@@ -5,3 +5,4 @@
 
 | 회차 | A 지적(C/I/M) | B 지적(C/I/M) | 반영 | 결정 필요 |
 |---|---|---|---|---|
+| 1 | 3 / 24 / 17 | 3 / 27 / 9 | 반영 78 · 일부 5 · 미반영 0(편집자 spec-editor-r1, round-1-applied.md). spec 309 → 707줄, intent 재작성, CLAUDE.md · curriculum-designer.md 맞춤 | 23건 잠정 적용(task-r1-apply.md 결정표) + 편집자가 정한 값 8묶음. 3회차 보고 때 요청자 확인 |
