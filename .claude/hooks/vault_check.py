@@ -4,8 +4,9 @@
 모드
   --start   SessionStart(새 세션 · /clear · 압축 뒤): 운영 규칙 요약 · 이어하기.md · 빚을 컨텍스트로 낸다
   --prompt  UserPromptSubmit: 턴 시작 시각을 기록한다(차단 횟수 초기화)
-  --stop    Stop: 이번 턴의 변경이 기록되지 않았으면 차단한다(JSON decision=block). 마지막 답을 상태에 남긴다
-  --end     SessionEnd(/clear · 종료): 이어하기.md 의 자동 기록 절을 다시 쓰고, 오늘 일지가 없으면 빚(debt)을 남긴다
+  --stop    Stop: 요청자 메시지 · 답 요지를 대화 원자료에 자동으로 덧붙이고, 이번 턴의 변경이 기록되지 않았으면 차단한다(JSON decision=block)
+  --end     SessionEnd(/clear · 종료): 대화 원자료를 보충하고 이어하기.md 의 자동 기록 절을 다시 쓰며, 오늘 일지가 없으면 빚(debt)을 남긴다
+  --compact PreCompact(컨텍스트 정리 직전): 대화 원자료 보충 + 이어하기 자동 기록 절
   --report  사람이 보는 상태표
   --lint    볼트 링크 · 고아 · sources 검사(--fix 면 문서-관계 교차표를 다시 만든다)
 규칙 원문: 볼트 위키/방법론/지식저장소-운영.md
@@ -27,6 +28,8 @@ RECORD_NEW_PREFIXES = (".superpowers/sdd/", "docs/research/")                   
 LOG = os.path.join(VAULT, "log.md")
 HANDOFF = os.path.join(VAULT, "이어하기.md")
 LAST = os.path.join(STATE, "last_turn.json")
+PENDING = os.path.join(STATE, "pending_ingest.json")
+RAW_CONV_SUFFIX = "_대화_세션기록.md"      # 훅이 자동으로 쓰는 대화 원자료
 JOURNAL = os.path.join(VAULT, "일지")
 CONTENT_DIRS = ["원자료", "위키", "그림", "일지"]
 
@@ -70,12 +73,41 @@ def repo_changed_since(ts, with_new=False):
     commits = _git("log", f"--since=@{int(ts)}", "--pretty=%h %s").strip().splitlines()
     return (files, commits, new) if with_new else (files, commits)
 
-def vault_changed_since(ts):
+def vault_changed_since(ts, include_auto=False):
     out = []
     for d in CONTENT_DIRS:
         for p in glob.glob(os.path.join(VAULT, d, "**", "*.md"), recursive=True):
+            if not include_auto and p.endswith(RAW_CONV_SUFFIX): continue
             if _mtime(p) >= ts: out.append(os.path.relpath(p, VAULT))
     return out
+
+# ───────────────────────── 대화 원자료 자동 기록
+def _esc(t):
+    return (t or "").replace("\r", "").replace("\n", " ⏎ ").replace("|", "／").strip()
+
+def raw_conv_path():
+    return os.path.join(VAULT, "원자료", "대화", f"{date.today().isoformat()}{RAW_CONV_SUFFIX}")
+
+def flush_raw_conversation(st, last):
+    """turn.json 의 요청자 메시지와 last_turn.json 의 답 요지를 그날 대화 원자료에 덧붙인다(중복 없이)."""
+    if not os.path.isdir(VAULT): return 0
+    p = raw_conv_path(); done = float(st.get("raw_flushed_at", 0)); rows = []
+    for pr in st.get("prompts") or []:
+        if pr.get("at", 0) > done:
+            rows.append(f"| {datetime.fromtimestamp(pr['at']).strftime('%H:%M')} | 요청자 | {_esc(pr.get('text'))} |")
+    if last and last.get("at", 0) > done and last.get("last_assistant_message"):
+        rows.append(f"| {datetime.fromtimestamp(last['at']).strftime('%H:%M')} | Claude | {_esc(last['last_assistant_message'])[:700]} |")
+    if not rows: return 0
+    if not os.path.exists(p):
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        head = ("---\ntype: raw\nkind: 대화\nproject: momo-english-academy\ndate: " + date.today().isoformat()
+                + "\nsource: Claude Code 세션 대화(훅 vault_check.py 가 턴마다 자동 기록. 요청자 메시지는 원문, 답은 앞 700자)\nupdated: "
+                + date.today().isoformat() + "\nstatus: immutable\ntags: [프로젝트/momo-english-academy, 원자료, 대화, 자동]\n---\n\n# 세션 대화 기록 "
+                + date.today().isoformat() + " (자동)\n\n> 원자료. 고치지 않는다. 훅이 턴마다 덧붙인다. 정리(ingest)는 다음 이정표 · 마무리 · 다음 세션 첫 턴에 한다.\n\n| 시각 | 누가 | 내용 |\n|---|---|---|\n")
+        with open(p, "w", encoding="utf-8") as f: f.write(head)
+    with open(p, "a", encoding="utf-8") as f: f.write("\n".join(rows) + "\n")
+    st["raw_flushed_at"] = time.time(); _save(TURN, st)
+    return len(rows)
 
 def today_journal():
     return os.path.join(JOURNAL, f"{date.today().isoformat()}.md")
@@ -99,9 +131,12 @@ def mode_stop(inp):
     st = _load(TURN, {})
     ts = st.get("turn_start") or (time.time() - 3600)
     last_msg = (inp.get("last_assistant_message") or "").strip()
+    last = None
     if last_msg:
-        _save(LAST, {"at": time.time(), "last_assistant_message": last_msg[:2000],
-                     "last_prompt": (st.get("prompts") or [{}])[-1].get("text", "")})
+        last = {"at": time.time(), "last_assistant_message": last_msg[:2000],
+                "last_prompt": (st.get("prompts") or [{}])[-1].get("text", "")}
+        _save(LAST, last)
+    flush_raw_conversation(st, last)                # 대화 원자료 자동 기록(턴마다)
     def _pass():
         st["last_stop_at"] = time.time(); _save(TURN, st)
     if time.time() - ts < GRACE:
@@ -126,6 +161,13 @@ def mode_stop(inp):
         need.append(f"커밋한 턴이다. 오늘 일지 일지/{date.today().isoformat()}.md 에 한 일 · 결정 · 막힌 것을 더한다")
     if trigger and _mtime(HANDOFF) < ts:
         need.append("볼트 이어하기.md 의 '지금 하던 것' · '다음 한 걸음' · '열린 질문'을 이번 턴 기준으로 고친다(세션이 끊겨도 다음 세션이 이어 가도록)")
+    pending = _load(PENDING, None)
+    if pending:
+        if log_ok:
+            try: os.remove(PENDING)
+            except OSError: pass
+        else:
+            need.append("세션 시작 때 미처리 원자료가 있었다(" + ", ".join(pending.get("files", [])[:4]) + "). /vault-ingest 로 읽고 위키 · index 를 고친 뒤 log.md 에 한 줄 남긴다(변경이 없으면 '확인, 변경 없음')")
     debt = _load(DEBT, None)
     if debt and _mtime(os.path.join(JOURNAL, f"{debt['date']}.md")) < ts and debt.get("date") != date.today().isoformat():
         need.append(f"지난 세션 빚: {debt['date']} 일지가 없다. 먼저 쓴다({debt.get('reason','')})")
@@ -176,7 +218,18 @@ def _write_auto_handoff(inp):
     body = re.sub(r"^updated: .*$", "updated: " + date.today().isoformat(), body, count=1, flags=re.M)
     with open(HANDOFF, "w", encoding="utf-8") as f: f.write(body)
 
+def mode_compact(inp):
+    st = _load(TURN, {}); last = _load(LAST, None)
+    try: flush_raw_conversation(st, last)
+    except Exception as e: print(f"대화 원자료 기록 실패: {e}", file=sys.stderr)
+    inp = dict(inp); inp.setdefault("reason", "compact(" + str(inp.get("trigger") or "-") + ")")
+    try: _write_auto_handoff(inp)
+    except Exception as e: print(f"handoff 기록 실패: {e}", file=sys.stderr)
+
 def mode_end(inp):
+    st0 = _load(TURN, {}); last0 = _load(LAST, None)
+    try: flush_raw_conversation(st0, last0)
+    except Exception as e: print(f"대화 원자료 기록 실패: {e}", file=sys.stderr)
     try: _write_auto_handoff(inp)
     except Exception as e: print(f"handoff 기록 실패: {e}", file=sys.stderr)
     st = _load(TURN, {})
@@ -195,6 +248,14 @@ def mode_start(inp):
     debt = _load(DEBT, None)
     if debt:
         lines.append(f"[볼트 빚] {debt['date']} 일지가 없다({debt.get('reason','')}). 이 세션 첫 턴에서 먼저 쓴다.")
+    pend = [f for f in vault_changed_since(_mtime(LOG), include_auto=True) if f.startswith("원자료")]
+    if pend:
+        _save(PENDING, {"files": pend, "at": time.time()})
+        lines.append("[미처리 원자료 " + str(len(pend)) + "건] " + ", ".join(pend[:6]) + (" …" if len(pend) > 6 else "")
+                     + " — log.md 보다 새 원자료다. 이 세션 첫 작업 턴에서 /vault-ingest 로 정리하고 log 에 적는다(Stop 훅이 검사).")
+    else:
+        try: os.remove(PENDING)
+        except OSError: pass
     if os.path.exists(HANDOFF):
         body = open(HANDOFF, encoding="utf-8").read()
         body = re.sub(r"^---\n.*?\n---\n", "", body, count=1, flags=re.S)
@@ -221,6 +282,10 @@ def _report_rows():
     debt = _load(DEBT, None)
     rows.append(("빚(미작성 일지)", f"{debt['date']} — {debt.get('reason','')}" if debt else "없음"))
     rows.append(("이어하기.md 갱신", datetime.fromtimestamp(_mtime(HANDOFF)).strftime("%Y-%m-%d %H:%M") if _mtime(HANDOFF) else "없음"))
+    rc = raw_conv_path()
+    rows.append(("오늘 자동 대화 기록", (f"{sum(1 for l in open(rc, encoding='utf-8') if l.startswith('| ') and not l.startswith('| 시각'))}행") if os.path.exists(rc) else "없음"))
+    pending = _load(PENDING, None)
+    rows.append(("미처리 원자료", ", ".join(pending["files"][:5]) if pending else "없음"))
     newer = [f for f in vault_changed_since(_mtime(LOG)) if not f.startswith("일지")]
     rows.append(("log 보다 새 원자료 · 위키", f"{len(newer)}개" + (": " + ", ".join(newer[:5]) if newer else "")))
     return rows
@@ -262,6 +327,7 @@ def mode_lint(fix=False, quiet=False):
                 missing.append((rel, m))
     orphans = [os.path.relpath(fp, VAULT) for fp in mine
                if os.path.basename(fp)[:-3] not in inbound and not fp.endswith(".excalidraw.md")
+               and not fp.endswith(RAW_CONV_SUFFIX)
                and os.path.basename(fp) not in ("README.md", "index.md")]
     if fix:
         _regen_relations()
@@ -295,8 +361,9 @@ def _regen_relations():
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    inp = _read_stdin() if any(a in args for a in ("--start", "--prompt", "--stop", "--end")) else {}
+    inp = _read_stdin() if any(a in args for a in ("--start", "--prompt", "--stop", "--end", "--compact")) else {}
     if "--start" in args: mode_start(inp)
+    elif "--compact" in args: mode_compact(inp)
     elif "--prompt" in args: mode_prompt(inp)
     elif "--stop" in args: mode_stop(inp)
     elif "--end" in args: mode_end(inp)
