@@ -21,6 +21,9 @@ TURN = os.path.join(STATE, "turn.json")
 DEBT = os.path.join(STATE, "debt.json")
 MAX_BLOCKS = 2          # 한 턴에서 최대 차단 횟수(무한 루프 방지)
 GRACE = 30              # 턴 시작 뒤 이 초 안에 끝난 턴은 검사하지 않는다(짧은 문답)
+CADENCE = 45 * 60       # 코드만 바뀌는 작업은 이 간격마다 한 번 log · 이어하기를 요구한다
+DESIGN_PREFIXES = ("intent/", "specs/", "plans/", ".claude/", "docs/research/", ".superpowers/")   # 설계 · 규약 · 검토 장부
+RECORD_NEW_PREFIXES = (".superpowers/sdd/", "docs/research/")                                     # 새 파일이면 원자료 사본이 필요
 LOG = os.path.join(VAULT, "log.md")
 HANDOFF = os.path.join(VAULT, "이어하기.md")
 LAST = os.path.join(STATE, "last_turn.json")
@@ -54,16 +57,18 @@ def _git(*args):
     except Exception:
         return ""
 
-def repo_changed_since(ts):
-    """턴 시작 뒤 바뀐 저장소 파일(추적 · 미추적)과 커밋 수."""
-    files = []
+def repo_changed_since(ts, with_new=False):
+    """턴 시작 뒤 바뀐 저장소 파일(추적 · 미추적)과 커밋 수. with_new 면 새 파일 목록도."""
+    files = []; new = []
     for line in _git("status", "--porcelain", "--untracked-files=all").splitlines():
         path = line[3:].strip().strip('"')
         if path.startswith(".claude/state/"): continue
         full = os.path.join(REPO, path)
-        if _mtime(full) >= ts: files.append(path)
+        if _mtime(full) >= ts:
+            files.append(path)
+            if line[:2] in ("??", "A ", "AM"): new.append(path)
     commits = _git("log", f"--since=@{int(ts)}", "--pretty=%h %s").strip().splitlines()
-    return files, commits
+    return (files, commits, new) if with_new else (files, commits)
 
 def vault_changed_since(ts):
     out = []
@@ -101,18 +106,25 @@ def mode_stop(inp):
         st["last_stop_at"] = time.time(); _save(TURN, st)
     if time.time() - ts < GRACE:
         return _pass()                              # 짧은 문답은 검사하지 않는다
-    repo_files, commits = repo_changed_since(ts)
+    repo_files, commits, new_files = repo_changed_since(ts, with_new=True)
     vault_files = vault_changed_since(ts)
     log_ok = _mtime(LOG) >= ts
     content_vault = [f for f in vault_files if not f.startswith("일지")]
+    design = [f for f in repo_files if f.startswith(DESIGN_PREFIXES)]
+    code = [f for f in repo_files if not f.startswith(DESIGN_PREFIXES)]
+    new_records = [f for f in new_files if f.startswith(RECORD_NEW_PREFIXES)]
+    stale = (time.time() - _mtime(LOG)) > CADENCE
+    # 기록할 가치가 있는 사건: 설계 문서 · 규약 · 커밋 · 볼트 내용 변경. 코드만 바뀌면 45분마다 한 번
+    trigger = bool(design or commits or content_vault) or (bool(code) and stale)
     need = []
-    if (repo_files or commits or content_vault) and not log_ok:
-        need.append("볼트 log.md 에 이번 턴의 ingest · lint 한 줄을 적는다")
-    if (repo_files or commits) and not content_vault:
-        need.append("저장소가 바뀌었는데 볼트 원자료 · 위키가 그대로다. 결정 · 지시 · 검토 보고 · 산출물 판본을 원자료에 넣고 닿는 위키 쪽을 고친다")
+    if trigger and not log_ok:
+        need.append("볼트 log.md 에 이번 턴의 ingest · lint 한 줄을 적는다" + (" (코드 작업이 45분 넘게 기록 없이 이어졌다)" if (code and stale and not (design or commits)) else ""))
+    if (new_records or commits) and not content_vault:
+        what = ("검토 보고 · 조사 파일 " + ", ".join(new_records[:4]) + " 의 사본") if new_records else "커밋 포인터 · 산출물 판본"
+        need.append(f"저장소에 기록할 것이 생겼는데 볼트 원자료 · 위키가 그대로다. {what}을 원자료에 넣고 닿는 위키 쪽을 고친다")
     if commits and _mtime(today_journal()) < ts:
         need.append(f"커밋한 턴이다. 오늘 일지 일지/{date.today().isoformat()}.md 에 한 일 · 결정 · 막힌 것을 더한다")
-    if (repo_files or commits or content_vault) and _mtime(HANDOFF) < ts:
+    if trigger and _mtime(HANDOFF) < ts:
         need.append("볼트 이어하기.md 의 '지금 하던 것' · '다음 한 걸음' · '열린 질문'을 이번 턴 기준으로 고친다(세션이 끊겨도 다음 세션이 이어 가도록)")
     debt = _load(DEBT, None)
     if debt and _mtime(os.path.join(JOURNAL, f"{debt['date']}.md")) < ts and debt.get("date") != date.today().isoformat():
@@ -124,7 +136,8 @@ def mode_stop(inp):
         return _pass()
     blocks = int(st.get("blocks", 0))
     detail = []
-    if repo_files: detail.append("저장소 변경 " + ", ".join(repo_files[:8]) + (" …" if len(repo_files) > 8 else ""))
+    if design: detail.append("설계 · 규약 변경 " + ", ".join(design[:6]) + (" …" if len(design) > 6 else ""))
+    if code and not design: detail.append("코드 변경 " + ", ".join(code[:6]) + (" …" if len(code) > 6 else ""))
     if commits: detail.append("커밋 " + "; ".join(commits[:3]))
     if content_vault: detail.append("볼트 변경 " + ", ".join(content_vault[:6]))
     reason = ("[볼트 기록 검사] 아직 끝낼 수 없다. " + " / ".join(need)
