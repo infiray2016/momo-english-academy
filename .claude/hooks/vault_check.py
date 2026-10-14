@@ -2,10 +2,10 @@
 """볼트 기록 강제 · 확인 스크립트.
 
 모드
-  --start   SessionStart: 운영 규칙 요약과 미처리 항목을 컨텍스트로 낸다
+  --start   SessionStart(새 세션 · /clear · 압축 뒤): 운영 규칙 요약 · 이어하기.md · 빚을 컨텍스트로 낸다
   --prompt  UserPromptSubmit: 턴 시작 시각을 기록한다(차단 횟수 초기화)
-  --stop    Stop: 이번 턴의 변경이 기록되지 않았으면 차단한다(JSON decision=block)
-  --end     SessionEnd: 오늘 일지가 없으면 빚(debt) 파일을 남긴다
+  --stop    Stop: 이번 턴의 변경이 기록되지 않았으면 차단한다(JSON decision=block). 마지막 답을 상태에 남긴다
+  --end     SessionEnd(/clear · 종료): 이어하기.md 의 자동 기록 절을 다시 쓰고, 오늘 일지가 없으면 빚(debt)을 남긴다
   --report  사람이 보는 상태표
   --lint    볼트 링크 · 고아 · sources 검사(--fix 면 문서-관계 교차표를 다시 만든다)
 규칙 원문: 볼트 위키/방법론/지식저장소-운영.md
@@ -22,6 +22,8 @@ DEBT = os.path.join(STATE, "debt.json")
 MAX_BLOCKS = 2          # 한 턴에서 최대 차단 횟수(무한 루프 방지)
 GRACE = 30              # 턴 시작 뒤 이 초 안에 끝난 턴은 검사하지 않는다(짧은 문답)
 LOG = os.path.join(VAULT, "log.md")
+HANDOFF = os.path.join(VAULT, "이어하기.md")
+LAST = os.path.join(STATE, "last_turn.json")
 JOURNAL = os.path.join(VAULT, "일지")
 CONTENT_DIRS = ["원자료", "위키", "그림", "일지"]
 
@@ -82,11 +84,19 @@ def mode_prompt(inp):
         st["session_id"] = inp.get("session_id")          # 같은 턴이 이어진다
     else:
         st.update({"session_id": inp.get("session_id"), "turn_start": time.time(), "blocks": 0})
+    prompt = (inp.get("prompt") or "").strip()
+    if prompt:
+        st.setdefault("prompts", []).append({"at": time.time(), "text": prompt[:600]})
+        st["prompts"] = st["prompts"][-5:]
     _save(TURN, st)
 
 def mode_stop(inp):
     st = _load(TURN, {})
     ts = st.get("turn_start") or (time.time() - 3600)
+    last_msg = (inp.get("last_assistant_message") or "").strip()
+    if last_msg:
+        _save(LAST, {"at": time.time(), "last_assistant_message": last_msg[:2000],
+                     "last_prompt": (st.get("prompts") or [{}])[-1].get("text", "")})
     def _pass():
         st["last_stop_at"] = time.time(); _save(TURN, st)
     if time.time() - ts < GRACE:
@@ -102,6 +112,8 @@ def mode_stop(inp):
         need.append("저장소가 바뀌었는데 볼트 원자료 · 위키가 그대로다. 결정 · 지시 · 검토 보고 · 산출물 판본을 원자료에 넣고 닿는 위키 쪽을 고친다")
     if commits and _mtime(today_journal()) < ts:
         need.append(f"커밋한 턴이다. 오늘 일지 일지/{date.today().isoformat()}.md 에 한 일 · 결정 · 막힌 것을 더한다")
+    if (repo_files or commits or content_vault) and _mtime(HANDOFF) < ts:
+        need.append("볼트 이어하기.md 의 '지금 하던 것' · '다음 한 걸음' · '열린 질문'을 이번 턴 기준으로 고친다(세션이 끊겨도 다음 세션이 이어 가도록)")
     debt = _load(DEBT, None)
     if debt and _mtime(os.path.join(JOURNAL, f"{debt['date']}.md")) < ts and debt.get("date") != date.today().isoformat():
         need.append(f"지난 세션 빚: {debt['date']} 일지가 없다. 먼저 쓴다({debt.get('reason','')})")
@@ -124,7 +136,36 @@ def mode_stop(inp):
     st["blocks"] = blocks + 1; _save(TURN, st)
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
 
+def _write_auto_handoff(inp):
+    st = _load(TURN, {}); last = _load(LAST, {})
+    ts = st.get("session_start") or (time.time() - 8 * 3600)
+    repo_files, commits = repo_changed_since(ts)
+    vault_files = vault_changed_since(ts)
+    status = _git("status", "--porcelain").rstrip("\n").splitlines()
+    head = _git("log", "-3", "--pretty=%h %s").strip().splitlines()
+    prompts = st.get("prompts") or []
+    when = datetime.now().strftime("%Y-%m-%d %H:%M")
+    rows = [("세션 끝", f"{when} · 이유 {inp.get('reason') or inp.get('hook_event_name') or '-'}"),
+            ("마지막 지시", (prompts[-1].get("text") if prompts else last.get("last_prompt") or "-").replace("\n", " ")[:300]),
+            ("마지막 답 요지", (last.get("last_assistant_message") or "-").replace("\n", " ")[:600]),
+            ("이 세션의 커밋", "; ".join(commits[:5]) or "없음"),
+            ("저장소 미커밋 변경", ", ".join(l[3:].strip() for l in status[:10]) or "없음"),
+            ("HEAD", "; ".join(head) or "-"),
+            ("이 세션에 바뀐 볼트 파일", ", ".join(vault_files[:12]) + (" …" if len(vault_files) > 12 else "") or "없음")]
+    auto = "## 자동 기록 (훅이 세션 끝에 씀)\n\n| 항목 | 값 |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows) + "\n"
+    if os.path.exists(HANDOFF):
+        body = open(HANDOFF, encoding="utf-8").read()
+        i = body.find("## 자동 기록")
+        body = (body[:i] if i >= 0 else body.rstrip("\n") + "\n\n") + auto
+    else:
+        body = ("---\ntype: handoff\nkind: 이어하기\nproject: momo-english-academy\nupdated: " + date.today().isoformat()
+                + "\nstatus: current\ntags: [프로젝트/momo-english-academy, 이어하기]\n---\n\n# 이어하기\n\n## 지금 하던 것\n\n- (Claude 가 턴마다 갱신)\n\n## 다음 한 걸음\n\n1. -\n\n## 열린 질문 · 결정 대기\n\n- -\n\n" + auto)
+    body = re.sub(r"^updated: .*$", "updated: " + date.today().isoformat(), body, count=1, flags=re.M)
+    with open(HANDOFF, "w", encoding="utf-8") as f: f.write(body)
+
 def mode_end(inp):
+    try: _write_auto_handoff(inp)
+    except Exception as e: print(f"handoff 기록 실패: {e}", file=sys.stderr)
     st = _load(TURN, {})
     ts = st.get("session_start") or st.get("turn_start") or (time.time() - 8 * 3600)
     repo_files, commits = repo_changed_since(ts)
@@ -141,6 +182,11 @@ def mode_start(inp):
     debt = _load(DEBT, None)
     if debt:
         lines.append(f"[볼트 빚] {debt['date']} 일지가 없다({debt.get('reason','')}). 이 세션 첫 턴에서 먼저 쓴다.")
+    if os.path.exists(HANDOFF):
+        body = open(HANDOFF, encoding="utf-8").read()
+        body = re.sub(r"^---\n.*?\n---\n", "", body, count=1, flags=re.S)
+        lines.append("[이어하기 — 볼트 이어하기.md, 세션 시작 원인 " + str(inp.get("source") or "-") + "]\n" + body.strip()[:8000])
+        lines.append("[이어하기 규칙] 위 '지금 하던 것'과 '다음 한 걸음'부터 이어 간다. 작업 턴마다 이 파일을 갱신한다(Stop 훅이 검사).")
     if not os.path.isdir(VAULT):
         lines.append(f"[경고] 볼트 경로가 없다: {VAULT} (MOMO_VAULT 환경 변수로 지정)")
     print("\n".join(lines))
@@ -161,6 +207,7 @@ def _report_rows():
         rows.append(("이번 턴 log 갱신", "예" if _mtime(LOG) >= ts else "아니오"))
     debt = _load(DEBT, None)
     rows.append(("빚(미작성 일지)", f"{debt['date']} — {debt.get('reason','')}" if debt else "없음"))
+    rows.append(("이어하기.md 갱신", datetime.fromtimestamp(_mtime(HANDOFF)).strftime("%Y-%m-%d %H:%M") if _mtime(HANDOFF) else "없음"))
     newer = [f for f in vault_changed_since(_mtime(LOG)) if not f.startswith("일지")]
     rows.append(("log 보다 새 원자료 · 위키", f"{len(newer)}개" + (": " + ", ".join(newer[:5]) if newer else "")))
     return rows
