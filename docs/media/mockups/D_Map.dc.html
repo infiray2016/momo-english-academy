@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>홈 D 여행 지도</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Baloo+2:wght@600;800&display=swap">
+<style>
+body{margin:0}
+a{color:#4A3F35}a:hover{color:#0E7490}
+</style>
+</helmet>
+<div style="width: 1180px; height: 820px; box-sizing: border-box; background: #FFF8EC; padding: 30px 44px 28px; font-family: 'Gowun Dodum', sans-serif; color: #2A2320; display: flex; flex-direction: column; gap: 20px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <div style="font-family: 'Black Han Sans', sans-serif; font-size: 36px; line-height: 1">모모의 영어 여행</div>
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 18px; color: #7A6A5A">Momo English Academy</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px">
+      <button style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Gowun Dodum', sans-serif; font-size: 18px; background: #2A2320; color: #FFF8EC; border: 0; border-radius: 999px; padding: 8px 20px; min-height: 46px; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 3H8"></path></svg>
+        복습 2분 · 단어 14개
+      </button>
+      <a href="#parent" aria-label="부모 화면" style="display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; border: 2px solid #CFC2AE; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; flex: 1 1 auto">
+
+    <div style="background: #E0F2FE; border-radius: 24px; padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px; color: #0E7490">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1; color: #0E7490">읽기 · 바다 길</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 16px; color: #3C6E7E">Reading</div>
+        </div>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      </div>
+      <div style="position: relative; flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0">
+        <div style="position: absolute; left: 50%; top: 10px; bottom: 10px; width: 6px; margin-left: -3px; background: #7DD3FC; border-radius: 3px"></div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">12</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">11</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">10</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">9</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">8</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">7</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">6</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">5</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #7DD3FC; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #3C6E7E; box-sizing: border-box">4</div>
+        <div style="position: relative; width: 52px; height: 52px; border-radius: 50%; background: #0E7490; border: 4px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #FFFFFF; box-sizing: border-box; box-shadow: 0 3px 0 rgba(0,0,0,0.15)" role="img" aria-label="현재 3단계">모</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #0E7490; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #0E7490; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; color: #2A2320">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px">
+          <span>3단계 · 단원 2 동물 친구들</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#C2410C" stroke="#C2410C" stroke-width="1" aria-hidden="true"><path d="M12 22c4-2 6-5 6-9 0-3-2-5-3-6-1 3-3 4-3 4s0-3-2-6c-2 2-4 5-4 8 0 4 2 7 6 9z"></path></svg>12일</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #0E7490; border: 3px solid #0E7490; border-radius: 999px; min-height: 50px; box-sizing: border-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          오늘 완료
+        </div>
+      </div>
+    </div>
+
+    <div style="background: #ECFCCB; border-radius: 24px; padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px; color: #3F6212">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1; color: #3F6212">쓰기 · 숲 길</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 16px; color: #52712A">Writing</div>
+        </div>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      </div>
+      <div style="position: relative; flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0">
+        <div style="position: absolute; left: 50%; top: 10px; bottom: 10px; width: 6px; margin-left: -3px; background: #BEF264; border-radius: 3px"></div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">12</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">11</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">10</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">9</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">8</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">7</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">6</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">5</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">4</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #BEF264; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #52712A; box-sizing: border-box">3</div>
+        <div style="position: relative; width: 52px; height: 52px; border-radius: 50%; background: #3F6212; border: 4px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #FFFFFF; box-sizing: border-box; box-shadow: 0 3px 0 rgba(0,0,0,0.15)" role="img" aria-label="현재 2단계">모</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #3F6212; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; color: #2A2320">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px">
+          <span>2단계 · 단원 4 나의 하루</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#C2410C" stroke="#C2410C" stroke-width="1" aria-hidden="true"><path d="M12 22c4-2 6-5 6-9 0-3-2-5-3-6-1 3-3 4-3 4s0-3-2-6c-2 2-4 5-4 8 0 4 2 7 6 9z"></path></svg>5일</span>
+        </div>
+        <button style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; background: #3F6212; color: #FFFFFF; border: 0; border-radius: 999px; min-height: 50px; cursor: pointer">출발!</button>
+      </div>
+    </div>
+
+    <div style="background: #EDE9FE; border-radius: 24px; padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px; color: #4C1D95">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1; color: #4C1D95">말하기 · 우주 길</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 16px; color: #5F3FA0">Speaking</div>
+        </div>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+      </div>
+      <div style="position: relative; flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0">
+        <div style="position: absolute; left: 50%; top: 10px; bottom: 10px; width: 6px; margin-left: -3px; background: #C4B5FD; border-radius: 3px"></div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">12</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">11</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">10</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">9</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">8</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">7</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">6</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">5</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">4</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">3</div>
+        <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 2px solid #C4B5FD; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; color: #5F3FA0; box-sizing: border-box">2</div>
+        <div style="position: relative; width: 52px; height: 52px; border-radius: 50%; background: #4C1D95; border: 4px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #FFFFFF; box-sizing: border-box; box-shadow: 0 3px 0 rgba(0,0,0,0.15)" role="img" aria-label="현재 1단계">모</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; color: #2A2320">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px">
+          <span>1단계 · 단원 1 인사하기</span>
+          <span>오늘부터 시작</span>
+        </div>
+        <button style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; background: #4C1D95; color: #FFFFFF; border: 0; border-radius: 999px; min-height: 50px; cursor: pointer">출발!</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

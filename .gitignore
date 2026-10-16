@@ -2,3 +2,5 @@ docs/media/*.mp4
 node_modules/
 .env*
 .claude/state/
+__pycache__/
+*.swp
