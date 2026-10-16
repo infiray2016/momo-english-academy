@@ -86,7 +86,7 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
    6. `deadline = t0 + AI_WAIT_TIMEOUT_MULTIPLE × timeoutMs`. 시도 k = 1 … `AI_ATTEMPTS_MAX`. 둘째 시도는 남은 시간이 `MIN_RETRY_MS`(기술 값 1초, 파일 위 상수)보다 적으면 하지 않는다. 시도의 타임아웃은 `min(timeoutMs, deadline − 지금)`. 보내기는 P9a `sendAttempt`.
    7. 실패면 `classifyFailure` → 한 행(`status` · `errorCode` · 지연, 토큰 0 · 비용 0). `same_error` 면 `sameErrorCount` 가 ai.down_after_failures 이상일 때 `createAlertOnce({ kind: "call_config_check", profileId: null, thresholdKey: "ai.down_after_failures:<목적>", learningDay, value: { purpose, model: config.model, errorCode }, once: "day" })`. 다시 보내는 것은 `retryConnection` 이고 목적이 P9a `REALTIME_PURPOSES` 일 때만이다(첨삭은 응답 뒤 호출이라 다시 보내지 않고 다음 앱 진입에 P11 이 부른다, 8절 '첨삭 대기'). 아니면 `{ ok: false, reason }`.
    8. 응답이면 `billedAttemptsOf` · `costOf`. 대체 모델이 답했거나 단가가 없으면 서버 경고(요청 번호 · 목적 · 요청 · 답한 모델 · 거절 분류만, 본문 없음 — 역분석 제안 5). `stop_reason === "refusal"` 이면 한 행(`refusal`)을 남기고 `{ ok: false, reason: "refusal", refusals: 1 }`(다시 요청하지 않음, 정할 것 나).
-   9. 그 밖이면 `answerTextOf` → JSON 풀기 → `prepareAnswer` → 엄격 규격 + `spec.validate`. 다 통과하고 `stop_reason === "end_turn"` 이면 `spec.normalize`. 아니면 남은 시도 · 시간이 있으면 한 행(`validation_failed`)을 남기고 다시 요청(앞 응답의 다듬은 값은 기억해 둔다). 남은 것이 없으면 느슨한 규격으로 받아 정규화하고, null 이면 한 행(`validation_failed`)과 `{ ok: false, reason: "invalid" }`.
+   9. 그 밖이면 stop_reason 을 먼저 본다(P5a `interpretSolveMessage` 와 같은 차례 — C62 · P9a 확인한 사실 12). `end_turn` 이 아니면(max_tokens 등) 이 시도는 엄격 실패다. 그다음 `answerTextOf`(마지막 fallback 블록 뒤의 text 블록을 type 으로 찾아 이어 붙임) → `JSON.parse` → `prepareAnswer` → 엄격 규격 `safeParse` + `spec.validate`. `end_turn` 이고 다 통과하면 `spec.normalize`. 아니면 남은 시도 · 시간이 있으면 한 행(`validation_failed`)을 남기고 다시 요청(앞 응답의 다듬은 값은 기억해 둔다). 남은 것이 없으면 느슨한 규격으로 받아 정규화하고, null 이면 한 행(`validation_failed`)과 `{ ok: false, reason: "invalid" }`.
    10. 출력 검사: `checkOutputFields(spec.checkFields(값), { forbidden, sentenceMaxWords: input.sentenceMaxWords })` → `spec.applyChecks`. 이 시도의 행: 엄격 통과이고 걸린 칸이 없으면 `success`, 아니면 `validation_failed`(6.4). `fatal` 이면 `{ ok: false, reason: "output_blocked" }`, 아니면 `{ ok: true, value, normalized, checked, historyEntry }`.
 
 5. `src/server/ai/index.ts`(`import "server-only"`). P11 은 이 파일만 가져온다.
@@ -102,7 +102,7 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 
 6. `scripts/ai-contract.ts`(9절 AI 계약(수동) · C46 (3)). 순수 함수(`parseArgs` · `loadScriptConfig` · `contractCases` · `recordOf` · `compareModelInfo`)를 내보내고 네트워크 · 파일 쓰기는 직접 실행될 때만 한다(P4c `seed-validate` 와 같은 꼴). `src/server` 는 `server-only` 라 가져오지 않는다 — `src/core/ai`(조합 · 규격 · 요청 본문 · 비용 · 분류)와 SDK(`zodOutputFormat` 포함)를 직접 쓴다.
    - 시작: `.env.local` 이 있으면 `process.loadEnvFile(".env.local")`(P3a `drizzle.config.ts` 와 같은 길). `--dry-run` 이 아니면 `ANTHROPIC_API_KEY` 가 없을 때 종료 2(값을 출력하지 않는다). 클라이언트 선택은 P9a 값 7 과 같다(maxRetries 0 · logLevel warn · OpenTelemetry 끔 · 기본 주소).
-   - 설정 · 단가표: `seed/settings.json` · `seed/model-prices.json` 이 있으면 그것(P4a 규격으로 검증), 없으면 `TEST_SETTINGS` · `MODEL_PRICES_FIXTURE`(어느 쪽을 썼는지 출력).
+   - 설정 · 단가표: `seed/settings.json` · `seed/model-prices.json` 이 있으면 그것(P4a 규격으로 검증), 없으면 `TEST_SETTINGS` · `MODEL_PRICES_FIXTURE`(어느 쪽을 썼는지 출력). 단가는 P9a `priceBookOf(priceRowsOfSeed(파일), 실행 시각의 UTC 날짜)`로 고른다(P5a 와 같은 고르기 · 같은 날짜 — plan-p05a 정할 것 하).
    - 사례(기본은 아래 모두, `--case <id,…>` 로 고름):
 
 | id | 무엇 | 기대 |
@@ -122,9 +122,9 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 7. `scripts/ai-observe.ts`(9절 실시간 호출 표본 평가의 1-가 몫 · 역분석 제안 5 관찰표). `parseArgs` · `observePlan` · `summarize` · `recommendMaxTokens` 를 내보낸다.
    - 계획: 쓰기 확인 · 말하기 평가(질문 답 l3 · l6, 발표 l9) · 생각 꺼내기(첫 턴)를 생각 단계 둘(`adaptive` · `off` — Sonnet 5.5 between_tools, 둘 다 effort low)로, 첨삭은 설정 조합(medium adaptive) 하나로, 묶음마다 `--n`(기본 20, 9절 '표본 20개씩')번. 입력은 P9b `sample-inputs.ts` 의 관찰용 변형을 돌려 쓴다.
    - 부르기 전에 예상 비용(6.6 1회 비용 × 횟수, 기본 약 4달러 — 추측)을 출력하고 `--yes` 가 없으면 부르지 않는다.
-   - 응답마다 한 줄: 목적 · 묶음 · 지연 · 입력 · 출력 · 생각 토큰(`usage.output_tokens_details.thinking_tokens`) · 캐시 읽기 · stop_reason · 첫 시도 엄격 통과 · 정규화로 자른 수 · 출력 검사 걸림 · 언어 · 말투 어긋남(한국어 칸에 한글이 없음 · 영어 칸에 한글) · '추론 같은 글'(메타 문장 목록이 있으면 그것, 없으면 짧은 내장 목록 — the child · the student · I should · Let me) · 비용 · 답한 모델 · 요청 번호.
+   - 응답마다 한 줄: 목적 · 묶음 · 지연 · 입력 · 출력 · 생각 토큰(`usage.output_tokens_details.thinking_tokens`, null 이면 빈칸) · 캐시 읽기 · stop_reason · 첫 시도 엄격 통과 · 정규화로 자른 수 · 출력 검사 걸림 · 언어 · 말투 어긋남(한국어 칸에 한글이 없음 · 영어 칸에 한글) · '추론 같은 글'(메타 문장 목록이 있으면 그것, 없으면 짧은 내장 목록 — the child · the student · I should · Let me) · 비용 · 답한 모델 · 요청 번호.
    - 요약(`summarize`): 묶음마다 n · 지연 p50 · p95 · p99 · 출력 p50 · p95 · p99 · 최대 · 엄격 통과율 · 규칙 위반 수 · 평균 비용, `recommendMaxTokens(p99) = ⌈2 × p99 ÷ 100⌉ × 100`(C21 '출력 p99 의 두 배'), 정할 것 사의 규칙으로 고른 생각 단계 후보.
-   - 산출물: `docs/research/<날짜>-ai-observe.md`(표와 권하는 값) · `docs/research/<날짜>-ai-observe.jsonl`(줄 자료와 아이에게 보일 칸의 글 — 견본 입력이라 아이 정보가 없다). 설정값은 바꾸지 않는다(컨트롤러 13절 → P6).
+   - 산출물: `docs/research/<날짜>-ai-observe.md`(표와 권하는 값. 머리에 'H4 첫 실호출' 표를 둔다 — P5a `pnpm seed:check --probe` 줄(모델 · stop_reason · 입력 · 출력 토큰 · 판단)은 명령이 빈칸으로 두고 컨트롤러가 장부(plan-p05a 작업 7)에서 옮겨 적고, 이 명령의 첫 응답 줄은 명령이 채운다) · `docs/research/<날짜>-ai-observe.jsonl`(줄 자료와 아이에게 보일 칸의 글 — 견본 입력이라 아이 정보가 없다). 설정값은 바꾸지 않는다(컨트롤러 13절 → P6).
 
 8. 응답 표본 `tests/fixtures/ai/samples/*.json`(손으로 만든 것, `source: "handmade"`): 목적마다 정상 · 개수 · 범위 초과(고칠 곳 2 · 교정 4 · 채점표 0 · 5 · 2.6 · 3단계 문법 지적 · 판정 대소문자 'Correct' · 발표 질문 1개) · 거절(`cyber`, 출력 0) · max_tokens 로 잘린 JSON · 대체 모델 iterations(문서 예시 꼴) · 오류(콘솔 한도 워크스페이스 400 · 등급 상한 429 · 404 · 529). 꼴은 `{ case, purpose, title, source, response: { status, body }, expect: { strict?, normalized?, classify? } }`.
 
@@ -157,7 +157,7 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 | 2 | 그 워크스페이스 범위의 API 키를 만든다 | 값은 저장소 · 장부 · 대화에 적지 않는다 |
 | 3 | 요청자 컴퓨터의 `.env.local` 에 `ANTHROPIC_API_KEY`. Vercel Preview 환경 변수에도 넣는다(H1 뒤, P11 프리뷰 사용) | `ANTHROPIC_BASE_URL` · `ANTHROPIC_CUSTOM_HEADERS` · `ANTHROPIC_LOG` · `ANTHROPIC_AUTH_TOKEN` 은 Vercel 에 넣지 않는다(P9a 위험 10) |
 | 4 | `pnpm ai:contract`(요청자 터미널, 또는 요청자 지시로 컨트롤러 — 키는 `.env.local` 에서만 읽고 출력하지 않는다) | 대화창의 `!` 로 키를 넘기지 않는다. 녹화 표본 → `pnpm test` → H14 커밋. `models` 사례가 어긋남을 내면 컨트롤러가 P6 몫으로 `seed/model-prices.json` 을 고치고(`pnpm seed:validate` 0) `pnpm ai:contract --case models` 를 다시 돌린다 |
-| 5 | `pnpm ai:observe --yes` | 관찰표 → 컨트롤러 결정(정할 것 사) → 13절 한 줄 → P6 |
+| 5 | `pnpm ai:observe --yes` | 관찰표 → 컨트롤러 결정(정할 것 사) → 13절 한 줄 → P6. 요청자가 먼저 돌려 알린 P5a `pnpm seed:check --probe` 첫 줄(모델 · stop_reason · 토큰, 장부에 있음)을 관찰표 'H4 첫 실호출' 표에 옮긴다 |
 | 6(H12) | 개발용 워크스페이스 월 한도를 이번 달 사용액보다 낮게 잠깐 걸고 `pnpm ai:contract --case console-limit` → 한도를 되돌린다 | C46 (3). 그 호출이 콘솔 사용량에 잡히는지 콘솔에서 본다. 다른 개발 호출(P5 풀이 검사)이 그동안 멈춘다(묶음 위험 10) — 짧게 |
 
 ## 위험 · 제약 (Risks)
@@ -176,7 +176,7 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 | 8 | 생각 꺼내기의 앞 턴 글을 P11 이 바꿔 저장하면 캐시가 깨진다 | 비용이 늘 뿐 결과는 같다 | `historyEntry` 를 글자 그대로 저장하라고 P11 에 넘긴다. 흐름 시험이 둘째 턴 메시지 머리를 본다 |
 | 9 | 콘솔 한도 400 의 풀리는 시각 꼴을 모른다(문서 문구 없음) | 1-나 부모 화면의 풀리는 시각 | 1-가는 쓰지 않는다. H12 표본으로 1-나가 정한다. SDK 의 조직 지출 한도 읽기(`client.beta.organization.spendLimits`, 끝점 `/v1/organizations/spend_limits`, 설치판 0.135.0)는 조직 관리용 끝점이라 앱 서버에서 쓰지 않는다(필요한 키 종류는 추측 — 끝점 경로로 판단) |
 | 10 | 첨삭의 '같은 초고' 실패 수를 ai_calls 로 세면 한 논리 호출의 두 시도가 둘로 셈해진다 | '첨삭 못 함'이 일찍 온다 | P9 는 논리 호출 하나의 결과(`reason` · `refusals`)만 돌려주고, 초고마다 세는 일은 P11 이 attempts 에서 한다 |
-| 11 | 생각 끔(between_tools · disabled)과 구조화 출력을 함께 보내면 400 일 수 있다(추측 — 문서에 막는 말이 없다) | 관찰의 'off' 묶음 · 1-나 회화 턴이 모두 실패한다 | H4 계약의 `talk_config.*` 사례가 먼저 확인한다. 400 이면 관찰은 그 묶음을 '받지 않음'으로 적고 adaptive 를 고르며, 회화 턴 조합은 1-나 전에 컨트롤러가 13절로 다시 정한다 |
+| 11 | 생각 끔(between_tools · disabled)과 구조화 출력을 함께 보내면 400 일 수 있다(추측 — 문서에 막는 말이 없다) | 관찰의 'off' 묶음 · 1-나 회화 턴이 모두 실패한다 | P5a `pnpm seed:check --probe`(GA 끝점 · Sonnet 5.5 between_tools)가 가장 먼저 보고, 이 plan 의 길(베타 끝점 · 머리글 · Haiku disabled)은 H4 계약의 `talk_config.*` 사례가 확인한다(P9a 확인할 사실 1). 400 이면 관찰은 그 묶음을 '받지 않음'으로 적고 adaptive 를 고르며, 회화 턴 조합은 1-나 전에 컨트롤러가 13절로 다시 정한다 |
 
 ### 정할 것(컨트롤러)
 
@@ -210,7 +210,7 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 | AC-8n(P9 몫) | 통합 "AC-8n 첨삭이 404 를 세 번 받으면 쉬는 상태 행이 생기지 않고 '호출 설정 확인 필요' 알림이 하나 생긴다(넷째에도 하나)" · "AC-8n 다시 보내도 같은 오류(400 · 413)는 그 호출 안에서 다시 보내지 않는다". 다섯 번 실패 → '첨삭 못 함'은 P11, 확인 호출 · 이어진 실패 수는 1-나 | `ai-errors.test.ts` |
 | 8절 실패 흐름 | 통합 "8절 흐름: 연결 실패는 대화형 호출에서 1회 다시 보내고 첨삭은 다시 보내지 않는다" · "8절 흐름: 콘솔 한도 400 · 429 는 결과 상태 limit 이고 다시 보내지 않는다(1-가는 호출 하나의 실패)" · "8절 흐름: 401 은 계정 갈래로 남고 다시 보내지 않는다" · "8절 흐름: 거절은 다시 요청하지 않고 거절 수 1 을 돌려준다" · "6.1 흐름: 두 시도의 기다림이 타임아웃의 두 배를 넘지 않는다" | `ai-errors.test.ts` |
 | 6.1 · 6.4 흐름 | 통합 "6.1 흐름: 엄격 규격 실패 → 1회 다시 요청 → 행 둘(validation_failed · success)" · "6.1 흐름: 두 번 다 엄격 실패면 정규화한 값을 돌려주고 두 행 모두 validation_failed" · "6.1 흐름: max_tokens 로 끝난 응답은 다시 요청한다" · "6.4 흐름: 출력 검사에 걸리면 바꾼 값을 돌려주고 그 행은 validation_failed" · "6.4 흐름: 시드 금지어 목록이 없거나 틀리면 AI 를 부르지 않는다" · "6.1 흐름: 프로필 이름 · 전화번호가 요청 본문에 없다" · "6.1 흐름: 생각 꺼내기 둘째 턴 요청은 첫 턴 메시지를 글자 그대로 앞에 둔다" | `ai-calls.test.ts` |
-| 9절 AI 계약 | 단위 "9절 계약: 손으로 만든 표본(호출 넷 · 말하기 셋)이 엄격 규격을 통과한다" · "9절 계약: 개수 · 범위를 넘는 표본은 엄격 규격에 걸리고 정규화가 고친다" · "9절 계약: 거절 · max_tokens 표본은 규격 밖이다" · "9절 계약: 녹화 표본이 엄격 규격 또는 정규화를 통과한다"(없으면 목적마다 todo) · "9절 계약: 콘솔 한도 표본(손 · H12 녹화)을 8절 분류가 콘솔 한도로 본다" · "9절 계약: 계약 명령의 요청마다 max_tokens 가 ai.max_tokens.<목적>이다" · "AI 계약 명령: 사례 목록이 9절 AI 계약(수동) 행(호출 넷 · 회화 턴 두 설정 · 확인 호출 세 모델 · 콘솔 한도)과 모델 정보 대조를 덮는다 · dry-run 은 네트워크를 쓰지 않는다 · 녹화 파일에 키 · 인증 머리글이 없다" · "AI 계약 명령: 모델 정보 대조는 생각 형 · effort · 대체 모델 목록 · 수명이 단가표와 어긋나면 그 칸을 짚는다(손으로 만든 모델 정보로)" · "AI 계약 명령: 대체 모델 목록이 null 이면 server-side-fallback 머리글로 한 번 더 묻고, 그래도 null 이면 '확인 못 함'으로 적는다" · "관찰표: p99 와 권하는 max_tokens(두 배를 100 단위 올림) · 생각 단계 고르기 규칙" | `tests/contract/ai-schemas.test.ts` · `pnpm test` |
+| 9절 AI 계약 | 단위 "9절 계약: 손으로 만든 표본(호출 넷 · 말하기 셋)이 엄격 규격을 통과한다" · "9절 계약: 개수 · 범위를 넘는 표본은 엄격 규격에 걸리고 정규화가 고친다" · "9절 계약: 거절 · max_tokens 표본은 규격 밖이다" · "9절 계약: 녹화 표본이 엄격 규격 또는 정규화를 통과한다"(없으면 목적마다 todo) · "9절 계약: 콘솔 한도 표본(손 · H12 녹화)을 8절 분류가 콘솔 한도로 본다" · "9절 계약: 계약 명령의 요청마다 max_tokens 가 ai.max_tokens.<목적>이다" · "AI 계약 명령: 사례 목록이 9절 AI 계약(수동) 행(호출 넷 · 회화 턴 두 설정 · 확인 호출 세 모델 · 콘솔 한도)과 모델 정보 대조를 덮는다 · dry-run 은 네트워크를 쓰지 않는다 · 녹화 파일에 키 · 인증 머리글이 없다" · "AI 계약 명령: 모델 정보 대조는 생각 형 · effort · 대체 모델 목록 · 수명이 단가표와 어긋나면 그 칸을 짚는다(손으로 만든 모델 정보로)" · "AI 계약 명령: 대체 모델 목록이 null 이면 server-side-fallback 머리글로 한 번 더 묻고, 그래도 null 이면 '확인 못 함'으로 적는다" · "관찰표: p99 와 권하는 max_tokens(두 배를 100 단위 올림) · 생각 단계 고르기 규칙" · "관찰표: 'H4 첫 실호출' 표에 P5a 확인 호출 줄(빈칸)과 이 명령의 첫 응답 줄이 있다" | `tests/contract/ai-schemas.test.ts` · `pnpm test` |
 | 9절 AI 계약(수동) · 표본 평가(H4 뒤) | `pnpm ai:contract`(종료 0, 녹화 표본) · `pnpm ai:observe --yes`(관찰표) · H12 `pnpm ai:contract --case console-limit` | 수동 명령 · `docs/research/<날짜>-ai-observe.md` |
 | 공통 | P9a 증명 표의 공통 행 + 빌드 추적 확인(작업 7 (나)) | CI |
 
