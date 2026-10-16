@@ -38,6 +38,10 @@ const FIXTURE_FILES: Record<string, string> = {
     'import Anthropic from "@anthropic-ai/sdk";\nexport const client = Anthropic;\n',
   "src/app/direct-sdk.ts":
     'import Anthropic from "@anthropic-ai/sdk";\nexport const a = Anthropic;\n',
+  "src/app/uses-db.ts":
+    'import { table } from "@/db/schema";\nexport const t = table;\n',
+  "src/server/db/index.ts":
+    'import { sql } from "drizzle-orm";\nimport { table } from "@/db/schema";\nexport const q = [sql, table];\n',
   "src/lib/a.ts": 'import { b } from "./b";\nexport const a = () => b;\n',
   "src/lib/b.ts": 'import { a } from "./a";\nexport const b = () => a;\n',
 };
@@ -167,6 +171,22 @@ describe("의존 규칙", () => {
     expect(violationsFrom("src/app/direct-sdk.ts")).toEqual(["sdk-only-in-ai"]);
   });
 
+  it("의존 규칙: src/app 이 별칭 @/db 를 가져오면 db-only-from-server 위반", () => {
+    expect(violationsFrom("src/app/uses-db.ts")).toEqual([
+      "db-only-from-server",
+    ]);
+  });
+
+  it("의존 규칙: src/server 가 src/db · drizzle-orm 을 가져오는 것은 허용", () => {
+    expect(
+      resolvedDependency("src/server/db/index.ts", "@/db/schema").resolved,
+    ).toBe("src/db/schema.ts");
+    const orm = resolvedDependency("src/server/db/index.ts", "drizzle-orm");
+    expect(orm.couldNotResolve).toBe(false);
+    expect(orm.resolved).toMatch(/node_modules\//);
+    expect(violationsFrom("src/server/db/index.ts")).toEqual([]);
+  });
+
   it("의존 규칙: 서로 가져오는 두 파일은 no-circular 위반", () => {
     // dependency-cruiser 는 한 고리를 한 번만(먼저 만난 쪽에서) 보고한다.
     const circular = result.summary.violations
@@ -205,6 +225,10 @@ describe("의존 규칙 정규식", () => {
           "drizzle-zod",
           "zod",
         ],
+      },
+      "db-only-from-server": {
+        take: ["drizzle-orm", "postgres"],
+        reject: ["postgres-array", "drizzle-zod", "zod"],
       },
       "sdk-only-in-ai": {
         take: ["@anthropic-ai/sdk"],

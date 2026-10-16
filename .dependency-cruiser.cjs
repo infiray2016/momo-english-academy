@@ -32,6 +32,14 @@ module.exports = {
       to: { path: "^src/server/ai/" },
     },
     {
+      name: "db-only-from-server",
+      comment:
+        "src/ 가운데 src/server · src/db 밖은 src/db · drizzle-orm · postgres 를 가져오지 않는다(10절 'DB 접근은 서버의 Drizzle 연결로만', plan-p03a 공용 변경 7). src/core 는 core-no-framework 가 이미 막아 한 줄로만 보고되게 뺀다",
+      severity: "error",
+      from: { path: "^src/", pathNot: "^src/(server|db|core)/" },
+      to: { path: `^src/db/|${npm("drizzle-orm|postgres")}` },
+    },
+    {
       name: "sdk-only-in-ai",
       comment:
         "(제안) @anthropic-ai/sdk 는 src/server/ai 에서만 가져온다. scripts/ 는 대상 밖(풀이 검사 · AI 계약은 스크립트가 직접 부른다)",
