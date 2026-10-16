@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P5a 풀이 검사 명령
 
-spec: `specs/` 정본(6.3 순서 (0) '풀이 검사 스크립트' · 사람 표본 검토 문단, 6.4 '풀이 검사' 행, 6.1 모델 조합 표, 6.6 풀이 검사 비용 문단, 9절 시드 검증 행, 10절 AI 행 · 운영 행('개발용 API 호출은 다른 워크스페이스의 키'), 11절 1-가 (2), 15절 AC-7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P5 행 · 시드 묶음 워크플로 '풀이 검사' 점 · 위험 10 · [사람] H4 · 공통 사실 `plan-p04a-규격.md`('기록' 절) · `plan-p04c-묶음-검사-명령.md`('해시 · 문항 번호 · 풀이 검사 · 완전성' 절) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(6.3 순서 (0) '풀이 검사 스크립트' · 사람 표본 검토 문단, 6.4 '풀이 검사' 행, 6.1 모델 조합 표, 6.6 풀이 검사 비용 문단, 9절 시드 검증 행, 10절 AI 행 · 운영 행('개발용 API 호출은 다른 워크스페이스의 키'), 11절 1-가 (2), 15절 AC-7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P5 행 · 시드 묶음 워크플로 '풀이 검사' 점 · 위험 10 · [사람] H4 · 공통 사실 `plan-p04a-규격.md`('기록' 절) · `plan-p04c-묶음-검사-명령.md`('해시 · 문항 번호 · 풀이 검사 · 완전성' 절) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(구현 · 검토 · fix 1 · 재검토 Approved 끝 00:5x — 커밋은 요청자 지시 대기, [사람] 작업 7 은 H4 뒤)
 승인: 컨트롤러 2026-10-16 23:2x(C62, 아래 '컨트롤러 결정'. 요청자는 PR 병합 때 본다) · 브랜치 · 워크트리: `feature/1a-p05a-seed-check`(P4c 끝 6bd6015 위, 격리 워크트리 하나) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P5 셋 가운데 첫째다. 둘째 `plan-p05b-시드-보기.md`(활동 표시 컴포넌트와 로컬 전용 시드 보기 화면, 읽기만), 셋째 `plan-p05c-보기-기록.md`(보기 화면에서 표본 검토 · 사람 확인을 seed/ 에 쓰기)가 있다. 배정표 P5 행이 파일 열 개를 넘어 셋으로 나눴다(묶음 plan 위험 12). P5 전체의 확인한 사실 · 정할 것 · 비용 어림은 이 파일에 두고 b · c 가 가리킨다. P5a 는 P5b 와 함께 돌 수 있다(겹치는 공용 파일은 `package.json` scripts 한 줄씩).
@@ -276,4 +276,9 @@ CI 작업은 더하지 않는다(풀이 검사는 로컬에서 요청자 키로�
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p05a(implementer · Opus · high)가 P2 워크트리(`.claude/worktrees/agent-a0ffe8037fa827af6`)에 만든 브랜치 `feature/1a-p05a-seed-check`(바탕 P4c 6bd6015)에서 함. 보고 `task-p05a-report.md` · fix 1 `task-p05a-fix1-report.md`(워크트리 장부 폴더).
+- 실제 바뀐 파일: 표의 다섯(새 파일) + 공용 변경 1(`package.json` scripts `seed:check`). `scripts/seed-check.ts` 는 1005줄.
+- 계획과 다르게 한 것(검토가 모두 받음) 11: runCheck deps 에 store(읽기 · 쓰기, 임시 파일 → 이름 바꾸기) · Solver 타입은 core · 내보낸 함수 여섯 더함 · 건너뜀 정의 · dry-run 미리 보기 줄 · 실패 호출도 토큰 셈 · 실패 까닭에 API 글 300자(키 가림 세 겹) · authToken null · probe 는 --root 만 · max-calls · concurrency 정수 · 지시문 한국어. 재검토 뒤 컨트롤러 고침(N-1): ANTHROPIC_BASE_URL 알림은 늘 표준 오류 · `seed-check: 주소 <host>` 만(접속 정보 안 냄).
+- 시험 · 명령: 단위 159 → 180 → 182(fix 1), 시험 이름 21 은 증명 표 글자 그대로, spec-trace AC 이름 시험 52 → 60 · missing-test 58 그대로, biome 0 · build · check:deps 0 · bundle 0 · 비밀값 0, 키 없이 `--probe` 2 · `CI=true` 2 · `--dry-run` 0.
+- 검토: `review-p05a.md`(rev-p05a · Opus · xhigh) Changes requested(C 0 · I 1 · M 4) — I-1 규격 파일이 깨진 시드에서 평가 · 배치 · 이야기 칸이 풀려 그림 보기가 영어 낱말로 샘 → fix 1(referenceErrors > 0 이면 2, 깨진 기록 파일은 부르기 전 실패, --file 확인, broken 사례, 주소 알림) → 재검토 `review-p05a-2.md` Approved(M 1 = N-1, 컨트롤러가 직접 고침, 00:5x). M-3(SDK 가 status enum 을 description 으로 옮김)은 관찰 항목 — H4 `--probe` · P8 첫 표본의 관찰표에 '규격 깨짐 status' 실패 수 칸.
+- 남긴 것: [사람] 작업 7 — H4 뒤 요청자 터미널에서 `pnpm seed:check --probe`(호출 하나) 첫 줄을 컨트롤러에게(400 이면 위험 6 → 13절). 단가 고르기 · 비용 셈은 P9a `cost.ts` 가 합쳐지면 그것으로 바꾼다(plan-p09a '다른 P 에 넘길 것'). 커밋: 요청자 지시 대기(H14).
