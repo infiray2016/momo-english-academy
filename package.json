@@ -13,7 +13,10 @@
     "format": "biome format --write",
     "test": "vitest run --project unit",
     "test:int": "vitest run --project integration --passWithNoTests",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:deps": "depcruise src --config .dependency-cruiser.cjs",
+    "spec:trace": "tsx scripts/spec-trace.ts",
+    "check:bundle": "tsx scripts/check-bundle.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
