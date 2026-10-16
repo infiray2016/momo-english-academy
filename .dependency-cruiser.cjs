@@ -40,6 +40,17 @@ module.exports = {
       to: { path: `^src/db/|${npm("drizzle-orm|postgres")}` },
     },
     {
+      name: "proxy-stays-light",
+      comment:
+        "src/proxy.ts 는 모든 요청에서 돈다. 직접이든 건너서든 DB · 설정 · 접근 코드 해시(네이티브 argon2)를 가져오지 않는다(plan-p03b 위험 5, 공용 변경 6, 검토 M-2)",
+      severity: "error",
+      from: { path: "^src/proxy\\.ts$" },
+      to: {
+        path: `^src/server/(db|settings)/|^src/server/access/(code|attempts)\\.ts$|${npm("@node-rs/argon2|postgres|drizzle-orm")}`,
+        reachable: true,
+      },
+    },
+    {
       name: "sdk-only-in-ai",
       comment:
         "(제안) @anthropic-ai/sdk 는 src/server/ai 에서만 가져온다. scripts/ 는 대상 밖(풀이 검사 · AI 계약은 스크립트가 직접 부른다)",

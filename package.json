@@ -18,7 +18,9 @@
     "e2e": "playwright test",
     "check:deps": "depcruise src --config .dependency-cruiser.cjs",
     "spec:trace": "tsx scripts/spec-trace.ts",
-    "check:bundle": "tsx scripts/check-bundle.ts"
+    "check:bundle": "tsx scripts/check-bundle.ts",
+    "access:hash": "tsx scripts/access-code-hash.ts",
+    "check:data-api": "tsx scripts/check-data-api.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
