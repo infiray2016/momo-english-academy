@@ -38,6 +38,14 @@ const FIXTURE_FILES: Record<string, string> = {
     'import Anthropic from "@anthropic-ai/sdk";\nexport const client = Anthropic;\n',
   "src/app/direct-sdk.ts":
     'import Anthropic from "@anthropic-ai/sdk";\nexport const a = Anthropic;\n',
+  "src/lib/speech/fake-web-speech.ts":
+    'import type { T } from "./types";\nexport const fake = (t?: T) => t;\n',
+  "src/lib/speech/types.ts": "export type T = string;\n",
+  "src/lib/speech/browser.ts": "export const browser = 1;\n",
+  "src/app/uses-fake-speech.ts":
+    'import { fake } from "@/lib/speech/fake-web-speech";\nexport const f = fake;\n',
+  "src/app/uses-browser-speech.ts":
+    'import { browser } from "@/lib/speech/browser";\nexport const b = browser;\n',
   "src/lib/a.ts": 'import { b } from "./b";\nexport const a = () => b;\n',
   "src/lib/b.ts": 'import { a } from "./a";\nexport const b = () => a;\n',
 };
@@ -165,6 +173,22 @@ describe("의존 규칙", () => {
 
   it("의존 규칙: src/server/ai 밖에서 @anthropic-ai/sdk 를 가져오면 sdk-only-in-ai 위반", () => {
     expect(violationsFrom("src/app/direct-sdk.ts")).toEqual(["sdk-only-in-ai"]);
+  });
+
+  it("의존 규칙: 앱 코드가 가짜 Web Speech 를 가져오면 no-fake-speech-in-app 위반", () => {
+    expect(violationsFrom("src/app/uses-fake-speech.ts")).toEqual([
+      "no-fake-speech-in-app",
+    ]);
+  });
+
+  it("의존 규칙: 앱 코드가 브라우저 음성 구현을 가져오는 것은 허용", () => {
+    const dep = resolvedDependency(
+      "src/app/uses-browser-speech.ts",
+      "@/lib/speech/browser",
+    );
+    expect(dep.resolved).toBe("src/lib/speech/browser.ts");
+    expect(violationsFrom("src/app/uses-browser-speech.ts")).toEqual([]);
+    expect(violationsFrom("src/lib/speech/fake-web-speech.ts")).toEqual([]);
   });
 
   it("의존 규칙: 서로 가져오는 두 파일은 no-circular 위반", () => {
