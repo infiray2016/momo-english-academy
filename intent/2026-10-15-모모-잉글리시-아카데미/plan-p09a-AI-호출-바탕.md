@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P9a AI 호출 바탕(요청 구성 · 서버 클라이언트 · 실패 분류 · 비용 · 기록 · 가짜 클라이언트)
 
-spec: `specs/` 정본(6.1 공통 규칙 · 조합 표 · 서버 측 대체 모델 재시도 · ai_calls 열, 6.6 단가, 8절 'AI 쉬는 중' 들어가는 조건 · 상황 표, 9절 AI 계약 · 통합 행, 12절 ai.* 키, 15절 AC-8i, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(6.1 공통 규칙 · 조합 표 · 서버 측 대체 모델 재시도 · ai_calls 열, 6.6 단가, 8절 'AI 쉬는 중' 들어가는 조건 · 상황 표, 9절 AI 계약 · 통합 행, 12절 ai.* 키, 15절 AC-8i, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(구현 · 검토 · fix 1 끝 00:4x — 커밋은 요청자 지시 대기)
 승인: 컨트롤러 2026-10-16 23:4x(C63, 아래 '컨트롤러 결정'. 요청자는 PR 병합 때 본다 — H14) · 브랜치 · 워크트리: `feature/1a-p09a-ai-client`(바탕은 아래 '바탕 브랜치', 격리 워크트리 하나) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P9 는 손으로 쓰는 파일이 서른여덟(a 14 · b 12 · c 12)이라 셋으로 나눴다(묶음 plan 위험 12, 정할 것 가). 이 파일은 첫째(바탕)다. 둘째 `plan-p09b-AI-호출-넷.md`(입력 가림 · 프롬프트 · 응답 규격 · 정규화 · 실시간 출력 검사)는 이 plan 이 끝난 브랜치 끝에서, 셋째 `plan-p09c-AI-흐름-계약.md`(호출 앞 판정 · 비용 알림 판정 · 실행 흐름 · 공개 함수 · 시드 목록 읽기 · AI 계약 · 관찰표)는 b 끝에서 가지 친다. 셋 다 같은 워크트리 · 같은 구현자로 차례로 한다(P4 a → b → c 와 같은 길).
@@ -287,4 +287,9 @@ CREATE INDEX "ai_calls_learning_day_idx" ON "ai_calls" USING btree ("learning_da
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p09a(implementer · Opus · high)가 격리 워크트리 `.claude/worktrees/p09`(브랜치 `feature/1a-p09a-ai-client`, 바탕 8791527 = P3a 25041d9 + P4c 6bd6015 합침)에서 함. 보고 `task-p09a-report.md` · fix 1 `task-p09a-fix1-report.md`(워크트리 장부 폴더). 계획 판 23:5x(계획자 보충 포함) 기준.
+- 실제 바뀐 파일: 표의 열넷(새 11 · 고침 3) + drizzle-kit 생성 셋(`drizzle/0002_ai_calls_error_code.sql` · `meta/0002_snapshot.json` · `meta/_journal.json`). 공용 파일 변화 0. 작업 3 (나)(`seed/model-prices.json` opus-4-8 행)은 바탕에 seed/ 가 없어 건너뜀 — P6 이 P9a 합침 뒤 'none' 으로.
+- 계획과 다르게 한 것(검토가 모두 받음): `checkSettingsCombos` 에 `invalid-setting` 이유, 거절 홉 짝짓기는 message · fallback_message 합친 홉 차례, `priceOf` 는 opus-4-8 줄마저 없으면 null(경고는 P9c), `costOf` 에 `costMicros`, `ComboBook` 을 combo 에(형 순환), 단계 인자 선택, betas 비면 안 넘김, `createAlertOnce` value 없으면 SQL NULL, `seedModelPrices` 셋째 인자 선택(fix 1 M-4).
+- 시험 · 명령: 단위 167 → 198 → 200(fix 1), 통합 23 → 29 → 30, spec-trace missing-test 55 → 54(AC-8i), biome 0 · build · check:deps 0 · bundle 0 · 비밀값 0(바탕 check-bundle.test.ts 주석 1건은 키 아님). 0002 SQL 은 ADD COLUMN · CREATE INDEX 두 문장(검토가 drizzle-kit 재생성으로 확인).
+- 검토: `review-p09a.md`(rev-p09a · Opus · xhigh) Approved(C 0 · I 0 · M 7) → fix 1(M-1~M-7 모두 ADDRESSED: 본문 금지 칸 형 시험 · 홉 셋 사슬 · invalid-setting · 섞인 단가 줄 · seedModelPrices 날짜 · LIKE 밑줄 이스케이프 · getAnthropicClient 캐시 시험 · 읽히지 않던 env 칸) → Minor 만이라 재검토 없이 컨트롤러 확인 2026-10-17 00:4x(biome 0 · build · 단위 200 · 통합 30 · deps 0 · spec 54 · bundle 0 · 비밀값 0).
+- 남긴 것: P9b · P9c(검토 8절 'P9c 에 넘길 메모' 일곱 — 시계 인자 꼴 · 단가 0 경고 · 거절 홉 from.model · 회화 턴 첫 문장 전 타임아웃 재시도 · e2e 501 · 등), 스트리밍(1-나), `seed/model-prices.json` opus-4-8 'none'(P6). 커밋: 요청자 지시 대기(H14).
