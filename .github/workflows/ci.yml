@@ -100,3 +100,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - if: ${{ hashFiles('seed/settings.json') != '' }}
         run: pnpm seed:validate
+      - if: ${{ hashFiles('seed/images.json') != '' }}
+        run: pnpm images:check

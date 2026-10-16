@@ -17,7 +17,9 @@
     "check:deps": "depcruise src --config .dependency-cruiser.cjs",
     "spec:trace": "tsx scripts/spec-trace.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",
-    "seed:validate": "tsx scripts/seed-validate.ts"
+    "seed:validate": "tsx scripts/seed-validate.ts",
+    "images:fetch": "tsx scripts/vocab-images.ts fetch",
+    "images:check": "tsx scripts/vocab-images.ts check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",

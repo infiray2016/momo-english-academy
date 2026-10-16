@@ -341,7 +341,8 @@ export const VocabFileSchema = z
   });
 export type VocabFile = z.infer<typeof VocabFileSchema>;
 
-const IMAGE_FILE = /^images\/vocab\/([a-z0-9-]+)\.(?:png|webp|jpg)$/;
+/** 그림 파일 꼴(svg 는 P6b · C65 — Twemoji 와 자체 그림을 SVG 로 둔다). */
+const IMAGE_FILE = /^images\/vocab\/([a-z0-9-]+)\.(?:png|webp|jpg|svg)$/;
 export const ImageEntrySchema = z
   .strictObject({
     key: ImageKeySchema,
