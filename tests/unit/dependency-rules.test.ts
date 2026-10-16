@@ -58,6 +58,12 @@ const FIXTURE_FILES: Record<string, string> = {
     'import { fake } from "@/lib/speech/fake-web-speech";\nexport const f = fake;\n',
   "src/app/uses-browser-speech.ts":
     'import { browser } from "@/lib/speech/browser";\nexport const b = browser;\n',
+  "src/server/settings/index.ts": "export const s = 1;\n",
+  "src/proxy.ts":
+    'import { s } from "@/server/settings";\nimport { r } from "./server/relay";\nexport const p = [s, r];\n',
+  // proxy 가 한 단계 건너 DB 를 끌어오는 길(검토 M-2)
+  "src/server/relay.ts":
+    'import { q } from "@/server/db/index";\nexport const r = q;\n',
   "src/lib/a.ts": 'import { b } from "./b";\nexport const a = () => b;\n',
   "src/lib/b.ts": 'import { a } from "./a";\nexport const b = () => a;\n',
 };
@@ -215,6 +221,8 @@ describe("의존 규칙", () => {
     expect(orm.couldNotResolve).toBe(false);
     expect(orm.resolved).toMatch(/node_modules\//);
     expect(violationsFrom("src/server/db/index.ts")).toEqual([]);
+  });
+
   it("의존 규칙: 앱 코드가 가짜 Web Speech 를 가져오면 no-fake-speech-in-app 위반", () => {
     expect(violationsFrom("src/app/uses-fake-speech.ts")).toEqual([
       "no-fake-speech-in-app",
@@ -229,6 +237,29 @@ describe("의존 규칙", () => {
     expect(dep.resolved).toBe("src/lib/speech/browser.ts");
     expect(violationsFrom("src/app/uses-browser-speech.ts")).toEqual([]);
     expect(violationsFrom("src/lib/speech/fake-web-speech.ts")).toEqual([]);
+  });
+
+  it("의존 규칙: src/proxy.ts 가 src/server/settings 를 가져오면 proxy-stays-light 위반", () => {
+    const targets = result.summary.violations
+      .filter(
+        (v) => v.from === "src/proxy.ts" && v.rule.name === "proxy-stays-light",
+      )
+      .map((v) => v.to);
+    expect(targets).toContain("src/server/settings/index.ts");
+    expect(
+      violationsFrom("src/proxy.ts").every((n) => n === "proxy-stays-light"),
+    ).toBe(true);
+  });
+
+  it("의존 규칙: src/proxy.ts 가 한 단계 건너(src/server/relay → src/server/db) DB 를 끌어와도 proxy-stays-light 위반", () => {
+    const targets = result.summary.violations
+      .filter(
+        (v) => v.from === "src/proxy.ts" && v.rule.name === "proxy-stays-light",
+      )
+      .map((v) => v.to);
+    expect(targets).toContain("src/server/db/index.ts");
+    // 건너는 모듈 자체(relay)는 막는 대상이 아니다
+    expect(targets).not.toContain("src/server/relay.ts");
   });
 
   it("의존 규칙: 서로 가져오는 두 파일은 no-circular 위반", () => {

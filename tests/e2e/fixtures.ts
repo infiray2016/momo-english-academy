@@ -1,6 +1,6 @@
 // 모든 e2e 가 가져올 test(plan-p02 '바뀌는 파일' P2b, 다-4). 가짜 Web Speech 를 addInitScript 로 넣는다.
 // 대본은 test.use({ speechScript: loadSpeechScript("…") }) 로 바꾼다. 기본은 default-ok.
-// P3b 가 접근 쿠키 준비를 여기에 더한다.
+// 접근 쿠키 준비(plan-p03b 공용 변경 5): 모든 e2e 가 유효한 가족 접근 쿠키를 갖고 시작한다(proxy 가 /dev/* 도 막는다, C57).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test as base, expect } from "@playwright/test";
@@ -13,6 +13,7 @@ import {
   type SpeechScript,
 } from "../../src/core/speech/script";
 import { installFakeWebSpeech } from "../../src/lib/speech/fake-web-speech";
+import { addAccessCookie } from "./access-cookie";
 
 const SPEECH_FIXTURES = join(__dirname, "..", "fixtures", "speech");
 
@@ -35,6 +36,10 @@ export function loadSpeechSettings(): SpeechSettings {
 
 export const test = base.extend<{ speechScript: SpeechScript }>({
   speechScript: [loadSpeechScript("default-ok"), { option: true }],
+  context: async ({ context, baseURL }, use) => {
+    await addAccessCookie(context, baseURL);
+    await use(context);
+  },
   page: async ({ page, speechScript }, use) => {
     await page.addInitScript(installFakeWebSpeech, speechScript);
     await use(page);
