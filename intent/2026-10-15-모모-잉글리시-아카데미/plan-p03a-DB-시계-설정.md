@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P3a DB · 시계 · 설정 읽기
 
-spec: `specs/` 정본(5절 데이터 · 10절 기술 구성의 DB · 접근 제어 행 · 11절 1-가 (1) · (4-1) · 3.1 학습일 · 12절 설정값 · 15절 AC-N5 · AC-N7 · AC-7g, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P3 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(5절 데이터 · 10절 기술 구성의 DB · 접근 제어 행 · 11절 1-가 (1) · (4-1) · 3.1 학습일 · 12절 설정값 · 15절 AC-N5 · AC-N7 · AC-7g, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P3 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(커밋 25041d9 21:1x, PR 은 H15 뒤. H3 의 db:migrate 는 요청자 몫)
 승인: 컨트롤러 2026-10-16 18:2x(결정 C55 · C56 · C57, 요청자는 PR 병합 때 본다 — H14) · 브랜치 · 워크트리: `feature/1a-p03a-db-clock`(승인 문서 커밋 끝에서 격리 워크트리로 가지 침 — `Agent(isolation: worktree)` 가 만들고, 끝난 뒤 컨트롤러가 브랜치 이름을 바꾼다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P3 은 파일 열 개를 넘어 둘로 나눴다(묶음 plan 위험 12). 이 파일은 앞 절반(DB · 한 시계 · 학습일 · 설정 읽기)이다. 뒤 절반(가족 접근 코드 · proxy.ts · 함수 안 확인 · CRON_SECRET · 접근 코드 화면 · 첫 화면 e2e 고치기 · Data API 확인)은 같은 폴더의 `plan-p03b-접근-제어.md` 이고, 이 plan 이 끝난 브랜치 끝에서 가지 친다(`feature/1a-p03b-access`).
@@ -48,7 +48,7 @@ P2 · P4 와 같이 돈다. 격리 워크트리는 띄울 때 HEAD 에서 만들
 |---|---|---|---|
 | 1 | `package.json` · `pnpm-lock.yaml` | dev 의존 `embedded-postgres@17.10.0-beta.17`(정확한 판 `-E`). `pnpm.onlyBuiltDependencies` 에 `@embedded-postgres/darwin-arm64` · `@embedded-postgres/linux-x64` | 시험용 Postgres(정할 것 나). 플랫폼 꾸러미의 설치 스크립트(라이브러리 심볼릭 링크 만들기)가 돌아야 하는데 pnpm 10 은 기본으로 막는다(확인함) |
 | 2 | `package.json` scripts | `"test:int": "vitest run --project integration"`(`--passWithNoTests` 뺌, P1a 가 예고함) · `"db:generate": "drizzle-kit generate"` · `"db:migrate": "drizzle-kit migrate"` | 첫 통합 시험 · 마이그레이션 명령 |
-| 3 | `vitest.config.mts` | 뿌리 `resolve.alias` 에 `server-only` → `server-only/empty.js`(두 프로젝트 공통). integration 프로젝트에 `globalSetup: ['tests/integration/global-setup.ts']` 와 `testTimeout`(파일 위 이름 붙인 상수) | `server-only` 의 기본 내보내기는 Node 에서 오류를 던진다(확인함). 시험용 Postgres |
+| 3 | `vitest.config.mts` | 뿌리 `resolve.alias` 에 `server-only` → 그 꾸러미의 `empty.js` 를 경로로(`fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url))` — 꾸러미 exports 가 그 파일을 이름으로 내보내지 않아 `server-only/empty.js` 는 Vite 가 풀지 못한다, 구현 때 바로잡음 20:1x)(두 프로젝트 공통). integration 프로젝트에 `globalSetup: ['tests/integration/global-setup.ts']` 와 `testTimeout`(파일 위 이름 붙인 상수) | `server-only` 의 기본 내보내기는 Node 에서 오류를 던진다(확인함). 시험용 Postgres |
 | 4 | `.github/workflows/ci.yml` | `integration` 작업의 `if: ${{ false }}` 를 빼고 준비 네 줄 + `pnpm test:int` | CI `ci / integration`(묶음 plan 증명 절 머리). 컨테이너 서비스는 쓰지 않는다 |
 | 5 | `.env.example` | `# 마이그레이션 접속 문자열(서버 전용, 세션 풀러 5432) — P3` 와 `MIGRATION_DATABASE_URL=` 두 줄 | drizzle-kit migrate 는 세션 풀러로 붙는다(위험 2) |
 | 6 | `biome.json` | `files.includes` 에 `"!drizzle"` | drizzle-kit 이 만든 JSON 은 Biome 꼴과 달라 `biome ci`(구현자 끝내기 관문)를 깬다(위험 4) |
@@ -88,6 +88,7 @@ generate 가 빈 url 로 멈추면(추측: 멈추지 않는다) `db:generate` �
    - 기본 키는 `id uuid` 에 `defaultRandom()`(gen_random_uuid)이다. 예외는 둘이다. images 는 `key text`, ai_status 는 `id smallint`(값 1 하나). vocab 도 `id uuid` 대리 키이고 시드 키 `word` 는 유니크 열이다(C54 (3) · C56 (5), 승인 때 바꿈).
    - 시각 열은 `timestamp(…, { withTimezone: true, mode: "date" })` 이고 기본값을 두지 않는다. `defaultNow()` 와 now() SQL 을 쓰지 않는다(11절 (4-1)). 값은 한 시계(아래 7)에서 받는다. 학습일 열은 `date(…, { mode: "string" })`('YYYY-MM-DD').
    - 상수 기본값(false · 0 · 빈 JSON 객체)은 쓸 수 있다. 시각 기본값만 막는다.
+   - jsonb 열은 `src/db/schema/jsonb.ts` 의 customType 하나를 쓴다(dataType 'jsonb', toDriver 는 JSON.stringify, fromDriver 는 받은 값 그대로). Drizzle 의 기본 jsonb 는 드라이버가 이미 푼 최상위 문자열("12")을 한 번 더 JSON.parse 해 수로 바꾼다(검토 A1 M-3, 20:5x). 생성 SQL 은 같다(`pnpm db:generate` 변화 없음을 fix 1 보고에).
    - 열 이름은 snake_case 를 열 정의에 그대로 적는다(Drizzle `casing` 옵션을 쓰지 않는다). TS 속성 이름은 camelCase.
    - 단계 · 단원 수(12 · 5)를 확인 제약에 넣지 않는다. `level >= 1` · `unit >= 0` · 시드 판 `>= 0` 만 둔다.
    - 시드 판 '개정.정정'(5절)은 정수 열 둘 `revision` · `correction` 이다. '개정 자리가 시작 개정 이하인 행 가운데 가장 높은 판'(5절) 고르기를 정렬 하나로 하려는 꼴이다.
@@ -276,7 +277,7 @@ export const TEST_SETTINGS = {
 |---|---|---|---|
 | 1 | 이 컴퓨터에 Docker · Podman · Colima · Postgres 가 없다(2026-10-16 확인) | 통합 시험을 로컬에서 못 돌린다. 구현자가 시험 없이 끝낸다 | embedded-postgres 로 로컬 · CI 가 같은 방법(정할 것 나). 이 패키지가 어느 기계에서 안 뜨면 그때 컨테이너 런타임 설치를 [사람] 단계로 올린다 |
 | 2 | 트랜잭션 풀러는 prepared statement 를 받지 않는다(확인함). drizzle-kit migrate 가 쓰는 연결의 prepared 설정은 모른다(추측) | migrate 가 풀러에서 실패한다. 서버리스 인스턴스가 늘면 연결이 쌓인다 | 앱은 `prepare: false`. migrate 는 세션 풀러(5432)의 `MIGRATION_DATABASE_URL` 을 쓴다. 인스턴스마다 연결 상한 `POOL_MAX`. 프리뷰에서 실제 풀러 연결은 P3b 작업 8 의 접근 코드 제출이 처음 증명한다 |
-| 3 | drizzle-kit 은 이름 바꾸기를 지우기 · 더하기로 만들 수 있다. 실행기는 마지막으로 적용한 마이그레이션 뒤의 것만 돌리고, 적용한 파일의 내용이 바뀌어도 다시 대조하지 않는다(설치판 원본 확인) | 옛 코드가 도는 동안 깨지거나, 적용한 파일을 고쳐도 반영되지 않는다(5절 '더하기만') | rls-grants 의 정적 검사가 `drizzle/*.sql` 의 `DROP TABLE` · `DROP COLUMN` · `DROP TYPE` · `DROP SCHEMA` · `RENAME` 을 막는다. 적용한 마이그레이션 파일은 고치지 않고 새 파일을 더한다. 지우기는 13절 승인 뒤 다음 배포에서 따로(묶음 위험 6) |
+| 3 | drizzle-kit 은 이름 바꾸기를 지우기 · 더하기로 만들 수 있다. 실행기는 마지막으로 적용한 마이그레이션 뒤의 것만 돌리고, 적용한 파일의 내용이 바뀌어도 다시 대조하지 않는다(설치판 원본 확인) | 옛 코드가 도는 동안 깨지거나, 적용한 파일을 고쳐도 반영되지 않는다(5절 '더하기만') | rls-grants 의 정적 검사가 `drizzle/*.sql` 의 `DROP TABLE` · `DROP COLUMN` · `DROP TYPE` · `DROP SCHEMA` · `RENAME` · `SET DATA TYPE` · `SET NOT NULL` 을 막는다(뒤 둘은 검토 A1 M-4, 20:5x — 열 꼴 바꾸기 · NOT NULL 조이기도 옛 코드의 쓰기를 깬다). 적용한 마이그레이션 파일은 고치지 않고 새 파일을 더한다. 지우기는 13절 승인 뒤 다음 배포에서 따로(묶음 위험 6) |
 | 4 | drizzle-kit 이 만든 `drizzle/meta/*.json` 은 Biome 꼴(배열 접기 · 끝 줄바꿈)과 다르다(추측) | 구현자 끝내기 관문의 `biome ci .` 가 막는다 | 공용 변경 6(`!drizzle`). 이 변경이 들어오기 전에 관문이 막으면 구현자는 NEEDS_CONTEXT 로 컨트롤러에게 올린다 |
 | 5 | 하위 plan 여럿이 동시에 마이그레이션을 만들면 `drizzle/meta/_journal.json` 과 번호(0002 …)가 부딪힌다(P7 · P9 · P10~P12) | 병합 뒤 journal 이 깨지거나 같은 번호가 둘 | 마이그레이션을 만드는 하위 plan 은 앞 것이 병합된 브랜치에서 `db:generate` 를 다시 돌린다. 컨트롤러가 병합 순서를 정한다 |
 | 6 | Supabase 는 public 의 새 표에 anon · authenticated 권한을 기본으로 준다(확인함). 시험용 Postgres 에는 그 역할 · 권한이 없다(묶음 위험 15) | 회수 SQL 이 시험에서 'role does not exist' 로 깨지거나, 회수를 빠뜨려도 시험이 통과한다 | global-setup 이 역할과 기본 권한을 Supabase 처럼 만든 뒤 마이그레이션한다. 작업 3 에서 회수 전 권한 시험이 실패하는 것을 본다 |
@@ -311,6 +312,9 @@ export const TEST_SETTINGS = {
 - 자 P4 와 값 맞추기: 열거형 · 판 열 · 배치 벌 · 주제 변형은 그대로. vocab 만 C54 (3) 대로 바꾼다 — DB 는 `id uuid` 대리 키와 유니크 `word`(시드 키). vocab_progress.vocab_id 는 uuid, unit_specs.target_vocab 은 word 목록. 위 표와 공통 규칙을 그에 맞게 고쳤다(13절 C56 (5)).
 - 공용 변경: 격리 워크트리는 띄울 때 HEAD 에서 만들어지므로 컨트롤러가 미리 넣을 수 없다. 구현자가 자기 워크트리에서 1~7 을 옮기고(브리프 `task-p03a.md`), 다른 워크트리와 합칠 때 컨트롤러가 푼다. 7(의존 규칙 db-only-from-server)도 넣는다.
 - 훅 실기 확인(C52 (2)): 구현자는 따로 할 일이 없다. 끝난 뒤 컨트롤러가 워크트리의 `.claude/state/implementer-stop-gate.log` 를 본다.
+- 구현 뒤(2026-10-16 20:1x, 구현자 보고 '다르게 한 것' 1~7): 1(vitest 별칭을 경로로 — 위 공용 변경 3 고침) · 2(`db-only-from-server` 의 from 에서 `src/core` 도 뺌, core-no-framework 와 겹침 방지) 수용. 3(의존 규칙 시험 정규식 칸) · 4(`--name=initial_schema`) · 5(확인 제약을 학습 테이블 · vocab.band_level 까지) · 6(설정 Zod 규격 둘 내보내기) · 7(`inArray`)은 검토자 판정 뒤 확정. 우려 1(Drizzle jsonb 가 숫자 꼴 문자열을 숫자로 풂)은 P6 · P7 브리프 메모, 우려 5(appClock 이 모듈 읽기 때 만들어져 CLOCK_SHIFT_DAYS 가 틀리면 모든 요청 실패)는 H13 안내에. 검토는 A1(작업 1~4 + 공용 변경) · A2(작업 5~7) 둘 나란히(`task-p03a-review-a1.md` · `-a2.md`).
+- A2 검토(2026-10-16 20:3x, `review-p03a-a2.md` Approved C 0 · I 0 · M 3): 다르게 한 것 6 · 7 수용. M1(한 시계 정적 검사 정규식이 `Date.now` 넘기기 · `new Date;` · `Date()` 를 놓침) · M2(학습일 시험 기준 날짜가 달 · 해 넘김을 지나지 않음 — 12월 31일로)는 A1 결과와 묶어 fix 1 로, M3(오류 메시지에 받은 값 — 비밀값 아님)은 수용. 범위 밖 관찰 '질의 SQL 안 now() 는 어느 검사도 못 잡음'은 P3b · P9 브리프에 '시각은 한 시계 값을 매개변수로 넘긴다' 로 적는다.
+- A1 검토(2026-10-16 20:5x, `review-p03a-a1.md` Approved C 0 · I 0 · M 5): 다르게 한 것 1~5 · 남은 우려 2 · 3 · 4 · 6 수용(확인 제약 넓힘은 '만 둔다'가 위 한계를 막는 뜻). fix 1(`task-p03a-fix1.md`): A1 M-1(global-setup 실패 경로에서 stop · 폴더 삭제) · M-2(Postgres 로그 끝 줄 보존해 시작 실패 원인 남김) · M-3(다시 풀지 않는 jsonb customType 한 곳 — 위 공통 규칙) · M-4(더하기만 검사에 SET DATA TYPE · SET NOT NULL) + A2 M1(정적 검사 정규식) · M2(시험 기준 날짜 12월 31일). A1 M-5(회화 토막 · 그림 라이선스 영어 값)는 시드 쪽이 DB 값을 따른다(C60, P4c 먼저 할 것) — P3a 는 그대로. A2 M3 수용. Minor 만이라 fix 1 뒤 컨트롤러 확인으로 닫는다(M-3 은 스키마 전체에 닿으므로 `db:generate` 변화 없음과 jsonb 왕복 시험을 본다).
 
 ### 제약
 
@@ -352,7 +356,7 @@ export const TEST_SETTINGS = {
 | AC-N7(P3 몫: 학습일 경계) | 단위 "AC-N7 자정 앞뒤(23시 50분 · 0시 10분)는 같은 학습일이다" · "AC-N7 경계(app.day_start_hour) 10분 뒤는 다음 학습일이다" · "AC-N7 경계 10분 앞(새벽 3시 50분)에 끝낸 수업은 전날 학습일이다" · "AC-N7 학습일은 app.timezone 의 벽시계로 센다(같은 순간의 UTC 날짜와 다를 수 있다)" · "AC-N7 틀린 시간대 · 경계 시각은 RangeError 다". 시간대 · 경계 시각은 `TEST_SETTINGS` 에서 읽고 경계 앞뒤 시각은 그 값에서 계산한다. 오늘 완료 · 이번 주 n일은 P10 | `tests/unit/learning-day.test.ts` · `pnpm test` |
 | AC-7g(P3 몫: 시계) | 통합 "AC-7g 프리뷰(VERCEL_ENV=preview)는 CLOCK_SHIFT_DAYS 만큼 시계와 학습일이 넘어간다"(학습일은 시험용 DB 의 설정 app.timezone · app.day_start_hour 를 읽어 learningDayOf 로 센다) · "AC-7g 운영 배포(VERCEL_ENV=production)는 CLOCK_SHIFT_DAYS 를 읽지 않는다"(환경 객체의 읽기를 기록해 그 이름을 읽지 않았음을 본다) · "AC-7g VERCEL_ENV 없는 next start · next dev 도 당기지 않는다" · "AC-7g 잘못된 CLOCK_SHIFT_DAYS(음수 · 소수 · 글자)는 시계를 만들 때 오류다" · "AC-7g 기록 시각 · 학습일은 앱 시계 값 그대로 sessions 에 저장된다" · "AC-7g 어느 열의 기본값에도 현재 시각 함수(now() · CURRENT_TIMESTAMP 등)가 없다". 단원 통과 판정이 도는 것은 P12, 개발용 적재 작업은 P7 | `tests/integration/clock.test.ts` · `pnpm test:int` |
 | AC-N5(DB 몫) | 통합 "AC-N5 public 의 테이블 29개가 모두 RLS 켜짐이고 스키마의 테이블 목록과 같다" · "AC-N5 anon · authenticated 는 public · drizzle 의 테이블 · 시퀀스 · 함수 권한이 없다" · "AC-N5 anon · authenticated 로 바꿔 조회하면 모든 테이블이 권한 오류(42501)다" · "AC-N5 기본 권한도 회수되어 새로 만든 테이블에 anon · authenticated 권한이 붙지 않는다". 홈 · 서버 액션 · Route Handler 401 과 Data API 확인은 P3b | `tests/integration/rls-grants.test.ts` |
-| 5절 더하기만 · 묶음 위험 6 | 통합(정적) "마이그레이션: drizzle/*.sql 에 DROP TABLE · DROP COLUMN · DROP TYPE · DROP SCHEMA · RENAME 이 없다" | `rls-grants.test.ts` |
+| 5절 더하기만 · 묶음 위험 6 | 통합(정적) "마이그레이션: drizzle/*.sql 에 DROP TABLE · DROP COLUMN · DROP TYPE · DROP SCHEMA · RENAME · SET DATA TYPE · SET NOT NULL 이 없다" | `rls-grants.test.ts` |
 | 5절 제약 | 통합 "스키마: 프로필 × 영역마다 진행 중 세션은 하나다(부분 유일 색인)" · "스키마: 집 전체 설정 행은 profile_id 가 비어 있다(확인 제약)" · "스키마: PIN 행은 하나뿐이다" | `rls-grants.test.ts` |
 | 10절 DB | 통합 "DB 연결: 트랜잭션 풀러용으로 prepare 를 끈다" · "DB 연결: DATABASE_URL 이 없으면 DbNotConfiguredError" · "DB 연결: DATABASE_URL 이 바뀌면 새 연결을 만든다" | `rls-grants.test.ts` |
 | 12절 설정 읽기 · 묶음 위험 4 | 통합 "설정 읽기: 집 전체 키는 profile_id 가 빈 행을 읽는다" · "설정 읽기: 프로필 키는 그 프로필 행을 먼저, 없으면 기본 행을 읽는다(B5-19)" · "설정 읽기: 없는 키는 SettingMissingError 이고 코드 기본값으로 메우지 않는다" · "설정 읽기: 값이 규격에 어긋나면 SettingInvalidError 다" · "설정 읽기: 여러 키를 질의 한 번으로 읽는다" | `tests/integration/settings.test.ts` |
@@ -362,4 +366,10 @@ export const TEST_SETTINGS = {
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p03a(implementer · Opus · high), 격리 워크트리 `.claude/worktrees/agent-a4f928c00fc43a1e8`(바탕 a28ee9f), 브랜치 `feature/1a-p03a-db-clock`. 보고 `task-p03a-report.md` · fix 1 `task-p03a-fix1-report.md`(워크트리의 장부 폴더). 약 1시간 40분 + fix 5분.
+- 실제 바뀐 파일: 손으로 쓴 새 파일 16 + `src/db/schema/jsonb.ts`(fix 1) + drizzle-kit 생성 4(`drizzle/0000_initial_schema.sql` · `0001_api_roles_revoke.sql` · `meta/*`) + 공용 변경 7(`package.json` · `pnpm-lock.yaml` · `vitest.config.mts` · `ci.yml` · `.env.example` · `biome.json` · `.dependency-cruiser.cjs` + `dependency-rules.test.ts`). 공용 변경은 구현자가 자기 워크트리에서 옮겼다(승인 때 바꾼 방식).
+- 계획과 다르게 한 것: vitest `server-only` 별칭은 경로로(꾸러미 exports), `db-only-from-server` 의 from 에서 `src/core` 제외, 첫 마이그레이션 이름 `initial_schema`, 확인 제약을 학습 테이블 · vocab.band_level 까지, 설정 Zod 규격 둘 내보내기, `inArray`, 더하기만 검사에 SET DATA TYPE · SET NOT NULL, 모든 jsonb 열은 다시 풀지 않는 customType(A1 M-3).
+- 시험 · 명령: 단위 57 · 통합 23(embedded-postgres 17.10, 첫 시작 약 4초 뒤 0.5초), biome 0 · build · check:deps 0 · check:bundle 0 · spec-trace missing-test 66 → 63(AC-N5 · AC-N7 · AC-7g) · 비밀값 grep 0 · `db:generate` 변화 없음. 회수 전 권한 시험 셋 실패 → 0001 뒤 통과.
+- 검토: A1 `review-p03a-a1.md` Approved(C 0 · I 0 · M 5) · A2 `review-p03a-a2.md` Approved(C 0 · I 0 · M 3) → fix 1(A1 M-1~M-4 · A2 M1 · M2) → 컨트롤러 확인 21:0x(C52, Minor 만). A1 M-5 는 C60(시드가 DB 값을 따름), A2 M3 수용.
+- 남긴 것: [사람] H3(개발용 Supabase · Data API 끔 · 접속 문자열 둘 → 요청자 터미널 `pnpm db:migrate`, 적용 2개). CI(linux)의 embedded-postgres 는 H15 뒤 첫 `ci / integration` 이 증명. 실제 Supabase 기본 권한은 H3 뒤 P3b `check:data-api`. 메모 — P7 · P9 · P10 · P12: 비울 수 있는 jsonb 열에서 JSON null 과 SQL NULL 이 구별되지 않으니 JSON null 을 뜻으로 쓰지 않는다(fix 1 보고). P3b · P9: 질의 SQL 안에 now() 를 쓰지 않고 시각은 한 시계 값을 매개변수로. H13 안내: appClock 은 모듈 읽기 때 만들어져 `CLOCK_SHIFT_DAYS` 가 틀리면 모든 요청이 실패. 끝내기 관문은 기록용(C59).
+- 커밋: 25041d9(브랜치 `feature/1a-p03a-db-clock`, 요청자 지시 21:1x). 공용 파일 `package.json` · `.env.example` 은 P3b 가 더한 줄을 빼고 P3a 몫만 스테이징했다(해시 객체로). P3b 는 `feature/1a-p03b-access` 로 이어 간다. PR 은 H15 뒤.

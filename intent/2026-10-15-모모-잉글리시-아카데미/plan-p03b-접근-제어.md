@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P3b 접근 제어
 
-spec: `specs/` 정본(10절 기술 구성의 접근 제어 행 · 4절 접근 코드 화면 · 5절 parent_auth · 5.1 접근 쿠키 · 9절 통합(접근 제어 401) · CI 검사 · 11절 1-가 (1) · 12절 access.cookie_days · parent.pin_max_attempts · parent.lock_minutes · 15절 AC-1a · AC-N5, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P3 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(10절 기술 구성의 접근 제어 행 · 4절 접근 코드 화면 · 5절 parent_auth · 5.1 접근 쿠키 · 9절 통합(접근 제어 401) · CI 검사 · 11절 1-가 (1) · 12절 access.cookie_days · parent.pin_max_attempts · parent.lock_minutes · 15절 AC-1a · AC-N5, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P3 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(구현 시작 21:0x, 브리프 `task-p03b.md`)
 승인: 컨트롤러 2026-10-16 18:2x(결정 C55 · C56 · C57, 요청자는 PR 병합 때 본다 — H14) · 브랜치 · 워크트리: `feature/1a-p03b-access`(P3a 가 끝난 같은 워크트리에서 이어 간다. 구현 브리프는 P3a 검토 뒤 컨트롤러가 쓴다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P3 의 뒤 절반이다. 앞 절반(스키마 · 마이그레이션 · RLS · 권한 회수 · 트랜잭션 풀러 · 한 시계 · 학습일 · 설정 읽기 · 시험용 Postgres)은 같은 폴더의 `plan-p03a-DB-시계-설정.md` 이고, 이 plan 은 그것이 끝난 브랜치 끝에서 시작한다. parent_auth 테이블 · 설정 읽기 · 한 시계 · `tests/integration/test-db.ts` · `tests/fixtures/settings.ts` 를 P3a 에서 가져다 쓴다.
@@ -193,6 +193,7 @@ export const config = {
 - 바 parent_auth 의 IP 행 꼴: 확정(13절 C56 (3), 5절 반영).
 - 아 check:data-api 때: 권함대로(H3 뒤 요청자 한 번, P7 dev-load 끝에 같은 명령 — P7 브리프로).
 - 공용 변경: P3a 와 같이 구현자가 자기 워크트리에서 1~4 · 6 을 옮기고, 5(`tests/e2e/fixtures.ts` 의 addAccessCookie 한 줄)는 P2b 와 P3b 가운데 나중에 병합하는 쪽에서 컨트롤러가 더한다. 브리프는 P3a 검토 뒤 컨트롤러가 쓴다.
+- 구현 시작(2026-10-16 21:0x, `task-p03b.md`): P3a 검토에서 넘어온 규칙 둘 — 질의 SQL 안에 now() · CURRENT_TIMESTAMP 를 쓰지 않고 시각은 한 시계 값을 매개변수로 넘긴다(잠금 해제 시각 · IP 행 갱신 시각 · 하루 지난 행 지우기 기준), 새 jsonb 열이 생기면 `src/db/schema/jsonb.ts` 의 customType 을 쓴다(이 plan 엔 없음). 명령은 PATH 접두 꼴. 시드 · DB 영어 값은 C60 까지 반영된 P3a 스키마 그대로.
 
 ### 제약
 

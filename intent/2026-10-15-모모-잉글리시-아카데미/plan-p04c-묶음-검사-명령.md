@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P4c 회화 · 평가 · 묶음 검사와 시드 검증 명령
 
-spec: `specs/` 정본(6.3 완전성 · 6.4 검사 표, 3.2 회화 평가 · 배치 평가, 3.3 회화 카드, 9절 시드 검증 행, 11절 (4) · (4-1), 12절, 15절 AC-7a · 7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 증명 절 머리 · 시드 묶음 워크플로 절 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 15:5x)
+spec: `specs/` 정본(6.3 완전성 · 6.4 검사 표, 3.2 회화 평가 · 배치 평가, 3.3 회화 카드, 9절 시드 검증 행, 11절 (4) · (4-1), 12절, 15절 AC-7a · 7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 증명 절 머리 · 시드 묶음 워크플로 절 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(구현 시작 20:4x, 브리프 `task-p04c.md`)
 승인: 컨트롤러, 2026-10-16 15:5x(결정은 plan-p04a '정할 것' 끝 문단과 13절 C54) · 브랜치 · 워크트리: `feature/1a-p04c-seed-validate`(P4b 브랜치 끝에서, P4 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P4 셋 가운데 셋째다. 첫째 `plan-p04a-규격.md`(규격 · 글 도구 · 시험용 시드 만들기 함수)와 둘째 `plan-p04b-배정-칸-검사.md`(어휘 배정 · 규격 파일 정합 · 읽기 · 쓰기 · 말하기 칸 검사)가 끝난 브랜치 끝에서 시작한다. 시드 파일 배치 · 영어 값 · 칸 키 · 규격 칸 · 상수 · 정할 것 ㄱ~ㅍ 는 P4a 에, 검사 결과 꼴 · `index` 꼴 · 수업 공통 검사는 P4b 에 있다. 이 plan 을 구현하는 쪽은 두 파일의 그 절을 함께 읽는다.
@@ -162,7 +162,7 @@ P4c 가 쓰는 파일은 열이다(새 파일 아홉 · 고치는 파일 하나)
 
 ## 작업 순서 (Order of work)
 
-한 구현자(implementer · Opus · high)가 차례로 한다. 명령은 `source ~/.nvm/nvm.sh && nvm use >/dev/null &&` 로 시작한다. 시험을 먼저 쓰고 실패를 본 뒤 구현한다. 시험 숫자는 P4a 만들기 함수의 설정값 · 단계 규격 견본에서 읽는다.
+한 구현자(implementer · Opus · high)가 차례로 한다. 명령은 `PATH=$HOME/.nvm/versions/node/v24.22.0/bin:$PATH pnpm …` 꼴이다(서브에이전트 환경이 `source` 를 막는다, 20:4x 고침). 시작 전에 P4b 검토의 Minor 넷(M-1 칸 검사 준비 가름 · M-2 견본 형태 표 낱말 목록 · M-3 메시지 숫자 · M-4 word · audioText = 허용 정답)과 `WORD_BOX_MIN` → structure.ts 를 먼저 한다(컨트롤러 20:4x). 시험을 먼저 쓰고 실패를 본 뒤 구현한다. 시험 숫자는 P4a 만들기 함수의 설정값 · 단계 규격 견본에서 읽는다.
 
 1. [검증] `check-talk.ts` 카드 하나. 시험 먼저(`seed-validator-talk.test.ts` 의 AC-15m · 6.4 줄). 완료: 시험 통과.
 2. [검증] `check-talk.ts` 단원 단위와 `check-assessment.ts`. 시험 먼저(AC-15m 단원 줄, `seed-validator-complete.test.ts` 의 평가 · 배치 · 이야기 줄). 완료: 시험 통과.
@@ -205,7 +205,7 @@ P4c 가 쓰는 파일은 열이다(새 파일 아홉 · 고치는 파일 하나)
 
 ## 요청하는 공용 변경(컨트롤러가 합친다)
 
-P2 · P3 이 같은 파일을 고치므로 이 plan 의 구현자는 손대지 않는다. 작업 6 이 끝나면 컨트롤러가 합친다.
+P2 · P3 이 같은 파일을 고치지만 격리 워크트리라 이 plan 의 구현자가 자기 워크트리에서 1~3 을 옮기고(3 도 넣는다 — P4a 검토 때 fs 금지 요청), 다른 워크트리와 합칠 때 컨트롤러가 충돌을 푼다(컨트롤러 20:4x, P3a 와 같은 방식).
 
 1. `package.json` 의 scripts 에 한 줄.
 

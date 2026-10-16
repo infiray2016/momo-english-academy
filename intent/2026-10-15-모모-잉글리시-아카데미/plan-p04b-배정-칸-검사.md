@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P4b 어휘 배정 · 칸 검사(읽기 · 쓰기 · 말하기)
 
-spec: `specs/` 정본(3.2 배정 · 관계 표 · 단원 틀 표, 3.3 단계표, 3.4, 3.6, 6.4 검사 표, 12절, 15절 AC-3a · 3b · 5b · 5g · 5h · 7c, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 15:5x)
+spec: `specs/` 정본(3.2 배정 · 관계 표 · 단원 틀 표, 3.3 단계표, 3.4, 3.6, 6.4 검사 표, 12절, 15절 AC-3a · 3b · 5b · 5g · 5h · 7c, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(커밋 f27ae15 21:1x, PR 은 H15 뒤)
 승인: 컨트롤러, 2026-10-16 15:5x(결정은 plan-p04a '정할 것' 끝 문단과 13절 C54) · 브랜치 · 워크트리: `feature/1a-p04b-seed-checks`(P4a 브랜치 끝에서, P4 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P4 셋 가운데 둘째다. 첫째 `plan-p04a-규격.md`(규격 · 글 도구 · 시험용 시드 만들기 함수)가 끝난 브랜치 끝에서 시작하고, 셋째 `plan-p04c-묶음-검사-명령.md`(회화 · 평가 · 묶음 검사 · 완전성 · 명령)가 이 plan 끝에서 시작한다. 시드 파일 배치 · 영어 값 · 칸 키 · 규격 칸 · 상수 · 정할 것 ㄱ~ㅍ 는 P4a 의 같은 이름 절에 있다. 이 plan 을 구현하는 쪽은 P4a 의 '규격 칸' · '상수' · '글 도구' 절을 함께 읽는다.
@@ -47,7 +47,7 @@ P4b 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 | `settings` | P4a 의 45 키가 있고 수다. writing.rule_check_until_level < writing.light_check_until_level 이고 light + 1 = writing.split_from_level(쓰기 모양 사이에 빈 단계가 없음) | 12절 |
 | `frame-*` | `checkFrameRelations` 위반 | 3.2 관계 표 |
 | `reference-image` | vocab 의 `imageKey` 가 그림 카탈로그에 있고 그 그림의 `word` 가 같은 단어다. 카탈로그의 `word` 가 vocab 에 있다. 그림 키가 겹치지 않는다 | 5절 vocab · images |
-| `reference-level-spec` | (영역, 단계)가 겹치지 않는다. `band` · `cefr` 가 단계와 맞다(P4a 상수 `BANDS`). 쓰기 `amount.kind` 가 키와 맞다(단계 ≤ rule_check → items, ≤ light_check → guided, ≥ split → composition). 쓰기 `frame` 은 단계 ≥ writing.split_from_level 에만 있고 거기선 꼭 있다 | 3.1 · 3.2 · 3.3 · 5절 |
+| `reference-level-spec` | (영역, 단계)가 겹치지 않는다. `band` · `cefr` 가 단계와 맞다(P4a 상수 `BAND_INFOS` — fix 1 에서 `BANDS` 를 이 이름으로 바꿈). 쓰기 `amount.kind` 가 키와 맞다(단계 ≤ rule_check → items, ≤ light_check → guided, ≥ split → composition). 쓰기 `frame` 은 단계 ≥ writing.split_from_level 에만 있고 거기선 꼭 있다 | 3.1 · 3.2 · 3.3 · 5절 |
 | `reference-unit-spec` | (영역, 단계, 단원)이 겹치지 않는다. 단원 0 은 읽기 · 쓰기 1단계에만. 단어가 vocab 에 있다. 단원 1~5 의 단어 수 = unit.vocab_count.<구간>. 단원 1~5 단어의 단계 어휘 범위 = 단원 단계, 단원 0 은 1 이하 | 3.2 · 3.4 '그 단계에 정해 둔 단어에서 고르고' · 5절 |
 | `reference-unit-word-dup` | 한 영역 안에서 한 단어가 두 단원 이상의 단원 단어다(영역이 다르면 괜찮다). 조사 P6 의 첫째 관계 | 3.4 '한 단어는 영역마다 한 단원에서만 새 단어' |
 | `reference-forms` | 형태 표 `introducedAt` 의 단계 1~12 · 단원 1~5 | 3.6 |
@@ -100,7 +100,7 @@ P4b 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 
 ## 작업 순서 (Order of work)
 
-한 구현자(implementer · Opus · high)가 차례로 한다. 명령은 `source ~/.nvm/nvm.sh && nvm use >/dev/null &&` 로 시작한다. 시험을 먼저 쓰고 실패를 본 뒤 구현한다. 시험의 설계 숫자는 P4a 만들기 함수의 `defaultSettings()` · 단계 규격 견본에서 읽는다.
+한 구현자(implementer · Opus · high)가 차례로 한다. 명령은 `PATH=$HOME/.nvm/versions/node/v24.22.0/bin:$PATH pnpm …` 꼴이다(서브에이전트 환경이 `source` 를 막는다, 19:3x 고침). 시작 전에 P4a 재검토의 Minor 둘(M-8 문장 자르기 줄임말 왼쪽 경계 · M-9 서수 꼬리 오른쪽 경계, `review-p04a-2.md`)을 `text.ts` 에서 먼저 고친다(컨트롤러 19:3x). 시험을 먼저 쓰고 실패를 본 뒤 구현한다. 시험의 설계 숫자는 P4a 만들기 함수의 `defaultSettings()` · 단계 규격 견본에서 읽는다.
 
 1. [검증] `allocate.ts`. 시험 먼저(아래 증명의 AC-7c · 3.2 관계 표 줄). 완료: 시험 통과.
 2. [검증] `reference-index.ts`. 시험 먼저(규격 파일 정합 줄, 그림 정합은 `seed-validator-image.test.ts`). 완료: 시험 통과, 견본 규격 파일의 정합 결과 0.
@@ -129,6 +129,10 @@ P4b 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 
 정할 것은 P4a 의 ㄱ~ㅍ 가운데 ㄴ(기능어) · ㄷ(상수) · ㄹ(6.4 밖 오류) · ㅂ(알파벳 단원) · ㅅ(학습 요소 범위)가 이 plan 에 닿는다. 제약과 확인한 사실은 P4a 와 같다. 이 plan 만의 확인 사실은 없다(새 패키지 · 외부 문서를 쓰지 않는다).
 
+컨트롤러 결정(구현 뒤 2026-10-16 20:3x, 구현자 보고 `task-p04b-report.md`): 해석 1~11 은 검토자 판정 뒤 확정(1 미리보기 제외 · 2 지문 낱말 수 셈 · 3 모음 같음 · 4 layout 한 건 · 5 정합 건너뛰기 · 6 겹침 단원마다 · 7 쓰기 정답 · 카드 · 8 WORD_BOX_MIN · 9 말하기 · 10 읽기 유형 한 건 · 11 AC-5b 규격 거부). 요청 1(`WORD_BOX_MIN` 2)은 C54 (2) 원칙대로 `structure.ts` 로 옮긴다(fix 라운드 때 structure.ts 허락). 요청 2(형태 표 정규식의 낱말 경계 · 활용형 칸에 불규칙형 · 축약형 · 줄임말은 점까지)는 P6 브리프에, 요청 3(회화 견본 단원 단어)은 P4c 브리프에 넘긴다. 검토는 rev-p04a 가 이어 본다(`task-p04b-review.md`).
+
+검토 뒤 결정(2026-10-16 20:4x, `review-p04b.md` Approved C 0 · I 0 · M 4): 해석 1~11 은 8(WORD_BOX_MIN)만 고치고 나머지 수용, 요청 1~3 수용. M-1(규격 파일 일부가 깨지면 칸 검사가 예외 · 잘못된 오류) · M-2(견본 형태 표 `past-ed` 가 red 를 잡음 — 낱말 목록으로 바꾸고 `under the bed` 되돌림 · red 통과 사례 고정) · M-3(메시지에 박힌 '(1~3단계)') · M-4(베끼기 · 채우기 · 받아쓰기의 word · audioText 가 허용 정답과 같은지 — plan 밖이지만 결정적 검사가 싸므로 `answer` 규칙에 더한다, 쓰기 '정답' 행 보완) 넷과 WORD_BOX_MIN 옮기기는 P4c 의 '먼저 할 것'으로 묶어 재검토 없이 P4c 검토가 덮는다. P4c 메모: `allowedForms('story')` 에는 구간 첫 단계를 넘긴다, 칸 검사 path 는 수업 객체 기준.
+
 ## 증명 (Proof)
 
 | 수용 기준 | 증명(시험 이름) | 파일 · 명령 |
@@ -148,4 +152,9 @@ P4b 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p04a(implementer · Opus · high)가 P4a 와 같은 격리 워크트리(`agent-a6ef72438a158a2f3`, 브랜치 `feature/1a-p04a-seed-spec`)에서 이어 함(16분). 보고 `task-p04b-report.md`(워크트리의 장부 폴더).
+- 실제 바뀐 파일: 표의 새 파일 여덟 + `builders.ts`(견본 내용 · `…Draft` 분리 · `withUsedUnitWords`). P4a 재검토 Minor 둘로 `text.ts` · `seed-text.test.ts` 도 고침. 공용 파일 · 잠금 파일 변화 0.
+- 계획과 다르게 한 것: 미리보기는 배정 · 단원 단어 확인에서 뺌, 배정표와 새 단어는 모음 같음, `layout` 은 수업 하나에 한 건, 설정값 정합 오류 때 그 설정을 쓰는 정합 검사 건너뛰기, 쓰기 카드 규칙은 문장 조립에만, `WORD_BOX_MIN` 은 우선 check-lesson.ts(P4c 에서 structure.ts 로).
+- 시험 · 명령: 시험 117(새 43, 증명 표 글자 그대로), lint 0 · build · check:deps 0 · check:bundle 0 · spec-trace missing-test 66 → 60(AC-3a · 3b · 5b · 5g · 5h · 7c).
+- 검토: `review-p04b.md` Approved(C 0 · I 0 · M 4) — M 넷은 P4c '먼저 할 것'으로.
+- 남긴 것: P6 브리프 메모(형태 표 정규식 낱말 경계 · 활용형 칸 불규칙형 · 축약형 · 줄임말 점까지), 회화 견본 unitWords 는 P4c. 커밋: f27ae15(브랜치 `feature/1a-p04b-seed-checks`, P4a 커밋 위, 요청자 지시 21:1x). P4c 첫 일의 고침(M-1 · M-3 · M-4 · WORD_BOX_MIN)이 함께 들어 있다. P4c 는 `feature/1a-p04c-seed-validate` 로 이어 간다.
