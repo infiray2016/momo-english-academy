@@ -61,7 +61,7 @@ P3 의 뒤 절반이다. 앞 절반(스키마 · 마이그레이션 · RLS · �
    - `hashIp(ip, keyMaterial)` → base64url(HMAC(IP 열쇠, ip)). 원래 IP 를 되돌릴 수 없다.
    - `encodeAccessCodeHash(phc)` = base64url(UTF-8 PHC 문자열). `decodeAccessCodeHash(value)` 는 풀어서 `$argon2id$` 로 시작하면 PHC 를, 아니면 `null` 을 돌려준다. 환경 변수 값에 `$` 가 없게 감싼다(Next 는 `.env*` 의 `$` 를 펼친다, 확인함).
 2. `src/server/access/code.ts`.
-   - `ACCESS_CODE_MIN_LENGTH = 12` · 글자 규칙 `/^[A-Za-z0-9]+$/`(10절 '영문 · 숫자 12자 이상'. 둘 다 섞여야 한다는 뜻으로 읽지 않는다). 상수의 자리는 정할 것 마.
+   - `ACCESS_CODE_MIN_LENGTH = 12` · 글자 규칙 `/^[A-Za-z0-9]+$/`(10절 '영문 · 숫자 12자 이상'. 둘 다 섞여야 한다는 뜻으로 읽지 않는다). 상수의 자리는 정할 것 마. 구현 때 바로잡음(21:3x): 이 둘은 `src/core/access-token.ts` 에 두고 `code.ts` 가 다시 내보낸다 — `code.ts` 는 `server-only` 라 tsx 로 도는 `pnpm access:hash` 가 가져올 수 없다.
    - `hashAccessCode(code)`: 꼴이 어긋나면 `AccessCodeRuleError`. 맞으면 `@node-rs/argon2` 의 `hash(code)` 를 기본값(Argon2id · 19456 KiB · 2회 · 병렬 1 = OWASP 최소 권고)으로 부르고 `encodeAccessCodeHash` 로 감싼다. `Algorithm` 은 `const enum` 이라 `isolatedModules` 에서 가져오지 않는다(기본값이 Argon2id 다, 설치판 확인).
    - `verifyAccessCode(code, keyMaterial)`: `decodeAccessCodeHash` 가 `null` 이면 `AccessNotConfiguredError`. 꼴이 어긋난 입력은 argon2 를 부르지 않고 false. 맞으면 `verify(phc, code)`.
 3. `src/server/access/attempts.ts`. `submitAccessCode({ code, ip, now, db = getDb(), env = process.env })` → `{ kind: "ok", token, maxAgeSeconds }` · `{ kind: "wrong" }` · `{ kind: "locked", retryAfterSeconds }` · `{ kind: "not_configured" }`.
@@ -194,6 +194,7 @@ export const config = {
 - 아 check:data-api 때: 권함대로(H3 뒤 요청자 한 번, P7 dev-load 끝에 같은 명령 — P7 브리프로).
 - 공용 변경: P3a 와 같이 구현자가 자기 워크트리에서 1~4 · 6 을 옮기고, 5(`tests/e2e/fixtures.ts` 의 addAccessCookie 한 줄)는 P2b 와 P3b 가운데 나중에 병합하는 쪽에서 컨트롤러가 더한다. 브리프는 P3a 검토 뒤 컨트롤러가 쓴다.
 - 구현 시작(2026-10-16 21:0x, `task-p03b.md`): P3a 검토에서 넘어온 규칙 둘 — 질의 SQL 안에 now() · CURRENT_TIMESTAMP 를 쓰지 않고 시각은 한 시계 값을 매개변수로 넘긴다(잠금 해제 시각 · IP 행 갱신 시각 · 하루 지난 행 지우기 기준), 새 jsonb 열이 생기면 `src/db/schema/jsonb.ts` 의 customType 을 쓴다(이 plan 엔 없음). 명령은 PATH 접두 꼴. 시드 · DB 영어 값은 C60 까지 반영된 P3a 스키마 그대로.
+- 구현 뒤(2026-10-16 21:3x, `task-p03b-report.md` DONE_WITH_CONCERNS): 단위 83 · 통합 33 · e2e 3, 전 명령 0, missing-test 63 → 62. 다르게 한 것(12자 상수 · 글자 규칙을 `access-token.ts` 로, `code.ts` 재내보내기) 수용 — 값 2 고침. 작은 변경(입력칸 required · 128자 상한 · 접두 없는 보조 시험 · 화면 사진은 `E2E_ACCESS_SCREENSHOT` 때만)은 검토자 판정. 우려(프리뷰 401 은 H4 뒤 · 브라우저 제출 흐름은 통합 시험으로만 · authInterrupts 실험 기능)는 plan 위험 2 · 17 · H4 표대로. 검토는 code-reviewer(rev-p03a-a1 이어 보기, `task-p03b-review.md`)와 design-reviewer(`task-p03b-design-review.md`, 화면 사진) 둘 나란히.
 
 ### 제약
 
