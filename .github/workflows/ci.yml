@@ -1,0 +1,61 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci --reporter=github .
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+  integration: # P3 이 채운다(시험용 Postgres)
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P3 가 채운다"
+  e2e: # P10 이 채운다. 첫 화면 시험은 P1a 에서 로컬로만 돈다
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P10 이 채운다"
+  seed-validate: # P4 가 채운다
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P4 가 채운다"

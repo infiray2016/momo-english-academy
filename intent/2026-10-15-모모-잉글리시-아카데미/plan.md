@@ -25,7 +25,7 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 | `package.json` · `pnpm-lock.yaml` | 신규 | Node 24 · pnpm. next 16.4 · react 19 · typescript · tailwindcss 4 · shadcn/ui · motion · drizzle-orm · drizzle-kit · postgres · @anthropic-ai/sdk · zod 4 · @biomejs/biome 2 · vitest · @playwright/test · dependency-cruiser · argon2 해시 패키지(추측: @node-rs/argon2) | P1 |
 | `package.json` scripts | 신규 | dev · lint · test · e2e · build(CLAUDE.md) · seed:load(5절)에 더해 test:int · e2e:local · seed:validate · seed:check · spec:trace · check:bundle · check:ids · check:data-api · ai:contract · ai:observe(제안) | P1~P9 |
 | `tsconfig.json` · `next.config.ts` · `biome.json` | 신규 | strict, React Compiler, Turbopack, 린트 · 포맷 하나 | P1 |
-| `vitest.config.ts` · `playwright.config.ts` | 신규 | Vitest 프로젝트 둘(unit · integration). Playwright 는 10.9형 태블릿 화면 · 가짜 음성 · 가짜 AI | P1 |
+| `vitest.config.mts` · `playwright.config.ts` | 신규 | Vitest 프로젝트 둘(unit · integration). Playwright 는 10.9형 태블릿 화면 · 가짜 음성 · 가짜 AI | P1 |
 | `.dependency-cruiser.cjs` | 신규 | `src/core` 는 db · next · react 를 못 가져온다. 순환 금지. `src/server/ai` 는 `src/server` 안에서만(조사 P8) | P1 |
 | `vercel.json` | 신규 | 함수 지역 서울(icn1, 10절). Cron 은 1-나 | P1 |
 | `.env.example` · `.gitignore` | 신규 · 수정 | 변수 이름만 둔다(값 없음). .gitignore 에 `seed/reports/inbox.json` · `playwright-report` · `test-results` · `.vercel` | P1 |
