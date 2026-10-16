@@ -385,7 +385,8 @@ export const ModelPriceSchema = z.strictObject({
   cacheWriteUsdPerMTok: UsdPerMTok,
   cacheReadUsdPerMTok: UsdPerMTok,
   effectiveFrom: IsoDateSchema,
-  thinkingDefault: z.literal("adaptive"),
+  /** 'none' = thinking 을 빼면 생각 없이 돈다(Opus 4.8 등, plan-p06a 정할 것 아). 요청은 늘 thinking 을 적어 보내므로 기록 · 대조용이다. */
+  thinkingDefault: z.enum(["adaptive", "none"]),
   thinkingOff: z.enum(["between_tools", "disabled"]).nullable(),
   thinkingOffEfforts: z.array(EffortSchema),
   effortDefault: EffortSchema,
