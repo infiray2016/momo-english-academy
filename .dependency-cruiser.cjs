@@ -58,6 +58,14 @@ module.exports = {
       from: { path: "^src/", pathNot: "^src/server/ai/" },
       to: { path: npm("@anthropic-ai/sdk") },
     },
+    {
+      name: "no-fake-speech-in-app",
+      comment:
+        "가짜 Web Speech(시험용)는 앱 코드가 가져오지 않는다. e2e(tests/)만 쓴다(plan-p02 다-3)",
+      severity: "error",
+      from: { path: "^src/", pathNot: "^src/lib/speech/fake-web-speech" },
+      to: { path: "^src/lib/speech/fake-web-speech" },
+    },
   ],
   options: {
     doNotFollow: { path: "node_modules" },

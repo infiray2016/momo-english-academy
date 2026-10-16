@@ -1,0 +1,44 @@
+{
+  "name": "first-pause-end",
+  "source": "손으로 씀 — 7절 '브라우저가 스스로 인식을 끝내면'(Chrome Android 는 continuous 를 무시하고 첫 쉼에서 끝냄, MDN browser-compat-data), AC-5e. 첫 객체가 첫 쉼에서 스스로 끝, 둘째 객체가 나머지",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 300, "type": "speechstart" },
+        {
+          "at": 600,
+          "type": "result",
+          "results": [{ "transcript": "I see a big park", "isFinal": false }]
+        },
+        {
+          "at": 1200,
+          "type": "result",
+          "results": [{ "transcript": "I see a big park", "isFinal": true }]
+        },
+        { "at": 1800, "type": "speechend" },
+        { "at": 1900, "type": "audioend" },
+        { "at": 2000, "type": "end" }
+      ]
+    },
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 300, "type": "speechstart" },
+        {
+          "at": 700,
+          "type": "result",
+          "results": [{ "transcript": "there is a dog", "isFinal": false }]
+        },
+        {
+          "at": 1300,
+          "type": "result",
+          "results": [{ "transcript": "there is a dog", "isFinal": true }]
+        }
+      ],
+      "onStop": [{ "at": 100, "type": "end" }]
+    }
+  ]
+}

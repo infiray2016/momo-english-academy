@@ -1,0 +1,31 @@
+{
+  "name": "one-sentence-ok",
+  "source": "손으로 씀 — 7절 '듣기를 끝내는 때' 한 문장 답, AC-5e. 중간 결과 둘 뒤 조용함, stop 에 확정과 끝",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 400, "type": "speechstart" },
+        {
+          "at": 900,
+          "type": "result",
+          "results": [{ "transcript": "I like", "isFinal": false }]
+        },
+        {
+          "at": 1600,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": false }]
+        }
+      ],
+      "onStop": [
+        {
+          "at": 150,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": true }]
+        },
+        { "at": 250, "type": "end" }
+      ]
+    }
+  ]
+}

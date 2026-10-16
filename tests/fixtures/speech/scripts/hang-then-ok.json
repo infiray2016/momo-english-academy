@@ -1,0 +1,31 @@
+{
+  "name": "hang-then-ok",
+  "source": "손으로 씀 — 7절 감시 타이머 행(한 번 다시 시작). 첫 객체 멈춤, 둘째 정상",
+  "recognitions": [
+    { "events": [], "hang": true },
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        {
+          "at": 600,
+          "type": "result",
+          "results": [{ "transcript": "I like", "isFinal": false }]
+        },
+        {
+          "at": 1200,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": false }]
+        }
+      ],
+      "onStop": [
+        {
+          "at": 150,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": true }]
+        },
+        { "at": 250, "type": "end" }
+      ]
+    }
+  ]
+}
