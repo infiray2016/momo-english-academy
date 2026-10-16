@@ -26,6 +26,14 @@ const FIXTURE_FILES: Record<string, string> = {
     'import { table } from "@/db/schema";\nexport const t = table;\n',
   "src/core/uses-server.ts":
     'import { now } from "@/server/clock";\nexport const n = now;\n',
+  "src/core/uses-fs.ts":
+    'import { readFileSync } from "node:fs";\nexport const r = readFileSync;\n',
+  "src/core/uses-fs-bare.ts":
+    'import { readdirSync } from "fs";\nexport const r = readdirSync;\n',
+  "src/core/uses-http.ts":
+    'import { request } from "node:https";\nexport const r = request;\n',
+  "src/core/uses-crypto.ts":
+    'import { createHash } from "node:crypto";\nexport const h = createHash;\n',
   "src/core/uses-zod.ts":
     'import { z } from "zod";\nexport const s = z.string();\n',
   "src/db/schema.ts": 'export const table = "t";\n',
@@ -131,6 +139,20 @@ describe("의존 규칙", () => {
     expect(violationsFrom("src/core/uses-server.ts")).toEqual([
       "core-no-framework",
     ]);
+  });
+
+  it("의존 규칙: src/core 가 fs · https(node: 접두 있든 없든)를 가져오면 core-no-io 위반", () => {
+    expect(violationsFrom("src/core/uses-fs.ts")).toEqual(["core-no-io"]);
+    expect(violationsFrom("src/core/uses-fs-bare.ts")).toEqual(["core-no-io"]);
+    expect(violationsFrom("src/core/uses-http.ts")).toEqual(["core-no-io"]);
+  });
+
+  it("의존 규칙: src/core 가 node:crypto 를 가져오는 것은 허용", () => {
+    const dep = resolvedDependency("src/core/uses-crypto.ts", "crypto");
+    // dependency-cruiser 는 node: 접두를 떼고 적는다(module · resolved 모두 "crypto", dependencyTypes core).
+    expect(dep.resolved).toBe("crypto");
+    expect(dep.couldNotResolve).toBe(false);
+    expect(violationsFrom("src/core/uses-crypto.ts")).toEqual([]);
   });
 
   it("의존 규칙: src/core 가 zod 를 가져오는 것은 허용", () => {

@@ -230,6 +230,17 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
         );
         settingsOk = false;
       }
+      // 완전성 범위의 마지막 단계는 단계 1~12 정수다(P4c 검토 M-2, 12절 seed.complete_through_level).
+      const through = num("seed.complete_through_level");
+      if (!isLevel(through)) {
+        issue(
+          "settings",
+          SEED_FILES.settings,
+          "settings",
+          `seed.complete_through_level ${through} 이 단계 ${LEVEL_MIN}~${LEVEL_MAX} 정수가 아니다`,
+        );
+        settingsOk = false;
+      }
     }
   }
 

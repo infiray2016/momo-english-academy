@@ -17,6 +17,17 @@ module.exports = {
       },
     },
     {
+      name: "core-no-io",
+      comment:
+        "src/core 는 순수 함수다. 파일 · 프로세스 · 네트워크 내장 모듈(fs · child_process · http · https · net, node: 접두 포함)을 가져오지 않는다. node:crypto 는 허용(seed 검증 해시, P4c)",
+      severity: "error",
+      from: { path: "^src/core/" },
+      to: {
+        dependencyTypes: ["core"],
+        path: "^(node:)?(fs|fs/promises|child_process|http|https|http2|net)$",
+      },
+    },
+    {
       name: "no-circular",
       comment: "가져오기 순환 금지(조사 P8)",
       severity: "error",

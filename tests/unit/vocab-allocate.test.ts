@@ -301,6 +301,17 @@ describe("어휘 배정(allocate.ts)", () => {
       num("writing.light_check_until_level") + 2,
     );
     expect(rulesOf(gap)).toContain("settings");
+    // seed.complete_through_level 은 단계 1~12 정수다(P4c 검토 M-2).
+    for (const bad of [0, 13, 1.5]) {
+      const through = cloneRef();
+      setSetting(through.settings, "seed.complete_through_level", bad);
+      const issues = buildReferenceIndex(through).issues;
+      expect(
+        issues.map((i) => i.rule),
+        String(bad),
+      ).toEqual(["settings"]);
+      expect(issues[0]?.message).toContain("seed.complete_through_level");
+    }
   });
 
   it("규격 파일: 단원 단어 수가 unit.vocab_count 와 다르면 오류", () => {
