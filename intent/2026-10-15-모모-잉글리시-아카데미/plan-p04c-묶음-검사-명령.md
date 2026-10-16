@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P4c 회화 · 평가 · 묶음 검사와 시드 검증 명령
 
-spec: `specs/` 정본(6.3 완전성 · 6.4 검사 표, 3.2 회화 평가 · 배치 평가, 3.3 회화 카드, 9절 시드 검증 행, 11절 (4) · (4-1), 12절, 15절 AC-7a · 7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 증명 절 머리 · 시드 묶음 워크플로 절 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(구현 시작 20:4x, 브리프 `task-p04c.md`)
+spec: `specs/` 정본(6.3 완전성 · 6.4 검사 표, 3.2 회화 평가 · 배치 평가, 3.3 회화 카드, 9절 시드 검증 행, 11절 (4) · (4-1), 12절, 15절 AC-7a · 7d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 증명 절 머리 · 시드 묶음 워크플로 절 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · 공통 사실 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(커밋 6bd6015 22:0x, PR 은 H15 뒤)
 승인: 컨트롤러, 2026-10-16 15:5x(결정은 plan-p04a '정할 것' 끝 문단과 13절 C54) · 브랜치 · 워크트리: `feature/1a-p04c-seed-validate`(P4b 브랜치 끝에서, P4 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P4 셋 가운데 셋째다. 첫째 `plan-p04a-규격.md`(규격 · 글 도구 · 시험용 시드 만들기 함수)와 둘째 `plan-p04b-배정-칸-검사.md`(어휘 배정 · 규격 파일 정합 · 읽기 · 쓰기 · 말하기 칸 검사)가 끝난 브랜치 끝에서 시작한다. 시드 파일 배치 · 영어 값 · 칸 키 · 규격 칸 · 상수 · 정할 것 ㄱ~ㅍ 는 P4a 에, 검사 결과 꼴 · `index` 꼴 · 수업 공통 검사는 P4b 에 있다. 이 plan 을 구현하는 쪽은 두 파일의 그 절을 함께 읽는다.
@@ -209,6 +209,8 @@ P2 · P3 이 같은 파일을 고치지만 격리 워크트리라 이 plan 의 �
 
 컨트롤러 결정(구현 뒤 2026-10-16 21:3x, `task-p04c-report.md` DONE_WITH_CONCERNS, 시험 159 · missing-test 60 → 58 · 실기 셋 통과): 회화 평가 카드 장의 문항 번호는 턴 차례(5절 '(장, 턴)', 위 표 고침)로 수용 — P5 · P11 신고가 같은 번호를 쓴다. `--json` stats 의 `ranges`(최소 · 최대) 추가와 version 1 유지 수용(P8 브리프에 메모). `--areas` 가 완전성만 아니라 검사 대상도 거르는 것 수용(개발용 적재 범위 ㅇ 와 맞음). 단원 단위 오류(`talk-again-slots` · `talk-known-days` · `remedial-coverage`)의 `errors[].cell` 이 null 인 것은 P8 워크플로가 '단원 전체 다시 만들기'로 다룬다(P8 브리프 메모, 검토자 판정). 다시 묻는 턴 자리는 대화 턴만 센다(해석, 검토자 판정). miniSeed 가 1단계까지만인 것은 남은 우려로 기록. 공용 변경 3 의 규칙 이름은 `core-no-io`(node: 접두를 떼고 적음을 시험이 고정). 검토는 rev-p04a 이어 보기(`task-p04c-review.md`).
 
+검토 뒤 결정(2026-10-16 21:5x, `review-p04c.md` Approved C 0 · I 0 · M 4): 판정 요청 둘 수용(다시 묻는 턴 자리는 대화 턴만 — 3.2 관계 표 셈과 맞음, 단원 단위 오류의 cell null 은 P8 이 file · path(variant.n) · rule 로 범위를 정함 — P8 브리프 메모). fix 1(`task-p04c-fix1.md`): M-1(첫 줄 요약의 '실패' 수에 칸 키 없는 파일 · 단원 단위 오류도 세고, JSON 이 아닌 파일은 그 파일 칸 전부를 json 오류로 — plan 명령 절 글자대로) · M-2(seed.complete_through_level 은 1~12 정수 — 설정값 정합 `settings` 규칙에 더하고, 벗어나면 완전성 모드는 2 로 끝남) · M-3(말하기 9~12단계 평가의 question 문항을 막는 plan 밖 규칙을 지운다 — 6.3 'AI 과제(말하기 질문 답 포함) 말하기 9단계 이상 2개까지'와 level-test-type · level-test-ai 행대로 허용 답 없는 question 은 AI 과제로 센다) · M-4(`validateSeed` 498줄에서 칸 걷기를 `collectCells` 로 떼어 내보낸다 — P5 · P7 이 같은 걷기를 다시 짜지 않게). Minor 만이라 fix 1 뒤 컨트롤러 확인으로 닫는다(시험 159 + 실기 셋 다시).
+
 1. `package.json` 의 scripts 에 한 줄.
 
 ```json
@@ -251,4 +253,10 @@ P2 · P3 이 같은 파일을 고치지만 격리 워크트리라 이 plan 의 �
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p04a(implementer · Opus · high)가 P4a · P4b 와 같은 격리 워크트리(`agent-a6ef72438a158a2f3`, 브랜치 `feature/1a-p04c-seed-validate`, P4b 커밋 f27ae15 위)에서 이어 함(42분 + fix 9분). 보고 `task-p04c-report.md` · fix 1 `task-p04c-fix1-report.md`(워크트리의 장부 폴더).
+- 실제 바뀐 파일: 표의 새 파일 아홉(`check-talk.ts` · `check-assessment.ts` · `check-cross.ts` · `validate.ts` · `scripts/seed-validate.ts` · 시험 넷) + 공용 변경 넷(`package.json` seed:validate · `ci.yml` seed-validate 작업 · `.dependency-cruiser.cjs` core-no-io + `dependency-rules.test.ts`) + P4b 파일 둘(`reference-index.ts` 의 complete_through_level 범위 · `vocab-allocate.test.ts` 사례). `builders.ts` 의 miniSeed · 회화 견본 unitWords 와 P4b 검토 Minor 넷 · WORD_BOX_MIN · C60 영어 값은 P4a(c3f6baf) · P4b(f27ae15) 커밋에 들어갔다.
+- 계획과 다르게 한 것: 회화 평가 카드 장의 문항 번호는 턴 차례(5절 '(장, 턴)'), `--json` stats 에 `ranges`(version 1), `--areas` 가 검사 대상도 거름, 단원 단위 오류는 `errors[].cell` null(P8 은 file · path · rule 로 범위), 다시 묻는 턴 자리는 대화 턴만, 규칙 이름 `core-no-io`(dependency-cruiser 가 `node:` 접두를 뗀 이름으로 적음을 시험이 고정), `collectCells` · `expectedCellsOf` 내보내기(fix 1 M-4), summary.failed 는 '실패 칸 + 칸 키 없는 오류'(fix 1 M-1 — P8 브리프 메모).
+- 시험 · 명령: 시험 159(증명 표 40 글자 그대로 + 의존 규칙 2), lint 0 · build · check:deps 0 · check:bundle 0 · spec-trace missing-test 60 → 58(AC-7a · 7d). 실기(miniSeed small, through 1): PR 모드 칸 172 · 통과 172 · 빈 칸 500 · exit 0, `--complete-through 1` 빈 칸 0 · exit 0, `--complete-through 2` 빈 칸 96 · exit 1, seed/ 없을 때 exit 2.
+- 검토: `review-p04c.md` Approved(C 0 · I 0 · M 4) → fix 1(M-1 첫 줄 실패 수 · json 오류 셈, M-2 complete_through_level 1~12, M-3 말하기 9~12 평가 question 막던 plan 밖 규칙 지움, M-4 collectCells) → 컨트롤러 확인 22:0x(C52, Minor 만).
+- 남긴 것: miniSeed 는 1단계까지만(2단계 이상 꼴의 묶음 검사는 견본 단위 시험으로만). `check-lesson.ts` 1028줄 · `validate.ts` 는 나누지 않음. P5 · P7 · P8 메모: `collectCells` · `expectedCellsOf` · `cellHash` · `itemsOf` · `solveTargets` · `--json` version 1(+ ranges, failed 의 뜻) · 경고 id 꼴 · 단원 단위 오류 범위. P6 메모(P4a · P4b 검토에서): 형태 표 정규식 낱말 경계 · 활용형 칸 불규칙형 · 축약형 · 줄임말 점까지 · function 표시 범위 · 금지어 활용형 꼴 · 견본 Opus 캐시 단가 옮기지 말 것. 묶음 plan 작업 3 '검증기 시험 통과' 채움(P4 끝).
+- 커밋: 6bd6015(브랜치 `feature/1a-p04c-seed-validate`, P4b f27ae15 위, 17 파일, 요청자 지시 "응 P4c 도 커밋해" 22:0x). P4 셋이 c3f6baf → f27ae15 → 6bd6015 로 쌓였다. 워크트리 agent-a6ef72438a158a2f3 은 깨끗함. PR 은 H15 뒤.
