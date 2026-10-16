@@ -1,0 +1,14 @@
+{
+  "name": "no-speech",
+  "source": "손으로 씀 — 7절 '오류' 행(no-speech). start 뒤 말소리 없이 no-speech 와 끝. 오류가 오는 때(8초)는 추측",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 8000, "type": "error", "error": "no-speech" },
+        { "at": 8010, "type": "end" }
+      ]
+    }
+  ]
+}

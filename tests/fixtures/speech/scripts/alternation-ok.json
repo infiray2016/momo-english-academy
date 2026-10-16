@@ -1,0 +1,85 @@
+{
+  "name": "alternation-ok",
+  "source": "손으로 씀 — 11절 1-가 첫 작업 '읽어 주기 → 인식 교대'(7절). 읽어 주기와 인식 교대 세 턴, 턴마다 새 인식 객체",
+  "expose": { "recognition": "webkit", "synthesis": true },
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        {
+          "at": 800,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": false }]
+        }
+      ],
+      "onStop": [
+        {
+          "at": 100,
+          "type": "result",
+          "results": [{ "transcript": "I like apples", "isFinal": true }]
+        },
+        { "at": 200, "type": "end" }
+      ]
+    },
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        {
+          "at": 800,
+          "type": "result",
+          "results": [{ "transcript": "I have two dogs", "isFinal": false }]
+        }
+      ],
+      "onStop": [
+        {
+          "at": 100,
+          "type": "result",
+          "results": [{ "transcript": "I have two dogs", "isFinal": true }]
+        },
+        { "at": 200, "type": "end" }
+      ]
+    },
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        {
+          "at": 800,
+          "type": "result",
+          "results": [{ "transcript": "it is sunny today", "isFinal": false }]
+        }
+      ],
+      "onStop": [
+        {
+          "at": 100,
+          "type": "result",
+          "results": [{ "transcript": "it is sunny today", "isFinal": true }]
+        },
+        { "at": 200, "type": "end" }
+      ]
+    }
+  ],
+  "synthesis": {
+    "voices": [
+      {
+        "name": "Test English (US)",
+        "lang": "en-US",
+        "localService": true,
+        "default": true
+      },
+      {
+        "name": "Test Korean",
+        "lang": "ko-KR",
+        "localService": true,
+        "default": false
+      }
+    ],
+    "utterances": [
+      { "startAfter": 50, "endAfter": 1500 },
+      { "startAfter": 50, "endAfter": 1500 },
+      { "startAfter": 50, "endAfter": 1500 }
+    ]
+  }
+}

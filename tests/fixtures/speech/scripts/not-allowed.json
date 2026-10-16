@@ -1,0 +1,17 @@
+{
+  "name": "not-allowed",
+  "source": "손으로 씀 — 7절 '마이크를 쓸 수 없음'(마이크 권한 거부). start 뒤 not-allowed 와 끝",
+  "recognitions": [
+    {
+      "events": [
+        {
+          "at": 50,
+          "type": "error",
+          "error": "not-allowed",
+          "message": "Permission denied"
+        },
+        { "at": 60, "type": "end" }
+      ]
+    }
+  ]
+}

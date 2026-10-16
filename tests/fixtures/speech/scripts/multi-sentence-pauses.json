@@ -1,0 +1,58 @@
+{
+  "name": "multi-sentence-pauses",
+  "source": "손으로 씀 — 7절 두 문장 이상 답(그림 보고 말하기), AC-5e. 2초 쉼 둘이 든 세 문장, stop 에 끝",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 300, "type": "speechstart" },
+        {
+          "at": 600,
+          "type": "result",
+          "results": [{ "transcript": "I see a big park", "isFinal": false }]
+        },
+        {
+          "at": 1200,
+          "type": "result",
+          "results": [{ "transcript": "I see a big park", "isFinal": true }]
+        },
+        {
+          "at": 3200,
+          "type": "result",
+          "results": [
+            { "transcript": "I see a big park", "isFinal": true },
+            { "transcript": "there is a dog", "isFinal": false }
+          ]
+        },
+        {
+          "at": 3800,
+          "type": "result",
+          "results": [
+            { "transcript": "I see a big park", "isFinal": true },
+            { "transcript": "there is a dog", "isFinal": true }
+          ]
+        },
+        {
+          "at": 5800,
+          "type": "result",
+          "results": [
+            { "transcript": "I see a big park", "isFinal": true },
+            { "transcript": "there is a dog", "isFinal": true },
+            { "transcript": "the dog is running", "isFinal": false }
+          ]
+        },
+        {
+          "at": 6400,
+          "type": "result",
+          "results": [
+            { "transcript": "I see a big park", "isFinal": true },
+            { "transcript": "there is a dog", "isFinal": true },
+            { "transcript": "the dog is running", "isFinal": true }
+          ]
+        }
+      ],
+      "onStop": [{ "at": 100, "type": "end" }]
+    }
+  ]
+}

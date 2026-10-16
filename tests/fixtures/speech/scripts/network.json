@@ -1,0 +1,14 @@
+{
+  "name": "network",
+  "source": "손으로 씀 — 7절 '네트워크' 행(Chrome 인식은 네트워크가 있어야 함). start 뒤 network 와 끝",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 1200, "type": "error", "error": "network" },
+        { "at": 1210, "type": "end" }
+      ]
+    }
+  ]
+}

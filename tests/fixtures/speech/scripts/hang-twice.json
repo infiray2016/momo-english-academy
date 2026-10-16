@@ -1,0 +1,8 @@
+{
+  "name": "hang-twice",
+  "source": "손으로 씀 — 7절 감시 타이머 행, WebKit 버그 321436(읽어 주기 뒤 인식이 이벤트 없이 멈춤). 두 객체 모두 아무 일도 없음",
+  "recognitions": [
+    { "events": [], "hang": true },
+    { "events": [], "hang": true }
+  ]
+}

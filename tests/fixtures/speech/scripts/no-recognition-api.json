@@ -1,0 +1,16 @@
+{
+  "name": "no-recognition-api",
+  "source": "손으로 씀 — 7절 브라우저 표의 Firefox(인식 API 없음) 흉내, AC-N3",
+  "expose": { "recognition": "none", "synthesis": true },
+  "recognitions": [],
+  "synthesis": {
+    "voices": [
+      {
+        "name": "Test English (US)",
+        "lang": "en-US",
+        "localService": true,
+        "default": true
+      }
+    ]
+  }
+}
