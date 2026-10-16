@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P1b 품질 관문
 
-spec: `specs/` 정본(9절 CI 검사 · 15절 수용 기준 번호 · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · 조사 `docs/research/2026-10-16-graph-engineering-ai-coding.md`(F2 · F3) · `docs/research/2026-10-16-graph-engineering.md`(조사 P3 · P4 · P8) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(approved 컨트롤러 2026-10-16 10:3x → 구현 · 검토 · fix 1 · 컨트롤러 확인 끝 14:1x, 작업 7 커밋 대기)
+spec: `specs/` 정본(9절 CI 검사 · 15절 수용 기준 번호 · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · 조사 `docs/research/2026-10-16-graph-engineering-ai-coding.md`(F2 · F3) · `docs/research/2026-10-16-graph-engineering.md`(조사 P3 · P4 · P8) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(approved 컨트롤러 2026-10-16 10:3x → 구현 · 검토 · fix 1 · 컨트롤러 확인 끝 14:1x → 커밋 cf97f62 14:2x, 요청자 지시. push · PR 은 원격 뒤 H15)
 승인: 컨트롤러, 2026-10-16 10:3x(요청자는 PR 병합 때 본다, H14) · 브랜치 · 워크트리: `feature/1a-p01b-quality-gates`(P1a 브랜치 끝에서 가지 침, 워크트리 없음) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P1 의 뒤 절반이다. 앞 절반(스택 · 폴더 규약 · CI 첫 세 작업)은 같은 폴더의 `plan-p01a-뼈대.md` 이고, 이 plan 은 P1a 의 작업 7 이 초록인 뒤 시작한다.
@@ -274,4 +274,4 @@ fix 라운드 1 결정(컨트롤러 2026-10-16 13:3x, 검토 `review-p01b.md` �
 | 훅 실기 확인(작업 6) | C52 로 P3 구현자의 첫 실행으로 겸한다. 아직 안 했다. settings.json 대안은 쓰지 않았다 |
 | 명령(컨트롤러 14:1x, Node 24.22.0) | lint 0(23 파일) · build 0 · test 0(5 파일 49) · test:int 0 · check:deps 0 · spec:trace 0 · check:bundle 0 · 비밀값 grep 0건 |
 | 남긴 것 | 작업 6 실기 확인(P3 때). P1c 규칙 셋은 뒤로(C52). 이 Mac 의 nvm 에 x64 판(기본 v26.8.2 · v24.16.0 등)이 남아 있는 것은 요청자 선택(관문은 '가장 높은 설치 판' 규칙으로 돌아 영향 없음). 구현 브리프 `task-p01b.md` 의 `.ts` 표기는 기록이라 그대로 |
-| 커밋 · PR | 요청자 지시 대기. 브랜치 `feature/1a-p01b-quality-gates`. 원격 없음(H15) |
+| 커밋 · PR | 커밋 cf97f62(요청자 지시 14:2x, 브랜치 `feature/1a-p01b-quality-gates`). 문서 커밋(C52 · 이 plan done)은 그 다음 커밋. push · PR 은 원격 뒤(H15) |
