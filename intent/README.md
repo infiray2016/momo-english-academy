@@ -6,7 +6,8 @@
 |---|---|---|---|
 | `intent.md` | Plan | 요청자가 자기 말로(Claude 가 받아 적음, intent-capture 스킬) | 요청자가 상태를 approved 로 바꾸면 Design 으로 |
 | `spec.md` | Design | Claude(spec-design 스킬). 정본 `specs/` 의 어느 장 · 절이 어떻게 바뀌는지만(델타) + 원칙 대조 + 우려 | 요청자가 approved 로 바꾸면 정본 장에 반영하고 Build 로 |
-| `plan.md` | Build | Claude(plan-build 스킬, plan mode). 바뀌는 파일 · 순서 · 위험 · 증명 | 요청자가 approved 로 바꾸면 구현. 구현이 벗어나면 같은 커밋에서 갱신 |
+| `plan.md` | Build | Claude(plan-build 스킬). 바뀌는 파일 · 순서 · 위험 · 증명. 차수처럼 크면 묶음 plan + 배정표 | 요청자가 approved 로 바꾸면 구현. 구현이 벗어나면 같은 커밋에서 갱신 |
+| `plan-pNN-<이름>.md` | Build(하위) | Claude(plan-build). 묶음 plan 배정표의 한 줄을 PR 하나 분량으로 | 컨트롤러가 검토 · 승인, 요청자는 PR 병합 때 본다(원하면 되읽기). 2026-10-16 06:5x |
 
 승인 지점마다 커밋한다. 폴더의 세 파일이 "무엇을 원했고 · 무엇을 정했고 · 무엇을 만들었나"의 감사 기록이다. 끝난 변경은 intent.md 상태를 closed 로.
 
