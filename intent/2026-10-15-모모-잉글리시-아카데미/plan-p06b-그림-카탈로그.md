@@ -70,7 +70,7 @@ vocab 의 그 항목 `imageKey` = 키. 검증기 `reference-image` 가 vocab ↔
 | `checkSvg(글)` | `<script` · `<foreignObject` · `<image` · 바깥 주소(`href="http` · `url(http`) · `on<이름>=` 속성 · `@import` 가 있으면 문제 목록. `xmlns="http://www.w3.org/2000/svg"` 는 이름 공간이라 바깥 주소로 세지 않는다 |
 | `checkCatalogFiles({ images, files })` | 행마다 파일 있음 · 파일 이름 = 키 · 크기 ≤ `IMAGE_MAX_BYTES`, 카탈로그 밖 파일 없음 |
 | fetch | Twemoji 행마다 받아 `public/images/vocab/<키>.svg` 에 쓴다(같은 내용이면 건너뜀). 네트워크는 이 명령에서만, CI 에서는 부르지 않는다 |
-| check | 위 둘을 돌린다. 종료 0 통과 · 1 위반 · 2 입력 오류(카탈로그 JSON 깨짐 · 폴더 없음) |
+| check | 위 둘을 돌린다. 종료 0 통과 · 1 위반 · 2 입력 오류(카탈로그 JSON 깨짐 · 꼴 틀림 · 행이 있는데 그림 폴더 없음). 행이 0 이면 그림 폴더가 없어도 0 — P6a 가 빈 카탈로그를 먼저 넣고 git 은 빈 폴더를 싣지 않아 CI 가 깨지지 않게(검토 review-p06b I-1, 01:0x) |
 
 ### CREDITS.md
 
