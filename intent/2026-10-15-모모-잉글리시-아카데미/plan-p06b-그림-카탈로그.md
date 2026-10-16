@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P6b 그림 카탈로그
 
-spec: `specs/` 정본(3.3 읽기 그림 문단 · 말하기 6 · 8단계 그림 보고 말하기(C27) · 회화 1~3단계 그림 턴(C32), 5절 vocab · images · '그림 파일은 단어마다 하나, 한 장 100KB 이하', 6.3 '그림 문제의 보기는 그림 카탈로그 키가 있는 단어 id 로만', 6.4 그림 행, 10절 그림 행, 13절 'Pre-A1 그림은 CC0 · CC-BY 공개 그림 묶음 …' 잠정 행 · C60, approved 2026-10-16 06:2x) · 묶음 plan 배정표 P6 행 · [사람] H7 · 공통 사실 `plan-p06a-규격-파일.md`('어휘 시드 구성' · '정할 것' · '확인한 사실과 출처') · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(3.3 읽기 그림 문단 · 말하기 6 · 8단계 그림 보고 말하기(C27) · 회화 1~3단계 그림 턴(C32), 5절 vocab · images · '그림 파일은 단어마다 하나, 한 장 100KB 이하', 6.3 '그림 문제의 보기는 그림 카탈로그 키가 있는 단어 id 로만', 6.4 그림 행, 10절 그림 행, 13절 'Pre-A1 그림은 CC0 · CC-BY 공개 그림 묶음 …' 잠정 행 · C60, approved 2026-10-16 06:2x) · 묶음 plan 배정표 P6 행 · [사람] H7 · 공통 사실 `plan-p06a-규격-파일.md`('어휘 시드 구성' · '정할 것' · '확인한 사실과 출처') · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress
 승인: 컨트롤러 2026-10-16 23:0x(C61, P6a '컨트롤러 결정'. 요청자는 H7 과 PR 병합 때 본다) · 브랜치 · 워크트리: `feature/1a-p06b-vocab-images`(바탕 P6a 끝 커밋. 작업 2 는 P6a 와 나란히 6bd6015 에서 시작하고 P6a 커밋 뒤 컨트롤러가 합친다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P6 셋 가운데 둘째다. 첫째 `plan-p06a-규격-파일.md` 가 vocab 을 만든 뒤 그 낱말에 그림을 단다. 셋째 `plan-p06c-목업-맞추기.md` 와는 겹치는 파일이 없다. 정할 것 · 확인한 사실은 P6a 의 같은 이름 절에 있다(이 plan 에 닿는 것: 나 · 차 · 카, 확인한 사실 7~11).
@@ -132,7 +132,7 @@ AC 시험을 더하지 않는다(AC-3b 의 규격 몫은 P4b 가 증명했다).
 | 무엇 | 증명 | 파일 · 명령 |
 |---|---|---|
 | 규격 | 단위 "6.3 시드 규격: 그림 파일 꼴 svg 를 받는다" | `tests/unit/seed-schema.test.ts` |
-| 스크립트 | 단위 "그림 카탈로그: Twemoji 출처 글에서 고정 판 주소를 만든다" · "그림 카탈로그: 출처 글 꼴이 틀리면 거부한다" · "그림 카탈로그: 파일이 없거나 상한을 넘거나 카탈로그 밖 파일이 있으면 잡는다" · "그림 카탈로그: script · foreignObject · 바깥 주소 · 이벤트 속성이 든 SVG 를 잡는다" | `tests/unit/vocab-images.test.ts` |
+| 스크립트 | 단위 "그림 카탈로그: Twemoji 출처 글에서 고정 판 주소를 만든다" · "그림 카탈로그: 출처 글 꼴이 틀리면 거부한다" · "그림 카탈로그: 파일이 없거나 상한을 넘거나 카탈로그 밖 파일이 있으면 잡는다" · "그림 카탈로그: script · foreignObject · 바깥 주소 · 이벤트 속성이 든 SVG 를 잡는다" · "그림 카탈로그: 행이 없으면 그림 폴더가 없어도 통과한다"(fix 1, 검토 I-1) · "그림 카탈로그: 그림 폴더 자리에 파일이 있거나 없음 밖의 오류면 null 로 삼키지 않는다"(재검토 N-1, 컨트롤러) | `tests/unit/vocab-images.test.ts` |
 | 카탈로그 | `pnpm images:check` 0 · `pnpm seed:validate` 0(`reference-image` 오류 0) | 작업 7 |
 | 그림 품질 | design-reviewer 보고(심각도 · 근거, 모아 보기 사진) Approved · H7 요청자 승인 | `review-p06b.md` |
 | 공통 | `pnpm lint` · `pnpm build` · `pnpm test` · `pnpm check:deps` 0, spec-trace missing-test 58 | 작업 7 |
@@ -141,4 +141,6 @@ AC 시험을 더하지 않는다(AC-3b 의 규격 몫은 P4b 가 증명했다).
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+(작업마다 채운다. 작업 1 · 3~6 은 아직.)
+
+- **작업 2(스크립트 · 규격) 끝 — 커밋 3caed9c**(feature/1a-p06b-vocab-images, 바탕 6bd6015, 요청자 지시 2026-10-17 04:5x). 바뀐 파일 일곱: `scripts/vocab-images.ts`(fetch · check, 순수 함수 넷 + 도움 함수, readImageFiles 는 ENOENT 만 null) · `tests/unit/vocab-images.test.ts`(시험 다섯) · `src/core/seed/schema/reference.ts`(그림 파일 꼴 svg) · `src/core/seed/structure.ts`(IMAGE_MAX_BYTES 100000) · `tests/unit/seed-schema.test.ts`(svg 시험) · 공용 `package.json`(images:fetch · images:check) · `.github/workflows/ci.yml`(seed-validate 끝 images:check). 단위 159 → 166. 검토 `review-p06b.md` Changes requested(I 1 · M 4) → fix 1 → `review-p06b-2.md` Approved(N-1 컨트롤러 고침). 계획과 다르게 한 것: 실기 네트워크 요청이 한 번이 아니라 두 번(구현 보고 '남긴 것' 1). 남긴 것: 작업 3(그림 고르기 — P6a fix 1 뒤 4단계 그림 낱말이 바뀜, ledger-open) · 4~6, H7.

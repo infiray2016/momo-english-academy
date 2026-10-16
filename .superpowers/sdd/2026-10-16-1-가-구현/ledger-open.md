@@ -13,16 +13,30 @@
 | `seed/model-prices.json` opus-4-8 행 `thinkingDefault` 'none' | P9a 가 P6a 와 합쳐진 뒤(P6 몫) | plan-p09a 작업 3 (나) |
 | P4a `bandOf` · `Band` ↔ P2a `src/core/level-band.ts` 중복 | P5b · P10 구현 때 하나로 | plan-p04a 완료 보고 · 바탕 합침 e08eaba |
 | P5a `priceOf` · `costOf` → P9a `cost.ts` 로 통합 | P9a 합침 뒤 | plan-p09a '다른 P 에 넘길 것' |
+| P8 시드 브리프: 말하기 1~2단계 '질문 답' 질문은 그림 없이 답할 수 있어야 함(C67 (5)); 검증기가 말하기 3~12단계 평가 question 의 '허용 답 셋 이상'(C66)을 세지 않음(check-assessment.ts 228 · 324) — P8 평가 묶음 전 결정 | P8 브리프 · P4c 수정 여부 | review-p05b-design 범위 밖 1 · review-p06a 메모 2 · 3 |
+| P4 검사 규칙: '한국어 뜻이 있으면 안 되는 단계'(토리 이야기 7~12 구간 · 질문 5단계 이상) | P4 수정 또는 P8 브리프 | review-p05b-design M-7 · C67 (7) |
+| P6 contact 범주 추가 꼴: 괄호 지역 번호 `(02)123-4567` · 국가 번호 `+82 10-…` · 말소리 숫자 꼴(`0 1 0 …` · `zero one zero`) | P6a fix 1 뒤 또는 2차 검토 | review-p09b P6 메모 1 |
+| speakingRulesOf 가 9~12단계에서도 문법 지적 1개 허용 — 단계 평가 질문 문항에 닿음(6.2 는 4~8단계만) | P12 단계 평가 화면 | review-p09b P6 · P12 메모 2 |
+| P5c: 문항 번호는 cell.items · `reviewPathOf` 공용 · `resolveSeedFile` realpath 확인 · AC-7f 절반(reviews 한 행) 시험 · cellHash 맞춘 풀이 기록 견본 | P5c 브리프 | review-p05b 8절 |
+| P9c: 흐름 차례(answerTextOf → JSON.parse → prepareAnswer → wireSchema → validate → normalize → checkOutputFields → applyChecks → historyEntry) · `SettingValues` 이름 겹침 | P9c 브리프 | review-p09b 6절 · review-p09b-2 4절(P9c 3 생각 꺼내기 · buildAiRequest 의 RangeError 는 호출부 결함 — 설정 문제 · AI 실패로 세지 않고 서버 오류, ai_calls 행 없음 · P9c 4 앱 연락처 정규식 다시 쓸 때 BUILTIN_CONTACT_PATTERNS 의 keepsPrefix 로 1번 묶음 되돌림, createMasker · checkOutputFields 그대로) |
+| P11: 생각 꺼내기 기록은 fillName 전 historyEntry 로 저장 · turn = history.length + 1 · 걸린 칸 뒤 빈 글은 보이지 않음 · 말하기 6 · 8단계 그림 · 질문 차례 · 쓰기 6단계 생각 꺼내기 결과 자리 · 조립 칸 수 · 4~5단계 제출 단위 · 갈래별 안내 문장 | P11 브리프 | review-p09b 6절 · review-p05b-design 메모 · 범위 밖 2 |
+| P10: 화면 방향(목업 가로 1180 · 시험 세로 820) · AREA_TONE hex → board 토큰 · 줄바꿈(keep-all) · 글꼴 입힌 뒤 크기 시험 다시 | P10 브리프 | review-p05b-design 메모 · review-p05b 메모 |
+| P6c(H6 목업): 영어 문장의 한국어 뜻 반말 · B_LevelTest '고르세요' → 해요체 · B_Reading 3단계 지문 옆 단어 그림 · B_Speaking 따라 말하기 뜻 · B_W3_Order '다시 듣기' 근거 | P6c 브리프 | review-p05b-design 메모 |
+| 시드 검사에 '한국어 뜻이 있으면 안 되는 단계' 규칙(말하기 질문 ko 는 `questions.koMeaning` 거짓인 단계에서 비어야 함 · 이야기 ko 는 7~12 구간 없음) | P4 보강 또는 P6a 2차 검토 | review-p05b-design M-7 · P5b fix 1 보고 범위 밖 |
+| P7 check-ids 허용 목록에 화면 구조 수 `PASSAGE_PICTURE_UNTIL_LEVEL = 4`(common.tsx, 12절 키 아님) | P7 plan · 브리프 | P5b fix 1 다르게 한 것 3 |
+| P6b 작업 3 그림 목록은 P6a fix 1 vocab 으로 다시 뽑는다(4단계 bread · letter · pilot 들어옴 · plant · toast · dentist · uniform · seat 빠짐 · head 2단계 · old 1단계 · many 1단계 기능어) | P6b 작업 3 브리프 | P6a fix 1 보고 알릴 것 1 · 2 |
 
 ## 남은 우려
 
 | 항목 | 상태 | 출처 |
 |---|---|---|
-| P6a 묶음 2: 3인칭 단수 검출은 he · she · it 주어만 · 활용형은 규칙 생성(표본만 봄) · 둘째 주제 묶음이 배정 수업 경계와 한 칸 어긋남 · 1~3단계 사전은 후보 앞 125 | design-reviewer 1차(묶음 0 · 2 · 1) 와 묶음 1 뒤 예문 재검사 | task-p06a-report '묶음 2' |
-| 4~12단계 후보의 단계 경계가 거침(7~9 에 A1 86) | 묶음 3 · 4 에서 다듬음 | task-p06a-report '묶음 0' |
+| P6a 묶음 2 ②: 활용형은 규칙 생성 — 표본에서 쓰지 않는 꼴(easts · corns · worlds, review-p06a M-9) | P6a fix 1 뒤 재검토 | review-p06a 5절(① · ③ · ④ 는 닫힘 → ledger-closed) |
+| 7~12단계 후보의 단계 경계가 거침(7~9 에 A1 86) | 묶음 3 · 4 | task-p06a-report '묶음 0' · review-p06a 5절(4~6 몫 닫힘) |
+| 동음이의어 board · bored(bore 는 candidates-9 124위) | 묶음 4 끝 | review-p06a 4절 약한 곳 2 |
+| P6a 뺀 32 낱말이 7단계 후보 끝에 있어 묶음 3 의 150 선정에서 다른 후보를 밀 수 있음 · he-she · we-they 검출기는 낱말만 잡아 명사 주어 문장은 사람 표본 몫 · board · bored 는 묶음 4 끝에서 | 묶음 3 · 4 브리프 · 2차 검토 | P6a fix 1 보고 남은 우려 1~3 |
 
 ## 잠정 값(요청자 확인 전)
 
 | 값 | 지금 | 확인 |
 |---|---|---|
-| H5 단원 틀 값(1~3구간 25 대 30 등) · testMix · speaking.answer_max_seconds 30 · 30 · 60 · 150 | settings.json · level-specs 에 12절 잠정 · 제안 값 | 읽기용 쪽 결정 1~4(https://claude.ai/artifact/99e44UMgVDD2svrd5h7Q93) |
+| (없음 — H5 는 C66 으로 확정, ledger-closed) | | |

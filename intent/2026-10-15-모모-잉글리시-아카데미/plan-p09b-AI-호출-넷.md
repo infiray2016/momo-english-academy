@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P9b AI 호출 넷(입력 가림 · 프롬프트 · 응답 규격 · 정규화 · 실시간 출력 검사)
 
-spec: `specs/` 정본(6.1 프롬프트 고정부 · 가변부 · 이름 바꾸기 · 가림 · 프롬프트 캐시 · 정규화, 6.2 호출 목록의 쓰기 확인 · 쓰기 첨삭 · 말하기 평가 · 생각 꺼내기, 6.4 끝 문단 실시간 출력 검사, 3.3 쓰기 · 말하기 단계표, 3.6 문장 길이 상한, 4절 말투, 12절 writing.*, 15절 AC-4b · AC-5d · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(6.1 프롬프트 고정부 · 가변부 · 이름 바꾸기 · 가림 · 프롬프트 캐시 · 정규화, 6.2 호출 목록의 쓰기 확인 · 쓰기 첨삭 · 말하기 평가 · 생각 꺼내기, 6.4 끝 문단 실시간 출력 검사, 3.3 쓰기 · 말하기 단계표, 3.6 문장 길이 상한, 4절 말투, 12절 writing.*, 15절 AC-4b · AC-5d · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done
 승인: 컨트롤러 2026-10-16 23:4x(C63, P9a '컨트롤러 결정') · 브랜치 · 워크트리: `feature/1a-p09b-ai-calls`(P9a 브랜치 끝에서, P9 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P9 셋 가운데 둘째다. 첫째 `plan-p09a-AI-호출-바탕.md`(요청 구성 · 서버 클라이언트 · 실패 분류 · 비용 · 기록 · 가짜 클라이언트)가 끝난 브랜치 끝에서 시작하고, 셋째 `plan-p09c-AI-흐름-계약.md`(호출 앞 판정 · 비용 알림 판정 · 실행 흐름 · 공개 함수 · AI 계약 · 관찰표)가 이 plan 끝에서 시작한다. SDK · 문서에서 확인한 사실은 P9a '확인한 사실과 출처'(번호로 가리킨다)에 있다.
@@ -224,4 +224,11 @@ export const THINKOUT_STARTERS = 2;
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+(컨트롤러 2026-10-17 04:2x 작성. 커밋 6213662(feature/1a-p09b-ai-calls, 요청자 지시 04:5x). P9c 는 같은 워크트리의 feature/1a-p09c-ai-flow 에서 이어 간다.)
+
+- 실제 바뀐 파일(워크트리 `.claude/worktrees/p09`, 브랜치 feature/1a-p09b-ai-calls, 12 + 장부 보고 2): 수정 `src/core/seed/structure.ts`(끝 'AI 출력 꼴' 상수 아홉 — 계획의 상수 자리 그대로); 신규 `src/core/ai/mask.ts` · `output-check.ts` · `request.ts` · `calls/common.ts` · `calls/writing.ts` · `calls/speaking.ts` · `calls/thinkout.ts`, `tests/fixtures/ai/sample-inputs.ts`, `tests/unit/normalize.test.ts` · `mask.test.ts` · `ai-request.test.ts`; 장부 `.superpowers/sdd/2026-10-16-1-가-구현/task-p09b-report.md` · `task-p09b-fix1-report.md`.
+- 시험 · 검사: 단위 200 → 234(normalize · mask · ai-request), 통합 30, spec-trace missing-test 54 → 52(AC-4b · AC-5d), biome 0 · build · check:deps 0 · check:bundle 0, 비밀값 0, 공용 파일 변화 0.
+- 검토: `review-p09b.md` Changes requested(I 3 · M 5 — 한국어 첫 문장 · 전화번호 경계 · 마지막 턴 검증 · 상수 · 턴 번호 · 빈 글 · 멱등 · 원문 길이) → fix 1 여덟 ADDRESSED → `review-p09b-2.md` Approved(새 N-1 Minor 는 컨트롤러가 고침: 견본 contact 정규식 주석 자리 · mask.test `phone` → `contact`).
+- 계획과 다르게 한 것 13(검토자 모두 받음): 연락처를 이름보다 먼저 가림 · 시드 contact 정규식 giu · 출력 검사에 앱 연락처 정규식 더함 · CallSpec 이 rules 도 받음 · 수업 글(단원 단어 · 학습 요소 · 지문)은 시스템 프롬프트 가변부이고 사용자 메시지는 아이 글만 · 빈 글도 null · 생각 꺼내기 안 쓰는 칸 비움 · BuiltRequest.masked · 도우미 더 내보냄 · P4a 견본 묶음 이어 씀 · 빈 바른 답 유지; fix 1 에서 연락처 정규식 `{ source, keepsPrefix }` 꼴(앞 글자 되돌리기) · 턴 검사 assertTurn 두 곳.
+- 남긴 것(ledger-open): P9c — 엄격 통과 값도 normalize 를 거침, 흐름 차례(answerTextOf → JSON.parse → prepareAnswer → wireSchema → validate → normalize → checkOutputFields → applyChecks → historyEntry), `SettingValues` 이름 겹침, RangeError(턴 번호 · 목적 불일치)는 호출부 결함으로 ai_calls 행 없음, 앱 연락처 정규식 다시 쓸 때 keepsPrefix; P6 — modelAnswer 경계; P11 — 4단계부터 빈 바른 답은 들려주지 않음. 알린 것: 두 글자 변형의 지나친 가림, 기록의 assistant 글은 안 가림, 고정부 영어 지시, firstSentence 는 영어 조각이 둘 이상 앞서면 한 문장보다 길 수 있음, 빈 피드백 null 은 8절 말하기 평가 실패 길.
+- PR: H15(GitHub 원격) 뒤.
