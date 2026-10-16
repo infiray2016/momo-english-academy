@@ -639,3 +639,22 @@ export function contentFilePath(target: SeedContentPath): string {
       return storyFilePath(target.band);
   }
 }
+
+// ── AI 출력 꼴(6.2 · 3.3, C54 (2)) ────────────────────────────────
+
+/** 6.2 쓰기 확인: 고칠 곳 최대 1개. */
+export const WRITING_CHECK_FIX_MAX = 1;
+/** 6.2 쓰기 확인: 헷갈리는 보기 1~2개(3.3 '보기 2~3개' = 바른 표현 + 이것). */
+export const WRITING_CHECK_DISTRACTORS = { min: 1, max: 2 } as const;
+/** 3.3 · 6.2 채점표 세 항목(과제 충족 · 문법 · 어휘). */
+export const RUBRIC_ITEMS = ["task", "grammar", "vocabulary"] as const;
+/** 6.2 채점표 · 말하기 내용 · 문법 점수 범위(1~4). */
+export const AI_SCORE = { min: 1, max: 4 } as const;
+/** 6.2 말하기 평가 판정(맞음 · 부분 · 다시). */
+export const SPEAKING_JUDGEMENTS = ["correct", "partial", "retry"] as const;
+/** 6.2 말하기 4~8단계 문법 지적 최대 1개. */
+export const SPEAKING_GRAMMAR_NOTE_MAX = 1;
+/** 6.2 · 3.3 생각 꺼내기: 보기 3개 · 쓰기에 쓸 영어 단어 4~6개 · 문장 시작 틀 2개. */
+export const THINKOUT_OPTIONS = 3;
+export const THINKOUT_WORDS = { min: 4, max: 6 } as const;
+export const THINKOUT_STARTERS = 2;
