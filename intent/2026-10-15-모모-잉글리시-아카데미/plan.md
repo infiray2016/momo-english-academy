@@ -70,7 +70,8 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 
 | P | 범위(한 줄) | 정본 절 · AC | 파일 묶음 | 의존 | ∥ | 완료 판정 | 증명 |
 |---|---|---|---|---|---|---|---|
-| P1 | 뼈대 · 품질 관문. 스택 설치, 폴더 규약, CI, spec 추적 검사(F2 = 조사 P3, AC ↔ 시험 조사 P4 포함), implementer Stop 훅 · maxTurns(F3), 의존 규칙(조사 P8) | 10절, 9절 CI 검사 · AC-N4(번들) · 공통 | 설정 파일들 · `ci.yml` · `scripts/spec-trace.ts` · `scripts/check-bundle.ts` · `implementer.md` | — | — | 빈 앱 CI 초록. spec-trace 는 정본 위반을 보고만 하다가 위반 0 이 되면 막는 검사로 | `pnpm lint` · `pnpm build` · `tests/unit/spec-trace.test.ts` · CI `ci / lint · build · unit · depcruise · spec-trace · bundle-secrets` |
+| P1 | 뼈대 · 품질 관문(P1a 뼈대 · P1b 품질 관문 둘로 나눔, 컨트롤러 승인 10:3x). 스택 설치, 폴더 규약, CI, spec 추적 검사(F2 = 조사 P3, AC ↔ 시험 조사 P4 포함), implementer Stop 훅 · maxTurns(F3), 의존 규칙(조사 P8) | 10절, 9절 CI 검사 · AC-N4(번들) · 공통 | 설정 파일들 · `ci.yml` · `scripts/spec-trace.ts` · `scripts/check-bundle.ts` · `implementer.md` | — | — | 빈 앱 CI 초록. spec-trace 는 정본 위반을 보고만 하다가 위반 0 이 되면 막는 검사로 | `pnpm lint` · `pnpm build` · `tests/unit/spec-trace.test.ts` · CI `ci / lint · build · unit · depcruise · spec-trace · bundle-secrets` |
+| P1c | spec 자료 그래프의 나머지 규칙(조사 P3: 모든 FR 에 AC · AC 가 가리키는 FR · 결정 번호가 있음 · 13절 '없어진 것'이 본문에 되살아나지 않음)을 spec-trace 규칙 셋으로 더한다(C51 마). 설정 키 대조는 P7 check-ids | 9절 CI 검사 · 14 · 15절 · 13절 | `scripts/spec-trace.ts` · `tests/unit/spec-trace.test.ts` | P1b | P2 · P3 · P4 | 새 규칙 셋 위반 0 → CI `--fail-on` 에 더함 | `tests/unit/spec-trace.test.ts` · CI `ci / spec-trace` |
 | P2 | 음성 접점과 실기 확인(11절 첫 작업). 인식 · 읽어 주기 인터페이스, 듣기 끝 · 감시 타이머 · 이어 붙이기, 일치율 순수 함수, 관찰 페이지와 가짜 대본(역분석 제안 4) | 7절, 6.2 일치율, 9절 음성 점검 · AC-5a · 5e(말하기 · 배치) · N3(수동) | `src/lib/speech/` · `src/core/speech/` · `src/app/dev/speech-probe/` · `tests/fixtures/speech/` · `docs/checklists/speech-check.md` | P1 | P3 · P4 | H2 결과표가 남는다. 실패면 S7 결정이 13절에 있다 | `tests/unit/match-rate.test.ts` · `listen-end.test.ts` · 점검표 |
 | P3 | DB · 시계 · 설정 읽기 · 접근 제어. 29 테이블 · RLS · 권한 회수, 트랜잭션 풀러(prepare 끔), 한 시계 · 학습일, 설정 읽기(프로필 행 → 기본 행), 가족 접근 코드 · proxy.ts · 함수 안 확인 · CRON_SECRET, 접근 코드 화면 | 5절, 10절 접근 제어 · DB, 3.1, 11절 (1) · (4-1) 시계 · AC-1a(접근) · N5 · N7 · 7g(시계) | `src/db/schema/` · `drizzle/` · `src/server/{clock,settings,access}` · `src/proxy.ts` · `src/app/(setup)/access/` | P1 | P2 · P4 | 개발용 DB 에 마이그레이션 적용, 쿠키 없는 요청 401 | `tests/integration/{access,rls-grants,clock}.test.ts` · `tests/unit/learning-day.test.ts` · `pnpm test:int` · `pnpm check:data-api` |
 | P4 | 시드 규격 · 검증기 · 어휘 배정(6.3 순서 (0)). 모든 시드 Zod 규격(회화 카드 · 평가 카드 포함), 6.4 검사 전부 · 완전성 · 단계 분포 경고 · 칸 사이 관계 경고(조사 P6) | 6.3 출력 규격, 6.4, 3.2 배정 · 관계 표, 3.6 · AC-3a · 3b · 5g · 5h · 7a · 7c · 7d | `src/core/seed/` · `src/core/vocab/allocate.ts` · `scripts/seed-validate.ts` · `tests/fixtures/seed/` | P1 | P2 · P3 | 시험용 시드로 6.4 행마다 통과 · 거부 사례가 있다 | `tests/unit/seed-validator-*.test.ts` · `vocab-allocate.test.ts` · `pnpm seed:validate` |
@@ -101,6 +102,7 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 | H12 | 콘솔 한도 오류 표본. 개발용 워크스페이스에 아주 낮은 월 한도를 짧게 걸고 Haiku 1토큰 호출, 표본 고정, 한도 되돌림(C46) | P9(1-나 확인 호출 전) | 8절 분류가 가정으로 남는다 |
 | H13 | 1-가 끝 사용. 프리뷰에서 배치 평가 → 단원 통과 → 단계 평가(시각 당기기) | 작업 11 | 1-나로 못 감 |
 | H14 | 하위 plan 승인 · 커밋 · PR 병합 지시 | P마다 | — |
+| H15 | GitHub 저장소 만들기 · 원격 추가 · 첫 push(CI 가 돌려면). 로컬 도구 준비(nvm Node 24 · pnpm 10.34.7)는 컨트롤러가 했다(C51) | P1a 작업 8 | CI 가 돌지 않아 작업 7 의 로컬 명령으로만 판정 |
 
 ### 시드 묶음 워크플로(P8, 영역 × 단계 하나에 한 번)
 
