@@ -64,6 +64,12 @@ const FIXTURE_FILES: Record<string, string> = {
   // proxy 가 한 단계 건너 DB 를 끌어오는 길(검토 M-2)
   "src/server/relay.ts":
     'import { q } from "@/server/db/index";\nexport const r = q;\n',
+  // 로컬 전용 시드 보기(P5b 공용 변경 5): 앱 화면은 못 가져오고 보기 화면은 가져온다
+  "src/server/seed-viewer/files.ts": "export const files = 1;\n",
+  "src/app/uses-seed-viewer.tsx":
+    'import { files } from "@/server/seed-viewer/files";\nexport const f = files;\n',
+  "src/app/dev/seed-viewer/page.local.tsx":
+    'import { files } from "@/server/seed-viewer/files";\nexport default function Page() {\n  return files;\n}\n',
   "src/lib/a.ts": 'import { b } from "./b";\nexport const a = () => b;\n',
   "src/lib/b.ts": 'import { a } from "./a";\nexport const b = () => a;\n',
 };
@@ -260,6 +266,23 @@ describe("의존 규칙", () => {
     expect(targets).toContain("src/server/db/index.ts");
     // 건너는 모듈 자체(relay)는 막는 대상이 아니다
     expect(targets).not.toContain("src/server/relay.ts");
+  });
+
+  it("의존 규칙: 앱 화면이 src/server/seed-viewer 를 가져오면 seed-viewer-only-from-viewer 위반", () => {
+    expect(violationsFrom("src/app/uses-seed-viewer.tsx")).toEqual([
+      "seed-viewer-only-from-viewer",
+    ]);
+  });
+
+  it("의존 규칙: 시드 보기 화면(src/app/dev/seed-viewer)이 src/server/seed-viewer 를 가져오는 것은 허용", () => {
+    const dep = resolvedDependency(
+      "src/app/dev/seed-viewer/page.local.tsx",
+      "@/server/seed-viewer/files",
+    );
+    expect(dep.resolved).toBe("src/server/seed-viewer/files.ts");
+    expect(violationsFrom("src/app/dev/seed-viewer/page.local.tsx")).toEqual(
+      [],
+    );
   });
 
   it("의존 규칙: 서로 가져오는 두 파일은 no-circular 위반", () => {

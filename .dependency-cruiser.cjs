@@ -77,6 +77,14 @@ module.exports = {
       from: { path: "^src/", pathNot: "^src/lib/speech/fake-web-speech" },
       to: { path: "^src/lib/speech/fake-web-speech" },
     },
+    {
+      name: "seed-viewer-only-from-viewer",
+      comment:
+        "로컬 전용 시드 보기(src/server/seed-viewer, seed/ 읽기 · 쓰기)는 그 화면(src/app/dev/seed-viewer)과 자기 폴더에서만 가져온다. 앱 화면이 가져오면 운영 묶음에 seed 쓰기가 들어간다(P5b, AC-7f)",
+      severity: "error",
+      from: { pathNot: "^src/(app/dev/seed-viewer|server/seed-viewer)/" },
+      to: { path: "^src/server/seed-viewer/" },
+    },
   ],
   options: {
     doNotFollow: { path: "node_modules" },

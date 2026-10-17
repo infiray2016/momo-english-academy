@@ -221,7 +221,8 @@ function passageSentencesOf(item: AnyItem): string[] {
   return [];
 }
 
-function isAiItem(item: AnyItem): boolean {
+/** AI 과제 문항(작문 · 발표 · 허용 답 없는 질문). 보기 화면(P5b)도 이 규칙을 쓴다. */
+export function isAiItem(item: AnyItem): boolean {
   return (
     item.type === "composition" ||
     item.type === "presentation" ||

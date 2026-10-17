@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "e2e": "playwright test",
+    "e2e:local": "playwright test --config playwright.local.config.ts",
     "check:deps": "depcruise src --config .dependency-cruiser.cjs",
     "spec:trace": "tsx scripts/spec-trace.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",
