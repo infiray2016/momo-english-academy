@@ -1,0 +1,44 @@
+{
+  "case": "speaking_eval.confirm.ok",
+  "purpose": "speaking_eval",
+  "title": "speaking_eval.confirm",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_5",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"contentScore\": 3, \"grammarScore\": 3, \"feedback\": \"까닭을 한 문장으로 말했어요.\"}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true
+  }
+}

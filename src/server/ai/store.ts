@@ -116,7 +116,8 @@ export type DailyUsage = { profileCalls: number; householdCostMicros: number };
  */
 export async function dailyUsage(
   db: Db,
-  { profileId, learningDay }: { profileId: string; learningDay: string },
+  // null 이면 호출 수 0 — 확인 호출 · 프로필 없는 호출(SQL 의 = NULL 은 참이 되지 않는다). 비용 합은 그대로 집 전체
+  { profileId, learningDay }: { profileId: string | null; learningDay: string },
 ): Promise<DailyUsage> {
   const [row] = await db
     .select({

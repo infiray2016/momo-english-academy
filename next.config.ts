@@ -16,6 +16,8 @@ export default function nextConfig(phase: string): NextConfig {
     agentRules: false,
     // unauthorized() 로 페이지 · 서버 액션 · Route Handler 가 401 을 낸다(C55 (4), P3b)
     experimental: { authInterrupts: true },
+    // 시드 목록은 빌드에 묶어 배포한다(5절). 서버 함수가 실행 때 읽는다 — plan-p09c 값 3
+    outputFileTracingIncludes: { "/*": ["./seed/lists/**/*.json"] },
     pageExtensions: [
       ...BASE_PAGE_EXTENSIONS,
       ...(isProductionDeployment ? [] : [PREVIEW_PAGE_EXTENSION]),

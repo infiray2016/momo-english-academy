@@ -1,0 +1,20 @@
+{
+  "case": "error.not-found-404",
+  "purpose": "writing_feedback",
+  "title": "writing_feedback",
+  "source": "handmade",
+  "response": {
+    "status": 404,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "not_found_error",
+        "message": "model: claude-retired-1"
+      },
+      "request_id": "req_handmade_error"
+    }
+  },
+  "expect": {
+    "classify": "same_error"
+  }
+}

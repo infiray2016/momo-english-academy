@@ -1,0 +1,20 @@
+{
+  "case": "error.console-workspace-400",
+  "purpose": "writing_check",
+  "title": "writing_check",
+  "source": "handmade",
+  "response": {
+    "status": 400,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "message": "You have reached your specified workspace API usage limits. You will regain access on 2026-11-01 at 00:00 UTC."
+      },
+      "request_id": "req_handmade_error"
+    }
+  },
+  "expect": {
+    "classify": "console_limit"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "case": "speaking_eval.answer.case",
+  "purpose": "speaking_eval",
+  "title": "speaking_eval.answer",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_11",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"judgement\": \"Correct\", \"feedback\": \"좋아하는 과일 두 가지를 말했어요.\", \"correctSentence\": \"I like apples and bananas.\", \"grammarNotes\": [\"모음 앞에서는 a 대신 an 을 써요.\"]}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true,
+    "normalized": {
+      "judgement": "correct"
+    }
+  }
+}

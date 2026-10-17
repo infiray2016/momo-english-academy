@@ -1,0 +1,20 @@
+{
+  "case": "error.overloaded-529",
+  "purpose": "speaking_eval",
+  "title": "speaking_eval.answer",
+  "source": "handmade",
+  "response": {
+    "status": 529,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "overloaded_error",
+        "message": "Overloaded"
+      },
+      "request_id": "req_handmade_error"
+    }
+  },
+  "expect": {
+    "classify": "server"
+  }
+}

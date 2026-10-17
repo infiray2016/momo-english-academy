@@ -24,7 +24,9 @@
     "access:hash": "tsx scripts/access-code-hash.ts",
     "check:data-api": "tsx scripts/check-data-api.ts",
     "seed:load": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/seed-load.ts",
-    "db:dev": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dev-db.ts"
+    "db:dev": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dev-db.ts",
+    "ai:contract": "tsx scripts/ai-contract.ts",
+    "ai:observe": "tsx scripts/ai-observe.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",

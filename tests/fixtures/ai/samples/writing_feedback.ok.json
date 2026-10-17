@@ -1,0 +1,44 @@
+{
+  "case": "writing_feedback.ok",
+  "purpose": "writing_feedback",
+  "title": "writing_feedback",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_2",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"praise\": \"바다에 간 일을 차례대로 썼어요. 모래가 뜨거웠다는 말이 생생해요.\", \"corrections\": [{\"original\": \"I go to the beach\", \"corrected\": \"I went to the beach\", \"reason\": \"어제 일이라 과거형 went 를 써요.\"}, {\"original\": \"I swim\", \"corrected\": \"I swam\", \"reason\": \"지난 일은 swam 으로 써요.\"}], \"modelAnswer\": \"Yesterday I went to the beach. I swam in the sea. The sand was hot. It was fun.\", \"rubric\": {\"task\": 3, \"grammar\": 2, \"vocabulary\": 3}}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true
+  }
+}

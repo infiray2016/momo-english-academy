@@ -1,0 +1,77 @@
+{
+  "case": "writing_check.fallback",
+  "purpose": "writing_check",
+  "title": "writing_check",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_15",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "fallback",
+          "from": {
+            "model": "claude-sonnet-5-5"
+          },
+          "to": {
+            "model": "claude-sonnet-5"
+          },
+          "trigger": {
+            "type": "refusal",
+            "category": "cyber"
+          }
+        },
+        {
+          "type": "text",
+          "text": "{\"praise\": \"좋아하는 과일을 세 문장으로 또박또박 썼어요.\", \"sentences\": [{\"index\": 0, \"correct\": true}, {\"index\": 1, \"correct\": false}, {\"index\": 2, \"correct\": true}], \"fixes\": [{\"sentenceIndex\": 1, \"original\": \"He like\", \"corrected\": \"He likes\", \"distractors\": [\"He liking\", \"He are like\"], \"reason\": \"He 가 주어일 때는 동사 뒤에 s 를 붙여요.\"}]}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": [
+          {
+            "type": "message",
+            "model": "claude-sonnet-5-5",
+            "input_tokens": 1200,
+            "output_tokens": 30,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": null
+          },
+          {
+            "type": "fallback_message",
+            "model": "claude-sonnet-5",
+            "input_tokens": 1200,
+            "output_tokens": 180,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": null
+          }
+        ],
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true,
+    "answeredModel": "claude-sonnet-5"
+  }
+}
