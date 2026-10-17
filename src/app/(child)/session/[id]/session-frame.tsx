@@ -5,8 +5,9 @@
 // 하나로 알린다 → 틀이 끝 시도 { v: 1, kind, step: "final", … } 를 기기 대기열에 넣고 끝 시도가 없는 가장 앞 활동으로 간다.
 // 마지막 활동 뒤 queue.idle() · flush() → finishSession → incomplete 면 한 번 더 → 안 되면 7절 끊김 안내와 online 때 다시 →
 // /result/<id>. 이어 할 자리는 서버 끝 시도 ∪ 이 기기 대기열의 끝 시도로 다시 세고(값 2), 활동 안 입력은 이 기기에 되살린다(값 6).
-// 첫 누름(미리보기 '다음')에서 unlockFromGesture() 를 불러 뒤 활동의 읽기를 연다(위험 8). 차례 2 는 읽기 활동에 상호작용을
-// 붙이고, 아직 조각이 없는 활동(쓰기 · 말하기 — 차례 3 · 4 · b · c)은 P10 처럼 보기만 하고 '다음'(시도 없음, 마지막 뒤 수업 목록).
+// 첫 누름(미리보기 '다음')에서 unlockFromGesture() 를 불러 뒤 활동의 읽기를 연다(위험 8). 읽기(차례 2) · 쓰기 1~3(차례 3)
+// 활동에 상호작용을 붙이고, 아직 조각이 없는 활동(쓰기 4~12 · 말하기 — 차례 4 · b · c)은 P10 처럼 보기만 하고 '다음'
+// (시도 없음, 마지막 뒤 수업 목록). 활동이 바뀌면 조각을 새로 만든다(활동 번호 열쇠 — 앞 활동의 입력을 다시 쓰지 않게).
 // '홈'은 대기열을 비운 뒤, 첫 활동이고 끝 시도가 없으면 세션 행을 지우게 서버에 알리고 홈으로 간다(AC-2e).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -41,6 +42,10 @@ import {
   QuestionActivity,
   type QuestionInput,
 } from "@/components/session/reading";
+import {
+  WritingItemActivity,
+  type WritingItemInput,
+} from "@/components/session/writing-items";
 import { resumePointOf } from "@/core/session/attempt";
 import type { Activity, ActivityKind } from "@/core/session/preview";
 import { type AttemptQueue, createAttemptQueue } from "@/lib/attempt-queue";
@@ -71,11 +76,12 @@ const DOT_TONE = {
   speaking: "bg-postit-speaking",
 } as const;
 
-/** 끝 시도를 보내는 활동(차례 2 — 읽기). 그 밖은 아직 보기만(차례 3 · 4 · b · c 가 더한다). */
+/** 끝 시도를 보내는 활동(차례 2 읽기 · 차례 3 쓰기 1~3). 그 밖은 아직 보기만(차례 4 · b · c 가 더한다). */
 const RECORDED_KINDS: ReadonlySet<ActivityKind> = new Set([
   "preview",
   "reading-passage",
   "reading-question",
+  "writing-item",
 ]);
 
 function storageOrUndefined(): Storage | undefined {
@@ -238,6 +244,8 @@ export function SessionFrame({ view }: { view: SessionView }) {
       onlineTarget: window,
     });
     queue.current = created;
+    // 이 기기의 활동 안 입력에서 그 프로필의 진행 세션이 아닌 줄을 지운다(검토 review-p11-2-code M-1)
+    inputs.prune(view.openSessionIds);
     const merged = new Set([...view.finals, ...created.finals(view.sessionId)]);
     setFinals(merged);
     const point = resumePointOf(view.activities, merged);
@@ -316,6 +324,7 @@ export function SessionFrame({ view }: { view: SessionView }) {
         !out.ok &&
         ["not_found", "closed", "invalid", "no_profile"].includes(out.reason)
       ) {
+        inputs.clear(view.sessionId);
         router.push(`/${view.area}/lessons`);
         return;
       }
@@ -434,6 +443,26 @@ export function SessionFrame({ view }: { view: SessionView }) {
         />
       );
     }
+  } else if (
+    activity?.kind === "writing-item" &&
+    view.area === "writing" &&
+    view.lesson.content.shape === "items"
+  ) {
+    const item = view.lesson.content.items[activity.index];
+    if (item) {
+      ownButtons = true;
+      body = (
+        <WritingItemActivity
+          item={item}
+          level={view.level}
+          pictures={pictures}
+          speech={speech}
+          initial={restored as WritingItemInput | undefined}
+          onChange={save}
+          onDone={(input) => complete(input)}
+        />
+      );
+    }
   } else if (activity) {
     body = <DisplayBody view={view} activity={activity} pictures={pictures} />;
   }
@@ -497,8 +526,10 @@ export function SessionFrame({ view }: { view: SessionView }) {
               {body}
             </div>
           )}
-          {/* 상태 글이 있을 때만 그 줄을 그린다(조각이 제 단추를 가질 때 빈 자리를 남기지 않게, 화면 검토 M-5) */}
-          {status ? <StatusLine tone="error">{status}</StatusLine> : null}
+          {/* 알림 줄은 늘 두어 읽기 도구가 끊김 안내를 읽게 하고, 글이 없으면 화면 배치에서만 뺀다(카드 간격도 안 남김 — 화면 검토 M-5 · 재검토 N-1) */}
+          <StatusLine tone="error" className={status ? undefined : "sr-only"}>
+            {status}
+          </StatusLine>
         </ActivityCard>
       </div>
       {ownButtons ? null : (

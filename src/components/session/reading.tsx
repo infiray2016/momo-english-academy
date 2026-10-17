@@ -446,7 +446,8 @@ export function QuestionActivity({
       >
         <PassageText passage={passage} speech={speech} />
       </div>
-      <div className="flex flex-col gap-5">
+      {/* 가로는 틈을 조금 줄여 맞음 · 정답 보기 화면이 보는 창에 든다(화면 검토 review-p11-3-design M-1) */}
+      <div className="flex flex-col gap-5 landscape:gap-4">
         <SmallButton
           ref={opener}
           className="self-start landscape:hidden"
@@ -458,7 +459,8 @@ export function QuestionActivity({
         <EnglishLine className="font-bold">{question.prompt}</EnglishLine>
         <ol
           className={cn(
-            "grid gap-4",
+            // 표시된 보기(✓ · ✕)가 이어져도 바깥 고리가 맞닿지 않게 틈을 고리 둘(띄움 4 + 굵기 4)보다 넓힌다(재검토 N-2)
+            "grid gap-5",
             question.kind === "picture" ? "grid-cols-2" : "grid-cols-1",
           )}
         >

@@ -64,4 +64,19 @@ describe("활동 안 입력", () => {
     fallback.write("s-1", 2, { tries: [3] });
     expect(fallback.read("s-1", 2)).toEqual({ tries: [3] });
   });
+
+  it("활동 안 입력: 그 프로필의 진행 세션이 아닌 줄(중단 · 다른 기기에서 끝냄 · 남의 세션)은 세션을 열 때 지운다", () => {
+    const storage = memoryStorage();
+    const store = createSessionInputStore(storage);
+    store.write("reading-open", 3, { tries: [2] });
+    store.write("writing-open", 2, { tries: [] });
+    store.write("closed", 4, { tappedWords: ["bababa"] });
+    store.prune(["reading-open", "writing-open"]);
+    expect(store.read("closed", 4)).toBeUndefined();
+    expect(store.read("reading-open", 3)).toEqual({ tries: [2] });
+    expect(store.read("writing-open", 2)).toEqual({ tries: [] });
+    expect(
+      Object.keys(JSON.parse(storage.getItem(SESSION_INPUT_KEY) ?? "{}")),
+    ).toEqual(["reading-open", "writing-open"]);
+  });
 });

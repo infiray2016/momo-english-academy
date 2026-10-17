@@ -852,6 +852,8 @@ export type SessionView = {
     appJudged: boolean;
     /** 활동마다 말로 답하는 꼴(말하기 활동만, 그 밖은 null — 값 4). */
     answerShapes: (AnswerShape | null)[];
+    /** 그 프로필의 진행 세션 id(이 기기의 활동 안 입력에서 남길 줄 — 검토 review-p11-2-code M-1). */
+    openSessionIds: string[];
     lesson: LessonOf[A];
     preview: PreviewWord[];
     /** 낱말 id → 그림 정보 · 그림 키 → 그림 정보(P5b PictureLookup 을 화면이 만든다). */
@@ -880,7 +882,8 @@ function pictureWordsOf(lesson: LessonOf[LessonArea]): {
       word?: string;
     }[]) {
       if (item.type === "pick-word" && item.picture) words.add(item.picture);
-      if (item.type === "fill-letters" && item.word) words.add(item.word);
+      // 맞았을 때 낱말 · 뜻 두 줄(목업 B_W1_Words)의 뜻도 같은 표에서 찾는다(차례 3)
+      if (item.word) words.add(item.word);
     }
   }
   if ("listening" in c && Array.isArray(c.listening)) {
@@ -1028,6 +1031,15 @@ export async function loadSessionView(
     thinkoutFromLevel: _from,
     ...config
   } = ctx.settings;
+  const open = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.profileId, profile.id),
+        eq(sessions.status, "in_progress"),
+      ),
+    );
 
   return {
     sessionId,
@@ -1044,6 +1056,7 @@ export async function loadSessionView(
     lemmaEntries: await lemmaEntriesOf(db, lesson.unitWords),
     appJudged: ctx.appJudged,
     answerShapes,
+    openSessionIds: open.map((o) => o.id),
     lesson,
     preview,
     wordPictures,

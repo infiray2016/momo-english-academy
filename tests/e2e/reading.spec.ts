@@ -1,5 +1,7 @@
 // 읽기 세션 e2e(3.3 읽기 · AC-3a, plan-p11a 값 9 · 10 · 13절 C77 (1) · C78). 4단계 견본 수업(견본 빌더 readingLesson 4)을 넣고
 // 진행 세션을 주소로 연다. 시험 숫자(지문 낱말 수 범위 · 문항 수)는 DB 의 단계 규격에서 읽는다. 화면 검토 사진은 E2E_PHOTOS 때만.
+
+import type { Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { attempts, sessions } from "../../src/db/schema/learning";
 import {
@@ -7,6 +9,7 @@ import {
   readingLesson,
   referenceSet,
 } from "../fixtures/seed/builders";
+import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, test } from "./fixtures";
 import { atLevel, insertSampleLesson, levelSpecOf } from "./lessons";
@@ -23,6 +26,20 @@ const T = {
   close: "닫기",
   done: "수업을 끝냈어요!",
 } as const;
+
+/** 두 방향 모두 쪽이 보는 창보다 길지 않다(화면 검토 review-p11-3-design M-1). 끝나면 세로로 돌려 둔다. */
+async function fitsBothWays(page: Page) {
+  for (const size of Object.values(CHILD_VIEWPORTS)) {
+    await page.setViewportSize(size);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight),
+    ).toBeLessThanOrEqual(size.height);
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+}
 
 test.beforeEach(resetHousehold);
 test.afterAll(closeE2eDb);
@@ -80,18 +97,36 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
     await page.locator(`[data-word-tap="${entry.lemma}"]`).first().click();
     await expect(page.locator("[data-word-note]")).toHaveText(entry.meaningKo);
     await photo(page, "p11-reading-word-note");
-    // 첫 줄 마지막 글로서리 낱말(오른쪽 끝)의 뜻 쪽지도 활동 카드 안에 든다(화면 검토 I-3)
-    const lastOnFirstLine = await page.evaluate(() => {
+    // 오른쪽 끝이 가장 큰 글로서리 낱말의 뜻 쪽지도 활동 카드 안에 든다(화면 검토 I-3). 그 낱말은 왼쪽 맞춤이었다면
+    // 쪽지가 카드를 넘었을 자리여야 한다(앞 조건 — 아니면 이 견본으로는 고친 것을 증명할 수 없다, 코드 재검토 Minor)
+    const rightmost = await page.evaluate(() => {
       const buttons = [...document.querySelectorAll("[data-word-tap]")];
-      const top = buttons[0]?.getBoundingClientRect().top ?? 0;
-      let last = 0;
+      let best = 0;
       buttons.forEach((b, i) => {
-        if (Math.abs(b.getBoundingClientRect().top - top) < 2) last = i;
+        if (
+          b.getBoundingClientRect().right >
+          (buttons[best]?.getBoundingClientRect().right ?? 0)
+        )
+          best = i;
       });
-      return last;
+      return best;
     });
-    await page.locator("[data-word-tap]").nth(lastOnFirstLine).click();
+    await page.locator("[data-word-tap]").nth(rightmost).click();
     await expect(page.locator("[data-word-note]")).toHaveCount(1);
+    const wouldOverflowLeftAligned = await page.evaluate(() => {
+      const button = document.querySelector(
+        '[data-word-tap][aria-expanded="true"]',
+      );
+      const note = document.querySelector("[data-word-note]");
+      const card = note?.closest("[data-activity-card]");
+      if (!button || !note || !card) return false;
+      return (
+        button.getBoundingClientRect().left +
+          note.getBoundingClientRect().width >
+        card.getBoundingClientRect().right
+      );
+    });
+    expect(wouldOverflowLeftAligned).toBe(true);
     const inside = () =>
       page.evaluate(() => {
         const note = document.querySelector("[data-word-note]");
@@ -163,6 +198,7 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
             "picked-wrong",
           );
         await photo(page, "p11-reading-reveal");
+        await fitsBothWays(page);
       } else {
         // 고르면 바로 채점과 해설(누름 한 번)
         await choice(question.answerNo).click();
@@ -170,6 +206,7 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
         await expect(page.getByText(question.explanationKo)).toBeVisible();
         if (index === 1) {
           await photo(page, "p11-reading-right");
+          await fitsBothWays(page);
           // 세로: 문항 위 '지문 보기' → 쪽지(글 · '읽어 주기' · '닫기')
           await page.getByRole("button", { name: T.showPassage }).click();
           const sheet = page.locator("[data-passage-sheet]");

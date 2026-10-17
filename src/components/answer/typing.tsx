@@ -3,7 +3,9 @@
 // 쓴 답 조각(plan-p10a 파일별 값 11 · 정할 것 카): 받아쓰기는 앱 안 영문 자판(a~z · '지우기' · '띄우기', 기기 자판을 띄우지 않음 —
 // 4절 쓰기 '1~3단계는 … 앱 안 영문 자판만')과 '다시 듣기', 빈칸 채우기 · 문장 고치기는 입력란(자동 수정 · 자동 대문자 ·
 // 맞춤법 검사 · 단어 추천 끔 — 4절). 채점하지 않고 '다음'에서 onAnswer 하나로 쓴 글을 넘긴다(비교 정규화는 check.ts).
-import { useId, useState } from "react";
+// P11 세션(plan-p11a 값 11)은 선택 속성 initial · onChange(쓴 글 되살리기) · reveal(정답 글 보이기 — 자판 · '다음' 없음)을 쓴다.
+// 셋 다 없으면 지금 그대로다(배치 — 위험 5).
+import { useEffect, useId, useRef, useState } from "react";
 import {
   CHILD_SIZE,
   EnglishLine,
@@ -87,14 +89,37 @@ export function TypingAnswer({
   item,
   speech,
   disabled = false,
+  initial,
+  onChange,
+  reveal,
+  submitLabel = ANSWER_TEXT.next,
   onAnswer,
 }: {
   item: TypingItem;
   speech?: SpeechPort;
   disabled?: boolean;
+  /** 되살릴 쓴 글(P11 세션). */
+  initial?: string;
+  /** 쓴 글이 바뀔 때마다(P11 세션이 기기에 쓴다). */
+  onChange?: (text: string) => void;
+  /** 정답 글(P11 세션 — 있으면 그 글을 보이고 자판 · 입력 · '다음'을 그리지 않는다). */
+  reveal?: string;
+  /** 내기 단추 글(P11 세션 '다 썼어요' — 넘기기 '다음'과 가르기, 화면 검토 review-p11-3-design M-2). 없으면 '다음'. */
+  submitLabel?: string;
   onAnswer: (answer: Answer) => void;
 }) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initial ?? "");
+  const changed = useRef(onChange);
+  changed.current = onChange;
+  const first = useRef(true);
+  useEffect(() => {
+    // 처음 그림(되살린 값)은 다시 쓰지 않는다
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    changed.current?.(text);
+  }, [text]);
   const inputId = useId();
   const ready = text.trim() !== "";
   const submit = () => {
@@ -114,29 +139,33 @@ export function TypingAnswer({
             "flex min-h-16 w-full items-center rounded-xl border-2 border-dashed border-ink bg-white px-5 font-bold whitespace-pre",
           )}
         >
-          {text}
+          {reveal ?? text}
         </output>
-        <AppKeyboard
-          disabled={disabled}
-          onKey={(letter) =>
-            setText((t) => (t.length < DICTATION_MAX ? t + letter : t))
-          }
-          onErase={() => setText((t) => t.slice(0, -1))}
-          onSpace={() =>
-            setText((t) =>
-              t.length < DICTATION_MAX && t !== "" && !t.endsWith(" ")
-                ? `${t} `
-                : t,
-            )
-          }
-        />
-        <BigButton
-          className="self-end"
-          disabled={disabled || !ready}
-          onClick={submit}
-        >
-          {ANSWER_TEXT.next}
-        </BigButton>
+        {reveal !== undefined ? null : (
+          <>
+            <AppKeyboard
+              disabled={disabled}
+              onKey={(letter) =>
+                setText((t) => (t.length < DICTATION_MAX ? t + letter : t))
+              }
+              onErase={() => setText((t) => t.slice(0, -1))}
+              onSpace={() =>
+                setText((t) =>
+                  t.length < DICTATION_MAX && t !== "" && !t.endsWith(" ")
+                    ? `${t} `
+                    : t,
+                )
+              }
+            />
+            <BigButton
+              className="self-end"
+              disabled={disabled || !ready}
+              onClick={submit}
+            >
+              {submitLabel}
+            </BigButton>
+          </>
+        )}
       </div>
     );
   }
@@ -162,9 +191,10 @@ export function TypingAnswer({
         aria-labelledby={`${inputId}-prompt`}
         data-touch=""
         lang="en"
-        value={text}
+        value={reveal ?? text}
         maxLength={TYPED_MAX}
         disabled={disabled}
+        readOnly={reveal !== undefined}
         onChange={(e) => setText(e.target.value)}
         autoComplete="off"
         autoCorrect="off"
@@ -178,13 +208,15 @@ export function TypingAnswer({
           "w-full rounded-xl border-2 border-ink bg-white px-5",
         )}
       />
-      <BigButton
-        type="submit"
-        className="self-end"
-        disabled={disabled || !ready}
-      >
-        {ANSWER_TEXT.next}
-      </BigButton>
+      {reveal !== undefined ? null : (
+        <BigButton
+          type="submit"
+          className="self-end"
+          disabled={disabled || !ready}
+        >
+          {submitLabel}
+        </BigButton>
+      )}
     </form>
   );
 }
