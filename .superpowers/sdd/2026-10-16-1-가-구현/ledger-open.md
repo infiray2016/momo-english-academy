@@ -34,14 +34,13 @@
 | 1-나: seed/reviews → seed_reports(신고자 개발자, C68 (3)) · 옛 개정 행의 정정을 싣는 자리(파) · main 작업의 '신고 판단 기록 · 다시 계산' 단계 · P4 규격의 토리 이야기 title · generation 필수(타, P8 브리프에도) · 2차 단원 미리보기는 startRevision = currentSeedRevision() | 1-나 plan | plan-p07a 정할 것 마 · 타 · 파 · C68 |
 | P8 · P12: 1~4단계 평가 지문의 그림 낱말이 '무엇' 질문의 정답과 같으면 그림이 답을 가리킴(견본 12-01). **P11 읽기 수업 몫은 결정(task-p11-2 컨트롤러 결정): 문항 활동의 지문 보기(가로 칸 · 세로 쪽지)에 그림 줄을 두지 않는다.** 평가 문항(P12 화면)도 같은 규칙으로, P8 시드는 정답 낱말이 그림 줄에 들지 않게 | P12 단계 평가 화면 브리프 · P8 브리프 | review-p05b-design-2 넘길 메모 · task-p11-2 |
 | P6c: B_LevelTest 에 1~4단계 평가 지문 그림 줄 자리(읽어 주기 없음) · 토리 이야기 새 화면에 읽어 주기 자리 · 새 단어 표시 색(노랑 카드 위 종이 바탕 · 굵게 vs 목업 종이 위 노랑) | P6c 브리프 | review-p05b-design-2 넘길 메모 |
-| P10 · P11 · P5c: ActivityCard 기본 글자 20px — 다른 틀도 20px 줌 · 소리 자리의 저절로 읽기와 다시 읽기(평가 지문은 없음) · 칸 화면 틀 -mx-6 과 820 가로 넘침 시험 유지 | P10 · P11 · P5c 브리프 | review-p05b-design-2 넘길 메모 |
+| P5c(평가 화면): ActivityCard 기본 글자 20px · 소리 자리의 저절로 읽기와 다시 읽기(평가 지문은 없음) · 칸 화면 틀 -mx-6 과 820 가로 넘침 시험 유지 — P10 · P11 몫은 닫힘(review-p11-2-design '맞는 것' 표 — 안내 20 · 지문 24 · 가로 넘침 없음 사진) | P5c · P12 평가 화면 브리프 | review-p05b-design-2 넘길 메모 · review-p11-2-design |
 | P9: MIN_RETRY_MS 1초 — 2차 설정 화면의 ai.timeout_seconds.* 범위 검사에 하한(1-나 3) · P11 은 AiOutcome 실패 갈래마다 화면 길(config · safety_cap · output_blocked · RangeError 는 서버 오류) · 첨삭 refusals 는 attempts 에 · 빌드 추적 '/*' 첫 프리뷰 확인 · 1-나 dueCostAlerts → createAlertOnce scope · preCallGate ai_status 상태 · P6 forbidden 목록 iu 컴파일 통과 | P9c fix 1 · P11 · 1-나 · P6 브리프 | review-p09c 3절 M-2 · 8절 |
 | P11: 쓰기 평가 '빈칸 채우기'에서 문장 빈칸(흰 상자)과 아래 답 칸이 쓰는 자리 둘로 보임 — 목업 B_LevelTest 대로 답을 빈칸 안에 넣는다(P5b 는 보기 화면이라 그대로) | P11 브리프 | review-p05b-design-3 M-C |
 | P9c · P11 · 1-나: 시드 contact 범주 값이 바뀜(한국어 주소 앞보기 좁힘 · 괄호 지역 번호 · 국가 번호 추가, P6a fix 2) — 실행 때 파일로 읽어 코드 변화 없음. P9c 계약 · 관찰과 P11 e2e 는 P6a 합친 뒤 실제 목록으로 한 번 더 | P9c 검토 메모 · P11 브리프 | P6a fix 2 + 묶음 3 보고 알릴 것 |
 | P8: 행이 있는 단원 · 벌에 새로 생긴 칸(보강 수 늘림 등)은 적재 앞 DB 최대 개정을 넘어야 함(new-cell-in-open-group) · 적재 보고 inserted → seed/manifest | P8 브리프 | review-p07a 8절 |
 | P10~P12: read.ts 로 읽고 start_revision 에 currentSeedRevision() · 배치 answer 열은 answerNo · accepted · sentence 가운데 있는 것만 · 회화 평가 카드 장 item_type 'talk-sheet' | P10 · P11 · P12 브리프 | review-p07a 8절 |
 | 1-나: 회화 적재 때 `--areas` 에 talk 추가 · 토리 이야기 title · generation 필수 전엔 story-field-missing 거부 | 1-나 plan | review-p07a 8절 |
-| 서버 액션 · 서버 함수의 DB 오류는 오류 이름 · Postgres 코드만 남긴다 — P10 몫 닫힘(review-p10-fix1 Approved). `src/server/db/safe-error.ts` 의 `dbErrorTag` · `safeDbError`(호출자 아직 없음 — P11 이 처음 쓸 때 단위 사례 더함)를 P11 아이 답 글(attempts) · P12 · 1-나 브리프 '지킬 것'에 넣고 닫는다 | P11 브리프 작성 때 | review-p10-2-code I-1 · review-p10-fix1 |
 | P12: `unitSnapshotOf` 는 쓰기 6~12 의 level_specs 덮기 값을 담지 않는다 — 판정 때 덮기를 함께 보거나 복사본에 담는다 | P12 브리프 | review-p10-2-code 6절 3 · impl-p10 차례 2 알릴 것 3 |
 | P10 차례 3 지적 가운데 남은 것: 배치 전 카드 누름 표시(review-p10-3-design H-M6 — 재부팅 뒤 화면 재검토 때 확인) · 홈 카드 '아는 단어 · 최근 성적 · 끝낸 대화' 칸은 P11 · P12 가 채움(입력 형 유지). 나머지(AC-2b · AC-2a 단언 · '이번 주 n일' 배치 셈)는 닫힘(review-p10-5-6-code 6절 · fix 2) | des-p10 사진 세트 · P11 · P12 브리프 | review-p10-3-design H-M6 · review-p10-5-6-code 6절 |
 | 홈 영역 카드의 아이콘(목업 B_Home4 에 있음, 구현에 없음) — 이모지 · 그림 가운데 무엇으로 그릴지 요청자 시각 결정(표본 쪽) 뒤 P10 마무리 또는 1-나 | 요청자 표본 쪽 · P10 차례 7 화면 검토 | review-p10-3-design H-M5 |
@@ -56,7 +55,6 @@
 | 개발용(Supabase) DB 의 집 데이터 지우기는 `TRUNCATE … CASCADE` 를 쓰면 안 됨 — settings(profile_id FK) 전체가 함께 비워짐(2026-10-18 01:5x 컨트롤러 실수 → 재적재로 복구). 프로필 테이블은 DELETE(또는 profiles 만 지워 FK CASCADE DELETE)로, settings 는 `profile_id IS NOT NULL` 만. 개발용 '집 초기화' 스크립트(dev-db --reset 의 원격판)를 두면 좋음(1-나 부모 화면 프로필 삭제와 같은 규칙) | 다음 집 초기화 때 · 1-나 | 컨트롤러 2026-10-18 |
 | 요청자 시험에서 드러난 안내 빈틈(1-가 차례 8 안내문 · 1-나 화면): 시작 단계를 안 고르면 홈 카드가 '내 단계 찾기'로 바뀌는 것이 '진행이 안 됨'으로 보임(배치 화면이 없던 동안) · 회화 카드 → '준비 중' · 아바타 첫 글자 동그라미가 왜 있는지 → 첫 실행 마지막 화면 또는 홈에 '지금 할 수 있는 것' 한 줄, 아바타 화면은 요청자 답(빼기 · 두기) 대기 | 차례 8 안내 · fix 5 | 요청자 2026-10-18 01:5x~02:0x |
 | AC-2f e2e 를 '배정 1 · 2 를 건너뛴 다지기'로 본 것은 시험용 시드 사정 — P8 실시드(배정 수업 여럿 · 새 단어 겹침) 뒤 plan 원안('배정 1 을 건너뛴 배정 2')으로 다시 | P8 뒤 e2e | review-p10-5-6-code 다르게 한 것 · impl-p10 차례 6 |
-| 시도 대기열이 서버의 묶음 전체 거부(50 초과 · 꼴 오류)에서 영영 비지 않음 — P11 '지킬 것'(거부된 묶음은 쪼개거나 버리고 알림) | P11 브리프 | review-p10-5-6-code M-2 |
 | CI 용 PR(ci/p10-c5 → P10 가지)은 바탕 가지에 새 커밋을 올리면 CONFLICTING 이 되어 GitHub 가 pull_request 워크플로를 만들지 않는다(2026-10-18 02:5x~03:4x 세 번 push 가 무응답). CI 가지는 늘 바탕 가지의 최신 커밋 위에 다시 만들어(commit-tree -p <바탕 HEAD>) force push 한다. PR #1 · #2 는 P10 검토 끝나면 닫기(#2 는 바탕 합침 때 다시) | P10 CI 때마다 · 커밋 뒤 | 컨트롤러 2026-10-18 |
 | 홈 닫힌 말하기 카드의 '다시 확인' 단추는 실제 마이크 확인 없이 저장 상태만 지우고 카드를 연다(아이도 누를 수 있음, 막혀 있으면 따라 말하기에서 다시 닫힘 — 해 작음). 1-나 부모 화면 '마이크 다시 확인'이 생기면 홈 단추는 빼거나 성공일 때만 지우게 | 1-나 부모 화면 | review-p10-fix5-code N-1 |
 

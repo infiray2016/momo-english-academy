@@ -113,3 +113,124 @@ pnpm check:ids            → code-setting-unknown 0 · fixture-setting 0 · des
 ```
 
 남은 우려: 없음(M-5 는 차례 2).
+
+## 차례 2 — 세션 서버 · 대기열 · 틀 · 읽기 · 결과 틀(검토 묶음 A2, 2026-10-18 07:xx)
+
+바탕 HEAD ccbd899(차례 1 c8db4f5 + specs 맞춤), 커밋 없음. 통합 · e2e 는 CI 로(아래 'CI' 줄은 결과가 오면 채운다).
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/server/session/index.ts` | 수정 | 공통 바탕: `seedHomophones`(164, 목록 없으면 빈 묶음 + 경고 한 번) · `SessionConfig` · `readSessionSettings`(207 — speech.* · ui.* · speaking.* · writing.thinkout_from_level · 그 구간 answer_max_seconds) · `sessionContextOf`(281 — 활동 모델 한 인자 꼴 · 규격 · appJudged) · `lemmaEntriesOf` · `scoringOf` · `needsAiPath`(354). `saveSessionAttempts`(550 — 묶음 겉꼴만 통째, 시도마다 겉꼴 · `parseAttemptInput` · `inputFitsActivity` · AI 길 거부, 받은 시도는 `appActivityResult` 로 score · word_results · word_count, `{ ok, accepted, rejected }`) · `finishLessonSession`(687 — 한 트랜잭션 FOR UPDATE · incomplete + missing · already · not_found · closed · `sessionScoreOf` · `englishSentencesOf` · `learningDayOf`, `WHERE status = 'in_progress'`) · `loadSessionView`(902 — `resumePointOf` · finals · config · 동음이의어 · 원형 표 · appJudged · answerShapes) · `readSessionPlace`(1056, `readSessionArea` 대신). 상수 `ATTEMPTS_PER_BATCH_MAX` · `INPUT_JSON_MAX` 는 core 에서 |
+| `src/server/actions/session.ts` | 수정 | `finishSession`(첫 문장 `await requireAccess()`) |
+| `src/server/session/result.ts` | 신규 | `server-only`. `loadResultView` — 그 프로필의 끝난 수업 세션만, `next` = hereStart(resume → 그 세션, lesson · practice → 그 칸 lessonId, 그 밖 · 없음 → list) |
+| `src/lib/attempt-queue.ts` | 수정 | `queueBatches`(50개씩) · `queueFinals`(이 기기의 끝 시도 번호) · send 가 `{ accepted, rejected }` 를 돌려주고 둘 다 지움 · 한 묶음 실패면 남은 묶음은 다음에 · 버린 수만 warn |
+| `src/lib/session-input.ts` | 신규 | `momo.session-input.v1` 활동 안 입력(못 쓰면 메모리) |
+| `src/core/session/attempt.ts` | 수정(차례 1 파일) | `parseAttemptInput` 이 NUL 글자 든 시도를 거부(jsonb 가 받지 않아 묶음 넣기 전체가 늘 실패 → 대기열이 막힘) |
+| `src/core/session/preview.ts` | 수정(차례 1 파일) | 두 인자 꼴 덧붙임 지움(브리프) |
+| `src/components/activities/reading.tsx` | 수정 | `ReadingPassage` 선택 속성 `onWordTap` · `openWord`(없으면 그대로) — 글로서리 낱말(고유 명사 빼고)을 글줄 안 단추(`data-size-exempt` · `data-word-tap`)로, 뜻 쪽지(`data-word-note`, lang="ko" 20px)를 낱말 위에 |
+| `src/components/session/reading.tsx` | 신규 | 'use client'. `ReadAloudButton`('읽어 주기' — 누를 때만, 다시 누르면 멈춤) · `PassageActivity` · `QuestionActivity`(C77 (1) — 고르면 바로 채점, 맞음 '맞았어요!' + 해설 + '다음', 처음 틀림 해설 + '한 번 더 풀기'(정답 안 보임, 처음 고른 오답은 눌린 채), 둘째 뒤 정답 표시 + '맞았어요!' 또는 '정답은 이거예요' + '다음'. 가로 지문 칸 나란히(세로 넘김) · 세로 '지문 보기' 쪽지('읽어 주기' · '닫기' · Esc). 문항 쪽 지문 보기에는 그림 줄 없음(컨트롤러 결정)) |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | 값 7 — 끝 시도 → 대기열 → 끝 시도 없는 가장 앞 활동, 마지막 뒤 idle · flush → `finishSession` → incomplete 한 번 더 → 그래도 incomplete 이고 이 기기에도 없으면 빠진 활동으로, 그 밖 실패는 7절 끊김 안내 · online 때 다시 · '다음'으로 다시 → `/result/<id>`. 서버 finals ∪ 대기열 finals 로 다시 셈, 활동 안 입력 되살림(하이드레이션 뒤 한 번 다시 그림), 미리보기 '다음'에서 `unlockFromGesture()`, '홈'은 idle · flush 뒤. 상호작용이 아직 없는 활동(쓰기 · 말하기)은 P10 처럼 보기만 · 마지막 뒤 수업 목록. M-5(문장 틀 key) 닫음 |
+| `src/app/(child)/session/[id]/page.tsx` | 수정 | 끝난 세션이면 `/result/<id>` |
+| `src/app/(child)/result/[id]/page.tsx` · `result-view.tsx` | 신규 | 값 8 — '수업을 끝냈어요!'(h2) · 수업 제목 · 큰 '다음 수업'(P10 `useLessonStart` · 확인 쪽지) 또는 '수업 목록' · 작은 '홈'. 숫자 · 퍼센트 없음 |
+| `.github/workflows/ci.yml` | 수정 · 공용 변경(컨트롤러 요청) | e2e 단계 `E2E_PHOTOS: "1"` + `actions/upload-artifact@v4`(e2e-photos, test-results/photos, if-no-files-found ignore, if always) |
+| `tests/e2e/photos.ts` | 신규 · 공용 변경 | `photo(page, 이름, 방향?)` — 환경 변수 있을 때만 `test-results/photos/<이름>-<portrait|landscape>.png` |
+| `tests/e2e/lessons.ts` | 신규 | 값 10 — `insertSampleLesson` · `atLevel` · `levelSpecOf`(시험 숫자를 DB 단계 규격에서) |
+| `tests/e2e/reading.spec.ts` | 신규 | AC-3a |
+| `tests/e2e/session.spec.ts` | 수정 | P10 '둘째 활동부터 보기만' → 끝까지 → 결과 → 끝난 세션 주소는 결과로 → '다음 수업'이 새 세션을 연다 |
+| `tests/integration/session-flow.test.ts` | 신규 | '세션 바탕:' 넷(증명 표 글자 그대로) + 말하기 1단계 서버 채점 · 화면 자료 · 결과 틀 |
+| `tests/integration/retry.test.ts` | 신규 | AC-2c 읽기 몫 |
+| `tests/integration/session-start.test.ts` | 수정 · **계획 표 밖(P10 시험)** | 저장 결과 기대값 셋에 `rejected: []`(위험 3 — P10 시험을 고침 목록에) |
+| `tests/unit/attempt-queue.test.ts` | 수정 | send 꼴 맞춤 + '대기열: 50개씩 나눠 보내고 거부된 id 도 지운다' · 앞 묶음 실패 · 끝 시도 번호 |
+| `tests/unit/session-input.test.ts` | 신규 · **계획 표 밖** | 활동 안 입력 둘 |
+| `tests/unit/safe-error.test.ts` | 수정 · **계획 표 밖(장부 행)** | `safeDbError` 시도 저장 질의 오류 사례 하나 |
+| `tests/unit/session-attempt.test.ts` · `session-preview.test.ts` | 수정 | NUL 거부 단언 · 두 인자 꼴 단언 지움 |
+
+### 시험 수
+
+단위 482 → **488**(+6 — 대기열 셋 · 활동 안 입력 둘 · safeDbError 하나), 파일 50 → 51. 통합 +7(session-flow 일곱 · retry 하나 — 이름 '세션 바탕:' 넷 + 말하기 · 화면 자료 · 결과 틀 · AC-2c), e2e 신규 하나(AC-3a) · 고침 하나.
+
+### 다르게 한 것과 까닭
+
+1. **묶음 꼴:** plan 은 '묶음을 통째로 거부하지 않는다'인데, 시도 id 글조차 없는 원소 · 빈 묶음 · 50 넘는 묶음은 거부할 id 가 없어 지금처럼 `invalid` 로 둔다(P10 시험 `[{ nope: 1 }]` 그대로). 시도 id 가 uuid 가 아닌 글이면 그 id 로 rejected.
+2. **화면이 보낸 점수:** 시도 꼴이 strict 라 점수 칸을 붙인 시도는 '꼴이 틀림'으로 거부한다(받아서 무시하지 않음). 시험 '세션 바탕: 서버가 … 화면이 보낸 점수는 받지 않는다'가 이 동작을 본다.
+3. **AI 길 거부(`needsAiPath`):** a 몫 종류 가운데 AI 길은 3단계부터의 질문 답뿐이라, 앱 판정 단계가 아닌 질문 답 끝 시도는 `skipped` 가 있을 때만 받는다(c 값 3). b · c 종류는 시도 꼴에 아직 없어 꼴에서 거부된다 — b · c 가 종류를 더할 때 이 함수에 자기 규칙을 더한다.
+4. **영어로 말한 문장 수:** 읽기 · 쓰기 세션은 0 을 쓴다(열이 NOT NULL default 0). 말하기만 `englishSentencesOf`.
+5. **끝 시도가 둘인 활동**(두 기기)은 가장 먼저 저장된 끝 시도의 점수를 쓴다(`finalRowsOf`).
+6. **`readSessionArea` → `readSessionPlace`**(끝났는지도 돌려줌). 쓰는 곳이 세션 쪽 하나라 바꿨다.
+7. **동음이의어 읽기**를 배치 서버(`src/server/placement`)의 `seedHomophones` 에서 가져오지 않고 같은 꼴로 세션 서버에 두었다 — 배치 모듈이 AI 기록(`@/server/ai/store`)을 가져와 세션 모듈이 AI 층에 닿지 않게(AC-1b). 같은 글 두 벌이라 차례 4(`src/server/alerts/device.ts` 옮길 때) 한 곳으로 모으기를 권한다.
+8. **ReadingPassage 선택 속성 둘**(`onWordTap` · `openWord`): plan 은 '선택 속성 하나'다. 조각이 훅 없는 보기 조각이라 뜻 쪽지를 낱말 위에 띄우려면 열린 자리를 속성으로 받아야 했다. 둘 다 없으면 지금 그대로다.
+9. **결과 화면 '다음 수업'이 단계 평가 · 복습 · 첨삭이면 '수업 목록'**(컨트롤러 결정 그대로). 하던 수업(resume)은 그 세션 주소로 간다.
+10. **e2e 견본은 기본 틀 규격**(`referenceSet(defaultSettings())`)으로 만든다 — 작은 틀(`smallReferenceSet()`)로는 `readingLesson` 1 · 4 가 '값이 없다'로 던진다(plan 확인한 사실의 추측이 틀림). 지어낸 낱말이 DB vocab 에 없어 그림은 뜻 글로 보인다.
+11. 세션 화면 자료는 읽기 · 쓰기 세션도 음성 · 말하기 설정을 함께 읽는다(설정 하나라도 없으면 SettingMissingError — 공용 변경 2 를 안 하면 프리뷰 세션 화면이 멈춘다는 plan 정할 것 카와 같은 조건).
+
+### 정할 것
+
+| 번호 | 무엇 | 고른 것 | 까닭 |
+|---|---|---|---|
+| 1 | 읽기 문항에서 처음 고른 오답 | 다시 고를 때 눌린 채(✕ 표, 고를 수 없음) | 같은 오답을 두 번 고르는 것을 막는다(C77 (1) 안의 화면 세부) |
+| 2 | 둘째 고름이 맞았을 때 말 | '맞았어요!'(정답 표시와 함께), 틀렸으면 '정답은 이거예요' | 정본 밖 문구 표 '맞음 · 틀림(정답 보임)' 두 말을 그대로 씀 |
+| 3 | 끝내기가 incomplete 로 두 번 막히고 이 기기 대기열에도 그 활동이 없을 때 | 빠진 가장 앞 활동으로 돌아가 다시 하게 함 | 다른 기기에서 하다 만 활동(8절 동시 사용) — 끊김 안내로는 풀리지 않는다 |
+
+### 차례 3 에 넘기는 것
+
+- 틀의 `RECORDED_KINDS`(session-frame.tsx 위)에 `writing-item` 을 더하고, 쓰기 조각을 `PassageActivity` · `QuestionActivity` 와 같은 꼴(`initial` · `onChange` · `onDone(끝 내용)`)로 붙이면 끝내기 · 결과 · 이어 하기가 그대로 돈다. 끝 내용은 `{ tries: Answer[] }`(값 2).
+- 활동 안 입력은 `onChange` 값이 그대로 `momo.session-input.v1` 에 쓰이고 `initial` 로 되돌아온다(하이드레이션 뒤 한 번 다시 그림 — 쪽이 서버 그림과 달라지지 않게).
+- 서버는 쓰기 1~3 끝 시도를 이미 채점한다(`appActivityResult` writing-item — 차례 1).
+- 사진 도우미 `photo(page, "p11-writing-…")` 를 같은 꼴로.
+
+### 관문 명령 결과(로컬)
+
+```
+pnpm lint                → Checked 290 files. No fixes applied.
+pnpm test                → Test Files 51 passed (51) · Tests 488 passed | 6 todo (494)
+pnpm build               → exit 0(ƒ /result/[id] · ƒ /session/[id])
+pnpm exec tsc --noEmit   → exit 0
+pnpm check:deps          → ✔ no dependency violations found (149 modules, 608 dependencies cruised)
+pnpm check:ids           → code-setting-unknown 0 · fixture-setting 0 · design-number 35(바탕 그대로, 새 줄 0)
+pnpm check:bundle        → 파일 230 · 화면 파일 20 · 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test 23줄, 보고만 — 남은 것은 차례 3 · 4 · b · c · P12 몫)
+```
+
+CI 1차(컨트롤러, 가지 ci/p11-c2 = ee3120f · PR #4 · run 39072933388): check-ids · depcruise · lint · seed-validate · spec-trace · build · bundle-secrets · unit · integration · e2e · e2e-local **전부 성공**(첫 바퀴). 사진 아티팩트 e2e-photos 는 컨트롤러가 받아 둠. 그 뒤 가지 HEAD 는 7794633(P10 fix 8 합침, 이 변경과 겹치지 않음).
+
+상태: DONE.
+
+## 차례 2 fix 2 — 화면 검토 A2 지적 I-1~I-3 · M-1~M-5(2026-10-18 07:xx)
+
+바탕 HEAD 7794633, 커밋 없음. 코드 검토 A2 M-1 은 차례 3 몫(손대지 않음).
+
+| 지적 | 어디를 어떻게 | 선 위 검증(e2e — CI) |
+|---|---|---|
+| I-1 가로 1단계 그림 문항 단추 잘림 | `src/components/session/reading.tsx:363` 그림 보기 단추에 가로에서만 `landscape:py-2` · 그림 칸 `size-28`(112px, 이미지 · 뜻 글 상자 둘 다). 보기 높이 약 186 → 약 140px, 두 줄에서 약 90px 줆. 누르는 곳 56 · 글자 24 그대로. M-5 로 32px 더 줆 | `tests/e2e/session.spec.ts` — 1단계 문항 1 을 가로에서 처음 틀려 '한 번 더 풀기', 다시 맞혀 '다음', 문항 2 를 가로에서 바로 맞혀 '다음' — 세 단추 아래 끝 ≤ `CHILD_VIEWPORTS.landscape.height` |
+| I-2 지문 그림 줄 깨진 그림 표 | `src/components/activities/reading.tsx` 선택 속성 `renderPicture`(82 · 157 — 없으면 VocabPicture 그대로, 시드 보기 · 평가 지문 영향 없음). 세션 지문은 새 `SafePicture`(`session/reading.tsx:100` — P10 AnswerPicture 와 같은 미리 열어 보기, 못 열면 수업 지문은 뜻 글 점선 상자 `data-picture-missing`, 꾸밈 그림(평가 지문)은 그리지 않음)를 넘긴다 | `session.spec.ts` — 1단계 지문 그림 줄이 하나 이상이고 줄마다 `img` 가 `complete && naturalWidth > 0` 이거나 `[data-picture-missing]` |
+| I-3 오른쪽 끝 낱말 쪽지 잘림 | `openWord` 에 `align`(start · end) · `shift`(px). `PassageActivity` 가 연 뒤 잰다(`session/reading.tsx:169` useLayoutEffect): 낱말 가운데가 카드 오른쪽 반이면 `right-0`, 그래도 카드를 넘으면 카드 안으로 `translateX`. 화면 크기가 바뀌면 다시 잰다 | `tests/e2e/reading.spec.ts` — 세로에서 첫 줄 마지막 글로서리 낱말을 눌러 쪽지 상자가 활동 카드 안(두 방향 사진 앞뒤로) · 사진 `p11-reading-word-note-right-<방향>` |
+| M-1 정답 보기에서 처음 오답 ✕ 사라짐 | `stateOf`(421) — 고른 보기(`tries`)는 끝까지 표시: 오답은 ✕, 정답 보기에서 고르지 않은 정답만 '정답' | `reading.spec.ts` — 다시 고를 때 처음 오답 `picked-wrong` · 누를 수 없음, 정답 보기에서 오답 둘 다 `picked-wrong` |
+| M-2 다시 고를 때 해설 사라짐 | 해설을 `tries.length > 0` 일 때 보임(491) — 다시 고르는 동안에도 | `reading.spec.ts` — '한 번 더 풀기' 뒤 해설 보임 · 사진 `p11-reading-retry-<방향>` |
+| M-3 세션 지문 줄 높이 | `ReadingPassage` 가 `onWordTap` 이 있을 때만(세션 지문) `leading-[2]`(24px × 2 = 48px, 184). `data-size-exempt` 그대로 | 사진(CI 2차) |
+| M-4 쪽지 닫기 | 쪽지가 열린 동안 `document` pointerdown — 낱말 단추 · 쪽지 밖을 누르면 닫음(209). 같은 낱말 다시 누르기도 그대로 | `reading.spec.ts` — 안내 줄을 누르면 쪽지 0 |
+| M-5 빈 상태 줄 | `session-frame.tsx:501` — 상태 글이 있을 때만 상태 줄 | 사진(CI 2차) |
+
+새 · 바뀐 사진 이름: `p11-reading-word-note-right` · `p11-reading-retry`(새), `p11-reading-level1-question-ask`(새 — 문항 1 고르기 전), `p11-reading-level1-question`(이제 문항 2 맞음 화면). 나머지 `p11-reading-*` 그대로 다시 찍힘.
+
+시험 수: 단위 488 그대로(바뀐 것은 화면 · e2e 단언). e2e 는 시험 수 그대로, 단언만 더함. `session.spec.ts` 첫 시험은 문항 1 을 처음 틀리므로 기대 점수를 (n − 1) ÷ n 으로 고침.
+
+다르게 한 것: I-2 의 '지문 그림 줄도 깨짐 대체'를 공용 그림 줄 자체가 아니라 선택 속성 `renderPicture` 로 세션 길에만 넣었다 — 지킬 것 '공용 조각을 고칠 때 선택 속성 · 세션 길에서만' · '시드 보기 화면 영향 없음'. 평가 지문(P12)도 같은 `SafePicture` 를 넘기면 '깨지면 안 그림'이 된다. `ReadingPassage` 의 P11 선택 속성은 이제 셋(onWordTap · openWord · renderPicture).
+
+관문(로컬):
+
+```
+pnpm lint                → Checked 290 files. No fixes applied.
+pnpm test                → Test Files 51 passed (51) · Tests 488 passed | 6 todo (494)
+pnpm build               → exit 0(빌드 CSS 에 landscape:[&_img]:size-28 · leading-[2] 규칙 확인)
+pnpm exec tsc --noEmit   → exit 0
+pnpm check:deps          → ✔ no dependency violations found (149 modules, 609 dependencies cruised)
+pnpm check:ids           → code-setting-unknown 0 · design-number 35(새 줄 0)
+pnpm check:bundle        → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+```
+
+CI 2차(컨트롤러, run 39074646676 · 1292c14): 통합 · e2e(새 단언 포함) · e2e-local 포함 **전부 성공**. 사진은 컨트롤러가 받아 재검토(des-p11)에 넘김.
+
+상태: DONE.
