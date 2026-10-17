@@ -475,6 +475,37 @@ describe("세션 시작 재판정", () => {
     }
   });
 
+  it("세션 틀: 지금 단원을 통과한 뒤에는 앞 회차에 끝낸 수업도 끝낸 수업이고 다시 하기로 연다(새 수업 별을 두 번 주지 않게)", () => {
+    // 앞 회차(회차 시작 전)에 끝낸 배정 1 — 통과 전에는 이 회차의 수업이 아니라 정규로 다시 열리지만,
+    // 통과한 뒤에는 지난 단원과 같게 '끝낸 적 있음'이라 다시 하기다(검토 review-p10-fix3-code N-1)
+    const earlier = session({
+      ref: ref(UNIT, "assigned", 1),
+      startedAt: BEFORE_ROUND,
+      completedAt: BEFORE_ROUND,
+    });
+    const before = input({ sessions: [earlier] });
+    expect(
+      judgeLessonStart(
+        before,
+        { level: LEVEL, ref: ref(UNIT, "assigned", 1) },
+        ctx,
+      ),
+    ).toMatchObject({ ok: true, kind: "regular" });
+    const passed = input({ sessions: [earlier], currentPassed: true });
+    expect(
+      judgeLessonStart(
+        passed,
+        { level: LEVEL, ref: ref(UNIT, "assigned", 1) },
+        ctx,
+      ),
+    ).toMatchObject({ ok: true, kind: "retry" });
+    const item = [...(lessonListState(passed).current?.front ?? [])].find(
+      (i) => i.ref.kind === "assigned" && i.ref.lessonNo === 1,
+    );
+    expect(item?.done).toBe(true);
+    expect(item?.untried).toBeUndefined();
+  });
+
   it("단어 익히기(practice) 상태에서는 잠긴 다음 단원 한 줄을 다시 쓰지 않는다", () => {
     const view = lessonListState(
       input({

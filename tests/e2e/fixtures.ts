@@ -3,7 +3,12 @@
 // 접근 쿠키 준비(plan-p03b 공용 변경 5): 모든 e2e 가 유효한 가족 접근 쿠키를 갖고 시작한다(proxy 가 /dev/* 도 막는다, C57).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test as base, expect } from "@playwright/test";
+import {
+  type BrowserContext,
+  test as base,
+  expect,
+  type Page,
+} from "@playwright/test";
 import {
   type SpeechSettings,
   speechSettingsFrom,
@@ -45,5 +50,21 @@ export const test = base.extend<{ speechScript: SpeechScript }>({
     await use(page);
   },
 });
+
+/**
+ * 그 대본의 가짜 음성을 넣은 새 쪽(검토 review-p10-fix2-code N-2). 대본은 이름(tests/fixtures/speech/scripts/<이름>.json)
+ * 또는 시험 안에서 만든 대본이다. 기본 page 와 달리 대본을 쪽마다 바꿀 때 쓴다.
+ */
+export async function speechPage(
+  context: BrowserContext,
+  script: SpeechScript | string,
+): Promise<Page> {
+  const page = await context.newPage();
+  await page.addInitScript(
+    installFakeWebSpeech,
+    typeof script === "string" ? loadSpeechScript(script) : script,
+  );
+  return page;
+}
 
 export { expect };

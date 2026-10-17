@@ -1,5 +1,5 @@
 // 홈 e2e(4절 홈 표 · AC-2a · AC-5c, plan-p10b 증명 표 — 차례 3 몫). 실제 e2e DB(시험용 시드, 완전성 1단계)를 쓴다.
-// 배치 평가 화면은 차례 5 라 '내 단계 찾기'는 그때까지 누를 수 없고, 수업 목록은 차례 4 에 생긴다(여기서는 가는 곳만 본다).
+// '내 단계 찾기'는 배치 평가 화면(차례 5)으로, 카드는 수업 목록(차례 4)으로 간다(여기서는 가는 곳과 첫 화면만 본다).
 // 설계 숫자(최근 성적 칸 수 · 최소 수업 수)는 e2e DB 의 단원 복사본에서 읽는다.
 
 import type { Page } from "@playwright/test";
@@ -7,10 +7,9 @@ import { and, eq } from "drizzle-orm";
 import { learningDayOf } from "../../src/core/learning-day";
 import { unitProgress } from "../../src/db/schema/learning";
 import { settings } from "../../src/db/schema/operations";
-import { installFakeWebSpeech } from "../../src/lib/speech/fake-web-speech";
 import { addAccessCookie } from "./access-cookie";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
-import { expect, loadSpeechScript, test } from "./fixtures";
+import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
 
 const T = {
@@ -22,6 +21,7 @@ const T = {
   start: "시작!",
   chooseStory: "이야기 고르기",
   talkSoon: "토리가 준비 중이에요. 곧 만나요",
+  placementStart: /^처음이라 내게 맞는 단계를 찾아요/,
 } as const;
 const AREAS = ["reading", "writing", "speaking", "talk"] as const;
 const MIC_STATE_KEY = "momo.mic.v1";
@@ -103,15 +103,27 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
     "모모의 공부 보드",
   );
 
-  // 배치 평가 전: 단계 자리에 '내 단계 찾기', 회화는 말하기 시작 단계 전 문구(배치 화면은 차례 5 — 그때까지 누를 수 없음)
+  // 배치 평가 전: 단계 자리에 '내 단계 찾기'이고 카드는 그 영역 배치 평가로, 회화는 말하기 배치 평가로 간다(4절 홈 표)
   await resetHousehold();
   await insertHousehold();
   await page.goto("/");
   for (const area of ["reading", "writing", "speaking"]) {
     await expect(card(page, area)).toContainText(T.findLevel);
-    await expect(card(page, area)).toHaveAttribute("aria-disabled", "true");
+    await expect(card(page, area)).toHaveAttribute(
+      "href",
+      `/${area}/placement`,
+    );
   }
   await expect(card(page, "talk")).toContainText(T.needsSpeaking);
+  await expect(card(page, "talk")).toHaveAttribute(
+    "href",
+    "/speaking/placement",
+  );
+  // 눌러 들어가면 배치 평가 시작 화면(4절 시작 문구)이다
+  await card(page, "reading").click();
+  await expect(page).toHaveURL(/\/reading\/placement$/);
+  await expect(page.getByText(T.placementStart)).toBeVisible();
+  await expect(page.getByRole("button", { name: "시작" })).toBeVisible();
 });
 
 test("AC-2a 부모 확인 대기 영역은 다시 하기 하나로, 단계 평가 세션 하나만 끝낸 영역도 오늘 완료가 켜진다", async ({
@@ -191,12 +203,8 @@ test.describe("인식 API 없음", () => {
       );
     }
     // 마이크 권한을 거부한 기기: 인식 API 는 있으나 이 브라우저에 '쓸 수 없음'이 저장됨
-    const denied = await context.newPage();
     // 새 쪽에도 인식 API 가 있는 가짜를 넣어 닫힘 까닭을 저장된 '쓸 수 없음' 하나로 고정한다(검토 review-p10-3-code I-1)
-    await denied.addInitScript(
-      installFakeWebSpeech,
-      loadSpeechScript("default-ok"),
-    );
+    const denied = await speechPage(context, "default-ok");
     await denied.addInitScript((key) => {
       localStorage.setItem(
         key,
@@ -264,11 +272,7 @@ test.describe("audio-capture 한 번", () => {
     // (2) 권한 거부가 저장된 기기: 배치 전이어도 말하기 · 회화 카드는 마이크 문구가 먼저(4절 '이 행이 배치 평가 전 행보다 먼저')
     await resetHousehold();
     await insertHousehold();
-    const denied = await context.newPage();
-    await denied.addInitScript(
-      installFakeWebSpeech,
-      loadSpeechScript("default-ok"),
-    );
+    const denied = await speechPage(context, "default-ok");
     await denied.addInitScript((key) => {
       localStorage.setItem(
         key,
@@ -288,21 +292,13 @@ test.describe("audio-capture 한 번", () => {
     // (3) 인식 API 가 없던 기기는 저장하지 않고 홈 진입마다 다시 판정한다: 없을 때 닫히고, 생긴 뒤 들어오면 열린다
     const noApi = await browser.newContext({ baseURL });
     await addAccessCookie(noApi, baseURL);
-    const first = await noApi.newPage();
-    await first.addInitScript(
-      installFakeWebSpeech,
-      loadSpeechScript("no-recognition-api"),
-    );
+    const first = await speechPage(noApi, "no-recognition-api");
     await first.goto("/");
     await expect(card(first, "speaking")).toContainText(T.needsMic);
     expect(
       await first.evaluate((key) => localStorage.getItem(key), MIC_STATE_KEY),
     ).toBeNull();
-    const second = await noApi.newPage();
-    await second.addInitScript(
-      installFakeWebSpeech,
-      loadSpeechScript("default-ok"),
-    );
+    const second = await speechPage(noApi, "default-ok");
     await second.goto("/");
     await expect(card(second, "speaking")).toContainText(T.findLevel);
     await expect(card(second, "speaking")).not.toContainText(T.needsMic);

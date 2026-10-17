@@ -510,3 +510,199 @@ e2e 추가 단언(컨트롤러 핫픽스 확인): AC-1c 차례 시험에 '이름
 남은 우려:
 - parent-check 사진의 하던 수업은 지난 단원(단원 1)의 진행 세션이다. 지난 단원 수업을 이어 하는 것도 '여기부터 해요'가 붙는지는 검토에서 볼 것.
 - 쓰기 6단계 frame 통합 시험은 시드 수업 칸이 1단계까지라 읽기 칸을 복사해 넣고 규격 행 값을 바꿨다가 되돌린다.
+
+## 차례 5(답 맞춤 · 답 입력 조각 · 배치 평가 — 검토 묶음 A3 · A2)
+
+순서: 컨트롤러의 순서 바꿈 알림(차례 5 → 6 → fix 3)은 fix 3 이 끝난 뒤에 왔다. fix 3 은 이미 끝나 있었고, 코드 I-1(`currentPassed` · `paused` 축소)도 그때 들어갔다(위 'fix 3' 소절). 그래서 차례 6 에서 따로 할 일은 없다.
+
+### 바뀐 파일
+
+| 파일 | 무엇 |
+|---|---|
+| `src/core/answer/check.ts`(새) | `checkAnswer` · `joinCards` · `normalizeTyped`. 고르기 · 글자 타일 · 카드(문장 부호 카드는 앞에 붙임) · 쓴 답(C73: 굽은 따옴표 · 겹 빈칸 · 문장 부호 앞 빈칸 · 앞뒤 공백 정규화, 낱말 답은 대소문자 무시, 문장 답은 그대로) · 따라 말하기(시도 가운데 가장 높은 일치율 ≥ 기준, 기준이 없으면 던짐) · 몰라요 · 답 꼴 안 맞음 |
+| `src/core/answer/display.ts`(새, plan 표 밖) | 화면에 넘기는 문항 꼴 `displayItemOf` · `answerShapeOf`. 정답 칸(answerNo · accepted · build-tiles 의 word)을 빼고 그림 보기는 그림 정보로 바꾼다 |
+| `src/core/placement/adaptive.ts`(새) | `nextPlacementStep` · `slotKey`. 답 기록을 다시 돌려 다음 차례 · 끝 · 판정을 센다(C71 일반화 · 건너뛴 단계 · 끝 셋 · 범위 끝 상한 · 예비 문항 · 실패 3회는 세지 않음 · 기록이 차례와 어긋나면 던짐) |
+| `src/core/placement/finish.ts`(새, plan 표 밖) | `placementFinishOf`. 트랙(알파벳이면 단원 0) · 단원 들기(첫 실행과 같은 `unitEntryOf`) · 회화 min(시작, cap) · alphabet_sound · speaking_placement_listening |
+| `src/core/profile/start.ts`(차례 2 파일) | `unitEntryOf` 를 뽑아냄(값 12 '값 8 과 같은 함수'). `householdRowsOf` 가 그것을 부른다. `TrackSource` 에 `placement`, `AlertRow` 형, `PLACEMENT_KEYS` 를 내보냄 |
+| `src/lib/mic-state.ts`(차례 2 파일) | `micNoticeSeen` · `markMicNoticeSeen`(4절 '처음 마이크 안내는 기기마다 한 번') |
+| `src/server/seed-lists.ts`(새) | P9c dae3afd 의 같은 이름 파일을 글자 그대로 옮김(정할 것 타 — 합칠 때 같은 내용이라 부딪치지 않음) |
+| `src/server/placement/index.ts`(새) | `readPlacementPage` · `beginPlacement` · `submitPlacementAnswer` · `recordPlacementMicAlert` · `seedHomophones` |
+| `src/server/actions/placement.ts`(새) | `startPlacement` · `answerPlacement` · `reportPlacementMic`(첫 문장 `await requireAccess()`) |
+| `src/components/answer/choice.tsx` · `tiles.tsx` · `typing.tsx` · `repeat.tsx`(새) | 답 조각 넷. 채점하지 않고 `onAnswer` 하나만 |
+| `src/app/(child)/[area]/placement/page.tsx` · `placement-flow.tsx`(새) | 배치 화면 |
+| `src/app/(child)/home-cards.tsx`(차례 3 파일) | `PLACEMENT_OPEN` 상수를 지우고 배치 전 카드를 늘 `/<영역>/placement` 링크로 |
+| `tests/e2e/home.spec.ts`(차례 3 파일) | AC-2a 첫 시험: 배치 전 카드 셋의 href, 회화 카드의 `/speaking/placement`, 읽기 카드를 눌러 시작 화면까지 |
+| 시험(새) | `tests/unit/answer-check.test.ts`(6) · `tests/unit/placement.test.ts`(11) · `tests/integration/placement.test.ts`(8) · `tests/e2e/placement.spec.ts`(7) |
+
+### 시험 · 빨강 먼저
+
+- 단위 `answer-check`(6)와 `placement`(적응 9 + 결과 행 2)는 모듈이 없는 빨강을 먼저 봤다. 그 뒤 구현해 초록이 됐다.
+- 통합 `placement`(8)와 e2e `placement`(7) · `home` AC-2a 는 아직 한 번도 돌리지 못했다(아래 '막힌 것').
+
+### 다르게 한 것과 까닭
+
+1. **화면 자료에서 정답 칸을 뺐다**(`display.ts`, plan 표 밖 파일). 조각은 P5b 표시 조각 대신 누르는 보기 · 타일을 직접 그린다. P5b 조각은 누를 수 없는 꼴이기 때문이다. 문항 몸통에는 P5b `ReadingPassage` · `EnglishLine` · `VocabPicture` · `FrameText` 를 쓴다. 받아쓰기와 빈 글자 채우기는 소리 자리 때문에 낱말 글이 실린다.
+2. **결과 행을 순수 함수 파일로 뺐다**(`finish.ts`, plan 표 밖). 단원 들기는 첫 실행과 같은 `unitEntryOf` 를 쓴다. 그래서 `start.ts` 를 조금 고쳤다.
+3. **placement_level 은 판정한 시작 단계로 둔다**. 넘은 최고 단계가 아니다.
+4. **실패 3회 난 따라 말하기 시도는 문항 수 상한에도 넣지 않는다**. 틀림으로 세지 않는 것과 같은 결이다.
+5. **결과 알림은 트랜잭션 안에서 바로 넣는다**(첫 실행 저장과 같은 꼴). 한 영역 배치는 한 번만 끝나므로 같은 기준 키의 앞선 알림이 없다. 마이크 알림(mic_unavailable · mic_stalled)은 `createAlertOnce` 로 그 학습일에 종류마다 한 번이다.
+6. **첫 마이크 안내 화면은 이 기기에서 처음일 때만 보인다**. 그 뒤 말하기 배치는 '시작'에서 바로 문항으로 간다. 권한 묻기는 첫 '말하기'가 한다.
+7. **동음이의어 목록 파일이 없으면 빈 묶음으로 본다**. 개발용 · e2e 길은 시드 목록 파일이 없다. 규격이 틀린 파일은 던진다.
+8. **'여섯 번 이어진 실패'(마이크가 멈춤)는 배치에 넣지 않았다**. 한 문항에서 3회 실패하면 남은 자리가 듣고 고르기가 되어 여섯 번에 닿지 않는다. 감시 타이머 멈춤(stalled)은 넣었다.
+9. **닿지 않은 답은 같은 시도 id 로 다시 보낸다**. 끊기면 오류 줄과 '다음' 단추가 나오고, 누르면 같은 시도 id 로 보낸다. 기기 대기열(attempt-queue)은 차례 6 에서 합친다.
+10. 쓴 답 정규화에서 문장 부호 앞 빈칸을 지운다('She has a cat .' 은 맞음). C73 '그 밖 문장 부호 꼴은 정규화'를 따옴표 꼴과 빈칸으로 읽었다.
+
+### 정본 밖 문구
+
+배치 · 쓰기 조각 행에 있는 문구만 썼다: '시작' · '다음' · '마이크 확인' · '말하기' · '다시 듣기' · '처음부터' · '다 놓았어요' · '대문자' · '지우기' · '띄우기'. 나머지는 4절 · 3.2 · 7절 · C72 문구다. 표 밖에 새로 쓴 문구는 없다.
+
+### 알릴 것(요청자)
+
+- 시험용 시드라 배치 결과는 늘 1단계다(seed.complete_through_level 1). 문항은 단계마다 하나다. 그래서 다 맞히면 3 → 5 → 7 → 9 → 11 → 12 로 여섯 문항, 다 틀리면 3 → 2 → 1 로 세 문항이다.
+- 요청자 집이 이미 시작 단계를 골랐으면 홈에 '내 단계 찾기' 카드가 없다. 배치를 보려면 시작 단계를 고르지 않은 집이어야 한다(컨트롤러가 안내).
+- 그림 파일이 없어 그림 자리에 뜻 글이 보인다. 낱말은 지어낸 말이다.
+
+### 막힌 것(환경)
+
+- 00:44 부터 이 컴퓨터에서 SysV 공유 메모리 구획을 하나도 만들 수 없다. perl `shmget` 56바이트도 ENOMEM 이다. 그래서 새 Postgres(통합 시험 · e2e 임시 DB · 실기용 임시 DB)가 initdb 에서 끝난다.
+- 만든 프로세스가 없고 붙은 곳이 0인 고아 구획 하나(22:47 생성)를 00:44 에 지웠더니 한 번은 돌았다(첫 실행 통합 14 초록 — `start.ts` 리팩터링 확인). 그 뒤 다시 막혔다. 지금 목록에 보이는 구획은 54331 하나뿐이다.
+- 컨트롤러 결정(01:2x): 통합 · e2e 는 CI(ci/p10-c5 가지)에서 돌린다. 54331 은 건드리지 않는다. 실기 사진은 재부팅 뒤로 미룬다.
+- 로컬에서 돌리지 못한 시험(CI 에서 돎):
+  - 통합 `tests/integration/placement.test.ts` 8: '배치 평가: 시작은 level_tests 에 placement.* 복사본 · 시작 개정을 남기고 …' · '배치 평가: 읽기 배치를 다 맞히고 끝내면 …' · '배치 평가: 1단계도 못 넘은 쓰기는 …' · 'AC-11b 말하기 배치 결과가 회화 트랙을 …' · '배치 평가: 예비 문항을 쓴 말하기 배치는 …' · 'AC-11d 진행 중 배치 평가는 session.resume_hours 가 지나도 …' · '배치 평가: 단계가 정해진 영역은 시작이 거부되고 …' · '배치 평가: 마이크 알림(mic_unavailable · mic_stalled)은 …'
+  - 통합 첫 실행 · 홈 · 수업 목록 등 나머지 통합(start.ts 리팩터링 뒤 첫 실행 14 만 00:44 에 로컬 초록)
+  - e2e `tests/e2e/placement.spec.ts` 7: 'AC-11d 배치 평가 시작 화면에 …' · 'AC-11d 배치 평가를 하다 멈추고 24시간 뒤 …' · 'AC-11c 따라 말하기 문항에서 첫 시도 일치율 0.6 · 둘째 0.85 …' · 'AC-11c · AC-5e 한 문항 인식이 두 시도를 합쳐 3회 …' · 'AC-11b 말하기 배치를 끝내면 …' · 'AC-11c 마이크를 쓸 수 없는 기기에서는 …' · '답 입력 조각: 쓰기 배치에서 …'
+  - e2e `tests/e2e/home.spec.ts` 'AC-2a 홈의 영역 카드 4개에 …'(href 단언 · 눌러 들어가기 추가)와 나머지 e2e 전부
+- 실기 사진(시작 · 마이크 확인 · 읽기 고르기 · 쓰기 타일 · 말하기 따라 말하기 · 듣고 고르기 · 결과 · 홈 '내 단계 찾기' 카드)은 재부팅 뒤.
+
+### 실행
+
+DB 없이 도는 관문: biome ci 0 · tsc 0 · test 351 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 42 → 38, AC-11a~d). 통합 · e2e 는 CI 에서(위 목록).
+
+## 차례 6(세션 틀 · 세션 시작 · 시도 대기열 — 검토 묶음 B3) — 동결 전까지의 몫
+
+fix 3 코드 I-1(`currentPassed` · `paused` 축소)은 fix 3 에서 이미 했다(위 'fix 3' 소절). 이 차례에서 다시 하지 않았다.
+
+### 바뀐 파일(새 파일만, 동결 파일은 손대지 않음)
+
+| 파일 | 무엇 |
+|---|---|
+| `src/core/session/preview.ts` | `previewWordsOf`(바탕: 새 단어면 시드 미리보기, 아니면 '안다'가 아닌 단원 단어 앞에서 k 개. 더함: 못 만난 단원 단어 전부) · `activitiesOf`(P5b 시드 보기 화면 차례, 회화는 빈 목록) · `Activity` 형 |
+| `src/lib/attempt-queue.ts` | 순수 `queueAdd` · `queueAccept` · `queuePending`. 감싼 `createAttemptQueue({ storage, send, onlineTarget })` 는 키 `momo.attempts.v1` 에 쌓고 곧바로 보낸다. 실패하면 남겨 두고 online · 다음 넣기 때 다시 보낸다. 받은 id 만 지우고, 저장소를 못 쓰면 메모리로만 쌓는다 |
+| `src/server/session/index.ts` | `startLessonSession` · `saveSessionAttempts` · `leaveLessonSession` · `loadSessionView` · `readSessionArea` |
+| `src/server/actions/session.ts` | `startLesson` · `saveAttempts` · `leaveSession`(첫 문장 `await requireAccess()`) |
+| `src/app/(child)/session/[id]/page.tsx` · `session-frame.tsx` | 세션 자리 · 세션 틀 화면 |
+| 시험 | `tests/unit/session-preview.test.ts`(5) · `tests/unit/attempt-queue.test.ts`(2) · `tests/integration/session-start.test.ts`(9) · `tests/e2e/session.spec.ts`(2) |
+
+### 시험 · 빨강 먼저
+
+- 단위 둘은 모듈이 없는 빨강을 먼저 봤다. 그 뒤 초록(7).
+- 통합 9 · e2e 2 는 로컬에서 못 돌린다(공유 메모리). CI 에서 돈다. 이름은 다음과 같다.
+  - 통합: 'AC-1b 세션을 여는 동안 AI 호출은 0회다(…)' · 'AC-2b 잠긴 다음 단원의 lesson_id 로 …' · 'AC-2e 진행 중 세션이 있는 영역에서 …' · 'AC-2e 세션 첫 활동에서 '홈'을 누르면 …' · '세션 틀: 같은 client_attempt_id 는 한 번만 저장된다' · '세션 틀: 다시 열면 저장한 시도 다음 활동부터 이어진다' · '세션 틀: 두 번째 기기에서 같은 영역을 열면 …' · '세션 틀: 판은 그 단원 회차의 시작 개정으로 …' · '세션 틀: seed.complete_through_level 보다 높은 단계와 …'
+  - e2e: '세션 틀: 첫 활동은 새 단어 미리보기이고 …' · '세션 틀: 첫 활동에서 '홈'을 누르면 세션 행이 지워지고 …'
+
+### 동결이 풀린 뒤 할 것(차례 4 파일 — fix 3 재검토 중)
+
+- 수업 목록 `lesson-board.tsx` 의 `SESSION_START_OPEN` 을 켠다. 수업을 고르면 `startLesson`, 확인 쪽지의 '새 수업 할래요'는 `confirmAbort: true` 로 부르고 `/session/<id>` 로 간다. 거부면 목록을 다시 그린다.
+- 지난 수업 쪽(`lessons/past/page.tsx`)의 글 상자 포스트잇도 같은 고르기로 바꾼다.
+- `tests/e2e/lesson-list.spec.ts` 에 세 가지를 더한다. AC-2b 에 '셋째 수업이 실제로 세션을 연다' 단언, AC-2e e2e('하던 수업이 있을 때 다른 수업을 고르면 … 묻는다'), AC-2f e2e('앞 배정 수업을 하지 않고 뒤 수업을 고르면 …', 작은 틀 배정 1 을 건너뛴 배정 2)다.
+- 실기 사진(세션 틀 활동 1 · 활동 2 · 마지막 활동 · 확인 쪽지 → 새 세션 · '하던 수업 이어 하기')은 재부팅 뒤 찍는다.
+
+### 다르게 한 것과 까닭
+
+1. **시작 재판정은 수업 목록 자료 함수 `readLessonList` 를 그대로 불러 입력을 모은다**. 목록과 같은 함수라 위험 3 을 막는다. 트랙 행 FOR UPDATE 는 트랜잭션 안에서 잡고, 목록 읽기는 바깥 연결로 한다. 동결 파일을 고치지 않으려는 것이다. 둘째 시작은 첫째가 커밋될 때까지 잠금에서 기다린 뒤 커밋된 진행 세션을 보고 이어 하기가 된다.
+2. **판 고르기**: 지금 · 통과한 단원은 그 단원 최신 회차의 시작 개정이다. 다시 하기는 처음 끝낸 세션의 seed_revision 으로 `readLessonsOfUnit` 를 읽어 그 개정의 가장 높은 정정을 쓴다. 변형은 다시 하기면 처음 변형이고, 그 밖은 프로필 묶음이며, 없으면 가장 낮은 변형이다.
+3. **saveAttempts 는 남의 세션 · 끝난 세션의 시도도 '받음'으로 돌려준다**(넣지는 않음). 기기 대기열이 비도록 하려는 것이고 plan 값 6 의 '버린다'와 같다. 꼴이 틀린 묶음은 invalid 다.
+4. **세션 화면 자료에는 수업 전체(정답 칸 포함)가 실린다**. 배치와 달리 P11 이 '틀리면 정답을 보여 주고 다시'에 정답을 쓴다. 그림은 낱말 id · 그림 키 사전으로 넘기고 화면이 P5b PictureLookup 을 만든다.
+5. **배치 평가는 시도 대기열을 쓰지 않는다**. 배치는 답마다 서버가 다음 문항을 정해 바로 답이 와야 하므로 '나중에 보내기' 대기열과 맞지 않는다. 같은 시도 id 로 다시 보내는 꼴(차례 5)을 그대로 둔다.
+6. 세션 e2e 를 새 파일 `tests/e2e/session.spec.ts` 로 두었다. 진행 세션을 DB 에 넣고 주소로 열어 틀만 본다. 수업 목록에서 시작하는 길은 동결이 풀린 뒤 `lesson-list.spec.ts` 에 더한다.
+
+### 알릴 것(요청자)
+
+- 둘째 활동부터는 보기만 하고 '다음'으로 넘어가는 틀이다. 활동마다 누르기 · 채점 · 완료는 P11 이 붙인다(위험 7).
+- 세션을 끝까지 넘겨도 완료 처리 · 별 · 결과 화면이 없다. 수업 목록으로 돌아가고 세션은 진행으로 남는다(P11 · P12).
+- 소리 자리(다시 듣기 · 읽어 주기)는 그리기만 하고 눌러도 소리가 나지 않는다(P11).
+
+### 실행
+
+DB 없이 도는 관문: tsc 0 · biome ci 0 · test 358 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 38 → 35, AC-1b · 2e · 2f). 통합 · e2e 는 CI 에서 돈다.
+
+## fix 4(재검토 Minor · 로마자) — 동결 전까지의 몫
+
+| 지적 | 고친 곳 | 시험 · 빨강 먼저 |
+|---|---|---|
+| 로마자 제안(13절 C74) | 새 `src/core/profile/romanize-spellings.ts`(조사 보고 5절 JSON 132 음절 그대로, 출처 · 기준일 주석). `romanize.ts` 는 음절마다 표를 먼저 찾고, 없으면 고시 규칙으로 적는다. ㄹㄹ 은 표 철자에도 l 이다. 성 빼기 · 붙여 쓰기 · 첫 글자 대문자는 그대로다. 첫 실행의 영어 이름 칸 자동 채움(`englishShown`)이 이 함수를 그대로 쓴다 | 단위 'AC-1c 로마자: 음절별 관용 철자 표(여권 통계 1위, 13절 C74)를 먼저 쓰고 …'(현우 Hyunwoo · 정우 Jungwoo · 은우 Eunwoo · 영희 Younghee · 하윤 Hayun · 민준 Minjun, 표 132 음절 전부, 표 밖 빛 · 꽃 · 뫼는 고시, 별라 Byeolla) — **빨강 먼저 봄**. 기존 고시 보기 시험(한복남 Boknam · 홍빛나 Bitna)은 그대로 초록이다 |
+| review-p10-fix2-design N-4 | `first-run-flow.tsx` 시작 단계 줄: 단추 열을 14rem 으로 고정(`LEVEL_ROW`), 단추는 그 열 너비(`LEVEL_BUTTON`). 예시 줄이 같은 자리에서 시작한다. 컨트롤러 핫픽스 두 곳(defaultValue · Fragment key)은 그대로다 | 사진은 재부팅 뒤 |
+| review-p10-fix2-code N-1 | e2e 'AC-1c 한글 이름을 넣으면 영어 이름 칸이 …'에 단언을 더함: 아바타 화면에서 '이전'으로 돌아오면 한글 이름 칸 · 영어 이름 칸이 다시 채워진다 | CI 에서 |
+| review-p10-fix2-code N-2 | `tests/e2e/fixtures.ts` 에 `speechPage(context, script \| 이름)` 도우미를 두었다. `home.spec` 네 자리와 `placement.spec` 의 손으로 넣던 꼴을 그것으로 바꿨다 | CI 에서 |
+
+### 동결이 풀린 뒤 할 것(차례 4 파일 · board.tsx)
+
+- review-p10-fix3-design N-5: 확인 쪽지 초점 가두기(`board.tsx` ConfirmSheet — `showModal()` 또는 뒤 화면 `inert`).
+- N-6: 조건 줄을 숨긴 잠긴 단원에 숨은 글 '잠긴 단원'(`lesson-board.tsx`).
+- review-p10-fix3-code N-1: 통과한 지금 단원에서 앞 회차에 끝낸 수업이 retry 임을 못 박는 단위 시험(`tests/unit/lesson-list-state.test.ts`).
+- N-2: 맨 위 포스트잇(하던 수업 이어 하기 · 첨삭 보기 · 단계 평가)의 고정 이름을 빼서 '여기부터 해요' · 수업 제목이 이름에 들게(`lesson-board.tsx`).
+- 사진(시작 단계 화면 세로 · 가로 · 확인 쪽지 초점 · 이름 화면 자동 채움)은 재부팅 뒤 찍는다.
+
+### 실행
+
+DB 없이 도는 관문: tsc 0 · biome ci 0 · test 359 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 35). 통합 · e2e 는 CI 에서 돈다.
+
+## 차례 6 나머지 · 차례 5 CI e2e 고침(동결 풀린 뒤)
+
+### 차례 5 CI e2e 실패 넷의 원인과 고침(run 39049250946)
+
+넷 모두 느린 CI 에서 드러난 **시험 쪽 경쟁**이었다. 가짜 음성 대본의 침묵 3초나 120초 상한과는 관계가 없다. 로그에 시간 초과로 끝난 듣기가 없다.
+
+| 실패 | 원인 | 고침 |
+|---|---|---|
+| first-run.spec AC-1c 로마자(PIN 뒤 '다음' 꺼짐) | 하이드레이션 전에 PIN 칸을 채워 React 상태가 비었다 | `fillPin` 이 PIN 칸 초점(마운트 뒤 효과가 옮김)을 기다린 뒤 채운다 |
+| placement.spec AC-11d 몰라요('문제 4' 기대) | 몰라요를 누른 직후 앞 문항이 남은 순간에 '다음 화면'을 셌다. 결과가 났는데 한 번 더 돌았다 | `nextScreen(page, 앞 문항 id)`: 앞 문항이 사라지고 문항 · 결과 하나가 보일 때까지 기다린다. 모든 답 보내기가 이것을 쓴다 |
+| placement.spec AC-11c · AC-5e(예비 문항이 아님) | 셋째 실패 직후 아직 본 문항이 보이는데 예비로 확인했다 | 같은 `nextScreen` |
+| placement.spec AC-11b('0단계' 기대) | 결과가 나기 전에 트랙을 DB 에서 읽었다(level 비어 0) | 결과 화면이 보인 뒤에 읽는다(`done` 단언) |
+
+더해서 배치 · 세션 · 수업 목록 · 지난 수업 화면에 하이드레이션 끝 표시(`data-hydrated`)를 두었다. 시험은 누르기 전에 그것을 기다린다. 흔들린 lesson-list 초점 시험(재시도에서 통과)은 fix 4 N-5(확인 쪽지 초점 가두기)에서 다시 본다. 수업 목록 하이드레이션 기다림은 지금 더했다.
+
+### 차례 6 나머지
+
+| 파일 | 무엇 |
+|---|---|
+| `src/app/(child)/[area]/lessons/use-lesson-start.ts`(새) | 수업 고르기 → `startLesson`. 열리면 `/session/<id>`, needs_confirm 이면 쪽지, unavailable 이면 오류 줄(C72 '지금은 저장할 수 없어요…' · 7절 끊김 문구), 그 밖 거부면 목록을 다시 그린다(router.refresh) |
+| `lesson-board.tsx` | `SESSION_START_OPEN` 을 지우고 세션 시작을 켰다. 하던 수업과 다른 수업이면 쪽지를 열고, '새 수업 할래요'는 `confirmAbort: true` 로 연다. 맨 위 '하던 수업 이어 하기'는 그 세션으로 간다. 확인 문구 셋은 훅 파일로 옮겼다(같은 글자). 하이드레이션 표시를 두었다 |
+| `lessons/past/past-lessons.tsx`(새) · `past/page.tsx` | 지난 단원 수업 포스트잇을 누르면 같은 시작 길로 간다(서버가 needs_confirm 이면 쪽지) |
+| `tests/e2e/lesson-list.spec.ts` | AC-2b 에 '셋째 수업을 누르면 그 수업 세션이 실제로 열린다' 단언(장부). 지난 수업 시험에 '안 해 본 수업을 누르면 untried 세션'. 새 'AC-2e 하던 수업이 있을 때 다른 수업을 고르면 …를 묻는다'(쪽지 동안 그대로 → 확인 뒤 이전 세션 aborted · 새 세션 · 이어 하기 포스트잇은 그 세션으로). 새 'AC-2f 앞 배정 수업을 하지 않고 뒤 수업을 고르면 …'. 하이드레이션 기다림 |
+
+다르게 한 것: **AC-2f e2e 는 plan 의 '배정 1 을 건너뛴 배정 2' 대신 '배정 1 · 2 를 건너뛴 다지기'로 본다**. 시험용 시드(작은 틀)는 배정 2 의 단원 단어에 배정 1 의 새 단어가 없어 더해질 단어가 없기 때문이다. 다지기의 단원 단어에는 배정 1 · 2 의 새 단어가 다 있다. 시험이 그 겹침이 비어 있지 않음을 먼저 단언한다. 단위 시험(AC-2f 둘)은 plan 글자 그대로 배정 8 → 다지기 9 · 배정 3 → 4 다.
+
+실행: tsc 0 · biome ci 0 · test 359 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 35). 통합 · e2e(차례 5 · 6 · 이 고침)는 다음 CI 가지에서 돈다.
+
+### fix 4 나머지(동결 풀린 뒤)
+
+| 지적 | 고친 곳 | 시험 · 빨강 먼저 |
+|---|---|---|
+| review-p10-fix3-design N-5 확인 쪽지 초점 가두기 | `board.tsx` ConfirmSheet 의 키 처리: Tab · Shift+Tab 이 쪽지 안 단추 사이를 맴돈다. 열림 초점(첫 단추) · Esc 취소 · 닫힌 뒤 돌려놓기(부르는 쪽)는 그대로다. board.tsx 가 훅 없는 공용 파일이라 `showModal()` 대신 키 처리로 했다. 덮개가 뒤 화면을 덮어 누르기는 막힌다 | e2e '수업 목록: 확인 쪽지가 열리면 …'에 Tab · Tab · Shift+Tab 단언을 더함(CI). 이 시험의 흔들림(CI 재시도 통과)은 수업 목록 하이드레이션 기다림을 더해 줄였다 |
+| N-6 잠긴 단원 숨은 글 | `lesson-board.tsx`: 조건 줄이 없을 때 숨은 글 '잠긴 단원'(C72 표) | e2e 부모 확인 대기 시험에 단언(CI) |
+| review-p10-fix3-code N-1 | 시험만 더함 | 단위 '세션 틀: 지금 단원을 통과한 뒤에는 앞 회차에 끝낸 수업도 끝낸 수업이고 다시 하기로 연다(…)'. 구현이 이미 맞아 처음엔 초록이었다. 통과 조건(`!input.currentPassed`)을 잠시 빼서 빨강을 확인하고 되돌렸다 |
+| review-p10-fix3-code N-2 | 코드 변경 없음 — 맨 위 포스트잇은 fix 3 에서 이미 고정 이름(label)을 뺐다 | e2e 부모 확인 대기 시험에 '하던 수업 이어 하기' 포스트잇의 읽히는 이름이 '여기부터 해요 … 하던 수업 이어 하기 … <수업 제목>'임을 단언(CI) |
+
+실행: tsc 0 · biome ci 0 · test 360 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 35). 통합 · e2e 는 다음 CI 가지에서 돈다. 사진(시작 단계 화면 세로 · 가로 · 확인 쪽지 초점 · 이름 화면 자동 채움)은 재부팅 뒤 찍는다.
+
+### CI 3차(4d0ed4f) e2e 실패 일곱 고침
+
+`tests/e2e/placement.spec.ts` 의 `openPlacement` 도우미 안 첫 줄이 자기 자신을 불렀다(스택 넘침). 원인은 `page.goto("/<영역>/placement")` 를 도우미 호출로 바꾸는 정규식 치환이 도우미 몸통의 `goto` 까지 바꾼 것이다. 몸통을 `page.goto(\`/${area}/placement\`)` 로 되돌렸다. 다른 도우미(`boardReady` · `openedSession` · `nextScreen` · `runsPage`)는 손으로 써서 같은 일이 없다. biome ci 0 · tsc 0. e2e 는 넷째 CI 에서 돈다.
+
+## 로컬에서 못 돌린 시험 → CI 결과(차례 5 · 6 · fix 4)
+
+로컬은 SysV 공유 메모리 고갈로 새 Postgres 가 뜨지 않아(00:44~), 통합 · e2e 는 ci/p10-c5 가지(초안 PR #1, ubuntu embedded-postgres)에서 돌렸다. 4차 칸은 결과가 오면 채운다.
+
+| 시험 파일 | 몫 | 시험 수 | CI 1차 1d637e4(run 39049250946) | CI 3차 4d0ed4f(run 39050999951) | CI 4차 |
+|---|---|---|---|---|---|
+| `tests/integration/placement.test.ts` | 차례 5 | 8 | 통과 | 통과 | (대기) |
+| `tests/integration/session-start.test.ts` | 차례 6 | 9 | — | 통과 | (대기) |
+| 그 밖 통합 전부 | 차례 1~4 · start.ts 리팩터링 | — | 통과 | 통과 | (대기) |
+| `tests/e2e/placement.spec.ts` | 차례 5 | 7 | 실패 3(시험 쪽 경쟁) · 통과 4 | 실패 7(도우미 자기 호출) | (대기) |
+| `tests/e2e/first-run.spec.ts` | fix 4 N-1 단언 · PIN 하이드레이션 기다림 | — | AC-1c 로마자 실패 1(하이드레이션 전 채움) | 통과 | (대기) |
+| `tests/e2e/home.spec.ts` | 차례 5 AC-2a · fix 4 N-2 도우미 | — | 통과 | 통과 | (대기) |
+| `tests/e2e/lesson-list.spec.ts` | 차례 6 AC-2b · 2e · 2f · 지난 수업 · fix 4 N-5 · N-6 · N-2 | — | 초점 시험 흔들림 1(재시도 통과) | 통과 | (대기) |
+| `tests/e2e/session.spec.ts` | 차례 6 | 2 | — | 통과 | (대기) |
+
+CI 2차(동결 밖 몫만 담은 둘째 커밋)는 3차가 덮어 이 표에 따로 적지 않는다. 3차 e2e 는 실패 7 · 통과 39 였고, 실패는 모두 `placement.spec.ts` 의 한 원인이었다.

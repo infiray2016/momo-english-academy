@@ -12,8 +12,6 @@ import { micUsable } from "@/lib/mic-state";
 import { cn } from "@/lib/utils";
 import type { HomeCard } from "@/server/home";
 
-/** 배치 평가 화면이 열렸는가(차례 5 에서 참으로 바꾼다). */
-const PLACEMENT_OPEN = false;
 /** 1-가 회화 카드가 가는 곳(C50 (1) — '토리가 준비 중이에요'). 1-나에서 수업 목록으로. */
 const TALK_PATH = "/talk";
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "right"];
@@ -210,9 +208,7 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
               key={card.area}
               tone={card.area}
               tilt={tilt}
-              {...(pending
-                ? {}
-                : { href: `/${target}/placement`, disabled: !PLACEMENT_OPEN })}
+              {...(pending ? {} : { href: `/${target}/placement` })}
             >
               <span data-home-card={card.area} className="contents">
                 <GateBody card={card} />

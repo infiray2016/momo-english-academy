@@ -352,6 +352,8 @@ export function StatusLine({
 /**
  * 확인 쪽지: 한 문장과 단추 둘(P10b 수업 목록이 쓴다). open 일 때만 그린다.
  * 열리면 초점이 첫 단추(취소 쪽 — 하던 일을 지키는 쪽)로 가고 Esc 는 취소다. 닫힌 뒤 초점 돌려놓기는 부르는 쪽이 한다.
+ * Tab · Shift+Tab 은 쪽지 안 단추 사이를 맴돈다 — 뒤 화면으로 나가 Esc 가 안 듣는 일이 없게(화면 검토 review-p10-fix3-design N-5).
+ * 덮개가 화면 전체를 덮어 뒤 화면은 눌리지 않는다.
  */
 export function ConfirmSheet({
   open,
@@ -379,6 +381,21 @@ export function ConfirmSheet({
           if (e.key === "Escape") {
             e.preventDefault();
             onCancel();
+            return;
+          }
+          if (e.key !== "Tab") return;
+          const buttons = [
+            ...e.currentTarget.querySelectorAll<HTMLElement>("button"),
+          ];
+          const first = buttons[0];
+          const last = buttons.at(-1);
+          if (!first || !last) return;
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
           }
         }}
         className="flex w-full max-w-xl flex-col gap-6 rounded bg-paper p-8 text-ink shadow-postit"

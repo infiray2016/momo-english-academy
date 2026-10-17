@@ -67,6 +67,8 @@ async function throughOf(): Promise<number> {
 
 async function fillPin(page: Page) {
   const pin = randomPin();
+  // 화면이 하이드레이션된 뒤(마운트 때 PIN 칸으로 초점을 옮김) 채운다 — 그 전에 채우면 상태가 비어 '다음'이 꺼진 채다(차례 5 CI)
+  await expect(page.getByLabel("PIN", { exact: true })).toBeFocused();
   await page.getByLabel("PIN", { exact: true }).fill(pin);
   await page.getByLabel(T.pinAgain).fill(pin);
   await next(page).click();
@@ -212,6 +214,12 @@ test("AC-1c 한글 이름을 넣으면 영어 이름 칸이 로마자로 먼저 
   await page.getByLabel(T.englishName).fill("");
   await expect(page.getByLabel(T.englishName)).toHaveValue("Tori");
   await page.getByLabel(T.displayName).fill("남궁모모");
+  await next(page).click();
+  // 뒤로 갔다 오면 이름 칸이 다시 채워진다(비제어 칸의 defaultValue 복원 — 검토 review-p10-fix2-code N-1)
+  await expect(step(page)).toHaveAttribute("data-first-run-step", "avatar");
+  await page.getByRole("button", { name: "이전" }).click();
+  await expect(page.getByLabel(T.displayName)).toHaveValue("남궁모모");
+  await expect(page.getByLabel(T.englishName)).toHaveValue("Momo");
   await next(page).click();
   await finishFrom(page, "avatar");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(

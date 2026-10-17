@@ -2,6 +2,7 @@
 // 설계 숫자는 TEST_SETTINGS · loadableSettings() 에서 읽는다. 이름은 앱 안 이름(모모 · 토리)과 고시의 보기만 쓴다.
 import { describe, expect, it } from "vitest";
 import { romanizeGivenName } from "@/core/profile/romanize";
+import { GIVEN_NAME_SPELLINGS } from "@/core/profile/romanize-spellings";
 import {
   AVATARS,
   canDoExample,
@@ -63,6 +64,30 @@ describe("로마자", () => {
     expect(romanizeGivenName(" 모 모! ")).toBe("Momo");
     expect(romanizeGivenName("Tori")).toBe("");
     expect(romanizeGivenName("")).toBe("");
+  });
+
+  it("AC-1c 로마자: 음절별 관용 철자 표(여권 통계 1위, 13절 C74)를 먼저 쓰고 붙여 써서 첫 글자만 대문자이며 표에 없는 음절은 고시대로다", () => {
+    // 조사 보고 docs/research/2026-10-17-korean-given-name-romanization-common-spellings.md 3절의 보기
+    expect(romanizeGivenName("현우")).toBe("Hyunwoo");
+    expect(romanizeGivenName("정우")).toBe("Jungwoo");
+    expect(romanizeGivenName("은우")).toBe("Eunwoo");
+    expect(romanizeGivenName("영희")).toBe("Younghee");
+    expect(romanizeGivenName("하윤")).toBe("Hayun");
+    expect(romanizeGivenName("민준")).toBe("Minjun");
+    // 성 빼기는 그대로(세 글자 → 뒤 두 글자)
+    expect(romanizeGivenName("김현우")).toBe("Hyunwoo");
+    // 표의 음절은 표의 철자 — 고시와 일부러 다른 것(강 kang · 이 yi · 오 oh)
+    for (const [syllable, spelling] of Object.entries(GIVEN_NAME_SPELLINGS)) {
+      expect(romanizeGivenName(`모${syllable}`)).toBe(`Mo${spelling}`);
+    }
+    // 표에 없는 음절은 고시 표기 일람대로(빛 bit · 꽃 kkot · 뫼 moe)
+    for (const syllable of ["빛", "꽃", "뫼"]) {
+      expect(GIVEN_NAME_SPELLINGS[syllable]).toBeUndefined();
+    }
+    expect(romanizeGivenName("빛꽃")).toBe("Bitkkot");
+    expect(romanizeGivenName("뫼빛")).toBe("Moebit");
+    // ㄹㄹ 은 ll 그대로(표의 r 첫소리도 앞 끝소리가 ㄹ 이면 l)
+    expect(romanizeGivenName("별라")).toBe("Byeolla");
   });
 
   it("로마자: 표기 일람대로 첫소리 · 가운뎃소리 · 끝소리를 적고 ㄹㄹ 은 ll 이다", () => {

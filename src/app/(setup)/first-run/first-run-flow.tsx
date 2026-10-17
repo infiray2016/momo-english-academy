@@ -49,6 +49,9 @@ import { cn } from "@/lib/utils";
 import { checkEnglishName, completeFirstRun } from "@/server/actions/first-run";
 import type { FirstRunView } from "@/server/profile";
 
+/** 시작 단계 줄: 단추 열 너비(화면 꼴 값 — '고르지 않음' + 체크 표가 22px 글자로 들어가는 너비) · 예시 줄. */
+const LEVEL_ROW = "grid grid-cols-[14rem_1fr] items-center gap-4";
+const LEVEL_BUTTON = "w-full justify-start";
 const APP_NAME = "모모 잉글리시 아카데미";
 const HOME_PATH = "/";
 
@@ -636,8 +639,10 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
               <p className="min-h-14 content-center">{TEXT.levelAlphabet}</p>
             ) : (
               <>
-                <div className="grid grid-cols-[auto_1fr] items-center gap-4">
+                {/* 단추 열은 같은 너비 — 예시 줄이 같은 자리에서 시작한다(화면 검토 review-p10-fix2-design N-4) */}
+                <div className={LEVEL_ROW}>
                   <ChoiceButton
+                    className={LEVEL_BUTTON}
                     selected={chosen === undefined}
                     onClick={() => pick(undefined)}
                   >
@@ -646,11 +651,9 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
                   <p>{area === "talk" ? TEXT.levelTalkNote : ""}</p>
                 </div>
                 {view.levels[area].map((l) => (
-                  <div
-                    key={l.level}
-                    className="grid grid-cols-[auto_1fr] items-center gap-4"
-                  >
+                  <div key={l.level} className={LEVEL_ROW}>
                     <ChoiceButton
+                      className={LEVEL_BUTTON}
                       selected={chosen === l.level}
                       onClick={() => pick(l.level)}
                     >

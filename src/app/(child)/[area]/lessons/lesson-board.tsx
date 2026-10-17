@@ -4,8 +4,9 @@
 // 위 종이 띠(영역 · 지금 단계 · 단원 · 홈) → [다음 단계 준비 중 안내] → 맨 위 차례(있을 때만) → 지금 단원 묶음(앞줄 보강 · 배정,
 // 뒷줄 다지기 — 부모 확인 대기면 그 자리에 안내) → 잠긴 다음 단원 한 장 · '지난 수업 다시 하기' 한 장.
 // '여기부터 해요'는 한 화면에 하나(4절 차례, 순수 함수 lessonListState 가 고름).
-// 세션 시작(startLesson · 세션 틀)은 차례 6 — 그 전까지 고르면 고른 표시 · 확인까지만 보이고 시작하지 않는다.
+// 수업을 고르면 세션을 연다(startLesson — 서버가 다시 판정, 하던 수업이 있으면 한 번 묻고 확인 뒤 중단으로 닫음, 차례 6).
 import { Check, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   AREA_LABEL,
@@ -14,6 +15,7 @@ import {
   PaperBand,
   PostIt,
   SmallLink,
+  StatusLine,
   type Tilt,
 } from "@/components/board/board";
 import type {
@@ -26,9 +28,8 @@ import type {
 } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
 import { cn } from "@/lib/utils";
+import { LESSON_START_TEXT, useLessonStart } from "./use-lesson-start";
 
-/** 세션 시작이 열렸는가(차례 6 에서 참으로 바꾼다). */
-const SESSION_START_OPEN = false;
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "none"];
 /** 수업 포스트잇 격자(가로 화면은 칸을 좁혀 실시드 12~15장이 한 화면에). */
 const LESSON_GRID =
@@ -49,12 +50,11 @@ const TEXT = {
   done: "끝낸 수업",
   past: "지난 수업 다시 하기",
   unit: (n: number) => `단원 ${n}`,
+  /** 조건 줄을 숨긴 잠긴 단원의 숨은 글(C72 표). */
+  lockedUnit: "잠긴 단원",
   parentCheck: "부모님이 다음 길을 고르고 있어요. 그동안 지난 수업을 해 봐요",
   nextLevelPending:
     "다음 단계 수업을 준비하고 있어요. 지난 수업을 다시 해 봐요",
-  confirm: "하던 수업은 처음부터 다시 해야 해요. 새 수업을 할까요?",
-  newLesson: "새 수업 할래요",
-  keepGoing: "하던 수업 할래요",
   lock: (line: LockLine): string => {
     switch (line.kind) {
       case "lessons":
@@ -103,8 +103,9 @@ export function LessonBoard({
   view: ListView;
   titles: Record<string, string>;
 }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<string | undefined>();
-  const [asking, setAsking] = useState<LessonRef | undefined>();
+  const { start, busy, status, asking, setAsking } = useLessonStart();
   // 확인 쪽지를 연 포스트잇 — 쪽지가 닫히면 초점을 돌려놓는다(화면 검토)
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -113,23 +114,25 @@ export function LessonBoard({
       opener.current = null;
     }
   }, [asking]);
+  // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다 — 그 전 누름은 처리기가 없어 사라진다)
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const going = view.top.find((t) => t.kind === "resume");
   const goingRef = going?.kind === "resume" ? going.ref : undefined;
 
-  /** 수업을 고름: 하던 수업이 있고 다른 수업이면 한 번 묻는다(4절 '다른 수업 고르기'). 시작은 차례 6. */
-  const choose = (ref: LessonRef) => {
-    if (goingRef && !sameRef(goingRef, ref)) {
-      opener.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      setAsking(ref);
+  /** 수업을 고름: 하던 수업이 있고 다른 수업이면 한 번 묻는다(4절 '다른 수업 고르기'). 아니면 세션을 연다. */
+  const choose = (item: LessonItem) => {
+    if (busy) return;
+    opener.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    if (goingRef && !sameRef(goingRef, item.ref)) {
+      setAsking(item.lessonId);
       return;
     }
-    setSelected(refKey(ref));
-    if (SESSION_START_OPEN) {
-      // 차례 6: startLesson({ lessonId, confirmAbort: false })
-    }
+    setSelected(refKey(item.ref));
+    void start(item.lessonId);
   };
 
   const lessonCard = (item: LessonItem, i: number) => {
@@ -141,7 +144,7 @@ export function LessonBoard({
         tone={area}
         tilt={TILTS[i % TILTS.length]}
         pressed={selected === refKey(item.ref)}
-        onClick={() => choose(item.ref)}
+        onClick={() => choose(item)}
         className={cn(
           "min-h-32 w-full gap-2 p-4 pt-7 landscape:min-h-24 landscape:p-3 landscape:pt-6",
           // '여기부터 해요'는 다른 것보다 크게(4절) — 두 칸 너비
@@ -207,7 +210,11 @@ export function LessonBoard({
         tone={area}
         tilt="slight"
         onClick={() => {
-          if (item.kind === "resume" && item.ref) setSelected(refKey(item.ref));
+          // 하던 수업은 그 세션으로(첨삭 보기 · 단계 평가는 P11 · P12)
+          if (item.kind === "resume") {
+            if (item.ref) setSelected(refKey(item.ref));
+            router.push(`/session/${item.sessionId}`);
+          }
         }}
         className={cn("gap-2 p-5 pt-8", here ? "ring-4 ring-ink" : "max-w-sm")}
       >
@@ -237,7 +244,11 @@ export function LessonBoard({
       ) : null}
       {/* 가로 화면은 오른쪽 칸에 잠긴 다음 단원 · 지난 수업(세로는 아래로 쌓음) */}
       {/* 위에서부터 쌓는다(아래 코르크가 남아도 됨) — 가로 화면은 오른쪽 칸에 잠긴 다음 단원 · 지난 수업 */}
-      <div className="grid content-start gap-4 landscape:grid-cols-[1fr_minmax(200px,240px)]">
+      <div
+        data-lesson-board=""
+        data-hydrated={hydrated ? "" : undefined}
+        className="grid content-start gap-4 landscape:grid-cols-[1fr_minmax(200px,240px)]"
+      >
         <div className="flex flex-col gap-4">
           {view.top.length > 0 ? (
             <section className="flex flex-wrap gap-6">
@@ -277,7 +288,10 @@ export function LessonBoard({
                 </span>
                 {view.lockedNext.line ? (
                   <span>{TEXT.lock(view.lockedNext.line)}</span>
-                ) : null}
+                ) : (
+                  // 조건 줄을 숨긴 때도 읽기 도구에는 잠긴 것이 들리게(화면 검토 review-p10-fix3-design N-6, C72)
+                  <span className="sr-only">{TEXT.lockedUnit}</span>
+                )}
               </span>
             </PostIt>
           ) : null}
@@ -294,15 +308,18 @@ export function LessonBoard({
           ) : null}
         </section>
       </div>
+      <StatusLine tone="error">{status}</StatusLine>
       <ConfirmSheet
         open={asking !== undefined}
-        message={TEXT.confirm}
-        confirmLabel={TEXT.newLesson}
-        cancelLabel={TEXT.keepGoing}
+        message={LESSON_START_TEXT.confirm}
+        confirmLabel={LESSON_START_TEXT.newLesson}
+        cancelLabel={LESSON_START_TEXT.keepGoing}
         onConfirm={() => {
-          if (asking) setSelected(refKey(asking));
+          const lessonId = asking;
+          // 확인 뒤 하던 세션을 중단으로 닫고 새 세션을 연다(5절) — 쪽지가 닫혀도 초점은 돌려놓지 않는다(쪽을 떠남)
+          opener.current = null;
           setAsking(undefined);
-          // 차례 6: startLesson({ lessonId, confirmAbort: true }) — 하던 세션을 중단으로 닫는다(5절)
+          if (lessonId) void start(lessonId, true);
         }}
         onCancel={() => setAsking(undefined)}
       />

@@ -4,6 +4,10 @@
 // 그래서 음절마다 첫소리 · 가운뎃소리 · 끝소리를 표대로 적고(끝소리는 대표음), 음절 사이 연음 · 동화를 하지 않는다.
 // 제2장 붙임 2 의 'ㄹㄹ 은 ll' 은 표기 일람의 규칙이라 따른다. 첫 글자만 대문자, 붙임표 없이 붙여 쓴다.
 // 부모가 고치는 미리 채움이다. 여기서 틀려도 부모가 바로잡는다.
+// 13절 C74(잠정): 음절마다 관용 철자 표(여권 통계 1위, romanize-spellings.ts)를 먼저 찾고, 표에 없는 음절만 위 고시 규칙으로 적는다.
+// 이어 붙인 철자를 다시 맞추지 않는다(Hyun + woo). ㄹㄹ 은 표의 철자에도 같게 l 로.
+
+import { GIVEN_NAME_SPELLINGS } from "./romanize-spellings";
 
 const HANGUL_FIRST = 0xac00;
 const HANGUL_LAST = 0xd7a3;
@@ -140,15 +144,20 @@ function givenPart(syllables: readonly string[]): readonly string[] {
 /** 한글 이름(성 포함 가능)의 이름 부분을 로마자로. 한글 음절이 아닌 글자는 버리고, 남는 것이 없으면 빈 글자. */
 export function romanizeGivenName(displayName: string): string {
   const syllables = [...displayName].filter(isHangulSyllable);
-  const parts = givenPart(syllables).map(decompose);
+  const given = givenPart(syllables);
+  const parts = given.map(decompose);
   let out = "";
   parts.forEach((s, i) => {
     const previous = parts[i - 1];
     // ㄹㄹ 은 ll(제2장 붙임 2): 앞 끝소리가 ㄹ 이면 첫소리 ㄹ 을 l 로
-    const initial =
-      s.initial === INITIAL_RIEUL && previous?.final === FINAL_RIEUL
-        ? "l"
-        : INITIALS[s.initial];
+    const rieulRieul =
+      s.initial === INITIAL_RIEUL && previous?.final === FINAL_RIEUL;
+    const common = GIVEN_NAME_SPELLINGS[given[i] ?? ""];
+    if (common !== undefined) {
+      out += rieulRieul ? common.replace(/^r/, "l") : common;
+      return;
+    }
+    const initial = rieulRieul ? "l" : INITIALS[s.initial];
     out += `${initial}${MEDIALS[s.medial]}${FINALS[s.final]}`;
   });
   return out.charAt(0).toUpperCase() + out.slice(1);
