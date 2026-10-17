@@ -271,7 +271,7 @@ fix 라운드 1 결정(컨트롤러 2026-10-16 13:3x, 검토 `review-p01b.md` �
 | `pnpm spec:trace` | `15절 AC 116 · 증명 표 AC 67 · AC 이름 시험 8 · unknown-ac 0 · plan-ac-not-in-spec 0 · missing-test 66`, 종료 0 |
 | `pnpm check:bundle` | `파일 25 · static 10 · 화면 파일 15 · 서버 변수 이름 5 · 대조한 값 0 · 위반 0`, 종료 0 |
 | 관문 직접 실행(컨트롤러 14:19, 로그 agent_id `ctrl-check-*`) | x64 Node 26 셸 흉내(PATH 에 24 없음, `env -i`) DONE → 0, stdout · stderr 0줄, 고른 bin `…/v24.22.0/bin`. 없는 파일을 읽는 시험을 두고 Node 24 DONE → 2, stdout 1줄, stderr 에 'no such file' 1건 · ESC 0개. 지운 뒤 → 0. 구현자 표(보고)와 같다 |
-| 훅 실기 확인(작업 6) | C52 로 P3 구현자의 첫 실행으로 겸한다. 아직 안 했다. settings.json 대안은 쓰지 않았다 |
+| 훅 실기 확인(작업 6) | 20:1x P3a 워크트리에서 함(C59): 깨지는 시험을 둔 채 구현자가 DONE 으로 끝내자 관문은 '막음 · vitest 실패'를 기록했지만(로그 11:18Z) 구현자는 끝났다 — 프런트매터 Stop 훅이 SubagentHandback 뒤에 돌아 막음이 끝내기를 되돌리지 못한다. 1-가 동안 관문은 기록용, 막는 역할은 컨트롤러 재확인 · code-reviewer. 값 7 의 settings.json SubagentStop 또는 PreToolUse(SubagentHandback) 대안은 다음 세션 첫 턴에 시험 |
 | 명령(컨트롤러 14:1x, Node 24.22.0) | lint 0(23 파일) · build 0 · test 0(5 파일 49) · test:int 0 · check:deps 0 · spec:trace 0 · check:bundle 0 · 비밀값 grep 0건 |
-| 남긴 것 | 작업 6 실기 확인(P3 때). P1c 규칙 셋은 뒤로(C52). 이 Mac 의 nvm 에 x64 판(기본 v26.8.2 · v24.16.0 등)이 남아 있는 것은 요청자 선택(관문은 '가장 높은 설치 판' 규칙으로 돌아 영향 없음). 구현 브리프 `task-p01b.md` 의 `.ts` 표기는 기록이라 그대로 |
+| 남긴 것 | 관문을 실제로 막게 하는 대안 시험(C59, 다음 세션 첫 턴, 가벼운 루프). P1c 규칙 셋은 뒤로(C52). 이 Mac 의 nvm 에 x64 판(기본 v26.8.2 · v24.16.0 등)이 남아 있는 것은 요청자 선택(관문은 '가장 높은 설치 판' 규칙으로 돌아 영향 없음). 구현 브리프 `task-p01b.md` 의 `.ts` 표기는 기록이라 그대로 |
 | 커밋 · PR | 커밋 cf97f62(요청자 지시 14:2x, 브랜치 `feature/1a-p01b-quality-gates`). 문서 커밋(C52 · 이 plan done)은 그 다음 커밋. push · PR 은 원격 뒤(H15) |

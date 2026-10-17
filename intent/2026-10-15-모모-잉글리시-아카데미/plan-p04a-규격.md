@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P4a 시드 규격 · 글 도구
 
-spec: `specs/` 정본(6.3 출력 규격 · 6.4 · 3.2 · 3.3 · 3.4 · 3.6 · 5절 시드 테이블 · 12절, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 15:5x)
+spec: `specs/` 정본(6.3 출력 규격 · 6.4 · 3.2 · 3.3 · 3.4 · 3.6 · 5절 시드 테이블 · 12절, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P4 행 · 조사 `docs/research/2026-10-16-graph-engineering.md`(P6) · `docs/research/2026-10-16-graph-engineering-ai-coding.md`(시드 생성 흐름) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(커밋 c3f6baf 21:1x, PR 은 H15 뒤)(컨트롤러 2026-10-16 15:5x)
 승인: 컨트롤러, 2026-10-16 15:5x(요청자는 PR 병합 때 본다, H14. 결정은 '정할 것' 끝 문단과 13절 C54) · 브랜치 · 워크트리: `feature/1a-p04a-seed-spec`(승인 커밋 뒤 HEAD 에서, Agent 격리 워크트리 `.claude/worktrees/`. a → b → c 가 차례로 같은 워크트리를 쓴다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P4 는 파일 열 개 · 단계 여덟을 넘어 셋으로 나눴다(묶음 plan 위험 12). 이 파일은 첫째(규격 · 글 도구)다. 둘째 `plan-p04b-배정-칸-검사.md`(어휘 배정 · 규격 파일 정합 · 읽기 · 쓰기 · 말하기 칸 검사)는 이 plan 이 끝난 브랜치 끝에서, 셋째 `plan-p04c-묶음-검사-명령.md`(회화 · 평가 · 묶음 검사 · 완전성 · `pnpm seed:validate`)는 둘째 끝에서 시작한다.
@@ -246,7 +246,7 @@ P4a 가 쓰는 파일은 열이다(모두 새 파일). 공용 파일은 고치�
 | `passage` | 읽기 지문 · 단계 평가와 배치 평가의 지문 |
 | `script` | 듣기 내용 |
 | `story` | 토리 이야기 본문 |
-| `prompt` | 문항 질문 · 과제 · 미션 영어 · 끝맺음 조건 · 예상 흐름 |
+| `prompt` | 문항 질문 · 과제 · 미션 영어 · 예상 흐름 |
 | `option` | 보기(정답 보기 포함) |
 | `answer` | 허용 정답 · 바른 답 · 모범 답 · 따라 말할 단어 · 문장 · 쓰기 4~5단계 문장 틀과 모범 |
 | `example` | 새 단어 예문 · 오늘 쓸 말 예문 · 쓰기 예시 |
@@ -257,7 +257,8 @@ P4a 가 쓰는 파일은 열이다(모두 새 파일). 공용 파일은 고치�
 | `expression` | 목표 표현 |
 | `scene` | 그림 장면 설명(아이에게 안 보임) |
 | `piece` | 쓰기 카드 · 타일 · 빈칸 꼴 |
-| `ko` | 한국어 글 전부(뜻 · 해설 · 한국어 뜻 힌트 · 목록 제목 · 오늘 이야기 목록 · 미션 한국어 · 아이가 할 말의 뜻) |
+| `ko` | 한국어 글 전부(뜻 · 해설 · 한국어 뜻 힌트 · 목록 제목 · 오늘 이야기 목록 · 미션 한국어 · 아이가 할 말의 뜻 · 회화 카드 끝맺음 조건 — 아이에게 안 보이는 AI 입력이라 P8 이 한국어로 쓴다, 검토 뒤 19:1x) |
+| `gloss` | 글로서리 표기형 · 원형(영어 범위 · 길이 검사 밖, 금지어 검사 안 — 검토 M-1, 19:1x) |
 
 ## 글 도구(text.ts)
 
@@ -340,7 +341,7 @@ P2 의 일치율(6.2)도 축약형을 펼친다. 두 곳이 같은 말을 다르
 - ㅌ. seed/ JSON 과 Biome. 권함: P6 착수 전에 `biome.json` 의 `files.includes` 에 `!seed/**/*.json` 을 더한다(시드는 검증기가 본다). 다른 길은 생성기가 Biome 꼴로 쓰고 `biome format --write seed` 를 거치는 것이다.
 - ㅍ. 회화 카드 검사 시험 이름에 1-나 AC-15m 을 쓴다(c). spec-trace 는 시험 하나만 있어도 덮였다고 세므로, 1-나 묶음 plan 에서 AC-15m 의 Playwright 몫이 따로 있음을 적는다.
 
-컨트롤러 결정(2026-10-16 15:5x, plan 승인): ㄱ 셋으로 나눈다(a → b → c, 워크트리 하나). ㄴ · ㄷ · ㅁ · ㅂ · ㅊ 는 13절 C54 에 한 줄로 넣고 5절(vocab 품사 function) · 6.3(알파벳 단원 틀 · 예비 문항 수)에 반영했다. ㅁ 는 이렇게 정한다 — vocab 은 시드 규격에서 `word` 가 id, DB 는 대리 키 `id` 와 유니크 `word`(적재가 잇는다); 배치 벌 정수(1 = 가 · 2 = 나); 주제 변형 정수. P4 규격은 지금 꼴 그대로이고 P3a plan 을 이에 맞춘다. ㄹ · ㅅ(글자대로, 평가 · 배치 그 단계까지, 이야기 구간 첫 단계 앞까지) · ㅇ(P7 때) · ㅈ · ㅋ · ㅌ(P6 전 컨트롤러가 biome.json) · ㅍ 는 권함대로. 단계 → 구간 함수: P2a 가 공용 `src/core/level-band.ts`(`Band` · `bandOf`)를 만들고 있어 이 워크트리에는 아직 없다. `structure.ts` 는 `BANDS`(구간 · 첫 · 끝 · CEFR)와 같은 꼴의 `bandOf(level): Band` 를 두되, 컨트롤러가 합칠 때 `bandOf` 를 level-band 의 것으로 바꾼다(가져오기 한 줄).
+컨트롤러 결정(2026-10-16 15:5x, plan 승인): ㄱ 셋으로 나눈다(a → b → c, 워크트리 하나). ㄴ · ㄷ · ㅁ · ㅂ · ㅊ 는 13절 C54 에 한 줄로 넣고 5절(vocab 품사 function) · 6.3(알파벳 단원 틀 · 예비 문항 수)에 반영했다. ㅁ 는 이렇게 정한다 — vocab 은 시드 규격에서 `word` 가 id, DB 는 대리 키 `id` 와 유니크 `word`(적재가 잇는다); 배치 벌 정수(1 = 가 · 2 = 나); 주제 변형 정수. P4 규격은 지금 꼴 그대로이고 P3a plan 을 이에 맞춘다. ㄹ · ㅅ(글자대로, 평가 · 배치 그 단계까지, 이야기 구간 첫 단계 앞까지) · ㅇ(P7 때) · ㅈ · ㅋ · ㅌ(P6 전 컨트롤러가 biome.json) · ㅍ 는 권함대로. 단계 → 구간 함수: P2a 가 공용 `src/core/level-band.ts`(`Band` · `bandOf`)를 만들고 있어 이 워크트리에는 아직 없다. `structure.ts` 는 `BANDS`(구간 · 첫 · 끝 · CEFR)와 같은 꼴의 `bandOf(level): Band` 를 두되, 컨트롤러가 합칠 때 `bandOf` 를 level-band 의 것으로 바꾼다(가져오기 한 줄). 구현 때 해석 수용(2026-10-16 18:5x, 구현자 보고 '다르게 한 것' 1 · 2 · 4 · 13): 회화 수업 규격 `TalkLessonSchema` 는 가져오기 순환(`no-circular`)을 피해 `schema/lesson.ts` 에 둔다(카드 · 평가 카드 장은 talk.ts 그대로). `tokenize` 는 틀 자리 뒤 소유격 `'s` 를 한 토큰으로 센다. '다지기 · 보강은 newWords 빈 목록'은 규격이 아니라 P4b `vocab-allocation` 검사 몫. 공용 `.dependency-cruiser.cjs` 의 `core-no-framework` 에 `^(node:)?fs(/|$)` 를 더하는 것은 P4c 공용 변경에 넣는다(P4c `validate.ts` 가 쓰는 `node:crypto` 는 허용). 글 조각 role 배정(3)과 5~11 은 검토자 판정 뒤 확정한다. 서브에이전트 환경이 `source ~/.nvm/nvm.sh` 와 한글 경로 인자(`--plan`)를 막아 PATH 접두 · 기본 plan 경로로 돌렸다 — 다음 브리프부터 그 꼴로 적는다. 검토 뒤 결정(2026-10-16 19:1x, rev-p04a Changes requested C 0 · I 3 · M 7): I-1 · I-2 · I-3 · M-1 · M-2 · M-3 · M-5 · M-6 · M-7 은 fix 1(`task-p04a-fix1.md`). M-1 은 글로서리 표기형 · 원형을 새 역할 `gloss`(영어 범위 · 길이 검사 밖, 금지어 검사 안)로 낸다. M-4 는 코드 그대로 두고 정본 5절 문구를 고쳤다(C58: 기능어는 글로서리에서만 빼고 범위 밖 비율은 단계로 판정). M-5 는 지금 `BANDS`(구간 정보 객체 배열) → `BAND_INFOS` 로 바꿔 합칠 때 P2a level-band 의 `BANDS`(이름 튜플)와 겹치지 않게 한다(P4b 브리프도 그 이름, `BAND_NAMES` 는 합칠 때 level-band 다시 내보내기). 범위 밖 관찰 1: 회화 카드 끝맺음 조건은 아이에게 안 보이는 AI 입력이라 역할 `ko` 로 두고 P8 이 한국어로 쓴다(아래 글 조각 목록 고침). 범위 밖 관찰 2(금지어 활용형은 목록에 꼴을 함께 적기)와 표 1 항목 9(function 표시는 주로 문법으로 쓰는 낱말만)는 P6 브리프에 넘긴다.
 
 ### 제약
 
@@ -384,4 +385,10 @@ P2 의 일치율(6.2)도 축약형을 펼친다. 두 곳이 같은 말을 다르
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+- 구현: impl-p04a(implementer · Opus · high), 격리 워크트리 `.claude/worktrees/agent-a6ef72438a158a2f3`(바탕 024a4bc), 브랜치 `feature/1a-p04a-seed-spec`(19:3x 이름 바꿈). 보고 `task-p04a-report.md` · fix 1 `task-p04a-fix1-report.md`(워크트리의 장부 폴더).
+- 실제 바뀐 파일: 위 표의 열 파일 그대로(모두 새 파일), 공용 파일 · 잠금 파일 변화 0.
+- 계획과 다르게 한 것: 회화 수업 규격 `TalkLessonSchema` 는 `schema/lesson.ts`(순환 회피). 글 조각 역할에 `gloss` 를 더하고 쓰기 단어 상자는 `option`, 회화 끝맺음 조건은 `ko`. 구간 정보 배열은 `BAND_INFOS`(P2a `level-band` 와 이름 겹침 회피). `tokenize` 는 줄임말 다섯(점까지)과 서수를 한 토큰으로, `{NAME}'s` 도 한 토큰. `Text` 는 공백만 있는 글 거부. 금지어는 토큰 · 하이픈 조각 · 소유격 · 축약형 줄기로 비교. 다지기 · 보강의 newWords 빈 목록 규칙은 P4b 검사 몫.
+- 시험 · 명령: 시험 74(새 25, 증명 표 22 + 셋), lint 0 · build 통과 · check:deps 0 · check:bundle 0 · spec-trace missing-test 66(AC 접두 시험 없음, 설계대로).
+- 검토: `review-p04a.md` Changes requested(C 0 · I 3 · M 7) → fix 1(열 항목, M-4 는 C58 로 닫음) → `review-p04a-2.md` Approved(C 0 · I 0 · M 2 — M-8 문장 자르기의 줄임말 왼쪽 경계 · M-9 서수 꼬리 오른쪽 경계는 P4b 첫 일로).
+- 남긴 것: 정본 6.6 에 Opus 캐시 단가 없음(견본은 Sonnet 비율 값 + 주석, P9 때 채움). P6 · P8 에 넘길 것 — 줄임말은 vocab · 글로서리에 점까지 적기, `function` 표시는 주로 문법으로 쓰는 낱말만, 금지어 목록에 활용형 꼴 함께, 견본 Opus 캐시 값을 옮기지 말 것. 합칠 때 `bandOf` · `Band` · `BAND_NAMES` 를 P2a `src/core/level-band.ts` 로.
+- 커밋: c3f6baf(브랜치 `feature/1a-p04a-seed-spec`, 요청자 지시 21:1x). P4a 파일에는 P4b 의 M-8 · M-9 와 P4c 첫 일(gloss · BAND_INFOS · WORD_BOX_MIN · 견본 형태 표 · C60 값)이 함께 들어 있다. PR 은 H15 뒤.

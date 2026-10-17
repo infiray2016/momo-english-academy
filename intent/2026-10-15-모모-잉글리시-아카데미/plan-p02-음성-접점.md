@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P2 음성 접점과 실기 확인
 
-spec: `specs/` 정본(7절 음성 처리 전부 · 8절 '마이크를 쓸 수 없음' 행 · 6.2 일치율 · 9절 음성 점검 · 11절 1-가 첫 작업 · 12절 speech.* · 15절 AC-5a · AC-5e · AC-N3, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P2 행 · 조사 `docs/research/2026-10-16-reverse-engineering.md`(역분석 제안 4) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 14:4x)
+spec: `specs/` 정본(7절 음성 처리 전부 · 8절 '마이크를 쓸 수 없음' 행 · 6.2 일치율 · 9절 음성 점검 · 11절 1-가 첫 작업 · 12절 speech.* · 15절 AC-5a · AC-5e · AC-N3, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P2 행 · 조사 `docs/research/2026-10-16-reverse-engineering.md`(역분석 제안 4) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: in-progress(코드 끝 — P2a 커밋 2f222d5 · P2b 커밋 b1b17d7 21:4x. 남은 것은 [사람] H1 · H2 와 작업 8 기록 대본, PR 은 H15 뒤)(컨트롤러 2026-10-16 14:4x)
 승인: 컨트롤러, 2026-10-16 14:4x(요청자는 PR 병합 때 본다, H14. 결정은 '정할 것' 끝 문단과 13절 C53) · 브랜치 · 워크트리: P2a `feature/1a-p02a-speech-core`(08cce00 에서) → P2b `feature/1a-p02b-speech-probe`(P2a 끝에서), 워크트리 하나씩(컨트롤러가 만든다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P2 는 파일 열 개 · 단계 여덟을 넘어 PR 둘로 나눈다(묶음 plan 위험 12). P2a 는 순수 함수 넷(일치율 · 한 번 듣기 판정 · 기기 판정 · 대본 규격)과 단위 시험이다. P2b 는 브라우저 구현 · 가짜 · 관찰 페이지 · e2e · 점검표 · H1 · H2 이고, P2a 가 끝난 브랜치 끝에서 시작한다. 컨트롤러 지시로 plan 파일은 하나로 두었다. 원하면 두 파일로 가르고 머리에서 서로를 가리킨다.
@@ -79,7 +79,7 @@ pageExtensions: isProductionDeployment ? ["tsx", "ts", "jsx", "js"] : ["tsx", "t
    - `EndRule = { endSilenceMs?: number; capMs?: number; chunkMs: number }`. 말하기 버튼은 어느 규칙에서나 듣기를 끝낸다(7절 '말하는 중에 다시 누르면 바로 끝난다').
    - `endRuleFor({ area: "speaking" | "placement", level, answer: "one-sentence" | "multi-sentence", capSeconds? })`. one-sentence(따라 말하기 · 말하기 1~4단계 질문 답 · 배치 평가 따라 말하기, 7절)는 endSilenceMs 가 그 단계 구간의 speech.end_silence_seconds 이고 capMs · chunkMs 가 speech.max_listen_seconds 다. multi-sentence(5단계부터의 질문 답 · 그림 보고 말하기, 9~12단계 발표 · 확인 질문)는 endSilenceMs 가 없고, capMs 는 부르는 쪽이 준 capSeconds(정할 것 가-3), chunkMs 는 speech.max_listen_seconds 다. answer 꼴은 부르는 쪽이 시드 활동에서 정한다. 이 함수는 3.3 단계표 경계를 박지 않는다. 배치 평가는 그 문항의 단계로 구간을 고른다(정할 것 나-7).
    - 한 번 듣기 판정은 `stepListen(state, input) → { state, effects, wakeAt }` 이다. 들어오는 일은 begin · result(그 인식 객체의 지금까지 글 전체) · error(code) · end · button · cancel(hidden · speak · leave) · timer · start-failed 이고 모두 now 를 갖는다. 인식 객체에서 온 일은 객체 번호도 갖는다. 돌려주는 일은 start-recognizer(새 번호) · stop-recognizer · abort-recognizer · done(결과) 이다. wakeAt 은 가장 이른 기한이다.
-   - 기한. capAt 은 begin + capMs, chunkAt 은 그 객체 시작 + chunkMs, silenceAt 은 마지막 결과 + endSilenceMs(결과가 하나라도 온 뒤에만), watchdogAt 은 마지막 신호 + speech.max_listen_seconds + speech.watchdog_extra_seconds 다. 신호는 객체 시작 · 결과 · 오류 · 끝이다(정할 것 나-2). 같은 때 여럿이면 cap → silence → chunk → watchdog 차례로 본다.
+   - 기한. capAt 은 begin + capMs, chunkAt 은 그 객체 시작 + chunkMs, silenceAt 은 마지막 결과 + endSilenceMs(결과가 하나라도 온 뒤에만), watchdogAt 은 마지막 신호 + speech.max_listen_seconds + speech.watchdog_extra_seconds 다. 신호는 객체 시작 · 결과 · 오류 · 끝이다(정할 것 나-2). 같은 때 여럿이면 cap → silence → chunk → watchdog 차례로 본다. 감시 다시 시작으로 새 객체를 열 때, 아직 모은 글이 없으면 capAt · silenceAt 을 그때 기준으로 다시 잰다(아이가 아직 아무 말도 못 한 때라 시간을 온전히 다시 준다). 모은 글이 있으면 창을 그대로 둔다(활동 시간 상한을 늘리지 않는다 — 검토 I-1). 브라우저 스스로 끝 · chunk 의 이어 붙이기도 창을 그대로 둔다(구현 때 바로잡음 2026-10-16 18:4x, 조건 좁힘 19:0x).
    - 판정 표. 글은 끝난 조각과 지금 객체의 글을 빈칸 하나로 이은 것이다. '한 문장 답'은 endSilenceMs 가 있는 규칙, '두 문장 이상 답'은 없는 규칙이다.
 
 | 상태 | 일 | 판정 |
@@ -88,14 +88,16 @@ pageExtensions: isProductionDeployment ? ["tsx", "ts", "jsx", "js"] : ["tsx", "t
 | 듣는 중 | capAt · silenceAt 도달, 말하기 버튼 | stop(까닭 cap · silence · button), 멈추는 중으로. 버튼도 abort 가 아니라 stop 이다(마지막 결과를 받으려고) |
 | 듣는 중 | chunkAt 도달 | stop(까닭 chunk). 끝이 오면 조각을 모으고 새 객체 |
 | 듣는 중 | 끝(브라우저가 스스로) | 글이 있으면 조각을 모으고 새 객체(다시 시작 수 +1). 글이 없으면 done '결과 없음'(정할 것 나-6) |
-| 듣는 중 | 오류 no-speech | 글이 있으면 한 문장 답은 done 결과(까닭 browser), 두 문장 이상 답은 새 객체. 글이 없으면 done 오류 |
+| 듣는 중 | 오류 no-speech | 글이 있으면 한 문장 답은 done 결과(까닭 browser), 두 문장 이상 답은 옛 객체를 abort 한 뒤 새 객체(감시 다시 시작 길과 같게 — 옛 객체의 뒤늦은 일은 번호로 버린다, 검토 M-2 · 위험 20, 19:0x). 글이 없으면 done 오류 |
 | 듣는 중 | 오류 그 밖 | done 오류(갈래는 classifyRecognitionError, 모은 글을 붙인다) |
 | 듣는 중 | watchdogAt 도달, 감시 다시 시작 0회 | 그 객체 abort, 조각을 모으고 새 객체(감시 다시 시작 1) |
 | 듣는 중 | watchdogAt 도달, 감시 다시 시작 1회 | abort, done '멈춤'(모은 글을 붙인다) |
 | 멈추는 중 | 결과 | 글을 바꾼다(마지막 확정) |
 | 멈추는 중 | 끝 · 오류 no-speech · 오류 aborted | done 결과(까닭 = stop 까닭), 글이 없으면 '결과 없음'. 까닭이 chunk 면 위 chunk 줄 |
 | 멈추는 중 | 오류 그 밖 | done 오류 |
-| 멈추는 중 | watchdogAt 도달 | abort, 모은 글로 done(까닭 stall-after-stop). 다시 시작하지 않는다 |
+| 멈추는 중 | watchdogAt 도달, 지금 객체가 시작 뒤 결과 · 오류 · 끝을 하나라도 냈음 | abort, 모은 글로 done(까닭 stall-after-stop). 다시 시작하지 않는다 |
+| 멈추는 중 | watchdogAt 도달, 지금 객체가 시작 뒤 아무 신호도 없음, stop 의 까닭이 chunk 이거나 아직 모은 글이 없음(7절 '하나도 없으면') | 듣는 중의 watchdogAt 줄과 같다 — 감시 다시 시작 0회면 abort 뒤 새 객체(1), 1회면 abort 뒤 done '멈춤'(모은 글을 붙인다). cap · chunk 가 watchdog 보다 늘 먼저 와 stop 을 부르므로 이 줄이 없으면 7절의 '한 번 다시 시작'에 닿을 수 없다(구현 때 바로잡음 2026-10-16 18:4x, 조건 좁힘 19:0x 검토 I-2) |
+| 멈추는 중 | watchdogAt 도달, 지금 객체가 시작 뒤 아무 신호도 없음, stop 의 까닭이 버튼 · 조용함 · 상한이고 모은 글이 있음 | abort, 모은 글로 done(까닭 stall-after-stop). 앱이 끝내기로 한 결정을 지킨다(7절 말하기 버튼 행 '다시 누르면 바로 끝난다', 나-2 · 위험 5 — 검토 I-2) |
 | 어느 때나 | cancel | abort, done '끊김'(까닭 hidden · speak · leave) |
 | 어느 때나 | 앱이 abort 한 객체 · 옛 번호의 일 | 버린다 |
 | 어느 때나 | start-failed(새 객체의 start 가 던짐) | done 오류(retry, 모은 글을 붙인다) |
@@ -325,7 +327,7 @@ interface ListenHandle { press(): void; cancel(): void; outcome: Promise<ListenO
 | 다-8 | 감시 타이머 단위 시험의 AC-N3 접두 | 붙이면 spec-trace 가 N3 를 '시험 있음'으로 세어 P11 e2e 가 빠져도 못 잡는다 | 붙이지 않는다(브리프대로 N3 의 P2 몫은 점검표) | plan 승인 |
 | 다-9 | 브랜치 · plan 파일 | 브리프는 `feature/1a-p02-speech` 와 파일 하나를 적었다 | PR 둘이라 브랜치 둘. 파일은 지시대로 하나, 원하면 가른다 | plan 승인 |
 
-컨트롤러 결정(2026-10-16 14:4x, plan 승인): 가-1~가-5 는 권함대로 — 13절 C53 에 한 줄로 넣고 7절(오류 행 · '마이크를 쓸 수 없음' 행 · 브라우저 표 · 읽어 주는 동안 말하기 버튼)과 12절(`speaking.answer_max_seconds.<구간>` 행, 값은 P6 때)에 반영했다. 나-1~나-7 권함대로. 다-1 pageExtensions + VERCEL_ENV 로 하고 `next.config.ts` 는 P2b 구현자에게 허락. 다-2 P2b 에서 CI e2e 작업을 켠다(`ci.yml` 허락. P3a 가 더할 integration 작업과는 컨트롤러가 합친다). 다-3 의존 규칙 `no-fake-speech-in-app` 을 넣는다(`.dependency-cruiser.cjs` 허락). 다-4 P2b 가 `tests/e2e/fixtures.ts` 를 먼저 만들고 P3b 가 접근 쿠키 준비를 더한다. 다-5 그대로. **다-6 은 바꾼다**: 단계 → 구간 함수는 공용 `src/core/level-band.ts`(`Band` · `bandOf`)로 P2a 가 만들고 `listen.ts` 가 가져오며 P3 · P4 도 그것을 쓴다. 다-7 정규화 표기와 동음이의어 목록 꼴('낱말 묶음의 배열')을 P4 · P8 브리프에 옮긴다. 다-8 붙이지 않는다. 다-9 브랜치 둘(`feature/1a-p02a-speech-core` · `feature/1a-p02b-speech-probe`), plan 파일 하나.
+컨트롤러 결정(2026-10-16 14:4x, plan 승인): 가-1~가-5 는 권함대로 — 13절 C53 에 한 줄로 넣고 7절(오류 행 · '마이크를 쓸 수 없음' 행 · 브라우저 표 · 읽어 주는 동안 말하기 버튼)과 12절(`speaking.answer_max_seconds.<구간>` 행, 값은 P6 때)에 반영했다. 나-1~나-7 권함대로. 다-1 pageExtensions + VERCEL_ENV 로 하고 `next.config.ts` 는 P2b 구현자에게 허락. 다-2 P2b 에서 CI e2e 작업을 켠다(`ci.yml` 허락. P3a 가 더할 integration 작업과는 컨트롤러가 합친다). 다-3 의존 규칙 `no-fake-speech-in-app` 을 넣는다(`.dependency-cruiser.cjs` 허락). 다-4 P2b 가 `tests/e2e/fixtures.ts` 를 먼저 만들고 P3b 가 접근 쿠키 준비를 더한다. 다-5 그대로. **다-6 은 바꾼다**: 단계 → 구간 함수는 공용 `src/core/level-band.ts`(`Band` · `bandOf`)로 P2a 가 만들고 `listen.ts` 가 가져오며 P3 · P4 도 그것을 쓴다. 다-7 정규화 표기와 동음이의어 목록 꼴('낱말 묶음의 배열')을 P4 · P8 브리프에 옮긴다. 다-8 붙이지 않는다. 다-9 브랜치 둘(`feature/1a-p02a-speech-core` · `feature/1a-p02b-speech-probe`), plan 파일 하나. 구현 때 바로잡음(2026-10-16 18:4x, 구현자 보고 '다르게 한 것' 1 · 2 수용): 값 2 판정 표의 '멈추는 중 · watchdogAt' 줄은 지금 객체가 시작 뒤 신호를 하나라도 냈을 때만 stall-after-stop 이고, 아무 신호도 없으면 7절 '하나도 없으면'대로 듣는 중의 watchdogAt 줄과 같이 한 번 다시 시작한다(cap · chunk 가 늘 먼저 와서 그 줄에 닿을 수 없던 모순). 감시 다시 시작으로 새 객체를 열 때는 capAt · silenceAt 을 그때 기준으로 다시 잰다. 7절은 그대로라 13절 줄은 없다. 구현자 요청 2(기록 대본의 observed 차례)는 P2b 브리프에, 요청 3(소수 · a.m. · 'd 표기)은 다-7 과 함께 P4 · P8 브리프에 넘긴다. 검토 뒤 조건 좁힘(2026-10-16 19:0x, rev-p02a I-1 · I-2 수용): 18:4x 에 고친 두 문장이 '아직 아무것도 못 들은 객체'를 위한 것인데 조건이 넓어, 글이 모인 뒤 감시 다시 시작이 활동 상한을 처음부터 다시 열고(I-1), 버튼 · 조용함 · 상한으로 stop 한 뒤 막 연 새 객체가 멈추면 모은 글이 있어도 다시 듣기로 돌아갔다(I-2). 82줄은 '아직 모은 글이 없을 때만 창을 다시 잰다', 99줄은 'stop 까닭이 chunk 이거나 모은 글이 없을 때만 다시 시작, 그 밖은 모은 글로 done' 으로 좁혔다. M-1({NAME} 앞뒤 문장 부호) · M-2(글 뒤 no-speech 때 옛 객체 abort, 91줄)도 fix 1 에 넣는다. 검토 '범위 밖 관찰' 1(chunk stop 뒤 끝이 안 올 때 전체가 끝남)은 H2 A-6 뒤 다시 보고, 2(상한 없는 두 문장 답의 빠른 되풀이) · 3(ListenHandle.capAt 은 걸음마다 state 에서) · 4(흉내 차례 이벤트 → 버튼 → 타이머)는 P2b 브리프에 넘긴다. 재검토 뒤(2026-10-16 20:2x, rev-p02a Approved · 새 Minor 둘): M-A({NAME} 바로 뒤 'll · 'd · 've · 're · 'm 가 조각으로 남는 fix 1 회귀)는 표지 뒤 축약형을 펼쳐 넣는 fix 2, M-B(주석의 \u 이스케이프)도 fix 2 — 둘 다 Minor 라 재검토 없이 컨트롤러 확인으로 닫는다(C52). 따옴표 없는 `{NAME}s` 꼴은 다-7 에 더해 P4 검증기 규칙('{NAME} 바로 뒤에 글자를 붙이지 않는다')으로 넘긴다. P2b 검토 뒤(2026-10-16 21:2x, rev-p02a Approved · 새 Minor 둘): M-1(교대 시험이 끊긴 듣기에서도 다음 문장으로 넘어감 — 나-4 · 118줄과 다름, H2 I-11 흐림) · M-2(마이크 확인 객체를 listen · dispose · 숨김이 끊지 않음 — 위험 20 · 나-4)를 fix 1 로 고친다(e2e 사례 둘). Minor 둘이라 재검토 없이 컨트롤러 확인으로 닫는다. 구현자가 다르게 한 것 넷 수용(같은 ms setTimeout(0) 묶음은 처리기에서 잡은 at 으로 기한을 재어 7절 시각이 바뀌지 않음).
 
 ### 제약
 
@@ -386,4 +388,20 @@ interface ListenHandle { press(): void; cancel(): void; outcome: Promise<ListenO
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+### P2a(2026-10-16 20:3x 구현 · 검토 끝, 커밋 2f222d5 21:1x — 요청자 지시 "응 셋 다 커밋해")
+- 구현: impl-p02a(implementer · Opus · high), 격리 워크트리 `.claude/worktrees/agent-a0ffe8037fa827af6`(바탕 b0be5ae), 브랜치 `feature/1a-p02a-speech-core`. 보고 `task-p02a-report.md` · fix 1 `task-p02a-fix1-report.md` · fix 2 `task-p02a-fix2-report.md`(워크트리의 장부 폴더).
+- 실제 바뀐 파일: P2a 표의 열 파일 + 대본 11(모두 새 파일). 공용 파일 · 잠금 파일 변화 0.
+- 계획과 다르게 한 것: 값 2 판정 표의 감시 타이머 줄을 바로잡음(82 · 91 · 98~100줄 — cap · chunk 가 늘 먼저 와 '듣는 중 · watchdog' 줄에 닿을 수 없던 모순, 검토 뒤 '모은 글 없음 · chunk' 조건으로 좁힘). `bandOf` 는 `level-band.ts` 에서만(다-6). `restarts` 는 감시 밖 새 객체 전부. 표에 없는 오류 코드는 retry. `{NAME}` 표지는 홀로 세우고 바로 뒤 's 는 흡수 · 'll 등은 펼침. 글 뒤 no-speech 때 옛 객체 abort.
+- 시험 · 명령: 단위 89(새 40, 증명 표 31 글자 그대로 + 밖 아홉), lint 0 · build · check:deps 0 · check:bundle 0 · spec-trace missing-test 66 → 64(AC-5a · AC-5e).
+- 검토: `review-p02a.md` Changes requested(C 0 · I 2 · M 2) → fix 1 → `review-p02a-2.md` Approved(새 M 2) → fix 2(M-A · M-B) → 컨트롤러 확인(C52, Minor 둘).
+- 남긴 것: 검토 '범위 밖 관찰' 1(chunk stop 뒤 끝이 안 오면 전체가 끝남)은 H2 A-6 뒤, 2~4 는 P2b. 다-7 표기 규칙에 소수 · a.m. · 'd · `{NAME}` 앞뒤 빈칸 · `{NAME}s` 금지를 더해 P4 · P8 브리프로. 실기 증거는 H2 만(위험 21).
+- 커밋: 2f222d5(브랜치 `feature/1a-p02a-speech-core`, 워크트리에서 P2a 파일 24 만). P2b 는 `feature/1a-p02b-speech-probe` 로 이어 간다.
+
+### P2b(2026-10-16 21:3x 구현 · 검토 끝, 커밋 b1b17d7 21:4x — 요청자 지시 "응 P2b 도 커밋해")
+- 구현: impl-p02a(implementer · Opus · high)가 P2a 와 같은 워크트리에서 이어 함(22분 + fix 11분), 브랜치 `feature/1a-p02b-speech-probe`(P2a 커밋 2f222d5 위). 보고 `task-p02b-report.md` · fix 1 `task-p02b-fix1-report.md` · 화면 사진 `p02b-speech-probe.png`(워크트리의 장부 폴더).
+- 실제 바뀐 파일: P2b 표의 열(`src/lib/speech/{types,browser,fake-web-speech}.ts` · `src/app/dev/speech-probe/{page.preview,speech-probe}.tsx` · `tests/fixtures/speech/probe-text.json` · `tests/e2e/{fixtures.ts,speech-probe.spec.ts}` · `docs/checklists/speech-check.md`) + `tests/unit/fake-web-speech-defaults.test.ts`(검토 의견으로 더함) + 공용 변경 셋(`next.config.ts` pageExtensions · `ci.yml` e2e 작업 · `.dependency-cruiser.cjs` no-fake-speech-in-app + `dependency-rules.test.ts`). `recorded/` 는 H2 뒤. P2a 파일 변화 0.
+- 계획과 다르게 한 것: 같은 ms 차례를 `setTimeout(0)` 묶음으로(기한은 처리기에서 잡은 at 으로 재어 7절 시각 그대로), `pickVoice` 내보냄, 가짜의 `__fakeSpeech.defaults`, 마이크 확인에서 audiostart · 결과 없이 끝나면 실패(`ended-without-audio`), 끊긴 마이크 확인은 실패 꼴에 `interrupted-<까닭>` 코드(결과 꼴은 P10 이 정함). 컨트롤러 추가 넷(capAt getter · 같은 ms 차례 · 빠른 되풀이는 보이기만 · observed 는 start() 순서) 반영. 교대 시험은 끊긴 듣기를 턴으로 세지 않고 같은 문장에 머문다(fix 1 M-1), 마이크 확인 객체도 listen · speak · 숨김 · dispose 가 끊는다(fix 1 M-2).
+- 시험 · 명령: 단위 93(새 4) · e2e 9(새 8, 증명 표 여섯 글자 그대로 + fix 1 둘), lint 0 · build · check:deps 0 · check:bundle 0 · spec-trace missing-test 64. 운영 빌드(`VERCEL_ENV=production`) 경로에 `/dev/speech-probe` 없음 · 일반 빌드에 있음.
+- 검토: `review-p02b.md` Approved(C 0 · I 0 · M 2) → fix 1 → 컨트롤러 확인 21:3x(C52, Minor 둘).
+- 남긴 것: [사람] H1(Vercel 프로젝트 · 첫 배포는 운영 · 둘째부터 프리뷰에 관찰 페이지 · 공유 링크) → H2(점검표 (가), 기기마다 대본 내보내기, H4 를 H2 앞에) → 작업 8(`tests/fixtures/speech/recorded/` 대본으로 다시 돌려 보기, 판정 가-5, 실패면 S7). 가짜의 합성 cancel 동작 · 기본값은 Chrome 꼴 추측. `import "client-only"` 는 webpack 별칭으로 확인, Turbopack 은 빌드 통과만. e2e 는 WebKit 만(P1a 설정). 검토 범위 밖 관찰: 빠른 시작 · 끝 되풀이는 H2 A-6 뒤, 끊긴 마이크 확인 결과 꼴은 P10.
+- 커밋: b1b17d7(브랜치 `feature/1a-p02b-speech-probe`, P2a 커밋 2f222d5 위, 17 파일). 워크트리 agent-a0ffe8037fa827af6 은 깨끗함 — P2 코드 끝.
