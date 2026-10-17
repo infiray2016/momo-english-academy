@@ -318,7 +318,7 @@ H3(Supabase 개발용)과 H15(원격)는 이 plan 을 막지 않는다. 모든 �
 |---|---|---|
 | AC-1a(P10 몫) | e2e "AC-1a 접근 쿠키 없이 홈을 열면 접근 코드 화면이 나오고 맞는 코드를 넣으면 첫 실행 화면으로 가며, 첫 실행은 PIN 6자리를 두 번 같게 넣어야 다음으로 넘어간다" + 통합 "AC-1a 첫 실행 저장은 PIN 이 6자리 숫자가 아니면 거부되고 PIN 은 argon2id 해시로 parent_auth 한 행에 남는다" | `tests/e2e/first-run.spec.ts` · `tests/integration/first-run.test.ts` |
 | AC-1b(P10a 몫) | e2e "AC-1b 첫 실행에서 읽기 시작 단계를 3으로 고르면 읽기 카드는 배치 평가 없이 읽기 3단계 단원 1의 수업 1로 열리고 고르지 않은 쓰기 · 말하기 카드는 배치 평가로 열린다"(차례 7, `cloneLessons` · seed.complete_through_level 6). 'AI 호출 0회'는 P10b 통합 | `first-run.spec.ts` |
-| AC-1c | e2e "AC-1c 첫 실행은 PIN → 이름 → 아바타 → 알파벳 → 주제 묶음 → 시작 단계 → 음성 인식 안내 → 넘겨주기 순서로 한 화면에 하나씩 넘어간다" · "AC-1c 한글 이름을 넣으면 영어 이름 칸이 로마자로 먼저 채워지고 홈에는 한글 이름이 보인다" · "AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다"(차례 7) · "AC-1c 두 번째 기기는 접근 코드 뒤 첫 실행 없이 홈으로 간다" · "AC-1c 음성 인식 안내의 '마이크 확인'이 실패해도 다음 화면으로 넘어가고 부모 알림이 하나 생긴다" · "AC-1c 시작 단계 화면에는 1~seed.complete_through_level 단계만 보이고 회화를 5단계로 고르면 회화는 5단계에서 시작한다" · "AC-1c 영어 이름 칸에 vocab 의 낱말을 넣으면 '토리가 부를 다른 영어 이름(별명)을 골라 주세요'가 보이고 다른 이름을 받는다" + 단위 "AC-1c 로마자: 이름의 음운 변화를 반영하지 않고(한복남 → Boknam · 홍빛나 → Bitna) 세 글자 · 두 글자 성 넉 자 이름은 성을 뺀다" + 통합 "AC-1c 회화를 5단계로 고르면 회화 트랙은 5단계 단원 1이고 talk.placement_cap 을 쓰지 않는다" | `first-run.spec.ts` · `tests/unit/first-run.test.ts` · `first-run.test.ts` |
+| AC-1c | e2e "AC-1c 첫 실행은 PIN → 이름 → 아바타 → 알파벳 → 주제 묶음 → 시작 단계 → 음성 인식 안내 → 넘겨주기 순서로 한 화면에 하나씩 넘어간다" · "AC-1c 한글 이름을 넣으면 영어 이름 칸이 로마자로 먼저 채워지고 홈에는 한글 이름이 보인다" · "AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다"(차례 7 → fix 8 176eda1) · "AC-1c 두 번째 기기는 접근 코드 뒤 첫 실행 없이 홈으로 간다" · "AC-1c 음성 인식 안내의 '마이크 확인'이 실패해도 다음 화면으로 넘어가고 부모 알림이 하나 생긴다" · "AC-1c 시작 단계 화면에는 1~seed.complete_through_level 단계만 보이고 회화를 5단계로 고르면 회화는 5단계에서 시작한다" · "AC-1c 영어 이름 칸에 vocab 의 낱말을 넣으면 '토리가 부를 다른 영어 이름(별명)을 골라 주세요'가 보이고 다른 이름을 받는다" + 단위 "AC-1c 로마자: 이름의 음운 변화를 반영하지 않고(한복남 → Boknam · 홍빛나 → Bitna) 세 글자 · 두 글자 성 넉 자 이름은 성을 뺀다" + 통합 "AC-1c 회화를 5단계로 고르면 회화 트랙은 5단계 단원 1이고 talk.placement_cap 을 쓰지 않는다" | `first-run.spec.ts` · `tests/unit/first-run.test.ts` · `first-run.test.ts` |
 | AC-11a | 단위 "AC-11a 배치: 3단계 3/3 → 5단계 2/3 → 6단계 1/3 이면 넘은 최고 단계는 5, 시작은 4다" · "AC-11a 배치: 한 단계에서 처음 두 문항을 틀리거나 몰라요로 넘기면 셋째 문항 없이 그 단계를 못 넘음으로 둔다" · "AC-11a 배치: 1단계도 못 넘으면 시작 1과 알파벳 처리가 나온다" · "AC-11a 배치: 두 단계 뛴 뒤 못 넘으면 건너뛴 단계를 보고 넘은 단계 바로 위에서 못 넘거나 placement.items_per_area 문항이면 끝난다" · "AC-11a 배치: 시작 단계는 seed.complete_through_level 을 넘지 않고 기본 설정의 가장 높은 시작은 10 이다" · "AC-11a 배치: 단계마다 문항 하나(작은 틀)여도 다 맞히면 두 단계 · 틀리면 못 넘음으로 끝까지 돈다" | `tests/unit/placement.test.ts` |
 | AC-11b | e2e "AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단계에서 시작해요' · '이제 토리를 만날 수 있어요'와 '수업 고르러 가기'만 보이고 회화 카드가 열리며 회화는 n 과 talk.placement_cap 가운데 낮은 단계다" + 통합 "AC-11b 부모가 말하기만 시작 단계를 고르면 회화는 고른 단계와 talk.placement_cap 가운데 낮은 값에서 시작한다" · "AC-11b 말하기 배치 결과가 회화 트랙을 n 과 상한 가운데 낮은 단계 단원 1로 넣는다" | `tests/e2e/placement.spec.ts` · `first-run.test.ts` · `tests/integration/placement.test.ts` |
 | AC-11c · AC-5e(배치 몫) | e2e "AC-11c 따라 말하기 문항에서 첫 시도 일치율 0.6 · 둘째 0.85 면 맞음이고 첫 시도 뒤에는 인식 글 없이 '한 번 더 말해 볼까요?'만 보인다" · "AC-11c · AC-5e 한 문항 인식이 두 시도를 합쳐 3회 실패하면 남은 따라 말하기 자리에 예비 문항이 나오고 결과에 '말하기 일부는 듣기로 봤어요'가 붙는다" · "AC-11c 마이크를 쓸 수 없는 기기에서는 말하기 배치가 시작되지 않고 읽기 · 쓰기 배치는 그대로 된다" + 단위 "AC-11c 배치: 두 시도 가운데 높은 일치율이 placement.repeat_pass 이상이면 맞음이다" · "AC-11c 배치: 실패 3회 뒤 그 문항과 남은 따라 말하기 자리는 같은 단계 예비 문항이다" | `placement.spec.ts` · `placement.test.ts` |
@@ -396,7 +396,7 @@ fix 라운드는 지적 묶음마다 한 번이다(한도 셋).
 
 시험 수: 단위 294 → 367 · 통합 66 + 1 → 108 + 1(CI 8차) · e2e 18 → 49 · e2e-local 7(P5b 시험 그대로).
 
-증명 표 대조(편집자, 78db3a2 의 시험 글): 이 plan 증명 표의 시험 이름 서른셋 가운데 서른둘이 있다. 없는 것은 e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다' 하나다(아래 '안 한 것').
+증명 표 대조(편집자, 78db3a2 의 시험 글): 이 plan 증명 표의 시험 이름 서른셋 가운데 서른둘이 있다. 없는 것은 e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다' 하나였다(아래 '안 한 것') → **fix 8(커밋 176eda1, CI 12차 run 39072876050 전부 성공)로 더해 서른셋 모두 있다.**
 
 ### 실제 바뀐 파일(※ = 계획과 다름)
 
@@ -420,7 +420,7 @@ fix 라운드는 지적 묶음마다 한 번이다(한도 셋).
 | `src/server/db/safe-error.ts` | ※ 신규 | `dbErrorTag` · `safeDbError`(fix 1 I-1) · `isUniqueViolation`(차례 7 — 세 서버 파일의 같은 함수를 합침, `CAUSE_CHAIN_DEPTH` 4 · `PG_UNIQUE_VIOLATION`) |
 | `src/db/schema/seed-revision.ts` | ※ 신규 | `SEED_REVISION_TABLES` — P7a `read.ts` 와 e2e `household.ts` 가 같이 씀(fix 1 M-3) |
 | `src/app/(setup)/first-run/page.tsx` · `first-run-flow.tsx` | 신규 | 여덟 화면. ※ 시작 단계 화면은 영역 단추 넷과 그 영역 칸, 선택지마다 예시 줄 · 고르기 화면은 '골라 두고 다음' · 핫픽스 둘 · 화면 준비 끝 표시 `data-hydrated`(CI 7차) · 마이크 확인 안내 한 줄(fix 5) |
-| `tests/unit/first-run.test.ts` · `tests/integration/first-run.test.ts` · `tests/e2e/first-run.spec.ts` | 신규 | ※ e2e 'AC-1c … 주제 변형 수업이 열린다'는 없음(아래 '안 한 것') · e2e '마이크 확인: 소리 받기만 시작하고 …' 더함(fix 5) |
+| `tests/unit/first-run.test.ts` · `tests/integration/first-run.test.ts` · `tests/e2e/first-run.spec.ts` | 신규 | ※ e2e 'AC-1c … 주제 변형 수업이 열린다'는 fix 8(176eda1)에서 더함 · e2e '마이크 확인: 소리 받기만 시작하고 …' 더함(fix 5) |
 | `src/core/answer/check.ts` · `tests/unit/answer-check.test.ts` | 신규 | ※ C73 대로 낱말 답은 대소문자 무시 · 쓴 답 정규화에 문장 부호 앞 빈칸 지움 |
 | `src/core/answer/display.ts` | ※ 신규 | 화면에 넘기는 문항에서 정답 칸을 뺌(평가 중 정답이 쪽에 실리지 않게) |
 | `src/components/answer/{choice,tiles,typing,repeat}.tsx` | 신규 | ※ 누르는 보기 · 타일은 직접 그림(P5b 조각은 누를 수 없는 꼴). 문항 몸통은 P5b `ReadingPassage` · `EnglishLine` · `VocabPicture` · `FrameText` |
@@ -462,7 +462,7 @@ fix 라운드는 지적 묶음마다 한 번이다(한도 셋).
 
 ### 안 한 것(계획에 있었음)
 
-1. **e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다'가 없다**(증명 표 · 차례 7 몫). 차례 7 브리프 `task-p10-7.md` 에 빠졌고 보고 · 검토에도 다룬 기록이 없다(편집자 대조). 프로필 묶음 변형 고르기는 통합 두 시험이 본다. '세션 틀: 판은 … 처음 변형으로 연다'와 '수업 목록 자료: … 고른 묶음 변형이 없으면 가장 낮은 변형이다'다. AC-1c 의 다른 시험이 있어 spec-trace 는 이 빈칸을 잡지 않는다.
+1. **e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다'가 없었다 → fix 8 로 더함**(커밋 176eda1 · CI 12차 run 39072876050 전부 성공 · 2026-10-18 07:0x. 증명 표 · 차례 7 몫). 차례 7 브리프 `task-p10-7.md` 에 빠졌고 보고 · 검토에도 다룬 기록이 없다(편집자 대조). 프로필 묶음 변형 고르기는 통합 두 시험이 본다. '세션 틀: 판은 … 처음 변형으로 연다'와 '수업 목록 자료: … 고른 묶음 변형이 없으면 가장 낮은 변형이다'다. AC-1c 의 다른 시험이 있어 spec-trace 는 이 빈칸을 잡지 않는다.
 2. **공용 변경 9(선택, `bandOf` 하나로)는 하지 않았다.** 새 코드는 `level-band.ts` 만 쓴다(ledger-open, P11 · P12 몫).
 3. **배치 화면의 답 보내기를 시도 대기열로 합치지 않았다**(plan-p10b '다른 P 에 넘길 것'의 P10a 몫). 배치는 답마다 서버가 다음 문항을 정해 맞지 않는다(review-p10-5-6-code 4절 받아들임).
 4. **화면 검토 둘과 사진이 남았다.** 차례 5 배치(A3 · A2)의 design-reviewer 검토와 차례 7 '화면 검토 다시'(첫 실행 → 세션 시작 한 번에)는 재부팅 뒤다. 차례 5 · 6 · fix 4~7 실기 사진도 같다. 화면 검토를 마친 차례는 2 · 3 · 4 와 그 fix 다.
