@@ -1,11 +1,20 @@
 import { expect, test } from "@playwright/test";
 import { TABLET_10_9_VIEWPORT } from "../../playwright.config";
+import { PIN_LENGTH } from "../../src/core/profile/start";
 import { addAccessCookie } from "./access-cookie";
+import { closeE2eDb, resetHousehold } from "./db";
+import { insertHousehold } from "./household";
 
 /** 4절 접근 코드 화면 문구(C57). */
 const ACCESS_TITLE = "부모님이 코드를 넣어 주세요";
 const ACCESS_LABEL = "가족 접근 코드";
 const ACCESS_BUTTON = "들어가기";
+/** 첫 실행 첫 화면 제목(C72). 프로필이 없으면 홈 대신 첫 실행으로 간다(plan-p10a 공용 변경 8). */
+const FIRST_RUN_PIN_TITLE = `부모님 PIN ${PIN_LENGTH}자리를 정해 주세요`;
+
+test.beforeEach(resetHousehold);
+test.afterAll(closeE2eDb);
+
 /** 이 환경 변수가 있으면 접근 코드 화면 사진을 그 경로에 남긴다(화면 검토용, plan-p03b 작업 6). */
 const SCREENSHOT_ENV = "E2E_ACCESS_SCREENSHOT";
 
@@ -54,8 +63,19 @@ test("AC-1a 유효한 접근 쿠키가 있는 기기는 접근 코드 화면 없
   baseURL,
 }) => {
   await addAccessCookie(context, baseURL);
+  // 프로필이 없으면 홈 대신 첫 실행(/first-run)으로 간다
+  const first = await page.goto("/");
+  expect(first?.status()).toBe(200);
+  expect(new URL(page.url()).pathname).toBe("/first-run");
+  await expect(
+    page.getByRole("heading", { level: 1, name: FIRST_RUN_PIN_TITLE }),
+  ).toBeVisible();
+  await expect(page.getByText(ACCESS_TITLE)).toHaveCount(0);
+  // 프로필이 있으면 홈이 열린다
+  await insertHousehold();
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
+  expect(new URL(page.url()).pathname).toBe("/");
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.getByText(ACCESS_TITLE)).toHaveCount(0);
   // 쿠키가 있는 기기가 /access 를 열면 홈으로 간다

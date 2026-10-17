@@ -3,7 +3,11 @@
 // window · document · navigator 는 함수 안에서만 읽는다.
 // 서버 구성 요소가 가져오면 빌드가 막는다(Next 가 설치 없이 안에서 처리, 16.4.2 문서 05-server-and-client-components).
 import "client-only";
-import { type DeviceVerdict, describeDevice } from "@/core/speech/device";
+import {
+  type DeviceFacts,
+  type DeviceVerdict,
+  describeDevice,
+} from "@/core/speech/device";
 import {
   type CancelReason,
   classifyRecognitionError,
@@ -135,6 +139,22 @@ const joinTranscripts = (results: { transcript: string }[]) =>
 
 function collectedText(state: ListenState): string {
   return [...state.pieces, state.currentText].filter((t) => t !== "").join(" ");
+}
+
+/**
+ * 이 브라우저의 기기 사실(P2a describeDevice 의 입력). 렌더 뒤 · 누름 처리 안에서만 부른다(window 를 읽는다).
+ * 음성 접점(device())과 기기 마이크 상태(src/lib/mic-state.ts)가 같이 쓴다(한 벌, 검토 review-p10-2-code M-3).
+ */
+export function deviceFacts(): DeviceFacts {
+  const w = speechWindow();
+  return {
+    userAgent: navigator.userAgent,
+    maxTouchPoints: navigator.maxTouchPoints ?? 0,
+    hasStandardRecognition: typeof w.SpeechRecognition === "function",
+    hasWebkitRecognition: typeof w.webkitSpeechRecognition === "function",
+    hasSynthesis: synthesisAvailable(),
+    isSecureContext: window.isSecureContext,
+  };
 }
 
 export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
@@ -522,15 +542,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
   }
 
   function device(): DeviceVerdict {
-    const w = speechWindow();
-    return describeDevice({
-      userAgent: navigator.userAgent,
-      maxTouchPoints: navigator.maxTouchPoints ?? 0,
-      hasStandardRecognition: typeof w.SpeechRecognition === "function",
-      hasWebkitRecognition: typeof w.webkitSpeechRecognition === "function",
-      hasSynthesis: synthesisAvailable(),
-      isSecureContext: window.isSecureContext,
-    });
+    return describeDevice(deviceFacts());
   }
 
   // 쪽이 숨으면 듣기는 '끊김', 읽어 주기는 멈춘다. 숨은 동안 다시 시작하지 않는다(나-4).

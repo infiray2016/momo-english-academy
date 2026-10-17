@@ -12,15 +12,22 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import EmbeddedPostgres from "embedded-postgres";
 import postgres from "postgres";
 import type { TestProject } from "vitest/node";
+import {
+  createLogTail,
+  PG_ADMIN_DB,
+  PG_ADMIN_USER,
+  pgUrl,
+  SUPABASE_ROLES,
+  supabaseDefaultPrivilegeSql,
+} from "../../scripts/pg-local";
 
 const TEMPLATE_DB = "momo_template";
-const ADMIN_USER = "postgres";
-const ADMIN_DB = "postgres";
+// Supabase 흉내 · 접속 문자열 조립 · 로그 끝 줄은 개발용 DB(scripts/dev-db.ts)와 같은 scripts/pg-local.ts 를 쓴다(검토 review-p10-1 M-4)
+const ADMIN_USER = PG_ADMIN_USER;
+const ADMIN_DB = PG_ADMIN_DB;
 const MIGRATIONS_FOLDER = "drizzle";
 /** 비밀번호 바이트 수(실행 때 만든다, 저장소에 적지 않는다). */
 const PASSWORD_BYTES = 24;
-/** 시작 실패 때 오류에 붙일 Postgres 로그 끝 줄 수. */
-const LOG_TAIL_LINES = 40;
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -47,19 +54,14 @@ function freePort(): Promise<number> {
   });
 }
 
-/** '사용자:비밀번호@' 꼴의 문자열 틀을 쓰지 않고 URL 속성으로 조립한다. */
+/** '사용자:비밀번호@' 꼴의 문자열 틀을 쓰지 않고 URL 속성으로 조립한다(pg-local pgUrl). */
 function buildPgUrl(opts: {
   user: string;
   password: string;
   port: number;
   database: string;
 }): string {
-  const url = new URL("postgres://127.0.0.1");
-  url.username = opts.user;
-  url.password = opts.password;
-  url.port = String(opts.port);
-  url.pathname = `/${opts.database}`;
-  return url.toString();
+  return pgUrl(opts);
 }
 
 export default async function setup(project: TestProject) {
@@ -67,20 +69,15 @@ export default async function setup(project: TestProject) {
   const port = await freePort();
   const password = randomBytes(PASSWORD_BYTES).toString("hex");
   // Postgres 로그의 끝 줄만 모은다. 성공 때는 내지 않고, 시작 실패 때 원인으로 붙인다(검토 A1 M-2)
-  const logTail: string[] = [];
+  const log = createLogTail();
+  const logTail = log.lines;
   const pg = new EmbeddedPostgres({
     databaseDir,
     port,
     user: ADMIN_USER,
     password,
     persistent: false,
-    onLog: (message) => {
-      for (const line of message.split(/\r?\n/)) {
-        if (line.trim() === "") continue;
-        logTail.push(line);
-        if (logTail.length > LOG_TAIL_LINES) logTail.shift();
-      }
-    },
+    onLog: log.push,
   });
 
   // start() 가 끝나기 전에 실패하면 서버 프로세스가 이미 닫혀 stop() 이 기다릴 'exit' 가 오지 않으므로,
@@ -147,9 +144,7 @@ async function prepareCluster(
   // Supabase 역할 흉내(묶음 위험 15)
   const admin = postgres(adminUrl, { max: 1, onnotice: () => {} });
   try {
-    await admin.unsafe("CREATE ROLE anon NOLOGIN");
-    await admin.unsafe("CREATE ROLE authenticated NOLOGIN");
-    await admin.unsafe("CREATE ROLE service_role NOLOGIN BYPASSRLS");
+    for (const role of SUPABASE_ROLES) await admin.unsafe(role.sql);
     await admin.unsafe(`CREATE DATABASE "${TEMPLATE_DB}"`);
   } finally {
     await admin.end();
@@ -161,13 +156,8 @@ async function prepareCluster(
     onnotice: () => {},
   });
   try {
-    await templateClient.unsafe(
-      "GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role",
-    );
-    for (const kind of ["TABLES", "SEQUENCES", "FUNCTIONS"]) {
-      await templateClient.unsafe(
-        `ALTER DEFAULT PRIVILEGES FOR ROLE ${ADMIN_USER} IN SCHEMA public GRANT ALL ON ${kind} TO anon, authenticated, service_role`,
-      );
+    for (const statement of supabaseDefaultPrivilegeSql(ADMIN_USER)) {
+      await templateClient.unsafe(statement);
     }
     await migrate(drizzle({ client: templateClient }), {
       migrationsFolder: MIGRATIONS_FOLDER,

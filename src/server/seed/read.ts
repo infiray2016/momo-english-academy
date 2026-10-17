@@ -17,6 +17,7 @@ import {
   placementItems,
   unitSpecs,
 } from "@/db/schema/content";
+import { SEED_REVISION_TABLES } from "@/db/schema/seed-revision";
 import { type Db, getDb } from "@/server/db";
 
 export type SeedReadOptions = { db?: Db };
@@ -25,15 +26,8 @@ export type SeedReadOptions = { db?: Db };
 export async function currentSeedRevision({
   db = getDb(),
 }: SeedReadOptions = {}): Promise<number> {
-  const tables = [
-    levelSpecs,
-    unitSpecs,
-    lessons,
-    levelTestItems,
-    placementItems,
-  ];
   const maxima: { revision: number }[] = [];
-  for (const table of tables) {
+  for (const table of SEED_REVISION_TABLES) {
     const [row] = await db
       .select({ revision: max(table.revision) })
       .from(table);

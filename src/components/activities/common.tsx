@@ -34,16 +34,16 @@ export const PASSAGE_PICTURE_UNTIL_LEVEL = 4;
 export const PICTURE_PX = 160;
 const PICTURE_BOX = "size-40";
 
-/** 영역 색(포스트잇 노랑 읽기 · 하늘 쓰기 · 분홍 말하기 · 연두 회화, 목업 B_Home4 의 색). */
+/** 영역 색(포스트잇 노랑 읽기 · 하늘 쓰기 · 분홍 말하기 · 연두 회화, 목업 B_Home4 의 색 — 값은 globals.css 보드 토큰, P10). */
 export const AREA_TONE = {
-  reading: { name: "노랑", className: "bg-[#FFE566]" },
-  writing: { name: "하늘", className: "bg-[#9FD8FF]" },
-  speaking: { name: "분홍", className: "bg-[#FFB3C7]" },
-  talk: { name: "연두", className: "bg-[#C9F2B2]" },
+  reading: { name: "노랑", className: "bg-postit-reading" },
+  writing: { name: "하늘", className: "bg-postit-writing" },
+  speaking: { name: "분홍", className: "bg-postit-speaking" },
+  talk: { name: "연두", className: "bg-postit-talk" },
 } as const satisfies Record<Area, { name: string; className: string }>;
 
-/** 종이 색(목업의 포스트잇 위 종이 · 보기 바탕). */
-const PAPER = "bg-[#FFFDF7]";
+/** 종이 색(목업의 포스트잇 위 종이 · 보기 바탕 — 보드 토큰 paper, P10). */
+const PAPER = "bg-paper";
 /** 보기 · 타일 · 소리 자리의 버튼 꼴(누를 수 없는 모습, 4절 크기). */
 const CHOICE_FRAME = cn(
   CHILD_SIZE.choice,

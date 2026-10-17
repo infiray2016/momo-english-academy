@@ -4,8 +4,32 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 포스트잇 보드 토큰(4절 · 목업 B_Home4 · B_Profile · B_Sticky 의 색, plan-p10a 값 5 · 공용 변경 6). */
+@theme {
+  --color-cork: #d2a86b;
+  --color-cork-frame: #8a6134;
+  --color-paper: #fffdf7;
+  --color-ink: #2b2b2b;
+  --color-ink-soft: #6b5b45;
+  --color-tape: rgb(255 255 255 / 0.55);
+  /* 부모 메뉴 꼬리표(목업 B_Home4 · B_Profile 오른쪽 아래) */
+  --color-kraft: #c8b48e;
+  --color-postit-reading: #ffe566;
+  --color-postit-writing: #9fd8ff;
+  --color-postit-speaking: #ffb3c7;
+  --color-postit-talk: #c9f2b2;
+  /* 아바타 동그라미 여섯(C72): 포스트잇 넷 + 주황 · 보라 */
+  --color-avatar-orange: #ffc98b;
+  --color-avatar-purple: #d9c6f5;
+  --shadow-postit: 4px 6px 0 rgb(0 0 0 / 0.16);
+  --shadow-band: 0 4px 0 rgb(0 0 0 / 0.18);
+}
+
 @theme inline {
-  --font-heading: var(--font-sans);
+  /* 글꼴: 제목 Jua · 본문 Gowun Dodum · 영어 Fredoka(4절). 변수는 layout.tsx 의 next/font 가 <html> 에 둔다 */
+  --font-sans: var(--font-gowun), "Apple SD Gothic Neo", sans-serif;
+  --font-heading: var(--font-jua), var(--font-gowun), sans-serif;
+  --font-en: var(--font-fredoka), var(--font-gowun), sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -124,5 +148,10 @@
   }
   html {
     @apply font-sans;
+  }
+  /* 한국어 줄바꿈은 낱말 단위(장부 '줄바꿈 keep-all'), 긴 영어 낱말은 칸 안에서 끊는다 */
+  body {
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 }

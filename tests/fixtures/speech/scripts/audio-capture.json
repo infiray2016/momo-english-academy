@@ -1,0 +1,17 @@
+{
+  "name": "audio-capture",
+  "source": "손으로 씀 — 7절 오류 행 audio-capture(마이크를 잡지 못함) 한 번. 다시 듣기 갈래라 기기 상태로 남지 않는다(AC-5c). start 뒤 audio-capture 와 끝",
+  "recognitions": [
+    {
+      "events": [
+        {
+          "at": 50,
+          "type": "error",
+          "error": "audio-capture",
+          "message": "No microphone was found"
+        },
+        { "at": 60, "type": "end" }
+      ]
+    }
+  ]
+}
