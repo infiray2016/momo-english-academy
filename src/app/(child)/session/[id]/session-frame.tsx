@@ -120,18 +120,22 @@ function ActivityBody({
           example={view.lesson.content.example}
         />
       );
-    case "writing-sentence": {
+    // P11 차례 1 꿰맞춤: 문장 전부 한 활동 · 초고 활동을 P10 자리 표시 그대로(차례 2 가 틀을 다시 쓴다)
+    case "writing-guided":
       if (view.area !== "writing" || view.lesson.content.shape !== "guided")
         return null;
-      const sentence = view.lesson.content.sentences[activity.index];
-      return sentence ? (
-        <WritingGuidedSentence
-          frame={sentence.frame}
-          wordBox={sentence.wordBox}
-        />
-      ) : null;
-    }
-    case "writing-composition":
+      return (
+        <>
+          {view.lesson.content.sentences.map((sentence) => (
+            <WritingGuidedSentence
+              key={sentence.frame}
+              frame={sentence.frame}
+              wordBox={sentence.wordBox}
+            />
+          ))}
+        </>
+      );
+    case "draft":
       if (
         view.area !== "writing" ||
         view.lesson.content.shape !== "composition"
@@ -184,6 +188,9 @@ function ActivityBody({
           prepWords={view.lesson.content.presentation.prepWords}
         />
       );
+    default:
+      // b · c 몫 활동(자리 표시 없음)
+      return null;
   }
 }
 

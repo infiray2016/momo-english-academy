@@ -12,13 +12,12 @@ import { useEffect, useRef, useState } from "react";
 import { EnglishLine } from "@/components/activities/common";
 import { BigButton, StatusLine } from "@/components/board/board";
 import type { Answer } from "@/core/answer/check";
+import { MIC_CAPTURE_STREAK } from "@/core/speaking/judge";
 import { endRuleFor, type SpeechSettings } from "@/core/speech/listen";
 import { bestMatchRate } from "@/core/speech/match-rate";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { SoundButton } from "./choice";
 
-/** audio-capture 가 같은 활동에서 이어지면 '마이크를 쓸 수 없음'으로 보는 수(7절 고정 수 — 12절 키 없음, 정할 것 처). */
-export const MIC_CAPTURE_STREAK = 3;
 const AUDIO_CAPTURE = "audio-capture";
 
 /** 조각 글(3.2 · 7절 · 정본 밖 문구 표 배치 행). */

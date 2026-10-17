@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   bestMatchRate,
   type MatchOptions,
+  matchedTargetWords,
   matchRate,
   normalizeForMatch,
 } from "@/core/speech/match-rate";
@@ -218,5 +219,66 @@ describe("일치율(6.2)", () => {
     expect(() => matchRate("?!", "I like apples", ANY)).toThrow();
     expect(() => matchRate("{NAME}", "pumpkin", EXCLUDED)).toThrow();
     expect(() => bestMatchRate([], "I like apples", ANY)).toThrow();
+  });
+});
+
+describe("낱말별 맞춤(단어별 정오, plan-p11a 값 2)", () => {
+  const marks = (target: string, heard: string, options = ANY) =>
+    matchedTargetWords(target, heard, options).map(
+      (w) => `${w.word}${w.matched ? "" : "✗"}`,
+    );
+
+  it("낱말별 맞춤: 정렬로 목표 낱말마다 맞았는지 내고 맞은 수는 일치율과 같다", () => {
+    expect(marks("I have two dogs", "I have dogs")).toEqual([
+      "i",
+      "have",
+      "two✗",
+      "dogs",
+    ]);
+    expect(marks("I like red apples", "I like green apples")).toEqual([
+      "i",
+      "like",
+      "red✗",
+      "apples",
+    ]);
+    // 덧붙인 말 · 동음이의어 · 숫자 · 축약
+    expect(marks("I have two dogs", "um i have 2 big dogs")).toEqual([
+      "i",
+      "have",
+      "two",
+      "dogs",
+    ]);
+    expect(marks("I'm happy", "i am happy")).toEqual(["i", "am", "happy"]);
+    // 동음이의어 묶음으로 맞아도 낱말은 목표에 적힌 꼴(묶음 첫 낱말로 바꾸지 않음)
+    const group = HOMOPHONES.find((g) => g.length > 1);
+    if (group) {
+      const [head, other] = [group[0] ?? "", group[1] ?? ""];
+      expect(marks(`I see ${other}`, `I see ${head}`)).toEqual([
+        "i",
+        "see",
+        other.toLowerCase(),
+      ]);
+    }
+    // 인식이 비면 모두 틀림
+    expect(marks("I like apples", "")).toEqual(["i✗", "like✗", "apples✗"]);
+    for (const [target, heard] of [
+      ["I like red apples", "apples red like I"],
+      ["the cat and the dog", "the dog and the cat"],
+      ["a b a b a", "b a b"],
+      ["My name is {NAME}.", "my name is pumpkin"],
+    ] as const) {
+      const n = matchedTargetWords(target, heard, ANY).filter(
+        (w) => w.matched,
+      ).length;
+      expect(n / normalizeForMatch(target, NONE).length).toBe(
+        matchRate(target, heard, ANY),
+      );
+    }
+  });
+
+  it("낱말별 맞춤: {NAME} 자리는 아무 낱말과 맞고 빼기를 고르면 목록에서 빠진다", () => {
+    expect(marks("Hi, {NAME}!", "hi pumpkin")).toEqual(["hi", "{NAME}"]);
+    expect(marks("Hi, {NAME}!", "hi", EXCLUDED)).toEqual(["hi"]);
+    expect(() => matchedTargetWords("?!", "hi", ANY)).toThrow();
   });
 });

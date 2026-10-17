@@ -1,11 +1,18 @@
-// 새 단어 미리보기 · 활동 차례(3.2 · 3.3 첫 활동 · AC-2f, plan-p10b 파일별 값 3 · 정할 것 ㄹ · ㅁ).
-// k(unit.new_words_per_lesson)는 시험용 설정의 1~3 구간 값에서 읽는다.
+// 새 단어 미리보기 · 활동 차례(3.2 · 3.3 첫 활동 · AC-2f, plan-p10b 파일별 값 3 · 정할 것 ㄹ · ㅁ, plan-p11a 파일별 값 1 · 위험 3).
+// k(unit.new_words_per_lesson)는 시험용 설정의 1~3 구간 값에서 읽는다. 활동 차례는 견본 빌더 수업 · 시험용 시드 1단계로 본다.
 import { describe, expect, it } from "vitest";
 import {
   type Activity,
   activitiesOf,
   previewWordsOf,
 } from "@/core/session/preview";
+import {
+  defaultSettings,
+  referenceSet,
+  speakingLesson,
+  writingLesson,
+} from "../fixtures/seed/builders";
+import { devSeedTree } from "../fixtures/seed/dev-tree";
 import { loadableSettings } from "../fixtures/seed/loadable";
 
 /** 시험용 시드 설정(작은 틀)의 1~3 구간 unit.new_words_per_lesson. */
@@ -109,29 +116,38 @@ describe("새 단어 미리보기", () => {
 });
 
 describe("활동 차례", () => {
-  const kinds = (list: Activity[]) => list.map((a) => a.kind);
+  const ref = referenceSet(defaultSettings());
+  const kinds = (list: Activity[]) =>
+    list.map((a) => ("index" in a ? `${a.kind}:${a.index}` : a.kind));
 
-  it("활동 차례: 영역마다 미리보기가 먼저이고 P5b 시드 보기의 화면 차례를 따르며 회화는 빈 목록이다", () => {
+  it("활동 차례: 읽기 · 쓰기 1~3 · 말하기 1단계는 미리보기가 먼저이고 내용 차례를 따르며 회화는 빈 목록이다", () => {
     expect(
       kinds(
-        activitiesOf("reading", {
-          passage: "p",
-          targetWords: [],
-          glossary: [],
-          questions: [{}, {}] as never,
+        activitiesOf({
+          area: "reading",
+          level: 1,
+          content: {
+            passage: "p",
+            targetWords: [],
+            glossary: [],
+            questions: [{}, {}] as never,
+          },
         }),
       ),
     ).toEqual([
       "preview",
       "reading-passage",
-      "reading-question",
-      "reading-question",
+      "reading-question:0",
+      "reading-question:1",
     ]);
     expect(
-      activitiesOf("writing", {
-        shape: "items",
-        items: [{}, {}, {}] as never,
-      }).map((a) => ("index" in a ? `${a.kind}:${a.index}` : a.kind)),
+      kinds(
+        activitiesOf({
+          area: "writing",
+          level: 1,
+          content: { shape: "items", items: [{}, {}, {}] as never },
+        }),
+      ),
     ).toEqual([
       "preview",
       "writing-item:0",
@@ -140,53 +156,168 @@ describe("활동 차례", () => {
     ]);
     expect(
       kinds(
-        activitiesOf("writing", {
-          shape: "guided",
-          task: "t",
-          example: "e",
-          hints: [],
-          rubric: [],
-          sentences: [{}, {}] as never,
+        activitiesOf({
+          area: "speaking",
+          level: 1,
+          content: {
+            repeat: { words: ["a", "b"], sentences: ["c"] },
+            listening: [{}] as never,
+            questions: [{}, {}] as never,
+          },
         }),
       ),
+    ).toEqual([
+      "preview",
+      "repeat-word:0",
+      "repeat-word:1",
+      "repeat-sentence:0",
+      "listening:0",
+      "question:0",
+      "question:1",
+    ]);
+    expect(
+      activitiesOf({ area: "talk", level: 1, content: {} as never }),
+    ).toEqual([]);
+  });
+
+  it("활동 차례: 쓰기 4~5 는 과제 뒤 문장 전부를 한 활동으로 쓰고 내 문장 듣고 따라 말하기가 붙는다", () => {
+    const guided = writingLesson(ref, 4).lesson.content;
+    expect(guided.shape).toBe("guided");
+    expect(
+      kinds(activitiesOf({ area: "writing", level: 4, content: guided })),
     ).toEqual([
       "preview",
       "writing-task",
-      "writing-sentence",
-      "writing-sentence",
+      "writing-guided",
+      "writing-own-repeat",
     ]);
-    expect(
+  });
+
+  it("활동 차례: 쓰기 6~12 첫 세션은 생각 꺼내기(설정 단계부터) · 초고, 둘째 세션은 미리보기 없이 칭찬 · 교정 수만큼 · 고쳐 쓰기 · 모범 답안 · 내 문장 말하기다", () => {
+    const composition = writingLesson(ref, 6).lesson.content;
+    expect(composition.shape).toBe("composition");
+    const draft = (thinkout: boolean) =>
       kinds(
-        activitiesOf("writing", {
-          shape: "composition",
-          task: "t",
-          example: "e",
-          hints: ["h"],
-          rubric: [],
+        activitiesOf({
+          area: "writing",
+          level: 6,
+          content: composition,
+          part: "draft",
+          thinkout,
         }),
-      ),
-    ).toEqual(["preview", "writing-composition"]);
-    expect(
-      kinds(
-        activitiesOf("speaking", {
-          repeat: { words: ["a", "b"], sentences: ["c"] },
-          listening: [{}] as never,
-          questions: [{}, {}] as never,
-          pictureTask: { images: ["k"], scene: "s" },
-          presentation: { topic: "t", prepWords: [], fallbackQuestions: [] },
-        }),
-      ),
-    ).toEqual([
+      );
+    expect(draft(true)).toEqual([
       "preview",
-      "repeat-word",
-      "repeat-word",
-      "repeat-sentence",
-      "listening",
-      "question",
-      "question",
-      "picture-task",
-      "presentation",
+      "writing-task",
+      "thinkout",
+      "draft",
     ]);
-    expect(activitiesOf("talk", {} as never)).toEqual([]);
+    expect(draft(false)).toEqual(["preview", "writing-task", "draft"]);
+    // part 가 없으면 첫 세션이다
+    expect(
+      kinds(activitiesOf({ area: "writing", level: 6, content: composition })),
+    ).toEqual(["preview", "writing-task", "draft"]);
+    const rewrite = (corrections: number) =>
+      kinds(
+        activitiesOf({
+          area: "writing",
+          level: 6,
+          content: composition,
+          part: "rewrite",
+          corrections,
+        }),
+      );
+    expect(rewrite(2)).toEqual([
+      "feedback-praise",
+      "feedback-correction:0",
+      "feedback-correction:1",
+      "rewrite",
+      "model-answer",
+      "own-speak",
+    ]);
+    expect(rewrite(0)).toEqual([
+      "feedback-praise",
+      "rewrite",
+      "model-answer",
+      "own-speak",
+    ]);
+  });
+
+  it("활동 차례: 말하기 6단계 그림 보고 말하기는 질문보다 먼저이고 10단계는 발표 뒤 확인 질문 수만큼이다", () => {
+    const six = speakingLesson(ref, 6).lesson.content;
+    expect(six.pictureTask).toBeDefined();
+    const sixKinds = kinds(
+      activitiesOf({ area: "speaking", level: 6, content: six }),
+    );
+    expect(sixKinds.indexOf("picture-task")).toBe(
+      sixKinds.indexOf("question:0") - 1,
+    );
+    expect(sixKinds.indexOf("picture-task")).toBe(
+      sixKinds.lastIndexOf(`listening:${six.listening.length - 1}`) + 1,
+    );
+    const ten = speakingLesson(ref, 10).lesson.content;
+    const tenSpec = ref.levelSpecs.levelSpecs.find(
+      (s) => s.area === "speaking" && s.level === 10,
+    );
+    const confirmQuestions =
+      tenSpec?.area === "speaking"
+        ? (tenSpec.presentation?.confirmQuestions ?? 0)
+        : 0;
+    expect(confirmQuestions).toBeGreaterThan(0);
+    const tenKinds = kinds(
+      activitiesOf({
+        area: "speaking",
+        level: 10,
+        content: ten,
+        confirmQuestions,
+      }),
+    );
+    expect(tenKinds.slice(-(confirmQuestions + 1))).toEqual([
+      "presentation",
+      ...Array.from(
+        { length: confirmQuestions },
+        (_, i) => `confirm-question:${i}`,
+      ),
+    ]);
+    expect(tenKinds.some((k) => k.startsWith("repeat-"))).toBe(false);
+  });
+
+  it("활동 차례: 시험용 시드 1단계 세 영역의 차례 번호는 P10 과 같고 P10 꼴(영역 · 내용)로 불러도 같다", () => {
+    // P10 차례: 읽기 미리보기 → 지문 → 문항, 쓰기 미리보기 → 문항, 말하기 미리보기 → 낱말 → 문장 → 듣기 → 질문(그림 칸 없음)
+    const p10 = (content: Record<string, unknown>): string[] => {
+      const n = (list: unknown) => (Array.isArray(list) ? list.length : 0);
+      const run = (kind: string, count: number) =>
+        Array.from({ length: count }, (_, i) => `${kind}:${i}`);
+      if ("passage" in content)
+        return [
+          "preview",
+          "reading-passage",
+          ...run("reading-question", n(content.questions)),
+        ];
+      if ("items" in content)
+        return ["preview", ...run("writing-item", n(content.items))];
+      const repeat = content.repeat as { words: unknown; sentences: unknown };
+      return [
+        "preview",
+        ...run("repeat-word", n(repeat.words)),
+        ...run("repeat-sentence", n(repeat.sentences)),
+        ...run("listening", n(content.listening)),
+        ...run("question", n(content.questions)),
+      ];
+    };
+    let seen = 0;
+    for (const file of devSeedTree().lessons) {
+      if (file.area === "talk") continue;
+      for (const lesson of file.lessons) {
+        const content = lesson.content as never;
+        const now = kinds(
+          activitiesOf({ area: file.area, level: file.level, content }),
+        );
+        expect(now).toEqual(p10(content));
+        expect(kinds(activitiesOf(file.area, content))).toEqual(now);
+        seen += 1;
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
   });
 });

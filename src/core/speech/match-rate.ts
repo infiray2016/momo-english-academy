@@ -1,6 +1,7 @@
 // 6.2 일치율. 목표 문장 낱말 가운데 순서를 지켜 맞은 수 ÷ 목표 낱말 수.
 // 정규화 차례와 표기는 plan-p02 '파일별 값' 1 이고, P4 검증기 · P8 생성 브리프가 같은 표기를 쓴다(다-7).
 // DB · 브라우저 없는 순수 함수다. 1~3단계 따라 말하기 · 허용 답 판정에 AI 를 쓰지 않는다.
+// matchedTargetWords 는 같은 정렬로 목표 낱말마다 맞았는지 낸다(단어별 정오, plan-p11a 값 2 · C76).
 
 /** 이름 자리. 시드 문장의 {NAME} 은 정규화 뒤에도 이 낱말로 남는다. */
 export const NAME_SLOT = "{NAME}";
@@ -245,6 +246,84 @@ function orderedMatches(
     previous = current;
   }
   return previous[heard.length] ?? 0;
+}
+
+/** 정렬 표(가장 긴 공통 부분열 길이, 행 = 목표 앞 i 낱말 · 열 = 인식 앞 j 낱말). orderedMatches 와 같은 맞음 규칙이다. */
+function alignmentTable(
+  target: readonly string[],
+  heard: readonly string[],
+): number[][] {
+  const table: number[][] = [new Array(heard.length + 1).fill(0)];
+  for (let i = 1; i <= target.length; i += 1) {
+    const want = target[i - 1];
+    const above = table[i - 1] ?? [];
+    const row: number[] = [0];
+    for (let j = 1; j <= heard.length; j += 1) {
+      const same = want === NAME_SLOT || want === heard[j - 1];
+      row.push(
+        same
+          ? (above[j - 1] ?? 0) + 1
+          : Math.max(above[j] ?? 0, row[j - 1] ?? 0),
+      );
+    }
+    table.push(row);
+  }
+  return table;
+}
+
+/** 견줄 목표 낱말(맞춤 열쇠 · 적힌 꼴). 빼기를 고르면 {NAME} 자리를 뺀다. 견줄 낱말이 없으면 던진다. */
+function targetWordsOf(
+  target: string,
+  options: MatchOptions,
+): { keys: string[]; words: string[] } {
+  const keys = normalizeForMatch(target, options.homophones);
+  // 동음이의어 묶음을 빼고 정규화한 꼴 — 낱말 수 · 차례는 keys 와 같다(묶음은 낱말 하나를 낱말 하나로 바꾼다)
+  const words = normalizeForMatch(target, []);
+  const keep = keys.map(
+    (key) => !(options.nameSlot === "excluded" && key === NAME_SLOT),
+  );
+  const kept = {
+    keys: keys.filter((_, i) => keep[i]),
+    words: words.filter((_, i) => keep[i]),
+  };
+  if (kept.keys.length === 0) {
+    throw new Error(`일치율: 목표 문장에 견줄 낱말이 없다: '${target}'`);
+  }
+  return kept;
+}
+
+/**
+ * 목표 낱말마다 순서를 지켜 맞았는지(정렬을 거꾸로 따라감). 낱말은 정규화한 꼴(소문자 · 축약 펼침 · 숫자 낱말)이고
+ * 동음이의어 묶음으로 바꾸지 않은 목표의 꼴이다. 맞은 수 ÷ 낱말 수는 matchRate 와 같다. 인식이 비면 모두 틀림.
+ */
+export function matchedTargetWords(
+  target: string,
+  heard: string,
+  options: MatchOptions,
+): { word: string; matched: boolean }[] {
+  const { keys, words } = targetWordsOf(target, options);
+  const heardWords = normalizeForMatch(heard, options.homophones);
+  const table = alignmentTable(keys, heardWords);
+  const matched: boolean[] = keys.map(() => false);
+  let i = keys.length;
+  let j = heardWords.length;
+  while (i > 0 && j > 0) {
+    const want = keys[i - 1];
+    const here = table[i]?.[j] ?? 0;
+    if (
+      (want === NAME_SLOT || want === heardWords[j - 1]) &&
+      here === (table[i - 1]?.[j - 1] ?? 0) + 1
+    ) {
+      matched[i - 1] = true;
+      i -= 1;
+      j -= 1;
+    } else if ((table[i - 1]?.[j] ?? 0) >= (table[i]?.[j - 1] ?? 0)) {
+      i -= 1;
+    } else {
+      j -= 1;
+    }
+  }
+  return words.map((word, n) => ({ word, matched: matched[n] ?? false }));
 }
 
 /**

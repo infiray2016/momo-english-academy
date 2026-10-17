@@ -9,6 +9,11 @@ import {
   normalizeTyped,
 } from "@/core/answer/check";
 import { matchRate } from "@/core/speech/match-rate";
+import {
+  defaultSettings,
+  referenceSet,
+  writingLesson,
+} from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 
 const REPEAT_PASS = TEST_SETTINGS["placement.repeat_pass"].value;
@@ -168,5 +173,56 @@ describe("답 맞춤", () => {
       opts,
     );
     expect(pick.detail.expected).toBe("3");
+  });
+
+  it("AC-4a 쓰기 1단계 빈 글자 채우기와 3단계 카드 조립은 앱이 채점하고 조립은 허용 정답 가운데 하나와 같으면 정답이며 첫 글자 대문자와 마침표 카드를 판정한다", () => {
+    // 견본 빌더(기본 틀) 1 · 3단계 쓰기 수업의 문항 그대로(P10a 넘김 — 시험은 checkAnswer 에)
+    const ref = referenceSet(defaultSettings());
+    const one = writingLesson(ref, 1).lesson.content;
+    const three = writingLesson(ref, 3).lesson.content;
+    if (one.shape !== "items" || three.shape !== "items")
+      throw new Error("견본 꼴");
+    const fill = one.items.find((i) => i.type === "fill-letters");
+    if (fill?.type !== "fill-letters") throw new Error("빈 글자 채우기 없음");
+    // 빈 글자 자리에 놓을 글자 = 정답 낱말에서 무늬의 '_' 자리 글자
+    const want = fill.accepted[0] ?? "";
+    const letters = [...fill.pattern].flatMap((c, i) =>
+      c === "_" ? [want[i] ?? ""] : [],
+    );
+    expect(ok(fill, { kind: "tiles", pieces: letters })).toBe(true);
+    const wrongLetter = fill.tiles.find((t) => !letters.includes(t)) ?? "q";
+    expect(
+      ok(fill, { kind: "tiles", pieces: letters.map(() => wrongLetter) }),
+    ).toBe(false);
+    // 빈 자리 수와 다르게 놓으면 틀림
+    expect(ok(fill, { kind: "tiles", pieces: [...letters, wrongLetter] })).toBe(
+      false,
+    );
+
+    const assemble = three.items.find((i) => i.type === "assemble-sentence");
+    if (assemble?.type !== "assemble-sentence") throw new Error("조립 없음");
+    const answer = assemble.accepted[0] ?? "";
+    // 허용 정답의 낱말 카드 차례(마침표 카드는 따로) — 첫 카드는 대문자 단추로 바꾼 글
+    const words = answer.replace(/[.]$/, "").split(" ");
+    const lowerFirst = [(words[0] ?? "").toLowerCase(), ...words.slice(1), "."];
+    const capitalFirst = [...words, "."];
+    // 시드 카드는 모두 소문자이고 마침표 카드가 따로 있다(C73 · 3.3)
+    expect(assemble.cards).toContain(".");
+    expect(assemble.cards.every((c) => c === c.toLowerCase())).toBe(true);
+    expect(ok(assemble, { kind: "tiles", pieces: capitalFirst })).toBe(true);
+    expect(ok(assemble, { kind: "tiles", pieces: lowerFirst })).toBe(false);
+    expect(ok(assemble, { kind: "tiles", pieces: words })).toBe(false);
+    expect(
+      ok(assemble, { kind: "tiles", pieces: [...words].reverse().concat(".") }),
+    ).toBe(false);
+    // 허용 정답이 여럿이면 어느 하나와 같으면 정답
+    const two = {
+      ...assemble,
+      accepted: [answer, "Momo likes the cat."],
+    };
+    expect(
+      ok(two, { kind: "tiles", pieces: ["Momo", "likes", "the", "cat", "."] }),
+    ).toBe(true);
+    expect(ok(two, { kind: "tiles", pieces: capitalFirst })).toBe(true);
   });
 });
