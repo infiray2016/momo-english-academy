@@ -28,7 +28,7 @@ import {
   unitProgress,
 } from "@/db/schema/learning";
 import { type Db, getDb, type Tx } from "@/server/db";
-import { dbErrorTag } from "@/server/db/safe-error";
+import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
 import { readLessonsOfUnit, readLevelSpec } from "@/server/seed/read";
@@ -53,8 +53,6 @@ const THROUGH_KEY = "seed.complete_through_level";
 const NEW_WORDS_KEY = "unit.new_words_per_lesson";
 /** 새 단어 미리보기 활동 번호(3.3 첫 활동). */
 const PREVIEW_ACTIVITY = 1;
-/** Postgres 유일 제약 위반(두 기기가 함께 시작). */
-const UNIQUE_VIOLATION = "23505";
 
 // 시도 입력 상한(기술 값)
 /** 한 번에 받는 시도 수. */
@@ -110,15 +108,6 @@ export type StartOutcome =
         | "no_profile"
         | "unavailable";
     };
-
-function isUniqueViolation(error: unknown): boolean {
-  let current: unknown = error;
-  for (let depth = 0; current && depth < 3; depth += 1) {
-    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
-    current = (current as { cause?: unknown }).cause;
-  }
-  return false;
-}
 
 function logFailure(what: string, error: unknown) {
   if (error instanceof SettingMissingError)

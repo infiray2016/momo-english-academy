@@ -177,7 +177,8 @@ export function LessonBoard({
               </span>
             ) : null}
           </span>
-          <span>{item.title}</span>
+          {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82, 이름표는 번호 · 꼬리표) */}
+          <span data-size-guide="">{item.title}</span>
           {item.untried ? (
             <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
               {TEXT.untried}
@@ -221,7 +222,7 @@ export function LessonBoard({
         <span data-top-item={item.kind} className="contents">
           {here ? <HereBadge /> : null}
           <span className="font-heading text-2xl">{label}</span>
-          {title ? <span>{title}</span> : null}
+          {title ? <span data-size-guide="">{title}</span> : null}
         </span>
       </PostIt>
     );
