@@ -27,3 +27,9 @@
 | P10 화면 방향(목업 가로 1180 · 시험 세로 820) · AREA_TONE → board 토큰 · keep-all · 글꼴 셋 | 코드 몫 review-p10-2-code 6절 · 사진 판정 review-p10-3-design(첫 실행 26장 · 홈 8장 세로 · 가로 넘침 없음) — 남은 e2e:local 7 확인은 ledger-open 별도 행 | 2026-10-17 23:3x |
 | 차례 2 화면 M-9 아바타 화면 제목 | 컨트롤러가 C72 문구 그대로 두기로(review-p10-3-design 차례 2 표 NOT ADDRESSED → 닫음) | 2026-10-17 23:3x |
 | P10 기기 사실 모으기(`browser.ts` ↔ `mic-state.ts`) · 시작 개정 다섯 테이블 목록(`read.ts` ↔ e2e `household.ts`) 두 벌 | fix 1 `deviceFacts()` · `SEED_REVISION_TABLES` 한 벌 — review-p10-fix1 ADDRESSED(복사본 단위 327 · deps 0 · 통합 16) | 2026-10-17 23:4x |
+| P10 홈 e2e AC-5c 둘째 시험이 이름의 두 절(audio-capture · 인식 API 없는 기기)을 증명하지 않음 · 새 쪽이 실제 WebKit API 에 기댐 | fix 2: 새 쪽마다 가짜 음성 + audio-capture.json 대본으로 첫 실행 마이크 확인 — review-p10-fix2-code ADDRESSED(변이 잡힘) | 2026-10-18 00:3x |
+| 컨트롤러 핫픽스 둘(한글 이름 칸 defaultValue · <Fragment key={step}>) 타당성 | review-p10-fix2-code: 둘은 짝(키 없으면 PIN DOM 재사용) · 상태 · 다음 조건 · 저장 값 · 초점 그대로 · 뒤로 오면 복원 — 복원 시험은 fix 3 N-1 | 2026-10-18 00:3x |
+| P10: P5b e2e:local 7(토큰 전환 뒤 시드 보기 화면) 컨트롤러 확인 | CI e2e-local 작업 성공(run 39051573610 등) — review-p10-5-6-code 장부 판정 | 2026-10-18 02:3x |
+| P10 차례 4 · 5 · 6 행(:46 카드 → 목록 · 배치 · 세션 상수 · 이번 주 배치 · AC-2b 세션 단언) · :49 · :50 · :52 · :31 · :41 P10 몫 · :53 코드 몫 | review-p10-5-6-code 장부 판정(C74 되읽기만 남음 — 로마자 행은 열어 둠) | 2026-10-18 02:3x |
+| CI 통합 작업이 실패를 가렸음(embedded-postgres 종료 처리기, P3a 부터) | fix 5 pg-local importEmbeddedPostgres + ci.yml 지킴 — CI 7 · 8차 integration 108 통과, 지난 CI 로그 재확인(가려진 실패는 세션 다시 열기 시험 하나) — review-p10-fix5-code ADDRESSED | 2026-10-18 05:1x |
+| 마이크 확인 거짓 양성(API 존재만으로 통과) · '못 씀' 되돌릴 길 없음 | fix 5 소리 · 결과 조건 + '다시 확인' 단추 + 안내 문구 — review-p10-fix5-code ADDRESSED(변이 S1 · S2 잡힘) | 2026-10-18 05:1x |
