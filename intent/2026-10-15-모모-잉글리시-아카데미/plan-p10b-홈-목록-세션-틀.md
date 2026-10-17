@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P10b 홈 · 수업 목록 · 세션 틀
 
-spec: `specs/` 정본(4절 첫 문단 '세션 진행 상태는 활동마다 즉시 저장' · 홈 표 · 수업 목록 표, 3.2 수업 목록 문단 · 다시 하기 · 안 해 본 수업 · 연습 수업 · 단원 통과 표, 3.3 첫 활동(새 단어 미리보기 · 다지기는 '안다'가 아닌 단원 단어 k 개까지) · 영역별 세션 순서, 3.5 연속 학습 일수 · '이번 주 n일', 5절 sessions · attempts · unit_progress · 칸 · 시드 판 · 전이 표 · '세션을 여는 서버 액션은 … 다시 판정' 문단, 8절 네트워크 끊김 · 같은 프로필의 동시 사용 · 오래 멈춘 세션 · 다음 단계 시드가 없음, 12절 unit.* · session.resume_hours · seed.complete_through_level · app.*, 13절 '하던 수업이 있을 때 다른 수업을 고르면' · '여기부터 해요' · '모든 영역의 세션은 새 단어를 … 첫 활동' 행 · C50 (1) · C56 (1) · C61, 15절 AC-1b(통합 몫) · 2a · 2b · 2d · 2e · 2f · 5c · N7 · N9, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P10 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: approved
+spec: `specs/` 정본(4절 첫 문단 '세션 진행 상태는 활동마다 즉시 저장' · 홈 표 · 수업 목록 표, 3.2 수업 목록 문단 · 다시 하기 · 안 해 본 수업 · 연습 수업 · 단원 통과 표, 3.3 첫 활동(새 단어 미리보기 · 다지기는 '안다'가 아닌 단원 단어 k 개까지) · 영역별 세션 순서, 3.5 연속 학습 일수 · '이번 주 n일', 5절 sessions · attempts · unit_progress · 칸 · 시드 판 · 전이 표 · '세션을 여는 서버 액션은 … 다시 판정' 문단, 8절 네트워크 끊김 · 같은 프로필의 동시 사용 · 오래 멈춘 세션 · 다음 단계 시드가 없음, 12절 unit.* · session.resume_hours · seed.complete_through_level · app.*, 13절 '하던 수업이 있을 때 다른 수업을 고르면' · '여기부터 해요' · '모든 영역의 세션은 새 단어를 … 첫 활동' 행 · C50 (1) · C56 (1) · C61, 15절 AC-1b(통합 몫) · 2a · 2b · 2d · 2e · 2f · 5c · N7 · N9, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P10 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: done(2026-10-18, 커밋 78db3a2)
 승인: 컨트롤러 2026-10-17 18:3x(C70~C73 — 순서 바꿈은 요청자 2026-10-17 14:1x 요청에 따름, 다른 순서를 원하면 되돌림; 정할 것은 모두 권함대로) · 브랜치 · 워크트리: `feature/1a-p10-first-run-home`(P10a 와 같은 브랜치 · 같은 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P10 의 둘째 절반이다. 짝은 `plan-p10a-첫-실행-배치.md` 이고, 두 plan 이 함께 쓰는 사실 — **앞당긴 까닭과 가정 · 화면을 보는 차례 · 바탕 브랜치 · 시험용 시드(값 2) · e2e DB 도우미(값 3) · 마이크 상태(값 4) · 보드(값 5) · 정본 밖 문구 · 확인한 사실** — 은 그 파일의 같은 이름 절에만 있다. 이 plan 의 작업은 그 파일 '화면을 보는 차례'의 차례 3 · 4 · 6 · 7 이다.
@@ -91,7 +91,7 @@ P10 의 둘째 절반이다. 짝은 `plan-p10a-첫-실행-배치.md` 이고, 두
    - `loadSessionView(sessionId, now)`(쪽이 부름): 그 프로필의 진행 세션이 아니면 없음(쪽이 목록으로 보냄). 수업 행 `content` 를 P4a `LESSON_SCHEMAS[area]` 로 풀고(진행 세션은 `lesson_id` 행을 끝까지, 5절), `activitiesOf`, 지금 활동 = 저장한 시도의 가장 큰 `activity_no` + 1(활동 수를 넘지 않음), 미리보기 단어(`metWords` = 이 영역의 다른 세션 미리보기 시도의 `shownWords` — 정할 것 ㄹ), 그림 정보(P10a 값 12 의 그림 꼴), 복사본 k.
 7. **세션 화면(`session-frame.tsx`)**. 위 종이 띠(영역 색 · '<n>단계 · 단원 <u>' · 수업 제목 · 활동 점 · 오른쪽 작은 '홈'). 활동 1(미리보기)은 P5b `NewWordsPreview` 와 큰 '다음' — 누르면 시도 `{ activityNo: 1, input: { shownWords } }` 를 대기열에 넣고 다음 활동. 활동 2부터는 P5b 표시 컴포넌트(`ReadingPassage` · `ReadingQuestion` · `WritingItem` · `RepeatItem` · `ListeningItem` …, `reveal` 거짓)와 '다음'(시도 없음, P11 이 바꿈). 마지막 뒤 `/<영역>/lessons`. '홈'은 `leaveSession({ sessionId, onFirstActivity: 지금 활동이 1 인가 })` 뒤 `/`. 읽어 주기 · 소리 자리 동작은 P11.
 8. **시도 대기열(`src/lib/attempt-queue.ts`)**. 순수 함수 `queueAdd(state, attempt)` · `queueAccept(state, ids)` · `queuePending(state)` 와 감싼 `createAttemptQueue({ storage, send })`. 시도는 `{ clientAttemptId: crypto.randomUUID(), sessionId, activityNo, input }`. localStorage 키 `momo.attempts.v1`(제안)에 쌓고 곧바로 보내며, 실패하면 남겨 `online` 이벤트와 다음 넣기 때 다시 보낸다(8절 '진행 중 세션의 답만 기기에 쌓는다'). localStorage 를 못 쓰면 메모리로만.
-9. **크기 훑기(`tests/e2e/child-size.ts`)**. P5b e2e-local 의 훑기를 일반화: `[data-child-screen]` 안의 글(자기 글이 있는 요소)이 20px 이상, `lang="en"` 조상이 있으면 24px 이상, `button` · `a` · `[role=button]` · `[data-touch]` 는 글자 22px 이상 · 상자 56 × 56px 이상, `[data-parent-info]` 안은 뺀다, '%' 없음, 가로 넘침 없음. 기준 수는 4절 잠정 값이라 이 파일 위 이름 붙인 상수(P5b 와 같은 값 · 같은 꼴)다.
+9. **크기 훑기(`tests/e2e/child-size.ts`)**. P5b e2e-local 의 훑기를 일반화: `[data-child-screen]` 안의 글(자기 글이 있는 요소)이 20px 이상, `lang="en"` 조상이 있으면 24px 이상, `button` · `a` · `[role=button]` · `[data-touch]` 는 상자 56 × 56px 이상이고 그 안의 이름표 글은 22px 이상(카드 꼴 단추 안의 보조 줄 — 단원 · 단어 수 · 최근 성적 · 이번 주 · 오늘 · 수업 제목 — 은 `data-size-guide` 표시로 안내 20px, C82 · fix 6), `[data-parent-info]` 안은 뺀다, '%' 없음, 가로 넘침 없음. 기준 수는 4절 잠정 값이라 이 파일 위 이름 붙인 상수(P5b 와 같은 값 · 같은 꼴)다.
 
 ### 정본 밖 문구(P10a '정본 밖 문구' 표에 더함 — 정할 것 ㅋ)
 
@@ -180,9 +180,91 @@ P10a '제약'과 같다. 더해서 — 아이 화면 문구는 4절에서 옮기
 | AC-2f(P10 몫) | 단위 "AC-2f 배정 수업 8을 하지 않은 채 다지기 수업 9를 고르면 수업 8 의 새 단어 가운데 수업 9 에 나오는 단어가 첫 활동에 더해진다" · "AC-2f 배정 수업 3을 하지 않고 배정 수업 4를 고른 경우도 같고 이미 만난 단어는 더하지 않는다" + e2e "AC-2f 앞 배정 수업을 하지 않고 뒤 수업을 고르면 새 단어 미리보기에 앞 수업의 새 단어가 더해 보인다"(작은 틀: 배정 1 을 건너뛴 배정 2). 1단계 회화 몫은 1-나 | `tests/unit/session-preview.test.ts` · `lesson-list.spec.ts` |
 | AC-5c(P10 몫) | e2e "AC-5c 음성 인식 API 가 없는 브라우저와 마이크 권한을 거부한 기기에서 홈을 열면 말하기 · 회화 카드에 '마이크가 필요해요. 부모님께 말해 주세요'가 보이고 눌리지 않으며 읽기 · 쓰기 카드는 열린다" · "AC-5c 말하기 배치 전이어도 회화 카드에 같은 문구가 보이고 audio-capture 한 번으로는 닫히지 않으며 인식 API 가 없던 기기는 홈 진입마다 다시 확인한다". 세션 도중 거부 P11, 부모 화면 1-나 | `home.spec.ts` |
 | AC-N9(P10 몫) | e2e "AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업 · 회화 준비 중 · 배치 평가 시작 · 문항 · 결과 · 세션 틀)의 안내 20px · 영어 24px · 버튼 글자 22px 이상, 누르는 곳 56px 이상, '%' 가 없고 세로 820 · 가로 1180 에서 가로 넘침이 없다" | `tests/e2e/font-size.spec.ts` · `tests/e2e/child-size.ts` |
-| 세션 틀(AC 접두 없음) | 통합 "세션 틀: 같은 client_attempt_id 는 한 번만 저장된다" · "세션 틀: 다시 열면 저장한 시도 다음 활동부터 이어진다" · "세션 틀: session.resume_hours 가 지난 진행 세션은 수업 목록 요청 때 중단으로 닫히고 배치 평가는 닫히지 않는다" · "세션 틀: 두 번째 기기에서 같은 영역을 열면 진행 중 세션을 이어 하고 새 세션을 만들지 않는다" · "세션 틀: 판은 그 단원 회차의 시작 개정으로 고르고 다시 하기는 처음 쓴 개정의 가장 높은 정정과 처음 변형으로 연다" · "세션 틀: seed.complete_through_level 보다 높은 단계와 다른 단계의 수업은 열지 않는다" + 단위 "세션 틀: 보내지 못한 시도는 기기에 쌓였다가 다시 보내고 받은 id 는 지운다" | `session-start.test.ts` · `tests/unit/attempt-queue.test.ts` |
+| 세션 틀(AC 접두 없음) | 통합 "세션 틀: 같은 client_attempt_id 는 한 번만 저장된다" · "세션 틀: 다시 열면 저장한 시도 다음 활동부터 이어진다" · "세션 틀: session.resume_hours 가 지난 진행 세션은 수업 목록 요청 때 중단으로 닫히고 배치 평가는 닫히지 않는다" · "세션 틀: 두 번째 기기에서 같은 영역을 열면 진행 중 세션을 이어 하고 새 세션을 만들지 않는다" · "세션 틀: 판은 그 단원 회차의 시작 개정으로 고르고 다시 하기는 처음 쓴 개정의 가장 높은 정정과 처음 변형으로 연다" · "세션 틀: seed.complete_through_level 보다 높은 단계와 다른 단계의 수업은 열지 않는다" + 단위 "세션 틀: 보내지 못한 시도는 기기에 쌓였다가 다시 보내고 받은 id 는 지운다" | `session-start.test.ts` · `lesson-list.test.ts`(session.resume_hours 몫 — review-p10-4-code 4절 ⑥) · `tests/unit/attempt-queue.test.ts` |
 | 공통 | P10a 증명 '공통' 줄과 같은 명령 · CI. missing-test −7(AC-2a · 2b · 2d · 2e · 2f · 5c · N9). 공용 변경 1 · 2 의 시험 초록 | P10a 작업 8 · 이 plan 작업 5 |
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 문서 반영 편집자 2026-10-18 06:4x(브리프 `task-p10-done-edit.md`). **커밋 78db3a2**(가지 `feature/1a-p10-first-run-home` — P10a 와 같은 가지 · 같은 워크트리). 흐름 · 커밋 · CI · 로컬 관문 · 공용 파일 · PR 은 plan-p10a 완료 보고의 같은 이름 절에 있다. 마지막 CI 는 11차 run 39070194023 전부 성공(통합 · e2e 49 · e2e-local)이고, 로컬 관문은 단위 367 · tsc 0 · biome 0 이다. 이 plan 의 검토는 B1(차례 3 · fix 2) · B2(차례 4 · fix 3) · B3(차례 6 — `review-p10-5-6-code.md` · `review-p10-fix5-code.md`) · 마무리(`review-p10-7-code.md`)다.
+
+### 실제 바뀐 파일(※ = 계획과 다름)
+
+계획 표의 손 파일 스물다섯(새 24 · P10a 자리를 채운 `(child)/page.tsx` 하나)은 모두 있다.
+
+| 파일 | 신규 / 수정 | 실제 |
+|---|---|---|
+| `src/core/today/done.ts` · `tests/unit/today-done.test.ts` | 신규 | `todayDone` · `thisWeekDays` · `weekStartOf`. ※ '이번 주 n일'은 배치 평가 세션도 센다(fix 2) |
+| `src/server/home/index.ts` | 신규 | `readHome`. ※ 아는 단어 · 최근 성적 · 끝낸 대화는 실제 질의로 센다(지금은 행이 없어 0 · 빈 칸, P11 · P12 가 행을 넣으면 채워짐). 회화 '끝낸 대화'의 최소 수는 단원 복사본 unit.min_lessons |
+| `tests/integration/home.test.ts` | ※ 신규 | 홈 자료(배치 전 · 단원 칸 · 오늘 완료 · 이번 주 · 배치 세션 셈) |
+| `src/app/(child)/page.tsx` | 수정(P10a 자리) | ※ 부모 꼬리표를 종이 띠 안으로(세로 820 한 화면) · 점은 먹색 |
+| `src/app/(child)/home-cards.tsx` | 신규 | ※ 카드 전체가 링크 하나이고 안의 글이 읽히는 이름 · 판정 전 말하기 · 회화 카드는 링크 없는 틀 · 배치 전 카드 안내 한 줄 · 닫힌 말하기 카드 아래 '다시 확인' 단추(1-가 임시) · 보조 줄 `data-size-guide`(C82) · 판정 끝 표시 `data-hydrated`(fix 7) |
+| `src/app/(child)/talk/page.tsx` | 신규 | ※ 부모용 작은 글 '회화 수업은 다음 차수에 들어와요'(1-가 임시) |
+| `tests/e2e/home.spec.ts` | 신규 | AC-2a 둘 · AC-5c 둘. ※ AC-5c 둘째는 `audio-capture` 대본으로 두 절을 증명(fix 2) · 가짜 음성은 `speechPage` 도우미로(fix 4) |
+| `tests/fixtures/speech/scripts/audio-capture.json` | ※ 신규 | 첫 실행 마이크 확인이 audio-capture 한 번으로 실패하는 대본(fix 2) |
+| `src/core/lesson-list/state.ts` · `tests/unit/lesson-list-state.test.ts` | 신규 | `lessonListState` · `pastUnits` · `judgeLessonStart`. ※ 입력 · 출력을 더함(아래 '계획과 다르게 한 것' 5) · 잠긴 줄 수 규칙을 순수 함수 `minLessonsOf` · `unitGateOf` 로 뺌(fix 3 M-1) |
+| `src/server/lesson-list/index.ts` | 신규 | `closeStaleSessions` · `readLessonList`. ※ 읽기가 트랜잭션도 받음(`DbOrTx`, fix 5 M-1) |
+| `tests/integration/lesson-list.test.ts` | ※ 신규 | 목록 자료 · 잠긴 줄 수 · 쓰기 6단계 `frame.minLessons` · '세션 틀: session.resume_hours …'(증명 표 파일 칸은 `session-start.test.ts` 로 적혀 있음 — review-p10-4-code 4절 ⑥) |
+| `src/app/(child)/[area]/lessons/page.tsx` · `lesson-board.tsx` | 신규 | ※ '여기부터 해요'는 두 칸 너비 · 뒷줄 이름표 '다지기' · 끝낸 수업 ✓ 와 숨은 글 '끝낸 수업' · 조건 줄 없는 잠긴 단원의 숨은 글 '잠긴 단원' · 가로는 오른쪽 칸에 잠긴 단원 · 지난 수업(카드 최소 112px) · 수업 제목 `data-size-guide` · 화면 준비 끝 표시 |
+| `src/app/(child)/[area]/lessons/use-lesson-start.ts` | ※ 신규 | 수업 고르기 → `startLesson` · 확인 쪽지 · 오류 줄(C72 저장 문장 · 7절 끊김 문장) · 같은 그리기 안 두 번 누름 막기(fix 5) |
+| `src/app/(child)/[area]/lessons/past/page.tsx` | 신규 | 단원 고르기 → 수업 고르기(안 해 본 수업 표시) |
+| `src/app/(child)/[area]/lessons/past/past-lessons.tsx` | ※ 신규 | 지난 수업 고르기(같은 시작 길) · 제목 `data-size-guide` |
+| `tests/e2e/lesson-list.spec.ts` | 신규 | AC-2b · 2d · 2e · 2f 와 지난 수업 · 주소 돌려보내기 · 부모 확인 안내 · 확인 쪽지 초점. ※ AC-2f 는 '배정 1 · 2 를 건너뛴 다지기' |
+| `src/core/session/preview.ts` · `tests/unit/session-preview.test.ts` | 신규 | 계획대로 |
+| `src/lib/attempt-queue.ts` · `tests/unit/attempt-queue.test.ts` | 신규 | ※ `online` 대상을 주입 받음(`onlineTarget`) · 배치는 이 대기열을 쓰지 않음 |
+| `src/server/session/index.ts` · `src/server/actions/session.ts` | 신규 | ※ 재판정 입력은 `readLessonList` 를 그대로 부름 · 목록 읽기도 `profile_tracks` 행 잠금 트랜잭션 안(fix 5 M-1) · 남의 · 끝난 세션의 시도는 '받음'으로만 · 세션 자료에 정답 칸까지 실음 · 유일 위반은 `safe-error.ts` 의 `isUniqueViolation`(차례 7) |
+| `src/app/(child)/session/[id]/page.tsx` · `session-frame.tsx` | 신규 | 계획대로(둘째 활동부터 보기만 · 마지막 뒤 수업 목록) |
+| `tests/integration/session-start.test.ts` | 신규 | 증명 표 이름 그대로 아홉. ※ '세션 틀: 다시 열면 …'은 CI 4차까지 가려진 실패였고 다지기 번호를 DB 에서 읽게 고침(fix 5 I-2) |
+| `tests/e2e/session.spec.ts` | ※ 신규 | 세션 틀 e2e 둘(진행 세션을 넣고 주소로 엶 — 첫 활동 미리보기 · 첫 활동 '홈'이면 지움) |
+| `tests/e2e/child-size.ts` | 신규 | ※ `data-size-guide` 안쪽 보조 줄은 20px(C82 · fix 6) · `data-size-exempt` 안쪽은 뺌(plan-p11a 위험 9 가 쓸 표시) |
+| `tests/e2e/font-size.spec.ts` | 신규 | AC-N9 하나 — 접근 코드 · 홈 · 회화 준비 중 · 수업 목록 · 지난 수업 · 세션 틀 · 배치(시작 · 쓰기 타일 · 읽기 그림 고르기 · 마이크 안내 · 따라 말하기 · 예비 문항 · 결과), 세로 · 가로 |
+
+공용 변경:
+
+| # | 파일 | 실제 |
+|---|---|---|
+| 1 | `tests/unit/learning-day.test.ts`(P3a) | 계획대로 — 한 시계 검사가 `src/app` 가운데 첫 문장이 `'use client'` 가 아닌 파일까지 본다 |
+| 2 | `tests/unit/access-gate.test.ts`(P3b) | 계획대로 — 같은 이름 지역 함수 · guard 밖 모듈의 `requireAccess` 를 잡는다. ※ 기본 가져오기 · guard 다른 함수의 별칭은 못 잡는다(review-p10-7-code M-4 → ledger-open) |
+| 3 | `tests/fixtures/settings.ts` | P10a 공용 변경 4 와 같은 줄 |
+
+세션 시작이 트랜잭션을 넘기려고 고친 공용 파일(`src/server/db/index.ts` · `settings/index.ts` · `seed/read.ts`)은 plan-p10a '공용 파일' 표에 있다.
+
+### 계획과 다르게 한 것
+
+1. **AC-6a 의 Playwright 증명은 P11 이다**(정할 것 ㄱ · C70). P10 은 접두 없는 통합 '세션 틀: 다시 열면 저장한 시도 다음 활동부터 이어진다'로 틀만 본다. 메인 묶음 plan 증명 표의 AC-6a P 칸은 이미 P11 이다.
+2. **값 9 문장을 C82 로 고쳤다**(컨트롤러 2026-10-18 06:0x). '버튼 글자 22px'는 이름표에 걸고, 카드 꼴 단추 안 보조 줄(단원 · 단어 수 · 최근 성적 · 이번 주 · 오늘 · 수업 제목)은 `data-size-guide` 표시로 안내 20px 로 잰다. CI 9차 AC-N9 26건 뒤의 결정이고 글자 크기는 바꾸지 않았다.
+3. **'이번 주 n일'은 배치 평가 세션을 끝낸 날도 센다**(정할 것 ㄴ 해석, 컨트롤러 결정 — review-p10-3-code M-2 → fix 2). 오늘 완료는 4절대로 배치를 세지 않는다.
+4. **지금 단원을 통과한 상태의 목록 해석**(다음 단계 준비 중 · 졸업 · 단계 평가 대기 · 부모 확인 대기, 컨트롤러 2026-10-18 00:1x — review-p10-4-code I-1 → fix 3). 안 한 수업은 '안 해 본 수업'(untried), 끝낸 수업은 다시 하기(retry)다. 잠긴 다음 단원 칸은 남기고 조건 줄만 숨긴다. '여기부터 해요'는 하던 수업 → 첨삭 보기 → 단계 평가 차례이고 지금 단원의 새 수업은 가리키지 않는다. P12 가 이 상태를 만들 때 같은 규칙이다.
+5. **순수 함수 입력 · 출력을 더했다**(review-p10-4-code 4절 받아들임). `ListInput.roundStartedAt`(세션 행에 회차가 없음) · `currentPassed`(fix 3) · 거부 까닭 `paused`(부모 확인 대기에만 — fix 3 에서 좁힘) · 다시 하기의 `firstVariant` · `firstRevision` 이다. '이 회차에서 끝냄'은 끝낸 시각으로 가른다(홈과 같게, fix 3 M-3).
+6. **AC-2f e2e 는 '배정 1 · 2 를 건너뛴 다지기'로 본다.** 시험용 시드는 배정 2 의 단원 단어에 배정 1 의 새 단어가 없다. 단위 둘은 plan 글자 그대로다(배정 8 → 다지기 9 · 배정 3 → 4). P8 실시드 뒤 원안(배정 1 을 건너뛴 배정 2)으로 다시 본다.
+7. **시도 대기열은 세션 첫 활동만 쓴다.** P10a 배치 화면은 대기열로 합치지 않았다(값 8 · 'P10a 에 넘길 것', review-p10-5-6-code 4절 받아들임).
+8. **세션 시작 재판정은 목록 자료 함수 `readLessonList` 를 그대로 불러 입력을 모은다**(위험 3). 목록 읽기도 `profile_tracks` 행 잠금과 같은 트랜잭션 안에서 한다(fix 5 M-1).
+9. **`saveAttempts` 는 남의 · 끝난 세션 시도도 '받음'으로 돌려주고 넣지는 않는다**(대기열이 비게). 세션 화면 자료에는 정답 칸까지 싣는다(P11 '틀리면 정답을 보여 주고 다시').
+10. **홈 꼴.** 비활성 카드는 흐림 대신 영역 색 45% 바탕 · 먹색 글이다(대비 11.18:1 · 12.56:1, review-p10-3-design H-I1 → fix 2). 부모 꼬리표는 종이 띠 안이고 점은 먹색이다(목업 #8A6134 의 2.70:1 → 7.00:1, 목업에서 벗어남).
+11. **수업 목록 꼴.** 가로 화면은 오른쪽 칸에 잠긴 단원 · 지난 수업을 두고 카드 최소 너비 112px · 잠긴 칸 200~240px 다(12 · 15장 흉내 한 화면). 확인 쪽지는 `showModal()` 대신 키 처리로 초점을 가두고 덮개 전체가 쪽지다(board.tsx 는 훅 없음, fix 4 · 5).
+12. **정본 밖 문구를 더했다**(C72 표에 받음). '끝낸 수업' · '<n>단계 평가' · '단계를 몰라도 돼요. 짧은 문제로 찾아요' · '마이크를 켰으면 여기를 눌러 다시 확인해요'(1-가 임시) · /talk 부모용 '회화 수업은 다음 차수에 들어와요'(1-가 임시) · '다지기' · '잠긴 단원'이다.
+13. **세션 e2e 는 새 파일 `tests/e2e/session.spec.ts`** 이고, 목록에서 여는 길은 `lesson-list.spec.ts` 에 있다.
+
+### 안 한 것(계획에 있었음)
+
+1. **B3(세션 틀) 화면 검토와 차례 7 '화면 검토 다시'가 없다**(재부팅 뒤). 배치 전 카드의 누를 곳 표시(review-p10-3-design H-M6)도 그 검토에서 보기로 했다.
+
+### 테스트 결과
+
+- 증명 표의 시험 이름 서른은 모두 78db3a2 에 있다(편집자 대조).
+- P10b 몫 AC(AC-1b 통합 · 2a · 2b · 2d · 2e · 2f · 5c · N7 · N9)는 모두 시험이 있고 CI 11차에서 초록이다.
+- AC-N9 는 CI 9차에 '20px < 22px' 26건(홈 카드 보조 줄 · 수업 카드 제목)으로 실패했다. C82 · fix 6 뒤 CI 10차 · 11차에서 통과했다. 마이크 안내 · 따라 말하기 · 예비 문항 화면 훑기는 fix 7 이 더했다.
+- 화면 검토: 홈(B1) · 수업 목록(B2) 지적은 fix 2 · fix 3 재검토에서 모두 ADDRESSED 다(마이크 닫힘 문구 대비 11.18:1 · 부모 점 7.00:1 · 12 · 15장 흉내 한 화면).
+- CI · 로컬 관문 표는 plan-p10a 완료 보고에 있다.
+
+### 남긴 것
+
+- **P11**: `activitiesOf` 를 이어받아 둘째 활동부터 상호작용 · 시도 저장 · 채점 · 점수 · 세션 완료 · 결과로 가기 · 소리 자리 동작, AC-6a e2e(다른 P 에 넘길 것). 목록 '첨삭 보기' · 홈 '첨삭이 왔어요'(P11b). 대기열이 서버의 묶음 전체 거부에서 비지 않는 것 — 나눠 보내기 · 꼴 틀린 시도 버리기(review-p10-5-6-code M-2, ledger-open). `data-size-exempt` 표시를 지문 안 낱말 단추에 단다.
+- **P12**: `ListInput` 의 `gate.wordsShort` · `scoreShort` · `state`(practice · parent_check) · `remedialIssued` · `practice` · `reviewDue` · `levelTest` 를 채운다. 통과한 지금 단원 해석은 위 4 그대로다(ledger-open). 홈의 아는 단어 · 최근 성적 · 끝낸 대화 칸(지금 0 · 빈 칸) · 별 · 연속 학습 일수 · 복습 포스트잇.
+- **1-나**: 부모 꼬리표를 누를 수 있게 되면 56px 이상(지금 48px). 홈 '다시 확인' 단추와 /talk 부모 글은 1-나 부모 화면 때 빼거나 바꾼다. 회화 카드 · 회화 수업 · 'AI 쉬는 중'. 모두 ledger-open · C72 표.
+- **요청자 시각 결정**: 홈 영역 아이콘(목업 B_Home4 에 있고 구현에 없음 — review-p10-3-design H-M5, ledger-open).
+- **P8 실시드 뒤**: 수업 목록 세로 15장에 하던 수업 · 보강이 더해지면 세로로 넘칠 수 있다(review-p10-fix3-design 메모). AC-2f e2e 원안. 모두 ledger-open.
+- **재부팅 뒤**: B3 세션 틀 화면 검토 · 사진 · 배치 전 카드 누를 곳 표시(H-M6).
+
+### PR
+
+plan-p10a 완료 보고 'PR' 과 같다. PR #1 · #2 는 78db3a2 뒤 닫았다.
