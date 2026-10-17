@@ -16,7 +16,8 @@
       "!docs",
       "!specs",
       "!intent",
-      "!.superpowers"
+      "!.superpowers",
+      "!seed/**/*.json"
     ]
   },
   "formatter": {

@@ -1,0 +1,21 @@
+{
+  "words": {
+    "en": ["kill", "kills", "killed", "killing", "killer", "killers", "murder", "murders", "murdered", "murdering", "murderer", "stab", "stabs", "stabbed", "stabbing", "gun", "guns", "bomb", "bombs", "bombed", "bombing", "weapon", "weapons", "suicide", "sex", "sexy", "naked", "porn", "beer", "beers", "wine", "wines", "alcohol", "drunk", "cigarette", "cigarettes", "drugs", "hell", "damn", "stupid", "idiot", "idiots", "dumb", "shut up", "crap"],
+    "ko": ["죽여", "죽일 거", "죽이겠", "살인", "자살", "칼로 찔", "찔러 죽", "총으로 쏴", "총을 쏴", "폭탄", "마약", "담배", "술을 마셔", "술 마시", "멍청이", "멍청한", "닥쳐", "꺼져", "섹스"]
+  },
+  "patterns": [
+    {"id": "violence-en-threat", "category": "violence", "lang": "en", "regex": "\\b(?:kill|stab|shoot)\\s+(?:you|yourself|him|her|them|me|us)\\b"},
+    {"id": "violence-ko-threat", "category": "violence", "lang": "ko", "regex": "(?:죽여|죽일|때려)\\s?(?:버릴|버린|줄|죽)"},
+    {"id": "personal-info-en-home", "category": "personal-info", "lang": "en", "regex": "\\bwhere\\s+(?:do|does)\\s+(?:you|your\\s+family)\\s+live\\b|\\bwhat(?:'s|\\s+is)\\s+your\\s+(?:home\\s+|house\\s+)?address\\b|\\byour\\s+(?:home|house)\\s+address\\b"},
+    {"id": "personal-info-en-phone", "category": "personal-info", "lang": "en", "regex": "\\byour\\s+(?:(?:mom's|dad's|mother's|father's|home|cell|mobile)\\s+)?(?:phone|telephone)\\s+number\\b"},
+    {"id": "personal-info-en-school", "category": "personal-info", "lang": "en", "regex": "\\bwhat(?:'s|\\s+is)\\s+(?:the\\s+name\\s+of\\s+)?your\\s+school(?:'s\\s+name)?\\b|\\b(?:what|which)\\s+school\\s+(?:do|does)\\s+you\\s+go\\s+to\\b|\\bwhat\\s+class\\s+are\\s+you\\s+in\\b"},
+    {"id": "personal-info-en-name", "category": "personal-info", "lang": "en", "regex": "\\byour\\s+(?:last|full|family)\\s+name\\b|\\byour\\s+surname\\b"},
+    {"id": "personal-info-en-email", "category": "personal-info", "lang": "en", "regex": "\\byour\\s+(?:e-?mail|password)\\b"},
+    {"id": "personal-info-ko", "category": "personal-info", "lang": "ko", "regex": "(?:^|[.!?]\\s*)어디(?:에)?\\s?살(?:아|니|고|는지)|(?:너|넌|너는|너희|너희는|너네|너네는)\\s?어디(?:에)?\\s?살(?:아|니|고|는지)?|(?:너|너희|너네)\\s?집(?:은|이)?\\s?어디|주소(?:가|는|를)?\\s?(?:뭐|어디|알려)|(?:전화|핸드폰|휴대폰)\\s?번호(?:가|는|를)?\\s?(?:뭐|몇|알려)|학교\\s?이름(?:이|은|을)?\\s?(?:뭐|알려)|무슨\\s?학교\\s?다녀|몇\\s?반(?:이야|이니|이에요)|이메일(?:\\s?주소)?(?:이|가|는|을|를)?\\s?(?:뭐|알려)|(?:너(?:의)?|넌|네|니)\\s?성(?:이|은)\\s?뭐|성씨(?:가|는)?\\s?뭐|비밀번호(?:가|는|를)?\\s?(?:뭐|알려)"},
+    {"id": "contact-phone", "category": "contact", "lang": "en", "regex": "(?:^|[^\\d])(?:01[016789]|0[2-6][0-9]?)[-. ]?\\d{3,4}[-. ]\\d{4}(?:[^\\d]|$)|(?:^|[^\\d])\\d{3}[-. ]\\d{3,4}[-. ]\\d{4}(?:[^\\d]|$)|\\(0\\d{1,2}\\)\\s?\\d{3,4}[-. ]?\\d{4}(?!\\d)|\\+\\d{1,3}[-. ]?\\d{1,4}[-. ]?\\d{3,4}[-. ]?\\d{4}(?!\\d)"},
+    {"id": "contact-email", "category": "contact", "lang": "en", "regex": "[a-z0-9._%+-]+@[a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.[a-z]{2,}"},
+    {"id": "contact-address-ko", "category": "contact", "lang": "ko", "regex": "\\d{1,4}\\s?동\\s?\\d{1,4}\\s?호|(?:[가-힣]+)?(?:아파트|빌라|맨션)\\s?\\d{1,4}\\s?동|[가-힣]+(?<!으)(?:대로|로|길)\\s?\\d{1,4}(?:-\\d{1,4})?(?=\\s?(?:번지|에|이야|야)|\\s*(?:$|[,.!?)]))"},
+    {"id": "contact-address-en", "category": "contact", "lang": "en", "regex": "\\b\\d{1,5}\\s+(?:[a-z]+\\s+){1,2}(?:street|st\\.|road|rd\\.|avenue|ave\\.|lane|drive|boulevard)(?![a-z])"},
+    {"id": "contact-web", "category": "contact", "lang": "en", "regex": "\\bhttps?://|\\bwww\\.[a-z0-9-]+|\\b[a-z0-9-]+\\.(?:com|net|org|kr|io|co\\.kr)\\b"}
+  ]
+}

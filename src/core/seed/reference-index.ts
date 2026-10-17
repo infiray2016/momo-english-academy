@@ -131,7 +131,7 @@ export type ReferenceIndex = {
   frame(area: Area, level: number, unit: number): UnitFrame | undefined;
   /** 단원 배정표(단원 틀이 있을 때). */
   allocation(area: Area, level: number, unit: number): Allocation | undefined;
-  /** 그 자리에서 쓸 수 있는 형태 id(3.6 · 정할 것 ㅅ). 쓰기는 writing 차례, 나머지는 rst 차례. 차례가 null 인 형태는 늘 범위 밖. */
+  /** 그 자리에서 쓸 수 있는 형태 id(3.6 · 정할 것 ㅅ · C64 (1)): 앞 단계 전부 + 같은 단계의 앞 단원까지 + 이번 단원. 쓰기는 writing 차례, 나머지는 rst 차례. 차례가 null 인 형태는 늘 범위 밖. */
   allowedForms(area: Area, level: number, scope: FormScope): Set<string>;
   /** 쓰기 단계의 모양(writing.rule_check_until_level · light_check_until_level · split_from_level). */
   writingShape(level: number): WritingShape;
@@ -545,9 +545,8 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
             if (!at) return false;
             if (scope === "test") return at.level <= level;
             if (scope === "story") return at.level < level;
-            return (
-              at.level < level || (at.level === level && at.unit === scope)
-            );
+            // 같은 단계는 앞 단원까지 쓸 수 있다(C64 (1) — P4b 위험 5 가 예견한 한 줄)
+            return at.level < level || (at.level === level && at.unit <= scope);
           })
           .map((form) => form.id),
       );
