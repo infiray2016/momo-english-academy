@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P7a 적재 · 판 규칙
 
-spec: `specs/` 정본(5절 시드 판 · 적재 · 설정값 시드 · 시드 테이블, 6.3 완전성 · 사람 표본 검토 문단, 9절 단위(시드 판 고르기 · 설정값 시드 적재의 값 견주기) · 통합(시드 적재의 반복 실행과 검증 실패 판 거부 · 설정값 시드 적재와 settings_history · 시드 판 고르기), 11절 1-가 (4) · (4-1), 12절 머리 두 문단 · seed.* · ai.*, 13절 R5 · '시드 판과 설정값 시드' 잠정 행 · C50 · C54 (3) · C56 (4) · (5) · C61 (2) · C63 · C66, 15절 AC-17a · AC-17b · AC-7e · AC-7g · AC-8i, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P7 행 · 증명 표 · 공통 사실 `plan-p04a-규격.md`(시드 파일 배치 · 영어 값 · 칸 키) · `plan-p04c-묶음-검사-명령.md`(validateSeed · collectCells · cellHash · 완전성 표) · `plan-p09a-AI-호출-바탕.md`(checkSettingsCombos · capabilitiesOf · priceRowsOfSeed · priceBookOf) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: approved
+spec: `specs/` 정본(5절 시드 판 · 적재 · 설정값 시드 · 시드 테이블, 6.3 완전성 · 사람 표본 검토 문단, 9절 단위(시드 판 고르기 · 설정값 시드 적재의 값 견주기) · 통합(시드 적재의 반복 실행과 검증 실패 판 거부 · 설정값 시드 적재와 settings_history · 시드 판 고르기), 11절 1-가 (4) · (4-1), 12절 머리 두 문단 · seed.* · ai.*, 13절 R5 · '시드 판과 설정값 시드' 잠정 행 · C50 · C54 (3) · C56 (4) · (5) · C61 (2) · C63 · C66, 15절 AC-17a · AC-17b · AC-7e · AC-7g · AC-8i, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P7 행 · 증명 표 · 공통 사실 `plan-p04a-규격.md`(시드 파일 배치 · 영어 값 · 칸 키) · `plan-p04c-묶음-검사-명령.md`(validateSeed · collectCells · cellHash · 완전성 표) · `plan-p09a-AI-호출-바탕.md`(checkSettingsCombos · capabilitiesOf · priceRowsOfSeed · priceBookOf) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: done
 승인: 컨트롤러 2026-10-17 05:4x(C68) · 브랜치 · 워크트리: `feature/1a-p07-seed-load`(바탕 `feature/1a-p09a-ai-client` 01ff0a9, 격리 워크트리 하나. b 는 이 브랜치 끝에서 이어 간다) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P7 은 파일 열 개를 넘어 둘로 나눴다(묶음 plan 위험 12). 이 파일은 앞 절반(판 규칙 · 설정값 시드 견주기 · 적재 함수 · 판 고르기 읽기 · 적재 명령 · 통합 시험)이고 전체 루프(C52, 기능 작업)다. 뒤 절반(CI 작업 셋 main · dev-load · keepalive · 활동 유지 명령 · 식별자 대조 · 개발용 DB [사람])은 같은 폴더의 `plan-p07b-CI-작업-식별자-대조.md` 이고 가벼운 루프(C52, 도구 작업)다. 두 plan 이 함께 쓰는 사실(확인한 사실 · 정할 것)은 이 파일에만 적고 b 는 절 이름으로 가리킨다.
@@ -284,4 +284,30 @@ P7 은 파일 열 개를 넘어 둘로 나눴다(묶음 plan 위험 12). 이 파
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 컨트롤러 2026-10-17 15:0x. **커밋 df8445e**(feature/1a-p07-seed-load, 파일 14, 요청자 지시 2026-10-17 21:0x "커밋해"). 워크트리 `.claude/worktrees/p07`, 브랜치 `feature/1a-p07-seed-load`(바탕 01ff0a9), 미커밋 13(새 코드 · 시험 10 · package.json · 장부 보고 3). 원격 없음(H15)이라 PR 없음.
+
+| 흐름 | 때 | 결과 |
+|---|---|---|
+| 구현 impl-p07a(Opus · high) | 13:4x | DONE_WITH_CONCERNS — 새 10 + package.json `seed:load` 한 줄, 단위 221 · 통합 51 + 1 건너뜀, 다르게 한 것 열하나, 우려 둘(`task-p07a-report.md`) |
+| 검토 rev-p07a(Opus · xhigh) | 14:0x | Changes requested(C 0 · I 1 · M 6) — I-1 적재 중 DB 오류가 종료 1 · 칸 내용 출력, M 접속 안 닫음 · 단가 행 조용히 빠짐 · 칸 종류 건너뜀 · kept · orphan 이름 · 다시 하기 단언 · answer 열(`review-p07a.md`) |
+| fix 1 | 14:1x | 모두 ADDRESSED — 종료 2 · 오류 이름 · 코드만, 접속 닫음, `price-row-invalid` 전체 거부(컨트롤러 판정) + 조합 검사 건너뜀, 칸 종류 오류, `loadSeedWithKeys` · `kept` · `orphan` 줄(20 넘으면 외 n), 시험 둘, `--areas` 공백. 통합 54 + 1(`task-p07a-fix1-report.md`) |
+| 재검토 rev-p07a | 14:5x | **Approved**(C 0 · I 0 · M 4) — 가짜 접속 재현 종료 2 · 칸 내용 0, 선택 둘 받음(`review-p07a-2.md`) |
+| fix 2(Minor 라운드, 재검토 없음 C52) | 15:0x | N-1 `SeedLoadInvariantError`(칸 키 · 파일 이름만, 메시지 그대로 · 나머지 '적재 중 오류(이름 코드)' · 종료 2) · N-2 · N-3 `price-row-invalid` 글('SQL 편집기에서 바로잡는다 · 그때까지 조합 검사 건너뜀') · N-4 sentence 단언. 통합 55 + 1. 컨트롤러 확인 biome 0 · build · 221 · 55 + 1 · deps 0 · spec-trace missing-test 51 · bundle 0 · 비밀값 꼴 없음 · `seed:load --root /nonexistent-root` 종료 2 · 접속 문자열 출력 0(`task-p07a-fix2-report.md`) |
+
+실제 바뀐 파일(계획과 다른 것은 ※):
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/core/seed/version-pick.ts` | 신규 | `pickVersion` · `pickByCell` · `latestRevision` · `cellGroupOf` · `VERSION_RULES` · `planVersionRows`. ※ `AREAS` · `isLevel` · `isUnitOf` 도 가져옴(규격 행 칸 키 확인) |
+| `src/core/seed/settings-compare.ts` | 신규 | `compareSettings` · `SettingsIncompleteError` · `SEED_LOAD_SOURCE` · `DEV_OVERRIDE_KEYS`. ※ `values` 에 시드에 없는 DB 키(orphans)의 값도 넣음 |
+| `src/server/seed/load.ts` | 신규 | `loadSeed`(= `loadSeedWithKeys` 한 줄 감싸기 ※ M-4) · 판 규칙 · 설정 견주기 · 한 트랜잭션 · 자문 잠금 `SEED_LOAD_LOCK_KEY` · `INSERT_CHUNK_ROWS` 200 · `VALIDATION_ERROR_LINES` 20 · `SeedLoadInvariantError` ※ fix 2 · `answerOf` · `buildIncoming` 내보냄(시험용) ※. 검증 거부는 오류 앞 20줄 + 요약 ※, 조합 위반 key `ai.model.<keyBase>` ※ |
+| `src/server/seed/read.ts` | 신규 | `currentSeedRevision` · `readLessonsOfUnit`(빈 변형 · tori_story 는 SQL 에서 뺌) · `readLevelSpec` · `readUnitSpec` · `readLevelTestForm` · `readPlacementForm` |
+| `scripts/seed-load.ts` | 신규 | `pnpm seed:load`(`parseArgs` · `summaryLine` · `runSeedLoad(args, deps)` ※ deps `{ files, databaseUrl, now, openDb? }` · `main().then` — tsx 가 CJS 로 돌려 최상위 await 못 씀). 접속 확인 `select 1` ※, 오류 갈래 둘(불변식은 메시지 그대로 · 나머지 이름 코드) · 종료 0 · 1 · 2 |
+| `tests/fixtures/seed/loadable.ts` | 신규 | 시험용 적재 시드(칸 462, 작은 틀 정규 3 · 보강 1) · `withSetting` · `withCellVersion` · `cellValueOf` · `LOADABLE_THROUGH` ※ |
+| `tests/unit/version-pick.test.ts` · `settings-compare.test.ts` | 신규 | 13 · 8 시험 |
+| `tests/integration/seed-load.test.ts` · `seed-version.test.ts` | 신규 | 16(1 건너뜀 — 저장소 seed/ 규격만 적재는 P6a 합친 뒤) · 7 시험. ※ 시험 이름 '수업 4 · 5' 는 작은 틀이라 단원 1 의 다지기 3 · 보강 1 로 대응(머리 주석). ※ AC-8i 는 두 길(빈 DB 거부 · 지킨 고급 키 불일치 거부) |
+| `package.json` | 수정(공용 1) | `"seed:load": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/seed-load.ts"` |
+
+증명: AC-17a 단위 4 · 통합 6, AC-17b 3, AC-7e 단위 1 · 통합 1, AC-7g 단위 1 · 통합 1, AC-8i 1(이름 글자 그대로, spec-trace missing-test 54 → 51). 적재 보고 `--json` version 1. 한 시계 정적 검사 통과(src/server/seed 에 `Date.now()` · 인자 없는 `new Date()` 없음, 시험은 고정 시각 `2026-10-17T03:00:00Z`).
+
+남긴 것: (1) 1-나 몫 — seed/reviews → seed_reports(적재는 읽지 않음), 토리 이야기 title · generation 필수화(지금은 없으면 `story-field-missing` 거부), 옛 개정 행의 정정 자리. (2) 저장소 `seed/` 규격만 적재 시험(건너뜀 1)은 P6a 를 합친 뒤 돈다. (3) 운영 범위 적재 시간(위험 2)은 재지 않음 — 시험용 시드 462칸 적재 15시험 5.5초뿐. (4) `finally { await handle.close() }` 가 던지면 결과를 덮어 '예상 밖 오류' 종료 2(넣은 것은 그대로, postgres.js end 는 거의 안 던짐) — ledger-open, P7b 덤. (5) C68 완료 판정 변경(규격만 적재 + 프리뷰 접근 코드 제출)은 P7b [사람] 단계(H3 뒤)에서 본다. (6) P7b 에 넘긴 것 — 명령 · 종료 코드 · 첫 줄 꼴 · dev-load 입력(`--complete-through <n> --areas reading,writing,speaking`, 수업 전 `--reference-only`) · 접속은 `MIGRATION_DATABASE_URL` 하나 · check-ids 허용 목록 후보 7 · 장부(P8 inserted → seed/manifest, P10~12 `read.ts` · `currentSeedRevision()`).

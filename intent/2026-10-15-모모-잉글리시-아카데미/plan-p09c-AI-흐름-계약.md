@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P9c AI 흐름 · 계약(호출 앞 판정 · 비용 알림 판정 · 실행 흐름 · 공개 함수 · 시드 목록 읽기 · AI 계약 · 관찰표)
 
-spec: `specs/` 정본(6.1 다시 요청 · 기다림 한도 · ai_calls · 비용 알림 · 안전 상한, 6.4 끝 문단, 6.6, 8절 상황 표('AI 호출 하나의 실패 · 지연' · '다시 보내도 같은 오류' · '안전 분류기 거절' · '실시간 응답 검증 실패' · '비용 알림 기준 도달'), 9절 AI 계약 · AI 계약(수동) · 실시간 호출 표본 평가 · 통합, 10절 운영 행, 11절 1-가 (7), 12절 ai.* · talk.safety_*, 15절 AC-8a · AC-8b · AC-8c · AC-8d · AC-8n · AC-N2, 13절 C1 · C15 · C17 · C21 · C28 · C46 · C48 · C50 (2), approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · 역분석 제안 5(`docs/research/2026-10-16-reverse-engineering.md`) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(6.1 다시 요청 · 기다림 한도 · ai_calls · 비용 알림 · 안전 상한, 6.4 끝 문단, 6.6, 8절 상황 표('AI 호출 하나의 실패 · 지연' · '다시 보내도 같은 오류' · '안전 분류기 거절' · '실시간 응답 검증 실패' · '비용 알림 기준 도달'), 9절 AI 계약 · AI 계약(수동) · 실시간 호출 표본 평가 · 통합, 10절 운영 행, 11절 1-가 (7), 12절 ai.* · talk.safety_*, 15절 AC-8a · AC-8b · AC-8c · AC-8d · AC-8n · AC-N2, 13절 C1 · C15 · C17 · C21 · C28 · C46 · C48 · C50 (2), approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P9 행 · 역분석 제안 5(`docs/research/2026-10-16-reverse-engineering.md`) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done
 승인: 컨트롤러 2026-10-16 23:4x(C63, P9a '컨트롤러 결정') · 브랜치 · 워크트리: `feature/1a-p09c-ai-flow`(P9b 브랜치 끝에서, P9 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P9 셋 가운데 셋째다. `plan-p09a-AI-호출-바탕.md`(요청 구성 · 클라이언트 · 실패 분류 · 비용 · 기록 · 가짜) → `plan-p09b-AI-호출-넷.md`(가림 · 프롬프트 · 규격 · 정규화 · 출력 검사) 다음에 같은 워크트리에서 한다. 확인한 사실은 P9a '확인한 사실과 출처'(번호로 가리킨다)에 있다.
@@ -216,4 +216,36 @@ export const AI_WAIT_TIMEOUT_MULTIPLE = 2;
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 컨트롤러 2026-10-17 15:2x. **커밋 dae3afd**(feature/1a-p09c-ai-flow, 파일 50, 요청자 지시 2026-10-17 21:0x "커밋해"). 워크트리 `.claude/worktrees/p09`, 브랜치 `feature/1a-p09c-ai-flow`(바탕 P9b 6213662), 미커밋 22(새 코드 · 시험 · 표본 + 추적 파일 5 수정 + 장부 보고 3). 원격 없음(H15)이라 PR 없음.
+
+| 흐름 | 때 | 결과 |
+|---|---|---|
+| 구현 impl-p09a(Opus · high) | 13:1x | DONE_WITH_CONCERNS — 단위 234 → 252 + todo 6 · 통합 30 → 57 · missing-test 52 → 46, 다르게 한 것 아홉, 알릴 것 다섯(`task-p09c-report.md`) |
+| 검토 rev-p09b(Opus · xhigh) | 13:3x | Changes requested(C 0 · I 1 · M 5) — I-1 관찰 요청에 `output_config.format` 없음, M-1 둘째 시도 실패 처리 · M-2 nil uuid · M-3 확인 호출 몫 · M-4 설정 없음 사례 · M-5 생각 꺼내기 done(`review-p09c.md`) |
+| fix 1 + 보충 | 13:4x~13:5x | 모두 ADDRESSED — 관찰 묶음 열하나에 형식, **C69**(둘째 시도가 어떤 실패로 끝나도 첫 값을 느슨한 규격으로 정규화, 거절만 예외), store `profileId: string \| null`(P9a 파일 한 줄 ※), 확인 호출 비용 단언, 설정 없음 사례, done 멈춤. 단위 255 · 통합 59(`task-p09c-fix1-report.md`) |
+| 재검토 rev-p09b | 14:0x | Changes requested(C 0 · I 1 · M 2, 모두 fix 1 줄) — N-1 설정 없음 사례가 지운 키 안 되돌려 뒤 사례 빈 단언 · N-2 관찰 고르기 일시 오류 · N-3 dailyUsage(null) 단언(`review-p09c-2.md`) |
+| fix 2 | 14:4x | 모두 ADDRESSED + 덤(sendCase 상태 없는 오류 → status 0 실패, `runObserve` 추출) — 망가뜨림 넷 모두 깨짐. 단위 258(`task-p09c-fix2-report.md`) |
+| 재검토 rev-p09b | 15:0x | **Approved**(C 0 · I 0 · M 1) — N2-1 관찰이 상태 숫자로만 가름; 범위 밖(첫 판부터): 녹화 표본이 생기면 계약 시험 TypeError(`review-p09c-3.md`) |
+| fix 3(Minor 라운드, 재검토 없음 C52) | 15:2x | 관찰 200 아닌 응답을 `classifyFailure` 로 셋(받지 않음 400 거부 · 설정 · 한도 오류 — 첫 console_limit · account 에서 남은 묶음 건너뛰고 산출물 씀 · 일시 오류), 녹화 표본 단언은 handmade 만 + 녹화 표본 있을 때 안 깨지는 시험. 단위 262 + todo 6. 컨트롤러 확인 biome 0 · build · 262 · 59 · deps 0 · spec-trace 46 · bundle 0 · `sk-ant-` 바탕 둘 · `ai:contract --dry-run` 0 · `ai:observe` 예상 비용만 0(`task-p09c-fix3-report.md`) |
+
+실제 바뀐 파일(계획과 다른 것은 ※):
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/core/seed/structure.ts` | 수정(공용 3) | `AI_ATTEMPTS_MAX = 2` · `AI_WAIT_TIMEOUT_MULTIPLE = 2` |
+| `src/core/ai/cost-alert.ts` | 신규 | `AI_ALERT_KINDS` · `preCallGate` · `dueCostAlerts` · `talkSafetyOf` · `monthKeyOf`(마이크로달러 정수, '닿으면' ≥). ※ 하루 호출 · 하루 비용 · 월 비용은 모두 kind `cost` + 기준 키, 콘솔 근접은 `console_near_limit`, `scope` · `value` 칸 |
+| `src/server/seed-lists.ts` | 신규 | `loadSeedList`(뿌리 · 이름마다 모아 둠, 실패는 모아 두지 않음, 메시지에 내용 없음) · `getOutputCheckLists` |
+| `src/server/ai/run.ts` | 신규 | `runAiCall` 차례 1~10(answerTextOf → JSON.parse → prepareAnswer → wireSchema → validate → normalize(엄격 통과도) → checkOutputFields → applyChecks → historyEntry), `AiOutcome` · `AiFailureReason`(결과 형은 여기 ※1, index 가 다시 내보냄 — 순환 방지) · `isConfigError`(SettingMissing · Invalid · Combo · ZodError · CallSetting · SeedList · AiConfig → config, 행 없음) · C69 둘째 시도(※5 → fix 1 에서 C69 로) · 턴 번호 어긋남 · 목적 불일치 · level 불일치는 RangeError ※3 |
+| `src/server/ai/index.ts` | 신규 | `checkWriting` · `writeFeedback` · `evaluateSpeaking(mode)` · `thinkoutTurn`(allowedWords 를 vocab 에서 채움 ※4) |
+| `src/server/ai/store.ts` · `tests/integration/ai-store.test.ts` | 수정(P9a 파일 ※ fix 1 M-2) | `dailyUsage(profileId: string \| null)`, null 이면 호출 수 0 · 집 비용 합 유지 + 단언(fix 2 N-3) |
+| `scripts/ai-contract.ts` | 신규 | `pnpm ai:contract`(사례 · `recordOf` · `compareModelInfo` · `runContract` · `sendCase`(withResponse, 상태 없는 오류는 status 0 실패) · `evaluateCall` · `createScriptClient` · `readApiKey` 내보냄 ※7, 생각 꺼내기 녹화 `<id>.turnN.json` · done 멈춤 ※6, `--dry-run`) |
+| `scripts/ai-observe.ts` | 신규 | `pnpm ai:observe`(`runObserve` · `observePlan` · `groupRequest`(형식 포함) · `summarize` · `recommendMaxTokens` · `chooseThinking`(400 거부만 버림) · 세 갈래 세기 · 관찰표, `--yes` 없이 예상 비용만, 생각 꺼내기는 첫 턴 변형 셋 ※9) |
+| `tests/unit/cost-alert.test.ts` | 신규 | AC-8a · AC-N2 6 |
+| `tests/integration/ai-calls.test.ts` · `ai-errors.test.ts` · `safety-cap.test.ts` | 신규 | 13 · 9(설정 없음 사례 뒤 키 되돌림 + 갈래별 오류 이름 단언) · 5 |
+| `tests/contract/ai-schemas.test.ts` | 신규 | 계약 · 두 명령 · 관찰표 · 끊김 · 녹화 표본 시험, todo 6(녹화 표본 없는 규격) |
+| `tests/fixtures/ai/samples/*.json` 29 · `recorded/.gitkeep` | 신규 | 손으로 만든 표본(source handmade) — 정상 · 개수 · 범위 초과 · 거절 · max_tokens 잘림 · 대체 모델 · iteration model null · 오류 400 · 429 · 404 |
+| `package.json` · `next.config.ts` | 수정(공용 1 · 2) | `ai:contract` · `ai:observe` 두 줄 · `outputFileTracingIncludes` seed/lists |
+
+증명: AC-8a · 8b · 8c · 8d · 8n · N2(spec-trace missing-test 52 → 46), 9절 계약 시험, 두 명령 dry-run · 예상 비용 종료 0. 검토 메모(review-p09a P9c 1~5 · review-p09b P9c 1~2 · review-p09b-2 P9c 3~4 · P9b 알릴 것 1 · 장부 '생각 끔 + 구조화 출력')은 구현 보고 '검토 메모 반영' 표대로 모두 반영. 13절 **C69**(fix 1 M-1, 괄호는 '종류 무관'으로 넓힘).
+
+남긴 것: (1) 작업 8 — H4 · H12 뒤 실제 호출 · 녹화 · 관찰표 채우기 · model-prices 고침(두 명령의 실제 호출 길은 키가 없어 못 돌림, `withResponse()` · `models.retrieve` 응답 꼴은 첫 실행이 확인). (2) 1-나 — 회화 턴 · 끝맺음 턴 · 확인 호출 · 'AI 쉬는 중' 상태 · 비용 알림 행 만들기(판정 함수와 `AI_ALERT_KINDS` 만 둠), 회화 턴 타임아웃 재시도(스트리밍 길), 메타 문장 시드 목록(관찰의 '언어 · 말투 어긋남'은 거친 셈). (3) `MIN_RETRY_MS` 1초 — 2차 설정 화면의 `ai.timeout_seconds.*` 하한(ledger-open). (4) 열린 장부 '생각 끔 + 구조화 출력 400' 은 H4 뒤 `talk_config.*` 계약 사례가 증명. (5) P11 은 `AiOutcome` 실패 갈래마다 화면 길(ledger-open). (6) 공용 변경 셋(package.json · next.config.ts · structure.ts)과 P9a 파일 둘 수정은 커밋 메시지에 적는다.

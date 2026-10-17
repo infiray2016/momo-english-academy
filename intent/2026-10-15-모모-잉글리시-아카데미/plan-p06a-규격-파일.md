@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P6a 규격 파일(시드 확정)
 
-spec: `specs/` 정본(3.1 can-do · 3.2 단원 틀 표 · 관계 표 · 단계 평가, 3.3 단계표 전부, 3.4, 3.6, 5절 시드 테이블, 6.1 모델 구성 · 조합 표, 6.3 (1) · 6.4, 6.6, 12절 전부, 15절 AC-7a · 7c, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P6 행 · 작업 순서 4 · [사람] H5 · 공통 사실 `plan-p04a-규격.md`(규격 칸 · 영어 값 · 상수) · `plan-p04b-배정-칸-검사.md`(규격 파일 정합) · `plan-p04c-묶음-검사-명령.md`(명령 · 평가 검사) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(3.1 can-do · 3.2 단원 틀 표 · 관계 표 · 단계 평가, 3.3 단계표 전부, 3.4, 3.6, 5절 시드 테이블, 6.1 모델 구성 · 조합 표, 6.3 (1) · 6.4, 6.6, 12절 전부, 15절 AC-7a · 7c, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P6 행 · 작업 순서 4 · [사람] H5 · 공통 사실 `plan-p04a-규격.md`(규격 칸 · 영어 값 · 상수) · `plan-p04b-배정-칸-검사.md`(규격 파일 정합) · `plan-p04c-묶음-검사-명령.md`(명령 · 평가 검사) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done
 승인: 컨트롤러 2026-10-16 23:0x(C61, 아래 '컨트롤러 결정'. 요청자는 H5 와 PR 병합 때 본다) · 브랜치 · 워크트리: `feature/1a-p06a-seed-reference`(바탕 P4c 6bd6015 — `pnpm seed:validate` 가 규격 파일을 검증한다. 격리 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P6 은 셋으로 나눴다(묶음 plan 위험 12, 정할 것 가). 이 파일은 첫째(규격 파일 열 · 근거 문서 · H5)다. 둘째 `plan-p06b-그림-카탈로그.md`(그림 · H7)는 이 plan 의 1~2단계 vocab 이 생긴 뒤 이 브랜치 끝에서, 셋째 `plan-p06c-목업-맞추기.md`(목업 · H6)는 이 plan 과 나란히 따로 간다.
@@ -296,4 +296,20 @@ design-reviewer 점검표. 1차: level_specs 48행(3.3 · 6.3 · 3.6) · can-do 
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 컨트롤러 2026-10-17 19:5x. **커밋 f447bc5**(feature/1a-p06a-seed-reference, 파일 15, 요청자 지시 2026-10-17 21:0x "커밋해"). 워크트리 `.claude/worktrees/agent-a6ef72438a158a2f3`, 브랜치 `feature/1a-p06a-seed-reference`(바탕 P4c 6bd6015). 미커밋: `seed/`(규격 일곱 — vocab · unit-specs · level-specs · settings · model-prices · images, `lists/` 넷 — forms · forbidden · homophones · meta-sentences), 근거 문서 `docs/research/2026-10-16-seed-reference-basis.md`(1,723줄), 코드 셋(`biome.json` · `src/core/seed/reference-index.ts` · `tests/unit/seed-validator-reading.test.ts` — 앞 라운드 컨트롤러 고침), 장부 보고 `task-p06a-report.md`. 일회 검사 스크립트 `tests/.tmp/p06/` 는 커밋 밖. 원격 없음(H15)이라 PR 없음.
+
+| 흐름 | 때 | 결과 |
+|---|---|---|
+| 묶음 0 · 2 · 1(cd-p06a, Opus · high) | 10-16 23:xx ~ 10-17 02:0x | 근거 · 후보(H5 제안 → 요청자 C66) → 4~6단계 → 1~3단계. `task-p06a-report.md` 묶음 절 |
+| 검토 des-p06a(Opus · xhigh) | 03:0x | Changes requested(C 0 · I 5 · M 12)(`review-p06a.md`) → fix 1(C67 (1)~(4) 판정, 맞바꾼 낱말 37 · 주제 9 · 검출기 · 금지어 · can-do) |
+| 재검토 | 04:4x | Changes requested(지난 17 ADDRESSED, I 1 · M 3 — 주소 정규식 등)(`review-p06a-2.md`) → fix 2 + 묶음 3(7~9, 7단계 150 은 원래 순위 1~150 기본 · 당긴 낱말만큼 다음 단계로) |
+| 묶음 4 | 14:1x · 14:3x | 10~12단계(후보 1~150 기본 · 당긴 8 · 밀린 낱말 다음 단계 · 12단계 밀린 10 은 앱 어휘 밖) + 초등 권장 맞바꿈 16 을 C67 (3) 판정대로 다시(4단계 9 · 5단계 4 · 6단계 3, 뺀 16 은 7단계 여분) |
+| 2차 검토 | 15:0x | Changes requested(N-1~N-4 ADDRESSED, I 1 R-1 묶음 3 검출기가 1~8단계 정형 표현을 잡음 · M 4)(`review-p06a-3.md`) → fix 3(마지막 라운드: 좁은 구 단위 예외 + 1~8단계 훑기 79 + 9-2 앞 to 꼴 표 · 주제 이름 아홉 · 활용형을 vocab forms 에서 · 눈높이 아홉 · 근거 문서) |
+| 3차 검토 | 18:4x | **Approved**(R-1~R-5 ADDRESSED, 진짜 형태 31 잡힘 · 예외 19 통과, M 3)(`review-p06a-4.md`) → Minor 정리(컨트롤러 확인 몫, 재검토 없음: Let's 예외 learn · talk · keep 만 · to 부정사 가주어 갈래 · keep + -ing 되돌리고 keep talking 만 뺌) |
+| 컨트롤러 확인 | 19:5x | seed:validate 종료 0 · 첫 줄 '칸 0 · 통과 0 · 실패 0 · 빈 칸 4892 · … · 경고 0 · 규격 파일 오류 0' · errors 0 · warnings 0 · 예문 1~12 RESULT 0(1,920) · 시험 문장 459 RESULT 0 · 훑기 79 막힘 0 · 맞대기 0(단원 242 · 단원 단어 6,952) · 뜻 0 · lint 0 · test 160 · 정규식 자리 셋 확인 |
+
+만든 것(계획과 다른 것은 ※): vocab 1,920(단계별 내용어 125 · 125 · 125 · 150 × 9, 누계 375 · 825 · 1,275 · 1,725 — C66) · 단원 규격 242(문법 초점 · 주제 · 단어 배정, 주제 겹침 0) · level-specs(can-do 48 · 단계 평가 testMix) · settings(12절) · model-prices 여섯 행 · images 목록 · forms 검출기 58(정형 표현 좁은 예외 ※ C64 (3) · C67 (1), 활용형은 vocab forms 에서 ※) · forbidden · homophones 48묶음 · meta-sentences. 근거 문서: 후보 · 선정 규칙(7~12 원래 순위 1~150 기본 ※) · 초등 권장 맞바꿈(C67 (3)) · 관용구 거짓 양성 · 9-2 앞 to 꼴 표 · 알고 둔 한계(he · she 명사 주어 · most + 두 음절 형용사 · vocab 밖 -ly 부사 · get better + 명사 · keep talking) · 빠지는 낱말 누계 242 · 초등 권장 밖은 일부러 뺀 8.
+
+증명: 증명 표의 검사 명령이 모두 0(위 컨트롤러 확인 줄). 검토 네 번(I 5 → 1 → 1 → 0)과 fix 셋(상한) · Minor 정리 하나.
+
+남긴 것: (1) `seed/model-prices.json` opus-4-8 `thinkingDefault` 'none' 은 P9a 와 합친 뒤 · 첫 개발용 적재 전(ledger-open). (2) 한국어 뜻 단계 규칙은 P4 시드 검사 몫(ledger-open). (3) P6b 작업 3 — 그림 낱말 목록 다시 뽑기(4단계 들어옴 kitchen · tape · tail · ice · mail · skin, 빠짐 pool · picnic · firefighter · diary; touch · point 는 P6b 가 그림 여부 판정). (4) 첫 개발용 적재 뒤 규격 파일을 고치면 판을 올린다(개정 G + 1 · 정정 + 1, ledger-open). (5) P8 에 알릴 것 — 예외로 뺀 꼴(인사 · 끝인사 · 수업 진행 말 · 가족 호칭 · feel better · best friend)은 앞 단계 시드에 써도 되고, 'You are the best!' · 'Do your best.' · 'You did it!' · 'That was fun!' 은 진짜 형태라 앞 단계에서 막힘 → 'Good job!' · 'That's fun!'. 7~12단계 지문 난도는 P8 표본에서. (6) 상태 변화: approved → in-progress(커밋 뒤 done).

@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P5b 활동 표시 컴포넌트와 로컬 전용 시드 보기 화면
 
-spec: `specs/` 정본(11절 1-가 (2-1) 시드 보기 화면, 4절 첫 문단 아이 화면 원칙 · 포스트잇 보드 · '단원 미리보기' 행(2차가 이 화면의 보기 부분을 다시 씀), 3.3 영역별 세션 순서 · 단계표, 6.3 출력 규격 · 사람 표본 검토, 6.4 풀이 검사 행, 10절 접근 제어, 15절 AC-7f · NFR-5, 13절 C57 '/dev/* 도 쿠키', approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P5 행 · 위험 13 · 화면 구현 · 검토 루프 · 공통 사실 · 정할 것 `plan-p05a-풀이-검사.md` · 시드 규격 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved
+spec: `specs/` 정본(11절 1-가 (2-1) 시드 보기 화면, 4절 첫 문단 아이 화면 원칙 · 포스트잇 보드 · '단원 미리보기' 행(2차가 이 화면의 보기 부분을 다시 씀), 3.3 영역별 세션 순서 · 단계표, 6.3 출력 규격 · 사람 표본 검토, 6.4 풀이 검사 행, 10절 접근 제어, 15절 AC-7f · NFR-5, 13절 C57 '/dev/* 도 쿠키', approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P5 행 · 위험 13 · 화면 구현 · 검토 루프 · 공통 사실 · 정할 것 `plan-p05a-풀이-검사.md` · 시드 규격 `plan-p04a-규격.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done
 승인: 컨트롤러 2026-10-16 23:2x(C62, P5a '컨트롤러 결정'. 요청자는 PR 병합 때 본다) · 브랜치 · 워크트리: `feature/1a-p05b-seed-viewer`(P2b b1b17d7 · P3b(커밋 뒤) · P4c 6bd6015 를 컨트롤러가 합친 줄기 위, 격리 워크트리 하나, 정할 것 가) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P5 셋 가운데 둘째다. 첫째 `plan-p05a-풀이-검사.md`(풀이 검사 명령, P5 전체의 확인한 사실 · 정할 것 가~하), 셋째 `plan-p05c-보기-기록.md`(이 화면에 표본 검토 · 사람 확인 쓰기를 더함)와 함께 읽는다. P5a 와 함께 돌 수 있다(P5a 코드를 쓰지 않는다). 확인한 사실 번호는 P5a 표의 번호다.
@@ -281,4 +281,11 @@ SEED_VIEWER_ROOT=
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+(컨트롤러 2026-10-17 13:0x 작성. 코드 · 화면 검토 모두 Approved. **커밋 7644d0f**(feature/1a-p05b-seed-viewer, 파일 27, 요청자 지시 2026-10-17 21:0x "커밋해").)
+
+- 실제 바뀐 파일(워크트리 `.claude/worktrees/p05b`, 브랜치 feature/1a-p05b-seed-viewer, 바탕 e08eaba): 신규 `src/app/dev/seed-viewer/`(쪽 · cell-view 등) · `src/components/`(활동 표시 컴포넌트 common · reading · writing · speaking) · `src/server/seed-viewer/`(files · 읽기) · `tests/e2e-local/`(seed-viewer.spec 7) · `tests/e2e/seed-viewer-absent.spec.ts` · `playwright.local.config.ts`; 수정 `tests/unit/dependency-rules.test.ts` · 공용 변경 1~6(`.dependency-cruiser.cjs` · `.env.example` · `.github/workflows/ci.yml` e2e-local 작업 · `next.config.ts` · `package.json` e2e:local) + fix 1 의 `src/core/seed/check-assessment.ts` isAiItem export 한 줄; 장부 보고 셋(`task-p05b-report.md` · `-fix1-report.md` · `-fix2-report.md`) · 사진 여섯(`p05b-{reading,writing,writing-blank,speaking,level-test,story}.png`).
+- 시험 · 검사: 단위 240 · 통합 34 · e2e 18 · e2e-local 7(갈래 넷 그리기 · 활동 표시 지적 묶음 포함), spec-trace missing-test 52(AC-7f), biome 0 · build(/dev/seed-viewer 는 운영 빌드에 없음) · check:deps 0 · check:bundle 0, 비밀값 0.
+- 검토: 코드 `review-p05b.md` Approved(M 7) · 화면 `review-p05b-design.md` Changes requested(I 2 · M 8) → fix 1(열일곱 ADDRESSED) → `review-p05b-design-2.md` Changes requested(I 1 · M 2 — 평가 읽어 주기 · 평가 그림 대체 글 · 빈칸 밑줄) → fix 2 → `review-p05b-design-3.md` Approved(M 1 — 쓰기 평가 빈칸 채우기의 칸 둘은 P11 로, 장부).
+- 계획과 다르게 한 것(검토자 모두 받음): fix 1 여섯(ActivityCard 기본 글자 크기 · 말하기 뜻 기준은 규격 `questions.koMeaning` · 지문 그림 단계 상수 `PASSAGE_PICTURE_UNTIL_LEVEL = 4` · 평가 지문 그림 낱말 해석 · 이야기 읽어 주기 · 사진 화면) · fix 2 하나(`decorativePictures` 를 `readAloud` 와 따로).
+- 남긴 것(ledger-open): P5c reviewPathOf · 틀 -mx-6 · 가로 넘침 시험 유지; P6c 목업(B_LevelTest 그림 줄 · 읽어 주기 없음 · 이야기 읽어 주기 자리 · 새 단어 표시 색); P8 평가 지문 그림이 정답 낱말을 가리킬 수 있음; P10 ActivityCard 기본 20px; P11 소리 자리 저절로 읽기 · 평가 지문 소리 없음 · 쓰기 평가 빈칸 답을 빈칸 안에; P4 시드 검사 '뜻이 있으면 안 되는 단계' 규칙; P6b 뒤 실데이터로 꾸밈 그림 확인.
+- PR: H15(GitHub 원격) 뒤.
