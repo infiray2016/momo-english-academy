@@ -100,6 +100,20 @@ export const TEST_SETTINGS = {
   "level.remedial_before_retest": { scope: "household", value: 2 },
   "level.retest_gap_days": { scope: "household", value: 1 },
   "level.near_pass_gap": { scope: "household", value: 2 },
+
+  // ── P11 세션 활동(읽기 · 쓰기 · 말하기)이 읽는 키(12절 기본값, plan-p11a 공용 변경 1 — seed/settings.json 과 같은 범위 · 값) ──
+  "ui.wait_hint_seconds": { scope: "household", value: [1, 5] },
+  "ui.match_phrase_levels": { scope: "household", value: [0.9, 0.6] },
+  "ui.auto_next_seconds": { scope: "household", value: 1 },
+  "speaking.match_weight": { scope: "household", value: 0.5 },
+  "speaking.listening_weight": { scope: "household", value: 0.2 },
+  "speaking.answer_match_pass": { scope: "household", value: 0.8 },
+  "speaking.prepare_seconds": { scope: "household", value: 30 },
+  "speaking.answer_max_seconds.1-3": { scope: "household", value: 30 },
+  "speaking.answer_max_seconds.4-6": { scope: "household", value: 30 },
+  "speaking.answer_max_seconds.7-9": { scope: "household", value: 60 },
+  "speaking.answer_max_seconds.10-12": { scope: "household", value: 150 },
+  "writing.thinkout_from_level": { scope: "household", value: 6 },
 } as const;
 
 export type TestSettingKey = keyof typeof TEST_SETTINGS;
