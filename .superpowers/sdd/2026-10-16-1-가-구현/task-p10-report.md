@@ -844,3 +844,10 @@ CI 9차 e2e 는 AC-N9 하나만 실패했다. 위반 72줄이 모두 '20px < 22p
 | M-5 AC-1b 의 ai_calls 를 표 전체로 셈 | `first-run.spec.ts` AC-1b: 시험 시작 시각을 잡고 `countRows(aiCalls, gte(aiCalls.calledAt, startedAt))` 로 그 뒤 행만 센다 |
 
 글 크기 · 화면 꼴 · 문구는 바꾸지 않았다(표시 속성만). fix 6 의 `data-size-guide` 규칙은 그대로다. tsc 0 · biome ci 0 · test 367.
+
+### 차례 7 fix 8 — 빠진 e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다'
+
+- `tests/e2e/first-run.spec.ts` 에 그 이름(plan-p10a 증명 표 글자 그대로)의 시험 하나를 더했다. 머리 주석의 '차례 7 에 더한다'는 '더했다'로 고쳤다.
+- **복제 자리**: e2e 전용 `cloneLessons`(정할 것 서)로 읽기 1단계 단원 1 의 변형 2 칸(`TOPIC_BUNDLES[1].id`)을 변형 1 내용으로 복제했다. 화면에서 구별하려고 복제 칸 제목 끝에 시험용 표시 ' · 변형 시험'을 붙였다. 시험 끝(finally)에 집 기록을 비우고 복제 칸을 지운다. 그래서 다른 e2e 는 변형 1 만 있는 시드 그대로다.
+- **단언**: 첫 실행에서 둘째 주제 묶음과 읽기 1단계를 고른다. 그러면 수업 목록 배정 1 카드 제목에 시험용 표시가 있고, 누르면 열린 세션의 수업 칸이 `topicVariant` 2 다. 반대쪽으로 첫 묶음 집(insertHousehold)은 표시 없는 제목에 변형 1 세션이다. 새 설계 숫자는 없다(묶음 id = 변형 번호, C54 (3)).
+- 글 크기 · 화면 · 문구는 바꾸지 않았다. tsc 0 · biome ci 0 · test 367 · spec-trace 종료 0(AC 이름 시험 186 → 187, missing-test 34 그대로 — AC-1c 는 앞서도 시험이 있었다). e2e 는 CI 12차.

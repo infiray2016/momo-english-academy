@@ -1,4 +1,4 @@
-// 첫 실행 e2e(4절 첫 실행 행 · AC-1a · AC-1c, plan-p10a 증명 표 — 차례 2 몫). AC-1b 와 'AC-1c 주제 변형 수업'은 차례 7 에 더한다.
+// 첫 실행 e2e(4절 첫 실행 행 · AC-1a · AC-1b · AC-1c, plan-p10a 증명 표 — 차례 2 몫, AC-1b 는 차례 7 · 'AC-1c 주제 변형 수업'은 fix 8 에 더했다).
 // 실제 e2e DB(playwright.config 의 임시 DB, 시험용 시드)를 쓰고 파일마다 집 기록을 비운다. 설계 숫자는 시험 DB 설정 · 구조 상수에서.
 
 import type { Page } from "@playwright/test";
@@ -487,4 +487,104 @@ test("AC-1b 첫 실행에서 읽기 시작 단계를 3으로 고르면 읽기 �
     // 첫 실행부터 세션 시작까지 AI 호출이 없다(AC-1b — 세션 모듈 정적 검사는 통합)
     expect(await countRows(aiCalls, gte(aiCalls.calledAt, startedAt))).toBe(0);
   });
+});
+
+test("AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다", async ({
+  page,
+}) => {
+  // 시험용 시드는 변형 1 뿐 — 읽기 1단계 단원 1 의 변형 2 칸을 변형 1 내용으로 복제하고(정할 것 서, e2e 전용)
+  // 제목 끝에 시험용 표시를 붙여 화면에서 구별한다. 끝나면 집 기록과 복제 칸을 지운다(다른 e2e 에 남지 않게)
+  const VARIANT_MARK = " · 변형 시험";
+  const db = e2eDb();
+  const second = Number(TOPIC_BUNDLES[1].id);
+  const first = Number(TOPIC_BUNDLES[0].id);
+  const variantCells = and(
+    eq(lessons.area, "reading"),
+    eq(lessons.level, 1),
+    eq(lessons.unit, 1),
+    eq(lessons.topicVariant, second),
+  );
+  await cloneLessons({
+    area: "reading",
+    fromLevel: 1,
+    unit: 1,
+    fromVariant: first,
+    toVariant: second,
+  });
+  for (const row of await db.select().from(lessons).where(variantCells)) {
+    await db
+      .update(lessons)
+      .set({ listTitle: `${row.listTitle}${VARIANT_MARK}` })
+      .where(eq(lessons.id, row.id));
+  }
+  /** 수업 목록에서 배정 1 을 열고 그 세션의 수업 칸을 돌려준다. */
+  const openFirstLesson = async () => {
+    await page.goto("/reading/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    const card = page.locator('[data-lesson="assigned-1"]');
+    const title = (await card.textContent()) ?? "";
+    await card.click();
+    await page.waitForURL((url) => url.pathname.startsWith("/session/"));
+    const id = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+    const [session] = await db
+      .select({ lessonId: sessions.lessonId })
+      .from(sessions)
+      .where(eq(sessions.id, id));
+    const [lesson] = await db
+      .select()
+      .from(lessons)
+      .where(eq(lessons.id, session?.lessonId ?? ""));
+    return { title, lesson };
+  };
+  try {
+    // 첫 실행에서 둘째 주제 묶음을 고르고 읽기 시작 단계를 1 로
+    await page.goto("/first-run");
+    await fillPin(page);
+    await page.getByLabel(T.displayName).fill("모모");
+    await next(page).click();
+    await expect(step(page)).toHaveAttribute("data-first-run-step", "avatar");
+    await page.getByRole("button", { name: AVATARS[0].label }).click();
+    await next(page).click();
+    await page.getByRole("button", { name: T.alphabetKnown }).click();
+    await next(page).click();
+    await page.getByRole("button", { name: TOPIC_BUNDLES[1].label }).click();
+    await next(page).click();
+    await expect(step(page)).toHaveAttribute("data-first-run-step", "level");
+    await page.getByRole("tab", { name: /^읽기/ }).click();
+    await page
+      .locator('[data-level-area="reading"]')
+      .getByRole("button", { name: "1단계", exact: true })
+      .click();
+    await next(page).click();
+    await next(page).click();
+    await page.getByRole("button", { name: T.handoff }).click();
+    await page.waitForURL((url) => url.pathname === "/");
+    // 목록 제목과 열린 세션의 수업 칸이 둘째 묶음의 변형이다
+    const chosen = await openFirstLesson();
+    expect(chosen.title).toContain(VARIANT_MARK);
+    expect(chosen.lesson).toMatchObject({
+      kind: "assigned",
+      lessonNo: 1,
+      topicVariant: second,
+    });
+
+    // 반대쪽: 첫 묶음을 고른 집은 변형 1 을 연다
+    await resetHousehold();
+    await insertHousehold({
+      startLevels: { reading: 1 },
+      topicBundle: TOPIC_BUNDLES[0].id,
+    });
+    const other = await openFirstLesson();
+    expect(other.title).not.toContain(VARIANT_MARK);
+    expect(other.lesson).toMatchObject({
+      kind: "assigned",
+      lessonNo: 1,
+      topicVariant: first,
+    });
+  } finally {
+    await resetHousehold();
+    await db.delete(lessons).where(variantCells);
+  }
 });
