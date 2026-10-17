@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P10a 첫 실행 · 배치 평가
 
-spec: `specs/` 정본(4절 첫 문단 · 첫 실행 · 배치 평가 행, 3.1 알파벳 문단, 3.2 배치 평가 표 · 회화 시작 단계 문단, 3.5 관심 주제, 5절 profiles · profile_tracks · settings · unit_progress · level_tests · sessions · attempts · parent_auth · parent_alerts · progress_events · 전이 표, 6.3 주제 묶음 · 시드 범위 끝 알림 문단, 7절 마이크 · 지원 표 · 오류 · 마이크를 쓸 수 없음 행, 8절 네트워크 끊김 · 오래 멈춘 세션(배치 평가는 닫지 않음), 12절 placement.* · profile.start_level.<영역> · speech.* · seed.complete_through_level · seed.range_end_alert_margin · talk.placement_cap · unit.* · level.*, 13절 C50 · C53 · C55 · C57 · C61 (2) · C66 · C68, 15절 AC-1a · 1b · 1c · 5e(배치 몫) · 11a · 11b · 11c · 11d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P10 행 · 위험 1 · 12 · 화면 구현 · 검토 루프 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: approved
+spec: `specs/` 정본(4절 첫 문단 · 첫 실행 · 배치 평가 행, 3.1 알파벳 문단, 3.2 배치 평가 표 · 회화 시작 단계 문단, 3.5 관심 주제, 5절 profiles · profile_tracks · settings · unit_progress · level_tests · sessions · attempts · parent_auth · parent_alerts · progress_events · 전이 표, 6.3 주제 묶음 · 시드 범위 끝 알림 문단, 7절 마이크 · 지원 표 · 오류 · 마이크를 쓸 수 없음 행, 8절 네트워크 끊김 · 오래 멈춘 세션(배치 평가는 닫지 않음), 12절 placement.* · profile.start_level.<영역> · speech.* · seed.complete_through_level · seed.range_end_alert_margin · talk.placement_cap · unit.* · level.*, 13절 C50 · C53 · C55 · C57 · C61 (2) · C66 · C68, 15절 AC-1a · 1b · 1c · 5e(배치 몫) · 11a · 11b · 11c · 11d, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P10 행 · 위험 1 · 12 · 화면 구현 · 검토 루프 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: done(2026-10-18, 커밋 78db3a2)
 승인: 컨트롤러 2026-10-17 18:3x(C70~C73 — 순서 바꿈은 요청자 2026-10-17 14:1x 요청에 따름, 다른 순서를 원하면 되돌림; 정할 것은 모두 권함대로) · 브랜치 · 워크트리: `feature/1a-p10-first-run-home`(바탕은 아래 '바탕 브랜치', 격리 워크트리 하나. P10b 와 같은 브랜치 · 같은 워크트리) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P10 은 파일이 쉰 개 안팎이라 둘로 나눴다(묶음 plan 위험 12). 이 파일(a)은 개발용 로컬 DB 길 · 보드 공용 · 첫 실행 · 배치 평가 · 답 입력 조각이다. 짝은 `plan-p10b-홈-목록-세션-틀.md`(홈 · 수업 목록 · 세션 틀 — 시작 재판정 · 판 · 주제 변형 · 전이 · 시도 id)다. 두 plan 은 한 브랜치에서 아래 '화면을 보는 차례'대로 엇갈려 구현한다. 함께 쓰는 사실(앞당긴 까닭과 가정 · 화면을 보는 차례 · 바탕 브랜치 · 시험용 시드 · 정본 밖 문구 · 정할 것 · 확인한 사실)은 이 파일에만 두고 b 는 절 이름으로 가리킨다.
@@ -331,4 +331,155 @@ H3(Supabase 개발용)과 H15(원격)는 이 plan 을 막지 않는다. 모든 �
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 문서 반영 편집자 2026-10-18 06:4x(브리프 `task-p10-done-edit.md`). **커밋 78db3a2**(가지 `feature/1a-p10-first-run-home`, 2026-10-18 06:20). P10a · P10b 는 한 가지 · 한 워크트리(`.claude/worktrees/p10`, 바탕 596137a)에서 차례 1~7 과 fix 1~7 로 끝냈다. 두 plan 이 함께 쓰는 사실(흐름 · 커밋 · CI · 로컬 관문 · 공용 파일 · PR)은 이 절에만 두고, plan-p10b 완료 보고는 절 이름으로 가리킨다. 원문은 구현 보고 `task-p10-report.md`(워크트리 장부 폴더, 78db3a2 에 들어감) · 검토 보고 열다섯(`review-p10-*.md`) · 장부 progress · ledger-open · ledger-closed 다.
+
+### 흐름
+
+| 차례 · 라운드 | 검토 묶음 | 결과(검토 보고) |
+|---|---|---|
+| 차례 1 개발용 로컬 DB 길 · 시험용 시드 나무 · e2e DB | T(가벼운) | Approved · M 5(`review-p10-1.md`). Minor 는 차례 2 라운드에 고침 |
+| 차례 2 보드 · 첫 실행 · 마이크 상태 | A1 | 코드 Changes requested · I 1 · M 3, 차례 1 Minor 다섯 ADDRESSED(`review-p10-2-code.md` — DB 오류 글에 아이 이름 · PIN 해시가 실림). 화면 Changes requested · I 2 · M 10(`review-p10-2-design.md`) |
+| fix 1 · 차례 2 화면 지적 반영 | A1 | 코드 Approved · 새 N 2(`review-p10-fix1.md`). 화면 열둘 가운데 열하나 ADDRESSED, M-9 는 C72 문구 그대로 · 새 N 3(`review-p10-3-design.md` (1)) |
+| 차례 3 홈(plan-p10b) | B1 | 코드 Changes requested · I 1 · M 4(`review-p10-3-code.md`). 화면 Changes requested · I 1 · M 6(`review-p10-3-design.md` (2)) |
+| 컨트롤러 핫픽스 | — | 첫 실행 한글 이름 칸 비제어 · `<Fragment key={step}>`(요청자 '한글 완성이 안 됨'). `review-p10-fix2-code.md` 2절이 타당하다고 봄 |
+| 차례 4 수업 목록(plan-p10b) | B2 | 코드 Changes requested · I 1 · M 4(`review-p10-4-code.md`). 화면 Changes requested · I 1 · M 6(`review-p10-4-design.md`) |
+| fix 2(B1) | B1 | 코드 Approved · 새 N 2(`review-p10-fix2-code.md`). 화면 범위 안 여덟 ADDRESSED · 새 N-4(`review-p10-fix2-design.md`) |
+| fix 3(B2) | B2 | 코드 Approved · 새 N 2(`review-p10-fix3-code.md`). 화면 모두 ADDRESSED · 새 N-5 · N-6(`review-p10-fix3-design.md`) |
+| 차례 5 답 맞춤 · 답 입력 조각 · 배치 평가 + 차례 6 세션 틀 + fix 4(재검토 Minor · 로마자 C74) | A3 · A2 · B3 | 코드 Changes requested · I 2 · M 4, fix 4 여덟 ADDRESSED(`review-p10-5-6-code.md` — CI 통합 작업이 실패를 가림 · 가려진 '세션 틀: 다시 열면 …' 실패). 화면 검토는 재부팅 뒤 |
+| fix 5(I 2 · M 3 + 요청자 프리뷰 결함 넷 + 마이크 확인 안내) | A3 · A2 · B3 | Approved · 새 N-1(`review-p10-fix5-code.md` — 홈 '다시 확인' 단추가 실제 확인 없이 카드를 엶 → 1-나 장부) |
+| 차례 7 마무리 + 덧붙임(`isUniqueViolation` 셋 합침) | 가벼운 | Approved · M 6(`review-p10-7-code.md`) |
+| fix 6(C82 크기 훑기 규칙) · fix 7(차례 7 M-1 · 2 · 3 · 5) | — | CI 10차 · 11차 초록. M-4 는 ledger-open, M-6 은 아래 비밀값 grep 문구 |
+
+fix 라운드는 지적 묶음마다 한 번이다(한도 셋).
+
+### 커밋(P10 가지, 바탕 596137a 위 넷)
+
+| 커밋 | 시각(10-18) | 파일 | 담은 것 | 비고 |
+|---|---|---|---|---|
+| 5fedd75 | 00:56 | 51 | 차례 1~4 · fix 1~3 · 핫픽스 둘 | 요청자 '커밋해도돼'(00:5x). 원격 저장소 · 프리뷰 배포도 이때 생김(C75) |
+| bc3e1ba | 02:09 | 43 | 차례 5 · 6 · fix 3 · 4 | CI 4차 뒤, 코드 검토 앞(요청자 프리뷰 시험 우선 — 장부의 루프 예외) |
+| df7f6cd | 05:00 | 28 | fix 5 · PIN 단계 화면 준비 기다림 | CI 8차 뒤, 재검토 앞(같은 예외) |
+| 78db3a2 | 06:20 | 15 | 차례 7 · fix 6 · 7 | CI 11차 뒤 |
+
+596137a → 78db3a2 는 94 파일이다(새 75 · 고침 18 · 지움 1, 장부 파일 둘 포함, +18,463 −78 줄). 마이그레이션은 더하지 않았다(계획대로). 사진 78장은 관례대로 커밋 밖(워크트리 장부 폴더)이다.
+
+### CI(가지 `ci/p10-c5`, 초안 PR #1)
+
+이 Mac 은 2026-10-18 00:44 부터 SysV 공유 메모리가 바닥나 새 Postgres 가 뜨지 않았다(ledger-open 환경 행). 그래서 차례 5 부터 통합 · e2e 는 워크트리 상태를 CI 가지에 올려 돌렸다(컨트롤러 01:2x). 작업은 열 개다(lint · build · unit · integration · e2e · e2e-local · depcruise · spec-trace · bundle-secrets · seed-validate).
+
+| 차 | 커밋 | run | 결과 |
+|---|---|---|---|
+| 1 | 1d637e4 | 39049250946 | e2e 만 실패 — 시험 쪽 경쟁 넷(첫 실행 1 · 배치 3). 수업 목록 초점 시험 흔들림은 재시도 통과. 통합 12 파일 통과 |
+| 2 | d0e89ea | 기록 없음 | 3차가 덮음. 통합은 가려진 실패 1 |
+| 3 | 4d0ed4f | 39050999951 | e2e 7 실패 · 39 통과(`openPlacement` 가 자기를 부름). 통합은 성공으로 보였으나 가려진 실패 1 |
+| 4 | 771d53e | 39051573610 | 전부 성공(e2e 46). 통합은 가려진 실패 1 |
+| 5 · 6 | b01153d · c691b7e(재시도) · 0185e42(ci.yml 되돌림) | 실행 없음 | PR #1 이 CONFLICTING 이라 Actions 가 생기지 않음. CI 가지를 bc3e1ba 위에 다시 만듦 |
+| 7 | c2d9de1 | 39060088890 | 통합 실제 통과(Test Files 13 · Tests 108 · 1 건너뜀). e2e 2 실패 · 45 통과(PIN 단계 화면 준비 경쟁) |
+| 8 | c606f5c | 39060827940 | 열 작업 성공(통합 108 + 1 · e2e 전부) → 커밋 df7f6cd |
+| 9 | 5cfe685 | 39068609052 | 아홉 작업 성공 · e2e 1 실패(AC-N9 '20px < 22px' 26건 → C82 · fix 6). AC-1b 통과 |
+| 10 | 12b03c9 | 39069390545 | 전부 성공(e2e 49) |
+| 11 | 6e7c868 | **39070194023** | **전부 성공**(통합 · e2e 49 · e2e-local) → 커밋 78db3a2 |
+
+'가려진 실패'는 통합 작업이 vitest 실패에도 성공으로 끝나던 결함이다(P3a 부터, review-p10-5-6-code I-1). 가려진 것은 '세션 틀: 다시 열면 …' 하나였다(I-2). fix 5 가 둘 다 고쳤고, 컨트롤러가 2~4차 통합 로그를 다시 봐 장부를 정정했다(05:0x).
+
+### 로컬 관문(DB 를 쓰지 않는 것, 이 Mac)
+
+| 명령 | 마지막 결과 |
+|---|---|
+| `pnpm test` | 40 파일 · 367 통과(fix 7 뒤) |
+| `pnpm exec tsc --noEmit -p .` · `pnpm exec biome ci .` | 0 · 0(fix 7 뒤) |
+| `pnpm build` · `pnpm check:deps` · `pnpm check:bundle` | 성공 · 위반 0(130 모듈) · 위반 0(227 파일), 차례 7(05:09) |
+| `pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec` | 종료 0 · AC 이름 시험 186 · missing-test 48(바탕) → 34. P10 몫 AC 는 모두 시험이 있다. P10 가지의 묶음 plan 은 낡아 AC-6a 를 P10 으로 보이나 메인 묶음 plan 은 이미 P11 이다(C70) |
+| `check:ids`(P11 워크트리의 스크립트를 읽기만으로) | design-number 0 · code-setting-unknown 0 · fixture-setting 0 · table-mismatch 0 · `seed/` 없음 건너뜀 |
+| 비밀값 grep(`sk-ant-…` · 비밀번호 든 postgres 주소, .env · 그림 뺌) | 지어낸 시험 주소 하나(`tests/unit/dev-tree.test.ts` 의 `.env.local` 시험) 밖 0(review-p10-7-code M-6) |
+| `pnpm test:int` · `pnpm e2e` · `pnpm e2e:local` | 로컬에서 못 돌림 → CI 11차 |
+
+시험 수: 단위 294 → 367 · 통합 66 + 1 → 108 + 1(CI 8차) · e2e 18 → 49 · e2e-local 7(P5b 시험 그대로).
+
+증명 표 대조(편집자, 78db3a2 의 시험 글): 이 plan 증명 표의 시험 이름 서른셋 가운데 서른둘이 있다. 없는 것은 e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다' 하나다(아래 '안 한 것').
+
+### 실제 바뀐 파일(※ = 계획과 다름)
+
+계획 표의 손 파일 서른둘(새 31 · 지움 1)은 모두 있다.
+
+| 파일 | 신규 / 수정 | 실제 |
+|---|---|---|
+| `scripts/dev-db.ts` | 신규 | `pnpm db:dev`(개발용 · `--reset` · `--ephemeral --port`). ※ `import.meta` 없음(Playwright 가 설정을 CommonJS 로 읽음) · 개발용도 `--port` · `.env.local` 두 키는 함께 다룸(하나라도 다른 주소면 둘 다 그대로) · 시드는 content 테이블 여덟이 모두 비면 · 켜 둔 인스턴스의 자료 폴더면 `--reset` 도 종료 2 · 끌 때 `STOP_WAIT_MS` 5초 |
+| `scripts/pg-local.ts` | ※ 신규 | Supabase 역할 흉내 · 기본 권한 SQL · `pgUrl` · 로그 끝 줄(차례 1 Minor M-4 — `tests/integration/global-setup.ts` 와 한 벌로). `importEmbeddedPostgres`(fix 5 I-1 — 읽을 때 걸리는 종료 처리기를 떼어 통합 실패가 보이게) |
+| `tests/fixtures/seed/dev-tree.ts` · `tests/unit/dev-tree.test.ts` | 신규 | 계획대로. 시험에 `--reset` 막기 · 오류 글 가림 사례를 더함(차례 1 Minor) |
+| `tests/integration/dev-seed.test.ts` | ※ 신규 | 적재 행 수를 나무에서 센 수와 맞댐(차례 1 Minor M-5) |
+| `tests/e2e/db.ts` | 신규 | ※ `insertHousehold` 는 여기 없음(차례 1 파일 동결) |
+| `tests/e2e/household.ts` | ※ 신규 | `insertHousehold` · `householdChoices` · `randomPin` — 서버와 같은 `householdRowsOf` 로 행을 만듦 |
+| `src/components/board/board.tsx` · `src/app/(child)/layout.tsx` | 신규 | 보드 조각(`ChildScreen` · `PaperBand` · `PostIt` · `BigButton` · `SmallButton` · `ConfirmSheet` · `AvatarCircle` · `AREA_LABEL`). ※ 뒤에 더한 것 — `ChoiceButton` · `StatusLine` · 초점 · 고른 표시(차례 2 화면 지적) · `BigLink`(차례 3) · `SmallLink`(fix 2) · 비활성 `PostIt` 은 흐림 대신 바탕 색 섞기(fix 2) · `ConfirmSheet` 첫 단추 초점 · Esc · Tab 가두기 · 덮개 전체가 쪽지(fix 3 · 4 · 5) |
+| `src/app/(child)/page.tsx` · `src/app/page.tsx` | 신규 · 지움 | 옮김. 홈 내용은 plan-p10b |
+| `src/lib/mic-state.ts` | 신규 | ※ 기기 사실은 P2b `browser.ts` 의 `deviceFacts()` 를 같이 씀(fix 1 M-3) · 처음 마이크 안내 표시 `micNoticeSeen` · `markMicNoticeSeen`(차례 5) |
+| `src/core/profile/romanize.ts` | 신규 | ※ 음절 관용 철자 표를 먼저 쓰고 없으면 고시 규칙(C74 잠정, fix 4). 값 6 은 고시 그대로였다 |
+| `src/core/profile/romanize-spellings.ts` | ※ 신규 | 132 음절 표(조사 보고 JSON 그대로 · 출처 · 기준일 주석) |
+| `src/core/profile/start.ts` | 신규 | 구조 상수 `PIN_LENGTH` 6 · `NAME_MAX_LENGTH` 20 · `TOPIC_BUNDLES` · `AVATARS`(파일 맨 위 대문자 상수, C72). ※ `MIC_CODE_MAX` 64 · `MIC_BROWSER_MAX` 120(fix 1 M-2) · 단원 들기 `unitEntryOf` 를 뽑아 배치와 같이 씀(차례 5) |
+| `src/server/profile/index.ts` · `src/server/actions/first-run.ts` | 신규 | 계획대로(argon2id 해시는 트랜잭션 밖 · 두 기기는 already_done). ※ DB 오류는 이름 · 코드만 로그에 남기고 화면에는 unavailable(fix 1 I-1) · `checkVocabName` · 범위 끝 알림은 `createAlertOnce` 없이 트랜잭션 안에서 바로 |
+| `src/server/db/safe-error.ts` | ※ 신규 | `dbErrorTag` · `safeDbError`(fix 1 I-1) · `isUniqueViolation`(차례 7 — 세 서버 파일의 같은 함수를 합침, `CAUSE_CHAIN_DEPTH` 4 · `PG_UNIQUE_VIOLATION`) |
+| `src/db/schema/seed-revision.ts` | ※ 신규 | `SEED_REVISION_TABLES` — P7a `read.ts` 와 e2e `household.ts` 가 같이 씀(fix 1 M-3) |
+| `src/app/(setup)/first-run/page.tsx` · `first-run-flow.tsx` | 신규 | 여덟 화면. ※ 시작 단계 화면은 영역 단추 넷과 그 영역 칸, 선택지마다 예시 줄 · 고르기 화면은 '골라 두고 다음' · 핫픽스 둘 · 화면 준비 끝 표시 `data-hydrated`(CI 7차) · 마이크 확인 안내 한 줄(fix 5) |
+| `tests/unit/first-run.test.ts` · `tests/integration/first-run.test.ts` · `tests/e2e/first-run.spec.ts` | 신규 | ※ e2e 'AC-1c … 주제 변형 수업이 열린다'는 없음(아래 '안 한 것') · e2e '마이크 확인: 소리 받기만 시작하고 …' 더함(fix 5) |
+| `src/core/answer/check.ts` · `tests/unit/answer-check.test.ts` | 신규 | ※ C73 대로 낱말 답은 대소문자 무시 · 쓴 답 정규화에 문장 부호 앞 빈칸 지움 |
+| `src/core/answer/display.ts` | ※ 신규 | 화면에 넘기는 문항에서 정답 칸을 뺌(평가 중 정답이 쪽에 실리지 않게) |
+| `src/components/answer/{choice,tiles,typing,repeat}.tsx` | 신규 | ※ 누르는 보기 · 타일은 직접 그림(P5b 조각은 누를 수 없는 꼴). 문항 몸통은 P5b `ReadingPassage` · `EnglishLine` · `VocabPicture` · `FrameText` |
+| `src/core/placement/adaptive.ts` · `tests/unit/placement.test.ts` | 신규 | C71 대로 |
+| `src/core/placement/finish.ts` | ※ 신규 | 배치 결과 행 순수 함수 `placementFinishOf` |
+| `src/server/placement/index.ts` · `src/server/actions/placement.ts` | 신규 | ※ 마이크 알림 액션 `reportPlacementMic` 을 더함 · 동음이의어 목록 파일이 없으면 경고 한 번과 빈 묶음(fix 5 M-3) |
+| `src/server/seed-lists.ts` | ※ 신규 | P9c dae3afd 의 같은 이름 파일을 글자 그대로 옮김(정할 것 타 — 바탕에 P9c 없음) |
+| `src/app/(child)/[area]/placement/page.tsx` · `placement-flow.tsx` · `tests/integration/placement.test.ts` · `tests/e2e/placement.spec.ts` | 신규 | ※ 답은 시도 대기열 대신 같은 시도 id 로 다시 보냄 · 화면 준비 끝 표시 · 마이크 안내 표시 `data-mic-notice`(fix 7) |
+| `tests/unit/pg-local.test.ts` · `tests/unit/mic-check.test.ts` · `tests/unit/safe-error.test.ts` · `tests/fixtures/speech/scripts/audio-no-sound.json` | ※ 신규 | 내장 Postgres 읽기 · 마이크 확인 성공 조건(fix 5) · 유일 위반 찾기(차례 7) |
+
+### 공용 파일(※ = 계획 밖)
+
+| 파일 | 실제 |
+|---|---|
+| `package.json` · `.gitignore` · `playwright.config.ts` · `tests/fixtures/settings.ts`(공용 1~4) | 계획 글자대로 — `db:dev` · `/.dev/` · `E2E_DB_PORT` 54339 · webServer 배열 · `workers: 1` · P10 키 서른셋(12절 기본값) |
+| `src/app/layout.tsx` · `src/app/globals.css` · `src/components/activities/common.tsx` · `tests/e2e/smoke.spec.ts`(공용 5~8) | 계획대로. Google Fonts 내려받기가 돼 `next/font/local` 길은 쓰지 않음(위험 5). ※ 토큰 `--color-kraft`(부모 꼬리표, 차례 3) |
+| `src/core/seed/structure.ts` · `src/core/level-band.ts`(공용 9, 선택) | 하지 않음 |
+| `tests/integration/global-setup.ts` | ※ `pg-local.ts` 조각을 같이 씀(차례 1 Minor M-4) · `importEmbeddedPostgres`(fix 5 I-1) |
+| `.github/workflows/ci.yml` | ※ 통합 단계에 vitest 'failed' 줄 지킴(fix 5 I-1). '바탕 브랜치' 절은 'ci.yml 은 P10 이 고치지 않는다'였다 |
+| `src/lib/speech/browser.ts`(P2b) | ※ `deviceFacts()` 내보냄(fix 1 M-3) · `checkMicrophone` 성공 조건을 소리 들어옴 · 첫 인식 결과로(fix 5) |
+| `src/server/seed/read.ts`(P7a) · `src/server/db/index.ts` · `src/server/settings/index.ts` | ※ `SEED_REVISION_TABLES` 를 씀(fix 1 M-3) · `Tx` · `DbOrTx` 형과 읽기 옵션이 트랜잭션도 받음(fix 5 M-1 — plan-p10b 세션 시작 몫) |
+| `tests/e2e/fixtures.ts` | ※ `speechPage(context, 대본)` 도우미(fix 4 — review-p10-fix2-code N-2) |
+
+### 계획과 다르게 한 것
+
+1. **시험용 시드를 Supabase 개발용 프로젝트에도 넣었다**(C75, 1-가 프리뷰 기간 한정, 요청자 2026-10-18 00:4x). 가정 (가)는 로컬 · e2e 임시 DB 에만이었다. P8 실시드를 넣기 전에 비운다.
+2. **요청자 확인(차례 8)은 로컬이 아니라 프리뷰에서 했다.** 프리뷰에서 나온 결함 넷(마이크 확인 거짓 양성 · '못 씀'을 되돌릴 길 없음 · '내 단계 찾기' 안내 · 회화 준비 중 안내)은 fix 5 가 고쳤다.
+3. **차례 5 부터 통합 · e2e 는 CI 가지에서 돌렸다**(위 'CI'). 커밋 둘(bc3e1ba · df7f6cd)은 요청자 시험을 위해 검토 앞에 했다.
+4. **실행 차례를 바꿨다.** 요청자 2026-10-18 00:2x('처음 단계평가가 제대로된 평가가 이루어 지지 않았고 수업진행이 안되던데')로 fix 2 → 차례 5 → 차례 6 → fix 3 순서가 됐다(fix 3 은 이미 끝나 있었음). 검토 중인 파일은 동결해 차례 5 · 6 은 새 파일부터 했다.
+5. **영어 이름 제안은 관용 철자를 먼저 쓴다**(C74 잠정, 요청자 2026-10-17 23:5x '확실히 한영 변환이 제대로 안된다'). 표에 없는 음절 · 성 빼기 · 붙여 쓰기 · 첫 글자 대문자는 고시 규칙 그대로다.
+6. **마이크 확인은 소리가 들어와야 성공이다**(fix 5 — 원격 PC 의 가상 장치에서 거짓 양성). 받기만 시작하고 소리 없이 끝나면 실패 문구이고, 기기에 '못 씀'은 남기지 않는다. 첫 실행 · 배치 마이크 화면의 확인 단추 아래에 '단추를 누른 뒤 아무 말이나 한마디 해 주세요'를 더했다(C72).
+7. **주제 묶음 2 대표 낱말을 kite · ball · star · bus 로 바꿨다**(review-p10-2-design I-2 — rocket 은 vocab 에 없고 toy · game 은 그림이 없음). 묶음 1 은 dog · tree · apple · family 다. 그림은 `images.word` 로 찾는다(P6a vocab 에 그림 키가 없음).
+8. **아바타 색 여섯 가운데 둘(주황 #FFC98B · 보라 #D9C6F5)은 구현자가 골랐다**(나머지 넷은 포스트잇 색). 아바타 화면 제목 '아이 그림을 골라 주세요'는 C72 문구 그대로 두었다(review-p10-2-design M-9, 컨트롤러).
+9. **시작 단계 화면은 영역 단추 넷과 그 영역 칸으로 바꾸고 선택지마다 예시 줄을 둔다**(review-p10-2-design M-1, 컨트롤러 확정). 가로 화면은 두 열 열 우선이고 단계 단추 열은 14rem 이다(fix 2 · fix 4).
+10. **문구 셋을 C72 표에 더했다.** '아이 이름을 알려 주세요' · '지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요'(서버가 unavailable 일 때 — 요청이 닿지 않고 기기가 끊겼으면 7절 끊김 문장) · 마이크 확인 안내(6).
+11. **DB 오류는 오류 이름 · Postgres 코드만 로그에 남긴다**(fix 1 I-1 — 아이 이름 · PIN 해시가 오류 글에 실려 서버 로그로 가던 것). 설정이 빠졌으면 그 키 이름은 남긴다(fix 2).
+12. **차례 5 의 다르게 한 것 열은 모두 받아들여졌다**(review-p10-5-6-code 4절). 화면 자료에서 정답 칸을 뺌 · 결과 행 순수 함수 · `placement_level` = 판정한 시작 단계 · 실패 3회 난 시도는 영역 문항 상한에도 세지 않음 · 결과 알림은 트랜잭션 안에서 바로(마이크 알림은 `createAlertOnce`, 학습일 · 종류마다 한 번) · 처음 마이크 안내는 기기마다 한 번 · 동음이의어 목록이 없으면 빈 묶음 · '여섯 번 이어진 실패'는 넣지 않고 stalled 는 넣음 · 닿지 않은 답은 같은 시도 id 로 다시 보냄 · 쓴 답에서 문장 부호 앞 빈칸을 지움(C73 '그 밖 문장 부호 꼴은 정규화').
+13. **차례 1 · 2 의 다르게 한 것도 받아들여졌다**(review-p10-1 4절 · review-p10-2-code 5절). 위 파일 표의 ※ 가 그것이다. 구조 상수 자리는 컨트롤러가 C72 글을 'structure.ts' 에서 '그 규칙을 쓰는 파일 맨 위 대문자 상수'로 고쳤다(13절 C72).
+
+### 안 한 것(계획에 있었음)
+
+1. **e2e 'AC-1c 고른 관심 주제 묶음의 주제 변형 수업이 열린다'가 없다**(증명 표 · 차례 7 몫). 차례 7 브리프 `task-p10-7.md` 에 빠졌고 보고 · 검토에도 다룬 기록이 없다(편집자 대조). 프로필 묶음 변형 고르기는 통합 두 시험이 본다. '세션 틀: 판은 … 처음 변형으로 연다'와 '수업 목록 자료: … 고른 묶음 변형이 없으면 가장 낮은 변형이다'다. AC-1c 의 다른 시험이 있어 spec-trace 는 이 빈칸을 잡지 않는다.
+2. **공용 변경 9(선택, `bandOf` 하나로)는 하지 않았다.** 새 코드는 `level-band.ts` 만 쓴다(ledger-open, P11 · P12 몫).
+3. **배치 화면의 답 보내기를 시도 대기열로 합치지 않았다**(plan-p10b '다른 P 에 넘길 것'의 P10a 몫). 배치는 답마다 서버가 다음 문항을 정해 맞지 않는다(review-p10-5-6-code 4절 받아들임).
+4. **화면 검토 둘과 사진이 남았다.** 차례 5 배치(A3 · A2)의 design-reviewer 검토와 차례 7 '화면 검토 다시'(첫 실행 → 세션 시작 한 번에)는 재부팅 뒤다. 차례 5 · 6 · fix 4~7 실기 사진도 같다. 화면 검토를 마친 차례는 2 · 3 · 4 와 그 fix 다.
+
+### 남긴 것
+
+- **재부팅 뒤(컨트롤러)**: 로컬 통합 · e2e 한 바퀴 · des-p10 화면 검토(차례 5 배치 · 차례 6 세션 틀 · 처음부터 끝까지 한 번) · 사진 세트(차례 5 · 6 · fix 4~7). 다시 막히지 않게 SysV 한도를 올리기를 권한다(요청자 sudo, ledger-open 환경 행).
+- **컨트롤러 · 요청자**: e2e 'AC-1c 주제 변형 수업'을 어디서 더할지(컨트롤러). C74 되읽기(요청자, 잠정). check:ids 를 P7b 가 든 가지에서 한 번 더 돌리기(구현 보고 '차례 7 덧붙임').
+- **P11**: 답 입력 조각 · `checkAnswer` 를 세션 활동에 그대로 쓰고 '틀리면 정답을 보여 주고 다시'만 더한다(다른 P 에 넘길 것). `dbErrorTag` · `safeDbError` 를 아이 답 글 · 서버 오류에 쓴다. `requireAccess` 는 guard 에서 이름 그대로 가져온다(access-gate 검사가 기본 가져오기 · 별칭을 못 잡음). 모두 ledger-open.
+- **P12**: `unitSnapshotOf` 는 쓰기 6~12 의 level_specs 덮기 값을 담지 않는다 — 판정 때 함께 본다(ledger-open). `placementSnapshotOf` · progress_events `{ area, source }` 꼴은 다른 P 에 넘길 것 그대로다.
+- **P6b · P8**: P6b 그림 키가 바탕에 오면 묶음 그림을 `vocab.imageKey` 로 바꾸고 대표 낱말을 카탈로그와 다시 맞댄다(ledger-open). P8 시드 브리프 몫은 다른 P 에 넘길 것 그대로다.
+- **1-나**: 부모 화면(PIN 입력 · 알림 보기 · '마이크 다시 확인'이 `clearMicState()` 를 부름). 그때 홈 '다시 확인' 단추는 빼거나 확인이 성공할 때만 지우게 한다(review-p10-fix5-code N-1). access-gate 검사 보강. 개발용 DB 의 '집 초기화'는 `TRUNCATE … CASCADE` 를 쓰지 않고(settings 가 함께 비워짐) 초기화 스크립트를 둔다. 모두 ledger-open.
+- **운영 전환(H8)**: production 환경 변수에 든 개발용 값과 개발용 DB 비밀번호를 바꾼다(ledger-open 배포 · 비밀번호 행).
+- **CI 가지 규칙**: CI 가지는 바탕 가지 최신 커밋 위에 다시 만들고, 바탕 · CI 가지의 specs · intent 는 문서 가지와 맞춘다(ledger-open).
+
+### PR
+
+- PR #1 `ci/p10-c5` → `feature/1a-p10-first-run-home`: CI 용 초안(합치지 않음). CI 1~11차를 이 PR 에서 돌렸다(5 · 6차는 실행이 생기지 않음).
+- PR #2 `feature/1a-p10-first-run-home` → `main`: 초안.
+- 78db3a2 뒤 컨트롤러가 둘 다 닫고 `ci/p10-c5` 원격 가지를 지웠다(06:2x). main 으로 합치는 PR 은 바탕 합침 때 다시 연다(ledger-open CI 용 PR 행 · H14). 78db3a2 는 P11 가지에 합쳤다(6e09901).
