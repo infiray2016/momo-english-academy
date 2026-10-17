@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P7b CI 작업 셋 · 식별자 대조 · 개발용 DB
 
-spec: `specs/` 정본(5절 적재 문단 'main 작업은 마이그레이션 → 시드 검증 → 적재', 9절 시드 검증 · CI 검사, 10절 배포 · CI(Deployment Checks) · 운영(활동 유지 요청) · 접근 제어(Data API), 11절 1-가 (4) · (4-1), 12절 표 전부, 13절 C26 · C50 · C51('설정 키 대조는 P7 check-ids') · C54 (2) · C57 · C61 (2) · C62 (2), 15절 AC-17b · AC-7g · AC-7a, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P7 행 · 위험 4 · 11 · 14 · 17 · [사람] H3 · H8 · H14 · H15 · 조사 `docs/research/2026-10-16-reverse-engineering.md`(역분석 제안 6) · `docs/research/2026-10-16-graph-engineering.md`(조사 P5) · 스킬 graph-engineering '자료 그래프' · 앞 절반 `plan-p07a-적재-판.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: approved
+spec: `specs/` 정본(5절 적재 문단 'main 작업은 마이그레이션 → 시드 검증 → 적재', 9절 시드 검증 · CI 검사, 10절 배포 · CI(Deployment Checks) · 운영(활동 유지 요청) · 접근 제어(Data API), 11절 1-가 (4) · (4-1), 12절 표 전부, 13절 C26 · C50 · C51('설정 키 대조는 P7 check-ids') · C54 (2) · C57 · C61 (2) · C62 (2), 15절 AC-17b · AC-7g · AC-7a, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P7 행 · 위험 4 · 11 · 14 · 17 · [사람] H3 · H8 · H14 · H15 · 조사 `docs/research/2026-10-16-reverse-engineering.md`(역분석 제안 6) · `docs/research/2026-10-16-graph-engineering.md`(조사 P5) · 스킬 graph-engineering '자료 그래프' · 앞 절반 `plan-p07a-적재-판.md` · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-17 · 상태: in-progress
 승인: 컨트롤러 2026-10-17 05:4x(C68 (4) · (5)) · 브랜치 · 워크트리: `feature/1a-p07b-ci-ids`(P7a 브랜치 `feature/1a-p07-seed-load` 끝에서, 같은 워크트리. 식별자 대조만 먼저 하려면 01ff0a9 에서 ∥) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P7 의 뒤 절반이다. 앞 절반(판 규칙 · 설정값 시드 견주기 · 적재 함수 `loadSeed` · 판 고르기 읽기 · 적재 명령 `pnpm seed:load`)은 같은 폴더의 `plan-p07a-적재-판.md` 이고, 이 plan 은 그 명령을 CI 작업 셋에 걸고, 식별자 대조 명령을 만들고, 개발용 DB 에 처음 넣는 [사람] 단계를 둔다.
@@ -361,4 +361,27 @@ jobs:
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 컨트롤러 2026-10-17 22:3x. **커밋 대기**(요청자 지시 H14). 워크트리 `.claude/worktrees/p07`, 가지 `feature/1a-p07b-ci-ids`(바탕 P7a df8445e), 미커밋 13(새 8 · 고친 4 · 보고 1). 원격 없음(H15)이라 PR 없음. [사람] 할 일 1~8(첫 개발용 적재 · GitHub 비밀값 · main 합침 · dev-load · keepalive · H8)은 그대로 남는다 — 첫 개발용 적재는 H3 진행 중(Supabase 개발용 프로젝트 ttdolsbczmdruzidmzno 만듦, 접속 문자열 확인 중).
+
+| 흐름 | 때 | 결과 |
+|---|---|---|
+| 구현 impl-p07b(Opus · high, 가벼운 루프) | 22:1x | DONE_WITH_CONCERNS → ci.yml check-ids 작업 반영 뒤 DONE — 단위 221 → 239 · 통합 55 + 1 → 59 + 1 · missing-test 51 · check:ids(메인 specs) 막는 위반 0(`task-p07b-report.md`) |
+| 검토 rev-p07b(Opus · high, 범위 한정) | 21:5x | **Approved**(C 0 · I 0 · M 5) — 작업 파일 셋 · ci.yml 작업 plan 글자 차이 0 · check:ids 재현 종료 0 · design-number 17 거짓 양성 · 해석 둘 타당 · 장부 셋 닫힘(`review-p07b.md`) |
+| Minor 라운드(재검토 없음 C52) | 22:2x | M-1 같은 머리 표 모두 읽기 · M-2 명시한 `--seed-root` 없으면 종료 2 · M-3 `writing.rule_check_until_level` 이하 쓰기 규격의 maxCorrections 위반(4~5단계는 뺌) · M-4 run 블록 꼴(`\|-` · `>`) · 공백 없는 식 · `toJSON(secrets)` · `secrets[` · `secrets: inherit` · M-5 견본 ai.effort 행 · 허용 이름 사례. 단위 240 |
+| 컨트롤러 확인 | 22:3x | biome 0 · build · 단위 240 · 통합 59 + 1 · check:deps 0 · spec-trace missing-test 51 · check-bundle 0 · `check:ids --specs <메인>` 종료 0(12절 키 184 · 코드 키 글자 185 · 테이블 29/29 · 대조 안 함 8 · 막는 위반 0) · `--seed-root /nonexistent-seed` 종료 2 · P6a 시드(p06b 워크트리) 막는 위반 0 · design-number 보고만 · 비밀값 꼴 없음 · 공용 diff 4 파일 |
+
+실제 바뀐 파일(계획과 다른 것은 ※):
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `scripts/check-ids.ts` | 신규 | 식별자 대조 `pnpm check:ids`(12절 키 펼치기 — 같은 머리 표 모두 ※, 5절 테이블 ↔ 스키마, seed/settings.json, 코드 키 글자, 규칙 spec-setting-missing · seed-setting-unknown · setting-scope · setting-change-via · setting-default · code-setting-unknown · table-mismatch · max-corrections(1~3단계 maxCorrections 위반 ※ · 사전 단계만) · design-number(보고만), `--specs` 정본 뿌리 ※ · `--seed-root`(명시한 뿌리 없으면 종료 2 ※) · `--fail-on`, 모르는 인자 종료 2) |
+| `scripts/db-ping.ts` | 신규 | 활동 유지 `pnpm db:ping`(`server-only` 없이 postgres, `sql.reserve()` 로 접속 · 질의 실패 가름, 질의 하나) |
+| `.github/workflows/main.yml` · `dev-load.yml` · `keepalive.yml` | 신규 | plan 글자 그대로(DEV_ · PROD_ 비밀값 이름, dev-load 는 운영 비밀값 안 읽음, PROD_RELEASE 보류) |
+| `.github/workflows/ci.yml` | 수정(공용 3) | 끝에 check-ids 작업(`--fail-on` 아홉 = CI_FAIL_ON). P5b 가지의 e2e-local 작업과 같은 자리라 합칠 때 둘 다 남긴다 |
+| `tests/unit/check-ids.test.ts` · `ci-workflows.test.ts` · `tests/integration/db-ping.test.ts` | 신규 | 10 + 8(+1) · 3 |
+| `scripts/seed-load.ts` · `tests/integration/seed-load.test.ts` | 수정(덤) | finally 의 close 실패를 삼켜 적재 결과 · 종료 코드 그대로(review-p07a-2 4절), 시험 1 |
+| `package.json` | 수정(공용 1 · 2) | `check:ids` · `db:ping` 두 줄 |
+
+해석 둘(검토 타당): 쓰기 교정 상한은 12절 사전에 있는 단계만 맞대고 4~5단계 '1'은 뜻 칸의 수라 설정값이 아님 · 바꾸는 곳이 '첫 실행 화면'인 키가 시드에 있으면 setting-change-via.
+
+남긴 것: (1) [사람] 1~8 — **첫 개발용 적재는 끝남**(2026-10-17 23:0x, 컨트롤러가 값 없이: 마이그레이션 3 · Data API 닫힘 · 규격만 적재 칸 290 · 설정 180 · 개정 1 — 산출물 H3 기록), 나머지 · 프리뷰 확인(H1 · H4) · GitHub 비밀값 DEV_ 넷(H15) · main 합침 · dev-load · keepalive 수동 · H8. (2) design-number 거짓 양성 17(진법 · 날짜 자르기 · toFixed · 키 마디 수 · numeric 열 크기) — 차수 경계에서 허용 목록 정리. (3) 쓰기 4~5단계 '고칠 곳 최대 1'을 막는 자동 검사 없음(ledger — 2차 설정 키). (4) H8 안내: PROD_RELEASE 끈 채 Deployment Checks 에 main 을 걸면 건너뛴 작업이 성공으로 보일 수 있음(ledger, 미확인). (5) P10 상수(PIN_LENGTH 등) 허용 목록 · fixture-setting 규칙은 P10 커밋 뒤 check:ids 로 확인.

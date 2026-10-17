@@ -1,0 +1,13 @@
+# 구현 브리프: P10 fix 1 — 차례 2 코드 검토 지적(implementer impl-p10 이어 보기 · Opus · high, 2026-10-17 23:2x)
+
+`review-p10-2-code.md`(rev-p10, Changes requested — C 0 · I 1 · M 3, 차례 1 Minor 다섯은 ADDRESSED)의 지적을 고친다. 워크트리 p10, 커밋하지 않는다. 3001 dev 서버 · 54331 DB 는 요청자가 보는 중 — 끄지 말고 실기는 다른 포트. **지금 검토자 둘(rev-p10 코드 · des-p10 화면)이 차례 3 파일(`src/core/today/done.ts` · `src/server/home/index.ts` · `src/app/(child)/page.tsx` · `home-cards.tsx` · `talk/page.tsx` · 홈 시험 셋 · `board.tsx` · `globals.css`)과 첫 실행 화면 꼴을 읽고 있다 — 이 라운드에서는 그 파일을 고치지 않는다.** 첫 실행 화면 파일(`first-run-flow.tsx`)은 I-1 의 오류 처리 줄만 손댄다. 시험 먼저(새 시험이 먼저 빨강인지 보고에 적는다).
+
+## 지적 — 컨트롤러 판정(보고 3절 '어떻게' 그대로, 다른 점만 따로 적음)
+- **I-1 DB 오류 글에 아이 이름 · PIN 해시가 실림(Important)** — 보고 3절 1~4 대로. `src/server/db/` 에 오류 이름 · Postgres 코드만 담는 도우미(제안 이름 `safeDbError`, `cause` 안 붙임). `saveFirstRun` catch: 유일 위반 → already_done(그대로), 그 밖 → `console.error` 에 이름 · 코드만 남기고 `{ ok: false, reason: "unavailable" }`. `checkEnglishName` → `isVocabName` 길도 같은 꼴(`unavailable`). **화면(`first-run-flow.tsx`, 컨트롤러 확정 — 새 문구 없음):** reason `unavailable` 은 이름 확인 · 저장 둘 다 C72 문장 '지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요'. catch(요청이 서버에 닿지 않음)는 둘 다 `navigator.onLine` 이 false 면 7절 '인터넷이 끊겼어요. 연결되면 다시 해요', 아니면 같은 C72 문장 — 이름 확인 catch 와 저장 catch 를 같은 꼴로(보고 7절 1). 시험: 통합에 BEFORE INSERT 트리거로 profiles · parent_auth 넣기를 실패시키는 사례 둘(결과 reason · 던진 글 · console.error 글에 표시 이름 · 영어 이름 · `$argon2id$` 가 없음을 단언 — 이름은 앱 안 이름만) + 이름 확인 쪽 하나.
+- **M-1** `tests/unit/first-run.test.ts` 에 '알파벳 모름이 고른 단계보다 앞선다' 사례: `chosen { reading: 3, writing: 2 }` + `alphabetUnknown: true` → 두 영역 모두 `{ level: 1, unit: 0, source: "first_run_alphabet" }`.
+- **M-2** `MicResultSchema` 의 `code` · `browser` 상한을 이름 상한의 곱 대신 이름 붙인 기술 값 둘(`MIC_CODE_MAX` · `MIC_BROWSER_MAX`, `start.ts` 맨 위 대문자 상수)로 바꾸고, 넘치면 잘라 받는다(`.transform(slice)`) — 진단 칸이 저장을 막지 않게. 단위 사례 하나(긴 browser 글이 잘려 저장됨).
+- **M-3** 기기 사실 모으기: `src/lib/speech/browser.ts` 에서 `deviceFacts()` 를 내보내 `mic-state.ts` 가 쓴다(두 벌 → 한 벌). 시작 개정의 다섯 테이블 목록: `server-only` 아닌 곳(제안 `src/db/schema/content.ts` 옆 상수)에 두고 `src/server/seed/read.ts` 와 `tests/e2e/household.ts` 가 함께 쓴다. 손이 크면 둘째는 두 곳 머리 주석이 서로를 가리키는 한 줄만 두고 보고에 적는다(장부 행으로 둠).
+- **보고 7절 2** `tests/e2e/first-run.spec.ts` 의 `test.beforeEach` · `plain.beforeEach` 중복 — 한 번만 돌게.
+
+## 완료
+tsc · biome · 단위 · 통합 · e2e(`pnpm e2e` 는 임시 DB 54339 · E2E_PORT 그대로 — 3001 과 겹치지 않음) 초록. 보고 `task-p10-report.md` 에 'fix 1(review-p10-2-code)' 소절(지적별 고친 자리 · 시험 이름 · 빨강 먼저 봤는지 · 다르게 한 것). 끝나면 SendMessage 로 상태 · 요지. 그 다음 차례 4(수업 목록) 브리프는 따로 보낸다 — 기다리는 동안 차례 4 의 순수 함수 `src/core/lesson-list/state.ts` · `tests/unit/lesson-list-state.test.ts`(plan-p10b 값 1, 새 파일만)는 먼저 시작해도 된다.
