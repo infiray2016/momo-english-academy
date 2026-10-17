@@ -6,4 +6,71 @@ export const TEST_SETTINGS = {
   "parent.pin_max_attempts": { scope: "household", value: 5 },
   "parent.lock_minutes": { scope: "household", value: 15 },
   "session.length_factor": { scope: "profile", value: 1.0 },
+
+  // ── AI 호출(12절 ai.*, plan-p09a 값 2). '끔' → "off", '적응' → "adaptive"(plan-p06a 정할 것 마) ──
+  "ai.model.writing_feedback": { scope: "household", value: "claude-opus-5-5" },
+  "ai.model.writing_check": { scope: "household", value: "claude-sonnet-5-5" },
+  "ai.model.speaking_eval": { scope: "household", value: "claude-sonnet-5-5" },
+  "ai.model.thinkout": { scope: "household", value: "claude-sonnet-5-5" },
+  "ai.model.talk_turn.1-3": { scope: "household", value: "claude-haiku-5-5" },
+  "ai.model.talk_turn.4-6": { scope: "household", value: "claude-sonnet-5-5" },
+  "ai.model.talk_turn.7-9": { scope: "household", value: "claude-sonnet-5-5" },
+  "ai.model.talk_turn.10-12": {
+    scope: "household",
+    value: "claude-sonnet-5-5",
+  },
+  "ai.effort.writing_feedback": { scope: "household", value: "medium" },
+  "ai.effort.writing_check": { scope: "household", value: "low" },
+  "ai.effort.speaking_eval": { scope: "household", value: "low" },
+  "ai.effort.thinkout": { scope: "household", value: "low" },
+  "ai.effort.talk_turn.1-3": { scope: "household", value: "low" },
+  "ai.effort.talk_turn.4-6": { scope: "household", value: "low" },
+  "ai.effort.talk_turn.7-9": { scope: "household", value: "low" },
+  "ai.effort.talk_turn.10-12": { scope: "household", value: "low" },
+  "ai.thinking.writing_feedback": { scope: "household", value: "adaptive" },
+  "ai.thinking.writing_check": { scope: "household", value: "adaptive" },
+  "ai.thinking.speaking_eval": { scope: "household", value: "adaptive" },
+  "ai.thinking.thinkout": { scope: "household", value: "adaptive" },
+  "ai.thinking.talk_turn.1-3": { scope: "household", value: "off" },
+  "ai.thinking.talk_turn.4-6": { scope: "household", value: "off" },
+  "ai.thinking.talk_turn.7-9": { scope: "household", value: "off" },
+  "ai.thinking.talk_turn.10-12": { scope: "household", value: "off" },
+  "ai.max_tokens.writing_feedback": { scope: "household", value: 8000 },
+  "ai.max_tokens.writing_check": { scope: "household", value: 4000 },
+  "ai.max_tokens.speaking_eval": { scope: "household", value: 4000 },
+  "ai.max_tokens.thinkout": { scope: "household", value: 4000 },
+  "ai.max_tokens.talk_turn": { scope: "household", value: 1000 },
+  "ai.max_tokens.talk_closing": { scope: "household", value: 2000 },
+  "ai.max_tokens.probe": { scope: "household", value: 1 },
+  "ai.timeout_seconds.realtime": { scope: "household", value: 10 },
+  "ai.timeout_seconds.feedback": { scope: "household", value: 60 },
+  "ai.feedback_max_attempts": { scope: "household", value: 5 },
+  "ai.daily_call_alert": { scope: "profile", value: 150 },
+  "ai.daily_cost_alert_usd": { scope: "household", value: 1.0 },
+  "ai.monthly_cost_alert_usd": { scope: "household", value: 12 },
+  "ai.monthly_alert_multiples": { scope: "household", value: [1, 2, 4] },
+  "ai.console_limit_usd": { scope: "household", value: 70 },
+  "ai.console_alert_ratio": { scope: "household", value: 0.8 },
+  "ai.safety_daily_calls": { scope: "profile", value: 1000 },
+  "ai.safety_daily_cost_usd": { scope: "household", value: 15 },
+  "ai.down_after_failures": { scope: "household", value: 3 },
+  "ai.down_retry_minutes": { scope: "household", value: [5, 15, 30] },
+  "ai.probe_interval_minutes": { scope: "household", value: 60 },
+  "talk.safety_max_turns": { scope: "household", value: 80 },
+  "talk.safety_alert_count": { scope: "household", value: 2 },
+  // 단계 → 수 사전(plan-p06a 정할 것 마)
+  "writing.max_corrections": {
+    scope: "household",
+    value: { "6": 2, "7": 2, "8": 2, "9": 2, "10": 3, "11": 3, "12": 3 },
+  },
+  "writing.thinkout_max_turns": { scope: "household", value: 3 },
 } as const;
+
+export type TestSettingKey = keyof typeof TEST_SETTINGS;
+
+/** 시험용 설정의 값만 키 → 값 사전으로(조합 · 요청 구성 시험이 `getSettings` 결과 대신 쓴다). */
+export function testSettingValues(): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(TEST_SETTINGS).map(([key, { value }]) => [key, value]),
+  );
+}

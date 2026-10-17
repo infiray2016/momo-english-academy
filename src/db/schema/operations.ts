@@ -6,6 +6,7 @@ import {
   boolean,
   check,
   date,
+  index,
   integer,
   numeric,
   pgTable,
@@ -103,36 +104,44 @@ export const parentAuth = pgTable(
   ],
 ).enableRLS();
 
-export const aiCalls = pgTable("ai_calls", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  // 프로필 삭제 때 비우고 비용 합계는 남긴다(5.1)
-  profileId: uuid("profile_id").references(() => profiles.id, {
-    onDelete: "set null",
-  }),
-  sessionId: uuid("session_id").references(() => sessions.id, {
-    onDelete: "set null",
-  }),
-  calledAt: tstz("called_at").notNull(),
-  // 하루 안전 상한은 학습일로 센다(3.1, C56 (2))
-  learningDay: day("learning_day").notNull(),
-  purpose: aiPurposeEnum("purpose").notNull(),
-  requestedModel: text("requested_model").notNull(),
-  answeredModel: text("answered_model"),
-  inputTokens: integer("input_tokens").notNull(),
-  outputTokens: integer("output_tokens").notNull(),
-  cacheWriteTokens: integer("cache_write_tokens").notNull(),
-  cacheReadTokens: integer("cache_read_tokens").notNull(),
-  costUsd: numeric("cost_usd", {
-    precision: 12,
-    scale: 6,
-    mode: "string",
-  }).notNull(),
-  // '단가 없음'(6.1, C56 (2))
-  priceMissing: boolean("price_missing").notNull().default(false),
-  latencyMs: integer("latency_ms"),
-  firstSentenceMs: integer("first_sentence_ms"),
-  status: aiCallStatusEnum("status").notNull(),
-}).enableRLS();
+export const aiCalls = pgTable(
+  "ai_calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // 프로필 삭제 때 비우고 비용 합계는 남긴다(5.1)
+    profileId: uuid("profile_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    sessionId: uuid("session_id").references(() => sessions.id, {
+      onDelete: "set null",
+    }),
+    calledAt: tstz("called_at").notNull(),
+    // 하루 안전 상한은 학습일로 센다(3.1, C56 (2))
+    learningDay: day("learning_day").notNull(),
+    purpose: aiPurposeEnum("purpose").notNull(),
+    requestedModel: text("requested_model").notNull(),
+    answeredModel: text("answered_model"),
+    inputTokens: integer("input_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    cacheWriteTokens: integer("cache_write_tokens").notNull(),
+    cacheReadTokens: integer("cache_read_tokens").notNull(),
+    costUsd: numeric("cost_usd", {
+      precision: 12,
+      scale: 6,
+      mode: "string",
+    }).notNull(),
+    // '단가 없음'(6.1, C56 (2))
+    priceMissing: boolean("price_missing").notNull().default(false),
+    latencyMs: integer("latency_ms"),
+    firstSentenceMs: integer("first_sentence_ms"),
+    status: aiCallStatusEnum("status").notNull(),
+    // 실패 갈래(값 6 의 errorCode). 성공 · 거절 · 검증 실패 · 안전 상한은 비운다(정할 것 나).
+    // 값은 `<갈래>` 또는 `<갈래>:<HTTP 상태>` 꼴(timeout · connection · server:529 · same_error:404 …, C63 (3))
+    errorCode: text("error_code"),
+  },
+  // 하루 합 질의가 호출마다 학습일로 돈다(C63 (3))
+  (t) => [index("ai_calls_learning_day_idx").on(t.learningDay)],
+).enableRLS();
 
 export const aiStatus = pgTable(
   "ai_status",
