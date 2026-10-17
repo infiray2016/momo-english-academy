@@ -328,7 +328,10 @@ export function PlacementFlow({
           tilt="slight"
           className="mx-auto mt-8 w-full max-w-2xl items-center gap-8 p-10"
         >
-          <p className="text-center font-heading text-[28px] leading-snug">
+          <p
+            data-mic-notice=""
+            className="text-center font-heading text-[28px] leading-snug"
+          >
             {TEXT.micNotice}
           </p>
           <BigButton disabled={busy || !port} onClick={() => void checkMic()}>

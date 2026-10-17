@@ -164,6 +164,13 @@ const NOT_CLOCK_READ_SAMPLES = [
   "const d = new Date(\n  ms,\n);",
 ];
 
+/** 첫 문장이 'use client' 지시인가(앞의 주석 · 빈 줄은 건너뜀). 화면 쪽 타이머(performance.now · setTimeout)는 한 시계 밖이다. */
+const CLIENT_DIRECTIVE =
+  /^(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*["']use client["']/;
+function isClientFile(text: string): boolean {
+  return CLIENT_DIRECTIVE.test(text);
+}
+
 function sourceFiles(path: string): string[] {
   const full = join(REPO_ROOT, path);
   if (!existsSync(full)) return [];
@@ -172,6 +179,26 @@ function sourceFiles(path: string): string[] {
 }
 
 describe("한 시계", () => {
+  it("한 시계: src/app 의 서버 파일(첫 문장이 'use client' 가 아닌 서버 컴포넌트 · 서버 액션 · Route Handler)도 현재 시각을 직접 읽지 않는다", () => {
+    expect(isClientFile('"use client";\n\nimport x from "y";')).toBe(true);
+    expect(isClientFile("// 머리 주석\n'use client';\n")).toBe(true);
+    expect(isClientFile('import { now } from "@/server/clock";')).toBe(false);
+    expect(isClientFile('"use server";\n')).toBe(false);
+    const serverFiles = sourceFiles("src/app")
+      .map((path) =>
+        relative(REPO_ROOT, join(REPO_ROOT, path)).split(sep).join("/"),
+      )
+      .filter(
+        (path) => !isClientFile(readFileSync(join(REPO_ROOT, path), "utf8")),
+      );
+    expect(serverFiles.length).toBeGreaterThan(0);
+    expect(
+      serverFiles.filter((path) =>
+        CLOCK_READ.test(readFileSync(join(REPO_ROOT, path), "utf8")),
+      ),
+    ).toEqual([]);
+  });
+
   it("한 시계: src/core · src/server · src/db · src/proxy.ts 에서 Date.now() · 인자 없는 new Date() 는 src/server/clock 에만 있다", () => {
     for (const sample of CLOCK_READ_SAMPLES) {
       expect(CLOCK_READ.test(sample), sample).toBe(true);
