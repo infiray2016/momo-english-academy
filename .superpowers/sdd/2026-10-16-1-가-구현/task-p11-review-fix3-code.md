@@ -1,0 +1,3 @@
+# 검토 브리프: P11a 차례 3 fix 3 코드 재검토(code-reviewer rev-p11 이어 보기 · Opus · xhigh, 2026-10-18 08:0x 작성 — fix 3 · CI 5차 뒤 보냄)
+
+범위 한정. fix 3 는 화면 검토 A3 지적(I 2 · M 4)을 고친 것이고 **P10 공용 답 조각(`src/components/answer/{tiles,choice,typing}.tsx`)을 다시 고쳤다** — 코드 검토 A3 Approved 를 깨지 않았는지만 본다. 볼 것: (1) 배치(P10)의 동작 — '다 놓았어요' 조건(`placed.length > 0`) · 빈 칸 꼴 · pick-word 내기 단추 · 받아쓰기 단추 이름이 배치 길에서 그대로인가(세션 길 = `slots` · `onChange` 같은 선택 속성이 있을 때만 바뀜). CI 5차 배치 e2e 통과가 근거지만 코드로도 확인. (2) 새 e2e 단언(빈 칸 너비 같음 · 하나만 놓으면 꺼짐 · 높이 ≤ 보는 창)이 거짓 초록이 아닌가. (3) 구조 상수 꼴(칸 너비 · 글자 크기 토큰은 설계 숫자 아님). (4) `check:deps` · `check:bundle` · `check:ids` 새 줄 없음. 보고 `review-p11-fix3-code.md`, SendMessage 한 줄.

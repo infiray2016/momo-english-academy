@@ -6,6 +6,10 @@
 
 | 항목 | 어디서 확인 | 출처 |
 |---|---|---|
+| P12 단계 평가 화면의 조립 문항도 `displayCardsOf`(C84 표시)로 카드를 보인다 — P10 배치 몫은 P11 차례 4 가 고침 | P12 평가 화면 브리프 | review-p11-3-code 범위 밖 관찰 |
+| `displayCardsOf`(C84 표시)가 첫 허용 정답만 봐서, 시드 카드가 소문자인 조립 문항의 둘째 허용 정답은 화면으로 못 냄 — P8 시드가 C84 대로 카드를 정답 꼴로 적으면 사라짐. 그 전에는 허용 정답 모두를 보거나 둘째 정답이 있는 문항 시험 하나 | P11 차례 4 fix 또는 P8 시드 규칙 | review-p11-3-code M-1 |
+| P8 시드 · 검증기: 문장 조립 카드는 소문자, 고유 명사 · I 는 정답 꼴(C84) — 시험용 시드 견본 빌더(`writingLesson(ref, 3)` 'They kububa with Momo.' 카드 'momo')도 P8 때 같은 규칙으로 | P8 브리프 · 검증기 규칙 | impl-p11 차례 3 보고 정할 것 · C84 |
+| P12 단계 평가 화면이 지문 그림 줄을 그릴 때 P11 차례 2 fix 2 의 깨짐 대체(`data-picture-missing`, 세션 길 선택 속성)를 넘긴다 — 평가 지문(decorative)은 깨지면 안 그림 | P12 평가 화면 브리프 | review-p11-fix2-design 장부로 넘길 일 |
 | `requireAccess` 는 `import { requireAccess } from "@/server/access/guard"` 꼴로만 가져온다 — access-gate 정적 검사가 기본 가져오기(`import requireAccess from …`)와 guard 다른 함수의 별칭(`hasValidAccess as requireAccess`)을 못 잡음(거짓 음성 둘). 검사 보강은 1-나 설정 · 도구 몫 | P11 · P12 · 1-나 브리프 '지킬 것' · 1-나 때 검사 보강 | review-p10-7-code M-4 |
 | 코드 가지의 specs · intent 가 문서 가지보다 낡으면 CI check-ids(setting-default) · spec-trace 가 어긋남을 낸다 — 바탕 가지 · CI 가지를 만들 때 `git checkout <문서 가지 커밋> -- specs intent` 로 맞춘다(P11 가지는 9b97f4d 로 맞췄음) | P10 을 P11 에 합칠 때 · CI 가지 재생성 때 · 다음 바탕 가지 | P11 가지 dc5308d 뒤 check:ids setting-default 1(unit.vocab_count.1-3 12절 30 ↔ 시드 25) |
 | P10 첫 실행 주제 묶음 그림은 지금 `images.word` 로 찾는다(P6a vocab 에 imageKey 가 없어서). P6b(imageKey 207) 가 바탕에 합쳐지면 `vocab.imageKey` 로 바꾸고 묶음 대표 낱말을 카탈로그와 다시 맞댄다 | P6b 합친 뒤(P10 또는 P11) | impl-p10 차례 2 화면 지적 반영 보고 |
@@ -45,7 +49,6 @@
 | P10 차례 3 지적 가운데 남은 것: 배치 전 카드 누름 표시(review-p10-3-design H-M6 — 재부팅 뒤 화면 재검토 때 확인) · 홈 카드 '아는 단어 · 최근 성적 · 끝낸 대화' 칸은 P11 · P12 가 채움(입력 형 유지). 나머지(AC-2b · AC-2a 단언 · '이번 주 n일' 배치 셈)는 닫힘(review-p10-5-6-code 6절 · fix 2) | des-p10 사진 세트 · P11 · P12 브리프 | review-p10-3-design H-M6 · review-p10-5-6-code 6절 |
 | 홈 영역 카드의 아이콘(목업 B_Home4 에 있음, 구현에 없음) — 이모지 · 그림 가운데 무엇으로 그릴지 요청자 시각 결정(표본 쪽) 뒤 P10 마무리 또는 1-나 | 요청자 표본 쪽 · P10 차례 7 화면 검토 | review-p10-3-design H-M5 |
 | 홈 부모 꼬리표 높이 48px — 1-나에서 누를 수 있게 되면 56px 이상으로 | 1-나 부모 화면 브리프 | review-p10-3-design 4절 |
-| 단계 · 활동 전환 때 입력 요소 재사용으로 앞 값이 남는 결함(첫 실행 PIN → 이름 칸 — 핫픽스 `key={step}`, review-p10-fix2 닫힘)이 배치 · 세션 틀에도 없는지는 P10 검토에 기록 없음 → P11 차례 3 · 4(활동마다 조각을 새로 만듦 · key) '지킬 것'과 화면 재검토 때 확인 | P11 차례 3 · 4 브리프 · des 사진 | 요청자 재현 23:3x · edit-p10-done 보고 |
 | 첫 실행 영어 이름 로마자 C74(관용 철자 표 우선 — fix 4 반영, 코드 몫 닫힘): 요청자 되읽기(잠정 → 확정) | 요청자 | 요청자 23:5x · C74 · review-p10-fix3-code |
 | 수업 목록 해석(컨트롤러 2026-10-18 00:1x, fix 3 반영 — 칸은 남기고 줄만 숨김 · 화면 재검토 받음(4절 단어 익히기 행이 칸을 전제), 코드 재검토 Approved — 닫힘, P12 몫만 남음): 지금 단원이 통과한 상태(다음 단계 준비 중 · 졸업 · 단계 평가 대기 · 부모 확인 대기)면 그 단원의 안 한 수업은 untried · 끝낸 수업은 retry(횟수 · 성적에 안 넣음), 잠긴 다음 단원 줄은 숨김, '여기부터 해요'는 하던 수업 → 첨삭 보기 → 단계 평가 차례(지금 단원의 새 수업은 안 가리킴, review-p10-fix3-code 권고로 글 고침). P12 가 이 상태를 만들 때 같은 규칙 | P10 fix 3 · P12 브리프 | review-p10-4-code I-1 · review-p10-4-design 부모 확인 대기 어긋남 |
 | 수업 목록이 실시드 수(단원마다 정규 10~15 + 보강)에서 가로 1180 에 넘치지 않는지 — fix 3 에서 12 · 15장 흉내 넘침 없음(가로 카드 최소 112px · 잠긴 단원 칸 200~240px, des-p10 재검토 대기), P8 실시드 적재 뒤 실제로 다시 — des-p10 fix 3 재검토: 12 · 15장 세로 · 가로 한 화면(가로 카드 133 × 138px, 20px 아래 글 없음), **세로 15장에 하던 수업 · 보강이 더해지면 세로로 넘칠 수 있음** | P8 뒤 화면 검토(실시드) | review-p10-4-design M · review-p10-fix3-design 메모 |

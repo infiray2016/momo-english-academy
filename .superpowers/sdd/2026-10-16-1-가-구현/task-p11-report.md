@@ -234,3 +234,117 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 CI 2차(컨트롤러, run 39074646676 · 1292c14): 통합 · e2e(새 단언 포함) · e2e-local 포함 **전부 성공**. 사진은 컨트롤러가 받아 재검토(des-p11)에 넘김.
 
 상태: DONE.
+
+## 차례 3 — 쓰기 1~3 · 이어 하기(검토 묶음 A3, 2026-10-18 08:xx)
+
+바탕 HEAD d798b6e(차례 2 + fix 2 커밋), 커밋 없음. 통합 · e2e 는 CI(아래 줄은 결과가 오면 채운다).
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/components/session/writing-items.tsx` | 신규 | 'use client'. `WritingItemActivity` — 값 11: 갈래마다 안내 줄(plan 표 글자 그대로, 조립은 '카드를 누르면 빈칸으로 가요'도) + P10 답 조각(pick-word `ChoiceAnswer` · copy · build · fill-letters · 조립 `TileAnswer` · 받아쓰기 `TypingAnswer` 앱 안 자판). 판정 `checkAnswer`. 맞음 '맞았어요!' + 정답 낱말 · 뜻(있을 때) + '다음', 틀림 '정답은 이거예요'(답 조각 자리에 정답 조각 — 타일 · 카드 차례 그대로, 고르기는 정답 ✓ · 고른 오답 ✕) + '한 번 더 풀기' → 맞힐 때까지, 끝 내용 `{ tries }`. 시도마다 답 조각을 새로(열쇠 = 시도 번호). `displayOfWritingItem` |
+| `src/core/answer/expected.ts` | 신규 · **계획 표 밖** | `expectedAnswerOf(item)` — 첫 허용 정답에서 정답 조각(고르기 번호 · 글자 · 빈 자리 글자 · 카드(마침표 카드 따로) · 쓴 글). 순수 함수라 core 에 둠(단위 시험) |
+| `src/components/answer/choice.tsx` | 수정 | `ChoiceAnswer` 선택 속성 `initial` · `onChange` · `reveal { answerNo, picked }`(정답 ✓ · 고른 오답 ✕ · `data-choice-state`, 고를 수 없고 '다음' 없음). `onChange` 가 있으면(세션) 보기 틈 gap-5(N-2 와 같은 까닭) |
+| `src/components/answer/tiles.tsx` | 수정 | `TileAnswer` 선택 속성 `initial`(TilePlacement — 놓은 번호 · 대문자) · `onChange` · `reveal`(정답 조각 줄 `RevealRow`, 남은 타일 · 단추 없음) · `slots`(조립 놓는 칸을 카드 수만큼, 빈 칸 `data-slot="empty"`) |
+| `src/components/answer/typing.tsx` | 수정 | `TypingAnswer` 선택 속성 `initial` · `onChange` · `reveal`(정답 글, 자판 · '다음' 없음). 넷 다(세 조각) 없으면 지금 동작 그대로(배치 — 위험 5) |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | `writing-item` 을 끝 시도 활동에 더하고 쓰기 조각 연결(활동 안 입력 되살리기 — 시도 · 지금 놓은 것), 활동 전환 때 조각 새로(활동 번호 열쇠 — 차례 2 의 묶음 열쇠 그대로). 화면을 열 때 `inputs.prune(view.openSessionIds)`, 끝내기 not_found · closed 길에서도 그 세션 줄 지움(A2 M-1). 상태 줄은 늘 두고 글이 없으면 `sr-only`(N-1 — 카드 간격도 안 남김) |
+| `src/lib/session-input.ts` | 수정 | `prune(keep)` — 그 프로필의 진행 세션 밖 줄을 지움(A2 M-1) |
+| `src/server/session/index.ts` | 수정 · **계획 표 밖(차례 3 몫 아님)** | 화면 자료에 `openSessionIds`(그 프로필의 진행 세션 id). 쓰기 문항의 `word`(copy · build · fill-letters · 받아쓰기)도 낱말 그림 · 뜻 표에 넣음(맞았을 때 뜻 줄) |
+| `src/components/session/reading.tsx` | 수정 | 문항 보기 틈 gap-4 → gap-5(N-2 — 고리 둘 16px 보다 넓게) |
+| `tests/e2e/writing.spec.ts` | 신규 | AC-4a e2e(이름 글자 그대로) — 1단계(시험용 시드) · 3단계(견본 빌더 조립) 끝까지, 첫 문항 오답 → '정답은 이거예요' · 정답 카드 차례 · '한 번 더 풀기' → 정답, 조립 빈 칸 수 = 카드 수, 활동마다 `input · textarea · [contenteditable]` 0, 결과 · 점수 (n − 1) ÷ n, `ai_calls` 행 수 그대로 |
+| `tests/e2e/resume.spec.ts` | 신규 | AC-6a e2e(이름 글자 그대로) — 읽기 셋째 문항(활동 5)에서 처음 틀린 채 쪽을 닫고 같은 문맥 새 쪽으로 열면 활동 5 · 처음 틀림 단계 · 고른 오답 ✕ 그대로, 쓰기 3단계 첫 문항에 카드 둘 놓고 닫았다 열면 같은 카드 둘 · 빈 칸 남은 수 |
+| `tests/e2e/reading.spec.ts` | 수정 | 코드 재검토 Minor — 쪽지 단언을 오른쪽 끝이 가장 큰 낱말로, '왼쪽 맞춤이었다면 넘쳤다'(낱말 왼쪽 + 쪽지 너비 > 카드 오른쪽) 앞 조건을 함께 |
+| `tests/unit/answer-expected.test.ts` | 신규 · 계획 표 밖 | 정답 조각 둘(갈래별 · 견본 1 · 3단계 문항 전부가 `checkAnswer` 맞음) |
+| `tests/unit/session-input.test.ts` | 수정 | prune 하나 |
+
+### 시험 수
+
+단위 488 → **491**(+3), 파일 51 → 52. e2e 신규 둘(AC-4a · AC-6a), 고침 하나(reading.spec 단언).
+
+### 다르게 한 것과 까닭
+
+1. **틀림 단계의 정답 보이기:** 답 조각 자리에 그대로 정답 조각을 보인다(같은 조각에 `reveal` — 따로 정답 줄을 두지 않음). 목업 B_W1_Words · B_W3_Order 의 '놓는 자리에 답'과 같은 꼴이고 '정답(타일 · 카드 차례 그대로)'을 지킨다. 맞았을 때도 같은 조각에 아이가 낸 답을 보이고 아래에 '맞았어요!' · 낱말 · 뜻.
+2. **답 조각 선택 속성 넷째 `slots`(TileAnswer):** plan 값 11 '조립의 놓는 칸은 카드 수만큼'을 그리려면 필요했다(initial · onChange · reveal 밖). 없으면 지금 그대로.
+3. **정답 조각 함수를 core 에**(`src/core/answer/expected.ts`): 화면에 보인 정답이 채점 정답과 같다는 것을 단위 시험으로 묶으려고(견본 1 · 3단계 문항 전부).
+4. **맞았을 때 뜻 줄:** pick-word 는 그림 낱말 뜻, build-tiles · 조립은 문항의 `meaningKo`, 그 밖은 `word` 의 vocab 뜻. 뜻이 없거나 낱말과 같으면(vocab 에 없는 견본 낱말) 그 줄을 그리지 않는다.
+5. **'다음'이 둘이 되지 않게:** 고르기 · 받아쓰기는 답 조각의 '다음'이 내기이고, 결과 단계에서는 `reveal` 로 그 단추가 사라져 틀의 '다음'(조각 안 BigButton) 하나만 남는다.
+6. **A2 M-1 은 '세션 쪽을 열 때 진행 세션이 아닌 줄 지움'(검토자 권함 앞의 것)**: 한 프로필 · 영역마다 진행 세션은 하나라 서버가 그 id 목록을 넘기고 기기가 나머지를 지운다. 다른 영역의 진행 세션 입력은 남는다.
+
+### 정할 것
+
+| 번호 | 무엇 | 고른 것 | 까닭 |
+|---|---|---|---|
+| 1 | 다시 할 때 받아쓰기 · 빈 글자 채우기 낱말을 또 읽는가 | 시도마다 답 조각을 새로 만들어 들어올 때 한 번 다시 읽는다 | 틀린 뒤 다시 듣는 것이 도움이 되고, '다시 듣기'를 누르지 않아도 된다(값 11 '들어올 때 한 번') |
+| 2 | 맞았을 때 첫째 줄 | 첫 허용 정답 글(조립은 문장) | 목업 B_W1_Words 'ball / 공' 꼴 — 아이가 고른 꼴이 아니라 바른 꼴을 한 번 더 보인다 |
+
+### 차례 4 에 넘기는 것
+
+- 틀 `RECORDED_KINDS` 에 `repeat-word` · `repeat-sentence` · `listening` · `question` 을 더하고 말하기 조각을 같은 꼴(`initial` · `onChange` · `onDone(끝 내용)`)로 붙인다. 끝 내용은 값 2(`heard` · `failures` · `skipped?` · `echo?` · `tries`). 서버 채점 · 끝내기 · 결과는 이미 돈다(차례 2 통합 '말하기 1단계 세션은 …').
+- 상태 줄(`sr-only` 알림 영역)은 틀에 하나 — 말하기 끊김 안내도 같은 줄을 쓸 수 있다.
+- 동음이의어 읽기 두 벌(세션 · 배치 서버, 차례 2 다르게 한 것 7)을 `src/server/alerts/device.ts` 옮길 때 한 곳으로.
+
+### 관문 명령 결과(로컬)
+
+```
+pnpm lint                → Checked 295 files. No fixes applied.
+pnpm test                → Test Files 52 passed (52) · Tests 491 passed | 6 todo (497)
+pnpm build               → exit 0
+pnpm exec tsc --noEmit   → exit 0
+pnpm check:deps          → ✔ no dependency violations found (151 modules, 623 dependencies cruised)
+pnpm check:ids           → code-setting-unknown 0 · design-number 35(새 줄 0)
+pnpm check:bundle        → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test 22줄, 보고만)
+```
+
+사진 이름(E2E_PHOTOS): `p11-writing-1-pick-word` · `p11-writing-1-wrong` · `p11-writing-1-right` · `p11-writing-3-assemble-sentence` · `p11-writing-3-wrong` · `p11-writing-3-right` · `p11-resume-reading` · `p11-resume-writing`(각 `-portrait` · `-landscape`). 읽기 사진(`p11-reading-*`)도 다시 찍힘.
+
+CI 3차(컨트롤러, run 39076275851 · bc55b8f): e2e 1 실패 / 52 통과 — `writing.spec.ts` AC-4a 의 3단계 쪽(withHouseholdSetting 안)에서 '맞았어요!'가 안 뜸. P10 배치 e2e · resume(AC-6a) · reading 은 초록(위험 5 없음). 그 밖 작업 전부 성공.
+
+**원인(로컬 재현):** 견본 3단계 다섯째 문항 정답이 'They kububa with Momo.' 인데 카드는 시드 규칙대로 소문자 'momo' 다. 화면은 첫 칸 카드만 '대문자' 단추로 바꿀 수 있어(C73) 이 문항은 화면으로 맞힐 수 없다 — 시험 잘못이 아니라 화면 결함이다(실시드에도 문장 가운데 고유 명사 · I 가 있으면 같다).
+
+**고침:** `src/core/answer/expected.ts` 에 `cardTokensOf` · `displayCardsOf` — 문장 가운데 대문자로 쓰는 낱말(첫 허용 정답 기준, 첫 낱말 빼고) 카드는 정답 꼴로 보인다. 첫 낱말 카드는 소문자 그대로(대문자 단추 판정 유지). 쓰기 조각의 `displayOfWritingItem` 이 이것으로 카드를 만든다. `checkAnswer` · 배치 · 시드는 그대로. 단위 'AC 접두 없음' 하나 더(화면이 낼 수 있는 답 — 보인 카드 차례 · 첫 카드만 대문자 — 으로 견본 3단계 문항 전부 맞음, 'Can I go?' 사례). e2e 는 보인 카드 글로 누름. 단위 491 → 492.
+
+**정할 것(추가):** 3 — 조립 카드의 대문자. 시드 카드는 모두 소문자(3.3 · C73)라는 규칙과 문장 가운데 고유 명사 · I 가 맞지 않는다. 화면이 정답 꼴로 보이게 했고(위), P8 시드 브리프에 '문장 가운데 고유 명사 · I 카드는 대문자 꼴로 둔다(또는 그런 문장을 내지 않는다)'를 넣을지는 컨트롤러 판단(13절 C73 에 한 줄 필요할 수 있음). → **C84** 로 적힘(컨트롤러 — 조립 카드는 소문자이되 고유 명사 · I 는 정답 꼴, 화면은 문장 가운데 대문자 낱말 카드를 정답 꼴로 · 첫 카드는 소문자, 판정은 C73 그대로, P8 시드 규칙 · 검증기 몫).
+
+로컬 관문(고친 뒤): lint 0 · 단위 492 · build 0 · tsc 0 · check:deps 0 · check:ids design-number 35 · check:bundle 0 · spec:trace exit 0.
+
+CI 4차(컨트롤러, run 39076856051 · 2ba410e): 통합 · e2e 53 · e2e-local 포함 **전부 성공**.
+
+상태: DONE.
+
+## 차례 3 fix 3 — 화면 검토 A3 지적 I-1 · I-2 · M-1~M-4(2026-10-18 08:xx)
+
+바탕 HEAD d798b6e, 커밋 없음. 코드 검토 A3 M-1 은 차례 4 몫(손대지 않음).
+
+| 지적 | 어디를 어떻게 | 선 위 검증(e2e — CI) |
+|---|---|---|
+| I-1 조립 빈 칸 너비가 섞인 카드 차례를 닮음 | `src/components/answer/tiles.tsx` 빈 칸(`slots` 일 때만)이 모두 가장 긴 조각 글만큼의 숨은 글로 너비를 잡는다(카드와 같은 24px 굵게) | `writing.spec.ts` `emptySlotsEven` — 처음 · 카드 하나 놓은 뒤 빈 칸 너비가 모두 같음(0.5px 안) |
+| I-2 '다 놓았어요'가 하나에도 켜짐 | `TileAnswer` 선택 속성 `needed`(놓아야 할 조각 수 — 다 찼을 때만 켜지고 더 놓을 수 없음). 쓰기 조각이 `expectedAnswerOf` 정답 조각 수를 넘긴다(조립 = 카드 수, 타일 = 정답 글자 수, 빈 글자 채우기 = 빈칸 수). 없으면 배치 조건(하나 이상 · fill-letters 는 빈칸 수) 그대로 | `writing.spec.ts` `placeAll` — 마지막 조각 전 꺼짐 · 놓으면 켜짐(타일 · 조립 모든 문항), 조립 첫 문항은 카드 하나만 놓은 채 꺼짐 |
+| M-1 가로 넘침 | 쓰기: `ChoiceAnswer` `instant` 일 때(세션 그림 고르기) 가로에서 그림을 보기 왼쪽에(`landscape:grid-cols-[auto_1fr]`). 읽기: 문항 칸 세로 틈을 가로에서 20 → 16px(`landscape:gap-4`) | `writing.spec.ts` · `reading.spec.ts` `fitsBothWays` — 쓰기 1 · 3 첫 문항 맞음 · 읽기 맞음 · 정답 보기에서 두 방향 `scrollHeight ≤ 보는 창 높이` |
+| M-2 '다음' 두 번 | `ChoiceAnswer` 선택 속성 `instant`(고르면 바로 냄, 내기 '다음' 없음) — 세션 그림 고르기가 씀(읽기 문항과 같은 꼴). `TypingAnswer` 선택 속성 `submitLabel` — 세션 받아쓰기 내기는 '다 썼어요'(`WRITING_TEXT.written`, 컨트롤러 결정), 넘기기는 '다음' | `writing.spec.ts` — 그림 고르기는 보기만 누름, 받아쓰기는 '다 썼어요'(견본에 받아쓰기는 2단계라 이번 e2e 에는 없음 — 코드로만) |
+| M-3 조립 뜻 | `TileAnswer` 가 `slots` 일 때 뜻을 제목 글꼴 32px(`font-heading text-[32px]`, `data-assemble-meaning`), 안내 두 줄은 20px 그대로. 맞음 단계에서 쓰기 조각이 조립 뜻 줄을 다시 쓰지 않음 | 사진(CI 5차) |
+| M-4 '대문자' 자리 | `slots` 일 때 '대문자'를 놓는 줄 오른쪽 끝(`ml-auto`)에 — 첫 카드 아래가 아님. 배치는 그대로 첫 카드 아래. 판정(C73) 그대로 | 사진(CI 5차) · e2e 는 이름으로 누름 |
+
+배치(P10) 영향 없음 근거: 바뀐 동작은 모두 새 선택 속성(`slots` · `needed` · `instant` · `submitLabel`)이나 이미 세션만 넘기는 `onChange` 아래에 있다. 배치 화면(`src/app/(child)/[area]/placement/placement-flow.tsx`)은 이 속성을 하나도 넘기지 않아 조건 · 배치 · 단추 글이 그대로다(빈 칸 · '대문자' 자리 · 뜻 크기는 `slots` 일 때만, 내기 조건은 `needed` 가 있을 때만, 바로 내기는 `instant` 일 때만, 단추 글 기본값 '다음').
+
+사진: 갈래마다 처음 나온 문항을 찍도록 바꿈(검토 '사진 없음' 줄) — `p11-writing-1-pick-word` · `p11-writing-1-copy-tiles` · `p11-writing-1-fill-letters` · `p11-writing-1-wrong` · `p11-writing-1-right` · `p11-writing-3-assemble-sentence` · `p11-writing-3-wrong` · `p11-writing-3-right`(각 두 방향). 나머지 그대로.
+
+시험 수: 단위 492 그대로. e2e 단언 더함(시험 수 그대로).
+
+관문(로컬):
+
+```
+pnpm lint                → Checked 295 files. No fixes applied.
+pnpm test                → Test Files 52 passed (52) · Tests 492 passed | 6 todo (498)
+pnpm build               → exit 0(빌드 CSS 에 landscape:grid-cols-[auto_1fr] 확인)
+pnpm exec tsc --noEmit   → exit 0
+pnpm check:deps          → ✔ no dependency violations found (151 modules, 623 dependencies cruised)
+pnpm check:ids           → code-setting-unknown 0 · design-number 35(새 줄 0)
+pnpm check:bundle        → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+```
+
+CI 5차(컨트롤러, run 39078060721 · 9e06c6a): 통합 · e2e(배치 e2e 그대로 — 위험 5 없음) · e2e-local 포함 **전부 성공**.
+
+상태: DONE.
