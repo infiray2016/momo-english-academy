@@ -20,7 +20,9 @@
     "spec:trace": "tsx scripts/spec-trace.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",
     "seed:validate": "tsx scripts/seed-validate.ts",
-    "seed:load": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/seed-load.ts"
+    "seed:load": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/seed-load.ts",
+    "check:ids": "tsx scripts/check-ids.ts",
+    "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",

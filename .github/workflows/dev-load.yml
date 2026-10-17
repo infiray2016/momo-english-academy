@@ -1,0 +1,83 @@
+name: dev-load
+# 개발용 DB: 마이그레이션 → 시드 검증 → 적재 → Data API 닫힘 확인(11절 (4-1) · AC-7g · plan-p03b 정할 것 아). 수동 실행.
+# 개발용 비밀값(DEV_*)만 읽고 운영 비밀값은 읽지 않는다. 이 파일이 기본 갈래(main)에 있어야 실행할 수 있다.
+on:
+  workflow_dispatch:
+    inputs:
+      complete_through:
+        description: "개발용 DB 의 seed.complete_through_level — 적재한 단계(1~12)"
+        type: number
+        required: true
+        default: 1
+      areas:
+        description: "수업 · 평가 · 배치 칸을 넣을 영역(쉼표). 1-가는 reading,writing,speaking"
+        type: string
+        required: true
+        default: reading,writing,speaking
+      reference_only:
+        description: "규격 파일만 넣기(P8 수업이 오기 전)"
+        type: boolean
+        required: true
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: dev-load
+  cancel-in-progress: false
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+jobs:
+  dev-load:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      THROUGH: ${{ inputs.complete_through }}
+      AREAS: ${{ inputs.areas }}
+      REFERENCE_ONLY: ${{ inputs.reference_only }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: dev-secrets
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.DEV_MIGRATION_DATABASE_URL }}
+        run: |
+          if [ -z "$MIGRATION_DATABASE_URL" ]; then
+            echo "::error::DEV_MIGRATION_DATABASE_URL 이 없다(H3 · H15)"
+            exit 1
+          fi
+      - name: migrate
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.DEV_MIGRATION_DATABASE_URL }}
+        run: pnpm db:migrate
+      - name: seed-validate
+        run: |
+          if [ "$REFERENCE_ONLY" = "true" ]; then
+            pnpm seed:validate
+          else
+            pnpm seed:validate --complete-through "$THROUGH" --areas "$AREAS"
+          fi
+      - name: seed-load
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.DEV_MIGRATION_DATABASE_URL }}
+        run: |
+          if [ "$REFERENCE_ONLY" = "true" ]; then
+            pnpm seed:load --reference-only --complete-through "$THROUGH"
+          else
+            pnpm seed:load --complete-through "$THROUGH" --areas "$AREAS"
+          fi
+      - name: check-data-api
+        env:
+          SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.DEV_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_LEGACY_ANON_KEY: ${{ secrets.DEV_SUPABASE_LEGACY_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::notice::DEV_SUPABASE_URL 이 없어 Data API 확인을 건너뛴다"
+          else
+            pnpm check:data-api
+          fi

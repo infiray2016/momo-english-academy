@@ -1044,4 +1044,22 @@ describe("적재 명령(pnpm seed:load)", () => {
     expect(result.lines.join("\n")).not.toContain(CONTENT_MARKER);
     expect(close).toHaveBeenCalledTimes(1);
   });
+  it("적재 명령: 적재 뒤 접속 닫기가 실패해도 적재 결과와 종료 코드는 그대로다", async () => {
+    // 닫기가 던지는 접속(review-p07a-2 4절 — 예전에는 결과를 덮어 '예상 밖 오류' 종료 2 였다)
+    const close = vi.fn(async () => {
+      throw Object.assign(new Error("end failed"), {
+        code: "CONNECTION_ENDED",
+      });
+    });
+    const result = await runSeedLoad(args([]), {
+      files: filesOf(loadableSeed()),
+      databaseUrl: testDb.url,
+      now: () => NOW,
+      openDb: () => ({ db: testDb.db, close }),
+    });
+    expect(result.code).toBe(0);
+    expect(result.lines[0]).toMatch(/^seed-load: 넣음 · /);
+    expect(close).toHaveBeenCalledTimes(1);
+    expect((await rowCounts()).settings).toBeGreaterThan(0);
+  });
 });
