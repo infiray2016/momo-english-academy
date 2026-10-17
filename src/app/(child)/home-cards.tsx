@@ -4,11 +4,17 @@
 // 카드마다 단계 · 단원 5칸 · 막대 둘 · 이번 주 n일 · 오늘 완료. 카드와 카드 안 '시작!' · '이야기 고르기'는 그 영역 수업 목록(R14).
 // 차례를 따른다: 마이크를 쓸 수 없는 기기(인식 API 없음 · 목록 밖 · 저장된 '쓸 수 없음')의 말하기 · 회화 → 배치 평가 전 → 보통.
 // 마이크 판정은 홈에 들어올 때마다 다시 한다(7절, 인식 API 가 없는 기기는 저장하지 않는다 — mic-state).
-// 배치 평가 화면은 차례 5 에 생긴다 — 그 전까지 '내 단계 찾기' 카드는 누를 수 없다.
+// '내 단계 찾기' 카드는 그 영역 배치 평가로 간다(차례 5).
+// 1-가 임시(부모 화면 '마이크 다시 확인'은 1-나): 닫힌 말하기 카드 아래 '다시 확인' 단추가 저장된 '쓸 수 없음'을 지우고 다시 판정한다.
 import { useEffect, useState } from "react";
-import { AREA_LABEL, PostIt, type Tilt } from "@/components/board/board";
+import {
+  AREA_LABEL,
+  PostIt,
+  SmallButton,
+  type Tilt,
+} from "@/components/board/board";
 import type { Area } from "@/core/seed/structure";
-import { micUsable } from "@/lib/mic-state";
+import { clearMicState, micUsable } from "@/lib/mic-state";
 import { cn } from "@/lib/utils";
 import type { HomeCard } from "@/server/home";
 
@@ -20,6 +26,10 @@ const MIC_AREAS: readonly Area[] = ["speaking", "talk"];
 
 const TEXT = {
   findLevel: "내 단계 찾기",
+  /** '내 단계 찾기' 아래 안내(C72 — 요청자가 잠긴 것으로 봄, 2026-10-18). */
+  findLevelHint: "단계를 몰라도 돼요. 짧은 문제로 찾아요",
+  /** 닫힌 말하기 카드 아래 다시 확인(C72, 1-가 임시 — 1-나 부모 화면 '마이크 다시 확인'이 대신한다). */
+  micRecheck: "마이크를 켰으면 여기를 눌러 다시 확인해요",
   needsSpeaking: "말하기에서 단계를 찾으면 토리를 만날 수 있어요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   todayDone: "오늘 다 했어요",
@@ -156,9 +166,12 @@ function GateBody({ card }: { card: HomeCard }) {
     <>
       <span className="font-heading text-3xl">{AREA_LABEL[card.area]}</span>
       {card.gate === "placement" ? (
-        <span className="font-heading text-4xl leading-tight">
-          {TEXT.findLevel}
-        </span>
+        <>
+          <span className="font-heading text-4xl leading-tight">
+            {TEXT.findLevel}
+          </span>
+          <span data-find-level-hint="">{TEXT.findLevelHint}</span>
+        </>
       ) : (
         <span>{TEXT.needsSpeaking}</span>
       )}
@@ -182,9 +195,8 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
         const tilt = TILTS[i] ?? "none";
         const needsMic = MIC_AREAS.includes(card.area);
         if (needsMic && micOk === false) {
-          return (
+          const closed = (
             <PostIt
-              key={card.area}
               tone={card.area}
               tilt={tilt}
               disabled
@@ -197,6 +209,24 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
                 <span data-mic-closed="">{TEXT.needsMic}</span>
               </span>
             </PostIt>
+          );
+          // 다시 확인 단추는 말하기 카드 아래 하나만(회화 카드도 같은 판정으로 함께 열린다)
+          if (card.area !== "speaking")
+            return <div key={card.area}>{closed}</div>;
+          return (
+            <div key={card.area} className="flex flex-col gap-3">
+              {closed}
+              <SmallButton
+                data-mic-recheck=""
+                className="h-auto py-2 text-left"
+                onClick={() => {
+                  clearMicState();
+                  setMicOk(micUsable());
+                }}
+              >
+                {TEXT.micRecheck}
+              </SmallButton>
+            </div>
           );
         }
         const pending = needsMic && micOk === undefined;

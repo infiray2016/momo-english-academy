@@ -55,6 +55,8 @@ const TEXT = {
   micNotice:
     "말한 소리는 인터넷으로 보내 글자로 바꿔요. 소리는 저장하지 않아요",
   micCheck: "마이크 확인",
+  /** 마이크 확인 단추 아래 안내(C72 — 확인은 소리가 들어와야 성공, fix 5). */
+  micSpeakHint: "단추를 누른 뒤 아무 말이나 한마디 해 주세요",
   micRetry: "다시 눌러 확인해 주세요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   stalled: "마이크가 잘 안 돼요. 부모님께 말해 주세요",
@@ -333,6 +335,9 @@ export function PlacementFlow({
             <Mic aria-hidden className="size-7" />
             {TEXT.micCheck}
           </BigButton>
+          <p data-mic-speak-hint="" className="text-center">
+            {TEXT.micSpeakHint}
+          </p>
           <StatusLine>{micStatus}</StatusLine>
           <StatusLine tone="error">{status}</StatusLine>
         </PostIt>

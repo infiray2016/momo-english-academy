@@ -27,7 +27,7 @@ import {
   sessions,
   unitProgress,
 } from "@/db/schema/learning";
-import { type Db, getDb } from "@/server/db";
+import { type Db, getDb, type Tx } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
@@ -39,7 +39,6 @@ import {
   SettingMissingError,
 } from "@/server/settings";
 
-type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type LessonArea = Exclude<Area, "talk">;
 
 /** 세션을 여는 수업 칸 종류(목록에 나오는 것). */
@@ -223,8 +222,9 @@ async function startUnsafe(
       )
       .for("update");
     if (!track) return { ok: false, reason: "not_placed" } as const;
-    // 목록 입력을 다시 모은다(오래 멈춘 세션 닫기 포함 — 목록과 같은 함수, 위험 3)
-    const list = await readLessonList({ db, area, now: at });
+    // 목록 입력을 다시 모은다(오래 멈춘 세션 닫기 포함 — 목록과 같은 함수, 위험 3). 같은 트랜잭션 연결로 읽는다 —
+    // 잠금을 쥔 채 바깥 연결을 또 받으면 풀이 찰 때 서로 기다린다(검토 review-p10-5-6-code M-1). READ COMMITTED 라 판정은 같다
+    const list = await readLessonList({ db: tx, area, now: at });
     if (list.kind !== "list")
       return { ok: false, reason: "not_placed" } as const;
     const judged = judgeLessonStart(
@@ -269,7 +269,7 @@ async function startUnsafe(
     const rows = (
       await readLessonsOfUnit(
         { area, level: lesson.level, unit: ref.unit, startRevision: revision },
-        { db },
+        { db: tx },
       )
     )
       .filter((r) => r.kind === ref.kind && r.lessonNo === ref.lessonNo)

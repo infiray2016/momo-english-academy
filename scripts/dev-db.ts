@@ -27,6 +27,7 @@ import { join, resolve } from "node:path";
 import type EmbeddedPostgres from "embedded-postgres";
 import {
   createLogTail,
+  importEmbeddedPostgres,
   PG_ADMIN_DB,
   PG_ADMIN_USER,
   pgUrl,
@@ -399,17 +400,9 @@ async function startCluster(
   }
   const fresh = !existsSync(join(databaseDir, "PG_VERSION"));
   const log = createLogTail();
-  // embedded-postgres 는 읽힐 때 async-exit-hook 로 신호 처리기를 걸어 끈 뒤 128 + 신호 번호로 끝낸다.
-  // 이 명령은 자기 처리기(main 이 먼저 건다)로 끄고 0 으로 끝내므로, 읽은 뒤 새로 걸린 신호 처리기만 뗀다('exit' 쪽은 그대로)
-  const before = new Map(
-    STOP_SIGNALS.map((signal) => [signal, new Set(process.listeners(signal))]),
-  );
-  const { default: Postgres } = await import("embedded-postgres");
-  for (const signal of STOP_SIGNALS) {
-    for (const listener of process.listeners(signal)) {
-      if (!before.get(signal)?.has(listener)) process.off(signal, listener);
-    }
-  }
+  // embedded-postgres 는 읽힐 때 async-exit-hook 로 신호 · beforeExit 처리기를 걸어 끈 뒤 종료 코드를 바꾼다.
+  // 이 명령은 자기 처리기(main 이 먼저 건다)로 끄고 0 으로 끝내므로, 읽은 뒤 새로 걸린 것을 떼는 공용 도우미로 읽는다('exit' 쪽은 그대로)
+  const Postgres = await importEmbeddedPostgres();
   const pg = new Postgres({
     databaseDir,
     port: args.port,

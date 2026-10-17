@@ -5,7 +5,7 @@ import "server-only";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { settings } from "@/db/schema/operations";
-import { type Db, getDb } from "@/server/db";
+import { type DbOrTx, getDb } from "@/server/db";
 
 /** 시각(0 ~ 23)의 범위 끝(단위 값). */
 const HOURS_PER_DAY = 24;
@@ -53,7 +53,7 @@ export type SettingSchemas = Record<string, z.ZodType>;
 export type SettingValues<S extends SettingSchemas> = {
   [K in keyof S]: z.output<S[K]>;
 };
-export type SettingReadOptions = { profileId?: string | null; db?: Db };
+export type SettingReadOptions = { profileId?: string | null; db?: DbOrTx };
 
 /**
  * 키 목록을 질의 한 번으로 읽는다. 키마다 프로필 행(scope 'profile' 이고 그 profile_id)이 있으면 그것을,

@@ -198,6 +198,9 @@ async function startSpeaking(page: Page) {
   await openPlacement(page, "speaking");
   await page.getByRole("button", { name: T.startButton }).click();
   await expect(page.getByText(T.micNotice)).toBeVisible();
+  await expect(
+    page.getByText("단추를 누른 뒤 아무 말이나 한마디 해 주세요"),
+  ).toBeVisible();
   await page.getByRole("button", { name: T.micCheck }).click();
   await expectItemNo(page, 1);
 }

@@ -9,11 +9,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import EmbeddedPostgres from "embedded-postgres";
+import type EmbeddedPostgres from "embedded-postgres";
 import postgres from "postgres";
 import type { TestProject } from "vitest/node";
 import {
   createLogTail,
+  importEmbeddedPostgres,
   PG_ADMIN_DB,
   PG_ADMIN_USER,
   pgUrl,
@@ -71,7 +72,9 @@ export default async function setup(project: TestProject) {
   // Postgres 로그의 끝 줄만 모은다. 성공 때는 내지 않고, 시작 실패 때 원인으로 붙인다(검토 A1 M-2)
   const log = createLogTail();
   const logTail = log.lines;
-  const pg = new EmbeddedPostgres({
+  // 읽을 때 걸리는 '코드 0 으로 끝내기'(beforeExit)를 뗀다 — 시험이 실패해도 vitest 가 0 으로 끝나던 일(검토 review-p10-5-6-code I-1)
+  const Postgres = await importEmbeddedPostgres();
+  const pg = new Postgres({
     databaseDir,
     port,
     user: ADMIN_USER,

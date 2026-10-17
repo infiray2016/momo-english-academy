@@ -324,6 +324,11 @@ test("수업 목록: 확인 쪽지가 열리면 초점이 쪽지 첫 단추로 �
   await expect(sheet.getByRole("button", { name: T.keepGoing })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(sheet.getByRole("button", { name: T.newLesson })).toBeFocused();
+  // 덮개를 눌러도 초점이 쪽지 밖으로 빠지지 않고, 그 뒤 Tab 은 쪽지 안 첫 단추로 간다(검토 review-p10-5-6-code M-4)
+  await sheet.click({ position: { x: 5, y: 5 } });
+  await expect(sheet).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(sheet.getByRole("button", { name: T.keepGoing })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
   await expect(opener).toBeFocused();

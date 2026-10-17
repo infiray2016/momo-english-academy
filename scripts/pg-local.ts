@@ -61,3 +61,41 @@ export function createLogTail(): {
     },
   };
 }
+
+/**
+ * embedded-postgres 가 읽힐 때 async-exit-hook 로 거는 처리기 가운데 종료 코드를 바꾸는 것(검토 review-p10-5-6-code I-1).
+ * beforeExit 는 '코드 0 으로 끝내기'라 vitest 의 실패 종료 코드(1)를 덮고, 신호 · message 는 128 + 번호 · 0 으로 끝낸다.
+ * 'exit'(끝날 때 자식 Postgres 정리)는 남긴다.
+ */
+export const EXIT_HOOK_EVENTS = [
+  "beforeExit",
+  "message",
+  "SIGHUP",
+  "SIGINT",
+  "SIGTERM",
+  "SIGBREAK",
+] as const;
+
+type EmbeddedPostgresModule = typeof import("embedded-postgres");
+
+/**
+ * embedded-postgres 를 동적으로 읽고, 읽는 동안 새로 걸린 EXIT_HOOK_EVENTS 처리기를 뗀다. 개발용 · e2e DB(dev-db)와
+ * 통합 시험 global setup 이 함께 쓴다. 끄기는 부르는 쪽(stop · cleanUp · 자기 신호 처리기)이 한다. load 는 시험이 바꾼다.
+ */
+export async function importEmbeddedPostgres(
+  load: () => Promise<EmbeddedPostgresModule> = () =>
+    import("embedded-postgres"),
+): Promise<EmbeddedPostgresModule["default"]> {
+  const emitter = process as unknown as NodeJS.EventEmitter;
+  const before = new Map(
+    EXIT_HOOK_EVENTS.map((event) => [event, new Set(emitter.listeners(event))]),
+  );
+  const loaded = await load();
+  for (const event of EXIT_HOOK_EVENTS) {
+    for (const listener of emitter.listeners(event)) {
+      if (!before.get(event)?.has(listener))
+        emitter.off(event, listener as (...args: unknown[]) => void);
+    }
+  }
+  return loaded.default;
+}

@@ -88,7 +88,15 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test:int
+      # 실패 줄 지킴(검토 review-p10-5-6-code I-1): embedded-postgres 의 종료 처리기가 vitest 실패 코드를 0 으로 덮던 일이 다시 생겨도
+      # 로그에 실패 줄이 있으면 이 단계가 실패한다(global setup 은 scripts/pg-local.ts importEmbeddedPostgres 로 처리기를 뗀다)
+      - name: pnpm test:int(실패 줄 지킴)
+        env:
+          NO_COLOR: "1"
+        run: |
+          set -o pipefail
+          pnpm test:int 2>&1 | tee int.log
+          ! grep -qE "(Test Files|Tests) +[0-9]+ failed" int.log
   e2e: # P2b 가 켰다(가짜 음성 e2e, 다-2). Playwright 가 스스로 빌드하고 띄운다(playwright.config.ts webServer)
     runs-on: ubuntu-24.04
     steps:

@@ -21,6 +21,9 @@ const T = {
   start: "시작!",
   chooseStory: "이야기 고르기",
   talkSoon: "토리가 준비 중이에요. 곧 만나요",
+  talkNextPhase: "회화 수업은 다음 차수에 들어와요",
+  findLevelHint: "단계를 몰라도 돼요. 짧은 문제로 찾아요",
+  micRecheck: "마이크를 켰으면 여기를 눌러 다시 확인해요",
   placementStart: /^처음이라 내게 맞는 단계를 찾아요/,
 } as const;
 const AREAS = ["reading", "writing", "speaking", "talk"] as const;
@@ -98,6 +101,8 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
   }
   await card(page, "talk").click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(T.talkSoon);
+  // 부모용 작은 글(개발 기간 안내, C72 — 1-나에서 뺀다)
+  await expect(page.locator("[data-parent-info]")).toHaveText(T.talkNextPhase);
   await page.getByRole("link", { name: "홈" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "모모의 공부 보드",
@@ -109,6 +114,8 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
   await page.goto("/");
   for (const area of ["reading", "writing", "speaking"]) {
     await expect(card(page, area)).toContainText(T.findLevel);
+    // 잠긴 것으로 보이지 않게 한 줄 안내(요청자 프리뷰 2026-10-18, C72)
+    await expect(card(page, area)).toContainText(T.findLevelHint);
     await expect(card(page, area)).toHaveAttribute(
       "href",
       `/${area}/placement`,
@@ -217,6 +224,20 @@ test.describe("인식 API 없음", () => {
     }, MIC_STATE_KEY);
     await denied.goto("/");
     await expect(card(denied, "speaking")).toContainText(T.needsMic);
+    // 1-가 임시 되돌리기: 닫힌 말하기 카드 아래 '다시 확인'을 누르면 저장된 '쓸 수 없음'을 지우고 다시 판정해 카드가 열린다
+    // (인식 API 가 있는 기기 — 요청자 프리뷰 2026-10-18, 1-나 부모 화면 '마이크 다시 확인'이 대신할 때까지)
+    await denied.getByRole("button", { name: T.micRecheck }).click();
+    await expect(card(denied, "speaking")).toHaveAttribute(
+      "href",
+      "/speaking/lessons",
+    );
+    await expect(card(denied, "talk")).not.toContainText(T.needsMic);
+    expect(
+      await denied.evaluate((key) => localStorage.getItem(key), MIC_STATE_KEY),
+    ).toBeNull();
+    await expect(
+      denied.getByRole("button", { name: T.micRecheck }),
+    ).toHaveCount(0);
   });
 });
 
@@ -232,6 +253,10 @@ test.describe("audio-capture 한 번", () => {
     // (1) audio-capture 한 번: 말하기를 고른 첫 실행의 '마이크 확인'이 audio-capture 로 실패해도 기기 상태로 남지 않아
     //     홈의 말하기 · 회화 카드가 열린다(검토 I-1 — 대본 audio-capture.json)
     await page.goto("/first-run");
+    // 하이드레이션 뒤 채운다(그 전 입력은 상태에 들지 않는다 — CI 7차)
+    await expect(
+      page.locator("[data-first-run-step][data-hydrated]"),
+    ).toHaveCount(1);
     const pin = "135790";
     await page.getByLabel("PIN", { exact: true }).fill(pin);
     await page.getByLabel("한 번 더 넣어 주세요").fill(pin);

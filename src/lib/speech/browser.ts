@@ -498,7 +498,9 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
         report({ ok: false, code: NO_API_CODE, group: "mic-unavailable" }),
       );
     }
-    // 새 객체를 start 하고 audiostart 나 첫 결과면 성공, 오류면 실패, 시간 안에 없으면 실패(나-5).
+    // 새 객체를 start 하고 소리 들어옴(soundstart · speechstart)이나 첫 결과면 성공, 오류면 실패, 시간 안에 없으면 실패(나-5).
+    // audiostart(소리 받기 시작)만으로는 성공이 아니다 — 원격 PC 의 가상 장치처럼 받기는 시작해도 소리가 안 들어오는 기기가
+    // '잘 돼요'로 통과한 뒤 따라 말하기에서 실패했다(요청자 프리뷰 2026-10-18, P10 fix 5).
     return new Promise<MicrophoneCheck>((resolve) => {
       const recognition = new Ctor();
       prepare(recognition);
@@ -525,7 +527,8 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
         },
       };
       activeCheck = check;
-      recognition.onaudiostart = () => finish({ ok: true });
+      recognition.onsoundstart = () => finish({ ok: true });
+      recognition.onspeechstart = () => finish({ ok: true });
       recognition.onresult = () => finish({ ok: true });
       recognition.onerror = (event) => fail(event.error);
       recognition.onend = () => fail(MIC_CHECK_ENDED_CODE);

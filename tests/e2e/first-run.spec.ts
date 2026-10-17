@@ -33,6 +33,7 @@ const T = {
   levelTitle: "영역마다 시작 단계를 고를 수 있어요",
   micCheck: "마이크 확인",
   micFailed: "마이크를 쓸 수 없었어요. 그래도 다음으로 넘어갈 수 있어요",
+  micOk: "마이크가 잘 돼요",
   handoff: "아이에게 넘기기",
   next: "다음",
   accessLabel: "가족 접근 코드",
@@ -67,7 +68,11 @@ async function throughOf(): Promise<number> {
 
 async function fillPin(page: Page) {
   const pin = randomPin();
-  // 화면이 하이드레이션된 뒤(마운트 때 PIN 칸으로 초점을 옮김) 채운다 — 그 전에 채우면 상태가 비어 '다음'이 꺼진 채다(차례 5 CI)
+  // 화면이 하이드레이션된 뒤 채운다 — 그 전에 채우면 상태가 비어 '다음'이 꺼진 채다(차례 5 CI). PIN 칸은 autoFocus 라
+  // 초점은 하이드레이션 전에도 잡히므로 하이드레이션 표시를 기다린다(CI 7차)
+  await expect(
+    page.locator("[data-first-run-step][data-hydrated]"),
+  ).toHaveCount(1);
   await expect(page.getByLabel("PIN", { exact: true })).toBeFocused();
   await page.getByLabel("PIN", { exact: true }).fill(pin);
   await page.getByLabel(T.pinAgain).fill(pin);
@@ -271,6 +276,31 @@ test.describe("마이크 확인 실패", () => {
     expect(
       await page.evaluate(() => localStorage.getItem("momo.mic.v1")),
     ).toContain("not-allowed");
+  });
+});
+
+test.describe("마이크 확인 · 소리 안 들어옴", () => {
+  test.use({ speechScript: loadSpeechScript("audio-no-sound") });
+
+  test("마이크 확인: 소리 받기만 시작하고 소리가 들어오지 않으면(원격 PC 가상 장치 꼴) '마이크가 잘 돼요'가 아니라 실패 문구가 보인다", async ({
+    page,
+  }) => {
+    await page.goto("/first-run");
+    await fillPin(page);
+    await page.getByLabel(T.displayName).fill("모모");
+    await next(page).click();
+    await finishToMic(page);
+    // 확인은 소리가 들어와야 성공이라 단추 아래에 말해 달라는 안내가 있다(C72)
+    await expect(
+      page.getByText("단추를 누른 뒤 아무 말이나 한마디 해 주세요"),
+    ).toBeVisible();
+    await page.getByRole("button", { name: T.micCheck }).click();
+    await expect(page.getByRole("status").first()).toHaveText(T.micFailed);
+    await expect(page.getByText(T.micOk)).toHaveCount(0);
+    // 다시 듣기 갈래(소리 없음)는 이 브라우저에 '쓸 수 없음'을 남기지 않는다
+    expect(
+      await page.evaluate(() => localStorage.getItem("momo.mic.v1")),
+    ).toBeNull();
   });
 });
 

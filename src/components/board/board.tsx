@@ -353,7 +353,7 @@ export function StatusLine({
  * 확인 쪽지: 한 문장과 단추 둘(P10b 수업 목록이 쓴다). open 일 때만 그린다.
  * 열리면 초점이 첫 단추(취소 쪽 — 하던 일을 지키는 쪽)로 가고 Esc 는 취소다. 닫힌 뒤 초점 돌려놓기는 부르는 쪽이 한다.
  * Tab · Shift+Tab 은 쪽지 안 단추 사이를 맴돈다 — 뒤 화면으로 나가 Esc 가 안 듣는 일이 없게(화면 검토 review-p10-fix3-design N-5).
- * 덮개가 화면 전체를 덮어 뒤 화면은 눌리지 않는다.
+ * 덮개가 화면 전체를 덮어 뒤 화면은 눌리지 않고, 덮개를 눌러도 초점은 쪽지 안에 남는다.
  */
 export function ConfirmSheet({
   open,
@@ -372,34 +372,42 @@ export function ConfirmSheet({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={message}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-            return;
-          }
-          if (e.key !== "Tab") return;
-          const buttons = [
-            ...e.currentTarget.querySelectorAll<HTMLElement>("button"),
-          ];
-          const first = buttons[0];
-          const last = buttons.at(-1);
-          if (!first || !last) return;
-          if (e.shiftKey && document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          } else if (!e.shiftKey && document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }}
-        className="flex w-full max-w-xl flex-col gap-6 rounded bg-paper p-8 text-ink shadow-postit"
-      >
+    // 덮개 전체가 쪽지(role=dialog, tabIndex −1)다 — 덮개를 누르면 초점이 쪽지 자체로 가고 body 로 빠지지 않는다.
+    // 그래서 Tab · Shift+Tab · Esc 가 늘 이 처리기를 지난다(검토 review-p10-5-6-code M-4)
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={message}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+          return;
+        }
+        if (e.key !== "Tab") return;
+        const buttons = [
+          ...e.currentTarget.querySelectorAll<HTMLElement>("button"),
+        ];
+        const first = buttons[0];
+        const last = buttons.at(-1);
+        if (!first || !last) return;
+        const at = document.activeElement;
+        if (at === e.currentTarget) {
+          // 덮개를 눌러 쪽지 자체에 초점이 있으면 쪽지 안 첫 · 끝 단추로
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+        } else if (e.shiftKey && at === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && at === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6 outline-none"
+    >
+      <div className="flex w-full max-w-xl flex-col gap-6 rounded bg-paper p-8 text-ink shadow-postit">
         <p className={CHILD_SIZE.guide}>{message}</p>
         <div className="flex flex-wrap justify-end gap-4">
           {/* 쪽지가 열리면 초점을 쪽지 안 첫 단추로(화면 검토 review-p10-4-design) */}

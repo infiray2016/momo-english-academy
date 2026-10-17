@@ -21,7 +21,7 @@ import {
 import { type Area, UNITS_PER_LEVEL } from "@/core/seed/structure";
 import { lessons } from "@/db/schema/content";
 import { profileTracks, sessions, unitProgress } from "@/db/schema/learning";
-import { type Db, getDb } from "@/server/db";
+import { type DbOrTx, getDb } from "@/server/db";
 import { readHouseholdProfile } from "@/server/profile";
 import {
   type LessonRow,
@@ -67,7 +67,7 @@ export async function closeStaleSessions({
   profileId,
   now,
 }: {
-  db?: Db;
+  db?: DbOrTx;
   profileId: string;
   now: Date;
 }): Promise<number> {
@@ -144,7 +144,7 @@ export async function readLessonList({
   area,
   now,
 }: {
-  db?: Db;
+  db?: DbOrTx;
   area: Exclude<Area, "talk">;
   now: Date;
 }): Promise<LessonListResult> {

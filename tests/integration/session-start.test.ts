@@ -123,6 +123,26 @@ async function lessonRow(
   return row;
 }
 
+/** 그 단원의 첫 다지기 칸(시험용 시드는 배정 · 다지기를 이어 1부터 센다 — 번호를 박지 않고 DB 에서 읽는다, 검토 I-2). */
+async function firstReinforce(unit: number) {
+  const rows = await db
+    .select()
+    .from(lessons)
+    .where(
+      and(
+        eq(lessons.area, "reading"),
+        eq(lessons.level, 1),
+        eq(lessons.unit, unit),
+        eq(lessons.kind, "reinforce"),
+        eq(lessons.revision, 1),
+        eq(lessons.correction, 0),
+      ),
+    );
+  const row = rows.sort((a, b) => a.lessonNo - b.lessonNo)[0];
+  if (!row) throw new Error("다지기 칸 없음");
+  return row;
+}
+
 async function start(lessonId: string, confirmAbort = false, at = NOW) {
   return startLessonSession({ lessonId, confirmAbort }, deps(at));
 }
@@ -325,10 +345,7 @@ describe("세션 시작", () => {
     ).toBeUndefined();
     // 미리보기에서 보인 단어는 같은 영역의 다음 세션에서 '만난 단어'다(정할 것 ㄹ)
     await start((await lessonRow(1, "assigned", 1)).id); // 같은 칸 — 이어 하기
-    const nextLesson = await start(
-      (await lessonRow(1, "reinforce", 1)).id,
-      true,
-    );
+    const nextLesson = await start((await firstReinforce(1)).id, true);
     if (!nextLesson.ok) throw new Error();
     const view = await loadSessionView(
       { sessionId: nextLesson.sessionId },

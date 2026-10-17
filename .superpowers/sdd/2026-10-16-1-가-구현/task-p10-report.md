@@ -692,17 +692,61 @@ DB 없이 도는 관문: tsc 0 · biome ci 0 · test 359 · check:deps 0 · buil
 
 ## 로컬에서 못 돌린 시험 → CI 결과(차례 5 · 6 · fix 4)
 
-로컬은 SysV 공유 메모리 고갈로 새 Postgres 가 뜨지 않아(00:44~), 통합 · e2e 는 ci/p10-c5 가지(초안 PR #1, ubuntu embedded-postgres)에서 돌렸다. 4차 칸은 결과가 오면 채운다.
+로컬은 SysV 공유 메모리 고갈로 새 Postgres 가 뜨지 않아(00:44~), 통합 · e2e 는 ci/p10-c5 가지(초안 PR #1, ubuntu embedded-postgres)에서 돌렸다. **CI 4차(771d53e)는 모든 작업이 성공했다** — unit · integration(전부 통과) · e2e(46 통과, 파일별 실패 없음) · e2e-local · build · lint · depcruise · spec-trace · bundle-secrets · seed-validate.
 
-| 시험 파일 | 몫 | 시험 수 | CI 1차 1d637e4(run 39049250946) | CI 3차 4d0ed4f(run 39050999951) | CI 4차 |
+| 시험 파일 | 몫 | 시험 수 | CI 1차 1d637e4(run 39049250946) | CI 3차 4d0ed4f(run 39050999951) | CI 4차 771d53e(run 39051573610) |
 |---|---|---|---|---|---|
-| `tests/integration/placement.test.ts` | 차례 5 | 8 | 통과 | 통과 | (대기) |
-| `tests/integration/session-start.test.ts` | 차례 6 | 9 | — | 통과 | (대기) |
-| 그 밖 통합 전부 | 차례 1~4 · start.ts 리팩터링 | — | 통과 | 통과 | (대기) |
-| `tests/e2e/placement.spec.ts` | 차례 5 | 7 | 실패 3(시험 쪽 경쟁) · 통과 4 | 실패 7(도우미 자기 호출) | (대기) |
-| `tests/e2e/first-run.spec.ts` | fix 4 N-1 단언 · PIN 하이드레이션 기다림 | — | AC-1c 로마자 실패 1(하이드레이션 전 채움) | 통과 | (대기) |
-| `tests/e2e/home.spec.ts` | 차례 5 AC-2a · fix 4 N-2 도우미 | — | 통과 | 통과 | (대기) |
-| `tests/e2e/lesson-list.spec.ts` | 차례 6 AC-2b · 2e · 2f · 지난 수업 · fix 4 N-5 · N-6 · N-2 | — | 초점 시험 흔들림 1(재시도 통과) | 통과 | (대기) |
-| `tests/e2e/session.spec.ts` | 차례 6 | 2 | — | 통과 | (대기) |
+| `tests/integration/placement.test.ts` | 차례 5 | 8 | 통과 | 통과 | 통과 |
+| `tests/integration/session-start.test.ts` | 차례 6 | 9 | — | 통과 | 통과 |
+| 그 밖 통합 전부 | 차례 1~4 · start.ts 리팩터링 | — | 통과 | 통과 | 통과 |
+| `tests/e2e/placement.spec.ts` | 차례 5 | 7 | 실패 3(시험 쪽 경쟁) · 통과 4 | 실패 7(도우미 자기 호출) | 통과 |
+| `tests/e2e/first-run.spec.ts` | fix 4 N-1 단언 · PIN 하이드레이션 기다림 | — | AC-1c 로마자 실패 1(하이드레이션 전 채움) | 통과 | 통과 |
+| `tests/e2e/home.spec.ts` | 차례 5 AC-2a · fix 4 N-2 도우미 | — | 통과 | 통과 | 통과 |
+| `tests/e2e/lesson-list.spec.ts` | 차례 6 AC-2b · 2e · 2f · 지난 수업 · fix 4 N-5 · N-6 · N-2 | — | 초점 시험 흔들림 1(재시도 통과) | 통과 | 통과 |
+| `tests/e2e/session.spec.ts` | 차례 6 | 2 | — | 통과 | 통과 |
 
 CI 2차(동결 밖 몫만 담은 둘째 커밋)는 3차가 덮어 이 표에 따로 적지 않는다. 3차 e2e 는 실패 7 · 통과 39 였고, 실패는 모두 `placement.spec.ts` 의 한 원인이었다.
+
+## fix 5(review-p10-5-6-code I 2 · M 3 + 요청자 프리뷰 결함 넷)
+
+| 지적 | 고친 곳 | 시험 · 빨강 먼저 |
+|---|---|---|
+| I-1 CI 통합이 실패를 가림 | `scripts/pg-local.ts` 에 `EXIT_HOOK_EVENTS` · `importEmbeddedPostgres(load?)` 를 두었다. embedded-postgres 를 동적으로 읽고, 읽는 동안 새로 걸린 beforeExit · message · SIGHUP · SIGINT · SIGTERM · SIGBREAK 처리기를 뗀다. 'exit'(자식 Postgres 정리)는 남긴다. `tests/integration/global-setup.ts` 와 `scripts/dev-db.ts` 가 함께 쓴다(dev-db 의 신호 처리기 떼기 코드를 이것으로 바꿈). `.github/workflows/ci.yml` integration 단계에는 `set -o pipefail; pnpm test:int 2>&1 \| tee int.log; ! grep -qE "(Test Files\|Tests) +[0-9]+ failed" int.log`(NO_COLOR=1) 지킴을 더했다 | 단위 '내장 Postgres 읽기: 읽을 때 새로 걸린 …' · '… 실제 embedded-postgres 를 읽은 뒤에도 beforeExit 처리기가 늘지 않는다' — **빨강 먼저 봄**. 검토자 재현을 그대로 해 봤다(DB 없이, 일부러 실패하는 시험 하나): global setup 이 그대로 읽으면 vitest 종료 0, 도우미로 읽으면 1. ci.yml 은 ruby YAML 로 읽어 단계 이름 · 명령을 확인했다 |
+| I-2 가려진 실패 '세션 틀: 다시 열면 …' | `tests/integration/session-start.test.ts` 에 `firstReinforce(unit)` 를 두었다. 그 단원 다지기 칸을 DB 에서 읽어 가장 작은 번호를 쓴다(작은 틀은 3번). `lessonRow(1, "reinforce", 1)` 자리를 바꿨다 | CI 에서(I-1 지킴 뒤 실제 초록 확인) |
+| M-1 잠금 안 바깥 연결 읽기 | `src/server/db` 에 `Tx` · `DbOrTx` 형을 두었다. 읽기 함수(`readLessonList` · `closeStaleSessions` · `SeedReadOptions` · `SettingReadOptions` · `ProfileReadOptions` · profile `settingValues`)는 `DbOrTx` 를 받는다. 세션 시작은 목록 읽기와 수업 칸 읽기를 `tx` 로 한다. `use-lesson-start.ts` 는 `useRef` 로 같은 그리기 안 두 번 누름을 막는다 | 통합 세션 시작 9(CI) — 판정은 같다 |
+| M-2 대기열 묶음 거부 | P11 몫(장부) — 손대지 않음 | — |
+| M-3 동음이의어 목록 없음 | `seedHomophones()` 가 목록 파일이 없을 때 처음 한 번 `console.warn`(파일 이름만)을 남기고 빈 묶음을 쓴다(브리프대로 warn). 적재 검사는 컨트롤러와 상의 몫 | — |
+| M-4 덮개 클릭 초점 | `ConfirmSheet` 를 덮개 전체가 쪽지(role=dialog · tabIndex −1)인 꼴로 바꿨다. 덮개를 누르면 초점이 쪽지 자체로 가고 body 로 빠지지 않는다. 쪽지 자체에 초점이 있을 때 Tab · Shift+Tab 은 첫 · 끝 단추로 간다. 정적 요소 처리기 규칙(biome a11y)에 걸리지 않는 꼴이다 | e2e 확인 쪽지 시험에 '덮개를 누르면 쪽지에 초점 → Tab 은 첫 단추'(CI) |
+| 요청자 · 마이크 확인 거짓 양성 | `src/lib/speech/browser.ts` checkMicrophone: 성공 조건을 audiostart(소리 받기 시작)에서 soundstart · speechstart(소리 들어옴) · 첫 결과로 바꿨다. 받기만 시작하고 소리 없이 끝나면 `ended-without-audio`(다시 듣기 갈래) 실패라 첫 실행은 7절 실패 문구다. 기기에 '쓸 수 없음'은 남기지 않는다 | 단위 '마이크 확인: 소리 받기만 시작하고 소리가 들어오지 않은 채 끝나면 실패다(…)' — **빨강 먼저 봄** · '… 소리 들어옴 · 인식 결과가 한 번 오면 성공이다'. e2e 새 대본 `audio-no-sound.json` · 첫 실행 '마이크 확인: 소리 받기만 시작하고 …'(CI). 기존 대본(default-ok)은 speechstart 가 있어 배치 · 홈 e2e 에 영향이 없다 |
+| 요청자 · 마이크 '못 씀' 되돌리기 | `home-cards.tsx`: 닫힌 말하기 카드 아래 작은 단추 '마이크를 켰으면 여기를 눌러 다시 확인해요'(C72). 누르면 `clearMicState()` 뒤 `micUsable()` 로 다시 판정한다. 말하기 카드 아래 하나만 두며, 회화 카드는 같은 판정으로 함께 열린다. 홈 진입마다 다시 판정(AC-5c)은 그대로다 | e2e AC-5c(권한 거부 기기)에 '다시 확인을 누르면 저장 상태가 지워지고 말하기 · 회화 카드가 열린다'(CI) |
+| 요청자 · '내 단계 찾기' 안내 | 배치 전 카드에 '단계를 몰라도 돼요. 짧은 문제로 찾아요'(C72) | e2e AC-2a 배치 전 카드 단언(CI) |
+| 요청자 · 회화 준비 중 부모용 글 | `/talk` 아래 `data-parent-info` 작은 글 '회화 수업은 다음 차수에 들어와요'(C72, 1-가 임시) | e2e AC-2a 회화 카드 단언(CI) |
+
+### 알릴 것 · 우려
+
+- **마이크 확인이 이제 소리가 들어와야 성공이다.** 조용한 곳에서 부모가 말하지 않으면 시간 상한(speech.max_listen_seconds + watchdog) 뒤 실패 문구가 나오고 알림이 생길 수 있다. 확인 단추 옆에 '말을 한마디 해 주세요' 같은 안내 한 줄이 있으면 좋겠지만 정본 밖 새 문구라 넣지 않았다. 컨트롤러가 정해 주면 넣는다.
+- 공용 파일을 고쳤다: `scripts/pg-local.ts` · `scripts/dev-db.ts` · `tests/integration/global-setup.ts` · `.github/workflows/ci.yml` · `src/lib/speech/browser.ts`(P2b) · `src/server/db/index.ts` · 읽기 옵션 형 셋(settings · seed/read · profile). 형만 넓혔고 동작은 그대로다(browser.ts 는 위 성공 조건만).
+- I-1 이 고쳐지면 main · 다른 가지의 지난 통합 결과를 다시 봐야 한다(검토 3단계, 컨트롤러).
+
+실행: tsc 0 · biome ci 0 · test 364 · check:deps 0 · build 0 · check:bundle 0 · spec-trace 종료 0(missing-test 35). 통합 · e2e 는 CI 에서 돈다.
+
+### fix 5 덧붙임 — 마이크 확인 안내(컨트롤러 결정, C72)
+
+첫 실행 마이크 화면과 배치의 마이크 확인 화면 둘 다 '마이크 확인' 단추 아래에 '단추를 누른 뒤 아무 말이나 한마디 해 주세요'를 넣었다(`data-mic-speak-hint`). e2e 단언: 첫 실행 '마이크 확인: 소리 받기만 시작하고 …' · 배치 `startSpeaking`(CI). tsc 0 · biome ci 0 · test 364.
+
+### CI 7차(c2d9de1, run 39060088890) e2e 실패 둘 고침
+
+통합은 이제 실제로 통과했다(Test Files 13 · Tests 108 passed | 1 skipped, 지킴 단계 동작).
+
+e2e 실패 둘(first-run.spec AC-1c 로마자 · home.spec 'audio-capture 한 번' AC-5c)의 원인은 마이크 확인이 아니라 **PIN 단계의 하이드레이션 경쟁**이다.
+- 첫째의 실패 자리는 `fillPin` 의 '다음' 누름(로그 :75)이다. PIN 칸에 `autoFocus` 가 있어 초점이 하이드레이션 전에도 잡히므로, 차례 5 CI 에서 더한 '초점 기다리기'가 하이드레이션 신호가 되지 못했다.
+- 둘째는 PIN 을 직접 채우며 기다림이 없었다.
+
+고침: 첫 실행 화면에 하이드레이션 끝 표시(`data-hydrated`)를 두고, `fillPin` 과 home.spec 의 직접 채우기가 그것을 기다린 뒤 채운다.
+
+컨트롤러가 짚은 셋은 다음과 같다.
+- ① 마이크 확인은 이미 스스로 끝난다. 소리 · 결과 · 오류 · 끝이 없으면 `speech.max_listen_seconds + speech.watchdog_extra_seconds`(기존 설정 키) 뒤 `timeout` 실패이고, 실패 문구가 보이며 '다음'이 살아난다. 실제 브라우저는 그보다 먼저 no-speech · end 로 끝난다.
+- ② 가짜 음성 default-ok 대본은 이미 speechstart(400ms) · result 를 낸다. 그래서 새 조건에서도 곧바로 성공하며 고치지 않았다.
+- ③ AC-5c 기대는 새 규칙과 맞다. audio-capture 한 번 · 소리 없음은 다시 듣기 갈래라 기기 상태를 남기지 않고, 카드는 열린다.
+
+tsc 0 · biome ci 0 · test 364.

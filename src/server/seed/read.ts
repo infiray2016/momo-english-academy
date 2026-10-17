@@ -18,9 +18,9 @@ import {
   unitSpecs,
 } from "@/db/schema/content";
 import { SEED_REVISION_TABLES } from "@/db/schema/seed-revision";
-import { type Db, getDb } from "@/server/db";
+import { type DbOrTx, getDb } from "@/server/db";
 
-export type SeedReadOptions = { db?: Db };
+export type SeedReadOptions = { db?: DbOrTx };
 
 /** 시드 테이블 다섯의 가장 큰 개정(빈 DB 0, 5절 '시드 전체 최신 개정 번호'). */
 export async function currentSeedRevision({

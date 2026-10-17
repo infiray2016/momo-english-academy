@@ -211,15 +211,27 @@ function numberSetting(values: Record<string, unknown>, key: string): number {
   return value;
 }
 
+/** 목록 없음 알림을 한 번만 냈는가(서버 인스턴스마다). */
+let homophonesMissingWarned = false;
+
 /**
  * 동음이의어 묶음(정할 것 타 — P9c 의 loadSeedList). 시드 목록 파일이 없는 개발용 · e2e 길(시험용 시드는 DB 에만 있음)에서는
- * 빈 묶음으로 본다 — 일치율이 조금 엄해질 뿐 판정은 된다. 규격이 틀린 파일은 던진다.
+ * 빈 묶음으로 본다 — 일치율이 조금 엄해질 뿐 판정은 된다. 운영에서 빌드 추적이 빠져 없을 때 조용히 엄해지지 않게
+ * 처음 한 번 경고를 남긴다(이름만, 검토 review-p10-5-6-code M-3). 규격이 틀린 파일은 던진다.
  */
 export function seedHomophones(): string[][] {
   try {
     return loadSeedList("homophones").groups;
   } catch (error) {
-    if (error instanceof SeedListError && error.reason === "missing") return [];
+    if (error instanceof SeedListError && error.reason === "missing") {
+      if (!homophonesMissingWarned) {
+        homophonesMissingWarned = true;
+        console.warn(
+          "동음이의어 목록(seed/lists/homophones.json)이 없어 빈 묶음으로 채점합니다",
+        );
+      }
+      return [];
+    }
     throw error;
   }
 }

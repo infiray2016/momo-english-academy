@@ -86,6 +86,8 @@ const TEXT = {
   ipadDictationPath: ["설정", "일반", "키보드", "받아쓰기"],
   ipadSiriPath: ["설정", "Siri 및 검색"],
   micCheck: "마이크 확인",
+  /** 마이크 확인 단추 아래 안내(C72 — 확인은 소리가 들어와야 성공, fix 5). */
+  micSpeakHint: "단추를 누른 뒤 아무 말이나 한마디 해 주세요",
   micOk: "마이크가 잘 돼요",
   micFailed: "마이크를 쓸 수 없었어요. 그래도 다음으로 넘어갈 수 있어요",
   micInterrupted: "다시 눌러 확인해 주세요",
@@ -202,6 +204,9 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
   const [saveMessage, setSaveMessage] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pinRef = useRef<HTMLInputElement>(null);
+  // 하이드레이션 끝 표시(e2e 가 채우기 전에 기다린다 — PIN 칸은 autoFocus 라 초점만으로는 하이드레이션을 알 수 없다, 차례 5 CI 7차)
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   // 음성 접점은 렌더 뒤에 만든다(SpeechPort.device 는 useEffect 에서만, P2b)
   useEffect(() => {
@@ -703,6 +708,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
               </BigButton>
             )}
           </div>
+          <p data-mic-speak-hint="">{TEXT.micSpeakHint}</p>
           <StatusLine
             tone={
               micStatus === "ok"
@@ -742,6 +748,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
       <PaperBand title={APP_NAME} />
       <section
         data-first-run-step={step}
+        data-hydrated={hydrated ? "" : undefined}
         className="flex flex-1 flex-col gap-5 rounded bg-paper p-6 shadow-postit sm:p-8"
       >
         {/* 단계마다 입력 요소를 새로 만든다 — 같은 자리의 input 이 재사용되면 PIN 값이 이름 칸에 남는다(컨트롤러 핫픽스 2026-10-17 23:4x) */}

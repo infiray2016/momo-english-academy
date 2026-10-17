@@ -1,0 +1,14 @@
+{
+  "name": "audio-no-sound",
+  "source": "손으로 씀 — 요청자 프리뷰 2026-10-18 원격 PC 꼴(가상 장치: 소리 받기는 시작하지만 소리가 들어오지 않고 결과 없이 끝남). start · audiostart 뒤 end",
+  "recognitions": [
+    {
+      "events": [
+        { "at": 50, "type": "start" },
+        { "at": 100, "type": "audiostart" },
+        { "at": 1500, "type": "audioend" },
+        { "at": 1510, "type": "end" }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 // 1-가 회화 자리(C50 (1), plan-p10b 바뀌는 파일). 회화 수업 · 세션은 1-나라 '토리가 준비 중이에요. 곧 만나요'와 '홈'만 보인다.
+// 아래에 부모용 작은 글 '회화 수업은 다음 차수에 들어와요'(C72, 1-가 임시)를 둔다.
 import { BigLink, ChildScreen, PostIt } from "@/components/board/board";
 
 export default function TalkPage() {
@@ -14,6 +15,10 @@ export default function TalkPage() {
         </h1>
         <BigLink href="/">홈</BigLink>
       </PostIt>
+      {/* 부모용 개발 기간 안내(C72, 1-가 임시 — 1-나에서 뺀다). 부모용 정보라 작은 글자다(4절) */}
+      <p data-parent-info="" className="text-center text-base text-ink/80">
+        회화 수업은 다음 차수에 들어와요
+      </p>
     </ChildScreen>
   );
 }

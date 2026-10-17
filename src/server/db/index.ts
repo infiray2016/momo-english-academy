@@ -29,6 +29,10 @@ export function createDb(
 }
 
 export type Db = ReturnType<typeof createDb>;
+/** 트랜잭션 안 연결(db.transaction 의 tx). */
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+/** 읽기 함수가 받는 연결 — 바깥 연결 또는 트랜잭션(같은 연결로 읽어 풀이 차도 서로 기다리지 않게, 검토 review-p10-5-6-code M-1). */
+export type DbOrTx = Db | Tx;
 
 type DbCache = { url: string; db: Db };
 const CACHE_KEY = Symbol.for("momo.server.db");
