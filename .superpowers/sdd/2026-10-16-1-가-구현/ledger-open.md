@@ -6,6 +6,8 @@
 
 | 항목 | 어디서 확인 | 출처 |
 |---|---|---|
+| `requireAccess` 는 `import { requireAccess } from "@/server/access/guard"` 꼴로만 가져온다 — access-gate 정적 검사가 기본 가져오기(`import requireAccess from …`)와 guard 다른 함수의 별칭(`hasValidAccess as requireAccess`)을 못 잡음(거짓 음성 둘). 검사 보강은 1-나 설정 · 도구 몫 | P11 · P12 · 1-나 브리프 '지킬 것' · 1-나 때 검사 보강 | review-p10-7-code M-4 |
+| 코드 가지의 specs · intent 가 문서 가지보다 낡으면 CI check-ids(setting-default) · spec-trace 가 어긋남을 낸다 — 바탕 가지 · CI 가지를 만들 때 `git checkout <문서 가지 커밋> -- specs intent` 로 맞춘다(P11 가지는 9b97f4d 로 맞췄음) | P10 을 P11 에 합칠 때 · CI 가지 재생성 때 · 다음 바탕 가지 | P11 가지 dc5308d 뒤 check:ids setting-default 1(unit.vocab_count.1-3 12절 30 ↔ 시드 25) |
 | P10 첫 실행 주제 묶음 그림은 지금 `images.word` 로 찾는다(P6a vocab 에 imageKey 가 없어서). P6b(imageKey 207) 가 바탕에 합쳐지면 `vocab.imageKey` 로 바꾸고 묶음 대표 낱말을 카탈로그와 다시 맞댄다 | P6b 합친 뒤(P10 또는 P11) | impl-p10 차례 2 화면 지적 반영 보고 |
 | P6b 커밋 전: `CREDITS.md` 의 CEFR-J 인용 꼴을 공식 README(TUFS Tono Laboratory 의 CEFR-J Wordlist 인용 문장)와 맞춘다(구현자 · 검토자 모두 네트워크 없이 미확인) · Twemoji attribution 글은 plan 글자 그대로 확인됨 | P6b 커밋 전(컨트롤러, 웹 조회 1회) | review-p06b-5b N-5 · task-p06b-report 작업 5 fix 1 |
 | P8 그림 문항 규칙: 그림만으로 풀 수 없는 헷갈리는 짝(ant · insect, hat · cap, face · smile, head · hair, tired · sleepy 등 review-p06b-5 짝 표 아홉; tired≠sleepy · strong≠arm · face≠neck)은 같은 문항 보기에 함께 두지 않는다. **단원 밖 짝**(leg · knee 등 — 복습 · 배치 평가에서 섞일 수 있음, review-p06b-5b N-4)도 같은 규칙. 검증기 목록(homophones.json 꼴)으로 막을지는 P8 때 13절 한 줄로 | P8 브리프 · P8 때 결정 | review-p06b-5 Important 4 |
@@ -30,7 +32,7 @@
 | P10 · P11 · P12: 시드는 `src/server/seed/read.ts` 로 읽고 단원 · 단계 평가 · 배치 평가 시작 때 `currentSeedRevision()` 을 start_revision 에 남겨 그 값으로 읽는다. 진행 중 세션은 `sessions.lesson_id` 행을 끝까지 | P10 · P11 · P12 plan · 브리프 | plan-p07a '다른 P 에 넘길 것' |
 | P6: **첫 개발용 적재 끝남(2026-10-17 23:0x, P6a f447bc5 판, 최신 개정 1)** — 이제 규격 파일을 고치면 판을 올린다(개정 G + 1 · 정정 + 1): P6b 의 images.json 207 · vocab imageKey · 예문 35 와 opus-4-8 thinkingDefault 'none'(새 적용일 행)은 다음 적재 때 개정 2 로 | P6b 커밋 · 합친 뒤 적재 | plan-p07a 위험 6 · H3 실행 기록 |
 | 1-나: seed/reviews → seed_reports(신고자 개발자, C68 (3)) · 옛 개정 행의 정정을 싣는 자리(파) · main 작업의 '신고 판단 기록 · 다시 계산' 단계 · P4 규격의 토리 이야기 title · generation 필수(타, P8 브리프에도) · 2차 단원 미리보기는 startRevision = currentSeedRevision() | 1-나 plan | plan-p07a 정할 것 마 · 타 · 파 · C68 |
-| P8: 1~4단계 평가 지문의 그림 낱말이 '무엇' 질문의 정답과 같으면 그림이 답을 가리킴(견본 12-01) — 평가 문항은 정답 낱말이 그림 줄에 들지 않게 쓰거나 화면이 보기 낱말을 그림 줄에서 빼는 규칙 | P8 브리프(또는 P11 화면 규칙) | review-p05b-design-2 넘길 메모 |
+| P8 · P12: 1~4단계 평가 지문의 그림 낱말이 '무엇' 질문의 정답과 같으면 그림이 답을 가리킴(견본 12-01). **P11 읽기 수업 몫은 결정(task-p11-2 컨트롤러 결정): 문항 활동의 지문 보기(가로 칸 · 세로 쪽지)에 그림 줄을 두지 않는다.** 평가 문항(P12 화면)도 같은 규칙으로, P8 시드는 정답 낱말이 그림 줄에 들지 않게 | P12 단계 평가 화면 브리프 · P8 브리프 | review-p05b-design-2 넘길 메모 · task-p11-2 |
 | P6c: B_LevelTest 에 1~4단계 평가 지문 그림 줄 자리(읽어 주기 없음) · 토리 이야기 새 화면에 읽어 주기 자리 · 새 단어 표시 색(노랑 카드 위 종이 바탕 · 굵게 vs 목업 종이 위 노랑) | P6c 브리프 | review-p05b-design-2 넘길 메모 |
 | P10 · P11 · P5c: ActivityCard 기본 글자 20px — 다른 틀도 20px 줌 · 소리 자리의 저절로 읽기와 다시 읽기(평가 지문은 없음) · 칸 화면 틀 -mx-6 과 820 가로 넘침 시험 유지 | P10 · P11 · P5c 브리프 | review-p05b-design-2 넘길 메모 |
 | P9: MIN_RETRY_MS 1초 — 2차 설정 화면의 ai.timeout_seconds.* 범위 검사에 하한(1-나 3) · P11 은 AiOutcome 실패 갈래마다 화면 길(config · safety_cap · output_blocked · RangeError 는 서버 오류) · 첨삭 refusals 는 attempts 에 · 빌드 추적 '/*' 첫 프리뷰 확인 · 1-나 dueCostAlerts → createAlertOnce scope · preCallGate ai_status 상태 · P6 forbidden 목록 iu 컴파일 통과 | P9c fix 1 · P11 · 1-나 · P6 브리프 | review-p09c 3절 M-2 · 8절 |
