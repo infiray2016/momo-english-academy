@@ -658,3 +658,7 @@ export const SPEAKING_GRAMMAR_NOTE_MAX = 1;
 export const THINKOUT_OPTIONS = 3;
 export const THINKOUT_WORDS = { min: 4, max: 6 } as const;
 export const THINKOUT_STARTERS = 2;
+/** 6.1 '1회 다시 요청' · 8절 '재시도 1회' — 논리 호출 하나의 시도 상한. */
+export const AI_ATTEMPTS_MAX = 2;
+/** 6.1 '기다림은 타임아웃의 두 배를 넘지 않게'. */
+export const AI_WAIT_TIMEOUT_MULTIPLE = 2;

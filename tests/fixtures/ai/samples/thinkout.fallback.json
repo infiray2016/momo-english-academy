@@ -1,0 +1,77 @@
+{
+  "case": "thinkout.fallback",
+  "purpose": "thinkout",
+  "title": "thinkout",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_24",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "fallback",
+          "from": {
+            "model": "claude-sonnet-5-5"
+          },
+          "to": {
+            "model": "claude-sonnet-5"
+          },
+          "trigger": {
+            "type": "refusal",
+            "category": "cyber"
+          }
+        },
+        {
+          "type": "text",
+          "text": "{\"question\": \"바다에서 무엇을 했어요?\", \"options\": [\"수영\", \"모래 놀이\", \"조개 줍기\"], \"done\": false, \"summary\": \"\", \"words\": [], \"starters\": []}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": [
+          {
+            "type": "message",
+            "model": "claude-sonnet-5-5",
+            "input_tokens": 1200,
+            "output_tokens": 30,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": null
+          },
+          {
+            "type": "fallback_message",
+            "model": "claude-sonnet-5",
+            "input_tokens": 1200,
+            "output_tokens": 180,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": null
+          }
+        ],
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true,
+    "answeredModel": "claude-sonnet-5"
+  }
+}

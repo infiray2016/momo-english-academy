@@ -1,0 +1,44 @@
+{
+  "case": "thinkout.done",
+  "purpose": "thinkout",
+  "title": "thinkout",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_7",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"question\": \"\", \"options\": [], \"done\": true, \"summary\": \"가족과 바다에 가서 수영하고 모래성을 만들었어요.\", \"words\": [\"yesterday\", \"went\", \"beach\", \"swim\", \"sand\"], \"starters\": [\"Yesterday I ___.\", \"It was ___.\"]}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "case": "error.console-tier-429",
+  "purpose": "writing_check",
+  "title": "writing_check",
+  "source": "handmade",
+  "response": {
+    "status": 429,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "rate_limit_error",
+        "message": "You will regain access on 2026-11-01 at 00:00 UTC.",
+        "details": {
+          "error_code": "enforced_spend_limit_reached"
+        }
+      },
+      "request_id": "req_handmade_error"
+    }
+  },
+  "expect": {
+    "classify": "console_limit"
+  }
+}

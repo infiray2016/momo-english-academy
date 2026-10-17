@@ -1,0 +1,43 @@
+{
+  "case": "writing_feedback.refusal",
+  "purpose": "writing_feedback",
+  "title": "writing_feedback",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_16",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [],
+      "stop_reason": "refusal",
+      "stop_sequence": null,
+      "stop_details": {
+        "type": "refusal",
+        "category": "cyber",
+        "explanation": null
+      },
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": false,
+    "refusal": true
+  }
+}

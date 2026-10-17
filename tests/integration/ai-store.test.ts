@@ -317,6 +317,8 @@ describe("6.1 · 5절 기록", () => {
       testDb.db,
       callRow({ profileId: b, costUsd: "0.002000" }),
     );
+    // 프로필이 비어 있는 실시간 호출 행(프로필 삭제 뒤 비워진 행과 같은 꼴, 5.1) — 어느 프로필의 호출 수에도 들지 않는다
+    await insertAiCall(testDb.db, callRow({ profileId: null }));
     // 다른 학습일
     await insertAiCall(
       testDb.db,
@@ -329,6 +331,10 @@ describe("6.1 · 5절 기록", () => {
     expect(
       await dailyUsage(testDb.db, { profileId: b, learningDay: DAY }),
     ).toEqual({ profileCalls: 1, householdCostMicros: 3500 });
+    // 프로필 없음(null): 호출 수 0 · 집 비용 합은 프로필 있을 때와 같다(검토 N-3, store.ts 주석의 계약)
+    expect(
+      await dailyUsage(testDb.db, { profileId: null, learningDay: DAY }),
+    ).toEqual({ profileCalls: 0, householdCostMicros: 3500 });
     expect(
       await dailyUsage(testDb.db, { profileId: b, learningDay: "2026-01-01" }),
     ).toEqual({ profileCalls: 0, householdCostMicros: 0 });

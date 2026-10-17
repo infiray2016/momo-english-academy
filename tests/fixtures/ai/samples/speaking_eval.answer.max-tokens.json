@@ -1,0 +1,44 @@
+{
+  "case": "speaking_eval.answer.max-tokens",
+  "purpose": "speaking_eval",
+  "title": "speaking_eval.answer",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_20",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"judgement\": \"partial\", \"feedback\": \"좋아",
+          "citations": null
+        }
+      ],
+      "stop_reason": "max_tokens",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 1200,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": false
+  }
+}
