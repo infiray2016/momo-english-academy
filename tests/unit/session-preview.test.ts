@@ -282,7 +282,7 @@ describe("활동 차례", () => {
     expect(tenKinds.some((k) => k.startsWith("repeat-"))).toBe(false);
   });
 
-  it("활동 차례: 시험용 시드 1단계 세 영역의 차례 번호는 P10 과 같고 P10 꼴(영역 · 내용)로 불러도 같다", () => {
+  it("활동 차례: 시험용 시드 1단계 세 영역의 차례 번호는 P10 과 같다", () => {
     // P10 차례: 읽기 미리보기 → 지문 → 문항, 쓰기 미리보기 → 문항, 말하기 미리보기 → 낱말 → 문장 → 듣기 → 질문(그림 칸 없음)
     const p10 = (content: Record<string, unknown>): string[] => {
       const n = (list: unknown) => (Array.isArray(list) ? list.length : 0);
@@ -314,7 +314,6 @@ describe("활동 차례", () => {
           activitiesOf({ area: file.area, level: file.level, content }),
         );
         expect(now).toEqual(p10(content));
-        expect(kinds(activitiesOf(file.area, content))).toEqual(now);
         seen += 1;
       }
     }

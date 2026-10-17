@@ -1,5 +1,9 @@
 // 읽기 활동 표시(plan-p05b '활동 표시 컴포넌트' reading.tsx): 지문 · 읽기 문항 · 평가 · 배치 읽기 문항 · 토리 이야기 글과 질문.
 // 내용 부분만 그린다(누르는 버튼 · 상태 · 세션 틀은 P10 · P11). 훅 · 'use client' · server-only 없음.
+// P11 세션 지문(plan-p11a 값 9)은 선택 속성 onWordTap · openWord 로 글로서리 낱말을 누르는 단추로 그리고 뜻 쪽지를 낱말 위에 띄우며
+// (상태 · 쪽지 자리 재기는 부르는 쪽이 쥔다), renderPicture 로 그림 줄의 그림을 바꿔 그린다(깨짐 대체 — 화면 검토 I-2). 세 속성이
+// 없으면 지금 그대로다(시드 보기 · 평가 지문 영향 없음).
+import type { ReactNode } from "react";
 import type { z } from "zod";
 import {
   CHILD_SIZE,
@@ -9,6 +13,7 @@ import {
   GuideLine,
   PASSAGE_PICTURE_MAX,
   PASSAGE_PICTURE_UNTIL_LEVEL,
+  type PictureInfo,
   type PictureLookup,
   SoundMark,
   VocabPicture,
@@ -67,12 +72,14 @@ function PassagePictures({
   level,
   pictures,
   decorative,
+  renderPicture,
 }: {
   words: readonly string[];
   level: number;
   pictures: PictureLookup;
   /** 평가 지문: 파일이 있는 그림만, 꾸밈 그림(alt 비움)으로. 뜻 글 대체 없음. */
   decorative: boolean;
+  renderPicture?: (picture: PictureInfo, decorative: boolean) => ReactNode;
 }) {
   if (level > PASSAGE_PICTURE_UNTIL_LEVEL) return null;
   const shown = [...new Set(words)]
@@ -87,7 +94,11 @@ function PassagePictures({
     <ul className="flex flex-wrap gap-4">
       {shown.map(({ word, picture }) => (
         <li key={word} data-passage-picture="">
-          <VocabPicture picture={picture} decorative={decorative} />
+          {renderPicture ? (
+            renderPicture(picture, decorative)
+          ) : (
+            <VocabPicture picture={picture} decorative={decorative} />
+          )}
         </li>
       ))}
     </ul>
@@ -108,6 +119,9 @@ export function ReadingPassage({
   pictures,
   readAloud = true,
   decorativePictures = false,
+  onWordTap,
+  openWord,
+  renderPicture,
 }: {
   passage: string;
   glossary?: readonly GlossaryEntry[];
@@ -124,14 +138,34 @@ export function ReadingPassage({
    * (4절 '평가 중에는 힌트와 뜻 보기가 없다'). 수업 지문은 거짓(파일이 없으면 뜻 글).
    */
   decorativePictures?: boolean;
+  /**
+   * 세션 지문(P11): 글로서리의 모든 낱말(고유 명사 빼고)을 글줄 안 단추로 그린다. 누르면 그 낱말과 지문 안 자리(글자 번호)를 넘긴다.
+   * 단추는 글줄 크기를 따라 크기 훑기의 예외 표시(data-size-exempt)를 붙인다(plan-p11a 위험 9).
+   */
+  onWordTap?: (entry: GlossaryEntry, at: number) => void;
+  /**
+   * 뜻 쪽지를 띄울 낱말 자리(onWordTap 이 받은 글자 번호)와 뜻. align end 는 쪽지 오른쪽 끝을 낱말 오른쪽 끝에 맞추고(카드 오른쪽 반의
+   * 낱말), shift 는 그래도 카드를 넘을 때 안으로 당기는 px 다(부르는 쪽이 잰다 — 화면 검토 I-3).
+   */
+  openWord?: {
+    at: number;
+    meaningKo: string;
+    align?: "start" | "end";
+    shift?: number;
+  };
+  /** 그림 줄의 그림을 바꿔 그린다(세션 지문 — 파일을 못 열면 뜻 글 상자). 없으면 VocabPicture 그대로. */
+  renderPicture?: (picture: PictureInfo, decorative: boolean) => ReactNode;
 }) {
   const marked = new Set(markWords);
-  const parts = splitPassage(
-    passage,
-    glossary
-      .filter((entry) => !entry.proper && marked.has(entry.lemma))
-      .map((entry) => entry.surface),
-  );
+  const markSurfaces = glossary
+    .filter((entry) => !entry.proper && marked.has(entry.lemma))
+    .map((entry) => entry.surface);
+  const tappable = onWordTap ? glossary.filter((entry) => !entry.proper) : [];
+  const markSet = new Set(markSurfaces);
+  const parts = splitPassage(passage, [
+    ...markSurfaces,
+    ...tappable.map((entry) => entry.surface),
+  ]);
   return (
     <div className="flex flex-col gap-4">
       <PassagePictures
@@ -139,11 +173,64 @@ export function ReadingPassage({
         level={level}
         pictures={pictures}
         decorative={decorativePictures}
+        renderPicture={renderPicture}
       />
       {readAloud ? <SoundMark label="읽어 주기" /> : null}
-      <p lang="en" className={cn(CHILD_SIZE.english, "leading-relaxed")}>
-        {parts.map((part) =>
-          part.mark ? (
+      <p
+        lang="en"
+        className={cn(
+          CHILD_SIZE.english,
+          // 세션 지문은 줄 높이를 넓혀(약 48px) 글줄 안 낱말 단추를 누르기 쉽게(화면 검토 M-3)
+          onWordTap ? "leading-[2]" : "leading-relaxed",
+        )}
+      >
+        {parts.map((part) => {
+          const entry = part.mark
+            ? tappable.find((e) => e.surface === part.text)
+            : undefined;
+          const isNew = part.mark && markSet.has(part.text);
+          if (entry && onWordTap) {
+            const open = openWord?.at === part.at;
+            return (
+              <span key={part.at} className="relative inline-block">
+                <button
+                  type="button"
+                  data-size-exempt=""
+                  data-word-tap={entry.lemma}
+                  {...(isNew ? { "data-new-word": "" } : {})}
+                  aria-expanded={open}
+                  onClick={() => onWordTap(entry, part.at)}
+                  className={cn(
+                    "rounded px-0.5 underline decoration-dotted underline-offset-4",
+                    isNew && "bg-[#FFFDF7] font-bold",
+                    open && "outline outline-2 outline-ink",
+                  )}
+                >
+                  {part.text}
+                </button>
+                {open && openWord ? (
+                  <span
+                    lang="ko"
+                    role="status"
+                    data-word-note=""
+                    className={cn(
+                      CHILD_SIZE.guide,
+                      "absolute bottom-full z-10 mb-1 w-max max-w-64 rounded-lg border-2 border-ink bg-paper px-3 py-1 font-normal leading-snug shadow-postit",
+                      openWord.align === "end" ? "right-0" : "left-0",
+                    )}
+                    style={
+                      openWord.shift
+                        ? { transform: `translateX(${openWord.shift}px)` }
+                        : undefined
+                    }
+                  >
+                    {openWord.meaningKo}
+                  </span>
+                ) : null}
+              </span>
+            );
+          }
+          return isNew ? (
             <span
               key={part.at}
               data-new-word=""
@@ -153,8 +240,8 @@ export function ReadingPassage({
             </span>
           ) : (
             <span key={part.at}>{part.text}</span>
-          ),
-        )}
+          );
+        })}
       </p>
     </div>
   );

@@ -75,15 +75,22 @@ const LegacyPreviewSchema = z.strictObject({
   shownWords: z.array(z.string()),
 });
 
-/** 시도 입력을 읽는다. 꼴이 틀리거나 JSON 글자 수가 INPUT_JSON_MAX 를 넘으면 undefined. */
+/** JSON 글의 NUL 글자 표기 — Postgres jsonb 가 받지 않아 묶음 저장 전체를 막는다(그 시도만 거부). */
+const JSON_NUL = "\\u0000";
+
+/**
+ * 시도 입력을 읽는다. 꼴이 틀리거나 JSON 글자 수가 INPUT_JSON_MAX 를 넘거나 NUL 글자가 들었으면 undefined
+ * (NUL 이 든 시도 하나가 묶음 넣기를 늘 실패시켜 기기 대기열이 막히지 않게 — 차례 2).
+ */
 export function parseAttemptInput(raw: unknown): AttemptInput | undefined {
-  let length: number;
+  let json: string | undefined;
   try {
-    length = JSON.stringify(raw)?.length ?? Number.POSITIVE_INFINITY;
+    json = JSON.stringify(raw);
   } catch {
     return undefined;
   }
-  if (length > INPUT_JSON_MAX) return undefined;
+  if (json === undefined || json.length > INPUT_JSON_MAX) return undefined;
+  if (json.includes(JSON_NUL)) return undefined;
   const parsed = AttemptInputSchema.safeParse(raw);
   if (parsed.success) return parsed.data;
   const legacy = LegacyPreviewSchema.safeParse(raw);

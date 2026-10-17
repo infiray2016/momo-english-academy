@@ -168,6 +168,16 @@ describe("시도 꼴", () => {
       tappedWords: ["x".repeat(INPUT_JSON_MAX)],
     };
     expect(parseAttemptInput(long)).toBeUndefined();
+    // NUL 글자는 jsonb 가 받지 않아 그 시도만 거부한다(묶음 저장을 막지 않게)
+    expect(
+      parseAttemptInput({
+        v: 1,
+        kind: "repeat-word",
+        step: "final",
+        heard: ["a\u0000b"],
+        failures: 0,
+      }),
+    ).toBeUndefined();
   });
 
   it("시도 꼴: 시도 종류가 활동 종류와 다르면 그 활동의 시도가 아니다", () => {

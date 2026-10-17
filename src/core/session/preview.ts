@@ -183,21 +183,8 @@ function speakingActivities(
  * 4~5 미리보기 → 과제 → 문장 전부 → 내 문장 따라 말하기, 6~12 첫 세션 미리보기 → 과제 → (생각 꺼내기) → 초고 · 둘째 세션
  * 칭찬 → 교정 → 고쳐 쓰기 → 모범 답안 → 내 문장 말하기, 말하기 미리보기 → 따라 말하기 낱말 → 문장 → 듣기 → 그림 보고 말하기 →
  * 질문 → 발표 → 확인 질문. 회화는 빈 목록(1-나).
- * 영역 · 내용 두 인자 꼴은 P10 서버가 부르는 꼴이다(첫 세션 · 생각 꺼내기 없음 · 확인 질문 0) — P11 차례 2 가 서버를 바꾸면 없앤다.
  */
-export function activitiesOf(input: ActivityModelInput): Activity[];
-export function activitiesOf<A extends Area>(
-  area: A,
-  content: ContentOf<A>,
-): Activity[];
-export function activitiesOf(
-  first: ActivityModelInput | Area,
-  content?: unknown,
-): Activity[] {
-  const input =
-    typeof first === "string"
-      ? ({ area: first, content, level: 0 } as ActivityModelInput)
-      : first;
+export function activitiesOf(input: ActivityModelInput): Activity[] {
   switch (input.area) {
     case "reading":
       return [

@@ -278,8 +278,16 @@ describe("세션 시작", () => {
     };
     const first = await saveSessionAttempts([one], deps());
     const second = await saveSessionAttempts([one], deps());
-    expect(first).toEqual({ ok: true, accepted: [one.clientAttemptId] });
-    expect(second).toEqual({ ok: true, accepted: [one.clientAttemptId] });
+    expect(first).toEqual({
+      ok: true,
+      accepted: [one.clientAttemptId],
+      rejected: [],
+    });
+    expect(second).toEqual({
+      ok: true,
+      accepted: [one.clientAttemptId],
+      rejected: [],
+    });
     expect(
       await db
         .select()
@@ -295,6 +303,7 @@ describe("세션 시작", () => {
     expect(await saveSessionAttempts([stray], deps())).toEqual({
       ok: true,
       accepted: [stray.clientAttemptId],
+      rejected: [],
     });
     expect(
       await db

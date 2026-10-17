@@ -109,6 +109,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps webkit
       - run: pnpm e2e
+        env:
+          E2E_PHOTOS: "1" # 화면 검토 사진(tests/e2e/photos.ts) — 이 Mac 은 로컬 e2e 를 못 돌려 CI 에서 받는다(P11 차례 2)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-photos
+          path: test-results/photos
+          if-no-files-found: ignore
   e2e-local: # P5b. 로컬 전용 시드 보기 화면(next dev)을 시험용 시드 나무로 연다. API 0회
     runs-on: ubuntu-24.04
     steps:
