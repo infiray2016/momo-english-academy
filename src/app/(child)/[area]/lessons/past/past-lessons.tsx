@@ -45,7 +45,8 @@ export function PastLessons({
               <span className="font-heading text-4xl leading-none">
                 {item.ref.lessonNo}
               </span>
-              <span>{item.title}</span>
+              {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82) */}
+              <span data-size-guide="">{item.title}</span>
               {item.mark === "untried" ? (
                 <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
                   {UNTRIED}

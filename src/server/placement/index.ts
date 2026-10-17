@@ -54,7 +54,7 @@ import {
 import { parentAlerts, progressEvents, settings } from "@/db/schema/operations";
 import { createAlertOnce } from "@/server/ai/store";
 import { type Db, getDb } from "@/server/db";
-import { dbErrorTag } from "@/server/db/safe-error";
+import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
 import {
   currentSeedRevision,
@@ -75,8 +75,6 @@ const MAX_RETRIES_KEY = "speech.max_retries";
 const THROUGH_KEY = "seed.complete_through_level";
 const TIMEZONE_KEY = "app.timezone";
 const DAY_START_KEY = "app.day_start_hour";
-/** Postgres 유일 제약 위반(두 기기가 함께 시작). */
-const UNIQUE_VIOLATION = "23505";
 
 // 답 입력 상한(기술 값 — 화면이 보낼 수 있는 꼴보다 넉넉하게)
 /** 보기 번호 상한. */
@@ -447,15 +445,6 @@ export async function readPlacementPage(
 }
 
 // ── 쓰기 ──
-
-function isUniqueViolation(error: unknown): boolean {
-  let current: unknown = error;
-  for (let depth = 0; current && depth < 3; depth += 1) {
-    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
-    current = (current as { cause?: unknown }).cause;
-  }
-  return false;
-}
 
 function unavailable(what: string, error: unknown): PlacementOutcome {
   if (error instanceof SettingMissingError) {

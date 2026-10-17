@@ -33,14 +33,12 @@ import {
 } from "@/db/schema/operations";
 import { now as clockNow } from "@/server/clock";
 import { type Db, type DbOrTx, getDb } from "@/server/db";
-import { dbErrorTag } from "@/server/db/safe-error";
+import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { currentSeedRevision, readLevelSpec } from "@/server/seed/read";
 import { getSettings, SettingMissingError } from "@/server/settings";
 
 const THROUGH_KEY = "seed.complete_through_level";
 const TARGET_MINUTES_KEY = "placement.target_minutes";
-/** Postgres 유일 제약 위반(두 기기가 함께 첫 실행을 끝낸 때). */
-const UNIQUE_VIOLATION = "23505";
 
 export type HouseholdProfile = typeof profiles.$inferSelect;
 export type ProfileReadOptions = { db?: DbOrTx };
@@ -108,15 +106,6 @@ async function settingValues(
   return getSettings(Object.fromEntries(keys.map((k) => [k, z.unknown()])), {
     db,
   });
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  let current: unknown = error;
-  for (let depth = 0; current && depth < 3; depth += 1) {
-    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
-    current = (current as { cause?: unknown }).cause;
-  }
-  return false;
 }
 
 /**

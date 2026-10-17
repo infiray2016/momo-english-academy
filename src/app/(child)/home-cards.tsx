@@ -77,7 +77,7 @@ function Bar({
   const ratio = max > 0 ? Math.min(1, value / max) : 0;
   return (
     <span className="flex flex-col gap-1">
-      <span>{label}</span>
+      <span data-size-guide="">{label}</span>
       <span
         aria-hidden
         className="h-3 w-full overflow-hidden rounded-full bg-paper/70"
@@ -94,7 +94,7 @@ function Bar({
 function RecentCells({ cells }: { cells: HomeCard["recent"] }) {
   return (
     <span className="flex flex-col gap-1">
-      <span>{TEXT.recent}</span>
+      <span data-size-guide="">{TEXT.recent}</span>
       <span data-recent-cells="" aria-hidden className="flex gap-1.5">
         {cells.map((cell, i) => (
           <span
@@ -120,7 +120,9 @@ function CardBody({ card, action }: { card: HomeCard; action: boolean }) {
       <span className="font-heading text-5xl leading-none">
         {TEXT.level(card.level ?? 0)}
       </span>
-      <span>{TEXT.unit(card.unit ?? 0, card.unitTopic)}</span>
+      <span data-size-guide="">
+        {TEXT.unit(card.unit ?? 0, card.unitTopic)}
+      </span>
       <UnitCells cells={card.unitCells} />
       <Bar
         label={TEXT.known(card.knownWords, card.unitWords)}
@@ -136,14 +138,16 @@ function CardBody({ card, action }: { card: HomeCard; action: boolean }) {
       ) : (
         <RecentCells cells={card.recent} />
       )}
-      <span>{TEXT.week(card.thisWeek)}</span>
+      <span data-size-guide="">{TEXT.week(card.thisWeek)}</span>
       <span className="mt-auto flex flex-col gap-2">
         {card.today.done ? (
           <span data-today="done" className="font-heading text-[22px]">
             {TEXT.todayDone}
           </span>
         ) : !card.today.newLessonDone ? (
-          <span data-today="not-yet">{TEXT.todayNotYet}</span>
+          <span data-today="not-yet" data-size-guide="">
+            {TEXT.todayNotYet}
+          </span>
         ) : null}
         {action ? (
           <span
@@ -170,12 +174,14 @@ function GateBody({ card }: { card: HomeCard }) {
           <span className="font-heading text-4xl leading-tight">
             {TEXT.findLevel}
           </span>
-          <span data-find-level-hint="">{TEXT.findLevelHint}</span>
+          <span data-find-level-hint="" data-size-guide="">
+            {TEXT.findLevelHint}
+          </span>
         </>
       ) : (
-        <span>{TEXT.needsSpeaking}</span>
+        <span data-size-guide="">{TEXT.needsSpeaking}</span>
       )}
-      <span>{TEXT.week(card.thisWeek)}</span>
+      <span data-size-guide="">{TEXT.week(card.thisWeek)}</span>
     </>
   );
 }
@@ -187,10 +193,16 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
     setMicOk(micUsable());
   }, []);
 
+  // 카드 안 보조 줄(단원 · 막대 이름 · 이번 주 · 오늘 · 안내)은 안내 글 20px 라 data-size-guide 를 단다(13절 C82 — 22px 는 영역 · 단계 · 단추 이름표)
   // 카드는 내용 높이로 위에 붙인다 — 아래로 코르크가 보이게(목업 B_Home4, 화면 검토 H-M1).
   // 카드의 읽히는 이름은 안의 글(영역 · 단계 · 상태 · 닫힘 까닭)이다 — label 을 넘기지 않는다(검토 M-3 · H-M3)
   return (
-    <div className="grid grid-cols-2 items-start gap-6 landscape:grid-cols-4">
+    <div
+      data-home-cards=""
+      // 마이크 판정이 끝나 행동 자리까지 그려졌다는 표시(e2e 크기 훑기가 기다린다 — 검토 review-p10-7-code M-2)
+      data-hydrated={micOk === undefined ? undefined : ""}
+      className="grid grid-cols-2 items-start gap-6 landscape:grid-cols-4"
+    >
       {cards.map((card, i) => {
         const tilt = TILTS[i] ?? "none";
         const needsMic = MIC_AREAS.includes(card.area);
@@ -206,7 +218,9 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
                 <span className="font-heading text-3xl">
                   {AREA_LABEL[card.area]}
                 </span>
-                <span data-mic-closed="">{TEXT.needsMic}</span>
+                <span data-mic-closed="" data-size-guide="">
+                  {TEXT.needsMic}
+                </span>
               </span>
             </PostIt>
           );

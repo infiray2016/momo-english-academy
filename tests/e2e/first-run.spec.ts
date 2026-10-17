@@ -3,16 +3,25 @@
 
 import type { Page } from "@playwright/test";
 import { test as plain } from "@playwright/test";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gte, isNull } from "drizzle-orm";
 import {
   AVATARS,
   PIN_LENGTH,
   TOPIC_BUNDLES,
 } from "../../src/core/profile/start";
-import { vocab } from "../../src/db/schema/content";
-import { profiles, profileTracks } from "../../src/db/schema/learning";
-import { parentAlerts, settings } from "../../src/db/schema/operations";
+import { lessons, vocab } from "../../src/db/schema/content";
 import {
+  profiles,
+  profileTracks,
+  sessions,
+} from "../../src/db/schema/learning";
+import {
+  aiCalls,
+  parentAlerts,
+  settings,
+} from "../../src/db/schema/operations";
+import {
+  cloneLessons,
   closeE2eDb,
   countRows,
   e2eDb,
@@ -399,4 +408,83 @@ test("AC-1c 영어 이름 칸에 vocab 의 낱말을 넣으면 '토리가 부를
   await finishFrom(page, "avatar");
   const [profile] = await e2eDb().select().from(profiles);
   expect(profile).toMatchObject({ englishName: word, toriNickname: "Tori" });
+});
+
+test("AC-1b 첫 실행에서 읽기 시작 단계를 3으로 고르면 읽기 카드는 배치 평가 없이 읽기 3단계 단원 1의 수업 1로 열리고 고르지 않은 쓰기 · 말하기 카드는 배치 평가로 열린다", async ({
+  page,
+}) => {
+  const CHOSEN = 3;
+  // 이 시험 동안의 AI 호출만 센다(앞 시험 · P11 가짜 AI e2e 의 행이 남아도 — 검토 review-p10-7-code M-5)
+  const startedAt = new Date();
+  await withHouseholdSetting(THROUGH_KEY, WIDE_THROUGH, async () => {
+    // 시험용 시드는 1단계뿐 — 3단계 단원 1 수업을 1단계 내용으로 복제한다(정할 것 서, e2e 전용)
+    await cloneLessons({
+      area: "reading",
+      fromLevel: 1,
+      toLevel: CHOSEN,
+      unit: 1,
+    });
+    await page.goto("/first-run");
+    await fillPin(page);
+    await page.getByLabel(T.displayName).fill("모모");
+    await next(page).click();
+    await expect(step(page)).toHaveAttribute("data-first-run-step", "avatar");
+    await page.getByRole("button", { name: AVATARS[0].label }).click();
+    await next(page).click();
+    await page.getByRole("button", { name: T.alphabetKnown }).click();
+    await next(page).click();
+    await page.getByRole("button", { name: TOPIC_BUNDLES[0].label }).click();
+    await next(page).click();
+    await expect(step(page)).toHaveAttribute("data-first-run-step", "level");
+    await page.getByRole("tab", { name: /^읽기/ }).click();
+    await page
+      .locator('[data-level-area="reading"]')
+      .getByRole("button", { name: `${CHOSEN}단계`, exact: true })
+      .click();
+    await next(page).click();
+    await expect(step(page)).toHaveAttribute("data-first-run-step", "mic");
+    await next(page).click();
+    await page.getByRole("button", { name: T.handoff }).click();
+    await page.waitForURL((url) => url.pathname === "/");
+
+    // 홈: 읽기 카드는 수업 목록, 고르지 않은 쓰기 · 말하기는 배치 평가로
+    const card = (area: string) =>
+      page
+        .locator("a")
+        .filter({ has: page.locator(`[data-home-card="${area}"]`) });
+    await expect(card("reading")).toContainText(`${CHOSEN}단계`);
+    await expect(card("reading")).toHaveAttribute("href", "/reading/lessons");
+    for (const area of ["writing", "speaking"]) {
+      await expect(card(area)).toHaveAttribute("href", `/${area}/placement`);
+    }
+
+    // 읽기 카드 → 수업 목록 → '여기부터 해요'(수업 1) → 그 수업의 세션
+    await card("reading").click();
+    await page.waitForURL((url) => url.pathname === "/reading/lessons");
+    await expect(page.getByText(`${CHOSEN}단계 · 단원 1`)).toBeVisible();
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    await page.locator('[data-lesson="assigned-1"]').click();
+    await page.waitForURL((url) => url.pathname.startsWith("/session/"));
+    const id = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+    const [session] = await e2eDb()
+      .select({ lessonId: sessions.lessonId, level: sessions.level })
+      .from(sessions)
+      .where(eq(sessions.id, id));
+    const [lesson] = await e2eDb()
+      .select()
+      .from(lessons)
+      .where(eq(lessons.id, session?.lessonId ?? ""));
+    expect(session?.level).toBe(CHOSEN);
+    expect(lesson).toMatchObject({
+      area: "reading",
+      level: CHOSEN,
+      unit: 1,
+      kind: "assigned",
+      lessonNo: 1,
+    });
+    // 첫 실행부터 세션 시작까지 AI 호출이 없다(AC-1b — 세션 모듈 정적 검사는 통합)
+    expect(await countRows(aiCalls, gte(aiCalls.calledAt, startedAt))).toBe(0);
+  });
 });

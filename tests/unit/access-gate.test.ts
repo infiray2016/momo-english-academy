@@ -228,6 +228,46 @@ function exportedFunctions(source: ts.SourceFile): ExportedFunction[] {
   return out;
 }
 
+/** 확인 함수가 오는 모듈(P3b)과 그 파일(자기 선언은 판정하지 않는다). */
+const GUARD_MODULE = "@/server/access/guard";
+const GUARD_FILE = "src/server/access/guard.ts";
+
+/**
+ * requireAccess 라는 이름이 이 파일에서 guard 가 아닌 곳에서 오는가 — 같은 이름의 지역 함수 · 변수 선언이나 다른 모듈에서 가져옴.
+ * 가져오기 줄이 없는 조각(시험 견본)은 판정하지 않는다(실제 파일은 tsc 가 막는다).
+ */
+function requireAccessFromElsewhere(source: ts.SourceFile): boolean {
+  for (const statement of source.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier)
+    ) {
+      const bindings = statement.importClause?.namedBindings;
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) {
+          if (
+            element.name.text === "requireAccess" &&
+            statement.moduleSpecifier.text !== GUARD_MODULE
+          )
+            return true;
+        }
+      }
+    }
+    if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.name?.text === "requireAccess"
+    )
+      return true;
+    if (ts.isVariableStatement(statement)) {
+      for (const decl of statement.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.name.text === "requireAccess")
+          return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** 파일 하나에서 첫 문장 확인을 빠뜨린 곳. `경로 함수이름 까닭` 꼴. */
 function findGuardViolations(path: string, text: string): string[] {
   const source = ts.createSourceFile(
@@ -239,6 +279,11 @@ function findGuardViolations(path: string, text: string): string[] {
   );
   const violations: string[] = [];
   const fileUseServer = hasUseServer(source.statements);
+  // 첫 문장 꼴이 맞아도 같은 이름의 가짜 확인이면 아무것도 막지 않는다(P3b 완료 보고 메모 'P10 때')
+  if (path !== GUARD_FILE && requireAccessFromElsewhere(source)) {
+    violations.push(`${path} requireAccess 가 ${GUARD_MODULE} 에서 오지 않음`);
+    return violations;
+  }
 
   if (fileUseServer) {
     for (const { name, fn } of exportedFunctions(source)) {
@@ -407,6 +452,31 @@ export { type Bar, ok };
 export type { Baz } from "./types";
 `;
     expect(findGuardViolations("src/app/actions.ts", typeExports)).toEqual([]);
+  });
+});
+
+describe("함수 안 확인 · 가져온 곳", () => {
+  it("AC-N5 함수 안 확인: 첫 문장의 requireAccess 는 @/server/access/guard 에서 가져온 것이다(같은 이름 지역 함수 견본을 잡는다)", () => {
+    // 같은 이름의 지역 함수 — 첫 문장 꼴은 맞지만 아무것도 확인하지 않는다(P3b 완료 보고 메모 'P10 때')
+    const localGuard = `"use server";
+async function requireAccess() { return; }
+export async function save() { await requireAccess(); return 1; }
+`;
+    expect(findGuardViolations("src/app/actions.ts", localGuard)).toEqual([
+      "src/app/actions.ts requireAccess 가 @/server/access/guard 에서 오지 않음",
+    ]);
+    const otherModule = `"use server";
+import { requireAccess } from "./fake-guard";
+export async function save() { await requireAccess(); return 1; }
+`;
+    expect(findGuardViolations("src/app/actions.ts", otherModule)).toEqual([
+      "src/app/actions.ts requireAccess 가 @/server/access/guard 에서 오지 않음",
+    ]);
+    const fromGuard = `"use server";
+import { requireAccess } from "@/server/access/guard";
+export async function save() { await requireAccess(); return 1; }
+`;
+    expect(findGuardViolations("src/app/actions.ts", fromGuard)).toEqual([]);
   });
 });
 
