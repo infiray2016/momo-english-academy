@@ -17,7 +17,8 @@
       "!specs",
       "!intent",
       "!.superpowers",
-      "!drizzle"
+      "!drizzle",
+      "!seed/**/*.json"
     ]
   },
   "formatter": {

@@ -209,6 +209,26 @@ describe("칸 검사: 읽기 · 수업 공통", () => {
     expect(check(reinforce, 4)).toEqual([]);
   });
 
+  it("6.4 학습 요소 범위: 같은 단계 앞 단원에서 도입된 형태는 쓸 수 있고 뒤 단원 형태는 아직 못 쓴다(C64)", () => {
+    // 견본 형태 표: 현재진행(present-progressive)은 읽기 4단계 단원 3 에서 도입된다.
+    const at = (unit: number) => {
+      const lesson = lesson4();
+      lesson.content.passage = `Tori is jumping. ${lesson.content.passage}`;
+      return checkLessonCell(lesson, {
+        area: "reading",
+        level: 4,
+        unit,
+        file: lessonFilePath("reading", 4, unit),
+        index,
+      }).filter((i) => i.rule === "learning-elements");
+    };
+    expect(at(3)).toEqual([]);
+    expect(at(4)).toEqual([]);
+    const early = at(2);
+    expect(early).toHaveLength(1);
+    expect(early[0]?.message).toContain("present-progressive");
+  });
+
   it("6.4 학습 요소 범위: 문장 길이 상한 + 1 과 범위 밖 형태(5단계 지문의 과거형)를 거부한다", () => {
     const spec = index.levelSpec("reading", 4);
     if (!spec) throw new Error("규격 없음");
