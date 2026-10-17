@@ -1,0 +1,42 @@
+name: keepalive
+# Supabase Free 의 1주 비활성 정지를 막는 활동 유지 요청(10절 운영 행). 하루 두 번 DB 에 읽기 질의 하나를 보낸다.
+# 개발용은 H3 · H15 뒤, 운영은 H8 뒤 비밀값이 생기면 돈다. 비밀값이 없는 쪽은 건너뛴다.
+on:
+  schedule:
+    - cron: "17 3,15 * * *" # UTC. 정시를 피한다(붐빌 때 일정 작업이 늦어진다)
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+jobs:
+  keepalive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: dev-db
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::notice::DEV_DATABASE_URL 이 없어 건너뛴다"
+          else
+            pnpm db:ping
+          fi
+      - name: prod-db
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::notice::PROD_DATABASE_URL 이 없어 건너뛴다"
+          else
+            pnpm db:ping
+          fi

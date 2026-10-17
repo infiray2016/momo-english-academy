@@ -273,7 +273,8 @@ export async function runSeedLoad(
     const cause = (error as { cause?: unknown })?.cause;
     return fail(`적재 중 오류(${errorTag(cause ?? error)})`);
   } finally {
-    await handle.close();
+    // 닫기 실패는 적재 결과 · 종료 코드를 덮지 않는다(접속 확인 쪽과 같다, review-p07a-2 4절)
+    await handle.close().catch(() => {});
   }
 }
 

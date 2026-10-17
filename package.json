@@ -26,7 +26,9 @@
     "seed:load": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/seed-load.ts",
     "db:dev": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dev-db.ts",
     "ai:contract": "tsx scripts/ai-contract.ts",
-    "ai:observe": "tsx scripts/ai-observe.ts"
+    "ai:observe": "tsx scripts/ai-observe.ts",
+    "check:ids": "tsx scripts/check-ids.ts",
+    "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
