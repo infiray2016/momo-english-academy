@@ -131,7 +131,7 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 | 구현 | implementer · Opus · high, 시험 먼저 | diff · `task-N-report.md` | Stop 훅(biome · vitest) 통과 |
 | 코드 검토 | code-reviewer · Opus · xhigh | `review-N.md`(심각도 · 근거) | Critical · Important 0 |
 | fix 라운드 | implementer → code-reviewer 범위 한정 재검토 | 지적별 ADDRESSED · NOT ADDRESSED | 3회 넘으면 요청자에게 |
-| 화면 검토 | design-reviewer · Opus · xhigh | Playwright 스크린샷 · 목업 · 4절 문구 · 크기 대조 | Approved |
+| 화면 검토 | design-reviewer · Fable · max(요청자 2026-10-22) | Playwright 스크린샷 · 목업 · 4절 문구 · 크기 대조 | Approved |
 | 커밋 | 요청자 지시(H14) | 커밋 · PR | — |
 
 열린 지적은 `ledger-open.md`, 닫힌 지적은 `ledger-closed.md` 에 둔다. 검토 브리프에는 새로 볼 것과 안 닫힌 것만 담는다.
@@ -184,7 +184,7 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 - 녹음하지 않는다. 생각 꺼내기 · 쓰기 입력의 전화번호 · 주소 형태는 보내기 전에 가린다(6.1).
 - 아이 화면은 한 화면 한 행동 · 해요체 · 안내 20px · 영어 24px · 버튼 22px · 누르는 곳 56 × 56px · 퍼센트 없음이다. 기다림 표시는 ui.wait_hint_seconds(1 · 5)다(4절).
 - 용어는 영역 · 단계 · 단원 · 활동 · 토막이다. '트랙' · '유닛'을 쓰지 않는다. 코드 식별자는 영어다.
-- 서브에이전트는 호출마다 model · effort 를 적는다. implementer Opus · high, code-reviewer · design-reviewer · analyst Opus · xhigh, 규격 설계 curriculum-designer Opus · xhigh, 본 생성은 H10 결정, 단순 작업 Sonnet · low. 구현자와 검토자를 나눈다. 커밋은 요청자 지시 때만.
+- 서브에이전트는 호출마다 model · effort 를 적는다. implementer Opus · high, code-reviewer · analyst Opus · xhigh, design-reviewer Fable · max(요청자 2026-10-22), 규격 설계 curriculum-designer Opus · xhigh, 본 생성은 H10 결정, 단순 작업 Sonnet · low. 구현자와 검토자를 나눈다. 커밋은 요청자 지시 때만.
 - 비밀값 · 아이 이름은 저장소 · 장부 · 대화에 적지 않는다. `.env.example` 은 이름만 둔다.
 - 1-가 프리뷰의 학습 기록은 운영 DB 로 옮기지 않는다(11절).
 

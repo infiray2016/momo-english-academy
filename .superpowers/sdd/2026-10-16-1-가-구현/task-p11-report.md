@@ -632,3 +632,86 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 fix 5b(2026-10-22, CI 11차 run 39731870212 e2e 1 실패 + 코드 재검토 review-p11-fix5-code 새 Minor 2): **(1) 원인 — 앱 쪽 표지 결함(시험 기대는 맞음):** 이유 줄은 그려졌지만 `GuideLine`(`src/components/activities/common.tsx` — children · className 만 받음)에 단 `data-fix-reason` 이 DOM 에 넘어가지 않아 시험이 표지를 못 찾았다. 가짜 응답의 reason · 서버 `outcomeOf` 의 `reason: found.reason`(새 결과 · 저장 결과 같은 길) · 그리는 조건(`fixDone` 이고 reason 이 있을 때)은 맞다. tsc 는 JSX 의 붙임표 속성을 형 검사하지 않아 잡지 못했다. 고침: `src/components/session/writing-guided.tsx:518` 같은 꼴(안내 20px `CHILD_SIZE.guide`)의 `p` 에 표지를 단다. 다른 조각에 `data-*` 를 단 곳은 이것 하나뿐(grep 확인). **(2-가)** 5단계 입력란 `max-w-full`(:406) — 60 자 가까이 써도 문장 줄 너비를 넘지 않음. **(2-나)** `src/server/writing/index.ts:42` `GuidedFix` 머리 주석을 C86(이유는 바르게 고친 뒤에만 보임) · 모범 답안 없음으로 고침. 다시 찍히는 사진: '쓰기 4~5: …' 시험의 `p11-writing-4-*` · `-5-*`(내용 같음 — 이유 줄은 전과 같이 보임). 로컬: biome ci 0 · tsc 0 · 단위 504 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.
 
 fix 5c(2026-10-22, CI 12차 run 39733003650 e2e 1 실패 — '쓰기 4~5: …' `fitsBothWays` 가로 1180 × 820 에서 문서 높이 869, 5단계 고친 뒤 화면): **원인 — 앱 화면 넘침.** fix 5 가 결과 단계에도 둔 과제 줄 · 5단계 예시문(다르게 한 것 2)에 이유 줄이 더해져 한 화면을 넘었다. **고침(컨트롤러 결정 fix 5c):** `src/components/session/writing-guided.tsx` 결과 단계(칭찬 · 고칠 곳 · 보기 · 이유)에서 과제 줄(:342)과 예시문(:343, 브리프 항목 6 의 원래 범위 — 쓰기 · 기다림 동안만)을 숨기고, 문장 목록 간격을 결과 단계만 24 → 8px(:353)로 줄였다. 글자 20 · 24px · 누르는 곳 56px(색칠 칸 · 보기 · '다음')은 그대로. 어림: 과제 줄 + 간격 약 52px · 예시문 + 간격 약 89px · 문장 사이 2 × 16px 로 약 170px 줄어 견본(3문장)은 약 700px, 실시드 4문장(문장 줄 56 + 8px 더함)도 약 760px 로 820 안. 세로(820 × 1180)는 줄기만 함. 결과가 오면 과제 줄이 사라져 문장 줄이 위로 올라가는 것(화면 검토 '참고')은 다시 생긴다 — 한 화면에 드는 쪽을 골랐다(컨트롤러 결정). 다시 찍히는 사진: `p11-writing-4-check` · `-options` · `-pick-again` · `-fixed` 와 `-5-` 같은 넷(결과 단계 꼴이 바뀜). 로컬: biome ci 0 · tsc 0 · 단위 504 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.
+
+## 차례 6 — 쓰기 6~12 첫 세션(생각 꺼내기 · 초고 · 첨삭 보내기 · 결과)(검토 묶음 B2, 2026-10-22 16:xx)
+
+바탕 HEAD 84b0669(차례 5 커밋), 커밋 없음. 브리프 `task-p11-6.md` = plan-p11b 작업 2(값 3 · 5 · 7 · 9 · 10). 통합 · e2e 는 CI.
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/core/writing/feedback.ts` | 신규 | 값 5 — `FeedbackState`(대기 failures · refusals · claimedAt? / 옴 value / 못 함 refusal · failures) · `feedbackStateOf`(Zod) · `nextFeedbackState`(옴 · 거절 수 · 실패 수, 안전 상한 · 설정 문제는 셈 그대로) · `REFUSALS_TO_FAIL` 2 · `rubricScore`(평균 ÷ 4 — P11a `rubricScoreOf`) · 기술 상한 `THINKOUT_ANSWER_MAX` 100 · `DRAFT_TEXT_MAX` 3000(화면 · 서버 같이 씀) |
+| `src/server/writing/composition.ts` | 신규 · **계획 표 밖(plan 은 `writing/index.ts` 하나 — 길어 나누고 index 가 다시 내보냄)** | 값 3 — `thinkoutStep`(233: 진행 시도 턴 차례로 앞 턴 기록(저장한 historyEntry 글자 그대로 + 다음 턴의 답) · turn = 턴 수 + 1 · 첫 턴만 답 없음, `thinkoutTurn` → 끝이 아니면 진행 시도 · 끝이면 끝 시도 { summary, words, starters } · 실패 · 출력 막힘 · 서버에서 던짐 → 끝 시도 { failed } 와 fallback · 안전 상한 → 시도 없이 ai_resting, 같은 시도 id · 끝 시도가 있으면 저장 결과) · `submitDraft`(378: 앞 활동 끝 시도가 다 있어야 — 없으면 incomplete, 한 트랜잭션에 초고 끝 시도(첨삭 대기 · 0 · 0) + 첫 세션 완료 · 끝낸 학습일 · 점수 비움, 응답 뒤 `schedule(runFeedback)`, 기본 Next `after()`) · `runFeedback`(490: 잡기 UPDATE — 대기 · claimedAt 없음 또는 AI_WAIT_TIMEOUT_MULTIPLE × ai.timeout_seconds.feedback 지남, 시각은 매개변수, 못 잡으면 안 부름 → `writeFeedback`(생각 꺼내기 요약을 넘김) → `nextFeedbackState` → 옴: 시도 done · 점수 + 첫 세션 점수 / 못 함: feedback_failed + `createAlertOnce`(feedback_failed · 시도 id 키 · once key · 값 sessionId · reason) / 대기: 셈만) · `feedbackStatus`(627). 아이에게 돌려주는 AI 글은 `fillNameDeep`(차례 5 함수), 저장은 가린 글 |
+| `src/server/writing/status.ts` | 신규 · 계획 표 밖 | `draftFeedbackOf` — 첨삭 상태 · 낸 시각 읽기. AI 층을 가져오지 않아 결과 화면 서버가 첨삭 호출 길과 떨어짐 |
+| `src/server/writing/index.ts` | 수정 | composition 다시 내보냄 |
+| `src/server/actions/writing.ts` | 수정 | `thinkoutNext` · `submitDraft`(schedule = `after`) · `draftFeedbackStatus` — 첫 문장 `await requireAccess()` |
+| `src/server/session/index.ts` | 수정 | 값 9 — 시작: 쓰기이고 단계 ≥ `writing.split_from_level` 이면 `writing_part: "draft"`(535). 끝내기: draft 세션은 거부(719, 초고 제출이 끝냄). 화면 자료 `composition`(974 `compositionViewOf` — 분량 줄(낱말 범위 먼저 · 없으면 문장 · 둘 다 없으면 던짐) · 생각 꺼내기 끝(이름 채움) · 마지막 진행 질문 · 가장 늦은 초고 진행 글). `SpecBits.amount` 범위 칸 |
+| `src/server/session/result.ts` | 수정 | 값 10 — draft 끝난 세션이면 `draft: { state, submittedAt, waitSeconds(ai.timeout_seconds.feedback), lessonId, waitHintSeconds }` |
+| `src/components/session/writing-composition.tsx` | 신규 | 값 7 — `CompositionTaskActivity`(과제 · 예시 · '다음') · `ThinkoutActivity`(들어오면 첫 질문을 부름, 질문 28px · 보기 셋 · '직접 쓸래요' → 비제어 한글 입력 '한글로 짧게 써도 돼요' · '보내기', 기다림 WaitHint, 끊김이면 7절 안내 · online 때 같은 시도 id) · `DraftActivity`('내 생각' · '쓸 수 있는 단어'(누르면 읽어 줌) · '이렇게 시작해 봐요', 실패면 '이번에는 바로 써 볼까요' + '예시' + 시드 힌트, 분량 줄 · '지금 n단어', 영어 입력란(자동 수정 · 대문자 · 맞춤법 끔 · lang en · maxLength), 멈추면 DRAFT_AUTOSAVE_MS 3000 · 떠나면 · 숨으면 · '홈' 앞 자동 저장, 가로는 두 칸) |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | 6~12 과제 · 생각 꺼내기(끝 시도는 서버 — `advance`) · 초고(자동 저장 = `draft` 진행 시도를 대기열에, '다 썼어요' = 대기열 비움 → `submitDraft`, incomplete 면 한 번 더 → 결과 주소), '홈' 앞 초고 저장 |
+| `src/app/(child)/result/[id]/result-view.tsx` | 수정 | 값 10 — 제목 '글을 보냈어요. 첨삭이 오면 고쳐 쓰고 별을 받아요', 큰 단추 자리 WaitHint → `FEEDBACK_POLL_MS` 3000 마다 상태 → 옴 '첨삭 보기'(그 수업 `start`) · 못 함 또는 낸 뒤 상한 지남 '수업 목록'(작은 '홈'은 띠) |
+| `tests/e2e/fake-ai.ts` · `lessons.ts` | 수정 | `thinkoutReply` · `feedbackReply` · `FAKE_THINKOUT`, `compositionSample()` · `openLessonSession(…, { writingPart })` |
+| `tests/unit/writing-feedback-state.test.ts` · `tests/integration/writing-feedback.test.ts` | 신규 | 아래 |
+| `tests/e2e/writing.spec.ts` · `timeout.spec.ts` · `resume.spec.ts` | 수정 | 아래(resume 은 `beforeEach` · `afterEach(resetFakeAi)` 더함) |
+
+### 시험 수
+
+단위 504 → **507**(+3, 파일 54). 통합 신규 다섯(writing-feedback). e2e 신규 셋. spec:trace missing-test 19 → 17.
+
+덮는 시험(증명 표 글자 그대로):
+- 단위 "첨삭 상태: 거절 둘이면 못 함 · 그 밖 실패는 ai.feedback_max_attempts 에서 못 함 · 안전 상한과 설정 문제는 셈이 그대로다" + 접두 없는 둘(채점표 점수 · 상태 글 읽기, 글자 상한 ≤ 시도 꼴 상한)
+- 통합 `writing-feedback.test.ts`: "AC-4c 초고 제출 서버 액션은 첨삭을 기다리지 않고 돌아오고 첨삭은 응답 뒤에 불려 첫 세션 점수를 채점표 평균 ÷ 4 로 채운다" · "AC-4c 생각 꺼내기는 writing.thinkout_max_turns 턴째에 끝내라는 요청을 보내고 그 뒤로는 부르지 않는다" · "AC-8k 같은 초고의 첨삭이 거절로 두 번 끝나면 더 부르지 않고 attempts 가 '첨삭 못 함'이 되며 부모 알림이 생기고 그 수업을 다시 고르면 빈 새 초고 화면이 열린다" · "AC-8n 거절이 아닌 까닭으로 같은 초고의 첨삭이 ai.feedback_max_attempts 번 실패하면 '첨삭 못 함'이 되고 부모 알림이 생기며 안전 상한 · 설정 문제는 실패 수에 들지 않는다" · "첨삭: 같은 초고를 두 요청이 함께 부르면 호출은 하나다"
+- e2e `writing.spec.ts` "AC-4c 쓰기 6단계 첫 세션에서 생각 꺼내기는 writing.thinkout_max_turns 턴에서 앱이 끝내고 초고를 내면 세션이 끝나며 결과 화면에 '글을 보냈어요. 첨삭이 오면 고쳐 쓰고 별을 받아요'와 기다림 표시가 보이고 첨삭이 오면 큰 버튼이 '첨삭 보기'가 된다"(목록에서 골라 서버가 draft 로 엶 · 보기 누름 · '직접 쓸래요' · 마지막 턴 말 · 첨삭 하나 · 세션 점수 = 채점표) · `timeout.spec.ts` "AC-8d 응답을 늦춘 고정 표본에서 10초 타임아웃 뒤 생각 꺼내기는 '이번에는 바로 써 볼까요'와 과제 예시 · 시드 힌트가 붙은 초고 화면으로 넘어간다" · `resume.spec.ts` "AC-6a 쓰기 6단계 초고를 쓰다 앱을 닫고 다시 열면 초고 화면에 쓴 글이 그대로 있다"
+
+빨강 먼저: 단위 첨삭 상태는 모듈이 없을 때 실패를 봤다. 통합 · e2e 는 CI.
+
+### 다르게 한 것과 까닭
+
+1. **초고 입력은 기기 자판 입력란**(브리프 범위 줄의 '앱 안 영문 자판'과 다름) — 4절 쓰기 세션 행 '6단계부터 자유 입력란 · 기기 자판 입력란은 자동 수정 … 끈다'와 plan 값 7 '입력란(영어, 자동 수정 · 대문자 · 맞춤법 · 추천 끔)'을 따랐다(정본이 이김). 앱 안 자판은 1~3단계 몫이다. → 정할 것 1.
+2. **`submitDraft` 는 앞 활동 끝 시도가 다 있어야 받는다**(없으면 incomplete · 빠진 번호) — 세션을 끝내는 길이라 미리보기 '만난 단어' 끝 시도가 대기열에 남은 채 세션이 닫혀 버려지지 않게(끝난 세션의 늦은 시도는 받은 것으로 치고 버림). 화면은 대기열을 비운 뒤 내고, incomplete 면 한 번 더.
+3. **쓰기 서버를 `composition.ts` · `status.ts` 로 나눔** — 첨삭 상태 읽기(결과 화면)가 AI 층을 가져오지 않게.
+4. **draft 세션의 `finishLessonSession` 은 거부**(invalid) — 초고 제출만 끝낸다(값 3 '쓰기 6단계 이상 첫 세션은 a 의 finishSession 길을 쓰지 않는다'를 서버에서도 지킴).
+5. **생각 꺼내기 끝의 '쓸 수 있는 단어'는 P9b 정규화 그대로** — 수업 새 단어 먼저 + 그 단계 어휘 범위 낱말만(가짜 응답의 낱말이 vocab 에 없으면 새 단어만 남음, e2e 는 줄이 보이는지만 본다).
+6. **결과 화면 '첨삭 보기'는 그 수업 `startLesson`** — 둘째 세션 시작 판정(part rewrite)은 차례 7 이라, 차례 7 전에는 같은 수업의 새 첫 세션이 열린다(값 10 · 11 순서 그대로). → 정할 것 2.
+7. **일기 과제 '부모님도 볼 수 있어요'는 그리지 않음**(정할 것 ㄹ — 시드 표시 칸 없음, 1-가 시드 7단계 미만).
+
+### 정할 것(컨트롤러)
+
+| 번호 | 무엇 | 고른 것 | 까닭 |
+|---|---|---|---|
+| 1 | 초고 입력 꼴(브리프 '앱 안 영문 자판' ↔ 4절 · plan 값 7 '기기 자판 입력란') | 기기 자판 입력란 | 정본 4절이 6단계부터 자유 입력란 · 기기 자판으로 적음 |
+| 2 | 차례 7 전 결과 화면 '첨삭 보기' | 그 수업을 연다(지금은 새 첫 세션) | 둘째 세션 판정은 차례 7(값 11). 차례 6 만 커밋하면 프리뷰에서 '첨삭 보기'가 새 초고를 연다 — 차례 6 · 7 을 함께 프리뷰에 올리기를 권함 |
+
+### 사진 이름(E2E_PHOTOS, 각 두 방향)
+
+`p11-writing-6-task` · `-6-thinkout`(질문 · 보기 셋) · `-6-thinkout-typing`(직접 쓸래요) · `-6-draft`(내 생각 · 쓸 수 있는 단어 · 시작 틀) · `-6-draft-written` · `-6-sent`('글을 보냈어요 …' + 기다림) · `-6-feedback-ready`('첨삭 보기') · `-6-fallback`('이번에는 바로 써 볼까요' + 예시 · 힌트) · `p11-resume-draft`.
+
+### 차례 7 에 넘기는 것
+
+- 둘째 세션: `judgeLessonStart` 의 part rewrite · 세션 행 `writing_part: "rewrite"`(첫 세션 lesson_id · 판) · 화면 자료 `{ praise, corrections, draftText }`(첨삭 값은 `feedbackStateOf(...).value` — 이름 채움 `fillNameDeep`) · `submitRewrite`(모범 답안은 그때만, 빈 글이면 건너뜀). 결과 화면 '첨삭 보기'가 그 길을 탄다.
+- 밀린 첨삭 `retryPendingFeedback` 은 `runFeedback` 을 그대로 쓴다(잡기가 겹침을 막음). 늦은 초고(중단된 draft 세션의 draft 진행 시도 받기) · 되살림(AC-2e) · '첨삭 못 함' 뒤 빈 새 초고(지금도 새 세션은 비어 있음 — 되살림이 생기면 못 함 세션은 빼야 함).
+
+### 관문(로컬)
+
+```
+pnpm biome ci .           → Checked 319 files. No fixes applied.
+pnpm test                 → Test Files 54 passed (54) · Tests 507 passed | 6 todo (513)
+pnpm exec tsc --noEmit    → exit 0
+pnpm build                → ✓ Compiled successfully
+pnpm check:deps           → ✔ no dependency violations found (166 modules, 763 dependencies cruised)
+pnpm check:ids            → design-number 35(새 줄 0)
+pnpm check:bundle         → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test 17)
+```
+
+### 남은 우려
+
+- 통합 · e2e 는 아직 한 번도 돌지 않았다. 특히 (가) 6단계 견본 하나만 넣은 단원에서 목록 → 시작(e2e AC-4c), (나) after() 첨삭이 빌드된 서버에서 응답 뒤 돌아 결과 화면이 3초 다시 읽기로 '첨삭 보기'로 바뀌는지, (다) 초고 화면 두 방향 높이(가로는 두 칸으로 나눔 — `fitsBothWays` 는 넣지 않았고 사진으로 봄).
+- `runFeedback` 이 잡은 뒤 서버가 죽으면 잡은 시각이 AI 기다림 상한(120초) 지날 때까지 그 초고는 다른 요청이 부르지 않는다(값 3 대로 — 밀린 첨삭이 다음 진입에 부름).
+
+상태: CI 돌려 달라(로컬 관문 초록).
+
+fix 6(2026-10-22, 코드 검토 review-p11-6-code Approved M 3 — 브리프 task-p11-fix6.md): **M-1** 생각 꺼내기 `{NAME}` 채움을 지키는 통합 시험 `tests/integration/writing-feedback.test.ts` "생각 꺼내기: AI 글의 {NAME} 은 턴 결과 · 다시 연 화면 자료에서 영어 이름으로 채우고 저장은 가린 글 그대로다"(질문 · 보기 · 요약 · 시작 틀에 `{NAME}` 이 든 가짜 응답 → 턴 결과 · `composition.thinkoutTurn` · `composition.thinkout` 에 영어 이름 · `{NAME}` 없음, 저장 시도 둘은 `{NAME}` 그대로 · 영어 이름 없음 — 채움 네 자리 가운데 하나가 빠지면 실패). 코드 변화 없음. **M-2** '쓸 수 있는 단어' 낱말 칩을 `SmallButton`(22px) 대신 24px(`CHILD_SIZE.choice`) · 56px · `lang="en"` 누르는 칩으로(`src/components/session/writing-composition.tsx:421`, 누르면 읽어 줌 그대로) — 사진 `p11-writing-6-draft-*`. **M-3** 틀의 초고 제출(`src/app/(child)/session/[id]/session-frame.tsx:803` 부근)이 두 번 낸 뒤에도 incomplete 이면 빠진 활동 가운데 이 기기 대기열에 없는 첫 활동으로 돌아간다(a 끝내기와 같은 꼴, 안내 문구 없음 — 끝내기도 문구 없이 옮김). 쓴 초고는 기기 입력에 남아 다시 오면 그대로. e2e `tests/e2e/resume.spec.ts` 신규 "쓰기 6~12: 초고를 낼 때 서버에 빠진 앞 활동이 있으면 그 활동으로 돌아가고 다시 오면 쓴 글 그대로 낸다"(과제 끝 시도가 서버에 닿은 뒤 DB 에서 지워 만든다 → '다 썼어요' → 과제로 → '다음' → 초고 글 그대로 → 결과). 시험 수: 단위 507 그대로, 통합 +1, e2e +1. 로컬: biome ci 0 · tsc 0 · 단위 507 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 차례 7 에 넘기는 관찰 둘(restored 를 실패로 읽는 두 자리 · AC-8k 빈 새 초고 단언)은 브리프대로 고치지 않음. 커밋 없음.
+
+fix 6b(2026-10-22, 화면 검토 review-p11-6-design Approved M 2 — 브리프 task-p11-fix6b.md): **M-1**(실패 길 힌트 언어) — 컨트롤러 결정 '한국어'. 힌트 목록(`data-draft-hints`)에 `lang` 이 없음을 확인, 코드 변화 없음. **M-2** 초고 입력란이 글에 맞춰 늘어남: `src/components/session/writing-composition.tsx` 이름 붙인 화면 꼴 상수 `DRAFT_ROWS_MIN` 5 · `DRAFT_ROWS_MAX_LANDSCAPE` 8 · `DRAFT_ROWS_MAX_PORTRAIT` 10(설계 숫자 아님), 방향은 `matchMedia("(orientation: landscape)")` 로 고르고 글 · 방향이 바뀔 때 `useLayoutEffect` 가 높이를 `min(글 높이, 상한 줄 수 × 줄 높이 + 안쪽 여백 · 테)` 로 맞춤(처음 · 짧은 글은 rows 5), `resize-none`. 상한보다 길면 입력란 안에서 넘김(2차 7~12 분량). e2e `writing.spec.ts` AC-4c 시험에 6단계 초고 화면 단언: 단계 규격 `amount.words.max` 만큼(긴 낱말 글) 써서 `fitsBothWays`(두 방향 문서 높이 ≤ 보는 창) + 가로에서 입력란 `scrollHeight ≤ clientHeight`(안에서 넘기지 않음), 사진 `p11-writing-6-draft-long-landscape`(새). 로컬: biome ci 0 · tsc 0 · 단위 507 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.

@@ -25,3 +25,6 @@ seed/reports/inbox.json
 
 # Codex 아바타 시제품의 VRM 모델(각 18~19MB) — 받는 법은 prototypes/teacher-avatar/README.md
 prototypes/teacher-avatar/public/models/*.vrm
+
+# Playwright MCP 가 남기는 스크린샷 · 기록
+.playwright-mcp/
