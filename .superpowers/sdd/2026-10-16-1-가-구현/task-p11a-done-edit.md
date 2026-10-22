@@ -1,11 +1,11 @@
 # 편집 브리프: plan-p11a 완료 보고 채우기(문서 반영 편집자 · Opus · high, 2026-10-18 08:3x 작성 — 차례 4 커밋 뒤 컨트롤러가 해시 · CI 번호를 채워 띄움)
 
-P11a(세션 바탕 · 읽기 · 쓰기 1~3 · 말하기 1~2, 앱 채점) 구현이 차례 1~4 로 끝났다. `intent/2026-10-15-모모-잉글리시-아카데미/plan-p11a-세션-바탕-앱-채점.md` 의 '완료 보고 (Done)' 절을 채우고 머리 상태를 `done(2026-10-18, 커밋 COMMIT4)` 으로 바꾼다. **설계 · 본문은 고치지 않는다.** 묶음 plan `plan.md` 의 P11a 행(배정표 · 완료 판정 칸)을 'done · 커밋 COMMIT4' 으로. 저장소 `/Users/hikaru/workspace/momo-english-academy`(문서 가지), 커밋하지 않는다.
+P11a(세션 바탕 · 읽기 · 쓰기 1~3 · 말하기 1~2, 앱 채점) 구현이 차례 1~4 로 끝났다. `intent/2026-10-15-모모-잉글리시-아카데미/plan-p11a-세션-바탕-앱-채점.md` 의 '완료 보고 (Done)' 절을 채우고 머리 상태를 `done(2026-10-18, 커밋 79ee1cc)` 으로 바꾼다. **설계 · 본문은 고치지 않는다.** 묶음 plan `plan.md` 의 P11a 행(배정표 · 완료 판정 칸)을 'done · 커밋 79ee1cc' 으로. 저장소 `/Users/hikaru/workspace/momo-english-academy`(문서 가지), 커밋하지 않는다.
 
 ## 원문(여기서만 옮긴다)
 1. 구현자 보고 `.superpowers/sdd/2026-10-16-1-가-구현/task-p11-report.md` 전체 — 차례 1 · fix 1 · 차례 2 · fix 2 · 차례 3 · fix 3 · 차례 4(· fix) · **'P11a 완료 보고에 넣을 것'** 절.
 2. 검토 보고: review-p11-1-code · -fix1-code · -2-code · -2-design · -fix2-design · -fix2-code · -3-code · -3-design · -fix3-design · -fix3-code · -4-code · -4-design(· fix 재검토).
-3. 장부 `progress.md`(P11 행 — 커밋 c8db4f5 · d798b6e · 52f30a8 · COMMIT4, 바탕 dc5308d · 9b97f4d · 6e09901 · 7794633 · 1d6ad23 · ccbd899 · b648c8c, CI 1~N차 번호와 결과, 공용 변경 1 · 2) · `ledger-open.md`(P11 에서 넘긴 것: P12 지문 그림 대체 · P12 조립 카드 표시 · P8 C84 · 동음이의어 …) · `ledger-closed.md`.
+3. 장부 `progress.md`(P11 행 — 커밋 c8db4f5 · d798b6e · 52f30a8 · 79ee1cc, 바탕 dc5308d · 9b97f4d · 6e09901 · 7794633 · 1d6ad23 · ccbd899 · b648c8c, CI 1~N차 번호와 결과, 공용 변경 1 · 2) · `ledger-open.md`(P11 에서 넘긴 것: P12 지문 그림 대체 · P12 조립 카드 표시 · P8 C84 · 동음이의어 …) · `ledger-closed.md`.
 4. 13절 C76~C84(`specs/10-결정-기록.md`)와 plan-p11a '정할 것' 가~카 · '정본 밖 문구' 표(받아쓰기 '다 썼어요' 행 추가됨).
 
 ## 적을 것
