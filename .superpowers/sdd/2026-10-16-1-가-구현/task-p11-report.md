@@ -715,3 +715,82 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test
 fix 6(2026-10-22, 코드 검토 review-p11-6-code Approved M 3 — 브리프 task-p11-fix6.md): **M-1** 생각 꺼내기 `{NAME}` 채움을 지키는 통합 시험 `tests/integration/writing-feedback.test.ts` "생각 꺼내기: AI 글의 {NAME} 은 턴 결과 · 다시 연 화면 자료에서 영어 이름으로 채우고 저장은 가린 글 그대로다"(질문 · 보기 · 요약 · 시작 틀에 `{NAME}` 이 든 가짜 응답 → 턴 결과 · `composition.thinkoutTurn` · `composition.thinkout` 에 영어 이름 · `{NAME}` 없음, 저장 시도 둘은 `{NAME}` 그대로 · 영어 이름 없음 — 채움 네 자리 가운데 하나가 빠지면 실패). 코드 변화 없음. **M-2** '쓸 수 있는 단어' 낱말 칩을 `SmallButton`(22px) 대신 24px(`CHILD_SIZE.choice`) · 56px · `lang="en"` 누르는 칩으로(`src/components/session/writing-composition.tsx:421`, 누르면 읽어 줌 그대로) — 사진 `p11-writing-6-draft-*`. **M-3** 틀의 초고 제출(`src/app/(child)/session/[id]/session-frame.tsx:803` 부근)이 두 번 낸 뒤에도 incomplete 이면 빠진 활동 가운데 이 기기 대기열에 없는 첫 활동으로 돌아간다(a 끝내기와 같은 꼴, 안내 문구 없음 — 끝내기도 문구 없이 옮김). 쓴 초고는 기기 입력에 남아 다시 오면 그대로. e2e `tests/e2e/resume.spec.ts` 신규 "쓰기 6~12: 초고를 낼 때 서버에 빠진 앞 활동이 있으면 그 활동으로 돌아가고 다시 오면 쓴 글 그대로 낸다"(과제 끝 시도가 서버에 닿은 뒤 DB 에서 지워 만든다 → '다 썼어요' → 과제로 → '다음' → 초고 글 그대로 → 결과). 시험 수: 단위 507 그대로, 통합 +1, e2e +1. 로컬: biome ci 0 · tsc 0 · 단위 507 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 차례 7 에 넘기는 관찰 둘(restored 를 실패로 읽는 두 자리 · AC-8k 빈 새 초고 단언)은 브리프대로 고치지 않음. 커밋 없음.
 
 fix 6b(2026-10-22, 화면 검토 review-p11-6-design Approved M 2 — 브리프 task-p11-fix6b.md): **M-1**(실패 길 힌트 언어) — 컨트롤러 결정 '한국어'. 힌트 목록(`data-draft-hints`)에 `lang` 이 없음을 확인, 코드 변화 없음. **M-2** 초고 입력란이 글에 맞춰 늘어남: `src/components/session/writing-composition.tsx` 이름 붙인 화면 꼴 상수 `DRAFT_ROWS_MIN` 5 · `DRAFT_ROWS_MAX_LANDSCAPE` 8 · `DRAFT_ROWS_MAX_PORTRAIT` 10(설계 숫자 아님), 방향은 `matchMedia("(orientation: landscape)")` 로 고르고 글 · 방향이 바뀔 때 `useLayoutEffect` 가 높이를 `min(글 높이, 상한 줄 수 × 줄 높이 + 안쪽 여백 · 테)` 로 맞춤(처음 · 짧은 글은 rows 5), `resize-none`. 상한보다 길면 입력란 안에서 넘김(2차 7~12 분량). e2e `writing.spec.ts` AC-4c 시험에 6단계 초고 화면 단언: 단계 규격 `amount.words.max` 만큼(긴 낱말 글) 써서 `fitsBothWays`(두 방향 문서 높이 ≤ 보는 창) + 가로에서 입력란 `scrollHeight ≤ clientHeight`(안에서 넘기지 않음), 사진 `p11-writing-6-draft-long-landscape`(새). 로컬: biome ci 0 · tsc 0 · 단위 507 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.
+
+## 차례 7 — 쓰기 6~12 둘째 세션 · 목록 '첨삭 보기' · 홈 '첨삭이 왔어요' · 밀린 첨삭 · 되살림(검토 묶음 B3, 2026-10-22 17:xx)
+
+바탕 HEAD 56acaec 뒤 차례 6 커밋(fix 6 · 6b 포함), 커밋 없음. 브리프 `task-p11-7.md` = plan-p11b 작업 3(값 9 · 11 · 12 · writing-rewrite). 통합 · e2e 는 CI.
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/core/lesson-list/state.ts` | 수정 | 값 11 — `SessionLite.writingPart` · `WritingDraft` · `ListInput.writingDrafts`. 끝낸 수업은 첫 세션(draft)이 아니라 둘째 세션이 끝나야(`triedRef`), `judgeLessonStart` 는 그 칸이 첨삭 옴이면 `{ part: "rewrite", draftSessionId, lessonRowId, kind: 첫 세션 종류 }`(하던 다른 수업은 abort) · 대기면 `{ ok: false, reason: "feedback_pending", draftSessionId }` · 못 함이면 새 첫 세션. `top` 의 첨삭 보기에 `lessonId`. 첨삭 대기 · 온 칸은 '여기부터 해요' 새 수업 후보에서 뺌. `unitGateOf` 정규 수업 수에서 둘째 세션을 뺌(학습일은 둘 다) |
+| `src/server/lesson-list/index.ts` | 수정 | `writingDraftsOf`(154) — 칸마다 가장 늦은 끝난 첫 세션 · 초고 첨삭 상태(그 뒤 둘째 세션이 끝난 칸은 뺌), `feedbackReady` = 그 가운데 옴, 세션의 `writingPart` |
+| `src/server/session/index.ts` | 수정 | 값 9 — 시작: 둘째 세션(519 — 첫 세션의 수업 행 · 종류 · 판 그대로, `writing_part: "rewrite"`), 안전 상한은 둘째 세션을 막지 않음, feedback_pending 에 첫 세션 id. 되살림 `restoreDraftInto`(624 — 같은 칸의 가장 최근 첫 세션이 중단이면 마지막 초고 진행 글 · 생각 꺼내기 끝(요약 있는 것)을 새 세션에 시도로 옮김(생각 꺼내기는 `restored`), 가장 최근이 끝난 것 — 첨삭 못 함 포함 — 이면 되살리지 않음). 늦은 초고(767 — 중단된 세션은 쓰기 첫 세션의 `draft` 진행 시도만 받음). 둘째 세션 맥락 `rewrite`(교정 수 = 활동 수) · 화면 자료 `rewrite`(1153 — 칭찬 · 교정 · 초고 글, 고쳐 쓰기 끝 시도가 있을 때만 그 글 · 모범 답안, 이름 채움). `restored` 를 실패로 읽던 자리 고침(차례 6 검토가 넘긴 것) |
+| `src/server/writing/status.ts` | 수정 | `rewriteSourceOf` — 둘째 세션이 기대는 첫 세션 · 첨삭(같은 프로필 · 수업 행, 둘째 세션 시작 전에 끝난 가장 늦은 첨삭 옴) |
+| `src/server/writing/composition.ts` · `index.ts` | 수정 | `submitRewrite`(680 — 끝 시도 저장 · 모범 답안을 이때만 돌려줌(빈 글은 null)) · `runDraftFeedback`(759) · `retryPendingFeedback`(780 — 오래된 차례로 `PENDING_FEEDBACK_PER_ENTRY` 2) · `startLessonAfterFeedback`(813 — 시작이 feedback_pending 이면 첨삭을 한 번 부른 뒤 다시 판정). 생각 꺼내기 `restored` 읽기 고침 |
+| `src/server/actions/session.ts` · `writing.ts` | 수정 | `startLesson` = `startLessonAfterFeedback`, `submitRewrite` 액션(첫 문장 `await requireAccess()`) |
+| `src/server/home/index.ts` | 수정 | 값 12 — `feedbackReady`(316 — 지금 쓰기 단계에서 첨삭이 온 가장 오래된 첫 세션의 수업 행), 최근 성적은 점수 없는 세션 · 둘째 세션을 빼고 셈 |
+| `src/app/(child)/page.tsx` · `home-cards.tsx` | 수정 | 홈 진입마다 `after(() => retryPendingFeedback)`(쿠키 · 헤더는 after 밖), '첨삭이 왔어요' 포스트잇(하늘, 영역 카드보다 앞 — `FeedbackNote`: 누르면 그 수업 시작 → 둘째 세션, 기다림 표시 · '아직 글을 살펴보고 있어요' + '수업 목록' · 확인 쪽지 · 안전 상한 안내) |
+| `src/app/(child)/[area]/lessons/use-lesson-start.ts` · `lesson-board.tsx` · `page.tsx` | 수정 · **계획 표 그대로(B3)** | 고르기 전 · 목록이 열릴 때 이 기기 시도 대기열을 비움(`flushAttempts`), '첨삭 보기' 맨 위 카드가 그 수업을 둘째 세션으로 엶(기다림 표시 `feedbackWaiting` — 쪽이 ui.wait_hint_seconds 를 넘김), feedback_pending → '아직 글을 살펴보고 있어요' |
+| `src/app/(child)/result/[id]/result-view.tsx` | 수정 | '첨삭 보기'가 feedback 꼴로 시작(이제 둘째 세션), 첨삭이 아직이면 '아직 글을 살펴보고 있어요' + '수업 목록' |
+| `src/components/session/writing-rewrite.tsx` | 신규 | `FeedbackPraiseActivity`('잘한 점' + 칭찬 28px) · `FeedbackCorrectionActivity`('이렇게 고쳐 봐요' — 원문(줄 그음) · 수정(굵게) 24px · 이유 20px, 한 화면에 하나) · `RewriteActivity`('고쳐 쓰기', 위에 교정 칩 '원문 → 수정'(누르지 않는 글 상자 · 영어 24px), 초고를 채운 입력란 — 차례 6 높이 맞춤 훅, '다 고쳤어요') · `ModelAnswerActivity`('모범 답안') · `sentencesOf` |
+| `src/components/session/writing-composition.tsx` · `writing-guided.tsx` | 수정 | 입력란 높이 맞춤을 `useDraftRows` 훅으로 뽑음(초고 · 고쳐 쓰기가 같이 씀), `OwnRepeatActivity` 선택 속성 `guide` |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | 둘째 세션 활동 다섯(칭찬 · 교정 · 고쳐 쓰기(끝 시도는 서버 액션 → `advance`) · 모범 답안(빈 글이면 건너뜀) · 내 글 소리 내어 읽기(쓰기 4~5 조각, 마이크를 쓸 수 없으면 건너뜀)) → `finishSession`(점수 없음) |
+| `tests/unit/lesson-list-state.test.ts` | 수정 | 둘 |
+| `tests/integration/writing-feedback.test.ts` | 수정 · **계획 표와 다름(plan 은 session-start.test.ts)** | 수업 셋으로 넓힘 · AC-8k 에 앞선 중단 세션 · 새 셋 |
+| `tests/e2e/writing.spec.ts` · `home.spec.ts` · `lessons.ts` | 수정 | 아래 · `insertReadyDraft`(첨삭이 온 첫 세션 바로 넣기) · `READY_FEEDBACK` · `READY_DRAFT` |
+
+### 시험 수
+
+단위 507 → **509**(+2). 통합 +3(writing-feedback). e2e +3. 덮는 시험(증명 표 글자 그대로):
+- 단위 "목록: 첫 세션만 끝난 칸은 남은 수업이고 둘째 세션이 끝나야 끝낸 수업이며 잠긴 단원 수는 첫 세션으로 센다" + 접두 없는 "시작 판정: 첨삭이 오면 둘째 세션(그 첫 세션의 수업 행 · 종류), 대기면 feedback_pending, 못 함이면 새 첫 세션이다"
+- 통합 "AC-2e 중단된 첫 세션의 마지막 초고 글이 같은 수업의 새 첫 세션 화면 자료에 채워지고 중단 뒤 늦게 온 초고 시도도 받는다" · "둘째 세션: 첨삭이 대기면 시작할 때 한 번 더 부르고 그래도 없으면 대기를 돌려준다"(이어 둘째 세션 행 · 활동 차례 · 모범 답안은 고쳐 쓰기 뒤에만) · "첨삭: 앱 진입마다 밀린 첨삭을 오래된 것부터 많아야 둘 부른다". AC-8k 는 앞선 중단 세션(쓰던 초고)을 두어 '빈 새 초고'가 되살림 규칙으로 참이게 바꿈
+- e2e `writing.spec.ts` "AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고쳐 쓰기 · 모범 답안 순서로 열리고 모범 답안은 고쳐 쓰기를 내기 전에는 보이지 않는다"(목록 맨 위 '첨삭 보기' → 둘째 세션 → 결과 · 목록에서 끝낸 수업) · "AC-2e 쓰기 6단계 초고를 쓰다 다른 수업을 고른 뒤 그 수업을 다시 열면 초고 입력란에 쓴 글이 채워져 있다"(생각 꺼내기 AI 한 번만) · `home.spec.ts` "AC-2a 첨삭이 오면 홈에 '첨삭이 왔어요'가 보이고 누르면 그 수업의 둘째 세션이 열린다"
+
+빨강 먼저: 단위 둘은 구현 전 실패를 봤다. 통합 · e2e 는 CI.
+
+### 다르게 한 것과 까닭
+
+1. **통합 시험을 `session-start.test.ts` 가 아니라 `writing-feedback.test.ts` 에** — 쓰기 6단계 견본 · 가짜 AI 바탕이 이미 그 파일에 있다(같은 바탕을 두 번 두지 않음). 이름은 증명 표 글자 그대로.
+2. **되살림 시점은 새 첫 세션을 넣는 트랜잭션 안**(시작 때 시도로 옮김) — 화면 자료(`draftText` · `thinkout`)와 이어 할 자리(생각 꺼내기 끝 시도)가 다른 길 없이 그대로 돈다. 되살린 생각 꺼내기는 요약 · 낱말 · 틀을 그대로 두고 `restored` 를 붙인다.
+3. **'가장 최근 첫 세션이 중단일 때만' 되살린다** — '첨삭 못 함' 뒤 빈 새 초고(AC-8k)와 '중단된 초고 되살림'(AC-2e)을 한 규칙으로.
+4. **첨삭 대기 · 온 칸을 '여기부터 해요' 새 수업 후보에서 뺌**(값 11 에 없는 세부) — 대기 칸을 고르면 '아직 글을 살펴보고 있어요'만 나오고, 온 칸은 맨 위 '첨삭 보기'가 맡아서.
+5. **'내 글 소리 내어 읽기'는 쓰기 4~5 조각을 그대로**(문장마다 읽어 준 뒤 '말하기' · '건너뛰기') — 값 7 '문장마다 말하기 · 건너뛰기 · 마이크 없으면 건너뜀'. 읽어 주기를 뺄지는 화면 검토 판단.
+6. **고르기 전 대기열 비우기는 훅(`use-lesson-start`)이 시도 대기열을 새로 만들어 보냄** — 목록 · 결과 · 홈 · 지난 수업 모두 같은 길.
+
+### 정할 것
+
+없음(차례 6 정할 것 2 — '첨삭 보기'가 새 첫 세션을 열던 임시 길 — 은 이번에 둘째 세션 판정으로 닫힘).
+
+### 사진 이름(E2E_PHOTOS, 각 두 방향)
+
+`p11-writing-6-rewrite-praise` · `-rewrite-correction` · `-rewrite`(교정 칩 · 초고 채운 입력란) · `-model-answer` · `-own-speak` · `p11-writing-6-restored`(되살린 초고) · `p11-home-feedback`('첨삭이 왔어요').
+
+### 관문(로컬)
+
+```
+pnpm biome ci .           → Checked 320 files. No fixes applied.
+pnpm test                 → Test Files 54 passed (54) · Tests 509 passed | 6 todo (515)
+pnpm exec tsc --noEmit    → exit 0
+pnpm build                → ✓ Compiled successfully
+pnpm check:deps           → ✔ no dependency violations found (167 modules, 790 dependencies cruised)
+pnpm check:ids            → design-number 35(새 줄 0)
+pnpm check:bundle         → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+```
+
+### 남은 우려
+
+- 통합 · e2e 는 아직 돌지 않았다. 특히 (가) 목록 맨 위 '첨삭 보기' 카드 누르기 · 홈 '첨삭이 왔어요' 누르기가 둘째 세션을 여는지(목록 서버 `writingDraftsOf` 의 칸 · 회차 조건), (나) AC-2e 의 '홈' 앞 초고 저장 → 다른 수업 고르기(확인 쪽지) → 되살림 순서, (다) P13 이 같은 파일(`session/index.ts` · `lesson-list` · 홈 셋)을 고치므로 합칠 때 겹침.
+- 수업 시작마다 대기열 비우기 요청이 한 번 더 간다(대기열이 비면 보내지 않음 — 그때는 비용 없음).
+
+상태: CI 돌려 달라(로컬 관문 초록).
+
+fix 7(2026-10-22, CI 16차 run 39747989104 통합 1 실패 — `writing-feedback.test.ts` AC-8k 606줄 `runFeedback` 가 false): **원인 — 시험 바탕 꼴(앱 맞음).** 차례 7 에서 AC-8k 앞에 둔 '쓰던 초고가 있는 중단 세션'이 새 첫 세션을 열 때 되살림(AC-2e)으로 초고 진행 시도를 같은 초고 활동 번호에 옮긴다. 그래서 그 활동에 행이 둘(되살린 진행 시도 status done · 낸 끝 시도 awaiting_feedback)인데, 도우미 `submitted()` 가 세션 · 활동 번호로만 첫 행을 집어 되살린 진행 시도 id 를 `runFeedback` 에 넘겼다 → 첨삭 대기가 아니라 false. 잡기 · 늦은 초고 · 중단 세션 처리 자체는 맞다. 앱 쪽에서 초고 행을 고르는 자리(`runDraftFeedback` 는 status, `draftFeedbackOf` · `writingDraftsOf` · `feedbackReadyOf` · `rewriteSourceOf` 는 끝 시도 꼴)는 모두 끝 시도만 본다(확인). **고침:** `tests/integration/writing-feedback.test.ts` `submitted()`(377~388)가 `status = 'awaiting_feedback'` 인 행을 고른다. 바뀐 파일은 그 하나 · 화면 변화 없음. 로컬: biome ci 0 · tsc 0 · 단위 509 · check:deps 0 · spec:trace 0. 커밋 없음.
+
+fix 8(2026-10-22, 코드 검토 review-p11-7-code Changes requested I 1 · M 3 — 브리프 task-p11-fix8.md): **I-1 (가)** `src/app/(child)/[area]/lessons/use-lesson-start.ts` — `useLessonStart(ui.wait_hint_seconds)` 가 `start()` 에서 서버 액션을 부른 뒤 첫 값이 지나도 돌아오지 않으면 기다림 표시를 켠다(`waitingSince` = 누른 시각, WaitHint 둘째 줄도 그때부터 — '첨삭 보기'로 열 때는 바로). 목록 · 지난 수업 · 결과 · 홈 넷이 같은 훅이고 각 쪽이 ui.wait_hint_seconds 를 넘긴다(지난 수업 쪽 · 결과 자료 `waitHintSeconds` 가 늘 실림 — 결과 자료의 `draft.waitHintSeconds` 는 위로 옮김). 지난 수업 · 결과에도 WaitHint 자리. e2e `writing.spec.ts` 신규 "쓰기 6~12: 첨삭을 기다리는 칸을 목록에서 고르면 서버가 첨삭을 기다리는 동안 ui.wait_hint_seconds 첫 값 안에 기다림 표시가 보이고 첨삭이 오면 둘째 세션이 열린다"(첨삭 대기 · 잡지 않은 첫 세션(`insertReadyDraft(…, { pending: true })`) + 느린 가짜 첨삭 → 일반 카드 → 첫 값 + 그리기 여유 안에 `data-wait-hint` → 둘째 세션, 사진 `p11-lesson-start-wait`). **M-1** 통합 `safety-cap.test.ts` '1-가 안전 상한: …'에 둘째 세션 몫: 첨삭이 온 쓰기 6 첫 세션 + 상한에 닿게 → 같은 수업 시작이 `writing_part: "rewrite"` 세션을 엶(시작 길의 `resting && judged.part !== "rewrite"` 를 지킴, '차례 7 이 더한다' 주석 지움). **M-2** — 컨트롤러 결정대로 P12 로 넘김(아래). **M-3** 통합 `writing-feedback.test.ts` 신규 "둘째 세션: 첨삭 글의 {NAME} 은 화면 자료 · 고쳐 쓰기 응답에서 영어 이름으로 채우고 저장은 가린 글 그대로다"(칭찬 · 교정 원문 · 수정 · 이유 · 모범 답안 다섯 칸에 `{NAME}` → `rewriteViewOf` · `submitRewrite` 두 자리 채움, 저장 값은 `{NAME}`). 시험 수: 단위 509 그대로, 통합 +1(M-3) · 단언 더함(M-1), e2e +1. 로컬: biome ci 0 · tsc 0 · 단위 509 · build 0 · check:deps 0 · check:ids design-number 35 · check:bundle 0 · spec:trace 0. 커밋 없음.
+
+**다른 P 에 넘길 것(fix 8 M-2 → P12):** 보강(remedial) 칸의 쓰기 6~12 둘째 세션 종류를 첫 세션 종류(remedial) 그대로 두고(`state.ts` 시작 판정이 지금은 regular 로 바꿈 — 타입을 remedial 까지 넓힘), `remedialDone` 도 `writingPart !== "draft"` 를 본다. 보강 발급 · 단원 통과 셈을 채우는 P12 가 함께 고치고 단위 표에 보강 칸 한 줄을 더한다(코드 검토 review-p11-7-code M-2).
+
+fix 8b(2026-10-22, 화면 검토 review-p11-7-design Approved M 1 + 범위 밖 X-1 — 브리프 task-p11-fix8b.md): **M-1 (가) 누른 카드 바로 아래** — `src/app/(child)/[area]/lessons/lesson-board.tsx` 가 수업 카드 · 맨 위 '첨삭 보기' 카드를 칸 하나(`div` 세로, '여기부터 해요' 두 칸 너비 `col-span-2` 는 칸으로 옮김)에 담고, 누른 카드(`waitAt`, 하던 수업을 묻는 쪽지를 거치면 확인 뒤 그 카드 `askedAt`)의 칸 안 카드 아래에 `data-lesson-wait` 묶음(WaitHint · '아직 글을 살펴보고 있어요')을 그린다. 쪽 맨 아래 두 줄은 지웠다(오류 줄 `StatusLine tone="error"` 는 늘 있는 알림 자리라 그대로 맨 아래 — 남은 우려). 같은 줄 카드 높이가 맞도록 카드에 `flex-1`(칸이 늘면 그 줄의 이웃 카드도 함께 길어짐, 자리는 그대로). e2e `writing.spec.ts` fix 8 시험에 첨삭 대기 칸 뒤 수업 23개(`CROWDED_LESSONS` 24 — 실시드 흉내) · 세로 820×1180 · '쪽이 보는 창보다 길다' 전제 단언 · `[data-lesson-wait] [data-wait-hint]` 1개 · 그 상자의 y + 높이 ≤ 보는 창 높이 단언을 더하고 그 뒤 사진 `p11-lesson-start-wait`(세로). 신규 "쓰기 6~12: 다른 부름이 첨삭을 잡고 있어 아직 첨삭이 없으면 목록이 누른 카드 바로 아래에 '아직 글을 살펴보고 있어요'를 보는 창 안에 보이고 세션을 열지 않는다"(`insertReadyDraft(…, { pending: true, claimed: true })` — `tests/e2e/lessons.ts` 에 `claimed` 선택지: aiFeedback.claimedAt = 지금, 서버가 첨삭을 더 부르지 못해 feedback_pending → 안내 줄, 가짜 첨삭 요청 0, 사진 `p11-lesson-start-still-reading`). **X-1** `src/app/globals.css` `@layer base` 에 `:lang(en) { font-family: var(--font-en); }`(토큰 그대로 — Fredoka → Gowun Dodum → sans-serif, 한글은 Gowun 이 받음). `lang="en"` 안 한국어는 개발용 시드 보기(`dev/seed-viewer/talk-card.tsx` '힌트(틀)' 등)뿐이고 아이 화면에는 없다 — 한글 글자는 다음 글꼴로 그려진다. e2e `font-size.spec.ts` 신규 "4절 글꼴: 영어 글(lang="en")의 첫 글꼴은 Fredoka 이고 실제로 실려 그려지며, 한국어 안내는 Gowun Dodum 그대로다(화면 검토 review-p11-7-design X-1)"(읽기 지문 화면: `[lang="en"]` computed font-family 첫 이름이 /fredoka/ · fallback 아님, lang 없는 한국어 줄은 Fredoka 아님, `document.fonts.ready` 뒤 실린 글꼴에 Fredoka · Gowun). **흔들릴 수 있는 것:** Fredoka 가 Gowun 의 라틴보다 넓어 영어 칩 · 타일 · 입력란 · 문장 줄의 줄바꿈이 달라질 수 있다 — 넘침 단언(`fitsBothWays`: 쓰기 4~5 · 6 첫 세션 · 둘째 세션 · 초고 긴 글 가로, 말하기)과 크기 훑기(AC-N9)가 CI 19차에서 흔들리면 그 화면 이름을 다음 보고에 적는다(로컬에서는 e2e 를 못 돌려 미확인). 시험 수: 단위 509 그대로, e2e +2(안내 줄 · 글꼴) · 단언 더함(fix 8 시험). 로컬: biome ci 0 · tsc 0 · 단위 509 · build 0 · check:deps 0 · check:ids design-number 35 · check:bundle 0 · spec:trace 0. 커밋 없음.
