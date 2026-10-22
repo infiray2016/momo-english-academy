@@ -36,6 +36,9 @@ export const RESUME_TIMEOUT_CODE = "resume-timeout";
 export const STOPPED_EARLY_CODE = "stopped-before-resume";
 /** 복사 글 첫 줄(검토 I-2 — 장치 이름에 사람 이름이 들 수 있다). */
 export const DEVICE_NAMES_NOTE = "기기 이름은 기록에 넣지 않아요";
+/** 3판: 교대 시험 '읽어 주기 끝난 뒤 자동으로 듣기 시작'의 대기 초(실측 6 — 끝 2초 안 듣기는 소리를 못 받음). */
+export const AUTO_LISTEN_WAIT_SECONDS = [0, 2, 5, 10] as const;
+export type AutoListenWaitSeconds = (typeof AUTO_LISTEN_WAIT_SECONDS)[number];
 /** 오디오 세션 꼴 실험에서 고를 수 있는 값(Safari 17+ navigator.audioSession.type). */
 export const AUDIO_SESSION_TYPES = [
   "auto",
@@ -201,7 +204,17 @@ export function describeDeviceCounts(
   return [...counts].map(([kind, n]) => `${kind} ${n}`).join(" · ");
 }
 
-const SET_BY_TEXT = { auto: "자동", button: "단추" } as const;
+const SET_BY_TEXT = {
+  auto: "자동",
+  button: "단추",
+  restore: "되돌림",
+} as const;
+
+const WARNING_ACTION_TEXT = {
+  listen: "듣기",
+  "mic-check": "마이크 확인",
+  "mic-level": "마이크 소리 재기",
+} as const;
 
 /**
  * at 시각까지의 기록으로 본 오디오 세션 꼴(env 의 값 · 바꾼 뒤 읽은 값 · 상태 바뀜의 꼴 가운데 마지막).
@@ -235,7 +248,9 @@ export type ProbeTraceEntry = Extract<
       | "beep"
       | "heard"
       | "audio-session"
-      | "speak-request";
+      | "speak-request"
+      | "auto-listen"
+      | "session-warning";
   }
 >;
 
@@ -288,6 +303,14 @@ export function probeEntryDetail(entry: ProbeTraceEntry): string {
         return `end 없음(${entry.waitedMs}ms 기다림) · 처리기 닫음`;
       }
       return entry.phase === "end" ? "end" : `error ${entry.code}`;
+    case "session-warning":
+      return `재생 전용 꼴(${entry.type})에서 ${WARNING_ACTION_TEXT[entry.action]} 시작 — 마이크가 안 열릴 수 있음`;
+    case "auto-listen":
+      return [
+        `교대 ${entry.turn}째 문장`,
+        `읽어 주기 ${entry.speakOutcome} 뒤 ${entry.waitMs}ms 기다려 누름 없이 듣기 시작`,
+        userActiveText(entry.userActive),
+      ].join(" · ");
     case "speak-request":
       return [
         entry.turn === undefined
@@ -336,6 +359,122 @@ export type ProbeLogRow = {
 
 // ── 듣기 지연 요약(팀 리드 2026-10-22 사파리 단독 실측: 안 되는 듣기는 start 이벤트와 audiostart 가 같은 ms) ──
 
+/**
+ * at 때의 읽어 주기 상태(3판 fix 1, 검토 review-speech-probe-3 I-1). 마지막 문장 요청(speak 줄) 기준이다:
+ * - 문장 speak 줄이 오면 앞 '끝'을 지우고 '읽는 중'으로 둔다.
+ * - 그 뒤 첫 끝 사건(end · error — 끊김은 error interrupted · canceled)이 그 문장의 끝이다.
+ * - 제약 풀기 빈칸 발화(speak 줄의 글이 빈칸)는 셈에서 뺀다. 빈칸 speak 하나마다 그 뒤 첫 끝 사건 하나를 빈칸 몫으로
+ *   쓰므로, 빈칸의 끝이 문장 speak 줄 뒤에 와도(실제 브라우저의 늦은 사건) 문장의 끝으로 세지 않는다.
+ */
+export type SpeakGap =
+  | { kind: "none" }
+  | { kind: "speaking"; sinceMs: number }
+  | { kind: "ended"; gapMs: number; error?: string };
+
+function speakGapAt(trace: readonly SpeechTraceEntry[], at: number): SpeakGap {
+  let blankPending = 0;
+  let state:
+    | { kind: "none" }
+    | { kind: "speaking"; since: number }
+    | { kind: "ended"; end: number; error?: string } = { kind: "none" };
+  for (const entry of trace) {
+    if (entry.at > at) break;
+    if (entry.kind === "speak") {
+      if (entry.text.trim() === "") blankPending += 1;
+      else state = { kind: "speaking", since: entry.at };
+      continue;
+    }
+    if (entry.kind !== "speak-event" || entry.type === "start") continue;
+    if (blankPending > 0) {
+      blankPending -= 1;
+      continue;
+    }
+    if (state.kind !== "speaking") continue;
+    state =
+      entry.type === "error"
+        ? { kind: "ended", end: entry.at, error: entry.code ?? "error" }
+        : { kind: "ended", end: entry.at };
+  }
+  if (state.kind === "none") return state;
+  if (state.kind === "speaking") {
+    return { kind: "speaking", sinceMs: Math.round(at - state.since) };
+  }
+  const gapMs = Math.round(at - state.end);
+  return state.error === undefined
+    ? { kind: "ended", gapMs }
+    : { kind: "ended", gapMs, error: state.error };
+}
+
+/** 듣기 번호 → 그 듣기의 첫 인식 start 호출 때의 읽어 주기 상태(간격 · 읽는 중 · 없음). */
+export function speakEndGaps(
+  trace: readonly SpeechTraceEntry[],
+): Record<number, SpeakGap> {
+  const gaps: Record<number, SpeakGap> = {};
+  for (const entry of trace) {
+    if (
+      entry.kind !== "recognizer-call" ||
+      entry.call !== "start" ||
+      entry.listen in gaps
+    ) {
+      continue;
+    }
+    gaps[entry.listen] = speakGapAt(trace, entry.at);
+  }
+  return gaps;
+}
+
+/** 간격 글: '읽어 주기 끝 → start 호출 +N' · '읽어 주기 끝(끊김 X) → start 호출 +N' · '읽어 주기 읽는 중(끝 전 +N ms)' · '… 없음'. */
+export function speakEndGapText(gap: SpeakGap): string {
+  if (gap.kind === "none") return `읽어 주기 끝 → start 호출 ${NONE}`;
+  if (gap.kind === "speaking") {
+    return `읽어 주기 읽는 중(끝 전 +${gap.sinceMs} ms)`;
+  }
+  const head =
+    gap.error === undefined
+      ? "읽어 주기 끝"
+      : `읽어 주기 끝(끊김 ${gap.error})`;
+  return `${head} → start 호출 +${gap.gapMs}`;
+}
+
+// ── 3판 fix 1: 마이크를 막는 꼴 · playback 단추 되돌림(검토 M-1 · M-2) ──
+
+/** 마이크가 열리지 않을 수 있는 오디오 세션 꼴(재생 전용). */
+export const MIC_BLOCKING_SESSION_TYPES = ["playback", "ambient"] as const;
+
+/** 듣기 · 마이크 확인 · 소리 재기 앞에서 경고할 꼴인가. */
+export function isMicBlockingSession(type: string | undefined): boolean {
+  return (
+    type !== undefined &&
+    (MIC_BLOCKING_SESSION_TYPES as readonly string[]).includes(type)
+  );
+}
+
+/**
+ * 'playback 으로 두고 읽어 주기' 발화가 끝난 뒤(끝 · 오류 · 끊김 무엇이든) 되돌릴 꼴. 지금 꼴이 아직 playback 이고
+ * 앞 꼴이 있고 playback 이 아닐 때만 앞 꼴, 아니면(그사이 다른 길이 바꿈 등) undefined — 두다.
+ */
+export function restoreAfterSpeak(
+  before: string | undefined,
+  current: string | undefined,
+  _outcome: string,
+): string | undefined {
+  if (before === undefined || before === "playback") return undefined;
+  return current === "playback" ? before : undefined;
+}
+
+/** 듣기 번호 → 그 듣기를 시작할 때의 세션 꼴 글('세션 X'). 그 앞에 꼴을 알 줄이 없으면 빠진다. */
+export function listenSessionTexts(
+  trace: readonly SpeechTraceEntry[],
+): Record<number, string> {
+  const out: Record<number, string> = {};
+  for (const entry of trace) {
+    if (entry.kind !== "listen-begin") continue;
+    const session = sessionAt(trace, entry.at);
+    if (session.known) out[entry.listen] = `세션 ${orNone(session.type)}`;
+  }
+  return out;
+}
+
 /** 듣기 지연 요약의 제목 줄(복사 글). */
 export const LATENCY_TITLE = "듣기 지연(start 호출 기준 ms):";
 
@@ -369,6 +508,7 @@ export function listenLatencyLines(
       }
       const session = sessionAt(trace, call.at);
       if (session.known) head.push(`세션 ${orNone(session.type)}`);
+      head.push(speakEndGapText(speakGapAt(trace, call.at)));
     }
     if (call.threw) {
       lines.push([...head, "start 던짐"].join(" · "));

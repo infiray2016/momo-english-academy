@@ -933,3 +933,150 @@ test.describe("관찰 페이지 2판 fix 1 · 마이크 끄기 보장 · 이름 
     await expect(page.locator("body")).not.toContainText(PERSON_NAME);
   });
 });
+
+test.describe("관찰 페이지 3판 · 읽어 주기 끝난 뒤 자동 듣기", () => {
+  test.use({ speechScript: loadSpeechScript("alternation-ok") });
+
+  test("관찰 페이지 3판: 자동 듣기를 켜고 대기 2초를 고르면 읽어 주기 끝 2초 뒤 누름 없이 듣기를 시작해 한 문장 뒤 멈추고, 간격이 listen-begin 줄 · 지연 요약에 남는다", async ({
+    page,
+    speechScript,
+  }) => {
+    const waitSeconds = 2;
+    const waitMs = waitSeconds * 1_000;
+    const run = speechScript.recognitions[0];
+    await openProbe(page);
+
+    await page.getByTestId("alt-auto-listen").check();
+    await page.getByTestId("alt-auto-wait").selectOption(String(waitSeconds));
+    await page.getByTestId("alt-start").click();
+    // 문장 읽기가 끝난 뒤(+ 기술 여유) 대기 직전까지는 듣기를 시작하지 않는다.
+    await advance(page, utteranceMs(speechScript, 1));
+    await advance(page, waitMs - SETTLE_MS * 3);
+    expect((await fakeRecord(page)).created).toBe(0);
+    await advance(page, SETTLE_MS);
+    expect((await fakeRecord(page)).created).toBe(1);
+
+    await advance(
+      page,
+      Math.max(...resultTimes(run)) +
+        SETTINGS.endSilenceMs["1-3"] +
+        lastAt(run?.onStop),
+    );
+    await expect(page.getByTestId("alt-turn")).toHaveCount(1);
+    await expect(page.getByTestId("alt-status")).toHaveText("done");
+    // 한 문장만 하고 다음 문장은 읽지 않는다.
+    expect((await fakeRecord(page)).spoken).toEqual([
+      " ",
+      probeText.sentences[0],
+    ]);
+    await expect(
+      traceRow(
+        page,
+        "auto-listen",
+        `교대 1째 문장 · 읽어 주기 ended 뒤 ${waitMs}ms 기다려 누름 없이 듣기 시작`,
+      ),
+    ).toHaveCount(1);
+    await expect(traceRow(page, "button")).toHaveCount(0);
+    await expect(traceRow(page, "listen-begin")).toContainText(
+      `읽어 주기 끝 → start 호출 +${waitMs}`,
+    );
+    await expect(page.getByTestId("latency-lines")).toContainText(
+      `읽어 주기 끝 → start 호출 +${waitMs}`,
+    );
+  });
+
+  test("관찰 페이지 3판: 자동 듣기를 끈 채면 읽어 주기가 끝나고 오래 지나도 듣기를 시작하지 않고 말하기 단추를 기다린다", async ({
+    page,
+    speechScript,
+  }) => {
+    await openProbe(page);
+    await page.getByTestId("alt-start").click();
+    await advance(page, utteranceMs(speechScript, 1) + 10_000);
+    expect((await fakeRecord(page)).created).toBe(0);
+    await expect(page.getByTestId("alt-status")).toHaveText("ready");
+  });
+});
+
+test.describe("관찰 페이지 3판 · 긴 말 시험 간격", () => {
+  test("관찰 페이지 3판: 읽어 주기 없이 시작한 듣기의 listen-begin 줄 · 지연 요약에는 '읽어 주기 끝 → start 호출 없음'", async ({
+    page,
+  }) => {
+    await openProbe(page);
+    await page.getByTestId("long-start").click();
+    await advance(page, 0);
+    await expect(traceRow(page, "listen-begin")).toContainText(
+      "읽어 주기 끝 → start 호출 없음",
+    );
+    await expect(page.getByTestId("latency-lines")).toContainText(
+      "읽어 주기 끝 → start 호출 없음",
+    );
+  });
+});
+
+test.describe("관찰 페이지 3판 · playback 되돌림과 재생 전용 꼴 경고", () => {
+  test("관찰 페이지 3판: 'playback 으로 두고 읽어 주기'는 발화가 끝나면 앞 꼴(auto)로 되돌리고 '되돌림' 줄을 남긴다", async ({
+    page,
+    speechScript,
+  }) => {
+    await page.addInitScript(installFakeAudio, {
+      ...HALF_LOUD,
+      audioSession: "auto",
+    });
+    await openProbe(page);
+
+    await page.getByTestId("speak-playback").click();
+    await advance(page, 0);
+    await expect(page.getByTestId("audio-session-current")).toHaveText(
+      "playback",
+    );
+    await advance(page, utteranceMs(speechScript, 1));
+    await expect(
+      traceRow(
+        page,
+        "audio-session",
+        "playback → auto 요청 · 읽은 값 auto · 되돌림",
+      ),
+    ).toHaveCount(1);
+    await expect(page.getByTestId("audio-session-current")).toHaveText("auto");
+  });
+
+  test("관찰 페이지 3판: 꼴이 playback 인 채 듣기 · 마이크 확인 · 소리 재기를 시작하면 경고 줄만 남기고 꼴은 그대로, '자동으로 두기'를 켜면 play-and-record 로 바꿔 경고가 없다", async ({
+    page,
+  }) => {
+    await page.addInitScript(installFakeAudio, {
+      ...HALF_LOUD,
+      audioSession: "auto",
+    });
+    await openProbe(page);
+    await page.getByTestId("audio-session-type").selectOption("playback");
+
+    await page.getByTestId("watchdog-listen").click();
+    await advance(page, 0);
+    await expect(
+      traceRow(page, "session-warning", "재생 전용 꼴(playback)에서 듣기 시작"),
+    ).toHaveCount(1);
+    await expect(traceRow(page, "listen-begin")).toContainText("세션 playback");
+    await page.getByTestId("mic-check").click();
+    await advance(page, 0);
+    await expect(
+      traceRow(page, "session-warning", "마이크 확인 시작"),
+    ).toHaveCount(1);
+    await page.getByTestId("mic-level").click();
+    await advance(page, 0);
+    await expect(
+      traceRow(page, "session-warning", "마이크 소리 재기 시작"),
+    ).toHaveCount(1);
+    await expect(page.getByTestId("audio-session-current")).toHaveText(
+      "playback",
+    );
+
+    await advance(page, MIC_LEVEL_DURATION_MS);
+    await page.getByTestId("audio-session-auto").check();
+    await page.getByTestId("watchdog-listen").click();
+    await advance(page, 0);
+    await expect(traceRow(page, "session-warning")).toHaveCount(3);
+    await expect(page.getByTestId("audio-session-current")).toHaveText(
+      "play-and-record",
+    );
+  });
+});
