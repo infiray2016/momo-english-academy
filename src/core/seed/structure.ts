@@ -285,6 +285,8 @@ export const YES_NO_AUXILIARIES = [
 export const PLACEHOLDER_NAME = "{NAME}";
 /** 6.4 영어 틀의 빈칸(밑줄 셋 이상). 빈칸은 틀 자리로 세지 않는다. */
 export const BLANK = /_{3,}/;
+/** 5절 '그림 파일은 단어마다 하나, 한 장 100KB 이하'(1000 배수로 보수적, P6b). */
+export const IMAGE_MAX_BYTES = 100000;
 /** 부동소수 비교 오차(설계 숫자 아님). */
 export const FLOAT_TOLERANCE = 1e-9;
 

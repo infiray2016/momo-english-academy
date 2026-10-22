@@ -141,6 +141,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - if: ${{ hashFiles('seed/settings.json') != '' }}
         run: pnpm seed:validate
+      - if: ${{ hashFiles('seed/images.json') != '' }}
+        run: pnpm images:check
   check-ids: # P7b. 12절 키 · 5절 테이블 ↔ seed/settings.json ↔ 코드(역분석 제안 6 · 조사 P5). 설계 숫자는 보고만(차수 경계에서 막음으로)
     runs-on: ubuntu-24.04
     steps:

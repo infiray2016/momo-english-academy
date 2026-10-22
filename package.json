@@ -28,7 +28,9 @@
     "ai:contract": "tsx scripts/ai-contract.ts",
     "ai:observe": "tsx scripts/ai-observe.ts",
     "check:ids": "tsx scripts/check-ids.ts",
-    "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts"
+    "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts",
+    "images:fetch": "tsx scripts/vocab-images.ts fetch",
+    "images:check": "tsx scripts/vocab-images.ts check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
