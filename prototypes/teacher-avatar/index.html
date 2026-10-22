@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f0e6" />
+    <meta name="description" content="모모 잉글리시 아카데미의 움직이는 영어 선생님, 미나와 리오를 만나 보세요." />
+    <link rel="icon" type="image/svg+xml" href="/leaf.svg" />
+    <title>선생님을 만나 보세요 · 모모 잉글리시 아카데미</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="masthead">
+        <a class="brand" href="/" aria-label="모모 잉글리시 아카데미">
+          <span class="brand-mark" aria-hidden="true">m<span>✳</span></span>
+          <span>momo<small>ENGLISH ACADEMY</small></span>
+        </a>
+        <span class="edition"><span aria-hidden="true">✦</span> 우리들의 영어 친구</span>
+      </header>
+
+      <main>
+        <section class="introduction" aria-labelledby="title">
+          <div><p class="eyebrow">A LITTLE HELLO, A BIG BEGINNING</p>
+            <h1 id="title">오늘도, <span>함께 말해요.</span></h1>
+            <p class="intro-copy">틀려도 괜찮아요. 천천히 기다려 줄 선생님이 있어요.</p>
+          </div>
+          <div class="handwritten" aria-hidden="true">작은 인사부터<br />시작해 볼까요? <span>↙</span></div>
+        </section>
+
+        <div class="studio">
+          <section class="portrait-panel" aria-label="선생님 움직임 미리보기">
+            <div class="portrait-top"><span class="live-label"><i></i> 선생님을 만나 보세요</span><span class="room-label">THE MOMO ROOM</span></div>
+            <div class="stage" id="stage" data-state="idle" aria-busy="true">
+              <div class="room" aria-hidden="true"><div class="window"><i></i><i></i><i></i><i></i></div><div class="sunlight"></div><div class="wall-note">hello<br /><span>there!</span></div><div class="shelf"><i></i><i></i><i></i><span class="plant">✳</span></div><div class="wall-line"></div></div>
+              <canvas id="avatar" role="img" aria-label="미나 선생님의 움직이는 3D 아바타"></canvas>
+              <div class="load-screen" id="load-screen" role="status"><span class="loading-flower" aria-hidden="true">✳</span><p id="load-message">선생님이 오고 있어요</p><button id="retry" type="button" hidden>다시 불러오기</button></div>
+              <span class="state-badge" id="state-badge" aria-live="polite">편안히 기다리는 중</span>
+              <div class="name-tag"><span class="name-dot" aria-hidden="true"></span><strong id="stage-name">Mina</strong><span>선생님</span></div>
+              <div class="speech-caption" id="speech-caption" hidden><p id="caption-text" lang="en"></p><span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
+              <div class="praise-stars" aria-hidden="true"><span>✦</span><span>✳</span><span>✧</span></div>
+            </div>
+            <div class="portrait-bottom"><span id="state-description">눈을 맞추며, 다음 이야기를 기다려요.</span><span class="tiny-flower" aria-hidden="true">✳</span></div>
+          </section>
+
+          <aside class="teacher-panel" aria-labelledby="teacher-heading">
+            <div class="teacher-picker" role="group" aria-label="선생님 고르기">
+              <button class="teacher-choice" type="button" data-teacher="mina" aria-pressed="true"><img src="/portraits/mina.png" alt="" /><span>미나<small>Mina</small></span><span class="chosen-check" aria-hidden="true">✓</span></button>
+              <button class="teacher-choice" type="button" data-teacher="leo" aria-pressed="false"><img src="/portraits/leo.png" alt="" /><span>리오<small>Leo</small></span><span class="chosen-check" aria-hidden="true">✓</span></button>
+            </div>
+
+            <div class="teacher-note">
+              <span class="paper-tape" aria-hidden="true"></span>
+              <p class="note-kicker">YOUR ENGLISH FRIEND</p>
+              <h2 id="teacher-heading">안녕, 나는 <span id="teacher-name">미나</span>예요<span class="hello-spark" aria-hidden="true">✦</span></h2>
+              <p id="teacher-description">작은 목소리도 귀 기울여 듣는,<br />다정한 영어 친구예요.</p>
+              <div class="personality" id="personality"><span>다정하게</span><span>차근차근</span><span>함께 웃어요</span></div>
+              <button type="button" id="greet" class="greet-button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 9 4 0 5-4v14l-5-4H4zM17 8c2 2 2 6 0 8m3-11c4 4 4 10 0 14" /></svg><span id="greet-label">목소리로 인사하기</span><span aria-hidden="true">↗</span></button>
+              <p class="voice-message" id="voice-message" role="status">눌러서 영어 인사를 들어 보세요.</p>
+            </div>
+
+            <section class="expressions" aria-labelledby="expressions-heading">
+              <div class="section-label"><h3 id="expressions-heading">이런 표정을 지어요</h3><span>눌러 보세요</span></div>
+              <div class="state-buttons" role="group" aria-label="선생님 표정">
+                <button type="button" data-state="idle" aria-pressed="true" disabled><span aria-hidden="true">◡</span>쉬기</button>
+                <button type="button" data-state="speaking" aria-pressed="false" disabled><span aria-hidden="true">♫</span>말하기</button>
+                <button type="button" data-state="listening" aria-pressed="false" disabled><span aria-hidden="true">♡</span>듣기</button>
+                <button type="button" data-state="praise" aria-pressed="false" disabled><span aria-hidden="true">✦</span>칭찬</button>
+                <button type="button" data-state="thinking" aria-pressed="false" disabled><span aria-hidden="true">···</span>생각</button>
+              </div>
+              <p class="preview-note">표정과 동작 미리보기예요. 마이크는 켜지지 않아요.</p>
+            </section>
+
+            <details class="voice-options"><summary>다른 문장도 들어 볼까요?</summary><label for="speech-text">선생님이 읽어 줄 영어</label><textarea id="speech-text" rows="3" maxlength="240" lang="en">Hello! I'm Mina. It's nice to meet you. Let's learn English together!</textarea><label for="voice">영어 목소리</label><select id="voice"><option value="">기기의 기본 영어 목소리</option></select><button class="read-button" type="button" id="read-text" disabled>이 문장 읽어 주기 <span aria-hidden="true">↗</span></button></details>
+            <label class="motion-option"><input id="reduce-motion" type="checkbox" /><span>움직임 줄이기</span><small>편안하게 볼 수 있어요</small></label>
+          </aside>
+        </div>
+      </main>
+      <footer><p><span aria-hidden="true">✳</span> A little English. A little closer.</p><a href="https://opengameart.org/content/vroid-studio-cc0-models" target="_blank" rel="noreferrer">캐릭터 출처 · VRoid Project ↗</a></footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

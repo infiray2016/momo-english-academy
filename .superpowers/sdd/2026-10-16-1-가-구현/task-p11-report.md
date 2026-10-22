@@ -348,3 +348,126 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 CI 5차(컨트롤러, run 39078060721 · 9e06c6a): 통합 · e2e(배치 e2e 그대로 — 위험 5 없음) · e2e-local 포함 **전부 성공**.
 
 상태: DONE.
+
+## 차례 4 — 말하기 1~2 · 음성 공통 · 기기 알림(검토 묶음 A4, 2026-10-18 09:xx)
+
+바탕 HEAD b648c8c(차례 3 52f30a8 + 맞춤), 커밋 없음. 통합 · e2e 는 CI(아래 줄은 결과가 오면 채운다).
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `src/components/session/speaking.tsx` | 신규 | 'use client'. 값 12 — `RepeatActivity`(목표 24px · 들어올 때 한 번 읽기 · '다시 듣기' · '말하기' → 한 문장 끝 규칙 → 인식 글을 아이 말 칸에(틀린 낱말 표시 없음) · 결과 말 셋 · '잘 말했어요'면 ui.auto_next_seconds 뒤 저절로 다음 · 아니면 '한 번 더 말하기'(큰) · '다음'(작은) · 상한 없음) · `ListeningActivity`(대본 한 번 읽기 · '다시 듣기' · 고르면 바로 채점 · 처음 틀리면 '한 번 더 듣기'(다시 읽음) → 둘째 뒤 정답 ✓ · '맞았어요!' 또는 '정답은 이거예요' · 대본 글 안 보임) · `QuestionAnswerActivity`(영어 질문 읽은 뒤 1~4단계 한국어 뜻 · '말하기' → `judgeAppAnswer` · 맞음 '잘 말했어요' + '다음' · 다시 바른 답 문장을 영어 줄로 보이며 들려주고 '같이 말해 볼까요' → 한 번 말하면 결과 말 없이 다음 · 판정 글자 없음) · `MicNotice`('말한 소리는 …' + '알겠어요') · 실패 판정 처리('다시 한 번 말해 볼까요' · 끊김 안내 · 건너뜀 skipped) |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | 값 7 — 말하기 세션을 열 때 `micUsable()` 아니면 막힌 안내(세션 진행으로 남음), 처음 말하는 활동 앞에 마이크 안내(기기마다 한 번 — `MIC_NOTICE_KEY` 공유), `speakingCounters` 를 틀이 쥐고(활동이 바뀌면 next-activity) 판정 셋을 막힌 안내 셋('마이크가 필요해요 …' · '마이크가 잘 안 돼요 …' · '말소리가 잘 안 들려요 …' + '홈')과 기기 알림(`reportSessionMic`)으로. mic-unavailable 은 기기 상태도 남김(`markMicUnavailable`). 끝 시도 활동에 따라 말하기 · 듣기 · 질문 답(앱 판정 단계만) 더함 |
+| `src/server/alerts/device.ts` | 신규 | `server-only`. `recordDeviceAlert({ kind: mic_unavailable · mic_stalled · speech_silent, code, browser })` — P10 `recordPlacementMicAlert` 몸통(createAlertOnce once day · 값 code · browser) |
+| `src/server/placement/index.ts` | 수정 | `recordPlacementMicAlert` 가 마이크 두 종류만 거른 뒤 `recordDeviceAlert` 를 부름(동작 같음) · 동음이의어 읽기를 공용으로 |
+| `src/server/actions/session.ts` | 수정 | `reportSessionMic`(첫 문장 `await requireAccess()`) |
+| `src/server/seed-lists.ts` | 수정 · 공용 | `seedHomophones()` — 배치 · 세션 두 벌을 한 곳으로(목록 없으면 빈 묶음 + 경고 한 번). AI 층(`@/server/ai`)을 가져오지 않는 모듈 |
+| `src/server/session/index.ts` | 수정 | 동음이의어 정의를 지우고 공용에서 가져옴 |
+| `src/core/answer/expected.ts` | 수정 | A3 M-1 — `displayCardsOf` 가 허용 정답 **전부**에서 문장 가운데 대문자 낱말을 모음 |
+| `src/core/answer/display.ts` | 수정 · **계획 표 밖** | 배치 조립 문항(`displayItemOf`)도 `displayCardsOf` 로 카드를 보임(판정 그대로 — 검토 A3 범위 밖 관찰) |
+| `src/components/answer/tiles.tsx` | 수정 | fix 3 새 Minor — `slots` 조립에서 '대문자' 자리를 처음부터 잡음(첫 카드 전에는 꺼짐) — 세로에서 카드 줄이 밀리지 않게 |
+| `src/components/answer/choice.tsx` | 수정 | `reveal.answerNo` 를 선택으로(정답 없이 고른 오답 ✕ 만 — 듣기 이해 처음 틀림) |
+| `tests/e2e/speaking.spec.ts` | 신규 | 증명 표 이름 글자 그대로 열(AC-5b · 5c · 5e · 5f 셋 · N3 넷). 가짜 음성 대본을 수업 문장으로 만듦, 견본 수업(따라 말하기 20낱말 문장 · 질문 둘 · 질문 하나)은 견본 빌더로 넣음, 4단계는 1단계 수업 복제 |
+| `tests/integration/device-alert.test.ts` | 신규 | 기기 알림 셋 · 학습일마다 한 번 · 값은 code · browser 만 · 다른 칸 거부 |
+| `tests/unit/answer-expected.test.ts` | 수정 | 허용 정답 둘(이름 자리 바꿈) · 배치 화면 꼴 카드 사례 둘 |
+
+### 시험 수
+
+단위 492 → **494**(+2), 파일 52. 통합 신규 하나(device-alert). e2e 신규 열(speaking.spec).
+
+### 다르게 한 것과 까닭
+
+1. **인식 실패 셈을 틀이 쥔다.** 조각은 결과를 `onSpeech(event)` 로 넘기고 판정을 받는다. 세션 몫 셈(성공 없이 여섯 번 · 말소리 없음 이어짐)이 활동을 넘어 이어져야 해서다(차례 1 `speakingCounters`). 막힌 안내 · 알림도 틀이 한다.
+2. **말소리 없음으로 막힐 때 그 활동은 건너뛴 끝 시도(skipped "silent")로 남긴다.** 7절 '그 문항을 건너뛰고'와 같고, 다시 열면 다음 활동에서 이어진다. 마이크 멈춤 · 쓸 수 없음은 그 활동을 남기지 않는다(다시 열면 그 활동에서).
+3. **처음 마이크 안내는 세션 처음이 아니라 처음 말하는 활동 앞**(미리보기 뒤). '처음 마이크를 쓸 때'(4절)에 맞춤. 단추는 '알겠어요'(plan 표).
+4. **질문 답의 '같이 말해 볼까요' 뒤 말은 결과 말 없이 바로 다음**, 그 말이 인식 실패면 다시 듣기 셈 안에서 다시(건너뜀이면 skipped). 첫 답은 `heard`, 뒤 말은 `echo`(값 2).
+5. **듣기 이해 '한 번 더 듣기'** 는 답 조각을 새로 그려 대본을 다시 읽고, 처음 고른 오답은 ✕ 로 남겨 다시 고를 수 없게 한다(컨트롤러 결정 — 읽기 문항과 같은 꼴, `ChoiceAnswer` 선택 속성 `struck`). 둘째 고름 뒤 정답 ✓ · 고른 오답 둘 다 ✕.
+6. **답 꼴 · 상한:** 1~2단계 질문 답은 한 문장(서버 `answerShapes`), 두 문장 이상 꼴의 상한은 `speaking.answer_max_seconds.<구간>`(서버 config) — c 가 같은 길을 쓴다.
+7. **마이크 멈춤 알림 코드:** 감시 타이머 멈춤은 'stalled', 여섯 번은 마지막 오류 코드(결과 없음이면 'no-result'), 말소리 없음은 'no-speech'.
+
+### 정할 것
+
+| 번호 | 무엇 | 고른 것 | 까닭 |
+|---|---|---|---|
+| 1 | 듣기 이해 다시 고를 때 처음 오답 표시 | 처음 오답은 ✕ 로 남김(새 조각이 대본을 다시 읽음) — CI 6차 뒤 컨트롤러 결정으로 처음 고른 '남기지 않음'을 바꿈 | 읽기 문항과 같은 꼴 |
+| 2 | 질문 답 화면에 아이 인식 글을 보이는가 | 보이지 않음(따라 말하기만 아이 말 칸) | AC-5d '판정 글자 없음' 쪽으로 — 인식 글과 정답이 나란하면 판정처럼 읽힌다 |
+
+### 관문 명령 결과(로컬)
+
+```
+pnpm lint                → Checked 299 files. No fixes applied.
+pnpm test                → Test Files 52 passed (52) · Tests 494 passed | 6 todo (500)
+pnpm build               → exit 0
+pnpm exec tsc --noEmit   → exit 0
+pnpm check:deps          → ✔ no dependency violations found (153 modules, 648 dependencies cruised)
+pnpm check:ids           → code-setting-unknown 0 · design-number 35(새 줄 0)
+pnpm check:bundle        → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test 21줄, 보고만)
+녹음 API(getUserMedia · MediaRecorder) — src 에 없음
+```
+
+사진 이름(E2E_PHOTOS): `p11-speaking-repeat` · `-repeat-good` · `-repeat-close` · `-listening` · `-question` · `-together` · `-result` · `-needs-mic` · `-stalled` · `-silent` · `-offline`(각 두 방향).
+
+CI 6차(컨트롤러, run 39079611504 · 833de73): integration 1 실패 / 150, e2e 4 실패 / 59(배치 · 읽기 · 쓰기 e2e 는 모두 초록 — 위험 자리 셋은 통과), 그 밖 성공.
+
+- **integration `device-alert.test`:** 시험용 시드가 1단계까지라 첫 실행(말하기 1단계)이 `seed_range_end_near` 알림도 남겨, 프로필 알림 전부를 기기 알림 셋과 맞댄 단언이 깨짐 → 시험이 `DEVICE_ALERT_KINDS` 로 걸러 봄(코드 변화 없음). 로그의 'TypeError: done is not a function' 은 `embedded-postgres` 의 종료 훅(`gracefulShutdown(done)` — `node_modules/embedded-postgres/dist/index.js:386~393`)이 콜백 없이 불린 것으로, 시험이 실패해 프로세스가 끝 코드로 나갈 때만 뒤에 붙는 라이브러리 줄이다(이번 변경과 무관 — 장부 '환경' 행에 둘 만함).
+- **e2e AC-N3 aborted · no-speech:** 시험이 앞 듣기가 끝나기 전에 '말하기'를 다시 눌렀다(앞의 '다시 한 번 말해 볼까요'가 이미 보여 기다림이 바로 지남). 듣는 중의 누름은 7절대로 듣기를 끝내는 누름이라 실패 하나가 사라져 건너뜀에 닿지 않았다 → 조각 뿌리에 `data-failures` · `data-listening` 을 두고, 시험 `speak()` 가 듣는 중이 아닐 때 · 들어올 때 읽기 뒤(250ms)에 누르고 실패 수를 기다린다.
+- **e2e AC-N3 network:** 같은 '누름 · 읽기 · 듣기' 경합으로 본다(로그로 확정 못 함 — 단위 재현에서 network 결과 · 판정 '끊김'은 바름). 같은 `speak()` · 실패 수 0 단언으로 바꿈. 7차에서 다시 실패하면 이 짐작이 틀린 것이다.
+- **e2e AC-5f 저절로 넘김:** 넘김 시계는 결과가 오는 때 시작하고 시험은 '잘 말했어요'가 보인 뒤 재서 791ms 로 짧게 잼 → '그 전 일정 동안 머무르고 그 뒤 넘어감'으로 단언을 바꿈.
+- **컨트롤러 결정 둘:** 듣기 이해에서 다시 고를 때 처음 오답은 ✕ 고정(`ChoiceAnswer` 선택 속성 `struck` — 세션만 넘김, 배치 그대로) · 질문 답 화면에 인식 글을 보이지 않는 것 받음.
+
+로컬 관문(고친 뒤): lint 0 · 단위 494 · build 0 · tsc 0 · check:deps 0 · check:ids design-number 35 · check:bundle 0 · spec:trace exit 0.
+
+CI 7차(컨트롤러, run 39080614985 · 8f5bd72): 통합 · e2e 63(말하기 열 포함) · e2e-local 포함 **전부 성공** — 경합 · 측정 짐작이 맞음.
+
+상태: DONE.
+
+## 차례 4 fix 4 — 화면 검토 A4 I-1 · M-1~M-3 + 코드 검토 A4 M-1(2026-10-18 09:xx)
+
+바탕 HEAD b648c8c, 커밋 없음.
+
+| 지적 | 어디를 어떻게 | 선 위 검증(e2e — CI) |
+|---|---|---|
+| I-1 듣는 동안 변화 없음 | 새 공용 조각 `src/components/answer/speak-button.tsx` `SpeakButton` — 듣는 동안 단추 안쪽 분홍 테(`border-postit-speaking`) · 둘레의 남은 시간 고리(conic-gradient — 먹색이 줄고 종이색이 늘어남, 분홍 카드 위에서 보이게) · `data-listening` · `aria-pressed`. 남은 시간은 P2b `ListenHandle.capAt`(설정 speech.max_listen_seconds · 활동 상한에서 온 시각)과 누른 시각으로만 셈(박힌 수 없음 — 한 바퀴 `FULL_TURN_DEG`). 다시 누르면 듣기 끝(부르는 쪽 press, 7절 그대로). `listeningLabel` 자리(c 의 '다 말했어요'). 세션 조각(`speaking.tsx`) · P10 배치 `repeat.tsx` 가 같이 씀 | `speaking.spec.ts` AC-5b — '말하기' 누른 뒤 결과 전 `[data-speak][data-listening]` · 고리 style · 사진 `p11-speaking-listening-on`, 결과 뒤 듣는 중 표시 없음 |
+| M-1 · 코드 M-1 막힌 안내 '홈' 둘 | 막힌 동안 종이 띠 '홈'을 숨기고 몸통 큰 '홈'(BigButton) 하나가 같은 `home()`(대기열 비우기)를 씀. 막힌 동안은 `leaveSession` 의 첫 활동 지움을 끔(세션은 진행으로 — 7절) | AC-5c — '홈' 단추 하나 · 눌러도 세션 진행 |
+| M-2 가로 듣기 '다음' 걸림 | `ChoiceAnswer` 의 `instant`(세션) 그림 보기는 가로에서 그림 칸 112px · 위아래 여백 줄임(`ChoiceOption` `compact`, 배치는 그대로) | AC-5b — 듣기 처음 틀림 · 정답 보기 · 맞음에서 `fitsBothWays` · 사진 `p11-speaking-listening-wrong` · `-reveal` · `-right` · 처음 오답 ✕ 고정 단언 |
+| M-3 안내 줄 · 크기 | 활동 첫 줄 안내(plan 표 a 행 — 컨트롤러가 더함): 따라 말하기 '잘 듣고 따라 말해 봐요' · 듣기 이해 '잘 듣고 알맞은 것을 골라요' · 질문 답 '질문을 듣고 영어로 대답해 봐요'(20px). 따라 말하기 목표 글 36px · 질문 답 영어 질문 28px(4절 '24px 이상' 안) | 사진(CI 8차) |
+
+배치(P10) 영향: 말하기 단추가 같은 조각이 되어 듣는 동안 꼴(테 · 고리 · `data-listening`)이 배치에도 생긴다(I-1 이 배치에도 걸린 것 — 화면 검토 근거 `repeat.tsx:154-163`). 단추 이름 '말하기' · `data-speak` · `aria-pressed` 는 그대로라 배치 e2e 의 단추 찾기는 같다. 그림 칸 줄임 · `struck` 은 세션만 넘긴다.
+
+새 사진: `p11-speaking-mic-notice` · `-listening-on` · `-listening-wrong` · `-listening-reveal` · `-listening-right`(각 두 방향).
+
+시험 수: 단위 494 그대로. e2e 단언 · 사진 더함(AC-5b 첫 듣기 문항은 처음에 틀리게 바꿈 — 듣기 점수 기대값을 그에 맞춤).
+
+관문(로컬): lint 0 · 단위 494 · build 0 · tsc 0 · check:deps 0 · check:ids design-number 35(새 줄 0) · check:bundle 0 · spec:trace exit 0.
+
+CI 8차: (컨트롤러 결과 대기)
+
+## P11a 완료 보고에 넣을 것(차례 1~4 모음)
+
+### 계획과 다르게 한 것(모두 검토에서 받음 — 까닭은 각 절)
+
+- **값 1 활동 모델:** 입력에 `level` 은 차례를 정하는 데 쓰지 않는다(부르는 쪽이 thinkout · corrections · confirmQuestions 로 채움). 차례 1 의 P10 두 인자 덧붙임은 차례 2 에서 지움.
+- **값 2 시도 꼴 · 앱 채점:** ctx 에 `appJudgedQuestions` 를 더함(시드 accepted 칸이 아니라 규격으로 가름). 공개 함수를 덧붙임(`parseAttemptInput` · `inputFitsActivity` · `finalActivityNos` · `lemmaLookup`). NUL 글자 든 시도 거부(묶음 넣기가 늘 실패해 대기열이 막히지 않게). 건너뛴 시도는 인식 글이 있어도 점수 · 단어별 정오 없음(컨트롤러 결정 1). 단어별 정오 세부(같은 단원 단어 한 줄 · 여러 낱말 표제어 · 정규화 견줌 — 'yo-yo' · "o'clock").
+- **값 3 세션 점수:** 입력을 영역별 판별 합으로, 쓰기에 `part`. `cleanSentenceRate` · `rubricScoreOf` 덧붙임. 구조 상수 `RUBRIC_MAX` · `MIC_STALL_RETRY_MULTIPLE`.
+- **값 5 세션 서버:** 묶음은 시도 id 글조차 없으면 통째로 invalid(P10 시험 그대로), 점수 칸을 붙인 시도는 꼴 틀림으로 거부, AI 길 거부(`needsAiPath` — 3단계부터 질문 답은 skipped 끝 시도만), 읽기 · 쓰기 세션의 영어로 말한 문장 수 0, 끝 시도 둘이면 먼저 저장된 것, `readSessionArea` → `readSessionPlace`, 화면 자료에 `openSessionIds` · 쓰기 낱말 뜻.
+- **값 6 활동 안 입력:** `prune(진행 세션 id)` 로 끝내지 않은 세션 줄 정리(검토 A2 M-1).
+- **값 7~9 틀 · 결과 · 읽기:** 결과 큰 단추는 hereStart 가 수업 · 연습이면 그 칸, 하던 수업이면 그 세션, 그 밖 '수업 목록'. 상태 줄은 늘 두는 알림 영역(`sr-only`). `ReadingPassage` 선택 속성 셋(`onWordTap` · `openWord` · `renderPicture` — 세션 길만, 시드 보기 · 평가 지문 그대로). 문항 쪽 지문 보기에는 그림 줄 없음(컨트롤러 결정). 지문 그림 깨짐 대체 `SafePicture`. 쪽지 자리 재기(오른쪽 반이면 오른쪽 끝 · 카드 안으로 당김). 가로 그림 보기 칸 112px.
+- **값 10 e2e 견본:** 기본 틀 규격(작은 틀로는 읽기 견본이 만들어지지 않음 — plan 추측이 틀림). `levelSpecOf` 로 시험 숫자를 DB 규격에서.
+- **값 11 쓰기 1~3:** 답 조각 선택 속성 `initial` · `onChange` · `reveal` 에 더해 `slots`(놓는 칸 · 같은 너비 · '대문자' 줄 끝 · 뜻 제목 글꼴) · `needed`(다 찼을 때만 '다 놓았어요') · `instant`(고르면 바로 채점) · `submitLabel`(받아쓰기 '다 썼어요' — plan 표에 더해짐). 정답 조각 · 카드 표시 함수를 core 에(`expected.ts` — C84). 배치 조립 화면도 같은 카드 표시.
+- **값 12 말하기 · 기기 알림:** 위 '차례 4 다르게 한 것' 1~7(듣기 이해 다시 고를 때 처음 오답 ✕ 고정 — 컨트롤러 결정). 동음이의어 읽기 한 곳(`seed-lists.ts`).
+- **계획 표 밖 파일 — 차례 1 꿰맞춤:** `src/app/(child)/session/[id]/session-frame.tsx` 를 차례 1 에서 없어진 활동 종류(`writing-sentence` · `writing-composition`)만 새 종류의 P10 자리 표시로 꿰맞췄고(브리프 허용), 차례 2 가 틀을 다시 쓰며 그 꿰맞춤을 없앴다(보기만 하는 활동 몸통 `DisplayBody`, 문장 틀 key → 문장 번호 — 검토 review-p11-1-code M-5).
+- **계획 표 밖 파일 — 시험:** `tests/integration/session-start.test.ts`(P10 시험 — 저장 결과 기대값에 `rejected: []`, 위험 3) · `tests/unit/safe-error.test.ts`(장부 행 — `safeDbError` 시도 저장 질의 오류 사례) · `tests/unit/session-input.test.ts`(활동 안 입력 · prune) · `tests/unit/answer-expected.test.ts`(정답 조각 · 카드 표시 · 배치 화면 꼴) · `tests/integration/device-alert.test.ts`(기기 알림 once day).
+- **공용 변경(컨트롤러 요청) — 사진 아티팩트:** `tests/e2e/photos.ts`(`E2E_PHOTOS` 가 있을 때만 `test-results/photos/<이름>-<portrait|landscape>.png`) · `.github/workflows/ci.yml` e2e 작업의 `E2E_PHOTOS: "1"` 과 `actions/upload-artifact@v4`(e2e-photos, `if: always()`, `if-no-files-found: ignore`). 이 Mac 이 로컬 e2e 를 못 돌려 화면 검토 사진을 CI 에서 받으려고(차례 2).
+- **13절에 적힌 것:** C83(7절 '최대 3회 다시 듣는다' · 12절 '다시 듣는 횟수' 글을 구현 — 실패 수가 speech.max_retries 에 닿으면 건너뜀, 처음 듣기 포함 — 에 맞춤, 차례 1 fix 1 무렵 · 코드 변화 없음) · C84(조립 카드 대문자 — 차례 3 정할 것).
+
+### 남긴 것(다른 차례 · P 몫)
+
+- **b · c:** 쓰기 4~12 · 말하기 3~12 AI 활동 조각 · 시도 꼴 종류 · `needsAiPath` 의 자기 규칙 · 둘째 세션 교정 수(`corrections` 지금 0) · 결과 화면 쓰기 6+ 첫 세션 문구 · `/result` 의 '첨삭 보기'. 받아쓰기 '다 썼어요'는 2단계 갈래라 e2e 사진이 없음(코드로만) — b 이전에 2단계 견본으로 볼 수 있음.
+- **차례 10(c 마무리):** `font-size.spec` AC-N9 에 P11 화면(읽기 · 쓰기 · 말하기 · 마이크 안내 · 결과) 더하기(공용 변경 3).
+- **P12:** 결과 화면 별 · 오늘 얻은 단어 · 단원 막대 · '단원 n을 통과했어요!' · '다시 했어요' · 'n단계 평가 보기', `attempts.word_results` · `tappedWords` · `shownWords` 로 단어장 · 복습일, `sessions.score` null 세션을 최근 성적에서 빼기, 평가 지문 그림 줄에 `renderPicture`(`SafePicture` 꾸밈 그림) 넘기기(장부 35행), 평가 화면 조립 카드 표시(`displayCardsOf`).
+- **P8:** C84 시드 규칙 · 검증기(고유 명사 · I 카드는 정답 꼴), 쓰기 1~3 정답 낱말 = 단원 단어 원형.
+- **1-나:** 부모 화면이 `speech_silent` · `mic_*` 알림과 `sessions.english_sentences` 를 읽음. '이 문제 이상해요' 자리. 'AI 쉬는 중' 상태가 말하기 3~8 질문 답을 건너뛰는 길(c 와 함께).
+- **공용 변경 2(컨트롤러):** 개발용 DB 둘에 P11 설정 키(차례 2 다르게 한 것 11 — 읽기 · 쓰기 세션도 음성 · 말하기 설정을 읽음).
+- **실기(H2 · 차례 11):** iPad Safari 에서 저절로 읽기(unlockFromGesture) · 결과 말 · 끝 조용함 · 마이크 안내를 요청자가 직접 확인.

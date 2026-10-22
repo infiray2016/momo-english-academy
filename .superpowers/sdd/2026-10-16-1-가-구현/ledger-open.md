@@ -6,8 +6,8 @@
 
 | 항목 | 어디서 확인 | 출처 |
 |---|---|---|
+| 통합 시험이 실패로 끝날 때 CI 로그 끝에 `embedded-postgres/dist/index.js:393` 'TypeError: done is not a function' 이 한 번 찍힌다(라이브러리 종료 훅 — fix 5 가 뗀 처리기 밖 길). 결과를 가리지 않음('failed' 지킴). 소음일 뿐이나 재부팅 뒤 로컬에서 재현되면 `importEmbeddedPostgres()` 에서 그 처리기도 뗀다 | 재부팅 뒤 로컬 통합 · P12 | P11 CI 6차 로그 |
 | P12 단계 평가 화면의 조립 문항도 `displayCardsOf`(C84 표시)로 카드를 보인다 — P10 배치 몫은 P11 차례 4 가 고침 | P12 평가 화면 브리프 | review-p11-3-code 범위 밖 관찰 |
-| `displayCardsOf`(C84 표시)가 첫 허용 정답만 봐서, 시드 카드가 소문자인 조립 문항의 둘째 허용 정답은 화면으로 못 냄 — P8 시드가 C84 대로 카드를 정답 꼴로 적으면 사라짐. 그 전에는 허용 정답 모두를 보거나 둘째 정답이 있는 문항 시험 하나 | P11 차례 4 fix 또는 P8 시드 규칙 | review-p11-3-code M-1 |
 | P8 시드 · 검증기: 문장 조립 카드는 소문자, 고유 명사 · I 는 정답 꼴(C84) — 시험용 시드 견본 빌더(`writingLesson(ref, 3)` 'They kububa with Momo.' 카드 'momo')도 P8 때 같은 규칙으로 | P8 브리프 · 검증기 규칙 | impl-p11 차례 3 보고 정할 것 · C84 |
 | P12 단계 평가 화면이 지문 그림 줄을 그릴 때 P11 차례 2 fix 2 의 깨짐 대체(`data-picture-missing`, 세션 길 선택 속성)를 넘긴다 — 평가 지문(decorative)은 깨지면 안 그림 | P12 평가 화면 브리프 | review-p11-fix2-design 장부로 넘길 일 |
 | `requireAccess` 는 `import { requireAccess } from "@/server/access/guard"` 꼴로만 가져온다 — access-gate 정적 검사가 기본 가져오기(`import requireAccess from …`)와 guard 다른 함수의 별칭(`hasValidAccess as requireAccess`)을 못 잡음(거짓 음성 둘). 검사 보강은 1-나 설정 · 도구 몫 | P11 · P12 · 1-나 브리프 '지킬 것' · 1-나 때 검사 보강 | review-p10-7-code M-4 |
