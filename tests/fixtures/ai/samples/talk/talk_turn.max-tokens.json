@@ -1,0 +1,44 @@
+{
+  "case": "talk_turn.max-tokens",
+  "purpose": "talk_turn",
+  "title": "talk_turn",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_talk_109",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tori_en\":\"Great! I like that. Tell me more about your",
+          "citations": null
+        }
+      ],
+      "stop_reason": "max_tokens",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 3500,
+        "output_tokens": 1000,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": false
+  }
+}

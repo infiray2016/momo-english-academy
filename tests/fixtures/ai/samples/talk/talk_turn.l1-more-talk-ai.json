@@ -1,0 +1,45 @@
+{
+  "case": "talk_turn.l1-more-talk-ai",
+  "purpose": "talk_turn",
+  "title": "talk_turn",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_talk_104",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-haiku-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tori_en\":\"Cool! A big ball.\",\"tori_ko\":\"멋지다! 큰 공이네.\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"stuck\":false,\"card_question_no\":0,\"next_question_en\":\"What color is your ball?\",\"next_question_ko\":\"네 공은 무슨 색이야?\",\"next_hint_ko\":\"내 공은 빨간색이야.\",\"next_hints\":[\"My ball is red.\"],\"next_usable_phrases\":[],\"next_targets\":[\"ball\"],\"next_answer_example\":\"My ball is red.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 3500,
+        "output_tokens": 120,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": true,
+    "level": 1
+  }
+}

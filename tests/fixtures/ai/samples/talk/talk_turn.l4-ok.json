@@ -1,0 +1,48 @@
+{
+  "case": "talk_turn.l4-ok",
+  "purpose": "talk_turn",
+  "title": "talk_turn",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_talk_105",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tori_en\":\"You like apples! I like apples too. What do you eat for lunch?\",\"tori_ko\":\"사과를 좋아하는구나! 나도 사과 좋아해. 점심에 뭐 먹어?\",\"recast\":\"I like apples.\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"apples\"],\"mission_done\":[],\"stuck\":false,\"card_question_no\":2,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 점심에 밥을 먹어.\",\"next_hints\":[\"I eat ___ for lunch.\",\"I eat rice for lunch.\",\"I eat bread.\"],\"next_usable_phrases\":[],\"next_targets\":[\"lunch\"],\"next_answer_example\":\"I eat rice for lunch.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 3500,
+        "output_tokens": 120,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": false,
+    "level": 4,
+    "normalized": {
+      "next_hints": 2
+    }
+  }
+}

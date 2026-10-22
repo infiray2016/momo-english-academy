@@ -99,6 +99,7 @@
     {"key": "speech.watchdog_extra_seconds", "scope": "household", "value": 3, "changeVia": "advanced"},
     {"key": "speech.max_retries", "scope": "household", "value": 3, "changeVia": "advanced"},
     {"key": "speech.silent_items_max", "scope": "household", "value": 3, "changeVia": "advanced"},
+    {"key": "speech.slow_rate", "scope": "household", "value": 0.8, "changeVia": "advanced"},
     {"key": "vocab.mastery_streak", "scope": "household", "value": 3, "changeVia": "decision-first"},
     {"key": "review.intervals_days", "scope": "household", "value": [1, 2, 4, 30, 60, 120], "changeVia": "advanced"},
     {"key": "review.daily_cards_per_area", "scope": "profile", "value": 15, "changeVia": "advanced"},
