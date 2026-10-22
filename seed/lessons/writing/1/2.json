@@ -1,0 +1,3198 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 2,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "농장 동물 세어 보기",
+      "newWords": [
+        "six",
+        "big",
+        "little",
+        "one",
+        "four"
+      ],
+      "unitWords": [
+        "six",
+        "big",
+        "little",
+        "one",
+        "four"
+      ],
+      "preview": [
+        {
+          "word": "six",
+          "meaningKo": "6, 여섯",
+          "example": "Six little ducks."
+        },
+        {
+          "word": "big",
+          "meaningKo": "큰",
+          "example": "The cow is big."
+        },
+        {
+          "word": "little",
+          "meaningKo": "작은, 어린",
+          "example": "It is a little cat."
+        },
+        {
+          "word": "one",
+          "meaningKo": "1, 하나",
+          "example": "One rabbit."
+        },
+        {
+          "word": "four",
+          "meaningKo": "4, 넷",
+          "example": "Four cats."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "six",
+            "options": [
+              "sand",
+              "six",
+              "sheep",
+              "star"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "four",
+            "options": [
+              "fork",
+              "fish",
+              "four",
+              "fan"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "four"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "big",
+            "tiles": [
+              "g",
+              "i",
+              "b"
+            ],
+            "accepted": [
+              "big"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "one",
+            "tiles": [
+              "n",
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "one"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "a",
+              "i",
+              "o"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "six",
+            "pattern": "s_x",
+            "tiles": [
+              "i",
+              "k"
+            ],
+            "accepted": [
+              "six"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "돼지우리 구경",
+      "newWords": [
+        "dog",
+        "pig",
+        "frog",
+        "green",
+        "small"
+      ],
+      "unitWords": [
+        "dog",
+        "pig",
+        "frog",
+        "green",
+        "small",
+        "little"
+      ],
+      "preview": [
+        {
+          "word": "dog",
+          "meaningKo": "개",
+          "example": "My dog is big."
+        },
+        {
+          "word": "pig",
+          "meaningKo": "돼지",
+          "example": "This is a pig."
+        },
+        {
+          "word": "frog",
+          "meaningKo": "개구리",
+          "example": "It is a little frog."
+        },
+        {
+          "word": "green",
+          "meaningKo": "초록의, 초록색",
+          "example": "I like green."
+        },
+        {
+          "word": "small",
+          "meaningKo": "작은",
+          "example": "The ant is small."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "dog",
+            "options": [
+              "dish",
+              "door",
+              "duck",
+              "dog"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "dog"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pig",
+            "options": [
+              "pen",
+              "pig",
+              "cow",
+              "cat"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "pig"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "green",
+            "tiles": [
+              "e",
+              "n",
+              "g",
+              "r",
+              "e"
+            ],
+            "accepted": [
+              "green"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "small",
+            "tiles": [
+              "l",
+              "m",
+              "a",
+              "s",
+              "l"
+            ],
+            "accepted": [
+              "small"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "frog",
+            "pattern": "fr_g",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "little"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "할머니네 간식 시간",
+      "newWords": [
+        "milk",
+        "cup",
+        "doll",
+        "bus",
+        "pizza"
+      ],
+      "unitWords": [
+        "milk",
+        "bus",
+        "pizza",
+        "cup",
+        "doll",
+        "pig"
+      ],
+      "preview": [
+        {
+          "word": "milk",
+          "meaningKo": "우유",
+          "example": "I like milk."
+        },
+        {
+          "word": "cup",
+          "meaningKo": "컵",
+          "example": "The cup is small."
+        },
+        {
+          "word": "doll",
+          "meaningKo": "인형",
+          "example": "My doll is little."
+        },
+        {
+          "word": "bus",
+          "meaningKo": "버스",
+          "example": "It is a big bus."
+        },
+        {
+          "word": "pizza",
+          "meaningKo": "피자",
+          "example": "Wow, pizza!"
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "milk",
+            "options": [
+              "map",
+              "monkey",
+              "milk",
+              "mouth"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bus",
+            "options": [
+              "bus",
+              "bear",
+              "bed",
+              "banana"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "bus"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pizza",
+            "tiles": [
+              "z",
+              "a",
+              "p",
+              "z",
+              "i"
+            ],
+            "accepted": [
+              "pizza"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "cup",
+            "tiles": [
+              "p",
+              "u",
+              "c"
+            ],
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "doll",
+            "pattern": "d_ll",
+            "tiles": [
+              "a",
+              "o"
+            ],
+            "accepted": [
+              "doll"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pig",
+            "pattern": "p_g",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "pig"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "햇볕 쨍쨍 모래밭",
+      "newWords": [
+        "drum",
+        "sun",
+        "top",
+        "hot",
+        "car"
+      ],
+      "unitWords": [
+        "sun",
+        "top",
+        "car",
+        "hot",
+        "drum",
+        "milk"
+      ],
+      "preview": [
+        {
+          "word": "drum",
+          "meaningKo": "북, 드럼",
+          "example": "I like the drum."
+        },
+        {
+          "word": "sun",
+          "meaningKo": "해, 태양",
+          "example": "The sun is hot."
+        },
+        {
+          "word": "top",
+          "meaningKo": "팽이, 꼭대기",
+          "example": "This top is red."
+        },
+        {
+          "word": "hot",
+          "meaningKo": "뜨거운, 더운",
+          "example": "The sand is hot."
+        },
+        {
+          "word": "car",
+          "meaningKo": "자동차",
+          "example": "It is a little car."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "sun",
+            "options": [
+              "sand",
+              "star",
+              "tree",
+              "sun"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "sun"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "top",
+            "options": [
+              "tent",
+              "top",
+              "tiger",
+              "ten"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "car",
+            "tiles": [
+              "r",
+              "a",
+              "c"
+            ],
+            "accepted": [
+              "car"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hot",
+            "tiles": [
+              "t",
+              "o",
+              "h"
+            ],
+            "accepted": [
+              "hot"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "drum",
+            "pattern": "dr_m",
+            "tiles": [
+              "o",
+              "u"
+            ],
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "milk",
+            "pattern": "m_lk",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "milk"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "숲속 여우 집",
+      "newWords": [
+        "pot",
+        "fox",
+        "puppy",
+        "wing",
+        "old"
+      ],
+      "unitWords": [
+        "pot",
+        "pig",
+        "fox",
+        "frog",
+        "puppy",
+        "old",
+        "wing",
+        "top"
+      ],
+      "preview": [
+        {
+          "word": "pot",
+          "meaningKo": "냄비, 화분",
+          "example": "The pot is hot."
+        },
+        {
+          "word": "fox",
+          "meaningKo": "여우",
+          "example": "The fox is orange."
+        },
+        {
+          "word": "puppy",
+          "meaningKo": "강아지",
+          "example": "My puppy is little."
+        },
+        {
+          "word": "wing",
+          "meaningKo": "날개",
+          "example": "The wing is big."
+        },
+        {
+          "word": "old",
+          "meaningKo": "~살의, 늙은",
+          "example": "The bear is old."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "pot",
+            "options": [
+              "pig",
+              "pot",
+              "pen",
+              "egg"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "pot"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fox",
+            "options": [
+              "frog",
+              "fish",
+              "fox",
+              "cat"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "fox"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "puppy",
+            "tiles": [
+              "y",
+              "p",
+              "u",
+              "p",
+              "p"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "d",
+              "l",
+              "o"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "wing",
+            "pattern": "w_ng",
+            "tiles": [
+              "u",
+              "i"
+            ],
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "top",
+            "pattern": "t_p",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "top"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "아기 돼지 낮잠 시간",
+      "newWords": [],
+      "unitWords": [
+        "six",
+        "sun",
+        "one",
+        "old",
+        "big",
+        "four",
+        "little",
+        "pig"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "six",
+            "options": [
+              "sheep",
+              "sun",
+              "six",
+              "sock"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "one",
+            "options": [
+              "one",
+              "orange",
+              "old",
+              "egg"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "one"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "big",
+            "tiles": [
+              "b",
+              "g",
+              "i"
+            ],
+            "accepted": [
+              "big"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "four",
+            "tiles": [
+              "u",
+              "f",
+              "r",
+              "o"
+            ],
+            "accepted": [
+              "four"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pig",
+            "pattern": "p_g",
+            "tiles": [
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "pig"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "연못가 산책",
+      "newWords": [],
+      "unitWords": [
+        "pig",
+        "doll",
+        "dog",
+        "green",
+        "frog",
+        "small",
+        "milk",
+        "bus"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "dog",
+            "options": [
+              "pig",
+              "duck",
+              "doll",
+              "dog"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "dog"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "green",
+            "options": [
+              "grape",
+              "green",
+              "red",
+              "guitar"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "green"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "frog",
+            "tiles": [
+              "g",
+              "o",
+              "f",
+              "r"
+            ],
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "small",
+            "tiles": [
+              "m",
+              "s",
+              "l",
+              "l",
+              "a"
+            ],
+            "accepted": [
+              "small"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "milk",
+            "pattern": "m_lk",
+            "tiles": [
+              "i",
+              "o"
+            ],
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bus",
+            "pattern": "b_s",
+            "tiles": [
+              "u",
+              "e"
+            ],
+            "accepted": [
+              "bus"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "가족 소풍 바구니",
+      "newWords": [],
+      "unitWords": [
+        "cup",
+        "pizza",
+        "pig",
+        "doll",
+        "drum",
+        "top",
+        "fox"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cup",
+            "options": [
+              "cat",
+              "cap",
+              "cup",
+              "cake"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pizza",
+            "options": [
+              "pizza",
+              "pig",
+              "piano",
+              "pen"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "pizza"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "doll",
+            "tiles": [
+              "l",
+              "o",
+              "d",
+              "l"
+            ],
+            "accepted": [
+              "doll"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "drum",
+            "tiles": [
+              "m",
+              "u",
+              "r",
+              "d"
+            ],
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "top",
+            "pattern": "t_p",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "fox",
+            "pattern": "f_x",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "fox"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "여름 바닷가 하루",
+      "newWords": [],
+      "unitWords": [
+        "six",
+        "sun",
+        "car",
+        "hot",
+        "puppy",
+        "wing",
+        "doll"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "sun",
+            "options": [
+              "six",
+              "sand",
+              "snake",
+              "sun"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "sun"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "car",
+            "options": [
+              "cat",
+              "car",
+              "cow",
+              "cake"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "car"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hot",
+            "tiles": [
+              "t",
+              "h",
+              "o"
+            ],
+            "accepted": [
+              "hot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "puppy",
+            "tiles": [
+              "u",
+              "p",
+              "y",
+              "p",
+              "p"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "wing",
+            "pattern": "w_ng",
+            "tiles": [
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "doll",
+            "pattern": "d_ll",
+            "tiles": [
+              "a",
+              "o"
+            ],
+            "accepted": [
+              "doll"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "텃밭 가꾸는 날",
+      "newWords": [],
+      "unitWords": [
+        "pig",
+        "top",
+        "pot",
+        "frog",
+        "fox",
+        "four",
+        "old",
+        "drum",
+        "puppy"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "pot",
+            "options": [
+              "pig",
+              "top",
+              "pot",
+              "pen"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "pot"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "frog",
+            "options": [
+              "frog",
+              "fox",
+              "fish",
+              "four"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "o",
+              "d",
+              "l"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pig",
+            "tiles": [
+              "g",
+              "p",
+              "i"
+            ],
+            "accepted": [
+              "pig"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "drum",
+            "pattern": "dr_m",
+            "tiles": [
+              "u",
+              "o"
+            ],
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "puppy",
+            "pattern": "p_ppy",
+            "tiles": [
+              "i",
+              "u"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "동물 친구 다시 만나기",
+      "newWords": [],
+      "unitWords": [
+        "one",
+        "small",
+        "big",
+        "six",
+        "four",
+        "frog",
+        "pig",
+        "little",
+        "green",
+        "dog"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "six",
+            "options": [
+              "one",
+              "small",
+              "big",
+              "six"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "frog",
+            "options": [
+              "four",
+              "frog",
+              "pig",
+              "little"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "green",
+            "tiles": [
+              "n",
+              "g",
+              "e",
+              "e",
+              "r"
+            ],
+            "accepted": [
+              "green"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "little",
+            "tiles": [
+              "e",
+              "t",
+              "l",
+              "i",
+              "l",
+              "t"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "dog",
+            "pattern": "d_g",
+            "tiles": [
+              "r",
+              "o"
+            ],
+            "accepted": [
+              "dog"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pig",
+            "pattern": "p_g",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "pig"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "동네 길 다시 걷기",
+      "newWords": [],
+      "unitWords": [
+        "cup",
+        "hot",
+        "car",
+        "top",
+        "doll",
+        "bus",
+        "drum",
+        "sun",
+        "pizza",
+        "milk"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cup",
+            "options": [
+              "cup",
+              "hot",
+              "car",
+              "top"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "drum",
+            "options": [
+              "doll",
+              "bus",
+              "drum",
+              "sun"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pizza",
+            "tiles": [
+              "z",
+              "p",
+              "i",
+              "a",
+              "z"
+            ],
+            "accepted": [
+              "pizza"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "milk",
+            "tiles": [
+              "i",
+              "k",
+              "l",
+              "m"
+            ],
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "top",
+            "pattern": "t_p",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bus",
+            "pattern": "b_s",
+            "tiles": [
+              "u",
+              "e"
+            ],
+            "accepted": [
+              "bus"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "뒷마당 다시 둘러보기",
+      "newWords": [],
+      "unitWords": [
+        "small",
+        "old",
+        "four",
+        "fox",
+        "puppy",
+        "pot",
+        "hot",
+        "little",
+        "big",
+        "wing"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "fox",
+            "options": [
+              "small",
+              "old",
+              "four",
+              "fox"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "fox"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pot",
+            "options": [
+              "puppy",
+              "pot",
+              "hot",
+              "little"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "pot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "l",
+              "o",
+              "d"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "big",
+            "tiles": [
+              "i",
+              "b",
+              "g"
+            ],
+            "accepted": [
+              "big"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "wing",
+            "pattern": "w_ng",
+            "tiles": [
+              "i",
+              "u"
+            ],
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "little"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "장난감 상자 세기",
+      "newWords": [
+        "six",
+        "big",
+        "little",
+        "one",
+        "four"
+      ],
+      "unitWords": [
+        "four",
+        "six",
+        "one",
+        "big",
+        "little"
+      ],
+      "preview": [
+        {
+          "word": "six",
+          "meaningKo": "6, 여섯",
+          "example": "Six little kites."
+        },
+        {
+          "word": "big",
+          "meaningKo": "큰",
+          "example": "The ship is big."
+        },
+        {
+          "word": "little",
+          "meaningKo": "작은, 어린",
+          "example": "It is a little robot."
+        },
+        {
+          "word": "one",
+          "meaningKo": "1, 하나",
+          "example": "One yo-yo."
+        },
+        {
+          "word": "four",
+          "meaningKo": "4, 넷",
+          "example": "Four balls."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "four",
+            "options": [
+              "fork",
+              "kite",
+              "ball",
+              "four"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "four"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "six",
+            "options": [
+              "six",
+              "ship",
+              "star",
+              "swing"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "one",
+            "tiles": [
+              "e",
+              "o",
+              "n"
+            ],
+            "accepted": [
+              "one"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "big",
+            "tiles": [
+              "i",
+              "g",
+              "b"
+            ],
+            "accepted": [
+              "big"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "big",
+            "pattern": "b_g",
+            "tiles": [
+              "r",
+              "i"
+            ],
+            "accepted": [
+              "big"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "동물 퍼즐 맞추기",
+      "newWords": [
+        "dog",
+        "pig",
+        "frog",
+        "green",
+        "small"
+      ],
+      "unitWords": [
+        "frog",
+        "pig",
+        "small",
+        "green",
+        "dog",
+        "six"
+      ],
+      "preview": [
+        {
+          "word": "dog",
+          "meaningKo": "개",
+          "example": "This is my dog."
+        },
+        {
+          "word": "pig",
+          "meaningKo": "돼지",
+          "example": "It is a little pig."
+        },
+        {
+          "word": "frog",
+          "meaningKo": "개구리",
+          "example": "Wow, a big frog!"
+        },
+        {
+          "word": "green",
+          "meaningKo": "초록의, 초록색",
+          "example": "It is green."
+        },
+        {
+          "word": "small",
+          "meaningKo": "작은",
+          "example": "My yo-yo is small."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "frog",
+            "options": [
+              "frog",
+              "fork",
+              "kite",
+              "fan"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pig",
+            "options": [
+              "plane",
+              "piano",
+              "bike",
+              "pig"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "pig"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "small",
+            "tiles": [
+              "a",
+              "l",
+              "s",
+              "m",
+              "l"
+            ],
+            "accepted": [
+              "small"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "green",
+            "tiles": [
+              "n",
+              "e",
+              "e",
+              "r",
+              "g"
+            ],
+            "accepted": [
+              "green"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "dog",
+            "pattern": "d_g",
+            "tiles": [
+              "r",
+              "o"
+            ],
+            "accepted": [
+              "dog"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "six",
+            "pattern": "s_x",
+            "tiles": [
+              "m",
+              "i"
+            ],
+            "accepted": [
+              "six"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "인형 극장 놀이",
+      "newWords": [
+        "milk",
+        "cup",
+        "doll",
+        "bus",
+        "pizza"
+      ],
+      "unitWords": [
+        "doll",
+        "cup",
+        "pizza",
+        "milk",
+        "bus",
+        "frog"
+      ],
+      "preview": [
+        {
+          "word": "milk",
+          "meaningKo": "우유",
+          "example": "It is milk."
+        },
+        {
+          "word": "cup",
+          "meaningKo": "컵",
+          "example": "This is my cup."
+        },
+        {
+          "word": "doll",
+          "meaningKo": "인형",
+          "example": "My doll is small."
+        },
+        {
+          "word": "bus",
+          "meaningKo": "버스",
+          "example": "The bus is big."
+        },
+        {
+          "word": "pizza",
+          "meaningKo": "피자",
+          "example": "I like pizza."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "doll",
+            "options": [
+              "dish",
+              "doll",
+              "door",
+              "kite"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "doll"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "cup",
+            "options": [
+              "cake",
+              "cap",
+              "bike",
+              "cup"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pizza",
+            "tiles": [
+              "i",
+              "z",
+              "a",
+              "z",
+              "p"
+            ],
+            "accepted": [
+              "pizza"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "milk",
+            "tiles": [
+              "l",
+              "m",
+              "k",
+              "i"
+            ],
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bus",
+            "pattern": "b_s",
+            "tiles": [
+              "e",
+              "u"
+            ],
+            "accepted": [
+              "bus"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "frog",
+            "pattern": "fr_g",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "frog"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "북 치는 운동회",
+      "newWords": [
+        "drum",
+        "sun",
+        "top",
+        "hot",
+        "car"
+      ],
+      "unitWords": [
+        "drum",
+        "sun",
+        "hot",
+        "car",
+        "top",
+        "doll"
+      ],
+      "preview": [
+        {
+          "word": "drum",
+          "meaningKo": "북, 드럼",
+          "example": "This is my drum."
+        },
+        {
+          "word": "sun",
+          "meaningKo": "해, 태양",
+          "example": "It is the sun."
+        },
+        {
+          "word": "top",
+          "meaningKo": "팽이, 꼭대기",
+          "example": "My top is red."
+        },
+        {
+          "word": "hot",
+          "meaningKo": "뜨거운, 더운",
+          "example": "Wow, it is hot!"
+        },
+        {
+          "word": "car",
+          "meaningKo": "자동차",
+          "example": "The car is small."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "drum",
+            "options": [
+              "drum",
+              "dish",
+              "guitar",
+              "door"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "sun",
+            "options": [
+              "star",
+              "ship",
+              "sun",
+              "sock"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "sun"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hot",
+            "tiles": [
+              "o",
+              "t",
+              "h"
+            ],
+            "accepted": [
+              "hot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "car",
+            "tiles": [
+              "a",
+              "r",
+              "c"
+            ],
+            "accepted": [
+              "car"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "top",
+            "pattern": "t_p",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "doll",
+            "pattern": "d_ll",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "doll"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "종이비행기 날리기",
+      "newWords": [
+        "pot",
+        "fox",
+        "puppy",
+        "wing",
+        "old"
+      ],
+      "unitWords": [
+        "wing",
+        "pot",
+        "top",
+        "old",
+        "puppy",
+        "fox",
+        "drum"
+      ],
+      "preview": [
+        {
+          "word": "pot",
+          "meaningKo": "냄비, 화분",
+          "example": "It is a big pot."
+        },
+        {
+          "word": "fox",
+          "meaningKo": "여우",
+          "example": "It is a fox."
+        },
+        {
+          "word": "puppy",
+          "meaningKo": "강아지",
+          "example": "This is my puppy."
+        },
+        {
+          "word": "wing",
+          "meaningKo": "날개",
+          "example": "Wow, big wings!"
+        },
+        {
+          "word": "old",
+          "meaningKo": "~살의, 늙은",
+          "example": "My dog is old."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "wing",
+            "options": [
+              "window",
+              "kite",
+              "wing",
+              "white"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pot",
+            "options": [
+              "pot",
+              "top",
+              "plane",
+              "piano"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "pot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "l",
+              "d",
+              "o"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "puppy",
+            "tiles": [
+              "p",
+              "y",
+              "p",
+              "u",
+              "p"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "fox",
+            "pattern": "f_x",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "fox"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "drum",
+            "pattern": "dr_m",
+            "tiles": [
+              "i",
+              "u"
+            ],
+            "accepted": [
+              "drum"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "자동차 경주 놀이",
+      "newWords": [],
+      "unitWords": [
+        "dog",
+        "doll",
+        "drum",
+        "bus",
+        "car",
+        "pizza",
+        "top",
+        "puppy"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "drum",
+            "options": [
+              "dog",
+              "duck",
+              "doll",
+              "drum"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "drum"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bus",
+            "options": [
+              "bike",
+              "bus",
+              "ball",
+              "box"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "bus"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "car",
+            "tiles": [
+              "c",
+              "r",
+              "a"
+            ],
+            "accepted": [
+              "car"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pizza",
+            "tiles": [
+              "a",
+              "z",
+              "i",
+              "p",
+              "z"
+            ],
+            "accepted": [
+              "pizza"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "top",
+            "pattern": "t_p",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "puppy",
+            "pattern": "p_ppy",
+            "tiles": [
+              "u",
+              "i"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "주사위 숫자 놀이",
+      "newWords": [],
+      "unitWords": [
+        "old",
+        "one",
+        "four",
+        "six",
+        "big",
+        "little",
+        "dog"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "one",
+            "options": [
+              "old",
+              "octopus",
+              "one",
+              "robot"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "one"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "four",
+            "options": [
+              "four",
+              "five",
+              "fork",
+              "fan"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "four"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "six",
+            "tiles": [
+              "x",
+              "s",
+              "i"
+            ],
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "big",
+            "tiles": [
+              "g",
+              "b",
+              "i"
+            ],
+            "accepted": [
+              "big"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "dog",
+            "pattern": "d_g",
+            "tiles": [
+              "o",
+              "r"
+            ],
+            "accepted": [
+              "dog"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "블록 동물원 만들기",
+      "newWords": [],
+      "unitWords": [
+        "big",
+        "pig",
+        "wing",
+        "green",
+        "small",
+        "frog",
+        "bus"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "pig",
+            "options": [
+              "big",
+              "pen",
+              "piano",
+              "pig"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "pig"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "wing",
+            "options": [
+              "window",
+              "wing",
+              "king",
+              "swing"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "green",
+            "tiles": [
+              "r",
+              "e",
+              "g",
+              "n",
+              "e"
+            ],
+            "accepted": [
+              "green"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "small",
+            "tiles": [
+              "l",
+              "s",
+              "m",
+              "l",
+              "a"
+            ],
+            "accepted": [
+              "small"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "frog",
+            "pattern": "fr_g",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "frog"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bus",
+            "pattern": "b_s",
+            "tiles": [
+              "e",
+              "u"
+            ],
+            "accepted": [
+              "bus"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "소꿉놀이 부엌",
+      "newWords": [],
+      "unitWords": [
+        "pizza",
+        "milk",
+        "doll",
+        "dog",
+        "drum",
+        "hot",
+        "old",
+        "cup",
+        "wing"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "milk",
+            "options": [
+              "map",
+              "pizza",
+              "milk",
+              "egg"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "doll",
+            "options": [
+              "doll",
+              "dog",
+              "drum",
+              "duck"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "doll"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hot",
+            "tiles": [
+              "o",
+              "h",
+              "t"
+            ],
+            "accepted": [
+              "hot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "d",
+              "o",
+              "l"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cup",
+            "pattern": "c_p",
+            "tiles": [
+              "u",
+              "n"
+            ],
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "wing",
+            "pattern": "w_ng",
+            "tiles": [
+              "u",
+              "i"
+            ],
+            "accepted": [
+              "wing"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "우주 여행 놀이",
+      "newWords": [],
+      "unitWords": [
+        "six",
+        "sun",
+        "pot",
+        "top",
+        "hot",
+        "little",
+        "fox",
+        "milk"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "sun",
+            "options": [
+              "robot",
+              "star",
+              "six",
+              "sun"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "sun"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pot",
+            "options": [
+              "plane",
+              "pot",
+              "top",
+              "hot"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "pot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "little",
+            "tiles": [
+              "t",
+              "l",
+              "e",
+              "i",
+              "t",
+              "l"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "top",
+            "tiles": [
+              "p",
+              "o",
+              "t"
+            ],
+            "accepted": [
+              "top"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "fox",
+            "pattern": "f_x",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "fox"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "milk",
+            "pattern": "m_lk",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "milk"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "보드게임 다시 한 판",
+      "newWords": [],
+      "unitWords": [
+        "four",
+        "one",
+        "frog",
+        "green",
+        "big",
+        "dog",
+        "pig",
+        "little",
+        "six",
+        "small"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "four",
+            "options": [
+              "four",
+              "one",
+              "frog",
+              "green"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "four"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pig",
+            "options": [
+              "big",
+              "dog",
+              "pig",
+              "little"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "pig"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "six",
+            "tiles": [
+              "i",
+              "x",
+              "s"
+            ],
+            "accepted": [
+              "six"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "small",
+            "tiles": [
+              "a",
+              "m",
+              "l",
+              "s",
+              "l"
+            ],
+            "accepted": [
+              "small"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "i",
+              "o"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "frog",
+            "pattern": "fr_g",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "frog"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "놀이공원 다시 가기",
+      "newWords": [],
+      "unitWords": [
+        "doll",
+        "pizza",
+        "hot",
+        "milk",
+        "sun",
+        "bus",
+        "car",
+        "top",
+        "cup",
+        "drum"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "milk",
+            "options": [
+              "doll",
+              "pizza",
+              "hot",
+              "milk"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "milk"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "sun",
+            "options": [
+              "sun",
+              "bus",
+              "car",
+              "top"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "sun"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "cup",
+            "tiles": [
+              "u",
+              "p",
+              "c"
+            ],
+            "accepted": [
+              "cup"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hot",
+            "tiles": [
+              "h",
+              "t",
+              "o"
+            ],
+            "accepted": [
+              "hot"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "doll",
+            "pattern": "d_ll",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "doll"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "drum",
+            "pattern": "dr_m",
+            "tiles": [
+              "i",
+              "u"
+            ],
+            "accepted": [
+              "drum"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "숨은 낱말 다시 찾기",
+      "newWords": [],
+      "unitWords": [
+        "small",
+        "wing",
+        "hot",
+        "big",
+        "fox",
+        "pot",
+        "little",
+        "puppy",
+        "old"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "wing",
+            "options": [
+              "small",
+              "window",
+              "wing",
+              "hot"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "wing"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fox",
+            "options": [
+              "big",
+              "fox",
+              "pot",
+              "little"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "fox"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "puppy",
+            "tiles": [
+              "p",
+              "p",
+              "y",
+              "u",
+              "p"
+            ],
+            "accepted": [
+              "puppy"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "old",
+            "tiles": [
+              "d",
+              "o",
+              "l"
+            ],
+            "accepted": [
+              "old"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "little",
+            "pattern": "l_ttle",
+            "tiles": [
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "little"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "wing",
+            "pattern": "w_ng",
+            "tiles": [
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "wing"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

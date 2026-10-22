@@ -1,0 +1,3190 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 1,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "빨간 새와 고양이",
+      "newWords": [
+        "seven",
+        "ten",
+        "red",
+        "yellow",
+        "cat"
+      ],
+      "unitWords": [
+        "seven",
+        "ten",
+        "red",
+        "yellow",
+        "cat"
+      ],
+      "preview": [
+        {
+          "word": "seven",
+          "meaningKo": "7, 일곱",
+          "example": "Seven cats."
+        },
+        {
+          "word": "ten",
+          "meaningKo": "10, 열",
+          "example": "Ten little fish."
+        },
+        {
+          "word": "red",
+          "meaningKo": "빨간, 빨간색",
+          "example": "The bird is red."
+        },
+        {
+          "word": "yellow",
+          "meaningKo": "노란, 노란색",
+          "example": "The banana is yellow."
+        },
+        {
+          "word": "cat",
+          "meaningKo": "고양이",
+          "example": "This is my cat."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "red",
+            "options": [
+              "red",
+              "rock",
+              "ring",
+              "rice"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "ten",
+            "options": [
+              "two",
+              "ten",
+              "tree",
+              "tiger"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "ten"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "seven",
+            "tiles": [
+              "e",
+              "n",
+              "s",
+              "v",
+              "e"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yellow",
+            "tiles": [
+              "l",
+              "o",
+              "w",
+              "e",
+              "y",
+              "l"
+            ],
+            "accepted": [
+              "yellow"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cat",
+            "pattern": "c_t",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "seven",
+            "pattern": "s_ven",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "토끼의 사과 도시락",
+      "newWords": [
+        "rabbit",
+        "apple",
+        "egg",
+        "candy",
+        "bag"
+      ],
+      "unitWords": [
+        "rabbit",
+        "apple",
+        "egg",
+        "candy",
+        "bag",
+        "yellow"
+      ],
+      "preview": [
+        {
+          "word": "rabbit",
+          "meaningKo": "토끼",
+          "example": "The rabbit is cute."
+        },
+        {
+          "word": "apple",
+          "meaningKo": "사과",
+          "example": "It is a red apple."
+        },
+        {
+          "word": "egg",
+          "meaningKo": "달걀",
+          "example": "It is an egg."
+        },
+        {
+          "word": "candy",
+          "meaningKo": "사탕",
+          "example": "I like candy."
+        },
+        {
+          "word": "bag",
+          "meaningKo": "가방",
+          "example": "This is my bag."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "rabbit",
+            "options": [
+              "rock",
+              "rose",
+              "rabbit",
+              "rice"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "rabbit"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "egg",
+            "options": [
+              "ear",
+              "eye",
+              "elephant",
+              "egg"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "egg"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "apple",
+            "tiles": [
+              "p",
+              "l",
+              "e",
+              "a",
+              "p"
+            ],
+            "accepted": [
+              "apple"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bag",
+            "tiles": [
+              "g",
+              "a",
+              "b"
+            ],
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "candy",
+            "pattern": "c_ndy",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "candy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "yellow",
+            "pattern": "y_llow",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "yellow"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "모자 쓰고 숲으로",
+      "newWords": [
+        "hat",
+        "cap",
+        "pen",
+        "pencil",
+        "bed"
+      ],
+      "unitWords": [
+        "hat",
+        "cap",
+        "pen",
+        "pencil",
+        "bed",
+        "apple"
+      ],
+      "preview": [
+        {
+          "word": "hat",
+          "meaningKo": "모자",
+          "example": "This is my hat."
+        },
+        {
+          "word": "cap",
+          "meaningKo": "(챙 달린) 모자",
+          "example": "My cap is blue."
+        },
+        {
+          "word": "pen",
+          "meaningKo": "펜",
+          "example": "It is a black pen."
+        },
+        {
+          "word": "pencil",
+          "meaningKo": "연필",
+          "example": "This is my pencil."
+        },
+        {
+          "word": "bed",
+          "meaningKo": "침대",
+          "example": "My bed is small."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "hat",
+            "options": [
+              "hat",
+              "hot",
+              "home",
+              "horse"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bed",
+            "options": [
+              "bear",
+              "bed",
+              "bird",
+              "box"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pen",
+            "tiles": [
+              "n",
+              "p",
+              "e"
+            ],
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pencil",
+            "tiles": [
+              "c",
+              "n",
+              "e",
+              "l",
+              "p",
+              "i"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cap",
+            "pattern": "c_p",
+            "tiles": [
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "cap"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "apple",
+            "pattern": "_pple",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "apple"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "바닷가 모래 놀이",
+      "newWords": [
+        "desk",
+        "map",
+        "hand",
+        "leg",
+        "sand"
+      ],
+      "unitWords": [
+        "desk",
+        "map",
+        "hand",
+        "leg",
+        "sand",
+        "hat",
+        "egg",
+        "pencil"
+      ],
+      "preview": [
+        {
+          "word": "desk",
+          "meaningKo": "책상",
+          "example": "This is my desk."
+        },
+        {
+          "word": "map",
+          "meaningKo": "지도",
+          "example": "It is a map."
+        },
+        {
+          "word": "hand",
+          "meaningKo": "손",
+          "example": "This is my hand."
+        },
+        {
+          "word": "leg",
+          "meaningKo": "다리",
+          "example": "It is a leg."
+        },
+        {
+          "word": "sand",
+          "meaningKo": "모래",
+          "example": "The sand is hot."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "hand",
+            "options": [
+              "hat",
+              "horse",
+              "hand",
+              "home"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "hand"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "leg",
+            "options": [
+              "lion",
+              "lake",
+              "egg",
+              "leg"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "leg"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "desk",
+            "tiles": [
+              "k",
+              "s",
+              "e",
+              "d"
+            ],
+            "accepted": [
+              "desk"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "sand",
+            "tiles": [
+              "d",
+              "n",
+              "a",
+              "s"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "map",
+            "pattern": "m_p",
+            "tiles": [
+              "u",
+              "a"
+            ],
+            "accepted": [
+              "map"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pencil",
+            "pattern": "p_ncil",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "숲속 캠핑 텐트",
+      "newWords": [
+        "jam",
+        "fan",
+        "lamp",
+        "tent",
+        "bell"
+      ],
+      "unitWords": [
+        "jam",
+        "fan",
+        "lamp",
+        "tent",
+        "bell",
+        "bed",
+        "sand"
+      ],
+      "preview": [
+        {
+          "word": "jam",
+          "meaningKo": "잼",
+          "example": "I like jam."
+        },
+        {
+          "word": "fan",
+          "meaningKo": "부채, 선풍기",
+          "example": "The fan is red."
+        },
+        {
+          "word": "lamp",
+          "meaningKo": "램프, 전등",
+          "example": "This lamp is small."
+        },
+        {
+          "word": "tent",
+          "meaningKo": "텐트",
+          "example": "It is a big tent."
+        },
+        {
+          "word": "bell",
+          "meaningKo": "종",
+          "example": "It is a little bell."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bell",
+            "options": [
+              "bell",
+              "ball",
+              "bed",
+              "bear"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fan",
+            "options": [
+              "fish",
+              "fan",
+              "fox",
+              "fork"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "jam",
+            "tiles": [
+              "m",
+              "j",
+              "a"
+            ],
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lamp",
+            "tiles": [
+              "p",
+              "a",
+              "m",
+              "l"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tent",
+            "pattern": "t_nt",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "sand",
+            "pattern": "s_nd",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "농장 친구 다시 보기",
+      "newWords": [],
+      "unitWords": [
+        "cat",
+        "cap",
+        "apple",
+        "egg",
+        "red",
+        "ten",
+        "yellow",
+        "rabbit"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cat",
+            "options": [
+              "cow",
+              "car",
+              "cat",
+              "cap"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "apple",
+            "options": [
+              "ant",
+              "arm",
+              "egg",
+              "apple"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "apple"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "red",
+            "tiles": [
+              "d",
+              "e",
+              "r"
+            ],
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ten",
+            "tiles": [
+              "n",
+              "t",
+              "e"
+            ],
+            "accepted": [
+              "ten"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "yellow",
+            "pattern": "y_llow",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "yellow"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "rabbit",
+            "pattern": "r_bbit",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "rabbit"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "아침 식탁 낱말",
+      "newWords": [],
+      "unitWords": [
+        "egg",
+        "leg",
+        "bag",
+        "bed",
+        "seven",
+        "candy",
+        "cap",
+        "pencil"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "egg",
+            "options": [
+              "egg",
+              "eye",
+              "ear",
+              "leg"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "egg"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bag",
+            "options": [
+              "bear",
+              "bag",
+              "bed",
+              "box"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "seven",
+            "tiles": [
+              "v",
+              "e",
+              "n",
+              "e",
+              "s"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "candy",
+            "tiles": [
+              "d",
+              "a",
+              "y",
+              "c",
+              "n"
+            ],
+            "accepted": [
+              "candy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cap",
+            "pattern": "c_p",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "cap"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pencil",
+            "pattern": "p_ncil",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "공부방 낱말 찾기",
+      "newWords": [],
+      "unitWords": [
+        "pen",
+        "ten",
+        "hat",
+        "hand",
+        "bed",
+        "desk",
+        "map"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "pen",
+            "options": [
+              "pig",
+              "pot",
+              "pen",
+              "ten"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "hat",
+            "options": [
+              "hot",
+              "horse",
+              "hand",
+              "hat"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bed",
+            "tiles": [
+              "e",
+              "d",
+              "b"
+            ],
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "desk",
+            "tiles": [
+              "s",
+              "d",
+              "k",
+              "e"
+            ],
+            "accepted": [
+              "desk"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "map",
+            "pattern": "m_p",
+            "tiles": [
+              "a",
+              "u"
+            ],
+            "accepted": [
+              "map"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "hand",
+            "pattern": "h_nd",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "hand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "모래밭 낱말 다지기",
+      "newWords": [],
+      "unitWords": [
+        "leg",
+        "lamp",
+        "egg",
+        "bell",
+        "bed",
+        "sand",
+        "jam",
+        "tent"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "leg",
+            "options": [
+              "leg",
+              "lion",
+              "lamp",
+              "egg"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "leg"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bell",
+            "options": [
+              "ball",
+              "bell",
+              "bird",
+              "bed"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "sand",
+            "tiles": [
+              "n",
+              "s",
+              "d",
+              "a"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lamp",
+            "tiles": [
+              "m",
+              "l",
+              "p",
+              "a"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "jam",
+            "pattern": "j_m",
+            "tiles": [
+              "u",
+              "a"
+            ],
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tent",
+            "pattern": "t_nt",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "tent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "정원 낱말 모아 쓰기",
+      "newWords": [],
+      "unitWords": [
+        "fan",
+        "jam",
+        "ten",
+        "bed",
+        "red",
+        "bell",
+        "pen",
+        "cat",
+        "leg"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "fan",
+            "options": [
+              "fork",
+              "fox",
+              "fan",
+              "jam"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "red",
+            "options": [
+              "ten",
+              "rock",
+              "bed",
+              "red"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bell",
+            "tiles": [
+              "l",
+              "e",
+              "b",
+              "l"
+            ],
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pen",
+            "tiles": [
+              "e",
+              "n",
+              "p"
+            ],
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cat",
+            "pattern": "c_t",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "leg",
+            "pattern": "l_g",
+            "tiles": [
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "leg"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "고양이랑 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "cat",
+        "candy",
+        "apple",
+        "ten",
+        "red",
+        "rabbit",
+        "seven",
+        "yellow",
+        "egg",
+        "bag"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cat",
+            "options": [
+              "cat",
+              "candy",
+              "apple",
+              "ten"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "red",
+            "options": [
+              "rabbit",
+              "red",
+              "seven",
+              "yellow"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "egg",
+            "tiles": [
+              "g",
+              "e",
+              "g"
+            ],
+            "accepted": [
+              "egg"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bag",
+            "tiles": [
+              "a",
+              "g",
+              "b"
+            ],
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "seven",
+            "pattern": "s_ven",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "yellow",
+            "pattern": "y_llow",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "yellow"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "숲길 모자 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "hat",
+        "hand",
+        "pencil",
+        "leg",
+        "bed",
+        "cap",
+        "pen",
+        "map",
+        "desk",
+        "sand"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "hat",
+            "options": [
+              "hand",
+              "pencil",
+              "hat",
+              "leg"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bed",
+            "options": [
+              "cap",
+              "pen",
+              "map",
+              "bed"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pen",
+            "tiles": [
+              "n",
+              "e",
+              "p"
+            ],
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "desk",
+            "tiles": [
+              "e",
+              "k",
+              "d",
+              "s"
+            ],
+            "accepted": [
+              "desk"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "map",
+            "pattern": "m_p",
+            "tiles": [
+              "u",
+              "a"
+            ],
+            "accepted": [
+              "map"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "sand",
+            "pattern": "s_nd",
+            "tiles": [
+              "a",
+              "o"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "캠핑 종 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "bell",
+        "bed",
+        "tent",
+        "egg",
+        "map",
+        "fan",
+        "jam",
+        "hand",
+        "lamp"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bell",
+            "options": [
+              "bell",
+              "bed",
+              "tent",
+              "egg"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fan",
+            "options": [
+              "map",
+              "fan",
+              "jam",
+              "hand"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lamp",
+            "tiles": [
+              "a",
+              "p",
+              "l",
+              "m"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "jam",
+            "tiles": [
+              "a",
+              "m",
+              "j"
+            ],
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tent",
+            "pattern": "t_nt",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "hand",
+            "pattern": "h_nd",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "hand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "빨간 요요 놀이",
+      "newWords": [
+        "seven",
+        "ten",
+        "red",
+        "yellow",
+        "cat"
+      ],
+      "unitWords": [
+        "yellow",
+        "seven",
+        "cat",
+        "ten",
+        "red"
+      ],
+      "preview": [
+        {
+          "word": "seven",
+          "meaningKo": "7, 일곱",
+          "example": "Seven red cars."
+        },
+        {
+          "word": "ten",
+          "meaningKo": "10, 열",
+          "example": "Ten little stars."
+        },
+        {
+          "word": "red",
+          "meaningKo": "빨간, 빨간색",
+          "example": "My yo-yo is red."
+        },
+        {
+          "word": "yellow",
+          "meaningKo": "노란, 노란색",
+          "example": "It is yellow."
+        },
+        {
+          "word": "cat",
+          "meaningKo": "고양이",
+          "example": "I like cats."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "yellow",
+            "options": [
+              "yo-yo",
+              "kite",
+              "yellow",
+              "seven"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "yellow"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "cat",
+            "options": [
+              "car",
+              "cake",
+              "cup",
+              "cat"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ten",
+            "tiles": [
+              "e",
+              "n",
+              "t"
+            ],
+            "accepted": [
+              "ten"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "red",
+            "tiles": [
+              "e",
+              "d",
+              "r"
+            ],
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "seven",
+            "pattern": "sev_n",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cat",
+            "pattern": "c_t",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "cat"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "소풍 가방 챙기기",
+      "newWords": [
+        "rabbit",
+        "apple",
+        "egg",
+        "candy",
+        "bag"
+      ],
+      "unitWords": [
+        "apple",
+        "bag",
+        "rabbit",
+        "egg",
+        "candy",
+        "seven"
+      ],
+      "preview": [
+        {
+          "word": "rabbit",
+          "meaningKo": "토끼",
+          "example": "I like the rabbit."
+        },
+        {
+          "word": "apple",
+          "meaningKo": "사과",
+          "example": "I like apples."
+        },
+        {
+          "word": "egg",
+          "meaningKo": "달걀",
+          "example": "This is an egg."
+        },
+        {
+          "word": "candy",
+          "meaningKo": "사탕",
+          "example": "Wow, candy!"
+        },
+        {
+          "word": "bag",
+          "meaningKo": "가방",
+          "example": "It is a big bag."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "apple",
+            "options": [
+              "apple",
+              "ant",
+              "arm",
+              "ball"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "apple"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bag",
+            "options": [
+              "ball",
+              "bag",
+              "bus",
+              "bike"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "rabbit",
+            "tiles": [
+              "b",
+              "i",
+              "a",
+              "r",
+              "t",
+              "b"
+            ],
+            "accepted": [
+              "rabbit"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "egg",
+            "tiles": [
+              "g",
+              "g",
+              "e"
+            ],
+            "accepted": [
+              "egg"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "candy",
+            "pattern": "c_ndy",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "candy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "seven",
+            "pattern": "s_ven",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "seven"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "야구 모자 쓰고 출발",
+      "newWords": [
+        "hat",
+        "cap",
+        "pen",
+        "pencil",
+        "bed"
+      ],
+      "unitWords": [
+        "cap",
+        "cat",
+        "pen",
+        "hat",
+        "bed",
+        "pencil",
+        "rabbit"
+      ],
+      "preview": [
+        {
+          "word": "hat",
+          "meaningKo": "모자",
+          "example": "It is a big hat."
+        },
+        {
+          "word": "cap",
+          "meaningKo": "(챙 달린) 모자",
+          "example": "It is a blue cap."
+        },
+        {
+          "word": "pen",
+          "meaningKo": "펜",
+          "example": "This is my pen."
+        },
+        {
+          "word": "pencil",
+          "meaningKo": "연필",
+          "example": "It is a little pencil."
+        },
+        {
+          "word": "bed",
+          "meaningKo": "침대",
+          "example": "The bed is big."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cap",
+            "options": [
+              "car",
+              "cup",
+              "cap",
+              "cat"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "cap"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "pen",
+            "options": [
+              "pot",
+              "pizza",
+              "piano",
+              "pen"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hat",
+            "tiles": [
+              "t",
+              "a",
+              "h"
+            ],
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bed",
+            "tiles": [
+              "d",
+              "b",
+              "e"
+            ],
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pencil",
+            "pattern": "p_ncil",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "rabbit",
+            "pattern": "r_bbit",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "rabbit"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "보물 지도 찾기",
+      "newWords": [
+        "desk",
+        "map",
+        "hand",
+        "leg",
+        "sand"
+      ],
+      "unitWords": [
+        "desk",
+        "map",
+        "cap",
+        "hand",
+        "leg",
+        "sand"
+      ],
+      "preview": [
+        {
+          "word": "desk",
+          "meaningKo": "책상",
+          "example": "It is a big desk."
+        },
+        {
+          "word": "map",
+          "meaningKo": "지도",
+          "example": "This is my map."
+        },
+        {
+          "word": "hand",
+          "meaningKo": "손",
+          "example": "My hand is small."
+        },
+        {
+          "word": "leg",
+          "meaningKo": "다리",
+          "example": "My leg is long."
+        },
+        {
+          "word": "sand",
+          "meaningKo": "모래",
+          "example": "I like sand."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "desk",
+            "options": [
+              "desk",
+              "drum",
+              "door",
+              "duck"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "desk"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "map",
+            "options": [
+              "mouth",
+              "map",
+              "cap",
+              "milk"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "map"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hand",
+            "tiles": [
+              "n",
+              "h",
+              "d",
+              "a"
+            ],
+            "accepted": [
+              "hand"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "leg",
+            "tiles": [
+              "g",
+              "l",
+              "e"
+            ],
+            "accepted": [
+              "leg"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "sand",
+            "pattern": "s_nd",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cap",
+            "pattern": "c_p",
+            "tiles": [
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "cap"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "별 보는 캠핑 밤",
+      "newWords": [
+        "jam",
+        "fan",
+        "lamp",
+        "tent",
+        "bell"
+      ],
+      "unitWords": [
+        "bell",
+        "jam",
+        "map",
+        "fan",
+        "tent",
+        "lamp",
+        "hand"
+      ],
+      "preview": [
+        {
+          "word": "jam",
+          "meaningKo": "잼",
+          "example": "It is red jam."
+        },
+        {
+          "word": "fan",
+          "meaningKo": "부채, 선풍기",
+          "example": "It is a red fan."
+        },
+        {
+          "word": "lamp",
+          "meaningKo": "램프, 전등",
+          "example": "It is a lamp."
+        },
+        {
+          "word": "tent",
+          "meaningKo": "텐트",
+          "example": "This is my tent."
+        },
+        {
+          "word": "bell",
+          "meaningKo": "종",
+          "example": "Oh, a bell!"
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bell",
+            "options": [
+              "ball",
+              "bike",
+              "bell",
+              "bus"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "jam",
+            "options": [
+              "jacket",
+              "map",
+              "drum",
+              "jam"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "fan",
+            "tiles": [
+              "a",
+              "n",
+              "f"
+            ],
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "tent",
+            "tiles": [
+              "n",
+              "t",
+              "e",
+              "t"
+            ],
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "lamp",
+            "pattern": "l_mp",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "hand",
+            "pattern": "h_nd",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "hand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "놀이터 낱말 다지기",
+      "newWords": [],
+      "unitWords": [
+        "bell",
+        "ten",
+        "tent",
+        "lamp",
+        "jam",
+        "fan",
+        "sand"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bell",
+            "options": [
+              "bell",
+              "ball",
+              "bike",
+              "box"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "tent",
+            "options": [
+              "ten",
+              "tent",
+              "top",
+              "truck"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lamp",
+            "tiles": [
+              "p",
+              "l",
+              "a",
+              "m"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "jam",
+            "tiles": [
+              "j",
+              "m",
+              "a"
+            ],
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "fan",
+            "pattern": "f_n",
+            "tiles": [
+              "o",
+              "a"
+            ],
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "sand",
+            "pattern": "s_nd",
+            "tiles": [
+              "a",
+              "o"
+            ],
+            "accepted": [
+              "sand"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "장난감 상자 낱말",
+      "newWords": [],
+      "unitWords": [
+        "bed",
+        "bag",
+        "hand",
+        "sand",
+        "hat",
+        "leg",
+        "pen",
+        "map",
+        "desk"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bed",
+            "options": [
+              "bus",
+              "bag",
+              "bed",
+              "bike"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "hand",
+            "options": [
+              "sand",
+              "hat",
+              "home",
+              "hand"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "hand"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "leg",
+            "tiles": [
+              "e",
+              "g",
+              "l"
+            ],
+            "accepted": [
+              "leg"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "pen",
+            "tiles": [
+              "n",
+              "p",
+              "e"
+            ],
+            "accepted": [
+              "pen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "map",
+            "pattern": "m_p",
+            "tiles": [
+              "u",
+              "a"
+            ],
+            "accepted": [
+              "map"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "desk",
+            "pattern": "d_sk",
+            "tiles": [
+              "o",
+              "e"
+            ],
+            "accepted": [
+              "desk"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "버스 타고 낱말 찾기",
+      "newWords": [],
+      "unitWords": [
+        "cap",
+        "cat",
+        "egg",
+        "leg",
+        "hat",
+        "bag",
+        "candy",
+        "pencil"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cap",
+            "options": [
+              "cap",
+              "car",
+              "cup",
+              "cat"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "cap"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "egg",
+            "options": [
+              "eye",
+              "egg",
+              "ear",
+              "leg"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "egg"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hat",
+            "tiles": [
+              "a",
+              "t",
+              "h"
+            ],
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bag",
+            "tiles": [
+              "g",
+              "b",
+              "a"
+            ],
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "candy",
+            "pattern": "c_ndy",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "candy"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pencil",
+            "pattern": "p_ncil",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "로켓 놀이 낱말",
+      "newWords": [],
+      "unitWords": [
+        "yellow",
+        "red",
+        "seven",
+        "rabbit",
+        "ten",
+        "apple",
+        "cat"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "yellow",
+            "options": [
+              "yo-yo",
+              "red",
+              "yellow",
+              "seven"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "yellow"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "rabbit",
+            "options": [
+              "robot",
+              "rock",
+              "ring",
+              "rabbit"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "rabbit"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ten",
+            "tiles": [
+              "t",
+              "n",
+              "e"
+            ],
+            "accepted": [
+              "ten"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "red",
+            "tiles": [
+              "d",
+              "r",
+              "e"
+            ],
+            "accepted": [
+              "red"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "apple",
+            "pattern": "_pple",
+            "tiles": [
+              "a",
+              "o"
+            ],
+            "accepted": [
+              "apple"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cat",
+            "pattern": "c_t",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "cat"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "자전거 길 낱말 쓰기",
+      "newWords": [],
+      "unitWords": [
+        "seven",
+        "ten",
+        "jam",
+        "map",
+        "bell",
+        "bed",
+        "tent",
+        "leg"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "seven",
+            "options": [
+              "seven",
+              "six",
+              "ten",
+              "star"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "seven"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "jam",
+            "options": [
+              "drum",
+              "jam",
+              "map",
+              "jacket"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bell",
+            "tiles": [
+              "e",
+              "l",
+              "l",
+              "b"
+            ],
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bed",
+            "tiles": [
+              "b",
+              "d",
+              "e"
+            ],
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tent",
+            "pattern": "t_nt",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "leg",
+            "pattern": "l_g",
+            "tiles": [
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "leg"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "요요 놀이 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "ten",
+        "seven",
+        "red",
+        "candy",
+        "bag",
+        "cat",
+        "egg",
+        "apple",
+        "yellow",
+        "rabbit"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "ten",
+            "options": [
+              "seven",
+              "red",
+              "ten",
+              "candy"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "ten"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bag",
+            "options": [
+              "cat",
+              "egg",
+              "apple",
+              "bag"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "bag"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yellow",
+            "tiles": [
+              "w",
+              "l",
+              "e",
+              "o",
+              "l",
+              "y"
+            ],
+            "accepted": [
+              "yellow"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "rabbit",
+            "tiles": [
+              "t",
+              "a",
+              "b",
+              "i",
+              "b",
+              "r"
+            ],
+            "accepted": [
+              "rabbit"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cat",
+            "pattern": "c_t",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "cat"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "candy",
+            "pattern": "c_ndy",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "candy"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "지도 놀이 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "cap",
+        "map",
+        "pen",
+        "desk",
+        "sand",
+        "hand",
+        "leg",
+        "bed",
+        "hat",
+        "pencil"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "cap",
+            "options": [
+              "cap",
+              "map",
+              "pen",
+              "desk"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "cap"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "hand",
+            "options": [
+              "sand",
+              "hand",
+              "leg",
+              "bed"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "hand"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "hat",
+            "tiles": [
+              "t",
+              "h",
+              "a"
+            ],
+            "accepted": [
+              "hat"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bed",
+            "tiles": [
+              "e",
+              "b",
+              "d"
+            ],
+            "accepted": [
+              "bed"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "pencil",
+            "pattern": "p_ncil",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "pencil"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "desk",
+            "pattern": "d_sk",
+            "tiles": [
+              "e",
+              "o"
+            ],
+            "accepted": [
+              "desk"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "텐트 놀이 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "tent",
+        "ten",
+        "lamp",
+        "cat",
+        "jam",
+        "fan",
+        "bell",
+        "yellow",
+        "leg"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "tent",
+            "options": [
+              "ten",
+              "lamp",
+              "tent",
+              "cat"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "tent"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "jam",
+            "options": [
+              "fan",
+              "bell",
+              "yellow",
+              "jam"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "jam"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bell",
+            "tiles": [
+              "l",
+              "b",
+              "l",
+              "e"
+            ],
+            "accepted": [
+              "bell"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "fan",
+            "tiles": [
+              "n",
+              "f",
+              "a"
+            ],
+            "accepted": [
+              "fan"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "lamp",
+            "pattern": "l_mp",
+            "tiles": [
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "lamp"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "leg",
+            "pattern": "l_g",
+            "tiles": [
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "leg"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

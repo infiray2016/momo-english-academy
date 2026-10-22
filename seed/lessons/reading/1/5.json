@@ -1,0 +1,4419 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 5,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "농장 동물 세기",
+   "newWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five"
+   ],
+   "unitWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five"
+   ],
+   "preview": [
+    {
+     "word": "one",
+     "meaningKo": "1, 하나",
+     "example": "This is one egg."
+    },
+    {
+     "word": "two",
+     "meaningKo": "2, 둘",
+     "example": "I like two dogs."
+    },
+    {
+     "word": "three",
+     "meaningKo": "3, 셋",
+     "example": "Three cats are cute."
+    },
+    {
+     "word": "four",
+     "meaningKo": "4, 넷",
+     "example": "Four apples, please."
+    },
+    {
+     "word": "five",
+     "meaningKo": "5, 다섯",
+     "example": "Five ducks and a pig."
+    }
+   ],
+   "content": {
+    "passage": "One cow and two pigs. Three ducks and four sheep. Five cats!",
+    "targetWords": [
+     "one",
+     "two",
+     "three",
+     "four",
+     "five"
+    ],
+    "glossary": [
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "pigs",
+      "lemma": "pig",
+      "meaningKo": "돼지들"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "ducks",
+      "lemma": "duck",
+      "meaningKo": "오리들"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     },
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "cats",
+      "lemma": "cat",
+      "meaningKo": "고양이들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one cow",
+      "options": [
+       "two",
+       "one",
+       "three",
+       "four"
+      ],
+      "answerNo": 2,
+      "explanationKo": "one 은 하나예요. 숫자 1 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two pigs",
+      "options": [
+       "two",
+       "three",
+       "five",
+       "one"
+      ],
+      "answerNo": 1,
+      "explanationKo": "two 는 둘이에요. 돼지가 두 마리예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three ducks",
+      "options": [
+       "one",
+       "four",
+       "three",
+       "five"
+      ],
+      "answerNo": 3,
+      "explanationKo": "three 는 셋이에요. 숫자 3 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four sheep",
+      "options": [
+       "five",
+       "two",
+       "one",
+       "four"
+      ],
+      "answerNo": 4,
+      "explanationKo": "four 는 넷이에요. 양이 네 마리예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five cats",
+      "options": [
+       "three",
+       "five",
+       "four",
+       "two"
+      ],
+      "answerNo": 2,
+      "explanationKo": "five 는 다섯이에요. 숫자 5 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장바구니 먹을거리",
+   "newWords": [
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten"
+   ],
+   "unitWords": [
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten"
+   ],
+   "preview": [
+    {
+     "word": "six",
+     "meaningKo": "6, 여섯",
+     "example": "Six eggs, please."
+    },
+    {
+     "word": "seven",
+     "meaningKo": "7, 일곱",
+     "example": "I like seven cookies."
+    },
+    {
+     "word": "eight",
+     "meaningKo": "8, 여덟",
+     "example": "Eight red apples."
+    },
+    {
+     "word": "nine",
+     "meaningKo": "9, 아홉",
+     "example": "I am nine."
+    },
+    {
+     "word": "ten",
+     "meaningKo": "10, 열",
+     "example": "Ten bananas, please."
+    }
+   ],
+   "content": {
+    "passage": "Six eggs and seven apples. Eight grapes and nine cookies. Ten candies!",
+    "targetWords": [
+     "six",
+     "seven",
+     "eight",
+     "nine",
+     "ten"
+    ],
+    "glossary": [
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "eggs",
+      "lemma": "egg",
+      "meaningKo": "달걀들"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "apples",
+      "lemma": "apple",
+      "meaningKo": "사과들"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "grapes",
+      "lemma": "grape",
+      "meaningKo": "포도알들"
+     },
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "cookies",
+      "lemma": "cookie",
+      "meaningKo": "쿠키들"
+     },
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "candies",
+      "lemma": "candy",
+      "meaningKo": "사탕들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "six eggs",
+      "options": [
+       "seven",
+       "six",
+       "nine",
+       "ten"
+      ],
+      "answerNo": 2,
+      "explanationKo": "six 는 여섯이에요. 숫자 6 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "seven apples",
+      "options": [
+       "eight",
+       "ten",
+       "seven",
+       "six"
+      ],
+      "answerNo": 3,
+      "explanationKo": "seven 은 일곱이에요. 사과가 일곱 개예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight grapes",
+      "options": [
+       "eight",
+       "nine",
+       "six",
+       "seven"
+      ],
+      "answerNo": 1,
+      "explanationKo": "eight 은 여덟이에요. 숫자 8 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine cookies",
+      "options": [
+       "six",
+       "ten",
+       "eight",
+       "nine"
+      ],
+      "answerNo": 4,
+      "explanationKo": "nine 은 아홉이에요. 쿠키가 아홉 개예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ten candies",
+      "options": [
+       "nine",
+       "ten",
+       "seven",
+       "eight"
+      ],
+      "answerNo": 2,
+      "explanationKo": "ten 은 열이에요. 숫자 10 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "키 큰 말, 작은 토끼",
+   "newWords": [
+    "tall",
+    "little",
+    "thin",
+    "eye",
+    "ear"
+   ],
+   "unitWords": [
+    "tall",
+    "little",
+    "thin",
+    "eye",
+    "ear",
+    "two"
+   ],
+   "preview": [
+    {
+     "word": "tall",
+     "meaningKo": "키가 큰, 높은",
+     "example": "The horse is tall."
+    },
+    {
+     "word": "little",
+     "meaningKo": "작은, 어린",
+     "example": "It is a little star."
+    },
+    {
+     "word": "thin",
+     "meaningKo": "얇은, 마른",
+     "example": "It is a thin pencil."
+    },
+    {
+     "word": "eye",
+     "meaningKo": "눈",
+     "example": "My eyes are big."
+    },
+    {
+     "word": "ear",
+     "meaningKo": "귀",
+     "example": "My ears are big."
+    }
+   ],
+   "content": {
+    "passage": "The horse is tall. A little rabbit, two ears. A thin cat, two eyes.",
+    "targetWords": [
+     "tall",
+     "little",
+     "thin",
+     "eye",
+     "ear"
+    ],
+    "glossary": [
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "마른"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The horse is tall.",
+      "options": [
+       "sheep",
+       "horse",
+       "cow",
+       "pig"
+      ],
+      "answerNo": 2,
+      "explanationKo": "horse 는 말이에요. 키가 큰 말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a little rabbit",
+      "options": [
+       "rabbit",
+       "frog",
+       "duck",
+       "cat"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rabbit 은 토끼예요. little 은 작다는 뜻이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two ears",
+      "options": [
+       "eye",
+       "ball",
+       "ear",
+       "cup"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ears 는 귀예요. 귀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two eyes",
+      "options": [
+       "ear",
+       "cup",
+       "ball",
+       "eye"
+      ],
+      "answerNo": 4,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a thin cat",
+      "options": [
+       "pig",
+       "cat",
+       "dog",
+       "sheep"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cat 은 고양이예요. thin 은 마른 모습이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "거울 속 내 얼굴",
+   "newWords": [
+    "nose",
+    "mouth",
+    "face",
+    "hand",
+    "leg"
+   ],
+   "unitWords": [
+    "nose",
+    "mouth",
+    "face",
+    "hand",
+    "leg",
+    "one",
+    "two",
+    "ear",
+    "eye"
+   ],
+   "preview": [
+    {
+     "word": "nose",
+     "meaningKo": "코",
+     "example": "My nose is small."
+    },
+    {
+     "word": "mouth",
+     "meaningKo": "입",
+     "example": "My mouth is big."
+    },
+    {
+     "word": "face",
+     "meaningKo": "얼굴",
+     "example": "This is my face."
+    },
+    {
+     "word": "hand",
+     "meaningKo": "손",
+     "example": "My hands are small."
+    },
+    {
+     "word": "leg",
+     "meaningKo": "다리",
+     "example": "My legs are long."
+    }
+   ],
+   "content": {
+    "passage": "This is my face. One nose and one mouth. Two hands and two legs.",
+    "targetWords": [
+     "nose",
+     "mouth",
+     "face",
+     "hand",
+     "leg"
+    ],
+    "glossary": [
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my face",
+      "options": [
+       "hand",
+       "face",
+       "leg",
+       "ball"
+      ],
+      "answerNo": 2,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one nose",
+      "options": [
+       "nose",
+       "ear",
+       "mouth",
+       "eye"
+      ],
+      "answerNo": 1,
+      "explanationKo": "nose 는 코예요. 코 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one mouth",
+      "options": [
+       "eye",
+       "nose",
+       "mouth",
+       "ear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "mouth 는 입이에요. 입술 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two hands",
+      "options": [
+       "leg",
+       "nose",
+       "ear",
+       "hand"
+      ],
+      "answerNo": 4,
+      "explanationKo": "hands 는 손이에요. 손 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two legs",
+      "options": [
+       "hand",
+       "leg",
+       "eye",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "legs 는 다리예요. 다리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "산속의 늙은 곰",
+   "newWords": [
+    "arm",
+    "old",
+    "neck",
+    "tooth",
+    "smile"
+   ],
+   "unitWords": [
+    "arm",
+    "old",
+    "neck",
+    "tooth",
+    "smile",
+    "one",
+    "leg",
+    "ear",
+    "nose",
+    "hand"
+   ],
+   "preview": [
+    {
+     "word": "arm",
+     "meaningKo": "팔",
+     "example": "My arms are long."
+    },
+    {
+     "word": "old",
+     "meaningKo": "늙은, ~살의",
+     "example": "The bear is old."
+    },
+    {
+     "word": "neck",
+     "meaningKo": "목",
+     "example": "My neck is short."
+    },
+    {
+     "word": "tooth",
+     "meaningKo": "이, 이빨",
+     "example": "My tooth is white."
+    },
+    {
+     "word": "smile",
+     "meaningKo": "미소, 웃다",
+     "example": "I like your smile."
+    }
+   ],
+   "content": {
+    "passage": "The bear is old. Big arms, a short neck. One white tooth, a smile!",
+    "targetWords": [
+     "arm",
+     "old",
+     "neck",
+     "tooth",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "늙은, 나이 많은"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀"
+     },
+     {
+      "surface": "tooth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big arms",
+      "options": [
+       "leg",
+       "arm",
+       "ear",
+       "nose"
+      ],
+      "answerNo": 2,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a short neck",
+      "options": [
+       "neck",
+       "hand",
+       "leg",
+       "tooth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one white tooth",
+      "options": [
+       "nose",
+       "ear",
+       "tooth",
+       "hand"
+      ],
+      "answerNo": 3,
+      "explanationKo": "tooth 는 이예요. 하얀 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a smile",
+      "options": [
+       "hand",
+       "leg",
+       "ear",
+       "smile"
+      ],
+      "answerNo": 4,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the bear",
+      "options": [
+       "lion",
+       "bear",
+       "tiger",
+       "monkey"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bear 는 곰이에요. 곰 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "개구리 관찰 일기",
+   "newWords": [],
+   "unitWords": [
+    "little",
+    "two",
+    "eye",
+    "one",
+    "mouth",
+    "four",
+    "leg",
+    "nose",
+    "ear",
+    "hand",
+    "three"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The frog is little. Two big eyes, one mouth. Four long legs!",
+    "targetWords": [
+     "little",
+     "two",
+     "eye",
+     "one",
+     "mouth",
+     "four",
+     "leg"
+    ],
+    "glossary": [
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two big eyes",
+      "options": [
+       "nose",
+       "eye",
+       "ear",
+       "mouth"
+      ],
+      "answerNo": 2,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one mouth",
+      "options": [
+       "mouth",
+       "nose",
+       "eye",
+       "ear"
+      ],
+      "answerNo": 1,
+      "explanationKo": "mouth 는 입이에요. 입술 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four long legs",
+      "options": [
+       "hand",
+       "ear",
+       "leg",
+       "nose"
+      ],
+      "answerNo": 3,
+      "explanationKo": "legs 는 다리예요. 다리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four",
+      "options": [
+       "two",
+       "three",
+       "one",
+       "four"
+      ],
+      "answerNo": 4,
+      "explanationKo": "four 는 넷이에요. 숫자 4 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The frog is little.",
+      "options": [
+       "duck",
+       "frog",
+       "fish",
+       "bird"
+      ],
+      "answerNo": 2,
+      "explanationKo": "frog 는 개구리예요. 개구리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 연못 구경",
+   "newWords": [],
+   "unitWords": [
+    "tall",
+    "three",
+    "thin",
+    "five",
+    "six",
+    "one",
+    "two",
+    "four",
+    "seven",
+    "eight"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The tree is tall. Three thin snakes. Five ducks and six fish.",
+    "targetWords": [
+     "tall",
+     "three",
+     "thin",
+     "five",
+     "six"
+    ],
+    "glossary": [
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     },
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰, 높은"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "가는, 얇은"
+     },
+     {
+      "surface": "snakes",
+      "lemma": "snake",
+      "meaningKo": "뱀들"
+     },
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "ducks",
+      "lemma": "duck",
+      "meaningKo": "오리들"
+     },
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The tree is tall.",
+      "options": [
+       "tree",
+       "rock",
+       "flower",
+       "sun"
+      ],
+      "answerNo": 1,
+      "explanationKo": "tree 는 나무예요. tall 은 키가 크다는 뜻이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three thin snakes",
+      "options": [
+       "fish",
+       "duck",
+       "snake",
+       "frog"
+      ],
+      "answerNo": 3,
+      "explanationKo": "snakes 는 뱀이에요. 뱀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three",
+      "options": [
+       "one",
+       "two",
+       "four",
+       "three"
+      ],
+      "answerNo": 4,
+      "explanationKo": "three 는 셋이에요. 숫자 3 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five ducks",
+      "options": [
+       "fish",
+       "duck",
+       "frog",
+       "pig"
+      ],
+      "answerNo": 2,
+      "explanationKo": "ducks 는 오리예요. 오리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "six",
+      "options": [
+       "five",
+       "seven",
+       "six",
+       "eight"
+      ],
+      "answerNo": 3,
+      "explanationKo": "six 는 여섯이에요. 숫자 6 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "늙은 고양이네 식구",
+   "newWords": [],
+   "unitWords": [
+    "old",
+    "ear",
+    "little",
+    "nose",
+    "seven",
+    "one",
+    "eye",
+    "mouth",
+    "six",
+    "eight",
+    "nine"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My cat is old. Big ears, a little nose. Seven little cats, one dog!",
+    "targetWords": [
+     "old",
+     "ear",
+     "little",
+     "nose",
+     "seven",
+     "one"
+    ],
+    "glossary": [
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "늙은, 나이 많은"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은, 어린"
+     },
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "cats",
+      "lemma": "cat",
+      "meaningKo": "고양이들"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big ears",
+      "options": [
+       "eye",
+       "ear",
+       "mouth",
+       "nose"
+      ],
+      "answerNo": 2,
+      "explanationKo": "ears 는 귀예요. 귀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a little nose",
+      "options": [
+       "mouth",
+       "ear",
+       "eye",
+       "nose"
+      ],
+      "answerNo": 4,
+      "explanationKo": "nose 는 코예요. 코 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "seven",
+      "options": [
+       "seven",
+       "nine",
+       "six",
+       "eight"
+      ],
+      "answerNo": 1,
+      "explanationKo": "seven 은 일곱이에요. 숫자 7 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my cat",
+      "options": [
+       "dog",
+       "pig",
+       "cat",
+       "rabbit"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cat 은 고양이예요. 고양이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one dog",
+      "options": [
+       "pig",
+       "dog",
+       "cow",
+       "duck"
+      ],
+      "answerNo": 2,
+      "explanationKo": "dog 는 개예요. 개 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "소풍 간식 나르기",
+   "newWords": [],
+   "unitWords": [
+    "nine",
+    "hand",
+    "ten",
+    "arm",
+    "smile",
+    "six",
+    "eight",
+    "seven",
+    "leg",
+    "ear",
+    "tooth",
+    "nose",
+    "eye"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Nine cookies in my hands. Ten bananas in my arms! A big smile!",
+    "targetWords": [
+     "nine",
+     "hand",
+     "ten",
+     "arm",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "cookies",
+      "lemma": "cookie",
+      "meaningKo": "쿠키들"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "bananas",
+      "lemma": "banana",
+      "meaningKo": "바나나들"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine",
+      "options": [
+       "six",
+       "eight",
+       "nine",
+       "seven"
+      ],
+      "answerNo": 3,
+      "explanationKo": "nine 은 아홉이에요. 숫자 9 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my hands",
+      "options": [
+       "hand",
+       "leg",
+       "ear",
+       "tooth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "hands 는 손이에요. 손 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ten",
+      "options": [
+       "eight",
+       "nine",
+       "seven",
+       "ten"
+      ],
+      "answerNo": 4,
+      "explanationKo": "ten 은 열이에요. 숫자 10 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my arms",
+      "options": [
+       "leg",
+       "arm",
+       "nose",
+       "eye"
+      ],
+      "answerNo": 2,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big smile",
+      "options": [
+       "leg",
+       "cookie",
+       "banana",
+       "smile"
+      ],
+      "answerNo": 4,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "따뜻한 목욕 시간",
+   "newWords": [],
+   "unitWords": [
+    "face",
+    "neck",
+    "eight",
+    "tooth",
+    "hand",
+    "leg",
+    "nose",
+    "ear",
+    "eye",
+    "six",
+    "nine",
+    "ten"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A hot bath! My face and my neck. Eight white teeth!",
+    "targetWords": [
+     "face",
+     "neck",
+     "eight",
+     "tooth"
+    ],
+    "glossary": [
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운, 따뜻한"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "목욕"
+     },
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀"
+     },
+     {
+      "surface": "teeth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my face",
+      "options": [
+       "hand",
+       "leg",
+       "tooth",
+       "face"
+      ],
+      "answerNo": 4,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my neck",
+      "options": [
+       "leg",
+       "neck",
+       "hand",
+       "tooth"
+      ],
+      "answerNo": 2,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight white teeth",
+      "options": [
+       "tooth",
+       "nose",
+       "ear",
+       "eye"
+      ],
+      "answerNo": 1,
+      "explanationKo": "teeth 는 이가 여러 개라는 뜻이에요. 하얀 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight",
+      "options": [
+       "six",
+       "nine",
+       "eight",
+       "ten"
+      ],
+      "answerNo": 3,
+      "explanationKo": "eight 은 여덟이에요. 숫자 8 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hot bath",
+      "options": [
+       "bed",
+       "bath",
+       "dish",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bath 는 목욕이에요. 욕조 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "물고기 세기 노래",
+   "newWords": [],
+   "unitWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "little"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "One, two, three, four, five! Six, seven, eight, nine, ten! Ten little fish!",
+    "targetWords": [
+     "one",
+     "two",
+     "three",
+     "four",
+     "five",
+     "six",
+     "seven",
+     "eight",
+     "nine",
+     "ten",
+     "little"
+    ],
+    "glossary": [
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three",
+      "options": [
+       "eight",
+       "three",
+       "five",
+       "one"
+      ],
+      "answerNo": 2,
+      "explanationKo": "three 는 셋이에요. 숫자 3 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "seven",
+      "options": [
+       "seven",
+       "two",
+       "nine",
+       "four"
+      ],
+      "answerNo": 1,
+      "explanationKo": "seven 은 일곱이에요. 숫자 7 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five",
+      "options": [
+       "six",
+       "ten",
+       "five",
+       "three"
+      ],
+      "answerNo": 3,
+      "explanationKo": "five 는 다섯이에요. 숫자 5 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine",
+      "options": [
+       "one",
+       "seven",
+       "four",
+       "nine"
+      ],
+      "answerNo": 4,
+      "explanationKo": "nine 은 아홉이에요. 숫자 9 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ten little fish",
+      "options": [
+       "two",
+       "ten",
+       "six",
+       "eight"
+      ],
+      "answerNo": 2,
+      "explanationKo": "ten 은 열이에요. 물고기가 열 마리예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "원숭이 몸 살펴보기",
+   "newWords": [],
+   "unitWords": [
+    "tall",
+    "thin",
+    "little",
+    "face",
+    "leg",
+    "eye",
+    "ear",
+    "nose",
+    "mouth",
+    "hand"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A tall, thin monkey. A little face, long legs. Eyes, ears, nose, mouth, hands!",
+    "targetWords": [
+     "tall",
+     "thin",
+     "little",
+     "face",
+     "leg",
+     "eye",
+     "ear",
+     "nose",
+     "mouth",
+     "hand"
+    ],
+    "glossary": [
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "마른"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a tall, thin monkey",
+      "options": [
+       "bear",
+       "monkey",
+       "lion",
+       "tiger"
+      ],
+      "answerNo": 2,
+      "explanationKo": "monkey 는 원숭이예요. 원숭이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a little face",
+      "options": [
+       "hand",
+       "leg",
+       "face",
+       "banana"
+      ],
+      "answerNo": 3,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "long legs",
+      "options": [
+       "ear",
+       "nose",
+       "eye",
+       "leg"
+      ],
+      "answerNo": 4,
+      "explanationKo": "legs 는 다리예요. 다리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eyes",
+      "options": [
+       "ear",
+       "eye",
+       "mouth",
+       "nose"
+      ],
+      "answerNo": 2,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nose",
+      "options": [
+       "nose",
+       "mouth",
+       "ear",
+       "eye"
+      ],
+      "answerNo": 1,
+      "explanationKo": "nose 는 코예요. 코 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "옛이야기 속 임금님",
+   "newWords": [],
+   "unitWords": [
+    "old",
+    "tall",
+    "neck",
+    "thin",
+    "arm",
+    "one",
+    "little",
+    "tooth",
+    "smile",
+    "hand",
+    "leg",
+    "ear",
+    "nose"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The old king is tall. A short neck, thin arms. One little tooth, a smile!",
+    "targetWords": [
+     "old",
+     "tall",
+     "neck",
+     "thin",
+     "arm",
+     "one",
+     "little",
+     "tooth",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "늙은, 나이 많은"
+     },
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "가는, 마른"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "tooth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The old king is tall.",
+      "options": [
+       "queen",
+       "nurse",
+       "king",
+       "monkey"
+      ],
+      "answerNo": 3,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a short neck",
+      "options": [
+       "neck",
+       "hand",
+       "leg",
+       "tooth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "thin arms",
+      "options": [
+       "leg",
+       "ear",
+       "nose",
+       "arm"
+      ],
+      "answerNo": 4,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one little tooth",
+      "options": [
+       "hand",
+       "tooth",
+       "ear",
+       "leg"
+      ],
+      "answerNo": 2,
+      "explanationKo": "tooth 는 이예요. 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a smile",
+      "options": [
+       "leg",
+       "hand",
+       "smile",
+       "star"
+      ],
+      "answerNo": 3,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 상자 세기",
+   "newWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five"
+   ],
+   "unitWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five"
+   ],
+   "preview": [
+    {
+     "word": "one",
+     "meaningKo": "1, 하나",
+     "example": "One blue kite."
+    },
+    {
+     "word": "two",
+     "meaningKo": "2, 둘",
+     "example": "Two red bikes."
+    },
+    {
+     "word": "three",
+     "meaningKo": "3, 셋",
+     "example": "Three toy cars."
+    },
+    {
+     "word": "four",
+     "meaningKo": "4, 넷",
+     "example": "I like four stars."
+    },
+    {
+     "word": "five",
+     "meaningKo": "5, 다섯",
+     "example": "Five red yo-yos."
+    }
+   ],
+   "content": {
+    "passage": "One ball and two kites. Three bikes and four cars. Five stars!",
+    "targetWords": [
+     "one",
+     "two",
+     "three",
+     "four",
+     "five"
+    ],
+    "glossary": [
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "kites",
+      "lemma": "kite",
+      "meaningKo": "연들"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "bikes",
+      "lemma": "bike",
+      "meaningKo": "자전거들"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "cars",
+      "lemma": "car",
+      "meaningKo": "자동차들"
+     },
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "stars",
+      "lemma": "star",
+      "meaningKo": "별들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one ball",
+      "options": [
+       "two",
+       "three",
+       "one",
+       "four"
+      ],
+      "answerNo": 3,
+      "explanationKo": "one 은 하나예요. 숫자 1 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two kites",
+      "options": [
+       "two",
+       "five",
+       "three",
+       "one"
+      ],
+      "answerNo": 1,
+      "explanationKo": "two 는 둘이에요. 연이 두 개예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three bikes",
+      "options": [
+       "one",
+       "four",
+       "five",
+       "three"
+      ],
+      "answerNo": 4,
+      "explanationKo": "three 는 셋이에요. 숫자 3 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four cars",
+      "options": [
+       "five",
+       "four",
+       "two",
+       "three"
+      ],
+      "answerNo": 2,
+      "explanationKo": "four 는 넷이에요. 자동차가 네 대예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five stars",
+      "options": [
+       "three",
+       "one",
+       "five",
+       "two"
+      ],
+      "answerNo": 3,
+      "explanationKo": "five 는 다섯이에요. 숫자 5 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "탈것 행진 세기",
+   "newWords": [
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten"
+   ],
+   "unitWords": [
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten"
+   ],
+   "preview": [
+    {
+     "word": "six",
+     "meaningKo": "6, 여섯",
+     "example": "Six big buses."
+    },
+    {
+     "word": "seven",
+     "meaningKo": "7, 일곱",
+     "example": "Seven white planes."
+    },
+    {
+     "word": "eight",
+     "meaningKo": "8, 여덟",
+     "example": "Eight blue kites."
+    },
+    {
+     "word": "nine",
+     "meaningKo": "9, 아홉",
+     "example": "Nine toy trucks."
+    },
+    {
+     "word": "ten",
+     "meaningKo": "10, 열",
+     "example": "I like ten robots."
+    }
+   ],
+   "content": {
+    "passage": "Six buses and seven trucks. Eight ships and nine planes. Ten robots!",
+    "targetWords": [
+     "six",
+     "seven",
+     "eight",
+     "nine",
+     "ten"
+    ],
+    "glossary": [
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "buses",
+      "lemma": "bus",
+      "meaningKo": "버스들"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "trucks",
+      "lemma": "truck",
+      "meaningKo": "트럭들"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "ships",
+      "lemma": "ship",
+      "meaningKo": "배들"
+     },
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "planes",
+      "lemma": "plane",
+      "meaningKo": "비행기들"
+     },
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "robots",
+      "lemma": "robot",
+      "meaningKo": "로봇들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "six buses",
+      "options": [
+       "six",
+       "nine",
+       "ten",
+       "seven"
+      ],
+      "answerNo": 1,
+      "explanationKo": "six 는 여섯이에요. 숫자 6 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "seven trucks",
+      "options": [
+       "ten",
+       "eight",
+       "seven",
+       "six"
+      ],
+      "answerNo": 3,
+      "explanationKo": "seven 은 일곱이에요. 트럭이 일곱 대예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight ships",
+      "options": [
+       "nine",
+       "eight",
+       "six",
+       "ten"
+      ],
+      "answerNo": 2,
+      "explanationKo": "eight 은 여덟이에요. 숫자 8 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine planes",
+      "options": [
+       "seven",
+       "six",
+       "eight",
+       "nine"
+      ],
+      "answerNo": 4,
+      "explanationKo": "nine 은 아홉이에요. 비행기가 아홉 대예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ten robots",
+      "options": [
+       "eight",
+       "seven",
+       "ten",
+       "nine"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ten 은 열이에요. 숫자 10 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 선반 구경",
+   "newWords": [
+    "tall",
+    "little",
+    "thin",
+    "eye",
+    "ear"
+   ],
+   "unitWords": [
+    "tall",
+    "little",
+    "thin",
+    "eye",
+    "ear",
+    "two",
+    "one",
+    "three",
+    "four"
+   ],
+   "preview": [
+    {
+     "word": "tall",
+     "meaningKo": "키가 큰, 높은",
+     "example": "The king is tall."
+    },
+    {
+     "word": "little",
+     "meaningKo": "작은, 어린",
+     "example": "It is a little bell."
+    },
+    {
+     "word": "thin",
+     "meaningKo": "얇은, 마른",
+     "example": "My doll is thin."
+    },
+    {
+     "word": "eye",
+     "meaningKo": "눈",
+     "example": "Two big eyes."
+    },
+    {
+     "word": "ear",
+     "meaningKo": "귀",
+     "example": "Two little ears."
+    }
+   ],
+   "content": {
+    "passage": "A tall, thin robot. Two eyes and two ears. My doll is little.",
+    "targetWords": [
+     "tall",
+     "little",
+     "thin",
+     "eye",
+     "ear"
+    ],
+    "glossary": [
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "마른, 가는"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two eyes",
+      "options": [
+       "ball",
+       "kite",
+       "eye",
+       "ear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two ears",
+      "options": [
+       "ear",
+       "eye",
+       "car",
+       "bike"
+      ],
+      "answerNo": 1,
+      "explanationKo": "ears 는 귀예요. 귀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "robot",
+      "options": [
+       "car",
+       "ball",
+       "kite",
+       "robot"
+      ],
+      "answerNo": 4,
+      "explanationKo": "robot 은 로봇이에요. 로봇 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My doll is little.",
+      "options": [
+       "ball",
+       "doll",
+       "bike",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "doll 은 인형이에요. little 은 작다는 뜻이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two",
+      "options": [
+       "one",
+       "four",
+       "two",
+       "three"
+      ],
+      "answerNo": 3,
+      "explanationKo": "two 는 둘이에요. 숫자 2 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "코코코 놀이",
+   "newWords": [
+    "nose",
+    "mouth",
+    "face",
+    "hand",
+    "leg"
+   ],
+   "unitWords": [
+    "nose",
+    "mouth",
+    "face",
+    "hand",
+    "leg",
+    "two",
+    "one",
+    "eye",
+    "ear"
+   ],
+   "preview": [
+    {
+     "word": "nose",
+     "meaningKo": "코",
+     "example": "A little nose."
+    },
+    {
+     "word": "mouth",
+     "meaningKo": "입",
+     "example": "A big mouth."
+    },
+    {
+     "word": "face",
+     "meaningKo": "얼굴",
+     "example": "It is my face."
+    },
+    {
+     "word": "hand",
+     "meaningKo": "손",
+     "example": "Two hands on the ball."
+    },
+    {
+     "word": "leg",
+     "meaningKo": "다리",
+     "example": "Two long legs."
+    }
+   ],
+   "content": {
+    "passage": "Nose, nose, nose, mouth! My face and my hands. Two legs and one ball!",
+    "targetWords": [
+     "nose",
+     "mouth",
+     "face",
+     "hand",
+     "leg"
+    ],
+    "glossary": [
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     },
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nose, nose, nose",
+      "options": [
+       "eye",
+       "ear",
+       "nose",
+       "mouth"
+      ],
+      "answerNo": 3,
+      "explanationKo": "nose 는 코예요. 코 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "mouth",
+      "options": [
+       "mouth",
+       "nose",
+       "eye",
+       "ear"
+      ],
+      "answerNo": 1,
+      "explanationKo": "mouth 는 입이에요. 입술 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my face",
+      "options": [
+       "hand",
+       "leg",
+       "ball",
+       "face"
+      ],
+      "answerNo": 4,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my hands",
+      "options": [
+       "leg",
+       "hand",
+       "kite",
+       "bike"
+      ],
+      "answerNo": 2,
+      "explanationKo": "hands 는 손이에요. 손 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two legs",
+      "options": [
+       "hand",
+       "ball",
+       "leg",
+       "car"
+      ],
+      "answerNo": 3,
+      "explanationKo": "legs 는 다리예요. 다리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "오래된 내 인형",
+   "newWords": [
+    "arm",
+    "old",
+    "neck",
+    "tooth",
+    "smile"
+   ],
+   "unitWords": [
+    "arm",
+    "old",
+    "neck",
+    "tooth",
+    "smile",
+    "one",
+    "two",
+    "thin",
+    "leg",
+    "ear",
+    "nose",
+    "hand"
+   ],
+   "preview": [
+    {
+     "word": "arm",
+     "meaningKo": "팔",
+     "example": "Two long arms."
+    },
+    {
+     "word": "old",
+     "meaningKo": "오래된, 늙은",
+     "example": "My doll is old."
+    },
+    {
+     "word": "neck",
+     "meaningKo": "목",
+     "example": "A short neck."
+    },
+    {
+     "word": "tooth",
+     "meaningKo": "이, 이빨",
+     "example": "One white tooth."
+    },
+    {
+     "word": "smile",
+     "meaningKo": "미소, 웃다",
+     "example": "A big smile."
+    }
+   ],
+   "content": {
+    "passage": "My doll is old. Two thin arms, one neck. One tooth, a big smile!",
+    "targetWords": [
+     "arm",
+     "old",
+     "neck",
+     "tooth",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "오래된"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "가는, 얇은"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "tooth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two thin arms",
+      "options": [
+       "leg",
+       "ear",
+       "arm",
+       "nose"
+      ],
+      "answerNo": 3,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one neck",
+      "options": [
+       "neck",
+       "leg",
+       "hand",
+       "tooth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one tooth",
+      "options": [
+       "nose",
+       "hand",
+       "ear",
+       "tooth"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tooth 는 이예요. 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big smile",
+      "options": [
+       "leg",
+       "smile",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my doll",
+      "options": [
+       "ball",
+       "kite",
+       "doll",
+       "robot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "doll 은 인형이에요. 인형 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "팽이와 요요 대회",
+   "newWords": [],
+   "unitWords": [
+    "five",
+    "little",
+    "four",
+    "three",
+    "two",
+    "one"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Five little tops. Four red yo-yos. Three balls and two kites.",
+    "targetWords": [
+     "five",
+     "little",
+     "four",
+     "three",
+     "two"
+    ],
+    "glossary": [
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "tops",
+      "lemma": "top",
+      "meaningKo": "팽이들"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간"
+     },
+     {
+      "surface": "yo-yos",
+      "lemma": "yo-yo",
+      "meaningKo": "요요들"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "balls",
+      "lemma": "ball",
+      "meaningKo": "공들"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "kites",
+      "lemma": "kite",
+      "meaningKo": "연들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five",
+      "options": [
+       "three",
+       "five",
+       "one",
+       "four"
+      ],
+      "answerNo": 2,
+      "explanationKo": "five 는 다섯이에요. 숫자 5 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four red yo-yos",
+      "options": [
+       "top",
+       "ball",
+       "kite",
+       "yo-yo"
+      ],
+      "answerNo": 4,
+      "explanationKo": "yo-yos 는 요요예요. 요요 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "three",
+      "options": [
+       "three",
+       "two",
+       "five",
+       "four"
+      ],
+      "answerNo": 1,
+      "explanationKo": "three 는 셋이에요. 숫자 3 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two kites",
+      "options": [
+       "ball",
+       "top",
+       "kite",
+       "bike"
+      ],
+      "answerNo": 3,
+      "explanationKo": "kites 는 연이에요. 연 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "five little tops",
+      "options": [
+       "yo-yo",
+       "top",
+       "ball",
+       "bell"
+      ],
+      "answerNo": 2,
+      "explanationKo": "tops 는 팽이예요. 팽이 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "텐트 밖 별 세기",
+   "newWords": [],
+   "unitWords": [
+    "tall",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "five"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The tent is tall. Six, seven, eight stars!",
+    "targetWords": [
+     "tall",
+     "six",
+     "seven",
+     "eight"
+    ],
+    "glossary": [
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "높은"
+     },
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "stars",
+      "lemma": "star",
+      "meaningKo": "별들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The tent is tall.",
+      "options": [
+       "ship",
+       "tent",
+       "bus",
+       "bed"
+      ],
+      "answerNo": 2,
+      "explanationKo": "tent 는 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "six",
+      "options": [
+       "nine",
+       "ten",
+       "five",
+       "six"
+      ],
+      "answerNo": 4,
+      "explanationKo": "six 는 여섯이에요. 숫자 6 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "seven",
+      "options": [
+       "seven",
+       "eight",
+       "six",
+       "ten"
+      ],
+      "answerNo": 1,
+      "explanationKo": "seven 은 일곱이에요. 숫자 7 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight",
+      "options": [
+       "six",
+       "nine",
+       "eight",
+       "seven"
+      ],
+      "answerNo": 3,
+      "explanationKo": "eight 은 여덟이에요. 숫자 8 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "stars",
+      "options": [
+       "sun",
+       "star",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "stars 는 별이에요. 별 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "상자 얼굴 만들기",
+   "newWords": [],
+   "unitWords": [
+    "nine",
+    "eye",
+    "ten",
+    "ear",
+    "one",
+    "nose",
+    "thin",
+    "little",
+    "mouth",
+    "eight",
+    "seven"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Nine eyes on the box! Ten ears, one nose. A thin, little mouth.",
+    "targetWords": [
+     "nine",
+     "eye",
+     "ten",
+     "ear",
+     "one",
+     "nose",
+     "thin",
+     "little",
+     "mouth"
+    ],
+    "glossary": [
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "얇은, 가는"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine eyes",
+      "options": [
+       "eye",
+       "ear",
+       "nose",
+       "mouth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nine",
+      "options": [
+       "eight",
+       "ten",
+       "nine",
+       "seven"
+      ],
+      "answerNo": 3,
+      "explanationKo": "nine 은 아홉이에요. 숫자 9 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ten ears",
+      "options": [
+       "eye",
+       "nose",
+       "mouth",
+       "ear"
+      ],
+      "answerNo": 4,
+      "explanationKo": "ears 는 귀예요. 귀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one nose",
+      "options": [
+       "mouth",
+       "nose",
+       "ear",
+       "eye"
+      ],
+      "answerNo": 2,
+      "explanationKo": "nose 는 코예요. 코 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a thin, little mouth",
+      "options": [
+       "mouth",
+       "eye",
+       "nose",
+       "ear"
+      ],
+      "answerNo": 1,
+      "explanationKo": "mouth 는 입이에요. 입술 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이터 공놀이",
+   "newWords": [],
+   "unitWords": [
+    "hand",
+    "leg",
+    "two",
+    "arm",
+    "smile",
+    "ear",
+    "nose",
+    "eye"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My hands on the ball. My legs on the swing. Two arms, a big smile!",
+    "targetWords": [
+     "hand",
+     "leg",
+     "two",
+     "arm",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my hands",
+      "options": [
+       "leg",
+       "ear",
+       "hand",
+       "nose"
+      ],
+      "answerNo": 3,
+      "explanationKo": "hands 는 손이에요. 손 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the ball",
+      "options": [
+       "ball",
+       "kite",
+       "top",
+       "swing"
+      ],
+      "answerNo": 1,
+      "explanationKo": "ball 은 공이에요. 공 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my legs",
+      "options": [
+       "hand",
+       "ear",
+       "nose",
+       "leg"
+      ],
+      "answerNo": 4,
+      "explanationKo": "legs 는 다리예요. 다리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two arms",
+      "options": [
+       "leg",
+       "arm",
+       "ear",
+       "eye"
+      ],
+      "answerNo": 2,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big smile",
+      "options": [
+       "leg",
+       "kite",
+       "smile",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "자전거와 찍은 사진",
+   "newWords": [],
+   "unitWords": [
+    "old",
+    "face",
+    "neck",
+    "two",
+    "tooth",
+    "hand",
+    "leg",
+    "ear",
+    "nose",
+    "eye",
+    "one",
+    "three",
+    "four"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My bike is old. My face, a short neck. Two white teeth!",
+    "targetWords": [
+     "old",
+     "face",
+     "neck",
+     "two",
+     "tooth"
+    ],
+    "glossary": [
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "오래된"
+     },
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀"
+     },
+     {
+      "surface": "teeth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My bike is old.",
+      "options": [
+       "bike",
+       "car",
+       "bus",
+       "kite"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bike 는 자전거예요. 자전거 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my face",
+      "options": [
+       "hand",
+       "leg",
+       "face",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a short neck",
+      "options": [
+       "leg",
+       "neck",
+       "hand",
+       "tooth"
+      ],
+      "answerNo": 2,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two white teeth",
+      "options": [
+       "ear",
+       "nose",
+       "eye",
+       "tooth"
+      ],
+      "answerNo": 4,
+      "explanationKo": "teeth 는 이가 여러 개라는 뜻이에요. 하얀 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two",
+      "options": [
+       "one",
+       "three",
+       "two",
+       "four"
+      ],
+      "answerNo": 3,
+      "explanationKo": "two 는 둘이에요. 숫자 2 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "별까지 거꾸로 세기",
+   "newWords": [],
+   "unitWords": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Ten, nine, eight, seven, six! Five, four, three, two, one! Up to the stars!",
+    "targetWords": [
+     "one",
+     "two",
+     "three",
+     "four",
+     "five",
+     "six",
+     "seven",
+     "eight",
+     "nine",
+     "ten"
+    ],
+    "glossary": [
+     {
+      "surface": "ten",
+      "lemma": "ten",
+      "meaningKo": "10, 열"
+     },
+     {
+      "surface": "nine",
+      "lemma": "nine",
+      "meaningKo": "9, 아홉"
+     },
+     {
+      "surface": "eight",
+      "lemma": "eight",
+      "meaningKo": "8, 여덟"
+     },
+     {
+      "surface": "seven",
+      "lemma": "seven",
+      "meaningKo": "7, 일곱"
+     },
+     {
+      "surface": "six",
+      "lemma": "six",
+      "meaningKo": "6, 여섯"
+     },
+     {
+      "surface": "five",
+      "lemma": "five",
+      "meaningKo": "5, 다섯"
+     },
+     {
+      "surface": "four",
+      "lemma": "four",
+      "meaningKo": "4, 넷"
+     },
+     {
+      "surface": "three",
+      "lemma": "three",
+      "meaningKo": "3, 셋"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "one",
+      "lemma": "one",
+      "meaningKo": "1, 하나"
+     },
+     {
+      "surface": "stars",
+      "lemma": "star",
+      "meaningKo": "별들"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "eight",
+      "options": [
+       "ten",
+       "six",
+       "eight",
+       "two"
+      ],
+      "answerNo": 3,
+      "explanationKo": "eight 은 여덟이에요. 숫자 8 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "four",
+      "options": [
+       "four",
+       "nine",
+       "one",
+       "seven"
+      ],
+      "answerNo": 1,
+      "explanationKo": "four 는 넷이에요. 숫자 4 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "six",
+      "options": [
+       "three",
+       "five",
+       "eight",
+       "six"
+      ],
+      "answerNo": 4,
+      "explanationKo": "six 는 여섯이에요. 숫자 6 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "one",
+      "options": [
+       "ten",
+       "one",
+       "seven",
+       "four"
+      ],
+      "answerNo": 2,
+      "explanationKo": "one 은 하나예요. 숫자 1 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Up to the stars!",
+      "options": [
+       "sun",
+       "plane",
+       "star",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "stars 는 별이에요. 별 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "카드 놀이 속 여왕",
+   "newWords": [],
+   "unitWords": [
+    "tall",
+    "thin",
+    "little",
+    "face",
+    "eye",
+    "ear",
+    "nose",
+    "mouth",
+    "hand",
+    "leg"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A tall, thin queen. A little face, big eyes. Ears, nose, mouth, hands, legs!",
+    "targetWords": [
+     "tall",
+     "thin",
+     "little",
+     "face",
+     "eye",
+     "ear",
+     "nose",
+     "mouth",
+     "hand",
+     "leg"
+    ],
+    "glossary": [
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "마른"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "face",
+      "lemma": "face",
+      "meaningKo": "얼굴"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "eyes",
+      "lemma": "eye",
+      "meaningKo": "눈"
+     },
+     {
+      "surface": "ears",
+      "lemma": "ear",
+      "meaningKo": "귀"
+     },
+     {
+      "surface": "nose",
+      "lemma": "nose",
+      "meaningKo": "코"
+     },
+     {
+      "surface": "mouth",
+      "lemma": "mouth",
+      "meaningKo": "입"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "legs",
+      "lemma": "leg",
+      "meaningKo": "다리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a tall, thin queen",
+      "options": [
+       "king",
+       "queen",
+       "nurse",
+       "doll"
+      ],
+      "answerNo": 2,
+      "explanationKo": "queen 은 여왕이에요. 여왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a little face",
+      "options": [
+       "leg",
+       "hand",
+       "ball",
+       "face"
+      ],
+      "answerNo": 4,
+      "explanationKo": "face 는 얼굴이에요. 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big eyes",
+      "options": [
+       "eye",
+       "nose",
+       "ear",
+       "mouth"
+      ],
+      "answerNo": 1,
+      "explanationKo": "eyes 는 눈이에요. 눈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "mouth",
+      "options": [
+       "nose",
+       "eye",
+       "mouth",
+       "ear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "mouth 는 입이에요. 입술 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "hands",
+      "options": [
+       "ear",
+       "hand",
+       "nose",
+       "leg"
+      ],
+      "answerNo": 2,
+      "explanationKo": "hands 는 손이에요. 손 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "원숭이 인형 친구",
+   "newWords": [],
+   "unitWords": [
+    "tall",
+    "old",
+    "thin",
+    "arm",
+    "little",
+    "neck",
+    "two",
+    "tooth",
+    "smile",
+    "leg",
+    "ear",
+    "nose",
+    "hand"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A tall, old toy monkey. Long, thin arms, little neck. Two teeth and a smile!",
+    "targetWords": [
+     "tall",
+     "old",
+     "thin",
+     "arm",
+     "little",
+     "neck",
+     "two",
+     "tooth",
+     "smile"
+    ],
+    "glossary": [
+     {
+      "surface": "tall",
+      "lemma": "tall",
+      "meaningKo": "키가 큰"
+     },
+     {
+      "surface": "old",
+      "lemma": "old",
+      "meaningKo": "오래된"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "thin",
+      "lemma": "thin",
+      "meaningKo": "가는"
+     },
+     {
+      "surface": "arms",
+      "lemma": "arm",
+      "meaningKo": "팔"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "neck",
+      "lemma": "neck",
+      "meaningKo": "목"
+     },
+     {
+      "surface": "two",
+      "lemma": "two",
+      "meaningKo": "2, 둘"
+     },
+     {
+      "surface": "teeth",
+      "lemma": "tooth",
+      "meaningKo": "이, 이빨"
+     },
+     {
+      "surface": "smile",
+      "lemma": "smile",
+      "meaningKo": "미소"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "monkey",
+      "options": [
+       "bear",
+       "monkey",
+       "lion",
+       "robot"
+      ],
+      "answerNo": 2,
+      "explanationKo": "monkey 는 원숭이예요. 원숭이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "long, thin arms",
+      "options": [
+       "arm",
+       "leg",
+       "ear",
+       "nose"
+      ],
+      "answerNo": 1,
+      "explanationKo": "arms 는 팔이에요. 팔 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "little neck",
+      "options": [
+       "hand",
+       "leg",
+       "tooth",
+       "neck"
+      ],
+      "answerNo": 4,
+      "explanationKo": "neck 은 목이에요. 목에 동그라미가 있는 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "two teeth",
+      "options": [
+       "ear",
+       "hand",
+       "tooth",
+       "leg"
+      ],
+      "answerNo": 3,
+      "explanationKo": "teeth 는 이가 여러 개라는 뜻이에요. 이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a smile",
+      "options": [
+       "leg",
+       "smile",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "smile 은 미소예요. 웃는 얼굴 그림을 골라요."
+     }
+    ]
+   }
+  }
+ ]
+}

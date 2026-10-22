@@ -1,0 +1,665 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 5,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "하얀 양과 바나나",
+      "newWords": ["five", "nine", "white", "like", "banana"],
+      "unitWords": ["five", "nine", "white", "like", "banana"],
+      "preview": [
+        {"word": "five", "meaningKo": "5, 다섯", "example": "Five cats."},
+        {"word": "nine", "meaningKo": "9, 아홉", "example": "Nine fish."},
+        {"word": "white", "meaningKo": "하얀, 흰색", "example": "The sheep is white."},
+        {"word": "like", "meaningKo": "좋아하다", "example": "I like milk."},
+        {"word": "banana", "meaningKo": "바나나", "example": "I like bananas."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "five", "options": ["five", "fox", "fish", "egg"], "answerNo": 1, "accepted": ["five"]},
+          {"type": "pick-word", "picture": "nine", "options": ["neck", "nine", "one", "lion"], "answerNo": 2, "accepted": ["nine"]},
+          {"type": "copy-tiles", "word": "banana", "tiles": ["n", "a", "b", "a", "a", "n"], "accepted": ["banana"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["e", "k", "i", "l"], "accepted": ["like"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["a", "i", "e"], "accepted": ["white"]},
+          {"type": "fill-letters", "word": "five", "pattern": "f_v_", "tiles": ["u", "e", "i"], "accepted": ["five"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "케이크 들고 소풍",
+      "newWords": ["cake", "grape", "bike", "kite", "ball"],
+      "unitWords": ["cake", "grape", "bike", "kite", "ball", "nine"],
+      "preview": [
+        {"word": "cake", "meaningKo": "케이크", "example": "I like cake."},
+        {"word": "grape", "meaningKo": "포도", "example": "Oh, grapes!"},
+        {"word": "bike", "meaningKo": "자전거", "example": "It is a red bike."},
+        {"word": "kite", "meaningKo": "연", "example": "It is a blue kite."},
+        {"word": "ball", "meaningKo": "공", "example": "The ball is big."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bike", "options": ["bear", "bird", "bike", "apple"], "answerNo": 3, "accepted": ["bike"]},
+          {"type": "pick-word", "picture": "kite", "options": ["cat", "key", "king", "kite"], "answerNo": 4, "accepted": ["kite"]},
+          {"type": "copy-tiles", "word": "ball", "tiles": ["l", "b", "l", "a"], "accepted": ["ball"]},
+          {"type": "copy-tiles", "word": "grape", "tiles": ["p", "e", "a", "g", "r"], "accepted": ["grape"]},
+          {"type": "fill-letters", "word": "cake", "pattern": "c_k_", "tiles": ["e", "i", "a"], "accepted": ["cake"]},
+          {"type": "fill-letters", "word": "nine", "pattern": "n_n_", "tiles": ["e", "u", "i"], "accepted": ["nine"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "호숫가 동물 얼굴",
+      "newWords": ["nose", "face", "lake", "cute", "ear"],
+      "unitWords": ["nose", "face", "lake", "cute", "ear", "kite"],
+      "preview": [
+        {"word": "nose", "meaningKo": "코", "example": "My nose is small."},
+        {"word": "face", "meaningKo": "얼굴", "example": "This is my face."},
+        {"word": "lake", "meaningKo": "호수", "example": "The lake is blue."},
+        {"word": "cute", "meaningKo": "귀여운", "example": "The cat is cute."},
+        {"word": "ear", "meaningKo": "귀", "example": "It is an ear."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "face", "options": ["face", "fox", "fan", "duck"], "answerNo": 1, "accepted": ["face"]},
+          {"type": "pick-word", "picture": "lake", "options": ["lion", "lake", "lamp", "fish"], "answerNo": 2, "accepted": ["lake"]},
+          {"type": "copy-tiles", "word": "ear", "tiles": ["r", "a", "e"], "accepted": ["ear"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["t", "u", "e", "c"], "accepted": ["cute"]},
+          {"type": "fill-letters", "word": "nose", "pattern": "n_s_", "tiles": ["e", "u", "o"], "accepted": ["nose"]},
+          {"type": "fill-letters", "word": "kite", "pattern": "k_t_", "tiles": ["u", "i", "e"], "accepted": ["kite"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장미 핀 꽃밭",
+      "newWords": ["nice", "rose", "home", "game", "flower"],
+      "unitWords": ["nice", "rose", "home", "game", "flower", "face"],
+      "preview": [
+        {"word": "nice", "meaningKo": "좋은, 멋진", "example": "The cake is nice."},
+        {"word": "rose", "meaningKo": "장미", "example": "The rose is red."},
+        {"word": "home", "meaningKo": "집", "example": "This is my home."},
+        {"word": "game", "meaningKo": "놀이, 게임", "example": "I like this game."},
+        {"word": "flower", "meaningKo": "꽃", "example": "This flower is white."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "rose", "options": ["rock", "ring", "rose", "cat"], "answerNo": 3, "accepted": ["rose"]},
+          {"type": "pick-word", "picture": "flower", "options": ["fish", "frog", "fox", "flower"], "answerNo": 4, "accepted": ["flower"]},
+          {"type": "copy-tiles", "word": "home", "tiles": ["m", "o", "e", "h"], "accepted": ["home"]},
+          {"type": "copy-tiles", "word": "nice", "tiles": ["c", "n", "e", "i"], "accepted": ["nice"]},
+          {"type": "fill-letters", "word": "game", "pattern": "g_m_", "tiles": ["u", "e", "a"], "accepted": ["game"]},
+          {"type": "fill-letters", "word": "face", "pattern": "f_c_", "tiles": ["e", "a", "u"], "accepted": ["face"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "풀밭의 초록 뱀",
+      "newWords": ["plane", "snake", "rice", "name", "smile"],
+      "unitWords": ["plane", "snake", "rice", "name", "smile", "nice"],
+      "preview": [
+        {"word": "plane", "meaningKo": "비행기", "example": "The plane is white."},
+        {"word": "snake", "meaningKo": "뱀", "example": "The snake is green."},
+        {"word": "rice", "meaningKo": "밥, 쌀", "example": "I like rice."},
+        {"word": "name", "meaningKo": "이름", "example": "My name is Tess."},
+        {"word": "smile", "meaningKo": "미소, 웃다", "example": "I like your smile."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "plane", "options": ["plane", "pig", "pen", "cow"], "answerNo": 1, "accepted": ["plane"]},
+          {"type": "pick-word", "picture": "smile", "options": ["sun", "smile", "sock", "cat"], "answerNo": 2, "accepted": ["smile"]},
+          {"type": "copy-tiles", "word": "name", "tiles": ["m", "a", "e", "n"], "accepted": ["name"]},
+          {"type": "copy-tiles", "word": "rice", "tiles": ["c", "e", "r", "i"], "accepted": ["rice"]},
+          {"type": "fill-letters", "word": "snake", "pattern": "sn_k_", "tiles": ["i", "a", "e"], "accepted": ["snake"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["a", "i", "e"], "accepted": ["nice"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "과일 바구니 다시 보기",
+      "newWords": [],
+      "unitWords": ["nine", "nose", "rose", "rice", "like", "ball", "white", "cake"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "nine", "options": ["nose", "one", "nine", "lion"], "answerNo": 3, "accepted": ["nine"]},
+          {"type": "pick-word", "picture": "rose", "options": ["nose", "rice", "ring", "rose"], "answerNo": 4, "accepted": ["rose"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["k", "i", "e", "l"], "accepted": ["like"]},
+          {"type": "copy-tiles", "word": "ball", "tiles": ["l", "a", "b", "l"], "accepted": ["ball"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["i", "a", "e"], "accepted": ["white"]},
+          {"type": "fill-letters", "word": "cake", "pattern": "c_k_", "tiles": ["a", "i", "e"], "accepted": ["cake"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 친구 되짚기",
+      "newWords": [],
+      "unitWords": ["kite", "bike", "face", "cake", "lake", "banana", "home", "five", "nice"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "kite", "options": ["kite", "bike", "key", "cat"], "answerNo": 1, "accepted": ["kite"]},
+          {"type": "pick-word", "picture": "face", "options": ["cake", "face", "lake", "fish"], "answerNo": 2, "accepted": ["face"]},
+          {"type": "copy-tiles", "word": "banana", "tiles": ["a", "b", "n", "a", "n", "a"], "accepted": ["banana"]},
+          {"type": "copy-tiles", "word": "home", "tiles": ["o", "h", "e", "m"], "accepted": ["home"]},
+          {"type": "fill-letters", "word": "five", "pattern": "f_v_", "tiles": ["i", "u", "e"], "accepted": ["five"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["e", "a", "i"], "accepted": ["nice"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 낱말 산책",
+      "newWords": [],
+      "unitWords": ["plane", "snake", "cake", "lake", "cute", "grape", "nose", "game"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "plane", "options": ["pen", "snake", "plane", "pig"], "answerNo": 3, "accepted": ["plane"]},
+          {"type": "pick-word", "picture": "cake", "options": ["lake", "candy", "cat", "cake"], "answerNo": 4, "accepted": ["cake"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["u", "c", "e", "t"], "accepted": ["cute"]},
+          {"type": "copy-tiles", "word": "grape", "tiles": ["g", "a", "p", "r", "e"], "accepted": ["grape"]},
+          {"type": "fill-letters", "word": "nose", "pattern": "n_s_", "tiles": ["u", "e", "o"], "accepted": ["nose"]},
+          {"type": "fill-letters", "word": "game", "pattern": "g_m_", "tiles": ["u", "a", "e"], "accepted": ["game"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연못가 철자 놀이",
+      "newWords": [],
+      "unitWords": ["bike", "kite", "snake", "smile", "ear", "name", "lake"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bike", "options": ["bike", "kite", "bird", "bear"], "answerNo": 1, "accepted": ["bike"]},
+          {"type": "pick-word", "picture": "snake", "options": ["smile", "snake", "sheep", "frog"], "answerNo": 2, "accepted": ["snake"]},
+          {"type": "copy-tiles", "word": "ear", "tiles": ["r", "e", "a"], "accepted": ["ear"]},
+          {"type": "copy-tiles", "word": "name", "tiles": ["a", "m", "n", "e"], "accepted": ["name"]},
+          {"type": "fill-letters", "word": "lake", "pattern": "l_k_", "tiles": ["e", "o", "a"], "accepted": ["lake"]},
+          {"type": "fill-letters", "word": "smile", "pattern": "sm_l_", "tiles": ["o", "i", "e"], "accepted": ["smile"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "저녁 식탁 낱말 모음",
+      "newWords": [],
+      "unitWords": ["rose", "nine", "nose", "five", "flower", "rice", "bike", "snake"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "nose", "options": ["rose", "nine", "nose", "duck"], "answerNo": 3, "accepted": ["nose"]},
+          {"type": "pick-word", "picture": "five", "options": ["fish", "four", "fox", "five"], "answerNo": 4, "accepted": ["five"]},
+          {"type": "copy-tiles", "word": "flower", "tiles": ["w", "o", "l", "f", "r", "e"], "accepted": ["flower"]},
+          {"type": "copy-tiles", "word": "rice", "tiles": ["i", "r", "e", "c"], "accepted": ["rice"]},
+          {"type": "fill-letters", "word": "bike", "pattern": "b_k_", "tiles": ["u", "e", "i"], "accepted": ["bike"]},
+          {"type": "fill-letters", "word": "snake", "pattern": "sn_k_", "tiles": ["a", "e", "i"], "accepted": ["snake"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숫자와 과일 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["kite", "bike", "cake", "five", "banana", "ball", "grape", "nine", "like", "white"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "kite", "options": ["kite", "bike", "cake", "five"], "answerNo": 1, "accepted": ["kite"]},
+          {"type": "pick-word", "picture": "banana", "options": ["ball", "banana", "grape", "nine"], "answerNo": 2, "accepted": ["banana"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["e", "l", "k", "i"], "accepted": ["like"]},
+          {"type": "copy-tiles", "word": "white", "tiles": ["t", "h", "w", "e", "i"], "accepted": ["white"]},
+          {"type": "fill-letters", "word": "five", "pattern": "f_v_", "tiles": ["e", "i", "u"], "accepted": ["five"]},
+          {"type": "fill-letters", "word": "bike", "pattern": "b_k_", "tiles": ["e", "u", "i"], "accepted": ["bike"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "얼굴과 꽃 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["nose", "lake", "rose", "ear", "game", "flower", "home", "face", "cute", "nice"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "rose", "options": ["nose", "lake", "rose", "ear"], "answerNo": 3, "accepted": ["rose"]},
+          {"type": "pick-word", "picture": "face", "options": ["game", "flower", "home", "face"], "answerNo": 4, "accepted": ["face"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["e", "t", "c", "u"], "accepted": ["cute"]},
+          {"type": "copy-tiles", "word": "nice", "tiles": ["n", "i", "e", "c"], "accepted": ["nice"]},
+          {"type": "fill-letters", "word": "nose", "pattern": "n_s_", "tiles": ["o", "e", "u"], "accepted": ["nose"]},
+          {"type": "fill-letters", "word": "lake", "pattern": "l_k_", "tiles": ["a", "o", "e"], "accepted": ["lake"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "뱀과 밥 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["snake", "smile", "plane", "name", "rice", "nice", "home", "game", "like", "cute"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "snake", "options": ["snake", "smile", "plane", "name"], "answerNo": 1, "accepted": ["snake"]},
+          {"type": "pick-word", "picture": "rice", "options": ["nice", "rice", "home", "game"], "answerNo": 2, "accepted": ["rice"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["l", "e", "i", "k"], "accepted": ["like"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["c", "e", "u", "t"], "accepted": ["cute"]},
+          {"type": "fill-letters", "word": "smile", "pattern": "sm_l_", "tiles": ["e", "o", "i"], "accepted": ["smile"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["i", "a", "e"], "accepted": ["nice"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "흰 별 세기 놀이",
+      "newWords": ["five", "nine", "white", "like", "banana"],
+      "unitWords": ["five", "nine", "white", "like", "banana"],
+      "preview": [
+        {"word": "five", "meaningKo": "5, 다섯", "example": "Five toy cars."},
+        {"word": "nine", "meaningKo": "9, 아홉", "example": "Nine drums."},
+        {"word": "white", "meaningKo": "하얀, 흰색", "example": "The star is white."},
+        {"word": "like", "meaningKo": "좋아하다", "example": "I like robots."},
+        {"word": "banana", "meaningKo": "바나나", "example": "Oh, a banana!"}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "five", "options": ["star", "fan", "five", "four"], "answerNo": 3, "accepted": ["five"]},
+          {"type": "pick-word", "picture": "nine", "options": ["one", "robot", "nurse", "nine"], "answerNo": 4, "accepted": ["nine"]},
+          {"type": "copy-tiles", "word": "banana", "tiles": ["a", "n", "a", "n", "b", "a"], "accepted": ["banana"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["i", "l", "e", "k"], "accepted": ["like"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["e", "a", "i"], "accepted": ["white"]},
+          {"type": "fill-letters", "word": "nine", "pattern": "n_n_", "tiles": ["u", "i", "e"], "accepted": ["nine"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자전거 타고 연날리기",
+      "newWords": ["cake", "grape", "bike", "kite", "ball"],
+      "unitWords": ["cake", "grape", "bike", "kite", "ball", "white"],
+      "preview": [
+        {"word": "cake", "meaningKo": "케이크", "example": "Wow, cake!"},
+        {"word": "grape", "meaningKo": "포도", "example": "I like grapes."},
+        {"word": "bike", "meaningKo": "자전거", "example": "My bike is red."},
+        {"word": "kite", "meaningKo": "연", "example": "My kite is blue."},
+        {"word": "ball", "meaningKo": "공", "example": "This is my ball."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bike", "options": ["bike", "bus", "box", "car"], "answerNo": 1, "accepted": ["bike"]},
+          {"type": "pick-word", "picture": "kite", "options": ["key", "kite", "top", "drum"], "answerNo": 2, "accepted": ["kite"]},
+          {"type": "copy-tiles", "word": "ball", "tiles": ["a", "l", "l", "b"], "accepted": ["ball"]},
+          {"type": "copy-tiles", "word": "grape", "tiles": ["r", "a", "e", "p", "g"], "accepted": ["grape"]},
+          {"type": "fill-letters", "word": "cake", "pattern": "c_k_", "tiles": ["i", "a", "e"], "accepted": ["cake"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["a", "e", "i"], "accepted": ["white"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이공원 얼굴 그림",
+      "newWords": ["nose", "face", "lake", "cute", "ear"],
+      "unitWords": ["nose", "face", "lake", "cute", "ear", "grape"],
+      "preview": [
+        {"word": "nose", "meaningKo": "코", "example": "This is my nose."},
+        {"word": "face", "meaningKo": "얼굴", "example": "It is my face."},
+        {"word": "lake", "meaningKo": "호수", "example": "Wow, a big lake!"},
+        {"word": "cute", "meaningKo": "귀여운", "example": "My doll is cute."},
+        {"word": "ear", "meaningKo": "귀", "example": "This is my ear."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "face", "options": ["fan", "box", "face", "fork"], "answerNo": 3, "accepted": ["face"]},
+          {"type": "pick-word", "picture": "lake", "options": ["lamp", "ship", "lion", "lake"], "answerNo": 4, "accepted": ["lake"]},
+          {"type": "copy-tiles", "word": "ear", "tiles": ["a", "r", "e"], "accepted": ["ear"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["e", "c", "t", "u"], "accepted": ["cute"]},
+          {"type": "fill-letters", "word": "nose", "pattern": "n_s_", "tiles": ["o", "u", "e"], "accepted": ["nose"]},
+          {"type": "fill-letters", "word": "grape", "pattern": "gr_p_", "tiles": ["u", "a", "e"], "accepted": ["grape"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이 시간 꽃 선물",
+      "newWords": ["nice", "rose", "home", "game", "flower"],
+      "unitWords": ["nice", "rose", "home", "game", "flower", "lake"],
+      "preview": [
+        {"word": "nice", "meaningKo": "좋은, 멋진", "example": "My bike is nice."},
+        {"word": "rose", "meaningKo": "장미", "example": "It is a red rose."},
+        {"word": "home", "meaningKo": "집", "example": "I like my home."},
+        {"word": "game", "meaningKo": "놀이, 게임", "example": "It is a nice game."},
+        {"word": "flower", "meaningKo": "꽃", "example": "It is a white flower."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "rose", "options": ["rose", "robot", "ring", "drum"], "answerNo": 1, "accepted": ["rose"]},
+          {"type": "pick-word", "picture": "flower", "options": ["fan", "flower", "four", "bus"], "answerNo": 2, "accepted": ["flower"]},
+          {"type": "copy-tiles", "word": "home", "tiles": ["e", "h", "m", "o"], "accepted": ["home"]},
+          {"type": "copy-tiles", "word": "nice", "tiles": ["i", "e", "c", "n"], "accepted": ["nice"]},
+          {"type": "fill-letters", "word": "game", "pattern": "g_m_", "tiles": ["a", "u", "e"], "accepted": ["game"]},
+          {"type": "fill-letters", "word": "lake", "pattern": "l_k_", "tiles": ["o", "a", "e"], "accepted": ["lake"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "하늘을 나는 비행기",
+      "newWords": ["plane", "snake", "rice", "name", "smile"],
+      "unitWords": ["plane", "snake", "rice", "name", "smile", "game"],
+      "preview": [
+        {"word": "plane", "meaningKo": "비행기", "example": "Wow, a white plane!"},
+        {"word": "snake", "meaningKo": "뱀", "example": "It is a green snake."},
+        {"word": "rice", "meaningKo": "밥, 쌀", "example": "Rice, please."},
+        {"word": "name", "meaningKo": "이름", "example": "My name is Ben."},
+        {"word": "smile", "meaningKo": "미소, 웃다", "example": "It is a big smile."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "plane", "options": ["pen", "bus", "plane", "pot"], "answerNo": 3, "accepted": ["plane"]},
+          {"type": "pick-word", "picture": "smile", "options": ["star", "ship", "sun", "smile"], "answerNo": 4, "accepted": ["smile"]},
+          {"type": "copy-tiles", "word": "name", "tiles": ["e", "n", "m", "a"], "accepted": ["name"]},
+          {"type": "copy-tiles", "word": "rice", "tiles": ["e", "i", "c", "r"], "accepted": ["rice"]},
+          {"type": "fill-letters", "word": "snake", "pattern": "sn_k_", "tiles": ["e", "i", "a"], "accepted": ["snake"]},
+          {"type": "fill-letters", "word": "game", "pattern": "g_m_", "tiles": ["e", "u", "a"], "accepted": ["game"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "운동장 철자 놀이",
+      "newWords": [],
+      "unitWords": ["flower", "nine", "name", "home", "cake", "grape", "white"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "flower", "options": ["flower", "fan", "four", "drum"], "answerNo": 1, "accepted": ["flower"]},
+          {"type": "pick-word", "picture": "nine", "options": ["one", "nine", "name", "robot"], "answerNo": 2, "accepted": ["nine"]},
+          {"type": "copy-tiles", "word": "home", "tiles": ["m", "e", "h", "o"], "accepted": ["home"]},
+          {"type": "copy-tiles", "word": "cake", "tiles": ["k", "a", "e", "c"], "accepted": ["cake"]},
+          {"type": "fill-letters", "word": "grape", "pattern": "gr_p_", "tiles": ["e", "u", "a"], "accepted": ["grape"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["e", "i", "a"], "accepted": ["white"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 상자 되짚기",
+      "newWords": [],
+      "unitWords": ["bike", "ball", "nice", "rice", "like", "nose", "face", "five"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "ball", "options": ["bell", "bike", "ball", "bus"], "answerNo": 3, "accepted": ["ball"]},
+          {"type": "pick-word", "picture": "rice", "options": ["nice", "ring", "rock", "rice"], "answerNo": 4, "accepted": ["rice"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["i", "k", "l", "e"], "accepted": ["like"]},
+          {"type": "copy-tiles", "word": "nose", "tiles": ["s", "o", "n", "e"], "accepted": ["nose"]},
+          {"type": "fill-letters", "word": "face", "pattern": "f_c_", "tiles": ["e", "u", "a"], "accepted": ["face"]},
+          {"type": "fill-letters", "word": "five", "pattern": "f_v_", "tiles": ["u", "i", "e"], "accepted": ["five"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "우주선 낱말 여행",
+      "newWords": [],
+      "unitWords": ["ear", "grape", "game", "cute", "bike", "nice", "kite"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "ear", "options": ["ear", "egg", "car", "star"], "answerNo": 1, "accepted": ["ear"]},
+          {"type": "pick-word", "picture": "grape", "options": ["game", "grape", "guitar", "car"], "answerNo": 2, "accepted": ["grape"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["e", "u", "t", "c"], "accepted": ["cute"]},
+          {"type": "copy-tiles", "word": "bike", "tiles": ["k", "i", "b", "e"], "accepted": ["bike"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["a", "e", "i"], "accepted": ["nice"]},
+          {"type": "fill-letters", "word": "kite", "pattern": "k_t_", "tiles": ["i", "u", "e"], "accepted": ["kite"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "기차역 낱말 찾기",
+      "newWords": [],
+      "unitWords": ["rose", "nose", "white", "kite", "name", "lake", "game", "banana"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "rose", "options": ["robot", "nose", "rose", "ring"], "answerNo": 3, "accepted": ["rose"]},
+          {"type": "pick-word", "picture": "white", "options": ["black", "pink", "kite", "white"], "answerNo": 4, "accepted": ["white"]},
+          {"type": "copy-tiles", "word": "name", "tiles": ["e", "a", "n", "m"], "accepted": ["name"]},
+          {"type": "copy-tiles", "word": "lake", "tiles": ["k", "e", "l", "a"], "accepted": ["lake"]},
+          {"type": "fill-letters", "word": "game", "pattern": "g_m_", "tiles": ["e", "a", "u"], "accepted": ["game"]},
+          {"type": "fill-letters", "word": "banana", "pattern": "b_nana", "tiles": ["o", "a", "i"], "accepted": ["banana"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "게임판 낱말 모음",
+      "newWords": [],
+      "unitWords": ["kite", "bike", "banana", "ball", "snake", "plane", "smile", "rice"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "kite", "options": ["kite", "bike", "key", "yo-yo"], "answerNo": 1, "accepted": ["kite"]},
+          {"type": "pick-word", "picture": "banana", "options": ["ball", "banana", "bus", "box"], "answerNo": 2, "accepted": ["banana"]},
+          {"type": "copy-tiles", "word": "snake", "tiles": ["k", "n", "a", "s", "e"], "accepted": ["snake"]},
+          {"type": "copy-tiles", "word": "plane", "tiles": ["n", "l", "e", "p", "a"], "accepted": ["plane"]},
+          {"type": "fill-letters", "word": "smile", "pattern": "sm_l_", "tiles": ["i", "o", "e"], "accepted": ["smile"]},
+          {"type": "fill-letters", "word": "rice", "pattern": "r_c_", "tiles": ["u", "e", "i"], "accepted": ["rice"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "공과 연 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["kite", "five", "bike", "nine", "cake", "ball", "banana", "grape", "like", "white"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bike", "options": ["kite", "five", "bike", "nine"], "answerNo": 3, "accepted": ["bike"]},
+          {"type": "pick-word", "picture": "grape", "options": ["cake", "ball", "banana", "grape"], "answerNo": 4, "accepted": ["grape"]},
+          {"type": "copy-tiles", "word": "like", "tiles": ["k", "l", "e", "i"], "accepted": ["like"]},
+          {"type": "copy-tiles", "word": "banana", "tiles": ["n", "a", "n", "a", "b", "a"], "accepted": ["banana"]},
+          {"type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["a", "e", "i"], "accepted": ["white"]},
+          {"type": "fill-letters", "word": "kite", "pattern": "k_t_", "tiles": ["e", "i", "u"], "accepted": ["kite"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "꽃과 놀이 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["nose", "rose", "home", "lake", "face", "flower", "game", "nice", "cute", "ear"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "nose", "options": ["nose", "rose", "home", "lake"], "answerNo": 1, "accepted": ["nose"]},
+          {"type": "pick-word", "picture": "flower", "options": ["face", "flower", "game", "nice"], "answerNo": 2, "accepted": ["flower"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["t", "e", "u", "c"], "accepted": ["cute"]},
+          {"type": "copy-tiles", "word": "ear", "tiles": ["a", "e", "r"], "accepted": ["ear"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["e", "i", "a"], "accepted": ["nice"]},
+          {"type": "fill-letters", "word": "face", "pattern": "f_c_", "tiles": ["u", "a", "e"], "accepted": ["face"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "비행기와 미소 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["name", "snake", "plane", "rice", "home", "like", "game", "smile", "cute", "nice"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "plane", "options": ["name", "snake", "plane", "rice"], "answerNo": 3, "accepted": ["plane"]},
+          {"type": "pick-word", "picture": "smile", "options": ["home", "like", "game", "smile"], "answerNo": 4, "accepted": ["smile"]},
+          {"type": "copy-tiles", "word": "name", "tiles": ["n", "e", "a", "m"], "accepted": ["name"]},
+          {"type": "copy-tiles", "word": "cute", "tiles": ["u", "t", "c", "e"], "accepted": ["cute"]},
+          {"type": "fill-letters", "word": "snake", "pattern": "sn_k_", "tiles": ["i", "e", "a"], "accepted": ["snake"]},
+          {"type": "fill-letters", "word": "nice", "pattern": "n_c_", "tiles": ["a", "e", "i"], "accepted": ["nice"]}
+        ]
+      }
+    }
+  ]
+}

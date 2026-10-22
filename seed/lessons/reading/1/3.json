@@ -1,0 +1,4171 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 3,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "빨강 노랑 색 이름",
+   "newWords": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "black"
+   ],
+   "unitWords": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "black"
+   ],
+   "preview": [
+    {
+     "word": "red",
+     "meaningKo": "빨간, 빨간색",
+     "example": "The apple is red."
+    },
+    {
+     "word": "blue",
+     "meaningKo": "파란, 파란색",
+     "example": "My cap is blue."
+    },
+    {
+     "word": "yellow",
+     "meaningKo": "노란, 노란색",
+     "example": "The cheese is yellow."
+    },
+    {
+     "word": "green",
+     "meaningKo": "초록의, 초록색",
+     "example": "The snake is green."
+    },
+    {
+     "word": "black",
+     "meaningKo": "검은, 검은색",
+     "example": "The piano is black."
+    }
+   ],
+   "content": {
+    "passage": "Red, blue, yellow, green, black. The apple is red. The snake is green.",
+    "targetWords": [
+     "red",
+     "blue",
+     "yellow",
+     "green",
+     "black"
+    ],
+    "glossary": [
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "yellow",
+      "lemma": "yellow",
+      "meaningKo": "노란, 노란색"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록의, 초록색"
+     },
+     {
+      "surface": "black",
+      "lemma": "black",
+      "meaningKo": "검은, 검은색"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "blue",
+       "red",
+       "green",
+       "black"
+      ],
+      "answerNo": 2,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "yellow",
+       "black",
+       "red",
+       "blue"
+      ],
+      "answerNo": 4,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yellow",
+      "options": [
+       "yellow",
+       "green",
+       "blue",
+       "red"
+      ],
+      "answerNo": 1,
+      "explanationKo": "yellow 는 노란색이에요. 노란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "black",
+       "blue",
+       "green",
+       "yellow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "black",
+      "options": [
+       "red",
+       "black",
+       "yellow",
+       "green"
+      ],
+      "answerNo": 2,
+      "explanationKo": "black 은 검은색이에요. 검은 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "주황 호랑이와 흰 접시",
+   "newWords": [
+    "white",
+    "pink",
+    "orange",
+    "color",
+    "big"
+   ],
+   "unitWords": [
+    "white",
+    "pink",
+    "orange",
+    "color",
+    "big",
+    "red",
+    "yellow",
+    "black",
+    "blue",
+    "green"
+   ],
+   "preview": [
+    {
+     "word": "white",
+     "meaningKo": "하얀, 흰색",
+     "example": "The dish is white."
+    },
+    {
+     "word": "pink",
+     "meaningKo": "분홍의, 분홍색",
+     "example": "My color is pink."
+    },
+    {
+     "word": "orange",
+     "meaningKo": "오렌지, 주황색",
+     "example": "The tiger is orange."
+    },
+    {
+     "word": "color",
+     "meaningKo": "색, 색깔",
+     "example": "Red is my color."
+    },
+    {
+     "word": "big",
+     "meaningKo": "큰",
+     "example": "The tiger is big."
+    }
+   ],
+   "content": {
+    "passage": "A big orange tiger. The dish is white. My color is pink.",
+    "targetWords": [
+     "white",
+     "pink",
+     "orange",
+     "color",
+     "big"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "orange",
+      "lemma": "orange",
+      "meaningKo": "주황색, 주황의"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀, 흰색"
+     },
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     },
+     {
+      "surface": "pink",
+      "lemma": "pink",
+      "meaningKo": "분홍의, 분홍색"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "orange",
+      "options": [
+       "orange",
+       "red",
+       "yellow",
+       "pink"
+      ],
+      "answerNo": 1,
+      "explanationKo": "orange 는 주황색이에요. 주황 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white",
+      "options": [
+       "black",
+       "blue",
+       "white",
+       "green"
+      ],
+      "answerNo": 3,
+      "explanationKo": "white 는 흰색이에요. 하얀 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pink",
+      "options": [
+       "white",
+       "pink",
+       "orange",
+       "black"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pink 는 분홍색이에요. 분홍 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big orange tiger",
+      "options": [
+       "lion",
+       "cat",
+       "dog",
+       "tiger"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tiger 는 호랑이예요. 크고 주황색인 호랑이를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The dish is white.",
+      "options": [
+       "dish",
+       "egg",
+       "cake",
+       "pizza"
+      ],
+      "answerNo": 1,
+      "explanationKo": "dish 는 접시예요. 하얀 접시 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "큰 해, 작은 나무",
+   "newWords": [
+    "small",
+    "long",
+    "short",
+    "sun",
+    "tree"
+   ],
+   "unitWords": [
+    "small",
+    "long",
+    "short",
+    "sun",
+    "tree",
+    "big",
+    "green",
+    "red",
+    "black",
+    "white"
+   ],
+   "preview": [
+    {
+     "word": "small",
+     "meaningKo": "작은",
+     "example": "An ant is small."
+    },
+    {
+     "word": "long",
+     "meaningKo": "긴",
+     "example": "The snake is long."
+    },
+    {
+     "word": "short",
+     "meaningKo": "짧은, 키가 작은",
+     "example": "The pig is short."
+    },
+    {
+     "word": "sun",
+     "meaningKo": "해, 태양",
+     "example": "The sun is big."
+    },
+    {
+     "word": "tree",
+     "meaningKo": "나무",
+     "example": "It is a big tree."
+    }
+   ],
+   "content": {
+    "passage": "Big sun, small tree. The green snake is long. The pig is short.",
+    "targetWords": [
+     "small",
+     "long",
+     "short",
+     "sun",
+     "tree"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록의, 초록색"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은, 키가 작은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big sun",
+      "options": [
+       "star",
+       "sun",
+       "apple",
+       "egg"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "small tree",
+      "options": [
+       "sun",
+       "apple",
+       "cat",
+       "tree"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The green snake is long.",
+      "options": [
+       "snake",
+       "fish",
+       "duck",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "snake 는 뱀이에요. 길고 초록색인 뱀을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pig is short.",
+      "options": [
+       "dog",
+       "cat",
+       "pig",
+       "horse"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pig 는 돼지예요. 돼지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "green",
+       "red",
+       "black",
+       "white"
+      ],
+      "answerNo": 1,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "호숫가 모래와 바위",
+   "newWords": [
+    "flower",
+    "rock",
+    "lake",
+    "sand",
+    "rose"
+   ],
+   "unitWords": [
+    "flower",
+    "rock",
+    "lake",
+    "sand",
+    "rose",
+    "blue",
+    "big",
+    "red",
+    "white",
+    "sun",
+    "tree"
+   ],
+   "preview": [
+    {
+     "word": "flower",
+     "meaningKo": "꽃",
+     "example": "This flower is white."
+    },
+    {
+     "word": "rock",
+     "meaningKo": "바위, 돌",
+     "example": "The rock is big."
+    },
+    {
+     "word": "lake",
+     "meaningKo": "호수",
+     "example": "The lake is blue."
+    },
+    {
+     "word": "sand",
+     "meaningKo": "모래",
+     "example": "This is sand."
+    },
+    {
+     "word": "rose",
+     "meaningKo": "장미",
+     "example": "The rose is red."
+    }
+   ],
+   "content": {
+    "passage": "The lake is blue. Sand and a big rock. Red rose, white flower.",
+    "targetWords": [
+     "flower",
+     "rock",
+     "lake",
+     "sand",
+     "rose"
+    ],
+    "glossary": [
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "sand",
+      "lemma": "sand",
+      "meaningKo": "모래"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "rock",
+      "lemma": "rock",
+      "meaningKo": "바위, 돌"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "rose",
+      "lemma": "rose",
+      "meaningKo": "장미"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀, 흰색"
+     },
+     {
+      "surface": "flower",
+      "lemma": "flower",
+      "meaningKo": "꽃"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The lake is blue.",
+      "options": [
+       "sun",
+       "tree",
+       "lake",
+       "rock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lake 는 호수예요. 파란 호수 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big rock",
+      "options": [
+       "rock",
+       "egg",
+       "sand",
+       "sun"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rock 은 바위예요. 큰 바위 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "sand",
+      "options": [
+       "tree",
+       "lake",
+       "sun",
+       "sand"
+      ],
+      "answerNo": 4,
+      "explanationKo": "sand 는 모래예요. 모래 더미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red rose",
+      "options": [
+       "tree",
+       "rose",
+       "sun",
+       "rock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "rose 는 장미예요. 빨간 장미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white flower",
+      "options": [
+       "sun",
+       "rock",
+       "tree",
+       "flower"
+      ],
+      "answerNo": 4,
+      "explanationKo": "flower 는 꽃이에요. 하얀 꽃 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "왕의 긴 노래",
+   "newWords": [
+    "shell",
+    "king",
+    "swing",
+    "wing",
+    "song"
+   ],
+   "unitWords": [
+    "shell",
+    "king",
+    "swing",
+    "wing",
+    "song",
+    "red",
+    "long",
+    "rock",
+    "sand",
+    "flower",
+    "tree",
+    "lake",
+    "blue",
+    "black",
+    "white"
+   ],
+   "preview": [
+    {
+     "word": "shell",
+     "meaningKo": "조개껍데기",
+     "example": "This is a shell."
+    },
+    {
+     "word": "king",
+     "meaningKo": "왕",
+     "example": "This is a king."
+    },
+    {
+     "word": "swing",
+     "meaningKo": "그네, 흔들다",
+     "example": "The swing is red."
+    },
+    {
+     "word": "wing",
+     "meaningKo": "날개",
+     "example": "This is a wing."
+    },
+    {
+     "word": "song",
+     "meaningKo": "노래",
+     "example": "The song is long."
+    }
+   ],
+   "content": {
+    "passage": "A shell and a wing. The swing is red. A king, a long song.",
+    "targetWords": [
+     "shell",
+     "king",
+     "swing",
+     "wing",
+     "song"
+    ],
+    "glossary": [
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shell",
+      "options": [
+       "rock",
+       "shell",
+       "sand",
+       "egg"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a wing",
+      "options": [
+       "flower",
+       "tree",
+       "rock",
+       "wing"
+      ],
+      "answerNo": 4,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The swing is red.",
+      "options": [
+       "lake",
+       "tree",
+       "swing",
+       "rock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "swing 은 그네예요. 빨간 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a king",
+      "options": [
+       "king",
+       "monkey",
+       "robot",
+       "horse"
+      ],
+      "answerNo": 1,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "blue",
+       "black",
+       "white",
+       "red"
+      ],
+      "answerNo": 4,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 새와 곤충",
+   "newWords": [],
+   "unitWords": [
+    "red",
+    "green",
+    "blue",
+    "lake",
+    "sand",
+    "rock",
+    "tree",
+    "yellow",
+    "black",
+    "white",
+    "pink"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The bird is red. It is a green insect. The lake is blue.",
+    "targetWords": [
+     "red",
+     "green",
+     "lake",
+     "blue"
+    ],
+    "glossary": [
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록의, 초록색"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The bird is red.",
+      "options": [
+       "cat",
+       "bird",
+       "pig",
+       "cow"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bird 는 새예요. 빨간 새 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a green insect",
+      "options": [
+       "fish",
+       "dog",
+       "rabbit",
+       "insect"
+      ],
+      "answerNo": 4,
+      "explanationKo": "insect 는 곤충이에요. 초록 곤충 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The lake is blue.",
+      "options": [
+       "lake",
+       "sand",
+       "rock",
+       "tree"
+      ],
+      "answerNo": 1,
+      "explanationKo": "lake 는 호수예요. 파란 호수 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "red",
+       "blue",
+       "green",
+       "yellow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "blue",
+       "black",
+       "white",
+       "pink"
+      ],
+      "answerNo": 1,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "부엌의 노랑과 하양",
+   "newWords": [],
+   "unitWords": [
+    "yellow",
+    "white",
+    "small",
+    "red",
+    "green",
+    "orange",
+    "black",
+    "pink",
+    "blue"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The cheese is yellow. The dish is white. A small red apple.",
+    "targetWords": [
+     "yellow",
+     "white",
+     "small",
+     "red"
+    ],
+    "glossary": [
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "yellow",
+      "lemma": "yellow",
+      "meaningKo": "노란, 노란색"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀, 흰색"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The cheese is yellow.",
+      "options": [
+       "cake",
+       "egg",
+       "cookie",
+       "cheese"
+      ],
+      "answerNo": 4,
+      "explanationKo": "cheese 는 치즈예요. 노란 치즈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The dish is white.",
+      "options": [
+       "dish",
+       "apple",
+       "pizza",
+       "banana"
+      ],
+      "answerNo": 1,
+      "explanationKo": "dish 는 접시예요. 하얀 접시 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a small red apple",
+      "options": [
+       "banana",
+       "grape",
+       "cheese",
+       "apple"
+      ],
+      "answerNo": 4,
+      "explanationKo": "apple 은 사과예요. 빨간 사과 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yellow",
+      "options": [
+       "green",
+       "yellow",
+       "orange",
+       "white"
+      ],
+      "answerNo": 2,
+      "explanationKo": "yellow 는 노란색이에요. 노란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white",
+      "options": [
+       "black",
+       "pink",
+       "white",
+       "blue"
+      ],
+      "answerNo": 3,
+      "explanationKo": "white 는 흰색이에요. 하얀 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물원의 긴 뱀",
+   "newWords": [],
+   "unitWords": [
+    "long",
+    "green",
+    "short",
+    "orange",
+    "black",
+    "white",
+    "pink",
+    "red",
+    "yellow",
+    "blue"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The long snake is green. The rabbit is short. The fox is orange.",
+    "targetWords": [
+     "long",
+     "green",
+     "short",
+     "orange"
+    ],
+    "glossary": [
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록의, 초록색"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "키가 작은, 짧은"
+     },
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "orange",
+      "lemma": "orange",
+      "meaningKo": "주황색, 주황의"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The long snake is green.",
+      "options": [
+       "duck",
+       "snake",
+       "bird",
+       "cat"
+      ],
+      "answerNo": 2,
+      "explanationKo": "snake 는 뱀이에요. 길고 초록색인 뱀을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The rabbit is short.",
+      "options": [
+       "pig",
+       "sheep",
+       "rabbit",
+       "dog"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rabbit 은 토끼예요. 토끼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The fox is orange.",
+      "options": [
+       "fox",
+       "cat",
+       "dog",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fox 는 여우예요. 주황 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "black",
+       "white",
+       "pink",
+       "green"
+      ],
+      "answerNo": 4,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "orange",
+      "options": [
+       "red",
+       "orange",
+       "yellow",
+       "blue"
+      ],
+      "answerNo": 2,
+      "explanationKo": "orange 는 주황색이에요. 주황 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "바닷가 조개 찾기",
+   "newWords": [],
+   "unitWords": [
+    "sun",
+    "big",
+    "shell",
+    "sand",
+    "rock",
+    "tree",
+    "wing",
+    "king",
+    "swing",
+    "lake",
+    "flower",
+    "rose"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The sun is big. A shell on the sand. A rock and a tree.",
+    "targetWords": [
+     "sun",
+     "big",
+     "shell",
+     "sand",
+     "rock",
+     "tree"
+    ],
+    "glossary": [
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "sand",
+      "lemma": "sand",
+      "meaningKo": "모래"
+     },
+     {
+      "surface": "rock",
+      "lemma": "rock",
+      "meaningKo": "바위, 돌"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The sun is big.",
+      "options": [
+       "star",
+       "egg",
+       "sun",
+       "apple"
+      ],
+      "answerNo": 3,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shell",
+      "options": [
+       "shell",
+       "wing",
+       "king",
+       "swing"
+      ],
+      "answerNo": 1,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the sand",
+      "options": [
+       "lake",
+       "flower",
+       "rose",
+       "sand"
+      ],
+      "answerNo": 4,
+      "explanationKo": "sand 는 모래예요. 모래 더미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rock",
+      "options": [
+       "sun",
+       "rock",
+       "lake",
+       "flower"
+      ],
+      "answerNo": 2,
+      "explanationKo": "rock 은 바위예요. 바위 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a tree",
+      "options": [
+       "rose",
+       "swing",
+       "tree",
+       "wing"
+      ],
+      "answerNo": 3,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "끝소리 ng 말놀이",
+   "newWords": [],
+   "unitWords": [
+    "king",
+    "wing",
+    "swing",
+    "song",
+    "red",
+    "rose",
+    "pink",
+    "color",
+    "shell",
+    "rock",
+    "sun",
+    "tree",
+    "lake",
+    "sand",
+    "orange",
+    "white"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "King, wing, swing, song! A red rose. Pink is my color.",
+    "targetWords": [
+     "king",
+     "wing",
+     "swing",
+     "song",
+     "red",
+     "rose",
+     "pink",
+     "color"
+    ],
+    "glossary": [
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "rose",
+      "lemma": "rose",
+      "meaningKo": "장미"
+     },
+     {
+      "surface": "pink",
+      "lemma": "pink",
+      "meaningKo": "분홍색, 분홍의"
+     },
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "king",
+      "options": [
+       "robot",
+       "king",
+       "monkey",
+       "lion"
+      ],
+      "answerNo": 2,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "wing",
+      "options": [
+       "wing",
+       "shell",
+       "rock",
+       "sun"
+      ],
+      "answerNo": 1,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "swing",
+      "options": [
+       "tree",
+       "lake",
+       "sand",
+       "swing"
+      ],
+      "answerNo": 4,
+      "explanationKo": "swing 은 그네예요. 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A red rose.",
+      "options": [
+       "sun",
+       "shell",
+       "rose",
+       "tree"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rose 는 장미예요. 빨간 장미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pink",
+      "options": [
+       "orange",
+       "red",
+       "white",
+       "pink"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pink 는 분홍색이에요. 분홍 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "소풍 도시락 색깔",
+   "newWords": [],
+   "unitWords": [
+    "big",
+    "red",
+    "yellow",
+    "orange",
+    "color",
+    "pink",
+    "white",
+    "blue",
+    "green",
+    "black"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A big red apple. The cheese is yellow. Orange is my color.",
+    "targetWords": [
+     "big",
+     "red",
+     "yellow",
+     "orange",
+     "color"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "yellow",
+      "lemma": "yellow",
+      "meaningKo": "노란, 노란색"
+     },
+     {
+      "surface": "orange",
+      "lemma": "orange",
+      "meaningKo": "주황색, 주황의"
+     },
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "red",
+       "pink",
+       "white",
+       "blue"
+      ],
+      "answerNo": 1,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big red apple",
+      "options": [
+       "banana",
+       "apple",
+       "egg",
+       "cake"
+      ],
+      "answerNo": 2,
+      "explanationKo": "apple 은 사과예요. 크고 빨간 사과 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The cheese is yellow.",
+      "options": [
+       "jam",
+       "cookie",
+       "cheese",
+       "rice"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cheese 는 치즈예요. 노란 치즈 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yellow",
+      "options": [
+       "green",
+       "black",
+       "orange",
+       "yellow"
+      ],
+      "answerNo": 4,
+      "explanationKo": "yellow 는 노란색이에요. 노란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "orange",
+      "options": [
+       "white",
+       "orange",
+       "black",
+       "green"
+      ],
+      "answerNo": 2,
+      "explanationKo": "orange 는 주황색이에요. 주황 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "해님 아래 꽃밭",
+   "newWords": [],
+   "unitWords": [
+    "big",
+    "sun",
+    "blue",
+    "lake",
+    "small",
+    "rose",
+    "short",
+    "tree",
+    "long",
+    "shell",
+    "sand",
+    "flower",
+    "rock",
+    "wing",
+    "king",
+    "swing",
+    "green",
+    "white",
+    "orange"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Big sun, blue lake. Small rose, short tree. The snake is long.",
+    "targetWords": [
+     "big",
+     "sun",
+     "blue",
+     "lake",
+     "small",
+     "rose",
+     "short",
+     "tree",
+     "long"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "rose",
+      "lemma": "rose",
+      "meaningKo": "장미"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "키가 작은, 짧은"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big sun",
+      "options": [
+       "sun",
+       "shell",
+       "sand",
+       "flower"
+      ],
+      "answerNo": 1,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue lake",
+      "options": [
+       "rock",
+       "lake",
+       "wing",
+       "sand"
+      ],
+      "answerNo": 2,
+      "explanationKo": "lake 는 호수예요. 파란 호수 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "small rose",
+      "options": [
+       "king",
+       "sand",
+       "rose",
+       "rock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rose 는 장미예요. 장미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "short tree",
+      "options": [
+       "swing",
+       "flower",
+       "sand",
+       "tree"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "green",
+       "white",
+       "blue",
+       "orange"
+      ],
+      "answerNo": 3,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "빨간 그네와 짧은 노래",
+   "newWords": [],
+   "unitWords": [
+    "big",
+    "shell",
+    "small",
+    "wing",
+    "king",
+    "red",
+    "swing",
+    "song",
+    "short",
+    "rock",
+    "sun",
+    "lake",
+    "rose",
+    "flower",
+    "sand",
+    "tree",
+    "pink",
+    "yellow",
+    "black"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Big shell, small wing. The king, a red swing. The song is short.",
+    "targetWords": [
+     "big",
+     "shell",
+     "small",
+     "wing",
+     "king",
+     "red",
+     "swing",
+     "song",
+     "short"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은, 키가 작은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big shell",
+      "options": [
+       "rock",
+       "shell",
+       "sun",
+       "lake"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "small wing",
+      "options": [
+       "wing",
+       "rose",
+       "flower",
+       "sand"
+      ],
+      "answerNo": 1,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The king",
+      "options": [
+       "robot",
+       "monkey",
+       "king",
+       "horse"
+      ],
+      "answerNo": 3,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a red swing",
+      "options": [
+       "tree",
+       "rock",
+       "flower",
+       "swing"
+      ],
+      "answerNo": 4,
+      "explanationKo": "swing 은 그네예요. 빨간 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "pink",
+       "yellow",
+       "black",
+       "red"
+      ],
+      "answerNo": 4,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "자전거와 연의 색",
+   "newWords": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "black"
+   ],
+   "unitWords": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "black"
+   ],
+   "preview": [
+    {
+     "word": "red",
+     "meaningKo": "빨간, 빨간색",
+     "example": "It is a red bike."
+    },
+    {
+     "word": "blue",
+     "meaningKo": "파란, 파란색",
+     "example": "It is a blue kite."
+    },
+    {
+     "word": "yellow",
+     "meaningKo": "노란, 노란색",
+     "example": "It is yellow."
+    },
+    {
+     "word": "green",
+     "meaningKo": "초록의, 초록색",
+     "example": "It is green."
+    },
+    {
+     "word": "black",
+     "meaningKo": "검은, 검은색",
+     "example": "It is black."
+    }
+   ],
+   "content": {
+    "passage": "The bike is red. The kite is blue. Yellow, green and black.",
+    "targetWords": [
+     "red",
+     "blue",
+     "yellow",
+     "green",
+     "black"
+    ],
+    "glossary": [
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "yellow",
+      "lemma": "yellow",
+      "meaningKo": "노란, 노란색"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록의, 초록색"
+     },
+     {
+      "surface": "black",
+      "lemma": "black",
+      "meaningKo": "검은, 검은색"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The bike is red.",
+      "options": [
+       "green",
+       "black",
+       "red",
+       "blue"
+      ],
+      "answerNo": 3,
+      "explanationKo": "'자전거는 빨간색이야'라는 뜻이에요. 빨간 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The kite is blue.",
+      "options": [
+       "blue",
+       "yellow",
+       "black",
+       "red"
+      ],
+      "answerNo": 1,
+      "explanationKo": "'연은 파란색이야'라는 뜻이에요. 파란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yellow",
+      "options": [
+       "red",
+       "green",
+       "black",
+       "yellow"
+      ],
+      "answerNo": 4,
+      "explanationKo": "yellow 는 노란색이에요. 노란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "yellow",
+       "green",
+       "red",
+       "blue"
+      ],
+      "answerNo": 2,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "black",
+      "options": [
+       "blue",
+       "red",
+       "black",
+       "green"
+      ],
+      "answerNo": 3,
+      "explanationKo": "black 은 검은색이에요. 검은 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "흰 비행기와 큰 배",
+   "newWords": [
+    "white",
+    "pink",
+    "orange",
+    "color",
+    "big"
+   ],
+   "unitWords": [
+    "white",
+    "pink",
+    "orange",
+    "color",
+    "big",
+    "blue",
+    "black",
+    "red",
+    "yellow",
+    "green"
+   ],
+   "preview": [
+    {
+     "word": "white",
+     "meaningKo": "하얀, 흰색",
+     "example": "The plane is white."
+    },
+    {
+     "word": "pink",
+     "meaningKo": "분홍의, 분홍색",
+     "example": "It is pink."
+    },
+    {
+     "word": "orange",
+     "meaningKo": "오렌지, 주황색",
+     "example": "It is orange."
+    },
+    {
+     "word": "color",
+     "meaningKo": "색, 색깔",
+     "example": "My color is blue."
+    },
+    {
+     "word": "big",
+     "meaningKo": "큰",
+     "example": "The ship is big."
+    }
+   ],
+   "content": {
+    "passage": "White plane, big ship. Pink and orange. Orange is my color.",
+    "targetWords": [
+     "white",
+     "pink",
+     "orange",
+     "color",
+     "big"
+    ],
+    "glossary": [
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀, 흰색"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "pink",
+      "lemma": "pink",
+      "meaningKo": "분홍색, 분홍의"
+     },
+     {
+      "surface": "orange",
+      "lemma": "orange",
+      "meaningKo": "주황색, 주황의"
+     },
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white plane",
+      "options": [
+       "bus",
+       "plane",
+       "car",
+       "truck"
+      ],
+      "answerNo": 2,
+      "explanationKo": "plane 은 비행기예요. 하얀 비행기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big ship",
+      "options": [
+       "bike",
+       "kite",
+       "ship",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ship 은 배예요. 배 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white",
+      "options": [
+       "white",
+       "black",
+       "blue",
+       "red"
+      ],
+      "answerNo": 1,
+      "explanationKo": "white 는 흰색이에요. 하얀 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pink",
+      "options": [
+       "orange",
+       "yellow",
+       "green",
+       "pink"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pink 는 분홍색이에요. 분홍 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "orange",
+      "options": [
+       "pink",
+       "orange",
+       "white",
+       "yellow"
+      ],
+      "answerNo": 2,
+      "explanationKo": "orange 는 주황색이에요. 주황 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "긴 버스, 짧은 자동차",
+   "newWords": [
+    "small",
+    "long",
+    "short",
+    "sun",
+    "tree"
+   ],
+   "unitWords": [
+    "small",
+    "long",
+    "short",
+    "sun",
+    "tree",
+    "big"
+   ],
+   "preview": [
+    {
+     "word": "small",
+     "meaningKo": "작은",
+     "example": "The ball is small."
+    },
+    {
+     "word": "long",
+     "meaningKo": "긴",
+     "example": "The bus is long."
+    },
+    {
+     "word": "short",
+     "meaningKo": "짧은, 키가 작은",
+     "example": "The car is short."
+    },
+    {
+     "word": "sun",
+     "meaningKo": "해, 태양",
+     "example": "The sun is big."
+    },
+    {
+     "word": "tree",
+     "meaningKo": "나무",
+     "example": "This is a tree."
+    }
+   ],
+   "content": {
+    "passage": "Long bus, short car. The sun is big. A ball, a small tree.",
+    "targetWords": [
+     "small",
+     "long",
+     "short",
+     "sun",
+     "tree"
+    ],
+    "glossary": [
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은, 키가 작은"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "long bus",
+      "options": [
+       "bus",
+       "ship",
+       "bike",
+       "plane"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bus 는 버스예요. 버스 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "short car",
+      "options": [
+       "truck",
+       "bike",
+       "car",
+       "ship"
+      ],
+      "answerNo": 3,
+      "explanationKo": "car 는 자동차예요. 자동차 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The sun is big.",
+      "options": [
+       "ball",
+       "sun",
+       "star",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "doll",
+       "kite",
+       "yo-yo",
+       "ball"
+      ],
+      "answerNo": 4,
+      "explanationKo": "ball 은 공이에요. 공 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a small tree",
+      "options": [
+       "tree",
+       "sun",
+       "ball",
+       "car"
+      ],
+      "answerNo": 1,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23",
+    "retries": 1
+   },
+   "title": "배 타고 호수 놀이",
+   "newWords": [
+    "flower",
+    "rock",
+    "lake",
+    "sand",
+    "rose"
+   ],
+   "unitWords": [
+    "flower",
+    "rock",
+    "lake",
+    "sand",
+    "rose",
+    "tree",
+    "sun"
+   ],
+   "preview": [
+    {
+     "word": "flower",
+     "meaningKo": "꽃",
+     "example": "The flower is white."
+    },
+    {
+     "word": "rock",
+     "meaningKo": "바위, 돌",
+     "example": "It is a big rock."
+    },
+    {
+     "word": "lake",
+     "meaningKo": "호수",
+     "example": "It is a blue lake."
+    },
+    {
+     "word": "sand",
+     "meaningKo": "모래",
+     "example": "A ball on the sand."
+    },
+    {
+     "word": "rose",
+     "meaningKo": "장미",
+     "example": "It is a red rose."
+    }
+   ],
+   "content": {
+    "passage": "A ship on the lake. A rock on the sand. A rose and a flower.",
+    "targetWords": [
+     "flower",
+     "rock",
+     "lake",
+     "sand",
+     "rose"
+    ],
+    "glossary": [
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "rock",
+      "lemma": "rock",
+      "meaningKo": "바위, 돌"
+     },
+     {
+      "surface": "sand",
+      "lemma": "sand",
+      "meaningKo": "모래"
+     },
+     {
+      "surface": "rose",
+      "lemma": "rose",
+      "meaningKo": "장미"
+     },
+     {
+      "surface": "flower",
+      "lemma": "flower",
+      "meaningKo": "꽃"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the lake",
+      "options": [
+       "tree",
+       "lake",
+       "sun",
+       "ball"
+      ],
+      "answerNo": 2,
+      "explanationKo": "lake 는 호수예요. 호수 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rock",
+      "options": [
+       "rock",
+       "ball",
+       "tree",
+       "sun"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rock 은 바위예요. 바위 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the sand",
+      "options": [
+       "sun",
+       "tree",
+       "ship",
+       "sand"
+      ],
+      "answerNo": 4,
+      "explanationKo": "sand 는 모래예요. 모래 더미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rose",
+      "options": [
+       "ball",
+       "tree",
+       "rose",
+       "sun"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rose 는 장미예요. 장미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a flower",
+      "options": [
+       "sun",
+       "flower",
+       "rock",
+       "tree"
+      ],
+      "answerNo": 2,
+      "explanationKo": "flower 는 꽃이에요. 꽃 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23",
+    "retries": 1
+   },
+   "title": "그네 탄 임금님",
+   "newWords": [
+    "shell",
+    "king",
+    "swing",
+    "wing",
+    "song"
+   ],
+   "unitWords": [
+    "shell",
+    "king",
+    "swing",
+    "wing",
+    "song",
+    "short"
+   ],
+   "preview": [
+    {
+     "word": "shell",
+     "meaningKo": "조개껍데기",
+     "example": "It is a shell."
+    },
+    {
+     "word": "king",
+     "meaningKo": "왕",
+     "example": "It is a king."
+    },
+    {
+     "word": "swing",
+     "meaningKo": "그네, 흔들다",
+     "example": "The swing is red."
+    },
+    {
+     "word": "wing",
+     "meaningKo": "날개",
+     "example": "It is a wing."
+    },
+    {
+     "word": "song",
+     "meaningKo": "노래",
+     "example": "The song is short."
+    }
+   ],
+   "content": {
+    "passage": "A king on the swing. Wing, shell, ball! The song is short.",
+    "targetWords": [
+     "shell",
+     "king",
+     "swing",
+     "wing",
+     "song"
+    ],
+    "glossary": [
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a king",
+      "options": [
+       "king",
+       "robot",
+       "doll",
+       "monkey"
+      ],
+      "answerNo": 1,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the swing",
+      "options": [
+       "ball",
+       "kite",
+       "swing",
+       "bike"
+      ],
+      "answerNo": 3,
+      "explanationKo": "swing 은 그네예요. 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "wing",
+      "options": [
+       "shell",
+       "wing",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "shell",
+      "options": [
+       "kite",
+       "ball",
+       "bike",
+       "shell"
+      ],
+      "answerNo": 4,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ball",
+      "options": [
+       "doll",
+       "yo-yo",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ball 은 공이에요. 공 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "음악회 날 모자와 신발",
+   "newWords": [],
+   "unitWords": [
+    "blue",
+    "red",
+    "black",
+    "white",
+    "pink",
+    "yellow",
+    "green",
+    "orange"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My cap is blue. My shoe is red. The piano is black.",
+    "targetWords": [
+     "blue",
+     "red",
+     "black"
+    ],
+    "glossary": [
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "black",
+      "lemma": "black",
+      "meaningKo": "검은, 검은색"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My cap is blue.",
+      "options": [
+       "cap",
+       "doll",
+       "ball",
+       "bike"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cap 은 챙 달린 모자예요. 파란 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My shoe is red.",
+      "options": [
+       "shirt",
+       "sock",
+       "shoe",
+       "jacket"
+      ],
+      "answerNo": 3,
+      "explanationKo": "shoe 는 신발이에요. 빨간 신발 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The piano is black.",
+      "options": [
+       "guitar",
+       "violin",
+       "robot",
+       "piano"
+      ],
+      "answerNo": 4,
+      "explanationKo": "piano 는 피아노예요. 건반 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "red",
+       "blue",
+       "white",
+       "pink"
+      ],
+      "answerNo": 2,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "black",
+      "options": [
+       "black",
+       "yellow",
+       "green",
+       "orange"
+      ],
+      "answerNo": 1,
+      "explanationKo": "black 은 검은색이에요. 검은 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "우주 탐험 놀이",
+   "newWords": [],
+   "unitWords": [
+    "sun",
+    "big",
+    "small",
+    "white",
+    "pink",
+    "black",
+    "blue"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The sun is big. The star is small. A white plane, a robot.",
+    "targetWords": [
+     "sun",
+     "big",
+     "small",
+     "white"
+    ],
+    "glossary": [
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "white",
+      "lemma": "white",
+      "meaningKo": "하얀, 흰색"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The sun is big.",
+      "options": [
+       "ball",
+       "sun",
+       "kite",
+       "egg"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The star is small.",
+      "options": [
+       "kite",
+       "ball",
+       "star",
+       "ring"
+      ],
+      "answerNo": 3,
+      "explanationKo": "star 는 별이에요. 별 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a white plane",
+      "options": [
+       "plane",
+       "ship",
+       "car",
+       "bus"
+      ],
+      "answerNo": 1,
+      "explanationKo": "plane 은 비행기예요. 하얀 비행기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a robot",
+      "options": [
+       "doll",
+       "ball",
+       "kite",
+       "robot"
+      ],
+      "answerNo": 4,
+      "explanationKo": "robot 은 로봇이에요. 로봇 얼굴 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "white",
+      "options": [
+       "pink",
+       "black",
+       "blue",
+       "white"
+      ],
+      "answerNo": 4,
+      "explanationKo": "white 는 흰색이에요. 하얀 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "색깔 맞히기 게임",
+   "newWords": [],
+   "unitWords": [
+    "color",
+    "yellow",
+    "green",
+    "pink",
+    "orange",
+    "long",
+    "black",
+    "white",
+    "red",
+    "blue"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A color game! Yellow, green, pink, orange. The truck is long.",
+    "targetWords": [
+     "color",
+     "yellow",
+     "green",
+     "pink",
+     "orange",
+     "long"
+    ],
+    "glossary": [
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "yellow",
+      "lemma": "yellow",
+      "meaningKo": "노란색, 노란"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록색, 초록의"
+     },
+     {
+      "surface": "pink",
+      "lemma": "pink",
+      "meaningKo": "분홍색, 분홍의"
+     },
+     {
+      "surface": "orange",
+      "lemma": "orange",
+      "meaningKo": "주황색, 주황의"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yellow",
+      "options": [
+       "yellow",
+       "black",
+       "white",
+       "red"
+      ],
+      "answerNo": 1,
+      "explanationKo": "yellow 는 노란색이에요. 노란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "blue",
+       "red",
+       "green",
+       "black"
+      ],
+      "answerNo": 3,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pink",
+      "options": [
+       "white",
+       "pink",
+       "red",
+       "orange"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pink 는 분홍색이에요. 분홍 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "orange",
+      "options": [
+       "black",
+       "white",
+       "yellow",
+       "orange"
+      ],
+      "answerNo": 4,
+      "explanationKo": "orange 는 주황색이에요. 주황 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The truck is long.",
+      "options": [
+       "car",
+       "truck",
+       "plane",
+       "bike"
+      ],
+      "answerNo": 2,
+      "explanationKo": "truck 은 트럭이에요. 트럭 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "캠핑장 보물찾기",
+   "newWords": [],
+   "unitWords": [
+    "sand",
+    "shell",
+    "rock",
+    "tree",
+    "lake",
+    "song",
+    "short",
+    "sun",
+    "flower",
+    "rose",
+    "wing",
+    "swing",
+    "king"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A ball on the sand. Shell, rock, tree, lake. The song is short.",
+    "targetWords": [
+     "sand",
+     "shell",
+     "rock",
+     "tree",
+     "lake",
+     "song",
+     "short"
+    ],
+    "glossary": [
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "sand",
+      "lemma": "sand",
+      "meaningKo": "모래"
+     },
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "rock",
+      "lemma": "rock",
+      "meaningKo": "바위, 돌"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     },
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "짧은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the sand",
+      "options": [
+       "sand",
+       "kite",
+       "sun",
+       "flower"
+      ],
+      "answerNo": 1,
+      "explanationKo": "sand 는 모래예요. 모래 더미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "shell",
+      "options": [
+       "rock",
+       "shell",
+       "ball",
+       "rose"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rock",
+      "options": [
+       "lake",
+       "tree",
+       "rock",
+       "wing"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rock 은 바위예요. 바위 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "tree",
+      "options": [
+       "flower",
+       "swing",
+       "king",
+       "tree"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "lake",
+      "options": [
+       "sun",
+       "sand",
+       "wing",
+       "lake"
+      ],
+      "answerNo": 4,
+      "explanationKo": "lake 는 호수예요. 호수 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "임금님 연극 놀이",
+   "newWords": [],
+   "unitWords": [
+    "swing",
+    "red",
+    "king",
+    "rose",
+    "wing",
+    "flower",
+    "tree",
+    "sun",
+    "rock"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The swing is red. A king and a rose. A wing, a flower.",
+    "targetWords": [
+     "swing",
+     "red",
+     "king",
+     "rose",
+     "wing",
+     "flower"
+    ],
+    "glossary": [
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "rose",
+      "lemma": "rose",
+      "meaningKo": "장미"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "flower",
+      "lemma": "flower",
+      "meaningKo": "꽃"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The swing is red.",
+      "options": [
+       "swing",
+       "ball",
+       "kite",
+       "doll"
+      ],
+      "answerNo": 1,
+      "explanationKo": "swing 은 그네예요. 빨간 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a king",
+      "options": [
+       "robot",
+       "king",
+       "doll",
+       "monkey"
+      ],
+      "answerNo": 2,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rose",
+      "options": [
+       "wing",
+       "tree",
+       "rose",
+       "sun"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rose 는 장미예요. 장미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a wing",
+      "options": [
+       "sun",
+       "rock",
+       "tree",
+       "wing"
+      ],
+      "answerNo": 4,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a flower",
+      "options": [
+       "tree",
+       "sun",
+       "king",
+       "flower"
+      ],
+      "answerNo": 4,
+      "explanationKo": "flower 는 꽃이에요. 꽃 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "요요와 재킷 색깔",
+   "newWords": [],
+   "unitWords": [
+    "big",
+    "red",
+    "blue",
+    "color",
+    "green",
+    "pink",
+    "orange",
+    "white",
+    "black",
+    "yellow"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A big red yo-yo. My jacket is blue. My color is green.",
+    "targetWords": [
+     "big",
+     "red",
+     "blue",
+     "color",
+     "green"
+    ],
+    "glossary": [
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "color",
+      "lemma": "color",
+      "meaningKo": "색, 색깔"
+     },
+     {
+      "surface": "green",
+      "lemma": "green",
+      "meaningKo": "초록색, 초록의"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a big red yo-yo",
+      "options": [
+       "ball",
+       "yo-yo",
+       "kite",
+       "doll"
+      ],
+      "answerNo": 2,
+      "explanationKo": "yo-yo 는 요요예요. 빨간 요요 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My jacket is blue.",
+      "options": [
+       "hat",
+       "shoe",
+       "jacket",
+       "doll"
+      ],
+      "answerNo": 3,
+      "explanationKo": "jacket 은 재킷이에요. 파란 웃옷 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "red",
+       "pink",
+       "orange",
+       "white"
+      ],
+      "answerNo": 1,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "black",
+       "yellow",
+       "green",
+       "blue"
+      ],
+      "answerNo": 4,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "green",
+      "options": [
+       "white",
+       "green",
+       "black",
+       "yellow"
+      ],
+      "answerNo": 2,
+      "explanationKo": "green 은 초록색이에요. 초록 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "공원에서 연날리기",
+   "newWords": [],
+   "unitWords": [
+    "lake",
+    "blue",
+    "small",
+    "rock",
+    "big",
+    "sun",
+    "short",
+    "tree",
+    "rose",
+    "sand",
+    "wing",
+    "swing",
+    "king",
+    "flower",
+    "shell",
+    "green",
+    "black",
+    "white"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The lake is blue. A small kite, a rock. Big sun, short tree.",
+    "targetWords": [
+     "lake",
+     "blue",
+     "small",
+     "rock",
+     "big",
+     "sun",
+     "short",
+     "tree"
+    ],
+    "glossary": [
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "blue",
+      "lemma": "blue",
+      "meaningKo": "파란, 파란색"
+     },
+     {
+      "surface": "small",
+      "lemma": "small",
+      "meaningKo": "작은"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "rock",
+      "lemma": "rock",
+      "meaningKo": "바위, 돌"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해, 태양"
+     },
+     {
+      "surface": "short",
+      "lemma": "short",
+      "meaningKo": "키가 작은, 짧은"
+     },
+     {
+      "surface": "tree",
+      "lemma": "tree",
+      "meaningKo": "나무"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The lake is blue.",
+      "options": [
+       "rose",
+       "sand",
+       "lake",
+       "wing"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lake 는 호수예요. 파란 호수 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rock",
+      "options": [
+       "swing",
+       "king",
+       "flower",
+       "rock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rock 은 바위예요. 바위 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "big sun",
+      "options": [
+       "shell",
+       "sun",
+       "flower",
+       "sand"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sun 은 해예요. 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "short tree",
+      "options": [
+       "tree",
+       "sand",
+       "rose",
+       "shell"
+      ],
+      "answerNo": 1,
+      "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "blue",
+      "options": [
+       "green",
+       "black",
+       "blue",
+       "white"
+      ],
+      "answerNo": 3,
+      "explanationKo": "blue 는 파란색이에요. 파란 동그라미를 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "왕 찾기 게임",
+   "newWords": [],
+   "unitWords": [
+    "red",
+    "swing",
+    "long",
+    "song",
+    "wing",
+    "shell",
+    "king",
+    "flower",
+    "sun",
+    "lake",
+    "sand",
+    "tree",
+    "rock",
+    "rose",
+    "yellow",
+    "pink",
+    "orange"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Red swing, long song. A wing and a shell. The king in the game.",
+    "targetWords": [
+     "red",
+     "swing",
+     "long",
+     "song",
+     "wing",
+     "shell",
+     "king"
+    ],
+    "glossary": [
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간, 빨간색"
+     },
+     {
+      "surface": "swing",
+      "lemma": "swing",
+      "meaningKo": "그네"
+     },
+     {
+      "surface": "long",
+      "lemma": "long",
+      "meaningKo": "긴"
+     },
+     {
+      "surface": "song",
+      "lemma": "song",
+      "meaningKo": "노래"
+     },
+     {
+      "surface": "wing",
+      "lemma": "wing",
+      "meaningKo": "날개"
+     },
+     {
+      "surface": "shell",
+      "lemma": "shell",
+      "meaningKo": "조개껍데기"
+     },
+     {
+      "surface": "king",
+      "lemma": "king",
+      "meaningKo": "왕"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red swing",
+      "options": [
+       "kite",
+       "swing",
+       "ball",
+       "doll"
+      ],
+      "answerNo": 2,
+      "explanationKo": "swing 은 그네예요. 빨간 그네 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a wing",
+      "options": [
+       "flower",
+       "sun",
+       "wing",
+       "lake"
+      ],
+      "answerNo": 3,
+      "explanationKo": "wing 은 날개예요. 날개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shell",
+      "options": [
+       "shell",
+       "sand",
+       "tree",
+       "rock"
+      ],
+      "answerNo": 1,
+      "explanationKo": "shell 은 조개껍데기예요. 소라 껍데기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The king",
+      "options": [
+       "robot",
+       "rose",
+       "monkey",
+       "king"
+      ],
+      "answerNo": 4,
+      "explanationKo": "king 은 왕이에요. 왕관을 쓴 왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "red",
+      "options": [
+       "yellow",
+       "red",
+       "pink",
+       "orange"
+      ],
+      "answerNo": 2,
+      "explanationKo": "red 는 빨간색이에요. 빨간 동그라미를 골라요."
+     }
+    ]
+   }
+  }
+ ]
+}

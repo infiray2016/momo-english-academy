@@ -1,0 +1,3270 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 0,
+  "lessons": [
+    {
+      "kind": "alphabet",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "숲속에서 만난 친구",
+      "newWords": [
+        "ant",
+        "bear",
+        "cow",
+        "door",
+        "elephant"
+      ],
+      "unitWords": [
+        "ant",
+        "bear",
+        "cow",
+        "door",
+        "elephant"
+      ],
+      "preview": [
+        {
+          "word": "ant",
+          "meaningKo": "개미",
+          "example": "An ant is small."
+        },
+        {
+          "word": "bear",
+          "meaningKo": "곰",
+          "example": "The bear is big."
+        },
+        {
+          "word": "cow",
+          "meaningKo": "소",
+          "example": "I like the cow."
+        },
+        {
+          "word": "door",
+          "meaningKo": "문",
+          "example": "It is a big door."
+        },
+        {
+          "word": "elephant",
+          "meaningKo": "코끼리",
+          "example": "It is an elephant."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "elephant",
+            "options": [
+              "elephant",
+              "fish",
+              "rabbit",
+              "pig"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "bear",
+            "options": [
+              "cat",
+              "duck",
+              "bear",
+              "snake"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "bear"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "cow",
+            "tiles": [
+              "o",
+              "w",
+              "c"
+            ],
+            "accepted": [
+              "cow"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "door",
+            "tiles": [
+              "r",
+              "o",
+              "d",
+              "o"
+            ],
+            "accepted": [
+              "door"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "ant",
+            "pattern": "_nt",
+            "tiles": [
+              "u",
+              "a",
+              "e"
+            ],
+            "accepted": [
+              "ant"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bear",
+            "pattern": "_ear",
+            "tiles": [
+              "k",
+              "b",
+              "z"
+            ],
+            "accepted": [
+              "bear"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "농장의 말과 주스",
+      "newWords": [
+        "fork",
+        "guitar",
+        "horse",
+        "insect",
+        "juice"
+      ],
+      "unitWords": [
+        "horse",
+        "cow",
+        "juice",
+        "fork",
+        "insect",
+        "guitar",
+        "elephant"
+      ],
+      "preview": [
+        {
+          "word": "fork",
+          "meaningKo": "포크",
+          "example": "This is my fork."
+        },
+        {
+          "word": "guitar",
+          "meaningKo": "기타",
+          "example": "I like the guitar."
+        },
+        {
+          "word": "horse",
+          "meaningKo": "말",
+          "example": "The horse is tall."
+        },
+        {
+          "word": "insect",
+          "meaningKo": "곤충",
+          "example": "The insect is green."
+        },
+        {
+          "word": "juice",
+          "meaningKo": "주스",
+          "example": "I like juice."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "horse",
+            "options": [
+              "sheep",
+              "cow",
+              "apple",
+              "horse"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "horse"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "juice",
+            "options": [
+              "egg",
+              "juice",
+              "cake",
+              "banana"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "juice"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "fork",
+            "tiles": [
+              "k",
+              "r",
+              "o",
+              "f"
+            ],
+            "accepted": [
+              "fork"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "insect",
+            "tiles": [
+              "c",
+              "s",
+              "t",
+              "n",
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "insect"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "guitar",
+            "pattern": "_uitar",
+            "tiles": [
+              "k",
+              "g",
+              "d"
+            ],
+            "accepted": [
+              "guitar"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "elephant",
+            "pattern": "_lephant",
+            "tiles": [
+              "a",
+              "e",
+              "i"
+            ],
+            "accepted": [
+              "elephant"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "정글의 사자와 원숭이",
+      "newWords": [
+        "key",
+        "lion",
+        "monkey",
+        "nurse",
+        "octopus"
+      ],
+      "unitWords": [
+        "lion",
+        "bear",
+        "octopus",
+        "key",
+        "nurse",
+        "monkey",
+        "horse"
+      ],
+      "preview": [
+        {
+          "word": "key",
+          "meaningKo": "열쇠",
+          "example": "This is my key."
+        },
+        {
+          "word": "lion",
+          "meaningKo": "사자",
+          "example": "The lion is big."
+        },
+        {
+          "word": "monkey",
+          "meaningKo": "원숭이",
+          "example": "The monkey is cute."
+        },
+        {
+          "word": "nurse",
+          "meaningKo": "간호사",
+          "example": "The nurse is nice."
+        },
+        {
+          "word": "octopus",
+          "meaningKo": "문어",
+          "example": "It is an octopus."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "lion",
+            "options": [
+              "tree",
+              "lion",
+              "bear",
+              "dog"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "octopus",
+            "options": [
+              "octopus",
+              "cake",
+              "sun",
+              "frog"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "octopus"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "key",
+            "tiles": [
+              "e",
+              "y",
+              "k"
+            ],
+            "accepted": [
+              "key"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "nurse",
+            "tiles": [
+              "s",
+              "u",
+              "e",
+              "n",
+              "r"
+            ],
+            "accepted": [
+              "nurse"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "monkey",
+            "pattern": "_onkey",
+            "tiles": [
+              "b",
+              "m",
+              "n"
+            ],
+            "accepted": [
+              "monkey"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "horse",
+            "pattern": "_orse",
+            "tiles": [
+              "j",
+              "h",
+              "b"
+            ],
+            "accepted": [
+              "horse"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "밤하늘 별과 호랑이",
+      "newWords": [
+        "piano",
+        "queen",
+        "robot",
+        "star",
+        "tiger"
+      ],
+      "unitWords": [
+        "tiger",
+        "monkey",
+        "star",
+        "piano",
+        "queen",
+        "robot",
+        "lion"
+      ],
+      "preview": [
+        {
+          "word": "piano",
+          "meaningKo": "피아노",
+          "example": "The piano is black."
+        },
+        {
+          "word": "queen",
+          "meaningKo": "여왕",
+          "example": "The queen is tall."
+        },
+        {
+          "word": "robot",
+          "meaningKo": "로봇",
+          "example": "It is a robot."
+        },
+        {
+          "word": "star",
+          "meaningKo": "별",
+          "example": "It is a little star."
+        },
+        {
+          "word": "tiger",
+          "meaningKo": "호랑이",
+          "example": "The tiger is orange."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "tiger",
+            "options": [
+              "duck",
+              "pig",
+              "tiger",
+              "monkey"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "tiger"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "star",
+            "options": [
+              "flower",
+              "rock",
+              "apple",
+              "star"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "star"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "piano",
+            "tiles": [
+              "n",
+              "a",
+              "p",
+              "o",
+              "i"
+            ],
+            "accepted": [
+              "piano"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "queen",
+            "tiles": [
+              "e",
+              "n",
+              "q",
+              "u",
+              "e"
+            ],
+            "accepted": [
+              "queen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "robot",
+            "pattern": "_obot",
+            "tiles": [
+              "l",
+              "r",
+              "w"
+            ],
+            "accepted": [
+              "robot"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "lion",
+            "pattern": "_ion",
+            "tiles": [
+              "n",
+              "l",
+              "r"
+            ],
+            "accepted": [
+              "lion"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "비 오는 날 창가",
+      "newWords": [
+        "umbrella",
+        "violin",
+        "window",
+        "box",
+        "yo-yo"
+      ],
+      "unitWords": [
+        "umbrella",
+        "window",
+        "box",
+        "yo-yo",
+        "violin",
+        "tiger"
+      ],
+      "preview": [
+        {
+          "word": "umbrella",
+          "meaningKo": "우산",
+          "example": "It is an umbrella."
+        },
+        {
+          "word": "violin",
+          "meaningKo": "바이올린",
+          "example": "I like the violin."
+        },
+        {
+          "word": "window",
+          "meaningKo": "창문",
+          "example": "The window is big."
+        },
+        {
+          "word": "box",
+          "meaningKo": "상자",
+          "example": "It is a big box."
+        },
+        {
+          "word": "yo-yo",
+          "meaningKo": "요요",
+          "example": "My yo-yo is red."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "umbrella",
+            "options": [
+              "cat",
+              "sheep",
+              "rose",
+              "umbrella"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "window",
+            "options": [
+              "window",
+              "bird",
+              "tree",
+              "egg"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "box",
+            "tiles": [
+              "o",
+              "x",
+              "b"
+            ],
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yo-yo",
+            "tiles": [
+              "o",
+              "y",
+              "-",
+              "o",
+              "y"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "violin",
+            "pattern": "_iolin",
+            "tiles": [
+              "w",
+              "v",
+              "b"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tiger",
+            "pattern": "_iger",
+            "tiles": [
+              "d",
+              "t",
+              "p"
+            ],
+            "accepted": [
+              "tiger"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "초원의 얼룩말",
+      "newWords": [
+        "zebra"
+      ],
+      "unitWords": [
+        "zebra",
+        "yo-yo",
+        "violin",
+        "window",
+        "umbrella"
+      ],
+      "preview": [
+        {
+          "word": "zebra",
+          "meaningKo": "얼룩말",
+          "example": "I like the zebra."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "zebra",
+            "options": [
+              "frog",
+              "zebra",
+              "pig",
+              "cat"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "yo-yo",
+            "options": [
+              "apple",
+              "candy",
+              "yo-yo",
+              "fish"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "violin",
+            "tiles": [
+              "l",
+              "i",
+              "n",
+              "v",
+              "o",
+              "i"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "window",
+            "tiles": [
+              "d",
+              "w",
+              "o",
+              "n",
+              "i",
+              "w"
+            ],
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "umbrella",
+            "pattern": "_mbrella",
+            "tiles": [
+              "a",
+              "u",
+              "o"
+            ],
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "zebra",
+            "pattern": "_ebra",
+            "tiles": [
+              "s",
+              "z",
+              "j"
+            ],
+            "accepted": [
+              "zebra"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "개미랑 곰 다시 만나기",
+      "newWords": [],
+      "unitWords": [
+        "elephant",
+        "cow",
+        "ant",
+        "fork",
+        "bear",
+        "door"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "elephant",
+            "options": [
+              "pig",
+              "cat",
+              "elephant",
+              "sun"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "cow",
+            "options": [
+              "rabbit",
+              "cow",
+              "frog",
+              "tree"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "cow"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ant",
+            "tiles": [
+              "n",
+              "t",
+              "a"
+            ],
+            "accepted": [
+              "ant"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "fork",
+            "tiles": [
+              "o",
+              "f",
+              "k",
+              "r"
+            ],
+            "accepted": [
+              "fork"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bear",
+            "pattern": "_ear",
+            "tiles": [
+              "v",
+              "b",
+              "k"
+            ],
+            "accepted": [
+              "bear"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "door",
+            "pattern": "_oor",
+            "tiles": [
+              "g",
+              "d",
+              "t"
+            ],
+            "accepted": [
+              "door"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "사자랑 기타 다시 보기",
+      "newWords": [],
+      "unitWords": [
+        "lion",
+        "insect",
+        "guitar",
+        "juice",
+        "key",
+        "horse",
+        "monkey"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "lion",
+            "options": [
+              "lion",
+              "insect",
+              "cake",
+              "dog"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "guitar",
+            "options": [
+              "fish",
+              "rice",
+              "egg",
+              "guitar"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "guitar"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "juice",
+            "tiles": [
+              "c",
+              "i",
+              "j",
+              "e",
+              "u"
+            ],
+            "accepted": [
+              "juice"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "key",
+            "tiles": [
+              "y",
+              "e",
+              "k"
+            ],
+            "accepted": [
+              "key"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "horse",
+            "pattern": "_orse",
+            "tiles": [
+              "b",
+              "h",
+              "k"
+            ],
+            "accepted": [
+              "horse"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "monkey",
+            "pattern": "_onkey",
+            "tiles": [
+              "n",
+              "b",
+              "m"
+            ],
+            "accepted": [
+              "monkey"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "바닷속 문어 다시 보기",
+      "newWords": [],
+      "unitWords": [
+        "octopus",
+        "queen",
+        "robot",
+        "star",
+        "nurse",
+        "piano"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "octopus",
+            "options": [
+              "duck",
+              "octopus",
+              "grape",
+              "banana"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "octopus"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "queen",
+            "options": [
+              "cat",
+              "lake",
+              "egg",
+              "queen"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "queen"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "robot",
+            "tiles": [
+              "t",
+              "o",
+              "b",
+              "r",
+              "o"
+            ],
+            "accepted": [
+              "robot"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "star",
+            "tiles": [
+              "a",
+              "r",
+              "t",
+              "s"
+            ],
+            "accepted": [
+              "star"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "nurse",
+            "pattern": "_urse",
+            "tiles": [
+              "g",
+              "n",
+              "t"
+            ],
+            "accepted": [
+              "nurse"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "piano",
+            "pattern": "_iano",
+            "tiles": [
+              "b",
+              "p",
+              "d"
+            ],
+            "accepted": [
+              "piano"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "얼룩말과 우산 다시 보기",
+      "newWords": [],
+      "unitWords": [
+        "umbrella",
+        "violin",
+        "zebra",
+        "box",
+        "tiger",
+        "window",
+        "yo-yo"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "umbrella",
+            "options": [
+              "violin",
+              "rose",
+              "umbrella",
+              "cake"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "zebra",
+            "options": [
+              "zebra",
+              "pig",
+              "apple",
+              "frog"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "box",
+            "tiles": [
+              "x",
+              "o",
+              "b"
+            ],
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "tiger",
+            "tiles": [
+              "g",
+              "t",
+              "r",
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "tiger"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "window",
+            "pattern": "_indow",
+            "tiles": [
+              "m",
+              "w",
+              "v"
+            ],
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "yo-yo",
+            "pattern": "_o-yo",
+            "tiles": [
+              "j",
+              "y",
+              "g"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "코끼리와 주스 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "cow",
+        "guitar",
+        "elephant",
+        "door",
+        "insect",
+        "juice",
+        "bear",
+        "ant",
+        "horse",
+        "fork"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "elephant",
+            "options": [
+              "cow",
+              "guitar",
+              "rice",
+              "elephant"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "juice",
+            "options": [
+              "door",
+              "insect",
+              "juice",
+              "cake"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "juice"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bear",
+            "tiles": [
+              "a",
+              "b",
+              "r",
+              "e"
+            ],
+            "accepted": [
+              "bear"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ant",
+            "tiles": [
+              "t",
+              "a",
+              "n"
+            ],
+            "accepted": [
+              "ant"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "horse",
+            "pattern": "_orse",
+            "tiles": [
+              "h",
+              "j"
+            ],
+            "accepted": [
+              "horse"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "fork",
+            "pattern": "_ork",
+            "tiles": [
+              "t",
+              "f",
+              "l"
+            ],
+            "accepted": [
+              "fork"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "호랑이와 문어 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "tiger",
+        "key",
+        "nurse",
+        "robot",
+        "octopus",
+        "star",
+        "monkey",
+        "queen",
+        "lion",
+        "piano"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "tiger",
+            "options": [
+              "tiger",
+              "key",
+              "nurse",
+              "fish"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "tiger"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "octopus",
+            "options": [
+              "robot",
+              "octopus",
+              "star",
+              "apple"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "octopus"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "monkey",
+            "tiles": [
+              "k",
+              "o",
+              "y",
+              "m",
+              "e",
+              "n"
+            ],
+            "accepted": [
+              "monkey"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "queen",
+            "tiles": [
+              "n",
+              "e",
+              "u",
+              "q",
+              "e"
+            ],
+            "accepted": [
+              "queen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "lion",
+            "pattern": "_ion",
+            "tiles": [
+              "r",
+              "l"
+            ],
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "piano",
+            "pattern": "_iano",
+            "tiles": [
+              "d",
+              "p",
+              "b"
+            ],
+            "accepted": [
+              "piano"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "창문과 얼룩말 한 번 더",
+      "newWords": [],
+      "unitWords": [
+        "bear",
+        "zebra",
+        "monkey",
+        "juice",
+        "key",
+        "fork",
+        "cow",
+        "window",
+        "violin",
+        "box",
+        "umbrella",
+        "yo-yo"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "zebra",
+            "options": [
+              "bear",
+              "zebra",
+              "monkey",
+              "juice"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "window",
+            "options": [
+              "key",
+              "fork",
+              "cow",
+              "window"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "violin",
+            "tiles": [
+              "o",
+              "v",
+              "n",
+              "i",
+              "l",
+              "i"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "box",
+            "tiles": [
+              "o",
+              "b",
+              "x"
+            ],
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "umbrella",
+            "pattern": "_mbrella",
+            "tiles": [
+              "o",
+              "u"
+            ],
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "yo-yo",
+            "pattern": "_o-yo",
+            "tiles": [
+              "y",
+              "j"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "놀이터 가는 길",
+      "newWords": [
+        "ant",
+        "bear",
+        "cow",
+        "door",
+        "elephant"
+      ],
+      "unitWords": [
+        "elephant",
+        "cow",
+        "ant",
+        "bear",
+        "door"
+      ],
+      "preview": [
+        {
+          "word": "ant",
+          "meaningKo": "개미",
+          "example": "It is an ant."
+        },
+        {
+          "word": "bear",
+          "meaningKo": "곰",
+          "example": "I like the bear."
+        },
+        {
+          "word": "cow",
+          "meaningKo": "소",
+          "example": "It is a cow."
+        },
+        {
+          "word": "door",
+          "meaningKo": "문",
+          "example": "The door is big."
+        },
+        {
+          "word": "elephant",
+          "meaningKo": "코끼리",
+          "example": "Wow, a big elephant!"
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "elephant",
+            "options": [
+              "ball",
+              "kite",
+              "elephant",
+              "drum"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "cow",
+            "options": [
+              "cow",
+              "bus",
+              "top",
+              "ship"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "cow"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "ant",
+            "tiles": [
+              "t",
+              "n",
+              "a"
+            ],
+            "accepted": [
+              "ant"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "bear",
+            "tiles": [
+              "r",
+              "e",
+              "a",
+              "b"
+            ],
+            "accepted": [
+              "bear"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "door",
+            "pattern": "_oor",
+            "tiles": [
+              "d",
+              "t",
+              "g"
+            ],
+            "accepted": [
+              "door"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "cow",
+            "pattern": "_ow",
+            "tiles": [
+              "f",
+              "c",
+              "z"
+            ],
+            "accepted": [
+              "cow"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "기타 치는 음악 시간",
+      "newWords": [
+        "fork",
+        "guitar",
+        "horse",
+        "insect",
+        "juice"
+      ],
+      "unitWords": [
+        "guitar",
+        "fork",
+        "horse",
+        "juice",
+        "insect",
+        "bear"
+      ],
+      "preview": [
+        {
+          "word": "fork",
+          "meaningKo": "포크",
+          "example": "It is a fork."
+        },
+        {
+          "word": "guitar",
+          "meaningKo": "기타",
+          "example": "Wow, a guitar!"
+        },
+        {
+          "word": "horse",
+          "meaningKo": "말",
+          "example": "I like the horse."
+        },
+        {
+          "word": "insect",
+          "meaningKo": "곤충",
+          "example": "It is an insect."
+        },
+        {
+          "word": "juice",
+          "meaningKo": "주스",
+          "example": "It is juice."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "guitar",
+            "options": [
+              "ship",
+              "guitar",
+              "doll",
+              "truck"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "guitar"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fork",
+            "options": [
+              "car",
+              "plane",
+              "bike",
+              "fork"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "fork"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "horse",
+            "tiles": [
+              "s",
+              "o",
+              "h",
+              "e",
+              "r"
+            ],
+            "accepted": [
+              "horse"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "juice",
+            "tiles": [
+              "e",
+              "u",
+              "c",
+              "j",
+              "i"
+            ],
+            "accepted": [
+              "juice"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "insect",
+            "pattern": "_nsect",
+            "tiles": [
+              "e",
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "insect"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "bear",
+            "pattern": "_ear",
+            "tiles": [
+              "b",
+              "z"
+            ],
+            "accepted": [
+              "bear"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "열쇠 찾기 놀이",
+      "newWords": [
+        "key",
+        "lion",
+        "monkey",
+        "nurse",
+        "octopus"
+      ],
+      "unitWords": [
+        "octopus",
+        "nurse",
+        "lion",
+        "monkey",
+        "key",
+        "juice"
+      ],
+      "preview": [
+        {
+          "word": "key",
+          "meaningKo": "열쇠",
+          "example": "It is a key."
+        },
+        {
+          "word": "lion",
+          "meaningKo": "사자",
+          "example": "Oh, a lion!"
+        },
+        {
+          "word": "monkey",
+          "meaningKo": "원숭이",
+          "example": "I like the monkey."
+        },
+        {
+          "word": "nurse",
+          "meaningKo": "간호사",
+          "example": "This is a nurse."
+        },
+        {
+          "word": "octopus",
+          "meaningKo": "문어",
+          "example": "Wow, an octopus!"
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "octopus",
+            "options": [
+              "octopus",
+              "bus",
+              "car",
+              "top"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "octopus"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "nurse",
+            "options": [
+              "ship",
+              "drum",
+              "nurse",
+              "kite"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "nurse"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lion",
+            "tiles": [
+              "o",
+              "n",
+              "l",
+              "i"
+            ],
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "monkey",
+            "tiles": [
+              "e",
+              "n",
+              "m",
+              "y",
+              "o",
+              "k"
+            ],
+            "accepted": [
+              "monkey"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "key",
+            "pattern": "_ey",
+            "tiles": [
+              "c",
+              "k",
+              "t"
+            ],
+            "accepted": [
+              "key"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "juice",
+            "pattern": "_uice",
+            "tiles": [
+              "g",
+              "j",
+              "z"
+            ],
+            "accepted": [
+              "juice"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "로봇과 피아노 놀이",
+      "newWords": [
+        "piano",
+        "queen",
+        "robot",
+        "star",
+        "tiger"
+      ],
+      "unitWords": [
+        "robot",
+        "piano",
+        "star",
+        "tiger",
+        "queen",
+        "nurse"
+      ],
+      "preview": [
+        {
+          "word": "piano",
+          "meaningKo": "피아노",
+          "example": "I like the piano."
+        },
+        {
+          "word": "queen",
+          "meaningKo": "여왕",
+          "example": "It is a queen."
+        },
+        {
+          "word": "robot",
+          "meaningKo": "로봇",
+          "example": "This robot is my toy."
+        },
+        {
+          "word": "star",
+          "meaningKo": "별",
+          "example": "Wow, a star!"
+        },
+        {
+          "word": "tiger",
+          "meaningKo": "호랑이",
+          "example": "It is a tiger."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "robot",
+            "options": [
+              "ball",
+              "kite",
+              "doll",
+              "robot"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "robot"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "piano",
+            "options": [
+              "drum",
+              "piano",
+              "bike",
+              "car"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "piano"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "star",
+            "tiles": [
+              "t",
+              "r",
+              "s",
+              "a"
+            ],
+            "accepted": [
+              "star"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "tiger",
+            "tiles": [
+              "e",
+              "g",
+              "i",
+              "r",
+              "t"
+            ],
+            "accepted": [
+              "tiger"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "queen",
+            "pattern": "_ueen",
+            "tiles": [
+              "p",
+              "q",
+              "g"
+            ],
+            "accepted": [
+              "queen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "nurse",
+            "pattern": "_urse",
+            "tiles": [
+              "t",
+              "n",
+              "g"
+            ],
+            "accepted": [
+              "nurse"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "요요 놀이 시간",
+      "newWords": [
+        "umbrella",
+        "violin",
+        "window",
+        "box",
+        "yo-yo"
+      ],
+      "unitWords": [
+        "umbrella",
+        "yo-yo",
+        "violin",
+        "window",
+        "box",
+        "star"
+      ],
+      "preview": [
+        {
+          "word": "umbrella",
+          "meaningKo": "우산",
+          "example": "This is my umbrella."
+        },
+        {
+          "word": "violin",
+          "meaningKo": "바이올린",
+          "example": "It is a violin."
+        },
+        {
+          "word": "window",
+          "meaningKo": "창문",
+          "example": "It is a window."
+        },
+        {
+          "word": "box",
+          "meaningKo": "상자",
+          "example": "This is my box."
+        },
+        {
+          "word": "yo-yo",
+          "meaningKo": "요요",
+          "example": "Wow, a red yo-yo!"
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "umbrella",
+            "options": [
+              "bus",
+              "kite",
+              "umbrella",
+              "doll"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "yo-yo",
+            "options": [
+              "yo-yo",
+              "car",
+              "ship",
+              "ball"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "violin",
+            "tiles": [
+              "i",
+              "l",
+              "v",
+              "n",
+              "i",
+              "o"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "window",
+            "tiles": [
+              "w",
+              "o",
+              "n",
+              "d",
+              "w",
+              "i"
+            ],
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "box",
+            "pattern": "bo_",
+            "tiles": [
+              "k",
+              "x",
+              "z"
+            ],
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "star",
+            "pattern": "_tar",
+            "tiles": [
+              "e",
+              "s",
+              "o"
+            ],
+            "accepted": [
+              "star"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "얼룩말 그림 맞히기",
+      "newWords": [
+        "zebra"
+      ],
+      "unitWords": [
+        "window",
+        "zebra",
+        "box",
+        "yo-yo",
+        "violin"
+      ],
+      "preview": [
+        {
+          "word": "zebra",
+          "meaningKo": "얼룩말",
+          "example": "It is a zebra."
+        }
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "window",
+            "options": [
+              "window",
+              "plane",
+              "bike",
+              "top"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "zebra",
+            "options": [
+              "drum",
+              "zebra",
+              "bus",
+              "kite"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "box",
+            "tiles": [
+              "x",
+              "b",
+              "o"
+            ],
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yo-yo",
+            "tiles": [
+              "-",
+              "y",
+              "o",
+              "o",
+              "y"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "zebra",
+            "pattern": "_ebra",
+            "tiles": [
+              "z",
+              "s"
+            ],
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "violin",
+            "pattern": "_iolin",
+            "tiles": [
+              "b",
+              "v"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "곰과 포크 짝 찾기",
+      "newWords": [],
+      "unitWords": [
+        "bear",
+        "fork",
+        "door",
+        "cow",
+        "elephant",
+        "ant"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "bear",
+            "options": [
+              "kite",
+              "top",
+              "ship",
+              "bear"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "bear"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "fork",
+            "options": [
+              "car",
+              "drum",
+              "fork",
+              "plane"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "fork"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "door",
+            "tiles": [
+              "o",
+              "r",
+              "d",
+              "o"
+            ],
+            "accepted": [
+              "door"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "cow",
+            "tiles": [
+              "w",
+              "o",
+              "c"
+            ],
+            "accepted": [
+              "cow"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "elephant",
+            "pattern": "_lephant",
+            "tiles": [
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "ant",
+            "pattern": "_nt",
+            "tiles": [
+              "u",
+              "e",
+              "a"
+            ],
+            "accepted": [
+              "ant"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "원숭이와 주스 놀이",
+      "newWords": [],
+      "unitWords": [
+        "horse",
+        "monkey",
+        "juice",
+        "guitar",
+        "lion",
+        "insect",
+        "key"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "monkey",
+            "options": [
+              "horse",
+              "monkey",
+              "bus",
+              "kite"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "monkey"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "juice",
+            "options": [
+              "juice",
+              "doll",
+              "top",
+              "car"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "juice"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "guitar",
+            "tiles": [
+              "t",
+              "u",
+              "g",
+              "r",
+              "i",
+              "a"
+            ],
+            "accepted": [
+              "guitar"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lion",
+            "tiles": [
+              "n",
+              "i",
+              "o",
+              "l"
+            ],
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "insect",
+            "pattern": "_nsect",
+            "tiles": [
+              "a",
+              "i"
+            ],
+            "accepted": [
+              "insect"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "key",
+            "pattern": "_ey",
+            "tiles": [
+              "c",
+              "k"
+            ],
+            "accepted": [
+              "key"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "피아노와 별 놀이",
+      "newWords": [],
+      "unitWords": [
+        "piano",
+        "star",
+        "nurse",
+        "queen",
+        "octopus",
+        "robot"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "piano",
+            "options": [
+              "bike",
+              "drum",
+              "piano",
+              "kite"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "piano"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "star",
+            "options": [
+              "plane",
+              "ball",
+              "top",
+              "star"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "star"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "nurse",
+            "tiles": [
+              "r",
+              "n",
+              "e",
+              "s",
+              "u"
+            ],
+            "accepted": [
+              "nurse"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "queen",
+            "tiles": [
+              "e",
+              "q",
+              "n",
+              "e",
+              "u"
+            ],
+            "accepted": [
+              "queen"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "octopus",
+            "pattern": "_ctopus",
+            "tiles": [
+              "a",
+              "o",
+              "u"
+            ],
+            "accepted": [
+              "octopus"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "robot",
+            "pattern": "_obot",
+            "tiles": [
+              "w",
+              "r",
+              "l"
+            ],
+            "accepted": [
+              "robot"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "alphabet",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "호랑이와 우산 찾기",
+      "newWords": [],
+      "unitWords": [
+        "tiger",
+        "window",
+        "umbrella",
+        "yo-yo",
+        "violin",
+        "zebra",
+        "box"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "tiger",
+            "options": [
+              "tiger",
+              "window",
+              "bus",
+              "drum"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "tiger"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "umbrella",
+            "options": [
+              "kite",
+              "car",
+              "umbrella",
+              "ship"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yo-yo",
+            "tiles": [
+              "o",
+              "-",
+              "y",
+              "y",
+              "o"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "violin",
+            "tiles": [
+              "n",
+              "o",
+              "i",
+              "l",
+              "v",
+              "i"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "zebra",
+            "pattern": "_ebra",
+            "tiles": [
+              "j",
+              "z",
+              "s"
+            ],
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "box",
+            "pattern": "bo_",
+            "tiles": [
+              "x",
+              "z",
+              "k"
+            ],
+            "accepted": [
+              "box"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "기타와 곤충 다시 놀기",
+      "newWords": [],
+      "unitWords": [
+        "ant",
+        "guitar",
+        "bear",
+        "horse",
+        "fork",
+        "insect",
+        "cow",
+        "door",
+        "elephant",
+        "juice"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "guitar",
+            "options": [
+              "ant",
+              "guitar",
+              "bear",
+              "horse"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "guitar"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "insect",
+            "options": [
+              "fork",
+              "drum",
+              "kite",
+              "insect"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "insect"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "cow",
+            "tiles": [
+              "o",
+              "c",
+              "w"
+            ],
+            "accepted": [
+              "cow"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "door",
+            "tiles": [
+              "r",
+              "d",
+              "o",
+              "o"
+            ],
+            "accepted": [
+              "door"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "elephant",
+            "pattern": "_lephant",
+            "tiles": [
+              "i",
+              "e"
+            ],
+            "accepted": [
+              "elephant"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "juice",
+            "pattern": "_uice",
+            "tiles": [
+              "z",
+              "j"
+            ],
+            "accepted": [
+              "juice"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "로봇과 별 다시 놀기",
+      "newWords": [],
+      "unitWords": [
+        "monkey",
+        "piano",
+        "robot",
+        "star",
+        "octopus",
+        "queen",
+        "key",
+        "lion",
+        "nurse",
+        "tiger"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "robot",
+            "options": [
+              "monkey",
+              "piano",
+              "robot",
+              "bus"
+            ],
+            "answerNo": 3,
+            "accepted": [
+              "robot"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "star",
+            "options": [
+              "star",
+              "octopus",
+              "queen",
+              "kite"
+            ],
+            "answerNo": 1,
+            "accepted": [
+              "star"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "key",
+            "tiles": [
+              "e",
+              "k",
+              "y"
+            ],
+            "accepted": [
+              "key"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "lion",
+            "tiles": [
+              "i",
+              "n",
+              "l",
+              "o"
+            ],
+            "accepted": [
+              "lion"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "nurse",
+            "pattern": "_urse",
+            "tiles": [
+              "n",
+              "t"
+            ],
+            "accepted": [
+              "nurse"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "tiger",
+            "pattern": "_iger",
+            "tiles": [
+              "p",
+              "t",
+              "d"
+            ],
+            "accepted": [
+              "tiger"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da",
+        "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+        "createdOn": "2026-10-23"
+      },
+      "title": "우산과 상자 다시 놀기",
+      "newWords": [],
+      "unitWords": [
+        "robot",
+        "guitar",
+        "piano",
+        "umbrella",
+        "star",
+        "box",
+        "queen",
+        "nurse",
+        "yo-yo",
+        "zebra",
+        "window",
+        "violin"
+      ],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {
+            "type": "pick-word",
+            "picture": "umbrella",
+            "options": [
+              "robot",
+              "guitar",
+              "piano",
+              "umbrella"
+            ],
+            "answerNo": 4,
+            "accepted": [
+              "umbrella"
+            ]
+          },
+          {
+            "type": "pick-word",
+            "picture": "box",
+            "options": [
+              "star",
+              "box",
+              "queen",
+              "nurse"
+            ],
+            "answerNo": 2,
+            "accepted": [
+              "box"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "yo-yo",
+            "tiles": [
+              "y",
+              "o",
+              "o",
+              "-",
+              "y"
+            ],
+            "accepted": [
+              "yo-yo"
+            ]
+          },
+          {
+            "type": "copy-tiles",
+            "word": "zebra",
+            "tiles": [
+              "b",
+              "z",
+              "a",
+              "e",
+              "r"
+            ],
+            "accepted": [
+              "zebra"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "window",
+            "pattern": "_indow",
+            "tiles": [
+              "v",
+              "w",
+              "m"
+            ],
+            "accepted": [
+              "window"
+            ]
+          },
+          {
+            "type": "fill-letters",
+            "word": "violin",
+            "pattern": "_iolin",
+            "tiles": [
+              "v",
+              "w"
+            ],
+            "accepted": [
+              "violin"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
