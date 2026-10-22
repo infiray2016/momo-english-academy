@@ -579,6 +579,8 @@ export function saveHumanDecisions(
 ): SeedWriteResult {
   const target = findCell(root, input.file, input.cell);
   if (!target.ok) return target;
+  // 내용이 바뀌었으면 문항 번호보다 먼저 거부한다(review-p05c Minor-1 — '다시 열어 주세요' 안내가 먹히게)
+  if (target.cell.hash !== input.contentHash) return reject(STALE_MESSAGE);
   if (input.items.length === 0) return reject("고른 문항이 없어요");
   const numbers = new Set(target.cell.items.map((item) => item.no));
   const seen = new Set<number>();
@@ -589,7 +591,6 @@ export function saveHumanDecisions(
     if (seen.has(item.no)) return reject(`문항 ${item.no} 을 두 번 골랐어요`);
     seen.add(item.no);
   }
-  if (target.cell.hash !== input.contentHash) return reject(STALE_MESSAGE);
   const checksPath = checksFilePath(target.loaded.path);
   const full = resolveSeedFile(root, checksPath);
   if (full === null) {
