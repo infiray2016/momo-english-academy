@@ -1,20 +1,38 @@
-// 시드 보기 화면의 서버 읽기(plan-p05b '서버 읽기'). 로컬 next dev 전용이고 seed/ 파일을 읽기만 한다(쓰기는 P5c).
-// node:fs 는 이 파일에서만 쓴다. 시각을 읽지 않는다. 시드 전체 검증(validateSeed)은 돌리지 않는다 — 칸 검사는 pnpm seed:validate.
-// 접근 확인은 proxy 가 한다(C57). 이 파일은 src/app/dev/seed-viewer 와 자기 폴더에서만 가져온다(의존 규칙 seed-viewer-only-from-viewer).
+// 시드 보기 화면의 서버 읽기(plan-p05b '서버 읽기')와 쓰기 둘(plan-p05c '서버 쓰기': 표본 검토 행 · 사람 확인). 로컬 next dev 전용.
+// node:fs 는 이 파일에서만 쓴다. 시각을 읽지 않는다(쓰기의 시각은 서버 액션이 한 시계 now() 로 넘긴다).
+// 시드 전체 검증(validateSeed)은 돌리지 않는다 — 칸 검사는 pnpm seed:validate.
+// 접근 확인은 proxy 와 서버 액션 첫 문장이 한다(C57). 이 파일은 src/app/dev/seed-viewer 와 자기 폴더에서만 가져온다(의존 규칙 seed-viewer-only-from-viewer).
 import "server-only";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { randomBytes } from "node:crypto";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { notFound } from "next/navigation";
+import type { z } from "zod";
 import type {
   PictureInfo,
   PictureLookup,
 } from "@/components/activities/common";
 import type { ReferenceIndex } from "@/core/seed/reference-index";
 import {
+  CheckFileSchema,
   type CheckRecord,
   ReviewFileSchema,
   type ReviewRow,
 } from "@/core/seed/schema/records";
+import {
+  type SettingsFile,
+  SettingsFileSchema,
+} from "@/core/seed/schema/reference";
+import { withHumanDecisions } from "@/core/seed/solve-check";
 import {
   AREAS,
   type Area,
@@ -393,4 +411,206 @@ export function pictureCatalog(index: ReferenceIndex): PictureCatalog {
     ofWord: (word) => toInfo(noteOfWord(word)),
     ofKey: (key) => toInfo(noteOfKey(key)),
   };
+}
+
+// ── 쓰기(P5c, plan-p05c '서버 쓰기') ───────────────────────────────
+
+/** 쓰기 결과. 거부 글은 어른용 해요체이고 경로 · 칸 키 밖의 내부 값(스택 · 파일 시스템 오류 원문)을 담지 않는다. */
+export type SeedWriteResult = { ok: true } | { ok: false; message: string };
+type Rejected = { ok: false; message: string };
+
+/** 표본 검토 날짜의 시간대 설정 키(12절). 코드에 기본값을 두지 않는다. */
+const TIMEZONE_KEY = "app.timezone";
+/** 임시 파일 이름의 무작위 부분(바이트, 기술 값). */
+const TEMP_RANDOM_BYTES = 4;
+const STALE_MESSAGE = "내용이 바뀌었어요. 다시 열어 주세요";
+const NO_RECORD_MESSAGE =
+  "이 내용의 풀이 기록이 없어요. 풀이 검사(pnpm seed:check)를 다시 해 주세요";
+
+function reject(message: string): Rejected {
+  return { ok: false, message };
+}
+
+/** JSON 을 같은 폴더 임시 파일에 쓰고 이름을 바꾼다(폴더는 처음 쓸 때 만든다, P5a 기록 쓰기와 같은 꼴). */
+function writeJsonAtomic(full: string, data: unknown): void {
+  mkdirSync(dirname(full), { recursive: true });
+  const temp = `${full}.${process.pid}.${randomBytes(TEMP_RANDOM_BYTES).toString("hex")}.tmp`;
+  try {
+    writeFileSync(temp, `${JSON.stringify(data, null, 2)}\n`);
+    renameSync(temp, full);
+  } finally {
+    rmSync(temp, { force: true });
+  }
+}
+
+/** 기록 파일(reviews · checks)을 읽는다. 없으면 value 가 undefined, JSON · 규격이 깨졌으면 거부(덮어쓰지 않는다). */
+function readRecordFile<T>(
+  full: string,
+  schema: z.ZodType<T>,
+  label: string,
+): { ok: true; value: T | undefined } | Rejected {
+  if (!existsSync(full)) return { ok: true, value: undefined };
+  let json: unknown;
+  try {
+    json = JSON.parse(readFileSync(full, "utf8"));
+  } catch {
+    return reject(`${label}이 JSON 이 아니에요. 고친 뒤 다시 남겨 주세요`);
+  }
+  const parsed = schema.safeParse(json);
+  if (!parsed.success) {
+    return reject(`${label}이 규격에 맞지 않아요. 고친 뒤 다시 남겨 주세요`);
+  }
+  return { ok: true, value: parsed.data };
+}
+
+/** 내용 파일(배치 안 · 뿌리 안)을 지금 다시 읽어 그 칸을 찾는다. */
+function findCell(
+  root: string,
+  file: string,
+  key: string,
+): { ok: true; loaded: LoadedContentFile; cell: ViewerCell } | Rejected {
+  if (resolveSeedFile(root, file) === null) {
+    return reject(`시드 파일 배치에 없는 경로예요: ${file}`);
+  }
+  const loaded = loadContentFile(root, file);
+  if (loaded === null) return reject(`내용 파일이 아니에요: ${file}`);
+  if (!loaded.exists) return reject(`내용 파일이 없어요: ${file}`);
+  const cell = loaded.cells.find((c) => c.key === key);
+  if (!cell) return reject(`이 파일에 그런 칸이 없어요: ${key}`);
+  return { ok: true, loaded, cell };
+}
+
+/** seed/settings.json 을 읽는다. 없거나 JSON · 규격이 깨졌으면 undefined. */
+export function readSeedSettings(root: string): SettingsFile | undefined {
+  const text = readText(root, SEED_FILES.settings);
+  if (text === undefined) return undefined;
+  try {
+    const parsed = SettingsFileSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 표본 검토 행의 날짜(정할 것 하): 한 시계 now() 를 설정값 시드의 app.timezone 으로 본 달력 날짜 `YYYY-MM-DD`
+ * (학습일 경계 아님). 키가 없거나 시간대 이름이 아니면 거부한다(코드 기본값 없음).
+ */
+export function reviewDateOf(
+  now: Date,
+  settings: SettingsFile | undefined,
+): { ok: true; date: string } | Rejected {
+  if (!settings) return reject("설정값 시드(settings.json)를 읽지 못했어요");
+  const row = settings.settings.find((r) => r.key === TIMEZONE_KEY);
+  if (!row) return reject(`설정값 시드에 ${TIMEZONE_KEY} 이 없어요`);
+  const invalid = `설정값 시드의 ${TIMEZONE_KEY} 이 시간대 이름이 아니에요`;
+  if (typeof row.value !== "string") return reject(invalid);
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: row.value,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(now);
+  } catch {
+    return reject(invalid);
+  }
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value;
+  const year = part("year");
+  const month = part("month");
+  const day = part("day");
+  if (!year || !month || !day) return reject(invalid);
+  return { ok: true, date: `${year}-${month}-${day}` };
+}
+
+/**
+ * 6.3 표본 검토 행 하나를 `reviews/<영역>-<단계>.json` 에 더한다(AC-7f). 내용 파일 · 칸 · 문항 번호를 지금 파일에서 확인하고,
+ * 검토 파일을 쓰기 바로 앞에 다시 읽어(없으면 `{ rows: [] }`) 행 하나를 더한 뒤 ReviewFileSchema 로 확인하고
+ * 임시 파일 → 이름 바꾸기로 쓴다. 있던 행은 건드리지 않는다. 검토 파일이 깨져 있으면 쓰지 않는다.
+ */
+export function appendReviewRow(
+  root: string,
+  input: { file: string; row: ReviewRow },
+): SeedWriteResult {
+  const { file, row } = input;
+  const target = findCell(root, file, row.cell);
+  if (!target.ok) return target;
+  if (
+    row.itemNo !== null &&
+    !target.cell.items.some((item) => item.no === row.itemNo)
+  ) {
+    return reject(`이 칸에 문항 ${row.itemNo} 이 없어요`);
+  }
+  const reviewPath = reviewPathOf(row.cell);
+  const full = reviewPath === null ? null : resolveSeedFile(root, reviewPath);
+  if (reviewPath === null || full === null) {
+    return reject(`표본 검토 파일 경로를 만들지 못했어요: ${row.cell}`);
+  }
+  const current = readRecordFile(
+    full,
+    ReviewFileSchema,
+    `표본 검토 파일(${reviewPath})`,
+  );
+  if (!current.ok) return current;
+  const next = ReviewFileSchema.safeParse({
+    rows: [...(current.value?.rows ?? []), row],
+  });
+  if (!next.success) return reject("남길 행이 규격에 맞지 않아요");
+  writeJsonAtomic(full, next.data);
+  return { ok: true };
+}
+
+/**
+ * 6.4 사람 확인: 내용 파일을 다시 읽어 그 칸의 지금 해시를 세고, 화면을 연 때의 해시(contentHash)와 다르면 거부한다.
+ * `checks/<내용 파일>` 을 쓰기 바로 앞에 다시 읽어 withHumanDecisions(P5a)로 합치고(풀이 기록이 없거나 해시가 다르면 거부)
+ * CheckFileSchema 로 확인한 뒤 임시 파일 → 이름 바꾸기로 쓴다. at 은 부르는 쪽이 한 시계로 만든 UTC ISO 다.
+ */
+export function saveHumanDecisions(
+  root: string,
+  input: {
+    file: string;
+    cell: string;
+    contentHash: string;
+    at: string;
+    items: readonly { no: number; decision: "correct" | "fixed" }[];
+  },
+): SeedWriteResult {
+  const target = findCell(root, input.file, input.cell);
+  if (!target.ok) return target;
+  if (input.items.length === 0) return reject("고른 문항이 없어요");
+  const numbers = new Set(target.cell.items.map((item) => item.no));
+  const seen = new Set<number>();
+  for (const item of input.items) {
+    if (!numbers.has(item.no)) {
+      return reject(`이 칸에 문항 ${item.no} 이 없어요`);
+    }
+    if (seen.has(item.no)) return reject(`문항 ${item.no} 을 두 번 골랐어요`);
+    seen.add(item.no);
+  }
+  if (target.cell.hash !== input.contentHash) return reject(STALE_MESSAGE);
+  const checksPath = checksFilePath(target.loaded.path);
+  const full = resolveSeedFile(root, checksPath);
+  if (full === null) {
+    return reject(`풀이 기록 파일 경로를 만들지 못했어요: ${checksPath}`);
+  }
+  const current = readRecordFile(
+    full,
+    CheckFileSchema,
+    `풀이 기록 파일(${checksPath})`,
+  );
+  if (!current.ok) return current;
+  if (current.value === undefined) return reject(NO_RECORD_MESSAGE);
+  const merged = withHumanDecisions(current.value, {
+    cell: input.cell,
+    contentHash: input.contentHash,
+    at: input.at,
+    items: input.items.map((item) => ({ ...item })),
+  });
+  if (!merged.ok) return reject(NO_RECORD_MESSAGE);
+  const next = CheckFileSchema.safeParse(merged.file);
+  if (!next.success) return reject("남길 기록이 규격에 맞지 않아요");
+  writeJsonAtomic(full, next.data);
+  return { ok: true };
 }
