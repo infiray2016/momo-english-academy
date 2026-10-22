@@ -1348,3 +1348,79 @@ pnpm spec:trace             → exit 0
 단위 '같은 말:'에 하나를 더했다(열하나 → 열둘). '같은 말: 처음 묻는 턴이 아닌 '모름'(답 두 개 없음)은 답 예시와 같은 질문을 그대로 붙인다' — 토리 반응 + 답 예시 + 같은 질문 = 3문장이다.
 
 관문: lint 0 · tsc 0 · 단위 776 통과 · 6 todo · build 0 · check:deps 0 · check:ids setting-default 0 · spec:trace 0. e2e 는 CI 18차 몫이다.
+
+## fix 1 덧 2 (2026-10-23 07:xx) — 문턱 (가) 확정 · I-3 막힘 판단 먼저(13절 C127)
+
+### 문턱
+
+`SAME_SAYING_MIN_WORDS` 는 2 그대로다. 주석을 13절 C127 로 고치고 두 낱말인 까닭을 적었다. 정규화가 따옴표를 지워 "I'm good" 이 'im good' 두 낱말이 되기 때문이다(`src/core/conversation/flow.ts`). 단위는 그대로 초록이다.
+
+### I-3 막힘 판단을 토리 말보다 먼저
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `src/core/ai/calls/talk.ts` | `talkWire` 칸 차례에서 `stuck` 을 맨 앞(tori_en 앞)으로 옮겼다. 느슨한 규격 `talkLoose` 와 정규화한 출력 두 꼴(끝맺음 · 보통 턴)의 차례도 같게 했다 |
+| `src/core/conversation/stream.ts` | `createToriEnReader` 가 앞 칸 `"stuck": true|false` 를 한 번 읽고 `,` 뒤 tori_en 으로 넘어간다. 새 `stuck()` 이 읽은 값을 돌려준다(없거나 아직이면 undefined). tori_en 이 바로 첫 칸이면 예전처럼 흘려 보낸다. 모델이 칸 차례를 어긴 때를 위한 것이고, 이때 stuck 은 모른다. stuck 값이 참 · 거짓이 아니거나 그 뒤가 tori_en 이 아니면 failed 다(끝에서 한 번에 보냄 — 위험 3 그대로) |
+| `src/server/ai/talk.ts` | 계획 · 호출 맥락에 `onStuck`. 조각마다 reader 가 stuck 을 알면 그 조각의 문장보다 먼저 시도마다 한 번 부른다 |
+| `src/core/conversation/flow.ts` | 새 순수 함수 `createAnswerHold({ dontKnow, samePair, nextPair })` |
+| `src/server/conversation/turn.ts` | 막힘 쪽 짝을 늘 넣던 `answerPairs` 를 없앴다. 대신 `createAnswerHold` 와 `onStuck` 을 쓴다 |
+
+`createAnswerHold` 가 잡아 둘 짝을 정하는 규칙이다.
+- '모름' 입력 턴은 지금 질문의 답 두 개다. 부르기 전에 알므로 stuck 칸 전부터 잡는다. 턴 길에서는 '모름' 다음 자리(afterBase)가 곧 같은 질문 자리다.
+- 말로 답한 턴은 stuck 참이면 지금 질문의 답 두 개(막힘 자리), 거짓이면 다음 질문의 답 두 개다. 다음 질문이 처음 묻는 턴일 때만 짝이 있다.
+- stuck 이 오기 전에 문장이 오면 다음 질문의 짝으로 본다.
+- 한 번 잡으면 차례를 지키려고 뒤 문장도 잡는다.
+- 고르기 차례(awaitingChoice) 자리에는 짝이 없다.
+- 판정 (4)대로 stuck 이 끝내 안 오는 끊김에는 잡은 문장을 지금 규칙(`gate.sent()` → `shownTurnOf`)대로 보낸다.
+
+칸 차례를 같게 한 시험 · 견본:
+- 가짜 응답 도우미 넷: 단위 `talk-stream-call` · 통합 `talk-fixture` · 통합 `conversation-call` · e2e `talk.ts` 의 `answer` / `talkAnswer`
+- 손으로 쓴 조각 둘: 첫 문장 뒤 거절
+- 계약 견본 여덟: `tests/fixtures/ai/samples/talk_turn.*.json`. fallback 은 블록 둘에 걸친 글과 `expect.joinedText` 를 고쳤고, max-tokens 는 잘린 글 앞머리를 고쳤다. refusal 은 JSON 글이 없어 그대로다
+- 글자 수로 끊는 가짜 응답 여섯: 단위 셋 · 통합 셋. 앞 칸이 14글자 늘어 끊는 자리를 '앞머리 + 남길 글' 길이로 다시 셌다. 단위는 `FIRST_SENTENCE_CUT`, 통합은 `talk-fixture` 의 `TORI_EN_LEAD` · `cutAfter()` 이고 숫자를 박지 않았다
+- 단위 'AC-15c 회화 턴 응답 규격에 판정 칸이 없고 …'(이름 그대로)의 칸 차례 단언: [stuck, tori_en, tori_ko]
+
+### 새 시험
+
+| 시험 | 덮는 것 |
+|---|---|
+| 단위 `talk-hold.test.ts` '잡아 둠: stuck 거짓이면 지금 답과 겹치는 바른 말 되풀이 'I'm good too!' 도 첫 문장으로 곧바로 나간다' | 판정 단위 ① — 가짜 흐름(흘려 받기 + 잡기) |
+| '잡아 둠: stuck 참이면 지금 질문의 답이 든 'You can say, I'm good.' 이 잡히고 보이는 글에서 빠진다' | 판정 단위 ② — `shownTurnOf` 까지 |
+| '잡아 둠: '모름' 입력은 stuck 칸을 읽기 전부터 지금 질문의 답으로 잡는다' | 판정 단위 ③ |
+| '잡아 둠: 다음 질문의 답과 겹치는 문장은 stuck 거짓일 때 잡는다' · '잡아 둠: 답 두 개를 붙이지 않을 자리(짝 없음)면 아무것도 잡지 않는다' | 나머지 갈래 |
+| 단위 `conversation-stream.test.ts` '회화 흘려 받기: 막힘 판단(stuck) 칸이 tori_en 앞에 오면 그 값을 첫 문장 전에 읽는다(C127)' · '…stuck 값이 참 · 거짓이 아니거나 그 뒤가 tori_en 이 아니면 흘려 보내지 않는다(failed)' | reader. 조각 1 · 3 · 1000, 옛 차례도 읽는지, 잘못된 꼴 넷 |
+| 단위 `talk-stream-call.test.ts` '회화 턴 흐름: tori_en 앞 칸의 막힘 판단(stuck)을 첫 문장보다 먼저 알린다' | streamTalk 가 onStuck → 문장 차례로 부르는지(참 · 거짓) |
+
+e2e 는 이름 · 기대를 바꾸지 않았다. 가짜 응답 도우미의 칸 차례만 바뀌었다.
+
+### `pnpm ai:contract`(컨트롤러가 돌림)
+
+```
+pnpm ai:contract --dry-run     # 사례 15 · 요청 꼴만(네트워크 없음) — 지금 종료 0
+pnpm ai:contract               # 실제 호출, .env.local 의 ANTHROPIC_API_KEY
+```
+
+비용은 사례 15개를 단가표(seed/model-prices.json 2026-10-22)와 각 사례의 출력 상한으로 셌다. 아래는 지난 실행 기록이 없어 잡은 상한이다.
+
+| 묶음 | 상한 셈 |
+|---|---|
+| 출력 상한까지 다 쓸 때 | Opus 2건 × 8000 × $20/M ≈ 0.32달러, Sonnet 8건 × 4000 · 1000 × $10/M ≈ 0.29달러, Haiku · 확인 호출은 거의 0 |
+| 입력 | 사례마다 수천 토큰 × 15 ≈ 0.2달러 이하 |
+| 합 | 많아야 약 0.8달러. 보통은 출력이 상한보다 훨씬 짧아 그보다 적다 |
+
+이 명령의 회화 사례 둘(`talk_config.haiku` · `talk_config.sonnet`)은 시험용 작은 규격(`TalkConfigSchema`)을 쓴다. 그래서 **실제 모델이 회화 턴 규격에서 stuck 을 tori_en 앞에 내는지는 이 명령으로 증명되지 않는다.** `ai:observe` 에도 회화 턴이 없다. 구조화 출력은 규격의 속성 차례를 따르는 것으로 보고 이 설계가 그것에 기댄다. 확인은 프리뷰의 첫 실제 회화 턴(서버 기록) 또는 계약 사례 하나를 더하는 길이다(브리프 밖). 모델이 차례를 어겨도 흘려 받기는 예전처럼 돌고, 잡기만 다음 질문 짝으로 본다.
+
+### 관문(Node 24.22.0)
+
+```
+pnpm lint                   → exit 0 (388 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 784 통과 · 6 todo (76 files)
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations
+pnpm check:ids              → setting-default 0
+pnpm check:bundle           → 위반 0
+pnpm spec:trace             → exit 0
+pnpm ai:contract --dry-run  → exit 0
+통합 · e2e                  → CI 18차 몫
+```
