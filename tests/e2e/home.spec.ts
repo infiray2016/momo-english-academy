@@ -27,8 +27,6 @@ const T = {
   todayNotYet: "오늘 아직이에요",
   start: "시작!",
   chooseStory: "이야기 고르기",
-  talkSoon: "토리가 준비 중이에요. 곧 만나요",
-  talkNextPhase: "회화 수업은 다음 차수에 들어와요",
   findLevelHint: "단계를 몰라도 돼요. 짧은 문제로 찾아요",
   micRecheck: "마이크를 켰으면 여기를 눌러 다시 확인해요",
   placementStart: /^처음이라 내게 맞는 단계를 찾아요/,
@@ -95,8 +93,8 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
         `끝낸 대화 0/${snapshot["unit.min_lessons"]}`,
       );
       await expect(c).toContainText(T.chooseStory);
-      // 1-가 회화 카드는 '토리가 준비 중이에요'(C50 (1))
-      await expect(c).toHaveAttribute("href", "/talk");
+      // 회화 카드도 그 영역 수업 목록으로(plan-p13b 값 12 — '토리가 준비 중이에요' 자리 /talk 는 지움)
+      await expect(c).toHaveAttribute("href", "/talk/lessons");
     } else {
       await expect(c.locator("[data-recent-cells] > *")).toHaveCount(
         snapshot["unit.recent_window"] ?? 0,
@@ -107,9 +105,7 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
     }
   }
   await card(page, "talk").click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(T.talkSoon);
-  // 부모용 작은 글(개발 기간 안내, C72 — 1-나에서 뺀다)
-  await expect(page.locator("[data-parent-info]")).toHaveText(T.talkNextPhase);
+  await expect(page).toHaveURL(/\/talk\/lessons$/);
   await page.getByRole("link", { name: "홈" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "모모의 공부 보드",
@@ -299,7 +295,7 @@ test.describe("audio-capture 한 번", () => {
       "href",
       "/speaking/lessons",
     );
-    await expect(card(page, "talk")).toHaveAttribute("href", "/talk");
+    await expect(card(page, "talk")).toHaveAttribute("href", "/talk/lessons");
 
     // (2) 권한 거부가 저장된 기기: 배치 전이어도 말하기 · 회화 카드는 마이크 문구가 먼저(4절 '이 행이 배치 평가 전 행보다 먼저')
     await resetHousehold();

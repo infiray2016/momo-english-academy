@@ -23,7 +23,6 @@ const T = {
   newLesson: "새 수업 할래요",
   keepGoing: "하던 수업 할래요",
   parentCheck: "부모님이 다음 길을 고르고 있어요. 그동안 지난 수업을 해 봐요",
-  talkSoon: "토리가 준비 중이에요. 곧 만나요",
 } as const;
 
 test.beforeEach(resetHousehold);
@@ -206,16 +205,20 @@ test("수업 목록: 지난 수업 다시 하기는 단원을 고른 뒤 수업�
   });
 });
 
-test("수업 목록: 배치 전 영역은 배치 평가로, 회화는 토리 준비 화면으로 보내고 영역이 아닌 주소는 없는 쪽이다", async ({
+test("수업 목록: 배치 전 영역은 배치 평가로, 단계가 없는 회화는 말하기 배치 평가로 보내고 영역이 아닌 주소와 지운 회화 준비 쪽은 없는 쪽이다", async ({
   page,
 }) => {
   await insertHousehold({ startLevels: { reading: 1 } });
   await page.goto("/writing/lessons");
   expect(new URL(page.url()).pathname).toBe("/writing/placement");
+  // 회화는 배치 평가가 없다 — 말하기 배치 평가로(4절 홈 표 회화 카드 행과 같은 길, plan-p13b 값 12)
   await page.goto("/talk/lessons");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(T.talkSoon);
+  expect(new URL(page.url()).pathname).toBe("/speaking/placement");
   const missing = await page.goto("/music/lessons");
   expect(missing?.status()).toBe(404);
+  // '토리가 준비 중이에요' 쪽(/talk)은 지웠다(값 12)
+  const talk = await page.goto("/talk");
+  expect(talk?.status()).toBe(404);
 });
 
 test("수업 목록: 부모 확인 대기면 지금 단원 묶음 자리에 4절 안내가 보이고, 하던 수업이 있으면 맨 위에 '하던 수업 이어 하기'가 있고 다른 수업을 고르면 새 수업을 할지 묻는다", async ({

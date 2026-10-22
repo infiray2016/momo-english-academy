@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import { shouldMarkNudge } from "@/components/conversation/child-turn";
 import {
   perceivedWaitOf,
+  SILENT_COUNT_START,
+  silentCountStep,
   talkCounterLimits,
 } from "@/components/conversation/talk-frame";
 import {
@@ -206,5 +208,57 @@ describe("차례 5 fix 2 — 그림 깨짐 · 말풍선 폭 · 뜻 자리", () =
     expect(html).toContain(`max-w-[${TORI_BUBBLE_MAX_PX}px]`);
     // 뜻이 아직 없어도 묶음 자리(최소 높이)가 먼저 있고 그 안에 ①② 가 있다
     expect(html).toMatch(/data-tori-under=""[^>]*>.*data-two-answers/);
+  });
+});
+
+describe("회화 말소리 없음 셈(C22 · 7절 오류 행 — no-speech 로만 끝난 질문)", () => {
+  const nospeech = { kind: "send", mode: "dont_know", nospeech: true } as const;
+  const passed = {
+    kind: "end",
+    afterDontKnow: true,
+    dontKnowCount: 0,
+  } as const;
+  const stayed = {
+    kind: "end",
+    afterDontKnow: true,
+    dontKnowCount: 1,
+  } as const;
+
+  it("AC-N3 한 질문의 no-speech '모름'이 여럿이어도 그 질문이 넘어갈 때 하나로 센다", () => {
+    let s = SILENT_COUNT_START;
+    for (let i = 0; i < 2; i++) {
+      s = silentCountStep(s, nospeech);
+      s = silentCountStep(s, stayed);
+    }
+    expect(s.passed).toBe(0);
+    s = silentCountStep(s, nospeech);
+    s = silentCountStep(s, passed);
+    expect(s.passed).toBe(1);
+  });
+
+  it("AC-N3 말소리 없이 넘어간 질문이 이어질 때만 쌓이고 말한 턴 · '잘 모르겠어요' 단추가 낀 질문은 처음부터다", () => {
+    let s = SILENT_COUNT_START;
+    s = silentCountStep(silentCountStep(s, nospeech), passed);
+    s = silentCountStep(silentCountStep(s, nospeech), passed);
+    expect(s.passed).toBe(2);
+    // 단추 '모름'이 낀 질문은 말소리 없음 질문이 아니다 — 이어짐이 끊긴다
+    s = silentCountStep(s, {
+      kind: "send",
+      mode: "dont_know",
+      nospeech: false,
+    });
+    s = silentCountStep(s, stayed);
+    s = silentCountStep(silentCountStep(s, nospeech), passed);
+    expect(s.passed).toBe(0);
+    s = silentCountStep(silentCountStep(s, nospeech), passed);
+    expect(s.passed).toBe(1);
+    // 말한 턴은 처음부터
+    s = silentCountStep(s, { kind: "send", mode: "speech", nospeech: false });
+    s = silentCountStep(s, {
+      kind: "end",
+      afterDontKnow: false,
+      dontKnowCount: 0,
+    });
+    expect(s.passed).toBe(0);
   });
 });

@@ -11,14 +11,19 @@ import {
   it,
 } from "vitest";
 import { twoAnswersLine } from "@/core/ai/calls/talk";
+import { talkClosingAttemptId } from "@/core/conversation/attempt";
 import { praiseLineOf } from "@/core/conversation/flow";
 import { safeLineOf } from "@/core/conversation/stream";
+import { attempts } from "@/db/schema/learning";
 import { parentAlerts } from "@/db/schema/operations";
 import { advanceTalk, chooseMoreTalk } from "@/server/conversation";
+import { closingStateOf } from "@/server/conversation/closing";
 import type { Db } from "@/server/db";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import {
+  CLOSING_MARK,
   cardOf,
+  closingRule,
   harnessOf,
   intoTalk,
   playToTarget,
@@ -361,7 +366,21 @@ describe("AC-15j 대화 안전 상한", () => {
       expect(closedRow.status).toBe("aborted");
       expect(closedRow.learningDay).not.toBeNull();
       expect(await alerts()).toHaveLength(n === SAFETY_ALERT_COUNT ? 1 : 0);
-      h.tasks.length = 0;
+      // 끝맺음 턴은 닫힘 응답 뒤(after)로 — 응답은 기다리지 않고 끝맺음 기록 행은 대기, 응답 뒤 일이 돌면 한 번 불려 옴(검토 F-3)
+      const closingBefore = requestsOf(h, CLOSING_MARK);
+      const closingState = async () => {
+        const [row] = await db
+          .select({ aiFeedback: attempts.aiFeedback })
+          .from(attempts)
+          .where(eq(attempts.clientAttemptId, talkClosingAttemptId(sessionId)));
+        return closingStateOf(row?.aiFeedback)?.state;
+      };
+      expect(h.tasks).toHaveLength(1);
+      expect(await closingState()).toBe("pending");
+      h.fake.push(closingRule());
+      await h.runTasks();
+      expect(requestsOf(h, CLOSING_MARK)).toBe(closingBefore + 1);
+      expect(await closingState()).toBe("ready");
     }
   });
 });

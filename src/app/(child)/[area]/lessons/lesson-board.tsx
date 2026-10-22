@@ -106,7 +106,7 @@ export function LessonBoard({
   titles,
   waitHintSeconds,
 }: {
-  area: Exclude<Area, "talk">;
+  area: Area;
   view: ListView;
   titles: Record<string, string>;
   /** ui.wait_hint_seconds — '첨삭 보기'로 여는 동안의 기다림 표시. */

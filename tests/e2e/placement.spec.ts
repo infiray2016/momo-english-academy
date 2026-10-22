@@ -439,7 +439,7 @@ test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단�
   const talk = page
     .locator("a")
     .filter({ has: page.locator('[data-home-card="talk"]') });
-  await expect(talk).toHaveAttribute("href", "/talk");
+  await expect(talk).toHaveAttribute("href", "/talk/lessons");
   await page.close();
 });
 

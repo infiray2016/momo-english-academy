@@ -16,6 +16,7 @@ import { AREAS, type Area } from "@/core/seed/structure";
 import { now } from "@/server/clock";
 import { readLessonList } from "@/server/lesson-list";
 import { getSettings } from "@/server/settings";
+import { placementPathOf } from "../placement-path";
 import { PastLessons } from "./past-lessons";
 
 const TEXT = {
@@ -30,14 +31,10 @@ export default async function PastLessonsPage(
   const { area } = await props.params;
   const query = await props.searchParams;
   if (!(AREAS as readonly string[]).includes(area)) notFound();
-  if (area === "talk") redirect("/talk");
   await connection();
-  const result = await readLessonList({
-    area: area as Exclude<Area, "talk">,
-    now: now(),
-  });
+  const result = await readLessonList({ area: area as Area, now: now() });
   if (result.kind === "no_profile") redirect("/first-run");
-  if (result.kind === "placement") redirect(`/${area}/placement`);
+  if (result.kind === "placement") redirect(placementPathOf(area as Area));
   const { input } = result;
   if (input.unitsPassed.length === 0) redirect(`/${area}/lessons`);
   const raw = typeof query.unit === "string" ? Number(query.unit) : undefined;
@@ -88,7 +85,7 @@ export default async function PastLessonsPage(
       ) : (
         // 수업을 고르는 쪽은 띠를 조각이 그린다 — 안전 상한 안내 동안 띠 링크를 숨겨 '홈' 하나만(검토 M-2 · 화면 M-5)
         <PastLessons
-          area={area as Exclude<Area, "talk">}
+          area={area as Area}
           items={pastUnits(input, unit)}
           band={band}
           waitHintSeconds={waitHintSeconds}

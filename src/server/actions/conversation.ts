@@ -16,10 +16,12 @@ import {
   leaveTalk as leave,
   type MoveOutcome,
   markTalkNotice as markNotice,
+  readTalkWrap as readWrap,
   revealTalkHint as revealHint,
   type StopOutcome,
   saveFollowAlong,
   stopTalk as stop,
+  type WrapOutcome,
 } from "@/server/conversation";
 
 const schedule = (task: () => Promise<void>) => after(task);
@@ -62,6 +64,12 @@ export async function talkClosingStatus(
 ): Promise<ClosingStatus> {
   await requireAccess();
   return closingStatus(input, { now });
+}
+
+/** 닫힌 회화의 마무리 자료(목표 턴 뒤 1-가 하루 안전 상한으로 닫힌 턴 뒤 — 정리 · 마무리, AI 없음). */
+export async function readTalkWrap(input: unknown): Promise<WrapOutcome> {
+  await requireAccess();
+  return readWrap(input, { now });
 }
 
 /** 한 번 안내를 보았다(처음 회화 안내 · '막히면 눌러요' — 프로필마다 한 번, 회17). */

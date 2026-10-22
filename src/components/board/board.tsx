@@ -87,7 +87,10 @@ export function PaperBand({
         </Title>
         {detail ? <p className={CHILD_SIZE.guide}>{detail}</p> : null}
       </div>
-      {right ? <div className="flex items-center gap-3">{right}</div> : null}
+      {/* 두 줄로 접히면(세로 820 — 제목이 길 때) 오른쪽 묶음이 왼쪽에 붙지 않게 ml-auto(4절 '구석', 차례 5 화면 재검토 N-1) */}
+      {right ? (
+        <div className="ml-auto flex items-center gap-3">{right}</div>
+      ) : null}
     </header>
   );
 }

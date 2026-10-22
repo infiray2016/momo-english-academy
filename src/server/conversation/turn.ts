@@ -45,7 +45,10 @@ import {
 } from "@/core/conversation/said";
 import { isQuestionSentence, safeLineOf } from "@/core/conversation/stream";
 import type { TalkCard } from "@/core/seed/schema/talk";
-import { PLACEHOLDER_NAME } from "@/core/seed/structure";
+import {
+  AI_WAIT_TIMEOUT_MULTIPLE,
+  PLACEHOLDER_NAME,
+} from "@/core/seed/structure";
 import type { FormRule } from "@/core/seed/text";
 import { lemmaLookup } from "@/core/session/attempt";
 import { vocab } from "@/db/schema/content";
@@ -107,6 +110,8 @@ import {
 export const TURN_IN_FLIGHT_MS = 60_000;
 /** 마지막 회화 턴 호출이 끝난 뒤 토리 행 저장을 기다리는 짧은 여유(ms, 기술 값 — 호출 기록과 저장 사이 틈, 재검토 N-2). */
 export const TURN_SAVE_GRACE_MS = 5000;
+/** 초 → ms(단위 바꿈 상수). */
+const MS_PER_SECOND = 1000;
 /** 힌트 단 수 상한(기술 값 — 단계 규격 단 수보다 넉넉히). */
 const HINT_TIERS_MAX = 10;
 /** 듣기 끝 대기 초 · 체감 대기 ms 상한(기술 값 — 꼴 검사). */
@@ -153,6 +158,7 @@ const turnSettings = {
   "talk.memory_summaries": z.unknown(),
   "talk.friendship_per_talk": z.unknown(),
   "talk.friendship_max": z.unknown(),
+  "ai.timeout_seconds.realtime": z.number().positive(),
 } as Record<string, z.ZodType>;
 
 function logFailure(what: string, error: unknown) {
@@ -501,16 +507,27 @@ type Begun =
   | { kind: "call"; state: TalkState; child: TalkTurnRow };
 
 /**
- * 같은 시도 id 의 고아 아이 행이 아직 진행 중인가(검토 M-1 · 재검토 N-2): TURN_IN_FLIGHT_MS 안이고, 그 아이 행 뒤 회화 턴 호출 기록이
- * 없거나 마지막 호출이 끝난 지(called_at + latency_ms) TURN_SAVE_GRACE_MS 가 안 됐으면(토리 행 저장이 곧 온다) 참.
+ * 같은 시도 id 의 고아 아이 행이 아직 진행 중인가(검토 M-1 · 재검토 N-2 · P-1): TURN_IN_FLIGHT_MS 안이고, 그 아이 행 뒤 회화 턴 호출 기록이
+ * 없거나, 마지막 호출이 끝난 지(called_at + latency_ms) TURN_SAVE_GRACE_MS 가 안 됐으면(토리 행 저장이 곧 온다) 참. 마지막 호출이 실패면
+ * 한 요청 안 다시 시도(첫 문장 전 연결 · 타임아웃 · 거절 — 기록은 시도가 끝난 뒤 남는다)가 아직 돌 수 있어, 그 요청의 기다림 상한(첫 호출 +
+ * AI_WAIT_TIMEOUT_MULTIPLE × ai.timeout_seconds.realtime)에 저장 여유를 더한 때까지도 참이다.
  */
 async function turnInFlight(
   tx: Tx,
-  { sessionId, since, at }: { sessionId: string; since: Date; at: Date },
+  {
+    sessionId,
+    since,
+    at,
+    timeoutMs,
+  }: { sessionId: string; since: Date; at: Date; timeoutMs: number },
 ): Promise<boolean> {
   if (since.getTime() <= at.getTime() - TURN_IN_FLIGHT_MS) return false;
   const calls = await tx
-    .select({ calledAt: aiCalls.calledAt, latencyMs: aiCalls.latencyMs })
+    .select({
+      calledAt: aiCalls.calledAt,
+      latencyMs: aiCalls.latencyMs,
+      status: aiCalls.status,
+    })
     .from(aiCalls)
     .where(
       and(
@@ -520,10 +537,15 @@ async function turnInFlight(
       ),
     );
   if (calls.length === 0) return true;
-  const lastEnd = Math.max(
-    ...calls.map((c) => c.calledAt.getTime() + (c.latencyMs ?? 0)),
-  );
-  return at.getTime() - lastEnd < TURN_SAVE_GRACE_MS;
+  const endOf = (c: (typeof calls)[number]) =>
+    c.calledAt.getTime() + (c.latencyMs ?? 0);
+  const last = calls.reduce((a, b) => (endOf(b) >= endOf(a) ? b : a));
+  const firstAt = Math.min(...calls.map((c) => c.calledAt.getTime()));
+  const until =
+    last.status === "success"
+      ? endOf(last)
+      : Math.max(endOf(last), firstAt + AI_WAIT_TIMEOUT_MULTIPLE * timeoutMs);
+  return at.getTime() < until + TURN_SAVE_GRACE_MS;
 }
 
 /** 1~3단계 AI 질문 검사 재료(어휘 범위 · 형태 표). 형태 표가 없으면 AI 질문을 쓰지 않는다(검사하지 않은 글을 보이지 않음). */
@@ -690,6 +712,8 @@ export async function runTalkTurnRequest(
             sessionId: state.session.id,
             since: own.recordedAt,
             at,
+            timeoutMs:
+              (s["ai.timeout_seconds.realtime"] as number) * MS_PER_SECOND,
           })
         )
           return { kind: "stale" };

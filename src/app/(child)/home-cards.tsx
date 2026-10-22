@@ -27,8 +27,6 @@ import {
   useLessonStart,
 } from "./[area]/lessons/use-lesson-start";
 
-/** 1-가 회화 카드가 가는 곳(C50 (1) — '토리가 준비 중이에요'). 1-나에서 수업 목록으로. */
-const TALK_PATH = "/talk";
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "right"];
 /** 마이크가 있어야 하는 영역(4절 '마이크를 쓸 수 없을 때'). */
 const MIC_AREAS: readonly Area[] = ["speaking", "talk"];
@@ -276,10 +274,8 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
             tilt={tilt}
             {...(pending
               ? {}
-              : {
-                  href:
-                    card.area === "talk" ? TALK_PATH : `/${card.area}/lessons`,
-                })}
+              : // 회화 카드도 그 영역 수업 목록으로(plan-p13b 값 12)
+                { href: `/${card.area}/lessons` })}
           >
             <span data-home-card={card.area} className="contents">
               <CardBody card={card} action={!pending} />

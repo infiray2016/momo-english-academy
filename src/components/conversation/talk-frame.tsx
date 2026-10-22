@@ -3,10 +3,13 @@
 // 회화 틀(plan-p13b 파일별 값 7, 4절 회화 세션 표 · 3.3 회화 문단 · 7절 · 8절 · 13절 C30 · C34 · C53 (2) · C92 · C100 · C103 · 재검토 N-1).
 // 위 종이 띠(오늘 이야기 제목 · '회화 · n단계 · 단원 u' · '말 주고받기 n / 목표 턴'(목표 턴 뒤 '다 했어요! 더 이야기하기 n / …') · '홈'),
 // 구석 작은 '그만하기'(대화 · 더 이야기하기 동안), 옆 칸 하나(오늘 이야기 목록 — 카드 todayTopicsKo), 아래 '토리의 약속' 한 줄(4절 글 그대로).
-// 열 때 차례: 마이크를 쓸 수 없는 기기면 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'만(세션 진행 — 7절) → (처음 회화 안내 —
-// 차례 6 의 따라 말하기 조각이 이 자리에 든다) → 처음 마이크 안내(기기마다 한 번, P10 MIC_NOTICE_KEY — 그 누름이 첫 읽어 주기를 연다) →
-// 1-가 하루 안전 상한이면 '토리가 잠깐 쉬어요'(P11b AiRest). 한 턴: 토리 말풍선(흘러 받은 문장 · 뜻 · 붙인 말, 바로 읽기) → 아이 차례 →
-// 턴 요청(talk-stream) → … . 인사 끝 턴 뒤 토막 넘김(advanceTalk — 대화 첫 질문을 붙임), 목표 턴 뒤 '더 이야기하기' · '그만하기'.
+// 열 때 차례: 마이크를 쓸 수 없는 기기면 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'만(세션 진행 — 7절) → 1-가 하루 안전 상한이면
+// '토리가 잠깐 쉬어요'(P11b AiRest) → '시작!'(처음 회화면 3.3 안내 글과 함께 — 열 때마다 한 번, 그 누름이 첫 읽어 주기를 연다, 컨트롤러
+// 결정) → 처음 마이크 안내(기기마다 한 번, P10 MIC_NOTICE_KEY). 토막: 인사 → 오늘 쓸 말 · 말해 보기(따라 말하기 조각 — follow-along) →
+// 대화 → 정리(WrapUp) → 마무리 세 장(closing-cards). 한 턴: 토리 말풍선(흘러 받은 문장 · 뜻 · 붙인 말, 바로 읽기) → 아이 차례 →
+// 턴 요청(talk-stream) → … . 토막 넘김은 advanceTalk(대화에 들어갈 때 대화 첫 질문을 붙임), 목표 턴 뒤 '더 이야기하기' · '그만하기'.
+// '그만하기'(목표 턴 전 확인 쪽지) · 목표 턴 뒤 고르기의 '그만하기'는 정리 → 마무리 세 장(차례 5 정할 것 2), 목표 턴 뒤 '홈'은 마무리 첫 장
+// 뒤 홈, 목표 턴 뒤 1-가 하루 안전 상한 닫힘은 정리 → 마무리(8절 '목표 턴 뒤의 회화'), 대화 안전 상한 닫힘은 끝인사 뒤 '수업 목록'.
 // stale · 끊김은 talk-stream 의 되풀이(같은 시도 id — 기다렸다 자료를 다시 읽고 판이 같으면 다시 보냄 · 온라인 끊김은 기다렸다 다시)가
 // 다루고, 그래도 안 되면 '인터넷이 끊겼어요 …' + '다시 해 보기' · online 때 다시(I-1). 턴 요청은 다음 턴 · '홈' · '그만하기' · 틀
 // 사라짐에서 끊는다(I-2). 토리의 말이 없는
@@ -48,12 +51,27 @@ import {
   chooseMoreTalk,
   leaveTalk,
   markTalkNotice,
+  readTalkWrap,
   revealTalkHint,
   stopTalk,
+  talkClosingStatus,
 } from "@/server/actions/conversation";
 import { reportSessionMic } from "@/server/actions/session";
-import type { AddLineOut, TalkView, TurnNext } from "@/server/conversation";
+import type {
+  AddLineOut,
+  TalkView,
+  TurnNext,
+  WrapView,
+} from "@/server/conversation";
 import { type ChildSend, ChildTurn } from "./child-turn";
+import { ClosingCards } from "./closing-cards";
+import {
+  FollowAlong,
+  type FollowEnv,
+  followStepsOf,
+  TalkStart,
+  WrapUp,
+} from "./follow-along";
 import {
   type BubbleContent,
   spokenOf,
@@ -98,6 +116,12 @@ export const TALK_TEXT = {
 type Blocked = keyof typeof TALK_TEXT.blocked;
 const LESSONS_PATH = "/talk/lessons";
 
+/** 대화 밖 큰 차례(토막 정리 · 마무리 세 장). 오늘 쓸 말 · 말해 보기는 view.next.segment 로 고른다. */
+type Stage = "talk" | "wrap" | "closing";
+type FollowSegment = "today_words" | "practice";
+const isFollowSegment = (segment: string): segment is FollowSegment =>
+  segment === "today_words" || segment === "practice";
+
 /** 화면이 그리는 차례. */
 type Phase =
   | "tori" // 토리 말을 받는 중 · 읽는 중
@@ -135,6 +159,40 @@ function heardOf(bubble: BubbleContent): {
 /** 인식 실패 셈의 상한 — 회화의 말소리 없음(C22)은 틀이 질문마다 따로 세므로 P11a 셈에는 그 상한을 두지 않는다(검토 M-6). */
 export function talkCounterLimits(maxRetries: number) {
   return { maxRetries, silentItemsMax: Number.POSITIVE_INFINITY };
+}
+
+/** 말소리 없음 셈(C22): 말소리 없이 '모름'으로 넘어간 질문이 이어진 수 · 지금 질문이 지금까지 말소리 없음 '모름'뿐인가. */
+export type SilentCount = {
+  passed: number;
+  current: "silent" | "mixed" | null;
+};
+export const SILENT_COUNT_START: SilentCount = { passed: 0, current: null };
+
+/**
+ * 말소리 없음 셈 한 걸음(순수 함수, C22 · 7절 오류 행 'no-speech 로만 끝난 질문(회화에서 모름으로 넘어간 질문)이 같은 세션에서
+ * speech.silent_items_max 개 이어지면'). 보냄: 말한 턴이면 처음부터, 말소리 없음 '모름'은 그 질문을 '말소리 없음'으로(단추 '모름'이 이미
+ * 끼었으면 그대로 섞임), 단추 '모름'은 섞임. 끝 줄: '모름' 뒤 같은 질문 '모름' 수가 0 이면 질문이 넘어간 것 — 말소리 없음뿐이었으면
+ * 하나 더, 아니면 이어짐이 끊겨 0. 넘어가지 않았으면 그대로.
+ */
+export function silentCountStep(
+  state: SilentCount,
+  event:
+    | { kind: "send"; mode: "speech" | "dont_know"; nospeech: boolean }
+    | { kind: "end"; afterDontKnow: boolean; dontKnowCount: number },
+): SilentCount {
+  if (event.kind === "send") {
+    if (event.mode === "speech") return { passed: 0, current: null };
+    if (!event.nospeech) return { ...state, current: "mixed" };
+    return {
+      ...state,
+      current: state.current === "mixed" ? "mixed" : "silent",
+    };
+  }
+  if (!event.afterDontKnow || event.dontKnowCount > 0) return state;
+  return {
+    passed: state.current === "silent" ? state.passed + 1 : 0,
+    current: null,
+  };
 }
 
 /** 체감 대기(ms) = 첫 문장을 그린 때 − 아이가 말을 멈춘 때(C23 — 듣기 끝 대기 · 확인 시간 포함, 검토 M-1). 시작을 모르면 없음. */
@@ -178,9 +236,19 @@ export function TalkFrame({ view }: { view: TalkView }) {
     ko?: string;
   } | null>(null);
   const [nudge, setNudge] = useState(!view.noticesSeen.talk_hint_nudge);
+  /** 프로필의 처음 회화(안내 글 — 회17). '시작!'은 처음이 아니어도 열 때마다 한 번(컨트롤러 결정). */
+  const introFirst = !view.noticesSeen.talk_intro;
+  const [started, setStarted] = useState(false);
+  const [stage, setStage] = useState<Stage>("talk");
+  const [wrap, setWrap] = useState<WrapView | null>(null);
+  const [closingMode, setClosingMode] = useState<"full" | "first">("full");
+  /** 오늘 쓸 말 · 말해 보기 조각을 그리는가(인사 끝 토리 말을 다 읽은 뒤 — 이어 열면 바로). */
+  const [followShown, setFollowShown] = useState(false);
   const nudgeMarked = useRef(false);
   const counters = useRef(speakingCountersStart());
-  const silentQuestions = useRef(0);
+  const silent = useRef<SilentCount>(SILENT_COUNT_START);
+  /** 이번 턴이 '모름'(단추 · 말소리 없음)이었는가 — 끝 줄에서 질문이 넘어갔는지 본다. */
+  const sentDontKnow = useRef(false);
   /** 다시 보낼 턴(끊김 · 열 때 고아 아이 행). */
   const pendingSend = useRef<TalkTurnBody | null>(null);
   /** '다시 해 보기'가 다시 부를 일(턴 보내기 · 토막 넘김 · 더 이야기하기 — 검토 M-11). */
@@ -220,7 +288,9 @@ export function TalkFrame({ view }: { view: TalkView }) {
     return () => created.dispose();
   }, []);
 
-  const ready = Boolean(speech) && noticeSeen && !blocked && !resting;
+  const ready =
+    Boolean(speech) && started && noticeSeen && !blocked && !resting;
+  const inFollow = isFollowSegment(next.segment);
 
   // 열 때(안내를 지난 뒤): 마지막 토리 말을 읽고, 토리의 말이 없는 아이 행이 있으면 같은 시도 id 로 다시 보낸다
   const opened = useRef(false);
@@ -231,6 +301,11 @@ export function TalkFrame({ view }: { view: TalkView }) {
     if (!ready || opened.current) return;
     opened.current = true;
     setOpening(false);
+    // 오늘 쓸 말 · 말해 보기에서 이어 열면 인사 끝 토리 말을 다시 읽지 않고 그 조각부터(남은 차례 — 저장한 차례는 건너뜀)
+    if (isFollowSegment(next.segment)) {
+      setFollowShown(true);
+      return;
+    }
     const retry = view.retryTurn;
     if (retry) {
       void submit({
@@ -247,6 +322,12 @@ export function TalkFrame({ view }: { view: TalkView }) {
     queue.enqueue(spokenOf(bubble));
     void afterBubble(next);
   }, [ready]);
+
+  // 인사 끝 토리 말을 다 흘리고 읽은 뒤 오늘 쓸 말 · 말해 보기 조각
+  useEffect(() => {
+    if (opening || !inFollow || followShown) return;
+    if (bubble.done && typedDone && !queue.speaking) setFollowShown(true);
+  }, [opening, inFollow, followShown, bubble.done, typedDone, queue.speaking]);
 
   // 토리가 다 읽고 끝 줄까지 받았으면 아이 차례(또는 고르기)
   useEffect(() => {
@@ -274,27 +355,48 @@ export function TalkFrame({ view }: { view: TalkView }) {
     return () => window.removeEventListener("online", again);
   }, [phase]);
 
-  /** 인사 끝 턴 뒤면 다음 토막으로(대화 첫 질문을 이 말풍선에 붙인다 — AI 없음). */
+  /** 인사 끝 턴 뒤면 다음 토막으로(대화로 바로 가면 대화 첫 질문을 이 말풍선에 붙인다 — AI 없음). */
   async function afterBubble(current: TurnNext) {
     if (!current.greetingDone || current.segment !== "greeting") return;
     const at = view.flow.indexOf("greeting");
     const to = view.flow[at + 1];
     if (to !== "today_words" && to !== "practice" && to !== "talk") return;
-    // 오늘 쓸 말 · 말해 보기 조각은 차례 6(따라 말하기) — 그 토막으로 넘기고 그 조각이 이어 받는다
+    await moveTo(to, false);
+  }
+
+  /** 오늘 쓸 말 · 말해 보기 조각을 다 함 → 흐름의 다음 토막(대화면 대화 첫 질문을 새 말풍선으로). */
+  function afterFollow(segment: FollowSegment) {
+    const at = view.flow.indexOf(segment);
+    const to = view.flow[at + 1];
+    if (to !== "practice" && to !== "talk") return;
+    void moveTo(to, true);
+  }
+
+  /** 토막 넘김(advanceTalk — 차례대로만). 실패면 '다시 해 보기'. */
+  async function moveTo(
+    to: "today_words" | "practice" | "talk",
+    fromFollow: boolean,
+  ) {
     const moved = await advanceTalk({ sessionId: view.sessionId, to }).catch(
       () => undefined,
     );
     if (!moved?.ok) {
       retryAction.current = () => {
         setPhase("tori");
-        void afterBubble(current);
+        void moveTo(to, fromFollow);
       };
       setPhase("failed");
       return;
     }
     retryAction.current = null;
     const adds = moved.add.flatMap((l) => (l.t === "add" ? [l] : []));
-    setBubble((b) => ({ ...b, adds: [...b.adds, ...adds] }));
+    if (fromFollow && to === "talk") {
+      // 따라 말하기 뒤 대화 첫 질문은 새 말풍선(흘러나오기부터)
+      setTurnKey((k) => k + 1);
+      setBubble({ sentences: [], adds, done: true });
+      setFollowShown(false);
+      setPhase("tori");
+    } else setBubble((b) => ({ ...b, adds: [...b.adds, ...adds] }));
     queue.enqueue(spokenOf({ sentences: [], adds }));
     setNext(moved.next);
   }
@@ -332,6 +434,19 @@ export function TalkFrame({ view }: { view: TalkView }) {
       setBlocked("silent");
     }
     return step.verdict;
+  }
+
+  /** 끝인사로 대화가 닫힘(대화 안전 상한 — 끝인사 뒤 '수업 목록'). */
+  function showClosed(farewell: { en: string; ko?: string }) {
+    setCloseLine(farewell);
+    setBubble({
+      sentences: [farewell.en],
+      ...(farewell.ko ? { ko: farewell.ko } : {}),
+      adds: [],
+      done: true,
+    });
+    queue.enqueue([farewell.en]);
+    setPhase("closed");
   }
 
   /** 지금 턴 요청의 끊음(다음 턴 · '홈' · '그만하기' · 틀 사라짐 — 검토 I-2). */
@@ -378,6 +493,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
+          countSilent(n);
           counters.current = speakingCounters(
             counters.current,
             { type: "next-activity" },
@@ -409,15 +525,22 @@ export function TalkFrame({ view }: { view: TalkView }) {
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
-          setCloseLine(line.farewell);
-          setBubble({
-            sentences: [line.farewell.en],
-            ...(line.farewell.ko ? { ko: line.farewell.ko } : {}),
-            adds: [],
-            done: true,
-          });
-          queue.enqueue([line.farewell.en]);
-          setPhase("closed");
+          if (line.reason === "resting" && (line.lines?.length ?? 0) > 0) {
+            // 목표 턴 뒤 1-가 하루 안전 상한: 정리(되짚을 말 · 카드 끝인사) → 마무리 첫 장 · 셋째 장(8절 '목표 턴 뒤의 회화'). 마무리 자료를
+            // 못 읽으면 끝인사와 '수업 목록'(대화 안전 상한과 같은 꼴)
+            void readTalkWrap({ sessionId: view.sessionId })
+              .catch(() => undefined)
+              .then((out) => {
+                if (out?.ok) {
+                  setWrap(out.wrap);
+                  setStage("wrap");
+                  return;
+                }
+                showClosed(line.farewell);
+              });
+            return;
+          }
+          showClosed(line.farewell);
         },
         onError: () => {
           setWaitingSince(null);
@@ -444,18 +567,30 @@ export function TalkFrame({ view }: { view: TalkView }) {
     }
   }
 
+  /** 끝 줄: 말소리 없이 '모름'으로 넘어간 질문이 speech.silent_items_max 개 이어지면 막힌 안내 · 알림(C22). */
+  function countSilent(n: TurnNext) {
+    silent.current = silentCountStep(silent.current, {
+      kind: "end",
+      afterDontKnow: sentDontKnow.current,
+      dontKnowCount: n.dontKnowCount,
+    });
+    sentDontKnow.current = false;
+    if (silent.current.passed < view.settings.silentItemsMax) return;
+    void reportSessionMic({
+      kind: "speech_silent",
+      code: "no-speech",
+      browser: readDeviceVerdict().name,
+    }).catch(() => {});
+    setBlocked("silent");
+  }
+
   function onChildSend(send: ChildSend) {
-    if (send.input.mode === "dont_know" && send.input.nospeech) {
-      silentQuestions.current += 1;
-      if (silentQuestions.current >= view.settings.silentItemsMax) {
-        void reportSessionMic({
-          kind: "speech_silent",
-          code: "no-speech",
-          browser: readDeviceVerdict().name,
-        }).catch(() => {});
-        setBlocked("silent");
-      }
-    } else silentQuestions.current = 0;
+    sentDontKnow.current = send.input.mode === "dont_know";
+    silent.current = silentCountStep(silent.current, {
+      kind: "send",
+      mode: send.input.mode,
+      nospeech: send.input.mode === "dont_know" && send.input.nospeech === true,
+    });
     const body: TalkTurnBody = {
       sessionId: view.sessionId,
       clientAttemptId: crypto.randomUUID(),
@@ -476,14 +611,32 @@ export function TalkFrame({ view }: { view: TalkView }) {
     void submit(body);
   }
 
-  async function home() {
+  /**
+   * '홈': 대화 중이면 leaveTalk — 목표 턴 전은 그대로(진행), 목표 턴 뒤는 닫히고 마무리 첫 장을 보인 뒤 홈(3.3 · 회11 (10)). 막힌 안내 ·
+   * 쉬는 안내의 '홈'은 첫 장 없이 바로 홈. 정리 · 마무리 중이면 이미 닫혔으므로 바로 홈.
+   */
+  async function home({ firstCard = true }: { firstCard?: boolean } = {}) {
     setBusy(true);
     abortInflight();
     queue.cancel();
-    await leaveTalk({ sessionId: view.sessionId }).catch(() => undefined);
+    if (stage !== "talk") {
+      router.push("/");
+      return;
+    }
+    const out = await leaveTalk({ sessionId: view.sessionId }).catch(
+      () => undefined,
+    );
+    if (firstCard && out?.ok && out.closed && out.wrap) {
+      setBusy(false);
+      setWrap(out.wrap);
+      setClosingMode("first");
+      setStage("closing");
+      return;
+    }
     router.push("/");
   }
 
+  /** '그만하기': 목표 턴 전이면 확인 쪽지(C34) 뒤. AI 를 기다리지 않고 정리 → 마무리(끝맺음은 응답 뒤 — C33 · AC-8c). */
   async function stop(confirmed: boolean) {
     setBusy(true);
     abortInflight();
@@ -491,13 +644,27 @@ export function TalkFrame({ view }: { view: TalkView }) {
     const out = await stopTalk({ sessionId: view.sessionId, confirmed }).catch(
       () => undefined,
     );
+    setBusy(false);
     if (out && !out.ok && out.reason === "needs_confirm") {
-      setBusy(false);
       setConfirmStop(true);
       return;
     }
-    // 정리 · 마무리 조각은 차례 6 — 지금은 수업 목록으로
-    router.push(LESSONS_PATH);
+    if (out && !out.ok && out.reason === "not_found") {
+      // 다른 기기에서 이미 닫혔다
+      router.push(LESSONS_PATH);
+      return;
+    }
+    if (!out?.ok) {
+      retryAction.current = () => {
+        setPhase("tori");
+        void stop(true);
+      };
+      setPhase("failed");
+      return;
+    }
+    retryAction.current = null;
+    setWrap(out.wrap);
+    setStage("wrap");
   }
 
   async function more() {
@@ -518,6 +685,43 @@ export function TalkFrame({ view }: { view: TalkView }) {
     setNext(moved.next);
     setPhase("tori");
   }
+
+  const followEnv: FollowEnv = {
+    sessionId: view.sessionId,
+    speech,
+    level: view.level,
+    lowLevel,
+    englishName: view.englishName,
+    ...(rate === undefined ? {} : { rate }),
+    homophones: view.homophones,
+    settings: {
+      speech: view.settings.speech,
+      talkSpeech: view.settings.talkSpeech,
+      matchPhraseLevels: view.settings.ui.matchPhraseLevels,
+      autoNextSeconds: view.settings.ui.autoNextSeconds,
+      hintReadMatch: view.settings.talk.hintReadMatch,
+      waitHintSeconds: view.settings.ui.waitHintSeconds,
+    },
+    onSpeech,
+    onNextItem: () => {
+      counters.current = speakingCounters(
+        counters.current,
+        { type: "next-activity" },
+        counterLimits,
+      ).state;
+    },
+    onListening: setListening,
+  };
+  const followSteps = useMemo(
+    () =>
+      followStepsOf({
+        todayWords: view.follow.todayWords,
+        practice: view.follow.practice,
+        done: view.follow.done,
+        lowLevel,
+      }),
+    [view.follow, lowLevel],
+  );
 
   const toriState: ToriState =
     waitingSince !== null
@@ -554,10 +758,31 @@ export function TalkFrame({ view }: { view: TalkView }) {
         <p className="text-center font-heading text-[28px] leading-snug">
           {TALK_TEXT.blocked[blocked]}
         </p>
-        <BigButton disabled={busy} onClick={() => void home()}>
+        <BigButton
+          disabled={busy}
+          onClick={() => void home({ firstCard: false })}
+        >
           {TALK_TEXT.home}
         </BigButton>
       </div>
+    );
+  } else if (resting) {
+    body = (
+      <AiRest busy={busy} onHome={() => void home({ firstCard: false })} />
+    );
+  } else if (!started) {
+    body = (
+      <TalkStart
+        first={introFirst}
+        disabled={!speech}
+        onStart={() => {
+          // 이 누름이 첫 읽어 주기를 연다(iPad Safari — 7절)
+          speech?.unlockFromGesture();
+          setStarted(true);
+          if (introFirst)
+            void markTalkNotice({ kind: "talk_intro" }).catch(() => {});
+        }}
+      />
     );
   } else if (!noticeSeen) {
     body = (
@@ -569,9 +794,55 @@ export function TalkFrame({ view }: { view: TalkView }) {
         }}
       />
     );
-  } else if (resting) {
-    body = <AiRest busy={busy} onHome={() => void home()} />;
+  } else if (stage === "closing" && wrap) {
+    body = (
+      <ClosingCards
+        wrap={wrap}
+        lowLevel={lowLevel}
+        mode={closingMode}
+        waitHintSeconds={view.settings.ui.waitHintSeconds}
+        onListen={(word) => {
+          speech?.unlockFromGesture();
+          queue.replay([word]);
+        }}
+        onHome={() => router.push("/")}
+        onLessons={() => router.push(LESSONS_PATH)}
+      />
+    );
   } else {
+    let main: ReactNode;
+    if (stage === "wrap" && wrap)
+      main = (
+        <WrapUp
+          lines={wrap.lines}
+          farewell={wrap.farewell}
+          env={followEnv}
+          closingFarewell={async () => {
+            const status = await talkClosingStatus({
+              sessionId: view.sessionId,
+            });
+            return status.state === "ready" ? status.farewell : undefined;
+          }}
+          onDone={() => {
+            setClosingMode("full");
+            setStage("closing");
+          }}
+        />
+      );
+    else if (inFollow && followShown && isFollowSegment(next.segment)) {
+      const segment = next.segment;
+      main = (
+        <FollowAlong
+          key={segment}
+          segment={segment}
+          steps={
+            segment === "today_words" ? followSteps.today : followSteps.practice
+          }
+          env={followEnv}
+          onDone={() => afterFollow(segment)}
+        />
+      );
+    }
     body = (
       <div className="flex flex-col gap-6 lg:flex-row">
         <section
@@ -583,130 +854,133 @@ export function TalkFrame({ view }: { view: TalkView }) {
             aria-hidden
             className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 bg-postit-talk/90"
           />
-          <div className="flex items-start gap-4">
-            <ToriFigure state={toriState} />
-            <div className="min-w-0 flex-1">
-              <ToriBubble
-                key={turnKey}
-                content={bubble}
-                onAllTyped={setTypedDone}
-                englishName={view.englishName}
-                waiting={waitingSince}
-                waitSeconds={view.settings.ui.waitHintSeconds}
-                {...(lowLevel && picture ? { picture } : {})}
-                {...(next.explanation ? { explanation: next.explanation } : {})}
-                onReplay={() => {
-                  speech?.unlockFromGesture();
-                  queue.replay(spokenOf(bubble));
-                }}
-                onAnswer={(i) => {
-                  const pair = bubble.adds.find(
-                    (a) => a.kind === "two_answers",
-                  );
-                  if (pair?.kind !== "two_answers") return;
-                  speech?.unlockFromGesture();
-                  queue.replay([pair.answers[i]]);
-                }}
-              />
-            </div>
-          </div>
-          <div className="mt-auto border-t-2 border-dashed border-ink/30 pt-4">
-            {phase === "child" && pending ? (
-              <ChildTurn
-                key={`${turnKey}:${next.talkCount}:${next.dontKnowCount}`}
-                sessionId={view.sessionId}
-                speech={speech}
-                level={view.level}
-                lowLevel={lowLevel}
-                englishName={view.englishName}
-                hints={next.hints}
-                dontKnowCount={next.dontKnowCount}
-                heard={heard}
-                settings={{
-                  speech: view.settings.speech,
-                  talkSpeech: view.settings.talkSpeech,
-                  confirmSeconds: view.settings.talk.confirmSeconds,
-                  hintReadMatch: view.settings.talk.hintReadMatch,
-                  nospeechDontknowCount:
-                    view.settings.talk.nospeechDontknowCount,
-                }}
-                {...(hintRate === undefined ? {} : { slowRate: hintRate })}
-                homophones={view.homophones}
-                nudge={nudge}
-                onNudgeShown={() => {
-                  if (nudgeMarked.current) return;
-                  nudgeMarked.current = true;
-                  void markTalkNotice({ kind: "talk_hint_nudge" }).catch(
-                    () => {},
-                  );
-                }}
-                onSpeech={onSpeech}
-                onListenStart={() => {
-                  queue.cancel();
-                  setNudge(false);
-                }}
-                onListening={setListening}
-                reveal={async (tier) => {
-                  setNudge(false);
-                  const out = await revealTalkHint({
-                    sessionId: view.sessionId,
-                    tier,
-                  }).catch(() => undefined);
-                  return out?.ok ? out.text : undefined;
-                }}
-                onSend={onChildSend}
-              />
-            ) : null}
-            {phase === "choice" ? (
-              <div
-                data-talk-choice=""
-                className="flex flex-wrap items-center justify-center gap-4"
-              >
-                <BigButton disabled={busy} onClick={() => void more()}>
-                  {TALK_TEXT.more}
-                </BigButton>
-                <SmallButton disabled={busy} onClick={() => void stop(true)}>
-                  {TALK_TEXT.stop}
-                </SmallButton>
+          {main ? (
+            <>
+              {main}
+              {phase === "offline" || phase === "failed" ? (
+                <TroubleLine phase={phase} retry={retryAction.current} />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-4">
+                <ToriFigure state={toriState} />
+                <div className="min-w-0 flex-1">
+                  <ToriBubble
+                    key={turnKey}
+                    content={bubble}
+                    onAllTyped={setTypedDone}
+                    englishName={view.englishName}
+                    waiting={waitingSince}
+                    waitSeconds={view.settings.ui.waitHintSeconds}
+                    {...(lowLevel && picture ? { picture } : {})}
+                    {...(next.explanation
+                      ? { explanation: next.explanation }
+                      : {})}
+                    onReplay={() => {
+                      speech?.unlockFromGesture();
+                      queue.replay(spokenOf(bubble));
+                    }}
+                    onAnswer={(i) => {
+                      const pair = bubble.adds.find(
+                        (a) => a.kind === "two_answers",
+                      );
+                      if (pair?.kind !== "two_answers") return;
+                      speech?.unlockFromGesture();
+                      queue.replay([pair.answers[i]]);
+                    }}
+                  />
+                </div>
               </div>
-            ) : null}
-            {phase === "break" ? (
-              <div
-                data-talk-break=""
-                className="flex flex-col items-center gap-6"
-              >
-                <p className={cn(CHILD_SIZE.guide, "text-center")}>
-                  {TALK_TEXT.saved}
-                </p>
-                <BigButton onClick={() => router.push(LESSONS_PATH)}>
-                  {TALK_TEXT.lessons}
-                </BigButton>
-              </div>
-            ) : null}
-            {phase === "closed" && closeLine ? (
-              <div data-talk-closed="" className="flex justify-center">
-                <BigButton onClick={() => router.push(LESSONS_PATH)}>
-                  {TALK_TEXT.lessons}
-                </BigButton>
-              </div>
-            ) : null}
-            {phase === "offline" || phase === "failed" ? (
-              <div className="flex flex-col items-center gap-4">
-                <StatusLine tone="error">
-                  {phase === "offline" ? TALK_TEXT.offline : TALK_TEXT.failed}
-                </StatusLine>
-                {/* 끊김 · 실패 모두 다시 부를 일이 있으면 '다시 해 보기'(검토 I-1 · M-11) */}
-                {retryAction.current ? (
-                  <SmallButton
-                    data-talk-retry=""
-                    onClick={() => retryAction.current?.()}
+              <div className="mt-auto border-t-2 border-dashed border-ink/30 pt-4">
+                {phase === "child" && pending ? (
+                  <ChildTurn
+                    key={`${turnKey}:${next.talkCount}:${next.dontKnowCount}`}
+                    sessionId={view.sessionId}
+                    speech={speech}
+                    level={view.level}
+                    lowLevel={lowLevel}
+                    englishName={view.englishName}
+                    hints={next.hints}
+                    dontKnowCount={next.dontKnowCount}
+                    heard={heard}
+                    settings={{
+                      speech: view.settings.speech,
+                      talkSpeech: view.settings.talkSpeech,
+                      confirmSeconds: view.settings.talk.confirmSeconds,
+                      hintReadMatch: view.settings.talk.hintReadMatch,
+                      nospeechDontknowCount:
+                        view.settings.talk.nospeechDontknowCount,
+                    }}
+                    {...(hintRate === undefined ? {} : { slowRate: hintRate })}
+                    homophones={view.homophones}
+                    nudge={nudge}
+                    onNudgeShown={() => {
+                      if (nudgeMarked.current) return;
+                      nudgeMarked.current = true;
+                      void markTalkNotice({ kind: "talk_hint_nudge" }).catch(
+                        () => {},
+                      );
+                    }}
+                    onSpeech={onSpeech}
+                    onListenStart={() => {
+                      queue.cancel();
+                      setNudge(false);
+                    }}
+                    onListening={setListening}
+                    reveal={async (tier) => {
+                      setNudge(false);
+                      const out = await revealTalkHint({
+                        sessionId: view.sessionId,
+                        tier,
+                      }).catch(() => undefined);
+                      return out?.ok ? out.text : undefined;
+                    }}
+                    onSend={onChildSend}
+                  />
+                ) : null}
+                {phase === "choice" ? (
+                  <div
+                    data-talk-choice=""
+                    className="flex flex-wrap items-center justify-center gap-4"
                   >
-                    {TALK_TEXT.retry}
-                  </SmallButton>
+                    <BigButton disabled={busy} onClick={() => void more()}>
+                      {TALK_TEXT.more}
+                    </BigButton>
+                    <SmallButton
+                      disabled={busy}
+                      onClick={() => void stop(true)}
+                    >
+                      {TALK_TEXT.stop}
+                    </SmallButton>
+                  </div>
+                ) : null}
+                {phase === "break" ? (
+                  <div
+                    data-talk-break=""
+                    className="flex flex-col items-center gap-6"
+                  >
+                    <p className={cn(CHILD_SIZE.guide, "text-center")}>
+                      {TALK_TEXT.saved}
+                    </p>
+                    <BigButton onClick={() => router.push(LESSONS_PATH)}>
+                      {TALK_TEXT.lessons}
+                    </BigButton>
+                  </div>
+                ) : null}
+                {phase === "closed" && closeLine ? (
+                  <div data-talk-closed="" className="flex justify-center">
+                    <BigButton onClick={() => router.push(LESSONS_PATH)}>
+                      {TALK_TEXT.lessons}
+                    </BigButton>
+                  </div>
+                ) : null}
+                {phase === "offline" || phase === "failed" ? (
+                  <TroubleLine phase={phase} retry={retryAction.current} />
                 ) : null}
               </div>
-            ) : null}
-          </div>
+            </>
+          )}
         </section>
         <aside
           data-talk-topics=""
@@ -733,10 +1007,13 @@ export function TalkFrame({ view }: { view: TalkView }) {
   const showStop =
     !blocked &&
     !resting &&
+    started &&
     noticeSeen &&
+    stage === "talk" &&
     inDialogue &&
     phase !== "closed" &&
     phase !== "break";
+  const showCount = stage === "talk";
   return (
     <ChildScreen>
       <PaperBand
@@ -745,9 +1022,11 @@ export function TalkFrame({ view }: { view: TalkView }) {
         detail={TALK_TEXT.levelUnit(view.level, view.unit)}
         right={
           <>
-            <span data-talk-count="" className={CHILD_SIZE.guide}>
-              {counter}
-            </span>
+            {showCount ? (
+              <span data-talk-count="" className={CHILD_SIZE.guide}>
+                {counter}
+              </span>
+            ) : null}
             {/* '그만하기'는 위 띠 오른쪽('홈' 왼쪽) 작은 단추 — 따로 한 줄을 차지하지 않게(plan-p13a 문구 표 · 화면 검토 I-1) */}
             {showStop ? (
               <SmallButton
@@ -761,7 +1040,8 @@ export function TalkFrame({ view }: { view: TalkView }) {
                 {TALK_TEXT.stop}
               </SmallButton>
             ) : null}
-            {blocked ? null : (
+            {/* 막힌 안내 · 쉬는 안내 · 마무리 셋째 장은 제 '홈'이 있다(한 화면 '홈' 하나) */}
+            {blocked || resting || stage === "closing" ? null : (
               <SmallButton disabled={busy} onClick={() => void home()}>
                 {TALK_TEXT.home}
               </SmallButton>
@@ -792,5 +1072,27 @@ export function TalkFrame({ view }: { view: TalkView }) {
         onCancel={() => setConfirmStop(false)}
       />
     </ChildScreen>
+  );
+}
+
+/** 끊김 · 실패 줄(다시 부를 일이 있으면 '다시 해 보기' — 검토 I-1 · M-11). */
+function TroubleLine({
+  phase,
+  retry,
+}: {
+  phase: "offline" | "failed";
+  retry: (() => void) | null;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <StatusLine tone="error">
+        {phase === "offline" ? TALK_TEXT.offline : TALK_TEXT.failed}
+      </StatusLine>
+      {retry ? (
+        <SmallButton data-talk-retry="" onClick={() => retry()}>
+          {TALK_TEXT.retry}
+        </SmallButton>
+      ) : null}
+    </div>
   );
 }

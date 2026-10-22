@@ -14,6 +14,7 @@ import {
 } from "vitest";
 import { talkClosingAttemptId } from "@/core/conversation/attempt";
 import { learningDayOf } from "@/core/learning-day";
+import { AI_WAIT_TIMEOUT_MULTIPLE } from "@/core/seed/structure";
 import { feedbackStateOf } from "@/core/writing/feedback";
 import { lessons, vocab } from "@/db/schema/content";
 import {
@@ -29,12 +30,17 @@ import {
   chooseMoreTalk,
   closeIdleTalks,
   leaveTalk,
+  readTalkWrap,
   runTalkClosing,
   saveFollowAlong,
   stopTalk,
   talkClosingStatus,
 } from "@/server/conversation";
 import { closingStateOf } from "@/server/conversation/closing";
+import {
+  TURN_IN_FLIGHT_MS,
+  TURN_SAVE_GRACE_MS,
+} from "@/server/conversation/turn";
 import type { Db } from "@/server/db";
 import { readLessonList } from "@/server/lesson-list";
 import { startLessonSession } from "@/server/session";
@@ -74,6 +80,10 @@ const TZ = TEST_SETTINGS["app.timezone"].value;
 const DAY_START = TEST_SETTINGS["app.day_start_hour"].value;
 const TODAY = learningDayOf(NOW, TZ, DAY_START);
 const IDLE_MINUTES = TEST_SETTINGS["talk.idle_close_minutes"].value;
+const REALTIME_TIMEOUT_SECONDS =
+  TEST_SETTINGS["ai.timeout_seconds.realtime"].value;
+/** 초 → ms(단위 바꿈 상수). */
+const MS_PER_SECOND = 1000;
 const MEMORY = TEST_SETTINGS["talk.memory_summaries"].value;
 const SUMMARY_MAX = TEST_SETTINGS["talk.summary_max_chars"].value;
 const FRIENDSHIP_PER = TEST_SETTINGS["talk.friendship_per_talk"].value;
@@ -435,6 +445,11 @@ describe("그만하기 · 홈 · 끝맺음(3.3 '대화가 멈추는 경우' · 8
     ).toBe(true);
     expect(h.fake.requests).toHaveLength(before);
     expect(h.tasks).toHaveLength(0);
+    // 열린 대화의 마무리 자료는 없다(정리 토막 뒤에만)
+    expect(await readTalkWrap({ sessionId }, h.deps())).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
   });
 
   it("AC-15f 목표 턴 뒤에 떠난 대화는 talk.idle_close_minutes 뒤 첫 홈 진입 때 끝맺음 턴이 한 번 불리고 그 전 다른 기기의 홈 진입은 대화를 닫지 않는다", async () => {
@@ -510,6 +525,45 @@ describe("그만하기 · 홈 · 끝맺음(3.3 '대화가 멈추는 경우' · 8
     expect(replayed.lines[0]).toEqual({ t: "s", en: "Great to hear!" });
     expect(replayed.last?.t).toBe("end");
     expect(h.fake.requests).toHaveLength(before);
+  });
+
+  it("AC-15f 토리의 말이 없는 마지막 턴의 같은 시도 id 는 마지막 호출이 실패면 그 요청의 기다림 상한과 저장 여유가 지날 때까지 다시 부르지 않고 그 뒤 TURN_IN_FLIGHT_MS 안이면 다시 부른다", async () => {
+    profileId = await resetHousehold(db, 4);
+    const sessionId = await startTalk(h, 4);
+    await viewOf(h, sessionId);
+    // 4단계: 첫 문장 전 연결 실패 두 번 → 'Oops' 쉼, 토리 행 없음(마지막 호출이 실패)
+    h.fake.push({
+      when: { bodyIncludes: TURN_MARK },
+      reply: { kind: "network-error" },
+      times: 2,
+    });
+    const broke = await say(h, sessionId, {
+      text: "I'm fine.",
+      clientAttemptId: "orphan-2",
+    });
+    expect(broke.last).toMatchObject({ t: "break" });
+    const calls = h.fake.requests.length;
+    // 저장 여유는 지났지만 그 요청의 기다림 상한(첫 호출 + 두 배 타임아웃) 안 — 한 요청 안 다시 시도가 아직 돌 수 있다(재검토 P-1)
+    h.clock.now = new Date(NOW.getTime() + TURN_SAVE_GRACE_MS + MS_PER_SECOND);
+    expect(
+      (await say(h, sessionId, { clientAttemptId: "orphan-2" })).last,
+    ).toEqual({ t: "stale" });
+    expect(h.fake.requests).toHaveLength(calls);
+    // 기다림 상한 + 저장 여유가 지났고 TURN_IN_FLIGHT_MS 안이면 진행 중이 아니다 — 다시 부른다(재검토 P-2)
+    const waitEnd =
+      AI_WAIT_TIMEOUT_MULTIPLE * REALTIME_TIMEOUT_SECONDS * MS_PER_SECOND +
+      TURN_SAVE_GRACE_MS;
+    expect(waitEnd + MS_PER_SECOND).toBeLessThan(TURN_IN_FLIGHT_MS);
+    h.clock.now = new Date(NOW.getTime() + waitEnd + MS_PER_SECOND);
+    h.fake.push(
+      turnRule({ tori_en: "Great to hear!" }, { model: "claude-sonnet-5-5" }),
+    );
+    const again = await say(h, sessionId, {
+      text: "ignored text",
+      clientAttemptId: "orphan-2",
+    });
+    expect(again.last?.t).toBe("end");
+    expect(h.fake.requests).toHaveLength(calls + 1);
   });
 
   it("회화 세션: 끝맺음을 두 요청이 함께 부르면 호출은 하나다", async () => {
@@ -700,6 +754,21 @@ describe("1-가 하루 안전 상한(회화, a 회4 · C80)", () => {
     expect(last.lines?.length).toBeGreaterThan(0);
     expect((await sessionOf(db, sessionId)).talkSegment).toBe("wrap_up");
     expect(h.tasks).toHaveLength(0);
+    // 닫힌 뒤 화면이 정리 · 마무리 자료를 다시 읽는다(8절 '목표 턴 뒤의 회화' — 정리 뒤 마무리 첫 장 · 셋째 장, AI 없음)
+    const calls = h.fake.requests.length;
+    const wrap = await readTalkWrap({ sessionId }, h.deps());
+    if (!wrap.ok) throw new Error("마무리 자료");
+    // 화면이 쓰는 칸(en · ko)만 견준다 — 마무리 자료의 되짚을 말에는 고른 곳(source) 칸이 더 있다(검토 b3 I-3)
+    expect(
+      wrap.wrap.lines.map(({ en, ko }) => ({
+        en,
+        ...(ko === undefined ? {} : { ko }),
+      })),
+    ).toEqual(last.lines);
+    expect(wrap.wrap.farewell.en).toBe(card.farewell.en);
+    expect(wrap.wrap.aborted).toBe(false);
+    expect(wrap.wrap.friendship).not.toBeNull();
+    expect(h.fake.requests).toHaveLength(calls);
     h.fake.push(closingRule());
     expect(await closeIdleTalks({ profileId, at: NOW }, h.deps())).toBe(0);
     expect(requestsOf(h, CLOSING_MARK)).toBe(0);

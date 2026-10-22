@@ -1301,6 +1301,44 @@ export async function leaveTalk(
   }
 }
 
+export type WrapOutcome =
+  | { ok: true; wrap: WrapView }
+  | { ok: false; reason: "invalid" | "not_found" | "unavailable" };
+
+/**
+ * 닫힌 회화(정리 토막)의 마무리 자료(값 15). 목표 턴 뒤 1-가 하루 안전 상한으로 턴 응답이 대화를 닫으면(close · resting) 화면이 이것을
+ * 읽어 정리 → 마무리 첫 장 · 셋째 장을 그린다(8절 '목표 턴 뒤의 회화'). AI 없음. 열린 대화 · 남의 세션은 not_found.
+ */
+export async function readTalkWrap(
+  raw: unknown,
+  deps: Pick<TalkServerDeps, "db" | "now">,
+): Promise<WrapOutcome> {
+  const parsed = SessionIdSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  const db: Db = deps.db ?? getDb();
+  try {
+    const profile = await readHouseholdProfile({ db });
+    if (!profile) return { ok: false, reason: "not_found" };
+    const at = deps.now();
+    const state = await readTalkState(db, {
+      sessionId: parsed.data.sessionId,
+      profileId: profile.id,
+      at,
+    });
+    if (state?.segment !== "wrap_up") return { ok: false, reason: "not_found" };
+    return {
+      ok: true,
+      wrap: await wrapViewOf(db, state, {
+        aborted: state.session.status === "aborted",
+        at,
+      }),
+    };
+  } catch (error) {
+    logFailure("회화 마무리 자료", error);
+    return { ok: false, reason: "unavailable" };
+  }
+}
+
 // ── 한 번 안내 · 힌트 단 ──────────────────────────────────────────
 
 const NoticeSchema = z.strictObject({ kind: z.enum(TALK_NOTICE_KINDS) });

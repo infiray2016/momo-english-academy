@@ -24,7 +24,7 @@ export function PastLessons({
   band,
   waitHintSeconds,
 }: {
-  area: Exclude<Area, "talk">;
+  area: Area;
   items: PastItem[];
   /** 종이 띠(쪽이 정함) — 안전 상한 안내 동안은 오른쪽 링크를 숨긴다. */
   band: {

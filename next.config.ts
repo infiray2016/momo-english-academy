@@ -16,8 +16,12 @@ export default function nextConfig(phase: string): NextConfig {
     agentRules: false,
     // unauthorized() 로 페이지 · 서버 액션 · Route Handler 가 401 을 낸다(C55 (4), P3b)
     experimental: { authInterrupts: true },
-    // 시드 목록은 빌드에 묶어 배포한다(5절). 서버 함수가 실행 때 읽는다 — plan-p09c 값 3
-    outputFileTracingIncludes: { "/*": ["./seed/lists/**/*.json"] },
+    // 시드 목록은 빌드에 묶어 배포한다(5절). 서버 함수가 실행 때 읽는다 — plan-p09c 값 3. 키 '/*' 는 홈 '/' 에 걸리지 않아(차례 4 검토
+    // X-1) 홈 응답 뒤 일(밀린 첨삭 · 회화 홈 진입 정리 — 끝맺음 검사가 읽는 금지어 · 형태 표)이 시드 목록을 못 읽는다 — 키 '/' 를 더한다
+    outputFileTracingIncludes: {
+      "/": ["./seed/lists/**/*.json"],
+      "/*": ["./seed/lists/**/*.json"],
+    },
     pageExtensions: [
       ...BASE_PAGE_EXTENSIONS,
       ...(isProductionDeployment ? [] : [PREVIEW_PAGE_EXTENSION]),
