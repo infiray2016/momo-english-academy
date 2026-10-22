@@ -50,3 +50,4 @@
 | 쓰던 글은 기기 입력으로만 되살림(진행 시도 안 보냄, plan-p11a 값 4 · 7 과 다름) | 닫힘 — plan-p11b 완료 보고 '다르게 한 것' 1 에 적음(edit-p11b-done, 문서 커밋) | 2026-10-22 19:3x |
 | 쓰기 4~5 사진 보강(빈칸 빈 상태 · '다시 골라 볼까요' · 도중 안전 상한) | 닫힘 — fix 5 e2e 사진 셋, review-p11-fix5-design · review-p11-6-design 장부 판정 '닫힘' | 2026-10-22 19:3x |
 | P9c 넘김 묶음(MIN_RETRY_MS 하한 · AiOutcome 실패 갈래마다 화면 길 · refusals attempts · 빌드 추적 · dueCostAlerts scope · preCallGate ai_status · P6 forbidden) | 닫힘 — P11 몫(실패 갈래 화면 길)은 쓰기 확인 · 생각 꺼내기 · 첨삭 · 둘째 세션에서 review-p11-5/6/7-design 장부 판정으로 닫힘, 1-나 몫(설정 화면 하한 3 · dueCostAlerts scope)은 1-나 plan 이 받음(열린 장부에서 빼고 여기에 둠), P6 forbidden iu 는 P6a 커밋에서 통과 | 2026-10-22 19:3x(edit-p11b-done 지적 7) |
+| P13 토리 행에 AI 질문 답 예시 · 힌트 저장 칸 없음(N3, 검토 a2) | 닫힘 2026-10-22 20:5x — C101 `talk_turns.ai_question` 열(0003) 저장 · 읽기 확인, 통합 AC-15i(review-p13-4-code 장부 판정) | 2026-10-22 20:5x |

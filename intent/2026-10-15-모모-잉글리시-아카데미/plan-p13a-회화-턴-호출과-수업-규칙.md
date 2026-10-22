@@ -120,7 +120,7 @@ P12 는 P13 뒤다(C85 순서 P11b → P13 → P12 → P11c). P13 은 회화만�
 | 앱을 닫음(목표 턴 전) → session.resume_hours 지남 | aborted(P10 `closeStaleSessions`) | 그대로 | 없음 |
 | 앱을 닫음(목표 턴 뒤) → 마지막 턴에서 talk.idle_close_minutes 지남 | completed | wrap_up | 그 뒤 첫 홈 진입 응답 뒤(마무리 안 보임) |
 | 4단계부터 회화 턴 두 번 실패 | in_progress | 그대로 | 없음 |
-| 대화 안전 상한(talk.safety_max_turns) | completed | wrap_up | 응답 뒤(제안) |
+| 대화 안전 상한(talk.safety_max_turns) | 목표 턴 뒤면 completed · 목표 턴 전이면 aborted(C107, 컨트롤러 2026-10-22 20:5x — 차례 4 코드 검토 M-9) | wrap_up | 응답 뒤(제안) |
 | 1-가 하루 안전 상한(목표 턴 전) | in_progress | 그대로 | — |
 | 1-가 하루 안전 상한(목표 턴 뒤) | completed | wrap_up | 상한이 풀린 첫 홈 진입 응답 뒤(정할 것 회4) |
 | 다른 수업 고르기(확인 뒤, P10) | aborted | 그대로 | 없음 |

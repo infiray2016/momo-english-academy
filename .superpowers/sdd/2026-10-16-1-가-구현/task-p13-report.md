@@ -196,3 +196,145 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 pnpm check:ids               → 설정 키 위반 0 · design-number 35(바탕 그대로)
 ```
 통합 20 은 CI 몫(로컬 embedded-postgres 불가).
+
+## 차례 4 (2026-10-22 20:1x) — P13b 작업 2: 회화 세션 서버 · 턴 길 · 끝맺음 · 안전 상한
+
+브리프 `task-p13-4.md`(덧 19:2x 까지), plan-p13b 작업 2 · 파일별 값 1~6 · 정할 것 회16~회18, a '회화 수업 모델' 4 · 5. 워크트리 p13(HEAD 6d1f929 = 합침 ① 뒤). 커밋하지 않았다. 통합 시험은 이 Mac 에서 embedded-postgres 가 뜨지 않아(`TypeError: done is not a function` — 20:0x 에 다시 확인) CI 몫이다.
+
+### 바뀐 파일
+
+| 파일 | 신규/수정 | 무엇 |
+|---|---|---|
+| `src/db/schema/learning.ts` | 수정 +4 | `profile_tracks.tori_stories_by_band` jsonb(C98, 구간 → 연 수) · `talk_turns.ai_question` jsonb(C101). 둘 다 비울 수 있음 |
+| `drizzle/0003_talk_ai_question_stories_by_band.sql` · `drizzle/meta/0003_snapshot.json` · `_journal.json` | 신규 · 수정 | `pnpm exec drizzle-kit generate` 로 만든 마이그레이션 하나(ALTER TABLE ADD COLUMN 둘). 적용(`db:migrate`)은 CI |
+| `src/server/conversation/state.ts` | 신규 | 공용 바탕: `readTalkState`(:596, 세션 행 FOR UPDATE 선택 · 카드 · 단계 규격 · talk_turns · 처음 스냅숏 · 따라 말하기 · 끝의 토리 말 없는 아이 행 떼기 · a `talkPositionOf`) · 토리 행 원문 꼴(`toriTextOf` :165 — 첫 줄 AI 글, 뒤 줄 붙인 말) · 네 칸 유도(`liteOf` :231 · `moreTalkFallbackOf` :186 · `moreChosenOf` :204 · `aiQuestionOf` :225) · 흘려 보낼 줄(`TalkLine` · `addLinesOf` :352 · `appendLinesFromText` :419) · 1~3단계 영어 빼기(`pendingViewOf` :466 · `hintViewsOf` :487) · 회화 턴 입력(`talkInputOf` :914 · `historyOf` :796 · `openingLineOf` :814 · `talkContextAt` :832 · `summariesBefore` :773) · '말함' 행(`writeSay` :992 · `metSayOf` :1069) · `reachTalkTarget`(:1111) · 이음매 `onTalkSessionEnded`(:1102, 빈 함수) |
+| `src/server/conversation/index.ts` | 신규 | 값 1: `loadTalkView`(:438, 처음 열 때 한 트랜잭션으로 처음 스냅숏 · 토리 행 1) · `readTalkSessionArea`(:544) · `saveFollowAlong`(:612) · `advanceTalk`(:777) · `chooseMoreTalk`(:896) · `stopTalk`(:1144) · `leaveTalk`(:1195) · `markTalkNotice`(:1246) · `revealTalkHint`(:1278) · 끝맺음 · 이음매 다시 내보냄 |
+| `src/server/conversation/turn.ts` | 신규 | 값 2: `runTalkTurnRequest`(:589) · 아이 행 칸 `childRowOf`(:179, 이름 묻기 턴 가림 `childTextOf` :161) · 결과 → 토리 행 순수 함수 `toriPlanOf`(:295) · 1~3단계 AI 질문 검사 재료 · `TALK_BREAK_LINE` |
+| `src/server/conversation/closing.ts` | 신규 | 값 3: 끝맺음 기록(attempts activity_no 0 · `talk-closing:<세션 id>`) 상태 `ClosingStateSchema`(대기 · 옴 · 못 함 · 건너뜀) · `insertClosingRecord`(:120) · `runTalkClosing`(:245, 잡기 · 미룸 · 요약 저장 · 지우기) · `talkClosingStatus`(:414) · `closeIdleTalks`(:476, (가) (나) (다)) · `safetyClosesOn`(:182) · `clearSentMessages`(:149) · `closeWithoutClosing`(:163) |
+| `src/server/actions/conversation.ts` | 신규 | 값 4: 액션 여덟(첫 문장 `await requireAccess()`, 끝맺음은 `after()`) |
+| `src/app/api/talk/turn/route.ts` | 신규 | 값 5: `POST` — 첫 문장 `requireAccess()` · 같은 출처 아니면 403 · 본문 4000자 넘으면 413 · NDJSON `ReadableStream`(줄마다 enqueue, 쓰기 실패 삼킴) · `dynamic = "force-dynamic"` · `maxDuration = 60` · `content-type: application/x-ndjson; charset=utf-8` · `cache-control: no-store` |
+| `src/server/session/index.ts` | 수정 +26 −13 | 값 6: `START_AREAS`(:85 — 회화 더함) · `startUnsafe` 회화는 AI 필요 판정을 `area === "talk" ||`(카드 `.content` 읽지 않음) · 세션 행 `talkSegment: "greeting"`(회화만) · 유일 색인 충돌 길의 `lesson.area !== "talk"` 지움 · `inProgressOf` 영역 형 `Area` · `readSessionPlace` 가 회화도 돌려주되 `completed` 는 회화면 늘 거짓(결과 쪽 없음 — 회16). 쓰기 둘째 세션 · feedback_pending · 되살림 길은 손대지 않음 |
+| `src/server/lesson-list/index.ts` | 수정 +2 −1 | 값 6: `readLessonList` 영역 형 `Exclude<Area,"talk">` → `Area` |
+| `tests/integration/conversation-session.test.ts` | 신규 | 통합 21 |
+| `tests/integration/conversation-turn.test.ts` | 신규 | 통합 11 |
+| `tests/integration/talk-fixture.ts` | 신규 | 두 통합 파일의 공용 바탕(시드 · 회화 1 · 4단계 수업 행 · 가짜 SSE 규칙 · 화면 흉내) |
+| `tests/unit/conversation-server.test.ts` | 신규 | 단위 19(순수 몫 — 로컬에서 도는 대조) |
+
+### 시험
+
+- 단위: 61 파일 · **631 통과 · 6 todo**(합침 ① 뒤 612 + conversation-server 19). `access-gate.test.ts` 11 통과 — 새 route.ts 처리기와 `'use server'` 액션 여덟을 허용 목록 없이 저절로 본다.
+- 통합(CI): plan 증명 표의 통합 이름 **32개 전부 글자 그대로**(스크립트 대조, 0 빠짐). conversation-session 21: AC-15c · AC-15f 넷 · AC-16b 둘 · AC-16c · AC-2c · AC-8c · '1-가 안전 상한(회화):' 셋 · '회화 세션:' 여덟. conversation-turn 11: AC-15b 넷 · AC-15i 셋 · AC-15j · AC-15k 둘 · AC-8b.
+- 단위 19(접두 '회화 서버:' · AC-15b · 15i · 15k · 16b 의 '(순수 몫)'): 원문 첫 줄 꼴 · moreChosen 1~3 / 4+ 규칙 · moreTalkFallback · aiQuestion 꼴 읽기 · 막힘 · 턴 차례 · 끝 아이 행 떼기 · 붙일 말 → 줄(again · two_answers · 칭찬은 s) · 저장 줄 다시 가르기 · 1~3단계 서버 자료에 아이가 말할 영어 없음 · 성공 / 끊김 / 첫 문장 전 실패(1~3 칭찬 · 4+ 쉼, 뜻은 koMeaning) / 거절 / 4단계 끊김 카드 번호 / AI 자리 검사 통과 · 걸림 되돌림 / 4단계 인사 토리 행 번호 비움 · 이름 묻기 턴 가림 · 끝맺음 상태 · 앞 턴 짝 · 바뀐 칸.
+- 순서: 계획대로 시험 먼저가 아니었다 — 서버 세 파일을 먼저 쓰고 단위 · 통합을 뒤에 썼다(통합을 로컬에서 빨강으로 볼 수 없어 길을 먼저 굳힌 뒤 손 대조로 맞춤). 단위 19 는 첫 실행에서 초록이었다.
+
+### b 에 넘긴 값 넷(a 보고 '요청 2')의 유도 규칙 — 구현함
+
+| 칸 | 저장 · 유도 | 자리 |
+|---|---|---|
+| cardQuestionNo | talk_turns.card_question_no 열 그대로. 4단계부터 AI 값, 첫 문장 뒤 끊김 · 거절은 앱이 붙인 카드 질문 번호(물음표 문장이 있으면 0), '더 이야기하기'는 앱이 붙인 번호. 1~3단계와 **인사 토막 토리 행은 비움**(대화 첫 질문 1번은 흐름이 스스로 넣음) | `state.ts liteOf` · `turn.ts toriPlanOf` · `index.ts chooseMoreTalk` |
+| moreTalkFallback | 토리 행 원문의 붙인 줄 가운데 카드 '더 이야기할 거리' 질문과 같은 줄의 차례(없으면 null). 흐름은 AI 자리에서만 쓴다 | `moreTalkFallbackOf` |
+| aiQuestion | talk_turns.ai_question jsonb(C101) — 1~3단계 AI 자리에서 `checkLowLevelAiQuestion` 을 지난 AI 질문만(영어 · 뜻 · 답 예시 · 뜻 힌트 · 영어 힌트 단). 이어 하기는 흐름이 이 칸으로 같은 질문을 다시 낸다 | `aiQuestionOf` · `toriPlanOf` |
+| moreChosen | 1~3단계: 원문 마지막 줄이 'Do you want to talk more?' 가 아니면 참. 4단계부터: AI 글 줄 뒤에 붙인 줄이 있고 그 마지막이 그 말이 아니면 참(N1 — 끊긴 목표 턴의 '더 이야기할래?'는 골랐음 아님). '더 이야기하기'를 고르면 앱이 그 토리 행 원문 · 다시 쓸 토리 차례에 다음 질문을 붙인다 | `moreChosenOf` · `chooseMoreTalk` |
+
+`aiQuestionSlot` 은 a `nextQuestionIsAi(args, 이번 입력)`(C100 · N2)로 채운다. `onSentence` 는 try 로 감싸 던지지 않는다(a2 M1).
+
+### 다르게 한 것(까닭)
+
+1. **파일 셋을 더했다.** `src/server/conversation/state.ts`(index · turn · closing 이 같이 쓰는 상태 읽기 · 유도 · '말함' 행 — 셋 사이 가져오기 순환을 없애려고, check:deps no-circular), `tests/integration/talk-fixture.ts`(두 통합 파일의 같은 준비), `tests/unit/conversation-server.test.ts`(통합을 로컬에서 못 돌려 순수 몫을 로컬에서 봄 — 차례 2 talk-stream-call 과 같은 까닭). plan 의 `reachTalkTarget` · `onTalkSessionEnded` 는 state.ts 에 두고 index.ts 가 다시 내보낸다.
+2. **1~3단계 서버 자료에 아이가 말할 영어를 넣지 않는다**(브리프 '서버 자료에도 글을 내려 주지 않게'). 끝 줄 · 화면 자료의 지금 질문은 답 예시 · 힌트 글을 빼고, 힌트 영어 단은 글 없이 종류 · 듣기 표시만 내린다. 연 단의 글은 새 액션 `revealTalkHint`(첫 문장 requireAccess)로 받는다 — plan 값 4 의 액션 목록에 없던 것이다. 토리가 읽어 주는 말(답 두 개 · '모름' 뒤 답 예시 + 같은 질문)은 읽어 주기에 글이 있어야 해서 `add` 줄에 든다(답 두 개는 글로 보이지 않는 칸 `answers`). 4단계부터는 그대로 내린다.
+3. **`ko` 줄은 토리 반응 뜻(tori_ko)만**, 붙인 카드 질문 뜻은 그 `add` 줄의 `ko` 로 낸다(plan 은 'tori_ko + 붙일 카드 질문 뜻'을 한 줄로 적음 — 같은 뜻을 두 번 보내지 않게).
+4. **'모름' 뒤 답 예시 + 같은 질문은 `add` 한 줄 `kind: "again"`(en = 답 예시 + 질문)**, 실패 길 칭찬 대사 · 거절 안전한 대사는 `{ t: "s" }`.
+5. **4단계부터 거절에도 카드 질문을 붙인다**(plan 은 1~3단계만). 안전한 대사에는 질문이 없어 아이가 답할 질문이 비므로, 끊긴 턴과 같은 규칙(물음표 문장이 없으면 아직 쓰지 않은 가장 앞 카드 질문 · 그 번호)을 썼다. 정본 8절 '대화가 이어진다'의 해석 — 정할 것 4.
+6. **AI 질문 검사의 어휘 원형을 그 단계 이하 vocab 전체 활용형으로 넓혔다**(`aiQuestionCheckOf`). 단원 단어 원형 표만으로는 기능어 활용형(is → be)이 범위 밖으로 걸린다(a 정할 것 5 의 '활용형'과 같은 뜻). 형태 표는 저장소 `seed/lists/forms.json`(rst 차례 · 그 단계 앞 단원까지)로, 읽지 못하면 AI 질문을 쓰지 않는다.
+7. **대화 안전 상한의 '그 학습일 닿은 수'는 끝맺음 기록 시도 행의 입력 칸 `{ kind: "talk-closing", reason: "safety" }` 으로 센다**(`safetyClosesOn` — 닫은 까닭을 둘 다른 자리가 없음). 끝맺음 기록 입력은 a 시도 꼴(`TalkAttemptInputSchema`) 밖이라 closing.ts 의 자체 꼴로 읽는다.
+8. **목표 턴 전에 대화 안전 상한 · (있을 수 없지만) 1-가 상한 닫힘에 닿으면 중단(aborted) + 학습일 + 이음매**로 둔다. 회화 수업 모델 5 표는 '대화 안전 상한 | completed'만 적었다('모름'이 많으면 목표 턴 전에도 아이 턴 80 에 닿을 수 있음).
+9. **끝맺음 실패 셈**: 하루 안전 상한만 셈에서 빼고 설정 문제(키 없음)도 센다 — 셈하지 않으면 키 없는 프리뷰에서 대기가 영영 남아 보낸 메시지를 지우지 못한다. 두 번이면 못 함(`CLOSING_FAILURES_TO_GIVE_UP` 2 — 8절 고정 수, 12절 키 아님).
+10. **'바뀐 턴에만 넣는 값'의 앞 값**은 저장 칸이 없어 다시 셈한다: 만난 단어는 처음 스냅숏 + 오늘 쓸 말(대화 토막부터) + 그 자리까지 토리 말에서 찾은 단원 단어, 미션은 그 자리까지 미션 체크. 아직 '안다'가 아닌 단어 · 새 단어 · 친한 정도는 지금 값을 앞 값에도 써서 대화 안에서 바뀌어도 넣지 않는다 — 정할 것 2.
+11. **같은 시도 id 다시 흘림**: 그 토리 행이 마지막 행일 때만 다시 흘리고(첫 줄 = 문장, 붙인 줄은 지금 질문 · 카드로 갈래를 다시 가름), 그 뒤 행이 더 있으면 stale. 저장 칸에 토리 반응 뜻(tori_ko)이 없어 다시 흘릴 때 · 이어 할 때 반응 뜻은 없다 — 정할 것 3.
+12. **이음매 `onTalkSessionEnded` 부르는 자리**: 목표 턴 닿음(`reachTalkTarget`), 목표 턴 전 '그만하기' · 안전 상한 닫힘(같은 트랜잭션), 다른 수업 고르기 · 시간 지남으로 닫힌 회화는 홈 진입 정리 (다)가 부르고 건너뜀 기록을 남겨 두 번 부르지 않는다(P10 파일 손대지 않음).
+13. 통합 시험은 쓰기 6단계 첨삭 시험 꼴로 시험용 시드를 넣고 회화 1 · 4단계 단원 1 카드(같은 시드 나무 규격의 `talkUnitCards`)를 수업 행으로 더한다. 가짜 규칙은 사용자 메시지 줄 `\nClosing: no|yes`(JSON 본문 글)로 가른다 — 고정부의 'Closing: yes' 설명 글과 겹치지 않게.
+
+### 정할 것(컨트롤러)
+
+1. (회16 연장) `readSessionPlace` 는 회화 세션을 `{ area: "talk", completed: false }` 로 돌려 지금 쪽이 `/talk/lessons` 로 보낸다(결과 쪽으로 가지 않음). 열린 회화를 회화 틀로 그리는 갈래(`readTalkSessionArea` → `loadTalkView`)는 차례 5 의 쪽 고침이다.
+2. 바뀐 턴 칸 가운데 '안다'가 아닌 단어 · 친한 정도가 대화 안에서 바뀐 것은 넣지 않는다(다른 까닭 10). 넣으려면 아이 행에 보낸 칸 값을 남길 자리(열)가 있어야 한다.
+3. 이어 할 때 · 같은 시도 id 다시 흘릴 때 1~3단계 토리 반응 뜻이 없다(저장 칸 없음). 뜻을 다시 보이려면 talk_turns 에 열 하나가 필요하다(13절 한 줄).
+4. 4단계부터 거절 턴의 카드 질문 붙임(다른 까닭 5) — 8절 해석 확인.
+5. 4단계부터 '더 이야기하기'에서 카드 질문을 다 썼으면 가장 적게 쓴 번호(같으면 앞)를 다시 붙인다(`moreQuestionNoOf`) — 정본에 그 경우가 없다.
+6. `advanceTalk` 는 오늘 쓸 말 · 말해 보기를 다 따라 말했는지 보지 않고 차례만 본다(인식 실패 건너뜀 · 마이크 막힘이 화면 몫이라).
+7. 끝맺음 기록 입력 칸(`kind: "talk-closing"`, reason)을 a 시도 꼴에 넣을지 — 지금은 closing.ts 만 읽는다.
+
+### 남은 우려
+
+- **같은 기기가 같은 시도 id 를 겹쳐 보내면(첫 요청이 아직 AI 를 기다리는 중 재시도) AI 가 두 번 불릴 수 있다.** 마지막 저장 트랜잭션이 토리 행 n+1 이 이미 있으면 넣지 않아 대화는 하나로 남지만 호출 · 비용은 둘이다. 두 기기(다른 시도 id)는 세션 행 FOR UPDATE + 끝 아이 행 확인으로 하나만 받는다. 세션 행 잠금을 AI 호출 동안 쥐지 않은 까닭: 5절 '아이 말은 보내기 전에 저장'과 Supabase 연결 풀.
+- 통합 32 는 로컬에서 한 번도 돌지 않았다 — 손으로 길을 따라 대조했다(가짜 규칙 소비 차례 · 세션 상태 표 · 끊김 글자 수 · 1단계 어휘 범위 · 형태 표). 첫 CI 에서 빨강이 나올 수 있는 자리: 견본 카드의 '모름'/질문 흐름 턴 수(1단계 목표 15 · 더 이야기할 거리 2), `cutAfterChars`(22 · 28) 문장 경계, 1단계 AI 질문 'What is it?' · 'It is <단원 단어>.' 의 어휘 · 형태 검사, 1-가 상한 프로필 설정 행.
+- `check:ids` 설계 숫자 보고에 새 줄 하나: `route.ts:13 maxDuration = 60`(Next 가 정적 글자만 받는 구간 설정이라 설정값으로 못 읽음 — 기술 값 주석). 보고 전체 37(합침 ① 뒤 바탕 포함), 설정 키 위반 0.
+- 4단계부터 AI 힌트는 저장하지 않아 이어 할 때 카드 힌트로 바뀐다(plan 위험 12 받아들임).
+- 홈 진입 정리(`closeIdleTalks`)를 홈 쪽 `after()` 에 거는 한 줄은 plan 값 12(차례 6)라 이번에 넣지 않았다 — 그 전까지 미룬 끝맺음 · 시간 지난 대화 정리는 돌지 않는다.
+
+### 관문(워크트리 p13, Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (356 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 61 파일 · 631 통과 · 6 todo
+pnpm build                             → exit 0 (/api/talk/turn ƒ 동적)
+pnpm check:deps                        → no dependency violations (183 modules)
+pnpm check:ids                         → exit 0(보고만) · 설정 키 위반 0 · design-number 37(새 줄 route.ts:13 하나)
+pnpm check:bundle                      → 위반 0 (파일 232 · 화면 파일 20)
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0 (missing-test 는 P12 몫 보고만)
+pnpm vitest run --project integration … → 로컬 불가(embedded-postgres), CI 몫
+```
+
+## fix round 1 (2026-10-22 21:0x) — 차례 4 코드 검토 b1(I 3 · M 9) + 컨트롤러 결정 둘
+
+브리프 `task-p13-fix1.md`, 검토 `review-p13-4-code.md`. 워크트리 p13 작업 트리, 커밋하지 않았다. 순서: I-1 · I-2(와 M-1) 통합 시험을 먼저 더한 상태에서 '빨강 확인 요청'을 SendMessage 로 보내고(20:4x), 기다리지 않고 고침으로 이어 갔다. 통합은 여전히 CI 몫이다.
+
+| 지적 | 어떻게 고쳤나 | 덮는 시험 |
+|---|---|---|
+| 결정 1(C103) | `talk_turns.tori_ko text`(비울 수 있음). 0003 을 지우고(`_journal` idx 3 · sql · 스냅숏) 다시 만들었다 — `drizzle/0003_talk_ai_question_tori_ko_stories_by_band.sql` 한 파일에 ADD COLUMN 셋. 턴 길은 1~3단계(카드 턴 꼴)에서만 반응 뜻을 저장하고(`turn.ts` ToriPlan `toriKo`), 이어 하기 화면 자료 `lastTori.ko` · 같은 시도 id 다시 흘림 `{ t: "ko" }` 로 다시 낸다 | 단위 '회화 서버: 토리 반응 뜻은 1~3단계만 저장 재료가 되고 4단계부터는 비운다(C103)' · 통합 AC-15f 이어 하기(`lastTori.ko` "좋아!") · AC-15f 고아 아이 행(4단계 `tori_ko` null · `lastTori.ko` 없음) |
+| 결정 2(정할 것 7) | a `TalkAttemptInputSchema` 에 `{ v, kind: "talk-closing", step: "final", reason }` 갈래와 `TALK_CLOSING_REASONS` 를 더했다(`src/core/conversation/attempt.ts`). closing.ts 는 그 꼴로 쓰고(`insertClosingRecord`) `parseTalkAttemptInput` 으로 센다(`safetyClosesOn`). 자체 꼴 `ClosingInputSchema` 는 지웠다 | 단위 '회화 서버: 끝맺음 기록 입력은 a 시도 꼴의 talk-closing 갈래(닫힌 까닭)로 읽고 모르는 까닭은 받지 않는다' |
+| I-1 | `src/server/writing/composition.ts`: `retryPendingFeedback` 고르기에 `sessions.area = 'writing'` · `attempts.input->>'kind' = 'draft'`, `runFeedback` 은 **잡기 UPDATE 전에** 영역 쓰기 · 입력 종류 draft 를 본다(아니면 거짓, claimedAt 안 씀) | 통합(먼저) '회화 세션: 회화 끝맺음 대기 둘이 있어도 홈 진입 밀린 첨삭은 쓰기 초고만 부르고 끝맺음 claimedAt 은 그대로다' — 끝맺음 대기 둘(더 오래됨) + 쓰기 대기 초고 하나 → 끝맺음 요청 0 · 두 기록 ai_feedback 그대로 · 초고 실패 수 1(견본이 첨삭 꼴이 아니라 실패로 셈) · 뒤이어 홈 진입 정리가 끝맺음 둘을 부름 |
+| I-2 | `saveFollowAlong`: 중단 세션은 정리 토막(`wrap_up`)일 때만 받고, 다른 수업 고르기 · 시간 지남으로 중단된 회화(토막 그대로)는 지금처럼 not_found | 통합(먼저) '회화 세션: 목표 턴 전 그만하기 뒤 정리 따라 말하기는 attempts 에 남고 영어로 말한 문장 수가 는다' |
+| I-3 | 붙일 말 줄 꼴을 나눴다(`state.ts` `AddLineOut`): `{ t: "add", kind: "again", say: <답 예시>, en?: <같은 질문>, ko? }` · `{ t: "add", kind: "two_answers", answers: [a, b] }`(en 없음 — 'Or' 이음은 화면 공용 `twoAnswersLine`) · question · more_prompt 는 그대로. say · answers 는 읽어 주기 재료이고 1~3단계 화면에서 글로 보이지 않는다는 것을 형 주석으로 적었다. 이어 하기 · 다시 흘림도 같은 함수(`addLinesOf`)라 같은 꼴. 저장 원문 · 다시 쓸 토리 차례는 그대로 | 단위 '회화 서버: 1~3단계 '모름' 뒤 붙일 말 줄의 글 칸(en)에는 답 예시가 없고 읽어 주기 칸(say)에만 있다' · 줄 꼴 시험 이름 고침('… 답 예시는 again 의 읽어 주기 칸 say 로, 답 두 개는 two_answers 의 answers 로만 낸다') |
+| M-1 | 같은 시도 id 의 고아 아이 행이 `TURN_IN_FLIGHT_MS`(60초 — 라우트 maxDuration 과 같은 기술 값, 라우트가 정적 글자만 받아 따로 둠) 안이고 그 뒤 그 세션 talk_turn ai_calls 행이 없으면 AI 대신 `{ t: "stale" }`(새 줄 종류 없음). 4단계 'Oops' 뒤 다시 보냄(실패 시도 행이 있음) · 다음 학습일 같은 시도 id(시간 지남)는 그대로 돈다 | 통합 '회화 세션: 같은 시도 id 를 겹쳐 보내면 둘째 요청은 AI 를 부르지 않고 다시 읽으라는 답을 받는다'(지연 가짜 · 회화 턴 요청 1) |
+| M-2 | 형태 표 읽기 실패에 오류 이름 로그. 검사 재료(형태 표 · 그 단계 vocab)는 성공 턴이고 다음 자리가 1~3단계 AI 자리일 때만 읽는다 | 기존 AC-15i 통합 · 단위 AI 자리 시험 그대로 |
+| M-3 | `content-length` 가 상한을 넘으면 본문을 읽기 전에 413(읽은 뒤 글자 수 확인도 그대로) | 단위 `tests/unit/talk-turn-route.test.ts` 셋(403 · 머리글 413 + 본문 안 읽음 · 400) |
+| M-4 | 라우트를 `TransformStream` 으로 바꾸고 턴 길 약속을 `after(done)` 으로 넘긴다(응답 스트림이 끊겨도 저장이 함수 수명 안에서) — 쓰기 실패는 삼킴 그대로 | 실기는 차례 11 |
+| M-5 | `closeIdleTalks` (가)는 `talk_segment` 비었거나 ≠ wrap_up · 컷오프 뒤 턴 NOT EXISTS, (다)는 끝맺음 기록 NOT EXISTS, (나)는 대기 기록을 SQL 로 골라 오래된 차례로 | 기존 통합 그대로(AC-15f 둘 · 1-가 셋 · I-1 시험 끝 단언) |
+| M-6 | (1) 따라 말하기 시험 앞에 인사 '모름' 턴을 더해 영어로 말한 문장 수 0 단언. (2) AC-15j 는 `max - 1 - card.greetingTurns`, AC-15k 는 `safeLineOf(card.safeLines, 1)`(문장 검사의 차례 — 앞 턴 짝 0 + 1), 거절 시험은 `safeLineOf(card.safeLines, 아이 턴 번호)` | — |
+| M-7 | `toriPlanOf` 거절 대사를 `safeLineOf(card.safeLines, turnNo)` 하나로(뜻은 같은 줄의 ko) | 단위 거절 시험이 safeLineOf 로 기대 |
+| M-8 | 주석 '회화 트랙' → '회화 영역 행'(index · state) | — |
+| M-9 | C107 그대로(코드 쪽이 정본). AC-15j 통합에 닫힌 세션 `status` 중단 · 학습일 단언 | 통합 AC-15j |
+
+### 바뀐 파일(fix 1)
+
+`src/core/conversation/attempt.ts`(갈래 하나) · `src/db/schema/learning.ts`(`toriKo`) · `drizzle/0003_talk_ai_question_tori_ko_stories_by_band.sql` · `drizzle/meta/0003_snapshot.json` · `drizzle/meta/_journal.json`(옛 0003 셋 지움) · `src/server/writing/composition.ts`(I-1, P11 파일 — 합침 ② 때 손 맞춤 한 자리) · `src/server/conversation/{state,index,turn,closing}.ts` · `src/app/api/talk/turn/route.ts` · `tests/unit/conversation-server.test.ts` · 새 `tests/unit/talk-turn-route.test.ts` · `tests/integration/conversation-{session,turn}.test.ts`.
+
+### 시험 수
+
+- 단위 62 파일 · **637 통과 · 6 todo**(차례 4 의 631 + conversation-server 3 + talk-turn-route 3).
+- 통합(CI): conversation-session **24**(21 + I-1 · I-2 · M-1), conversation-turn 11(단언 보강). plan 증명 표 이름 32 는 그대로 있다.
+
+### 다르게 한 것
+
+1. I-1 시험의 쓰기 대기 초고는 시험용 시드의 1단계 쓰기 수업 행에 넣은 첫 세션 · 초고 끝 시도(첨삭 꼴이 아닌 수업)다 — 첨삭은 부르지 않고 실패 하나로 센다. '쓰기 초고만 부른다'는 그 실패 수 1 로 단언하고, 끝맺음 쪽은 요청 0 · ai_feedback 그대로로 단언한다.
+2. M-1 시험은 고정 시계라 앞 턴 호출 기록과 같은 시각이 되지 않게 시계를 한 칸(1분) 옮긴다. 판정은 '그 시각 이후 호출 기록'(`calledAt ≥ 아이 행 recorded_at`)이라 실제 시계에서는 늘 뒤다.
+3. M-4 는 `ReadableStream` start 안에서 기다리던 꼴을 `TransformStream` 쓰기 쪽 + `after(done)` 으로 바꿨다(약속을 응답 전에 만들어 after 에 넘기려고).
+4. I-3 의 `again` 은 AI 자리에서 질문 글이 없을 때 `en` 이 빈다(선택 칸) — 그 밖은 늘 질문이 있다.
+
+### 관문(워크트리 p13, Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (357 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 62 파일 · 637 통과 · 6 todo
+pnpm build                             → exit 0 (/api/talk/turn ƒ)
+pnpm check:deps                        → no dependency violations (183 modules)
+pnpm check:ids                         → exit 0(보고만) · 설정 키 위반 0 · design-number 37(새 줄 없음 — route.ts:13 그대로)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+통합                                   → 로컬 불가, CI 몫(시험만 든 스냅숏은 20:4x 에 알림)
+```
+
+남은 우려: 통합의 새 셋은 로컬에서 빨강 · 초록을 본 적이 없다(CI 두 스냅숏 몫). I-1 고침은 P11 파일이라 P11 가지 쪽 시험(writing-feedback 의 밀린 첨삭)이 영역 · 종류 조건으로도 그대로인지 CI 에서 함께 본다.
