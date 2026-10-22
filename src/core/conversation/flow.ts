@@ -273,7 +273,8 @@ export type TalkTurnLite =
       moreTalkFallback: number | null;
       /**
        * 1~3단계: 이 토리 행이 붙인 AI 질문(검사를 지난 것 — 영어 · 뜻 · 답 예시, 있으면 힌트). '모름'이면 같은 질문을 다시 붙이는 재료다
-       * (fix 1 M3). 없으면 null. 채우는 것은 b(토리 행 저장 때 붙인 말에서).
+       * (fix 1 M3). 없으면 null. 저장 자리는 talk_turns 토리 행의 `ai_question` jsonb 열(13절 C101 — 마이그레이션은 b 차례 4, C98 열과
+       * 함께)이고 b 가 그 열을 이 칸으로 읽는다. '다시 쓸 토리 차례'(화면에 보인 영어 글 — 6.1 · AC-15k)에는 넣지 않는다.
        */
       aiQuestion: AiQuestionLite | null;
       /**
@@ -741,6 +742,8 @@ export function talkPositionOf({
  */
 export function nextQuestionIsAi(
   args: Parameters<typeof talkPositionOf>[0],
+  /** 이번에 보낼 입력. '모름'이면 같은 질문을 다시 묻는 턴이라 talk.dontknow_max 번째가 아니면 AI 자리가 아니다(fix 2 N2). */
+  input: TalkInputMode = "speech",
 ): boolean {
   if (!isTurns(args.spec)) return false;
   const now = talkPositionOf(args);
@@ -752,13 +755,18 @@ export function nextQuestionIsAi(
       {
         speaker: "child",
         segment: args.segment === "more_talk" ? "more_talk" : "talk",
-        input: "speech",
+        input,
         stuck: false,
         targets: now.pending.targets,
       },
     ],
   });
-  return !after.awaitingChoice && after.pending?.source === "ai_more_talk";
+  // 같은 질문을 다시 묻는 자리('모름' 수가 남음)는 새 AI 질문을 쓰지 않는다
+  return (
+    !after.awaitingChoice &&
+    after.dontKnowCount === 0 &&
+    after.pending?.source === "ai_more_talk"
+  );
 }
 
 /**
@@ -856,8 +864,15 @@ export function appendAfter({
   ai?: { en: string; ko: string; answerExample: string } | null;
 }): AppendLine[] {
   const ko = spec.koMeaning;
+  const morePrompt: AppendLine = {
+    kind: "more_prompt",
+    en: MORE_PROMPT.en,
+    ...(ko ? { ko: MORE_PROMPT.ko } : {}),
+  };
   if (!isTurns(spec)) {
     if (outcome !== "cut" || sentHasQuestion) return [];
+    // 고르기 차례면 카드 질문 대신 '더 이야기할래?'(3.3 — 끊긴 턴의 카드 질문은 고르기 차례가 아닌 턴의 규칙, fix 2 N1)
+    if (after.awaitingChoice) return [morePrompt];
     const no = nextUnusedQuestionNo(after, card);
     const q = no === null ? undefined : card.questions?.[no - 1];
     if (!q) return [];
@@ -868,11 +883,7 @@ export function appendAfter({
       ? [{ kind: "praise", en: praiseLineOf(card, turnNo) }]
       : [];
   if (after.awaitingChoice) {
-    lines.push({
-      kind: "more_prompt",
-      en: MORE_PROMPT.en,
-      ...(ko ? { ko: MORE_PROMPT.ko } : {}),
-    });
+    lines.push(morePrompt);
     return lines;
   }
   let q = after.pending;

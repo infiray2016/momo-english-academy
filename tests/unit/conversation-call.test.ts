@@ -56,7 +56,7 @@ const FORMS: FormEntry[] = ListFormsFileSchema.parse(
     readFileSync(join(process.cwd(), "seed/lists/forms.json"), "utf8"),
   ),
 ).forms;
-const SAMPLES = join(process.cwd(), "tests/fixtures/ai/samples/talk");
+const SAMPLES = join(process.cwd(), "tests/fixtures/ai/samples");
 const ref = smallReferenceSet();
 const book = new Map(
   MODEL_PRICES_FIXTURE.models.map((m) => [

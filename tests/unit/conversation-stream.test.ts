@@ -1,6 +1,6 @@
 // 회화 턴 흘려 받기(plan-p13a 파일별 값 2 · 정할 것 회8, 6.2 끝 문단 · 6.4 실시간 출력 검사 · 8절 회화 턴 실패 · C92 · C95).
 // tori_en 조각 풀기 · 문장 끝 · 문장 검사 · 걸린 문장 바꾸기 · 시도 다음 할 일. 실제 API 를 부르지 않는다.
-// 금지어 · 메타 문장은 시드 목록(seed/lists) 그대로, 견본 응답은 tests/fixtures/ai/samples/talk 에서 읽는다.
+// 금지어 · 메타 문장은 시드 목록(seed/lists) 그대로, 견본 응답은 tests/fixtures/ai/samples 에서 읽는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -29,7 +29,7 @@ const META = MetaSentencesFileSchema.parse(
     readFileSync(join(process.cwd(), "seed/lists/meta-sentences.json"), "utf8"),
   ),
 ).phrases;
-const SAMPLES = join(process.cwd(), "tests/fixtures/ai/samples/talk");
+const SAMPLES = join(process.cwd(), "tests/fixtures/ai/samples");
 
 type TalkSample = {
   case: string;

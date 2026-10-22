@@ -693,6 +693,80 @@ describe("회화 흐름: 질문 차례 · '모름' · 목표 턴(C36 · C30)", (
     }
   });
 
+  it("회화 흐름: 4단계부터 목표 턴이 첫 문장 뒤 끊기면 카드 질문 대신 'Do you want to talk more?'를 붙여 고르기를 연다", () => {
+    const card = lessonAt(4).card;
+    const spec = specOf(4);
+    const rows: TalkTurnLite[] = [
+      tori(),
+      kid("greeting_end"),
+      tori({ cardQuestionNo: 0 }),
+    ];
+    for (let i = 1; i < spec.targetTurns; i++)
+      rows.push(kid("talk"), tori({ cardQuestionNo: 0 }));
+    // 목표 턴에 닿은 아이 행 바로 뒤(토리 행 저장 전)
+    rows.pop();
+    const after = talkPositionOf({
+      spec,
+      card,
+      metBefore: [],
+      turns: rows,
+      segment: "talk",
+      settings: FLOW,
+    });
+    expect(after.awaitingChoice).toBe(true);
+    expect(
+      appendAfter({
+        spec,
+        card,
+        after,
+        outcome: "cut",
+        turnNo: spec.targetTurns,
+        sentHasQuestion: false,
+      }),
+    ).toEqual([
+      { kind: "more_prompt", en: MORE_PROMPT.en, ko: MORE_PROMPT.ko },
+    ]);
+    // AI 가 끊기기 전에 이미 물었으면 붙이지 않는다
+    expect(
+      appendAfter({
+        spec,
+        card,
+        after,
+        outcome: "cut",
+        turnNo: spec.targetTurns,
+        sentHasQuestion: true,
+      }),
+    ).toEqual([]);
+    // 5단계부터는 뜻을 붙이지 않는다
+    const five = specOf(5);
+    expect(
+      appendAfter({
+        spec: five,
+        card: lessonAt(5).card,
+        after,
+        outcome: "cut",
+        turnNo: 1,
+        sentHasQuestion: false,
+      }),
+    ).toEqual([{ kind: "more_prompt", en: MORE_PROMPT.en }]);
+  });
+
+  it("회화 흐름: '모름'을 보낼 턴은 AI 자리가 아니고 talk.dontknow_max 번째 '모름'으로 다음이 AI 자리면 AI 자리다", () => {
+    const card = lessonAt(1).card;
+    const more = card.moreTalk ?? [];
+    const talk = conversation(1, card);
+    for (let i = 0; i < talk.spec.targetTurns; i++) talk.say();
+    talk.chooseMore();
+    for (let m = 0; m < more.length; m++) talk.say();
+    // 지금 AI 자리 질문 — 말로 답하면 다음도 AI 자리, '모름'이면 같은 질문을 다시 묻는다
+    expect(talk.position().pending?.source).toBe("ai_more_talk");
+    expect(nextQuestionIsAi(talk.args(), "speech")).toBe(true);
+    expect(nextQuestionIsAi(talk.args(), "dont_know")).toBe(false);
+    for (let i = 1; i < FLOW.dontknowMax; i++) talk.say("dont_know");
+    expect(talk.position().dontKnowCount).toBe(FLOW.dontknowMax - 1);
+    expect(nextQuestionIsAi(talk.args(), "dont_know")).toBe(true);
+  });
+
   it("회화 흐름: 4단계부터 이어 묻는 질문이 노린 단어를 뒤 카드 질문이 노리면 다시 묻는 턴이다", () => {
     const card = lessonAt(4).card;
     const spec = specOf(4);
