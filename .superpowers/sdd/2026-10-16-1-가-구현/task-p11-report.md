@@ -471,3 +471,104 @@ CI 8차: (컨트롤러 결과 대기)
 - **1-나:** 부모 화면이 `speech_silent` · `mic_*` 알림과 `sessions.english_sentences` 를 읽음. '이 문제 이상해요' 자리. 'AI 쉬는 중' 상태가 말하기 3~8 질문 답을 건너뛰는 길(c 와 함께).
 - **공용 변경 2(컨트롤러):** 개발용 DB 둘에 P11 설정 키(차례 2 다르게 한 것 11 — 읽기 · 쓰기 세션도 음성 · 말하기 설정을 읽음).
 - **실기(H2 · 차례 11):** iPad Safari 에서 저절로 읽기(unlockFromGesture) · 결과 말 · 끝 조용함 · 마이크 안내를 요청자가 직접 확인.
+
+## 차례 5 — AI 길 · 쓰기 4~5 확인(검토 묶음 B1, implementer impl-p11b, 2026-10-22 14:0x)
+
+바탕 HEAD 79ee1cc(차례 4 커밋), 커밋 · stash · push 없음. 통합 · e2e 는 이 Mac 에서 돌리지 않았다(가정 (다)) — CI 로.
+
+### 바뀐 파일
+
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `playwright.config.ts` | 수정 · **공용 변경 1(C81)** | `E2E_AI_PORT` 54349(25) · `E2E_FAKE_AI_KEY` "e2e-fake-key"(27) · webServer 둘째 `fake-ai`(DB 다음 · Next 앞, 준비 줄 `FAKE_AI_READY`, SIGTERM) · Next env 에 `ANTHROPIC_BASE_URL` · `ANTHROPIC_API_KEY`, `VERCEL_ENV` 를 지움(P9a `clientOptionsOf` 가 그때만 SDK 에 주소를 맡김) |
+| `tests/e2e/fake-ai-server.ts` | 신규 | P9a `startFakeAnthropicServer` 를 `--port` 로 띄우고 `FAKE_AI_READY` 를 낸다(설정이 이 상수를 가져감 — 글자 한 벌). 직접 실행 판정은 dev-db 꼴(import.meta 없음) |
+| `tests/e2e/fake-ai.ts` | 신규 | 값 8 — `resetFakeAi` · `pushFakeAi` · `fakeAiRequests` · `fakeAiRequestsOf(목적)` · `writingCheckReply({ correct, fix?, delayMs? })` · `ruleFor` · `FAKE_PRAISE`. 모델은 `TEST_SETTINGS` |
+| `src/core/session/attempt.ts` | 수정 | 값 4 — b 종류(writing-task · writing-guided 진행/끝 · writing-guided-fix 진행 · writing-own-repeat · thinkout 진행/끝(step 판별 합) · draft · feedback-praise · feedback-correction · model-answer · rewrite · own-speak, 58~116) · `INPUT_VERSION` 내보냄(25) · `inputFitsActivity`(고친 문장 진행 시도는 쓰기 문장 활동의 것, 156) · `serverActionOnly`(169) · `aiNeededLesson`(187) · `appActivityResult` 의 b 종류는 점수 없음(끝) |
+| `src/core/writing/guided.ts` | 신규 · **계획 표 밖** | `frameParts` · `frameBlanks` · `assembleSentence` · `fixSpotOf` · `applyFix` — 화면 · 서버가 같은 함수로 문장을 만들고 고칠 곳 자리를 찾는다(단위 시험) |
+| `src/server/session/ai-context.ts` | 신규 | 값 1 — `levelContextOf`(28): 단계 규격 can-do · sentenceMaxWords, 단원 규격 학습 요소 · targetVocab, 앞 단원(앞 단계 1~5 + 같은 단계 앞, 단원 0 뺌)을 `pickByCell` 로, 없는 칸은 `LevelContextError` |
+| `src/server/session/ai-gate.ts` | 신규 | 값 2 — `aiRestingToday`(25) = `preCallGate(dailyUsage(…))` 막힘 |
+| `src/server/writing/index.ts` | 신규 | 값 3 공통 + `checkGuided`(132): 같은 시도 id · 같은 활동 끝 시도면 저장 결과, 진행 중 쓰기 세션 · 쓰기 문장 활동 · 문장 수 확인, `checkWriting`(가변부 `levelContextOf`), 성공 → 시도 `{ ai_feedback: { state: "ok", value }, score: cleanSentenceRate }`, 실패 → `{ state: "failed", reason }` · `skipped`, 안전 상한 → 시도 없이 `ai_resting`, DB 실패 → `unavailable`. 고칠 곳 보기 = 바른 표현 + 헷갈리는 보기를 시도 id 로 정한 차례(`rotationOf`), 아이 문장에서 자리를 못 찾는 고칠 곳은 내지 않음 |
+| `src/server/actions/writing.ts` | 신규 | `checkGuidedWriting` — 첫 문장 `await requireAccess()` |
+| `src/server/session/index.ts` | 수정 | 값 9 — 시작: 잠금 전에 `aiNeededLesson` · `aiRestingToday`(434), 하던 수업(resume)은 그대로 열고 새로 여는 수업은 확인 쪽지 · 중단 전에 `{ ok: false, reason: "ai_resting" }`(462). 대기열 길 `needsAiPath` 가 `serverActionOnly` 를 거부(339). 화면 자료 `aiResting`(1085) · `guided: { input(단계 규격 amount.input), sentences(확인 끝 시도 문장, 고친 문장 진행 시도가 있으면 가장 늦은 것) }`(`guidedViewOf` 907). `SpecBits.amount` |
+| `src/components/session/wait-hint.tsx` | 신규 | 값 6 — `WaitHint`: 그리는 즉시 점 셋(`data-wait-hint`, motion-reduce 멈춤), 둘째 값 뒤 '확인하고 있어요'(`data-wait-line`) |
+| `src/components/session/ai-rest.tsx` | 신규 | C50 (2) — '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요' + '홈'(onHome 이면 단추, 없으면 링크) |
+| `src/components/session/writing-guided.tsx` | 신규 | 값 7 — `GuidedTaskActivity`(P5b 과제 · 예시 + 4단계 '단어 상자' 칩 + '다음') · `GuidedWritingActivity`(문장 전부 한 화면, 4단계 누르는 빈칸 + 문장마다 단어 상자 칩 · 5단계 입력란(autoComplete · autoCorrect · autoCapitalize off · spellCheck false · lang en), '다 썼어요' → WaitHint → 같은 화면에 칭찬 한 줄 · 고칠 곳 색칠 · '색칠한 곳을 눌러 고쳐 봐요' → '알맞은 말을 골라요' 보기 → 틀리면 ✕ · '다시 골라 볼까요' → '잘 고쳤어요!' → '다음'; skipped 면 바로 다음, 끊김이면 7절 안내 · online 때 같은 시도 id 로 다시) · `OwnRepeatActivity`(문장마다 a `RepeatActivity`, '건너뛰기', 마이크 막힘이면 이 활동만 건너뜀) |
+| `src/components/session/speaking.tsx` | 수정 | `RepeatActivity` 선택 속성 `guide` · `ringGapClassName`(쓰기 카드 하늘 틈). **N-1**: '같이 말해 볼까요' 바른 답 36px |
+| `src/app/(child)/session/[id]/session-frame.tsx` | 수정 | 쓰기 과제 · 문장 · 내 문장 조각 연결(문장 활동 끝 시도는 서버 액션이 저장 — `advance()` 로 대기열 없이 다음, 고친 문장은 `writing-guided-fix` 진행 시도), 내 문장 활동은 마이크를 쓸 수 없으면 `skipped: "no_mic"` · 문장이 없으면 빈 끝 시도(405), 처음 마이크 안내를 쓰기에도, 안전 상한 안내(`resting` — 열 때 `view.aiResting` · 도중 서버 액션, 789), '홈'은 안내 중 세션을 지우지 않음(542). **M-2**: 막힌 안내 · 안전 상한 안내가 끝내기 실패보다 먼저(`stopped` · `showFinishRetry`, 813) |
+| `src/app/(child)/[area]/lessons/use-lesson-start.ts` | 수정 · **계획 표 밖 차례(plan 표는 B3)** | `ai_resting` 이면 `resting` 을 켬 |
+| `src/app/(child)/[area]/lessons/lesson-board.tsx` · `past/past-lessons.tsx` · `src/app/(child)/result/[id]/result-view.tsx` | 수정 · **계획 표 밖(앞 둘은 B3 몫을 당김)** | `resting` 이면 `AiRest`(목록은 띠 '홈'을 빼고 안내 + '홈' 하나, 결과 화면은 큰 단추 자리에 안내 · 띠 '홈' 숨김) |
+| `tests/e2e/lessons.ts` | 수정 | `guidedSample(4 | 5)`(견본 4단계, 5단계는 복제) · `openLessonSession`(writing.spec 의 openSession 을 옮김) |
+| `tests/unit/session-attempt.test.ts` | 수정 | 넷 더함(아래) |
+| `tests/unit/writing-guided.test.ts` | 신규 · 계획 표 밖 | 둘 |
+| `tests/integration/writing-check.test.ts` | 신규 | 증명 표 셋(이름 글자 그대로) |
+| `tests/integration/safety-cap.test.ts` | 수정 | 아래 describe '1-가 안전 상한' 둘(위 AC-8b 다섯은 그대로 — 시드 DB 를 따로 만듦) |
+| `tests/e2e/writing.spec.ts` | 수정 | 쓰기 4~5 e2e · 1-가 안전 상한 e2e(이름 글자 그대로), `beforeEach`/`afterEach(resetFakeAi)` |
+| `tests/e2e/timeout.spec.ts` | 신규 | AC-N10 · AC-N6(이름 글자 그대로) |
+| `tests/e2e/speaking.spec.ts` | 수정 | **재검토 코드 M-1**: (가) AC-5c 끝에 '쓸 수 없음' 기기로 새 세션을 열자마자 막힘 → '홈' → 시도 0 인 세션이 진행으로 남음, (나) AC-5b 듣는 동안 고리 각도를 400ms 사이 두 번 재 작아짐 |
+
+### 시험 수
+
+단위 494 → **500**(+6, 파일 52 → 53). 통합 신규 다섯(writing-check 셋 · safety-cap 둘), e2e 신규 넷(쓰기 4~5 · 1-가 안전 상한 · AC-N10 · AC-N6), 고침 하나(speaking AC-5b · 5c 단언).
+
+덮는 시험(증명 표 글자 그대로):
+- 통합 `writing-check.test.ts`: "쓰기 4~5: 세션 점수는 첫 제출에서 맞다고 본 문장 수 ÷ 문장 수이고 확인이 실패하면 점수가 빈다" · "쓰기 4~5: 같은 시도 id 로 다시 내면 AI 를 다시 부르지 않고 저장한 결과를 돌려준다" · "쓰기 AI: 가변부의 앞 단원 학습 요소는 앞 단계 전부와 같은 단계 앞 단원이다"
+- 통합 `safety-cap.test.ts`: "1-가 안전 상한: 그 학습일 호출이 ai.safety_daily_calls 에 닿으면 쓰기 4단계 이상 첫 세션 · 말하기 9단계 이상은 시작되지 않고 둘째 세션 · 읽기 · 쓰기 1~3 은 시작된다" + 접두 없는 하나 "1-가 안전 상한: 쓰기 확인 도중 닿으면 시도를 남기지 않고 '쉬는 중'이며 세션은 진행으로 남고 다시 열면 화면 자료가 안내를 고른다"
+- e2e `writing.spec.ts`: "쓰기 4~5: 문장을 다 쓰고 내면 칭찬 한 줄과 고칠 곳 하나가 같은 화면에 보이고 고칠 곳을 누르면 보기 2~3개가 나와 골라 고친다" · "1-가 안전 상한: 쓰기 5단계 수업을 고르면 '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈'이 보인다"
+- e2e `timeout.spec.ts`: "AC-N10 응답을 늦춘 고정 표본에서 1초 안에 기다림 표시가 보이고 5초 뒤 '확인하고 있어요'가 더해진다" · "AC-N6 쓰기 확인이 ai.timeout_seconds.realtime 을 넘으면 확인 없이 다음 활동으로 넘어간다"
+- 단위(접두 없음): "b 시도 꼴: 쓰기 4~12 종류의 진행 · 끝 시도를 읽고 칸이 틀리면 받지 않는다" · "b 시도 꼴: 대기열 길은 쓰기 확인 끝 · 생각 꺼내기 · 초고 끝 · 고쳐 쓰기 끝을 받지 않는다(서버 액션만 저장)" · "b 시도 꼴: 고친 문장 진행 시도는 쓰기 문장 활동의 것이고 AI 없는 b 끝 시도는 점수 · 단어별 정오가 없다" · "AI 가 필요한 수업: …" · "문장 틀: …" · "고칠 곳: …"
+
+빨강 먼저: 단위 여섯은 구현 전에 실패를 봤다(모듈 · 함수 없음). 통합 · e2e 는 로컬에서 못 돌려 CI 첫 바퀴가 빨강 · 초록을 알린다.
+
+### 다르게 한 것과 까닭
+
+1. **4 · 5단계 넣는 꼴은 단계 규격 `amount.input`(word-box · slot)으로 가른다** — 단계 숫자를 박지 않으려고(값 2 의 '시드 칸 유무로 가르지 않는다'와 같은 결). 규격에 없으면 화면 자료가 던진다. 그래서 5단계 e2e 는 4단계 견본을 5단계로 복제해도 입력란이 된다.
+2. **단어 상자는 문장마다** — 시드 `sentences[].wordBox` 가 문장마다라 칩을 누르면 그 문장의 첫 빈칸으로 간다(목업은 상자 하나). 과제 화면은 모든 문장 낱말을 한 상자로 보인다. 가로 화면은 문장 줄 옆에 상자.
+3. **문장 쓰기 화면 첫 줄은 시드 과제 글**(`content.task`) — 정본 밖 새 문구를 만들지 않으려고. 시드 hints · rubric 은 어디에도 안 보인다.
+4. **`checkGuided` 는 같은 활동에 끝 시도가 이미 있으면(다른 시도 id — 두 기기) 그 결과를 돌려준다**(AI 를 다시 안 부름). 같은 시도 id 가 동시에 둘 들어오는 경합은 막지 않고 먼저 저장된 결과를 돌려준다(아래 우려).
+5. **고칠 곳 자리를 아이 문장에서 못 찾으면(대소문자 무시) 그 고칠 곳을 내지 않는다** — 색칠할 수 없어서. 칭찬만 보이고 점수는 AI 판정 그대로.
+6. **서버에서 던진 오류(가변부 재료 없음 · 호출부 결함)는 실패 이유 `error` 로 시도를 남기고 넘어간다**(표 '서버 오류' 열 — 화면은 넘어감). 시도 저장까지 실패하면 `unavailable` → 화면이 저장 실패 줄을 보이고 같은 시도 id 로 다시.
+7. **`aiRestingToday` 는 `@/server/ai/store` 의 `dailyUsage` 를 바로 가져온다**(plan 제약 'index.ts 만'은 AI 를 부르는 길에 대한 것으로 읽음 — 읽기 함수는 index 가 다시 내보내지 않는다). P9c 파일은 고치지 않았다.
+8. **수업 목록 · 지난 수업 · 결과 화면의 안전 상한 안내를 이 차례에 당겼다** — 브리프의 e2e '쓰기 5단계 수업을 고르면 … 보인다'가 목록 화면을 거쳐야 해서(plan 표는 lesson-board · use-lesson-start 를 B3 에 둠). 바꾼 것은 `resting` 한 칸과 안내 그리기뿐이다.
+9. **내 문장 듣고 따라 말하기의 '건너뛰기'는 그 활동 전체를 건너뛴다**(문장 하나가 아님). 문장마다 '잘 말했어요'면 저절로 다음 문장, 아니면 a 조각의 '한 번 더 말하기' · '다음'. 마이크 막힘(쓸 수 없음 · 멈춤 · 말소리 없음)은 쓰기 세션을 막지 않고 이 활동만 `no_mic` 로 넘긴다(기기 알림 · 막힌 안내 없음).
+10. **`WaitHint` 는 첫 값을 기다리지 않고 그리는 즉시 보인다**(첫 값은 '이 안에' 상한) — 받는 값은 둘 다 설정 그대로.
+11. **AI 기다림 e2e 는 가짜 서버 규칙을 시험마다 비운다**(`beforeEach` · `afterEach` — plan 값 8 '`beforeEach(resetFakeAi)`'에 뒤 비우기를 더함, AI 를 쓰지 않는 다른 e2e 파일은 고치지 않음).
+
+### 정할 것(컨트롤러)
+
+| 번호 | 무엇 | 고른 것 | 까닭 |
+|---|---|---|---|
+| 1 | 하던 쓰기 4~5 세션을 상한 날 다시 열었는데 AI 활동(문장 확인)이 이미 끝나 내 문장 듣기만 남은 때 | 그래도 안내(plan 값 9 글자 그대로 — `aiNeededLesson` · 상한이면 `aiResting`) | 드문 경우이고 다음 학습일에 이어진다. 남은 활동만 보려면 c · 1-나가 'AI 활동이 남았는가'를 더하면 된다 |
+| 2 | 증명 표 '1-가 안전 상한 …둘째 세션 … 시작된다'의 둘째 세션 몫 | 이 차례는 `aiNeededLesson({ part: "rewrite" })` 거짓만 단언(시험 안 주석), 시작 판정 길('첨삭 보기')은 차례 7 이 같은 시험에 더함 | 둘째 세션을 여는 길(`judgeLessonStart` part rewrite)이 차례 7 에 생긴다 |
+| 3 | 재검토 화면 N-2('한 번 더 말하기' 오른쪽 안쪽 몇 px) | 손대지 않음 | 2026-10-22 고리 틈(요청자 iPad '고리 안 보임')으로 단추 둘레가 바뀌어(바깥 8 + 안 4px) 검토 때 잰 값이 지금과 다르다. 음수 여백은 듣는 동안 고리가 옆 단추 쪽으로 넘어 다음 사진으로 다시 재기를 권함 |
+
+### 사진 이름(E2E_PHOTOS, 각 `-portrait` · `-landscape`)
+
+`p11-writing-4-task` · `-4-write` · `-4-check` · `-4-options` · `-4-fixed` · `-4-own` · `p11-writing-5-task` · `-5-write`(입력란) · `-5-check` · `-5-options` · `-5-fixed` · `-5-own` · `p11-ai-rest-list` · `p11-wait-hint` · `p11-wait-line` · `p11-wait-timeout-next`. 말하기 `p11-speaking-listening-on` 은 같은 이름(고리 단언 뒤 찍음).
+
+### 차례 6 에 넘기는 것
+
+- 쓰기 서버 공통 꼴: `WritingDeps`(AiDeps + now) · 같은 시도 id 먼저 보기 · 진행 쓰기 세션 · 활동 차례 확인 · 아이 글 없는 로그(`dbErrorTag`) · 안전 상한은 시도 없이 `ai_resting` — `thinkoutStep` · `submitDraft` 가 같은 순서를 쓴다. 가변부는 `levelContextOf`.
+- 시도 꼴 thinkout · draft · rewrite 는 이미 있다(값 4 그대로, thinkout 끝은 summary · words · starters · failed · restored 를 모두 선택 칸으로 둠 — 차례 6 이 꼴을 좁혀도 된다). 대기열은 `serverActionOnly` 로 거부한다(늦은 초고 받기는 차례 7).
+- 화면: `WaitHint`(생각 꺼내기 · 결과 화면 첨삭 기다림) · `AiRest`(틀 `resting`). 과제 화면은 6~12 가 `GuidedTaskActivity` 를 쓰지 않고 따로(틀 `recorded` 가 쓰기 과제를 guided 만 받음 — 6~12 를 붙일 때 그 조건을 넓힌다).
+- 가짜 AI: `fake-ai.ts` 에 `thinkoutReply` · `feedbackReply` 를 더한다(이 차례에는 쓸 시험이 없어 만들지 않음). AC-8d 는 `timeout.spec.ts` 에 더한다.
+
+### 관문 명령 결과(로컬)
+
+```
+pnpm biome ci .           → Checked 313 files. No fixes applied.
+pnpm test                 → Test Files 53 passed (53) · Tests 500 passed | 6 todo (506)
+pnpm exec tsc --noEmit    → exit 0
+pnpm build                → ✓ Compiled successfully
+pnpm check:deps           → ✔ no dependency violations found (162 modules, 710 dependencies cruised)
+pnpm check:ids            → code-setting-unknown 0 · fixture-setting 0 · design-number 35(바탕 그대로, 새 줄 0)
+pnpm check:bundle         → 파일 230 · 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0(missing-test 21 → 19 — AC-N6 · AC-N10 생김)
+playwright test --list    → 설정 읽힘(가짜 AI 서버 import), 가짜 서버 직접 띄움 · /health · 규칙 없을 때 501 · SIGTERM 종료 확인
+```
+
+### 남은 우려
+
+- 통합 · e2e 는 한 번도 돌지 않았다 — 특히 (가) 쓰기 6 · 말하기 10 견본 수업 하나만 넣은 단원에서 `startLessonSession` 판정이 열리는지(통합 '1-가 안전 상한'은 상한을 지운 뒤 열림을 함께 단언), (나) 4 · 5단계 쓰기 화면 두 방향 넘침(`fitsBothWays` 를 쓰기 · 고친 뒤 두 번), (다) 가짜 AI 응답이 실제 금지어 목록(seed/lists) 출력 검사를 지나는지.
+- 같은 시도 id 의 '다 썼어요'가 두 요청으로 동시에 서버에 닿으면 AI 가 두 번 불릴 수 있다(저장은 하나 — 먼저 저장된 결과를 돌려줌). 화면은 기다리는 동안 다시 내지 못하게 막는다. 잡기(값 3 (1) 꼴)는 첨삭(차례 6)에만 plan 에 있다.
+
+상태: CI 돌려 달라(로컬 관문 초록).

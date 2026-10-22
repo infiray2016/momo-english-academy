@@ -6,6 +6,7 @@
 
 | 항목 | 어디서 확인 | 출처 |
 |---|---|---|
+| Supabase 공지(요청자 2026-10-22 메일): 10-30부터 public 의 새 테이블에 Data API grant 를 자동으로 주지 않음 — 우리 설계(10절 · AC-N5: Data API 끔 · anon · authenticated 거부 · DB 는 서버 Drizzle 로만)와 같은 방향이라 **조치 없음**, 메일의 GRANT 문은 실행하지 않는다(실행하면 설계 위반). 10-22 `pnpm check:data-api` 개발용 프로젝트: 테이블 29 · 키 2 · 닫힘 58(503 PGRST002) · 행 있음 0. 운영 프로젝트(H8)도 같은 검사로 확인 | H8 운영 프로젝트 만들 때 · 새 마이그레이션 때 | 요청자 메일 · check-data-api |
 | 세션 서버 액션이 `src/server/alerts/device.ts` 를 거쳐 `@/server/ai/store` 의 `createAlertOnce` 를 가져온다(SDK 는 아님 — AI 호출 경로 아님) → 알림 공용 모듈로 옮길 만함 | 1-나 알림 브리프 | review-p11-4-code 범위 밖 관찰 · plan-p11a 완료 보고 '남긴 것' |
 | 마지막 활동이 '말소리 없음'으로 막히면 안내를 잠깐 보인 뒤 결과로 간다 — 부모 화면 · 알림 흐름(1-나) 때 확인 | 1-나 부모 화면 브리프 | review-p11-fix4-code 범위 밖 관찰 |
 | 통합 시험이 실패로 끝날 때 CI 로그 끝에 `embedded-postgres/dist/index.js:393` 'TypeError: done is not a function' 이 한 번 찍힌다(라이브러리 종료 훅 — fix 5 가 뗀 처리기 밖 길). 결과를 가리지 않음('failed' 지킴). 소음일 뿐이나 재부팅 뒤 로컬에서 재현되면 `importEmbeddedPostgres()` 에서 그 처리기도 뗀다 | 재부팅 뒤 로컬 통합 · P12 | P11 CI 6차 로그 |
