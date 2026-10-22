@@ -144,4 +144,153 @@ export type SpeechTraceEntry =
       type: "start" | "end" | "error";
       code?: string;
     }
-  | { at: number; kind: "mic-check"; result: MicrophoneCheck };
+  | { at: number; kind: "mic-check"; result: MicrophoneCheck }
+  // ── 관찰 페이지 2판(task-speech-probe-2) — 관찰 페이지가 직접 남긴다. 음성 접점(browser.ts)은 내지 않는다 ──
+  | { at: number; kind: "env"; reason: ProbeEnvReason; facts: ProbeEnvFacts }
+  | {
+      at: number;
+      kind: "devices";
+      phase: ProbeDevicesPhase;
+      result:
+        | { ok: true; devices: ProbeDevice[] }
+        | { ok: false; code: string };
+    }
+  | { at: number; kind: "mic-level"; result: MicLevelResult }
+  | {
+      at: number;
+      kind: "beep";
+      phase: "start";
+      contextState: string;
+      audioSession: string | undefined;
+      /** navigator.userActivation?.isActive(누름 처리 안인가). 없는 브라우저는 undefined. */
+      userActive: boolean | undefined;
+    }
+  | { at: number; kind: "beep"; phase: "end" }
+  /** 비프 길이 + 여유 뒤에도 end 가 오지 않아 처리기를 닫음. */
+  | { at: number; kind: "beep"; phase: "no-end"; waitedMs: number }
+  | { at: number; kind: "beep"; phase: "error"; code: string }
+  /** 관찰 페이지가 읽어 주기를 부르기 바로 앞(그 뒤 speak 줄은 음성 접점이 남긴다). turn 은 교대 시험의 몇째 문장(1부터). */
+  | {
+      at: number;
+      kind: "speak-request";
+      source: ProbeOutputTest | "alternation";
+      turn?: number;
+      audioSession: string | undefined;
+      userActive: boolean | undefined;
+    }
+  | {
+      at: number;
+      kind: "heard";
+      test: ProbeOutputTest;
+      heard: boolean;
+      audioSession: string | undefined;
+    }
+  | {
+      at: number;
+      kind: "audio-session";
+      action: "set";
+      requested: string;
+      before: string | undefined;
+      after: string | undefined;
+      /** 바꾸기가 던진 오류 이름. */
+      threw?: string;
+      /** 누가 바꿨나: 없으면 선택 상자, auto 는 '자동으로 두기' 스위치, button 은 'playback 으로 두고 읽어 주기' 단추. */
+      by?: "auto" | "button";
+      /** navigator.userActivation?.isActive(누름 처리 안인가). 없는 브라우저는 undefined. */
+      userActive: boolean | undefined;
+    }
+  | {
+      at: number;
+      kind: "audio-session";
+      action: "state";
+      type: string | undefined;
+      state: string | undefined;
+    };
+
+// ── 관찰 페이지 2판의 사실 꼴(수치 · 이름만, 소리는 없다) ──
+
+/** env 줄을 남긴 때: 쪽이 열림 · 음성 목록이 바뀜 · 보이는 상태가 바뀜. */
+export type ProbeEnvReason = "load" | "voices" | "visibility";
+
+/** AudioContext 를 만들고 바로 닫으며 읽은 값. 없는 값은 undefined. */
+export type AudioContextFacts =
+  | {
+      ok: true;
+      sampleRate: number;
+      state: string;
+      outputLatency: number | undefined;
+      baseLatency: number | undefined;
+    }
+  | { ok: false; code: string };
+
+export type ProbeEnvFacts = {
+  userAgent: string;
+  /** navigator.standalone(iOS 홈 화면 아이콘으로 열면 true). 없는 브라우저는 undefined. */
+  standalone: boolean | undefined;
+  /** matchMedia('(display-mode: standalone)'). */
+  displayModeStandalone: boolean;
+  visibility: string;
+  /** navigator.audioSession?.type(Safari 17+ Audio Session API). 없으면 undefined. */
+  audioSessionType: string | undefined;
+  audioSessionState: string | undefined;
+  audioContext: AudioContextFacts;
+  voices: number;
+  englishVoices: number;
+};
+
+/** enumerateDevices 를 부른 때. 권한 전(쪽이 열림) · 권한 뒤(마이크 소리 재기 성공) · 다시 보기 단추. */
+export type ProbeDevicesPhase =
+  | "before-permission"
+  | "after-permission"
+  | "again";
+
+/**
+ * 장치 이름(label)의 갈래. 원문 이름은 어디에도 적지 않는다 — AirPods 기본 이름처럼 사람 이름이 들 수 있다
+ * (검토 review-speech-probe-2 I-2). 이름이 비어 있으면(권한 전) '권한 전'.
+ */
+export type DeviceLabelGroup = "블루투스 · 외부" | "내장" | "권한 전" | "그 밖";
+
+/** 장치 하나: kind 와 이름 갈래만. 원문 label · deviceId · groupId 는 담지 않는다. */
+export type ProbeDevice = { kind: string; group: DeviceLabelGroup };
+
+/** 소리 나가기 시험: 비프 · 읽어 주기 · 세션 꼴을 playback 으로 두고 읽어 주기. */
+export type ProbeOutputTest = "beep" | "speak" | "speak-playback";
+
+/** '마이크 소리 재기' 한 번의 결과. RMS 수치만 남기고 소리는 남기지 않는다. */
+export type MicLevelResult =
+  | {
+      ok: true;
+      /** 실제로 잰 시간(ms). */
+      durationMs: number;
+      frames: number;
+      max: number;
+      mean: number;
+      /** 소리가 들린 틀(RMS 가 문턱 이상)의 비율 0~1. */
+      heardRatio: number;
+      /** 모든 틀이 정확히 0(소리 길이 막힘 · 멈춘 처리기). */
+      allZero: boolean;
+      sampleRate: number;
+      /** 재는 동안의 AudioContext 상태. */
+      contextState: string;
+      track: {
+        /** 마이크 이름의 갈래(원문 이름은 담지 않는다). */
+        group: DeviceLabelGroup;
+        muted: boolean;
+        mutedAtEnd: boolean;
+        readyState: string;
+        settings: Record<string, string | number | boolean>;
+      };
+      /** 재기 뒤 모든 트랙이 ended 인가. */
+      stopped: boolean;
+      audioSession: string | undefined;
+    }
+  | {
+      ok: false;
+      code: string;
+      /** api 없음 · 권한(getUserMedia) · 소리 처리(AudioContext) 가운데 어디서 실패했나. */
+      stage: "api" | "permission" | "audio";
+      audioSession: string | undefined;
+      /** 스트림을 받은 뒤 실패했으면 그때의 처리기 상태 · 마이크를 껐는가. */
+      contextState?: string;
+      stopped?: boolean;
+    };
