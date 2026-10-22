@@ -1,0 +1,821 @@
+{
+  "area": "speaking",
+  "level": 1,
+  "unit": 1,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "할머니 댁 과일 바구니",
+      "newWords": ["apple", "egg", "banana", "milk", "cake"],
+      "unitWords": ["apple", "egg", "banana", "milk", "cake"],
+      "preview": [
+        {"word": "apple", "meaningKo": "사과", "example": "It is an apple."},
+        {"word": "egg", "meaningKo": "달걀", "example": "Oh, an egg!"},
+        {"word": "banana", "meaningKo": "바나나", "example": "It is a banana."},
+        {"word": "milk", "meaningKo": "우유", "example": "It is milk."},
+        {"word": "cake", "meaningKo": "케이크", "example": "It is cake."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["apple", "egg", "banana", "milk", "cake"],
+          "sentences": ["It is an apple.", "An egg and an ant.", "It is a banana.", "It is milk.", "Cake and milk."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is milk.", "options": ["pig", "milk", "egg", "horse"], "answerNo": 2},
+          {"kind": "picture", "script": "It is cake.", "options": ["cake", "banana", "sheep", "lion"], "answerNo": 1},
+          {"kind": "picture", "script": "Oh, an apple!", "options": ["monkey", "egg", "bear", "apple"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]},
+          {"en": "It is an ant. What is it?", "ko": "그건 개미야. 그건 뭐야?", "modelAnswer": "It is an ant.", "accepted": ["ant", "an ant", "It is an ant."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 간식 시간",
+      "newWords": ["candy", "cookie", "cheese", "grape", "pizza"],
+      "unitWords": ["candy", "cookie", "cheese", "grape", "pizza", "apple", "banana", "milk", "egg"],
+      "preview": [
+        {"word": "candy", "meaningKo": "사탕", "example": "It is a candy."},
+        {"word": "cookie", "meaningKo": "쿠키, 과자", "example": "It is a cookie."},
+        {"word": "cheese", "meaningKo": "치즈", "example": "It is cheese."},
+        {"word": "grape", "meaningKo": "포도", "example": "Oh, grapes!"},
+        {"word": "pizza", "meaningKo": "피자", "example": "It is pizza."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["candy", "cookie", "cheese", "grape", "pizza"],
+          "sentences": ["It is a cookie.", "A candy and an apple.", "It is cheese.", "Grapes and a banana.", "Pizza and milk."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Oh, grapes!", "options": ["grape", "pig", "cookie", "duck"], "answerNo": 1},
+          {"kind": "picture", "script": "It is pizza.", "options": ["cow", "candy", "pizza", "sheep"], "answerNo": 3},
+          {"kind": "picture", "script": "It is cheese.", "options": ["horse", "egg", "cat", "cheese"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 소풍 도시락",
+      "newWords": ["jam", "rice", "snack", "sun", "tree"],
+      "unitWords": ["jam", "rice", "snack", "sun", "tree", "cheese", "egg", "pizza"],
+      "preview": [
+        {"word": "jam", "meaningKo": "잼", "example": "It is jam."},
+        {"word": "rice", "meaningKo": "밥, 쌀", "example": "It is rice."},
+        {"word": "snack", "meaningKo": "간식", "example": "It is a snack."},
+        {"word": "sun", "meaningKo": "해, 태양", "example": "It is the sun."},
+        {"word": "tree", "meaningKo": "나무", "example": "It is a tree."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["jam", "rice", "snack", "sun", "tree"],
+          "sentences": ["It is the sun.", "Oh, a tree!", "It is a snack.", "Rice and an egg.", "It is jam."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a tree.", "options": ["fox", "tree", "cheese", "bear"], "answerNo": 2},
+          {"kind": "picture", "script": "It is the sun.", "options": ["jam", "monkey", "sun", "lion"], "answerNo": 3},
+          {"kind": "picture", "script": "It is rice.", "options": ["rice", "frog", "pizza", "egg"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a tree. What is it?", "ko": "그건 나무야. 그건 뭐야?", "modelAnswer": "It is a tree.", "accepted": ["tree", "a tree", "It is a tree."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]},
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "호숫가 산책",
+      "newWords": ["flower", "rock", "lake", "sand", "rose"],
+      "unitWords": ["flower", "rock", "lake", "sand", "rose", "tree", "sun", "egg"],
+      "preview": [
+        {"word": "flower", "meaningKo": "꽃", "example": "It is a flower."},
+        {"word": "rock", "meaningKo": "바위, 돌", "example": "It is a rock."},
+        {"word": "lake", "meaningKo": "호수", "example": "It is a lake."},
+        {"word": "sand", "meaningKo": "모래", "example": "It is sand."},
+        {"word": "rose", "meaningKo": "장미", "example": "Oh, a rose!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["flower", "rock", "lake", "sand", "rose"],
+          "sentences": ["It is a lake.", "A rock and a tree.", "It is sand.", "Oh, a flower!", "It is a rose."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a rock.", "options": ["duck", "rock", "fish", "flower"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a lake.", "options": ["lake", "frog", "tree", "sun"], "answerNo": 1},
+          {"kind": "picture", "script": "It is sand.", "options": ["bird", "egg", "rose", "sand"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a flower. What is it?", "ko": "그건 꽃이야. 그건 뭐야?", "modelAnswer": "It is a flower.", "accepted": ["flower", "a flower", "It is a flower."]},
+          {"en": "It is a rose. What is it?", "ko": "그건 장미야. 그건 뭐야?", "modelAnswer": "It is a rose.", "accepted": ["rose", "a rose", "It is a rose."]},
+          {"en": "It is a rock. What is it?", "ko": "그건 바위야. 그건 뭐야?", "modelAnswer": "It is a rock.", "accepted": ["rock", "a rock", "It is a rock."]},
+          {"en": "It is a lake. What is it?", "ko": "그건 호수야. 그건 뭐야?", "modelAnswer": "It is a lake.", "accepted": ["lake", "a lake", "It is a lake."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바닷가 조개 줍기",
+      "newWords": ["shell", "king", "swing", "wing", "song"],
+      "unitWords": ["shell", "king", "swing", "wing", "song", "tree", "lake", "sand", "rose", "apple"],
+      "preview": [
+        {"word": "shell", "meaningKo": "조개껍데기", "example": "It is a shell."},
+        {"word": "king", "meaningKo": "왕", "example": "It is a king."},
+        {"word": "swing", "meaningKo": "그네, 흔들다", "example": "It is a swing."},
+        {"word": "wing", "meaningKo": "날개", "example": "It is a wing."},
+        {"word": "song", "meaningKo": "노래", "example": "It is a song."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["shell", "king", "swing", "wing", "song"],
+          "sentences": ["It is a shell.", "Oh, a king!", "A swing and a tree.", "It is a wing.", "It is a song."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a shell.", "options": ["shell", "lake", "fox", "cow"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a king.", "options": ["horse", "tree", "king", "sand"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a swing.", "options": ["rose", "apple", "pig", "swing"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]},
+          {"en": "It is a wing. What is it?", "ko": "그건 날개야. 그건 뭐야?", "modelAnswer": "It is a wing.", "accepted": ["wing", "a wing", "It is a wing."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "과수원 나들이",
+      "newWords": [],
+      "unitWords": ["apple", "banana", "grape", "tree", "flower", "egg", "rock"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["apple", "banana", "grape", "tree", "flower"],
+          "sentences": ["It is a tree.", "An apple and a banana.", "Oh, grapes!", "It is a flower.", "A banana and an egg."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a banana.", "options": ["cow", "flower", "banana", "horse"], "answerNo": 3},
+          {"kind": "picture", "script": "Oh, grapes!", "options": ["grape", "apple", "bird", "tree"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a tree.", "options": ["sheep", "rock", "monkey", "tree"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a flower. What is it?", "ko": "그건 꽃이야. 그건 뭐야?", "modelAnswer": "It is a flower.", "accepted": ["flower", "a flower", "It is a flower."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is a tree. What is it?", "ko": "그건 나무야. 그건 뭐야?", "modelAnswer": "It is a tree.", "accepted": ["tree", "a tree", "It is a tree."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "아침 식탁 차리기",
+      "newWords": [],
+      "unitWords": ["egg", "milk", "cheese", "rice", "jam", "cookie", "apple", "banana"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["egg", "milk", "cheese", "rice", "jam"],
+          "sentences": ["It is an egg.", "Rice and an egg.", "Milk and a cookie.", "Cheese and an apple.", "Jam and a banana."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is jam.", "options": ["cat", "jam", "dog", "pig"], "answerNo": 2},
+          {"kind": "picture", "script": "It is cheese.", "options": ["cheese", "duck", "cow", "fish"], "answerNo": 1},
+          {"kind": "picture", "script": "It is rice.", "options": ["horse", "sheep", "egg", "rice"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동물 친구 생일 잔치",
+      "newWords": [],
+      "unitWords": ["cake", "candy", "cookie", "pizza", "snack", "apple"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cake", "candy", "cookie", "pizza", "snack"],
+          "sentences": ["It is cake.", "A candy and a cookie.", "It is pizza.", "A snack and an apple.", "Oh, a cookie!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is pizza.", "options": ["bear", "lion", "pizza", "cookie"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a candy.", "options": ["candy", "cake", "monkey", "elephant"], "answerNo": 1},
+          {"kind": "picture", "script": "It is cake.", "options": ["zebra", "tiger", "candy", "cake"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "햇살 가득 모래밭",
+      "newWords": [],
+      "unitWords": ["sun", "lake", "sand", "rock", "shell", "tree", "flower"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["sun", "lake", "sand", "rock", "shell"],
+          "sentences": ["It is the sun.", "A shell and a rock.", "It is sand.", "It is a lake.", "Oh, a shell!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a shell.", "options": ["fish", "shell", "lake", "octopus"], "answerNo": 2},
+          {"kind": "picture", "script": "It is sand.", "options": ["sand", "rock", "duck", "frog"], "answerNo": 1},
+          {"kind": "picture", "script": "It is the sun.", "options": ["tree", "bird", "flower", "sun"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]},
+          {"en": "It is a rock. What is it?", "ko": "그건 바위야. 그건 뭐야?", "modelAnswer": "It is a rock.", "accepted": ["rock", "a rock", "It is a rock."]},
+          {"en": "It is a lake. What is it?", "ko": "그건 호수야. 그건 뭐야?", "modelAnswer": "It is a lake.", "accepted": ["lake", "a lake", "It is a lake."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동화 속 왕의 정원",
+      "newWords": [],
+      "unitWords": ["rose", "king", "swing", "wing", "song", "egg", "apple", "tree", "shell"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["rose", "king", "swing", "wing", "song"],
+          "sentences": ["It is a king.", "A rose and a king.", "It is a swing.", "Oh, a wing!", "It is a song."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a rose.", "options": ["lion", "egg", "rose", "swing"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a wing.", "options": ["wing", "horse", "apple", "tree"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a king.", "options": ["cow", "rose", "shell", "king"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a swing. What is it?", "ko": "그건 그네야. 그건 뭐야?", "modelAnswer": "It is a swing.", "accepted": ["swing", "a swing", "It is a swing."]},
+          {"en": "It is a rose. What is it?", "ko": "그건 장미야. 그건 뭐야?", "modelAnswer": "It is a rose.", "accepted": ["rose", "a rose", "It is a rose."]},
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "시골 장터 구경",
+      "newWords": [],
+      "unitWords": ["apple", "egg", "banana", "candy", "cookie", "milk", "cake", "cheese", "grape", "pizza", "tree", "rock", "lake", "shell", "king", "sun", "flower"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["apple", "egg", "banana", "candy", "cookie"],
+          "sentences": ["It is milk.", "Cake and an apple.", "It is cheese.", "Grapes and a cookie.", "It is pizza."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is cheese.", "options": ["cheese", "tree", "rock", "lion"], "answerNo": 1},
+          {"kind": "picture", "script": "It is pizza.", "options": ["lake", "pizza", "shell", "cow"], "answerNo": 2},
+          {"kind": "picture", "script": "Oh, grapes!", "options": ["king", "sun", "grape", "flower"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]},
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "꽃밭 길 따라 걷기",
+      "newWords": [],
+      "unitWords": ["sun", "tree", "flower", "rock", "lake", "jam", "rice", "egg", "rose", "sand", "song", "snack", "banana", "milk", "cookie", "swing", "cake", "wing", "pizza"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["sun", "tree", "flower", "rock", "lake"],
+          "sentences": ["It is jam.", "Rice and an egg.", "A rose and a tree.", "It is sand.", "A song and a snack."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a lake.", "options": ["banana", "jam", "lake", "milk"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a rose.", "options": ["rose", "cookie", "swing", "cake"], "answerNo": 1},
+          {"kind": "picture", "script": "It is sand.", "options": ["wing", "pizza", "egg", "sand"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a rock. What is it?", "ko": "그건 바위야. 그건 뭐야?", "modelAnswer": "It is a rock.", "accepted": ["rock", "a rock", "It is a rock."]},
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]},
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "새소리 들리는 마을",
+      "newWords": [],
+      "unitWords": ["shell", "king", "swing", "wing", "song", "rose", "snack", "apple", "candy", "jam", "rice", "cheese", "sand", "grape"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["shell", "king", "swing", "wing", "song"],
+          "sentences": ["It is a song.", "A shell and a rose.", "It is a snack.", "An apple and a candy.", "Jam and rice."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a wing.", "options": ["cheese", "wing", "sand", "grape"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a king.", "options": ["shell", "rose", "king", "apple"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a swing.", "options": ["jam", "rice", "candy", "swing"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]},
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "버스 소풍 바구니",
+      "newWords": ["apple", "egg", "banana", "milk", "cake"],
+      "unitWords": ["apple", "egg", "banana", "milk", "cake"],
+      "preview": [
+        {"word": "apple", "meaningKo": "사과", "example": "It is an apple."},
+        {"word": "egg", "meaningKo": "달걀", "example": "It is an egg."},
+        {"word": "banana", "meaningKo": "바나나", "example": "Oh, a banana!"},
+        {"word": "milk", "meaningKo": "우유", "example": "It is milk."},
+        {"word": "cake", "meaningKo": "케이크", "example": "It is cake."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["apple", "egg", "banana", "milk", "cake"],
+          "sentences": ["It is an apple.", "An egg and a ball.", "It is a banana.", "Milk and cake.", "It is a bus."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is cake.", "options": ["bus", "drum", "cake", "ball"], "answerNo": 3},
+          {"kind": "picture", "script": "It is an egg.", "options": ["egg", "robot", "car", "banana"], "answerNo": 1},
+          {"kind": "picture", "script": "It is milk.", "options": ["ship", "apple", "truck", "milk"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is a bus. What is it?", "ko": "그건 버스야. 그건 뭐야?", "modelAnswer": "It is a bus.", "accepted": ["bus", "a bus", "It is a bus."]},
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이방 간식 놀이",
+      "newWords": ["candy", "cookie", "cheese", "grape", "pizza"],
+      "unitWords": ["candy", "cookie", "cheese", "grape", "pizza", "egg"],
+      "preview": [
+        {"word": "candy", "meaningKo": "사탕", "example": "It is a candy."},
+        {"word": "cookie", "meaningKo": "쿠키, 과자", "example": "Oh, a cookie!"},
+        {"word": "cheese", "meaningKo": "치즈", "example": "It is cheese."},
+        {"word": "grape", "meaningKo": "포도", "example": "Wow, grapes!"},
+        {"word": "pizza", "meaningKo": "피자", "example": "It is pizza."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["candy", "cookie", "cheese", "grape", "pizza"],
+          "sentences": ["It is a candy.", "A cookie and a drum.", "It is pizza.", "Grapes and an egg.", "It is cheese."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a cookie.", "options": ["top", "cookie", "bike", "yo-yo"], "answerNo": 2},
+          {"kind": "picture", "script": "It is cheese.", "options": ["drum", "plane", "cheese", "kite"], "answerNo": 3},
+          {"kind": "picture", "script": "It is pizza.", "options": ["doll", "grape", "car", "pizza"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]},
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is a drum. What is it?", "ko": "그건 북이야. 그건 뭐야?", "modelAnswer": "It is a drum.", "accepted": ["drum", "a drum", "It is a drum."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자전거 타고 언덕으로",
+      "newWords": ["jam", "rice", "snack", "sun", "tree"],
+      "unitWords": ["jam", "rice", "snack", "sun", "tree"],
+      "preview": [
+        {"word": "jam", "meaningKo": "잼", "example": "It is jam."},
+        {"word": "rice", "meaningKo": "밥, 쌀", "example": "It is rice."},
+        {"word": "snack", "meaningKo": "간식", "example": "Oh, a snack!"},
+        {"word": "sun", "meaningKo": "해, 태양", "example": "It is the sun."},
+        {"word": "tree", "meaningKo": "나무", "example": "It is a tree."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["jam", "rice", "snack", "sun", "tree"],
+          "sentences": ["It is the sun.", "A tree and a bike.", "It is jam.", "It is rice.", "A snack and a kite."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is jam.", "options": ["jam", "bike", "ship", "drum"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a tree.", "options": ["ball", "tree", "robot", "bus"], "answerNo": 2},
+          {"kind": "picture", "script": "It is the sun.", "options": ["truck", "kite", "yo-yo", "sun"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a tree. What is it?", "ko": "그건 나무야. 그건 뭐야?", "modelAnswer": "It is a tree.", "accepted": ["tree", "a tree", "It is a tree."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]},
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a kite. What is it?", "ko": "그건 연이야. 그건 뭐야?", "modelAnswer": "It is a kite.", "accepted": ["kite", "a kite", "It is a kite."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "배 타고 호수로",
+      "newWords": ["flower", "rock", "lake", "sand", "rose"],
+      "unitWords": ["flower", "rock", "lake", "sand", "rose"],
+      "preview": [
+        {"word": "flower", "meaningKo": "꽃", "example": "It is a flower."},
+        {"word": "rock", "meaningKo": "바위, 돌", "example": "It is a rock."},
+        {"word": "lake", "meaningKo": "호수", "example": "Wow, a lake!"},
+        {"word": "sand", "meaningKo": "모래", "example": "It is sand."},
+        {"word": "rose", "meaningKo": "장미", "example": "It is a rose."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["flower", "rock", "lake", "sand", "rose"],
+          "sentences": ["A ship and a lake.", "It is a rock.", "Sand and a ball.", "It is a flower.", "It is a rose."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a flower.", "options": ["ship", "bike", "flower", "lake"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a rose.", "options": ["rose", "ball", "car", "drum"], "answerNo": 1},
+          {"kind": "picture", "script": "It is sand.", "options": ["plane", "rock", "bus", "sand"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a lake. What is it?", "ko": "그건 호수야. 그건 뭐야?", "modelAnswer": "It is a lake.", "accepted": ["lake", "a lake", "It is a lake."]},
+          {"en": "It is a rose. What is it?", "ko": "그건 장미야. 그건 뭐야?", "modelAnswer": "It is a rose.", "accepted": ["rose", "a rose", "It is a rose."]},
+          {"en": "It is a rock. What is it?", "ko": "그건 바위야. 그건 뭐야?", "modelAnswer": "It is a rock.", "accepted": ["rock", "a rock", "It is a rock."]},
+          {"en": "It is a flower. What is it?", "ko": "그건 꽃이야. 그건 뭐야?", "modelAnswer": "It is a flower.", "accepted": ["flower", "a flower", "It is a flower."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이터 그네 노래",
+      "newWords": ["shell", "king", "swing", "wing", "song"],
+      "unitWords": ["shell", "king", "swing", "wing", "song"],
+      "preview": [
+        {"word": "shell", "meaningKo": "조개껍데기", "example": "It is a shell."},
+        {"word": "king", "meaningKo": "왕", "example": "Wow, a king!"},
+        {"word": "swing", "meaningKo": "그네, 흔들다", "example": "It is a swing."},
+        {"word": "wing", "meaningKo": "날개", "example": "It is a wing."},
+        {"word": "song", "meaningKo": "노래", "example": "It is a song."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["shell", "king", "swing", "wing", "song"],
+          "sentences": ["It is a swing.", "A song and a drum.", "It is a king.", "A shell and a ball.", "It is a wing."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a wing.", "options": ["kite", "bus", "wing", "doll"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a swing.", "options": ["swing", "drum", "car", "robot"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a shell.", "options": ["bike", "top", "truck", "shell"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a swing. What is it?", "ko": "그건 그네야. 그건 뭐야?", "modelAnswer": "It is a swing.", "accepted": ["swing", "a swing", "It is a swing."]},
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "트럭 장보기 놀이",
+      "newWords": [],
+      "unitWords": ["apple", "banana", "egg", "milk", "grape"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["apple", "banana", "egg", "milk", "grape"],
+          "sentences": ["It is an apple.", "An egg and a truck.", "It is milk.", "Oh, grapes!", "A banana and a car."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is milk.", "options": ["milk", "truck", "bus", "robot"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a banana.", "options": ["ship", "banana", "ball", "drum"], "answerNo": 2},
+          {"kind": "picture", "script": "It is an apple.", "options": ["kite", "grape", "egg", "apple"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is an apple. What is it?", "ko": "그건 사과야. 그건 뭐야?", "modelAnswer": "It is an apple.", "accepted": ["apple", "an apple", "It is an apple."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]},
+          {"en": "It is a truck. What is it?", "ko": "그건 트럭이야. 그건 뭐야?", "modelAnswer": "It is a truck.", "accepted": ["truck", "a truck", "It is a truck."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "우주 여행 간식",
+      "newWords": [],
+      "unitWords": ["cheese", "pizza", "cake", "cookie", "candy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cheese", "pizza", "cake", "cookie", "candy"],
+          "sentences": ["It is pizza.", "Cake and a candy.", "It is cheese.", "A cookie and a robot.", "Wow, a star!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is cheese.", "options": ["star", "robot", "cheese", "plane"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a cookie.", "options": ["cookie", "ship", "car", "yo-yo"], "answerNo": 1},
+          {"kind": "picture", "script": "It is cake.", "options": ["bus", "candy", "doll", "cake"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is a star. What is it?", "ko": "그건 별이야. 그건 뭐야?", "modelAnswer": "It is a star.", "accepted": ["star", "a star", "It is a star."]},
+          {"en": "It is a robot. What is it?", "ko": "그건 로봇이야. 그건 뭐야?", "modelAnswer": "It is a robot.", "accepted": ["robot", "a robot", "It is a robot."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "캠핑 텐트 앞에서",
+      "newWords": [],
+      "unitWords": ["jam", "rice", "snack", "tree", "sun", "cookie"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["jam", "rice", "snack", "tree", "sun"],
+          "sentences": ["It is the sun.", "A tree and a bus.", "It is rice.", "Jam and a cookie.", "A snack and a ball."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a tree.", "options": ["bike", "bus", "tree", "kite"], "answerNo": 3},
+          {"kind": "picture", "script": "It is jam.", "options": ["jam", "ball", "plane", "truck"], "answerNo": 1},
+          {"kind": "picture", "script": "It is rice.", "options": ["drum", "sun", "top", "rice"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a tree. What is it?", "ko": "그건 나무야. 그건 뭐야?", "modelAnswer": "It is a tree.", "accepted": ["tree", "a tree", "It is a tree."]},
+          {"en": "It is a snack. What is it?", "ko": "그건 간식이야. 그건 뭐야?", "modelAnswer": "It is a snack.", "accepted": ["snack", "a snack", "It is a snack."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자동차 나들이 길",
+      "newWords": [],
+      "unitWords": ["flower", "rose", "rock", "sand", "lake"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["flower", "rose", "rock", "sand", "lake"],
+          "sentences": ["A car and a lake.", "It is a rose.", "It is sand.", "A rock and a ball.", "It is a flower."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a lake.", "options": ["car", "lake", "drum", "rose"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a rock.", "options": ["rock", "plane", "yo-yo", "flower"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a rose.", "options": ["bus", "sand", "kite", "rose"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a lake. What is it?", "ko": "그건 호수야. 그건 뭐야?", "modelAnswer": "It is a lake.", "accepted": ["lake", "a lake", "It is a lake."]},
+          {"en": "It is a rock. What is it?", "ko": "그건 바위야. 그건 뭐야?", "modelAnswer": "It is a rock.", "accepted": ["rock", "a rock", "It is a rock."]},
+          {"en": "It is a flower. What is it?", "ko": "그건 꽃이야. 그건 뭐야?", "modelAnswer": "It is a flower.", "accepted": ["flower", "a flower", "It is a flower."]},
+          {"en": "It is a rose. What is it?", "ko": "그건 장미야. 그건 뭐야?", "modelAnswer": "It is a rose.", "accepted": ["rose", "a rose", "It is a rose."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 왕국 놀이",
+      "newWords": [],
+      "unitWords": ["shell", "king", "swing", "wing", "song"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["shell", "king", "swing", "wing", "song"],
+          "sentences": ["It is a king.", "A king and a drum.", "It is a song.", "A shell and a swing.", "It is a wing."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a swing.", "options": ["robot", "swing", "doll", "bus"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a king.", "options": ["king", "truck", "shell", "drum"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a wing.", "options": ["car", "top", "ball", "wing"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]},
+          {"en": "It is a swing. What is it?", "ko": "그건 그네야. 그건 뭐야?", "modelAnswer": "It is a swing.", "accepted": ["swing", "a swing", "It is a swing."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "공놀이 뒤 간식",
+      "newWords": [],
+      "unitWords": ["milk", "cake", "cheese", "grape", "pizza", "apple", "egg", "banana", "candy", "cookie", "tree", "rock", "flower", "lake", "king", "sun"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["milk", "cake", "cheese", "grape", "pizza"],
+          "sentences": ["An apple and a ball.", "It is an egg.", "A banana and a kite.", "It is a candy.", "A cookie and a drum."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is cake.", "options": ["ball", "cake", "tree", "star"], "answerNo": 2},
+          {"kind": "picture", "script": "It is milk.", "options": ["milk", "rock", "bus", "flower"], "answerNo": 1},
+          {"kind": "picture", "script": "Oh, grapes!", "options": ["lake", "king", "sun", "grape"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is an egg. What is it?", "ko": "그건 달걀이야. 그건 뭐야?", "modelAnswer": "It is an egg.", "accepted": ["egg", "an egg", "It is an egg."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]},
+          {"en": "It is a cookie. What is it?", "ko": "그건 쿠키야. 그건 뭐야?", "modelAnswer": "It is a cookie.", "accepted": ["cookie", "a cookie", "It is a cookie."]},
+          {"en": "It is a candy. What is it?", "ko": "그건 사탕이야. 그건 뭐야?", "modelAnswer": "It is a candy.", "accepted": ["candy", "a candy", "It is candy.", "It is a candy."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "비행기 창밖 보기",
+      "newWords": [],
+      "unitWords": ["jam", "rice", "sand", "rose", "snack", "sun", "tree", "flower", "rock", "lake", "song", "milk", "shell", "pizza", "swing", "egg", "wing"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["jam", "rice", "sand", "rose", "snack"],
+          "sentences": ["It is the sun.", "A tree and a plane.", "It is a flower.", "A rock and a lake.", "A song and a ball."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is rice.", "options": ["plane", "milk", "rice", "shell"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a rose.", "options": ["rose", "pizza", "bike", "swing"], "answerNo": 1},
+          {"kind": "picture", "script": "It is jam.", "options": ["car", "egg", "wing", "jam"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is the sun. What is it?", "ko": "그건 해야. 그건 뭐야?", "modelAnswer": "It is the sun.", "accepted": ["sun", "the sun", "It is the sun."]},
+          {"en": "It is a tree. What is it?", "ko": "그건 나무야. 그건 뭐야?", "modelAnswer": "It is a tree.", "accepted": ["tree", "a tree", "It is a tree."]},
+          {"en": "It is a flower. What is it?", "ko": "그건 꽃이야. 그건 뭐야?", "modelAnswer": "It is a flower.", "accepted": ["flower", "a flower", "It is a flower."]},
+          {"en": "It is a lake. What is it?", "ko": "그건 호수야. 그건 뭐야?", "modelAnswer": "It is a lake.", "accepted": ["lake", "a lake", "It is a lake."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "음악 놀이 무대",
+      "newWords": [],
+      "unitWords": ["shell", "king", "swing", "wing", "song", "apple", "banana", "cake", "cookie", "snack", "candy", "grape", "cheese", "rose", "sand", "jam", "rice"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["shell", "king", "swing", "wing", "song"],
+          "sentences": ["It is a king.", "An apple and a banana.", "A song and a drum.", "Cake and a cookie.", "It is a snack."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a shell.", "options": ["candy", "shell", "grape", "drum"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a swing.", "options": ["cheese", "rose", "swing", "sand"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a wing.", "options": ["jam", "rice", "kite", "wing"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a king. What is it?", "ko": "그건 왕이야. 그건 뭐야?", "modelAnswer": "It is a king.", "accepted": ["king", "a king", "It is a king."]},
+          {"en": "It is a song. What is it?", "ko": "그건 노래야. 그건 뭐야?", "modelAnswer": "It is a song.", "accepted": ["song", "a song", "It is a song."]},
+          {"en": "It is a shell. What is it?", "ko": "그건 조개껍데기야. 그건 뭐야?", "modelAnswer": "It is a shell.", "accepted": ["shell", "a shell", "It is a shell."]},
+          {"en": "It is a banana. What is it?", "ko": "그건 바나나야. 그건 뭐야?", "modelAnswer": "It is a banana.", "accepted": ["banana", "a banana", "It is a banana."]}
+        ]
+      }
+    }
+  ]
+}

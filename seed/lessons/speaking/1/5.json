@@ -1,0 +1,717 @@
+{
+  "area": "speaking",
+  "level": 1,
+  "unit": 5,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 동물 세기",
+      "newWords": ["one", "two", "three", "four", "five"],
+      "unitWords": ["one", "two", "three", "four", "five"],
+      "preview": [
+        {"word": "one", "meaningKo": "1, 하나", "example": "One red apple."},
+        {"word": "two", "meaningKo": "2, 둘", "example": "I like two dogs."},
+        {"word": "three", "meaningKo": "3, 셋", "example": "Three ducks."},
+        {"word": "four", "meaningKo": "4, 넷", "example": "Four eggs."},
+        {"word": "five", "meaningKo": "5, 다섯", "example": "Five fish."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["one", "two", "three", "four", "five"],
+          "sentences": ["One big pig.", "Two ducks.", "Three red birds.", "I like four cats.", "Wow, five fish!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Three red birds.", "options": ["one", "three", "five", "two"], "answerNo": 2},
+          {"kind": "picture", "script": "I like five frogs.", "options": ["five", "four", "two", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "Four eggs, please.", "options": ["two", "one", "three", "four"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like two dogs. How many dogs?", "ko": "나는 개 두 마리가 좋아. 개가 몇 마리야?", "modelAnswer": "Two dogs.", "accepted": ["two", "two dogs", "I like two dogs."]},
+          {"en": "I like five frogs. How many frogs?", "ko": "나는 개구리 다섯 마리가 좋아. 개구리가 몇 마리야?", "modelAnswer": "Five frogs.", "accepted": ["five", "five frogs", "I like five frogs."]},
+          {"en": "Three red birds. What color are the birds?", "ko": "빨간 새 세 마리야. 새는 무슨 색이야?", "modelAnswer": "The birds are red.", "accepted": ["red", "red birds", "The birds are red."]},
+          {"en": "I like four cats. How many cats?", "ko": "나는 고양이 네 마리가 좋아. 고양이가 몇 마리야?", "modelAnswer": "Four cats.", "accepted": ["four", "four cats", "I like four cats."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "과일 바구니 세기",
+      "newWords": ["six", "seven", "eight", "nine", "ten"],
+      "unitWords": ["six", "seven", "eight", "nine", "ten", "four", "one", "two"],
+      "preview": [
+        {"word": "six", "meaningKo": "6, 여섯", "example": "Six eggs, please."},
+        {"word": "seven", "meaningKo": "7, 일곱", "example": "I like seven cookies."},
+        {"word": "eight", "meaningKo": "8, 여덟", "example": "Eight red apples."},
+        {"word": "nine", "meaningKo": "9, 아홉", "example": "Nine bananas."},
+        {"word": "ten", "meaningKo": "10, 열", "example": "Ten candies."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["six", "seven", "eight", "nine", "ten"],
+          "sentences": ["Six eggs, please.", "Seven cookies.", "I like eight apples.", "Nine yellow bananas.", "Wow, ten candies!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Meg is nine.", "options": ["seven", "nine", "four", "six"], "answerNo": 2},
+          {"kind": "picture", "script": "I like seven cookies.", "options": ["seven", "ten", "eight", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "Six eggs, please.", "options": ["eight", "ten", "two", "six"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like seven cookies. How many cookies?", "ko": "나는 쿠키 일곱 개가 좋아. 쿠키가 몇 개야?", "modelAnswer": "Seven cookies.", "accepted": ["seven", "seven cookies", "I like seven cookies."]},
+          {"en": "I like eight apples. How many apples?", "ko": "나는 사과 여덟 개가 좋아. 사과가 몇 개야?", "modelAnswer": "Eight apples.", "accepted": ["eight", "eight apples", "I like eight apples."]},
+          {"en": "Nine yellow bananas. What color are the bananas?", "ko": "노란 바나나 아홉 개야. 바나나는 무슨 색이야?", "modelAnswer": "The bananas are yellow.", "accepted": ["yellow", "yellow bananas", "The bananas are yellow."]},
+          {"en": "I like ten candies. How many candies?", "ko": "나는 사탕 열 개가 좋아. 사탕이 몇 개야?", "modelAnswer": "Ten candies.", "accepted": ["ten", "ten candies", "I like ten candies."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲길 모자 산책",
+      "newWords": ["tall", "little", "thin", "hat", "cap"],
+      "unitWords": ["tall", "little", "thin", "hat", "cap", "two", "three"],
+      "preview": [
+        {"word": "tall", "meaningKo": "키가 큰, 높은", "example": "The tree is tall."},
+        {"word": "little", "meaningKo": "작은, 어린", "example": "It is a little bird."},
+        {"word": "thin", "meaningKo": "얇은, 마른", "example": "The snake is thin."},
+        {"word": "hat", "meaningKo": "모자", "example": "This is my hat."},
+        {"word": "cap", "meaningKo": "(챙 달린) 모자", "example": "My cap is blue."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["tall", "little", "thin", "hat", "cap"],
+          "sentences": ["The tree is tall.", "Two little birds.", "The snake is thin.", "I like my hat.", "Three blue caps."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is my hat.", "options": ["dog", "hat", "apple", "fish"], "answerNo": 2},
+          {"kind": "picture", "script": "My cap is blue.", "options": ["frog", "egg", "bird", "cap"], "answerNo": 4},
+          {"kind": "picture", "script": "The horse is tall.", "options": ["horse", "duck", "pig", "sheep"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "The tree is tall. What is tall?", "ko": "나무가 높아. 뭐가 높아?", "modelAnswer": "The tree is tall.", "accepted": ["tree", "the tree", "The tree is tall."]},
+          {"en": "The snake is thin. What is thin?", "ko": "뱀이 가늘어. 뭐가 가늘어?", "modelAnswer": "The snake is thin.", "accepted": ["snake", "the snake", "The snake is thin."]},
+          {"en": "My cap is blue. What color is it?", "ko": "내 모자는 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The cap is blue."]},
+          {"en": "I like two little birds. How many birds?", "ko": "나는 작은 새 두 마리가 좋아. 새가 몇 마리야?", "modelAnswer": "Two birds.", "accepted": ["two", "two birds", "two little birds"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "빨랫줄의 옷",
+      "newWords": ["sock", "shoe", "shirt", "jacket", "ball"],
+      "unitWords": ["sock", "shoe", "shirt", "jacket", "ball", "four", "two", "cap", "hat"],
+      "preview": [
+        {"word": "sock", "meaningKo": "양말", "example": "My socks are blue."},
+        {"word": "shoe", "meaningKo": "신발", "example": "I like the red shoes."},
+        {"word": "shirt", "meaningKo": "셔츠", "example": "My shirt is blue."},
+        {"word": "jacket", "meaningKo": "재킷, 웃옷", "example": "This is my jacket."},
+        {"word": "ball", "meaningKo": "공", "example": "The ball is big."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["sock", "shoe", "shirt", "jacket", "ball"],
+          "sentences": ["Four blue socks.", "Two red shoes.", "My shirt is blue.", "This is my jacket.", "Wow, a big ball!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "I like the red shoes.", "options": ["shoe", "shirt", "cap", "dog"], "answerNo": 1},
+          {"kind": "picture", "script": "My jacket is blue.", "options": ["ball", "sock", "jacket", "tree"], "answerNo": 3},
+          {"kind": "picture", "script": "The ball is big.", "options": ["shirt", "egg", "hat", "ball"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "Four blue socks. What color are the socks?", "ko": "파란 양말 네 짝이야. 양말은 무슨 색이야?", "modelAnswer": "The socks are blue.", "accepted": ["blue", "blue socks", "The socks are blue."]},
+          {"en": "I like two red shoes. How many shoes?", "ko": "나는 빨간 신발 두 짝이 좋아. 신발이 몇 짝이야?", "modelAnswer": "Two red shoes.", "accepted": ["two", "two shoes", "two red shoes"]},
+          {"en": "My shirt is blue. What color is it?", "ko": "내 셔츠는 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The shirt is blue."]},
+          {"en": "This is my jacket. What is this?", "ko": "이건 내 재킷이야. 이건 뭐야?", "modelAnswer": "This is a jacket.", "accepted": ["jacket", "a jacket", "This is a jacket."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바닷가 소풍 날",
+      "newWords": ["doll", "bike", "kite", "ring", "game"],
+      "unitWords": ["doll", "bike", "kite", "ring", "game", "two", "three", "little"],
+      "preview": [
+        {"word": "doll", "meaningKo": "인형", "example": "My doll is cute."},
+        {"word": "bike", "meaningKo": "자전거", "example": "It is a red bike."},
+        {"word": "kite", "meaningKo": "연", "example": "It is a blue kite."},
+        {"word": "ring", "meaningKo": "반지", "example": "It is a small ring."},
+        {"word": "game", "meaningKo": "놀이, 게임", "example": "I like the game."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["doll", "bike", "kite", "ring", "game"],
+          "sentences": ["I like my doll.", "Two red bikes.", "Wow, three blue kites!", "It is a little ring.", "I like the game."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "My doll is cute.", "options": ["bird", "doll", "flower", "egg"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a blue kite.", "options": ["sun", "rabbit", "kite", "duck"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a small ring.", "options": ["tree", "apple", "frog", "ring"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "Two red bikes. What color are the bikes?", "ko": "빨간 자전거 두 대야. 자전거는 무슨 색이야?", "modelAnswer": "The bikes are red.", "accepted": ["red", "red bikes", "The bikes are red."]},
+          {"en": "I like three kites. How many kites?", "ko": "나는 연 세 개가 좋아. 연이 몇 개야?", "modelAnswer": "Three kites.", "accepted": ["three", "three kites", "I like three kites."]},
+          {"en": "It is a game. What is it?", "ko": "그건 놀이야. 그게 뭐야?", "modelAnswer": "It is a game.", "accepted": ["game", "a game", "It is a game."]},
+          {"en": "This is my doll. What is this?", "ko": "이건 내 인형이야. 이건 뭐야?", "modelAnswer": "This is a doll.", "accepted": ["doll", "a doll", "This is a doll."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 모자와 양말",
+      "newWords": [],
+      "unitWords": ["one", "six", "hat", "sock", "doll", "little", "two", "nine"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["one", "six", "hat", "sock", "doll"],
+          "sentences": ["One little hat.", "Six blue socks.", "This is my doll.", "I like six ducks.", "The doll is little."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a hat.", "options": ["hat", "pig", "duck", "sock"], "answerNo": 1},
+          {"kind": "picture", "script": "Six blue socks.", "options": ["two", "six", "nine", "one"], "answerNo": 2},
+          {"kind": "picture", "script": "My doll is cute.", "options": ["cat", "sheep", "doll", "bird"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "Six blue socks. How many socks?", "ko": "파란 양말 여섯 짝이야. 양말이 몇 짝이야?", "modelAnswer": "Six blue socks.", "accepted": ["six", "six socks", "six blue socks"]},
+          {"en": "The doll is little. What is little?", "ko": "인형이 작아. 뭐가 작아?", "modelAnswer": "The doll is little.", "accepted": ["doll", "the doll", "The doll is little."]},
+          {"en": "It is a hat. What is it?", "ko": "그건 모자야. 그게 뭐야?", "modelAnswer": "It is a hat.", "accepted": ["hat", "a hat", "It is a hat."]},
+          {"en": "One little hat. How many hats?", "ko": "작은 모자 한 개야. 모자가 몇 개야?", "modelAnswer": "One little hat.", "accepted": ["one", "one hat", "one little hat"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "강가 자전거 길",
+      "newWords": [],
+      "unitWords": ["two", "seven", "cap", "shoe", "bike", "little", "eight", "four", "one"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["two", "seven", "cap", "shoe", "bike"],
+          "sentences": ["I like two bikes.", "Seven little birds.", "My cap is blue.", "I like the red shoes.", "Wow, seven ducks!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a red bike.", "options": ["frog", "bike", "egg", "cap"], "answerNo": 2},
+          {"kind": "picture", "script": "Momo is seven.", "options": ["eight", "four", "one", "seven"], "answerNo": 4},
+          {"kind": "picture", "script": "I like the red shoes.", "options": ["apple", "dog", "shoe", "sheep"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "I like two bikes. How many bikes?", "ko": "나는 자전거 두 대가 좋아. 자전거가 몇 대야?", "modelAnswer": "Two bikes.", "accepted": ["two", "two bikes", "I like two bikes."]},
+          {"en": "Seven little birds. How many birds?", "ko": "작은 새 일곱 마리야. 새가 몇 마리야?", "modelAnswer": "Seven little birds.", "accepted": ["seven", "seven birds", "seven little birds"]},
+          {"en": "My cap is blue. What is blue?", "ko": "내 모자는 파란색이야. 뭐가 파란색이야?", "modelAnswer": "The cap is blue.", "accepted": ["cap", "the cap", "The cap is blue."]},
+          {"en": "I like the red shoes. What color are the shoes?", "ko": "나는 빨간 신발이 좋아. 신발은 무슨 색이야?", "modelAnswer": "The shoes are red.", "accepted": ["red", "red shoes", "The shoes are red."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "언덕 위 연날리기",
+      "newWords": [],
+      "unitWords": ["three", "eight", "tall", "shirt", "kite", "five", "one"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["three", "eight", "tall", "shirt", "kite"],
+          "sentences": ["Three blue kites.", "Eight tall trees.", "My shirt is blue.", "The tree is tall.", "Three blue shirts."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a blue kite.", "options": ["rock", "flower", "sun", "kite"], "answerNo": 4},
+          {"kind": "picture", "script": "Eight tall trees.", "options": ["eight", "three", "five", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "My shirt is blue.", "options": ["tree", "shirt", "sheep", "rock"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "Eight tall trees. How many trees?", "ko": "높은 나무 여덟 그루야. 나무가 몇 그루야?", "modelAnswer": "Eight tall trees.", "accepted": ["eight", "eight trees", "eight tall trees"]},
+          {"en": "My shirt is blue. What is blue?", "ko": "내 셔츠는 파란색이야. 뭐가 파란색이야?", "modelAnswer": "The shirt is blue.", "accepted": ["shirt", "the shirt", "The shirt is blue."]},
+          {"en": "Three blue kites. What color are the kites?", "ko": "파란 연 세 개야. 연은 무슨 색이야?", "modelAnswer": "The kites are blue.", "accepted": ["blue", "blue kites", "The kites are blue."]},
+          {"en": "Three blue shirts. How many shirts?", "ko": "파란 셔츠 세 벌이야. 셔츠가 몇 벌이야?", "modelAnswer": "Three blue shirts.", "accepted": ["three", "three shirts", "three blue shirts"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "추운 날 재킷",
+      "newWords": [],
+      "unitWords": ["four", "nine", "little", "jacket", "ring", "ten", "six"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["four", "nine", "little", "jacket", "ring"],
+          "sentences": ["Four blue jackets.", "Nine little fish.", "It is a little ring.", "This is my jacket.", "I like four rings."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Nine little fish.", "options": ["four", "nine", "ten", "six"], "answerNo": 2},
+          {"kind": "picture", "script": "My jacket is blue.", "options": ["jacket", "bird", "rose", "egg"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the ring.", "options": ["cake", "bear", "ring", "tree"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "Nine little fish. How many fish?", "ko": "작은 물고기 아홉 마리야. 물고기가 몇 마리야?", "modelAnswer": "Nine little fish.", "accepted": ["nine", "nine fish", "nine little fish"]},
+          {"en": "Four blue jackets. What color are the jackets?", "ko": "파란 재킷 네 벌이야. 재킷은 무슨 색이야?", "modelAnswer": "The jackets are blue.", "accepted": ["blue", "blue jackets", "The jackets are blue."]},
+          {"en": "It is a little ring. What is little?", "ko": "그건 작은 반지야. 뭐가 작아?", "modelAnswer": "The ring is little.", "accepted": ["ring", "the ring", "The ring is little."]},
+          {"en": "I like four rings. How many rings?", "ko": "나는 반지 네 개가 좋아. 반지가 몇 개야?", "modelAnswer": "Four rings.", "accepted": ["four", "four rings", "I like four rings."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "모래밭 공놀이",
+      "newWords": [],
+      "unitWords": ["five", "ten", "thin", "ball", "game", "two", "seven", "three", "one", "eight"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["five", "ten", "thin", "ball", "game"],
+          "sentences": ["Wow, five balls!", "Ten red apples.", "The tree is thin.", "It is a game.", "It is a big ball."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ten red apples.", "options": ["five", "two", "ten", "seven"], "answerNo": 3},
+          {"kind": "picture", "script": "The ball is big.", "options": ["rose", "ball", "fish", "cake"], "answerNo": 2},
+          {"kind": "picture", "script": "Five big balls.", "options": ["three", "one", "eight", "five"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "Ten red apples. How many apples?", "ko": "빨간 사과 열 개야. 사과가 몇 개야?", "modelAnswer": "Ten red apples.", "accepted": ["ten", "ten apples", "ten red apples"]},
+          {"en": "The tree is thin. What is thin?", "ko": "나무가 가늘어. 뭐가 가늘어?", "modelAnswer": "The tree is thin.", "accepted": ["tree", "the tree", "The tree is thin."]},
+          {"en": "It is a big ball. What is it?", "ko": "그건 큰 공이야. 그게 뭐야?", "modelAnswer": "It is a big ball.", "accepted": ["ball", "a ball", "a big ball", "It is a big ball."]},
+          {"en": "Five big balls. How many balls?", "ko": "큰 공 다섯 개야. 공이 몇 개야?", "modelAnswer": "Five big balls.", "accepted": ["five", "five balls", "five big balls"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "닭장 달걀 세기",
+      "newWords": [],
+      "unitWords": ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "little", "hat", "cap", "shoe", "game"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["two", "four", "six", "eight", "ten"],
+          "sentences": ["One little hat.", "Three blue caps.", "Five red shoes.", "I like seven ducks.", "Wow, nine fish!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ten big eggs.", "options": ["ten", "two", "five", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "Eight little chickens.", "options": ["three", "eight", "six", "nine"], "answerNo": 2},
+          {"kind": "picture", "script": "Two big pigs.", "options": ["nine", "seven", "two", "four"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "Six eggs, please. How many eggs?", "ko": "달걀 여섯 개 주세요. 달걀이 몇 개야?", "modelAnswer": "Six eggs.", "accepted": ["six", "six eggs", "Six eggs, please."]},
+          {"en": "I like four cats. How many cats?", "ko": "나는 고양이 네 마리가 좋아. 고양이가 몇 마리야?", "modelAnswer": "Four cats.", "accepted": ["four", "four cats", "I like four cats."]},
+          {"en": "I like two games. How many games?", "ko": "나는 놀이 두 개가 좋아. 놀이가 몇 개야?", "modelAnswer": "Two games.", "accepted": ["two", "two games", "I like two games."]},
+          {"en": "Five red shoes. What color are the shoes?", "ko": "빨간 신발 다섯 짝이야. 신발은 무슨 색이야?", "modelAnswer": "The shoes are red.", "accepted": ["red", "red shoes", "The shoes are red."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 옷 가게",
+      "newWords": [],
+      "unitWords": ["hat", "sock", "shirt", "jacket", "ball", "four", "cap", "six", "shoe", "tall", "little", "one", "thin", "ring", "kite", "doll", "bike", "eight"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["hat", "sock", "shirt", "jacket", "ball"],
+          "sentences": ["Four blue caps.", "Six red shoes.", "The horse is tall.", "It is a little hat.", "One thin sock."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "I like the red shoes.", "options": ["ring", "jacket", "shoe", "egg"], "answerNo": 3},
+          {"kind": "picture", "script": "This is my hat.", "options": ["hat", "kite", "horse", "shirt"], "answerNo": 1},
+          {"kind": "picture", "script": "My socks are blue.", "options": ["doll", "cap", "bike", "sock"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The horse is tall. What is tall?", "ko": "말은 키가 커. 뭐가 키가 커?", "modelAnswer": "The horse is tall.", "accepted": ["horse", "the horse", "The horse is tall."]},
+          {"en": "My jacket is blue. What color is it?", "ko": "내 재킷은 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The jacket is blue."]},
+          {"en": "I like eight balls. How many balls?", "ko": "나는 공 여덟 개가 좋아. 공이 몇 개야?", "modelAnswer": "Eight balls.", "accepted": ["eight", "eight balls", "I like eight balls."]},
+          {"en": "It is a little hat. What is little?", "ko": "그건 작은 모자야. 뭐가 작아?", "modelAnswer": "The hat is little.", "accepted": ["hat", "the hat", "The hat is little."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "들판의 장난감",
+      "newWords": [],
+      "unitWords": ["doll", "bike", "kite", "ring", "game", "little", "thin", "five", "ten", "tall", "shirt", "ball", "jacket", "sock", "two", "nine", "six", "three", "seven"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["doll", "bike", "kite", "ring", "game"],
+          "sentences": ["My doll is little.", "The kite is thin.", "Five red bikes.", "I like the game.", "Ten tall trees."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a red bike.", "options": ["shirt", "bike", "ball", "cow"], "answerNo": 2},
+          {"kind": "picture", "script": "My doll is cute.", "options": ["doll", "jacket", "sock", "sun"], "answerNo": 1},
+          {"kind": "picture", "script": "Three blue kites.", "options": ["two", "nine", "six", "three"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The kite is thin. What is thin?", "ko": "연이 얇아. 뭐가 얇아?", "modelAnswer": "The kite is thin.", "accepted": ["kite", "the kite", "The kite is thin."]},
+          {"en": "My doll is little. What is little?", "ko": "내 인형은 작아. 뭐가 작아?", "modelAnswer": "The doll is little.", "accepted": ["doll", "the doll", "The doll is little."]},
+          {"en": "It is a game. What is it?", "ko": "그건 놀이야. 그게 뭐야?", "modelAnswer": "It is a game.", "accepted": ["game", "a game", "It is a game."]},
+          {"en": "Seven little rings. How many rings?", "ko": "작은 반지 일곱 개야. 반지가 몇 개야?", "modelAnswer": "Seven little rings.", "accepted": ["seven", "seven rings", "seven little rings"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "밤하늘 별 세기",
+      "newWords": ["one", "two", "three", "four", "five"],
+      "unitWords": ["one", "two", "three", "four", "five"],
+      "preview": [
+        {"word": "one", "meaningKo": "1, 하나", "example": "One big star."},
+        {"word": "two", "meaningKo": "2, 둘", "example": "Two buses."},
+        {"word": "three", "meaningKo": "3, 셋", "example": "Three ships."},
+        {"word": "four", "meaningKo": "4, 넷", "example": "Four white planes."},
+        {"word": "five", "meaningKo": "5, 다섯", "example": "I like five robots."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["one", "two", "three", "four", "five"],
+          "sentences": ["One big star.", "Two buses.", "I like three cars.", "Four white planes.", "Wow, five robots!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "I like three cars.", "options": ["three", "one", "four", "two"], "answerNo": 1},
+          {"kind": "picture", "script": "Five toy robots.", "options": ["two", "four", "five", "one"], "answerNo": 3},
+          {"kind": "picture", "script": "Two big trucks.", "options": ["five", "three", "one", "two"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like five robots. How many robots?", "ko": "나는 로봇 다섯 개가 좋아. 로봇이 몇 개야?", "modelAnswer": "Five robots.", "accepted": ["five", "five robots", "I like five robots."]},
+          {"en": "I like three cars. How many cars?", "ko": "나는 자동차 세 대가 좋아. 자동차가 몇 대야?", "modelAnswer": "Three cars.", "accepted": ["three", "three cars", "I like three cars."]},
+          {"en": "Four white planes. What color are the planes?", "ko": "하얀 비행기 네 대야. 비행기는 무슨 색이야?", "modelAnswer": "The planes are white.", "accepted": ["white", "white planes", "The planes are white."]},
+          {"en": "I like two buses. How many buses?", "ko": "나는 버스 두 대가 좋아. 버스가 몇 대야?", "modelAnswer": "Two buses.", "accepted": ["two", "two buses", "I like two buses."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 상자 세기",
+      "newWords": ["six", "seven", "eight", "nine", "ten"],
+      "unitWords": ["six", "seven", "eight", "nine", "ten", "three", "five", "one", "two", "four"],
+      "preview": [
+        {"word": "six", "meaningKo": "6, 여섯", "example": "Six red tops."},
+        {"word": "seven", "meaningKo": "7, 일곱", "example": "Seven toy cars."},
+        {"word": "eight", "meaningKo": "8, 여덟", "example": "Eight drums."},
+        {"word": "nine", "meaningKo": "9, 아홉", "example": "Nine toy robots."},
+        {"word": "ten", "meaningKo": "10, 열", "example": "Ten toy trucks."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["six", "seven", "eight", "nine", "ten"],
+          "sentences": ["Six red tops.", "Seven toy cars.", "I like eight drums.", "Nine toy robots.", "Wow, ten trucks!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ben is ten.", "options": ["six", "ten", "three", "eight"], "answerNo": 2},
+          {"kind": "picture", "script": "Seven toy cars.", "options": ["nine", "five", "seven", "one"], "answerNo": 3},
+          {"kind": "picture", "script": "Six red tops.", "options": ["six", "two", "eight", "four"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "I like eight drums. How many drums?", "ko": "나는 북 여덟 개가 좋아. 북이 몇 개야?", "modelAnswer": "Eight drums.", "accepted": ["eight", "eight drums", "I like eight drums."]},
+          {"en": "Nine toy robots. How many robots?", "ko": "장난감 로봇 아홉 개야. 로봇이 몇 개야?", "modelAnswer": "Nine toy robots.", "accepted": ["nine", "nine robots", "nine toy robots"]},
+          {"en": "Six red tops. What color are the tops?", "ko": "빨간 팽이 여섯 개야. 팽이는 무슨 색이야?", "modelAnswer": "The tops are red.", "accepted": ["red", "red tops", "The tops are red."]},
+          {"en": "I like ten trucks. How many trucks?", "ko": "나는 트럭 열 대가 좋아. 트럭이 몇 대야?", "modelAnswer": "Ten trucks.", "accepted": ["ten", "ten trucks", "I like ten trucks."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "야구장 모자",
+      "newWords": ["tall", "little", "thin", "hat", "cap"],
+      "unitWords": ["tall", "little", "thin", "hat", "cap", "two"],
+      "preview": [
+        {"word": "tall", "meaningKo": "키가 큰, 높은", "example": "The truck is tall."},
+        {"word": "little", "meaningKo": "작은, 어린", "example": "It is a little star."},
+        {"word": "thin", "meaningKo": "얇은, 마른", "example": "The pencil is thin."},
+        {"word": "hat", "meaningKo": "모자", "example": "This is my hat."},
+        {"word": "cap", "meaningKo": "(챙 달린) 모자", "example": "My cap is blue."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["tall", "little", "thin", "hat", "cap"],
+          "sentences": ["The truck is tall.", "It is a little car.", "The pencil is thin.", "This is my hat.", "Two blue caps."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is my hat.", "options": ["bus", "hat", "star", "drum"], "answerNo": 2},
+          {"kind": "picture", "script": "My cap is blue.", "options": ["cap", "robot", "plane", "ship"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a little star.", "options": ["truck", "drum", "star", "bus"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "The truck is tall. What is tall?", "ko": "트럭이 높아. 뭐가 높아?", "modelAnswer": "The truck is tall.", "accepted": ["truck", "the truck", "The truck is tall."]},
+          {"en": "The pencil is thin. What is thin?", "ko": "연필이 가늘어. 뭐가 가늘어?", "modelAnswer": "The pencil is thin.", "accepted": ["pencil", "the pencil", "The pencil is thin."]},
+          {"en": "My cap is blue. What color is it?", "ko": "내 모자는 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The cap is blue."]},
+          {"en": "Two blue caps. How many caps?", "ko": "파란 모자 두 개야. 모자가 몇 개야?", "modelAnswer": "Two blue caps.", "accepted": ["two", "two caps", "two blue caps"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "축구 경기 준비",
+      "newWords": ["sock", "shoe", "shirt", "jacket", "ball"],
+      "unitWords": ["sock", "shoe", "shirt", "jacket", "ball", "two", "three"],
+      "preview": [
+        {"word": "sock", "meaningKo": "양말", "example": "Two blue socks."},
+        {"word": "shoe", "meaningKo": "신발", "example": "It is a red shoe."},
+        {"word": "shirt", "meaningKo": "셔츠", "example": "It is a blue shirt."},
+        {"word": "jacket", "meaningKo": "재킷, 웃옷", "example": "My jacket is blue."},
+        {"word": "ball", "meaningKo": "공", "example": "It is a big ball."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["sock", "shoe", "shirt", "jacket", "ball"],
+          "sentences": ["Two blue socks.", "I like my red shoes.", "It is a blue shirt.", "My jacket is blue.", "I like three balls."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a big ball.", "options": ["car", "ball", "sock", "plane"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a red shoe.", "options": ["jacket", "bus", "star", "shoe"], "answerNo": 4},
+          {"kind": "picture", "script": "It is a blue shirt.", "options": ["shirt", "drum", "robot", "truck"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "Two blue socks. What color are the socks?", "ko": "파란 양말 두 짝이야. 양말은 무슨 색이야?", "modelAnswer": "The socks are blue.", "accepted": ["blue", "blue socks", "The socks are blue."]},
+          {"en": "I like my red shoes. What color are the shoes?", "ko": "나는 내 빨간 신발이 좋아. 신발은 무슨 색이야?", "modelAnswer": "The shoes are red.", "accepted": ["red", "red shoes", "The shoes are red."]},
+          {"en": "I like three balls. How many balls?", "ko": "나는 공 세 개가 좋아. 공이 몇 개야?", "modelAnswer": "Three balls.", "accepted": ["three", "three balls", "I like three balls."]},
+          {"en": "My jacket is blue. What is blue?", "ko": "내 재킷은 파란색이야. 뭐가 파란색이야?", "modelAnswer": "The jacket is blue.", "accepted": ["jacket", "the jacket", "The jacket is blue."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "주말 놀이 시간",
+      "newWords": ["doll", "bike", "kite", "ring", "game"],
+      "unitWords": ["doll", "bike", "kite", "ring", "game", "four"],
+      "preview": [
+        {"word": "doll", "meaningKo": "인형", "example": "This is my doll."},
+        {"word": "bike", "meaningKo": "자전거", "example": "My bike is red."},
+        {"word": "kite", "meaningKo": "연", "example": "The kite is blue."},
+        {"word": "ring", "meaningKo": "반지", "example": "This is my ring."},
+        {"word": "game", "meaningKo": "놀이, 게임", "example": "It is a game."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["doll", "bike", "kite", "ring", "game"],
+          "sentences": ["I like the doll.", "My bike is red.", "Four blue kites.", "This is my ring.", "I like games."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "My bike is red.", "options": ["bike", "star", "drum", "ship"], "answerNo": 1},
+          {"kind": "picture", "script": "The kite is blue.", "options": ["plane", "truck", "kite", "robot"], "answerNo": 3},
+          {"kind": "picture", "script": "This is my ring.", "options": ["box", "ring", "bus", "top"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "Four blue kites. How many kites?", "ko": "파란 연 네 개야. 연이 몇 개야?", "modelAnswer": "Four blue kites.", "accepted": ["four", "four kites", "four blue kites"]},
+          {"en": "My bike is red. What color is it?", "ko": "내 자전거는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bike is red."]},
+          {"en": "This is my doll. What is this?", "ko": "이건 내 인형이야. 이건 뭐야?", "modelAnswer": "This is a doll.", "accepted": ["doll", "a doll", "This is a doll."]},
+          {"en": "It is a game. What is it?", "ko": "그건 게임이야. 그게 뭐야?", "modelAnswer": "It is a game.", "accepted": ["game", "a game", "It is a game."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "인형 옷 입히기",
+      "newWords": [],
+      "unitWords": ["one", "six", "hat", "sock", "doll", "little", "nine", "three"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["one", "six", "hat", "sock", "doll"],
+          "sentences": ["One little doll.", "I like six socks.", "It is a hat.", "My doll is little.", "Six toy cars."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a hat.", "options": ["ship", "bus", "hat", "robot"], "answerNo": 3},
+          {"kind": "picture", "script": "I like six socks.", "options": ["one", "nine", "three", "six"], "answerNo": 4},
+          {"kind": "picture", "script": "This is my doll.", "options": ["doll", "car", "plane", "drum"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "I like six socks. How many socks?", "ko": "나는 양말 여섯 짝이 좋아. 양말이 몇 짝이야?", "modelAnswer": "Six socks.", "accepted": ["six", "six socks", "I like six socks."]},
+          {"en": "My doll is little. What is little?", "ko": "내 인형은 작아. 뭐가 작아?", "modelAnswer": "The doll is little.", "accepted": ["doll", "the doll", "The doll is little."]},
+          {"en": "It is a hat. What is it?", "ko": "그건 모자야. 그게 뭐야?", "modelAnswer": "It is a hat.", "accepted": ["hat", "a hat", "It is a hat."]},
+          {"en": "One little doll. How many dolls?", "ko": "작은 인형 한 개야. 인형이 몇 개야?", "modelAnswer": "One little doll.", "accepted": ["one", "one doll", "one little doll"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자전거 경주 날",
+      "newWords": [],
+      "unitWords": ["two", "seven", "cap", "shoe", "bike", "five", "eight"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["two", "seven", "cap", "shoe", "bike"],
+          "sentences": ["Two red bikes.", "Seven blue caps.", "I like the red shoes.", "Seven toy planes.", "My cap is blue."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Dan is seven.", "options": ["two", "seven", "five", "eight"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a red bike.", "options": ["car", "truck", "ship", "bike"], "answerNo": 4},
+          {"kind": "picture", "script": "My cap is blue.", "options": ["cap", "star", "bus", "top"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "Two red bikes. How many bikes?", "ko": "빨간 자전거 두 대야. 자전거가 몇 대야?", "modelAnswer": "Two red bikes.", "accepted": ["two", "two bikes", "two red bikes"]},
+          {"en": "Seven blue caps. What color are the caps?", "ko": "파란 모자 일곱 개야. 모자는 무슨 색이야?", "modelAnswer": "The caps are blue.", "accepted": ["blue", "blue caps", "The caps are blue."]},
+          {"en": "I like the red shoes. What color are the shoes?", "ko": "나는 빨간 신발이 좋아. 신발은 무슨 색이야?", "modelAnswer": "The shoes are red.", "accepted": ["red", "red shoes", "The shoes are red."]},
+          {"en": "Seven toy planes. How many planes?", "ko": "장난감 비행기 일곱 대야. 비행기가 몇 대야?", "modelAnswer": "Seven toy planes.", "accepted": ["seven", "seven planes", "seven toy planes"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "항구의 큰 배",
+      "newWords": [],
+      "unitWords": ["three", "eight", "tall", "shirt", "kite", "ten", "four"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["three", "eight", "tall", "shirt", "kite"],
+          "sentences": ["I like three kites.", "Eight blue shirts.", "The robot is tall.", "My shirt is blue.", "Eight tall ships."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Eight blue shirts.", "options": ["three", "eight", "ten", "four"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a blue kite.", "options": ["kite", "bus", "star", "robot"], "answerNo": 1},
+          {"kind": "picture", "script": "My shirt is blue.", "options": ["car", "drum", "shirt", "plane"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "The robot is tall. What is tall?", "ko": "로봇은 키가 커. 뭐가 키가 커?", "modelAnswer": "The robot is tall.", "accepted": ["robot", "the robot", "The robot is tall."]},
+          {"en": "I like three kites. How many kites?", "ko": "나는 연 세 개가 좋아. 연이 몇 개야?", "modelAnswer": "Three kites.", "accepted": ["three", "three kites", "I like three kites."]},
+          {"en": "Eight blue shirts. What color are the shirts?", "ko": "파란 셔츠 여덟 벌이야. 셔츠는 무슨 색이야?", "modelAnswer": "The shirts are blue.", "accepted": ["blue", "blue shirts", "The shirts are blue."]},
+          {"en": "Eight tall ships. How many ships?", "ko": "큰 배 여덟 척이야. 배가 몇 척이야?", "modelAnswer": "Eight tall ships.", "accepted": ["eight", "eight ships", "eight tall ships"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "반짝이 반지 놀이",
+      "newWords": [],
+      "unitWords": ["four", "nine", "little", "jacket", "ring", "six", "one"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["four", "nine", "little", "jacket", "ring"],
+          "sentences": ["Four little rings.", "Nine toy cars.", "My jacket is blue.", "It is a little star.", "Four blue jackets."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Tess is nine.", "options": ["nine", "six", "four", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a little ring.", "options": ["plane", "drum", "ring", "bus"], "answerNo": 3},
+          {"kind": "picture", "script": "My jacket is blue.", "options": ["truck", "star", "drum", "jacket"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "Nine toy cars. How many cars?", "ko": "장난감 자동차 아홉 대야. 자동차가 몇 대야?", "modelAnswer": "Nine toy cars.", "accepted": ["nine", "nine cars", "nine toy cars"]},
+          {"en": "Four little rings. How many rings?", "ko": "작은 반지 네 개야. 반지가 몇 개야?", "modelAnswer": "Four little rings.", "accepted": ["four", "four rings", "four little rings"]},
+          {"en": "My jacket is blue. What color is it?", "ko": "내 재킷은 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The jacket is blue."]},
+          {"en": "It is a little star. What is little?", "ko": "그건 작은 별이야. 뭐가 작아?", "modelAnswer": "The star is little.", "accepted": ["star", "the star", "The star is little."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "로봇 공 게임",
+      "newWords": [],
+      "unitWords": ["five", "ten", "thin", "ball", "game", "two", "seven", "nine", "one"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["five", "ten", "thin", "ball", "game"],
+          "sentences": ["Five big balls.", "Ten toy robots.", "The book is thin.", "It is a ball game.", "I like the ball."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ten toy robots.", "options": ["two", "five", "ten", "seven"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a big ball.", "options": ["bus", "ball", "robot", "star"], "answerNo": 2},
+          {"kind": "picture", "script": "Five big balls.", "options": ["five", "nine", "one", "ten"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "Ten toy robots. How many robots?", "ko": "장난감 로봇 열 개야. 로봇이 몇 개야?", "modelAnswer": "Ten toy robots.", "accepted": ["ten", "ten robots", "ten toy robots"]},
+          {"en": "The book is thin. What is thin?", "ko": "책이 얇아. 뭐가 얇아?", "modelAnswer": "The book is thin.", "accepted": ["book", "the book", "The book is thin."]},
+          {"en": "It is a ball game. What is it?", "ko": "그건 공 놀이야. 그게 뭐야?", "modelAnswer": "It is a ball game.", "accepted": ["game", "a game", "a ball game", "It is a ball game."]},
+          {"en": "Five big balls. How many balls?", "ko": "큰 공 다섯 개야. 공이 몇 개야?", "modelAnswer": "Five big balls.", "accepted": ["five", "five balls", "five big balls"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "주차장 차 세기",
+      "newWords": [],
+      "unitWords": ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hat", "cap", "shoe", "game"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["two", "four", "six", "eight", "ten"],
+          "sentences": ["One hat, please.", "I like three caps.", "Five red shoes.", "Seven buses.", "Wow, nine cars!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ten toy trucks.", "options": ["two", "ten", "four", "six"], "answerNo": 2},
+          {"kind": "picture", "script": "Eight white planes.", "options": ["eight", "three", "nine", "one"], "answerNo": 1},
+          {"kind": "picture", "script": "Four big ships.", "options": ["seven", "five", "ten", "four"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like two games. How many games?", "ko": "나는 게임 두 개가 좋아. 게임이 몇 개야?", "modelAnswer": "Two games.", "accepted": ["two", "two games", "I like two games."]},
+          {"en": "Six toy cars. How many cars?", "ko": "장난감 자동차 여섯 대야. 자동차가 몇 대야?", "modelAnswer": "Six toy cars.", "accepted": ["six", "six cars", "six toy cars"]},
+          {"en": "Five red shoes. What color are the shoes?", "ko": "빨간 신발 다섯 짝이야. 신발은 무슨 색이야?", "modelAnswer": "The shoes are red.", "accepted": ["red", "red shoes", "The shoes are red."]},
+          {"en": "Eight white planes. What color are the planes?", "ko": "하얀 비행기 여덟 대야. 비행기는 무슨 색이야?", "modelAnswer": "The planes are white.", "accepted": ["white", "white planes", "The planes are white."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "운동회 옷 고르기",
+      "newWords": [],
+      "unitWords": ["hat", "sock", "shirt", "jacket", "ball", "four", "cap", "six", "shoe", "tall", "little", "one", "thin", "ring", "kite", "doll", "bike", "eight"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["hat", "sock", "shirt", "jacket", "ball"],
+          "sentences": ["I like four caps.", "Six red shoes, please.", "The bus is tall.", "My hat is little.", "One thin sock."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a red shoe.", "options": ["ring", "jacket", "shoe", "car"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a hat.", "options": ["hat", "kite", "bus", "shirt"], "answerNo": 1},
+          {"kind": "picture", "script": "My sock is blue.", "options": ["doll", "cap", "bike", "sock"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The bus is tall. What is tall?", "ko": "버스가 높아. 뭐가 높아?", "modelAnswer": "The bus is tall.", "accepted": ["bus", "the bus", "The bus is tall."]},
+          {"en": "It is a blue jacket. What color is it?", "ko": "그건 파란 재킷이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The jacket is blue."]},
+          {"en": "I like eight balls. How many balls?", "ko": "나는 공 여덟 개가 좋아. 공이 몇 개야?", "modelAnswer": "Eight balls.", "accepted": ["eight", "eight balls", "I like eight balls."]},
+          {"en": "My hat is little. What is little?", "ko": "내 모자는 작아. 뭐가 작아?", "modelAnswer": "The hat is little.", "accepted": ["hat", "the hat", "The hat is little."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 가게 구경",
+      "newWords": [],
+      "unitWords": ["doll", "bike", "kite", "ring", "game", "little", "thin", "five", "ten", "tall", "shirt", "ball", "jacket", "sock", "two", "nine", "six", "three", "seven"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["doll", "bike", "kite", "ring", "game"],
+          "sentences": ["The doll is little.", "It is a thin kite.", "Five red bikes.", "I like games.", "Ten tall trucks."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "My bike is red.", "options": ["shirt", "bike", "ball", "bus"], "answerNo": 2},
+          {"kind": "picture", "script": "This is my doll.", "options": ["doll", "jacket", "sock", "star"], "answerNo": 1},
+          {"kind": "picture", "script": "Three blue kites.", "options": ["two", "nine", "six", "three"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a thin kite. What is thin?", "ko": "그건 얇은 연이야. 뭐가 얇아?", "modelAnswer": "The kite is thin.", "accepted": ["kite", "the kite", "The kite is thin."]},
+          {"en": "The doll is little. What is little?", "ko": "인형이 작아. 뭐가 작아?", "modelAnswer": "The doll is little.", "accepted": ["doll", "the doll", "The doll is little."]},
+          {"en": "It is a game. What is it?", "ko": "그건 놀이야. 그게 뭐야?", "modelAnswer": "It is a game.", "accepted": ["game", "a game", "It is a game."]},
+          {"en": "Seven little rings. How many rings?", "ko": "작은 반지 일곱 개야. 반지가 몇 개야?", "modelAnswer": "Seven little rings.", "accepted": ["seven", "seven rings", "seven little rings"]}
+        ]
+      }
+    }
+  ]
+}

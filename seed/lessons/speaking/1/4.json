@@ -1,0 +1,717 @@
+{
+  "area": "speaking",
+  "level": 1,
+  "unit": 4,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 구경",
+      "newWords": ["like", "cat", "dog", "pig", "duck"],
+      "unitWords": ["like", "cat", "dog", "pig", "duck"],
+      "preview": [
+        {"word": "like", "meaningKo": "좋아하다", "example": "I like the cat."},
+        {"word": "cat", "meaningKo": "고양이", "example": "This is a cat."},
+        {"word": "dog", "meaningKo": "개", "example": "This is my dog."},
+        {"word": "pig", "meaningKo": "돼지", "example": "It is a pig."},
+        {"word": "duck", "meaningKo": "오리", "example": "Oh, a duck!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["like", "cat", "dog", "pig", "duck"],
+          "sentences": ["I like the cat.", "This is my dog.", "It is a pig.", "I like the duck.", "A cat and a dog."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "I like the pig.", "options": ["cow", "pig", "apple", "tree"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a duck.", "options": ["duck", "horse", "egg", "flower"], "answerNo": 1},
+          {"kind": "picture", "script": "This is my dog.", "options": ["banana", "sun", "cat", "dog"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like the cat. What is it?", "ko": "나는 그 고양이가 좋아. 그건 뭐야?", "modelAnswer": "It is a cat.", "accepted": ["cat", "a cat", "the cat", "It is a cat."]},
+          {"en": "This is my dog. What is this?", "ko": "이건 내 개야. 이건 뭐야?", "modelAnswer": "This is a dog.", "accepted": ["dog", "a dog", "This is a dog.", "It is a dog."]},
+          {"en": "The pig is big. What is big?", "ko": "그 돼지는 커. 뭐가 커?", "modelAnswer": "The pig is big.", "accepted": ["pig", "the pig", "The pig is big."]},
+          {"en": "The duck is small. What is small?", "ko": "그 오리는 작아. 뭐가 작아?", "modelAnswer": "The duck is small.", "accepted": ["duck", "the duck", "The duck is small."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연못과 들판",
+      "newWords": ["fish", "bird", "rabbit", "frog", "sheep"],
+      "unitWords": ["fish", "bird", "rabbit", "frog", "sheep", "like", "duck"],
+      "preview": [
+        {"word": "fish", "meaningKo": "물고기", "example": "It is a fish."},
+        {"word": "bird", "meaningKo": "새", "example": "The bird is red."},
+        {"word": "rabbit", "meaningKo": "토끼", "example": "I like the rabbit."},
+        {"word": "frog", "meaningKo": "개구리", "example": "Oh, a frog!"},
+        {"word": "sheep", "meaningKo": "양", "example": "This is a sheep."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["fish", "bird", "rabbit", "frog", "sheep"],
+          "sentences": ["I like fish.", "The bird is red.", "It is a rabbit.", "Oh, a frog!", "I like the sheep."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a red bird.", "options": ["tree", "lake", "bird", "rock"], "answerNo": 3},
+          {"kind": "picture", "script": "I like the rabbit.", "options": ["flower", "rabbit", "duck", "egg"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a frog.", "options": ["sun", "sheep", "fish", "frog"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "I like the red bird. What color is the bird?", "ko": "나는 빨간 새가 좋아. 새는 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bird is red."]},
+          {"en": "This is a sheep. What is this?", "ko": "이건 양이야. 이건 뭐야?", "modelAnswer": "This is a sheep.", "accepted": ["sheep", "a sheep", "This is a sheep.", "It is a sheep."]},
+          {"en": "The rabbit is small. What is small?", "ko": "그 토끼는 작아. 뭐가 작아?", "modelAnswer": "The rabbit is small.", "accepted": ["rabbit", "the rabbit", "The rabbit is small."]},
+          {"en": "It is a fish. What is it?", "ko": "그건 물고기야. 그건 뭐야?", "modelAnswer": "It is a fish.", "accepted": ["fish", "a fish", "It is a fish."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "시골길 친구들",
+      "newWords": ["puppy", "fox", "chicken", "snake", "thank"],
+      "unitWords": ["puppy", "fox", "chicken", "snake", "thank", "like", "pig", "bird"],
+      "preview": [
+        {"word": "puppy", "meaningKo": "강아지", "example": "This is my puppy."},
+        {"word": "fox", "meaningKo": "여우", "example": "The fox is orange."},
+        {"word": "chicken", "meaningKo": "닭, 닭고기", "example": "It is a chicken."},
+        {"word": "snake", "meaningKo": "뱀", "example": "The snake is green."},
+        {"word": "thank", "meaningKo": "고마워하다", "example": "Thank you!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["puppy", "fox", "chicken", "snake", "thank"],
+          "sentences": ["This is my puppy.", "The fox is orange.", "I like the chicken.", "The snake is long.", "Thank you!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The fox is orange.", "options": ["fox", "banana", "rose", "egg"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the chicken.", "options": ["flower", "tree", "chicken", "pig"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a green snake.", "options": ["apple", "snake", "sun", "bird"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "Max is my puppy. What is Max?", "ko": "맥스는 내 강아지야. 맥스는 뭐야?", "modelAnswer": "It is a puppy.", "accepted": ["puppy", "a puppy", "It is a puppy."]},
+          {"en": "The fox is orange. What color is it?", "ko": "그 여우는 주황색이야. 무슨 색이야?", "modelAnswer": "It is orange.", "accepted": ["orange", "It is orange.", "The fox is orange."]},
+          {"en": "The snake is long. What is long?", "ko": "그 뱀은 길어. 뭐가 길어?", "modelAnswer": "The snake is long.", "accepted": ["snake", "the snake", "The snake is long."]},
+          {"en": "This is a chicken. What is this?", "ko": "이건 닭이야. 이건 뭐야?", "modelAnswer": "This is a chicken.", "accepted": ["chicken", "a chicken", "This is a chicken.", "It is a chicken."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "할머니 댁 마당",
+      "newWords": ["cute", "nice", "name", "hot", "top"],
+      "unitWords": ["cute", "nice", "name", "hot", "top", "puppy", "like", "fish", "sheep", "rabbit", "cat", "chicken", "frog", "duck"],
+      "preview": [
+        {"word": "cute", "meaningKo": "귀여운", "example": "The rabbit is cute."},
+        {"word": "nice", "meaningKo": "좋은, 멋진", "example": "The cake is nice."},
+        {"word": "name", "meaningKo": "이름", "example": "I like my name."},
+        {"word": "hot", "meaningKo": "뜨거운, 더운", "example": "The sun is hot."},
+        {"word": "top", "meaningKo": "팽이", "example": "This top is red."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["cute", "nice", "name", "hot", "top"],
+          "sentences": ["The puppy is cute.", "It is a nice name.", "The sun is hot.", "This top is red.", "I like my top."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This top is red.", "options": ["fish", "sheep", "egg", "top"], "answerNo": 4},
+          {"kind": "picture", "script": "The rabbit is cute.", "options": ["cat", "chicken", "rabbit", "tree"], "answerNo": 3},
+          {"kind": "picture", "script": "The sun is hot.", "options": ["frog", "sun", "duck", "rose"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The sun is hot. What is hot?", "ko": "해가 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The sun is hot.", "accepted": ["sun", "the sun", "The sun is hot."]},
+          {"en": "The puppy is cute. What is cute?", "ko": "그 강아지는 귀여워. 뭐가 귀여워?", "modelAnswer": "The puppy is cute.", "accepted": ["puppy", "the puppy", "The puppy is cute."]},
+          {"en": "This top is red. What color is it?", "ko": "이 팽이는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The top is red."]},
+          {"en": "The cake is nice. What is nice?", "ko": "그 케이크는 좋아. 뭐가 좋아?", "modelAnswer": "The cake is nice.", "accepted": ["cake", "the cake", "The cake is nice."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "엄마와 점심 준비",
+      "newWords": ["fan", "pot", "brush", "lunch", "thick"],
+      "unitWords": ["fan", "pot", "brush", "lunch", "thick", "hot", "like"],
+      "preview": [
+        {"word": "fan", "meaningKo": "부채, 선풍기", "example": "The fan is red."},
+        {"word": "pot", "meaningKo": "냄비", "example": "The pot is hot."},
+        {"word": "brush", "meaningKo": "붓, 솔", "example": "It is my brush."},
+        {"word": "lunch", "meaningKo": "점심", "example": "I like lunch."},
+        {"word": "thick", "meaningKo": "두꺼운", "example": "The cheese is thick."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["fan", "pot", "brush", "lunch", "thick"],
+          "sentences": ["The pot is hot.", "It is my lunch.", "This is a red fan.", "I like my brush.", "The cheese is thick."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The pot is hot.", "options": ["pot", "cake", "apple", "milk"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a red fan.", "options": ["egg", "banana", "fan", "rice"], "answerNo": 3},
+          {"kind": "picture", "script": "This is my brush.", "options": ["cheese", "brush", "pizza", "cookie"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The pot is hot. What is hot?", "ko": "그 냄비는 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The pot is hot.", "accepted": ["pot", "the pot", "The pot is hot."]},
+          {"en": "The fan is red. What color is it?", "ko": "그 부채는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The fan is red."]},
+          {"en": "The cheese is thick. What is thick?", "ko": "그 치즈는 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The cheese is thick.", "accepted": ["cheese", "the cheese", "The cheese is thick."]},
+          {"en": "This is lunch. What is this?", "ko": "이건 점심이야. 이건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "This is lunch."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동물원 나들이",
+      "newWords": [],
+      "unitWords": ["fox", "snake", "bird", "cute", "like", "rabbit", "sheep"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["fox", "snake", "bird", "cute", "like"],
+          "sentences": ["The fox is orange.", "I like the snake.", "Wow, a red bird!", "The rabbit is cute.", "It is a big lion."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The snake is green.", "options": ["lion", "monkey", "snake", "zebra"], "answerNo": 3},
+          {"kind": "picture", "script": "I like the fox.", "options": ["fox", "elephant", "bear", "tiger"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a cute rabbit.", "options": ["zebra", "rabbit", "lion", "sheep"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The fox is orange. What color is the fox?", "ko": "그 여우는 주황색이야. 여우는 무슨 색이야?", "modelAnswer": "It is orange.", "accepted": ["orange", "It is orange.", "The fox is orange."]},
+          {"en": "The snake is long. What is long?", "ko": "그 뱀은 길어. 뭐가 길어?", "modelAnswer": "The snake is long.", "accepted": ["snake", "the snake", "The snake is long."]},
+          {"en": "I like the red bird. What color is it?", "ko": "나는 빨간 새가 좋아. 그건 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bird is red."]},
+          {"en": "The lion is big. The rabbit is small. What is small?", "ko": "사자는 커. 토끼는 작아. 뭐가 작아?", "modelAnswer": "The rabbit is small.", "accepted": ["rabbit", "the rabbit", "The rabbit is small."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바닷가 하루",
+      "newWords": [],
+      "unitWords": ["fish", "hot", "lunch", "pot", "thank", "like", "duck"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["fish", "hot", "lunch", "pot", "thank"],
+          "sentences": ["The sand is hot.", "I like fish.", "It is my lunch.", "The pot is hot.", "Oh, thank you!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a fish.", "options": ["shell", "fish", "sun", "rock"], "answerNo": 2},
+          {"kind": "picture", "script": "The pot is hot.", "options": ["sand", "lake", "tree", "pot"], "answerNo": 4},
+          {"kind": "picture", "script": "Oh, a duck!", "options": ["duck", "shell", "lake", "flower"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "The sand is hot. What is hot?", "ko": "모래가 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The sand is hot.", "accepted": ["sand", "the sand", "The sand is hot."]},
+          {"en": "The fish is small. What is small?", "ko": "그 물고기는 작아. 뭐가 작아?", "modelAnswer": "The fish is small.", "accepted": ["fish", "the fish", "The fish is small."]},
+          {"en": "This is a pot. What is this?", "ko": "이건 냄비야. 이건 뭐야?", "modelAnswer": "This is a pot.", "accepted": ["pot", "a pot", "This is a pot.", "It is a pot."]},
+          {"en": "The lake is blue. What color is it?", "ko": "호수는 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The lake is blue."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "잠들기 전 그림책",
+      "newWords": [],
+      "unitWords": ["frog", "pig", "thick", "name", "dog", "like", "nice", "cat", "chicken", "sheep", "duck", "rabbit"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["frog", "pig", "thick", "name", "dog"],
+          "sentences": ["The book is thick.", "I like the frog.", "This is a pig.", "It is a nice name.", "That is a dog."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a frog.", "options": ["cat", "pig", "frog", "bear"], "answerNo": 3},
+          {"kind": "picture", "script": "This is a chicken.", "options": ["chicken", "book", "sheep", "cow"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the pig.", "options": ["duck", "pig", "rabbit", "horse"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The book is thick. What is thick?", "ko": "그 책은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The book is thick.", "accepted": ["book", "the book", "The book is thick."]},
+          {"en": "This is a frog. What is this?", "ko": "이건 개구리야. 이건 뭐야?", "modelAnswer": "This is a frog.", "accepted": ["frog", "a frog", "This is a frog.", "It is a frog."]},
+          {"en": "That is a duck. What is that?", "ko": "저건 오리야. 저건 뭐야?", "modelAnswer": "That is a duck.", "accepted": ["duck", "a duck", "That is a duck.", "It is a duck."]},
+          {"en": "The dog is big. The pig is small. What is big?", "ko": "개는 커. 돼지는 작아. 뭐가 커?", "modelAnswer": "The dog is big.", "accepted": ["dog", "the dog", "The dog is big."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "할아버지와 그림",
+      "newWords": [],
+      "unitWords": ["brush", "fan", "top", "cat", "nice", "like", "thick", "frog", "fish", "sheep"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["brush", "fan", "top", "cat", "nice"],
+          "sentences": ["This is my brush.", "The fan is red.", "I like the top.", "It is a nice cat.", "The brush is thick."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The fan is red.", "options": ["fan", "frog", "banana", "tree"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a brush.", "options": ["cat", "fish", "egg", "brush"], "answerNo": 4},
+          {"kind": "picture", "script": "This top is red.", "options": ["sheep", "top", "egg", "flower"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The top is red. What color is it?", "ko": "그 팽이는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The top is red."]},
+          {"en": "The brush is thick. What is thick?", "ko": "그 붓은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The brush is thick.", "accepted": ["brush", "the brush", "The brush is thick."]},
+          {"en": "It is a nice cat. What is it?", "ko": "그건 멋진 고양이야. 그건 뭐야?", "modelAnswer": "It is a cat.", "accepted": ["cat", "a cat", "a nice cat", "It is a cat.", "It is a nice cat."]},
+          {"en": "The fan is big. The top is small. What is small?", "ko": "부채는 커. 팽이는 작아. 뭐가 작아?", "modelAnswer": "The top is small.", "accepted": ["top", "the top", "The top is small."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "강아지 생일 파티",
+      "newWords": [],
+      "unitWords": ["puppy", "cute", "thank", "name", "chicken", "like", "duck", "lunch", "hot", "dog", "fox"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["puppy", "cute", "thank", "name", "chicken"],
+          "sentences": ["The puppy is cute.", "Oh, thank you!", "I like the name.", "A chicken and a duck.", "My lunch is hot."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Oh, a chicken!", "options": ["cake", "chicken", "egg", "banana"], "answerNo": 2},
+          {"kind": "picture", "script": "That is a dog.", "options": ["dog", "cake", "sun", "milk"], "answerNo": 1},
+          {"kind": "picture", "script": "The fox is cute.", "options": ["apple", "cookie", "candy", "fox"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a cute puppy. What is it?", "ko": "그건 귀여운 강아지야. 그건 뭐야?", "modelAnswer": "It is a puppy.", "accepted": ["puppy", "a puppy", "a cute puppy", "It is a puppy.", "It is a cute puppy."]},
+          {"en": "The milk is hot. What is hot?", "ko": "우유가 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The milk is hot.", "accepted": ["milk", "the milk", "The milk is hot."]},
+          {"en": "The fox is orange. What color is it?", "ko": "그 여우는 주황색이야. 무슨 색이야?", "modelAnswer": "It is orange.", "accepted": ["orange", "It is orange.", "The fox is orange."]},
+          {"en": "I like the cake. It is big. What is big?", "ko": "나는 그 케이크가 좋아. 그건 커. 뭐가 커?", "modelAnswer": "The cake is big.", "accepted": ["cake", "the cake", "The cake is big."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "꽃밭의 아침",
+      "newWords": [],
+      "unitWords": ["cat", "dog", "pig", "duck", "bird", "like", "rabbit", "name", "fox", "snake", "top", "frog", "pot", "chicken", "brush", "fan", "fish", "sheep"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cat", "dog", "pig", "duck", "bird"],
+          "sentences": ["This is my cat.", "That is a dog.", "The pig is big.", "I like the rabbit.", "The bird is red."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "My name is Gus. I am a duck.", "options": ["duck", "fox", "flower", "snake"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the frog.", "options": ["top", "cat", "frog", "pot"], "answerNo": 3},
+          {"kind": "picture", "script": "This is a fish.", "options": ["chicken", "brush", "fan", "fish"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "That is a dog. What is that?", "ko": "저건 개야. 저건 뭐야?", "modelAnswer": "That is a dog.", "accepted": ["dog", "a dog", "That is a dog.", "It is a dog."]},
+          {"en": "The bird is red. What color is it?", "ko": "그 새는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bird is red."]},
+          {"en": "The sheep is big. The cat is small. What is small?", "ko": "양은 커. 고양이는 작아. 뭐가 작아?", "modelAnswer": "The cat is small.", "accepted": ["cat", "the cat", "The cat is small."]},
+          {"en": "I like the sheep. What is it?", "ko": "나는 그 양이 좋아. 그건 뭐야?", "modelAnswer": "It is a sheep.", "accepted": ["sheep", "a sheep", "the sheep", "It is a sheep."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "산속 텐트 밤",
+      "newWords": [],
+      "unitWords": ["puppy", "fox", "snake", "top", "name", "cute", "thank", "nice", "hot", "dog", "rabbit", "chicken", "pig", "sheep", "duck", "fish", "lunch", "thick"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["puppy", "fox", "snake", "top", "name"],
+          "sentences": ["It is a cute puppy.", "The fox is orange.", "Oh, thank you!", "It is a nice name.", "The sun is hot."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The snake is long.", "options": ["dog", "snake", "rabbit", "rock"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a chicken.", "options": ["chicken", "pig", "lake", "sheep"], "answerNo": 1},
+          {"kind": "picture", "script": "This top is red.", "options": ["duck", "fish", "top", "lake"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "This is lunch. What is this?", "ko": "이건 점심이야. 이건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "This is lunch."]},
+          {"en": "The chicken is big. The snake is long. What is long?", "ko": "닭은 커. 뱀은 길어. 뭐가 길어?", "modelAnswer": "The snake is long.", "accepted": ["snake", "the snake", "The snake is long."]},
+          {"en": "The puppy is cute. What is cute?", "ko": "그 강아지는 귀여워. 뭐가 귀여워?", "modelAnswer": "The puppy is cute.", "accepted": ["puppy", "the puppy", "The puppy is cute."]},
+          {"en": "The book is thick. What is thick?", "ko": "그 책은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The book is thick.", "accepted": ["book", "the book", "The book is thick."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "가족 저녁 식탁",
+      "newWords": [],
+      "unitWords": ["fan", "pot", "brush", "lunch", "thick", "like", "hot", "thank", "nice", "bird", "cat", "sheep", "frog", "puppy", "cute"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["fan", "pot", "brush", "lunch", "thick"],
+          "sentences": ["I like lunch.", "The pot is hot.", "Thank you!", "The cheese is thick.", "It is a nice fan."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a pot.", "options": ["pot", "bird", "rice", "cat"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a brush.", "options": ["banana", "sheep", "brush", "milk"], "answerNo": 3},
+          {"kind": "picture", "script": "The fan is red.", "options": ["rice", "egg", "frog", "fan"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The pot is hot. What is hot?", "ko": "그 냄비는 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The pot is hot.", "accepted": ["pot", "the pot", "The pot is hot."]},
+          {"en": "The cheese is thick. What is thick?", "ko": "그 치즈는 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The cheese is thick.", "accepted": ["cheese", "the cheese", "The cheese is thick."]},
+          {"en": "This is my puppy. It is cute. What is it?", "ko": "이건 내 강아지야. 귀여워. 그건 뭐야?", "modelAnswer": "It is a puppy.", "accepted": ["puppy", "a puppy", "It is a puppy."]},
+          {"en": "That is lunch. What is that?", "ko": "저건 점심이야. 저건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "That is lunch."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 상자 열기",
+      "newWords": ["like", "cat", "dog", "pig", "duck"],
+      "unitWords": ["like", "cat", "dog", "pig", "duck"],
+      "preview": [
+        {"word": "like", "meaningKo": "좋아하다", "example": "I like my ball."},
+        {"word": "cat", "meaningKo": "고양이", "example": "It is a cat."},
+        {"word": "dog", "meaningKo": "개", "example": "This is my dog."},
+        {"word": "pig", "meaningKo": "돼지", "example": "That is a pig."},
+        {"word": "duck", "meaningKo": "오리", "example": "I like the duck."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["like", "cat", "dog", "pig", "duck"],
+          "sentences": ["I like my toy car.", "This is a toy dog.", "It is a toy pig.", "I like the duck.", "A cat and a ball."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a cat.", "options": ["ball", "car", "cat", "kite"], "answerNo": 3},
+          {"kind": "picture", "script": "I like the pig.", "options": ["drum", "bus", "pig", "doll"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a duck.", "options": ["ship", "duck", "plane", "bike"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "This is a toy dog. What is this?", "ko": "이건 장난감 개야. 이건 뭐야?", "modelAnswer": "It is a toy dog.", "accepted": ["dog", "a dog", "a toy dog", "This is a dog.", "It is a toy dog."]},
+          {"en": "The cat is small. What is small?", "ko": "그 고양이는 작아. 뭐가 작아?", "modelAnswer": "The cat is small.", "accepted": ["cat", "the cat", "The cat is small."]},
+          {"en": "My kite is blue. What color is it?", "ko": "내 연은 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The kite is blue."]},
+          {"en": "I like the duck. What is it?", "ko": "나는 그 오리가 좋아. 그건 뭐야?", "modelAnswer": "It is a duck.", "accepted": ["duck", "a duck", "the duck", "It is a duck."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "인형극 놀이",
+      "newWords": ["fish", "bird", "rabbit", "frog", "sheep"],
+      "unitWords": ["fish", "bird", "rabbit", "frog", "sheep", "like"],
+      "preview": [
+        {"word": "fish", "meaningKo": "물고기", "example": "It is a fish."},
+        {"word": "bird", "meaningKo": "새", "example": "The bird is red."},
+        {"word": "rabbit", "meaningKo": "토끼", "example": "This is a rabbit."},
+        {"word": "frog", "meaningKo": "개구리", "example": "I like the frog."},
+        {"word": "sheep", "meaningKo": "양", "example": "That is a sheep."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["fish", "bird", "rabbit", "frog", "sheep"],
+          "sentences": ["This is a toy fish.", "I like the red bird.", "That is a rabbit.", "Oh, a frog!", "This is my toy sheep."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "I like the rabbit.", "options": ["doll", "kite", "drum", "rabbit"], "answerNo": 4},
+          {"kind": "picture", "script": "It is a red bird.", "options": ["bird", "robot", "star", "plane"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a sheep.", "options": ["car", "sheep", "fish", "drum"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The bird is red. What color is it?", "ko": "그 새는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bird is red."]},
+          {"en": "This is a toy frog. What is this?", "ko": "이건 장난감 개구리야. 이건 뭐야?", "modelAnswer": "It is a toy frog.", "accepted": ["frog", "a frog", "a toy frog", "This is a frog.", "It is a toy frog."]},
+          {"en": "The sheep is big. The fish is small. What is small?", "ko": "양은 커. 물고기는 작아. 뭐가 작아?", "modelAnswer": "The fish is small.", "accepted": ["fish", "the fish", "The fish is small."]},
+          {"en": "I like the rabbit. What is it?", "ko": "나는 그 토끼가 좋아. 그건 뭐야?", "modelAnswer": "It is a rabbit.", "accepted": ["rabbit", "a rabbit", "the rabbit", "It is a rabbit."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "버스 타고 소풍",
+      "newWords": ["puppy", "fox", "chicken", "snake", "thank"],
+      "unitWords": ["puppy", "fox", "chicken", "snake", "thank", "like"],
+      "preview": [
+        {"word": "puppy", "meaningKo": "강아지", "example": "This is my puppy."},
+        {"word": "fox", "meaningKo": "여우", "example": "It is a fox."},
+        {"word": "chicken", "meaningKo": "닭, 닭고기", "example": "That is a chicken."},
+        {"word": "snake", "meaningKo": "뱀", "example": "I like the snake."},
+        {"word": "thank", "meaningKo": "고마워하다", "example": "Oh, thank you!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["puppy", "fox", "chicken", "snake", "thank"],
+          "sentences": ["I like my puppy.", "The fox is orange.", "That is a toy snake.", "The chicken is big.", "Thank you!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The snake is green.", "options": ["bus", "car", "snake", "plane"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a chicken.", "options": ["chicken", "truck", "kite", "ball"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the fox.", "options": ["bike", "fox", "ship", "drum"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The bus is big. What is big?", "ko": "버스는 커. 뭐가 커?", "modelAnswer": "The bus is big.", "accepted": ["bus", "the bus", "The bus is big."]},
+          {"en": "The fox is orange. What color is it?", "ko": "그 여우는 주황색이야. 무슨 색이야?", "modelAnswer": "It is orange.", "accepted": ["orange", "It is orange.", "The fox is orange."]},
+          {"en": "This is my puppy. What is this?", "ko": "이건 내 강아지야. 이건 뭐야?", "modelAnswer": "This is a puppy.", "accepted": ["puppy", "a puppy", "This is a puppy.", "It is a puppy."]},
+          {"en": "The snake is long. What is long?", "ko": "그 뱀은 길어. 뭐가 길어?", "modelAnswer": "The snake is long.", "accepted": ["snake", "the snake", "The snake is long."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "팽이 돌리기 시합",
+      "newWords": ["cute", "nice", "name", "hot", "top"],
+      "unitWords": ["cute", "nice", "name", "hot", "top", "puppy", "like", "rabbit"],
+      "preview": [
+        {"word": "cute", "meaningKo": "귀여운", "example": "The doll is cute."},
+        {"word": "nice", "meaningKo": "좋은, 멋진", "example": "It is a nice kite."},
+        {"word": "name", "meaningKo": "이름", "example": "It is a nice name."},
+        {"word": "hot", "meaningKo": "뜨거운, 더운", "example": "It is hot."},
+        {"word": "top", "meaningKo": "팽이", "example": "This top is red."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["cute", "nice", "name", "hot", "top"],
+          "sentences": ["This is my red top.", "It is a nice top.", "The puppy is cute.", "I like the name.", "Oh, it is hot!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This top is red.", "options": ["kite", "top", "car", "plane"], "answerNo": 2},
+          {"kind": "picture", "script": "The rabbit is cute.", "options": ["drum", "ship", "rabbit", "ball"], "answerNo": 3},
+          {"kind": "picture", "script": "The sun is hot.", "options": ["sun", "star", "robot", "bus"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "The top is red. What color is it?", "ko": "그 팽이는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The top is red."]},
+          {"en": "The doll is cute. What is cute?", "ko": "그 인형은 귀여워. 뭐가 귀여워?", "modelAnswer": "The doll is cute.", "accepted": ["doll", "the doll", "The doll is cute."]},
+          {"en": "The sand is hot. What is hot?", "ko": "모래가 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The sand is hot.", "accepted": ["sand", "the sand", "The sand is hot."]},
+          {"en": "It is a nice kite. What is it?", "ko": "그건 멋진 연이야. 그건 뭐야?", "modelAnswer": "It is a kite.", "accepted": ["kite", "a kite", "a nice kite", "It is a kite.", "It is a nice kite."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "로봇 요리사 놀이",
+      "newWords": ["fan", "pot", "brush", "lunch", "thick"],
+      "unitWords": ["fan", "pot", "brush", "lunch", "thick", "hot", "like", "nice"],
+      "preview": [
+        {"word": "fan", "meaningKo": "부채, 선풍기", "example": "It is a red fan."},
+        {"word": "pot", "meaningKo": "냄비", "example": "That is a pot."},
+        {"word": "brush", "meaningKo": "붓, 솔", "example": "I like the brush."},
+        {"word": "lunch", "meaningKo": "점심", "example": "It is lunch."},
+        {"word": "thick", "meaningKo": "두꺼운", "example": "The book is thick."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["fan", "pot", "brush", "lunch", "thick"],
+          "sentences": ["The pot is hot.", "It is my lunch.", "I like the red fan.", "This is a thick brush.", "The robot is nice."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a brush.", "options": ["robot", "brush", "drum", "car"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a pot.", "options": ["ball", "kite", "bike", "pot"], "answerNo": 4},
+          {"kind": "picture", "script": "The fan is red.", "options": ["fan", "plane", "ship", "star"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "The robot is big. The pot is small. What is small?", "ko": "로봇은 커. 냄비는 작아. 뭐가 작아?", "modelAnswer": "The pot is small.", "accepted": ["pot", "the pot", "The pot is small."]},
+          {"en": "The brush is thick. What is thick?", "ko": "그 붓은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The brush is thick.", "accepted": ["brush", "the brush", "The brush is thick."]},
+          {"en": "This is lunch. What is this?", "ko": "이건 점심이야. 이건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "This is lunch."]},
+          {"en": "The fan is red. What color is it?", "ko": "그 부채는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The fan is red."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연날리기 날",
+      "newWords": [],
+      "unitWords": ["bird", "fox", "snake", "cute", "like"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["bird", "fox", "snake", "cute", "like"],
+          "sentences": ["I like my blue kite.", "The bird is red.", "Wow, a big kite!", "The fox is cute.", "That is a toy snake."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "The bird is red.", "options": ["kite", "ball", "plane", "bird"], "answerNo": 4},
+          {"kind": "picture", "script": "I like the fox.", "options": ["fox", "bike", "star", "drum"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a snake.", "options": ["car", "ship", "snake", "robot"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "My kite is blue. What color is it?", "ko": "내 연은 파란색이야. 무슨 색이야?", "modelAnswer": "It is blue.", "accepted": ["blue", "It is blue.", "The kite is blue."]},
+          {"en": "The fox is cute. What is cute?", "ko": "그 여우는 귀여워. 뭐가 귀여워?", "modelAnswer": "The fox is cute.", "accepted": ["fox", "the fox", "The fox is cute."]},
+          {"en": "The kite is big. The bird is small. What is small?", "ko": "연은 커. 새는 작아. 뭐가 작아?", "modelAnswer": "The bird is small.", "accepted": ["bird", "the bird", "The bird is small."]},
+          {"en": "That is a toy snake. What is that?", "ko": "저건 장난감 뱀이야. 저건 뭐야?", "modelAnswer": "It is a toy snake.", "accepted": ["snake", "a snake", "a toy snake", "That is a snake.", "It is a toy snake."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 가게 구경",
+      "newWords": [],
+      "unitWords": ["rabbit", "sheep", "cat", "nice", "thick", "like", "top"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["rabbit", "sheep", "cat", "nice", "thick"],
+          "sentences": ["It is a toy shop.", "I like the rabbit.", "That is a nice cat.", "This is a toy sheep.", "The book is thick."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a sheep.", "options": ["doll", "yo-yo", "sheep", "robot"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a cat.", "options": ["drum", "cat", "car", "top"], "answerNo": 2},
+          {"kind": "picture", "script": "I like the rabbit.", "options": ["bike", "ball", "truck", "rabbit"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The yo-yo is red. What color is it?", "ko": "그 요요는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The yo-yo is red."]},
+          {"en": "That is a nice cat. What is that?", "ko": "저건 멋진 고양이야. 저건 뭐야?", "modelAnswer": "It is a nice cat.", "accepted": ["cat", "a cat", "a nice cat", "That is a cat.", "It is a nice cat."]},
+          {"en": "The book is thick. What is thick?", "ko": "그 책은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The book is thick.", "accepted": ["book", "the book", "The book is thick."]},
+          {"en": "The doll is big. The rabbit is small. What is small?", "ko": "인형은 커. 토끼는 작아. 뭐가 작아?", "modelAnswer": "The rabbit is small.", "accepted": ["rabbit", "the rabbit", "The rabbit is small."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "배 타고 섬으로",
+      "newWords": [],
+      "unitWords": ["fish", "duck", "hot", "lunch", "pot", "like"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["fish", "duck", "hot", "lunch", "pot"],
+          "sentences": ["The ship is big.", "I like fish.", "Oh, a duck!", "My lunch is hot.", "The pot is hot."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Oh, a duck!", "options": ["duck", "ship", "fish", "star"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a fish.", "options": ["plane", "star", "bus", "fish"], "answerNo": 4},
+          {"kind": "picture", "script": "This is a pot.", "options": ["ship", "pot", "kite", "car"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "The sun is hot. What is hot?", "ko": "해가 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The sun is hot.", "accepted": ["sun", "the sun", "The sun is hot."]},
+          {"en": "This is a duck. What is this?", "ko": "이건 오리야. 이건 뭐야?", "modelAnswer": "This is a duck.", "accepted": ["duck", "a duck", "This is a duck.", "It is a duck."]},
+          {"en": "The ship is big. The fish is small. What is small?", "ko": "배는 커. 물고기는 작아. 뭐가 작아?", "modelAnswer": "The fish is small.", "accepted": ["fish", "the fish", "The fish is small."]},
+          {"en": "That is lunch. What is that?", "ko": "저건 점심이야. 저건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "That is lunch."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "곰 인형과 놀기",
+      "newWords": [],
+      "unitWords": ["name", "dog", "pig", "puppy", "thank", "like", "cute", "frog"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["name", "dog", "pig", "puppy", "thank"],
+          "sentences": ["This is my toy bear.", "I like the name.", "It is a cute puppy.", "A dog and a pig.", "Thank you!"]
+        },
+        "listening": [
+          {"kind": "picture", "script": "Ted is a bear.", "options": ["bear", "robot", "drum", "doll"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a pig.", "options": ["ball", "pig", "ship", "kite"], "answerNo": 2},
+          {"kind": "picture", "script": "That is a dog.", "options": ["car", "bike", "plane", "dog"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "Ted is my toy bear. What is Ted?", "ko": "테드는 내 곰 인형이야. 테드는 뭐야?", "modelAnswer": "It is a toy bear.", "accepted": ["bear", "a bear", "a toy bear", "It is a bear.", "It is a toy bear."]},
+          {"en": "The dog is big. The pig is small. What is small?", "ko": "개는 커. 돼지는 작아. 뭐가 작아?", "modelAnswer": "The pig is small.", "accepted": ["pig", "the pig", "The pig is small."]},
+          {"en": "It is a cute puppy. What is it?", "ko": "그건 귀여운 강아지야. 그건 뭐야?", "modelAnswer": "It is a puppy.", "accepted": ["puppy", "a puppy", "a cute puppy", "It is a puppy.", "It is a cute puppy."]},
+          {"en": "I like the frog. What is it?", "ko": "나는 그 개구리가 좋아. 그건 뭐야?", "modelAnswer": "It is a frog.", "accepted": ["frog", "a frog", "the frog", "It is a frog."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "별 보는 밤",
+      "newWords": [],
+      "unitWords": ["chicken", "frog", "top", "fan", "brush", "like", "thick"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["chicken", "frog", "top", "fan", "brush"],
+          "sentences": ["Wow, a little star!", "The frog is small.", "The fan is red.", "It is my brush.", "The chicken is big."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a chicken.", "options": ["star", "plane", "robot", "chicken"], "answerNo": 4},
+          {"kind": "picture", "script": "This top is red.", "options": ["ship", "top", "star", "drum"], "answerNo": 2},
+          {"kind": "picture", "script": "I like the brush.", "options": ["brush", "fan", "kite", "bus"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "The star is small. What is small?", "ko": "별은 작아. 뭐가 작아?", "modelAnswer": "The star is small.", "accepted": ["star", "the star", "The star is small."]},
+          {"en": "The frog is small. The chicken is big. What is big?", "ko": "개구리는 작아. 닭은 커. 뭐가 커?", "modelAnswer": "The chicken is big.", "accepted": ["chicken", "the chicken", "The chicken is big."]},
+          {"en": "This top is red. What color is it?", "ko": "이 팽이는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The top is red."]},
+          {"en": "The brush is thick. What is thick?", "ko": "그 붓은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The brush is thick.", "accepted": ["brush", "the brush", "The brush is thick."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "공놀이 시간",
+      "newWords": [],
+      "unitWords": ["cat", "dog", "pig", "duck", "fish", "like", "rabbit", "frog", "fox", "top", "snake", "sheep", "pot", "brush", "chicken", "bird"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cat", "dog", "pig", "duck", "fish"],
+          "sentences": ["I like the ball.", "A dog and a cat.", "That is a pig.", "This is a toy duck.", "I like the rabbit."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a frog.", "options": ["frog", "ball", "fox", "top"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the sheep.", "options": ["kite", "snake", "sheep", "pot"], "answerNo": 3},
+          {"kind": "picture", "script": "The bird is red.", "options": ["brush", "chicken", "drum", "bird"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The dog is big. The cat is small. What is small?", "ko": "개는 커. 고양이는 작아. 뭐가 작아?", "modelAnswer": "The cat is small.", "accepted": ["cat", "the cat", "The cat is small."]},
+          {"en": "That is a pig. What is that?", "ko": "저건 돼지야. 저건 뭐야?", "modelAnswer": "That is a pig.", "accepted": ["pig", "a pig", "That is a pig.", "It is a pig."]},
+          {"en": "The bird is red. What color is it?", "ko": "그 새는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bird is red."]},
+          {"en": "This is a toy duck. What is this?", "ko": "이건 장난감 오리야. 이건 뭐야?", "modelAnswer": "It is a toy duck.", "accepted": ["duck", "a duck", "a toy duck", "This is a duck.", "It is a toy duck."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자전거 타는 길",
+      "newWords": [],
+      "unitWords": ["puppy", "fox", "chicken", "snake", "cute", "thank", "nice", "name", "lunch", "hot", "fan", "rabbit", "dog", "pig", "top", "cat", "duck", "thick"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["puppy", "fox", "chicken", "snake", "cute"],
+          "sentences": ["It is a red bike.", "The puppy is cute.", "Oh, thank you!", "It is a nice name.", "My lunch is hot."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a fox.", "options": ["fan", "fox", "rabbit", "car"], "answerNo": 2},
+          {"kind": "picture", "script": "This top is red.", "options": ["dog", "pig", "top", "ship"], "answerNo": 3},
+          {"kind": "picture", "script": "The snake is green.", "options": ["cat", "duck", "bus", "snake"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The bike is red. What color is it?", "ko": "그 자전거는 빨간색이야. 무슨 색이야?", "modelAnswer": "It is red.", "accepted": ["red", "It is red.", "The bike is red."]},
+          {"en": "The chicken is big. What is big?", "ko": "그 닭은 커. 뭐가 커?", "modelAnswer": "The chicken is big.", "accepted": ["chicken", "the chicken", "The chicken is big."]},
+          {"en": "The puppy is cute. What is cute?", "ko": "그 강아지는 귀여워. 뭐가 귀여워?", "modelAnswer": "The puppy is cute.", "accepted": ["puppy", "the puppy", "The puppy is cute."]},
+          {"en": "The book is thick. What is thick?", "ko": "그 책은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The book is thick.", "accepted": ["book", "the book", "The book is thick."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "비행기 여행 놀이",
+      "newWords": [],
+      "unitWords": ["fan", "pot", "brush", "lunch", "thick", "like", "hot", "thank", "nice", "name", "bird", "sheep", "frog", "fish", "fox", "cute", "puppy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["fan", "pot", "brush", "lunch", "thick"],
+          "sentences": ["The plane is white.", "I like my lunch.", "The pot is hot.", "Thank you!", "It is a nice name."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a fan.", "options": ["plane", "fan", "bird", "sheep"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a pot.", "options": ["pot", "frog", "fish", "star"], "answerNo": 1},
+          {"kind": "picture", "script": "I like the brush.", "options": ["car", "kite", "fox", "brush"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "The pot is hot. What is hot?", "ko": "그 냄비는 뜨거워. 뭐가 뜨거워?", "modelAnswer": "The pot is hot.", "accepted": ["pot", "the pot", "The pot is hot."]},
+          {"en": "This is lunch. What is this?", "ko": "이건 점심이야. 이건 뭐야?", "modelAnswer": "It is lunch.", "accepted": ["lunch", "It is lunch.", "This is lunch."]},
+          {"en": "The brush is thick. What is thick?", "ko": "그 붓은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The brush is thick.", "accepted": ["brush", "the brush", "The brush is thick."]},
+          {"en": "It is a cute puppy. What is it?", "ko": "그건 귀여운 강아지야. 그건 뭐야?", "modelAnswer": "It is a puppy.", "accepted": ["puppy", "a puppy", "a cute puppy", "It is a puppy.", "It is a cute puppy."]}
+        ]
+      }
+    }
+  ]
+}
