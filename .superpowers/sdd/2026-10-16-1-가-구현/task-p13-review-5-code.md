@@ -1,0 +1,25 @@
+# 검토 브리프: P13b 차례 5 코드 검토 b2 — 회화 틀 · 토리 표시 · 말풍선 · 아이 차례 · 턴 요청 · 읽어 주기 빠르기(code-reviewer rev-p13b 이어 보기 · Opus · xhigh, 2026-10-22 21:2x)
+
+코드: 워크트리 `/Users/hikaru/workspace/momo-english-academy/.claude/worktrees/p13` 작업 트리(HEAD 2645768 = 차례 4 + fix 1, 커밋 전 — 고친 여섯 `src/app/(child)/session/[id]/page.tsx` · `src/lib/speech/{browser,fake-web-speech,types}.ts` · `src/server/conversation/{index,state}.ts`, 새 `src/components/conversation/`(talk-frame · tori · child-turn) · `src/lib/talk-stream.ts` · `tests/e2e/{conversation.spec,talk}.ts` · `tests/unit/{talk-bubble,talk-stream}.test.ts`). CI 가지 ci/p13-c1 6d65d66 = 작업 트리(**CI 7차** — 결과 · 사진은 컨트롤러 덧). 구현 보고 `task-p13-report.md` '차례 5' 절(바뀐 파일 · 시험 · 다르게 한 것 1~7 · 정할 것 1 · 2 · 남은 우려). 브리프 `task-p13-5.md`.
+
+대조: plan-p13b '파일별 값' 7 · 8 · 9 · 10 · 11 · 12(세션 쪽 갈래) · 13 · 증명 표(e2e 이름 열), plan-p13a 회화 수업 모델 · `talkEndRuleFor` · `confirmPlanOf` · `hintKindOf` · `twoAnswersLine`, 정본 4절 회화 세션 표(`specs/03-화면.md`) · 3.3 회화 문단(1~3단계 토리 말 · 힌트 · 모름 · 답 두 개 · 인식 확인) · 7절(C53 (2) 읽는 중 누르면 듣기 · C22 말소리 없음 막힌 안내 · speech.silent_items_max) · 13절 C30 · C34(목표 턴 전 그만하기 확인 쪽지) · C39 · C92 · C96(speech.slow_rate) · C100 · C101 · C103 · C105 · C107. CLAUDE.md 규칙 — **1~3단계 회화에서 영어 문장을 보여 읽게 하지 않는다**(대화 토막 글 없이 힌트 단추만) · 해요체 · 한 화면 한 행동 · 설정값(talk.* · speech.* · ui.*) · 녹음 없음 · 채점 없음 · 아이 이름 {NAME} 은 화면이 채움.
+
+볼 것(지적마다 심각도 · 근거 파일:줄 · 정본 절 · plan 값):
+1. **영어 노출 경계**: `shownEnglishOf` 가 토리 말 · 다시 묻는 질문만 글로 두고 `say`(답 예시) · `answers`(답 두 개)는 읽기 큐에만 가는지, 힌트 영어 단은 `revealTalkHint` 로 연 단만 받는지, 끝 줄 · 이어 하기 · 다시 흘림 세 길 모두 같은지, 아이 말풍선(인식 글)은 보이는 것이 맞는지(3.3 인식 확인).
+2. **읽어 주기 빠르기**(값 11): `speak(text, { rate? })` 가 넘긴 때만 `utterance.rate` 를 바꾸고 말하기 · 배치 길은 그대로인지(위험 5), 가짜가 `rates` 를 기록해 e2e 가 '천천히'를 보는지, 1~2단계만 `speech.slow_rate`.
+3. **턴 요청**(값 10): NDJSON 조각 경계 줄 나누기 · 아홉 갈래 · 끝 줄 없이 끊김 → offline → online 때 같은 시도 id · HTTP 오류 · AbortSignal · `STALE_RETRY_MS` 1500 뒤 `router.refresh` + `key={view.version}`(N-1 — 되풀이 요청이 60초 안에 겹치지 않는지) · 체감 대기 `prevPerceivedWaitMs` 측정 자리(듣기 끝 → 첫 문장 그림).
+4. **회화 틀**(값 7): 열 때 차례(마이크 못 씀 → 처음 마이크 안내 → AiRest) · 첫 누름 `unlockFromGesture` · '여는 동안' 표지로 처음 읽기 뒤 아이 차례 경합 막음 · 인사 끝 뒤 `advanceTalk` · 목표 턴 뒤 '더 이야기하기' · '그만하기' C34 확인 쪽지 · 'Oops' 쉼 · 안전 상한 닫힘 · 고아 아이 행 다시 받기(view.retry) — 세션 상태 표와 맞는지.
+5. **토리 표시 · 말풍선**(값 8): 문장 흘러나오기와 읽기 큐가 문장 차례를 지키는지(문장마다 하나씩, 겹침 없음), 1~3단계 뜻은 영어가 다 흐른 뒤 아래, 1단계 처음 묻는 턴의 답 ①('Or')② 읽기 + 글 없는 듣기 단추 둘, 말풍선 누르면 다시 읽기(AC-15l), 기다림 점 셋 → 둘째 값 뒤 '토리가 생각하고 있어요', 설명은 글로만, 움직임 줄이기, 그림 턴.
+6. **아이 차례**(값 9): `talkEndRuleFor({ level, mode: "dialogue" })`, 읽는 중 누르면 읽기 멈춤 → 듣기(C53 (2)), 힌트 단 열림 규칙(둘째 '모름'부터 마지막 단까지), '막히면 눌러요' 한 번(notices_seen — 다른 기기 포함), 인식 확인 `confirmPlanOf`(바로 보냄 · 아이 말풍선 + '다시 말하기' · '보내기' · 시간 지남 보냄 · 1~3단계 맞지 않으면 '다시 말하기' 크게), '모름'(단추 · nospeech talk.nospeech_dontknow_count) · 들은 도움(two_answers · answer_example) · 말소리 없음 막힌 안내 셈(다르게 한 것 5 — C22 와 맞는지) · `confirmSkipped` · `listenEndSeconds`(다르게 한 것 6).
+7. **쪽**(값 12 세션 갈래): 회화면 열린 대화만 `loadTalkView`, 아니면 `/talk/lessons`; 다른 영역 그대로. 화면 자료 추가(pictures · silentItemsMax · version — 다르게 한 것 2)가 5절 · 설정값 규칙과 맞는지.
+8. **다르게 한 것 1~7 · 정할 것 1 · 2 판정** — 컨트롤러 결정: 정할 것 1 → 차례 6 에서 열 때마다(처음 안내가 아니어도) '시작!' 한 번 누르는 자리를 둔다(iPad Safari 첫 읽기 누름, plan 값 7 '첫 누름'과 같은 뜻). 정할 것 2 → 차례 6(정리 조각). 지적은 그 결정을 전제로.
+9. **시험**: 단위 7 이 뜻을 덮는지(말풍선 글에 답 예시 없음 · 읽을 차례 · 'Or' 이음 = a `twoAnswersLine`), e2e 열(증명 표 이름 글자 그대로)의 가짜 음성 대본 · 가짜 SSE 규칙이 실제 꼴과 어긋나 통과만 하는 자리가 없는지, 시간 여유(인식 확인 2초 · 끝 조용함 3초 · 첫 조각 늦춤 6초 < 첫 글 기다림 10초) — CI 7차 결과는 덧으로. P10 · P11 e2e 가 그대로 초록인지(CI).
+10. 열린 장부 `ledger-open.md` 의 P13 · 회화 행 판정. 과정(시험 먼저) 지적은 따로.
+
+보고 `.superpowers/sdd/2026-10-16-1-가-구현/review-p13-5-code.md`(첫 줄 판정 · 지적 표 · 맞는 것 표 · 장부 판정 · fix 한 줄). 끝나면 SendMessage 한 줄. 코드 · 문서는 고치지 않는다. 단위는 `export PATH="$HOME/.nvm/versions/node/v24.22.0/bin:$PATH"` 뒤 `pnpm test`.
+
+## 덧(21:5x) — fix 1 재검토(범위 한정)
+fix 1(`task-p13-5-fix1.md`, 보고 '차례 5 fix 1' 절)이 작업 트리에 들어갔다(CI 가지 ci/p13-c1 d949bb8 = 작업 트리, **CI 8차** — 결과는 컨트롤러 덧). **I-1 · I-2 · I-3 를 ADDRESSED · NOT ADDRESSED 로 판정**, M-1~M-11 은 결정대로 고쳤는지 한 줄씩. 구현자 우려: stale e2e 는 첫 요청이 호출 기록을 남긴 뒤 토리 행을 저장하기 전 밀리초 틈에 둘째 쪽이 다시 보내면 AI 를 한 번 더 부를 수 있음(요청 수 단언 흔들림 가능) — 시험 꼴이 깜빡이지 않게 할 길을 판정에 적는다. M-11 은 단위 없음(틀 안 흐름) — 받아들일지. 새 지적은 fix 1 이 건드린 자리에서 생긴 것만. 보고 `review-p13-5-fix1-code.md`, SendMessage 한 줄.
+
+## 덧(22:5x) — fix 2(덧 N-1 · N-2 · N-3) 재검토(범위 한정)
+fix 2(화면 I 2 · M 4 — 화면 몫은 des-p13 이 봄)와 함께 **재검토 덧 셋**이 작업 트리에 들어갔다(CI 가지 ci/p13-c1 67797f9 = 작업 트리, **CI 9차** run 39789362496 — 결과는 컨트롤러 덧. 8차 e2e-local 이 22분 뒤 취소된 것(7차는 2분)이 fix 1 의 되풀이 길 멈춤인지 9차 시간으로 본다). **N-1(음성 접점 세션 동안 하나 — ref · [] 효과 · 틀 사라질 때만 dispose · 읽기 줄은 지금 접점) · N-2(서버 `turnInFlight` — 마지막 호출 끝 뒤 `TURN_SAVE_GRACE_MS` 5초) · N-3(stale e2e route 문 + 단언 셋)을 ADDRESSED · NOT ADDRESSED 로 판정**. 구현자 우려: N-1 단위 없음(DOM 도구 없음 — e2e 로만) · '둘째 쪽 턴 요청 ≥ 2' 단언이 첫 요청이 둘째 쪽 첫 다시 읽기 전에 끝나면 빨강일 수 있음(첫 조각 6초 늦춤) — 받아들일지 · 더 결정적으로 할 길. 화면 fix 2 가 건드린 talk-frame · tori · child-turn 의 코드 몫(가로 힌트 단 자리 · SafePicture 꼴 · 아이 차례 열림 조건 · 뜻 묶음 · 말풍선 폭 상수 · 인식 확인 중 힌트 비활성)도 CLAUDE.md 규칙(설정값 · 영어 경계)에서 어긋남이 없는지 한 줄씩. 보고 `review-p13-5-fix2-code.md`, SendMessage 한 줄.

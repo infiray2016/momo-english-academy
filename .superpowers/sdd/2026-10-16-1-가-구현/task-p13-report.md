@@ -338,3 +338,181 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 ```
 
 남은 우려: 통합의 새 셋은 로컬에서 빨강 · 초록을 본 적이 없다(CI 두 스냅숏 몫). I-1 고침은 P11 파일이라 P11 가지 쪽 시험(writing-feedback 의 밀린 첨삭)이 영역 · 종류 조건으로도 그대로인지 CI 에서 함께 본다.
+
+## 차례 5 (2026-10-22 22:xx) — P13b 작업 순서 3: 회화 틀 · 토리 표시 · 말풍선 · 아이 차례 · 턴 요청 · 읽어 주기 빠르기 · 1단계 인사 → 대화
+
+브리프 `task-p13-5.md`, plan-p13b 파일별 값 7 · 8 · 9 · 10 · 11 · 12(세션 쪽 갈래) · 13, 4절 회화 세션 표 · 3.3 · 7절 · C30 · C34 · C53 (2) · C92 · C96 · C103 · 재검토 N-1 · N-2. 워크트리 p13(HEAD 2645768). 커밋하지 않았다. e2e 는 이 Mac 에서 돌지 않아(임시 DB 가 embedded-postgres) CI 몫이다 — 사진도 CI 아티팩트.
+
+### 바뀐 파일
+
+| 파일 | 신규/수정 | 무엇 |
+|---|---|---|
+| `src/lib/speech/types.ts` · `browser.ts` · `fake-web-speech.ts` | 수정 | 값 11: `speak(text, options?: { rate? })` — 브라우저는 넘긴 때만 `utterance.rate`(관찰 기록에도), 가짜는 `record.rates`(spoken 과 같은 차례). 넘기지 않는 말하기 · 배치는 그대로 |
+| `src/lib/talk-stream.ts` | 신규 | 값 10: `sendTalkTurn(body, handlers, { signal, fetchImpl })` — POST /api/talk/turn, 조각 경계를 넘는 NDJSON 줄 나누기, 갈래 처리기 아홉, 끝 줄 없이 끊기면 `"offline"`, HTTP 오류는 onError. `STALE_RETRY_MS` 1500(N-1, 기술 값) |
+| `src/components/conversation/tori.tsx` | 신규 | 값 8: `ToriFigure`(토 동그라미 — 연두 · 먹색 테 · Jua, 말하는 중 물결 · 생각 중 점 셋, 움직임 줄이기 motion-safe) · `ToriBubble`(문장 흘러나오기 `TYPE_MS_PER_CHAR` 30 · 1~4단계 뜻은 다 흐른 뒤 아래 20px · 그림 턴 · 답 두 개는 글 없는 ①② 듣기 단추 · 말풍선 누르면 다시 읽기 · 설명은 글로만) · `ToriWaiting`(점 셋 data-wait-hint → ui.wait_hint_seconds 둘째 값 뒤 '토리가 생각하고 있어요' data-wait-line) · `useSpeakQueue`(문장마다 차례대로 하나씩, 1~2단계 rate) · `spokenOf` · `shownEnglishOf` · `answersLine` |
+| `src/components/conversation/child-turn.tsx` | 신규 | 값 9: SpeakButton(고리 틈 연두) 크게 · 작은 '힌트' · '잘 모르겠어요' · `talkEndRuleFor(대화)` · 읽어 주는 중 누르면 읽기 멈추고 듣기 · 힌트 단(1~3단계 영어 단은 연 단만 `revealTalkHint` 로 받음 · 영어 문장 단에 천천히 듣기 단추 · 둘째 '모름'부터 마지막 단까지) · '막히면 눌러요' 한 번 · 인식 확인 `confirmPlanOf`(바로 보냄 · 아이 말풍선 + '다시 말하기' · '보내기', 1~3단계 맞지 않으면 '다시 말하기' 크게) · '모름'(단추 · 말소리 없음 talk.nospeech_dontknow_count) · 들은 도움(two_answers · answer_example) |
+| `src/components/conversation/talk-frame.tsx` | 신규 | 값 7: 종이 띠(오늘 이야기 제목 · '회화 · n단계 · 단원 u' · '말 주고받기 n / 목표 턴' — 목표 턴 뒤 '다 했어요! 더 이야기하기 n / …' · '홈') · 구석 '그만하기'(대화 · 더 이야기하기 동안, 목표 턴 전 C34 확인 쪽지) · 옆 칸 오늘 이야기 목록 · '토리의 약속' 한 줄 · 열 때 차례(마이크 못 씀 → (처음 회화 안내 자리 — 차례 6) → 처음 마이크 안내 → 1-가 상한이면 AiRest) · 턴 보내기(talk-stream — 문장마다 그림 · 읽기, 체감 대기를 다음 턴에) · 인사 끝 뒤 advanceTalk · 목표 턴 뒤 '더 이야기하기' · '그만하기' · stale 은 STALE_RETRY_MS 뒤 router.refresh(N-1) · 끊김은 online 때 같은 시도 id · 4단계부터 'Oops' 쉼 · 안전 상한 닫힘 · 고아 아이 행(view.retryTurn)은 열 때 같은 시도 id 로 다시 · 인식 실패 셈(speakingCounters) · 막힌 안내 셋 + reportSessionMic |
+| `src/app/(child)/session/[id]/page.tsx` | 수정 | 값 12 의 세션 갈래: `readTalkSessionArea` 가 회화면 열린 대화만 `loadTalkView` → `<TalkFrame key={view.version}>`, 아니면 `/talk/lessons`. 다른 영역은 그대로 |
+| `src/server/conversation/index.ts` | 수정 | 화면 자료에 `pictures`(1~3단계 그림 턴의 카탈로그 그림) · `settings.silentItemsMax`(speech.silent_items_max — 말소리 없음 막힌 안내) · `version`(다시 읽기 열쇠) · 형 다시 내보냄(AddLine · AddLineOut · HintView · PendingView) |
+| `src/server/conversation/state.ts` | 수정 | N-2: 죽은 형 `AddKind` 지움 |
+| `tests/e2e/talk.ts` | 신규 | 값 13: `greetingToTalkLesson`(견본 talkCard 작은 틀 — 새 단어 · 단원 단어 · 오늘 쓸 말을 비워 인사 → 대화) · `insertTalkLesson`(같은 칸을 지우고 넣음) · `talkHousehold` · `openTalkSession` · `talkReply`(가짜 SSE — 조각 · 지연 · 첫 조각 늦춤, '\nClosing: no' 로 고름) · `talkAnswer` · `saidRun` · `talkScript`(읽어 주기 짧게) · `speechRecord` |
+| `tests/e2e/conversation.spec.ts` | 신규 | e2e 열 |
+| `tests/unit/talk-stream.test.ts` · `tests/unit/talk-bubble.test.ts` | 신규 | 단위 넷 · 셋 |
+
+### 시험
+
+- 단위: 64 파일 · **644 통과 · 6 todo**(차례 4 fix 1 의 637 + talk-stream 4 + talk-bubble 3). 이름: '회화 턴 요청: 조각 경계에서 나뉜 NDJSON 줄을 …' · '… 끝 줄 없이 끊기면 offline …' · '… 끝 줄 갈래 … HTTP 오류는 error …' · '… 다시 읽기 전 기다림은 이름 붙인 기술 값 …(재검토 N-1)' · '회화 화면: 말풍선 글은 토리 말과 다시 묻는 질문만이고 답 예시 · 답 두 개는 넣지 않는다' · '회화 화면: 읽어 줄 차례는 토리 말 → 답 예시 → 같은 질문 → 'Or' 를 사이에 둔 답 두 개다' · '회화 화면: 답 두 개를 잇는 말은 회화 턴 규격의 이음과 같다'.
+- e2e(CI) 열 — plan 증명 표 이름 그대로: AC-15a 셋('… 답 두 개가 'Or' 를 사이에 두고 들리고 화면에는 답 글 없이 듣기 버튼 ①② 만 있다' · '… '힌트'를 한 번 누르면 한국어 뜻, 두 번 누르면 영어 문장과 듣기 버튼이 보인다' · '인식 글이 들려준 답이나 연 영어 문장과 … 바로 보내지고 아니면 talk.confirm_seconds 보인 뒤 보내지며 …') · AC-N8 둘('… 첫 문장이 끝나면 전체 응답을 기다리지 않고 …' · '인식 확인 중 '보내기'를 누르면 바로 보낸다') · AC-15g 하나(''잘 모르겠어요'를 누르면 …') · AC-15l 둘(말풍선 다시 읽기 · 천천히 / 듣기 버튼 ① · '다시 듣기' 없음) · AC-15b 하나(검사에 걸린 문장 · 안전한 대사) · AC-8b 하나(알림 기준 넘긴 날 제한 문구 없음).
+- 사진(E2E_PHOTOS, 두 방향 각각 -portrait · -landscape): `p13-talk-greeting` · `p13-talk-dialogue` · `p13-talk-answers` · `p13-talk-hint` · `p13-talk-confirm` · `p13-talk-waiting` · `p13-talk-dontknow`.
+
+### 다르게 한 것
+
+1. **`:lang(en)` 규칙은 이미 p13 에 있다**(합침 ①이 cce2238 를 가져옴 — `src/app/globals.css:152`). 브리프의 '아직 없음'과 다르다. 영어 글은 `lang="en"` 에 `font-en` 토큰도 함께 붙였다(겹쳐도 같은 글꼴).
+2. **화면 자료를 서버에서 조금 더 받는다**: 그림 턴 그림(`pictures`), 말소리 없음 상한(`silentItemsMax`), 다시 읽기 열쇠(`version`). stale 뒤 router.refresh 가 같은 컴포넌트를 그대로 두면 처음 자료로 그린 상태가 남아, 쪽이 `key={view.version}` 으로 틀을 새로 그린다.
+3. **처음 회화 안내 · 오늘 쓸 말 · 말해 보기 · 정리 · 마무리 조각은 차례 6** — 틀은 그 자리를 비우고(안내 차례 주석만), 인사 끝 뒤 다음 토막이 오늘 쓸 말이면 advanceTalk 로 넘긴 뒤 그 조각을 기다린다(지금은 띠 · '홈'만). e2e 견본은 오늘 쓸 말이 없어 닿지 않는다. '그만하기' · 목표 턴 뒤 '그만하기' · 안전 상한 닫힘 · 'Oops' 뒤는 지금 수업 목록(/talk/lessons — 차례 6 전까지는 '토리가 준비 중이에요')으로 간다.
+4. **답 두 개 잇기는 화면 쪽 작은 함수(`answersLine`)** — 회화 턴 규격 모듈(고정부 글 · Zod)을 화면 묶음에 끌어오지 않으려고. 같은 글인지는 단위 시험이 a `twoAnswersLine` 과 견준다.
+5. **말소리 없음 막힌 안내(C22)의 셈**: speakingCounters 는 인식 실패 · 마이크 판정에 쓰고, 회화의 '말소리 없이 '모름'으로 넘어간 질문'은 틀이 따로 센다(이어진 수가 speech.silent_items_max 이면 막힌 안내 + 알림). 같은 질문 안 말소리 없음 talk.nospeech_dontknow_count 번이면 '모름'(nospeech) 으로 보낸다.
+6. **확인 건너뜀(confirmSkipped)** 은 바로 보낸 턴만 참, '보내기' · 시간 지남은 거짓. 듣기 끝 대기(listenEndSeconds)는 그 규칙의 끝 조용함 초.
+7. **'막히면 눌러요'** 는 첫 회화 수업의 아이 차례가 처음 그려질 때 notices_seen 에 남기고(다른 기기에서는 다시 안 보임), 그 화면에서는 '힌트'를 누르거나 말하기를 누를 때까지 보인다.
+
+### 정할 것
+
+1. 처음 마이크 안내를 이미 본 기기에서는 열 때 첫 읽어 주기에 누름이 없다 — iPad Safari 는 첫 읽기가 막힐 수 있다(말풍선을 누르면 다시 읽음). 처음 회화 안내('시작!')가 그 누름이 되는 것은 첫 회화 한 번뿐이라, 차례 6 에서 열 때마다 한 번 누르는 자리를 둘지(iPad 실기 — 차례 11).
+2. '그만하기'(목표 턴 전 · 뒤) 뒤 정리 · 마무리 세 장(차례 6) 전까지는 수업 목록으로 간다 — 차례 6 브리프에서 이 길을 정리 조각으로 바꾼다.
+
+### 남은 우려
+
+- e2e 열 · 사진 일곱(두 방향)은 로컬에서 한 번도 돌지 않았다. 흐름을 손으로 따라 대조했다(가짜 음성 대본 차례 · 인식 확인 2초 · 1단계 끝 조용함 3초 · 첫 조각 늦춤 6초 < 첫 글 기다림 10초). CI 첫 실행에서 시간 여유(시험 120초) · 셋째 시험의 둘째 대화 턴 답 글(견본 카드 둘째 턴 답 두 개의 첫째)을 본다.
+- 열 때 처음 읽기 직후 아이 차례로 넘어가는 경합을 '여는 동안' 표지로 막았다(토리가 다 읽은 뒤 아이 차례).
+- 화면 검토(design-reviewer)는 사진 뒤 — 4절 회화 세션 표 · 목업 B_Talk1 꼴. 옛 목업의 '골라서 말해 보세요'(답 글 단추)는 T2 · C 에 따라 따르지 않았다.
+
+### 관문(워크트리 p13, Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (365 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 64 파일 · 644 통과 · 6 todo
+pnpm build                             → exit 0 (/session/[id] ƒ)
+pnpm check:deps                        → no dependency violations (187 modules)
+pnpm check:ids                         → exit 0(보고만) · design-number 37(새 줄 없음)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+pnpm e2e                               → 로컬 불가, CI 몫(사진 E2E_PHOTOS)
+```
+
+## 차례 5 fix 1 (2026-10-22 22:xx) — 코드 검토 b2(I 3 · M 11)
+
+브리프 `task-p13-5-fix1.md`, 검토 `review-p13-5-code.md`. 워크트리 p13 작업 트리, 커밋하지 않았다. 순서: I-1 · I-2 단위 시험(되풀이 · 끊음 · dispose 뒤 읽기)을 먼저 써서 빨강(새 함수 없음 · dispose 뒤 `ended`)을 본 뒤 고쳤다. e2e 는 이 Mac 에서 돌지 않아 고침과 함께 쓰고 손으로 대조했다(CI 8차 몫).
+
+| 지적 | 어떻게 | 덮는 시험 |
+|---|---|---|
+| I-1 | `src/lib/talk-stream.ts` 에 되풀이 `sendTalkTurnRetrying` — 같은 시도 id 로: 끊김은 브라우저가 온라인이면 `OFFLINE_RETRY_MS` 기다렸다 다시(`OFFLINE_RETRIES_MAX` 3 번까지), 오프라인이면 'offline'. stale 은 처리기로 넘기지 않고 `STALE_RETRY_MS` 기다림 → `router.refresh()`(판이 바뀌면 쪽이 key 로 틀을 새로 그려 이 요청을 끊음) → 또 기다림 → 같은 시도 id 로 다시(`STALE_RESENDS_MAX` 20 번 — 한 번에 3초라 TURN_IN_FLIGHT_MS · maxDuration 60초 안). 다 쓰면 끊김처럼. 틀은 'offline' 화면에 7절 문구 + '다시 해 보기'(그리고 online 때 다시) | 단위 '회화 턴 요청: 끊겼는데 브라우저가 온라인이면 기다렸다 같은 시도 id 로 다시 보내고 오프라인이면 …' · '… 온라인 끊김 다시 보내기는 상한까지 …' · '… stale 이면 바로 되풀이하지 않고 기다렸다 자료를 다시 읽고 판이 같으면 같은 시도 id 로 다시 보낸다' · '… 자료를 다시 읽어 틀이 바뀌면(끊음 신호) 되풀이를 멈추고 stale 되풀이는 상한까지다'(M-7 상수 시험을 이것으로 바꿈). e2e '회화 화면: 같은 시도 id 가 아직 진행 중이라 stale 을 받으면 기다렸다 다시 읽어 토리 말이 그려진다'(둘째 쪽이 고아 아이 행을 다시 보냄 · AI 요청 1) |
+| I-2 | 틀: `submit` 마다 AbortController(`inflight`) — 다음 submit · '홈' · '그만하기' · 틀 사라짐(언마운트)에서 끊고, 끊긴 결과(`aborted`)는 아무것도 바꾸지 않음. `sendTalkTurn` 은 신호가 서면 줄을 처리기로 넘기지 않는다. `useSpeakQueue` 는 사라진 뒤 enqueue 무시(마운트마다 다시 켬 — 개발 모드 두 번 마운트에도). `browser.ts` `speak` 는 dispose 뒤 `unsupported`(말하기 · 배치는 dispose 뒤 부르지 않아 길 그대로) | 단위 '회화 턴 요청: 끊음 신호로 멈춘 요청은 offline 이 아니라 aborted 이고 처리기를 더 부르지 않는다' · `tests/unit/speech-speak.test.ts` '음성 접점: 넘긴 빠르기는 utterance.rate 로 …' · '음성 접점: 닫은 뒤 speak 는 읽지 않고 unsupported 다'. e2e '회화 화면: 토리 말을 흘려 받는 중 '홈'을 누르면 홈에서 토리 말을 더 읽지 않는다' |
+| I-3 | e2e AC-15l 둘째의 /다시 듣기/ 찾기를 `[data-child-turn]` 안으로(코드 그대로 — 말풍선 자체가 다시 읽기) | CI 8차 |
+| M-1 | 아이 차례가 `listenEndedAt`(듣기 끝 − 끝 조용함, '모름' 단추는 누른 때)을 넘기고 틀이 첫 문장 때와의 차를 다음 턴 `prevPerceivedWaitMs` 로 — `perceivedWaitOf` | 단위 '… 체감 대기는 아이가 말을 멈춘 때부터 첫 문장까지 …' |
+| M-2 | 힌트 문장 듣기는 1~3단계면 `speech.slow_rate`(토리 말은 1~2단계 그대로 — `hintRate`) | e2e '회화 화면: 3단계 힌트 영어 문장 듣기는 천천히 읽고 토리 말은 보통 빠르기로 읽는다'(뜻 → 영어 틀 → 영어 문장도 봄) |
+| M-3 | 옆 칸 제목을 4절 '오늘 이야기 목록'으로. 나머지 둘은 코드 그대로(컨트롤러 표) | — |
+| M-4 | 그림 턴 `alt=""`(꾸밈 그림) | 단위 '… 그림 턴 그림은 꾸밈 그림이라 대체 글이 비어 있다' |
+| M-5 | 앞 줄이 다 흐른 뒤 다음 줄(`english.slice(0, typed + 1)` — onTyped 셈) | 단위 '… 처음 그림에는 첫 줄만 있다' |
+| M-6 | 회화는 P11a 셈에 말소리 없음 상한을 두지 않음(`talkCounterLimits` — 무한). 틀 셈만 C22 | 단위 '… P11a 셈이 막힌 안내를 따로 내지 않는다' |
+| M-7 | I-1 단위로 바꿈 | — |
+| M-8 | `shouldMarkNudge(nudge, 힌트 단 수)` — 힌트 단추가 있어 글이 보인 턴만 기록 | 단위 '… '막히면 눌러요'는 힌트 단추가 있어 보인 턴에만 남긴다' |
+| M-9 | 기다림 표시를 말풍선 단추 밖 같은 꼴 칸(`data-tori-waiting`)으로 | 단위 '… 기다림 표시(상태 줄)는 말풍선 단추 밖 칸에 있다' · e2e 기존 그대로(data-wait-hint · data-wait-line) |
+| M-10 | AC-N8 시험 끝에 아이 차례(끝 줄)까지 기다림 | CI 8차(23503 줄 없음) |
+| M-11 | 토막 넘김 · '더 이야기하기' 실패도 다시 부를 일(`retryAction`)을 남겨 같은 '다시 해 보기'로(턴 보내기 · 끊김도 같은 자리) | 단위 없음(틀 안 흐름 — e2e 로 닿는 길 없음, 보고) |
+
+### 바뀐 파일(fix 1)
+
+`src/lib/talk-stream.ts` · `src/lib/speech/browser.ts` · `src/components/conversation/{talk-frame,tori,child-turn}.tsx` · `tests/unit/talk-stream.test.ts` · `tests/unit/talk-bubble.test.ts` · 새 `tests/unit/speech-speak.test.ts` · `tests/e2e/conversation.spec.ts`.
+
+### 시험 수
+
+- 단위 65 파일 · **656 통과 · 6 todo**(차례 5 의 644 + 12: talk-stream 상수 시험 하나 빼고 되풀이 다섯 · speech-speak 둘 · talk-bubble 여섯).
+- e2e(CI): conversation.spec **13**(차례 5 의 10 + '홈' 끊음 · stale 다시 읽기 · 3단계 힌트 빠르기).
+
+### 다르게 한 것
+
+1. 되풀이 정책을 틀이 아니라 `talk-stream.ts` 함수 하나에 두어 가짜 fetch · 가짜 기다림으로 단위 시험한다. 판이 같은지는 따로 묻지 않고 '자료 다시 읽기(router.refresh) 뒤 틀이 그대로 있으면(끊음 신호가 서지 않으면) 같은 판'으로 본다 — 판이 바뀌면 쪽이 `key={view.version}` 으로 틀을 새로 그리며 언마운트가 그 요청을 끊는다.
+2. 보내기 · 다시 보내기마다 말풍선을 비우고 기다림 표시부터 다시 시작한다(다시 흘림이 같은 줄을 처음부터 보냄 — `onAttempt`).
+3. M-11 은 틀 안 흐름이라 단위 시험이 없다(서버 액션 실패를 e2e 로 만들 길이 없음).
+
+### 남은 우려
+
+- e2e 13 은 로컬에서 돌지 않았다. stale 시험은 첫 요청이 AI 호출 기록을 남긴 뒤 토리 행을 저장하기 전 짧은 틈에 둘째 쪽이 다시 보내면 서버가 AI 를 한 번 더 부를 수 있다(차례 4 M-1 판정이 '그 아이 행 뒤 호출 기록'이라) — 그 틈은 밀리초라 드물지만 그때 AI 요청 수 단언이 빨강이 된다.
+- 화면 검토(fix 2)는 따로 온다.
+
+### 관문(워크트리 p13, Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (366 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 65 파일 · 656 통과 · 6 todo
+pnpm build                             → exit 0
+pnpm check:deps                        → no dependency violations (187 modules)
+pnpm check:ids                         → exit 0(보고만) · design-number 37(새 줄 없음)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+pnpm e2e                               → 로컬 불가, CI 몫
+```
+
+## 차례 5 fix 2 (2026-10-22 22:xx) — 화면 검토 b2(I 2 · M 4)
+
+브리프 `task-p13-5-fix2.md`(검토 보고 `review-p13-5-design.md` 요지). 워크트리 p13 작업 트리(차례 5 + fix 1), 커밋하지 않았다. 단위 시험(그림 깨짐 · 말풍선 폭 · 뜻 묶음)을 먼저 써서 빨강(함수 없음 · w-fit 없음)을 본 뒤 고쳤다. e2e · 사진은 CI 9차 몫. 1~3단계 영어 경계(답 두 개 · 답 예시 · 힌트 영어 글 없음)는 그대로다.
+
+| 지적 | 어떻게 | 덮는 시험 |
+|---|---|---|
+| I-1 | '그만하기'를 `PaperBand` 의 right 자리('말 주고받기' · '그만하기' · '홈' 차례 — 작은 단추)로 옮겨 따로 한 줄을 없앴다. 가로(lg)에서는 아이 차례의 힌트 단을 단추 줄 옆(`lg:flex-row-reverse` — 단추 왼쪽 · 힌트 단 오른쪽)에 두고, 판 여백을 `landscape:py-4 · gap-3` 으로 줄였다(손 셈: 토리 세 줄 · 답 두 개 · 뜻 · 설명 · 힌트 두 단 턴에서 판 ≈ 496px, 남는 창 ≈ 568px) | e2e '회화 화면: 가로 1180×820 에서 토리 세 줄 · 힌트 끝 단 · 설명이 있는 턴에도 말하기 · 잘 모르겠어요 · 토리의 약속이 보는 창 안이고 그만하기는 위 띠 안이다'(아래 끝 ≤ 820 · 사진 `p13-talk-hint` 다시) |
+| I-2 | 그림 턴 그림을 `TurnPicture` 로 — P11 `SafePicture` 꼴로 그림을 미리 열어 보고(Image probe) · `onError` 로도, 깨지면 그리지 않아 자리도 접힌다(말풍선이 그 폭을 씀). `alt=""` 그대로. 서버 `picturesOf` 의 `meaningKo` 를 그 낱말의 vocab 한국어 뜻으로(없으면 빈 글) — 그림 낱말(영어)을 화면 자료 글로 내리지 않는다 | 단위 '회화 화면: 그림 턴 그림은 파일이 있고 깨지지 않았을 때만 그리고 깨지면 자리도 접는다' · e2e '회화 화면: 그림 턴 그림이 깨지면 그리지 않고 그림 낱말(영어)이 글로 보이지 않는다'(보이는 그림은 naturalWidth > 0 · 대체 글 있는 그림 0 · 노린 낱말 글 없음 · 사진 `p13-talk-picture`) |
+| M-1 | 말풍선이 '글이 다 흘러나왔는가'를 틀에 알리고(`onAllTyped`) 틀은 끝 줄 · 다 흐름 · 읽기 줄 빔이 모두 되어야 아이 차례를 연다. 그 뒤 말풍선을 다시 누른 읽기 중의 '말하기'는 읽기를 멈추고 듣는다(C53 (2) 그대로) | 기존 e2e(아이 차례가 열리는 때를 기다리는 시험 전부) |
+| M-2 | 뜻 줄과 ①② 를 한 묶음 줄(`data-tori-under`, 최소 높이 56px)로 — ①② 가 먼저, 뜻은 그 옆(넘치면 아래)에 와 단추가 뛰지 않는다 | 단위 '… 뜻 줄과 답 두 개 단추는 한 묶음 자리에 있다' · 사진 비교 |
+| M-3 | 말풍선을 글 길이만큼(`w-fit`) · 상한 `TORI_BUBBLE_MAX_PX` 520(화면 꼴 상수 — Tailwind 가 소스 글을 훑으므로 클래스는 글자 그대로 `max-w-[520px]`, 단위 시험이 같은 수인지 봄) · 토리 쪽(왼쪽) 정렬. 기다림 칸도 같은 폭 | 단위(같은 시험) · 사진 |
+| M-4 | 인식 확인 중에는 '힌트'도 비활성('잘 모르겠어요'는 이미 비활성) | e2e AC-15a 인식 확인 시험에 두 단추 비활성 단언 |
+
+### 바뀐 파일(fix 2)
+
+`src/components/conversation/{tori,talk-frame,child-turn}.tsx` · `src/server/conversation/index.ts`(picturesOf 뜻 칸) · `tests/unit/talk-bubble.test.ts` · `tests/e2e/conversation.spec.ts`.
+
+### 시험 수
+
+- 단위 65 파일 · **658 통과 · 6 todo**(fix 1 의 656 + talk-bubble 둘).
+- e2e(CI): conversation.spec **15**(fix 1 의 13 + 가로 보는 창 · 그림 깨짐). 사진 더함 `p13-talk-picture`.
+
+### 다르게 한 것 · 남은 우려
+
+1. 가로 맞춤은 '그만하기' 옮김만으로는 손 셈이 820 을 넘어(힌트 두 단 + 단추 열 줄), 힌트 단을 단추 옆으로 두는 가로 배치와 여백 줄임을 함께 했다. 실제 높이는 CI 9차 e2e · 사진에서 본다(로컬 브라우저 실행 불가).
+2. 그림 턴의 지금 질문 자료(`pending.imageKey`)와 그림 파일 경로에는 그림 키가 남는다 — 글로 보이지 않고 화면 읽기 프로그램도 읽지 않지만, 견본처럼 그림 키가 곧 영어 낱말이면 자료에는 들어 있다. 키를 서버에서 그림 정보로 바꿔 내리려면 턴 길 끝 줄도 그림 표를 읽어야 해 범위를 넘는다 — 정할 것(컨트롤러).
+3. 말풍선 글이 없는(드문) 턴도 '다 흐름'으로 보아 아이 차례가 막히지 않게 했다.
+
+### 관문(워크트리 p13, Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (366 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 65 파일 · 658 통과 · 6 todo
+pnpm build                             → exit 0
+pnpm check:deps                        → no dependency violations (187 modules)
+pnpm check:ids                         → exit 0(보고만) · design-number 37(새 줄 없음)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+pnpm e2e                               → 로컬 불가, CI 몫(사진 E2E_PHOTOS)
+```
+
+### 덧(22:3x) — fix 1 재검토 새 지적 N-1 · N-2 · N-3
+
+| 지적 | 어떻게 | 덮는 시험 |
+|---|---|---|
+| N-1(Important) | 음성 접점을 세션 동안 하나로 — 틀이 처음 받은 음성 설정을 ref 로 쥐고 `useEffect(…, [])` 로 한 번만 만들고 틀이 사라질 때만 닫는다(자료 다시 읽기가 새 설정 객체를 줘도 다시 만들지 않음). `useSpeakQueue` 는 접점을 ref(`port`)로 읽어 처리기가 보낸 때의 함수를 쥐고 있어도 늘 지금 접점으로 읽는다 | e2e(아래 N-3)의 '둘째 쪽 가짜 음성 기록에 다시 흘린 문장' 단언. 단위는 없다(훅을 그릴 DOM 시험 도구가 저장소에 없음 — jsdom · testing-library 없음) |
+| N-2(Minor) | 서버 '진행 중' 판정을 `turnInFlight` 로: TURN_IN_FLIGHT_MS 안이고, 그 아이 행 뒤 회화 턴 호출 기록이 없거나 마지막 호출이 끝난 지(called_at + latency_ms) `TURN_SAVE_GRACE_MS`(5초, 기술 값) 안이면 stale | 통합 'AC-15f 토리의 말이 없는 마지막 턴이 있으면 같은 시도 id 로 다시 받는다'에 단언 더함(호출이 막 끝난 때 같은 시도 id → stale · AI 요청 그대로, 시계를 2분 옮긴 뒤 다시 받음) |
+| N-3(시험) | stale e2e 를 둘째 쪽 `page.route("**/api/talk/turn")` 로 묶음 — 첫 요청만 통과(진행 중이라 stale), 나머지는 첫 쪽 `[data-child-turn]` 이 보인 뒤 `route.continue()`. 둘째 쪽은 첫 쪽 AI 요청이 들어온 뒤 연다. 첫 조각 6초(첫 글 기다림 10초 안) | e2e '회화 화면: 같은 시도 id 가 아직 진행 중이라 stale 을 받으면 기다렸다 다시 읽어 토리 말이 그려지고 읽힌다'(둘째 쪽 턴 요청 ≥ 2 · AI 요청 1 · 둘째 쪽 읽은 글에 'Welcome back, friend.') |
+
+바뀐 파일 더함: `src/server/conversation/turn.ts`(turnInFlight · TURN_SAVE_GRACE_MS) · `tests/integration/conversation-session.test.ts`. 관문은 덧 뒤 다시 돌렸다 — biome ci 0 · tsc 0 · 단위 65 파일 658 통과 · 6 todo · build 0 · check:deps 0 · check:ids 37(새 줄 없음) · check:bundle 0 · spec:trace 0. 통합 · e2e 는 CI 9차 몫.
+
+남은 우려(덧): N-1 에 단위 시험이 없다. N-3 은 시간이 아니라 요청 문으로 묶었지만, 둘째 쪽이 자료를 다시 읽기 전에 첫 요청이 끝나면(첫 조각 6초보다 둘째 쪽 열기 · 첫 기다림이 길면) 둘째 쪽이 새 판으로 다시 그려져 턴 요청이 하나뿐일 수 있다 — 그때 '≥ 2' 단언이 빨강이다(읽은 글 단언은 그대로 지남).
+
+#### 덧 셋의 자리(컨트롤러 확인 요청 22:4x — fix 2b 없이 이미 들어 있음)
+
+- N-1: `src/components/conversation/talk-frame.tsx:216-221`(처음 받은 음성 설정 ref · `[]` 효과로 한 번 만들고 틀이 사라질 때만 dispose) · `src/components/conversation/tori.tsx:413-414 · :427`(읽기 줄이 ref `port` 로 늘 지금 접점을 씀). 시험: e2e `tests/e2e/conversation.spec.ts:411` '회화 화면: 같은 시도 id 가 아직 진행 중이라 stale 을 받으면 기다렸다 다시 읽어 토리 말이 그려지고 읽힌다'의 `:446`(둘째 쪽 가짜 음성 spoken 에 다시 흘린 문장). 단위 없음(DOM 시험 도구 없음).
+- N-2: `src/server/conversation/turn.ts:109`(`TURN_SAVE_GRACE_MS` 5000 — 기술 값) · `:507`(`turnInFlight` — 마지막 talk_turn 호출의 called_at + latency_ms 가 그 안이면 진행 중) · `:689`(같은 시도 id 고아 아이 행 갈래). 시험: 통합 `tests/integration/conversation-session.test.ts:483` 'AC-15f 토리의 말이 없는 마지막 턴이 있으면 같은 시도 id 로 다시 받는다' 안 단언(호출이 막 끝난 때 → stale · AI 요청 그대로).
+- N-3: `tests/e2e/conversation.spec.ts:430`(둘째 쪽 `page.route("**/api/talk/turn")` — 첫 요청만 통과, 나머지는 첫 쪽 `[data-child-turn]` 뒤 `route.continue()`), 단언 셋(둘째 쪽 턴 요청 ≥ 2 · AI 요청 1 · 둘째 쪽 spoken 에 'Welcome back, friend.').
+- CI 9차(67797f9)에 이 셋이 들어 있는지는 그 커밋 내용 기준 — 덧은 화면 지적 고침 뒤 같은 작업 트리에서 이어 넣었다(보고 '덧' 표). 67797f9 가 덧 전 스냅숏이면 CI 10차에 들어간다.
+- 확인(22:4x): CI 9차 스냅숏 67797f9 에 셋 모두 들어 있다 — `git show 67797f9:<경로>` 로 `TURN_SAVE_GRACE_MS`(turn.ts) · `speechSettings.current`(talk-frame.tsx) · `second.route`(conversation.spec.ts)를 찾았다. fix 2b 는 필요 없다.

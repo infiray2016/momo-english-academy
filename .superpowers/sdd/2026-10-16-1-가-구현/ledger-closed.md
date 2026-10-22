@@ -51,3 +51,5 @@
 | 쓰기 4~5 사진 보강(빈칸 빈 상태 · '다시 골라 볼까요' · 도중 안전 상한) | 닫힘 — fix 5 e2e 사진 셋, review-p11-fix5-design · review-p11-6-design 장부 판정 '닫힘' | 2026-10-22 19:3x |
 | P9c 넘김 묶음(MIN_RETRY_MS 하한 · AiOutcome 실패 갈래마다 화면 길 · refusals attempts · 빌드 추적 · dueCostAlerts scope · preCallGate ai_status · P6 forbidden) | 닫힘 — P11 몫(실패 갈래 화면 길)은 쓰기 확인 · 생각 꺼내기 · 첨삭 · 둘째 세션에서 review-p11-5/6/7-design 장부 판정으로 닫힘, 1-나 몫(설정 화면 하한 3 · dueCostAlerts scope)은 1-나 plan 이 받음(열린 장부에서 빼고 여기에 둠), P6 forbidden iu 는 P6a 커밋에서 통과 | 2026-10-22 19:3x(edit-p11b-done 지적 7) |
 | P13 토리 행에 AI 질문 답 예시 · 힌트 저장 칸 없음(N3, 검토 a2) | 닫힘 2026-10-22 20:5x — C101 `talk_turns.ai_question` 열(0003) 저장 · 읽기 확인, 통합 AC-15i(review-p13-4-code 장부 판정) | 2026-10-22 20:5x |
+| P13b 차례 4 컨트롤러 결정 · 우려(정할 것 7 · 같은 시도 id 겹침 · 통합 미실행 · 시험 먼저 · maxDuration) | 닫힘 2026-10-22 21:5x — C103~C105 · C107, fix 1(tori_ko · 끝맺음 갈래 · stale) 재검토 Approved(review-p13-4-fix1-code), CI 6차-b 초록, 차례 4 커밋 2645768. 시험 먼저 위반은 과정 지적으로 기록(AI-SDLC 글) | 2026-10-22 21:5x |
+| P13b 차례 4 코드 검토 b1 Changes requested I 3 · M 9 | 닫힘 2026-10-22 21:5x — fix 1 재검토 Approved(I 셋 · 결정 둘 ADDRESSED · M 아홉), 커밋 2645768 | 2026-10-22 21:5x |
