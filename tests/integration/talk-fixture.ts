@@ -2,7 +2,7 @@
 // 시험용 시드(작은 틀 · 1단계)를 넣고 시드 완전성 끝을 12단계로 올린 뒤, 회화 1단계 · 4단계 단원 1 정규 카드(견본 빌더 talkUnitCards —
 // 같은 시드 나무의 규격)를 수업 행으로 더한다(쓰기 6단계 첨삭 시험과 같은 길). AI 는 가짜 Anthropic(fetch 주입, SSE 'stream' 응답)만 쓴다.
 // 응답 뒤 할 일(after)은 모아 두었다가 시험이 돌린다. 시각은 고정 시계 하나. 아이 이름 · 연락처는 지어낸 값(앱 안 이름 Momo)이다.
-import { and, eq, isNull, max } from "drizzle-orm";
+import { and, eq, inArray, isNull, max } from "drizzle-orm";
 import type { TalkOutput } from "@/core/ai/calls/talk";
 import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
 import { LESSON_SCHEMAS } from "@/core/seed/schema/lesson";
@@ -66,7 +66,10 @@ const VARIANT = 1;
 
 export type TalkDb = { testDb: TestDatabase; db: Db };
 
-/** 시험 DB · 시드 · 회화 수업 행(1 · 4단계 단원 1). */
+/**
+ * 시험 DB · 시드 · 회화 수업 행(1 · 4단계 단원 1). 시험용 시드가 회화 1단계를 이미 넣으므로(같은 견본 빌더 · 같은 칸) 겹치는 칸은 그대로
+ * 둔다(onConflictDoNothing — 개발용 시드 회화, task-p13-dev-seed-talk).
+ */
 export async function setupTalkDb(): Promise<TalkDb> {
   const testDb = await createTestDatabase();
   const db = testDb.db;
@@ -89,21 +92,24 @@ export async function setupTalkDb(): Promise<TalkDb> {
   }
   for (const level of [1, 4]) {
     for (const card of talkUnitCards(tree.reference, level, UNIT, VARIANT)) {
-      await db.insert(lessons).values({
-        area: "talk",
-        level,
-        unit: UNIT,
-        kind: card.kind,
-        lessonNo: card.lessonNo,
-        topicVariant: card.variant,
-        listTitle: card.title,
-        content: { ...card, revision, correction: 0 },
-        newWords: [...card.newWords],
-        unitWords: [...card.unitWords],
-        generation: card.generation,
-        revision,
-        correction: 0,
-      });
+      await db
+        .insert(lessons)
+        .values({
+          area: "talk",
+          level,
+          unit: UNIT,
+          kind: card.kind,
+          lessonNo: card.lessonNo,
+          topicVariant: card.variant,
+          listTitle: card.title,
+          content: { ...card, revision, correction: 0 },
+          newWords: [...card.newWords],
+          unitWords: [...card.unitWords],
+          generation: card.generation,
+          revision,
+          correction: 0,
+        })
+        .onConflictDoNothing();
     }
   }
   return { testDb, db };
@@ -134,7 +140,7 @@ export async function resetHousehold(db: Db, level = 1): Promise<string> {
   return profile.id;
 }
 
-/** 회화 수업 행(그 단계 단원 1 · 배정 · 수업 번호). */
+/** 회화 수업 행(그 단계 단원 1 · 정규(배정 · 다지기) · 수업 번호 — 시험용 시드의 보강 수업은 고르지 않는다). */
 export async function talkLessonRow(db: Db, level: number, lessonNo = 1) {
   const [row] = await db
     .select()
@@ -145,6 +151,7 @@ export async function talkLessonRow(db: Db, level: number, lessonNo = 1) {
         eq(lessons.level, level),
         eq(lessons.unit, UNIT),
         eq(lessons.lessonNo, lessonNo),
+        inArray(lessons.kind, ["assigned", "reinforce"]),
       ),
     );
   if (!row) throw new Error(`회화 수업 행 없음: ${level} ${lessonNo}`);

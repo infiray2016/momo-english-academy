@@ -78,7 +78,20 @@ describe("개발용 시드 나무", () => {
     expect(report.unchecked).toEqual([]);
     expect(report.summary.referenceErrors).toBe(0);
 
-    expect(DEV_SEED_AREAS).toEqual(["reading", "writing", "speaking"]);
+    expect(DEV_SEED_AREAS).toEqual(["reading", "writing", "speaking", "talk"]);
+    // 회화 1단계 단원 1 은 대화 1 · 2 · 3(배정 · 다지기) — 프리뷰에서 눌러 볼 수업(task-p13-dev-seed-talk)
+    const talkUnit1 = tree.lessons.find(
+      (f) => f.area === "talk" && f.level === 1 && f.unit === 1,
+    );
+    expect(
+      talkUnit1?.lessons
+        .filter((l) => l.kind !== "remedial")
+        .map((l) => [l.kind, l.lessonNo]),
+    ).toEqual([
+      ["assigned", 1],
+      ["assigned", 2],
+      ["reinforce", 3],
+    ]);
     const base = loadableSeed();
     const speaking = tree.placements.find((f) => f.area === "speaking");
     const before = base.placements.find((f) => f.area === "speaking");
