@@ -138,10 +138,18 @@ export function guidedSample(level: 4 | 5): LessonSample<"writing"> {
   return { ...sample, level };
 }
 
+/** 쓰기 6단계 견본(자유 작문 — 견본 빌더 writingLesson(ref, 6), 차례 6). */
+export function compositionSample(): LessonSample<"writing"> {
+  const sample = writingLesson(referenceSet(defaultSettings()), 6);
+  if (sample.lesson.content.shape !== "composition") throw new Error("견본 꼴");
+  return sample;
+}
+
 /** 그 수업의 진행 세션을 바로 넣는다(목록을 거치지 않음 — 정규 수업, 수업 행의 판). 세션 id 를 돌려준다. */
 export async function openLessonSession(
   profileId: string,
   lesson: LessonRow,
+  { writingPart }: { writingPart?: "draft" } = {},
 ): Promise<string> {
   const [sessionId] = await insertSessions([
     {
@@ -155,6 +163,7 @@ export async function openLessonSession(
       startedAt: new Date(),
       seedRevision: lesson.revision,
       seedCorrection: lesson.correction,
+      ...(writingPart ? { writingPart } : {}),
     },
   ]);
   if (!sessionId) throw new Error("세션 없음");

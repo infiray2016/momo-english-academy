@@ -5,6 +5,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import { lessons } from "../../src/db/schema/content";
+import { attempts } from "../../src/db/schema/learning";
 import { SESSION_INPUT_KEY } from "../../src/lib/session-input";
 import {
   defaultSettings,
@@ -12,14 +13,23 @@ import {
   writingLesson,
 } from "../fixtures/seed/builders";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
+import { pushFakeAi, resetFakeAi, ruleFor, thinkoutReply } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { atLevel, insertSampleLesson } from "./lessons";
+import {
+  atLevel,
+  compositionSample,
+  insertSampleLesson,
+  openLessonSession,
+} from "./lessons";
 import { photo } from "./photos";
 
-const T = { next: "다음", right: "맞았어요!" } as const;
+const T = { next: "다음", right: "맞았어요!", written: "다 썼어요" } as const;
 
 test.beforeEach(resetHousehold);
+// 초고 시험이 가짜 AI(생각 꺼내기)를 쓴다 — 시험마다 비우고 끝에도 비운다(plan-p11b 값 8)
+test.beforeEach(resetFakeAi);
+test.afterEach(resetFakeAi);
 test.afterAll(closeE2eDb);
 
 async function session(
@@ -174,5 +184,88 @@ test("AC-6a 세션 도중 앱을 닫고 다시 열면 같은 활동 · 같은 �
       first.cards.length - placed.length,
     );
     await photo(current, "p11-resume-writing");
+  });
+});
+
+test("AC-6a 쓰기 6단계 초고를 쓰다 앱을 닫고 다시 열면 초고 화면에 쓴 글이 그대로 있다", async ({
+  page,
+  context,
+}) => {
+  const text = "I have a dog. We play in the park";
+  // 생각 꺼내기는 첫 턴에 끝(가짜) — 초고 화면까지 간다
+  await pushFakeAi([ruleFor("thinkout", thinkoutReply({ done: true }))]);
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    const sessionId = await openLessonSession(profileId, lesson, {
+      writingPart: "draft",
+    });
+    await page.goto(`/session/${sessionId}`);
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    await page.getByRole("button", { name: T.next }).click(); // 미리보기
+    await page.getByRole("button", { name: T.next }).click(); // 과제
+    const activity = page.locator("[data-activity]");
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    const draftNo = Number(await activity.getAttribute("data-activity-no"));
+    await page.locator("[data-draft-text]").fill(text);
+    await savedInput(page, sessionId, draftNo);
+    const current = await reopen(page, context, sessionId);
+    await expect(current.locator("[data-activity]")).toHaveAttribute(
+      "data-activity",
+      "draft",
+    );
+    // 같은 글 · 생각 꺼내기 결과(서버에 끝 시도)도 그대로
+    await expect(current.locator("[data-draft-text]")).toHaveValue(text);
+    await expect(current.locator("[data-draft-idea]")).toBeVisible();
+    await photo(current, "p11-resume-draft");
+  });
+});
+
+test("쓰기 6~12: 초고를 낼 때 서버에 빠진 앞 활동이 있으면 그 활동으로 돌아가고 다시 오면 쓴 글 그대로 낸다", async ({
+  page,
+}) => {
+  // 코드 검토 review-p11-6-code M-3 — 서버가 앞 활동 끝 시도를 갖고 있지 않고 이 기기 대기열에도 없을 때(여기서는 서버 행을 지워 만든다)
+  const text = "I have a dog. We play in the park every day.";
+  await pushFakeAi([ruleFor("thinkout", thinkoutReply({ done: true }))]);
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    const sessionId = await openLessonSession(profileId, lesson, {
+      writingPart: "draft",
+    });
+    await page.goto(`/session/${sessionId}`);
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    const activity = page.locator("[data-activity]");
+    await page.getByRole("button", { name: T.next }).click(); // 미리보기
+    await expect(activity).toHaveAttribute("data-activity", "writing-task");
+    const taskNo = Number(await activity.getAttribute("data-activity-no"));
+    await page.getByRole("button", { name: T.next }).click(); // 과제
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    // 과제 끝 시도가 서버에 닿은 뒤 지운다(서버에도 기기에도 없는 앞 활동)
+    const taskRows = () =>
+      e2eDb()
+        .select({ id: attempts.id })
+        .from(attempts)
+        .where(
+          and(
+            eq(attempts.sessionId, sessionId),
+            eq(attempts.activityNo, taskNo),
+          ),
+        );
+    await expect.poll(async () => (await taskRows()).length).toBe(1);
+    await e2eDb()
+      .delete(attempts)
+      .where(
+        and(eq(attempts.sessionId, sessionId), eq(attempts.activityNo, taskNo)),
+      );
+    await page.locator("[data-draft-text]").fill(text);
+    await page.getByRole("button", { name: T.written }).click();
+    // 빠진 과제로 돌아간다 → 다시 끝내면 초고로, 쓴 글 그대로
+    await expect(activity).toHaveAttribute("data-activity", "writing-task");
+    await page.getByRole("button", { name: T.next }).click();
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    await expect(page.locator("[data-draft-text]")).toHaveValue(text);
+    await page.getByRole("button", { name: T.written }).click();
+    await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
   });
 });

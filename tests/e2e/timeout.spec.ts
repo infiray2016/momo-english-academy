@@ -19,6 +19,7 @@ import {
 import { expect, test } from "./fixtures";
 import {
   atLevel,
+  compositionSample,
   guidedSample,
   insertSampleLesson,
   openLessonSession,
@@ -27,6 +28,7 @@ import { photo } from "./photos";
 
 const T = {
   next: "다음",
+  fallback: "이번에는 바로 써 볼까요",
   written: "다 썼어요",
   checking: "확인하고 있어요",
 } as const;
@@ -147,5 +149,45 @@ test("AC-N6 쓰기 확인이 ai.timeout_seconds.realtime 을 넘으면 확인 �
       aiFeedback: { state: "failed", reason: "timeout" },
       score: null,
     });
+  });
+});
+
+test("AC-8d 응답을 늦춘 고정 표본에서 10초 타임아웃 뒤 생각 꺼내기는 '이번에는 바로 써 볼까요'와 과제 예시 · 시드 힌트가 붙은 초고 화면으로 넘어간다", async ({
+  page,
+}) => {
+  test.setTimeout(TIMEOUT_TEST_MS);
+  await pushFakeAi([ruleFor("thinkout", { kind: "hang" })]);
+  const sample = compositionSample();
+  const content = sample.lesson.content;
+  if (content.shape !== "composition") throw new Error("견본 꼴");
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    const sessionId = await openLessonSession(profileId, lesson, {
+      writingPart: "draft",
+    });
+    await page.goto(`/session/${sessionId}`);
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    await page.getByRole("button", { name: T.next }).click(); // 미리보기
+    const enteredAt = Date.now();
+    await page.getByRole("button", { name: T.next }).click(); // 과제 → 생각 꺼내기(첫 질문을 부름)
+    await expect(page.locator("[data-wait-hint]")).toBeVisible();
+    // 타임아웃 뒤 '이번에는 바로 써 볼까요' 초고 화면(과제 예시 · 시드 힌트)
+    await expect(page.locator("[data-activity]")).toHaveAttribute(
+      "data-activity",
+      "draft",
+      { timeout: (REALTIME_TIMEOUT_S * 2 + 5) * MS_PER_SECOND },
+    );
+    expect(Date.now() - enteredAt).toBeGreaterThanOrEqual(
+      REALTIME_TIMEOUT_S * MS_PER_SECOND,
+    );
+    await expect(page.getByText(T.fallback)).toBeVisible();
+    await expect(
+      page.locator("[data-draft-example]").getByText(content.example),
+    ).toBeVisible();
+    for (const hint of content.hints)
+      await expect(
+        page.locator("[data-draft-hints]").getByText(hint, { exact: true }),
+      ).toBeVisible();
+    await photo(page, "p11-writing-6-fallback");
   });
 });

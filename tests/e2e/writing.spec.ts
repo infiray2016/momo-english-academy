@@ -5,6 +5,7 @@
 
 import type { Page } from "@playwright/test";
 import { and, eq, max } from "drizzle-orm";
+import { THINKOUT_LAST_TURN_NOTE } from "../../src/core/ai/calls/thinkout";
 import { cardTokensOf, displayCardsOf } from "../../src/core/answer/expected";
 import { learningDayOf } from "../../src/core/learning-day";
 import type {
@@ -12,6 +13,7 @@ import type {
   WritingItem,
 } from "../../src/core/seed/schema/lesson";
 import { PLACEHOLDER_NAME } from "../../src/core/seed/structure";
+import { rubricScore } from "../../src/core/writing/feedback";
 import { assembleSentence, frameBlanks } from "../../src/core/writing/guided";
 import { lessons } from "../../src/db/schema/content";
 import {
@@ -32,17 +34,21 @@ import { closeE2eDb, countRows, e2eDb, resetHousehold } from "./db";
 import {
   FAKE_PRAISE,
   FAKE_REASON,
+  FAKE_THINKOUT,
   fakeAiRequests,
   fakeAiRequestsOf,
+  feedbackReply,
   pushFakeAi,
   resetFakeAi,
   ruleFor,
+  thinkoutReply,
   writingCheckReply,
 } from "./fake-ai";
 import { expect, test } from "./fixtures";
 import { householdChoices, insertHousehold } from "./household";
 import {
   atLevel,
+  compositionSample,
   guidedSample,
   insertSampleLesson,
   levelSpecOf,
@@ -672,3 +678,162 @@ async function passWritingUnitOne(profileId: string) {
       ),
     );
 }
+
+// ── 쓰기 6~12 첫 세션(생각 꺼내기 · 초고 · 첨삭 보내기 — 차례 6) ──
+
+const C = {
+  task: "과제",
+  thinkout: "생각 꺼내기",
+  typeOwn: "직접 쓸래요",
+  send: "보내기",
+  myIdea: "내 생각",
+  words: "쓸 수 있는 단어",
+  starters: "이렇게 시작해 봐요",
+  written: "다 썼어요",
+  sent: "글을 보냈어요. 첨삭이 오면 고쳐 쓰고 별을 받아요",
+  feedback: "첨삭 보기",
+} as const;
+const MAX_TURNS = TEST_SETTINGS["writing.thinkout_max_turns"].value;
+/** 첨삭이 오기 전 기다림 표시를 볼 만큼 늦추는 응답 시간(기술 값 — 첨삭 타임아웃보다 짧게). */
+const FEEDBACK_DELAY_MS = 4000;
+/** 결과 화면이 첨삭을 다시 읽어 단추를 바꾸기까지 기다리는 상한(기술 값). */
+const FEEDBACK_SHOWN_MS = 20_000;
+const DRAFT_TEXT =
+  "I have a small dog. We go to the park. We play every day. I love it.";
+
+test("AC-4c 쓰기 6단계 첫 세션에서 생각 꺼내기는 writing.thinkout_max_turns 턴에서 앱이 끝내고 초고를 내면 세션이 끝나며 결과 화면에 '글을 보냈어요. 첨삭이 오면 고쳐 쓰고 별을 받아요'와 기다림 표시가 보이고 첨삭이 오면 큰 버튼이 '첨삭 보기'가 된다", async ({
+  page,
+}) => {
+  test.setTimeout(GUIDED_TEST_MS);
+  const activity = page.locator("[data-activity]");
+  const sample = compositionSample();
+  const rubric = { task: 4, grammar: 3, vocabulary: 3 };
+  await pushFakeAi([
+    ruleFor("thinkout", thinkoutReply({ done: false }), MAX_TURNS - 1),
+    ruleFor("thinkout", thinkoutReply({ done: true })),
+    ruleFor(
+      "writing_feedback",
+      feedbackReply({ rubric, delayMs: FEEDBACK_DELAY_MS }),
+    ),
+  ]);
+  await atLevel({ area: "writing", level: sample.level }, async () => {
+    await insertSampleLesson({ sample });
+    // 목록에서 고른다(서버가 6단계 첫 세션을 writing_part draft 로 연다)
+    await page.goto("/writing/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    await page.locator('[data-lesson="assigned-1"]').click();
+    await expect(page).toHaveURL(/\/session\//);
+    const sessionId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    await page.getByRole("button", { name: T.next }).click();
+
+    // 과제(과제 · 예시)
+    await expect(activity).toHaveAttribute("data-activity", "writing-task");
+    await expect(page.getByText(C.task, { exact: true })).toBeVisible();
+    await photo(page, "p11-writing-6-task");
+    await page.getByRole("button", { name: T.next }).click();
+
+    // 생각 꺼내기: 들어오면 첫 질문 — 보기를 누르거나 '직접 쓸래요'로 한글로 짧게
+    await expect(activity).toHaveAttribute("data-activity", "thinkout");
+    await expect(page.getByText(C.thinkout, { exact: true })).toBeVisible();
+    for (let turn = 1; turn < MAX_TURNS; turn += 1) {
+      await expect(page.locator("[data-thinkout-turn]")).toHaveAttribute(
+        "data-thinkout-turn",
+        String(turn),
+      );
+      await expect(page.getByText(FAKE_THINKOUT.question)).toBeVisible();
+      await expect(page.locator("[data-thinkout-option]")).toHaveCount(
+        FAKE_THINKOUT.options.length,
+      );
+      if (turn === 1) {
+        await photo(page, "p11-writing-6-thinkout");
+        await page
+          .locator(`[data-thinkout-option="${FAKE_THINKOUT.options[0]}"]`)
+          .click();
+      } else {
+        await page.getByRole("button", { name: C.typeOwn }).click();
+        await page.locator("[data-thinkout-answer]").fill("공원에서 놀아요");
+        await photo(page, "p11-writing-6-thinkout-typing");
+        await page.getByRole("button", { name: C.send }).click();
+      }
+    }
+
+    // writing.thinkout_max_turns 턴째에 앱이 끝낸다 → 초고(내 생각 · 쓸 수 있는 단어 · 시작 틀)
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    await expect(page.getByText(C.myIdea, { exact: true })).toBeVisible();
+    await expect(page.getByText(FAKE_THINKOUT.summary)).toBeVisible();
+    await expect(page.getByText(C.words, { exact: true })).toBeVisible();
+    await expect(page.getByText(C.starters, { exact: true })).toBeVisible();
+    const thinkouts = await fakeAiRequestsOf("thinkout");
+    expect(thinkouts).toHaveLength(MAX_TURNS);
+    expect(thinkouts.at(-1)?.bodyText).toContain(THINKOUT_LAST_TURN_NOTE);
+    for (const r of thinkouts.slice(0, -1))
+      expect(r.bodyText).not.toContain(THINKOUT_LAST_TURN_NOTE);
+    // 영어 입력란(자동 수정 · 대문자 · 맞춤법 · 추천 끔)
+    const draft = page.locator("[data-draft-text]");
+    await expect(draft).toHaveAttribute("autocorrect", "off");
+    await expect(draft).toHaveAttribute("autocapitalize", "off");
+    await expect(draft).toHaveAttribute("spellcheck", "false");
+    await expect(draft).toHaveAttribute("lang", "en");
+    await photo(page, "p11-writing-6-draft");
+    // 분량 상한만큼 써도 두 방향 모두 한 화면 안이고, 가로에서도 입력란 안에서 넘기지 않는다(화면 검토 review-p11-6-design M-2)
+    const spec = (await levelSpecOf("writing", sample.level)) as {
+      amount: { words?: { max: number } };
+    };
+    const maxWords = spec.amount.words?.max ?? 0;
+    expect(maxWords).toBeGreaterThan(0);
+    const chunk = "My little brother plays outside."; // 낱말 다섯 · 실제 글처럼 긴 낱말(줄이 늘어나게)
+    const long = Array.from(
+      { length: Math.ceil(maxWords / chunk.split(" ").length) },
+      () => chunk,
+    ).join(" ");
+    await draft.fill(long);
+    await fitsBothWays(page);
+    await page.setViewportSize(CHILD_VIEWPORTS.landscape);
+    await expect
+      .poll(() =>
+        draft.evaluate(
+          (el) => (el as HTMLTextAreaElement).scrollHeight <= el.clientHeight,
+        ),
+      )
+      .toBe(true);
+    await photo(page, "p11-writing-6-draft-long", ["landscape"]);
+    await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+    await draft.fill(DRAFT_TEXT);
+    await expect(page.locator("[data-draft-count]")).toHaveAttribute(
+      "data-draft-count",
+      String(DRAFT_TEXT.split(/\s+/).length),
+    );
+    await photo(page, "p11-writing-6-draft-written");
+    await page.getByRole("button", { name: C.written }).click();
+
+    // 결과: '글을 보냈어요 …' + 기다림 표시 → 첨삭이 오면 '첨삭 보기'
+    await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
+    await expect(page.getByRole("heading", { name: C.sent })).toBeVisible();
+    await expect(
+      page.locator('[data-result-next="waiting"] [data-wait-hint]'),
+    ).toBeVisible();
+    await photo(page, "p11-writing-6-sent");
+    await expect(page.getByRole("button", { name: C.feedback })).toBeVisible({
+      timeout: FEEDBACK_SHOWN_MS,
+    });
+    await photo(page, "p11-writing-6-feedback-ready");
+    expect(await fakeAiRequestsOf("writing_feedback")).toHaveLength(1);
+    expect(await fakeAiRequestsOf("thinkout")).toHaveLength(MAX_TURNS);
+    const [row] = await e2eDb()
+      .select({
+        status: sessions.status,
+        writingPart: sessions.writingPart,
+        score: sessions.score,
+      })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId));
+    expect(row).toEqual({
+      status: "completed",
+      writingPart: "draft",
+      score: rubricScore(rubric),
+    });
+  });
+});

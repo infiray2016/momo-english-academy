@@ -1,7 +1,7 @@
 import "server-only";
 // 쓰기 AI 서버 함수(3.3 쓰기 4~5 · 6.2 쓰기 확인 · 3.7 쓰기 4~5 행 · 8절 'AI 호출 하나의 실패', plan-p11b 파일별 값 3 · 'AI 실패 갈래별
-// 화면 길' 쓰기 확인 행 · 정할 것 ㄴ · ㄷ, 13절 C50 (2) · C80). 차례 5 는 쓰기 4~5 확인(checkGuided)이다 — 생각 꺼내기 · 초고 · 첨삭은
-// 차례 6, 고쳐 쓰기 · 밀린 첨삭은 차례 7 이 더한다. AI 는 P9c 공개 함수(@/server/ai)로만 부르고 그 자리에서 시도를 저장한다.
+// 화면 길' 쓰기 확인 행 · 정할 것 ㄴ · ㄷ, 13절 C50 (2) · C80). 쓰기 4~5 확인(checkGuided)은 여기, 6~12 생각 꺼내기 · 초고 · 첨삭
+// (차례 6)은 composition.ts 에서 다시 내보낸다. 고쳐 쓰기 · 밀린 첨삭은 차례 7 이 더한다. AI 는 P9c 공개 함수(@/server/ai)로만 부르고 그 자리에서 시도를 저장한다.
 // 같은 시도 id(또는 같은 활동의 끝 시도)가 있으면 저장한 결과를 그대로 돌려준다(AI 를 두 번 부르지 않음). 아이 글 · AI 글은
 // 로그 · 오류 · 알림 값에 넣지 않는다(오류는 이름 · 코드만, safe-error). 시각은 deps 에서 읽는다.
 import { and, eq } from "drizzle-orm";
@@ -21,6 +21,16 @@ import { type Db, getDb } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
 import { levelContextOf } from "@/server/session/ai-context";
+
+export {
+  type CompositionDeps,
+  type DraftOutcome,
+  feedbackStatus,
+  runFeedback,
+  submitDraft,
+  type ThinkoutOutcome,
+  thinkoutStep,
+} from "@/server/writing/composition";
 
 /** 활동 번호 상한(세션 서버의 시도 겉꼴과 같은 기술 값). */
 const ACTIVITY_NO_MAX = 200;

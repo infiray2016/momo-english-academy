@@ -7,6 +7,7 @@ import "server-only";
 // DB 오류는 이름 · 코드만 로그에 남긴다(시도 입력 · 인식 글을 내지 않음, safe-error).
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { fillNameDeep } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
 import { learningDayOf } from "@/core/learning-day";
 import {
@@ -98,8 +99,11 @@ const SPEECH_KINDS: ReadonlySet<string> = new Set<SpeechActivityKind>([
   "confirm-question",
 ]);
 
+/** 쓰기 두 세션이 갈리는 단계(이 단계부터 첫 세션은 writing_part draft — 3.3 · 5절, plan-p11b 값 9). */
+const SPLIT_KEY = "writing.split_from_level";
 const settingSchemas = {
   [THROUGH_KEY]: z.number().int().min(1),
+  [SPLIT_KEY]: z.int().min(1),
   "app.timezone": appTimezoneSchema,
   "app.day_start_hour": appDayStartHourSchema,
 };
@@ -246,8 +250,13 @@ type SpecBits = {
     answerSentences?: { max: number };
   };
   presentation?: { confirmQuestions?: number };
-  /** 쓰기 분량(3.3 — 4단계 단어 상자 누르기 word-box · 5단계 기기 자판 slot). */
-  amount?: { kind?: string; input?: "word-box" | "slot" };
+  /** 쓰기 분량(3.3 — 4단계 단어 상자 누르기 word-box · 5단계 기기 자판 slot, 6~12 문장 · 낱말 범위). */
+  amount?: {
+    kind?: string;
+    input?: "word-box" | "slot";
+    words?: { min: number; max: number };
+    sentences?: { min: number; max: number };
+  };
 };
 
 type SessionContext = {
@@ -522,6 +531,10 @@ async function startUnsafe(
         startedAt: at,
         seedRevision: row.revision,
         seedCorrection: row.correction,
+        // 쓰기 6단계부터 첫 세션(초고) — 둘째 세션(고쳐 쓰기)은 차례 7
+        ...(area === "writing" && lesson.level >= s[SPLIT_KEY]
+          ? { writingPart: "draft" as const }
+          : {}),
       })
       .returning({ id: sessions.id });
     if (!created) throw new Error("세션을 넣지 못했다");
@@ -702,6 +715,9 @@ export async function finishLessonSession(
       if (session.status === "completed") return { ok: true, already: true };
       if (session.status !== "in_progress")
         return { ok: false, reason: "closed" };
+      // 쓰기 6~12 첫 세션은 초고 제출 서버 액션이 끝낸다(plan-p11b 값 3 — 첨삭 대기와 함께)
+      if (session.writingPart === "draft")
+        return { ok: false, reason: "invalid" };
       const [lessonRow] = await tx
         .select()
         .from(lessons)
@@ -860,8 +876,25 @@ export type SessionView = {
       input: "word-box" | "slot";
       sentences: string[] | null;
     } | null;
+    /** 쓰기 6~12 첫 세션 자료(plan-p11b 값 7 · 9). 그 밖 null. AI 글의 {NAME} 은 영어 이름으로 채움. */
+    composition: CompositionView | null;
   };
 }[LessonArea];
+
+/** 쓰기 6~12 첫 세션 화면 자료. */
+export type CompositionView = {
+  /** 분량 줄('<최소>~<최대>단어로 써요' — 낱말 범위가 있으면 낱말, 없으면 문장, 단계 규격 amount). */
+  amount: { unit: "words" | "sentences"; min: number; max: number };
+  /** 생각 꺼내기 끝(요약 · 쓸 낱말 · 시작 틀) · 실패('이번에는 바로 써 볼까요') · 아직 없음. */
+  thinkout:
+    | { state: "done"; summary: string; words: string[]; starters: string[] }
+    | { state: "failed" }
+    | null;
+  /** 생각 꺼내기 도중이면 마지막 질문(다시 열 때 그 질문부터). */
+  thinkoutTurn: { turn: number; question: string; options: string[] } | null;
+  /** 자동 저장한 초고 글(가장 늦은 진행 시도 — 다른 기기에서 이어 쓰기). */
+  draftText: string | null;
+};
 
 function pictureWordsOf(lesson: LessonOf[LessonArea]): {
   words: string[];
@@ -932,6 +965,68 @@ function guidedViewOf(
     if (parsed?.kind === "writing-guided-fix") sentences = parsed.fixed;
   }
   return { input, sentences };
+}
+
+/**
+ * 쓰기 6~12 첫 세션 화면 자료(plan-p11b 값 7 · 9): 분량 줄(단계 규격 amount — 낱말 범위 먼저, 없으면 문장, 둘 다 없으면 던짐),
+ * 생각 꺼내기 끝 시도(요약 · 낱말 · 틀 또는 실패) · 마지막 진행 질문, 가장 늦은 초고 진행 시도 글. AI 글은 영어 이름으로 채운다.
+ */
+function compositionViewOf(
+  ctx: SessionContext,
+  tried: readonly { activityNo: number; input: unknown; attemptedAt: Date }[],
+  englishName: string,
+): CompositionView | null {
+  if (ctx.area !== "writing" || !("shape" in ctx.lesson.content)) return null;
+  if (ctx.lesson.content.shape !== "composition") return null;
+  const range = ctx.spec.amount?.words ?? ctx.spec.amount?.sentences;
+  if (!range)
+    throw new Error(`쓰기 ${ctx.level}단계 규격에 분량(amount)이 없다`);
+  const amount = {
+    unit: ctx.spec.amount?.words ? ("words" as const) : ("sentences" as const),
+    min: range.min,
+    max: range.max,
+  };
+  const rows = tried
+    .map((r) => ({
+      at: r.attemptedAt.getTime(),
+      input: parseAttemptInput(r.input),
+    }))
+    .sort((a, b) => a.at - b.at);
+  let thinkout: CompositionView["thinkout"] = null;
+  let thinkoutTurn: CompositionView["thinkoutTurn"] = null;
+  let draftText: string | null = null;
+  for (const { input } of rows) {
+    if (input?.kind === "thinkout" && input.step === "final")
+      thinkout ??=
+        input.failed || input.restored || input.summary === undefined
+          ? { state: "failed" }
+          : fillNameDeep(
+              {
+                state: "done" as const,
+                summary: input.summary,
+                words: input.words ?? [],
+                starters: input.starters ?? [],
+              },
+              englishName,
+            );
+    if (
+      input?.kind === "thinkout" &&
+      input.step === "progress" &&
+      input.turn > (thinkoutTurn?.turn ?? 0)
+    )
+      thinkoutTurn = fillNameDeep(
+        { turn: input.turn, question: input.question, options: input.options },
+        englishName,
+      );
+    if (input?.kind === "draft" && input.step === "progress")
+      draftText = input.text;
+  }
+  return {
+    amount,
+    thinkout,
+    thinkoutTurn: thinkout ? null : thinkoutTurn,
+    draftText,
+  };
 }
 
 /** 세션 화면 자료. 그 프로필의 진행 세션이 아니면 undefined(쪽이 결과 · 수업 목록으로 보낸다). */
@@ -1084,6 +1179,7 @@ export async function loadSessionView(
       ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
     }) && (await aiRestingToday({ profileId: profile.id, at: now() }, { db }));
 
+  const composition = compositionViewOf(ctx, tried, profile.englishName);
   return {
     sessionId,
     area,
@@ -1107,6 +1203,7 @@ export async function loadSessionView(
     showKo,
     aiResting,
     guided: guidedViewOf(ctx, tried),
+    composition,
   } as SessionView;
 }
 
