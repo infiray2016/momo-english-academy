@@ -74,3 +74,7 @@
 | 값 | 지금 | 확인 |
 |---|---|---|
 | (없음 — H5 는 C66 으로 확정, ledger-closed) | | |
+| 볼트 훅 `vault_check.py`: UserPromptSubmit 이 배경 작업 알림(`<task-notification>` · Monitor 이벤트)도 요청자 메시지로 `prompts` 에 넣어 세션기록 '요청자' 턴으로 센다 → --mark-ingest 뒤 알림이 하나라도 오면 Stop 훅이 '정리 안 된 턴 1' 로 막음(2026-10-22 14:2x 두 번). 고칠 것: `<task-notification>` · `[SYSTEM NOTIFICATION` 로 시작하는 prompt 는 기록 · 집계에서 뺀다(사용자 수준 훅 — 가벼운 루프, 요청자 확인 뒤) | 컨트롤러, 다음 설정 · 도구 틈 | 2026-10-22 14:2x Stop 훅 차단 둘 · turn.json prompts 첫 항목이 task-notification |
+| Codex 리뷰 2(2026-10-19): 답안 대기열 `src/lib/attempt-queue.ts` `add()` 가 저장소와 합치지 않고 덮어써 두 탭 오프라인 답안이 유실됨 — 저장 전 `load(storage)` 합침 + 단위 시험 | P11b 차례 6 fix(impl-p11b) | `review-codex-2026-10-19.md` 판정 2 · 코드 147 · 183줄 |
+| Codex 리뷰 3(2026-10-19): 배치 평가 `src/server/placement/index.ts` 591줄 트랜잭션 안 613 · 672 · 686줄이 `screenOf(db, …)` 로 바깥 연결을 잡아 풀(POOL_MAX) 고갈 교착 가능 — `screenOf` 에 tx 넘기기 + 통합 시험 | P11b 차례 6 fix(impl-p11b) | `review-codex-2026-10-19.md` 판정 3 |
+| Codex 리뷰 1 · 5 · 6(2026-10-19): H2 iPad 점검표(`docs/checklists/speech-check.md`) 아직 빔 → 요청자 15분 · 통합 가지 하나(`integration/1a`)로 CI 가지 재생성 없애기 제안 · 성공 기준에 전이 측정(처음 보는 지문 · 며칠 뒤 회상 · 힌트 없는 새 질문) 더할지 | 요청자 결정(H2 · 가지 · 2차 측정값) | `review-codex-2026-10-19.md` 판정 1 · 5 · 6 |

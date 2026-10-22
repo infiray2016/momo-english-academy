@@ -13,8 +13,8 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 학습 규칙은 처음부터 본 규칙이다(S4). 단원 통과는 단원 단어 unit.vocab_mastery(0.80) '안다'와 최근 unit.recent_window(5)회 평균 unit.recent_score(0.80)이다. 최소 수업 수 · 최소 학습일 수는 아래 한계일 뿐이다(3.2).
 승급은 단계 평가 문항 점수 합이 ⌈문항 수 × level.pass_score⌉ 이상일 때다. seed.complete_through_level(6)을 넘으면 '다음 단계 수업을 준비하고 있어요. 지난 수업을 다시 해 봐요'가 된다(3.2).
 앱은 시드를 읽기만 한다(6.3). 서버에서 실시간 호출 넷(쓰기 확인 · 첨삭 · 말하기 평가 · 생각 꺼내기)만 부르고 모두 ai_calls 에 남긴다(6.1).
-하루 안전 상한(ai.safety_daily_calls 1000 · ai.safety_daily_cost_usd 15)에 닿으면 그 학습일의 실시간 호출만 막고 안내한다. 'AI 쉬는 중' 상태 · 확인 호출 · 부모 화면 · 비용 알림 · 회화 · 신고는 1-나다(11절).
-시드는 6.3 순서 (0)~(3)을 끝내고 (4-가)를 시작한다. 회화 카드 본 생성 (4-나)는 1-나 회화 턴 뒤다.
+하루 안전 상한(ai.safety_daily_calls 1000 · ai.safety_daily_cost_usd 15)에 닿으면 그 학습일의 실시간 호출만 막고 안내한다. 'AI 쉬는 중' 상태 · 확인 호출 · 부모 화면 · 비용 알림 · 신고는 1-나다(11절). 회화는 요청자 지시(2026-10-22, C85)로 1-가에 당겨 P13 으로 한다 — 순서 P11b → P13 회화 → P12 → P11c.
+시드는 6.3 순서 (0)~(3)을 끝내고 (4-가)를 시작한다. 회화 카드 본 생성 (4-나)는 P13 회화 턴이 표본 카드로 돈 뒤다(C85).
 
 ## 바뀌는 파일 (Files that change)
 
@@ -58,8 +58,8 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 5. [DB][검증] P7. H8. 완료: dev-load 한 번, 프리뷰가 규격을 읽음, main 작업이 운영 승격을 보류함.
 6. [검증][사람] P8 시작. H9 · H10 · H11. 따로 연 생성 세션에서 1-나까지 이어 간다(6.3, 2~3세션). 완료(1-가 몫): 표본 확정 · effort 결정 · 배치 가 벌 · 정할 것 ④의 묶음이 개발용 DB 에 있음.
 7. [화면] P10. 완료: 접근 코드 → 첫 실행 → 배치 → 홈 → 수업 목록 → 세션 시작 e2e.
-8. [화면][서버] P11. 완료: 세 영역 세션 e2e.
-9. [화면][서버] P12. 순수 함수는 작업 4부터 ∥. 완료: 시각 당기기로 단원 통과와 단계 평가 통과 e2e.
+8. [화면][서버] P11a · P11b ∥ P13 회화(C85 — P11b 차례 6~7 과 나란히, 워크트리 따로). 완료: 세 영역 세션 e2e · 회화 수업 다섯 토막 e2e(가짜 AI).
+9. [화면][서버] P12 → P11c(C85 순서). 순수 함수는 작업 4부터 ∥. 완료: 시각 당기기로 단원 통과와 단계 평가 통과 e2e.
 10. [검증] 차수 경계 점검. `pnpm spec:trace`(증명 표 AC 마다 시험 있음) · `pnpm check:ids` · 전체 `pnpm e2e` · dev-load. 완료: 1-가 AC 중 시험 없는 것 0, 설계 숫자 박힘 0.
 11. [사람] H13. 완료: 요청자가 프리뷰에서 끝까지 써 봄.
 12. [문서] 완료 보고를 채우고 done. 1-나 plan 으로 간다.
@@ -85,6 +85,7 @@ spec: `specs/` 정본 열세 장(지도 `specs/README.md`, approved 2026-10-16 0
 | P11b | 쓰기 AI · 첨삭: AI 길(가짜 AI e2e — C81 · 기다림 표시 · 1-가 안전 상한 안내 — C80) · 4~5 쓰기 확인 · 6~12 생각 꺼내기 · 초고 · after() 첨삭 · 둘째 세션 · 밀린 첨삭 · 목록 '첨삭 보기' · 홈 '첨삭이 왔어요'(두 세션 자리 C79) | 3.3 쓰기 표, 3.5, 3.7, 4절 쓰기 · 결과 · 홈 · 목록 행, 5절, 6.1 · 6.2, 8절 첨삭 · 실패, 10절 운영, C79 · C80 · C81 · AC-2a(첨삭) · 2e(초고) · 4c · 6a(초고) · 8d · 8k · 8n(첨삭) · N6 · N10 | `src/server/{writing,session}/` · `src/server/actions/writing.ts` · `src/core/{writing,lesson-list}/` · `src/components/session/{wait-hint,ai-rest,writing-*}.tsx` · `src/app/(child)/{page.tsx,home-cards.tsx,[area]/lessons}` | P11a · P9c(가짜 Anthropic 먼저, 실제 키는 H4 뒤) — 같은 바탕 | — | 쓰기 4~12 세션이 가짜 AI 로 끝까지 돌고 첨삭 · 둘째 세션 · 밀린 첨삭 · '첨삭 보기' · '첨삭이 왔어요'가 된다 | `tests/unit/writing-feedback-state.test.ts` · `tests/integration/{writing-check,writing-feedback,safety-cap,session-start}.test.ts` · `tests/e2e/{writing,timeout,resume,home}.spec.ts` |
 | P11c | 말하기 AI 평가: 3~8 질문 답 · 그림 보고 말하기(AI 판정, 판정 글자 없음) · 9~12 생각 화면 · 발표 · 확인 질문 · 안전 상한 뒤 건너뛰기 · P11 마무리(크기 시험 · CI 순서 명령 · 화면 검토 다시) | 3.3 말하기 표, 3.7, 4절 말하기 행, 6.2 말하기 평가, 7절 두 문장 이상, 8절, C77 · C80 · AC-2c(말하기 평가) · 5b(6 · 10) · 5d · 5e(6) · 5f(3) · 5g · 8b · N9 | `src/server/speaking/` · `src/server/actions/speaking.ts` · `src/components/session/{speaking,presentation}.tsx` | P11a · P11b(AI 길) — 같은 바탕 | — | 말하기 3~12 세션이 가짜 AI · 가짜 음성으로 끝까지 돌고 판정 · 점수 글자가 아이 화면에 없다 | `tests/integration/{speaking-eval,retry}.test.ts` · `tests/e2e/{speaking,font-size}.spec.ts` |
 | P12 | 단어장 · 복습 · 단원 통과 · 단계 평가 · 결과(11절 (8)). 세 상태 · 간격 반복 · 카드 꼴과 속하는 영역(C45 · C47) · 15장, 숙달 · 단원 통과(복사한 설정값) · 보강 · 단어 익히기 연습 · 부모 확인 판정과 표시, 단계 평가(벌 · 재응시 · AI 과제 채점 · 준비 중 · 졸업), 세션 결과(P11 이 틀 · P12 가 채움 — plan-p11a 정할 것 바: 별 · 오늘 얻은 단어 · 단원 막대 · '단원 n을 통과했어요!' · '다시 했어요' · 'n단계 평가 보기'), 별 · 연속 일수 | 3.2, 3.4, 3.5, 3.7, 4절 복습 · 단계 평가 · 세션 결과 · AC-2d · 6b · 6d · 6e · 7b · 7e · 9a~9c · 9f · 9g · 10a~10d · 10f~10h | `src/core/{review,mastery,unit-pass,level-test,stars,streak,practice-pick}/` · `src/app/(child)/{review,level-test,result}/` · `src/server/actions/` | P10 · P11(순수 함수는 P4) | 순수 함수는 P5~P11 과 | 프리뷰에서 시각 당기기로 단원 통과 · 단계 평가 통과 | `tests/unit/{spaced-review,review-card,unit-pass,level-test,stars,streak,practice-pick}.test.ts` · `tests/integration/unit-progress.test.ts` · `tests/e2e/{review,level-test,result}.spec.ts` |
+| P13 | **회화 수업(1-나에서 당김, 요청자 지시 2026-10-22 · C85)**. 다섯 토막(인사 · 오늘 쓸 말 · 말해 보기(1~3단계) · 대화 15~25번 · 정리), 회화 턴 호출(1~3 Haiku · 4~ Sonnet, 문장 단위 검사 · 되풀이 · 짧은 설명), 1~3단계 글 없는 힌트 버튼, 다시 묻는 턴과 '말했다' · '안다', 끝맺음 · 요약, 친한 정도, 토리 이야기, 잘한 말 2 · 다음엔 이렇게 1(5단계~), 회화 단원 통과('말함' 80% + 끝낸 대화) · 회화 단계 평가(허용 답 일치율 앱 채점), 토리 표시(아바타 결정 전까지 정지 그림), 녹음 없음. 하위 plan 은 계획자가 나눈다(p13a 수업 흐름 · 턴 호출 · p13b 평가 · 통과 · 이야기 등) | 3절 회화(02-1 · 02-2 · 02-3), 4절 회화 행, 5절 conversation 테이블, 6.1 · 6.2 회화 턴, 6.3 회화 카드, 7절, 9절 회화 키, 델타 spec `intent/2026-10-16-회화-선생님-수업/spec.md` · AC 회화 행 | `src/app/(child)/conversation/**` · `src/components/conversation/**` · `src/server/conversation/**` · `src/server/actions/conversation.ts` · `src/core/conversation/**`(순수 함수) · `tests/unit/conversation-*.test.ts` · `tests/integration/conversation-*.test.ts` · `tests/e2e/conversation.spec.ts`(가짜 AI) | P9 · P10 · P11a(세션 틀 · 말하기 단추 · 가짜 AI 서버) | P11b 차례 6~7 · P12 순수 함수(단원 통과 수치 공유) | 회화 수업 다섯 토막이 가짜 AI 로 e2e 끝까지 돌고, 1~3단계 대화 화면에 영어 문장 글이 없음(힌트 버튼만), 회화 단원 통과('말함' 80% + 끝낸 대화) · 회화 단계 평가 e2e, 녹음 없음 검사 | `tests/unit/conversation-*.test.ts` · `tests/integration/conversation-*.test.ts` · `tests/e2e/conversation.spec.ts` · AI 계약(수동, 8절) |
 
 ### [사람] 단계
 

@@ -572,3 +572,5 @@ playwright test --list    → 설정 읽힘(가짜 AI 서버 import), 가짜 서
 - 같은 시도 id 의 '다 썼어요'가 두 요청으로 동시에 서버에 닿으면 AI 가 두 번 불릴 수 있다(저장은 하나 — 먼저 저장된 결과를 돌려줌). 화면은 기다리는 동안 다시 내지 못하게 막는다. 잡기(값 3 (1) 꼴)는 첨삭(차례 6)에만 plan 에 있다.
 
 상태: CI 돌려 달라(로컬 관문 초록).
+
+CI 9차 → 10차(2026-10-22): run 39726243762 e2e 1 실패(`writing.spec.ts` '쓰기 4~5: …' 447줄). **원인 — 시험 결함(앱 맞음):** 가짜 AI 가 받은 사용자 글은 `0. I like the madeba and the modeba.\n1. We can mudeba with {NAME}.\n2. It is very mideba.` 로 문장 셋이 모두 있다. 시험 집의 영어 이름 'Momo'(insertHousehold 기본)가 견본 둘째 문장 끝에 있어 정본 6.1 이름 가림(P9c 가림 함수)이 `{NAME}` 으로 바꿨는데, 시험이 가리기 전 글을 찾았다. **고친 것:** 요청 본문의 messages 에서 문장마다 영어 이름을 `PLACEHOLDER_NAME` 으로 바꾼 글이 있는지 · 영어 이름 글자 그대로는 없는지를 본다(이름 가림까지 선 위에서 지킴). **바뀐 파일:** `tests/e2e/writing.spec.ts`(그 단언 · 가져오기 둘)만 — 화면 변화 없음, 다시 찍히는 사진은 같은 시험의 `p11-writing-4-*` · `p11-writing-5-*`(내용 같음). 로컬: biome ci 0 · tsc 0 · 단위 500 · check:deps 0 · spec:trace exit 0. 커밋 없음(작업 트리).
