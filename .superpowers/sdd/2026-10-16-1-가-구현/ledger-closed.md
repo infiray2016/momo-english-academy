@@ -53,3 +53,6 @@
 | P13 토리 행에 AI 질문 답 예시 · 힌트 저장 칸 없음(N3, 검토 a2) | 닫힘 2026-10-22 20:5x — C101 `talk_turns.ai_question` 열(0003) 저장 · 읽기 확인, 통합 AC-15i(review-p13-4-code 장부 판정) | 2026-10-22 20:5x |
 | P13b 차례 4 컨트롤러 결정 · 우려(정할 것 7 · 같은 시도 id 겹침 · 통합 미실행 · 시험 먼저 · maxDuration) | 닫힘 2026-10-22 21:5x — C103~C105 · C107, fix 1(tori_ko · 끝맺음 갈래 · stale) 재검토 Approved(review-p13-4-fix1-code), CI 6차-b 초록, 차례 4 커밋 2645768. 시험 먼저 위반은 과정 지적으로 기록(AI-SDLC 글) | 2026-10-22 21:5x |
 | P13b 차례 4 코드 검토 b1 Changes requested I 3 · M 9 | 닫힘 2026-10-22 21:5x — fix 1 재검토 Approved(I 셋 · 결정 둘 ADDRESSED · M 아홉), 커밋 2645768 | 2026-10-22 21:5x |
+| X-1 next.config 추적 포함 키 `/`(홈 응답 뒤 일의 시드 목록) | 닫힘 2026-10-23 00:0x — P13b 차례 6 이 키 `/` 더함 · 빌드 추적 파일에 seed/lists 넷 확인(review-p13-6-code 장부 판정) | 2026-10-23 00:0x |
+| P-1 · P-2(차례 5 재검토 Minor) | 닫힘 — 차례 6 에서 turnInFlight 요청 기다림 상한 · 통합 단언(review-p13-6-code 장부 판정) | 2026-10-23 00:0x |
+| P13b 차례 5 코드 검토 b2 · fix 1 · fix 2 | 닫힘 — 재검토 둘 Approved, 커밋 cd99cdf | 2026-10-23 00:0x |

@@ -516,3 +516,110 @@ pnpm e2e                               → 로컬 불가, CI 몫(사진 E2E_PHOT
 - N-3: `tests/e2e/conversation.spec.ts:430`(둘째 쪽 `page.route("**/api/talk/turn")` — 첫 요청만 통과, 나머지는 첫 쪽 `[data-child-turn]` 뒤 `route.continue()`), 단언 셋(둘째 쪽 턴 요청 ≥ 2 · AI 요청 1 · 둘째 쪽 spoken 에 'Welcome back, friend.').
 - CI 9차(67797f9)에 이 셋이 들어 있는지는 그 커밋 내용 기준 — 덧은 화면 지적 고침 뒤 같은 작업 트리에서 이어 넣었다(보고 '덧' 표). 67797f9 가 덧 전 스냅숏이면 CI 10차에 들어간다.
 - 확인(22:4x): CI 9차 스냅숏 67797f9 에 셋 모두 들어 있다 — `git show 67797f9:<경로>` 로 `TURN_SAVE_GRACE_MS`(turn.ts) · `speechSettings.current`(talk-frame.tsx) · `second.route`(conversation.spec.ts)를 찾았다. fix 2b 는 필요 없다.
+
+## 차례 6 (2026-10-22 23:4x) — P13b 작업 순서 5: 처음 안내 · 오늘 쓸 말 · 말해 보기 · 정리 · 마무리 세 장 · 쪽 · 연결 · 홈 진입 정리
+
+워크트리 p13, 시작 HEAD e32032d(합침 ②). 커밋 없음. 브리프 `task-p13-6.md` + 덧(23:1x) N-1.
+
+### 바뀐 파일
+
+| 파일 | 무엇 |
+|---|---|
+| `src/components/conversation/follow-along.tsx`(새) | 값 14. `TALK_START_TEXT`(3.3 안내 글 그대로 · '시작!') · `FOLLOW_TEXT` · `followStepsOf`(:94 — 남은 차례, 1~3단계 단어 · 4단계부터 예문, 말해 보기 바퀴 차례 = 처음 스냅숏 practiceOrder, 저장한 차례 뺌) · `practiceRevealOf`(:152 — 둘째 바퀴부터 일치율 < talk.hint_read_match) · `TalkStart`(:165) · `FollowAlong`(:391 — 카드 단어 · 뜻 · 예문, 들어올 때 단어 → 예문 읽기, 결과 말 ui.auto_next_seconds 뒤 결과와 관계없이 다음, 인식 실패 speech.max_retries 면 건너뜀 skipped recognition) · `WrapUp`(:599 — 되짚을 말 말풍선 + 뜻, 1~3단계 문장마다 따라 말하기 → `talkClosingStatus` 한 번 → 끝인사 → 마무리). 따라 말하기 저장은 `saveTalkFollowAlong`(시도 id `talk-follow:<세션>:<토막>:<바퀴>:<차례>` — 다시 열어도 한 번) |
+| `src/components/conversation/closing-cards.tsx`(새) | 값 15. `CLOSING_TEXT` · `closingCardsOf`(:48 — 목표 턴 뒤 '홈'은 첫 장만, 1~3단계 첫 장 · 셋째 장) · `friendshipCellsOf`(:60) · `ClosingFirst`(:65 — 별 · 미션 자리(P12 · c) · '다음에 끝까지 이야기하면 별을 받아요' / '다시 했어요' · 오늘 얻은 단어(대화에 원형이 안 나온 것만 듣기 단추) · '다음') · `ClosingThird`(:148 — 친한 정도 막대(다시 하기 없음) · 다음 이야기 제목 · 큰 '다음 이야기'(없으면 '수업 목록') · 작은 '홈', '다음' 없음) · `ClosingCards`(:231 — 다음 이야기는 수업 목록과 같은 `useLessonStart` 길: 하던 수업 확인 쪽지 · 1-가 상한 AiRest · 기다림 표시) |
+| `src/components/conversation/talk-frame.tsx` | 머리 주석 · 단계 상태(`stage` talk/wrap/closing, `started`, `followShown`). 열 때 차례 막힘 → 쉼 → '시작!'(:726, 처음 회화면 안내 글 · `markTalkNotice("talk_intro")`) → 처음 마이크 안내. 토막 넘김 `moveTo`(:340) · `afterFollow`(:332). '그만하기'(:591) → stopTalk 뒤 정리 → 마무리(차례 5 정할 것 2 — 수업 목록 임시 길 지움, 실패면 '다시 해 보기'). '홈'(:569) — 목표 턴 뒤 닫히면 마무리 첫 장 뒤 홈, 막힘 · 쉼의 '홈'은 바로. 목표 턴 뒤 1-가 상한 닫힘(close · resting · 되짚을 말 있음)은 `readTalkWrap`(:494) → 정리 → 마무리, 대화 안전 상한은 그대로 끝인사 + '수업 목록'(`showClosed` :404). 띠의 수 · '그만하기'는 대화 단계만, 마무리 중 띠 '홈' 숨김(셋째 장 '홈' 하나). 끊김 줄 `TroubleLine`(:1030)을 따라 말하기 조각에도 |
+| `src/components/board/board.tsx:90-93` | 덧 N-1 — PaperBand 오른쪽 묶음 `ml-auto`(브리프가 허용한 공용 한 토큰) |
+| `src/server/conversation/index.ts:1312` | `readTalkWrap` · `WrapOutcome`(정리 토막 세션의 마무리 자료 — 열린 대화 · 남의 세션 not_found, AI 없음) |
+| `src/server/actions/conversation.ts:70` | 액션 `readTalkWrap`(첫 문장 requireAccess — access-gate 시험이 저절로 봄) |
+| `src/server/conversation/turn.ts:515-548 · :716` | 재검토 P-1 — `turnInFlight` 에 요청 기다림 상한: 마지막 호출이 실패면 `max(마지막 끝, 첫 호출 + AI_WAIT_TIMEOUT_MULTIPLE × ai.timeout_seconds.realtime) + TURN_SAVE_GRACE_MS` 까지 진행 중, 성공이면 지금처럼 `마지막 끝 + 여유`. 설정 키 `ai.timeout_seconds.realtime` 을 turnSettings 에 |
+| `src/app/(child)/[area]/lessons/page.tsx` · `past/page.tsx` · `lesson-board.tsx` · `past/past-lessons.tsx` | talk redirect · `Exclude<Area,"talk">` 지움. 단계 없는 회화는 `/speaking/placement`(새 `placement-path.ts` — 쪽 파일은 다른 이름을 내보낼 수 없어 따로) |
+| `src/app/(child)/talk/page.tsx` | 지움(작업 트리에서만 — 색인은 건드리지 않음). `/talk` 404 |
+| `src/app/(child)/home-cards.tsx` | `TALK_PATH` 지움 — 회화 카드도 `/${area}/lessons` |
+| `src/app/(child)/page.tsx:26-31` | `after(() => closeIdleTalks({ profileId, at: now() }, { now }))`(P11b 꼴 — 쿠키 · 머리글은 after 안에서 안 읽음) |
+| `next.config.ts:19-25` | X-1 — 추적 포함 키 `/` 더함(까닭 주석). 빌드 뒤 `.next/server/app/(child)/page.js.nft.json` 에 seed/lists 넷(forbidden · forms · homophones · meta-sentences)이 든 것을 확인 |
+| `tests/e2e/talk.ts` | `fullTalkLesson`(다섯 토막 견본 — 단원 단어를 새 단어로 좁혀 오늘 쓸 말 = 카드 차례) · `openTalkSession(…, { kind })` · `failingRun` · `reachSafetyCap` |
+| `tests/e2e/conversation.spec.ts` | 열기 도우미 `pastStart`('시작!' → 처음 마이크 안내), 차례 5 시험 둘(stale 둘째 쪽 · 3단계 빠르기)을 '시작!'에 맞춤, 새 describe 셋 · 시험 16(아래) |
+| `tests/e2e/home.spec.ts` · `lesson-list.spec.ts` · `placement.spec.ts` · `font-size.spec.ts` | P10 시험 넷 — 회화 카드 href `/talk/lessons`, 목록 '토리 준비' 대신 말하기 배치 평가로 · `/talk` 404, font-size 는 '회화 준비 중' 대신 '회화 수업 목록'(집에 회화 1단계 · 견본 수업) |
+| `tests/unit/talk-follow.test.ts`(새) | 단위 9 |
+| `tests/integration/conversation-session.test.ts` | P-1 · P-2 새 시험 하나 + `readTalkWrap` 단언 둘 |
+
+### 설계와 다르게 한 것 · 정한 것(까닭)
+
+1. 열 때 차례를 막힘 → **쉼** → '시작!' → 마이크 안내로 했다(plan 값 7 은 안내 → 마이크 안내 → 쉼). 쉬는 날 첫 회화면 안내 · '시작!'을 누른 뒤 곧 쉼 안내가 나와 한 화면 두 행동이 된다. 안내 표시는 '시작!'에서만 남기므로 쉬는 날에는 다음에 안내가 나온다.
+2. '시작!'을 처음 마이크 안내보다 앞에 늘 둔다(컨트롤러 결정). 마이크 안내는 지금처럼 기기마다 한 번이라 처음 기기에서는 두 번 누른다.
+3. 지난 수업 쪽(`past/page.tsx`)도 talk redirect 를 지웠다. 브리프는 수업 목록 쪽만 적었지만 그 쪽도 `/talk` 로 보내 404 가 된다. 단계 없는 회화를 `/speaking/placement` 로 보내는 것은 4절 홈 표 회화 카드 행과 같은 길이다(전에는 `/talk/placement` 404 였을 자리).
+4. 서버 함수 하나(`readTalkWrap`)를 더했다. 목표 턴 뒤 1-가 상한 닫힘 줄에는 마무리 자료(오늘 얻은 단어 · 친한 정도 · 다음 이야기)가 없어서, 8절 '목표 턴 뒤의 회화' 행(정리 → 마무리 첫 장 · 셋째 장)을 그리려고 닫힌 뒤 읽는다. 못 읽으면 끝인사 + '수업 목록'.
+5. P-1 은 검토 권고(늘 두 값 가운데 늦은 쪽)보다 좁게 했다. 마지막 호출이 성공이면 다시 시도가 없으므로 지금처럼 끝 + 5초, 실패일 때만 요청 기다림 상한까지 본다. 실패로 끝난 요청이 정말 죽었으면 같은 시도 id 다시 보냄이 그 상한(시험 값 25초)까지 stale 이다. 화면 되풀이(1.5초 × 20)가 그 안에 닿는다.
+6. 따라 말하기 조각에는 인식 글을 보이지 않는다(4절 '결과 말로만'). 말하기 영역 따라 말하기와 다르다.
+7. 4단계부터 둘째 장은 c 몫이라 `closingCardsOf` 가 지금은 단계와 관계없이 첫 장 · 셋째 장이다.
+8. 마무리 중에는 띠의 수 · '그만하기' · '홈'을 숨겼다(셋째 장 '홈' 하나 — 한 화면 '홈' 하나).
+9. 장 이름을 글자(first · third)로 했다. 숫자 1 · 3 이 설계 숫자 검사에 오탐으로 잡혀서다. 화면 표지 `data-closing-card` 는 1 · 3.
+
+### 정본 밖 문구(새로 쓴 것)
+
+'토리를 따라 말해 봐요' · '보고 말해 봐요' · '뜻을 보고 영어로 말해 봐요'(plan 값 14 제안 그대로) · '토리와 친한 정도'(목업 B_TalkEnd) · '단어 듣기'(듣기 단추 이름). 나머지는 4절 · 3.3 글 그대로('오늘 얻은 단어' · '다음' · '다음 이야기' · '수업 목록' · '홈' · '다시 했어요' · '다음에 끝까지 이야기하면 별을 받아요' · 3.3 안내 다섯 문장 · '시작!').
+
+### 요청하는 변경(공용 · 설계)
+
+없음. 공용 변경은 브리프가 허용한 둘(board.tsx `ml-auto` · next.config 키 `/`)만 했다.
+
+### 덮는 시험
+
+단위 `tests/unit/talk-follow.test.ts`(9):
+- 회화 따라 말하기: 오늘 쓸 말은 단어 차례, 말해 보기는 바퀴마다 정한 차례이고 1~3단계 따라 말할 것은 단어 · 4단계부터 예문이다
+- 회화 따라 말하기: 이어 열면 이미 저장한 차례는 건너뛴다
+- 회화 말해 보기: 둘째 바퀴부터 일치율이 talk.hint_read_match 아래이면 영어 문장을 보이고 들려준다(첫 바퀴는 이미 보임)
+- AC-16c 처음 회화 안내는 3.3 글 그대로이고 처음이 아니면 안내 글 없이 '시작!'만 있다
+- AC-15e 1~3단계 마무리는 둘째 장 없이 첫 장 · 셋째 장이고 목표 턴 뒤 '홈'은 첫 장만이다
+- 회화 마무리: 친한 정도 막대는 talk.friendship_max 칸 가운데 지금 값만큼 찬다(숫자 없음)
+- AC-15g 마무리 첫 장의 오늘 얻은 단어는 대화에 원형이 안 나온 것에만 듣기 단추가 있고 끝인사 · 숫자 · 퍼센트 · '내일'이 없다
+- AC-15f 목표 턴 전 그만둔 대화의 첫 장은 '다음에 끝까지 이야기하면 별을 받아요', 다시 하기는 '다시 했어요'다
+- AC-15e 셋째 장은 친한 정도 막대 · 다음 이야기 · 큰 '다음 이야기' · 작은 '홈'이고 '다음'이 없으며 다음 수업이 없으면 큰 단추는 '수업 목록', 다시 하기는 막대가 없다
+
+통합 `conversation-session.test.ts`:
+- 새 'AC-15f 토리의 말이 없는 마지막 턴의 같은 시도 id 는 마지막 호출이 실패면 그 요청의 기다림 상한과 저장 여유가 지날 때까지 다시 부르지 않고 그 뒤 TURN_IN_FLIGHT_MS 안이면 다시 부른다'(P-1 · P-2 — 여유 + 1초는 stale · AI 그대로, 상한 + 여유 + 1초(< 60초)는 다시 부름. 2분 단언은 원래 시험에 그대로)
+- '1-가 안전 상한(회화): 목표 턴 뒤 더 이야기하기 중에 닿으면 …'에 `readTalkWrap` 단언(되짚을 말 = 닫힘 줄 · 카드 끝인사 · 중단 아님 · 막대 있음 · AI 없음)
+- 'AC-15f 목표 턴 전에 떠난 대화는 …'에 열린 대화는 `readTalkWrap` not_found
+
+e2e `conversation.spec.ts` 새 16(사진 이름은 괄호):
+- AC-15a 회화 1단계 수업은 인사 → 오늘 쓸 말 → 말해 보기 → 대화 → 정리 순서로 이어지고 대화 토막의 아이 차례에 영어 문장이 보이지 않는다 — 홈 카드 → 회화 수업 목록 → 세션 → 안내 '시작!' → 오늘 쓸 말 → 말해 보기 → 대화 열네 턴 → 목표 턴 고르기 '그만하기' → 정리 → 첫 장 → 셋째 장(막대 · 다음 이야기 = 둘째 수업) → '다음 이야기'로 새 세션('시작!'만). 듣기 끝 조용함은 그 시험 동안 0.3초(`withHouseholdSetting`) (closing-1 · closing-3)
+- AC-16c 처음 회화를 열면 … 안내가 보이고 … '토리의 약속' 한 줄이 늘 보인다 — notices_seen talk_intro · 다시 열면 '시작!'만 (intro)
+- AC-15g 회화 오늘 쓸 말은 … 인식이 speech.max_retries 번 실패한 단어는 건너뛴다 — 단어 · 뜻 · 예문, 단어 → 예문 읽기, 결과 말 뒤 저절로 다음, 실패 셋이면 말해 보기로 · attempts(said · recognition) (today-words)
+- AC-15a 회화 1단계 말해 보기는 첫 바퀴를 예문 모두에 한 뒤 둘째 바퀴를 다른 순서로 하고 … 영어 문장이 보이고 들린다 (say-it · say-it-reveal)
+- AC-15f 목표 턴 전에 '그만하기'를 누르면 '토리와 그만 이야기할까요? …'를 묻고 그만두면 마무리 첫 장에 '다음에 끝까지 이야기하면 별을 받아요'가 보인다 (stop-confirm)
+- AC-15a '그만하기'를 누르면 AI 응답을 기다리지 않고 토리가 오늘 쓴 말을 되짚고 아이가 따라 말한 뒤 마무리 화면으로 간다 — 정리 따라 말하기 attempts 1 (wrapup)
+- AC-15g 대화에서 나오지 않은 새 단어는 마무리 첫 장에 듣기 버튼과 함께 보인다
+- AC-15e 회화 마무리는 장마다 '다음' 버튼으로 넘어가고 1~3단계는 둘째 장 없이 셋째 장으로 가며 …
+- AC-15e 끝인사는 정리 토막에서 한 번만 나오고 마무리 첫 장에는 없으며 … 다음 이야기는 수업 목록의 '여기부터 해요' 회화 수업 주제와 같다
+- AC-15e 다시 하기로 한 대화의 첫 장에는 '다시 했어요'가 보이고 친한 정도 막대가 없다
+- AC-15f 목표 턴 전에 회화 화면에서 '홈'을 누르면 확인 없이 홈으로 가고 다시 열면 '하던 수업 이어 하기'로 토리의 마지막 질문부터 이어진다 — 뜻 tori_ko · AI 요청 그대로 (resume)
+- AC-15p 회화 3단계 대화 턴에서 '힌트'를 누르면 한국어 뜻 → 영어 틀 → 영어 문장 순으로 열린다
+- AC-15p 1단계 카드 턴에 그림 키가 있으면 토리 말풍선 옆에 그림이 크게 보이고 글은 보이지 않는다 — 그림 주소에 `page.route` 로 작은 PNG
+- AC-5c 회화 세션 도중 마이크 권한을 거두면 세션이 진행으로 남고 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'이 보인다 (needs-mic)
+- 1-가 안전 상한(회화): 상한 날 회화 수업을 고르면 '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈'이 보인다
+- AC-15j 대화 안전 상한에 닿으면 끝인사 뒤 수업 목록으로 간다(talk.safety_max_turns 를 그 시험 동안 2)
+
+사진(두 방향, E2E_PHOTOS): p13-talk-intro · -today-words · -say-it · -wrapup · -closing-1 · -closing-3 · -stop-confirm · -resume(브리프 여덟) + -say-it-reveal · -needs-mic. 덧 N-1(세로 띠 접힘)은 이 사진들의 띠로 본다.
+
+### 실행 명령과 출력(Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (373 files)
+pnpm exec tsc --noEmit                 → exit 0(지운 /talk 의 옛 경로 타입은 next typegen 으로 다시 만듦)
+pnpm test                              → exit 0, 68 파일 · 718 통과 · 6 todo
+pnpm build                             → exit 0(경로 표에 /talk 없음)
+pnpm check:deps                        → no dependency violations (191 modules, 1039 dependencies)
+pnpm check:ids                         → exit 0 · design-number 37(새 줄 없음)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+pnpm vitest run --project integration  → 로컬 불가(embedded-postgres 'done is not a function'), CI 몫
+pnpm e2e                               → 로컬 불가, CI 몫(사진 E2E_PHOTOS)
+```
+
+### 남은 우려
+
+- e2e 16 과 통합 새 시험은 여기서 한 번도 돌지 않았다. 첫 CI 가 첫 실행이다. 홈부터 끝까지 시험은 열다섯 턴 · 따라 말하기 열 번이라 길다(제한 300초).
+- 그림 시험은 시험용 DB 그림 경로가 `/images/…` 꼴이라는 가정에 기댄다(빌더 `images/vocab/<키>.png`). 다르면 route 가 안 맞아 그림이 접힌다.
+- 덧 N-1 · 마무리 · 따라 말하기 화면 꼴은 단위 정적 그림과 사진으로만 본다. 자동 다음 · 다시 보임 같은 시간 흐름은 e2e 만 덮는다(DOM 시험 도구 없음).
+- 차례 5 의 열린 결정(그림 키 = 영어 낱말이 자료 · 그림 주소에 드러남)은 그대로다. 이번 그림 시험 route 도 그 주소를 쓴다.
+- 3.3 은 '마무리 첫 장에 이 문제 이상해요 작은 버튼'이지만 1-나 몫이라 자리만 두었다(버튼 없음).
