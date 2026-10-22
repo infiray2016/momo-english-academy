@@ -815,3 +815,105 @@ pnpm check:deps             → no dependency violations
 - 로컬에서 실제 적재 · `/talk/lessons` 화면을 보지 못했다. 통합 둘이 CI 에서 초록이어야 적재 길이 확인된다.
 - 정할 것(이야기 견본 함께 적재)을 컨트롤러가 받지 않으면 `DEV_SEED_AREAS` 회화 적재는 적재기 거부로 막힌다. 그때 시험 DB 적재가 모두 멈추므로 CI 가 크게 빨강이 된다.
 - 개발용 DB 적재 때 설정 견주기가 바뀐 `seed.complete_through_level`(5)을 어떻게 다루는지는 미리 돌림 결과로 먼저 봐야 한다.
+
+## 디자인 fix 1 (2026-10-23 02:xx) — 전체 디자인 리뷰 묶음 #1~#5 · #7~#18(#6 뺌)
+
+브리프 `task-design-fix-1.md`(본 표 + 덧 02:1x · 02:3x). 워크트리 p13(HEAD f5e5787), 커밋 없음. 정본 결정은 메인 저장소 13절 C111 · C112 · C114 · plan-p11a 정본 밖 문구 표 새 두 행을 읽었다(워크트리 specs 는 옛 판이라 읽지 않음).
+
+### 번호별 어떻게
+
+| # | 어떻게 | 자리 |
+|---|---|---|
+| 1 | 회화 막힘 · 쉼 안내를 '시작!'과 같은 종이 판(`TalkPaper` — 종이 + 연두 테이프) 안에 두었다. 목록 · 지난 수업 쉼은 이미 종이 포스트잇이고, 세션 막힘 · 쉼은 활동 카드 안이라 손대지 않았다. 공용 조각으로 묶은 것은 막힘 안내 글(#9 `MicBlockedText`)이다 | `follow-along.tsx` `TalkPaper` · `talk-frame.tsx` 막힘 · 쉼 갈래 |
+| 2 | 셈 '말 주고받기 n / 목표'를 띠 둘째 줄(`detail` — '회화 · n단계 · 단원 u' 옆)로 옮겼다. 오른쪽 묶음은 '그만하기' · '홈' 두 단추이고, 안 쓸 때도 자리는 잡아 둔다(invisible · aria-hidden · tabIndex −1). 셈은 `started && !blocked && !resting && stage === "talk"` 일 때만 보이고 자리는 늘 있다. 그래서 띠 높이가 토막 · 안내 · 마무리에서 바뀌지 않는다 | `talk-frame.tsx` 띠 |
+| 3 | 가로에서 `lg:flex-row lg:justify-between`, 힌트 단은 왼쪽 flex-1, 단추 묶음(`data-child-actions`)은 `lg:ml-auto` 오른쪽 끝이다. 세로는 그대로 가운데다 | `child-turn.tsx` |
+| 4 | 따라 말하기 카드 테이프를 왼쪽 1/4 로 옮겨 판 테이프와 위아래로 겹치지 않게 했다. 마무리 셋째 장 친한 정도 테이프는 연두(`bg-postit-talk/90`)로 바꿔 회화 안 테이프 색을 하나로 맞췄다 | `follow-along.tsx` · `closing-cards.tsx` |
+| 5 | 답 두 개 단추를 동그라미 숫자 글자 대신 Fredoka 숫자 1 · 2(`font-en font-bold`)를 원 테(`size-8 rounded-full border-2`) 안에 그리게 했다. 접근 이름 '첫째 답 듣기' · '둘째 답 듣기'는 그대로다 | `tori.tsx` `ANSWER_MARKS` |
+| 7 | 순수 함수 `splitLeadingPunctuation`(새 `core/text/punctuation.ts`)을 두었다. 읽기 지문 `splitPassage` 는 표시 낱말 뒤 부호를 그 낱말 상자의 꼬리(`tail`)로 붙이고, 새 단어 표시는 `whitespace-nowrap` 묶음이다. 쓰기 4~5 빈칸 줄 `frameSegments` 는 빈칸 뒤 부호를 빈칸의 꼬리(`blankTail`)로 붙이고, 빈칸 상자와 한 `whitespace-nowrap` 덩이로 그리며 오른쪽 `mx-1` 을 0 으로 한다. 온 글(assembleSentence)은 그대로다 | `reading.tsx` · `core/writing/guided.ts` · `writing-guided.tsx` |
+| 8 | 수업 목록 격자를 `grid-flow-row-dense` 로 했다. 기다림 · 안내 · 오류를 누른 카드 바로 뒤의 `col-span-full` 한 줄 칸(`LESSON_ROW`, `data-lesson-wait`)에 함께 두어, 같은 줄 카드가 늘지 않는다. 오류가 오면 고른 표시를 되돌린다(`useEffect(status)`). 판 아래 오류 줄은 한 줄 칸 자리가 없을 때만 쓴다. 맨 위 카드(이어 하기 · 첨삭 보기)는 격자 밖이라 그 아래 칸 그대로다 | `lesson-board.tsx` |
+| 9 | 공용 조각 `src/components/session/mic-blocked.tsx` 를 만들었다. `MIC_BLOCKED_TEXT` · 순수 `micBlockedLinesOf` · `useIpadSafari` · `MicBlockedText` 로, 첫 줄은 막힘 안내이고 아이패드 사파리면 둘째 줄 '아이패드 제어 센터에서 무음 모드를 꺼 주세요'(C111 문구 그대로)를 붙인다. 세션 · 회화 · 배치 막힘 안내 셋이 같이 쓴다. 기기 판정은 `describeDevice` 이름으로 보는 순수 `isIpadSafari`(`core/speech/device.ts`)다. 첫 실행 아이패드 상자에 '무음 모드를 끄면 소리가 들리고 말을 들을 수 있어요' · '스크린 타임을 쓰면 설정 → 스크린 타임 → 콘텐츠 및 개인정보 보호 제한 → Siri 및 받아쓰기를 허용해 주세요' 두 줄(문구 표 그대로)을 더했다 | `session-frame.tsx` · `talk-frame.tsx` · `placement-flow.tsx` · `first-run-flow.tsx` |
+| 10 | 순수 `recognitionErrorCodeOf(error, message)` 를 두었다. aborted 이고 메시지가 /dictation/i 면 앱 코드 `dictation-disabled` 이고, 이 코드는 '마이크를 쓸 수 없음' 갈래다(`MIC_UNAVAILABLE_CODES`). 브라우저 접점이 인식 오류를 넘길 때 이 함수를 쓴다. 새 문구는 없다 — 막힘 안내 '마이크가 필요해요' + #9 줄로 간다. 부모 알림 code 칸은 `dictation-disabled` 가 된다 | `core/speech/listen.ts` · `lib/speech/browser.ts` |
+| 11 | (1) 쓰기 둘째 세션 e2e 의 첨삭 칭찬 · 첫 교정 · 고쳐 쓰기 · 모범 답안 사진 뒤에 `fitsBothWays`. (2) `guidedSample(5)` 가 5단계 과제 글 '예시문을 보고 빈칸에 알맞은 낱말을 자판으로 써서 문장을 완성해요.' · 제목 '쓰기 5단계 첫 수업' · 힌트 · 채점표를 따로 갖는다(장부 86행 (2)). (3) 회화 세로 띠 높이 단언 · 목록 N-1 · N-2 단언(아래 시험). (4) 사진: 첫 실행 여덟 · 배치 넷 · 홈 기본 · 목록 기본 · 지난 수업 | `tests/e2e/*` |
+| 12 | 홈 격자를 `items-stretch` 로 하고 카드마다 최소 높이 상수 `HOME_CARD_MIN_H`(min-h-[400px] — B_Home4)를 두었다. 안 내용은 위에서부터, 시작 단추 묶음만 `mt-auto`(기존)로 아래 끝이다. 닫힌 말하기 · 회화 카드는 감싼 칸을 flex-col 로 해 늘게 했다. 수업 목록은 카드 높이를 고정했다(#14 상수). '여기부터 해요'는 두 칸 너비 · 같은 높이이고, 표지는 카드 위 끝에 붙이고(LESSON_BADGE) 그 카드는 테이프를 숨긴다. 기다림 · 안내 · 오류는 #8 한 줄 칸이라 카드가 늘지 않는다 | `home-cards.tsx` · `lesson-board.tsx` |
+| 13 | `ai.model.talk_turn.1-3` 을 `claude-sonnet-5-5` 로 바꿨다 — 실시드 `seed/settings.json` · 시험 `tests/fixtures/settings.ts`(시험용 시드 `loadableSettings` 는 TEST_SETTINGS 에서 받음). Haiku 를 가정하던 시험은 그 시험 안에서 Haiku 를 고르게 했다: 단위 talk-stream-call 거절 재시도 · ai-client 시도 · combo, 통합 conversation-call 셋(거절 · AC-15k · AC-8f 1~3) · conversation-turn 거절. AI 계약 명령(`scripts/ai-contract.ts`)의 `talk_config.haiku` 사례도 1~3 모델을 Haiku 로 골라 둔다. talk-fixture 는 `LOW_MODEL`(시험 설정 값)과 `HAIKU`(글자 그대로)로 나눴다 | 위 파일 |
+| 14 | 수업 카드 꼴 상수 모듈 `src/app/(child)/[area]/lessons/lesson-card.ts` 를 만들었다(LESSON_GRID · LESSON_CARD · LESSON_TITLE · LESSON_NO · LESSON_BADGE · LESSON_ROW). 목록 · 지난 수업이 같이 쓴다. 칸 너비 고정은 세로 168px · 가로 120px, 간격 16 · 12px, 가운데 정렬이다. 카드 높이는 세로 160px · 가로 144px, 제목은 두 줄까지다(line-clamp). '안 해 본 수업'은 위 끝 표지로 둔다 | `lesson-card.ts` · `lesson-board.tsx` · `past-lessons.tsx` |
+| 15 | 홈 카드 안 내용은 위에서부터, 단추 묶음만 아래 끝이다. 빈 띠는 아래 'e2e 잰 값'에 적었다 | `home-cards.tsx` |
+| 16 | `globals.css` 바탕 층에 `button, a, [role="button"], label, summary { touch-action: manipulation }` 를 두었다(손가락 두 개 확대는 그대로) | `globals.css` |
+| 17 | 누르는 종이(PostIt)의 `transition-transform` 에 `motion-reduce:transition-none` 를 더했다 | `board.tsx` |
+| 18 | 격자 셈은 아래 표다 | — |
+
+### #18 격자 셈(ChildScreen 바깥 테 16px · 안쪽 여백 24px — 세로 820 · 가로 1180)
+
+| 화면 · 방향 | 판 안쪽 너비 | 셈 | 양쪽 여백 |
+|---|---|---|---|
+| 홈 세로 | 820 − 32 − 48 = 740 | 358 × 2 + 24 × 1 = 740 | 0 · 0 |
+| 홈 가로 | 1148 − 48 = 1100 | 257 × 4 + 24 × 3 = 1100 | 0 · 0 |
+| 목록 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 목록 가로(오른쪽 칸 240 · 간격 16) | 1100 − 16 − 240 = 844 | 120 × 6 + 12 × 5 = 780 | 32 · 32 |
+| 지난 수업 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 지난 수업 가로 | 1100 | 120 × 8 + 12 × 7 = 1044 | 28 · 28 |
+
+'여기부터 해요' 카드는 168 × 2 + 16 = 352px(가로 252px) 너비다. 격자 칸 너비를 고정해 두 화면 카드가 같은 크기이고, 남는 너비는 가운데 정렬로 양쪽에 같게 남는다.
+
+### #15 빈 띠(단추 위)
+
+로컬은 화면을 그릴 수 없어(DB 없음) **재지 못했다**. e2e '홈 화면 꼴: …'이 두 방향에서 카드마다 '시작 단추 묶음 위끝 − 그 앞 내용 아래끝'을 재어 시험 주석(`home-card-blank-portrait` · `-landscape`)에 남긴다 — CI 결과에서 읽는다. 코드로 셈한 추정값은 둘이다.
+- 막대(Bar)와 최근 성적 칸(RecentCells)은 둘 다 이름 28px + 4 + 12px 로 높이가 같다. 그래서 첫 화면(넷 다 '오늘 아직이에요')은 카드 안 사이 간격 12px 만 남는다.
+- 가로(카드 안 너비 209px)에서 '단원 n · 주제' 줄이 두 줄로 접히는 카드가 있으면, 다른 카드가 그만큼(28px) 더 비어 최대 약 40px 이다.
+- 배치 전 카드(GateBody)는 단추가 없어 같은 줄 카드 높이로 늘면 아래가 빈다. 그래서 40px 기준 밖이다. 배치 전 홈이라 고치지 않았다(정할 것).
+
+### 시험
+
+단위(새 7 · 고침 4, 70 파일 · 747 통과):
+- `tests/unit/mic-blocked.test.ts` '마이크 막힘 안내: 아이패드 사파리만 둘째 줄 …'(isIpadSafari · micBlockedLinesOf · 렌더)
+- `tests/unit/punctuation-glue.test.ts` 셋(문장부호 떼기 · 지문 꼬리 · 빈칸 꼬리)
+- `tests/unit/talk-bubble.test.ts` '회화 말소리 …'과 별개로 '회화 화면: 답 두 개 듣기 단추는 보드 글꼴(Fredoka) 숫자 1 · 2 …'
+- `tests/unit/talk-stream-call.test.ts` '회화 턴 요청 구성: 1~3단계 기본값은 claude-sonnet-5-5 · effort low 이고 생각 '끔'은 Sonnet 의 between_tools 로 보낸다'
+- `tests/unit/listen-end.test.ts` 오류 갈래에 dictation 단언
+- 고침: combo · ai-client · talk-stream-call 거절 · contract ai-schemas(계약 명령 사례)
+
+통합(CI 몫): conversation-call 새 '회화 턴 요청(C112): 1~3단계 기본값이면 claude-sonnet-5-5 · effort low · thinking between_tools 이다'. Haiku 고르기로 바꾼 시험 넷(conversation-call 셋 · conversation-turn 거절)도 같다.
+
+e2e(CI 몫):
+- 새 home.spec '홈 화면 꼴: 한 판의 영역 카드 넷은 두 방향 모두 같은 높이이고 시작 단추는 카드 아래 끝이며 누르는 곳은 빠르게 두 번 눌러도 커지지 않는다'(높이 · 아래 끝 ±1px · touch-action manipulation · 빈 띠 주석)
+- 새 lesson-list.spec '수업 목록: 고르기가 실패하면 오류 줄이 누른 카드 줄 바로 뒤 한 줄 칸에 보는 창 안에 보이고 고른 표시가 되돌아가며 같은 줄 카드는 늘지 않는다'(서버 액션 POST 를 끊음)
+- 단언 더함:
+  - lesson-list 지난 수업 시험: 목록 카드와 지난 수업 카드의 너비 · 높이 ±1px, 두 방향.
+  - writing 안내 시험: '아직 글을 살펴보고 있어요'가 두 방향 한 줄(≤ 44px)이고 수업 카드 높이가 모두 같음.
+  - writing 둘째 세션: `fitsBothWays` 넷.
+  - reading AC-3a: 글줄 첫 글자가 문장부호가 아님, 두 방향.
+  - conversation AC-15a 인사 시험: 띠 높이가 인사 · 대화에서 같음.
+  - conversation 가로 시험: 말하기 단추 가운데가 판 가운데보다 오른쪽.
+  - conversation AC-5c: 막힘이 종이 판 안이고 무음 모드 줄이 있음(e2e 기기 iPad Pro 11 WebKit = 아이패드 사파리 판정).
+  - first-run AC-1c 순서 시험: 아이패드 상자 두 줄.
+
+사진(두 방향, E2E_PHOTOS):
+- 첫 실행 여덟: `first-run-pin` · `-name` · `-avatar` · `-alphabet` · `-topic` · `-level` · `-mic` · `-handoff`
+- 배치 넷: `placement-start` · `-item` · `-result` · `-mic-notice`
+- 홈 · 목록: `home-default` · `lesson-list-default` · `lesson-list-past`
+- 기존 회화 · 쓰기 · 읽기 사진은 새 꼴로 다시 찍힌다
+
+### 관문(Node 24.22.0)
+
+```
+pnpm -s biome ci .          → exit 0 (378 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 70 파일 · 747 통과 · 6 todo
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations (194 modules)
+pnpm check:ids              → exit 0 · design-number 37(새 줄 없음) · setting-default 하나(아래)
+pnpm check:bundle           → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+통합 · e2e                   → 로컬 불가, CI 몫
+```
+
+### 다르게 한 것 · 정할 것 · 남은 우려
+
+- **정할 것 — '여기부터 해요' 크기**: C114 는 '표시만 다르고 크기는 같음', 4절 '여기부터 해요' 행은 '다른 것보다 크게', 브리프 #12 는 '두 칸 너비여도 높이 같게'다. 브리프대로 두 칸 너비 · 같은 높이로 두었다. C114 글 그대로(한 칸)라면 `lesson-board.tsx` 의 `col-span-2` 한 토큰을 뺀다.
+- **정할 것 — 배치 전 홈 카드의 빈 띠**(#15 위) — 단추 없는 카드가 늘어 생긴다.
+- **check:ids setting-default**: 워크트리 정본 12절 기본값이 아직 Haiku 다(보고만, exit 0). 메인 정본 12절이 C112 로 바뀌었으면 합침 때 사라진다 — 문서 몫이다.
+- **plan-p13a 증명 표 이름**: 'AC-8f 회화 턴 요청은 1~3단계에서 claude-haiku-5-5 …' 시험은 이름을 지키려고 그 안에서 Haiku 를 고른다. C112 뒤 기본값 단언은 새 시험이다. 증명 표 이름을 C112 에 맞출지는 컨트롤러 몫이다.
+- **#1**: 목록 · 지난 수업 · 세션의 쉼 · 막힘 틀은 이미 종이 위라 손대지 않았다(회화만 고침). 셋을 한 조각으로 합치는 것은 하지 않았다.
+- **#14 카드 고정 높이**: 실시드 제목이 두 줄을 넘으면 줄임표로 줄어든다(읽기 도구는 온 제목). '보강' · 끝낸 표시는 번호 줄에 들어간다. 세로 160 · 가로 144px 는 번호 줄 + 제목 두 줄 + 여백으로 셈한 값이다.
+- **#10**: `dictation-disabled` 는 앱이 붙이는 코드라, 관찰 페이지 · 부모 알림 code 칸에 그 이름이 보인다.
+- 사진 · 잰 값 · e2e 는 모두 CI 에서 처음 돈다. 로컬에서 그려 보지 못했다.
