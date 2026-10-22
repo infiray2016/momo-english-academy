@@ -201,12 +201,18 @@ export function englishHintTiersOf(
 const isTurnsShape = (spec: Pick<TalkSpecView, "cardShape">) =>
   spec.cardShape === "turns";
 
-// ── 응답 규격(6.2 — 모두 required, null 없음, 칸 차례 그대로) ─────
+// ── 응답 규격(6.2 — 모두 required, null 없음, 칸 차례 그대로 · stuck 이 맨 앞 C127) ─────
 
 function talkWire(input: TalkTurnInput, rules: TalkRules) {
   const tiers = englishHintTiersOf(input.spec);
   return z
     .object({
+      // 막힘 판단을 tori_en 앞에 둔다 — 서버가 흘려 받는 처음에 알아 겹치는 토리 문장만 잡아 둔다(13절 C127)
+      stuck: z
+        .boolean()
+        .describe(
+          "True if the child's words mean they did not understand, or are one or two words unrelated to the question",
+        ),
       tori_en: z
         .string()
         .describe("Tori's English words. Empty string in the closing turn"),
@@ -232,11 +238,6 @@ function talkWire(input: TalkTurnInput, rules: TalkRules) {
       mission_done: z
         .array(z.int())
         .describe("Numbers of missions finished in this turn (levels 5-7)"),
-      stuck: z
-        .boolean()
-        .describe(
-          "True if the child's words mean they did not understand, or are one or two words unrelated to the question",
-        ),
       card_question_no: z
         .int()
         .describe(
@@ -301,6 +302,7 @@ const strs = z
   .catch([])
   .transform((list) => list.filter((v): v is string => typeof v === "string"));
 const talkLoose = z.object({
+  stuck: z.boolean().catch(false),
   tori_en: z.string(),
   tori_ko: str,
   recast: str,
@@ -311,7 +313,6 @@ const talkLoose = z.object({
     .array(z.unknown())
     .catch([])
     .transform((list) => list.filter((v): v is number => Number.isInteger(v))),
-  stuck: z.boolean().catch(false),
   card_question_no: z.number().catch(0),
   next_question_en: str,
   next_question_ko: str,
@@ -604,6 +605,7 @@ export function normalizeTalk(
     if (a.farewell === "" && a.summary === "") return null;
     const feedback = input.level >= rules.feedbackFromLevel;
     return {
+      stuck: false,
       tori_en: "",
       tori_ko: "",
       recast: "",
@@ -611,7 +613,6 @@ export function normalizeTalk(
       new_words: [],
       self_used_words: [],
       mission_done: [],
-      stuck: false,
       card_question_no: 0,
       ...EMPTY_HINTS,
       farewell: a.farewell,
@@ -661,6 +662,7 @@ export function normalizeTalk(
       };
   const seenMissions = new Set<number>();
   return {
+    stuck: a.stuck,
     tori_en: a.tori_en,
     tori_ko: ko ? a.tori_ko : "",
     recast: a.recast,
@@ -675,7 +677,6 @@ export function normalizeTalk(
             return true;
           })
         : [],
-    stuck: a.stuck,
     card_question_no:
       turnsShape || turn.levelTest
         ? 0

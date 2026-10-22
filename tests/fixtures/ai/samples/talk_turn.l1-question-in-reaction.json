@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"Wow, a red ball! Do you like red?\",\"tori_ko\":\"와, 빨간 공이다! 빨간색 좋아해?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"ball\"],\"mission_done\":[],\"stuck\":false,\"card_question_no\":0,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_targets\":[],\"next_answer_example\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"Wow, a red ball! Do you like red?\",\"tori_ko\":\"와, 빨간 공이다! 빨간색 좋아해?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"ball\"],\"mission_done\":[],\"card_question_no\":0,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_targets\":[],\"next_answer_example\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

@@ -136,6 +136,45 @@ describe("회화 흘려 받기: tori_en 풀기", () => {
     expect(reader.failed()).toBe(false);
   });
 
+  it("회화 흘려 받기: 막힘 판단(stuck) 칸이 tori_en 앞에 오면 그 값을 첫 문장 전에 읽는다(C127)", () => {
+    for (const value of [true, false]) {
+      const text = `{"stuck": ${value} ,"tori_en":"Hi. Bye."}`;
+      for (const size of [1, 3, 1000]) {
+        const reader = createToriEnReader();
+        const seen: { stuck: boolean | undefined; sentences: string[] }[] = [];
+        for (const piece of chunks(text, size))
+          seen.push({ stuck: reader.stuck(), sentences: reader.push(piece) });
+        seen.push({ stuck: reader.stuck(), sentences: reader.finish() });
+        // 문장이 처음 나온 조각을 넣은 뒤에는 이미 stuck 을 안다
+        const first = seen.findIndex((s) => s.sentences.length > 0);
+        expect(first, `조각 ${size}`).toBeGreaterThan(-1);
+        expect(reader.stuck(), `조각 ${size}`).toBe(value);
+        expect(seen.flatMap((s) => s.sentences)).toEqual(["Hi.", "Bye."]);
+        expect(reader.failed()).toBe(false);
+      }
+    }
+    // tori_en 이 첫 칸이면(옛 차례 · 모델이 차례를 어김) 흘려 보내고 stuck 은 모른다
+    const old = createToriEnReader();
+    expect(old.push('{"tori_en":"Hi. Bye.","stuck":true}')).toEqual([
+      "Hi.",
+      "Bye.",
+    ]);
+    expect(old.stuck()).toBeUndefined();
+  });
+
+  it("회화 흘려 받기: stuck 값이 참 · 거짓이 아니거나 그 뒤가 tori_en 이 아니면 흘려 보내지 않는다(failed)", () => {
+    for (const text of [
+      '{"stuck":"yes","tori_en":"Hi. "}',
+      '{"stuck":truth,"tori_en":"Hi. "}',
+      '{"stuck":true,"tori_ko":"안녕","tori_en":"Hi. "}',
+      '{"stuck":true "tori_en":"Hi. "}',
+    ]) {
+      const reader = createToriEnReader();
+      expect(reader.push(text), text).toEqual([]);
+      expect(reader.failed(), text).toBe(true);
+    }
+  });
+
   it("회화 흘려 받기: 견본 응답 l1-ok 의 tori_en 이 문장으로 나온다", () => {
     const text = sampleText("talk_turn.l1-ok");
     const whole = JSON.parse(text) as { tori_en: string };

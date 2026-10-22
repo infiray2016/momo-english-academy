@@ -1,7 +1,7 @@
 # Plan: 모모 잉글리시 아카데미 — 1-가 P8 시드 표본 · 본 생성(읽기 · 쓰기 · 말하기 1~6단계 + 단계 평가 · 배치)
 
-spec: `specs/06-시드-생성.md` 6.3 순서 (2)~(4-가) · 6.4, `specs/08-테스트와-기술.md` 9절 '시드 표본 생성 평가', 13절 C66 · C67 · C84 · C85 · C87 · C88 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-22 · 상태: review(요청자 승인 대기 — 묶음 plan P8 행 · '시드 묶음 워크플로' 표는 승인됨)
-승인: — · 브랜치 · 워크트리: `feature/1a-p08-seed-generation`(워크트리 `.claude/worktrees/p08`, P11 가지 + P6b 7767df0 + P5a 2c31bee 합침) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`(브리프 `task-p08-prep.md`, 보고 `task-p08-prep-report.md` — p08 워크트리)
+spec: `specs/06-시드-생성.md` 6.3 순서 (2)~(4-가) · 6.4, `specs/08-테스트와-기술.md` 9절 '시드 표본 생성 평가', 13절 C66 · C67 · C84 · C85 · C87 · C88 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-22 · 상태: approved(요청자 2026-10-23 02:1x, 13절 C116 — 앞서는 review: 요청자 승인 대기 — 묶음 plan P8 행 · '시드 묶음 워크플로' 표는 승인됨)
+승인: hikaru, 2026-10-23 02:1x(C116 — H9 가 · H7 가 · 표본 가) · 브랜치 · 워크트리: `feature/1a-p08-seed-generation`(워크트리 `.claude/worktrees/p08`, P11 가지 + P6b 7767df0 + P5a 2c31bee 합침) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`(브리프 `task-p08-prep.md`, 보고 `task-p08-prep-report.md` — p08 워크트리)
 
 가벼운 루프(생성 파이프라인은 도구 성격, 내용 검토는 6.3 게이트가 맡음). 정본에 없는 이름은 '(제안)', 확인 못 한 사실은 '(추측)'.
 

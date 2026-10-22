@@ -16,6 +16,7 @@ import {
   type ListenOutcome,
   type ListenState,
   type ListenStep,
+  recognitionErrorCodeOf,
   type SpeechSettings,
   START_FAILED_CODE,
   startListen,
@@ -267,7 +268,13 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
           recognizer: id,
           event: { type: "error", error: event.error, message: event.message },
         });
-        push({ type: "error", now: at, recognizer: id, code: event.error });
+        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10)
+        push({
+          type: "error",
+          now: at,
+          recognizer: id,
+          code: recognitionErrorCodeOf(event.error, event.message),
+        });
       };
       recognition.onend = () => {
         const at = now();

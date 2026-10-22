@@ -1,6 +1,6 @@
 // 회화 1단계 인사 → 대화 e2e(plan-p13b 차례 5 — 증명 표 AC-15a · 15b · 15g · 15l · N8 · 8b 의 화면 몫, 4절 회화 세션 표 · 3.3 · 7절 · T2).
 // 견본 수업(인사 → 대화 — 오늘 쓸 말 없음)을 시험이 넣고 진행 세션을 바로 연다. 회화 턴은 가짜 Anthropic SSE(talkReply), 듣기는 가짜 Web Speech
-// 대본(턴마다 하나). 숫자(인식 확인 초 · 기다림 표시 초 · 천천히 빠르기)는 시험용 설정에서 읽는다. 차례 6 은 홈부터 · 처음 안내 · 오늘 쓸 말 ·
+// 대본(턴마다 하나). 숫자(인식 확인 초 · 기다림 표시 초 · 단계 구간 빠르기)는 시험용 설정에서 읽는다. 차례 6 은 홈부터 · 처음 안내 · 오늘 쓸 말 ·
 // 말해 보기 · 정리 · 마무리 세 장 · 그만하기 · 이어 하기 · 3단계 · 그림 · 마이크 · 안전 상한 둘(아래 describe 셋).
 // 녹음하지 않는다(브라우저 인식만). 화면 검토 사진은 E2E_PHOTOS 때만(p13-talk-…).
 import type { BrowserContext, Page } from "@playwright/test";
@@ -9,7 +9,7 @@ import { twoAnswersLine } from "../../src/core/ai/calls/talk";
 import { MORE_PROMPT, practiceOrderOf } from "../../src/core/conversation/flow";
 import { safeLineOf } from "../../src/core/conversation/stream";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
-import type { TalkCard } from "../../src/core/seed/schema/talk";
+import type { TalkCard, TurnCard } from "../../src/core/seed/schema/talk";
 import { LEVEL_MAX, PLACEHOLDER_NAME } from "../../src/core/seed/structure";
 import { RESULT_PHRASES } from "../../src/core/speaking/judge";
 import type { RecognitionRun } from "../../src/core/speech/script";
@@ -64,9 +64,12 @@ const T = {
   rest: "토리가 잠깐 쉬어요",
 } as const;
 const MS = 1000;
+/** 같은 크기로 보는 어긋남(px, 시험 값 — 반올림 한 칸). */
+const SAME_PX = 1;
 const CONFIRM_MS = TEST_SETTINGS["talk.confirm_seconds"].value * MS;
 const WAIT_LINE_MS = TEST_SETTINGS["ui.wait_hint_seconds"].value[1] * MS;
-const SLOW_RATE = TEST_SETTINGS["speech.slow_rate"].value;
+/** 1~3단계 읽어 주기 빠르기(speech.rate.1-3, C125 — C96 speech.slow_rate 를 바꿈). */
+const LOW_BAND_RATE = TEST_SETTINGS["speech.rate.1-3"].value;
 /** 한 시험 시간(듣기 끝 조용함 · 인식 확인 · 흘려 받기 지연을 여럿 기다림). */
 const LONG = 120_000;
 /** 느린 흘려 받기가 끝 줄까지 오는 여유(시험 값 — 24 조각 × 300ms 와 읽기). */
@@ -183,6 +186,10 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     const text = await page.locator("main").innerText();
     for (const answer of g.twoAnswers) expect(text).not.toContain(answer);
     await photo(page, "p13-talk-greeting");
+    // 위 띠 높이는 인사 · 대화 토막에서 같다(셈은 둘째 줄 · '그만하기' 자리는 늘 잡음 — 전체 디자인 리뷰 M-2)
+    const bandAtGreeting = (
+      await page.locator("[data-paper-band]").boundingBox()
+    )?.height;
 
     // 처음 묻는 대화 턴도 같다(대화 첫 질문은 앱이 붙임 — AI 없음)
     const first = await pastGreeting(page, card);
@@ -196,6 +203,15 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
       expect(talkText).not.toContain(answer);
     expect(talkText).not.toContain(first.hintEn);
     await expect(page.locator("[data-answer-listen]")).toHaveCount(2);
+    await expect(
+      page.locator("[data-paper-band] [data-talk-stop]"),
+    ).toBeVisible();
+    const bandAtTalk = (await page.locator("[data-paper-band]").boundingBox())
+      ?.height;
+    expect(bandAtGreeting).toBeDefined();
+    expect(
+      Math.abs((bandAtTalk ?? 0) - (bandAtGreeting ?? 0)),
+    ).toBeLessThanOrEqual(SAME_PX);
     await photo(page, "p13-talk-dialogue");
     await photo(page, "p13-talk-answers");
   });
@@ -220,7 +236,7 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     await expect
       .poll(async () => (await speechRecord(page)).spoken.at(-1))
       .toBe(first.hintEn);
-    expect((await speechRecord(page)).rates.at(-1)).toBeCloseTo(SLOW_RATE);
+    expect((await speechRecord(page)).rates.at(-1)).toBeCloseTo(LOW_BAND_RATE);
     await photo(page, "p13-talk-hint");
   });
 
@@ -298,9 +314,20 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     await untilChildTurn(page);
     await expect(bubble(page)).toContainText(first.question.en);
     const spoken = (await speechRecord(page)).spoken;
-    const at = spoken.lastIndexOf(first.answerExample);
-    expect(at).toBeGreaterThan(-1);
-    expect(spoken.slice(at)).toContain(first.question.en);
+    if (first.twoAnswers) {
+      // C125 판정(2026-10-23): 1단계 처음 묻는 턴의 '모름'은 같은 질문 뒤 답 두 개 줄(①②)로 답 예시를 들려준다 — 답 두 개와 같은 답 예시
+      // 줄은 빠진다
+      expect(first.twoAnswers).toContain(first.answerExample);
+      await spokenTail(page, [
+        first.question.en,
+        twoAnswersLine(first.twoAnswers),
+      ]);
+      await expect(page.locator("[data-answer-listen]")).toHaveCount(2);
+    } else {
+      const at = spoken.lastIndexOf(first.answerExample);
+      expect(at).toBeGreaterThan(-1);
+      expect(spoken.slice(at)).toContain(first.question.en);
+    }
     expect(spoken).not.toContain(explanation);
     // 답 예시는 들려주기만 하고 글로 보이지 않는다(1~3단계 T2)
     expect(await page.locator("main").innerText()).not.toContain(
@@ -310,7 +337,7 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     await photo(page, "p13-talk-dontknow");
   });
 
-  test("AC-15l 토리 말풍선을 누르면 그 말을 다시 읽어 주고 1~2단계는 천천히 읽으며 1단계 처음 묻는 턴에서는 질문과 답 두 개를 다시 들려준다", async ({
+  test("AC-15l 토리 말풍선을 누르면 그 말을 다시 읽어 주고 단계 구간마다 정한 빠르기(speech.rate.<구간>, C125)로 읽으며 1단계 처음 묻는 턴에서는 질문과 답 두 개를 다시 들려준다", async ({
     context,
   }) => {
     const { page, card } = await openTalk(context, []);
@@ -321,13 +348,13 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     await expect
       .poll(async () => (await speechRecord(page)).spoken.slice(before))
       .toEqual([g.question.en, twoAnswersLine(g.twoAnswers)]);
-    // 토리가 읽은 글은 모두 천천히(첫 누름의 읽어 주기 잠금 풀기 발화 — 빈 글 — 는 뺀다)
+    // 토리가 읽은 글은 모두 1~3 구간 빠르기(C125 — 첫 누름의 읽어 주기 잠금 풀기 발화 — 빈 글 — 는 뺀다)
     const record = await speechRecord(page);
     const read = record.rates.filter(
       (_, i) => (record.spoken[i] ?? "").trim() !== "",
     );
     expect(read.length).toBeGreaterThan(0);
-    for (const rate of read) expect(rate).toBeCloseTo(SLOW_RATE);
+    for (const rate of read) expect(rate).toBeCloseTo(LOW_BAND_RATE);
   });
 
   test("AC-15l 1단계 처음 묻는 턴의 듣기 버튼 ①을 누르면 첫째 답만 다시 읽고 아이 차례 화면에 따로 '다시 듣기' 버튼이 없다", async ({
@@ -429,7 +456,8 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
   test("회화 화면: 토리 말을 흘려 받는 중 '홈'을 누르면 홈에서 토리 말을 더 읽지 않는다", async ({
     context,
   }) => {
-    const { page } = await openTalk(context, [saidRun("I'm good.")]);
+    const { page, sessionId } = await openTalk(context, [saidRun("I'm good.")]);
+    const toriRowsBefore = await toriRowCount(sessionId);
     await pushFakeAi([
       talkReply(
         { tori_en: "Great! I am happy too. Let's talk about it." },
@@ -447,6 +475,10 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
     const read = (await speechRecord(page)).spoken.length;
     await page.waitForTimeout(AFTER_LEAVE_MS);
     expect((await speechRecord(page)).spoken.length).toBe(read);
+    // 서버 턴(시도 기록 → 토리 행)이 끝날 때까지 기다린다 — 다음 시험의 집 비우기와 겹치지 않게(검토 rev-p13b M-2 · 차례 5 M-10)
+    await expect
+      .poll(() => toriRowCount(sessionId), { timeout: STREAM_END_MS })
+      .toBe(toriRowsBefore + 1);
   });
 
   test("회화 화면: 같은 시도 id 가 아직 진행 중이라 stale 을 받으면 기다렸다 다시 읽어 토리 말이 그려지고 읽힌다", async ({
@@ -492,7 +524,7 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
     expect(await turnRequests()).toBe(1);
   });
 
-  test("회화 화면: 3단계 힌트 영어 문장 듣기는 천천히 읽고 토리 말은 보통 빠르기로 읽는다", async ({
+  test("회화 화면: 3단계 힌트 영어 문장 듣기와 토리 말은 1~3 구간 빠르기(speech.rate.1-3)로 읽는다", async ({
     context,
   }) => {
     await withHouseholdSetting(
@@ -522,12 +554,15 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
         const tori = await speechRecord(page);
         const at = tori.spoken.indexOf(greeting.question.en);
         expect(at).toBeGreaterThan(-1);
-        expect(tori.rates[at]).toBe(1);
+        // C125: 3단계 토리 말도 힌트와 같은 1~3 구간 빠르기(speech.rate.1-3)
+        expect(tori.rates[at]).toBeCloseTo(LOW_BAND_RATE);
         await page.locator("[data-hint-listen]").click();
         await expect
           .poll(async () => (await speechRecord(page)).spoken.at(-1))
           .toBe(greeting.hintEn);
-        expect((await speechRecord(page)).rates.at(-1)).toBeCloseTo(SLOW_RATE);
+        expect((await speechRecord(page)).rates.at(-1)).toBeCloseTo(
+          LOW_BAND_RATE,
+        );
       },
     );
   });
@@ -571,6 +606,16 @@ test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", (
     await expect(
       page.locator("[data-paper-band] [data-talk-stop]"),
     ).toBeVisible();
+    // 가로에서 말하기 단추 묶음은 판 오른쪽(목업 B_Talk1 — 전체 디자인 리뷰 M-3)
+    const panel = await page.locator("[data-talk-panel]").boundingBox();
+    const speakBox = await page
+      .locator("[data-child-turn] [data-speak]")
+      .boundingBox();
+    expect(panel && speakBox).toBeTruthy();
+    if (panel && speakBox)
+      expect(speakBox.x + speakBox.width / 2).toBeGreaterThan(
+        panel.x + panel.width / 2,
+      );
     await photo(page, "p13-talk-hint");
   });
 
@@ -1449,6 +1494,10 @@ test.describe("회화 이어 하기 · 3단계 · 그림 · 마이크 · 안전 
     await untilChildTurn(page);
     await page.locator("[data-child-turn] [data-speak]").click();
     await expect(page.getByText(F.needsMic)).toBeVisible();
+    // 막힘 안내는 종이 판 위(M-1), 아이패드 사파리(e2e 기기)면 둘째 줄 무음 모드(C111)
+    await expect(page.locator("[data-blocked] [data-blocked-hint]")).toHaveText(
+      "아이패드 제어 센터에서 무음 모드를 꺼 주세요",
+    );
     await expect(
       page
         .locator("[data-blocked]")
@@ -1602,6 +1651,18 @@ async function silentTurn(page: Page) {
 }
 
 /** 토리가 마지막으로 읽은 말 n 개(응답이 다 읽힐 때까지 기다림). */
+/**
+ * '모름'(막힘 · 말소리 없음 포함) 뒤 끝에 읽히는 말(C125 (3) 우선순위 · AC-15g): 1단계 처음 묻는 턴이면 같은 질문과 답 두 개 줄
+ * (답 예시는 답 두 개 ①과 같아 빠짐), 아니면 답 예시와 같은 질문.
+ */
+function dontKnowTailOf(
+  turn: Pick<TurnCard, "answerExample" | "question" | "twoAnswers">,
+): string[] {
+  return turn.twoAnswers
+    ? [turn.question.en, twoAnswersLine(turn.twoAnswers)]
+    : [turn.answerExample, turn.question.en];
+}
+
 async function spokenTail(page: Page, tail: readonly string[]) {
   await expect
     .poll(async () => (await speechRecord(page)).spoken.slice(-tail.length), {
@@ -1629,6 +1690,21 @@ async function childRows(sessionId: string) {
         ),
       )
   ).sort((a, b) => a.turnNo - b.turnNo);
+}
+
+/** 그 세션의 토리 행 수(서버 턴이 끝났는지 — 토리 행은 시도 기록 뒤에 저장된다). */
+async function toriRowCount(sessionId: string): Promise<number> {
+  return (
+    await e2eDb()
+      .select({ turnNo: talkTurnRows.turnNo })
+      .from(talkTurnRows)
+      .where(
+        and(
+          eq(talkTurnRows.sessionId, sessionId),
+          eq(talkTurnRows.speaker, "tori"),
+        ),
+      )
+  ).length;
 }
 
 async function alertKindsOf(profileId: string) {
@@ -1719,10 +1795,9 @@ test.describe("회화 증명 표 남은 시험(차례 6 fix 1)", () => {
     for (let k = 1; k <= DONTKNOW_MAX; k++) {
       await silentTurn(page);
       if (k < DONTKNOW_MAX) {
-        // '모름'과 같이: 토리가 답 예시를 말하고 같은 질문을 다시 묻는다(위 띠 숫자 그대로)
-        await expect
-          .poll(async () => (await speechRecord(page)).spoken)
-          .toContain(first.answerExample);
+        // '모름'과 같이: 토리가 같은 질문을 다시 묻는다 — 처음 묻는 턴이면 같은 질문과 답 두 개, 아니면 답 예시와 같은 질문
+        // (C125 (3) 우선순위 · AC-15g, 위 띠 숫자 그대로)
+        await spokenTail(page, dontKnowTailOf(first));
         await expect(bubble(page)).toContainText(first.question.en);
         await expect(count(page)).toHaveText(
           TALK_TEXT.count(1, targetOf(card)),
@@ -1753,11 +1828,7 @@ test.describe("회화 증명 표 남은 시험(차례 6 fix 1)", () => {
     // 회화 턴이 막힘으로 볼 말(stuck)로 돌려준다(6.2) — 앱이 답 예시 + 같은 질문을 붙인다
     await pushFakeAi([talkReply({ tori_en: "That's okay.", stuck: true })]);
     await talkTurns(page, 1);
-    await spokenTail(page, [
-      first.answerExample,
-      first.question.en,
-      ...(first.twoAnswers ? [twoAnswersLine(first.twoAnswers)] : []),
-    ]);
+    await spokenTail(page, dontKnowTailOf(first));
     await expect(bubble(page)).toContainText(first.question.en);
     await untilChildTurn(page);
     await expect(count(page)).toHaveText(TALK_TEXT.count(1, targetOf(card)));

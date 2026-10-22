@@ -29,7 +29,7 @@ import {
   writingLesson,
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
-import { CHILD_VIEWPORTS } from "./child-size";
+import { CHILD_VIEWPORTS, layoutBoxesOf } from "./child-size";
 import { closeE2eDb, countRows, e2eDb, resetHousehold } from "./db";
 import {
   FAKE_PRAISE,
@@ -109,6 +109,9 @@ async function placeAll(page: Page, pieces: readonly string[]) {
 }
 
 /** 두 방향 모두 쪽이 보는 창보다 길지 않다(화면 검토 M-1). 끝나면 세로로 돌려 둔다. */
+/** 안내 줄 한 줄 높이의 위 한계(px, 시험 값 — 20px 글 · 상태 줄 최소 높이 32px 와 아이콘 28px 를 넉넉히). */
+const ONE_LINE_PX = 44;
+
 async function fitsBothWays(page: Page) {
   for (const size of Object.values(CHILD_VIEWPORTS)) {
     await page.setViewportSize(size);
@@ -887,6 +890,7 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
     await expect(page.getByText(READY_FEEDBACK.praise)).toBeVisible();
     await expect(model).toHaveCount(0);
     await photo(page, "p11-writing-6-rewrite-praise");
+    await fitsBothWays(page);
     await page.getByRole("button", { name: T.next }).click();
 
     // 교정 하나씩(원문 · 수정 · 이유) — 한 화면에 하나
@@ -900,7 +904,10 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
       await expect(page.getByText(c.reason)).toBeVisible();
       await expect(page.locator("[data-feedback-correction]")).toHaveCount(1);
       await expect(model).toHaveCount(0);
-      if (i === 0) await photo(page, "p11-writing-6-rewrite-correction");
+      if (i === 0) {
+        await photo(page, "p11-writing-6-rewrite-correction");
+        await fitsBothWays(page);
+      }
       await page.getByRole("button", { name: T.next }).click();
     }
 
@@ -914,6 +921,7 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
     );
     await expect(model).toHaveCount(0);
     await photo(page, "p11-writing-6-rewrite");
+    await fitsBothWays(page);
     await box.fill("I have a dog. We go to the park. I love my dog.");
     await page.getByRole("button", { name: R.rewritten }).click();
 
@@ -922,6 +930,7 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
     await expect(page.getByText(R.model, { exact: true })).toBeVisible();
     await expect(model).toBeVisible();
     await photo(page, "p11-writing-6-model-answer");
+    await fitsBothWays(page);
     await page.getByRole("button", { name: T.next }).click();
 
     // 내 글 소리 내어 읽기(선택) → 결과
@@ -1012,6 +1021,9 @@ const WAIT_RENDER_SLACK_MS = 500;
 const SLOW_FEEDBACK_MS = 4000;
 /** 실시드 단원 흉내(정규 10~15 + 보강 — 장부 56행): 목록이 세로 보는 창을 넘게 첨삭 대기 칸 뒤에 넣는 수업 수(시험 값). */
 const CROWDED_LESSONS = 24;
+/** 가로 한 화면에 들어야 하는 수업 카드 수 · 한 줄 장 수(plan-p10b '실시드 12~15장' · 디자인 fix 1c — 시험 값). */
+const LANDSCAPE_ONE_SCREEN = 15;
+const LANDSCAPE_PER_ROW = 6;
 
 /** 첨삭 대기 칸(1번) 뒤에 수업을 여럿 넣어 목록 판이 세로 보는 창보다 길게 한다(화면 검토 review-p11-7-design M-1). */
 async function crowdLessonList(
@@ -1039,6 +1051,43 @@ async function expectInView(page: Page, selector: string) {
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(view.height);
 }
+
+test("수업 목록 화면 꼴: 가로에서 수업 카드 15장은 한 줄 6장으로 판 안 한 화면에 들고 모든 카드가 같은 크기다", async ({
+  page,
+}) => {
+  // plan-p10b '가로 실시드 12~15장이 한 화면에' · C114 · C82(디자인 fix 1c) — 쓰기 6단계 단원 1 에 수업 15장
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async () => {
+    for (let lessonNo = 1; lessonNo <= LANDSCAPE_ONE_SCREEN; lessonNo += 1)
+      await insertSampleLesson({ sample, lessonNo });
+    await page.setViewportSize(CHILD_VIEWPORTS.landscape);
+    await page.goto("/writing/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    const cards = page
+      .locator("button")
+      .filter({ has: page.locator("[data-lesson]") });
+    await expect(cards).toHaveCount(LANDSCAPE_ONE_SCREEN);
+    const boxes = await layoutBoxesOf(cards);
+    // 한 줄 6장(첫 줄 위 끝이 같은 카드 수)
+    const firstTop = Math.min(...boxes.map((b) => b.top));
+    expect(boxes.filter((b) => Math.abs(b.top - firstTop) <= 1)).toHaveLength(
+      LANDSCAPE_PER_ROW,
+    );
+    // 같은 크기 · 맨 아래 카드 아래 끝이 보는 창 안
+    const heights = boxes.map((b) => b.height);
+    const widths = boxes.map((b) => b.width);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    const scrollTop = await page.evaluate(() => window.scrollY);
+    expect(scrollTop).toBe(0);
+    expect(Math.max(...boxes.map((b) => b.bottom))).toBeLessThanOrEqual(
+      CHILD_VIEWPORTS.landscape.height,
+    );
+    await photo(page, "lesson-list-landscape-15", ["landscape"]);
+  });
+});
 
 test("쓰기 6~12: 첨삭을 기다리는 칸을 목록에서 고르면 서버가 첨삭을 기다리는 동안 ui.wait_hint_seconds 첫 값 안에 기다림 표시가 보이고 첨삭이 오면 둘째 세션이 열린다", async ({
   page,
@@ -1109,6 +1158,25 @@ test("쓰기 6~12: 다른 부름이 첨삭을 잡고 있어 아직 첨삭이 없
       .getByText(T.stillReading, { exact: true });
     await expect(line).toBeVisible();
     await expectInView(page, "[data-lesson-wait]");
+    // 안내는 한 줄 칸(격자 한 줄 전체)이라 두 방향 모두 한 줄이고 수업 카드는 모두 같은 높이(fix 8b N-1 · 전체 디자인 리뷰 M-8 · C114)
+    for (const size of Object.values(CHILD_VIEWPORTS)) {
+      await page.setViewportSize(size);
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+      );
+      const lineBox = await line.boundingBox();
+      expect(lineBox?.height ?? 0).toBeLessThanOrEqual(ONE_LINE_PX);
+      // 기울기 없는 레이아웃 높이(포스트잇 기울기는 그대로 — 디자인 fix 1b)
+      const heights = (
+        await layoutBoxesOf(
+          page.locator("button").filter({ has: page.locator("[data-lesson]") }),
+        )
+      ).map((b) => b.height);
+      expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(
+        1,
+      );
+    }
+    await page.setViewportSize(CHILD_VIEWPORTS.portrait);
     await photo(page, "p11-lesson-start-still-reading");
     await expect(page).toHaveURL(/\/writing\/lessons$/);
     // 잡은 부름이 있으니 서버는 첨삭을 다시 부르지 않는다

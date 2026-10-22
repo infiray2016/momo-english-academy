@@ -1,6 +1,6 @@
 // 회화 턴 흘려 받기(6.2 끝 문단 · 6.4 실시간 출력 검사 · 8절 '회화 턴 실패' · C92 · C95, plan-p13a 파일별 값 2 · 정할 것 회8).
-// SDK 의 text 조각(delta)을 차례로 이어 첫 속성 tori_en 문자열을 이스케이프까지 직접 풀고, 문장이 끝날 때마다 검사해
-// 통과한(또는 바꾼) 문장만 내보낸다. 브라우저는 검사 전 글을 받지 않는다. 순수 모듈이다(시각 · DB · SDK 없음).
+// SDK 의 text 조각(delta)을 차례로 이어 앞 칸 막힘 판단(stuck, C127)을 읽고 tori_en 문자열을 이스케이프까지 직접 풀고, 문장이 끝날
+// 때마다 검사해 통과한(또는 바꾼) 문장만 내보낸다. 브라우저는 검사 전 글을 받지 않는다. 순수 모듈이다(시각 · DB · SDK 없음).
 import { checkOutputFields } from "@/core/ai/output-check";
 import {
   type ForbiddenList,
@@ -13,8 +13,11 @@ import {
 
 // ── tori_en 풀기 ─────────────────────────────────────────────────
 
-/** 첫 속성 이름(6.2 '첫 속성은 토리의 영어 말'). */
+/** 토리 영어 말 속성 이름(6.2). */
 export const TORI_EN_KEY = "tori_en";
+/** tori_en 앞에 오는 막힘 판단 속성 이름(13절 C127 — 서버가 첫 문장 전에 안다). */
+export const STUCK_KEY = "stuck";
+const BOOLEAN_LITERALS = ["true", "false"] as const;
 /** 흘려 받는 중 문장 끝을 가릴 때 글 끝에 붙여 보는 글자(공백이 아닌 아무 글자, 기술 값). */
 const PROBE = "x";
 /** \uXXXX 의 16진 자리 수(JSON 문법). */
@@ -36,6 +39,9 @@ type ReaderPhase =
   | "start"
   | "before-key"
   | "key"
+  | "after-stuck-key"
+  | "stuck-value"
+  | "after-stuck-value"
   | "after-key"
   | "before-value"
   | "string"
@@ -49,8 +55,10 @@ export type ToriEnReader = {
   push(delta: string): string[];
   /** 흐름이 끝났을 때 아직 내지 않은 문장. 문자열이 닫히지 않았으면(끊김) 끝나지 않은 조각은 내지 않는다. */
   finish(): string[];
-  /** 첫 속성이 tori_en 이 아니거나 JSON 꼴이 아니다 — 흘려 보내지 않고 끝까지 받아 한 번에 보낸다(위험 3). */
+  /** 앞 칸이 stuck · tori_en 이 아니거나 JSON 꼴이 아니다 — 흘려 보내지 않고 끝까지 받아 한 번에 보낸다(위험 3). */
   failed(): boolean;
+  /** tori_en 앞 칸에서 읽은 막힘 판단(C127). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
+  stuck(): boolean | undefined;
   /** tori_en 문자열이 닫혔다. */
   closed(): boolean;
   /** 지금까지 푼 tori_en 글. */
@@ -60,11 +68,14 @@ export type ToriEnReader = {
 /**
  * tori_en 흘려 풀기. 조각 경계에 걸친 이스케이프(\" \\ \/ \n \t \uXXXX)를 잇고, 문장 끝은 P4a `splitSentences` 규칙이다.
  * 흘려 받는 중에는 문장부호 뒤에 공백이 온 뒤에야 끝으로 본다 — 글 끝에 공백 아닌 글자를 붙여 잘라 보고 마지막 조각을 뺀다.
- * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다.
+ * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다. 앞 칸은 stuck(참 · 거짓 한 번) 다음 tori_en 이거나
+ * tori_en 바로다(C127 — 모델이 칸 차례를 어겨 tori_en 이 먼저 와도 흘려 보내고 stuck 은 모른다). 그 밖의 앞 칸이면 failed.
  */
 export function createToriEnReader(): ToriEnReader {
   let phase: ReaderPhase = "start";
   let key = "";
+  let literal = "";
+  let stuck: boolean | undefined;
   let hex = "";
   let decoded = "";
   let emitted = 0;
@@ -87,15 +98,46 @@ export function createToriEnReader(): ToriEnReader {
         return;
       case "before-key":
         if (JSON_WHITESPACE.test(ch)) return;
+        key = "";
         phase = ch === '"' ? "key" : "failed";
         return;
       case "key":
         if (ch === '"') {
-          phase = key === TORI_EN_KEY ? "after-key" : "failed";
+          // 앞 칸은 stuck(한 번, C127) 다음 tori_en, 또는 tori_en 바로
+          phase =
+            key === TORI_EN_KEY
+              ? "after-key"
+              : key === STUCK_KEY && stuck === undefined
+                ? "after-stuck-key"
+                : "failed";
           return;
         }
         key += ch;
-        if (!TORI_EN_KEY.startsWith(key)) phase = "failed";
+        if (
+          !TORI_EN_KEY.startsWith(key) &&
+          !(stuck === undefined && STUCK_KEY.startsWith(key))
+        )
+          phase = "failed";
+        return;
+      case "after-stuck-key":
+        if (JSON_WHITESPACE.test(ch)) return;
+        literal = "";
+        phase = ch === ":" ? "stuck-value" : "failed";
+        return;
+      case "stuck-value": {
+        if (literal === "" && JSON_WHITESPACE.test(ch)) return;
+        literal += ch;
+        const done = BOOLEAN_LITERALS.find((l) => l === literal);
+        if (done) {
+          stuck = done === "true";
+          phase = "after-stuck-value";
+        } else if (!BOOLEAN_LITERALS.some((l) => l.startsWith(literal)))
+          phase = "failed";
+        return;
+      }
+      case "after-stuck-value":
+        if (JSON_WHITESPACE.test(ch)) return;
+        phase = ch === "," ? "before-key" : "failed";
         return;
       case "after-key":
         if (JSON_WHITESPACE.test(ch)) return;
@@ -160,6 +202,7 @@ export function createToriEnReader(): ToriEnReader {
       return complete();
     },
     failed: isFailed,
+    stuck: () => stuck,
     closed: () => phase === "closed",
     text: () => decoded,
   };

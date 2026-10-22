@@ -12,7 +12,7 @@ export const TEST_SETTINGS = {
   "ai.model.writing_check": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.speaking_eval": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.thinkout": { scope: "household", value: "claude-sonnet-5-5" },
-  "ai.model.talk_turn.1-3": { scope: "household", value: "claude-haiku-5-5" },
+  "ai.model.talk_turn.1-3": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.4-6": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.7-9": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.10-12": {
@@ -154,8 +154,12 @@ export const TEST_SETTINGS = {
   "speech.end_silence_seconds.talk.7-9": { scope: "household", value: 2 },
   "speech.end_silence_seconds.talk.10-12": { scope: "household", value: 2 },
   "speech.end_silence_seconds.talk_long": { scope: "household", value: 5 },
-  // C96 · 회12 — 1~2단계 회화 읽어 주기 빠르기(Web Speech rate)
-  "speech.slow_rate": { scope: "household", value: 0.8 },
+  // C125 — 단계 구간별 읽어 주기 빠르기(Web Speech rate) · 문장 사이 쉼(ms). C96 speech.slow_rate 를 바꿈
+  "speech.rate.1-3": { scope: "household", value: 0.8 },
+  "speech.rate.4-6": { scope: "household", value: 0.85 },
+  "speech.rate.7-9": { scope: "household", value: 0.9 },
+  "speech.rate.10-12": { scope: "household", value: 1.0 },
+  "speech.sentence_pause_ms": { scope: "household", value: 700 },
 } as const;
 
 export type TestSettingKey = keyof typeof TEST_SETTINGS;

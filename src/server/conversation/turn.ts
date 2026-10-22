@@ -24,8 +24,10 @@ import {
   type AiQuestionLite,
   type AppendLine,
   appendAfter,
+  createAnswerHold,
   nextQuestionIsAi,
   nextUnusedQuestionNo,
+  shownTurnOf,
   type TalkPosition,
   type TalkTurnLite,
   turnSegmentOf,
@@ -44,6 +46,10 @@ import {
   talkEnglishSentenceDelta,
 } from "@/core/conversation/said";
 import { isQuestionSentence, safeLineOf } from "@/core/conversation/stream";
+import {
+  createStageTimer,
+  type StageTimings,
+} from "@/core/conversation/timing";
 import type { TalkCard } from "@/core/seed/schema/talk";
 import {
   AI_WAIT_TIMEOUT_MULTIPLE,
@@ -150,6 +156,8 @@ export type TurnDeps = TalkServerDeps & {
   write: (line: TalkLine) => void;
   /** 서버가 요청을 받은 때(첫 문장 시간의 시작, 6.1). */
   requestReceivedAt?: Date;
+  /** AI 를 부르기 직전에 한 번 — 구간마다 준비 시간(13절 C125 (4) · NFR-8). 아이 글은 들지 않는다. */
+  onPrepTimings?: (timings: StageTimings) => void;
 };
 
 const turnSettings = {
@@ -633,16 +641,18 @@ async function closeOnTurn(
 /** 같은 시도 id 의 저장된 토리 행을 다시 흘려 보낸다(AI 없음). */
 function replay(state: TalkState, tori: TalkTurnRow, write: TurnDeps["write"]) {
   const { aiPart, appended } = toriLinesOf(tori.text);
-  for (const en of sentencesOf(aiPart)) write({ t: "s", en });
-  if (tori.toriKo) write({ t: "ko", ko: tori.toriKo });
-  for (const line of addLinesOf(
+  // 저장 글은 그대로, 읽고 보이는 글은 같은 말을 뺀 것(C125 (3))
+  const shown = shownTurnOf(
+    sentencesOf(aiPart),
     appendLinesFromText(appended, {
       card: state.card,
       pending: state.position.pending,
       koMeaning: state.spec.koMeaning,
     }),
-  ))
-    write(line);
+  );
+  for (const en of shown.sentences) write({ t: "s", en });
+  if (tori.toriKo) write({ t: "ko", ko: tori.toriKo });
+  for (const line of addLinesOf(shown.append)) write(line);
   write({
     t: "end",
     next: nextOf(state.position, {
@@ -668,8 +678,11 @@ export async function runTalkTurnRequest(
   const request = parsed.data;
   const db: Db = deps.db ?? getDb();
   const received = deps.requestReceivedAt ?? deps.now();
+  // 구간마다 준비 시간(C125 (4)) — 차례로 기다리던 읽기는 서로 기대지 않는 것끼리 함께 돌린다
+  const timer = createStageTimer(() => performance.now());
   try {
     const profile = await readHouseholdProfile({ db });
+    timer.mark("profile");
     if (!profile) {
       write({ t: "error" });
       return;
@@ -678,9 +691,16 @@ export async function runTalkTurnRequest(
     const contact = getOutputCheckLists()
       .forbidden.patterns.filter((p) => p.category === "contact")
       .map((p) => p.regex);
-    const masker = await maskerFor(db, profileId, contact);
-    const s = await getSettings(turnSettings, { db, profileId });
+    const [masker, s] = await Promise.all([
+      maskerFor(db, profileId, contact),
+      getSettings(turnSettings, { db, profileId }),
+    ]);
+    timer.mark("masker_settings");
     const at = deps.now();
+    // 1-가 하루 안전 상한 확인은 세션 행 잡기와 함께 시작한다(서로 기대지 않음 — 결과는 (4) 에서 씀). 일찍 끝나는 길에서도 놓친
+    // 거절이 남지 않게 받아 둔다
+    const restingP = aiRestingToday({ profileId, at }, { db });
+    restingP.catch(() => {});
 
     // (2) · (3) 세션 행을 잡고 자리를 본 뒤 아이 행을 넣는다
     const begun: Begun = await db.transaction(async (tx): Promise<Begun> => {
@@ -778,9 +798,21 @@ export async function runTalkTurnRequest(
     }
     const { state, child } = begun;
     const position = state.position;
+    timer.mark("state");
+    // (6) 의 단계 맥락은 (4) · (5) 확인과 함께 읽는다(서로 기대지 않음)
+    const ctxP = levelContextOf(
+      {
+        area: "talk",
+        level: state.level,
+        unit: state.unit,
+        revision: state.session.seedRevision ?? state.lessonRow.revision,
+      },
+      { db },
+    );
+    ctxP.catch(() => {});
 
     // (4) 1-가 하루 안전 상한(a 회4): 목표 턴 전이면 쉼(세션 진행 · 아이 행 남음), 목표 턴 뒤면 정리로 닫고 끝맺음은 미룸
-    if (await aiRestingToday({ profileId, at }, { db })) {
+    if (await restingP) {
       if (!position.targetReached) {
         write({ t: "resting" });
         return;
@@ -868,15 +900,8 @@ export async function runTalkTurnRequest(
     }
 
     // (6) 회화 턴 입력
-    const ctx = await levelContextOf(
-      {
-        area: "talk",
-        level: state.level,
-        unit: state.unit,
-        revision: state.session.seedRevision ?? state.lessonRow.revision,
-      },
-      { db },
-    );
+    const ctx = await ctxP;
+    timer.mark("checks_context");
     const lites = liveLites(state);
     const mode = (child.inputMode ?? "speech") as TalkInputMode;
     const flowArgs = {
@@ -925,10 +950,47 @@ export async function runTalkTurnRequest(
       },
       summaryLimit: positiveInt(s, "talk.memory_summaries"),
     });
+    timer.mark("input");
     const sentUserMessage = talkUserMessage(
       { ...input.turn, child: masker(input.turn.child).text },
       input.history.length === 0 ? input.openingLine : undefined,
     );
+
+    // 답 두 개를 담은 토리 문장은 읽고 보이는 글에서 빠진다(C125 (3)). 그 답을 담은 문장부터는 계획이 정해질 때까지 잡아 둔다.
+    // 잡아 둘 짝은 앱이 붙일 답 두 개 — '모름' 입력이거나 막힘 판단(tori_en 앞 칸 stuck) 참이면 지금 질문을 다시 묻는 자리, 아니면
+    // 다음 질문 자리(C127). '모름' 입력은 그 자리가 곧 afterBase 다
+    const pairOf = (p: TalkPosition) =>
+      p.awaitingChoice ? undefined : p.pending?.twoAnswers;
+    const stuckAfter =
+      mode === "dont_know"
+        ? afterBase
+        : positionWith(state, [
+            ...lites,
+            childLiteOf(
+              {
+                turnNo: child.turnNo,
+                text: child.text,
+                hintKind: child.hintKind,
+                segment: child.segment,
+                inputMode: mode,
+                targetWords: childTargets,
+              },
+              true,
+            ),
+          ]);
+    const hold = createAnswerHold({
+      dontKnow: mode === "dont_know",
+      samePair: pairOf(stuckAfter),
+      nextPair: pairOf(afterBase),
+    });
+    const held: string[] = [];
+    const send = (en: string) => {
+      try {
+        write({ t: "s", en });
+      } catch {
+        // 브라우저 연결이 닫혀도 응답을 끝까지 받아 토리 행을 저장한다
+      }
+    };
 
     // (7) 회화 턴 — 문장마다 흘려 보냄. onSentence 는 던지지 않는다(a2 M1 계약)
     let outcome: TalkOutcome;
@@ -940,12 +1002,14 @@ export async function runTalkTurnRequest(
           sessionId: state.session.id,
           level: state.level,
           requestReceivedAt: received,
+          onPrepared: () => {
+            timer.mark("ai_prep");
+            deps.onPrepTimings?.(timer.result());
+          },
+          onStuck: (stuck) => hold.stuck(stuck),
           onSentence: (en) => {
-            try {
-              write({ t: "s", en });
-            } catch {
-              // 브라우저 연결이 닫혀도 응답을 끝까지 받아 토리 행을 저장한다
-            }
+            if (hold.hold(en)) held.push(en);
+            else send(en);
           },
         },
         { db, clock: deps.now, ...deps.ai },
@@ -997,12 +1061,23 @@ export async function runTalkTurnRequest(
         : {}),
     });
     if (plan.kind === "break") {
+      // 잡아 둔 문장은 붙일 말이 없으니 그대로 보낸다(잡기 전과 같은 줄)
+      for (const en of held) send(en);
       write({ t: "break", ...plan.line });
       return;
     }
-    for (const en of plan.speak) write({ t: "s", en });
+    // 같은 말 두 번 안 읽기(C125 (3)): 읽고 보이는 글만 줄인다. 저장 글 · 다시 쓸 토리 차례 · 질문 차례 셈은 계획 그대로
+    const shown = shownTurnOf(plan.sentSentences, plan.append);
+    const left = [...shown.sentences];
+    const keep = (en: string) => {
+      const at = left.indexOf(en);
+      if (at < 0) return false;
+      left.splice(at, 1);
+      return true;
+    };
+    for (const en of [...held, ...plan.speak]) if (keep(en)) send(en);
     if (plan.ko !== null) write({ t: "ko", ko: plan.ko });
-    for (const line of addLinesOf(plan.append)) write(line);
+    for (const line of addLinesOf(shown.append)) write(line);
 
     const appended = plan.append.map(appendEnOf);
     const saved = await db.transaction(async (tx) => {

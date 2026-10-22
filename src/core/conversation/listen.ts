@@ -12,8 +12,6 @@ import {
 
 /** 회화 대화에서 두세 문장으로 답하는 턴이 시작되는 단계(3.3 단계표 8단계 · 7절 · C37 — 화면 구조 수, 12절 키가 아니다). */
 export const TALK_LONG_ANSWER_FROM_LEVEL = 8;
-/** 토리의 말을 천천히 읽는 마지막 단계(3.3 · 4절 '1~2단계는 천천히 읽는다' — 화면 구조 수, 빠르기 값은 12절 speech.slow_rate). */
-export const TALK_SLOW_READ_UNTIL_LEVEL = 2;
 const MS_PER_SECOND = 1000;
 
 export type TalkSpeechSettings = {
@@ -23,15 +21,12 @@ export type TalkSpeechSettings = {
   longSilenceMs: number;
   /** talk.max_answer_seconds(ms). */
   maxAnswerMs: number;
-  /** speech.slow_rate — 1~2단계 읽어 주기 빠르기(Web Speech rate, C96). */
-  slowRate: number;
 };
 
 const talkSilenceKey = (band: Band) =>
   `speech.end_silence_seconds.talk.${band}`;
 const LONG_KEY = "speech.end_silence_seconds.talk_long";
 const MAX_ANSWER_KEY = "talk.max_answer_seconds";
-const SLOW_RATE_KEY = "speech.slow_rate";
 
 function positive(read: (key: string) => unknown, key: string): number {
   const parsed = z.number().positive().safeParse(read(key));
@@ -54,16 +49,7 @@ export function talkSpeechSettingsFrom(
     ) as Record<Band, number>,
     longSilenceMs: seconds(read, LONG_KEY),
     maxAnswerMs: seconds(read, MAX_ANSWER_KEY),
-    slowRate: positive(read, SLOW_RATE_KEY),
   };
-}
-
-/** 그 단계 회화의 읽어 주기 빠르기: 1~2단계는 speech.slow_rate, 그 밖은 undefined(브라우저 기본 빠르기 — 읽어 주기에 넘기지 않음). */
-export function talkSpeakRateOf(
-  level: number,
-  talk: Pick<TalkSpeechSettings, "slowRate">,
-): number | undefined {
-  return level <= TALK_SLOW_READ_UNTIL_LEVEL ? talk.slowRate : undefined;
 }
 
 /**

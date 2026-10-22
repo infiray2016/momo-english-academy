@@ -3,7 +3,7 @@
 // 실제 API 를 부르지 않는다. 숫자는 시험용 설정 · 견본에서 읽는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type TalkTurnInput,
   talkClosingSpec,
@@ -18,6 +18,7 @@ import {
 } from "@/core/seed/schema/reference";
 import { createAnthropicClient } from "@/server/ai/client";
 import {
+  keepTurnOnRecordFailure,
   streamTalk,
   TALK_REFUSAL_RETRY,
   type TalkAttemptRecord,
@@ -83,9 +84,10 @@ const once = (reply: FakeReply, model?: string): FakeRule => ({
   times: 1,
 });
 
-/** 시험용 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, 칸 차례는 tori_en 먼저). */
+/** 시험용 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, 칸 차례는 stuck · tori_en 먼저 — C127). */
 function answer(over: Record<string, unknown>): Record<string, unknown> {
   return {
+    stuck: false,
     tori_en: "Nice!",
     tori_ko: "좋아!",
     recast: "",
@@ -93,7 +95,6 @@ function answer(over: Record<string, unknown>): Record<string, unknown> {
     new_words: [],
     self_used_words: [],
     mission_done: [],
-    stuck: false,
     card_question_no: 0,
     next_question_en: "",
     next_question_ko: "",
@@ -154,6 +155,19 @@ function harness(
   return { fake, plan, rows, sentences, config };
 }
 
+/** Haiku 5.5 를 1~3 구간 회화 모델로 고른 요청 구성(C112 뒤 기본은 Sonnet — Haiku 거절 뒤 Sonnet 재시도 길은 이 설정에서만). */
+function haikuConfigOf(level: number) {
+  return requestConfigOf({
+    purpose: "talk_turn",
+    level,
+    values: { ...values, "ai.model.talk_turn.1-3": HAIKU },
+    book: comboBook,
+  });
+}
+const HAIKU = "claude-haiku-5-5";
+/** 견본 l1-ok 에서 첫 문장('Two apples!') 뒤 · 둘째 문장 안에서 끊는 글자 자리(앞 칸 stuck 을 더한 C127 차례). */
+const FIRST_SENTENCE_CUT = '{"stuck":false,"tori_en":"Two apples! Great'.length;
+
 function otherConfigOf(level: number) {
   return requestConfigOf({
     purpose: "talk_turn",
@@ -167,6 +181,26 @@ function otherConfigOf(level: number) {
     book: comboBook,
   });
 }
+
+describe("회화 턴 요청 구성(C112)", () => {
+  it("회화 턴 요청 구성: 1~3단계 기본값은 claude-sonnet-5-5 · effort low 이고 생각 '끔'은 Sonnet 의 between_tools 로 보낸다", () => {
+    for (const level of [1, 3]) {
+      const config = requestConfigOf({
+        purpose: "talk_turn",
+        level,
+        values,
+        book: comboBook,
+      });
+      expect(config).toMatchObject({
+        model: "claude-sonnet-5-5",
+        effort: "low",
+        thinking: { type: "between_tools" },
+      });
+    }
+    // 설정으로 Haiku 를 고르면 끔은 disabled(6.1)
+    expect(haikuConfigOf(1).thinking).toEqual({ type: "disabled" });
+  });
+});
 
 describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
   it("회화 턴 흐름: 검사에 걸린 문장은 내보내지 않고 첫 자리만 안전한 대사로 바뀌며 tori_en 은 내보낸 문장이다", async () => {
@@ -283,6 +317,82 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
   });
 });
 
+describe("회화 턴 흐름(DB 없는 몫): 막힘 판단 먼저(C127)", () => {
+  it("회화 턴 흐름: tori_en 앞 칸의 막힘 판단(stuck)을 첫 문장보다 먼저 알린다", async () => {
+    const input = talkSample(1);
+    for (const stuck of [true, false]) {
+      const events: string[] = [];
+      const { plan } = harness(
+        [
+          once(
+            stream(
+              messageBody({
+                model: "claude-sonnet-5-5",
+                json: answer({ stuck, tori_en: "That's okay! Let's try." }),
+              }),
+              { chunks: 12 },
+            ),
+          ),
+        ],
+        input,
+        {
+          onStuck: (value) => events.push(`stuck:${value}`),
+          onSentence: (sentence) => events.push(sentence),
+        },
+      );
+      const result = await streamTalk(plan);
+      if (!result.ok) throw new Error(`실패: ${result.reason}`);
+      expect(events).toEqual([`stuck:${stuck}`, "That's okay!", "Let's try."]);
+      expect(result.value.stuck).toBe(stuck);
+    }
+  });
+});
+
+describe("회화 턴 흐름(DB 없는 몫): 시도 기록 실패(검토 rev-p13b M-1)", () => {
+  it("회화 턴 흐름: 시도 기록(ai_calls) 쓰기가 실패해도 받은 응답 · 흘려 보낸 문장은 그대로이고 이름 · 코드만 든 기록 한 줄을 남긴다", async () => {
+    const input = talkSample(1);
+    const logged: string[] = [];
+    const log = vi
+      .spyOn(console, "error")
+      .mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(" "));
+      });
+    try {
+      const fk = Object.assign(new Error("insert or update violates"), {
+        code: "23503",
+      });
+      const { plan, sentences } = harness(
+        [
+          once(
+            stream(
+              messageBody({
+                model: "claude-sonnet-5-5",
+                json: answer({ tori_en: "Nice! Good job." }),
+              }),
+            ),
+          ),
+        ],
+        input,
+        {
+          record: keepTurnOnRecordFailure(async () => {
+            throw fk;
+          }),
+        },
+      );
+      const result = await streamTalk(plan);
+      if (!result.ok) throw new Error(`실패: ${result.reason}`);
+      expect(result.value.tori_en).toBe("Nice! Good job.");
+      expect(sentences).toEqual(["Nice!", "Good job."]);
+      expect(logged).toEqual(["회화 시도 기록 실패(Error 23503)"]);
+      // 아이 글 · 토리 글이 기록에 없다
+      expect(logged.join(" ")).not.toContain("Nice");
+      expect(logged.join(" ")).not.toContain(input.turn.child);
+    } finally {
+      log.mockRestore();
+    }
+  });
+});
+
 describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
   it("회화 턴 흐름: 첫 문장 뒤 스트림이 끊기면 다시 부르지 않고 보낸 문장을 두고 그 턴이 닫힌다", async () => {
     const input = talkSample(1);
@@ -291,7 +401,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
         {
           reply: stream(sampleBody("talk_turn.l1-ok"), {
             chunks: 20,
-            cutAfterChars: 30,
+            cutAfterChars: FIRST_SENTENCE_CUT,
           }),
         },
       ],
@@ -357,6 +467,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
     const input = talkSample(1);
     const refusal = sampleBody("talk_turn.refusal");
     const { fake, plan, rows } = harness([{ reply: stream(refusal) }], input, {
+      config: haikuConfigOf(1),
       otherModelConfig: otherConfigOf(1),
     });
     const result = await streamTalk(plan);
@@ -390,7 +501,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
         once(stream(sampleBody("talk_turn.l1-ok")), TALK_REFUSAL_RETRY.model),
       ],
       input,
-      { otherModelConfig: otherConfigOf(1) },
+      { config: haikuConfigOf(1), otherModelConfig: otherConfigOf(1) },
     );
     const answered = await streamTalk(ok.plan);
     if (!answered.ok) throw new Error(`실패: ${answered.reason}`);
@@ -404,7 +515,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
       content: [
         {
           type: "text",
-          text: '{"tori_en":"Nice job! I like that. ',
+          text: '{"stuck":false,"tori_en":"Nice job! I like that. ',
           citations: null,
         },
       ],
@@ -470,7 +581,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
         {
           reply: stream(sampleBody("talk_turn.l1-ok"), {
             chunks: 20,
-            errorAfterChars: 30,
+            errorAfterChars: FIRST_SENTENCE_CUT,
             errorType: "api_error",
           }),
         },
@@ -517,7 +628,7 @@ describe("회화 턴 흐름(DB 없는 몫): 실패 길(8절)", () => {
         {
           reply: stream(sampleBody("talk_turn.l1-ok"), {
             chunks: 20,
-            cutAfterChars: 30,
+            cutAfterChars: FIRST_SENTENCE_CUT,
           }),
         },
       ],

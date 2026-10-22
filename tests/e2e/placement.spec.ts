@@ -18,6 +18,7 @@ import { settings } from "../../src/db/schema/operations";
 import { closeE2eDb, e2eDb, resetHousehold, shiftTimes } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
+import { photo } from "./photos";
 
 const T = {
   start:
@@ -201,6 +202,7 @@ async function startSpeaking(page: Page) {
   await expect(
     page.getByText("단추를 누른 뒤 아무 말이나 한마디 해 주세요"),
   ).toBeVisible();
+  await photo(page, "placement-mic-notice");
   await page.getByRole("button", { name: T.micCheck }).click();
   await expectItemNo(page, 1);
 }
@@ -244,6 +246,8 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
   await expect(page.getByText(T.start)).toHaveText(
     `처음이라 내게 맞는 단계를 찾아요. 모르는 문제는 '몰라요'를 눌러요. 많아도 ${maxItems}문제예요`,
   );
+  // 화면 검토 사진(전체 디자인 리뷰 M-11 (4)) — 시작 · 문항 · 결과(마이크 안내는 말하기 배치 시험)
+  await photo(page, "placement-start");
   await page.getByRole("button", { name: T.startButton }).click();
   let n = 0;
   let done = false;
@@ -251,6 +255,7 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
     n += 1;
     // 통과 기준 칸 · 정오 표시 없음 — 위에는 '문제 n'만
     await expectItemNo(page, n);
+    if (n === 1) await photo(page, "placement-item");
     const { id } = await currentItem(page);
     await page.getByRole("button", { name: T.dontKnow }).click();
     done = await nextScreen(page, id);
@@ -259,6 +264,7 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
   await expect(page.locator("[data-placement-result]")).toHaveText(
     "읽기는 1단계에서 시작해요",
   );
+  await photo(page, "placement-result");
   const { answers, test: lt } = await placementAnswers(profileId);
   expect(answers.length).toBe(n);
   expect(answers.every((a) => a.dontKnow && !a.correct)).toBe(true);

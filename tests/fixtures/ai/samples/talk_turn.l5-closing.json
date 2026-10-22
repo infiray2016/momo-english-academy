@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"\",\"tori_ko\":\"\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"stuck\":false,\"card_question_no\":0,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_targets\":[],\"next_answer_example\":\"\",\"farewell\":\"It was fun to talk with you, {NAME}!\",\"farewell_ko\":\"너랑 이야기해서 재밌었어!\",\"good_lines\":[\"I want two apples, please.\",\"Here you are.\"],\"next_time_lines\":[\"Can I have two apples?\",\"How much is it?\",\"Thank you very much.\"],\"summary\":\"가게 놀이를 했다. 사과 두 개를 사는 말을 잘 썼다. 사과를 좋아한다고 했다.\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"\",\"tori_ko\":\"\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"card_question_no\":0,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_targets\":[],\"next_answer_example\":\"\",\"farewell\":\"It was fun to talk with you, {NAME}!\",\"farewell_ko\":\"너랑 이야기해서 재밌었어!\",\"good_lines\":[\"I want two apples, please.\",\"Here you are.\"],\"next_time_lines\":[\"Can I have two apples?\",\"How much is it?\",\"Thank you very much.\"],\"summary\":\"가게 놀이를 했다. 사과 두 개를 사는 말을 잘 썼다. 사과를 좋아한다고 했다.\"}",
           "citations": null
         }
       ],

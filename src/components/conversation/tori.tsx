@@ -4,7 +4,7 @@
 // ToriFigure: 1-가는 목업 B_Talk1 의 '토' 글자 동그라미(연두 바탕 · 먹색 테 · Jua) — 말하는 중 둘레 물결 · 생각 중 점 셋(움직임 줄이기면
 // 멈춘 표시). 그림 · VRM 은 이 경계 안에서 바꾼다(a 정할 것 회14). ToriBubble: 받은 차례대로 문장이 흘러나오듯 보이고(TYPE_MS_PER_CHAR,
 // 움직임 줄이기면 바로), 1~4단계 뜻은 영어가 다 흐른 뒤 아래에 한 번에(20px), 붙인 카드 질문은 같은 말풍선 끝에. 1~3단계 아이가 말할
-// 영어(답 예시 say · 답 두 개 answers)는 읽어 주기만 하고 글로 보이지 않는다 — 1단계 처음 묻는 턴 · 인사 턴은 글 없는 듣기 단추 ①②.
+// 영어(답 예시 say · 답 두 개 answers)는 읽어 주기만 하고 글로 보이지 않는다 — 1단계 처음 묻는 턴 · 인사 턴은 글 없는 듣기 단추 둘(원 안 1 · 2).
 // 말풍선을 누르면 그 말을 다시 읽는다(답 두 개까지, AC-15l). 기다리는 동안 점 셋(data-wait-hint) → ui.wait_hint_seconds 둘째 값 뒤
 // '토리가 생각하고 있어요'(data-wait-line). 설명(explanation)은 말풍선 아래 글로만(읽지 않음). 녹음 없음.
 import { Volume2 } from "lucide-react";
@@ -14,6 +14,7 @@ import { CHILD_SIZE } from "@/components/activities/common";
 import { FOCUS_RING } from "@/components/board/board";
 import { fillName } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
+import { createSleeper, pauseLeftMs } from "@/core/speech/pace";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import type { AddLineOut } from "@/server/conversation";
@@ -89,7 +90,8 @@ const BUBBLE_CLASS =
   "flex flex-col gap-2 rounded-[4px_18px_18px_18px] border-[3px] border-ink bg-[color-mix(in_srgb,var(--color-postit-talk)_30%,var(--color-paper))] px-5 py-4 text-ink";
 
 /** 답 두 개 단추 표(글 없는 번호). */
-const ANSWER_MARKS = ["①", "②"] as const;
+/** 답 두 개 듣기 단추의 차례 숫자(보드 글꼴 Fredoka 숫자를 원 테 안에 — 동그라미 숫자 글자는 Jua 에 없어 대체 글꼴로 떨어짐, 전체 디자인 리뷰 M-5). */
+const ANSWER_MARKS = [1, 2] as const;
 
 export type ToriState = "idle" | "speaking" | "listening" | "thinking";
 
@@ -375,7 +377,13 @@ export function ToriBubble({
                       "inline-flex items-center gap-2 rounded-full border-2 border-ink bg-paper px-5 font-heading text-[26px]",
                     )}
                   >
-                    <span aria-hidden>{mark}</span>
+                    <span
+                      aria-hidden
+                      data-answer-mark={mark}
+                      className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink font-en text-[20px] font-bold leading-none"
+                    >
+                      {mark}
+                    </span>
                     <Volume2 aria-hidden className="size-6" />
                   </button>
                 ))}
@@ -400,12 +408,17 @@ export function ToriBubble({
 }
 
 /**
- * 읽어 주기 줄(문장마다 차례대로 — 한 번에 하나, plan 위험 3). 1~2단계는 rate(speech.slow_rate). 줄을 비우면 읽기를 멈춘다.
- * speaking 은 줄에 남은 글이 있거나 읽는 중이면 참.
+ * 읽어 주기 줄(문장마다 차례대로 — 한 번에 하나, plan 위험 3). 빠르기는 단계 구간의 speech.rate.<구간>, 앞 문장이 끝난 뒤
+ * speech.sentence_pause_ms 만큼 쉬고 다음 문장을 읽는다(C125 — 쉼은 앞 문장이 끝난 때부터 재므로 늦게 온 문장은 덜 기다린다).
+ * 줄을 비우면 읽기와 쉼을 멈춘다. speaking 은 줄에 남은 글이 있거나 읽는 중 · 쉬는 중이면 참.
  */
 export function useSpeakQueue(
   speech: SpeechPort | undefined,
-  { rate, englishName }: { rate?: number; englishName: string },
+  {
+    rate,
+    pauseMs,
+    englishName,
+  }: { rate: number; pauseMs: number; englishName: string },
 ) {
   const queue = useRef<string[]>([]);
   const generation = useRef(0);
@@ -416,6 +429,10 @@ export function useSpeakQueue(
   const disposed = useRef(false);
   const running = useRef(false);
   const [speaking, setSpeaking] = useState(false);
+  /** 문장 사이 쉼(멈추면 함께 끝남). */
+  const [sleeper] = useState(createSleeper);
+  /** 이 줄에서 앞 문장이 끝난 때(performance.now — 끝나지 않았거나 끊겼으면 없음). */
+  const endedAt = useRef<number | undefined>(undefined);
 
   const pump = useCallback(async () => {
     if (running.current || !port.current) return;
@@ -424,17 +441,24 @@ export function useSpeakQueue(
     const mine = generation.current;
     while (queue.current.length > 0 && mine === generation.current) {
       const text = queue.current.shift() as string;
+      const wait = pauseLeftMs({
+        endedAt: endedAt.current,
+        now: performance.now(),
+        pauseMs,
+      });
+      if (!(await sleeper.sleep(wait)) || mine !== generation.current) return;
       const current = port.current;
       if (!current) break;
-      await current.speak(
-        fillName(text, englishName),
-        rate === undefined ? undefined : { rate },
-      );
+      const outcome = await current.speak(fillName(text, englishName), {
+        rate,
+      });
+      endedAt.current =
+        outcome.kind === "ended" ? performance.now() : undefined;
     }
     if (mine !== generation.current) return;
     running.current = false;
     setSpeaking(false);
-  }, [rate, englishName]);
+  }, [rate, pauseMs, englishName, sleeper]);
 
   const enqueue = useCallback(
     (texts: readonly string[]) => {
@@ -448,9 +472,11 @@ export function useSpeakQueue(
     generation.current += 1;
     queue.current = [];
     running.current = false;
+    endedAt.current = undefined;
+    sleeper.cancel();
     setSpeaking(false);
     port.current?.cancelSpeaking();
-  }, []);
+  }, [sleeper]);
   const replay = useCallback(
     (texts: readonly string[]) => {
       cancel();
@@ -464,7 +490,8 @@ export function useSpeakQueue(
       disposed.current = true;
       generation.current += 1;
       queue.current = [];
+      sleeper.cancel();
     };
-  }, []);
+  }, [sleeper]);
   return { enqueue, cancel, replay, speaking };
 }

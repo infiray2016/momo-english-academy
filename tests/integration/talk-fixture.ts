@@ -4,6 +4,7 @@
 // 응답 뒤 할 일(after)은 모아 두었다가 시험이 돌린다. 시각은 고정 시계 하나. 아이 이름 · 연락처는 지어낸 값(앱 안 이름 Momo)이다.
 import { and, eq, inArray, isNull, max } from "drizzle-orm";
 import type { TalkOutput } from "@/core/ai/calls/talk";
+import type { StageTimings } from "@/core/conversation/timing";
 import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
 import { LESSON_SCHEMAS } from "@/core/seed/schema/lesson";
 import type { TalkCard } from "@/core/seed/schema/talk";
@@ -55,7 +56,10 @@ export const MS_PER_MINUTE = 60_000;
 /** 시험 집의 영어 이름 · 한글 이름(첫 실행 값). */
 export const ENGLISH_NAME = "Momo";
 export const DISPLAY_NAME = "모모";
-export const HAIKU = TEST_SETTINGS["ai.model.talk_turn.1-3"].value;
+/** 1~3 구간 회화 턴 모델(시험 설정 — C112 뒤 Sonnet). 가짜 응답의 모델 칸 기본값. */
+export const LOW_MODEL = TEST_SETTINGS["ai.model.talk_turn.1-3"].value;
+/** Haiku 5.5 — 설정으로 1~3 구간을 Haiku 로 고른 시험(거절 뒤 Sonnet 재시도 길). */
+export const HAIKU = "claude-haiku-5-5";
 export const SONNET = TEST_SETTINGS["ai.model.talk_turn.4-6"].value;
 /** 회화 턴 · 끝맺음 턴 요청을 가르는 사용자 메시지 줄(JSON 본문 안 — 고정부의 'Closing: yes' 설명과 겹치지 않게 줄바꿈부터). */
 export const TURN_MARK = "\\nClosing: no";
@@ -203,9 +207,16 @@ export function harnessOf(db: Db): TalkHarness {
   };
 }
 
-/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, tori_en 먼저). */
+/** 가짜 응답 JSON 글에서 tori_en 글이 시작되기 전 앞머리(stuck 거짓 · C127 차례) — 글자 수로 끊는 시험이 끊을 자리를 센다. */
+export const TORI_EN_LEAD = '{"stuck":false,"tori_en":"';
+/** tori_en 글의 이 앞부분까지 받고 끊는 글자 자리. */
+export const cutAfter = (toriPrefix: string) =>
+  TORI_EN_LEAD.length + toriPrefix.length;
+
+/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, stuck · tori_en 먼저 — C127). */
 export function answer(over: Partial<TalkOutput> = {}): TalkOutput {
   return {
+    stuck: false,
     tori_en: "Nice!",
     tori_ko: "좋아!",
     recast: "",
@@ -213,7 +224,6 @@ export function answer(over: Partial<TalkOutput> = {}): TalkOutput {
     new_words: [],
     self_used_words: [],
     mission_done: [],
-    stuck: false,
     card_question_no: 0,
     next_question_en: "",
     next_question_ko: "",
@@ -248,7 +258,7 @@ export function turnRule(
     when: { bodyIncludes: TURN_MARK },
     reply: {
       kind: "stream",
-      body: messageBody({ model: opts.model ?? HAIKU, json: answer(over) }),
+      body: messageBody({ model: opts.model ?? LOW_MODEL, json: answer(over) }),
       chunks: opts.chunks ?? 4,
       ...(opts.delayMs === undefined ? {} : { delayMs: opts.delayMs }),
       ...(opts.cutAfterChars === undefined
@@ -285,7 +295,7 @@ export function closingRule(
     reply: {
       kind: "stream",
       body: messageBody({
-        model: opts.model ?? HAIKU,
+        model: opts.model ?? LOW_MODEL,
         json: answer({
           tori_en: "",
           tori_ko: "",
@@ -314,9 +324,14 @@ let attemptSeq = 0;
 export type SayOptions = {
   text?: string;
   mode?: "speech" | "dont_know";
-  hint?: { opened: number; heard: ("two_answers" | "answer_example")[] };
+  hint?: {
+    opened: number;
+    heard: ("two_answers" | "answer_example")[];
+  };
   clientAttemptId?: string;
   prevPerceivedWaitMs?: number;
+  /** AI 를 부르기 전 구간마다 준비 시간(C125 (4)). */
+  onPrepTimings?: (timings: StageTimings) => void;
 };
 
 /** 아이 말 하나(Route Handler 가 부르는 턴 길 — 줄을 모은다). */
@@ -346,6 +361,7 @@ export async function say(
       ...h.deps(),
       write: (line) => lines.push(line),
       requestReceivedAt: h.clock.now,
+      ...(opts.onPrepTimings ? { onPrepTimings: opts.onPrepTimings } : {}),
     },
   );
   return { lines, last: lines.at(-1), id };
@@ -379,7 +395,7 @@ export async function viewOf(
 export async function intoTalk(
   h: TalkHarness,
   sessionId: string,
-  { model = HAIKU }: { model?: string } = {},
+  { model = LOW_MODEL }: { model?: string } = {},
 ): Promise<TalkView> {
   let view = await viewOf(h, sessionId);
   while (!view.next.greetingDone) {
@@ -403,7 +419,10 @@ export async function intoTalk(
 export async function playToTarget(
   h: TalkHarness,
   sessionId: string,
-  { model = HAIKU, maxTurns = 60 }: { model?: string; maxTurns?: number } = {},
+  {
+    model = LOW_MODEL,
+    maxTurns = 60,
+  }: { model?: string; maxTurns?: number } = {},
 ): Promise<Extract<TalkLine, { t: "end" }>> {
   for (let i = 0; i < maxTurns; i++) {
     h.fake.push(turnRule({ tori_en: "Good job!" }, { model }));

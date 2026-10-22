@@ -67,11 +67,15 @@ const writingCheck = () =>
     values: testSettingValues(),
     book,
   });
+/** 1~3 구간을 Haiku 로 고른 회화 턴 구성(C112 뒤 기본은 Sonnet — 이 시험은 대체 모델이 없는 Haiku 쪽을 본다). */
 const talkTurn13 = () =>
   requestConfigOf({
     purpose: "talk_turn",
     level: 1,
-    values: testSettingValues(),
+    values: {
+      ...testSettingValues(),
+      "ai.model.talk_turn.1-3": "claude-haiku-5-5",
+    },
     book,
   });
 

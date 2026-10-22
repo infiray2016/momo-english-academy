@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"You like apples! I like apples too. What do you eat for lunch?\",\"tori_ko\":\"사과를 좋아하는구나! 나도 사과 좋아해. 점심에 뭐 먹어?\",\"recast\":\"I like apples.\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"apples\"],\"mission_done\":[],\"stuck\":false,\"card_question_no\":2,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 점심에 밥을 먹어.\",\"next_hints\":[\"I eat ___ for lunch.\",\"I eat rice for lunch.\",\"I eat bread.\"],\"next_usable_phrases\":[],\"next_targets\":[\"lunch\"],\"next_answer_example\":\"I eat rice for lunch.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"You like apples! I like apples too. What do you eat for lunch?\",\"tori_ko\":\"사과를 좋아하는구나! 나도 사과 좋아해. 점심에 뭐 먹어?\",\"recast\":\"I like apples.\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"apples\"],\"mission_done\":[],\"card_question_no\":2,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 점심에 밥을 먹어.\",\"next_hints\":[\"I eat ___ for lunch.\",\"I eat rice for lunch.\",\"I eat bread.\"],\"next_usable_phrases\":[],\"next_targets\":[\"lunch\"],\"next_answer_example\":\"I eat rice for lunch.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

@@ -12,9 +12,16 @@ import {
   it,
   vi,
 } from "vitest";
+import { twoAnswersLine } from "@/core/ai/calls/talk";
 import { talkClosingAttemptId } from "@/core/conversation/attempt";
+import { normalizeSpoken } from "@/core/conversation/flow";
+import {
+  type StageTimings,
+  stageTimingsLine,
+} from "@/core/conversation/timing";
 import { learningDayOf } from "@/core/learning-day";
 import { AI_WAIT_TIMEOUT_MULTIPLE } from "@/core/seed/structure";
+import { splitSentences } from "@/core/seed/text";
 import { feedbackStateOf } from "@/core/writing/feedback";
 import { lessons, vocab } from "@/db/schema/content";
 import {
@@ -34,6 +41,7 @@ import {
   runTalkClosing,
   saveFollowAlong,
   stopTalk,
+  type TalkLine,
   talkClosingStatus,
 } from "@/server/conversation";
 import { closingStateOf } from "@/server/conversation/closing";
@@ -925,6 +933,107 @@ describe("공유 상태 · 정리 따라 말하기 · 같은 시도 id 겹침(fi
     expect(rows.filter((r) => r.clientAttemptId === "same-1")).toHaveLength(1);
     // 저장된 토리 말은 첫 요청의 것(원문 첫 줄 = AI 글)
     expect(rows.at(-1)?.text?.split("\n")[0]).toBe("Nice one!");
+  });
+});
+
+/** 한 턴에 읽힐 문장(토리 말 · 붙인 말 — 답 두 개는 읽는 한 줄 'A. Or B.' 그대로). */
+function spokenSentencesOf(lines: readonly TalkLine[]): string[] {
+  return lines
+    .flatMap((l) => {
+      if (l.t === "s") return [l.en];
+      if (l.t !== "add") return [];
+      if (l.kind === "two_answers") return [twoAnswersLine(l.answers)];
+      if (l.kind === "again") return [l.say, ...(l.en ? [l.en] : [])];
+      return [l.en];
+    })
+    .flatMap(splitSentences);
+}
+
+describe("한 턴에 같은 말 두 번 안 읽기(C125 (3))", () => {
+  it("회화 세션: 1단계 처음 묻는 턴의 '모름'은 답 두 개를 남기고 겹치는 답 예시 · 토리 문장을 빼 4문장 이하다", async () => {
+    const sessionId = await startTalk(h, 1);
+    await intoTalk(h, sessionId);
+    const card = cardOf(await talkLessonRow(db, 1));
+    const first = card.turns?.[0];
+    if (!first?.twoAnswers) throw new Error("견본 꼴 — 1단계 처음 묻는 턴");
+    const view = await viewOf(h, sessionId);
+    expect(view.next.pending?.en).toBe(first.question.en);
+    const told = `You can say, ${first.answerExample}`;
+
+    const check = (lines: readonly TalkLine[]) => {
+      const sentences = spokenSentencesOf(lines);
+      expect(sentences.length).toBeLessThanOrEqual(4);
+      const norm = sentences.map(normalizeSpoken);
+      expect(new Set(norm).size).toBe(norm.length);
+      // 답 두 개 줄(①②)은 남고 같은 질문을 다시 묻는다. 답 예시 줄(again)은 답 두 개와 겹쳐 빠진다
+      expect(
+        lines.filter((l) => l.t === "add" && l.kind === "two_answers"),
+      ).toEqual([{ t: "add", kind: "two_answers", answers: first.twoAnswers }]);
+      expect(lines.some((l) => l.t === "add" && l.kind === "again")).toBe(
+        false,
+      );
+      expect(
+        lines.some(
+          (l) =>
+            l.t === "add" &&
+            l.kind === "question" &&
+            l.en === first.question.en,
+        ),
+      ).toBe(true);
+      return sentences.length;
+    };
+
+    // 토리 말(AI)이 답 예시를 이미 말한 '모름' — 그 토리 문장은 읽고 보이는 글에서 빠진다
+    h.fake.push(turnRule({ tori_en: `That's okay! ${told}` }));
+    const withExample = await say(h, sessionId, { mode: "dont_know" });
+    const withCount = check(withExample.lines);
+    expect(withExample.lines.some((l) => l.t === "s" && l.en === told)).toBe(
+      false,
+    );
+    // 저장하는 토리 말(다시 쓸 토리 차례 포함)은 그대로
+    const saved = (await turnsOf(db, sessionId)).at(-1);
+    expect(saved?.text).toContain(told);
+    expect(saved?.text).toContain(twoAnswersLine(first.twoAnswers));
+    // 이어 하기로 다시 그려도 같은 말은 빠진다
+    const again = await viewOf(h, sessionId);
+    expect(again.lastTori?.sentences).not.toContain(told);
+
+    // 토리 말에 답 예시가 없는 '모름'
+    h.fake.push(turnRule({ tori_en: "That's okay!" }));
+    const plain = await say(h, sessionId, { mode: "dont_know" });
+    const plainCount = check(plain.lines);
+    console.info(
+      `회화 '모름' 턴 문장 수: 토리 말에 답 예시 있음 ${withCount} · 없음 ${plainCount}`,
+    );
+  });
+});
+
+describe("턴 길 준비 시간(C125 (4))", () => {
+  it("회화 세션: 턴 길은 AI 를 부르기 전 구간마다 준비 시간을 남긴다", async () => {
+    const sessionId = await startTalk(h, 1);
+    await intoTalk(h, sessionId);
+    const seen: StageTimings[] = [];
+    h.fake.push(turnRule({ tori_en: "Good!" }));
+    await say(h, sessionId, { onPrepTimings: (t) => seen.push(t) });
+    expect(seen).toHaveLength(1);
+    const [t] = seen;
+    expect(t?.stages.map((s) => s.stage)).toEqual([
+      "profile",
+      "masker_settings",
+      "state",
+      "checks_context",
+      "input",
+      "ai_prep",
+    ]);
+    for (const stage of t?.stages ?? [])
+      expect(stage.ms).toBeGreaterThanOrEqual(0);
+    // 합은 구간 합과 반올림 한 칸씩만 다르다
+    const sum = (t?.stages ?? []).reduce((total, s) => total + s.ms, 0);
+    expect(Math.abs((t?.totalMs ?? 0) - sum)).toBeLessThanOrEqual(
+      t?.stages.length ?? 0,
+    );
+    // 재기 값(시험 DB — 보고에 남김)
+    if (t) console.info(`회화 턴 준비 시간 ${stageTimingsLine(t)}`);
   });
 });
 

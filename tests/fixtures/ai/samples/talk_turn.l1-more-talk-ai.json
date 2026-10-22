@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"Cool! A big ball.\",\"tori_ko\":\"멋지다! 큰 공이네.\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"stuck\":false,\"card_question_no\":0,\"next_question_en\":\"What color is your ball?\",\"next_question_ko\":\"네 공은 무슨 색이야?\",\"next_hint_ko\":\"내 공은 빨간색이야.\",\"next_hints\":[\"My ball is red.\"],\"next_usable_phrases\":[],\"next_targets\":[\"ball\"],\"next_answer_example\":\"My ball is red.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"Cool! A big ball.\",\"tori_ko\":\"멋지다! 큰 공이네.\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"card_question_no\":0,\"next_question_en\":\"What color is your ball?\",\"next_question_ko\":\"네 공은 무슨 색이야?\",\"next_hint_ko\":\"내 공은 빨간색이야.\",\"next_hints\":[\"My ball is red.\"],\"next_usable_phrases\":[],\"next_targets\":[\"ball\"],\"next_answer_example\":\"My ball is red.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

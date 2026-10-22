@@ -6,9 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   confirmPlanOf,
   maskNameAnswer,
-  TALK_SLOW_READ_UNTIL_LEVEL,
   talkEndRuleFor,
-  talkSpeakRateOf,
   talkSpeechSettingsFrom,
 } from "@/core/conversation/listen";
 import { HomophonesFileSchema } from "@/core/seed/schema/reference";
@@ -162,22 +160,5 @@ describe("이름 묻기 턴 가림(6.1)", () => {
     expect(
       maskNameAnswer("my name is Momo", { templates: ["I like it."] }),
     ).toBe("my name is Momo");
-  });
-});
-
-describe("회화 읽어 주기 빠르기(C96)", () => {
-  it("회화 읽어 주기: 1~2단계는 speech.slow_rate 로 천천히, 3단계부터는 기본 빠르기로 읽는다", () => {
-    const slow = values["speech.slow_rate"] as number;
-    expect(talk.slowRate).toBe(slow);
-    for (let level = 1; level <= TALK_SLOW_READ_UNTIL_LEVEL; level++)
-      expect(talkSpeakRateOf(level, talk)).toBe(slow);
-    expect(
-      talkSpeakRateOf(TALK_SLOW_READ_UNTIL_LEVEL + 1, talk),
-    ).toBeUndefined();
-    expect(() =>
-      talkSpeechSettingsFrom((key) =>
-        key === "speech.slow_rate" ? undefined : read(key),
-      ),
-    ).toThrow();
   });
 });

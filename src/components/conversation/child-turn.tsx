@@ -3,7 +3,7 @@
 // 아이 차례(plan-p13b 파일별 값 9, 4절 회화 세션 '아이 차례' · '힌트' · '인식 확인' 행 · 3.3 · 7절 · C10 · C22 · C23 · C44 · C53 (2)).
 // 말하기 단추 하나를 크게(P11a SpeakButton — 고리 틈 연두), 옆에 작은 '힌트' · '잘 모르겠어요'. 듣기는 a talkEndRuleFor(대화). 읽어 주는
 // 중에 누르면 읽기를 멈추고 듣는다. '힌트'는 누를 때마다 한 단 — 1~3단계 영어 단은 서버가 미리 내려 주지 않아 연 단만 revealTalkHint 로
-// 받는다(영어 문장 단에 작은 듣기 단추 · 천천히). 같은 질문 둘째 '모름'부터 마지막 단까지 열린 채. 첫 회화 수업에서 '막히면 눌러요' 한 번.
+// 받는다(영어 문장 단에 작은 듣기 단추 · 단계 구간 빠르기). 같은 질문 둘째 '모름'부터 마지막 단까지 열린 채. 첫 회화 수업에서 '막히면 눌러요' 한 번.
 // 인식 확인은 a confirmPlanOf — 바로 보냄 · talk.confirm_seconds 동안 아이 말풍선 + '다시 말하기' · '보내기'(아무것도 안 누르면 보냄).
 // '모름'은 단추 · 같은 질문에서 말소리 없는 듣기 talk.nospeech_dontknow_count 번. 녹음하지 않는다(브라우저 인식만).
 import { Volume2 } from "lucide-react";
@@ -80,8 +80,8 @@ export type ChildTurnProps = {
     hintReadMatch: number;
     nospeechDontknowCount: number;
   };
-  /** 1~2단계 천천히(speech.slow_rate). */
-  slowRate?: number;
+  /** 힌트 문장 듣기 빠르기(단계 구간마다 speech.rate.<구간>, C125). */
+  rate: number;
   homophones: string[][];
   /** '막히면 눌러요'를 보일까(프로필의 첫 회화 수업 — notices_seen). */
   nudge: boolean;
@@ -311,8 +311,9 @@ export function ChildTurn(props: ChildTurnProps) {
           </div>
         </div>
       ) : null}
-      {/* 가로(넓은 칸)에서는 힌트 단을 단추 줄 옆에 두어 보는 창 높이를 아낀다(화면 검토 I-1) */}
-      <div className="flex flex-col gap-3 lg:flex-row-reverse lg:items-start lg:justify-end lg:gap-6">
+      {/* 가로(넓은 칸)에서는 힌트 단을 왼쪽(넓게) · 단추 묶음을 오른쪽 끝에 — 힌트가 없는 턴에도 단추는 오른쪽(목업 B_Talk1 · 화면 검토 I-1 ·
+          전체 디자인 리뷰 M-3) */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
         {opened > 0 ? (
           <ol data-hint-tiers="" className="flex min-w-0 flex-1 flex-col gap-2">
             {hints.slice(0, opened).map((tier, i) => {
@@ -341,12 +342,9 @@ export function ChildTurn(props: ChildTurnProps) {
                       aria-label={CHILD_TURN_TEXT.listenHint}
                       onClick={() => {
                         speech?.unlockFromGesture();
-                        void speech?.speak(
-                          fillName(text, props.englishName),
-                          props.slowRate === undefined
-                            ? undefined
-                            : { rate: props.slowRate },
-                        );
+                        void speech?.speak(fillName(text, props.englishName), {
+                          rate: props.rate,
+                        });
                       }}
                       className={cn(
                         FOCUS_RING,
@@ -362,7 +360,10 @@ export function ChildTurn(props: ChildTurnProps) {
             })}
           </ol>
         ) : null}
-        <div className="flex shrink-0 flex-wrap items-center justify-center gap-4">
+        <div
+          data-child-actions=""
+          className="flex shrink-0 flex-wrap items-center justify-center gap-4 lg:ml-auto"
+        >
           <SpeakButton
             label={CHILD_TURN_TEXT.speak}
             listening={listening}

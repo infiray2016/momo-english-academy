@@ -10,9 +10,11 @@ import {
   sessions,
   unitProgress,
 } from "../../src/db/schema/learning";
+import { CHILD_VIEWPORTS, layoutBoxesOf } from "./child-size";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, test } from "./fixtures";
 import { insertHousehold } from "./household";
+import { photo } from "./photos";
 
 const T = {
   hereStart: "여기부터 해요",
@@ -23,6 +25,8 @@ const T = {
   newLesson: "새 수업 할래요",
   keepGoing: "하던 수업 할래요",
   parentCheck: "부모님이 다음 길을 고르고 있어요. 그동안 지난 수업을 해 봐요",
+  /** 수업 시작이 서버에 닿지 않을 때(온라인 — use-lesson-start LESSON_START_TEXT.failed). */
+  failed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
 } as const;
 
 test.beforeEach(resetHousehold);
@@ -38,6 +42,88 @@ async function boardReady(page: Page) {
 }
 
 /** 세션 쪽으로 가서 그 세션 행을 돌려준다. */
+/** 같은 크기로 보는 어긋남(px, 시험 값 — 반올림 한 칸). */
+const SAME_PX = 1;
+/** 카드 위 끝 표지와 번호 줄 사이 최소 틈(px, 시험 값 — 디자인 fix 1c 여유). */
+const BADGE_GAP_PX = 4;
+
+/** 그 수업 카드(포스트잇 — 단추)의 너비 · 높이를 두 방향에서 잰다. 끝나면 세로로 돌려 둔다. */
+async function cardSizesBothWays(page: Page, lesson: string) {
+  const sizes = {} as Record<
+    keyof typeof CHILD_VIEWPORTS,
+    { width: number; height: number }
+  >;
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    // 기울기 없는 레이아웃 크기(디자인 fix 1b)
+    const [box] = await layoutBoxesOf(
+      page
+        .locator("button")
+        .filter({ has: page.locator(`[data-lesson="${lesson}"]`) }),
+    );
+    if (!box) throw new Error(`수업 카드 없음: ${lesson}`);
+    sizes[way] = { width: box.width, height: box.height };
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  return sizes;
+}
+
+/**
+ * 카드 위 끝 표지('여기부터 해요' · '안 해 본 수업')가 22px 그대로(C82) 두 줄 이하로 카드 안 표지 칸에 넘치지 않고, 번호 줄과 BADGE_GAP_PX 이상 떨어진다
+ * (세로 한 줄 · 가로 두 줄 — 디자인 fix 1b · 1c), 두 방향.
+ */
+async function badgesFitBothWays(page: Page) {
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    // 브라우저 안 함수에는 바깥 상수가 넘어가지 않아 둘째 인자로 넘긴다(CI 16차)
+    const badges = await page.locator("[data-lesson-badge]").evaluateAll(
+      (els, gap) =>
+        els.map((el) => {
+          const node = el as HTMLElement;
+          const style = getComputedStyle(node);
+          const lineHeight = Number.parseFloat(style.lineHeight);
+          const inner =
+            node.clientHeight -
+            Number.parseFloat(style.paddingTop) -
+            Number.parseFloat(style.paddingBottom);
+          const card = node.closest("button");
+          const no = card?.querySelector(
+            "[data-lesson-no]",
+          ) as HTMLElement | null;
+          return {
+            text: node.textContent ?? "",
+            font: Number.parseFloat(style.fontSize),
+            lines: Math.round(inner / lineHeight),
+            scroll: node.scrollWidth,
+            client: node.clientWidth,
+            // 기울기 없는 너비 · 자리로 견줌(디자인 fix 1b)
+            inCard: node.offsetWidth <= (card?.clientWidth ?? 0),
+            clearOfNumber:
+              no === null ||
+              node.offsetTop + node.offsetHeight + gap <= no.offsetTop,
+          };
+        }),
+      BADGE_GAP_PX,
+    );
+    expect(badges.length, way).toBeGreaterThan(0);
+    for (const b of badges) {
+      const label = `${way} ${b.text}`;
+      expect(b.font, label).toBeGreaterThanOrEqual(22);
+      expect(b.lines, label).toBeLessThanOrEqual(way === "portrait" ? 1 : 2);
+      expect(b.scroll, label).toBeLessThanOrEqual(b.client);
+      expect(b.inCard, label).toBe(true);
+      expect(b.clearOfNumber, label).toBe(true);
+    }
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+}
+
 async function openedSession(page: Page) {
   await page.waitForURL((url) => url.pathname.startsWith("/session/"));
   const id = new URL(page.url()).pathname.split("/").at(-1) ?? "";
@@ -137,6 +223,29 @@ test("AC-2d 수업 포스트잇마다 번호와 한국어 제목이 있고 '여�
     await expect(card).toContainText(c.listTitle);
   }
   await expect(page.getByText(T.hereStart, { exact: true })).toHaveCount(1);
+  // '여기부터 해요' 카드도 다른 카드와 같은 크기 — 표지 · 테두리로만 구별(C114 · 4절 '여기부터 해요' 행), 두 방향
+  await boardReady(page);
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    // 기울기 없는 레이아웃 크기(포스트잇 기울기는 그대로 — 디자인 fix 1b)
+    const boxes = await layoutBoxesOf(
+      page.locator("button").filter({ has: page.locator("[data-lesson]") }),
+    );
+    const widths = boxes.map((b) => b.width);
+    const heights = boxes.map((b) => b.height);
+    expect(Math.max(...widths) - Math.min(...widths), way).toBeLessThanOrEqual(
+      SAME_PX,
+    );
+    expect(
+      Math.max(...heights) - Math.min(...heights),
+      way,
+    ).toBeLessThanOrEqual(SAME_PX);
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  await badgesFitBothWays(page);
   // 첫 화면: 지금 단원 묶음 · 잠긴 다음 단원 한 장 · 지난 단원이 없으면 '지난 수업 다시 하기'도 없다
   await expect(page.locator("[data-locked-next]")).toHaveCount(1);
   await expect(page.getByText(T.past)).toHaveCount(0);
@@ -184,6 +293,10 @@ test("수업 목록: 지난 수업 다시 하기는 단원을 고른 뒤 수업�
   ]);
   await page.goto("/reading/lessons");
   await expect(page.getByText("1단계 · 단원 2")).toBeVisible();
+  await boardReady(page);
+  // 수업 카드는 목록 · 지난 수업에서 같은 크기(같은 종류 종이 — C114 · 전체 디자인 리뷰 #14), 두 방향 모두
+  const listSizes = await cardSizesBothWays(page, "assigned-2");
+  await photo(page, "lesson-list-default");
   await page.getByRole("link", { name: T.past }).click();
   await page.waitForURL((url) => url.pathname === "/reading/lessons/past");
   await page.getByRole("link", { name: "단원 1" }).click();
@@ -194,6 +307,19 @@ test("수업 목록: 지난 수업 다시 하기는 단원을 고른 뒤 수업�
   await expect(page.locator('[data-lesson="assigned-2"]')).toContainText(
     T.untried,
   );
+  const pastSizes = await cardSizesBothWays(page, "assigned-2");
+  await badgesFitBothWays(page);
+  for (const way of ["portrait", "landscape"] as const) {
+    expect(
+      Math.abs(pastSizes[way].width - listSizes[way].width),
+      way,
+    ).toBeLessThanOrEqual(SAME_PX);
+    expect(
+      Math.abs(pastSizes[way].height - listSizes[way].height),
+      way,
+    ).toBeLessThanOrEqual(SAME_PX);
+  }
+  await photo(page, "lesson-list-past");
   // 지난 수업도 고르면 세션이 열린다 — 안 해 본 수업은 untried 세션(3.2)
   await expect(page.locator("[data-past-lessons][data-hydrated]")).toHaveCount(
     1,
@@ -409,4 +535,40 @@ test("AC-2f 앞 배정 수업을 하지 않고 뒤 수업을 고르면 새 단�
       page.locator("[data-activity]").getByText(word, { exact: true }),
     ).toBeVisible();
   }
+});
+
+test("수업 목록: 고르기가 실패하면 오류 줄이 누른 카드 줄 바로 뒤 한 줄 칸에 보는 창 안에 보이고 고른 표시가 되돌아가며 같은 줄 카드는 늘지 않는다", async ({
+  page,
+}) => {
+  // fix 8b N-1 · N-2 · 전체 디자인 리뷰 M-8 — 수업 시작 서버 액션이 닿지 않는 꼴(요청을 끊음)
+  await insertHousehold({ startLevels: { reading: 1 } });
+  await page.goto("/reading/lessons");
+  await boardReady(page);
+  const cards = page
+    .locator("button")
+    .filter({ has: page.locator("[data-lesson]") });
+  const before = await cards.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().height),
+  );
+  await page.route("**/reading/lessons", async (route) => {
+    if (route.request().method() === "POST") await route.abort("failed");
+    else await route.continue();
+  });
+  const target = cards.filter({
+    has: page.locator('[data-lesson="assigned-2"]'),
+  });
+  await target.click();
+  const row = page.locator("[data-lesson-wait]");
+  await expect(row).toContainText(T.failed);
+  // 한 줄 칸은 보는 창 안이고, 판 아래 오류 줄은 비어 있다(같은 글을 두 번 보이지 않음)
+  const box = await row.boundingBox();
+  const view = page.viewportSize();
+  expect(box && view && box.y + box.height <= view.height).toBe(true);
+  await expect(page.getByText(T.failed, { exact: true })).toHaveCount(1);
+  // 고른 표시가 되돌아가고, 카드 높이는 그대로(칸이 카드를 늘이지 않음)
+  await expect(target).toHaveAttribute("aria-pressed", "false");
+  const after = await cards.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().height),
+  );
+  expect(after).toEqual(before);
 });

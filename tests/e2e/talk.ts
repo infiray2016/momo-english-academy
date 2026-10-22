@@ -216,9 +216,10 @@ export async function openTalkSession(
   return sessionId;
 }
 
-/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, tori_en 먼저 — 6.2 규격 차례). */
+/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, stuck · tori_en 먼저 — 6.2 규격 차례, C127). */
 export function talkAnswer(over: Partial<TalkOutput> = {}): TalkOutput {
   return {
+    stuck: false,
     tori_en: "Nice!",
     tori_ko: "좋아!",
     recast: "",
@@ -226,7 +227,6 @@ export function talkAnswer(over: Partial<TalkOutput> = {}): TalkOutput {
     new_words: [],
     self_used_words: [],
     mission_done: [],
-    stuck: false,
     card_question_no: 0,
     next_question_en: "",
     next_question_ko: "",

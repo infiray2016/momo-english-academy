@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"Nice! ",
+          "text": "{\"stuck\":false,\"tori_en\":\"Nice! ",
           "citations": null
         },
         {
@@ -31,7 +31,7 @@
         },
         {
           "type": "text",
-          "text": "You went to the park. What did you do there?\",\"tori_ko\":\"좋아! 공원에 갔구나. 거기서 뭐 했어?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"stuck\":false,\"card_question_no\":3,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 공을 찼어.\",\"next_hints\":[\"I ___ a ball.\",\"I kicked a ball.\"],\"next_usable_phrases\":[],\"next_targets\":[\"park\"],\"next_answer_example\":\"I kicked a ball.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "You went to the park. What did you do there?\",\"tori_ko\":\"좋아! 공원에 갔구나. 거기서 뭐 했어?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"card_question_no\":3,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 공을 찼어.\",\"next_hints\":[\"I ___ a ball.\",\"I kicked a ball.\"],\"next_usable_phrases\":[],\"next_targets\":[\"park\"],\"next_answer_example\":\"I kicked a ball.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],
@@ -79,6 +79,6 @@
     "strict": true,
     "level": 4,
     "answeredModel": "claude-sonnet-5",
-    "joinedText": "{\"tori_en\":\"Nice! You went to the park. What did you do there?\",\"tori_ko\":\"좋아! 공원에 갔구나. 거기서 뭐 했어?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"stuck\":false,\"card_question_no\":3,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 공을 찼어.\",\"next_hints\":[\"I ___ a ball.\",\"I kicked a ball.\"],\"next_usable_phrases\":[],\"next_targets\":[\"park\"],\"next_answer_example\":\"I kicked a ball.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}"
+    "joinedText": "{\"stuck\":false,\"tori_en\":\"Nice! You went to the park. What did you do there?\",\"tori_ko\":\"좋아! 공원에 갔구나. 거기서 뭐 했어?\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"card_question_no\":3,\"next_question_en\":\"\",\"next_question_ko\":\"\",\"next_hint_ko\":\"나는 공을 찼어.\",\"next_hints\":[\"I ___ a ball.\",\"I kicked a ball.\"],\"next_usable_phrases\":[],\"next_targets\":[\"park\"],\"next_answer_example\":\"I kicked a ball.\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}"
   }
 }

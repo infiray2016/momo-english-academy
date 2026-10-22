@@ -166,8 +166,8 @@ describe("회화 턴 규격", () => {
     const keys = Object.keys(
       (wire as unknown as { shape: Record<string, unknown> }).shape,
     );
-    expect(keys[0]).toBe("tori_en");
-    expect(keys[1]).toBe("tori_ko");
+    // 막힘 판단이 맨 앞, 그다음 토리 영어 말 · 뜻(13절 C127)
+    expect(keys.slice(0, 3)).toEqual(["stuck", "tori_en", "tori_ko"]);
     for (const banned of ["score", "correct", "judgement", "verdict", "pass"])
       expect(
         keys.some((k) => k.includes(banned)),

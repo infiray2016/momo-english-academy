@@ -310,6 +310,10 @@ function callCase<I extends { level: number }, O, R>(
   };
 }
 
+/** 1~3 구간 회화 턴 모델 설정 키 · Haiku 5.5(설정으로 고를 수 있는 쪽 — C112). */
+const TALK_LOW_MODEL_KEY = "ai.model.talk_turn.1-3";
+const HAIKU_MODEL = "claude-haiku-5-5";
+
 /** 회화 턴 두 설정으로 보내는 작은 구조화 출력(필드 둘, 모두 필수 — 1-나 회화 턴과 같은 '생각 끔 + 구조화 출력' 조합). */
 const TalkConfigSchema = z
   .object({ reply: z.string(), done: z.boolean() })
@@ -322,7 +326,11 @@ function talkConfigCase(
   const reqConfig = requestConfigOf({
     purpose: "talk_turn",
     level: TALK_LEVELS[which],
-    values: config.values,
+    // C112 뒤 1~3 기본도 Sonnet 이라, Haiku 사례는 1~3 구간 모델을 Haiku 로 골라 둔다(설정으로 고를 수 있는 조합의 증명)
+    values:
+      which === "haiku"
+        ? { ...config.values, [TALK_LOW_MODEL_KEY]: HAIKU_MODEL }
+        : config.values,
     book: config.book,
   });
   const betas = [...reqConfig.betas, STRUCTURED_OUTPUTS_BETA];

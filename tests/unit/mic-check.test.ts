@@ -66,6 +66,8 @@ const settings = {
   maxListenMs: 15_000,
   endSilenceMs: { "1-3": 3000, "4-6": 1500, "7-9": 1500, "10-12": 1500 },
   watchdogExtraMs: 3000,
+  rate: { "1-3": 0.8, "4-6": 0.85, "7-9": 0.9, "10-12": 1 },
+  sentencePauseMs: 700,
 };
 
 beforeEach(() => {

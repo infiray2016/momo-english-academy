@@ -6,12 +6,14 @@ import { BANDS, bandOf } from "@/core/level-band";
 import {
   type CancelReason,
   classifyRecognitionError,
+  DICTATION_DISABLED_CODE,
   type EndRule,
   endRuleFor,
   type ListenEffect,
   type ListenInput,
   type ListenOutcome,
   type ListenStep,
+  recognitionErrorCodeOf,
   SPEECH_SETTING_KEYS,
   type SpeechSettings,
   speechSettingsFrom,
@@ -872,6 +874,18 @@ describe("오류 갈래(7절 · 8절 · C53)", () => {
     for (const code of ["no-speech", "aborted", "audio-capture"]) {
       expect(classifyRecognitionError(code)).toBe("retry");
     }
+
+    // iPad 에서 Siri · 받아쓰기가 꺼졌을 때(실측 1 — error aborted "Siri and Dictation are disabled")는 마이크를 쓸 수 없는 기기(7절 11행,
+    // 전체 디자인 리뷰 M-10). 우리 쪽 멈춤의 aborted(메시지 없음 · 다른 메시지)는 그대로 다시 듣기
+    expect(
+      recognitionErrorCodeOf("aborted", "Siri and Dictation are disabled"),
+    ).toBe(DICTATION_DISABLED_CODE);
+    expect(classifyRecognitionError(DICTATION_DISABLED_CODE)).toBe(
+      "mic-unavailable",
+    );
+    expect(recognitionErrorCodeOf("aborted", "")).toBe("aborted");
+    expect(recognitionErrorCodeOf("aborted", undefined)).toBe("aborted");
+    expect(recognitionErrorCodeOf("no-speech", "dictation")).toBe("no-speech");
 
     const rule = oneSentence(1);
     expect(simulate(loadScript("not-allowed"), rule).outcome).toEqual({

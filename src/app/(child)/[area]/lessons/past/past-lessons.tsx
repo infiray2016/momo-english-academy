@@ -14,6 +14,13 @@ import { AiRest } from "@/components/session/ai-rest";
 import { WaitHint } from "@/components/session/wait-hint";
 import type { PastItem } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
+import {
+  LESSON_BADGE,
+  LESSON_CARD,
+  LESSON_GRID,
+  LESSON_NO,
+  LESSON_TITLE,
+} from "../lesson-card";
 import { LESSON_START_TEXT, useLessonStart } from "../use-lesson-start";
 
 const UNTRIED = "안 해 본 수업";
@@ -61,7 +68,8 @@ export function PastLessons({
       <section
         data-past-lessons=""
         data-hydrated={hydrated ? "" : undefined}
-        className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-6"
+        // 수업 목록과 같은 카드 격자 · 크기(같은 종류 종이 — C114 · 전체 디자인 리뷰 #14)
+        className={LESSON_GRID}
       >
         {items.map((item, i) => (
           <PostIt
@@ -71,22 +79,25 @@ export function PastLessons({
             onClick={() => {
               if (!busy) void start(item.lessonId);
             }}
-            className="min-h-36 gap-2 p-4 pt-8"
+            className={LESSON_CARD}
           >
             <span
               data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
               className="contents"
             >
-              <span className="font-heading text-4xl leading-none">
-                {item.ref.lessonNo}
-              </span>
-              {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82) */}
-              <span data-size-guide="">{item.title}</span>
+              {/* '안 해 본 수업'은 카드 위 끝 표지(카드 높이를 늘이지 않음 — 같은 크기, C114) */}
               {item.mark === "untried" ? (
-                <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
+                <span data-lesson-badge="" className={LESSON_BADGE}>
                   {UNTRIED}
                 </span>
               ) : null}
+              <span data-lesson-no="" className={LESSON_NO}>
+                {item.ref.lessonNo}
+              </span>
+              {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82), 두 줄까지 */}
+              <span data-size-guide="" className={LESSON_TITLE}>
+                {item.title}
+              </span>
             </span>
           </PostIt>
         ))}

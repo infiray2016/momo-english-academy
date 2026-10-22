@@ -11,6 +11,7 @@ import type {
 import type { TalkLevelSpec } from "@/core/seed/schema/reference";
 import type { TalkCard, TurnCard } from "@/core/seed/schema/talk";
 import type { AskKind, TALK_SEGMENTS } from "@/core/seed/structure";
+import { splitSentences } from "@/core/seed/text";
 import { type PreviewWord, previewWordsOf } from "@/core/session/preview";
 
 export type TalkSegment = (typeof TALK_SEGMENTS)[number];
@@ -894,6 +895,112 @@ export function appendAfter({
   }
   lines.push(...questionLines(q, after.dontKnowCount > 0, ko));
   return lines;
+}
+
+/** 같은 문장 견주기 꼴(C125 (3)): 대소문자 · 따옴표(I'm = I’m) · 문장부호 · 띄어쓰기를 지운 낱말 줄. */
+export function normalizeSpoken(text: string): string {
+  return text
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/['’‘`]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * '들어 있음'(낱말 경계)으로 같은 말을 보는 가장 짧은 낱말 수(13절 C127 — C125 (3) '같은 말'의 뜻 풀이, 설정값이 아닌 기술 판정).
+ * 찾는 쪽(답 · 붙일 줄의 문장)이 이보다 짧으면 정규화한 문장 전체가 같을 때만 같은 말이다 — 한 낱말 답 'Yes.' 가
+ * 'Yes, that's right!' 반응을, 'Good!' 이 'It is good.' 을 같은 말로 보지 않게. 두 낱말인 까닭: 정규화가 따옴표를 지워 "I'm good" 이
+ * 'im good' 두 낱말이 되므로, 이 답이 든 'You can say, I'm good.' 을 같은 말로 보려면 두 낱말부터 '들어 있음'을 써야 한다.
+ */
+export const SAME_SAYING_MIN_WORDS = 2;
+
+/** 정규화한 글의 낱말 수(띄어쓰기로). */
+const spokenWords = (normalized: string) =>
+  normalized === "" ? 0 : normalized.split(" ").length;
+
+const holds = (said: string, line: string) =>
+  line !== "" &&
+  (said === line ||
+    (spokenWords(line) >= SAME_SAYING_MIN_WORDS &&
+      ` ${said} `.includes(` ${line} `)));
+
+/** 토리 문장이 답 두 개 가운데 어느 하나를 담는가(정규화 · 낱말 경계 — 스트리밍 중 잡아 둘 문장을 고를 때도 쓴다). */
+export function sayingAnswer(
+  sentence: string,
+  pairs: readonly (readonly [string, string])[],
+): boolean {
+  const n = normalizeSpoken(sentence);
+  return pairs.some((pair) => pair.some((a) => holds(n, normalizeSpoken(a))));
+}
+
+type AnswerPair = readonly [string, string];
+
+/**
+ * 흘려 받는 동안 잡아 둘 토리 문장(13절 C125 (3) · C127): 답 두 개 어느 하나를 담은 토리 문장부터는 계획이 정해질 때까지 잡아 둔다
+ * (빠질지는 shownTurnOf 가 정함). 잡아 둘 짝은 앱이 붙일 답 두 개다 — '모름' 입력이거나 막힘 판단(stuck, tori_en 앞 칸) 참이면 지금
+ * 질문을 다시 묻는 자리의 짝(samePair), 아니면 다음 질문의 짝(nextPair, 1단계 처음 묻는 턴일 때만 있음). '모름' 입력 턴은 부르기
+ * 전에 알아 stuck 칸 전부터 잡는다. stuck 이 오기 전에 문장이 오면(모델이 칸 차례를 어김) 다음 질문의 짝으로 본다. 한 번 잡으면
+ * 차례를 지키려고 그 뒤 문장도 잡는다.
+ */
+export function createAnswerHold({
+  dontKnow,
+  samePair,
+  nextPair,
+}: {
+  dontKnow: boolean;
+  samePair?: AnswerPair | undefined;
+  nextPair?: AnswerPair | undefined;
+}): { stuck: (value: boolean) => void; hold: (sentence: string) => boolean } {
+  const listOf = (pair: AnswerPair | undefined) => (pair ? [pair] : []);
+  let pairs: AnswerPair[] | undefined = dontKnow ? listOf(samePair) : undefined;
+  let holding = false;
+  return {
+    stuck(value) {
+      if (!dontKnow) pairs = listOf(value ? samePair : nextPair);
+    },
+    hold(sentence) {
+      if (!holding) holding = sayingAnswer(sentence, pairs ?? listOf(nextPair));
+      return holding;
+    },
+  };
+}
+
+/**
+ * 한 턴에 같은 말 두 번 안 읽기(13절 C125 (3) · 컨트롤러 판정 2026-10-23): 읽고 보이는 토리 문장과 붙일 말. 1단계 답 두 개 줄(①②)은
+ * 칭찬 대사와 함께 늘 남긴다. 토리 문장 가운데 답 두 개 어느 하나를 담은 문장은 뺀다. 앱이 붙일 답 예시 · 질문 같은 줄은 남은
+ * 토리 문장 · 답 두 개 · 앞서 붙인 줄에 이미 든 문장이면 뺀다(정규화해 견줌 — 짧은 줄은 문장 전체가 같을 때만, SAME_SAYING_MIN_WORDS).
+ * 저장 글 · 다시 쓸 토리 차례 · 질문 차례 셈은 바꾸지 않는다.
+ */
+export function shownTurnOf(
+  sentences: readonly string[],
+  append: readonly AppendLine[],
+): { sentences: string[]; append: AppendLine[] } {
+  const pairs = append.flatMap((l) =>
+    l.kind === "two_answers" ? [l.answers] : [],
+  );
+  const shown = sentences.filter((s) => !sayingAnswer(s, pairs));
+  const said = [...shown, ...pairs.flat()]
+    .flatMap(splitSentences)
+    .map(normalizeSpoken)
+    .filter((s) => s !== "");
+  const heard = (sentence: string) => {
+    const n = normalizeSpoken(sentence);
+    return n !== "" && said.some((s) => holds(s, n));
+  };
+  const out: AppendLine[] = [];
+  for (const line of append) {
+    // 답 두 개(①②)와 칭찬 대사(실패 길에서 토리 반응 자리 — 8절 '회화 턴 실패')는 늘 남긴다
+    if (line.kind === "two_answers" || line.kind === "praise") {
+      out.push(line);
+      continue;
+    }
+    const parts = splitSentences(line.en);
+    if (parts.length > 0 && parts.every(heard)) continue;
+    out.push(line);
+    said.push(...parts.map(normalizeSpoken).filter((s) => s !== ""));
+  }
+  return { sentences: shown, append: out };
 }
 
 /** 카드가 노리는 단어 목록(P12 연습 수업 고르기): 1~3단계 카드 턴마다, 4단계부터 카드 질문마다. */

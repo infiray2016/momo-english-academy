@@ -172,7 +172,12 @@ export function PostIt({
     disabled ? DISABLED_TONE[tone] : POSTIT_TONE(tone),
     TILT[tilt],
     (href || onClick) &&
-      cn(CHILD_SIZE.target, "transition-transform", FOCUS_RING),
+      // 움직임 줄이기 설정이면 누름 움직임도 없음(ui-ux-pro-max §1 reduced-motion)
+      cn(
+        CHILD_SIZE.target,
+        "transition-transform motion-reduce:transition-none",
+        FOCUS_RING,
+      ),
     pressed && SELECTED_RING,
     disabled && "cursor-not-allowed",
     className,

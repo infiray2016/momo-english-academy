@@ -42,8 +42,8 @@ export interface SpeechPort {
   /** 누름 처리 안에서 동기로 부른다. iOS 첫 읽어 주기 제약을 푼다. */
   unlockFromGesture(): void;
   /**
-   * 읽어 주기. options.rate 는 Web Speech 빠르기(회화 1~2단계 천천히 — speech.slow_rate, C96). 없으면 브라우저 기본 빠르기
-   * (말하기 · 배치는 넘기지 않는다 — plan-p13b 위험 5).
+   * 읽어 주기. options.rate 는 Web Speech 빠르기(단계 구간마다 speech.rate.<구간> — C125, 회화 · 읽기 · 말하기가 넘김). 없으면
+   * 브라우저 기본 빠르기(쓰기 · 배치는 넘기지 않는다).
    */
   speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome>;
   cancelSpeaking(): void;

@@ -13,19 +13,27 @@ export type SpeechSettings = {
   maxListenMs: number;
   endSilenceMs: Readonly<Record<Band, number>>;
   watchdogExtraMs: number;
+  /** speech.rate.<구간> — 읽어 주기 빠르기(Web Speech rate, C125). */
+  rate: Readonly<Record<Band, number>>;
+  /** speech.sentence_pause_ms — 읽어 주기 문장 사이 쉼(ms, C125). */
+  sentencePauseMs: number;
 };
 
 const LANG_KEY = "speech.lang";
 const MAX_LISTEN_KEY = "speech.max_listen_seconds";
 const WATCHDOG_EXTRA_KEY = "speech.watchdog_extra_seconds";
 const endSilenceKey = (band: Band) => `speech.end_silence_seconds.${band}`;
+const rateKey = (band: Band) => `speech.rate.${band}`;
+const SENTENCE_PAUSE_KEY = "speech.sentence_pause_ms";
 
-/** speechSettingsFrom 이 읽는 12절 키. 회화 키(talk 갈래)는 1-나가 더한다. */
+/** speechSettingsFrom 이 읽는 12절 키(듣기 · 읽어 주기 빠르기 · 문장 사이 쉼). 회화 듣기 키(talk 갈래)는 회화 설정이 더한다. */
 export const SPEECH_SETTING_KEYS: readonly string[] = [
   LANG_KEY,
   MAX_LISTEN_KEY,
   ...BANDS.map(endSilenceKey),
   WATCHDOG_EXTRA_KEY,
+  ...BANDS.map(rateKey),
+  SENTENCE_PAUSE_KEY,
 ];
 
 const MS_PER_SECOND = 1000;
@@ -62,7 +70,25 @@ export function speechSettingsFrom(
   ) as Record<Band, number>;
   const watchdogExtraMs =
     readSetting(read, WATCHDOG_EXTRA_KEY, nonNegativeSeconds) * MS_PER_SECOND;
-  return { lang, maxListenMs, endSilenceMs, watchdogExtraMs };
+  const rate = Object.fromEntries(
+    BANDS.map((band) => [
+      band,
+      readSetting(read, rateKey(band), z.number().positive()),
+    ]),
+  ) as Record<Band, number>;
+  const sentencePauseMs = readSetting(
+    read,
+    SENTENCE_PAUSE_KEY,
+    z.int().nonnegative(),
+  );
+  return {
+    lang,
+    maxListenMs,
+    endSilenceMs,
+    watchdogExtraMs,
+    rate,
+    sentencePauseMs,
+  };
 }
 
 // ── 듣기 끝 규칙 ──
@@ -119,14 +145,33 @@ export type ErrorGroup = "retry" | "mic-unavailable" | "network";
 /** 새 인식 객체의 start() 가 던졌을 때의 코드. */
 export const START_FAILED_CODE = "start-failed";
 
+/** iPad 에서 Siri · 받아쓰기가 꺼진 기기의 aborted(앱이 붙이는 코드 — START_FAILED_CODE 와 같은 꼴, 7절 11행 · 전체 디자인 리뷰 M-10). */
+export const DICTATION_DISABLED_CODE = "dictation-disabled";
+/** 그 aborted 를 가르는 메시지(실측 1 — "Siri and Dictation are disabled"). */
+const DICTATION_MESSAGE = /dictation/i;
+
 const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
   "not-allowed",
   "service-not-allowed",
   "language-not-supported",
+  DICTATION_DISABLED_CODE,
 ]);
 
 /**
- * 인식 오류 코드의 갈래. not-allowed · service-not-allowed · language-not-supported 는 '마이크를 쓸 수 없음',
+ * 인식 오류 사건(error · message)의 코드. aborted 인데 메시지가 받아쓰기를 말하면(iPad Siri · 받아쓰기 꺼짐) DICTATION_DISABLED_CODE —
+ * '마이크를 쓸 수 없음' 갈래로 간다. 나머지는 코드 그대로(우리 쪽 멈춤의 aborted 는 메시지가 없다).
+ */
+export function recognitionErrorCodeOf(
+  error: string,
+  message: string | undefined,
+): string {
+  if (error === "aborted" && message && DICTATION_MESSAGE.test(message))
+    return DICTATION_DISABLED_CODE;
+  return error;
+}
+
+/**
+ * 인식 오류 코드의 갈래. not-allowed · service-not-allowed · language-not-supported · dictation-disabled 는 '마이크를 쓸 수 없음',
  * network 는 network, 나머지(no-speech · aborted · audio-capture · phrases-not-supported · bad-grammar ·
  * start-failed · 모르는 코드)는 다시 듣기다. 셈(speech.max_retries · 여섯 번 · 세 번)은 부르는 쪽 몫이다.
  */

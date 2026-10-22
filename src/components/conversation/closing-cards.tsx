@@ -170,7 +170,8 @@ export function ClosingThird({
           >
             <span
               aria-hidden
-              className="absolute -top-3 left-1/2 h-6 w-28 -translate-x-1/2 rotate-3 bg-tape"
+              // 회화 안 테이프는 연두 하나(회화 영역 표시 — 전체 디자인 리뷰 M-4)
+              className="absolute -top-3 left-1/2 h-6 w-28 -translate-x-1/2 rotate-3 bg-postit-talk/90"
             />
             <p className="font-heading text-[26px] leading-tight">
               {CLOSING_TEXT.friendship}

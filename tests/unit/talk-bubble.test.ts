@@ -262,3 +262,38 @@ describe("회화 말소리 없음 셈(C22 · 7절 오류 행 — no-speech 로�
     expect(s.passed).toBe(0);
   });
 });
+
+describe("답 두 개 듣기 단추 꼴(전체 디자인 리뷰 M-5)", () => {
+  it("회화 화면: 답 두 개 듣기 단추는 보드 글꼴(Fredoka) 숫자 1 · 2 를 원 테 안에 그리고 대체 글꼴로 떨어지는 동그라미 숫자 글자가 없으며 이름은 그대로다", () => {
+    const html = renderToStaticMarkup(
+      createElement(ToriBubble, {
+        content: {
+          sentences: ["How are you?"],
+          adds: [
+            {
+              t: "add",
+              kind: "two_answers",
+              answers: ["I'm good.", "I'm fine."],
+            },
+          ],
+          done: true,
+        },
+        englishName: "Momo",
+        waiting: null,
+        waitSeconds: [5, 10],
+        onReplay: () => {},
+        onAnswer: () => {},
+      }),
+    );
+    expect(html).not.toMatch(/[①②]/);
+    expect(html).toContain('aria-label="첫째 답 듣기"');
+    expect(html).toContain('aria-label="둘째 답 듣기"');
+    const marks = [...html.matchAll(/data-answer-mark="(\d)"[^>]*>(\d)</g)];
+    expect(marks.map((m) => [m[1], m[2]])).toEqual([
+      ["1", "1"],
+      ["2", "2"],
+    ]);
+    expect(html).toMatch(/data-answer-mark="1"[^>]*class="[^"]*font-en/);
+    expect(html).toMatch(/data-answer-mark="1"[^>]*class="[^"]*rounded-full/);
+  });
+});

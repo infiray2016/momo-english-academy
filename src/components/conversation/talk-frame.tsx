@@ -27,14 +27,18 @@ import {
   StatusLine,
 } from "@/components/board/board";
 import { AiRest } from "@/components/session/ai-rest";
+import {
+  MicBlockedText,
+  useIpadSafari,
+} from "@/components/session/mic-blocked";
 import { MicNotice } from "@/components/session/speaking";
-import { talkSpeakRateOf } from "@/core/conversation/listen";
 import {
   type SpeechEvent,
   type SpeechVerdict,
   speakingCounters,
   speakingCountersStart,
 } from "@/core/speaking/judge";
+import { speakRateOf } from "@/core/speech/pace";
 import {
   markMicNoticeSeen,
   markMicUnavailable,
@@ -69,6 +73,7 @@ import {
   FollowAlong,
   type FollowEnv,
   followStepsOf,
+  TalkPaper,
   TalkStart,
   WrapUp,
 } from "./follow-along";
@@ -236,6 +241,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
     ko?: string;
   } | null>(null);
   const [nudge, setNudge] = useState(!view.noticesSeen.talk_hint_nudge);
+  const ipadSafari = useIpadSafari();
   /** 프로필의 처음 회화(안내 글 — 회17). '시작!'은 처음이 아니어도 열 때마다 한 번(컨트롤러 결정). */
   const introFirst = !view.noticesSeen.talk_intro;
   const [started, setStarted] = useState(false);
@@ -260,13 +266,13 @@ export function TalkFrame({ view }: { view: TalkView }) {
   /** 앞 턴 체감 대기(듣기 끝 → 첫 문장, C23 — 다음 턴에 보냄). */
   const perceived = useRef<number | undefined>(undefined);
   const lowLevel = view.spec.cardShape === "turns";
-  const rate = talkSpeakRateOf(view.level, view.settings.talkSpeech);
-  /** 힌트 문장 듣기는 1~3단계면 천천히(3.3 '영어 문장 힌트 … 천천히' — 토리 말 빠르기는 1~2단계 그대로, 검토 M-2). */
-  const hintRate = lowLevel ? view.settings.talkSpeech.slowRate : undefined;
+  /** 토리 말 · 힌트 문장 듣기 · 따라 말하기의 읽어 주기 빠르기(단계 구간마다 speech.rate.<구간>, C125). */
+  const rate = speakRateOf(view.level, view.settings.speech);
   /** 인식 실패 셈의 상한. 회화의 말소리 없음 셈(C22)은 틀이 질문마다 따로 하므로 P11a 셈에는 상한을 두지 않는다(검토 M-6). */
   const counterLimits = talkCounterLimits(view.settings.maxRetries);
   const queue = useSpeakQueue(speech, {
-    ...(rate === undefined ? {} : { rate }),
+    rate,
+    pauseMs: view.settings.speech.sentencePauseMs,
     englishName: view.englishName,
   });
 
@@ -692,7 +698,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
     level: view.level,
     lowLevel,
     englishName: view.englishName,
-    ...(rate === undefined ? {} : { rate }),
+    rate,
     homophones: view.homophones,
     settings: {
       speech: view.settings.speech,
@@ -750,25 +756,23 @@ export function TalkFrame({ view }: { view: TalkView }) {
 
   let body: ReactNode;
   if (blocked) {
+    // 막힘 · 쉼 안내도 종이 판 위에(코르크 위에 글을 두지 않음 — 전체 디자인 리뷰 M-1), 아이패드 사파리면 무음 모드 줄(C111)
     body = (
-      <div
-        data-blocked={blocked}
-        className="flex flex-col items-center gap-8 py-6"
-      >
-        <p className="text-center font-heading text-[28px] leading-snug">
-          {TALK_TEXT.blocked[blocked]}
-        </p>
+      <TalkPaper data-blocked={blocked}>
+        <MicBlockedText kind={blocked} ipadSafari={ipadSafari} />
         <BigButton
           disabled={busy}
           onClick={() => void home({ firstCard: false })}
         >
           {TALK_TEXT.home}
         </BigButton>
-      </div>
+      </TalkPaper>
     );
   } else if (resting) {
     body = (
-      <AiRest busy={busy} onHome={() => void home({ firstCard: false })} />
+      <TalkPaper data-talk-rest="">
+        <AiRest busy={busy} onHome={() => void home({ firstCard: false })} />
+      </TalkPaper>
     );
   } else if (!started) {
     body = (
@@ -912,7 +916,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
                       nospeechDontknowCount:
                         view.settings.talk.nospeechDontknowCount,
                     }}
-                    {...(hintRate === undefined ? {} : { slowRate: hintRate })}
+                    rate={rate}
                     homophones={view.homophones}
                     nudge={nudge}
                     onNudgeShown={() => {
@@ -1013,39 +1017,52 @@ export function TalkFrame({ view }: { view: TalkView }) {
     inDialogue &&
     phase !== "closed" &&
     phase !== "break";
-  const showCount = stage === "talk";
+  // 셈은 대화 단계에서만 보이고(안내 · 막힘 · 마무리에는 없음), 자리는 늘 잡아 띠 높이가 토막 · 화면마다 바뀌지 않게 한다(전체 디자인 리뷰 M-2)
+  const showCount = started && !blocked && !resting && stage === "talk";
+  const showHome = !blocked && !resting && stage !== "closing";
   return (
     <ChildScreen>
       <PaperBand
         heading
         title={view.title}
-        detail={TALK_TEXT.levelUnit(view.level, view.unit)}
+        detail={
+          <span className="flex flex-wrap gap-x-4">
+            <span>{TALK_TEXT.levelUnit(view.level, view.unit)}</span>
+            <span
+              data-talk-count={showCount ? "" : undefined}
+              aria-hidden={showCount ? undefined : true}
+              className={cn(!showCount && "invisible")}
+            >
+              {counter}
+            </span>
+          </span>
+        }
         right={
           <>
-            {showCount ? (
-              <span data-talk-count="" className={CHILD_SIZE.guide}>
-                {counter}
-              </span>
-            ) : null}
-            {/* '그만하기'는 위 띠 오른쪽('홈' 왼쪽) 작은 단추 — 따로 한 줄을 차지하지 않게(plan-p13a 문구 표 · 화면 검토 I-1) */}
-            {showStop ? (
-              <SmallButton
-                data-talk-stop=""
-                disabled={busy}
-                onClick={() => {
-                  if (next.targetReached) void stop(true);
-                  else setConfirmStop(true);
-                }}
-              >
-                {TALK_TEXT.stop}
-              </SmallButton>
-            ) : null}
-            {/* 막힌 안내 · 쉬는 안내 · 마무리 셋째 장은 제 '홈'이 있다(한 화면 '홈' 하나) */}
-            {blocked || resting || stage === "closing" ? null : (
-              <SmallButton disabled={busy} onClick={() => void home()}>
-                {TALK_TEXT.home}
-              </SmallButton>
-            )}
+            {/* '그만하기'는 위 띠 오른쪽('홈' 왼쪽) 작은 단추 — 자리는 늘 잡아 두고 대화 · 더 이야기하기 동안만 보인다(띠가 두 줄로 접혀 판이 뛰지 않게, M-2) */}
+            <SmallButton
+              data-talk-stop={showStop ? "" : undefined}
+              aria-hidden={showStop ? undefined : true}
+              tabIndex={showStop ? undefined : -1}
+              className={cn(!showStop && "invisible")}
+              disabled={busy || !showStop}
+              onClick={() => {
+                if (next.targetReached) void stop(true);
+                else setConfirmStop(true);
+              }}
+            >
+              {TALK_TEXT.stop}
+            </SmallButton>
+            {/* 막힌 안내 · 쉬는 안내 · 마무리 셋째 장은 제 '홈'이 있다(한 화면 '홈' 하나 — 띠 자리는 잡아 둠) */}
+            <SmallButton
+              aria-hidden={showHome ? undefined : true}
+              tabIndex={showHome ? undefined : -1}
+              className={cn(!showHome && "invisible")}
+              disabled={busy || !showHome}
+              onClick={() => void home()}
+            >
+              {TALK_TEXT.home}
+            </SmallButton>
           </>
         }
       />

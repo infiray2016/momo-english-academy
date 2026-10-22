@@ -14,7 +14,7 @@ export type FakeSpeechRecord = {
   created: number;
   calls: { at: number; id: number; method: "start" | "stop" | "abort" }[];
   spoken: string[];
-  /** 읽어 준 빠르기(spoken 과 같은 차례 — 회화 1~2단계 '천천히'를 e2e 가 본다, plan-p13b 값 11). */
+  /** 읽어 준 빠르기(spoken 과 같은 차례 — 단계 구간 빠르기 speech.rate.<구간>을 e2e 가 본다, C125). */
   rates: number[];
   /** 함수 안에 다시 적은 기본값. script.ts 의 DEFAULT_* 와 같은지 단위 시험이 본다. */
   defaults: {

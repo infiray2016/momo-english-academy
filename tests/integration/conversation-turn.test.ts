@@ -24,6 +24,8 @@ import {
   CLOSING_MARK,
   cardOf,
   closingRule,
+  cutAfter,
+  HAIKU,
   harnessOf,
   intoTalk,
   playToTarget,
@@ -132,7 +134,7 @@ describe("AC-15b 회화 턴 실패(대화 몫)", () => {
     h.fake.push(
       turnRule(
         { tori_en: "Nice! Very good.", self_used_words: [...first.targets] },
-        { chunks: 20, cutAfterChars: 22 },
+        { chunks: 20, cutAfterChars: cutAfter("Nice! Very") },
       ),
     );
     const { lines, last } = await say(h, sessionId, {
@@ -161,7 +163,11 @@ describe("AC-15b 회화 턴 실패(대화 몫)", () => {
     h.fake.push(
       turnRule(
         { tori_en: "That is nice. I like it too." },
-        { model: SONNET, chunks: 20, cutAfterChars: 28 },
+        {
+          model: SONNET,
+          chunks: 20,
+          cutAfterChars: cutAfter("That is nice. I "),
+        },
       ),
     );
     const { lines, last } = await say(h, sessionId);
@@ -183,6 +189,8 @@ describe("AC-15b 회화 턴 실패(대화 몫)", () => {
   });
 
   it("AC-15b Haiku 와 Sonnet 이 다 거절하면 카드의 안전한 대사 뒤 대화가 이어진다", async () => {
+    // C112 뒤 1~3 기본은 Sonnet — 설정으로 Haiku 를 고른 때(거절 뒤 Sonnet 한 번)
+    await setSetting("ai.model.talk_turn.1-3", HAIKU);
     const sessionId = await startTalk(h, 1);
     await intoTalk(h, sessionId);
     const card = await card1();

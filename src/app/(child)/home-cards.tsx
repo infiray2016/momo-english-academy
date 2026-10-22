@@ -28,6 +28,11 @@ import {
 } from "./[area]/lessons/use-lesson-start";
 
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "right"];
+/**
+ * 영역 카드의 최소 높이(화면 꼴 상수 — 목업 B_Home4 네 장 400px). 한 판의 카드는 줄 높이로 늘어 같은 높이가 되고(C114), 안 내용은 위에서부터,
+ * 시작 단추만 아래 끝(mt-auto — taste §4.2 같은 줄 아래 끝).
+ */
+const HOME_CARD_MIN_H = "min-h-[400px]";
 /** 마이크가 있어야 하는 영역(4절 '마이크를 쓸 수 없을 때'). */
 const MIC_AREAS: readonly Area[] = ["speaking", "talk"];
 
@@ -171,24 +176,33 @@ function CardBody({ card, action }: { card: HomeCard; action: boolean }) {
   );
 }
 
-/** 배치 평가 전 카드 내용('내 단계 찾기' · 회화는 말하기 시작 단계 전 문구). */
-function GateBody({ card }: { card: HomeCard }) {
+/**
+ * 배치 평가 전 카드 내용: 위에서부터 영역 이름 · 안내(단계 찾기 힌트 · 회화는 말하기 시작 단계 전 문구) · 이번 주, 아래 끝에 '내 단계 찾기'
+ * 단추 꼴(CardBody '시작!'과 같은 꼴 — 늘인 카드의 발에는 단추만, design-taste §4.2 · C114 · 디자인 fix 1a). 단추 글은 카드 링크의 읽히는
+ * 이름에 든다. 마이크 판정 전(action 거짓)이면 단추 자리만 비워 둔다.
+ */
+function GateBody({ card, action }: { card: HomeCard; action: boolean }) {
   return (
     <>
       <span className="font-heading text-3xl">{AREA_LABEL[card.area]}</span>
       {card.gate === "placement" ? (
-        <>
-          <span className="font-heading text-4xl leading-tight">
-            {TEXT.findLevel}
-          </span>
-          <span data-find-level-hint="" data-size-guide="">
-            {TEXT.findLevelHint}
-          </span>
-        </>
+        <span data-find-level-hint="" data-size-guide="">
+          {TEXT.findLevelHint}
+        </span>
       ) : (
         <span data-size-guide="">{TEXT.needsSpeaking}</span>
       )}
       <span data-size-guide="">{TEXT.week(card.thisWeek)}</span>
+      {action ? (
+        <span
+          data-find-level=""
+          className="mt-auto flex min-h-14 items-center justify-center rounded-xl bg-ink font-heading text-2xl text-paper"
+        >
+          {TEXT.findLevel}
+        </span>
+      ) : (
+        <span aria-hidden className="mt-auto min-h-14" />
+      )}
     </>
   );
 }
@@ -201,14 +215,14 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
   }, []);
 
   // 카드 안 보조 줄(단원 · 막대 이름 · 이번 주 · 오늘 · 안내)은 안내 글 20px 라 data-size-guide 를 단다(13절 C82 — 22px 는 영역 · 단계 · 단추 이름표)
-  // 카드는 내용 높이로 위에 붙인다 — 아래로 코르크가 보이게(목업 B_Home4, 화면 검토 H-M1).
+  // 한 판의 영역 카드는 같은 높이(C114 · 목업 B_Home4 — 네 장 같은 높이), 판 아래로는 코르크가 보인다(화면 검토 H-M1).
   // 카드의 읽히는 이름은 안의 글(영역 · 단계 · 상태 · 닫힘 까닭)이다 — label 을 넘기지 않는다(검토 M-3 · H-M3)
   return (
     <div
       data-home-cards=""
       // 마이크 판정이 끝나 행동 자리까지 그려졌다는 표시(e2e 크기 훑기가 기다린다 — 검토 review-p10-7-code M-2)
       data-hydrated={micOk === undefined ? undefined : ""}
-      className="grid grid-cols-2 items-start gap-6 landscape:grid-cols-4"
+      className="grid grid-cols-2 items-stretch gap-6 landscape:grid-cols-4"
     >
       {cards.map((card, i) => {
         const tilt = TILTS[i] ?? "none";
@@ -220,6 +234,7 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
               tilt={tilt}
               disabled
               href={`/${card.area}/lessons`}
+              className={cn(HOME_CARD_MIN_H, "flex-1")}
             >
               <span data-home-card={card.area} className="contents">
                 <span className="font-heading text-3xl">
@@ -233,7 +248,11 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
           );
           // 다시 확인 단추는 말하기 카드 아래 하나만(회화 카드도 같은 판정으로 함께 열린다)
           if (card.area !== "speaking")
-            return <div key={card.area}>{closed}</div>;
+            return (
+              <div key={card.area} className="flex flex-col">
+                {closed}
+              </div>
+            );
           return (
             <div key={card.area} className="flex flex-col gap-3">
               {closed}
@@ -259,10 +278,11 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
               key={card.area}
               tone={card.area}
               tilt={tilt}
+              className={HOME_CARD_MIN_H}
               {...(pending ? {} : { href: `/${target}/placement` })}
             >
               <span data-home-card={card.area} className="contents">
-                <GateBody card={card} />
+                <GateBody card={card} action={!pending} />
               </span>
             </PostIt>
           );
@@ -272,6 +292,7 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
             key={card.area}
             tone={card.area}
             tilt={tilt}
+            className={HOME_CARD_MIN_H}
             {...(pending
               ? {}
               : // 회화 카드도 그 영역 수업 목록으로(plan-p13b 값 12)

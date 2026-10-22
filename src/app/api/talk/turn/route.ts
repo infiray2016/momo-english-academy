@@ -3,6 +3,7 @@
 // 검사를 지난 토리 문장(s) · 뜻(ko) · 앱이 붙일 말(add) · 끝 줄(end · resting · break · close · stale · error). 브라우저 연결이 닫혀도
 // 쓰기 실패를 삼키고 턴 길은 응답을 끝까지 받아 토리 행을 저장한다(a2 M1 계약). 오류는 이름만 남긴다(아이 글 없음).
 import { after, type NextRequest } from "next/server";
+import { stageTimingsLine } from "@/core/conversation/timing";
 import { isSameOrigin, requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
 import type { TalkLine } from "@/server/conversation";
@@ -58,6 +59,10 @@ export async function POST(request: NextRequest) {
     now,
     write,
     requestReceivedAt: received,
+    // AI 를 부르기 전 구간마다 준비 시간(13절 C125 (4)) — 구간 이름과 ms 만 남긴다
+    onPrepTimings: (timings) => {
+      console.info(`회화 턴 준비 시간 ${stageTimingsLine(timings)}`);
+    },
   })
     .catch((error: unknown) => {
       console.error(

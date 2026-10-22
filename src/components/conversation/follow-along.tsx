@@ -12,7 +12,13 @@
 //   끝인사가 와 있으면 그것 — talkClosingStatus 한 번) → 마무리.
 // 따라 말한 것은 점수 · '말했다'에 들지 않는다(서버 saveFollowAlong — 인식 글이 있는 발화만 영어로 말한 문장 수에). 인식 글은 화면에
 // 보이지 않는다(결과 말로만, 4절). 녹음하지 않는다.
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   CHILD_SIZE,
   EnglishLine,
@@ -35,6 +41,7 @@ import {
 } from "@/core/speaking/judge";
 import type { SpeechSettings } from "@/core/speech/listen";
 import { bestMatchRate } from "@/core/speech/match-rate";
+import { createSleeper, speakInTurn } from "@/core/speech/pace";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { saveTalkFollowAlong } from "@/server/actions/conversation";
@@ -161,6 +168,25 @@ export function practiceRevealOf({
   return round > 0 && rate < hintReadMatch;
 }
 
+/** 회화 종이 판(코르크 위 종이 · 연두 테이프 — 시작 · 막힘 · 쉼 안내가 같이 씀, 4절 '글은 종이 위에' · 전체 디자인 리뷰 M-1). */
+export function TalkPaper({
+  children,
+  ...data
+}: { children: ReactNode } & Record<`data-${string}`, string | undefined>) {
+  return (
+    <div
+      {...data}
+      className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-8 bg-paper px-8 py-10 shadow-postit"
+    >
+      <span
+        aria-hidden
+        className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 bg-postit-talk/90"
+      />
+      {children}
+    </div>
+  );
+}
+
 /** 열 때마다 한 번 누르는 '시작!'(처음 회화면 3.3 안내 글과 함께). 그 누름이 첫 읽어 주기를 연다(7절). */
 export function TalkStart({
   first,
@@ -173,14 +199,7 @@ export function TalkStart({
   onStart: () => void;
 }) {
   return (
-    <div
-      data-talk-start=""
-      className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-8 bg-paper px-8 py-10 shadow-postit"
-    >
-      <span
-        aria-hidden
-        className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 bg-postit-talk/90"
-      />
+    <TalkPaper data-talk-start="">
       <ToriFigure state="idle" />
       {first ? (
         <div data-talk-intro="" className="flex flex-col gap-2">
@@ -197,7 +216,7 @@ export function TalkStart({
       <BigButton disabled={disabled} onClick={onStart}>
         {TALK_START_TEXT.start}
       </BigButton>
-    </div>
+    </TalkPaper>
   );
 }
 
@@ -208,8 +227,8 @@ export type FollowEnv = {
   level: number;
   lowLevel: boolean;
   englishName: string;
-  /** 토리 말 빠르기(1~2단계 천천히 — C96). */
-  rate?: number;
+  /** 토리 말 빠르기(단계 구간마다 speech.rate.<구간>, C125). */
+  rate: number;
   homophones: string[][];
   settings: {
     speech: SpeechSettings;
@@ -226,48 +245,60 @@ export type FollowEnv = {
   onListening: (listening: boolean) => void;
 };
 
-/** 토리 말 읽기(차례대로 · 끝날 때까지 기다림 · 끊으면 거기서 멈춤). 음성 접점은 늘 지금 것으로(재검토 N-1). */
-function useSayer(env: Pick<FollowEnv, "speech" | "rate" | "englishName">) {
+/**
+ * 토리 말 읽기(차례대로 · 끝날 때까지 기다림 · 끊으면 거기서 멈춤). 문장이 끝나면 speech.sentence_pause_ms 쉬고 다음(C125 — 끊으면
+ * 쉼도 끝남). 음성 접점은 늘 지금 것으로(재검토 N-1).
+ */
+function useSayer(
+  env: Pick<FollowEnv, "speech" | "rate" | "englishName" | "settings">,
+) {
   const port = useRef(env.speech);
   port.current = env.speech;
   const generation = useRef(0);
   const speakingRef = useRef(false);
   const [speaking, setSpeaking] = useState(false);
+  const [sleeper] = useState(createSleeper);
   const { rate, englishName } = env;
+  const pauseMs = env.settings.speech.sentencePauseMs;
   const say = useCallback(
     async (texts: readonly string[]): Promise<boolean> => {
       generation.current += 1;
+      sleeper.cancel();
       const mine = generation.current;
       speakingRef.current = true;
       setSpeaking(true);
-      for (const text of texts) {
-        const current = port.current;
-        if (!current || mine !== generation.current) break;
-        await current.speak(
-          fillName(text, englishName),
-          rate === undefined ? undefined : { rate },
-        );
-      }
+      await speakInTurn(texts, {
+        speak: async (text) => {
+          const current = port.current;
+          if (!current) return { kind: "cancelled" };
+          return current.speak(fillName(text, englishName), { rate });
+        },
+        pauseMs,
+        sleeper,
+        alive: () => mine === generation.current,
+      });
       if (mine !== generation.current) return false;
       speakingRef.current = false;
       setSpeaking(false);
       return true;
     },
-    [rate, englishName],
+    [rate, englishName, pauseMs, sleeper],
   );
   const cancel = useCallback(() => {
     generation.current += 1;
+    sleeper.cancel();
     if (speakingRef.current) port.current?.cancelSpeaking();
     speakingRef.current = false;
     setSpeaking(false);
-  }, []);
+  }, [sleeper]);
   // 조각이 사라질 때 이 조각이 읽던 것만 멈춘다(틀의 읽기 큐는 건드리지 않음)
   useEffect(
     () => () => {
       generation.current += 1;
+      sleeper.cancel();
       if (speakingRef.current) port.current?.cancelSpeaking();
     },
-    [],
+    [sleeper],
   );
   return { say, cancel, speaking };
 }
@@ -536,7 +567,7 @@ function FollowCard({
       >
         <span
           aria-hidden
-          className="absolute -top-3 left-1/2 h-6 w-28 -translate-x-1/2 -rotate-3 bg-tape"
+          className="absolute -top-3 left-1/4 h-6 w-28 -translate-x-1/2 -rotate-3 bg-tape"
         />
         {step.word !== undefined ? (
           <p

@@ -20,6 +20,7 @@ import {
   nextUnusedQuestionNo,
   practiceItemsOf,
   practiceOrderOf,
+  shownTurnOf,
   type TalkPosition,
   type TalkSegment,
   todayWordsOf,
@@ -403,7 +404,6 @@ async function viewSettingsOf(
     "speech.end_silence_seconds.talk.10-12",
     "speech.end_silence_seconds.talk_long",
     "talk.max_answer_seconds",
-    "speech.slow_rate",
   ];
   const positive = z.number().positive();
   const unit = z.number().min(0).max(1);
@@ -474,16 +474,19 @@ function lastToriOf(state: TalkState): TalkView["lastTori"] {
   const tori = state.liveRows.findLast((r) => r.speaker === "tori");
   if (!tori) return null;
   const { aiPart, appended } = toriLinesOf(tori.text);
+  // 저장 글은 그대로, 다시 그리는 글은 같은 말을 뺀 것(C125 (3))
+  const shown = shownTurnOf(
+    sentencesOf(aiPart),
+    appendLinesFromText(appended, {
+      card: state.card,
+      pending: state.position.pending,
+      koMeaning: state.spec.koMeaning,
+    }),
+  );
   return {
-    sentences: sentencesOf(aiPart),
+    sentences: shown.sentences,
     ...(tori.toriKo ? { ko: tori.toriKo } : {}),
-    add: addLinesOf(
-      appendLinesFromText(appended, {
-        card: state.card,
-        pending: state.position.pending,
-        koMeaning: state.spec.koMeaning,
-      }),
-    ),
+    add: addLinesOf(shown.append),
   };
 }
 

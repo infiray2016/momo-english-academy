@@ -85,6 +85,9 @@ afterAll(async () => {
   await testDb?.drop();
 });
 
+/** 1~3 구간을 Haiku 로 고른 시험의 모델(C112 뒤 기본은 Sonnet). */
+const HAIKU = "claude-haiku-5-5";
+
 /** 시험이 바꾼 집 전체 설정 — afterEach 가 TEST_SETTINGS 값으로 되돌린다. */
 const touched = new Set<keyof typeof TEST_SETTINGS>();
 
@@ -184,9 +187,10 @@ async function rows() {
   return testDb.db.select().from(aiCalls).orderBy(aiCalls.calledAt);
 }
 
-/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, tori_en 먼저). */
+/** 회화 턴 응답 칸(빈 값 + 덮어쓴 칸, stuck · tori_en 먼저 — C127). */
 function answer(over: Record<string, unknown>): Record<string, unknown> {
   return {
+    stuck: false,
     tori_en: "Nice!",
     tori_ko: "좋아!",
     recast: "",
@@ -194,7 +198,6 @@ function answer(over: Record<string, unknown>): Record<string, unknown> {
     new_words: [],
     self_used_words: [],
     mission_done: [],
-    stuck: false,
     card_question_no: 0,
     next_question_en: "",
     next_question_ko: "",
@@ -306,7 +309,8 @@ describe("AC-15b 흘려 보내기 · 회화 턴 실패", () => {
       {
         reply: stream(sampleBody("talk_turn.l1-ok"), {
           chunks: 20,
-          cutAfterChars: 30,
+          // 첫 문장 'Two apples!' 뒤 · 둘째 문장 안(앞 칸 stuck 을 더한 C127 차례)
+          cutAfterChars: '{"stuck":false,"tori_en":"Two apples! Great'.length,
         }),
       },
     ]);
@@ -338,17 +342,19 @@ describe("AC-15b 흘려 보내기 · 회화 턴 실패", () => {
   });
 
   it("AC-15b Haiku 5.5 거절 표본에서 Sonnet 5.5 로 한 번 다시 부르고 그것도 거절이면 거절로 돌아온다", async () => {
+    // C112 뒤 1~3 기본은 Sonnet — 설정으로 Haiku 를 고른 때의 길
+    await setHouseholdSetting("ai.model.talk_turn.1-3", HAIKU);
     const { fake, deps, ctxOf } = harness([
       { reply: stream(sampleBody("talk_turn.refusal")) },
     ]);
     const result = await talkTurn(talkSample(1), ctxOf(null, 1), deps);
     expect(result).toEqual({ ok: false, reason: "refusal", refusals: 2 });
     expect([bodyOf(fake, 0).model, bodyOf(fake, 1).model]).toEqual([
-      TEST_SETTINGS["ai.model.talk_turn.1-3"].value,
+      HAIKU,
       TALK_REFUSAL_RETRY.model,
     ]);
     expect((await rows()).map((r) => [r.status, r.requestedModel])).toEqual([
-      ["refusal", TEST_SETTINGS["ai.model.talk_turn.1-3"].value],
+      ["refusal", HAIKU],
       ["refusal", TALK_REFUSAL_RETRY.model],
     ]);
   });
@@ -359,7 +365,7 @@ describe("AC-15b 흘려 보내기 · 회화 턴 실패", () => {
       content: [
         {
           type: "text",
-          text: '{"tori_en":"Nice job! I like that. ',
+          text: '{"stuck":false,"tori_en":"Nice job! I like that. ',
           citations: null,
         },
       ],
@@ -380,7 +386,9 @@ describe("AC-15b 흘려 보내기 · 회화 턴 실패", () => {
 
 describe("AC-15k · AC-8f · AC-8i · AC-8c 요청 꼴 · 기록", () => {
   it("AC-15k 둘째 턴 요청 본문은 앞 턴 요청의 메시지를 글자 그대로 앞에 두고 대화 도중 모델 · effort · 생각 단계가 바뀌지 않으며 Haiku 5.5 거절 뒤 Sonnet 5.5 로 다시 부른 턴만 예외다", async () => {
-    const haiku = TEST_SETTINGS["ai.model.talk_turn.1-3"].value;
+    // C112 뒤 1~3 기본은 Sonnet — 설정으로 Haiku 를 고른 때의 길
+    await setHouseholdSetting("ai.model.talk_turn.1-3", HAIKU);
+    const haiku = HAIKU;
     const { fake, deps, ctxOf } = harness([
       once(stream(sampleBody("talk_turn.l1-ok"))),
       once(stream(sampleBody("talk_turn.refusal")), haiku),
@@ -438,7 +446,9 @@ describe("AC-15k · AC-8f · AC-8i · AC-8c 요청 꼴 · 기록", () => {
     expect(bodies[2]?.messages).toEqual(bodies[1]?.messages);
   });
 
-  it("AC-8f 회화 턴 요청은 1~3단계에서 claude-haiku-5-5 · effort low · thinking disabled 이고 fallbacks 가 없다", async () => {
+  it("AC-8f 설정으로 Haiku 를 고른 회화 턴 요청은 effort low · thinking disabled 이고 fallbacks 가 없다", async () => {
+    // C112 뒤 1~3 기본은 Sonnet(아래 시험) — 이 시험은 설정으로 1~3 구간을 Haiku 로 고른 때
+    await setHouseholdSetting("ai.model.talk_turn.1-3", HAIKU);
     const { fake, deps, ctxOf } = harness([
       once(stream(sampleBody("talk_turn.l1-ok"))),
     ]);
@@ -450,6 +460,21 @@ describe("AC-15k · AC-8f · AC-8i · AC-8c 요청 꼴 · 기록", () => {
     expect(body.fallbacks).toBeUndefined();
     expect(body.max_tokens).toBe(
       TEST_SETTINGS["ai.max_tokens.talk_turn"].value,
+    );
+  });
+
+  it("AC-8f 회화 턴 요청은 1~3단계 기본값이면 claude-sonnet-5-5 · effort low · thinking between_tools 이고 서버 측 대체 모델 재시도를 켠다(C112)", async () => {
+    const { fake, deps, ctxOf } = harness([
+      once(stream(sampleBody("talk_turn.l1-ok"))),
+    ]);
+    await talkTurn(talkSample(1), ctxOf(null, 1), deps);
+    const body = bodyOf(fake, 0);
+    expect(body.model).toBe("claude-sonnet-5-5");
+    expect(body.output_config.effort).toBe("low");
+    expect(body.thinking).toEqual({ type: "between_tools" });
+    expect(body.fallbacks).toBe("default");
+    expect(fake.requests[0]?.headers["anthropic-beta"]).toContain(
+      "server-side-fallback",
     );
   });
 

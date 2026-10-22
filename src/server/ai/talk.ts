@@ -73,6 +73,7 @@ import {
 } from "@/server/ai/store";
 import { now } from "@/server/clock";
 import { getDb } from "@/server/db";
+import { dbErrorTag } from "@/server/db/safe-error";
 import { getOutputCheckLists, loadSeedList } from "@/server/seed-lists";
 import { getSettings } from "@/server/settings";
 
@@ -111,7 +112,7 @@ export type TalkSuccess = {
   hintsBlocked: boolean;
   farewellBlocked: boolean;
   summaryBlocked: boolean;
-  /** tori_en 을 문장마다 흘려 보냈다. 거짓이면 응답 끝에서 한 번에(첫 속성이 tori_en 이 아님 — 위험 3). */
+  /** tori_en 을 문장마다 흘려 보냈다. 거짓이면 응답 끝에서 한 번에(앞 칸이 stuck · tori_en 이 아님 — 위험 3 · C127). */
   streamed: boolean;
   /** Haiku 거절 뒤 다른 모델로 다시 불러 받은 턴(6.1). */
   retriedOtherModel: boolean;
@@ -135,6 +136,10 @@ export type TalkCallContext = AiCallContext & {
   requestReceivedAt: Date;
   /** 검사를 지난(또는 바꾼) 영어 문장마다. 끝맺음 턴은 넘기지 않는다(tori_en 이 빈 글 — C33). */
   onSentence?: (sentence: string) => void;
+  /** tori_en 앞 칸의 막힘 판단을 읽은 때(첫 문장 전, 시도마다 한 번 — 13절 C127). */
+  onStuck?: (stuck: boolean) => void;
+  /** 준비(설정 · 단가 · 하루 사용 · 가림)를 마치고 AI 를 부르기 직전(준비 시간 재기 — C125 (4)). */
+  onPrepared?: () => void;
 };
 
 export type TalkDeps = AiDeps & {
@@ -179,6 +184,8 @@ export type TalkStreamPlan = {
   startedAt: Date;
   requestReceivedAt: Date;
   onSentence?: (sentence: string) => void;
+  /** tori_en 앞 칸의 막힘 판단(C127) — 첫 문장 전에 부른다. */
+  onStuck?: (stuck: boolean) => void;
   record(row: TalkAttemptRecord): Promise<void>;
 };
 
@@ -278,6 +285,7 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
       deadline - calledAt.getTime(),
     );
     const reader = createToriEnReader();
+    let stuckTold = false;
     const sentBefore = firstSentenceMs;
     const result = await sendStreamingAttempt(
       plan.client,
@@ -294,7 +302,14 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
       {
         onText: (delta) => {
           if (!streaming) return;
-          for (const sentence of reader.push(delta)) emit(sentence);
+          const fresh = reader.push(delta);
+          // 막힘 판단은 tori_en 앞 칸이라 첫 문장보다 먼저 알린다(C127)
+          const stuck = reader.stuck();
+          if (stuck !== undefined && !stuckTold) {
+            stuckTold = true;
+            plan.onStuck?.(stuck);
+          }
+          for (const sentence of fresh) emit(sentence);
         },
       },
     );
@@ -463,7 +478,7 @@ async function finishTalk(
   if (s.streaming) {
     for (const sentence of s.reader.finish()) s.emit(sentence);
     streamed = s.reader.closed() && !s.reader.failed();
-    // 첫 속성이 tori_en 이 아니어서 흘려 보내지 못했으면 끝에서 한 번에(위험 3)
+    // 앞 칸이 stuck · tori_en 이 아니어서 흘려 보내지 못했으면 끝에서 한 번에(위험 3 · C127)
     const toriEn = (prepared as { tori_en?: unknown } | undefined)?.tori_en;
     if (!streamed && typeof toriEn === "string")
       for (const sentence of splitSentences(toriEn)) s.emit(sentence);
@@ -563,6 +578,23 @@ const fail = (reason: AiFailureReason, refusals = 0): TalkOutcome => ({
 });
 
 /**
+ * 시도 기록 쓰기를 감싼다(검토 rev-p13b M-1): DB 실패는 이름 · 코드만 한 줄 남기고(아이 글 · 대화 글 없음) 던지지 않는다. 비용 기록
+ * 한 행의 실패가 이미 받은 AI 응답 · 흘려 보낸 문장 · 토리 행을 실패 길로 바꾸지 않게 한다.
+ */
+export function keepTurnOnRecordFailure(
+  write: (row: TalkAttemptRecord) => Promise<void>,
+  what = "회화 시도 기록",
+): (row: TalkAttemptRecord) => Promise<void> {
+  return async (row) => {
+    try {
+      await write(row);
+    } catch (error) {
+      console.error(`${what} 실패(${dbErrorTag(error)})`);
+    }
+  };
+}
+
+/**
  * 회화 턴 · 끝맺음 턴 하나(runAiCall 과 같은 앞머리). 설정 문제 · 목록 없음 · 키 없음은 config(행 없음),
  * 하루 안전 상한이면 safety_cap 행 하나(스트림 없음). 맥락과 입력의 단계가 다르면 호출부 결함으로 던진다.
  */
@@ -586,6 +618,7 @@ export async function runTalkCall(
   let learningDay: string;
   let book: PriceBook;
   let config: AiRequestConfig;
+  let usage: Awaited<ReturnType<typeof dailyUsage>>;
   try {
     const read = await getSettings(
       {
@@ -601,7 +634,13 @@ export async function runTalkCall(
       read["app.timezone"],
       read["app.day_start_hour"],
     );
-    book = await loadPriceBook(db, learningDay);
+    // 단가표와 하루 사용량은 서로 기대지 않아 함께 읽는다(C125 (4))
+    const [loaded, used] = await Promise.all([
+      loadPriceBook(db, learningDay),
+      dailyUsage(db, { profileId: ctx.profileId, learningDay }),
+    ]);
+    book = loaded;
+    usage = used;
     config = requestConfigOf({ purpose, level: ctx.level, values, book });
   } catch (error) {
     if (!isConfigError(error)) throw error;
@@ -616,7 +655,6 @@ export async function runTalkCall(
     purpose,
   };
 
-  const usage = await dailyUsage(db, { profileId: ctx.profileId, learningDay });
   const gate = preCallGate(usage, {
     safetyDailyCalls: values["ai.safety_daily_calls"] as number,
     safetyDailyCostUsd: values["ai.safety_daily_cost_usd"] as number,
@@ -650,6 +688,7 @@ export async function runTalkCall(
     .filter((p) => p.category === "contact")
     .map((p) => p.regex);
   const masker = await maskerFor(db, ctx.profileId, contactPatterns);
+  ctx.onPrepared?.();
 
   return streamTalk({
     spec,
@@ -672,18 +711,23 @@ export async function runTalkCall(
     startedAt: t0,
     requestReceivedAt: ctx.requestReceivedAt,
     onSentence: ctx.onSentence,
-    record: async ({ failureReason, ...row }) => {
-      await insertAiCall(db, { ...baseRow, ...row });
-      if (failureReason === "same_error" && row.errorCode !== null) {
-        await alertSameError(db, {
-          purpose,
-          learningDay,
-          model: row.requestedModel,
-          errorCode: row.errorCode,
-          downAfterFailures,
-          at: clock(),
-        });
-      }
+    onStuck: ctx.onStuck,
+    // 시도 기록 · 같은 오류 알림의 DB 실패는 받은 응답 · 흘려 보낸 문장 · 토리 행을 바꾸지 않는다(검토 rev-p13b M-1)
+    record: async (attempt) => {
+      await keepTurnOnRecordFailure(async ({ failureReason, ...row }) => {
+        await insertAiCall(db, { ...baseRow, ...row });
+      })(attempt);
+      await keepTurnOnRecordFailure(async ({ failureReason, ...row }) => {
+        if (failureReason === "same_error" && row.errorCode !== null)
+          await alertSameError(db, {
+            purpose,
+            learningDay,
+            model: row.requestedModel,
+            errorCode: row.errorCode,
+            downAfterFailures,
+            at: clock(),
+          });
+      }, "같은 오류 알림")(attempt);
     },
   });
 }

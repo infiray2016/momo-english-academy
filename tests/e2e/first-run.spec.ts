@@ -30,6 +30,7 @@ import {
 } from "./db";
 import { expect, loadSpeechScript, test } from "./fixtures";
 import { insertHousehold, randomPin } from "./household";
+import { photo } from "./photos";
 
 const T = {
   pinTitle: `부모님 PIN ${PIN_LENGTH}자리를 정해 주세요`,
@@ -159,9 +160,21 @@ test("AC-1c 첫 실행은 PIN → 이름 → 아바타 → 알파벳 → 주제 
   await page.goto("/first-run");
   const order: string[] = [];
   const record = async () => {
-    order.push((await step(page).getAttribute("data-first-run-step")) ?? "");
+    const name = (await step(page).getAttribute("data-first-run-step")) ?? "";
+    order.push(name);
     // 한 화면에 제목 하나, 큰 단추 하나(다음 · 넘기기)
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    // 아이패드 상자(e2e 기기는 iPad Safari)에 무음 모드 · 스크린 타임 줄(C111 — plan-p11a 정본 밖 문구 표)
+    if (name === "mic") {
+      await expect(page.locator("[data-ipad-silent]")).toHaveText(
+        "무음 모드를 끄면 소리가 들리고 말을 들을 수 있어요",
+      );
+      await expect(page.locator("[data-ipad-screen-time]")).toHaveText(
+        "스크린 타임을 쓰면 설정 → 스크린 타임 → 콘텐츠 및 개인정보 보호 제한 → Siri 및 받아쓰기를 허용해 주세요",
+      );
+    }
+    // 화면 검토 사진 여덟(전체 디자인 리뷰 M-11 (4))
+    await photo(page, `first-run-${name}`);
   };
   await record();
   await fillPin(page);

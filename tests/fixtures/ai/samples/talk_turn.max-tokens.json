@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"tori_en\":\"Great! I like that. Tell me more about your",
+          "text": "{\"stuck\":false,\"tori_en\":\"Great! I like that. Tell me more about your",
           "citations": null
         }
       ],
