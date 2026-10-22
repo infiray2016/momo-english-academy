@@ -7,7 +7,7 @@
 - 목업 캔버스: https://claude.ai/artifact/BaG1A1Ewst9AzMLKHD4Zp2 · 소개 영상 재생성: `docs/media/build-intro-demo-video.py`(스크래치패드 venv 의 Playwright · imageio-ffmpeg 필요, 15분)
 
 ## Conventions
-- Next.js 16(App Router) · React 19 · TypeScript strict · Tailwind 4 · shadcn/ui · Supabase Postgres + Drizzle · Anthropic 공식 SDK(첨삭 `claude-opus-5-5`, 짧은 실시간 호출과 4단계부터의 회화 턴 `claude-sonnet-5-5`, 1~3단계 회화 턴 `claude-haiku-5-5`, structured outputs + Zod) · Web Speech API. 린트 · 포맷은 Biome 하나
+- Next.js 16(App Router) · React 19 · TypeScript strict · Tailwind 4 · shadcn/ui · Supabase Postgres + Drizzle · Anthropic 공식 SDK(첨삭 `claude-opus-5-5`, 짧은 실시간 호출과 회화 턴 `claude-sonnet-5-5`(1~3단계도, C112), structured outputs + Zod) · Web Speech API. 린트 · 포맷은 Biome 하나
 - 용어는 영역(읽기 · 쓰기 · 말하기 · 회화) · 단계(1~12) · 단원(단계 안 5개) · 활동(세션 안의 차례). 문서와 화면에서 "트랙" · "유닛"을 쓰지 않고, 영어 개발 용어는 직역하지 않고 알맞은 우리말로 바꾼다(요청자 지시 2026-10-15). 코드 식별자는 영어(track · unit 허용)
 - 아이 화면 문구는 한국어 해요체, 한 화면에 행동 하나, 큰 글자. 디자인은 포스트잇 보드(코르크 바탕 · 종이 띠 · 포스트잇 노랑 읽기 · 하늘 쓰기 · 분홍 말하기 · 연두 회화, 글꼴 Jua · Gowun Dodum · Fredoka)
 - 피드백 규칙: 쓰기 1~3단계는 AI 없이 정답 비교, 4~5단계는 고칠 곳 최대 1개, 6~9단계 교정 최대 2개 · 10~12단계 3개 + 모범 답안(고쳐 쓰기 뒤). 말하기 1~3단계는 바른 답 들려주기만. 회화는 1단계부터 말로 하고 채점하지 않는다. 회화 수업은 토리가 선생님처럼 이끄는 10~20분 수업(인사 → 오늘 쓸 말 → 말해 보기(1~3단계) → 대화 15~25번 → 정리)이고 1~3단계 대화에서도 영어 문장을 미리 보이지 않는다. 토리가 바른 말로 되풀이하고 필요하면 짧게 설명하며, 5단계부터 대화 뒤 잘한 말 2 · 다음엔 이렇게 1(10단계부터 2). 읽기 문제 · 따라 말하기 일치율 · 말하기 1~2단계 질문 답 · 회화 단계 평가의 허용 답 일치율도 AI 없이 앱이 채점. 회화 단원 단어를 스스로 썼는지는 회화 턴 AI 가 기록하고 '안다'는 앱이 센다

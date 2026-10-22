@@ -623,3 +623,195 @@ pnpm e2e                               → 로컬 불가, CI 몫(사진 E2E_PHOT
 - 덧 N-1 · 마무리 · 따라 말하기 화면 꼴은 단위 정적 그림과 사진으로만 본다. 자동 다음 · 다시 보임 같은 시간 흐름은 e2e 만 덮는다(DOM 시험 도구 없음).
 - 차례 5 의 열린 결정(그림 키 = 영어 낱말이 자료 · 그림 주소에 드러남)은 그대로다. 이번 그림 시험 route 도 그 주소를 쓴다.
 - 3.3 은 '마무리 첫 장에 이 문제 이상해요 작은 버튼'이지만 1-나 몫이라 자리만 두었다(버튼 없음).
+
+## 차례 6 fix 1 (2026-10-23 00:1x) — 코드 검토 b3(I 3)
+
+브리프 `task-p13-6-fix1.md`, 검토 `review-p13-6-code.md`. 워크트리 p13 작업 트리, 커밋 없음. 시험을 먼저 쓰고 고쳤다.
+
+### 지적별
+
+| 지적 | 어떻게 | 자리 | 덮는 시험 |
+|---|---|---|---|
+| I-3 통합 견줌 | 시험의 견줌을 en · ko 로 좁혔다(브리프의 첫 길). `wrapViewOf` 는 그대로 — 되짚을 말 꼴(a `WrapUpLine`)을 화면 자료와 순수 함수가 같이 쓰고, 화면은 en · ko 만 읽는다 | `tests/integration/conversation-session.test.ts:761` | '1-가 안전 상한(회화): 목표 턴 뒤 더 이야기하기 중에 닿으면 …'(CI 11차) |
+| I-1 정리 다시 읽기 | 말풍선 다시 읽기의 끝도 `read` 를 세운다(`onReplay` → `say(…).then(ok => ok && setRead(true))`). 따라 말하지 않는 장(1~3단계 끝인사 · 4단계부터 되짚을 말)이 다시 읽은 뒤 저절로 넘어간다 | `src/components/conversation/follow-along.tsx:760-767` | e2e '회화 정리: 끝인사를 읽는 중 말풍선을 눌러 다시 들어도 다시 읽기가 끝나면 마무리 첫 장으로 간다'(`conversation.spec.ts:2050` — 읽어 주기 한 번 1.5초로 끝인사를 읽는 중 누름 · 끝인사 두 번 읽힘 · 첫 장 열림) |
+| I-2 증명 표 열 개 | 증명 표 글자 그대로 열 개를 더했다(`conversation.spec.ts:1607-2049`). 증명 표 이름과 시험 이름을 대조하니 plan-p13b 표에 없는 이름이 0 이다 | 아래 표 | 아래 표 |
+
+### I-2 에서 함께 고친 것 — C22 셈(틀의 결함)
+
+AC-N3 두 시험을 쓰다가 틀의 말소리 없음 셈이 정본과 어긋난 것을 찾았다. 틀은 말소리 없는 '모름'을 **보낼 때마다** 셌다. 그래서 한 질문의 no-speech 여섯 번('모름' 셋)만으로 speech.silent_items_max(3)에 닿아 막혔다. 정본 C22 · 7절 오류 행은 'no-speech 로만 끝난 질문(회화에서 모름으로 넘어간 질문)이 같은 세션에서 speech.silent_items_max 개 이어지면'이다. 그래서 셈을 순수 함수 `silentCountStep`(`talk-frame.tsx:177`)으로 바꿨다.
+- 보낼 때: 말한 턴이면 0 부터 다시 센다. 말소리 없음 '모름'은 그 질문을 '말소리 없음'으로, 단추 '모름'은 '섞임'으로 둔다.
+- 끝 줄에서: '모름' 뒤 같은 질문 '모름' 수가 0 이면 질문이 넘어간 것이다. 말소리 없음뿐이었으면 하나를 더하고, 섞였으면 이어짐이 끊겨 0 이 된다.
+- 막힌 안내와 알림은 끝 줄에서 낸다(`countSilent` :571, 쓰는 곳 :496 · :588).
+- 단위 시험 둘을 더했다(`tests/unit/talk-bubble.test.ts:227 · :239`).
+
+### 열 개 시험이 증명 표의 뜻을 단언하는지
+
+| 증명 표 이름(앞머리) | 줄 | 단언하는 뜻(설정 키 · 정본 절) |
+|---|---|---|
+| AC-15a 위 띠는 '말 주고받기 n / 목표 턴'이고 … 그만큼 뒤 다시 묻는다 | 1607 | 위 띠가 0 · 1 · 목표 − 1 / 목표 턴으로 오름 → 목표 턴에 고르기 · 'Do you want to talk more?' · '다 했어요! 더 이야기하기 0 / talk.more_talk_round_turns' → '더 이야기하기'에 '더 이야기할 거리' 첫 질문 → 턴마다 n / 5 → 5 턴 뒤 다시 고르기와 더 이야기할래 읽음(4절 위 띠 · 목표 턴 행 · 3.3 · C30) |
+| AC-15g 같은 질문에서 no-speech … talk.nospeech_dontknow_count … talk.dontknow_max … | 1674 | 첫 no-speech 는 '토리에게 잘 안 들렸어요 …'이고 턴을 보내지 않음. talk.nospeech_dontknow_count 번째에 '모름'으로 보냄(답 예시 읽음 · 같은 질문 · 위 띠 그대로). talk.dontknow_max 번째 뒤 다음 카드 질문. 아이 행 셋이 dont_know(7절 오류 행 · 3.3 · C44) |
+| AC-15g 1단계에서 'I don't know' 라고 말한 턴 … | 1715 | 막힘으로 볼 말(가짜 회화 턴 stuck) 뒤 답 예시 → 같은 질문 → 답 두 개(처음 묻는 턴)를 읽음. 위 띠 1 그대로. 아이 행은 입력 speech · stuck_phrase 가 들은 글(3.3 · 5절) |
+| AC-15g 질문 하나를 talk.dontknow_max 번 '모름'으로 넘긴 … | 1743 | 앞 두 질문을 '모름' talk.dontknow_max 번씩 넘기고 나머지 카드 턴에 답함. 카드를 다 쓴 뒤 넘긴 질문을 답 예시와 함께 한 번 더(답 두 개 없음, 위 띠 13 → 14). 둘째 넘긴 질문도 '모름'이면 '더 이야기할 거리'로 목표 턴에 닿아 고르기(회11 (4) · C36) |
+| AC-15h 1단계 다지기 수업에서 앞 세션에 만난 단어 … | 1795 | 다지기 견본에서 단원 단어를 앞 세션에 만남 · 안다로 넣음(오늘 쓸 말이 비어 토막 건너뜀). 턴마다 ①② 없음 · 답 두 개 안 읽음. said_words 는 힌트 없음 · 뜻만 연 턴만 그 단어이고, 영어 문장 단을 연 턴 · 답 예시를 들은 턴 · '모름' 턴은 비어 있음. hint_kind none · meaning_only · english · english, 들은 도움 answer_example(C2 · 3.4 · 3.3) |
+| AC-15l 프로필의 첫 회화 수업에서 '막히면 눌러요'가 한 번 … | 1894 | 첫 아이 차례에 '막히면 눌러요', 같은 수업 다음 턴에는 없음, notices_seen talk_hint_nudge. 둘째 수업을 새 브라우저 문맥(다른 기기)에서 열면 '힌트'는 있고 '막히면 눌러요'는 없음(C10 · 회17) |
+| AC-15m 카드가 다시 묻는 턴으로 적은 턴이라도 … 답 두 개 | 1938 | 카드 턴 ask 가 re_ask(다지기 견본)인데 만난 적 없는 프로필이면 ①② 둘 · 'Or' 줄을 읽음(C2 — 앱이 아이 기록으로 정함) |
+| AC-16b 회화 말풍선에는 영어 이름 … 홈에는 한글 이름 | 1962 | 회화 턴 응답의 {NAME} 이 말풍선 · 읽어 주기에서 앱 안 영어 이름으로 채워지고, 틀 글 {NAME} · 한글 이름은 회화 화면에 없음. 홈 제목은 한글 이름(6.1 · AC-16b — 시험 집의 지어낸 이름) |
+| AC-N3 … 회화 질문 셋이 '모름'으로 넘어가면 '말소리가 잘 안 들려요' … | 1983 | 질문마다 no-speech 여섯 번('모름' talk.dontknow_max 번). speech.silent_items_max 번째 질문이 넘어가기 전에는 막힘이 없음. 그 뒤 '말소리가 잘 안 들려요. 부모님께 말해 주세요' + '홈', 알림 speech_silent, 세션 진행(C22 · 7절) |
+| AC-N3 한 질문에서 no-speech 가 여섯 번이어도 … | 2015 | 시험 값 talk.nospeech_dontknow_count × talk.dontknow_max = 6 을 확인. 여섯 번 뒤 다음 질문 · 아이 차례 열림 · 막힘 없음. 알림 mic_stalled · speech_silent 없음(C22 — no-speech 는 여섯 번 셈 밖) |
+
+e2e 도우미 더함(`tests/e2e/talk.ts`): `reinforceTalkLesson`(:95 — 다지기 견본) · `meetSayWords`(:109 — 앞 세션 만남 · 안다 vocab_progress '말함' 행) · `talkScript(…, { utterMs })`(:295 — 읽어 주기 길이). 가짜 회화 턴은 지금 `talkReply` 칸(stuck · self_used_words)으로 충분했다.
+
+### 시험 수
+
+- 단위: 68 파일 · 720 통과(새 2) · 6 todo
+- e2e `conversation.spec.ts`: 31 → 42(새 11 — 증명 표 열 + 정리 다시 읽기 하나)
+- 통합: 견줌 한 줄 고침(수 그대로)
+
+### 실행 명령과 출력(Node 24.22.0)
+
+```
+pnpm -s biome ci .                     → exit 0 (373 files)
+pnpm exec tsc --noEmit                 → exit 0
+pnpm test                              → exit 0, 68 파일 · 720 통과 · 6 todo
+pnpm build                             → exit 0
+pnpm check:deps                        → no dependency violations (191 modules, 1039 dependencies)
+pnpm check:ids                         → exit 0 · design-number 37(새 줄 없음)
+pnpm check:bundle                      → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0 · plan-p13b missing-test 0
+증명 표 이름 ↔ 시험 이름 대조(plan-p13b 의 "AC-…" 글 전부) → 없는 이름 0
+통합 · e2e                              → 로컬 불가(embedded-postgres), CI 11차 몫
+```
+
+### 남은 우려
+
+- 새 e2e 11 은 여기서 돌지 않았다. AC-15a 위 띠 시험(20 턴)과 dontknow_max 시험(24 턴)은 듣기 끝 조용함을 그 시험 동안 0.3초로 줄였지만 길다(제한 300초).
+- 정리 다시 읽기 시험은 '처음 읽기 중 누름'을 읽어 주기 1.5초로 만든다. CI 가 느려 끝인사가 보인 뒤 누르기까지 1.5초를 넘기면, 고치기 전 코드로도 지나는 시험이 된다. 그때 고친 코드에서 빨강이 되지는 않는다.
+- C22 셈 고침은 브리프 밖이다. AC-N3 증명 표를 지나려면 필요했다. 바뀐 뜻은 '모름 보냄마다'에서 '말소리 없이 넘어간 질문마다'로 바뀐 것뿐이고, 정본 C22 글 그대로다.
+- AC-15h 는 다지기 수업의 오늘 쓸 말 토막을 건너뛰려고 단원 단어를 '안다'로 넣었다. 만났지만 아직 '안다'가 아닌 길(오늘 쓸 말이 있는 다지기)은 이 시험이 보지 않는다.
+
+## 차례 6 fix 1b (2026-10-23 00:3x) — CI 10차 e2e 실패 다섯(차례 6 새 시험)
+
+로그 `p13-ci10-e2e-failed.log` 를 읽었다. fix 1(b2997ab)은 다섯 가운데 어느 것도 건드리지 않았다. 다섯 모두 **시험 쪽 결함**이고 화면 · 서버는 그대로다. 고친 곳은 `tests/e2e/conversation.spec.ts` 한 파일이다.
+
+| 실패 | 원인 | 고침 |
+|---|---|---|
+| :718 AC-15a 홈부터 끝까지(845행) · :1170 AC-15e 마무리 장(1196행) — '다음' 단추 0 기대에 1 | `getByRole("button", { name: "다음" })` 은 부분 일치라 셋째 장의 '다음 이야기'에 걸렸다. 셋째 장에 '다음'은 실제로 없다 | 이름을 정확 일치로(`exact: true` — F.next 6곳) |
+| :1323 AC-15p 3단계 힌트(1364행) — '힌트' 단추 둘(strict) | 영어 문장 단의 듣기 단추 이름 '힌트 문장 듣기'가 부분 일치로 걸렸다 | `exact: true`(T.hint 9곳). 같은 까닭으로 F.home 6곳도 정확 일치 |
+| :1044 AC-15f 그만하기(1071행) · :1452 AC-15j 대화 안전 상한(1487행) — 턴 요청 1 기대에 2 | '그만하기' · 안전 상한 닫힘 뒤 응답 뒤 끝맺음 턴(`after`)이 나간다. 그 요청 본문의 대화 기록에 앞 턴 사용자 메시지('\nClosing: no' 줄)가 그대로 들어 있어 `turnRequests` 가 회화 턴으로 셌다. 턴이 더 나간 것이 아니다(끊김 · 재전송 길은 이 두 시험에서 돌지 않음) | `turnRequests` 가 끝맺음 표지('\nClosing: yes' — 통합 talk-fixture `CLOSING_MARK` 와 같은 글)가 든 본문을 뺀다 |
+
+fix 1 에서 더한 시험 11 도 같은 셈 · 같은 단추 이름을 쓰므로 이 고침이 함께 덮는다.
+
+관문: biome ci 0 · tsc 0 · 단위 720 통과 · 6 todo. e2e 는 CI 몫이다.
+
+남은 우려: 끝맺음 턴이 '그만하기' 응답 뒤에 나가는 것은 시험이 따로 단언하지 않는다(통합 AC-8c 가 본다). e2e 는 이제 끝맺음 요청을 세지 않는다.
+
+## 차례 6 fix 1c (2026-10-23 00:5x) — 시험 결정화 둘(fix 1 재검토 제안)
+
+고친 곳은 `tests/e2e/conversation.spec.ts` · `tests/e2e/talk.ts` 둘뿐이다. 가짜 음성(`src/lib/speech/fake-web-speech.ts`, 공용)은 그대로다. 커밋 없음.
+
+| 제안 | 어떻게 |
+|---|---|
+| (1) 정리 다시 읽기 시험을 시간에 기대지 않게 | `talk.ts` 에 `recordInterruptedSpeech` · `interruptedSpeech` 를 더했다. 가짜 음성을 넣은 뒤의 init script 로 `speechSynthesis.speak` 를 감싸, 발화가 'interrupted' 오류(다음 읽기 · 멈춤이 끊음 — 가짜의 cancel 이 읽던 발화에 냄)를 받으면 그 글을 남긴다. 시험은 끝인사가 두 번 읽혔고 **끝인사의 첫 읽기가 끊겼다**를 단언한다. CI 가 느려 다 읽은 뒤에 눌렀으면 이 단언이 빨강이 된다(고치기 전 코드의 거짓 초록을 막음). 읽기 1.5초는 누를 틈으로 그대로 둔다 |
+| (2) 긴 e2e 둘의 인식 확인 시간 | `withFastTurns` 로 그 시험 동안만 `talk.confirm_seconds` 를 0.2초(시험 값)로, 듣기 끝 조용함을 0.3초로 줄였다(`withHouseholdSetting` 두 겹 — 끝나면 되돌림). 턴은 `talkTurns(…, AUTO_SEND)` 로 '보내기'를 누르지 않고 저절로 보내지기를 기다린다. 누름과 저절로 보냄이 겨루어, 다음 턴의 확인을 누르는 일이 없게 했다. 대상은 AC-15a 위 띠(20 턴) · AC-15g dontknow_max(24 턴)이다. 홈부터 끝까지 시험은 그대로 '보내기'를 누른다 |
+
+관문: biome ci 0 · tsc 0 · 단위 720 통과 · 6 todo. e2e 는 CI 13차 몫이다.
+
+남은 우려: 감싼 `speak` 는 가짜 음성에서만 돈다(시험 쪽 init script). 실제 브라우저의 끊김 사건 이름은 보지 않는다 — 앱이 쓰는 갈래가 아니다.
+
+### fix 1c 덧 — F-3 안전 상한 뒤 끝맺음 통합 단언(재검토 a866ba0..34fbfa5 새 Minor)
+
+fix 1b 가 e2e 셈에서 끝맺음 요청을 빼면서, '대화 안전 상한 닫힘 뒤 끝맺음 턴이 응답 뒤에 나간다'를 아무도 단언하지 않게 됐다. 그래서 통합 'AC-15j 대화 하나가 talk.safety_max_turns 에 닿으면 …'(`tests/integration/conversation-turn.test.ts`)의 닫힘마다 아래를 단언한다.
+- 닫힘 응답 뒤 할 일이 하나 걸려 있다.
+- 끝맺음 기록 행(시도 id `talk-closing:<세션>`)의 상태가 pending 이다.
+- 응답 뒤 일을 돌리면 끝맺음 요청('\nClosing: yes')이 한 번 나가고 상태가 ready 가 된다.
+
+전에는 `h.tasks.length = 0` 으로 그 일을 버렸는데 그 줄을 지웠다.
+
+F-1 · F-2 는 위 fix 1c 표 그대로다. 관문: biome ci 0 · tsc 0 · 단위 720 통과. 통합 · e2e 는 CI 13차 몫이다.
+
+## 차례 6 fix 2 (2026-10-23 01:0x) — 화면 검토 b3 Minor 둘
+
+| 지적 | 고침 | 자리 |
+|---|---|---|
+| M-1 정리 따라 말하기 '말하기'가 토리 글이 다 흐르기 전에 켜짐 | 비활성 조건에 `|| !typed`(말풍선 글이 다 흐른 뒤 — 차례 5 M-1 결정과 같은 꼴). 읽는 중에 누르면 읽기를 멈추고 듣는 것은 그대로다 | `src/components/conversation/follow-along.tsx:793` |
+| M-2 오늘 쓸 말 · 말해 보기 결과 말이 판 왼쪽 끝에 붙음 | 결과 말 줄(StatusLine)에 `justify-center` — 카드 · '말하기' 단추 축에 맞춤 | `follow-along.tsx:574` |
+
+e2e 는 '말하기'가 켜질 때까지 기다려 누르므로 시험은 그대로다. 관문: biome ci 0 · tsc 0 · 단위 720 통과 · build 0. 화면은 CI 13차 사진으로 본다.
+
+## 개발용 시드 회화 (2026-10-23 01:1x) — 시험용 시드 나무에 회화 1단계 · 적재 길
+
+브리프 `task-p13-dev-seed-talk.md`. 워크트리 p13(HEAD 220a51c). 커밋 없음. Supabase 개발용 DB 에는 넣지 않았다.
+
+### 찾은 것
+
+- 시험용 시드 나무(`loadableSeed()` → `miniSeed`, 작은 틀)에는 회화 1단계가 **이미 들어 있다**. 단원 1~5 마다 대화 1 · 2(배정) · 대화 3(다지기) · 보강 1 이 견본 `talkCard` 로 들어 있고, 회화 단계 평가 장과 토리 이야기 견본(1~3 구간)도 있다. 빠진 것은 적재 영역뿐이었다 — `DEV_SEED_AREAS` 가 읽기 · 쓰기 · 말하기만이라 적재기가 회화 칸을 건너뛰었다. 그래서 나무 빌더는 고치지 않았다.
+- 견본 카드는 e2e `fullTalkLesson` 과 같은 빌더라 다섯 토막(인사 · 오늘 쓸 말 · 말해 보기 · 대화 14 턴 · 더 이야기할 거리 2 · 정리)이다. 1단계 답 두 개 · 힌트 두 단도 같다. 다른 점이 둘 있다. 단원 단어를 좁히지 않아 대화 1 의 오늘 쓸 말에 안 만난 단원 단어 하나가 덧붙는다(3.3 대로). 카드 턴에 그림 키가 있으나 시험용 시드에는 그림 파일이 없어 화면이 그리지 않는다(차례 5 fix 2 깨진 그림 길).
+- **정할 것 하나**: '토리 이야기는 넣지 않는다'가 적재기와 맞지 않는다. 회화 영역을 완전성 1단계로 검사하면 이야기 칸 다섯(1~3 구간)이 '빈 칸'이 된다. 적재기는 빈 칸이 있으면 거부한다(`load.ts` 빈 칸 · 풀이 검사 안 됨 · 사람 확인 > 0 → refused). 이야기를 뺀 나무는 `empty` 5 로 확인했다. 그래서 나무의 이야기 견본을 함께 넣는다. lessons 의 tori_story 행(단원 비움)이라 수업 목록에는 나오지 않는다. 견본 이야기 story-field-missing 은 걸리지 않았다(검증 통과). 이야기를 빼야 한다면 길은 둘이다. (가) 적재기에 '이야기 칸 빈 칸 허용' 선택을 두거나, (나) 회화 적재 때 완전성 단계를 0 으로 두는 것이다. 둘 다 적재기 · 정본 몫이라 손대지 않았다.
+
+### 바뀐 파일
+
+| 파일 | 무엇 |
+|---|---|
+| `tests/fixtures/seed/dev-tree.ts` | `DEV_SEED_AREAS` 에 `"talk"`(타입 `Area`), 머리 주석(회화 · 이야기 견본도 적재하는 까닭) |
+| `tests/unit/dev-tree.test.ts` | 영역 넷 단언 · 회화 1단계 단원 1 정규 수업이 배정 1 · 배정 2 · 다지기 3 인지 단언. 검증(완전성 1단계 · 영역 넷) 오류 0 · 빈 칸 0 은 기존 단언 그대로 |
+| `tests/integration/dev-seed.test.ts` | 적재 뒤 행 수 기대에 회화 몫을 더함 — lessons 에 토리 이야기 행 · level_test_items 에 회화 평가 대화 카드 장(talk-sheet 행). 수는 나무에서 셈 |
+| `tests/integration/lesson-list.test.ts` | 새 통합 '수업 목록: 시험용 시드를 적재하면 회화 1단계 단원 1 목록에 대화 1 · 2 · 3 이 있고 '여기부터 해요'는 대화 1 이다'(회화 1단계 집 → `readLessonList({ area: "talk" })` 앞 · 뒷줄 제목 = 나무의 정규 셋, hereStart 배정 1) |
+| `tests/integration/talk-fixture.ts` | 회화 통합 준비가 1 · 4단계 단원 1 카드를 넣을 때, 시험용 시드가 이미 넣은 1단계 칸은 `onConflictDoNothing`(같은 빌더 · 같은 칸 · 같은 판). `talkLessonRow` 는 정규(배정 · 다지기)만 고른다 — 같은 단원의 보강 1 과 수업 번호가 겹쳐서다 |
+
+### 검증 결과
+
+나무를 파일로 꺼내(아래 명령 첫 줄) 실제 `seed:validate` 를 돌렸다.
+
+```
+seed:validate --root <나무 폴더>                                        → 칸 172 · 통과 172 · 실패 0 · 빈 칸 0 · 경고 0 · 규격 파일 오류 0
+seed:validate --root <나무 폴더> --complete-through 1 --areas talk     → 칸 41 · 통과 41 · 실패 0 · 빈 칸 0
+seed:validate --root <나무 폴더> --complete-through 1 --areas reading,writing,speaking,talk → 칸 172 · 통과 172 · 실패 0 · 빈 칸 0
+(이야기를 뺀 나무, 단위 탐침 — 시험 파일로 남기지 않음)                  → 오류 0 · 빈 칸 5(lesson:talk:1:-:tori_story:1~5:1)
+```
+
+저장소 `seed/`(진짜 시드)의 `pnpm seed:validate` 는 P8 전이라 빈 칸 4892 그대로다(이번 일과 무관).
+
+### 적재 명령 · 지움 명령(Supabase 개발용 DB — 컨트롤러가 요청자 허용 뒤, 접속 문자열 없이)
+
+시험용 시드 나무는 파일로 없으므로 먼저 폴더로 꺼낸다. 적재는 회화 영역만, MIGRATION_DATABASE_URL(세션 풀러)로 한다. 먼저 미리 돌림으로 설정 견주기 결과를 본다 — 개발용 DB 의 `seed.complete_through_level` 은 컨트롤러가 5 로 바꿔 두었다(장부 83행).
+
+```
+node --import tsx -e 'import("./tests/fixtures/seed/dev-tree.ts").then(async ({ devSeedTree }) => { const { filesOf } = await import("./tests/fixtures/seed/loadable.ts"); const fs = await import("node:fs"); const path = await import("node:path"); for (const [rel, text] of filesOf(devSeedTree())) { const p = path.join(process.argv[1], rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text); } })' <나무 폴더>
+pnpm seed:load --root <나무 폴더> --complete-through 1 --areas talk --dry-run
+pnpm seed:load --root <나무 폴더> --complete-through 1 --areas talk
+```
+
+지울 때(시험용 회화 자료 — 세션이 수업을 restrict 로 잡으므로 세션부터, attempts · talk_turns 는 세션 cascade):
+
+```sql
+DELETE FROM sessions WHERE area = 'talk';
+DELETE FROM lessons WHERE area = 'talk';            -- 회화 수업 · 토리 이야기 행
+DELETE FROM level_test_items WHERE area = 'talk';   -- 회화 평가 대화 카드 장
+```
+
+### 로컬 확인
+
+`pnpm db:dev --reset` 대신 같은 적재 길(`seedIfEmpty` → `loadSeed(devSeedTree, areas DEV_SEED_AREAS)`)을 쓰는 임시 모드를 띄웠다(`dev-db.ts --ephemeral`). 워크트리에 `.env.local` 을 만들지 않으려는 것이다. 이 Mac 은 initdb 에서 `shmget … Cannot allocate memory`(공유 메모리 고갈 — 10-18 01:0x 와 같은 환경 문제, 재부팅 필요)로 Postgres 가 뜨지 않았다. 그래서 **로컬 적재는 확인하지 못했다**. 적재 확인은 통합 둘이 대신하고 CI 몫이다 — dev-seed 의 적재 loaded · 행 수, lesson-list 의 회화 목록 셋. 띄운 프로세스 · 임시 비밀번호 파일은 지웠다.
+
+### e2e · 통합 영향(시험 DB 에도 회화가 들어간다)
+
+- e2e 임시 DB(`dev-db --ephemeral`)와 통합 시험 DB 가 모두 `DEV_SEED_AREAS` 로 적재하므로 회화 1단계 단원 1~5 수업 · 이야기 · 평가 장이 들어간다.
+- 회화 e2e 의 `insertTalkLesson` 은 같은 칸(영역 · 단계 · 단원 · 종류 · 번호, 판 · 변형 무관)을 먼저 지우고 넣는다. 그래서 견본 칸과 겹치지 않는다. 시험이 넣은 대화 1 · 2 가 시드의 같은 칸을 바꾸고, 시드의 다지기 3 · 보강 1 은 남는다. 다음 이야기 · '여기부터 해요'를 단언하는 시험(홈부터 끝까지 → 대화 2, 그만둔 수업 → 대화 1)은 시험이 넣은 행을 그대로 가리킨다.
+- P10(홈 · 수업 목록 · 배치 · 글자 크기) e2e 는 회화 수업이 없다는 가정을 하지 않는다. 회화 카드 href · 단계 없는 회화 → 말하기 배치 · 글자 크기 시험의 견본 한 칸은 지우고 넣는다. P11 은 회화와 닿지 않는다.
+- 통합: 회화 준비의 겹침은 위 `onConflictDoNothing` · 정규만 고르기로 막았다. 홈 통합의 회화 카드는 단계 없는 집이라 그대로 needs_speaking 이다. 나머지 통합은 회화 행을 읽지 않는다.
+
+### 관문
+
+```
+pnpm -s biome ci .          → exit 0 (373 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 741 통과 · 6 todo(합침 ③ 뒤 수)
+pnpm check:deps             → no dependency violations
+통합 · e2e                   → 로컬 불가(위 환경), CI 몫
+```
+
+### 남은 우려
+
+- 로컬에서 실제 적재 · `/talk/lessons` 화면을 보지 못했다. 통합 둘이 CI 에서 초록이어야 적재 길이 확인된다.
+- 정할 것(이야기 견본 함께 적재)을 컨트롤러가 받지 않으면 `DEV_SEED_AREAS` 회화 적재는 적재기 거부로 막힌다. 그때 시험 DB 적재가 모두 멈추므로 CI 가 크게 빨강이 된다.
+- 개발용 DB 적재 때 설정 견주기가 바뀐 `seed.complete_through_level`(5)을 어떻게 다루는지는 미리 돌림 결과로 먼저 봐야 한다.

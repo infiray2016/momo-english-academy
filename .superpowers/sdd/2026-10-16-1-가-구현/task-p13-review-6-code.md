@@ -16,3 +16,9 @@
 9. 열린 장부 `ledger-open.md` 의 P13 · 회화 행 판정(60행 '준비 중' 빈틈 · 85 전체 디자인 리뷰 · P-1 · P-2 · N-1 등). 과정 지적 따로.
 
 보고 `.superpowers/sdd/2026-10-16-1-가-구현/review-p13-6-code.md`(첫 줄 판정 · 지적 표 · 맞는 것 표 · 장부 판정 · fix 한 줄). 끝나면 SendMessage 한 줄. 코드 · 문서는 고치지 않는다. 단위는 `export PATH="$HOME/.nvm/versions/node/v24.22.0/bin:$PATH"` 뒤 `pnpm test`.
+
+## 덧(00:1x) — fix 1 재검토(범위 한정)
+fix 1(`task-p13-6-fix1.md`, 보고 '차례 6 fix 1' 절)이 작업 트리에 들어갔다(CI 가지 ci/p13-c1 b2997ab = 작업 트리, **CI 11차** — 결과는 덧). **I-1 · I-2 · I-3 을 ADDRESSED · NOT ADDRESSED 로**(I-2 는 증명 표 이름 열 개가 글자 그대로 있고 각 시험이 뜻을 단언하는지 — 구현자는 '빠진 것 0' 대조). **브리프 밖 고침 하나 판정**: AC-N3 를 쓰다 틀의 C22 셈이 '모름 보냄마다' 세어 한 질문 여섯 번만으로 막히는 결함 → 정본 '말소리 없이 넘어간 질문이 이어진 수'로(순수 함수 `silentCountStep` · 단위 둘) — 7절 · C22 와 맞는지, 설정 키. 구현자 우려: 긴 e2e 둘(턴 20 · 24) · 다시 읽기 시험이 CI 느리면 고치기 전 코드로도 지날 수 있음 — 결정적으로 할 길. 보고 `review-p13-6-fix1-code.md`, SendMessage 한 줄.
+
+## 덧(01:1x) — 개발용 시드 회화(가벼운 루프 · 범위 한정 · high)
+브리프 `task-p13-dev-seed-talk.md` · 보고 '개발용 시드 회화' 절. 작업 트리 = ci/p13-c1 74b13dd(`git diff 220a51c 74b13dd` — `tests/fixtures/seed/dev-tree.ts` DEV_SEED_AREAS 에 talk, 단위 `dev-tree.test.ts`, 통합 `dev-seed.test.ts` · `lesson-list.test.ts` · `talk-fixture.ts`). **CI 14차** 결과는 덧. 볼 것: (1) 시험용 시드 나무에 이미 있던 회화 1단계(단원 1~5 대화 1 · 2 · 다지기 3 · 보강 1 · 평가 장 · 토리 이야기 견본)를 적재하는 것이 C68 · C70 · C75(시험용 시드 규칙 — 무작위 · 아이 이름 · 연락처 없음)와 맞는지, 그림 키는 있으나 파일 없음 → 깨진 그림 길 OK. (2) 컨트롤러 결정: 토리 이야기 견본도 함께 적재한다(적재기가 완전성 1단계 빈 칸을 거부 — tori_story 행은 목록에 안 나옴, 1-가는 토리 이야기 화면 없음) — 받아들일 만한지, 뒤에 지울 길(지움 SQL 셋). (3) 통합 준비 `talk-fixture.ts` 의 `onConflictDoNothing` · 정규만 고르기가 회화 통합 32 를 흔들지 않는지(같은 빌더 · 같은 칸 · 같은 판이면 같은 내용인가). (4) e2e 영향 분석(회화 `insertTalkLesson` 이 같은 칸을 지우고 넣음 · P10 글자 크기 시험 한 칸) 타당성. (5) 적재 명령(나무 꺼내기 → `seed:load --areas talk --complete-through 1 --dry-run` → 실제)과 지움 SQL 이 맞는지 — 세션 restrict · attempts cascade. 로컬 적재 미확인(shmget) → CI 통합 둘이 대신. 보고 `review-p13-dev-seed-code.md`, SendMessage 한 줄.
