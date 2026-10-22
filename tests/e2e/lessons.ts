@@ -7,8 +7,13 @@ import type { Area } from "../../src/core/seed/structure";
 import { LEVEL_MAX } from "../../src/core/seed/structure";
 import { lessons, levelSpecs } from "../../src/db/schema/content";
 import { SEED_REVISION_TABLES } from "../../src/db/schema/seed-revision";
-import type { LessonSample } from "../fixtures/seed/builders";
-import { e2eDb, withHouseholdSetting } from "./db";
+import {
+  defaultSettings,
+  type LessonSample,
+  referenceSet,
+  writingLesson,
+} from "../fixtures/seed/builders";
+import { e2eDb, insertSessions, withHouseholdSetting } from "./db";
 import { insertHousehold } from "./household";
 
 type LessonKind = "assigned" | "reinforce";
@@ -121,4 +126,37 @@ export async function levelSpecOf(
   )[0];
   if (!row) throw new Error(`${area} ${level}단계 규격 없음`);
   return row.spec as Record<string, unknown>;
+}
+
+/**
+ * 쓰기 4~5 견본(plan-p11b 브리프 — 견본 빌더 writingLesson(ref, 4), 5단계는 같은 수업을 5단계로 복제). 넣는 꼴(4단계 단어 상자 ·
+ * 5단계 기기 자판)은 그 단계 규격(amount.input)에서 오고 문장 틀은 같다.
+ */
+export function guidedSample(level: 4 | 5): LessonSample<"writing"> {
+  const sample = writingLesson(referenceSet(defaultSettings()), 4);
+  if (sample.lesson.content.shape !== "guided") throw new Error("견본 꼴");
+  return { ...sample, level };
+}
+
+/** 그 수업의 진행 세션을 바로 넣는다(목록을 거치지 않음 — 정규 수업, 수업 행의 판). 세션 id 를 돌려준다. */
+export async function openLessonSession(
+  profileId: string,
+  lesson: LessonRow,
+): Promise<string> {
+  const [sessionId] = await insertSessions([
+    {
+      profileId,
+      area: lesson.area,
+      level: lesson.level,
+      unit: lesson.unit ?? 1,
+      lessonId: lesson.id,
+      kind: "regular",
+      status: "in_progress",
+      startedAt: new Date(),
+      seedRevision: lesson.revision,
+      seedCorrection: lesson.correction,
+    },
+  ]);
+  if (!sessionId) throw new Error("세션 없음");
+  return sessionId;
 }

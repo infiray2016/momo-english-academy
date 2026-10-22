@@ -127,6 +127,8 @@ export function RepeatActivity({
   env,
   phraseLevels,
   autoNextSeconds,
+  guide = SPEAKING_TEXT.guide.repeat,
+  ringGapClassName,
   initial,
   onChange,
   onDone,
@@ -135,6 +137,10 @@ export function RepeatActivity({
   env: SpeakingEnv;
   phraseLevels: readonly number[];
   autoNextSeconds: number;
+  /** 첫 줄 안내(없으면 따라 말하기 안내 — 쓰기 '내 문장 듣고 따라 말하기'가 바꿈, plan-p11b 값 7). */
+  guide?: string;
+  /** 말하기 단추 고리 틈 색(바탕 카드색 — 없으면 말하기 분홍, 쓰기 카드는 하늘). */
+  ringGapClassName?: string;
   initial?: RepeatInput;
   onChange: (input: RepeatInput) => void;
   onDone: (input: RepeatInput & { skipped?: "recognition" | "silent" }) => void;
@@ -208,7 +214,7 @@ export function RepeatActivity({
       data-listening={listening ? "" : undefined}
       className="flex flex-col gap-5"
     >
-      <GuideLine>{SPEAKING_TEXT.guide.repeat}</GuideLine>
+      <GuideLine>{guide}</GuideLine>
       <SoundButton speech={env.speech} text={text} />
       {/* 따라 말할 글은 화면의 할 일이라 크게(36px — 화면 검토 M-3, 4절 '영어 24px 이상') */}
       <EnglishLine className="font-bold text-[36px] leading-tight">
@@ -232,18 +238,23 @@ export function RepeatActivity({
           listening={listening}
           capAt={capAt}
           disabled={!env.speech}
+          {...(ringGapClassName ? { gapClassName: ringGapClassName } : {})}
           onPress={() => void speak()}
         />
       ) : phrase !== "good" ? (
-        <div className="flex flex-wrap items-center justify-end gap-4">
+        // '한 번 더 말하기'의 고리 자리(바깥 12px)를 가로로만 걷어 단추 끝을 내용 끝에 맞추고, 그만큼 틈을 넓혀 보이는 간격은 그대로
+        // (화면 검토 review-p11-5-design M-6 · fix 4 N-2 — 위아래 간격 · 가운데 놓인 '말하기'는 그대로)
+        <div className="flex flex-wrap items-center justify-end gap-7">
           <SmallButton onClick={() => finish({ heard, failures })}>
             {SPEAKING_TEXT.next}
           </SmallButton>
           <SpeakButton
+            className="-mx-3"
             label={SPEAKING_TEXT.oneMore}
             listening={listening}
             capAt={capAt}
             disabled={!env.speech}
+            {...(ringGapClassName ? { gapClassName: ringGapClassName } : {})}
             onPress={() => void speak()}
           />
         </div>
@@ -473,7 +484,10 @@ export function QuestionAnswerActivity({
       ) : null}
       {stage === "echo" ? (
         <div data-model-answer="" className="flex flex-col gap-3">
-          <EnglishLine className="font-bold">{model}</EnglishLine>
+          {/* 아이가 따라 말할 글 — 따라 말하기 목표와 같은 36px(질문 28px 보다 크게, 화면 재검토 review-p11-fix4-design N-1) */}
+          <EnglishLine className="font-bold text-[36px] leading-tight">
+            {model}
+          </EnglishLine>
           <GuideLine>{SPEAKING_TEXT.together}</GuideLine>
         </div>
       ) : null}

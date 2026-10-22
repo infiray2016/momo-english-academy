@@ -12,6 +12,7 @@ import {
   CONTACT_MASK,
   createMasker,
   fillName,
+  fillNameDeep,
   nameVariantsOf,
   TWO_SYLLABLE_SURNAMES,
 } from "@/core/ai/mask";
@@ -164,6 +165,33 @@ describe("6.1 화면", () => {
       ),
     ).toBe("Hi Ganada! Ganada, ready?");
     expect(fillName("no name here", "Ganada")).toBe("no name here");
+  });
+
+  it("6.1 화면: AI 결과 값 안의 글마다 {NAME} 을 채우고 꼴 · 수 · 참거짓은 그대로 둔다", () => {
+    const value = {
+      praise: `${PLACEHOLDER_NAME}, 잘 썼어요.`,
+      sentences: [{ index: 0, correct: true }],
+      fixes: [
+        {
+          sentenceIndex: 0,
+          original: `with ${PLACEHOLDER_NAME}`,
+          distractors: [`to ${PLACEHOLDER_NAME}`],
+        },
+      ],
+    };
+    expect(fillNameDeep(value, "Ganada")).toEqual({
+      praise: "Ganada, 잘 썼어요.",
+      sentences: [{ index: 0, correct: true }],
+      fixes: [
+        {
+          sentenceIndex: 0,
+          original: "with Ganada",
+          distractors: ["to Ganada"],
+        },
+      ],
+    });
+    // 넘긴 값은 바꾸지 않는다(저장은 가린 글 그대로)
+    expect(value.praise).toBe(`${PLACEHOLDER_NAME}, 잘 썼어요.`);
   });
 });
 

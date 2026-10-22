@@ -21,7 +21,7 @@ import {
   progressEvents,
   settings,
 } from "@/db/schema/operations";
-import type { Db } from "@/server/db";
+import { createDb, type Db } from "@/server/db";
 import { closeStaleSessions } from "@/server/lesson-list";
 import {
   beginPlacement,
@@ -50,6 +50,9 @@ const PLACEMENT_KEYS = Object.keys(TEST_SETTINGS).filter((k) =>
   k.startsWith("placement."),
 );
 const deps = () => ({ db, now: () => NOW, homophones: () => [] });
+/** 연결 하나짜리 풀로 답할 문항 수 · 멈췄다고 볼 시간(기술 값). */
+const SINGLE_POOL_ANSWERS = 3;
+const SINGLE_POOL_DEADLINE_MS = 10_000;
 
 let testDb: TestDatabase;
 let db: Db;
@@ -479,5 +482,49 @@ describe("배치 평가 서버", () => {
       kind: "mic_stalled",
       value: { code: "stalled", browser: "Chrome" },
     });
+  });
+
+  it("배치 평가: 답 저장 트랜잭션 안의 다음 문항 화면은 그 트랜잭션 연결로 읽어 연결 하나짜리 풀에서도 끝난다", async () => {
+    // Codex 지적 3(review-codex-2026-10-19 판정 3) — 트랜잭션을 쥔 채 바깥 연결을 또 잡으면 풀이 찰 때 서로 기다린다
+    await household();
+    const single = createDb(testDb.url, { max: 1 });
+    const one = { db: single, now: () => NOW, homophones: () => [] };
+    const deadline = <T>(work: Promise<T>) =>
+      Promise.race([
+        work,
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("연결 하나짜리 풀에서 멈췄다")),
+            SINGLE_POOL_DEADLINE_MS,
+          ),
+        ),
+      ]);
+    try {
+      const begun = await deadline(beginPlacement({ area: "reading" }, one));
+      if (!begun.ok) throw new Error(`시작 거부: ${begun.reason}`);
+      let screen = begun.screen;
+      for (
+        let i = 0;
+        i < SINGLE_POOL_ANSWERS && screen.kind === "item";
+        i += 1
+      ) {
+        const out = await deadline(
+          submitPlacementAnswer(
+            {
+              sessionId: screen.sessionId,
+              clientAttemptId: randomUUID(),
+              itemId: screen.itemId,
+              answer: await answerFor(screen, true),
+            },
+            one,
+          ),
+        );
+        if (!out.ok) throw new Error(`답 거부: ${out.reason}`);
+        screen = out.screen;
+      }
+      expect(screen.kind).toBe("item");
+    } finally {
+      await single.$client.end();
+    }
   });
 });

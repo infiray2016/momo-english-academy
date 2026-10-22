@@ -2,7 +2,8 @@ import "server-only";
 // 세션 틀 서버(5절 sessions · attempts · 전이 표 '세션을 여는 서버 액션은 … 다시 판정' · 8절 네트워크 끊김 · 같은 프로필 동시 사용,
 // plan-p10b 파일별 값 6 · 위험 4 · 5 · 10 · 정할 것 ㄹ · ㅁ · ㅈ, plan-p11a 파일별 값 5 · 위험 2 · 4). 세션 시작 재판정 · 판 고르기 ·
 // 이전 세션 중단 · 시도 저장(시도마다 꼴 검사 · 서버 다시 채점) · 끝내기 · 첫 활동 '홈' 지움 · 세션 화면 자료.
-// AI 를 가져오지 않는다(AC-1b). 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
+// AI 를 부르지 않는다(AC-1b) — 1-가 하루 안전 상한은 ai_calls 를 읽기만 한다(ai-gate, plan-p11b 값 2 · 9). AI 활동의 끝 시도는 서버 액션이
+// 저장하고 이 길(대기열)은 받지 않는다(serverActionOnly). 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
 // DB 오류는 이름 · 코드만 로그에 남긴다(시도 입력 · 인식 글을 내지 않음, safe-error).
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -20,12 +21,14 @@ import {
   type AppScoringContext,
   ATTEMPTS_PER_BATCH_MAX,
   type AttemptInput,
+  aiNeededLesson,
   appActivityResult,
   finalActivityNos,
   inputFitsActivity,
   lemmaLookup,
   parseAttemptInput,
   resumePointOf,
+  serverActionOnly,
 } from "@/core/session/attempt";
 import {
   type Activity,
@@ -59,6 +62,7 @@ import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
 import { readLessonsOfUnit, readLevelSpec } from "@/server/seed/read";
 import { seedHomophones } from "@/server/seed-lists";
+import { aiRestingToday } from "@/server/session/ai-gate";
 import {
   appDayStartHourSchema,
   appTimezoneSchema,
@@ -140,7 +144,9 @@ export type StartOutcome =
         | "needs_confirm"
         | "invalid"
         | "no_profile"
-        | "unavailable";
+        | "unavailable"
+        // 1-가 하루 안전 상한에 닿은 학습일의 AI 가 필요한 수업(13절 C50 (2) · C80 — '토리가 잠깐 쉬어요')
+        | "ai_resting";
     };
 
 function logFailure(what: string, error: unknown) {
@@ -232,7 +238,7 @@ async function readSessionSettings(
   };
 }
 
-/** 단계 규격에서 세션이 쓰는 칸(말하기 질문 · 발표). */
+/** 단계 규격에서 세션이 쓰는 칸(말하기 질문 · 발표 · 쓰기 4~5 넣는 꼴). */
 type SpecBits = {
   questions?: {
     acceptedMin?: number;
@@ -240,6 +246,8 @@ type SpecBits = {
     answerSentences?: { max: number };
   };
   presentation?: { confirmQuestions?: number };
+  /** 쓰기 분량(3.3 — 4단계 단어 상자 누르기 word-box · 5단계 기기 자판 slot). */
+  amount?: { kind?: string; input?: "word-box" | "slot" };
 };
 
 type SessionContext = {
@@ -324,10 +332,11 @@ function scoringOf(
 }
 
 /**
- * AI 활동의 끝 시도는 이 길로 받지 않는다 — b · c 서버 액션이 AI 결과와 함께 저장한다. 3단계부터의 질문 답은 AI 판정이라
- * AI 결과 없이 건너뛴 끝 시도만 받는다(c 값 3). a 몫 밖 종류는 시도 꼴(parseAttemptInput)에서 이미 걸러진다.
+ * AI 활동의 끝 시도는 이 길로 받지 않는다 — b · c 서버 액션이 AI 결과와 함께 저장한다(쓰기 확인 끝 · 생각 꺼내기 · 초고 끝 ·
+ * 고쳐 쓰기 끝 — plan-p11b 값 4). 3단계부터의 질문 답은 AI 판정이라 AI 결과 없이 건너뛴 끝 시도만 받는다(c 값 3).
  */
 function needsAiPath(input: AttemptInput, ctx: SessionContext): boolean {
+  if (serverActionOnly(input)) return true;
   return (
     input.kind === "question" &&
     !ctx.appJudged &&
@@ -418,6 +427,11 @@ async function startUnsafe(
     s["app.timezone"],
     s["app.day_start_hour"],
   );
+  // 1-가 하루 안전 상한(C80): AI 가 필요한 수업이면 잠금을 쥐기 전에 읽는다(바깥 연결 — 위 M-1 과 같은 까닭)
+  const lessonContent = LESSON_SCHEMAS[area].parse(lesson.content).content;
+  const resting =
+    aiNeededLesson({ area, content: lessonContent }) &&
+    (await aiRestingToday({ profileId: profile.id, at }, { db }));
 
   return db.transaction(async (tx) => {
     // 같은 영역 시작을 줄 세운다(위험 4)
@@ -443,7 +457,9 @@ async function startUnsafe(
       { seedThrough: s[THROUGH_KEY], placed: true },
     );
     if (!judged.ok) return { ok: false, reason: judged.reason } as const;
+    // 하던 수업은 그대로 열린다(그 세션 화면이 안내 — aiResting). 새로 여는 수업은 하던 수업을 닫기 전에 막는다
     if (judged.resume) return { ok: true, sessionId: judged.resume } as const;
+    if (resting) return { ok: false, reason: "ai_resting" } as const;
     if (judged.abort && !input.confirmAbort)
       return { ok: false, reason: "needs_confirm" } as const;
     if (judged.abort) {
@@ -837,6 +853,13 @@ export type SessionView = {
     keyPictures: Record<string, PictureInfo>;
     /** 말하기 질문의 한국어 뜻(그 단계 말하기 규격 questions.koMeaning, C39). */
     showKo: boolean;
+    /** AI 가 필요한 수업인데 그 학습일 하루 안전 상한에 닿음 — 틀이 '토리가 잠깐 쉬어요'와 '홈'(세션은 진행, C50 (2) · C80). */
+    aiResting: boolean;
+    /** 쓰기 4~5: 넣는 꼴(단계 규격 amount.input)과 낸 문장(확인을 낸 뒤 — 고친 문장이 있으면 그것, 내 문장 듣기에 씀). 그 밖 null. */
+    guided: {
+      input: "word-box" | "slot";
+      sentences: string[] | null;
+    } | null;
   };
 }[LessonArea];
 
@@ -877,10 +900,44 @@ const toPicture = (meaningKo: string, path: string | null): PictureInfo => ({
   ...(path ? { src: path.startsWith("/") ? path : `/${path}` } : {}),
 });
 
+/**
+ * 쓰기 4~5 화면 자료: 넣는 꼴(단계 규격 amount.input — 없으면 던짐, 조용한 기본값 금지)과 낸 문장(쓰기 확인 끝 시도의 문장,
+ * 그 뒤 고친 문장 진행 시도가 있으면 가장 늦은 것).
+ */
+function guidedViewOf(
+  ctx: SessionContext,
+  tried: readonly { activityNo: number; input: unknown; attemptedAt: Date }[],
+): SessionView["guided"] {
+  if (ctx.area !== "writing" || !("shape" in ctx.lesson.content)) return null;
+  if (ctx.lesson.content.shape !== "guided") return null;
+  const input = ctx.spec.amount?.input;
+  if (input !== "word-box" && input !== "slot")
+    throw new Error(
+      `쓰기 ${ctx.level}단계 규격에 넣는 꼴(amount.input)이 없다`,
+    );
+  const no = ctx.activities.findIndex((a) => a.kind === "writing-guided") + 1;
+  const rows = tried
+    .filter((r) => r.activityNo === no)
+    .map((r) => ({
+      at: r.attemptedAt.getTime(),
+      input: parseAttemptInput(r.input),
+    }))
+    .sort((a, b) => a.at - b.at);
+  let sentences: string[] | null = null;
+  for (const { input: parsed } of rows) {
+    if (parsed?.kind === "writing-guided" && parsed.step === "final")
+      sentences ??= parsed.sentences;
+  }
+  for (const { input: parsed } of rows) {
+    if (parsed?.kind === "writing-guided-fix") sentences = parsed.fixed;
+  }
+  return { input, sentences };
+}
+
 /** 세션 화면 자료. 그 프로필의 진행 세션이 아니면 undefined(쪽이 결과 · 수업 목록으로 보낸다). */
 export async function loadSessionView(
   { sessionId }: { sessionId: string },
-  { db = getDb(), homophones = seedHomophones }: SessionDeps,
+  { db = getDb(), now, homophones = seedHomophones }: SessionDeps,
 ): Promise<SessionView | undefined> {
   if (!z.uuid().safeParse(sessionId).success) return undefined;
   const profile = await readHouseholdProfile({ db });
@@ -904,7 +961,11 @@ export async function loadSessionView(
 
   // 이어 할 자리: 끝 시도가 없는 가장 앞 활동(값 2 — 진행 시도는 자리를 옮기지 않음)
   const tried = await db
-    .select({ activityNo: attempts.activityNo, input: attempts.input })
+    .select({
+      activityNo: attempts.activityNo,
+      input: attempts.input,
+      attemptedAt: attempts.attemptedAt,
+    })
     .from(attempts)
     .where(eq(attempts.sessionId, sessionId));
   const finals = finalActivityNos(tried);
@@ -1016,6 +1077,12 @@ export async function loadSessionView(
         eq(sessions.status, "in_progress"),
       ),
     );
+  const aiResting =
+    aiNeededLesson({
+      area,
+      content: lesson.content,
+      ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
+    }) && (await aiRestingToday({ profileId: profile.id, at: now() }, { db }));
 
   return {
     sessionId,
@@ -1038,6 +1105,8 @@ export async function loadSessionView(
     wordPictures,
     keyPictures,
     showKo,
+    aiResting,
+    guided: guidedViewOf(ctx, tried),
   } as SessionView;
 }
 

@@ -18,6 +18,7 @@ import {
   StatusLine,
   type Tilt,
 } from "@/components/board/board";
+import { AiRest } from "@/components/session/ai-rest";
 import type {
   HereStart,
   LessonItem,
@@ -105,7 +106,7 @@ export function LessonBoard({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string | undefined>();
-  const { start, busy, status, asking, setAsking } = useLessonStart();
+  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
   // 확인 쪽지를 연 포스트잇 — 쪽지가 닫히면 초점을 돌려놓는다(화면 검토)
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -230,6 +231,20 @@ export function LessonBoard({
 
   const front = view.current?.front ?? [];
   const back = view.current?.back ?? [];
+  // 1-가 하루 안전 상한 — 고른 수업을 열지 못하면 한 화면에 안내와 '홈'만(C50 (2) · C80)
+  if (resting)
+    return (
+      <ChildScreen>
+        <PaperBand
+          heading
+          title={AREA_LABEL[area]}
+          detail={TEXT.band(view.band.level, view.band.unit)}
+        />
+        <PostIt tone="paper" className="p-6 pt-9">
+          <AiRest />
+        </PostIt>
+      </ChildScreen>
+    );
   return (
     <ChildScreen>
       <PaperBand

@@ -158,6 +158,8 @@ const activity = (page: Page) => page.locator("[data-activity]");
 const speakButton = (page: Page) => page.locator("[data-speak]");
 /** 들어올 때의 읽기(effect)가 먼저 돌 틈. 읽기가 듣기 뒤에 시작하면 듣기를 끊는다(P2b speak → cancel 'speak'). */
 const SETTLE_MS = 250;
+/** 남은 시간 고리를 두 번 잴 틈(기술 값 — 1단계 끝 조용함 3초보다 짧게). */
+const RING_GAP_MS = 400;
 
 /**
  * '말하기'를 누른다 — 앞 듣기가 끝난 뒤에만(듣는 중의 누름은 듣기를 끝내는 누름이라 실패 하나가 사라진다, 7절 말하기 버튼 행),
@@ -291,6 +293,17 @@ test("AC-5b 말하기 1단계 세션은 따라 말하기 단어 5 · 문장 5, �
     "style",
     /conic-gradient/,
   );
+  // 남은 시간 고리는 듣는 동안 줄어든다(7절 '남은 시간이 줄어드는 표시' — 잠깐 사이 두 번 잰 먹색 각도가 작아짐, 재검토 M-1 (나))
+  const ringDeg = async () => {
+    const style =
+      (await page.locator("[data-speak-ring]").getAttribute("style")) ?? "";
+    // 먹색 몫(첫 각도) — 'conic-gradient(var(--color-ink) <n>deg, …)'
+    return Number(/(\d+(?:\.\d+)?)deg/.exec(style)?.[1]);
+  };
+  const before = await ringDeg();
+  await page.waitForTimeout(RING_GAP_MS);
+  await expect(page.locator("[data-speak][data-listening]")).toBeVisible();
+  expect(await ringDeg()).toBeLessThan(before);
   await photo(page, "p11-speaking-listening-on");
   await expect(page.getByText(T.good)).toBeVisible();
   await expect(page.locator("[data-speak][data-listening]")).toHaveCount(0);
@@ -415,6 +428,28 @@ test("AC-5c 말하기 세션 도중 마이크 권한을 거두면 세션이 진�
   await expect(page).toHaveURL(/\/$/);
   expect((await sessionStatus(sessionId))?.status).toBe("in_progress");
   await page.close();
+  // 막힌 안내의 '홈'은 첫 활동 · 시도 없는 세션도 지우지 않는다(이 기기는 '쓸 수 없음'으로 남아 열자마자 막힘 — 고친 갈래,
+  // 재검토 review-p11-fix4-code M-1 (가): 막힘을 보지 않으면 첫 활동 '홈'이 세션 행을 지운다)
+  await e2eDb()
+    .update(sessions)
+    .set({ status: "aborted" })
+    .where(eq(sessions.id, sessionId));
+  const fresh = await openSession(context, [], profileId, lesson);
+  await expect(activity(fresh.page)).toHaveAttribute(
+    "data-activity",
+    "preview",
+  );
+  await expect(fresh.page.getByText(T.needsMic)).toBeVisible();
+  expect(
+    await e2eDb()
+      .select({ id: attempts.id })
+      .from(attempts)
+      .where(eq(attempts.sessionId, fresh.sessionId)),
+  ).toHaveLength(0);
+  await fresh.page.getByRole("button", { name: T.home }).click();
+  await expect(fresh.page).toHaveURL(/\/$/);
+  expect((await sessionStatus(fresh.sessionId))?.status).toBe("in_progress");
+  await fresh.page.close();
 });
 
 test("AC-5e 말하기 1단계 따라 말하기는 마지막 중간 결과 뒤 3초 조용하면, 4단계는 1.5초 조용하면 듣기가 끝난다", async ({

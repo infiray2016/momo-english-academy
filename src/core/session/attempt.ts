@@ -1,10 +1,12 @@
 // 시도 꼴 · 앱 채점 활동 결과 · 단어별 정오 · 단어 수 · 이어 할 자리(plan-p11a 파일별 값 2 · 정할 것 다 · 라 · 위험 2 · 3,
 // 13절 C38 · C73 · C76 · C77, 3.7 활동 점수, 6.2 앱 채점 · 일치율). DB · 시계 없는 순수 함수다. 화면은 같은 함수로 바로 판정하고
 // 서버는 저장 때 수업 내용으로 다시 채점한다(서버 값이 정본). 허용 답 기준(speaking.answer_match_pass)은 부르는 쪽이 넘긴다.
-// 이 파일은 a 몫 종류(AI 없이 채점하는 활동)만 꼴을 둔다 — b · c 가 자기 종류를 더한다.
+// a 몫 종류(AI 없이 채점하는 활동)에 b 몫(쓰기 4~12, plan-p11b 값 4) 종류를 더했다 — c 가 자기 종류를 더한다.
+// AI 결과를 함께 저장하는 끝 시도(쓰기 확인 · 생각 꺼내기 · 초고 · 고쳐 쓰기)는 서버 액션만 저장한다(serverActionOnly).
 import { z } from "zod";
 import { type Answer, checkAnswer } from "@/core/answer/check";
 import type { LessonOf } from "@/core/seed/schema/lesson";
+import type { Area } from "@/core/seed/structure";
 import type { Activity } from "@/core/session/preview";
 import { judgeAppAnswer } from "@/core/speaking/judge";
 import {
@@ -19,8 +21,8 @@ import {
 export const ATTEMPTS_PER_BATCH_MAX = 50;
 /** 시도 입력 JSON 글자 수 상한. */
 export const INPUT_JSON_MAX = 4000;
-/** 시도 꼴 판. */
-const INPUT_VERSION = 1;
+/** 시도 꼴 판(서버 액션이 저장하는 b · c 끝 시도도 같은 판). */
+export const INPUT_VERSION = 1;
 
 // ── 시도 꼴(attempts.input) ──
 
@@ -45,6 +47,14 @@ const spoken = {
   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
 };
 
+/** 쓰기 4~5 문장(빈칸을 채운 온 문장 · 쓰던 글은 빈 글도). */
+const sentenceList = z.array(z.string()).min(1);
+/** 내 문장 말하기(선택 — 점수 없음 · 영어로 말한 문장 수에 안 셈): 인식 글 · 건너뛴 까닭(스스로 · 마이크 없음). */
+const ownSpoken = {
+  heard: z.array(z.string()).optional(),
+  skipped: z.enum(["chose_skip", "no_mic"]).optional(),
+};
+
 export const AttemptInputSchema = z.discriminatedUnion("kind", [
   z.strictObject({ ...head("preview"), shownWords: z.array(z.string()) }),
   /** 누른 글로서리 낱말의 원형(P12 단어장). */
@@ -66,6 +76,44 @@ export const AttemptInputSchema = z.discriminatedUnion("kind", [
     ...spoken,
     echo: z.string().optional(),
   }),
+  // ── b: 쓰기 4~5(과제 → 문장 → 내 문장 듣고 따라 말하기) ──
+  z.strictObject({ ...head("writing-task") }),
+  /** 진행: 쓰던 글(대기열 — 되살리기), 끝: 낸 문장(서버 액션 — 확인 결과와 함께). */
+  z.strictObject({ ...head("writing-guided"), sentences: sentenceList }),
+  /** 진행: 고칠 곳을 고친 문장(내 문장 듣기에 씀). 쓰기 문장 활동의 시도다. */
+  z.strictObject({ ...head("writing-guided-fix"), fixed: sentenceList }),
+  z.strictObject({ ...head("writing-own-repeat"), ...ownSpoken }),
+  // ── b: 쓰기 6~12 첫 세션(생각 꺼내기 · 초고 — 서버 액션) · 둘째 세션 ──
+  z.discriminatedUnion("step", [
+    z.strictObject({
+      v: z.literal(INPUT_VERSION),
+      kind: z.literal("thinkout"),
+      step: z.literal("progress"),
+      turn: z.int().min(1),
+      answer: z.string().nullable(),
+      question: z.string(),
+      options: z.array(z.string()),
+      historyEntry: z.string(),
+    }),
+    z.strictObject({
+      v: z.literal(INPUT_VERSION),
+      kind: z.literal("thinkout"),
+      step: z.literal("final"),
+      summary: z.string().optional(),
+      words: z.array(z.string()).optional(),
+      starters: z.array(z.string()).optional(),
+      /** 생각 꺼내기 실패 · 출력 막힘 — '이번에는 바로 써 볼까요'(8절). */
+      failed: z.literal(true).optional(),
+      /** 중단된 초고를 되살릴 때 앞 생각 꺼내기를 그대로 씀(AI 다시 안 부름). */
+      restored: z.literal(true).optional(),
+    }),
+  ]),
+  z.strictObject({ ...head("draft"), text: z.string() }),
+  z.strictObject({ ...head("feedback-praise") }),
+  z.strictObject({ ...head("feedback-correction") }),
+  z.strictObject({ ...head("model-answer") }),
+  z.strictObject({ ...head("rewrite"), text: z.string() }),
+  z.strictObject({ ...head("own-speak"), ...ownSpoken }),
 ]);
 export type AttemptInput = z.infer<typeof AttemptInputSchema>;
 export type AttemptKind = AttemptInput["kind"];
@@ -104,12 +152,55 @@ export function parseAttemptInput(raw: unknown): AttemptInput | undefined {
   return undefined;
 }
 
-/** 시도가 그 활동의 것인가(종류가 같은가). 서버는 다르면 그 시도를 거부한다. */
+/** 시도가 그 활동의 것인가(종류가 같은가 — 고친 문장 진행 시도는 쓰기 문장 활동의 것). 서버는 다르면 그 시도를 거부한다. */
 export function inputFitsActivity(
   activity: Activity,
   input: AttemptInput,
 ): boolean {
+  if (input.kind === "writing-guided-fix")
+    return activity.kind === "writing-guided";
   return activity.kind === input.kind;
+}
+
+/**
+ * 대기열 길(saveSessionAttempts)이 받지 않는 시도 — AI 결과와 함께 서버 액션이 저장한다(plan-p11b 값 4):
+ * 쓰기 확인 끝 · 생각 꺼내기(진행 · 끝) · 초고 끝 · 고쳐 쓰기 끝.
+ */
+export function serverActionOnly(input: AttemptInput): boolean {
+  switch (input.kind) {
+    case "thinkout":
+      return true;
+    case "writing-guided":
+    case "draft":
+    case "rewrite":
+      return input.step === "final";
+    default:
+      return false;
+  }
+}
+
+/**
+ * AI 가 필요한 수업인가(13절 C80 · 8절 '동안' — 1-가 하루 안전 상한에 닿은 학습일에 시작하지 않는 수업): 쓰기 4~5 와
+ * 6~12 첫 세션, 발표가 있는 말하기(9~12). 쓰기 둘째 세션(고쳐 쓰기)은 AI 를 부르지 않고, 말하기 3~8 은 막지 않고 질문 답만
+ * 건너뛴다(8절 예외 — c). 시드 내용 꼴로 가른다(단계 숫자를 박지 않는다).
+ */
+export function aiNeededLesson(input: {
+  area: Area;
+  content: object;
+  part?: "draft" | "rewrite";
+}): boolean {
+  const c = input.content as { shape?: unknown; presentation?: unknown };
+  switch (input.area) {
+    case "writing":
+      return (
+        c.shape === "guided" ||
+        (c.shape === "composition" && input.part !== "rewrite")
+      );
+    case "speaking":
+      return c.presentation !== undefined && c.presentation !== null;
+    default:
+      return false;
+  }
 }
 
 // ── 이어 할 자리 ──
@@ -437,5 +528,19 @@ export function appActivityResult(
       const q = at(speakingContent(lesson).questions, activity.index, "질문");
       return questionResult(q, input, ctx);
     }
+    // b: 과제 · 첨삭 보기 · 모범 답안은 점수 없음, 내 문장 말하기는 선택(점수 · 단어 수 없음), 쓰기 확인 · 초고 · 고쳐 쓰기의
+    // 점수는 서버 액션이 AI 결과로 쓴다(이 길로 오지 않음)
+    case "writing-task":
+    case "writing-guided":
+    case "writing-guided-fix":
+    case "writing-own-repeat":
+    case "thinkout":
+    case "draft":
+    case "feedback-praise":
+    case "feedback-correction":
+    case "model-answer":
+    case "rewrite":
+    case "own-speak":
+      return NO_RESULT;
   }
 }

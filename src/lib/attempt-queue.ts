@@ -179,7 +179,8 @@ export function createAttemptQueue({
 
   return {
     async add(attempt) {
-      state = queueAdd(state, attempt);
+      // 저장 전에 저장소와 합친다 — 같은 기기의 다른 탭이 끊긴 채 쌓은 답을 덮어쓰지 않게(Codex 지적 2, 2026-10-22)
+      state = queueAdd(mergeStates(load(storage), state), attempt);
       save(storage, state);
       await flush();
     },

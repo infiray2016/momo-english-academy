@@ -189,3 +189,32 @@ describe("시도 대기열", () => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+describe("시도 대기열 · 여러 탭", () => {
+  it("대기열: 한 기기 저장소를 쓰는 두 쪽(탭)이 끊긴 채 각각 쌓아도 둘 다 남는다", async () => {
+    // Codex 지적 2(review-codex-2026-10-19 판정 2) — 나중 탭이 앞 탭 답을 덮어쓰지 않게 저장 전에 저장소와 합친다
+    const storage = memoryStorage();
+    const offline = async () => {
+      throw new Error("offline");
+    };
+    const tabA = createAttemptQueue({ storage, send: offline });
+    const tabB = createAttemptQueue({ storage, send: offline });
+    await tabA.add(attempt("a"));
+    await tabB.add(attempt("b"));
+    const stored = JSON.parse(storage.getItem(ATTEMPT_QUEUE_KEY) ?? "{}") as {
+      items: QueuedAttempt[];
+    };
+    expect(stored.items.map((i) => i.clientAttemptId).sort()).toEqual([
+      "a",
+      "b",
+    ]);
+    // 다시 연 쪽은 둘 다 본다
+    const reopened = createAttemptQueue({ storage, send: offline });
+    expect(
+      reopened
+        .pending()
+        .map((i) => i.clientAttemptId)
+        .sort(),
+    ).toEqual(["a", "b"]);
+  });
+});

@@ -17,6 +17,7 @@ import {
   SmallLink,
   StatusLine,
 } from "@/components/board/board";
+import { AiRest } from "@/components/session/ai-rest";
 import type { ResultView as ResultData } from "@/server/session/result";
 import {
   LESSON_START_TEXT,
@@ -34,7 +35,7 @@ const TEXT = {
 
 export function ResultView({ view }: { view: ResultData }) {
   const router = useRouter();
-  const { start, busy, status, asking, setAsking } = useLessonStart();
+  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -45,7 +46,10 @@ export function ResultView({ view }: { view: ResultData }) {
         heading
         title={AREA_LABEL[view.area]}
         detail={TEXT.levelUnit(view.level, view.unit)}
-        right={<SmallLink href="/">{TEXT.home}</SmallLink>}
+        right={
+          // 안전 상한 안내가 큰 '홈'을 가진다(한 화면에 '홈' 하나)
+          resting ? undefined : <SmallLink href="/">{TEXT.home}</SmallLink>
+        }
       />
       <div
         data-result=""
@@ -59,7 +63,10 @@ export function ResultView({ view }: { view: ResultData }) {
           <p>{view.title}</p>
         </PostIt>
         <div className="flex flex-col items-center gap-4">
-          {next.kind === "list" ? (
+          {resting ? (
+            // 1-가 하루 안전 상한 — '다음 수업'을 열지 못하면 안내와 '홈'(C50 (2) · C80)
+            <AiRest />
+          ) : next.kind === "list" ? (
             <BigLink href={`/${view.area}/lessons`} data-result-next="list">
               {TEXT.list}
             </BigLink>

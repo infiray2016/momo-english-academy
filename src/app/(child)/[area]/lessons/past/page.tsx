@@ -44,14 +44,21 @@ export default async function PastLessonsPage(
   if (raw !== undefined && unit === undefined)
     redirect(`/${area}/lessons/past`);
 
+  const band = {
+    title: TEXT.title,
+    detail: `${AREA_LABEL[area as Area]} · ${input.level}단계${unit !== undefined ? ` · ${TEXT.unit(unit)}` : ""}`,
+    back: { href: `/${area}/lessons`, label: TEXT.back },
+  };
   return (
     <ChildScreen>
-      <PaperBand
-        heading
-        title={TEXT.title}
-        detail={`${AREA_LABEL[area as Area]} · ${input.level}단계${unit !== undefined ? ` · ${TEXT.unit(unit)}` : ""}`}
-        right={<SmallLink href={`/${area}/lessons`}>{TEXT.back}</SmallLink>}
-      />
+      {unit === undefined ? (
+        <PaperBand
+          heading
+          title={band.title}
+          detail={band.detail}
+          right={<SmallLink href={band.back.href}>{band.back.label}</SmallLink>}
+        />
+      ) : null}
       {unit === undefined ? (
         <section className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6">
           {input.unitsPassed.map((u, i) => (
@@ -68,9 +75,11 @@ export default async function PastLessonsPage(
           ))}
         </section>
       ) : (
+        // 수업을 고르는 쪽은 띠를 조각이 그린다 — 안전 상한 안내 동안 띠 링크를 숨겨 '홈' 하나만(검토 M-2 · 화면 M-5)
         <PastLessons
           area={area as Exclude<Area, "talk">}
           items={pastUnits(input, unit)}
+          band={band}
         />
       )}
     </ChildScreen>

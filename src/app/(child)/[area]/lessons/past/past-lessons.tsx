@@ -3,7 +3,14 @@
 // 지난 단원의 수업 고르기(4절 수업 목록 표 '지난 수업' 행 · 3.2, plan-p10b 값 7). 고르면 세션을 연다(수업 목록과 같은 useLessonStart —
 // 서버가 다시 판정, 하던 수업이 있으면 서버가 needs_confirm 을 돌려주고 쪽지로 한 번 묻는다).
 import { useEffect, useState } from "react";
-import { ConfirmSheet, PostIt, StatusLine } from "@/components/board/board";
+import {
+  ConfirmSheet,
+  PaperBand,
+  PostIt,
+  SmallLink,
+  StatusLine,
+} from "@/components/board/board";
+import { AiRest } from "@/components/session/ai-rest";
 import type { PastItem } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
 import { LESSON_START_TEXT, useLessonStart } from "../use-lesson-start";
@@ -13,16 +20,39 @@ const UNTRIED = "안 해 본 수업";
 export function PastLessons({
   area,
   items,
+  band,
 }: {
   area: Exclude<Area, "talk">;
   items: PastItem[];
+  /** 종이 띠(쪽이 정함) — 안전 상한 안내 동안은 오른쪽 링크를 숨긴다. */
+  band: {
+    title: string;
+    detail: string;
+    back: { href: string; label: string };
+  };
 }) {
-  const { start, busy, status, asking, setAsking } = useLessonStart();
+  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
+  // 1-가 하루 안전 상한 — 안내와 '홈'만(C50 (2) · C80, 띠 링크 숨김)
+  if (resting)
+    return (
+      <>
+        <PaperBand heading title={band.title} detail={band.detail} />
+        <PostIt tone="paper" className="p-6 pt-9">
+          <AiRest />
+        </PostIt>
+      </>
+    );
   return (
     <>
+      <PaperBand
+        heading
+        title={band.title}
+        detail={band.detail}
+        right={<SmallLink href={band.back.href}>{band.back.label}</SmallLink>}
+      />
       <section
         data-past-lessons=""
         data-hydrated={hydrated ? "" : undefined}

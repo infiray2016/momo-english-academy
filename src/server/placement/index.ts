@@ -53,7 +53,7 @@ import {
 } from "@/db/schema/learning";
 import { parentAlerts, progressEvents, settings } from "@/db/schema/operations";
 import { recordDeviceAlert } from "@/server/alerts/device";
-import { type Db, getDb } from "@/server/db";
+import { type Db, type DbOrTx, getDb } from "@/server/db";
 import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
 import {
@@ -299,7 +299,7 @@ function stepOf(
 
 /** 문항에 쓰인 낱말의 그림 정보(정할 것 파 — 카탈로그 행을 믿고 경로를 준다. 읽기 실패는 화면이 뜻 글로). */
 async function pictureLookup(
-  db: Db,
+  db: DbOrTx,
   item: PlacementItem,
 ): Promise<(word: string) => PictureInfo> {
   const words = new Set<string>();
@@ -329,7 +329,8 @@ async function pictureLookup(
 }
 
 async function screenOf(
-  db: Db,
+  // 트랜잭션 안에서는 그 트랜잭션 연결로 읽는다(바깥 연결을 또 잡아 풀이 차면 서로 기다리지 않게 — Codex 지적 3)
+  db: DbOrTx,
   area: PlacementArea,
   session: typeof sessions.$inferSelect,
   test: typeof levelTests.$inferSelect,
@@ -610,7 +611,7 @@ async function answerUnsafe(
     if (seen)
       return {
         ok: true,
-        screen: await screenOf(db, area, current, test, form, through),
+        screen: await screenOf(tx, area, current, test, form, through),
       } as const;
     if (current.status !== "in_progress")
       return { ok: false, reason: "stale" } as const;
@@ -669,7 +670,7 @@ async function answerUnsafe(
       // 다른 요청이 같은 시도 id 를 먼저 넣었다 — 그 결과를 돌려준다
       return {
         ok: true,
-        screen: await screenOf(db, area, current, test, form, through),
+        screen: await screenOf(tx, area, current, test, form, through),
       } as const;
     }
     const [updated] = await tx
@@ -683,7 +684,7 @@ async function answerUnsafe(
     if (next.kind === "item")
       return {
         ok: true,
-        screen: await screenOf(db, area, current, updated, form, through),
+        screen: await screenOf(tx, area, current, updated, form, through),
       } as const;
 
     // ── 끝: 결과(값 12) ──

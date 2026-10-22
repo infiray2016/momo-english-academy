@@ -5,6 +5,7 @@ import type { LessonOf } from "@/core/seed/schema/lesson";
 import {
   type AppScoringContext,
   type AttemptInput,
+  aiNeededLesson,
   appActivityResult,
   finalActivityNos,
   INPUT_JSON_MAX,
@@ -12,6 +13,7 @@ import {
   lemmaLookup,
   parseAttemptInput,
   resumePointOf,
+  serverActionOnly,
 } from "@/core/session/attempt";
 import { type Activity, activitiesOf } from "@/core/session/preview";
 import {
@@ -30,6 +32,10 @@ const reading = readingLesson(ref, 1).lesson;
 const writing1 = writingLesson(ref, 1).lesson;
 const writing3 = writingLesson(ref, 3).lesson;
 const speaking = speakingLesson(ref, 1).lesson;
+const writing4 = writingLesson(ref, 4).lesson;
+const writing6 = writingLesson(ref, 6).lesson;
+const speaking6 = speakingLesson(ref, 6).lesson;
+const speaking10 = speakingLesson(ref, 10).lesson;
 
 const ctxOf = (
   lesson: { unitWords: readonly string[] },
@@ -615,5 +621,169 @@ describe("앱 채점", () => {
     expect(lemmaOf("be")).toBe("be");
     expect(lemmaOf("ice creams")).toBe("ice cream");
     expect(lemmaOf("dog")).toBeUndefined();
+  });
+});
+
+describe("쓰기 AI 시도(plan-p11b 값 4)", () => {
+  const b = (kind: string, step: "final" | "progress", content = {}) => ({
+    v: 1,
+    kind,
+    step,
+    ...content,
+  });
+
+  it("b 시도 꼴: 쓰기 4~12 종류의 진행 · 끝 시도를 읽고 칸이 틀리면 받지 않는다", () => {
+    for (const good of [
+      b("writing-task", "final"),
+      b("writing-guided", "progress", { sentences: ["I like the ", ""] }),
+      b("writing-guided", "final", { sentences: ["I like the cat."] }),
+      b("writing-guided-fix", "progress", { fixed: ["He likes cats."] }),
+      b("writing-own-repeat", "final", { heard: ["i like the cat"] }),
+      b("writing-own-repeat", "final", { skipped: "chose_skip" }),
+      b("own-speak", "final", { skipped: "no_mic" }),
+      b("thinkout", "progress", {
+        turn: 1,
+        answer: null,
+        question: "어떤 동물을 좋아해?",
+        options: ["강아지", "고양이", "토끼"],
+        historyEntry: "어떤 동물을 좋아해?",
+      }),
+      b("thinkout", "final", {
+        summary: "강아지를 좋아해요",
+        words: ["dog"],
+        starters: ["I like"],
+      }),
+      b("thinkout", "final", { failed: true }),
+      b("thinkout", "final", { restored: true }),
+      b("draft", "progress", { text: "I have a dog." }),
+      b("draft", "final", { text: "I have a dog." }),
+      b("feedback-praise", "final"),
+      b("feedback-correction", "final"),
+      b("model-answer", "final"),
+      b("rewrite", "final", { text: "I have a dog." }),
+    ])
+      expect(parseAttemptInput(good), JSON.stringify(good)).toBeDefined();
+    for (const bad of [
+      b("writing-task", "final", { extra: 1 }),
+      b("writing-guided", "final", { sentences: [] }),
+      b("writing-guided", "final", { sentences: [1] }),
+      b("writing-guided-fix", "progress", { fixed: "x" }),
+      b("writing-own-repeat", "final", { skipped: "bored" }),
+      b("thinkout", "progress", { turn: 0, answer: null }),
+      b("thinkout", "final", { failed: false }),
+      b("draft", "final", {}),
+      b("rewrite", "final", { text: 3 }),
+      b("feedback-praise", "final", { text: "x" }),
+    ])
+      expect(parseAttemptInput(bad), JSON.stringify(bad)).toBeUndefined();
+  });
+
+  it("b 시도 꼴: 대기열 길은 쓰기 확인 끝 · 생각 꺼내기 · 초고 끝 · 고쳐 쓰기 끝을 받지 않는다(서버 액션만 저장)", () => {
+    const only = (input: object) =>
+      serverActionOnly(parseAttemptInput(input) as AttemptInput);
+    expect(only(b("writing-guided", "final", { sentences: ["a."] }))).toBe(
+      true,
+    );
+    expect(only(b("thinkout", "final", { failed: true }))).toBe(true);
+    expect(
+      only(
+        b("thinkout", "progress", {
+          turn: 1,
+          answer: "강아지",
+          question: "q",
+          options: ["a", "b", "c"],
+          historyEntry: "q",
+        }),
+      ),
+    ).toBe(true);
+    expect(only(b("draft", "final", { text: "a" }))).toBe(true);
+    expect(only(b("rewrite", "final", { text: "a" }))).toBe(true);
+    // 대기열이 받는 것: 쓰던 글 · 고친 문장 · 자동 저장 초고 · AI 없는 끝 시도 · a 몫
+    for (const queued of [
+      b("writing-guided", "progress", { sentences: ["a"] }),
+      b("writing-guided-fix", "progress", { fixed: ["a."] }),
+      b("draft", "progress", { text: "a" }),
+      b("writing-task", "final"),
+      b("writing-own-repeat", "final", { skipped: "chose_skip" }),
+      b("feedback-praise", "final"),
+      b("model-answer", "final"),
+      b("own-speak", "final", { heard: ["a"] }),
+      b("preview", "final", { shownWords: [] }),
+    ])
+      expect(only(queued), JSON.stringify(queued)).toBe(false);
+  });
+
+  it("b 시도 꼴: 고친 문장 진행 시도는 쓰기 문장 활동의 것이고 AI 없는 b 끝 시도는 점수 · 단어별 정오가 없다", () => {
+    const fix = parseAttemptInput(
+      b("writing-guided-fix", "progress", { fixed: ["a."] }),
+    ) as AttemptInput;
+    expect(inputFitsActivity({ kind: "writing-guided" }, fix)).toBe(true);
+    expect(inputFitsActivity({ kind: "writing-task" }, fix)).toBe(false);
+    const activities = activitiesOf({
+      area: "writing",
+      level: 4,
+      content: writing4.content,
+    });
+    for (const [activity, input] of [
+      [activities[1], b("writing-task", "final")],
+      [activities[2], b("writing-guided-fix", "progress", { fixed: ["a."] })],
+      [
+        activities[3],
+        b("writing-own-repeat", "final", { heard: ["i like it"] }),
+      ],
+    ] as const) {
+      if (!activity) throw new Error("활동 없음");
+      expect(
+        appActivityResult(
+          activity,
+          writing4,
+          parseAttemptInput(input) as AttemptInput,
+          ctxOf(writing4),
+        ),
+      ).toEqual({ score: null, wordResults: [], wordCount: null });
+    }
+  });
+
+  it("AI 가 필요한 수업: 쓰기 4~5 · 6~12 첫 세션 · 발표가 있는 말하기는 참이고 둘째 세션 · 쓰기 1~3 · 읽기 · 말하기 1~8 은 거짓이다", () => {
+    expect(aiNeededLesson({ area: "writing", content: writing4.content })).toBe(
+      true,
+    );
+    expect(aiNeededLesson({ area: "writing", content: writing6.content })).toBe(
+      true,
+    );
+    expect(
+      aiNeededLesson({
+        area: "writing",
+        content: writing6.content,
+        part: "draft",
+      }),
+    ).toBe(true);
+    // 둘째 세션(고쳐 쓰기)은 AI 를 부르지 않는다(C80)
+    expect(
+      aiNeededLesson({
+        area: "writing",
+        content: writing6.content,
+        part: "rewrite",
+      }),
+    ).toBe(false);
+    expect(aiNeededLesson({ area: "writing", content: writing1.content })).toBe(
+      false,
+    );
+    expect(aiNeededLesson({ area: "writing", content: writing3.content })).toBe(
+      false,
+    );
+    expect(aiNeededLesson({ area: "reading", content: reading.content })).toBe(
+      false,
+    );
+    // 말하기 3~8 은 막지 않고 질문 답만 건너뛴다(8절 '동안' 예외), 9~12(발표)는 막는다
+    expect(
+      aiNeededLesson({ area: "speaking", content: speaking.content }),
+    ).toBe(false);
+    expect(
+      aiNeededLesson({ area: "speaking", content: speaking6.content }),
+    ).toBe(false);
+    expect(
+      aiNeededLesson({ area: "speaking", content: speaking10.content }),
+    ).toBe(true);
   });
 });

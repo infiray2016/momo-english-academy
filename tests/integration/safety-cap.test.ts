@@ -1,14 +1,31 @@
-// AC-8b(서버 몫) 하루 안전 상한 · 알림 기준은 막지 않음(plan-p09c 증명 표). P11 이 세션 몫을 이 파일에 더한다.
+// AC-8b(서버 몫) 하루 안전 상한 · 알림 기준은 막지 않음(plan-p09c 증명 표). P11b 가 1-가 시작 막음 · 쓰기 확인 도중 몫을 아래에 더했다.
 // 숫자는 TEST_SETTINGS 에서 읽고, 안전 상한 호출 수는 프로필 설정 행을 작은 값으로 넣어 '설정값을 읽는 것'을 본다.
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { and, eq, isNull, max } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { learningDayOf } from "@/core/learning-day";
-import { profiles } from "@/db/schema/learning";
-import { aiCalls, parentAlerts } from "@/db/schema/operations";
+import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
+import { LEVEL_MAX } from "@/core/seed/structure";
+import { aiNeededLesson } from "@/core/session/attempt";
+import { lessons } from "@/db/schema/content";
+import { attempts, profiles, sessions } from "@/db/schema/learning";
+import {
+  aiCalls,
+  parentAlerts,
+  parentAuth,
+  settings,
+} from "@/db/schema/operations";
+import { SEED_REVISION_TABLES } from "@/db/schema/seed-revision";
 import { type AiDeps, checkWriting } from "@/server/ai";
 import { createAnthropicClient } from "@/server/ai/client";
 import { type AiCallRow, insertAiCall } from "@/server/ai/store";
+import type { Db } from "@/server/db";
+import { saveFirstRun } from "@/server/profile";
+import { loadSeed } from "@/server/seed/load";
+import { loadSessionView, startLessonSession } from "@/server/session";
+import { checkGuided } from "@/server/writing";
 import {
   createFakeAnthropic,
   type FakeReply,
@@ -18,6 +35,18 @@ import {
   SAMPLE_FORBIDDEN,
   WRITING_CHECK_SAMPLE,
 } from "../fixtures/ai/sample-inputs";
+import {
+  defaultSettings,
+  referenceSet,
+  speakingLesson,
+  writingLesson,
+} from "../fixtures/seed/builders";
+import {
+  DEV_SEED_AREAS,
+  DEV_SEED_THROUGH,
+  devSeedTree,
+} from "../fixtures/seed/dev-tree";
+import { filesOf } from "../fixtures/seed/loadable";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { createTestDatabase, seedSettings, type TestDatabase } from "./test-db";
 
@@ -262,5 +291,223 @@ describe("AC-8b 하루 안전 상한", () => {
       await checkWriting(WRITING_CHECK_SAMPLE, ctxOf(profileId), deps),
     ).toEqual({ ok: false, reason: "safety_cap", refusals: 0 });
     expect(fake.requests).toHaveLength(SMALL_SAFETY_CALLS);
+  });
+});
+
+// ── 1-가 시작 막음(11절 (7) · 13절 C50 (2) · C80, plan-p11b 값 2 · 9 · 증명 표 '1-가 안전 상한' 행) ──
+// 수업 시작 · 쓰기 확인 도중은 시험용 시드(작은 틀, 규격 12단계 전부)를 넣은 따로 된 시험 DB 에서 본다(위 AC-8b 는 설정만 든 DB).
+describe("1-가 안전 상한", () => {
+  const LOADED_AT = new Date("2026-10-17T10:00:00+09:00");
+  const SAVED_AT = new Date("2026-10-17T11:00:00+09:00");
+  const NOW = new Date("2026-10-17T20:00:00+09:00");
+  const THROUGH_KEY = "seed.complete_through_level";
+  const ref = referenceSet(defaultSettings());
+  const samples = {
+    writing4: writingLesson(ref, 4),
+    writing6: writingLesson(ref, 6),
+    speaking10: speakingLesson(ref, 10),
+  };
+  let seeded: TestDatabase;
+  let db: Db;
+  const sessionDeps = () => ({ db, now: () => NOW, homophones: () => [] });
+
+  beforeAll(async () => {
+    seeded = await createTestDatabase();
+    db = seeded.db;
+    const report = await loadSeed(db, {
+      files: filesOf(devSeedTree()),
+      completeThrough: DEV_SEED_THROUGH,
+      areas: [...DEV_SEED_AREAS],
+      now: LOADED_AT,
+    });
+    if (report.outcome !== "loaded") throw new Error("시험 시드 적재 실패");
+    await db
+      .update(settings)
+      .set({ value: LEVEL_MAX })
+      .where(and(eq(settings.key, THROUGH_KEY), isNull(settings.profileId)));
+    let revision = 0;
+    for (const table of SEED_REVISION_TABLES) {
+      const [row] = await db.select({ r: max(table.revision) }).from(table);
+      revision = Math.max(revision, Number(row?.r ?? 0));
+    }
+    for (const sample of Object.values(samples)) {
+      await db.insert(lessons).values({
+        area: sample.area,
+        level: sample.level,
+        unit: sample.unit,
+        kind: "assigned",
+        lessonNo: 1,
+        topicVariant: 1,
+        listTitle: sample.lesson.title,
+        content: {
+          ...sample.lesson,
+          kind: "assigned",
+          lessonNo: 1,
+          variant: 1,
+          revision,
+          correction: 0,
+        },
+        newWords: [...sample.lesson.newWords],
+        unitWords: [...sample.lesson.unitWords],
+        generation: sample.lesson.generation,
+        revision,
+        correction: 0,
+      });
+    }
+  });
+  afterAll(async () => {
+    await seeded?.drop();
+  });
+
+  /** 집을 비우고 그 시작 단계로 새로 넣는다. 프로필 id 를 돌려준다. */
+  async function household(
+    startLevels: Partial<Record<"reading" | "writing" | "speaking", number>>,
+  ): Promise<string> {
+    await db.delete(profiles);
+    await db.delete(parentAuth);
+    await db.delete(parentAlerts);
+    await db.delete(aiCalls);
+    const saved = await saveFirstRun(
+      {
+        pin: "246813",
+        displayName: "모모",
+        englishName: "Momo",
+        avatar: AVATARS[0].id,
+        topicBundle: TOPIC_BUNDLES[0].id,
+        alphabetUnknown: false,
+        startLevels,
+        mic: { result: "not_checked" },
+      },
+      { db, now: () => SAVED_AT },
+    );
+    if (!saved.ok) throw new Error("첫 실행 저장 실패");
+    const [profile] = await db.select({ id: profiles.id }).from(profiles);
+    if (!profile) throw new Error("프로필 없음");
+    // 이 프로필의 안전 상한을 작은 값으로(설정값을 읽는 것을 본다)
+    await seedSettings(db, [
+      {
+        key: "ai.safety_daily_calls",
+        scope: "profile",
+        value: SMALL_SAFETY_CALLS,
+        profileId: profile.id,
+      },
+    ]);
+    return profile.id;
+  }
+
+  /** 그 학습일 호출 수를 상한까지 채운다. */
+  async function reachCap(profileId: string) {
+    await db.insert(aiCalls).values(
+      Array.from({ length: SMALL_SAFETY_CALLS }, () =>
+        pastRow({
+          profileId,
+          calledAt: NOW,
+          learningDay: learningDayOf(NOW, TZ, DAY_START),
+        }),
+      ),
+    );
+  }
+
+  async function lessonId(
+    area: "reading" | "writing" | "speaking",
+    level: number,
+  ): Promise<string> {
+    const [row] = await db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .where(
+        and(
+          eq(lessons.area, area),
+          eq(lessons.level, level),
+          eq(lessons.unit, 1),
+          eq(lessons.kind, "assigned"),
+          eq(lessons.lessonNo, 1),
+          eq(lessons.topicVariant, 1),
+        ),
+      );
+    if (!row) throw new Error(`${area} ${level}단계 수업 없음`);
+    return row.id;
+  }
+
+  const start = async (id: string) =>
+    startLessonSession({ lessonId: id, confirmAbort: false }, sessionDeps());
+
+  it("1-가 안전 상한: 그 학습일 호출이 ai.safety_daily_calls 에 닿으면 쓰기 4단계 이상 첫 세션 · 말하기 9단계 이상은 시작되지 않고 둘째 세션 · 읽기 · 쓰기 1~3 은 시작된다", async () => {
+    // AI 가 필요한 수업(쓰기 4 · 6 첫 세션 · 말하기 10)은 막히고, 상한 행을 지우면 같은 수업이 열린다(막힌 까닭이 상한임)
+    for (const [area, level] of [
+      ["writing", samples.writing4.level],
+      ["writing", samples.writing6.level],
+      ["speaking", samples.speaking10.level],
+    ] as const) {
+      const profileId = await household({ [area]: level });
+      await reachCap(profileId);
+      const id = await lessonId(area, level);
+      expect(await start(id), `${area} ${level}`).toEqual({
+        ok: false,
+        reason: "ai_resting",
+      });
+      expect(await db.select().from(sessions)).toHaveLength(0);
+      await db.delete(aiCalls);
+      expect((await start(id)).ok, `${area} ${level} 상한 전`).toBe(true);
+    }
+    // AI 없이 되는 수업(읽기 · 쓰기 1~3)은 상한 날에도 열린다
+    const profileId = await household({ reading: 1, writing: 1 });
+    await reachCap(profileId);
+    expect((await start(await lessonId("reading", 1))).ok).toBe(true);
+    expect((await start(await lessonId("writing", 1))).ok).toBe(true);
+    // 둘째 세션(고쳐 쓰기)은 AI 가 필요한 수업이 아니다 — 시작 판정 길(첨삭 보기)은 차례 7 이 이 시험에 더한다
+    expect(
+      aiNeededLesson({
+        area: "writing",
+        content: samples.writing6.lesson.content,
+        part: "rewrite",
+      }),
+    ).toBe(false);
+  });
+
+  it("1-가 안전 상한: 쓰기 확인 도중 닿으면 시도를 남기지 않고 '쉬는 중'이며 세션은 진행으로 남고 다시 열면 화면 자료가 안내를 고른다", async () => {
+    const profileId = await household({ writing: samples.writing4.level });
+    const started = await start(
+      await lessonId("writing", samples.writing4.level),
+    );
+    if (!started.ok) throw new Error("세션이 열려야 한다");
+    const view = await loadSessionView(
+      { sessionId: started.sessionId },
+      sessionDeps(),
+    );
+    if (view?.area !== "writing") throw new Error("화면 자료 없음");
+    expect(view.aiResting).toBe(false);
+    await reachCap(profileId);
+    const { fake, deps } = harness(() => NOW);
+    const content = samples.writing4.lesson.content;
+    if (content.shape !== "guided") throw new Error("견본 꼴");
+    const out = await checkGuided(
+      {
+        sessionId: started.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo:
+          view.activities.findIndex((a) => a.kind === "writing-guided") + 1,
+        sentences: content.sentences.map((s) => s.model),
+      },
+      { ...deps, db, now: () => NOW },
+    );
+    expect(out).toEqual({ ok: false, reason: "ai_resting" });
+    expect(fake.requests).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(attempts)
+        .where(eq(attempts.sessionId, started.sessionId)),
+    ).toHaveLength(0);
+    const [row] = await db
+      .select({ status: sessions.status })
+      .from(sessions)
+      .where(eq(sessions.id, started.sessionId));
+    expect(row?.status).toBe("in_progress");
+    const reopened = await loadSessionView(
+      { sessionId: started.sessionId },
+      sessionDeps(),
+    );
+    expect(reopened?.aiResting).toBe(true);
   });
 });

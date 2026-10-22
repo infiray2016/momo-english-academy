@@ -195,3 +195,18 @@ export function createMasker({
 export function fillName(text: string, englishName: string): string {
   return text.split(PLACEHOLDER_NAME).join(englishName);
 }
+
+/**
+ * AI 결과 값(객체 · 배열 안의 글 모두)의 {NAME} 을 채운 새 값(P11 — 쓰기 확인 · 생각 꺼내기 · 첨삭이 아이에게 돌려주는 자리에서 쓴다).
+ * 넘긴 값은 바꾸지 않는다(저장은 가린 글 그대로, 6.1).
+ */
+export function fillNameDeep<T>(value: T, englishName: string): T {
+  if (typeof value === "string") return fillName(value, englishName) as T;
+  if (Array.isArray(value))
+    return value.map((v) => fillNameDeep(v, englishName)) as T;
+  if (value !== null && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, fillNameDeep(v, englishName)]),
+    ) as T;
+  return value;
+}
