@@ -43,3 +43,4 @@
 | P11 차례 3 작은 것 넷(A2 M-1 활동 안 입력 줄 · N-1 상태 줄 aria-live · N-2 정답 보기 고리 틈 · 쪽지 단언 보강) | review-p11-3-code 장부 판정 모두 닫힘 | 2026-10-18 08:0x |
 | displayCardsOf 첫 허용 정답만(review-p11-3-code M-1) | P11 차례 4 — 허용 정답 모두에서 대문자 꼴 모음 + 단위 시험, review-p11-4-code 장부 판정 닫힘 | 2026-10-18 09:0x |
 | 동음이의어 읽기 두 벌(세션 · 배치) | P11 차례 4 공용 모듈 하나로(AI 층에 안 닿음), review-p11-4-code 장부 판정 닫힘 | 2026-10-18 09:0x |
+| P6b 커밋 전 CREDITS.md CEFR-J 인용 꼴 | 닫힘 2026-10-22 15:0x — 공식 README(openlanguageprofiles/olp-en-cefrj 'References' · 'Terms of use')와 대조해 'The CEFR-J Wordlist Version 1.5. Compiled by Yukio Tono, Tokyo University of Foreign Studies. Retrieved from http://www.cefr-j.org/download.html' 꼴로 고치고 P6b 커밋 7767df0 | 컨트롤러 웹 조회 1회(firecrawl) |

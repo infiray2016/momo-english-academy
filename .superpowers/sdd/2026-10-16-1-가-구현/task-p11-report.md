@@ -574,3 +574,61 @@ playwright test --list    → 설정 읽힘(가짜 AI 서버 import), 가짜 서
 상태: CI 돌려 달라(로컬 관문 초록).
 
 CI 9차 → 10차(2026-10-22): run 39726243762 e2e 1 실패(`writing.spec.ts` '쓰기 4~5: …' 447줄). **원인 — 시험 결함(앱 맞음):** 가짜 AI 가 받은 사용자 글은 `0. I like the madeba and the modeba.\n1. We can mudeba with {NAME}.\n2. It is very mideba.` 로 문장 셋이 모두 있다. 시험 집의 영어 이름 'Momo'(insertHousehold 기본)가 견본 둘째 문장 끝에 있어 정본 6.1 이름 가림(P9c 가림 함수)이 `{NAME}` 으로 바꿨는데, 시험이 가리기 전 글을 찾았다. **고친 것:** 요청 본문의 messages 에서 문장마다 영어 이름을 `PLACEHOLDER_NAME` 으로 바꾼 글이 있는지 · 영어 이름 글자 그대로는 없는지를 본다(이름 가림까지 선 위에서 지킴). **바뀐 파일:** `tests/e2e/writing.spec.ts`(그 단언 · 가져오기 둘)만 — 화면 변화 없음, 다시 찍히는 사진은 같은 시험의 `p11-writing-4-*` · `p11-writing-5-*`(내용 같음). 로컬: biome ci 0 · tsc 0 · 단위 500 · check:deps 0 · spec:trace exit 0. 커밋 없음(작업 트리).
+
+## 차례 5 fix 5 — 코드 검토 B1 I-1 · M-1~M-3 · 화면 검토 B1 I-1 · M-1~M-6 · Codex 2 · 3(2026-10-22 15:xx)
+
+바탕 HEAD 726198f + 미커밋 차례 5, 커밋 없음. 브리프 `task-p11-fix5.md` 15 항목.
+
+| 번호 · 출처 | 어디를 어떻게 | 선 위 검증 |
+|---|---|---|
+| 1 코드 I-1 | `src/core/ai/mask.ts:203` `fillNameDeep`(값 안 글마다 `fillName`, 넘긴 값은 그대로 — 차례 6 생각 꺼내기 · 첨삭도 이것을 씀). `src/server/writing/index.ts:83` `outcomeOf` 가 프로필 영어 이름으로 칭찬 · 고칠 곳(원문 · 바른 표현 · 보기 · 이유)을 채운 **뒤** 아이 문장에서 자리를 찾는다(:90). 새 결과 · 같은 시도 id · 같은 활동 끝 시도 · 동시 저장 넷 모두 이 길. 저장하는 ai_feedback 은 가린 글 그대로 | 통합 `writing-check.test.ts` 신규 "쓰기 4~5: AI 칭찬 · 고칠 곳 · 이유의 {NAME} 은 프로필 영어 이름으로 채워 돌려주고 고칠 곳 자리는 채운 글로 찾으며 저장은 가린 글 그대로다"(견본 'We can ___ with Momo.' 에 원문 `… with {NAME}` — 채우지 않으면 자리를 못 찾아 고칠 곳이 사라짐) · 단위 `mask.test.ts` "6.1 화면: AI 결과 값 안의 글마다 {NAME} 을 채우고 꼴 · 수 · 참거짓은 그대로 둔다" |
+| 2 코드 M-1 | `src/core/writing/guided.ts:59` `ownRepeatStopOf(판정)` — 쓸 수 없음은 `{ markDevice: true }`, 멈춤 · 말소리 없음은 건너뛰기만. `writing-guided.tsx:591` 이 쓸 수 없음이면 `markMicUnavailable(오류 코드)` 뒤 이 활동만 `no_mic`(막힌 안내 · 알림 없음, 쓰기 세션 안 막음) | 단위 `writing-guided.test.ts` "내 문장 말하기: 마이크를 쓸 수 없음은 기기 상태를 남기고 이 활동만 건너뛰며 멈춤 · 말소리 없음은 건너뛰기만, 그 밖은 그대로다" |
+| 3 코드 M-2 · 화면 M-5 | 지난 수업 쪽(단원을 고른 뒤)의 종이 띠를 `PastLessons` 가 그린다(`past/page.tsx` 가 띠 자료 `band` 를 넘김, 단원 고르기 쪽은 그대로 쪽이 그림). 안전 상한 안내 동안은 띠 오른쪽 '수업 목록'을 빼고 안내 + '홈' 하나 | e2e `writing.spec.ts` '1-가 안전 상한: …'에 지난 수업 몫: 단원 1 통과로 두고 `/writing/lessons/past?unit=1` 에서 고르면 안내 · '수업 목록' 링크 0 · '홈' 하나 · 세션 0, 사진 `p11-ai-rest-past` |
+| 4 코드 M-3 | **고치지 않음(컨트롤러 결정)** — 아래 '다르게 한 것' | — |
+| 5 코드 범위 밖 | `guided.ts:12` `BLANK_TEXT_MAX` 60(기술 상한 — 이름 붙인 대문자 상수), 5단계 입력란 `maxLength` | 단위 "빈칸 글자 상한: 견본 문장 틀의 빈칸을 모두 상한만큼 채워도 쓰기 확인 시도 꼴 상한 안이다"(견본 문장을 두 벌 이어 빈칸 8 개 × 60 자 → `INPUT_JSON_MAX` 안 · 시도 꼴 통과) |
+| 6 화면 I-1 | `writing-guided.tsx:344` 5단계(`input === "slot"`)면 과제 줄 아래 '예시'(문구 표 b 행) + 예시문(`content.example`, 24px). 틀이 `example` 을 넘김. 4단계는 그대로 | e2e 쓰기 4~5: 5단계 쓰기 화면에서 `[data-guided-example]` 하나 · 예시문 보임, 4단계 0. 사진 `p11-writing-5-write-*` · `-5-blank-*` |
+| 7 화면 M-1 | 입력란 `w-40` → `w-auto min-w-40` + `size`(글 길이 + 1, 최소 `BLANK_INPUT_SIZE_MIN` 8 칸) — 글이 길면 늘어남 | 사진 `p11-writing-5-write-*` |
+| 8 화면 M-2 | 빈칸 꼴에 `FOCUS_RING`(누르는 칸), 입력란은 같은 꼴의 `focus:` 판(`INPUT_FOCUS`, :145 — 글 쓰는 칸은 손가락 초점에도 늘 보이게) | 사진(입력란을 `fill` 한 직후 찍어 초점 든 칸이 마지막 칸) |
+| 9 화면 M-3 | 과제 화면 단어 상자를 `TileRow`(누르는 칩 꼴) 대신 테 · 그림자 없는 굵은 글 줄(24px, `lang="en"`, :93). 새 동작 없음 | 사진 `p11-writing-4-task-*` |
+| 10 화면 M-4 → C86 | `GuidedFix.reason`(서버 :110, 1 의 이름 채움 거침). 바르게 고친 뒤 '잘 고쳤어요!' 아래 `GuideLine` 이유 한 줄(`data-fix-reason`, :516), 고르기 전 · 틀린 보기 뒤에는 없음 | e2e 쓰기 4~5: 색칠 칸 누르기 전 · '다시 골라 볼까요' 뒤 이유 0, 고친 뒤 `FAKE_REASON`. 사진 `p11-writing-*-fixed-*` |
+| 11 화면 M-6 | `speaking.tsx:247` 그 줄 `gap-4` → `gap-7`, '한 번 더 말하기' `SpeakButton` 에 `className="-mx-3"`(:252) — 단추 끝이 내용 끝, '다음'과 보이는 간격 28px 그대로 | 사진 `p11-speaking-repeat-close-*` · `-listening-on-*` |
+| 12 화면 참고 | 확인 결과가 와도 과제 줄(5단계는 예시문도)을 지우지 않음 · 입력란 · 빈 칸 단추 이름 '문장 n 빈칸 m' | — |
+| 13 Codex 2 | `src/lib/attempt-queue.ts:183` `add()` 가 저장 전에 `mergeStates(load(storage), state)` | 단위 `attempt-queue.test.ts` "대기열: 한 기기 저장소를 쓰는 두 쪽(탭)이 끊긴 채 각각 쌓아도 둘 다 남는다"(고치기 전 'b' 만 남아 실패를 봄) |
+| 14 Codex 3 | `src/server/placement/index.ts` `screenOf` · `pictureLookup` 첫 매개변수 `DbOrTx`, 답 저장 트랜잭션 안 셋(614 · 673 · 687)이 `tx` | 통합 `placement.test.ts` 신규 "배치 평가: 답 저장 트랜잭션 안의 다음 문항 화면은 그 트랜잭션 연결로 읽어 연결 하나짜리 풀에서도 끝난다"(`createDb(url, { max: 1 })` 로 시작 + 답 셋, 10초 안에 끝나야) |
+| 15 화면 '사진 없음' | 사진 셋(+ 3 의 하나) 더함 | `p11-writing-4-blank` · `-5-blank`(채우기 전) · `p11-writing-4-pick-again` · `-5-pick-again`(틀린 보기 ✕ + '다시 골라 볼까요') · `p11-ai-rest-session`(하던 세션을 상한 날 다시 엶 — 안내 · '홈' 단추 하나, 누르면 홈 · 세션 진행) · `p11-ai-rest-past` |
+
+### 시험 수
+
+단위 500 → **504**(+4 — 대기열 여러 탭 · fillNameDeep · 빈칸 상한 · 내 문장 마이크 판정), 파일 53. 통합 +2(writing-check 이름 채움 · placement 연결 하나 풀). e2e 시험 수 그대로(쓰기 4~5 · 안전 상한 e2e 에 단언 · 사진 더함). 빨강 먼저: 대기열 · 내 문장 판정 단위는 구현 전에 실패를 봤다. `fillNameDeep` 은 시험과 함수를 함께 썼다(빨강을 따로 보지 않음). 통합 · e2e 는 CI.
+
+### 다르게 한 것과 까닭
+
+1. **(4, 코드 M-3) 쓰던 글은 기기 입력으로만 되살린다** — plan-p11a 값 4 · plan-p11b 값 7 의 '진행 시도 `writing-guided { sentences }`로 되살림'과 다르다. 글자마다 진행 시도는 대기열을 넘치게 하고 다른 기기에서 이어 쓰기는 드물다(컨트롤러 결정). 시도 꼴은 받게 남겨 두었다.
+2. **(6) 5단계 예시문은 확인 결과 단계에도 둔다**(브리프는 write · checking) — 12 와 같은 까닭(결과가 와도 문장 줄이 뛰지 않게). 두 방향 넘침은 e2e `fitsBothWays` 가 쓰기 · 고친 뒤 두 번 본다.
+3. **(7) 입력란 늘림은 `field-sizing: content` 가 아니라 `size` 속성으로** — iPad Safari 의 `field-sizing` 지원을 확인하지 못해 모든 브라우저에서 되는 쪽.
+4. **(11) 음수 여백을 `speak-button.tsx` 바깥 span 의 `-m-3` 이 아니라 그 줄의 단추에만 `-mx-3` 로** — 공용 조각 기본값을 바꾸면 배치 따라 말하기 · 가운데 놓인 '말하기'의 위아래 간격(12px 씩 줄어듦)도 바뀐다. 가로만 걷어 브리프의 '보이는 간격 그대로 · 가운데 말하기 그대로'를 지킨다.
+5. **(2) 쓸 수 없음 기기 상태만 남기고 기기 알림은 남기지 않는다**(검토 '알림까지는 컨트롤러 판단' — 브리프가 기기 상태만 적음).
+
+### 관문(로컬)
+
+```
+pnpm biome ci .           → Checked 313 files. No fixes applied.
+pnpm test                 → Test Files 53 passed (53) · Tests 504 passed | 6 todo (510)
+pnpm exec tsc --noEmit    → exit 0
+pnpm build                → ✓ Compiled successfully
+pnpm check:deps           → ✔ no dependency violations found (162 modules, 713 dependencies cruised)
+pnpm check:ids            → design-number 35(새 줄 0 — BLANK_TEXT_MAX · BLANK_INPUT_SIZE_MIN 은 이름 붙인 대문자 상수)
+pnpm check:bundle         → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
+```
+
+### 남은 우려
+
+- e2e 의 지난 수업 몫은 단원 1 을 통과로 두고 단원 2 에 쓰기 5단계 수업이 없는 집에서 지난 수업 쪽이 열린다고 본다(lesson-list.spec 의 읽기 1단계 꼴을 옮김) — CI 에서 처음 확인.
+- 13절 C86(고친 뒤 이유 한 줄)은 컨트롤러가 더한다고 브리프에 적혀 있어 정본 · 문구 표는 손대지 않았다(새 화면 글은 AI 이유뿐, 정본 밖 새 문구 없음).
+
+상태: CI 돌려 달라(로컬 관문 초록).
+
+fix 5b(2026-10-22, CI 11차 run 39731870212 e2e 1 실패 + 코드 재검토 review-p11-fix5-code 새 Minor 2): **(1) 원인 — 앱 쪽 표지 결함(시험 기대는 맞음):** 이유 줄은 그려졌지만 `GuideLine`(`src/components/activities/common.tsx` — children · className 만 받음)에 단 `data-fix-reason` 이 DOM 에 넘어가지 않아 시험이 표지를 못 찾았다. 가짜 응답의 reason · 서버 `outcomeOf` 의 `reason: found.reason`(새 결과 · 저장 결과 같은 길) · 그리는 조건(`fixDone` 이고 reason 이 있을 때)은 맞다. tsc 는 JSX 의 붙임표 속성을 형 검사하지 않아 잡지 못했다. 고침: `src/components/session/writing-guided.tsx:518` 같은 꼴(안내 20px `CHILD_SIZE.guide`)의 `p` 에 표지를 단다. 다른 조각에 `data-*` 를 단 곳은 이것 하나뿐(grep 확인). **(2-가)** 5단계 입력란 `max-w-full`(:406) — 60 자 가까이 써도 문장 줄 너비를 넘지 않음. **(2-나)** `src/server/writing/index.ts:42` `GuidedFix` 머리 주석을 C86(이유는 바르게 고친 뒤에만 보임) · 모범 답안 없음으로 고침. 다시 찍히는 사진: '쓰기 4~5: …' 시험의 `p11-writing-4-*` · `-5-*`(내용 같음 — 이유 줄은 전과 같이 보임). 로컬: biome ci 0 · tsc 0 · 단위 504 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.
+
+fix 5c(2026-10-22, CI 12차 run 39733003650 e2e 1 실패 — '쓰기 4~5: …' `fitsBothWays` 가로 1180 × 820 에서 문서 높이 869, 5단계 고친 뒤 화면): **원인 — 앱 화면 넘침.** fix 5 가 결과 단계에도 둔 과제 줄 · 5단계 예시문(다르게 한 것 2)에 이유 줄이 더해져 한 화면을 넘었다. **고침(컨트롤러 결정 fix 5c):** `src/components/session/writing-guided.tsx` 결과 단계(칭찬 · 고칠 곳 · 보기 · 이유)에서 과제 줄(:342)과 예시문(:343, 브리프 항목 6 의 원래 범위 — 쓰기 · 기다림 동안만)을 숨기고, 문장 목록 간격을 결과 단계만 24 → 8px(:353)로 줄였다. 글자 20 · 24px · 누르는 곳 56px(색칠 칸 · 보기 · '다음')은 그대로. 어림: 과제 줄 + 간격 약 52px · 예시문 + 간격 약 89px · 문장 사이 2 × 16px 로 약 170px 줄어 견본(3문장)은 약 700px, 실시드 4문장(문장 줄 56 + 8px 더함)도 약 760px 로 820 안. 세로(820 × 1180)는 줄기만 함. 결과가 오면 과제 줄이 사라져 문장 줄이 위로 올라가는 것(화면 검토 '참고')은 다시 생긴다 — 한 화면에 드는 쪽을 골랐다(컨트롤러 결정). 다시 찍히는 사진: `p11-writing-4-check` · `-options` · `-pick-again` · `-fixed` 와 `-5-` 같은 넷(결과 단계 꼴이 바뀜). 로컬: biome ci 0 · tsc 0 · 단위 504 · build 0 · check:deps 0 · check:ids design-number 35 · spec:trace 0. 커밋 없음.
