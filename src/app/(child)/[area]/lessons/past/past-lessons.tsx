@@ -11,6 +11,7 @@ import {
   StatusLine,
 } from "@/components/board/board";
 import { AiRest } from "@/components/session/ai-rest";
+import { WaitHint } from "@/components/session/wait-hint";
 import type { PastItem } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
 import { LESSON_START_TEXT, useLessonStart } from "../use-lesson-start";
@@ -21,6 +22,7 @@ export function PastLessons({
   area,
   items,
   band,
+  waitHintSeconds,
 }: {
   area: Exclude<Area, "talk">;
   items: PastItem[];
@@ -30,8 +32,11 @@ export function PastLessons({
     detail: string;
     back: { href: string; label: string };
   };
+  /** ui.wait_hint_seconds(고른 뒤 서버가 늦으면 기다림 표시). */
+  waitHintSeconds: readonly [number, number];
 }) {
-  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
+  const { start, busy, status, asking, setAsking, resting, waitingSince } =
+    useLessonStart(waitHintSeconds);
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -86,6 +91,9 @@ export function PastLessons({
           </PostIt>
         ))}
       </section>
+      {waitingSince !== undefined ? (
+        <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />
+      ) : null}
       <StatusLine tone="error">{status}</StatusLine>
       <ConfirmSheet
         open={asking !== undefined}

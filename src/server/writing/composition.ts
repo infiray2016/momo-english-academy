@@ -41,13 +41,18 @@ import { now as appNow } from "@/server/clock";
 import { type Db, getDb } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
+import { type StartOutcome, startLessonSession } from "@/server/session";
 import { levelContextOf } from "@/server/session/ai-context";
 import {
   appDayStartHourSchema,
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
-import { type DraftFeedback, draftFeedbackOf } from "@/server/writing/status";
+import {
+  type DraftFeedback,
+  draftFeedbackOf,
+  rewriteSourceOf,
+} from "@/server/writing/status";
 
 /** 활동 번호 상한(세션 서버의 시도 겉꼴과 같은 기술 값). */
 const ACTIVITY_NO_MAX = 200;
@@ -210,7 +215,8 @@ function thinkoutOutcomeOf(
       },
       englishName,
     );
-  if (input.failed || input.restored || input.summary === undefined)
+  // 되살린 생각 꺼내기(restored)는 요약이 있으면 끝으로 읽는다(차례 6 검토 '차례 7 이 볼 것')
+  if (input.failed || input.summary === undefined)
     return { ok: false, reason: "fallback" };
   return fillNameDeep(
     {
@@ -650,4 +656,171 @@ export async function feedbackStatus(
     logFailure("첨삭 상태", error);
     return { ok: false, reason: "unavailable" };
   }
+}
+
+// ── 둘째 세션 · 밀린 첨삭(차례 7) ──
+
+/** 앱 진입 한 번에 부를 밀린 첨삭 수(기술 값 — Vercel Hobby 300초 안에 첨삭 기다림 두 번, plan-p11b 값 3 · 위험 4). */
+export const PENDING_FEEDBACK_PER_ENTRY = 2;
+
+const RewriteSchema = z.strictObject({
+  ...base,
+  text: z.string().max(DRAFT_TEXT_MAX),
+});
+
+export type RewriteOutcome =
+  | { ok: true; modelAnswer: string | null }
+  | { ok: false; reason: "invalid" | "not_found" | "unavailable" };
+
+/**
+ * 고쳐 쓰기 제출(plan-p11b 값 3 submitRewrite · AC-4c · 위험 9). 그 프로필의 진행 중 둘째 세션 · 그 활동이 고쳐 쓰기인지 보고 끝 시도
+ * { kind: "rewrite", text } 를 저장한 뒤 그 초고 첨삭의 모범 답안을 돌려준다(화면 자료에는 고쳐 쓰기 전까지 넣지 않음). 빈 모범 답안은
+ * null(그 활동을 건너뜀). 같은 시도 id · 이미 낸 고쳐 쓰기면 저장한 것 그대로.
+ */
+export async function submitRewrite(
+  raw: unknown,
+  deps: CompositionDeps = {},
+): Promise<RewriteOutcome> {
+  const parsed = RewriteSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  const { sessionId, clientAttemptId, activityNo, text } = parsed.data;
+  if (wordsIn(text).length === 0) return { ok: false, reason: "invalid" };
+  const db: Db = deps.db ?? getDb();
+  const clock = deps.now ?? deps.clock ?? appNow;
+  try {
+    const profile = await readHouseholdProfile({ db });
+    if (!profile) return { ok: false, reason: "not_found" };
+    const [row] = await db
+      .select({ session: sessions, lesson: lessons })
+      .from(sessions)
+      .innerJoin(lessons, eq(lessons.id, sessions.lessonId))
+      .where(
+        and(
+          eq(sessions.id, sessionId),
+          eq(sessions.profileId, profile.id),
+          eq(sessions.status, "in_progress"),
+          eq(sessions.writingPart, "rewrite"),
+        ),
+      );
+    if (!row?.session.lessonId) return { ok: false, reason: "not_found" };
+    const source = await rewriteSourceOf(db, {
+      profileId: profile.id,
+      lessonId: row.session.lessonId,
+      before: row.session.startedAt,
+    });
+    const lesson = LESSON_SCHEMAS.writing.parse(row.lesson.content);
+    if (!source || lesson.content.shape !== "composition")
+      return { ok: false, reason: "not_found" };
+    const activities = activitiesOf({
+      area: "writing",
+      level: row.session.level ?? row.lesson.level,
+      content: lesson.content,
+      part: "rewrite",
+      corrections: source.value.corrections.length,
+    });
+    if (activities[activityNo - 1]?.kind !== "rewrite")
+      return { ok: false, reason: "not_found" };
+    const model = fillNameDeep(source.value, profile.englishName).modelAnswer;
+    const outcome: RewriteOutcome = {
+      ok: true,
+      modelAnswer: model.trim() === "" ? null : model,
+    };
+    const done = (await attemptsOf(db, sessionId, activityNo)).find(
+      (r) => r.input.kind === "rewrite" && r.input.step === "final",
+    );
+    if (done) return outcome;
+    const input: AttemptInput = {
+      v: INPUT_VERSION,
+      kind: "rewrite",
+      step: "final",
+      text,
+    };
+    if (!parseAttemptInput(input)) return { ok: false, reason: "invalid" };
+    await db
+      .insert(attempts)
+      .values({
+        sessionId,
+        clientAttemptId,
+        activityNo,
+        input,
+        attemptedAt: clock(),
+        wordCount: wordsIn(text).length,
+        status: "done",
+      })
+      .onConflictDoNothing({ target: attempts.clientAttemptId });
+    return outcome;
+  } catch (error) {
+    logFailure("고쳐 쓰기 저장", error);
+    return { ok: false, reason: "unavailable" };
+  }
+}
+
+/** 그 첫 세션의 대기 초고 첨삭을 한 번 부른다(둘째 세션을 열 때 — 값 9). 불렀으면 참. */
+export async function runDraftFeedback(
+  { draftSessionId }: { draftSessionId: string },
+  deps: CompositionDeps = {},
+): Promise<boolean> {
+  const db: Db = deps.db ?? getDb();
+  const [pending] = await db
+    .select({ id: attempts.id })
+    .from(attempts)
+    .where(
+      and(
+        eq(attempts.sessionId, draftSessionId),
+        eq(attempts.status, "awaiting_feedback"),
+      ),
+    );
+  return pending ? runFeedback({ attemptId: pending.id }, deps) : false;
+}
+
+/**
+ * 밀린 첨삭(10절 운영 '첨삭 재시도는 앱 진입 때' · plan-p11b 값 3 retryPendingFeedback): 그 프로필의 첨삭 대기 초고를 오래된 차례로
+ * 많아야 PENDING_FEEDBACK_PER_ENTRY 개 부른다(잡기가 겹침을 막는다). 부른 수를 돌려준다. 1-나는 'AI 쉬는 중'이면 부르지 않게 앞에서 본다.
+ */
+export async function retryPendingFeedback(
+  { profileId }: { profileId: string },
+  deps: CompositionDeps = {},
+): Promise<number> {
+  const db: Db = deps.db ?? getDb();
+  try {
+    const waiting = await db
+      .select({ id: attempts.id, at: attempts.attemptedAt })
+      .from(attempts)
+      .innerJoin(sessions, eq(sessions.id, attempts.sessionId))
+      .where(
+        and(
+          eq(sessions.profileId, profileId),
+          eq(attempts.status, "awaiting_feedback"),
+        ),
+      );
+    const oldest = waiting
+      .sort((a, b) => a.at.getTime() - b.at.getTime())
+      .slice(0, PENDING_FEEDBACK_PER_ENTRY);
+    let called = 0;
+    for (const { id } of oldest)
+      if (await runFeedback({ attemptId: id }, deps)) called += 1;
+    return called;
+  } catch (error) {
+    logFailure("밀린 첨삭", error);
+    return 0;
+  }
+}
+
+/**
+ * 수업 시작(서버 액션 startLesson 이 부름 — plan-p11b 값 9): 시작 판정이 첨삭 대기(feedback_pending)면 그 첨삭을 한 번 기다린 뒤(그동안
+ * 화면은 기다림 표시) 다시 판정한다. 그래도 대기면 feedback_pending — 화면이 '아직 글을 살펴보고 있어요'.
+ */
+export async function startLessonAfterFeedback(
+  raw: unknown,
+  deps: CompositionDeps & { now: () => Date },
+): Promise<StartOutcome> {
+  const sessionDeps = {
+    now: deps.now,
+    ...(deps.db ? { db: deps.db } : {}),
+  };
+  const first = await startLessonSession(raw, sessionDeps);
+  if (first.ok || first.reason !== "feedback_pending" || !first.draftSessionId)
+    return first;
+  await runDraftFeedback({ draftSessionId: first.draftSessionId }, deps);
+  return startLessonSession(raw, sessionDeps);
 }

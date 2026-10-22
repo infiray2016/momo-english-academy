@@ -42,9 +42,9 @@ export type ResultView = {
     waitSeconds: number;
     /** '첨삭 보기'가 여는 수업(그 첫 세션의 수업 행). */
     lessonId: string;
-    /** ui.wait_hint_seconds(기다림 표시). */
-    waitHintSeconds: [number, number];
   };
+  /** ui.wait_hint_seconds(기다림 표시 — 첨삭 기다림 · '다음 수업'이 서버에서 첨삭을 기다릴 때). */
+  waitHintSeconds: [number, number];
 };
 
 const sameRef = (a: LessonRef, b: LessonRef) =>
@@ -97,27 +97,25 @@ export async function loadResultView(
     row.session.writingPart === "draft" && row.session.lessonId
       ? await draftFeedbackOf(db, { sessionId, profileId: profile.id })
       : undefined;
-  const waits = draft
-    ? await getSettings(
-        {
-          "ai.timeout_seconds.feedback": z.number().positive(),
-          "ui.wait_hint_seconds": z.tuple([
-            z.number().positive(),
-            z.number().positive(),
-          ]),
-        },
-        { db, profileId: profile.id },
-      )
-    : undefined;
+  const waits = await getSettings(
+    {
+      "ai.timeout_seconds.feedback": z.number().positive(),
+      "ui.wait_hint_seconds": z.tuple([
+        z.number().positive(),
+        z.number().positive(),
+      ]),
+    },
+    { db, profileId: profile.id },
+  );
   return {
-    ...(draft && waits && row.session.lessonId
+    waitHintSeconds: waits["ui.wait_hint_seconds"],
+    ...(draft && row.session.lessonId
       ? {
           draft: {
             state: draft.state,
             submittedAt: draft.submittedAt.toISOString(),
             waitSeconds: waits["ai.timeout_seconds.feedback"],
             lessonId: row.session.lessonId,
-            waitHintSeconds: waits["ui.wait_hint_seconds"],
           },
         }
       : {}),

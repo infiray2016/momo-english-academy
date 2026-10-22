@@ -50,9 +50,12 @@ import {
   atLevel,
   compositionSample,
   guidedSample,
+  insertReadyDraft,
   insertSampleLesson,
   levelSpecOf,
   openLessonSession,
+  READY_DRAFT,
+  READY_FEEDBACK,
 } from "./lessons";
 import { photo } from "./photos";
 
@@ -66,6 +69,7 @@ const T = {
   answerIs: "정답은 이거예요",
   tryAgain: "한 번 더 풀기",
   finished: "수업을 끝냈어요!",
+  stillReading: "아직 글을 살펴보고 있어요",
   guide: {
     "pick-word": "그림에 맞는 단어를 골라요",
     "copy-tiles": "단어를 보고 글자를 차례대로 놓아요",
@@ -694,6 +698,8 @@ const C = {
   feedback: "첨삭 보기",
 } as const;
 const MAX_TURNS = TEST_SETTINGS["writing.thinkout_max_turns"].value;
+/** 초 → ms(단위 바꿈 상수). */
+const MS_PER_SECOND_E2E = 1000;
 /** 첨삭이 오기 전 기다림 표시를 볼 만큼 늦추는 응답 시간(기술 값 — 첨삭 타임아웃보다 짧게). */
 const FEEDBACK_DELAY_MS = 4000;
 /** 결과 화면이 첨삭을 다시 읽어 단추를 바꾸기까지 기다리는 상한(기술 값). */
@@ -835,5 +841,277 @@ test("AC-4c 쓰기 6단계 첫 세션에서 생각 꺼내기는 writing.thinkout
       writingPart: "draft",
       score: rubricScore(rubric),
     });
+  });
+});
+
+// ── 쓰기 6~12 둘째 세션 · 되살림(차례 7) ──
+
+const R = {
+  feedback: "첨삭 보기",
+  praise: "잘한 점",
+  correction: "이렇게 고쳐 봐요",
+  rewrite: "고쳐 쓰기",
+  rewritten: "다 고쳤어요",
+  model: "모범 답안",
+  ownSpeak: "내 글을 소리 내어 읽어 봐요",
+  skip: "건너뛰기",
+  micOk: "알겠어요",
+  finished: "수업을 끝냈어요!",
+  home: "홈",
+  newLesson: "새 수업 할래요",
+} as const;
+
+test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고쳐 쓰기 · 모범 답안 순서로 열리고 모범 답안은 고쳐 쓰기를 내기 전에는 보이지 않는다", async ({
+  page,
+}) => {
+  test.setTimeout(GUIDED_TEST_MS);
+  const activity = page.locator("[data-activity]");
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    const firstId = await insertReadyDraft(profileId, lesson);
+    // 목록 맨 위 '첨삭 보기'(여기부터 해요) → 그 수업의 둘째 세션
+    await page.goto("/writing/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    await page.locator('[data-top-item="feedback"]').click();
+    await expect(page).toHaveURL(/\/session\//);
+    const sessionId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    const model = page.getByText(READY_FEEDBACK.modelAnswer);
+
+    // 칭찬(미리보기 없이 첫 활동)
+    await expect(activity).toHaveAttribute("data-activity", "feedback-praise");
+    await expect(page.getByText(R.praise, { exact: true })).toBeVisible();
+    await expect(page.getByText(READY_FEEDBACK.praise)).toBeVisible();
+    await expect(model).toHaveCount(0);
+    await photo(page, "p11-writing-6-rewrite-praise");
+    await page.getByRole("button", { name: T.next }).click();
+
+    // 교정 하나씩(원문 · 수정 · 이유) — 한 화면에 하나
+    for (const [i, c] of READY_FEEDBACK.corrections.entries()) {
+      await expect(activity).toHaveAttribute(
+        "data-activity",
+        "feedback-correction",
+      );
+      await expect(page.getByText(R.correction, { exact: true })).toBeVisible();
+      await expect(page.getByText(c.corrected, { exact: true })).toBeVisible();
+      await expect(page.getByText(c.reason)).toBeVisible();
+      await expect(page.locator("[data-feedback-correction]")).toHaveCount(1);
+      await expect(model).toHaveCount(0);
+      if (i === 0) await photo(page, "p11-writing-6-rewrite-correction");
+      await page.getByRole("button", { name: T.next }).click();
+    }
+
+    // 고쳐 쓰기: 초고를 채운 입력란 + 교정 칩, 모범 답안은 아직 없다
+    await expect(activity).toHaveAttribute("data-activity", "rewrite");
+    await expect(page.getByText(R.rewrite, { exact: true })).toBeVisible();
+    const box = page.locator("[data-rewrite-text]");
+    await expect(box).toHaveValue(READY_DRAFT);
+    await expect(page.locator("[data-rewrite-chips] li")).toHaveCount(
+      READY_FEEDBACK.corrections.length,
+    );
+    await expect(model).toHaveCount(0);
+    await photo(page, "p11-writing-6-rewrite");
+    await box.fill("I have a dog. We go to the park. I love my dog.");
+    await page.getByRole("button", { name: R.rewritten }).click();
+
+    // 고쳐 쓰기를 낸 뒤에만 모범 답안
+    await expect(activity).toHaveAttribute("data-activity", "model-answer");
+    await expect(page.getByText(R.model, { exact: true })).toBeVisible();
+    await expect(model).toBeVisible();
+    await photo(page, "p11-writing-6-model-answer");
+    await page.getByRole("button", { name: T.next }).click();
+
+    // 내 글 소리 내어 읽기(선택) → 결과
+    await expect(activity).toHaveAttribute("data-activity", "own-speak");
+    if ((await page.locator("[data-mic-notice]").count()) > 0)
+      await page.getByRole("button", { name: R.micOk }).click();
+    await expect(page.getByText(R.ownSpeak)).toBeVisible();
+    await photo(page, "p11-writing-6-own-speak");
+    await page.getByRole("button", { name: R.skip }).click();
+    await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
+    await expect(page.getByRole("heading", { name: R.finished })).toBeVisible();
+    const [row] = await e2eDb()
+      .select({
+        status: sessions.status,
+        writingPart: sessions.writingPart,
+        score: sessions.score,
+        lessonId: sessions.lessonId,
+      })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId));
+    expect(row).toEqual({
+      status: "completed",
+      writingPart: "rewrite",
+      score: null,
+      lessonId: lesson.id,
+    });
+    expect(sessionId).not.toBe(firstId);
+    // 둘째 세션이 끝나 목록에서 끝낸 수업(첨삭 보기 없음)
+    await page.goto("/writing/lessons");
+    await expect(page.locator('[data-top-item="feedback"]')).toHaveCount(0);
+    await expect(
+      page.locator('[data-lesson="assigned-1"] [data-done]'),
+    ).toHaveCount(1);
+  });
+});
+
+test("AC-2e 쓰기 6단계 초고를 쓰다 다른 수업을 고른 뒤 그 수업을 다시 열면 초고 입력란에 쓴 글이 채워져 있다", async ({
+  page,
+}) => {
+  test.setTimeout(GUIDED_TEST_MS);
+  const activity = page.locator("[data-activity]");
+  const sample = compositionSample();
+  const text = "I have a dog. We play in the park";
+  await pushFakeAi([ruleFor("thinkout", thinkoutReply({ done: true }))]);
+  await atLevel({ area: "writing", level: sample.level }, async () => {
+    await insertSampleLesson({ sample, lessonNo: 1 });
+    await insertSampleLesson({ sample, lessonNo: 2 });
+    const board = async () => {
+      await page.goto("/writing/lessons");
+      await expect(
+        page.locator("[data-lesson-board][data-hydrated]"),
+      ).toHaveCount(1);
+    };
+    // 수업 1: 생각 꺼내기(첫 턴에 끝) → 초고를 쓰다가 '홈'
+    await board();
+    await page.locator('[data-lesson="assigned-1"]').click();
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    await page.getByRole("button", { name: T.next }).click();
+    await page.getByRole("button", { name: T.next }).click();
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    await page.locator("[data-draft-text]").fill(text);
+    await page.getByRole("button", { name: R.home }).click();
+    await expect(page).toHaveURL(/\/$/);
+    // 수업 2 를 고른다(하던 수업 1 은 중단)
+    await board();
+    await page.locator('[data-lesson="assigned-2"]').click();
+    await page.getByRole("button", { name: R.newLesson }).click();
+    await expect(page).toHaveURL(/\/session\//);
+    // 수업 1 을 다시 연다 → 생각 꺼내기는 건너뛰고(AI 다시 안 부름) 초고 입력란에 쓴 글
+    await board();
+    await page.locator('[data-lesson="assigned-1"]').click();
+    // 하던 수업 2 가 있어 한 번 묻는다
+    await page.getByRole("button", { name: R.newLesson }).click();
+    await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+    await page.getByRole("button", { name: T.next }).click();
+    await page.getByRole("button", { name: T.next }).click();
+    await expect(activity).toHaveAttribute("data-activity", "draft");
+    await expect(page.locator("[data-draft-text]")).toHaveValue(text);
+    await expect(page.locator("[data-draft-idea]")).toBeVisible();
+    expect(await fakeAiRequestsOf("thinkout")).toHaveLength(1);
+    await photo(page, "p11-writing-6-restored");
+  });
+});
+
+/** 기다림 표시가 첫 값 뒤 그려지기까지의 여유(타이머 · 그리기 — 기술 값). */
+const WAIT_RENDER_SLACK_MS = 500;
+/** 서버가 첨삭을 기다리는 동안 기다림 표시를 볼 만큼 첨삭 응답을 늦추는 시간(기술 값 — 첫 값보다 길고 첨삭 타임아웃보다 짧게). */
+const SLOW_FEEDBACK_MS = 4000;
+/** 실시드 단원 흉내(정규 10~15 + 보강 — 장부 56행): 목록이 세로 보는 창을 넘게 첨삭 대기 칸 뒤에 넣는 수업 수(시험 값). */
+const CROWDED_LESSONS = 24;
+
+/** 첨삭 대기 칸(1번) 뒤에 수업을 여럿 넣어 목록 판이 세로 보는 창보다 길게 한다(화면 검토 review-p11-7-design M-1). */
+async function crowdLessonList(
+  sample: ReturnType<typeof compositionSample>,
+): Promise<void> {
+  for (let lessonNo = 2; lessonNo <= CROWDED_LESSONS; lessonNo += 1)
+    await insertSampleLesson({ sample, lessonNo });
+}
+
+/** 목록이 보는 창보다 길다(맨 아래에 그리면 보는 창 밖이 되는 집인지 — 시험의 전제). */
+async function expectPageTallerThanView(page: Page) {
+  const tall = await page.evaluate(
+    () => document.documentElement.scrollHeight > window.innerHeight,
+  );
+  expect(tall).toBe(true);
+}
+
+/** 요소가 지금 보는 창 안에 다 들어온다(세로 y + 높이 ≤ 보는 창 높이 — M-1 선 위 검증). */
+async function expectInView(page: Page, selector: string) {
+  const box = await page.locator(selector).boundingBox();
+  const view = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(view).not.toBeNull();
+  if (!box || !view) return;
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height);
+}
+
+test("쓰기 6~12: 첨삭을 기다리는 칸을 목록에서 고르면 서버가 첨삭을 기다리는 동안 ui.wait_hint_seconds 첫 값 안에 기다림 표시가 보이고 첨삭이 오면 둘째 세션이 열린다", async ({
+  page,
+}) => {
+  // 코드 검토 review-p11-7-code I-1 (가) — 일반 수업 카드로 골라도 서버가 첨삭을 한 번 더 부르는 동안 기다림 표시
+  test.setTimeout(GUIDED_TEST_MS);
+  const [hintWithin] = TEST_SETTINGS["ui.wait_hint_seconds"].value as readonly [
+    number,
+    number,
+  ];
+  await pushFakeAi([
+    ruleFor("writing_feedback", feedbackReply({ delayMs: SLOW_FEEDBACK_MS })),
+  ]);
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    await insertReadyDraft(profileId, lesson, { pending: true });
+    await crowdLessonList(sample);
+    await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+    await page.goto("/writing/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    await expectPageTallerThanView(page);
+    // 첨삭 대기 칸은 맨 위 '첨삭 보기'가 없고 일반 수업 카드로 남아 있다
+    await expect(page.locator('[data-top-item="feedback"]')).toHaveCount(0);
+    await page.locator('[data-lesson="assigned-1"]').click();
+    await expect(page.locator("[data-wait-hint]")).toBeVisible({
+      timeout: hintWithin * MS_PER_SECOND_E2E + WAIT_RENDER_SLACK_MS,
+    });
+    // 기다림 표시는 누른 카드 바로 아래 — 목록이 길어도 보는 창 안(M-1)
+    await expect(
+      page.locator("[data-lesson-wait] [data-wait-hint]"),
+    ).toHaveCount(1);
+    await expectInView(page, "[data-wait-hint]");
+    await photo(page, "p11-lesson-start-wait");
+    // 첨삭이 오면 그 수업의 둘째 세션
+    await expect(page).toHaveURL(/\/session\//, {
+      timeout: SLOW_FEEDBACK_MS + FEEDBACK_SHOWN_MS,
+    });
+    await expect(page.locator("[data-activity]")).toHaveAttribute(
+      "data-activity",
+      "feedback-praise",
+    );
+    expect(await fakeAiRequestsOf("writing_feedback")).toHaveLength(1);
+  });
+});
+
+test("쓰기 6~12: 다른 부름이 첨삭을 잡고 있어 아직 첨삭이 없으면 목록이 누른 카드 바로 아래에 '아직 글을 살펴보고 있어요'를 보는 창 안에 보이고 세션을 열지 않는다", async ({
+  page,
+}) => {
+  // 화면 검토 review-p11-7-design M-1 — feedback_pending 의 안내 줄도 누른 자리 가까이
+  test.setTimeout(GUIDED_TEST_MS);
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    await insertReadyDraft(profileId, lesson, { pending: true, claimed: true });
+    await crowdLessonList(sample);
+    await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+    await page.goto("/writing/lessons");
+    await expect(
+      page.locator("[data-lesson-board][data-hydrated]"),
+    ).toHaveCount(1);
+    await expectPageTallerThanView(page);
+    await page.locator('[data-lesson="assigned-1"]').click();
+    const line = page
+      .locator("[data-lesson-wait]")
+      .getByText(T.stillReading, { exact: true });
+    await expect(line).toBeVisible();
+    await expectInView(page, "[data-lesson-wait]");
+    await photo(page, "p11-lesson-start-still-reading");
+    await expect(page).toHaveURL(/\/writing\/lessons$/);
+    // 잡은 부름이 있으니 서버는 첨삭을 다시 부르지 않는다
+    expect(await fakeAiRequestsOf("writing_feedback")).toHaveLength(0);
   });
 });

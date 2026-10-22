@@ -40,8 +40,12 @@ import {
 import {
   type CompositionDeps,
   feedbackStatus,
+  PENDING_FEEDBACK_PER_ENTRY,
+  retryPendingFeedback,
   runFeedback,
+  startLessonAfterFeedback,
   submitDraft,
+  submitRewrite,
   thinkoutStep,
 } from "@/server/writing";
 import {
@@ -76,6 +80,8 @@ const MAX_TURNS = TEST_SETTINGS["writing.thinkout_max_turns"].value;
 const MAX_FAILURES = TEST_SETTINGS["ai.feedback_max_attempts"].value;
 const THINKOUT_MODEL = TEST_SETTINGS["ai.model.thinkout"].value;
 const FEEDBACK_MODEL = TEST_SETTINGS["ai.model.writing_feedback"].value;
+/** 초 → ms(단위 바꿈 상수). */
+const MS_PER_SECOND = 1000;
 /** 같은 초고를 함께 부를 때 첫 응답을 늦추는 시간(기술 값). */
 const SLOW_FEEDBACK_MS = 300;
 
@@ -107,28 +113,30 @@ beforeAll(async () => {
     const [row] = await db.select({ r: max(table.revision) }).from(table);
     revision = Math.max(revision, Number(row?.r ?? 0));
   }
-  await db.insert(lessons).values({
-    area: "writing",
-    level: sample.level,
-    unit: sample.unit,
-    kind: "assigned",
-    lessonNo: 1,
-    topicVariant: 1,
-    listTitle: sample.lesson.title,
-    content: {
-      ...sample.lesson,
+  // 같은 단원 배정 수업 셋(중단 · 되살림 · 밀린 첨삭이 다른 칸을 쓴다)
+  for (const lessonNo of [1, 2, 3])
+    await db.insert(lessons).values({
+      area: "writing",
+      level: sample.level,
+      unit: sample.unit,
       kind: "assigned",
-      lessonNo: 1,
-      variant: 1,
+      lessonNo,
+      topicVariant: 1,
+      listTitle: sample.lesson.title,
+      content: {
+        ...sample.lesson,
+        kind: "assigned",
+        lessonNo,
+        variant: 1,
+        revision,
+        correction: 0,
+      },
+      newWords: [...sample.lesson.newWords],
+      unitWords: [...sample.lesson.unitWords],
+      generation: sample.lesson.generation,
       revision,
       correction: 0,
-    },
-    newWords: [...sample.lesson.newWords],
-    unitWords: [...sample.lesson.unitWords],
-    generation: sample.lesson.generation,
-    revision,
-    correction: 0,
-  });
+    });
 });
 afterAll(async () => {
   await testDb.drop();
@@ -289,19 +297,25 @@ const final = (kind: string, content: Record<string, unknown> = {}) => ({
   ...content,
 });
 
-async function lessonRow() {
+async function lessonRow(lessonNo = 1) {
   const [row] = await db
     .select()
     .from(lessons)
-    .where(and(eq(lessons.area, "writing"), eq(lessons.level, sample.level)));
+    .where(
+      and(
+        eq(lessons.area, "writing"),
+        eq(lessons.level, sample.level),
+        eq(lessons.lessonNo, lessonNo),
+      ),
+    );
   if (!row) throw new Error("견본 수업 없음");
   return row;
 }
 
 /** 쓰기 6단계 첫 세션을 열고 미리보기 · 과제 끝 시도를 넣는다. 화면 자료 · 활동 번호를 돌려준다. */
-async function openComposition() {
+async function openComposition(lessonNo = 1) {
   const started = await startLessonSession(
-    { lessonId: (await lessonRow()).id, confirmAbort: false },
+    { lessonId: (await lessonRow(lessonNo)).id, confirmAbort: true },
     sessionDeps(),
   );
   if (!started.ok) throw new Error(`세션이 열려야 한다: ${started.reason}`);
@@ -335,8 +349,8 @@ async function openComposition() {
 }
 
 /** 생각 꺼내기를 한 턴에 끝내고(가짜가 끝 응답) 초고를 낸다. 초고 시도 id 를 돌려준다. */
-async function submitted(deps: CompositionDeps) {
-  const opened = await openComposition();
+async function submitted(deps: CompositionDeps, lessonNo = 1) {
+  const opened = await openComposition(lessonNo);
   const done = await thinkoutStep(
     {
       sessionId: opened.sessionId,
@@ -360,6 +374,7 @@ async function submitted(deps: CompositionDeps) {
     ok: true,
     resultPath: `/result/${opened.sessionId}`,
   });
+  // 초고 끝 시도(첨삭 대기) — 같은 활동에 되살린 초고 진행 시도가 함께 있을 수 있다(AC-2e 되살림, CI 16차)
   const [draft] = await db
     .select()
     .from(attempts)
@@ -367,6 +382,7 @@ async function submitted(deps: CompositionDeps) {
       and(
         eq(attempts.sessionId, opened.sessionId),
         eq(attempts.activityNo, opened.draftNo),
+        eq(attempts.status, "awaiting_feedback"),
       ),
     );
   if (!draft) throw new Error("초고 시도 없음");
@@ -381,6 +397,39 @@ async function sessionRow(id: string) {
   const [row] = await db.select().from(sessions).where(eq(sessions.id, id));
   return row;
 }
+/** 그 수업의 중단된 첫 세션 하나(쓰던 초고 진행 시도가 있음)를 바로 넣는다. */
+async function abortedDraft(lessonNo: number, text: string) {
+  const profile = await readHouseholdProfile({ db });
+  const row = await lessonRow(lessonNo);
+  if (!profile) throw new Error("프로필 없음");
+  const [s] = await db
+    .insert(sessions)
+    .values({
+      profileId: profile.id,
+      area: "writing",
+      level: row.level,
+      unit: row.unit,
+      lessonId: row.id,
+      kind: "regular",
+      status: "aborted",
+      // 다른 첫 세션보다 앞서 시작한 중단 세션
+      startedAt: new Date(NOW.getTime() - MS_PER_SECOND),
+      seedRevision: row.revision,
+      seedCorrection: row.correction,
+      writingPart: "draft",
+    })
+    .returning({ id: sessions.id });
+  if (!s) throw new Error("세션을 넣지 못했다");
+  await db.insert(attempts).values({
+    sessionId: s.id,
+    clientAttemptId: randomUUID(),
+    activityNo: 4,
+    input: { v: 1, kind: "draft", step: "progress", text },
+    attemptedAt: NOW,
+    status: "done",
+  });
+}
+
 async function feedbackAlerts() {
   return db
     .select()
@@ -553,6 +602,8 @@ describe("쓰기 6~12 첫 세션", () => {
       { when: { purpose: "thinkout" }, reply: thinkoutReply(true) },
       { when: { purpose: "writing_feedback" }, reply: refusal },
     ]);
+    // 앞서 중단된 첫 세션(쓰던 초고가 있음) — 되살림이 있어도 '첨삭 못 함' 뒤에는 되살리지 않는다(단언이 참인 까닭이 되살림 규칙이게)
+    await abortedDraft(1, "An old draft I stopped.");
     const { attemptId, sessionId } = await submitted(deps);
     expect(await runFeedback({ attemptId }, deps)).toBe(true);
     expect(await attemptRow(attemptId)).toMatchObject({
@@ -587,6 +638,246 @@ describe("쓰기 6~12 첫 세션", () => {
       draftText: null,
       thinkout: null,
     });
+  });
+
+  it("AC-2e 중단된 첫 세션의 마지막 초고 글이 같은 수업의 새 첫 세션 화면 자료에 채워지고 중단 뒤 늦게 온 초고 시도도 받는다", async () => {
+    const { fake, deps } = harness([
+      { when: { purpose: "thinkout" }, reply: thinkoutReply(true) },
+    ]);
+    // 수업 1: 생각 꺼내기를 끝내고 초고를 쓰다가(자동 저장) 수업 2 를 골라 중단
+    const one = await openComposition(1);
+    await thinkoutStep(
+      {
+        sessionId: one.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo: one.thinkoutNo,
+        answer: null,
+      },
+      deps,
+    );
+    const progress = (text: string) => ({
+      clientAttemptId: randomUUID(),
+      sessionId: one.sessionId,
+      activityNo: one.draftNo,
+      input: { v: 1, kind: "draft", step: "progress", text },
+    });
+    await saveSessionAttempts([progress("I have a dog.")], sessionDeps());
+    await openComposition(2);
+    expect((await sessionRow(one.sessionId))?.status).toBe("aborted");
+    // 중단 뒤 늦게 온 초고 진행 시도도 받는다(그 밖 종류는 받은 것으로 치고 버림)
+    const late = progress("I have a dog. We play.");
+    const ignored = {
+      clientAttemptId: randomUUID(),
+      sessionId: one.sessionId,
+      activityNo: 1,
+      input: final("preview", { shownWords: [] }),
+    };
+    expect(
+      await saveSessionAttempts([late, ignored], sessionDeps()),
+    ).toMatchObject({ ok: true, rejected: [] });
+    const kept = await db
+      .select({ id: attempts.clientAttemptId })
+      .from(attempts)
+      .where(eq(attempts.sessionId, one.sessionId));
+    expect(kept.map((k) => k.id)).toContain(late.clientAttemptId);
+    expect(kept.map((k) => k.id)).not.toContain(ignored.clientAttemptId);
+    // 수업 1 을 다시 열면 마지막 초고 글 · 생각 꺼내기(되살림 — AI 다시 안 부름)
+    const before = requestsOf(fake, "thinkout").length;
+    const again = await openComposition(1);
+    expect(again.sessionId).not.toBe(one.sessionId);
+    expect(again.view.composition).toMatchObject({
+      draftText: "I have a dog. We play.",
+      thinkout: { state: "done", summary: "강아지와 노는 하루를 쓰고 싶어요." },
+    });
+    const step = await thinkoutStep(
+      {
+        sessionId: again.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo: again.thinkoutNo,
+        answer: null,
+      },
+      deps,
+    );
+    expect(step).toMatchObject({ ok: true, done: true });
+    expect(requestsOf(fake, "thinkout")).toHaveLength(before);
+  });
+
+  it("둘째 세션: 첨삭이 대기면 시작할 때 한 번 더 부르고 그래도 없으면 대기를 돌려준다", async () => {
+    const failing = harness([
+      { when: { purpose: "thinkout" }, reply: thinkoutReply(true) },
+      { when: { purpose: "writing_feedback" }, reply: serverError },
+    ]);
+    const { sessionId } = await submitted(failing.deps);
+    const lessonId = (await lessonRow(1)).id;
+    // 대기: 한 번 더 부르고(실패) 그래도 없으면 feedback_pending
+    expect(
+      await startLessonAfterFeedback(
+        { lessonId, confirmAbort: false },
+        { ...failing.deps, now: () => NOW },
+      ),
+    ).toMatchObject({ ok: false, reason: "feedback_pending" });
+    expect(requestsOf(failing.fake, "writing_feedback")).toHaveLength(1);
+    // 첨삭이 오면(한 번 더 부름이 성공) 둘째 세션 — 첫 세션의 수업 행 · 판 그대로, 미리보기 없이 칭찬 → 교정 → 고쳐 쓰기 → 모범 답안 → 말하기
+    const ok = harness([
+      { when: { purpose: "writing_feedback" }, reply: feedbackReply() },
+    ]);
+    const started = await startLessonAfterFeedback(
+      { lessonId, confirmAbort: false },
+      { ...ok.deps, now: () => NOW },
+    );
+    if (!started.ok)
+      throw new Error(`둘째 세션이 열려야 한다: ${started.reason}`);
+    const second = await sessionRow(started.sessionId);
+    const first = await sessionRow(sessionId);
+    expect(second).toMatchObject({
+      writingPart: "rewrite",
+      lessonId: first?.lessonId,
+      seedRevision: first?.seedRevision,
+      status: "in_progress",
+    });
+    const view = await loadSessionView(
+      { sessionId: started.sessionId },
+      sessionDeps(),
+    );
+    if (view?.area !== "writing" || !view.rewrite)
+      throw new Error("둘째 세션 자료 없음");
+    expect(view.activities.map((a) => a.kind)).toEqual([
+      "feedback-praise",
+      "feedback-correction",
+      "rewrite",
+      "model-answer",
+      "own-speak",
+    ]);
+    // 모범 답안은 고쳐 쓰기를 내기 전에는 화면 자료에 없다(AC-4c · 위험 9)
+    expect(view.rewrite).toMatchObject({
+      praise: "강아지와 노는 모습을 잘 썼어요.",
+      draftText: DRAFT,
+      rewriteText: null,
+      modelAnswer: null,
+    });
+    const rewriteNo =
+      view.activities.findIndex((a) => a.kind === "rewrite") + 1;
+    const out = await submitRewrite(
+      {
+        sessionId: started.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo: rewriteNo,
+        text: "I have a dog. It is very small. I love my dog.",
+      },
+      ok.deps,
+    );
+    expect(out).toEqual({
+      ok: true,
+      modelAnswer: "I have a small dog. We play every day.",
+    });
+    const after = await loadSessionView(
+      { sessionId: started.sessionId },
+      sessionDeps(),
+    );
+    expect(after?.area === "writing" && after.rewrite?.modelAnswer).toBe(
+      "I have a small dog. We play every day.",
+    );
+  });
+
+  it("둘째 세션: 첨삭 글의 {NAME} 은 화면 자료 · 고쳐 쓰기 응답에서 영어 이름으로 채우고 저장은 가린 글 그대로다", async () => {
+    // 코드 검토 review-p11-7-code M-3 — 칭찬 · 교정 원문 · 수정 · 이유 · 모범 답안 다섯 칸
+    const named: FakeReply = {
+      kind: "message",
+      body: messageBody({
+        model: FEEDBACK_MODEL,
+        json: {
+          praise: `${PLACEHOLDER_NAME}, 하루 일을 잘 썼어요.`,
+          corrections: [
+            {
+              original: `I play with ${PLACEHOLDER_NAME}s dog.`,
+              corrected: `I play with ${PLACEHOLDER_NAME}'s dog.`,
+              reason: `${PLACEHOLDER_NAME}의 것이면 's 를 붙여요.`,
+            },
+          ],
+          modelAnswer: `${PLACEHOLDER_NAME} has a small dog.`,
+          rubric: RUBRIC,
+        },
+      }),
+    };
+    const { deps, later } = harness([
+      { when: { purpose: "thinkout" }, reply: thinkoutReply(true) },
+      { when: { purpose: "writing_feedback" }, reply: named },
+    ]);
+    const { attemptId } = await submitted(deps);
+    await later();
+    const started = await startLessonAfterFeedback(
+      { lessonId: (await lessonRow(1)).id, confirmAbort: false },
+      { ...deps, now: () => NOW },
+    );
+    if (!started.ok)
+      throw new Error(`둘째 세션이 열려야 한다: ${started.reason}`);
+    const view = await loadSessionView(
+      { sessionId: started.sessionId },
+      sessionDeps(),
+    );
+    if (view?.area !== "writing" || !view.rewrite)
+      throw new Error("둘째 세션 자료 없음");
+    expect(view.rewrite).toMatchObject({
+      praise: `${ENGLISH_NAME}, 하루 일을 잘 썼어요.`,
+      corrections: [
+        {
+          original: `I play with ${ENGLISH_NAME}s dog.`,
+          corrected: `I play with ${ENGLISH_NAME}'s dog.`,
+          reason: `${ENGLISH_NAME}의 것이면 's 를 붙여요.`,
+        },
+      ],
+    });
+    expect(JSON.stringify(view.rewrite)).not.toContain(PLACEHOLDER_NAME);
+    const out = await submitRewrite(
+      {
+        sessionId: started.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo: view.activities.findIndex((a) => a.kind === "rewrite") + 1,
+        text: "I play with my dog.",
+      },
+      deps,
+    );
+    expect(out).toEqual({
+      ok: true,
+      modelAnswer: `${ENGLISH_NAME} has a small dog.`,
+    });
+    // 저장은 가린 글 그대로(6.1)
+    const stored = JSON.stringify((await attemptRow(attemptId))?.aiFeedback);
+    expect(stored).toContain(PLACEHOLDER_NAME);
+    expect(stored).not.toContain(ENGLISH_NAME);
+  });
+
+  it("첨삭: 앱 진입마다 밀린 첨삭을 오래된 것부터 많아야 둘 부른다", async () => {
+    const waiting = harness([
+      { when: { purpose: "thinkout" }, reply: thinkoutReply(true) },
+    ]);
+    // 낸 시각을 1초씩 늦춰(오래된 차례가 갈리게) 수업 셋에 초고를 낸다
+    const drafts: string[] = [];
+    for (const lessonNo of [1, 2, 3]) {
+      const at = () => new Date(NOW.getTime() + lessonNo * MS_PER_SECOND);
+      drafts.push(
+        (await submitted({ ...waiting.deps, now: at, clock: at }, lessonNo))
+          .attemptId,
+      );
+    }
+    const { fake, deps } = harness([
+      { when: { purpose: "writing_feedback" }, reply: feedbackReply() },
+    ]);
+    const profile = await readHouseholdProfile({ db });
+    if (!profile) throw new Error("프로필 없음");
+    expect(await retryPendingFeedback({ profileId: profile.id }, deps)).toBe(
+      PENDING_FEEDBACK_PER_ENTRY,
+    );
+    expect(requestsOf(fake, "writing_feedback")).toHaveLength(
+      PENDING_FEEDBACK_PER_ENTRY,
+    );
+    const statuses = await Promise.all(
+      drafts.map(async (id) => (await attemptRow(id))?.status),
+    );
+    expect(statuses).toEqual([
+      ...Array.from({ length: PENDING_FEEDBACK_PER_ENTRY }, () => "done"),
+      "awaiting_feedback",
+    ]);
   });
 
   it("AC-8n 거절이 아닌 까닭으로 같은 초고의 첨삭이 ai.feedback_max_attempts 번 실패하면 '첨삭 못 함'이 되고 부모 알림이 생기며 안전 상한 · 설정 문제는 실패 수에 들지 않는다", async () => {

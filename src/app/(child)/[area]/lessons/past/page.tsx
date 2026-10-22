@@ -3,6 +3,7 @@
 // 수업을 고르면 세션을 연다(PastLessons — 수업 목록과 같은 시작 길, 차례 6).
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { z } from "zod";
 import {
   AREA_LABEL,
   ChildScreen,
@@ -14,6 +15,7 @@ import { pastUnits } from "@/core/lesson-list/state";
 import { AREAS, type Area } from "@/core/seed/structure";
 import { now } from "@/server/clock";
 import { readLessonList } from "@/server/lesson-list";
+import { getSettings } from "@/server/settings";
 import { PastLessons } from "./past-lessons";
 
 const TEXT = {
@@ -44,6 +46,15 @@ export default async function PastLessonsPage(
   if (raw !== undefined && unit === undefined)
     redirect(`/${area}/lessons/past`);
 
+  // 고른 뒤 서버가 늦으면 기다림 표시(ui.wait_hint_seconds — plan-p11b 값 6)
+  const waitHintSeconds = (
+    await getSettings({
+      "ui.wait_hint_seconds": z.tuple([
+        z.number().positive(),
+        z.number().positive(),
+      ]),
+    })
+  )["ui.wait_hint_seconds"];
   const band = {
     title: TEXT.title,
     detail: `${AREA_LABEL[area as Area]} · ${input.level}단계${unit !== undefined ? ` · ${TEXT.unit(unit)}` : ""}`,
@@ -80,6 +91,7 @@ export default async function PastLessonsPage(
           area={area as Exclude<Area, "talk">}
           items={pastUnits(input, unit)}
           band={band}
+          waitHintSeconds={waitHintSeconds}
         />
       )}
     </ChildScreen>

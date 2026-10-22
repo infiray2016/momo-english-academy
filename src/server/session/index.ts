@@ -70,6 +70,7 @@ import {
   getSettings,
   SettingMissingError,
 } from "@/server/settings";
+import { type RewriteSource, rewriteSourceOf } from "@/server/writing/status";
 
 type LessonArea = Exclude<Area, "talk">;
 
@@ -151,6 +152,8 @@ export type StartOutcome =
         | "unavailable"
         // 1-가 하루 안전 상한에 닿은 학습일의 AI 가 필요한 수업(13절 C50 (2) · C80 — '토리가 잠깐 쉬어요')
         | "ai_resting";
+      /** feedback_pending 의 첫 세션(서버 액션이 그 첨삭을 한 번 더 부른다). */
+      draftSessionId?: string;
     };
 
 function logFailure(what: string, error: unknown) {
@@ -268,6 +271,8 @@ type SessionContext = {
   spec: SpecBits;
   /** 말하기 질문 답을 앱이 판정하는가(level_specs questions.acceptedMin > 0 — 1~2단계, C38 · C66). */
   appJudged: boolean;
+  /** 쓰기 6~12 둘째 세션이 기대는 첫 세션 · 첨삭(교정 수 = 활동 수, plan-p11b 값 9 · 11). 그 밖 없음. */
+  rewrite?: RewriteSource;
 };
 
 /** 진행 세션 행과 그 수업 행으로 활동 차례 · 설정 · 규격을 모은다(활동 모델 값 1 — 서버 · 화면이 같은 목록). */
@@ -295,17 +300,34 @@ async function sessionContextOf(
   const spec = (specRow?.spec ?? {}) as SpecBits;
   const appJudged =
     area === "speaking" && (spec.questions?.acceptedMin ?? 0) > 0;
+  const rewrite =
+    session.writingPart === "rewrite" && session.lessonId
+      ? await rewriteSourceOf(db, {
+          profileId,
+          lessonId: session.lessonId,
+          before: session.startedAt,
+        })
+      : undefined;
   const activities = activitiesOf({
     area,
     level,
     content: lesson.content,
     part: session.writingPart ?? undefined,
     thinkout: level >= settings.thinkoutFromLevel,
-    // 둘째 세션의 교정 수는 첨삭이 오면 b 가 채운다
-    corrections: 0,
+    // 둘째 세션의 교정 수 = 그 첫 세션 첨삭의 교정 수(3.3 6~9단계 최대 2 · 10~12단계 3 — 규격 · 설정이 정한 수만큼 AI 가 냄)
+    corrections: rewrite?.value.corrections.length ?? 0,
     confirmQuestions: spec.presentation?.confirmQuestions ?? 0,
   } as ActivityModelInput);
-  return { area, level, lesson, activities, settings, spec, appJudged };
+  return {
+    area,
+    level,
+    lesson,
+    activities,
+    settings,
+    spec,
+    appJudged,
+    ...(rewrite ? { rewrite } : {}),
+  };
 }
 
 /** 단원 단어의 원형 표 자료(vocab word · forms). */
@@ -465,10 +487,19 @@ async function startUnsafe(
       { level: lesson.level, ref },
       { seedThrough: s[THROUGH_KEY], placed: true },
     );
-    if (!judged.ok) return { ok: false, reason: judged.reason } as const;
-    // 하던 수업은 그대로 열린다(그 세션 화면이 안내 — aiResting). 새로 여는 수업은 하던 수업을 닫기 전에 막는다
+    if (!judged.ok)
+      return {
+        ok: false,
+        reason: judged.reason,
+        ...(judged.draftSessionId
+          ? { draftSessionId: judged.draftSessionId }
+          : {}),
+      } as const;
+    // 하던 수업은 그대로 열린다(그 세션 화면이 안내 — aiResting). 새로 여는 수업은 하던 수업을 닫기 전에 막는다.
+    // 쓰기 둘째 세션(고쳐 쓰기)은 AI 를 부르지 않아 막지 않는다(C80)
     if (judged.resume) return { ok: true, sessionId: judged.resume } as const;
-    if (resting) return { ok: false, reason: "ai_resting" } as const;
+    if (resting && judged.part !== "rewrite")
+      return { ok: false, reason: "ai_resting" } as const;
     if (judged.abort && !input.confirmAbort)
       return { ok: false, reason: "needs_confirm" } as const;
     if (judged.abort) {
@@ -481,6 +512,42 @@ async function startUnsafe(
             eq(sessions.status, "in_progress"),
           ),
         );
+    }
+
+    // 쓰기 6~12 둘째 세션: 첫 세션의 수업 행 · 종류 · 판 그대로(5절 '진행 중 세션은 시작할 때 고른 행을 끝까지', 값 9)
+    if (
+      judged.part === "rewrite" &&
+      judged.draftSessionId &&
+      judged.lessonRowId
+    ) {
+      const [first] = await tx
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.id, judged.draftSessionId),
+            eq(sessions.profileId, profile.id),
+          ),
+        );
+      if (!first) return { ok: false, reason: "unknown" } as const;
+      const [second] = await tx
+        .insert(sessions)
+        .values({
+          profileId: profile.id,
+          area,
+          level: lesson.level,
+          unit: ref.unit,
+          lessonId: judged.lessonRowId,
+          kind: judged.kind,
+          status: "in_progress",
+          startedAt: at,
+          seedRevision: first.seedRevision,
+          seedCorrection: first.seedCorrection,
+          writingPart: "rewrite",
+        })
+        .returning({ id: sessions.id });
+      if (!second) throw new Error("세션을 넣지 못했다");
+      return { ok: true, sessionId: second.id } as const;
     }
 
     // 판: 지금 · 통과한 단원은 그 단원 회차의 시작 개정, 다시 하기는 처음 쓴 개정(그 개정의 가장 높은 정정)
@@ -518,6 +585,7 @@ async function startUnsafe(
     const row = rows.find((r) => r.topicVariant === wanted) ?? rows[0];
     if (!row) return { ok: false, reason: "unknown" } as const;
 
+    const draftPart = area === "writing" && lesson.level >= s[SPLIT_KEY];
     const [created] = await tx
       .insert(sessions)
       .values({
@@ -531,15 +599,108 @@ async function startUnsafe(
         startedAt: at,
         seedRevision: row.revision,
         seedCorrection: row.correction,
-        // 쓰기 6단계부터 첫 세션(초고) — 둘째 세션(고쳐 쓰기)은 차례 7
-        ...(area === "writing" && lesson.level >= s[SPLIT_KEY]
-          ? { writingPart: "draft" as const }
-          : {}),
+        // 쓰기 6단계부터 첫 세션(초고)
+        ...(draftPart ? { writingPart: "draft" as const } : {}),
       })
       .returning({ id: sessions.id });
     if (!created) throw new Error("세션을 넣지 못했다");
+    if (draftPart)
+      await restoreDraftInto(tx, {
+        profileId: profile.id,
+        sessionId: created.id,
+        cell: row,
+        at,
+      });
     return { ok: true, sessionId: created.id } as const;
   });
+}
+
+/**
+ * 되살림(AC-2e · plan-p11b 값 9): 같은 칸(영역 · 단계 · 단원 · 종류 · 수업 번호 · 변형)의 가장 최근 첫 세션이 중단된 것이면 그 세션의
+ * 마지막 초고 진행 글과 생각 꺼내기 끝(실패 아닌 것)을 새 첫 세션에 시도로 옮긴다 — 생각 꺼내기는 끝 시도 { restored } 로 건너뛰고
+ * (AI 다시 안 부름, a 정할 것 마), 초고 글은 진행 시도로 화면 자료에 채워진다. 가장 최근 첫 세션이 끝난 것(첨삭 못 함 포함)이면
+ * 되살리지 않는다(빈 새 초고 — AC-8k).
+ */
+async function restoreDraftInto(
+  tx: Tx,
+  {
+    profileId,
+    sessionId,
+    cell,
+    at,
+  }: { profileId: string; sessionId: string; cell: LessonRow; at: Date },
+): Promise<void> {
+  const sameCell = await tx
+    .select({ id: lessons.id })
+    .from(lessons)
+    .where(
+      and(
+        eq(lessons.area, cell.area),
+        eq(lessons.level, cell.level),
+        eq(lessons.kind, cell.kind),
+        eq(lessons.lessonNo, cell.lessonNo),
+        ...(cell.unit === null ? [] : [eq(lessons.unit, cell.unit)]),
+        ...(cell.topicVariant === null
+          ? []
+          : [eq(lessons.topicVariant, cell.topicVariant)]),
+      ),
+    );
+  if (sameCell.length === 0) return;
+  const firsts = await tx
+    .select()
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.profileId, profileId),
+        eq(sessions.writingPart, "draft"),
+        inArray(
+          sessions.lessonId,
+          sameCell.map((c) => c.id),
+        ),
+        inArray(sessions.status, ["aborted", "completed"]),
+      ),
+    );
+  const latest = firsts
+    .filter((f) => f.id !== sessionId)
+    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())[0];
+  if (latest?.status !== "aborted") return;
+  const rows = await tx
+    .select()
+    .from(attempts)
+    .where(eq(attempts.sessionId, latest.id));
+  const ordered = rows
+    .map((r) => ({ row: r, input: parseAttemptInput(r.input) }))
+    .sort((a, b) => a.row.attemptedAt.getTime() - b.row.attemptedAt.getTime());
+  const thinkout = ordered.find(
+    (r) =>
+      r.input?.kind === "thinkout" &&
+      r.input.step === "final" &&
+      !r.input.failed &&
+      r.input.summary !== undefined,
+  );
+  const draft = ordered
+    .filter((r) => r.input?.kind === "draft" && r.input.step === "progress")
+    .at(-1);
+  const copies: (typeof attempts.$inferInsert)[] = [];
+  if (thinkout?.input?.kind === "thinkout" && thinkout.input.step === "final")
+    copies.push({
+      sessionId,
+      clientAttemptId: crypto.randomUUID(),
+      activityNo: thinkout.row.activityNo,
+      input: { ...thinkout.input, restored: true },
+      attemptedAt: at,
+      status: "done",
+    });
+  if (draft?.input?.kind === "draft")
+    copies.push({
+      sessionId,
+      clientAttemptId: crypto.randomUUID(),
+      activityNo: draft.row.activityNo,
+      input: draft.input,
+      attemptedAt: at,
+      status: "done",
+    });
+  if (copies.length > 0) await tx.insert(attempts).values(copies);
 }
 
 export type SaveOutcome =
@@ -586,13 +747,14 @@ export async function saveSessionAttempts(
               and(
                 inArray(sessions.id, ids),
                 eq(sessions.profileId, profile.id),
-                eq(sessions.status, "in_progress"),
+                // 중단된 쓰기 첫 세션의 늦은 초고 진행 시도도 받는다(아래 — AC-2e · 위험 3)
+                inArray(sessions.status, ["in_progress", "aborted"]),
               ),
             )
         : [];
     const contexts = new Map<
       string,
-      { ctx: SessionContext; scoring: AppScoringContext }
+      { ctx: SessionContext; scoring: AppScoringContext; lateOnly: boolean }
     >();
     const groups = homophones();
     for (const { session, lesson } of open) {
@@ -602,13 +764,19 @@ export async function saveSessionAttempts(
       contexts.set(session.id, {
         ctx,
         scoring: scoringOf(ctx, groups, lemmas),
+        lateOnly: session.status === "aborted",
       });
     }
     const at = now();
     const rows: (typeof attempts.$inferInsert)[] = [];
     for (const { attempt, input } of valid) {
       const found = contexts.get(attempt.sessionId);
-      if (!found) {
+      // 중단된 세션은 쓰기 첫 세션의 초고 진행 시도만 남긴다(다른 수업을 골라 중단된 뒤 대기열이 늦게 닿아도 글이 남게 — 값 9)
+      const late =
+        found?.lateOnly === true &&
+        input.kind === "draft" &&
+        input.step === "progress";
+      if (!found || (found.lateOnly && !late)) {
         accepted.push(attempt.clientAttemptId);
         continue;
       }
@@ -878,8 +1046,22 @@ export type SessionView = {
     } | null;
     /** 쓰기 6~12 첫 세션 자료(plan-p11b 값 7 · 9). 그 밖 null. AI 글의 {NAME} 은 영어 이름으로 채움. */
     composition: CompositionView | null;
+    /** 쓰기 6~12 둘째 세션 자료(칭찬 · 교정 · 초고 글, 모범 답안은 고쳐 쓰기를 낸 뒤에만 — AC-4c · 위험 9). 그 밖 null. */
+    rewrite: RewriteView | null;
   };
 }[LessonArea];
+
+/** 쓰기 6~12 둘째 세션 화면 자료(이름 채움). */
+export type RewriteView = {
+  praise: string;
+  corrections: { original: string; corrected: string; reason: string }[];
+  /** 낸 초고(고쳐 쓰기 입력란에 채워 둠). */
+  draftText: string;
+  /** 낸 고쳐 쓰기 글(다시 열 때 — 낸 뒤에만). */
+  rewriteText: string | null;
+  /** 모범 답안 — 고쳐 쓰기를 낸 뒤에만, 빈 글이면 null(그 활동을 건너뜀). */
+  modelAnswer: string | null;
+};
 
 /** 쓰기 6~12 첫 세션 화면 자료. */
 export type CompositionView = {
@@ -967,6 +1149,34 @@ function guidedViewOf(
   return { input, sentences };
 }
 
+/** 쓰기 6~12 둘째 세션 화면 자료(plan-p11b 값 9 · 11): 첫 세션 첨삭의 칭찬 · 교정 · 초고 글, 고쳐 쓰기 끝 시도가 있으면 그 글과 모범 답안. */
+function rewriteViewOf(
+  ctx: SessionContext,
+  tried: readonly { activityNo: number; input: unknown; attemptedAt: Date }[],
+  englishName: string,
+): RewriteView | null {
+  if (!ctx.rewrite) return null;
+  const value = fillNameDeep(ctx.rewrite.value, englishName);
+  const rewritten = tried
+    .map((r) => parseAttemptInput(r.input))
+    .find((i) => i?.kind === "rewrite" && i.step === "final");
+  const rewriteText = rewritten?.kind === "rewrite" ? rewritten.text : null;
+  return {
+    praise: value.praise,
+    corrections: value.corrections.map(({ original, corrected, reason }) => ({
+      original,
+      corrected,
+      reason,
+    })),
+    draftText: ctx.rewrite.draftText,
+    rewriteText,
+    modelAnswer:
+      rewriteText !== null && value.modelAnswer.trim() !== ""
+        ? value.modelAnswer
+        : null,
+  };
+}
+
 /**
  * 쓰기 6~12 첫 세션 화면 자료(plan-p11b 값 7 · 9): 분량 줄(단계 규격 amount — 낱말 범위 먼저, 없으면 문장, 둘 다 없으면 던짐),
  * 생각 꺼내기 끝 시도(요약 · 낱말 · 틀 또는 실패) · 마지막 진행 질문, 가장 늦은 초고 진행 시도 글. AI 글은 영어 이름으로 채운다.
@@ -998,7 +1208,7 @@ function compositionViewOf(
   for (const { input } of rows) {
     if (input?.kind === "thinkout" && input.step === "final")
       thinkout ??=
-        input.failed || input.restored || input.summary === undefined
+        input.failed || input.summary === undefined
           ? { state: "failed" }
           : fillNameDeep(
               {
@@ -1179,7 +1389,11 @@ export async function loadSessionView(
       ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
     }) && (await aiRestingToday({ profileId: profile.id, at: now() }, { db }));
 
-  const composition = compositionViewOf(ctx, tried, profile.englishName);
+  const composition =
+    row.session.writingPart === "rewrite"
+      ? null
+      : compositionViewOf(ctx, tried, profile.englishName);
+  const rewrite = rewriteViewOf(ctx, tried, profile.englishName);
   return {
     sessionId,
     area,
@@ -1204,6 +1418,7 @@ export async function loadSessionView(
     aiResting,
     guided: guidedViewOf(ctx, tried),
     composition,
+    rewrite,
   } as SessionView;
 }
 

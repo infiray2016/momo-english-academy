@@ -53,12 +53,12 @@ export const COMPOSITION_TEXT = {
 export const DRAFT_AUTOSAVE_MS = 3000;
 /** 초고 입력란 줄 수: 처음 · 최소 5줄, 글이 길면 늘어나되 가로 8 · 세로 10줄까지(한 화면 안 — 화면 꼴 값, 설계 숫자 아님,
  * 화면 검토 review-p11-6-design M-2). 그보다 길면 입력란 안에서 넘긴다(2차 7~12단계 분량). */
-const DRAFT_ROWS_MIN = 5;
+export const DRAFT_ROWS_MIN = 5;
 const DRAFT_ROWS_MAX_LANDSCAPE = 8;
 const DRAFT_ROWS_MAX_PORTRAIT = 10;
 const LANDSCAPE_QUERY = "(orientation: landscape)";
 /** 글 입력란 초점 꼴(쓰기 4~5 입력란과 같은 먹색 점선 4px). */
-const INPUT_FOCUS =
+export const INPUT_FOCUS =
   "focus:outline-4 focus:outline-offset-4 focus:outline-dashed focus:outline-ink";
 
 const wordsIn = (text: string) =>
@@ -282,6 +282,45 @@ export function ThinkoutActivity({
   );
 }
 
+/**
+ * 글 입력란 높이를 글에 맞춘다(최소 DRAFT_ROWS_MIN 줄 — rows, 가로 · 세로 줄 상한까지, 화면 검토 review-p11-6-design M-2). 초고 · 고쳐
+ * 쓰기 입력란이 같이 쓴다. 입력란에 달 ref 를 돌려준다.
+ */
+export function useDraftRows(text: string) {
+  const box = useRef<HTMLTextAreaElement>(null);
+  const [landscape, setLandscape] = useState(false);
+  // 방향이 바뀌면 줄 상한을 다시 고른다
+  useEffect(() => {
+    const query = window.matchMedia(LANDSCAPE_QUERY);
+    const on = () => setLandscape(query.matches);
+    on();
+    query.addEventListener("change", on);
+    return () => query.removeEventListener("change", on);
+  }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 글 · 방향이 바뀔 때마다 잰다
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const css = window.getComputedStyle(el);
+    const line = Number.parseFloat(css.lineHeight);
+    const borders =
+      Number.parseFloat(css.borderTopWidth) +
+      Number.parseFloat(css.borderBottomWidth);
+    const frame =
+      Number.parseFloat(css.paddingTop) +
+      Number.parseFloat(css.paddingBottom) +
+      borders;
+    const maxRows = landscape
+      ? DRAFT_ROWS_MAX_LANDSCAPE
+      : DRAFT_ROWS_MAX_PORTRAIT;
+    el.style.height = "auto";
+    const natural = el.scrollHeight + borders;
+    if (natural > el.offsetHeight && Number.isFinite(line))
+      el.style.height = `${Math.min(natural, maxRows * line + frame)}px`;
+  }, [text, landscape]);
+  return box;
+}
+
 // ── 초고 ──
 
 /** 활동 안 입력(이 기기에 되살림): 쓴 글 · 낸 시도 id. */
@@ -331,40 +370,7 @@ export function DraftActivity({
   const [busy, setBusy] = useState(false);
   const [waitingOnline, setWaitingOnline] = useState(false);
   const count = wordsIn(text);
-  const box = useRef<HTMLTextAreaElement>(null);
-  const [landscape, setLandscape] = useState(false);
-
-  // 방향이 바뀌면 줄 상한을 다시 고른다
-  useEffect(() => {
-    const query = window.matchMedia(LANDSCAPE_QUERY);
-    const on = () => setLandscape(query.matches);
-    on();
-    query.addEventListener("change", on);
-    return () => query.removeEventListener("change", on);
-  }, []);
-  // 글에 맞춰 입력란 높이를 늘린다(최소 DRAFT_ROWS_MIN 줄 — rows, 상한은 방향마다)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 글 · 방향이 바뀔 때마다 잰다
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const css = window.getComputedStyle(el);
-    const line = Number.parseFloat(css.lineHeight);
-    const frame =
-      Number.parseFloat(css.paddingTop) +
-      Number.parseFloat(css.paddingBottom) +
-      Number.parseFloat(css.borderTopWidth) +
-      Number.parseFloat(css.borderBottomWidth);
-    const borders =
-      Number.parseFloat(css.borderTopWidth) +
-      Number.parseFloat(css.borderBottomWidth);
-    const maxRows = landscape
-      ? DRAFT_ROWS_MAX_LANDSCAPE
-      : DRAFT_ROWS_MAX_PORTRAIT;
-    el.style.height = "auto";
-    const natural = el.scrollHeight + borders;
-    if (natural > el.offsetHeight && Number.isFinite(line))
-      el.style.height = `${Math.min(natural, maxRows * line + frame)}px`;
-  }, [text, landscape]);
+  const box = useDraftRows(text);
 
   const latest = useRef(text);
   latest.current = text;

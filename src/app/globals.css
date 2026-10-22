@@ -149,6 +149,10 @@
   html {
     @apply font-sans;
   }
+  /* 영어 글(lang="en")은 Fredoka(4절). 한글이 섞이면 --font-en 의 다음 값 Gowun Dodum 이 받는다 */
+  :lang(en) {
+    font-family: var(--font-en);
+  }
   /* 한국어 줄바꿈은 낱말 단위(장부 '줄바꿈 keep-all'), 긴 영어 낱말은 칸 안에서 끊는다 */
   body {
     word-break: keep-all;

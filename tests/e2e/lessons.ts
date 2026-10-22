@@ -2,10 +2,12 @@
 // writingLesson 3 · 4 · 6 · speakingLesson 6 · 10)의 수업을 lessons 행으로 넣어 본다(판은 DB 최신 개정 · 정정 0, 검증 밖 —
 // P10 cloneLessons 와 같은 결). 견본 규격은 기본 틀(referenceSet(defaultSettings())) — 작은 틀 규격으로는 읽기 견본이 만들어지지
 // 않는다(plan 의 추측과 다름, 차례 2 보고). 지어낸 낱말이라 DB vocab 에 없을 수 있고 그림은 뜻 글로 보인다.
+import { randomUUID } from "node:crypto";
 import { and, eq, max } from "drizzle-orm";
 import type { Area } from "../../src/core/seed/structure";
 import { LEVEL_MAX } from "../../src/core/seed/structure";
 import { lessons, levelSpecs } from "../../src/db/schema/content";
+import { attempts, sessions } from "../../src/db/schema/learning";
 import { SEED_REVISION_TABLES } from "../../src/db/schema/seed-revision";
 import {
   defaultSettings,
@@ -168,4 +170,95 @@ export async function openLessonSession(
   ]);
   if (!sessionId) throw new Error("세션 없음");
   return sessionId;
+}
+
+/** 시험 첨삭 값(쓰기 6단계 — 교정 둘 · 모범 답안 · 채점표, 6.2 쓰기 첨삭 꼴). */
+export const READY_FEEDBACK = {
+  praise: "강아지와 노는 하루를 차례대로 잘 썼어요.",
+  corrections: [
+    {
+      original: "I love it.",
+      corrected: "I love my dog.",
+      reason: "무엇을 좋아하는지 분명히 써요.",
+    },
+    {
+      original: "We goes",
+      corrected: "We go",
+      reason: "We 뒤에는 go 를 써요.",
+    },
+  ],
+  modelAnswer: "I have a small dog. We go to the park and play every day.",
+  rubric: { task: 4, grammar: 3, vocabulary: 3 },
+} as const;
+export const READY_DRAFT = "I have a dog. We goes to the park. I love it.";
+
+/**
+ * 첨삭이 온(pending 이면 첨삭을 기다리는) 쓰기 6~12 첫 세션 하나를 바로 넣는다(초고 끝 시도 — 첨삭 옴 · 채점표 점수, 끝난 첫 세션). 둘째 세션 · 홈 '첨삭이 왔어요'
+ * 시험의 바탕. 첫 세션 id 를 돌려준다.
+ */
+export async function insertReadyDraft(
+  profileId: string,
+  lesson: LessonRow,
+  {
+    pending = false,
+    claimed = false,
+  }: {
+    pending?: boolean;
+    /** 첨삭 대기를 다른 부름이 막 잡은 꼴(claimedAt 지금) — 서버가 첨삭을 더 부르지 못해 '아직 글을 살펴보고 있어요'가 된다. */
+    claimed?: boolean;
+  } = {},
+): Promise<string> {
+  const db = e2eDb();
+  const at = new Date();
+  const score =
+    (READY_FEEDBACK.rubric.task +
+      READY_FEEDBACK.rubric.grammar +
+      READY_FEEDBACK.rubric.vocabulary) /
+    3 /
+    4;
+  const [first] = await db
+    .insert(sessions)
+    .values({
+      profileId,
+      area: "writing",
+      level: lesson.level,
+      unit: lesson.unit ?? 1,
+      lessonId: lesson.id,
+      kind: "regular",
+      status: "completed",
+      startedAt: at,
+      completedAt: at,
+      learningDay: at.toISOString().slice(0, 10),
+      seedRevision: lesson.revision,
+      seedCorrection: lesson.correction,
+      writingPart: "draft",
+      // 첨삭 대기면 점수는 비어 있다(첨삭이 올 때 채움)
+      ...(pending ? {} : { score }),
+    })
+    .returning({ id: sessions.id });
+  if (!first) throw new Error("첫 세션을 넣지 못했다");
+  await db.insert(attempts).values({
+    sessionId: first.id,
+    clientAttemptId: randomUUID(),
+    activityNo: 4,
+    input: { v: 1, kind: "draft", step: "final", text: READY_DRAFT },
+    attemptedAt: at,
+    ...(pending
+      ? {
+          // 첨삭 대기(응답 뒤 첨삭이 실패해 대기로 돌아온 때와 같은 꼴) — claimed 면 다른 부름이 잡고 있는 중
+          aiFeedback: {
+            state: "pending",
+            failures: 1,
+            refusals: 0,
+            ...(claimed ? { claimedAt: at.toISOString() } : {}),
+          },
+          status: "awaiting_feedback" as const,
+        }
+      : {
+          aiFeedback: { state: "ready", value: READY_FEEDBACK },
+          score,
+          status: "done" as const,
+        }),
+  });
+  return first.id;
 }

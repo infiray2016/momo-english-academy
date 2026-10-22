@@ -1,18 +1,38 @@
 // 홈(4절 홈 표 · AC-2a · AC-5c, plan-p10b 작업 2). 프로필이 없으면 첫 실행으로, 있으면 영역 카드 넷 · 별 · 부모 점.
-// 연속 학습 일수 · 복습 포스트잇 · '첨삭이 왔어요'는 P11 · P12 몫이라 아직 그리지 않는다.
+// 연속 학습 일수 · 복습 포스트잇은 P12 몫이라 아직 그리지 않는다. 쓰기 6~12(plan-p11b 값 12): 첨삭이 온 수업이 있으면 영역 카드보다
+// 앞에 '첨삭이 왔어요'(하늘), 앱 진입마다 응답 뒤(after)에 밀린 첨삭을 많아야 둘 부른다(10절 운영 — 쿠키 · 헤더는 after 안에서 읽지 않음).
 import { Star } from "lucide-react";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
+import { z } from "zod";
 import { ChildScreen, PaperBand } from "@/components/board/board";
 import { now } from "@/server/clock";
 import { readHome } from "@/server/home";
-import { HomeCards } from "./home-cards";
+import { readHouseholdProfile } from "@/server/profile";
+import { getSettings } from "@/server/settings";
+import { retryPendingFeedback } from "@/server/writing";
+import { FeedbackNote, HomeCards } from "./home-cards";
 
 export default async function HomePage() {
   // DB 를 읽는 쪽이라 요청 때 그린다(빌드 때 미리 그리지 않는다)
   await connection();
   const home = await readHome({ now: now() });
   if (!home) redirect("/first-run");
+  const profile = await readHouseholdProfile();
+  if (profile) {
+    const profileId = profile.id;
+    after(() => retryPendingFeedback({ profileId }).then(() => undefined));
+  }
+  const waitHintSeconds = home.feedbackReady
+    ? (
+        await getSettings({
+          "ui.wait_hint_seconds": z.tuple([
+            z.number().positive(),
+            z.number().positive(),
+          ]),
+        })
+      )["ui.wait_hint_seconds"]
+    : undefined;
   return (
     <ChildScreen>
       <PaperBand
@@ -45,6 +65,12 @@ export default async function HomePage() {
           </>
         }
       />
+      {home.feedbackReady && waitHintSeconds ? (
+        <FeedbackNote
+          lessonId={home.feedbackReady.lessonId}
+          waitHintSeconds={waitHintSeconds}
+        />
+      ) : null}
       <HomeCards cards={home.cards} />
     </ChildScreen>
   );

@@ -1,7 +1,7 @@
 "use server";
 // 쓰기 AI 서버 액션(plan-p11b 파일별 값 3, 6.2 · 8절 · 10절 운영). 모든 함수의 첫 문장은 requireAccess() 다(P3b 훑기 시험).
 // AI 는 서버 함수(src/server/writing)가 P9c 공개 함수로 부른다. 입력은 화면에서 온 그대로 받아 서버에서 다시 본다(Zod).
-// 아이 글 · AI 글을 로그에 내지 않는다. 첨삭은 초고 제출 응답 뒤(after())에 부른다. 고쳐 쓰기는 차례 7 이 더한다.
+// 아이 글 · AI 글을 로그에 내지 않는다. 첨삭은 초고 제출 응답 뒤(after())에 부른다.
 import { after } from "next/server";
 import { requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
@@ -10,7 +10,9 @@ import {
   type DraftOutcome,
   feedbackStatus,
   type GuidedCheckOutcome,
+  type RewriteOutcome,
   submitDraft as submitDraftText,
+  submitRewrite as submitRewriteText,
   type ThinkoutOutcome,
   thinkoutStep,
 } from "@/server/writing";
@@ -41,4 +43,10 @@ export async function draftFeedbackStatus(
 ): ReturnType<typeof feedbackStatus> {
   await requireAccess();
   return feedbackStatus(input);
+}
+
+/** 쓰기 6~12 둘째 세션 '다 고쳤어요' — 고쳐 쓴 글을 저장하고 그 초고 첨삭의 모범 답안을 돌려준다(그 전에는 보이지 않음). */
+export async function submitRewrite(input: unknown): Promise<RewriteOutcome> {
+  await requireAccess();
+  return submitRewriteText(input, { now });
 }

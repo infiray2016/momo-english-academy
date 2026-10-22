@@ -83,7 +83,16 @@ function useDraftFeedback(
 
 export function ResultView({ view }: { view: ResultData }) {
   const router = useRouter();
-  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
+  const {
+    start,
+    busy,
+    status,
+    asking,
+    setAsking,
+    resting,
+    stillReading,
+    waitingSince,
+  } = useLessonStart(view.waitHintSeconds);
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -122,7 +131,7 @@ export function ResultView({ view }: { view: ResultData }) {
             <div data-result-next="waiting">
               <WaitHint
                 startedAt={waitStarted}
-                seconds={view.draft.waitHintSeconds}
+                seconds={view.waitHintSeconds}
               />
             </div>
           ) : view.draft && draftShown === "ready" ? (
@@ -130,7 +139,8 @@ export function ResultView({ view }: { view: ResultData }) {
               data-result-next="feedback"
               disabled={busy}
               onClick={() => {
-                if (view.draft) void start(view.draft.lessonId);
+                if (view.draft)
+                  void start(view.draft.lessonId, false, { feedback: true });
               }}
             >
               {TEXT.feedback}
@@ -152,6 +162,18 @@ export function ResultView({ view }: { view: ResultData }) {
               {TEXT.nextLesson}
             </BigButton>
           )}
+          {stillReading ? (
+            // 둘째 세션을 열 때 첨삭이 아직 없음 — '아직 글을 살펴보고 있어요'와 '수업 목록'(4절 · plan-p11b 값 9)
+            <>
+              <StatusLine>{LESSON_START_TEXT.stillReading}</StatusLine>
+              <BigLink href={`/${view.area}/lessons`} data-result-next="list">
+                {TEXT.list}
+              </BigLink>
+            </>
+          ) : null}
+          {waitingSince !== undefined ? (
+            <WaitHint startedAt={waitingSince} seconds={view.waitHintSeconds} />
+          ) : null}
           <StatusLine tone={status ? "error" : "info"}>{status}</StatusLine>
         </div>
       </div>

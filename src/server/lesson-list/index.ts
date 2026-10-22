@@ -2,7 +2,8 @@ import "server-only";
 // 수업 목록 자료(4절 수업 목록 표 · 3.2 · 5절 전이 · 8절 오래 멈춘 세션, plan-p10b 파일별 값 5 · 정할 것 ㄷ · ㅂ · ㅅ · ㅇ).
 // 목록 요청 때 먼저 오래 멈춘 진행 세션을 중단으로 닫고(배치 평가는 닫지 않음), 트랙 · 단원 회차 · 수업 칸 · 이 단계 세션 ·
 // 잠긴 다음 단원 수를 모아 순수 함수 lessonListState 로 넘긴다. 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
-// gate 의 단어 · 성적 조건과 첨삭 · 단계 평가 · 보강 · 연습 · 복습은 P11 · P12 가 채운다(지금은 빈 값).
+// gate 의 단어 · 성적 조건과 단계 평가 · 보강 · 연습 · 복습은 P12 가 채운다(지금은 빈 값). 쓰기 6~12 첫 세션 · 첨삭 상태
+// (writingDrafts · feedbackReady)는 P11b 차례 7 이 채운다(plan-p11b 값 11).
 import { and, eq, inArray, lt, ne } from "drizzle-orm";
 import { z } from "zod";
 import { learningDayOf } from "@/core/learning-day";
@@ -17,10 +18,18 @@ import {
   type SessionLite,
   unitGateOf,
   WRITING_FRAME_FROM,
+  type WritingDraft,
 } from "@/core/lesson-list/state";
 import { type Area, UNITS_PER_LEVEL } from "@/core/seed/structure";
+import { parseAttemptInput } from "@/core/session/attempt";
+import { feedbackStateOf } from "@/core/writing/feedback";
 import { lessons } from "@/db/schema/content";
-import { profileTracks, sessions, unitProgress } from "@/db/schema/learning";
+import {
+  attempts,
+  profileTracks,
+  sessions,
+  unitProgress,
+} from "@/db/schema/learning";
 import { type DbOrTx, getDb } from "@/server/db";
 import { readHouseholdProfile } from "@/server/profile";
 import {
@@ -138,6 +147,79 @@ const snapshotNumber = (snapshot: unknown, key: string): number => {
   return value;
 };
 
+/**
+ * 쓰기 6~12 칸마다 가장 늦게 끝낸 첫 세션과 그 초고의 첨삭 상태(plan-p11b 값 11). 그 뒤에 끝낸 둘째 세션이 있는 칸은 넣지 않는다.
+ * 첨삭 상태 글이 꼴이 아니면 대기로 본다(밀린 첨삭이 다시 부름).
+ */
+async function writingDraftsOf(
+  db: DbOrTx,
+  list: readonly SessionLite[],
+): Promise<WritingDraft[]> {
+  const latest = new Map<string, SessionLite>();
+  const key = (s: SessionLite) =>
+    s.ref ? `${s.ref.unit}:${s.ref.kind}:${s.ref.lessonNo}` : "";
+  const endOf = (s: SessionLite) => (s.completedAt ?? s.startedAt).getTime();
+  for (const s of list) {
+    if (s.status !== "completed" || s.writingPart !== "draft" || !s.ref)
+      continue;
+    const before = latest.get(key(s));
+    if (!before || endOf(s) > endOf(before)) latest.set(key(s), s);
+  }
+  const open = [...latest.values()].filter(
+    (d) =>
+      !list.some(
+        (s) =>
+          s.status === "completed" &&
+          s.writingPart === "rewrite" &&
+          key(s) === key(d) &&
+          endOf(s) >= endOf(d),
+      ),
+  );
+  if (open.length === 0) return [];
+  const rows = await db
+    .select({
+      sessionId: attempts.sessionId,
+      input: attempts.input,
+      aiFeedback: attempts.aiFeedback,
+    })
+    .from(attempts)
+    .where(
+      inArray(
+        attempts.sessionId,
+        open.map((d) => d.id),
+      ),
+    );
+  const lessonOf = await db
+    .select({ id: sessions.id, lessonId: sessions.lessonId })
+    .from(sessions)
+    .where(
+      inArray(
+        sessions.id,
+        open.map((d) => d.id),
+      ),
+    );
+  return open.flatMap((d): WritingDraft[] => {
+    const draft = rows.find((r) => {
+      if (r.sessionId !== d.id) return false;
+      const input = parseAttemptInput(r.input);
+      return input?.kind === "draft" && input.step === "final";
+    });
+    const lessonRowId = lessonOf.find((l) => l.id === d.id)?.lessonId;
+    if (!draft || !d.ref || !lessonRowId) return [];
+    const state = feedbackStateOf(draft.aiFeedback)?.state ?? "pending";
+    return [
+      {
+        ref: d.ref,
+        variant: d.variant ?? 0,
+        draftSessionId: d.id,
+        lessonRowId,
+        kind: d.kind,
+        state: state === "pending" ? "awaiting" : state,
+      },
+    ];
+  });
+}
+
 /** 수업 목록 자료. 프로필이 없으면 no_profile, 배치 전 영역이면 placement. 먼저 오래 멈춘 세션을 닫는다. */
 export async function readLessonList({
   db = getDb(),
@@ -242,7 +324,10 @@ export async function readLessonList({
     completedAt: session.completedAt,
     unit: session.unit,
     learningDay: session.learningDay,
+    ...(session.writingPart ? { writingPart: session.writingPart } : {}),
   }));
+  const writingDrafts =
+    area === "writing" ? await writingDraftsOf(db, sessionsLite) : [];
 
   // 잠긴 다음 단원 수(plan 값 1 끝 문단, 정할 것 ㅇ — 단어 · 성적 조건은 P12). 규칙은 순수 함수 minLessonsOf · unitGateOf
   const cells = lessonsByUnit[unit] ?? [];
@@ -296,7 +381,10 @@ export async function readLessonList({
     sessions: sessionsLite,
     gate,
     state,
-    feedbackReady: [],
+    feedbackReady: writingDrafts
+      .filter((d) => d.state === "ready")
+      .map((d) => d.ref),
+    writingDrafts,
     remedialIssued: [],
     practice: [],
     reviewDue: false,

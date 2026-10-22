@@ -455,7 +455,8 @@ describe("1-가 안전 상한", () => {
     await reachCap(profileId);
     expect((await start(await lessonId("reading", 1))).ok).toBe(true);
     expect((await start(await lessonId("writing", 1))).ok).toBe(true);
-    // 둘째 세션(고쳐 쓰기)은 AI 가 필요한 수업이 아니다 — 시작 판정 길(첨삭 보기)은 차례 7 이 이 시험에 더한다
+    // 둘째 세션(고쳐 쓰기)은 AI 를 부르지 않아 상한 날에도 열린다(C80 — 코드 검토 review-p11-7-code M-1): 첨삭이 온 첫 세션을 두고 상한에
+    // 닿게 한 뒤 같은 수업을 고르면 둘째 세션
     expect(
       aiNeededLesson({
         area: "writing",
@@ -463,6 +464,51 @@ describe("1-가 안전 상한", () => {
         part: "rewrite",
       }),
     ).toBe(false);
+    const writer = await household({ writing: samples.writing6.level });
+    const writing6 = await lessonId("writing", samples.writing6.level);
+    const [first] = await db
+      .insert(sessions)
+      .values({
+        profileId: writer,
+        area: "writing",
+        level: samples.writing6.level,
+        unit: samples.writing6.unit,
+        lessonId: writing6,
+        kind: "regular",
+        status: "completed",
+        startedAt: SAVED_AT,
+        completedAt: SAVED_AT,
+        learningDay: learningDayOf(SAVED_AT, TZ, DAY_START),
+        writingPart: "draft",
+      })
+      .returning({ id: sessions.id });
+    if (!first) throw new Error("첫 세션을 넣지 못했다");
+    await db.insert(attempts).values({
+      sessionId: first.id,
+      clientAttemptId: randomUUID(),
+      activityNo: 4,
+      input: { v: 1, kind: "draft", step: "final", text: "I have a dog." },
+      attemptedAt: SAVED_AT,
+      aiFeedback: {
+        state: "ready",
+        value: {
+          praise: "잘 썼어요.",
+          corrections: [],
+          modelAnswer: "I have a small dog.",
+          rubric: { task: 3, grammar: 3, vocabulary: 3 },
+        },
+      },
+      status: "done",
+    });
+    await reachCap(writer);
+    const second = await start(writing6);
+    if (!second.ok)
+      throw new Error(`둘째 세션이 열려야 한다: ${second.reason}`);
+    const [row] = await db
+      .select({ writingPart: sessions.writingPart })
+      .from(sessions)
+      .where(eq(sessions.id, second.sessionId));
+    expect(row?.writingPart).toBe("rewrite");
   });
 
   it("1-가 안전 상한: 쓰기 확인 도중 닿으면 시도를 남기지 않고 '쉬는 중'이며 세션은 진행으로 남고 다시 열면 화면 자료가 안내를 고른다", async () => {

@@ -3,7 +3,7 @@ import "server-only";
 // 결과 화면 · 세션 화면 자료가 이 모듈만 읽어 첨삭 호출 길과 떨어지게(세션 쪽은 AI 를 부르지 않음, AC-1b).
 import { and, eq } from "drizzle-orm";
 import { parseAttemptInput } from "@/core/session/attempt";
-import { feedbackStateOf } from "@/core/writing/feedback";
+import { type FeedbackValue, feedbackStateOf } from "@/core/writing/feedback";
 import { attempts, sessions } from "@/db/schema/learning";
 import type { DbOrTx } from "@/server/db";
 
@@ -46,4 +46,64 @@ export async function draftFeedbackOf(
   if (!draft) return undefined;
   const state = feedbackStateOf(draft.aiFeedback)?.state ?? "pending";
   return { state, submittedAt: draft.attemptedAt };
+}
+
+export type RewriteSource = {
+  draftSessionId: string;
+  /** 첨삭 값(가린 글 그대로 — 화면에 낼 때 이름을 채운다). */
+  value: FeedbackValue;
+  /** 낸 초고 글(고쳐 쓰기 입력란에 채워 둠). */
+  draftText: string;
+};
+
+/**
+ * 둘째 세션(고쳐 쓰기)이 기대는 첫 세션 · 첨삭(plan-p11b 값 9 · 11): 같은 프로필 · 같은 수업 행의 끝난 첫 세션 가운데 둘째 세션 시작
+ * 전에 끝났고 첨삭이 온 가장 늦은 것. 없으면 undefined.
+ */
+export async function rewriteSourceOf(
+  db: DbOrTx,
+  {
+    profileId,
+    lessonId,
+    before,
+  }: { profileId: string; lessonId: string; before: Date },
+): Promise<RewriteSource | undefined> {
+  const firsts = await db
+    .select({ id: sessions.id, completedAt: sessions.completedAt })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.profileId, profileId),
+        eq(sessions.lessonId, lessonId),
+        eq(sessions.status, "completed"),
+        eq(sessions.writingPart, "draft"),
+      ),
+    );
+  const ordered = firsts
+    .filter((f) => f.completedAt !== null && f.completedAt <= before)
+    .sort(
+      (a, b) =>
+        (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0),
+    );
+  for (const first of ordered) {
+    const rows = await db
+      .select({ input: attempts.input, aiFeedback: attempts.aiFeedback })
+      .from(attempts)
+      .where(eq(attempts.sessionId, first.id));
+    for (const row of rows) {
+      const input = parseAttemptInput(row.input);
+      const state = feedbackStateOf(row.aiFeedback);
+      if (
+        input?.kind === "draft" &&
+        input.step === "final" &&
+        state?.state === "ready"
+      )
+        return {
+          draftSessionId: first.id,
+          value: state.value,
+          draftText: input.text,
+        };
+    }
+  }
+  return undefined;
 }
