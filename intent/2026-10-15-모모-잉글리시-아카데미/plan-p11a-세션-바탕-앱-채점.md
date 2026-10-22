@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P11a 세션 바탕 · 읽기 · 쓰기 1~3 · 말하기 1~2(앱 채점)
 
-spec: `specs/` 정본(3.3 첫 활동 · 읽기 문단과 표 · 쓰기 1~3 행 · 말하기 문단과 표, 3.4 단어장 · '단어별 정오', 3.7 점수 표 전부, 4절 첫 문단(결과 말 셋 · '한 번 더' · 퍼센트 없음) · 읽기 · 쓰기 · 말하기 세션 행 · 세션 결과 행, 5절 sessions · attempts · 전이 표, 6.2 끝 두 문단(앱 채점 · 일치율), 7절 인식 규칙 표 · 마이크를 쓸 수 없음, 8절 네트워크 끊김 · 같은 프로필 동시 사용, 12절 ui.* · speaking.match_weight · speaking.listening_weight · speaking.answer_match_pass · speech.*, 13절 C38 · C39 · C53 · C67 (6) (7) · C70 · C73, 15절 AC-2c(읽기 몫) · 3a · 4a · 5b(1단계) · 5c(세션 몫) · 5e(말하기 1 · 4) · 5f(1~2단계) · 6a · 6c · N3 · N9, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P11 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-18 · 상태: approved(컨트롤러 2026-10-18 04:1x — 요청자 묶음 plan 승인 2026-10-16 아래, P10 하위 plan 과 같은 꼴)
+spec: `specs/` 정본(3.3 첫 활동 · 읽기 문단과 표 · 쓰기 1~3 행 · 말하기 문단과 표, 3.4 단어장 · '단어별 정오', 3.7 점수 표 전부, 4절 첫 문단(결과 말 셋 · '한 번 더' · 퍼센트 없음) · 읽기 · 쓰기 · 말하기 세션 행 · 세션 결과 행, 5절 sessions · attempts · 전이 표, 6.2 끝 두 문단(앱 채점 · 일치율), 7절 인식 규칙 표 · 마이크를 쓸 수 없음, 8절 네트워크 끊김 · 같은 프로필 동시 사용, 12절 ui.* · speaking.match_weight · speaking.listening_weight · speaking.answer_match_pass · speech.*, 13절 C38 · C39 · C53 · C67 (6) (7) · C70 · C73, 15절 AC-2c(읽기 몫) · 3a · 4a · 5b(1단계) · 5c(세션 몫) · 5e(말하기 1 · 4) · 5f(1~2단계) · 6a · 6c · N3 · N9, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P11 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-18 · 상태: done(2026-10-22, 커밋 79ee1cc)
 승인: 컨트롤러 2026-10-18 04:1x(정할 것 가~카 모두 권함대로 — 13절 C76 단어별 정오 · C77 활동 흐름 해석 · C78 정본 밖 문구, 짝 plan 몫 C79 · C80 · C81) · 브랜치 · 워크트리: `feature/1a-p11-session-activities`(제안, a · b · c 한 브랜치 · 워크트리 p11) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P11 은 손 파일이 일흔 안팎(셋의 표를 더하면 여든여덟 — 같은 파일을 차례마다 고친 것을 따로 셈)이라 셋으로 나눴다(묶음 plan 위험 12). 이 파일(a)은 AI 없이 도는 세션 — 활동 바탕 · 시도 저장과 서버 채점 · 세션 끝내기 · 결과 틀 · 읽기 · 쓰기 1~3 · 말하기 1~2 와 음성 공통이다. 짝은 `plan-p11b-쓰기-AI-첨삭.md` · `plan-p11c-말하기-AI-평가.md` 다. 셋이 함께 쓰는 사실 — **나눈 까닭과 배정 · 가정 · 화면을 보는 차례 · 바탕 가지 · 활동 모델(값 1) · 시도 꼴(값 2) · 정본 밖 문구 · 정할 것 가~카 · 확인한 사실** — 은 이 파일에만 있고 b · c 는 절 이름으로 가리킨다.
@@ -181,6 +181,7 @@ P11 은 손 파일이 일흔 안팎(셋의 표를 더하면 여든여덟 — 같
 | 쓰기 1~3 | 갈래별 안내 | pick-word '그림에 맞는 단어를 골라요' · copy-tiles '단어를 보고 글자를 차례대로 놓아요' · build-tiles '뜻에 맞게 글자를 놓아 단어를 만들어요' · fill-letters '빈칸에 들어갈 글자를 놓아요' · dictation '잘 듣고 단어를 써요' · 조립 '이 뜻이 되게 카드를 놓아요' · '카드를 누르면 빈칸으로 가요'(목업 B_W3_Order 둘) | a |
 | 말하기 · 쓰기 · 듣기 | 소리 단추 · 처음 마이크 안내 단추 · 듣기 틀림 | '다시 듣기'(목업 B_Speaking · B_W1_Words) · '알겠어요' · '한 번 더 듣기' | a |
 | 쓰기 1~3 받아쓰기 | 내기 단추(쓴 글을 내는 것 — '다음'과 가름, 컨트롤러 2026-10-18 fix 3 · review-p11-3-design M-2) | '다 썼어요'(쓰기 4~5 와 같은 말) | a |
+| 말하기 1~2 | 활동 첫 줄 안내(읽기 · 쓰기와 같은 꼴 — 컨트롤러 2026-10-18 fix 4 · review-p11-4-design M-3) | 따라 말하기 '잘 듣고 따라 말해 봐요' · 듣기 이해 '잘 듣고 알맞은 것을 골라요' · 질문 답 '질문을 듣고 영어로 대답해 봐요' | a |
 | 쓰기 4~5 | 과제 · 단어 상자 · 제출 | '과제' · '예시' · '단어 상자'(목업 B_Writing) · '다 썼어요'(목업 B_Writing) | b |
 | 쓰기 4~5 | 고칠 곳 · 보기 · 틀린 보기 · 고침 | '색칠한 곳을 눌러 고쳐 봐요' · '알맞은 말을 골라요' · '다시 골라 볼까요' · '잘 고쳤어요!' | b |
 | 쓰기 4~5 · 6~12 | 내 문장 말하기 · 선택 | '내 문장을 듣고 따라 말해 봐요' · '내 글을 소리 내어 읽어 봐요' · '건너뛰기' | b |
@@ -309,4 +310,187 @@ P11 은 손 파일이 일흔 안팎(셋의 표를 더하면 여든여덟 — 같
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다.
+채움: 문서 반영 편집자 2026-10-22 13:4x(브리프 `task-p11a-done-edit.md`). **커밋 79ee1cc**(가지 `feature/1a-p11-session-activities`, 2026-10-22 13:31). P11a 는 워크트리 `.claude/worktrees/p11`(작업 가지 바탕 dc5308d)에서 차례 1~4 와 fix 1~4 로 끝냈다. b · c 는 같은 가지 · 같은 워크트리에서 차례 5 부터 잇는다. 원문은 구현 보고 `task-p11-report.md`(장부 폴더) · 검토 보고 열넷(`review-p11-*.md`) · 장부 progress · ledger-open · ledger-closed · 13절 C76~C84 다. CI 8차의 시험 수는 장부에 없어 GitHub Actions 로그에서 옮겼다.
+
+### 흐름
+
+| 차례 · 라운드 | 검토 묶음 | 결과(검토 보고) |
+|---|---|---|
+| 차례 0 바탕 · 공용 변경 1(컨트롤러, 10-18 05:3x~05:5x) | — | 바탕 가지 `feature/1a-base-p11` a4a46a4 = P10 df7f6cd + P9c dae3afd + P6a f447bc5 + P7b 1a5c188. 검사 tsc 0 · biome 0 · 단위 446 · build 성공 · check:ids 2(P10 차례 7 몫). 공용 변경 1 dc5308d · specs · intent 맞춤 9b97f4d. 바탕만으로 돌린 CI 는 기록 없음(첫 CI 는 차례 2) |
+| 차례 1 순수 함수 바탕 | A1(코드만) | Changes requested · I 1 · M 5(`review-p11-1-code.md` — 건너뛴 시도에 인식 글이 있으면 점수 · 단어별 정오를 냄) |
+| fix 1 | A1 | Approved · 다섯 ADDRESSED · 새 0(`review-p11-fix1-code.md`) → c8db4f5 |
+| 차례 2 세션 서버 · 대기열 · 틀 · 읽기 · 결과 틀 | A2 | 코드 Approved · M 1(`review-p11-2-code.md`). 화면 Changes requested · I 3 · M 5(`review-p11-2-design.md` — 가로 1단계 그림 문항 '다음' 잘림 · 지문 그림 줄 깨진 그림 표 · 오른쪽 끝 낱말 쪽지 잘림) |
+| fix 2 | A2 | 화면 Approved · 여덟 ADDRESSED · 새 M 2(`review-p11-fix2-design.md`). 코드 Approved · M 1(`review-p11-fix2-code.md`) → d798b6e |
+| 차례 3 쓰기 1~3 · 이어 하기 | A3 | 코드 Approved · M 1(`review-p11-3-code.md`). 화면 Changes requested · I 2 · M 4(`review-p11-3-design.md` — 조립 빈 칸 너비가 섞인 카드 차례를 닮음 · '다 놓았어요'가 하나만 놓아도 켜짐) |
+| fix 3 | A3 | 화면 Approved · 여섯 ADDRESSED · 새 M 1(`review-p11-fix3-design.md`). 코드 Approved · 지적 0(`review-p11-fix3-code.md`) → 52f30a8 |
+| 차례 4 말하기 1~2 · 음성 공통 · 기기 알림 | A4 | 코드 Approved · M 2(`review-p11-4-code.md`). 화면 Changes requested · I 1 · M 3(`review-p11-4-design.md` — 듣는 동안 화면이 바뀌지 않음) |
+| fix 4 | A4 | 구현은 10-18 09:1x 에 끝났고 CI 8차가 그때 돌았다. 곧바로 주간 한도로 멈췄다가 10-22 13:2x 에 다시 시작했다. 한도 뒤 응답 보장이 없는 앞 검토자 대신 새 검토자 둘(rev-p11b 코드 · des-p11b 화면, Opus · xhigh)이 재검토했다. 화면 Approved · 넷 ADDRESSED · 새 M 2(`review-p11-fix4-design.md`). 코드 Approved · 새 M 3(`review-p11-fix4-code.md`) → 79ee1cc |
+
+fix 라운드는 검토 묶음마다 한 번이다(한도 셋). 재검토의 새 Minor 는 다음 차례 브리프로 넘겼다. 차례 4 재검토의 넷은 차례 5 브리프에 있고, 코드 재검토 M-3 은 이 절이 닫는다(계획 표 밖 파일 · 다르게 한 것 14 · 15).
+
+### 커밋(작업 가지, 바탕 dc5308d 위 넷)
+
+| 커밋 | 시각 | 파일 · 줄 | 담은 것 | 커밋한 때 |
+|---|---|---|---|---|
+| c8db4f5 | 10-18 06:30 | 13 · +2,572 −125 | 차례 1 · fix 1 | 재검토 Approved 뒤 |
+| d798b6e | 10-18 07:30 | 26 · +3,222 −229 | 차례 2 · fix 2 | CI 2차 · 재검토 둘 Approved 뒤 |
+| 52f30a8 | 10-18 08:18 | 14 · +1,389 −121 | 차례 3 · fix 3 | CI 5차 · 재검토 둘 Approved 뒤 |
+| 79ee1cc | 10-22 13:31 | 16 · +1,899 −111 | 차례 4 · fix 4 | CI 8차 · 재검토 둘 Approved 뒤. 요청자 지시 "검토 끝나면 커밋하고 말하기 프리뷰 주소 알려줘"(10-22 13:2x) |
+
+넷을 합치면 50 파일이다(새 27 · 고침 23, +9,082 −586 줄). 차례 1~3 커밋의 요청자 지시는 장부에 기록이 없다. 마이그레이션은 더하지 않았다(계획대로). 사이의 커밋 여섯은 P11a 코드가 아니다 — 9b97f4d · ccbd899 · 1d6ad23 · b648c8c 는 specs · intent 를 문서 가지와 맞춘 것이고, 6e09901 · 7794633 은 P10 78db3a2 · fix 8 176eda1 을 합친 것이다.
+
+### CI(가지 `ci/p11-c2`, 초안 PR #4)
+
+이 Mac 은 새 Postgres 가 뜨지 않아(ledger-open 환경 행) 통합 · e2e 는 CI 에서만 돌렸다(가정 (다)). CI 가지는 차례마다 작업 가지 최신 커밋 위에 다시 만들었다(ledger-open CI 용 PR 행). 작업은 열하나다(lint · build · unit · integration · e2e · e2e-local · depcruise · spec-trace · bundle-secrets · seed-validate · check-ids).
+
+| 차 | 커밋 | run | 차례 | 결과 | 사진 세트(장) |
+|---|---|---|---|---|---|
+| 1 | ee3120f | 39072933388 | 차례 2 | 전부 성공(첫 바퀴) | 19 |
+| 2 | 1292c14 | 39074646676 | fix 2 | 전부 성공 | 25 |
+| 3 | bc55b8f | 39076275851 | 차례 3 | e2e 1 실패 · 52 통과 — 견본 조립 카드 'momo' 가 소문자라 화면으로 맞힐 수 없음(→ C84) | — |
+| 4 | 2ba410e | 39076856051 | 차례 3 고침 | 전부 성공(e2e 53) | 41 |
+| 5 | 9e06c6a | 39078060721 | fix 3 | 전부 성공(배치 e2e 그대로) | 45 |
+| 6 | 833de73 | 39079611504 | 차례 4 | 통합 1 실패(device-alert — 알림 종류에 seed_range_end_near 가 섞임) · e2e 4 실패 · 59 통과(말하기 — 듣는 중 다시 누름 경합 · 저절로 넘김 시간 재는 때) | — |
+| 7 | 8f5bd72 | 39080614985 | 차례 4 고침 | 전부 성공(e2e 63) | 67 |
+| 8 | 755a2be | **39081857257** | fix 4 | **전부 성공**(작업 열하나, 아래 표) | 77 |
+
+사진 세트 칸의 '—'는 내려받은 세트가 없다는 뜻이다. 화면 검토는 이 세트들을 봤다.
+
+CI 8차(10-18 09:11 시작, 결과는 10-22 재개 때 확인):
+
+| 작업 | 결과 |
+|---|---|
+| unit | 52 파일 · 494 통과 · 6 todo |
+| integration | 20 파일 · 151 통과 |
+| e2e | 63 통과(배치 e2e 포함 — 공용 '말하기' 단추가 배치를 깨지 않음) |
+| e2e-local | 7 통과 |
+| 사진(아티팩트 e2e-photos) | 77장 — 읽기 25 · 쓰기 16 · 이어 하기 4 · 말하기 32(세로 820 · 가로 1180) |
+
+사진은 컨트롤러가 내려받아 두었고 커밋 밖이다.
+
+### 로컬 관문(DB 를 쓰지 않는 것, 이 Mac — fix 4 뒤)
+
+| 명령 | 마지막 결과 |
+|---|---|
+| `pnpm lint` · `pnpm exec tsc --noEmit` · `pnpm build` | 0 · 0 · 성공 |
+| `pnpm test` | 52 파일 · 494 통과 · 6 todo |
+| `pnpm check:deps` · `pnpm check:bundle` | 위반 0 · 위반 0 |
+| `pnpm check:ids` | code-setting-unknown 0 · design-number 35(P10 을 합친 뒤의 바탕 값 — P11a 파일에서 새 줄 0) |
+| `pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec` | 종료 0(missing-test 는 보고만 — 차례 4 에 21줄) |
+| 녹음 API(`getUserMedia` · `MediaRecorder`) | src 에 없음(차례 4 · review-p11-4-code) |
+| 비밀값 grep | 따로 돌린 기록 없음. CI bundle-secrets 작업은 8차 성공 |
+| `pnpm test:int` · `pnpm e2e` · `pnpm e2e:local` | 로컬에서 못 돌림 → CI 8차 |
+
+| 시험 | P11a 가 더한 것 | P11a 끝(79ee1cc) |
+|---|---|---|
+| 단위 | +45 — 446 → 476(차례 1) → 479(P10 합침 +3) → 482(fix 1) → 488(차례 2) → 491(차례 3) → 492(CI 3차 고침) → 494(차례 4) | 494 · 6 todo |
+| 통합 | +9(session-flow 7 · retry 1 · device-alert 1 — 편집자가 시험 선언을 셈) · session-start 기대값 고침 | 151(CI 8차) |
+| e2e | +13(읽기 1 · 쓰기 1 · 이어 하기 1 · 말하기 10) · session.spec 둘 고침 | 63(CI 8차) |
+| e2e-local | 0 | 7 |
+
+증명 표 대조(편집자, 79ee1cc 의 시험 글을 읽기만): 증명 표의 시험 이름 서른 가운데 스물아홉이 글자 그대로 시험 선언 줄에 있다(건너뜀 · todo 없음). 없는 하나는 e2e 'AC-N9 세션 활동 화면(…)'으로, 차례 10(c 마무리 · 공용 변경 3) 몫이다. `tests/e2e/font-size.spec.ts` 에 P10 의 AC-N9 시험이 있어 spec-trace 는 이 빈칸을 잡지 않는다.
+
+### 프리뷰 확인(P11 가지 별칭)
+
+| 때 | 판 | 확인한 것 |
+|---|---|---|
+| 10-18 07:4x | d798b6e | 배포 READY · 접근 204 · 홈 200 · 읽기 수업 목록 200 · 진행 중 읽기 세션 200(지문 활동) · 쓰기 세션 200 |
+| 10-18 08:2x | b648c8c | 접근 204 · 홈 200 · 쓰기 수업 목록 200 · 쓰기 세션 200(그림 고르기 안내) · 읽기 세션 200 |
+| 10-22 13:3x | 79ee1cc | 배포 READY · 접근 204 · 홈 200 · 말하기 수업 목록 200. 남아 있던 진행 세션 셋은 session.resume_hours 가 지나 중단 처리되어 세션 주소가 307 이다(8절). 말하기 세션 화면은 CI 8차 사진으로 봤다 |
+
+요청자가 프리뷰에서 수업을 끝까지 해 본 기록은 없다(차례 11).
+
+### 실제 바뀐 파일(※ = 계획과 다름)
+
+계획 표의 손 파일 서른여덟(새 21 · 고침 17)은 모두 바뀌었다. 계획 표 밖 파일은 열둘이다(둘째 표). '다르게 한 것' 번호는 아래 절이다.
+
+| 파일 | 신규 / 수정 | 실제 |
+|---|---|---|
+| `src/core/session/preview.ts` | 수정 | 값 1 대로(시험용 시드 1단계 차례 번호는 P10 과 같음). ※ 다르게 한 것 4 |
+| `src/core/session/attempt.ts` | 신규 | 값 2 대로. ※ 다르게 한 것 2 · 4 |
+| `src/core/scoring/score.ts` · `src/core/speaking/judge.ts` | 신규 | 값 3 · 4 대로(`MIC_CAPTURE_STREAK` 를 repeat.tsx 에서 옮김). ※ 다르게 한 것 6 |
+| `src/core/speech/match-rate.ts` | 수정 | 계획대로(`matchedTargetWords`, 기존 함수 그대로) |
+| `tests/unit/{session-preview,session-attempt,score,speaking-judge,match-rate,answer-check}.test.ts` | 신규 셋 · 수정 셋 | 계획대로. 시험 숫자는 `TEST_SETTINGS` 에서(fix 1) |
+| `src/server/session/index.ts` | 수정 | 값 5 대로. ※ 다르게 한 것 5 · 9, 화면 자료에 `openSessionIds` · 쓰기 낱말 뜻(차례 3) |
+| `src/server/actions/session.ts` | 수정 | `finishSession`(차례 2) · `reportSessionMic`(차례 4). 첫 문장 `await requireAccess()` |
+| `src/server/session/result.ts` · `src/app/(child)/result/[id]/{page,result-view}.tsx` | 신규 | 값 8 대로. ※ 다르게 한 것 7 |
+| `src/lib/attempt-queue.ts` · `src/lib/session-input.ts` | 수정 · 신규 | 값 6 대로. ※ `prune(진행 세션 id)`(차례 3, review-p11-2-code M-1) |
+| `src/app/(child)/session/[id]/{session-frame,page}.tsx` | 수정 | 값 7 대로. ※ 다르게 한 것 7 · 13 · 14 |
+| `src/components/activities/reading.tsx` | 수정 | ※ 선택 속성이 셋이다(다르게 한 것 8) |
+| `src/components/session/reading.tsx` | 신규 | 값 9 대로. ※ 다르게 한 것 8 |
+| `tests/integration/{session-flow,retry}.test.ts` · `tests/unit/attempt-queue.test.ts` | 신규 둘 · 수정 하나 | 계획대로. session-flow 는 증명 이름 넷에 말하기 1단계 서버 채점 · 화면 자료 · 결과 틀을 더함 |
+| `tests/e2e/lessons.ts` | 신규 | ※ 다르게 한 것 10 · `levelSpecOf`(시험 숫자를 DB 단계 규격에서) |
+| `tests/e2e/{reading,session}.spec.ts` | 신규 · 수정 | 계획대로. 가로 '다음' 아래 끝 · 그림 줄 · 쪽지 자리(fix 2 · 차례 3) · 두 방향 높이(fix 3) 단언을 더함 |
+| `src/components/answer/{choice,tiles,typing}.tsx` | 수정 | `initial` · `onChange` · `reveal`. ※ 선택 속성을 더 둠 — `ChoiceAnswer` `instant` · `struck`(안쪽 보기 `compact`), `TileAnswer` `slots` · `needed`, `TypingAnswer` `submitLabel`. 넘기지 않으면 배치 동작 그대로(위험 5 — 배치 e2e 초록) |
+| `src/components/session/writing-items.tsx` | 신규 | 값 11 대로. ※ 다르게 한 것 11 · 12 |
+| `tests/e2e/{writing,resume}.spec.ts` | 신규 | 계획대로(AC-4a · AC-6a) |
+| `src/server/alerts/device.ts` · `src/server/placement/index.ts` | 신규 · 수정 | 값 12 · 정할 것 자 대로(배치 동작 같음) |
+| `src/components/session/speaking.tsx` | 신규 | 값 12 대로. ※ 다르게 한 것 13 · 14 · 15 |
+| `tests/e2e/speaking.spec.ts` | 신규 | 계획대로. 가짜 음성 대본을 수업 문장으로 만들고, 4단계는 1단계 수업 복제 |
+
+계획 표 밖 열둘:
+
+| 파일 | 신규 / 수정 | 까닭 · 차례 |
+|---|---|---|
+| `src/components/answer/repeat.tsx`(P10) | 수정 | 차례 1 — `MIC_CAPTURE_STREAK` 를 core 에서 가져옴(값 4 글에는 있음). fix 4 — 공용 '말하기' 단추를 써 배치 화면에도 듣는 중 꼴이 생김(다르게 한 것 14) |
+| `src/components/answer/speak-button.tsx` | 신규 | fix 4 — 공용 '말하기' 단추(듣는 중 분홍 테 · 남은 시간 고리 · `data-listening`, P2b `capAt` 으로만 셈). c 의 '다 말했어요' 자리 `listeningLabel` |
+| `src/core/answer/expected.ts` · `tests/unit/answer-expected.test.ts` | 신규 | 차례 3 — 정답 조각(`expectedAnswerOf`) · 카드 표시(`displayCardsOf`, C84). 화면에 보인 정답 = 채점 정답을 단위로 묶음 |
+| `src/core/answer/display.ts`(P10) | 수정 | 차례 4 — 배치 조립 문항도 `displayCardsOf` 로 카드를 보임(판정 그대로) |
+| `src/server/seed-lists.ts` | 수정 | 차례 4 — `seedHomophones()` 하나로(다르게 한 것 9) |
+| `tests/unit/session-input.test.ts` | 신규 | 차례 2 · 3 — 활동 안 입력 · `prune` |
+| `tests/unit/safe-error.test.ts`(P10) | 수정 | 차례 2 — 시도 저장 질의 오류 사례(제약 글에는 있음) |
+| `tests/integration/session-start.test.ts`(P10) | 수정 | 차례 2 — 저장 결과 기대값에 `rejected: []`(위험 3 글에는 있음) |
+| `tests/integration/device-alert.test.ts` | 신규 | 차례 4 — 기기 알림 셋 · 학습일마다 한 번 · 값은 code · browser 만 |
+| `tests/e2e/photos.ts` · `.github/workflows/ci.yml` | 신규 · 수정 | 공용 변경(컨트롤러 요청) — 아래 표 마지막 줄 |
+
+### 공용 변경
+
+| # | 실제 |
+|---|---|
+| 1 `tests/fixtures/settings.ts` | 계획 글자대로 — 컨트롤러 dc5308d(키 열둘, 12절 기본값). 단위 446 · tsc 0 · biome 0 |
+| 2 개발용 DB 둘 | Supabase 개발용은 10-18 07:0x 에 시험용 시드를 다시 적재했다(설정 넣음 12 · 고침 0 · 위반 0, 임시 적재 스크립트는 지움). 로컬 54331 은 재부팅 뒤 `pnpm db:dev --reset` 이다(아직) |
+| 3 `tests/e2e/font-size.spec.ts` | 차례 10(c 마무리) 몫 — 아직 |
+| 계획 밖 — 사진 아티팩트 | `tests/e2e/photos.ts`(`E2E_PHOTOS` 가 있을 때만 사진) · `.github/workflows/ci.yml`(e2e 작업 `E2E_PHOTOS: "1"` · upload-artifact e2e-photos). 컨트롤러 요청(10-18 06:1x) — 이 Mac 이 로컬 e2e 를 못 돌려 화면 검토 사진을 CI 에서 받으려고 |
+
+### 계획과 다르게 한 것
+
+1. **바탕은 P10 fix 5 커밋 df7f6cd 에서 시작했다.** 정할 것 나는 P10 차례 7 커밋까지를 바탕으로 했다. 실제로는 바탕 가지(`feature/1a-base-p11` — 제안 이름과 다름)를 먼저 만들고, P10 78db3a2 · fix 8 176eda1 은 작업 가지에 합쳤다(6e09901 · 7794633). 작업 가지의 specs · intent 는 문서 가지와 네 번 맞췄다(ledger-open '코드 가지의 specs · intent' 행).
+2. **건너뛴 시도는 인식 글이 있어도 점수 · 단어별 정오를 내지 않는다**(컨트롤러 결정 1 · 7절 '점수에서 뺀다', review-p11-1-code I-1 → fix 1). 단어 수는 내고 영어로 말한 문장 수에는 센다. 성공이 그 활동의 실패 수를 지우지 않는 것(결정 2)과 단어별 정오 세부(결정 3 — 같은 단원 단어는 한 줄 · 여러 낱말 표제어는 이어진 낱말 전부 · 하이픈 · 따옴표 든 낱말도 일치율과 같은 정규화)는 받아들여졌다.
+3. **C83 — 7절 · 12절의 '다시 듣기 최대 3회' 글을 구현에 맞췄다.** 한 활동의 인식 실패 수가 speech.max_retries 에 닿으면 건너뛴다(처음 듣기도 실패로 셈). review-p11-1-code 범위 밖 관찰에서 나왔고 코드 · 값은 그대로다.
+4. **활동 모델 · 시도 꼴**(값 1 · 2). `activitiesOf` 의 `level` 칸은 차례를 정하는 데 쓰지 않는다. 차례 1 은 P10 서버가 부르는 두 인자 꼴을 임시로 남겼고 차례 2 가 지웠다. 앱 채점 ctx 에 `appJudgedQuestions` 를 더했다(질문 답이 앱 판정인지를 시드 accepted 칸이 아니라 level_specs 로 가름). 공개 함수 넷(`parseAttemptInput` · `inputFitsActivity` · `finalActivityNos` · `lemmaLookup`)을 덧붙였다. NUL 글자 든 시도는 거부한다(jsonb 가 받지 않아 묶음 넣기 전체가 늘 실패하던 길).
+5. **세션 서버**(값 5). 시도 id 글조차 없는 원소 · 빈 묶음 · 50 넘는 묶음은 통째로 `invalid` 다(P10 시험 그대로). 꼴이 strict 라 점수 칸을 붙인 시도는 거부한다. 앱 판정이 아닌 단계의 질문 답 끝 시도는 건너뛴 것만 받는다(`needsAiPath`). 읽기 · 쓰기 세션의 영어로 말한 문장 수는 0 이고, 끝 시도가 둘이면 먼저 저장된 것을 쓴다. `readSessionArea` 는 `readSessionPlace` 로 바꿨다. 화면 자료는 읽기 · 쓰기 세션도 음성 · 말하기 설정을 함께 읽어, 설정이 하나라도 없으면 멈춘다(정할 것 카와 같은 조건).
+6. **세션 점수 · 판정 함수**(값 3 · 4). `sessionScoreOf` 입력은 영역별 판별 합이고 쓰기에 `part` 를 더했다(둘째 세션 null). b · c 가 같은 식을 쓰게 `cleanSentenceRate` · `rubricScoreOf` · `RESULT_PHRASES` · `answerMaxSecondsKey` · `speakingCountersStart` · `speechEventOf` 를 덧붙였다. 구조 상수 `RUBRIC_MAX` · `MIC_STALL_RETRY_MULTIPLE` 은 12절 키가 아니다(check:ids 새 줄 0).
+7. **틀 · 결과**(값 7 · 8). 결과의 큰 단추는 '여기부터 해요'가 수업 · 연습이면 그 칸, 하던 수업이면 그 세션이다. 그 밖(단계 평가 · 복습 · 첨삭)이나 없으면 '수업 목록'이다(컨트롤러 결정). 끝내기가 두 번 incomplete 이고 이 기기에도 그 활동이 없으면 빠진 가장 앞 활동으로 돌아간다(컨트롤러 결정). 상태 줄은 늘 두는 알림 영역이고 글이 없으면 `sr-only` 다(fix 2 · 차례 3). 차례 1 은 계획에 없던 차례에 틀을 꿰맞췄고(없어진 활동 종류 둘을 P10 자리로), 차례 2 가 틀을 다시 쓰며 없앴다(review-p11-1-code M-5 닫힘).
+8. **읽기 화면**(값 9 · 컨트롤러 결정 · 화면 검토 A2). 문항 쪽 지문 보기에는 그림 줄이 없다(ledger-open P8 · P12 행). 처음 고른 오답은 ✕ 로 눌린 채 끝까지 남고, 둘째가 맞으면 '맞았어요!'다. 다시 고르는 동안에도 해설을 남긴다. 지문 그림이 깨지면 뜻 글 상자로 바꾸고(`SafePicture`), 뜻 쪽지는 열 때 자리를 재어 카드 안에 두며 쪽지 밖을 누르면 닫힌다. 가로 그림 보기 칸은 줄이고 세션 지문 줄 높이는 넓혔다. `ReadingPassage` 선택 속성은 하나가 아니라 셋이다(`onWordTap` · `openWord` · `renderPicture`, 세션 길만 — 시드 보기 · 평가 지문 그대로).
+9. **동음이의어 읽기**: 차례 2 는 세션 서버에 따로 두었고(배치 모듈이 AI 기록을 가져와서), 차례 4 가 `src/server/seed-lists.ts` 의 `seedHomophones()` 한 곳으로 모았다(AI 층에 안 닿음).
+10. **e2e 견본은 기본 틀 규격으로 만든다**(값 10). '확인한 사실' 끝의 추측(작은 틀로도 만들어진다)이 틀렸다 — 작은 틀로는 `readingLesson` 1 · 4 가 던진다. 지어낸 낱말이라 견본 그림은 뜻 글로 보인다.
+11. **C84 — 조립 카드의 대문자**(CI 3차). 견본의 소문자 'momo' 카드는 첫 칸만 대문자로 바꾸는 화면에서 맞힐 수 없었다. 화면은 문장 가운데 대문자 낱말 카드를 정답 꼴로 보인다(차례 4 부터 허용 정답 전부에서). 첫 카드는 소문자이고 판정은 C73 그대로다. 배치 조립 화면도 같은 카드 표시를 쓴다. 시드 규칙 · 검증기는 P8 이다.
+12. **쓰기 1~3 화면**(값 11 · 컨트롤러 · 화면 검토 A3). 틀린 뒤 정답은 같은 답 조각 자리에 보인다. 조립 빈 칸은 모두 같은 너비이고, '다 놓았어요'는 다 찼을 때만 켜진다. 그림 고르기는 고르면 바로 채점하고, 받아쓰기 내기 단추는 '다 썼어요'다. 조립 뜻은 제목 글꼴로 크게, '대문자'는 놓는 줄 오른쪽 끝에 처음부터 자리를 잡는다. 다시 할 때 소리를 한 번 다시 읽고, 맞으면 첫 허용 정답 글과 뜻을 보인다(뜻이 없거나 낱말과 같으면 뜻 줄 없음).
+13. **말하기 흐름**(값 12 · 컨트롤러). 인식 실패 셈은 틀이 쥔다(세션 몫이 활동을 넘어 이어져서). 말소리 없음으로 막히면 그 활동은 건너뛴 끝 시도(`skipped: "silent"`)로 남고, 마이크 멈춤 · 쓸 수 없음은 남기지 않는다. 처음 마이크 안내는 처음 말하는 활동 앞이다. 듣기 이해에서 다시 고를 때 처음 오답은 ✕ 로 고정한다(CI 6차 뒤 결정). 질문 답 화면에는 아이 인식 글을 보이지 않는다(AC-5d 쪽). '같이 말해 볼까요' 뒤 말은 결과 말 없이 다음이다. 알림 코드는 멈춤 'stalled' · 여섯 번은 마지막 오류 코드 · 말소리 없음 'no-speech' 다.
+14. **'말하기' 단추를 공용 조각으로 만들었다**(fix 4 — 화면 검토 A4 I-1, 7절 '남은 시간' 표시). 새 파일 `speak-button.tsx` 를 세션 조각과 P10 배치 `repeat.tsx` 가 같이 쓴다. 그래서 배치 화면에도 듣는 중 꼴(분홍 테 · 남은 시간 고리 · `data-listening`)이 생겼다. 단추 이름 · `data-speak` · `aria-pressed` 는 그대로라 배치 e2e 는 같다(CI 8차 초록). 막힌 안내의 '홈'은 몸통에 하나이고(띠 '홈'을 숨김), 막힌 동안에는 첫 활동이어도 세션을 지우지 않는다. 세션 듣기 이해 그림 보기는 가로에서 작게 그린다(`compact`).
+15. **정본 밖 문구 표에 a 행 둘을 더했다**(컨트롤러): 받아쓰기 내기 '다 썼어요'(fix 3) · 말하기 1~2 활동 첫 줄 안내 셋(fix 4). 따라 말하기 목표 글과 영어 질문 글은 키웠다(36px · 28px, 4절 '24px 이상' 안).
+16. **사진 아티팩트를 공용 변경으로 더했다**(위 '공용 변경').
+
+### 안 한 것(계획에 있었음)
+
+1. **e2e 'AC-N9 세션 활동 화면(…)'** — 차례 10(c 마무리) 몫이라 아직 없다(위 증명 표 대조).
+2. **공용 변경 2 의 로컬 몫 · 공용 변경 3** — 위 '공용 변경' 표.
+3. **공통 증명의 로컬 통합 · e2e · e2e-local** — CI 8차로 대신했다(가정 (다)). 비밀값 grep 은 따로 돌린 기록이 없다.
+4. **차례 11 [사람] 요청자 프리뷰 시험 · iPad 실기(H2)** — 남았다.
+
+### 남긴 것
+
+- **차례 5(b) — 브리프 `task-p11-5.md` '함께 닫을 작은 것'**: review-p11-fix4-design N-1('같이 말해 볼까요' 바른 답이 질문보다 작음) · N-2('한 번 더 말하기' 오른쪽 끝이 안쪽, 고르기). review-p11-fix4-code M-1(AC-5c '홈 → 진행' 단언과 고리 단언이 고친 동작을 가르지 못함) · M-2(마지막 활동이 말소리 없음으로 막힌 채 끝내기가 실패하면 '홈'이 없음).
+- **b · c**: 쓰기 4~12 · 말하기 3~12 AI 활동 조각과 시도 꼴 종류 · `needsAiPath` 의 자기 규칙 · 둘째 세션 교정 수(`corrections` 지금 0) · 결과 화면 쓰기 6+ 첫 세션 문구 · '첨삭 보기'. c 는 `SpeakButton` 의 `listeningLabel` 에 '다 말했어요'를 붙인다. 받아쓰기 '다 썼어요'는 시험용 시드에서 2단계 갈래라 사진이 없다(코드로만).
+- **차례 10(c 마무리)**: `font-size.spec` AC-N9 에 P11 화면(읽기 · 쓰기 · 말하기 · 마이크 안내 · 결과)을 더한다(공용 변경 3).
+- **P12**: 결과 화면 나머지(별 · 오늘 얻은 단어 · 단원 막대 · '단원 n을 통과했어요!' · '다시 했어요' · 'n단계 평가 보기'). `attempts.word_results` · `tappedWords` · `shownWords` 로 단어장 · 복습일을 고친다. `sessions.score` 가 null 인 세션은 최근 성적에서 뺀다. 평가 지문 그림 줄에 `renderPicture`(`SafePicture` 꾸밈 그림)를 넘기고, 평가 문항 지문 보기에도 그림 줄을 두지 않는다. 평가 조립 문항도 `displayCardsOf` 를 쓴다. 평가 '빈칸 채우기'는 답을 문장 빈칸 안에 넣는다. `bandOf` 를 하나로(정할 것 차). 모두 ledger-open 또는 '다른 P 에 넘길 것'.
+- **P8**: C84 시드 규칙 · 검증기(ledger-open) · 쓰기 1~3 정답 낱말 = 단원 단어 원형.
+- **1-나**: 부모 화면이 `speech_silent` · `mic_*` 알림과 `sessions.english_sentences` 를 읽는다. '이 문제 이상해요' 자리 · 'AI 쉬는 중' 상태. 검토자 관찰 둘 — 세션 서버 액션이 `device.ts` 를 거쳐 `@/server/ai/store` 의 `createAlertOnce` 를 가져오므로 알림 공용 모듈로 옮길 만하다(review-p11-4-code). 마지막 활동이 말소리 없음이면 안내를 잠깐 보인 뒤 결과로 간다(review-p11-fix4-code) — 부모 화면 작업 때 아이 쪽 안내를 남길지 본다.
+- **재부팅 뒤(컨트롤러)**: 로컬 54331 `pnpm db:dev --reset`(공용 변경 2) · 로컬 통합 · e2e 한 바퀴 · embedded-postgres 종료 훅 소음이 로컬에서도 나는지(ledger-open). 재부팅했다는 기록은 아직 없다.
+- **실기(H2 · 차례 11)**: iPad Safari 에서 저절로 읽기(`unlockFromGesture` — '확인한 사실'의 추측) · 결과 말 · 끝 조용함 · 마이크 안내 · 듣는 중 고리를 요청자가 직접 본다.
+- **문서 맞춤**: 워크트리의 intent 사본은 b648c8c 맞춤 그대로라 말하기 1~2 안내 줄 행과 이 완료 보고가 없다 — 다음 specs · intent 맞춤 때(review-p11-fix4-code 범위 밖 · ledger-open).
+
+### PR
+
+- PR #4 `ci/p11-c2` → `feature/1a-p11-session-activities`: CI 용 초안(합치지 않음). CI 1~8차를 이 PR 에서 돌렸고 10-22 지금 열려 있다.
+- main 으로 합치는 PR 은 없다(H14 — 바탕 합침 때).
