@@ -169,6 +169,23 @@ export type SpeechTraceEntry =
   /** 비프 길이 + 여유 뒤에도 end 가 오지 않아 처리기를 닫음. */
   | { at: number; kind: "beep"; phase: "no-end"; waitedMs: number }
   | { at: number; kind: "beep"; phase: "error"; code: string }
+  /** 3판: 마이크를 쓰는 일(듣기 · 마이크 확인 · 소리 재기)을 재생 전용 꼴(playback)에서 시작함 — 경고만, 꼴은 안 바꾼다. */
+  | {
+      at: number;
+      kind: "session-warning";
+      action: "listen" | "mic-check" | "mic-level";
+      type: string;
+    }
+  /** 3판: 교대 시험 '읽어 주기 끝난 뒤 자동으로 듣기 시작' — 읽어 주기가 끝나고 waitMs 기다린 뒤 누름 없이 듣기를 시작함. */
+  | {
+      at: number;
+      kind: "auto-listen";
+      turn: number;
+      /** 그 문장 읽어 주기의 결과(SpeakOutcome.kind). */
+      speakOutcome: string;
+      waitMs: number;
+      userActive: boolean | undefined;
+    }
   /** 관찰 페이지가 읽어 주기를 부르기 바로 앞(그 뒤 speak 줄은 음성 접점이 남긴다). turn 은 교대 시험의 몇째 문장(1부터). */
   | {
       at: number;
@@ -194,8 +211,11 @@ export type SpeechTraceEntry =
       after: string | undefined;
       /** 바꾸기가 던진 오류 이름. */
       threw?: string;
-      /** 누가 바꿨나: 없으면 선택 상자, auto 는 '자동으로 두기' 스위치, button 은 'playback 으로 두고 읽어 주기' 단추. */
-      by?: "auto" | "button";
+      /**
+       * 누가 바꿨나: 없으면 선택 상자, auto 는 '자동으로 두기' 스위치, button 은 'playback 으로 두고 읽어 주기' 단추,
+       * restore 는 그 단추가 발화 뒤 앞 꼴로 되돌림(3판).
+       */
+      by?: "auto" | "button" | "restore";
       /** navigator.userActivation?.isActive(누름 처리 안인가). 없는 브라우저는 undefined. */
       userActive: boolean | undefined;
     }
