@@ -45,8 +45,9 @@ shasum -a 256 seed/prompts/reading-1.md seed/prompts/speaking-1.md .claude/agent
 # 2) manifest 첫 줄(4절 꼴)을 뿌리마다 manifest/reading-1.jsonl · manifest/speaking-1.jsonl 에
 # 3) 생성 호출 넷 — Agent(subagent_type seed-generator, model opus, effort xhigh | high), 호출 글은 아래 꼴
 # 4) 최종 검증(뿌리마다)
-pnpm -s seed:validate --root tests/.tmp/p08-samples/xhigh --areas reading,speaking --json --stats > tests/.tmp/p08-samples/xhigh/validate.json
-pnpm -s seed:validate --root tests/.tmp/p08-samples/high --areas reading,speaking --json --stats > tests/.tmp/p08-samples/high/validate.json
+#    결과 파일은 뿌리 밖에 쓴다 — 뿌리 안에 두면 검증기가 '시드 파일 배치에 없는 경로'로 잡는다(2026-10-23 표본에서 겪음)
+pnpm -s seed:validate --root tests/.tmp/p08-samples/xhigh --areas reading,speaking --json --stats > tests/.tmp/p08-samples/xhigh.validate.json
+pnpm -s seed:validate --root tests/.tmp/p08-samples/high --areas reading,speaking --json --stats > tests/.tmp/p08-samples/high.validate.json
 # 5) 풀이 검사(H4 키 · P5a 합친 뒤). 처음엔 --dry-run 으로 대상 문항 수를 본다
 pnpm seed:check --root tests/.tmp/p08-samples/xhigh --file lessons/reading/1/1.json --dry-run
 pnpm seed:check --root tests/.tmp/p08-samples/xhigh --file lessons/reading/1/1.json --json
@@ -76,20 +77,21 @@ effort: xhigh · createdOn: 2026-10-23 · revision: 1 · correction: 0
 
 | 잴 것 | R-x | R-h | S-x | S-h | 어디서 |
 |---|---|---|---|---|---|
-| 칸 수 |  |  |  |  | 생성 보고 · validate summary(단원 하나 26칸) |
-| 첫 검증 오류 칸 · 첫 통과율 |  |  |  |  | 생성 보고 '첫 검증'. 통과율 = (칸 − 오류 칸) ÷ 칸 |
-| 첫 검증 규칙별 오류 |  |  |  |  | 생성 보고 |
-| 고침 회차 · 최종 오류 |  |  |  |  | 생성 보고 · validate.json errors |
-| 최종 경고 |  |  |  |  | validate.json warnings |
-| 풀이 검사 대상 문항 |  |  |  |  | seed:check --dry-run(읽기는 칸마다 그림 문제 5, 말하기는 듣기 3) |
-| 풀이 검사 걸림(different · multiple · none) |  |  |  |  | seed/checks 기록 → 사람 확인 목록 |
-| 풀이 검사 비용(USD) |  |  |  |  | 기록 costUsd 합 |
-| 걸린 시간(분) |  |  |  |  | 컨트롤러가 호출 시작 · 끝을 잰다(생성 보고 시각과 견줌) |
-| 파일 크기 · 수업 하나 크기(KB) |  |  |  |  | `wc -c` ÷ 칸 수 |
-| 수업 하나 토큰(추정) |  |  |  |  | (제안) 수업 하나를 H4 키로 count_tokens 에 한 번 넣어 '바이트 ÷ 토큰' 비율을 정하고 나머지는 그 비율로 |
-| 보강 덮기 1번 · 2번 이상 단어 수 |  |  |  |  | 생성 보고(seed.remedial_coverage.1-3 을 정할 자료) |
-| 답하는 대상으로 나온 단원 단어 수 |  |  |  |  | validate.json stats answerTargetWords |
-| 요청자 판정(알맞음 · 쉬움 · 어려움 · 오류) |  |  |  |  | 5절 |
+| 칸 수 | 26 | 26 | 26 | 26 | 생성 보고 · validate summary(단원 하나 26칸) |
+| 첫 검증 오류 칸 · 첫 통과율 | 0 · 100% | 0 · 100% | 0 · 100% | 0 · 100% | 생성 보고 '첫 검증'. 통과율 = (칸 − 오류 칸) ÷ 칸 |
+| 첫 검증 규칙별 오류 | 없음 | 없음 | 없음 | 없음 | 생성 보고 |
+| 고침 회차 · 최종 오류 | 0 · 0 | 0 · 0 | 0 · 0 | 0 · 0 | 생성 보고 · 컨트롤러 최종 검증(`<뿌리>.validate-*.json`) |
+| 최종 경고 | 0 | 0 | 0 | 0 | 컨트롤러 최종 검증 |
+| 풀이 검사 대상 문항 | 130 | 130 | 78 | 78 | seed:check --dry-run(읽기 칸마다 그림 문제 5, 말하기 듣기 3) |
+| 풀이 검사 걸림(different · multiple · none) | 0 | 0 | 0 | 0 | `<뿌리>.check-*.json` — 사람 확인 0 |
+| 풀이 검사 비용(USD) | 0.138 | 0.138 | 0.114 | 0.114 | 기록 costUsd 합(각 1분 남짓) |
+| 걸린 시간(분) | 17 | 9 | 12 | 7 | 생성 보고 시작 · 끝(02:26:44 · 02:50:11 시작) |
+| 파일 크기 · 수업 하나 크기(KB) | 66,275 · 2.5 | 66,208 · 2.5 | 56,307 · 2.1 | 54,374 · 2.0 | `wc -c` ÷ 칸 수 |
+| 생성자 토큰(하위 에이전트 합, 구독 사용량) | 약 167k | 약 111k | 약 144k | 약 101k | 작업 알림 usage |
+| 수업 하나 토큰(추정) | — | — | — | — | (뒤에) count_tokens 로 비율을 정한다 |
+| 보강 덮기 1번 · 2번 이상 단어 수 | 25 · 25 | 25 · 25 | 25 · 25 | 25 · 25 | 생성 보고(셈법은 '나온 보강 수업 수' — 브리프에 셈법 없음, 장부) |
+| 답하는 대상으로 나온 단원 단어 수 | 15 | 15 | 25 | 25 | validate stats answerTargetWords |
+| 요청자 판정(알맞음 · 쉬움 · 어려움 · 오류) | 대기 | 대기 | 대기 | 대기 | 표본 쪽 https://claude.ai/artifact/BrK2sw8LAdWrWY8svQdkzu (가 · 나로 가림, 짝은 스크래치 패드에만) |
 
 '같다' 판정(6.3 S10): 첫 통과율 차이가 5%p 이하이고, 풀이 검사 걸림과 요청자 '오류'가 high 쪽에 더 많지 않으면 같다고 본다. 요청자는 결과를 볼 때 이 기준을 바꿀 수 있다. 정본은 '성격이 다른 두 묶음에서 한 단원씩, 모두 네 단원'이라 하고 읽기 4 · 회화 2 를 예로 들었다. 이번 표본은 지금 만들 수 있는 읽기 1 · 말하기 1 이다(컨트롤러 일정).
 
