@@ -6,6 +6,7 @@ import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { toriRewriteOf } from "@/core/ai/calls/talk";
+import type { PictureInfo } from "@/core/answer/display";
 import {
   followAlongNo,
   parseTalkAttemptInput,
@@ -40,7 +41,7 @@ import {
   type SpeechSettings,
   speechSettingsFrom,
 } from "@/core/speech/listen";
-import { vocab } from "@/db/schema/content";
+import { images, vocab } from "@/db/schema/content";
 import { attempts, profiles, sessions, talkTurns } from "@/db/schema/learning";
 import { type Db, type DbOrTx, getDb, type Tx } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
@@ -86,7 +87,11 @@ export {
   talkClosingStatus,
 } from "./closing";
 export {
+  type AddLine,
+  type AddLineOut,
+  type HintView,
   onTalkSessionEnded,
+  type PendingView,
   reachTalkTarget,
   type TalkLine,
   type TalkServerDeps,
@@ -141,6 +146,48 @@ async function wordInfoOf(
       out.set(r.word, { meaningKo: r.meaning, example: r.example ?? "" });
   }
   return out;
+}
+
+/** 카드의 그림 키(인사 질문 · 대화 턴 · 더 이야기할 거리). */
+function imageKeysOf(card: TalkState["card"]): string[] {
+  const turns = [
+    ...("questions" in card.greeting ? card.greeting.questions : []),
+    ...(card.turns ?? []),
+    ...(card.moreTalk ?? []),
+  ];
+  return [
+    ...new Set(
+      turns.flatMap((t) => (t.imageKey === undefined ? [] : [t.imageKey])),
+    ),
+  ];
+}
+
+async function picturesOf(
+  db: DbOrTx,
+  card: TalkState["card"],
+): Promise<Record<string, PictureInfo>> {
+  const keys = imageKeysOf(card);
+  if (keys.length === 0) return {};
+  // 뜻 칸은 한국어 뜻(그 그림 낱말의 vocab 뜻)이거나 비움 — 그림 키 · 낱말(아이가 말할 영어)을 화면 자료로 내리지 않는다(화면 검토 I-2)
+  const rows = await db
+    .select({ key: images.key, path: images.path, meaning: vocab.meaning })
+    .from(images)
+    .leftJoin(vocab, eq(vocab.word, images.word))
+    .where(inArray(images.key, keys));
+  return Object.fromEntries(
+    keys.map((key) => {
+      const row = rows.find((r) => r.key === key);
+      const path = row?.path ?? null;
+      return [
+        key,
+        {
+          meaningKo: row?.meaning ?? "",
+          catalogued: path !== null,
+          ...(path ? { src: path.startsWith("/") ? path : `/${path}` } : {}),
+        },
+      ];
+    }),
+  );
 }
 
 /** 토리 행 1(앱의 첫 말): 1~3단계 카드 인사 질문(1단계는 답 두 개도), 4단계부터 카드 토리 첫 말. */
@@ -254,6 +301,8 @@ export type TalkViewSettings = {
   talkSpeech: TalkSpeechSettings;
   /** speech.max_retries */
   maxRetries: number;
+  /** speech.silent_items_max — 말소리 없이 '모름'으로 넘어간 질문이 이만큼이면 막힌 안내(C22). */
+  silentItemsMax: number;
   ui: {
     waitHintSeconds: [number, number];
     matchPhraseLevels: [number, number];
@@ -273,6 +322,8 @@ export type TalkViewSettings = {
 
 export type TalkView = {
   sessionId: string;
+  /** 자료 판(턴 행 수 · 토막 · 끝 아이 행) — 쪽이 다시 읽으면(stale 뒤) 틀을 새로 그리는 열쇠. */
+  version: string;
   level: number;
   unit: number;
   lessonNo: number;
@@ -330,6 +381,8 @@ export type TalkView = {
     done: TalkState["follows"];
   };
   settings: TalkViewSettings;
+  /** 1~3단계 그림 턴의 그림(카드 그림 키 → 카탈로그 그림 — 파일이 없으면 src 없음, 화면이 그리지 않는다). */
+  pictures: Record<string, PictureInfo>;
   homophones: string[][];
   lemmaEntries: { word: string; forms: string[] }[];
   friendship: { value: number; max: number };
@@ -364,6 +417,7 @@ async function viewSettingsOf(
         ]),
       ),
       "speech.max_retries": count,
+      "speech.silent_items_max": count,
       "ui.wait_hint_seconds": z.tuple([positive, positive]),
       "ui.match_phrase_levels": z.tuple([unit, unit]),
       "ui.auto_next_seconds": z.number().nonnegative(),
@@ -384,6 +438,7 @@ async function viewSettingsOf(
     speech: speechSettingsFrom(read),
     talkSpeech: talkSpeechSettingsFrom(read),
     maxRetries: num("speech.max_retries"),
+    silentItemsMax: num("speech.silent_items_max"),
     ui: {
       waitHintSeconds: values["ui.wait_hint_seconds"] as [number, number],
       matchPhraseLevels: values["ui.match_phrase_levels"] as [number, number],
@@ -468,6 +523,7 @@ export async function loadTalkView(
   const homophones = (deps.homophones ?? seedHomophones)();
   return {
     sessionId,
+    version: `${state.rows.length}:${state.segment}:${state.orphan?.id ?? ""}`,
     level: state.level,
     unit: state.unit,
     lessonNo: state.lessonRow.lessonNo,
@@ -528,6 +584,7 @@ export async function loadTalkView(
       done: state.follows,
     },
     settings: viewSettings,
+    pictures: await picturesOf(db, state.card),
     homophones,
     lemmaEntries: state.lemmaEntries,
     friendship: {

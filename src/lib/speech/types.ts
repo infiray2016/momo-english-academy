@@ -15,6 +15,9 @@ export type SpeakOutcome =
   | { kind: "error"; code: string }
   | { kind: "unsupported" };
 
+/** 읽어 주기 선택 칸(plan-p13b 파일별 값 11). */
+export type SpeakOptions = { rate?: number };
+
 /** 마이크 확인 결과(plan-p02 나-5). */
 export type MicrophoneCheck =
   | { ok: true }
@@ -38,7 +41,11 @@ export interface SpeechPort {
   device(): DeviceVerdict;
   /** 누름 처리 안에서 동기로 부른다. iOS 첫 읽어 주기 제약을 푼다. */
   unlockFromGesture(): void;
-  speak(text: string): Promise<SpeakOutcome>;
+  /**
+   * 읽어 주기. options.rate 는 Web Speech 빠르기(회화 1~2단계 천천히 — speech.slow_rate, C96). 없으면 브라우저 기본 빠르기
+   * (말하기 · 배치는 넘기지 않는다 — plan-p13b 위험 5).
+   */
+  speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome>;
   cancelSpeaking(): void;
   listen(rule: EndRule, on?: { text?(text: string): void }): ListenHandle;
   checkMicrophone(): Promise<MicrophoneCheck>;
@@ -124,7 +131,13 @@ export type SpeechTraceEntry =
   | { at: number; kind: "button"; listen: number }
   | { at: number; kind: "cancel"; listen: number; reason: CancelReason }
   | { at: number; kind: "listen-done"; listen: number; outcome: ListenOutcome }
-  | { at: number; kind: "speak"; text: string; voice: string | undefined }
+  | {
+      at: number;
+      kind: "speak";
+      text: string;
+      voice: string | undefined;
+      rate?: number;
+    }
   | {
       at: number;
       kind: "speak-event";

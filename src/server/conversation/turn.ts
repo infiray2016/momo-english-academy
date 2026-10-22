@@ -105,6 +105,8 @@ import {
  * 글자만 받아 여기서 가져갈 수 없다).
  */
 export const TURN_IN_FLIGHT_MS = 60_000;
+/** 마지막 회화 턴 호출이 끝난 뒤 토리 행 저장을 기다리는 짧은 여유(ms, 기술 값 — 호출 기록과 저장 사이 틈, 재검토 N-2). */
+export const TURN_SAVE_GRACE_MS = 5000;
 /** 힌트 단 수 상한(기술 값 — 단계 규격 단 수보다 넉넉히). */
 const HINT_TIERS_MAX = 10;
 /** 듣기 끝 대기 초 · 체감 대기 ms 상한(기술 값 — 꼴 검사). */
@@ -498,10 +500,17 @@ type Begun =
   | { kind: "replay"; state: TalkState; tori: TalkTurnRow }
   | { kind: "call"; state: TalkState; child: TalkTurnRow };
 
-/** 그 세션에 그 시각 뒤 회화 턴 호출 기록(ai_calls)이 있는가. */
-async function callAfter(tx: Tx, sessionId: string, since: Date) {
-  const [row] = await tx
-    .select({ id: aiCalls.id })
+/**
+ * 같은 시도 id 의 고아 아이 행이 아직 진행 중인가(검토 M-1 · 재검토 N-2): TURN_IN_FLIGHT_MS 안이고, 그 아이 행 뒤 회화 턴 호출 기록이
+ * 없거나 마지막 호출이 끝난 지(called_at + latency_ms) TURN_SAVE_GRACE_MS 가 안 됐으면(토리 행 저장이 곧 온다) 참.
+ */
+async function turnInFlight(
+  tx: Tx,
+  { sessionId, since, at }: { sessionId: string; since: Date; at: Date },
+): Promise<boolean> {
+  if (since.getTime() <= at.getTime() - TURN_IN_FLIGHT_MS) return false;
+  const calls = await tx
+    .select({ calledAt: aiCalls.calledAt, latencyMs: aiCalls.latencyMs })
     .from(aiCalls)
     .where(
       and(
@@ -509,9 +518,12 @@ async function callAfter(tx: Tx, sessionId: string, since: Date) {
         eq(aiCalls.purpose, "talk_turn"),
         gte(aiCalls.calledAt, since),
       ),
-    )
-    .limit(1);
-  return row !== undefined;
+    );
+  if (calls.length === 0) return true;
+  const lastEnd = Math.max(
+    ...calls.map((c) => c.calledAt.getTime() + (c.latencyMs ?? 0)),
+  );
+  return at.getTime() - lastEnd < TURN_SAVE_GRACE_MS;
 }
 
 /** 1~3단계 AI 질문 검사 재료(어휘 범위 · 형태 표). 형태 표가 없으면 AI 질문을 쓰지 않는다(검사하지 않은 글을 보이지 않음). */
@@ -674,8 +686,11 @@ export async function runTalkTurnRequest(
         // 같은 시도 id 가 겹쳐 왔다(첫 요청이 아직 회화 턴을 기다리는 중): 그 아이 행 뒤 회화 턴 호출 기록이 없고 아직
         // TURN_IN_FLIGHT_MS 안이면 AI 를 다시 부르지 않는다(검토 M-1 — 화면이 잠깐 뒤 자료를 다시 읽음)
         if (
-          own.recordedAt.getTime() > at.getTime() - TURN_IN_FLIGHT_MS &&
-          !(await callAfter(tx, state.session.id, own.recordedAt))
+          await turnInFlight(tx, {
+            sessionId: state.session.id,
+            since: own.recordedAt,
+            at,
+          })
         )
           return { kind: "stale" };
         return { kind: "call", state, child: own };

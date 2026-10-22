@@ -319,8 +319,6 @@ export type TurnNext = {
   missionsDone?: number[];
 };
 
-export type AddKind = "question" | "again" | "two_answers" | "more_prompt";
-
 /**
  * 앱이 붙인 말 한 줄(C92 add). en 은 토리가 묻는 말(말풍선 글 · 읽어 주기). 아이가 말할 영어는 글 칸에 넣지 않는다 —
  * again 의 say(답 예시)와 two_answers 의 answers(답 두 개)는 **읽어 주기 재료**이고 1~3단계 화면은 글로 보이지 않는다(3.3 · T2 ·

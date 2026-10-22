@@ -480,6 +480,14 @@ describe("그만하기 · 홈 · 끝맺음(3.3 '대화가 멈추는 경우' · 8
     ).toEqual({
       t: "stale",
     });
+    // 마지막 호출이 막 끝난 때(저장 여유 TURN_SAVE_GRACE_MS 안)의 같은 시도 id 는 아직 진행 중으로 보고 AI 를 부르지 않는다(재검토 N-2)
+    const calls = h.fake.requests.length;
+    expect(
+      (await say(h, sessionId, { clientAttemptId: "orphan-1" })).last,
+    ).toEqual({ t: "stale" });
+    expect(h.fake.requests).toHaveLength(calls);
+    // 'Oops' 뒤 다시 보냄은 마지막 호출이 끝난 뒤 저장 여유가 지난 때다(진행 중이 아님)
+    h.clock.now = new Date(NOW.getTime() + 2 * MS_PER_MINUTE);
     h.fake.push(
       turnRule({ tori_en: "Great to hear!" }, { model: "claude-sonnet-5-5" }),
     );

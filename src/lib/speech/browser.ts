@@ -27,6 +27,7 @@ import {
   PLAIN_RECOGNITION_EVENTS,
   type RecognitionCtor,
   type RecognitionLike,
+  type SpeakOptions,
   type SpeakOutcome,
   type SpeechPort,
   type SpeechTraceEntry,
@@ -410,8 +411,10 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     };
   }
 
-  function speak(text: string): Promise<SpeakOutcome> {
-    if (!synthesisAvailable()) return Promise.resolve({ kind: "unsupported" });
+  function speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome> {
+    // 닫은 뒤(화면이 사라진 뒤) 늦게 온 읽기는 하지 않는다(P13b 차례 5 검토 I-2)
+    if (disposed || !synthesisAvailable())
+      return Promise.resolve({ kind: "unsupported" });
     // 듣는 중이면 끊고, 밀린 줄을 비운 뒤 읽는다(end 가 안 온 발화 뒤 speak 는 cancel 전까지 대기, 321436).
     activeListen?.cancelNow("speak");
     activeCheck?.cancelNow("speak");
@@ -422,7 +425,15 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     utterance.lang = settings.lang;
     const voice = pickVoice(synth.getVoices(), settings.lang);
     if (voice !== undefined) utterance.voice = voice;
-    trace({ at: now(), kind: "speak", text, voice: voice?.name });
+    // 빠르기는 넘긴 때만(없으면 브라우저 기본 — 말하기 · 배치 동작 그대로)
+    if (options?.rate !== undefined) utterance.rate = options.rate;
+    trace({
+      at: now(),
+      kind: "speak",
+      text,
+      voice: voice?.name,
+      ...(options?.rate === undefined ? {} : { rate: options.rate }),
+    });
     // await 없이 같은 차례에서 speak 를 부른다(누름 처리 안에서 불릴 수 있다).
     return new Promise<SpeakOutcome>((resolve) => {
       const current = {
