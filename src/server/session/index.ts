@@ -82,6 +82,8 @@ const LESSON_KINDS: readonly LessonKindRef[] = [
   "remedial",
 ];
 const LESSON_AREAS: readonly LessonArea[] = ["reading", "writing", "speaking"];
+/** 수업 시작이 받는 영역 — 회화 수업도 같은 시작 길(목록 재판정 · 판 · 변형 · 하던 수업, plan-p13b 값 6 · 회16). */
+const START_AREAS: readonly Area[] = [...LESSON_AREAS, "talk"];
 const THROUGH_KEY = "seed.complete_through_level";
 const NEW_WORDS_KEY = "unit.new_words_per_lesson";
 /** 새 단어 미리보기 활동 번호(3.3 첫 활동). */
@@ -379,7 +381,7 @@ function needsAiPath(input: AttemptInput, ctx: SessionContext): boolean {
 async function inProgressOf(
   db: Db | Tx,
   profileId: string,
-  area: LessonArea,
+  area: Area,
 ): Promise<string | undefined> {
   const [row] = await db
     .select({ id: sessions.id })
@@ -415,7 +417,7 @@ export async function startLessonSession(
           .select({ area: lessons.area })
           .from(lessons)
           .where(eq(lessons.id, parsed.data.lessonId));
-        if (profile && lesson && lesson.area !== "talk") {
+        if (profile && lesson) {
           const going = await inProgressOf(db, profile.id, lesson.area);
           if (going) return { ok: true, sessionId: going };
         }
@@ -442,11 +444,11 @@ async function startUnsafe(
   if (
     !lesson ||
     lesson.unit === null ||
-    !LESSON_AREAS.includes(lesson.area as LessonArea) ||
+    !START_AREAS.includes(lesson.area) ||
     !LESSON_KINDS.includes(lesson.kind as LessonKindRef)
   )
     return { ok: false, reason: "unknown" };
-  const area = lesson.area as LessonArea;
+  const area = lesson.area;
   const ref = {
     unit: lesson.unit,
     kind: lesson.kind as LessonKindRef,
@@ -458,11 +460,16 @@ async function startUnsafe(
     s["app.timezone"],
     s["app.day_start_hour"],
   );
-  // 1-가 하루 안전 상한(C80): AI 가 필요한 수업이면 잠금을 쥐기 전에 읽는다(바깥 연결 — 위 M-1 과 같은 까닭)
-  const lessonContent = LESSON_SCHEMAS[area].parse(lesson.content).content;
+  // 1-가 하루 안전 상한(C80): AI 가 필요한 수업이면 잠금을 쥐기 전에 읽는다(바깥 연결 — 위 M-1 과 같은 까닭).
+  // 회화는 늘 AI 가 필요하다(a 정할 것 회4 — 회화 수업 행은 .content 가 아니라 .card 라 읽지 않는다)
+  const aiNeeded =
+    area === "talk" ||
+    aiNeededLesson({
+      area,
+      content: LESSON_SCHEMAS[area].parse(lesson.content).content,
+    });
   const resting =
-    aiNeededLesson({ area, content: lessonContent }) &&
-    (await aiRestingToday({ profileId: profile.id, at }, { db }));
+    aiNeeded && (await aiRestingToday({ profileId: profile.id, at }, { db }));
 
   return db.transaction(async (tx) => {
     // 같은 영역 시작을 줄 세운다(위험 4)
@@ -601,6 +608,8 @@ async function startUnsafe(
         seedCorrection: row.correction,
         // 쓰기 6단계부터 첫 세션(초고)
         ...(draftPart ? { writingPart: "draft" as const } : {}),
+        // 회화는 인사 토막으로 연다(회화 수업 모델 5)
+        ...(area === "talk" ? { talkSegment: "greeting" as const } : {}),
       })
       .returning({ id: sessions.id });
     if (!created) throw new Error("세션을 넣지 못했다");
@@ -1422,11 +1431,14 @@ export async function loadSessionView(
   } as SessionView;
 }
 
-/** 진행이 아닌 세션 쪽을 열었을 때 보낼 곳: 끝난 세션은 결과, 그 밖 그 프로필 세션은 그 영역 수업 목록. 없으면 undefined. */
+/**
+ * 진행이 아닌 세션 쪽을 열었을 때 보낼 곳: 끝난 세션은 결과, 그 밖 그 프로필 세션은 그 영역 수업 목록. 없으면 undefined.
+ * 회화는 결과 쪽이 없다(마무리 세 장 — 회16) — 끝난 회화도 회화 수업 목록으로(열린 회화는 쪽이 회화 틀로 먼저 고른다).
+ */
 export async function readSessionPlace(
   { sessionId }: { sessionId: string },
   { db = getDb() }: { db?: Db } = {},
-): Promise<{ area: LessonArea; completed: boolean } | undefined> {
+): Promise<{ area: Area; completed: boolean } | undefined> {
   if (!z.uuid().safeParse(sessionId).success) return undefined;
   const profile = await readHouseholdProfile({ db });
   if (!profile) return undefined;
@@ -1434,7 +1446,10 @@ export async function readSessionPlace(
     .select({ area: sessions.area, status: sessions.status })
     .from(sessions)
     .where(and(eq(sessions.id, sessionId), eq(sessions.profileId, profile.id)));
-  return row && row.area !== "talk"
-    ? { area: row.area, completed: row.status === "completed" }
+  return row
+    ? {
+        area: row.area,
+        completed: row.area !== "talk" && row.status === "completed",
+      }
     : undefined;
 }

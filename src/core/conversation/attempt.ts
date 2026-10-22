@@ -1,5 +1,5 @@
 // 회화 시도 꼴(attempts.input)과 활동 번호(5절 attempts · C89 · 회화 수업 모델 4, plan-p13a 파일별 값 13).
-// 처음 스냅숏 · 따라 말하기(오늘 쓸 말 · 말해 보기 · 정리 · 마무리 한 번 더 말해 보기) · 끝맺음 기록. 점수 · 단어별 정오는 없다(회화는
+// 처음 스냅숏 · 따라 말하기(오늘 쓸 말 · 말해 보기 · 정리 · 마무리 한 번 더 말해 보기) · 끝맺음 기록(닫힌 까닭). 점수 · 단어별 정오는 없다(회화는
 // 채점하지 않음 — R2). P11a src/core/session/attempt.ts 는 고치지 않는다(회화 시도는 회화 서버만 읽고 쓴다, 정할 것 회3). 순수 모듈이다.
 import { z } from "zod";
 
@@ -29,6 +29,17 @@ const spoken = {
   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
 };
 
+/** 끝맺음 기록의 닫힌 까닭(대화 안전 상한 셈 · 기록 — b closing.ts, 컨트롤러 결정 2026-10-22 fix 1). */
+export const TALK_CLOSING_REASONS = [
+  "stop",
+  "leave",
+  "safety",
+  "resting",
+  "idle",
+  "aborted",
+] as const;
+export type TalkClosingReason = (typeof TALK_CLOSING_REASONS)[number];
+
 export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
   z.strictObject({
     ...head("talk-start"),
@@ -48,6 +59,11 @@ export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ ...head("talk-wrapup"), ...spoken, index }),
   z.strictObject({ ...head("talk-again"), ...spoken }),
+  /** 끝맺음 기록(activity_no 0 — 상태는 ai_feedback 칸). */
+  z.strictObject({
+    ...head("talk-closing"),
+    reason: z.enum(TALK_CLOSING_REASONS),
+  }),
 ]);
 export type TalkAttemptInput = z.infer<typeof TalkAttemptInputSchema>;
 

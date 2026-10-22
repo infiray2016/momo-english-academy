@@ -227,7 +227,8 @@ export async function readLessonList({
   now,
 }: {
   db?: DbOrTx;
-  area: Exclude<Area, "talk">;
+  /** 회화도 같은 목록이다(끝낸 수업 = 완료 세션 = 목표 턴에 닿은 회화, plan-p13b 값 6). */
+  area: Area;
   now: Date;
 }): Promise<LessonListResult> {
   const profile = await readHouseholdProfile({ db });
