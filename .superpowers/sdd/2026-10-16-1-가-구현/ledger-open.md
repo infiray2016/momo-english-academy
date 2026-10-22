@@ -6,6 +6,8 @@
 
 | 항목 | 어디서 확인 | 출처 |
 |---|---|---|
+| 세션 서버 액션이 `src/server/alerts/device.ts` 를 거쳐 `@/server/ai/store` 의 `createAlertOnce` 를 가져온다(SDK 는 아님 — AI 호출 경로 아님) → 알림 공용 모듈로 옮길 만함 | 1-나 알림 브리프 | review-p11-4-code 범위 밖 관찰 · plan-p11a 완료 보고 '남긴 것' |
+| 마지막 활동이 '말소리 없음'으로 막히면 안내를 잠깐 보인 뒤 결과로 간다 — 부모 화면 · 알림 흐름(1-나) 때 확인 | 1-나 부모 화면 브리프 | review-p11-fix4-code 범위 밖 관찰 |
 | 통합 시험이 실패로 끝날 때 CI 로그 끝에 `embedded-postgres/dist/index.js:393` 'TypeError: done is not a function' 이 한 번 찍힌다(라이브러리 종료 훅 — fix 5 가 뗀 처리기 밖 길). 결과를 가리지 않음('failed' 지킴). 소음일 뿐이나 재부팅 뒤 로컬에서 재현되면 `importEmbeddedPostgres()` 에서 그 처리기도 뗀다 | 재부팅 뒤 로컬 통합 · P12 | P11 CI 6차 로그 |
 | P12 단계 평가 화면의 조립 문항도 `displayCardsOf`(C84 표시)로 카드를 보인다 — P10 배치 몫은 P11 차례 4 가 고침 | P12 평가 화면 브리프 | review-p11-3-code 범위 밖 관찰 |
 | P8 시드 · 검증기: 문장 조립 카드는 소문자, 고유 명사 · I 는 정답 꼴(C84) — 시험용 시드 견본 빌더(`writingLesson(ref, 3)` 'They kububa with Momo.' 카드 'momo')도 P8 때 같은 규칙으로 | P8 브리프 · 검증기 규칙 | impl-p11 차례 3 보고 정할 것 · C84 |
@@ -22,13 +24,13 @@
 | between_tools(생각 끔) + 구조화 출력을 함께 보내면 400 인지 | H4 뒤 P5a `--probe`(GA 길) · P9c 계약 `pnpm ai:contract --case talk_config.haiku,talk_config.sonnet`(베타 길 — P9c 구현됨, dry-run 에 요청 꼴 확인) | plan-p05a 위험 6 · plan-p09a 확인할 사실 1 · task-p09c-report |
 | `ANTHROPIC_BASE_URL` 알림 줄 실기(키가 있어야 닿음) | H4 뒤 첫 `--probe` | review-p05a-2 N-1(컨트롤러 고침) |
 | `seed/model-prices.json` opus-4-8 행 `thinkingDefault` 'none'(P6a 바탕 6bd6015 의 규격에는 'none' 이 없어 P9a 와 합친 뒤에만 가능) · 첫 개발용 적재(P7b [사람] 1) 전에 반드시(늦으면 새 적용일 행) | P9a 가 P6a 와 합쳐진 뒤 · 첫 개발용 적재 전(P6 몫) | plan-p09a 작업 3 (나) · plan-p07a 위험 13 |
-| P4a `bandOf` · `Band` ↔ P2a `src/core/level-band.ts` 중복 — P10 은 안 함(새 코드는 level-band 만 씀) | P11 또는 P12 구현 때 하나로 | plan-p04a 완료 보고 · 바탕 합침 e08eaba · review-p10-2-code 5절 9 |
+| P4a `bandOf` · `Band` ↔ P2a `src/core/level-band.ts` 중복 — P10 · P11a 는 안 함(새 코드는 level-band 만 씀, plan-p11a 정할 것 차) | P12 구현 때 하나로 | plan-p04a 완료 보고 · 바탕 합침 e08eaba · review-p10-2-code 5절 9 |
 | P5a `priceOf` · `costOf` → P9a `cost.ts` 로 통합 | P9a 합침 뒤 | plan-p09a '다른 P 에 넘길 것' |
 | P8 시드 브리프: 말하기 1~2단계 '질문 답' 질문은 그림 없이 답할 수 있어야 함(C67 (5)); 검증기가 말하기 3~12단계 평가 question 의 '허용 답 셋 이상'(C66)을 세지 않음(check-assessment.ts 228 · 324) — P8 평가 묶음 전 결정 | P8 브리프 · P4c 수정 여부 | review-p05b-design 범위 밖 1 · review-p06a 메모 2 · 3 |
 | P4 검사 규칙: '한국어 뜻이 있으면 안 되는 단계'(토리 이야기 7~12 구간 · 질문 5단계 이상) | P4 수정 또는 P8 브리프 | review-p05b-design M-7 · C67 (7) |
 | speakingRulesOf 가 9~12단계에서도 문법 지적 1개 허용 — 단계 평가 질문 문항에 닿음(6.2 는 4~8단계만) | P12 단계 평가 화면 | review-p09b P6 · P12 메모 2 |
 | P5c: 문항 번호는 cell.items · `reviewPathOf` 공용 · `resolveSeedFile` realpath 확인 · AC-7f 절반(reviews 한 행) 시험 · cellHash 맞춘 풀이 기록 견본 | P5c 브리프 | review-p05b 8절 |
-| P11: 생각 꺼내기 기록은 fillName 전 historyEntry 로 저장 · turn = history.length + 1 · 걸린 칸 뒤 빈 글은 보이지 않음 · 말하기 6 · 8단계 그림 · 질문 차례 · 쓰기 6단계 생각 꺼내기 결과 자리 · 조립 칸 수 · 4~5단계 제출 단위 · 갈래별 안내 문장 | P11 브리프 | review-p09b 6절 · review-p05b-design 메모 · 범위 밖 2 |
+| P11b · c: 생각 꺼내기 기록은 fillName 전 historyEntry 로 저장 · turn = history.length + 1 · 걸린 칸 뒤 빈 글은 보이지 않음 · 말하기 6 · 8단계 그림 → 질문 차례(활동 모델은 P11a 가 함) · 쓰기 6단계 생각 꺼내기 결과 자리 · 4~5단계 제출 단위(조립 칸 수 · 쓰기 1~3 · 말하기 1~2 안내 문장은 P11a 가 함) | P11b · c 브리프 | review-p09b 6절 · review-p05b-design 메모 · 범위 밖 2 · plan-p11a 완료 보고 |
 | P6c(H6 목업): 영어 문장의 한국어 뜻 반말 · B_LevelTest '고르세요' → 해요체 · B_Reading 3단계 지문 옆 단어 그림 · B_Speaking 따라 말하기 뜻 · B_W3_Order '다시 듣기' 근거 | P6c 브리프 | review-p05b-design 메모 |
 | 시드 검사에 '한국어 뜻이 있으면 안 되는 단계' 규칙(말하기 질문 ko 는 `questions.koMeaning` 거짓인 단계에서 비어야 함 · 이야기 ko 는 7~12 구간 없음) | P4 보강 또는 P6a 2차 검토 | review-p05b-design M-7 · P5b fix 1 보고 범위 밖 |
 | P6b 작업 3 그림 목록은 P6a 묶음 4 끝의 vocab 으로 다시 뽑는다(fix 1: 4단계 bread · letter · pilot 들어옴 · plant · toast · dentist · uniform · seat 빠짐 · head 2단계 · old 1단계 · many 기능어; 묶음 4 끝: 초등 권장 16(math 포함, review-p06a-3) 맞바꿈으로 4단계에 kitchen · tape · tail · touch · ice · mail · point · skin 들어올 수 있음 — 보고 '알릴 것'대로) | P6b 작업 3 브리프(P6a 묶음 4 뒤) | P6a fix 1 보고 알릴 것 1 · 2 · 묶음 4 알림 |
@@ -40,13 +42,13 @@
 | P6c: B_LevelTest 에 1~4단계 평가 지문 그림 줄 자리(읽어 주기 없음) · 토리 이야기 새 화면에 읽어 주기 자리 · 새 단어 표시 색(노랑 카드 위 종이 바탕 · 굵게 vs 목업 종이 위 노랑) | P6c 브리프 | review-p05b-design-2 넘길 메모 |
 | P5c(평가 화면): ActivityCard 기본 글자 20px · 소리 자리의 저절로 읽기와 다시 읽기(평가 지문은 없음) · 칸 화면 틀 -mx-6 과 820 가로 넘침 시험 유지 — P10 · P11 몫은 닫힘(review-p11-2-design '맞는 것' 표 — 안내 20 · 지문 24 · 가로 넘침 없음 사진) | P5c · P12 평가 화면 브리프 | review-p05b-design-2 넘길 메모 · review-p11-2-design |
 | P9: MIN_RETRY_MS 1초 — 2차 설정 화면의 ai.timeout_seconds.* 범위 검사에 하한(1-나 3) · P11 은 AiOutcome 실패 갈래마다 화면 길(config · safety_cap · output_blocked · RangeError 는 서버 오류) · 첨삭 refusals 는 attempts 에 · 빌드 추적 '/*' 첫 프리뷰 확인 · 1-나 dueCostAlerts → createAlertOnce scope · preCallGate ai_status 상태 · P6 forbidden 목록 iu 컴파일 통과 | P9c fix 1 · P11 · 1-나 · P6 브리프 | review-p09c 3절 M-2 · 8절 |
-| P11: 쓰기 평가 '빈칸 채우기'에서 문장 빈칸(흰 상자)과 아래 답 칸이 쓰는 자리 둘로 보임 — 목업 B_LevelTest 대로 답을 빈칸 안에 넣는다(P5b 는 보기 화면이라 그대로) | P11 브리프 | review-p05b-design-3 M-C |
+| P12 단계 평가 화면: 쓰기 평가 '빈칸 채우기'는 문장 빈칸 안에 답을 넣는다(목업 B_LevelTest, P5b 는 보기 화면이라 그대로) — plan-p11a '다른 P 에 넘길 것'대로 P12 몫 | P12 평가 화면 브리프 | review-p05b-design-3 M-C · plan-p11a |
 | P9c · P11 · 1-나: 시드 contact 범주 값이 바뀜(한국어 주소 앞보기 좁힘 · 괄호 지역 번호 · 국가 번호 추가, P6a fix 2) — 실행 때 파일로 읽어 코드 변화 없음. P9c 계약 · 관찰과 P11 e2e 는 P6a 합친 뒤 실제 목록으로 한 번 더 | P9c 검토 메모 · P11 브리프 | P6a fix 2 + 묶음 3 보고 알릴 것 |
 | P8: 행이 있는 단원 · 벌에 새로 생긴 칸(보강 수 늘림 등)은 적재 앞 DB 최대 개정을 넘어야 함(new-cell-in-open-group) · 적재 보고 inserted → seed/manifest | P8 브리프 | review-p07a 8절 |
 | P10~P12: read.ts 로 읽고 start_revision 에 currentSeedRevision() · 배치 answer 열은 answerNo · accepted · sentence 가운데 있는 것만 · 회화 평가 카드 장 item_type 'talk-sheet' | P10 · P11 · P12 브리프 | review-p07a 8절 |
 | 1-나: 회화 적재 때 `--areas` 에 talk 추가 · 토리 이야기 title · generation 필수 전엔 story-field-missing 거부 | 1-나 plan | review-p07a 8절 |
 | P12: `unitSnapshotOf` 는 쓰기 6~12 의 level_specs 덮기 값을 담지 않는다 — 판정 때 덮기를 함께 보거나 복사본에 담는다 | P12 브리프 | review-p10-2-code 6절 3 · impl-p10 차례 2 알릴 것 3 |
-| P10 차례 3 지적 가운데 남은 것: 배치 전 카드 누름 표시(review-p10-3-design H-M6 — 재부팅 뒤 화면 재검토 때 확인) · 홈 카드 '아는 단어 · 최근 성적 · 끝낸 대화' 칸은 P11 · P12 가 채움(입력 형 유지). 나머지(AC-2b · AC-2a 단언 · '이번 주 n일' 배치 셈)는 닫힘(review-p10-5-6-code 6절 · fix 2) | des-p10 사진 세트 · P11 · P12 브리프 | review-p10-3-design H-M6 · review-p10-5-6-code 6절 |
+| P10 차례 3 지적 가운데 남은 것: 배치 전 카드 누름 표시(review-p10-3-design H-M6 — 재부팅 뒤 화면 재검토 때 확인) · 홈 카드 '아는 단어 · 최근 성적 · 끝낸 대화' 칸은 P12 · 1-나가 채움(입력 형 유지 — P11a 는 다루지 않음, 완료 보고). 나머지(AC-2b · AC-2a 단언 · '이번 주 n일' 배치 셈)는 닫힘(review-p10-5-6-code 6절 · fix 2) | des-p10 사진 세트 · P11 · P12 브리프 | review-p10-3-design H-M6 · review-p10-5-6-code 6절 |
 | 홈 영역 카드의 아이콘(목업 B_Home4 에 있음, 구현에 없음) — 이모지 · 그림 가운데 무엇으로 그릴지 요청자 시각 결정(표본 쪽) 뒤 P10 마무리 또는 1-나 | 요청자 표본 쪽 · P10 차례 7 화면 검토 | review-p10-3-design H-M5 |
 | 홈 부모 꼬리표 높이 48px — 1-나에서 누를 수 있게 되면 56px 이상으로 | 1-나 부모 화면 브리프 | review-p10-3-design 4절 |
 | 첫 실행 영어 이름 로마자 C74(관용 철자 표 우선 — fix 4 반영, 코드 몫 닫힘): 요청자 되읽기(잠정 → 확정) | 요청자 | 요청자 23:5x · C74 · review-p10-fix3-code |
