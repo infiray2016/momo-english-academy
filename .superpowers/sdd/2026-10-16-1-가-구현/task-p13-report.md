@@ -917,3 +917,434 @@ pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0
 - **#14 카드 고정 높이**: 실시드 제목이 두 줄을 넘으면 줄임표로 줄어든다(읽기 도구는 온 제목). '보강' · 끝낸 표시는 번호 줄에 들어간다. 세로 160 · 가로 144px 는 번호 줄 + 제목 두 줄 + 여백으로 셈한 값이다.
 - **#10**: `dictation-disabled` 는 앱이 붙이는 코드라, 관찰 페이지 · 부모 알림 code 칸에 그 이름이 보인다.
 - 사진 · 잰 값 · e2e 는 모두 CI 에서 처음 돈다. 로컬에서 그려 보지 못했다.
+
+## 디자인 fix 1a (2026-10-23 02:4x) — 정할 것 둘 판정 · AC-8f 이름 · 정본 맞춤 뒤 확인
+
+브리프 `task-design-fix-1a.md`. 같은 작업 트리, 커밋 없음. 정본 · intent 는 손대지 않았다(컨트롤러가 옮겨 둔 판).
+
+| # | 어떻게 | 파일 |
+|---|---|---|
+| a | '여기부터 해요' 카드의 `col-span-2` 를 뺐다. 구별은 표지(LESSON_BADGE) · 테두리(ring-4) · 테이프 숨김뿐이다(C114 · 4절 행). 같은 칸에 표지 '여기부터 해요'(20px 글 여섯 자 ≈ 126px)가 들어가게 두 가지를 바꿨다. 가로 칸 너비를 120 → 144px 로 넓혔고, 표지는 카드 너비 안 가운데(`inset-x-1 px-1 text-center text-[20px]`)로 두었다. 세로 168px 칸에서도 22px 표지는 넘쳤으므로(≈ 163px) 20px 로 맞췄다. 목록 카드에서 '여기부터 해요'와 '안 해 본 수업'이 함께면 위 끝 표지는 '여기부터 해요' 하나다 | `lesson-card.ts` · `lesson-board.tsx` · `past-lessons.tsx` |
+| b | 배치 전 홈 카드(GateBody)에서 '내 단계 찾기'를 큰 제목에서 빼어, CardBody '시작!'과 같은 아래 끝 단추 꼴(`mt-auto min-h-14 rounded-xl bg-ink … text-paper`, aria-hidden 아님 — 카드 링크의 읽히는 이름에 듦, `data-find-level`)로 두었다. 위는 영역 이름 · 힌트(회화는 말하기 시작 단계 전 문구) · 이번 주다. 회화 needs_speaking 갈래도 같은 단추 글이다(새 문구 없음). 마이크 판정 전이면 단추 자리만 비운다 | `home-cards.tsx` |
+| c | 시험 이름을 둘 바꿨다. 'AC-8f 회화 턴 요청은 1~3단계 기본값이면 claude-sonnet-5-5 · effort low · thinking between_tools 이고 서버 측 대체 모델 재시도를 켠다(C112)'에는 `fallbacks: "default"` · `anthropic-beta` 의 server-side-fallback 단언을 더했다. 다른 하나는 'AC-8f 설정으로 Haiku 를 고른 회화 턴 요청은 effort low · thinking disabled 이고 fallbacks 가 없다'다. plan-p13a 증명 표의 AC-8f 이름 넷과 글자가 같다 | `tests/integration/conversation-call.test.ts` |
+| d | 아래 관문 | — |
+
+### 시험
+
+- e2e 새 home.spec '홈 화면 꼴: 배치 전 홈의 영역 카드 넷은 두 방향 모두 같은 높이이고 '내 단계 찾기'가 카드 아래 끝 단추 꼴로 같은 줄에 있다'. 카드 넷 높이와 줄마다 단추 아래 끝을 ±1px 로 보고, 단추 글이 aria-hidden 이 아닌지도 본다. 사진은 `home-find-level` 두 방향이다.
+- e2e lesson-list AC-2d 에 단언을 더했다: 목록의 모든 수업 카드('여기부터 해요' 포함) 너비 · 높이가 두 방향에서 ±1px.
+- 지난 수업 대 목록 카드 같은 크기 단언(디자인 fix 1)은 그대로다.
+- 통합: AC-8f 두 이름 바꿈 · 대체 모델 재시도 단언 더함(CI 몫).
+
+### #18 셈 고침(가로 칸 144px, '여기부터 해요' 352px 줄 지움)
+
+| 화면 · 방향 | 판 안쪽 너비 | 셈 | 양쪽 여백 |
+|---|---|---|---|
+| 목록 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 목록 가로 | 844 | 144 × 5 + 12 × 4 = 768 | 38 · 38 |
+| 지난 수업 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 지난 수업 가로 | 1100 | 144 × 7 + 12 × 6 = 1080 | 10 · 10 |
+
+홈은 디자인 fix 1 표 그대로다(세로 358 × 2 + 24 = 740 · 가로 257 × 4 + 72 = 1100).
+
+### 관문(Node 24.22.0)
+
+```
+pnpm -s biome ci .          → exit 0 (378 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 70 파일 · 747 통과 · 6 todo
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations (194 modules)
+pnpm check:ids              → exit 0 · setting-default 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec → exit 0 · plan-p13a missing-test 0
+통합 · e2e                   → CI 몫
+```
+
+### 남은 우려
+
+- 가로 목록 칸이 120 → 144px 로 넓어져 한 줄 카드가 6 → 5장이다. 실시드 13~15장(+ 다지기 이름표 · 맨 위 카드)이면 가로에서 한 화면을 넘어 아래로 밀릴 수 있다(plan-p10b '가로 실시드 12~15장이 한 화면에'와 맞물림). 같은 크기(C114)와 표지가 카드 안에 드는 것을 먼저 했다.
+- 배치 전 카드는 위 내용이 짧아, 이번 주 줄과 '내 단계 찾기' 단추 사이가 비어 있다. 늘인 카드의 발에는 단추만 둔다는 기준대로 단추를 아래 끝에 두었다.
+
+## 디자인 fix 1b (2026-10-23 03:3x) — CI 15차 e2e 실패 일곱
+
+브리프 `task-design-fix-1b.md`, 로그 `ci15-e2e.clean.log`. 같은 작업 트리, 커밋 없음.
+
+| # | 실패 | 어떻게 | 파일 |
+|---|---|---|---|
+| a | home 375 · 435 · lesson-list 154 · 201 · writing 1099(같은 크기 · 같은 아래 끝 1.4~6px 어긋남) | 같은 크기 · 같은 아래 끝 단언을 기울기 없는 레이아웃 크기로 잰다. 도우미 `layoutBoxesOf`(offsetWidth · offsetHeight · offsetParent 사슬 offsetTop 합 — 위 · 아래 끝)와 `spreadOf` 를 `tests/e2e/child-size.ts` 에 두고 다섯 시험이 같이 쓴다. 홈 두 시험은 세로가 두 줄이므로 아래 끝을 줄마다 견준다(`rowsOf` — 위 끝 차이 100px 안을 한 줄로). 그전에는 세로 네 카드의 아래 끝을 한꺼번에 견주어, 기울기가 없어도 틀렸을 단언이었다. 빈 띠 주석도 offset 값으로 잰다. 포스트잇 기울기 · 꼴은 그대로 | `child-size.ts` · `home.spec.ts` · `lesson-list.spec.ts` · `writing.spec.ts` |
+| b | font-size AC-N9: 표지 20px < 22px | 표지(LESSON_BADGE)를 이름표 22px(C82)로 되돌리고 `whitespace-nowrap px-2` 로 한 줄에 둔다. 표지 칸(카드 − 8px)에 '여기부터 해요' · '안 해 본 수업'이 드는 너비로 칸을 두 방향 모두 168px 로 정했다. 22px 표지는 160px 칸 안에 든다 — 한글 22px 글자 다섯~여섯 + 띄어쓰기 + 좌우 16px ≈ 135~146px 추정, 시험이 잰다. 표지에 `data-lesson-badge` 를 더했다 | `lesson-card.ts` · `lesson-board.tsx` · `past-lessons.tsx` |
+| c | reading 73 AC-3a: `wouldOverflowLeftAligned` 거짓 | 시험이 지문 낱말 단추를 왼쪽 끝이 큰 차례로 하나씩 눌러, 왼쪽 맞춤이면 쪽지가 카드를 넘었을 낱말을 찾는다(앞 낱말 쪽지가 덮을 수 있어 단추에 바로 누름을 보냄). 없으면 '왼쪽 맞춤이면 쪽지가 넘칠 낱말이 지문에 있다(견본 전제)'로 빨강이다. 쪽지가 카드 안에 드는 단언은 그대로 | `reading.spec.ts` |
+
+### 새 단언
+
+lesson-list `badgesFitBothWays` 를 AC-2d('여기부터 해요') · 지난 수업 시험('안 해 본 수업')에 더했다. 두 방향에서 표지마다 세 가지를 본다.
+- 글자 ≥ 22px
+- scrollWidth ≤ clientWidth(한 줄이 표지 칸 안)
+- 표지 너비(offsetWidth) ≤ 카드 안쪽 너비
+
+### #18 셈 고침(칸 두 방향 168px)
+
+| 화면 · 방향 | 판 안쪽 너비 | 셈 | 양쪽 여백 |
+|---|---|---|---|
+| 목록 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 목록 가로 | 844 | 168 × 4 + 12 × 3 = 708 | 68 · 68 |
+| 지난 수업 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 지난 수업 가로 | 1100 | 168 × 6 + 12 × 5 = 1068 | 16 · 16 |
+
+홈은 그대로다.
+
+### 관문(Node 24.22.0)
+
+```
+pnpm -s biome ci .          → exit 0 (378 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 747 통과 · 6 todo
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations
+pnpm check:ids              → setting-default 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace --fail-on … → exit 0
+e2e                         → CI 16차 몫
+```
+
+### 남은 우려
+
+- 가로 목록은 한 줄 4장이다(fix 1a 5장 → 4장). 실시드 13~15장이면 가로에서 4줄 이상이라 한 화면을 넘는다 — 같은 크기(C114) · 이름표 22px(C82) · 표지가 카드 안을 함께 지키면 칸이 168px 아래로 줄지 않는다. 가로 한 화면이 필요하면 표지를 카드 위 바깥(테이프 자리)으로 빼거나 카드 높이를 줄이는 시각 결정이 필요하다(요청자 표본 몫).
+- 22px 표지 너비는 추정이다. 넘치면 새 표지 단언이 빨강으로 알린다.
+
+## 디자인 fix 1c (2026-10-23 03:4x) — 가로 목록 한 화면 되찾기
+
+브리프 `task-design-fix-1c.md`. 같은 작업 트리, 커밋 없음. CI 16차는 1b + 1c 를 함께 돈다.
+
+| # | 어떻게 | 파일 |
+|---|---|---|
+| a | 가로 칸 너비를 130px(`landscape:grid-cols-[repeat(auto-fill,8.125rem)]`)로 했다. 목록 가로 판 844px 에 6 × 130 + 5 × 12 = 840 이 든다. 세로 168px 는 그대로다. 지난 수업도 같은 상수다 | `lesson-card.ts` |
+| b | 표지(LESSON_BADGE)는 22px 그대로다. 세로는 `whitespace-nowrap` 한 줄, 가로는 `landscape:whitespace-normal` 이라 글 바탕의 keep-all 로 낱말 사이에서만 접힌다('여기부터 / 해요' · '안 해 본 / 수업' — 낱말 안은 안 끊음, 가운데 정렬). 줄 높이는 `leading-tight` 로, 두 줄 표지 높이 = 22 × 1.25 × 2 + 위아래 여백 8 = 63px 이고 카드 위 −16px 부터 47px 까지다. 모든 카드의 가로 위 여백을 `pt-14`(56px)로 해 두 줄 표지 자리를 잡아 둔다. 그래서 표지와 번호 줄 사이가 9px 떨어지고(여유 — 덧 03:5x), 표지가 있든 없든 같은 높이다(C114). 가로 카드 높이는 144 → 160px(`h-40`, 세로와 같음)다: 56 + 번호 30 + 4 + 제목 두 줄 56 + 12 = 158. 번호 줄에 `data-lesson-no` 를 더했다 | `lesson-card.ts` · `lesson-board.tsx` · `past-lessons.tsx` |
+| c | `badgesFitBothWays` 가 두 방향에서 표지마다 다섯 가지를 본다. 22px 이상 · 줄 수(세로 1 · 가로 2 이하) · scrollWidth ≤ clientWidth · 카드 안(offsetWidth) · 번호 줄과 4px 이상 떨어짐(표지 아래 끝 + BADGE_GAP_PX 4 ≤ 번호 위 끝)이다. 새 시험 하나를 더했다(아래) | `lesson-list.spec.ts` · `writing.spec.ts` |
+
+### 새 시험
+
+writing.spec '수업 목록 화면 꼴: 가로에서 수업 카드 15장은 한 줄 6장으로 판 안 한 화면에 들고 모든 카드가 같은 크기다'. 쓰기 6단계 단원 1 에 견본 수업 15장(시험이 넣음)을 둔다. 가로 1180 × 820 에서 다음을 본다.
+- 카드 15장, 첫 줄 6장
+- 너비 · 높이 ±1px(기울기 없는 크기)
+- 쪽이 스크롤되지 않은 채 맨 아래 카드 아래 끝 ≤ 820
+
+사진은 `lesson-list-landscape-15`(가로)다. 장 수 · 한 줄 수는 이름 붙인 시험 값(LANDSCAPE_ONE_SCREEN 15 · LANDSCAPE_PER_ROW 6)이다.
+
+### #18 셈 고침(세로 168 · 가로 130)
+
+| 화면 · 방향 | 판 안쪽 너비 | 셈 | 양쪽 여백 |
+|---|---|---|---|
+| 목록 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 목록 가로 | 844 | 130 × 6 + 12 × 5 = 840 | 2 · 2 |
+| 지난 수업 세로 | 740 | 168 × 4 + 16 × 3 = 720 | 10 · 10 |
+| 지난 수업 가로 | 1100 | 130 × 7 + 12 × 6 = 982 | 59 · 59 |
+
+가로 15장 높이 셈: 세 줄 × 160 + 두 간격 × 12 = 504px 다. 바깥 테 16 + 위 여백 24 + 띠 약 88 + 간격 24 를 더하면 약 656px 로 820 안이다. 칸 너비는 그대로라 위 #18 표는 바뀌지 않는다.
+
+### 관문(Node 24.22.0)
+
+```
+pnpm -s biome ci .          → exit 0 (378 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 747 통과 · 6 todo
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations
+pnpm check:ids              → setting-default 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace --fail-on … → exit 0
+e2e                         → CI 16차 몫
+```
+
+### 남은 우려
+
+- (덧 03:5x 로 닫힘) 표지와 번호 줄 사이 1px 셈은 `pt-14` · `h-40` 으로 9px 로 넓혔다. 단언은 4px 이상이다.
+- 맨 위 카드(이어 하기 · 첨삭 보기)와 다지기 줄이 함께 있는 가로 실시드 목록은 이 시험 밖이다(정규 15장 한 격자만 봄).
+
+## 회화 느낌 고침 (2026-10-23 04:0x) — 13절 C125 넷
+
+디자인 고침(커밋 없음) 위에 더했다. 정본은 컨트롤러가 옮긴 작업 트리 specs 를 따랐다(12절 speech.rate.<구간> · speech.sentence_pause_ms, 4절 토리 차례, AC-15l). 커밋 없음.
+
+### (1) 문장 사이 쉼 — speech.sentence_pause_ms
+
+| 파일:줄 | 바꾼 것 |
+|---|---|
+| `src/core/speech/pace.ts:16` · `:35` · `:68` | 새 순수 모듈. `pauseLeftMs`(앞 문장이 끝난 때부터 남은 쉼), `createSleeper`(끊을 수 있는 쉼 — cancel 은 기다리는 쉼을 바로 false 로), `speakInTurn`(문장이 ended 로 끝난 뒤에만 쉬고, 쉼이 끊기거나 alive 가 거짓이면 멈춤) |
+| `src/components/conversation/tori.tsx:444` | `useSpeakQueue` 가 문장마다 앞 문장이 끝난 때부터 `pauseMs` 를 채운 뒤 읽는다(늦게 흘러온 문장은 덜 기다림). `cancel` · `replay` · 틀이 사라질 때 쉼도 끊는다 |
+| `src/components/conversation/follow-along.tsx:270` | `useSayer` 가 `speakInTurn` 으로 읽는다(세대가 바뀌면 남은 문장 · 쉼 멈춤) |
+| `src/lib/speech/paced.ts` | 새 감싸기 `pacedSpeech`. 받은 글을 `splitSentences` 로 문장마다 나눠 구간 빠르기로 읽고 문장 사이에 쉰다. `cancelSpeaking` · 다른 `speak` 가 앞 말의 쉼과 남은 문장을 끝낸다. 듣기 · 장치 · 마이크는 그대로 넘긴다(C109 소리 통로 꼴 안 건드림) |
+| `src/app/(child)/session/[id]/session-frame.tsx:452` | 읽기 · 말하기 세션은 감싼 접점을 쓴다(지문 읽어 주기 · 말하기 들려주기). 쓰기는 그대로 |
+
+### (2) 단계 구간별 빠르기 — speech.rate.<구간>, speech.slow_rate 없앰
+
+| 파일:줄 | 바꾼 것 |
+|---|---|
+| `src/core/speech/listen.ts:26` | `SpeechSettings` 에 `rate`(구간마다) · `sentencePauseMs`, `SPEECH_SETTING_KEYS` 에 키 다섯. 없거나 꼴이 틀리면 던진다 |
+| `src/core/speech/pace.ts:8` | `speakRateOf(level, speech)` = `speech.rate[bandOf(level)]` |
+| `src/core/speech/script.ts` | 관찰 대본 스키마의 설정 칸에 두 칸 |
+| `src/core/conversation/listen.ts` | `slowRate` · `TALK_SLOW_READ_UNTIL_LEVEL` · `talkSpeakRateOf` 를 지웠다 |
+| `src/server/conversation/index.ts` | 회화 설정 읽기에서 `speech.slow_rate` 를 뺐다(새 키는 `SPEECH_SETTING_KEYS` 로 들어옴) |
+| `talk-frame.tsx:270` · `child-turn.tsx` · `follow-along.tsx` | 토리 말 · 따라 말하기 · 힌트 문장 듣기가 모두 `speakRateOf` 값. 아이 차례 칸 `slowRate?` → `rate` |
+| `seed/settings.json:102` | slow_rate 행 → speech.rate.1-3 · 4-6 · 7-9 · 10-12(0.8 · 0.85 · 0.9 · 1.0) · speech.sentence_pause_ms 700(모두 집 전체 · 고급) |
+| `tests/fixtures/settings.ts:158` | 같은 다섯 키. 시험용 시드 설정(`loadableSettings`)은 TEST_SETTINGS 에서 가져와 함께 바뀐다 |
+| `tests/fixtures/speech/settings.json` | 관찰 쪽 · e2e 음성 설정에 다섯 키(12절 기본값 대조 시험이 같은 값을 본다) |
+| `src/lib/speech/types.ts:45` · `fake-web-speech.ts:17` | 설명만 고침 |
+
+정본 설정 규격(12절)은 컨트롤러가 이미 옮겨 두어 손대지 않았다. `check:ids` 는 setting-default 0 · spec-setting-missing 0 · seed-setting-unknown 0 · fixture-setting 0 이다.
+
+### (3) 한 턴에 같은 말 두 번 안 읽기
+
+| 파일:줄 | 바꾼 것 |
+|---|---|
+| `src/core/conversation/flow.ts:901` | `normalizeSpoken`: NFKC · 소문자 · 따옴표 지움(I'm = I’m) · 문장부호를 띄어쓰기로 · 띄어쓰기 하나로 |
+| `src/core/conversation/flow.ts:918` | `dropRepeatedLines(append, spoken)`: 토리 말(검사를 지난 AI 문장)이나 앞서 붙인 말에 이미 든 문장이면 그 붙일 말을 뺀다. 낱말 경계로 '들어 있음'을 본다. 답 두 개는 ①② 짝이라 한 답이라도 이미 읽었으면 줄째 뺀다 |
+| `src/server/conversation/turn.ts:1035` | 흘려 보낼 붙임 줄 · 저장할 토리 글 · 만난 단어 셈에 줄인 목록을 쓴다. 질문 차례 셈(`cardQuestionNo` · `aiQuestion` · 자리)은 계획 그대로다 |
+
+견본 대화 셈(1단계 처음 묻는 턴의 '모름', 시험용 카드 — 답 예시 = 답 두 개의 첫 답):
+
+| 경우 | 고치기 전 | 고친 뒤 |
+|---|---|---|
+| 토리 말이 답 예시를 말함('That's okay!' · 'You can say, I'm good.') | 7문장(토리 2 + 답 예시 1 + 같은 질문 1 + 답 두 개 3) | 3문장(토리 2 + 같은 질문 1) |
+| 토리 말에 답 예시 없음('That's okay!') | 6문장 | 3문장(토리 1 + 답 예시 1 + 같은 질문 1) |
+
+설계와 다르게 한 것 하나가 있다. 1단계 처음 묻는 턴의 '모름' 다시 묻기에서는 답 두 개 줄(①② 단추 포함)이 빠진다. 답 예시가 답 두 개의 첫 답과 같은 문장이라, '같은 문장은 한 번만'을 지키면 짝을 통째로 빼야 4문장 이하가 된다. 처음 묻는 턴(모름 아님)에는 토리 말이 답을 말하지 않는 한 ①② 가 그대로다. 정본 4절은 '처음 묻는 턴'에 답 두 개를 두라고 하고, 다시 묻기를 따로 적지 않았다. 컨트롤러 판정을 바란다.
+
+### (4) 턴 길 서버 준비 시간
+
+| 파일:줄 | 바꾼 것 |
+|---|---|
+| `src/core/conversation/timing.ts` | 새 순수 모듈. `createStageTimer`(구간마다 앞 표시부터의 ms · 합)와 `stageTimingsLine`(이름과 ms 만 든 기록 한 줄) |
+| `src/server/conversation/turn.ts:681` ~ `:969` | 구간 표시 여섯: profile → masker_settings → state → checks_context → input → ai_prep. 가림 읽기와 설정 읽기를 함께 돌린다. 하루 안전 상한 확인은 세션 행 트랜잭션과 함께 시작한다. 단계 맥락은 상한 · 대화 상한 확인과 함께 읽는다. AI 를 부르기 직전에 `onPrepTimings` 를 한 번 부른다 |
+| `src/server/ai/talk.ts:608` | 단가표와 하루 사용량을 함께 읽는다. AI 를 부르기 직전에 `onPrepared` 를 부른다 |
+| `src/app/api/talk/turn/route.ts:63` | 턴마다 `회화 턴 준비 시간 profile … · 합 …ms` 를 서버 기록에 남긴다. 아이 글은 들지 않는다(로그 시험 '로그에 아이 말 글이 없다'가 그대로 덮음) |
+
+AI 부르기 전 차례로 기다리는 DB 일(보통 턴 길):
+
+| | 차례로 기다림 |
+|---|---|
+| 고치기 전 | 11번(집 → 가림 → 설정 → 세션 트랜잭션 → 하루 상한 → 단계 맥락 → 턴 입력 → 호출 설정 → 단가표 → 하루 사용량 → 가림) |
+| 고친 뒤 | 8번(집 → 가림 ‖ 설정 → 트랜잭션 ‖ 하루 상한 → 단계 맥락(상한 확인과 겹침) → 턴 입력 → 호출 설정 → 단가표 ‖ 하루 사용량 → 가림) |
+
+ms 값은 로컬에서 잴 수 없다. 로컬 내장 Postgres 가 shmget ENOMEM 으로 뜨지 않아 통합 시험이 CI 에서만 돈다. 고친 뒤 값은 CI 통합 기록의 `회화 턴 준비 시간 …` 줄에 남는다(시험 '턴 길은 AI 를 부르기 전 구간마다 준비 시간을 남긴다'). 고치기 전 값은 같은 시험 DB 로 잰 것이 없다. 요청자가 운영에서 본 약 3초와 견주려면 배포 뒤 Vercel 함수 기록의 같은 줄을 보면 된다. 시험 DB 는 같은 기계라 왕복이 짧아, 운영(Supabase 왕복) 값의 줄어듦을 보여 주지 못한다.
+
+### 덮는 시험
+
+| 시험 | 덮는 것 |
+|---|---|
+| 단위 `speech-pace.test.ts` — '읽어 주기 빠르기: 1~12단계마다 그 단계 구간의 speech.rate.<구간> 으로 읽는다' · '…speech.rate.<구간> 이나 speech.sentence_pause_ms 가 없으면 던진다' | (2) |
+| 단위 `speech-pace.test.ts` — '문장 사이 쉼: 앞 문장이 끝난 때부터 쉼이 다 지났으면 기다리지 않는다' · '…문장이 끝나면 speech.sentence_pause_ms 쉬고 다음 문장을 읽는다' · '…쉬는 동안 멈추면 쉼도 끝나고 다음 문장을 읽지 않는다' · '…다른 말을 고르면(alive 거짓) 남은 문장을 읽지 않는다' · '…문장이 끝나지 않았거나(끊김) 읽을 수 없는 기기면 쉬지 않는다' | (1) 가짜 시계 |
+| 단위 `speech-paced.test.ts` — '문장 사이 쉼: 지문 읽어 주기는 문장마다 나눠 구간 빠르기로 읽고 문장 사이에 쉰다' · '…쉬는 동안 멈추면 남은 문장을 읽지 않고 끊김으로 끝난다' · '…다른 말을 고르면 앞 말의 남은 문장은 읽지 않는다' · '읽어 주기 빠르기: 빈 글(읽어 주기 잠금 풀기)도 구간 빠르기로 그대로 넘긴다' | (1) · (2) 세션 쪽 |
+| 단위 `talk-repeat.test.ts` — '같은 말:' 여섯(정규화 · 답 예시 · 같은 질문 · 답 두 개 · 겹치지 않으면 그대로 · 1단계 '모름' 4문장 이하) | (3) |
+| 통합 `conversation-session.test.ts` — '회화 세션: 1단계 처음 묻는 턴의 '모름'은 토리 말에 든 답 예시를 다시 붙이지 않고 4문장 이하다' | (3) 턴 길 · 저장 글 |
+| 단위 `stage-timer.test.ts` 둘 · 통합 '회화 세션: 턴 길은 AI 를 부르기 전 구간마다 준비 시간을 남긴다' | (4) |
+| e2e `conversation.spec.ts` 셋(이름 그대로) — 힌트 듣기 · AC-15l 말풍선 다시 읽기 · '3단계 힌트 영어 문장 듣기는…'의 빠르기 단언을 `speech.rate.1-3` 로 바꿈 | (2) 화면 |
+
+옛 단위 시험 '회화 읽어 주기: 1~2단계는 speech.slow_rate 로 천천히, 3단계부터는 기본 빠르기로 읽는다'는 지웠다. 규칙이 없어져서다. 새 빠르기 시험이 그 자리를 덮는다.
+
+### 관문(Node 24.22.0)
+
+```
+pnpm biome ci               → exit 0 (385 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 765 통과 · 6 todo (74 files)
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations (197 modules)
+pnpm check:ids              → setting-default 0 · 다른 막는 규칙 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace             → exit 0
+통합 · e2e                  → CI 몫(로컬 Postgres 못 뜸)
+```
+
+### 남은 우려
+
+- e2e '회화 화면: 3단계 힌트 영어 문장 듣기는 천천히 읽고 토리 말은 보통 빠르기로 읽는다'는 브리프대로 이름을 그대로 두었다. 지금은 3단계 토리 말도 1~3 구간 빠르기(0.8)라 이름 뒷부분이 맞지 않는다. 같은 까닭으로 AC-15l 첫 시험 이름의 '1~2단계는 천천히'도 옛말이다. 이름을 바꿀지 컨트롤러가 정해 주면 된다.
+- 쉼 700ms 가 e2e 회화 턴마다 더해진다(세 문장 턴이면 약 1.4초). 기다림 상한 안이라고 보았지만 CI 시간이 조금 는다.
+- 1단계 답 두 개('I'm good. Or I'm fine.')는 지금처럼 한 번에 읽는 한 덩이라 그 안에는 쉼이 없다. AC-15l e2e 가 이 한 덩이를 그대로 본다. 답 사이에도 쉬게 하려면 시험과 함께 바꿔야 한다.
+- 위 (3)의 '모름' 다시 묻기에서 ①② 가 빠지는 것은 판정이 필요하다.
+
+## 디자인 fix 1d (2026-10-23 04:2x) — CI 16차 e2e 실패 셋
+
+회화 느낌 고침과 같은 작업 트리에서 했다. 커밋 없음. 나머지 137 은 CI 16차에서 초록이었다.
+
+| # | 실패 | 원인 | 고침 |
+|---|---|---|---|
+| 1 · 2 | `lesson-list.spec.ts:210` AC-2d · `:253` 지난 수업 다시 하기 | `badgesFitBothWays` 의 브라우저 안 함수가 바깥 상수 BADGE_GAP_PX 를 바로 썼다(`Can't find variable`) | `evaluateAll` 의 둘째 인자로 넘긴다(`lesson-list.spec.ts:85`). e2e 의 다른 브라우저 안 함수도 훑었다. 바깥 상수를 바로 쓰는 곳은 이것 하나였다 |
+| 3 | `reading.spec.ts:73` AC-3a | 시험용 지문에 '왼쪽 맞춤이면 쪽지가 넘칠 낱말'이 없어 앞 조건 단언이 빨강 | 넘침 피하기 셈을 순수 함수로 빼고 단위 시험으로 증명했다. e2e 는 앞 쪽지를 닫고, 카드 오른쪽 끝에 가장 가까운 낱말을 눌러 뜻 쪽지가 카드 안인지만 본다 |
+
+### 바뀐 파일
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `src/core/session/note-place.ts`(새) | `noteAlignOf`(낱말 가운데가 카드 가운데보다 오른쪽이면 end) · `noteShiftOf`(카드를 넘친 만큼 안으로 당김, 안이면 0) |
+| `src/components/session/reading.tsx` | 쪽지 자리 셈을 위 두 함수로 바꿨다(동작 같음) |
+| `tests/unit/word-note-place.test.ts`(새) | '뜻 쪽지:' 넷 — 맞춤 방향 · 오른쪽 넘침 당김(-120) · 왼쪽 넘침 밂(+40) · 안이면 0 |
+| `tests/e2e/lesson-list.spec.ts` · `tests/e2e/reading.spec.ts` | 위 표 |
+
+브리프는 '시험만'이었다. 증명할 순수 함수가 없어서 화면 코드에서 셈 두 줄을 함수로 뺐다. 동작은 바꾸지 않았다.
+
+### 관문(Node 24.22.0, 회화 느낌 고침과 합친 상태)
+
+```
+pnpm biome ci               → exit 0 (387 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 769 통과 · 6 todo (75 files)
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations (198 modules)
+pnpm check:ids              → setting-default 0 · fixture-setting 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace             → exit 0
+e2e                         → CI 17차 몫
+```
+
+### 남은 우려
+
+- CI 16차 기록 첫머리에 서버 줄 `회화 턴 실패(Error 23503)`(외래 키 위반)가 한 번 있다. 회화 시험은 모두 초록이었다. 세션을 지운 뒤 늦게 온 턴 같은, 시험이 일부러 만든 길로 보이지만 확인하지 않았다.
+
+## 회화 느낌 고침 판정 반영 (2026-10-23 04:4x) — 컨트롤러 판정 둘
+
+### (1) 1단계 '모름' 다시 묻기에서 답 두 개 줄을 남김
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `src/core/conversation/flow.ts` | `dropRepeatedLines` 를 `shownTurnOf(sentences, append)` 로 바꿨다. 답 두 개 줄(①②)은 늘 남긴다. 토리 문장 가운데 답 두 개 어느 하나를 담은 문장은 뺀다(`sayingAnswer`). 앱이 붙일 답 예시 · 질문 같은 줄은 남은 토리 문장 · 답 두 개 · 앞서 붙인 줄에 이미 든 문장이면 뺀다 |
+| `src/server/conversation/turn.ts` | 다음 질문이 답 두 개를 붙일 수 있으면(막힘 · 아님 두 자리를 AI 부르기 전에 셈) 그 답을 담은 토리 문장부터는 계획이 정해질 때까지 잡아 둔다. 잡은 문장 가운데 `shownTurnOf` 가 남긴 것만 보낸다(쉼 줄 길은 잡은 것을 그대로 보냄). 저장 글(`text`) · 다시 쓸 토리 차례 · 만난 단어 셈 · 질문 차례 셈은 계획 그대로 되돌렸다. 같은 시도 다시 흘림도 `shownTurnOf` 를 거친다 |
+| `src/server/conversation/index.ts` | 이어 하기의 마지막 토리(`lastToriOf`)도 `shownTurnOf` 를 거친다(저장 글은 그대로, 다시 그리는 글만 줄임) |
+
+판정의 '같은 문장'은 정규화한 낱말 경계 '들어 있음'으로 보았다. 'You can say, I'm good.' 은 답 'I'm good.' 과 글자가 같지 않지만, 이 문장을 남기면 '모름' 턴이 5문장이 되어 4문장 이하를 지키지 못한다.
+
+견본 셈(1단계 처음 묻는 턴의 '모름', 답 두 개는 읽는 한 줄 'A. Or B.' 를 두 문장으로 셈):
+
+| 경우 | 고치기 전 | 고친 뒤 |
+|---|---|---|
+| 토리 말이 답 예시를 말함 | 6문장 | 4문장(토리 1 + 같은 질문 1 + 답 두 개 2) |
+| 토리 말에 답 예시 없음 | 5문장 | 4문장(토리 1 + 같은 질문 1 + 답 두 개 2) |
+
+앞 절의 7 · 6 은 'Or' 를 따로 셌던 값이라 이 표가 그것을 대신한다.
+
+### (2) 옛 빠르기 이름 바꿈
+
+| 옛 이름 | 새 이름 |
+|---|---|
+| AC-15l 토리 말풍선을 누르면 그 말을 다시 읽어 주고 1~2단계는 천천히 읽으며 … | AC-15l 토리 말풍선을 누르면 그 말을 다시 읽어 주고 단계 구간마다 정한 빠르기(speech.rate.<구간>, C125)로 읽으며 1단계 처음 묻는 턴에서는 질문과 답 두 개를 다시 들려준다 |
+| 회화 화면: 3단계 힌트 영어 문장 듣기는 천천히 읽고 토리 말은 보통 빠르기로 읽는다 | 회화 화면: 3단계 힌트 영어 문장 듣기와 토리 말은 1~3 구간 빠르기(speech.rate.1-3)로 읽는다 |
+
+### 고친 시험
+
+- 단위 `talk-repeat.test.ts` '같은 말:' 일곱 — 답 두 개 줄은 늘 남고 같은 답 예시 줄이 빠짐 · 답이 든 토리 문장이 빠짐 · 견본 4문장 이하
+- 통합 '회화 세션: 1단계 처음 묻는 턴의 '모름'은 답 두 개를 남기고 겹치는 답 예시 · 토리 문장을 빼 4문장 이하다'(이름 바뀜). 답 두 개 줄 · 같은 질문이 남는지, 답 예시 줄이 없는지, 답이 든 토리 문장이 흐르지 않는지를 본다. 저장 글에는 그 문장과 답 두 개가 그대로 있는지, 이어 하기 화면에서도 빠지는지까지 본다
+- e2e 'AC-15g '잘 모르겠어요'를 누르면 1단계는 …'(이름 그대로) — 처음 묻는 턴이면 끝에 [같은 질문, 답 두 개 줄]이 읽히고 ①② 가 둘이다. 답 두 개가 없는 턴이면 예전 단언(답 예시 → 같은 질문)이다. 다른 '모름' e2e(넘긴 질문 다시 묻기 · AC-9d (라))는 답 두 개 없는 다시 묻는 턴이라 그대로다
+
+### 관문(Node 24.22.0, 느낌 고침 · fix 1d 와 합친 상태)
+
+```
+pnpm biome ci               → exit 0 (387 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 770 통과 · 6 todo (75 files)
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations
+pnpm check:ids              → setting-default 0
+pnpm check:bundle           → 위반 0
+pnpm spec:trace             → exit 0
+통합 · e2e                  → CI 17차 몫
+```
+
+### 남은 우려
+
+- AC-15g 정본 문구 '토리가 답 예시를 말한 뒤 같은 질문을 다시 묻고'는 1단계 처음 묻는 턴에서 순서가 맞지 않는다. 이제 같은 질문을 먼저 묻고, 답 예시는 그 뒤 답 두 개 줄 안에서 들린다. 시험 이름은 그대로 두었다. 정본 문구를 고칠지 컨트롤러가 정해 주면 된다.
+- 토리 말풍선 아래 뜻 줄(tori_ko)은 AI 가 준 한 덩이라, 뺀 영어 문장의 뜻도 그대로 보인다(1~3단계 뜻 줄).
+
+## 판정 재전송 확인 · 23503 출처 (2026-10-23 04:5x)
+
+(1) · (2) 판정은 앞 메시지를 받아 위 '회화 느낌 고침 판정 반영' 절에서 이미 반영했다. 다시 바꾼 것은 없다.
+
+### (3) e2e 첫머리 '[WebServer] 회화 턴 실패(Error 23503)'
+
+**결론은 시험 정리 순서 탓이다. 앱 결함은 아니라고 본다. 시험은 그대로 두었다.**
+
+| 단서 | 사실 |
+|---|---|
+| 기록 문구 | '회화 턴 실패'는 `turn.ts` 의 `talkTurn` 을 감싼 catch 한 곳에서만 나온다. 토리 행 저장 실패는 '회화 턴 길 실패'로 따로 남는다. 그래서 AI 호출 안의 쓰기다 |
+| 그 안의 쓰기 | `runTalkCall` 의 `record` → `insertAiCall`(ai_calls 행)이다 |
+| 외래 키 | ai_calls 의 profile_id · session_id 는 `onDelete: "set null"` 이다. 부모를 지울 때는 오류가 없다. 이미 지워진 세션 · 프로필 id 로 새 행을 넣을 때만 23503 이다 |
+| 지우는 쪽 | e2e `resetHousehold`(시험마다 beforeEach)가 프로필을 지우고 세션이 따라 지워진다. ai_calls 는 두는데, 이미 있는 행의 칸만 비운다 |
+| 그 사이에 흐르는 시험 | conversation.spec '회화 화면: 토리 말을 흘려 받는 중 '홈'을 누르면 홈에서 토리 말을 더 읽지 않는다'. 가짜 응답이 24조각 × 300ms(약 7.2초)다. 첫 문장 'Great!' 이 읽히면 '홈'을 누르고 4초(AFTER_LEAVE_MS) 기다린 뒤 끝난다. 서버는 `after()` 로 응답을 끝까지 받으므로, 다음 시험('stale 을 받으면…')의 집 비우기 뒤에 ai_calls 를 넣어 23503 이 난다 |
+| 같은 꼴을 피한 시험 | AC-N8 시험은 '다음 시험의 집 비우기 뒤까지 흐르지 않게 — 검토 M-10'이라 적고 끝 줄까지 기다린다. 이 '홈' 시험(차례 5 fix 1)에는 그 기다림이 없다. 차례 5 fix 1 시험이라 CI 15차에도 있던 것과 맞는다 |
+
+시간 셈과 기록 문구로 짚은 것이다. e2e 는 로컬에서 돌릴 수 없어 그 시험을 혼자 돌려 확인하지는 못했다.
+
+운영에서 같은 일이 나려면 회화 턴이 흐르는 동안 그 프로필이나 세션 행이 지워져야 한다. 1-가 에는 그런 길이 없다. 부모의 '이 대화 지우기'는 talk_turns 의 글만 지우고 세션 행은 남긴다. 다만 3차 '프로필 지우기'가 들어오면, 흐르던 턴의 ai_calls 한 행(비용 기록)이 23503 으로 빠질 수 있다. 그때 `insertAiCall` 이 외래 키 위반이면 id 칸을 비워 다시 넣게 하면 된다(제안만, 이번에 고치지 않음).
+
+시험을 고친다면 '홈' 시험 끝에서 서버 응답이 다 끝날 때까지 기다리면 된다. 예를 들면 그 세션의 토리 행이 생길 때까지 DB 를 polling 하는 것이다. 기록이 한 줄 남을 뿐 초록이라, 판정대로 그대로 두었다.
+
+## 회화 느낌 고침 fix 1 (2026-10-23 05:xx) — 코드 검토 rev-p13b I-1 · M-1 · M-2
+
+브리프 `task-p13-feel-fix1.md` 대로 셋을 고쳤다. I-2(개발용 DB 설정 적재)는 컨트롤러 몫이고, M-3(뜻 줄)은 장부로 넘어갔다. I-3(1단계 되풀이 문장이 잡혀 첫 문장이 늦음)은 브리프에 없어 손대지 않았다. 커밋 없음.
+
+### I-1 겹침 없애기가 짧은 줄에서 토리 반응 · 칭찬을 지움
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `src/core/conversation/flow.ts` | 이름 붙인 상수 `SAME_SAYING_MIN_WORDS` 를 주석과 함께 두었다. '들어 있음'(낱말 경계)은 찾는 쪽(답 · 붙일 줄의 문장)이 이 낱말 수 이상일 때만 쓴다. 그보다 짧으면 정규화한 문장 전체가 같을 때만 같은 말이다. `sayingAnswer` 와 `shownTurnOf` 의 `heard` 가 같은 `holds` 를 쓴다. 낱말 수는 `normalizeSpoken` 뒤 띄어쓰기로 센다 |
+| 같은 파일 `shownTurnOf` | 칭찬 대사(`praise`)는 답 두 개 줄과 함께 늘 남긴다(8절 '회화 턴 실패'의 토리 반응 자리) |
+
+**설계와 다르게 한 것 하나가 있다. 문턱을 브리프의 3 이 아니라 2 로 두었다.** 정규화가 따옴표를 지워 "I'm good" 이 'im good' 두 낱말이 된다. 문턱 3 이면 'You can say, I'm good.' 이 답 'I'm good.' 을 담는다고 볼 수 없다. 그러면 브리프의 (e) '지금 일곱 견본 그대로'가 지켜지지 않는다. 실제로 돌려 보니 셋이 빨강이었다. '답 예시가 들어 있으면' · '답이 든 토리 문장' · '모름 4문장 이하'이고, '모름' 턴이 다시 5문장이 된다. 컨트롤러에게 셋 가운데 하나를 골라 달라고 물었다. (가) 문턱 2, (나) 문턱 3 + 줄임말을 두 낱말로 셈, (다) 문턱 3 + 견본 셋을 바꿈이다. 답을 받기 전이라 권한 (가)로 두었다. (나)는 낱말 세는 함수 한 줄, (다)는 상수 하나와 시험 셋만 바꾸면 된다.
+
+단위 '같은 말:'에 넷을 더했다(일곱 → 열하나, 모두 초록).
+- (a) 답 'Yes.' · 'No.' 와 반응 'Yes, that's right!' · 'No problem.' → 둘 다 남음
+- (b) 실패 길 칭찬 'Good!' + 다음 질문 답 'It is good.' → 칭찬 남음(토리 말과 똑같아도 남음)
+- (c) 답 'Yes, I do.' + 반응 'Yes!' → 남음
+- (d) 반응 'yes!' 가 답 'Yes.' 와 정규화해 같음 → 빠짐
+- (e) 앞 일곱 그대로 초록. '모름 4문장 이하' 셈도 그대로 4문장이다
+
+통합 '모름' 시험은 고치지 않았다. 시험 카드의 답 예시가 'I like …' 꼴로 세 낱말 이상이라 문턱과 상관없다.
+
+### M-1 시도 기록 실패가 턴을 바꿈
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `src/server/ai/talk.ts` | 새 `keepTurnOnRecordFailure(write, what)`. DB 실패를 잡아 `회화 시도 기록 실패(<이름> <코드>)` 한 줄만 남기고(`dbErrorTag` — 아이 글 · 대화 글 없음) 던지지 않는다. `runTalkCall` 의 `record` 가 시도 기록과 같은 오류 알림을 따로 감싼다. 그래서 하나가 실패해도 다른 하나는 돈다(알림 쪽 기록 이름은 '같은 오류 알림') |
+
+23503 이면 id 칸을 비워 다시 넣는 길(선택)은 하지 않았다. 다시 넣는 길은 DB 를 거쳐야 증명되는데, 로컬에서는 통합 시험이 돌지 않는다. 1-가 에는 그 길이 열리는 때도 없다.
+
+안전 상한 닫힘 기록(`runTalkCall` 의 `safety_cap` 행)은 `record` 밖이라 그대로 두었다.
+
+단위 `talk-stream-call.test.ts` '회화 턴 흐름: 시도 기록(ai_calls) 쓰기가 실패해도 받은 응답 · 흘려 보낸 문장은 그대로이고 이름 · 코드만 든 기록 한 줄을 남긴다'. 가짜 23503 을 던지는 기록에서 결과가 ok 이고, tori_en · 흘린 두 문장이 그대로다. 기록은 `회화 시도 기록 실패(Error 23503)` 한 줄이고 토리 글 · 아이 글이 없다.
+
+### M-2 '홈' e2e 가 서버 턴이 끝나기 전에 끝남
+
+`tests/e2e/conversation.spec.ts` '회화 화면: 토리 말을 흘려 받는 중 '홈'을 누르면 홈에서 토리 말을 더 읽지 않는다'(이름 그대로) 끝에 기다림을 더했다. 그 세션의 토리 행이 열 때보다 하나 늘 때까지 DB 를 poll 한다(상한 STREAM_END_MS). 토리 행은 시도 기록 뒤에 저장되므로 행이 생기면 ai_calls 쓰기도 끝난 것이다. 목표 턴 전의 '홈'은 세션을 열린 채 두어(`leaveTalk`) 토리 행이 저장된다. 도우미 `toriRowCount` 를 더했다. CI 18차 서버 기록에서 '회화 턴 실패(Error 23503)'가 0 인지 보면 된다.
+
+### 관문(Node 24.22.0)
+
+```
+pnpm lint (biome)           → exit 0 (387 files)
+pnpm exec tsc --noEmit      → exit 0
+pnpm test                   → 775 통과 · 6 todo (75 files)
+pnpm build                  → exit 0
+pnpm check:deps             → no dependency violations
+pnpm check:ids              → setting-default 0 · design-number 36
+pnpm check:bundle           → 위반 0
+pnpm spec:trace             → exit 0
+통합 · e2e                  → CI 18차 몫
+```
+
+### 남은 우려
+
+- I-1 문턱(2 또는 3)은 컨트롤러 답을 기다린다.
+- I-3 은 브리프 밖이라 그대로다. 1단계 처음 묻는 턴에서 말로 답한 턴의 되풀이 문장이 잡혀 첫 문장이 응답 끝까지 늦을 수 있다.
+
+### fix 1 덧 — CI 17차 e2e 빨강 둘(run 39838603341)
+
+빨강 둘의 원인은 같다. 1단계 처음 묻는 턴의 '모름'에서 답 예시 줄이 답 두 개 ①과 같아 빠졌고(C125 (3) 우선순위), 두 시험이 고치기 전의 [답 예시, 같은 질문, 답 두 개]를 기대했다. 앱이 맞고 시험이 낡았다. 앱이 낸 끝 줄은 ['That's okay.', 'What do you see?', 'I see a bababa. Or I see a bobaba.']였다.
+
+| 시험(이름 그대로) | 고침 |
+|---|---|
+| `conversation.spec.ts` 'AC-15g 같은 질문에서 no-speech 로 끝난 듣기가 …' | `toContain(first.answerExample)` poll 을 `spokenTail(page, dontKnowTailOf(first))` 로 바꿨다 |
+| 'AC-15g 1단계에서 'I don't know' 라고 말한 턴 뒤에는 …' | `spokenTail` 기대를 `dontKnowTailOf(first)` 로 바꿨다 |
+
+새 도우미 `dontKnowTailOf(turn)` 은 AC-15g 새 문구대로 끝에 읽히는 말을 돌려준다. 처음 묻는 턴(답 두 개 있음)이면 [같은 질문, 답 두 개 줄], 아니면 [답 예시, 같은 질문]이다. 다른 '모름' e2e(넘긴 질문 다시 묻기 · AC-9d (라))는 답 두 개 없는 다시 묻는 턴이라 [답 예시, 같은 질문] 그대로이고 CI 17차에서 초록이었다.
+
+단위 '같은 말:'에 하나를 더했다(열하나 → 열둘). '같은 말: 처음 묻는 턴이 아닌 '모름'(답 두 개 없음)은 답 예시와 같은 질문을 그대로 붙인다' — 토리 반응 + 답 예시 + 같은 질문 = 3문장이다.
+
+관문: lint 0 · tsc 0 · 단위 776 통과 · 6 todo · build 0 · check:deps 0 · check:ids setting-default 0 · spec:trace 0. e2e 는 CI 18차 몫이다.
