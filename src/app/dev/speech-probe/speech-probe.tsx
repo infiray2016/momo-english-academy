@@ -39,15 +39,23 @@ import type {
 } from "@/lib/speech/types";
 import {
   AUDIO_SESSION_TYPES,
+  AUTO_LISTEN_WAIT_SECONDS,
   type AudioSessionTypeChoice,
+  type AutoListenWaitSeconds,
   describeDeviceCounts,
   envFactLines,
   formatProbeLog,
+  isMicBlockingSession,
   listenLatencyLines,
+  listenSessionTexts,
   MIC_LEVEL_DURATION_MS,
   micLevelSummary,
   type ProbeLogRow,
   probeEntryDetail,
+  restoreAfterSpeak,
+  type SpeakGap,
+  speakEndGaps,
+  speakEndGapText,
 } from "./probe-audio";
 import {
   listDevices,
@@ -431,6 +439,12 @@ export function SpeechProbe({
   >({ beep: undefined, speak: undefined, "speak-playback": undefined });
   const [measureDuringListen, setMeasureDuringListen] = useState(false);
   const [autoSessionOn, setAutoSessionOn] = useState(false);
+  // 3판: 교대 시험 '읽어 주기 끝난 뒤 자동으로 듣기 시작'(실측 6 — 끝 직후 시작한 듣기가 소리를 못 받는지 가르기).
+  const [altAutoListen, setAltAutoListen] = useState(false);
+  const [altAutoWait, setAltAutoWait] = useState<AutoListenWaitSeconds>(
+    AUTO_LISTEN_WAIT_SECONDS[0],
+  );
+  const autoListenTimerRef = useRef<number | undefined>(undefined);
   const [listenLevels, setListenLevels] = useState<ListenLevels>({});
   const [sessionType, setSessionType] = useState<string>();
   const [logText, setLogText] = useState("");
@@ -454,8 +468,8 @@ export function SpeechProbe({
 
   // 오디오 세션 꼴 바꾸기(선택 상자 · 단추 · 자동). 바꾼 값을 기록 표 · 환경 사실 칸 · 지금 꼴에 남긴다.
   const applySessionType = (
-    type: AudioSessionTypeChoice,
-    by?: "auto" | "button",
+    type: string,
+    by?: "auto" | "button" | "restore",
   ) => {
     const result = setAudioSessionType(type);
     if (result === undefined) return;
@@ -492,6 +506,14 @@ export function SpeechProbe({
     applySessionType(target, "auto");
   };
 
+  // 3판: 마이크를 쓰는 일을 재생 전용 꼴(playback · ambient, 3판 fix 1 M-1)에서 시작하면 경고 줄만 남긴다
+  // (실험이라 꼴은 안 바꾼다).
+  const warnIfPlayback = (action: "listen" | "mic-check" | "mic-level") => {
+    const { type } = readAudioSession();
+    if (type === undefined || !isMicBlockingSession(type)) return;
+    pushTrace({ at: performance.now(), kind: "session-warning", action, type });
+  };
+
   useEffect(() => {
     setOrigin(performance.now());
     const native = nativeCtor();
@@ -516,6 +538,16 @@ export function SpeechProbe({
 
   // 2판 환경 사실: 쪽이 열리면 처리기를 만들어 읽고 닫은 뒤 env 줄 · 권한 전 장치 목록을 남긴다.
   // 음성 수가 바뀌거나 보이는 상태가 바뀌면 env 줄을 다시 남긴다. 오디오 세션 상태 바뀜도 줄로 남긴다.
+  // 쪽을 떠나면 자동 듣기 대기를 거둔다.
+  useEffect(
+    () => () => {
+      if (autoListenTimerRef.current !== undefined) {
+        window.clearTimeout(autoListenTimerRef.current);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
     let audioContext: Parameters<typeof readEnvFacts>[0] | undefined;
@@ -623,6 +655,7 @@ export function SpeechProbe({
   ) => {
     if (port === undefined) return undefined;
     autoSession("play-and-record");
+    warnIfPlayback("listen");
     const handle = port.listen(rule, { text: onText });
     const listen = lastListenId();
     if (listen !== undefined) sessionsRef.current.push({ listen, label, rule });
@@ -666,9 +699,32 @@ export function SpeechProbe({
       audioSession: readAudioSession().type,
       userActive: readUserActive(),
     });
-    port.speak(sentence).then(() => {
+    port.speak(sentence).then((outcome) => {
       setAltStatus((status) => (status === "speaking" ? "ready" : status));
+      // 3판: 자동 듣기가 켜져 있으면 읽어 주기 끝 뒤 대기 초만큼 기다려 누름 없이 듣기를 시작한다(끊긴 읽어 주기는 빼고).
+      if (!altAutoListen || outcome.kind === "cancelled") return;
+      const waitMs = altAutoWait * MS_PER_SECOND;
+      clearAutoListenTimer();
+      autoListenTimerRef.current = window.setTimeout(() => {
+        autoListenTimerRef.current = undefined;
+        pushTrace({
+          at: performance.now(),
+          kind: "auto-listen",
+          turn: index + 1,
+          speakOutcome: outcome.kind,
+          waitMs,
+          userActive: readUserActive(),
+        });
+        beginAltListen();
+      }, waitMs);
     });
+  };
+
+  const clearAutoListenTimer = () => {
+    if (autoListenTimerRef.current !== undefined) {
+      window.clearTimeout(autoListenTimerRef.current);
+    }
+    autoListenTimerRef.current = undefined;
   };
 
   const onAltStart = () => {
@@ -676,16 +732,24 @@ export function SpeechProbe({
     // 꼴 바꾸기 → 제약 풀기 → 읽기(playback 단추 길과 같은 순서, 검토 M-3).
     autoSession("playback");
     port.unlockFromGesture();
+    clearAutoListenTimer();
     setTurns([]);
     setAltInterrupted(undefined);
     speakTurn(0);
   };
 
   const onAltSpeak = () => {
+    // 자동 듣기 대기 중에 누르면 대기를 거두고 지금 듣는다.
+    clearAutoListenTimer();
     if (altStatus === "listening") {
       handleRef.current?.press();
       return;
     }
+    beginAltListen();
+  };
+
+  /** 교대 시험의 듣기 하나(말하기 단추 · 자동 듣기가 같이 쓴다). 자동 듣기면 한 문장 뒤 멈춘다. */
+  const beginAltListen = () => {
     const index = turnRef.current;
     const sentence = sentences[index] ?? "";
     const started = startListen(
@@ -719,8 +783,9 @@ export function SpeechProbe({
           outcome,
         },
       ]);
-      if (index + 1 < sentences.length) speakTurn(index + 1);
-      else setAltStatus("done");
+      if (index + 1 < sentences.length && !altAutoListen) {
+        speakTurn(index + 1);
+      } else setAltStatus("done");
     });
   };
 
@@ -780,6 +845,7 @@ export function SpeechProbe({
   const onMicCheck = () => {
     setMicResult(undefined);
     autoSession("play-and-record");
+    warnIfPlayback("mic-check");
     port?.checkMicrophone().then(setMicResult);
   };
 
@@ -807,6 +873,7 @@ export function SpeechProbe({
   const onMicLevel = () => {
     setMicLevel("measuring");
     autoSession("play-and-record");
+    warnIfPlayback("mic-level");
     measureMicLevel().then((result) => {
       pushTrace({ at: performance.now(), kind: "mic-level", result });
       setMicLevel(result);
@@ -852,7 +919,7 @@ export function SpeechProbe({
 
   // 읽어 주기는 교대 시험의 지금 문장 그대로. speak · speak-event 줄은 음성 접점이 남긴다.
   const onSpeakTest = (test: ProbeOutputTest) => {
-    if (port === undefined) return;
+    if (port === undefined) return undefined;
     // 꼴 바꾸기 → 제약 풀기 → 읽기(playback 단추 길과 같은 순서, 검토 M-3).
     autoSession("playback");
     port.unlockFromGesture();
@@ -864,7 +931,7 @@ export function SpeechProbe({
       audioSession: readAudioSession().type,
       userActive: readUserActive(),
     });
-    port.speak(sentences[currentTurn] ?? "");
+    return port.speak(sentences[currentTurn] ?? "");
   };
 
   const onHeard = (test: ProbeOutputTest, heard: boolean) => {
@@ -887,17 +954,33 @@ export function SpeechProbe({
       onBeep();
       return;
     }
-    if (test === "speak-playback") applySessionType("playback", "button");
-    onSpeakTest(test);
+    if (test !== "speak-playback") {
+      onSpeakTest(test);
+      return;
+    }
+    const before = readAudioSession().type;
+    applySessionType("playback", "button");
+    // 3판(요청자 지적): 발화가 끝나면(끝 · 오류 · 끊김) 앞 꼴로 되돌린다 — 되돌리지 않으면 뒤 듣기가 재생 전용 꼴에서
+    // 돈다. 그사이 다른 길(자동으로 두기 · 손으로 바꾸기)이 꼴을 바꿨으면 두다.
+    onSpeakTest(test)?.then((outcome) => {
+      const target = restoreAfterSpeak(
+        before,
+        readAudioSession().type,
+        outcome.kind,
+      );
+      if (target !== undefined) applySessionType(target, "restore");
+    });
   };
 
+  const gaps = speakEndGaps(trace);
+  const listenSessions = listenSessionTexts(trace);
   const logRows: (ProbeLogRow & { seq: number })[] = traceRows.map(
     ({ seq, entry }) => ({
       seq,
       ms: Math.round(entry.at - origin),
       ids: `${"listen" in entry ? entry.listen : ""}${"recognizer" in entry ? ` · ${entry.recognizer}` : ""}`,
       kind: entry.kind,
-      detail: traceDetail(entry, listenLevels),
+      detail: traceDetail(entry, listenLevels, gaps, listenSessions),
     }),
   );
 
@@ -1307,6 +1390,35 @@ export function SpeechProbe({
             같은 객체 되풀이(참고)
           </label>
         </fieldset>
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              data-testid="alt-auto-listen"
+              checked={altAutoListen}
+              onChange={(e) => setAltAutoListen(e.target.checked)}
+            />
+            읽어 주기 끝난 뒤 자동으로 듣기 시작(누름 없이, 한 문장만 하고
+            멈춘다)
+          </label>
+          <label className="flex items-center gap-2">
+            대기
+            <select
+              data-testid="alt-auto-wait"
+              value={altAutoWait}
+              onChange={(e) =>
+                setAltAutoWait(Number(e.target.value) as AutoListenWaitSeconds)
+              }
+              className="border"
+            >
+              {AUTO_LISTEN_WAIT_SECONDS.map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {seconds}초
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="flex gap-2">
           <button
             type="button"
@@ -1548,10 +1660,23 @@ export function SpeechProbe({
   );
 }
 
-function traceDetail(entry: SpeechTraceEntry, levels: ListenLevels): string {
+function traceDetail(
+  entry: SpeechTraceEntry,
+  levels: ListenLevels,
+  gaps: Record<number, SpeakGap>,
+  sessions: Record<number, string>,
+): string {
   switch (entry.kind) {
-    case "listen-begin":
-      return JSON.stringify(entry.rule);
+    case "listen-begin": {
+      // 3판: 그 듣기 때의 세션 꼴과 '마지막 읽어 주기 끝 → 이 듣기의 첫 인식 start 호출' 간격.
+      const gap = gaps[entry.listen];
+      const session = sessions[entry.listen];
+      return [
+        JSON.stringify(entry.rule),
+        ...(session === undefined ? [] : [session]),
+        ...(gap === undefined ? [] : [speakEndGapText(gap)]),
+      ].join(" · ");
+    }
     case "recognizer-call":
       return `${entry.call}${entry.threw ? " (던짐)" : ""}`;
     case "recognizer-event": {
@@ -1588,6 +1713,8 @@ function traceDetail(entry: SpeechTraceEntry, levels: ListenLevels): string {
     case "heard":
     case "audio-session":
     case "speak-request":
+    case "auto-listen":
+    case "session-warning":
       return probeEntryDetail(entry);
   }
 }

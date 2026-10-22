@@ -2,6 +2,7 @@
 // 소리는 다루지 않고 수치만 다룬다(7절 '녹음하지 않는다').
 import { describe, expect, it } from "vitest";
 import {
+  AUTO_LISTEN_WAIT_SECONDS,
   BEEP_DURATION_MS,
   BEEP_END_GRACE_MS,
   byteSamplesToUnit,
@@ -11,7 +12,9 @@ import {
   envFactLines,
   formatLevel,
   formatProbeLog,
+  isMicBlockingSession,
   listenLatencyLines,
+  listenSessionTexts,
   MIC_LEVEL_DURATION_MS,
   MIC_LEVEL_FRAMES,
   MIC_LEVEL_HEARD_RMS,
@@ -20,8 +23,11 @@ import {
   probeEntryDetail,
   RESUME_TIMEOUT_CODE,
   RESUME_WAIT_MS,
+  restoreAfterSpeak,
   rmsOf,
   STOPPED_EARLY_CODE,
+  speakEndGaps,
+  speakEndGapText,
   summarizeLevels,
 } from "@/app/dev/speech-probe/probe-audio";
 import type {
@@ -437,7 +443,7 @@ describe("듣기 지연 요약", () => {
       event(4_000, 1, 1, "end"),
     ];
     expect(listenLatencyLines(trace)).toEqual([
-      "듣기 1 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · start 이벤트 +8 · audiostart +265(start 뒤 +257) · speechstart +798 · 첫 결과 +1498 · end +2998",
+      "듣기 1 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · 읽어 주기 끝 → start 호출 없음 · start 이벤트 +8 · audiostart +265(start 뒤 +257) · speechstart +798 · 첫 결과 +1498 · end +2998",
     ]);
   });
 
@@ -461,7 +467,7 @@ describe("듣기 지연 요약", () => {
       event(8_010, 2, 1, "end"),
     ];
     expect(listenLatencyLines(trace)).toEqual([
-      "듣기 2 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · start 이벤트 +4 · audiostart +4(start 뒤 +0, 같은 ms) · 소리 없음 · 첫 결과 없음 · error no-speech +7999",
+      "듣기 2 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · 읽어 주기 끝 → start 호출 없음 · start 이벤트 +4 · audiostart +4(start 뒤 +0, 같은 ms) · 소리 없음 · 첫 결과 없음 · error no-speech +7999",
     ]);
   });
 
@@ -472,7 +478,7 @@ describe("듣기 지연 요약", () => {
       call(100, 3, 2),
     ];
     expect(listenLatencyLines(trace)).toEqual([
-      "듣기 3 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · start 던짐",
+      "듣기 3 · 객체 1 · 규칙 endSilenceMs=3000 capMs=15000 chunkMs=15000 · 읽어 주기 끝 → start 호출 없음 · start 던짐",
       "듣기 3 · 객체 2 · start 이벤트 없음 · audiostart 없음 · 소리 없음 · 첫 결과 없음 · 끝 없음",
     ]);
   });
@@ -652,5 +658,262 @@ describe("fix 1 — 장치 이름 갈래 · 처리기 깨우기 상한 · 비프
         userActive: undefined,
       }),
     ).toBe("speak-playback · 세션 없음 · 누름 안 없음");
+  });
+});
+
+describe("3판 — 읽어 주기 끝 → 인식 start 호출 간격 · 자동 듣기(실측 6)", () => {
+  const rule = { endSilenceMs: 3_000, chunkMs: 15_000 };
+  const trace: SpeechTraceEntry[] = [
+    // 제약 풀기(빈칸) 읽기의 끝은 세지 않는다.
+    { at: 0, kind: "speak", text: " ", voice: undefined },
+    { at: 1, kind: "speak-event", type: "start" },
+    { at: 2, kind: "speak-event", type: "end" },
+    { at: 10, kind: "listen-begin", listen: 1, rule },
+    {
+      at: 11,
+      kind: "recognizer-call",
+      listen: 1,
+      recognizer: 1,
+      call: "start",
+    },
+    { at: 100, kind: "speak", text: "I like apples.", voice: "Samantha" },
+    { at: 150, kind: "speak-event", type: "start" },
+    { at: 1_600, kind: "speak-event", type: "end" },
+    { at: 3_599, kind: "listen-begin", listen: 2, rule },
+    {
+      at: 3_600.4,
+      kind: "recognizer-call",
+      listen: 2,
+      recognizer: 1,
+      call: "start",
+    },
+    {
+      at: 4_000,
+      kind: "recognizer-call",
+      listen: 2,
+      recognizer: 2,
+      call: "start",
+    },
+  ];
+
+  it("speakEndGaps: 듣기마다 첫 start 호출 앞의 마지막 읽어 주기 끝까지의 간격, 읽어 주기가 없었으면 none(빈칸 제약 풀기는 빼고)", () => {
+    expect(speakEndGaps(trace)).toEqual({
+      1: { kind: "none" },
+      2: { kind: "ended", gapMs: 2_000 },
+    });
+  });
+
+  it("listenLatencyLines: 듣기 첫 객체 줄에 '읽어 주기 끝 → start 호출' 간격을, 다시 시작 객체 줄에는 적지 않는다", () => {
+    const lines = listenLatencyLines(trace);
+    expect(lines[0]).toContain("· 읽어 주기 끝 → start 호출 없음 ·");
+    expect(lines[1]).toContain("· 읽어 주기 끝 → start 호출 +2000 ·");
+    expect(lines[2]).not.toContain("읽어 주기 끝");
+  });
+
+  it("AUTO_LISTEN_WAIT_SECONDS: 대기 초는 0 · 2 · 5 · 10", () => {
+    expect(AUTO_LISTEN_WAIT_SECONDS).toEqual([0, 2, 5, 10]);
+  });
+
+  it("probeEntryDetail: auto-listen 줄은 몇째 문장 · 읽어 주기 결과 · 기다린 ms · 누름 없이 · 누름 안 여부를 적는다", () => {
+    expect(
+      probeEntryDetail({
+        at: 0,
+        kind: "auto-listen",
+        turn: 1,
+        speakOutcome: "ended",
+        waitMs: 2_000,
+        userActive: false,
+      }),
+    ).toBe(
+      "교대 1째 문장 · 읽어 주기 ended 뒤 2000ms 기다려 누름 없이 듣기 시작 · 누름 안 아니오",
+    );
+  });
+});
+
+describe("3판 바뀐 요청 — playback 되돌림 · 재생 전용 꼴 경고 · listen-begin 줄의 꼴(요청자 지적)", () => {
+  it("probeEntryDetail: playback 단추가 발화 뒤 앞 꼴로 되돌린 줄은 '되돌림'", () => {
+    expect(
+      probeEntryDetail({
+        at: 0,
+        kind: "audio-session",
+        action: "set",
+        requested: "auto",
+        before: "playback",
+        after: "auto",
+        by: "restore",
+        userActive: false,
+      }),
+    ).toBe("playback → auto 요청 · 읽은 값 auto · 되돌림 · 누름 안 아니오");
+  });
+
+  it.each([
+    [
+      "listen",
+      "재생 전용 꼴(playback)에서 듣기 시작 — 마이크가 안 열릴 수 있음",
+    ],
+    [
+      "mic-check",
+      "재생 전용 꼴(playback)에서 마이크 확인 시작 — 마이크가 안 열릴 수 있음",
+    ],
+    [
+      "mic-level",
+      "재생 전용 꼴(playback)에서 마이크 소리 재기 시작 — 마이크가 안 열릴 수 있음",
+    ],
+  ] as const)("probeEntryDetail: session-warning %s 줄", (action, text) => {
+    expect(
+      probeEntryDetail({
+        at: 0,
+        kind: "session-warning",
+        action,
+        type: "playback",
+      }),
+    ).toBe(text);
+  });
+
+  it("listenSessionTexts: 듣기마다 시작 때의 꼴(env · 바꾼 값 · 되돌린 값 가운데 마지막), 알 수 없으면 빠진다", () => {
+    const rule = { endSilenceMs: 3_000, chunkMs: 15_000 };
+    const trace: SpeechTraceEntry[] = [
+      { at: 0, kind: "listen-begin", listen: 1, rule },
+      { at: 1, kind: "env", reason: "load", facts: ENV },
+      { at: 2, kind: "listen-begin", listen: 2, rule },
+      {
+        at: 3,
+        kind: "audio-session",
+        action: "set",
+        requested: "playback",
+        before: "auto",
+        after: "playback",
+        by: "button",
+        userActive: true,
+      },
+      { at: 4, kind: "listen-begin", listen: 3, rule },
+    ];
+    expect(listenSessionTexts(trace)).toEqual({
+      2: "세션 auto",
+      3: "세션 playback",
+    });
+  });
+});
+
+describe("3판 fix 1 — 간격은 마지막 문장 요청 기준(검토 review-speech-probe-3 I-1) · ambient 경고(M-1) · 되돌림 규칙(M-2)", () => {
+  const rule = { endSilenceMs: 3_000, chunkMs: 15_000 };
+  const speak = (at: number, text: string): SpeechTraceEntry => ({
+    at,
+    kind: "speak",
+    text,
+    voice: undefined,
+  });
+  const ended = (at: number): SpeechTraceEntry => ({
+    at,
+    kind: "speak-event",
+    type: "end",
+  });
+  const cut = (at: number, code = "interrupted"): SpeechTraceEntry => ({
+    at,
+    kind: "speak-event",
+    type: "error",
+    code,
+  });
+  const listenAt = (at: number, listen = 1): SpeechTraceEntry[] => [
+    { at, kind: "listen-begin", listen, rule },
+    { at, kind: "recognizer-call", listen, recognizer: 1, call: "start" },
+  ];
+
+  it("(가) 문장 둘: 둘째 문장 요청 뒤에는 첫 문장의 끝을 쓰지 않는다 — 둘째 문장을 읽는 중이면 '읽는 중', 끝난 뒤면 둘째 끝 기준", () => {
+    const reading = [
+      speak(0, "First."),
+      ended(1_000),
+      speak(5_000, "Second."),
+      ...listenAt(5_500),
+    ];
+    expect(speakEndGaps(reading)).toEqual({
+      1: { kind: "speaking", sinceMs: 500 },
+    });
+    const afterSecond = [
+      speak(0, "First."),
+      ended(1_000),
+      speak(5_000, "Second."),
+      ended(6_000),
+      ...listenAt(6_700),
+    ];
+    expect(speakEndGaps(afterSecond)).toEqual({
+      1: { kind: "ended", gapMs: 700 },
+    });
+  });
+
+  it("(나) 문장을 읽는 중(끝 사건 전)에 시작한 듣기는 간격 대신 '읽는 중(끝 전 +N ms)'", () => {
+    const trace = [speak(0, "Hello."), ...listenAt(800)];
+    expect(speakEndGaps(trace)).toEqual({
+      1: { kind: "speaking", sinceMs: 800 },
+    });
+    expect(listenLatencyLines(trace)[0]).toContain(
+      "· 읽어 주기 읽는 중(끝 전 +800 ms) ·",
+    );
+    expect(speakEndGapText({ kind: "speaking", sinceMs: 800 })).toBe(
+      "읽어 주기 읽는 중(끝 전 +800 ms)",
+    );
+  });
+
+  it("(다) 빈칸 제약 풀기 발화의 끝이 문장 요청 뒤에 와도 셈에 들지 않는다(순서 무관)", () => {
+    const lateBlank = [
+      speak(0, " "),
+      speak(1, "Hello."),
+      ended(5),
+      ...listenAt(10),
+    ];
+    expect(speakEndGaps(lateBlank)).toEqual({
+      1: { kind: "speaking", sinceMs: 9 },
+    });
+    const thenSentenceEnds = [
+      speak(0, " "),
+      speak(1, "Hello."),
+      ended(5),
+      ended(1_500),
+      ...listenAt(3_500),
+    ];
+    expect(speakEndGaps(thenSentenceEnds)).toEqual({
+      1: { kind: "ended", gapMs: 2_000 },
+    });
+  });
+
+  it("(라) 끊김(오류)으로 끝난 문장은 그 오류 시각을 끝으로 두고 '끊김'을 적는다", () => {
+    const trace = [speak(0, "Hello."), cut(700), ...listenAt(700)];
+    expect(speakEndGaps(trace)).toEqual({
+      1: { kind: "ended", gapMs: 0, error: "interrupted" },
+    });
+    expect(
+      speakEndGapText({ kind: "ended", gapMs: 0, error: "interrupted" }),
+    ).toBe("읽어 주기 끝(끊김 interrupted) → start 호출 +0");
+  });
+
+  it("가짜 cancel 비동기 순서: 듣기가 읽기를 끊고 그 오류 사건이 start 호출 뒤에 오면 그 듣기는 '읽는 중'에 시작한 것이다", () => {
+    const trace = [speak(0, "Hello."), ...listenAt(700), cut(701)];
+    expect(speakEndGaps(trace)).toEqual({
+      1: { kind: "speaking", sinceMs: 700 },
+    });
+  });
+
+  it.each([
+    ["playback", true],
+    ["ambient", true],
+    ["auto", false],
+    ["play-and-record", false],
+    [undefined, false],
+  ] as const)("isMicBlockingSession: %s → %s", (type, blocking) => {
+    expect(isMicBlockingSession(type)).toBe(blocking);
+  });
+
+  it("restoreAfterSpeak: 발화가 끊겨(cancelled) 끝나도 앞 꼴로 되돌린다", () => {
+    expect(restoreAfterSpeak("auto", "playback", "cancelled")).toBe("auto");
+    expect(restoreAfterSpeak("auto", "playback", "ended")).toBe("auto");
+    expect(restoreAfterSpeak("auto", "playback", "error")).toBe("auto");
+  });
+
+  it("restoreAfterSpeak: 그사이 다른 길이 꼴을 바꿨거나(playback 아님) 앞 꼴이 없거나 playback 이면 두다", () => {
+    expect(
+      restoreAfterSpeak("auto", "play-and-record", "cancelled"),
+    ).toBeUndefined();
+    expect(restoreAfterSpeak(undefined, "playback", "ended")).toBeUndefined();
+    expect(restoreAfterSpeak("playback", "playback", "ended")).toBeUndefined();
   });
 });
