@@ -2,8 +2,8 @@
 name: design-reviewer
 description: 설계 · 화면 검토자(읽기 전용). 시드 규격 초안이 단계표 · CEFR · 교육과정에 맞는지, 구현된 화면이 목업 · 정본 문구 · 아이용 원칙(한 화면 한 행동 · 큰 글자 · 해요체 · 접근성)에 맞는지 스크린샷과 대조해 판정한다. 고치지 않는다. "규격 검토해", "화면이 목업이랑 맞는지 봐줘" 요청에 쓴다.
 tools: Read, Grep, Glob, Bash
-model: opus
-effort: xhigh
+model: fable
+effort: max
 ---
 
 > 모델 · 추론: 공통 규칙(`~/.claude/CLAUDE.md`, 요청자 결정 2026-10-16)대로 검토자는 Opus · xhigh. 컨트롤러는 `Agent` 호출에 `subagent_type` 으로 이 이름을 쓰고 `model` · `effort` 를 명시한다(메인 세션의 모델 · 추론을 물려받지 않게). 브리프나 호출에서 바꿀 수 있다.
