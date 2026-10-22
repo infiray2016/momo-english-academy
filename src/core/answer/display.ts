@@ -1,6 +1,7 @@
 // 답 입력 조각에 넘기는 문항 꼴(plan-p10a 파일별 값 11). 시드 문항에서 정답 칸(answerNo · accepted · 글자 만들기의 낱말)을 빼고,
 // 그림 보기는 그림 정보(뜻 · 경로)로 바꾼다. 받아쓰기 · 빈 글자 채우기는 읽어 줄 글로 낱말 소리가 실린다(소리 자리에 필요).
 // 채점은 서버가 원래 문항으로 한다(check.ts). DB 없는 순수 함수다.
+import { displayCardsOf } from "@/core/answer/expected";
 import type { PlacementItem } from "@/core/seed/schema/assessment";
 import type { READING_TEXT_QUESTION_TYPES } from "@/core/seed/structure";
 
@@ -134,7 +135,8 @@ export function displayItemOf(
     case "assemble-sentence":
       return {
         type: item.type,
-        cards: [...item.cards],
+        // 문장 가운데 대문자 낱말(고유 명사 · I) 카드는 정답 꼴로 — 세션과 같은 표시(C84, 판정 그대로)
+        cards: displayCardsOf(item),
         ...(item.meaningKo ? { meaningKo: item.meaningKo } : {}),
       };
     case "fill-blank":

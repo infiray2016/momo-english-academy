@@ -58,7 +58,7 @@ import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
 import { readLessonsOfUnit, readLevelSpec } from "@/server/seed/read";
-import { loadSeedList, SeedListError } from "@/server/seed-lists";
+import { seedHomophones } from "@/server/seed-lists";
 import {
   appDayStartHourSchema,
   appTimezoneSchema,
@@ -153,30 +153,6 @@ function logFailure(what: string, error: unknown) {
 
 type SessionRow = typeof sessions.$inferSelect;
 type LessonRow = typeof lessons.$inferSelect;
-
-/** 목록 없음 알림을 한 번만 냈는가(서버 인스턴스마다). */
-let homophonesMissingWarned = false;
-
-/**
- * 동음이의어 묶음(P9c loadSeedList — P10 배치와 같은 꼴). 시드 목록 파일이 없는 개발용 · e2e 길(시험용 시드는 DB 에만 있음)은
- * 빈 묶음으로 보고 처음 한 번 경고를 남긴다(이름만). 규격이 틀린 파일은 던진다.
- */
-function seedHomophones(): string[][] {
-  try {
-    return loadSeedList("homophones").groups;
-  } catch (error) {
-    if (error instanceof SeedListError && error.reason === "missing") {
-      if (!homophonesMissingWarned) {
-        homophonesMissingWarned = true;
-        console.warn(
-          "동음이의어 목록(seed/lists/homophones.json)이 없어 빈 묶음으로 채점합니다",
-        );
-      }
-      return [];
-    }
-    throw error;
-  }
-}
 
 /** 세션 화면 · 채점 · 끝내기가 쓰는 설정(12절 speech.* · ui.* · speaking.* · writing.thinkout_from_level). */
 export type SessionConfig = {

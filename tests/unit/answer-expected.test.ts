@@ -2,6 +2,7 @@
 // 그 조각을 답 조각에 그대로 넣으면 checkAnswer 가 맞음이다(화면이 보인 정답 = 채점 정답).
 import { describe, expect, it } from "vitest";
 import { checkAnswer } from "@/core/answer/check";
+import { displayItemOf } from "@/core/answer/display";
 import { displayCardsOf, expectedAnswerOf } from "@/core/answer/expected";
 import {
   defaultSettings,
@@ -112,5 +113,59 @@ describe("쓰기 정답 조각", () => {
         each.accepted[0],
       ).toBe(true);
     }
+  });
+
+  it("쓰기 카드 표시: 허용 정답이 여럿이면 어느 정답에든 문장 가운데 대문자로 들어가는 낱말 카드는 정답 꼴로 보여 둘째 정답도 화면으로 낼 수 있다", () => {
+    const item = {
+      type: "assemble-sentence" as const,
+      cards: ["tori", "and", "momo", "are", "friends", "."],
+      accepted: ["Tori and Momo are friends.", "Momo and Tori are friends."],
+    };
+    const shown = displayCardsOf(item);
+    expect(shown).toEqual(["Tori", "and", "Momo", "are", "friends", "."]);
+    // 화면이 낼 수 있는 답(보인 카드 차례 · 첫 카드만 대문자 단추)으로 두 정답 모두 맞음
+    for (const sentence of item.accepted) {
+      const pieces = sentence
+        .replace(/[.]$/, "")
+        .split(" ")
+        .map((token) => {
+          const card = shown.find(
+            (c) => c.toLowerCase() === token.toLowerCase(),
+          );
+          if (card === undefined) throw new Error(`카드 없음: ${token}`);
+          return card;
+        })
+        .map((card, i) =>
+          i === 0 ? card.charAt(0).toUpperCase() + card.slice(1) : card,
+        );
+      expect(
+        checkAnswer(
+          item,
+          { kind: "tiles", pieces: [...pieces, "."] },
+          {
+            homophones: [],
+          },
+        ).correct,
+        sentence,
+      ).toBe(true);
+    }
+  });
+
+  it("쓰기 카드 표시: 배치 평가 조립 문항의 화면 꼴도 같은 카드 표시를 쓴다(판정 그대로)", () => {
+    const shown = displayItemOf(
+      {
+        no: 1,
+        revision: 1,
+        correction: 0,
+        type: "assemble-sentence",
+        cards: ["momo", "with", "kububa", "they", "."],
+        accepted: ["They kububa with Momo."],
+      } as never,
+      () => ({ meaningKo: "", catalogued: false }),
+    );
+    expect(shown).toMatchObject({
+      type: "assemble-sentence",
+      cards: ["Momo", "with", "kububa", "they", "."],
+    });
   });
 });

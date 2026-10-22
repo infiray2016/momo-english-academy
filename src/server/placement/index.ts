@@ -52,7 +52,7 @@ import {
   unitProgress,
 } from "@/db/schema/learning";
 import { parentAlerts, progressEvents, settings } from "@/db/schema/operations";
-import { createAlertOnce } from "@/server/ai/store";
+import { recordDeviceAlert } from "@/server/alerts/device";
 import { type Db, getDb } from "@/server/db";
 import { dbErrorTag, isUniqueViolation } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
@@ -61,7 +61,7 @@ import {
   type PlacementItemRow,
   readPlacementForm,
 } from "@/server/seed/read";
-import { loadSeedList, SeedListError } from "@/server/seed-lists";
+import { seedHomophones } from "@/server/seed-lists";
 import { getSettings, SettingMissingError } from "@/server/settings";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -207,31 +207,6 @@ function numberSetting(values: Record<string, unknown>, key: string): number {
   if (typeof value !== "number" || !Number.isFinite(value))
     throw new SettingMissingError(key);
   return value;
-}
-
-/** 목록 없음 알림을 한 번만 냈는가(서버 인스턴스마다). */
-let homophonesMissingWarned = false;
-
-/**
- * 동음이의어 묶음(정할 것 타 — P9c 의 loadSeedList). 시드 목록 파일이 없는 개발용 · e2e 길(시험용 시드는 DB 에만 있음)에서는
- * 빈 묶음으로 본다 — 일치율이 조금 엄해질 뿐 판정은 된다. 운영에서 빌드 추적이 빠져 없을 때 조용히 엄해지지 않게
- * 처음 한 번 경고를 남긴다(이름만, 검토 review-p10-5-6-code M-3). 규격이 틀린 파일은 던진다.
- */
-export function seedHomophones(): string[][] {
-  try {
-    return loadSeedList("homophones").groups;
-  } catch (error) {
-    if (error instanceof SeedListError && error.reason === "missing") {
-      if (!homophonesMissingWarned) {
-        homophonesMissingWarned = true;
-        console.warn(
-          "동음이의어 목록(seed/lists/homophones.json)이 없어 빈 묶음으로 채점합니다",
-        );
-      }
-      return [];
-    }
-    throw error;
-  }
 }
 
 async function trackOf(
@@ -793,36 +768,13 @@ export type MicAlertOutcome =
   | { ok: true }
   | { ok: false; reason: "invalid" | "no_profile" | "unavailable" };
 
-/** 배치 도중 마이크 알림(7절 — '마이크를 쓸 수 없음' · '마이크가 멈춤'). 그 학습일에 종류마다 한 번. */
+/** 배치 도중 마이크 알림(7절 — '마이크를 쓸 수 없음' · '마이크가 멈춤'). 그 학습일에 종류마다 한 번(기기 알림 — P11 차례 4 로 옮김). */
 export async function recordPlacementMicAlert(
   raw: unknown,
   { db = getDb(), now }: PlacementDeps,
 ): Promise<MicAlertOutcome> {
+  // 배치는 마이크 두 종류만 받는다(말소리 없음은 말하기 세션 몫)
   const parsed = MicAlertSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: "invalid" };
-  try {
-    const profile = await readHouseholdProfile({ db });
-    if (!profile) return { ok: false, reason: "no_profile" };
-    const values = await settingValues(db, [TIMEZONE_KEY, DAY_START_KEY]);
-    const at = now();
-    await createAlertOnce(db, {
-      kind: parsed.data.kind,
-      profileId: profile.id,
-      thresholdKey: null,
-      learningDay: learningDayOf(
-        at,
-        values[TIMEZONE_KEY] as string,
-        numberSetting(values, DAY_START_KEY),
-      ),
-      value: { code: parsed.data.code, browser: parsed.data.browser },
-      createdAt: at,
-      once: "day",
-    });
-    return { ok: true };
-  } catch (error) {
-    if (error instanceof SettingMissingError)
-      console.error(`마이크 알림 실패(설정 ${error.key} 가 없습니다)`);
-    else console.error(`마이크 알림 실패(${dbErrorTag(error)})`);
-    return { ok: false, reason: "unavailable" };
-  }
+  return recordDeviceAlert(parsed.data, { db, now });
 }

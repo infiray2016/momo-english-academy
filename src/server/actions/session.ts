@@ -2,6 +2,10 @@
 // 세션 틀 서버 액션(5절 · 8절, plan-p10b 파일별 값 6 · plan-p11a 값 5). 모든 함수의 첫 문장은 requireAccess() 다(P3b 훑기 시험).
 // 입력은 화면에서 온 그대로 받아 서버에서 다시 본다(src/server/session 의 Zod). 시도 입력을 로그에 내지 않는다. AI 를 부르지 않는다.
 import { requireAccess } from "@/server/access/guard";
+import {
+  type DeviceAlertOutcome,
+  recordDeviceAlert,
+} from "@/server/alerts/device";
 import { now } from "@/server/clock";
 import {
   type FinishOutcome,
@@ -36,4 +40,12 @@ export async function leaveSession(input: unknown): Promise<LeaveOutcome> {
 export async function finishSession(input: unknown): Promise<FinishOutcome> {
   await requireAccess();
   return finishLessonSession(input, { now });
+}
+
+/** 말하기 세션 도중 기기 알림(마이크를 쓸 수 없음 · 마이크가 멈춤 · 말소리가 들어오지 않음 — 코드 · 브라우저 이름만). */
+export async function reportSessionMic(
+  input: unknown,
+): Promise<DeviceAlertOutcome> {
+  await requireAccess();
+  return recordDeviceAlert(input, { now });
 }

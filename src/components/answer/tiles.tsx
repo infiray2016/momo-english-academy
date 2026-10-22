@@ -271,12 +271,13 @@ export function TileAnswer({
                 </span>
               ))
             : null}
-          {slots && canCapital ? (
-            // 세션: '대문자'는 놓는 줄 오른쪽 끝(카드 줄이 고르게 — 화면 검토 M-4)
+          {slots && cards ? (
+            // 세션: '대문자'는 놓는 줄 오른쪽 끝. 자리를 처음부터 잡아 두어(첫 카드 전에는 꺼짐) 카드를 놓을 때 줄이 밀리지 않는다
+            // (화면 검토 review-p11-3-design M-4 · 재검토 N-1)
             <SmallButton
               aria-pressed={capital}
               data-capital=""
-              disabled={disabled}
+              disabled={disabled || !canCapital}
               onClick={() => setCapital(!capital)}
               className={cn("ml-auto px-4", capital && "border-4")}
             >

@@ -7,16 +7,16 @@
 // 두 시도를 합쳐 speech.max_retries 번이면 repeat-failed 로 넘긴다. network 는 세지 않는다. audio-capture 가 이어서
 // MIC_CAPTURE_STREAK 번이면 '마이크를 쓸 수 없음'이 먼저다(예비 문항보다). mic-unavailable · stalled 는 부르는 쪽이 안내한다.
 // 채점은 서버가 같은 인식 글로 다시 한다 — 여기의 일치율은 '한 번 더'를 정하는 데만 쓴다.
-import { Mic } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { EnglishLine } from "@/components/activities/common";
-import { BigButton, StatusLine } from "@/components/board/board";
+import { StatusLine } from "@/components/board/board";
 import type { Answer } from "@/core/answer/check";
 import { MIC_CAPTURE_STREAK } from "@/core/speaking/judge";
 import { endRuleFor, type SpeechSettings } from "@/core/speech/listen";
 import { bestMatchRate } from "@/core/speech/match-rate";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { SoundButton } from "./choice";
+import { SpeakButton } from "./speak-button";
 
 const AUDIO_CAPTURE = "audio-capture";
 
@@ -151,16 +151,14 @@ export function RepeatAnswer({
       <SoundButton speech={speech} text={sentence} />
       <EnglishLine className="font-bold">{sentence}</EnglishLine>
       <StatusLine>{message}</StatusLine>
-      <BigButton
-        className="self-center"
-        data-speak=""
-        aria-pressed={listening}
+      {/* 세션과 같은 '말하기' 단추 조각 — 듣는 동안 분홍 테 · 남은 시간 고리(7절, 화면 검토 review-p11-4-design I-1) */}
+      <SpeakButton
+        label={REPEAT_TEXT.speak}
+        listening={listening}
+        capAt={() => handle.current?.capAt}
         disabled={disabled || !speech}
-        onClick={() => void listen()}
-      >
-        <Mic aria-hidden className="size-7" />
-        {REPEAT_TEXT.speak}
-      </BigButton>
+        onPress={() => void listen()}
+      />
     </div>
   );
 }

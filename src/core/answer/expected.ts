@@ -16,17 +16,20 @@ export function cardTokensOf(sentence: string): string[] {
 
 /**
  * 조립 카드의 화면 글. 시드 카드는 소문자 그대로이고(C73) 아이는 첫 칸 카드만 '대문자' 단추로 바꾼다. 그래서 문장 가운데 대문자로
- * 쓰는 낱말(고유 명사 · I)의 카드는 첫 허용 정답의 꼴로 보인다 — 그렇지 않으면 화면으로 낼 수 없는 정답이 생긴다(차례 3 CI 3차,
+ * 쓰는 낱말(고유 명사 · I)의 카드는 허용 정답의 꼴로 보인다 — 그렇지 않으면 화면으로 낼 수 없는 정답이 생긴다(차례 3 CI 3차,
  * 견본 'They kububa with Momo.'). 첫 낱말 카드는 그대로 둔다(대문자 판정 · C73).
  */
 export function displayCardsOf(
   item: Extract<WritingItem, { type: "assemble-phrase" | "assemble-sentence" }>,
 ): string[] {
+  // 허용 정답 전부에서 모은다 — 한 정답에서 맨 앞인 이름이 다른 정답에서는 가운데일 수 있다(검토 review-p11-3-code M-1)
   const capitalized = new Map(
-    cardTokensOf(item.accepted[0] ?? "")
-      .slice(1)
-      .filter((token) => token !== token.toLowerCase())
-      .map((token) => [token.toLowerCase(), token]),
+    item.accepted.flatMap((sentence) =>
+      cardTokensOf(sentence)
+        .slice(1)
+        .filter((token) => token !== token.toLowerCase())
+        .map((token) => [token.toLowerCase(), token] as const),
+    ),
   );
   return item.cards.map((card) => capitalized.get(card) ?? card);
 }

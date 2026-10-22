@@ -111,6 +111,7 @@ function ChoiceOption({
   selected,
   disabled,
   revealed,
+  compact = false,
   onSelect,
 }: {
   choice: DisplayChoice;
@@ -118,6 +119,8 @@ function ChoiceOption({
   selected: boolean;
   disabled: boolean;
   revealed?: RevealState;
+  /** 가로 화면에서 그림 칸을 줄인다(P11 세션 듣기 이해 — 고른 뒤 '다음'이 보는 창에 들게, 화면 검토 review-p11-4-design M-2). */
+  compact?: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -135,6 +138,9 @@ function ChoiceOption({
         FOCUS_RING,
         "relative flex w-full items-center gap-3 rounded-xl border-2 border-ink bg-paper px-5 py-3 text-left text-ink",
         choice.kind === "picture" && "justify-center",
+        compact &&
+          choice.kind === "picture" &&
+          "landscape:py-1 landscape:[&_[data-picture-missing]]:size-28 landscape:[&_img]:size-28",
         (selected || revealed) && SELECTED_RING,
         revealed === "wrong" && "opacity-70",
       )}
@@ -172,6 +178,7 @@ export function ChoiceAnswer({
   onChange,
   reveal,
   instant = false,
+  struck = [],
   onAnswer,
 }: {
   item: ChoiceItem;
@@ -182,10 +189,12 @@ export function ChoiceAnswer({
   initial?: number;
   /** 고를 때마다(P11 세션이 기기에 쓴다). */
   onChange?: (no: number) => void;
-  /** 정답 보이기(P11 세션 — 정답 번호 · 고른 번호). 고를 수 없고 '다음'을 그리지 않는다. */
-  reveal?: { answerNo: number; picked?: number };
+  /** 정답 보이기(P11 세션 — 정답 번호 · 고른 번호, 정답 번호가 없으면 고른 오답 ✕ 만). 고를 수 없고 '다음'을 그리지 않는다. */
+  reveal?: { answerNo?: number; picked?: number };
   /** 고르면 바로 낸다(P11 세션 — 내기 '다음'을 그리지 않음, 화면 검토 review-p11-3-design M-2). */
   instant?: boolean;
+  /** 앞서 고른 오답(P11 세션 — ✕ 로 남고 다시 고를 수 없음). */
+  struck?: readonly number[];
   onAnswer: (answer: Answer) => void;
 }) {
   const [picked, setPicked] = useState<number | undefined>(initial);
@@ -193,8 +202,9 @@ export function ChoiceAnswer({
   changed.current = onChange;
   const pictures = item.choices.some((c) => c.kind === "picture");
   const revealOf = (no: number): RevealState | undefined => {
+    if (reveal && no === reveal.answerNo) return "answer";
+    if (struck.includes(no)) return "wrong";
     if (!reveal) return undefined;
-    if (no === reveal.answerNo) return "answer";
     return no === reveal.picked ? "wrong" : undefined;
   };
   // 세션 그림 고르기는 가로 화면에서 그림을 보기 왼쪽에(세로로 쌓여 넘치지 않게 — 화면 검토 M-1)
@@ -248,8 +258,11 @@ export function ChoiceAnswer({
               choice={choice}
               no={i + 1}
               selected={!reveal && picked === i + 1}
-              disabled={disabled || reveal !== undefined}
+              disabled={
+                disabled || reveal !== undefined || struck.includes(i + 1)
+              }
               revealed={revealOf(i + 1)}
+              compact={instant}
               onSelect={() => {
                 setPicked(i + 1);
                 changed.current?.(i + 1);

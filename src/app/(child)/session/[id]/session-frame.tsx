@@ -5,9 +5,11 @@
 // 하나로 알린다 → 틀이 끝 시도 { v: 1, kind, step: "final", … } 를 기기 대기열에 넣고 끝 시도가 없는 가장 앞 활동으로 간다.
 // 마지막 활동 뒤 queue.idle() · flush() → finishSession → incomplete 면 한 번 더 → 안 되면 7절 끊김 안내와 online 때 다시 →
 // /result/<id>. 이어 할 자리는 서버 끝 시도 ∪ 이 기기 대기열의 끝 시도로 다시 세고(값 2), 활동 안 입력은 이 기기에 되살린다(값 6).
-// 첫 누름(미리보기 '다음')에서 unlockFromGesture() 를 불러 뒤 활동의 읽기를 연다(위험 8). 읽기(차례 2) · 쓰기 1~3(차례 3)
-// 활동에 상호작용을 붙이고, 아직 조각이 없는 활동(쓰기 4~12 · 말하기 — 차례 4 · b · c)은 P10 처럼 보기만 하고 '다음'
-// (시도 없음, 마지막 뒤 수업 목록). 활동이 바뀌면 조각을 새로 만든다(활동 번호 열쇠 — 앞 활동의 입력을 다시 쓰지 않게).
+// 첫 누름(미리보기 '다음')에서 unlockFromGesture() 를 불러 뒤 활동의 읽기를 연다(위험 8). 읽기(차례 2) · 쓰기 1~3(차례 3) ·
+// 말하기 1~2(차례 4 — 따라 말하기 · 듣기 이해 · 앱 판정 질문 답) 활동에 상호작용을 붙이고, 아직 조각이 없는 활동(쓰기 4~12 ·
+// 말하기 3~12 AI 활동 — b · c)은 P10 처럼 보기만 하고 '다음'(시도 없음, 마지막 뒤 수업 목록). 활동이 바뀌면 조각을 새로 만든다.
+// 말하기 세션(값 7 · 12 · 7절): 열 때 마이크를 쓸 수 없는 기기면 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'만(세션은 진행으로
+// 남음), 처음 말하는 활동에서 기기마다 한 번 마이크 안내, 인식 실패 셈(speakingCounters)이 막힌 안내 셋과 기기 알림을 낸다.
 // '홈'은 대기열을 비운 뒤, 첫 활동이고 끝 시도가 없으면 세션 행을 지우게 서버에 알리고 홈으로 간다(AC-2e).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -43,12 +45,35 @@ import {
   type QuestionInput,
 } from "@/components/session/reading";
 import {
+  ListeningActivity,
+  type ListeningInput,
+  MicNotice,
+  QuestionAnswerActivity,
+  type QuestionAnswerInput,
+  RepeatActivity,
+  type RepeatInput,
+  type SpeakingEnv,
+} from "@/components/session/speaking";
+import {
   WritingItemActivity,
   type WritingItemInput,
 } from "@/components/session/writing-items";
 import { resumePointOf } from "@/core/session/attempt";
 import type { Activity, ActivityKind } from "@/core/session/preview";
+import {
+  type SpeechEvent,
+  type SpeechVerdict,
+  speakingCounters,
+  speakingCountersStart,
+} from "@/core/speaking/judge";
 import { type AttemptQueue, createAttemptQueue } from "@/lib/attempt-queue";
+import {
+  markMicNoticeSeen,
+  markMicUnavailable,
+  micNoticeSeen,
+  micUsable,
+  readDeviceVerdict,
+} from "@/lib/mic-state";
 import { createSessionInputStore } from "@/lib/session-input";
 import { createBrowserSpeech } from "@/lib/speech/browser";
 import type { SpeechPort } from "@/lib/speech/types";
@@ -56,6 +81,7 @@ import { cn } from "@/lib/utils";
 import {
   finishSession,
   leaveSession,
+  reportSessionMic,
   saveAttempts,
 } from "@/server/actions/session";
 import type { SessionView } from "@/server/session";
@@ -67,7 +93,21 @@ const TEXT = {
   levelUnit: (level: number, unit: number) => `${level}단계 · 단원 ${unit}`,
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
   failed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
+  /** 막힌 안내 셋(7절 '마이크를 쓸 수 없음' · '오류' · '감시 타이머' 행 · C22). */
+  blocked: {
+    needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
+    stalled: "마이크가 잘 안 돼요. 부모님께 말해 주세요",
+    silent: "말소리가 잘 안 들려요. 부모님께 말해 주세요",
+  },
 } as const;
+
+type Blocked = keyof typeof TEXT.blocked;
+/** 말로 답하는 활동(처음 마이크 안내를 그 앞에 둔다). */
+const SPOKEN_KINDS: ReadonlySet<ActivityKind> = new Set([
+  "repeat-word",
+  "repeat-sentence",
+  "question",
+]);
 
 /** 활동 점 색(영역 포스트잇 토큰). */
 const DOT_TONE = {
@@ -76,12 +116,16 @@ const DOT_TONE = {
   speaking: "bg-postit-speaking",
 } as const;
 
-/** 끝 시도를 보내는 활동(차례 2 읽기 · 차례 3 쓰기 1~3). 그 밖은 아직 보기만(차례 4 · b · c 가 더한다). */
+/** 끝 시도를 보내는 활동(차례 2 읽기 · 차례 3 쓰기 1~3 · 차례 4 말하기 1~2). 그 밖은 아직 보기만(b · c 가 더한다). */
 const RECORDED_KINDS: ReadonlySet<ActivityKind> = new Set([
   "preview",
   "reading-passage",
   "reading-question",
   "writing-item",
+  "repeat-word",
+  "repeat-sentence",
+  "listening",
+  "question",
 ]);
 
 function storageOrUndefined(): Storage | undefined {
@@ -229,7 +273,65 @@ export function SessionFrame({ view }: { view: SessionView }) {
   const [hydrated, setHydrated] = useState(false);
   const total = view.activities.length;
   const activity = view.activities[current - 1];
-  const allRecorded = view.activities.every((a) => RECORDED_KINDS.has(a.kind));
+  // 질문 답은 앱 판정 단계(1~2)만 이 길(3단계부터 AI — c)
+  const recorded = (a: Activity) =>
+    RECORDED_KINDS.has(a.kind) && (a.kind !== "question" || view.appJudged);
+  const allRecorded = view.activities.every(recorded);
+  const [blocked, setBlocked] = useState<Blocked | undefined>();
+  const [noticeSeen, setNoticeSeen] = useState(true);
+  const counters = useRef(speakingCountersStart());
+  const limits = {
+    maxRetries: view.config.maxRetries,
+    silentItemsMax: view.config.silentItemsMax,
+  };
+
+  // 말하기 세션: 마이크를 쓸 수 없는 기기면 막힌 안내(세션은 진행으로 남음), 처음 마이크 안내를 봤는지(기기마다 한 번)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 세션을 열 때 한 번만 본다
+  useEffect(() => {
+    if (view.area !== "speaking") return;
+    if (!micUsable()) setBlocked("needsMic");
+    setNoticeSeen(micNoticeSeen());
+  }, []);
+
+  /** 기기 알림(코드 · 브라우저 이름만 — 인식 글 없음). 닿지 않아도 화면은 그대로 막힌 안내다. */
+  function report(
+    kind: "mic_unavailable" | "mic_stalled" | "speech_silent",
+    code: string,
+  ) {
+    void reportSessionMic({
+      kind,
+      code: code || kind,
+      browser: readDeviceVerdict().name,
+    }).catch(() => {});
+  }
+
+  /** 인식 결과를 셈에 넣는다(7절 오류 행 · C22). 막힌 판정이면 안내 · 알림, 판정을 조각에 돌려준다. */
+  function onSpeech(event: SpeechEvent): SpeechVerdict {
+    const step = speakingCounters(counters.current, event, limits);
+    counters.current = step.state;
+    const code =
+      event.type === "error"
+        ? event.code
+        : event.type === "stalled"
+          ? "stalled"
+          : event.type === "no-result" || event.type === "heard"
+            ? "no-result"
+            : "";
+    if (step.verdict === "mic-unavailable") {
+      markMicUnavailable(code);
+      report("mic_unavailable", code);
+      setBlocked("needsMic");
+    }
+    if (step.verdict === "mic-stalled") {
+      report("mic_stalled", code);
+      setBlocked("stalled");
+    }
+    if (step.verdict === "speech-silent") {
+      report("speech_silent", "no-speech");
+      setBlocked("silent");
+    }
+    return step.verdict;
+  }
 
   // 기기 대기열(8절): 남은 시도를 먼저 보내고, 다시 연결되면 또 보낸다. 대기열의 끝 시도를 합쳐 이어 할 자리를 다시 센다
   // biome-ignore lint/correctness/useExhaustiveDependencies: 세션 하나에 한 번만 만든다
@@ -347,6 +449,12 @@ export function SessionFrame({ view }: { view: SessionView }) {
       input: { v: 1, kind: activity.kind, step: "final", ...content },
     });
     inputs.clear(view.sessionId, no);
+    // 새 활동 — 활동 몫 셈을 지운다(세션 몫 '여섯 번' · 말소리 없음 이어짐은 이어진다)
+    counters.current = speakingCounters(
+      counters.current,
+      { type: "next-activity" },
+      limits,
+    ).state;
     const next = new Set(finals);
     next.add(no);
     setFinals(next);
@@ -391,7 +499,8 @@ export function SessionFrame({ view }: { view: SessionView }) {
       await queue.current?.flush();
       await leaveSession({
         sessionId: view.sessionId,
-        onFirstActivity: current === 1 && finals.size === 0,
+        // 막힌 안내의 '홈'은 세션을 진행으로 남긴다(7절 — 첫 활동이어도 지우지 않음, 검토 review-p11-4-code M-1)
+        onFirstActivity: !blocked && current === 1 && finals.size === 0,
       });
     } catch {
       // 닿지 않으면 세션은 진행으로 남는다(다음 목록 요청 · 오래 멈춤 닫기가 정리)
@@ -463,8 +572,99 @@ export function SessionFrame({ view }: { view: SessionView }) {
         />
       );
     }
+  } else if (
+    view.area === "speaking" &&
+    activity &&
+    recorded(activity) &&
+    activity.kind !== "preview"
+  ) {
+    const env: SpeakingEnv = {
+      speech,
+      speechSettings: view.config.speech,
+      level: view.level,
+      homophones: view.homophones,
+      onSpeech,
+    };
+    const c = view.lesson.content;
+    ownButtons = true;
+    if (!noticeSeen && SPOKEN_KINDS.has(activity.kind)) {
+      body = (
+        <MicNotice
+          onOk={() => {
+            speech?.unlockFromGesture();
+            markMicNoticeSeen();
+            setNoticeSeen(true);
+          }}
+        />
+      );
+    } else if (
+      activity.kind === "repeat-word" ||
+      activity.kind === "repeat-sentence"
+    ) {
+      const text =
+        activity.kind === "repeat-word"
+          ? c.repeat.words[activity.index]
+          : c.repeat.sentences[activity.index];
+      body = text ? (
+        <RepeatActivity
+          text={text}
+          env={env}
+          phraseLevels={view.config.ui.matchPhraseLevels}
+          autoNextSeconds={view.config.ui.autoNextSeconds}
+          initial={restored as RepeatInput | undefined}
+          onChange={save}
+          onDone={(input) => complete(input)}
+        />
+      ) : null;
+    } else if (activity.kind === "listening") {
+      const item = c.listening[activity.index];
+      body = item ? (
+        <ListeningActivity
+          item={item}
+          level={view.level}
+          pictures={pictures}
+          speech={speech}
+          initial={restored as ListeningInput | undefined}
+          onChange={save}
+          onDone={(input) => complete(input)}
+        />
+      ) : null;
+    } else if (activity.kind === "question") {
+      const question = c.questions[activity.index];
+      body = question ? (
+        <QuestionAnswerActivity
+          question={question}
+          showKo={view.showKo}
+          env={env}
+          answerShape={view.answerShapes[current - 1] ?? "one-sentence"}
+          capSeconds={view.config.speaking.answerMaxSeconds}
+          pass={view.config.speaking.answerMatchPass}
+          initial={restored as QuestionAnswerInput | undefined}
+          onChange={save}
+          onDone={(input) => complete(input)}
+        />
+      ) : null;
+    }
   } else if (activity) {
     body = <DisplayBody view={view} activity={activity} pictures={pictures} />;
+  }
+  // 막힌 안내(한 화면 — 안내와 '홈'만, 세션은 진행으로 남음, 7절)
+  if (blocked) {
+    ownButtons = true;
+    body = (
+      <div
+        data-blocked={blocked}
+        className="flex flex-col items-center gap-8 py-6"
+      >
+        <p className="text-center font-heading text-[28px] leading-snug">
+          {TEXT.blocked[blocked]}
+        </p>
+        {/* '홈' 버튼 하나(7절) — 종이 띠의 '홈'은 숨기고 같은 길(대기열 비우기 · 세션은 진행으로) */}
+        <BigButton disabled={busy} onClick={() => void home()}>
+          {TEXT.home}
+        </BigButton>
+      </div>
+    );
   }
   // 끝내기가 막힌 동안은 마지막 활동 자리에 안내와 '다음'(다시 해 봄)만
   if (finishPending) ownButtons = false;
@@ -476,9 +676,11 @@ export function SessionFrame({ view }: { view: SessionView }) {
         title={view.title}
         detail={TEXT.levelUnit(view.level, view.unit)}
         right={
-          <SmallButton disabled={busy} onClick={() => void home()}>
-            {TEXT.home}
-          </SmallButton>
+          blocked ? undefined : (
+            <SmallButton disabled={busy} onClick={() => void home()}>
+              {TEXT.home}
+            </SmallButton>
+          )
         }
       />
       <ol
