@@ -14,3 +14,11 @@ P11b(쓰기 AI — 확인 · 생각 꺼내기 · 초고 · 첨삭 · 둘째 세�
 
 ## 보고
 `task-p11b-done-edit-report.md` — 바뀐 파일 둘의 diff 요약 · 원문에서 못 찾은 것 · 대조로 찾은 것(증명 표 시험 이름이 코드에 다 있는지). SendMessage(team-lead) 한 줄.
+
+## 덧(2026-10-22 19:1x, 컨트롤러) — 채울 값
+- 차례 7 커밋 **cce2238**(가지 `feature/1a-p11-session-activities`, push 됨). P11b 커밋 셋: 84b0669(차례 5 + fix 5 · 5b · 5c) · 56acaec(차례 6 + fix 6 · 6b) · cce2238(차례 7 + fix 7 · 8 · 8b). 머리 상태는 `done(2026-10-22, 커밋 cce2238)`.
+- 마지막 CI: **19차 run 39757529426**(ci/p11-c2 d75806d = 차례 7 작업 트리와 같음) 전부 초록 — 단위 509 · 통합(차례 7 몫 +4) · e2e(차례 7 몫 +6) · 사진 158장. 16차(run 39747989104)는 통합 1 실패(시험 도우미 `submitted`, fix 7) · 17 · 18 · 19차 초록. CI 번호 · 실패 원인 전부는 `progress.md` P11b 행.
+- 검토 보고 하나 더: `review-p11-fix8b-design.md`(새 design-reviewer des-p11d · Fable · max, Approved — M-1 · X-1 ADDRESSED, 새 Minor N-1 가로 안내 접힘 · N-2 오류 줄 맨 아래 · N-3 지문 마침표 줄 머리는 `ledger-open.md` 끝 행 → P11c 또는 전체 디자인 리뷰). 열린 장부 98행(Fredoka 미적용)은 `ledger-closed.md` 로 옮겼다.
+- 남긴 것에 더할 것: N-1 · N-2 · N-3, X-1 전수 확인(첫 실행 영어 이름 입력란 · 회화 화면), 전체 디자인 리뷰 참고(review-p11-7-design 참고 1~7 · review-p11-fix8b-design 참고 넷), P12 몫(보강 칸 둘째 세션 종류, review-p11-7-code M-2).
+- 프리뷰 칸: 차례 5 · 6 배포됨, 차례 7 은 push 직후라 배포 확인은 컨트롤러 몫 — plan 에는 '차례 7 push(배포 확인은 컨트롤러)' · '쓰기 6~12 는 개발용 DB 에 시험용 수업이 없어 프리뷰에서 못 봄'으로.
+- 보고 `task-p11b-done-edit-report.md`, SendMessage(team-lead) 한 줄.
