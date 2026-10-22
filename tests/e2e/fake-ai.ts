@@ -2,7 +2,7 @@
 // /__fake/{reset,rules,requests} 를 부른다. workers 1 이라 서버 하나를 시험마다 비우고 규칙을 넣는다 — AI 를 쓰는 e2e 파일은
 // test.beforeEach(resetFakeAi) 로 시작하고 뒤 파일에 규칙이 남지 않게 afterEach 에서도 비운다.
 // 응답은 P9a messageBody 꼴이고 내용은 시험의 수업 내용(문장 수)에 맞춰 시험 안에서 만든다 — 견본 JSON 이 수업과 안 맞으면
-// 정규화가 실패 길로 간다(위험 7). 모델은 TEST_SETTINGS 의 ai.model.<목적>. 생각 꺼내기 · 첨삭 응답 만들기는 차례 6 이 더한다.
+// 정규화가 실패 길로 간다(위험 7). 모델은 TEST_SETTINGS 의 ai.model.<목적>.
 import { E2E_AI_PORT } from "../../playwright.config";
 import {
   type FakeReply,
@@ -99,5 +99,78 @@ export function ruleFor(
     when: { purpose },
     reply,
     ...(times === undefined ? {} : { times }),
+  };
+}
+
+/** 생각 꺼내기 질문(시험 고정 글 — 한국어 해요체 · 보기 셋). */
+export const FAKE_THINKOUT = {
+  question: "무엇을 쓰고 싶어요?",
+  options: ["강아지", "공원", "학교"],
+  summary: "강아지와 공원에서 노는 하루를 쓰고 싶어요.",
+  starters: ["I have", "Every day"],
+} as const;
+
+/** 생각 꺼내기 한 턴 응답 — 끝이 아니면 질문 · 보기 셋, 끝이면 요약 · 낱말(4개 — 규격 하한) · 시작 틀 둘. */
+export function thinkoutReply({
+  done,
+  words = ["dog", "park", "play", "day"],
+  delayMs,
+}: {
+  done: boolean;
+  words?: readonly string[];
+  delayMs?: number;
+}): FakeReply {
+  return {
+    kind: "message",
+    body: messageBody({
+      model: TEST_SETTINGS["ai.model.thinkout"].value,
+      json: done
+        ? {
+            question: "",
+            options: [],
+            done: true,
+            summary: FAKE_THINKOUT.summary,
+            words: [...words],
+            starters: [...FAKE_THINKOUT.starters],
+          }
+        : {
+            question: FAKE_THINKOUT.question,
+            options: [...FAKE_THINKOUT.options],
+            done: false,
+            summary: "",
+            words: [],
+            starters: [],
+          },
+    }),
+    ...(delayMs === undefined ? {} : { delayMs }),
+  };
+}
+
+/** 첨삭 응답(교정 하나 · 모범 답안 · 채점표). */
+export function feedbackReply({
+  rubric = { task: 4, grammar: 3, vocabulary: 3 },
+  delayMs,
+}: {
+  rubric?: { task: number; grammar: number; vocabulary: number };
+  delayMs?: number;
+} = {}): FakeReply {
+  return {
+    kind: "message",
+    body: messageBody({
+      model: TEST_SETTINGS["ai.model.writing_feedback"].value,
+      json: {
+        praise: "하루 일을 차례대로 잘 썼어요.",
+        corrections: [
+          {
+            original: "I love it.",
+            corrected: "I love my dog.",
+            reason: "무엇을 좋아하는지 분명히 써요.",
+          },
+        ],
+        modelAnswer: "I have a small dog. We play in the park every day.",
+        rubric,
+      },
+    }),
+    ...(delayMs === undefined ? {} : { delayMs }),
   };
 }

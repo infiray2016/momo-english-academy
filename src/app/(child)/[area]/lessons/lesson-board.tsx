@@ -19,6 +19,7 @@ import {
   type Tilt,
 } from "@/components/board/board";
 import { AiRest } from "@/components/session/ai-rest";
+import { WaitHint } from "@/components/session/wait-hint";
 import type {
   HereStart,
   LessonItem,
@@ -29,7 +30,11 @@ import type {
 } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
 import { cn } from "@/lib/utils";
-import { LESSON_START_TEXT, useLessonStart } from "./use-lesson-start";
+import {
+  flushAttempts,
+  LESSON_START_TEXT,
+  useLessonStart,
+} from "./use-lesson-start";
 
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "none"];
 /** 수업 포스트잇 격자(가로 화면은 칸을 좁혀 실시드 12~15장이 한 화면에). */
@@ -99,14 +104,30 @@ export function LessonBoard({
   area,
   view,
   titles,
+  waitHintSeconds,
 }: {
   area: Exclude<Area, "talk">;
   view: ListView;
   titles: Record<string, string>;
+  /** ui.wait_hint_seconds — '첨삭 보기'로 여는 동안의 기다림 표시. */
+  waitHintSeconds: readonly [number, number];
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string | undefined>();
-  const { start, busy, status, asking, setAsking, resting } = useLessonStart();
+  // 기다림 표시 · '아직 글을 살펴보고 있어요'를 그릴 카드(누른 카드 바로 아래 — 목록이 길어도 보는 창 안, 화면 검토 review-p11-7-design M-1).
+  // 하던 수업을 묻는 쪽지를 거치면 쪽지가 닫힌 뒤 그 카드에 그린다(askedAt)
+  const [waitAt, setWaitAt] = useState<string | undefined>();
+  const askedAt = useRef<string | undefined>(undefined);
+  const {
+    start,
+    busy,
+    status,
+    asking,
+    setAsking,
+    resting,
+    waitingSince,
+    stillReading,
+  } = useLessonStart(waitHintSeconds);
   // 확인 쪽지를 연 포스트잇 — 쪽지가 닫히면 초점을 돌려놓는다(화면 검토)
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -118,6 +139,10 @@ export function LessonBoard({
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다 — 그 전 누름은 처리기가 없어 사라진다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
+  // 목록이 열리면 이 기기에 남은 시도를 보낸다(쓰던 초고가 다른 수업 고르기 전에 서버에 닿게 — plan-p11b 위험 3)
+  useEffect(() => {
+    void flushAttempts().catch(() => {});
+  }, []);
   const going = view.top.find((t) => t.kind === "resume");
   const goingRef = going?.kind === "resume" ? going.ref : undefined;
 
@@ -129,64 +154,92 @@ export function LessonBoard({
         ? document.activeElement
         : null;
     if (goingRef && !sameRef(goingRef, item.ref)) {
+      askedAt.current = refKey(item.ref);
       setAsking(item.lessonId);
       return;
     }
     setSelected(refKey(item.ref));
+    setWaitAt(refKey(item.ref));
     void start(item.lessonId);
   };
 
+  const waiting = waitingSince !== undefined || stillReading;
+  /** 누른 카드 바로 아래의 기다림 표시 · 안내 줄(그 카드일 때만). */
+  const waitBelow = (key: string) =>
+    waiting && waitAt === key ? (
+      <div data-lesson-wait="" className="flex flex-col items-center">
+        {waitingSince !== undefined ? (
+          <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />
+        ) : null}
+        {stillReading ? (
+          <StatusLine className="text-center">
+            {LESSON_START_TEXT.stillReading}
+          </StatusLine>
+        ) : null}
+      </div>
+    ) : null;
+
   const lessonCard = (item: LessonItem, i: number) => {
     const here = isHereLesson(view.hereStart, item.ref);
+    const key = refKey(item.ref);
     // 이름은 안의 글(여기부터 · 번호 · 보강 · 끝낸 수업 · 제목 · 안 해 본 수업)이다 — 고정 이름을 덮지 않는다(검토 M-4)
+    // 칸 하나가 카드와 그 아래 기다림 표시를 함께 담는다(다른 카드 자리는 그대로, 그 줄만 길어짐 — M-1)
     return (
-      <PostIt
-        key={refKey(item.ref)}
-        tone={area}
-        tilt={TILTS[i % TILTS.length]}
-        pressed={selected === refKey(item.ref)}
-        onClick={() => choose(item)}
+      <div
+        key={key}
         className={cn(
-          "min-h-32 w-full gap-2 p-4 pt-7 landscape:min-h-24 landscape:p-3 landscape:pt-6",
+          "flex flex-col gap-2",
           // '여기부터 해요'는 다른 것보다 크게(4절) — 두 칸 너비
-          here && "col-span-2 ring-4 ring-ink",
+          here && "col-span-2",
         )}
       >
-        <span
-          data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
-          className="contents"
+        <PostIt
+          tone={area}
+          tilt={TILTS[i % TILTS.length]}
+          pressed={selected === key}
+          onClick={() => choose(item)}
+          className={cn(
+            "min-h-32 w-full flex-1 gap-2 p-4 pt-7 landscape:min-h-24 landscape:p-3 landscape:pt-6",
+            here && "ring-4 ring-ink",
+          )}
         >
-          {here ? <HereBadge /> : null}
-          <span className="flex items-center gap-2">
-            <span className="font-heading text-4xl leading-none">
-              {item.ref.lessonNo}
-            </span>
-            {item.remedial ? (
-              <span className="rounded-md border-2 border-ink px-2 font-heading text-[22px]">
-                {TEXT.remedial}
+          <span
+            data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
+            className="contents"
+          >
+            {here ? <HereBadge /> : null}
+            <span className="flex items-center gap-2">
+              <span className="font-heading text-4xl leading-none">
+                {item.ref.lessonNo}
               </span>
-            ) : null}
-            {item.done ? (
-              <span className="ml-auto flex items-center">
-                <Check
-                  aria-hidden
-                  data-done=""
-                  className="size-8"
-                  strokeWidth={3}
-                />
-                <span className="sr-only">{TEXT.done}</span>
+              {item.remedial ? (
+                <span className="rounded-md border-2 border-ink px-2 font-heading text-[22px]">
+                  {TEXT.remedial}
+                </span>
+              ) : null}
+              {item.done ? (
+                <span className="ml-auto flex items-center">
+                  <Check
+                    aria-hidden
+                    data-done=""
+                    className="size-8"
+                    strokeWidth={3}
+                  />
+                  <span className="sr-only">{TEXT.done}</span>
+                </span>
+              ) : null}
+            </span>
+            {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82, 이름표는 번호 · 꼬리표) */}
+            <span data-size-guide="">{item.title}</span>
+            {item.untried ? (
+              <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
+                {TEXT.untried}
               </span>
             ) : null}
           </span>
-          {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82, 이름표는 번호 · 꼬리표) */}
-          <span data-size-guide="">{item.title}</span>
-          {item.untried ? (
-            <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
-              {TEXT.untried}
-            </span>
-          ) : null}
-        </span>
-      </PostIt>
+        </PostIt>
+        {waitBelow(key)}
+      </div>
     );
   };
 
@@ -202,30 +255,45 @@ export function LessonBoard({
       item.kind !== "level_test" && item.ref
         ? titles[refKey(item.ref)]
         : undefined;
+    const key =
+      item.kind === "resume"
+        ? item.sessionId
+        : `${item.kind}-${item.kind === "feedback" ? refKey(item.ref) : ""}`;
     return (
-      <PostIt
-        key={
-          item.kind === "resume"
-            ? item.sessionId
-            : `${item.kind}-${item.kind === "feedback" ? refKey(item.ref) : ""}`
-        }
-        tone={area}
-        tilt="slight"
-        onClick={() => {
-          // 하던 수업은 그 세션으로(첨삭 보기 · 단계 평가는 P11 · P12)
-          if (item.kind === "resume") {
-            if (item.ref) setSelected(refKey(item.ref));
-            router.push(`/session/${item.sessionId}`);
-          }
-        }}
-        className={cn("gap-2 p-5 pt-8", here ? "ring-4 ring-ink" : "max-w-sm")}
-      >
-        <span data-top-item={item.kind} className="contents">
-          {here ? <HereBadge /> : null}
-          <span className="font-heading text-2xl">{label}</span>
-          {title ? <span data-size-guide="">{title}</span> : null}
-        </span>
-      </PostIt>
+      <div key={key} className="flex flex-col gap-2">
+        <PostIt
+          tone={area}
+          tilt="slight"
+          onClick={() => {
+            // 하던 수업은 그 세션으로, 첨삭 보기는 그 수업의 둘째 세션(plan-p11b 값 11, 단계 평가는 P12)
+            if (item.kind === "resume") {
+              if (item.ref) setSelected(refKey(item.ref));
+              router.push(`/session/${item.sessionId}`);
+            }
+            if (item.kind === "feedback" && item.lessonId && !busy) {
+              setSelected(refKey(item.ref));
+              if (goingRef && !sameRef(goingRef, item.ref)) {
+                askedAt.current = key;
+                setAsking(item.lessonId);
+                return;
+              }
+              setWaitAt(key);
+              void start(item.lessonId, false, { feedback: true });
+            }
+          }}
+          className={cn(
+            "flex-1 gap-2 p-5 pt-8",
+            here ? "ring-4 ring-ink" : "max-w-sm",
+          )}
+        >
+          <span data-top-item={item.kind} className="contents">
+            {here ? <HereBadge /> : null}
+            <span className="font-heading text-2xl">{label}</span>
+            {title ? <span data-size-guide="">{title}</span> : null}
+          </span>
+        </PostIt>
+        {waitBelow(key)}
+      </div>
     );
   };
 
@@ -335,6 +403,7 @@ export function LessonBoard({
           // 확인 뒤 하던 세션을 중단으로 닫고 새 세션을 연다(5절) — 쪽지가 닫혀도 초점은 돌려놓지 않는다(쪽을 떠남)
           opener.current = null;
           setAsking(undefined);
+          setWaitAt(askedAt.current);
           if (lessonId) void start(lessonId, true);
         }}
         onCancel={() => setAsking(undefined)}

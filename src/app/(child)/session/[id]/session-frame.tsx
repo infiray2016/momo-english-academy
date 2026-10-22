@@ -14,6 +14,10 @@
 // 쓰기 4~5(plan-p11b 값 7 · 9): 과제 · 문장 쓰기(확인은 서버 액션이 AI 결과와 함께 끝 시도를 저장 — 틀은 대기열에 넣지 않고 다음 활동으로,
 // 고친 문장은 진행 시도로) · 내 문장 듣고 따라 말하기(마이크를 쓸 수 없으면 건너뜀). 1-가 하루 안전 상한(C50 (2) · C80)이면 열 때 · 도중에
 // '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈' 하나(세션은 진행). 막힌 안내는 끝내기 실패보다 먼저 보인다('홈'이 늘 있게).
+// 쓰기 6~12 첫 세션(plan-p11b 값 7 · 9): 과제 · 생각 꺼내기(턴마다 서버 액션이 시도를 저장) · 초고(자동 저장은 진행 시도로 대기열에,
+// '다 썼어요'는 대기열을 비운 뒤 초고 제출 서버 액션이 세션을 끝냄 — finishSession 을 부르지 않음) → 결과.
+// 쓰기 6~12 둘째 세션(plan-p11b 값 7 · 9 · 11): 칭찬 → 교정 하나씩 → 고쳐 쓰기(서버 액션이 끝 시도 저장 · 모범 답안을 돌려줌) → 모범 답안
+// (빈 글이면 건너뜀) → 내 글 소리 내어 읽기(마이크를 쓸 수 없으면 건너뜀) → finishSession(점수 없음).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -59,6 +63,13 @@ import {
   type SpeakingEnv,
 } from "@/components/session/speaking";
 import {
+  CompositionTaskActivity,
+  DraftActivity,
+  type DraftInput,
+  ThinkoutActivity,
+  type ThinkoutInput,
+} from "@/components/session/writing-composition";
+import {
   type GuidedInput,
   GuidedTaskActivity,
   GuidedWritingActivity,
@@ -68,6 +79,15 @@ import {
   WritingItemActivity,
   type WritingItemInput,
 } from "@/components/session/writing-items";
+import {
+  FeedbackCorrectionActivity,
+  FeedbackPraiseActivity,
+  ModelAnswerActivity,
+  REWRITE_TEXT,
+  RewriteActivity,
+  type RewriteInput,
+  sentencesOf,
+} from "@/components/session/writing-rewrite";
 import { resumePointOf } from "@/core/session/attempt";
 import type { Activity, ActivityKind } from "@/core/session/preview";
 import {
@@ -94,7 +114,12 @@ import {
   reportSessionMic,
   saveAttempts,
 } from "@/server/actions/session";
-import { checkGuidedWriting } from "@/server/actions/writing";
+import {
+  checkGuidedWriting,
+  submitDraft,
+  submitRewrite,
+  thinkoutNext,
+} from "@/server/actions/writing";
 import type { SessionView } from "@/server/session";
 
 /** 화면 글(4절 · 7절 네트워크 행 · 정본 밖 문구 표 세션 틀 행). */
@@ -119,6 +144,7 @@ const SPOKEN_KINDS: ReadonlySet<ActivityKind> = new Set([
   "repeat-sentence",
   "question",
   "writing-own-repeat",
+  "own-speak",
 ]);
 
 /** 활동 점 색(영역 포스트잇 토큰). */
@@ -141,6 +167,13 @@ const RECORDED_KINDS: ReadonlySet<ActivityKind> = new Set([
   "writing-task",
   "writing-guided",
   "writing-own-repeat",
+  "thinkout",
+  "draft",
+  "feedback-praise",
+  "feedback-correction",
+  "rewrite",
+  "model-answer",
+  "own-speak",
 ]);
 
 function storageOrUndefined(): Storage | undefined {
@@ -288,11 +321,13 @@ export function SessionFrame({ view }: { view: SessionView }) {
   const [hydrated, setHydrated] = useState(false);
   const total = view.activities.length;
   const activity = view.activities[current - 1];
-  // 질문 답은 앱 판정 단계(1~2)만 이 길(3단계부터 AI — c), 과제는 쓰기 4~5 만(6~12 — 차례 6)
+  // 질문 답은 앱 판정 단계(1~2)만 이 길(3단계부터 AI — c), 과제는 쓰기 4~5 · 6~12 첫 세션
   const recorded = (a: Activity) =>
     RECORDED_KINDS.has(a.kind) &&
     (a.kind !== "question" || view.appJudged) &&
-    (a.kind !== "writing-task" || view.guided !== null);
+    (a.kind !== "writing-task" ||
+      view.guided !== null ||
+      view.composition !== null);
   const allRecorded = view.activities.every(recorded);
   const [blocked, setBlocked] = useState<Blocked | undefined>();
   /** 1-가 하루 안전 상한 — 열 때(서버 화면 자료) · 쓰기 확인 도중(서버 액션)에 켜진다. */
@@ -302,6 +337,24 @@ export function SessionFrame({ view }: { view: SessionView }) {
     view.guided?.sentences ?? null,
   );
   const [noticeSeen, setNoticeSeen] = useState(true);
+  /** 쓰기 6~12: 생각 꺼내기 결과(초고 화면이 씀 — 서버 화면 자료 또는 방금 끝낸 턴). */
+  const [thinkoutResult, setThinkoutResult] = useState(
+    view.composition?.thinkout ?? null,
+  );
+  /** 쓰기 둘째 세션: 낸 고쳐 쓰기 글 · 모범 답안(서버 화면 자료 또는 방금 낸 것 — 낸 뒤에만 있음). */
+  const [rewritten, setRewritten] = useState<{
+    text: string;
+    modelAnswer: string | null;
+  } | null>(
+    view.rewrite?.rewriteText
+      ? {
+          text: view.rewrite.rewriteText,
+          modelAnswer: view.rewrite.modelAnswer,
+        }
+      : null,
+  );
+  /** 초고 조각이 맡긴 '홈' 앞 저장. */
+  const draftFlush = useRef<(() => void) | undefined>(undefined);
   const counters = useRef(speakingCountersStart());
   const limits = {
     maxRetries: view.config.maxRetries,
@@ -398,13 +451,27 @@ export function SessionFrame({ view }: { view: SessionView }) {
     return () => window.removeEventListener("online", again);
   }, [finishPending]);
 
-  // 쓰기 '내 문장 듣고 따라 말하기'(선택): 마이크를 쓸 수 없는 기기면 건너뛰고(쓰기 세션은 막지 않음), 문장이 없으면(다른 기기에서
-  // 확인을 내고 고친 문장이 아직 닿지 않음 등) 빈 끝 시도로 넘어간다(plan-p11a 정할 것 마 (6))
+  // 쓰기 '내 문장 듣고 따라 말하기' · '내 글 소리 내어 읽기'(선택): 마이크를 쓸 수 없는 기기면 건너뛰고(쓰기 세션은 막지 않음),
+  // 문장이 없으면(다른 기기에서 냈고 글이 아직 닿지 않음 등) 빈 끝 시도로 넘어간다(plan-p11a 정할 것 마 (6)). 모범 답안이 빈 글이면
+  // 그 활동을 건너뛴다(값 3 — 걸린 칸 바꾸기 뒤 빈 모범 답안은 보이지 않는다)
   // biome-ignore lint/correctness/useExhaustiveDependencies: 그 활동에 들어올 때 한 번 본다
   useEffect(() => {
-    if (!hydrated || activity?.kind !== "writing-own-repeat") return;
+    if (!hydrated) return;
+    if (activity?.kind === "model-answer" && !rewritten?.modelAnswer) {
+      complete({});
+      return;
+    }
+    const spoken =
+      activity?.kind === "writing-own-repeat"
+        ? ownSentences
+        : activity?.kind === "own-speak"
+          ? rewritten
+            ? sentencesOf(rewritten.text)
+            : null
+          : undefined;
+    if (spoken === undefined) return;
     if (!micUsable()) complete({ skipped: "no_mic" });
-    else if (!ownSentences || ownSentences.length === 0) complete({});
+    else if (!spoken || spoken.length === 0) complete({});
   }, [hydrated, current]);
 
   // 활동이 바뀌면 활동 카드로 초점을 옮긴다(보조 기술이 새 활동을 읽게)
@@ -532,6 +599,8 @@ export function SessionFrame({ view }: { view: SessionView }) {
 
   async function home() {
     setBusy(true);
+    // 초고를 쓰던 중이면 마지막 글을 먼저 대기열에(plan-p11b 값 7 · 위험 3)
+    draftFlush.current?.();
     try {
       await queue.current?.idle();
       await queue.current?.flush();
@@ -547,6 +616,12 @@ export function SessionFrame({ view }: { view: SessionView }) {
     router.push("/");
   }
 
+  const registerDraftFlush = useMemo(
+    () => (flush: (() => void) | undefined) => {
+      draftFlush.current = flush;
+    },
+    [],
+  );
   const restored = hydrated
     ? (inputs.read(view.sessionId, current) as
         | Record<string, unknown>
@@ -681,6 +756,201 @@ export function SessionFrame({ view }: { view: SessionView }) {
         }}
       />
     );
+  } else if (
+    view.area === "writing" &&
+    view.lesson.content.shape === "composition" &&
+    view.composition &&
+    activity?.kind === "writing-task"
+  ) {
+    ownButtons = true;
+    body = (
+      <CompositionTaskActivity
+        task={view.lesson.content.task}
+        example={view.lesson.content.example}
+        onDone={() => complete({})}
+      />
+    );
+  } else if (
+    view.area === "writing" &&
+    view.composition &&
+    activity?.kind === "thinkout"
+  ) {
+    const activityNo = current;
+    ownButtons = true;
+    body = (
+      <ThinkoutActivity
+        initialTurn={view.composition.thinkoutTurn}
+        waitHintSeconds={view.config.ui.waitHintSeconds}
+        initial={restored as ThinkoutInput | undefined}
+        onChange={save}
+        step={(req) =>
+          thinkoutNext({ sessionId: view.sessionId, activityNo, ...req })
+        }
+        onDone={(result) => {
+          // 끝 시도는 서버 액션이 저장했다
+          setThinkoutResult(
+            result ? { state: "done", ...result } : { state: "failed" },
+          );
+          advance();
+        }}
+        onResting={() => setResting(true)}
+        onLeave={() => {
+          inputs.clear(view.sessionId);
+          router.push(`/${view.area}/lessons`);
+        }}
+      />
+    );
+  } else if (
+    view.area === "writing" &&
+    view.lesson.content.shape === "composition" &&
+    view.composition &&
+    activity?.kind === "draft"
+  ) {
+    const activityNo = current;
+    const content = view.lesson.content;
+    ownButtons = true;
+    body = (
+      <DraftActivity
+        task={content.task}
+        example={content.example}
+        hints={content.hints}
+        thinkout={thinkoutResult}
+        amount={view.composition.amount}
+        speech={speech}
+        initialText={view.composition.draftText}
+        initial={restored as DraftInput | undefined}
+        onChange={save}
+        autosave={(text) =>
+          void queue.current?.add({
+            clientAttemptId: crypto.randomUUID(),
+            sessionId: view.sessionId,
+            activityNo,
+            input: { v: 1, kind: "draft", step: "progress", text },
+          })
+        }
+        registerFlush={registerDraftFlush}
+        submit={async (req) => {
+          // 앞 활동의 끝 시도를 먼저 보낸 뒤 낸다(서버가 앞 활동이 다 있어야 받는다 — 빠졌으면 한 번 더)
+          let out: Awaited<ReturnType<typeof submitDraft>> | undefined;
+          for (let round = 0; round < 2; round += 1) {
+            await queue.current?.idle();
+            await queue.current?.flush();
+            out = await submitDraft({
+              sessionId: view.sessionId,
+              activityNo,
+              ...req,
+            });
+            if (out.ok || out.reason !== "incomplete") break;
+          }
+          if (!out) throw new Error("초고를 내지 못했다");
+          if (out.ok) {
+            inputs.clear(view.sessionId);
+            router.push(out.resultPath);
+            return out;
+          }
+          if (out.reason === "incomplete") {
+            // 서버에도 이 기기 대기열에도 없는 앞 활동(서버가 버린 시도 · 다른 기기) — 끝내기와 같은 꼴로 그 활동으로 돌아간다.
+            // 쓴 초고는 기기 입력에 남아 다시 오면 그대로다(코드 검토 review-p11-6-code M-3)
+            const queued = new Set(queue.current?.finals(view.sessionId) ?? []);
+            const lost = out.missing.filter((no) => !queued.has(no));
+            const back = lost[0];
+            if (back !== undefined) {
+              setFinals(
+                (before) =>
+                  new Set([...before].filter((n) => !lost.includes(n))),
+              );
+              setCurrent(back);
+            }
+          }
+          return out;
+        }}
+        onLeave={() => {
+          inputs.clear(view.sessionId);
+          router.push(`/${view.area}/lessons`);
+        }}
+      />
+    );
+  } else if (view.area === "writing" && view.rewrite && activity) {
+    const rv = view.rewrite;
+    const activityNo = current;
+    if (activity.kind === "feedback-praise") {
+      ownButtons = true;
+      body = (
+        <FeedbackPraiseActivity
+          praise={rv.praise}
+          onDone={() => complete({})}
+        />
+      );
+    } else if (activity.kind === "feedback-correction") {
+      const correction = rv.corrections[activity.index];
+      if (correction) {
+        ownButtons = true;
+        body = (
+          <FeedbackCorrectionActivity
+            correction={correction}
+            onDone={() => complete({})}
+          />
+        );
+      }
+    } else if (activity.kind === "rewrite") {
+      ownButtons = true;
+      body = (
+        <RewriteActivity
+          draftText={rv.draftText}
+          corrections={rv.corrections}
+          initial={restored as RewriteInput | undefined}
+          onChange={save}
+          submit={(req) =>
+            submitRewrite({ sessionId: view.sessionId, activityNo, ...req })
+          }
+          onDone={(text, modelAnswer) => {
+            // 끝 시도는 서버 액션이 저장했다 — 모범 답안은 이제 보인다(AC-4c)
+            setRewritten({ text, modelAnswer });
+            advance();
+          }}
+          onLeave={() => {
+            inputs.clear(view.sessionId);
+            router.push(`/${view.area}/lessons`);
+          }}
+        />
+      );
+    } else if (activity.kind === "model-answer" && rewritten?.modelAnswer) {
+      ownButtons = true;
+      body = (
+        <ModelAnswerActivity
+          text={rewritten.modelAnswer}
+          onDone={() => complete({})}
+        />
+      );
+    } else if (activity.kind === "own-speak" && rewritten) {
+      ownButtons = true;
+      body = !noticeSeen ? (
+        <MicNotice
+          onOk={() => {
+            speech?.unlockFromGesture();
+            markMicNoticeSeen();
+            setNoticeSeen(true);
+          }}
+        />
+      ) : (
+        <OwnRepeatActivity
+          sentences={sentencesOf(rewritten.text)}
+          guide={REWRITE_TEXT.ownSpeak}
+          env={{
+            speech,
+            speechSettings: view.config.speech,
+            level: view.level,
+            homophones: view.homophones,
+          }}
+          phraseLevels={view.config.ui.matchPhraseLevels}
+          autoNextSeconds={view.config.ui.autoNextSeconds}
+          limits={limits}
+          onDone={(result) => complete(result)}
+        />
+      );
+    } else {
+      ownButtons = true;
+    }
   } else if (
     view.area === "writing" &&
     activity?.kind === "writing-own-repeat"

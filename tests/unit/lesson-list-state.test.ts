@@ -647,3 +647,147 @@ describe("잠긴 단원 수", () => {
     ).toEqual({ remainingLessons: 0, remainingDays: 0 });
   });
 });
+
+describe("쓰기 두 세션(plan-p11b 값 11 · 정할 것 ㄱ · C79)", () => {
+  const W = { area: "writing" as const, level: 6 };
+  const a1 = ref(UNIT, "assigned", 1);
+  const a2 = ref(UNIT, "assigned", 2);
+  const draft = (over: Partial<SessionLite> = {}) =>
+    session({
+      ref: a1,
+      writingPart: "draft",
+      completedAt: AFTER,
+      unit: UNIT,
+      learningDay: "2026-10-13",
+      ...over,
+    });
+  const drafts = (
+    state: "awaiting" | "ready" | "failed",
+  ): NonNullable<ListInput["writingDrafts"]> => [
+    {
+      ref: a1,
+      variant: 1,
+      draftSessionId: "s-draft",
+      lessonRowId: "row-a1",
+      kind: "regular",
+      state,
+    },
+  ];
+
+  it("목록: 첫 세션만 끝난 칸은 남은 수업이고 둘째 세션이 끝나야 끝낸 수업이며 잠긴 단원 수는 첫 세션으로 센다", () => {
+    // 첫 세션만 끝남(첨삭 대기): 남은 수업 — 완료 표시 없음, 다시 하기가 아님
+    const onlyDraft = input({
+      ...W,
+      sessions: [draft({ id: "s-draft" })],
+      writingDrafts: drafts("awaiting"),
+    });
+    const item = lessonListState(onlyDraft).current?.front.find(
+      (i) => i.ref.lessonNo === 1,
+    );
+    expect(item?.done).toBe(false);
+    // 첨삭 대기 칸은 '여기부터 해요' 새 수업 후보가 아니다(다음 남은 수업으로)
+    expect(lessonListState(onlyDraft).hereStart).toEqual({
+      kind: "lesson",
+      ref: a2,
+    });
+    // 첨삭이 옴: 맨 위 '첨삭 보기'(그 수업 행) · 여기부터 해요는 하던 수업 다음으로 첨삭
+    const ready = input({
+      ...W,
+      sessions: [draft({ id: "s-draft" })],
+      writingDrafts: drafts("ready"),
+      feedbackReady: [a1],
+    });
+    const view = lessonListState(ready);
+    expect(view.top).toContainEqual({
+      kind: "feedback",
+      ref: a1,
+      lessonId: "row-a1",
+    });
+    expect(view.hereStart).toEqual({ kind: "feedback", ref: a1 });
+    // 둘째 세션이 끝나면 끝낸 수업 — 다시 고르면 다시 하기
+    const both = input({
+      ...W,
+      sessions: [
+        draft({ id: "s-draft" }),
+        session({
+          ref: a1,
+          writingPart: "rewrite",
+          completedAt: AFTER,
+          unit: UNIT,
+          learningDay: "2026-10-14",
+        }),
+      ],
+    });
+    expect(
+      lessonListState(both).current?.front.find((i) => i.ref.lessonNo === 1)
+        ?.done,
+    ).toBe(true);
+    expect(judgeLessonStart(both, { level: 6, ref: a1 }, ctx)).toMatchObject({
+      ok: true,
+      kind: "retry",
+    });
+    // 잠긴 단원 수: 수업 수는 첫 세션(둘째 세션은 빼고), 학습일은 두 세션 모두
+    const gate = unitGateOf({
+      unit: UNIT,
+      roundStartedAt: ROUND_START,
+      minLessons: 5,
+      minDays: 5,
+      sessions: both.sessions,
+    });
+    expect(gate).toEqual({ remainingLessons: 4, remainingDays: 3 });
+  });
+
+  it("시작 판정: 첨삭이 오면 둘째 세션(그 첫 세션의 수업 행 · 종류), 대기면 feedback_pending, 못 함이면 새 첫 세션이다", () => {
+    const base = { ...W, sessions: [draft({ id: "s-draft" })] };
+    expect(
+      judgeLessonStart(
+        input({ ...base, writingDrafts: drafts("ready"), feedbackReady: [a1] }),
+        { level: 6, ref: a1 },
+        ctx,
+      ),
+    ).toMatchObject({
+      ok: true,
+      kind: "regular",
+      part: "rewrite",
+      draftSessionId: "s-draft",
+      lessonRowId: "row-a1",
+    });
+    expect(
+      judgeLessonStart(
+        input({ ...base, writingDrafts: drafts("awaiting") }),
+        { level: 6, ref: a1 },
+        ctx,
+      ),
+    ).toEqual({
+      ok: false,
+      reason: "feedback_pending",
+      draftSessionId: "s-draft",
+    });
+    const failed = judgeLessonStart(
+      input({ ...base, writingDrafts: drafts("failed") }),
+      { level: 6, ref: a1 },
+      ctx,
+    );
+    expect(failed).toMatchObject({ ok: true, kind: "regular" });
+    expect(failed).not.toHaveProperty("part");
+    // 하던 둘째 세션은 이어 한다
+    const going = session({
+      id: "s-rewrite",
+      ref: a1,
+      status: "in_progress",
+      writingPart: "rewrite",
+    });
+    expect(
+      judgeLessonStart(
+        input({
+          ...base,
+          sessions: [...base.sessions, going],
+          writingDrafts: drafts("ready"),
+          feedbackReady: [a1],
+        }),
+        { level: 6, ref: a1 },
+        ctx,
+      ),
+    ).toMatchObject({ ok: true, resume: "s-rewrite" });
+  });
+});

@@ -567,6 +567,7 @@ export type OwnRepeatResult = {
  */
 export function OwnRepeatActivity({
   sentences,
+  guide = WRITING_GUIDED_TEXT.ownRepeat,
   env,
   phraseLevels,
   autoNextSeconds,
@@ -574,6 +575,8 @@ export function OwnRepeatActivity({
   onDone,
 }: {
   sentences: readonly string[];
+  /** 첫 줄 안내(없으면 쓰기 4~5 '내 문장을 듣고 따라 말해 봐요' — 둘째 세션은 '내 글을 소리 내어 읽어 봐요'). */
+  guide?: string;
   env: Omit<SpeakingEnv, "onSpeech">;
   phraseLevels: readonly number[];
   autoNextSeconds: number;
@@ -616,7 +619,7 @@ export function OwnRepeatActivity({
         env={{ ...env, onSpeech }}
         phraseLevels={phraseLevels}
         autoNextSeconds={autoNextSeconds}
-        guide={WRITING_GUIDED_TEXT.ownRepeat}
+        guide={guide}
         ringGapClassName={WRITING_CARD_GAP}
         onChange={() => {}}
         onDone={(input) => {

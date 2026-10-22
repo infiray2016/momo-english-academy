@@ -9,14 +9,23 @@
 import { useEffect, useState } from "react";
 import {
   AREA_LABEL,
+  BigLink,
+  ConfirmSheet,
   PostIt,
   SmallButton,
+  StatusLine,
   type Tilt,
 } from "@/components/board/board";
+import { AiRest } from "@/components/session/ai-rest";
+import { WaitHint } from "@/components/session/wait-hint";
 import type { Area } from "@/core/seed/structure";
 import { clearMicState, micUsable } from "@/lib/mic-state";
 import { cn } from "@/lib/utils";
 import type { HomeCard } from "@/server/home";
+import {
+  LESSON_START_TEXT,
+  useLessonStart,
+} from "./[area]/lessons/use-lesson-start";
 
 /** 1-가 회화 카드가 가는 곳(C50 (1) — '토리가 준비 중이에요'). 1-나에서 수업 목록으로. */
 const TALK_PATH = "/talk";
@@ -278,6 +287,73 @@ export function HomeCards({ cards }: { cards: HomeCard[] }) {
           </PostIt>
         );
       })}
+    </div>
+  );
+}
+
+/** '첨삭이 왔어요' 글(4절 홈 '그 밖' 행 · plan-p11b 값 12). */
+const FEEDBACK_TEXT = { ready: "첨삭이 왔어요", list: "수업 목록" } as const;
+
+/**
+ * '첨삭이 왔어요' 포스트잇(하늘 — 영역 카드보다 앞, AC-2a). 누르면 그 수업 startLesson → 둘째 세션이 바로 열린다. 서버가 첨삭을 한 번 더
+ * 부르는 동안 기다림 표시, 그래도 없으면 '아직 글을 살펴보고 있어요'와 '수업 목록', 하던 다른 수업이 있으면 확인 쪽지, 안전 상한이면 안내.
+ */
+export function FeedbackNote({
+  lessonId,
+  waitHintSeconds,
+}: {
+  lessonId: string;
+  waitHintSeconds: readonly [number, number];
+}) {
+  const {
+    start,
+    busy,
+    status,
+    asking,
+    setAsking,
+    resting,
+    waitingSince,
+    stillReading,
+  } = useLessonStart(waitHintSeconds);
+  if (resting) return <AiRest />;
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <PostIt
+        tone="writing"
+        tilt="slight"
+        onClick={() => {
+          if (!busy) void start(lessonId, false, { feedback: true });
+        }}
+        className="gap-2 p-5 pt-8"
+      >
+        <span data-feedback-ready="" className="font-heading text-2xl">
+          {FEEDBACK_TEXT.ready}
+        </span>
+      </PostIt>
+      {waitingSince !== undefined ? (
+        <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />
+      ) : null}
+      {stillReading ? (
+        <>
+          <StatusLine>{LESSON_START_TEXT.stillReading}</StatusLine>
+          <BigLink href="/writing/lessons">{FEEDBACK_TEXT.list}</BigLink>
+        </>
+      ) : null}
+      <StatusLine tone="error" className={status ? undefined : "sr-only"}>
+        {status}
+      </StatusLine>
+      <ConfirmSheet
+        open={asking !== undefined}
+        message={LESSON_START_TEXT.confirm}
+        confirmLabel={LESSON_START_TEXT.newLesson}
+        cancelLabel={LESSON_START_TEXT.keepGoing}
+        onConfirm={() => {
+          const id = asking;
+          setAsking(undefined);
+          if (id) void start(id, true, { feedback: true });
+        }}
+        onCancel={() => setAsking(undefined)}
+      />
     </div>
   );
 }

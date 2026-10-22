@@ -3,6 +3,9 @@
 // 목록(lessonListState)과 재판정(judgeLessonStart)은 같은 ListInput 과 같은 도우미를 써서 '화면에 보인 것 = 열리는 것'이다.
 // P10 의 서버는 gate 의 수업 수 · 학습일과 state 만 채우고 feedbackReady · levelTest · remedialIssued · practice · reviewDue ·
 // gate.wordsShort · scoreShort 는 빈 값이다(P11 · P12 가 채운다).
+// 쓰기 6단계 이상 두 세션(plan-p11b 값 11 · 정할 것 ㄱ · 13절 C79): 첫 세션(초고)만 끝난 칸은 남은 수업이고 둘째 세션(고쳐 쓰기)이 끝나야
+// 끝낸 수업이다. 첨삭이 오면 시작 판정이 둘째 세션을 열고(그 첫 세션의 수업 행 · 종류), 대기면 feedback_pending, 못 함이면 새 첫 세션.
+// 잠긴 단원 수의 정규 수업 수는 첫 세션으로 센다(둘째 세션은 빼고, 학습일은 둘 다). P12 단원 통과 판정이 같은 규칙을 쓴다.
 import type { Area } from "@/core/seed/structure";
 
 export type LessonKindRef = "assigned" | "reinforce" | "alphabet" | "remedial";
@@ -39,6 +42,19 @@ export type SessionLite = {
   /** 세션의 단원(수업 칸이 없는 세션도 단원 수에 쓴다). */
   unit?: number | null;
   learningDay?: string | null;
+  /** 쓰기 6~12 세션(첫 세션 draft · 둘째 세션 rewrite, sessions.writing_part). 없으면 그 밖 세션. */
+  writingPart?: "draft" | "rewrite";
+};
+
+/** 지금 단계 쓰기의 끝난 첫 세션 하나와 그 초고의 첨삭 상태(둘째 세션이 끝난 칸은 넣지 않는다 — 서버가 채움). */
+export type WritingDraft = {
+  ref: LessonRef;
+  variant: number;
+  draftSessionId: string;
+  /** 첫 세션의 수업 행(둘째 세션이 같은 행 · 판을 쓴다 — 5절). */
+  lessonRowId: string;
+  kind: SessionKind;
+  state: "awaiting" | "ready" | "failed";
 };
 export type UnitGate = {
   remainingLessons: number;
@@ -76,6 +92,8 @@ export type ListInput = {
   practice: LessonCellView[];
   reviewDue: boolean;
   unitsPerLevel: number;
+  /** 쓰기 6~12 첫 세션 · 첨삭 상태(그 밖 영역 · 단계는 비움). feedbackReady 는 이 가운데 ready 의 ref 다. */
+  writingDrafts?: WritingDraft[];
 };
 
 export type LessonItem = {
@@ -90,7 +108,7 @@ export type LessonItem = {
 };
 export type TopItem =
   | { kind: "resume"; sessionId: string; ref?: LessonRef }
-  | { kind: "feedback"; ref: LessonRef }
+  | { kind: "feedback"; ref: LessonRef; lessonId?: string }
   | { kind: "level_test" };
 export type HereStart =
   | { kind: "resume"; sessionId: string }
@@ -157,17 +175,23 @@ const inRound = (s: SessionLite, roundStartedAt: Date): boolean =>
 
 /**
  * 이 칸을 끝낸 적이 있는가 — 통과 전 지금 단원은 이 회차에서(끝낸 시각 ≥ 회차 시작), 지난 단원 · 통과한 지금 단원은 언제든.
+ * 쓰기 6~12 첫 세션(초고)은 끝낸 수업이 아니다 — 둘째 세션이 끝나야 한다(값 11).
  */
 function triedRef(input: ListInput, ref: LessonRef): boolean {
   const sinceRound = ref.unit === input.unit && !input.currentPassed;
   return input.sessions.some(
     (s) =>
       s.status === "completed" &&
+      s.writingPart !== "draft" &&
       TRIED_KINDS.has(s.kind) &&
       sameRef(s.ref, ref) &&
       (!sinceRound || inRound(s, input.roundStartedAt)),
   );
 }
+
+/** 그 칸의 쓰기 첫 세션 · 첨삭 상태(없으면 undefined). */
+const draftOf = (input: ListInput, ref: LessonRef) =>
+  input.writingDrafts?.find((d) => sameRef(d.ref, ref));
 
 function issued(input: ListInput, ref: LessonRef): boolean {
   return input.remedialIssued.some((r) => sameRef(r, ref));
@@ -239,7 +263,14 @@ export function lessonListState(input: ListInput): ListView {
           },
         ]
       : []),
-    ...input.feedbackReady.map((ref) => ({ kind: "feedback" as const, ref })),
+    ...input.feedbackReady.map((ref) => {
+      const lessonId = draftOf(input, ref)?.lessonRowId;
+      return {
+        kind: "feedback" as const,
+        ref,
+        ...(lessonId ? { lessonId } : {}),
+      };
+    }),
     ...(input.levelTest?.ready ? [{ kind: "level_test" as const }] : []),
   ];
 
@@ -253,10 +284,14 @@ export function lessonListState(input: ListInput): ListView {
     hereStart = { kind: "feedback", ref: input.feedbackReady[0] };
   else if (input.levelTest?.ready) hereStart = { kind: "level_test" };
   else if (!paused) {
+    // 첨삭을 기다리거나 온 칸은 새 수업 후보가 아니다(온 것은 맨 위 '첨삭 보기')
+    const open = (i: LessonItem) =>
+      !i.done &&
+      !["awaiting", "ready"].includes(draftOf(input, i.ref)?.state ?? "");
     const next =
-      frontItems.find((i) => i.remedial && !i.done) ??
-      frontItems.find((i) => !i.remedial && !i.done) ??
-      backItems.find((i) => !i.done);
+      frontItems.find((i) => i.remedial && open(i)) ??
+      frontItems.find((i) => !i.remedial && open(i)) ??
+      backItems.find(open);
     if (next) hereStart = { kind: "lesson", ref: next.ref };
     else if (input.state === "practice" && input.reviewDue)
       hereStart = { kind: "review" };
@@ -323,6 +358,10 @@ export type StartJudgement =
   | {
       ok: true;
       kind: "regular" | "retry" | "untried" | "remedial" | "practice";
+      /** 쓰기 6~12 둘째 세션(첨삭이 옴) — 그 첫 세션의 수업 행 · 판 그대로 연다. */
+      part?: "rewrite";
+      draftSessionId?: string;
+      lessonRowId?: string;
       variantRule: "profile" | "first_session";
       /** retry 의 처음 변형(그 칸을 처음 끝낸 세션의 변형). */
       firstVariant?: number;
@@ -340,7 +379,10 @@ export type StartJudgement =
         | "locked_unit"
         | "not_issued"
         | "paused"
-        | "unknown";
+        | "unknown"
+        // 쓰기 6~12 첫 세션의 첨삭을 기다리는 중(서버 액션이 한 번 더 부른 뒤 다시 판정)
+        | "feedback_pending";
+      draftSessionId?: string;
     };
 
 /**
@@ -373,6 +415,30 @@ export function judgeLessonStart(
   );
   if (!exists) return { ok: false, reason: "unknown" };
 
+  const going = inProgressLesson(input);
+  // 쓰기 6~12: 첨삭이 오면 둘째 세션, 대기면 기다림(하던 세션이 그 칸이면 이어 한다), 못 함이면 새 첫 세션(아래 그대로)
+  const draft = draftOf(input, ref);
+  if (draft && !chosen.practice && !(going && sameRef(going.ref, ref))) {
+    if (draft.state === "awaiting")
+      return {
+        ok: false,
+        reason: "feedback_pending",
+        draftSessionId: draft.draftSessionId,
+      };
+    if (draft.state === "ready")
+      return {
+        ok: true,
+        kind: TRIED_KINDS.has(draft.kind)
+          ? (draft.kind as "regular" | "retry" | "untried")
+          : "regular",
+        part: "rewrite",
+        draftSessionId: draft.draftSessionId,
+        lessonRowId: draft.lessonRowId,
+        variantRule: "profile",
+        ...(going ? { abort: going.id } : {}),
+      };
+  }
+
   let kind: Extract<StartJudgement, { ok: true }>["kind"];
   if (chosen.practice) {
     const offered =
@@ -399,7 +465,6 @@ export function judgeLessonStart(
     kind = "untried";
   }
 
-  const going = inProgressLesson(input);
   const first = input.sessions
     .filter(
       (s) =>
@@ -470,7 +535,10 @@ export function unitGateOf(input: {
       (s.unit ?? s.ref?.unit) === input.unit &&
       inRound(s, input.roundStartedAt),
   );
-  const regular = done.filter((s) => s.kind === "regular").length;
+  // 쓰기 6~12 는 첫 세션이 수업 하나(둘째 세션은 빼고 — 3.7 '첨삭 대기 중 … 최소 수업 수에 넣는다', 값 11)
+  const regular = done.filter(
+    (s) => s.kind === "regular" && s.writingPart !== "rewrite",
+  ).length;
   const days = new Set(
     done
       .filter((s) => DAY_KINDS.has(s.kind))

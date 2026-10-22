@@ -243,3 +243,63 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
 
   expect(problems).toEqual([]);
 });
+
+/** 정본 4절 글꼴: 영어 Fredoka · 본문 Gowun Dodum(next/font 가 붙이는 이름이 바뀌어도 맞게 이름 조각으로 본다). */
+const FREDOKA = /fredoka/i;
+const GOWUN = /gowun/i;
+
+test('4절 글꼴: 영어 글(lang="en")의 첫 글꼴은 Fredoka 이고 실제로 실려 그려지며, 한국어 안내는 Gowun Dodum 그대로다(화면 검토 review-p11-7-design X-1)', async ({
+  page,
+}) => {
+  test.setTimeout(LONG);
+  const { profileId } = await insertHousehold({ startLevels: { reading: 1 } });
+  const cell = await readingCell(1, "assigned", 1);
+  const [sessionId] = await insertSessions([
+    {
+      profileId,
+      area: "reading",
+      level: 1,
+      unit: 1,
+      lessonId: cell.id,
+      kind: "regular",
+      status: "in_progress",
+      startedAt: new Date(),
+      seedRevision: cell.revision,
+      seedCorrection: cell.correction,
+    },
+  ]);
+  await page.goto(`/session/${sessionId}`);
+  await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
+  await page.getByRole("button", { name: "다음" }).click();
+  await expect(page.locator("[data-activity]")).toHaveAttribute(
+    "data-activity",
+    "reading-passage",
+  );
+  const english = page.locator('[data-child-screen] [lang="en"]').first();
+  await expect(english).toBeVisible();
+  const families = await english.evaluate((el) => {
+    const first = (family: string) =>
+      (family.split(",")[0] ?? "").trim().replace(/^["']|["']$/g, "");
+    // 한국어 줄(lang 없는 첫 글줄 — 제목 Jua 이거나 안내 Gowun Dodum, 어느 쪽이든 Fredoka 가 아니다)
+    const korean = document.querySelector(
+      '[data-child-screen] p:not([lang]):not([lang="en"] *)',
+    );
+    return {
+      english: first(getComputedStyle(el).fontFamily),
+      korean: korean ? first(getComputedStyle(korean).fontFamily) : "",
+    };
+  });
+  expect(families.english).toMatch(FREDOKA);
+  expect(families.english).not.toMatch(/fallback/i);
+  expect(families.korean).not.toBe("");
+  expect(families.korean).not.toMatch(FREDOKA);
+  // 이름만 맞고 글꼴 파일이 안 실리면 Gowun Dodum 의 라틴 글자로 그려진다 — 실린 글꼴 가운데 Fredoka 가 있는지까지 본다
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts]
+      .filter((f) => f.status === "loaded")
+      .map((f) => f.family);
+  });
+  expect(loaded.some((family) => FREDOKA.test(family))).toBe(true);
+  expect(loaded.some((family) => GOWUN.test(family))).toBe(true);
+});

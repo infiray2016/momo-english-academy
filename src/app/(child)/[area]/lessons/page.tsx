@@ -3,9 +3,11 @@
 // 회화는 1-가에서 '토리가 준비 중이에요'(C50 (1)), 배치 전이면 배치 평가로, 프로필이 없으면 첫 실행으로 보낸다.
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { z } from "zod";
 import { AREAS, type Area } from "@/core/seed/structure";
 import { now } from "@/server/clock";
 import { readLessonList } from "@/server/lesson-list";
+import { getSettings } from "@/server/settings";
 import { LessonBoard } from "./lesson-board";
 
 export default async function LessonsPage(props: PageProps<"/[area]/lessons">) {
@@ -20,11 +22,21 @@ export default async function LessonsPage(props: PageProps<"/[area]/lessons">) {
   if (result.kind === "no_profile") redirect("/first-run");
   if (result.kind === "placement") redirect(`/${area}/placement`);
   const { view, input } = result;
+  // '첨삭 보기'로 여는 동안의 기다림 표시(ui.wait_hint_seconds — plan-p11b 값 6)
+  const waitHintSeconds = (
+    await getSettings({
+      "ui.wait_hint_seconds": z.tuple([
+        z.number().positive(),
+        z.number().positive(),
+      ]),
+    })
+  )["ui.wait_hint_seconds"];
   // 화면은 고른 칸의 제목 · 번호만 쓴다(세션 시작 재판정은 서버가 같은 입력으로 다시 한다 — 차례 6)
   return (
     <LessonBoard
       area={area as Exclude<Area, "talk">}
       view={view}
+      waitHintSeconds={waitHintSeconds}
       titles={Object.fromEntries(
         Object.values(input.lessonsByUnit)
           .flat()

@@ -3,17 +3,31 @@ import "server-only";
 // 별 합 · 부모 점 · 이름. 판정 기준(unit.recent_window · unit.recent_score · unit.min_lessons)은 그 단원 회차의 복사본에서,
 // 학습일은 app.timezone · app.day_start_hour 로 센다. 시각은 인자로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
 // 아는 단어 · 복습 · 연속 일수는 P12, 최근 성적 · 끝낸 대화는 세션 완료(P11 · 1-나)가 생기면 채워진다(그 전에는 0 · 빈 칸).
-import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+// 쓰기 6~12(plan-p11b 값 12): '첨삭이 왔어요'(지금 단계에서 첨삭이 온 가장 오래된 첫 세션의 수업 행), 최근 성적은 점수 없는 세션과
+// 둘째 세션(고쳐 쓰기)을 빼고 센다(수업 하나 = 첫 세션 점수).
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { learningDayOf } from "@/core/learning-day";
 import { AREAS, type Area, UNITS_PER_LEVEL } from "@/core/seed/structure";
+import { parseAttemptInput } from "@/core/session/attempt";
 import {
   type DoneSession,
   thisWeekDays,
   todayDone,
   weekStartOf,
 } from "@/core/today/done";
+import { feedbackStateOf } from "@/core/writing/feedback";
 import { vocab } from "@/db/schema/content";
 import {
+  attempts,
   profileTracks,
   sessions,
   starLedger,
@@ -56,6 +70,8 @@ export type HomeView = {
   starTotal: number;
   parentDot: boolean;
   cards: HomeCard[];
+  /** 쓰기 첨삭이 온 수업(누르면 그 수업 startLesson → 둘째 세션, AC-2a). 없으면 null. */
+  feedbackReady: { lessonId: string } | null;
 };
 
 /** 아는 단어로 세는 단어장 상태(3.2 — 읽기 · 말하기 '알아봄', 쓰기 '씀', 회화 '말함'). */
@@ -205,7 +221,7 @@ export async function readHome({
     // 이 단원 회차에서 끝낸 정규 수업(최근 성적 · 끝낸 대화)
     const regular = current
       ? await db
-          .select({ score: sessions.score })
+          .select({ score: sessions.score, writingPart: sessions.writingPart })
           .from(sessions)
           .where(
             and(
@@ -235,7 +251,11 @@ export async function readHome({
         RECENT_WINDOW_KEY,
       );
       const pass = snapshotNumber(current.settingsSnapshot, RECENT_SCORE_KEY);
-      const last = regular.slice(0, windowSize).reverse();
+      // 점수 없는 세션(쓰기 확인 실패 · 첨삭 전 …)과 쓰기 둘째 세션은 빼고 센다(3.7 · 값 12)
+      const last = regular
+        .filter((s) => s.score !== null && s.writingPart !== "rewrite")
+        .slice(0, windowSize)
+        .reverse();
       recent = Array.from({ length: windowSize }, (_, i) => {
         const s = last[i];
         if (!s) return "empty";
@@ -279,10 +299,69 @@ export async function readHome({
     .where(isNull(parentAlerts.acknowledgedAt))
     .limit(1);
 
+  const writingLevel = tracks.find((t) => t.area === "writing")?.level;
   return {
     displayName: profile.displayName,
     starTotal: stars?.n ?? 0,
     parentDot: alert !== undefined,
     cards,
+    feedbackReady:
+      writingLevel === null || writingLevel === undefined
+        ? null
+        : await feedbackReadyOf(db, profile.id, writingLevel),
   };
+}
+
+/** 지금 쓰기 단계에서 첨삭이 온(둘째 세션을 아직 끝내지 않은) 가장 오래된 첫 세션의 수업 행(값 12). */
+async function feedbackReadyOf(
+  db: Db,
+  profileId: string,
+  level: number,
+): Promise<{ lessonId: string } | null> {
+  const parts = await db
+    .select({
+      id: sessions.id,
+      lessonId: sessions.lessonId,
+      writingPart: sessions.writingPart,
+      completedAt: sessions.completedAt,
+    })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.profileId, profileId),
+        eq(sessions.area, "writing"),
+        eq(sessions.level, level),
+        eq(sessions.status, "completed"),
+        isNotNull(sessions.writingPart),
+      ),
+    );
+  const firsts = parts
+    .filter((p) => p.writingPart === "draft" && p.lessonId && p.completedAt)
+    .sort(
+      (a, b) =>
+        (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+  for (const first of firsts) {
+    const rewritten = parts.some(
+      (p) =>
+        p.writingPart === "rewrite" &&
+        p.lessonId === first.lessonId &&
+        (p.completedAt?.getTime() ?? 0) >= (first.completedAt?.getTime() ?? 0),
+    );
+    if (rewritten || !first.lessonId) continue;
+    const rows = await db
+      .select({ input: attempts.input, aiFeedback: attempts.aiFeedback })
+      .from(attempts)
+      .where(eq(attempts.sessionId, first.id));
+    const ready = rows.some((r) => {
+      const input = parseAttemptInput(r.input);
+      return (
+        input?.kind === "draft" &&
+        input.step === "final" &&
+        feedbackStateOf(r.aiFeedback)?.state === "ready"
+      );
+    });
+    if (ready) return { lessonId: first.lessonId };
+  }
+  return null;
 }

@@ -5,12 +5,19 @@
 import type { Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import { learningDayOf } from "../../src/core/learning-day";
-import { unitProgress } from "../../src/db/schema/learning";
+import { sessions, unitProgress } from "../../src/db/schema/learning";
 import { settings } from "../../src/db/schema/operations";
 import { addAccessCookie } from "./access-cookie";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
+import {
+  atLevel,
+  compositionSample,
+  insertReadyDraft,
+  insertSampleLesson,
+} from "./lessons";
+import { photo } from "./photos";
 
 const T = {
   findLevel: "내 단계 찾기",
@@ -328,5 +335,39 @@ test.describe("audio-capture 한 번", () => {
     await expect(card(second, "speaking")).toContainText(T.findLevel);
     await expect(card(second, "speaking")).not.toContainText(T.needsMic);
     await noApi.close();
+  });
+});
+
+test("AC-2a 첨삭이 오면 홈에 '첨삭이 왔어요'가 보이고 누르면 그 수업의 둘째 세션이 열린다", async ({
+  page,
+}) => {
+  const sample = compositionSample();
+  await atLevel({ area: "writing", level: sample.level }, async (profileId) => {
+    const lesson = await insertSampleLesson({ sample });
+    await insertReadyDraft(profileId, lesson);
+    await page.goto("/");
+    const note = page.getByText("첨삭이 왔어요", { exact: true });
+    await expect(note).toBeVisible();
+    // 영역 카드보다 앞(4절 홈 '그 밖' 행)
+    const noteTop = (await note.boundingBox())?.y ?? Number.POSITIVE_INFINITY;
+    const cardsTop =
+      (await page.locator("[data-home-cards]").boundingBox())?.y ?? 0;
+    expect(noteTop).toBeLessThan(cardsTop);
+    await photo(page, "p11-home-feedback");
+    await note.click();
+    await expect(page).toHaveURL(/\/session\//);
+    const sessionId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+    await expect(page.locator("[data-activity]")).toHaveAttribute(
+      "data-activity",
+      "feedback-praise",
+    );
+    const [row] = await e2eDb()
+      .select({
+        writingPart: sessions.writingPart,
+        lessonId: sessions.lessonId,
+      })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId));
+    expect(row).toEqual({ writingPart: "rewrite", lessonId: lesson.id });
   });
 });
