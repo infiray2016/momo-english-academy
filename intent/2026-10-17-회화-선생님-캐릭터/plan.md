@@ -329,6 +329,8 @@ spec: `intent/2026-10-17-회화-선생님-캐릭터/spec.md`(approved — 13절 
 ## 작업 순서 (Order of work)
 
 > **C142(요청자 2026-10-23 13:1x) — 검토 묶기**: 구현은 쉬지 않고 이어 가고, 코드 검토는 d1 · d2 · d5 → d3 · d4 · d6 → d7 · d8 세 번으로 모으고, 화면 검토는 프리뷰 직전(d8 뒤, CI 사진 + 로컬 3D 사진)에 한 번 한다. 아래 차례의 '코드 검토 · 화면 검토' 줄은 이 묶음 검토로 읽는다. 동시 서브에이전트는 다섯까지.
+>
+> **컨트롤러 덧(2026-10-23 13:3x~13:5x)**: (1) d6 관찰 쪽에 '단원 바로 가기'(영역 · 1단계 단원을 골라 지금 단원으로 — 프리뷰 전용, 운영 거부, 기존 단원 시작 길 재사용)를 더한다 — 단원 통과(P12) 전에도 진짜 자료의 단원 2~5 를 프리뷰에서 쓰게. (2) 고르기 성공 뒤 router.refresh(d4 보고). (3) 검토 묶음은 d1 · d2 · d5 → d3 · d4 → d6 · d7 · d8 로 고침(d6 을 기다리지 않고 d3 · d4 먼저).
 
 
 구현자는 implementer(Opus · high), 코드 검토는 code-reviewer(Opus · xhigh), 화면이 있는 묶음은 design-reviewer(Fable · max)도 — 호출마다 model · effort 를 적는다(CLAUDE.md). fix 라운드는 3회까지. 묶음마다 관문(Node 24 PATH — `export PATH="$HOME/.nvm/versions/node/v24.22.0/bin:$PATH"`): `pnpm lint` · `pnpm exec next typegen && pnpm exec tsc --noEmit` · `pnpm test` · `pnpm check:deps`(장부 '시드 코드 브리프 · 검토 관문에 check:deps') · `pnpm seed:validate` · `pnpm check:ids`, 통합 · e2e 는 CI(이 Mac 은 새 Postgres 가 뜨지 않음). 커밋 · push 는 요청자 지시 때(CLAUDE.md — 프리뷰는 C139).
