@@ -43,6 +43,7 @@ import {
 } from "@/components/session/mic-blocked";
 import { MicNotice } from "@/components/session/speaking";
 import { TeacherChoice } from "@/components/teacher/teacher-choice";
+import { useTeacherLayer } from "@/components/teacher/teacher-layer";
 import { TeacherWindow } from "@/components/teacher/teacher-window";
 import {
   type SpeechEvent,
@@ -833,6 +834,15 @@ function TalkFrameBody({ view }: { view: TalkView }) {
     praiseUntil: praiseClock?.until ?? null,
     now: praiseClock?.now ?? 0,
   });
+  // 그림 층(세션 쪽 보관 조각 — 선생님 화면 plan 값 14): 상태 · 움직임 줄이기를 넘기고, 마무리 세 장에 들어가면 닫는다(4절 '회화
+  // 마무리 — 초상만', 메모리를 일찍 풂)
+  const layer = useTeacherLayer();
+  useEffect(() => {
+    layer?.setPose(teacherState, reducedMotion);
+  }, [layer, teacherState, reducedMotion]);
+  useEffect(() => {
+    if (stage === "closing") layer?.close();
+  }, [layer, stage]);
   const pending = next.pending;
   const picture =
     pending?.imageKey !== undefined
@@ -1117,6 +1127,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
             teacher={view.teacher}
             state={teacherState}
             reducedMotion={reducedMotion}
+            started={started}
           />
           {panelShown ? (
             <aside

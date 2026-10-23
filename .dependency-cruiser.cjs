@@ -85,6 +85,28 @@ module.exports = {
       from: { pathNot: "^src/(app/dev/seed-viewer|server/seed-viewer)/" },
       to: { path: "^src/server/seed-viewer/" },
     },
+    {
+      name: "three-only-in-avatar",
+      comment:
+        "three · @pixiv/three-vrm(형 @types/three 포함)은 3D 그림 층 src/components/teacher/avatar-3d.ts 에서만 가져온다 — 3D 코드가 회화 세션 밖 쪽 · 회화 세션 첫 JS 에 들어가지 않게(선생님 화면 plan 값 15 · NFR-2 · AC-N12)",
+      severity: "error",
+      from: {
+        path: "^src/",
+        pathNot: "^src/components/teacher/avatar-3d\\.ts$",
+      },
+      to: { path: npm("three|@types/three|@pixiv/three-vrm[a-z0-9-]*") },
+    },
+    {
+      name: "avatar-only-dynamic",
+      comment:
+        "3D 그림 층(avatar-3d.ts)은 동적 가져오기(import())로만 받는다 — 그림 층 보관 조각이 회화 세션에서만 따로 불러온다(선생님 화면 plan 값 15 · NFR-2 · AC-N12)",
+      severity: "error",
+      from: {},
+      to: {
+        path: "^src/components/teacher/avatar-3d\\.ts$",
+        dependencyTypesNot: ["dynamic-import"],
+      },
+    },
   ],
   options: {
     doNotFollow: { path: "node_modules" },

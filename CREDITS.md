@@ -55,6 +55,13 @@ arm, ball, catch, coat, cup, desk, dish, doll, draw, face, finger, fly, fork, gl
 - 줄인 방법: pnpm teacher:reduce --max-texture 1024 (scripts/teacher-reduce.ts) · libwebp cwebp/dwebp 1.6.0 · 텍스처 한 변 1024 · 색 WebP q85(알파 무손실) · 법선 WebP 무손실 · 썸네일 PNG 256 · EXT_texture_webp(되돌림 PNG 없음) · 정점 · 뼈 · 표정 · 머티리얼 · VRM 메타 그대로
 - 초상: 원본 VRM 안 썸네일(meta.texture)을 512² WebP q80 으로 줄였다. 따로 그린 그림이 아니다.
 
+### 3D 그리기 라이브러리(회화 세션 선생님 창)
+
+선생님 모델을 그리는 라이브러리다. 회화 세션에서만 따로 불러온다(`src/components/teacher/avatar-3d.ts`).
+
+- three 0.180.0 — MIT 라이선스, Copyright © 2010-2025 three.js authors. https://github.com/mrdoob/three.js
+- @pixiv/three-vrm 3.5.5 — MIT 라이선스, Copyright (c) 2019-2026 pixiv Inc. https://github.com/pixiv/three-vrm
+
 ## 4. 앱 안 표시
 
 부모 화면의 '정보' 쪽에 같은 내용을 보이는 일은 2차 부모 화면에서 한다.

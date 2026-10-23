@@ -653,7 +653,7 @@ describe("proxy", () => {
     }
   });
 
-  it("proxy matcher: 정적 파일 · 그림 · favicon 은 proxy 를 타지 않고 페이지 · /api 는 탄다", () => {
+  it("proxy matcher: 정적 파일 · 그림 · 선생님 모델 · 초상(/teachers/) · favicon 은 proxy 를 타지 않고 페이지 · /api 는 탄다", () => {
     const matches = (url: string) =>
       unstable_doesMiddlewareMatch({ config: proxyConfig, url });
     for (const url of [
@@ -671,6 +671,8 @@ describe("proxy", () => {
       "/_next/image?url=x",
       "/favicon.ico",
       "/images/apple.webp",
+      "/teachers/mina.1a2b3c4d.vrm",
+      "/teachers/mina.fdc5f7f2.webp",
       "/robots.txt",
       "/icon.png",
       "/fonts/jua.woff2",

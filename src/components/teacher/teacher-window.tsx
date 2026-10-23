@@ -3,11 +3,14 @@
 // 회화 세션 선생님 창(선생님 화면 plan 값 13, 4절 회화 세션 '선생님 창' 행 · C122 · C130 · C141). 보드에 붙인 사진 꼴(종이 테 · 위 테이프)이고
 // 안 바탕은 선생님 방 색, 안에 초상(썸네일이 얼굴 정면 — 꽉 채움), 아래 이름표 '[이름] 선생님'(accent 바탕 · 종이색 글자 — C141). 창의 접근
 // 이름도 같다. 초상일 때 상태 표시: 말하기 = 창 둘레 물결, 생각 = 점 셋, 칭찬 = 작은 별 표지(움직임 줄이기면 멈춘 꼴), 쉬기 · 듣기는 표시 없음.
-// 넘김 효과(transition)를 두지 않는다. 시제품의 영어 자막 · 상태 이름 띠 · 머리글은 없다(C115). 이 묶음(d7)에서 창은 늘 초상이고,
-// 3D 캔버스 붙이기와 대신 표시 까닭 속성(data-teacher-fallback)은 d8 이 더한다.
+// 넘김 효과(transition)를 두지 않는다. 시제품의 영어 자막 · 상태 이름 띠 · 머리글은 없다(C115).
+// 3D(plan 값 14 — d8): 그림 층 보관 조각의 공유 값이 3d 이고 회화 틀이 '시작!'을 누른 뒤(started)면 창 안 칸에 3D 캔버스를 보이고
+// 초상 · 상태 표시를 숨긴다('시작!' 화면은 3D 가 먼저 되어도 초상 — 정할 것 8). 칸은 늘 두어 그림 층이 캔버스를 미리 붙인다. 대신
+// 표시로 갔으면 초상에 까닭 속성(data-teacher-fallback)을 단다 — 아이에게 오류 글 · 단추는 없다(C122).
 import { Star } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { useTeacherLayer } from "@/components/teacher/teacher-layer";
 import { TeacherPortrait } from "@/components/teacher/teacher-portrait";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { TeacherView } from "@/core/teacher/roster";
@@ -40,14 +43,20 @@ export function TeacherWindow({
   teacher,
   state,
   reducedMotion,
+  started,
 }: {
   teacher: TeacherView;
   state: TeacherState;
   /** 움직임 줄이기(prefers-reduced-motion) — 상태 표시를 멈춘 꼴로. */
   reducedMotion: boolean;
+  /** 회화 틀이 '시작!'을 누른 뒤인가(그 앞은 3D 가 되어도 초상). */
+  started: boolean;
 }) {
   const name = TEACHER_TEXT.windowName(teacher.nameKo);
-  const indicator = indicatorOf(state);
+  const layer = useTeacherLayer();
+  const show3d = started && layer?.render === "3d";
+  const fallback = show3d ? undefined : layer?.fallback;
+  const indicator = show3d ? undefined : indicatorOf(state);
   // 읽기에 실패한 초상 주소(선생님이 바뀌면 새 주소라 다시 그려 본다)
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const motion = (cls: string) => (reducedMotion ? undefined : cls);
@@ -56,7 +65,8 @@ export function TeacherWindow({
       data-teacher-window=""
       data-teacher-key={teacher.key}
       data-teacher-state={state}
-      data-teacher-render="portrait"
+      data-teacher-render={show3d ? "3d" : "portrait"}
+      data-teacher-fallback={fallback}
       role="img"
       aria-label={name}
       className={cn(
@@ -92,8 +102,19 @@ export function TeacherWindow({
         className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden"
         style={{ backgroundColor: teacher.color.room }}
       >
+        {layer ? (
+          // 3D 칸: 그림 층 보관 조각이 캔버스를 붙인다(초상일 때는 숨김 — 넘김 효과 없음)
+          <div
+            ref={layer.attach}
+            data-teacher-slot=""
+            aria-hidden
+            className={cn("absolute inset-0", !show3d && "hidden")}
+          />
+        ) : null}
         {brokenSrc === teacher.portraitPath ? (
-          <TeacherPortrait teacher={null} size={INITIAL_PX} />
+          show3d ? null : (
+            <TeacherPortrait teacher={null} size={INITIAL_PX} />
+          )
         ) : (
           <Image
             data-teacher-portrait-image=""
@@ -104,7 +125,7 @@ export function TeacherWindow({
             height={TEACHER_WINDOW_PX.landscape.width}
             unoptimized
             onError={() => setBrokenSrc(teacher.portraitPath)}
-            className="size-full object-cover"
+            className={cn("size-full object-cover", show3d && "hidden")}
           />
         )}
         {indicator === "thinking" ? (

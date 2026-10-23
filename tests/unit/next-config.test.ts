@@ -5,7 +5,7 @@ import {
   PHASE_PRODUCTION_BUILD,
 } from "next/constants";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import nextConfig from "../../next.config";
+import nextConfig, { TEACHER_ASSET_CACHE } from "../../next.config";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -34,5 +34,16 @@ describe("쪽 확장자(next.config pageExtensions)", () => {
     const extensions = extensionsOf(PHASE_DEVELOPMENT_SERVER);
     expect(extensions).toContain("preview.tsx");
     expect(extensions).toContain("local.tsx");
+  });
+});
+
+describe("선생님 자산 캐시(next.config headers)", () => {
+  it("AC-N12 회화 선생님 모델 · 초상(/teachers/)은 1년 바꾸지 않는 캐시 머리글이다(파일 이름에 내용 해시)", async () => {
+    const rules = (await nextConfig(PHASE_PRODUCTION_BUILD).headers?.()) ?? [];
+    const teachers = rules.find((r) => r.source === "/teachers/:path*");
+    expect(teachers?.headers).toEqual([
+      { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+    ]);
+    expect(TEACHER_ASSET_CACHE).toBe("public, max-age=31536000, immutable");
   });
 });

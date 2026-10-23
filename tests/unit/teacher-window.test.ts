@@ -1,5 +1,6 @@
 // 회화 세션 선생님 창(초상 · 상태 표시 · 이름표)과 회화 틀의 창 칸 · 칭찬 때 판정(선생님 화면 plan 값 13, 4절 회화 세션 '선생님 창' 행 ·
-// 증명 표 AC-19c 창 접근 이름 · AC-19g 칭찬 때 · AC-19h 초상 몫). 3D · 대신 표시 까닭(data-teacher-fallback)은 d8 이다.
+// 증명 표 AC-19c 창 접근 이름 · AC-19g 칭찬 때 · AC-19h 초상 몫). 그림 층 공유 값에 따른 3D 칸 · 대신 표시 까닭(data-teacher-fallback)은
+// d8 몫(plan 값 14 · AC-19i 창 몫)이다.
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -8,10 +9,15 @@ import {
   teacherWindowShown,
 } from "@/components/conversation/talk-frame";
 import {
+  TeacherLayerContext,
+  type TeacherLayerValue,
+} from "@/components/teacher/teacher-layer";
+import {
   TEACHER_WINDOW_PX,
   TeacherWindow,
   WINDOW_SIZE_CLASS,
 } from "@/components/teacher/teacher-window";
+import { LAYER_FALLBACKS } from "@/core/teacher/layer";
 import { TEACHER_STATES, type TeacherState } from "@/core/teacher/state";
 
 // 브라우저 전용 표시 모듈 · 쪽 길잡이 · 서버 액션은 시험(node)에서 빈 모듈로
@@ -35,9 +41,50 @@ const MINA = {
 
 function windowOf(state: TeacherState, reducedMotion = false): string {
   return renderToStaticMarkup(
-    createElement(TeacherWindow, { teacher: MINA, state, reducedMotion }),
+    createElement(TeacherWindow, {
+      teacher: MINA,
+      state,
+      reducedMotion,
+      started: true,
+    }),
   );
 }
+
+/** 그림 층 보관 조각 안의 창(공유 값을 바꿔 넣음). */
+function layeredWindowOf(
+  layer: Pick<TeacherLayerValue, "render" | "fallback">,
+  {
+    state = "idle",
+    started = true,
+  }: { state?: TeacherState; started?: boolean } = {},
+): string {
+  const value: TeacherLayerValue = {
+    ...layer,
+    attach: () => {},
+    setPose: () => {},
+    close: () => {},
+  };
+  return renderToStaticMarkup(
+    createElement(
+      TeacherLayerContext.Provider,
+      { value },
+      createElement(TeacherWindow, {
+        teacher: MINA,
+        state,
+        reducedMotion: false,
+        started,
+      }),
+    ),
+  );
+}
+
+/** 3D 칸 · 초상 그림 태그(속성 차례와 관계없이). */
+const slotTag = (html: string) =>
+  html.match(/<div[^>]*data-teacher-slot[^>]*>/)?.[0];
+/** class 속성 안의 hidden(aria-hidden 은 아님). */
+const HIDDEN_CLASS = /class="[^"]*\bhidden\b/;
+const portraitTag = (html: string) =>
+  html.match(/<img[^>]*data-teacher-portrait-image[^>]*>/)?.[0];
 
 describe("선생님 창(초상)", () => {
   it("AC-19c 선생님 창은 접근 이름 · 이름표가 '[이름] 선생님'이고 선생님 키 · 상태 · 초상 표시 속성을 달며 3D 를 시작하기 전이라 까닭 속성이 없다", () => {
@@ -108,6 +155,52 @@ describe("선생님 창(초상)", () => {
       `h-[${portrait.height}px] w-[${portrait.width}px] lg:h-[${landscape.height}px] lg:w-[${landscape.width}px]`,
     );
     expect(windowOf("idle")).toContain(WINDOW_SIZE_CLASS);
+  });
+});
+
+describe("선생님 창의 3D 칸 · 대신 표시(그림 층 공유 값)", () => {
+  it("AC-19i 그림 층이 3D 이고 '시작!'을 누른 뒤면 창은 data-teacher-render=3d 로 3D 칸을 보이고 초상 · 상태 표시를 숨기며 까닭 속성이 없다", () => {
+    const html = layeredWindowOf({ render: "3d" }, { state: "speaking" });
+    expect(html).toContain('data-teacher-render="3d"');
+    expect(html).not.toContain("data-teacher-fallback");
+    expect(slotTag(html)).toBeDefined();
+    expect(slotTag(html)).not.toMatch(HIDDEN_CLASS);
+    expect(portraitTag(html)).toMatch(HIDDEN_CLASS);
+    expect(html).not.toContain("data-teacher-indicator");
+  });
+
+  it("AC-19i '시작!' 화면에서는 3D 가 먼저 되어도 초상이고(3D 칸은 숨긴 채 둠) 상태 표시가 그대로다", () => {
+    const html = layeredWindowOf(
+      { render: "3d" },
+      { state: "speaking", started: false },
+    );
+    expect(html).toContain('data-teacher-render="portrait"');
+    expect(html).not.toContain("data-teacher-fallback");
+    expect(slotTag(html)).toMatch(HIDDEN_CLASS);
+    expect(portraitTag(html)).not.toMatch(HIDDEN_CLASS);
+    expect(html).toContain('data-teacher-indicator="speaking"');
+  });
+
+  it("AC-19i 대신 표시 까닭 다섯마다 창은 초상 · 그 까닭 속성이고 초상에서도 상태 표시가 보이며 오류 글 · 단추가 없다", () => {
+    for (const fallback of LAYER_FALLBACKS) {
+      for (const state of ["speaking", "thinking", "praise"] as const) {
+        const html = layeredWindowOf(
+          { render: "portrait", fallback },
+          { state },
+        );
+        expect(html, fallback).toContain('data-teacher-render="portrait"');
+        expect(html, fallback).toContain(`data-teacher-fallback="${fallback}"`);
+        expect(html, fallback).toContain(`data-teacher-indicator="${state}"`);
+        expect(html, fallback).not.toContain("<button");
+        expect(html, fallback).not.toMatch(/오류|불러오|다시/);
+      }
+    }
+  });
+
+  it("AC-19c 그림 층 보관 조각 밖의 창(그 밖 화면)은 3D 칸 없이 늘 초상이다", () => {
+    const html = windowOf("idle");
+    expect(html).not.toContain("data-teacher-slot");
+    expect(html).toContain('data-teacher-render="portrait"');
   });
 });
 

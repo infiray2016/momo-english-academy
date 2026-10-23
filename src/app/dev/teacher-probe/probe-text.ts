@@ -32,6 +32,33 @@ export const PROBE_TEXT = {
   copy: "목록 복사",
   copied: "복사했어요 · 대화창에 붙여 넣어 주세요",
   copyFailed: "복사하지 못했어요. 표를 길게 눌러 복사해 주세요",
+  view3dHeading: "3D 보기",
+  view3dNote:
+    "선생님을 고르면 회화 세션과 같은 선생님 창(그림 층 보관 조각)으로 3D 를 불러와요. 잰 값은 점검표 칸에 그대로 적어요.",
+  view3dPick: (nameKo: string) => `${nameKo} 3D 보기`,
+  view3dOff: "선생님 창 설정을 읽지 못했어요. 개발용 DB 설정을 확인해 주세요",
+  renderSetting: (value: string) => `지금 talk.teacher_render: ${value}`,
+  loadMs: "불러오기",
+  firstFrameMs: "첫 장",
+  fps: "초당 장 수",
+  fallback: "대신 표시 까닭",
+  measureColumns: [
+    "불러오기",
+    "첫 장",
+    "초당 장 수",
+    "대신 표시 까닭",
+  ] as const,
+  stateHeading: "선생님 상태",
+  states: {
+    idle: "쉬기",
+    speaking: "말하기",
+    listening: "듣기",
+    praise: "칭찬",
+    thinking: "생각",
+  },
+  none: "—",
+  ms: (ms: number) => `${Math.round(ms)}ms`,
+  perSecond: (n: number) => n.toFixed(1),
 } as const;
 
 /** 목소리 목록 한 줄. */

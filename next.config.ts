@@ -7,6 +7,11 @@ const BASE_PAGE_EXTENSIONS = ["tsx", "ts", "jsx", "js"];
 const PREVIEW_PAGE_EXTENSION = "preview.tsx";
 /** 로컬 전용 화면(page.local.tsx, 시드 보기)은 next dev 에서만 넣는다. 프리뷰 · 운영 · 로컬 next build 에서 빠진다(P5b, AC-7f). */
 const LOCAL_PAGE_EXTENSION = "local.tsx";
+/**
+ * 회화 선생님 모델 · 초상(public/teachers/ — 파일 이름에 내용 해시)은 1년 바꾸지 않는 캐시(선생님 화면 plan 값 15 · spec '제공' 행).
+ * 내용이 바뀌면 이름이 바뀐다(teacher:reduce).
+ */
+export const TEACHER_ASSET_CACHE = "public, max-age=31536000, immutable";
 
 export default function nextConfig(phase: string): NextConfig {
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
@@ -23,6 +28,12 @@ export default function nextConfig(phase: string): NextConfig {
       "/": ["./seed/lists/**/*.json", "./seed/teachers.json"],
       "/*": ["./seed/lists/**/*.json", "./seed/teachers.json"],
     },
+    headers: async () => [
+      {
+        source: "/teachers/:path*",
+        headers: [{ key: "Cache-Control", value: TEACHER_ASSET_CACHE }],
+      },
+    ],
     pageExtensions: [
       ...BASE_PAGE_EXTENSIONS,
       ...(isProductionDeployment ? [] : [PREVIEW_PAGE_EXTENSION]),

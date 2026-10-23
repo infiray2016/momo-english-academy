@@ -1,11 +1,14 @@
 // 회화 세션 선생님 창 e2e(선생님 화면 plan 차례 7 — 증명 표 AC-19c 창 · 말풍선 접근 이름 · AC-19g · AC-19h 초상 몫 · AC-19j 화면 몫, 4절 회화
-// 세션 '선생님 창' 행 · 7절 읽어 주기 행). 기본 프로젝트는 WebGL 을 끈 채(fixtures webgl off) 돌아 창이 늘 초상이다 — 3D 는 d8 · d9.
+// 세션 '선생님 창' 행 · 7절 읽어 주기 행). 기본 프로젝트는 WebGL 을 끈 채(fixtures webgl off) 돌아 창이 늘 초상이다 — 3D 는 d9.
+// 차례 8(d8): 대신 표시 AC-19i 기본 몫 — WebGL 없음(no-webgl) · 설정(talk.teacher_render=portrait → setting)에서 초상 · 까닭 속성 ·
+// 오류 글 · 새 단추 없음 · 모델(.vrm) 요청 0 · 그만하기 → 정리 → 마무리까지, 관찰 쪽 '3D 보기'의 까닭 칸.
 // 선생님 상태는 쪽 안 기록(MutationObserver — data-teacher-state 바뀜)과 가짜 읽어 주기의 시작 · 끝 · 오류 사건을 같은 시계로 남겨 견준다.
 // 회화 턴은 가짜 Anthropic SSE(talkReply), 듣기는 가짜 Web Speech 대본. 숫자는 시험용 설정 · 명단에서 읽는다. 아이 이름은 지어낸 값이다.
 // 녹음하지 않는다. 화면 검토 사진은 E2E_PHOTOS 때만(teacher-window-…).
 import type { BrowserContext, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import teachersFile from "../../seed/teachers.json";
+import { PROBE_TEXT } from "../../src/app/dev/teacher-probe/probe-text";
 import { MORE_PROMPT } from "../../src/core/conversation/flow";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
 import type { TalkCard } from "../../src/core/seed/schema/talk";
@@ -15,6 +18,7 @@ import type {
   SpeechScript,
   UtteranceRun,
 } from "../../src/core/speech/script";
+import type { TeacherLayerSignal } from "../../src/core/teacher/layer";
 import { lessons } from "../../src/db/schema/content";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { CHILD_VIEWPORTS } from "./child-size";
@@ -51,6 +55,7 @@ const T = {
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   rest: "미나가 잠깐 쉬어요",
   next: "다음",
+  stopYes: "그만할래요",
 } as const;
 const MINA = teachersFile.teachers.find((t) => t.key === "mina");
 if (!MINA) throw new Error("명단에 미나가 없다");
@@ -105,6 +110,13 @@ function installTeacherLog(): void {
       };
   const log: Entry[] = [];
   (window as unknown as { __teacherLog: Entry[] }).__teacherLog = log;
+  // 그림 층 사건(momo:teacher — d8)
+  const signals: unknown[] = [];
+  (window as unknown as { __teacherSignals: unknown[] }).__teacherSignals =
+    signals;
+  window.addEventListener("momo:teacher", (event) =>
+    signals.push((event as CustomEvent).detail),
+  );
   let last: string | null = null;
   const look = () => {
     const el = document.querySelector("[data-teacher-window]");
@@ -141,6 +153,30 @@ function installTeacherLog(): void {
     },
     { once: true },
   );
+}
+
+/** 그림 층 사건(momo:teacher) 기록. */
+async function teacherSignals(page: Page): Promise<TeacherLayerSignal[]> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __teacherSignals: TeacherLayerSignal[] })
+        .__teacherSignals,
+  );
+}
+
+/** 모델(.vrm) 요청 수를 센다(쪽을 열기 전에 단다). */
+function countModelRequests(page: Page): () => number {
+  let n = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.endsWith(".vrm")) n += 1;
+  });
+  return () => n;
+}
+
+/** 아이 화면에 3D 오류 글 · 다시 불러오기 단추가 없다(C122). */
+async function expectNoLayerError(page: Page) {
+  await expect(page.getByText(/불러오|오류|3D|WebGL/)).toHaveCount(0);
+  await expect(teacherWindow(page).getByRole("button")).toHaveCount(0);
 }
 
 async function teacherLog(page: Page): Promise<LogEntry[]> {
@@ -275,7 +311,7 @@ async function boxOf(page: Page, selector: string) {
 test.describe("회화 세션 선생님 창(차례 7)", () => {
   test.setTimeout(LONG);
 
-  test("AC-19c 선생님 창은 '시작!' 화면부터 초상(까닭 속성 없음)이고 접근 이름 · 이름표가 '미나 선생님', 말풍선 접근 이름이 '미나 말 다시 듣기'이며 가로는 말풍선 왼쪽 · 세로는 위 띠 아래에 있고 인사 → 대화로 토막이 바뀌어도 같은 창이다", async ({
+  test("AC-19c 선생님 창은 '시작!' 화면부터 초상(WebGL 없는 쪽은 까닭 no-webgl)이고 접근 이름 · 이름표가 '미나 선생님', 말풍선 접근 이름이 '미나 말 다시 듣기'이며 가로는 말풍선 왼쪽 · 세로는 위 띠 아래에 있고 인사 → 대화로 토막이 바뀌어도 같은 창이다", async ({
     context,
   }) => {
     const { page, card } = await openWindowTalk(context, [
@@ -293,8 +329,8 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     await expect(win).toHaveCount(1);
     await expect(win).toHaveAttribute("data-teacher-key", "mina");
     await expect(win).toHaveAttribute("data-teacher-render", "portrait");
-    // 3D 를 시작하기 전 초상은 까닭 속성이 없다(d8 이 대신 표시 까닭을 더함)
-    expect(await win.getAttribute("data-teacher-fallback")).toBeNull();
+    // WebGL 이 없어 그림 층이 '시작!' 화면에서 바로 대신 표시로 간다(d8 — 3D 를 기다리지 않음)
+    await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
     await expect(win).toHaveAttribute("data-teacher-state", "idle");
     await expect(page.getByRole("img", { name: T.window })).toHaveCount(1);
     await expect(win.locator("figcaption")).toHaveText(T.window);
@@ -713,5 +749,120 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
       expect(r.pitch).toBe(1);
       expect(r.voice).toBe(TEST_VOICE);
     }
+  });
+});
+
+// ── 차례 8: 대신 표시(AC-19i 기본 프로젝트 몫) ──
+
+/** 회화 견본 카드의 정리 되짚을 말(1~3단계 — 따라 말함). */
+function wrapLineOf(card: TalkCard) {
+  const line = card.closingLines[0];
+  if (!line) throw new Error("견본 꼴 — 정리 대사");
+  return line;
+}
+
+test.describe("선생님 창 대신 표시(차례 8)", () => {
+  test.setTimeout(LONG);
+
+  test("AC-19i WebGL 이 없는 기기에서는 선생님 창이 no-webgl 까닭의 초상이고 오류 글 · 새 단추 없이 대화 → 그만하기 → 정리 → 마무리까지 가며 모델(.vrm)을 받지 않는다", async ({
+    context,
+  }) => {
+    const probe = (await insertTalkLesson({ level: 1 })).content as TalkLesson;
+    const line = wrapLineOf(probe.card);
+    let models = () => 0;
+    const { page } = await openWindowTalk(
+      context,
+      [saidRun("I'm good."), saidRun(line.en)],
+      {
+        beforeGoto: async (p) => {
+          models = countModelRequests(p);
+        },
+      },
+    );
+    const win = teacherWindow(page);
+    await expect(page.locator("[data-talk-start]")).toBeVisible();
+    await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
+    await expect(win).toHaveAttribute("data-teacher-render", "portrait");
+    await expectNoLayerError(page);
+    await pastStart(page);
+    // 인사 턴 하나 → 대화 첫 아이 차례(초상에서도 상태가 바뀐다)
+    await pushFakeAi([talkReply({ tori_en: "Great! Let's talk." })]);
+    await talkTurn(page);
+    await untilChildTurn(page);
+    await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
+    await expect(page.locator("canvas")).toHaveCount(0);
+    expect(statesOf(await teacherLog(page))).toEqual(
+      expect.arrayContaining(["idle", "listening"]),
+    );
+    await expectNoLayerError(page);
+    // 그만하기 → 정리(따라 말하기) → 끝인사 → 마무리 첫 장
+    await page.locator("[data-paper-band] [data-talk-stop]").click();
+    await page.getByRole("button", { name: T.stopYes }).click();
+    await expect(page.locator("[data-talk-wrap]")).toBeVisible();
+    await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
+    await page.locator("[data-talk-wrap] [data-speak]").click();
+    await expect(page.locator('[data-closing-card="1"]')).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    // 마무리 세 장에는 창이 없다(초상만 — 4절)
+    await expect(win).toHaveCount(0);
+    await expect(page.getByText(/불러오|오류|3D|WebGL/)).toHaveCount(0);
+    // 그림 층 사건은 대신 표시 한 번(불러오기 시작 · 첫 장 없음), 모델 요청 0
+    const signals = await teacherSignals(page);
+    expect(signals).toEqual([{ type: "fallback", reason: "no-webgl" }]);
+    expect(models()).toBe(0);
+  });
+
+  test("AC-19i talk.teacher_render=portrait 면 선생님 창이 setting 까닭의 초상이고 모델(.vrm) 요청이 0 이며 대화가 이어진다", async ({
+    context,
+  }) => {
+    await withHouseholdSetting("talk.teacher_render", "portrait", async () => {
+      let models = () => 0;
+      const { page } = await openWindowTalk(context, [saidRun("I'm good.")], {
+        beforeGoto: async (p) => {
+          models = countModelRequests(p);
+        },
+      });
+      const win = teacherWindow(page);
+      // 설정이 WebGL 검사보다 먼저다(3D 코드 조각도 받지 않음)
+      await expect(win).toHaveAttribute("data-teacher-fallback", "setting");
+      await pastStart(page);
+      await pushFakeAi([talkReply({ tori_en: "Great! Let's talk." })]);
+      await talkTurn(page);
+      await untilChildTurn(page);
+      await expect(win).toHaveAttribute("data-teacher-render", "portrait");
+      await expect(win).toHaveAttribute("data-teacher-fallback", "setting");
+      await expectNoLayerError(page);
+      expect(await teacherSignals(page)).toEqual([
+        { type: "fallback", reason: "setting" },
+      ]);
+      expect(models()).toBe(0);
+    });
+  });
+
+  test("AC-19i 관찰 쪽 '3D 보기'는 WebGL 없는 쪽에서 선생님 창을 no-webgl 초상으로 두고 대신 표시 까닭 칸에 적는다", async ({
+    page,
+  }) => {
+    await talkHousehold(1);
+    const models = countModelRequests(page);
+    await page.goto("/dev/teacher-probe");
+    await expect(page.getByTestId("teacher-probe")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
+    await expect(page.getByTestId("render-setting")).toHaveText(
+      PROBE_TEXT.renderSetting(TEST_SETTINGS["talk.teacher_render"].value),
+    );
+    await page
+      .getByRole("button", { name: PROBE_TEXT.view3dPick(MINA.nameKo) })
+      .click();
+    await expect(teacherWindow(page)).toHaveAttribute(
+      "data-teacher-fallback",
+      "no-webgl",
+    );
+    await expect(page.locator('[data-measure="fallback"]')).toHaveText(
+      "no-webgl",
+    );
+    expect(models()).toBe(0);
   });
 });
