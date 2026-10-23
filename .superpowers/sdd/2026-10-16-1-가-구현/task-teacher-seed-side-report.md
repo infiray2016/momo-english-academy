@@ -110,3 +110,57 @@
 4. 앱 쪽에서 명단을 읽는 일(서버 묶음 추적 `next.config.ts outputFileTracingIncludes`, `src/server/seed-lists.ts` 류 읽기, 화면에 AI 성격 글 · 출처를 보내지 않기)은 C118 차례 몫이라 하지 않았다. seed-viewer(`src/server/seed-viewer/files.ts`)는 SEED_FILES 를 다 읽으므로 teachers.json 도 읽는다. 적재(load.ts)는 이 파일을 DB 에 넣지 않는다.
 5. 통합 시험(`pnpm test:int`)과 로컬 e2e(seed-viewer)는 DB · 서버가 필요해 돌리지 않았다. 적재 경로는 바꾸지 않았고, 적재가 쓰는 견본 나무는 단위 시험(seed-validate-cli · seed-check-cli · 완전성)으로 검증을 통과한다.
 6. 작업 중 tsc 의 기존 오류를 견주려고 워크트리에서 `git stash` · `git stash pop` 을 한 번 했다(1분 안, 추적 파일만). 그 사이 vocab.json · prompts/ 에는 바뀐 것이 없었고, pop 뒤 상태가 그대로임을 확인했다. 같은 워크트리를 다른 사람이 함께 고치는 때에는 쓰지 말아야 할 방법이어서 적어 둔다.
+
+## fix round 1(2026-10-23 09:5x, 검토 review-teacher-seed-side-code · C132)
+
+상태: DONE. 시험을 먼저 썼다. 새 시험 4개가 실패하는 것을 본 뒤 구현했다. 커밋 없음. 규격 파일(seed/unit-specs.json · level-specs.json)과 vocab.json · prompts/ 는 손대지 않았다.
+
+### 바뀐 것
+1. **I-1 → C132 (1), (나) 길.** `src/core/seed/check-teacher.ts:58-122`
+   - 허용 조사 목록(KO_NAME_TAILS)을 지웠다. 앞 글자가 한글이 아니면 뒤에 무엇이 붙어도 걸고, `KO_NAME_WORD_EXCEPTIONS`(미나리 · 미나토 · 토리노 · 토리이 · 리오넬 · 리오데자네이루 · 리옹)로 시작하는 자리만 뺀다.
+   - 마지막 음절에 받침을 붙인 줄임 꼴(토리+ㄴ='토린', 토리+ㄹ='토릴')도 이름으로 본다(`nameAt`). 검토자가 놓쳤다고 한 '토린 좋아'는 글자 그대로 찾으면 '토리'가 없어서 이 갈래가 필요했다. 이 갈래 때문에 '리옹'(리오+ㅇ)이 걸려 빼는 목록에 넣었다.
+   - 이름의 마지막 음절에 받침이 있으면 같은 받침만 받는다.
+2. **C132 (2).** `checkTeacherNamesInSpecs`(check-teacher.ts:154)를 `buildReferenceIndex`(reference-index.ts:529)에서 부른다.
+   - 회화 행의 단원 규격 topic(`unitSpecs.<i>.topic`)과 단계 규격 canDo(`levelSpecs.<i>.canDo`)를 보고, 걸리면 규칙 teacher-name 의 규격 파일 오류로 낸다.
+   - 읽기 · 쓰기 · 말하기 행은 보지 않는다.
+   - 시험용 나무의 회화 canDo '토리와 …'를 '선생님과 …'로 바꿨다(builders.ts:800-801).
+3. **C132 (3).** 글 역할 `flow` 를 새로 두었다(structure.ts:351). 예상 흐름 글 조각은 이 역할로 나오고(schema/talk.ts:194), 회화 영어 역할 목록 TALK_ROLES 에는 넣지 않았다(check-talk.ts 주석).
+   - 시험용 나무 예상 흐름은 'The teacher says the words again.'으로 되돌렸다.
+4. **M-2.** 쓰기 · 말하기 견본 제목에 '미나와 리오 · Tori'를 넣어도 안 걸림을 단언했다. assetExists 갈래도 시험했다.
+   - validateSeed: 모델을 채운 명단과 `() => false` 를 주면 teacher-asset 오류 하나이고 summary.referenceErrors 1, 종료 1이다. 넘기지 않으면 오류 0이다.
+   - runValidate 셋째 인자: `() => false` 면 1, `() => true` 와 넘기지 않음은 0이다.
+5. **M-3.** 자산 경로 refine(schema/teachers.ts:22)이 조각마다 빈 글자 · '.' · '..' 를 막는다('//' · 끝 '/' 포함).
+
+### 정한 것
+- (3)을 경로로 빼지 않고 역할을 바꾼 까닭: 미션 영어(missions.en)가 같은 역할 prompt 를 써서, prompt 를 목록에서 빼면 미션의 길이 상한도 함께 빠진다.
+- flow 를 TALK_ROLES · 보강 덮기 역할(COVERAGE_ROLES)에 넣지 않았다. 그래서 예상 흐름은 문장 길이와 함께 형태 범위 · 단원 단어 확인 · 문장 통계 · 보강 덮기 '나옴' 세기에서도 빠진다. 아이에게 보이지 않는 AI 지시 글을 아이 영어 검사 밖에 두는 C132 (3)의 뜻으로 읽었다.
+- 금지어 검사와 선생님 이름 검사는 모든 글 조각을 보므로 예상 흐름에도 그대로 걸린다.
+- 길이 상한만 빼야 한다면, 역할 목록 대신 TextScope 에 길이 상한만 빼는 역할 칸을 더하면 된다.
+
+### 덮는 시험(tests/unit/seed-teacher.test.ts, 19개)
+새로 더한 것:
+- 'C132 (3) 회화 카드의 예상 흐름은 문장 길이 상한을 받지 않고, 다른 영어 칸은 그대로 받는다'
+- 'AC-19e 회화 영역의 단원 규격 주제와 단계 규격 can-do 글에 이름이 있으면 규격 파일 오류다(읽기 · 쓰기 · 말하기 행은 안 봄, C132 (2))'
+- 'AC-19a 시드 검증 · 명령은 assetExists 로 채워진 모델 칸의 파일 없음을 규격 파일 오류 하나로 낸다(검토 M-2)'
+- 'AC-19a 자산 경로는 빈 조각('//' · 끝 '/')을 받지 않는다(검토 M-3)'
+
+고친 것:
+- 한국어 시험의 이름을 'AC-19e 한국어 이름은 앞 글자가 한글이 아니면 뒤에 무엇이 붙어도 걸고, 이름으로 시작하는 보통 낱말 · 낱말 안에 든 글자는 뺀다(C132 (1))'로 바꿨다.
+  - 걸림: 검토의 아홉 꼴(토리라고 · 토리라는 · 토리인데 · 미나이고 · 토리잖아 · 토리지 · 미나쌤 · 미나선생님 · 토린)과 토릴, 원래 있던 조사 꼴
+  - 안 걸림: 미나리 · 토리노 · 미나토 · 리오넬 · 토리이 · 리옹 · 세미나 · 시나리오 · 스토리 · 히스토리 · 포트폴리오 · 마리오 · 카테고리 · 도토리
+- '읽기 · 쓰기 · 말하기 글 …' 시험에 쓰기 · 말하기 견본을 더했다.
+
+### 관문(p08)
+| 명령 | 결과 |
+|---|---|
+| `pnpm exec biome ci` | 310 파일 깨끗함 |
+| `pnpm exec tsc --noEmit` | 이번 변경 오류 0(PageProps · LayoutProps 7건은 원래 있던 것) |
+| `pnpm test` | 파일 56 · 543 통과 · 6 todo |
+| `pnpm -s seed:validate`(지금 작업 트리) | 칸 442 · 통과 442 · 실패 0 · 규격 파일 오류 0 |
+| `pnpm -s check:ids --specs <본 저장소 specs>` | 종료 0. 남은 것은 지난번 우려 1 과 같다 |
+
+**실시드 '토리' 걸림 수:** 13건(규격 파일 오류). level-specs.json 회화 canDo 12행(levelSpecs.36~47)과 unit-specs.json 회화 1단계 단원 1 주제 '토리와 첫 만남' 1행이다. HEAD 의 규격 파일 둘로 바꾼 사본(scratchpad seed-head)에 seed:validate 를 돌려 셌다. 학습 설계자가 작업 트리에서 이 글을 이미 '선생님과 첫 만남' · '선생님…'으로 고쳐서, 지금 작업 트리에서는 0이다(git diff: level-specs.json 24줄 · unit-specs.json 2줄 · vocab.json 8줄, 설계자 몫).
+
+### 남은 우려
+- 빼는 목록은 지금 명단(토리 · 미나 · 리오)에 맞춘 것이다. 명단에 이름을 더하면 그 이름으로 시작하는 보통 낱말을 함께 더해야 헛걸림이 없다(코드 주석에 적음). 헛걸림이 나면 칸을 다시 만드는 쪽으로 틀린다.
+- 받침 줄임 갈래는 '리온' 같은 다른 이름 꼴도 건다(막는 쪽).
