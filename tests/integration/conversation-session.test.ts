@@ -453,6 +453,23 @@ describe("회화 선생님(선생님 화면 plan 값 7 — 처음 스냅숏 키 
     expect(h.fake.requests).toHaveLength(0);
   });
 
+  it("AC-19b 선생님을 고르기 전(처음 스냅숏 없음) 세션의 확인한 '그만하기'는 not_found 이고 중단 · 끝맺음 기록 · 끝맺음 턴 예약이 없다", async () => {
+    profileId = await resetHousehold(db, 1, null);
+    const sessionId = await startTalk(h, 1);
+    expect((await viewOf(h, sessionId)).teacher).toBeNull();
+    const before = await sessionOf(db, sessionId);
+    expect(await stopTalk({ sessionId, confirmed: true }, h.deps())).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    const after = await sessionOf(db, sessionId);
+    expect(after.status).toBe(before.status);
+    expect(after.talkSegment).toBe(before.talkSegment);
+    expect(await closingRecord(sessionId)).toBeUndefined();
+    expect(h.tasks).toHaveLength(0);
+    expect(h.fake.requests).toHaveLength(0);
+  });
+
   it("AC-19b 영어 이름이 Mina 인 프로필의 고를 선생님은 리오만이다", async () => {
     profileId = await resetHousehold(db, 1, null);
     await db

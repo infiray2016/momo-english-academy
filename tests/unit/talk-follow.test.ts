@@ -136,7 +136,8 @@ describe("처음 회화 안내 · '시작!'(값 14 · 3.3)", () => {
     expect(first).toContain("미나는 앱 속 AI 선생님이에요.");
     expect(first).toContain("미나는 지난 이야기를 조금 기억해요");
     expect(first).toContain("미나와 나눈 이야기는 부모님도 볼 수 있어요");
-    expect(first).toContain('aria-label="미나 선생님"');
+    // 선생님 그림은 회화 틀의 선생님 창이 맡는다(선생님 화면 plan 값 13 — '시작!' 화면에도 창이 초상으로 있다)
+    expect(first).not.toContain('role="img"');
     expect(first).toContain(TALK_START_TEXT.start);
     expect(first).not.toContain("토리");
     // 고르기 전(이름 없음)은 '선생님'

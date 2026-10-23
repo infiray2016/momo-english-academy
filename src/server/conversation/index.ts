@@ -1261,7 +1261,9 @@ export async function stopTalk(
         lock: true,
         at,
       });
-      if (!state || !isTalkOpen(state.session))
+      // 처음 스냅숏 전(선생님을 아직 안 고름 — 선생님 화면 plan 값 7 미룸)이면 닫을 대화가 없다. 중단 · 끝맺음 기록 ·
+      // 끝맺음 턴(행 0 대화로 AI 부름) 없이 not_found(검토 묶음 1 M-1)
+      if (!state || !isTalkOpen(state.session) || !state.start)
         return { ok: false, reason: "not_found" } as const;
       if (!state.position.targetReached && !parsed.data.confirmed)
         return { ok: false, reason: "needs_confirm" } as const;

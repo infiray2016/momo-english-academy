@@ -81,7 +81,8 @@ export function PaperBand({
       data-paper-band=""
       className="flex flex-wrap items-center justify-between gap-4 rounded bg-paper px-6 py-3 shadow-band"
     >
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+      {/* 왼쪽 묶음이 남은 너비를 다 차지해 제목 · 둘째 줄이 그 안에서 접히고, 오른쪽 묶음은 같은 줄에 남는다(띠가 단추 줄로 늘지 않음 — 디자인 리뷰 2 N-3) */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-1">
         <Title className="font-heading text-[32px] leading-tight">
           {title}
         </Title>

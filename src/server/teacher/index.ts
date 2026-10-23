@@ -7,6 +7,7 @@ import { and, eq, isNull, notInArray, or } from "drizzle-orm";
 import { cache } from "react";
 import { z } from "zod";
 import type { Teacher } from "@/core/seed/schema/teachers";
+import { TEACHER_KEY } from "@/core/seed/structure";
 import {
   type TeacherView,
   teacherViewOf,
@@ -80,7 +81,7 @@ export type ChooseTeacherOutcome =
   | { ok: false; reason: "unknown" | "hidden" | "already" };
 
 const ChooseTeacherInputSchema = z.strictObject({
-  key: z.string().regex(/^[a-z]+$/),
+  key: z.string().regex(TEACHER_KEY),
 });
 
 /**

@@ -277,14 +277,13 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
       const reordered = { tori_ko: json.tori_ko, ...json };
       const body = messageBody({ model: "claude-haiku-5-5", json: reordered });
       const events: string[] = [];
-      const { plan, sentences } = harness([once(stream(body))], input, {
+      const { plan } = harness([once(stream(body))], input, {
         onStuck: (value) => events.push(`stuck:${value}`),
         onSentence: (sentence) => events.push(sentence),
       });
       const result = await streamTalk(plan);
       if (!result.ok) throw new Error(`실패: ${result.reason}`);
       expect(result.streamed).toBe(false);
-      expect(sentences).toEqual([]);
       // 끝에서 한 번에 내보내는 길도 막힘 판단을 첫 문장보다 먼저 한 번만 알린다(C125 (3) · C127)
       expect(events).toEqual([`stuck:${stuck}`, "Wow!", "A red ball."]);
       expect(result.value.stuck).toBe(stuck);

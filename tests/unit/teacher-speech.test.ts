@@ -59,7 +59,7 @@ function wrap() {
 }
 
 describe("선생님 음성 감싸기", () => {
-  it("선생님 음성: speak 마다 선생님 높이 · 목소리 순서를 넣고 빠르기는 부르는 쪽 값 그대로다", () => {
+  it("AC-19g · AC-19j 선생님 음성: speak 마다 선생님 높이 · 목소리 순서를 넣고 빠르기는 부르는 쪽 값 그대로다", () => {
     const { calls, speech } = wrap();
     void speech.speak("Hello.", { rate: 0.8 });
     void speech.speak("Again.");
@@ -72,7 +72,7 @@ describe("선생님 음성 감싸기", () => {
     expect(calls[0]?.options?.voicePrefer).toEqual(["samantha"]);
   });
 
-  it("선생님 음성: 시작 알림 없는 발화는 말하기가 아니고 결과에도 끄는 알림이 없다", async () => {
+  it("AC-19g 선생님 음성: 시작 알림 없는 발화는 말하기가 아니고 결과에도 끄는 알림이 없다", async () => {
     const { calls, changes, speech } = wrap();
     const outcome = speech.speak("Silent.");
     calls[0]?.finish({ kind: "cancelled" });
@@ -80,7 +80,7 @@ describe("선생님 음성 감싸기", () => {
     expect(changes).toEqual([]);
   });
 
-  it("선생님 음성: 미지원(unsupported) 결과도 시작이 없었으면 알림이 없다", async () => {
+  it("AC-19g 선생님 음성: 미지원(unsupported) 결과도 시작이 없었으면 알림이 없다", async () => {
     const { calls, changes, speech } = wrap();
     const outcome = speech.speak("Nope.");
     calls[0]?.finish({ kind: "unsupported" });
@@ -93,7 +93,7 @@ describe("선생님 음성 감싸기", () => {
     { kind: "cancelled" },
     { kind: "error", code: "synthesis-failed" },
   ] as const) {
-    it(`선생님 음성: 시작 알림에 켜고 ${outcome.kind} 뒤 끈다`, async () => {
+    it(`AC-19g 선생님 음성: 시작 알림에 켜고 ${outcome.kind} 뒤 끈다`, async () => {
       const { calls, changes, speech } = wrap();
       const result = speech.speak("Hello.");
       expect(changes).toEqual([]);
@@ -105,7 +105,7 @@ describe("선생님 음성 감싸기", () => {
     });
   }
 
-  it("선생님 음성: 부르는 쪽의 시작 알림도 함께 부른다", () => {
+  it("AC-19g 선생님 음성: 부르는 쪽의 시작 알림도 함께 부른다", () => {
     const { calls, speech } = wrap();
     const onStart = vi.fn();
     void speech.speak("Hello.", { onStart });
@@ -113,7 +113,7 @@ describe("선생님 음성 감싸기", () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
-  it("선생님 음성: 겹친 발화는 마지막 시작 발화가 끝날 때만 끈다", async () => {
+  it("AC-19g 선생님 음성: 겹친 발화는 마지막 시작 발화가 끝날 때만 끈다", async () => {
     const { calls, changes, speech } = wrap();
     const first = speech.speak("One.");
     calls[0]?.start();
@@ -128,7 +128,7 @@ describe("선생님 음성 감싸기", () => {
     expect(changes).toEqual([true, false]);
   });
 
-  it("선생님 음성: 앞 발화가 끝난 뒤 다음 발화가 시작하면 다시 켠다", async () => {
+  it("AC-19g 선생님 음성: 앞 발화가 끝난 뒤 다음 발화가 시작하면 다시 켠다", async () => {
     const { calls, changes, speech } = wrap();
     const first = speech.speak("One.");
     calls[0]?.start();
@@ -141,7 +141,7 @@ describe("선생님 음성 감싸기", () => {
     expect(changes).toEqual([true, false, true, false]);
   });
 
-  it("선생님 음성: 결과가 난 뒤 늦게 온 시작 알림은 말하기를 켜지 않는다", async () => {
+  it("AC-19g 선생님 음성: 결과가 난 뒤 늦게 온 시작 알림은 말하기를 켜지 않는다", async () => {
     const { calls, changes, speech } = wrap();
     const outcome = speech.speak("Late.");
     calls[0]?.finish({ kind: "cancelled" });
@@ -151,7 +151,7 @@ describe("선생님 음성 감싸기", () => {
     expect(changes).toEqual([]);
   });
 
-  it("선생님 음성: 한 발화의 시작 알림이 두 번 와도 한 번만 센다", async () => {
+  it("AC-19g 선생님 음성: 한 발화의 시작 알림이 두 번 와도 한 번만 센다", async () => {
     const { calls, changes, speech } = wrap();
     const outcome = speech.speak("Twice.");
     calls[0]?.start();
@@ -161,7 +161,7 @@ describe("선생님 음성 감싸기", () => {
     expect(changes).toEqual([true, false]);
   });
 
-  it("선생님 음성: 듣기 · 장치 · 잠금 풀기 · 끊기 · 마이크 · 닫기는 그대로 넘긴다", async () => {
+  it("AC-19g 선생님 음성: 듣기 · 장치 · 잠금 풀기 · 끊기 · 마이크 · 닫기는 그대로 넘긴다", async () => {
     const { port, changes, speech } = wrap();
     speech.device();
     speech.unlockFromGesture();
@@ -180,7 +180,7 @@ describe("선생님 음성 감싸기", () => {
 });
 
 describe("음성 층 훑기", () => {
-  it("음성 층: src/lib/speech 는 navigator.audioSession 을 쓰지(바꾸지) 않는다(C109)", () => {
+  it("AC-19g 음성 층: src/lib/speech 는 navigator.audioSession 을 쓰지(바꾸지) 않는다(C109)", () => {
     const dir = join(process.cwd(), "src/lib/speech");
     const files = readdirSync(dir).filter((f) => /\.tsx?$/.test(f));
     expect(files).toContain("teacher.ts");

@@ -2,6 +2,7 @@
 // 처음 스냅숏 · 따라 말하기(오늘 쓸 말 · 말해 보기 · 정리 · 마무리 한 번 더 말해 보기) · 끝맺음 기록(닫힌 까닭). 점수 · 단어별 정오는 없다(회화는
 // 채점하지 않음 — R2). P11a src/core/session/attempt.ts 는 고치지 않는다(회화 시도는 회화 서버만 읽고 쓴다, 정할 것 회3). 순수 모듈이다.
 import { z } from "zod";
+import { TEACHER_KEY } from "@/core/seed/structure";
 
 /** 시도 꼴 판(P11a INPUT_VERSION 과 같은 1). */
 const TALK_INPUT_VERSION = 1;
@@ -50,10 +51,7 @@ export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
     /** 말해 보기 바퀴마다의 차례(practiceOrderOf). */
     practiceOrder: z.array(z.array(index)),
     /** 이 대화의 회화 선생님 키(한 대화는 이 키로 끝까지 — 선생님 화면 plan 값 7). 선생님 전 옛 스냅숏에는 없다. */
-    teacherKey: z
-      .string()
-      .regex(/^[a-z]+$/)
-      .optional(),
+    teacherKey: z.string().regex(TEACHER_KEY).optional(),
   }),
   z.strictObject({ ...head("talk-today"), ...spoken, index }),
   z.strictObject({

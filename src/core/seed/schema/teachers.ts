@@ -4,7 +4,11 @@
 // 목소리 순서(voice.prefer)는 빈 목록을 받는다(값은 프리뷰 때 받은 기기 목소리 목록으로, plan 정할 것 9).
 import { z } from "zod";
 import { Text } from "@/core/seed/schema/reference";
-import { TEACHER_KINDS, TEACHER_PITCH } from "@/core/seed/structure";
+import {
+  TEACHER_KEY,
+  TEACHER_KINDS,
+  TEACHER_PITCH,
+} from "@/core/seed/structure";
 
 /** 창 바탕 · 이름표 색(`#rrggbb`). */
 const HexColor = z
@@ -51,7 +55,7 @@ export const TeacherSourceSchema = z.strictObject({
 
 export const TeacherSchema = z.strictObject({
   /** 키(영어 소문자). profiles.teacher_key 값이다. */
-  key: z.string().regex(/^[a-z]+$/, { message: "키는 영어 소문자다" }),
+  key: z.string().regex(TEACHER_KEY, { message: "키는 영어 소문자다" }),
   /** 꼴(1-가는 vrm 만). */
   kind: z.enum(TEACHER_KINDS),
   /** 한글 이름(화면 · 조사). */

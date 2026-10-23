@@ -296,6 +296,16 @@ export const OLD_TEACHER_NAMES = {
   ko: ["토리"],
   koWordExceptions: ["토리노"],
 } as const;
+/**
+ * 5절 명단 칸 '키(영어 소문자)' — profiles.teacher_key · 처음 스냅숏 teacherKey · 고르기 입력이 모두 이 꼴이다(명단 키 꼴은 여기 한 곳,
+ * 검토 묶음 1 M-2). 자산 파일 이름 `teachers/<키>.<8자>.*` 도 이 꼴의 키를 쓴다.
+ */
+export const TEACHER_KEY = /^[a-z]+$/;
+/**
+ * 자산 파일 이름 꼴 <TEACHER_ASSET_DIR>/<키>.<SHA-256 앞 8자>.<확장자>의 해시 글자 수(자산 검사, 검토 묶음 1 M-3).
+ * /teachers/ 를 오래 캐시하는 것은 이름에 내용 해시가 있다는 전제다.
+ */
+export const TEACHER_ASSET_HASH_CHARS = 8;
 /** 6.4 명단 자료 '꼴은 1-가에 vrm 만 받는다'(emoji 는 뒤에). */
 export const TEACHER_KINDS = ["vrm"] as const;
 /** 6.4 명단 자료 '성격 세 낱말(셋)'. */

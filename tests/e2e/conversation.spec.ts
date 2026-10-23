@@ -578,7 +578,7 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
 test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", () => {
   test.setTimeout(LONG);
 
-  test("회화 화면: 가로 1180×820 에서 토리 세 줄 · 힌트 끝 단 · 설명이 있는 턴에도 말하기 · 잘 모르겠어요 · 선생님의 약속이 보는 창 안이고 그만하기는 위 띠 안이다", async ({
+  test("회화 화면: 가로 1180×820 에서 선생님 말 세 줄 · 힌트 끝 단 · 설명이 있는 턴에도 말하기 · 잘 모르겠어요 · 선생님의 약속 · 선생님 창 · 오늘 이야기 목록이 보는 창 안이고 선생님 창은 말풍선 왼쪽 칸(목록은 그 아래)이며 그만하기는 위 띠 안이다", async ({
     context,
   }) => {
     const { page, card } = await openTalk(context, [saidRun("I'm good.")]);
@@ -603,6 +603,8 @@ test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", (
       "[data-child-turn] [data-speak]",
       "[data-dont-know]",
       "[data-tori-promise]",
+      "[data-teacher-window]",
+      "[data-talk-topics]",
     ]) {
       const box = await page.locator(selector).boundingBox();
       expect(box, selector).not.toBeNull();
@@ -613,8 +615,20 @@ test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", (
     await expect(
       page.locator("[data-paper-band] [data-talk-stop]"),
     ).toBeVisible();
-    // 가로에서 말하기 단추 묶음은 판 오른쪽(목업 B_Talk1 — 전체 디자인 리뷰 M-3)
+    // 가로에서 선생님 창은 대화 판(말풍선) 왼쪽 칸이고 오늘 이야기 목록은 그 아래(4절 '선생님 창' · 선생님 화면 plan 정할 것 7)
     const panel = await page.locator("[data-talk-panel]").boundingBox();
+    const teacherBox = await page
+      .locator("[data-teacher-window]")
+      .boundingBox();
+    const topicsBox = await page.locator("[data-talk-topics]").boundingBox();
+    expect(panel && teacherBox && topicsBox).toBeTruthy();
+    if (panel && teacherBox && topicsBox) {
+      expect(teacherBox.x + teacherBox.width).toBeLessThanOrEqual(panel.x);
+      expect(topicsBox.y).toBeGreaterThanOrEqual(
+        teacherBox.y + teacherBox.height,
+      );
+    }
+    // 가로에서 말하기 단추 묶음은 판 오른쪽(목업 B_Talk1 — 전체 디자인 리뷰 M-3)
     const speakBox = await page
       .locator("[data-child-turn] [data-speak]")
       .boundingBox();
@@ -1664,7 +1678,6 @@ async function silentTurn(page: Page) {
   await expect.poll(turnRequests).toBe(before + 1);
 }
 
-/** 토리가 마지막으로 읽은 말 n 개(응답이 다 읽힐 때까지 기다림). */
 /**
  * '모름'(막힘 · 말소리 없음 포함) 뒤 끝에 읽히는 말(C125 (3) 우선순위 · AC-15g): 1단계 처음 묻는 턴이면 같은 질문과 답 두 개 줄
  * (답 예시는 답 두 개 ①과 같아 빠짐), 아니면 답 예시와 같은 질문.
@@ -1677,6 +1690,7 @@ function dontKnowTailOf(
     : [turn.answerExample, turn.question.en];
 }
 
+/** 선생님이 마지막으로 읽은 말 n 개(응답이 다 읽힐 때까지 기다림). */
 async function spokenTail(page: Page, tail: readonly string[]) {
   await expect
     .poll(async () => (await speechRecord(page)).spoken.slice(-tail.length), {

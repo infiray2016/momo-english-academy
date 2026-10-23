@@ -103,7 +103,7 @@ describe("음성 접점 읽어 주기", () => {
     expect(spoken).toEqual([]);
   });
 
-  it("음성 접점: 넘긴 높이는 utterance.pitch 로 읽고 넘기지 않으면 기본 높이 그대로다", async () => {
+  it("AC-19j 음성 접점: 넘긴 높이는 utterance.pitch 로 읽고 넘기지 않으면 기본 높이 그대로다", async () => {
     const speech = createBrowserSpeech({ settings });
     await speech.speak("High.", { pitch: 1.08 });
     await speech.speak("Plain.");
@@ -113,7 +113,7 @@ describe("음성 접점 읽어 주기", () => {
     ]);
   });
 
-  it("음성 접점: 목소리 순서가 있으면 그 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice 목소리다", async () => {
+  it("AC-19j 음성 접점: 목소리 순서가 있으면 그 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice 목소리다", async () => {
     voices = [
       { name: "Daniel", lang: "en-GB", default: false, localService: true },
       { name: "Samantha", lang: "en-US", default: true, localService: true },
@@ -132,7 +132,7 @@ describe("음성 접점 읽어 주기", () => {
     ]);
   });
 
-  it("음성 접점: 기록 speak 줄에 넘긴 높이가 남는다", async () => {
+  it("AC-19j 음성 접점: 기록 speak 줄에 넘긴 높이가 남는다", async () => {
     const trace: unknown[] = [];
     const speech = createBrowserSpeech({
       settings,
@@ -151,7 +151,7 @@ describe("음성 접점 읽어 주기", () => {
     expect("pitch" in (lines[1] ?? {})).toBe(false);
   });
 
-  it("음성 접점: 시작 알림은 발화가 실제로 시작한 뒤 한 번, 결과보다 앞에 온다", async () => {
+  it("AC-19g 음성 접점: 시작 알림은 발화가 실제로 시작한 뒤 한 번, 결과보다 앞에 온다", async () => {
     const speech = createBrowserSpeech({ settings });
     const seen: string[] = [];
     const outcome = speech
@@ -165,7 +165,7 @@ describe("음성 접점 읽어 주기", () => {
     expect(seen).toEqual(["start", "ended"]);
   });
 
-  it("음성 접점: 시작하지 않은 발화(오류로 끝남)는 시작 알림이 없다", async () => {
+  it("AC-19g 음성 접점: 시작하지 않은 발화(오류로 끝남)는 시작 알림이 없다", async () => {
     run = (u) =>
       setTimeout(() => u.onerror?.({ error: "synthesis-failed" }), 0);
     const speech = createBrowserSpeech({ settings });
@@ -179,7 +179,7 @@ describe("음성 접점 읽어 주기", () => {
     expect(started).toBe(0);
   });
 
-  it("음성 접점: 끊긴 발화의 늦은 시작 알림은 넘기지 않는다", async () => {
+  it("AC-19g 음성 접점: 끊긴 발화의 늦은 시작 알림은 넘기지 않는다", async () => {
     const held: Utter[] = [];
     run = (u) => held.push(u);
     const speech = createBrowserSpeech({ settings });
@@ -195,7 +195,7 @@ describe("음성 접점 읽어 주기", () => {
     expect(started).toBe(0);
   });
 
-  it("음성 접점: 잠금 풀기는 시작 알림을 넘기지 않고 이어진 읽어 주기만 알린다", async () => {
+  it("AC-19g 음성 접점: 잠금 풀기는 시작 알림을 넘기지 않고 이어진 읽어 주기만 알린다", async () => {
     const speech = createBrowserSpeech({ settings });
     let started = 0;
     speech.unlockFromGesture();

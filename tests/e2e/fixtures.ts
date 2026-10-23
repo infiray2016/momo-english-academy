@@ -1,6 +1,8 @@
 // 모든 e2e 가 가져올 test(plan-p02 '바뀌는 파일' P2b, 다-4). 가짜 Web Speech 를 addInitScript 로 넣는다.
 // 대본은 test.use({ speechScript: loadSpeechScript("…") }) 로 바꾼다. 기본은 default-ok.
 // 접근 쿠키 준비(plan-p03b 공용 변경 5): 모든 e2e 가 유효한 가족 접근 쿠키를 갖고 시작한다(proxy 가 /dev/* 도 막는다, C57).
+// WebGL(선생님 화면 plan 값 13 · 9절 'WebGL 없는 CI'): 선택 webgl 기본 off — 문맥의 모든 쪽(page · speechPage)에서 캔버스의 webgl ·
+// webgl2 · experimental-webgl 맥락이 null 이라 선생님 창이 늘 초상(대신 표시 길)이다. 3D 프로젝트만 on(d9).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -39,10 +41,32 @@ export function loadSpeechSettings(): SpeechSettings {
   return speechSettingsFrom((key) => raw[key]);
 }
 
-export const test = base.extend<{ speechScript: SpeechScript }>({
+/** 쪽 시작 스크립트: 캔버스의 WebGL 맥락을 null 로(그 밖 맥락 — 2d 등 — 은 그대로). 밖 이름을 쓰지 않는다(Playwright 가 함수 글을 옮김). */
+export function disableWebgl(): void {
+  const original = HTMLCanvasElement.prototype.getContext;
+  const blocked = ["webgl", "webgl2", "experimental-webgl"];
+  HTMLCanvasElement.prototype.getContext = function getContext(
+    this: HTMLCanvasElement,
+    type: string,
+    ...rest: unknown[]
+  ) {
+    if (blocked.includes(type)) return null;
+    return (original as (...args: unknown[]) => unknown).call(
+      this,
+      type,
+      ...rest,
+    );
+  } as typeof original;
+}
+
+export type Webgl = "off" | "on";
+
+export const test = base.extend<{ speechScript: SpeechScript; webgl: Webgl }>({
   speechScript: [loadSpeechScript("default-ok"), { option: true }],
-  context: async ({ context, baseURL }, use) => {
+  webgl: ["off", { option: true }],
+  context: async ({ context, baseURL, webgl }, use) => {
     await addAccessCookie(context, baseURL);
+    if (webgl === "off") await context.addInitScript(disableWebgl);
     await use(context);
   },
   page: async ({ page, speechScript }, use) => {

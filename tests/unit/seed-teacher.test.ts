@@ -848,6 +848,17 @@ describe("자산 검사", () => {
       ])
       .join("\n");
 
+  /** 자산 파일 이름(teachers/<키>.<SHA-256 앞 8자>.<확장자>). */
+  const assetName = (key: string, digest: string, ext: "vrm" | "webp") =>
+    `teachers/${key}.${digest.slice(0, 8)}.${ext}`;
+  /** 파일을 옮긴다(명단 경로는 부르는 쪽이 맞춘다). */
+  const moveFile = (s: Setup, from: string, to: string) => {
+    const bytes = s.files.get(from);
+    if (!bytes) throw new Error(`파일 없음 ${from}`);
+    s.files.delete(from);
+    s.files.set(to, bytes);
+  };
+
   /** 미나(licenseName Other) · 리오(CC0)의 가짜 VRM · 초상과 그에 맞춘 명단. */
   function setup(): Setup {
     const roster = teacherRoster();
@@ -863,17 +874,19 @@ describe("자산 검사", () => {
         originalSha256: String(i + 1).repeat(64),
         reduction: `fixture reduction ${t.key}`,
       };
+      const portrait = new Uint8Array(PORTRAIT_BYTES).fill(i + 1);
+      // 이름은 줄이기 스크립트와 같은 꼴 teachers/<키>.<SHA-256 앞 8자>.<확장자>(검토 묶음 1 M-3)
       t.model = {
-        path: `teachers/${t.key}.0000000${i}.vrm`,
+        path: assetName(t.key, sha(model), "vrm"),
         bytes: model.length,
         sha256: sha(model),
       };
       t.portrait = {
-        path: `teachers/${t.key}.0000000${i}.webp`,
+        path: assetName(t.key, sha(portrait), "webp"),
         bytes: PORTRAIT_BYTES,
       };
       files.set(t.model.path, model);
-      files.set(t.portrait.path, new Uint8Array(PORTRAIT_BYTES).fill(i + 1));
+      files.set(t.portrait.path, portrait);
     });
     return { roster, files, limits: { ...LIMITS } };
   }
@@ -895,12 +908,22 @@ describe("자산 검사", () => {
     if (!t) throw new Error("명단 없음");
     return t;
   };
-  /** 미나 모델을 바꾸고 명단 바이트 · 해시를 맞춘다(그 밖 검사만 걸리게). */
+  /** 미나 모델을 바꾸고 명단 바이트 · 해시 · 이름을 맞춘다(그 밖 검사만 걸리게). */
   const replaceModel = (s: Setup, bytes: Uint8Array) => {
     const t = first(s);
+    s.files.delete(t.model.path);
+    t.model.path = assetName(t.key, sha(bytes), "vrm");
     s.files.set(t.model.path, bytes);
     t.model.bytes = bytes.length;
     t.model.sha256 = sha(bytes);
+  };
+  /** 미나 초상을 바꾸고 명단 바이트 · 이름을 맞춘다. */
+  const replacePortrait = (s: Setup, bytes: Uint8Array) => {
+    const t = first(s);
+    s.files.delete(t.portrait.path);
+    t.portrait.path = assetName(t.key, sha(bytes), "webp");
+    s.files.set(t.portrait.path, bytes);
+    t.portrait.bytes = bytes.length;
   };
 
   it("AC-19k 맞춘 가짜 자산은 통과한다", () => {
@@ -908,7 +931,7 @@ describe("자산 검사", () => {
     expect(checkTeacherAssets(s.roster, ioOf(s))).toEqual([]);
   });
 
-  it("AC-19k 깨뜨린 가짜 자료마다 거부 하나: 파일 없음 · 바이트 · 해시 · 크기 상한 · VRM 판 · 메타 넷 · 표정 · 뼈 · 원본 해시 · 명단 밖 .vrm · 출처 문서", () => {
+  it("AC-19k 깨뜨린 가짜 자료마다 거부 하나: 파일 없음 · 바이트 · 해시 · 이름의 해시 · teachers 폴더 · 크기 상한 · VRM 판 · 메타 넷 · 표정 · 뼈 · 원본 해시 · 명단 밖 .vrm · 출처 문서", () => {
     const cases: [string, string, (s: Setup) => void][] = [
       [
         "모델 없음",
@@ -925,7 +948,49 @@ describe("자산 검사", () => {
         "모델 해시",
         "teachers.0.model.sha256",
         (s) => {
-          first(s).model.sha256 = "f".repeat(64);
+          // 앞 8자는 그대로 두어 이름 검사는 걸리지 않게(해시 다름만)
+          const t = first(s);
+          t.model.sha256 = `${t.model.sha256.slice(0, 8)}${"f".repeat(56)}`;
+        },
+      ],
+      [
+        "모델 이름 해시",
+        "teachers.0.model.path",
+        (s) => {
+          const t = first(s);
+          const to = `teachers/${t.key}.00000000.vrm`;
+          moveFile(s, t.model.path, to);
+          t.model.path = to;
+        },
+      ],
+      [
+        "모델 폴더",
+        "teachers.0.model.path",
+        (s) => {
+          const t = first(s);
+          const to = t.model.path.replace(/^teachers\//, "models/");
+          moveFile(s, t.model.path, to);
+          t.model.path = to;
+        },
+      ],
+      [
+        "초상 이름 해시",
+        "teachers.0.portrait.path",
+        (s) => {
+          const t = first(s);
+          const to = `teachers/${t.key}.00000000.webp`;
+          moveFile(s, t.portrait.path, to);
+          t.portrait.path = to;
+        },
+      ],
+      [
+        "초상 폴더",
+        "teachers.0.portrait.path",
+        (s) => {
+          const t = first(s);
+          const to = t.portrait.path.replace(/^teachers\//, "");
+          moveFile(s, t.portrait.path, to);
+          t.portrait.path = to;
         },
       ],
       [
@@ -958,9 +1023,7 @@ describe("자산 검사", () => {
         "초상 크기 상한",
         "teachers.0.portrait.bytes",
         (s) => {
-          const big = new Uint8Array(PORTRAIT_BYTES + 1);
-          s.files.set(first(s).portrait.path, big);
-          first(s).portrait.bytes = big.length;
+          replacePortrait(s, new Uint8Array(PORTRAIT_BYTES + 1));
           s.limits.portraitMaxKb = PORTRAIT_BYTES / BYTES_PER_KB;
         },
       ],
@@ -1106,6 +1169,10 @@ describe("자산 검사", () => {
       "초상 없음": "초상 파일",
       "모델 바이트": "명단",
       "모델 해시": "SHA-256",
+      "모델 이름 해시": "꼴이 아니다",
+      "모델 폴더": "꼴이 아니다",
+      "초상 이름 해시": "꼴이 아니다",
+      "초상 폴더": "꼴이 아니다",
       "초상 바이트": "명단",
       "모델 크기 상한": "talk.teacher_model_max_mb",
       "초상 크기 상한": "talk.teacher_portrait_max_kb",

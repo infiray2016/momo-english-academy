@@ -15,13 +15,13 @@ import {
 const BODY_KEYS = ["headX", "headY", "headZ", "bodyX", "bodyY"] as const;
 
 describe("선생님 움직임(시제품 시험 다섯)", () => {
-  it("선생님 움직임: 말하기 밖(쉬기 · 듣기 · 생각 · 칭찬)에는 입이 0 이다", () => {
+  it("AC-19g 선생님 움직임: 말하기 밖(쉬기 · 듣기 · 생각 · 칭찬)에는 입이 0 이다", () => {
     for (const state of ["idle", "listening", "thinking", "praise"] as const) {
       expect(sampleMotion(state, 2.4, false).mouth).toBe(0);
     }
   });
 
-  it("선생님 움직임: 말하기는 입을 0.3 넘게 여는 때가 있고 늘 0~0.65 안이다", () => {
+  it("AC-19g 선생님 움직임: 말하기는 입을 0.3 넘게 여는 때가 있고 늘 0~0.65 안이다", () => {
     const samples = Array.from({ length: 100 }, (_, n) =>
       sampleMotion("speaking", n / 20, false),
     );
@@ -31,7 +31,7 @@ describe("선생님 움직임(시제품 시험 다섯)", () => {
     );
   });
 
-  it("선생님 움직임: 움직임 줄이기면 몸 · 고개가 시간과 관계없이 같고 말하기 입만 바뀐다", () => {
+  it("AC-19h 선생님 움직임: 움직임 줄이기면 몸 · 고개가 시간과 관계없이 같고 말하기 입만 바뀐다", () => {
     const first = sampleMotion("speaking", 0.2, true);
     const later = sampleMotion("speaking", 7.4, true);
     for (const key of BODY_KEYS) expect(first[key]).toBe(later[key]);
@@ -44,14 +44,14 @@ describe("선생님 움직임(시제품 시험 다섯)", () => {
     }
   });
 
-  it("선생님 움직임: 듣기는 고개를 기울이고 칭찬은 웃음이 눈에 띄게 커진다", () => {
+  it("AC-19g 선생님 움직임: 듣기는 고개를 기울이고 칭찬은 웃음이 눈에 띄게 커진다", () => {
     expect(sampleMotion("listening", 0, false).headZ).toBeGreaterThan(0.08);
     expect(sampleMotion("praise", 0, false).smile).toBeGreaterThan(
       sampleMotion("idle", 0, false).smile + 0.3,
     );
   });
 
-  it("선생님 움직임: 모르는 상태는 쉬기와 같고 입을 열지 않는다", () => {
+  it("AC-19g 선생님 움직임: 모르는 상태는 쉬기와 같고 입을 열지 않는다", () => {
     const unknown = "not-a-state" as TeacherState;
     expect(sampleMotion(unknown, 1, false)).toEqual(
       sampleMotion("idle", 1, false),
@@ -59,7 +59,7 @@ describe("선생님 움직임(시제품 시험 다섯)", () => {
     expect(sampleMotion(unknown, 1, false).mouth).toBe(0);
   });
 
-  it("선생님 움직임: 움직임 줄이기가 아니면 쉬기도 시간에 따라 몸이 움직인다", () => {
+  it("AC-19h 선생님 움직임: 움직임 줄이기가 아니면 쉬기도 시간에 따라 몸이 움직인다", () => {
     const a = sampleMotion("idle", 0.5, false);
     const b = sampleMotion("idle", 3.1, false);
     expect(BODY_KEYS.some((key) => a[key] !== b[key])).toBe(true);
@@ -75,7 +75,7 @@ describe("선생님 상태 차례", () => {
     now: 1000,
   };
 
-  it("선생님 상태: 듣기 → 생각 → 말하기 → 칭찬 → 쉬기 차례로 앞이 이긴다", () => {
+  it("AC-19g 선생님 상태: 듣기 → 생각 → 말하기 → 칭찬 → 쉬기 차례로 앞이 이긴다", () => {
     const all = {
       listening: true,
       thinking: true,
@@ -99,13 +99,13 @@ describe("선생님 상태 차례", () => {
     expect(teacherStateOf(base)).toBe("idle");
   });
 
-  it("선생님 상태: 칭찬은 now 가 praiseUntil 앞일 때만이고 닿으면 쉬기다", () => {
+  it("AC-19g 선생님 상태: 칭찬은 now 가 praiseUntil 앞일 때만이고 닿으면 쉬기다", () => {
     expect(teacherStateOf({ ...base, praiseUntil: 1001 })).toBe("praise");
     expect(teacherStateOf({ ...base, praiseUntil: 1000 })).toBe("idle");
     expect(teacherStateOf({ ...base, praiseUntil: 999 })).toBe("idle");
   });
 
-  it("선생님 상태: 칭찬 끝 시각은 지금 + 설정 초 × 1000 이다", () => {
+  it("AC-19g 선생님 상태: 칭찬 끝 시각은 지금 + 설정 초 × 1000 이다", () => {
     expect(praiseUntilOf(5000, 2)).toBe(7000);
     expect(praiseUntilOf(5000, 0.5)).toBe(5500);
     const until = praiseUntilOf(5000, 2);
@@ -117,7 +117,7 @@ describe("선생님 상태 차례", () => {
     );
   });
 
-  it("선생님 상태: 다섯 상태 이름은 쉬기 · 말하기 · 듣기 · 칭찬 · 생각이다", () => {
+  it("AC-19g 선생님 상태: 다섯 상태 이름은 쉬기 · 말하기 · 듣기 · 칭찬 · 생각이다", () => {
     expect(TEACHER_STATES).toEqual([
       "idle",
       "speaking",
@@ -129,7 +129,7 @@ describe("선생님 상태 차례", () => {
 });
 
 describe("선생님 깜빡임", () => {
-  it("선생님 깜빡임: 시작 뒤 깜빡임 시간 동안 사인 곡선이고 그 밖은 0 이다", () => {
+  it("AC-19h 선생님 깜빡임: 시작 뒤 깜빡임 시간 동안 사인 곡선이고 그 밖은 0 이다", () => {
     const span = MOTION.blinkSeconds;
     expect(blinkAt({ elapsed: 10, blinkStart: 10, reduced: false })).toBe(0);
     expect(
@@ -147,7 +147,7 @@ describe("선생님 깜빡임", () => {
     expect(mid).toBeLessThan(1);
   });
 
-  it("선생님 깜빡임: 움직임 줄이기면 늘 0 이다", () => {
+  it("AC-19h 선생님 깜빡임: 움직임 줄이기면 늘 0 이다", () => {
     for (const elapsed of [10, 10.05, 10.09, 10.15]) {
       expect(blinkAt({ elapsed, blinkStart: 10, reduced: true })).toBe(0);
     }
@@ -155,7 +155,7 @@ describe("선생님 깜빡임", () => {
 });
 
 describe("불러오기 차례 번호", () => {
-  it("불러오기 차례: 마지막으로 받은 번호만 지금 차례다", () => {
+  it("AC-19i 불러오기 차례: 마지막으로 받은 번호만 지금 차례다", () => {
     const turn = createLoadTurn();
     const first = turn.next();
     expect(turn.isCurrent(first)).toBe(true);
@@ -165,7 +165,7 @@ describe("불러오기 차례 번호", () => {
     expect(turn.isCurrent(second)).toBe(true);
   });
 
-  it("불러오기 차례: 따로 만든 차례 번호는 서로 섞이지 않는다", () => {
+  it("AC-19i 불러오기 차례: 따로 만든 차례 번호는 서로 섞이지 않는다", () => {
     const a = createLoadTurn();
     const b = createLoadTurn();
     const n = a.next();

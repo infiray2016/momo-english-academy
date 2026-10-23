@@ -6,7 +6,8 @@
 // 이름 자리 글(약속 · 그만하기 확인 · 쉼 · 처음 안내 · 기다림 · 말풍선 접근 이름 …)은 문구 표(TEACHER_TEXT)에 세션 선생님
 // (view.teacher — 처음 스냅숏)의 한글 이름을 넘긴다(선생님 화면 plan 값 9, 고르기 전 '선생님').
 // 열 때 차례: 마이크를 쓸 수 없는 기기면 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'만(세션 진행 — 7절) → 1-가 하루 안전 상한이면
-// '[이름](이/가) 잠깐 쉬어요'(P11b AiRest) → '시작!'(처음 회화면 3.3 안내 글과 함께 — 열 때마다 한 번, 그 누름이 첫 읽어 주기를 연다, 컨트롤러
+// '[이름](이/가) 잠깐 쉬어요'(P11b AiRest) → 고른 선생님이 없으면 '선생님을 골라요'(선생님 화면 plan 값 10 — 고른 뒤 자료를 다시 읽어
+// 처음 스냅숏 · 토리 행 1 이 들고 아이 화면 틀의 집 선생님도 새로) → '시작!'(처음 회화면 3.3 안내 글과 함께 — 열 때마다 한 번, 그 누름이 첫 읽어 주기를 연다, 컨트롤러
 // 결정) → 처음 마이크 안내(기기마다 한 번, P10 MIC_NOTICE_KEY). 토막: 인사 → 오늘 쓸 말 · 말해 보기(따라 말하기 조각 — follow-along) →
 // 대화 → 정리(WrapUp) → 마무리 세 장(closing-cards). 한 턴: 토리 말풍선(흘러 받은 문장 · 뜻 · 붙인 말, 바로 읽기) → 아이 차례 →
 // 턴 요청(talk-stream) → … . 토막 넘김은 advanceTalk(대화에 들어갈 때 대화 첫 질문을 붙임), 목표 턴 뒤 '더 이야기하기' · '그만하기'.
@@ -17,7 +18,14 @@
 // 사라짐에서 끊는다(I-2). 토리의 말이 없는
 // 마지막 아이 행(view.retryTurn)은 열 때 같은 시도 id 로 다시 보낸다(8절 · AC-15f). 판정 · 점수 · 퍼센트를 보이지 않는다(R2). 녹음 없음.
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
 import {
   AREA_LABEL,
@@ -34,6 +42,8 @@ import {
   useIpadSafari,
 } from "@/components/session/mic-blocked";
 import { MicNotice } from "@/components/session/speaking";
+import { TeacherChoice } from "@/components/teacher/teacher-choice";
+import { TeacherWindow } from "@/components/teacher/teacher-window";
 import {
   type SpeechEvent,
   type SpeechVerdict,
@@ -42,6 +52,7 @@ import {
 } from "@/core/speaking/judge";
 import { speakRateOf } from "@/core/speech/pace";
 import { TEACHER_TEXT } from "@/core/teacher/name";
+import { praiseUntilOf, teacherStateOf } from "@/core/teacher/state";
 import {
   markMicNoticeSeen,
   markMicUnavailable,
@@ -50,6 +61,7 @@ import {
   readDeviceVerdict,
 } from "@/lib/mic-state";
 import { createBrowserSpeech } from "@/lib/speech/browser";
+import { teacherSpeech } from "@/lib/speech/teacher";
 import type { SpeechPort } from "@/lib/speech/types";
 import { sendTalkTurnRetrying, type TalkTurnBody } from "@/lib/talk-stream";
 import { cn } from "@/lib/utils";
@@ -84,8 +96,7 @@ import {
   type BubbleContent,
   spokenOf,
   ToriBubble,
-  ToriFigure,
-  type ToriState,
+  useReducedMotion,
   useSpeakQueue,
 } from "./tori";
 
@@ -209,7 +220,33 @@ export function perceivedWaitOf(
     : Math.max(0, Math.round(firstAt - endedAt));
 }
 
+/**
+ * 선생님 창을 그리는가(선생님 화면 plan 값 13 · 4절 '처음 회화' · '회화 마무리 — 초상만'): 고른 선생님이 있고 막힘 · 쉼 · 마무리 세 장이
+ * 아닐 때. 고르는 화면에는 없고 '시작!' 화면 · 처음 마이크 안내 · 토막 · 정리에는 있다.
+ */
+export function teacherWindowShown(s: {
+  hasTeacher: boolean;
+  blocked: boolean;
+  resting: boolean;
+  stage: Stage;
+}): boolean {
+  return s.hasTeacher && !s.blocked && !s.resting && s.stage !== "closing";
+}
+
+/** 목표 턴 칭찬(4절 '선생님 창' 칭찬 행 · R2): 목표 턴이 이번 턴 끝 줄에서 처음 참이 됐는가(이미 닿은 뒤 · 닿기 전은 아님). */
+export function targetReachedNow(before: boolean, after: boolean): boolean {
+  return !before && after;
+}
+
+/**
+ * 회화 틀. 선생님이 바뀌면(고르는 화면에서 고른 뒤 판이 같아도 — 옛 스냅숏에 키가 없을 때) 틀을 새로 그려 음성 접점을 그 선생님 목소리로
+ * 다시 감싼다. 판(version)이 바뀌면 세션 쪽이 key 로 새로 그린다.
+ */
 export function TalkFrame({ view }: { view: TalkView }) {
+  return <TalkFrameBody key={view.teacher?.key ?? ""} view={view} />;
+}
+
+function TalkFrameBody({ view }: { view: TalkView }) {
   const router = useRouter();
   // 이름 자리(세션 선생님 — 처음 스냅숏, 고르기 전이면 undefined → 문구 표가 '선생님')
   const teacherName = view.teacher?.nameKo;
@@ -235,6 +272,16 @@ export function TalkFrame({ view }: { view: TalkView }) {
   const [typedDone, setTypedDone] = useState(false);
   const [waitingSince, setWaitingSince] = useState<number | null>(null);
   const [listening, setListening] = useState(false);
+  /** 선생님 말하기(읽어 주기가 실제로 시작한 알림부터 그 문장의 결과까지 — 선생님 음성 감싸기가 알린다, 4절 · AC-19g). */
+  const [speakingNow, setSpeakingNow] = useState(false);
+  /** 칭찬 끝 시각과 그 상태를 잰 때(performance.now ms — 타이머가 끝에서 다시 그린다). */
+  const [praiseClock, setPraiseClock] = useState<{
+    until: number;
+    now: number;
+  } | null>(null);
+  /** 목표 턴에 닿은 턴의 읽어 주기가 끝나면 칭찬(끝 줄에서 세우고 읽기 줄이 비면 켬). */
+  const [praiseAfterReading, setPraiseAfterReading] = useState(false);
+  const reducedMotion = useReducedMotion();
   const [busy, setBusy] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const [closeLine, setCloseLine] = useState<{
@@ -266,6 +313,9 @@ export function TalkFrame({ view }: { view: TalkView }) {
   const listenEndedAt = useRef<number | undefined>(undefined);
   /** 앞 턴 체감 대기(듣기 끝 → 첫 문장, C23 — 다음 턴에 보냄). */
   const perceived = useRef<number | undefined>(undefined);
+  /** 지난 끝 줄까지 목표 턴에 닿았는가(목표 턴 칭찬은 처음 닿은 턴만). */
+  const reachedBefore = useRef(view.next.targetReached);
+  const praiseTimer = useRef<number | undefined>(undefined);
   const lowLevel = view.spec.cardShape === "turns";
   /** 토리 말 · 힌트 문장 듣기 · 따라 말하기의 읽어 주기 빠르기(단계 구간마다 speech.rate.<구간>, C125). */
   const rate = speakRateOf(view.level, view.settings.speech);
@@ -287,16 +337,49 @@ export function TalkFrame({ view }: { view: TalkView }) {
   useEffect(() => () => inflight.current?.abort(), []);
 
   // 음성 접점은 렌더 뒤에 세션 동안 하나만 만든다(SpeechPort.device 는 useEffect 에서만). 자료 다시 읽기(router.refresh — 판이 같으면
-  // 틀이 그대로)가 설정 객체를 새로 줘도 다시 만들지 않는다 — 돌고 있는 처리기가 닫힌 접점으로 읽지 않게(재검토 N-1). 틀이 사라질 때만 닫는다
+  // 틀이 그대로)가 설정 객체를 새로 줘도 다시 만들지 않는다 — 돌고 있는 처리기가 닫힌 접점으로 읽지 않게(재검토 N-1). 틀이 사라질 때만 닫는다.
+  // 고른 선생님이 있으면 바로 선생님 음성 감싸기로 싼다(선생님 화면 plan 값 13): 회화 틀 · 따라 말하기 · 아이 차례 힌트 듣기 · 마무리 단어
+  // 듣기가 모두 이 접점이라 선생님 높이 · 목소리 순서 · 시작 알림이 한 곳에서 나온다. 고르기 전(고르는 화면)은 감싸지 않는다 — '인사 듣기'가
+  // 장마다 그 선생님 높이를 넘긴다. 선생님은 틀의 key 라 바뀌면 틀이 새로 그려진다
   const speechSettings = useRef(view.settings.speech);
+  const teacherVoice = useRef(view.teacher?.voice);
   useEffect(() => {
     const created = createBrowserSpeech({ settings: speechSettings.current });
-    setSpeech(created);
+    const voice = teacherVoice.current;
+    setSpeech(
+      voice
+        ? teacherSpeech(created, {
+            pitch: voice.pitch,
+            voicePrefer: voice.prefer,
+            onSpeaking: setSpeakingNow,
+          })
+        : created,
+    );
     return () => created.dispose();
   }, []);
 
+  /** 칭찬을 talk.teacher_praise_seconds 동안 켠다(끝나면 다시 그린다). 5~7단계 미션 체크(P13c)도 이것을 부른다. */
+  const praiseSeconds = view.teacherSettings.praiseSeconds;
+  const praise = useCallback(() => {
+    const at = performance.now();
+    const until = praiseUntilOf(at, praiseSeconds);
+    setPraiseClock({ until, now: at });
+    window.clearTimeout(praiseTimer.current);
+    praiseTimer.current = window.setTimeout(
+      () => setPraiseClock({ until, now: until }),
+      until - at,
+    );
+  }, [praiseSeconds]);
+  useEffect(() => () => window.clearTimeout(praiseTimer.current), []);
+
+  // 선생님을 고르기 전에는 열지 않는다(고르는 화면은 처음 스냅숏 앞 — 값 10)
   const ready =
-    Boolean(speech) && started && noticeSeen && !blocked && !resting;
+    Boolean(speech) &&
+    view.teacher !== null &&
+    started &&
+    noticeSeen &&
+    !blocked &&
+    !resting;
   const inFollow = isFollowSegment(next.segment);
 
   // 열 때(안내를 지난 뒤): 마지막 토리 말을 읽고, 토리의 말이 없는 아이 행이 있으면 같은 시도 id 로 다시 보낸다
@@ -349,6 +432,13 @@ export function TalkFrame({ view }: { view: TalkView }) {
     if (next.awaitingChoice) setPhase("choice");
     else if (next.pending) setPhase("child");
   }, [opening, phase, bubble.done, typedDone, queue.speaking, next]);
+
+  // 목표 턴에 닿은 턴의 읽어 주기가 끝나면(끝 줄까지 받고 읽기 줄이 빔) 칭찬(4절 '선생님 창' · R2 — 대화 턴의 맞고 틀림과 무관)
+  useEffect(() => {
+    if (!praiseAfterReading || !bubble.done || queue.speaking) return;
+    setPraiseAfterReading(false);
+    praise();
+  }, [praiseAfterReading, bubble.done, queue.speaking, praise]);
 
   // 끊긴 턴은 다시 연결될 때 같은 시도 id 로
   // biome-ignore lint/correctness/useExhaustiveDependencies: 끊긴 동안만
@@ -506,6 +596,9 @@ export function TalkFrame({ view }: { view: TalkView }) {
             { type: "next-activity" },
             counterLimits,
           ).state;
+          if (targetReachedNow(reachedBefore.current, n.targetReached))
+            setPraiseAfterReading(true);
+          reachedBefore.current = n.targetReached;
           setNext(n);
           setBubble((b) => ({ ...b, done: true }));
           void afterBubble(n);
@@ -719,6 +812,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
       ).state;
     },
     onListening: setListening,
+    onPraise: praise,
   };
   const followSteps = useMemo(
     () =>
@@ -731,14 +825,14 @@ export function TalkFrame({ view }: { view: TalkView }) {
     [view.follow, lowLevel],
   );
 
-  const toriState: ToriState =
-    waitingSince !== null
-      ? "thinking"
-      : queue.speaking
-        ? "speaking"
-        : listening
-          ? "listening"
-          : "idle";
+  // 선생님 상태 하나(듣기 → 생각 → 말하기 → 칭찬 → 쉬기, 앞이 이긴다 — 4절 '선생님 창')
+  const teacherState = teacherStateOf({
+    listening,
+    thinking: waitingSince !== null,
+    speaking: speakingNow,
+    praiseUntil: praiseClock?.until ?? null,
+    now: praiseClock?.now ?? 0,
+  });
   const pending = next.pending;
   const picture =
     pending?.imageKey !== undefined
@@ -757,6 +851,8 @@ export function TalkFrame({ view }: { view: TalkView }) {
     : TALK_TEXT.count(next.talkCount, next.target);
 
   let body: ReactNode;
+  /** 대화 판이 보이는가(오늘 이야기 목록은 그때만 — 창 칸 아래 · 옆). */
+  let panelShown = false;
   if (blocked) {
     // 막힘 · 쉼 안내도 종이 판 위에(코르크 위에 글을 두지 않음 — 전체 디자인 리뷰 M-1), 아이패드 사파리면 무음 모드 줄(C111)
     body = (
@@ -779,6 +875,16 @@ export function TalkFrame({ view }: { view: TalkView }) {
           onHome={() => void home({ firstCard: false })}
         />
       </TalkPaper>
+    );
+  } else if (!view.teacher) {
+    body = (
+      <TeacherChoice
+        choices={view.teacherChoices}
+        speech={speech}
+        rate={rate}
+        // 새 자료(선생님 · 처음 스냅숏)와 아이 화면 틀의 집 선생님(쉼 안내 등의 이름)을 다시 읽는다 — 틀은 쪽을 옮겨도 다시 그려지지 않는다
+        onChosen={() => router.refresh()}
+      />
     );
   } else if (!started) {
     body = (
@@ -855,168 +961,189 @@ export function TalkFrame({ view }: { view: TalkView }) {
         />
       );
     }
+    panelShown = true;
     body = (
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <section
-          data-talk-panel=""
-          data-talk-phase={phase}
-          className="relative flex min-w-0 flex-1 flex-col gap-5 bg-paper px-6 py-6 shadow-postit landscape:gap-3 landscape:py-4"
-        >
-          <span
-            aria-hidden
-            className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 bg-postit-talk/90"
-          />
-          {main ? (
-            <>
-              {main}
+      <section
+        data-talk-panel=""
+        data-talk-phase={phase}
+        className="relative flex min-w-0 flex-1 flex-col gap-5 bg-paper px-6 py-6 shadow-postit landscape:gap-3 landscape:py-4"
+      >
+        <span
+          aria-hidden
+          className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 bg-postit-talk/90"
+        />
+        {main ? (
+          <>
+            {main}
+            {phase === "offline" || phase === "failed" ? (
+              <TroubleLine phase={phase} retry={retryAction.current} />
+            ) : null}
+          </>
+        ) : (
+          <>
+            <div className="min-w-0">
+              <ToriBubble
+                key={turnKey}
+                content={bubble}
+                onAllTyped={setTypedDone}
+                englishName={view.englishName}
+                teacherName={teacherName}
+                waiting={waitingSince}
+                waitSeconds={view.settings.ui.waitHintSeconds}
+                {...(lowLevel && picture ? { picture } : {})}
+                {...(next.explanation ? { explanation: next.explanation } : {})}
+                onReplay={() => {
+                  speech?.unlockFromGesture();
+                  queue.replay(spokenOf(bubble));
+                }}
+                onAnswer={(i) => {
+                  const pair = bubble.adds.find(
+                    (a) => a.kind === "two_answers",
+                  );
+                  if (pair?.kind !== "two_answers") return;
+                  speech?.unlockFromGesture();
+                  queue.replay([pair.answers[i]]);
+                }}
+              />
+            </div>
+            <div className="mt-auto border-t-2 border-dashed border-ink/30 pt-4">
+              {phase === "child" && pending ? (
+                <ChildTurn
+                  key={`${turnKey}:${next.talkCount}:${next.dontKnowCount}`}
+                  sessionId={view.sessionId}
+                  speech={speech}
+                  level={view.level}
+                  lowLevel={lowLevel}
+                  englishName={view.englishName}
+                  teacherName={teacherName}
+                  hints={next.hints}
+                  dontKnowCount={next.dontKnowCount}
+                  heard={heard}
+                  settings={{
+                    speech: view.settings.speech,
+                    talkSpeech: view.settings.talkSpeech,
+                    confirmSeconds: view.settings.talk.confirmSeconds,
+                    hintReadMatch: view.settings.talk.hintReadMatch,
+                    nospeechDontknowCount:
+                      view.settings.talk.nospeechDontknowCount,
+                  }}
+                  rate={rate}
+                  homophones={view.homophones}
+                  nudge={nudge}
+                  onNudgeShown={() => {
+                    if (nudgeMarked.current) return;
+                    nudgeMarked.current = true;
+                    void markTalkNotice({ kind: "talk_hint_nudge" }).catch(
+                      () => {},
+                    );
+                  }}
+                  onSpeech={onSpeech}
+                  onListenStart={() => {
+                    queue.cancel();
+                    setNudge(false);
+                  }}
+                  onListening={setListening}
+                  reveal={async (tier) => {
+                    setNudge(false);
+                    const out = await revealTalkHint({
+                      sessionId: view.sessionId,
+                      tier,
+                    }).catch(() => undefined);
+                    return out?.ok ? out.text : undefined;
+                  }}
+                  onSend={onChildSend}
+                />
+              ) : null}
+              {phase === "choice" ? (
+                <div
+                  data-talk-choice=""
+                  className="flex flex-wrap items-center justify-center gap-4"
+                >
+                  <BigButton disabled={busy} onClick={() => void more()}>
+                    {TALK_TEXT.more}
+                  </BigButton>
+                  <SmallButton disabled={busy} onClick={() => void stop(true)}>
+                    {TALK_TEXT.stop}
+                  </SmallButton>
+                </div>
+              ) : null}
+              {phase === "break" ? (
+                <div
+                  data-talk-break=""
+                  className="flex flex-col items-center gap-6"
+                >
+                  <p className={cn(CHILD_SIZE.guide, "text-center")}>
+                    {TALK_TEXT.saved}
+                  </p>
+                  <BigButton onClick={() => router.push(LESSONS_PATH)}>
+                    {TALK_TEXT.lessons}
+                  </BigButton>
+                </div>
+              ) : null}
+              {phase === "closed" && closeLine ? (
+                <div data-talk-closed="" className="flex justify-center">
+                  <BigButton onClick={() => router.push(LESSONS_PATH)}>
+                    {TALK_TEXT.lessons}
+                  </BigButton>
+                </div>
+              ) : null}
               {phase === "offline" || phase === "failed" ? (
                 <TroubleLine phase={phase} retry={retryAction.current} />
               ) : null}
-            </>
-          ) : (
-            <>
-              <div className="flex items-start gap-4">
-                <ToriFigure state={toriState} teacherName={teacherName} />
-                <div className="min-w-0 flex-1">
-                  <ToriBubble
-                    key={turnKey}
-                    content={bubble}
-                    onAllTyped={setTypedDone}
-                    englishName={view.englishName}
-                    teacherName={teacherName}
-                    waiting={waitingSince}
-                    waitSeconds={view.settings.ui.waitHintSeconds}
-                    {...(lowLevel && picture ? { picture } : {})}
-                    {...(next.explanation
-                      ? { explanation: next.explanation }
-                      : {})}
-                    onReplay={() => {
-                      speech?.unlockFromGesture();
-                      queue.replay(spokenOf(bubble));
-                    }}
-                    onAnswer={(i) => {
-                      const pair = bubble.adds.find(
-                        (a) => a.kind === "two_answers",
-                      );
-                      if (pair?.kind !== "two_answers") return;
-                      speech?.unlockFromGesture();
-                      queue.replay([pair.answers[i]]);
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="mt-auto border-t-2 border-dashed border-ink/30 pt-4">
-                {phase === "child" && pending ? (
-                  <ChildTurn
-                    key={`${turnKey}:${next.talkCount}:${next.dontKnowCount}`}
-                    sessionId={view.sessionId}
-                    speech={speech}
-                    level={view.level}
-                    lowLevel={lowLevel}
-                    englishName={view.englishName}
-                    teacherName={teacherName}
-                    hints={next.hints}
-                    dontKnowCount={next.dontKnowCount}
-                    heard={heard}
-                    settings={{
-                      speech: view.settings.speech,
-                      talkSpeech: view.settings.talkSpeech,
-                      confirmSeconds: view.settings.talk.confirmSeconds,
-                      hintReadMatch: view.settings.talk.hintReadMatch,
-                      nospeechDontknowCount:
-                        view.settings.talk.nospeechDontknowCount,
-                    }}
-                    rate={rate}
-                    homophones={view.homophones}
-                    nudge={nudge}
-                    onNudgeShown={() => {
-                      if (nudgeMarked.current) return;
-                      nudgeMarked.current = true;
-                      void markTalkNotice({ kind: "talk_hint_nudge" }).catch(
-                        () => {},
-                      );
-                    }}
-                    onSpeech={onSpeech}
-                    onListenStart={() => {
-                      queue.cancel();
-                      setNudge(false);
-                    }}
-                    onListening={setListening}
-                    reveal={async (tier) => {
-                      setNudge(false);
-                      const out = await revealTalkHint({
-                        sessionId: view.sessionId,
-                        tier,
-                      }).catch(() => undefined);
-                      return out?.ok ? out.text : undefined;
-                    }}
-                    onSend={onChildSend}
-                  />
-                ) : null}
-                {phase === "choice" ? (
-                  <div
-                    data-talk-choice=""
-                    className="flex flex-wrap items-center justify-center gap-4"
-                  >
-                    <BigButton disabled={busy} onClick={() => void more()}>
-                      {TALK_TEXT.more}
-                    </BigButton>
-                    <SmallButton
-                      disabled={busy}
-                      onClick={() => void stop(true)}
-                    >
-                      {TALK_TEXT.stop}
-                    </SmallButton>
-                  </div>
-                ) : null}
-                {phase === "break" ? (
-                  <div
-                    data-talk-break=""
-                    className="flex flex-col items-center gap-6"
-                  >
-                    <p className={cn(CHILD_SIZE.guide, "text-center")}>
-                      {TALK_TEXT.saved}
-                    </p>
-                    <BigButton onClick={() => router.push(LESSONS_PATH)}>
-                      {TALK_TEXT.lessons}
-                    </BigButton>
-                  </div>
-                ) : null}
-                {phase === "closed" && closeLine ? (
-                  <div data-talk-closed="" className="flex justify-center">
-                    <BigButton onClick={() => router.push(LESSONS_PATH)}>
-                      {TALK_TEXT.lessons}
-                    </BigButton>
-                  </div>
-                ) : null}
-                {phase === "offline" || phase === "failed" ? (
-                  <TroubleLine phase={phase} retry={retryAction.current} />
-                ) : null}
-              </div>
-            </>
-          )}
-        </section>
-        <aside
-          data-talk-topics=""
-          className="flex flex-col gap-3 bg-postit-talk px-6 py-6 shadow-postit lg:w-80 lg:rotate-[1.5deg]"
-        >
-          <p className="font-heading text-[24px] leading-tight">
-            {TALK_TEXT.topics}
-          </p>
-          <ul
-            className={cn(
-              CHILD_SIZE.guide,
-              "flex list-disc flex-col gap-2 pl-6",
-            )}
-          >
-            {view.card.todayTopicsKo.map((topic) => (
-              <li key={topic}>{topic}</li>
-            ))}
-          </ul>
-        </aside>
-      </div>
+            </div>
+          </>
+        )}
+      </section>
     );
   }
+
+  // 선생님 칸(4절 '선생님 창' · plan 값 13 · 정할 것 7): 몸 밖 늘 같은 자리 — 토막 · 정리로 바뀌어도 창을 다시 만들지 않는다. 가로는 왼쪽 칸
+  // (창 + 그 아래 오늘 이야기 목록) · 오른쪽 대화 판, 세로는 위 띠 아래 한 줄(창 | 오늘 이야기 목록) · 그 아래 대화 판
+  const windowShown = teacherWindowShown({
+    hasTeacher: view.teacher !== null,
+    blocked: blocked !== undefined,
+    resting,
+    stage,
+  });
+  const shown =
+    windowShown && view.teacher ? (
+      <div data-talk-layout="" className="flex flex-col gap-6 lg:flex-row">
+        <div
+          data-teacher-column=""
+          className="flex shrink-0 flex-row items-start gap-6 lg:w-[260px] lg:flex-col lg:items-stretch"
+        >
+          <TeacherWindow
+            key="teacher-window"
+            teacher={view.teacher}
+            state={teacherState}
+            reducedMotion={reducedMotion}
+          />
+          {panelShown ? (
+            <aside
+              data-talk-topics=""
+              className="flex min-w-0 flex-1 flex-col gap-3 bg-postit-talk px-6 py-6 shadow-postit lg:flex-none lg:rotate-[1.5deg]"
+            >
+              <p className="font-heading text-[24px] leading-tight">
+                {TALK_TEXT.topics}
+              </p>
+              <ul
+                className={cn(
+                  CHILD_SIZE.guide,
+                  "flex list-disc flex-col gap-2 pl-6",
+                )}
+              >
+                {view.card.todayTopicsKo.map((topic) => (
+                  <li key={topic}>{topic}</li>
+                ))}
+              </ul>
+            </aside>
+          ) : null}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">{body}</div>
+      </div>
+    ) : (
+      body
+    );
 
   const showStop =
     !blocked &&
@@ -1076,7 +1203,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
           </>
         }
       />
-      {body}
+      {shown}
       <p
         data-tori-promise=""
         className={cn(

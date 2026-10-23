@@ -15,6 +15,8 @@ import {
   BYTES_PER_MB,
   OLD_TEACHER_NAMES,
   SEED_FILES,
+  TEACHER_ASSET_DIR,
+  TEACHER_ASSET_HASH_CHARS,
   TEACHER_INTRO_LINES,
   TEACHER_LABEL_CONTRAST_MIN,
   TEACHER_LABEL_TEXT,
@@ -385,9 +387,19 @@ function permissionsOf(meta: {
   return `allowedUserName=${meta.allowedUserName ?? ""} · commercialUssageName=${meta.commercialUssageName ?? ""}`;
 }
 
+/** 자산 파일 이름 teachers/<키>.<SHA-256 앞 8자>.<확장자>(이름에 내용 해시 — 오래 캐시해도 바뀐 파일은 새 이름). */
+export function teacherAssetPath(
+  key: string,
+  sha256: string,
+  ext: "vrm" | "webp",
+): string {
+  return `${TEACHER_ASSET_DIR}/${key}.${sha256.slice(0, TEACHER_ASSET_HASH_CHARS)}.${ext}`;
+}
+
 /**
  * 선생님 자산 검사(6.4 자산 검사 · AC-19k). 규칙 `teacher-asset`, 경로 `teachers.<차례>.<칸>`(명단 밖 파일 · 출처 문서 없음은 `teachers`).
- * (a) 모델 · 초상 파일 있음 (b) 모델 바이트 · SHA-256, 초상 바이트가 명단과 같음 (c) 크기 상한(10진 MB · KB)
+ * (a) 모델 · 초상 파일 있음 (b) 모델 바이트 · SHA-256, 초상 바이트가 명단과 같음, 모델 경로는 teachers/<키>.<명단 해시 앞 8자>.vrm ·
+ * 초상 경로는 teachers/<키>.<읽은 바이트 해시 앞 8자>.webp (c) 크기 상한(10진 MB · KB)
  * (d) VRM 0.x · licenseName · 허용 설정 · 조건 주소 둘 · 표정 · 뼈 (e) public/ 의 .vrm 은 명단 모델뿐이고 원본 해시와 다름
  * (f) CREDITS.md 에 원 제작자 · 배포처 · 원본 제목 · 원본 SHA-256 · 줄인 파일 SHA-256 · 줄인 방법이 글자 그대로 있음.
  */
@@ -414,6 +426,12 @@ export function checkTeacherAssets(
   file.teachers.forEach((t, i) => {
     const at = (key: string) => `teachers.${i}.${key}`;
 
+    const modelName = teacherAssetPath(t.key, t.model.sha256, "vrm");
+    if (t.model.path !== modelName)
+      report(
+        at("model.path"),
+        `모델 경로 ${t.model.path} 가 ${modelName} 꼴이 아니다(teachers/<키>.<명단 SHA-256 앞 ${TEACHER_ASSET_HASH_CHARS}자>.vrm)`,
+      );
     const model = io.read(t.model.path);
     if (model === undefined) {
       report(at("model.path"), `모델 파일 ${t.model.path} 가 없다`);
@@ -446,6 +464,12 @@ export function checkTeacherAssets(
     if (portrait === undefined) {
       report(at("portrait.path"), `초상 파일 ${t.portrait.path} 가 없다`);
     } else {
+      const portraitName = teacherAssetPath(t.key, io.sha256(portrait), "webp");
+      if (t.portrait.path !== portraitName)
+        report(
+          at("portrait.path"),
+          `초상 경로 ${t.portrait.path} 가 ${portraitName} 꼴이 아니다(teachers/<키>.<읽은 바이트 SHA-256 앞 ${TEACHER_ASSET_HASH_CHARS}자>.webp)`,
+        );
       if (portrait.length !== t.portrait.bytes)
         report(
           at("portrait.bytes"),

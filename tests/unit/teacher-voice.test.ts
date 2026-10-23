@@ -13,7 +13,7 @@ const voices = [
 ];
 
 describe("선생님 목소리 고르기", () => {
-  it("선생님 목소리 고르기: 순서 조각의 차례가 목소리 목록 차례보다 앞선다", () => {
+  it("AC-19j 선생님 목소리 고르기: 순서 조각의 차례가 목소리 목록 차례보다 앞선다", () => {
     expect(preferredVoice(voices, "en-US", ["nicky", "samantha"])?.name).toBe(
       "Nicky (Enhanced)",
     );
@@ -22,30 +22,30 @@ describe("선생님 목소리 고르기", () => {
     );
   });
 
-  it("선생님 목소리 고르기: 첫 조각에 맞는 목소리가 없으면 다음 조각으로 간다", () => {
+  it("AC-19j 선생님 목소리 고르기: 첫 조각에 맞는 목소리가 없으면 다음 조각으로 간다", () => {
     expect(preferredVoice(voices, "en-US", ["zoe", "sAmAn"])?.name).toBe(
       "Samantha",
     );
   });
 
-  it("선생님 목소리 고르기: 언어가 같은(소문자 · '_' 를 '-' 로) 목소리만 고르고 en-GB · en-AU 는 고르지 않는다", () => {
+  it("AC-19j 선생님 목소리 고르기: 언어가 같은(소문자 · '_' 를 '-' 로) 목소리만 고르고 en-GB · en-AU 는 고르지 않는다", () => {
     expect(preferredVoice(voices, "en-US", ["daniel"])).toBeUndefined();
     expect(preferredVoice(voices, "en-US", ["karen"])).toBeUndefined();
     expect(preferredVoice(voices, "en_us", ["aaron"])?.name).toBe("Aaron");
   });
 
-  it("선생님 목소리 고르기: 맞는 목소리가 없거나 순서가 비면 undefined 다", () => {
+  it("AC-19j 선생님 목소리 고르기: 맞는 목소리가 없거나 순서가 비면 undefined 다", () => {
     expect(preferredVoice(voices, "en-US", ["zoe"])).toBeUndefined();
     expect(preferredVoice(voices, "en-US", [])).toBeUndefined();
     expect(preferredVoice([], "en-US", ["samantha"])).toBeUndefined();
   });
 
-  it("선생님 목소리 고르기: 빈 조각은 아무 목소리에나 맞지 않게 건너뛴다", () => {
+  it("AC-19j 선생님 목소리 고르기: 빈 조각은 아무 목소리에나 맞지 않게 건너뛴다", () => {
     expect(preferredVoice(voices, "en-US", [""])).toBeUndefined();
     expect(preferredVoice(voices, "en-US", ["", "aaron"])?.name).toBe("Aaron");
   });
 
-  it("선생님 목소리 고르기: 받은 목소리 객체를 그대로 돌린다", () => {
+  it("AC-19j 선생님 목소리 고르기: 받은 목소리 객체를 그대로 돌린다", () => {
     const picked = preferredVoice(voices, "en-US", ["samantha"]);
     expect(picked).toBe(voices[1]);
   });

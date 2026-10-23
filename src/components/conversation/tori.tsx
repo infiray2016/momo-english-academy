@@ -1,8 +1,7 @@
 "use client";
 
-// 토리 표시 · 말풍선(plan-p13b 파일별 값 8, 4절 회화 세션 '토리 차례' 행 · 3.3 · 7절 · C32 · C96 · C103 · 검토 I-3).
-// ToriFigure: 1-가는 목업 B_Talk1 꼴 글자 동그라미('선' — 문구 표 initial, 연두 바탕 · 먹색 테 · Jua, 접근 이름 '[이름] 선생님') — 말하는 중 둘레 물결 · 생각 중 점 셋(움직임 줄이기면
-// 멈춘 표시). 그림 · VRM 은 이 경계 안에서 바꾼다(a 정할 것 회14). ToriBubble: 받은 차례대로 문장이 흘러나오듯 보이고(TYPE_MS_PER_CHAR,
+// 선생님 말풍선(plan-p13b 파일별 값 8, 4절 회화 세션 '선생님 차례' 행 · 3.3 · 7절 · C32 · C96 · C103 · 검토 I-3). 선생님 그림은 회화 틀의
+// 선생님 창(src/components/teacher/teacher-window.tsx — 선생님 화면 plan 값 13)이 맡는다. ToriBubble: 받은 차례대로 문장이 흘러나오듯 보이고(TYPE_MS_PER_CHAR,
 // 움직임 줄이기면 바로), 1~4단계 뜻은 영어가 다 흐른 뒤 아래에 한 번에(20px), 붙인 카드 질문은 같은 말풍선 끝에. 1~3단계 아이가 말할
 // 영어(답 예시 say · 답 두 개 answers)는 읽어 주기만 하고 글로 보이지 않는다 — 1단계 처음 묻는 턴 · 인사 턴은 글 없는 듣기 단추 둘(원 안 1 · 2).
 // 말풍선을 누르면 그 말을 다시 읽는다(답 두 개까지, AC-15l). 기다리는 동안 점 셋(data-wait-hint) → ui.wait_hint_seconds 둘째 값 뒤
@@ -92,10 +91,8 @@ const BUBBLE_CLASS =
 /** 답 두 개 듣기 단추의 차례 숫자(보드 글꼴 Fredoka 숫자를 원 테 안에 — 동그라미 숫자 글자는 Jua 에 없어 대체 글꼴로 떨어짐, 전체 디자인 리뷰 M-5). */
 const ANSWER_MARKS = [1, 2] as const;
 
-export type ToriState = "idle" | "speaking" | "listening" | "thinking";
-
-/** 움직임 줄이기(prefers-reduced-motion). 렌더 뒤에 읽는다. */
-function useReducedMotion(): boolean {
+/** 움직임 줄이기(prefers-reduced-motion). 렌더 뒤에 읽는다(말풍선 흘림 · 선생님 창 표시가 같이 쓴다). */
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -105,57 +102,6 @@ function useReducedMotion(): boolean {
     return () => query.removeEventListener("change", on);
   }, []);
   return reduced;
-}
-
-/** 토리 표시(경계 하나 — 그림 · VRM 은 여기서 바꾼다). */
-export function ToriFigure({
-  state,
-  size = 64,
-  teacherName,
-}: {
-  state: ToriState;
-  /** 동그라미 지름(px). */
-  size?: number;
-  /** 세션 선생님 한글 이름(접근 이름 '[이름] 선생님' — 없으면 '선생님'). */
-  teacherName?: string | undefined;
-}) {
-  return (
-    <span
-      data-tori-figure=""
-      data-tori-state={state}
-      className="relative inline-flex shrink-0"
-      style={{ width: size, height: size }}
-    >
-      {state === "speaking" ? (
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-full border-4 border-postit-talk motion-safe:animate-ping"
-        />
-      ) : null}
-      <span
-        role="img"
-        aria-label={TEACHER_TEXT.windowName(teacherName)}
-        className="relative flex size-full items-center justify-center rounded-full border-[3px] border-ink bg-postit-talk font-heading leading-none text-ink"
-        style={{ fontSize: size / 2 }}
-      >
-        {TEACHER_TEXT.initial}
-      </span>
-      {state === "thinking" ? (
-        <span
-          aria-hidden
-          className="absolute -right-2 -bottom-2 flex gap-1 rounded-full bg-paper px-2 py-1 shadow-postit"
-        >
-          {DOTS.map((i) => (
-            <span
-              key={i}
-              className="size-2 rounded-full bg-ink motion-safe:animate-bounce"
-              style={{ animationDelay: `${i * DOT_DELAY_MS}ms` }}
-            />
-          ))}
-        </span>
-      ) : null}
-    </span>
-  );
 }
 
 /** 문장 하나가 흘러나오듯(움직임 줄이기면 바로). 다 흐르면 onDone. */

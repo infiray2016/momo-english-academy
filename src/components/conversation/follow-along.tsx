@@ -12,6 +12,8 @@
 //   끝인사가 와 있으면 그것 — talkClosingStatus 한 번) → 마무리.
 // 따라 말한 것은 점수 · '말했다'에 들지 않는다(서버 saveFollowAlong — 인식 글이 있는 발화만 영어로 말한 문장 수에). 인식 글은 화면에
 // 보이지 않는다(결과 말로만, 4절). 녹음하지 않는다.
+// 선생님 그림은 회화 틀의 선생님 창이 맡는다(선생님 화면 plan 값 13 — 이 조각에는 그림이 없다). 결과 말이 '잘 말했어요'(C39)면 틀의 칭찬을
+// 부른다(env.onPraise — 4절 '선생님 창' 칭찬 행). 선생님의 말하기 · 듣기 상태는 틀의 음성 접점(선생님 음성 감싸기) · onListening 이 낸다.
 import {
   type ReactNode,
   useCallback,
@@ -47,7 +49,7 @@ import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { saveTalkFollowAlong } from "@/server/actions/conversation";
 import { CHILD_TURN_TEXT } from "./child-turn";
-import { type BubbleContent, ToriBubble, ToriFigure } from "./tori";
+import { type BubbleContent, ToriBubble } from "./tori";
 
 /** 시작 단추(처음 회화 안내 글은 이름 자리라 TEACHER_TEXT.intro — 3.3 글 그대로, 문장마다 한 줄). */
 export const TALK_START_TEXT = {
@@ -179,7 +181,7 @@ export function TalkPaper({
   );
 }
 
-/** 열 때마다 한 번 누르는 '시작!'(처음 회화면 3.3 안내 글과 함께). 그 누름이 첫 읽어 주기를 연다(7절). */
+/** 열 때마다 한 번 누르는 '시작!'(처음 회화면 3.3 안내 글과 함께). 그 누름이 첫 읽어 주기를 연다(7절). 선생님은 틀의 선생님 창(초상). */
 export function TalkStart({
   first,
   teacherName,
@@ -195,7 +197,6 @@ export function TalkStart({
 }) {
   return (
     <TalkPaper data-talk-start="">
-      <ToriFigure state="idle" teacherName={teacherName} />
       {first ? (
         <div data-talk-intro="" className="flex flex-col gap-2">
           {TEACHER_TEXT.intro(teacherName).map((line) => (
@@ -240,6 +241,8 @@ export type FollowEnv = {
   /** 차례가 바뀜(틀이 인식 실패 셈을 비움). */
   onNextItem: () => void;
   onListening: (listening: boolean) => void;
+  /** 따라 말하기 결과 말이 '잘 말했어요'(C39) — 틀이 선생님 칭찬을 talk.teacher_praise_seconds 동안 켠다. */
+  onPraise: () => void;
 };
 
 /**
@@ -517,6 +520,7 @@ function FollowCard({
     }
     tried.current.heard.push(out.text);
     setPhrase(out.phrase);
+    if (out.phrase === "good") env.onPraise();
     saveFollow(env, { ...step, segment }, tried.current);
     const autoMs = env.settings.autoNextSeconds * MS_PER_SECOND;
     if (
@@ -552,13 +556,7 @@ function FollowCard({
       data-follow-failures={failures}
       className="flex flex-col gap-5"
     >
-      <div className="flex items-center gap-4">
-        <ToriFigure
-          state={sayer.speaking ? "speaking" : listening ? "listening" : "idle"}
-          teacherName={env.teacherName}
-        />
-        <GuideLine className="font-heading text-[26px]">{guide}</GuideLine>
-      </div>
+      <GuideLine className="font-heading text-[26px]">{guide}</GuideLine>
       <div
         data-follow-card=""
         className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-3 bg-postit-talk px-8 pt-9 pb-7 text-center shadow-postit"
@@ -684,9 +682,7 @@ export function WrapUp({
       onNext={onDone}
     />
   ) : (
-    <div data-talk-wrap="" className="flex items-start gap-4">
-      <ToriFigure state="thinking" teacherName={env.teacherName} />
-    </div>
+    <div data-talk-wrap="" />
   );
 }
 
@@ -763,6 +759,7 @@ function WrapCard({
     }
     tried.current.heard.push(out.text);
     setPhrase(out.phrase);
+    if (out.phrase === "good") env.onPraise();
     saveFollow(env, at, tried.current);
     moveOn(autoMs);
   }
@@ -779,29 +776,23 @@ function WrapCard({
       data-wrap-farewell={farewell ? "" : undefined}
       className="flex flex-col gap-5"
     >
-      <div className="flex items-start gap-4">
-        <ToriFigure
-          state={sayer.speaking ? "speaking" : listening ? "listening" : "idle"}
+      <div className="min-w-0">
+        <ToriBubble
+          content={content}
+          englishName={env.englishName}
           teacherName={env.teacherName}
+          waiting={null}
+          waitSeconds={env.settings.waitHintSeconds}
+          onAllTyped={setTyped}
+          onReplay={() => {
+            env.speech?.unlockFromGesture();
+            // 다시 읽기가 처음 읽기를 끊어도 그 끝에서 '다 읽음'을 세운다 — 따라 말하지 않는 장이 저절로 넘어가게(검토 b3 I-1)
+            void sayer.say([line.en]).then((ok) => {
+              if (ok) setRead(true);
+            });
+          }}
+          onAnswer={() => {}}
         />
-        <div className="min-w-0 flex-1">
-          <ToriBubble
-            content={content}
-            englishName={env.englishName}
-            teacherName={env.teacherName}
-            waiting={null}
-            waitSeconds={env.settings.waitHintSeconds}
-            onAllTyped={setTyped}
-            onReplay={() => {
-              env.speech?.unlockFromGesture();
-              // 다시 읽기가 처음 읽기를 끊어도 그 끝에서 '다 읽음'을 세운다 — 따라 말하지 않는 장이 저절로 넘어가게(검토 b3 I-1)
-              void sayer.say([line.en]).then((ok) => {
-                if (ok) setRead(true);
-              });
-            }}
-            onAnswer={() => {}}
-          />
-        </div>
       </div>
       {follow ? (
         <div className="flex flex-col items-center gap-3 border-t-2 border-dashed border-ink/30 pt-4">
