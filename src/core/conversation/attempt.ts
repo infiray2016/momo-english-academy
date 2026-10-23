@@ -49,6 +49,11 @@ export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
     metBefore: z.array(z.string()),
     /** 말해 보기 바퀴마다의 차례(practiceOrderOf). */
     practiceOrder: z.array(z.array(index)),
+    /** 이 대화의 회화 선생님 키(한 대화는 이 키로 끝까지 — 선생님 화면 plan 값 7). 선생님 전 옛 스냅숏에는 없다. */
+    teacherKey: z
+      .string()
+      .regex(/^[a-z]+$/)
+      .optional(),
   }),
   z.strictObject({ ...head("talk-today"), ...spoken, index }),
   z.strictObject({

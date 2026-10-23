@@ -160,7 +160,7 @@ const BAND_SETTINGS: readonly {
   { key: "seed.topic_variants", values: [2, 2, 2, 2], changeVia: "seed" },
 ];
 
-/** 하나짜리 키 13(12절). */
+/** 하나짜리 키 15(12절). talk.teacher_model_max_mb · talk.teacher_portrait_max_kb 는 선생님 자산 검사가 읽는다(12절 '자산 검사(CI)가 읽는다'). */
 const SINGLE_SETTINGS: readonly {
   key: string;
   value: number;
@@ -187,9 +187,11 @@ const SINGLE_SETTINGS: readonly {
     changeVia: "decision-first",
   },
   { key: "writing.split_from_level", value: 6, changeVia: "decision-first" },
+  { key: "talk.teacher_model_max_mb", value: 8, changeVia: "seed" },
+  { key: "talk.teacher_portrait_max_kb", value: 100, changeVia: "seed" },
 ];
 
-/** 검증기(P4b · P4c)가 읽는 45 키의 12절 기본값. */
+/** 검증기(P4b · P4c)와 선생님 자산 검사가 읽는 47 키의 12절 기본값. */
 export function defaultSettings(): SettingsFile {
   const settings: SettingRow[] = [];
   for (const { key, values, changeVia } of BAND_SETTINGS) {

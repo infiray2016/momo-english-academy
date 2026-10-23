@@ -119,8 +119,15 @@ export async function setupTalkDb(): Promise<TalkDb> {
   return { testDb, db };
 }
 
-/** 집을 비우고 첫 실행(회화 그 단계 · 단원 1). */
-export async function resetHousehold(db: Db, level = 1): Promise<string> {
+/**
+ * 집을 비우고 첫 실행(회화 그 단계 · 단원 1). 회화 선생님은 기본 미나다 — 선생님이 없으면 처음 스냅숏 · 토리 행 1 을 미루므로(선생님 화면
+ * plan 값 7) 고르는 길을 보는 시험만 null 을 넘긴다.
+ */
+export async function resetHousehold(
+  db: Db,
+  level = 1,
+  teacherKey: string | null = "mina",
+): Promise<string> {
   await db.delete(profiles);
   await db.delete(parentAuth);
   await db.delete(parentAlerts);
@@ -141,6 +148,11 @@ export async function resetHousehold(db: Db, level = 1): Promise<string> {
   if (!saved.ok) throw new Error("첫 실행 저장 실패");
   const profile = await readHouseholdProfile({ db });
   if (!profile) throw new Error("프로필 없음");
+  if (teacherKey !== null)
+    await db
+      .update(profiles)
+      .set({ teacherKey })
+      .where(eq(profiles.id, profile.id));
   return profile.id;
 }
 

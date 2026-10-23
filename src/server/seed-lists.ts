@@ -1,5 +1,5 @@
 import "server-only";
-// 시드 목록 넷 읽기(5절 '빌드에 묶어 배포' · 6.4 · C63 (5), plan-p09c 파일별 값 3).
+// 시드 목록 넷과 회화 선생님 명단 읽기(5절 '빌드에 묶어 배포' · 6.4 · C63 (5), plan-p09c 파일별 값 3 · 선생님 화면 plan 값 5).
 // 빌드 추적(next.config.ts outputFileTracingIncludes)으로 서버 함수 묶음에 든 파일을 실행 때 읽는다.
 // 없거나 규격에 어긋나면 던진다 — 흐름은 AI 를 부르지 않는다(검사하지 않은 출력을 아이에게 보이지 않는다).
 // 오류 메시지에 파일 내용을 넣지 않는다.
@@ -13,6 +13,7 @@ import {
   ListFormsFileSchema,
   MetaSentencesFileSchema,
 } from "@/core/seed/schema/reference";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import { SEED_FILES } from "@/core/seed/structure";
 
 /** 시드 폴더 이름(P4a 배치). */
@@ -25,6 +26,7 @@ const LIST_SCHEMAS = {
   homophones: HomophonesFileSchema,
   forms: ListFormsFileSchema,
   metaSentences: MetaSentencesFileSchema,
+  teachers: TeachersFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;

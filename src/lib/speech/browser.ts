@@ -22,6 +22,7 @@ import {
   startListen,
   stepListen,
 } from "@/core/speech/listen";
+import { preferredVoice } from "@/core/teacher/voice";
 import {
   type ListenHandle,
   type MicrophoneCheck,
@@ -430,16 +431,23 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = settings.lang;
-    const voice = pickVoice(synth.getVoices(), settings.lang);
+    // 목소리 순서(회화 선생님)가 있으면 그 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice(plan 회화-선생님-캐릭터 값 12)
+    const voices = synth.getVoices();
+    const voice =
+      (options?.voicePrefer?.length
+        ? preferredVoice(voices, settings.lang, options.voicePrefer)
+        : undefined) ?? pickVoice(voices, settings.lang);
     if (voice !== undefined) utterance.voice = voice;
-    // 빠르기는 넘긴 때만(없으면 브라우저 기본 — 말하기 · 배치 동작 그대로)
+    // 빠르기 · 높이는 넘긴 때만(없으면 브라우저 기본 — 말하기 · 배치 · 읽기 동작 그대로)
     if (options?.rate !== undefined) utterance.rate = options.rate;
+    if (options?.pitch !== undefined) utterance.pitch = options.pitch;
     trace({
       at: now(),
       kind: "speak",
       text,
       voice: voice?.name,
       ...(options?.rate === undefined ? {} : { rate: options.rate }),
+      ...(options?.pitch === undefined ? {} : { pitch: options.pitch }),
     });
     // await 없이 같은 차례에서 speak 를 부른다(누름 처리 안에서 불릴 수 있다).
     return new Promise<SpeakOutcome>((resolve) => {
@@ -456,8 +464,11 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
           resolve(outcome);
         }
       };
-      utterance.onstart = () =>
+      utterance.onstart = () => {
         trace({ at: now(), kind: "speak-event", type: "start" });
+        // 실제로 시작한 알림(선생님 말하기 상태의 시작). 이미 끊긴 발화의 늦은 알림은 넘기지 않는다.
+        if (speaking === current) options?.onStart?.();
+      };
       utterance.onend = () => {
         trace({ at: now(), kind: "speak-event", type: "end" });
         settleIfCurrent({ kind: "ended" });

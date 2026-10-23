@@ -42,6 +42,7 @@ import {
   type SpeechSettings,
   speechSettingsFrom,
 } from "@/core/speech/listen";
+import { type TeacherView, teacherViewOf } from "@/core/teacher/roster";
 import { images, vocab } from "@/db/schema/content";
 import { attempts, profiles, sessions, talkTurns } from "@/db/schema/learning";
 import { type Db, type DbOrTx, getDb, type Tx } from "@/server/db";
@@ -51,6 +52,7 @@ import { readHouseholdProfile } from "@/server/profile";
 import { seedHomophones } from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
+import { rosterOf, teacherChoicesOf } from "@/server/teacher";
 import {
   closeWithoutClosing,
   insertClosingRecord,
@@ -262,6 +264,8 @@ async function ensureStarted(
         items.length,
         state.practiceRounds,
       ),
+      // 한 대화는 이 키로 끝까지 간다(선생님 화면 plan 값 7). 선생님이 없으면 loadTalkView 가 여기까지 오지 않는다
+      ...(state.teacher ? { teacherKey: state.teacher.key } : {}),
     };
     if (!parseTalkAttemptInput(input))
       throw new Error("처음 스냅숏 꼴이 틀렸다");
@@ -319,6 +323,13 @@ export type TalkViewSettings = {
   };
   /** ai.timeout_seconds.feedback */
   feedbackTimeoutSeconds: number;
+};
+
+/** 선생님 창 설정(12절 talk.teacher_render · talk.teacher_load_timeout_seconds · talk.teacher_praise_seconds). */
+export type TalkTeacherSettings = {
+  render: "3d" | "portrait";
+  loadTimeoutSeconds: number;
+  praiseSeconds: number;
 };
 
 export type TalkView = {
@@ -391,12 +402,22 @@ export type TalkView = {
   noticesSeen: Record<(typeof TALK_NOTICE_KINDS)[number], boolean>;
   /** 1-가 하루 안전 상한에 닿았고 목표 턴 전(화면이 '토리가 잠깐 쉬어요' — C80). */
   resting: boolean;
+  /** 이 대화의 회화 선생님(처음 스냅숏 키 → 프로필 키). null 이면 아직 고르지 않음 — 처음 스냅숏 · 토리 행 1 도 없다(3.3). */
+  teacher: TeacherView | null;
+  /** 고르는 화면의 선생님(teacher 가 null 일 때만 — 그 아이에게 보일 선생님, 명단 차례). teacher 가 있으면 빈 목록. */
+  teacherChoices: TeacherView[];
+  teacherSettings: TalkTeacherSettings;
 };
 
 async function viewSettingsOf(
   db: DbOrTx,
   profileId: string,
-): Promise<TalkViewSettings & { friendshipMax: number }> {
+): Promise<
+  TalkViewSettings & {
+    friendshipMax: number;
+    teacherSettings: TalkTeacherSettings;
+  }
+> {
   const talkSpeechKeys = [
     "speech.end_silence_seconds.talk.1-3",
     "speech.end_silence_seconds.talk.4-6",
@@ -429,6 +450,9 @@ async function viewSettingsOf(
       "talk.nospeech_dontknow_count": count,
       "talk.practice_rounds": count,
       "talk.friendship_max": count,
+      "talk.teacher_render": z.enum(["3d", "portrait"]),
+      "talk.teacher_load_timeout_seconds": positive,
+      "talk.teacher_praise_seconds": positive,
     } as Record<string, z.ZodType>,
     { db, profileId },
   );
@@ -454,6 +478,11 @@ async function viewSettingsOf(
     },
     feedbackTimeoutSeconds: num("ai.timeout_seconds.feedback"),
     friendshipMax: num("talk.friendship_max"),
+    teacherSettings: {
+      render: values["talk.teacher_render"] as TalkTeacherSettings["render"],
+      loadTimeoutSeconds: num("talk.teacher_load_timeout_seconds"),
+      praiseSeconds: num("talk.teacher_praise_seconds"),
+    },
   };
 }
 
@@ -493,6 +522,8 @@ function lastToriOf(state: TalkState): TalkView["lastTori"] {
 /**
  * 회화 화면 자료(값 1). 그 프로필의 회화 세션이고 대화가 열려 있으면(진행 · 또는 완료이고 정리 토막 전) 자료, 아니면 undefined
  * (쪽이 회화 수업 목록으로). 처음 열 때 한 트랜잭션(세션 행 FOR UPDATE)으로 처음 스냅숏과 토리 행 1 을 넣는다(AI 없음).
+ * 선생님을 먼저 정하고, 선생님이 없고 처음 스냅숏도 없으면 넣지 않는다 — 고르는 화면은 처음 스냅숏 앞이다(3.3, 선생님 화면 plan 값 7).
+ * 고른 뒤 다시 읽으면 스냅숏 · 토리 행 1 이 들어가 판(version)이 바뀐다.
  */
 export async function loadTalkView(
   { sessionId }: { sessionId: string },
@@ -511,12 +542,13 @@ export async function loadTalkView(
       at,
     });
     if (!first || !isTalkOpen(first.session)) return undefined;
+    if (!first.teacher && !first.start) return first;
     if (!(await ensureStarted(tx, first, at))) return first;
     return readTalkState(tx, { sessionId, profileId: profile.id, at });
   });
   if (!state) return undefined;
   const settings = await viewSettingsOf(db, profile.id);
-  const { friendshipMax, ...viewSettings } = settings;
+  const { friendshipMax, teacherSettings, ...viewSettings } = settings;
   const shown = state.start?.shownWords ?? [];
   const info = await wordInfoOf(db, state, shown);
   const seen = (profile.noticesSeen ?? {}) as Record<string, unknown>;
@@ -598,6 +630,9 @@ export async function loadTalkView(
       TALK_NOTICE_KINDS.map((kind) => [kind, typeof seen[kind] === "string"]),
     ) as TalkView["noticesSeen"],
     resting,
+    teacher: state.teacher ? teacherViewOf(state.teacher) : null,
+    teacherChoices: state.teacher ? [] : teacherChoicesOf(rosterOf(), profile),
+    teacherSettings,
   };
 }
 

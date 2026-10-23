@@ -52,6 +52,8 @@ export const profiles = pgTable("profiles", {
   alphabetStart: boolean("alphabet_start").notNull(),
   // 안내 종류 → 보인 시각
   noticesSeen: jsonb("notices_seen").notNull().default({}),
+  // 고른 회화 선생님(seed/teachers.json 키). 비었으면 아직 고르지 않음 — 5절 · C130, 선생님 화면 plan 값 7
+  teacherKey: text("teacher_key"),
 }).enableRLS();
 
 const profileRef = () =>

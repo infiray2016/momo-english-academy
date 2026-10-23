@@ -15,8 +15,17 @@ export type SpeakOutcome =
   | { kind: "error"; code: string }
   | { kind: "unsupported" };
 
-/** 읽어 주기 선택 칸(plan-p13b 파일별 값 11). */
-export type SpeakOptions = { rate?: number };
+/**
+ * 읽어 주기 선택 칸(plan-p13b 파일별 값 11 · plan 회화-선생님-캐릭터 값 12).
+ * pitch 는 넘긴 때만 utterance.pitch(회화 선생님 높이), voicePrefer 는 목소리 이름 조각 차례(맞는 것이 없거나 비면
+ * pickVoice), onStart 는 발화가 실제로 시작한 알림(onstart) 뒤에 한 번 — 끊긴 발화의 늦은 알림은 넘기지 않는다.
+ */
+export type SpeakOptions = {
+  rate?: number;
+  pitch?: number;
+  voicePrefer?: readonly string[];
+  onStart?: () => void;
+};
 
 /** 마이크 확인 결과(plan-p02 나-5). */
 export type MicrophoneCheck =
@@ -137,6 +146,7 @@ export type SpeechTraceEntry =
       text: string;
       voice: string | undefined;
       rate?: number;
+      pitch?: number;
     }
   | {
       at: number;

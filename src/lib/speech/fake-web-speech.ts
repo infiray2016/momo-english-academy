@@ -16,6 +16,10 @@ export type FakeSpeechRecord = {
   spoken: string[];
   /** 읽어 준 빠르기(spoken 과 같은 차례 — 단계 구간 빠르기 speech.rate.<구간>을 e2e 가 본다, C125). */
   rates: number[];
+  /** 읽어 준 높이(spoken 과 같은 차례 — 회화 선생님 높이를 e2e 가 본다, plan 회화-선생님-캐릭터 값 12). */
+  pitches: number[];
+  /** 읽어 준 목소리 이름(spoken 과 같은 차례). 목소리를 고르지 않은 발화(잠금 풀기 · 목록 없음)는 null. */
+  voices: (string | null)[];
   /** 함수 안에 다시 적은 기본값. script.ts 의 DEFAULT_* 와 같은지 단위 시험이 본다. */
   defaults: {
     expose: { recognition: string; synthesis: boolean };
@@ -46,6 +50,8 @@ export function installFakeWebSpeech(script: SpeechScript): void {
     calls: [],
     spoken: [],
     rates: [],
+    pitches: [],
+    voices: [],
     defaults: {
       expose: defaultExpose,
       onStop: defaultOnStop,
@@ -256,6 +262,9 @@ export function installFakeWebSpeech(script: SpeechScript): void {
     speak(utterance: FakeUtterance) {
       record.spoken.push(utterance.text);
       record.rates.push(utterance.rate);
+      record.pitches.push(utterance.pitch);
+      const voice = utterance.voice as { name?: unknown } | null;
+      record.voices.push(typeof voice?.name === "string" ? voice.name : null);
       queue.push(utterance);
       pump();
     },

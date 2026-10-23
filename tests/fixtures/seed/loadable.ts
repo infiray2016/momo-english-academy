@@ -50,7 +50,7 @@ function changeViaOf(key: string): ChangeVia {
 }
 
 /**
- * 적재 시험용 설정값 시드: smallFrameSettings() 의 45 키 + TEST_SETTINGS 키.
+ * 적재 시험용 설정값 시드: smallFrameSettings() 의 47 키 + TEST_SETTINGS 키.
  * 조합 · 관계 · 학습일 계산에 드는 키가 모두 있다. seed.complete_through_level 은 시험용 시드가 차 있는 단계다
  * (덮어쓰기 없는 적재도 완전성을 넘는다).
  */

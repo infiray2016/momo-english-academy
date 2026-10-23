@@ -40,12 +40,15 @@ import {
   TalkLevelSpecSchema,
 } from "@/core/seed/schema/reference";
 import type { TalkCard } from "@/core/seed/schema/talk";
+import type { Teacher } from "@/core/seed/schema/teachers";
 import { STORIES_PER_BAND } from "@/core/seed/structure";
 import { splitSentences } from "@/core/seed/text";
 import { lemmaLookup } from "@/core/session/attempt";
+import { resolveTeacher } from "@/core/teacher/roster";
 import { lessons, vocab } from "@/db/schema/content";
 import {
   attempts,
+  profiles,
   profileTracks,
   sessions,
   talkSummaries,
@@ -61,6 +64,7 @@ import {
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
+import { rosterOf } from "@/server/teacher";
 
 // ── 의존 · 형 ────────────────────────────────────────────────────
 
@@ -110,6 +114,11 @@ export type TalkState = {
   /** talk.practice_rounds */
   practiceRounds: number;
   start: TalkStart | null;
+  /**
+   * 이 대화의 회화 선생님 — 처음 스냅숏 키, 그 키가 명단에 없으면(또는 스냅숏 전이면) 프로필의 지금 선생님(spec '세션의 선생님' 행,
+   * 선생님 화면 plan 값 7). 둘 다 명단에 없으면 null(스냅숏 전이면 고르는 화면).
+   */
+  teacher: Teacher | null;
   /** 이 세션 talk_turns(턴 번호 차례, 같은 번호는 토리 행 먼저 — C89). */
   rows: TalkTurnRow[];
   /** 끝의 '토리의 말이 없는 아이 행'을 뺀 것(자리 판정은 이것으로). */
@@ -655,15 +664,24 @@ export async function readTalkState(
     .from(attempts)
     .where(eq(attempts.sessionId, sessionId));
   let start: TalkStart | null = null;
+  let startTeacherKey: string | undefined;
   for (const t of tried) {
     const input = parseTalkAttemptInput(t.input);
-    if (input?.kind === "talk-start")
+    if (input?.kind === "talk-start") {
       start = {
         shownWords: input.shownWords,
         metBefore: input.metBefore,
         practiceOrder: input.practiceOrder,
       };
+      startTeacherKey = input.teacherKey;
+    }
   }
+  const [chosen] = await db
+    .select({ teacherKey: profiles.teacherKey })
+    .from(profiles)
+    .where(eq(profiles.id, profileId));
+  const teacher =
+    resolveTeacher(rosterOf(), startTeacherKey, chosen?.teacherKey) ?? null;
   const follows = followDoneOf(tried.map((t) => t.input));
 
   const [round] = await db
@@ -719,6 +737,7 @@ export async function readTalkState(
     flowSettings,
     practiceRounds,
     start,
+    teacher,
     rows,
     liveRows: live,
     orphan,

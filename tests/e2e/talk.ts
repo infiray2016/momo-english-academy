@@ -185,9 +185,18 @@ export async function insertTalkLesson({
   return row;
 }
 
-/** 회화를 그 단계에서 시작한 집(앱 안 이름 Momo). 프로필 id. */
-export async function talkHousehold(level: number): Promise<string> {
-  const { profileId } = await insertHousehold({ startLevels: { talk: level } });
+/**
+ * 회화를 그 단계에서 시작한 집(앱 안 이름 Momo). 프로필 id. 회화 선생님은 기본 미나다 — 선생님이 없으면 처음 스냅숏 · 토리 행 1 을
+ * 미루고 고르는 화면을 내므로(선생님 화면 plan 값 7) 고르는 화면 시험만 null 을 넘긴다.
+ */
+export async function talkHousehold(
+  level: number,
+  { teacherKey = "mina" }: { teacherKey?: string | null } = {},
+): Promise<string> {
+  const { profileId } = await insertHousehold({
+    startLevels: { talk: level },
+    teacherKey,
+  });
   return profileId;
 }
 

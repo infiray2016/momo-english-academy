@@ -26,6 +26,7 @@ import { feedbackStateOf } from "@/core/writing/feedback";
 import { lessons, vocab } from "@/db/schema/content";
 import {
   attempts,
+  profiles,
   profileTracks,
   sessions,
   talkSummaries,
@@ -52,6 +53,7 @@ import {
 import type { Db } from "@/server/db";
 import { readLessonList } from "@/server/lesson-list";
 import { startLessonSession } from "@/server/session";
+import { chooseTeacherFor } from "@/server/teacher";
 import { retryPendingFeedback } from "@/server/writing";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import {
@@ -371,6 +373,96 @@ describe("회화 세션: 시작 · 상태 전이", () => {
       .filter((r) => r.speaker === "child")
       .at(-1);
     expect(child?.saidWords).toEqual([first.targets[0]]);
+  });
+});
+
+describe("회화 선생님(선생님 화면 plan 값 7 — 처음 스냅숏 키 · 고르기 전 미룸)", () => {
+  async function startInput(sessionId: string) {
+    const [row] = await db
+      .select({ input: attempts.input })
+      .from(attempts)
+      .where(eq(attempts.clientAttemptId, `talk-start:${sessionId}`));
+    return row?.input as Record<string, unknown> | undefined;
+  }
+
+  it("AC-19b 처음 스냅숏에 고른 선생님 키가 남고 프로필 선생님이 바뀌어도 그 대화는 스냅숏 키로 가며 스냅숏 키가 명단에 없으면 프로필의 지금 선생님이다", async () => {
+    const sessionId = await startTalk(h, 1);
+    const view = await viewOf(h, sessionId);
+    expect(view.teacher).toMatchObject({ key: "mina", nameKo: "미나" });
+    expect(view.teacherChoices).toEqual([]);
+    expect(view.teacherSettings).toEqual({
+      render: TEST_SETTINGS["talk.teacher_render"].value,
+      loadTimeoutSeconds:
+        TEST_SETTINGS["talk.teacher_load_timeout_seconds"].value,
+      praiseSeconds: TEST_SETTINGS["talk.teacher_praise_seconds"].value,
+    });
+    expect(await startInput(sessionId)).toMatchObject({
+      kind: "talk-start",
+      teacherKey: "mina",
+    });
+
+    await db
+      .update(profiles)
+      .set({ teacherKey: "leo" })
+      .where(eq(profiles.id, profileId));
+    expect((await viewOf(h, sessionId)).teacher?.key).toBe("mina");
+
+    // 명단에서 빠진 키가 남은 스냅숏(명단을 줄인 뒤)은 프로필의 지금 선생님
+    const input = await startInput(sessionId);
+    await db
+      .update(attempts)
+      .set({ input: { ...input, teacherKey: "tori" } })
+      .where(eq(attempts.clientAttemptId, `talk-start:${sessionId}`));
+    expect((await viewOf(h, sessionId)).teacher?.key).toBe("leo");
+    // 선생님 전 옛 스냅숏(키 없음)도 읽힌다
+    const { teacherKey: _dropped, ...old } = input ?? {};
+    await db
+      .update(attempts)
+      .set({ input: old })
+      .where(eq(attempts.clientAttemptId, `talk-start:${sessionId}`));
+    const legacy = await viewOf(h, sessionId);
+    expect(legacy.teacher?.key).toBe("leo");
+    expect(legacy.next.pending?.en).toBe(view.next.pending?.en);
+    expect(h.fake.requests).toHaveLength(0);
+  });
+
+  it("AC-19b 선생님이 없는 프로필이 회화를 열면 처음 스냅숏 · 토리 행 1 을 넣지 않고 보일 선생님을 주며 고른 뒤 다시 읽으면 스냅숏 · 토리 행 1 이 들어가 판이 바뀐다", async () => {
+    profileId = await resetHousehold(db, 1, null);
+    const sessionId = await startTalk(h, 1);
+    const before = await viewOf(h, sessionId);
+    expect(before.teacher).toBeNull();
+    expect(before.teacherChoices.map((t) => t.key)).toEqual(["mina", "leo"]);
+    expect(before.teacherChoices[0]).not.toHaveProperty("personaEn");
+    expect(before.lastTori).toBeNull();
+    expect(await startInput(sessionId)).toBeUndefined();
+    expect(await turnsOf(db, sessionId)).toEqual([]);
+    // 다시 열어도 미룬 그대로다
+    expect((await viewOf(h, sessionId)).version).toBe(before.version);
+    expect(await startInput(sessionId)).toBeUndefined();
+
+    expect(await chooseTeacherFor({ key: "leo" }, { db })).toEqual({
+      ok: true,
+    });
+    const after = await viewOf(h, sessionId);
+    expect(after.teacher?.key).toBe("leo");
+    expect(after.teacherChoices).toEqual([]);
+    expect(after.version).not.toBe(before.version);
+    expect(await startInput(sessionId)).toMatchObject({ teacherKey: "leo" });
+    const rows = await turnsOf(db, sessionId);
+    expect(rows.map((r) => `${r.speaker}${r.turnNo}`)).toEqual(["tori1"]);
+    expect(h.fake.requests).toHaveLength(0);
+  });
+
+  it("AC-19b 영어 이름이 Mina 인 프로필의 고를 선생님은 리오만이다", async () => {
+    profileId = await resetHousehold(db, 1, null);
+    await db
+      .update(profiles)
+      .set({ englishName: "Mina" })
+      .where(eq(profiles.id, profileId));
+    const sessionId = await startTalk(h, 1);
+    const view = await viewOf(h, sessionId);
+    expect(view.teacher).toBeNull();
+    expect(view.teacherChoices.map((t) => t.key)).toEqual(["leo"]);
   });
 });
 
