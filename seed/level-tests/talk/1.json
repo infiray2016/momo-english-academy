@@ -1,0 +1,549 @@
+{
+  "area": "talk",
+  "level": 1,
+  "forms": [
+    {
+      "form": 1,
+      "sheets": [
+        {
+          "sheet": 1,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Hi, {NAME}! Let's talk.", "ko": "안녕, {NAME}! 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "Pizza? Grapes?", "ko": "피자? 포도?" },
+              "allowed": [{ "text": "I like pizza." }, { "text": "I like grapes." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 피자가 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like pizza.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Your toy. What is this?", "ko": "네 장난감이네. 이건 뭐야?" },
+              "allowed": [{ "text": "This is my ball." }, { "text": "It is my ball." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "my ball" }],
+              "childKo": "이건 내 공이야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my ball.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "What color is your bag?", "ko": "네 가방은 무슨 색이야?" },
+              "allowed": [{ "text": "It is blue." }, { "text": "My bag is blue." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "blue" }],
+              "childKo": "파란색이야.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is blue.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "{NAME}, what do you like?", "ko": "{NAME}, 너는 뭘 좋아해?" },
+              "allowed": [{ "text": "I like my book." }, { "text": "I like my ___.", "slotPos": "noun" }, { "text": "I like ___.", "slotPos": "noun" }, { "text": "my book" }],
+              "childKo": "나는 내 책이 좋아.",
+              "frameEn": "I like my ___.",
+              "sentenceEn": "I like my book.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Okay! How old are you?", "ko": "좋아! 너는 몇 살이야?" },
+              "allowed": [{ "text": "I am ten." }, { "text": "I am ___.", "slotPos": "number" }, { "text": "ten" }],
+              "childKo": "나는 열 살이야.",
+              "frameEn": "I am ___.",
+              "sentenceEn": "I am ten.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Your fan! How is it?", "ko": "네 부채네! 어때?" },
+              "allowed": [{ "text": "It is nice." }, { "text": "My fan is nice." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "nice" }],
+              "childKo": "멋져.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is nice.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Green! A frog? A cat?", "ko": "초록색이야! 개구리? 고양이?" },
+              "allowed": [{ "text": "It is a frog." }, { "text": "It is a green frog." }, { "text": "That is a frog." }],
+              "childKo": "개구리야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a frog.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "A truck! Big? Small?", "ko": "트럭이야! 커? 작아?" },
+              "allowed": [{ "text": "It is big." }, { "text": "The truck is big." }, { "text": "It is a big truck." }],
+              "childKo": "그건 커.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is big.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "Ring, ring! Bell? Cup?", "ko": "딸랑딸랑! 종? 컵?" },
+              "allowed": [{ "text": "It is a bell." }, { "text": "That is a bell." }, { "text": "This is a bell." }],
+              "childKo": "종이야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a bell.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "A lion. How many legs?", "ko": "사자야. 다리가 몇 개야?" },
+              "allowed": [{ "text": "Four legs." }, { "text": "four" }, { "text": "A lion, four legs." }],
+              "childKo": "다리 네 개.",
+              "frameEn": "___ legs.",
+              "sentenceEn": "Four legs.",
+              "unit": 5
+            }
+          ]
+        },
+        {
+          "sheet": 2,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Hello! Let's talk.", "ko": "안녕! 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "What is your name?", "ko": "네 이름은 뭐야?" },
+              "allowed": [{ "text": "My name is {NAME}." }, { "text": "I am {NAME}." }, { "text": "{NAME} is my name." }],
+              "childKo": "내 이름은 {NAME}.",
+              "frameEn": "My name is ___.",
+              "sentenceEn": "My name is {NAME}.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "A tree! Tall? Short?", "ko": "나무야! 키가 커? 작아?" },
+              "allowed": [{ "text": "It is tall." }, { "text": "The tree is tall." }, { "text": "It is a tall tree." }],
+              "childKo": "그건 키가 커.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is tall.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Your jacket! What is that?", "ko": "네 재킷이네! 저건 뭐야?" },
+              "allowed": [{ "text": "That is my jacket." }, { "text": "It is my jacket." }, { "text": "This is my jacket." }],
+              "childKo": "저건 내 재킷이야.",
+              "frameEn": "That is my ___.",
+              "sentenceEn": "That is my jacket.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "How is your desk?", "ko": "네 책상은 어때?" },
+              "allowed": [{ "text": "My desk is old." }, { "text": "It is old." }, { "text": "My desk is ___.", "slotPos": "adjective" }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "old" }],
+              "childKo": "내 책상은 오래됐어.",
+              "frameEn": "My desk is ___.",
+              "sentenceEn": "My desk is old.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Pink? Blue? Yellow?", "ko": "분홍? 파랑? 노랑?" },
+              "allowed": [{ "text": "I like pink." }, { "text": "I like the color pink." }, { "text": "I like ___.", "slotPos": "adjective" }],
+              "childKo": "나는 분홍색이 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like pink.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "{NAME}, your cake!", "ko": "{NAME}, 네 케이크야!" },
+              "allowed": [{ "text": "Oh, thank you!" }, { "text": "Thank you!" }, { "text": "Thanks!" }],
+              "childKo": "아, 고마워!",
+              "frameEn": "Oh, ___ you!",
+              "sentenceEn": "Oh, thank you!",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Your face! What is this?", "ko": "네 얼굴이야! 이건 뭐야?" },
+              "allowed": [{ "text": "This is my nose." }, { "text": "It is my nose." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "my nose" }],
+              "childKo": "이건 내 코야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my nose.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Long! A snake? A duck?", "ko": "길어! 뱀? 오리?" },
+              "allowed": [{ "text": "It is a snake." }, { "text": "It is a long snake." }, { "text": "That is a snake." }],
+              "childKo": "뱀이야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a snake.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "Flowers? Trees?", "ko": "꽃? 나무?" },
+              "allowed": [{ "text": "I like flowers." }, { "text": "I like trees." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 꽃이 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like flowers.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Up, up! Ship? Plane?", "ko": "위로, 위로! 배? 비행기?" },
+              "allowed": [{ "text": "It is a plane." }, { "text": "That is a plane." }, { "text": "It is a big plane." }],
+              "childKo": "비행기야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a plane.",
+              "unit": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "form": 2,
+      "sheets": [
+        {
+          "sheet": 1,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Hello, {NAME}! Okay, let's talk.", "ko": "안녕, {NAME}! 좋아, 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "Jam? Cheese?", "ko": "잼? 치즈?" },
+              "allowed": [{ "text": "I like jam." }, { "text": "I like cheese." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 잼이 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like jam.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "What is this toy?", "ko": "이 장난감은 뭐야?" },
+              "allowed": [{ "text": "This is my kite." }, { "text": "It is a kite." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "a kite" }],
+              "childKo": "이건 내 연이야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my kite.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "What color is your cap?", "ko": "네 모자는 무슨 색이야?" },
+              "allowed": [{ "text": "It is red." }, { "text": "My cap is red." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "red" }],
+              "childKo": "빨간색이야.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is red.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "Wow! What do you like?", "ko": "와! 너는 뭘 좋아해?" },
+              "allowed": [{ "text": "I like my bag." }, { "text": "I like my ___.", "slotPos": "noun" }, { "text": "I like ___.", "slotPos": "noun" }, { "text": "my bag" }],
+              "childKo": "나는 내 가방이 좋아.",
+              "frameEn": "I like my ___.",
+              "sentenceEn": "I like my bag.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "{NAME}, how old are you?", "ko": "{NAME}, 너는 몇 살이야?" },
+              "allowed": [{ "text": "I am nine." }, { "text": "I am ___.", "slotPos": "number" }, { "text": "nine" }],
+              "childKo": "나는 아홉 살이야.",
+              "frameEn": "I am ___.",
+              "sentenceEn": "I am nine.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "A puppy! How is it?", "ko": "강아지야! 어때?" },
+              "allowed": [{ "text": "It is cute." }, { "text": "The puppy is cute." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "cute" }],
+              "childKo": "귀여워.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is cute.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "White! A sheep? A pig?", "ko": "하얀색이야! 양? 돼지?" },
+              "allowed": [{ "text": "It is a sheep." }, { "text": "It is a white sheep." }, { "text": "That is a sheep." }],
+              "childKo": "양이야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a sheep.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "A snake! Long? Short?", "ko": "뱀이야! 길어? 짧아?" },
+              "allowed": [{ "text": "It is long." }, { "text": "The snake is long." }, { "text": "It is a long snake." }],
+              "childKo": "그건 길어.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is long.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "Hot milk! Cup? Map?", "ko": "뜨거운 우유야! 컵? 지도?" },
+              "allowed": [{ "text": "It is a cup." }, { "text": "That is a cup." }, { "text": "It is my cup." }],
+              "childKo": "컵이야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a cup.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "An octopus. How many legs?", "ko": "문어야. 다리가 몇 개야?" },
+              "allowed": [{ "text": "Eight legs." }, { "text": "eight" }, { "text": "An octopus, eight legs." }],
+              "childKo": "다리 여덟 개.",
+              "frameEn": "___ legs.",
+              "sentenceEn": "Eight legs.",
+              "unit": 5
+            }
+          ]
+        },
+        {
+          "sheet": 2,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Oh, hello, {NAME}! Let's talk.", "ko": "오, 안녕, {NAME}! 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "Your snack. What is it?", "ko": "네 간식은 뭐야?" },
+              "allowed": [{ "text": "My snack is candy." }, { "text": "It is candy." }, { "text": "My snack is ___.", "slotPos": "noun" }, { "text": "candy" }],
+              "childKo": "내 간식은 사탕이야.",
+              "frameEn": "My snack is ___.",
+              "sentenceEn": "My snack is candy.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "A shell! Little? Big?", "ko": "조개껍데기야! 작아? 커?" },
+              "allowed": [{ "text": "It is little." }, { "text": "It is a little shell." }, { "text": "The shell is little." }, { "text": "It is small." }],
+              "childKo": "그건 작아.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is little.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Your shoe. What is that?", "ko": "네 신발이네. 저건 뭐야?" },
+              "allowed": [{ "text": "That is my shoe." }, { "text": "It is my shoe." }, { "text": "This is my shoe." }],
+              "childKo": "저건 내 신발이야.",
+              "frameEn": "That is my ___.",
+              "sentenceEn": "That is my shoe.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "Your chair! How is it?", "ko": "네 의자야! 어때?" },
+              "allowed": [{ "text": "My chair is big." }, { "text": "It is big." }, { "text": "My chair is ___.", "slotPos": "adjective" }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "big" }],
+              "childKo": "내 의자는 커.",
+              "frameEn": "My chair is ___.",
+              "sentenceEn": "My chair is big.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Red? Green? Black?", "ko": "빨강? 초록? 검정?" },
+              "allowed": [{ "text": "I like green." }, { "text": "I like the color green." }, { "text": "I like ___.", "slotPos": "adjective" }],
+              "childKo": "나는 초록색이 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like green.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "In your cup! Milk? Jam?", "ko": "네 컵 안에! 우유? 잼?" },
+              "allowed": [{ "text": "It is milk." }, { "text": "That is milk." }, { "text": "It is my milk." }],
+              "childKo": "우유야.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is milk.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Your face! And this?", "ko": "네 얼굴이야! 그럼 이건?" },
+              "allowed": [{ "text": "This is my mouth." }, { "text": "It is my mouth." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "my mouth" }],
+              "childKo": "이건 내 입이야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my mouth.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Yellow! A duck? A pig?", "ko": "노란색이야! 오리? 돼지?" },
+              "allowed": [{ "text": "It is a duck." }, { "text": "It is a yellow duck." }, { "text": "That is a duck." }],
+              "childKo": "오리야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a duck.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "Swings? Songs?", "ko": "그네? 노래?" },
+              "allowed": [{ "text": "I like swings." }, { "text": "I like songs." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 그네가 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like swings.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "On the lake! Ship? Car?", "ko": "호수 위에! 배? 자동차?" },
+              "allowed": [{ "text": "It is a ship." }, { "text": "That is a ship." }, { "text": "It is a big ship." }],
+              "childKo": "배야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a ship.",
+              "unit": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "form": 3,
+      "sheets": [
+        {
+          "sheet": 1,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Hello, hello, {NAME}! Let's talk.", "ko": "안녕, 안녕, {NAME}! 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "Juice? Cake?", "ko": "주스? 케이크?" },
+              "allowed": [{ "text": "I like cake." }, { "text": "I like juice." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 케이크가 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like cake.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Your toy! What is it?", "ko": "네 장난감이네! 그건 뭐야?" },
+              "allowed": [{ "text": "This is my doll." }, { "text": "It is my doll." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "my doll" }],
+              "childKo": "이건 내 인형이야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my doll.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "What color is your shirt?", "ko": "네 셔츠는 무슨 색이야?" },
+              "allowed": [{ "text": "It is white." }, { "text": "My shirt is white." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "white" }],
+              "childKo": "하얀색이야.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is white.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "Okay! What do you like?", "ko": "좋아! 너는 뭘 좋아해?" },
+              "allowed": [{ "text": "I like my drum." }, { "text": "I like my ___.", "slotPos": "noun" }, { "text": "I like ___.", "slotPos": "noun" }, { "text": "my drum" }],
+              "childKo": "나는 내 북이 좋아.",
+              "frameEn": "I like my ___.",
+              "sentenceEn": "I like my drum.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Your pencils! How many?", "ko": "네 연필! 몇 자루야?" },
+              "allowed": [{ "text": "Five pencils." }, { "text": "___ pencils.", "slotPos": "number" }, { "text": "five" }, { "text": "Many pencils." }],
+              "childKo": "연필 다섯 자루.",
+              "frameEn": "___ pencils.",
+              "sentenceEn": "Five pencils.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "The pot! How is it?", "ko": "냄비야! 어때?" },
+              "allowed": [{ "text": "It is hot." }, { "text": "The pot is hot." }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "hot" }],
+              "childKo": "뜨거워.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is hot.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Orange! A fox? A frog?", "ko": "주황색이야! 여우? 개구리?" },
+              "allowed": [{ "text": "It is a fox." }, { "text": "It is an orange fox." }, { "text": "That is a fox." }],
+              "childKo": "여우야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a fox.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "An ant! Big? Small?", "ko": "개미야! 커? 작아?" },
+              "allowed": [{ "text": "It is small." }, { "text": "The ant is small." }, { "text": "It is a small ant." }, { "text": "It is little." }],
+              "childKo": "그건 작아.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is small.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "On your desk! Lamp? Rock?", "ko": "네 책상 위에! 전등? 바위?" },
+              "allowed": [{ "text": "It is a lamp." }, { "text": "That is a lamp." }, { "text": "It is my lamp." }],
+              "childKo": "전등이야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a lamp.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "A rabbit. How many ears?", "ko": "토끼야. 귀가 몇 개야?" },
+              "allowed": [{ "text": "Two ears." }, { "text": "two" }, { "text": "A rabbit, two ears." }],
+              "childKo": "귀 두 개.",
+              "frameEn": "___ ears.",
+              "sentenceEn": "Two ears.",
+              "unit": 5
+            }
+          ]
+        },
+        {
+          "sheet": 2,
+          "revision": 1,
+          "correction": 0,
+          "firstLine": { "en": "Hi, {NAME}! Okay! Let's talk.", "ko": "안녕, {NAME}! 좋아! 이야기하자." },
+          "turns": [
+            {
+              "question": { "en": "Your lunch. What is it?", "ko": "네 점심은 뭐야?" },
+              "allowed": [{ "text": "My lunch is rice." }, { "text": "It is rice." }, { "text": "My lunch is ___.", "slotPos": "noun" }, { "text": "rice" }],
+              "childKo": "내 점심은 밥이야.",
+              "frameEn": "My lunch is ___.",
+              "sentenceEn": "My lunch is rice.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "A pen! Thick? Thin?", "ko": "펜이야! 두꺼워? 얇아?" },
+              "allowed": [{ "text": "It is thin." }, { "text": "The pen is thin." }, { "text": "It is a thin pen." }],
+              "childKo": "그건 얇아.",
+              "frameEn": "It is ___.",
+              "sentenceEn": "It is thin.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Your hat. What is that?", "ko": "네 모자네. 저건 뭐야?" },
+              "allowed": [{ "text": "That is my hat." }, { "text": "It is my hat." }, { "text": "This is my hat." }],
+              "childKo": "저건 내 모자야.",
+              "frameEn": "That is my ___.",
+              "sentenceEn": "That is my hat.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "Your clock! How is it?", "ko": "네 시계야! 어때?" },
+              "allowed": [{ "text": "My clock is small." }, { "text": "It is small." }, { "text": "My clock is ___.", "slotPos": "adjective" }, { "text": "It is ___.", "slotPos": "adjective" }, { "text": "small" }],
+              "childKo": "내 시계는 작아.",
+              "frameEn": "My clock is ___.",
+              "sentenceEn": "My clock is small.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Orange? White? Blue?", "ko": "주황? 하양? 파랑?" },
+              "allowed": [{ "text": "I like orange." }, { "text": "I like the color orange." }, { "text": "I like ___.", "slotPos": "adjective" }],
+              "childKo": "나는 주황색이 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like orange.",
+              "unit": 3
+            },
+            {
+              "question": { "en": "Monkey snack! What is it?", "ko": "원숭이 간식이야! 그게 뭘까?" },
+              "allowed": [{ "text": "It is a banana." }, { "text": "a banana" }, { "text": "banana" }],
+              "childKo": "바나나야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a banana.",
+              "unit": 1
+            },
+            {
+              "question": { "en": "Your hand! And this?", "ko": "네 손이야! 그럼 이건?" },
+              "allowed": [{ "text": "This is my arm." }, { "text": "It is my arm." }, { "text": "This is my ___.", "slotPos": "noun" }, { "text": "my arm" }],
+              "childKo": "이건 내 팔이야.",
+              "frameEn": "This is my ___.",
+              "sentenceEn": "This is my arm.",
+              "unit": 4
+            },
+            {
+              "question": { "en": "Pink! A pig? A frog?", "ko": "분홍색이야! 돼지? 개구리?" },
+              "allowed": [{ "text": "It is a pig." }, { "text": "It is a pink pig." }, { "text": "That is a pig." }],
+              "childKo": "돼지야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a pig.",
+              "unit": 2
+            },
+            {
+              "question": { "en": "Songs? Stars?", "ko": "노래? 별?" },
+              "allowed": [{ "text": "I like songs." }, { "text": "I like stars." }, { "text": "I like ___.", "slotPos": "noun" }],
+              "childKo": "나는 노래가 좋아.",
+              "frameEn": "I like ___.",
+              "sentenceEn": "I like songs.",
+              "unit": 5
+            },
+            {
+              "question": { "en": "Big, long! Bus? Car?", "ko": "크고 길어! 버스? 자동차?" },
+              "allowed": [{ "text": "It is a bus." }, { "text": "That is a bus." }, { "text": "It is a big bus." }],
+              "childKo": "버스야.",
+              "frameEn": "It is a ___.",
+              "sentenceEn": "It is a bus.",
+              "unit": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
