@@ -22,17 +22,17 @@ import {
 } from "@/components/board/board";
 import { AiRest } from "@/components/session/ai-rest";
 import { WaitHint } from "@/components/session/wait-hint";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import { cn } from "@/lib/utils";
 import type { WrapView } from "@/server/conversation";
 
-/** 마무리 화면 글(4절 회화 마무리 행 그대로 · 목업 B_TalkEnd '토리와 친한 정도'). */
+/** 마무리 화면 글(4절 회화 마무리 행 그대로). 이름 자리 글('[이름](와/과) 친한 정도' — 목업 B_TalkEnd)은 TEACHER_TEXT. */
 export const CLOSING_TEXT = {
   gotWords: "오늘 얻은 단어",
   listenWord: "단어 듣기",
   aborted: "다음에 끝까지 이야기하면 별을 받아요",
   retried: "다시 했어요",
   next: "다음",
-  friendship: "토리와 친한 정도",
   nextStoryTitle: "다음 이야기",
   nextStory: "다음 이야기",
   lessons: "수업 목록",
@@ -148,12 +148,15 @@ export function ClosingFirst({
 /** 셋째 장: 친한 정도 막대 · 다음 이야기 · 큰 '다음 이야기'(없으면 '수업 목록') · 작은 '홈'. '다음'은 없다. */
 export function ClosingThird({
   wrap,
+  teacherName,
   busy,
   onNextStory,
   onLessons,
   onHome,
 }: {
   wrap: WrapView;
+  /** 세션 선생님 한글 이름('[이름](와/과) 친한 정도' — 없으면 '선생님'). */
+  teacherName?: string | undefined;
   busy: boolean;
   onNextStory: (lessonId: string) => void;
   onLessons: () => void;
@@ -174,7 +177,7 @@ export function ClosingThird({
               className="absolute -top-3 left-1/2 h-6 w-28 -translate-x-1/2 rotate-3 bg-postit-talk/90"
             />
             <p className="font-heading text-[26px] leading-tight">
-              {CLOSING_TEXT.friendship}
+              {TEACHER_TEXT.friendship(teacherName)}
             </p>
             <div className="flex gap-1.5" aria-hidden>
               {friendshipCellsOf(
@@ -232,6 +235,7 @@ export function ClosingThird({
 /** 마무리 세 장(장마다 '다음'). 다음 이야기는 수업 목록과 같은 시작 길(재판정 · 하던 수업 확인 · 1-가 하루 안전 상한). */
 export function ClosingCards({
   wrap,
+  teacherName,
   lowLevel,
   mode,
   waitHintSeconds,
@@ -240,6 +244,8 @@ export function ClosingCards({
   onLessons,
 }: {
   wrap: WrapView;
+  /** 세션 선생님 한글 이름(이름 자리 글 — 없으면 '선생님'). */
+  teacherName?: string | undefined;
   lowLevel: boolean;
   mode: "full" | "first";
   waitHintSeconds: readonly [number, number];
@@ -256,7 +262,7 @@ export function ClosingCards({
     if (at + 1 < cards.length) setAt(at + 1);
     else onHome();
   };
-  if (resting) return <AiRest />;
+  if (resting) return <AiRest teacherName={teacherName} />;
   return (
     <div data-talk-closing="" className="flex flex-col gap-6">
       {card === "first" ? (
@@ -264,6 +270,7 @@ export function ClosingCards({
       ) : (
         <ClosingThird
           wrap={wrap}
+          teacherName={teacherName}
           busy={busy}
           onNextStory={(lessonId) => void start(lessonId)}
           onLessons={onLessons}

@@ -1,7 +1,9 @@
 // 회화 턴 · 끝맺음 턴 규격(6.1 회화 턴 두 행 · 고정부 공통 · 구간 규칙 · 이름 가림 · 프롬프트 캐시 · 정규화, 6.2 회화 턴 행과
 // 그 아래 문단, 6.4 실시간 출력 검사 · C5 · C19 · C20 · C21 · C33 · C36 · C44 · C89 · C95, plan-p13a 파일별 값 1 · 정할 것 회7).
 // 두 목적(talk_turn · talk_closing)이 같은 응답 규격 · 같은 고정부를 쓴다(캐시가 깨지지 않게). 흘려 받기는 stream.ts.
-// 회화 고정부는 P9b 공통 규칙(해요체 지시)을 쓰지 않는다 — 토리 말의 뜻 · 설명은 친구 말투(반말)다(6.1, 위험 7).
+// 회화 고정부는 P9b 공통 규칙(해요체 지시)을 쓰지 않는다 — 선생님 말의 뜻 · 설명은 친구 말투(반말)다(6.1, 위험 7).
+// 고정부 첫머리는 그 대화 선생님의 블록(명단의 영어 이름 · 성격 글, 6.1 · C117 · C130)이고, 다람쥐 · 옛 이름은 고정부 · 사용자
+// 메시지 · 스키마 어디에도 두지 않는다. 출력 칸 이름(tori_en · tori_ko …)은 그대로다(C130 (9), 선생님 화면 plan 값 8).
 // 순수 모듈이다(시각 · DB · SDK 없음).
 import { z } from "zod";
 import {
@@ -30,8 +32,6 @@ import {
   tokenize,
 } from "@/core/seed/text";
 
-/** 토리 이름(회화 선생님 캐릭터 intent 대비 한 자리, 정할 것 회14). */
-export const TORI_NAME = "Tori";
 /** 응답 규격 제목(두 목적이 같은 규격, 6.2). 가짜 Anthropic 이 이 제목으로 고른다. */
 export const TALK_TITLE = "talk_turn";
 /** 답 두 개 사이에 읽는 말(3.3 'I'm nine.' · 'Or' · 'I'm ten.'). */
@@ -119,8 +119,13 @@ export type TalkHistoryEntry = {
   assistant: string;
 };
 
+/** 고정부 선생님 블록의 재료(명단의 영어 이름 · AI 성격 글, 6.1 — 서버 teacherPromptOf). */
+export type TalkTeacher = { nameEn: string; personaEn: string };
+
 export type TalkTurnInput = LevelContext & {
   spec: TalkSpecView;
+  /** 이 대화의 선생님(처음 스냅숏 키 — 한 대화는 끝까지 같은 선생님, 6.1 '캐시'). */
+  teacher: TalkTeacher;
   card: TalkCard;
   /** 대화 시작 때 읽어 고정한 지난 대화 요약(최근 talk.memory_summaries 개). */
   summaries: readonly string[];
@@ -215,7 +220,7 @@ function talkWire(input: TalkTurnInput, rules: TalkRules) {
         ),
       tori_en: z
         .string()
-        .describe("Tori's English words. Empty string in the closing turn"),
+        .describe("Your English words. Empty string in the closing turn"),
       tori_ko: z
         .string()
         .describe(
@@ -223,7 +228,7 @@ function talkWire(input: TalkTurnInput, rules: TalkRules) {
         ),
       recast: z
         .string()
-        .describe("The correct sentence Tori said back. Empty if none"),
+        .describe("The correct sentence you said back. Empty if none"),
       explanation: z
         .string()
         .describe(
@@ -233,7 +238,7 @@ function talkWire(input: TalkTurnInput, rules: TalkRules) {
       self_used_words: z
         .array(z.string())
         .describe(
-          "Unit words the child used correctly by themselves (not words echoed from Tori's previous line)",
+          "Unit words the child used correctly by themselves (not words echoed from your previous line)",
         ),
       mission_done: z
         .array(z.int())
@@ -330,9 +335,17 @@ const talkLoose = z.object({
 
 // ── 고정부 · 가변부(6.1) ─────────────────────────────────────────
 
-function commonRules(): string[] {
+/**
+ * 고정부 첫머리 선생님 블록(6.1 글 그대로). 선생님마다 다른 것은 이 한 줄뿐이다 — 블록 밖 고정부는 선생님과 관계없이 글자까지 같다
+ * (AC-19d). 성격 글은 말투 · 낱말 고르기만 바꾸고 아래 규칙을 바꾸지 않는다.
+ */
+export function teacherBlockOf(teacher: TalkTeacher): string {
+  return `You are ${teacher.nameEn}, an AI teacher character in an English learning app for Korean children. You lead the lesson like a kind native-speaker teacher. Your personality: ${teacher.personaEn} Your personality changes only your tone and word choice. It never changes the rules below.`;
+}
+
+function commonRules(teacher: TalkTeacher): string[] {
   return [
-    `You are ${TORI_NAME}, a friendly squirrel and an AI friend in an English learning app. You lead the lesson like a kind native-speaker teacher.`,
+    teacherBlockOf(teacher),
     "The learner is a Korean child from 4th grade of elementary school to middle school. Use only content suitable for children.",
     "React to what the child said in a word or two. If the child's English is wrong, say the correct sentence back naturally (recast), even for a one-sound difference at the end of a word. Never say it was wrong and never scold.",
     "Praise concretely by pointing at what the child said. Never hurry the child.",
@@ -340,6 +353,7 @@ function commonRules(): string[] {
     "Talk only inside the topic of the scenario card. Do not ask about anything outside the card topic.",
     "Never ask for a name, school, address, phone number, photo, or to meet. If the child says personal information, do not ask about it and go back to the topic.",
     "Never say you are a human.",
+    "Do not make up a human life for yourself (age, family, home, school). If the child asks who you are, say you are an AI teacher in this app.",
     "When Input is speech, do not use parts that look like speech recognition errors (similar-sounding words, missing function words, a one-sound difference at the end) as the reason for next_time_lines.",
     "Use each new word of this lesson in the conversation at least once. Do not put the unit word the next turn aims at in your question.",
     "Do not put in self_used_words a word the child just echoed from your previous line.",
@@ -420,7 +434,7 @@ function cardVariable(input: TalkTurnInput): (readonly [string, string])[] {
 function talkSystem(input: TalkTurnInput, rules: TalkRules): string {
   return buildSystem({
     fixed: [
-      ...commonRules(),
+      ...commonRules(input.teacher),
       ...(isTurnsShape(input.spec) ? lowBandRules() : upperBandRules(rules)),
     ],
     variable: [...levelVariable(input), ...cardVariable(input)],
@@ -435,9 +449,20 @@ const listOf = (words: readonly string[] | undefined) =>
 
 /**
  * 사용자 메시지(6.1 · AC-15k): 영어 이름표 줄. 늘 넣는 값 열 줄 뒤에 첫 턴과 값이 바뀐 턴에만 넣는 값.
- * 첫 턴이면 앱의 첫 말을 맨 앞에 둔다. 같은 입력이면 같은 글(캐시).
+ * 첫 턴이면 앱의 첫 말을 맨 앞에 두고 이름표는 그 대화 선생님의 영어 이름이다('Mina (app): …', 6.1 · AC-19d).
+ * 같은 입력이면 같은 글(캐시).
  */
-export function talkUserMessage(turn: TalkTurn, openingLine?: string): string {
+export function talkUserMessage(turn: TalkTurn): string;
+export function talkUserMessage(
+  turn: TalkTurn,
+  openingLine: string | undefined,
+  teacherNameEn: string,
+): string;
+export function talkUserMessage(
+  turn: TalkTurn,
+  openingLine?: string,
+  teacherNameEn?: string,
+): string {
   const child =
     turn.input === "dont_know"
       ? "(don't know)"
@@ -445,9 +470,9 @@ export function talkUserMessage(turn: TalkTurn, openingLine?: string): string {
         ? "-"
         : turn.child;
   const lines = [
-    ...(openingLine === undefined
+    ...(openingLine === undefined || teacherNameEn === undefined
       ? []
-      : [`${TORI_NAME} (app): ${openingLine}`]),
+      : [`${teacherNameEn} (app): ${openingLine}`]),
     `Child: ${child}`,
     `Input: ${turn.input}`,
     `Segment: ${turn.segment}`,
@@ -529,6 +554,7 @@ function talkMessages(input: TalkTurnInput): ChatMessage[] {
     content: talkUserMessage(
       input.turn,
       input.history.length === 0 ? input.openingLine : undefined,
+      input.teacher.nameEn,
     ),
   });
   return messages;
@@ -843,6 +869,8 @@ export type LowLevelCheckOptions = {
   /** 시드 형태 표와 그 단계 · 단원에 쓸 수 있는 형태 id(reference-index allowedForms). */
   forms: readonly FormRule[];
   allowedForms: ReadonlySet<string>;
+  /** 그 대화 선생님의 영어 이름 — {NAME} 처럼 범위 안으로 본다('Hi, Mina!', 6.4 · AC-19d). */
+  teacherName: string;
 };
 
 function overLimit(text: string, max: number): boolean {
@@ -853,8 +881,12 @@ function overLimit(text: string, max: number): boolean {
 
 function hasOffbandWord(text: string, options: LowLevelCheckOptions): boolean {
   const unit = new Set(options.unitWords.map((w) => w.toLowerCase()));
+  const teacher = options.teacherName.toLowerCase();
+  // 선생님 이름은 대소문자 없이 범위 안이다(소유격 's 꼴 포함 — 이름 자리는 {NAME} 과 같은 뜻)
+  const isTeacherName = (word: string) =>
+    word === teacher || word === `${teacher}'s`;
   const inRange = (word: string) =>
-    options.allowedWords.has(word) || unit.has(word);
+    options.allowedWords.has(word) || unit.has(word) || isTeacherName(word);
   return tokenize(text).some((token) => {
     if (token.kind !== "word") return false;
     const lower = token.text.toLowerCase();
@@ -874,7 +906,7 @@ function hasOffbandForm(text: string, options: LowLevelCheckOptions): boolean {
 /**
  * 1~3단계 AI 질문 · 힌트 검사(6.4): 질문은 물음표로 끝나고 문장 길이 상한 안, 힌트는 한국어 뜻 힌트와 영어 힌트 단 수만큼
  * (3단계는 영어 틀 + 영어 문장), 답 예시가 있고, 영어 힌트 · 답 예시는 길이 상한 안 · 어휘 범위(그 단계 이하 · 단원 단어 ·
- * {NAME} · 수) 밖 낱말이 없고 · 형태 표로 범위 밖 형태가 없다. 걸리면 b 가 '더 이야기할 거리' 가운데 가장 오래전에 쓴 것으로.
+ * {NAME} · 수 · 그 대화 선생님의 영어 이름) 밖 낱말이 없고 · 형태 표로 범위 밖 형태가 없다. 걸리면 b 가 '더 이야기할 거리' 가운데 가장 오래전에 쓴 것으로.
  */
 export function checkLowLevelAiQuestion(
   value: LowLevelAiQuestion,

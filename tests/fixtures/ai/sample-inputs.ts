@@ -9,7 +9,11 @@ import {
   type SpeakingPresentationInput,
   speakingRulesOf,
 } from "@/core/ai/calls/speaking";
-import type { TalkTurn, TalkTurnInput } from "@/core/ai/calls/talk";
+import type {
+  TalkTeacher,
+  TalkTurn,
+  TalkTurnInput,
+} from "@/core/ai/calls/talk";
 import type { ThinkoutInput } from "@/core/ai/calls/thinkout";
 import type {
   WritingCheckInput,
@@ -19,7 +23,12 @@ import type { NameSource } from "@/core/ai/mask";
 import type { TalkLevelSpec } from "@/core/seed/schema/reference";
 import type { Area } from "@/core/seed/structure";
 import { lemmaLookup } from "@/core/session/attempt";
-import { defaultSettings, referenceSet, talkCard } from "../seed/builders";
+import {
+  defaultSettings,
+  referenceSet,
+  talkCard,
+  teacherRoster,
+} from "../seed/builders";
 
 /** 지어낸 아이 이름. */
 export const SAMPLE_NAMES: NameSource = {
@@ -378,6 +387,17 @@ export const TALK_BASE_TURN: TalkTurn = {
 
 const talkLemmaOf = lemmaLookup(reference.vocab.vocab);
 
+/** 견본 명단(미나 · 리오)의 AI 고정부 재료(영어 이름 · 성격 글, 6.1 선생님 블록 — 선생님 화면 plan 값 8). */
+function samplePromptOf(key: string): TalkTeacher {
+  const t = teacherRoster().teachers.find((x) => x.key === key);
+  if (!t) throw new Error(`견본 명단에 ${key} 가 없다`);
+  return { nameEn: t.nameEn, personaEn: t.personaEn };
+}
+/** 회화 견본의 기본 선생님(미나 — 시험 집 기본값과 같음). */
+export const SAMPLE_TEACHER: TalkTeacher = samplePromptOf("mina");
+/** 블록 밖 글을 견주는 둘째 선생님(리오). */
+export const SAMPLE_TEACHER_LEO: TalkTeacher = samplePromptOf("leo");
+
 /** 회화 턴 견본 입력(카드 · 단계 규격은 견본 빌더, 단원 단어는 그 카드의 단원 단어). */
 export function talkSample(
   level: number,
@@ -405,6 +425,7 @@ export function talkSample(
     card: lesson.card,
     summaries: ["사과를 좋아한다고 했다."],
     history: [],
+    teacher: SAMPLE_TEACHER,
     lemmaOf: talkLemmaOf,
     ...rest,
     turn: { ...TALK_BASE_TURN, ...turn },

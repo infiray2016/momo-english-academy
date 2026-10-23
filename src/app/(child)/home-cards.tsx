@@ -19,6 +19,7 @@ import {
 import { AiRest } from "@/components/session/ai-rest";
 import { WaitHint } from "@/components/session/wait-hint";
 import type { Area } from "@/core/seed/structure";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import { clearMicState, micUsable } from "@/lib/mic-state";
 import { cn } from "@/lib/utils";
 import type { HomeCard } from "@/server/home";
@@ -42,7 +43,6 @@ const TEXT = {
   findLevelHint: "단계를 몰라도 돼요. 짧은 문제로 찾아요",
   /** 닫힌 말하기 카드 아래 다시 확인(C72, 1-가 임시 — 1-나 부모 화면 '마이크 다시 확인'이 대신한다). */
   micRecheck: "마이크를 켰으면 여기를 눌러 다시 확인해요",
-  needsSpeaking: "말하기에서 단계를 찾으면 토리를 만날 수 있어요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   todayDone: "오늘 다 했어요",
   todayNotYet: "오늘 아직이에요",
@@ -190,7 +190,7 @@ function GateBody({ card, action }: { card: HomeCard; action: boolean }) {
           {TEXT.findLevelHint}
         </span>
       ) : (
-        <span data-size-guide="">{TEXT.needsSpeaking}</span>
+        <span data-size-guide="">{TEACHER_TEXT.needsSpeaking}</span>
       )}
       <span data-size-guide="">{TEXT.week(card.thisWeek)}</span>
       {action ? (

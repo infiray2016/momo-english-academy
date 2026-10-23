@@ -112,7 +112,7 @@ describe("회화 흘려 받기: tori_en 풀기", () => {
     expect(reader.finish()).toEqual([]);
   });
 
-  it("회화 흘려 받기: 첫 속성이 tori_en 이 아니면 흘려 보내지 않는다(failed)", () => {
+  it("회화 흘려 받기: 앞 칸이 stuck · tori_en 이 아니면 흘려 보내지 않는다(failed)", () => {
     const reader = createToriEnReader();
     expect(reader.push('{"tori_ko":"좋아!","tori_en":"Hi. "}')).toEqual([]);
     expect(reader.failed()).toBe(true);

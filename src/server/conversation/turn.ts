@@ -556,12 +556,16 @@ async function turnInFlight(
   return at.getTime() < until + TURN_SAVE_GRACE_MS;
 }
 
-/** 1~3단계 AI 질문 검사 재료(어휘 범위 · 형태 표). 형태 표가 없으면 AI 질문을 쓰지 않는다(검사하지 않은 글을 보이지 않음). */
+/**
+ * 1~3단계 AI 질문 검사 재료(어휘 범위 · 형태 표 · 그 대화 선생님의 영어 이름 — 'Hi, Mina!', 6.4). 형태 표가 없으면 AI 질문을 쓰지
+ * 않는다(검사하지 않은 글을 보이지 않음).
+ */
 async function aiQuestionCheckOf(
   db: Db,
   state: TalkState,
   sentenceMaxWords: number,
   unitWords: readonly string[],
+  teacherName: string,
 ): Promise<((value: TalkOutput) => boolean) | undefined> {
   if (state.spec.cardShape !== "turns") return undefined;
   let forms: FormRule[];
@@ -610,6 +614,7 @@ async function aiQuestionCheckOf(
       lemmaOf: (surface) => state.lemmaOf(surface) ?? rangeLemma(surface),
       forms,
       allowedForms,
+      teacherName,
     }).ok;
 }
 
@@ -954,6 +959,7 @@ export async function runTalkTurnRequest(
     const sentUserMessage = talkUserMessage(
       { ...input.turn, child: masker(input.turn.child).text },
       input.history.length === 0 ? input.openingLine : undefined,
+      input.teacher.nameEn,
     );
 
     // 답 두 개를 담은 토리 문장은 읽고 보이는 글에서 빠진다(C125 (3)). 그 답을 담은 문장부터는 계획이 정해질 때까지 잡아 둔다.
@@ -1056,6 +1062,7 @@ export async function runTalkTurnRequest(
               state,
               ctx.sentenceMaxWords,
               unitWords,
+              input.teacher.nameEn,
             ),
           }
         : {}),

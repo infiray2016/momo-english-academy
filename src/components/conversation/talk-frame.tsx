@@ -2,9 +2,11 @@
 
 // 회화 틀(plan-p13b 파일별 값 7, 4절 회화 세션 표 · 3.3 회화 문단 · 7절 · 8절 · 13절 C30 · C34 · C53 (2) · C92 · C100 · C103 · 재검토 N-1).
 // 위 종이 띠(오늘 이야기 제목 · '회화 · n단계 · 단원 u' · '말 주고받기 n / 목표 턴'(목표 턴 뒤 '다 했어요! 더 이야기하기 n / …') · '홈'),
-// 구석 작은 '그만하기'(대화 · 더 이야기하기 동안), 옆 칸 하나(오늘 이야기 목록 — 카드 todayTopicsKo), 아래 '토리의 약속' 한 줄(4절 글 그대로).
+// 구석 작은 '그만하기'(대화 · 더 이야기하기 동안), 옆 칸 하나(오늘 이야기 목록 — 카드 todayTopicsKo), 아래 '선생님의 약속' 한 줄(4절 글 그대로).
+// 이름 자리 글(약속 · 그만하기 확인 · 쉼 · 처음 안내 · 기다림 · 말풍선 접근 이름 …)은 문구 표(TEACHER_TEXT)에 세션 선생님
+// (view.teacher — 처음 스냅숏)의 한글 이름을 넘긴다(선생님 화면 plan 값 9, 고르기 전 '선생님').
 // 열 때 차례: 마이크를 쓸 수 없는 기기면 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈'만(세션 진행 — 7절) → 1-가 하루 안전 상한이면
-// '토리가 잠깐 쉬어요'(P11b AiRest) → '시작!'(처음 회화면 3.3 안내 글과 함께 — 열 때마다 한 번, 그 누름이 첫 읽어 주기를 연다, 컨트롤러
+// '[이름](이/가) 잠깐 쉬어요'(P11b AiRest) → '시작!'(처음 회화면 3.3 안내 글과 함께 — 열 때마다 한 번, 그 누름이 첫 읽어 주기를 연다, 컨트롤러
 // 결정) → 처음 마이크 안내(기기마다 한 번, P10 MIC_NOTICE_KEY). 토막: 인사 → 오늘 쓸 말 · 말해 보기(따라 말하기 조각 — follow-along) →
 // 대화 → 정리(WrapUp) → 마무리 세 장(closing-cards). 한 턴: 토리 말풍선(흘러 받은 문장 · 뜻 · 붙인 말, 바로 읽기) → 아이 차례 →
 // 턴 요청(talk-stream) → … . 토막 넘김은 advanceTalk(대화에 들어갈 때 대화 첫 질문을 붙임), 목표 턴 뒤 '더 이야기하기' · '그만하기'.
@@ -39,6 +41,7 @@ import {
   speakingCountersStart,
 } from "@/core/speaking/judge";
 import { speakRateOf } from "@/core/speech/pace";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   markMicNoticeSeen,
   markMicUnavailable,
@@ -86,7 +89,7 @@ import {
   useSpeakQueue,
 } from "./tori";
 
-/** 화면 글(4절 회화 세션 표 · 3.3 · 7절 · C34 · 8절 · 정본 밖 문구 표). */
+/** 화면 글(4절 회화 세션 표 · 3.3 · 7절 · C34 · 8절 · 정본 밖 문구 표). 이름 자리 글(약속 · 그만하기 확인)은 TEACHER_TEXT. */
 export const TALK_TEXT = {
   home: "홈",
   stop: "그만하기",
@@ -98,11 +101,7 @@ export const TALK_TEXT = {
     `다 했어요! 더 이야기하기 ${n} / ${round}`,
   /** 4절 옆 칸 '오늘 이야기 목록'(검토 M-3). */
   topics: "오늘 이야기 목록",
-  promiseLabel: "토리의 약속",
-  promise: "토리는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요",
-  /** C34 확인 쪽지. */
-  stopConfirm:
-    "토리와 그만 이야기할까요? 지금 그만두면 이 이야기는 다음에 처음부터 해요",
+  /** C34 확인 쪽지 단추(물음 글은 TEACHER_TEXT.stopConfirm). */
   stopYes: "그만할래요",
   stopNo: "더 이야기할래요",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
@@ -212,6 +211,8 @@ export function perceivedWaitOf(
 
 export function TalkFrame({ view }: { view: TalkView }) {
   const router = useRouter();
+  // 이름 자리(세션 선생님 — 처음 스냅숏, 고르기 전이면 undefined → 문구 표가 '선생님')
+  const teacherName = view.teacher?.nameKo;
   const [speech, setSpeech] = useState<SpeechPort | undefined>();
   const [blocked, setBlocked] = useState<Blocked | undefined>();
   const [noticeSeen, setNoticeSeen] = useState(true);
@@ -698,6 +699,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
     level: view.level,
     lowLevel,
     englishName: view.englishName,
+    teacherName,
     rate,
     homophones: view.homophones,
     settings: {
@@ -771,13 +773,18 @@ export function TalkFrame({ view }: { view: TalkView }) {
   } else if (resting) {
     body = (
       <TalkPaper data-talk-rest="">
-        <AiRest busy={busy} onHome={() => void home({ firstCard: false })} />
+        <AiRest
+          busy={busy}
+          teacherName={teacherName}
+          onHome={() => void home({ firstCard: false })}
+        />
       </TalkPaper>
     );
   } else if (!started) {
     body = (
       <TalkStart
         first={introFirst}
+        teacherName={teacherName}
         disabled={!speech}
         onStart={() => {
           // 이 누름이 첫 읽어 주기를 연다(iPad Safari — 7절)
@@ -802,6 +809,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
     body = (
       <ClosingCards
         wrap={wrap}
+        teacherName={teacherName}
         lowLevel={lowLevel}
         mode={closingMode}
         waitHintSeconds={view.settings.ui.waitHintSeconds}
@@ -868,13 +876,14 @@ export function TalkFrame({ view }: { view: TalkView }) {
           ) : (
             <>
               <div className="flex items-start gap-4">
-                <ToriFigure state={toriState} />
+                <ToriFigure state={toriState} teacherName={teacherName} />
                 <div className="min-w-0 flex-1">
                   <ToriBubble
                     key={turnKey}
                     content={bubble}
                     onAllTyped={setTypedDone}
                     englishName={view.englishName}
+                    teacherName={teacherName}
                     waiting={waitingSince}
                     waitSeconds={view.settings.ui.waitHintSeconds}
                     {...(lowLevel && picture ? { picture } : {})}
@@ -905,6 +914,7 @@ export function TalkFrame({ view }: { view: TalkView }) {
                     level={view.level}
                     lowLevel={lowLevel}
                     englishName={view.englishName}
+                    teacherName={teacherName}
                     hints={next.hints}
                     dontKnowCount={next.dontKnowCount}
                     heard={heard}
@@ -1074,12 +1084,12 @@ export function TalkFrame({ view }: { view: TalkView }) {
           "mt-auto rounded bg-paper/80 px-4 py-2",
         )}
       >
-        <span className="font-heading">{TALK_TEXT.promiseLabel}</span>{" "}
-        {TALK_TEXT.promise}
+        <span className="font-heading">{TEACHER_TEXT.promiseLabel}</span>{" "}
+        {TEACHER_TEXT.promise(teacherName)}
       </p>
       <ConfirmSheet
         open={confirmStop}
-        message={TALK_TEXT.stopConfirm}
+        message={TEACHER_TEXT.stopConfirm(teacherName)}
         confirmLabel={TALK_TEXT.stopYes}
         cancelLabel={TALK_TEXT.stopNo}
         onConfirm={() => {

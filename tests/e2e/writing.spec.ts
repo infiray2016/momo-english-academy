@@ -332,7 +332,8 @@ const G = {
   own: "내 문장을 듣고 따라 말해 봐요",
   skip: "건너뛰기",
   micOk: "알겠어요",
-  rest: "토리가 잠깐 쉬어요. 다른 공부를 해 볼까요",
+  /** 선생님을 고르지 않은 집(atLevel)이라 이름 자리는 '선생님'(C123 · 선생님 화면 plan 값 9). */
+  rest: "선생님이 잠깐 쉬어요. 다른 공부를 해 볼까요",
   home: "홈",
   back: "수업 목록",
 } as const;
@@ -593,7 +594,7 @@ async function reachSafetyCap(profileId: string) {
   });
 }
 
-test("1-가 안전 상한: 쓰기 5단계 수업을 고르면 '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈'이 보인다", async ({
+test("1-가 안전 상한: 쓰기 5단계 수업을 고르면 '선생님이 잠깐 쉬어요. 다른 공부를 해 볼까요'(선생님을 고르기 전)와 '홈'이 보인다", async ({
   page,
 }) => {
   const sample = guidedSample(5);

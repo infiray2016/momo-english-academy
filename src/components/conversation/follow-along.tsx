@@ -42,31 +42,23 @@ import {
 import type { SpeechSettings } from "@/core/speech/listen";
 import { bestMatchRate } from "@/core/speech/match-rate";
 import { createSleeper, speakInTurn } from "@/core/speech/pace";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { saveTalkFollowAlong } from "@/server/actions/conversation";
 import { CHILD_TURN_TEXT } from "./child-turn";
 import { type BubbleContent, ToriBubble, ToriFigure } from "./tori";
 
-/** 처음 회화 안내(3.3 글 그대로 — 문장마다 한 줄) · 시작 단추. */
+/** 시작 단추(처음 회화 안내 글은 이름 자리라 TEACHER_TEXT.intro — 3.3 글 그대로, 문장마다 한 줄). */
 export const TALK_START_TEXT = {
-  intro: [
-    "토리는 앱 속 AI 친구예요.",
-    "토리는 오늘 이야기에 나오는 것만 물어요.",
-    "집 주소, 학교 이름, 전화번호는 묻지 않아요.",
-    "토리는 지난 이야기를 조금 기억해요.",
-    "토리와 나눈 이야기는 부모님도 볼 수 있어요",
-  ],
   start: "시작!",
 } as const;
 
-/** 따라 말하기 화면 글(4절 · 3.3 · plan-p13b 값 14 제안 문구). */
+/** 따라 말하기 화면 글(4절 · 3.3 · plan-p13b 값 14 제안 문구). 이름 자리 글(안내 · 잘 안 들림)은 TEACHER_TEXT. */
 export const FOLLOW_TEXT = {
-  guide: "토리를 따라 말해 봐요",
   practiceSee: "보고 말해 봐요",
   practiceMeaning: "뜻을 보고 영어로 말해 봐요",
   speak: "말하기",
-  notHeard: CHILD_TURN_TEXT.notHeard,
   offline: CHILD_TURN_TEXT.offline,
 } as const;
 
@@ -190,20 +182,23 @@ export function TalkPaper({
 /** 열 때마다 한 번 누르는 '시작!'(처음 회화면 3.3 안내 글과 함께). 그 누름이 첫 읽어 주기를 연다(7절). */
 export function TalkStart({
   first,
+  teacherName,
   disabled = false,
   onStart,
 }: {
   /** 프로필의 처음 회화(안내 글을 보인다 — 회17). */
   first: boolean;
+  /** 세션 선생님 한글 이름(안내 글의 이름 자리 — 없으면 '선생님'). */
+  teacherName?: string | undefined;
   disabled?: boolean;
   onStart: () => void;
 }) {
   return (
     <TalkPaper data-talk-start="">
-      <ToriFigure state="idle" />
+      <ToriFigure state="idle" teacherName={teacherName} />
       {first ? (
         <div data-talk-intro="" className="flex flex-col gap-2">
-          {TALK_START_TEXT.intro.map((line) => (
+          {TEACHER_TEXT.intro(teacherName).map((line) => (
             <p
               key={line}
               className="text-center font-heading text-[26px] leading-snug"
@@ -227,6 +222,8 @@ export type FollowEnv = {
   level: number;
   lowLevel: boolean;
   englishName: string;
+  /** 세션 선생님 한글 이름(이름 자리 글 — 없으면 '선생님'). */
+  teacherName: string | undefined;
   /** 토리 말 빠르기(단계 구간마다 speech.rate.<구간>, C125). */
   rate: number;
   homophones: string[][];
@@ -409,7 +406,7 @@ function useFollowTry(env: FollowEnv) {
     }
     if (verdict === "skip") return { kind: "skip" };
     if (verdict === "retry") {
-      setMessage(FOLLOW_TEXT.notHeard);
+      setMessage(TEACHER_TEXT.notHeard(env.teacherName));
       return { kind: "retry" };
     }
     if (verdict === "offline") setMessage(FOLLOW_TEXT.offline);
@@ -543,7 +540,7 @@ function FollowCard({
 
   const guide =
     segment === "today_words"
-      ? FOLLOW_TEXT.guide
+      ? TEACHER_TEXT.followGuide(env.teacherName)
       : step.showEnglish
         ? FOLLOW_TEXT.practiceSee
         : FOLLOW_TEXT.practiceMeaning;
@@ -558,6 +555,7 @@ function FollowCard({
       <div className="flex items-center gap-4">
         <ToriFigure
           state={sayer.speaking ? "speaking" : listening ? "listening" : "idle"}
+          teacherName={env.teacherName}
         />
         <GuideLine className="font-heading text-[26px]">{guide}</GuideLine>
       </div>
@@ -687,7 +685,7 @@ export function WrapUp({
     />
   ) : (
     <div data-talk-wrap="" className="flex items-start gap-4">
-      <ToriFigure state="thinking" />
+      <ToriFigure state="thinking" teacherName={env.teacherName} />
     </div>
   );
 }
@@ -784,11 +782,13 @@ function WrapCard({
       <div className="flex items-start gap-4">
         <ToriFigure
           state={sayer.speaking ? "speaking" : listening ? "listening" : "idle"}
+          teacherName={env.teacherName}
         />
         <div className="min-w-0 flex-1">
           <ToriBubble
             content={content}
             englishName={env.englishName}
+            teacherName={env.teacherName}
             waiting={null}
             waitSeconds={env.settings.waitHintSeconds}
             onAllTyped={setTyped}
@@ -805,7 +805,7 @@ function WrapCard({
       </div>
       {follow ? (
         <div className="flex flex-col items-center gap-3 border-t-2 border-dashed border-ink/30 pt-4">
-          <GuideLine>{FOLLOW_TEXT.guide}</GuideLine>
+          <GuideLine>{TEACHER_TEXT.followGuide(env.teacherName)}</GuideLine>
           <StatusLine
             tone={phrase === "good" ? "ok" : message ? "error" : "info"}
           >

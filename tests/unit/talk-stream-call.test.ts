@@ -270,16 +270,41 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
     expect(rows.map((r) => r.status)).toEqual(["validation_failed"]);
   });
 
-  it("회화 턴 흐름: 첫 속성이 tori_en 이 아니면 흘려 보내지 않고 응답 끝에서 한 번에 내보낸다", async () => {
+  it("회화 턴 흐름: 앞 칸이 stuck · tori_en 이 아니면 흘려 보내지 않고 응답 끝에서 한 번에 내보내며 그 전에 막힘 판단을 알린다(rev-p13b N-1)", async () => {
     const input = talkSample(1);
-    const json = answer({ tori_en: "Wow! A red ball." });
-    const reordered = { tori_ko: json.tori_ko, ...json };
-    const body = messageBody({ model: "claude-haiku-5-5", json: reordered });
-    const { plan, sentences } = harness([once(stream(body))], input);
+    for (const stuck of [false, true]) {
+      const json = answer({ stuck, tori_en: "Wow! A red ball." });
+      const reordered = { tori_ko: json.tori_ko, ...json };
+      const body = messageBody({ model: "claude-haiku-5-5", json: reordered });
+      const events: string[] = [];
+      const { plan, sentences } = harness([once(stream(body))], input, {
+        onStuck: (value) => events.push(`stuck:${value}`),
+        onSentence: (sentence) => events.push(sentence),
+      });
+      const result = await streamTalk(plan);
+      if (!result.ok) throw new Error(`실패: ${result.reason}`);
+      expect(result.streamed).toBe(false);
+      expect(sentences).toEqual([]);
+      // 끝에서 한 번에 내보내는 길도 막힘 판단을 첫 문장보다 먼저 한 번만 알린다(C125 (3) · C127)
+      expect(events).toEqual([`stuck:${stuck}`, "Wow!", "A red ball."]);
+      expect(result.value.stuck).toBe(stuck);
+    }
+  });
+
+  it("회화 턴 흐름: 흘려 받는 동안 막힘 판단을 이미 알렸으면 응답 끝에서 다시 알리지 않는다", async () => {
+    const input = talkSample(1);
+    const events: string[] = [];
+    const body = messageBody({
+      model: "claude-sonnet-5-5",
+      json: answer({ stuck: true, tori_en: "That's okay! Let's try." }),
+    });
+    const { plan } = harness([once(stream(body, { chunks: 6 }))], input, {
+      onStuck: (value) => events.push(`stuck:${value}`),
+    });
     const result = await streamTalk(plan);
     if (!result.ok) throw new Error(`실패: ${result.reason}`);
-    expect(result.streamed).toBe(false);
-    expect(sentences).toEqual(["Wow!", "A red ball."]);
+    expect(result.streamed).toBe(true);
+    expect(events).toEqual(["stuck:true"]);
   });
 
   it("회화 턴 흐름: fallback 블록이 끼인 표본에서 토리의 말은 한 번만 내보내지고 비용은 iterations 항목별이다", async () => {

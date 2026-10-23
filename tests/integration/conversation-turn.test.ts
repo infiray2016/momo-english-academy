@@ -14,7 +14,7 @@ import { twoAnswersLine } from "@/core/ai/calls/talk";
 import { talkClosingAttemptId } from "@/core/conversation/attempt";
 import { praiseLineOf } from "@/core/conversation/flow";
 import { safeLineOf } from "@/core/conversation/stream";
-import { attempts } from "@/db/schema/learning";
+import { attempts, profiles } from "@/db/schema/learning";
 import { parentAlerts } from "@/db/schema/operations";
 import { advanceTalk, chooseMoreTalk } from "@/server/conversation";
 import { closingStateOf } from "@/server/conversation/closing";
@@ -458,6 +458,55 @@ describe("AC-15k 보낸 사용자 메시지 · 다시 쓸 토리 차례", () => 
     expect(last?.messages.at(-1)?.content).toBe(
       children.at(-1)?.sentUserMessage,
     );
+  });
+});
+
+describe("AC-19d 회화 고정부의 선생님(처음 스냅숏 키)", () => {
+  const systemOf = (body: { system: unknown } | undefined) =>
+    JSON.stringify(body?.system ?? "");
+
+  it("AC-19d 이어 하는 세션은 처음 스냅숏의 선생님 키(리오)로 고정부를 만들고 스냅숏 키가 명단에 없으면 프로필의 지금 선생님(미나)으로 만든다", async () => {
+    profileId = await resetHousehold(db, 1, "leo");
+    h = harnessOf(db);
+    const sessionId = await startTalk(h, 1);
+    // 처음 스냅숏은 회화 화면을 처음 읽을 때 들어간다(리오). 그 뒤 프로필 선생님이 바뀌어도(부모 화면 · 관찰 쪽) 이 대화는 스냅숏 키다
+    expect((await viewOf(h, sessionId)).teacher?.key).toBe("leo");
+    await db
+      .update(profiles)
+      .set({ teacherKey: "mina" })
+      .where(eq(profiles.id, profileId));
+    await intoTalk(h, sessionId);
+    const greeting = turnBodies();
+    expect(greeting.length).toBeGreaterThan(0);
+    for (const body of greeting) {
+      expect(systemOf(body)).toContain("You are Leo, an AI teacher character");
+      expect(systemOf(body)).not.toMatch(/\bTori\b|squirrel/);
+    }
+    expect(greeting[0]?.messages[0]?.content).toMatch(/^Leo \(app\): /);
+    const firstChild = (await turnsOf(db, sessionId)).find(
+      (r) => r.speaker === "child",
+    );
+    expect(firstChild?.sentUserMessage).toMatch(/^Leo \(app\): /);
+
+    h.fake.push(turnRule({ tori_en: "Good!" }));
+    await say(h, sessionId);
+    expect(systemOf(turnBodies().at(-1))).toContain("You are Leo,");
+
+    // 명단에서 빠진 키가 남은 스냅숏이면 프로필의 지금 선생님
+    const startId = `talk-start:${sessionId}`;
+    const [start] = await db
+      .select({ input: attempts.input })
+      .from(attempts)
+      .where(eq(attempts.clientAttemptId, startId));
+    await db
+      .update(attempts)
+      .set({ input: { ...(start?.input as object), teacherKey: "tori" } })
+      .where(eq(attempts.clientAttemptId, startId));
+    h.fake.push(turnRule({ tori_en: "Nice!" }));
+    await say(h, sessionId);
+    const last = turnBodies().at(-1);
+    expect(systemOf(last)).toContain("You are Mina, an AI teacher character");
+    expect(systemOf(last)).not.toContain("You are Leo");
   });
 });
 

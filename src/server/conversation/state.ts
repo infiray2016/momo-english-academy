@@ -64,7 +64,7 @@ import {
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
-import { rosterOf } from "@/server/teacher";
+import { rosterOf, teacherPromptOf } from "@/server/teacher";
 
 // ── 의존 · 형 ────────────────────────────────────────────────────
 
@@ -931,8 +931,19 @@ export async function friendshipOf(
 }
 
 /**
+ * 고정부 선생님 블록의 재료(6.1): 이 대화의 선생님(처음 스냅숏 키 → 프로필의 지금 선생님, state.teacher). 둘 다 명단에 없는 드문 길
+ * (관찰 쪽 지우기를 대화 도중 누른 뒤 옛 스냅숏에 키가 없을 때 정도)은 명단 첫 항목이다(선생님 화면 plan '드문 길' · 정할 것 11).
+ * 명단은 규격상 하나 이상이다.
+ */
+function talkTeacherOf(state: Pick<TalkState, "teacher">) {
+  const teacher = state.teacher ?? rosterOf()[0];
+  if (!teacher) throw new Error("회화 선생님 명단이 비었다");
+  return teacherPromptOf(teacher);
+}
+
+/**
  * 회화 턴 입력(a TalkTurnInput). 이번 턴 칸(바뀐 값)은 앞 아이 행 자리의 값과 견줘 바뀐 것만, 첫 턴이면 모두.
- * rowsBefore = 이번 아이 말 앞까지의 행(이번 아이 행 · 그 뒤 행 없음).
+ * rowsBefore = 이번 아이 말 앞까지의 행(이번 아이 행 · 그 뒤 행 없음). 회화 턴 · 끝맺음 턴이 같이 쓴다(같은 선생님 블록).
  */
 export async function talkInputOf(
   db: DbOrTx,
@@ -989,6 +1000,7 @@ export async function talkInputOf(
     ...ctx,
     spec: state.spec,
     card: state.card,
+    teacher: talkTeacherOf(state),
     summaries,
     history,
     turn: { ...turn, context: talkContextDelta(prev, now) },

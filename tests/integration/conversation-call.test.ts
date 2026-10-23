@@ -4,7 +4,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { and, eq, getTableColumns, isNull } from "drizzle-orm";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { talkUserMessage, toriRewriteOf } from "@/core/ai/calls/talk";
 import {
   billedAttemptsOf,
@@ -20,6 +28,7 @@ import { type TalkDeps, talkClosing, talkTurn } from "@/server/ai";
 import { createAnthropicClient } from "@/server/ai/client";
 import { insertAiCall } from "@/server/ai/store";
 import { TALK_REFUSAL_RETRY } from "@/server/ai/talk";
+import type { Db } from "@/server/db";
 import {
   createFakeAnthropic,
   type FakeReply,
@@ -35,6 +44,7 @@ import {
   SAMPLE_ADDRESS,
   SAMPLE_NAMES,
   SAMPLE_PHONE,
+  SAMPLE_TEACHER_LEO,
   talkSample,
 } from "../fixtures/ai/sample-inputs";
 import { TEST_SETTINGS } from "../fixtures/settings";
@@ -145,6 +155,33 @@ async function insertProfile(safetyCalls?: number): Promise<string> {
     ]);
   }
   return row.id;
+}
+
+/** 그 프로필의 오늘 호출 한 행(하루 안전 상한 시험 — 상한 1 이면 다음 호출이 닫힌다). */
+async function insertUsedCall(profileId: string) {
+  const now = new Date();
+  await insertAiCall(testDb.db, {
+    profileId,
+    sessionId: null,
+    calledAt: now,
+    learningDay: learningDayOf(
+      now,
+      TEST_SETTINGS["app.timezone"].value,
+      TEST_SETTINGS["app.day_start_hour"].value,
+    ),
+    purpose: "talk_turn",
+    requestedModel: "claude-haiku-5-5",
+    answeredModel: "claude-haiku-5-5",
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheWriteTokens: 0,
+    cacheReadTokens: 0,
+    costUsd: "0.000000",
+    priceMissing: false,
+    latencyMs: null,
+    status: "success",
+    errorCode: null,
+  });
 }
 
 /** 가짜 클라이언트 · 문장 받기. 시드 목록(금지어 · 메타 문장)은 저장소의 seed/lists 를 그대로 읽는다. */
@@ -384,6 +421,37 @@ describe("AC-15b 흘려 보내기 · 회화 턴 실패", () => {
   });
 });
 
+describe("AC-19d 회화 턴 요청의 선생님 블록(가짜 클라이언트)", () => {
+  it("AC-19d 회화 턴 요청 본문의 시스템 첫머리는 그 대화 선생님의 블록이고 첫 사용자 메시지 이름표는 그 선생님의 영어 이름이며 'Tori' · 'squirrel' 이 없다", async () => {
+    const { fake, deps, ctxOf } = harness([
+      once(stream(sampleBody("talk_turn.l1-ok"))),
+      once(stream(sampleBody("talk_turn.l1-ok"))),
+    ]);
+    const mina = talkSample(1, {
+      openingLine: "Hi {NAME}! How are you today?",
+      turn: { segment: "greeting" },
+    });
+    const leo = { ...mina, teacher: SAMPLE_TEACHER_LEO };
+    expect((await talkTurn(mina, ctxOf(null, 1), deps)).ok).toBe(true);
+    expect((await talkTurn(leo, ctxOf(null, 1), deps)).ok).toBe(true);
+    const [minaBody, leoBody] = [bodyOf(fake, 0), bodyOf(fake, 1)];
+    const systemText = (b: RequestBody) => JSON.stringify(b.system);
+    expect(systemText(minaBody)).toContain(
+      `You are Mina, an AI teacher character in an English learning app for Korean children.`,
+    );
+    expect(systemText(leoBody)).toContain("You are Leo, an AI teacher");
+    expect(minaBody.messages[0]?.content).toMatch(
+      /^Mina \(app\): Hi \{NAME\}! How are you today\?\n/,
+    );
+    expect(leoBody.messages[0]?.content).toMatch(/^Leo \(app\): /);
+    for (const i of [0, 1]) {
+      const text = fake.requests[i]?.bodyText ?? "";
+      expect(text).not.toMatch(/\bTori\b/);
+      expect(text).not.toMatch(/squirrel/i);
+    }
+  });
+});
+
 describe("AC-15k · AC-8f · AC-8i · AC-8c 요청 꼴 · 기록", () => {
   it("AC-15k 둘째 턴 요청 본문은 앞 턴 요청의 메시지를 글자 그대로 앞에 두고 대화 도중 모델 · effort · 생각 단계가 바뀌지 않으며 Haiku 5.5 거절 뒤 Sonnet 5.5 로 다시 부른 턴만 예외다", async () => {
     // C112 뒤 1~3 기본은 Sonnet — 설정으로 Haiku 를 고른 때의 길
@@ -401,7 +469,11 @@ describe("AC-15k · AC-8f · AC-8i · AC-8c 요청 꼴 · 기록", () => {
     });
     const r1 = await talkTurn(first, ctxOf(null, 1), deps);
     if (!r1.ok) throw new Error(`실패: ${r1.reason}`);
-    const sent1 = talkUserMessage(first.turn, first.openingLine);
+    const sent1 = talkUserMessage(
+      first.turn,
+      first.openingLine,
+      first.teacher.nameEn,
+    );
     const history = [
       {
         user: sent1,
@@ -701,6 +773,46 @@ describe("회화 턴 앞머리 · 기록", () => {
       "success",
       "safety_cap",
     ]);
+  });
+
+  it("회화 턴: 하루 안전 상한 닫힘의 기록 쓰기가 실패해도 safety_cap 으로 돌아오고 이름 · 코드만 든 기록 한 줄을 남긴다(rev-p13b N-4)", async () => {
+    const profileId = await insertProfile(1);
+    await insertUsedCall(profileId);
+    const fk = Object.assign(new Error("insert or update violates"), {
+      code: "23503",
+    });
+    // ai_calls 쓰기만 실패하는 DB(읽기 · 다른 쓰기는 그대로)
+    const failingDb = new Proxy(testDb.db, {
+      get(target, prop) {
+        if (prop === "insert")
+          return (table: unknown) => {
+            if (table === aiCalls) throw fk;
+            return target.insert(table as typeof aiCalls);
+          };
+        const value = Reflect.get(target, prop);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as Db;
+    const logged: string[] = [];
+    const log = vi
+      .spyOn(console, "error")
+      .mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(" "));
+      });
+    try {
+      const { fake, deps, sentences, ctxOf } = harness(
+        [once(stream(sampleBody("talk_turn.l1-ok")))],
+        { db: failingDb },
+      );
+      const result = await talkTurn(talkSample(1), ctxOf(profileId, 1), deps);
+      expect(result).toEqual({ ok: false, reason: "safety_cap", refusals: 0 });
+      expect(fake.requests).toHaveLength(0);
+      expect(sentences).toEqual([]);
+      expect((await rows()).map((r) => r.status)).toEqual(["success"]);
+      expect(logged).toEqual(["회화 안전 상한 기록 실패(Error 23503)"]);
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("회화 턴: ai_calls 에 첫 문장 시간이 서버가 요청을 받은 때부터 남는다", async () => {

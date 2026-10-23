@@ -285,7 +285,13 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
       deadline - calledAt.getTime(),
     );
     const reader = createToriEnReader();
+    // 막힘 판단은 시도마다 한 번만 알린다 — 흘려 받는 동안 읽었거나, 못 읽었으면 응답 끝에서 내보내기 전에(C127 · rev-p13b N-1)
     let stuckTold = false;
+    const tellStuck = (stuck: boolean) => {
+      if (stuckTold) return;
+      stuckTold = true;
+      plan.onStuck?.(stuck);
+    };
     const sentBefore = firstSentenceMs;
     const result = await sendStreamingAttempt(
       plan.client,
@@ -305,10 +311,7 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
           const fresh = reader.push(delta);
           // 막힘 판단은 tori_en 앞 칸이라 첫 문장보다 먼저 알린다(C127)
           const stuck = reader.stuck();
-          if (stuck !== undefined && !stuckTold) {
-            stuckTold = true;
-            plan.onStuck?.(stuck);
-          }
+          if (stuck !== undefined) tellStuck(stuck);
           for (const sentence of fresh) emit(sentence);
         },
       },
@@ -363,6 +366,7 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
           reader,
           streaming,
           emit,
+          tellStuck,
           gate: () => gate,
           firstSentenceMs: () => firstSentenceMs,
           answered,
@@ -465,6 +469,8 @@ async function finishTalk(
     reader: ReturnType<typeof createToriEnReader>;
     streaming: boolean;
     emit: (sentence: string) => void;
+    /** 막힘 판단 알리기(시도에서 아직 알리지 않았을 때만 부른다). */
+    tellStuck: (stuck: boolean) => void;
     gate: () => ToriSentenceGate;
     firstSentenceMs: () => number | null;
     answered: TalkAttemptRecord;
@@ -476,6 +482,10 @@ async function finishTalk(
   const prepared = parsedAnswer(s.message);
   let streamed = false;
   if (s.streaming) {
+    // 흘려 받는 동안 막힘 판단을 읽지 못했으면(앞 칸이 stuck · tori_en 이 아님) 응답 전체의 값을 먼저 알린다 — 잡아 둘 짝이
+    // 맞아야 같은 답을 두 번 읽지 않는다(C125 (3) · C127 · rev-p13b N-1)
+    const stuck = (prepared as { stuck?: unknown } | undefined)?.stuck;
+    if (typeof stuck === "boolean") s.tellStuck(stuck);
     for (const sentence of s.reader.finish()) s.emit(sentence);
     streamed = s.reader.closed() && !s.reader.failed();
     // 앞 칸이 stuck · tori_en 이 아니어서 흘려 보내지 못했으면 끝에서 한 번에(위험 3 · C127)
@@ -660,8 +670,10 @@ export async function runTalkCall(
     safetyDailyCostUsd: values["ai.safety_daily_cost_usd"] as number,
   });
   if (!gate.allowed) {
-    await insertAiCall(db, {
-      ...baseRow,
+    // 닫힘 기록 한 행의 실패가 safety_cap 길을 서버 실패로 바꾸지 않는다(rev-p13b N-4 — M-1 과 같은 꼴)
+    await keepTurnOnRecordFailure(async (row) => {
+      await insertAiCall(db, { ...baseRow, ...row });
+    }, "회화 안전 상한 기록")({
       ...emptyRecord(config.model, t0),
       status: "safety_cap",
     });

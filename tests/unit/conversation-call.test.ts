@@ -16,12 +16,12 @@ import {
   type TalkTurn,
   type TalkTurnContext,
   type TalkTurnInput,
-  TORI_NAME,
   talkCheckFields,
   talkClosingSpec,
   talkContextDelta,
   talkTurnSpec,
   talkUserMessage,
+  teacherBlockOf,
   toriRewriteOf,
   twoAnswersLine,
 } from "@/core/ai/calls/talk";
@@ -41,6 +41,8 @@ import {
   SAMPLE_CONTACT_PATTERNS,
   SAMPLE_NAMES,
   SAMPLE_PHONE,
+  SAMPLE_TEACHER,
+  SAMPLE_TEACHER_LEO,
 } from "../fixtures/ai/sample-inputs";
 import { smallReferenceSet, talkCard } from "../fixtures/seed/builders";
 import { testSettingValues } from "../fixtures/settings";
@@ -127,6 +129,7 @@ function inputOf(
     summaries: ["사과를 좋아한다고 했다."],
     history: [],
     turn: baseTurn,
+    teacher: SAMPLE_TEACHER,
     lemmaOf,
     ...over,
   };
@@ -224,7 +227,7 @@ describe("회화 턴 규격", () => {
     const system = talkTurnSpec.system(input, rules);
     expect(system).not.toContain("해요체");
     expect(system).toContain("반말");
-    expect(system).toContain(TORI_NAME);
+    expect(system).toContain(`You are ${SAMPLE_TEACHER.nameEn},`);
     expect(system).toContain(
       `${values["talk.reask_sentence_every_turns"]} turns`,
     );
@@ -287,6 +290,104 @@ describe("회화 턴 규격", () => {
   });
 });
 
+describe("AC-19d 회화 고정부의 선생님 블록(6.1 · 6.2 · C117 · C130)", () => {
+  /** 'Tori' 낱말(대문자 — 칸 이름 tori_en · tori_ko 는 남는다, C130 (9)) · 다람쥐. */
+  const OLD_CHARACTER = [/\bTori\b/, /squirrel/i];
+  const HUMAN_LIFE =
+    "Do not make up a human life for yourself (age, family, home, school). If the child asks who you are, say you are an AI teacher in this app.";
+
+  it("AC-19d 미나로 만든 회화 턴 시스템 프롬프트 첫머리에 'You are Mina' 와 미나 성격 글이 있고 'Never say you are a human.' 과 사람의 삶을 지어내지 않는 줄이 있으며 'Tori' · 'squirrel' 이 없다", () => {
+    for (const level of [1, 4, 10]) {
+      for (const spec of [talkTurnSpec, talkClosingSpec]) {
+        const input = inputOf(level);
+        const system = spec.system(input, rulesOf(input));
+        expect(teacherBlockOf(SAMPLE_TEACHER)).toBe(
+          `You are Mina, an AI teacher character in an English learning app for Korean children. You lead the lesson like a kind native-speaker teacher. Your personality: ${SAMPLE_TEACHER.personaEn} Your personality changes only your tone and word choice. It never changes the rules below.`,
+        );
+        expect(
+          system.startsWith(`Rules:\n- ${teacherBlockOf(SAMPLE_TEACHER)}\n`),
+          `${level}단계 ${spec.purpose}`,
+        ).toBe(true);
+        expect(system).toContain(SAMPLE_TEACHER.personaEn);
+        expect(system).toContain(
+          `- Never say you are a human.\n- ${HUMAN_LIFE}\n`,
+        );
+        for (const banned of OLD_CHARACTER)
+          expect(system, `${level}단계 ${banned}`).not.toMatch(banned);
+      }
+    }
+  });
+
+  it("AC-19d 같은 입력을 리오로 만들면 시스템 프롬프트의 선생님 블록 밖의 글이 글자까지 같다", () => {
+    for (const level of [1, 4]) {
+      const mina = inputOf(level);
+      const leo = inputOf(level, { teacher: SAMPLE_TEACHER_LEO });
+      const minaSystem = talkTurnSpec.system(mina, rulesOf(mina));
+      const leoSystem = talkTurnSpec.system(leo, rulesOf(leo));
+      expect(leoSystem.startsWith(`Rules:\n- You are Leo,`)).toBe(true);
+      expect(leoSystem).toContain(SAMPLE_TEACHER_LEO.personaEn);
+      expect(minaSystem).not.toBe(leoSystem);
+      expect(minaSystem.split(teacherBlockOf(SAMPLE_TEACHER))).toHaveLength(2);
+      expect(minaSystem.replace(teacherBlockOf(SAMPLE_TEACHER), "")).toBe(
+        leoSystem.replace(teacherBlockOf(SAMPLE_TEACHER_LEO), ""),
+      );
+    }
+  });
+
+  it("AC-19d 출력 스키마 글에 명단 이름 · Tori 가 없고 미나 · 리오에서 같다", () => {
+    for (const level of [1, 5]) {
+      const mina = inputOf(level);
+      const leo = inputOf(level, { teacher: SAMPLE_TEACHER_LEO });
+      const minaWire = JSON.stringify(
+        z.toJSONSchema(talkTurnSpec.wireSchema(mina, rulesOf(mina))),
+      );
+      const leoWire = JSON.stringify(
+        z.toJSONSchema(talkTurnSpec.wireSchema(leo, rulesOf(leo))),
+      );
+      expect(minaWire).toBe(leoWire);
+      for (const name of [SAMPLE_TEACHER.nameEn, SAMPLE_TEACHER_LEO.nameEn])
+        expect(minaWire).not.toContain(name);
+      for (const banned of OLD_CHARACTER) expect(minaWire).not.toMatch(banned);
+      // 칸 이름은 그대로다(C130 (9))
+      expect(minaWire).toContain('"tori_en"');
+      expect(minaWire).toContain("Your English words");
+    }
+  });
+
+  it("AC-19d 첫 사용자 메시지의 이름표가 'Mina (app):'이고 앞 턴이 있으면 이름표 줄이 없으며 요청 본문 어디에도 'Tori' · 'squirrel' 이 없다", () => {
+    const first = inputOf(1, { openingLine: "Hi {NAME}! How are you?" });
+    const [message] = talkTurnSpec.messages(first, rulesOf(first));
+    expect(message?.content).toMatch(
+      /^Mina \(app\): Hi \{NAME\}! How are you\?\nChild: /,
+    );
+    const leo = inputOf(1, {
+      openingLine: "Hi {NAME}!",
+      teacher: SAMPLE_TEACHER_LEO,
+    });
+    expect(talkTurnSpec.messages(leo, rulesOf(leo))[0]?.content).toMatch(
+      /^Leo \(app\): /,
+    );
+    const later = inputOf(1, {
+      openingLine: "Hi {NAME}!",
+      history: [{ user: String(message?.content), assistant: "Great!" }],
+    });
+    expect(
+      talkTurnSpec.messages(later, rulesOf(later)).at(-1)?.content,
+    ).not.toContain("(app)");
+    for (const level of [1, 4]) {
+      const input = inputOf(level, { openingLine: "Hi {NAME}!" });
+      const built = buildAiRequest(talkTurnSpec, input, {
+        config: requestConfigOf({ purpose: "talk_turn", level, values, book }),
+        masker,
+        rules: rulesOf(input),
+      });
+      const text = JSON.stringify(built.body);
+      for (const banned of OLD_CHARACTER) expect(text).not.toMatch(banned);
+      expect(text).toContain("Mina (app):");
+    }
+  });
+});
+
 describe("회화 턴 사용자 메시지 · 다시 쓸 토리 차례", () => {
   const context: TalkTurnContext = {
     unknownWords: ["ball", "red"],
@@ -302,8 +403,9 @@ describe("회화 턴 사용자 메시지 · 다시 쓸 토리 차례", () => {
     const first = talkUserMessage(
       { ...baseTurn, segment: "greeting", context: firstDelta },
       "Hi {NAME}! How are you today?",
+      SAMPLE_TEACHER.nameEn,
     );
-    expect(first.startsWith("Tori (app): Hi {NAME}! How are you today?")).toBe(
+    expect(first.startsWith("Mina (app): Hi {NAME}! How are you today?")).toBe(
       true,
     );
     expect(first).toContain("Unit words not known yet: ball, red");
@@ -315,7 +417,7 @@ describe("회화 턴 사용자 메시지 · 다시 쓸 토리 차례", () => {
     });
     expect(same).not.toContain("Unit words not known yet");
     expect(same).not.toContain("Friendship");
-    expect(same).not.toContain("Tori (app)");
+    expect(same).not.toContain("(app)");
     // 안다가 된 단어가 생긴 턴: 그 값만
     const changed = talkUserMessage({
       ...baseTurn,
@@ -376,6 +478,7 @@ describe("회화 턴 사용자 메시지 · 다시 쓸 토리 차례", () => {
     const sent = talkUserMessage(
       { ...baseTurn, segment: "greeting" },
       "How are you today?",
+      SAMPLE_TEACHER.nameEn,
     );
     const input = inputOf(1, {
       history: [{ user: sent, assistant: "Great!\nWhat is this?" }],
@@ -392,7 +495,11 @@ describe("회화 턴 사용자 메시지 · 다시 쓸 토리 차례", () => {
     expect(talkTurnSpec.messages(firstInput, rulesOf(firstInput))).toEqual([
       {
         role: "user",
-        content: talkUserMessage(firstInput.turn, "How are you today?"),
+        content: talkUserMessage(
+          firstInput.turn,
+          "How are you today?",
+          SAMPLE_TEACHER.nameEn,
+        ),
       },
     ]);
   });
@@ -733,6 +840,7 @@ describe("1~3단계 AI 질문 · 힌트 검사(6.4 · C5)", () => {
     lemmaOf,
     forms: FORMS,
     allowedForms,
+    teacherName: SAMPLE_TEACHER.nameEn,
   };
   const good = {
     next_question_en: "What color is your ball?",
@@ -784,6 +892,32 @@ describe("1~3단계 AI 질문 · 힌트 검사(6.4 · C5)", () => {
         { ...options, allowedWords: new Set([...options.allowedWords]) },
       ),
     ).toEqual({ ok: true });
+  });
+
+  it("AC-19d 실시간 검사는 답 예시 'Hi, Mina!'를 낱말 범위 밖으로 보지 않는다(선생님 영어 이름은 대소문자 없이 범위 안)", () => {
+    const withHi = {
+      ...options,
+      allowedWords: new Set([...options.allowedWords, "hi"]),
+    };
+    const greet = {
+      ...good,
+      next_hints: ["Hi, ___!", "Hi, Mina!"],
+      next_answer_example: "Hi, Mina!",
+    };
+    expect(checkLowLevelAiQuestion(greet, withHi)).toEqual({ ok: true });
+    expect(
+      checkLowLevelAiQuestion(
+        { ...greet, next_answer_example: "Hi, MINA! I like Mina's ball." },
+        withHi,
+      ),
+    ).toEqual({ ok: true });
+    // 다른 선생님의 이름은 범위 밖이다(그 대화의 선생님 이름만)
+    expect(
+      checkLowLevelAiQuestion(greet, {
+        ...withHi,
+        teacherName: SAMPLE_TEACHER_LEO.nameEn,
+      }),
+    ).toEqual({ ok: false, reason: "offband" });
   });
 
   it("회화 흐름: 1~3단계 AI 힌트에 그 단계에 아직 없는 형태(과거형 등)가 있으면 걸린다", () => {

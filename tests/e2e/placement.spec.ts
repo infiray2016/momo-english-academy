@@ -32,7 +32,7 @@ const T = {
   next: "다음",
   oneMore: "한 번 더 말해 볼까요?",
   retry: "다시 한 번 말해 볼까요",
-  meetTori: "이제 토리를 만날 수 있어요",
+  meetTeacher: "이제 회화 선생님을 만날 수 있어요",
   spares: "말하기 일부는 듣기로 봤어요",
   toLessons: "수업 고르러 가기",
   done: "다 놓았어요",
@@ -389,7 +389,7 @@ test("AC-11c · AC-5e 한 문항 인식이 두 시도를 합쳐 3회 실패하�
   await page.close();
 });
 
-test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단계에서 시작해요' · '이제 토리를 만날 수 있어요'와 '수업 고르러 가기'만 보이고 회화 카드가 열리며 회화는 n 과 talk.placement_cap 가운데 낮은 단계다", async ({
+test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단계에서 시작해요' · '이제 회화 선생님을 만날 수 있어요'와 '수업 고르러 가기'만 보이고 회화 카드가 열리며 회화는 n 과 talk.placement_cap 가운데 낮은 단계다", async ({
   context,
 }) => {
   test.setTimeout(LONG);
@@ -428,7 +428,7 @@ test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단�
   await expect(page.locator("[data-placement-result]")).toHaveText(
     `말하기는 ${n}단계에서 시작해요`,
   );
-  await expect(page.getByText(T.meetTori)).toBeVisible();
+  await expect(page.getByText(T.meetTeacher)).toBeVisible();
   // 결과 화면의 단추는 '수업 고르러 가기' 하나다(띠의 '홈'도 없다)
   await expect(page.locator("main").getByRole("link")).toHaveCount(1);
   await expect(page.locator("main").getByRole("button")).toHaveCount(0);

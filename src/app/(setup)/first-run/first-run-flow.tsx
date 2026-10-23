@@ -34,6 +34,7 @@ import {
 } from "@/core/profile/start";
 import { AREAS, type Area } from "@/core/seed/structure";
 import type { DeviceVerdict } from "@/core/speech/device";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   clearMicState,
   isIpad,
@@ -66,8 +67,6 @@ const TEXT = {
   /** (제안) 이름 화면 제목 — 표에는 이름표 둘만 있다. */
   nameTitle: "아이 이름을 알려 주세요",
   displayNameLabel: "홈에 보일 이름(한글)",
-  englishNameLabel: "토리가 부를 영어 이름",
-  nickname: "토리가 부를 다른 영어 이름(별명)을 골라 주세요",
   avatarTitle: "아이 그림을 골라 주세요",
   alphabetTitle: "아이가 알파벳 26자의 이름과 소리를 알아요?",
   alphabetKnown: "알아요",
@@ -447,7 +446,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             />
           </label>
           <label className="flex flex-col gap-2">
-            <span>{TEXT.englishNameLabel}</span>
+            <span>{TEACHER_TEXT.firstRunEnglishName}</span>
             <input
               type="text"
               lang="en"
@@ -469,7 +468,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
           </label>
           {needNickname ? (
             <label className="flex flex-col gap-2">
-              <span>{TEXT.nickname}</span>
+              <span>{TEACHER_TEXT.firstRunNickname}</span>
               <input
                 type="text"
                 lang="en"
@@ -496,7 +495,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             // 별명도 vocab 낱말이면 받지 않고 4절 문장을 다시 보인다(화면 검토 I-1, 새 문구 없음)
             <StatusLine tone="error" className="-mt-2">
               <span id="nickname-status">
-                {nicknameRejected ? TEXT.nickname : ""}
+                {nicknameRejected ? TEACHER_TEXT.firstRunNickname : ""}
               </span>
             </StatusLine>
           ) : null}

@@ -53,6 +53,10 @@ import {
   talkScript,
 } from "./talk";
 
+/**
+ * 이름 자리 글(4절 머리 문단 · 선생님 화면 plan 값 9). 회화 시험 집(talkHousehold)은 선생님 미나를 고른 집이라 [이름] = 미나
+ * (받침 없음 — 가 · 는 · 와 · 를). 화면 문구 표 TEACHER_TEXT 와 같은 글이다.
+ */
 const T = {
   start: "시작!",
   micOk: "알겠어요",
@@ -60,8 +64,9 @@ const T = {
   dontKnow: "잘 모르겠어요",
   again: "다시 말하기",
   send: "보내기",
-  thinking: "토리가 생각하고 있어요",
-  rest: "토리가 잠깐 쉬어요",
+  thinking: "미나가 생각하고 있어요",
+  replay: "미나 말 다시 듣기",
+  rest: "미나가 잠깐 쉬어요",
 } as const;
 const MS = 1000;
 /** 같은 크기로 보는 어긋남(px, 시험 값 — 반올림 한 칸). */
@@ -343,6 +348,8 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     const { page, card } = await openTalk(context, []);
     const g = greetingOf(card);
     await untilChildTurn(page);
+    // 말풍선의 접근 이름은 '[이름] 말 다시 듣기'(AC-19c — 집 선생님 미나)
+    await expect(bubble(page)).toHaveAttribute("aria-label", T.replay);
     const before = (await speechRecord(page)).spoken.length;
     await bubble(page).click();
     await expect
@@ -571,7 +578,7 @@ test.describe("회화 화면 — 끊음 · 다시 보내기 · 힌트 빠르기(
 test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", () => {
   test.setTimeout(LONG);
 
-  test("회화 화면: 가로 1180×820 에서 토리 세 줄 · 힌트 끝 단 · 설명이 있는 턴에도 말하기 · 잘 모르겠어요 · 토리의 약속이 보는 창 안이고 그만하기는 위 띠 안이다", async ({
+  test("회화 화면: 가로 1180×820 에서 토리 세 줄 · 힌트 끝 단 · 설명이 있는 턴에도 말하기 · 잘 모르겠어요 · 선생님의 약속이 보는 창 안이고 그만하기는 위 띠 안이다", async ({
     context,
   }) => {
     const { page, card } = await openTalk(context, [saidRun("I'm good.")]);
@@ -647,14 +654,17 @@ test.describe("회화 화면 — 보는 창 · 그림 깨짐(차례 5 fix 2)", (
 // ── 차례 6: 처음 안내 · 오늘 쓸 말 · 말해 보기 · 정리 · 마무리 세 장 · 그만하기 · 이어 하기 · 3단계 · 그림 · 마이크 · 안전 상한 ──
 
 const F = {
-  introMemory: "토리는 지난 이야기를 조금 기억해요",
-  introParents: "토리와 나눈 이야기는 부모님도 볼 수 있어요",
-  promise: "토리의 약속",
-  followGuide: "토리를 따라 말해 봐요",
+  introFirst: "미나는 앱 속 AI 선생님이에요.",
+  introMemory: "미나는 지난 이야기를 조금 기억해요",
+  introParents: "미나와 나눈 이야기는 부모님도 볼 수 있어요",
+  promise: "선생님의 약속",
+  promiseLine:
+    "미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요",
+  followGuide: "미나를 따라 말해 봐요",
   practiceSee: "보고 말해 봐요",
   practiceMeaning: "뜻을 보고 영어로 말해 봐요",
   stopConfirm:
-    "토리와 그만 이야기할까요? 지금 그만두면 이 이야기는 다음에 처음부터 해요",
+    "미나와 그만 이야기할까요? 지금 그만두면 이 이야기는 다음에 처음부터 해요",
   stopYes: "그만할래요",
   stop: "그만하기",
   next: "다음",
@@ -665,7 +675,7 @@ const F = {
   retried: "다시 했어요",
   resume: "하던 수업 이어 하기",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
-  rest: "토리가 잠깐 쉬어요. 다른 공부를 해 볼까요",
+  rest: "미나가 잠깐 쉬어요. 다른 공부를 해 볼까요",
   tomorrow: "내일",
 } as const;
 const AUTO_NEXT_MS = TEST_SETTINGS["ui.auto_next_seconds"].value * MS;
@@ -952,16 +962,20 @@ test.describe("회화 1단계 홈부터 끝까지(차례 6)", () => {
 test.describe("회화 1단계 처음 안내 · 오늘 쓸 말 · 말해 보기 · 정리 · 마무리(차례 6)", () => {
   test.setTimeout(LONG);
 
-  test("AC-16c 처음 회화를 열면 '토리는 지난 이야기를 조금 기억해요'와 '토리와 나눈 이야기는 부모님도 볼 수 있어요'가 든 안내가 보이고 회화 화면 아래에 '토리의 약속' 한 줄이 늘 보인다", async ({
+  test("AC-16c 처음 회화를 열면 '미나는 지난 이야기를 조금 기억해요'와 '미나와 나눈 이야기는 부모님도 볼 수 있어요'가 든 안내가 보이고 회화 화면 아래에 '선생님의 약속' 한 줄이 늘 보인다", async ({
     context,
   }) => {
     const { sessionId, profileId } = await fullSession();
     const page = await speechPage(context, talkScript([]));
     await page.goto(`/session/${sessionId}`);
     const intro = page.locator("[data-talk-intro]");
+    await expect(intro).toContainText(F.introFirst);
     await expect(intro).toContainText(F.introMemory);
     await expect(intro).toContainText(F.introParents);
     await expect(page.locator("[data-tori-promise]")).toContainText(F.promise);
+    await expect(page.locator("[data-tori-promise]")).toContainText(
+      F.promiseLine,
+    );
     await photo(page, "p13-talk-intro");
     await pastStart(page);
     await expect(page.locator("[data-tori-promise]")).toContainText(F.promise);
@@ -1126,7 +1140,7 @@ test.describe("회화 1단계 처음 안내 · 오늘 쓸 말 · 말해 보기 �
     expect(await turnRequests()).toBe(1);
   });
 
-  test("AC-15f 목표 턴 전에 '그만하기'를 누르면 '토리와 그만 이야기할까요? 지금 그만두면 이 이야기는 다음에 처음부터 해요'를 묻고 그만두면 마무리 첫 장에 '다음에 끝까지 이야기하면 별을 받아요'가 보인다", async ({
+  test("AC-15f 목표 턴 전에 '그만하기'를 누르면 '미나와 그만 이야기할까요? 지금 그만두면 이 이야기는 다음에 처음부터 해요'를 묻고 그만두면 마무리 첫 장에 '다음에 끝까지 이야기하면 별을 받아요'가 보인다", async ({
     context,
   }) => {
     const { sessionId, card } = await fullSession();
@@ -1523,7 +1537,7 @@ test.describe("회화 이어 하기 · 3단계 · 그림 · 마이크 · 안전 
     expect((await sessionOf(sessionId))?.status).toBe("in_progress");
   });
 
-  test("1-가 안전 상한(회화): 상한 날 회화 수업을 고르면 '토리가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈'이 보인다", async ({
+  test("1-가 안전 상한(회화): 상한 날 회화 수업을 고르면 '미나가 잠깐 쉬어요. 다른 공부를 해 볼까요'와 '홈'이 보인다", async ({
     page,
   }) => {
     const profileId = await talkHousehold(1);
@@ -1603,7 +1617,7 @@ async function sessionOf(sessionId: string) {
 // ── 차례 6 fix 1: 증명 표의 남은 e2e 열 개(검토 b3 I-2) · 정리 다시 읽기(I-1) ──
 
 const G = {
-  notHeard: "토리에게 잘 안 들렸어요. 조금 더 크게 말해 볼까요",
+  notHeard: "미나에게 잘 안 들렸어요. 조금 더 크게 말해 볼까요",
   silent: "말소리가 잘 안 들려요. 부모님께 말해 주세요",
   nudge: "막히면 눌러요",
   more: "더 이야기하기",

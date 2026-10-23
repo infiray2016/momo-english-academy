@@ -31,6 +31,7 @@ import {
 import type { Answer } from "@/core/answer/check";
 import { answerShapeOf } from "@/core/answer/display";
 import type { PlacementArea } from "@/core/seed/structure";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   clearMicState,
   markMicNoticeSeen,
@@ -66,7 +67,6 @@ const TEXT = {
   dontKnow: "몰라요",
   result: (area: PlacementArea, level: number) =>
     `${AREA_LABEL[area]}는 ${level}단계에서 시작해요`,
-  meetTori: "이제 토리를 만날 수 있어요",
   spares: "말하기 일부는 듣기로 봤어요",
   toLessons: "수업 고르러 가기",
   home: "홈",
@@ -285,7 +285,7 @@ export function PlacementFlow({
             {TEXT.result(area, screen.start)}
           </p>
           {area === "speaking" ? (
-            <p className="text-2xl">{TEXT.meetTori}</p>
+            <p className="text-2xl">{TEACHER_TEXT.meetTeacher}</p>
           ) : null}
           {screen.usedSpares ? <p className="text-xl">{TEXT.spares}</p> : null}
           <BigLink href={`/${area}/lessons`}>{TEXT.toLessons}</BigLink>

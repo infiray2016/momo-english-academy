@@ -11,12 +11,12 @@ import {
   friendshipCellsOf,
 } from "@/components/conversation/closing-cards";
 import {
-  FOLLOW_TEXT,
   followStepsOf,
   practiceRevealOf,
   TALK_START_TEXT,
   TalkStart,
 } from "@/components/conversation/follow-along";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import { TEST_SETTINGS } from "../fixtures/settings";
 
 // 브라우저 전용 표시 모듈 · 쪽 길잡이 · 서버 액션은 시험(node)에서 빈 모듈로
@@ -122,22 +122,39 @@ describe("따라 말하기 차례(값 14)", () => {
 });
 
 describe("처음 회화 안내 · '시작!'(값 14 · 3.3)", () => {
-  it("AC-16c 처음 회화 안내는 3.3 글 그대로이고 처음이 아니면 안내 글 없이 '시작!'만 있다", () => {
-    expect(TALK_START_TEXT.intro.join(" ")).toBe(
-      "토리는 앱 속 AI 친구예요. 토리는 오늘 이야기에 나오는 것만 물어요. 집 주소, 학교 이름, 전화번호는 묻지 않아요. 토리는 지난 이야기를 조금 기억해요. 토리와 나눈 이야기는 부모님도 볼 수 있어요",
-    );
+  it("AC-16c 처음 회화 안내는 3.3 글 그대로 세션 선생님 이름 자리를 채우고 처음이 아니면 안내 글 없이 '시작!'만 있다", () => {
     const first = renderToStaticMarkup(
-      createElement(TalkStart, { first: true, onStart: () => {} }),
+      createElement(TalkStart, {
+        first: true,
+        teacherName: "미나",
+        onStart: () => {},
+      }),
     );
     expect(first).toContain("data-talk-intro");
-    expect(first).toContain("토리는 지난 이야기를 조금 기억해요");
+    for (const line of TEACHER_TEXT.intro("미나"))
+      expect(first).toContain(line);
+    expect(first).toContain("미나는 앱 속 AI 선생님이에요.");
+    expect(first).toContain("미나는 지난 이야기를 조금 기억해요");
+    expect(first).toContain("미나와 나눈 이야기는 부모님도 볼 수 있어요");
+    expect(first).toContain('aria-label="미나 선생님"');
     expect(first).toContain(TALK_START_TEXT.start);
+    expect(first).not.toContain("토리");
+    // 고르기 전(이름 없음)은 '선생님'
+    const before = renderToStaticMarkup(
+      createElement(TalkStart, { first: true, onStart: () => {} }),
+    );
+    expect(before).toContain("선생님은 지난 이야기를 조금 기억해요");
+    expect(before).toContain("선생님과 나눈 이야기는 부모님도 볼 수 있어요");
     const again = renderToStaticMarkup(
-      createElement(TalkStart, { first: false, onStart: () => {} }),
+      createElement(TalkStart, {
+        first: false,
+        teacherName: "미나",
+        onStart: () => {},
+      }),
     );
     expect(again).not.toContain("data-talk-intro");
     expect(again).toContain(TALK_START_TEXT.start);
-    expect(FOLLOW_TEXT.guide).toBe("토리를 따라 말해 봐요");
+    expect(TEACHER_TEXT.followGuide("미나")).toBe("미나를 따라 말해 봐요");
   });
 });
 
@@ -230,9 +247,13 @@ describe("마무리 세 장(값 15 · 4절 회화 마무리 · C33)", () => {
       onHome: () => {},
     };
     const html = renderToStaticMarkup(
-      createElement(ClosingThird, { wrap, ...props }),
+      createElement(ClosingThird, { wrap, teacherName: "리오", ...props }),
     );
     expect(html).toContain("data-friendship");
+    expect(html).toContain("리오와 친한 정도");
+    expect(
+      renderToStaticMarkup(createElement(ClosingThird, { wrap, ...props })),
+    ).toContain("선생님과 친한 정도");
     expect(html.match(/data-friendship-cell/g)).toHaveLength(FRIENDSHIP_MAX);
     expect(html).toContain(wrap.nextLesson.title);
     expect(html).toContain(CLOSING_TEXT.nextStory);

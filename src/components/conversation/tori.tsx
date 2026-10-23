@@ -1,12 +1,13 @@
 "use client";
 
 // 토리 표시 · 말풍선(plan-p13b 파일별 값 8, 4절 회화 세션 '토리 차례' 행 · 3.3 · 7절 · C32 · C96 · C103 · 검토 I-3).
-// ToriFigure: 1-가는 목업 B_Talk1 의 '토' 글자 동그라미(연두 바탕 · 먹색 테 · Jua) — 말하는 중 둘레 물결 · 생각 중 점 셋(움직임 줄이기면
+// ToriFigure: 1-가는 목업 B_Talk1 꼴 글자 동그라미('선' — 문구 표 initial, 연두 바탕 · 먹색 테 · Jua, 접근 이름 '[이름] 선생님') — 말하는 중 둘레 물결 · 생각 중 점 셋(움직임 줄이기면
 // 멈춘 표시). 그림 · VRM 은 이 경계 안에서 바꾼다(a 정할 것 회14). ToriBubble: 받은 차례대로 문장이 흘러나오듯 보이고(TYPE_MS_PER_CHAR,
 // 움직임 줄이기면 바로), 1~4단계 뜻은 영어가 다 흐른 뒤 아래에 한 번에(20px), 붙인 카드 질문은 같은 말풍선 끝에. 1~3단계 아이가 말할
 // 영어(답 예시 say · 답 두 개 answers)는 읽어 주기만 하고 글로 보이지 않는다 — 1단계 처음 묻는 턴 · 인사 턴은 글 없는 듣기 단추 둘(원 안 1 · 2).
 // 말풍선을 누르면 그 말을 다시 읽는다(답 두 개까지, AC-15l). 기다리는 동안 점 셋(data-wait-hint) → ui.wait_hint_seconds 둘째 값 뒤
-// '토리가 생각하고 있어요'(data-wait-line). 설명(explanation)은 말풍선 아래 글로만(읽지 않음). 녹음 없음.
+// '[이름](이/가) 생각하고 있어요'(data-wait-line). 설명(explanation)은 말풍선 아래 글로만(읽지 않음). 녹음 없음.
+// 이름 자리 글은 문구 표(src/core/teacher/name.ts — 선생님 화면 plan 값 9)이고 부르는 쪽이 세션 선생님 이름(teacherName)을 넘긴다.
 import { Volume2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -15,15 +16,13 @@ import { FOCUS_RING } from "@/components/board/board";
 import { fillName } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
 import { createSleeper, pauseLeftMs } from "@/core/speech/pace";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import type { AddLineOut } from "@/server/conversation";
 
-export const TORI_TEXT = {
-  name: "토리",
-  initial: "토",
-  thinking: "토리가 생각하고 있어요",
-  replay: "토리 말 다시 듣기",
+/** 이름 자리 없는 말풍선 글(이름 자리 글은 TEACHER_TEXT). */
+export const BUBBLE_TEXT = {
   answer: (n: number) => `${n === 1 ? "첫째" : "둘째"} 답 듣기`,
 } as const;
 
@@ -112,10 +111,13 @@ function useReducedMotion(): boolean {
 export function ToriFigure({
   state,
   size = 64,
+  teacherName,
 }: {
   state: ToriState;
   /** 동그라미 지름(px). */
   size?: number;
+  /** 세션 선생님 한글 이름(접근 이름 '[이름] 선생님' — 없으면 '선생님'). */
+  teacherName?: string | undefined;
 }) {
   return (
     <span
@@ -132,11 +134,11 @@ export function ToriFigure({
       ) : null}
       <span
         role="img"
-        aria-label={TORI_TEXT.name}
+        aria-label={TEACHER_TEXT.windowName(teacherName)}
         className="relative flex size-full items-center justify-center rounded-full border-[3px] border-ink bg-postit-talk font-heading leading-none text-ink"
         style={{ fontSize: size / 2 }}
       >
-        {TORI_TEXT.initial}
+        {TEACHER_TEXT.initial}
       </span>
       {state === "thinking" ? (
         <span
@@ -188,14 +190,17 @@ function TypedText({ text, onDone }: { text: string; onDone?: () => void }) {
   );
 }
 
-/** 토리를 기다리는 동안(점 셋 → 둘째 값 뒤 '토리가 생각하고 있어요'). */
+/** 선생님을 기다리는 동안(점 셋 → 둘째 값 뒤 '[이름](이/가) 생각하고 있어요'). */
 export function ToriWaiting({
   startedAt,
   seconds,
+  teacherName,
 }: {
   startedAt: number;
   /** ui.wait_hint_seconds. */
   seconds: readonly [number, number];
+  /** 세션 선생님 한글 이름(없으면 '선생님'). */
+  teacherName?: string | undefined;
 }) {
   const [late, setLate] = useState(false);
   useEffect(() => {
@@ -221,7 +226,7 @@ export function ToriWaiting({
       </span>
       {late ? (
         <p data-wait-line="" className={CHILD_SIZE.guide}>
-          {TORI_TEXT.thinking}
+          {TEACHER_TEXT.thinking(teacherName)}
         </p>
       ) : null}
     </div>
@@ -278,6 +283,7 @@ function shownKoOf(content: BubbleContent): string[] {
 export function ToriBubble({
   content,
   englishName,
+  teacherName,
   waiting,
   waitSeconds,
   picture,
@@ -289,6 +295,8 @@ export function ToriBubble({
   content: BubbleContent;
   /** {NAME} 을 채울 이름(저장 글은 틀 그대로). */
   englishName: string;
+  /** 세션 선생님 한글 이름(접근 이름 '[이름] 말 다시 듣기' · 기다림 글 — 없으면 '선생님'). */
+  teacherName?: string | undefined;
   /** 첫 문장을 기다리는 중이면 시작 때(performance.now()). */
   waiting: number | null;
   waitSeconds: readonly [number, number];
@@ -321,13 +329,17 @@ export function ToriBubble({
         {waiting !== null && empty ? (
           // 기다림 표시는 단추 밖 같은 말풍선 꼴 칸에(상태 줄이 비활성 단추 안에 들지 않게 — 검토 M-9)
           <div data-tori-waiting="" className={cn(BUBBLE_CLASS, BUBBLE_WIDTH)}>
-            <ToriWaiting startedAt={waiting} seconds={waitSeconds} />
+            <ToriWaiting
+              startedAt={waiting}
+              seconds={waitSeconds}
+              teacherName={teacherName}
+            />
           </div>
         ) : (
           <button
             type="button"
             data-tori-bubble=""
-            aria-label={TORI_TEXT.replay}
+            aria-label={TEACHER_TEXT.replay(teacherName)}
             disabled={empty}
             onClick={onReplay}
             className={cn(
@@ -369,7 +381,7 @@ export function ToriBubble({
                     key={mark}
                     type="button"
                     data-answer-listen={i + 1}
-                    aria-label={TORI_TEXT.answer(i + 1)}
+                    aria-label={BUBBLE_TEXT.answer(i + 1)}
                     onClick={() => onAnswer(i as 0 | 1)}
                     className={cn(
                       FOCUS_RING,

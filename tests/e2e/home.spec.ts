@@ -27,7 +27,7 @@ import { photo } from "./photos";
 
 const T = {
   findLevel: "내 단계 찾기",
-  needsSpeaking: "말하기에서 단계를 찾으면 토리를 만날 수 있어요",
+  needsSpeaking: "말하기에서 단계를 찾으면 회화 선생님을 만날 수 있어요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   todayDone: "오늘 다 했어요",
   todayNotYet: "오늘 아직이에요",

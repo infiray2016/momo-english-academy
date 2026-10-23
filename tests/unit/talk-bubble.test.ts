@@ -110,6 +110,27 @@ describe("차례 5 fix 1 — 말풍선 렌더 · 아이 차례 · 틀 셈", () =
     expect(html).not.toContain("Two.");
   });
 
+  it("AC-19c 말풍선의 접근 이름은 '[이름] 말 다시 듣기'이고 고르기 전에는 '선생님 말 다시 듣기'다", () => {
+    const named = renderToStaticMarkup(
+      createElement(ToriBubble, {
+        ...base,
+        teacherName: "미나",
+        content: { sentences: ["Hi!"], adds: [], done: true },
+        waiting: null,
+      }),
+    );
+    expect(named).toContain('aria-label="미나 말 다시 듣기"');
+    expect(named).not.toContain("토리");
+    const before = renderToStaticMarkup(
+      createElement(ToriBubble, {
+        ...base,
+        content: { sentences: ["Hi!"], adds: [], done: true },
+        waiting: null,
+      }),
+    );
+    expect(before).toContain('aria-label="선생님 말 다시 듣기"');
+  });
+
   it("회화 화면: 기다림 표시(상태 줄)는 말풍선 단추 밖 칸에 있다(검토 M-9)", () => {
     const html = renderToStaticMarkup(
       createElement(ToriBubble, {

@@ -26,6 +26,7 @@ import {
 import type { SpeechEvent, SpeechVerdict } from "@/core/speaking/judge";
 import { speechEventOf } from "@/core/speaking/judge";
 import type { SpeechSettings } from "@/core/speech/listen";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import type { HintView } from "@/server/conversation";
@@ -39,8 +40,6 @@ export const CHILD_TURN_TEXT = {
   dontKnow: "잘 모르겠어요",
   again: "다시 말하기",
   send: "보내기",
-  /** 7절 오류 행 회화 문장(인식 실패 — 같은 차례). */
-  notHeard: "토리에게 잘 안 들렸어요. 조금 더 크게 말해 볼까요",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
   listenHint: "힌트 문장 듣기",
 } as const;
@@ -66,6 +65,8 @@ export type ChildTurnProps = {
   /** 1~3단계 꼴(카드 턴). */
   lowLevel: boolean;
   englishName: string;
+  /** 세션 선생님 한글 이름(7절 '[이름]에게 잘 안 들렸어요 …' — 없으면 '선생님'). */
+  teacherName?: string | undefined;
   hints: readonly HintView[];
   dontKnowCount: number;
   /** 그 턴에 토리가 읽어 준 답(1단계 답 두 개 · '모름' 뒤 답 예시) — 인식 확인 견줌 · 들은 도움. */
@@ -263,7 +264,7 @@ export function ChildTurn(props: ChildTurnProps) {
         return;
       }
     }
-    setMessage(CHILD_TURN_TEXT.notHeard);
+    setMessage(TEACHER_TEXT.notHeard(props.teacherName));
   }
 
   function retry() {
