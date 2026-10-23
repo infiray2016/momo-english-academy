@@ -7,6 +7,7 @@ import {
   type TeacherNames,
   teacherNamesOf,
 } from "@/core/seed/check-teacher";
+import type { SeedIssue } from "@/core/seed/issue";
 import type {
   ForbiddenFile,
   FormEntry,
@@ -50,18 +51,8 @@ import {
   type UnitFrame,
 } from "@/core/vocab/allocate";
 
-/** 검사 결과 하나(규격 파일 정합 · 칸 검사 공통). 경로는 그 파일 안의 점 경로다. */
-export type SeedIssue = {
-  rule: string;
-  severity: "error" | "warning";
-  /** 한국어 설명. */
-  message: string;
-  /** seed/ 뿌리 기준 파일 경로. */
-  file: string;
-  /** 칸 키(칸 검사일 때). */
-  cell?: string;
-  path: string;
-};
+/** 검사 결과 하나 — 정의는 잎 모듈 issue.ts(가져오기 순환을 끊으려고 옮김). */
+export type { SeedIssue };
 
 /** 규격 파일 열(이름은 `SEED_FILES` 의 열쇠와 같다). */
 export type ReferenceFiles = {

@@ -5,8 +5,7 @@
 //     읽기 · 쓰기 · 말하기 글은 이 검사가 보지 않는다(토리는 그 글의 등장인물, C122). {TEACHER} 는 틀 자리 검사(talk-placeholder)가 막는다.
 // (2) 명단 검사: 키 · 이름 겹침, vocab 단어인 영어 이름, 성격 낱말 셋, AI 성격 글 · 인사 · 소개 · 색 대비. (3) 채워진 모델 · 초상의 파일 있음.
 // DB · 파일 시스템을 읽지 않는 순수 함수다(파일 있음은 부르는 쪽이 함수로 넘긴다).
-import type { Report } from "@/core/seed/check-lesson";
-import type { SeedIssue } from "@/core/seed/reference-index";
+import type { Report, SeedIssue } from "@/core/seed/issue";
 import type { ForbiddenFile } from "@/core/seed/schema/reference";
 import type { TeachersFile } from "@/core/seed/schema/teachers";
 import {
