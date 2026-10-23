@@ -1,0 +1,1178 @@
+{
+  "records": [
+    {
+      "cell": "level-test:writing:1:1:1",
+      "contentHash": "dd8fa7afb19dc1416880c9bc76ed5734bdeae35b3bcd4181cde55f5052206b9e",
+      "solve": {
+        "at": "2026-10-23T01:29:51.707Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1542,
+        "outputTokens": 39,
+        "costUsd": 0.003474,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:2",
+      "contentHash": "d681c79bfb5958744f776c2be2ce785801a5cbcec77423fc64eaafb0e5a30900",
+      "solve": {
+        "at": "2026-10-23T01:29:53.319Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1541,
+        "outputTokens": 39,
+        "costUsd": 0.003472,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:3",
+      "contentHash": "23e17e6907d0752fa8237a01a80764871dde8635d7a615f9012ec214fb8e7e1f",
+      "solve": {
+        "at": "2026-10-23T01:29:55.344Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1538,
+        "outputTokens": 39,
+        "costUsd": 0.003466,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:4",
+      "contentHash": "2147bd462537f02b94de1db07377d6d33857578b38bd41051634acb36be637f2",
+      "solve": {
+        "at": "2026-10-23T01:29:57.209Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 39,
+        "costUsd": 0.003486,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "small"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:5",
+      "contentHash": "943ec138266c1d2929cbc9efa16fd82c48085744074f542ad7c28cefc401aecf",
+      "solve": {
+        "at": "2026-10-23T01:29:59.203Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "thank"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:6",
+      "contentHash": "e2286bafeb625939c16a23b51194ff16881c86208691f5db8d92104db8ef28d8",
+      "solve": {
+        "at": "2026-10-23T01:30:00.921Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1545,
+        "outputTokens": 40,
+        "costUsd": 0.00349,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "apple"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:7",
+      "contentHash": "5c21bd86926b94ccfaa45d5e71c6c9654e6e8133b7d45244011263cd3bc43469",
+      "solve": {
+        "at": "2026-10-23T01:30:02.504Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 40,
+        "costUsd": 0.003492,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "milk"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:8",
+      "contentHash": "271327b7467d71136d9742b58a16dbcafea89009f7f0bd541902b4e798a4d250",
+      "solve": {
+        "at": "2026-10-23T01:30:04.497Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 42,
+        "costUsd": 0.003512,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "multiple",
+            "solverAnswer": "hair"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "271327b7467d71136d9742b58a16dbcafea89009f7f0bd541902b4e798a4d250",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:9",
+      "contentHash": "213eca4c9a29778aa89fa0cead34ebeb0a5e8b73a36de8928aa9661708640b95",
+      "solve": {
+        "at": "2026-10-23T01:30:06.034Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "black"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:10",
+      "contentHash": "146fca947544e7fa13929938646e26a8d1449e93340c92d5e7416e7e7bda0d59",
+      "solve": {
+        "at": "2026-10-23T01:30:08.155Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 39,
+        "costUsd": 0.003486,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "146fca947544e7fa13929938646e26a8d1449e93340c92d5e7416e7e7bda0d59",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:11",
+      "contentHash": "a3c7db0f528b1809308a46cd1b3165df332507392ec409cea9b337abe8146a53",
+      "solve": {
+        "at": "2026-10-23T01:30:09.708Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1536,
+        "outputTokens": 39,
+        "costUsd": 0.003462,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 4
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:12",
+      "contentHash": "79c00695f77f3141641624a7e4e8b75401d801050eaee043e5126034f6387df0",
+      "solve": {
+        "at": "2026-10-23T01:30:11.631Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:13",
+      "contentHash": "bc8d7fba41790e5d859179aab7635a8b6086170dd804c7359e1673b453545c86",
+      "solve": {
+        "at": "2026-10-23T01:30:13.250Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:14",
+      "contentHash": "3414f5d73a604ff1f9941646f1deda10605844dbcbbca9958b3a00e5ab864035",
+      "solve": {
+        "at": "2026-10-23T01:30:14.872Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "seven"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:15",
+      "contentHash": "0b4be6c816f9025ff48a850cdf5d4ee9fcde939f948419c44fc09762636ba747",
+      "solve": {
+        "at": "2026-10-23T01:30:17.263Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 39,
+        "costUsd": 0.003486,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "short"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:16",
+      "contentHash": "28c51597c76c12b4a3126cc77eeb093c0ac47e72f8d6eb38c8eed22ff5bf2926",
+      "solve": {
+        "at": "2026-10-23T01:30:18.814Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 41,
+        "costUsd": 0.003504,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "pencil"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:17",
+      "contentHash": "64cf2d81bb405069fd41a84cbdef76ed2d9ae96d32561ed5ccef1ef61e0429ff",
+      "solve": {
+        "at": "2026-10-23T01:30:20.592Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 40,
+        "costUsd": 0.003492,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "frog"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:18",
+      "contentHash": "24762bba310b85b315fe2f600509baef949ea28bbc6b8bb2d73043c78874030a",
+      "solve": {
+        "at": "2026-10-23T01:30:22.197Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "24762bba310b85b315fe2f600509baef949ea28bbc6b8bb2d73043c78874030a",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:19",
+      "contentHash": "b9051f3e523295d53fa6c2a1c0657ea9346fd2156495cf75a55f87ed995a3d06",
+      "solve": {
+        "at": "2026-10-23T01:30:23.946Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "different",
+            "solverAnswer": "kic"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "b9051f3e523295d53fa6c2a1c0657ea9346fd2156495cf75a55f87ed995a3d06",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:1:20",
+      "contentHash": "bec5b880c84a6ac5e6e178c2333202a98b30771a6e4cf377213f412155a9e41c",
+      "solve": {
+        "at": "2026-10-23T01:30:25.690Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 40,
+        "costUsd": 0.003496,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "cake"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:1",
+      "contentHash": "5a917732df7238b27876e1cbaa38f66f30698d3eaaa57af2a4197fa7c003bb17",
+      "solve": {
+        "at": "2026-10-23T01:30:27.787Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:2",
+      "contentHash": "8371f2ef0dfc8ab76a9ecee878c1f8aaef941323713477c7042ae84391148a2a",
+      "solve": {
+        "at": "2026-10-23T01:30:29.548Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1544,
+        "outputTokens": 39,
+        "costUsd": 0.003478,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:3",
+      "contentHash": "0d643025da8b3c44d0134357f062676d06ab87ae7453bf2f31795a28885c7b1b",
+      "solve": {
+        "at": "2026-10-23T01:30:31.437Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:4",
+      "contentHash": "d5acc2af7b274751b5cfbd494b391fe51fa224400c2d1d9781402a0482aa0f0c",
+      "solve": {
+        "at": "2026-10-23T01:30:34.359Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1550,
+        "outputTokens": 41,
+        "costUsd": 0.00351,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "puppy"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:5",
+      "contentHash": "d5c769485738decf4dec5b379ac3d7cc6d7b99b41e452f4af91ba85a180cbe9d",
+      "solve": {
+        "at": "2026-10-23T01:30:36.762Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "snack"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:6",
+      "contentHash": "dada56d0f19cc686a6d748a67d1353d5887400dd7d5117f2e1826e9fd433b5b1",
+      "solve": {
+        "at": "2026-10-23T01:30:38.566Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "dada56d0f19cc686a6d748a67d1353d5887400dd7d5117f2e1826e9fd433b5b1",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:7",
+      "contentHash": "91b0596ed0696746c585c45318a7459668c275677e41b01f6ba98f36011ce111",
+      "solve": {
+        "at": "2026-10-23T01:30:40.850Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 40,
+        "costUsd": 0.003492,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "different",
+            "solverAnswer": "drom"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "91b0596ed0696746c585c45318a7459668c275677e41b01f6ba98f36011ce111",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:8",
+      "contentHash": "bfe016c41217beac8eea504fac7bbca9e3cba95150c2f4a48c3a82a3c085a97f",
+      "solve": {
+        "at": "2026-10-23T01:30:42.662Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 41,
+        "costUsd": 0.003504,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "shirt"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:9",
+      "contentHash": "6fd6140a2e7e5b8d9f266085602d5407e44f555c3bab98771fd03f8d03bcd787",
+      "solve": {
+        "at": "2026-10-23T01:30:45.350Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "clock"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:10",
+      "contentHash": "a26c7189aff88e9e138fa85ad2b035ef8d121d167e116f178ac573b2062d89ae",
+      "solve": {
+        "at": "2026-10-23T01:30:47.020Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:11",
+      "contentHash": "0feec357d6c5cea09a12d5532e43ffb0168aed178572b62d776cdb2d4fc2e015",
+      "solve": {
+        "at": "2026-10-23T01:30:48.790Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1541,
+        "outputTokens": 39,
+        "costUsd": 0.003472,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 4
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:12",
+      "contentHash": "fcfafd123fcff03dce6eda04520d7b9b71e6adc6a587fdb8b9f5629a4fdad324",
+      "solve": {
+        "at": "2026-10-23T01:30:50.995Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1532,
+        "outputTokens": 39,
+        "costUsd": 0.003454,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:13",
+      "contentHash": "efb5acbcac2427e73e813610a03c44fd55492239aeb44377b237780f9034b96e",
+      "solve": {
+        "at": "2026-10-23T01:30:52.514Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1536,
+        "outputTokens": 39,
+        "costUsd": 0.003462,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:14",
+      "contentHash": "5e61e57a68b6c83a2c523ef44a5c97aff9bdf38369029f5c6a782f7d84c05748",
+      "solve": {
+        "at": "2026-10-23T01:30:54.699Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "desk"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:15",
+      "contentHash": "eae2a12bf0755d5d05673fb05e8459a53fbceaf77c133b1ca2400fe5b6f11348",
+      "solve": {
+        "at": "2026-10-23T01:30:56.342Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "thin"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:16",
+      "contentHash": "e9f99936d159ac990813765785fc59d3f23aa2f0641584f89eaa77a4217325e9",
+      "solve": {
+        "at": "2026-10-23T01:30:57.912Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 41,
+        "costUsd": 0.003502,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "yellow"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:17",
+      "contentHash": "3832bebb3cdae6e9fd972ccdb215cf46abe10369903808e4aafa8d0056b0ca28",
+      "solve": {
+        "at": "2026-10-23T01:30:59.605Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "little"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:18",
+      "contentHash": "383871122962a944128b6bff6117b32eb6e4b8aee6ed7761403d9c59c0766260",
+      "solve": {
+        "at": "2026-10-23T01:31:01.409Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "different",
+            "solverAnswer": "tree"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "383871122962a944128b6bff6117b32eb6e4b8aee6ed7761403d9c59c0766260",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:19",
+      "contentHash": "507d68b230590b3163411063760b914df1d14d668c5320fe7b3a99be5b679cc7",
+      "solve": {
+        "at": "2026-10-23T01:31:03.902Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "507d68b230590b3163411063760b914df1d14d668c5320fe7b3a99be5b679cc7",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:2:20",
+      "contentHash": "5b5ff4f0449946e0931d17041b368bb6bb5f404c40510fea16e4b47c0c42f4c2",
+      "solve": {
+        "at": "2026-10-23T01:31:05.448Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "smile"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:1",
+      "contentHash": "c4762d2aea2a4f2768dc2afbba5c0175e52f2d852633508754386ba73a7780fb",
+      "solve": {
+        "at": "2026-10-23T01:31:07.473Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:2",
+      "contentHash": "9ebfe7fce1ead441dcef01f497c3d2b4ca3245e00b61d23865806acc9dad03a2",
+      "solve": {
+        "at": "2026-10-23T01:31:09.176Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1534,
+        "outputTokens": 39,
+        "costUsd": 0.003458,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:3",
+      "contentHash": "c0a729eeec17b97008a35c5e7dbbe65e24f9e43d98a5fbb457a29a26f4c23a65",
+      "solve": {
+        "at": "2026-10-23T01:31:10.890Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1534,
+        "outputTokens": 39,
+        "costUsd": 0.003458,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 4
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:4",
+      "contentHash": "cb8ef3ae1a829d3fa9e5e9c73e0bdb042801fbf354753ec1b9453deabd7aa656",
+      "solve": {
+        "at": "2026-10-23T01:31:12.574Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1550,
+        "outputTokens": 41,
+        "costUsd": 0.00351,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "pizza"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:5",
+      "contentHash": "983d902cb1b46d17e76833eaab85f10d232d1fdc6af9b01034373177565c7455",
+      "solve": {
+        "at": "2026-10-23T01:31:14.676Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 39,
+        "costUsd": 0.003486,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "color"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:6",
+      "contentHash": "870a23208f91f9b3e856ebb1367e42829eee66b09e3a7bcfbf2c52e4ea3afd38",
+      "solve": {
+        "at": "2026-10-23T01:31:16.270Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 39,
+        "costUsd": 0.003484,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "870a23208f91f9b3e856ebb1367e42829eee66b09e3a7bcfbf2c52e4ea3afd38",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:7",
+      "contentHash": "82c4e20e50cb4c3e524846da3883c7cf44375a52cd060174f9fe3cf0ed3f7f08",
+      "solve": {
+        "at": "2026-10-23T01:31:18.690Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1545,
+        "outputTokens": 40,
+        "costUsd": 0.00349,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "fox"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:8",
+      "contentHash": "8ab52b139a2bba6f160ce66d647bddb4777c6cff76175a4d829d206ab8b3c874",
+      "solve": {
+        "at": "2026-10-23T01:31:20.339Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 41,
+        "costUsd": 0.003504,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "lunch"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:9",
+      "contentHash": "5e4e0791873ac20cb9044caea0a8a19065a335e923c692e857f773c75456a2a2",
+      "solve": {
+        "at": "2026-10-23T01:31:21.948Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "truck"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:10",
+      "contentHash": "51bf2fdbeb85a75ea131ca1a43d668a5fe240a4c36a172a109faf34ced4943cf",
+      "solve": {
+        "at": "2026-10-23T01:31:23.511Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 40,
+        "costUsd": 0.003498,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:11",
+      "contentHash": "9346a11c4a8c1921105eb94ac4cf121242604ff0e5b2f2fc1e633c1e8788e8df",
+      "solve": {
+        "at": "2026-10-23T01:31:25.388Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1536,
+        "outputTokens": 39,
+        "costUsd": 0.003462,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:12",
+      "contentHash": "03b9d7b610a7157361573c2049588779eddaa69ed55c4b004a8d439457655c0c",
+      "solve": {
+        "at": "2026-10-23T01:31:27.009Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1535,
+        "outputTokens": 39,
+        "costUsd": 0.00346,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:13",
+      "contentHash": "ee15852c6619ad90fb8cf0be043a4a2cbed5d38897bd45ca0d430593f332bbaf",
+      "solve": {
+        "at": "2026-10-23T01:31:28.869Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1536,
+        "outputTokens": 39,
+        "costUsd": 0.003462,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 4
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:14",
+      "contentHash": "299921e040dc9637cd8a62207791b79ec653481f76d6dae55a43f25c7eb69a4b",
+      "solve": {
+        "at": "2026-10-23T01:31:30.529Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1548,
+        "outputTokens": 41,
+        "costUsd": 0.003506,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "lamp"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:15",
+      "contentHash": "15fb640a98776d71eb0918ca75d54518f3932f5730f81516e2b9b2c26b0b01a6",
+      "solve": {
+        "at": "2026-10-23T01:31:32.309Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 40,
+        "costUsd": 0.003494,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "tall"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:16",
+      "contentHash": "473a4b675e561b00be4374622e383b2e66f6591aa301c1953e6bf871cfe4ce75",
+      "solve": {
+        "at": "2026-10-23T01:31:34.219Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 40,
+        "costUsd": 0.003492,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "tent"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:17",
+      "contentHash": "d0dc7c89324bf970bf7d68e842da0eb7556c0ef63ecf6539d93bef0f7b06f477",
+      "solve": {
+        "at": "2026-10-23T01:31:35.920Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 40,
+        "costUsd": 0.003492,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "wing"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:18",
+      "contentHash": "312648f224a0ffcbfe682fab77204d010185a1ffb15a4fbd66aef87b51b3995e",
+      "solve": {
+        "at": "2026-10-23T01:31:37.660Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1547,
+        "outputTokens": 41,
+        "costUsd": 0.003504,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "shoe"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:19",
+      "contentHash": "d9faf6e001185fca9f26f0fe82a4fefb4e15221de3995865fcc04cba8067fd1b",
+      "solve": {
+        "at": "2026-10-23T01:31:39.752Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1546,
+        "outputTokens": 39,
+        "costUsd": 0.003482,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": "song"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "level-test:writing:1:3:20",
+      "contentHash": "4ee407341aff0639d77ab3ffec3a38e1c4adf284af4586abe0386e1bb8df6db9",
+      "solve": {
+        "at": "2026-10-23T01:31:41.995Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1549,
+        "outputTokens": 39,
+        "costUsd": 0.003488,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "none"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "4ee407341aff0639d77ab3ffec3a38e1c4adf284af4586abe0386e1bb8df6db9",
+        "at": "2026-10-23T01:37:40.000Z",
+        "items": [
+          {
+            "no": 1,
+            "decision": "correct"
+          }
+        ]
+      }
+    }
+  ]
+}

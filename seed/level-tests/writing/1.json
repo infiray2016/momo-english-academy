@@ -1,0 +1,81 @@
+{
+  "area": "writing",
+  "level": 1,
+  "forms": [
+    {
+      "form": 1,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "pick-word", "picture": "cap", "options": ["cup", "cap", "map", "cat"], "answerNo": 2, "accepted": ["cap"], "explanationKo": "cap 은 챙 달린 모자예요. cup 과 달리 가운데에 a 를 써요."},
+        {"no": 2, "unit": 3, "revision": 2, "correction": 0, "type": "pick-word", "picture": "eight", "options": ["egg", "eye", "eight", "tiger"], "answerNo": 3, "accepted": ["eight"], "explanationKo": "eight 은 여덟이에요. e-i-g-h-t 로 써요."},
+        {"no": 3, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "banana", "options": ["banana", "bank", "bag", "zebra"], "answerNo": 1, "accepted": ["banana"], "explanationKo": "banana 는 바나나예요. b-a-n-a-n-a 로 써요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "small", "tiles": ["l", "a", "s", "l", "m"], "accepted": ["small"], "explanationKo": "small 은 '작은'이라는 뜻이에요. 끝에 l 을 두 번 써요."},
+        {"no": 5, "unit": 4, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "thank", "tiles": ["k", "a", "t", "n", "h"], "accepted": ["thank"], "explanationKo": "thank 는 '고마워하다'라는 뜻이에요. th 로 시작하고 nk 로 끝나요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "apple", "pattern": "_pple", "tiles": ["e", "a"], "accepted": ["apple"], "explanationKo": "apple 은 사과예요. 맨 앞에 a 를 놓아요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "milk", "pattern": "m_lk", "tiles": ["i", "o"], "accepted": ["milk"], "explanationKo": "milk 는 우유예요. 가운데 소리 /이/ 는 i 로 써요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "chair", "pattern": "__air", "tiles": ["h", "s", "c"], "accepted": ["chair"], "explanationKo": "chair 는 의자예요. 앞의 ch 는 c 와 h 를 차례로 놓아요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "black", "pattern": "bla__", "tiles": ["k", "g", "c"], "accepted": ["black"], "explanationKo": "black 은 검은색이에요. 끝의 ck 는 c 와 k 를 차례로 놓아요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "five", "pattern": "f_v_", "tiles": ["e", "u", "i"], "accepted": ["five"], "explanationKo": "five 는 다섯이에요. 가운데에 i, 끝에 소리 나지 않는 e 를 놓아요."},
+        {"no": 11, "unit": 2, "revision": 2, "correction": 0, "type": "pick-word", "picture": "car", "options": ["star", "cat", "guitar", "car"], "answerNo": 4, "accepted": ["car"], "explanationKo": "car 는 자동차예요. star 처럼 ar 로 끝나요."},
+        {"no": 12, "unit": 4, "revision": 2, "correction": 0, "type": "pick-word", "picture": "tree", "options": ["tree", "three", "truck", "queen"], "answerNo": 1, "accepted": ["tree"], "explanationKo": "tree 는 나무예요. three 와 달리 t 다음에 h 가 없어요."},
+        {"no": 13, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "ball", "options": ["bell", "doll", "ball", "shell"], "answerNo": 3, "accepted": ["ball"], "explanationKo": "ball 은 공이에요. bell 과 달리 가운데에 a 를 써요."},
+        {"no": 14, "unit": 1, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "seven", "tiles": ["v", "e", "n", "s", "e"], "accepted": ["seven"], "explanationKo": "seven 은 일곱이에요. e 가 두 번 들어가요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "short", "tiles": ["r", "t", "s", "o", "h"], "accepted": ["short"], "explanationKo": "short 는 '짧은'이라는 뜻이에요. sh 로 시작해요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "pencil", "pattern": "p_ncil", "tiles": ["a", "e"], "accepted": ["pencil"], "explanationKo": "pencil 은 연필이에요. pen 처럼 e 를 놓아요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "frog", "pattern": "fr_g", "tiles": ["o", "e"], "accepted": ["frog"], "explanationKo": "frog 는 개구리예요. 가운데에 o 를 놓아요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "mouth", "pattern": "mou__", "tiles": ["h", "s", "t"], "accepted": ["mouth"], "explanationKo": "mouth 는 입이에요. 끝의 th 는 t 와 h 를 차례로 놓아요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "king", "pattern": "ki__", "tiles": ["g", "c", "n"], "accepted": ["king"], "explanationKo": "king 은 왕이에요. 끝의 ng 는 n 과 g 를 차례로 놓아요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "cake", "pattern": "c_k_", "tiles": ["e", "i", "a"], "accepted": ["cake"], "explanationKo": "cake 는 케이크예요. 가운데에 a, 끝에 소리 나지 않는 e 를 놓아요."}
+      ]
+    },
+    {
+      "form": 2,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "pick-word", "picture": "bed", "options": ["red", "bed", "bell", "bag"], "answerNo": 2, "accepted": ["bed"], "explanationKo": "bed 는 침대예요. red 처럼 ed 로 끝나요."},
+        {"no": 2, "unit": 3, "revision": 2, "correction": 0, "type": "pick-word", "picture": "cookie", "options": ["cookie", "cake", "cow", "monkey"], "answerNo": 1, "accepted": ["cookie"], "explanationKo": "cookie 는 쿠키예요. c 다음에 o 를 두 번 써요."},
+        {"no": 3, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "flower", "options": ["four", "fork", "flower", "window"], "answerNo": 3, "accepted": ["flower"], "explanationKo": "flower 는 꽃이에요. f-l-o-w-e-r 로 써요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "puppy", "tiles": ["y", "p", "u", "p", "p"], "accepted": ["puppy"], "explanationKo": "puppy 는 강아지예요. p 가 세 번 들어가요."},
+        {"no": 5, "unit": 4, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "snack", "tiles": ["c", "k", "n", "s", "a"], "accepted": ["snack"], "explanationKo": "snack 은 간식이에요. ck 로 끝나요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "candy", "pattern": "c_ndy", "tiles": ["e", "a"], "accepted": ["candy"], "explanationKo": "candy 는 사탕이에요. 가운데 소리 /애/ 는 a 로 써요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "drum", "pattern": "dr_m", "tiles": ["o", "u"], "accepted": ["drum"], "explanationKo": "drum 은 북이에요. 가운데 소리 /어/ 는 u 로 써요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "shirt", "pattern": "__irt", "tiles": ["h", "t", "s"], "accepted": ["shirt"], "explanationKo": "shirt 는 셔츠예요. 앞의 sh 는 s 와 h 를 차례로 놓아요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "clock", "pattern": "clo__", "tiles": ["k", "c", "g"], "accepted": ["clock"], "explanationKo": "clock 은 시계예요. 끝의 ck 는 c 와 k 를 차례로 놓아요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "grape", "pattern": "gr_p_", "tiles": ["u", "e", "a"], "accepted": ["grape"], "explanationKo": "grape 는 포도예요. 가운데에 a, 끝에 소리 나지 않는 e 를 놓아요."},
+        {"no": 11, "unit": 2, "revision": 2, "correction": 0, "type": "pick-word", "picture": "green", "options": ["queen", "seven", "pen", "green"], "answerNo": 4, "accepted": ["green"], "explanationKo": "green 은 초록색이에요. 가운데에 e 를 두 번 써요."},
+        {"no": 12, "unit": 4, "revision": 2, "correction": 0, "type": "pick-word", "picture": "book", "options": ["box", "door", "book", "rock"], "answerNo": 3, "accepted": ["book"], "explanationKo": "book 은 책이에요. 가운데에 o 를 두 번 써요."},
+        {"no": 13, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "ear", "options": ["bear", "ear", "eye", "egg"], "answerNo": 2, "accepted": ["ear"], "explanationKo": "ear 는 귀예요. e-a-r 로 써요."},
+        {"no": 14, "unit": 1, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "desk", "tiles": ["s", "k", "d", "e"], "accepted": ["desk"], "explanationKo": "desk 는 책상이에요. d-e-s-k 차례로 놓아요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "thin", "tiles": ["n", "i", "h", "t"], "accepted": ["thin"], "explanationKo": "thin 은 '얇은, 마른'이라는 뜻이에요. th 로 시작해요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "yellow", "pattern": "y_llow", "tiles": ["e", "u"], "accepted": ["yellow"], "explanationKo": "yellow 는 노란색이에요. y 다음에 e 를 놓아요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "little", "pattern": "l_ttle", "tiles": ["u", "i"], "accepted": ["little"], "explanationKo": "little 은 '작은'이라는 뜻이에요. l 다음의 소리 /이/ 는 i 로 써요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["h", "c", "t"], "accepted": ["three"], "explanationKo": "three 는 셋이에요. 앞의 th 는 t 와 h 를 차례로 놓아요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "swing", "pattern": "swi__", "tiles": ["g", "n", "c"], "accepted": ["swing"], "explanationKo": "swing 은 그네예요. 끝의 ng 는 n 과 g 를 차례로 놓아요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "smile", "pattern": "sm_l_", "tiles": ["e", "o", "i"], "accepted": ["smile"], "explanationKo": "smile 은 미소예요. 가운데에 i, 끝에 소리 나지 않는 e 를 놓아요."}
+      ]
+    },
+    {
+      "form": 3,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "pick-word", "picture": "hand", "options": ["hat", "sand", "hand", "ant"], "answerNo": 3, "accepted": ["hand"], "explanationKo": "hand 는 손이에요. sand 처럼 and 로 끝나요."},
+        {"no": 2, "unit": 3, "revision": 2, "correction": 0, "type": "pick-word", "picture": "arm", "options": ["star", "arm", "car", "ear"], "answerNo": 2, "accepted": ["arm"], "explanationKo": "arm 은 팔이에요. a-r-m 으로 써요."},
+        {"no": 3, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "kite", "options": ["bike", "king", "nine", "kite"], "answerNo": 4, "accepted": ["kite"], "explanationKo": "kite 는 연이에요. 가운데에 i, 끝에 소리 나지 않는 e 를 써요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "pizza", "tiles": ["z", "a", "p", "z", "i"], "accepted": ["pizza"], "explanationKo": "pizza 는 피자예요. z 를 두 번 써요."},
+        {"no": 5, "unit": 4, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "color", "tiles": ["o", "r", "l", "c", "o"], "accepted": ["color"], "explanationKo": "color 는 색깔이에요. o 가 두 번 들어가요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "rabbit", "pattern": "r_bbit", "tiles": ["a", "e"], "accepted": ["rabbit"], "explanationKo": "rabbit 은 토끼예요. r 다음에 a 를 놓아요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "fox", "pattern": "f_x", "tiles": ["e", "o"], "accepted": ["fox"], "explanationKo": "fox 는 여우예요. 가운데에 o 를 놓아요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "lunch", "pattern": "lun__", "tiles": ["h", "c", "s"], "accepted": ["lunch"], "explanationKo": "lunch 는 점심이에요. 끝의 ch 는 c 와 h 를 차례로 놓아요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "truck", "pattern": "tru__", "tiles": ["g", "k", "c"], "accepted": ["truck"], "explanationKo": "truck 은 트럭이에요. 끝의 ck 는 c 와 k 를 차례로 놓아요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "snake", "pattern": "sn_k_", "tiles": ["i", "e", "a"], "accepted": ["snake"], "explanationKo": "snake 는 뱀이에요. 가운데에 a, 끝에 소리 나지 않는 e 를 놓아요."},
+        {"no": 11, "unit": 2, "revision": 2, "correction": 0, "type": "pick-word", "picture": "four", "options": ["four", "fork", "door", "five"], "answerNo": 1, "accepted": ["four"], "explanationKo": "four 는 넷이에요. f-o-u-r 로 써요."},
+        {"no": 12, "unit": 4, "revision": 2, "correction": 0, "type": "pick-word", "picture": "eye", "options": ["egg", "eye", "ear", "key"], "answerNo": 2, "accepted": ["eye"], "explanationKo": "eye 는 눈이에요. e-y-e 로 써요."},
+        {"no": 13, "unit": 5, "revision": 2, "correction": 0, "type": "pick-word", "picture": "nose", "options": ["rose", "horse", "nurse", "nose"], "answerNo": 4, "accepted": ["nose"], "explanationKo": "nose 는 코예요. 가운데에 o, 끝에 소리 나지 않는 e 를 써요."},
+        {"no": 14, "unit": 1, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "lamp", "tiles": ["p", "m", "a", "l"], "accepted": ["lamp"], "explanationKo": "lamp 는 램프예요. l-a-m-p 차례로 놓아요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "copy-tiles", "word": "tall", "tiles": ["l", "t", "l", "a"], "accepted": ["tall"], "explanationKo": "tall 은 '키가 큰'이라는 뜻이에요. 끝에 l 을 두 번 써요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "fill-letters", "word": "tent", "pattern": "t_nt", "tiles": ["u", "e"], "accepted": ["tent"], "explanationKo": "tent 는 텐트예요. 가운데 소리 /에/ 는 e 로 써요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "fill-letters", "word": "wing", "pattern": "w_ng", "tiles": ["i", "u"], "accepted": ["wing"], "explanationKo": "wing 은 날개예요. 가운데 소리 /이/ 는 i 로 써요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "fill-letters", "word": "shoe", "pattern": "__oe", "tiles": ["t", "h", "s"], "accepted": ["shoe"], "explanationKo": "shoe 는 신발이에요. 앞의 sh 는 s 와 h 를 차례로 놓아요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "fill-letters", "word": "song", "pattern": "so__", "tiles": ["c", "g", "n"], "accepted": ["song"], "explanationKo": "song 은 노래예요. 끝의 ng 는 n 과 g 를 차례로 놓아요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "fill-letters", "word": "white", "pattern": "wh_t_", "tiles": ["e", "a", "i"], "accepted": ["white"], "explanationKo": "white 는 흰색이에요. 가운데에 i, 끝에 소리 나지 않는 e 를 놓아요."}
+      ]
+    }
+  ]
+}
