@@ -8,7 +8,7 @@ import { AREAS, type Area, LEVEL_MAX, LEVEL_MIN } from "@/core/seed/structure";
 
 // ── 구조 상수(정본 고정 규칙, 12절 키 아님 — C72) ──
 
-/** 부모 PIN 자리 수(4절 'PIN 6자리', C72 — C57 의 접근 코드 12자와 같은 결). */
+/** 부모 PIN 자리 수(4절 'PIN 6자리', C72 — C57 · C147 의 접근 코드 길이 규칙과 같은 결). */
 export const PIN_LENGTH = 6;
 /** 이름 칸 입력 상한(기술 값, C72). */
 export const NAME_MAX_LENGTH = 20;
