@@ -1,5 +1,6 @@
 // 회화 선생님 몫의 시드 검사(6.4 '선생님 이름' · 명단 자료, C130 · AC-19a · AC-19e 의 시드 몫).
 // 명단 · 설계 숫자는 견본(teacherRoster · structure 상수)에서 읽는다. 이름은 1-가 명단(미나 · 리오)과 옛 이름(토리)만 쓴다.
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -17,6 +18,7 @@ import {
   checkTeacherNamesInSpecs,
   checkTeacherRoster,
   contrastRatio,
+  type TeacherAssetIo,
   teacherNameHits,
   teacherNamesOf,
 } from "@/core/seed/check-teacher";
@@ -28,25 +30,35 @@ import {
 } from "@/core/seed/schema/teachers";
 import {
   AREAS,
+  BYTES_PER_KB,
+  BYTES_PER_MB,
   lessonFilePath,
   levelTestFilePath,
   OLD_TEACHER_NAMES,
   SEED_FILES,
   storyFilePath,
+  TEACHER_ASSET_DIR,
   TEACHER_LABEL_CONTRAST_MIN,
+  TEACHER_LABEL_TEXT,
   TEACHER_PERSONA_MAX_SENTENCES,
   TEACHER_PITCH,
   TEACHER_TRAITS,
   type TextFragment,
 } from "@/core/seed/structure";
 import { exitCodeOf, validateSeed } from "@/core/seed/validate";
-import { runValidate } from "../../scripts/seed-validate";
+import {
+  publicAssetFiles,
+  readSeedTree,
+  runValidate,
+  teacherAssetLimits,
+} from "../../scripts/seed-validate";
 import {
   defaultSettings,
   miniSeed,
   readingLesson,
   referenceSet,
   seedTreeFiles,
+  settingNumber,
   speakingLesson,
   storyFile,
   talkLesson,
@@ -55,6 +67,7 @@ import {
   teacherRoster,
   writingLesson,
 } from "../fixtures/seed/builders";
+import { FAKE_CONDITIONS_URL, fakeVrmBytes } from "../fixtures/seed/vrm";
 
 const ref = referenceSet(defaultSettings());
 const { index } = buildReferenceIndex(ref);
@@ -76,7 +89,15 @@ describe("시드 검증 선생님 이름", () => {
     expect(teacherNamesOf(undefined)).toEqual({
       en: [...OLD_TEACHER_NAMES.en],
       ko: [...OLD_TEACHER_NAMES.ko],
+      koExceptions: [...OLD_TEACHER_NAMES.koWordExceptions],
     });
+    // 빼는 낱말은 옛 이름 몫(코드) + 명단 칸 nameKoWordExceptions(C141 · 장부 N-3).
+    expect(names.koExceptions).toEqual([
+      ...OLD_TEACHER_NAMES.koWordExceptions,
+      "미나리",
+      "리오넬",
+      "리오데자네이루",
+    ]);
     // 명단을 늘리면 그 이름도 막는다(명단이 검사 입력).
     const roster = teacherRoster();
     const [first] = roster.teachers;
@@ -159,6 +180,29 @@ describe("시드 검증 선생님 이름", () => {
     ]) {
       expect(namesIn(text), text).toEqual([]);
     }
+  });
+
+  it("AC-19e 빼는 낱말을 명단 칸으로 옮긴 뒤에도 같게 걸고 빼며, 칸을 비우면 그 낱말도 이름으로 건다", () => {
+    const roster = teacherRoster();
+    for (const t of roster.teachers) t.nameKoWordExceptions = [];
+    const bare = teacherNamesOf(roster);
+    expect(teacherNameHits("미나리를 먹어.", bare)).toEqual(["미나"]);
+    expect(teacherNameHits("리오넬이 왔어.", bare)).toEqual(["리오"]);
+    // 옛 이름 몫은 명단 밖이라 코드에 남는다.
+    expect(teacherNameHits("토리노에 가.", bare)).toEqual([]);
+    // 명단에 이름 · 빼는 낱말을 더하면 코드 고침 없이 는다(C130 (1)).
+    const [first] = roster.teachers;
+    if (!first) throw new Error("명단 없음");
+    roster.teachers.push({
+      ...first,
+      key: "hana",
+      nameKo: "하나",
+      nameEn: "Hana",
+      nameKoWordExceptions: ["하나님"],
+    });
+    const more = teacherNamesOf(roster);
+    expect(teacherNameHits("하나가 웃어.", more)).toEqual(["하나"]);
+    expect(teacherNameHits("하나님", more)).toEqual([]);
   });
 
   it("AC-19e 글 조각마다 이름이 있으면 그 칸 경로로 teacher-name 오류 하나를 낸다", () => {
@@ -565,7 +609,10 @@ describe("명단 검사", () => {
         "teachers.1.nameKo",
         roster((r) => {
           const t = r.teachers[1];
-          if (t) t.nameKo = mina(r).nameKo;
+          if (t) {
+            t.nameKo = mina(r).nameKo;
+            t.nameKoWordExceptions = [...mina(r).nameKoWordExceptions];
+          }
         }),
       ],
       [
@@ -634,6 +681,32 @@ describe("명단 검사", () => {
           mina(r).introKo = "한 줄.\n두 줄.\n세 줄.";
         }),
       ],
+      // 빼는 낱말이 그 이름 자리에서 걸리지 않거나(받침 ㅇ 은 줄임 받침이 아님) 이름보다 길지 않으면(이름 자체를 빼게 됨) 거부
+      [
+        "teachers.1.nameKoWordExceptions",
+        roster((r) => {
+          const t = r.teachers[1];
+          if (t) t.nameKoWordExceptions = ["리오넬", "리옹"];
+        }),
+      ],
+      [
+        "teachers.0.nameKoWordExceptions",
+        roster((r) => {
+          mina(r).nameKoWordExceptions = ["세미나"];
+        }),
+      ],
+      [
+        "teachers.0.nameKoWordExceptions",
+        roster((r) => {
+          mina(r).nameKoWordExceptions = ["미나"];
+        }),
+      ],
+      [
+        "teachers.0.nameKoWordExceptions",
+        roster((r) => {
+          mina(r).nameKoWordExceptions = ["미난"];
+        }),
+      ],
     ];
     for (const [path, file] of cases) {
       expect(TeachersFileSchema.safeParse(file).success, path).toBe(true);
@@ -685,42 +758,6 @@ describe("명단 검사", () => {
     expect(TeachersFileSchema.safeParse(noPrefer).success).toBe(false);
   });
 
-  it("AC-19a 모델 · 초상 파일이 없으면 그 칸 오류다", () => {
-    const r = teacherRoster();
-    const all = new Set(
-      r.teachers.flatMap((t) => [t.model.path, t.portrait.path]),
-    );
-    expect(checkTeacherAssets(r, (p) => all.has(p))).toEqual([]);
-    all.delete(mina(r).portrait.path);
-    expect(
-      checkTeacherAssets(r, (p) => all.has(p)).map((i) => [i.rule, i.path]),
-    ).toEqual([["teacher-asset", "teachers.0.portrait.path"]]);
-  });
-
-  it("AC-19a 시드 검증 · 명령은 assetExists 로 채워진 모델 칸의 파일 없음을 규격 파일 오류 하나로 낸다(검토 M-2)", () => {
-    const tree = miniSeed({ areas: AREAS, through: 1, frame: "small" });
-    const files = seedTreeFiles(tree);
-    const r = teacherRoster();
-    const report = validateSeed(files, {
-      mode: "pr",
-      areas: AREAS,
-      assetExists: (p) => p !== mina(r).model.path,
-    });
-    expect(report.errors.map((e) => [e.rule, e.path])).toEqual([
-      ["teacher-asset", "teachers.0.model.path"],
-    ]);
-    expect(report.summary.referenceErrors).toBe(1);
-    expect(exitCodeOf(report)).toBe(1);
-    // 넘기지 않으면 보지 않는다.
-    expect(validateSeed(files, { mode: "pr", areas: AREAS }).errors).toEqual(
-      [],
-    );
-    const args = { root: "seed", areas: [...AREAS], json: false, stats: false };
-    expect(runValidate(args, files, () => false).code).toBe(1);
-    expect(runValidate(args, files, () => true).code).toBe(0);
-    expect(runValidate(args, files).code).toBe(0);
-  });
-
   it("AC-19a 자산 경로는 빈 조각('//' · 끝 '/')을 받지 않는다(검토 M-3)", () => {
     for (const path of ["teachers//mina.vrm", "teachers/", "teachers/./x"]) {
       const file = roster((r) => {
@@ -734,15 +771,30 @@ describe("명단 검사", () => {
     expect(TeachersFileSchema.safeParse(ok).success).toBe(true);
   });
 
-  it("AC-19a 이름표 색 대비는 WCAG 대비(흰 · 검정 21:1)로 세고 1-가 명단 둘은 상한을 넘는다", () => {
+  it("AC-19a 이름표 대비 짝은 accent 바탕 ↔ 종이색 글자(--color-paper)이고 WCAG 대비로 센다 — 1-가 명단 둘은 하한을 넘는다(장부 M-1)", () => {
     expect(contrastRatio("#ffffff", "#000000")).toBeCloseTo(21, 5);
     expect(contrastRatio("#777777", "#777777")).toBeCloseTo(1, 5);
+    const css = readFileSync(
+      join(process.cwd(), "src", "app", "globals.css"),
+      "utf8",
+    );
+    expect(/--color-paper:\s*(#[0-9a-fA-F]{6})/.exec(css)?.[1]).toBe(
+      TEACHER_LABEL_TEXT,
+    );
     for (const t of teacherRoster().teachers) {
       expect(
-        contrastRatio(t.color.accent, t.color.room),
+        contrastRatio(t.color.accent, TEACHER_LABEL_TEXT),
         t.key,
       ).toBeGreaterThanOrEqual(TEACHER_LABEL_CONTRAST_MIN);
     }
+    // 창 바탕(room)과의 대비는 보지 않는다 — 창 안 바탕에는 글자가 없다.
+    const darkRoom = roster((r) => {
+      mina(r).color = { room: "#3a3a3a", accent: mina(r).color.accent };
+    });
+    expect(
+      contrastRatio(mina(darkRoom).color.accent, mina(darkRoom).color.room),
+    ).toBeLessThan(TEACHER_LABEL_CONTRAST_MIN);
+    expect(check(darkRoom)).toEqual([]);
   });
 
   it("AC-19a 명단 검사 오류는 시드 검증의 규격 파일 오류이고, 명단이 없으면 규격 파일이 없다는 오류다", () => {
@@ -761,5 +813,394 @@ describe("명단 검사", () => {
     expect(missing.errors.map((e) => [e.rule, e.file])).toEqual([
       ["reference-missing", SEED_FILES.teachers],
     ]);
+  });
+});
+
+describe("자산 검사", () => {
+  const sha = (bytes: Uint8Array) =>
+    createHash("sha256").update(bytes).digest("hex");
+  const settings = defaultSettings();
+  const LIMITS = {
+    modelMaxMb: settingNumber(settings, "talk.teacher_model_max_mb"),
+    portraitMaxKb: settingNumber(settings, "talk.teacher_portrait_max_kb"),
+  };
+  const PORTRAIT_BYTES = 10;
+
+  type Setup = {
+    roster: TeachersFile;
+    files: Map<string, Uint8Array>;
+    limits: { modelMaxMb: number; portraitMaxKb: number };
+    /** undefined 면 명단에서 만든다. null 이면 출처 문서 없음. */
+    credits?: string | null;
+  };
+
+  /** 출처 문서(선생님마다 자산 검사 (f) 칸을 줄마다). */
+  const creditsOf = (roster: TeachersFile) =>
+    roster.teachers
+      .flatMap((t) => [
+        `## ${t.nameKo}`,
+        `- ${t.source.creator}`,
+        `- ${t.source.distributionUrl}`,
+        `- ${t.source.originalTitle}`,
+        `- 원본 SHA-256 ${t.source.originalSha256}`,
+        `- 줄인 파일 SHA-256 ${t.model.sha256}`,
+        `- ${t.source.reduction}`,
+      ])
+      .join("\n");
+
+  /** 미나(licenseName Other) · 리오(CC0)의 가짜 VRM · 초상과 그에 맞춘 명단. */
+  function setup(): Setup {
+    const roster = teacherRoster();
+    const files = new Map<string, Uint8Array>();
+    roster.teachers.forEach((t, i) => {
+      const licenseName = t.key === "mina" ? "Other" : "CC0";
+      const model = fakeVrmBytes({ licenseName });
+      t.source = {
+        ...t.source,
+        licenseName,
+        conditionsUrl: FAKE_CONDITIONS_URL,
+        originalTitle: `fixture ${t.key}`,
+        originalSha256: String(i + 1).repeat(64),
+        reduction: `fixture reduction ${t.key}`,
+      };
+      t.model = {
+        path: `teachers/${t.key}.0000000${i}.vrm`,
+        bytes: model.length,
+        sha256: sha(model),
+      };
+      t.portrait = {
+        path: `teachers/${t.key}.0000000${i}.webp`,
+        bytes: PORTRAIT_BYTES,
+      };
+      files.set(t.model.path, model);
+      files.set(t.portrait.path, new Uint8Array(PORTRAIT_BYTES).fill(i + 1));
+    });
+    return { roster, files, limits: { ...LIMITS } };
+  }
+
+  const ioOf = (s: Setup): TeacherAssetIo => ({
+    read: (p) => s.files.get(p),
+    sha256: sha,
+    publicVrmFiles: [...s.files.keys()].filter((p) => p.endsWith(".vrm")),
+    credits:
+      s.credits === undefined
+        ? creditsOf(s.roster)
+        : s.credits === null
+          ? undefined
+          : s.credits,
+    limits: s.limits,
+  });
+  const first = (s: Setup) => {
+    const t = s.roster.teachers[0];
+    if (!t) throw new Error("명단 없음");
+    return t;
+  };
+  /** 미나 모델을 바꾸고 명단 바이트 · 해시를 맞춘다(그 밖 검사만 걸리게). */
+  const replaceModel = (s: Setup, bytes: Uint8Array) => {
+    const t = first(s);
+    s.files.set(t.model.path, bytes);
+    t.model.bytes = bytes.length;
+    t.model.sha256 = sha(bytes);
+  };
+
+  it("AC-19k 맞춘 가짜 자산은 통과한다", () => {
+    const s = setup();
+    expect(checkTeacherAssets(s.roster, ioOf(s))).toEqual([]);
+  });
+
+  it("AC-19k 깨뜨린 가짜 자료마다 거부 하나: 파일 없음 · 바이트 · 해시 · 크기 상한 · VRM 판 · 메타 넷 · 표정 · 뼈 · 원본 해시 · 명단 밖 .vrm · 출처 문서", () => {
+    const cases: [string, string, (s: Setup) => void][] = [
+      [
+        "모델 없음",
+        "teachers.0.model.path",
+        (s) => s.files.delete(first(s).model.path),
+      ],
+      [
+        "초상 없음",
+        "teachers.0.portrait.path",
+        (s) => s.files.delete(first(s).portrait.path),
+      ],
+      ["모델 바이트", "teachers.0.model.bytes", (s) => first(s).model.bytes++],
+      [
+        "모델 해시",
+        "teachers.0.model.sha256",
+        (s) => {
+          first(s).model.sha256 = "f".repeat(64);
+        },
+      ],
+      [
+        "초상 바이트",
+        "teachers.0.portrait.bytes",
+        (s) => first(s).portrait.bytes++,
+      ],
+      [
+        "모델 크기 상한",
+        "teachers.0.model.bytes",
+        (s) => {
+          const leo = s.roster.teachers[1];
+          if (!leo) throw new Error("명단 없음");
+          // 미나 모델에 표정을 더해 리오보다 길게 하고 상한을 리오 크기로
+          replaceModel(
+            s,
+            fakeVrmBytes({
+              licenseName: "Other",
+              presets: [
+                ...["neutral", "a", "i", "u", "e", "o", "blink", "joy"],
+                ...["angry", "fun", "sorrow", "blink_l", "blink_r"],
+              ],
+            }),
+          );
+          expect(first(s).model.bytes).toBeGreaterThan(leo.model.bytes);
+          s.limits.modelMaxMb = leo.model.bytes / BYTES_PER_MB;
+        },
+      ],
+      [
+        "초상 크기 상한",
+        "teachers.0.portrait.bytes",
+        (s) => {
+          const big = new Uint8Array(PORTRAIT_BYTES + 1);
+          s.files.set(first(s).portrait.path, big);
+          first(s).portrait.bytes = big.length;
+          s.limits.portraitMaxKb = PORTRAIT_BYTES / BYTES_PER_KB;
+        },
+      ],
+      [
+        "GLB 깨짐",
+        "teachers.0.model.path",
+        (s) => replaceModel(s, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])),
+      ],
+      [
+        "VRM 1.0",
+        "teachers.0.model.path",
+        (s) => replaceModel(s, fakeVrmBytes({ vrm1: true })),
+      ],
+      [
+        "licenseName",
+        "teachers.0.source.licenseName",
+        (s) => {
+          first(s).source.licenseName = "CC0";
+        },
+      ],
+      [
+        "허용 설정",
+        "teachers.0.source.permissions",
+        (s) => {
+          first(s).source.permissions =
+            "allowedUserName=OnlyAuthor · commercialUssageName=Allow";
+        },
+      ],
+      [
+        "otherPermissionUrl",
+        "teachers.0.source.conditionsUrl",
+        (s) =>
+          replaceModel(
+            s,
+            fakeVrmBytes({
+              licenseName: "Other",
+              otherPermissionUrl: "https://example.com/other",
+            }),
+          ),
+      ],
+      [
+        "otherLicenseUrl",
+        "teachers.0.source.conditionsUrl",
+        (s) =>
+          replaceModel(
+            s,
+            fakeVrmBytes({
+              licenseName: "Other",
+              otherLicenseUrl: "https://example.com/other",
+            }),
+          ),
+      ],
+      [
+        "표정 oh 없음",
+        "teachers.0.model.path",
+        (s) =>
+          replaceModel(
+            s,
+            fakeVrmBytes({
+              licenseName: "Other",
+              presets: ["a", "e", "blink", "joy"],
+            }),
+          ),
+      ],
+      [
+        "뼈 neck 없음",
+        "teachers.0.model.path",
+        (s) =>
+          replaceModel(
+            s,
+            fakeVrmBytes({ licenseName: "Other", bones: ["spine", "head"] }),
+          ),
+      ],
+      [
+        "원본 해시",
+        "teachers.0.model.sha256",
+        (s) => {
+          first(s).source.originalSha256 = first(s).model.sha256;
+        },
+      ],
+      [
+        "명단 밖 .vrm",
+        "teachers",
+        (s) => s.files.set("teachers/old.vrm", fakeVrmBytes()),
+      ],
+      [
+        "공개 폴더의 원본",
+        "teachers",
+        (s) => {
+          const original = fakeVrmBytes({ licenseName: "Original" });
+          s.files.set("models/mina.vrm", original);
+          first(s).source.originalSha256 = sha(original);
+        },
+      ],
+      [
+        "출처 문서 없음",
+        "teachers",
+        (s) => {
+          s.credits = null;
+        },
+      ],
+      [
+        "출처 문서 원본 해시",
+        "teachers.0.source.originalSha256",
+        (s) => {
+          s.credits = creditsOf(s.roster).replace(
+            first(s).source.originalSha256,
+            "",
+          );
+        },
+      ],
+      [
+        "출처 문서 줄인 방법",
+        "teachers.0.source.reduction",
+        (s) => {
+          s.credits = creditsOf(s.roster).replace(
+            first(s).source.reduction,
+            "",
+          );
+        },
+      ],
+      [
+        "출처 문서 줄인 파일 해시",
+        "teachers.0.model.sha256",
+        (s) => {
+          s.credits = creditsOf(s.roster).replace(first(s).model.sha256, "");
+        },
+      ],
+      [
+        "출처 문서 원본 제목",
+        "teachers.0.source.originalTitle",
+        (s) => {
+          s.credits = creditsOf(s.roster).replace(
+            `- ${first(s).source.originalTitle}`,
+            "-",
+          );
+        },
+      ],
+    ];
+    /** 경우마다 오류 글에 드는 조각(같은 경로의 다른 까닭과 가른다). */
+    const MESSAGE: Record<string, string> = {
+      "모델 없음": "모델 파일",
+      "초상 없음": "초상 파일",
+      "모델 바이트": "명단",
+      "모델 해시": "SHA-256",
+      "초상 바이트": "명단",
+      "모델 크기 상한": "talk.teacher_model_max_mb",
+      "초상 크기 상한": "talk.teacher_portrait_max_kb",
+      "GLB 깨짐": "GLB",
+      "VRM 1.0": "VRM 1.0",
+      licenseName: "licenseName",
+      "허용 설정": "허용 설정",
+      otherPermissionUrl: "otherPermissionUrl",
+      otherLicenseUrl: "otherLicenseUrl",
+      "표정 oh 없음": "표정 oh",
+      "뼈 neck 없음": "뼈 neck",
+      "원본 해시": "원본 VRM",
+      "명단 밖 .vrm": "명단 모델이 아니다",
+      "공개 폴더의 원본": "원본 VRM",
+      "출처 문서 없음": "CREDITS.md 가 없다",
+      "출처 문서 원본 해시": "source.originalSha256",
+      "출처 문서 줄인 방법": "source.reduction",
+      "출처 문서 줄인 파일 해시": "model.sha256",
+      "출처 문서 원본 제목": "source.originalTitle",
+    };
+    expect(Object.keys(MESSAGE).sort()).toEqual(cases.map(([l]) => l).sort());
+    for (const [label, path, edit] of cases) {
+      const s = setup();
+      edit(s);
+      const issues = checkTeacherAssets(s.roster, ioOf(s));
+      expect(
+        issues.map((i) => [i.rule, i.path]),
+        label,
+      ).toEqual([["teacher-asset", path]]);
+      expect(issues[0]?.file, label).toBe(SEED_FILES.teachers);
+      expect(issues[0]?.message, label).toContain(MESSAGE[label]);
+    }
+  });
+
+  it("AC-19k 실제 명단 · public/teachers/ · CREDITS.md 는 자산 검사를 통과하고, 모델 둘이 상한 안이다", () => {
+    const root = process.cwd();
+    const roster = TeachersFileSchema.parse(
+      JSON.parse(readFileSync(join(root, "seed", SEED_FILES.teachers), "utf8")),
+    );
+    const real = readSeedTree(join(root, "seed"));
+    if (!real) throw new Error("시드 뿌리 없음");
+    const files = publicAssetFiles(root);
+    const limits = teacherAssetLimits(real);
+    if (!limits.ok) throw new Error(limits.error);
+    expect(
+      checkTeacherAssets(roster, { ...files, limits: limits.limits }),
+    ).toEqual([]);
+    for (const t of roster.teachers) {
+      expect(t.model.path.startsWith(`${TEACHER_ASSET_DIR}/`)).toBe(true);
+      expect(t.model.bytes).toBeLessThanOrEqual(
+        limits.limits.modelMaxMb * BYTES_PER_MB,
+      );
+    }
+  });
+
+  it("AC-19k 시드 검증 · 명령은 자산 검사 오류를 규격 파일 오류로 내고, 상한 설정이 없으면 명령은 입력 오류 2 다", () => {
+    const tree = miniSeed({ areas: AREAS, through: 1, frame: "small" });
+    const s = setup();
+    tree.reference.teachers = s.roster;
+    const files = seedTreeFiles(tree);
+    s.files.delete(first(s).portrait.path);
+    const report = validateSeed(files, {
+      mode: "pr",
+      areas: AREAS,
+      teacherAssets: ioOf(s),
+    });
+    expect(report.errors.map((e) => [e.rule, e.path])).toEqual([
+      ["teacher-asset", "teachers.0.portrait.path"],
+    ]);
+    expect(report.summary.referenceErrors).toBe(1);
+    expect(exitCodeOf(report)).toBe(1);
+    // 넘기지 않으면 보지 않는다.
+    expect(validateSeed(files, { mode: "pr", areas: AREAS }).errors).toEqual(
+      [],
+    );
+    const args = { root: "seed", areas: [...AREAS], json: false, stats: false };
+    const { limits: _limits, ...assetFiles } = ioOf(s);
+    expect(runValidate(args, files, assetFiles).code).toBe(1);
+    expect(runValidate(args, files).code).toBe(0);
+    const good = setup();
+    const goodFiles = seedTreeFiles({
+      ...tree,
+      reference: { ...tree.reference, teachers: good.roster },
+    });
+    const { limits: _l, ...goodAssets } = ioOf(good);
+    expect(runValidate(args, goodFiles, goodAssets).code).toBe(0);
+    // 상한 설정은 읽은 시드 settings.json 에서 — 없으면 입력 오류
+    const noLimit = structuredClone(tree);
+    noLimit.reference.teachers = good.roster;
+    noLimit.reference.settings.settings =
+      noLimit.reference.settings.settings.filter(
+        (r) => r.key !== "talk.teacher_model_max_mb",
+      );
+    const missing = runValidate(args, seedTreeFiles(noLimit), goodAssets);
+    expect(missing.code).toBe(2);
+    expect(missing.lines[0]).toContain("talk.teacher_model_max_mb");
   });
 });

@@ -1,11 +1,12 @@
 // 시드 검증 명령(plan-p04c '명령', 6.3 순서 (0) · 6.4 · 9절 시드 검증 행).
 // 사용: pnpm seed:validate [--root <폴더>] [--complete-through <n|settings>] [--areas <영역,…>] [--json] [--stats]
 // 종료 코드: 0 통과(경고가 있어도), 1 위반, 2 입력 오류(모르는 인자 · 잘못된 값 · 뿌리 폴더 없음 · 꼭 있어야 하는 규격 파일 없음 ·
-// --complete-through settings 인데 키 없음). 순수 함수(parseArgs · runValidate)를 내보내고 파일 걷기 · 출력은 직접 실행될 때만 한다.
+// --complete-through settings 인데 키 없음 · 선생님 자산 크기 상한 설정 없음). 순수 함수(parseArgs · runValidate)를 내보내고 파일 걷기 · 출력은 직접 실행될 때만 한다.
 // API 를 부르지 않는다(seed/checks 의 저장 결과만 읽는다, AC-7d).
+// 선생님 자산 검사(AC-19k)는 --root 가 달라도 저장소 뿌리(실행 폴더)의 public/ · CREDITS.md 를 읽고, 크기 상한은 읽은 시드 settings.json 에서 가져온다.
+import { createHash } from "node:crypto";
 import {
   type Dirent,
-  existsSync,
   readdirSync,
   readFileSync,
   realpathSync,
@@ -13,6 +14,7 @@ import {
 } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { TeacherAssetIo } from "../src/core/seed/check-teacher";
 import {
   AREAS,
   type Area,
@@ -148,15 +150,98 @@ function humanLines(report: SeedReport, stats: boolean): string[] {
 
 /** 명단의 모델 · 초상 경로를 찾는 정적 자산 폴더(같은 출처, 저장소 뿌리 기준, C130). */
 export const PUBLIC_DIR = "public";
+/** 선생님 자산 검사의 출처 문서(저장소 뿌리 기준, 자산 검사 (f)). */
+export const CREDITS_FILE = "CREDITS.md";
+/** 선생님 자산 크기 상한 설정 키(12절 · C131). */
+export const TEACHER_LIMIT_KEYS = {
+  modelMaxMb: "talk.teacher_model_max_mb",
+  portraitMaxKb: "talk.teacher_portrait_max_kb",
+} as const;
+
+/** 자산 검사 io 가운데 저장소 뿌리에서 읽는 몫(크기 상한은 시드 settings.json 에서 runValidate 가 붙인다). */
+export type TeacherAssetFiles = Omit<TeacherAssetIo, "limits">;
+
+/** 읽은 시드의 settings.json 에서 선생님 자산 크기 상한 둘을 읽는다(없거나 양수가 아니면 오류 글). */
+export function teacherAssetLimits(
+  files: ReadonlyMap<string, string>,
+):
+  | { ok: true; limits: TeacherAssetIo["limits"] }
+  | { ok: false; error: string } {
+  let rows: { key?: unknown; value?: unknown }[] = [];
+  try {
+    const parsed = JSON.parse(files.get(SEED_FILES.settings) ?? "{}") as {
+      settings?: unknown;
+    };
+    if (Array.isArray(parsed.settings)) rows = parsed.settings;
+  } catch {
+    return { ok: false, error: "settings.json 이 JSON 이 아니다" };
+  }
+  const read = (key: string) => {
+    const value = rows.find((r) => r.key === key)?.value;
+    return typeof value === "number" && value > 0 ? value : undefined;
+  };
+  const modelMaxMb = read(TEACHER_LIMIT_KEYS.modelMaxMb);
+  const portraitMaxKb = read(TEACHER_LIMIT_KEYS.portraitMaxKb);
+  if (modelMaxMb === undefined)
+    return {
+      ok: false,
+      error: `settings.json 에 ${TEACHER_LIMIT_KEYS.modelMaxMb}(양수)가 없다 — 선생님 자산 검사가 읽는다`,
+    };
+  if (portraitMaxKb === undefined)
+    return {
+      ok: false,
+      error: `settings.json 에 ${TEACHER_LIMIT_KEYS.portraitMaxKb}(양수)가 없다 — 선생님 자산 검사가 읽는다`,
+    };
+  return { ok: true, limits: { modelMaxMb, portraitMaxKb } };
+}
+
+/** 저장소 뿌리의 public/(파일 읽기 · .vrm 목록)과 CREDITS.md 로 자산 검사 io 를 만든다. */
+export function publicAssetFiles(repoRoot: string): TeacherAssetFiles {
+  const publicRoot = resolve(repoRoot, PUBLIC_DIR);
+  const vrms: string[] = [];
+  const walk = (dir: string) => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && entry.name.toLowerCase().endsWith(".vrm"))
+        vrms.push(relative(publicRoot, full).split(sep).join("/"));
+    }
+  };
+  walk(publicRoot);
+  let credits: string | undefined;
+  try {
+    credits = readFileSync(resolve(repoRoot, CREDITS_FILE), "utf8");
+  } catch {
+    credits = undefined;
+  }
+  return {
+    read: (path) => {
+      try {
+        return new Uint8Array(readFileSync(join(publicRoot, path)));
+      } catch {
+        return undefined;
+      }
+    },
+    sha256: (bytes) => createHash("sha256").update(bytes).digest("hex"),
+    publicVrmFiles: vrms.sort(),
+    credits,
+  };
+}
 
 /**
  * 인자와 읽은 파일 묶음(seed/ 뿌리 기준 경로 → 글, 뿌리가 없으면 null)으로 검증하고 종료 코드와 출력 줄을 돌려준다.
- * 종료 2 의 출력은 표준 오류로 낸다(직접 실행 때). assetExists 는 명단의 채워진 모델 · 초상 파일 있음을 본다(넘기지 않으면 보지 않는다).
+ * 종료 2 의 출력은 표준 오류로 낸다(직접 실행 때). assets 를 넘기면 선생님 자산 검사를 한다(크기 상한은 settings.json — 없으면 2).
  */
 export function runValidate(
   args: CliArgs,
   files: ReadonlyMap<string, string> | null,
-  assetExists?: (path: string) => boolean,
+  assets?: TeacherAssetFiles,
 ): { code: 0 | 1 | 2; lines: string[] } {
   if (files === null) {
     return {
@@ -214,11 +299,18 @@ export function runValidate(
   } else {
     through = args.completeThrough;
   }
+  let teacherAssets: TeacherAssetIo | undefined;
+  if (assets) {
+    const limits = teacherAssetLimits(files);
+    if (!limits.ok)
+      return { code: 2, lines: [`seed-validate: ${limits.error}`] };
+    teacherAssets = { ...assets, limits: limits.limits };
+  }
   const report = validateSeed(files, {
     mode: through === undefined ? "pr" : "complete",
     ...(through === undefined ? {} : { through }),
     areas: args.areas,
-    ...(assetExists ? { assetExists } : {}),
+    ...(teacherAssets ? { teacherAssets } : {}),
   });
   const code = exitCodeOf(report);
   return {
@@ -272,9 +364,10 @@ function main(): number {
     return 2;
   }
   const root = resolve(process.cwd(), parsed.args.root);
-  const publicRoot = resolve(process.cwd(), PUBLIC_DIR);
-  const { code, lines } = runValidate(parsed.args, readSeedTree(root), (p) =>
-    existsSync(join(publicRoot, p)),
+  const { code, lines } = runValidate(
+    parsed.args,
+    readSeedTree(root),
+    publicAssetFiles(process.cwd()),
   );
   const write = code === 2 ? console.error : console.log;
   for (const line of lines) write(line);

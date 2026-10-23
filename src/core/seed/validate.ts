@@ -26,7 +26,10 @@ import {
   type SeedIssue,
 } from "@/core/seed/check-lesson";
 import { checkTalkCard, checkTalkUnit } from "@/core/seed/check-talk";
-import { checkTeacherAssets } from "@/core/seed/check-teacher";
+import {
+  checkTeacherAssets,
+  type TeacherAssetIo,
+} from "@/core/seed/check-teacher";
 import {
   buildReferenceIndex,
   type ReferenceFiles,
@@ -475,10 +478,10 @@ export type ValidateOptions = {
   /** 영역 거르기(기본 넷). */
   areas?: readonly Area[];
   /**
-   * 명단의 채워진 모델 · 초상 칸 파일이 있는가(public/ 기준 경로, 6.4 자산 검사의 '파일 있음' 몫). 넘기지 않으면 보지 않는다.
-   * 명령(scripts/seed-validate.ts)이 넘긴다.
+   * 선생님 자산 검사가 읽는 것(public/ · CREDITS.md · 해시 · 크기 상한, 6.4 자산 검사 · AC-19k). 넘기지 않으면 자산 검사를 건너뛴다.
+   * 명령(scripts/seed-validate.ts)이 저장소 뿌리에서 만들어 넘긴다.
    */
-  assetExists?: (path: string) => boolean;
+  teacherAssets?: TeacherAssetIo;
 };
 export type ReportError = {
   rule: string;
@@ -998,10 +1001,10 @@ export function validateSeed(
 ): SeedReport {
   const seed = collectCells(files, { areas: options.areas });
   const { areas, index, reference, errors, failedKeys, brokenKeys } = seed;
-  if (reference.teachers && options.assetExists) {
+  if (reference.teachers && options.teacherAssets) {
     for (const i of checkTeacherAssets(
       reference.teachers,
-      options.assetExists,
+      options.teacherAssets,
     )) {
       seed.referenceErrors++;
       errors.push({
