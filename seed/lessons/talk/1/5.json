@@ -1,0 +1,1570 @@
+{"area":"talk","level":1,"unit":5,"lessons":[
+{"kind":"assigned","lessonNo":1,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"동물 다리 세기",
+ "newWords":["one","two","three","four","five"],
+ "unitWords":["one","two","three","four","five"],
+ "card":{
+  "topic":"숫자와 동물 다리",
+  "targetExpressions":["It is one.","Two legs.","It is three.","Four legs.","It is five."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am okay."]}
+  ]},
+  "todayWords":[
+   {"word":"one","meaningKo":"1, 한 개","example":"This is one egg.","exampleKo":"이건 달걀 한 개야."},
+   {"word":"two","meaningKo":"2, 둘","example":"Two legs.","exampleKo":"다리 두 개야."},
+   {"word":"three","meaningKo":"3, 셋","example":"Three cats are cute.","exampleKo":"고양이 세 마리는 귀여워."},
+   {"word":"four","meaningKo":"4, 넷","example":"It is four.","exampleKo":"4야."},
+   {"word":"five","meaningKo":"5, 다섯","example":"Five apples are red.","exampleKo":"사과 다섯 개는 빨개."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows number cards from one to five and asks what they are.",
+   "The teacher names an animal and asks how many legs it has.",
+   "The teacher asks about the number cards again."
+  ],
+  "todayTopicsKo":["숫자 1부터 5","동물 다리 세기","숫자 카드 맞히기"],
+  "closingLines":[
+   {"en":"It is one.","ko":"1이야."},
+   {"en":"Two legs.","ko":"다리 두 개야."},
+   {"en":"It is three.","ko":"3이야."},
+   {"en":"Four legs.","ko":"다리 네 개야."},
+   {"en":"It is five.","ko":"5야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is four."],"imageKey":"one","targets":["one"],"ask":"first"},
+   {"question":{"en":"A bird. How many legs?","ko":"새야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"two","targets":["two"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is two.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is one."],"imageKey":"three","targets":["three"],"ask":"first"},
+   {"question":{"en":"A dog. How many legs?","ko":"개야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"first"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is four.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is two."],"imageKey":"five","targets":["five"],"ask":"first"},
+   {"question":{"en":"A cat. How many legs?","ko":"고양이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"A duck. How many legs?","ko":"오리야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is four.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is three."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is five.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"A horse. How many legs?","ko":"말이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"A chicken. How many legs?","ko":"닭이야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"two","targets":["two"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A frog. How many legs?","ko":"개구리야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"A cat. How many eyes?","ko":"고양이야. 눈이 몇 개야?"},"hintKo":"눈 두 개야.","hintEn":"Two eyes.","answerExample":"Two eyes.","imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":2,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"곤충 다리와 내 나이",
+ "newWords":["six","seven","eight","nine","ten"],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten"],
+ "card":{
+  "topic":"큰 숫자와 곤충 다리",
+  "targetExpressions":["Six legs.","It is seven.","It is eight.","I am nine.","It is ten."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am good."]}
+  ]},
+  "todayWords":[
+   {"word":"six","meaningKo":"6, 여섯","example":"Six legs.","exampleKo":"다리 여섯 개야."},
+   {"word":"seven","meaningKo":"7, 일곱","example":"I like seven cookies.","exampleKo":"나는 쿠키 일곱 개가 좋아."},
+   {"word":"eight","meaningKo":"8, 여덟","example":"It is eight.","exampleKo":"8이야."},
+   {"word":"nine","meaningKo":"9, 아홉","example":"I am nine.","exampleKo":"나는 아홉 살이야."},
+   {"word":"ten","meaningKo":"10, 열","example":"I am ten.","exampleKo":"나는 열 살이야."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows number cards from six to ten and asks what they are.",
+   "The teacher names a bug or an animal and asks how many legs it has.",
+   "The teacher asks how old the child is."
+  ],
+  "todayTopicsKo":["숫자 6부터 10","곤충 다리 세기","내 나이"],
+  "closingLines":[
+   {"en":"Six legs.","ko":"다리 여섯 개야."},
+   {"en":"It is seven.","ko":"7이야."},
+   {"en":"It is eight.","ko":"8이야."},
+   {"en":"I am nine.","ko":"나는 아홉 살이야."},
+   {"en":"It is ten.","ko":"10이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is six.","It is two."],"imageKey":"six","targets":["six"],"ask":"first"},
+   {"question":{"en":"A pig. How many legs?","ko":"돼지야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is three.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"first"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is one."],"imageKey":"eight","targets":["eight"],"ask":"first"},
+   {"question":{"en":"An insect. How many legs?","ko":"곤충이야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Six legs.","Two legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is four.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"first"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is ten.","It is six."],"imageKey":"ten","targets":["ten"],"ask":"first"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is two."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is five.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is nine."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is eight.","It is ten."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"A cat. How many ears?","ko":"고양이야. 귀가 몇 개야?"},"hintKo":"귀 두 개야.","hintEn":"Two ears.","answerExample":"Two ears.","twoAnswers":["Four ears.","Two ears."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"An ant. How many legs?","ko":"개미야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Two legs.","Six legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"A cow. How many legs?","ko":"소야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","imageKey":"four","targets":["four"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":3,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"숲속의 해와 나무",
+ "newWords":["tall","little","thin","sun","tree"],
+ "unitWords":["two","three","four","six","nine","ten","tall","little","thin","sun","tree"],
+ "card":{
+  "topic":"숲속 해와 나무",
+  "targetExpressions":["It is tall.","It is little.","It is thin.","It is the sun.","It is a tree."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am okay."]}
+  ]},
+  "todayWords":[
+   {"word":"tall","meaningKo":"키가 큰, 높은","example":"The tree is tall.","exampleKo":"나무는 키가 커."},
+   {"word":"little","meaningKo":"작은, 어린","example":"An ant is little.","exampleKo":"개미는 작아."},
+   {"word":"thin","meaningKo":"얇은, 마른","example":"The fork is thin.","exampleKo":"포크는 얇아."},
+   {"word":"sun","meaningKo":"해, 태양","example":"The sun is hot.","exampleKo":"해는 뜨거워."},
+   {"word":"tree","meaningKo":"나무","example":"It is a big tree.","exampleKo":"큰 나무야."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows nature pictures and asks what they are.",
+   "The teacher shows a tree, an ant and a fork and asks how they are.",
+   "The teacher asks how many legs a frog has and how old the child is."
+  ],
+  "todayTopicsKo":["해와 나무","키 큰 것 · 작은 것","얇은 것"],
+  "closingLines":[
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"It is the sun.","ko":"해야."},
+   {"en":"It is a tree.","ko":"나무야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a star."],"imageKey":"tree","targets":["tree"],"ask":"first"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the tree.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"first"},
+   {"question":{"en":"A frog. How many legs?","ko":"개구리야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"tree","targets":["tall"],"ask":"first"},
+   {"question":{"en":"An ant! How is it?","ko":"개미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"ant","targets":["little"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the tree."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"A fork! How is it?","ko":"포크다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"fork","targets":["thin"],"ask":"first"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is six.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the candy?","ko":"오, 사탕은 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"candy","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a star."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"A snake! How is it?","ko":"뱀이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is tall."],"imageKey":"snake","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the tree.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! How is the tree?","ko":"와! 나무는 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"An egg! How is it?","ko":"달걀이다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"egg","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the fork?","ko":"오, 포크는 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"fork","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","imageKey":"nine","targets":["nine"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":4,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"꽃밭과 호숫가 산책",
+ "newWords":["flower","rock","lake","sand","rose"],
+ "unitWords":["two","seven","tall","little","sun","tree","flower","rock","lake","sand","rose"],
+ "card":{
+  "topic":"꽃밭과 호숫가",
+  "targetExpressions":["It is a flower.","It is a rock.","It is a lake.","It is sand.","It is a rose."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am fine."]}
+  ]},
+  "todayWords":[
+   {"word":"flower","meaningKo":"꽃","example":"This flower is white.","exampleKo":"이 꽃은 하얘."},
+   {"word":"rock","meaningKo":"바위, 돌","example":"The rock is big.","exampleKo":"바위는 커."},
+   {"word":"lake","meaningKo":"호수","example":"The lake is blue.","exampleKo":"호수는 파래."},
+   {"word":"sand","meaningKo":"모래","example":"The sand is hot.","exampleKo":"모래는 뜨거워."},
+   {"word":"rose","meaningKo":"장미","example":"The rose is red.","exampleKo":"장미는 빨개."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows pictures of a garden and a lake and asks what they are.",
+   "The teacher asks how a tree and an egg are.",
+   "The teacher asks about the sun and a number card."
+  ],
+  "todayTopicsKo":["꽃과 장미","바위와 모래","호숫가 구경"],
+  "closingLines":[
+   {"en":"It is a flower.","ko":"꽃이야."},
+   {"en":"It is a rock.","ko":"바위야."},
+   {"en":"It is a lake.","ko":"호수야."},
+   {"en":"It is sand.","ko":"모래야."},
+   {"en":"It is a rose.","ko":"장미야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a tree."],"imageKey":"flower","targets":["flower"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a tree.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"first"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a tree.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"first"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, rocks!","Oh, sand!"],"imageKey":"sand","targets":["sand"],"ask":"first"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a rock.","It is a flower."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a tree."],"imageKey":"rose","targets":["rose"],"ask":"first"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a star."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the egg?","ko":"오, 달걀은 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"egg","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a lake.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the lake."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is two."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"모래야.","hintEn":"It is sand.","answerExample":"It is sand.","imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the tree?","ko":"오, 나무는 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","imageKey":"flower","targets":["flower"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":5,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"바닷가 조개와 새 날개",
+ "newWords":["shell","king","swing","wing","song"],
+ "unitWords":["two","four","tall","little","tree","rock","rose","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"바닷가와 새 날개",
+  "targetExpressions":["It is a shell.","It is a king.","It is a swing.","It is a wing.","I like songs."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 괜찮아.","hintEn":"I am okay.","answerExample":"I am okay.","twoAnswers":["I am okay.","I am great."]}
+  ]},
+  "todayWords":[
+   {"word":"shell","meaningKo":"조개껍데기","example":"I like this shell.","exampleKo":"나는 이 조개껍데기가 좋아."},
+   {"word":"king","meaningKo":"왕","example":"The king is tall.","exampleKo":"왕은 키가 커."},
+   {"word":"swing","meaningKo":"그네, 흔들다","example":"The swing is red.","exampleKo":"그네는 빨개."},
+   {"word":"wing","meaningKo":"날개","example":"The bird wings are big.","exampleKo":"새 날개는 커."},
+   {"word":"song","meaningKo":"노래","example":"I like songs.","exampleKo":"나는 노래가 좋아."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows pictures from a beach and a picture book and asks what they are.",
+   "The teacher asks what the child likes, such as songs or books.",
+   "The teacher asks how many wings a bird has."
+  ],
+  "todayTopicsKo":["바닷가 조개","왕과 그네","새 날개와 노래"],
+  "closingLines":[
+   {"en":"It is a shell.","ko":"조개껍데기야."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"It is a swing.","ko":"그네야."},
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"shell","targets":["shell"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"first"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a tree.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"first"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"first"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like songs.","I like books."],"targets":["song"],"ask":"first"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Wow! How is the tree?","ko":"와! 나무는 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"A bird. How many wings?","ko":"새야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Two wings.","Four wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"A shell! How is it?","ko":"조개껍데기다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"shell","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the egg?","ko":"오, 달걀은 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"egg","targets":["little"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":6,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"농장 동물 숫자 놀이",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten"],
+ "card":{
+  "topic":"농장 동물과 숫자 카드",
+  "targetExpressions":["It is seven.","Two legs.","Four legs.","Six legs.","I am ten."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am good."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher names farm animals and bugs and asks how many legs they have.",
+   "The teacher shows number cards from one to ten and asks what they are.",
+   "The teacher asks how old the child is."
+  ],
+  "todayTopicsKo":["농장 동물 다리","숫자 카드 1부터 10","내 나이"],
+  "closingLines":[
+   {"en":"It is one.","ko":"1이야."},
+   {"en":"Two legs.","ko":"다리 두 개야."},
+   {"en":"Four legs.","ko":"다리 네 개야."},
+   {"en":"Six legs.","ko":"다리 여섯 개야."},
+   {"en":"I am ten.","ko":"나는 열 살이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is eight."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"An ant. How many legs?","ko":"개미야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Two legs.","Six legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"A duck. How many legs?","ko":"오리야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is four.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"A pig. How many legs?","ko":"돼지야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is eight.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is two."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is three.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is nine.","It is six."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"A bird. How many legs?","ko":"새야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"An insect. How many legs?","ko":"곤충이야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Six legs.","Four legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"A dog. How many legs?","ko":"개야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is ten.","It is six."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":7,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"숲속 길 숫자 찾기",
+ "newWords":[],
+ "unitWords":["two","three","six","seven","eight","nine","ten","tall","little","thin","sun","tree","rock","lake"],
+ "card":{
+  "topic":"숲속 친구들과 숫자",
+  "targetExpressions":["It is a tree.","It is tall.","It is thin.","Six legs.","I am nine."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"A tree! How is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows forest pictures and asks what they are.",
+   "The teacher asks how a tree, an ant and a snake are.",
+   "The teacher shows number cards and asks how old the child is."
+  ],
+  "todayTopicsKo":["숲속 나무와 해","키 큰 것 · 얇은 것","숫자 6부터 10"],
+  "closingLines":[
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"It is the sun.","ko":"해야."},
+   {"en":"I am nine.","ko":"나는 아홉 살이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is three.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"An ant! How is it?","ko":"개미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"ant","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the lake.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"An insect. How many legs?","ko":"곤충이야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Six legs.","Two legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"A snake! How is it?","ko":"뱀이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is tall.","It is thin."],"imageKey":"snake","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a rock."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is two.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is ten.","It is eight."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the fork?","ko":"오, 포크는 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"fork","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the tree.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the candy?","ko":"오, 사탕은 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"candy","targets":["little"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"An ant. How many legs?","ko":"개미야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":8,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"공원 소풍 날",
+ "newWords":[],
+ "unitWords":["tall","little","thin","sun","tree","flower","rock","lake","sand","rose"],
+ "card":{
+  "topic":"공원 소풍과 자연",
+  "targetExpressions":["It is a rose.","It is a lake.","It is thin.","It is the sun.","It is a rock."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 괜찮아.","hintEn":"I am okay.","answerExample":"I am okay.","twoAnswers":["I am okay.","I am fine."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows pictures from a picnic in the park and asks what they are.",
+   "The teacher asks how a tree, an ant, a fork and a snake are.",
+   "The teacher asks what the child likes in the park."
+  ],
+  "todayTopicsKo":["공원의 꽃과 나무","호수와 모래","키 큰 것 · 작은 것"],
+  "closingLines":[
+   {"en":"It is a flower.","ko":"꽃이야."},
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is sand.","ko":"모래야."},
+   {"en":"I like roses.","ko":"나는 장미가 좋아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Wow! How is the tree?","ko":"와! 나무는 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, rocks!","Oh, sand!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"An ant! How is it?","ko":"개미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"ant","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a tree."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a tree.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A fork! How is it?","ko":"포크다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"fork","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the lake."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a star."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 장미가 좋아.","hintEn":"I like roses.","answerExample":"I like roses.","twoAnswers":["I like roses.","I like trees."],"targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the egg?","ko":"오, 달걀은 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"egg","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"A snake! How is it?","ko":"뱀이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is tall."],"imageKey":"snake","targets":["thin"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":9,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"갈매기와 모래밭",
+ "newWords":[],
+ "unitWords":["tree","flower","rock","lake","sand","rose","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"갈매기와 모래밭",
+  "targetExpressions":["It is a rose.","It is a lake.","It is a rock.","It is sand.","It is a flower."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am great."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows pictures of birds, shells and flowers by the sea and asks what they are.",
+   "The teacher asks what the child likes.",
+   "The teacher shows a picture book king and a swing and asks what they are."
+  ],
+  "todayTopicsKo":["바다 새와 날개","모래밭 조개","좋아하는 노래"],
+  "closingLines":[
+   {"en":"It is a shell.","ko":"조개껍데기야."},
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"It is a swing.","ko":"그네야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like books.","I like songs."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a lake."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a tree.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a shell."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a bike.","It is a swing."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a kite."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a flower.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"모래야.","hintEn":"It is sand.","answerExample":"It is sand.","imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","imageKey":"rock","targets":["rock"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":10,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"동물원 나들이",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","eight","nine","ten","tall","little","sun","rock","lake","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"동물원 나들이와 숫자",
+  "targetExpressions":["It is one.","Four legs.","It is a wing.","It is a shell.","It is five."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am great."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher names zoo animals and asks how many legs or wings they have.",
+   "The teacher shows number cards and pictures and asks what they are.",
+   "The teacher asks what the child likes and how old the child is."
+  ],
+  "todayTopicsKo":["동물원 동물 다리","숫자 카드","좋아하는 것과 내 나이"],
+  "closingLines":[
+   {"en":"It is three.","ko":"3이야."},
+   {"en":"Two wings.","ko":"날개 두 개야."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a swing.","ko":"그네야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is ten."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"An elephant. How many legs?","ko":"코끼리야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"A bird. How many wings?","ko":"새야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Four wings.","Two wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is six.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like songs.","I like dogs."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is eight."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"An ant. How many legs?","ko":"개미야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Six legs.","Two legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the lake.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","imageKey":"swing","targets":["swing"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":1,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"물가 동물 숫자 놀이",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten","sun","tree","flower","rock","lake","sand","wing"],
+ "card":{
+  "topic":"물가 동물 숫자 놀이",
+  "targetExpressions":["It is one.","Two wings.","Four legs.","It is a lake.","It is sand."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows number cards from one to ten and asks what they are.",
+   "The teacher names pond animals and bugs and asks how many legs or wings they have.",
+   "The teacher shows a lake, sand, a rock and the sun and asks what they are."
+  ],
+  "todayTopicsKo":["숫자 카드 1부터 10","다리와 날개 세기","물가 자연 구경"],
+  "closingLines":[
+   {"en":"It is three.","ko":"3이야."},
+   {"en":"Six legs.","ko":"다리 여섯 개야."},
+   {"en":"I am ten.","ko":"나는 열 살이야."},
+   {"en":"It is a rock.","ko":"바위야."},
+   {"en":"It is the sun.","ko":"해야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is six."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"A bird. How many wings?","ko":"새야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Two wings.","Four wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a tree.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is eight.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"A frog. How many legs?","ko":"개구리야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is two.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"An insect. How many legs?","ko":"곤충이야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Two legs.","Six legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is four."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is one.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a rock.","It is a flower."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is six.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the lake."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":2,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"꽃 정원 가꾸기",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","nine","tall","little","thin","sun","tree","flower","rock","lake","sand","rose","shell","king"],
+ "card":{
+  "topic":"꽃 정원 가꾸기",
+  "targetExpressions":["It is a rose.","The tree is tall.","It is a flower.","It is a rock.","It is the sun."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am fine."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows garden pictures and asks what they are.",
+   "The teacher asks how a tree, a shell and a snake are.",
+   "The teacher asks about number cards and how many legs or eyes."
+  ],
+  "todayTopicsKo":["정원의 꽃과 장미","키 큰 것 · 작은 것","숫자 세기"],
+  "closingLines":[
+   {"en":"The tree is tall.","ko":"나무는 키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"It is a rose.","ko":"장미야."},
+   {"en":"Oh, sand!","ko":"오, 모래다!"}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a tree."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"나무는 키가 커.","hintEn":"The tree is tall.","answerExample":"The tree is tall.","twoAnswers":["The tree is tall.","The tree is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is three.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"A shell! How is it?","ko":"조개껍데기다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"shell","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a rock.","It is a flower."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"A king. How many eyes?","ko":"왕이야. 눈이 몇 개야?"},"hintKo":"눈 두 개야.","hintEn":"Two eyes.","answerExample":"Two eyes.","twoAnswers":["Two eyes.","Five eyes."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"A snake! How is it?","ko":"뱀이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is tall."],"imageKey":"snake","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a star.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is nine."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the lake.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a tree.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"A cat. How many legs?","ko":"고양이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a flower.","It is a tree."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"An ant! How is it?","ko":"개미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"ant","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"A fork! How is it?","ko":"포크다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"fork","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":3,"variant":1,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"새들의 노래 시간",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten","tall","little","thin","tree","flower","rock","rose","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"새들의 노래 시간",
+  "targetExpressions":["It is a shell.","The tree is tall.","It is little.","It is five.","I am nine."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 괜찮아.","hintEn":"I am okay.","answerExample":"I am okay.","twoAnswers":["I am okay.","I am good."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about forest birds and asks what the child likes.",
+   "The teacher shows pictures of a wing, a shell, a king and a swing and asks what they are.",
+   "The teacher asks how a tree, a flower and a fork are, and asks about number cards."
+  ],
+  "todayTopicsKo":["새 날개와 노래","조개 · 왕 · 그네","얇은 것 · 작은 것"],
+  "closingLines":[
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"It is a swing.","ko":"그네야."},
+   {"en":"It is thin.","ko":"얇아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like songs.","I like birds."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is one."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"나무는 키가 커.","hintEn":"The tree is tall.","answerExample":"The tree is tall.","twoAnswers":["The tree is little.","The tree is tall."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"An ant. How many legs?","ko":"개미야. 다리가 몇 개야?"},"hintKo":"다리 여섯 개야.","hintEn":"Six legs.","answerExample":"Six legs.","twoAnswers":["Six legs.","Four legs."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"A flower! How is it?","ko":"꽃이다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"flower","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is two.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a kite."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"A fork! How is it?","ko":"포크다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"fork","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is three."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is six.","It is ten."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"A rose! How is it?","ko":"장미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"rose","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"A snake! How is it?","ko":"뱀이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"snake","targets":["thin"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":1,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"숫자 카드 게임",
+ "newWords":["one","two","three","four","five"],
+ "unitWords":["one","two","three","four","five"],
+ "card":{
+  "topic":"숫자 카드 게임과 장난감",
+  "targetExpressions":["It is one.","Two legs.","It is three.","Four legs.","It is five."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am great."]}
+  ]},
+  "todayWords":[
+   {"word":"one","meaningKo":"1, 한 개","example":"This is one ball.","exampleKo":"이건 공 한 개야."},
+   {"word":"two","meaningKo":"2, 둘","example":"Two kites are blue.","exampleKo":"연 두 개는 파래."},
+   {"word":"three","meaningKo":"3, 셋","example":"Three cars are big.","exampleKo":"자동차 세 대는 커."},
+   {"word":"four","meaningKo":"4, 넷","example":"It is four.","exampleKo":"4야."},
+   {"word":"five","meaningKo":"5, 다섯","example":"Five dolls are cute.","exampleKo":"인형 다섯 개는 귀여워."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a number card game with cards from one to five.",
+   "The teacher names toys and asks how many legs, hands or eyes they have.",
+   "The teacher asks about the number cards again."
+  ],
+  "todayTopicsKo":["숫자 카드 게임","인형과 로봇 세기","숫자 1부터 5"],
+  "closingLines":[
+   {"en":"It is one.","ko":"1이야."},
+   {"en":"Two eyes.","ko":"눈 두 개야."},
+   {"en":"It is three.","ko":"3이야."},
+   {"en":"Four legs.","ko":"다리 네 개야."},
+   {"en":"It is five.","ko":"5야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is four."],"imageKey":"one","targets":["one"],"ask":"first"},
+   {"question":{"en":"A doll. How many legs?","ko":"인형이야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"two","targets":["two"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is two.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is one."],"imageKey":"three","targets":["three"],"ask":"first"},
+   {"question":{"en":"A chair. How many legs?","ko":"의자야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"first"},
+   {"question":{"en":"A robot. How many eyes?","ko":"로봇이야. 눈이 몇 개야?"},"hintKo":"눈 두 개야.","hintEn":"Two eyes.","answerExample":"Two eyes.","twoAnswers":["Two eyes.","Three eyes."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is two."],"imageKey":"five","targets":["five"],"ask":"first"},
+   {"question":{"en":"A horse. How many legs?","ko":"말이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is five.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is four.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A doll. How many hands?","ko":"인형이야. 손이 몇 개야?"},"hintKo":"손 두 개야.","hintEn":"Two hands.","answerExample":"Two hands.","twoAnswers":["Two hands.","Four hands."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is three.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"A zebra. How many legs?","ko":"얼룩말이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is four."],"imageKey":"three","targets":["three"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"A robot. How many arms?","ko":"로봇이야. 팔이 몇 개야?"},"hintKo":"팔 두 개야.","hintEn":"Two arms.","answerExample":"Two arms.","imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"A bear. How many legs?","ko":"곰이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":2,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"우주선 숫자 세기",
+ "newWords":["six","seven","eight","nine","ten"],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten"],
+ "card":{
+  "topic":"우주 숫자 세기 놀이",
+  "targetExpressions":["It is six.","It is seven.","It is eight.","It is nine.","I am ten."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am okay."]}
+  ]},
+  "todayWords":[
+   {"word":"six","meaningKo":"6, 여섯","example":"Six balls are big.","exampleKo":"공 여섯 개는 커."},
+   {"word":"seven","meaningKo":"7, 일곱","example":"Seven stars are white.","exampleKo":"별 일곱 개는 하얘."},
+   {"word":"eight","meaningKo":"8, 여덟","example":"It is eight.","exampleKo":"8이야."},
+   {"word":"nine","meaningKo":"9, 아홉","example":"I am nine.","exampleKo":"나는 아홉 살이야."},
+   {"word":"ten","meaningKo":"10, 열","example":"It is ten.","exampleKo":"10이야."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a space countdown game with number cards from six to ten.",
+   "The teacher asks how many arms a robot has and how many legs a chair has.",
+   "The teacher asks how old the child is."
+  ],
+  "todayTopicsKo":["우주 숫자 세기","숫자 6부터 10","내 나이"],
+  "closingLines":[
+   {"en":"It is six.","ko":"6이야."},
+   {"en":"It is seven.","ko":"7이야."},
+   {"en":"It is eight.","ko":"8이야."},
+   {"en":"It is nine.","ko":"9야."},
+   {"en":"I am ten.","ko":"나는 열 살이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is six.","It is one."],"imageKey":"six","targets":["six"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is five.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is two.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"first"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is four."],"imageKey":"eight","targets":["eight"],"ask":"first"},
+   {"question":{"en":"A robot. How many arms?","ko":"로봇이야. 팔이 몇 개야?"},"hintKo":"팔 두 개야.","hintEn":"Two arms.","answerExample":"Two arms.","twoAnswers":["Two arms.","Six arms."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is one.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"first"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is ten.","It is six."],"imageKey":"ten","targets":["ten"],"ask":"first"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is eight.","It is six."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is two."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is three."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is four.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"A chair. How many legs?","ko":"의자야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is ten.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","imageKey":"six","targets":["six"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":3,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"놀이터에서 본 하늘",
+ "newWords":["tall","little","thin","sun","tree"],
+ "unitWords":["two","five","six","eight","nine","ten","tall","little","thin","sun","tree"],
+ "card":{
+  "topic":"놀이터와 하늘",
+  "targetExpressions":["It is tall.","It is little.","It is thin.","It is the sun.","It is a tree."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am good."]}
+  ]},
+  "todayWords":[
+   {"word":"tall","meaningKo":"키가 큰, 높은","example":"The horse is tall.","exampleKo":"말은 키가 커."},
+   {"word":"little","meaningKo":"작은, 어린","example":"It is a little star.","exampleKo":"작은 별이야."},
+   {"word":"thin","meaningKo":"얇은, 마른","example":"The pencil is thin.","exampleKo":"연필은 얇아."},
+   {"word":"sun","meaningKo":"해, 태양","example":"The sun is hot.","exampleKo":"해는 뜨거워."},
+   {"word":"tree","meaningKo":"나무","example":"I like this tree.","exampleKo":"나는 이 나무가 좋아."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows pictures of the sky and a playground and asks what they are.",
+   "The teacher asks how a tree, a yo-yo and a pencil are.",
+   "The teacher asks how many arms a robot has and how old the child is."
+  ],
+  "todayTopicsKo":["하늘의 해","놀이터 나무","작은 장난감 · 얇은 연필"],
+  "closingLines":[
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"It is the sun.","ko":"해야."},
+   {"en":"It is a tree.","ko":"나무야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a star."],"imageKey":"tree","targets":["tree"],"ask":"first"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the plane.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"first"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is eight."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is little.","It is tall."],"imageKey":"tree","targets":["tall"],"ask":"first"},
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"yo-yo","targets":["little"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the plane."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"pencil","targets":["thin"],"ask":"first"},
+   {"question":{"en":"A robot. How many arms?","ko":"로봇이야. 팔이 몇 개야?"},"hintKo":"팔 두 개야.","hintEn":"Two arms.","answerExample":"Two arms.","twoAnswers":["Six arms.","Two arms."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the top?","ko":"오, 팽이는 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"top","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a star.","It is a tree."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"brush","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the plane.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! How is the tree?","ko":"와! 나무는 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"A ring! How is it?","ko":"반지다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"ring","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the pencil?","ko":"오, 연필은 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":4,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"호숫가 캠핑 놀이",
+ "newWords":["flower","rock","lake","sand","rose"],
+ "unitWords":["two","nine","tall","little","thin","sun","tree","flower","rock","lake","sand","rose"],
+ "card":{
+  "topic":"호숫가 캠핑 놀이",
+  "targetExpressions":["It is a flower.","It is a rock.","It is a lake.","It is sand.","It is a rose."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 괜찮아.","hintEn":"I am okay.","answerExample":"I am okay.","twoAnswers":["I am okay.","I am fine."]}
+  ]},
+  "todayWords":[
+   {"word":"flower","meaningKo":"꽃","example":"This flower is white.","exampleKo":"이 꽃은 하얘."},
+   {"word":"rock","meaningKo":"바위, 돌","example":"It is a big rock.","exampleKo":"큰 바위야."},
+   {"word":"lake","meaningKo":"호수","example":"I like the lake.","exampleKo":"나는 호수가 좋아."},
+   {"word":"sand","meaningKo":"모래","example":"I like sand.","exampleKo":"나는 모래가 좋아."},
+   {"word":"rose","meaningKo":"장미","example":"The rose is red.","exampleKo":"장미는 빨개."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about a camping trip by a lake and asks what things are.",
+   "The teacher asks about sand play, rocks and flowers.",
+   "The teacher asks how a yo-yo and a brush are."
+  ],
+  "todayTopicsKo":["호숫가 캠핑","모래 놀이","꽃과 바위"],
+  "closingLines":[
+   {"en":"It is a flower.","ko":"꽃이야."},
+   {"en":"It is a rock.","ko":"바위야."},
+   {"en":"It is a lake.","ko":"호수야."},
+   {"en":"It is sand.","ko":"모래야."},
+   {"en":"It is a rose.","ko":"장미야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a tree.","It is a flower."],"imageKey":"flower","targets":["flower"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a rock.","It is a tree."],"imageKey":"rock","targets":["rock"],"ask":"first"},
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"yo-yo","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a star."],"imageKey":"lake","targets":["lake"],"ask":"first"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"first"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a tree.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"first"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"brush","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a tree.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, rocks!","Oh, sand!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the lake."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a lake."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is two.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"모래야.","hintEn":"It is sand.","answerExample":"It is sand.","imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the top?","ko":"오, 팽이는 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"top","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","imageKey":"rock","targets":["rock"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"assigned","lessonNo":5,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"그네와 비행기 날개",
+ "newWords":["shell","king","swing","wing","song"],
+ "unitWords":["two","four","tall","little","thin","rock","lake","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"놀이터와 비행기 날개",
+  "targetExpressions":["It is a swing.","It is a king.","It is a shell.","It is a wing.","I like songs."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am good."]}
+  ]},
+  "todayWords":[
+   {"word":"shell","meaningKo":"조개껍데기","example":"This is my shell.","exampleKo":"이건 내 조개껍데기야."},
+   {"word":"king","meaningKo":"왕","example":"The king is nice.","exampleKo":"왕은 멋져."},
+   {"word":"swing","meaningKo":"그네, 흔들다","example":"I like the swing.","exampleKo":"나는 그네가 좋아."},
+   {"word":"wing","meaningKo":"날개","example":"The plane wings are big.","exampleKo":"비행기 날개는 커."},
+   {"word":"song","meaningKo":"노래","example":"I like this song.","exampleKo":"나는 이 노래가 좋아."}
+  ],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher shows playground and game pictures and asks what they are.",
+   "The teacher asks what the child likes, such as songs or games.",
+   "The teacher asks how many wings a plane has."
+  ],
+  "todayTopicsKo":["놀이터 그네","왕 놀이와 조개","비행기 날개와 노래"],
+  "closingLines":[
+   {"en":"It is a swing.","ko":"그네야."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"It is a shell.","ko":"조개껍데기야."},
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"first"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"first"},
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"yo-yo","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"first"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"first"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a kite.","It is a swing."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like songs.","I like games."],"targets":["song"],"ask":"first"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"A plane. How many wings?","ko":"비행기야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Four wings.","Two wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a star.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the top?","ko":"오, 팽이는 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"top","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":6,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"장난감 가게 숫자 놀이",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten"],
+ "card":{
+  "topic":"장난감 가게 숫자 놀이",
+  "targetExpressions":["It is one.","Two eyes.","It is seven.","Four legs.","It is ten."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a toy shop game with number cards from one to ten.",
+   "The teacher names toys and asks how many legs or eyes they have.",
+   "The teacher asks how old the child is."
+  ],
+  "todayTopicsKo":["장난감 가게 놀이","숫자 카드 1부터 10","인형 다리 세기"],
+  "closingLines":[
+   {"en":"It is five.","ko":"5야."},
+   {"en":"Two legs.","ko":"다리 두 개야."},
+   {"en":"It is eight.","ko":"8이야."},
+   {"en":"Four legs.","ko":"다리 네 개야."},
+   {"en":"I am nine.","ko":"나는 아홉 살이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is one."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A doll. How many legs?","ko":"인형이야. 다리가 몇 개야?"},"hintKo":"다리 두 개야.","hintEn":"Two legs.","answerExample":"Two legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is eight.","It is three."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"A chair. How many legs?","ko":"의자야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is eight."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is four.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is six."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is nine.","It is six."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"A robot. How many eyes?","ko":"로봇이야. 눈이 몇 개야?"},"hintKo":"눈 두 개야.","hintEn":"Two eyes.","answerExample":"Two eyes.","twoAnswers":["Two eyes.","Three eyes."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is eight.","It is ten."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"A zebra. How many legs?","ko":"얼룩말이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is three.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is ten.","It is one."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":7,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"놀이공원 숫자 게임",
+ "newWords":[],
+ "unitWords":["two","three","four","six","seven","eight","nine","ten","tall","little","thin","sun","tree"],
+ "card":{
+  "topic":"놀이공원 숫자 게임",
+  "targetExpressions":["It is the sun.","It is a tree.","It is seven.","It is eight.","It is thin."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a game at an amusement park and shows the sun and number cards.",
+   "The teacher asks how a yo-yo, a tree and a pencil are.",
+   "The teacher asks how old the child is."
+  ],
+  "todayTopicsKo":["놀이공원 놀이","숫자 6부터 10","작은 것 · 얇은 것"],
+  "closingLines":[
+   {"en":"It is the sun.","ko":"해야."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"I am ten.","ko":"나는 열 살이야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the plane."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is two.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"yo-yo","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is three.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is six.","It is nine."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a star.","It is a tree."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is nine.","It is six."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the plane.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"Oh, how is the top?","ko":"오, 팽이는 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"top","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"brush","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is four."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","imageKey":"six","targets":["six"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":8,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"자전거 타고 꽃길",
+ "newWords":[],
+ "unitWords":["tall","little","thin","sun","tree","flower","rock","lake","sand","rose"],
+ "card":{
+  "topic":"자전거 타고 꽃길",
+  "targetExpressions":["It is a flower.","It is a rock.","It is the sun.","It is little.","It is a tree."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am great."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about a bike ride on a flower path and asks what things are.",
+   "The teacher asks how a brush, a tree and a yo-yo are.",
+   "The teacher asks what the child likes to play with."
+  ],
+  "todayTopicsKo":["자전거 꽃길","호수와 모래","얇은 것 · 키 큰 것"],
+  "closingLines":[
+   {"en":"It is a rose.","ko":"장미야."},
+   {"en":"It is a lake.","ko":"호수야."},
+   {"en":"I like sand.","ko":"나는 모래가 좋아."},
+   {"en":"It is tall.","ko":"키가 커."},
+   {"en":"It is thin.","ko":"얇아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a tree."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is big.","It is thin."],"imageKey":"brush","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a star.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","twoAnswers":["It is tall.","It is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a rock.","It is a flower."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"yo-yo","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the lake.","It is the sun."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a rock.","It is a flower."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 모래가 좋아.","hintEn":"I like sand.","answerExample":"I like sand.","twoAnswers":["I like sand.","I like kites."],"targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a star.","It is a tree."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a lake.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a tree."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"A ring! How is it?","ko":"반지다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"ring","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"horse","targets":["tall"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":9,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"배 타고 섬 놀이",
+ "newWords":[],
+ "unitWords":["tree","flower","rock","lake","sand","rose","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"배 타고 섬 놀이",
+  "targetExpressions":["It is a king.","It is a swing.","It is a lake.","It is sand.","It is a flower."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 괜찮아.","hintEn":"I am okay.","answerExample":"I am okay.","twoAnswers":["I am okay.","I am good."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about a ship trip to an island and asks what things are.",
+   "The teacher asks what the child likes, such as songs or games.",
+   "The teacher shows a king from a play and a swing and asks what they are."
+  ],
+  "todayTopicsKo":["배 타고 섬으로","섬의 조개와 모래","왕 놀이와 노래"],
+  "closingLines":[
+   {"en":"It is a shell.","ko":"조개껍데기야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"It is a rock.","ko":"바위야."},
+   {"en":"It is a rose.","ko":"장미야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a tree.","It is a lake."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a kite."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like games.","I like songs."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a nurse.","It is a king."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, sand!","Oh, rocks!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a rose.","It is a tree."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a shell."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a bike.","It is a swing."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a flower.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"모래야.","hintEn":"It is sand.","answerExample":"It is sand.","imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","imageKey":"flower","targets":["flower"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"reinforce","lessonNo":10,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"신나는 운동회",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten","tall","little","sun","rock","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"신나는 운동회",
+  "targetExpressions":["It is one.","Four legs.","It is a king.","It is a wing.","It is five."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am fine."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about a sports day and shows number cards.",
+   "The teacher asks how many legs or wings things have.",
+   "The teacher asks what the child likes and how old the child is."
+  ],
+  "todayTopicsKo":["운동회 숫자 카드","날개와 다리 세기","좋아하는 것과 내 나이"],
+  "closingLines":[
+   {"en":"It is three.","ko":"3이야."},
+   {"en":"Two wings.","ko":"날개 두 개야."},
+   {"en":"It is a swing.","ko":"그네야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a shell.","ko":"조개껍데기야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is three.","It is ten."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"A bear. How many legs?","ko":"곰이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a swing.","It is a bike."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"A plane. How many wings?","ko":"비행기야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Four wings.","Two wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is six.","It is one."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like songs.","I like balls."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is five.","It is eight."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a leg.","It is a wing."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a shell.","It is a rock."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"A ring! How is it?","ko":"반지다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"ring","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the plane."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is two.","It is seven."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","imageKey":"king","targets":["king"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":1,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"숫자 보물찾기",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten","sun","tree","rock","lake","sand","wing"],
+ "card":{
+  "topic":"숫자 보물찾기 게임",
+  "targetExpressions":["It is three.","Four legs.","It is eight.","It is a rock.","It is sand."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 좋아.","hintEn":"I am good.","answerExample":"I am good.","twoAnswers":["I am good.","I am fine."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a treasure hunt game with number cards from one to ten.",
+   "The teacher asks how many wings a plane has and how many legs a chair has.",
+   "The teacher shows sand, a lake, a rock and the sun on the treasure map."
+  ],
+  "todayTopicsKo":["보물찾기 숫자 카드","날개와 다리 세기","보물 지도 속 자연"],
+  "closingLines":[
+   {"en":"It is one.","ko":"1이야."},
+   {"en":"Two wings.","ko":"날개 두 개야."},
+   {"en":"I am nine.","ko":"나는 아홉 살이야."},
+   {"en":"It is a lake.","ko":"호수야."},
+   {"en":"It is the sun.","ko":"해야."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is six."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"A plane. How many wings?","ko":"비행기야. 날개가 몇 개야?"},"hintKo":"날개 두 개야.","hintEn":"Two wings.","answerExample":"Two wings.","twoAnswers":["Two wings.","Four wings."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, rocks!","Oh, sand!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is eight.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"A chair. How many legs?","ko":"의자야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Four legs.","Two legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is two.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a star."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is nine.","It is six."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is four."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 아홉 살이야.","hintEn":"I am nine.","answerExample":"I am nine.","twoAnswers":["I am nine.","I am ten."],"targets":["nine"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is one.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a rock.","It is a tree."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","twoAnswers":["It is six.","It is ten."],"imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the plane."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"What is it, {NAME}?","ko":"이건 뭐야, {NAME}?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"10이야.","hintEn":"It is ten.","answerExample":"It is ten.","imageKey":"ten","targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":2,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"모래 놀이터 탐험",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","nine","tall","little","thin","sun","tree","flower","rock","lake","sand","rose","shell","king"],
+ "card":{
+  "topic":"모래 놀이터 탐험",
+  "targetExpressions":["It is a flower.","It is a lake.","It is a rock.","It is the sun.","The tree is tall."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hi, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 잘 지내.","hintEn":"I am fine.","answerExample":"I am fine.","twoAnswers":["I am fine.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher talks about a sand playground and asks what things are.",
+   "The teacher asks how a tree, a shell and a brush are.",
+   "The teacher asks about number cards and how many legs or eyes."
+  ],
+  "todayTopicsKo":["모래 놀이터","꽃과 나무","숫자 세기"],
+  "closingLines":[
+   {"en":"The tree is tall.","ko":"나무는 키가 커."},
+   {"en":"It is little.","ko":"작아."},
+   {"en":"It is thin.","ko":"얇아."},
+   {"en":"It is a rose.","ko":"장미야."},
+   {"en":"Oh, sand!","ko":"오, 모래다!"}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Oh, wow!","ko":"오, 와!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","twoAnswers":["It is a tree.","It is a rose."],"imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"나무는 키가 커.","hintEn":"The tree is tall.","answerExample":"The tree is tall.","twoAnswers":["The tree is little.","The tree is tall."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","twoAnswers":["It is one.","It is three."],"imageKey":"one","targets":["one"],"ask":"re_ask"},
+   {"question":{"en":"A shell! How is it?","ko":"조개껍데기다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is little.","It is tall."],"imageKey":"shell","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"꽃이야.","hintEn":"It is a flower.","answerExample":"It is a flower.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"flower","targets":["flower"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"오, 모래다!","hintEn":"Oh, sand!","answerExample":"Oh, sand!","twoAnswers":["Oh, rocks!","Oh, sand!"],"imageKey":"sand","targets":["sand"],"ask":"re_ask"},
+   {"question":{"en":"A king. How many eyes?","ko":"왕이야. 눈이 몇 개야?"},"hintKo":"눈 두 개야.","hintEn":"Two eyes.","answerExample":"Two eyes.","twoAnswers":["Five eyes.","Two eyes."],"imageKey":"two","targets":["two"],"ask":"re_ask"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"brush","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"호수야.","hintEn":"It is a lake.","answerExample":"It is a lake.","twoAnswers":["It is a lake.","It is a star."],"imageKey":"lake","targets":["lake"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"3이야.","hintEn":"It is three.","answerExample":"It is three.","twoAnswers":["It is nine.","It is three."],"imageKey":"three","targets":["three"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"해야.","hintEn":"It is the sun.","answerExample":"It is the sun.","twoAnswers":["It is the sun.","It is the plane."],"imageKey":"sun","targets":["sun"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"바위야.","hintEn":"It is a rock.","answerExample":"It is a rock.","twoAnswers":["It is a flower.","It is a rock."],"imageKey":"rock","targets":["rock"],"ask":"re_ask"},
+   {"question":{"en":"A bear. How many legs?","ko":"곰이야. 다리가 몇 개야?"},"hintKo":"다리 네 개야.","hintEn":"Four legs.","answerExample":"Four legs.","twoAnswers":["Two legs.","Four legs."],"imageKey":"four","targets":["four"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"나무야.","hintEn":"It is a tree.","answerExample":"It is a tree.","twoAnswers":["It is a tree.","It is a star."],"imageKey":"tree","targets":["tree"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"A yo-yo! How is it?","ko":"요요다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"yo-yo","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"장미야.","hintEn":"It is a rose.","answerExample":"It is a rose.","imageKey":"rose","targets":["rose"],"ask":"re_ask"},
+   {"question":{"en":"A horse! How is it?","ko":"말이다! 어때?"},"hintKo":"키가 커.","hintEn":"It is tall.","answerExample":"It is tall.","imageKey":"horse","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"{NAME}, what is it?","ko":"{NAME}, 이건 뭐야?"},"hintKo":"1이야.","hintEn":"It is one.","answerExample":"It is one.","imageKey":"one","targets":["one"],"ask":"re_ask"}
+  ]
+ }
+},
+{"kind":"remedial","lessonNo":3,"variant":2,"revision":1,"correction":0,
+ "generation":{"method":"generated","model":"claude-opus-5-5","effort":"high","briefHash":"09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de","agentHash":"ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3","createdOn":"2026-10-23"},
+ "title":"왕 놀이와 노래 게임",
+ "newWords":[],
+ "unitWords":["one","two","three","four","five","six","seven","eight","nine","ten","tall","little","thin","tree","flower","rock","rose","shell","king","swing","wing","song"],
+ "card":{
+  "topic":"왕 놀이와 노래 게임",
+  "targetExpressions":["It is a shell.","The tree is tall.","It is little.","It is seven.","I am ten."],
+  "greetingTurns":1,
+  "greeting":{"questions":[
+   {"question":{"en":"Hello, {NAME}! How are you?","ko":"안녕, {NAME}! 잘 지냈어?"},"hintKo":"나는 아주 좋아.","hintEn":"I am great.","answerExample":"I am great.","twoAnswers":["I am great.","I am okay."]}
+  ]},
+  "todayWords":[],
+  "firstQuestion":"What is it?",
+  "flow":[
+   "The teacher says hello and asks how the child is.",
+   "The teacher plays a king game with songs and asks what the child likes.",
+   "The teacher shows pictures of a wing, a shell, a king and a swing and asks what they are.",
+   "The teacher asks how a tree, a flower and a pencil are, and asks about number cards."
+  ],
+  "todayTopicsKo":["왕 놀이","노래 게임","얇은 것 · 작은 것"],
+  "closingLines":[
+   {"en":"It is a wing.","ko":"날개야."},
+   {"en":"I like songs.","ko":"나는 노래가 좋아."},
+   {"en":"It is a king.","ko":"왕이야."},
+   {"en":"It is a swing.","ko":"그네야."},
+   {"en":"It is thin.","ko":"얇아."}
+  ],
+  "safeLines":[{"en":"Oh, okay!","ko":"오, 그렇구나!"},{"en":"Wow, fun!","ko":"와, 재밌다!"}],
+  "endCondition":"대화 턴을 모두 마치면 정리로 간다.",
+  "farewell":{"en":"Bye, {NAME}! See you!","ko":"안녕, {NAME}! 또 보자!"},
+  "safetyFarewell":{"en":"Let's talk again soon!","ko":"다음에 또 새 이야기 하자!"},
+  "praiseLines":["Wow!","Good!","Great!","Yes, good!"],
+  "turns":[
+   {"question":{"en":"What is it?","ko":"이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","twoAnswers":["It is a wing.","It is a leg."],"imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"What do you like?","ko":"너는 뭘 좋아해?"},"hintKo":"나는 노래가 좋아.","hintEn":"I like songs.","answerExample":"I like songs.","twoAnswers":["I like kites.","I like songs."],"targets":["song"],"ask":"re_ask"},
+   {"question":{"en":"Great! What is it?","ko":"멋져! 이건 뭐야?"},"hintKo":"5야.","hintEn":"It is five.","answerExample":"It is five.","twoAnswers":["It is one.","It is five."],"imageKey":"five","targets":["five"],"ask":"re_ask"},
+   {"question":{"en":"A tree! How is it?","ko":"나무다! 어때?"},"hintKo":"나무는 키가 커.","hintEn":"The tree is tall.","answerExample":"The tree is tall.","twoAnswers":["The tree is tall.","The tree is little."],"imageKey":"tree","targets":["tall"],"ask":"re_ask"},
+   {"question":{"en":"Oh, what is it?","ko":"오, 이건 뭐야?"},"hintKo":"조개껍데기야.","hintEn":"It is a shell.","answerExample":"It is a shell.","twoAnswers":["It is a rock.","It is a shell."],"imageKey":"shell","targets":["shell"],"ask":"re_ask"},
+   {"question":{"en":"Wow, what is it?","ko":"와, 이건 뭐야?"},"hintKo":"6이야.","hintEn":"It is six.","answerExample":"It is six.","twoAnswers":["It is six.","It is two."],"imageKey":"six","targets":["six"],"ask":"re_ask"},
+   {"question":{"en":"Okay! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","twoAnswers":["It is a king.","It is a nurse."],"imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"A flower! How is it?","ko":"꽃이다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","twoAnswers":["It is tall.","It is little."],"imageKey":"flower","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"What is this?","ko":"이건 뭐야?"},"hintKo":"7이야.","hintEn":"It is seven.","answerExample":"It is seven.","twoAnswers":["It is seven.","It is three."],"imageKey":"seven","targets":["seven"],"ask":"re_ask"},
+   {"question":{"en":"And this?","ko":"그럼 이건?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","twoAnswers":["It is a bike.","It is a swing."],"imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"A pencil! How is it?","ko":"연필이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","twoAnswers":["It is thin.","It is big."],"imageKey":"pencil","targets":["thin"],"ask":"re_ask"},
+   {"question":{"en":"What is that?","ko":"저건 뭐야?"},"hintKo":"8이야.","hintEn":"It is eight.","answerExample":"It is eight.","twoAnswers":["It is four.","It is eight."],"imageKey":"eight","targets":["eight"],"ask":"re_ask"},
+   {"question":{"en":"How old are you?","ko":"너는 몇 살이야?"},"hintKo":"나는 열 살이야.","hintEn":"I am ten.","answerExample":"I am ten.","twoAnswers":["I am nine.","I am ten."],"targets":["ten"],"ask":"re_ask"},
+   {"question":{"en":"Good! What is it?","ko":"좋아! 이건 뭐야?"},"hintKo":"9야.","hintEn":"It is nine.","answerExample":"It is nine.","twoAnswers":["It is six.","It is nine."],"imageKey":"nine","targets":["nine"],"ask":"re_ask"}
+  ],
+  "moreTalk":[
+   {"question":{"en":"A rose! How is it?","ko":"장미다! 어때?"},"hintKo":"작아.","hintEn":"It is little.","answerExample":"It is little.","imageKey":"rose","targets":["little"],"ask":"re_ask"},
+   {"question":{"en":"Oh! What is that?","ko":"오! 저건 뭐야?"},"hintKo":"그네야.","hintEn":"It is a swing.","answerExample":"It is a swing.","imageKey":"swing","targets":["swing"],"ask":"re_ask"},
+   {"question":{"en":"Wow! What is this?","ko":"와! 이건 뭐야?"},"hintKo":"왕이야.","hintEn":"It is a king.","answerExample":"It is a king.","imageKey":"king","targets":["king"],"ask":"re_ask"},
+   {"question":{"en":"Oh, wow! What is it?","ko":"오, 와! 이건 뭐야?"},"hintKo":"날개야.","hintEn":"It is a wing.","answerExample":"It is a wing.","imageKey":"wing","targets":["wing"],"ask":"re_ask"},
+   {"question":{"en":"A brush! How is it?","ko":"붓이다! 어때?"},"hintKo":"얇아.","hintEn":"It is thin.","answerExample":"It is thin.","imageKey":"brush","targets":["thin"],"ask":"re_ask"}
+  ]
+ }
+}
+]}

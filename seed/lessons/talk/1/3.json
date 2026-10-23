@@ -1,0 +1,1691 @@
+{
+  "area": "talk",
+  "level": 1,
+  "unit": 3,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "사과와 뱀의 색",
+      "newWords": ["red", "blue", "yellow", "green", "black"],
+      "unitWords": ["red", "blue", "yellow", "green", "black"],
+      "card": {
+        "topic": "무슨 색일까 — 과일 · 동물 · 호수의 색",
+        "targetExpressions": ["It is red.", "It is a blue lake.", "It is yellow cheese.", "It is a green snake.", "It is black."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "red", "meaningKo": "빨간, 빨간색", "example": "It is a red apple.", "exampleKo": "빨간 사과야."},
+          {"word": "blue", "meaningKo": "파란, 파란색", "example": "The lake is blue.", "exampleKo": "호수는 파란색이야."},
+          {"word": "yellow", "meaningKo": "노란, 노란색", "example": "The cheese is yellow.", "exampleKo": "치즈는 노란색이야."},
+          {"word": "green", "meaningKo": "초록의, 초록색", "example": "The snake is green.", "exampleKo": "뱀은 초록색이야."},
+          {"word": "black", "meaningKo": "검은, 검은색", "example": "It is a black pen.", "exampleKo": "검은 펜이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows red, blue, yellow, green and black circles and asks what they are.",
+          "The teacher shows an apple, a lake, a snake, cheese and a bird and asks about them.",
+          "The teacher praises each answer and says the full sentence again."
+        ],
+        "todayTopicsKo": ["빨강 · 파랑 · 노랑", "초록과 검정", "사과 · 뱀 · 새의 색"],
+        "closingLines": [
+          {"en": "It is red.", "ko": "빨간색이야."},
+          {"en": "It is a blue lake.", "ko": "파란 호수야."},
+          {"en": "The cheese is yellow.", "ko": "치즈는 노란색이야."},
+          {"en": "It is a green snake.", "ko": "초록 뱀이야."},
+          {"en": "It is black.", "ko": "검은색이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "빨간색이야.", "hintEn": "It is red.", "answerExample": "It is red.", "twoAnswers": ["It is red.", "It is blue."], "imageKey": "red", "targets": ["red"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "파란색이야.", "hintEn": "It is blue.", "answerExample": "It is blue.", "twoAnswers": ["It is yellow.", "It is blue."], "imageKey": "blue", "targets": ["blue"], "ask": "first"},
+          {"question": {"en": "An apple! What is it?", "ko": "사과다! 이건 뭐야?"}, "hintKo": "빨간 사과야.", "hintEn": "It is a red apple.", "answerExample": "It is a red apple.", "twoAnswers": ["It is a green apple.", "It is a red apple."], "imageKey": "apple", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is red."], "imageKey": "yellow", "targets": ["yellow"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is blue.", "It is green."], "imageKey": "green", "targets": ["green"], "ask": "first"},
+          {"question": {"en": "A lake! What is it?", "ko": "호수다! 이건 뭐야?"}, "hintKo": "파란 호수야.", "hintEn": "It is a blue lake.", "answerExample": "It is a blue lake.", "twoAnswers": ["It is a blue lake.", "It is a red lake."], "imageKey": "lake", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is black.", "It is yellow."], "imageKey": "black", "targets": ["black"], "ask": "first"},
+          {"question": {"en": "A snake! And this?", "ko": "뱀이다! 이건?"}, "hintKo": "초록 뱀이야.", "hintEn": "It is a green snake.", "answerExample": "It is a green snake.", "twoAnswers": ["It is a red snake.", "It is a green snake."], "imageKey": "snake", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Cheese! What is it?", "ko": "치즈다! 이건 뭐야?"}, "hintKo": "노란 치즈야.", "hintEn": "It is yellow cheese.", "answerExample": "It is yellow cheese.", "twoAnswers": ["It is yellow cheese.", "It is red cheese."], "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "빨간 새야.", "hintEn": "It is a red bird.", "answerExample": "It is a red bird.", "twoAnswers": ["It is a red bird.", "It is a blue bird."], "imageKey": "bird", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is green.", "It is black."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "An insect! And this?", "ko": "곤충이다! 이건?"}, "hintKo": "초록 곤충이야.", "hintEn": "It is a green insect.", "answerExample": "It is a green insect.", "twoAnswers": ["It is a black insect.", "It is a green insect."], "imageKey": "insect", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is green."], "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "파란색이야.", "hintEn": "It is blue.", "answerExample": "It is blue.", "twoAnswers": ["It is red.", "It is blue."], "imageKey": "blue", "targets": ["blue"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "A rose! What is it?", "ko": "장미다! 이건 뭐야?"}, "hintKo": "빨간 장미야.", "hintEn": "It is a red rose.", "answerExample": "It is a red rose.", "imageKey": "rose", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "파란색이야.", "hintEn": "It is blue.", "answerExample": "It is blue.", "imageKey": "blue", "targets": ["blue"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "흰 꽃과 주황 여우",
+      "newWords": ["white", "pink", "orange", "color", "big"],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big"],
+      "card": {
+        "topic": "무슨 색일까 — 꽃 · 여우의 색과 큰 동물",
+        "targetExpressions": ["It is white.", "It is pink.", "The fox is orange.", "I like the color red.", "It is big."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am good."]}
+        ]},
+        "todayWords": [
+          {"word": "white", "meaningKo": "하얀, 흰색", "example": "The flower is white.", "exampleKo": "꽃은 흰색이야."},
+          {"word": "pink", "meaningKo": "분홍의, 분홍색", "example": "I like pink.", "exampleKo": "나는 분홍색이 좋아."},
+          {"word": "orange", "meaningKo": "오렌지, 주황색", "example": "The fox is orange.", "exampleKo": "여우는 주황색이야."},
+          {"word": "color", "meaningKo": "색, 색깔", "example": "I like the color red.", "exampleKo": "나는 빨간색이 좋아."},
+          {"word": "big", "meaningKo": "큰", "example": "The bear is big.", "exampleKo": "곰은 커."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows white, pink and orange circles and asks what they are.",
+          "The teacher names two colors and asks which color the child likes.",
+          "The teacher shows a flower, a fox, an elephant and a bear and asks about their color or size."
+        ],
+        "todayTopicsKo": ["흰색 · 분홍 · 주황", "좋아하는 색", "큰 동물"],
+        "closingLines": [
+          {"en": "The flower is white.", "ko": "꽃은 흰색이야."},
+          {"en": "It is pink.", "ko": "분홍색이야."},
+          {"en": "The fox is orange.", "ko": "여우는 주황색이야."},
+          {"en": "I like the color red.", "ko": "나는 빨간색이 좋아."},
+          {"en": "It is big.", "ko": "그건 커."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Great!", "Yes, good!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "twoAnswers": ["It is white.", "It is black."], "imageKey": "white", "targets": ["white"], "ask": "first"},
+          {"question": {"en": "Red? Blue?", "ko": "빨강? 파랑?"}, "hintKo": "나는 빨간색이 좋아.", "hintEn": "I like the color red.", "answerExample": "I like the color red.", "twoAnswers": ["I like the color red.", "I like the color blue."], "targets": ["color"], "ask": "first"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is red.", "It is green."], "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is red.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "first"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is orange.", "It is yellow."], "imageKey": "orange", "targets": ["orange"], "ask": "first"},
+          {"question": {"en": "What color is the flower?", "ko": "꽃은 무슨 색이야?"}, "hintKo": "꽃은 흰색이야.", "hintEn": "The flower is white.", "answerExample": "The flower is white.", "twoAnswers": ["The flower is white.", "The flower is pink."], "imageKey": "flower", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "How is the elephant?", "ko": "코끼리는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is little.", "It is big."], "imageKey": "elephant", "targets": ["big"], "ask": "first"},
+          {"question": {"en": "What color is the fox?", "ko": "여우는 무슨 색이야?"}, "hintKo": "여우는 주황색이야.", "hintEn": "The fox is orange.", "answerExample": "The fox is orange.", "twoAnswers": ["The fox is black.", "The fox is orange."], "imageKey": "fox", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Green?", "ko": "분홍? 초록?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "twoAnswers": ["I like the color pink.", "I like the color green."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "노란 치즈야.", "hintEn": "It is yellow cheese.", "answerExample": "It is yellow cheese.", "twoAnswers": ["It is white cheese.", "It is yellow cheese."], "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "How is the bear?", "ko": "곰은 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is little."], "imageKey": "bear", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is pink.", "It is white."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "What color is the apple?", "ko": "사과는 무슨 색이야?"}, "hintKo": "사과는 빨간색이야.", "hintEn": "The apple is red.", "answerExample": "The apple is red.", "twoAnswers": ["The apple is green.", "The apple is red."], "imageKey": "apple", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "What color is the lake?", "ko": "호수는 무슨 색이야?"}, "hintKo": "호수는 파란색이야.", "hintEn": "The lake is blue.", "answerExample": "The lake is blue.", "twoAnswers": ["The lake is blue.", "The lake is pink."], "imageKey": "lake", "targets": ["blue"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the tree?", "ko": "나무는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "tree", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "주황 호랑이야.", "hintEn": "It is an orange tiger.", "answerExample": "It is an orange tiger.", "imageKey": "tiger", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Yellow? Orange?", "ko": "노랑? 주황?"}, "hintKo": "나는 노란색이 좋아.", "hintEn": "I like the color yellow.", "answerExample": "I like the color yellow.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "작은 개미 긴 뱀",
+      "newWords": ["small", "long", "short", "bus", "car"],
+      "unitWords": ["red", "blue", "white", "orange", "color", "big", "small", "long", "short", "bus", "car"],
+      "card": {
+        "topic": "무슨 색일까 — 동물의 크기와 버스 · 자동차",
+        "targetExpressions": ["It is small.", "It is long.", "It is short.", "It is a bus.", "It is a car."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am great."]}
+        ]},
+        "todayWords": [
+          {"word": "small", "meaningKo": "작은", "example": "An ant is small.", "exampleKo": "개미는 작아."},
+          {"word": "long", "meaningKo": "긴", "example": "The snake is long.", "exampleKo": "뱀은 길어."},
+          {"word": "short", "meaningKo": "짧은, 키가 작은", "example": "This pencil is short.", "exampleKo": "이 연필은 짧아."},
+          {"word": "bus", "meaningKo": "버스", "example": "It is a big bus.", "exampleKo": "큰 버스야."},
+          {"word": "car", "meaningKo": "자동차", "example": "I like the car.", "exampleKo": "나는 그 자동차가 좋아."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a bus and a car and asks what they are.",
+          "The teacher shows an ant, a snake, a banana and a neck and asks how they are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["버스와 자동차", "크다 · 작다", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "An ant is small.", "ko": "개미는 작아."},
+          {"en": "The snake is long.", "ko": "뱀은 길어."},
+          {"en": "It is short.", "ko": "그건 짧아."},
+          {"en": "It is a big bus.", "ko": "큰 버스야."},
+          {"en": "It is a car.", "ko": "자동차야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a bus.", "It is a horse."], "imageKey": "bus", "targets": ["bus"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a pig.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "first"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is little."], "imageKey": "bus", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "How is the ant?", "ko": "개미는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "ant", "targets": ["small"], "ask": "first"},
+          {"question": {"en": "How is the snake?", "ko": "뱀은 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "snake", "targets": ["long"], "ask": "first"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a duck."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "first"},
+          {"question": {"en": "How is the banana?", "ko": "바나나는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "banana", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "How is the candy?", "ko": "사탕은 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "candy", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a bear.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 버스야.", "hintEn": "It is a big bus.", "answerExample": "It is a big bus.", "twoAnswers": ["It is a big bus.", "It is a big car."], "imageKey": "bus", "targets": ["big", "bus"], "ask": "re_ask"},
+          {"question": {"en": "Blue? Orange?", "ko": "파랑? 주황?"}, "hintKo": "나는 파란색이 좋아.", "hintEn": "I like the color blue.", "answerExample": "I like the color blue.", "twoAnswers": ["I like the color blue.", "I like the color orange."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "빨간 장미야.", "hintEn": "It is a red rose.", "answerExample": "It is a red rose.", "twoAnswers": ["It is a white rose.", "It is a red rose."], "imageKey": "rose", "targets": ["red"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the egg?", "ko": "달걀은 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "imageKey": "egg", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the snake?", "ko": "오, 뱀은 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "snake", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "배와 비행기 구경",
+      "newWords": ["ship", "truck", "plane", "bed", "bath"],
+      "unitWords": ["white", "black", "green", "pink", "color", "big", "small", "long", "short", "bus", "ship", "truck", "plane", "bed", "bath"],
+      "card": {
+        "topic": "무슨 색일까 — 배 · 비행기 · 트럭과 침대 · 욕조",
+        "targetExpressions": ["It is a ship.", "It is a truck.", "The plane is white.", "It is a bed.", "It is a bath."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "ship", "meaningKo": "배", "example": "The ship is big.", "exampleKo": "배는 커."},
+          {"word": "truck", "meaningKo": "트럭", "example": "It is a big truck.", "exampleKo": "큰 트럭이야."},
+          {"word": "plane", "meaningKo": "비행기", "example": "The plane is white.", "exampleKo": "비행기는 흰색이야."},
+          {"word": "bed", "meaningKo": "침대", "example": "I like my bed.", "exampleKo": "나는 내 침대가 좋아."},
+          {"word": "bath", "meaningKo": "목욕, 욕조", "example": "The bath is hot.", "exampleKo": "목욕물이 뜨거워."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a ship, a plane and a truck and asks what they are.",
+          "The teacher shows a bed and a bath and asks what they are.",
+          "The teacher asks about the color and size of the pictures.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["배와 비행기", "큰 트럭", "침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a ship.", "ko": "배야."},
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "The plane is white.", "ko": "비행기는 흰색이야."},
+          {"en": "It is a bed.", "ko": "침대야."},
+          {"en": "It is a bath.", "ko": "욕조야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a ship.", "It is a cow."], "imageKey": "ship", "targets": ["ship"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a bird.", "It is a plane."], "imageKey": "plane", "targets": ["plane"], "ask": "first"},
+          {"question": {"en": "What color is the plane?", "ko": "비행기는 무슨 색이야?"}, "hintKo": "비행기는 흰색이야.", "hintEn": "The plane is white.", "answerExample": "The plane is white.", "twoAnswers": ["The plane is white.", "The plane is black."], "imageKey": "plane", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a bus.", "It is a truck."], "imageKey": "truck", "targets": ["truck"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a desk."], "imageKey": "bed", "targets": ["bed"], "ask": "first"},
+          {"question": {"en": "How is the ship?", "ko": "배는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "ship", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a lake.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big truck.", "It is a big bus."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "Green? Pink?", "ko": "초록? 분홍?"}, "hintKo": "나는 초록색이 좋아.", "hintEn": "I like the color green.", "answerExample": "I like the color green.", "twoAnswers": ["I like the color green.", "I like the color pink."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a chair.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a bath.", "It is a tree."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big tree.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "How is the snake?", "ko": "뱀은 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "snake", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a white plane.", "It is a pink plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "How is the banana?", "ko": "바나나는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "banana", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "숲속 텐트와 마을",
+      "newWords": ["dish", "tent", "home", "shop", "bank"],
+      "unitWords": ["red", "yellow", "black", "white", "pink", "color", "big", "small", "ship", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 숲속 텐트와 마을 건물",
+        "targetExpressions": ["It is a dish.", "It is a tent.", "It is my home.", "It is a shop.", "It is a bank."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am okay.", "I am good."]}
+        ]},
+        "todayWords": [
+          {"word": "dish", "meaningKo": "접시, 요리", "example": "The dish is white.", "exampleKo": "접시는 흰색이야."},
+          {"word": "tent", "meaningKo": "텐트", "example": "It is a big tent.", "exampleKo": "큰 텐트야."},
+          {"word": "home", "meaningKo": "집", "example": "It is my home.", "exampleKo": "우리 집이야."},
+          {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "It is a small shop.", "exampleKo": "작은 가게야."},
+          {"word": "bank", "meaningKo": "은행", "example": "It is a bank.", "exampleKo": "은행이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a tent and a dish and asks what they are.",
+          "The teacher shows a house, a shop and a bank and asks what they are.",
+          "The teacher asks about the color and size of the pictures.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["텐트와 접시", "집 · 가게 · 은행", "크기와 색"],
+        "closingLines": [
+          {"en": "The dish is white.", "ko": "접시는 흰색이야."},
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "It is my home.", "ko": "우리 집이야."},
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is a bank.", "ko": "은행이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "twoAnswers": ["It is a tent.", "It is a tree."], "imageKey": "tent", "targets": ["tent"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a cup.", "It is a dish."], "imageKey": "dish", "targets": ["dish"], "ask": "first"},
+          {"question": {"en": "What color is the dish?", "ko": "접시는 무슨 색이야?"}, "hintKo": "접시는 흰색이야.", "hintEn": "The dish is white.", "answerExample": "The dish is white.", "twoAnswers": ["The dish is white.", "The dish is red."], "imageKey": "dish", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my shop.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a shop.", "It is a bank."], "imageKey": "shop", "targets": ["shop"], "ask": "first"},
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "tent", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a tent.", "It is a bank."], "imageKey": "bank", "targets": ["bank"], "ask": "first"},
+          {"question": {"en": "How is the shop?", "ko": "가게는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "shop", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "White? Black?", "ko": "하양? 검정?"}, "hintKo": "나는 흰색이 좋아.", "hintEn": "I like the color white.", "answerExample": "I like the color white.", "twoAnswers": ["I like the color white.", "I like the color black."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my home.", "It is my tent."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a ship."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big ship.", "It is a big tent."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small bank."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a black dish.", "It is a white dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Yellow?", "ko": "분홍? 노랑?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "알록달록 동물원",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small"],
+      "card": {
+        "topic": "무슨 색일까 — 동물원 동물의 색과 크기",
+        "targetExpressions": ["The tiger is orange.", "It is a green snake.", "I like the color yellow.", "It is big.", "It is pink."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows animals like a tiger, a snake, a fox and a cow and asks about their color or size.",
+          "The teacher shows color circles and asks what they are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["동물의 색", "큰 동물", "좋아하는 색"],
+        "closingLines": [
+          {"en": "The tiger is orange.", "ko": "호랑이는 주황색이야."},
+          {"en": "It is a green snake.", "ko": "초록 뱀이야."},
+          {"en": "I like the color yellow.", "ko": "나는 노란색이 좋아."},
+          {"en": "It is big.", "ko": "그건 커."},
+          {"en": "The flower is white.", "ko": "꽃은 흰색이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "빨간색이야.", "hintEn": "It is red.", "answerExample": "It is red.", "twoAnswers": ["It is red.", "It is pink."], "imageKey": "red", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "What color is the tiger?", "ko": "호랑이는 무슨 색이야?"}, "hintKo": "호랑이는 주황색이야.", "hintEn": "The tiger is orange.", "answerExample": "The tiger is orange.", "twoAnswers": ["The tiger is blue.", "The tiger is orange."], "imageKey": "tiger", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Yellow? Green?", "ko": "노랑? 초록?"}, "hintKo": "나는 노란색이 좋아.", "hintEn": "I like the color yellow.", "answerExample": "I like the color yellow.", "twoAnswers": ["I like the color yellow.", "I like the color green."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "초록 뱀이야.", "hintEn": "It is a green snake.", "answerExample": "It is a green snake.", "twoAnswers": ["It is a green snake.", "It is a pink snake."], "imageKey": "snake", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "How is the cow?", "ko": "소는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "cow", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What color is the flower?", "ko": "꽃은 무슨 색이야?"}, "hintKo": "꽃은 흰색이야.", "hintEn": "The flower is white.", "answerExample": "The flower is white.", "twoAnswers": ["The flower is white.", "The flower is red."], "imageKey": "flower", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "파란색이야.", "hintEn": "It is blue.", "answerExample": "It is blue.", "twoAnswers": ["It is green.", "It is blue."], "imageKey": "blue", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is black.", "It is orange."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is white.", "It is yellow."], "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is pink.", "It is blue."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "What color is the fox?", "ko": "여우는 무슨 색이야?"}, "hintKo": "여우는 주황색이야.", "hintEn": "The fox is orange.", "answerExample": "The fox is orange.", "twoAnswers": ["The fox is orange.", "The fox is white."], "imageKey": "fox", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "How is the elephant?", "ko": "코끼리는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "elephant", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "An apple! What is it?", "ko": "사과다! 이건 뭐야?"}, "hintKo": "빨간 사과야.", "hintEn": "It is a red apple.", "answerExample": "It is a red apple.", "twoAnswers": ["It is a white apple.", "It is a red apple."], "imageKey": "apple", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "A lake! What is it?", "ko": "호수다! 이건 뭐야?"}, "hintKo": "파란 호수야.", "hintEn": "It is a blue lake.", "answerExample": "It is a blue lake.", "twoAnswers": ["It is a pink lake.", "It is a blue lake."], "imageKey": "lake", "targets": ["blue"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Cheese! What is it?", "ko": "치즈다! 이건 뭐야?"}, "hintKo": "노란 치즈야.", "hintEn": "It is yellow cheese.", "answerExample": "It is yellow cheese.", "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "A bird! What is it?", "ko": "새다! 이건 뭐야?"}, "hintKo": "빨간 새야.", "hintEn": "It is a red bird.", "answerExample": "It is a red bird.", "imageKey": "bird", "targets": ["red"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "버스 타고 소풍",
+      "newWords": [],
+      "unitWords": ["blue", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car"],
+      "card": {
+        "topic": "무슨 색일까 — 버스 타고 가는 소풍길",
+        "targetExpressions": ["It is a big bus.", "It is small.", "It is long.", "It is short.", "It is a car."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a bus and a car on the way to a picnic and asks what they are.",
+          "The teacher shows a tree, an ant, a banana and a snake and asks how they are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["버스와 자동차", "크다 · 작다", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "It is a big bus.", "ko": "큰 버스야."},
+          {"en": "The ant is small.", "ko": "개미는 작아."},
+          {"en": "The snake is long.", "ko": "뱀은 길어."},
+          {"en": "I like the color orange.", "ko": "나는 주황색이 좋아."},
+          {"en": "It is a car.", "ko": "자동차야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Great!", "Yes, good!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a bus.", "It is a cow."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the tree?", "ko": "나무는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "tree", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "How is the ant?", "ko": "개미는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "ant", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "How is the banana?", "ko": "바나나는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "banana", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Orange? Pink?", "ko": "주황? 분홍?"}, "hintKo": "나는 주황색이 좋아.", "hintEn": "I like the color orange.", "answerExample": "I like the color orange.", "twoAnswers": ["I like the color orange.", "I like the color pink."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a fox."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What color is the flower?", "ko": "꽃은 무슨 색이야?"}, "hintKo": "꽃은 흰색이야.", "hintEn": "The flower is white.", "answerExample": "The flower is white.", "twoAnswers": ["The flower is pink.", "The flower is white."], "imageKey": "flower", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "What color is the tiger?", "ko": "호랑이는 무슨 색이야?"}, "hintKo": "호랑이는 주황색이야.", "hintEn": "The tiger is orange.", "answerExample": "The tiger is orange.", "twoAnswers": ["The tiger is orange.", "The tiger is pink."], "imageKey": "tiger", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 버스야.", "hintEn": "It is a big bus.", "answerExample": "It is a big bus.", "twoAnswers": ["It is a big bus.", "It is a big bear."], "imageKey": "bus", "targets": ["big", "bus"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the snake?", "ko": "오, 뱀은 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "snake", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is orange.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "How is the egg?", "ko": "달걀은 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "egg", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a horse.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "White? Blue?", "ko": "하양? 파랑?"}, "hintKo": "나는 흰색이 좋아.", "hintEn": "I like the color white.", "answerExample": "I like the color white.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the rock?", "ko": "바위는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "rock", "targets": ["big"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "여행 가는 날",
+      "newWords": [],
+      "unitWords": ["black", "white", "color", "big", "small", "long", "short", "bus", "car", "ship", "truck", "plane", "bed", "bath"],
+      "card": {
+        "topic": "무슨 색일까 — 여행 가는 날 본 탈것과 방",
+        "targetExpressions": ["It is a ship.", "It is a white plane.", "It is a big truck.", "The bus is long.", "It is a bath."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am fine.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a ship, a plane, a truck, a bus and a car on a trip day and asks about them.",
+          "The teacher shows a bed and a bath and asks what they are.",
+          "The teacher asks how big, small, long or short things are."
+        ],
+        "todayTopicsKo": ["배 · 비행기 · 트럭", "버스와 자동차", "침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a ship.", "ko": "배야."},
+          {"en": "It is a white plane.", "ko": "흰 비행기야."},
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "It is a bed.", "ko": "침대야."},
+          {"en": "It is a bath.", "ko": "욕조야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a tree.", "It is a ship."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a plane.", "It is a bird."], "imageKey": "plane", "targets": ["plane"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a truck.", "It is a bike."], "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a horse.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a door."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a cup.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "How is the ring?", "ko": "반지는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "ring", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a white plane.", "It is a black plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big bus.", "It is a big truck."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a bus.", "It is a duck."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big cow.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a bath.", "It is a desk."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "How is the banana?", "ko": "바나나는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "banana", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "How is the egg?", "ko": "달걀은 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "imageKey": "egg", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "바닷가 캠핑",
+      "newWords": [],
+      "unitWords": ["white", "pink", "color", "big", "small", "ship", "truck", "plane", "bed", "bath", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 바닷가 캠핑에서 본 것",
+        "targetExpressions": ["It is a tent.", "It is a white dish.", "It is a big ship.", "It is a small shop.", "It is a bank."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am good.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a tent, a ship, a plane and a truck at a beach camp and asks what they are.",
+          "The teacher shows a dish, a shop, a bank and a house and asks what they are.",
+          "The teacher shows a bed and a bath and asks what they are.",
+          "The teacher asks about the color and size of the pictures."
+        ],
+        "todayTopicsKo": ["텐트와 배", "접시 · 가게 · 은행", "침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "It is a white dish.", "ko": "흰 접시야."},
+          {"en": "It is a big ship.", "ko": "큰 배야."},
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is my home.", "ko": "우리 집이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "twoAnswers": ["It is a tent.", "It is a rock."], "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a horse.", "It is a ship."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a dish.", "It is a cup."], "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a bird.", "It is a plane."], "imageKey": "plane", "targets": ["plane"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a truck.", "It is a cow."], "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a tent.", "It is a shop."], "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a tree."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my tent.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "이건?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a chair."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a lake.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a white dish.", "It is a pink dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "tent", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small bank."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big tree.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "아침부터 밤까지",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 아침부터 밤까지 본 것",
+        "targetExpressions": ["The rose is red.", "It is a white dish.", "It is my home.", "It is a bank.", "The bus is long."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am okay.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows pictures from morning to night and asks about their colors.",
+          "The teacher shows a tent, a house, a shop and a bank and asks what they are.",
+          "The teacher asks how long or short things are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["빨강 · 파랑 · 노랑 · 초록", "집 · 가게 · 은행", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "The rose is red.", "ko": "장미는 빨간색이야."},
+          {"en": "The lake is blue.", "ko": "호수는 파란색이야."},
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "The bus is long.", "ko": "버스는 길어."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is black.", "It is pink."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "What color is the rose?", "ko": "장미는 무슨 색이야?"}, "hintKo": "장미는 빨간색이야.", "hintEn": "The rose is red.", "answerExample": "The rose is red.", "twoAnswers": ["The rose is white.", "The rose is red."], "imageKey": "rose", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a white dish.", "It is a green dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big rock.", "It is a big tent."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my home.", "It is my shop."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "What color is the lake?", "ko": "호수는 무슨 색이야?"}, "hintKo": "호수는 파란색이야.", "hintEn": "The lake is blue.", "answerExample": "The lake is blue.", "twoAnswers": ["The lake is red.", "The lake is blue."], "imageKey": "lake", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small tent."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "Cheese! What is it?", "ko": "치즈다! 이건 뭐야?"}, "hintKo": "노란 치즈야.", "hintEn": "It is yellow cheese.", "answerExample": "It is yellow cheese.", "twoAnswers": ["It is white cheese.", "It is yellow cheese."], "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a door."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Orange?", "ko": "분홍? 주황?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "twoAnswers": ["I like the color pink.", "I like the color orange."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "초록 뱀이야.", "hintEn": "It is a green snake.", "answerExample": "It is a green snake.", "twoAnswers": ["It is a black snake.", "It is a green snake."], "imageKey": "snake", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "버스는 길어.", "hintEn": "The bus is long.", "answerExample": "The bus is long.", "twoAnswers": ["The bus is long.", "The bus is short."], "imageKey": "bus", "targets": ["long", "bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a frog."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "A bird! What is it?", "ko": "새다! 이건 뭐야?"}, "hintKo": "빨간 새야.", "hintEn": "It is a red bird.", "answerExample": "It is a red bird.", "imageKey": "bird", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "숲과 호수의 색",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "car", "ship", "plane", "dish"],
+      "card": {
+        "topic": "무슨 색일까 — 숲과 호수에서 색 다시 말하기",
+        "targetExpressions": ["It is red.", "It is pink.", "The fox is orange.", "I like the color green.", "It is a white plane."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows color circles and asks what they are.",
+          "The teacher shows a fox, cheese, a lake, an insect and an apple and asks about their colors.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["색 이름 다시 말하기", "동물과 과일의 색", "좋아하는 색"],
+        "closingLines": [
+          {"en": "It is red.", "ko": "빨간색이야."},
+          {"en": "It is pink.", "ko": "분홍색이야."},
+          {"en": "The fox is orange.", "ko": "여우는 주황색이야."},
+          {"en": "I like the color green.", "ko": "나는 초록색이 좋아."},
+          {"en": "It is a big ship.", "ko": "큰 배야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "빨간색이야.", "hintEn": "It is red.", "answerExample": "It is red.", "twoAnswers": ["It is red.", "It is green."], "imageKey": "red", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is white.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a white plane.", "It is a red plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "What color is the fox?", "ko": "여우는 무슨 색이야?"}, "hintKo": "여우는 주황색이야.", "hintEn": "The fox is orange.", "answerExample": "The fox is orange.", "twoAnswers": ["The fox is pink.", "The fox is orange."], "imageKey": "fox", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Green? Black?", "ko": "초록? 검정?"}, "hintKo": "나는 초록색이 좋아.", "hintEn": "I like the color green.", "answerExample": "I like the color green.", "twoAnswers": ["I like the color green.", "I like the color black."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "노란 치즈야.", "hintEn": "It is yellow cheese.", "answerExample": "It is yellow cheese.", "twoAnswers": ["It is yellow cheese.", "It is pink cheese."], "imageKey": "cheese", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big cow.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "A lake! What is it?", "ko": "호수다! 이건 뭐야?"}, "hintKo": "파란 호수야.", "hintEn": "It is a blue lake.", "answerExample": "It is a blue lake.", "twoAnswers": ["It is a blue lake.", "It is a pink lake."], "imageKey": "lake", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is orange.", "It is black."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a white dish.", "It is a blue dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "An insect! What is it?", "ko": "곤충이다! 이건 뭐야?"}, "hintKo": "초록 곤충이야.", "hintEn": "It is a green insect.", "answerExample": "It is a green insect.", "twoAnswers": ["It is a pink insect.", "It is a green insect."], "imageKey": "insect", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a frog."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "What color is the apple?", "ko": "사과는 무슨 색이야?"}, "hintKo": "사과는 빨간색이야.", "hintEn": "The apple is red.", "answerExample": "The apple is red.", "twoAnswers": ["The apple is blue.", "The apple is red."], "imageKey": "apple", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Red? Yellow?", "ko": "빨강? 노랑?"}, "hintKo": "나는 빨간색이 좋아.", "hintEn": "I like the color red.", "answerExample": "I like the color red.", "twoAnswers": ["I like the color red.", "I like the color yellow."], "targets": ["color"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "주황 호랑이야.", "hintEn": "It is an orange tiger.", "answerExample": "It is an orange tiger.", "imageKey": "tiger", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "A snake! What is it?", "ko": "뱀이다! 이건 뭐야?"}, "hintKo": "초록 뱀이야.", "hintEn": "It is a green snake.", "answerExample": "It is a green snake.", "imageKey": "snake", "targets": ["green"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "크고 작은 탈것",
+      "newWords": [],
+      "unitWords": ["green", "white", "color", "big", "small", "long", "short", "bus", "car", "ship", "truck", "plane", "bed", "bath", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 탈것과 크기 다시 말하기",
+        "targetExpressions": ["The bus is long.", "It is small.", "It is short.", "It is a big truck.", "It is a bath."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a bus, a car, a ship, a truck and a plane and asks about them.",
+          "The teacher asks how big, small, long or short things are.",
+          "The teacher shows a bed, a bath, a shop, a bank and a house and asks what they are."
+        ],
+        "todayTopicsKo": ["탈것 이름", "크다 · 작다 · 길다 · 짧다", "침대와 욕조"],
+        "closingLines": [
+          {"en": "The bus is long.", "ko": "버스는 길어."},
+          {"en": "It is a car.", "ko": "자동차야."},
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "It is a white plane.", "ko": "흰 비행기야."},
+          {"en": "It is a bed.", "ko": "침대야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Great!", "Yes, good!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a bus.", "It is a horse."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a pig.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the ant?", "ko": "개미는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "ant", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a ship.", "It is a tree."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a green plane.", "It is a white plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big truck.", "It is a big bus."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a desk.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a bath.", "It is a lake."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small bank.", "It is a small shop."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "How is the banana?", "ko": "바나나는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "banana", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a tent.", "It is a bank."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my home.", "It is my tent."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "tent", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "동네 가게와 은행",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "truck", "bed", "bath", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 동네 가게 · 은행 · 집 다시 말하기",
+        "targetExpressions": ["It is a shop.", "It is a bank.", "It is my home.", "It is a dish.", "I like the color red."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am great.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a shop, a bank, a house, a tent and a dish in the town and asks what they are.",
+          "The teacher names two colors and asks which color the child likes.",
+          "The teacher asks how big, small, long or short things are.",
+          "The teacher shows a truck, a bed and a bath and asks about them."
+        ],
+        "todayTopicsKo": ["가게 · 은행 · 집", "좋아하는 색", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is a bank.", "ko": "은행이야."},
+          {"en": "It is my home.", "ko": "우리 집이야."},
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "I like the color red.", "ko": "나는 빨간색이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a shop.", "It is a tent."], "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "Red? Blue?", "ko": "빨강? 파랑?"}, "hintKo": "나는 빨간색이 좋아.", "hintEn": "I like the color red.", "answerExample": "I like the color red.", "twoAnswers": ["I like the color red.", "I like the color blue."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a tree.", "It is a bank."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my shop.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big tent.", "It is a big rock."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a cup.", "It is a dish."], "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Green? Yellow?", "ko": "초록? 노랑?"}, "hintKo": "나는 초록색이 좋아.", "hintEn": "I like the color green.", "answerExample": "I like the color green.", "twoAnswers": ["I like the color green.", "I like the color yellow."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small tent."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "버스는 길어.", "hintEn": "The bus is long.", "answerExample": "The bus is long.", "twoAnswers": ["The bus is short.", "The bus is long."], "imageKey": "bus", "targets": ["long", "bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "White? Black?", "ko": "하양? 검정?"}, "hintKo": "나는 흰색이 좋아.", "hintEn": "I like the color white.", "answerExample": "I like the color white.", "twoAnswers": ["I like the color white.", "I like the color black."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big bus.", "It is a big truck."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a chair."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a lake.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Orange?", "ko": "분홍? 주황?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "장난감 색 놀이",
+      "newWords": ["red", "blue", "yellow", "green", "black"],
+      "unitWords": ["red", "blue", "yellow", "green", "black"],
+      "card": {
+        "topic": "무슨 색일까 — 장난감과 옷의 색",
+        "targetExpressions": ["It is red.", "It is a blue kite.", "It is yellow.", "It is green.", "It is a black pen."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "red", "meaningKo": "빨간, 빨간색", "example": "The top is red.", "exampleKo": "팽이는 빨간색이야."},
+          {"word": "blue", "meaningKo": "파란, 파란색", "example": "My cap is blue.", "exampleKo": "내 모자는 파란색이야."},
+          {"word": "yellow", "meaningKo": "노란, 노란색", "example": "I like yellow.", "exampleKo": "나는 노란색이 좋아."},
+          {"word": "green", "meaningKo": "초록의, 초록색", "example": "Green is nice.", "exampleKo": "초록색은 멋져."},
+          {"word": "black", "meaningKo": "검은, 검은색", "example": "The pen is black.", "exampleKo": "펜은 검은색이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows red, blue, yellow, green and black circles and asks what they are.",
+          "The teacher shows toys and clothes like a kite, a top, a bike and a cap and asks about them.",
+          "The teacher praises each answer and says the full sentence again."
+        ],
+        "todayTopicsKo": ["파랑 · 빨강 · 초록", "검정과 노랑", "장난감의 색"],
+        "closingLines": [
+          {"en": "The top is red.", "ko": "팽이는 빨간색이야."},
+          {"en": "It is a blue kite.", "ko": "파란 연이야."},
+          {"en": "It is yellow.", "ko": "노란색이야."},
+          {"en": "It is green.", "ko": "초록색이야."},
+          {"en": "It is a black pen.", "ko": "검은 펜이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "파란색이야.", "hintEn": "It is blue.", "answerExample": "It is blue.", "twoAnswers": ["It is green.", "It is blue."], "imageKey": "blue", "targets": ["blue"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "빨간색이야.", "hintEn": "It is red.", "answerExample": "It is red.", "twoAnswers": ["It is red.", "It is yellow."], "imageKey": "red", "targets": ["red"], "ask": "first"},
+          {"question": {"en": "A kite! What is it?", "ko": "연이다! 이건 뭐야?"}, "hintKo": "파란 연이야.", "hintEn": "It is a blue kite.", "answerExample": "It is a blue kite.", "twoAnswers": ["It is a red kite.", "It is a blue kite."], "imageKey": "kite", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is green.", "It is red."], "imageKey": "green", "targets": ["green"], "ask": "first"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is yellow.", "It is black."], "imageKey": "black", "targets": ["black"], "ask": "first"},
+          {"question": {"en": "A top! And this?", "ko": "팽이다! 이건?"}, "hintKo": "빨간 팽이야.", "hintEn": "It is a red top.", "answerExample": "It is a red top.", "twoAnswers": ["It is a red top.", "It is a green top."], "imageKey": "top", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is blue."], "imageKey": "yellow", "targets": ["yellow"], "ask": "first"},
+          {"question": {"en": "A pen! What is it?", "ko": "펜이다! 이건 뭐야?"}, "hintKo": "검은 펜이야.", "hintEn": "It is a black pen.", "answerExample": "It is a black pen.", "twoAnswers": ["It is a red pen.", "It is a black pen."], "imageKey": "pen", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "파란 모자야.", "hintEn": "It is a blue cap.", "answerExample": "It is a blue cap.", "twoAnswers": ["It is a blue cap.", "It is a yellow cap."], "imageKey": "cap", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is black.", "It is green."], "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "A bike! What is it?", "ko": "자전거다! 이건 뭐야?"}, "hintKo": "빨간 자전거야.", "hintEn": "It is a red bike.", "answerExample": "It is a red bike.", "twoAnswers": ["It is a red bike.", "It is a blue bike."], "imageKey": "bike", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is red.", "It is yellow."], "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is black.", "It is green."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "A shirt! And this?", "ko": "셔츠다! 이건?"}, "hintKo": "파란 셔츠야.", "hintEn": "It is a blue shirt.", "answerExample": "It is a blue shirt.", "twoAnswers": ["It is a green shirt.", "It is a blue shirt."], "imageKey": "shirt", "targets": ["blue"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "A shoe! What is it?", "ko": "신발이다! 이건 뭐야?"}, "hintKo": "빨간 신발이야.", "hintEn": "It is a red shoe.", "answerExample": "It is a red shoe.", "imageKey": "shoe", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "파란 연이야.", "hintEn": "It is a blue kite.", "answerExample": "It is a blue kite.", "imageKey": "kite", "targets": ["blue"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "공놀이와 색깔",
+      "newWords": ["white", "pink", "orange", "color", "big"],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big"],
+      "card": {
+        "topic": "무슨 색일까 — 공놀이와 좋아하는 색",
+        "targetExpressions": ["It is white.", "It is pink.", "It is orange.", "I like the color yellow.", "It is big."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am fine.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "white", "meaningKo": "하얀, 흰색", "example": "I like white.", "exampleKo": "나는 흰색이 좋아."},
+          {"word": "pink", "meaningKo": "분홍의, 분홍색", "example": "Pink is cute.", "exampleKo": "분홍색은 귀여워."},
+          {"word": "orange", "meaningKo": "오렌지, 주황색", "example": "The tiger is orange.", "exampleKo": "호랑이는 주황색이야."},
+          {"word": "color", "meaningKo": "색, 색깔", "example": "I like the color blue.", "exampleKo": "나는 파란색이 좋아."},
+          {"word": "big", "meaningKo": "큰", "example": "The ball is big.", "exampleKo": "공이 커."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows white, pink and orange circles and asks what they are.",
+          "The teacher names two colors and asks which color the child likes.",
+          "The teacher shows a ball, a box, a kite and a bike and asks about their color or size."
+        ],
+        "todayTopicsKo": ["분홍 · 하양 · 주황", "좋아하는 색", "큰 공"],
+        "closingLines": [
+          {"en": "It is white.", "ko": "흰색이야."},
+          {"en": "It is pink.", "ko": "분홍색이야."},
+          {"en": "It is orange.", "ko": "주황색이야."},
+          {"en": "I like the color yellow.", "ko": "나는 노란색이 좋아."},
+          {"en": "The ball is big.", "ko": "공이 커."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Great!", "Yes, good!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is pink.", "It is red."], "imageKey": "pink", "targets": ["pink"], "ask": "first"},
+          {"question": {"en": "Yellow? Green?", "ko": "노랑? 초록?"}, "hintKo": "나는 노란색이 좋아.", "hintEn": "I like the color yellow.", "answerExample": "I like the color yellow.", "twoAnswers": ["I like the color yellow.", "I like the color green."], "targets": ["color"], "ask": "first"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "파란 연이야.", "hintEn": "It is a blue kite.", "answerExample": "It is a blue kite.", "twoAnswers": ["It is a blue kite.", "It is a pink kite."], "imageKey": "kite", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "twoAnswers": ["It is black.", "It is white."], "imageKey": "white", "targets": ["white"], "ask": "first"},
+          {"question": {"en": "How is the ball?", "ko": "공은 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is little."], "imageKey": "ball", "targets": ["big"], "ask": "first"},
+          {"question": {"en": "What color is the bike?", "ko": "자전거는 무슨 색이야?"}, "hintKo": "자전거는 빨간색이야.", "hintEn": "The bike is red.", "answerExample": "The bike is red.", "twoAnswers": ["The bike is white.", "The bike is red."], "imageKey": "bike", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is orange.", "It is green."], "imageKey": "orange", "targets": ["orange"], "ask": "first"},
+          {"question": {"en": "Pink? White?", "ko": "분홍? 하양?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "twoAnswers": ["I like the color pink.", "I like the color white."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 상자야.", "hintEn": "It is a big box.", "answerExample": "It is a big box.", "twoAnswers": ["It is a big box.", "It is a little box."], "imageKey": "box", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is pink.", "It is orange."], "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "twoAnswers": ["It is white.", "It is yellow."], "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "What color is the pen?", "ko": "펜은 무슨 색이야?"}, "hintKo": "펜은 검은색이야.", "hintEn": "The pen is black.", "answerExample": "The pen is black.", "twoAnswers": ["The pen is orange.", "The pen is black."], "imageKey": "pen", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is white.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 공이야.", "hintEn": "It is a big ball.", "answerExample": "It is a big ball.", "twoAnswers": ["It is a big drum.", "It is a big ball."], "imageKey": "ball", "targets": ["big"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the box?", "ko": "상자는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "box", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Orange? Blue?", "ko": "주황? 파랑?"}, "hintKo": "나는 주황색이 좋아.", "hintEn": "I like the color orange.", "answerExample": "I like the color orange.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "What color is the top?", "ko": "팽이는 무슨 색이야?"}, "hintKo": "팽이는 빨간색이야.", "hintEn": "The top is red.", "answerExample": "The top is red.", "imageKey": "top", "targets": ["red"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "자동차 경주 놀이",
+      "newWords": ["small", "long", "short", "bus", "car"],
+      "unitWords": ["red", "blue", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car"],
+      "card": {
+        "topic": "무슨 색일까 — 자동차 경주 놀이와 크기",
+        "targetExpressions": ["It is small.", "It is long.", "It is short.", "It is a bus.", "It is a car."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am okay.", "I am great."]}
+        ]},
+        "todayWords": [
+          {"word": "small", "meaningKo": "작은", "example": "It is a small ring.", "exampleKo": "작은 반지야."},
+          {"word": "long", "meaningKo": "긴", "example": "The bus is long.", "exampleKo": "버스는 길어."},
+          {"word": "short", "meaningKo": "짧은, 키가 작은", "example": "It is a short pencil.", "exampleKo": "짧은 연필이야."},
+          {"word": "bus", "meaningKo": "버스", "example": "I like the bus.", "exampleKo": "나는 그 버스가 좋아."},
+          {"word": "car", "meaningKo": "자동차", "example": "This is a car.", "exampleKo": "이건 자동차야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a toy car race with a car and a bus and asks what they are.",
+          "The teacher shows a top, a yo-yo, a leg and a neck and asks how they are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["자동차와 버스", "작다 · 길다 · 짧다", "좋아하는 색"],
+        "closingLines": [
+          {"en": "It is a small ring.", "ko": "작은 반지야."},
+          {"en": "The bus is long.", "ko": "버스는 길어."},
+          {"en": "It is short.", "ko": "그건 짧아."},
+          {"en": "I like the bus.", "ko": "나는 그 버스가 좋아."},
+          {"en": "This is a car.", "ko": "이건 자동차야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a kite.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a bus.", "It is a drum."], "imageKey": "bus", "targets": ["bus"], "ask": "first"},
+          {"question": {"en": "A bike! What is it?", "ko": "자전거다! 이건 뭐야?"}, "hintKo": "빨간 자전거야.", "hintEn": "It is a red bike.", "answerExample": "It is a red bike.", "twoAnswers": ["It is a white bike.", "It is a red bike."], "imageKey": "bike", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "How is the top?", "ko": "팽이는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "top", "targets": ["small"], "ask": "first"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "bus", "targets": ["long"], "ask": "first"},
+          {"question": {"en": "Blue? Pink?", "ko": "파랑? 분홍?"}, "hintKo": "나는 파란색이 좋아.", "hintEn": "I like the color blue.", "answerExample": "I like the color blue.", "twoAnswers": ["I like the color blue.", "I like the color pink."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "first"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a ball.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the yo-yo?", "ko": "요요는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "yo-yo", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 버스야.", "hintEn": "It is a big bus.", "answerExample": "It is a big bus.", "twoAnswers": ["It is a big ball.", "It is a big bus."], "imageKey": "bus", "targets": ["big", "bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the leg?", "ko": "다리는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "leg", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is orange.", "It is white."], "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a robot."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the ring?", "ko": "반지는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "imageKey": "ring", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the bus?", "ko": "오, 버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "하늘과 바다 놀이",
+      "newWords": ["ship", "truck", "plane", "bed", "bath"],
+      "unitWords": ["yellow", "green", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car", "ship", "truck", "plane", "bed", "bath"],
+      "card": {
+        "topic": "무슨 색일까 — 하늘 · 바다 탈것 놀이와 인형 방",
+        "targetExpressions": ["It is a ship.", "It is a truck.", "It is a plane.", "It is a bed.", "It is a bath."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [
+          {"word": "ship", "meaningKo": "배", "example": "It is a big ship.", "exampleKo": "큰 배야."},
+          {"word": "truck", "meaningKo": "트럭", "example": "This is a truck.", "exampleKo": "이건 트럭이야."},
+          {"word": "plane", "meaningKo": "비행기", "example": "It is a white plane.", "exampleKo": "흰 비행기야."},
+          {"word": "bed", "meaningKo": "침대", "example": "This is my bed.", "exampleKo": "이건 내 침대야."},
+          {"word": "bath", "meaningKo": "목욕, 욕조", "example": "I like my bath.", "exampleKo": "나는 목욕이 좋아."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows toy planes, ships and trucks and asks what they are.",
+          "The teacher shows a bed and a bath for a doll and asks what they are.",
+          "The teacher asks about the color and size of the pictures.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["비행기와 배", "트럭", "인형 침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a big ship.", "ko": "큰 배야."},
+          {"en": "This is a truck.", "ko": "이건 트럭이야."},
+          {"en": "It is a white plane.", "ko": "흰 비행기야."},
+          {"en": "This is my bed.", "ko": "이건 내 침대야."},
+          {"en": "It is a bath.", "ko": "욕조야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a kite.", "It is a plane."], "imageKey": "plane", "targets": ["plane"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a ship.", "It is a robot."], "imageKey": "ship", "targets": ["ship"], "ask": "first"},
+          {"question": {"en": "What color is the plane?", "ko": "비행기는 무슨 색이야?"}, "hintKo": "비행기는 흰색이야.", "hintEn": "The plane is white.", "answerExample": "The plane is white.", "twoAnswers": ["The plane is pink.", "The plane is white."], "imageKey": "plane", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a truck.", "It is a car."], "imageKey": "truck", "targets": ["truck"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a drum.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "first"},
+          {"question": {"en": "How is the ship?", "ko": "배는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "ship", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a car.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "first"},
+          {"question": {"en": "Orange? Green?", "ko": "주황? 초록?"}, "hintKo": "나는 주황색이 좋아.", "hintEn": "I like the color orange.", "answerExample": "I like the color orange.", "twoAnswers": ["I like the color orange.", "I like the color green."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big truck.", "It is a big ball."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "이건?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a ball.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a bath.", "It is a drum."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a pink plane.", "It is a white plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big robot.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "imageKey": "plane", "targets": ["plane"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "Yellow? Pink?", "ko": "노랑? 분홍?"}, "hintKo": "나는 노란색이 좋아.", "hintEn": "I like the color yellow.", "answerExample": "I like the color yellow.", "targets": ["color"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "캠핑과 가게 놀이",
+      "newWords": ["dish", "tent", "home", "shop", "bank"],
+      "unitWords": ["red", "blue", "green", "white", "color", "big", "small", "bus", "car", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 캠핑 놀이와 가게 놀이",
+        "targetExpressions": ["It is a dish.", "It is a tent.", "It is my home.", "It is a shop.", "It is a bank."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am good."]}
+        ]},
+        "todayWords": [
+          {"word": "dish", "meaningKo": "접시, 요리", "example": "It is a white dish.", "exampleKo": "흰 접시야."},
+          {"word": "tent", "meaningKo": "텐트", "example": "The tent is big.", "exampleKo": "텐트는 커."},
+          {"word": "home", "meaningKo": "집", "example": "It is my home.", "exampleKo": "우리 집이야."},
+          {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "It is a toy shop.", "exampleKo": "장난감 가게야."},
+          {"word": "bank", "meaningKo": "은행", "example": "This is a bank.", "exampleKo": "이건 은행이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher plays a pretend game with a toy shop, a tent and a dish and asks what they are.",
+          "The teacher shows a bank and a house and asks what they are.",
+          "The teacher names two colors and asks which color the child likes.",
+          "The teacher asks about the color and size of the pictures."
+        ],
+        "todayTopicsKo": ["가게와 은행", "텐트와 접시", "우리 집"],
+        "closingLines": [
+          {"en": "It is a white dish.", "ko": "흰 접시야."},
+          {"en": "The tent is big.", "ko": "텐트는 커."},
+          {"en": "It is my home.", "ko": "우리 집이야."},
+          {"en": "It is a toy shop.", "ko": "장난감 가게야."},
+          {"en": "This is a bank.", "ko": "이건 은행이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a shop.", "It is a bus."], "imageKey": "shop", "targets": ["shop"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "twoAnswers": ["It is a kite.", "It is a tent."], "imageKey": "tent", "targets": ["tent"], "ask": "first"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small car."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a robot.", "It is a bank."], "imageKey": "bank", "targets": ["bank"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a dish.", "It is a ball."], "imageKey": "dish", "targets": ["dish"], "ask": "first"},
+          {"question": {"en": "Red? White?", "ko": "빨강? 하양?"}, "hintKo": "나는 빨간색이 좋아.", "hintEn": "I like the color red.", "answerExample": "I like the color red.", "twoAnswers": ["I like the color red.", "I like the color white."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my car.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "first"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a white dish.", "It is a red dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big drum.", "It is a big tent."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a kite."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my bike.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "이건?"}, "hintKo": "장난감 가게야.", "hintEn": "It is a toy shop.", "answerExample": "It is a toy shop.", "twoAnswers": ["It is a toy box.", "It is a toy shop."], "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a dish.", "It is a robot."], "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "twoAnswers": ["It is a robot.", "It is a tent."], "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Blue? Green?", "ko": "파랑? 초록?"}, "hintKo": "나는 파란색이 좋아.", "hintEn": "I like the color blue.", "answerExample": "I like the color blue.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "tent", "targets": ["big"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "색깔 맞히기 게임",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small"],
+      "card": {
+        "topic": "무슨 색일까 — 색깔 맞히기 게임",
+        "targetExpressions": ["The shoe is red.", "It is a blue cap.", "I like the color black.", "It is big.", "The pen is black."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher plays a color guessing game with color circles.",
+          "The teacher shows a shoe, a cap, a pen, a swing and a kite and asks about their colors.",
+          "The teacher asks how big a ball and a box are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["색깔 맞히기", "장난감과 옷의 색", "큰 공과 상자"],
+        "closingLines": [
+          {"en": "The shoe is red.", "ko": "신발은 빨간색이야."},
+          {"en": "It is a blue cap.", "ko": "파란 모자야."},
+          {"en": "I like the color black.", "ko": "나는 검은색이 좋아."},
+          {"en": "The ball is big.", "ko": "공이 커."},
+          {"en": "It is pink.", "ko": "분홍색이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is pink."], "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "What color is the shoe?", "ko": "신발은 무슨 색이야?"}, "hintKo": "신발은 빨간색이야.", "hintEn": "The shoe is red.", "answerExample": "The shoe is red.", "twoAnswers": ["The shoe is green.", "The shoe is red."], "imageKey": "shoe", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Black? Pink?", "ko": "검정? 분홍?"}, "hintKo": "나는 검은색이 좋아.", "hintEn": "I like the color black.", "answerExample": "I like the color black.", "twoAnswers": ["I like the color black.", "I like the color pink."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "파란 모자야.", "hintEn": "It is a blue cap.", "answerExample": "It is a blue cap.", "twoAnswers": ["It is a blue cap.", "It is a white cap."], "imageKey": "cap", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is orange.", "It is green."], "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "How is the box?", "ko": "상자는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "box", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "twoAnswers": ["It is pink.", "It is white."], "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "What color is the pen?", "ko": "펜은 무슨 색이야?"}, "hintKo": "펜은 검은색이야.", "hintEn": "The pen is black.", "answerExample": "The pen is black.", "twoAnswers": ["The pen is black.", "The pen is green."], "imageKey": "pen", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is green.", "It is orange."], "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is pink.", "It is black."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "A swing! What is it?", "ko": "그네다! 이건 뭐야?"}, "hintKo": "빨간 그네야.", "hintEn": "It is a red swing.", "answerExample": "It is a red swing.", "twoAnswers": ["It is a blue swing.", "It is a red swing."], "imageKey": "swing", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "How is the ball?", "ko": "공은 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "ball", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What color is the kite?", "ko": "연은 무슨 색이야?"}, "hintKo": "연은 파란색이야.", "hintEn": "The kite is blue.", "answerExample": "The kite is blue.", "twoAnswers": ["The kite is blue.", "The kite is red."], "imageKey": "kite", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "twoAnswers": ["It is white.", "It is black."], "imageKey": "black", "targets": ["black"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Blue? White?", "ko": "파랑? 하양?"}, "hintKo": "나는 파란색이 좋아.", "hintEn": "I like the color blue.", "answerExample": "I like the color blue.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "A top! What is it?", "ko": "팽이다! 이건 뭐야?"}, "hintKo": "빨간 팽이야.", "hintEn": "It is a red top.", "answerExample": "It is a red top.", "imageKey": "top", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "놀이터 가는 길",
+      "newWords": [],
+      "unitWords": ["green", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car"],
+      "card": {
+        "topic": "무슨 색일까 — 놀이터 가는 길의 탈것과 크기",
+        "targetExpressions": ["It is a big bus.", "It is small.", "It is long.", "It is short.", "I like the color pink."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am fine.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a bus and a car on the way to the playground and asks about them.",
+          "The teacher shows a ring, a ball, a top and a leg and asks how they are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["버스와 자동차", "크다 · 작다", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "The bus is long.", "ko": "버스는 길어."},
+          {"en": "It is a car.", "ko": "자동차야."},
+          {"en": "The ball is big.", "ko": "공이 커."},
+          {"en": "It is a small ring.", "ko": "작은 반지야."},
+          {"en": "I like the color pink.", "ko": "나는 분홍색이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a kite.", "It is a bus."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a ball."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the ring?", "ko": "반지는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "ring", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "How is the ball?", "ko": "공은 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "ball", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Orange?", "ko": "분홍? 주황?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "twoAnswers": ["I like the color pink.", "I like the color orange."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "twoAnswers": ["It is white.", "It is orange."], "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is pink.", "It is orange."], "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 버스야.", "hintEn": "It is a big bus.", "answerExample": "It is a big bus.", "twoAnswers": ["It is a big bus.", "It is a big kite."], "imageKey": "bus", "targets": ["big", "bus"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is white.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "How is the top?", "ko": "팽이는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "top", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "How is the leg?", "ko": "다리는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "leg", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a drum."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰색이야.", "hintEn": "It is white.", "answerExample": "It is white.", "imageKey": "white", "targets": ["white"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "White? Green?", "ko": "하양? 초록?"}, "hintKo": "나는 흰색이 좋아.", "hintEn": "I like the color white.", "answerExample": "I like the color white.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the bus?", "ko": "오, 버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "bus", "targets": ["long"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "장난감 상자 정리",
+      "newWords": [],
+      "unitWords": ["black", "white", "color", "big", "small", "long", "short", "bus", "car", "ship", "truck", "plane", "bed", "bath"],
+      "card": {
+        "topic": "무슨 색일까 — 장난감 상자 정리하며 탈것 말하기",
+        "targetExpressions": ["It is a truck.", "It is a ship.", "It is a white plane.", "It is small.", "It is a bath."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher and the child tidy up a toy box, and the teacher asks what each toy is.",
+          "The teacher shows a truck, a ship, a plane, a car and a bus and asks about them.",
+          "The teacher asks how small, long or short things are.",
+          "The teacher shows a doll's bed and bath and asks what they are."
+        ],
+        "todayTopicsKo": ["트럭 · 배 · 비행기", "버스와 자동차", "침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "It is a white plane.", "ko": "흰 비행기야."},
+          {"en": "It is a big ship.", "ko": "큰 배야."},
+          {"en": "The bus is long.", "ko": "버스는 길어."},
+          {"en": "It is a bed.", "ko": "침대야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a truck.", "It is a kite."], "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a ball.", "It is a ship."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a plane.", "It is a robot."], "imageKey": "plane", "targets": ["plane"], "ask": "re_ask"},
+          {"question": {"en": "How is the yo-yo?", "ko": "요요는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "yo-yo", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a kite."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a robot.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "이건?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a drum.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a black plane.", "It is a white plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big truck.", "It is a big kite."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a kite.", "It is a bus."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big ship.", "It is a big kite."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a car.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "How is the ring?", "ko": "반지는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "imageKey": "ring", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "How is the leg?", "ko": "다리는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "imageKey": "leg", "targets": ["long"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "놀이 매트 마을",
+      "newWords": [],
+      "unitWords": ["white", "pink", "color", "big", "small", "car", "ship", "truck", "plane", "bed", "bath", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 놀이 매트 위 장난감 마을",
+        "targetExpressions": ["It is my home.", "It is a shop.", "It is a bank.", "It is a tent.", "It is a white dish."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a toy town play mat with a house, a shop and a bank and asks what they are.",
+          "The teacher shows a truck, a ship and a plane on the mat and asks what they are.",
+          "The teacher shows a tent, a dish, a bed and a bath and asks what they are.",
+          "The teacher asks about the color and size of the pictures."
+        ],
+        "todayTopicsKo": ["집 · 가게 · 은행", "트럭 · 배 · 비행기", "텐트와 접시"],
+        "closingLines": [
+          {"en": "It is my home.", "ko": "우리 집이야."},
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is a bank.", "ko": "은행이야."},
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "It is a white dish.", "ko": "흰 접시야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my home.", "It is my kite."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a robot.", "It is a shop."], "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a kite."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "트럭이야.", "hintEn": "It is a truck.", "answerExample": "It is a truck.", "twoAnswers": ["It is a car.", "It is a truck."], "imageKey": "truck", "targets": ["truck"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a ship.", "It is a drum."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "비행기야.", "hintEn": "It is a plane.", "answerExample": "It is a plane.", "twoAnswers": ["It is a kite.", "It is a plane."], "imageKey": "plane", "targets": ["plane"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "twoAnswers": ["It is a tent.", "It is a box."], "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "이건?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a ball.", "It is a dish."], "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a kite."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a robot.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small bank."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a pink dish.", "It is a white dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "twoAnswers": ["It is big.", "It is small."], "imageKey": "tent", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "What color is the plane?", "ko": "비행기는 무슨 색이야?"}, "hintKo": "비행기는 흰색이야.", "hintEn": "The plane is white.", "answerExample": "The plane is white.", "twoAnswers": ["The plane is pink.", "The plane is white."], "imageKey": "plane", "targets": ["white"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "놀이공원 하루",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 놀이공원에서 보낸 하루",
+        "targetExpressions": ["The bike is red.", "It is a blue kite.", "It is a bank.", "It is a white dish.", "The bus is long."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows things from a day at an amusement park and asks about their colors.",
+          "The teacher shows a shop, a tent, a bank and a house and asks what they are.",
+          "The teacher asks how long or short things are.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["놀이공원의 색", "가게 · 은행 · 집", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "The bike is red.", "ko": "자전거는 빨간색이야."},
+          {"en": "It is a blue kite.", "ko": "파란 연이야."},
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is my home.", "ko": "우리 집이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is green.", "It is pink."], "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "What color is the bike?", "ko": "자전거는 무슨 색이야?"}, "hintKo": "자전거는 빨간색이야.", "hintEn": "The bike is red.", "answerExample": "The bike is red.", "twoAnswers": ["The bike is blue.", "The bike is red."], "imageKey": "bike", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "A kite! What is it?", "ko": "연이다! 이건 뭐야?"}, "hintKo": "파란 연이야.", "hintEn": "It is a blue kite.", "answerExample": "It is a blue kite.", "twoAnswers": ["It is a blue kite.", "It is a red kite."], "imageKey": "kite", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small bus.", "It is a small shop."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is white."], "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my car.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "What color is the pen?", "ko": "펜은 무슨 색이야?"}, "hintKo": "펜은 검은색이야.", "hintEn": "The pen is black.", "answerExample": "The pen is black.", "twoAnswers": ["The pen is black.", "The pen is red."], "imageKey": "pen", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big ball.", "It is a big tent."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Green? Orange?", "ko": "초록? 주황?"}, "hintKo": "나는 초록색이 좋아.", "hintEn": "I like the color green.", "answerExample": "I like the color green.", "twoAnswers": ["I like the color green.", "I like the color orange."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a drum."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a green dish.", "It is a white dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "버스는 길어.", "hintEn": "The bus is long.", "answerExample": "The bus is long.", "twoAnswers": ["The bus is long.", "The bus is short."], "imageKey": "bus", "targets": ["long", "bus"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a robot."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "A swing! What is it?", "ko": "그네다! 이건 뭐야?"}, "hintKo": "빨간 그네야.", "hintEn": "It is a red swing.", "answerExample": "It is a red swing.", "imageKey": "swing", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "운동회 색깔 팀",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "car", "ship", "plane", "dish"],
+      "card": {
+        "topic": "무슨 색일까 — 운동회 색깔 팀과 옷의 색",
+        "targetExpressions": ["It is red.", "The shirt is blue.", "I like the color yellow.", "It is orange.", "It is a white plane."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am fine.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows color circles for sports day teams and asks what they are.",
+          "The teacher shows a shirt, a pen, a shoe and a cap and asks about their colors.",
+          "The teacher names two colors and asks which color the child likes."
+        ],
+        "todayTopicsKo": ["팀 색깔", "옷과 신발의 색", "좋아하는 색"],
+        "closingLines": [
+          {"en": "It is red.", "ko": "빨간색이야."},
+          {"en": "The shirt is blue.", "ko": "셔츠는 파란색이야."},
+          {"en": "I like the color yellow.", "ko": "나는 노란색이 좋아."},
+          {"en": "It is orange.", "ko": "주황색이야."},
+          {"en": "It is a big ship.", "ko": "큰 배야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "빨간색이야.", "hintEn": "It is red.", "answerExample": "It is red.", "twoAnswers": ["It is red.", "It is white."], "imageKey": "red", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "What color is the shirt?", "ko": "셔츠는 무슨 색이야?"}, "hintKo": "셔츠는 파란색이야.", "hintEn": "The shirt is blue.", "answerExample": "The shirt is blue.", "twoAnswers": ["The shirt is pink.", "The shirt is blue."], "imageKey": "shirt", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a white plane.", "It is a blue plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "twoAnswers": ["It is green.", "It is pink."], "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"},
+          {"question": {"en": "Yellow? Black?", "ko": "노랑? 검정?"}, "hintKo": "나는 노란색이 좋아.", "hintEn": "I like the color yellow.", "answerExample": "I like the color yellow.", "twoAnswers": ["I like the color yellow.", "I like the color black."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "twoAnswers": ["It is orange.", "It is black."], "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "twoAnswers": ["It is a big drum.", "It is a big ship."], "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "노란색이야.", "hintEn": "It is yellow.", "answerExample": "It is yellow.", "twoAnswers": ["It is yellow.", "It is red."], "imageKey": "yellow", "targets": ["yellow"], "ask": "re_ask"},
+          {"question": {"en": "What color is the pen?", "ko": "펜은 무슨 색이야?"}, "hintKo": "펜은 검은색이야.", "hintEn": "The pen is black.", "answerExample": "The pen is black.", "twoAnswers": ["The pen is white.", "The pen is black."], "imageKey": "pen", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "흰 접시야.", "hintEn": "It is a white dish.", "answerExample": "It is a white dish.", "twoAnswers": ["It is a white dish.", "It is a yellow dish."], "imageKey": "dish", "targets": ["white", "dish"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "twoAnswers": ["It is pink.", "It is green."], "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a car.", "It is a kite."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "A shoe! What is it?", "ko": "신발이다! 이건 뭐야?"}, "hintKo": "빨간 신발이야.", "hintEn": "It is a red shoe.", "answerExample": "It is a red shoe.", "twoAnswers": ["It is a white shoe.", "It is a red shoe."], "imageKey": "shoe", "targets": ["red"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Green?", "ko": "분홍? 초록?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "twoAnswers": ["I like the color pink.", "I like the color green."], "targets": ["color"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "What color is the cap?", "ko": "모자는 무슨 색이야?"}, "hintKo": "모자는 파란색이야.", "hintEn": "The cap is blue.", "answerExample": "The cap is blue.", "imageKey": "cap", "targets": ["blue"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "주황색이야.", "hintEn": "It is orange.", "answerExample": "It is orange.", "imageKey": "orange", "targets": ["orange"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "초록색이야.", "hintEn": "It is green.", "answerExample": "It is green.", "imageKey": "green", "targets": ["green"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "검은색이야.", "hintEn": "It is black.", "answerExample": "It is black.", "imageKey": "black", "targets": ["black"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "분홍색이야.", "hintEn": "It is pink.", "answerExample": "It is pink.", "imageKey": "pink", "targets": ["pink"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "탈것 그림책",
+      "newWords": [],
+      "unitWords": ["red", "white", "color", "big", "small", "long", "short", "bus", "car", "ship", "truck", "plane", "bed", "bath", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 탈것 그림책 보며 크기 말하기",
+        "targetExpressions": ["It is small.", "The bus is long.", "It is short.", "It is a big truck.", "It is a bed."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher reads a vehicle picture book and asks what each vehicle is.",
+          "The teacher asks how small, long or short things are.",
+          "The teacher shows a bed, a bath, a shop, a bank and a house and asks what they are."
+        ],
+        "todayTopicsKo": ["탈것 그림책", "작다 · 길다 · 짧다", "침대와 욕조"],
+        "closingLines": [
+          {"en": "It is a car.", "ko": "자동차야."},
+          {"en": "The bus is long.", "ko": "버스는 길어."},
+          {"en": "It is a big truck.", "ko": "큰 트럭이야."},
+          {"en": "It is a white plane.", "ko": "흰 비행기야."},
+          {"en": "It is a bath.", "ko": "욕조야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you soon!", "ko": "잘 가, {NAME}! 곧 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Great!", "Yes, good!", "Wow, great!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "twoAnswers": ["It is a ball.", "It is a car."], "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "How is the top?", "ko": "팽이는 어때?"}, "hintKo": "그건 작아.", "hintEn": "It is small.", "answerExample": "It is small.", "twoAnswers": ["It is small.", "It is big."], "imageKey": "top", "targets": ["small"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "버스야.", "hintEn": "It is a bus.", "answerExample": "It is a bus.", "twoAnswers": ["It is a robot.", "It is a bus."], "imageKey": "bus", "targets": ["bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the bus?", "ko": "버스는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "bus", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "배야.", "hintEn": "It is a ship.", "answerExample": "It is a ship.", "twoAnswers": ["It is a kite.", "It is a ship."], "imageKey": "ship", "targets": ["ship"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the neck?", "ko": "오, 목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What color is it?", "ko": "이건 무슨 색이야?"}, "hintKo": "흰 비행기야.", "hintEn": "It is a white plane.", "answerExample": "It is a white plane.", "twoAnswers": ["It is a red plane.", "It is a white plane."], "imageKey": "plane", "targets": ["white", "plane"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big truck.", "It is a big kite."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a drum.", "It is a bed."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a bath.", "It is a robot."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small car.", "It is a small shop."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "How is the leg?", "ko": "다리는 어때?"}, "hintKo": "그건 길어.", "hintEn": "It is long.", "answerExample": "It is long.", "twoAnswers": ["It is long.", "It is short."], "imageKey": "leg", "targets": ["long"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a drum.", "It is a bank."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my home.", "It is my robot."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the tent?", "ko": "텐트는 어때?"}, "hintKo": "그건 커.", "hintEn": "It is big.", "answerExample": "It is big.", "imageKey": "tent", "targets": ["big"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "자동차야.", "hintEn": "It is a car.", "answerExample": "It is a car.", "imageKey": "car", "targets": ["car"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "큰 배야.", "hintEn": "It is a big ship.", "answerExample": "It is a big ship.", "imageKey": "ship", "targets": ["big", "ship"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "블록으로 만든 동네",
+      "newWords": [],
+      "unitWords": ["red", "blue", "yellow", "green", "black", "white", "pink", "orange", "color", "big", "small", "long", "short", "bus", "car", "truck", "bed", "bath", "dish", "tent", "home", "shop", "bank"],
+      "card": {
+        "topic": "무슨 색일까 — 블록으로 만든 동네 다시 말하기",
+        "targetExpressions": ["It is a shop.", "It is a bank.", "It is my home.", "It is a dish.", "I like the color blue."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am great.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher builds a block town with a bank, a shop and a house and asks what they are.",
+          "The teacher names two colors and asks which color the child likes.",
+          "The teacher asks how big, small, long or short things are.",
+          "The teacher shows a truck, a bed and a bath and asks about them."
+        ],
+        "todayTopicsKo": ["은행 · 가게 · 집", "좋아하는 색", "길다 · 짧다"],
+        "closingLines": [
+          {"en": "It is a small shop.", "ko": "작은 가게야."},
+          {"en": "It is a bank.", "ko": "은행이야."},
+          {"en": "It is my home.", "ko": "우리 집이야."},
+          {"en": "It is a big tent.", "ko": "큰 텐트야."},
+          {"en": "I like the color blue.", "ko": "나는 파란색이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "twoAnswers": ["It is a bank.", "It is a kite."], "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Blue? Yellow?", "ko": "파랑? 노랑?"}, "hintKo": "나는 파란색이 좋아.", "hintEn": "I like the color blue.", "answerExample": "I like the color blue.", "twoAnswers": ["I like the color blue.", "I like the color yellow."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "가게야.", "hintEn": "It is a shop.", "answerExample": "It is a shop.", "twoAnswers": ["It is a drum.", "It is a shop."], "imageKey": "shop", "targets": ["shop"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "twoAnswers": ["It is my car.", "It is my home."], "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "큰 텐트야.", "hintEn": "It is a big tent.", "answerExample": "It is a big tent.", "twoAnswers": ["It is a big tent.", "It is a big robot."], "imageKey": "tent", "targets": ["big", "tent"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "twoAnswers": ["It is a ball.", "It is a dish."], "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "Red? Green?", "ko": "빨강? 초록?"}, "hintKo": "나는 빨간색이 좋아.", "hintEn": "I like the color red.", "answerExample": "I like the color red.", "twoAnswers": ["I like the color red.", "I like the color green."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "작은 가게야.", "hintEn": "It is a small shop.", "answerExample": "It is a small shop.", "twoAnswers": ["It is a small shop.", "It is a small kite."], "imageKey": "shop", "targets": ["small", "shop"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "이건 어때?"}, "hintKo": "버스는 길어.", "hintEn": "The bus is long.", "answerExample": "The bus is long.", "twoAnswers": ["The bus is short.", "The bus is long."], "imageKey": "bus", "targets": ["long", "bus"], "ask": "re_ask"},
+          {"question": {"en": "How is the neck?", "ko": "목은 어때?"}, "hintKo": "그건 짧아.", "hintEn": "It is short.", "answerExample": "It is short.", "twoAnswers": ["It is short.", "It is long."], "imageKey": "neck", "targets": ["short"], "ask": "re_ask"},
+          {"question": {"en": "Black? White?", "ko": "검정? 하양?"}, "hintKo": "나는 검은색이 좋아.", "hintEn": "I like the color black.", "answerExample": "I like the color black.", "twoAnswers": ["I like the color black.", "I like the color white."], "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "큰 트럭이야.", "hintEn": "It is a big truck.", "answerExample": "It is a big truck.", "twoAnswers": ["It is a big ball.", "It is a big truck."], "imageKey": "truck", "targets": ["big", "truck"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "침대야.", "hintEn": "It is a bed.", "answerExample": "It is a bed.", "twoAnswers": ["It is a bed.", "It is a robot."], "imageKey": "bed", "targets": ["bed"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "욕조야.", "hintEn": "It is a bath.", "answerExample": "It is a bath.", "twoAnswers": ["It is a kite.", "It is a bath."], "imageKey": "bath", "targets": ["bath"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "이건?"}, "hintKo": "접시야.", "hintEn": "It is a dish.", "answerExample": "It is a dish.", "imageKey": "dish", "targets": ["dish"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "은행이야.", "hintEn": "It is a bank.", "answerExample": "It is a bank.", "imageKey": "bank", "targets": ["bank"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "우리 집이야.", "hintEn": "It is my home.", "answerExample": "It is my home.", "imageKey": "house", "targets": ["home"], "ask": "re_ask"},
+          {"question": {"en": "Pink? Orange?", "ko": "분홍? 주황?"}, "hintKo": "나는 분홍색이 좋아.", "hintEn": "I like the color pink.", "answerExample": "I like the color pink.", "targets": ["color"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "텐트야.", "hintEn": "It is a tent.", "answerExample": "It is a tent.", "imageKey": "tent", "targets": ["tent"], "ask": "re_ask"}
+        ]
+      }
+    }
+  ]
+}

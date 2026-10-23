@@ -1,0 +1,605 @@
+{
+  "band": "1-3",
+  "stories": [
+    {
+      "no": 1,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "커다란 상자 속",
+      "textEn": "Oh, a big box! The box is green. What is it? It is a little cat! The cat is white. Wow, cute!",
+      "textKo": "오, 커다란 상자다! 상자는 초록색이야. 뭘까? 작은 고양이야! 고양이는 하얀색이야. 와, 귀여워!",
+      "questions": [
+        {
+          "prompt": "What color is the box?",
+          "options": ["white", "green", "pink"],
+          "answerNo": 2,
+          "explanationKo": "'The box is green.' 에 나와요. 상자는 초록색이에요(green)."
+        },
+        {
+          "prompt": "What is little?",
+          "options": ["the box", "the bed", "the cat"],
+          "answerNo": 3,
+          "explanationKo": "'It is a little cat!' 에 나와요. 작은 건 고양이예요."
+        }
+      ]
+    },
+    {
+      "no": 2,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "맥스의 빨간 공",
+      "textEn": "This is Max. Max is a dog. Oh, what is it? It is a red ball! \"It is my ball! I like it!\"",
+      "textKo": "얘는 맥스야. 맥스는 강아지야. 오, 뭘까? 빨간 공이야! \"내 공이야! 나 이거 좋아!\"",
+      "questions": [
+        {
+          "prompt": "Max is…",
+          "options": ["a dog", "a cat", "a duck"],
+          "answerNo": 1,
+          "explanationKo": "'Max is a dog.' 에 나와요. 맥스는 강아지예요(a dog)."
+        },
+        {
+          "prompt": "What color is the ball?",
+          "options": ["blue", "red", "yellow"],
+          "answerNo": 2,
+          "explanationKo": "'It is a red ball!' 에 나와요. 공은 빨간색이에요(red)."
+        }
+      ]
+    },
+    {
+      "no": 3,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "사과 두 개",
+      "textEn": "This is Meg. Wow, two apples! The big apple is red. The little apple is green. \"I like apples!\"",
+      "textKo": "얘는 메그야. 와, 사과 두 개! 큰 사과는 빨간색이야. 작은 사과는 초록색이야. \"나는 사과가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "How many apples?",
+          "options": ["one", "two", "three"],
+          "answerNo": 2,
+          "explanationKo": "'Wow, two apples!' 에 나와요. 사과는 두 개예요(two)."
+        },
+        {
+          "prompt": "The little apple is…",
+          "options": ["green", "red", "pink"],
+          "answerNo": 1,
+          "explanationKo": "'The little apple is green.' 에 나와요. 작은 사과는 초록색이에요(green)."
+        }
+      ]
+    },
+    {
+      "no": 4,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "뜨거운 해와 호수",
+      "textEn": "This is the sun. The sun is hot. Hot, hot, hot! Oh, a lake! The lake is blue. Wow, nice!",
+      "textKo": "이건 해야. 해가 뜨거워. 뜨거워, 뜨거워, 뜨거워! 오, 호수다! 호수가 파래. 와, 좋다!",
+      "questions": [
+        {
+          "prompt": "What is hot?",
+          "options": ["the lake", "the sun", "the cake"],
+          "answerNo": 2,
+          "explanationKo": "'The sun is hot.' 에 나와요. 뜨거운 건 해예요."
+        },
+        {
+          "prompt": "What color is the lake?",
+          "options": ["blue", "pink", "black"],
+          "answerNo": 1,
+          "explanationKo": "'The lake is blue.' 에 나와요. 호수는 파란색이에요(blue)."
+        }
+      ]
+    },
+    {
+      "no": 5,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "노래를 좋아하는 거스",
+      "textEn": "Gus is a duck. The duck is white. What is it? Oh, a song! The song is nice. \"I like songs!\"",
+      "textKo": "거스는 오리야. 오리는 하얀색이야. 뭘까? 오, 노래다! 노래가 멋져. \"나는 노래가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What is nice?",
+          "options": ["the cake", "the bike", "the song"],
+          "answerNo": 3,
+          "explanationKo": "'The song is nice.' 에 나와요. 멋진 건 노래예요."
+        },
+        {
+          "prompt": "What color is Gus?",
+          "options": ["black", "white", "pink"],
+          "answerNo": 2,
+          "explanationKo": "'The duck is white.' 에 나와요. 오리인 거스는 하얀색이에요(white)."
+        }
+      ]
+    },
+    {
+      "no": 6,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "벤의 큰 모자",
+      "textEn": "Ben is little. Oh, a green hat! The hat is big. Big, big, big! \"I like my hat!\"",
+      "textKo": "벤은 작아. 오, 초록 모자다! 모자가 커. 크다, 크다, 크다! \"나는 내 모자가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What is big?",
+          "options": ["the hat", "the cup", "the egg"],
+          "answerNo": 1,
+          "explanationKo": "'The hat is big.' 에 나와요. 큰 건 모자예요."
+        },
+        {
+          "prompt": "Ben is…",
+          "options": ["big", "tall", "little"],
+          "answerNo": 3,
+          "explanationKo": "'Ben is little.' 에 나와요. 벤은 작아요(little)."
+        }
+      ]
+    },
+    {
+      "no": 7,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "테드의 케이크",
+      "textEn": "This is Ted. Ted is a bear. Oh, a cake! The cake is pink. \"Thank you! I like cake!\"",
+      "textKo": "얘는 테드야. 테드는 곰이야. 오, 케이크다! 케이크는 분홍색이야. \"고마워! 나는 케이크가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "Ted is…",
+          "options": ["a dog", "a pig", "a bear"],
+          "answerNo": 3,
+          "explanationKo": "'Ted is a bear.' 에 나와요. 테드는 곰이에요(a bear)."
+        },
+        {
+          "prompt": "What color is the cake?",
+          "options": ["pink", "white", "yellow"],
+          "answerNo": 1,
+          "explanationKo": "'The cake is pink.' 에 나와요. 케이크는 분홍색이에요(pink)."
+        }
+      ]
+    },
+    {
+      "no": 8,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "테스의 파란 연",
+      "textEn": "This is Tess. Oh, a blue kite! The kite is long. Up, up, up! \"Wow! I like my kite!\"",
+      "textKo": "얘는 테스야. 오, 파란 연이다! 연이 길어. 높이, 높이, 높이! \"와! 나는 내 연이 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What color is the kite?",
+          "options": ["orange", "white", "blue"],
+          "answerNo": 3,
+          "explanationKo": "'Oh, a blue kite!' 에 나와요. 연은 파란색이에요(blue)."
+        },
+        {
+          "prompt": "The kite is…",
+          "options": ["short", "long", "tall"],
+          "answerNo": 2,
+          "explanationKo": "'The kite is long.' 에 나와요. 연은 길어요(long)."
+        }
+      ]
+    },
+    {
+      "no": 9,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "조개껍데기 셋",
+      "textEn": "The sand is hot. Oh, what is it? It is a shell! One, two, three shells! Wow, pink shells!",
+      "textKo": "모래가 뜨거워. 오, 뭘까? 조개껍데기야! 조개껍데기 한 개, 두 개, 세 개! 와, 분홍 조개껍데기!",
+      "questions": [
+        {
+          "prompt": "How many shells?",
+          "options": ["two", "three", "four"],
+          "answerNo": 2,
+          "explanationKo": "'One, two, three shells!' 에 나와요. 조개껍데기는 세 개예요(three)."
+        },
+        {
+          "prompt": "What is hot?",
+          "options": ["the sand", "the frog", "the ball"],
+          "answerNo": 1,
+          "explanationKo": "'The sand is hot.' 에 나와요. 뜨거운 건 모래예요."
+        }
+      ]
+    },
+    {
+      "no": 10,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "노란 장난감 버스",
+      "textEn": "This is Momo. Oh, a yellow bus! The bus is little. It is a toy! \"My toy! I like it!\"",
+      "textKo": "얘는 모모야. 오, 노란 버스다! 버스가 작아. 장난감이야! \"내 장난감! 나 이거 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What color is the bus?",
+          "options": ["red", "yellow", "green"],
+          "answerNo": 2,
+          "explanationKo": "'Oh, a yellow bus!' 에 나와요. 버스는 노란색이에요(yellow)."
+        },
+        {
+          "prompt": "The bus is…",
+          "options": ["a cake", "a hat", "a toy"],
+          "answerNo": 3,
+          "explanationKo": "'It is a toy!' 에 나와요. 버스는 장난감이에요(a toy)."
+        }
+      ]
+    },
+    {
+      "no": 11,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "작은 개구리",
+      "textEn": "This is a big rock. What is that? It is little. It is green. Oh, it is a frog! The frog is cute.",
+      "textKo": "이건 커다란 바위야. 저건 뭘까? 작아. 초록색이야. 오, 개구리야! 개구리가 귀여워.",
+      "questions": [
+        {
+          "prompt": "What is little?",
+          "options": ["the rock", "the frog", "the tree"],
+          "answerNo": 2,
+          "explanationKo": "'It is little.' 다음에 'Oh, it is a frog!' 가 나와요. 작은 건 개구리예요."
+        },
+        {
+          "prompt": "The rock is…",
+          "options": ["big", "little", "short"],
+          "answerNo": 1,
+          "explanationKo": "'This is a big rock.' 에 나와요. 바위는 커요(big)."
+        }
+      ]
+    },
+    {
+      "no": 12,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "댄의 자전거",
+      "textEn": "This is Dan. Wow, a red bike! The bike is nice. Ring, ring! Oh, a little bell! \"I like my bike!\"",
+      "textKo": "얘는 댄이야. 와, 빨간 자전거다! 자전거가 멋져. 따르릉, 따르릉! 오, 작은 종! \"나는 내 자전거가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What color is the bike?",
+          "options": ["blue", "black", "red"],
+          "answerNo": 3,
+          "explanationKo": "'Wow, a red bike!' 에 나와요. 자전거는 빨간색이에요(red)."
+        },
+        {
+          "prompt": "The bell is…",
+          "options": ["little", "big", "long"],
+          "answerNo": 1,
+          "explanationKo": "'Oh, a little bell!' 에 나와요. 종은 작아요(little)."
+        }
+      ]
+    },
+    {
+      "no": 13,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "키 큰 왕과 장미",
+      "textEn": "This is a king. The king is tall. This is a queen. Oh, a pink rose! \"Thank you!\" A big smile!",
+      "textKo": "이분은 왕이야. 왕은 키가 커. 이분은 여왕이야. 오, 분홍 장미다! \"고마워!\" 함박웃음!",
+      "questions": [
+        {
+          "prompt": "The king is…",
+          "options": ["tall", "short", "little"],
+          "answerNo": 1,
+          "explanationKo": "'The king is tall.' 에 나와요. 왕은 키가 커요(tall)."
+        },
+        {
+          "prompt": "What color is the rose?",
+          "options": ["red", "yellow", "pink"],
+          "answerNo": 3,
+          "explanationKo": "'Oh, a pink rose!' 에 나와요. 장미는 분홍색이에요(pink)."
+        }
+      ]
+    },
+    {
+      "no": 14,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "맥스의 간식",
+      "textEn": "Max is a puppy. Max is little. What is it? Oh, two cookies! \"My snack! I like cookies!\"",
+      "textKo": "맥스는 강아지야. 맥스는 작아. 뭘까? 오, 쿠키 두 개! \"내 간식! 나는 쿠키가 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What is the snack?",
+          "options": ["cookies", "apples", "eggs"],
+          "answerNo": 1,
+          "explanationKo": "'My snack! I like cookies!' 에 나와요. 간식은 쿠키예요(cookies)."
+        },
+        {
+          "prompt": "Max is…",
+          "options": ["tall", "big", "little"],
+          "answerNo": 3,
+          "explanationKo": "'Max is little.' 에 나와요. 맥스는 작아요(little)."
+        }
+      ]
+    },
+    {
+      "no": 15,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "메그의 인형 침대",
+      "textEn": "This is Meg. This is a doll. The doll is little. Oh, a doll bed! The bed is pink. \"I like it!\"",
+      "textKo": "얘는 메그야. 이건 인형이야. 인형은 작아. 오, 인형 침대다! 침대는 분홍색이야. \"나 이거 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What is little?",
+          "options": ["the doll", "the tree", "the bus"],
+          "answerNo": 1,
+          "explanationKo": "'The doll is little.' 에 나와요. 작은 건 인형이에요."
+        },
+        {
+          "prompt": "What color is the bed?",
+          "options": ["blue", "pink", "green"],
+          "answerNo": 2,
+          "explanationKo": "'The bed is pink.' 에 나와요. 침대는 분홍색이에요(pink)."
+        }
+      ]
+    },
+    {
+      "no": 16,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "하얀 별 다섯",
+      "textEn": "Oh, what is that? It is a star! The star is little. One, two, three, four, five! Wow, five white stars!",
+      "textKo": "오, 저건 뭘까? 별이야! 별이 작아. 한 개, 두 개, 세 개, 네 개, 다섯 개! 와, 하얀 별 다섯 개!",
+      "questions": [
+        {
+          "prompt": "How many stars?",
+          "options": ["three", "four", "five"],
+          "answerNo": 3,
+          "explanationKo": "'Wow, five white stars!' 에 나와요. 별은 다섯 개예요(five)."
+        },
+        {
+          "prompt": "What color are the stars?",
+          "options": ["white", "pink", "orange"],
+          "answerNo": 1,
+          "explanationKo": "'Wow, five white stars!' 에 나와요. 별은 하얀색이에요(white)."
+        }
+      ]
+    },
+    {
+      "no": 17,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "테드와 작은 물고기",
+      "textEn": "Ted is a bear. Oh, a big fish! No, no! It is a small fish. The fish is orange. \"You are cute!\"",
+      "textKo": "테드는 곰이야. 오, 커다란 물고기다! 아니, 아니! 작은 물고기야. 물고기는 주황색이야. \"너 귀엽다!\"",
+      "questions": [
+        {
+          "prompt": "The fish is…",
+          "options": ["big", "small", "tall"],
+          "answerNo": 2,
+          "explanationKo": "'No, no! It is a small fish.' 에 나와요. 큰 물고기가 아니라 작은 물고기예요(small)."
+        },
+        {
+          "prompt": "What color is the fish?",
+          "options": ["green", "pink", "orange"],
+          "answerNo": 3,
+          "explanationKo": "'The fish is orange.' 에 나와요. 물고기는 주황색이에요(orange)."
+        }
+      ]
+    },
+    {
+      "no": 18,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "모모와 빨간 그네",
+      "textEn": "This is Momo. That is a tree. The tree is tall. What is it? Oh, a red swing! \"I like the swing!\"",
+      "textKo": "얘는 모모야. 저건 나무야. 나무가 높아. 뭘까? 오, 빨간 그네다! \"나 그네 좋아!\"",
+      "questions": [
+        {
+          "prompt": "What is tall?",
+          "options": ["the tree", "the cup", "the lamp"],
+          "answerNo": 1,
+          "explanationKo": "'The tree is tall.' 에 나와요. 높은 건 나무예요."
+        },
+        {
+          "prompt": "What color is the swing?",
+          "options": ["white", "red", "blue"],
+          "answerNo": 2,
+          "explanationKo": "'Oh, a red swing!' 에 나와요. 그네는 빨간색이에요(red)."
+        }
+      ]
+    },
+    {
+      "no": 19,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "거스의 우산",
+      "textEn": "This is Gus. Gus is a little duck. What is that? Oh, a yellow umbrella! The umbrella is big. \"It is my umbrella!\"",
+      "textKo": "얘는 거스야. 거스는 작은 오리야. 저건 뭘까? 오, 노란 우산이다! 우산이 커. \"내 우산이야!\"",
+      "questions": [
+        {
+          "prompt": "What color is the umbrella?",
+          "options": ["black", "green", "yellow"],
+          "answerNo": 3,
+          "explanationKo": "'Oh, a yellow umbrella!' 에 나와요. 우산은 노란색이에요(yellow)."
+        },
+        {
+          "prompt": "The umbrella is…",
+          "options": ["little", "big", "short"],
+          "answerNo": 2,
+          "explanationKo": "'The umbrella is big.' 에 나와요. 우산은 커요(big)."
+        }
+      ]
+    },
+    {
+      "no": 20,
+      "revision": 1,
+      "correction": 0,
+      "generation": {
+        "method": "generated",
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "briefHash": "cdfe7a22afc4564d25adbcfeabc86ee507b4f7615987583cd0b77985e5dd68d0",
+        "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3",
+        "createdOn": "2026-10-23"
+      },
+      "title": "피자 나누기",
+      "textEn": "This is Ben. This is Tess. Oh, a pizza! The pizza is hot. One pizza, two dishes. \"I like pizza!\"",
+      "textKo": "얘는 벤이야. 얘는 테스야. 오, 피자다! 피자가 뜨거워. 피자 한 판, 접시 두 개. \"나 피자 좋아!\"",
+      "questions": [
+        {
+          "prompt": "How many dishes?",
+          "options": ["one", "two", "three"],
+          "answerNo": 2,
+          "explanationKo": "'One pizza, two dishes.' 에 나와요. 접시는 두 개예요(two)."
+        },
+        {
+          "prompt": "What is hot?",
+          "options": ["the ball", "the hat", "the pizza"],
+          "answerNo": 3,
+          "explanationKo": "'The pizza is hot.' 에 나와요. 뜨거운 건 피자예요."
+        }
+      ]
+    }
+  ]
+}
