@@ -1,0 +1,32 @@
+{
+ "rows": [
+  {
+   "cell": "lesson:reading:1:1:assigned:1:1",
+   "itemNo": null,
+   "reason": "easy",
+   "memo": "요청자 표본 판정 '쉬움'(2026-10-23 표본 쪽)",
+   "date": "2026-10-23"
+  },
+  {
+   "cell": "lesson:reading:1:1:remedial:1:2",
+   "itemNo": null,
+   "reason": "easy",
+   "memo": "요청자 표본 판정 '쉬움'(2026-10-23 표본 쪽)",
+   "date": "2026-10-23"
+  },
+  {
+   "cell": "lesson:reading:1:0:alphabet:5:1",
+   "itemNo": null,
+   "reason": "easy",
+   "memo": "요청자 묶음 표본 판정 '쉬움'(2026-10-23 묶음 표본 쪽)",
+   "date": "2026-10-23"
+  },
+  {
+   "cell": "lesson:reading:1:5:reinforce:7:2",
+   "itemNo": null,
+   "reason": "easy",
+   "memo": "요청자 묶음 표본 판정 '쉬움'(2026-10-23 묶음 표본 쪽)",
+   "date": "2026-10-23"
+  }
+ ]
+}

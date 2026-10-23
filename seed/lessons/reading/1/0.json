@@ -1,0 +1,3974 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 0,
+ "lessons": [
+  {
+   "kind": "alphabet",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 동물 A~E",
+   "newWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant"
+   ],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant"
+   ],
+   "preview": [
+    {
+     "word": "ant",
+     "meaningKo": "개미",
+     "example": "Ant!"
+    },
+    {
+     "word": "bear",
+     "meaningKo": "곰",
+     "example": "Bear!"
+    },
+    {
+     "word": "cow",
+     "meaningKo": "소",
+     "example": "Cow!"
+    },
+    {
+     "word": "door",
+     "meaningKo": "문",
+     "example": "Door!"
+    },
+    {
+     "word": "elephant",
+     "meaningKo": "코끼리",
+     "example": "Elephant!"
+    }
+   ],
+   "content": {
+    "passage": "ant, bear, cow.\ndoor, elephant.",
+    "targetWords": [
+     "ant",
+     "bear",
+     "cow",
+     "door",
+     "elephant"
+    ],
+    "glossary": [
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A a",
+      "options": [
+       "bear",
+       "ant",
+       "cow",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "에이(A)는 /애/ 소리예요. ant 는 /애/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "B b",
+      "options": [
+       "bear",
+       "door",
+       "elephant",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "비(B)는 /브/ 소리예요. bear 는 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "C c",
+      "options": [
+       "ant",
+       "elephant",
+       "cow",
+       "door"
+      ],
+      "answerNo": 3,
+      "explanationKo": "씨(C)는 여기서 /크/ 소리예요. cow 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "D d",
+      "options": [
+       "cow",
+       "bear",
+       "ant",
+       "door"
+      ],
+      "answerNo": 4,
+      "explanationKo": "디(D)는 /드/ 소리예요. door 는 /드/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "E e",
+      "options": [
+       "door",
+       "cow",
+       "elephant",
+       "bear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "이(E)는 /에/ 소리예요. elephant 는 /에/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "아침 식탁 F~J",
+   "newWords": [
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "unitWords": [
+    "bear",
+    "cow",
+    "door",
+    "elephant",
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "preview": [
+    {
+     "word": "fork",
+     "meaningKo": "포크",
+     "example": "Fork!"
+    },
+    {
+     "word": "guitar",
+     "meaningKo": "기타",
+     "example": "Guitar!"
+    },
+    {
+     "word": "horse",
+     "meaningKo": "말",
+     "example": "Horse!"
+    },
+    {
+     "word": "insect",
+     "meaningKo": "곤충",
+     "example": "Insect!"
+    },
+    {
+     "word": "juice",
+     "meaningKo": "주스",
+     "example": "Juice!"
+    }
+   ],
+   "content": {
+    "passage": "fork, guitar, horse.\ninsect, juice.",
+    "targetWords": [
+     "fork",
+     "guitar",
+     "horse",
+     "insect",
+     "juice"
+    ],
+    "glossary": [
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "F f",
+      "options": [
+       "horse",
+       "fork",
+       "bear",
+       "juice"
+      ],
+      "answerNo": 2,
+      "explanationKo": "에프(F)는 /프/ 소리예요. fork 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "G g",
+      "options": [
+       "guitar",
+       "cow",
+       "insect",
+       "door"
+      ],
+      "answerNo": 1,
+      "explanationKo": "지(G)는 여기서 /그/ 소리예요. guitar 는 /그/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "H h",
+      "options": [
+       "fork",
+       "elephant",
+       "horse",
+       "guitar"
+      ],
+      "answerNo": 3,
+      "explanationKo": "에이치(H)는 /흐/ 소리예요. horse 는 /흐/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I i",
+      "options": [
+       "juice",
+       "horse",
+       "bear",
+       "insect"
+      ],
+      "answerNo": 4,
+      "explanationKo": "아이(I)는 /이/ 소리예요. insect 는 /이/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "J j",
+      "options": [
+       "cow",
+       "juice",
+       "door",
+       "fork"
+      ],
+      "answerNo": 2,
+      "explanationKo": "제이(J)는 /즈/ 소리예요. juice 는 /즈/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물원 산책 K~O",
+   "newWords": [
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus"
+   ],
+   "unitWords": [
+    "bear",
+    "elephant",
+    "fork",
+    "guitar",
+    "horse",
+    "juice",
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus"
+   ],
+   "preview": [
+    {
+     "word": "key",
+     "meaningKo": "열쇠",
+     "example": "Key!"
+    },
+    {
+     "word": "lion",
+     "meaningKo": "사자",
+     "example": "Lion!"
+    },
+    {
+     "word": "monkey",
+     "meaningKo": "원숭이",
+     "example": "Monkey!"
+    },
+    {
+     "word": "nurse",
+     "meaningKo": "간호사",
+     "example": "Nurse!"
+    },
+    {
+     "word": "octopus",
+     "meaningKo": "문어",
+     "example": "Octopus!"
+    }
+   ],
+   "content": {
+    "passage": "key, lion, monkey.\nnurse, octopus.",
+    "targetWords": [
+     "key",
+     "lion",
+     "monkey",
+     "nurse",
+     "octopus"
+    ],
+    "glossary": [
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     },
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "K k",
+      "options": [
+       "lion",
+       "key",
+       "horse",
+       "octopus"
+      ],
+      "answerNo": 2,
+      "explanationKo": "케이(K)는 /크/ 소리예요. key 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "L l",
+      "options": [
+       "lion",
+       "nurse",
+       "fork",
+       "guitar"
+      ],
+      "answerNo": 1,
+      "explanationKo": "엘(L)은 /르/ 소리예요. lion 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "M m",
+      "options": [
+       "octopus",
+       "key",
+       "monkey",
+       "bear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엠(M)은 /므/ 소리예요. monkey 는 /므/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "N n",
+      "options": [
+       "horse",
+       "lion",
+       "juice",
+       "nurse"
+      ],
+      "answerNo": 4,
+      "explanationKo": "엔(N)은 /느/ 소리예요. nurse 는 /느/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "O o",
+      "options": [
+       "key",
+       "octopus",
+       "lion",
+       "elephant"
+      ],
+      "answerNo": 2,
+      "explanationKo": "오(O)는 /아/ 소리예요. octopus 는 /아/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "호랑이 숲 P~T",
+   "newWords": [
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "unitWords": [
+    "horse",
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus",
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "preview": [
+    {
+     "word": "piano",
+     "meaningKo": "피아노",
+     "example": "Piano!"
+    },
+    {
+     "word": "queen",
+     "meaningKo": "여왕",
+     "example": "Queen!"
+    },
+    {
+     "word": "robot",
+     "meaningKo": "로봇",
+     "example": "Robot!"
+    },
+    {
+     "word": "star",
+     "meaningKo": "별",
+     "example": "Star!"
+    },
+    {
+     "word": "tiger",
+     "meaningKo": "호랑이",
+     "example": "Tiger!"
+    }
+   ],
+   "content": {
+    "passage": "piano, queen, robot.\nstar, tiger.",
+    "targetWords": [
+     "piano",
+     "queen",
+     "robot",
+     "star",
+     "tiger"
+    ],
+    "glossary": [
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "P p",
+      "options": [
+       "star",
+       "piano",
+       "tiger",
+       "monkey"
+      ],
+      "answerNo": 2,
+      "explanationKo": "피(P)는 /프/ 소리예요. piano 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Q q",
+      "options": [
+       "queen",
+       "robot",
+       "lion",
+       "star"
+      ],
+      "answerNo": 1,
+      "explanationKo": "큐(Q)는 /쿠/ 소리예요. queen 은 /쿠/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "R r",
+      "options": [
+       "tiger",
+       "nurse",
+       "robot",
+       "piano"
+      ],
+      "answerNo": 3,
+      "explanationKo": "아르(R)는 /르/ 소리예요. robot 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "S s",
+      "options": [
+       "queen",
+       "octopus",
+       "piano",
+       "star"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에스(S)는 /스/ 소리예요. star 는 /스/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "T t",
+      "options": [
+       "robot",
+       "tiger",
+       "horse",
+       "key"
+      ],
+      "answerNo": 2,
+      "explanationKo": "티(T)는 /트/ 소리예요. tiger 는 /트/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "비 오는 정원 U~Y",
+   "newWords": [
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo"
+   ],
+   "unitWords": [
+    "lion",
+    "piano",
+    "queen",
+    "robot",
+    "tiger",
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo"
+   ],
+   "preview": [
+    {
+     "word": "umbrella",
+     "meaningKo": "우산",
+     "example": "Umbrella!"
+    },
+    {
+     "word": "violin",
+     "meaningKo": "바이올린",
+     "example": "Violin!"
+    },
+    {
+     "word": "window",
+     "meaningKo": "창문",
+     "example": "Window!"
+    },
+    {
+     "word": "box",
+     "meaningKo": "상자",
+     "example": "Box!"
+    },
+    {
+     "word": "yo-yo",
+     "meaningKo": "요요",
+     "example": "Yo-yo!"
+    }
+   ],
+   "content": {
+    "passage": "umbrella, violin, window.\nbox, yo-yo.",
+    "targetWords": [
+     "umbrella",
+     "violin",
+     "window",
+     "box",
+     "yo-yo"
+    ],
+    "glossary": [
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     },
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "U u",
+      "options": [
+       "box",
+       "umbrella",
+       "violin",
+       "lion"
+      ],
+      "answerNo": 2,
+      "explanationKo": "유(U)는 /어/ 소리예요. umbrella 는 /어/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "V v",
+      "options": [
+       "violin",
+       "window",
+       "yo-yo",
+       "tiger"
+      ],
+      "answerNo": 1,
+      "explanationKo": "브이(V)는 /브/ 소리예요. violin 은 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "W w",
+      "options": [
+       "yo-yo",
+       "box",
+       "window",
+       "piano"
+      ],
+      "answerNo": 3,
+      "explanationKo": "더블유(W)는 /워/ 소리예요. window 는 /워/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "X x",
+      "options": [
+       "window",
+       "violin",
+       "robot",
+       "box"
+      ],
+      "answerNo": 4,
+      "explanationKo": "엑스(X)는 /크스/ 소리예요. box 는 /크스/ 소리로 끝나요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Y y",
+      "options": [
+       "umbrella",
+       "yo-yo",
+       "box",
+       "queen"
+      ],
+      "answerNo": 2,
+      "explanationKo": "와이(Y)는 /이/ 소리예요. yo-yo 는 /이/ 와 /오/ 가 붙은 /요/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "초원의 얼룩말 Z",
+   "newWords": [
+    "zebra"
+   ],
+   "unitWords": [
+    "horse",
+    "lion",
+    "monkey",
+    "tiger",
+    "zebra"
+   ],
+   "preview": [
+    {
+     "word": "zebra",
+     "meaningKo": "얼룩말",
+     "example": "Zebra!"
+    }
+   ],
+   "content": {
+    "passage": "zebra, tiger, lion.\nmonkey, horse.",
+    "targetWords": [
+     "zebra",
+     "tiger",
+     "lion",
+     "monkey",
+     "horse"
+    ],
+    "glossary": [
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Z z",
+      "options": [
+       "lion",
+       "zebra",
+       "monkey",
+       "horse"
+      ],
+      "answerNo": 2,
+      "explanationKo": "지(Z)는 /즈/ 소리예요. zebra 는 /즈/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "T t",
+      "options": [
+       "tiger",
+       "horse",
+       "zebra",
+       "lion"
+      ],
+      "answerNo": 1,
+      "explanationKo": "티(T)는 /트/ 소리예요. tiger 는 /트/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "L l",
+      "options": [
+       "monkey",
+       "horse",
+       "lion",
+       "zebra"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엘(L)은 /르/ 소리예요. lion 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "M m",
+      "options": [
+       "horse",
+       "zebra",
+       "tiger",
+       "monkey"
+      ],
+      "answerNo": 4,
+      "explanationKo": "엠(M)은 /므/ 소리예요. monkey 는 /므/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "H h",
+      "options": [
+       "zebra",
+       "horse",
+       "lion",
+       "tiger"
+      ],
+      "answerNo": 2,
+      "explanationKo": "에이치(H)는 /흐/ 소리예요. horse 는 /흐/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲길 되짚기 A~G",
+   "newWords": [],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant",
+    "fork",
+    "guitar"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "ant, bear, cow, door.\nelephant, fork, guitar.",
+    "targetWords": [
+     "ant",
+     "bear",
+     "cow",
+     "door",
+     "elephant",
+     "fork",
+     "guitar"
+    ],
+    "glossary": [
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     },
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A a",
+      "options": [
+       "ant",
+       "guitar",
+       "door",
+       "fork"
+      ],
+      "answerNo": 1,
+      "explanationKo": "에이(A)는 /애/ 소리예요. ant 는 /애/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "C c",
+      "options": [
+       "fork",
+       "cow",
+       "bear",
+       "guitar"
+      ],
+      "answerNo": 2,
+      "explanationKo": "씨(C)는 여기서 /크/ 소리예요. cow 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "E e",
+      "options": [
+       "door",
+       "bear",
+       "elephant",
+       "cow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "이(E)는 /에/ 소리예요. elephant 는 /에/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "F f",
+      "options": [
+       "guitar",
+       "ant",
+       "cow",
+       "fork"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에프(F)는 /프/ 소리예요. fork 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "G g",
+      "options": [
+       "bear",
+       "guitar",
+       "elephant",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "지(G)는 여기서 /그/ 소리예요. guitar 는 /그/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "농장 되짚기 H~N",
+   "newWords": [],
+   "unitWords": [
+    "horse",
+    "insect",
+    "juice",
+    "key",
+    "lion",
+    "monkey",
+    "nurse"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "horse, insect, juice, key.\nlion, monkey, nurse.",
+    "targetWords": [
+     "horse",
+     "insect",
+     "juice",
+     "key",
+     "lion",
+     "monkey",
+     "nurse"
+    ],
+    "glossary": [
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     },
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "H h",
+      "options": [
+       "horse",
+       "key",
+       "lion",
+       "juice"
+      ],
+      "answerNo": 1,
+      "explanationKo": "에이치(H)는 /흐/ 소리예요. horse 는 /흐/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I i",
+      "options": [
+       "monkey",
+       "insect",
+       "horse",
+       "nurse"
+      ],
+      "answerNo": 2,
+      "explanationKo": "아이(I)는 /이/ 소리예요. insect 는 /이/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "J j",
+      "options": [
+       "lion",
+       "horse",
+       "juice",
+       "key"
+      ],
+      "answerNo": 3,
+      "explanationKo": "제이(J)는 /즈/ 소리예요. juice 는 /즈/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "K k",
+      "options": [
+       "insect",
+       "juice",
+       "lion",
+       "key"
+      ],
+      "answerNo": 4,
+      "explanationKo": "케이(K)는 /크/ 소리예요. key 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "M m",
+      "options": [
+       "key",
+       "horse",
+       "monkey",
+       "insect"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엠(M)은 /므/ 소리예요. monkey 는 /므/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "바닷가 되짚기 O~U",
+   "newWords": [],
+   "unitWords": [
+    "octopus",
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger",
+    "umbrella"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "octopus, piano, queen, robot.\nstar, tiger, umbrella.",
+    "targetWords": [
+     "octopus",
+     "piano",
+     "queen",
+     "robot",
+     "star",
+     "tiger",
+     "umbrella"
+    ],
+    "glossary": [
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     },
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     },
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "O o",
+      "options": [
+       "octopus",
+       "star",
+       "piano",
+       "tiger"
+      ],
+      "answerNo": 1,
+      "explanationKo": "오(O)는 /아/ 소리예요. octopus 는 /아/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Q q",
+      "options": [
+       "robot",
+       "queen",
+       "tiger",
+       "star"
+      ],
+      "answerNo": 2,
+      "explanationKo": "큐(Q)는 /쿠/ 소리예요. queen 은 /쿠/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "R r",
+      "options": [
+       "piano",
+       "umbrella",
+       "robot",
+       "queen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "아르(R)는 /르/ 소리예요. robot 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "S s",
+      "options": [
+       "tiger",
+       "queen",
+       "octopus",
+       "star"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에스(S)는 /스/ 소리예요. star 는 /스/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "U u",
+      "options": [
+       "piano",
+       "umbrella",
+       "robot",
+       "star"
+      ],
+      "answerNo": 2,
+      "explanationKo": "유(U)는 /어/ 소리예요. umbrella 는 /어/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "초원 되짚기 V~Z",
+   "newWords": [],
+   "unitWords": [
+    "violin",
+    "window",
+    "box",
+    "yo-yo",
+    "zebra"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "violin, window, box.\nyo-yo, zebra.",
+    "targetWords": [
+     "violin",
+     "window",
+     "box",
+     "yo-yo",
+     "zebra"
+    ],
+    "glossary": [
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "V v",
+      "options": [
+       "window",
+       "violin",
+       "zebra",
+       "box"
+      ],
+      "answerNo": 2,
+      "explanationKo": "브이(V)는 /브/ 소리예요. violin 은 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "W w",
+      "options": [
+       "window",
+       "yo-yo",
+       "box",
+       "violin"
+      ],
+      "answerNo": 1,
+      "explanationKo": "더블유(W)는 /워/ 소리예요. window 는 /워/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "X x",
+      "options": [
+       "zebra",
+       "violin",
+       "box",
+       "window"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엑스(X)는 /크스/ 소리예요. box 는 /크스/ 소리로 끝나요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Y y",
+      "options": [
+       "box",
+       "zebra",
+       "window",
+       "yo-yo"
+      ],
+      "answerNo": 4,
+      "explanationKo": "와이(Y)는 /이/ 소리예요. yo-yo 는 /이/ 와 /오/ 가 붙은 /요/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Z z",
+      "options": [
+       "yo-yo",
+       "box",
+       "zebra",
+       "violin"
+      ],
+      "answerNo": 3,
+      "explanationKo": "지(Z)는 /즈/ 소리예요. zebra 는 /즈/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant",
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "ant, bear, cow, door, elephant.\nfork, guitar, horse, insect, juice.",
+    "targetWords": [
+     "ant",
+     "bear",
+     "cow",
+     "door",
+     "elephant",
+     "fork",
+     "guitar",
+     "horse",
+     "insect",
+     "juice"
+    ],
+    "glossary": [
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     },
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ant",
+      "options": [
+       "bear",
+       "ant",
+       "door",
+       "fork"
+      ],
+      "answerNo": 2,
+      "explanationKo": "ant 는 개미예요. 개미 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cow",
+      "options": [
+       "horse",
+       "juice",
+       "cow",
+       "bear"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cow 는 소예요. 소 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "elephant",
+      "options": [
+       "elephant",
+       "guitar",
+       "door",
+       "horse"
+      ],
+      "answerNo": 1,
+      "explanationKo": "elephant 는 코끼리예요. 코끼리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "insect",
+      "options": [
+       "juice",
+       "fork",
+       "cow",
+       "insect"
+      ],
+      "answerNo": 4,
+      "explanationKo": "insect 는 곤충이에요. 곤충 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "guitar",
+      "options": [
+       "door",
+       "guitar",
+       "elephant",
+       "juice"
+      ],
+      "answerNo": 2,
+      "explanationKo": "guitar 는 기타예요. 기타 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물원 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus",
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "key, lion, monkey, nurse, octopus.\npiano, queen, robot, star, tiger.",
+    "targetWords": [
+     "key",
+     "lion",
+     "monkey",
+     "nurse",
+     "octopus",
+     "piano",
+     "queen",
+     "robot",
+     "star",
+     "tiger"
+    ],
+    "glossary": [
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     },
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     },
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "key",
+      "options": [
+       "lion",
+       "piano",
+       "key",
+       "robot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "key 는 열쇠예요. 열쇠 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "monkey",
+      "options": [
+       "monkey",
+       "nurse",
+       "tiger",
+       "queen"
+      ],
+      "answerNo": 1,
+      "explanationKo": "monkey 는 원숭이예요. 원숭이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "octopus",
+      "options": [
+       "star",
+       "octopus",
+       "lion",
+       "piano"
+      ],
+      "answerNo": 2,
+      "explanationKo": "octopus 는 문어예요. 문어 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "queen",
+      "options": [
+       "robot",
+       "tiger",
+       "nurse",
+       "queen"
+      ],
+      "answerNo": 4,
+      "explanationKo": "queen 은 여왕이에요. 여왕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "star",
+      "options": [
+       "octopus",
+       "key",
+       "star",
+       "monkey"
+      ],
+      "answerNo": 3,
+      "explanationKo": "star 는 별이에요. 별 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "정원 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo",
+    "zebra"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "umbrella, violin, window.\nbox, yo-yo, zebra.",
+    "targetWords": [
+     "umbrella",
+     "violin",
+     "window",
+     "box",
+     "yo-yo",
+     "zebra"
+    ],
+    "glossary": [
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     },
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "umbrella",
+      "options": [
+       "window",
+       "box",
+       "umbrella",
+       "yo-yo"
+      ],
+      "answerNo": 3,
+      "explanationKo": "umbrella 는 우산이에요. 우산 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "violin",
+      "options": [
+       "violin",
+       "zebra",
+       "box",
+       "umbrella"
+      ],
+      "answerNo": 1,
+      "explanationKo": "violin 은 바이올린이에요. 바이올린 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "window",
+      "options": [
+       "yo-yo",
+       "window",
+       "violin",
+       "zebra"
+      ],
+      "answerNo": 2,
+      "explanationKo": "window 는 창문이에요. 창문 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "box",
+      "options": [
+       "zebra",
+       "umbrella",
+       "yo-yo",
+       "box"
+      ],
+      "answerNo": 4,
+      "explanationKo": "box 는 상자예요. 상자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "zebra",
+      "options": [
+       "zebra",
+       "violin",
+       "window",
+       "yo-yo"
+      ],
+      "answerNo": 1,
+      "explanationKo": "zebra 는 얼룩말이에요. 얼룩말 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이터 A~E",
+   "newWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant"
+   ],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant"
+   ],
+   "preview": [
+    {
+     "word": "ant",
+     "meaningKo": "개미",
+     "example": "Ant!"
+    },
+    {
+     "word": "bear",
+     "meaningKo": "곰",
+     "example": "Bear!"
+    },
+    {
+     "word": "cow",
+     "meaningKo": "소",
+     "example": "Cow!"
+    },
+    {
+     "word": "door",
+     "meaningKo": "문",
+     "example": "Door!"
+    },
+    {
+     "word": "elephant",
+     "meaningKo": "코끼리",
+     "example": "Elephant!"
+    }
+   ],
+   "content": {
+    "passage": "ant, bear.\ncow, door, elephant.",
+    "targetWords": [
+     "ant",
+     "bear",
+     "cow",
+     "door",
+     "elephant"
+    ],
+    "glossary": [
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A a",
+      "options": [
+       "ant",
+       "door",
+       "bear",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "에이(A)는 /애/ 소리예요. ant 는 /애/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "B b",
+      "options": [
+       "cow",
+       "bear",
+       "door",
+       "elephant"
+      ],
+      "answerNo": 2,
+      "explanationKo": "비(B)는 /브/ 소리예요. bear 는 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "C c",
+      "options": [
+       "door",
+       "ant",
+       "elephant",
+       "cow"
+      ],
+      "answerNo": 4,
+      "explanationKo": "씨(C)는 여기서 /크/ 소리예요. cow 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "D d",
+      "options": [
+       "elephant",
+       "cow",
+       "door",
+       "ant"
+      ],
+      "answerNo": 3,
+      "explanationKo": "디(D)는 /드/ 소리예요. door 는 /드/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "E e",
+      "options": [
+       "bear",
+       "elephant",
+       "cow",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "이(E)는 /에/ 소리예요. elephant 는 /에/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "음악 놀이 F~J",
+   "newWords": [
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "unitWords": [
+    "bear",
+    "cow",
+    "door",
+    "elephant",
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "preview": [
+    {
+     "word": "fork",
+     "meaningKo": "포크",
+     "example": "Fork!"
+    },
+    {
+     "word": "guitar",
+     "meaningKo": "기타",
+     "example": "Guitar!"
+    },
+    {
+     "word": "horse",
+     "meaningKo": "말",
+     "example": "Horse!"
+    },
+    {
+     "word": "insect",
+     "meaningKo": "곤충",
+     "example": "Insect!"
+    },
+    {
+     "word": "juice",
+     "meaningKo": "주스",
+     "example": "Juice!"
+    }
+   ],
+   "content": {
+    "passage": "fork, guitar.\nhorse, insect, juice.",
+    "targetWords": [
+     "fork",
+     "guitar",
+     "horse",
+     "insect",
+     "juice"
+    ],
+    "glossary": [
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "F f",
+      "options": [
+       "fork",
+       "insect",
+       "cow",
+       "horse"
+      ],
+      "answerNo": 1,
+      "explanationKo": "에프(F)는 /프/ 소리예요. fork 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "G g",
+      "options": [
+       "bear",
+       "horse",
+       "guitar",
+       "elephant"
+      ],
+      "answerNo": 3,
+      "explanationKo": "지(G)는 여기서 /그/ 소리예요. guitar 는 /그/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "H h",
+      "options": [
+       "insect",
+       "horse",
+       "fork",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "에이치(H)는 /흐/ 소리예요. horse 는 /흐/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I i",
+      "options": [
+       "door",
+       "guitar",
+       "juice",
+       "insect"
+      ],
+      "answerNo": 4,
+      "explanationKo": "아이(I)는 /이/ 소리예요. insect 는 /이/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "J j",
+      "options": [
+       "elephant",
+       "fork",
+       "juice",
+       "horse"
+      ],
+      "answerNo": 3,
+      "explanationKo": "제이(J)는 /즈/ 소리예요. juice 는 /즈/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "보물찾기 K~O",
+   "newWords": [
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus"
+   ],
+   "unitWords": [
+    "door",
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus"
+   ],
+   "preview": [
+    {
+     "word": "key",
+     "meaningKo": "열쇠",
+     "example": "Key!"
+    },
+    {
+     "word": "lion",
+     "meaningKo": "사자",
+     "example": "Lion!"
+    },
+    {
+     "word": "monkey",
+     "meaningKo": "원숭이",
+     "example": "Monkey!"
+    },
+    {
+     "word": "nurse",
+     "meaningKo": "간호사",
+     "example": "Nurse!"
+    },
+    {
+     "word": "octopus",
+     "meaningKo": "문어",
+     "example": "Octopus!"
+    }
+   ],
+   "content": {
+    "passage": "key, lion.\nmonkey, nurse, octopus.",
+    "targetWords": [
+     "key",
+     "lion",
+     "monkey",
+     "nurse",
+     "octopus"
+    ],
+    "glossary": [
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     },
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "K k",
+      "options": [
+       "key",
+       "monkey",
+       "door",
+       "nurse"
+      ],
+      "answerNo": 1,
+      "explanationKo": "케이(K)는 /크/ 소리예요. key 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "L l",
+      "options": [
+       "octopus",
+       "insect",
+       "lion",
+       "key"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엘(L)은 /르/ 소리예요. lion 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "M m",
+      "options": [
+       "lion",
+       "monkey",
+       "guitar",
+       "octopus"
+      ],
+      "answerNo": 2,
+      "explanationKo": "엠(M)은 /므/ 소리예요. monkey 는 /므/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "N n",
+      "options": [
+       "key",
+       "octopus",
+       "horse",
+       "nurse"
+      ],
+      "answerNo": 4,
+      "explanationKo": "엔(N)은 /느/ 소리예요. nurse 는 /느/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "O o",
+      "options": [
+       "monkey",
+       "lion",
+       "octopus",
+       "fork"
+      ],
+      "answerNo": 3,
+      "explanationKo": "오(O)는 /아/ 소리예요. octopus 는 /아/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "우주 여행 P~T",
+   "newWords": [
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "unitWords": [
+    "guitar",
+    "horse",
+    "monkey",
+    "nurse",
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "preview": [
+    {
+     "word": "piano",
+     "meaningKo": "피아노",
+     "example": "Piano!"
+    },
+    {
+     "word": "queen",
+     "meaningKo": "여왕",
+     "example": "Queen!"
+    },
+    {
+     "word": "robot",
+     "meaningKo": "로봇",
+     "example": "Robot!"
+    },
+    {
+     "word": "star",
+     "meaningKo": "별",
+     "example": "Star!"
+    },
+    {
+     "word": "tiger",
+     "meaningKo": "호랑이",
+     "example": "Tiger!"
+    }
+   ],
+   "content": {
+    "passage": "piano, queen.\nrobot, star, tiger.",
+    "targetWords": [
+     "piano",
+     "queen",
+     "robot",
+     "star",
+     "tiger"
+    ],
+    "glossary": [
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "P p",
+      "options": [
+       "piano",
+       "robot",
+       "horse",
+       "queen"
+      ],
+      "answerNo": 1,
+      "explanationKo": "피(P)는 /프/ 소리예요. piano 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Q q",
+      "options": [
+       "star",
+       "tiger",
+       "queen",
+       "monkey"
+      ],
+      "answerNo": 3,
+      "explanationKo": "큐(Q)는 /쿠/ 소리예요. queen 은 /쿠/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "R r",
+      "options": [
+       "piano",
+       "robot",
+       "star",
+       "nurse"
+      ],
+      "answerNo": 2,
+      "explanationKo": "아르(R)는 /르/ 소리예요. robot 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "S s",
+      "options": [
+       "tiger",
+       "queen",
+       "guitar",
+       "star"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에스(S)는 /스/ 소리예요. star 는 /스/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "T t",
+      "options": [
+       "queen",
+       "piano",
+       "tiger",
+       "robot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "티(T)는 /트/ 소리예요. tiger 는 /트/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 상자 U~Y",
+   "newWords": [
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo"
+   ],
+   "unitWords": [
+    "monkey",
+    "queen",
+    "robot",
+    "star",
+    "tiger",
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo"
+   ],
+   "preview": [
+    {
+     "word": "umbrella",
+     "meaningKo": "우산",
+     "example": "Umbrella!"
+    },
+    {
+     "word": "violin",
+     "meaningKo": "바이올린",
+     "example": "Violin!"
+    },
+    {
+     "word": "window",
+     "meaningKo": "창문",
+     "example": "Window!"
+    },
+    {
+     "word": "box",
+     "meaningKo": "상자",
+     "example": "Box!"
+    },
+    {
+     "word": "yo-yo",
+     "meaningKo": "요요",
+     "example": "Yo-yo!"
+    }
+   ],
+   "content": {
+    "passage": "umbrella, violin.\nwindow, box, yo-yo.",
+    "targetWords": [
+     "umbrella",
+     "violin",
+     "window",
+     "box",
+     "yo-yo"
+    ],
+    "glossary": [
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     },
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "U u",
+      "options": [
+       "umbrella",
+       "yo-yo",
+       "monkey",
+       "box"
+      ],
+      "answerNo": 1,
+      "explanationKo": "유(U)는 /어/ 소리예요. umbrella 는 /어/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "V v",
+      "options": [
+       "box",
+       "window",
+       "violin",
+       "star"
+      ],
+      "answerNo": 3,
+      "explanationKo": "브이(V)는 /브/ 소리예요. violin 은 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "W w",
+      "options": [
+       "violin",
+       "window",
+       "yo-yo",
+       "queen"
+      ],
+      "answerNo": 2,
+      "explanationKo": "더블유(W)는 /워/ 소리예요. window 는 /워/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "X x",
+      "options": [
+       "yo-yo",
+       "umbrella",
+       "tiger",
+       "box"
+      ],
+      "answerNo": 4,
+      "explanationKo": "엑스(X)는 /크스/ 소리예요. box 는 /크스/ 소리로 끝나요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Y y",
+      "options": [
+       "window",
+       "violin",
+       "yo-yo",
+       "robot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "와이(Y)는 /이/ 소리예요. yo-yo 는 /이/ 와 /오/ 가 붙은 /요/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "Z 글자 찾기 놀이",
+   "newWords": [
+    "zebra"
+   ],
+   "unitWords": [
+    "robot",
+    "star",
+    "box",
+    "yo-yo",
+    "zebra"
+   ],
+   "preview": [
+    {
+     "word": "zebra",
+     "meaningKo": "얼룩말",
+     "example": "Zebra!"
+    }
+   ],
+   "content": {
+    "passage": "zebra, yo-yo, box.\nrobot, star.",
+    "targetWords": [
+     "zebra",
+     "yo-yo",
+     "box",
+     "robot",
+     "star"
+    ],
+    "glossary": [
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Z z",
+      "options": [
+       "zebra",
+       "robot",
+       "yo-yo",
+       "box"
+      ],
+      "answerNo": 1,
+      "explanationKo": "지(Z)는 /즈/ 소리예요. zebra 는 /즈/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Y y",
+      "options": [
+       "box",
+       "star",
+       "yo-yo",
+       "zebra"
+      ],
+      "answerNo": 3,
+      "explanationKo": "와이(Y)는 /이/ 소리예요. yo-yo 는 /이/ 와 /오/ 가 붙은 /요/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "X x",
+      "options": [
+       "robot",
+       "box",
+       "zebra",
+       "yo-yo"
+      ],
+      "answerNo": 2,
+      "explanationKo": "엑스(X)는 /크스/ 소리예요. box 는 /크스/ 소리로 끝나요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "R r",
+      "options": [
+       "yo-yo",
+       "zebra",
+       "box",
+       "robot"
+      ],
+      "answerNo": 4,
+      "explanationKo": "아르(R)는 /르/ 소리예요. robot 은 /르/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "S s",
+      "options": [
+       "box",
+       "yo-yo",
+       "star",
+       "robot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "에스(S)는 /스/ 소리예요. star 는 /스/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "악기와 장난감 모으기",
+   "newWords": [],
+   "unitWords": [
+    "guitar",
+    "piano",
+    "violin",
+    "yo-yo",
+    "robot",
+    "box",
+    "star"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "guitar, piano, violin.\nyo-yo, robot, box, star.",
+    "targetWords": [
+     "guitar",
+     "piano",
+     "violin",
+     "yo-yo",
+     "robot",
+     "box",
+     "star"
+    ],
+    "glossary": [
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     },
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "G g",
+      "options": [
+       "piano",
+       "guitar",
+       "star",
+       "box"
+      ],
+      "answerNo": 2,
+      "explanationKo": "지(G)는 여기서 /그/ 소리예요. guitar 는 /그/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "P p",
+      "options": [
+       "piano",
+       "violin",
+       "yo-yo",
+       "robot"
+      ],
+      "answerNo": 1,
+      "explanationKo": "피(P)는 /프/ 소리예요. piano 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "V v",
+      "options": [
+       "robot",
+       "box",
+       "violin",
+       "guitar"
+      ],
+      "answerNo": 3,
+      "explanationKo": "브이(V)는 /브/ 소리예요. violin 은 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Y y",
+      "options": [
+       "star",
+       "guitar",
+       "box",
+       "yo-yo"
+      ],
+      "answerNo": 4,
+      "explanationKo": "와이(Y)는 /이/ 소리예요. yo-yo 는 /이/ 와 /오/ 가 붙은 /요/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "S s",
+      "options": [
+       "robot",
+       "yo-yo",
+       "star",
+       "piano"
+      ],
+      "answerNo": 3,
+      "explanationKo": "에스(S)는 /스/ 소리예요. star 는 /스/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물 흉내 놀이",
+   "newWords": [],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "elephant",
+    "horse",
+    "insect",
+    "lion"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "ant, bear, cow, elephant.\nhorse, insect, lion.",
+    "targetWords": [
+     "ant",
+     "bear",
+     "cow",
+     "elephant",
+     "horse",
+     "insect",
+     "lion"
+    ],
+    "glossary": [
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "B b",
+      "options": [
+       "bear",
+       "horse",
+       "lion",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "비(B)는 /브/ 소리예요. bear 는 /브/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "C c",
+      "options": [
+       "lion",
+       "cow",
+       "insect",
+       "bear"
+      ],
+      "answerNo": 2,
+      "explanationKo": "씨(C)는 여기서 /크/ 소리예요. cow 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "E e",
+      "options": [
+       "horse",
+       "bear",
+       "elephant",
+       "lion"
+      ],
+      "answerNo": 3,
+      "explanationKo": "이(E)는 /에/ 소리예요. elephant 는 /에/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "H h",
+      "options": [
+       "cow",
+       "lion",
+       "bear",
+       "horse"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에이치(H)는 /흐/ 소리예요. horse 는 /흐/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I i",
+      "options": [
+       "elephant",
+       "insect",
+       "horse",
+       "cow"
+      ],
+      "answerNo": 2,
+      "explanationKo": "아이(I)는 /이/ 소리예요. insect 는 /이/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "역할 놀이 친구들",
+   "newWords": [],
+   "unitWords": [
+    "monkey",
+    "octopus",
+    "tiger",
+    "zebra",
+    "queen",
+    "nurse"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "monkey, octopus, tiger.\nzebra, queen, nurse.",
+    "targetWords": [
+     "monkey",
+     "octopus",
+     "tiger",
+     "zebra",
+     "queen",
+     "nurse"
+    ],
+    "glossary": [
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     },
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "M m",
+      "options": [
+       "monkey",
+       "tiger",
+       "zebra",
+       "octopus"
+      ],
+      "answerNo": 1,
+      "explanationKo": "엠(M)은 /므/ 소리예요. monkey 는 /므/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "O o",
+      "options": [
+       "queen",
+       "octopus",
+       "tiger",
+       "zebra"
+      ],
+      "answerNo": 2,
+      "explanationKo": "오(O)는 /아/ 소리예요. octopus 는 /아/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "T t",
+      "options": [
+       "zebra",
+       "nurse",
+       "tiger",
+       "queen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "티(T)는 /트/ 소리예요. tiger 는 /트/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Z z",
+      "options": [
+       "octopus",
+       "queen",
+       "nurse",
+       "zebra"
+      ],
+      "answerNo": 4,
+      "explanationKo": "지(Z)는 /즈/ 소리예요. zebra 는 /즈/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "N n",
+      "options": [
+       "tiger",
+       "zebra",
+       "nurse",
+       "octopus"
+      ],
+      "answerNo": 3,
+      "explanationKo": "엔(N)은 /느/ 소리예요. nurse 는 /느/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "alphabet",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "집 안 물건 찾기",
+   "newWords": [],
+   "unitWords": [
+    "door",
+    "window",
+    "key",
+    "fork",
+    "umbrella",
+    "juice"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "door, window, key.\nfork, umbrella, juice.",
+    "targetWords": [
+     "door",
+     "window",
+     "key",
+     "fork",
+     "umbrella",
+     "juice"
+    ],
+    "glossary": [
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     },
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "D d",
+      "options": [
+       "window",
+       "door",
+       "juice",
+       "fork"
+      ],
+      "answerNo": 2,
+      "explanationKo": "디(D)는 /드/ 소리예요. door 는 /드/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "W w",
+      "options": [
+       "window",
+       "key",
+       "fork",
+       "juice"
+      ],
+      "answerNo": 1,
+      "explanationKo": "더블유(W)는 /워/ 소리예요. window 는 /워/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "K k",
+      "options": [
+       "fork",
+       "juice",
+       "key",
+       "door"
+      ],
+      "answerNo": 3,
+      "explanationKo": "케이(K)는 /크/ 소리예요. key 는 /크/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "F f",
+      "options": [
+       "key",
+       "door",
+       "umbrella",
+       "fork"
+      ],
+      "answerNo": 4,
+      "explanationKo": "에프(F)는 /프/ 소리예요. fork 는 /프/ 로 시작해요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "U u",
+      "options": [
+       "door",
+       "umbrella",
+       "key",
+       "juice"
+      ],
+      "answerNo": 2,
+      "explanationKo": "유(U)는 /어/ 소리예요. umbrella 는 /어/ 로 시작해요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이터 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "ant",
+    "bear",
+    "cow",
+    "door",
+    "elephant",
+    "fork",
+    "guitar",
+    "horse",
+    "insect",
+    "juice"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "fork, guitar, horse, insect, juice.\nant, bear, cow, door, elephant.",
+    "targetWords": [
+     "fork",
+     "guitar",
+     "horse",
+     "insect",
+     "juice",
+     "ant",
+     "bear",
+     "cow",
+     "door",
+     "elephant"
+    ],
+    "glossary": [
+     {
+      "surface": "fork",
+      "lemma": "fork",
+      "meaningKo": "포크"
+     },
+     {
+      "surface": "guitar",
+      "lemma": "guitar",
+      "meaningKo": "기타"
+     },
+     {
+      "surface": "horse",
+      "lemma": "horse",
+      "meaningKo": "말"
+     },
+     {
+      "surface": "insect",
+      "lemma": "insect",
+      "meaningKo": "곤충"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     },
+     {
+      "surface": "ant",
+      "lemma": "ant",
+      "meaningKo": "개미"
+     },
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "door",
+      "lemma": "door",
+      "meaningKo": "문"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bear",
+      "options": [
+       "bear",
+       "cow",
+       "guitar",
+       "insect"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bear 는 곰이에요. 곰 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "door",
+      "options": [
+       "elephant",
+       "door",
+       "ant",
+       "horse"
+      ],
+      "answerNo": 2,
+      "explanationKo": "door 는 문이에요. 문 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fork",
+      "options": [
+       "guitar",
+       "juice",
+       "fork",
+       "cow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "fork 는 포크예요. 포크 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "horse",
+      "options": [
+       "ant",
+       "bear",
+       "juice",
+       "horse"
+      ],
+      "answerNo": 4,
+      "explanationKo": "horse 는 말이에요. 말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "juice",
+      "options": [
+       "insect",
+       "juice",
+       "fork",
+       "elephant"
+      ],
+      "answerNo": 2,
+      "explanationKo": "juice 는 주스예요. 주스 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "보물 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "key",
+    "lion",
+    "monkey",
+    "nurse",
+    "octopus",
+    "piano",
+    "queen",
+    "robot",
+    "star",
+    "tiger"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "piano, queen, robot, star, tiger.\nkey, lion, monkey, nurse, octopus.",
+    "targetWords": [
+     "piano",
+     "queen",
+     "robot",
+     "star",
+     "tiger",
+     "key",
+     "lion",
+     "monkey",
+     "nurse",
+     "octopus"
+    ],
+    "glossary": [
+     {
+      "surface": "piano",
+      "lemma": "piano",
+      "meaningKo": "피아노"
+     },
+     {
+      "surface": "queen",
+      "lemma": "queen",
+      "meaningKo": "여왕"
+     },
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     },
+     {
+      "surface": "tiger",
+      "lemma": "tiger",
+      "meaningKo": "호랑이"
+     },
+     {
+      "surface": "key",
+      "lemma": "key",
+      "meaningKo": "열쇠"
+     },
+     {
+      "surface": "lion",
+      "lemma": "lion",
+      "meaningKo": "사자"
+     },
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "nurse",
+      "lemma": "nurse",
+      "meaningKo": "간호사"
+     },
+     {
+      "surface": "octopus",
+      "lemma": "octopus",
+      "meaningKo": "문어"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "lion",
+      "options": [
+       "key",
+       "lion",
+       "star",
+       "octopus"
+      ],
+      "answerNo": 2,
+      "explanationKo": "lion 은 사자예요. 사자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "nurse",
+      "options": [
+       "queen",
+       "monkey",
+       "nurse",
+       "piano"
+      ],
+      "answerNo": 3,
+      "explanationKo": "nurse 는 간호사예요. 간호사 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "piano",
+      "options": [
+       "piano",
+       "robot",
+       "key",
+       "tiger"
+      ],
+      "answerNo": 1,
+      "explanationKo": "piano 는 피아노예요. 피아노 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "robot",
+      "options": [
+       "star",
+       "octopus",
+       "monkey",
+       "robot"
+      ],
+      "answerNo": 4,
+      "explanationKo": "robot 은 로봇이에요. 로봇 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "tiger",
+      "options": [
+       "lion",
+       "tiger",
+       "nurse",
+       "queen"
+      ],
+      "answerNo": 2,
+      "explanationKo": "tiger 는 호랑이예요. 호랑이 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 낱말 다시 읽기",
+   "newWords": [],
+   "unitWords": [
+    "umbrella",
+    "violin",
+    "window",
+    "box",
+    "yo-yo",
+    "zebra"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "box, yo-yo, zebra.\numbrella, violin, window.",
+    "targetWords": [
+     "box",
+     "yo-yo",
+     "zebra",
+     "umbrella",
+     "violin",
+     "window"
+    ],
+    "glossary": [
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "yo-yo",
+      "lemma": "yo-yo",
+      "meaningKo": "요요"
+     },
+     {
+      "surface": "zebra",
+      "lemma": "zebra",
+      "meaningKo": "얼룩말"
+     },
+     {
+      "surface": "umbrella",
+      "lemma": "umbrella",
+      "meaningKo": "우산"
+     },
+     {
+      "surface": "violin",
+      "lemma": "violin",
+      "meaningKo": "바이올린"
+     },
+     {
+      "surface": "window",
+      "lemma": "window",
+      "meaningKo": "창문"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "yo-yo",
+      "options": [
+       "box",
+       "yo-yo",
+       "window",
+       "violin"
+      ],
+      "answerNo": 2,
+      "explanationKo": "yo-yo 는 요요예요. 요요 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "zebra",
+      "options": [
+       "umbrella",
+       "violin",
+       "zebra",
+       "box"
+      ],
+      "answerNo": 3,
+      "explanationKo": "zebra 는 얼룩말이에요. 얼룩말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "umbrella",
+      "options": [
+       "umbrella",
+       "yo-yo",
+       "zebra",
+       "window"
+      ],
+      "answerNo": 1,
+      "explanationKo": "umbrella 는 우산이에요. 우산 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "violin",
+      "options": [
+       "window",
+       "box",
+       "yo-yo",
+       "violin"
+      ],
+      "answerNo": 4,
+      "explanationKo": "violin 은 바이올린이에요. 바이올린 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "window",
+      "options": [
+       "zebra",
+       "umbrella",
+       "window",
+       "box"
+      ],
+      "answerNo": 3,
+      "explanationKo": "window 는 창문이에요. 창문 그림을 골라요."
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -42,6 +42,7 @@ import {
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
 import { TalkCardSchema, TalkTestSheetSchema } from "@/core/seed/schema/talk";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   AREAS,
@@ -607,6 +608,27 @@ describe("시드 규격(schema)", () => {
     );
   });
 
+  it("6.3 시드 규격: 그림 파일 꼴 svg 를 받는다", () => {
+    const image = ref.images.images[0];
+    if (!image) throw new Error("그림 견본이 없다");
+    expectValid(
+      ImageEntrySchema,
+      { ...image, file: `images/vocab/${image.key}.svg` },
+      "svg 그림",
+    );
+    // 키와 다른 이름 · 모르는 꼴은 svg 를 더해도 거부한다.
+    expectInvalid(
+      ImageEntrySchema,
+      { ...image, file: "images/vocab/other.svg" },
+      "file",
+    );
+    expectInvalid(
+      ImageEntrySchema,
+      { ...image, file: `images/vocab/${image.key}.gif` },
+      "file",
+    );
+  });
+
   it("6.3 시드 규격: 읽기 문항 유형 수 합이 문항 수와 다르면 거부한다", () => {
     const spec = clone(levelSpecOf("reading", 5));
     if (spec.area !== "reading") throw new Error("읽기 단계 규격이 아니다");
@@ -1050,6 +1072,7 @@ describe("시드 규격(schema)", () => {
             forbidden: ForbiddenFileSchema,
             forms: ListFormsFileSchema,
             metaSentences: MetaSentencesFileSchema,
+            teachers: TeachersFileSchema,
           }[parsed.name];
         case "lessons":
           return LessonFileSchema;

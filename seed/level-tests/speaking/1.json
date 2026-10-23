@@ -1,0 +1,81 @@
+{
+  "area": "speaking",
+  "level": 1,
+  "forms": [
+    {
+      "form": 1,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "pizza", "explanationKo": "pizza 는 피자예요."},
+        {"no": 2, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "book", "explanationKo": "book 은 책이에요."},
+        {"no": 3, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "yellow", "explanationKo": "yellow 는 노란색이에요."},
+        {"no": 4, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "dog", "explanationKo": "dog 는 개예요."},
+        {"no": 5, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "jacket", "explanationKo": "jacket 은 재킷이에요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "It is a red swing.", "options": ["lake", "swing", "egg", "rice"], "answerNo": 2, "explanationKo": "swing 은 그네예요. 빨간 그네 그림을 골라요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Oh, that is my drum!", "options": ["map", "clock", "tent", "drum"], "answerNo": 4, "explanationKo": "drum 은 북이에요. 북 그림을 골라요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Oh, it is pink!", "options": ["pink", "green", "blue", "white"], "answerNo": 1, "explanationKo": "pink 는 분홍색이에요. 분홍색 그림을 골라요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I like the green snake.", "options": ["cat", "fan", "snake", "top"], "answerNo": 3, "explanationKo": "snake 는 뱀이에요. 초록 뱀 그림을 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Wow, nine balls!", "options": ["two", "nine", "five", "eight"], "answerNo": 2, "explanationKo": "nine 은 아홉이에요. 숫자 아홉 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "An egg and a cookie.", "explanationKo": "'달걀 하나와 쿠키 하나.'라는 뜻이에요."},
+        {"no": 12, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "This is my blue cup.", "explanationKo": "'이건 내 파란 컵이야.'라는 뜻이에요."},
+        {"no": 13, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "The white cat is small.", "explanationKo": "'그 하얀 고양이는 작아.'라는 뜻이에요."},
+        {"no": 14, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like my cute puppy.", "explanationKo": "'나는 내 귀여운 강아지가 좋아.'라는 뜻이에요."},
+        {"no": 15, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "Two shoes and two socks.", "explanationKo": "'신발 두 짝과 양말 두 짝.'이라는 뜻이에요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "question", "en": "This is a rock. That is a shell. What is that?", "ko": "이건 바위야. 저건 조개껍데기야. 저건 뭐야?", "modelAnswer": "That is a shell.", "accepted": ["shell", "a shell", "That is a shell.", "It is a shell."], "explanationKo": "저것은 조개껍데기(shell)예요. 'That is a shell.' 이라고 말해요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "question", "en": "That is a bus. This is my bed. What is this?", "ko": "저건 버스야. 이건 내 침대야. 이건 뭐야?", "modelAnswer": "This is my bed.", "accepted": ["bed", "my bed", "This is my bed.", "It is my bed."], "explanationKo": "이것은 침대(bed)예요. 'This is my bed.' 라고 말해요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "question", "en": "The bag is red. The pen is black. What color is the pen?", "ko": "가방은 빨개. 펜은 까매. 펜은 무슨 색이야?", "modelAnswer": "The pen is black.", "accepted": ["black", "It is black.", "The pen is black."], "explanationKo": "펜은 검은색(black)이에요. 'The pen is black.' 이라고 말해요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "question", "en": "I like the green frog. The pig is pink. What is pink?", "ko": "나는 그 초록 개구리가 좋아. 돼지는 분홍색이야. 뭐가 분홍색이야?", "modelAnswer": "The pig is pink.", "accepted": ["pig", "the pig", "The pig is pink."], "explanationKo": "돼지(pig)가 분홍색이에요. 'The pig is pink.' 라고 말해요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "question", "en": "I like two caps. I like four kites. How many kites?", "ko": "나는 모자 두 개가 좋아. 나는 연 네 개가 좋아. 연은 몇 개야?", "modelAnswer": "Four kites.", "accepted": ["four", "four kites", "I like four kites."], "explanationKo": "연은 네 개(four)예요. 'Four kites.' 라고 말해요."}
+      ]
+    },
+    {
+      "form": 2,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "candy", "explanationKo": "candy 는 사탕이에요."},
+        {"no": 2, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "bus", "explanationKo": "bus 는 버스예요."},
+        {"no": 3, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "smile", "explanationKo": "smile 은 미소예요."},
+        {"no": 4, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "cat", "explanationKo": "cat 은 고양이예요."},
+        {"no": 5, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "ball", "explanationKo": "ball 은 공이에요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "It is yellow cheese.", "options": ["cookie", "shell", "cheese", "rock"], "answerNo": 3, "explanationKo": "cheese 는 치즈예요. 노란 치즈 그림을 골라요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "That is a big truck.", "options": ["truck", "lamp", "cup", "bell"], "answerNo": 1, "explanationKo": "truck 은 트럭이에요. 트럭 그림을 골라요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "My arm is long.", "options": ["nose", "ear", "eye", "arm"], "answerNo": 4, "explanationKo": "arm 은 팔이에요. 팔 그림을 골라요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I like the orange fox.", "options": ["pig", "fox", "bird", "pot"], "answerNo": 2, "explanationKo": "fox 는 여우예요. 주황 여우 그림을 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Wow, three kites!", "options": ["six", "one", "eight", "three"], "answerNo": 4, "explanationKo": "three 는 셋이에요. 숫자 셋 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "It is a nice song.", "explanationKo": "'그건 좋은 노래야.'라는 뜻이에요."},
+        {"no": 12, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "That is a little bell.", "explanationKo": "'저건 작은 종이야.'라는 뜻이에요."},
+        {"no": 13, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "The red apple is big.", "explanationKo": "'그 빨간 사과는 커.'라는 뜻이에요."},
+        {"no": 14, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like the white sheep.", "explanationKo": "'나는 그 하얀 양이 좋아.'라는 뜻이에요."},
+        {"no": 15, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like two pink dolls.", "explanationKo": "'나는 분홍 인형 두 개가 좋아.'라는 뜻이에요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "question", "en": "The sand is hot. The lake is blue. What is blue?", "ko": "모래는 뜨거워. 호수는 파래. 뭐가 파래?", "modelAnswer": "The lake is blue.", "accepted": ["lake", "the lake", "The lake is blue."], "explanationKo": "호수(lake)가 파래요. 'The lake is blue.' 라고 말해요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "question", "en": "This is my cup. That is a clock. What is that?", "ko": "이건 내 컵이야. 저건 시계야. 저건 뭐야?", "modelAnswer": "That is a clock.", "accepted": ["clock", "a clock", "That is a clock.", "It is a clock."], "explanationKo": "저것은 시계(clock)예요. 'That is a clock.' 이라고 말해요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "question", "en": "My eyes are big. My neck is short. What is short?", "ko": "내 눈은 커. 내 목은 짧아. 뭐가 짧아?", "modelAnswer": "My neck is short.", "accepted": ["neck", "my neck", "My neck is short."], "explanationKo": "목(neck)이 짧아요. 'My neck is short.' 라고 말해요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "question", "en": "I like the big dog. The duck is small. What is small?", "ko": "나는 그 큰 개가 좋아. 오리는 작아. 뭐가 작아?", "modelAnswer": "The duck is small.", "accepted": ["duck", "the duck", "The duck is small."], "explanationKo": "오리(duck)가 작아요. 'The duck is small.' 이라고 말해요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "question", "en": "Six red hats. Ten blue rings. How many rings?", "ko": "빨간 모자 여섯 개. 파란 반지 열 개. 반지는 몇 개야?", "modelAnswer": "Ten blue rings.", "accepted": ["ten", "ten rings", "Ten blue rings."], "explanationKo": "반지는 열 개(ten)예요. 'Ten blue rings.' 라고 말해요."}
+      ]
+    },
+    {
+      "form": 3,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "banana", "explanationKo": "banana 는 바나나예요."},
+        {"no": 2, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "pencil", "explanationKo": "pencil 은 연필이에요."},
+        {"no": 3, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "hand", "explanationKo": "hand 는 손이에요."},
+        {"no": 4, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "fish", "explanationKo": "fish 는 물고기예요."},
+        {"no": 5, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "bike", "explanationKo": "bike 는 자전거예요."},
+        {"no": 6, "unit": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Oh, a big tree!", "options": ["apple", "king", "sand", "tree"], "answerNo": 4, "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."},
+        {"no": 7, "unit": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Oh, that is a tent!", "options": ["bag", "tent", "chair", "ship"], "answerNo": 2, "explanationKo": "tent 는 텐트예요. 텐트 그림을 골라요."},
+        {"no": 8, "unit": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "It is a white tooth.", "options": ["nose", "leg", "tooth", "ear"], "answerNo": 3, "explanationKo": "tooth 는 이, 이빨이에요. 하얀 이 그림을 골라요."},
+        {"no": 9, "unit": 4, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I like my red top.", "options": ["top", "frog", "sheep", "duck"], "answerNo": 1, "explanationKo": "top 은 팽이예요. 빨간 팽이 그림을 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I like seven cups.", "options": ["four", "two", "seven", "six"], "answerNo": 3, "explanationKo": "seven 은 일곱이에요. 숫자 일곱 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "It is a big rock.", "explanationKo": "'그건 큰 바위야.'라는 뜻이에요."},
+        {"no": 12, "unit": 2, "revision": 2, "correction": 0, "type": "repeat", "sentence": "That is a small lamp.", "explanationKo": "'저건 작은 램프야.'라는 뜻이에요."},
+        {"no": 13, "unit": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "My green bag is big.", "explanationKo": "'내 초록 가방은 커.'라는 뜻이에요."},
+        {"no": 14, "unit": 4, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like the cute frog.", "explanationKo": "'나는 그 귀여운 개구리가 좋아.'라는 뜻이에요."},
+        {"no": 15, "unit": 5, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like six little hats.", "explanationKo": "'나는 작은 모자 여섯 개가 좋아.'라는 뜻이에요."},
+        {"no": 16, "unit": 1, "revision": 2, "correction": 0, "type": "question", "en": "An apple and an egg. The egg is white. What is white?", "ko": "사과 하나랑 달걀 하나. 달걀은 하얘. 뭐가 하얘?", "modelAnswer": "The egg is white.", "accepted": ["egg", "the egg", "The egg is white."], "explanationKo": "달걀(egg)이 하얘요. 'The egg is white.' 라고 말해요."},
+        {"no": 17, "unit": 2, "revision": 2, "correction": 0, "type": "question", "en": "This is my desk. That is a shop. What is this?", "ko": "이건 내 책상이야. 저건 가게야. 이건 뭐야?", "modelAnswer": "This is my desk.", "accepted": ["desk", "my desk", "This is my desk.", "It is my desk."], "explanationKo": "이것은 책상(desk)이에요. 'This is my desk.' 라고 말해요."},
+        {"no": 18, "unit": 3, "revision": 2, "correction": 0, "type": "question", "en": "The fox is orange. The cat is white. What color is the fox?", "ko": "여우는 주황색이야. 고양이는 하얘. 여우는 무슨 색이야?", "modelAnswer": "The fox is orange.", "accepted": ["orange", "It is orange.", "The fox is orange."], "explanationKo": "여우는 주황색(orange)이에요. 'The fox is orange.' 라고 말해요."},
+        {"no": 19, "unit": 4, "revision": 2, "correction": 0, "type": "question", "en": "The pen is thin. The brush is thick. What is thick?", "ko": "펜은 얇아. 붓은 두꺼워. 뭐가 두꺼워?", "modelAnswer": "The brush is thick.", "accepted": ["brush", "the brush", "The brush is thick."], "explanationKo": "붓(brush)이 두꺼워요. 'The brush is thick.' 이라고 말해요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "question", "en": "I like five ducks. I like two pigs. How many ducks?", "ko": "나는 오리 다섯 마리가 좋아. 나는 돼지 두 마리가 좋아. 오리는 몇 마리야?", "modelAnswer": "Five ducks.", "accepted": ["five", "five ducks", "I like five ducks."], "explanationKo": "오리는 다섯 마리(five)예요. 'Five ducks.' 라고 말해요."}
+      ]
+    }
+  ]
+}

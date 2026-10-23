@@ -26,6 +26,7 @@ import {
   type SeedIssue,
 } from "@/core/seed/check-lesson";
 import { checkTalkCard, checkTalkUnit } from "@/core/seed/check-talk";
+import { checkTeacherAssets } from "@/core/seed/check-teacher";
 import {
   buildReferenceIndex,
   type ReferenceFiles,
@@ -63,6 +64,7 @@ import {
   UnitSpecsFileSchema,
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   AREAS,
@@ -472,6 +474,11 @@ export type ValidateOptions = {
   through?: number;
   /** 영역 거르기(기본 넷). */
   areas?: readonly Area[];
+  /**
+   * 명단의 채워진 모델 · 초상 칸 파일이 있는가(public/ 기준 경로, 6.4 자산 검사의 '파일 있음' 몫). 넘기지 않으면 보지 않는다.
+   * 명령(scripts/seed-validate.ts)이 넘긴다.
+   */
+  assetExists?: (path: string) => boolean;
 };
 export type ReportError = {
   rule: string;
@@ -531,6 +538,7 @@ const REFERENCE_SCHEMAS: Record<SeedFileName, z.ZodType> = {
   forbidden: ForbiddenFileSchema,
   forms: ListFormsFileSchema,
   metaSentences: MetaSentencesFileSchema,
+  teachers: TeachersFileSchema,
 };
 
 function issuePath(prefix: string, path: readonly PropertyKey[]): string {
@@ -990,6 +998,21 @@ export function validateSeed(
 ): SeedReport {
   const seed = collectCells(files, { areas: options.areas });
   const { areas, index, reference, errors, failedKeys, brokenKeys } = seed;
+  if (reference.teachers && options.assetExists) {
+    for (const i of checkTeacherAssets(
+      reference.teachers,
+      options.assetExists,
+    )) {
+      seed.referenceErrors++;
+      errors.push({
+        rule: i.rule,
+        cell: null,
+        file: i.file,
+        path: i.path,
+        message: i.message,
+      });
+    }
+  }
   const warnings: SeedWarning[] = [];
   const addIssues = (issues: readonly SeedIssue[], prefix: string) => {
     for (const i of issues) {

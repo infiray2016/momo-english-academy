@@ -35,9 +35,15 @@ export const LOADABLE_THROUGH = LEVEL_MIN;
 
 type ChangeVia = SettingRow["changeVia"];
 
-/** 12절 바꾸는 곳: app.* 시드, writing.* 결정 기록 먼저, session.length_factor 기본, 나머지(ai.* · access.* · parent.* · talk.safety_*) 고급. */
+/** 12절 바꾸는 곳이 시드인 회화 선생님 키(자산 검사가 읽는 상한, C130). */
+const SEED_CHANGE_KEYS: readonly string[] = [
+  "talk.teacher_model_max_mb",
+  "talk.teacher_portrait_max_kb",
+];
+
+/** 12절 바꾸는 곳: app.* · 선생님 자산 상한 시드, writing.* 결정 기록 먼저, session.length_factor 기본, 나머지(ai.* · access.* · parent.* · talk.safety_*) 고급. */
 function changeViaOf(key: string): ChangeVia {
-  if (key.startsWith("app.")) return "seed";
+  if (key.startsWith("app.") || SEED_CHANGE_KEYS.includes(key)) return "seed";
   if (key.startsWith("writing.")) return "decision-first";
   if (key === "session.length_factor") return "basic";
   return "advanced";

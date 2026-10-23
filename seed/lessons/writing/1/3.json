@@ -1,0 +1,561 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 3,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연못 물고기 세기",
+      "newWords": ["three", "short", "fish", "two", "eight"],
+      "unitWords": ["three", "short", "fish", "two", "eight"],
+      "preview": [
+        {"word": "three", "meaningKo": "3, 셋", "example": "Three red apples."},
+        {"word": "short", "meaningKo": "짧은, 키가 작은", "example": "The pig is short."},
+        {"word": "fish", "meaningKo": "물고기", "example": "I like fish."},
+        {"word": "two", "meaningKo": "2, 둘", "example": "Two little frogs."},
+        {"word": "eight", "meaningKo": "8, 여덟", "example": "Eight ants."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "fish", "options": ["fox", "fish", "frog", "fork"], "answerNo": 2, "accepted": ["fish"]},
+          {"type": "pick-word", "picture": "eight", "options": ["egg", "ear", "eye", "eight"], "answerNo": 4, "accepted": ["eight"]},
+          {"type": "copy-tiles", "word": "short", "tiles": ["t", "o", "s", "r", "h"], "accepted": ["short"]},
+          {"type": "copy-tiles", "word": "two", "tiles": ["w", "o", "t"], "accepted": ["two"]},
+          {"type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["h", "g", "t"], "accepted": ["three"]},
+          {"type": "fill-letters", "word": "fish", "pattern": "fi__", "tiles": ["p", "h", "s"], "accepted": ["fish"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "목장의 양과 치즈",
+      "newWords": ["sheep", "cheese", "chair", "orange", "tall"],
+      "unitWords": ["sheep", "cheese", "chair", "orange", "tall", "short"],
+      "preview": [
+        {"word": "sheep", "meaningKo": "양", "example": "I like sheep."},
+        {"word": "cheese", "meaningKo": "치즈", "example": "The cheese is yellow."},
+        {"word": "chair", "meaningKo": "의자", "example": "This is my chair."},
+        {"word": "orange", "meaningKo": "오렌지, 주황색", "example": "The fox is orange."},
+        {"word": "tall", "meaningKo": "키가 큰, 높은", "example": "The tree is tall."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "sheep", "options": ["sheep", "snake", "sun", "seven"], "answerNo": 1, "accepted": ["sheep"]},
+          {"type": "pick-word", "picture": "chair", "options": ["cat", "cheese", "chair", "chicken"], "answerNo": 3, "accepted": ["chair"]},
+          {"type": "copy-tiles", "word": "orange", "tiles": ["n", "o", "e", "r", "g", "a"], "accepted": ["orange"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["l", "t", "l", "a"], "accepted": ["tall"]},
+          {"type": "fill-letters", "word": "cheese", "pattern": "__eese", "tiles": ["h", "p", "c"], "accepted": ["cheese"]},
+          {"type": "fill-letters", "word": "short", "pattern": "__ort", "tiles": ["t", "s", "h"], "accepted": ["short"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "쿠키 먹고 이 닦기",
+      "newWords": ["shoe", "ship", "mouth", "tooth", "cookie"],
+      "unitWords": ["shoe", "ship", "mouth", "tooth", "cookie", "sheep"],
+      "preview": [
+        {"word": "shoe", "meaningKo": "신발", "example": "I like the red shoes."},
+        {"word": "ship", "meaningKo": "배", "example": "The ship is big."},
+        {"word": "mouth", "meaningKo": "입", "example": "This is my mouth."},
+        {"word": "tooth", "meaningKo": "이, 이빨", "example": "My tooth is white."},
+        {"word": "cookie", "meaningKo": "쿠키, 과자", "example": "I like cookies."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "shoe", "options": ["sheep", "sand", "six", "shoe"], "answerNo": 4, "accepted": ["shoe"]},
+          {"type": "pick-word", "picture": "tooth", "options": ["tooth", "tiger", "ten", "tree"], "answerNo": 1, "accepted": ["tooth"]},
+          {"type": "copy-tiles", "word": "cookie", "tiles": ["k", "o", "e", "c", "i", "o"], "accepted": ["cookie"]},
+          {"type": "copy-tiles", "word": "mouth", "tiles": ["u", "h", "m", "t", "o"], "accepted": ["mouth"]},
+          {"type": "fill-letters", "word": "ship", "pattern": "__ip", "tiles": ["e", "h", "s"], "accepted": ["ship"]},
+          {"type": "fill-letters", "word": "sheep", "pattern": "__eep", "tiles": ["m", "s", "h"], "accepted": ["sheep"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바닷가 조개 가게",
+      "newWords": ["shop", "shirt", "shell", "brush", "toy"],
+      "unitWords": ["shop", "shirt", "shell", "brush", "toy", "sheep", "ship", "fish", "mouth"],
+      "preview": [
+        {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "It is a cake shop."},
+        {"word": "shirt", "meaningKo": "셔츠", "example": "My shirt is blue."},
+        {"word": "shell", "meaningKo": "조개껍데기", "example": "I like this shell."},
+        {"word": "brush", "meaningKo": "솔, 붓", "example": "It is my brush."},
+        {"word": "toy", "meaningKo": "장난감", "example": "It is a toy duck."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "shop", "options": ["sheep", "sun", "shop", "ship"], "answerNo": 3, "accepted": ["shop"]},
+          {"type": "pick-word", "picture": "shell", "options": ["bell", "shell", "egg", "fish"], "answerNo": 2, "accepted": ["shell"]},
+          {"type": "copy-tiles", "word": "toy", "tiles": ["y", "o", "t"], "accepted": ["toy"]},
+          {"type": "copy-tiles", "word": "brush", "tiles": ["s", "u", "b", "h", "r"], "accepted": ["brush"]},
+          {"type": "fill-letters", "word": "shirt", "pattern": "__irt", "tiles": ["t", "h", "s"], "accepted": ["shirt"]},
+          {"type": "fill-letters", "word": "mouth", "pattern": "mou__", "tiles": ["s", "t", "h"], "accepted": ["mouth"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "소풍 점심 도시락",
+      "newWords": ["dish", "lunch", "thin", "bath", "arm"],
+      "unitWords": ["dish", "lunch", "thin", "bath", "arm", "fish", "brush"],
+      "preview": [
+        {"word": "dish", "meaningKo": "접시, 요리", "example": "The dish is white."},
+        {"word": "lunch", "meaningKo": "점심", "example": "I like lunch."},
+        {"word": "thin", "meaningKo": "얇은, 마른", "example": "The snake is thin."},
+        {"word": "bath", "meaningKo": "목욕, 욕조", "example": "The bath is hot."},
+        {"word": "arm", "meaningKo": "팔", "example": "This is my arm."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "dish", "options": ["duck", "dish", "fish", "dog"], "answerNo": 2, "accepted": ["dish"]},
+          {"type": "pick-word", "picture": "bath", "options": ["bear", "bag", "bed", "bath"], "answerNo": 4, "accepted": ["bath"]},
+          {"type": "copy-tiles", "word": "arm", "tiles": ["r", "m", "a"], "accepted": ["arm"]},
+          {"type": "copy-tiles", "word": "lunch", "tiles": ["c", "l", "h", "u", "n"], "accepted": ["lunch"]},
+          {"type": "fill-letters", "word": "thin", "pattern": "__in", "tiles": ["e", "h", "t"], "accepted": ["thin"]},
+          {"type": "fill-letters", "word": "brush", "pattern": "bru__", "tiles": ["n", "h", "s"], "accepted": ["brush"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 오두막",
+      "newWords": [],
+      "unitWords": ["two", "cheese", "chair", "tall", "three", "sheep", "fish"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "two", "options": ["two", "ten", "tree", "tiger"], "answerNo": 1, "accepted": ["two"]},
+          {"type": "pick-word", "picture": "chair", "options": ["cheese", "cow", "chair", "cat"], "answerNo": 3, "accepted": ["chair"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["a", "l", "t", "l"], "accepted": ["tall"]},
+          {"type": "copy-tiles", "word": "three", "tiles": ["e", "r", "t", "e", "h"], "accepted": ["three"]},
+          {"type": "fill-letters", "word": "sheep", "pattern": "__eep", "tiles": ["h", "a", "s"], "accepted": ["sheep"]},
+          {"type": "fill-letters", "word": "fish", "pattern": "fi__", "tiles": ["l", "s", "h"], "accepted": ["fish"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "과수원 나들이",
+      "newWords": [],
+      "unitWords": ["eight", "shoe", "ship", "toy", "cheese", "thin"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "eight", "options": ["egg", "elephant", "apple", "eight"], "answerNo": 4, "accepted": ["eight"]},
+          {"type": "pick-word", "picture": "shoe", "options": ["shoe", "ship", "seven", "sun"], "answerNo": 1, "accepted": ["shoe"]},
+          {"type": "copy-tiles", "word": "toy", "tiles": ["o", "y", "t"], "accepted": ["toy"]},
+          {"type": "copy-tiles", "word": "cheese", "tiles": ["e", "s", "c", "e", "h", "e"], "accepted": ["cheese"]},
+          {"type": "fill-letters", "word": "ship", "pattern": "__ip", "tiles": ["g", "h", "s"], "accepted": ["ship"]},
+          {"type": "fill-letters", "word": "thin", "pattern": "__in", "tiles": ["h", "o", "t"], "accepted": ["thin"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동물원 구경",
+      "newWords": [],
+      "unitWords": ["orange", "mouth", "short", "shirt", "tooth", "shell"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "orange", "options": ["one", "octopus", "orange", "egg"], "answerNo": 3, "accepted": ["orange"]},
+          {"type": "pick-word", "picture": "mouth", "options": ["map", "mouth", "monkey", "milk"], "answerNo": 2, "accepted": ["mouth"]},
+          {"type": "copy-tiles", "word": "short", "tiles": ["r", "s", "t", "h", "o"], "accepted": ["short"]},
+          {"type": "copy-tiles", "word": "shirt", "tiles": ["i", "t", "s", "r", "h"], "accepted": ["shirt"]},
+          {"type": "fill-letters", "word": "tooth", "pattern": "too__", "tiles": ["h", "p", "t"], "accepted": ["tooth"]},
+          {"type": "fill-letters", "word": "shell", "pattern": "__ell", "tiles": ["g", "h", "s"], "accepted": ["shell"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "빵집 가는 길",
+      "newWords": [],
+      "unitWords": ["cookie", "ship", "shoe", "shop", "lunch", "bath", "brush", "chair"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "cookie", "options": ["cake", "cookie", "cat", "cow"], "answerNo": 2, "accepted": ["cookie"]},
+          {"type": "pick-word", "picture": "shop", "options": ["ship", "shoe", "sun", "shop"], "answerNo": 4, "accepted": ["shop"]},
+          {"type": "copy-tiles", "word": "lunch", "tiles": ["n", "h", "u", "l", "c"], "accepted": ["lunch"]},
+          {"type": "copy-tiles", "word": "bath", "tiles": ["t", "b", "h", "a"], "accepted": ["bath"]},
+          {"type": "fill-letters", "word": "brush", "pattern": "bru__", "tiles": ["s", "t", "h"], "accepted": ["brush"]},
+          {"type": "fill-letters", "word": "chair", "pattern": "__air", "tiles": ["f", "c", "h"], "accepted": ["chair"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "정원 꽃밭 산책",
+      "newWords": [],
+      "unitWords": ["arm", "fish", "dish", "mouth", "cheese", "lunch"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "arm", "options": ["arm", "ant", "ear", "apple"], "answerNo": 1, "accepted": ["arm"]},
+          {"type": "pick-word", "picture": "dish", "options": ["desk", "fish", "dish", "duck"], "answerNo": 3, "accepted": ["dish"]},
+          {"type": "copy-tiles", "word": "fish", "tiles": ["s", "f", "h", "i"], "accepted": ["fish"]},
+          {"type": "copy-tiles", "word": "mouth", "tiles": ["t", "m", "h", "u", "o"], "accepted": ["mouth"]},
+          {"type": "fill-letters", "word": "cheese", "pattern": "__eese", "tiles": ["w", "c", "h"], "accepted": ["cheese"]},
+          {"type": "fill-letters", "word": "lunch", "pattern": "lun__", "tiles": ["h", "e", "c"], "accepted": ["lunch"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "냇가 돌다리 건너기",
+      "newWords": [],
+      "unitWords": ["three", "two", "short", "eight", "cheese", "chair", "sheep", "orange", "tall", "fish"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "three", "options": ["two", "short", "eight", "three"], "answerNo": 4, "accepted": ["three"]},
+          {"type": "pick-word", "picture": "cheese", "options": ["cheese", "chair", "sheep", "orange"], "answerNo": 1, "accepted": ["cheese"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["l", "l", "a", "t"], "accepted": ["tall"]},
+          {"type": "copy-tiles", "word": "orange", "tiles": ["e", "g", "o", "n", "a", "r"], "accepted": ["orange"]},
+          {"type": "fill-letters", "word": "fish", "pattern": "fi__", "tiles": ["h", "s", "p"], "accepted": ["fish"]},
+          {"type": "fill-letters", "word": "sheep", "pattern": "__eep", "tiles": ["s", "m", "h"], "accepted": ["sheep"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바다 위 배 타기",
+      "newWords": [],
+      "unitWords": ["shop", "shoe", "ship", "shell", "cookie", "tooth", "toy", "brush", "mouth", "shirt"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "ship", "options": ["shop", "shoe", "ship", "shell"], "answerNo": 3, "accepted": ["ship"]},
+          {"type": "pick-word", "picture": "tooth", "options": ["cookie", "tooth", "toy", "brush"], "answerNo": 2, "accepted": ["tooth"]},
+          {"type": "copy-tiles", "word": "mouth", "tiles": ["o", "t", "u", "m", "h"], "accepted": ["mouth"]},
+          {"type": "copy-tiles", "word": "shirt", "tiles": ["h", "r", "s", "t", "i"], "accepted": ["shirt"]},
+          {"type": "fill-letters", "word": "shell", "pattern": "__ell", "tiles": ["t", "s", "h"], "accepted": ["shell"]},
+          {"type": "fill-letters", "word": "shop", "pattern": "__op", "tiles": ["n", "s", "h"], "accepted": ["shop"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "부엌 식탁 정리",
+      "newWords": [],
+      "unitWords": ["thin", "dish", "toy", "arm", "lunch", "bath", "short", "tall"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "dish", "options": ["thin", "dish", "toy", "desk"], "answerNo": 2, "accepted": ["dish"]},
+          {"type": "pick-word", "picture": "bath", "options": ["arm", "lunch", "bag", "bath"], "answerNo": 4, "accepted": ["bath"]},
+          {"type": "copy-tiles", "word": "short", "tiles": ["h", "t", "o", "s", "r"], "accepted": ["short"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["t", "l", "a", "l"], "accepted": ["tall"]},
+          {"type": "fill-letters", "word": "thin", "pattern": "__in", "tiles": ["h", "t", "e"], "accepted": ["thin"]},
+          {"type": "fill-letters", "word": "lunch", "pattern": "lun__", "tiles": ["c", "e", "h"], "accepted": ["lunch"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "별나라 숫자 놀이",
+      "newWords": ["three", "short", "fish", "two", "eight"],
+      "unitWords": ["three", "short", "fish", "two", "eight"],
+      "preview": [
+        {"word": "three", "meaningKo": "3, 셋", "example": "Three big stars."},
+        {"word": "short", "meaningKo": "짧은, 키가 작은", "example": "The doll is short."},
+        {"word": "fish", "meaningKo": "물고기", "example": "It is a fish."},
+        {"word": "two", "meaningKo": "2, 둘", "example": "Two blue kites."},
+        {"word": "eight", "meaningKo": "8, 여덟", "example": "Wow, eight stars!"}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "three", "options": ["three", "top", "truck", "ten"], "answerNo": 1, "accepted": ["three"]},
+          {"type": "pick-word", "picture": "eight", "options": ["ear", "egg", "eight", "kite"], "answerNo": 3, "accepted": ["eight"]},
+          {"type": "copy-tiles", "word": "two", "tiles": ["o", "w", "t"], "accepted": ["two"]},
+          {"type": "copy-tiles", "word": "short", "tiles": ["o", "h", "t", "s", "r"], "accepted": ["short"]},
+          {"type": "fill-letters", "word": "fish", "pattern": "fi__", "tiles": ["l", "s", "h"], "accepted": ["fish"]},
+          {"type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["a", "t", "h"], "accepted": ["three"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "블록 쌓는 놀이방",
+      "newWords": ["sheep", "cheese", "chair", "orange", "tall"],
+      "unitWords": ["sheep", "cheese", "chair", "orange", "tall", "three"],
+      "preview": [
+        {"word": "sheep", "meaningKo": "양", "example": "It is a sheep."},
+        {"word": "cheese", "meaningKo": "치즈", "example": "I like cheese."},
+        {"word": "chair", "meaningKo": "의자", "example": "It is a little chair."},
+        {"word": "orange", "meaningKo": "오렌지, 주황색", "example": "It is orange."},
+        {"word": "tall", "meaningKo": "키가 큰, 높은", "example": "The robot is tall."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "sheep", "options": ["six", "star", "swing", "sheep"], "answerNo": 4, "accepted": ["sheep"]},
+          {"type": "pick-word", "picture": "cheese", "options": ["cheese", "chair", "car", "cup"], "answerNo": 1, "accepted": ["cheese"]},
+          {"type": "copy-tiles", "word": "orange", "tiles": ["a", "g", "r", "o", "e", "n"], "accepted": ["orange"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["l", "a", "l", "t"], "accepted": ["tall"]},
+          {"type": "fill-letters", "word": "chair", "pattern": "__air", "tiles": ["s", "c", "h"], "accepted": ["chair"]},
+          {"type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["w", "t", "h"], "accepted": ["three"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "종이배 띄우기",
+      "newWords": ["shoe", "ship", "mouth", "tooth", "cookie"],
+      "unitWords": ["shoe", "ship", "mouth", "tooth", "cookie", "sheep"],
+      "preview": [
+        {"word": "shoe", "meaningKo": "신발", "example": "It is a red shoe."},
+        {"word": "ship", "meaningKo": "배", "example": "It is a big ship."},
+        {"word": "mouth", "meaningKo": "입", "example": "It is a mouth."},
+        {"word": "tooth", "meaningKo": "이, 이빨", "example": "It is a white tooth."},
+        {"word": "cookie", "meaningKo": "쿠키, 과자", "example": "This cookie is big."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "ship", "options": ["star", "swing", "ship", "six"], "answerNo": 3, "accepted": ["ship"]},
+          {"type": "pick-word", "picture": "mouth", "options": ["map", "mouth", "drum", "robot"], "answerNo": 2, "accepted": ["mouth"]},
+          {"type": "copy-tiles", "word": "cookie", "tiles": ["o", "e", "k", "i", "o", "c"], "accepted": ["cookie"]},
+          {"type": "copy-tiles", "word": "tooth", "tiles": ["o", "h", "t", "o", "t"], "accepted": ["tooth"]},
+          {"type": "fill-letters", "word": "shoe", "pattern": "__oe", "tiles": ["t", "s", "h"], "accepted": ["shoe"]},
+          {"type": "fill-letters", "word": "sheep", "pattern": "__eep", "tiles": ["o", "s", "h"], "accepted": ["sheep"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 가게 구경",
+      "newWords": ["shop", "shirt", "shell", "brush", "toy"],
+      "unitWords": ["shop", "shirt", "shell", "brush", "toy", "ship", "tooth"],
+      "preview": [
+        {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "It is a toy shop."},
+        {"word": "shirt", "meaningKo": "셔츠", "example": "This shirt is blue."},
+        {"word": "shell", "meaningKo": "조개껍데기", "example": "It is a little shell."},
+        {"word": "brush", "meaningKo": "솔, 붓", "example": "This is my brush."},
+        {"word": "toy", "meaningKo": "장난감", "example": "It is a toy car."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "shirt", "options": ["ship", "shirt", "star", "drum"], "answerNo": 2, "accepted": ["shirt"]},
+          {"type": "pick-word", "picture": "brush", "options": ["bus", "ball", "bike", "brush"], "answerNo": 4, "accepted": ["brush"]},
+          {"type": "copy-tiles", "word": "toy", "tiles": ["t", "y", "o"], "accepted": ["toy"]},
+          {"type": "copy-tiles", "word": "shop", "tiles": ["p", "o", "h", "s"], "accepted": ["shop"]},
+          {"type": "fill-letters", "word": "shell", "pattern": "__ell", "tiles": ["b", "s", "h"], "accepted": ["shell"]},
+          {"type": "fill-letters", "word": "tooth", "pattern": "too__", "tiles": ["t", "k", "h"], "accepted": ["tooth"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "물총 놀이 뒤 씻기",
+      "newWords": ["dish", "lunch", "thin", "bath", "arm"],
+      "unitWords": ["dish", "lunch", "thin", "bath", "arm", "shirt"],
+      "preview": [
+        {"word": "dish", "meaningKo": "접시, 요리", "example": "It is a white dish."},
+        {"word": "lunch", "meaningKo": "점심", "example": "Oh, lunch!"},
+        {"word": "thin", "meaningKo": "얇은, 마른", "example": "The book is thin."},
+        {"word": "bath", "meaningKo": "목욕, 욕조", "example": "It is a big bath."},
+        {"word": "arm", "meaningKo": "팔", "example": "My arm is long."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bath", "options": ["bath", "ball", "bus", "bike"], "answerNo": 1, "accepted": ["bath"]},
+          {"type": "pick-word", "picture": "arm", "options": ["car", "star", "arm", "ant"], "answerNo": 3, "accepted": ["arm"]},
+          {"type": "copy-tiles", "word": "lunch", "tiles": ["h", "u", "c", "n", "l"], "accepted": ["lunch"]},
+          {"type": "copy-tiles", "word": "thin", "tiles": ["n", "t", "i", "h"], "accepted": ["thin"]},
+          {"type": "fill-letters", "word": "dish", "pattern": "di__", "tiles": ["s", "f", "h"], "accepted": ["dish"]},
+          {"type": "fill-letters", "word": "shirt", "pattern": "__irt", "tiles": ["s", "t", "h"], "accepted": ["shirt"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "공놀이 마당",
+      "newWords": [],
+      "unitWords": ["orange", "fish", "toy", "shoe", "three", "short"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "orange", "options": ["one", "drum", "robot", "orange"], "answerNo": 4, "accepted": ["orange"]},
+          {"type": "pick-word", "picture": "fish", "options": ["fish", "fan", "fork", "frog"], "answerNo": 1, "accepted": ["fish"]},
+          {"type": "copy-tiles", "word": "toy", "tiles": ["o", "t", "y"], "accepted": ["toy"]},
+          {"type": "copy-tiles", "word": "shoe", "tiles": ["o", "e", "s", "h"], "accepted": ["shoe"]},
+          {"type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["h", "t", "g"], "accepted": ["three"]},
+          {"type": "fill-letters", "word": "short", "pattern": "__ort", "tiles": ["h", "s", "t"], "accepted": ["short"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "버스 타고 시내로",
+      "newWords": [],
+      "unitWords": ["shop", "ship", "sheep", "two", "tall", "mouth", "chair", "dish"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "sheep", "options": ["shop", "ship", "sheep", "star"], "answerNo": 3, "accepted": ["sheep"]},
+          {"type": "pick-word", "picture": "two", "options": ["ten", "two", "top", "truck"], "answerNo": 2, "accepted": ["two"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["l", "t", "a", "l"], "accepted": ["tall"]},
+          {"type": "copy-tiles", "word": "mouth", "tiles": ["h", "o", "m", "u", "t"], "accepted": ["mouth"]},
+          {"type": "fill-letters", "word": "chair", "pattern": "__air", "tiles": ["h", "p", "c"], "accepted": ["chair"]},
+          {"type": "fill-letters", "word": "dish", "pattern": "di__", "tiles": ["h", "s", "f"], "accepted": ["dish"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "로봇 친구와 놀이",
+      "newWords": [],
+      "unitWords": ["tooth", "toy", "eight", "lunch", "shell", "thin", "bath"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "tooth", "options": ["top", "tooth", "toy", "tent"], "answerNo": 2, "accepted": ["tooth"]},
+          {"type": "pick-word", "picture": "eight", "options": ["kite", "egg", "ear", "eight"], "answerNo": 4, "accepted": ["eight"]},
+          {"type": "copy-tiles", "word": "lunch", "tiles": ["u", "l", "h", "n", "c"], "accepted": ["lunch"]},
+          {"type": "copy-tiles", "word": "shell", "tiles": ["l", "e", "h", "l", "s"], "accepted": ["shell"]},
+          {"type": "fill-letters", "word": "thin", "pattern": "__in", "tiles": ["e", "t", "h"], "accepted": ["thin"]},
+          {"type": "fill-letters", "word": "bath", "pattern": "ba__", "tiles": ["p", "t", "h"], "accepted": ["bath"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연날리기 언덕",
+      "newWords": [],
+      "unitWords": ["shirt", "ship", "cookie", "cheese", "shop", "brush"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "shirt", "options": ["shirt", "ship", "star", "swing"], "answerNo": 1, "accepted": ["shirt"]},
+          {"type": "pick-word", "picture": "cookie", "options": ["kite", "car", "cookie", "cake"], "answerNo": 3, "accepted": ["cookie"]},
+          {"type": "copy-tiles", "word": "cheese", "tiles": ["s", "e", "h", "e", "c", "e"], "accepted": ["cheese"]},
+          {"type": "copy-tiles", "word": "ship", "tiles": ["p", "i", "h", "s"], "accepted": ["ship"]},
+          {"type": "fill-letters", "word": "shop", "pattern": "__op", "tiles": ["m", "s", "h"], "accepted": ["shop"]},
+          {"type": "fill-letters", "word": "brush", "pattern": "bru__", "tiles": ["s", "n", "h"], "accepted": ["brush"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "자전거 경주",
+      "newWords": [],
+      "unitWords": ["arm", "chair", "cheese", "three", "fish", "sheep", "tooth"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "arm", "options": ["ant", "car", "star", "arm"], "answerNo": 4, "accepted": ["arm"]},
+          {"type": "pick-word", "picture": "chair", "options": ["chair", "cheese", "chicken", "car"], "answerNo": 1, "accepted": ["chair"]},
+          {"type": "copy-tiles", "word": "three", "tiles": ["h", "e", "t", "r", "e"], "accepted": ["three"]},
+          {"type": "copy-tiles", "word": "fish", "tiles": ["h", "i", "s", "f"], "accepted": ["fish"]},
+          {"type": "fill-letters", "word": "sheep", "pattern": "__eep", "tiles": ["h", "m", "s"], "accepted": ["sheep"]},
+          {"type": "fill-letters", "word": "tooth", "pattern": "too__", "tiles": ["h", "t", "p"], "accepted": ["tooth"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "우주 정거장 탐험",
+      "newWords": [],
+      "unitWords": ["tall", "two", "three", "chair", "sheep", "short", "orange", "eight", "cheese", "fish"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "two", "options": ["ten", "tall", "two", "three"], "answerNo": 3, "accepted": ["two"]},
+          {"type": "pick-word", "picture": "sheep", "options": ["chair", "sheep", "short", "orange"], "answerNo": 2, "accepted": ["sheep"]},
+          {"type": "copy-tiles", "word": "eight", "tiles": ["g", "t", "e", "h", "i"], "accepted": ["eight"]},
+          {"type": "copy-tiles", "word": "cheese", "tiles": ["e", "c", "e", "s", "e", "h"], "accepted": ["cheese"]},
+          {"type": "fill-letters", "word": "fish", "pattern": "fi__", "tiles": ["p", "s", "h"], "accepted": ["fish"]},
+          {"type": "fill-letters", "word": "three", "pattern": "__ree", "tiles": ["g", "h", "t"], "accepted": ["three"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "인형 옷 갈아입히기",
+      "newWords": [],
+      "unitWords": ["shoe", "shirt", "ship", "cookie", "toy", "shell", "mouth", "tooth", "brush", "shop"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "shirt", "options": ["shoe", "shirt", "ship", "cookie"], "answerNo": 2, "accepted": ["shirt"]},
+          {"type": "pick-word", "picture": "mouth", "options": ["toy", "map", "shell", "mouth"], "answerNo": 4, "accepted": ["mouth"]},
+          {"type": "copy-tiles", "word": "cookie", "tiles": ["i", "k", "o", "c", "e", "o"], "accepted": ["cookie"]},
+          {"type": "copy-tiles", "word": "tooth", "tiles": ["t", "h", "o", "t", "o"], "accepted": ["tooth"]},
+          {"type": "fill-letters", "word": "brush", "pattern": "bru__", "tiles": ["h", "t", "s"], "accepted": ["brush"]},
+          {"type": "fill-letters", "word": "shop", "pattern": "__op", "tiles": ["h", "n", "s"], "accepted": ["shop"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이터 정리 시간",
+      "newWords": [],
+      "unitWords": ["arm", "toy", "short", "tall", "bath", "dish", "lunch", "thin"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "arm", "options": ["arm", "ant", "toy", "short"], "answerNo": 1, "accepted": ["arm"]},
+          {"type": "pick-word", "picture": "bath", "options": ["tall", "ball", "bath", "dish"], "answerNo": 3, "accepted": ["bath"]},
+          {"type": "copy-tiles", "word": "lunch", "tiles": ["n", "c", "u", "h", "l"], "accepted": ["lunch"]},
+          {"type": "copy-tiles", "word": "tall", "tiles": ["a", "t", "l", "l"], "accepted": ["tall"]},
+          {"type": "fill-letters", "word": "thin", "pattern": "__in", "tiles": ["h", "e", "t"], "accepted": ["thin"]},
+          {"type": "fill-letters", "word": "dish", "pattern": "di__", "tiles": ["f", "h", "s"], "accepted": ["dish"]}
+        ]
+      }
+    }
+  ]
+}

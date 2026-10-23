@@ -1,0 +1,515 @@
+{
+  "area": "writing",
+  "form": 1,
+  "levels": [
+    {
+      "level": 1,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "pick-word",
+          "picture": "ship",
+          "options": [
+            "shop",
+            "ship",
+            "sheep",
+            "shell"
+          ],
+          "answerNo": 2,
+          "accepted": [
+            "ship"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-letters",
+          "word": "clock",
+          "pattern": "clo__",
+          "tiles": [
+            "k",
+            "g",
+            "c"
+          ],
+          "accepted": [
+            "clock"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "copy-tiles",
+          "word": "snake",
+          "tiles": [
+            "k",
+            "a",
+            "s",
+            "e",
+            "n"
+          ],
+          "accepted": [
+            "snake"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 2,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "dictation",
+          "word": "skate",
+          "audioText": "skate",
+          "accepted": [
+            "skate"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "build-tiles",
+          "word": "goat",
+          "meaningKo": "염소",
+          "tiles": [
+            "t",
+            "o",
+            "e",
+            "g",
+            "a"
+          ],
+          "accepted": [
+            "goat"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "assemble-phrase",
+          "cards": [
+            "dogs",
+            "two",
+            "hungry"
+          ],
+          "meaningKo": "배고픈 개 두 마리",
+          "accepted": [
+            "two hungry dogs"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 3,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "assemble-sentence",
+          "cards": [
+            "sky",
+            "bright",
+            "the",
+            "is",
+            "."
+          ],
+          "meaningKo": "하늘이 밝아.",
+          "accepted": [
+            "The sky is bright."
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "assemble-sentence",
+          "cards": [
+            "classroom",
+            "we",
+            "the",
+            "clean",
+            "."
+          ],
+          "meaningKo": "우리는 교실을 청소해.",
+          "accepted": [
+            "We clean the classroom."
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "assemble-sentence",
+          "cards": [
+            "open",
+            "you",
+            "the",
+            "can",
+            "window",
+            "?"
+          ],
+          "meaningKo": "창문을 열어 줄 수 있어?",
+          "accepted": [
+            "Can you open the window?"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 4,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "My parents ___ (be) in the kitchen now.",
+          "accepted": [
+            "are"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "I not like rainy days.",
+          "accepted": [
+            "I don't like rainy days.",
+            "I don't like rainy days",
+            "I do not like rainy days.",
+            "I do not like rainy days"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "Oh no, I ___ (can) find my homework!",
+          "accepted": [
+            "can't",
+            "can not"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 5,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "My sister ___ (carry) a heavy bag every day.",
+          "accepted": [
+            "carries"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "There is three plastic boxes in our classroom.",
+          "accepted": [
+            "There are three plastic boxes in our classroom.",
+            "There are three plastic boxes in our classroom"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "We need five ___ (tomato) for the salad.",
+          "accepted": [
+            "tomatoes"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 6,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "I visit my cousins and play with ___ (they).",
+          "accepted": [
+            "them"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "My mom don't like honey.",
+          "accepted": [
+            "My mom doesn't like honey.",
+            "My mom doesn't like honey",
+            "My mom does not like honey.",
+            "My mom does not like honey"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "My dad has ___ (a) office near the park.",
+          "accepted": [
+            "an"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 7,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "Yesterday we ___ (be) very nervous during the final match.",
+          "accepted": [
+            "were"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "Last Friday our class see a huge whale at the museum.",
+          "accepted": [
+            "Last Friday our class saw a huge whale at the museum.",
+            "Last Friday our class saw a huge whale at the museum"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "Last night I ___ (prepare) dinner with my mom.",
+          "accepted": [
+            "prepared"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 8,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "My little brother is ___ (calm) than me.",
+          "accepted": [
+            "calmer"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "Tomorrow our team will discussed the clues.",
+          "accepted": [
+            "Tomorrow our team will discuss the clues.",
+            "Tomorrow our team will discuss the clues"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "This is the ___ (good) choice of all.",
+          "accepted": [
+            "best"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 9,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "My aunt enjoys ___ (dive) in the ocean.",
+          "accepted": [
+            "diving"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "I decided join the volunteer club.",
+          "accepted": [
+            "I decided to join the volunteer club.",
+            "I decided to join the volunteer club"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "After the last class ___ (finish), we gathered in the playground.",
+          "accepted": [
+            "finished"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 10,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "I have never ___ (see) such a huge machine before.",
+          "accepted": [
+            "seen"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "I admire the engineer which designed this bridge.",
+          "accepted": [
+            "I admire the engineer who designed this bridge.",
+            "I admire the engineer who designed this bridge",
+            "I admire the engineer that designed this bridge.",
+            "I admire the engineer that designed this bridge"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "I think vacation homework is not necessary ___ (because or so) kids need time to rest.",
+          "accepted": [
+            "because"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 11,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "Our school was ___ (build) by the local citizens long ago.",
+          "accepted": [
+            "built"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "This is the only magazine what has comics for kids.",
+          "accepted": [
+            "This is the only magazine that has comics for kids.",
+            "This is the only magazine that has comics for kids",
+            "This is the only magazine which has comics for kids.",
+            "This is the only magazine which has comics for kids"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "If it ___ (rain) tomorrow, we will hold the event in the community center.",
+          "accepted": [
+            "rains"
+          ]
+        }
+      ],
+      "spares": []
+    },
+    {
+      "level": 12,
+      "items": [
+        {
+          "no": 1,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "If I ___ (have) a bigger budget, I would build a new library.",
+          "accepted": [
+            "had"
+          ]
+        },
+        {
+          "no": 2,
+          "revision": 2,
+          "correction": 0,
+          "type": "fix-sentence",
+          "prompt": "We stayed inside because of the air quality was poor.",
+          "accepted": [
+            "We stayed inside because the air quality was poor.",
+            "We stayed inside because the air quality was poor",
+            "We stayed inside because of the poor air quality.",
+            "We stayed inside because of the poor air quality"
+          ]
+        },
+        {
+          "no": 3,
+          "revision": 2,
+          "correction": 0,
+          "type": "fill-blank",
+          "prompt": "___ (although or despite) the essay was difficult, I finished it on time.",
+          "accepted": [
+            "although",
+            "though"
+          ]
+        }
+      ],
+      "spares": []
+    }
+  ]
+}

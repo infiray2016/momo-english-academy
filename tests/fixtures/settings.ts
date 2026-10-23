@@ -160,6 +160,12 @@ export const TEST_SETTINGS = {
   "speech.rate.7-9": { scope: "household", value: 0.9 },
   "speech.rate.10-12": { scope: "household", value: 1.0 },
   "speech.sentence_pause_ms": { scope: "household", value: 700 },
+  // ── 회화 선생님(12절 · C130 · C131 — seed/settings.json 과 같은 범위 · 값) ──
+  "talk.teacher_model_max_mb": { scope: "household", value: 8 },
+  "talk.teacher_portrait_max_kb": { scope: "household", value: 100 },
+  "talk.teacher_load_timeout_seconds": { scope: "household", value: 6 },
+  "talk.teacher_praise_seconds": { scope: "household", value: 2 },
+  "talk.teacher_render": { scope: "household", value: "3d" },
 } as const;
 
 export type TestSettingKey = keyof typeof TEST_SETTINGS;

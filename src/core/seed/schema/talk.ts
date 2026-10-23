@@ -191,7 +191,7 @@ export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
     sink.one(at(`todayWords.${i}.exampleKo`), "ko", word.exampleKo);
   });
   sink.one(at("firstQuestion"), "tori", card.firstQuestion);
-  sink.all(at("flow"), "prompt", card.flow);
+  sink.all(at("flow"), "flow", card.flow);
   sink.all(at("todayTopicsKo"), "ko", card.todayTopicsKo);
   card.closingLines.forEach((line, i) => {
     lineTexts(sink, at(`closingLines.${i}`), line);

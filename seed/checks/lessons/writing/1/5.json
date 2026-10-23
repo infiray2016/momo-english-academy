@@ -1,0 +1,1188 @@
+{
+  "records": [
+    {
+      "cell": "lesson:writing:1:5:assigned:1:1",
+      "contentHash": "d47c1f4a0c93286a294c3ac17f1a41569fc856706afb5217db708b76c780091b",
+      "solve": {
+        "at": "2026-10-22T22:00:11.944Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1802,
+        "outputTokens": 195,
+        "costUsd": 0.005554,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "banana"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 5,
+            "verdict": "none"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "five"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "d47c1f4a0c93286a294c3ac17f1a41569fc856706afb5217db708b76c780091b",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:2:1",
+      "contentHash": "a42f76c3cb14aa78be4d739f260f52475978c920d439479588413d2aa669db15",
+      "solve": {
+        "at": "2026-10-22T22:00:15.149Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1792,
+        "outputTokens": 198,
+        "costUsd": 0.005564,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "ball"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "cake"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nine"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:3:1",
+      "contentHash": "16f9702d52861859d56e03603dee191ce23a40d2c4c1e674e728cfb0bda66114",
+      "solve": {
+        "at": "2026-10-22T22:00:17.332Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1792,
+        "outputTokens": 198,
+        "costUsd": 0.005564,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "ear"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nose"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "kite"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:4:1",
+      "contentHash": "ded2a044bbb524da0d0fb7e2f8dfe7c0d66ae4380d6c5d493876b95629258040",
+      "solve": {
+        "at": "2026-10-22T22:00:19.450Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1792,
+        "outputTokens": 195,
+        "costUsd": 0.005534,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "home"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          },
+          {
+            "no": 5,
+            "verdict": "none"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "face"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "ded2a044bbb524da0d0fb7e2f8dfe7c0d66ae4380d6c5d493876b95629258040",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:5:1",
+      "contentHash": "ed40c9140a5d10d1f59c98898011f1bad18beba84042eec747f5b4c4ec92c51f",
+      "solve": {
+        "at": "2026-10-22T22:00:22.408Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1798,
+        "outputTokens": 197,
+        "costUsd": 0.005566,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "name"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "rice"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:6:1",
+      "contentHash": "4fc30c275778181ff8fe75dbbb42ea77ebe44a665ac98ca3805d4a1f8b90074a",
+      "solve": {
+        "at": "2026-10-22T22:00:25.508Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1795,
+        "outputTokens": 196,
+        "costUsd": 0.00555,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "ball"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "white"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "cake"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:7:1",
+      "contentHash": "8d065f1793a795a6a0ac99a424d1c095034e1906be64b324517274a1de00773e",
+      "solve": {
+        "at": "2026-10-22T22:00:28.329Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1794,
+        "outputTokens": 196,
+        "costUsd": 0.005548,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "banana"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "home"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "five"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:8:1",
+      "contentHash": "e803e03a808ed942628c11833f49251a92d90174c007c6d507c12d160977fa47",
+      "solve": {
+        "at": "2026-10-22T22:00:30.578Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1796,
+        "outputTokens": 197,
+        "costUsd": 0.005562,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nose"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "game"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:9:1",
+      "contentHash": "d808836dcece43df706f48098f410bcabad9b00146d1ed2476492d9b3fde9461",
+      "solve": {
+        "at": "2026-10-22T22:00:32.653Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1793,
+        "outputTokens": 196,
+        "costUsd": 0.005546,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "ear"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "name"
+          },
+          {
+            "no": 5,
+            "verdict": "different",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "smile"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "d808836dcece43df706f48098f410bcabad9b00146d1ed2476492d9b3fde9461",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:10:1",
+      "contentHash": "c586c6dd6e268cb8fc524fb9cd6f9003cda09a7a4ac264097465624c48dc7dc1",
+      "solve": {
+        "at": "2026-10-22T22:00:35.037Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1798,
+        "outputTokens": 197,
+        "costUsd": 0.005566,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "flower"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "rice"
+          },
+          {
+            "no": 5,
+            "verdict": "none"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "c586c6dd6e268cb8fc524fb9cd6f9003cda09a7a4ac264097465624c48dc7dc1",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:1:1",
+      "contentHash": "a5cf4455afe45b4c8ba7ee8a61a1a4f84a9326a57348b440218a8acce4d65791",
+      "solve": {
+        "at": "2026-10-22T22:00:37.393Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1791,
+        "outputTokens": 195,
+        "costUsd": 0.005532,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "white"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "five"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "bike"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:2:1",
+      "contentHash": "d6f4dd8647fec6440fb7b3b72d2a10504e134e6b8c6fadc43ef2eaa3d4a341b3",
+      "solve": {
+        "at": "2026-10-22T22:00:40.173Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1791,
+        "outputTokens": 198,
+        "costUsd": 0.005562,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nose"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "lake"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:3:1",
+      "contentHash": "5bd807ec068296ef95434692186ae7488ffc16ad2794c63fcc4c269401de654f",
+      "solve": {
+        "at": "2026-10-22T22:00:42.133Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1795,
+        "outputTokens": 197,
+        "costUsd": 0.00556,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "smile"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:1:2",
+      "contentHash": "84ee32e5760ca60c8f57088c57955452e1dbad1caf2609cce6f6fc83f61c1646",
+      "solve": {
+        "at": "2026-10-22T22:00:44.243Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1801,
+        "outputTokens": 197,
+        "costUsd": 0.005572,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "banana"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 5,
+            "verdict": "different",
+            "solverAnswer": "whale"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nine"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "84ee32e5760ca60c8f57088c57955452e1dbad1caf2609cce6f6fc83f61c1646",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:2:2",
+      "contentHash": "63df217b9aae15a8f89bd66062398679e5543f4502b9dc3839c99fbaf20a6123",
+      "solve": {
+        "at": "2026-10-22T22:00:46.307Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1791,
+        "outputTokens": 196,
+        "costUsd": 0.005542,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "ball"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          },
+          {
+            "no": 5,
+            "verdict": "none"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "white"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "63df217b9aae15a8f89bd66062398679e5543f4502b9dc3839c99fbaf20a6123",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 5,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:3:2",
+      "contentHash": "2c071813eff9d574389dffd065a12dc3527d8c10de0faddeaaa38fec9ae863f1",
+      "solve": {
+        "at": "2026-10-22T22:00:47.977Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1792,
+        "outputTokens": 198,
+        "costUsd": 0.005564,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "ear"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nose"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:4:2",
+      "contentHash": "221c1b76cfe5ebafd335c32e2d0b6060effbcc5f364d5b32e814ddbbf6c1f911",
+      "solve": {
+        "at": "2026-10-22T22:00:51.130Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1791,
+        "outputTokens": 195,
+        "costUsd": 0.005532,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "home"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "game"
+          },
+          {
+            "no": 6,
+            "verdict": "different",
+            "solverAnswer": "like"
+          }
+        ]
+      },
+      "human": {
+        "contentHash": "221c1b76cfe5ebafd335c32e2d0b6060effbcc5f364d5b32e814ddbbf6c1f911",
+        "at": "2026-10-22T22:01:57.000Z",
+        "items": [
+          {
+            "no": 6,
+            "decision": "correct"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:assigned:5:2",
+      "contentHash": "7f71ce16f3817ed1fba89d09fb293f9901ea0304f65804e7aa7c529c17d39d89",
+      "solve": {
+        "at": "2026-10-22T22:00:53.475Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1797,
+        "outputTokens": 196,
+        "costUsd": 0.005554,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "name"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "rice"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "game"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:6:2",
+      "contentHash": "1a357119a8ac188fc8d898657bd35712ed647497e8a3236b1e26a322cf6ebda1",
+      "solve": {
+        "at": "2026-10-22T22:00:55.623Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1795,
+        "outputTokens": 196,
+        "costUsd": 0.00555,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "home"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "cake"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "grape"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "white"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:7:2",
+      "contentHash": "f1a6875fb0fb7cac4b648a5d31b3ee44325bbe386b0f282bc48679a0b156c971",
+      "solve": {
+        "at": "2026-10-22T22:00:57.821Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1795,
+        "outputTokens": 195,
+        "costUsd": 0.00554,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "nose"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "face"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "five"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:8:2",
+      "contentHash": "e7091657b8eb92d4c48035b20a066bb2a41a8bc9268b95b52e9f6fd825ad1caf",
+      "solve": {
+        "at": "2026-10-22T22:01:00.069Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1789,
+        "outputTokens": 198,
+        "costUsd": 0.005558,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "bike"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "kite"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:9:2",
+      "contentHash": "c4d1fea47db7d4bcf45bb6cbf3b5058d88be049d1be9b800cd9e6106e87e756a",
+      "solve": {
+        "at": "2026-10-22T22:01:02.425Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1795,
+        "outputTokens": 196,
+        "costUsd": 0.00555,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "name"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "lake"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "game"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "banana"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:reinforce:10:2",
+      "contentHash": "94010ad6df51a7767b0358c6933fc55269bad2f402364374724d3fd737baedd0",
+      "solve": {
+        "at": "2026-10-22T22:01:04.628Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1798,
+        "outputTokens": 198,
+        "costUsd": 0.005576,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "plane"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "smile"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "rice"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:1:2",
+      "contentHash": "bfdbda912d245da589d7dda13a6132974ed3987d8911d4a96225609359a20341",
+      "solve": {
+        "at": "2026-10-22T22:01:06.725Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1796,
+        "outputTokens": 196,
+        "costUsd": 0.005552,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "like"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "banana"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "white"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "kite"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:2:2",
+      "contentHash": "cad84e5b23e7daf22576e4b9190e908fabcf48dcc5141515d11b8572d1ab3683",
+      "solve": {
+        "at": "2026-10-22T22:01:09.960Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1787,
+        "outputTokens": 197,
+        "costUsd": 0.005544,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "ear"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "face"
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:writing:1:5:remedial:3:2",
+      "contentHash": "2f7693feffbf8c642932d30084e165039df418ee77733152fee606e759ad0ca8",
+      "solve": {
+        "at": "2026-10-22T22:01:12.268Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1794,
+        "outputTokens": 197,
+        "costUsd": 0.005558,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": "name"
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": "cute"
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": "snake"
+          },
+          {
+            "no": 6,
+            "verdict": "same",
+            "solverAnswer": "nice"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,717 @@
+{
+  "area": "speaking",
+  "level": 1,
+  "unit": 2,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "할머니 댁 갈 가방",
+      "newWords": ["bag", "pen", "pencil", "book", "cup"],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup"],
+      "preview": [
+        {"word": "bag", "meaningKo": "가방", "example": "It is my bag."},
+        {"word": "pen", "meaningKo": "펜", "example": "This is a pen."},
+        {"word": "pencil", "meaningKo": "연필", "example": "Oh, a pencil!"},
+        {"word": "book", "meaningKo": "책", "example": "This is my book."},
+        {"word": "cup", "meaningKo": "컵", "example": "It is a cup."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["bag", "pen", "pencil", "book", "cup"],
+          "sentences": ["This is my bag.", "It is a pen.", "This is my pencil.", "Oh, a book!", "This is a cup."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is my book.", "options": ["apple", "book", "dog", "pen"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a cup.", "options": ["cup", "egg", "bag", "cat"], "answerNo": 1},
+          {"kind": "picture", "script": "This is a pencil.", "options": ["banana", "bird", "bag", "pencil"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is my pen. What is it?", "ko": "그건 내 펜이야. 그건 뭐야?", "modelAnswer": "It is a pen.", "accepted": ["pen", "a pen", "my pen", "It is a pen.", "It is my pen."]},
+          {"en": "This is a book. What is this?", "ko": "이건 책이야. 이건 뭐야?", "modelAnswer": "It is a book.", "accepted": ["book", "a book", "It is a book.", "This is a book."]},
+          {"en": "This is my cup. What is this?", "ko": "이건 내 컵이야. 이건 뭐야?", "modelAnswer": "It is a cup.", "accepted": ["cup", "a cup", "my cup", "It is a cup.", "This is my cup."]},
+          {"en": "That is a bag. What is that?", "ko": "저건 가방이야. 저건 뭐야?", "modelAnswer": "It is a bag.", "accepted": ["bag", "a bag", "It is a bag.", "That is a bag."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "할아버지 방 구경",
+      "newWords": ["map", "desk", "chair", "toy", "drum"],
+      "unitWords": ["map", "desk", "chair", "toy", "drum", "book", "cup"],
+      "preview": [
+        {"word": "map", "meaningKo": "지도", "example": "This is a map."},
+        {"word": "desk", "meaningKo": "책상", "example": "This is my desk."},
+        {"word": "chair", "meaningKo": "의자", "example": "It is a chair."},
+        {"word": "toy", "meaningKo": "장난감", "example": "It is my toy."},
+        {"word": "drum", "meaningKo": "북, 드럼", "example": "Wow, a drum!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["map", "desk", "chair", "toy", "drum"],
+          "sentences": ["This is a map.", "That is a desk.", "This is my chair.", "This is my toy.", "This is a drum."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a map.", "options": ["tree", "map", "book", "pig"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a drum.", "options": ["cat", "desk", "drum", "egg"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a desk.", "options": ["chair", "rabbit", "cup", "desk"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is Ted. Ted is my toy. What is Ted?", "ko": "이건 테드야. 테드는 내 장난감이야. 테드는 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "my toy", "It is a toy.", "It is my toy."]},
+          {"en": "This is a map. What is this?", "ko": "이건 지도야. 이건 뭐야?", "modelAnswer": "It is a map.", "accepted": ["map", "a map", "It is a map.", "This is a map."]},
+          {"en": "That is my desk. What is that?", "ko": "저건 내 책상이야. 저건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "my desk", "It is a desk.", "That is my desk."]},
+          {"en": "This is a drum. What is this?", "ko": "이건 북이야. 이건 뭐야?", "modelAnswer": "It is a drum.", "accepted": ["drum", "a drum", "It is a drum.", "This is a drum."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "창가에서 본 것",
+      "newWords": ["clock", "lamp", "bell", "bus", "car"],
+      "unitWords": ["clock", "lamp", "bell", "bus", "car", "toy", "cup"],
+      "preview": [
+        {"word": "clock", "meaningKo": "시계", "example": "This is a clock."},
+        {"word": "lamp", "meaningKo": "램프, 전등", "example": "It is my lamp."},
+        {"word": "bell", "meaningKo": "종", "example": "Oh, a bell!"},
+        {"word": "bus", "meaningKo": "버스", "example": "That is a bus."},
+        {"word": "car", "meaningKo": "자동차", "example": "It is a car."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["clock", "lamp", "bell", "bus", "car"],
+          "sentences": ["This is my clock.", "That is a lamp.", "It is a bell.", "This is a bus.", "That is a car."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a bell.", "options": ["bell", "dog", "clock", "apple"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a bus.", "options": ["tree", "cat", "bus", "lamp"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a car.", "options": ["fish", "car", "banana", "cup"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "This is a clock. What is this?", "ko": "이건 시계야. 이건 뭐야?", "modelAnswer": "It is a clock.", "accepted": ["clock", "a clock", "It is a clock.", "This is a clock."]},
+          {"en": "That is my lamp. What is that?", "ko": "저건 내 전등이야. 저건 뭐야?", "modelAnswer": "It is a lamp.", "accepted": ["lamp", "a lamp", "my lamp", "It is a lamp.", "That is my lamp."]},
+          {"en": "It is a bus. What is it?", "ko": "그건 버스야. 그건 뭐야?", "modelAnswer": "It is a bus.", "accepted": ["bus", "a bus", "It is a bus."]},
+          {"en": "This is a toy car. What is this?", "ko": "이건 장난감 자동차야. 이건 뭐야?", "modelAnswer": "It is a toy car.", "accepted": ["car", "toy car", "a toy car", "It is a toy car.", "It is a car."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바닷가 여행 가는 날",
+      "newWords": ["ship", "truck", "plane", "bed", "bath"],
+      "unitWords": ["ship", "truck", "plane", "bed", "bath"],
+      "preview": [
+        {"word": "ship", "meaningKo": "배", "example": "That is a ship."},
+        {"word": "truck", "meaningKo": "트럭", "example": "It is a truck."},
+        {"word": "plane", "meaningKo": "비행기", "example": "Wow, a plane!"},
+        {"word": "bed", "meaningKo": "침대", "example": "This is my bed."},
+        {"word": "bath", "meaningKo": "목욕, 욕조", "example": "This is a bath."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["ship", "truck", "plane", "bed", "bath"],
+          "sentences": ["This is a ship.", "That is a truck.", "It is a plane.", "That is my bed.", "It is a bath."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a plane.", "options": ["cow", "bed", "tree", "plane"], "answerNo": 4},
+          {"kind": "picture", "script": "It is a ship.", "options": ["ship", "horse", "bath", "egg"], "answerNo": 1},
+          {"kind": "picture", "script": "This is my bed.", "options": ["sheep", "bed", "truck", "sun"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "That is a truck. What is that?", "ko": "저건 트럭이야. 저건 뭐야?", "modelAnswer": "It is a truck.", "accepted": ["truck", "a truck", "It is a truck.", "That is a truck."]},
+          {"en": "This is my bed. What is this?", "ko": "이건 내 침대야. 이건 뭐야?", "modelAnswer": "It is a bed.", "accepted": ["bed", "a bed", "my bed", "It is a bed.", "This is my bed."]},
+          {"en": "This is a ship. What is this?", "ko": "이건 배야. 이건 뭐야?", "modelAnswer": "It is a ship.", "accepted": ["ship", "a ship", "It is a ship.", "This is a ship."]},
+          {"en": "It is a bath. What is it?", "ko": "그건 욕조야. 그건 뭐야?", "modelAnswer": "It is a bath.", "accepted": ["bath", "a bath", "It is a bath."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동네 한 바퀴",
+      "newWords": ["dish", "tent", "home", "shop", "bank"],
+      "unitWords": ["dish", "tent", "home", "shop", "bank", "toy"],
+      "preview": [
+        {"word": "dish", "meaningKo": "접시, 요리", "example": "This is a dish."},
+        {"word": "tent", "meaningKo": "텐트", "example": "That is a tent."},
+        {"word": "home", "meaningKo": "집", "example": "This is my home."},
+        {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "It is a shop."},
+        {"word": "bank", "meaningKo": "은행", "example": "That is a bank."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["dish", "tent", "home", "shop", "bank"],
+          "sentences": ["It is a dish.", "This is a tent.", "It is my home.", "That is a toy shop.", "This is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a tent.", "options": ["dog", "tent", "apple", "bank"], "answerNo": 2},
+          {"kind": "picture", "script": "That is a bank.", "options": ["rabbit", "dish", "tree", "bank"], "answerNo": 4},
+          {"kind": "picture", "script": "This is a shop.", "options": ["shop", "egg", "tent", "bird"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "That is a toy shop. What is that?", "ko": "저건 장난감 가게야. 저건 뭐야?", "modelAnswer": "It is a toy shop.", "accepted": ["shop", "toy shop", "a toy shop", "It is a toy shop.", "It is a shop."]},
+          {"en": "This is a dish. What is this?", "ko": "이건 접시야. 이건 뭐야?", "modelAnswer": "It is a dish.", "accepted": ["dish", "a dish", "It is a dish.", "This is a dish."]},
+          {"en": "That is a bank. What is that?", "ko": "저건 은행이야. 저건 뭐야?", "modelAnswer": "It is a bank.", "accepted": ["bank", "a bank", "It is a bank.", "That is a bank."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 창고 정리",
+      "newWords": [],
+      "unitWords": ["bag", "map", "clock", "ship", "dish", "toy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["bag", "map", "clock", "ship", "dish"],
+          "sentences": ["This is a bag.", "That is a map.", "It is a clock.", "This is a toy ship.", "That is my dish."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a clock.", "options": ["pig", "clock", "cow", "dish"], "answerNo": 2},
+          {"kind": "picture", "script": "That is a map.", "options": ["map", "horse", "bag", "duck"], "answerNo": 1},
+          {"kind": "picture", "script": "This is a dish.", "options": ["chicken", "ship", "egg", "dish"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is my bag. What is this?", "ko": "이건 내 가방이야. 이건 뭐야?", "modelAnswer": "It is a bag.", "accepted": ["bag", "a bag", "my bag", "It is a bag.", "This is my bag."]},
+          {"en": "That is a ship. What is that?", "ko": "저건 배야. 저건 뭐야?", "modelAnswer": "It is a ship.", "accepted": ["ship", "a ship", "It is a ship.", "That is a ship."]},
+          {"en": "This is a map. What is this?", "ko": "이건 지도야. 이건 뭐야?", "modelAnswer": "It is a map.", "accepted": ["map", "a map", "It is a map.", "This is a map."]},
+          {"en": "It is my clock. What is it?", "ko": "그건 내 시계야. 그건 뭐야?", "modelAnswer": "It is a clock.", "accepted": ["clock", "a clock", "my clock", "It is a clock.", "It is my clock."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 캠핑 밤",
+      "newWords": [],
+      "unitWords": ["pen", "desk", "lamp", "truck", "tent"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pen", "desk", "lamp", "truck", "tent"],
+          "sentences": ["This is my tent.", "It is a lamp.", "That is a truck.", "This is a pen.", "It is a desk."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a tent.", "options": ["tree", "fox", "tent", "lake"], "answerNo": 3},
+          {"kind": "picture", "script": "It is a lamp.", "options": ["lamp", "rabbit", "sun", "pen"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a truck.", "options": ["frog", "desk", "bird", "truck"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is a tent. What is this?", "ko": "이건 텐트야. 이건 뭐야?", "modelAnswer": "It is a tent.", "accepted": ["tent", "a tent", "It is a tent.", "This is a tent."]},
+          {"en": "Oh, a lamp! What is it?", "ko": "오, 전등이다! 그건 뭐야?", "modelAnswer": "It is a lamp.", "accepted": ["lamp", "a lamp", "It is a lamp."]},
+          {"en": "That is a pen. What is that?", "ko": "저건 펜이야. 저건 뭐야?", "modelAnswer": "It is a pen.", "accepted": ["pen", "a pen", "It is a pen.", "That is a pen."]},
+          {"en": "This is my desk. What is this?", "ko": "이건 내 책상이야. 이건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "my desk", "It is a desk.", "This is my desk."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "시골집 마당에서",
+      "newWords": [],
+      "unitWords": ["pencil", "chair", "bell", "plane", "home"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pencil", "chair", "bell", "plane", "home"],
+          "sentences": ["This is my home.", "It is a chair.", "That is a bell.", "Wow, a plane!", "This is a pencil."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a plane.", "options": ["plane", "cow", "chair", "apple"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a bell.", "options": ["dog", "tree", "bell", "pencil"], "answerNo": 3},
+          {"kind": "picture", "script": "This is my chair.", "options": ["cat", "egg", "banana", "chair"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "That is a bell. What is that?", "ko": "저건 종이야. 저건 뭐야?", "modelAnswer": "It is a bell.", "accepted": ["bell", "a bell", "It is a bell.", "That is a bell."]},
+          {"en": "This is a pencil. What is this?", "ko": "이건 연필이야. 이건 뭐야?", "modelAnswer": "It is a pencil.", "accepted": ["pencil", "a pencil", "It is a pencil.", "This is a pencil."]},
+          {"en": "It is a plane. What is it?", "ko": "그건 비행기야. 그건 뭐야?", "modelAnswer": "It is a plane.", "accepted": ["plane", "a plane", "It is a plane."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "동물원 가는 버스",
+      "newWords": [],
+      "unitWords": ["book", "toy", "bus", "bed", "shop"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["book", "toy", "bus", "bed", "shop"],
+          "sentences": ["This is a bus.", "It is my book.", "That is a toy.", "This is my bed.", "That is a shop."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a bus.", "options": ["lion", "bus", "zebra", "book"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a book.", "options": ["book", "monkey", "bed", "tiger"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a shop.", "options": ["elephant", "bear", "shop", "monkey"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "That is a toy. What is that?", "ko": "저건 장난감이야. 저건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "It is a toy.", "That is a toy."]},
+          {"en": "This is my bed. What is this?", "ko": "이건 내 침대야. 이건 뭐야?", "modelAnswer": "It is a bed.", "accepted": ["bed", "a bed", "my bed", "It is a bed.", "This is my bed."]},
+          {"en": "It is a bus. What is it?", "ko": "그건 버스야. 그건 뭐야?", "modelAnswer": "It is a bus.", "accepted": ["bus", "a bus", "It is a bus."]},
+          {"en": "That is a shop. What is that?", "ko": "저건 가게야. 저건 뭐야?", "modelAnswer": "It is a shop.", "accepted": ["shop", "a shop", "It is a shop.", "That is a shop."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "가족 나들이 날",
+      "newWords": [],
+      "unitWords": ["cup", "drum", "car", "bath", "bank"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cup", "drum", "car", "bath", "bank"],
+          "sentences": ["This is my cup.", "It is a drum.", "That is a car.", "This is a bath.", "That is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a drum.", "options": ["apple", "banana", "drum", "cup"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a car.", "options": ["car", "egg", "cookie", "bank"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a bath.", "options": ["candy", "bath", "flower", "egg"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "This is my cup. What is this?", "ko": "이건 내 컵이야. 이건 뭐야?", "modelAnswer": "It is a cup.", "accepted": ["cup", "a cup", "my cup", "It is a cup.", "This is my cup."]},
+          {"en": "That is a car. What is that?", "ko": "저건 자동차야. 저건 뭐야?", "modelAnswer": "It is a car.", "accepted": ["car", "a car", "It is a car.", "That is a car."]},
+          {"en": "It is a bank. What is it?", "ko": "그건 은행이야. 그건 뭐야?", "modelAnswer": "It is a bank.", "accepted": ["bank", "a bank", "It is a bank."]},
+          {"en": "This is a drum. What is this?", "ko": "이건 북이야. 이건 뭐야?", "modelAnswer": "It is a drum.", "accepted": ["drum", "a drum", "It is a drum.", "This is a drum."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "아빠와 짐 싸기",
+      "newWords": [],
+      "unitWords": ["pencil", "cup", "chair", "toy", "drum", "bag", "bath", "pen", "bus", "book", "ship", "map", "bed", "truck", "bell", "desk", "plane"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pencil", "cup", "chair", "toy", "drum"],
+          "sentences": ["This is my pencil.", "It is a cup.", "That is a chair.", "This is a toy.", "It is my drum."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a bag.", "options": ["bag", "bath", "pen", "bus"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a book.", "options": ["ship", "book", "map", "bed"], "answerNo": 2},
+          {"kind": "picture", "script": "That is a desk.", "options": ["truck", "bell", "desk", "plane"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "This is my pen. What is this?", "ko": "이건 내 펜이야. 이건 뭐야?", "modelAnswer": "It is a pen.", "accepted": ["pen", "a pen", "my pen", "It is a pen.", "This is my pen."]},
+          {"en": "That is a map. What is that?", "ko": "저건 지도야. 저건 뭐야?", "modelAnswer": "It is a map.", "accepted": ["map", "a map", "It is a map.", "That is a map."]},
+          {"en": "It is a toy. What is it?", "ko": "그건 장난감이야. 그건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "It is a toy."]},
+          {"en": "This is a desk. What is this?", "ko": "이건 책상이야. 이건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "It is a desk.", "This is a desk."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "삼촌 차 타고 가기",
+      "newWords": [],
+      "unitWords": ["clock", "bell", "ship", "plane", "bath", "lamp", "bus", "car", "truck", "bed", "dish", "cup", "tent", "pen", "bank", "shop", "chair", "home", "toy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["clock", "bell", "ship", "plane", "bath"],
+          "sentences": ["This is a lamp.", "That is a bus.", "It is a car.", "That is a truck.", "This is my bed."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a clock.", "options": ["clock", "bird", "dish", "cup"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a ship.", "options": ["tree", "ship", "tent", "pen"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a bath.", "options": ["bank", "shop", "chair", "bath"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is a bell. What is this?", "ko": "이건 종이야. 이건 뭐야?", "modelAnswer": "It is a bell.", "accepted": ["bell", "a bell", "It is a bell.", "This is a bell."]},
+          {"en": "That is a plane. What is that?", "ko": "저건 비행기야. 저건 뭐야?", "modelAnswer": "It is a plane.", "accepted": ["plane", "a plane", "It is a plane.", "That is a plane."]},
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "This is a toy car. What is this?", "ko": "이건 장난감 자동차야. 이건 뭐야?", "modelAnswer": "It is a toy car.", "accepted": ["car", "toy car", "a toy car", "It is a toy car.", "It is a car."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "이모네 집 놀러 가기",
+      "newWords": [],
+      "unitWords": ["dish", "tent", "home", "shop", "bank", "toy", "book", "clock", "map", "desk", "car", "drum", "pencil", "bag", "lamp"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["dish", "tent", "home", "shop", "bank"],
+          "sentences": ["This is a dish.", "It is a tent.", "This is my home.", "That is a toy shop.", "It is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a tent.", "options": ["book", "tent", "clock", "map"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a shop.", "options": ["desk", "car", "drum", "shop"], "answerNo": 4},
+          {"kind": "picture", "script": "This is a dish.", "options": ["dish", "pencil", "bag", "lamp"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "It is my home. What is it?", "ko": "그건 우리 집이야. 그건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home."]},
+          {"en": "That is a bank. What is that?", "ko": "저건 은행이야. 저건 뭐야?", "modelAnswer": "It is a bank.", "accepted": ["bank", "a bank", "It is a bank.", "That is a bank."]},
+          {"en": "This is my toy. What is this?", "ko": "이건 내 장난감이야. 이건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "my toy", "It is a toy.", "This is my toy."]},
+          {"en": "It is a tent. What is it?", "ko": "그건 텐트야. 그건 뭐야?", "modelAnswer": "It is a tent.", "accepted": ["tent", "a tent", "It is a tent."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이 시간 준비물",
+      "newWords": ["bag", "pen", "pencil", "book", "cup"],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup"],
+      "preview": [
+        {"word": "bag", "meaningKo": "가방", "example": "This is a bag."},
+        {"word": "pen", "meaningKo": "펜", "example": "It is my pen."},
+        {"word": "pencil", "meaningKo": "연필", "example": "This is a pencil."},
+        {"word": "book", "meaningKo": "책", "example": "It is a book."},
+        {"word": "cup", "meaningKo": "컵", "example": "This is my cup."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["bag", "pen", "pencil", "book", "cup"],
+          "sentences": ["It is my bag.", "This is my pen.", "That is a pencil.", "This is a book.", "It is a cup."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a pen.", "options": ["ball", "kite", "pen", "robot"], "answerNo": 3},
+          {"kind": "picture", "script": "It is my bag.", "options": ["bag", "star", "doll", "book"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a cup.", "options": ["yo-yo", "pencil", "bike", "cup"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is a pencil. What is this?", "ko": "이건 연필이야. 이건 뭐야?", "modelAnswer": "It is a pencil.", "accepted": ["pencil", "a pencil", "It is a pencil.", "This is a pencil."]},
+          {"en": "It is my book. What is it?", "ko": "그건 내 책이야. 그건 뭐야?", "modelAnswer": "It is a book.", "accepted": ["book", "a book", "my book", "It is a book.", "It is my book."]},
+          {"en": "That is a cup. What is that?", "ko": "저건 컵이야. 저건 뭐야?", "modelAnswer": "It is a cup.", "accepted": ["cup", "a cup", "It is a cup.", "That is a cup."]},
+          {"en": "This is my bag. What is this?", "ko": "이건 내 가방이야. 이건 뭐야?", "modelAnswer": "It is a bag.", "accepted": ["bag", "a bag", "my bag", "It is a bag.", "This is my bag."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "악기 놀이 방",
+      "newWords": ["map", "desk", "chair", "toy", "drum"],
+      "unitWords": ["map", "desk", "chair", "toy", "drum", "cup", "bag"],
+      "preview": [
+        {"word": "map", "meaningKo": "지도", "example": "It is a map."},
+        {"word": "desk", "meaningKo": "책상", "example": "That is a desk."},
+        {"word": "chair", "meaningKo": "의자", "example": "This is my chair."},
+        {"word": "toy", "meaningKo": "장난감", "example": "This is a toy."},
+        {"word": "drum", "meaningKo": "북, 드럼", "example": "Oh, a drum!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["map", "desk", "chair", "toy", "drum"],
+          "sentences": ["This is a drum.", "It is my desk.", "That is a chair.", "This is my toy.", "It is a map."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a drum.", "options": ["guitar", "drum", "violin", "cup"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a chair.", "options": ["piano", "desk", "chair", "ball"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a map.", "options": ["kite", "bag", "robot", "map"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is my toy. What is it?", "ko": "그건 내 장난감이야. 그건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "my toy", "It is a toy.", "It is my toy."]},
+          {"en": "This is a drum. What is this?", "ko": "이건 북이야. 이건 뭐야?", "modelAnswer": "It is a drum.", "accepted": ["drum", "a drum", "It is a drum.", "This is a drum."]},
+          {"en": "That is a desk. What is that?", "ko": "저건 책상이야. 저건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "It is a desk.", "That is a desk."]},
+          {"en": "This is my chair. What is this?", "ko": "이건 내 의자야. 이건 뭐야?", "modelAnswer": "It is a chair.", "accepted": ["chair", "a chair", "my chair", "It is a chair.", "This is my chair."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "장난감 자동차 경주",
+      "newWords": ["clock", "lamp", "bell", "bus", "car"],
+      "unitWords": ["clock", "lamp", "bell", "bus", "car", "toy"],
+      "preview": [
+        {"word": "clock", "meaningKo": "시계", "example": "It is a clock."},
+        {"word": "lamp", "meaningKo": "램프, 전등", "example": "This is a lamp."},
+        {"word": "bell", "meaningKo": "종", "example": "That is a bell."},
+        {"word": "bus", "meaningKo": "버스", "example": "This is a toy bus."},
+        {"word": "car", "meaningKo": "자동차", "example": "Wow, a car!"}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["clock", "lamp", "bell", "bus", "car"],
+          "sentences": ["That is a clock.", "This is my lamp.", "It is a bell.", "That is a bus.", "This is a toy car."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a bus.", "options": ["bike", "bus", "kite", "doll"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a clock.", "options": ["robot", "ball", "clock", "yo-yo"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a car.", "options": ["car", "lamp", "top", "violin"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "This is a toy car. What is this?", "ko": "이건 장난감 자동차야. 이건 뭐야?", "modelAnswer": "It is a toy car.", "accepted": ["car", "toy car", "a toy car", "It is a toy car.", "It is a car."]},
+          {"en": "That is a bell. What is that?", "ko": "저건 종이야. 저건 뭐야?", "modelAnswer": "It is a bell.", "accepted": ["bell", "a bell", "It is a bell.", "That is a bell."]},
+          {"en": "It is a lamp. What is it?", "ko": "그건 전등이야. 그건 뭐야?", "modelAnswer": "It is a lamp.", "accepted": ["lamp", "a lamp", "It is a lamp."]},
+          {"en": "This is a toy bus. What is this?", "ko": "이건 장난감 버스야. 이건 뭐야?", "modelAnswer": "It is a toy bus.", "accepted": ["bus", "toy bus", "a toy bus", "It is a toy bus.", "It is a bus."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "우주 여행 놀이",
+      "newWords": ["ship", "truck", "plane", "bed", "bath"],
+      "unitWords": ["ship", "truck", "plane", "bed", "bath", "toy"],
+      "preview": [
+        {"word": "ship", "meaningKo": "배", "example": "This is a ship."},
+        {"word": "truck", "meaningKo": "트럭", "example": "It is a toy truck."},
+        {"word": "plane", "meaningKo": "비행기", "example": "That is a plane."},
+        {"word": "bed", "meaningKo": "침대", "example": "This is my bed."},
+        {"word": "bath", "meaningKo": "목욕, 욕조", "example": "It is a bath."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["ship", "truck", "plane", "bed", "bath"],
+          "sentences": ["It is a ship.", "This is a truck.", "Wow, a plane!", "It is my bed.", "This is a bath."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a truck.", "options": ["star", "robot", "truck", "kite"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a ship.", "options": ["ship", "bed", "ball", "yo-yo"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a plane.", "options": ["bike", "doll", "bath", "plane"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is my bed. What is this?", "ko": "이건 내 침대야. 이건 뭐야?", "modelAnswer": "It is a bed.", "accepted": ["bed", "a bed", "my bed", "It is a bed.", "This is my bed."]},
+          {"en": "It is a bath. What is it?", "ko": "그건 욕조야. 그건 뭐야?", "modelAnswer": "It is a bath.", "accepted": ["bath", "a bath", "It is a bath."]},
+          {"en": "That is a plane. What is that?", "ko": "저건 비행기야. 저건 뭐야?", "modelAnswer": "It is a plane.", "accepted": ["plane", "a plane", "It is a plane.", "That is a plane."]},
+          {"en": "This is a toy truck. What is this?", "ko": "이건 장난감 트럭이야. 이건 뭐야?", "modelAnswer": "It is a toy truck.", "accepted": ["truck", "toy truck", "a toy truck", "It is a toy truck.", "It is a truck."]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "가게 놀이 한판",
+      "newWords": ["dish", "tent", "home", "shop", "bank"],
+      "unitWords": ["dish", "tent", "home", "shop", "bank", "toy"],
+      "preview": [
+        {"word": "dish", "meaningKo": "접시, 요리", "example": "It is a dish."},
+        {"word": "tent", "meaningKo": "텐트", "example": "This is a tent."},
+        {"word": "home", "meaningKo": "집", "example": "It is my home."},
+        {"word": "shop", "meaningKo": "가게, 쇼핑하다", "example": "This is a toy shop."},
+        {"word": "bank", "meaningKo": "은행", "example": "This is a bank."}
+      ],
+      "content": {
+        "repeat": {
+          "words": ["dish", "tent", "home", "shop", "bank"],
+          "sentences": ["This is a dish.", "That is a tent.", "This is my home.", "It is a shop.", "That is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a bank.", "options": ["ball", "bank", "robot", "kite"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a tent.", "options": ["tent", "doll", "yo-yo", "dish"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a dish.", "options": ["bike", "star", "dish", "box"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "It is a toy shop. What is it?", "ko": "그건 장난감 가게야. 그건 뭐야?", "modelAnswer": "It is a toy shop.", "accepted": ["shop", "toy shop", "a toy shop", "It is a toy shop.", "It is a shop."]},
+          {"en": "That is a tent. What is that?", "ko": "저건 텐트야. 저건 뭐야?", "modelAnswer": "It is a tent.", "accepted": ["tent", "a tent", "It is a tent.", "That is a tent."]},
+          {"en": "This is a dish. What is this?", "ko": "이건 접시야. 이건 뭐야?", "modelAnswer": "It is a dish.", "accepted": ["dish", "a dish", "It is a dish.", "This is a dish."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "보물찾기 놀이",
+      "newWords": [],
+      "unitWords": ["bag", "map", "clock", "ship", "dish"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["bag", "map", "clock", "ship", "dish"],
+          "sentences": ["It is my bag.", "This is a map.", "That is a clock.", "It is a ship.", "This is a dish."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a map.", "options": ["ball", "map", "kite", "clock"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a ship.", "options": ["bike", "doll", "ship", "dish"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a bag.", "options": ["yo-yo", "robot", "box", "bag"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is a clock. What is this?", "ko": "이건 시계야. 이건 뭐야?", "modelAnswer": "It is a clock.", "accepted": ["clock", "a clock", "It is a clock.", "This is a clock."]},
+          {"en": "It is my bag. What is it?", "ko": "그건 내 가방이야. 그건 뭐야?", "modelAnswer": "It is a bag.", "accepted": ["bag", "a bag", "my bag", "It is a bag.", "It is my bag."]},
+          {"en": "That is a ship. What is that?", "ko": "저건 배야. 저건 뭐야?", "modelAnswer": "It is a ship.", "accepted": ["ship", "a ship", "It is a ship.", "That is a ship."]},
+          {"en": "It is a dish. What is it?", "ko": "그건 접시야. 그건 뭐야?", "modelAnswer": "It is a dish.", "accepted": ["dish", "a dish", "It is a dish."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "거실 텐트 놀이",
+      "newWords": [],
+      "unitWords": ["pen", "desk", "lamp", "truck", "tent", "toy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pen", "desk", "lamp", "truck", "tent"],
+          "sentences": ["This is a tent.", "It is my lamp.", "That is a pen.", "This is a desk.", "It is a toy truck."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a lamp.", "options": ["lamp", "robot", "yo-yo", "bike"], "answerNo": 1},
+          {"kind": "picture", "script": "This is a pen.", "options": ["kite", "doll", "pen", "star"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a truck.", "options": ["box", "truck", "desk", "guitar"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "This is a tent. What is this?", "ko": "이건 텐트야. 이건 뭐야?", "modelAnswer": "It is a tent.", "accepted": ["tent", "a tent", "It is a tent.", "This is a tent."]},
+          {"en": "It is my desk. What is it?", "ko": "그건 내 책상이야. 그건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "my desk", "It is a desk.", "It is my desk."]},
+          {"en": "That is a lamp. What is that?", "ko": "저건 전등이야. 저건 뭐야?", "modelAnswer": "It is a lamp.", "accepted": ["lamp", "a lamp", "It is a lamp.", "That is a lamp."]},
+          {"en": "This is my pen. What is this?", "ko": "이건 내 펜이야. 이건 뭐야?", "modelAnswer": "It is a pen.", "accepted": ["pen", "a pen", "my pen", "It is a pen.", "This is my pen."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "종이비행기 날리기",
+      "newWords": [],
+      "unitWords": ["pencil", "chair", "bell", "plane", "home"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pencil", "chair", "bell", "plane", "home"],
+          "sentences": ["This is my pencil.", "It is a plane.", "That is a bell.", "This is a chair.", "It is my home."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a bell.", "options": ["kite", "bell", "robot", "star"], "answerNo": 2},
+          {"kind": "picture", "script": "This is a pencil.", "options": ["pencil", "yo-yo", "bike", "box"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a plane.", "options": ["doll", "chair", "top", "plane"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "That is a plane. What is that?", "ko": "저건 비행기야. 저건 뭐야?", "modelAnswer": "It is a plane.", "accepted": ["plane", "a plane", "It is a plane.", "That is a plane."]},
+          {"en": "This is a bell. What is this?", "ko": "이건 종이야. 이건 뭐야?", "modelAnswer": "It is a bell.", "accepted": ["bell", "a bell", "It is a bell.", "This is a bell."]},
+          {"en": "It is a chair. What is it?", "ko": "그건 의자야. 그건 뭐야?", "modelAnswer": "It is a chair.", "accepted": ["chair", "a chair", "It is a chair."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "버스 타고 놀이공원",
+      "newWords": [],
+      "unitWords": ["book", "toy", "bus", "bed", "shop"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["book", "toy", "bus", "bed", "shop"],
+          "sentences": ["That is a bus.", "This is a book.", "It is my toy.", "This is a bed.", "It is a toy shop."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a bus.", "options": ["robot", "kite", "bike", "bus"], "answerNo": 4},
+          {"kind": "picture", "script": "It is a book.", "options": ["book", "ball", "star", "yo-yo"], "answerNo": 1},
+          {"kind": "picture", "script": "That is a shop.", "options": ["guitar", "bed", "shop", "kite"], "answerNo": 3}
+        ],
+        "questions": [
+          {"en": "That is a toy. What is that?", "ko": "저건 장난감이야. 저건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "It is a toy.", "That is a toy."]},
+          {"en": "It is my bed. What is it?", "ko": "그건 내 침대야. 그건 뭐야?", "modelAnswer": "It is a bed.", "accepted": ["bed", "a bed", "my bed", "It is a bed.", "It is my bed."]},
+          {"en": "That is a bus. What is that?", "ko": "저건 버스야. 저건 뭐야?", "modelAnswer": "It is a bus.", "accepted": ["bus", "a bus", "It is a bus.", "That is a bus."]},
+          {"en": "This is a book. What is this?", "ko": "이건 책이야. 이건 뭐야?", "modelAnswer": "It is a book.", "accepted": ["book", "a book", "It is a book.", "This is a book."]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "인형 놀이 하루",
+      "newWords": [],
+      "unitWords": ["cup", "drum", "car", "bath", "bank", "toy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["cup", "drum", "car", "bath", "bank"],
+          "sentences": ["This is a cup.", "It is a bath.", "That is a toy car.", "This is my drum.", "It is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "It is a bath.", "options": ["bath", "kite", "robot", "guitar"], "answerNo": 1},
+          {"kind": "picture", "script": "This is a cup.", "options": ["doll", "star", "cup", "bike"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a bank.", "options": ["drum", "bank", "yo-yo", "box"], "answerNo": 2}
+        ],
+        "questions": [
+          {"en": "This is my cup. What is this?", "ko": "이건 내 컵이야. 이건 뭐야?", "modelAnswer": "It is a cup.", "accepted": ["cup", "a cup", "my cup", "It is a cup.", "This is my cup."]},
+          {"en": "It is a toy car. What is it?", "ko": "그건 장난감 자동차야. 그건 뭐야?", "modelAnswer": "It is a toy car.", "accepted": ["car", "toy car", "a toy car", "It is a toy car.", "It is a car."]},
+          {"en": "That is a drum. What is that?", "ko": "저건 북이야. 저건 뭐야?", "modelAnswer": "It is a drum.", "accepted": ["drum", "a drum", "It is a drum.", "That is a drum."]},
+          {"en": "This is a bank. What is this?", "ko": "이건 은행이야. 이건 뭐야?", "modelAnswer": "It is a bank.", "accepted": ["bank", "a bank", "It is a bank.", "This is a bank."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이터 쉬는 시간",
+      "newWords": [],
+      "unitWords": ["pencil", "cup", "chair", "toy", "drum", "pen", "bus", "bag", "bath", "book", "ship", "map", "bed", "truck", "bell", "plane", "desk"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["pencil", "cup", "chair", "toy", "drum"],
+          "sentences": ["It is my pencil.", "This is a cup.", "This is my chair.", "It is a toy.", "That is a drum."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "That is a bag.", "options": ["pen", "bus", "bag", "bath"], "answerNo": 3},
+          {"kind": "picture", "script": "This is a book.", "options": ["book", "ship", "map", "bed"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a desk.", "options": ["truck", "bell", "plane", "desk"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "This is a pen. What is this?", "ko": "이건 펜이야. 이건 뭐야?", "modelAnswer": "It is a pen.", "accepted": ["pen", "a pen", "It is a pen.", "This is a pen."]},
+          {"en": "It is my map. What is it?", "ko": "그건 내 지도야. 그건 뭐야?", "modelAnswer": "It is a map.", "accepted": ["map", "a map", "my map", "It is a map.", "It is my map."]},
+          {"en": "This is my toy. What is this?", "ko": "이건 내 장난감이야. 이건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "my toy", "It is a toy.", "This is my toy."]},
+          {"en": "That is a desk. What is that?", "ko": "저건 책상이야. 저건 뭐야?", "modelAnswer": "It is a desk.", "accepted": ["desk", "a desk", "It is a desk.", "That is a desk."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "탈것 그림 카드",
+      "newWords": [],
+      "unitWords": ["clock", "bell", "ship", "plane", "bath", "lamp", "bus", "car", "toy", "truck", "bed", "cup", "dish", "tent", "pen", "shop", "chair", "bank", "home"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["clock", "bell", "ship", "plane", "bath"],
+          "sentences": ["It is a lamp.", "This is a bus.", "That is a toy car.", "It is a truck.", "That is a bed."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a clock.", "options": ["cup", "clock", "dish", "kite"], "answerNo": 2},
+          {"kind": "picture", "script": "It is a ship.", "options": ["tent", "pen", "ship", "robot"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a bath.", "options": ["bath", "shop", "chair", "bank"], "answerNo": 1}
+        ],
+        "questions": [
+          {"en": "It is a bell. What is it?", "ko": "그건 종이야. 그건 뭐야?", "modelAnswer": "It is a bell.", "accepted": ["bell", "a bell", "It is a bell."]},
+          {"en": "This is a plane. What is this?", "ko": "이건 비행기야. 이건 뭐야?", "modelAnswer": "It is a plane.", "accepted": ["plane", "a plane", "It is a plane.", "This is a plane."]},
+          {"en": "This is my home. What is this?", "ko": "이건 우리 집이야. 이건 뭐야?", "modelAnswer": "It is my home.", "accepted": ["home", "my home", "It is my home.", "This is my home."]},
+          {"en": "That is a car. What is that?", "ko": "저건 자동차야. 저건 뭐야?", "modelAnswer": "It is a car.", "accepted": ["car", "a car", "It is a car.", "That is a car."]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 2, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "df137e85233469aa95b31ba0b57a7f3f365721f8e975e0edfbc5df0a9bfd762d", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "블록 마을 만들기",
+      "newWords": [],
+      "unitWords": ["dish", "tent", "home", "shop", "bank", "clock", "map", "book", "car", "desk", "drum", "lamp", "bag", "pencil", "toy"],
+      "preview": [],
+      "content": {
+        "repeat": {
+          "words": ["dish", "tent", "home", "shop", "bank"],
+          "sentences": ["It is a dish.", "This is a tent.", "It is my home.", "This is a shop.", "That is a bank."]
+        },
+        "listening": [
+          {"kind": "picture", "script": "This is a tent.", "options": ["clock", "map", "tent", "book"], "answerNo": 3},
+          {"kind": "picture", "script": "That is a shop.", "options": ["shop", "car", "desk", "drum"], "answerNo": 1},
+          {"kind": "picture", "script": "It is a dish.", "options": ["lamp", "bag", "pencil", "dish"], "answerNo": 4}
+        ],
+        "questions": [
+          {"en": "It is a toy. What is it?", "ko": "그건 장난감이야. 그건 뭐야?", "modelAnswer": "It is a toy.", "accepted": ["toy", "a toy", "It is a toy."]},
+          {"en": "This is a bank. What is this?", "ko": "이건 은행이야. 이건 뭐야?", "modelAnswer": "It is a bank.", "accepted": ["bank", "a bank", "It is a bank.", "This is a bank."]},
+          {"en": "It is a tent. What is it?", "ko": "그건 텐트야. 그건 뭐야?", "modelAnswer": "It is a tent.", "accepted": ["tent", "a tent", "It is a tent."]},
+          {"en": "That is a toy shop. What is that?", "ko": "저건 장난감 가게야. 저건 뭐야?", "modelAnswer": "It is a toy shop.", "accepted": ["shop", "toy shop", "a toy shop", "It is a toy shop.", "It is a shop."]}
+        ]
+      }
+    }
+  ]
+}

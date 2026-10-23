@@ -1,0 +1,81 @@
+{
+  "area": "reading",
+  "level": 1,
+  "forms": [
+    {
+      "form": 1,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A cookie and an egg.", "prompt": "an egg", "options": ["cookie", "egg", "banana", "ring"], "answerNo": 2, "explanationKo": "egg 는 달걀이에요. 달걀 그림을 골라요."},
+        {"no": 2, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A blue kite. A small ring.", "prompt": "a blue kite", "options": ["ring", "ball", "bike", "kite"], "answerNo": 4, "explanationKo": "kite 는 연이에요. 파란 연 그림을 골라요."},
+        {"no": 3, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is a frog. This is my duck.", "prompt": "That is a frog.", "options": ["frog", "duck", "sheep", "fox"], "answerNo": 1, "explanationKo": "frog 는 개구리예요. 개구리 그림을 골라요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "This is my bus. That is a truck.", "prompt": "This is my bus.", "options": ["car", "truck", "bus", "plane"], "answerNo": 3, "explanationKo": "bus 는 버스예요. 버스 그림을 골라요."},
+        {"no": 5, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "My top is red. A white plane.", "prompt": "My top is red.", "options": ["white", "black", "red", "green"], "answerNo": 3, "explanationKo": "red 는 빨간색이에요. 빨간색 그림을 골라요."},
+        {"no": 6, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A big tree. A small rock.", "prompt": "a big tree", "options": ["tree", "rock", "lake", "shell"], "answerNo": 1, "explanationKo": "tree 는 나무예요. 나무 그림을 골라요."},
+        {"no": 7, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my book. A lamp and a bag.", "prompt": "I like my book.", "options": ["pen", "lamp", "bag", "book"], "answerNo": 4, "explanationKo": "book 은 책이에요. 책 그림을 골라요."},
+        {"no": 8, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like the chair. The desk is small.", "prompt": "I like the chair.", "options": ["desk", "chair", "cup", "map"], "answerNo": 2, "explanationKo": "chair 는 의자예요. 의자 그림을 골라요."},
+        {"no": 9, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Six red apples. Two cats.", "prompt": "Six red apples.", "options": ["six", "two", "eight", "three"], "answerNo": 1, "explanationKo": "six 는 6 이에요. 숫자 6 을 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two big eyes. A small nose.", "prompt": "two big eyes", "options": ["nose", "ear", "hand", "eye"], "answerNo": 4, "explanationKo": "eye 는 눈이에요. 눈 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A red shoe. A small cap.", "prompt": "a red shoe", "options": ["sock", "shirt", "shoe", "cap"], "answerNo": 3, "explanationKo": "shoe 는 신발이에요. 빨간 신발 그림을 골라요."},
+        {"no": 12, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "Wow, a doll! A ring and a ball.", "prompt": "a doll", "options": ["ball", "doll", "ring", "sock"], "answerNo": 2, "explanationKo": "doll 은 인형이에요. 인형 그림을 골라요."},
+        {"no": 13, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is an orange fox.", "prompt": "an orange fox", "options": ["cat", "fox", "dog", "pig"], "answerNo": 2, "explanationKo": "fox 는 여우예요. 여우 그림을 골라요."},
+        {"no": 14, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "This is a big ship. That is a car.", "prompt": "a big ship", "options": ["car", "plane", "bus", "ship"], "answerNo": 4, "explanationKo": "ship 은 배예요. 배 그림을 골라요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "My dish is white. A red yo-yo.", "prompt": "My dish is white.", "options": ["white", "red", "pink", "black"], "answerNo": 1, "explanationKo": "white 는 흰색이에요. 흰색 그림을 골라요."},
+        {"no": 16, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A tall king. A small queen.", "prompt": "a tall king", "options": ["rose", "sun", "king", "queen"], "answerNo": 3, "explanationKo": "king 은 왕이고 queen 은 여왕이에요. 왕 그림을 골라요."},
+        {"no": 17, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like the big clock. Oh, a bell!", "prompt": "the big clock", "options": ["bell", "lamp", "cup", "clock"], "answerNo": 4, "explanationKo": "clock 은 시계예요. 시계 그림을 골라요."},
+        {"no": 18, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my black pen. The bag is small.", "prompt": "I like my black pen.", "options": ["pen", "bag", "pencil", "book"], "answerNo": 1, "explanationKo": "pen 은 펜이고 pencil 은 연필이에요. 검은 펜 그림을 골라요."},
+        {"no": 19, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Ten little ducks. One big dog.", "prompt": "Ten little ducks.", "options": ["one", "eight", "ten", "four"], "answerNo": 3, "explanationKo": "ten 은 10 이에요. 숫자 10 을 골라요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two small hands. A big ear.", "prompt": "two small hands", "options": ["ear", "hand", "leg", "nose"], "answerNo": 2, "explanationKo": "hand 는 손이에요. 손 그림을 골라요."}
+      ]
+    },
+    {
+      "form": 2,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A red apple. A big egg.", "prompt": "a red apple", "options": ["egg", "cake", "apple", "grape"], "answerNo": 3, "explanationKo": "apple 은 사과예요. 빨간 사과 그림을 골라요."},
+        {"no": 2, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A hat and a jacket.", "prompt": "a hat", "options": ["hat", "jacket", "shirt", "sock"], "answerNo": 1, "explanationKo": "hat 은 모자예요. 모자 그림을 골라요."},
+        {"no": 3, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is my cat. This is a rabbit.", "prompt": "That is my cat.", "options": ["rabbit", "dog", "pig", "cat"], "answerNo": 4, "explanationKo": "cat 은 고양이예요. 고양이 그림을 골라요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is a big truck. This is a small car.", "prompt": "a big truck", "options": ["car", "truck", "ship", "plane"], "answerNo": 2, "explanationKo": "truck 은 트럭이에요. 트럭 그림을 골라요."},
+        {"no": 5, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "My sock is blue. A red swing.", "prompt": "My sock is blue.", "options": ["red", "blue", "green", "yellow"], "answerNo": 2, "explanationKo": "blue 는 파란색이에요. 파란색 그림을 골라요."},
+        {"no": 6, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A big rock. A small shell.", "prompt": "a big rock", "options": ["shell", "tree", "sun", "rock"], "answerNo": 4, "explanationKo": "rock 은 바위예요. 바위 그림을 골라요."},
+        {"no": 7, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like the bag. A map and a pen.", "prompt": "I like the bag.", "options": ["bag", "map", "pen", "book"], "answerNo": 1, "explanationKo": "bag 은 가방이에요. 가방 그림을 골라요."},
+        {"no": 8, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my desk. The chair is small.", "prompt": "I like my desk.", "options": ["chair", "lamp", "desk", "clock"], "answerNo": 3, "explanationKo": "desk 는 책상이에요. 책상 그림을 골라요."},
+        {"no": 9, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Three big trucks. Five pigs.", "prompt": "Three big trucks.", "options": ["five", "eight", "ten", "three"], "answerNo": 4, "explanationKo": "three 는 3 이에요. 숫자 3 을 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two big ears. A little mouth.", "prompt": "two big ears", "options": ["ear", "mouth", "eye", "hand"], "answerNo": 1, "explanationKo": "ear 는 귀예요. 귀 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A banana and a ball.", "prompt": "a banana", "options": ["ball", "banana", "egg", "cookie"], "answerNo": 2, "explanationKo": "banana 는 바나나예요. 바나나 그림을 골라요."},
+        {"no": 12, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A red bike. A cute doll.", "prompt": "a red bike", "options": ["doll", "kite", "bike", "ball"], "answerNo": 3, "explanationKo": "bike 는 자전거예요. 빨간 자전거 그림을 골라요."},
+        {"no": 13, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "This is my pig. That is a big sheep.", "prompt": "This is my pig.", "options": ["sheep", "dog", "pig", "frog"], "answerNo": 3, "explanationKo": "pig 는 돼지예요. 돼지 그림을 골라요."},
+        {"no": 14, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is a white plane.", "prompt": "a white plane", "options": ["plane", "ship", "bus", "truck"], "answerNo": 1, "explanationKo": "plane 은 비행기예요. 비행기 그림을 골라요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A green snake. A red bird.", "prompt": "A green snake.", "options": ["red", "yellow", "pink", "green"], "answerNo": 4, "explanationKo": "green 은 초록색이에요. 초록색 그림을 골라요."},
+        {"no": 16, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "Oh, the sun! A big lake.", "prompt": "the sun", "options": ["lake", "sun", "tree", "flower"], "answerNo": 2, "explanationKo": "sun 은 해예요. 해 그림을 골라요."},
+        {"no": 17, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my small lamp.", "prompt": "my small lamp", "options": ["lamp", "clock", "bell", "pencil"], "answerNo": 1, "explanationKo": "lamp 는 전등이에요. 전등 그림을 골라요."},
+        {"no": 18, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like the cup. Oh, a drum!", "prompt": "I like the cup.", "options": ["drum", "pen", "map", "cup"], "answerNo": 4, "explanationKo": "cup 은 컵이에요. 컵 그림을 골라요."},
+        {"no": 19, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Eight red roses. Four eggs.", "prompt": "Eight red roses.", "options": ["four", "eight", "six", "two"], "answerNo": 2, "explanationKo": "eight 는 8 이에요. 숫자 8 을 골라요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two long legs. Two arms.", "prompt": "two long legs", "options": ["arm", "hand", "leg", "ear"], "answerNo": 3, "explanationKo": "leg 는 다리예요. 다리 그림을 골라요."}
+      ]
+    },
+    {
+      "form": 3,
+      "items": [
+        {"no": 1, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A cookie and an apple.", "prompt": "a cookie", "options": ["apple", "cake", "pizza", "cookie"], "answerNo": 4, "explanationKo": "cookie 는 쿠키예요. 쿠키 그림을 골라요."},
+        {"no": 2, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A blue sock. A big shoe.", "prompt": "a blue sock", "options": ["shoe", "sock", "jacket", "doll"], "answerNo": 2, "explanationKo": "sock 은 양말이에요. 파란 양말 그림을 골라요."},
+        {"no": 3, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "This is Max. Max is a dog.", "prompt": "a dog", "options": ["cat", "fox", "dog", "pig"], "answerNo": 3, "explanationKo": "dog 는 개예요. 개 그림을 골라요."},
+        {"no": 4, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is my car. This is a tent.", "prompt": "That is my car.", "options": ["car", "tent", "bus", "truck"], "answerNo": 1, "explanationKo": "car 는 자동차예요. 자동차 그림을 골라요."},
+        {"no": 5, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "Yellow cheese and red jam.", "prompt": "yellow cheese", "options": ["yellow", "red", "blue", "white"], "answerNo": 1, "explanationKo": "yellow 는 노란색이에요. 노란색 그림을 골라요."},
+        {"no": 6, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A big blue lake. A small red rose.", "prompt": "a big blue lake", "options": ["rose", "tree", "lake", "rock"], "answerNo": 3, "explanationKo": "lake 는 호수예요. 호수 그림을 골라요."},
+        {"no": 7, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my pencil. Oh, a brush!", "prompt": "I like my pencil.", "options": ["brush", "pencil", "pen", "book"], "answerNo": 2, "explanationKo": "pencil 은 연필이고 pen 은 펜이에요. 연필 그림을 골라요."},
+        {"no": 8, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like this map. The desk is big.", "prompt": "I like this map.", "options": ["desk", "bag", "book", "map"], "answerNo": 4, "explanationKo": "map 은 지도예요. 지도 그림을 골라요."},
+        {"no": 9, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two green snakes. Ten cats.", "prompt": "Two green snakes.", "options": ["ten", "one", "two", "five"], "answerNo": 3, "explanationKo": "two 는 2 예요. 숫자 2 를 골라요."},
+        {"no": 10, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "A big nose. Two little eyes.", "prompt": "a big nose", "options": ["eye", "nose", "mouth", "ear"], "answerNo": 2, "explanationKo": "nose 는 코예요. 코 그림을 골라요."},
+        {"no": 11, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "Wow, a ring! An egg and a ball.", "prompt": "a ring", "options": ["ring", "ball", "egg", "kite"], "answerNo": 1, "explanationKo": "ring 은 반지예요. 반지 그림을 골라요."},
+        {"no": 12, "unit": 1, "revision": 2, "correction": 0, "type": "picture", "passage": "A blue shirt. A small hat.", "prompt": "a blue shirt", "options": ["hat", "jacket", "sock", "shirt"], "answerNo": 4, "explanationKo": "shirt 는 셔츠예요. 파란 셔츠 그림을 골라요."},
+        {"no": 13, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "That is a long snake. This is my fish.", "prompt": "a long snake", "options": ["fish", "rabbit", "frog", "snake"], "answerNo": 4, "explanationKo": "snake 는 뱀이에요. 뱀 그림을 골라요."},
+        {"no": 14, "unit": 2, "revision": 2, "correction": 0, "type": "picture", "passage": "This is a cute rabbit. That is a small fox.", "prompt": "a cute rabbit", "options": ["fox", "rabbit", "sheep", "pig"], "answerNo": 2, "explanationKo": "rabbit 은 토끼예요. 토끼 그림을 골라요."},
+        {"no": 15, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "A black piano. A white dish.", "prompt": "A black piano.", "options": ["white", "pink", "black", "blue"], "answerNo": 3, "explanationKo": "black 은 검은색이에요. 검은색 그림을 골라요."},
+        {"no": 16, "unit": 3, "revision": 2, "correction": 0, "type": "picture", "passage": "Oh, a small white flower!", "prompt": "a small white flower", "options": ["flower", "tree", "sun", "shell"], "answerNo": 1, "explanationKo": "flower 는 꽃이에요. 꽃 그림을 골라요."},
+        {"no": 17, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like my big drum. A bell and a top.", "prompt": "my big drum", "options": ["bell", "drum", "top", "fan"], "answerNo": 2, "explanationKo": "drum 은 북이에요. 북 그림을 골라요."},
+        {"no": 18, "unit": 4, "revision": 2, "correction": 0, "type": "picture", "passage": "I like the little bell. Wow, a clock!", "prompt": "the little bell", "options": ["clock", "lamp", "bell", "chair"], "answerNo": 3, "explanationKo": "bell 은 종이에요. 종 그림을 골라요."},
+        {"no": 19, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Four blue kites. Nine eggs.", "prompt": "Four blue kites.", "options": ["four", "nine", "seven", "three"], "answerNo": 1, "explanationKo": "four 는 4 예요. 숫자 4 를 골라요."},
+        {"no": 20, "unit": 5, "revision": 2, "correction": 0, "type": "picture", "passage": "Two long arms. A small mouth.", "prompt": "two long arms", "options": ["mouth", "hand", "leg", "arm"], "answerNo": 4, "explanationKo": "arm 은 팔이에요. 팔 그림을 골라요."}
+      ]
+    }
+  ]
+}

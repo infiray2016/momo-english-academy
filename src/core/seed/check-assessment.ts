@@ -12,6 +12,7 @@ import {
   type SeedIssue,
 } from "@/core/seed/check-lesson";
 import { questionKey, TALK_ROLES } from "@/core/seed/check-talk";
+import { checkTeacherNames } from "@/core/seed/check-teacher";
 import type { ReferenceIndex } from "@/core/seed/reference-index";
 import {
   type LevelTestFile,
@@ -649,6 +650,11 @@ function checkTalkForms(
         { area: "talk", level, scope: "test", index, englishRoles: TALK_ROLES },
         report,
       );
+      checkTeacherNames(
+        textsOfTalkTestSheet(sheet, path),
+        index.teacherNames,
+        report,
+      );
     });
   });
 }
@@ -796,6 +802,7 @@ export function checkStoryFile(file: StoryFile, ctx: FileContext): SeedIssue[] {
       },
       report,
     );
+    checkTeacherNames(textsOfStory(story, path), index.teacherNames, report);
   });
   return out;
 }
