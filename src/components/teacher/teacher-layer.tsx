@@ -2,17 +2,16 @@
 
 // 선생님 그림 층 보관 조각(선생님 화면 plan 값 14 · 위험 3 · 12 · 13, 10절 '선생님 그림' 행 · 4절 회화 세션 '선생님 창' 행 · C122 · FR-6 · FR-9).
 // 세션 쪽이 판(version)을 키로 둔 회화 틀 바깥에 둔다 — 회화 틀이 판 바뀜으로 다시 그려져도 그림 층(3D 맥락 · 모델)은 세션에 하나다.
-// 선생님이 생기면('시작!' 화면부터) 3D 를 준비하고 수업은 기다리지 않는다: 처음엔 초상, 첫 장을 그리면 3D(창은 '시작!'을 누른 뒤에만
-// 바꿈), 설정 · WebGL 없음 · 불러오기 실패 · 시간 넘김 · 맥락 잃음이면 그 세션 끝까지 초상 + 까닭 속성(아이에게 오류 글 · 단추 없음).
+// 선생님이 있고 회화 틀이 창을 처음 보이면(want — '시작!' 화면부터, 막힘 · 쉼 화면에서는 받지 않음) 3D 를 준비하고 수업은 기다리지
+// 않는다: 처음엔 초상, 첫 장을 그리면 3D(창은 '시작!'을 누른 뒤에만 바꿈), 설정 · WebGL 없음 · 불러오기 실패 · 시간 넘김 · 맥락
+// 잃음이면 그 세션 끝까지 초상 + 까닭 속성(아이에게 오류 글 · 단추 없음).
 // 3D 코드(three · three-vrm)는 여기서 동적 가져오기로만 받는다 — 회화 세션 밖 쪽과 회화 세션 첫 JS 에 들어가지 않는다(NFR-2 · 의존 규칙).
 // 판정은 순수 함수(src/core/teacher/layer.ts)이고, 늦게 끝난 불러오기는 차례 번호로 버린다.
 import {
   createContext,
   type ReactNode,
-  useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import {
@@ -29,6 +28,8 @@ import {
   type TeacherLayerSignal,
 } from "@/core/teacher/layer";
 import type { TeacherState } from "@/core/teacher/state";
+
+const MS_PER_SECOND = 1000;
 
 /** 3D 그림 층을 만드는 함수(avatar-3d 가 내보냄 — 형은 손잡이 꼴만 쓴다). */
 export type CreateAvatar = (
@@ -184,7 +185,7 @@ export function startTeacherLayer({
     controller = new AbortController();
     timer = setTimeout(
       () => apply({ type: "timeout", turn }),
-      timeoutSeconds * 1000,
+      timeoutSeconds * MS_PER_SECOND,
     );
     void load(turn);
   }
@@ -223,15 +224,140 @@ function emitSignal(signal: TeacherLayerSignal) {
   window.dispatchEvent(new CustomEvent(TEACHER_EVENT, { detail: signal }));
 }
 
-/** 창이 읽는 그림 층 값. */
-export type TeacherLayerValue = {
+/** 보관 조각이 그림 층 차례를 만드는 값(고른 선생님의 모델 · talk.teacher_render · talk.teacher_load_timeout_seconds). */
+export type LayerHostConfig = {
+  modelUrl: string;
+  render: "3d" | "portrait";
+  timeoutSeconds: number;
+};
+
+/** 창이 보는 그림 층 모습. */
+export type LayerView = {
   render: "3d" | "portrait";
   fallback?: LayerFallback;
-  /** 창 안 칸(ref) — 3D 캔버스를 붙인다. */
+};
+
+/** 보관 조각의 몸(React 밖 — 단위 시험이 돌린다). */
+export type LayerHost = {
+  /** 선생님 · 설정(고르기 전 null). 바뀌면 지금 차례를 풀고 새 차례를 만든다(창이 원한 뒤에만). */
+  configure(config: LayerHostConfig | null): void;
+  /**
+   * 창이 처음 보임 — 이 뒤에만 차례를 시작한다(설정 → WebGL → 코드 조각). 회화 틀은 막힘 · 쉼 판정이 끝난 뒤 창이 보일 때 부른다
+   * (막힘 · 쉼 화면에서는 3D 를 받지 않음 — 검토 4 M-1). 두 번째부터는 아무 일도 하지 않는다.
+   */
+  want(): void;
+  /** 창 안 칸(ref) — 3D 캔버스를 붙인다(칸이 바뀌면 옮김). */
   attach(slot: HTMLElement | null): void;
   setPose(state: TeacherState, reduced: boolean): void;
   close(): void;
+  /** 보관 조각이 사라짐 — 지금 차례를 풀고 설정을 잊는다(다시 붙으면 configure 로 새 차례, 대신 표시 까닭 · 상태는 기억). */
+  dispose(): void;
+  canvas(): HTMLCanvasElement | null;
 };
+
+/**
+ * 보관 조각의 몸. 선생님(configure)과 창의 원함(want)이 둘 다 있을 때 그림 층 차례를 시작한다. 한 번 간 대신 표시 까닭과 마지막
+ * 상태 · 움직임 줄이기는 차례를 다시 만들어도 넘긴다(세션 끝까지 초상 · 회화 틀의 효과가 차례보다 먼저 돌 수 있음).
+ */
+export function createLayerHost({
+  onView,
+  deps,
+}: {
+  onView(view: LayerView): void;
+  deps: Omit<LayerRunDeps, "mount">;
+}): LayerHost {
+  let config: LayerHostConfig | null = null;
+  let wanted = false;
+  let slot: HTMLElement | null = null;
+  let run: LayerRun | null = null;
+  /** 이 세션에서 간 대신 표시 까닭(그림 층 차례를 다시 만들어도 세션 끝까지 초상). */
+  let fallen: LayerFallback | undefined;
+  /** 마지막으로 받은 상태 · 움직임 줄이기(새 차례에 넘긴다). */
+  let pose: { state: TeacherState; reduced: boolean } = {
+    state: "idle",
+    reduced: false,
+  };
+
+  function restart() {
+    run?.dispose();
+    run = null;
+    if (!config || !wanted) return;
+    const layer = startTeacherLayer({
+      ...config,
+      initialFallback: fallen,
+      onChange: (s) => {
+        if (s.fallback) fallen = s.fallback;
+        onView(
+          s.fallback
+            ? { render: s.render, fallback: s.fallback }
+            : { render: s.render },
+        );
+      },
+      deps: {
+        ...deps,
+        mount: (canvas) => {
+          slot?.appendChild(canvas);
+        },
+      },
+    });
+    layer.setPose(pose.state, pose.reduced);
+    run = layer;
+  }
+
+  return {
+    configure(next) {
+      if (
+        next?.modelUrl === config?.modelUrl &&
+        next?.render === config?.render &&
+        next?.timeoutSeconds === config?.timeoutSeconds
+      )
+        return;
+      config = next;
+      restart();
+    },
+    want() {
+      if (wanted) return;
+      wanted = true;
+      restart();
+    },
+    attach(el) {
+      slot = el;
+      const canvas = run?.canvas();
+      if (el && canvas && canvas.parentElement !== el) el.appendChild(canvas);
+    },
+    setPose(state, reduced) {
+      pose = { state, reduced };
+      run?.setPose(state, reduced);
+    },
+    close() {
+      run?.close();
+    },
+    dispose() {
+      run?.dispose();
+      run = null;
+      config = null;
+    },
+    canvas: () => run?.canvas() ?? null,
+  };
+}
+
+/** 브라우저의 그림 층 바깥(보관 조각이 쓴다). */
+const BROWSER_DEPS: Omit<LayerRunDeps, "mount"> = {
+  hasWebgl: browserHasWebgl,
+  importAvatar: () => import("@/components/teacher/avatar-3d"),
+  createCanvas: () => {
+    const canvas = document.createElement("canvas");
+    canvas.dataset.teacherCanvas = "";
+    canvas.className = "block size-full";
+    return canvas;
+  },
+  emit: emitSignal,
+  now: () => performance.now(),
+};
+
+/** 창이 읽는 그림 층 값. */
+export type TeacherLayerValue = LayerView &
+  Pick<LayerHost, "want" | "attach" | "setPose" | "close">;
 
 export const TeacherLayerContext = createContext<TeacherLayerValue | null>(
   null,
@@ -242,11 +368,9 @@ export function useTeacherLayer(): TeacherLayerValue | null {
   return useContext(TeacherLayerContext);
 }
 
-type LayerView = { render: "3d" | "portrait"; fallback?: LayerFallback };
-
 /**
- * 그림 층 보관 조각. teacher(고른 선생님 — 고르기 전 null)가 생기면 그림 층 차례를 시작하고, 사라질 때 자원을 푼다.
- * settings 는 talk.teacher_render · talk.teacher_load_timeout_seconds.
+ * 그림 층 보관 조각. teacher(고른 선생님 — 고르기 전 null)가 있고 창이 그림 층을 원하면(want) 그림 층 차례를 시작하고, 사라질 때
+ * 자원을 푼다. settings 는 talk.teacher_render · talk.teacher_load_timeout_seconds.
  */
 export function TeacherLayerHost({
   teacher,
@@ -258,73 +382,28 @@ export function TeacherLayerHost({
   children: ReactNode;
 }) {
   const [view, setView] = useState<LayerView>({ render: "portrait" });
-  const run = useRef<LayerRun | null>(null);
-  const slot = useRef<HTMLElement | null>(null);
-  /** 이 세션에서 간 대신 표시 까닭(그림 층 차례를 다시 만들어도 세션 끝까지 초상). */
-  const fallen = useRef<LayerFallback | undefined>(undefined);
-  /** 마지막으로 받은 상태 · 움직임 줄이기(회화 틀의 효과가 그림 층 차례보다 먼저 돌 수 있어 새 차례에 넘긴다). */
-  const pose = useRef<{ state: TeacherState; reduced: boolean }>({
-    state: "idle",
-    reduced: false,
-  });
+  const [host] = useState(() =>
+    createLayerHost({ onView: setView, deps: BROWSER_DEPS }),
+  );
   const modelUrl = teacher?.modelPath;
   const render = settings.render;
   const timeoutSeconds = settings.loadTimeoutSeconds;
 
   useEffect(() => {
-    if (!modelUrl) return;
-    const layer = startTeacherLayer({
-      modelUrl,
-      render,
-      timeoutSeconds,
-      initialFallback: fallen.current,
-      onChange: (s) => {
-        if (s.fallback) fallen.current = s.fallback;
-        setView(
-          s.fallback
-            ? { render: s.render, fallback: s.fallback }
-            : { render: s.render },
-        );
-      },
-      deps: {
-        hasWebgl: browserHasWebgl,
-        importAvatar: () => import("@/components/teacher/avatar-3d"),
-        createCanvas: () => {
-          const canvas = document.createElement("canvas");
-          canvas.dataset.teacherCanvas = "";
-          canvas.className = "block size-full";
-          return canvas;
-        },
-        mount: (canvas) => {
-          slot.current?.appendChild(canvas);
-        },
-        emit: emitSignal,
-        now: () => performance.now(),
-      },
-    });
-    layer.setPose(pose.current.state, pose.current.reduced);
-    run.current = layer;
-    return () => {
-      layer.dispose();
-      if (run.current === layer) run.current = null;
-    };
-  }, [modelUrl, render, timeoutSeconds]);
-
-  const attach = useCallback((el: HTMLElement | null) => {
-    slot.current = el;
-    const canvas = run.current?.canvas();
-    if (el && canvas && canvas.parentElement !== el) el.appendChild(canvas);
-  }, []);
-  const setPose = useCallback((state: TeacherState, reduced: boolean) => {
-    pose.current = { state, reduced };
-    run.current?.setPose(state, reduced);
-  }, []);
-  const close = useCallback(() => {
-    run.current?.close();
-  }, []);
+    host.configure(modelUrl ? { modelUrl, render, timeoutSeconds } : null);
+  }, [host, modelUrl, render, timeoutSeconds]);
+  useEffect(() => () => host.dispose(), [host]);
 
   return (
-    <TeacherLayerContext.Provider value={{ ...view, attach, setPose, close }}>
+    <TeacherLayerContext.Provider
+      value={{
+        ...view,
+        want: host.want,
+        attach: host.attach,
+        setPose: host.setPose,
+        close: host.close,
+      }}
+    >
       {children}
     </TeacherLayerContext.Provider>
   );

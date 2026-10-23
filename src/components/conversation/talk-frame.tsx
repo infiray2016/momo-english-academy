@@ -254,6 +254,8 @@ function TalkFrameBody({ view }: { view: TalkView }) {
   const [speech, setSpeech] = useState<SpeechPort | undefined>();
   const [blocked, setBlocked] = useState<Blocked | undefined>();
   const [noticeSeen, setNoticeSeen] = useState(true);
+  /** 마이크 막힘 판정이 끝났는가(렌더 뒤 효과에서 정함 — 그 앞 첫 그림에는 창이 잠깐 보여도 3D 를 원하지 않는다, 검토 4 M-1). */
+  const [micChecked, setMicChecked] = useState(false);
   const [resting, setResting] = useState(view.resting);
   const [next, setNext] = useState<TurnNext>(view.next);
   const [bubble, setBubble] = useState<BubbleContent>(() =>
@@ -332,6 +334,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
   useEffect(() => {
     if (!micUsable()) setBlocked("needsMic");
     setNoticeSeen(micNoticeSeen());
+    setMicChecked(true);
   }, []);
 
   // 틀이 사라지면 턴 요청을 끊는다(검토 I-2 — 늦게 온 문장이 다른 화면에서 읽히지 않게)
@@ -834,9 +837,20 @@ function TalkFrameBody({ view }: { view: TalkView }) {
     praiseUntil: praiseClock?.until ?? null,
     now: praiseClock?.now ?? 0,
   });
-  // 그림 층(세션 쪽 보관 조각 — 선생님 화면 plan 값 14): 상태 · 움직임 줄이기를 넘기고, 마무리 세 장에 들어가면 닫는다(4절 '회화
-  // 마무리 — 초상만', 메모리를 일찍 풂)
+  // 선생님 칸(4절 '선생님 창' · plan 값 13): 고른 선생님이 있고 막힘 · 쉼 · 마무리가 아닐 때
+  const windowShown = teacherWindowShown({
+    hasTeacher: view.teacher !== null,
+    blocked: blocked !== undefined,
+    resting,
+    stage,
+  });
+  // 그림 층(세션 쪽 보관 조각 — 선생님 화면 plan 값 14): 막힘 판정이 끝난 뒤 창이 처음 보이면 3D 를 원하고('시작!' 화면부터 — 막힘 ·
+  // 쉼 화면에서는 받지 않음, 검토 4 M-1), 상태 · 움직임 줄이기를 넘기고, 마무리 세 장에 들어가면 닫는다(4절 '회화 마무리 — 초상만',
+  // 메모리를 일찍 풂)
   const layer = useTeacherLayer();
+  useEffect(() => {
+    if (micChecked && windowShown) layer?.want();
+  }, [layer, micChecked, windowShown]);
   useEffect(() => {
     layer?.setPose(teacherState, reducedMotion);
   }, [layer, teacherState, reducedMotion]);
@@ -1109,12 +1123,6 @@ function TalkFrameBody({ view }: { view: TalkView }) {
 
   // 선생님 칸(4절 '선생님 창' · plan 값 13 · 정할 것 7): 몸 밖 늘 같은 자리 — 토막 · 정리로 바뀌어도 창을 다시 만들지 않는다. 가로는 왼쪽 칸
   // (창 + 그 아래 오늘 이야기 목록) · 오른쪽 대화 판, 세로는 위 띠 아래 한 줄(창 | 오늘 이야기 목록) · 그 아래 대화 판
-  const windowShown = teacherWindowShown({
-    hasTeacher: view.teacher !== null,
-    blocked: blocked !== undefined,
-    resting,
-    stage,
-  });
   const shown =
     windowShown && view.teacher ? (
       <div data-talk-layout="" className="flex flex-col gap-6 lg:flex-row">

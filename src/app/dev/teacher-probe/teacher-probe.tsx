@@ -5,7 +5,8 @@
 // (2) '단원 바로 가기' — 영역 하나의 지금 단원을 1단계 단원 하나로 바꾼다(단원 통과 P12 전에 진짜 자료의 단원 2~5 를 써 보게).
 // (3) 목소리 목록 표 · '목록 복사' — 요청자가 대화창에 붙여 넣어 리오 · 미나 목소리 순서를 정한다.
 // (4) '3D 보기'(d8 — plan 값 16, AC-N11 점검표 칸): 명단 선생님을 고르면 회화 세션과 같은 그림 층 보관 조각 · 선생님 창으로 3D 를 불러오고,
-// 그림 층 사건(momo:teacher)으로 불러오기 · 첫 장 ms 와 대신 표시 까닭을, 캔버스 data-teacher-frames 차이로 초당 장 수를 잰다.
+// 그림 층 사건(momo:teacher)으로 불러오기 · 첫 장 ms 와 대신 표시 까닭을, 캔버스 data-teacher-frames · data-teacher-frames-at(적은 때)
+// 차이로 초당 장 수를 잰다.
 // 서버 액션은 운영 배포에서 거부한다. 소리를 저장하지 않고 목소리 목록은 복사할 때만 기기 밖(클립보드)으로 나간다.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,9 +45,10 @@ export type Probe3dSettings = {
   loadTimeoutSeconds: number;
 };
 
-/** 초당 장 수를 재는 간격(ms)과 견줄 표본 수(관찰 도구 값 — 캔버스가 1초마다 그린 장 수를 적는다). */
+/** 초당 장 수를 읽는 간격(ms)과 견줄 표본 수(관찰 도구 값 — 캔버스가 1초마다 그린 장 수와 적은 때를 적는다). */
 const FPS_SAMPLE_MS = 1000;
 const FPS_WINDOW = 5;
+const MS_PER_SECOND = 1000;
 
 const buttonClass =
   "min-h-11 rounded-md border border-neutral-500 bg-neutral-100 px-4 py-2 text-base disabled:opacity-40";
@@ -66,9 +68,12 @@ function StatusText({ line, testId }: { line: Line; testId: string }) {
   );
 }
 
-/** 보관 조각 안에서 상태를 그림 층에 넘긴다(회화 틀이 하는 일과 같음). */
+/** 보관 조각 안에서 3D 를 원하고 상태를 그림 층에 넘긴다(회화 틀이 하는 일과 같음 — 관찰 쪽은 창이 늘 보여 고른 뒤 바로 원함). */
 function ProbePose({ state }: { state: TeacherState }) {
   const layer = useTeacherLayer();
+  useEffect(() => {
+    layer?.want();
+  }, [layer]);
   useEffect(() => {
     layer?.setPose(state, false);
   }, [layer, state]);
@@ -112,7 +117,8 @@ function Probe3d({
     return () => window.removeEventListener(TEACHER_EVENT, on);
   }, []);
 
-  // 초당 장 수: 캔버스가 적는 그린 장 수를 1초마다 읽어 최근 몇 초 차이로 나눈다
+  // 초당 장 수: 캔버스가 적는 그린 장 수와 적은 때(performance.now 시간축)를 1초마다 읽어, 적은 때가 바뀐 표본만 모아 최근 몇 번의
+  // 장 수 차이를 적은 때 차이로 나눈다(읽은 때로 나누면 적은 때와 어긋나 흔들린다 — 검토 4 M-2)
   useEffect(() => {
     if (!chosen) return;
     const samples: { at: number; frames: number }[] = [];
@@ -121,13 +127,16 @@ function Probe3d({
         "[data-teacher-canvas]",
       );
       const frames = Number(canvas?.dataset.teacherFrames ?? Number.NaN);
-      if (!Number.isFinite(frames)) return;
-      samples.push({ at: performance.now(), frames });
+      const at = Number(canvas?.dataset.teacherFramesAt ?? Number.NaN);
+      if (!Number.isFinite(frames) || !Number.isFinite(at)) return;
+      if (samples.at(-1)?.at === at) return;
+      samples.push({ at, frames });
       if (samples.length > FPS_WINDOW) samples.shift();
       const first = samples[0];
       const last = samples.at(-1);
       if (!first || !last || last.at <= first.at) return;
-      const fps = ((last.frames - first.frames) * 1000) / (last.at - first.at);
+      const fps =
+        ((last.frames - first.frames) * MS_PER_SECOND) / (last.at - first.at);
       setMeasure((m) => ({ ...m, fps }));
     }, FPS_SAMPLE_MS);
     return () => window.clearInterval(id);

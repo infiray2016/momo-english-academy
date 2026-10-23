@@ -3,7 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type CreateAvatar,
+  createLayerHost,
   type LayerRunDeps,
+  type LayerView,
   startTeacherLayer,
 } from "@/components/teacher/teacher-layer";
 import {
@@ -151,6 +153,7 @@ type Harness = {
   avatars: FakeAvatar[];
   mounted: unknown[];
   imports: number;
+  webglChecks: number;
   resolveImport(): void;
   rejectImport(): void;
 };
@@ -203,10 +206,14 @@ function harness({
     avatars,
     mounted,
     imports: 0,
+    webglChecks: 0,
     resolveImport: () => importDone?.resolve(),
     rejectImport: () => importDone?.reject(),
     deps: {
-      hasWebgl: () => webgl,
+      hasWebgl: () => {
+        h.webglChecks += 1;
+        return webgl;
+      },
       importAvatar: () => {
         h.imports += 1;
         return new Promise((resolve, reject) => {
@@ -217,7 +224,10 @@ function harness({
         });
       },
       createCanvas: () =>
-        ({ remove: () => {} }) as unknown as HTMLCanvasElement,
+        ({
+          remove: () => {},
+          parentElement: null,
+        }) as unknown as HTMLCanvasElement,
       mount: (canvas) => mounted.push(canvas),
       emit: (signal) => signals.push(signal),
       now: () => Date.now(),
@@ -260,6 +270,26 @@ describe("그림 층 보관 조각의 불러오기 차례(startTeacherLayer)", (
     expect(h.avatars).toHaveLength(0);
     expect(last()).toMatchObject({ render: "portrait", fallback: "setting" });
     expect(h.signals).toEqual([{ type: "fallback", reason: "setting" }]);
+  });
+
+  it("AC-19i 같은 세션에서 앞서 대신 표시로 갔으면(initialFallback) importAvatar · hasWebgl 을 부르지 않고 사건 없이 그 까닭 초상을 한 번 낸다", async () => {
+    const h = harness();
+    const states: LayerState[] = [];
+    startTeacherLayer({
+      modelUrl: MODEL,
+      render: "3d",
+      timeoutSeconds: TIMEOUT_SECONDS,
+      initialFallback: "timeout",
+      onChange: (s) => states.push(s),
+      deps: h.deps,
+    });
+    await flush();
+    vi.advanceTimersByTime(TIMEOUT_SECONDS * 1000);
+    expect(h.imports).toBe(0);
+    expect(h.webglChecks).toBe(0);
+    expect(h.avatars).toHaveLength(0);
+    expect(h.signals).toEqual([]);
+    expect(states).toEqual([fallbackState("timeout")]);
   });
 
   it("AC-19i WebGL 2 맥락을 못 만드는 기기면 3D 코드 조각을 받지 않고 'no-webgl' 초상이다", async () => {
@@ -431,5 +461,138 @@ describe("그림 층 보관 조각의 불러오기 차례(startTeacherLayer)", (
     layer.setPose("praise", false);
     expect(avatar?.states.at(-1)).toBe("praise");
     expect(avatar?.reduced.at(-1)).toBe(false);
+  });
+});
+
+// ── 보관 조각의 몸(창이 원한 뒤에만 차례 — 검토 4 M-1) ──
+
+type FakeSlot = { appended: unknown[]; el: HTMLElement };
+function fakeSlot(): FakeSlot {
+  const appended: unknown[] = [];
+  const el = {
+    appendChild: (child: unknown) => {
+      appended.push(child);
+      return child;
+    },
+  } as unknown as HTMLElement;
+  return { appended, el };
+}
+
+function host(h: Harness) {
+  const views: LayerView[] = [];
+  const { mount: _mount, ...deps } = h.deps;
+  const made = createLayerHost({ onView: (v) => views.push(v), deps });
+  return { host: made, views };
+}
+
+const CONFIG = {
+  modelUrl: MODEL,
+  render: "3d",
+  timeoutSeconds: TIMEOUT_SECONDS,
+} as const;
+
+describe("그림 층 보관 조각의 몸(createLayerHost)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("AC-19f 창이 원하기(want) 전에는 선생님 · 설정이 있어도 importAvatar · hasWebgl 을 부르지 않고 사건도 없다(막힘 · 쉼 화면에서는 3D 를 받지 않음)", async () => {
+    for (const render of ["3d", "portrait"] as const) {
+      const h = harness();
+      const { host: layer, views } = host(h);
+      layer.configure({ ...CONFIG, render });
+      layer.attach(fakeSlot().el);
+      layer.setPose("listening", true);
+      await flush();
+      vi.advanceTimersByTime(TIMEOUT_SECONDS * 1000);
+      expect(h.imports, render).toBe(0);
+      expect(h.webglChecks, render).toBe(0);
+      expect(h.avatars, render).toHaveLength(0);
+      expect(h.signals, render).toEqual([]);
+      expect(views, render).toEqual([]);
+      expect(layer.canvas(), render).toBeNull();
+      layer.dispose();
+    }
+    // 선생님을 고르기 전(설정 null)에는 원해도 시작하지 않는다
+    const before = harness();
+    const { host: picking } = host(before);
+    picking.configure(null);
+    picking.want();
+    await flush();
+    expect(before.webglChecks).toBe(0);
+    expect(before.signals).toEqual([]);
+  });
+
+  it("AC-19i 창이 원한(want) 뒤 차례는 지금과 같다 — WebGL 검사 · load-start · 코드 조각 · 붙인 칸에 캔버스 · 받은 상태 넘김 · 첫 장에 3D 이고 두 번 원해도 한 번이다", async () => {
+    const h = harness();
+    const { host: layer, views } = host(h);
+    const slot = fakeSlot();
+    layer.configure(CONFIG);
+    layer.attach(slot.el);
+    layer.setPose("listening", true);
+    layer.want();
+    layer.want();
+    expect(h.webglChecks).toBe(1);
+    expect(h.signals).toEqual([{ type: "load-start" }]);
+    h.resolveImport();
+    await flush();
+    expect(h.imports).toBe(1);
+    const avatar = h.avatars[0];
+    expect(slot.appended).toHaveLength(1);
+    expect(layer.canvas()).toBe(slot.appended[0]);
+    expect(avatar?.states.at(-1)).toBe("listening");
+    expect(avatar?.reduced.at(-1)).toBe(true);
+    avatar?.resolveLoad(true);
+    await flush();
+    avatar?.callbacks.onFirstFrame();
+    expect(views.at(-1)).toEqual({ render: "3d" });
+    expect(h.signals.map((s) => s.type)).toEqual(["load-start", "first-frame"]);
+    // 칸이 바뀌면(창을 다시 그림) 캔버스를 새 칸으로 옮긴다
+    const next = fakeSlot();
+    layer.attach(next.el);
+    expect(next.appended).toEqual([layer.canvas()]);
+    // 같은 설정을 다시 줘도 다시 받지 않는다
+    layer.configure({ ...CONFIG });
+    expect(h.imports).toBe(1);
+    layer.close();
+    expect(views.at(-1)).toEqual({ render: "portrait" });
+    layer.dispose();
+    expect(avatar?.disposed).toBe(1);
+  });
+
+  it("AC-19i 한 번 대신 표시로 가면 보관 조각이 차례를 다시 만들어도(설정 다시 줌 · 사라졌다 다시 붙음) 받지 않고 그 까닭 초상이며 마지막 상태 · 움직임 줄이기를 새 차례에 넘긴다", async () => {
+    const h = harness();
+    const { host: layer, views } = host(h);
+    layer.configure(CONFIG);
+    layer.want();
+    vi.advanceTimersByTime(TIMEOUT_SECONDS * 1000);
+    expect(views.at(-1)).toEqual({ render: "portrait", fallback: "timeout" });
+    // 보관 조각이 사라졌다 다시 붙음(개발 모드의 효과 두 번 돌기와 같은 길)
+    layer.dispose();
+    layer.configure(CONFIG);
+    // 설정이 바뀌어 새 차례
+    layer.configure({ ...CONFIG, timeoutSeconds: TIMEOUT_SECONDS + 1 });
+    await flush();
+    expect(h.webglChecks).toBe(1);
+    expect(h.imports).toBe(1);
+    expect(views.at(-1)).toEqual({ render: "portrait", fallback: "timeout" });
+    expect(h.signals.map((s) => s.type)).toEqual(["load-start", "fallback"]);
+
+    // 상태: 차례가 생기기 전에 받은 값을 다시 만든 차례에도 넘긴다
+    const p = harness();
+    const { host: posed } = host(p);
+    posed.setPose("praise", true);
+    posed.configure(CONFIG);
+    posed.want();
+    posed.dispose();
+    posed.configure(CONFIG);
+    p.resolveImport();
+    await flush();
+    const avatar = p.avatars.at(-1);
+    expect(avatar?.states.at(-1)).toBe("praise");
+    expect(avatar?.reduced.at(-1)).toBe(true);
   });
 });

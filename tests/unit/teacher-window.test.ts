@@ -60,6 +60,7 @@ function layeredWindowOf(
 ): string {
   const value: TeacherLayerValue = {
     ...layer,
+    want: () => {},
     attach: () => {},
     setPose: () => {},
     close: () => {},
@@ -81,8 +82,8 @@ function layeredWindowOf(
 /** 3D 칸 · 초상 그림 태그(속성 차례와 관계없이). */
 const slotTag = (html: string) =>
   html.match(/<div[^>]*data-teacher-slot[^>]*>/)?.[0];
-/** class 속성 안의 hidden(aria-hidden 은 아님). */
-const HIDDEN_CLASS = /class="[^"]*\bhidden\b/;
+/** class 속성 안의 낱개 클래스 hidden(aria-hidden · overflow-hidden 은 아님 — 클래스 경계는 공백). */
+const HIDDEN_CLASS = /class="(?:[^"]*\s)?hidden(?:\s[^"]*)?"/;
 const portraitTag = (html: string) =>
   html.match(/<img[^>]*data-teacher-portrait-image[^>]*>/)?.[0];
 
@@ -160,6 +161,12 @@ describe("선생님 창(초상)", () => {
 
 describe("선생님 창의 3D 칸 · 대신 표시(그림 층 공유 값)", () => {
   it("AC-19i 그림 층이 3D 이고 '시작!'을 누른 뒤면 창은 data-teacher-render=3d 로 3D 칸을 보이고 초상 · 상태 표시를 숨기며 까닭 속성이 없다", () => {
+    // 숨김 판정은 낱개 클래스 hidden 만(overflow-hidden · aria-hidden 은 아님 — 검토 4 M-6)
+    expect('<img class="size-full overflow-hidden">').not.toMatch(HIDDEN_CLASS);
+    expect('<div aria-hidden="true" class="absolute">').not.toMatch(
+      HIDDEN_CLASS,
+    );
+    expect('<img class="hidden">').toMatch(HIDDEN_CLASS);
     const html = layeredWindowOf({ render: "3d" }, { state: "speaking" });
     expect(html).toContain('data-teacher-render="3d"');
     expect(html).not.toContain("data-teacher-fallback");

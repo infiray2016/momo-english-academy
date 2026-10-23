@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+import {
+  TEACHER_ASSET_HASH_CHARS,
+  TEACHER_KEY,
+} from "./src/core/seed/structure";
 
 /** 기본 쪽 확장자 넷. 목록을 바꾸면 proxy.ts · instrumentation 도 이 목록으로 잡힌다(P2b). */
 const BASE_PAGE_EXTENSIONS = ["tsx", "ts", "jsx", "js"];
@@ -12,6 +16,12 @@ const LOCAL_PAGE_EXTENSION = "local.tsx";
  * 내용이 바뀌면 이름이 바뀐다(teacher:reduce).
  */
 export const TEACHER_ASSET_CACHE = "public, max-age=31536000, immutable";
+/**
+ * 그 캐시를 붙이는 경로 — 해시 이름 /teachers/<키>.<SHA-256 앞 8자>.<vrm|webp> 에만(검토 4 M-3: 해시 없는 파일이 폴더에 생겨도 1년 캐시가
+ * 되지 않게). 키 꼴 · 글자 수는 명단 꼴과 한 곳(structure.ts TEACHER_KEY · TEACHER_ASSET_HASH_CHARS — 키 꼴은 앞뒤 닻을 뗀 몸).
+ * 확장자는 명단 모델(vrm) · 초상(webp)이다(check-teacher teacherAssetPath). 꼴은 Next 의 경로 맞춤(path-to-regexp) 매개변수 정규식.
+ */
+export const TEACHER_ASSET_SOURCE = `/teachers/:file(${TEACHER_KEY.source.replace(/^\^|\$$/g, "")}\\.[0-9a-f]{${TEACHER_ASSET_HASH_CHARS}}\\.(?:vrm|webp))`;
 
 export default function nextConfig(phase: string): NextConfig {
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
@@ -30,7 +40,7 @@ export default function nextConfig(phase: string): NextConfig {
     },
     headers: async () => [
       {
-        source: "/teachers/:path*",
+        source: TEACHER_ASSET_SOURCE,
         headers: [{ key: "Cache-Control", value: TEACHER_ASSET_CACHE }],
       },
     ],

@@ -3,7 +3,9 @@
 // three-vrm 을 가져오는 곳은 앱에서 여기 하나다(의존 규칙 three-only-in-avatar · avatar-only-dynamic, NFR-2).
 // 시제품과 바뀐 것: (1) load 는 fetch(signal) → arrayBuffer → parseAsync(멈출 수 있음) (2) 첫 장을 그리면 onFirstFrame (3) 맥락 잃음 ·
 // 장 그리기 오류는 onFailure(다시 불러오기 안내 없음) (4) dispose 는 한 번만, 뒤에 momo:teacher { type: "dispose" } (5) 크기는
-// 캔버스 칸을 ResizeObserver 로 (6) 움직임 · 깜빡임은 core(sampleMotion · blinkAt) (7) 그린 장 수를 1초마다 data-teacher-frames.
+// 캔버스 칸을 ResizeObserver 로 (6) 움직임 · 깜빡임은 core(sampleMotion · blinkAt) (7) 그린 장 수를 1초마다 data-teacher-frames, 적은 때
+// (requestAnimationFrame 시각 — performance.now 시간축)를 data-teacher-frames-at (8) 첫 장 뒤에는 캔버스가 문서에서 떨어졌거나 크기가
+// 0 이면 그리지 않는다('시작!' 화면의 숨긴 칸 · 대화 중 막힘 · 쉼 — GPU 가 쉼, 검토 4 M-1).
 // 상수(그리기 빈도 — 매 장 · 화소 비율 · 섞기 · 깜빡임 간격 · 빛 · 카메라)는 시제품 값이고 iPad 실측 뒤 고친다(d10, C72 화면 꼴 상수).
 import { type VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import * as THREE from "three";
@@ -38,7 +40,22 @@ const FRAMING = { top: 0.045, belowHead: 0.25, width: 0.42 } as const;
 /** 팔 내리기(라디안, 시제품 값). */
 const ARMS = { upper: 1.23, lower: 0.22 } as const;
 /** 표정 무게(시제품 값): 입 aa · oh(흔들림) · ee. */
-const MOUTH = { aa: 0.8, ohBase: 0.18, ohSwing: 0.12, ohRate: 7, ee: 0.15 };
+const MOUTH = {
+  aa: 0.8,
+  ohBase: 0.18,
+  ohSwing: 0.12,
+  ohRate: 7,
+  ee: 0.15,
+} as const;
+/** 빛 셋(시제품 값): 반구 빛(하늘 · 땅 색 · 세기) · 주 빛 · 보조 빛(색 · 세기 · 위치). */
+const LIGHTS = {
+  hemisphere: { sky: 0xfff9ef, ground: 0xaebfa9, intensity: 2 },
+  key: { color: 0xfff8ed, intensity: 2.4, position: [-1, 2, 3] },
+  fill: { color: 0xe4edff, intensity: 0.6, position: [2, 1, -1] },
+} as const;
+/** 아직 깜빡이지 않음(깜빡임 시작 시각 — 첫 깜빡임 전에 눈을 감지 않게 아주 앞, 시제품 값). */
+const NO_BLINK_YET = -10;
+const MS_PER_SECOND = 1000;
 const BONES = ["head", "neck", "spine", "chest"] as const;
 
 type Framing = {
@@ -70,7 +87,9 @@ class TeacherAvatar implements TeacherAvatarHandle {
   private generation = 0;
   private elapsed = 0;
   private nextBlink: number = BLINK.first;
-  private blinkStart = -10;
+  private blinkStart = NO_BLINK_YET;
+  /** 캔버스 크기가 0 인가(ResizeObserver 가 resize 에서 적음 — 첫 장 뒤 그리기 건너뜀). */
+  private empty = true;
   private previousFrame = 0;
   private frame = 0;
   private frames = 0;
@@ -92,16 +111,27 @@ class TeacherAvatar implements TeacherAvatarHandle {
       Math.min(window.devicePixelRatio, PIXEL_RATIO_MAX),
     );
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.scene.add(new THREE.HemisphereLight(0xfff9ef, 0xaebfa9, 2));
-    const key = new THREE.DirectionalLight(0xfff8ed, 2.4);
-    key.position.set(-1, 2, 3);
-    this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xe4edff, 0.6);
-    fill.position.set(2, 1, -1);
-    this.scene.add(fill);
+    const { hemisphere } = LIGHTS;
+    this.scene.add(
+      new THREE.HemisphereLight(
+        hemisphere.sky,
+        hemisphere.ground,
+        hemisphere.intensity,
+      ),
+    );
+    for (const light of [LIGHTS.key, LIGHTS.fill]) {
+      const directional = new THREE.DirectionalLight(
+        light.color,
+        light.intensity,
+      );
+      const [x, y, z] = light.position;
+      directional.position.set(x, y, z);
+      this.scene.add(directional);
+    }
     this.loader.register((parser) => new VRMLoaderPlugin(parser));
     canvas.addEventListener("webglcontextlost", this.onContextLost);
     canvas.dataset.teacherFrames = "0";
+    canvas.dataset.teacherFramesAt = String(performance.now());
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.resize();
@@ -154,7 +184,7 @@ class TeacherAvatar implements TeacherAvatarHandle {
     this.resize();
     this.elapsed = 0;
     this.nextBlink = BLINK.first;
-    this.blinkStart = -10;
+    this.blinkStart = NO_BLINK_YET;
     return true;
   }
 
@@ -211,7 +241,8 @@ class TeacherAvatar implements TeacherAvatarHandle {
   private resize() {
     if (this.disposed) return;
     const { width, height } = this.canvas.getBoundingClientRect();
-    if (!width || !height) return;
+    this.empty = !width || !height;
+    if (this.empty) return;
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     if (this.framing) {
@@ -234,12 +265,14 @@ class TeacherAvatar implements TeacherAvatarHandle {
     if (this.disposed) return;
     this.frame = requestAnimationFrame(this.tick);
     const delta = Math.min(
-      (timestamp - (this.previousFrame || timestamp)) / 1000,
+      (timestamp - (this.previousFrame || timestamp)) / MS_PER_SECOND,
       DELTA_MAX_SECONDS,
     );
     this.previousFrame = timestamp;
-    // 쪽이 숨으면 그리지 않는다(그린 장 수도 그대로 — AC-19h)
+    // 쪽이 숨으면 그리지 않는다(그린 장 수도 그대로 — AC-19h). 첫 장 뒤에는 보이지 않는 캔버스(문서에서 떨어짐 · 크기 0)에도
+    // 그리지 않는다(검토 4 M-1 — 첫 장은 숨긴 칸에서도 그려야 3D 가 된다)
     if (document.hidden || this.contextLost) return;
+    if (this.firstFrameSent && (!this.canvas.isConnected || this.empty)) return;
     this.elapsed += delta;
     try {
       const vrm = this.vrm;
@@ -253,14 +286,19 @@ class TeacherAvatar implements TeacherAvatarHandle {
     this.frames += 1;
     if (this.vrm && !this.firstFrameSent) {
       this.firstFrameSent = true;
-      this.canvas.dataset.teacherFrames = String(this.frames);
-      this.framesWrittenAt = timestamp;
+      this.writeFrames(timestamp);
       this.callbacks.onFirstFrame();
     } else if (timestamp - this.framesWrittenAt >= FRAMES_EVERY_MS) {
-      this.canvas.dataset.teacherFrames = String(this.frames);
-      this.framesWrittenAt = timestamp;
+      this.writeFrames(timestamp);
     }
   };
+
+  /** 그린 장 수와 적은 때를 캔버스 속성에 적는다(관찰 쪽이 두 값의 차이로 초당 장 수를 잼 — 검토 4 M-2). */
+  private writeFrames(timestamp: number) {
+    this.canvas.dataset.teacherFrames = String(this.frames);
+    this.canvas.dataset.teacherFramesAt = String(timestamp);
+    this.framesWrittenAt = timestamp;
+  }
 
   private pose(vrm: VRM, delta: number) {
     const target = sampleMotion(this.state, this.elapsed, this.reduced);
