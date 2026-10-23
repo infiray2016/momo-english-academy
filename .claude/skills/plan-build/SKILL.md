@@ -13,7 +13,7 @@ plan 은 승인된 spec 하나를 구현하는 계획이다. **바뀌는 파일,
 3. **쪼개기** — 작업을 번호 매기고 독립인 것은 병렬 표시(∥). 한 plan 은 PR 하나 분량(파일 열 개 · 단계 여덟 이하) — 넘치면 plan 을 나누고 묶음 plan 에 배정표를 둔다.
 4. **증명을 먼저** — AC-n 마다 어떤 테스트 · 검사가 증명하는지 이름으로 적는다.
 5. **작성** — `intent/YYYY-MM-DD-<슬러그>/plan.md`(변경 단위 폴더, spec.md 옆), 상태 draft. 작업 장부는 `.superpowers/sdd/<날짜-주제>/`(progress.md, 브리프 `task-*.md`, 보고 `task-*-report.md`, 검토 `review-*.md`).
-6. **승인** — 요청자가 approved. 그 뒤 구현: 브리프 → implementer(구현 · 테스트) → code-reviewer(diff 검토) → fix 라운드 → design-reviewer(화면이면 스크린샷 대조). 동시에 2~3개까지.
+6. **승인** — 요청자가 approved. 그 뒤 구현: 브리프 → implementer(구현 · 테스트) → code-reviewer(diff 검토) → fix 라운드 → design-reviewer(화면이면 스크린샷 대조). 동시에 다섯까지(프로젝트 CLAUDE.md, C142).
 7. **갱신** — 끝나면 완료 보고 절을 채우고 done. 계획과 다르게 한 것 · 남긴 것을 숨기지 않는다.
 
 ## 템플릿

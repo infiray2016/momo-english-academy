@@ -328,6 +328,9 @@ spec: `intent/2026-10-17-회화-선생님-캐릭터/spec.md`(approved — 13절 
 
 ## 작업 순서 (Order of work)
 
+> **C142(요청자 2026-10-23 13:1x) — 검토 묶기**: 구현은 쉬지 않고 이어 가고, 코드 검토는 d1 · d2 · d5 → d3 · d4 · d6 → d7 · d8 세 번으로 모으고, 화면 검토는 프리뷰 직전(d8 뒤, CI 사진 + 로컬 3D 사진)에 한 번 한다. 아래 차례의 '코드 검토 · 화면 검토' 줄은 이 묶음 검토로 읽는다. 동시 서브에이전트는 다섯까지.
+
+
 구현자는 implementer(Opus · high), 코드 검토는 code-reviewer(Opus · xhigh), 화면이 있는 묶음은 design-reviewer(Fable · max)도 — 호출마다 model · effort 를 적는다(CLAUDE.md). fix 라운드는 3회까지. 묶음마다 관문(Node 24 PATH — `export PATH="$HOME/.nvm/versions/node/v24.22.0/bin:$PATH"`): `pnpm lint` · `pnpm exec next typegen && pnpm exec tsc --noEmit` · `pnpm test` · `pnpm check:deps`(장부 '시드 코드 브리프 · 검토 관문에 check:deps') · `pnpm seed:validate` · `pnpm check:ids`, 통합 · e2e 는 CI(이 Mac 은 새 Postgres 가 뜨지 않음). 커밋 · push 는 요청자 지시 때(CLAUDE.md — 프리뷰는 C139).
 
 0. [컨트롤러] plan 승인(정할 것 권함대로) · 13절 한 줄(정할 것 1) · 브리프 d1 · d2 · d5. 완료: 13절 줄 · 브리프 셋.
