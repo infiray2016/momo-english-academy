@@ -634,7 +634,7 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     );
   });
 
-  test("AC-19h 움직임 줄이기 흉내에서 초상 상태 표시(물결 · 점 셋)는 멈춘 꼴로 보이고 창에는 넘김 효과가 없다", async ({
+  test("AC-19h 움직임 줄이기 흉내에서 초상 상태 표시(말하기 테 · 점 셋)는 멈춘 꼴로 보이고 창에는 넘김 효과가 없다", async ({
     context,
   }) => {
     const { page } = await openWindowTalk(context, [saidRun("I'm good.")], {

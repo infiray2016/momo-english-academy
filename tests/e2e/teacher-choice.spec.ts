@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import teachersFile from "../../seed/teachers.json";
 import { PROBE_TEXT } from "../../src/app/dev/teacher-probe/probe-text";
 import { profiles, profileTracks } from "../../src/db/schema/learning";
+import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, e2eDb, resetHousehold } from "./db";
 import { expect, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
@@ -174,6 +175,65 @@ test.describe("선생님을 골라요(차례 6)", () => {
     await expect(page.locator("[data-teacher-card]")).toHaveCount(1);
     await expect(card(page, "leo")).toBeVisible();
     await expect(card(page, "mina")).toHaveCount(0);
+    // 장 하나는 두 칸 격자의 가운데에 두 장일 때와 같은 너비로(화면 검토 1 M-7) — 세로 · 가로 모두
+    for (const way of ["portrait", "landscape"] as const) {
+      await page.setViewportSize(CHILD_VIEWPORTS[way]);
+      const list = await choice(page).locator("ul").boundingBox();
+      const one = await card(page, "leo").boundingBox();
+      expect(list && one, way).toBeTruthy();
+      if (list && one) {
+        expect(
+          Math.abs(one.x + one.width / 2 - (list.x + list.width / 2)),
+          way,
+        ).toBeLessThanOrEqual(1);
+        expect(one.width, way).toBeLessThan(list.width / 2);
+        expect(one.width, way).toBeGreaterThan(list.width / 2 - 20);
+      }
+    }
+  });
+
+  test("AC-19b 가로 1180 × 820 에서 '선생님을 골라요'의 큰 단추 · 안내 줄이 보는 창 안이고 장은 누운 꼴(왼쪽 초상 · 그 아래 '인사 듣기', 오른쪽 이름)이며 '인사 듣기'를 눌러도 고른 것이 아니다", async ({
+    context,
+  }) => {
+    const profileId = await talkHousehold(1, { teacherKey: null });
+    const { page } = await openSession(context, profileId);
+    await page.setViewportSize(CHILD_VIEWPORTS.landscape);
+    await expect(choice(page)).toBeVisible();
+    const height = CHILD_VIEWPORTS.landscape.height;
+    for (const selector of ["[data-teacher-go]", "[data-teacher-choice] > p"]) {
+      const box = await page.locator(selector).last().boundingBox();
+      expect(box, selector).not.toBeNull();
+      expect((box?.y ?? 0) + (box?.height ?? 0), selector).toBeLessThanOrEqual(
+        height,
+      );
+    }
+    for (const t of [MINA, LEO]) {
+      const portrait = await card(page, t.key)
+        .locator(`img[data-teacher-portrait="${t.key}"]:visible`)
+        .boundingBox();
+      const greet = await card(page, t.key)
+        .locator("[data-teacher-greet]")
+        .boundingBox();
+      const name = await card(page, t.key)
+        .getByText(t.nameKo, { exact: true })
+        .boundingBox();
+      expect(portrait && greet && name, t.key).toBeTruthy();
+      if (portrait && greet && name) {
+        // 초상 아래 '인사 듣기', 둘 다 이름(오른쪽 칸)보다 왼쪽
+        expect(greet.y, t.key).toBeGreaterThanOrEqual(
+          portrait.y + portrait.height,
+        );
+        expect(portrait.x + portrait.width, t.key).toBeLessThanOrEqual(name.x);
+        expect(greet.x + greet.width, t.key).toBeLessThanOrEqual(name.x);
+      }
+    }
+    // '인사 듣기'는 누름 자리와 같은 칸에 겹쳐 있어도 따로 눌린다
+    await page.getByRole("button", { name: T.greetMina }).click();
+    await expect(page.locator("[data-teacher-chosen]")).toHaveCount(0);
+    await card(page, "mina").locator('button[aria-pressed="false"]').click();
+    await expect(card(page, "mina")).toHaveAttribute("data-teacher-chosen", "");
+    const go = await page.locator("[data-teacher-go]").boundingBox();
+    expect((go?.y ?? 0) + (go?.height ?? 0)).toBeLessThanOrEqual(height);
   });
 
   test("AC-19b 마이크를 쓸 수 없는 기기에서는 '선생님을 골라요'보다 막힌 안내가 먼저다", async ({

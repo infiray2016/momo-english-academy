@@ -1128,7 +1128,12 @@ function TalkFrameBody({ view }: { view: TalkView }) {
       <div data-talk-layout="" className="flex flex-col gap-6 lg:flex-row">
         <div
           data-teacher-column=""
-          className="flex shrink-0 flex-row items-start gap-6 lg:w-[260px] lg:flex-col lg:items-stretch"
+          className={cn(
+            // 세로: 창과 목록 포스트잇을 같은 높이로(줄의 아래 끝이 같게 — C114 · 화면 검토 1 M-1), 목록이 없으면('시작!' 화면 등) 창을
+            // 가운데에(빈 코르크 반 줄을 두지 않음 — M-5). 가로: 왼쪽 칸 위에서부터
+            "flex shrink-0 flex-row items-stretch gap-6 lg:w-[260px] lg:flex-col lg:justify-start",
+            !panelShown && "justify-center",
+          )}
         >
           <TeacherWindow
             key="teacher-window"

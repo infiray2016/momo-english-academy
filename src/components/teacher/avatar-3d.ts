@@ -35,8 +35,11 @@ const BLINK = { first: 2.5, minGap: 3, spread: 3 } as const;
 const FRAMES_EVERY_MS = 1000;
 /** 카메라(시야각 · 가까운 면 · 먼 면, 시제품 값). */
 const CAMERA = { fov: 30, near: 0.05, far: 20 } as const;
-/** 화면에 담는 범위: 머리 위 여유 · 머리 아래 · 너비(모델 키에 대한 비, 시제품 값). */
-const FRAMING = { top: 0.045, belowHead: 0.25, width: 0.42 } as const;
+/**
+ * 화면에 담는 범위: 머리 위 여유 · 머리 아래 · 너비(모델 키에 대한 비). 머리 위 여유는 시제품 값, 머리 아래 · 너비는 화면 검토 1 M-2 가
+ * 가슴 위로 당김(시제품 0.25 · 0.42 는 허리까지라 얼굴이 초상의 절반 아래 — 4절 '상반신과 눈 맞춤').
+ */
+const FRAMING = { top: 0.045, belowHead: 0.15, width: 0.34 } as const;
 /** 팔 내리기(라디안, 시제품 값). */
 const ARMS = { upper: 1.23, lower: 0.22 } as const;
 /** 표정 무게(시제품 값): 입 aa · oh(흔들림) · ee. */

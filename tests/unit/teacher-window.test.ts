@@ -130,7 +130,13 @@ describe("선생님 창(초상)", () => {
       praise: ["praise"],
       thinking: ["thinking"],
     });
-    expect(windowOf("speaking")).toContain("motion-safe:animate-ping");
+    // 말하기 테는 창 밖 8px(-inset-2) 제자리 깜빡임 — 퍼지는 물결(ping)은 위 띠를 지나서 쓰지 않는다(화면 검토 1 M-3)
+    const speaking = windowOf("speaking");
+    expect(speaking).toContain("motion-safe:animate-pulse");
+    expect(speaking).not.toContain("animate-ping");
+    expect(
+      speaking.match(/<span[^>]*data-teacher-indicator="speaking"[^>]*>/)?.[0],
+    ).toContain("-inset-2");
     expect(windowOf("thinking")).toContain("motion-safe:animate-bounce");
     expect(windowOf("praise")).toContain("lucide-star");
   });
@@ -146,10 +152,10 @@ describe("선생님 창(초상)", () => {
         expect(windowOf(state, reduced)).not.toMatch(/transition/);
   });
 
-  it("선생님 창 크기는 화면 꼴 상수(가로 260 × 300 · 세로 200 × 240 — 제안 값)와 같은 글자 클래스다", () => {
+  it("AC-19c 선생님 창 크기는 화면 꼴 상수(가로 260 × 300 · 세로 200 × 200 — 화면 검토 1 M-1)와 같은 글자 클래스다", () => {
     expect(TEACHER_WINDOW_PX).toEqual({
       landscape: { width: 260, height: 300 },
-      portrait: { width: 200, height: 240 },
+      portrait: { width: 200, height: 200 },
     });
     const { landscape, portrait } = TEACHER_WINDOW_PX;
     expect(WINDOW_SIZE_CLASS).toBe(
