@@ -634,16 +634,6 @@ describe("명단 검사", () => {
           mina(r).introKo = "한 줄.\n두 줄.\n세 줄.";
         }),
       ],
-      [
-        "teachers.0.source.reduction",
-        roster((r) => {
-          mina(r).model = {
-            path: "teachers/mina.vrm",
-            bytes: 1,
-            sha256: "0".repeat(64),
-          };
-        }),
-      ],
     ];
     for (const [path, file] of cases) {
       expect(TeachersFileSchema.safeParse(file).success, path).toBe(true);
@@ -661,7 +651,10 @@ describe("명단 검사", () => {
       ["kind", (r) => Object.assign(mina(r), { kind: "emoji" })],
       ["nameKo", (r) => (mina(r).nameKo = "미나1")],
       ["nameEn", (r) => (mina(r).nameEn = "Mi-na")],
-      ["voice", (r) => (mina(r).voice = { pitch: TEACHER_PITCH.max + 0.1 })],
+      [
+        "voice",
+        (r) => (mina(r).voice = { pitch: TEACHER_PITCH.max + 0.1, prefer: [] }),
+      ],
       ["source", (r) => (mina(r).source.creator = " ")],
       ["key", (r) => (mina(r).key = "Mina")],
     ];
@@ -670,52 +663,48 @@ describe("명단 검사", () => {
       expect(result.success, label).toBe(false);
       expect(result.error?.issues, label).toHaveLength(1);
     }
-    // 모델 · 초상 · 목소리 칸은 지금 비워도 된다(선생님 화면 plan 때 필수).
-    const bare = roster((r) => {
-      delete mina(r).voice;
-      delete mina(r).model;
-      delete mina(r).portrait;
+    // 모델 · 초상 · 목소리 · 줄인 방법 · 빼는 낱말 칸은 필수다(선생님 화면 plan 값 2, C141). 목소리 순서는 빈 목록을 받는다.
+    for (const field of [
+      "model",
+      "portrait",
+      "voice",
+      "nameKoWordExceptions",
+    ] as const) {
+      const bare = roster((r) => {
+        delete (mina(r) as Partial<TeachersFile["teachers"][number]>)[field];
+      });
+      expect(TeachersFileSchema.safeParse(bare).success, field).toBe(false);
+    }
+    const noReduction = roster((r) => {
+      delete (mina(r).source as { reduction?: string }).reduction;
     });
-    expect(TeachersFileSchema.safeParse(bare).success).toBe(true);
+    expect(TeachersFileSchema.safeParse(noReduction).success).toBe(false);
+    const noPrefer = roster((r) => {
+      delete (mina(r).voice as { prefer?: string[] }).prefer;
+    });
+    expect(TeachersFileSchema.safeParse(noPrefer).success).toBe(false);
   });
 
-  it("AC-19a 채워진 모델 · 초상 칸만 파일 있음을 보고, 비면 보지 않는다", () => {
-    expect(checkTeacherAssets(teacherRoster(), () => false)).toEqual([]);
-    const filled = roster((r) => {
-      mina(r).model = {
-        path: "teachers/mina.vrm",
-        bytes: 1,
-        sha256: "0".repeat(64),
-      };
-      mina(r).portrait = { path: "teachers/mina.png", bytes: 1 };
-      mina(r).source.reduction = "텍스처 줄임";
-    });
-    expect(check(filled)).toEqual([]);
-    const present = new Set(["teachers/mina.vrm"]);
+  it("AC-19a 모델 · 초상 파일이 없으면 그 칸 오류다", () => {
+    const r = teacherRoster();
+    const all = new Set(
+      r.teachers.flatMap((t) => [t.model.path, t.portrait.path]),
+    );
+    expect(checkTeacherAssets(r, (p) => all.has(p))).toEqual([]);
+    all.delete(mina(r).portrait.path);
     expect(
-      checkTeacherAssets(filled, (p) => present.has(p)).map((i) => [
-        i.rule,
-        i.path,
-      ]),
+      checkTeacherAssets(r, (p) => all.has(p)).map((i) => [i.rule, i.path]),
     ).toEqual([["teacher-asset", "teachers.0.portrait.path"]]);
   });
 
   it("AC-19a 시드 검증 · 명령은 assetExists 로 채워진 모델 칸의 파일 없음을 규격 파일 오류 하나로 낸다(검토 M-2)", () => {
     const tree = miniSeed({ areas: AREAS, through: 1, frame: "small" });
-    const filled = roster((r) => {
-      mina(r).model = {
-        path: "teachers/mina.vrm",
-        bytes: 1,
-        sha256: "0".repeat(64),
-      };
-      mina(r).source.reduction = "텍스처 줄임";
-    });
-    tree.reference.teachers = filled;
     const files = seedTreeFiles(tree);
+    const r = teacherRoster();
     const report = validateSeed(files, {
       mode: "pr",
       areas: AREAS,
-      assetExists: () => false,
+      assetExists: (p) => p !== mina(r).model.path,
     });
     expect(report.errors.map((e) => [e.rule, e.path])).toEqual([
       ["teacher-asset", "teachers.0.model.path"],

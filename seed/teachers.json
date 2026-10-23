@@ -5,12 +5,15 @@
       "kind": "vrm",
       "nameKo": "미나",
       "nameEn": "Mina",
+      "nameKoWordExceptions": ["미나리"],
       "introKo": "작은 목소리도 귀 기울여 듣는,\n다정한 영어 친구예요.",
       "traitsKo": ["다정하게", "차근차근", "함께 웃어요"],
       "personaEn": "Warm and patient. You go step by step and laugh together with the child.",
       "greetingEn": "Hello! I'm Mina. It's nice to meet you. Let's learn English together!",
       "color": { "room": "#e8e9d9", "accent": "#386449" },
-      "voice": { "pitch": 1.08 },
+      "model": { "path": "teachers/mina.9c5152a7.vrm", "bytes": 4728568, "sha256": "9c5152a7a0247fa9c9164482512c889e9bddf14056d8f49ddf751d7ce3565a8a" },
+      "portrait": { "path": "teachers/mina.fdc5f7f2.webp", "bytes": 22336 },
+      "voice": { "pitch": 1.08, "prefer": [] },
       "source": {
         "creator": "VRoid Project (VRoidプロジェクト)",
         "distributionUrl": "https://opengameart.org/content/vroid-studio-cc0-models",
@@ -19,7 +22,8 @@
         "originalSha256": "aea824cc43a95dd022a57d460ed901534a45fc2ac195f26ffc4d0d5beb0d7911",
         "licenseName": "Other",
         "permissions": "allowedUserName=Everyone · commercialUssageName=Allow",
-        "conditionsUrl": "https://hub.vroid.com/license?allowed_to_use_user=everyone&characterization_allowed_user=everyone&corporate_commercial_use=allow&credit=unnecessary&modification=allow&personal_commercial_use=profit&redistribution=allow&sexual_expression=allow&version=1&violent_expression=allow"
+        "conditionsUrl": "https://hub.vroid.com/license?allowed_to_use_user=everyone&characterization_allowed_user=everyone&corporate_commercial_use=allow&credit=unnecessary&modification=allow&personal_commercial_use=profit&redistribution=allow&sexual_expression=allow&version=1&violent_expression=allow",
+        "reduction": "pnpm teacher:reduce --max-texture 1024 (scripts/teacher-reduce.ts) · libwebp cwebp/dwebp 1.6.0 · 텍스처 한 변 1024 · 색 WebP q85(알파 무손실) · 법선 WebP 무손실 · 썸네일 PNG 256 · EXT_texture_webp(되돌림 PNG 없음) · 정점 · 뼈 · 표정 · 머티리얼 · VRM 메타 그대로"
       }
     },
     {
@@ -27,12 +31,15 @@
       "kind": "vrm",
       "nameKo": "리오",
       "nameEn": "Leo",
+      "nameKoWordExceptions": ["리오넬", "리오데자네이루"],
       "introKo": "새로운 이야기가 늘 궁금한,\n밝고 편안한 영어 친구예요.",
       "traitsKo": ["호기심 가득", "편안하게", "한 번 더 해요"],
       "personaEn": "Curious and relaxed. You love new stories and cheerfully invite the child to try one more time.",
       "greetingEn": "Hey! I'm Leo. I'm happy you're here.",
       "color": { "room": "#e0e8e8", "accent": "#43667b" },
-      "voice": { "pitch": 0.97 },
+      "model": { "path": "teachers/leo.45154cde.vrm", "bytes": 5047396, "sha256": "45154cdee6c1d486cfc1cb9509c8776de494b3b3eede0eae1fdff1c1a0e4e7df" },
+      "portrait": { "path": "teachers/leo.669c5d28.webp", "bytes": 22180 },
+      "voice": { "pitch": 0.97, "prefer": [] },
       "source": {
         "creator": "VRoid Project (VRoidプロジェクト)",
         "distributionUrl": "https://opengameart.org/content/vroid-studio-cc0-models",
@@ -41,7 +48,8 @@
         "originalSha256": "4af2194f90ba846f3b13c00b50b14262419062d2171d17de922bcce2f89979c7",
         "licenseName": "CC0",
         "permissions": "allowedUserName=Everyone · commercialUssageName=Allow",
-        "conditionsUrl": "https://hub.vroid.com/license?allowed_to_use_user=everyone&characterization_allowed_user=everyone&corporate_commercial_use=allow&credit=unnecessary&modification=allow&personal_commercial_use=profit&redistribution=allow&sexual_expression=allow&version=1&violent_expression=allow"
+        "conditionsUrl": "https://hub.vroid.com/license?allowed_to_use_user=everyone&characterization_allowed_user=everyone&corporate_commercial_use=allow&credit=unnecessary&modification=allow&personal_commercial_use=profit&redistribution=allow&sexual_expression=allow&version=1&violent_expression=allow",
+        "reduction": "pnpm teacher:reduce --max-texture 1024 (scripts/teacher-reduce.ts) · libwebp cwebp/dwebp 1.6.0 · 텍스처 한 변 1024 · 색 WebP q85(알파 무손실) · 법선 WebP 무손실 · 썸네일 PNG 256 · EXT_texture_webp(되돌림 PNG 없음) · 정점 · 뼈 · 표정 · 머티리얼 · VRM 메타 그대로"
       }
     }
   ]

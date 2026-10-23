@@ -1,7 +1,7 @@
 // 회화 선생님 명단 seed/teachers.json 의 Zod 규격(5절 · 6.4 명단 자료 · C130 (1)).
 // 칸 꼴(글자 종류 · 범위)은 여기서, 칸끼리 · 다른 규격 파일과 견주는 검사(겹침 · vocab · 문장 · 대비)는 check-teacher.ts 가 본다.
-// 지금(1-가 P8 앞, C128)은 이름 칸이 쓰이는 몫만 필수다. 모델(model) · 초상(portrait) · 목소리(voice) · 줄인 방법(source.reduction)은
-// 선생님 화면 plan(C118 차례) 때 필수로 바꾼다 — 그때 이 파일의 `.optional()` 넷을 뗀다.
+// 모델(model) · 초상(portrait) · 목소리(voice) · 줄인 방법(source.reduction)은 필수다(선생님 화면 plan 값 2, C141 — 파일 · 해시 · 메타는 자산 검사가 본다).
+// 목소리 순서(voice.prefer)는 빈 목록을 받는다(값은 프리뷰 때 받은 기기 목소리 목록으로, plan 정할 것 9).
 import { z } from "zod";
 import { Text } from "@/core/seed/schema/reference";
 import { TEACHER_KINDS, TEACHER_PITCH } from "@/core/seed/structure";
@@ -45,8 +45,8 @@ export const TeacherSourceSchema = z.strictObject({
   permissions: Text,
   /** 파일 안 조건 주소(otherPermissionUrl · otherLicenseUrl). */
   conditionsUrl: z.url(),
-  /** 줄인 방법. 모델(줄인 VRM)이 들어올 때 함께 채운다(검사는 check-teacher). */
-  reduction: Text.optional(),
+  /** 줄인 방법(pnpm teacher:reduce 가 쓰는 글 — 출처 문서에도 글자 그대로). */
+  reduction: Text,
 });
 
 export const TeacherSchema = z.strictObject({
@@ -58,6 +58,13 @@ export const TeacherSchema = z.strictObject({
   nameKo: z.string().regex(/^[가-힣]+$/, { message: "한글 이름은 한글만" }),
   /** 영어 이름(AI · 읽어 주기). */
   nameEn: z.string().regex(/^[A-Za-z]+$/, { message: "영어 이름은 영문자만" }),
+  /**
+   * 한글 이름으로 시작하는 보통 낱말('선생님 이름' 검사가 이 자리에서 시작하는 낱말은 이름으로 보지 않는다 — 미나리 · 리오넬 …, 장부 N-3 · C141).
+   * 낱말마다 그 이름 자리에서 걸려야 한다(명단 검사).
+   */
+  nameKoWordExceptions: z.array(
+    z.string().regex(/^[가-힣]+$/, { message: "빼는 낱말은 한글만" }),
+  ),
   /** 소개 한두 줄(해요체). 줄은 `\n` 으로 나눈다. */
   introKo: Text,
   /** 성격 세 낱말(수는 check-teacher). */
@@ -68,19 +75,15 @@ export const TeacherSchema = z.strictObject({
   greetingEn: Text,
   /** 창 바탕(room) · 이름표 색(accent). */
   color: z.strictObject({ room: HexColor, accent: HexColor }),
-  /** 줄인 VRM(public/ 기준 경로 · 바이트 · SHA-256). 선생님 화면 plan 때 필수. */
-  model: z
-    .strictObject({ path: AssetPath, bytes: Bytes, sha256: Sha256 })
-    .optional(),
-  /** 초상 그림(public/ 기준 경로 · 바이트). 선생님 화면 plan 때 필수. */
-  portrait: z.strictObject({ path: AssetPath, bytes: Bytes }).optional(),
-  /** 목소리(높이 0~2 · 목소리 이름 조각 순서). prefer 는 기기 실측 뒤. 선생님 화면 plan 때 필수. */
-  voice: z
-    .strictObject({
-      pitch: z.number().min(TEACHER_PITCH.min).max(TEACHER_PITCH.max),
-      prefer: z.array(Text).optional(),
-    })
-    .optional(),
+  /** 줄인 VRM(public/ 기준 경로 · 바이트 · SHA-256). */
+  model: z.strictObject({ path: AssetPath, bytes: Bytes, sha256: Sha256 }),
+  /** 초상 그림(public/ 기준 경로 · 바이트). */
+  portrait: z.strictObject({ path: AssetPath, bytes: Bytes }),
+  /** 목소리(높이 0~2 · 목소리 이름 조각 순서). prefer 는 기기 실측 뒤(빈 목록 허용). */
+  voice: z.strictObject({
+    pitch: z.number().min(TEACHER_PITCH.min).max(TEACHER_PITCH.max),
+    prefer: z.array(Text),
+  }),
   /** 출처(빈칸 없음). 화면에 보내지 않는다. */
   source: TeacherSourceSchema,
 });

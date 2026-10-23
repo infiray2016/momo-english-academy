@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ReadingLesson } from "@/core/seed/schema/lesson";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   AREAS,
   type Area,
@@ -145,6 +146,12 @@ describe("명령 seed:validate", () => {
     mkdirSync(TMP_ROOT, { recursive: true });
     const dir = mkdtempSync(join(TMP_ROOT, "seed-"));
     made.push(dir);
+    // 명령은 --root 가 달라도 저장소 뿌리의 public/ · CREDITS.md 로 선생님 자산을 본다 — 견본 대신 실제 명단을 쓴다.
+    tree.reference.teachers = TeachersFileSchema.parse(
+      JSON.parse(
+        readFileSync(join(REPO_ROOT, "seed", SEED_FILES.teachers), "utf8"),
+      ),
+    );
     writeSeedTree(dir, tree);
     const result = spawn(["--root", dir, "--complete-through", "1", "--json"]);
     expect(result.status, result.stderr).toBe(0);

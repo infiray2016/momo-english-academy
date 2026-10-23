@@ -31,6 +31,7 @@
     "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts",
     "images:fetch": "tsx scripts/vocab-images.ts fetch",
     "images:check": "tsx scripts/vocab-images.ts check",
+    "teacher:reduce": "tsx scripts/teacher-reduce.ts",
     "seed:check": "node --env-file-if-exists=.env.local --import tsx scripts/seed-check.ts"
   },
   "dependencies": {

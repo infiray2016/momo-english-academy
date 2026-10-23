@@ -942,9 +942,22 @@ const TEACHER_SOURCE: TeachersFile["teachers"][number]["source"] = {
   licenseName: "CC0",
   permissions: "allowedUserName=Everyone · commercialUssageName=Allow",
   conditionsUrl: "https://hub.vroid.com/license",
+  reduction: "fixture reduction",
 };
 
-/** 견본 명단(1-가 명단과 같은 이름 미나 · 리오, 5절 · C130). 모델 · 초상 칸은 비운다(선생님 화면 plan 때 필수). */
+/** 견본 모델 · 초상 칸(파일은 자산 검사 시험이 io 로 넘긴다). */
+function teacherAssets(key: string) {
+  return {
+    model: {
+      path: `teachers/${key}.00000000.vrm`,
+      bytes: 1,
+      sha256: "0".repeat(64),
+    },
+    portrait: { path: `teachers/${key}.00000000.webp`, bytes: 1 },
+  };
+}
+
+/** 견본 명단(1-가 명단과 같은 이름 · 빼는 낱말 · 목소리 미나 · 리오, 5절 · C130 · C141). 모델 · 초상 칸은 가짜 경로다. */
 export function teacherRoster(): TeachersFile {
   return {
     teachers: [
@@ -953,6 +966,7 @@ export function teacherRoster(): TeachersFile {
         kind: "vrm",
         nameKo: "미나",
         nameEn: "Mina",
+        nameKoWordExceptions: ["미나리"],
         introKo: "작은 목소리도 귀 기울여 듣는,\n다정한 영어 친구예요.",
         traitsKo: ["다정하게", "차근차근", "함께 웃어요"],
         personaEn:
@@ -960,7 +974,8 @@ export function teacherRoster(): TeachersFile {
         greetingEn:
           "Hello! I'm Mina. It's nice to meet you. Let's learn English together!",
         color: { room: "#e8e9d9", accent: "#386449" },
-        voice: { pitch: 1.08 },
+        ...teacherAssets("mina"),
+        voice: { pitch: 1.08, prefer: [] },
         source: { ...TEACHER_SOURCE },
       },
       {
@@ -968,13 +983,15 @@ export function teacherRoster(): TeachersFile {
         kind: "vrm",
         nameKo: "리오",
         nameEn: "Leo",
+        nameKoWordExceptions: ["리오넬", "리오데자네이루"],
         introKo: "새로운 이야기가 늘 궁금한,\n밝고 편안한 영어 친구예요.",
         traitsKo: ["호기심 가득", "편안하게", "한 번 더 해요"],
         personaEn:
           "Curious and relaxed. You love new stories and cheerfully invite the child to try one more time.",
         greetingEn: "Hey! I'm Leo. I'm happy you're here.",
         color: { room: "#e0e8e8", accent: "#43667b" },
-        voice: { pitch: 0.97 },
+        ...teacherAssets("leo"),
+        voice: { pitch: 0.97, prefer: [] },
         source: { ...TEACHER_SOURCE },
       },
     ],
