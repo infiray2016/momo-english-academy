@@ -124,7 +124,7 @@ const JumpInputSchema = z
   .refine((v) => isUnitOf(v.area, PREVIEW_JUMP_LEVEL, v.unit));
 
 /**
- * 단원 바로 가기(컨트롤러 덧). 운영 배포면 refused, 1단계에 없는 단원 · 꼴이 틀린 입력은 invalid. 한 트랜잭션: 그 영역 트랙 행을
+ * 단원 바로 가기(컨트롤러 덧). 운영 배포면 refused, 1단계에 없는 단원 · 꼴이 틀린 입력은 invalid. 한 트랜잭션: 그 영역의 지금 단계 · 단원 행(profile_tracks)을
  * 1단계 · 그 단원으로 → 그 단원 회차가 없으면 단원 들기(unitEntryOf)의 회차를 넣음 → 사건 한 행.
  */
 export async function jumpUnitForPreviewFor(

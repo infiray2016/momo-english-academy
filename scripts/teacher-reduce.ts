@@ -21,7 +21,12 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_FILES, TEACHER_ASSET_DIR } from "../src/core/seed/structure";
+import {
+  SEED_FILES,
+  TEACHER_ASSET_DIR,
+  TEACHER_ASSET_HASH_CHARS,
+  TEACHER_KEY,
+} from "../src/core/seed/structure";
 import { buildGlb, type GltfJson, parseGlb } from "../src/core/seed/vrm";
 
 /** 저장소 뿌리 기준 시드 · 공개 폴더. */
@@ -42,8 +47,8 @@ const ENCODE = {
   portraitSide: 512,
   portraitQuality: 80,
 } as const;
-/** 파일 이름에 넣는 SHA-256 앞 글자 수. */
-const HASH_PREFIX = 8;
+/** 파일 이름에 넣는 SHA-256 앞 글자 수(자산 검사와 같은 값 — 검토 3 Minor-2). */
+const HASH_PREFIX = TEACHER_ASSET_HASH_CHARS;
 
 // ── 순수 함수 ────────────────────────────────────────────────────
 
@@ -226,7 +231,7 @@ export function parseArgs(
     }
     return { ok: false, error: `모르는 인자: ${arg}` };
   }
-  if (key === undefined || !/^[a-z]+$/.test(key))
+  if (key === undefined || !TEACHER_KEY.test(key))
     return { ok: false, error: "--key 는 영어 소문자 키다" };
   if (src === undefined) return { ok: false, error: "--src 가 없다" };
   return { ok: true, args: { key, src, maxTexture, out, write } };

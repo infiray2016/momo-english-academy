@@ -236,7 +236,7 @@ describe("관찰 쪽 단원 바로 가기(컨트롤러 덧 2026-10-23 — 프리
     expect(await trackOf("talk")).toEqual({ level: 1, unit: 1 });
   });
 
-  it("AC-19b 단원 바로 가기: 운영 배포(VERCEL_ENV=production)에서는 거부하고 트랙 · 단원 회차 · 사건을 쓰지 않는다", async () => {
+  it("AC-19b 단원 바로 가기: 운영 배포(VERCEL_ENV=production)에서는 거부하고 그 영역의 지금 단계 · 단원 행(profile_tracks) · 단원 회차 · 사건을 쓰지 않는다", async () => {
     const eventsBefore = await db
       .select()
       .from(progressEvents)
@@ -255,7 +255,7 @@ describe("관찰 쪽 단원 바로 가기(컨트롤러 덧 2026-10-23 — 프리
     ).toHaveLength(eventsBefore.length);
   });
 
-  it("AC-19b 단원 바로 가기: 회화 단원 3 으로 바꾸면 트랙 · 첫 단원 회차(단원 시작 복사본) · 사건이 들고 홈 회화 카드가 단원 3 을 지금 단원으로 보인다", async () => {
+  it("AC-19b 단원 바로 가기: 회화 단원 3 으로 바꾸면 그 영역의 지금 단계 · 단원 행(profile_tracks) · 첫 단원 회차(단원 시작 복사본) · 사건이 들고 홈 회화 카드가 단원 3 을 지금 단원으로 보인다", async () => {
     expect((await homeCard("talk"))?.unit).toBe(1);
     expect(await jump({ area: "talk", unit: 3 })).toEqual({
       ok: true,
