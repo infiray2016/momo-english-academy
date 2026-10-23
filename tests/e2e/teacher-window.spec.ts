@@ -730,9 +730,9 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     await expect(
       speaking.locator("[data-activity][data-hydrated]"),
     ).toHaveCount(1);
+    // 처음 마이크 안내는 기기마다 한 번(MIC_NOTICE_KEY) — 같은 브라우저 맥락의 회화 세션에서 pastStart 가 이미 '알겠어요'를 눌렀다(CI 22차 실패)
     await speaking.getByRole("button", { name: T.next }).click();
-    await expect(speaking.locator("[data-mic-notice]")).toBeVisible();
-    await speaking.getByRole("button", { name: T.micOk }).click();
+    await expect(speaking.locator("[data-mic-notice]")).toHaveCount(0);
     await expect
       .poll(async () =>
         (await speechRecord(speaking)).spoken.some((t) => t !== UNLOCK_TEXT),
