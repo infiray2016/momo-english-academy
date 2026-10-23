@@ -42,6 +42,7 @@ import {
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
 import { TalkCardSchema, TalkTestSheetSchema } from "@/core/seed/schema/talk";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   AREAS,
@@ -1071,6 +1072,7 @@ describe("시드 규격(schema)", () => {
             forbidden: ForbiddenFileSchema,
             forms: ListFormsFileSchema,
             metaSentences: MetaSentencesFileSchema,
+            teachers: TeachersFileSchema,
           }[parsed.name];
         case "lessons":
           return LessonFileSchema;

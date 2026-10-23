@@ -5,6 +5,7 @@
 // API 를 부르지 않는다(seed/checks 의 저장 결과만 읽는다, AC-7d).
 import {
   type Dirent,
+  existsSync,
   readdirSync,
   readFileSync,
   realpathSync,
@@ -145,13 +146,17 @@ function humanLines(report: SeedReport, stats: boolean): string[] {
   return lines;
 }
 
+/** 명단의 모델 · 초상 경로를 찾는 정적 자산 폴더(같은 출처, 저장소 뿌리 기준, C130). */
+export const PUBLIC_DIR = "public";
+
 /**
  * 인자와 읽은 파일 묶음(seed/ 뿌리 기준 경로 → 글, 뿌리가 없으면 null)으로 검증하고 종료 코드와 출력 줄을 돌려준다.
- * 종료 2 의 출력은 표준 오류로 낸다(직접 실행 때).
+ * 종료 2 의 출력은 표준 오류로 낸다(직접 실행 때). assetExists 는 명단의 채워진 모델 · 초상 파일 있음을 본다(넘기지 않으면 보지 않는다).
  */
 export function runValidate(
   args: CliArgs,
   files: ReadonlyMap<string, string> | null,
+  assetExists?: (path: string) => boolean,
 ): { code: 0 | 1 | 2; lines: string[] } {
   if (files === null) {
     return {
@@ -213,6 +218,7 @@ export function runValidate(
     mode: through === undefined ? "pr" : "complete",
     ...(through === undefined ? {} : { through }),
     areas: args.areas,
+    ...(assetExists ? { assetExists } : {}),
   });
   const code = exitCodeOf(report);
   return {
@@ -266,7 +272,10 @@ function main(): number {
     return 2;
   }
   const root = resolve(process.cwd(), parsed.args.root);
-  const { code, lines } = runValidate(parsed.args, readSeedTree(root));
+  const publicRoot = resolve(process.cwd(), PUBLIC_DIR);
+  const { code, lines } = runValidate(parsed.args, readSeedTree(root), (p) =>
+    existsSync(join(publicRoot, p)),
+  );
   const write = code === 2 ? console.error : console.log;
   for (const line of lines) write(line);
   return code;

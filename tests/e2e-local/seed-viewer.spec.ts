@@ -266,7 +266,7 @@ const lateStories: StoryFile = (() => {
   return {
     ...file,
     stories: [
-      { ...first, textKo: "토리가 그걸 찾았어. 다 같이 놀아." },
+      { ...first, textKo: "모모가 그걸 찾았어. 다 같이 놀아." },
       ...rest,
     ],
   };
