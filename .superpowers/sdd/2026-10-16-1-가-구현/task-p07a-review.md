@@ -1,0 +1,23 @@
+# 검토 브리프: P7a 적재 · 판 규칙(code-reviewer rev-p07a · Opus · xhigh, 읽기 전용, 2026-10-17 13:4x)
+
+P7a(plan-p07a) 구현의 전체 검토다. 설계 준수(빠진 것 · 넘친 것 · 잘못 이해한 것)와 품질(Critical · Important · Minor, 근거 — 파일:줄 · 정본 절 · 재현)을 판정한다. 저장소 · 워크트리 파일을 고치지 않는다(시험용 Postgres 로 시험을 돌리는 것은 된다). 보고 파일 하나만. 명령은 `PATH=/Users/hikaru/.nvm/versions/node/v24.22.0/bin:$PATH pnpm …` 꼴, 실제 DB(Supabase) 접속 없음.
+
+## 대상
+- 워크트리 `/Users/hikaru/workspace/momo-english-academy/.claude/worktrees/p07`(브랜치 feature/1a-p07-seed-load, 바탕 01ff0a9 = P3a + P4c + P9a, 커밋 없음). 새 파일: `src/core/seed/version-pick.ts` · `settings-compare.ts`, `src/server/seed/`(load.ts · read.ts 등), `scripts/seed-load.ts`, `tests/fixtures/seed/loadable.ts`, `tests/unit/{version-pick,settings-compare}.test.ts`, `tests/integration/{seed-load,seed-version}.test.ts`. 수정: 공용 변경 `package.json` scripts `seed:load` 한 줄(글자 그대로).
+- 구현 보고 `<워크트리>/.superpowers/sdd/2026-10-16-1-가-구현/task-p07a-report.md`(DONE_WITH_CONCERNS — 바뀐 파일 · 시험 수 · 작업 7 출력 · 작업 6 실기 출력(미리 돌림 · 적재 · 다시 — 칸 462 · 건너뜀 462, 접속 문자열 없이 종료 2, 조건 플래그 없으면 server-only 던짐) · 다르게 한 것 열하나 · 남긴 것 · P7b 에 넘길 것). 브리프 `task-p07a.md`.
+- 기준: `intent/2026-10-15-모모-잉글리시-아카데미/plan-p07a-적재-판.md`(approved — 목표 · 파일별 값 1~6 · 작업 1~7 · 위험 1~13 · 정할 것 가~파 → 13절 C68 · 증명 표), 13절 C68(1-가 개발용 적재 범위 · 판 적재 규칙 · 설정 판 · seed_load · 기술 선택) · C50 (4) · C56 (4) · C61 (2) · C66, 정본 5절(04 — 시드 판 · 적재 · 설정값 시드) · 6.3 완전성(06) · 9절(08) · 11절 (4) · (4-1) · 12절 머리 · seed.* · ai.*(09) · AC-17a · 17b · 7e · 7g · 8i(11), P4c `validateSeed` · `cellHash` · `canonicalJson`, P3a 스키마 · `getDb` · `getSettings` · test-db, P9a `checkSettingsCombos` · `priceRowsOfSeed` · `priceBookOf` · `loadPriceBook`.
+- 컨트롤러 재확인(13:4x, 워크트리): biome 0 · build · 단위 221 · 통합 51 통과 + 1 건너뜀(저장소 seed/ 규격만 적재 — 바탕에 seed/ 없음) · check:deps 0 · spec-trace missing-test 51(54 → 51, AC-17a · 17b · 7e) · bundle 0 · 비밀값은 바탕의 check-bundle 둘과 P3a global-setup 뿐 · 공용 변경 한 줄 그대로 · 규격 파일 없는 뿌리로 돌리면 '규격 파일이 없다' 로 멈춤.
+
+## 볼 것
+1. **판 규칙(값 1, C68 (2))** — 같은 칸 · 같은 판 · 다른 내용 → `version-content-changed` 전체 실패; 있는 칸의 새 개정과 행이 있는 묶음(단원 · 벌 · 배치 벌)의 새 칸은 DB 최대 개정 G 초과(건너뛴 번호 받음, 빈 묶음의 새 칸은 받음); 정정은 그 개정 행이 있고 그 개정의 최대 정정보다 커야 함; 칸 묶음 정의(수업 → 단원, 이야기 → 구간, 평가 → 벌, 배치 → 영역 · 벌, 규격 행 → 행). 단위 시험이 경계(G · G+1 · G+2)를 고정하는지.
+2. **판 고르기 · 읽기(값 1 · 4, AC-17a · R5)** — 시작 개정 이하 행 가운데 최고 판, 같은 개정의 정정은 진행 중 단원에 바로, 새 개정은 다음 단원부터, 뒤 개정에 생긴 칸은 안 열림, `currentSeedRevision`, 이전 판 행 · sessions.lesson_id 보존, 회화 단계 규격 목표 턴 수도 시작 개정 값. 다르게 한 것 1(시험 이름 '수업 4 · 5' 대 작은 틀 — 다지기 3 · 보강 1 로 대응)이 AC-17a 증명으로 충분한지 판정.
+3. **설정값 시드 견주기(값 2, AC-7e · 7g · 5절)** — '시드' · '결정 기록 먼저' 키는 다르면 고침, '고급' · '기본' 키는 없을 때만 넣고 DB 값 지킴, 정규 JSON 비교, 범위 다름 `setting-scope-changed`, 시드에 없는 DB 키는 지우지 않고 알림(다르게 한 것 6 — orphans 값을 values 에 넣음), 개발용 덮어쓰기는 seed.complete_through_level 만, 결과 값 읽개의 `SettingsIncompleteError`, 설정 판 하나 · 이력은 고친 행 · 출처 `seed_load`(C68 (2)).
+4. **적재 함수(값 3, AC-17b · 8i)** — 검증(validateSeed, 완전성 범위 · 영역 · 규격만) → 계획 → 조합 검사(P9a checkSettingsCombos · capabilitiesOf) · 3.2 관계 표 → 자문 잠금 한 트랜잭션 → 보고. 하나라도 걸리면 한 행도 안 넣음(모든 표 0 행 · settings 그대로). 같은 판 두 번 = 행 수 같음. vocab · images 제자리 고침 · 빠진 행 남김, model_prices (모델, 적용일) 더하기만 · 같은 키 다른 값 실패. 학습 기록 · 운영 표 불변. --areas 밖 영역 안 넣음 · 규격 파일은 모두. 다르게 한 것 3 · 4 · 5 · 9 · 10(보고 빈 값 · 위반 줄 · key 꼴 · AC-8i 두 길 · 4-6 구간) 판정. 시각은 한 시계 인자(SQL now() 없음).
+5. **명령(값 5)** — 인자(--root · --dry-run · --json · --complete-through · --areas · --reference-only) · 종료 0/1/2 · 접속 문자열 · 값 출력 없음(다르게 한 것 7 접속 확인 `select 1` · 오류 이름 · 코드만) · `MIGRATION_DATABASE_URL` 만 · `node --conditions=react-server --import tsx`(다르게 한 것 8 `main().then`) · 첫 줄 꼴 · --json version 1. 실기 출력(보고)과 시험의 '적재 명령' 줄.
+6. **시험용 자료(값 6)** — loadableSeed 가 complete · through 1 오류 0 · 빈 칸 0, withCellVersion, 풀이 기록 해시 다시 셈, 프로필 · 세션 넣기, 다르게 한 것 11(cellValueOf · LOADABLE_THROUGH · answerOf 내보냄).
+7. **경계 · 규칙** — core-no-io(순수 함수 둘) · server-only · db-only-from-server · 마이그레이션 없음 · 행 삭제 없음 · 비밀값 없음(출력에 접속 문자열 없음) · 묶음 행 수 · 잠금 이름은 파일 위 상수(check-ids 허용 후보 목록은 장부에).
+8. **증명 표** — 시험 이름 글자 그대로(spec-trace AC-17a · 17b · 7e · 7g · 8i, 51), 표 밖 시험의 가치, 건너뛴 시험(seed/ 없음)의 조건이 바르고 P6a 합친 뒤 돌 수 있는지.
+9. **다른 P · 열린 장부** — P7b 에 넘길 것(명령 꼴 · 종료 코드 · 입력 · 접속 변수 · 허용 목록 후보)이 plan-p07b 와 맞는지, P8 · P10~P12 · 1-나 메모가 ledger-open 과 맞는지. `ledger-open.md` 의 P7 관련 행 판정(닫힘 · 아직 열림).
+
+## 보고
+`/Users/hikaru/workspace/momo-english-academy/.superpowers/sdd/2026-10-16-1-가-구현/review-p07a.md`(메인 저장소): 1 설계 준수(plan 값 · 정본 절 · C68 마다) · 2 잘한 점 · 3 지적(심각도 · 근거 · 권하는 고침) · 4 다르게 한 것 1~11 판정 · 5 우려 둘(작은 틀 시험 이름 · spec-trace 시작 수 54) 판정 · 6 증명 표 행마다 시험 · 7 열린 장부 판정 · 8 P7b · P8 · P10~12 · 1-나 에 넘길 메모. 마지막 메시지는 판정(Approved · Changes requested)과 요지 5줄 안쪽.

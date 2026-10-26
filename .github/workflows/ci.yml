@@ -1,0 +1,95 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci --reporter=github .
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+  depcruise:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:deps
+  spec-trace: # missing-test 는 묶음 plan 작업 10 에서 0 이 되면 --fail-on 에 더한다(C51 라)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec
+  bundle-secrets: # 빌드 결과를 넘겨받지 않고 다시 빌드한다
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm check:bundle
+  integration: # P3 이 채운다(시험용 Postgres)
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P3 가 채운다"
+  e2e: # P10 이 채운다. 첫 화면 시험은 P1a 에서 로컬로만 돈다
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P10 이 채운다"
+  seed-validate: # P4 가 채운다
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "P4 가 채운다"
