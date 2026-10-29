@@ -12,7 +12,7 @@ export const TEST_SETTINGS = {
   "ai.model.writing_check": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.speaking_eval": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.thinkout": { scope: "household", value: "claude-sonnet-5-5" },
-  "ai.model.talk_turn.1-3": { scope: "household", value: "claude-haiku-5-5" },
+  "ai.model.talk_turn.1-3": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.4-6": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.7-9": { scope: "household", value: "claude-sonnet-5-5" },
   "ai.model.talk_turn.10-12": {
@@ -114,6 +114,58 @@ export const TEST_SETTINGS = {
   "speaking.answer_max_seconds.7-9": { scope: "household", value: 60 },
   "speaking.answer_max_seconds.10-12": { scope: "household", value: 150 },
   "writing.thinkout_from_level": { scope: "household", value: 6 },
+
+  // ── P13 회화가 읽는 키(12절 기본값, plan-p13a 공용 변경 1 — seed/settings.json 과 같은 범위 · 값) ──
+  // talk.said_ratio · known_days · more_talk_turns 는 작은 틀 설정(smallFrameSettings)에 있다.
+  "talk.feedback_from_level": { scope: "household", value: 5 },
+  "talk.good_lines": { scope: "household", value: 2 },
+  // 단계 → 수 사전(실시드 꼴 그대로)
+  "talk.next_time_lines": {
+    scope: "household",
+    value: {
+      "5": 1,
+      "6": 1,
+      "7": 1,
+      "8": 1,
+      "9": 1,
+      "10": 2,
+      "11": 2,
+      "12": 2,
+    },
+  },
+  "talk.friendship_max": { scope: "household", value: 10 },
+  "talk.friendship_per_talk": { scope: "household", value: 1 },
+  "talk.memory_summaries": { scope: "household", value: 3 },
+  "talk.summary_max_chars": { scope: "household", value: 300 },
+  "talk.test_match_pass": { scope: "household", value: 0.8 },
+  "talk.test_hint_scores": { scope: "household", value: [1, 0.5, 0] },
+  "talk.hint_read_match": { scope: "household", value: 0.9 },
+  "talk.confirm_seconds": { scope: "household", value: 2 },
+  "talk.idle_close_minutes": { scope: "household", value: 30 },
+  "talk.practice_rounds": { scope: "household", value: 2 },
+  "talk.more_talk_round_turns": { scope: "household", value: 5 },
+  "talk.dontknow_max": { scope: "household", value: 3 },
+  "talk.nospeech_dontknow_count": { scope: "household", value: 2 },
+  "talk.reask_sentence_every_turns": { scope: "household", value: 3 },
+  "talk.follow_up_min_every_turns": { scope: "household", value: 3 },
+  "talk.max_answer_seconds": { scope: "household", value: 30 },
+  "speech.end_silence_seconds.talk.1-3": { scope: "household", value: 3 },
+  "speech.end_silence_seconds.talk.4-6": { scope: "household", value: 2.5 },
+  "speech.end_silence_seconds.talk.7-9": { scope: "household", value: 2 },
+  "speech.end_silence_seconds.talk.10-12": { scope: "household", value: 2 },
+  "speech.end_silence_seconds.talk_long": { scope: "household", value: 5 },
+  // C125 — 단계 구간별 읽어 주기 빠르기(Web Speech rate) · 문장 사이 쉼(ms). C96 speech.slow_rate 를 바꿈
+  "speech.rate.1-3": { scope: "household", value: 0.8 },
+  "speech.rate.4-6": { scope: "household", value: 0.85 },
+  "speech.rate.7-9": { scope: "household", value: 0.9 },
+  "speech.rate.10-12": { scope: "household", value: 1.0 },
+  "speech.sentence_pause_ms": { scope: "household", value: 700 },
+  // ── 회화 선생님(12절 · C130 · C131 — seed/settings.json 과 같은 범위 · 값) ──
+  "talk.teacher_model_max_mb": { scope: "household", value: 8 },
+  "talk.teacher_portrait_max_kb": { scope: "household", value: 100 },
+  "talk.teacher_load_timeout_seconds": { scope: "household", value: 6 },
+  "talk.teacher_praise_seconds": { scope: "household", value: 2 },
+  "talk.teacher_render": { scope: "household", value: "3d" },
 } as const;
 
 export type TestSettingKey = keyof typeof TEST_SETTINGS;

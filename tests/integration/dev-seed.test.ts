@@ -45,9 +45,14 @@ describe("개발용 시드 나무 적재", () => {
     expect(report.violations).toEqual([]);
     const db = testDb.db;
     const expected = {
-      lessons: tree.lessons
-        .filter((f) => areas.includes(f.area))
-        .reduce((n, f) => n + f.lessons.length, 0),
+      // 수업 + 토리 이야기(회화 영역 — lessons 의 tori_story 행)
+      lessons:
+        tree.lessons
+          .filter((f) => areas.includes(f.area))
+          .reduce((n, f) => n + f.lessons.length, 0) +
+        (areas.includes("talk")
+          ? tree.stories.reduce((n, f) => n + f.stories.length, 0)
+          : 0),
       placementItems: tree.placements
         .filter((f) => areas.includes(f.area))
         .reduce(
@@ -62,7 +67,9 @@ describe("개발용 시드 나무 적재", () => {
           (n, f) =>
             n +
             f.forms.reduce(
-              (m, form) => m + ("items" in form ? form.items.length : 0),
+              // 문항(읽기 · 쓰기 · 말하기) · 회화 평가 대화 카드 장(talk-sheet 행)
+              (m, form) =>
+                m + ("items" in form ? form.items.length : form.sheets.length),
               0,
             ),
           0,

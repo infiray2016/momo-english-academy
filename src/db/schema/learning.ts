@@ -52,6 +52,8 @@ export const profiles = pgTable("profiles", {
   alphabetStart: boolean("alphabet_start").notNull(),
   // 안내 종류 → 보인 시각
   noticesSeen: jsonb("notices_seen").notNull().default({}),
+  // 고른 회화 선생님(seed/teachers.json 키). 비었으면 아직 고르지 않음 — 5절 · C130, 선생님 화면 plan 값 7
+  teacherKey: text("teacher_key"),
 }).enableRLS();
 
 const profileRef = () =>
@@ -75,6 +77,8 @@ export const profileTracks = pgTable(
     // 회화 행
     friendship: smallint("friendship"),
     toriStoriesOpened: smallint("tori_stories_opened"),
+    // 구간 → 그 구간에서 연 토리 이야기 수(C98 — 열 하나면 구간이 바뀔 때 앞 구간 기록을 잃는다)
+    toriStoriesByBand: jsonb("tori_stories_by_band"),
   },
   (t) => [
     unique("profile_tracks_profile_area_unique").on(t.profileId, t.area),
@@ -196,6 +200,8 @@ export const talkTurns = pgTable(
     // 회화 턴이 가리킨 카드 질문 번호(C19)
     cardQuestionNo: smallint("card_question_no"),
     saidWords: text("said_words").array(),
+    // 1~3단계 토리 반응의 한국어 뜻(이어 하기 · 다시 흘림, C103)
+    toriKo: text("tori_ko"),
     // 토리가 되풀이한 바른 문장
     recast: text("recast"),
     explanation: text("explanation"),
@@ -207,10 +213,14 @@ export const talkTurns = pgTable(
     sentUserMessage: text("sent_user_message"),
     // 다시 쓸 토리 차례
     toriRewrite: text("tori_rewrite"),
+    // 토리 행이 붙인 1~3단계 AI 질문(영어 · 뜻 · 답 예시 · 힌트 단, C101)
+    aiQuestion: jsonb("ai_question"),
     perceivedWaitMs: integer("perceived_wait_ms"),
     listenEndSeconds: doublePrecision("listen_end_seconds"),
     // C23
     confirmSkipped: boolean("confirm_skipped"),
+    // 아이 행의 듣기 사건 요약(C149 — '모름'의 출처 · 기기 · 3D · 듣기마다 결과 · 끝난 까닭 · 길이 · 소리 · 읽기 관계, 글 · 소리 없음)
+    clientListen: jsonb("client_listen"),
     recordedAt: tstz("recorded_at").notNull(),
   },
   (t) => [

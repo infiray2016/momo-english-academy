@@ -1,0 +1,665 @@
+{
+  "area": "writing",
+  "level": 1,
+  "unit": 4,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "까만 고양이, 분홍 돼지",
+      "newWords": ["black", "pink", "long", "blue", "color"],
+      "unitWords": ["blue", "black", "color", "long", "pink"],
+      "preview": [
+        {"word": "black", "meaningKo": "검은, 검은색", "example": "My cat is black."},
+        {"word": "pink", "meaningKo": "분홍의, 분홍색", "example": "The pig is pink."},
+        {"word": "long", "meaningKo": "긴", "example": "My legs are long."},
+        {"word": "blue", "meaningKo": "파란, 파란색", "example": "The lake is blue."},
+        {"word": "color", "meaningKo": "색, 색깔", "example": "It is a nice color."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "blue", "options": ["blue", "bear", "bell", "fish"], "answerNo": 1, "accepted": ["blue"]},
+          {"type": "pick-word", "picture": "black", "options": ["bag", "black", "cake", "fish"], "answerNo": 2, "accepted": ["black"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["o", "r", "c", "l", "o"], "accepted": ["color"]},
+          {"type": "copy-tiles", "word": "long", "tiles": ["g", "o", "n", "l"], "accepted": ["long"]},
+          {"type": "fill-letters", "word": "pink", "pattern": "pi__", "tiles": ["k", "m", "n"], "accepted": ["pink"]},
+          {"type": "fill-letters", "word": "black", "pattern": "bla__", "tiles": ["k", "g", "c"], "accepted": ["black"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "연못의 오리와 새",
+      "newWords": ["thank", "duck", "sock", "truck", "bird"],
+      "unitWords": ["duck", "truck", "thank", "bird", "sock", "long"],
+      "preview": [
+        {"word": "thank", "meaningKo": "고마워하다", "example": "Thank you."},
+        {"word": "duck", "meaningKo": "오리", "example": "This is a duck."},
+        {"word": "sock", "meaningKo": "양말", "example": "My socks are blue."},
+        {"word": "truck", "meaningKo": "트럭", "example": "It is a big truck."},
+        {"word": "bird", "meaningKo": "새", "example": "The bird is red."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "duck", "options": ["dog", "cat", "duck", "door"], "answerNo": 3, "accepted": ["duck"]},
+          {"type": "pick-word", "picture": "truck", "options": ["tiger", "tent", "fish", "truck"], "answerNo": 4, "accepted": ["truck"]},
+          {"type": "copy-tiles", "word": "thank", "tiles": ["n", "a", "k", "t", "h"], "accepted": ["thank"]},
+          {"type": "copy-tiles", "word": "bird", "tiles": ["r", "b", "d", "i"], "accepted": ["bird"]},
+          {"type": "fill-letters", "word": "sock", "pattern": "so__", "tiles": ["p", "k", "c"], "accepted": ["sock"]},
+          {"type": "fill-letters", "word": "long", "pattern": "lo__", "tiles": ["n", "p", "g"], "accepted": ["long"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "바위에 앉아 책 읽기",
+      "newWords": ["ring", "neck", "rock", "jacket", "book"],
+      "unitWords": ["neck", "duck", "rock", "sock", "book", "jacket", "ring", "truck"],
+      "preview": [
+        {"word": "ring", "meaningKo": "반지, 울리다", "example": "It is a small ring."},
+        {"word": "neck", "meaningKo": "목", "example": "This is my neck."},
+        {"word": "rock", "meaningKo": "바위, 돌", "example": "The rock is big."},
+        {"word": "jacket", "meaningKo": "재킷, 웃옷", "example": "My jacket is blue."},
+        {"word": "book", "meaningKo": "책", "example": "I like this book."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "neck", "options": ["nine", "neck", "duck", "lion"], "answerNo": 2, "accepted": ["neck"]},
+          {"type": "pick-word", "picture": "rock", "options": ["rock", "sock", "rose", "rice"], "answerNo": 1, "accepted": ["rock"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["o", "k", "b", "o"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "jacket", "tiles": ["c", "t", "a", "j", "k", "e"], "accepted": ["jacket"]},
+          {"type": "fill-letters", "word": "ring", "pattern": "ri__", "tiles": ["m", "g", "n"], "accepted": ["ring"]},
+          {"type": "fill-letters", "word": "truck", "pattern": "tru__", "tiles": ["c", "g", "k"], "accepted": ["truck"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "닭장 옆 간식 시간",
+      "newWords": ["chicken", "thick", "clock", "snack", "eye"],
+      "unitWords": ["chicken", "eye", "thick", "snack", "clock", "neck"],
+      "preview": [
+        {"word": "chicken", "meaningKo": "닭, 닭고기", "example": "This is a chicken."},
+        {"word": "thick", "meaningKo": "두꺼운", "example": "The book is thick."},
+        {"word": "clock", "meaningKo": "시계", "example": "It is a big clock."},
+        {"word": "snack", "meaningKo": "간식", "example": "I like snacks."},
+        {"word": "eye", "meaningKo": "눈", "example": "My eyes are big."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "chicken", "options": ["cheese", "cake", "cat", "chicken"], "answerNo": 4, "accepted": ["chicken"]},
+          {"type": "pick-word", "picture": "eye", "options": ["egg", "ear", "eye", "ant"], "answerNo": 3, "accepted": ["eye"]},
+          {"type": "copy-tiles", "word": "thick", "tiles": ["c", "i", "k", "t", "h"], "accepted": ["thick"]},
+          {"type": "copy-tiles", "word": "snack", "tiles": ["a", "k", "s", "c", "n"], "accepted": ["snack"]},
+          {"type": "fill-letters", "word": "clock", "pattern": "clo__", "tiles": ["k", "g", "c"], "accepted": ["clock"]},
+          {"type": "fill-letters", "word": "neck", "pattern": "ne__", "tiles": ["t", "k", "c"], "accepted": ["neck"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲속 왕의 노래",
+      "newWords": ["king", "song", "swing", "bank", "tree"],
+      "unitWords": ["king", "swing", "song", "tree", "bank", "snack"],
+      "preview": [
+        {"word": "king", "meaningKo": "왕", "example": "The king is tall."},
+        {"word": "song", "meaningKo": "노래", "example": "I like this song."},
+        {"word": "swing", "meaningKo": "그네, 흔들다", "example": "The swing is red."},
+        {"word": "bank", "meaningKo": "은행", "example": "It is a bank."},
+        {"word": "tree", "meaningKo": "나무", "example": "It is a big tree."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "king", "options": ["king", "wing", "kite", "fish"], "answerNo": 1, "accepted": ["king"]},
+          {"type": "pick-word", "picture": "swing", "options": ["sun", "swing", "wing", "snake"], "answerNo": 2, "accepted": ["swing"]},
+          {"type": "copy-tiles", "word": "song", "tiles": ["n", "g", "s", "o"], "accepted": ["song"]},
+          {"type": "copy-tiles", "word": "tree", "tiles": ["e", "r", "e", "t"], "accepted": ["tree"]},
+          {"type": "fill-letters", "word": "bank", "pattern": "ba__", "tiles": ["k", "n", "p"], "accepted": ["bank"]},
+          {"type": "fill-letters", "word": "snack", "pattern": "sna__", "tiles": ["c", "k", "g"], "accepted": ["snack"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "호숫가 색깔 찾기",
+      "newWords": [],
+      "unitWords": ["duck", "sock", "truck", "blue", "black", "pink", "color", "bird", "thank"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "duck", "options": ["sock", "truck", "duck", "dog"], "answerNo": 3, "accepted": ["duck"]},
+          {"type": "pick-word", "picture": "blue", "options": ["black", "pink", "bell", "blue"], "answerNo": 4, "accepted": ["blue"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["l", "o", "r", "o", "c"], "accepted": ["color"]},
+          {"type": "copy-tiles", "word": "bird", "tiles": ["d", "i", "b", "r"], "accepted": ["bird"]},
+          {"type": "fill-letters", "word": "black", "pattern": "bla__", "tiles": ["c", "g", "k"], "accepted": ["black"]},
+          {"type": "fill-letters", "word": "thank", "pattern": "tha__", "tiles": ["k", "p", "n"], "accepted": ["thank"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "숲길에서 양말 찾기",
+      "newWords": [],
+      "unitWords": ["sock", "rock", "tree", "long", "eye", "neck", "king"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "sock", "options": ["six", "sock", "rock", "sun"], "answerNo": 2, "accepted": ["sock"]},
+          {"type": "pick-word", "picture": "tree", "options": ["tree", "three", "rock", "lake"], "answerNo": 1, "accepted": ["tree"]},
+          {"type": "copy-tiles", "word": "long", "tiles": ["n", "l", "g", "o"], "accepted": ["long"]},
+          {"type": "copy-tiles", "word": "eye", "tiles": ["y", "e", "e"], "accepted": ["eye"]},
+          {"type": "fill-letters", "word": "neck", "pattern": "ne__", "tiles": ["k", "c", "t"], "accepted": ["neck"]},
+          {"type": "fill-letters", "word": "king", "pattern": "ki__", "tiles": ["g", "p", "n"], "accepted": ["king"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "농장 친구 다시 쓰기",
+      "newWords": [],
+      "unitWords": ["chicken", "ring", "king", "swing", "book", "snack", "truck", "pink"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "chicken", "options": ["egg", "cheese", "cat", "chicken"], "answerNo": 4, "accepted": ["chicken"]},
+          {"type": "pick-word", "picture": "ring", "options": ["king", "swing", "ring", "rice"], "answerNo": 3, "accepted": ["ring"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["k", "o", "o", "b"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "snack", "tiles": ["n", "c", "a", "s", "k"], "accepted": ["snack"]},
+          {"type": "fill-letters", "word": "truck", "pattern": "tru__", "tiles": ["k", "c", "g"], "accepted": ["truck"]},
+          {"type": "fill-letters", "word": "pink", "pattern": "pi__", "tiles": ["n", "m", "k"], "accepted": ["pink"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "들판의 시계 놀이",
+      "newWords": [],
+      "unitWords": ["clock", "rock", "jacket", "duck", "song", "thick", "bank"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "clock", "options": ["clock", "rock", "cake", "cow"], "answerNo": 1, "accepted": ["clock"]},
+          {"type": "pick-word", "picture": "jacket", "options": ["jam", "jacket", "juice", "duck"], "answerNo": 2, "accepted": ["jacket"]},
+          {"type": "copy-tiles", "word": "song", "tiles": ["o", "g", "n", "s"], "accepted": ["song"]},
+          {"type": "copy-tiles", "word": "thick", "tiles": ["k", "t", "c", "h", "i"], "accepted": ["thick"]},
+          {"type": "fill-letters", "word": "rock", "pattern": "ro__", "tiles": ["g", "k", "c"], "accepted": ["rock"]},
+          {"type": "fill-letters", "word": "bank", "pattern": "ba__", "tiles": ["n", "p", "k"], "accepted": ["bank"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "꽃밭에서 노래하기",
+      "newWords": [],
+      "unitWords": ["swing", "pink", "blue", "black", "duck", "ring", "clock", "song"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "swing", "options": ["sheep", "snake", "swing", "wing"], "answerNo": 3, "accepted": ["swing"]},
+          {"type": "pick-word", "picture": "pink", "options": ["blue", "pig", "black", "pink"], "answerNo": 4, "accepted": ["pink"]},
+          {"type": "copy-tiles", "word": "duck", "tiles": ["c", "u", "k", "d"], "accepted": ["duck"]},
+          {"type": "copy-tiles", "word": "ring", "tiles": ["n", "r", "g", "i"], "accepted": ["ring"]},
+          {"type": "fill-letters", "word": "clock", "pattern": "clo__", "tiles": ["c", "g", "k"], "accepted": ["clock"]},
+          {"type": "fill-letters", "word": "song", "pattern": "so__", "tiles": ["g", "n", "p"], "accepted": ["song"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "색깔과 새 한 번 더",
+      "newWords": [],
+      "unitWords": ["bird", "blue", "black", "pink", "truck", "duck", "sock", "color", "thank", "long"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bird", "options": ["blue", "bird", "black", "pink"], "answerNo": 2, "accepted": ["bird"]},
+          {"type": "pick-word", "picture": "truck", "options": ["truck", "duck", "sock", "color"], "answerNo": 1, "accepted": ["truck"]},
+          {"type": "copy-tiles", "word": "thank", "tiles": ["h", "k", "t", "n", "a"], "accepted": ["thank"]},
+          {"type": "copy-tiles", "word": "long", "tiles": ["o", "g", "l", "n"], "accepted": ["long"]},
+          {"type": "fill-letters", "word": "sock", "pattern": "so__", "tiles": ["c", "p", "k"], "accepted": ["sock"]},
+          {"type": "fill-letters", "word": "black", "pattern": "bla__", "tiles": ["k", "c", "g"], "accepted": ["black"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "닭과 시계 한 번 더",
+      "newWords": [],
+      "unitWords": ["chicken", "jacket", "eye", "rock", "ring", "clock", "book", "neck", "thick", "snack"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "chicken", "options": ["cheese", "jacket", "eye", "chicken"], "answerNo": 4, "accepted": ["chicken"]},
+          {"type": "pick-word", "picture": "clock", "options": ["rock", "ring", "clock", "cake"], "answerNo": 3, "accepted": ["clock"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["o", "b", "k", "o"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "neck", "tiles": ["k", "e", "c", "n"], "accepted": ["neck"]},
+          {"type": "fill-letters", "word": "thick", "pattern": "thi__", "tiles": ["p", "c", "k"], "accepted": ["thick"]},
+          {"type": "fill-letters", "word": "snack", "pattern": "sna__", "tiles": ["k", "g", "c"], "accepted": ["snack"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 1,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "왕과 나무 한 번 더",
+      "newWords": [],
+      "unitWords": ["king", "thank", "long", "tree", "thick", "snack", "song", "color", "swing", "bank"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "king", "options": ["king", "wing", "thank", "long"], "answerNo": 1, "accepted": ["king"]},
+          {"type": "pick-word", "picture": "tree", "options": ["three", "tree", "thick", "snack"], "answerNo": 2, "accepted": ["tree"]},
+          {"type": "copy-tiles", "word": "song", "tiles": ["n", "o", "s", "g"], "accepted": ["song"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["r", "o", "o", "c", "l"], "accepted": ["color"]},
+          {"type": "fill-letters", "word": "swing", "pattern": "swi__", "tiles": ["n", "p", "g"], "accepted": ["swing"]},
+          {"type": "fill-letters", "word": "bank", "pattern": "ba__", "tiles": ["p", "n", "k"], "accepted": ["bank"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "알록달록 자동차 놀이",
+      "newWords": ["black", "pink", "long", "blue", "color"],
+      "unitWords": ["black", "pink", "blue", "color", "long"],
+      "preview": [
+        {"word": "black", "meaningKo": "검은, 검은색", "example": "My car is black."},
+        {"word": "pink", "meaningKo": "분홍의, 분홍색", "example": "It is pink."},
+        {"word": "long", "meaningKo": "긴", "example": "The bus is long."},
+        {"word": "blue", "meaningKo": "파란, 파란색", "example": "My kite is blue."},
+        {"word": "color", "meaningKo": "색, 색깔", "example": "I like this color."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "black", "options": ["ball", "bike", "black", "box"], "answerNo": 3, "accepted": ["black"]},
+          {"type": "pick-word", "picture": "pink", "options": ["piano", "kite", "drum", "pink"], "answerNo": 4, "accepted": ["pink"]},
+          {"type": "copy-tiles", "word": "blue", "tiles": ["u", "b", "e", "l"], "accepted": ["blue"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["c", "l", "r", "o", "o"], "accepted": ["color"]},
+          {"type": "fill-letters", "word": "long", "pattern": "lo__", "tiles": ["g", "p", "n"], "accepted": ["long"]},
+          {"type": "fill-letters", "word": "pink", "pattern": "pi__", "tiles": ["m", "k", "n"], "accepted": ["pink"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "트럭 타고 출발",
+      "newWords": ["thank", "duck", "sock", "truck", "bird"],
+      "unitWords": ["truck", "sock", "thank", "bird", "duck", "black"],
+      "preview": [
+        {"word": "thank", "meaningKo": "고마워하다", "example": "Oh, thank you!"},
+        {"word": "duck", "meaningKo": "오리", "example": "It is a duck."},
+        {"word": "sock", "meaningKo": "양말", "example": "It is a blue sock."},
+        {"word": "truck", "meaningKo": "트럭", "example": "This is a toy truck."},
+        {"word": "bird", "meaningKo": "새", "example": "It is a red bird."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "truck", "options": ["top", "truck", "drum", "tent"], "answerNo": 2, "accepted": ["truck"]},
+          {"type": "pick-word", "picture": "sock", "options": ["sock", "six", "star", "ship"], "answerNo": 1, "accepted": ["sock"]},
+          {"type": "copy-tiles", "word": "thank", "tiles": ["a", "t", "n", "h", "k"], "accepted": ["thank"]},
+          {"type": "copy-tiles", "word": "bird", "tiles": ["i", "d", "r", "b"], "accepted": ["bird"]},
+          {"type": "fill-letters", "word": "duck", "pattern": "du__", "tiles": ["k", "g", "c"], "accepted": ["duck"]},
+          {"type": "fill-letters", "word": "black", "pattern": "bla__", "tiles": ["g", "k", "c"], "accepted": ["black"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "보물 상자 찾기 놀이",
+      "newWords": ["ring", "neck", "rock", "jacket", "book"],
+      "unitWords": ["ring", "jacket", "book", "neck", "rock", "thank"],
+      "preview": [
+        {"word": "ring", "meaningKo": "반지, 울리다", "example": "This is my ring."},
+        {"word": "neck", "meaningKo": "목", "example": "My neck is short."},
+        {"word": "rock", "meaningKo": "바위, 돌", "example": "It is a big rock."},
+        {"word": "jacket", "meaningKo": "재킷, 웃옷", "example": "This is my blue jacket."},
+        {"word": "book", "meaningKo": "책", "example": "It is my book."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "ring", "options": ["robot", "top", "wing", "ring"], "answerNo": 4, "accepted": ["ring"]},
+          {"type": "pick-word", "picture": "jacket", "options": ["kite", "jam", "jacket", "yo-yo"], "answerNo": 3, "accepted": ["jacket"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["b", "k", "o", "o"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "neck", "tiles": ["c", "n", "k", "e"], "accepted": ["neck"]},
+          {"type": "fill-letters", "word": "rock", "pattern": "ro__", "tiles": ["c", "g", "k"], "accepted": ["rock"]},
+          {"type": "fill-letters", "word": "thank", "pattern": "tha__", "tiles": ["p", "k", "n"], "accepted": ["thank"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 4,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "로봇과 우주 시계",
+      "newWords": ["chicken", "thick", "clock", "snack", "eye"],
+      "unitWords": ["clock", "eye", "thick", "snack", "chicken", "jacket"],
+      "preview": [
+        {"word": "chicken", "meaningKo": "닭, 닭고기", "example": "It is a chicken."},
+        {"word": "thick", "meaningKo": "두꺼운", "example": "My book is thick."},
+        {"word": "clock", "meaningKo": "시계", "example": "This is my clock."},
+        {"word": "snack", "meaningKo": "간식", "example": "Oh, a snack!"},
+        {"word": "eye", "meaningKo": "눈", "example": "It is an eye."}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "clock", "options": ["clock", "car", "cake", "kite"], "answerNo": 1, "accepted": ["clock"]},
+          {"type": "pick-word", "picture": "eye", "options": ["egg", "eye", "yo-yo", "top"], "answerNo": 2, "accepted": ["eye"]},
+          {"type": "copy-tiles", "word": "thick", "tiles": ["h", "c", "t", "k", "i"], "accepted": ["thick"]},
+          {"type": "copy-tiles", "word": "snack", "tiles": ["k", "s", "n", "a", "c"], "accepted": ["snack"]},
+          {"type": "fill-letters", "word": "chicken", "pattern": "chi__en", "tiles": ["c", "t", "k"], "accepted": ["chicken"]},
+          {"type": "fill-letters", "word": "jacket", "pattern": "ja__et", "tiles": ["k", "g", "c"], "accepted": ["jacket"]}
+        ]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 5,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "놀이터 그네 타기",
+      "newWords": ["king", "song", "swing", "bank", "tree"],
+      "unitWords": ["bank", "king", "ring", "song", "tree", "swing", "thick"],
+      "preview": [
+        {"word": "king", "meaningKo": "왕", "example": "The king is nice."},
+        {"word": "song", "meaningKo": "노래", "example": "It is a nice song."},
+        {"word": "swing", "meaningKo": "그네, 흔들다", "example": "It is a red swing."},
+        {"word": "bank", "meaningKo": "은행", "example": "The bank is big."},
+        {"word": "tree", "meaningKo": "나무", "example": "Wow, a big tree!"}
+      ],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bank", "options": ["bus", "ball", "bank", "box"], "answerNo": 3, "accepted": ["bank"]},
+          {"type": "pick-word", "picture": "king", "options": ["kite", "robot", "ring", "king"], "answerNo": 4, "accepted": ["king"]},
+          {"type": "copy-tiles", "word": "song", "tiles": ["g", "o", "s", "n"], "accepted": ["song"]},
+          {"type": "copy-tiles", "word": "tree", "tiles": ["r", "t", "e", "e"], "accepted": ["tree"]},
+          {"type": "fill-letters", "word": "swing", "pattern": "swi__", "tiles": ["g", "n", "p"], "accepted": ["swing"]},
+          {"type": "fill-letters", "word": "thick", "pattern": "thi__", "tiles": ["k", "p", "c"], "accepted": ["thick"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "분홍 양말 신고 달리기",
+      "newWords": [],
+      "unitWords": ["truck", "duck", "pink", "blue", "king", "thank", "tree", "sock", "long"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "truck", "options": ["duck", "truck", "drum", "top"], "answerNo": 2, "accepted": ["truck"]},
+          {"type": "pick-word", "picture": "pink", "options": ["pink", "piano", "blue", "king"], "answerNo": 1, "accepted": ["pink"]},
+          {"type": "copy-tiles", "word": "thank", "tiles": ["k", "h", "a", "t", "n"], "accepted": ["thank"]},
+          {"type": "copy-tiles", "word": "tree", "tiles": ["e", "t", "r", "e"], "accepted": ["tree"]},
+          {"type": "fill-letters", "word": "sock", "pattern": "so__", "tiles": ["k", "p", "c"], "accepted": ["sock"]},
+          {"type": "fill-letters", "word": "long", "pattern": "lo__", "tiles": ["p", "n", "g"], "accepted": ["long"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 7,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "왕관 쓰고 놀이하기",
+      "newWords": [],
+      "unitWords": ["bird", "swing", "ring", "king", "black", "thick", "jacket", "snack"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "bird", "options": ["ball", "bike", "kite", "bird"], "answerNo": 4, "accepted": ["bird"]},
+          {"type": "pick-word", "picture": "king", "options": ["swing", "ring", "king", "kite"], "answerNo": 3, "accepted": ["king"]},
+          {"type": "copy-tiles", "word": "black", "tiles": ["c", "l", "k", "b", "a"], "accepted": ["black"]},
+          {"type": "copy-tiles", "word": "thick", "tiles": ["i", "k", "h", "t", "c"], "accepted": ["thick"]},
+          {"type": "fill-letters", "word": "jacket", "pattern": "ja__et", "tiles": ["c", "k", "g"], "accepted": ["jacket"]},
+          {"type": "fill-letters", "word": "snack", "pattern": "sna__", "tiles": ["g", "k", "c"], "accepted": ["snack"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 8,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "우주 바위 탐험",
+      "newWords": [],
+      "unitWords": ["blue", "black", "rock", "clock", "sock", "color", "song", "chicken", "neck"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "blue", "options": ["blue", "black", "ball", "bus"], "answerNo": 1, "accepted": ["blue"]},
+          {"type": "pick-word", "picture": "rock", "options": ["robot", "rock", "clock", "sock"], "answerNo": 2, "accepted": ["rock"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["o", "c", "r", "l", "o"], "accepted": ["color"]},
+          {"type": "copy-tiles", "word": "song", "tiles": ["o", "s", "g", "n"], "accepted": ["song"]},
+          {"type": "fill-letters", "word": "chicken", "pattern": "chi__en", "tiles": ["t", "c", "k"], "accepted": ["chicken"]},
+          {"type": "fill-letters", "word": "neck", "pattern": "ne__", "tiles": ["c", "t", "k"], "accepted": ["neck"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "그네 타고 하늘 보기",
+      "newWords": [],
+      "unitWords": ["eye", "swing", "book", "duck", "bank", "ring"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "eye", "options": ["star", "egg", "eye", "box"], "answerNo": 3, "accepted": ["eye"]},
+          {"type": "pick-word", "picture": "swing", "options": ["ship", "sun", "wing", "swing"], "answerNo": 4, "accepted": ["swing"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["o", "o", "k", "b"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "duck", "tiles": ["k", "d", "u", "c"], "accepted": ["duck"]},
+          {"type": "fill-letters", "word": "bank", "pattern": "ba__", "tiles": ["k", "p", "n"], "accepted": ["bank"]},
+          {"type": "fill-letters", "word": "ring", "pattern": "ri__", "tiles": ["n", "m", "g"], "accepted": ["ring"]}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 10,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "반지 찾기 보드게임",
+      "newWords": [],
+      "unitWords": ["clock", "rock", "ring", "king", "pink", "truck", "thick"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "clock", "options": ["car", "clock", "rock", "kite"], "answerNo": 2, "accepted": ["clock"]},
+          {"type": "pick-word", "picture": "ring", "options": ["ring", "king", "bike", "robot"], "answerNo": 1, "accepted": ["ring"]},
+          {"type": "copy-tiles", "word": "pink", "tiles": ["k", "p", "n", "i"], "accepted": ["pink"]},
+          {"type": "copy-tiles", "word": "truck", "tiles": ["c", "t", "k", "r", "u"], "accepted": ["truck"]},
+          {"type": "fill-letters", "word": "king", "pattern": "ki__", "tiles": ["p", "g", "n"], "accepted": ["king"]},
+          {"type": "fill-letters", "word": "thick", "pattern": "thi__", "tiles": ["c", "k", "p"], "accepted": ["thick"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 1,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "트럭과 오리 한 번 더",
+      "newWords": [],
+      "unitWords": ["duck", "sock", "color", "truck", "blue", "black", "bird", "pink", "thank", "long"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "duck", "options": ["sock", "color", "truck", "duck"], "answerNo": 4, "accepted": ["duck"]},
+          {"type": "pick-word", "picture": "blue", "options": ["black", "bird", "blue", "pink"], "answerNo": 3, "accepted": ["blue"]},
+          {"type": "copy-tiles", "word": "thank", "tiles": ["n", "h", "t", "k", "a"], "accepted": ["thank"]},
+          {"type": "copy-tiles", "word": "long", "tiles": ["g", "l", "o", "n"], "accepted": ["long"]},
+          {"type": "fill-letters", "word": "truck", "pattern": "tru__", "tiles": ["g", "k", "c"], "accepted": ["truck"]},
+          {"type": "fill-letters", "word": "pink", "pattern": "pi__", "tiles": ["k", "n", "m"], "accepted": ["pink"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 2,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "재킷 입고 한 번 더",
+      "newWords": [],
+      "unitWords": ["jacket", "chicken", "snack", "ring", "eye", "rock", "neck", "book", "thick", "clock"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "jacket", "options": ["jacket", "chicken", "snack", "ring"], "answerNo": 1, "accepted": ["jacket"]},
+          {"type": "pick-word", "picture": "eye", "options": ["egg", "eye", "rock", "neck"], "answerNo": 2, "accepted": ["eye"]},
+          {"type": "copy-tiles", "word": "book", "tiles": ["k", "o", "b", "o"], "accepted": ["book"]},
+          {"type": "copy-tiles", "word": "thick", "tiles": ["t", "k", "i", "h", "c"], "accepted": ["thick"]},
+          {"type": "fill-letters", "word": "clock", "pattern": "clo__", "tiles": ["k", "c", "g"], "accepted": ["clock"]},
+          {"type": "fill-letters", "word": "chicken", "pattern": "chi__en", "tiles": ["k", "c", "t"], "accepted": ["chicken"]}
+        ]
+      }
+    },
+    {
+      "kind": "remedial",
+      "lessonNo": 3,
+      "variant": 2,
+      "revision": 2,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "2716aa552775b51a044f514fa294df070f4d18a8246e81003e6897190e96e7da", "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005", "createdOn": "2026-10-23"},
+      "title": "은행 놀이 한 번 더",
+      "newWords": [],
+      "unitWords": ["song", "long", "swing", "thank", "thick", "bank", "tree", "color", "king", "snack"],
+      "preview": [],
+      "content": {
+        "shape": "items",
+        "items": [
+          {"type": "pick-word", "picture": "swing", "options": ["song", "long", "swing", "wing"], "answerNo": 3, "accepted": ["swing"]},
+          {"type": "pick-word", "picture": "bank", "options": ["thank", "ball", "thick", "bank"], "answerNo": 4, "accepted": ["bank"]},
+          {"type": "copy-tiles", "word": "tree", "tiles": ["e", "e", "t", "r"], "accepted": ["tree"]},
+          {"type": "copy-tiles", "word": "color", "tiles": ["l", "c", "o", "r", "o"], "accepted": ["color"]},
+          {"type": "fill-letters", "word": "king", "pattern": "ki__", "tiles": ["n", "p", "g"], "accepted": ["king"]},
+          {"type": "fill-letters", "word": "snack", "pattern": "sna__", "tiles": ["c", "k", "g"], "accepted": ["snack"]}
+        ]
+      }
+    }
+  ]
+}

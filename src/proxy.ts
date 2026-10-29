@@ -57,8 +57,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return new NextResponse(null, { status: 401 });
 }
 
+// 정적 파일 · 그림(images/) · 회화 선생님 모델 · 초상(teachers/ — 재배포가 허용된 공개 모델, 큰 파일 요청마다 proxy 를 부르지 않음,
+// 선생님 화면 plan 값 15 · 위험 14)은 거르지 않는다.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|images/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|images/|teachers/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
   ],
 };

@@ -5,7 +5,7 @@
 // '버튼 글자 22px' 는 누르는 것의 이름표(영역 이름 · 단계 · 수업 번호 · 띠 · 단추 글)에 건다. 카드 꼴 단추 안의 보조 줄은 안내 글이라
 // 누르는 것 안쪽에 [data-size-guide] 표시(그 요소 또는 누르는 것 안쪽 조상)가 있으면 20px 기준이다(13절 C82). 누르는 것 바깥 표시는 효과가 없다.
 // 기준 수는 4절 잠정 값이라 이름 붙인 상수다(P5b 시험과 같은 값).
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export const MIN_GUIDE_PX = 20;
 export const MIN_ENGLISH_PX = 24;
@@ -124,4 +124,42 @@ export async function childSizeBothWays(
   }
   await page.setViewportSize(CHILD_VIEWPORTS.portrait);
   return out;
+}
+
+/** 기울기 없는 레이아웃 상자(offset 너비 · 높이 · 쪽 위에서 잰 위 · 아래 끝). */
+export type LayoutBox = {
+  width: number;
+  height: number;
+  top: number;
+  bottom: number;
+};
+
+/**
+ * 요소들의 레이아웃 크기 · 자리(기울기 · 변형을 빼고 — offsetWidth · offsetHeight · offsetParent 사슬의 offsetTop 합). 포스트잇은 보드 꼴로
+ * 기울어 있어(board.tsx TILT) getBoundingClientRect 상자가 각도만큼 커지므로, 같은 크기 · 같은 아래 끝 단언은 이 값으로 잰다(디자인 fix 1b).
+ */
+export async function layoutBoxesOf(locator: Locator): Promise<LayoutBox[]> {
+  return locator.evaluateAll((els) =>
+    els.map((el) => {
+      const node = el as HTMLElement;
+      let top = 0;
+      for (
+        let n: HTMLElement | null = node;
+        n;
+        n = n.offsetParent as HTMLElement | null
+      )
+        top += n.offsetTop;
+      return {
+        width: node.offsetWidth,
+        height: node.offsetHeight,
+        top,
+        bottom: top + node.offsetHeight,
+      };
+    }),
+  );
+}
+
+/** 값들의 가장 큰 차이(같은 크기 단언용). */
+export function spreadOf(values: readonly number[]): number {
+  return values.length === 0 ? 0 : Math.max(...values) - Math.min(...values);
 }

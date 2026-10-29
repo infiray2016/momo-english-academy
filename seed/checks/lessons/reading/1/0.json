@@ -1,0 +1,992 @@
+{
+  "records": [
+    {
+      "cell": "lesson:reading:1:0:alphabet:1:1",
+      "contentHash": "3b7efd513b118fa8cf34893283579a93ddfb5b324690973e0fe276b68b9c1787",
+      "solve": {
+        "at": "2026-10-22T19:20:21.633Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1789,
+        "outputTokens": 163,
+        "costUsd": 0.005208,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:2:1",
+      "contentHash": "4ab2c4d669a6cd53754bc4943eb155273f4eecedc0efb0d100ed7fd3c394f36c",
+      "solve": {
+        "at": "2026-10-22T19:20:24.764Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1790,
+        "outputTokens": 163,
+        "costUsd": 0.00521,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:3:1",
+      "contentHash": "1d478cbea10b8a1d5e34f24324e88d531b35365df9817fe79abe8e29108cb13a",
+      "solve": {
+        "at": "2026-10-22T19:20:30.107Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1803,
+        "outputTokens": 163,
+        "costUsd": 0.005236,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:4:1",
+      "contentHash": "14391cf582f3cbd68d0df02e98dcd69e5fa6001ecdb68c824639487b0b15da9f",
+      "solve": {
+        "at": "2026-10-22T19:20:32.303Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1808,
+        "outputTokens": 163,
+        "costUsd": 0.005246,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:5:1",
+      "contentHash": "65ca88a0d9744d381d4db3ba2bac7129ba9e005efc7303d360fa1031174509d9",
+      "solve": {
+        "at": "2026-10-22T19:20:34.449Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1807,
+        "outputTokens": 163,
+        "costUsd": 0.005244,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:6:1",
+      "contentHash": "1e5a16514f63a7bdf16d05fe200249148e617346cde88851b225186b10339ad5",
+      "solve": {
+        "at": "2026-10-22T19:20:36.795Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1818,
+        "outputTokens": 163,
+        "costUsd": 0.005266,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:7:1",
+      "contentHash": "7d239ad1e61849bec70bb22663c698f19c9330ddb8597dcbd9b9eb1e7e5e7762",
+      "solve": {
+        "at": "2026-10-22T19:20:38.953Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1796,
+        "outputTokens": 163,
+        "costUsd": 0.005222,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:8:1",
+      "contentHash": "7ea9bce319b865945136a6a398de3bb6886c4e0b7fe3d23371b3d65abc606185",
+      "solve": {
+        "at": "2026-10-22T19:20:41.061Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1810,
+        "outputTokens": 163,
+        "costUsd": 0.00525,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:9:1",
+      "contentHash": "e0080cac32d9ca3f41eeda2402162dca79a0ea49b701f720557f90701e5f0298",
+      "solve": {
+        "at": "2026-10-22T19:20:43.346Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1813,
+        "outputTokens": 163,
+        "costUsd": 0.005256,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:10:1",
+      "contentHash": "25d92a074f07ee34cb878ca60f0be91853fe946b8f270a3b7433212ee56caf6f",
+      "solve": {
+        "at": "2026-10-22T19:20:45.330Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1815,
+        "outputTokens": 163,
+        "costUsd": 0.00526,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:1:1",
+      "contentHash": "86f739a53aa0067d3de08dee5ab3ebb306639533f845ffab5c6cd0fe6b3e6ab1",
+      "solve": {
+        "at": "2026-10-22T19:20:47.703Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1807,
+        "outputTokens": 163,
+        "costUsd": 0.005244,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:2:1",
+      "contentHash": "870aceaf4337a1d43325d9b830312868354b9c8cec2e5d9c3d6c28f3a21daee2",
+      "solve": {
+        "at": "2026-10-22T19:20:49.825Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1826,
+        "outputTokens": 163,
+        "costUsd": 0.005282,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:3:1",
+      "contentHash": "3d1ac6bc0850d352e58389ac8d6e61316b708f65527462bde7397c3aea0c903f",
+      "solve": {
+        "at": "2026-10-22T19:20:51.875Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1818,
+        "outputTokens": 163,
+        "costUsd": 0.005266,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 1
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:1:2",
+      "contentHash": "3554d958da07565c8ca88704e4e1ea4335c3dca854839db98614a68b2ce7c66b",
+      "solve": {
+        "at": "2026-10-22T19:20:53.984Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1789,
+        "outputTokens": 163,
+        "costUsd": 0.005208,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:2:2",
+      "contentHash": "9dffffda444720dacdd6cf6b98f5643f74a0d1a7913e916e464b74c7b7c16d96",
+      "solve": {
+        "at": "2026-10-22T19:20:56.117Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1793,
+        "outputTokens": 163,
+        "costUsd": 0.005216,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:3:2",
+      "contentHash": "2d91e6eb0719c5cc3bf18cf28cbc3a86f867183bad5e50acb3a92de67c3e6c75",
+      "solve": {
+        "at": "2026-10-22T19:20:58.305Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1807,
+        "outputTokens": 163,
+        "costUsd": 0.005244,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:4:2",
+      "contentHash": "d4a4159644898af50f1ce4dbe159306460872623054441b77be7acd37709bf85",
+      "solve": {
+        "at": "2026-10-22T19:21:00.130Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1808,
+        "outputTokens": 163,
+        "costUsd": 0.005246,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:5:2",
+      "contentHash": "ce707af0221591c5998866c1ab6a54ced0c19c909eed58c91700e421a0fe9cdd",
+      "solve": {
+        "at": "2026-10-22T19:21:02.119Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1808,
+        "outputTokens": 163,
+        "costUsd": 0.005246,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:6:2",
+      "contentHash": "1316199e2967a60c4d9cd51cdc0607a2852676379baf65db7ebb97534088ce13",
+      "solve": {
+        "at": "2026-10-22T19:21:04.182Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1810,
+        "outputTokens": 163,
+        "costUsd": 0.00525,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:7:2",
+      "contentHash": "8d82e695f44077e233a45798e684db027b472e572a3a2a3f397b1ea3111020dd",
+      "solve": {
+        "at": "2026-10-22T19:21:06.376Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1807,
+        "outputTokens": 163,
+        "costUsd": 0.005244,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:8:2",
+      "contentHash": "145ab369e673ee107f8bad0d727e2f9d3edd6c4e925a7f130e4d549538a8dbd7",
+      "solve": {
+        "at": "2026-10-22T19:21:08.949Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1797,
+        "outputTokens": 163,
+        "costUsd": 0.005224,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:9:2",
+      "contentHash": "31fd0c5313d4bc7af1d360b1f1463264ab4c4236b513ba286e70b33ae981cb5a",
+      "solve": {
+        "at": "2026-10-22T19:21:12.086Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1831,
+        "outputTokens": 163,
+        "costUsd": 0.005292,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:alphabet:10:2",
+      "contentHash": "e8b45af498cf0a2281e4b9e39f1041bf02aec3b46ba2d22f136fdb7edb171652",
+      "solve": {
+        "at": "2026-10-22T19:21:14.162Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1797,
+        "outputTokens": 163,
+        "costUsd": 0.005224,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:1:2",
+      "contentHash": "ac643679ec11e8e5e2a35f3c6a5f45b4542410eb50d13e4a823d51b26d7ebb21",
+      "solve": {
+        "at": "2026-10-22T19:21:16.512Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1806,
+        "outputTokens": 163,
+        "costUsd": 0.005242,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:2:2",
+      "contentHash": "7483ff97f911bb3e92786217730c5c402d06dddd566df5aecb3c67d19fe0c421",
+      "solve": {
+        "at": "2026-10-22T19:21:19.214Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1829,
+        "outputTokens": 163,
+        "costUsd": 0.005288,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 2
+          }
+        ]
+      }
+    },
+    {
+      "cell": "lesson:reading:1:0:remedial:3:2",
+      "contentHash": "aea885af2ddfabe7141bf6c013cd9608e0de720831038b54d7974b2c49f3495b",
+      "solve": {
+        "at": "2026-10-22T19:21:21.846Z",
+        "model": "claude-sonnet-5-5",
+        "inputTokens": 1817,
+        "outputTokens": 163,
+        "costUsd": 0.005264,
+        "items": [
+          {
+            "no": 1,
+            "verdict": "same",
+            "solverAnswer": 2
+          },
+          {
+            "no": 2,
+            "verdict": "same",
+            "solverAnswer": 3
+          },
+          {
+            "no": 3,
+            "verdict": "same",
+            "solverAnswer": 1
+          },
+          {
+            "no": 4,
+            "verdict": "same",
+            "solverAnswer": 4
+          },
+          {
+            "no": 5,
+            "verdict": "same",
+            "solverAnswer": 3
+          }
+        ]
+      }
+    }
+  ]
+}

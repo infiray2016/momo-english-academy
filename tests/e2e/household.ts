@@ -50,9 +50,15 @@ async function seedRevision(): Promise<number> {
   return latest;
 }
 
-/** 집을 넣고 프로필 id 와 PIN 을 돌려준다. 시각은 부르는 쪽이 넘기거나 시험을 돌린 때. */
+/**
+ * 집을 넣고 프로필 id 와 PIN 을 돌려준다. 시각은 부르는 쪽이 넘기거나 시험을 돌린 때. 회화 선생님(teacherKey)은 기본 비움 — 첫 실행과
+ * 같다(선생님 화면 plan 값 7). 회화 세션을 여는 시험은 talkHousehold(기본 미나)를 쓴다.
+ */
 export async function insertHousehold(
-  choices: Partial<FirstRunInput> = {},
+  {
+    teacherKey = null,
+    ...choices
+  }: Partial<FirstRunInput> & { teacherKey?: string | null } = {},
   at: Date = new Date(),
 ): Promise<{ profileId: string; pin: string }> {
   const db = e2eDb();
@@ -81,7 +87,7 @@ export async function insertHousehold(
   });
   const pinHash = await hash(input.pin);
   await db.transaction(async (tx) => {
-    await tx.insert(learning.profiles).values(made.profile);
+    await tx.insert(learning.profiles).values({ ...made.profile, teacherKey });
     await tx.insert(operations.parentAuth).values({
       kind: "pin",
       pinHash,

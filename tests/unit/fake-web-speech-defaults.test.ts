@@ -16,7 +16,10 @@ import {
 
 type Timer = { fn: () => void; ms: number; seq: number; cleared: boolean };
 
-function installWithStubWindow(recognitions: unknown[]) {
+function installWithStubWindow(
+  recognitions: unknown[],
+  synthesis?: { voices: unknown[] },
+) {
   const timers: Timer[] = [];
   const win: Record<string, unknown> = {
     setTimeout: (fn: () => void, ms: number) => {
@@ -35,6 +38,7 @@ function installWithStubWindow(recognitions: unknown[]) {
       name: "defaults",
       source: "손으로 씀 — 시험 안 장면",
       recognitions,
+      ...(synthesis === undefined ? {} : { synthesis }),
     }),
   );
   const runTimers = () => {
@@ -102,5 +106,30 @@ describe("가짜 Web Speech 기본값", () => {
     aborted.abort();
     runTimers();
     expect(afterAbort).toEqual(DEFAULT_ON_ABORT.map(label));
+  });
+
+  it("가짜 음성: 기록에 읽어 준 높이 · 목소리 이름이 spoken 과 같은 차례로 남는다(목소리 없으면 null)", () => {
+    const { win } = installWithStubWindow([{ events: [] }], {
+      voices: [
+        { name: "Samantha", lang: "en-US", localService: true, default: true },
+      ],
+    });
+    const record = win.__fakeSpeech as FakeSpeechRecord;
+    type Utterance = { pitch: number; voice: unknown };
+    const Ctor = win.SpeechSynthesisUtterance as new (
+      text: string,
+    ) => Utterance;
+    const synth = win.speechSynthesis as {
+      getVoices(): unknown[];
+      speak(u: Utterance): void;
+    };
+    const teacher = new Ctor("Hello.");
+    teacher.pitch = 1.08;
+    teacher.voice = synth.getVoices()[0];
+    synth.speak(teacher);
+    synth.speak(new Ctor("Plain."));
+    expect(record.spoken).toEqual(["Hello.", "Plain."]);
+    expect(record.pitches).toEqual([1.08, 1]);
+    expect(record.voices).toEqual(["Samantha", null]);
   });
 });

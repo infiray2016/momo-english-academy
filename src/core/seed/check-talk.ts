@@ -8,6 +8,7 @@ import {
   type Report,
   type SeedIssue,
 } from "@/core/seed/check-lesson";
+import { checkTeacherNames } from "@/core/seed/check-teacher";
 import { type TalkLesson, textsOfLesson } from "@/core/seed/schema/lesson";
 import type { TalkLevelSpec } from "@/core/seed/schema/reference";
 import type { TurnCard } from "@/core/seed/schema/talk";
@@ -22,7 +23,11 @@ import {
 } from "@/core/seed/structure";
 import { placeholdersIn, wordIdsIn } from "@/core/seed/text";
 
-/** 회화 몫의 영어 글 role(6.4 회화 행: 첫 말 · 예상 흐름 · 힌트 · 답 예시 · 더 이야기할 거리 · 정리 · 안전한 대사 · 끝인사). */
+/**
+ * 회화 몫의 영어 글 role(6.4 회화 행: 첫 말 · 힌트 · 답 예시 · 더 이야기할 거리 · 정리 · 안전한 대사 · 끝인사 · 미션).
+ * 예상 흐름(role flow)은 아이에게 보이지 않는 AI 지시 글이라 넣지 않는다 — 문장 길이 · 형태 범위 · 단원 단어 · 문장 통계 · 보강 덮기 세기에서 빠지고,
+ * 금지어 · 선생님 이름 검사는 받는다(C132 (3) · C134). 미션 영어 등 다른 prompt 역할 글은 지금 검사 그대로다.
+ */
 export const TALK_ROLES: readonly TextRole[] = [
   "tori",
   "hint",
@@ -699,6 +704,11 @@ export function checkTalkCard(
   checkMissions(lesson, spec, report);
   checkFirstQuestion(lesson, spec, report);
   checkPlaceholders(lesson, report);
+  checkTeacherNames(
+    textsOfLesson("talk", lesson),
+    ctx.index.teacherNames,
+    report,
+  );
   return out;
 }
 

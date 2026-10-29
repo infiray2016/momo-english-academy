@@ -10,6 +10,7 @@ import { childSizeBothWays } from "./child-size";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
+import { insertTalkLesson } from "./talk";
 
 test.beforeEach(resetHousehold);
 test.afterAll(closeE2eDb);
@@ -86,7 +87,7 @@ async function passReadingUnitOne(profileId: string) {
 const placementShown = (page: Page) =>
   expect(page.locator("[data-placement-screen][data-hydrated]")).toHaveCount(1);
 
-test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업 · 회화 준비 중 · 배치 평가 시작 · 문항 · 결과 · 세션 틀)의 안내 20px · 영어 24px · 버튼 글자 22px 이상, 누르는 곳 56px 이상, '%' 가 없고 세로 820 · 가로 1180 에서 가로 넘침이 없다", async ({
+test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업 · 회화 수업 목록 · 배치 평가 시작 · 문항 · 결과 · 세션 틀)의 안내 20px · 영어 24px · 버튼 글자 22px 이상, 누르는 곳 56px 이상, '%' 가 없고 세로 820 · 가로 1180 에서 가로 넘침이 없다", async ({
   page,
   browser,
   baseURL,
@@ -105,7 +106,10 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   problems.push(...(await childSizeBothWays(access, "접근 코드", "main")));
   await anonymous.close();
 
-  const { profileId } = await insertHousehold({ startLevels: { reading: 1 } });
+  // 회화도 1단계로(회화 수업 목록을 훑는다 — 값 12)
+  const { profileId } = await insertHousehold({
+    startLevels: { reading: 1, talk: 1 },
+  });
 
   // 홈(읽기 카드 · 배치 전 카드 · 회화 카드)
   await page.goto("/");
@@ -114,9 +118,13 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
   problems.push(...(await childSizeBothWays(page, "홈")));
 
-  // 회화 준비 중(부모용 작은 글은 뺀다)
-  await page.goto("/talk");
-  problems.push(...(await childSizeBothWays(page, "회화 준비 중")));
+  // 회화 수업 목록(값 12 — '토리가 준비 중이에요' 쪽은 지움. 회화 단계를 그 자리에서 넣고 견본 수업 하나)
+  await insertTalkLesson({ level: 1 });
+  await page.goto("/talk/lessons");
+  await expect(page.locator("[data-lesson-board][data-hydrated]")).toHaveCount(
+    1,
+  );
+  problems.push(...(await childSizeBothWays(page, "회화 수업 목록")));
 
   // 세션 틀(진행 세션을 넣고 연다): 미리보기 → 지문 → 문항
   const cell = await readingCell(1, "assigned", 1);

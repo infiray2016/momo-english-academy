@@ -1,6 +1,13 @@
 // 규격 파일 묶음과 정합(plan-p04b '규격 파일 정합'). 규격 파일을 읽기 좋은 꼴로 묶어(index) 칸 검사(P4b · P4c)에 내주고,
 // 규격 파일끼리 맞는지를 본다. 정합 위반은 모두 오류다(plan-p04a 정할 것 ㄹ). DB 없는 순수 함수다.
 // Zod 규격에서 깨진 규격 파일은 넘기지 않는다(Partial). 빠진 파일을 쓰는 정합 검사는 건너뛰고, P4c 가 '규격 파일 오류로 건너뜀'을 보고한다.
+import {
+  checkTeacherNamesInSpecs,
+  checkTeacherRoster,
+  type TeacherNames,
+  teacherNamesOf,
+} from "@/core/seed/check-teacher";
+import type { SeedIssue } from "@/core/seed/issue";
 import type {
   ForbiddenFile,
   FormEntry,
@@ -18,6 +25,7 @@ import type {
   VocabEntry,
   VocabFile,
 } from "@/core/seed/schema/reference";
+import type { TeachersFile } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   type Area,
@@ -31,6 +39,7 @@ import {
   LEVEL_MIN,
   SEED_FILES,
   type SeedFileName,
+  TEACHER_GREETING_LEVEL,
   UNITS_PER_LEVEL,
 } from "@/core/seed/structure";
 import { buildLexicon, type Lexicon } from "@/core/seed/text";
@@ -42,18 +51,8 @@ import {
   type UnitFrame,
 } from "@/core/vocab/allocate";
 
-/** 검사 결과 하나(규격 파일 정합 · 칸 검사 공통). 경로는 그 파일 안의 점 경로다. */
-export type SeedIssue = {
-  rule: string;
-  severity: "error" | "warning";
-  /** 한국어 설명. */
-  message: string;
-  /** seed/ 뿌리 기준 파일 경로. */
-  file: string;
-  /** 칸 키(칸 검사일 때). */
-  cell?: string;
-  path: string;
-};
+/** 검사 결과 하나 — 정의는 잎 모듈 issue.ts(가져오기 순환을 끊으려고 옮김). */
+export type { SeedIssue };
 
 /** 규격 파일 열(이름은 `SEED_FILES` 의 열쇠와 같다). */
 export type ReferenceFiles = {
@@ -67,6 +66,7 @@ export type ReferenceFiles = {
   forbidden: ForbiddenFile;
   forms: ListFormsFile;
   metaSentences: MetaSentencesFile;
+  teachers: TeachersFile;
 };
 
 /** 검증기가 읽는 구간 키 8종(12절, plan-p04a '설정값 시드'). */
@@ -127,6 +127,8 @@ export type ReferenceIndex = {
   forbidden: ForbiddenFile;
   homophones: HomophonesFile;
   metaSentences: MetaSentencesFile;
+  /** '선생님 이름' 검사가 막는 이름(옛 이름 Tori · 토리 + 명단 이름, 6.4 · C130). 명단이 없거나 깨졌으면 옛 이름만. */
+  teacherNames: TeacherNames;
   /** 단원 틀(그 단계 규격 · 단원 규격 · 설정값이 있을 때). */
   frame(area: Area, level: number, unit: number): UnitFrame | undefined;
   /** 단원 배정표(단원 틀이 있을 때). */
@@ -176,6 +178,7 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
     return value;
   };
   const vocab = new Map(vocabList.map((v) => [v.word, v]));
+  const lexicon = buildLexicon(vocabList);
   const images = new Map(imageList.map((i) => [i.key, i]));
   const levelSpecMap = new Map(
     levelSpecs.map((s) => [`${s.area}:${s.level}`, s]),
@@ -500,6 +503,22 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
     }
   });
 
+  // ── 회화 선생님 명단(6.4 명단 자료, C130) ──
+  if (files.teachers) {
+    const greeting = levelSpecMap.get(`talk:${TEACHER_GREETING_LEVEL}`);
+    issues.push(
+      ...checkTeacherRoster(files.teachers, {
+        lexicon,
+        forbidden: files.forbidden ?? EMPTY_FORBIDDEN,
+        ...(greeting ? { greetingMaxWords: greeting.sentenceMaxWords } : {}),
+      }),
+    );
+  }
+
+  // 회화 단원 규격 주제 · 단계 규격 can-do 의 '선생님 이름'(6.4 · C132 (2)).
+  const teacherNames = teacherNamesOf(files.teachers);
+  issues.push(...checkTeacherNamesInSpecs(levelSpecs, unitSpecs, teacherNames));
+
   // ── allocation(3.2) ──
   unitSpecs.forEach((spec, i) => {
     const result = allocation(spec.area, spec.level, spec.unit);
@@ -527,13 +546,14 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
       unitSpecs
         .filter((u) => u.area === area && u.level === level)
         .sort((a, b) => a.unit - b.unit),
-    lexicon: buildLexicon(vocabList),
+    lexicon,
     vocab,
     images,
     forms,
     forbidden: files.forbidden ?? EMPTY_FORBIDDEN,
     homophones: files.homophones ?? { groups: [] },
     metaSentences: files.metaSentences ?? { phrases: [] },
+    teacherNames,
     frame,
     allocation,
     allowedForms: (area, level, scope) => {

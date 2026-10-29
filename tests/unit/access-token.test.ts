@@ -1,4 +1,4 @@
-// AC-1a 의 P3b 몫(12자 규칙 · argon2id · 코드 바꾸면 쿠키 무효)과 토큰 · IP 해시(plan-p03b 증명 표).
+// AC-1a 의 P3b 몫(길이 규칙 — C147 로 10자 · argon2id · 코드 바꾸면 쿠키 무효)과 토큰 · IP 해시(plan-p03b 증명 표).
 // 견본 코드 · 해시 · 난수는 실행 때 만든다. 시각은 인자로 넘긴다.
 import { randomBytes, randomInt } from "node:crypto";
 import { describe, expect, it } from "vitest";
@@ -43,7 +43,7 @@ const nonce = () => new Uint8Array(randomBytes(NONCE_BYTES));
 const randomKeyMaterial = () => randomBytes(32).toString("base64url");
 
 describe("접근 코드 해시", () => {
-  it("AC-1a 12자보다 짧거나 영문 · 숫자 밖 글자가 든 접근 코드는 해시를 만들지 않는다", async () => {
+  it("AC-1a 10자보다 짧거나 영문 · 숫자 밖 글자가 든 접근 코드는 해시를 만들지 않는다", async () => {
     const valid = randomCode(ACCESS_CODE_MIN_LENGTH);
     const bad = [
       randomCode(ACCESS_CODE_MIN_LENGTH - 1),

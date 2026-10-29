@@ -47,6 +47,10 @@ import {
 } from "@/components/board/board";
 import { AiRest } from "@/components/session/ai-rest";
 import {
+  MicBlockedText,
+  useIpadSafari,
+} from "@/components/session/mic-blocked";
+import {
   PassageActivity,
   type PassageInput,
   QuestionActivity,
@@ -96,6 +100,7 @@ import {
   speakingCounters,
   speakingCountersStart,
 } from "@/core/speaking/judge";
+import { speakRateOf } from "@/core/speech/pace";
 import { type AttemptQueue, createAttemptQueue } from "@/lib/attempt-queue";
 import {
   markMicNoticeSeen,
@@ -106,6 +111,7 @@ import {
 } from "@/lib/mic-state";
 import { createSessionInputStore } from "@/lib/session-input";
 import { createBrowserSpeech } from "@/lib/speech/browser";
+import { pacedSpeech } from "@/lib/speech/paced";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import {
@@ -330,6 +336,7 @@ export function SessionFrame({ view }: { view: SessionView }) {
       view.composition !== null);
   const allRecorded = view.activities.every(recorded);
   const [blocked, setBlocked] = useState<Blocked | undefined>();
+  const ipadSafari = useIpadSafari();
   /** 1-가 하루 안전 상한 — 열 때(서버 화면 자료) · 쓰기 확인 도중(서버 액션)에 켜진다. */
   const [resting, setResting] = useState(view.aiResting);
   /** 내 문장 듣고 따라 말하기의 문장(확인을 낸 뒤 — 고쳤으면 고친 문장). */
@@ -435,12 +442,20 @@ export function SessionFrame({ view }: { view: SessionView }) {
     return () => created.dispose();
   }, []);
 
-  // 음성 접점은 렌더 뒤에 만든다(SpeechPort.device 는 useEffect 에서만, P2b)
+  // 음성 접점은 렌더 뒤에 만든다(SpeechPort.device 는 useEffect 에서만, P2b). 읽기 지문 읽어 주기 · 말하기 들려주기는 문장마다
+  // 단계 구간 빠르기로 읽고 문장 사이에 쉰다(C125 — 쓰기는 그대로)
   useEffect(() => {
     const created = createBrowserSpeech({ settings: view.config.speech });
-    setSpeech(created);
+    setSpeech(
+      view.area === "writing"
+        ? created
+        : pacedSpeech(created, {
+            rate: speakRateOf(view.level, view.config.speech),
+            pauseMs: view.config.speech.sentencePauseMs,
+          }),
+    );
     return () => created.dispose();
-  }, [view.config.speech]);
+  }, [view.config.speech, view.area, view.level]);
 
   // 끝내기가 막혔으면 다시 연결될 때 다시 해 본다(7절 네트워크 행)
   // biome-ignore lint/correctness/useExhaustiveDependencies: finish 는 매 그림 새로 만들어진다
@@ -1069,9 +1084,8 @@ export function SessionFrame({ view }: { view: SessionView }) {
         data-blocked={blocked}
         className="flex flex-col items-center gap-8 py-6"
       >
-        <p className="text-center font-heading text-[28px] leading-snug">
-          {TEXT.blocked[blocked]}
-        </p>
+        {/* 아이패드 사파리면 둘째 줄 무음 모드(C111) */}
+        <MicBlockedText kind={blocked} ipadSafari={ipadSafari} />
         {/* '홈' 버튼 하나(7절) — 종이 띠의 '홈'은 숨기고 같은 길(대기열 비우기 · 세션은 진행으로) */}
         <BigButton disabled={busy} onClick={() => void home()}>
           {TEXT.home}

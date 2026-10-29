@@ -16,6 +16,14 @@ import {
   speakingCountersStart,
   speechEventOf,
 } from "@/core/speaking/judge";
+import {
+  endRuleFor,
+  type ListenOutcome,
+  recognitionErrorCodeOf,
+  speechSettingsFrom,
+  startListen,
+  stepListen,
+} from "@/core/speech/listen";
 import { bestMatchRate } from "@/core/speech/match-rate";
 import {
   defaultSettings,
@@ -235,6 +243,40 @@ describe("말하기 인식 셈(7절 오류 행)", () => {
     expect(quiet.verdicts).not.toContain("mic-stalled");
     // 감시 타이머가 두 번 멈춤(P2b stalled)은 바로 '마이크가 멈춤'
     expect(run([{ type: "stalled" }]).verdicts).toEqual(["mic-stalled"]);
+  });
+
+  it("C148 iPad WebKit 의 말소리 없는 듣기(단추 stop 뒤 'aborted · No speech detected')는 no-speech 로 세어 '마이크가 멈춤'이 아니라 '말소리 없음'으로 간다", () => {
+    const speech = speechSettingsFrom(
+      (key) =>
+        (TEST_SETTINGS as Record<string, { value: unknown }>)[key]?.value,
+    );
+    const rule = endRuleFor(
+      { area: "speaking", level: 1, answer: "one-sentence" },
+      speech,
+    );
+    // 듣기 하나: 시작 → 단추 → aborted 'No speech detected' → 끝(10-22 실측 꼴)
+    let step = startListen(rule, speech, 0);
+    step = stepListen(step.state, { type: "button", now: 2000 });
+    step = stepListen(step.state, {
+      type: "error",
+      now: 2010,
+      recognizer: 1,
+      code: recognitionErrorCodeOf("aborted", "No speech detected"),
+    });
+    const done = step.effects.find((e) => e.type === "done");
+    const outcome = (done as { outcome: ListenOutcome } | undefined)?.outcome;
+    expect(outcome).toMatchObject({ kind: "error", code: "no-speech" });
+    const event = outcome ? speechEventOf(outcome) : undefined;
+    if (!event) throw new Error("셈의 일이 있어야 한다");
+    const items = limits.silentItemsMax;
+    const events: SpeechEvent[] = [];
+    for (let i = 0; i < items; i++)
+      events.push(...times(limits.maxRetries, event), {
+        type: "next-activity",
+      });
+    const { verdicts } = run(events);
+    expect(verdicts).not.toContain("mic-stalled");
+    expect(verdicts.filter((v) => v !== "none").at(-1)).toBe("speech-silent");
   });
 
   it("말하기 인식 셈: no-speech 로만 끝난 활동이 speech.silent_items_max 개 이어지면 '말소리 없음'이고 사이에 들은 활동이 있으면 다시 센다", () => {

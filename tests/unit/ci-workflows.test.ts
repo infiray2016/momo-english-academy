@@ -279,7 +279,8 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
   it("AC-7g ci / seed-validate: PR 은 --complete-through 없이 돌아 빈 칸을 보고만 한다", () => {
     const text = read("ci.yml");
     expect(topBlock(text, "on")).toContain("  pull_request:");
-    const steps = stepsOf(jobsOf(text).get("seed-validate") ?? []);
+    // 2026-10-29 분 줄이기: 작은 관문 아홉은 작업 checks 하나의 단계다(설치 한 번)
+    const steps = stepsOf(jobsOf(text).get("checks") ?? []);
     const runs = steps
       .map((s) => s.run ?? "")
       .filter((r) => r.includes("seed:validate"));
@@ -288,9 +289,11 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
 
   it("식별자 대조 ci / check-ids: PR 마다 --fail-on 으로 돌고 그 규칙이 check-ids 의 CI 규칙 목록(design-number 뺀 아홉)과 같다", () => {
     const text = read("ci.yml");
-    const job = jobsOf(text).get("check-ids");
+    const job = jobsOf(text).get("checks");
     expect(job).toBeDefined();
-    const runs = stepsOf(job ?? []).map((s) => s.run ?? "");
+    const steps = stepsOf(job ?? []);
+    expect(steps.some((s) => s.name === "check-ids")).toBe(true);
+    const runs = steps.map((s) => s.run ?? "");
     expect(runs).toContain("pnpm install --frozen-lockfile");
     expect(runs).toContain(`pnpm check:ids --fail-on ${CI_FAIL_ON.join(",")}`);
     expect(CI_FAIL_ON).not.toContain("design-number");
@@ -420,7 +423,7 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
     ]);
   });
 
-  it("작업 이름: main · dev-load · keepalive · check-ids 는 다른 작업 파일의 작업 이름과 겹치지 않는다(Vercel Deployment Checks 는 이름으로 고른다)", () => {
+  it("작업 이름: main · dev-load · keepalive · checks 는 다른 작업 파일의 작업 이름과 겹치지 않는다(Vercel Deployment Checks 는 이름으로 고른다)", () => {
     const owners = new Map<string, string[]>();
     for (const file of workflowFiles()) {
       for (const name of jobsOf(read(file)).keys()) {
@@ -430,7 +433,7 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
     expect(owners.get("main")).toEqual(["main.yml"]);
     expect(owners.get("dev-load")).toEqual(["dev-load.yml"]);
     expect(owners.get("keepalive")).toEqual(["keepalive.yml"]);
-    expect(owners.get("check-ids")).toEqual(["ci.yml"]);
+    expect(owners.get("checks")).toEqual(["ci.yml"]);
     for (const [name, files] of owners) expect(files, name).toHaveLength(1);
   });
 });

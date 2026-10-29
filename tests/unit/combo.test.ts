@@ -227,10 +227,11 @@ describe("6.1 조합 · 요청 구성", () => {
     expect(check.fallbacks).toBe("default");
     expect(check.betas).toEqual([SERVER_SIDE_FALLBACK_BETA]);
 
+    // 1~3 구간을 Haiku 로 고른 때(C112 뒤 기본은 Sonnet)
     const talk = requestConfigOf({
       purpose: "talk_turn",
       level: levelOfBand("1-3"),
-      values,
+      values: { ...values, "ai.model.talk_turn.1-3": HAIKU },
       book,
     });
     expect(talk.model).toBe(HAIKU);

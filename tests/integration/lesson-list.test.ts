@@ -413,4 +413,43 @@ describe("수업 목록 자료", () => {
         .where(eq(levelSpecs.id, writingSpec.id));
     }
   });
+
+  it("수업 목록: 시험용 시드를 적재하면 회화 1단계 단원 1 목록에 대화 1 · 2 · 3 이 있고 '여기부터 해요'는 대화 1 이다", async () => {
+    // 회화도 1단계에서 시작한 집(시험용 시드 회화 적재 — task-p13-dev-seed-talk)
+    await db.delete(profiles);
+    await db.delete(parentAuth);
+    const saved = await saveFirstRun(
+      {
+        pin: "246813",
+        displayName: "모모",
+        englishName: "Momo",
+        avatar: AVATARS[0].id,
+        topicBundle: TOPIC_BUNDLES[0].id,
+        alphabetUnknown: false,
+        startLevels: { talk: 1 },
+        mic: { result: "not_checked" },
+      },
+      { db, now: () => SAVED_AT },
+    );
+    if (!saved.ok) throw new Error("첫 실행 저장 실패");
+    const unit1 = devSeedTree().lessons.find(
+      (f) => f.area === "talk" && f.level === 1 && f.unit === 1,
+    );
+    const expected = (unit1?.lessons ?? [])
+      .filter((l) => l.kind !== "remedial")
+      .map((l) => (l as { title: string }).title);
+    expect(expected).toHaveLength(3);
+    const list = await readLessonList({ db, area: "talk", now: NOW });
+    if (list.kind !== "list")
+      throw new Error(`회화 목록이 아니다: ${list.kind}`);
+    const items = [
+      ...(list.view.current?.front ?? []),
+      ...(list.view.current?.back ?? []),
+    ];
+    expect(items.map((i) => i.title).sort()).toEqual([...expected].sort());
+    expect(list.view.hereStart).toMatchObject({
+      kind: "lesson",
+      ref: { unit: 1, kind: "assigned", lessonNo: 1 },
+    });
+  });
 });

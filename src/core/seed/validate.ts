@@ -27,6 +27,10 @@ import {
 } from "@/core/seed/check-lesson";
 import { checkTalkCard, checkTalkUnit } from "@/core/seed/check-talk";
 import {
+  checkTeacherAssets,
+  type TeacherAssetIo,
+} from "@/core/seed/check-teacher";
+import {
   buildReferenceIndex,
   type ReferenceFiles,
   type ReferenceIndex,
@@ -63,6 +67,7 @@ import {
   UnitSpecsFileSchema,
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
+import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   AREAS,
@@ -472,6 +477,11 @@ export type ValidateOptions = {
   through?: number;
   /** 영역 거르기(기본 넷). */
   areas?: readonly Area[];
+  /**
+   * 선생님 자산 검사가 읽는 것(public/ · CREDITS.md · 해시 · 크기 상한, 6.4 자산 검사 · AC-19k). 넘기지 않으면 자산 검사를 건너뛴다.
+   * 명령(scripts/seed-validate.ts)이 저장소 뿌리에서 만들어 넘긴다.
+   */
+  teacherAssets?: TeacherAssetIo;
 };
 export type ReportError = {
   rule: string;
@@ -531,6 +541,7 @@ const REFERENCE_SCHEMAS: Record<SeedFileName, z.ZodType> = {
   forbidden: ForbiddenFileSchema,
   forms: ListFormsFileSchema,
   metaSentences: MetaSentencesFileSchema,
+  teachers: TeachersFileSchema,
 };
 
 function issuePath(prefix: string, path: readonly PropertyKey[]): string {
@@ -990,6 +1001,21 @@ export function validateSeed(
 ): SeedReport {
   const seed = collectCells(files, { areas: options.areas });
   const { areas, index, reference, errors, failedKeys, brokenKeys } = seed;
+  if (reference.teachers && options.teacherAssets) {
+    for (const i of checkTeacherAssets(
+      reference.teachers,
+      options.teacherAssets,
+    )) {
+      seed.referenceErrors++;
+      errors.push({
+        rule: i.rule,
+        cell: null,
+        file: i.file,
+        path: i.path,
+        message: i.message,
+      });
+    }
+  }
   const warnings: SeedWarning[] = [];
   const addIssues = (issues: readonly SeedIssue[], prefix: string) => {
     for (const i of issues) {

@@ -1,0 +1,4040 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 4,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "모모의 가방",
+   "newWords": [
+    "like",
+    "bag",
+    "pen",
+    "pencil",
+    "book"
+   ],
+   "unitWords": [
+    "like",
+    "bag",
+    "pen",
+    "pencil",
+    "book"
+   ],
+   "preview": [
+    {
+     "word": "like",
+     "meaningKo": "좋아하다",
+     "example": "I like milk."
+    },
+    {
+     "word": "bag",
+     "meaningKo": "가방",
+     "example": "This is my bag."
+    },
+    {
+     "word": "pen",
+     "meaningKo": "펜",
+     "example": "It is a black pen."
+    },
+    {
+     "word": "pencil",
+     "meaningKo": "연필",
+     "example": "This is my pencil."
+    },
+    {
+     "word": "book",
+     "meaningKo": "책",
+     "example": "I like this book."
+    }
+   ],
+   "content": {
+    "passage": "This is my bag. A pen and a pencil. I like the book.",
+    "targetWords": [
+     "like",
+     "bag",
+     "pen",
+     "pencil",
+     "book"
+    ],
+    "glossary": [
+     {
+      "surface": "bag",
+      "lemma": "bag",
+      "meaningKo": "가방"
+     },
+     {
+      "surface": "pen",
+      "lemma": "pen",
+      "meaningKo": "펜"
+     },
+     {
+      "surface": "pencil",
+      "lemma": "pencil",
+      "meaningKo": "연필"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "book",
+      "lemma": "book",
+      "meaningKo": "책"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my bag",
+      "options": [
+       "pen",
+       "bag",
+       "book",
+       "pencil"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bag 은 가방이에요. 가방 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pen",
+      "options": [
+       "pen",
+       "pencil",
+       "bag",
+       "book"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pen 은 펜이에요. pencil(연필)과 헷갈리지 않게 봐요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pencil",
+      "options": [
+       "book",
+       "bag",
+       "pencil",
+       "pen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pencil 은 연필이에요. 연필 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the book",
+      "options": [
+       "bag",
+       "pen",
+       "pencil",
+       "book"
+      ],
+      "answerNo": 4,
+      "explanationKo": "book 은 책이에요. 책 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "This is my bag.",
+      "options": [
+       "pencil",
+       "book",
+       "bag",
+       "pen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "이건 내 가방이라는 말이에요. bag 은 가방이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "오리 장난감과 책상",
+   "newWords": [
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "toy"
+   ],
+   "unitWords": [
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "toy",
+    "like",
+    "book",
+    "pen",
+    "bag",
+    "pencil"
+   ],
+   "preview": [
+    {
+     "word": "cup",
+     "meaningKo": "컵",
+     "example": "The cup is small."
+    },
+    {
+     "word": "map",
+     "meaningKo": "지도",
+     "example": "This is a map."
+    },
+    {
+     "word": "desk",
+     "meaningKo": "책상",
+     "example": "This is my desk."
+    },
+    {
+     "word": "chair",
+     "meaningKo": "의자",
+     "example": "This is my chair."
+    },
+    {
+     "word": "toy",
+     "meaningKo": "장난감",
+     "example": "This is my toy."
+    }
+   ],
+   "content": {
+    "passage": "My desk and chair. A cup and a map. I like my toy duck.",
+    "targetWords": [
+     "cup",
+     "map",
+     "desk",
+     "chair",
+     "toy"
+    ],
+    "glossary": [
+     {
+      "surface": "desk",
+      "lemma": "desk",
+      "meaningKo": "책상"
+     },
+     {
+      "surface": "chair",
+      "lemma": "chair",
+      "meaningKo": "의자"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "map",
+      "lemma": "map",
+      "meaningKo": "지도"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "desk",
+      "options": [
+       "chair",
+       "cup",
+       "desk",
+       "book"
+      ],
+      "answerNo": 3,
+      "explanationKo": "desk 는 책상이에요. 서랍 달린 책상 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chair",
+      "options": [
+       "map",
+       "pen",
+       "desk",
+       "chair"
+      ],
+      "answerNo": 4,
+      "explanationKo": "chair 는 의자예요. 앉는 의자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cup",
+      "options": [
+       "cup",
+       "map",
+       "bag",
+       "chair"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cup 은 컵이에요. 손잡이 달린 컵 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a map",
+      "options": [
+       "desk",
+       "map",
+       "cup",
+       "pencil"
+      ],
+      "answerNo": 2,
+      "explanationKo": "map 은 지도예요. 지도 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cup",
+      "options": [
+       "cup",
+       "pencil",
+       "chair",
+       "map"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cup 은 컵이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "방 정리 고마워",
+   "newWords": [
+    "drum",
+    "clock",
+    "lamp",
+    "bell",
+    "thank"
+   ],
+   "unitWords": [
+    "drum",
+    "clock",
+    "lamp",
+    "bell",
+    "thank",
+    "cup",
+    "desk",
+    "map",
+    "chair"
+   ],
+   "preview": [
+    {
+     "word": "drum",
+     "meaningKo": "북, 드럼",
+     "example": "I like the drum."
+    },
+    {
+     "word": "clock",
+     "meaningKo": "시계",
+     "example": "It is a big clock."
+    },
+    {
+     "word": "lamp",
+     "meaningKo": "램프, 전등",
+     "example": "This lamp is small."
+    },
+    {
+     "word": "bell",
+     "meaningKo": "종",
+     "example": "It is a little bell."
+    },
+    {
+     "word": "thank",
+     "meaningKo": "고마워하다",
+     "example": "Thank you, Tori!"
+    }
+   ],
+   "content": {
+    "passage": "A drum and a bell. The clock and the lamp. Thank you, Momo!",
+    "targetWords": [
+     "drum",
+     "clock",
+     "lamp",
+     "bell",
+     "thank"
+    ],
+    "glossary": [
+     {
+      "surface": "drum",
+      "lemma": "drum",
+      "meaningKo": "북, 드럼"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "clock",
+      "lemma": "clock",
+      "meaningKo": "시계"
+     },
+     {
+      "surface": "lamp",
+      "lemma": "lamp",
+      "meaningKo": "램프, 전등"
+     },
+     {
+      "surface": "thank",
+      "lemma": "thank",
+      "meaningKo": "고마워하다"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a drum",
+      "options": [
+       "bell",
+       "clock",
+       "lamp",
+       "drum"
+      ],
+      "answerNo": 4,
+      "explanationKo": "drum 은 북이에요. 북과 북채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bell",
+      "options": [
+       "lamp",
+       "bell",
+       "drum",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bell 은 종이에요. 종 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the clock",
+      "options": [
+       "clock",
+       "lamp",
+       "desk",
+       "bell"
+      ],
+      "answerNo": 1,
+      "explanationKo": "clock 은 시계예요. 시계 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the lamp",
+      "options": [
+       "clock",
+       "drum",
+       "lamp",
+       "map"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lamp 는 전등이에요. 불이 켜진 전등 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bell",
+      "options": [
+       "drum",
+       "bell",
+       "clock",
+       "chair"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bell 은 종이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "따뜻한 컵과 팽이",
+   "newWords": [
+    "cute",
+    "nice",
+    "name",
+    "hot",
+    "top"
+   ],
+   "unitWords": [
+    "cute",
+    "nice",
+    "name",
+    "hot",
+    "top",
+    "cup",
+    "like",
+    "drum",
+    "bell",
+    "lamp",
+    "clock",
+    "map",
+    "desk",
+    "bag"
+   ],
+   "preview": [
+    {
+     "word": "cute",
+     "meaningKo": "귀여운",
+     "example": "My cat is cute."
+    },
+    {
+     "word": "nice",
+     "meaningKo": "좋은, 멋진",
+     "example": "The cake is nice."
+    },
+    {
+     "word": "name",
+     "meaningKo": "이름",
+     "example": "My name is Tori."
+    },
+    {
+     "word": "hot",
+     "meaningKo": "뜨거운, 더운",
+     "example": "The sun is hot."
+    },
+    {
+     "word": "top",
+     "meaningKo": "팽이, 꼭대기",
+     "example": "This top is red."
+    }
+   ],
+   "content": {
+    "passage": "My name is Momo. The hot cup is nice. I like my cute top.",
+    "targetWords": [
+     "cute",
+     "nice",
+     "name",
+     "hot",
+     "top"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     },
+     {
+      "surface": "top",
+      "lemma": "top",
+      "meaningKo": "팽이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my cute top",
+      "options": [
+       "top",
+       "drum",
+       "bell",
+       "cup"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cute 는 귀엽다는 뜻이고, top 은 팽이예요. 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The hot cup",
+      "options": [
+       "lamp",
+       "top",
+       "cup",
+       "clock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "hot 은 뜨겁다는 뜻이에요. cup 은 컵이니까 컵 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "top",
+      "options": [
+       "bell",
+       "clock",
+       "drum",
+       "top"
+      ],
+      "answerNo": 4,
+      "explanationKo": "top 은 팽이예요. 빨간 나무 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cup",
+      "options": [
+       "map",
+       "cup",
+       "top",
+       "desk"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cup 은 컵이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I like my cute top.",
+      "options": [
+       "cup",
+       "bag",
+       "lamp",
+       "top"
+      ],
+      "answerNo": 4,
+      "explanationKo": "내 귀여운 팽이가 좋다는 말이에요. top 은 팽이예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "점심 뒤 그림 시간",
+   "newWords": [
+    "fan",
+    "pot",
+    "brush",
+    "lunch",
+    "thick"
+   ],
+   "unitWords": [
+    "fan",
+    "pot",
+    "brush",
+    "lunch",
+    "thick",
+    "like",
+    "cup",
+    "top",
+    "bell",
+    "lamp",
+    "clock",
+    "desk"
+   ],
+   "preview": [
+    {
+     "word": "fan",
+     "meaningKo": "선풍기, 부채",
+     "example": "The fan is red."
+    },
+    {
+     "word": "pot",
+     "meaningKo": "냄비, 화분",
+     "example": "The pot is hot."
+    },
+    {
+     "word": "brush",
+     "meaningKo": "솔, 붓",
+     "example": "It is my brush."
+    },
+    {
+     "word": "lunch",
+     "meaningKo": "점심",
+     "example": "I like lunch."
+    },
+    {
+     "word": "thick",
+     "meaningKo": "두꺼운",
+     "example": "The book is thick."
+    }
+   ],
+   "content": {
+    "passage": "I like lunch. A pot and a fan. My brush is thick.",
+    "targetWords": [
+     "fan",
+     "pot",
+     "brush",
+     "lunch",
+     "thick"
+    ],
+    "glossary": [
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     },
+     {
+      "surface": "pot",
+      "lemma": "pot",
+      "meaningKo": "냄비"
+     },
+     {
+      "surface": "fan",
+      "lemma": "fan",
+      "meaningKo": "부채"
+     },
+     {
+      "surface": "brush",
+      "lemma": "brush",
+      "meaningKo": "붓"
+     },
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pot",
+      "options": [
+       "fan",
+       "pot",
+       "brush",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pot 은 냄비예요. 뚜껑 덮인 냄비 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a fan",
+      "options": [
+       "top",
+       "pot",
+       "bell",
+       "fan"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fan 은 부채예요. 접는 부채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My brush",
+      "options": [
+       "pot",
+       "lamp",
+       "brush",
+       "fan"
+      ],
+      "answerNo": 3,
+      "explanationKo": "brush 는 붓이에요. 붓 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pot",
+      "options": [
+       "pot",
+       "brush",
+       "fan",
+       "clock"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pot 은 냄비예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fan",
+      "options": [
+       "fan",
+       "brush",
+       "pot",
+       "desk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fan 은 부채예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "토리의 귀여운 가방",
+   "newWords": [],
+   "unitWords": [
+    "name",
+    "like",
+    "cute",
+    "bag",
+    "pen",
+    "pencil",
+    "book",
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "clock"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My name is Tori. I like my cute bag. A pen and a pencil.",
+    "targetWords": [
+     "name",
+     "like",
+     "cute",
+     "bag",
+     "pen",
+     "pencil"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Tori",
+      "lemma": "Tori",
+      "meaningKo": "토리(이름)",
+      "proper": true
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     },
+     {
+      "surface": "bag",
+      "lemma": "bag",
+      "meaningKo": "가방"
+     },
+     {
+      "surface": "pen",
+      "lemma": "pen",
+      "meaningKo": "펜"
+     },
+     {
+      "surface": "pencil",
+      "lemma": "pencil",
+      "meaningKo": "연필"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my cute bag",
+      "options": [
+       "book",
+       "pen",
+       "bag",
+       "cup"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cute 는 귀엽다는 뜻이고, bag 은 가방이에요. 가방 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pen",
+      "options": [
+       "pen",
+       "pencil",
+       "map",
+       "bag"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pen 은 펜이에요. 검은 볼펜 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pencil",
+      "options": [
+       "bag",
+       "pencil",
+       "book",
+       "desk"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pencil 은 연필이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bag",
+      "options": [
+       "pencil",
+       "pen",
+       "chair",
+       "bag"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bag 은 가방이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pen",
+      "options": [
+       "book",
+       "pen",
+       "pencil",
+       "clock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pen 은 펜이에요. pencil(연필)과 다르게 생겼어요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "멋진 책상 꾸미기",
+   "newWords": [],
+   "unitWords": [
+    "nice",
+    "desk",
+    "chair",
+    "cup",
+    "like",
+    "map",
+    "lamp",
+    "bell",
+    "book",
+    "pen",
+    "top"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my nice desk. A chair and a cup. I like the map.",
+    "targetWords": [
+     "nice",
+     "desk",
+     "chair",
+     "cup",
+     "like",
+     "map"
+    ],
+    "glossary": [
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     },
+     {
+      "surface": "desk",
+      "lemma": "desk",
+      "meaningKo": "책상"
+     },
+     {
+      "surface": "chair",
+      "lemma": "chair",
+      "meaningKo": "의자"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "map",
+      "lemma": "map",
+      "meaningKo": "지도"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my nice desk",
+      "options": [
+       "chair",
+       "cup",
+       "map",
+       "desk"
+      ],
+      "answerNo": 4,
+      "explanationKo": "nice 는 멋지다는 뜻이고, desk 는 책상이에요. 책상 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a chair",
+      "options": [
+       "cup",
+       "desk",
+       "chair",
+       "lamp"
+      ],
+      "answerNo": 3,
+      "explanationKo": "chair 는 의자예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cup",
+      "options": [
+       "map",
+       "cup",
+       "desk",
+       "bell"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cup 은 컵이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the map",
+      "options": [
+       "map",
+       "chair",
+       "cup",
+       "book"
+      ],
+      "answerNo": 1,
+      "explanationKo": "map 은 지도예요. 세계 지도 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "desk",
+      "options": [
+       "pen",
+       "map",
+       "desk",
+       "top"
+      ],
+      "answerNo": 3,
+      "explanationKo": "desk 는 책상이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "거실 구경",
+   "newWords": [],
+   "unitWords": [
+    "toy",
+    "drum",
+    "bell",
+    "clock",
+    "like",
+    "lamp",
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "book"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is a toy drum. A bell and a clock. I like the lamp.",
+    "targetWords": [
+     "toy",
+     "drum",
+     "bell",
+     "clock",
+     "like",
+     "lamp"
+    ],
+    "glossary": [
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "drum",
+      "lemma": "drum",
+      "meaningKo": "북, 드럼"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "clock",
+      "lemma": "clock",
+      "meaningKo": "시계"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "lamp",
+      "lemma": "lamp",
+      "meaningKo": "램프, 전등"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a toy drum",
+      "options": [
+       "drum",
+       "bell",
+       "lamp",
+       "cup"
+      ],
+      "answerNo": 1,
+      "explanationKo": "toy 는 장난감이고, drum 은 북이에요. 북 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bell",
+      "options": [
+       "clock",
+       "drum",
+       "map",
+       "bell"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bell 은 종이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a clock",
+      "options": [
+       "lamp",
+       "clock",
+       "bell",
+       "desk"
+      ],
+      "answerNo": 2,
+      "explanationKo": "clock 은 시계예요. 자명종 시계 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the lamp",
+      "options": [
+       "drum",
+       "clock",
+       "lamp",
+       "chair"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lamp 는 전등이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I like the lamp.",
+      "options": [
+       "clock",
+       "bell",
+       "book",
+       "lamp"
+      ],
+      "answerNo": 4,
+      "explanationKo": "전등이 좋다는 말이에요. lamp 는 전등이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "찾았다, 내 팽이",
+   "newWords": [],
+   "unitWords": [
+    "top",
+    "bell",
+    "thank",
+    "like",
+    "drum",
+    "clock",
+    "lamp",
+    "pen",
+    "brush",
+    "fan"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My top and my bell! Thank you, Momo! I like the red top.",
+    "targetWords": [
+     "top",
+     "bell",
+     "thank",
+     "like"
+    ],
+    "glossary": [
+     {
+      "surface": "top",
+      "lemma": "top",
+      "meaningKo": "팽이"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "thank",
+      "lemma": "thank",
+      "meaningKo": "고마워하다"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "red",
+      "lemma": "red",
+      "meaningKo": "빨간"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the red top",
+      "options": [
+       "bell",
+       "top",
+       "drum",
+       "clock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "red 는 빨간, top 은 팽이예요. 빨간 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my bell",
+      "options": [
+       "bell",
+       "top",
+       "lamp",
+       "pen"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bell 은 종이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "top",
+      "options": [
+       "drum",
+       "bell",
+       "top",
+       "brush"
+      ],
+      "answerNo": 3,
+      "explanationKo": "top 은 팽이예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bell",
+      "options": [
+       "top",
+       "fan",
+       "clock",
+       "bell"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bell 은 종이에요. 종 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I like the red top.",
+      "options": [
+       "lamp",
+       "bell",
+       "top",
+       "clock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "빨간 팽이가 좋다는 말이에요. top 은 팽이예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "따뜻한 점심 밥상",
+   "newWords": [],
+   "unitWords": [
+    "lunch",
+    "hot",
+    "pot",
+    "thick",
+    "fan",
+    "brush",
+    "cup",
+    "lamp",
+    "book"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My lunch is hot. The pot is big. The jam is thick.",
+    "targetWords": [
+     "lunch",
+     "hot",
+     "pot",
+     "thick"
+    ],
+    "glossary": [
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운"
+     },
+     {
+      "surface": "pot",
+      "lemma": "pot",
+      "meaningKo": "냄비"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운, 걸쭉한"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pot",
+      "options": [
+       "fan",
+       "brush",
+       "pot",
+       "cup"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pot 은 냄비예요. 뚜껑 덮인 냄비 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The jam",
+      "options": [
+       "pot",
+       "cup",
+       "fan",
+       "jam"
+      ],
+      "answerNo": 4,
+      "explanationKo": "jam 은 잼이에요. 잼이 든 병 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pot",
+      "options": [
+       "pot",
+       "brush",
+       "cup",
+       "lamp"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pot 은 냄비예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "pot",
+       "jam",
+       "brush",
+       "fan"
+      ],
+      "answerNo": 2,
+      "explanationKo": "jam 은 잼이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pot is big.",
+      "options": [
+       "pot",
+       "jam",
+       "fan",
+       "book"
+      ],
+      "answerNo": 1,
+      "explanationKo": "냄비가 크다는 말이에요. pot 은 냄비예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "두꺼운 책과 지도",
+   "newWords": [],
+   "unitWords": [
+    "like",
+    "nice",
+    "toy",
+    "book",
+    "thick",
+    "cup",
+    "map",
+    "bag",
+    "pen",
+    "pot",
+    "desk",
+    "chair",
+    "bell",
+    "pencil",
+    "fan",
+    "brush",
+    "clock"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "I like my nice toy. The book is thick. A cup and a map.",
+    "targetWords": [
+     "like",
+     "nice",
+     "toy",
+     "book",
+     "thick",
+     "cup",
+     "map"
+    ],
+    "glossary": [
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "book",
+      "lemma": "book",
+      "meaningKo": "책"
+     },
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "map",
+      "lemma": "map",
+      "meaningKo": "지도"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The book",
+      "options": [
+       "bag",
+       "pen",
+       "pot",
+       "book"
+      ],
+      "answerNo": 4,
+      "explanationKo": "book 은 책이에요. 펼친 책 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cup",
+      "options": [
+       "desk",
+       "cup",
+       "chair",
+       "bell"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cup 은 컵이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a map",
+      "options": [
+       "map",
+       "pencil",
+       "bag",
+       "fan"
+      ],
+      "answerNo": 1,
+      "explanationKo": "map 은 지도예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cup",
+      "options": [
+       "pen",
+       "chair",
+       "cup",
+       "brush"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cup 은 컵이에요. 손잡이 달린 컵 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "map",
+      "options": [
+       "desk",
+       "map",
+       "pencil",
+       "clock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "map 은 지도예요. 세계 지도 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "이웃집 놀러 가기",
+   "newWords": [],
+   "unitWords": [
+    "name",
+    "clock",
+    "cute",
+    "lamp",
+    "hot",
+    "drum",
+    "bell",
+    "cup",
+    "book",
+    "top",
+    "pot",
+    "map",
+    "brush",
+    "fan",
+    "bag",
+    "pen"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Hello, my name is Momo. The clock is cute. The lamp is hot.",
+    "targetWords": [
+     "name",
+     "clock",
+     "cute",
+     "lamp",
+     "hot"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     },
+     {
+      "surface": "clock",
+      "lemma": "clock",
+      "meaningKo": "시계"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     },
+     {
+      "surface": "lamp",
+      "lemma": "lamp",
+      "meaningKo": "램프, 전등"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The clock",
+      "options": [
+       "clock",
+       "drum",
+       "bell",
+       "cup"
+      ],
+      "answerNo": 1,
+      "explanationKo": "clock 은 시계예요. 시계 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The lamp",
+      "options": [
+       "book",
+       "top",
+       "lamp",
+       "pot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lamp 는 전등이에요. 불이 켜진 전등 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "clock",
+      "options": [
+       "bell",
+       "top",
+       "map",
+       "clock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "clock 은 시계예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "lamp",
+      "options": [
+       "brush",
+       "lamp",
+       "drum",
+       "fan"
+      ],
+      "answerNo": 2,
+      "explanationKo": "lamp 는 전등이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The clock is cute.",
+      "options": [
+       "lamp",
+       "bag",
+       "pen",
+       "clock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "시계가 귀엽다는 말이에요. clock 은 시계예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "더운 날 소풍",
+   "newWords": [],
+   "unitWords": [
+    "hot",
+    "fan",
+    "thank",
+    "like",
+    "lunch",
+    "drum",
+    "pencil",
+    "lamp",
+    "chair",
+    "desk",
+    "clock",
+    "brush",
+    "top",
+    "bell",
+    "pot",
+    "book",
+    "cup"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The sun is hot. A fan, thank you! I like this lunch.",
+    "targetWords": [
+     "hot",
+     "fan",
+     "thank",
+     "like",
+     "lunch"
+    ],
+    "glossary": [
+     {
+      "surface": "sun",
+      "lemma": "sun",
+      "meaningKo": "해"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운, 더운"
+     },
+     {
+      "surface": "fan",
+      "lemma": "fan",
+      "meaningKo": "부채"
+     },
+     {
+      "surface": "thank",
+      "lemma": "thank",
+      "meaningKo": "고마워하다"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The sun",
+      "options": [
+       "fan",
+       "sun",
+       "drum",
+       "pencil"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sun 은 해예요. 빛살 있는 해 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A fan",
+      "options": [
+       "lamp",
+       "chair",
+       "desk",
+       "fan"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fan 은 부채예요. 접는 부채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "sun",
+      "options": [
+       "clock",
+       "brush",
+       "sun",
+       "top"
+      ],
+      "answerNo": 3,
+      "explanationKo": "sun 은 해예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fan",
+      "options": [
+       "fan",
+       "bell",
+       "pot",
+       "chair"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fan 은 부채예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The sun is hot.",
+      "options": [
+       "sun",
+       "desk",
+       "book",
+       "cup"
+      ],
+      "answerNo": 1,
+      "explanationKo": "해가 뜨겁다는 말이에요. sun 은 해예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "보물찾기 놀이",
+   "newWords": [
+    "like",
+    "bag",
+    "pen",
+    "pencil",
+    "book"
+   ],
+   "unitWords": [
+    "like",
+    "bag",
+    "pen",
+    "pencil",
+    "book"
+   ],
+   "preview": [
+    {
+     "word": "like",
+     "meaningKo": "좋아하다",
+     "example": "I like the ball."
+    },
+    {
+     "word": "bag",
+     "meaningKo": "가방",
+     "example": "It is a bag."
+    },
+    {
+     "word": "pen",
+     "meaningKo": "펜",
+     "example": "This is my pen."
+    },
+    {
+     "word": "pencil",
+     "meaningKo": "연필",
+     "example": "It is a pencil."
+    },
+    {
+     "word": "book",
+     "meaningKo": "책",
+     "example": "This is my book."
+    }
+   ],
+   "content": {
+    "passage": "A bag and a book! A pen and a pencil! I like it!",
+    "targetWords": [
+     "like",
+     "bag",
+     "pen",
+     "pencil",
+     "book"
+    ],
+    "glossary": [
+     {
+      "surface": "bag",
+      "lemma": "bag",
+      "meaningKo": "가방"
+     },
+     {
+      "surface": "book",
+      "lemma": "book",
+      "meaningKo": "책"
+     },
+     {
+      "surface": "pen",
+      "lemma": "pen",
+      "meaningKo": "펜"
+     },
+     {
+      "surface": "pencil",
+      "lemma": "pencil",
+      "meaningKo": "연필"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bag",
+      "options": [
+       "book",
+       "pencil",
+       "bag",
+       "pen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bag 은 가방이에요. 책가방 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a book",
+      "options": [
+       "book",
+       "pen",
+       "bag",
+       "pencil"
+      ],
+      "answerNo": 1,
+      "explanationKo": "book 은 책이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pen",
+      "options": [
+       "pencil",
+       "pen",
+       "book",
+       "bag"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pen 은 펜이에요. 검은 볼펜 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pencil",
+      "options": [
+       "bag",
+       "book",
+       "pen",
+       "pencil"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pencil 은 연필이에요. pen(펜)과 헷갈리지 않게 봐요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bag",
+      "options": [
+       "pencil",
+       "bag",
+       "pen",
+       "book"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bag 은 가방이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 자동차",
+   "newWords": [
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "toy"
+   ],
+   "unitWords": [
+    "cup",
+    "map",
+    "desk",
+    "chair",
+    "toy",
+    "like",
+    "book",
+    "pen",
+    "bag",
+    "pencil"
+   ],
+   "preview": [
+    {
+     "word": "cup",
+     "meaningKo": "컵",
+     "example": "It is a cup."
+    },
+    {
+     "word": "map",
+     "meaningKo": "지도",
+     "example": "I like the map."
+    },
+    {
+     "word": "desk",
+     "meaningKo": "책상",
+     "example": "It is a desk."
+    },
+    {
+     "word": "chair",
+     "meaningKo": "의자",
+     "example": "It is a chair."
+    },
+    {
+     "word": "toy",
+     "meaningKo": "장난감",
+     "example": "It is a toy car."
+    }
+   ],
+   "content": {
+    "passage": "A desk and a chair. A map and a cup. I like my toy car.",
+    "targetWords": [
+     "cup",
+     "map",
+     "desk",
+     "chair",
+     "toy"
+    ],
+    "glossary": [
+     {
+      "surface": "desk",
+      "lemma": "desk",
+      "meaningKo": "책상"
+     },
+     {
+      "surface": "chair",
+      "lemma": "chair",
+      "meaningKo": "의자"
+     },
+     {
+      "surface": "map",
+      "lemma": "map",
+      "meaningKo": "지도"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a chair",
+      "options": [
+       "cup",
+       "desk",
+       "map",
+       "chair"
+      ],
+      "answerNo": 4,
+      "explanationKo": "chair 는 의자예요. 나무 의자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a map",
+      "options": [
+       "book",
+       "chair",
+       "map",
+       "pen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "map 은 지도예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a desk",
+      "options": [
+       "cup",
+       "desk",
+       "bag",
+       "chair"
+      ],
+      "answerNo": 2,
+      "explanationKo": "desk 는 책상이에요. 서랍 달린 책상 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cup",
+      "options": [
+       "cup",
+       "desk",
+       "map",
+       "pencil"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cup 은 컵이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "map",
+      "options": [
+       "cup",
+       "chair",
+       "map",
+       "bag"
+      ],
+      "answerNo": 3,
+      "explanationKo": "map 은 지도예요. 세계 지도 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이방 이름 대기",
+   "newWords": [
+    "drum",
+    "clock",
+    "lamp",
+    "bell",
+    "thank"
+   ],
+   "unitWords": [
+    "drum",
+    "clock",
+    "lamp",
+    "bell",
+    "thank",
+    "like",
+    "chair",
+    "desk",
+    "cup",
+    "map"
+   ],
+   "preview": [
+    {
+     "word": "drum",
+     "meaningKo": "북, 드럼",
+     "example": "This is a drum."
+    },
+    {
+     "word": "clock",
+     "meaningKo": "시계",
+     "example": "This is my clock."
+    },
+    {
+     "word": "lamp",
+     "meaningKo": "램프, 전등",
+     "example": "It is a lamp."
+    },
+    {
+     "word": "bell",
+     "meaningKo": "종",
+     "example": "I like the bell."
+    },
+    {
+     "word": "thank",
+     "meaningKo": "고마워하다",
+     "example": "Thanks, Momo!"
+    }
+   ],
+   "content": {
+    "passage": "Drum, bell, clock, lamp! I like the drum. Thanks, Tori!",
+    "targetWords": [
+     "drum",
+     "clock",
+     "lamp",
+     "bell",
+     "thank"
+    ],
+    "glossary": [
+     {
+      "surface": "drum",
+      "lemma": "drum",
+      "meaningKo": "북, 드럼"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "clock",
+      "lemma": "clock",
+      "meaningKo": "시계"
+     },
+     {
+      "surface": "lamp",
+      "lemma": "lamp",
+      "meaningKo": "램프, 전등"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "thanks",
+      "lemma": "thank",
+      "meaningKo": "고마워"
+     },
+     {
+      "surface": "Tori",
+      "lemma": "Tori",
+      "meaningKo": "토리(이름)",
+      "proper": true
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the drum",
+      "options": [
+       "drum",
+       "bell",
+       "clock",
+       "lamp"
+      ],
+      "answerNo": 1,
+      "explanationKo": "drum 은 북이에요. 북과 북채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bell",
+      "options": [
+       "clock",
+       "lamp",
+       "chair",
+       "bell"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bell 은 종이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "clock",
+      "options": [
+       "lamp",
+       "clock",
+       "drum",
+       "bell"
+      ],
+      "answerNo": 2,
+      "explanationKo": "clock 은 시계예요. 자명종 시계 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "lamp",
+      "options": [
+       "bell",
+       "clock",
+       "lamp",
+       "desk"
+      ],
+      "answerNo": 3,
+      "explanationKo": "lamp 는 전등이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I like the drum.",
+      "options": [
+       "cup",
+       "bell",
+       "map",
+       "drum"
+      ],
+      "answerNo": 4,
+      "explanationKo": "북이 좋다는 말이에요. drum 은 북이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "팽이 놀이 뒤 목욕",
+   "newWords": [
+    "cute",
+    "nice",
+    "name",
+    "hot",
+    "top"
+   ],
+   "unitWords": [
+    "cute",
+    "nice",
+    "name",
+    "hot",
+    "top",
+    "like",
+    "bell",
+    "clock",
+    "drum",
+    "lamp",
+    "desk",
+    "cup",
+    "chair"
+   ],
+   "preview": [
+    {
+     "word": "cute",
+     "meaningKo": "귀여운",
+     "example": "The duck is cute."
+    },
+    {
+     "word": "nice",
+     "meaningKo": "좋은, 멋진",
+     "example": "It is nice."
+    },
+    {
+     "word": "name",
+     "meaningKo": "이름",
+     "example": "My name is Momo."
+    },
+    {
+     "word": "hot",
+     "meaningKo": "뜨거운, 더운",
+     "example": "The bath is hot."
+    },
+    {
+     "word": "top",
+     "meaningKo": "팽이, 꼭대기",
+     "example": "I like my top."
+    }
+   ],
+   "content": {
+    "passage": "My name is Tori. I like my cute top. A hot bath is nice.",
+    "targetWords": [
+     "cute",
+     "nice",
+     "name",
+     "hot",
+     "top"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Tori",
+      "lemma": "Tori",
+      "meaningKo": "토리(이름)",
+      "proper": true
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     },
+     {
+      "surface": "top",
+      "lemma": "top",
+      "meaningKo": "팽이"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "목욕, 욕조"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my cute top",
+      "options": [
+       "bell",
+       "top",
+       "clock",
+       "drum"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cute 는 귀엽다는 뜻이고, top 은 팽이예요. 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "A hot bath",
+      "options": [
+       "bath",
+       "clock",
+       "top",
+       "lamp"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bath 는 목욕, 욕조예요. 욕조 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "top",
+      "options": [
+       "bell",
+       "desk",
+       "top",
+       "cup"
+      ],
+      "answerNo": 3,
+      "explanationKo": "top 은 팽이예요. 빨간 나무 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bath",
+      "options": [
+       "top",
+       "cup",
+       "chair",
+       "bath"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bath 는 욕조예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "I like my cute top.",
+      "options": [
+       "lamp",
+       "bath",
+       "top",
+       "bell"
+      ],
+      "answerNo": 3,
+      "explanationKo": "내 귀여운 팽이가 좋다는 말이에요. top 은 팽이예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "미술 놀이",
+   "newWords": [
+    "fan",
+    "pot",
+    "brush",
+    "lunch",
+    "thick"
+   ],
+   "unitWords": [
+    "fan",
+    "pot",
+    "brush",
+    "lunch",
+    "thick",
+    "hot",
+    "pen",
+    "drum",
+    "top",
+    "lamp",
+    "clock"
+   ],
+   "preview": [
+    {
+     "word": "fan",
+     "meaningKo": "선풍기, 부채",
+     "example": "It is a red fan."
+    },
+    {
+     "word": "pot",
+     "meaningKo": "냄비, 화분",
+     "example": "This is a pot."
+    },
+    {
+     "word": "brush",
+     "meaningKo": "솔, 붓",
+     "example": "This is my brush."
+    },
+    {
+     "word": "lunch",
+     "meaningKo": "점심",
+     "example": "Lunch, please!"
+    },
+    {
+     "word": "thick",
+     "meaningKo": "두꺼운",
+     "example": "My brush is thick."
+    }
+   ],
+   "content": {
+    "passage": "This is my thick brush. A fan and a pot. Hot lunch, please!",
+    "targetWords": [
+     "fan",
+     "pot",
+     "brush",
+     "lunch",
+     "thick"
+    ],
+    "glossary": [
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운"
+     },
+     {
+      "surface": "brush",
+      "lemma": "brush",
+      "meaningKo": "붓"
+     },
+     {
+      "surface": "fan",
+      "lemma": "fan",
+      "meaningKo": "부채"
+     },
+     {
+      "surface": "pot",
+      "lemma": "pot",
+      "meaningKo": "냄비"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운, 따뜻한"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my thick brush",
+      "options": [
+       "fan",
+       "pot",
+       "brush",
+       "pen"
+      ],
+      "answerNo": 3,
+      "explanationKo": "thick 은 두껍다는 뜻이고, brush 는 붓이에요. 붓 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a fan",
+      "options": [
+       "pot",
+       "brush",
+       "drum",
+       "fan"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fan 은 부채예요. 접는 부채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pot",
+      "options": [
+       "pot",
+       "fan",
+       "brush",
+       "top"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pot 은 냄비예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "brush",
+      "options": [
+       "pot",
+       "brush",
+       "fan",
+       "lamp"
+      ],
+      "answerNo": 2,
+      "explanationKo": "brush 는 붓이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pot",
+      "options": [
+       "pot",
+       "clock",
+       "fan",
+       "brush"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pot 은 냄비예요. 뚜껑 덮인 냄비 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "연필 굴리기 게임",
+   "newWords": [],
+   "unitWords": [
+    "name",
+    "pencil",
+    "bag",
+    "cute",
+    "pen",
+    "book",
+    "cup",
+    "map",
+    "chair",
+    "desk",
+    "lamp"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My name is Momo. It is a pencil game. My bag is cute.",
+    "targetWords": [
+     "name",
+     "pencil",
+     "bag",
+     "cute"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     },
+     {
+      "surface": "pencil",
+      "lemma": "pencil",
+      "meaningKo": "연필"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "bag",
+      "lemma": "bag",
+      "meaningKo": "가방"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pencil",
+      "options": [
+       "pen",
+       "book",
+       "bag",
+       "pencil"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pencil 은 연필이에요. 연필 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My bag",
+      "options": [
+       "cup",
+       "bag",
+       "pencil",
+       "pen"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bag 은 가방이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pencil",
+      "options": [
+       "pencil",
+       "book",
+       "map",
+       "bag"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pencil 은 연필이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My bag is cute.",
+      "options": [
+       "chair",
+       "pencil",
+       "bag",
+       "desk"
+      ],
+      "answerNo": 3,
+      "explanationKo": "내 가방이 귀엽다는 말이에요. bag 은 가방이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bag",
+      "options": [
+       "lamp",
+       "bag",
+       "pen",
+       "pencil"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bag 은 가방이에요. 책가방 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "지도 놀이",
+   "newWords": [],
+   "unitWords": [
+    "like",
+    "map",
+    "desk",
+    "nice",
+    "book",
+    "thick",
+    "cup",
+    "chair",
+    "pen",
+    "bag"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "I like the map game. My desk is nice. The book is thick.",
+    "targetWords": [
+     "like",
+     "map",
+     "desk",
+     "nice",
+     "book",
+     "thick"
+    ],
+    "glossary": [
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "map",
+      "lemma": "map",
+      "meaningKo": "지도"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "desk",
+      "lemma": "desk",
+      "meaningKo": "책상"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     },
+     {
+      "surface": "book",
+      "lemma": "book",
+      "meaningKo": "책"
+     },
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the map",
+      "options": [
+       "map",
+       "desk",
+       "book",
+       "cup"
+      ],
+      "answerNo": 1,
+      "explanationKo": "map 은 지도예요. 세계 지도 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My desk",
+      "options": [
+       "book",
+       "chair",
+       "desk",
+       "map"
+      ],
+      "answerNo": 3,
+      "explanationKo": "desk 는 책상이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The book",
+      "options": [
+       "desk",
+       "map",
+       "pen",
+       "book"
+      ],
+      "answerNo": 4,
+      "explanationKo": "book 은 책이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "map",
+      "options": [
+       "chair",
+       "map",
+       "book",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "map 은 지도예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My desk is nice.",
+      "options": [
+       "map",
+       "book",
+       "bag",
+       "desk"
+      ],
+      "answerNo": 4,
+      "explanationKo": "내 책상이 멋지다는 말이에요. desk 는 책상이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "북과 종 놀이",
+   "newWords": [],
+   "unitWords": [
+    "like",
+    "drum",
+    "toy",
+    "clock",
+    "bell",
+    "lamp",
+    "top",
+    "fan"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "I like the drum. This is a toy clock. The bell is little.",
+    "targetWords": [
+     "like",
+     "drum",
+     "toy",
+     "clock",
+     "bell"
+    ],
+    "glossary": [
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "drum",
+      "lemma": "drum",
+      "meaningKo": "북, 드럼"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "clock",
+      "lemma": "clock",
+      "meaningKo": "시계"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "little",
+      "lemma": "little",
+      "meaningKo": "작은"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the drum",
+      "options": [
+       "bell",
+       "drum",
+       "clock",
+       "lamp"
+      ],
+      "answerNo": 2,
+      "explanationKo": "drum 은 북이에요. 북과 북채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a toy clock",
+      "options": [
+       "bell",
+       "drum",
+       "top",
+       "clock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "toy 는 장난감이고, clock 은 시계예요. 시계 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The bell",
+      "options": [
+       "drum",
+       "lamp",
+       "bell",
+       "clock"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bell 은 종이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "drum",
+      "options": [
+       "drum",
+       "clock",
+       "bell",
+       "lamp"
+      ],
+      "answerNo": 1,
+      "explanationKo": "drum 은 북이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The bell is little.",
+      "options": [
+       "bell",
+       "fan",
+       "clock",
+       "drum"
+      ],
+      "answerNo": 1,
+      "explanationKo": "종이 작다는 말이에요. bell 은 종이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "팽이 게임 응원",
+   "newWords": [],
+   "unitWords": [
+    "like",
+    "top",
+    "drum",
+    "nice",
+    "thank",
+    "bell",
+    "pot",
+    "clock",
+    "brush",
+    "fan",
+    "lamp",
+    "chair"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "I like the top game. The drum is nice. Thank you, Momo!",
+    "targetWords": [
+     "like",
+     "top",
+     "drum",
+     "nice",
+     "thank"
+    ],
+    "glossary": [
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "top",
+      "lemma": "top",
+      "meaningKo": "팽이"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "drum",
+      "lemma": "drum",
+      "meaningKo": "북, 드럼"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     },
+     {
+      "surface": "thank",
+      "lemma": "thank",
+      "meaningKo": "고마워하다"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "the top",
+      "options": [
+       "drum",
+       "bell",
+       "top",
+       "pot"
+      ],
+      "answerNo": 3,
+      "explanationKo": "top 은 팽이예요. 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The drum",
+      "options": [
+       "drum",
+       "top",
+       "clock",
+       "brush"
+      ],
+      "answerNo": 1,
+      "explanationKo": "drum 은 북이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "top",
+      "options": [
+       "bell",
+       "top",
+       "drum",
+       "fan"
+      ],
+      "answerNo": 2,
+      "explanationKo": "top 은 팽이예요. 빨간 나무 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "drum",
+      "options": [
+       "top",
+       "lamp",
+       "bell",
+       "drum"
+      ],
+      "answerNo": 4,
+      "explanationKo": "drum 은 북이에요. 북과 북채 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The drum is nice.",
+      "options": [
+       "top",
+       "drum",
+       "chair",
+       "clock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "북이 멋지다는 말이에요. drum 은 북이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "텐트 놀이 점심",
+   "newWords": [],
+   "unitWords": [
+    "pot",
+    "hot",
+    "like",
+    "lunch",
+    "fan",
+    "brush",
+    "cup",
+    "chair",
+    "lamp"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "The tent is big. The pot is hot. I like lunch.",
+    "targetWords": [
+     "pot",
+     "hot",
+     "like",
+     "lunch"
+    ],
+    "glossary": [
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "big",
+      "lemma": "big",
+      "meaningKo": "큰"
+     },
+     {
+      "surface": "pot",
+      "lemma": "pot",
+      "meaningKo": "냄비"
+     },
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The tent",
+      "options": [
+       "pot",
+       "fan",
+       "brush",
+       "tent"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tent 는 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pot",
+      "options": [
+       "tent",
+       "brush",
+       "pot",
+       "cup"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pot 은 냄비예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "tent",
+      "options": [
+       "fan",
+       "tent",
+       "brush",
+       "chair"
+      ],
+      "answerNo": 2,
+      "explanationKo": "tent 는 텐트예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pot",
+      "options": [
+       "pot",
+       "tent",
+       "fan",
+       "lamp"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pot 은 냄비예요. 뚜껑 덮인 냄비 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The tent is big.",
+      "options": [
+       "pot",
+       "brush",
+       "tent",
+       "fan"
+      ],
+      "answerNo": 3,
+      "explanationKo": "텐트가 크다는 말이에요. tent 는 텐트예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "학교 놀이",
+   "newWords": [],
+   "unitWords": [
+    "name",
+    "pen",
+    "cup",
+    "desk",
+    "nice",
+    "pencil",
+    "bag",
+    "fan",
+    "map",
+    "book",
+    "brush",
+    "chair",
+    "pot",
+    "top"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My name is Momo. A pen and a cup. The desk is nice.",
+    "targetWords": [
+     "name",
+     "pen",
+     "cup",
+     "desk",
+     "nice"
+    ],
+    "glossary": [
+     {
+      "surface": "name",
+      "lemma": "name",
+      "meaningKo": "이름"
+     },
+     {
+      "surface": "Momo",
+      "lemma": "Momo",
+      "meaningKo": "모모(이름)",
+      "proper": true
+     },
+     {
+      "surface": "pen",
+      "lemma": "pen",
+      "meaningKo": "펜"
+     },
+     {
+      "surface": "cup",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "desk",
+      "lemma": "desk",
+      "meaningKo": "책상"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pen",
+      "options": [
+       "pen",
+       "pencil",
+       "bag",
+       "fan"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pen 은 펜이에요. 검은 볼펜 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cup",
+      "options": [
+       "map",
+       "book",
+       "brush",
+       "cup"
+      ],
+      "answerNo": 4,
+      "explanationKo": "cup 은 컵이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The desk",
+      "options": [
+       "chair",
+       "desk",
+       "book",
+       "pot"
+      ],
+      "answerNo": 2,
+      "explanationKo": "desk 는 책상이에요. 서랍 달린 책상 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pen",
+      "options": [
+       "bag",
+       "pencil",
+       "pen",
+       "map"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pen 은 펜이에요. pencil(연필)과 다르게 생겼어요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The desk is nice.",
+      "options": [
+       "chair",
+       "cup",
+       "top",
+       "desk"
+      ],
+      "answerNo": 4,
+      "explanationKo": "책상이 멋지다는 말이에요. desk 는 책상이에요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "토리가 빌려준 종",
+   "newWords": [],
+   "unitWords": [
+    "thank",
+    "top",
+    "cute",
+    "bell",
+    "nice",
+    "drum",
+    "cup",
+    "lamp",
+    "map",
+    "clock",
+    "pencil",
+    "desk",
+    "chair",
+    "book"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Thank you, Tori! My top is cute. The bell is nice.",
+    "targetWords": [
+     "thank",
+     "top",
+     "cute",
+     "bell",
+     "nice"
+    ],
+    "glossary": [
+     {
+      "surface": "thank",
+      "lemma": "thank",
+      "meaningKo": "고마워하다"
+     },
+     {
+      "surface": "Tori",
+      "lemma": "Tori",
+      "meaningKo": "토리(이름)",
+      "proper": true
+     },
+     {
+      "surface": "top",
+      "lemma": "top",
+      "meaningKo": "팽이"
+     },
+     {
+      "surface": "cute",
+      "lemma": "cute",
+      "meaningKo": "귀여운"
+     },
+     {
+      "surface": "bell",
+      "lemma": "bell",
+      "meaningKo": "종"
+     },
+     {
+      "surface": "nice",
+      "lemma": "nice",
+      "meaningKo": "좋은, 멋진"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My top",
+      "options": [
+       "bell",
+       "top",
+       "drum",
+       "cup"
+      ],
+      "answerNo": 2,
+      "explanationKo": "top 은 팽이예요. 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The bell",
+      "options": [
+       "bell",
+       "lamp",
+       "top",
+       "map"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bell 은 종이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "top",
+      "options": [
+       "clock",
+       "drum",
+       "top",
+       "pencil"
+      ],
+      "answerNo": 3,
+      "explanationKo": "top 은 팽이예요. 빨간 나무 팽이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bell",
+      "options": [
+       "top",
+       "desk",
+       "lamp",
+       "bell"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bell 은 종이에요. 종 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "My top is cute.",
+      "options": [
+       "chair",
+       "book",
+       "top",
+       "bell"
+      ],
+      "answerNo": 3,
+      "explanationKo": "내 팽이가 귀엽다는 말이에요. top 은 팽이예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "소꿉놀이 점심",
+   "newWords": [],
+   "unitWords": [
+    "hot",
+    "lunch",
+    "like",
+    "toy",
+    "pot",
+    "thick",
+    "fan",
+    "brush",
+    "drum",
+    "lamp",
+    "bag",
+    "clock",
+    "pen",
+    "bell",
+    "chair"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Hot lunch! I like my toy pot. The pizza is thick.",
+    "targetWords": [
+     "hot",
+     "lunch",
+     "like",
+     "toy",
+     "pot",
+     "thick"
+    ],
+    "glossary": [
+     {
+      "surface": "hot",
+      "lemma": "hot",
+      "meaningKo": "뜨거운, 따뜻한"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     },
+     {
+      "surface": "like",
+      "lemma": "like",
+      "meaningKo": "좋아하다"
+     },
+     {
+      "surface": "toy",
+      "lemma": "toy",
+      "meaningKo": "장난감"
+     },
+     {
+      "surface": "pot",
+      "lemma": "pot",
+      "meaningKo": "냄비"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     },
+     {
+      "surface": "thick",
+      "lemma": "thick",
+      "meaningKo": "두꺼운"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pizza",
+      "options": [
+       "pot",
+       "fan",
+       "pizza",
+       "brush"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pot",
+      "options": [
+       "drum",
+       "lamp",
+       "bag",
+       "pot"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pot 은 냄비예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "pizza",
+       "fan",
+       "brush",
+       "clock"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pizza 는 피자예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my toy pot",
+      "options": [
+       "brush",
+       "pot",
+       "fan",
+       "pen"
+      ],
+      "answerNo": 2,
+      "explanationKo": "toy 는 장난감이고, pot 은 냄비예요. 냄비 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "The pizza is thick.",
+      "options": [
+       "pizza",
+       "bell",
+       "chair",
+       "fan"
+      ],
+      "answerNo": 1,
+      "explanationKo": "피자가 두껍다는 말이에요. pizza 는 피자예요."
+     }
+    ]
+   }
+  }
+ ]
+}

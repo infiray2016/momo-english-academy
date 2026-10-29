@@ -10,10 +10,10 @@ export const IP_KEY_INFO = "momo/access-ip/v1";
 /** 접근 코드 입력의 길이 상한(기술 값, 해시 계산을 지나치게 길게 하지 않게). */
 export const ACCESS_CODE_MAX_LENGTH = 128;
 /**
- * 10절 '영문 · 숫자 12자 이상'. 보안 고정 규칙이라 설정값이 아니라 이름 붙인 상수다(C57).
+ * 10절 '영문 · 숫자 10자 이상'(요청자 2026-10-23 15:4x, 12자에서 낮춤). 보안 고정 규칙이라 설정값이 아니라 이름 붙인 상수다(C57).
  * server-only 가 없는 이곳에 두어 해시 스크립트(tsx, Node)도 같은 규칙을 쓴다. src/server/access/code.ts 가 다시 내보낸다.
  */
-export const ACCESS_CODE_MIN_LENGTH = 12;
+export const ACCESS_CODE_MIN_LENGTH = 10;
 /** 영문 · 숫자만(둘 다 섞여야 한다는 뜻으로 읽지 않는다). */
 export const ACCESS_CODE_PATTERN = /^[A-Za-z0-9]+$/;
 

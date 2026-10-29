@@ -1,6 +1,9 @@
 // 가짜 Anthropic(plan-p09a 파일별 값 9). 앱 코드(src/)는 이 파일을 가져오지 않는다.
 // 같은 처리기를 두 길로 쓴다: SDK 의 `fetch` 자리에 끼우는 가짜(Vitest)와 node:http 로컬 서버(e2e, ANTHROPIC_BASE_URL).
 // 응답 꼴은 문서의 Messages 응답 · 오류 본문을 그대로 따른다(확인한 사실 2 · 4, 위험 11).
+// 'stream' 응답(회화 턴, plan-p13a 파일별 값 6 · C92)은 마지막 메시지 body 를 문서의 SSE 차례(message_start → content_block_start →
+// content_block_delta × 조각 → content_block_stop → … → message_delta → message_stop)로 흘린다. fallback 블록이 끼인 body 는 그 차례대로
+// 블록이 이어진다(앞 text 블록 → fallback 블록 → 새 text 블록).
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
@@ -9,6 +12,8 @@ const LOOPBACK_HOST = "127.0.0.1";
 /** 맞는 규칙이 없을 때의 상태(Not Implemented). */
 const NO_RULE_STATUS = 501;
 const MESSAGES_PATH = "/v1/messages";
+/** 'stream' 응답의 text 블록 하나를 나누는 조각 수 기본값(기술 값). */
+const DEFAULT_STREAM_CHUNKS = 8;
 
 export type FakeReply =
   | { kind: "message"; body: unknown; delayMs?: number }
@@ -19,7 +24,24 @@ export type FakeReply =
       headers?: Record<string, string>;
     }
   | { kind: "network-error" }
-  | { kind: "hang" };
+  | { kind: "hang" }
+  | {
+      kind: "stream";
+      /** 마지막 메시지(messageBody 꼴 — 내용 블록 · stop_reason · usage). */
+      body: unknown;
+      /** text 블록 하나를 나누는 조각 수. */
+      chunks?: number;
+      /** 조각 사이 기다림(ms). */
+      delayMs?: number;
+      /** 첫 text 조각 앞 기다림(ms — 첫 바이트 늦춤). */
+      firstDelayMs?: number;
+      /** text 를 이만큼 흘린 뒤 연결을 끊는다(message_stop 없음). */
+      cutAfterChars?: number;
+      /** text 를 이만큼 흘린 뒤 SSE `error` 이벤트를 보내고 끝낸다(문서 'Error events' — 예: overloaded_error). */
+      errorAfterChars?: number;
+      /** 오류 이벤트의 error.type(기본 overloaded_error). */
+      errorType?: string;
+    };
 
 export type FakeRule = {
   when?: { purpose?: string; model?: string; bodyIncludes?: string };
@@ -36,6 +58,12 @@ export type FakeRequest = {
   body: unknown;
 };
 
+/** SSE 한 걸음: 보낼 글 · 기다림 · 끊음. */
+export type StreamStep =
+  | { kind: "data"; text: string }
+  | { kind: "delay"; ms: number }
+  | { kind: "cut" };
+
 type FakeOutcome =
   | {
       kind: "response";
@@ -43,6 +71,7 @@ type FakeOutcome =
       headers: Record<string, string>;
       body: unknown;
     }
+  | { kind: "stream"; headers: Record<string, string>; steps: StreamStep[] }
   | { kind: "network-error" };
 
 type RequestInput = {
@@ -200,6 +229,124 @@ export function consoleLimitBody(which: "workspace" | "tier"): {
   };
 }
 
+// ── SSE(회화 턴 'stream' 응답) ────────────────────────────────────
+
+const sse = (type: string, data: Record<string, unknown>): StreamStep => ({
+  kind: "data",
+  text: `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`,
+});
+
+function split(text: string, chunks: number): string[] {
+  const n = Math.max(1, Math.min(chunks, text.length));
+  const size = Math.ceil(text.length / n);
+  const out: string[] = [];
+  for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size));
+  return out;
+}
+
+/**
+ * 마지막 메시지 body 를 SSE 걸음으로(문서의 Messages 스트리밍 이벤트 차례). usage 의 output_tokens · iterations 는 message_delta 에
+ * 싣는다(SDK 가 message_delta 에서 채운다 — plan-p13a 확인한 사실 1). cutAfterChars 면 그만큼 text 를 흘린 뒤 끊는다.
+ */
+export function streamStepsOf(
+  reply: Extract<FakeReply, { kind: "stream" }>,
+): StreamStep[] {
+  const body = reply.body as {
+    content: { type: string; text?: string }[];
+    usage: Record<string, unknown>;
+    stop_reason: string | null;
+    stop_sequence?: string | null;
+    stop_details?: unknown;
+  } & Record<string, unknown>;
+  // 실제 스트림은 요청 모델로 시작하고 fallback 블록에서 SDK 스냅숏이 to.model 로 바뀐다(plan-p13a 확인한 사실 1, 검토 M3)
+  const firstHop = body.content.find((b) => b.type === "fallback") as
+    | { from?: { model?: string } }
+    | undefined;
+  const steps: StreamStep[] = [
+    sse("message_start", {
+      message: {
+        ...body,
+        model: firstHop?.from?.model ?? body.model,
+        content: [],
+        stop_reason: null,
+        stop_sequence: null,
+        stop_details: null,
+        usage: { ...body.usage, output_tokens: 0, iterations: null },
+      },
+    }),
+  ];
+  let sent = 0;
+  let first = true;
+  for (const [index, block] of body.content.entries()) {
+    if (block.type !== "text") {
+      steps.push(sse("content_block_start", { index, content_block: block }));
+      steps.push(sse("content_block_stop", { index }));
+      continue;
+    }
+    steps.push(
+      sse("content_block_start", {
+        index,
+        content_block: { ...block, text: "" },
+      }),
+    );
+    for (const piece of split(
+      block.text ?? "",
+      reply.chunks ?? DEFAULT_STREAM_CHUNKS,
+    )) {
+      if (first && reply.firstDelayMs !== undefined)
+        steps.push({ kind: "delay", ms: reply.firstDelayMs });
+      else if (!first && reply.delayMs !== undefined)
+        steps.push({ kind: "delay", ms: reply.delayMs });
+      first = false;
+      const stopAt = Math.min(
+        reply.cutAfterChars ?? Number.POSITIVE_INFINITY,
+        reply.errorAfterChars ?? Number.POSITIVE_INFINITY,
+      );
+      const room = Number.isFinite(stopAt) ? stopAt - sent : piece.length;
+      const text = piece.slice(0, Math.max(0, room));
+      if (text !== "")
+        steps.push(
+          sse("content_block_delta", {
+            index,
+            delta: { type: "text_delta", text },
+          }),
+        );
+      sent += text.length;
+      if (reply.cutAfterChars !== undefined && sent >= reply.cutAfterChars) {
+        steps.push({ kind: "cut" });
+        return steps;
+      }
+      if (
+        reply.errorAfterChars !== undefined &&
+        sent >= reply.errorAfterChars
+      ) {
+        steps.push(
+          sse("error", {
+            error: {
+              type: reply.errorType ?? "overloaded_error",
+              message: "Overloaded",
+            },
+          }),
+        );
+        return steps;
+      }
+    }
+    steps.push(sse("content_block_stop", { index }));
+  }
+  steps.push(
+    sse("message_delta", {
+      delta: {
+        stop_reason: body.stop_reason,
+        stop_sequence: body.stop_sequence ?? null,
+        stop_details: body.stop_details ?? null,
+      },
+      usage: body.usage,
+    }),
+  );
+  steps.push(sse("message_stop", {}));
+  return steps;
+}
+
 // ── 처리기 ───────────────────────────────────────────────────────
 
 function parseJson(text: string): unknown {
@@ -348,6 +495,12 @@ function createCore(initialRules: readonly FakeRule[]): FakeCore {
           return { kind: "network-error" };
         case "hang":
           return waitForAbort(signal);
+        case "stream":
+          return {
+            kind: "stream",
+            headers: { "request-id": requestId },
+            steps: streamStepsOf(reply),
+          };
       }
     },
   };
@@ -399,6 +552,44 @@ export function createFakeAnthropic(
       if (outcome.kind === "network-error") {
         // undici 가 연결 실패 때 던지는 꼴. SDK 는 이것을 APIConnectionError 로 바꾼다
         throw new TypeError("fetch failed");
+      }
+      if (outcome.kind === "stream") {
+        const signal = init?.signal ?? undefined;
+        const steps = [...outcome.steps];
+        const encoder = new TextEncoder();
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            try {
+              for (;;) {
+                const step = steps.shift();
+                if (step === undefined) {
+                  controller.close();
+                  return;
+                }
+                if (step.kind === "delay") {
+                  await wait(step.ms, signal);
+                  continue;
+                }
+                if (step.kind === "cut") {
+                  // 연결이 끊긴 꼴(undici 'terminated')
+                  controller.error(new TypeError("terminated"));
+                  return;
+                }
+                controller.enqueue(encoder.encode(step.text));
+                return;
+              }
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+        });
+        return new Response(body, {
+          status: 200,
+          headers: {
+            "content-type": "text/event-stream",
+            ...outcome.headers,
+          },
+        });
       }
       return new Response(JSON.stringify(outcome.body), {
         status: outcome.status,
@@ -507,6 +698,30 @@ export async function startFakeAnthropicServer({
         if (outcome === undefined || res.destroyed) return;
         if (outcome.kind === "network-error") {
           req.socket.destroy();
+          return;
+        }
+        if (outcome.kind === "stream") {
+          res.writeHead(200, {
+            "content-type": "text/event-stream",
+            ...outcome.headers,
+          });
+          for (const step of outcome.steps) {
+            if (res.destroyed) return;
+            if (step.kind === "delay") {
+              const ok = await wait(step.ms, controller.signal).then(
+                () => true,
+                () => false,
+              );
+              if (!ok) return;
+              continue;
+            }
+            if (step.kind === "cut") {
+              req.socket.destroy();
+              return;
+            }
+            res.write(step.text);
+          }
+          res.end();
           return;
         }
         sendJson(res, outcome.status, outcome.body, outcome.headers);

@@ -13,6 +13,11 @@ import {
   speakingPresentationSpec,
 } from "@/core/ai/calls/speaking";
 import {
+  type TalkTurnInput,
+  talkClosingSpec,
+  talkTurnSpec,
+} from "@/core/ai/calls/talk";
+import {
   type ThinkoutInput,
   type ThinkoutOutput,
   thinkoutSpec,
@@ -32,6 +37,12 @@ import {
   allowedWordsOf,
   runAiCall,
 } from "@/server/ai/run";
+import {
+  runTalkCall,
+  type TalkCallContext,
+  type TalkDeps,
+  type TalkOutcome,
+} from "@/server/ai/talk";
 import { getDb } from "@/server/db";
 
 export type {
@@ -40,6 +51,12 @@ export type {
   AiFailureReason,
   AiOutcome,
 } from "@/server/ai/run";
+export type {
+  TalkCallContext,
+  TalkDeps,
+  TalkOutcome,
+  TalkSuccess,
+} from "@/server/ai/talk";
 
 /** 쓰기 확인(4~5단계). 실패면 P11 은 확인 없이 넘어가고 점수 없는 세션(8절). */
 export function checkWriting(
@@ -108,4 +125,32 @@ export async function thinkoutTurn(
 ): Promise<AiOutcome<ThinkoutOutput>> {
   const allowedWords = await allowedWordsOf(deps?.db ?? getDb(), input.level);
   return runAiCall(thinkoutSpec, { ...input, allowedWords }, ctx, deps);
+}
+
+/**
+ * 회화 턴 한 번(6.2 · 8절 회화 턴 실패 · C92). 검사를 지난 영어 문장을 ctx.onSentence 로 흘려 보낸다(브라우저는 검사 전 글을 받지 않음).
+ * 결과의 sentSentences 로 b 가 다시 쓸 토리 차례(toriRewriteOf)를 만든다. 실패 길(첫 문장 뒤 끊김 · 첫 문장 전 실패 · 거절)의 화면은 b.
+ * 계약: onSentence 는 던지지 않는다 — 브라우저 연결이 닫혀도 쓰기 실패를 삼키고 응답을 끝까지 받아 토리 행을 저장한다(5절 · 8절).
+ * 그래도 던지면 그 시도를 ai_calls 에 연결 실패로 남긴 뒤 그 오류를 다시 던진다.
+ */
+export function talkTurn(
+  input: TalkTurnInput,
+  ctx: TalkCallContext & { onSentence: (sentence: string) => void },
+  deps?: TalkDeps,
+): Promise<TalkOutcome> {
+  return runTalkCall(talkTurnSpec, input, ctx, deps);
+}
+
+/**
+ * 끝맺음 턴(같은 규격 · 같은 대화, ai.max_tokens.talk_closing · ai.timeout_seconds.feedback — 6.1 · C21). 흘려 보내지 않는다.
+ * '그만하기' 응답 뒤(after)에서 부른다. input.turn.closing 은 참이어야 한다.
+ */
+export function talkClosing(
+  input: TalkTurnInput,
+  ctx: Omit<TalkCallContext, "onSentence">,
+  deps?: TalkDeps,
+): Promise<TalkOutcome> {
+  if (!input.turn.closing)
+    throw new RangeError("끝맺음 턴 입력의 closing 이 참이 아니다");
+  return runTalkCall(talkClosingSpec, input, ctx, deps);
 }

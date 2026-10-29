@@ -24,9 +24,14 @@ import {
   SmallLink,
   StatusLine,
 } from "@/components/board/board";
+import {
+  MicBlockedText,
+  useIpadSafari,
+} from "@/components/session/mic-blocked";
 import type { Answer } from "@/core/answer/check";
 import { answerShapeOf } from "@/core/answer/display";
 import type { PlacementArea } from "@/core/seed/structure";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   clearMicState,
   markMicNoticeSeen,
@@ -58,13 +63,10 @@ const TEXT = {
   /** 마이크 확인 단추 아래 안내(C72 — 확인은 소리가 들어와야 성공, fix 5). */
   micSpeakHint: "단추를 누른 뒤 아무 말이나 한마디 해 주세요",
   micRetry: "다시 눌러 확인해 주세요",
-  needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
-  stalled: "마이크가 잘 안 돼요. 부모님께 말해 주세요",
   itemNo: (n: number) => `문제 ${n}`,
   dontKnow: "몰라요",
   result: (area: PlacementArea, level: number) =>
     `${AREA_LABEL[area]}는 ${level}단계에서 시작해요`,
-  meetTori: "이제 토리를 만날 수 있어요",
   spares: "말하기 일부는 듣기로 봤어요",
   toLessons: "수업 고르러 가기",
   home: "홈",
@@ -100,6 +102,7 @@ export function PlacementFlow({
     area === "speaking" ? "pending" : "ready",
   );
   const [blocked, setBlocked] = useState<Blocked | undefined>();
+  const ipadSafari = useIpadSafari();
   const [wantStart, setWantStart] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -260,9 +263,8 @@ export function PlacementFlow({
           tilt="slight"
           className="mx-auto mt-8 w-full max-w-xl items-center gap-8 p-10"
         >
-          <p className="font-heading text-[28px] leading-snug">
-            {blocked === "needsMic" ? TEXT.needsMic : TEXT.stalled}
-          </p>
+          {/* 아이패드 사파리면 둘째 줄 무음 모드(C111) */}
+          <MicBlockedText kind={blocked} ipadSafari={ipadSafari} />
           <BigLink href="/">{TEXT.home}</BigLink>
         </PostIt>
       </>
@@ -283,7 +285,7 @@ export function PlacementFlow({
             {TEXT.result(area, screen.start)}
           </p>
           {area === "speaking" ? (
-            <p className="text-2xl">{TEXT.meetTori}</p>
+            <p className="text-2xl">{TEACHER_TEXT.meetTeacher}</p>
           ) : null}
           {screen.usedSpares ? <p className="text-xl">{TEXT.spares}</p> : null}
           <BigLink href={`/${area}/lessons`}>{TEXT.toLessons}</BigLink>

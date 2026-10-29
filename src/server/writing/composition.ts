@@ -506,6 +506,12 @@ export async function runFeedback(
       .innerJoin(sessions, eq(sessions.id, attempts.sessionId))
       .where(eq(attempts.id, attemptId));
     if (head?.attempt.status !== "awaiting_feedback") return false;
+    // 쓰기 초고 끝 시도만 — 같은 상태 칸을 쓰는 회화 끝맺음 기록을 잡지 않는다(잡기 전에 본다, P13b 차례 4 검토 I-1)
+    if (
+      head.session.area !== "writing" ||
+      parseAttemptInput(head.attempt.input)?.kind !== "draft"
+    )
+      return false;
     const profileId = head.session.profileId;
     const s = await getSettings(feedbackSettings, { db, profileId });
     const at = clock();
@@ -790,7 +796,10 @@ export async function retryPendingFeedback(
       .where(
         and(
           eq(sessions.profileId, profileId),
+          // 쓰기 초고만(회화 끝맺음 기록도 awaiting_feedback 이다 — P13b 차례 4 검토 I-1)
+          eq(sessions.area, "writing"),
           eq(attempts.status, "awaiting_feedback"),
+          sql`${attempts.input}->>'kind' = 'draft'`,
         ),
       );
     const oldest = waiting

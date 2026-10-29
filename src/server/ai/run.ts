@@ -17,6 +17,7 @@ import {
   prepareAnswer,
 } from "@/core/ai/calls/common";
 import {
+  type AiPurpose,
   aiSettingSchemasOf,
   ComboError,
   REALTIME_PURPOSES,
@@ -79,8 +80,8 @@ const ZERO_COST = "0.000000";
 const CALL_CONFIG_CHECK = "call_config_check";
 const DOWN_AFTER_FAILURES_KEY = "ai.down_after_failures";
 
-/** 흐름이 늘 읽는 설정(12절). */
-const BASE_SETTING_SCHEMAS = {
+/** 흐름이 늘 읽는 설정(12절). 회화 턴 흐름(talk.ts)도 같이 쓴다. */
+export const BASE_SETTING_SCHEMAS = {
   "app.timezone": appTimezoneSchema,
   "app.day_start_hour": appDayStartHourSchema,
   "ai.safety_daily_calls": z.int().min(1),
@@ -128,12 +129,12 @@ const fail = (reason: AiFailureReason, refusals = 0) =>
   ({ ok: false, reason, refusals }) as const;
 
 /** 서버 오류 기록 — 목적과 오류 이름만(값 · 아이 글 · 본문을 넣지 않는다). */
-function logConfigProblem(purpose: string, error: unknown): void {
+export function logConfigProblem(purpose: string, error: unknown): void {
   const name = error instanceof Error ? error.name : typeof error;
   console.error(`[ai] ${purpose}: 설정 문제(${name})`);
 }
 
-function isConfigError(error: unknown): boolean {
+export function isConfigError(error: unknown): boolean {
   return (
     error instanceof SettingMissingError ||
     error instanceof SettingInvalidError ||
@@ -145,8 +146,8 @@ function isConfigError(error: unknown): boolean {
   );
 }
 
-/** 프로필 이름 변형 가운데 vocab 단어인 것을 한 질의로 가린 가림 함수(6.1 끝 문장). */
-async function maskerFor(
+/** 프로필 이름 변형 가운데 vocab 단어인 것을 한 질의로 가린 가림 함수(6.1 끝 문장). 회화 턴 흐름도 같이 쓴다. */
+export async function maskerFor(
   db: Db,
   profileId: string | null,
   contactPatterns: readonly string[],
@@ -199,7 +200,7 @@ export async function allowedWordsOf(
 }
 
 /** 대체 모델이 답했거나 단가가 없을 때의 서버 경고(요청 번호 · 목적 · 모델 · 거절 분류만, 본문 없음). */
-function warnAnswer(
+export function warnAnswer(
   message: MessageLike,
   info: {
     requestId: string | null;
@@ -235,6 +236,38 @@ function warnAnswer(
       priceMissingModelInBook: info.book.has(PRICE_MISSING_MODEL),
     })}`,
   );
+}
+
+/** '다시 보내도 같은 오류'가 그 학습일 ai.down_after_failures 번째면 '호출 설정 확인 필요' 알림 한 번(8절 · C17). 회화 턴 흐름도 같이 쓴다. */
+export async function alertSameError(
+  db: Db,
+  info: {
+    purpose: AiPurpose;
+    learningDay: string;
+    model: string;
+    errorCode: string;
+    downAfterFailures: number;
+    at: Date;
+  },
+): Promise<void> {
+  const count = await sameErrorCount(db, {
+    purpose: info.purpose,
+    learningDay: info.learningDay,
+  });
+  if (count < info.downAfterFailures) return;
+  await createAlertOnce(db, {
+    kind: CALL_CONFIG_CHECK,
+    profileId: null,
+    thresholdKey: `${DOWN_AFTER_FAILURES_KEY}:${info.purpose}`,
+    learningDay: info.learningDay,
+    value: {
+      purpose: info.purpose,
+      model: info.model,
+      errorCode: info.errorCode,
+    },
+    createdAt: info.at,
+    once: "day",
+  });
 }
 
 /**
@@ -407,22 +440,14 @@ export async function runAiCall<I extends LevelContext, O, R>(
         calledAt,
       });
       if (failure.reason === "same_error") {
-        const count = await sameErrorCount(db, { purpose, learningDay });
-        if (count >= downAfterFailures) {
-          await createAlertOnce(db, {
-            kind: CALL_CONFIG_CHECK,
-            profileId: null,
-            thresholdKey: `${DOWN_AFTER_FAILURES_KEY}:${purpose}`,
-            learningDay,
-            value: {
-              purpose,
-              model: config.model,
-              errorCode: failure.errorCode,
-            },
-            createdAt: clock(),
-            once: "day",
-          });
-        }
+        await alertSameError(db, {
+          purpose,
+          learningDay,
+          model: config.model,
+          errorCode: failure.errorCode,
+          downAfterFailures,
+          at: clock(),
+        });
       }
       // 응답 전 연결 실패만, 대화형 호출에서만 1회 다시 보낸다(첨삭은 응답 뒤 호출 — 다음 앱 진입에 P11 이 부른다)
       if (failure.retryConnection && realtime && canRetry()) continue;

@@ -34,6 +34,7 @@ import {
 } from "@/core/profile/start";
 import { AREAS, type Area } from "@/core/seed/structure";
 import type { DeviceVerdict } from "@/core/speech/device";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   clearMicState,
   isIpad,
@@ -66,8 +67,6 @@ const TEXT = {
   /** (제안) 이름 화면 제목 — 표에는 이름표 둘만 있다. */
   nameTitle: "아이 이름을 알려 주세요",
   displayNameLabel: "홈에 보일 이름(한글)",
-  englishNameLabel: "토리가 부를 영어 이름",
-  nickname: "토리가 부를 다른 영어 이름(별명)을 골라 주세요",
   avatarTitle: "아이 그림을 골라 주세요",
   alphabetTitle: "아이가 알파벳 26자의 이름과 소리를 알아요?",
   alphabetKnown: "알아요",
@@ -85,6 +84,10 @@ const TEXT = {
   /** iPadOS 설정의 메뉴 이름(화면 검토 M-4 · 브리프 — 고유 이름이라 새 안내 문구가 아님). */
   ipadDictationPath: ["설정", "일반", "키보드", "받아쓰기"],
   ipadSiriPath: ["설정", "Siri 및 검색"],
+  /** 아이패드 무음 모드 · 스크린 타임(plan-p11a 정본 밖 문구 표 — C111 · 전체 디자인 리뷰 I-1 · M-9). */
+  ipadSilentMode: "무음 모드를 끄면 소리가 들리고 말을 들을 수 있어요",
+  ipadScreenTime:
+    "스크린 타임을 쓰면 설정 → 스크린 타임 → 콘텐츠 및 개인정보 보호 제한 → Siri 및 받아쓰기를 허용해 주세요",
   micCheck: "마이크 확인",
   /** 마이크 확인 단추 아래 안내(C72 — 확인은 소리가 들어와야 성공, fix 5). */
   micSpeakHint: "단추를 누른 뒤 아무 말이나 한마디 해 주세요",
@@ -443,7 +446,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             />
           </label>
           <label className="flex flex-col gap-2">
-            <span>{TEXT.englishNameLabel}</span>
+            <span>{TEACHER_TEXT.firstRunEnglishName}</span>
             <input
               type="text"
               lang="en"
@@ -465,7 +468,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
           </label>
           {needNickname ? (
             <label className="flex flex-col gap-2">
-              <span>{TEXT.nickname}</span>
+              <span>{TEACHER_TEXT.firstRunNickname}</span>
               <input
                 type="text"
                 lang="en"
@@ -492,7 +495,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             // 별명도 vocab 낱말이면 받지 않고 4절 문장을 다시 보인다(화면 검토 I-1, 새 문구 없음)
             <StatusLine tone="error" className="-mt-2">
               <span id="nickname-status">
-                {nicknameRejected ? TEXT.nickname : ""}
+                {nicknameRejected ? TEACHER_TEXT.firstRunNickname : ""}
               </span>
             </StatusLine>
           ) : null}
@@ -687,6 +690,8 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
               <p>{TEXT.micIpad}</p>
               <SettingsPath steps={TEXT.ipadDictationPath} />
               <SettingsPath steps={TEXT.ipadSiriPath} />
+              <p data-ipad-silent="">{TEXT.ipadSilentMode}</p>
+              <p data-ipad-screen-time="">{TEXT.ipadScreenTime}</p>
             </div>
           ) : null}
           <p>{TEXT.micBody}</p>

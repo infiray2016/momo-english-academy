@@ -8,6 +8,12 @@ import { learningDayOf } from "../../src/core/learning-day";
 import { sessions, unitProgress } from "../../src/db/schema/learning";
 import { settings } from "../../src/db/schema/operations";
 import { addAccessCookie } from "./access-cookie";
+import {
+  CHILD_VIEWPORTS,
+  type LayoutBox,
+  layoutBoxesOf,
+  spreadOf,
+} from "./child-size";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
@@ -21,14 +27,12 @@ import { photo } from "./photos";
 
 const T = {
   findLevel: "내 단계 찾기",
-  needsSpeaking: "말하기에서 단계를 찾으면 토리를 만날 수 있어요",
+  needsSpeaking: "말하기에서 단계를 찾으면 회화 선생님을 만날 수 있어요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   todayDone: "오늘 다 했어요",
   todayNotYet: "오늘 아직이에요",
   start: "시작!",
   chooseStory: "이야기 고르기",
-  talkSoon: "토리가 준비 중이에요. 곧 만나요",
-  talkNextPhase: "회화 수업은 다음 차수에 들어와요",
   findLevelHint: "단계를 몰라도 돼요. 짧은 문제로 찾아요",
   micRecheck: "마이크를 켰으면 여기를 눌러 다시 확인해요",
   placementStart: /^처음이라 내게 맞는 단계를 찾아요/,
@@ -40,6 +44,24 @@ test.beforeEach(resetHousehold);
 test.afterAll(closeE2eDb);
 
 /** 그 영역 카드(포스트잇 — 링크이거나 누를 수 없는 단추). */
+/** 같은 크기로 보는 어긋남(px, 시험 값 — 반올림 한 칸). */
+const SAME_PX = 1;
+/** 같은 줄로 보는 위 끝 차이(px, 시험 값 — 카드 높이보다 작게). */
+const SAME_ROW_PX = 100;
+
+/** 위 끝이 가까운 것끼리 줄로 묶는다. */
+function rowsOf(boxes: readonly LayoutBox[]): LayoutBox[][] {
+  const rows: LayoutBox[][] = [];
+  for (const box of boxes) {
+    const row = rows.find(
+      (r) => Math.abs((r[0]?.top ?? 0) - box.top) < SAME_ROW_PX,
+    );
+    if (row) row.push(box);
+    else rows.push([box]);
+  }
+  return rows;
+}
+
 const card = (page: Page, area: string) =>
   page
     .locator(`a, button`)
@@ -95,8 +117,8 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
         `끝낸 대화 0/${snapshot["unit.min_lessons"]}`,
       );
       await expect(c).toContainText(T.chooseStory);
-      // 1-가 회화 카드는 '토리가 준비 중이에요'(C50 (1))
-      await expect(c).toHaveAttribute("href", "/talk");
+      // 회화 카드도 그 영역 수업 목록으로(plan-p13b 값 12 — '토리가 준비 중이에요' 자리 /talk 는 지움)
+      await expect(c).toHaveAttribute("href", "/talk/lessons");
     } else {
       await expect(c.locator("[data-recent-cells] > *")).toHaveCount(
         snapshot["unit.recent_window"] ?? 0,
@@ -107,9 +129,7 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
     }
   }
   await card(page, "talk").click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(T.talkSoon);
-  // 부모용 작은 글(개발 기간 안내, C72 — 1-나에서 뺀다)
-  await expect(page.locator("[data-parent-info]")).toHaveText(T.talkNextPhase);
+  await expect(page).toHaveURL(/\/talk\/lessons$/);
   await page.getByRole("link", { name: "홈" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "모모의 공부 보드",
@@ -299,7 +319,7 @@ test.describe("audio-capture 한 번", () => {
       "href",
       "/speaking/lessons",
     );
-    await expect(card(page, "talk")).toHaveAttribute("href", "/talk");
+    await expect(card(page, "talk")).toHaveAttribute("href", "/talk/lessons");
 
     // (2) 권한 거부가 저장된 기기: 배치 전이어도 말하기 · 회화 카드는 마이크 문구가 먼저(4절 '이 행이 배치 평가 전 행보다 먼저')
     await resetHousehold();
@@ -370,4 +390,93 @@ test("AC-2a 첨삭이 오면 홈에 '첨삭이 왔어요'가 보이고 누르면
       .where(eq(sessions.id, sessionId));
     expect(row).toEqual({ writingPart: "rewrite", lessonId: lesson.id });
   });
+});
+
+test("홈 화면 꼴: 한 판의 영역 카드 넷은 두 방향 모두 같은 높이이고 시작 단추는 카드 아래 끝이며 누르는 곳은 빠르게 두 번 눌러도 커지지 않는다", async ({
+  page,
+}, testInfo) => {
+  // C114 · design-taste §4.2(같은 줄 아래 끝 · 늘인 카드의 빈 띠) · ui-ux-pro-max §2 tap-delay — 전체 디자인 리뷰 묶음 #12 · #15 · #16
+  await insertHousehold({
+    startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
+  });
+  await page.goto("/");
+  await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    // 카드(링크 칸)의 기울기 없는 높이 · 줄마다 아래 끝(디자인 fix 1b — 포스트잇 기울기는 그대로)
+    const cards = await layoutBoxesOf(page.locator("[data-home-cards] > *"));
+    expect(cards).toHaveLength(4);
+    expect(spreadOf(cards.map((c) => c.height)), way).toBeLessThanOrEqual(
+      SAME_PX,
+    );
+    for (const row of rowsOf(cards))
+      expect(spreadOf(row.map((c) => c.bottom)), way).toBeLessThanOrEqual(
+        SAME_PX,
+      );
+    // 시작 단추 위 빈 띠(단추 묶음 위 끝 − 그 앞 내용 아래 끝, 카드 안 간격 포함 — 보고에 남김)
+    const measured = await page
+      .locator("[data-home-cards] > *")
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const group = el.querySelector("[aria-hidden].min-h-14")
+            ?.parentElement as HTMLElement | null | undefined;
+          const prev = group?.previousElementSibling as HTMLElement | null;
+          return group && prev
+            ? group.offsetTop - (prev.offsetTop + prev.offsetHeight)
+            : -1;
+        }),
+      );
+    testInfo.annotations.push({
+      type: `home-card-blank-${way}`,
+      description: measured.join(","),
+    });
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  await photo(page, "home-default");
+  // 누르는 곳은 touch-action manipulation(손가락 두 개 확대는 그대로)
+  const actions = await page
+    .locator("[data-child-screen] a, [data-child-screen] button")
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).touchAction));
+  expect(actions.length).toBeGreaterThan(0);
+  for (const value of actions) expect(value).toBe("manipulation");
+});
+
+test("홈 화면 꼴: 배치 전 홈의 영역 카드 넷은 두 방향 모두 같은 높이이고 '내 단계 찾기'가 카드 아래 끝 단추 꼴로 같은 줄에 있다", async ({
+  page,
+}) => {
+  // C114 · design-taste §4.2 '늘인 카드의 발에는 단추만'(디자인 fix 1a (b)) — 첫 실행 뒤 배치 평가 전
+  await insertHousehold();
+  await page.goto("/");
+  await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  for (const area of AREAS) {
+    // 단추 글은 카드 링크의 읽히는 이름에 든다(aria-hidden 아님)
+    await expect(card(page, area).locator("[data-find-level]")).toHaveText(
+      T.findLevel,
+    );
+    await expect(
+      card(page, area).locator("[data-find-level]"),
+    ).not.toHaveAttribute("aria-hidden", "true");
+  }
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    const cards = await layoutBoxesOf(page.locator("[data-home-cards] > *"));
+    expect(spreadOf(cards.map((c) => c.height)), way).toBeLessThanOrEqual(
+      SAME_PX,
+    );
+    // 같은 줄 카드의 단추 아래 끝이 같다(세로 두 줄 · 가로 한 줄 — 줄마다, 기울기 없는 자리)
+    const pills = await layoutBoxesOf(page.locator("[data-find-level]"));
+    expect(pills).toHaveLength(4);
+    for (const row of rowsOf(pills))
+      expect(spreadOf(row.map((p) => p.bottom)), way).toBeLessThanOrEqual(
+        SAME_PX,
+      );
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  await photo(page, "home-find-level");
 });

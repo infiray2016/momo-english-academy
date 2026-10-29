@@ -41,6 +41,32 @@ async function fitsBothWays(page: Page) {
   await page.setViewportSize(CHILD_VIEWPORTS.portrait);
 }
 
+/** 글 칸의 줄마다 첫 글자(글자마다 그린 자리의 윗변이 바뀌는 곳 — 빈칸은 뺌). */
+async function lineStartsOf(page: Page, selector: string): Promise<string[]> {
+  return page.locator(selector).evaluate((root) => {
+    const starts: string[] = [];
+    let lastTop = Number.NEGATIVE_INFINITY;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i] ?? "";
+        if (ch.trim() === "") continue;
+        const range = document.createRange();
+        range.setStart(node, i);
+        range.setEnd(node, i + 1);
+        const rect = range.getClientRects()[0];
+        if (!rect) continue;
+        if (rect.top > lastTop + rect.height / 2) {
+          starts.push(ch);
+          lastTop = rect.top;
+        }
+      }
+    }
+    return starts;
+  });
+}
+
 test.beforeEach(resetHousehold);
 test.afterAll(closeE2eDb);
 
@@ -92,41 +118,35 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
     expect(words).toBeGreaterThanOrEqual(spec.passage.words.min);
     expect(words).toBeLessThanOrEqual(spec.passage.words.max);
     await photo(page, "p11-reading-passage");
+    // 글줄의 첫 글자가 문장부호가 아니다 — 낱말 상자 뒤 부호는 상자에 붙어 함께 줄을 바꾼다(전체 디자인 리뷰 M-7 · fix 8b N-3), 두 방향
+    for (const size of Object.values(CHILD_VIEWPORTS)) {
+      await page.setViewportSize(size);
+      expect(
+        await lineStartsOf(page, "[data-passage-activity] p[lang=en]"),
+        `${size.width}x${size.height}`,
+      ).not.toContainEqual(expect.stringMatching(/^[.,!?;:]$/));
+    }
+    await page.setViewportSize(CHILD_VIEWPORTS.portrait);
     const entry = glossary.find((g) => !g.proper);
     if (!entry) throw new Error("글로서리 없음");
     await page.locator(`[data-word-tap="${entry.lemma}"]`).first().click();
     await expect(page.locator("[data-word-note]")).toHaveText(entry.meaningKo);
     await photo(page, "p11-reading-word-note");
-    // 오른쪽 끝이 가장 큰 글로서리 낱말의 뜻 쪽지도 활동 카드 안에 든다(화면 검토 I-3). 그 낱말은 왼쪽 맞춤이었다면
-    // 쪽지가 카드를 넘었을 자리여야 한다(앞 조건 — 아니면 이 견본으로는 고친 것을 증명할 수 없다, 코드 재검토 Minor)
-    const rightmost = await page.evaluate(() => {
-      const buttons = [...document.querySelectorAll("[data-word-tap]")];
-      let best = 0;
-      buttons.forEach((b, i) => {
-        if (
-          b.getBoundingClientRect().right >
-          (buttons[best]?.getBoundingClientRect().right ?? 0)
-        )
-          best = i;
-      });
-      return best;
-    });
-    await page.locator("[data-word-tap]").nth(rightmost).click();
+    // 카드 오른쪽 끝에 가장 가까운 글로서리 낱말의 뜻 쪽지도 활동 카드 안에 든다(화면 검토 I-3). 넘침 피하기 셈(오른쪽 끝 맞춤 ·
+    // 카드 안으로 당김)은 단위 시험 '뜻 쪽지:' 넷이 넘침 · 안 넘침 둘 다로 증명하고, 여기서는 그 낱말의 쪽지가 카드 안인지만 본다(디자인 fix 1d)
+    // 앞 쪽지를 먼저 닫는다(같은 낱말을 다시 누르면 닫히므로)
+    await page.getByText(T.tapHint).click();
+    await expect(page.locator("[data-word-note]")).toHaveCount(0);
+    const rightmost = await page.evaluate(
+      () =>
+        [...document.querySelectorAll("[data-word-tap]")]
+          .map((b, i) => ({ i, right: b.getBoundingClientRect().right }))
+          .reduce((best, c) => (c.right > best.right ? c : best)).i,
+    );
+    const word = page.locator("[data-word-tap]").nth(rightmost);
+    await word.click();
+    await expect(word).toHaveAttribute("aria-expanded", "true");
     await expect(page.locator("[data-word-note]")).toHaveCount(1);
-    const wouldOverflowLeftAligned = await page.evaluate(() => {
-      const button = document.querySelector(
-        '[data-word-tap][aria-expanded="true"]',
-      );
-      const note = document.querySelector("[data-word-note]");
-      const card = note?.closest("[data-activity-card]");
-      if (!button || !note || !card) return false;
-      return (
-        button.getBoundingClientRect().left +
-          note.getBoundingClientRect().width >
-        card.getBoundingClientRect().right
-      );
-    });
-    expect(wouldOverflowLeftAligned).toBe(true);
     const inside = () =>
       page.evaluate(() => {
         const note = document.querySelector("[data-word-note]");

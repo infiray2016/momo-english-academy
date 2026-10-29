@@ -1,0 +1,162 @@
+{
+  "area": "speaking",
+  "form": 1,
+  "levels": [
+    {
+      "level": 1,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "This is my toy truck."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I like the tiger.", "options": ["lion", "tiger", "bear", "zebra"], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I like five yellow stars."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "This is an apple.", "options": ["banana", "grape", "egg", "apple"], "answerNo": 4},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "This is a white tooth.", "options": ["tooth", "nose", "ear", "hand"], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "That is my red bike.", "options": ["doll", "drum", "bike", "robot"], "answerNo": 3}
+      ]
+    },
+    {
+      "level": 2,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I am very hungry."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "I have a gift for you.", "options": ["cake", "doll", "gift", "kite"], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "My dad can cook."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "This is my friend. He can dance.", "options": ["dance", "sing", "swim", "walk"], "answerNo": 1},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Do you like tennis?", "options": ["soccer", "baseball", "ski", "tennis"], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "picture", "script": "Is it a turtle? It is very slow.", "options": ["whale", "turtle", "penguin", "dolphin"], "answerNo": 2}
+      ]
+    },
+    {
+      "level": 3,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "We eat lunch in the classroom."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "The cat is under the chair. The dog is behind the wall.", "prompt": "Where is the cat?", "options": ["under the chair", "behind the wall", "on the chair", "next to the wall"], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "There are birds in the sky."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "We bring crayons and paper. They bring scissors and glue.", "prompt": "What do they bring?", "options": ["crayons and paper", "crayons and glue", "scissors and glue", "scissors and paper"], "answerNo": 3},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My grandmother is at the door. My friends sit on the floor.", "prompt": "Who is at the door?", "options": ["my friends", "my grandmother", "my teacher", "my sister"], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "There is a library near the park. The market is far.", "prompt": "What is near the park?", "options": ["a market", "a school", "a hospital", "a library"], "answerNo": 4}
+      ]
+    },
+    {
+      "level": 4,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "My teacher reads the newspaper every morning."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My brother likes tennis. He does not like baseball. He plays tennis on Saturday.", "prompt": "What sport does he not like?", "options": ["tennis", "soccer", "basketball", "baseball"], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "We have art class on Monday."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "A man is running in the park. Two kids are riding bikes.", "prompt": "What is the man doing?", "options": ["He is riding a bike.", "He is running.", "He is reading a book.", "He is eating lunch."], "answerNo": 2},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My sister's favorite umbrella is yellow. My umbrella is blue.", "prompt": "What color is her umbrella?", "options": ["blue", "red", "yellow", "green"], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My dad works on Monday. On Sunday, he sleeps late.", "prompt": "What does he do on Sunday?", "options": ["He sleeps late.", "He works.", "He cooks lunch.", "He plays tennis."], "answerNo": 1}
+      ]
+    },
+    {
+      "level": 5,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "My family often goes to the museum."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Ben: Do you want steak or spaghetti?\nMeg: I would like spaghetti, please.", "prompt": "What does Meg want?", "options": ["steak", "spaghetti", "salad", "soup"], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I share my snacks with them."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Tess: How many pears do you want?\nDan: Three pears, please. How much are they?\nTess: Two dollars.", "prompt": "How many pears does Dan want?", "options": ["three", "two", "four", "five"], "answerNo": 1},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Meg: What do you do on weekends?\nBen: I often hike with my dad. I never watch television.", "prompt": "What does Ben often do?", "options": ["He watches television.", "He bakes cookies.", "He plays football.", "He hikes."], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Momo: This ribbon is for Tess. The doughnut is for Gus.\nTori: Great! Let's give them the gifts.", "prompt": "What is for Tess?", "options": ["the doughnut", "the medal", "the ribbon", "the button"], "answerNo": 3}
+      ]
+    },
+    {
+      "level": 6,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "I was a shy child five years ago."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Meg: When is the school festival?\nDan: It was in April last year. This year, it is in June.", "prompt": "When is the festival this year?", "options": ["in April", "in July", "in June", "in March"], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "Spring is my favorite season because it is warm."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Ben: In July, I stayed home. In August, I visited my uncle on a farm.\nTess: Wow! That sounds fun.", "prompt": "Where was Ben in August?", "options": ["at home", "at the beach", "in the city", "on a farm"], "answerNo": 4},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Meg: Which season do you like?\nDan: Autumn, because the air is cool.\nMeg: I like summer. I can swim in the sea.", "prompt": "Why does Dan like autumn?", "options": ["The air is cool.", "He can swim.", "It is warm.", "He likes snow."], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Tess: Our class trip is tomorrow. Do we have any snacks?\nBen: We have some cookies, but we need juice.", "prompt": "What do they need for the trip?", "options": ["cookies", "juice", "sandwiches", "honey"], "answerNo": 2}
+      ]
+    },
+    {
+      "level": 7,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "Last summer, my family went to the countryside."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Tess: Did you watch the comedy yesterday?\nBen: No, I did not. I cleaned my room.\nTess: Oh. It was fantastic!", "prompt": "What did Ben do yesterday?", "options": ["He watched a comedy.", "He went to the cinema.", "He played soccer.", "He cleaned his room."], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "We are going to visit the palace this weekend."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Dan: Will it rain during our school marathon?\nMeg: No. It will be sunny in the morning. It will rain at night.", "prompt": "When will it rain?", "options": ["in the morning", "in the afternoon", "at night", "during the marathon"], "answerNo": 3},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Ben: My dog is huge. He is bigger than your cat.\nTess: Yes. But my cat is older. She is the oldest pet on our street.", "prompt": "Which pet is older?", "options": ["the dog", "the cat", "the rabbit", "the bird"], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Meg: What are you going to do this weekend?\nDan: I am going to see a drama at the theater.\nMeg: Fun! I am going to stay home.", "prompt": "Where is Dan going to go?", "options": ["to the theater", "to the cinema", "to the museum", "to the palace"], "answerNo": 1}
+      ]
+    },
+    {
+      "level": 8,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "repeat", "sentence": "We were walking slowly to school in the snow."},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Tess: Why did you scream in the garden?\nDan: I was reading when a frog suddenly jumped on my book!\nTess: Oh, that is really funny.", "prompt": "What was Dan doing?", "options": ["He was reading.", "He was sleeping.", "He was jumping.", "He was eating."], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "repeat", "sentence": "You should not touch the iron because it is hot."}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Ben: Can we swim in the lake now?\nTess: Yes, but we must stay near the yellow flags. Never swim near the red flags.\nBen: Okay. I will swim carefully.", "prompt": "Where must they swim?", "options": ["near the red flags", "near the yellow flags", "near the white boat", "near the big rock"], "answerNo": 2},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Dan: I am new here, and I am shy. Any advice?\nMeg: You should join a club. The art club is fun.\nDan: Thanks. I will try it.", "prompt": "Which club should Dan join?", "options": ["the music club", "the science club", "the art club", "the soccer club"], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Momo: I called you last night. What were you doing?\nTori: Sorry, I did not notice. I was baking bread with my mom in the kitchen.", "prompt": "What was Tori making?", "options": ["cookies", "a cake", "soup", "bread"], "answerNo": 4}
+      ]
+    },
+    {
+      "level": 9,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Drawing is my favorite hobby. Every weekend, I draw animals and fun shapes. Drawing helps me relax after a long day. Last month, I gave a picture of a cat to my grandmother. She put it on her kitchen wall.", "prompt": "What is the main topic?", "options": ["drawing as a hobby", "cooking with a grandmother", "a trip to a farm", "a pet cat at home"], "answerNo": 1},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "This summer, I want to learn a new instrument. My uncle plays the violin very well. He offered to teach me on Saturdays. I am a little nervous. But I hope to play a song for my mom on her birthday.", "prompt": "When are the violin lessons?", "options": ["on Sundays", "on Saturdays", "every day", "on her birthday"], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My aunt lives on an island. I have visited her twice. The island has a long beach and a small hill. My cousin has tried hiking there, but I have never tried it. Next time, I want to have that experience too.", "prompt": "Who has tried hiking on the island?", "options": ["the aunt", "the uncle", "the cousin", "the grandmother"], "answerNo": 3}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Here is a fun experiment. Put an egg in a glass of water. The egg will stay at the bottom. If you add salt to the water, the egg will float. Try it at home with an adult.", "prompt": "What do you put in the water first?", "options": ["some salt", "some sugar", "a stone", "an egg"], "answerNo": 4},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My school is quite close, so I walk there every morning. Before I leave home, I check the weather. Today it was rainy, so I took my umbrella. After I crossed the bridge, I met my friend. We walked the rest of the way together.", "prompt": "Who joined the walk after the bridge?", "options": ["a friend", "a teacher", "a cousin", "a dog"], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Many people enjoy growing vegetables. You do not need a big garden. A small pot by a window is enough. First, put some soil in the pot. Then add seeds and water them every day. Soon, you can eat your own tomatoes!", "prompt": "What is this talk about?", "options": ["buying vegetables at a market", "growing vegetables at home", "cooking tomato soup", "making a big garden"], "answerNo": 2}
+      ]
+    },
+    {
+      "level": 10,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My aunt is a scientist who works at a laboratory. She studies the climate of our planet. She has worked there for ten years. Every spring, she visits my school and gives a talk. She also shows us a machine that measures temperature. Everyone loves her talks.", "prompt": "What does the machine measure?", "options": ["weight", "speed", "temperature", "distance"], "answerNo": 3},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "This old bridge was built about a hundred years ago. It was made of stone and wood. At first, it was used only by people and horses. Then it was repaired many times. Today, cars and bikes cross it every day. However, big trucks are not allowed on it.", "prompt": "Which title fits this talk best?", "options": ["How to build a house", "A trip with horses", "Rules for big trucks", "The story of an old bridge"], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Last Sunday, a woman stopped me on the street. She asked me where the post office was located. I did not know the way, so I asked a police officer. The officer explained that it was next to the bank. I walked there with the woman. She thanked me with a big smile.", "prompt": "Where is the post office?", "options": ["next to the bank", "next to the museum", "behind the police station", "across from the park"], "answerNo": 1}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "My sister has made computer programs since last spring. She has already finished two simple games. In the first game, a cat collects stars. Now she is working on a game about the planet. She has also helped me with my homework. I am proud of her, and I want to learn from her.", "prompt": "How many games has the sister finished?", "options": ["one", "two", "three", "four"], "answerNo": 2},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Internet classes have good points. You can study at home, and you can watch the lessons again. However, there are also some problems. It is hard to focus for a long time. Also, you do not see your friends during the break. Many students prefer real classrooms.", "prompt": "What is one problem with internet classes?", "options": ["You can study at home.", "You can watch lessons again.", "It is hard to focus.", "The lessons cost too much."], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Did you know that glass is made from sand? At a factory, the sand is mixed with a few other things. Then it gets very hot and melts. People at the factory shape the hot glass into bottles and cups. Finally, the glass becomes cool and hard.", "prompt": "What does this talk explain?", "options": ["why sand is hot", "how to clean bottles", "where to buy cups", "how glass is made"], "answerNo": 4}
+      ]
+    },
+    {
+      "level": 11,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "I will never forget the day when our school band played at a festival. The festival was in a small town where my grandmother grew up. I was nervous before the show. However, the audience cheered loudly for us. After the show, my grandmother gave me a big smile. It was a special occasion for my family.", "prompt": "Where did the band play?", "options": ["at a school concert", "at a town festival", "at a city museum", "at a birthday party"], "answerNo": 2},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "If I were a bird for one day, I would fly over my local park. I would look down at the streets where I walk every day. I would visit my grandmother in the countryside without a car. Although it sounds fun, I would miss my family at night. So I would come home early, before dark.", "prompt": "What is the best title?", "options": ["A day as a bird", "A trip by car", "Life in the countryside", "A pet bird at home"], "answerNo": 1},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Look at this painting of a busy market in a foreign town. The man selling fruit is wearing a red hat. The girl holding a balloon is his daughter. Next to them, a woman carrying a basket is talking to a boy. In the corner, a sleeping dog lies under a table. The painting shows a very happy day.", "prompt": "What is the man selling?", "options": ["balloons", "baskets", "hats", "fruit"], "answerNo": 4}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "The town where my grandfather lives has changed a lot. Fifty years ago, there was only one small store. Now there are many shops and a big hospital. However, the local market is still as busy as before. The old houses are not as big as the new apartments. My grandfather says the town is not the same, but he still loves it.", "prompt": "What is as busy as before?", "options": ["the new hospital", "the small store", "the local market", "the new apartments"], "answerNo": 3},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Last month, I ran in a long race at school. Although I tried my best, I finished last. At first, I felt sad and wanted to quit. Then my coach told me something wise. Even great players lose sometimes. Each race teaches us something new. Now I run every morning with my dad, and I am making progress.", "prompt": "What did the coach say?", "options": ["You should quit the race.", "Great players lose sometimes.", "You ran very fast.", "Races are not fun."], "answerNo": 2},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "If I had a robot at home, my life would be much better. The robot would wake me up every morning. It would also clean my room and wash the dishes. However, I would rather do my own homework. Learning is my job, and nobody can do it for me. A robot can help us, but we must think for ourselves.", "prompt": "Which job would the robot not do?", "options": ["doing homework", "cleaning the room", "washing the dishes", "waking someone up"], "answerNo": 1}
+      ]
+    },
+    {
+      "level": 12,
+      "items": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "In my opinion, every school should have a small garden. First of all, students can learn about nature by growing vegetables. Also, working outside is good exercise for the body and the mind. Some people say gardens cost too much money. However, a garden does not need to be big. In conclusion, I believe that a school garden is worth it.", "prompt": "What is the main idea?", "options": ["Gardens cost too much money.", "Vegetables are hard to grow.", "Students should stay inside.", "Schools should have gardens."], "answerNo": 4},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Here is how I study new English words. First of all, I write each word on a small card. I put the cards on my desk so that I can see them every day. In order to remember them better, I say each word aloud three times. Also, I test myself every Friday. In my opinion, a little study every day is better than a lot of study at once.", "prompt": "Why are the cards on the desk?", "options": ["to give them to friends", "to keep the desk clean", "to see them every day", "to sell them at school"], "answerNo": 3},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "When I was little, I used to be afraid of the dark. I used to sleep with a small lamp on. Every night, my mother read me stories about the moon and the bright stars. Slowly, the dark became my friend. Now I sleep without any light at all. Indeed, I even enjoy looking at the night sky from my window.", "prompt": "What did the mother read every night?", "options": ["stories about animals", "stories about the moon", "letters from friends", "poems about the sea"], "answerNo": 2}
+      ],
+      "spares": [
+        {"no": 1, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "I believe that our school playground rules should be changed. Right now, students can only play outside after lunch. However, many students arrive early in the morning. They often sit in the classroom with nothing to do. In my opinion, the playground should be opened before classes too. A teacher or a parent can stay with them. In conclusion, more time outside is good for everyone.", "prompt": "When should the playground be opened?", "options": ["before classes", "after lunch", "at night", "on weekends"], "answerNo": 1},
+        {"no": 2, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "Let me compare cats and dogs as pets. First of all, dogs need a walk every day, and they love to play with people. On the other hand, cats are quiet and can stay home alone. Dogs are great for families who like sports. Cats are better for busy people. In conclusion, both pets are great. The best choice depends on your family.", "prompt": "What is the final point?", "options": ["Dogs are better than cats.", "Cats are better than dogs.", "Pets need long walks.", "The best pet depends on your family."], "answerNo": 4},
+        {"no": 3, "revision": 2, "correction": 0, "type": "listening", "kind": "text", "script": "In my opinion, we must reduce plastic waste at school. Every day, students throw away many plastic bottles. These bottles can stay in the ground for a very long time. In order to change this, each class should get a water machine. Students can bring their own cups and fill them. This is a small step, but it can protect our planet.", "prompt": "Why are plastic bottles a problem?", "options": ["They cost too much money.", "They are too heavy to carry.", "They stay in the ground too long.", "They break too easily."], "answerNo": 3}
+      ]
+    }
+  ]
+}

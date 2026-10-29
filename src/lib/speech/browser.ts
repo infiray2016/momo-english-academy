@@ -16,17 +16,20 @@ import {
   type ListenOutcome,
   type ListenState,
   type ListenStep,
+  recognitionErrorCodeOf,
   type SpeechSettings,
   START_FAILED_CODE,
   startListen,
   stepListen,
 } from "@/core/speech/listen";
+import { preferredVoice } from "@/core/teacher/voice";
 import {
   type ListenHandle,
   type MicrophoneCheck,
   PLAIN_RECOGNITION_EVENTS,
   type RecognitionCtor,
   type RecognitionLike,
+  type SpeakOptions,
   type SpeakOutcome,
   type SpeechPort,
   type SpeechTraceEntry,
@@ -62,7 +65,7 @@ const INPUT_ORDER: Record<ListenInput["type"], number> = {
 
 type BrowserSpeechOptions = {
   settings: SpeechSettings;
-  /** 관찰 페이지만 넘긴다. */
+  /** 관찰 페이지(기록 전부)와 회화 틀(듣기 사건 요약 — listen-log, C149)이 넘긴다. */
   onTrace?: (entry: SpeechTraceEntry) => void;
   /** 관찰 페이지만 넘긴다('이벤트 무시' · '같은 객체 되풀이' 흉내). */
   recognitionCtor?: RecognitionCtor;
@@ -266,7 +269,14 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
           recognizer: id,
           event: { type: "error", error: event.error, message: event.message },
         });
-        push({ type: "error", now: at, recognizer: id, code: event.error });
+        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10), iPad WebKit 말소리 없음의
+        // aborted('No speech detected')는 no-speech 로(C148 — 모은 글이 없으면 말소리 없음 오류)
+        push({
+          type: "error",
+          now: at,
+          recognizer: id,
+          code: recognitionErrorCodeOf(event.error, event.message),
+        });
       };
       recognition.onend = () => {
         const at = now();
@@ -410,8 +420,10 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     };
   }
 
-  function speak(text: string): Promise<SpeakOutcome> {
-    if (!synthesisAvailable()) return Promise.resolve({ kind: "unsupported" });
+  function speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome> {
+    // 닫은 뒤(화면이 사라진 뒤) 늦게 온 읽기는 하지 않는다(P13b 차례 5 검토 I-2)
+    if (disposed || !synthesisAvailable())
+      return Promise.resolve({ kind: "unsupported" });
     // 듣는 중이면 끊고, 밀린 줄을 비운 뒤 읽는다(end 가 안 온 발화 뒤 speak 는 cancel 전까지 대기, 321436).
     activeListen?.cancelNow("speak");
     activeCheck?.cancelNow("speak");
@@ -420,9 +432,24 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = settings.lang;
-    const voice = pickVoice(synth.getVoices(), settings.lang);
+    // 목소리 순서(회화 선생님)가 있으면 그 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice(plan 회화-선생님-캐릭터 값 12)
+    const voices = synth.getVoices();
+    const voice =
+      (options?.voicePrefer?.length
+        ? preferredVoice(voices, settings.lang, options.voicePrefer)
+        : undefined) ?? pickVoice(voices, settings.lang);
     if (voice !== undefined) utterance.voice = voice;
-    trace({ at: now(), kind: "speak", text, voice: voice?.name });
+    // 빠르기 · 높이는 넘긴 때만(없으면 브라우저 기본 — 말하기 · 배치 · 읽기 동작 그대로)
+    if (options?.rate !== undefined) utterance.rate = options.rate;
+    if (options?.pitch !== undefined) utterance.pitch = options.pitch;
+    trace({
+      at: now(),
+      kind: "speak",
+      text,
+      voice: voice?.name,
+      ...(options?.rate === undefined ? {} : { rate: options.rate }),
+      ...(options?.pitch === undefined ? {} : { pitch: options.pitch }),
+    });
     // await 없이 같은 차례에서 speak 를 부른다(누름 처리 안에서 불릴 수 있다).
     return new Promise<SpeakOutcome>((resolve) => {
       const current = {
@@ -438,8 +465,11 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
           resolve(outcome);
         }
       };
-      utterance.onstart = () =>
+      utterance.onstart = () => {
         trace({ at: now(), kind: "speak-event", type: "start" });
+        // 실제로 시작한 알림(선생님 말하기 상태의 시작). 이미 끊긴 발화의 늦은 알림은 넘기지 않는다.
+        if (speaking === current) options?.onStart?.();
+      };
       utterance.onend = () => {
         trace({ at: now(), kind: "speak-event", type: "end" });
         settleIfCurrent({ kind: "ended" });

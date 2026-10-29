@@ -1,6 +1,8 @@
 // 시험용 시드 만들기 함수(plan-p04a '시험용 시드 만들기 함수'). P4b · P4c · P5 · P7 이 같이 쓴다.
 // 설계 숫자는 여기의 defaultSettings()(12절 기본값)와 단계 규격 견본(3.3 단계표 값)에만 두고, 시험은 여기서 읽는다(묶음 위험 4).
 // 이름은 앱 안 이름(Tori · Momo)만 쓰고, 연락처 꼴 글은 두지 않는다. 무작위 값을 쓰지 않는다(같은 입력이면 같은 시드).
+// 회화 카드 · 회화 평가 카드 · 선생님 이야기에는 선생님 이름(Tori · 토리 · 명단 이름)을 두지 않는다(6.4 '선생님 이름', C130).
+// 읽기 · 쓰기 · 말하기 글의 Tori 는 등장인물이라 그대로 둔다(C122).
 // 견본은 P4a 규격을 통과하면 된다. P4b · P4c 는 자기 검사에 맞게 내용을 고칠 수 있다(함수 이름 · 돌려주는 꼴은 바꾸지 않는다).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -57,6 +59,7 @@ import type {
   TalkTestSheet,
   TurnCard,
 } from "@/core/seed/schema/talk";
+import type { TeachersFile } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
   AREAS,
@@ -157,7 +160,7 @@ const BAND_SETTINGS: readonly {
   { key: "seed.topic_variants", values: [2, 2, 2, 2], changeVia: "seed" },
 ];
 
-/** 하나짜리 키 13(12절). */
+/** 하나짜리 키 15(12절). talk.teacher_model_max_mb · talk.teacher_portrait_max_kb 는 선생님 자산 검사가 읽는다(12절 '자산 검사(CI)가 읽는다'). */
 const SINGLE_SETTINGS: readonly {
   key: string;
   value: number;
@@ -184,9 +187,11 @@ const SINGLE_SETTINGS: readonly {
     changeVia: "decision-first",
   },
   { key: "writing.split_from_level", value: 6, changeVia: "decision-first" },
+  { key: "talk.teacher_model_max_mb", value: 8, changeVia: "seed" },
+  { key: "talk.teacher_portrait_max_kb", value: 100, changeVia: "seed" },
 ];
 
-/** 검증기(P4b · P4c)가 읽는 45 키의 12절 기본값. */
+/** 검증기(P4b · P4c)와 선생님 자산 검사가 읽는 47 키의 12절 기본값. */
 export function defaultSettings(): SettingsFile {
   const settings: SettingRow[] = [];
   for (const { key, values, changeVia } of BAND_SETTINGS) {
@@ -627,7 +632,7 @@ const TALK_TABLE: readonly TalkRow[] = [
     minutes: 10,
   },
   {
-    mode: "정해진 질문 · 토리가 되묻기",
+    mode: "정해진 질문 · 선생님이 되묻기",
     targetTurns: 15,
     missions: 0,
     hintTiers: ["ko", "sentence"],
@@ -794,8 +799,8 @@ function levelSpecRows(
       ...common,
       canDo:
         talk.missions > 0
-          ? `토리와 ${talk.targetTurns}번 말을 주고받으며 미션 ${talk.missions}개를 해낼 수 있다`
-          : `토리와 ${talk.targetTurns}번 말을 주고받을 수 있다`,
+          ? `선생님과 ${talk.targetTurns}번 말을 주고받으며 미션 ${talk.missions}개를 해낼 수 있다`
+          : `선생님과 ${talk.targetTurns}번 말을 주고받을 수 있다`,
       targetMinutes: talk.minutes,
       segments: low
         ? ["greeting", "today_words", "practice", "talk", "wrap_up"]
@@ -926,7 +931,74 @@ export type ReferenceSet = {
   forbidden: ForbiddenFile;
   forms: ListFormsFile;
   metaSentences: MetaSentencesFile;
+  teachers: TeachersFile;
 };
+
+/** 시제품 출처(seed/teachers.json 과 같은 꼴, 견본 값). */
+const TEACHER_SOURCE: TeachersFile["teachers"][number]["source"] = {
+  creator: "VRoid Project",
+  distributionUrl: "https://opengameart.org/content/vroid-studio-cc0-models",
+  originalTitle: "fixture",
+  originalFile: "fixture.vrm",
+  originalSha256: "0".repeat(64),
+  licenseName: "CC0",
+  permissions: "allowedUserName=Everyone · commercialUssageName=Allow",
+  conditionsUrl: "https://hub.vroid.com/license",
+  reduction: "fixture reduction",
+};
+
+/** 견본 모델 · 초상 칸(파일은 자산 검사 시험이 io 로 넘긴다). */
+function teacherAssets(key: string) {
+  return {
+    model: {
+      path: `teachers/${key}.00000000.vrm`,
+      bytes: 1,
+      sha256: "0".repeat(64),
+    },
+    portrait: { path: `teachers/${key}.00000000.webp`, bytes: 1 },
+  };
+}
+
+/** 견본 명단(1-가 명단과 같은 이름 · 빼는 낱말 · 목소리 미나 · 리오, 5절 · C130 · C141). 모델 · 초상 칸은 가짜 경로다. */
+export function teacherRoster(): TeachersFile {
+  return {
+    teachers: [
+      {
+        key: "mina",
+        kind: "vrm",
+        nameKo: "미나",
+        nameEn: "Mina",
+        nameKoWordExceptions: ["미나리"],
+        introKo: "작은 목소리도 귀 기울여 듣는,\n다정한 영어 친구예요.",
+        traitsKo: ["다정하게", "차근차근", "함께 웃어요"],
+        personaEn:
+          "Warm and patient. You go step by step and laugh together with the child.",
+        greetingEn:
+          "Hello! I'm Mina. It's nice to meet you. Let's learn English together!",
+        color: { room: "#e8e9d9", accent: "#386449" },
+        ...teacherAssets("mina"),
+        voice: { pitch: 1.08, prefer: [] },
+        source: { ...TEACHER_SOURCE },
+      },
+      {
+        key: "leo",
+        kind: "vrm",
+        nameKo: "리오",
+        nameEn: "Leo",
+        nameKoWordExceptions: ["리오넬", "리오데자네이루"],
+        introKo: "새로운 이야기가 늘 궁금한,\n밝고 편안한 영어 친구예요.",
+        traitsKo: ["호기심 가득", "편안하게", "한 번 더 해요"],
+        personaEn:
+          "Curious and relaxed. You love new stories and cheerfully invite the child to try one more time.",
+        greetingEn: "Hey! I'm Leo. I'm happy you're here.",
+        color: { room: "#e0e8e8", accent: "#43667b" },
+        ...teacherAssets("leo"),
+        voice: { pitch: 0.97, prefer: [] },
+        source: { ...TEACHER_SOURCE },
+      },
+    ],
+  };
+}
 
 /**
  * 규격 파일 한 벌: level_specs 48행(3.3 단계표 값), unit_specs 240 + 알파벳 2행, vocab(지어낸 낱말과 기능어),
@@ -1183,6 +1255,7 @@ export function referenceSet(
         "I will now",
       ],
     },
+    teachers: teacherRoster(),
   };
 }
 
@@ -1840,7 +1913,7 @@ export function speakingLesson(
 
 type Pos = (typeof POS_CYCLE)[number];
 type QuestionBank = readonly { en: string; ko: string }[];
-/** 품사별 토리 질문(노리는 단어를 질문에 넣지 않는다, 6.3). 1단계 문장 길이(5) 안. */
+/** 품사별 선생님 질문(노리는 단어를 질문에 넣지 않는다, 6.3). 1단계 문장 길이(5) 안. 선생님 이름은 두지 않는다(C130). */
 const QUESTION_BANK: Record<Pos, QuestionBank> = {
   noun: [
     { en: "What do you see?", ko: "뭐가 보여?" },
@@ -1854,7 +1927,7 @@ const QUESTION_BANK: Record<Pos, QuestionBank> = {
     { en: "What can you do?", ko: "뭘 할 수 있어?" },
     { en: "What do you do?", ko: "뭐 해?" },
     { en: "What can Momo do?", ko: "모모는 뭘 할 수 있어?" },
-    { en: "What can Tori do?", ko: "토리는 뭘 할 수 있어?" },
+    { en: "What can they do?", ko: "걔들은 뭘 할 수 있어?" },
     { en: "What can we do?", ko: "우리는 뭘 할 수 있어?" },
   ],
   adjective: [
@@ -2042,9 +2115,9 @@ export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
     }),
     firstQuestion: "",
     flow: [
-      "Tori asks about things.",
+      "The teacher asks about things.",
       "The child answers.",
-      "Tori says the words again.",
+      "The teacher says the words again.",
     ],
     todayTopicsKo: ["좋아하는 물건", "할 수 있는 것", "물건 모양"],
     closingLines: [
@@ -2296,7 +2369,7 @@ export function speakingPlacement(ref: ReferenceSet): PlacementFile {
   };
 }
 
-/** 토리 이야기 한 구간(STORIES_PER_BAND 장, 장마다 질문 STORY_QUESTIONS 개 · 보기 STORY_OPTIONS 개). */
+/** 선생님 이야기(종류 tori_story) 한 구간(STORIES_PER_BAND 장, 장마다 질문 STORY_QUESTIONS 개 · 보기 STORY_OPTIONS 개). 선생님 이름은 두지 않는다(C130). */
 export function storyFile(ref: ReferenceSet, band: Band): StoryFile {
   const first = bandInfo(band).first;
   const { nouns } = wordsByPos(unitWordsOf(ref, "talk", first, SAMPLE_UNIT));
@@ -2312,13 +2385,11 @@ export function storyFile(ref: ReferenceSet, band: Band): StoryFile {
         no: i + 1,
         ...VERSION,
         generation: { ...GENERATION },
-        title: `토리 이야기 ${i + 1}`,
-        textEn: `Tori finds a ${word}. They play with it.`,
-        ...(withKo
-          ? { textKo: "토리가 그걸 찾아. 모모랑 토리가 같이 놀아." }
-          : {}),
+        title: `선생님 이야기 ${i + 1}`,
+        textEn: `Momo finds a ${word}. They play with it.`,
+        ...(withKo ? { textKo: "모모가 그걸 찾아. 다 같이 놀아." } : {}),
         questions: Array.from({ length: STORY_QUESTIONS }, (_, q) => ({
-          prompt: q === 0 ? "What does Tori find?" : "Who plays with Tori?",
+          prompt: q === 0 ? "What does Momo find?" : "Who finds it?",
           options:
             q === 0
               ? options
@@ -2452,7 +2523,7 @@ export function writeSeedTree(root: string, tree: SeedTree): string {
 
 // ── 꽉 찬 작은 시드(miniSeed, plan-p04c 작업 4) ──────────────────
 
-/** 회화 평가 카드의 토리 질문(수업 카드 질문과 겹치지 않게 따로 둔다, 6.4 단계 평가). 1단계 문장 길이(5) 안. */
+/** 회화 평가 카드의 선생님 질문(수업 카드 질문과 겹치지 않게 따로 둔다, 6.4 단계 평가). 1단계 문장 길이(5) 안. 선생님 이름은 두지 않는다(C130). */
 const SHEET_BANK: QuestionBank = [
   { en: "What is your toy?", ko: "네 장난감은 뭐야?" },
   { en: "What color is it?", ko: "그건 무슨 색이야?" },

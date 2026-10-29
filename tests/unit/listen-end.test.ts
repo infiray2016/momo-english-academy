@@ -6,12 +6,14 @@ import { BANDS, bandOf } from "@/core/level-band";
 import {
   type CancelReason,
   classifyRecognitionError,
+  DICTATION_DISABLED_CODE,
   type EndRule,
   endRuleFor,
   type ListenEffect,
   type ListenInput,
   type ListenOutcome,
   type ListenStep,
+  recognitionErrorCodeOf,
   SPEECH_SETTING_KEYS,
   type SpeechSettings,
   speechSettingsFrom,
@@ -78,7 +80,13 @@ function scriptInput(item: Queued): ListenInput | undefined {
         text: event.results.map((r) => r.transcript).join(" "),
       };
     case "error":
-      return { type: "error", now, recognizer, code: event.error };
+      // 브라우저 구현(browser.ts)과 같이 메시지로 코드를 고른다(받아쓰기 꺼짐 · iPad 말소리 없음 — M-10 · C148)
+      return {
+        type: "error",
+        now,
+        recognizer,
+        code: recognitionErrorCodeOf(event.error, event.message),
+      };
     case "end":
       return { type: "end", now, recognizer };
     default:
@@ -873,6 +881,18 @@ describe("오류 갈래(7절 · 8절 · C53)", () => {
       expect(classifyRecognitionError(code)).toBe("retry");
     }
 
+    // iPad 에서 Siri · 받아쓰기가 꺼졌을 때(실측 1 — error aborted "Siri and Dictation are disabled")는 마이크를 쓸 수 없는 기기(7절 11행,
+    // 전체 디자인 리뷰 M-10). 우리 쪽 멈춤의 aborted(메시지 없음 · 다른 메시지)는 그대로 다시 듣기
+    expect(
+      recognitionErrorCodeOf("aborted", "Siri and Dictation are disabled"),
+    ).toBe(DICTATION_DISABLED_CODE);
+    expect(classifyRecognitionError(DICTATION_DISABLED_CODE)).toBe(
+      "mic-unavailable",
+    );
+    expect(recognitionErrorCodeOf("aborted", "")).toBe("aborted");
+    expect(recognitionErrorCodeOf("aborted", undefined)).toBe("aborted");
+    expect(recognitionErrorCodeOf("no-speech", "dictation")).toBe("no-speech");
+
     const rule = oneSentence(1);
     expect(simulate(loadScript("not-allowed"), rule).outcome).toEqual({
       kind: "error",
@@ -900,6 +920,184 @@ describe("오류 갈래(7절 · 8절 · C53)", () => {
     );
     expect(classifyRecognitionError("phrases-not-supported")).toBe("retry");
     expect(classifyRecognitionError("bad-grammar")).toBe("retry");
+  });
+});
+
+describe("iPad WebKit 말소리 없음(C148)", () => {
+  // 10-22 실측: iPad 사파리 · 크롬(같은 WebKit)은 말소리가 없으면 스스로 no-speech 를 내지 않고, 앱이 stop 하면
+  // error aborted "No speech detected" → end 로 끝난다(분석 보고 task-talk-speech-analysis 0 · 2.3)
+  const WEBKIT_NO_SPEECH = "No speech detected";
+  const webkitSilent = (name: string) =>
+    inlineScript(name, [
+      {
+        events: [
+          { at: 50, type: "start" },
+          { at: 60, type: "audiostart" },
+        ],
+        onStop: [
+          {
+            at: 10,
+            type: "error",
+            error: "aborted",
+            message: WEBKIT_NO_SPEECH,
+          },
+          { at: 20, type: "end" },
+        ],
+      },
+    ]);
+  const NO_SPEECH_OUTCOME: ListenOutcome = {
+    kind: "error",
+    code: "no-speech",
+    group: "retry",
+    partialText: "",
+  };
+
+  it("C148 aborted 의 메시지가 'No speech detected' 면 no-speech 코드로 읽고 다른 aborted 는 그대로 둔다", () => {
+    expect(recognitionErrorCodeOf("aborted", WEBKIT_NO_SPEECH)).toBe(
+      "no-speech",
+    );
+    expect(recognitionErrorCodeOf("aborted", "no speech detected")).toBe(
+      "no-speech",
+    );
+    expect(recognitionErrorCodeOf("aborted", undefined)).toBe("aborted");
+    expect(recognitionErrorCodeOf("aborted", "Recognition aborted")).toBe(
+      "aborted",
+    );
+  });
+
+  it("C148 말하기 단추로 stop 한 뒤 'aborted · No speech detected' 로 끝나고 모은 글이 없으면 no-speech 오류다", () => {
+    const sim = simulate(webkitSilent("webkit-button"), oneSentence(1), {
+      buttonAt: 2000,
+    });
+    expect(sim.outcome).toEqual(NO_SPEECH_OUTCOME);
+    expect(sim.doneAt).toBe(2010);
+  });
+
+  it("C148 상한(speech.max_listen_seconds)으로 stop 한 뒤 'aborted · No speech detected' 로 끝나고 모은 글이 없으면 no-speech 오류다", () => {
+    const sim = simulate(webkitSilent("webkit-cap"), oneSentence(1));
+    expect(sim.outcome).toEqual(NO_SPEECH_OUTCOME);
+    expect(sim.doneAt).toBe(SETTINGS.maxListenMs + 10);
+  });
+
+  it("C148 모은 글이 있으면 stop 뒤 'aborted · No speech detected' 여도 모은 글로 끝난다", () => {
+    const script = inlineScript("webkit-text", [
+      {
+        events: [
+          { at: 50, type: "start" },
+          {
+            at: 500,
+            type: "result",
+            results: [{ transcript: "I'm good", isFinal: false }],
+          },
+        ],
+        onStop: [
+          {
+            at: 10,
+            type: "error",
+            error: "aborted",
+            message: WEBKIT_NO_SPEECH,
+          },
+          { at: 20, type: "end" },
+        ],
+      },
+    ]);
+    expect(
+      simulate(script, oneSentence(1), { buttonAt: 1000 }).outcome,
+    ).toEqual({
+      kind: "result",
+      text: "I'm good",
+      pieces: ["I'm good"],
+      endedBy: "button",
+      restarts: 0,
+      watchdogRestarts: 0,
+    });
+  });
+
+  it("C148 끊어 듣기(chunk)로 stop 한 뒤의 'aborted · No speech detected' 는 오류가 아니라 새 객체로 이어 듣는다", () => {
+    const script = inlineScript("webkit-chunk", [
+      {
+        events: [
+          { at: 50, type: "start" },
+          {
+            at: 500,
+            type: "result",
+            results: [{ transcript: "First I wake up", isFinal: true }],
+          },
+        ],
+        onStop: [
+          {
+            at: 10,
+            type: "error",
+            error: "aborted",
+            message: WEBKIT_NO_SPEECH,
+          },
+          { at: 20, type: "end" },
+        ],
+      },
+      {
+        events: [
+          { at: 50, type: "start" },
+          {
+            at: 500,
+            type: "result",
+            results: [{ transcript: "then I eat", isFinal: true }],
+          },
+        ],
+        onStop: [{ at: 20, type: "end" }],
+      },
+    ]);
+    const sim = simulate(script, multiSentence(9), {
+      buttonAt: SETTINGS.maxListenMs + 2000,
+    });
+    expect(sim.outcome).toEqual({
+      kind: "result",
+      text: "First I wake up then I eat",
+      pieces: ["First I wake up", "then I eat"],
+      endedBy: "button",
+      restarts: 1,
+      watchdogRestarts: 0,
+    });
+    // 글 없는 chunk 도 이어 듣는다(오류로 끝나지 않음)
+    const silentChunk = simulate(
+      webkitSilent("webkit-silent-chunk"),
+      multiSentence(9),
+      { buttonAt: SETTINGS.maxListenMs + 2000 },
+    );
+    expect(effectsOf(silentChunk, "start-recognizer")).toHaveLength(2);
+    expect(silentChunk.outcome).toEqual(NO_SPEECH_OUTCOME);
+  });
+
+  it("C148 듣는 중에 'aborted · No speech detected' 가 오고 모은 글이 없으면 no-speech 오류다", () => {
+    const script = inlineScript("webkit-listening", [
+      {
+        events: [
+          { at: 50, type: "start" },
+          {
+            at: 4000,
+            type: "error",
+            error: "aborted",
+            message: WEBKIT_NO_SPEECH,
+          },
+          { at: 4010, type: "end" },
+        ],
+      },
+    ]);
+    expect(simulate(script, oneSentence(1)).outcome).toEqual(NO_SPEECH_OUTCOME);
+  });
+
+  it("C148 우리 쪽 stop 뒤 메시지 없는 aborted 는 그대로 '결과 없음'이다", () => {
+    const script = inlineScript("plain-aborted", [
+      {
+        events: [{ at: 50, type: "start" }],
+        onStop: [
+          { at: 10, type: "error", error: "aborted" },
+          { at: 20, type: "end" },
+        ],
+      },
+    ]);
+    expect(
+      simulate(script, oneSentence(1), { buttonAt: 2000 }).outcome,
+    ).toEqual({ kind: "no-result" });
   });
 });
 

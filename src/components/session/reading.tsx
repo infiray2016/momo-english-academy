@@ -30,6 +30,7 @@ import {
 } from "@/components/board/board";
 import { checkAnswer } from "@/core/answer/check";
 import type { ReadingQuestion } from "@/core/seed/schema/lesson";
+import { noteAlignOf, noteShiftOf } from "@/core/session/note-place";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 
@@ -176,19 +177,12 @@ export function PassageActivity({
     const card = root?.closest<HTMLElement>("[data-activity-card]") ?? root;
     if (!button || !note || !card) return;
     const c = card.getBoundingClientRect();
-    const b = button.getBoundingClientRect();
-    const align = b.left + b.width / 2 > c.left + c.width / 2 ? "end" : "start";
+    const align = noteAlignOf(button.getBoundingClientRect(), c);
     if (align !== open.align) {
       setOpen({ ...open, align, shift: 0 });
       return;
     }
-    const n = note.getBoundingClientRect();
-    const shift =
-      n.right > c.right
-        ? c.right - n.right
-        : n.left < c.left
-          ? c.left - n.left
-          : 0;
+    const shift = noteShiftOf(note.getBoundingClientRect(), c);
     setOpen({ ...open, shift, placed: true });
   }, [open]);
 

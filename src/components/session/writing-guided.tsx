@@ -39,6 +39,7 @@ import {
   fixSpotOf,
   frameBlanks,
   frameParts,
+  frameSegments,
   ownRepeatStopOf,
 } from "@/core/writing/guided";
 import { markMicUnavailable } from "@/lib/mic-state";
@@ -375,58 +376,64 @@ export function GuidedWritingActivity({
                   lang="en"
                   className={cn(CHILD_SIZE.english, "leading-[4rem]")}
                 >
-                  {parts.map((part, j) => (
+                  {frameSegments(s.frame).map((segment, j) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: 빈칸 차례가 곧 자리다
                     <span key={j}>
-                      {part}
+                      {segment.text}
                       {j < parts.length - 1 ? (
-                        input === "slot" ? (
-                          <input
-                            type="text"
-                            data-blank-input=""
-                            aria-label={WRITING_GUIDED_TEXT.blankName(
-                              i + 1,
-                              j + 1,
-                            )}
-                            lang="en"
-                            autoComplete="off"
-                            autoCorrect="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
-                            enterKeyHint="done"
-                            disabled={phase !== "write"}
-                            value={row[j] ?? ""}
-                            onChange={(e) => setBlank(i, j, e.target.value)}
-                            maxLength={BLANK_TEXT_MAX}
-                            size={Math.max(
-                              BLANK_INPUT_SIZE_MIN,
-                              (row[j] ?? "").length + 1,
-                            )}
-                            className={cn(
-                              BLANK_FRAME,
-                              INPUT_FOCUS,
-                              // 글 길이만큼 늘되 문장 줄 너비를 넘지 않게(코드 재검토 review-p11-fix5-code Minor)
-                              "w-auto min-w-40 max-w-full font-normal",
-                            )}
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            data-blank-slot={row[j] ? "filled" : "empty"}
-                            aria-label={
-                              row[j] ||
-                              WRITING_GUIDED_TEXT.blankName(i + 1, j + 1)
-                            }
-                            disabled={phase !== "write" || !row[j]}
-                            onClick={() => setBlank(i, j, "")}
-                            className={cn(
-                              BLANK_FRAME,
-                              !row[j] && "border-dashed",
-                            )}
-                          >
-                            {row[j] ?? ""}
-                          </button>
-                        )
+                        // 빈칸 뒤 문장부호는 빈칸과 한 덩이(줄이 부호로 시작하지 않게 — 전체 디자인 리뷰 M-7)
+                        <span className="whitespace-nowrap">
+                          {input === "slot" ? (
+                            <input
+                              type="text"
+                              data-blank-input=""
+                              aria-label={WRITING_GUIDED_TEXT.blankName(
+                                i + 1,
+                                j + 1,
+                              )}
+                              lang="en"
+                              autoComplete="off"
+                              autoCorrect="off"
+                              autoCapitalize="off"
+                              spellCheck={false}
+                              enterKeyHint="done"
+                              disabled={phase !== "write"}
+                              value={row[j] ?? ""}
+                              onChange={(e) => setBlank(i, j, e.target.value)}
+                              maxLength={BLANK_TEXT_MAX}
+                              size={Math.max(
+                                BLANK_INPUT_SIZE_MIN,
+                                (row[j] ?? "").length + 1,
+                              )}
+                              className={cn(
+                                BLANK_FRAME,
+                                segment.blankTail !== "" && "mr-0",
+                                INPUT_FOCUS,
+                                // 글 길이만큼 늘되 문장 줄 너비를 넘지 않게(코드 재검토 review-p11-fix5-code Minor)
+                                "w-auto min-w-40 max-w-full font-normal",
+                              )}
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              data-blank-slot={row[j] ? "filled" : "empty"}
+                              aria-label={
+                                row[j] ||
+                                WRITING_GUIDED_TEXT.blankName(i + 1, j + 1)
+                              }
+                              disabled={phase !== "write" || !row[j]}
+                              onClick={() => setBlank(i, j, "")}
+                              className={cn(
+                                BLANK_FRAME,
+                                segment.blankTail !== "" && "mr-0",
+                                !row[j] && "border-dashed",
+                              )}
+                            >
+                              {row[j] ?? ""}
+                            </button>
+                          )}
+                          {segment.blankTail}
+                        </span>
                       ) : null}
                     </span>
                   ))}

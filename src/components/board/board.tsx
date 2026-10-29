@@ -81,13 +81,17 @@ export function PaperBand({
       data-paper-band=""
       className="flex flex-wrap items-center justify-between gap-4 rounded bg-paper px-6 py-3 shadow-band"
     >
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+      {/* 왼쪽 묶음이 남은 너비를 다 차지해 제목 · 둘째 줄이 그 안에서 접히고, 오른쪽 묶음은 같은 줄에 남는다(띠가 단추 줄로 늘지 않음 — 디자인 리뷰 2 N-3) */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-1">
         <Title className="font-heading text-[32px] leading-tight">
           {title}
         </Title>
         {detail ? <p className={CHILD_SIZE.guide}>{detail}</p> : null}
       </div>
-      {right ? <div className="flex items-center gap-3">{right}</div> : null}
+      {/* 두 줄로 접히면(세로 820 — 제목이 길 때) 오른쪽 묶음이 왼쪽에 붙지 않게 ml-auto(4절 '구석', 차례 5 화면 재검토 N-1) */}
+      {right ? (
+        <div className="ml-auto flex items-center gap-3">{right}</div>
+      ) : null}
     </header>
   );
 }
@@ -169,7 +173,12 @@ export function PostIt({
     disabled ? DISABLED_TONE[tone] : POSTIT_TONE(tone),
     TILT[tilt],
     (href || onClick) &&
-      cn(CHILD_SIZE.target, "transition-transform", FOCUS_RING),
+      // 움직임 줄이기 설정이면 누름 움직임도 없음(ui-ux-pro-max §1 reduced-motion)
+      cn(
+        CHILD_SIZE.target,
+        "transition-transform motion-reduce:transition-none",
+        FOCUS_RING,
+      ),
     pressed && SELECTED_RING,
     disabled && "cursor-not-allowed",
     className,

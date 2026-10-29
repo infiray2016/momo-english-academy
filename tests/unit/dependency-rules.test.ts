@@ -70,6 +70,17 @@ const FIXTURE_FILES: Record<string, string> = {
     'import { files } from "@/server/seed-viewer/files";\nexport const f = files;\n',
   "src/app/dev/seed-viewer/page.local.tsx":
     'import { files } from "@/server/seed-viewer/files";\nexport default function Page() {\n  return files;\n}\n',
+  // 3D 그림 층(선생님 화면 plan 값 15): three 는 avatar-3d 만, avatar-3d 는 동적 가져오기로만
+  "src/components/teacher/avatar-3d.ts":
+    'import * as THREE from "three";\nimport { VRMUtils } from "@pixiv/three-vrm";\nexport const a = [THREE, VRMUtils];\n',
+  "src/components/teacher/teacher-layer.tsx":
+    'export const load = () => import("@/components/teacher/avatar-3d");\n',
+  "src/components/uses-three.ts":
+    'import { Scene } from "three";\nexport const s = Scene;\n',
+  "src/components/uses-three-vrm.ts":
+    'import { VRMUtils } from "@pixiv/three-vrm";\nexport const v = VRMUtils;\n',
+  "src/app/static-avatar.tsx":
+    'import { a } from "@/components/teacher/avatar-3d";\nexport const s = a;\n',
   "src/lib/a.ts": 'import { b } from "./b";\nexport const a = () => b;\n',
   "src/lib/b.ts": 'import { a } from "./a";\nexport const b = () => a;\n',
 };
@@ -285,6 +296,40 @@ describe("의존 규칙", () => {
     );
   });
 
+  it("AC-N12 의존 규칙: 3D 그림 층(avatar-3d) 밖에서 three · @pixiv/three-vrm 을 가져오면 three-only-in-avatar 위반", () => {
+    expect(violationsFrom("src/components/uses-three.ts")).toEqual([
+      "three-only-in-avatar",
+    ]);
+    expect(violationsFrom("src/components/uses-three-vrm.ts")).toEqual([
+      "three-only-in-avatar",
+    ]);
+  });
+
+  it("AC-N12 의존 규칙: 3D 그림 층(avatar-3d)이 three · @pixiv/three-vrm 을 가져오는 것은 허용", () => {
+    expect(violationsFrom("src/components/teacher/avatar-3d.ts")).toEqual([]);
+    for (const name of ["three", "@pixiv/three-vrm"]) {
+      const dep = resolvedDependency(
+        "src/components/teacher/avatar-3d.ts",
+        name,
+      );
+      expect(dep.couldNotResolve, name).toBe(false);
+    }
+  });
+
+  it("AC-N12 의존 규칙: avatar-3d 를 정적으로 가져오면 avatar-only-dynamic 위반이고 동적 가져오기(import())는 허용", () => {
+    expect(violationsFrom("src/app/static-avatar.tsx")).toEqual([
+      "avatar-only-dynamic",
+    ]);
+    expect(violationsFrom("src/components/teacher/teacher-layer.tsx")).toEqual(
+      [],
+    );
+    const dep = resolvedDependency(
+      "src/components/teacher/teacher-layer.tsx",
+      "@/components/teacher/avatar-3d",
+    );
+    expect(dep.resolved).toBe("src/components/teacher/avatar-3d.ts");
+  });
+
   it("의존 규칙: 서로 가져오는 두 파일은 no-circular 위반", () => {
     // dependency-cruiser 는 한 고리를 한 번만(먼저 만난 쪽에서) 보고한다.
     const circular = result.summary.violations
@@ -331,6 +376,16 @@ describe("의존 규칙 정규식", () => {
       "sdk-only-in-ai": {
         take: ["@anthropic-ai/sdk"],
         reject: ["@anthropic-ai/sdk-extra", "@anthropic-ai/tokenizer", "zod"],
+      },
+      "three-only-in-avatar": {
+        take: [
+          "three",
+          "@types/three",
+          "@pixiv/three-vrm",
+          "@pixiv/three-vrm-core",
+          "@pixiv/three-vrm-materials-mtoon",
+        ],
+        reject: ["three-mesh-bvh", "threejs", "@pixiv/other", "zod"],
       },
     };
     const forms = (name: string) => [

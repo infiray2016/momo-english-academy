@@ -27,6 +27,7 @@ import type {
   ReadingLesson,
   ReadingQuestion as ReadingQuestionData,
 } from "@/core/seed/schema/lesson";
+import { splitLeadingPunctuation } from "@/core/text/punctuation";
 import { cn } from "@/lib/utils";
 
 /** 글로서리 한 항목(P4a 규격). 표시는 새 단어에만, 누르면 뜻은 P11. */
@@ -36,30 +37,49 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** 지문을 표시할 표기형과 나머지로 가른다(긴 표기형 먼저, 낱말 경계 안에서만). */
-function splitPassage(
+export type PassagePart = {
+  text: string;
+  mark: boolean;
+  at: number;
+  /** 표시 낱말 뒤에 붙여 그릴 문장부호(다음 토막에서 뺐다 — 줄이 부호로 시작하지 않게, 전체 디자인 리뷰 M-7). */
+  tail: string;
+};
+
+/**
+ * 지문을 표시할 표기형과 나머지로 가른다(긴 표기형 먼저, 낱말 경계 안에서만). 표시 낱말 바로 뒤의 문장부호는 그 낱말의 꼬리로 옮긴다
+ * (낱말 상자는 inline-block 이라 상자 뒤에서 줄이 바뀔 수 있다).
+ */
+export function splitPassage(
   passage: string,
   surfaces: readonly string[],
-): { text: string; mark: boolean; at: number }[] {
+): PassagePart[] {
   const unique = [...new Set(surfaces.filter((s) => s.trim() !== ""))].sort(
     (a, b) => b.length - a.length,
   );
-  if (unique.length === 0) return [{ text: passage, mark: false, at: 0 }];
+  if (unique.length === 0)
+    return [{ text: passage, mark: false, at: 0, tail: "" }];
   const pattern = new RegExp(
     `(?<![A-Za-z'])(?:${unique.map(escapeRegExp).join("|")})(?![A-Za-z'])`,
     "g",
   );
-  const parts: { text: string; mark: boolean; at: number }[] = [];
+  const parts: PassagePart[] = [];
   let last = 0;
   for (const match of passage.matchAll(pattern)) {
     const at = match.index ?? 0;
     if (at > last)
-      parts.push({ text: passage.slice(last, at), mark: false, at: last });
-    parts.push({ text: match[0], mark: true, at });
-    last = at + match[0].length;
+      parts.push({
+        text: passage.slice(last, at),
+        mark: false,
+        at: last,
+        tail: "",
+      });
+    const end = at + match[0].length;
+    const { punct } = splitLeadingPunctuation(passage.slice(end));
+    parts.push({ text: match[0], mark: true, at, tail: punct });
+    last = end + punct.length;
   }
   if (last < passage.length)
-    parts.push({ text: passage.slice(last), mark: false, at: last });
+    parts.push({ text: passage.slice(last), mark: false, at: last, tail: "" });
   return parts;
 }
 
@@ -208,6 +228,7 @@ export function ReadingPassage({
                 >
                   {part.text}
                 </button>
+                {part.tail}
                 {open && openWord ? (
                   <span
                     lang="ko"
@@ -231,15 +252,20 @@ export function ReadingPassage({
             );
           }
           return isNew ? (
-            <span
-              key={part.at}
-              data-new-word=""
-              className="rounded bg-[#FFFDF7] px-1 font-bold"
-            >
-              {part.text}
+            <span key={part.at} className="whitespace-nowrap">
+              <span
+                data-new-word=""
+                className="rounded bg-[#FFFDF7] px-1 font-bold"
+              >
+                {part.text}
+              </span>
+              {part.tail}
             </span>
           ) : (
-            <span key={part.at}>{part.text}</span>
+            <span key={part.at}>
+              {part.text}
+              {part.tail}
+            </span>
           );
         })}
       </p>

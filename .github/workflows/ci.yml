@@ -1,18 +1,31 @@
 name: ci
+# 분 아끼기(2026-10-29, 이어하기 0³³ ①): 작은 관문 아홉은 작업 하나(설치 한 번)로 묶고, e2e 둘은
+# 손으로 띄울 때(workflow_dispatch) · PR 에 'e2e' 라벨이 붙어 있을 때 · main push 때만 돈다.
+# 라벨을 붙이는 사건(labeled)은 e2e 둘만 띄우고 checks 는 다시 돌리지 않는다. 그 실행은 라벨 이름별 concurrency group 에
+# 두어 진행 중인 checks 를 취소하지 않는다(검토 task-ci-minutes-review I-1). 'e2e' 가 아닌 라벨을 붙여도 e2e 는 다시 돌지 않는다(M-1).
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      e2e:
+        description: "e2e · e2e-local 도 돌린다"
+        type: boolean
+        default: true
 permissions:
   contents: read
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ github.event.action == 'labeled' && format('label-{0}', github.event.label.name) || 'run' }}
   cancel-in-progress: true
 env:
   NEXT_TELEMETRY_DISABLED: "1"
 jobs:
-  lint:
+  checks: # 작은 관문 아홉(설치 한 번). 싼 것부터 — 앞 단계가 실패하면 뒤는 돌지 않는다
+    if: ${{ github.event.action != 'labeled' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
@@ -21,76 +34,30 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec biome ci --reporter=github .
-  build:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-  unit:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-  depcruise:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check:deps
-  spec-trace: # missing-test 는 묶음 plan 작업 10 에서 0 이 되면 --fail-on 에 더한다(C51 라)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec
-  bundle-secrets: # 빌드 결과를 넘겨받지 않고 다시 빌드한다
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm check:bundle
-  integration: # 시험용 Postgres 는 embedded-postgres(dev 의존)가 띄운다. 컨테이너 서비스는 쓰지 않는다(C55 (1))
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - name: lint
+        run: pnpm exec biome ci --reporter=github .
+      - name: check-ids # P7b. 12절 키 · 5절 테이블 ↔ seed/settings.json ↔ 코드(역분석 제안 6 · 조사 P5). 설계 숫자는 보고만(차수 경계에서 막음으로)
+        run: pnpm check:ids --fail-on spec-setting-missing,seed-setting-unknown,setting-scope,setting-change-via,setting-default,code-setting-unknown,table-mismatch,max-corrections,fixture-setting
+      - name: spec-trace # missing-test 는 묶음 plan 작업 10 에서 0 이 되면 --fail-on 에 더한다(C51 라)
+        run: pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec
+      - name: depcruise
+        run: pnpm check:deps
+      - name: unit
+        run: pnpm test
+      - name: seed-validate # P4c. seed/ 가 생기기 전(P6 전)에는 검증 단계를 건너뛴다
+        if: ${{ hashFiles('seed/settings.json') != '' }}
+        run: pnpm seed:validate
+      - name: images-check
+        if: ${{ hashFiles('seed/images.json') != '' }}
+        run: pnpm images:check
+      - name: build
+        run: pnpm build
+      - name: bundle-secrets # 바로 위 build 결과를 검사한다(따로 다시 빌드하지 않는다)
+        run: pnpm check:bundle
+      # integration: 시험용 Postgres 는 embedded-postgres(dev 의존)가 띄운다. 컨테이너 서비스는 쓰지 않는다(C55 (1))
       # 실패 줄 지킴(검토 review-p10-5-6-code I-1): embedded-postgres 의 종료 처리기가 vitest 실패 코드를 0 으로 덮던 일이 다시 생겨도
       # 로그에 실패 줄이 있으면 이 단계가 실패한다(global setup 은 scripts/pg-local.ts importEmbeddedPostgres 로 처리기를 뗀다)
-      - name: pnpm test:int(실패 줄 지킴)
+      - name: integration(실패 줄 지킴)
         env:
           NO_COLOR: "1"
         run: |
@@ -98,7 +65,9 @@ jobs:
           pnpm test:int 2>&1 | tee int.log
           ! grep -qE "(Test Files|Tests) +[0-9]+ failed" int.log
   e2e: # P2b 가 켰다(가짜 음성 e2e, 다-2). Playwright 가 스스로 빌드하고 띄운다(playwright.config.ts webServer)
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 45 # 최근 실측 21~27분(검토 I-2)
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
@@ -108,6 +77,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps webkit
+        timeout-minutes: 12 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 일찍 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토)
       - run: pnpm e2e
         env:
           E2E_PHOTOS: "1" # 화면 검토 사진(tests/e2e/photos.ts) — 이 Mac 은 로컬 e2e 를 못 돌려 CI 에서 받는다(P11 차례 2)
@@ -118,7 +88,9 @@ jobs:
           path: test-results/photos
           if-no-files-found: ignore
   e2e-local: # P5b. 로컬 전용 시드 보기 화면(next dev)을 시험용 시드 나무로 연다. API 0회
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
@@ -128,27 +100,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps webkit
+        timeout-minutes: 12 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 일찍 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토)
       - run: pnpm e2e:local
-  seed-validate: # P4c. seed/ 가 생기기 전(P6 전)에는 검증 단계를 건너뛴다
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - if: ${{ hashFiles('seed/settings.json') != '' }}
-        run: pnpm seed:validate
-  check-ids: # P7b. 12절 키 · 5절 테이블 ↔ seed/settings.json ↔ 코드(역분석 제안 6 · 조사 P5). 설계 숫자는 보고만(차수 경계에서 막음으로)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check:ids --fail-on spec-setting-missing,seed-setting-unknown,setting-scope,setting-change-via,setting-default,code-setting-unknown,table-mismatch,max-corrections,fixture-setting

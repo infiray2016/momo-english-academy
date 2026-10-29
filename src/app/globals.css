@@ -158,4 +158,12 @@
     word-break: keep-all;
     overflow-wrap: break-word;
   }
+  /* 빠르게 두 번 눌러도 화면이 커지지 않게(타일 · 보기를 빨리 누르는 아이 — ui-ux-pro-max §2 tap-delay). 손가락 두 개 확대는 그대로 */
+  button,
+  a,
+  [role="button"],
+  label,
+  summary {
+    touch-action: manipulation;
+  }
 }

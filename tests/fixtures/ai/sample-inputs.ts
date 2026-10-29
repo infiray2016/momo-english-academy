@@ -9,14 +9,26 @@ import {
   type SpeakingPresentationInput,
   speakingRulesOf,
 } from "@/core/ai/calls/speaking";
+import type {
+  TalkTeacher,
+  TalkTurn,
+  TalkTurnInput,
+} from "@/core/ai/calls/talk";
 import type { ThinkoutInput } from "@/core/ai/calls/thinkout";
 import type {
   WritingCheckInput,
   WritingFeedbackInput,
 } from "@/core/ai/calls/writing";
 import type { NameSource } from "@/core/ai/mask";
+import type { TalkLevelSpec } from "@/core/seed/schema/reference";
 import type { Area } from "@/core/seed/structure";
-import { defaultSettings, referenceSet } from "../seed/builders";
+import { lemmaLookup } from "@/core/session/attempt";
+import {
+  defaultSettings,
+  referenceSet,
+  talkCard,
+  teacherRoster,
+} from "../seed/builders";
 
 /** 지어낸 아이 이름. */
 export const SAMPLE_NAMES: NameSource = {
@@ -354,3 +366,83 @@ export const THINKOUT_VARIANTS: readonly ThinkoutInput[] = [
     newWords: ["yesterday", "went", "beach", "swim", "sand", "fun"],
   }),
 ];
+
+// ── 회화 턴 · 끝맺음 턴(plan-p13a 작업 2 — 계약 · 통합 시험이 같이 쓴다) ─────
+
+/** 회화 턴의 늘 넣는 값 기본(말로 답함 · 힌트 없음 · 대화 토막). */
+export const TALK_BASE_TURN: TalkTurn = {
+  child: "I like apples.",
+  input: "speech",
+  segment: "talk",
+  hintKind: "none",
+  hintTier: 0,
+  heardHelp: "none",
+  dontKnowCount: 0,
+  targetReached: false,
+  closing: false,
+  levelTest: false,
+  moreTalkUsedUp: false,
+  aiQuestionSlot: false,
+};
+
+const talkLemmaOf = lemmaLookup(reference.vocab.vocab);
+
+/** 견본 명단(미나 · 리오)의 AI 고정부 재료(영어 이름 · 성격 글, 6.1 선생님 블록 — 선생님 화면 plan 값 8). */
+function samplePromptOf(key: string): TalkTeacher {
+  const t = teacherRoster().teachers.find((x) => x.key === key);
+  if (!t) throw new Error(`견본 명단에 ${key} 가 없다`);
+  return { nameEn: t.nameEn, personaEn: t.personaEn };
+}
+/** 회화 견본의 기본 선생님(미나 — 시험 집 기본값과 같음). */
+export const SAMPLE_TEACHER: TalkTeacher = samplePromptOf("mina");
+/** 블록 밖 글을 견주는 둘째 선생님(리오). */
+export const SAMPLE_TEACHER_LEO: TalkTeacher = samplePromptOf("leo");
+
+/** 회화 턴 견본 입력(카드 · 단계 규격은 견본 빌더, 단원 단어는 그 카드의 단원 단어). */
+export function talkSample(
+  level: number,
+  over: Omit<Partial<TalkTurnInput>, "turn"> & {
+    turn?: Partial<TalkTurn>;
+  } = {},
+): TalkTurnInput {
+  const spec = sampleLevelSpec("talk", level) as TalkLevelSpec;
+  const lesson = talkCard(reference, {
+    level,
+    unit: 1,
+    kind: "assigned",
+    lessonNo: 1,
+    variant: 1,
+  });
+  const { turn, ...rest } = over;
+  return {
+    level,
+    canDo: spec.canDo,
+    learningElement: "좋아하는 것 말하기",
+    prevLearningElements: [],
+    unitWords: [...lesson.unitWords],
+    sentenceMaxWords: spec.sentenceMaxWords,
+    spec,
+    card: lesson.card,
+    summaries: ["사과를 좋아한다고 했다."],
+    history: [],
+    teacher: SAMPLE_TEACHER,
+    lemmaOf: talkLemmaOf,
+    ...rest,
+    turn: { ...TALK_BASE_TURN, ...turn },
+  };
+}
+
+/** 견본 이름(talk_turn.<이름>)에 맞는 회화 입력 — 끝맺음 · '더 이야기하기' AI 자리 견본은 그 턴 꼴로. */
+export function talkSampleFor(caseId: string, level: number): TalkTurnInput {
+  const closing = caseId.includes("closing");
+  const aiSlot = caseId.includes("more-talk-ai");
+  return talkSample(level, {
+    turn: {
+      closing,
+      child: closing ? "" : TALK_BASE_TURN.child,
+      ...(aiSlot
+        ? { segment: "more_talk", moreTalkUsedUp: true, aiQuestionSlot: true }
+        : {}),
+    },
+  });
+}

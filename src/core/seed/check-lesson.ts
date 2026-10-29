@@ -1,6 +1,8 @@
 // 칸 검사(plan-p04b '칸 검사'): 읽기 · 쓰기 · 말하기 수업 칸 하나에 6.4 의 분량 · 말하기 수업 · 어휘 배정 · 어휘 범위 밖 단어 ·
 // 학습 요소 범위 · 정답 · 그림 · 글로서리 · 금지 내용 행을 건다. 수업 공통 검사(checkLessonCommon)는 P4c 회화 카드 검사가
 // 회화 몫 role 로 다시 부른다. 숫자는 설정값 · 단계 규격에서 읽는다. DB 없는 순수 함수다.
+
+import type { Report } from "@/core/seed/issue";
 import type {
   FormScope,
   ReferenceIndex,
@@ -102,12 +104,8 @@ export type CommonOptions = {
   allocationRoles?: readonly TextRole[];
 };
 
-export type Report = (
-  rule: string,
-  path: string,
-  message: string,
-  severity?: SeedIssue["severity"],
-) => void;
+/** 검사 결과를 받는 함수 — 정의는 잎 모듈 issue.ts(가져오기 순환을 끊으려고 옮김). */
+export type { Report };
 
 /** 검사 결과를 모으는 함수를 만든다(파일 · 칸 키를 묶는다). P4c 평가 검사가 같이 쓴다. */
 export function makeReport(

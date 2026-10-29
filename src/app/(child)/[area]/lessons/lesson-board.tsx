@@ -7,7 +7,7 @@
 // 수업을 고르면 세션을 연다(startLesson — 서버가 다시 판정, 하던 수업이 있으면 한 번 묻고 확인 뒤 중단으로 닫음, 차례 6).
 import { Check, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   AREA_LABEL,
   ChildScreen,
@@ -31,15 +31,20 @@ import type {
 import type { Area } from "@/core/seed/structure";
 import { cn } from "@/lib/utils";
 import {
+  LESSON_BADGE,
+  LESSON_CARD,
+  LESSON_GRID,
+  LESSON_NO,
+  LESSON_ROW,
+  LESSON_TITLE,
+} from "./lesson-card";
+import {
   flushAttempts,
   LESSON_START_TEXT,
   useLessonStart,
 } from "./use-lesson-start";
 
 const TILTS: readonly Tilt[] = ["left", "right", "slight", "none"];
-/** 수업 포스트잇 격자(가로 화면은 칸을 좁혀 실시드 12~15장이 한 화면에). */
-const LESSON_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 landscape:grid-cols-[repeat(auto-fill,minmax(112px,1fr))] landscape:gap-3";
 
 /** 화면 문구(4절 수업 목록 표 · plan-p10b 정본 밖 문구 표 그대로). */
 const TEXT = {
@@ -92,8 +97,13 @@ function isHereTop(here: HereStart | null, item: TopItem): boolean {
 }
 
 /** '여기부터 해요' 띠(다른 것보다 크게 — 4절). */
-function HereBadge() {
-  return (
+/** '여기부터 해요' 표지 — 카드 위 끝에 붙여 카드 높이를 늘이지 않는다(같은 크기 — C114). */
+function HereBadge({ inCard = true }: { inCard?: boolean }) {
+  return inCard ? (
+    <span data-lesson-badge="" className={LESSON_BADGE}>
+      {TEXT.hereStart}
+    </span>
+  ) : (
     <span className="self-start rounded-lg bg-ink px-3 py-1 font-heading text-[22px] text-paper">
       {TEXT.hereStart}
     </span>
@@ -106,7 +116,7 @@ export function LessonBoard({
   titles,
   waitHintSeconds,
 }: {
-  area: Exclude<Area, "talk">;
+  area: Area;
   view: ListView;
   titles: Record<string, string>;
   /** ui.wait_hint_seconds — '첨삭 보기'로 여는 동안의 기다림 표시. */
@@ -164,16 +174,28 @@ export function LessonBoard({
   };
 
   const waiting = waitingSince !== undefined || stillReading;
-  /** 누른 카드 바로 아래의 기다림 표시 · 안내 줄(그 카드일 때만). */
-  const waitBelow = (key: string) =>
-    waiting && waitAt === key ? (
-      <div data-lesson-wait="" className="flex flex-col items-center">
+  // 고르기가 실패하면 고른 표시를 되돌린다(오류 줄은 누른 카드 줄 바로 뒤 — fix 8b N-2 · 전체 디자인 리뷰 M-8)
+  useEffect(() => {
+    if (status) setSelected(undefined);
+  }, [status]);
+  /**
+   * 누른 카드 바로 뒤의 기다림 표시 · 안내 · 오류 줄(그 카드일 때만). 격자 안에서는 한 줄 전체 칸(LESSON_ROW)이라 같은 줄 카드가 늘지
+   * 않는다(fix 8b N-1 · M-8).
+   */
+  const waitBelow = (key: string, className?: string) =>
+    (waiting || status) && waitAt === key ? (
+      <div data-lesson-wait="" className={className ?? LESSON_ROW}>
         {waitingSince !== undefined ? (
           <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />
         ) : null}
         {stillReading ? (
-          <StatusLine className="text-center">
+          <StatusLine className="justify-center text-center">
             {LESSON_START_TEXT.stillReading}
+          </StatusLine>
+        ) : null}
+        {status ? (
+          <StatusLine tone="error" className="justify-center text-center">
+            {status}
           </StatusLine>
         ) : null}
       </div>
@@ -182,34 +204,32 @@ export function LessonBoard({
   const lessonCard = (item: LessonItem, i: number) => {
     const here = isHereLesson(view.hereStart, item.ref);
     const key = refKey(item.ref);
-    // 이름은 안의 글(여기부터 · 번호 · 보강 · 끝낸 수업 · 제목 · 안 해 본 수업)이다 — 고정 이름을 덮지 않는다(검토 M-4)
-    // 칸 하나가 카드와 그 아래 기다림 표시를 함께 담는다(다른 카드 자리는 그대로, 그 줄만 길어짐 — M-1)
+    // 이름은 안의 글(여기부터 · 번호 · 보강 · 끝낸 수업 · 제목 · 안 해 본 수업)이다 — 고정 이름을 덮지 않는다(검토 M-4).
+    // 카드는 격자 칸 하나(같은 크기 — C114, '여기부터 해요'도 같은 칸), 기다림 · 안내 · 오류는 바로 뒤 한 줄 칸(M-8)
     return (
-      <div
-        key={key}
-        className={cn(
-          "flex flex-col gap-2",
-          // '여기부터 해요'는 다른 것보다 크게(4절) — 두 칸 너비
-          here && "col-span-2",
-        )}
-      >
+      <Fragment key={key}>
         <PostIt
           tone={area}
           tilt={TILTS[i % TILTS.length]}
+          tape={!here}
           pressed={selected === key}
           onClick={() => choose(item)}
-          className={cn(
-            "min-h-32 w-full flex-1 gap-2 p-4 pt-7 landscape:min-h-24 landscape:p-3 landscape:pt-6",
-            here && "ring-4 ring-ink",
-          )}
+          // '여기부터 해요'도 같은 크기 — 표지 · 테두리 · 테이프 숨김으로만 구별(C114 · 4절 행)
+          className={cn(LESSON_CARD, here && "ring-4 ring-ink")}
         >
           <span
             data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
             className="contents"
           >
             {here ? <HereBadge /> : null}
+            {/* 표지는 위 끝 하나 — '여기부터 해요'가 먼저 */}
+            {item.untried && !here ? (
+              <span data-lesson-badge="" className={LESSON_BADGE}>
+                {TEXT.untried}
+              </span>
+            ) : null}
             <span className="flex items-center gap-2">
-              <span className="font-heading text-4xl leading-none">
+              <span data-lesson-no="" className={LESSON_NO}>
                 {item.ref.lessonNo}
               </span>
               {item.remedial ? (
@@ -229,17 +249,14 @@ export function LessonBoard({
                 </span>
               ) : null}
             </span>
-            {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82, 이름표는 번호 · 꼬리표) */}
-            <span data-size-guide="">{item.title}</span>
-            {item.untried ? (
-              <span className="self-start rounded-md border-2 border-ink px-2 font-heading text-[22px]">
-                {TEXT.untried}
-              </span>
-            ) : null}
+            {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82, 이름표는 번호 · 꼬리표), 두 줄까지 */}
+            <span data-size-guide="" className={LESSON_TITLE}>
+              {item.title}
+            </span>
           </span>
         </PostIt>
         {waitBelow(key)}
-      </div>
+      </Fragment>
     );
   };
 
@@ -287,12 +304,12 @@ export function LessonBoard({
           )}
         >
           <span data-top-item={item.kind} className="contents">
-            {here ? <HereBadge /> : null}
+            {here ? <HereBadge inCard={false} /> : null}
             <span className="font-heading text-2xl">{label}</span>
             {title ? <span data-size-guide="">{title}</span> : null}
           </span>
         </PostIt>
-        {waitBelow(key)}
+        {waitBelow(key, "flex flex-col items-center gap-1")}
       </div>
     );
   };
@@ -392,7 +409,8 @@ export function LessonBoard({
           ) : null}
         </section>
       </div>
-      <StatusLine tone="error">{status}</StatusLine>
+      {/* 오류 줄은 누른 카드 바로 뒤 한 줄 칸에(M-8) — 그 자리가 없을 때만 판 아래 */}
+      <StatusLine tone="error">{waitAt === undefined ? status : ""}</StatusLine>
       <ConfirmSheet
         open={asking !== undefined}
         message={LESSON_START_TEXT.confirm}

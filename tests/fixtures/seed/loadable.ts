@@ -35,16 +35,22 @@ export const LOADABLE_THROUGH = LEVEL_MIN;
 
 type ChangeVia = SettingRow["changeVia"];
 
-/** 12절 바꾸는 곳: app.* 시드, writing.* 결정 기록 먼저, session.length_factor 기본, 나머지(ai.* · access.* · parent.* · talk.safety_*) 고급. */
+/** 12절 바꾸는 곳이 시드인 회화 선생님 키(자산 검사가 읽는 상한, C130). */
+const SEED_CHANGE_KEYS: readonly string[] = [
+  "talk.teacher_model_max_mb",
+  "talk.teacher_portrait_max_kb",
+];
+
+/** 12절 바꾸는 곳: app.* · 선생님 자산 상한 시드, writing.* 결정 기록 먼저, session.length_factor 기본, 나머지(ai.* · access.* · parent.* · talk.safety_*) 고급. */
 function changeViaOf(key: string): ChangeVia {
-  if (key.startsWith("app.")) return "seed";
+  if (key.startsWith("app.") || SEED_CHANGE_KEYS.includes(key)) return "seed";
   if (key.startsWith("writing.")) return "decision-first";
   if (key === "session.length_factor") return "basic";
   return "advanced";
 }
 
 /**
- * 적재 시험용 설정값 시드: smallFrameSettings() 의 45 키 + TEST_SETTINGS 키.
+ * 적재 시험용 설정값 시드: smallFrameSettings() 의 47 키 + TEST_SETTINGS 키.
  * 조합 · 관계 · 학습일 계산에 드는 키가 모두 있다. seed.complete_through_level 은 시험용 시드가 차 있는 단계다
  * (덮어쓰기 없는 적재도 완전성을 넘는다).
  */

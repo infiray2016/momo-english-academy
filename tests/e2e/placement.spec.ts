@@ -18,6 +18,7 @@ import { settings } from "../../src/db/schema/operations";
 import { closeE2eDb, e2eDb, resetHousehold, shiftTimes } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
+import { photo } from "./photos";
 
 const T = {
   start:
@@ -31,7 +32,7 @@ const T = {
   next: "다음",
   oneMore: "한 번 더 말해 볼까요?",
   retry: "다시 한 번 말해 볼까요",
-  meetTori: "이제 토리를 만날 수 있어요",
+  meetTeacher: "이제 회화 선생님을 만날 수 있어요",
   spares: "말하기 일부는 듣기로 봤어요",
   toLessons: "수업 고르러 가기",
   done: "다 놓았어요",
@@ -201,6 +202,7 @@ async function startSpeaking(page: Page) {
   await expect(
     page.getByText("단추를 누른 뒤 아무 말이나 한마디 해 주세요"),
   ).toBeVisible();
+  await photo(page, "placement-mic-notice");
   await page.getByRole("button", { name: T.micCheck }).click();
   await expectItemNo(page, 1);
 }
@@ -244,6 +246,8 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
   await expect(page.getByText(T.start)).toHaveText(
     `처음이라 내게 맞는 단계를 찾아요. 모르는 문제는 '몰라요'를 눌러요. 많아도 ${maxItems}문제예요`,
   );
+  // 화면 검토 사진(전체 디자인 리뷰 M-11 (4)) — 시작 · 문항 · 결과(마이크 안내는 말하기 배치 시험)
+  await photo(page, "placement-start");
   await page.getByRole("button", { name: T.startButton }).click();
   let n = 0;
   let done = false;
@@ -251,6 +255,7 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
     n += 1;
     // 통과 기준 칸 · 정오 표시 없음 — 위에는 '문제 n'만
     await expectItemNo(page, n);
+    if (n === 1) await photo(page, "placement-item");
     const { id } = await currentItem(page);
     await page.getByRole("button", { name: T.dontKnow }).click();
     done = await nextScreen(page, id);
@@ -259,6 +264,7 @@ test("AC-11d 배치 평가 시작 화면에 안내 문구가 보이고 문제마
   await expect(page.locator("[data-placement-result]")).toHaveText(
     "읽기는 1단계에서 시작해요",
   );
+  await photo(page, "placement-result");
   const { answers, test: lt } = await placementAnswers(profileId);
   expect(answers.length).toBe(n);
   expect(answers.every((a) => a.dontKnow && !a.correct)).toBe(true);
@@ -383,7 +389,7 @@ test("AC-11c · AC-5e 한 문항 인식이 두 시도를 합쳐 3회 실패하�
   await page.close();
 });
 
-test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단계에서 시작해요' · '이제 토리를 만날 수 있어요'와 '수업 고르러 가기'만 보이고 회화 카드가 열리며 회화는 n 과 talk.placement_cap 가운데 낮은 단계다", async ({
+test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단계에서 시작해요' · '이제 회화 선생님을 만날 수 있어요'와 '수업 고르러 가기'만 보이고 회화 카드가 열리며 회화는 n 과 talk.placement_cap 가운데 낮은 단계다", async ({
   context,
 }) => {
   test.setTimeout(LONG);
@@ -422,7 +428,7 @@ test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단�
   await expect(page.locator("[data-placement-result]")).toHaveText(
     `말하기는 ${n}단계에서 시작해요`,
   );
-  await expect(page.getByText(T.meetTori)).toBeVisible();
+  await expect(page.getByText(T.meetTeacher)).toBeVisible();
   // 결과 화면의 단추는 '수업 고르러 가기' 하나다(띠의 '홈'도 없다)
   await expect(page.locator("main").getByRole("link")).toHaveCount(1);
   await expect(page.locator("main").getByRole("button")).toHaveCount(0);
@@ -439,7 +445,7 @@ test("AC-11b 말하기 배치를 끝내면 결과 화면에 '말하기는 n단�
   const talk = page
     .locator("a")
     .filter({ has: page.locator('[data-home-card="talk"]') });
-  await expect(talk).toHaveAttribute("href", "/talk");
+  await expect(talk).toHaveAttribute("href", "/talk/lessons");
   await page.close();
 });
 

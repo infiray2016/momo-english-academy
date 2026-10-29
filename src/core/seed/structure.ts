@@ -285,6 +285,82 @@ export const YES_NO_AUXILIARIES = [
 export const PLACEHOLDER_NAME = "{NAME}";
 /** 6.4 영어 틀의 빈칸(밑줄 셋 이상). 빈칸은 틀 자리로 세지 않는다. */
 export const BLANK = /_{3,}/;
+// ── 회화 선생님 명단(5절 seed/teachers.json · 6.4 명단 자료 · '선생님 이름' 검사, C130) ──
+
+/**
+ * 6.4 '선생님 이름': 명단과 함께 막는 옛 이름(영어 · 한글, C122 · C130).
+ * koWordExceptions 는 옛 한글 이름으로 시작하는 보통 낱말이다 — 명단 이름 몫은 명단 칸 nameKoWordExceptions 에 있고(C141 · 장부 N-3), 옛 이름은 명단 밖이라 여기 남는다.
+ */
+export const OLD_TEACHER_NAMES = {
+  en: ["Tori"],
+  ko: ["토리"],
+  koWordExceptions: ["토리노"],
+} as const;
+/**
+ * 5절 명단 칸 '키(영어 소문자)' — profiles.teacher_key · 처음 스냅숏 teacherKey · 고르기 입력이 모두 이 꼴이다(명단 키 꼴은 여기 한 곳,
+ * 검토 묶음 1 M-2). 자산 파일 이름 `teachers/<키>.<8자>.*` 도 이 꼴의 키를 쓴다.
+ */
+export const TEACHER_KEY = /^[a-z]+$/;
+/**
+ * 자산 파일 이름 꼴 <TEACHER_ASSET_DIR>/<키>.<SHA-256 앞 8자>.<확장자>의 해시 글자 수(자산 검사, 검토 묶음 1 M-3).
+ * /teachers/ 를 오래 캐시하는 것은 이름에 내용 해시가 있다는 전제다.
+ */
+export const TEACHER_ASSET_HASH_CHARS = 8;
+/** 6.4 명단 자료 '꼴은 1-가에 vrm 만 받는다'(emoji 는 뒤에). */
+export const TEACHER_KINDS = ["vrm"] as const;
+/** 6.4 명단 자료 '성격 세 낱말(셋)'. */
+export const TEACHER_TRAITS = 3;
+/** 6.4 명단 자료 'AI 성격 글(두 문장 이하)'. */
+export const TEACHER_PERSONA_MAX_SENTENCES = 2;
+/** 5절 · 델타 spec 명단 칸 '소개 한두 줄'(6.4 '소개(길이)'를 줄 수로 본다). */
+export const TEACHER_INTRO_LINES = { min: 1, max: 2 } as const;
+/** 6.4 명단 자료 '색(이름표 글자 대비 4.5:1 이상)'. */
+export const TEACHER_LABEL_CONTRAST_MIN = 4.5;
+/** 이름표 글자색 = 종이색(`--color-paper`, src/app/globals.css). 이름표는 accent 바탕 · 종이색 글자라 명단 대비 짝은 accent ↔ 이 색이다(plan 선생님 '이름표 그리기와 대비 짝', 장부 M-1). */
+export const TEACHER_LABEL_TEXT = "#fffdf7";
+/** 6.4 명단 자료 '목소리 높이(0~2)'(Web Speech pitch 범위). */
+export const TEACHER_PITCH = { min: 0, max: 2 } as const;
+/** WCAG 2 상대 휘도 · 대비 식의 상수(설계 숫자 아님, 이름표 대비 검사가 쓴다). */
+export const WCAG = {
+  channelMax: 255,
+  linearKnee: 0.03928,
+  linearSlope: 12.92,
+  gammaOffset: 0.055,
+  gamma: 2.4,
+  weights: { r: 0.2126, g: 0.7152, b: 0.0722 },
+  flare: 0.05,
+} as const;
+/** 인사가 따르는 문장 길이 상한의 단계(6.4 '인사 … 1단계 문장 길이 상한, 3.6'). */
+export const TEACHER_GREETING_LEVEL = LEVEL_MIN;
+
+/** 줄인 VRM · 초상이 놓이는 곳(public/ 기준, 같은 출처 정적 자산 — plan 선생님 미결 3). */
+export const TEACHER_ASSET_DIR = "teachers";
+/** 6.4 자산 검사 '표정'(VRM 1.0 이름 — 깜빡임 · 칭찬 · 입 모양 셋, C115 시제품이 쓰는 표정). */
+export const VRM_REQUIRED_EXPRESSIONS = [
+  "blink",
+  "happy",
+  "aa",
+  "oh",
+  "ee",
+] as const;
+/** 6.4 자산 검사 '뼈'(고개 · 몸 움직임이 쓰는 뼈). */
+export const VRM_REQUIRED_BONES = ["head", "neck", "spine"] as const;
+/** VRM 0.x 표정 프리셋 → VRM 1.0 표정 이름(three-vrm 의 VRM 0.x 이름 바꿈과 같음). 표에 없는 프리셋은 이름 그대로 둔다. */
+export const VRM0_PRESET_TO_EXPRESSION: Readonly<Record<string, string>> = {
+  blink: "blink",
+  joy: "happy",
+  a: "aa",
+  i: "ih",
+  u: "ou",
+  e: "ee",
+  o: "oh",
+};
+/** 자산 크기 상한의 MB · KB 바이트 수(10진, P6b IMAGE_MAX_BYTES 와 같은 보수적 셈 — 단위 환산이라 설계 숫자 아님). */
+export const BYTES_PER_MB = 1_000_000;
+export const BYTES_PER_KB = 1_000;
+
+/** 5절 '그림 파일은 단어마다 하나, 한 장 100KB 이하'(1000 배수로 보수적, P6b). */
+export const IMAGE_MAX_BYTES = 100000;
 /** 부동소수 비교 오차(설계 숫자 아님). */
 export const FLOAT_TOLERANCE = 1e-9;
 
@@ -316,6 +392,8 @@ export const TEXT_ROLES = [
   "tori",
   "expression",
   "scene",
+  /** 회화 카드 예상 흐름(아이에게 보이지 않는 AI 지시 글). 영어 학습 요소 검사(길이 · 형태 · 단원 단어 · 통계 · 보강 덮기) 밖, 금지어 · 선생님 이름 검사 안(C132 (3)). */
+  "flow",
   "piece",
   "ko",
   /** 글로서리 표기형 · 원형. 영어 범위 · 길이 검사 밖, 금지어 검사 안(검토 M-1, 컨트롤러 19:1x). */
@@ -532,6 +610,8 @@ export const SEED_FILES = {
   forbidden: "lists/forbidden.json",
   forms: "lists/forms.json",
   metaSentences: "lists/meta-sentences.json",
+  /** 회화 선생님 명단(5절, C130). 빌드에 묶고 DB 에 넣지 않는다. */
+  teachers: "teachers.json",
 } as const;
 export type SeedFileName = keyof typeof SEED_FILES;
 

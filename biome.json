@@ -18,7 +18,8 @@
       "!intent",
       "!.superpowers",
       "!drizzle",
-      "!seed/**/*.json"
+      "!seed/**/*.json",
+      "!public/images/vocab"
     ]
   },
   "formatter": {

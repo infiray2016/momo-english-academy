@@ -3,6 +3,7 @@
 // 빈칸 꼴은 시드 규칙(밑줄 셋 이상, P4a BLANK)을 그대로 쓴다.
 import { BLANK } from "@/core/seed/structure";
 import type { SpeechVerdict } from "@/core/speaking/judge";
+import { splitLeadingPunctuation } from "@/core/text/punctuation";
 
 const BLANKS = new RegExp(BLANK.source, "g");
 /**
@@ -14,6 +15,23 @@ export const BLANK_TEXT_MAX = 60;
 /** 문장 틀을 빈칸으로 가른 글 조각(빈칸 수 + 1). */
 export function frameParts(frame: string): string[] {
   return frame.split(BLANKS);
+}
+
+/**
+ * 그리기용 토막(빈칸 수 + 1): 빈칸 뒤 토막 앞의 문장부호는 그 빈칸의 꼬리(blankTail)로 옮긴다 — 빈칸 상자와 부호를 한 덩이로 그려
+ * 줄이 부호로 시작하지 않게(전체 디자인 리뷰 M-7). 온 글(assembleSentence)은 frameParts 그대로다.
+ */
+export function frameSegments(
+  frame: string,
+): { text: string; blankTail: string }[] {
+  const parts = frameParts(frame);
+  return parts.map((part, j) => {
+    const next = parts[j + 1];
+    return {
+      text: j === 0 ? part : splitLeadingPunctuation(part).rest,
+      blankTail: next === undefined ? "" : splitLeadingPunctuation(next).punct,
+    };
+  });
 }
 
 /** 문장 틀의 빈칸 수. */

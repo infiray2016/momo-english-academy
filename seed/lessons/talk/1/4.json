@@ -1,0 +1,1662 @@
+{
+  "area": "talk",
+  "level": 1,
+  "unit": 4,
+  "lessons": [
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "소풍 가방 챙기기",
+      "newWords": ["bag", "pen", "pencil", "book", "cup"],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup"],
+      "card": {
+        "topic": "좋아하는 것과 소풍 가방",
+        "targetExpressions": ["It is a bag.", "I like my pen.", "It is a pencil.", "I like the book.", "It is a cup."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "bag", "meaningKo": "가방", "example": "This is my bag.", "exampleKo": "이건 내 가방이야."},
+          {"word": "pen", "meaningKo": "펜", "example": "I like my pen.", "exampleKo": "나는 내 펜이 좋아."},
+          {"word": "pencil", "meaningKo": "연필", "example": "This is my pencil.", "exampleKo": "이건 내 연필이야."},
+          {"word": "book", "meaningKo": "책", "example": "I like the book.", "exampleKo": "나는 그 책이 좋아."},
+          {"word": "cup", "meaningKo": "컵", "example": "It is my cup.", "exampleKo": "내 컵이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows things to pack for a picnic and asks what they are.",
+          "The teacher asks what the child likes: a bag, a pen, a book or a cup."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필", "책 · 컵", "소풍에 챙길 물건"],
+        "closingLines": [
+          {"en": "This is my bag.", "ko": "이건 내 가방이야."},
+          {"en": "I like my pen.", "ko": "나는 내 펜이 좋아."},
+          {"en": "It is a pencil.", "ko": "연필이야."},
+          {"en": "I like the book.", "ko": "나는 그 책이 좋아."},
+          {"en": "It is my cup.", "ko": "내 컵이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a bag.", "It is a fork."], "imageKey": "bag", "targets": ["bag"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a key.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 가방이 좋아.", "hintEn": "I like my bag.", "answerExample": "I like my bag.", "twoAnswers": ["I like my bag.", "I like my pen."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a pencil.", "It is a dish."], "imageKey": "pencil", "targets": ["pencil"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "책이야.", "hintEn": "It is a book.", "answerExample": "It is a book.", "twoAnswers": ["It is a key.", "It is a book."], "imageKey": "book", "targets": ["book"], "ask": "first"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 펜이야.", "hintEn": "This is my pen.", "answerExample": "This is my pen.", "twoAnswers": ["This is my pen.", "This is my fork."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "컵이야.", "hintEn": "It is a cup.", "answerExample": "It is a cup.", "twoAnswers": ["It is a dish.", "It is a cup."], "imageKey": "cup", "targets": ["cup"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the cake."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 연필이야.", "hintEn": "That is my pencil.", "answerExample": "That is my pencil.", "twoAnswers": ["That is my key.", "That is my pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 컵이야.", "hintEn": "That is my cup.", "answerExample": "That is my cup.", "twoAnswers": ["That is my cup.", "That is my dish."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my key.", "It is my bag."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a pen.", "It is a dish."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 컵이 좋아.", "hintEn": "I like the cup.", "answerExample": "I like the cup.", "twoAnswers": ["I like the cookie.", "I like the cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a fork.", "It is a pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 책이야.", "hintEn": "This is my book.", "answerExample": "This is my book.", "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 펜이 좋아.", "hintEn": "I like my pen.", "answerExample": "I like my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "이건 내 연필이야.", "hintEn": "This is my pencil.", "answerExample": "This is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "숲속 교실 구경",
+      "newWords": ["map", "desk", "chair", "toy", "drum"],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "desk", "chair", "toy", "drum"],
+      "card": {
+        "topic": "좋아하는 것과 숲속 교실",
+        "targetExpressions": ["It is a map.", "It is a desk.", "That is a chair.", "I like my toy.", "I like the drum."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am great."]}
+        ]},
+        "todayWords": [
+          {"word": "map", "meaningKo": "지도", "example": "This is a map.", "exampleKo": "이건 지도야."},
+          {"word": "desk", "meaningKo": "책상", "example": "This is my desk.", "exampleKo": "이건 내 책상이야."},
+          {"word": "chair", "meaningKo": "의자", "example": "I like my chair.", "exampleKo": "나는 내 의자가 좋아."},
+          {"word": "toy", "meaningKo": "장난감", "example": "This is my toy.", "exampleKo": "이건 내 장난감이야."},
+          {"word": "drum", "meaningKo": "북, 드럼", "example": "I like the drum.", "exampleKo": "나는 그 북이 좋아."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows things in a forest classroom and asks what they are.",
+          "The teacher asks what the child likes, like a toy or a drum."
+        ],
+        "todayTopicsKo": ["지도 · 책상 · 의자", "장난감 · 북", "숲속 교실 물건"],
+        "closingLines": [
+          {"en": "This is a map.", "ko": "이건 지도야."},
+          {"en": "This is my desk.", "ko": "이건 내 책상이야."},
+          {"en": "I like my chair.", "ko": "나는 내 의자가 좋아."},
+          {"en": "I like my toy.", "ko": "나는 내 장난감이 좋아."},
+          {"en": "It is a drum.", "ko": "북이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "지도야.", "hintEn": "It is a map.", "answerExample": "It is a map.", "twoAnswers": ["It is a map.", "It is a book."], "imageKey": "map", "targets": ["map"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 가방이 좋아.", "hintEn": "I like the bag.", "answerExample": "I like the bag.", "twoAnswers": ["I like the bag.", "I like the apple."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "twoAnswers": ["It is a window.", "It is a desk."], "imageKey": "desk", "targets": ["desk"], "ask": "first"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 의자야.", "hintEn": "That is a chair.", "answerExample": "That is a chair.", "twoAnswers": ["That is a chair.", "That is a desk."], "imageKey": "chair", "targets": ["chair"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책이야.", "hintEn": "That is my book.", "answerExample": "That is my book.", "twoAnswers": ["That is my pen.", "That is my book."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my map."], "targets": ["toy"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a guitar.", "It is a drum."], "imageKey": "drum", "targets": ["drum"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "내 지도야.", "hintEn": "It is my map.", "answerExample": "It is my map.", "twoAnswers": ["It is my map.", "It is my pen."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 책상이 좋아.", "hintEn": "I like my desk.", "answerExample": "I like my desk.", "twoAnswers": ["I like my chair.", "I like my desk."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "twoAnswers": ["It is a bed.", "It is a chair."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the bird.", "I like the drum."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "컵이야.", "hintEn": "It is a cup.", "answerExample": "It is a cup.", "twoAnswers": ["It is a cup.", "It is a dish."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 연필이야.", "hintEn": "It is my pencil.", "answerExample": "It is my pencil.", "twoAnswers": ["It is my fork.", "It is my pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 북이야.", "hintEn": "This is a drum.", "answerExample": "This is a drum.", "twoAnswers": ["This is a drum.", "This is a piano."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 책상이야.", "hintEn": "This is my desk.", "answerExample": "This is my desk.", "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 의자야.", "hintEn": "It is my chair.", "answerExample": "It is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 지도야.", "hintEn": "This is a map.", "answerExample": "This is a map.", "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 가방이야.", "hintEn": "That is my bag.", "answerExample": "That is my bag.", "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "농장의 아침 종소리",
+      "newWords": ["clock", "lamp", "bell", "eye", "ear"],
+      "unitWords": ["bag", "cup", "map", "desk", "chair", "drum", "clock", "lamp", "bell", "eye", "ear"],
+      "card": {
+        "topic": "좋아하는 것과 농장의 아침",
+        "targetExpressions": ["It is a clock.", "It is a lamp.", "I like the bell.", "It is an eye.", "It is an ear."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "clock", "meaningKo": "시계", "example": "This is my clock.", "exampleKo": "이건 내 시계야."},
+          {"word": "lamp", "meaningKo": "램프, 전등", "example": "I like my lamp.", "exampleKo": "나는 내 전등이 좋아."},
+          {"word": "bell", "meaningKo": "종", "example": "I like the bell.", "exampleKo": "나는 그 종이 좋아."},
+          {"word": "eye", "meaningKo": "눈", "example": "This is my eye.", "exampleKo": "이건 내 눈이야."},
+          {"word": "ear", "meaningKo": "귀", "example": "This is my ear.", "exampleKo": "이건 내 귀야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows things from a farm morning and asks what they are.",
+          "The teacher shows an eye and an ear and asks what they are.",
+          "The teacher asks what the child likes, like a drum or a bell."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀", "농장의 아침"],
+        "closingLines": [
+          {"en": "This is my clock.", "ko": "이건 내 시계야."},
+          {"en": "I like my lamp.", "ko": "나는 내 전등이 좋아."},
+          {"en": "I like the bell.", "ko": "나는 그 종이 좋아."},
+          {"en": "This is my eye.", "ko": "이건 내 눈이야."},
+          {"en": "This is my ear.", "ko": "이건 내 귀야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a clock.", "It is a map."], "imageKey": "clock", "targets": ["clock"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a cup.", "It is a lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the cow.", "I like the drum."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a bell.", "It is a drum."], "imageKey": "bell", "targets": ["bell"], "ask": "first"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an apple.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 의자가 좋아.", "hintEn": "I like my chair.", "answerExample": "I like my chair.", "twoAnswers": ["I like my chair.", "I like my desk."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an apple."], "imageKey": "ear", "targets": ["ear"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 시계야.", "hintEn": "That is a clock.", "answerExample": "That is a clock.", "twoAnswers": ["That is a bell.", "That is a clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 전등이야.", "hintEn": "That is my lamp.", "answerExample": "That is my lamp.", "twoAnswers": ["That is my lamp.", "That is my desk."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an egg.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 종이 좋아.", "hintEn": "I like the bell.", "answerExample": "I like the bell.", "twoAnswers": ["I like the bell.", "I like the horse."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ant.", "It is an ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a lamp.", "It is a clock."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 시계야.", "hintEn": "It is my clock.", "answerExample": "It is my clock.", "twoAnswers": ["It is my bag.", "It is my clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "과일 간식과 얼굴 놀이",
+      "newWords": ["nose", "mouth", "face", "hand", "leg"],
+      "unitWords": ["book", "clock", "lamp", "ear", "nose", "mouth", "face", "hand", "leg"],
+      "card": {
+        "topic": "좋아하는 것과 과일 간식 놀이",
+        "targetExpressions": ["This is my nose.", "It is a mouth.", "It is a face.", "This is my hand.", "It is a leg."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "nose", "meaningKo": "코", "example": "This is my nose.", "exampleKo": "이건 내 코야."},
+          {"word": "mouth", "meaningKo": "입", "example": "It is a mouth.", "exampleKo": "입이야."},
+          {"word": "face", "meaningKo": "얼굴", "example": "This is my face.", "exampleKo": "이건 내 얼굴이야."},
+          {"word": "hand", "meaningKo": "손", "example": "That is a hand.", "exampleKo": "저건 손이야."},
+          {"word": "leg", "meaningKo": "다리", "example": "This is my leg.", "exampleKo": "이건 내 다리야."}
+        ],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a nose, a mouth, a face, a hand and a leg and asks what they are.",
+          "The teacher asks what the child likes at fruit snack time."
+        ],
+        "todayTopicsKo": ["코 · 입 · 얼굴", "손 · 다리", "과일 간식 시간"],
+        "closingLines": [
+          {"en": "This is my nose.", "ko": "이건 내 코야."},
+          {"en": "It is a mouth.", "ko": "입이야."},
+          {"en": "This is my face.", "ko": "이건 내 얼굴이야."},
+          {"en": "That is a hand.", "ko": "저건 손이야."},
+          {"en": "This is my leg.", "ko": "이건 내 다리야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my nose.", "This is my ear."], "imageKey": "nose", "targets": ["nose"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a nose.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the banana."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 손이야.", "hintEn": "This is my hand.", "answerExample": "This is my hand.", "twoAnswers": ["This is my hand.", "This is my nose."], "imageKey": "hand", "targets": ["hand"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a hand.", "It is a face."], "imageKey": "face", "targets": ["face"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 시계가 좋아.", "hintEn": "I like the clock.", "answerExample": "I like the clock.", "twoAnswers": ["I like the dog.", "I like the clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a leg.", "It is a hand."], "imageKey": "leg", "targets": ["leg"], "ask": "first"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a mouth.", "It is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 입이야.", "hintEn": "This is my mouth.", "answerExample": "This is my mouth.", "twoAnswers": ["This is my mouth.", "This is my hand."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 손이야.", "hintEn": "That is a hand.", "answerExample": "That is a hand.", "twoAnswers": ["That is a leg.", "That is a hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a leg."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 전등이 좋아.", "hintEn": "I like the lamp.", "answerExample": "I like the lamp.", "twoAnswers": ["I like the lamp.", "I like the apple."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a nose.", "It is a leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an apple."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 입이야.", "hintEn": "This is my mouth.", "answerExample": "This is my mouth.", "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 다리야.", "hintEn": "It is my leg.", "answerExample": "It is my leg.", "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 코야.", "hintEn": "That is a nose.", "answerExample": "That is a nose.", "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "공원의 오래된 나무",
+      "newWords": ["arm", "old", "neck", "tooth", "smile"],
+      "unitWords": ["book", "map", "clock", "nose", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 공원 산책",
+        "targetExpressions": ["This is my arm.", "It is old.", "This is my neck.", "It is a tooth.", "It is a smile."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am good."]}
+        ]},
+        "todayWords": [
+          {"word": "arm", "meaningKo": "팔", "example": "This is my arm.", "exampleKo": "이건 내 팔이야."},
+          {"word": "old", "meaningKo": "~살의, 늙은", "example": "It is an old tree.", "exampleKo": "오래된 나무야."},
+          {"word": "neck", "meaningKo": "목", "example": "This is my neck.", "exampleKo": "이건 내 목이야."},
+          {"word": "tooth", "meaningKo": "이, 이빨", "example": "My tooth is white.", "exampleKo": "내 이빨은 하얀색이야."},
+          {"word": "smile", "meaningKo": "미소, 웃다", "example": "It is a big smile.", "exampleKo": "큰 미소야."}
+        ],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows pictures from a walk in the park and asks what they are.",
+          "The teacher asks how an old tree and an old book are.",
+          "The teacher asks what the child likes."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨", "미소", "공원의 오래된 나무"],
+        "closingLines": [
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "It is an old tree.", "ko": "오래된 나무야."},
+          {"en": "This is my neck.", "ko": "이건 내 목이야."},
+          {"en": "My tooth is white.", "ko": "내 이빨은 하얀색이야."},
+          {"en": "It is a big smile.", "ko": "큰 미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my arm.", "This is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "first"},
+          {"question": {"en": "How is the tree?", "ko": "그 나무는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is big.", "It is old."], "imageKey": "tree", "targets": ["old"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a leg.", "It is a face."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my neck.", "This is my hand."], "imageKey": "neck", "targets": ["neck"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 오래된 시계가 좋아.", "hintEn": "I like the old clock.", "answerExample": "I like the old clock.", "twoAnswers": ["I like the old clock.", "I like the old tree."], "imageKey": "clock", "targets": ["old", "clock"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a nose.", "It is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "first"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a hand."], "imageKey": "smile", "targets": ["smile"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 팔이야.", "hintEn": "That is my arm.", "answerExample": "That is my arm.", "twoAnswers": ["That is my leg.", "That is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is the book?", "ko": "그 책은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is old.", "It is nice."], "imageKey": "book", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 목이야.", "hintEn": "It is my neck.", "answerExample": "It is my neck.", "twoAnswers": ["It is my neck.", "It is my tooth."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 이빨이야.", "hintEn": "That is a tooth.", "answerExample": "That is a tooth.", "twoAnswers": ["That is a hand.", "That is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 오래된 지도가 좋아.", "hintEn": "I like my old map.", "answerExample": "I like my old map.", "twoAnswers": ["I like my old book.", "I like my old map."], "imageKey": "map", "targets": ["old", "map"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my nose.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 이빨이야.", "hintEn": "This is my tooth.", "answerExample": "This is my tooth.", "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the clock?", "ko": "오, 그 시계는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "clock", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "숲속 공부방 정리",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "desk", "chair", "toy", "drum"],
+      "card": {
+        "topic": "좋아하는 것과 숲속 공부방",
+        "targetExpressions": ["It is a bag.", "It is a pencil.", "That is my desk.", "I like my toy.", "It is a drum."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows things in a study room in the forest and asks what they are.",
+          "The teacher asks what the child likes, like a toy, a book or a drum."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "지도 · 책상 · 의자", "장난감 · 북"],
+        "closingLines": [
+          {"en": "It is my bag.", "ko": "내 가방이야."},
+          {"en": "This is my pencil.", "ko": "이건 내 연필이야."},
+          {"en": "That is a map.", "ko": "저건 지도야."},
+          {"en": "I like my toy.", "ko": "나는 내 장난감이 좋아."},
+          {"en": "It is a drum.", "ko": "북이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a bag.", "It is a fork."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a dish.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my book."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a key.", "It is a pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 지도야.", "hintEn": "That is a map.", "answerExample": "That is a map.", "twoAnswers": ["That is a map.", "That is a book."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my bed.", "That is my desk."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the cat."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 컵이야.", "hintEn": "This is a cup.", "answerExample": "This is a cup.", "twoAnswers": ["This is a dish.", "This is a cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "twoAnswers": ["This is my chair.", "This is my desk."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a guitar."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 장난감이 좋아.", "hintEn": "I like the toy.", "answerExample": "I like the toy.", "twoAnswers": ["I like the toy.", "I like the cake."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my key.", "It is my bag."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "twoAnswers": ["It is a desk.", "It is a window."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 지도야.", "hintEn": "It is my map.", "answerExample": "It is my map.", "twoAnswers": ["It is my pen.", "It is my map."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "이건 내 연필이야.", "hintEn": "This is my pencil.", "answerExample": "This is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 펜이야.", "hintEn": "It is my pen.", "answerExample": "It is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "음악 숲의 북과 종",
+      "newWords": [],
+      "unitWords": ["map", "desk", "chair", "toy", "drum", "clock", "lamp", "bell", "eye", "ear", "nose", "hand"],
+      "card": {
+        "topic": "좋아하는 것과 음악 숲",
+        "targetExpressions": ["It is a drum.", "It is a bell.", "That is a lamp.", "It is an eye.", "It is an ear."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "Wow! What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher shows a drum, a bell and other things in a music forest and asks what they are.",
+          "The teacher shows an eye and an ear and asks what they are.",
+          "The teacher asks what the child likes."
+        ],
+        "todayTopicsKo": ["북 · 종 · 시계 · 전등", "지도 · 책상 · 의자 · 장난감", "눈 · 귀"],
+        "closingLines": [
+          {"en": "I like the drum.", "ko": "나는 그 북이 좋아."},
+          {"en": "It is a bell.", "ko": "종이야."},
+          {"en": "This is a clock.", "ko": "이건 시계야."},
+          {"en": "This is my eye.", "ko": "이건 내 눈이야."},
+          {"en": "It is my ear.", "ko": "내 귀야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a bell."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a guitar.", "It is a bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my lamp."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a clock.", "It is a map."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an apple.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 전등이야.", "hintEn": "That is a lamp.", "answerExample": "That is a lamp.", "twoAnswers": ["That is a lamp.", "That is a clock."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ant.", "It is an ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 지도가 좋아.", "hintEn": "I like the map.", "answerExample": "I like the map.", "twoAnswers": ["I like the map.", "I like the bird."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my bed.", "That is my desk."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "twoAnswers": ["It is a chair.", "It is a bed."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the flower.", "I like the drum."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a bell.", "It is a drum."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "twoAnswers": ["This is my eye.", "This is my nose."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 귀야.", "hintEn": "It is my ear.", "answerExample": "It is my ear.", "twoAnswers": ["It is my hand.", "It is my ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "내 전등이야.", "hintEn": "It is my lamp.", "answerExample": "It is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 시계야.", "hintEn": "This is a clock.", "answerExample": "This is a clock.", "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "지도야.", "hintEn": "It is a map.", "answerExample": "It is a map.", "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "동물원 그림 찾기",
+      "newWords": [],
+      "unitWords": ["clock", "lamp", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg"],
+      "card": {
+        "topic": "좋아하는 것과 동물원 구경",
+        "targetExpressions": ["This is my nose.", "It is a mouth.", "It is a face.", "This is my hand.", "That is a leg."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher plays a picture game at the zoo and asks what each picture is.",
+          "The teacher asks what the child likes, like a lion or a monkey."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀 · 코 · 입", "얼굴 · 손 · 다리"],
+        "closingLines": [
+          {"en": "I like the clock.", "ko": "나는 그 시계가 좋아."},
+          {"en": "This is my nose.", "ko": "이건 내 코야."},
+          {"en": "It is a face.", "ko": "얼굴이야."},
+          {"en": "This is my hand.", "ko": "이건 내 손이야."},
+          {"en": "It is an eye.", "ko": "눈이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my nose.", "This is my ear."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 시계가 좋아.", "hintEn": "I like the clock.", "answerExample": "I like the clock.", "twoAnswers": ["I like the lion.", "I like the clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a hand.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a leg."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 전등이야.", "hintEn": "That is a lamp.", "answerExample": "That is a lamp.", "twoAnswers": ["That is a bell.", "That is a lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 손이야.", "hintEn": "This is my hand.", "answerExample": "This is my hand.", "twoAnswers": ["This is my hand.", "This is my nose."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an elephant.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 다리야.", "hintEn": "That is a leg.", "answerExample": "That is a leg.", "twoAnswers": ["That is a leg.", "That is a hand."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 종이 좋아.", "hintEn": "I like the bell.", "answerExample": "I like the bell.", "twoAnswers": ["I like the monkey.", "I like the bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 귀야.", "hintEn": "This is my ear.", "answerExample": "This is my ear.", "twoAnswers": ["This is my ear.", "This is my mouth."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a mouth.", "It is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "내 입이야.", "hintEn": "It is my mouth.", "answerExample": "It is my mouth.", "twoAnswers": ["It is my mouth.", "It is my leg."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "twoAnswers": ["It is my nose.", "It is my hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 다리야.", "hintEn": "This is my leg.", "answerExample": "This is my leg.", "twoAnswers": ["This is my hand.", "This is my leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 얼굴이야.", "hintEn": "This is my face.", "answerExample": "This is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 전등이야.", "hintEn": "That is my lamp.", "answerExample": "That is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "바닷가 산책길",
+      "newWords": [],
+      "unitWords": ["ear", "nose", "mouth", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 바닷가 산책",
+        "targetExpressions": ["This is my arm.", "It is old.", "It is a tooth.", "This is my neck.", "It is a smile."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 잘 지내.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher walks by the sea and asks how a shell, a tree and a rock are.",
+          "The teacher shows an arm, a neck, a mouth and other pictures and asks what they are."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨 · 미소", "코 · 입 · 얼굴 · 손 · 다리", "오래된 조개껍데기"],
+        "closingLines": [
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "The shell is old.", "ko": "그 조개껍데기는 오래됐어."},
+          {"en": "This is my neck.", "ko": "이건 내 목이야."},
+          {"en": "It is a tooth.", "ko": "이빨이야."},
+          {"en": "It is a smile.", "ko": "미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my arm.", "This is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is the shell?", "ko": "그 조개껍데기는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is nice.", "It is old."], "imageKey": "shell", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a tooth.", "It is a hand."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a leg.", "It is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 입이야.", "hintEn": "That is a mouth.", "answerExample": "That is a mouth.", "twoAnswers": ["That is a mouth.", "That is a nose."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the tree?", "ko": "오, 그 나무는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is old.", "It is big."], "imageKey": "tree", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a hand.", "It is a face."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 손이야.", "hintEn": "That is my hand.", "answerExample": "That is my hand.", "twoAnswers": ["That is my hand.", "That is my nose."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 다리야.", "hintEn": "It is my leg.", "answerExample": "It is my leg.", "twoAnswers": ["It is my arm.", "It is my leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 이빨이야.", "hintEn": "This is my tooth.", "answerExample": "This is my tooth.", "twoAnswers": ["This is my tooth.", "This is my ear."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a hand.", "It is a smile."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 팔이야.", "hintEn": "It is my arm.", "answerExample": "It is my arm.", "twoAnswers": ["It is my nose.", "It is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "rock", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 입이야.", "hintEn": "It is my mouth.", "answerExample": "It is my mouth.", "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "농장 장터 구경",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "toy", "drum", "clock", "bell", "eye", "nose", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 농장 장터",
+        "targetExpressions": ["It is a bag.", "It is an old book.", "I like the cup.", "It is a tooth.", "I like my toy."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher looks at things at a farm market and asks what they are.",
+          "The teacher asks how an old book and an old clock are, and what the child likes."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "장난감 · 북 · 시계", "팔 · 목 · 이빨 · 미소"],
+        "closingLines": [
+          {"en": "It is an old book.", "ko": "오래된 책이야."},
+          {"en": "I like the cup.", "ko": "나는 그 컵이 좋아."},
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "It is a smile.", "ko": "미소야."},
+          {"en": "I like my toy.", "ko": "나는 내 장난감이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a bag.", "It is a fork."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my leg.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old book.", "It is an old map."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a key.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a hand."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 컵이 좋아.", "hintEn": "I like the cup.", "answerExample": "I like the cup.", "twoAnswers": ["I like the cup.", "I like the cake."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 연필이야.", "hintEn": "That is my pencil.", "answerExample": "That is my pencil.", "twoAnswers": ["That is my pencil.", "That is my fork."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a nose.", "It is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 시계야.", "hintEn": "It is an old clock.", "answerExample": "It is an old clock.", "twoAnswers": ["It is an old bell.", "It is an old clock."], "imageKey": "clock", "targets": ["old", "clock"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my drum."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a guitar."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an apple.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a hand."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the cup?", "ko": "그 컵은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "cup", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 책이야.", "hintEn": "It is my book.", "answerExample": "It is my book.", "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 펜이야.", "hintEn": "It is my pen.", "answerExample": "It is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "과수원 쉬는 시간",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "desk", "chair", "toy", "drum", "clock", "lamp", "nose", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 과수원 쉬는 시간",
+        "targetExpressions": ["It is my bag.", "It is an old book.", "I like my toy.", "This is my arm.", "It is a tooth."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher takes a break in an orchard and asks what the child's things are.",
+          "The teacher asks how an old book, an old clock and an old lamp are.",
+          "The teacher asks what the child likes, like a toy or a drum."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "지도 · 책상 · 의자 · 장난감 · 북", "팔 · 목 · 이빨 · 미소"],
+        "closingLines": [
+          {"en": "It is my bag.", "ko": "내 가방이야."},
+          {"en": "It is an old book.", "ko": "오래된 책이야."},
+          {"en": "I like my chair.", "ko": "나는 내 의자가 좋아."},
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "It is a smile.", "ko": "미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my bag.", "It is my key."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a fork.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old map.", "It is an old book."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a pencil.", "It is a dish."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my bag."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "컵이야.", "hintEn": "It is a cup.", "answerExample": "It is a cup.", "twoAnswers": ["It is a dish.", "It is a cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 지도야.", "hintEn": "That is a map.", "answerExample": "That is a map.", "twoAnswers": ["That is a map.", "That is a book."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a hand.", "It is a smile."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my desk.", "That is my bed."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 의자가 좋아.", "hintEn": "I like my chair.", "answerExample": "I like my chair.", "twoAnswers": ["I like my chair.", "I like my desk."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my leg.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the drum.", "I like the banana."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my neck.", "This is my hand."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a nose.", "It is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the clock?", "ko": "그 시계는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "clock", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the lamp?", "ko": "오, 그 전등은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "lamp", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 펜이야.", "hintEn": "This is my pen.", "answerExample": "This is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 연필이야.", "hintEn": "It is my pencil.", "answerExample": "It is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "호숫가 그림 놀이",
+      "newWords": [],
+      "unitWords": ["bag", "pencil", "cup", "map", "desk", "drum", "clock", "lamp", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg", "old"],
+      "card": {
+        "topic": "좋아하는 것과 호숫가 놀이",
+        "targetExpressions": ["It is a clock.", "It is an eye.", "It is an old bag.", "This is my nose.", "It is a hand."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 잘 지내.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher plays a picture game by a lake and asks what each picture is.",
+          "The teacher asks how some old things are and what the child likes."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀 · 코 · 입", "얼굴 · 손 · 다리"],
+        "closingLines": [
+          {"en": "It is a clock.", "ko": "시계야."},
+          {"en": "It is an old bag.", "ko": "오래된 가방이야."},
+          {"en": "This is my nose.", "ko": "이건 내 코야."},
+          {"en": "That is a face.", "ko": "저건 얼굴이야."},
+          {"en": "It is a hand.", "ko": "손이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a map.", "It is a clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an eye.", "It is an egg."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 가방이야.", "hintEn": "It is an old bag.", "answerExample": "It is an old bag.", "twoAnswers": ["It is an old bag.", "It is an old cup."], "imageKey": "bag", "targets": ["old", "bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a cup.", "It is a lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an ant."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a drum.", "It is a bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my nose.", "This is my hand."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 컵이 좋아.", "hintEn": "I like my cup.", "answerExample": "I like my cup.", "twoAnswers": ["I like my cup.", "I like my bag."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a leg.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 얼굴이야.", "hintEn": "That is a face.", "answerExample": "That is a face.", "twoAnswers": ["That is a face.", "That is a hand."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 지도가 좋아.", "hintEn": "I like the map.", "answerExample": "I like the map.", "twoAnswers": ["I like the map.", "I like the duck."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "손이야.", "hintEn": "It is a hand.", "answerExample": "It is a hand.", "twoAnswers": ["It is a nose.", "It is a hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 다리야.", "hintEn": "That is my leg.", "answerExample": "That is my leg.", "twoAnswers": ["That is my leg.", "That is my mouth."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "오래된 북이야.", "hintEn": "It is an old drum.", "answerExample": "It is an old drum.", "twoAnswers": ["It is an old bell.", "It is an old drum."], "imageKey": "drum", "targets": ["old", "drum"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the pencil?", "ko": "그 연필은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "pencil", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "How is the desk?", "ko": "그 책상은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "desk", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 귀야.", "hintEn": "This is my ear.", "answerExample": "This is my ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 전등이야.", "hintEn": "It is my lamp.", "answerExample": "It is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 1, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "꽃밭 옆 그림 카드",
+      "newWords": [],
+      "unitWords": ["pen", "book", "chair", "toy", "clock", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 꽃밭 산책",
+        "targetExpressions": ["This is my arm.", "This is my neck.", "It is a tooth.", "It is a smile.", "I like my toy."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher looks at picture cards by a flower garden and asks what they are.",
+          "The teacher asks how some old things are and what the child likes."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨 · 미소", "눈 · 귀 · 코 · 입 · 얼굴", "오래된 물건 · 장난감"],
+        "closingLines": [
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "This is my neck.", "ko": "이건 내 목이야."},
+          {"en": "It is a tooth.", "ko": "이빨이야."},
+          {"en": "It is a smile.", "ko": "미소야."},
+          {"en": "I like the old chair.", "ko": "나는 그 오래된 의자가 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my arm.", "This is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an apple.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old book.", "It is an old clock."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an ant."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my book.", "I like my toy."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a tooth.", "It is a hand."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 코야.", "hintEn": "That is a nose.", "answerExample": "That is a nose.", "twoAnswers": ["That is a mouth.", "That is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 오래된 의자가 좋아.", "hintEn": "I like the old chair.", "answerExample": "I like the old chair.", "twoAnswers": ["I like the old chair.", "I like the old tree."], "imageKey": "chair", "targets": ["old", "chair"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a nose.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 얼굴이야.", "hintEn": "That is a face.", "answerExample": "That is a face.", "twoAnswers": ["That is a face.", "That is a leg."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "twoAnswers": ["It is my nose.", "It is my hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a hand.", "It is a leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the pen?", "ko": "그 펜은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "pen", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the bell?", "ko": "오, 그 종은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "bell", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 이빨이야.", "hintEn": "It is my tooth.", "answerExample": "It is my tooth.", "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 1, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "학교 버스 타기",
+      "newWords": ["bag", "pen", "pencil", "book", "cup"],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup"],
+      "card": {
+        "topic": "좋아하는 것과 학교 버스",
+        "targetExpressions": ["It is a bag.", "It is a pen.", "It is a pencil.", "I like the book.", "It is a cup."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "bag", "meaningKo": "가방", "example": "I like my bag.", "exampleKo": "나는 내 가방이 좋아."},
+          {"word": "pen", "meaningKo": "펜", "example": "It is a black pen.", "exampleKo": "검은 펜이야."},
+          {"word": "pencil", "meaningKo": "연필", "example": "It is my pencil.", "exampleKo": "내 연필이야."},
+          {"word": "book", "meaningKo": "책", "example": "This is my book.", "exampleKo": "이건 내 책이야."},
+          {"word": "cup", "meaningKo": "컵", "example": "I like the cup.", "exampleKo": "나는 그 컵이 좋아."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher gets ready for the school bus and asks what each thing is.",
+          "The teacher asks what the child likes: a bag, a book or a cup."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필", "책 · 컵", "버스에 챙길 물건"],
+        "closingLines": [
+          {"en": "I like my bag.", "ko": "나는 내 가방이 좋아."},
+          {"en": "It is a black pen.", "ko": "검은 펜이야."},
+          {"en": "It is my pencil.", "ko": "내 연필이야."},
+          {"en": "This is my book.", "ko": "이건 내 책이야."},
+          {"en": "I like the cup.", "ko": "나는 그 컵이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a kite.", "It is a bag."], "imageKey": "bag", "targets": ["bag"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a pen.", "It is a yo-yo."], "imageKey": "pen", "targets": ["pen"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 가방이 좋아.", "hintEn": "I like my bag.", "answerExample": "I like my bag.", "twoAnswers": ["I like my bag.", "I like my robot."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a top.", "It is a pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "책이야.", "hintEn": "It is a book.", "answerExample": "It is a book.", "twoAnswers": ["It is a book.", "It is a kite."], "imageKey": "book", "targets": ["book"], "ask": "first"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 펜이야.", "hintEn": "This is my pen.", "answerExample": "This is my pen.", "twoAnswers": ["This is my robot.", "This is my pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "컵이야.", "hintEn": "It is a cup.", "answerExample": "It is a cup.", "twoAnswers": ["It is a cup.", "It is a ball."], "imageKey": "cup", "targets": ["cup"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the car."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 연필이야.", "hintEn": "That is my pencil.", "answerExample": "That is my pencil.", "twoAnswers": ["That is my pencil.", "That is my top."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 컵이야.", "hintEn": "That is my cup.", "answerExample": "That is my cup.", "twoAnswers": ["That is my yo-yo.", "That is my cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my bag.", "It is my kite."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a ball.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 컵이 좋아.", "hintEn": "I like my cup.", "answerExample": "I like my cup.", "twoAnswers": ["I like my cup.", "I like my kite."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a pencil.", "It is a robot."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 책이야.", "hintEn": "This is my book.", "answerExample": "This is my book.", "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "이건 내 가방이야.", "hintEn": "This is my bag.", "answerExample": "This is my bag.", "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 펜이 좋아.", "hintEn": "I like my pen.", "answerExample": "I like my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "이건 내 연필이야.", "hintEn": "This is my pencil.", "answerExample": "This is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 2, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "장난감 방 놀이",
+      "newWords": ["map", "desk", "chair", "toy", "drum"],
+      "unitWords": ["pen", "book", "cup", "map", "desk", "chair", "toy", "drum"],
+      "card": {
+        "topic": "좋아하는 것과 장난감 방",
+        "targetExpressions": ["It is a map.", "It is a desk.", "That is a chair.", "This is my toy.", "It is a drum."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 잘 지내.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am great."]}
+        ]},
+        "todayWords": [
+          {"word": "map", "meaningKo": "지도", "example": "It is a map.", "exampleKo": "지도야."},
+          {"word": "desk", "meaningKo": "책상", "example": "I like my desk.", "exampleKo": "나는 내 책상이 좋아."},
+          {"word": "chair", "meaningKo": "의자", "example": "This is my chair.", "exampleKo": "이건 내 의자야."},
+          {"word": "toy", "meaningKo": "장난감", "example": "I like my toy.", "exampleKo": "나는 내 장난감이 좋아."},
+          {"word": "drum", "meaningKo": "북, 드럼", "example": "This is a drum.", "exampleKo": "이건 북이야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher looks around a toy room and asks what each thing is.",
+          "The teacher shows a robot and asks about the child's toy.",
+          "The teacher asks what the child likes, like a ball or a drum."
+        ],
+        "todayTopicsKo": ["지도 · 책상 · 의자", "장난감 · 북", "장난감 방 구경"],
+        "closingLines": [
+          {"en": "It is a map.", "ko": "지도야."},
+          {"en": "I like my desk.", "ko": "나는 내 책상이 좋아."},
+          {"en": "This is my chair.", "ko": "이건 내 의자야."},
+          {"en": "This is my toy.", "ko": "이건 내 장난감이야."},
+          {"en": "I like the drum.", "ko": "나는 그 북이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "지도야.", "hintEn": "It is a map.", "answerExample": "It is a map.", "twoAnswers": ["It is a ball.", "It is a map."], "imageKey": "map", "targets": ["map"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the kite.", "I like the book."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "twoAnswers": ["It is a desk.", "It is a robot."], "imageKey": "desk", "targets": ["desk"], "ask": "first"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 의자야.", "hintEn": "That is a chair.", "answerExample": "That is a chair.", "twoAnswers": ["That is a desk.", "That is a chair."], "imageKey": "chair", "targets": ["chair"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 펜이야.", "hintEn": "That is my pen.", "answerExample": "That is my pen.", "twoAnswers": ["That is my pen.", "That is my top."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my ball.", "I like my toy."], "targets": ["toy"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a piano."], "imageKey": "drum", "targets": ["drum"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "내 지도야.", "hintEn": "It is my map.", "answerExample": "It is my map.", "twoAnswers": ["It is my kite.", "It is my map."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 책상이 좋아.", "hintEn": "I like my desk.", "answerExample": "I like my desk.", "twoAnswers": ["I like my desk.", "I like my chair."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "twoAnswers": ["It is a ball.", "It is a chair."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the drum.", "I like the ball."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "A robot! What is this?", "ko": "로봇이다! 이건 뭐야?"}, "hintKo": "이건 내 장난감이야.", "hintEn": "This is my toy.", "answerExample": "This is my toy.", "twoAnswers": ["This is my toy.", "This is my map."], "imageKey": "robot", "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "twoAnswers": ["It is my yo-yo.", "It is my cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 북이야.", "hintEn": "This is a drum.", "answerExample": "This is a drum.", "twoAnswers": ["This is a drum.", "This is a guitar."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 책상이야.", "hintEn": "This is my desk.", "answerExample": "This is my desk.", "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 의자야.", "hintEn": "It is my chair.", "answerExample": "It is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 지도야.", "hintEn": "This is a map.", "answerExample": "This is a map.", "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 펜이야.", "hintEn": "It is my pen.", "answerExample": "It is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책이야.", "hintEn": "That is my book.", "answerExample": "That is my book.", "imageKey": "book", "targets": ["book"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 3, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "우주선 타고 출발",
+      "newWords": ["clock", "lamp", "bell", "eye", "ear"],
+      "unitWords": ["desk", "chair", "drum", "clock", "lamp", "bell", "eye", "ear"],
+      "card": {
+        "topic": "좋아하는 것과 우주 여행",
+        "targetExpressions": ["It is a clock.", "It is a lamp.", "It is a bell.", "It is an eye.", "It is an ear."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am okay."]}
+        ]},
+        "todayWords": [
+          {"word": "clock", "meaningKo": "시계", "example": "It is a clock.", "exampleKo": "시계야."},
+          {"word": "lamp", "meaningKo": "램프, 전등", "example": "This is my lamp.", "exampleKo": "이건 내 전등이야."},
+          {"word": "bell", "meaningKo": "종", "example": "It is a bell.", "exampleKo": "종이야."},
+          {"word": "eye", "meaningKo": "눈", "example": "It is an eye.", "exampleKo": "눈이야."},
+          {"word": "ear", "meaningKo": "귀", "example": "This is my ear.", "exampleKo": "이건 내 귀야."}
+        ],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher gets a spaceship ready for a trip to the stars and asks what each thing is.",
+          "The teacher shows an eye and an ear and asks what they are.",
+          "The teacher asks what the child likes, like a plane or a star."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀", "우주 여행 떠나기"],
+        "closingLines": [
+          {"en": "It is a clock.", "ko": "시계야."},
+          {"en": "This is my lamp.", "ko": "이건 내 전등이야."},
+          {"en": "It is a bell.", "ko": "종이야."},
+          {"en": "It is an eye.", "ko": "눈이야."},
+          {"en": "This is my ear.", "ko": "이건 내 귀야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a star.", "It is a clock."], "imageKey": "clock", "targets": ["clock"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a lamp.", "It is a ball."], "imageKey": "lamp", "targets": ["lamp"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the plane.", "I like the drum."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a bell.", "It is a kite."], "imageKey": "bell", "targets": ["bell"], "ask": "first"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an egg.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 의자가 좋아.", "hintEn": "I like my chair.", "answerExample": "I like my chair.", "twoAnswers": ["I like my chair.", "I like my bike."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an umbrella."], "imageKey": "ear", "targets": ["ear"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 시계야.", "hintEn": "That is a clock.", "answerExample": "That is a clock.", "twoAnswers": ["That is a clock.", "That is a bell."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 전등이야.", "hintEn": "That is my lamp.", "answerExample": "That is my lamp.", "twoAnswers": ["That is my desk.", "That is my lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an eye.", "It is an apple."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 종이 좋아.", "hintEn": "I like the bell.", "answerExample": "I like the bell.", "twoAnswers": ["I like the bell.", "I like the star."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an umbrella.", "It is an ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a lamp.", "It is a robot."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 시계야.", "hintEn": "It is my clock.", "answerExample": "It is my clock.", "twoAnswers": ["It is my ball.", "It is my clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 4, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "공놀이 몸 풀기",
+      "newWords": ["nose", "mouth", "face", "hand", "leg"],
+      "unitWords": ["book", "clock", "lamp", "ear", "nose", "mouth", "face", "hand", "leg"],
+      "card": {
+        "topic": "좋아하는 것과 공놀이",
+        "targetExpressions": ["This is my nose.", "It is a mouth.", "It is a face.", "This is my hand.", "It is a leg."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am good."]}
+        ]},
+        "todayWords": [
+          {"word": "nose", "meaningKo": "코", "example": "It is a nose.", "exampleKo": "코야."},
+          {"word": "mouth", "meaningKo": "입", "example": "This is my mouth.", "exampleKo": "이건 내 입이야."},
+          {"word": "face", "meaningKo": "얼굴", "example": "It is a face.", "exampleKo": "얼굴이야."},
+          {"word": "hand", "meaningKo": "손", "example": "This is my hand.", "exampleKo": "이건 내 손이야."},
+          {"word": "leg", "meaningKo": "다리", "example": "That is a leg.", "exampleKo": "저건 다리야."}
+        ],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "Before a ball game, the teacher shows a nose, a mouth, a face, a hand and a leg and asks what they are.",
+          "The teacher asks what the child likes, like a kite or a ball."
+        ],
+        "todayTopicsKo": ["코 · 입 · 얼굴", "손 · 다리", "공놀이 전 몸 풀기"],
+        "closingLines": [
+          {"en": "It is a nose.", "ko": "코야."},
+          {"en": "This is my mouth.", "ko": "이건 내 입이야."},
+          {"en": "It is a face.", "ko": "얼굴이야."},
+          {"en": "This is my hand.", "ko": "이건 내 손이야."},
+          {"en": "That is a leg.", "ko": "저건 다리야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my ear.", "This is my nose."], "imageKey": "nose", "targets": ["nose"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a mouth.", "It is a nose."], "imageKey": "mouth", "targets": ["mouth"], "ask": "first"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the kite."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 손이야.", "hintEn": "This is my hand.", "answerExample": "This is my hand.", "twoAnswers": ["This is my nose.", "This is my hand."], "imageKey": "hand", "targets": ["hand"], "ask": "first"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a hand."], "imageKey": "face", "targets": ["face"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 시계가 좋아.", "hintEn": "I like the clock.", "answerExample": "I like the clock.", "twoAnswers": ["I like the bike.", "I like the clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a hand.", "It is a leg."], "imageKey": "leg", "targets": ["leg"], "ask": "first"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a nose.", "It is a mouth."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 입이야.", "hintEn": "This is my mouth.", "answerExample": "This is my mouth.", "twoAnswers": ["This is my hand.", "This is my mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 손이야.", "hintEn": "That is a hand.", "answerExample": "That is a hand.", "twoAnswers": ["That is a hand.", "That is a leg."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a leg.", "It is a face."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 전등이 좋아.", "hintEn": "I like my lamp.", "answerExample": "I like my lamp.", "twoAnswers": ["I like my lamp.", "I like my ball."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a leg.", "It is a nose."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an umbrella.", "It is an ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 입이야.", "hintEn": "This is my mouth.", "answerExample": "This is my mouth.", "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 다리야.", "hintEn": "It is my leg.", "answerExample": "It is my leg.", "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 코야.", "hintEn": "That is a nose.", "answerExample": "That is a nose.", "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "assigned", "lessonNo": 5, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "로봇 친구 만들기",
+      "newWords": ["arm", "old", "neck", "tooth", "smile"],
+      "unitWords": ["drum", "clock", "nose", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 로봇 만들기",
+        "targetExpressions": ["This is my arm.", "It is old.", "This is my neck.", "It is a tooth.", "It is a smile."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [
+          {"word": "arm", "meaningKo": "팔", "example": "It is my arm.", "exampleKo": "내 팔이야."},
+          {"word": "old", "meaningKo": "~살의, 늙은", "example": "The robot is old.", "exampleKo": "그 로봇은 오래됐어."},
+          {"word": "neck", "meaningKo": "목", "example": "It is my neck.", "exampleKo": "내 목이야."},
+          {"word": "tooth", "meaningKo": "이, 이빨", "example": "It is a white tooth.", "exampleKo": "하얀 이빨이야."},
+          {"word": "smile", "meaningKo": "미소, 웃다", "example": "It is a smile.", "exampleKo": "미소야."}
+        ],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher builds a robot friend with the child and shows an arm, a neck, a tooth and a smile.",
+          "The teacher asks how an old robot and an old bike are.",
+          "The teacher asks what the child likes."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨", "미소", "오래된 로봇"],
+        "closingLines": [
+          {"en": "It is my arm.", "ko": "내 팔이야."},
+          {"en": "The robot is old.", "ko": "그 로봇은 오래됐어."},
+          {"en": "It is my neck.", "ko": "내 목이야."},
+          {"en": "It is a white tooth.", "ko": "하얀 이빨이야."},
+          {"en": "It is a smile.", "ko": "미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my leg.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "first"},
+          {"question": {"en": "How is the robot?", "ko": "그 로봇은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is old.", "It is cute."], "imageKey": "robot", "targets": ["old"], "ask": "first"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a hand."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "first"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 오래된 시계가 좋아.", "hintEn": "I like the old clock.", "answerExample": "I like the old clock.", "twoAnswers": ["I like the old car.", "I like the old clock."], "imageKey": "clock", "targets": ["old", "clock"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a tooth.", "It is a nose."], "imageKey": "tooth", "targets": ["tooth"], "ask": "first"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a hand.", "It is a smile."], "imageKey": "smile", "targets": ["smile"], "ask": "first"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 팔이야.", "hintEn": "That is my arm.", "answerExample": "That is my arm.", "twoAnswers": ["That is my arm.", "That is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is the bike?", "ko": "그 자전거는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is nice.", "It is old."], "imageKey": "bike", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 목이야.", "hintEn": "It is my neck.", "answerExample": "It is my neck.", "twoAnswers": ["It is my neck.", "It is my tooth."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 이빨이야.", "hintEn": "That is a tooth.", "answerExample": "That is a tooth.", "twoAnswers": ["That is a hand.", "That is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 오래된 북이 좋아.", "hintEn": "I like my old drum.", "answerExample": "I like my old drum.", "twoAnswers": ["I like my old kite.", "I like my old drum."], "imageKey": "drum", "targets": ["old", "drum"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my nose.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 이빨이야.", "hintEn": "This is my tooth.", "answerExample": "This is my tooth.", "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the clock?", "ko": "오, 그 시계는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "clock", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 6, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "기차놀이 짐 싣기",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "desk", "chair", "toy", "drum"],
+      "card": {
+        "topic": "좋아하는 것과 기차놀이",
+        "targetExpressions": ["It is a bag.", "It is a pencil.", "That is my desk.", "I like my toy.", "It is a drum."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher loads things onto a toy train and asks what they are.",
+          "The teacher asks what the child likes, like a toy, a book or a drum."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "지도 · 책상 · 의자", "장난감 · 북"],
+        "closingLines": [
+          {"en": "It is my bag.", "ko": "내 가방이야."},
+          {"en": "This is my pencil.", "ko": "이건 내 연필이야."},
+          {"en": "That is a map.", "ko": "저건 지도야."},
+          {"en": "I like my toy.", "ko": "나는 내 장난감이 좋아."},
+          {"en": "It is a drum.", "ko": "북이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a bag.", "It is a kite."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a top.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my bike."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a ball.", "It is a pencil."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 지도야.", "hintEn": "That is a map.", "answerExample": "That is a map.", "twoAnswers": ["That is a map.", "That is a kite."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my robot.", "That is my desk."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 책이 좋아.", "hintEn": "I like the book.", "answerExample": "I like the book.", "twoAnswers": ["I like the book.", "I like the ship."], "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 컵이야.", "hintEn": "This is a cup.", "answerExample": "This is a cup.", "twoAnswers": ["This is a yo-yo.", "This is a cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "twoAnswers": ["This is my chair.", "This is my desk."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a guitar."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 장난감이 좋아.", "hintEn": "I like the toy.", "answerExample": "I like the toy.", "twoAnswers": ["I like the toy.", "I like the car."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my top.", "It is my bag."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "twoAnswers": ["It is a desk.", "It is a bed."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 지도야.", "hintEn": "It is my map.", "answerExample": "It is my map.", "twoAnswers": ["It is my kite.", "It is my map."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "이건 내 연필이야.", "hintEn": "This is my pencil.", "answerExample": "This is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 펜이야.", "hintEn": "It is my pen.", "answerExample": "It is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 7, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "음악 놀이 시간",
+      "newWords": [],
+      "unitWords": ["map", "desk", "chair", "toy", "drum", "clock", "lamp", "bell", "eye", "ear", "nose", "hand"],
+      "card": {
+        "topic": "좋아하는 것과 음악 놀이",
+        "targetExpressions": ["It is a drum.", "It is a bell.", "That is a lamp.", "It is an eye.", "It is an ear."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 아주 좋아.", "hintEn": "I am great.", "answerExample": "I am great.", "twoAnswers": ["I am great.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "Wow! What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher plays a music game with a drum and a bell and asks what each thing is.",
+          "The teacher shows an eye and an ear and asks what they are.",
+          "The teacher asks what the child likes."
+        ],
+        "todayTopicsKo": ["북 · 종 · 시계 · 전등", "지도 · 책상 · 의자 · 장난감", "눈 · 귀"],
+        "closingLines": [
+          {"en": "I like the drum.", "ko": "나는 그 북이 좋아."},
+          {"en": "It is a bell.", "ko": "종이야."},
+          {"en": "This is a clock.", "ko": "이건 시계야."},
+          {"en": "This is my eye.", "ko": "이건 내 눈이야."},
+          {"en": "It is my ear.", "ko": "내 귀야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a bell."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a piano.", "It is a bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my lamp."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a clock.", "It is a ball."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an umbrella.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 전등이야.", "hintEn": "That is a lamp.", "answerExample": "That is a lamp.", "twoAnswers": ["That is a lamp.", "That is a clock."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an elephant.", "It is an ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 지도가 좋아.", "hintEn": "I like the map.", "answerExample": "I like the map.", "twoAnswers": ["I like the map.", "I like the plane."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my bed.", "That is my desk."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "의자야.", "hintEn": "It is a chair.", "answerExample": "It is a chair.", "twoAnswers": ["It is a chair.", "It is a robot."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the kite.", "I like the drum."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a bell.", "It is a drum."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "twoAnswers": ["This is my eye.", "This is my nose."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 귀야.", "hintEn": "It is my ear.", "answerExample": "It is my ear.", "twoAnswers": ["It is my hand.", "It is my ear."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "내 전등이야.", "hintEn": "It is my lamp.", "answerExample": "It is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 시계야.", "hintEn": "This is a clock.", "answerExample": "This is a clock.", "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "책상이야.", "hintEn": "It is a desk.", "answerExample": "It is a desk.", "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "지도야.", "hintEn": "It is a map.", "answerExample": "It is a map.", "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 의자야.", "hintEn": "This is my chair.", "answerExample": "This is my chair.", "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 8, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "별나라 탐험",
+      "newWords": [],
+      "unitWords": ["clock", "lamp", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg"],
+      "card": {
+        "topic": "좋아하는 것과 별나라 탐험",
+        "targetExpressions": ["This is my nose.", "It is a mouth.", "It is a face.", "This is my hand.", "That is a leg."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher explores a star land and asks what each picture is.",
+          "The teacher asks what the child likes, like a star or a robot."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀 · 코 · 입", "얼굴 · 손 · 다리"],
+        "closingLines": [
+          {"en": "I like the bell.", "ko": "나는 그 종이 좋아."},
+          {"en": "This is my nose.", "ko": "이건 내 코야."},
+          {"en": "It is a face.", "ko": "얼굴이야."},
+          {"en": "This is my hand.", "ko": "이건 내 손이야."},
+          {"en": "This is my ear.", "ko": "이건 내 귀야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my nose.", "This is my ear."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 시계가 좋아.", "hintEn": "I like the clock.", "answerExample": "I like the clock.", "twoAnswers": ["I like the star.", "I like the clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a hand.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a leg."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 전등이야.", "hintEn": "That is a lamp.", "answerExample": "That is a lamp.", "twoAnswers": ["That is a bell.", "That is a lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 손이야.", "hintEn": "This is my hand.", "answerExample": "This is my hand.", "twoAnswers": ["This is my hand.", "This is my nose."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an umbrella.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 다리야.", "hintEn": "That is a leg.", "answerExample": "That is a leg.", "twoAnswers": ["That is a leg.", "That is a hand."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 종이 좋아.", "hintEn": "I like the bell.", "answerExample": "I like the bell.", "twoAnswers": ["I like the robot.", "I like the bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 귀야.", "hintEn": "This is my ear.", "answerExample": "This is my ear.", "twoAnswers": ["This is my ear.", "This is my mouth."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a mouth.", "It is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "내 입이야.", "hintEn": "It is my mouth.", "answerExample": "It is my mouth.", "twoAnswers": ["It is my mouth.", "It is my leg."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "twoAnswers": ["It is my nose.", "It is my hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 다리야.", "hintEn": "This is my leg.", "answerExample": "This is my leg.", "twoAnswers": ["This is my hand.", "This is my leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 얼굴이야.", "hintEn": "This is my face.", "answerExample": "This is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 눈이야.", "hintEn": "This is my eye.", "answerExample": "This is my eye.", "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 전등이야.", "hintEn": "That is my lamp.", "answerExample": "That is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 9, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "운동회 아침 체조",
+      "newWords": [],
+      "unitWords": ["ear", "nose", "mouth", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 운동회",
+        "targetExpressions": ["This is my arm.", "It is old.", "It is a tooth.", "This is my neck.", "It is a smile."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 잘 지내.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "Before sports day, the teacher asks how an old ball, an old bike and an old kite are.",
+          "The teacher shows an arm, a neck, a mouth and other pictures and asks what they are."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨 · 미소", "코 · 입 · 얼굴 · 손 · 다리", "오래된 공"],
+        "closingLines": [
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "The ball is old.", "ko": "그 공은 오래됐어."},
+          {"en": "This is my neck.", "ko": "이건 내 목이야."},
+          {"en": "It is a tooth.", "ko": "이빨이야."},
+          {"en": "It is a smile.", "ko": "미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my arm.", "This is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is the ball?", "ko": "그 공은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is nice.", "It is old."], "imageKey": "ball", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a tooth.", "It is a hand."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "코야.", "hintEn": "It is a nose.", "answerExample": "It is a nose.", "twoAnswers": ["It is a leg.", "It is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 입이야.", "hintEn": "That is a mouth.", "answerExample": "That is a mouth.", "twoAnswers": ["That is a mouth.", "That is a nose."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the bike?", "ko": "오, 그 자전거는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "twoAnswers": ["It is old.", "It is big."], "imageKey": "bike", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a hand.", "It is a face."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 손이야.", "hintEn": "That is my hand.", "answerExample": "That is my hand.", "twoAnswers": ["That is my hand.", "That is my nose."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 다리야.", "hintEn": "It is my leg.", "answerExample": "It is my leg.", "twoAnswers": ["It is my arm.", "It is my leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 이빨이야.", "hintEn": "This is my tooth.", "answerExample": "This is my tooth.", "twoAnswers": ["This is my tooth.", "This is my ear."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a hand.", "It is a smile."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 팔이야.", "hintEn": "It is my arm.", "answerExample": "It is my arm.", "twoAnswers": ["It is my nose.", "It is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "kite", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 입이야.", "hintEn": "It is my mouth.", "answerExample": "It is my mouth.", "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "reinforce", "lessonNo": 10, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "놀이공원 하루",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "toy", "drum", "clock", "bell", "eye", "nose", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 놀이공원",
+        "targetExpressions": ["It is a bag.", "It is an old book.", "I like the cup.", "It is a tooth.", "I like my toy."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am great."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher spends a day at an amusement park and asks what things are.",
+          "The teacher asks how an old book and an old clock are, and what the child likes."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "장난감 · 북 · 시계", "팔 · 목 · 이빨 · 미소"],
+        "closingLines": [
+          {"en": "It is an old book.", "ko": "오래된 책이야."},
+          {"en": "I like the cup.", "ko": "나는 그 컵이 좋아."},
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "It is a smile.", "ko": "미소야."},
+          {"en": "I like my toy.", "ko": "나는 내 장난감이 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "가방이야.", "hintEn": "It is a bag.", "answerExample": "It is a bag.", "twoAnswers": ["It is a bag.", "It is a kite."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my leg.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old book.", "It is an old map."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a top.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a hand."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 컵이 좋아.", "hintEn": "I like the cup.", "answerExample": "I like the cup.", "twoAnswers": ["I like the cup.", "I like the ball."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 내 연필이야.", "hintEn": "That is my pencil.", "answerExample": "That is my pencil.", "twoAnswers": ["That is my pencil.", "That is my yo-yo."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a nose.", "It is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 시계야.", "hintEn": "It is an old clock.", "answerExample": "It is an old clock.", "twoAnswers": ["It is an old bell.", "It is an old clock."], "imageKey": "clock", "targets": ["old", "clock"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my drum."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "북이야.", "hintEn": "It is a drum.", "answerExample": "It is a drum.", "twoAnswers": ["It is a drum.", "It is a guitar."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an umbrella.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "얼굴이야.", "hintEn": "It is a face.", "answerExample": "It is a face.", "twoAnswers": ["It is a face.", "It is a hand."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the cup?", "ko": "그 컵은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "cup", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "내 책이야.", "hintEn": "It is my book.", "answerExample": "It is my book.", "imageKey": "book", "targets": ["book"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 펜이야.", "hintEn": "It is my pen.", "answerExample": "It is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 1, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "블록 쌓기 놀이",
+      "newWords": [],
+      "unitWords": ["bag", "pen", "pencil", "book", "cup", "map", "desk", "chair", "toy", "drum", "clock", "lamp", "nose", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 블록 놀이",
+        "targetExpressions": ["It is my bag.", "It is an old book.", "I like my toy.", "This is my arm.", "It is a tooth."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 좋아.", "hintEn": "I am good.", "answerExample": "I am good.", "twoAnswers": ["I am good.", "I am okay."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher builds with blocks and asks what the child's things are.",
+          "The teacher asks how an old book, an old clock and an old lamp are.",
+          "The teacher asks what the child likes, like a toy or a drum."
+        ],
+        "todayTopicsKo": ["가방 · 펜 · 연필 · 책 · 컵", "지도 · 책상 · 의자 · 장난감 · 북", "팔 · 목 · 이빨 · 미소"],
+        "closingLines": [
+          {"en": "It is my bag.", "ko": "내 가방이야."},
+          {"en": "It is an old book.", "ko": "오래된 책이야."},
+          {"en": "I like my chair.", "ko": "나는 내 의자가 좋아."},
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "It is a smile.", "ko": "미소야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "내 가방이야.", "hintEn": "It is my bag.", "answerExample": "It is my bag.", "twoAnswers": ["It is my bag.", "It is my kite."], "imageKey": "bag", "targets": ["bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "펜이야.", "hintEn": "It is a pen.", "answerExample": "It is a pen.", "twoAnswers": ["It is a top.", "It is a pen."], "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old map.", "It is an old book."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "연필이야.", "hintEn": "It is a pencil.", "answerExample": "It is a pencil.", "twoAnswers": ["It is a pencil.", "It is a ball."], "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my toy.", "I like my bike."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "컵이야.", "hintEn": "It is a cup.", "answerExample": "It is a cup.", "twoAnswers": ["It is a yo-yo.", "It is a cup."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 지도야.", "hintEn": "That is a map.", "answerExample": "That is a map.", "twoAnswers": ["That is a map.", "That is a kite."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a hand.", "It is a smile."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 책상이야.", "hintEn": "That is my desk.", "answerExample": "That is my desk.", "twoAnswers": ["That is my desk.", "That is my robot."], "imageKey": "desk", "targets": ["desk"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 의자가 좋아.", "hintEn": "I like my chair.", "answerExample": "I like my chair.", "twoAnswers": ["I like my chair.", "I like my desk."], "imageKey": "chair", "targets": ["chair"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my leg.", "This is my arm."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 북이 좋아.", "hintEn": "I like the drum.", "answerExample": "I like the drum.", "twoAnswers": ["I like the drum.", "I like the car."], "imageKey": "drum", "targets": ["drum"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my neck.", "This is my hand."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a nose.", "It is a tooth."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the clock?", "ko": "그 시계는 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "clock", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the lamp?", "ko": "오, 그 전등은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "lamp", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 펜이야.", "hintEn": "This is my pen.", "answerExample": "This is my pen.", "imageKey": "pen", "targets": ["pen"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 컵이야.", "hintEn": "It is my cup.", "answerExample": "It is my cup.", "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 연필이야.", "hintEn": "It is my pencil.", "answerExample": "It is my pencil.", "imageKey": "pencil", "targets": ["pencil"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 2, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "연날리기 언덕",
+      "newWords": [],
+      "unitWords": ["bag", "pencil", "cup", "map", "desk", "drum", "clock", "lamp", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg", "old"],
+      "card": {
+        "topic": "좋아하는 것과 연날리기",
+        "targetExpressions": ["It is a clock.", "It is an eye.", "It is an old bag.", "This is my nose.", "It is a hand."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hello, {NAME}! How are you?", "ko": "안녕, {NAME}! 오늘 어때?"}, "hintKo": "나는 잘 지내.", "hintEn": "I am fine.", "answerExample": "I am fine.", "twoAnswers": ["I am fine.", "I am good."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is it?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher flies a kite on a hill and plays a picture game.",
+          "The teacher asks how some old things are and what the child likes."
+        ],
+        "todayTopicsKo": ["시계 · 전등 · 종", "눈 · 귀 · 코 · 입", "얼굴 · 손 · 다리"],
+        "closingLines": [
+          {"en": "It is a clock.", "ko": "시계야."},
+          {"en": "It is an old bag.", "ko": "오래된 가방이야."},
+          {"en": "This is my nose.", "ko": "이건 내 코야."},
+          {"en": "That is a face.", "ko": "저건 얼굴이야."},
+          {"en": "It is a hand.", "ko": "손이야."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is it?", "ko": "이건 뭐야?"}, "hintKo": "시계야.", "hintEn": "It is a clock.", "answerExample": "It is a clock.", "twoAnswers": ["It is a star.", "It is a clock."], "imageKey": "clock", "targets": ["clock"], "ask": "re_ask"},
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an eye.", "It is an umbrella."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 가방이야.", "hintEn": "It is an old bag.", "answerExample": "It is an old bag.", "twoAnswers": ["It is an old bag.", "It is an old cup."], "imageKey": "bag", "targets": ["old", "bag"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "전등이야.", "hintEn": "It is a lamp.", "answerExample": "It is a lamp.", "twoAnswers": ["It is a ball.", "It is a lamp."], "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an elephant."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "종이야.", "hintEn": "It is a bell.", "answerExample": "It is a bell.", "twoAnswers": ["It is a kite.", "It is a bell."], "imageKey": "bell", "targets": ["bell"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "이건 내 코야.", "hintEn": "This is my nose.", "answerExample": "This is my nose.", "twoAnswers": ["This is my nose.", "This is my hand."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 내 컵이 좋아.", "hintEn": "I like my cup.", "answerExample": "I like my cup.", "twoAnswers": ["I like my cup.", "I like my kite."], "imageKey": "cup", "targets": ["cup"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a leg.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 얼굴이야.", "hintEn": "That is a face.", "answerExample": "That is a face.", "twoAnswers": ["That is a face.", "That is a hand."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 그 지도가 좋아.", "hintEn": "I like the map.", "answerExample": "I like the map.", "twoAnswers": ["I like the map.", "I like the plane."], "imageKey": "map", "targets": ["map"], "ask": "re_ask"},
+          {"question": {"en": "Great! What is it?", "ko": "멋져! 이건 뭐야?"}, "hintKo": "손이야.", "hintEn": "It is a hand.", "answerExample": "It is a hand.", "twoAnswers": ["It is a nose.", "It is a hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 내 다리야.", "hintEn": "That is my leg.", "answerExample": "That is my leg.", "twoAnswers": ["That is my leg.", "That is my mouth."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "오래된 북이야.", "hintEn": "It is an old drum.", "answerExample": "It is an old drum.", "twoAnswers": ["It is an old bell.", "It is an old drum."], "imageKey": "drum", "targets": ["old", "drum"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the pencil?", "ko": "그 연필은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "pencil", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "How is the desk?", "ko": "그 책상은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "desk", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 귀야.", "hintEn": "This is my ear.", "answerExample": "This is my ear.", "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 전등이야.", "hintEn": "It is my lamp.", "answerExample": "It is my lamp.", "imageKey": "lamp", "targets": ["lamp"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "내 얼굴이야.", "hintEn": "It is my face.", "answerExample": "It is my face.", "imageKey": "face", "targets": ["face"], "ask": "re_ask"}
+        ]
+      }
+    },
+    {
+      "kind": "remedial", "lessonNo": 3, "variant": 2, "revision": 1, "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "high", "briefHash": "09f5c7afd4e420734e8fdc2c057d5411e5d6ab9effde82968000cc6c337382de", "agentHash": "ef819801779b89d665b9e9ffb23fd023ed5b68b1633b3e6cd47b9e0eff1f2ce3", "createdOn": "2026-10-23"},
+      "title": "종이비행기 날리기",
+      "newWords": [],
+      "unitWords": ["pen", "book", "chair", "toy", "clock", "bell", "eye", "ear", "nose", "mouth", "face", "hand", "leg", "arm", "old", "neck", "tooth", "smile"],
+      "card": {
+        "topic": "좋아하는 것과 종이비행기",
+        "targetExpressions": ["This is my arm.", "This is my neck.", "It is a tooth.", "It is a smile.", "I like my toy."],
+        "greetingTurns": 1,
+        "greeting": {"questions": [
+          {"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 괜찮아.", "hintEn": "I am okay.", "answerExample": "I am okay.", "twoAnswers": ["I am okay.", "I am fine."]}
+        ]},
+        "todayWords": [],
+        "firstQuestion": "What is this?",
+        "flow": [
+          "The teacher says hello and asks how the child is.",
+          "The teacher flies paper planes and looks at picture cards with the child.",
+          "The teacher asks how some old things are and what the child likes."
+        ],
+        "todayTopicsKo": ["팔 · 목 · 이빨 · 미소", "눈 · 귀 · 코 · 입 · 얼굴", "오래된 물건 · 장난감"],
+        "closingLines": [
+          {"en": "This is my arm.", "ko": "이건 내 팔이야."},
+          {"en": "This is my neck.", "ko": "이건 내 목이야."},
+          {"en": "It is a tooth.", "ko": "이빨이야."},
+          {"en": "It is a smile.", "ko": "미소야."},
+          {"en": "I like the old chair.", "ko": "나는 그 오래된 의자가 좋아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, fun!", "ko": "와, 재밌다!"}
+        ],
+        "endCondition": "대화 턴을 모두 마치면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Let's talk again soon!", "ko": "다음에 또 새 이야기 하자!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Yes, good!"],
+        "turns": [
+          {"question": {"en": "What is this?", "ko": "이건 뭐야?"}, "hintKo": "이건 내 팔이야.", "hintEn": "This is my arm.", "answerExample": "This is my arm.", "twoAnswers": ["This is my arm.", "This is my leg."], "imageKey": "arm", "targets": ["arm"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what is it?", "ko": "오, 이건 뭐야?"}, "hintKo": "눈이야.", "hintEn": "It is an eye.", "answerExample": "It is an eye.", "twoAnswers": ["It is an umbrella.", "It is an eye."], "imageKey": "eye", "targets": ["eye"], "ask": "re_ask"},
+          {"question": {"en": "How is it?", "ko": "그건 어때?"}, "hintKo": "오래된 책이야.", "hintEn": "It is an old book.", "answerExample": "It is an old book.", "twoAnswers": ["It is an old book.", "It is an old clock."], "imageKey": "book", "targets": ["old", "book"], "ask": "re_ask"},
+          {"question": {"en": "Wow! What is this?", "ko": "와! 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "twoAnswers": ["This is my hand.", "This is my neck."], "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "And this?", "ko": "그럼 이건?"}, "hintKo": "귀야.", "hintEn": "It is an ear.", "answerExample": "It is an ear.", "twoAnswers": ["It is an ear.", "It is an elephant."], "imageKey": "ear", "targets": ["ear"], "ask": "re_ask"},
+          {"question": {"en": "What do you like?", "ko": "너는 뭐가 좋아?"}, "hintKo": "나는 내 장난감이 좋아.", "hintEn": "I like my toy.", "answerExample": "I like my toy.", "twoAnswers": ["I like my plane.", "I like my toy."], "targets": ["toy"], "ask": "re_ask"},
+          {"question": {"en": "Okay! What is it?", "ko": "좋아! 이건 뭐야?"}, "hintKo": "이빨이야.", "hintEn": "It is a tooth.", "answerExample": "It is a tooth.", "twoAnswers": ["It is a tooth.", "It is a hand."], "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "What is that?", "ko": "저건 뭐야?"}, "hintKo": "저건 코야.", "hintEn": "That is a nose.", "answerExample": "That is a nose.", "twoAnswers": ["That is a mouth.", "That is a nose."], "imageKey": "nose", "targets": ["nose"], "ask": "re_ask"},
+          {"question": {"en": "Wow, what is it?", "ko": "와, 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "twoAnswers": ["It is a smile.", "It is a leg."], "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"},
+          {"question": {"en": "Oh, what do you like?", "ko": "오, 너는 뭐가 좋아?"}, "hintKo": "나는 그 오래된 의자가 좋아.", "hintEn": "I like the old chair.", "answerExample": "I like the old chair.", "twoAnswers": ["I like the old chair.", "I like the old car."], "imageKey": "chair", "targets": ["old", "chair"], "ask": "re_ask"},
+          {"question": {"en": "Good! What is it?", "ko": "잘했어! 이건 뭐야?"}, "hintKo": "입이야.", "hintEn": "It is a mouth.", "answerExample": "It is a mouth.", "twoAnswers": ["It is a nose.", "It is a mouth."], "imageKey": "mouth", "targets": ["mouth"], "ask": "re_ask"},
+          {"question": {"en": "Oh! What is that?", "ko": "오! 저건 뭐야?"}, "hintKo": "저건 얼굴이야.", "hintEn": "That is a face.", "answerExample": "That is a face.", "twoAnswers": ["That is a face.", "That is a leg."], "imageKey": "face", "targets": ["face"], "ask": "re_ask"},
+          {"question": {"en": "{NAME}, what is it?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 손이야.", "hintEn": "It is my hand.", "answerExample": "It is my hand.", "twoAnswers": ["It is my nose.", "It is my hand."], "imageKey": "hand", "targets": ["hand"], "ask": "re_ask"},
+          {"question": {"en": "Oh, wow! What is it?", "ko": "오, 와! 이건 뭐야?"}, "hintKo": "다리야.", "hintEn": "It is a leg.", "answerExample": "It is a leg.", "twoAnswers": ["It is a hand.", "It is a leg."], "imageKey": "leg", "targets": ["leg"], "ask": "re_ask"}
+        ],
+        "moreTalk": [
+          {"question": {"en": "How is the pen?", "ko": "그 펜은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "pen", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "Oh, how is the bell?", "ko": "오, 그 종은 어때?"}, "hintKo": "오래됐어.", "hintEn": "It is old.", "answerExample": "It is old.", "imageKey": "bell", "targets": ["old"], "ask": "re_ask"},
+          {"question": {"en": "And this one?", "ko": "그럼 이건 뭐야?"}, "hintKo": "이건 내 목이야.", "hintEn": "This is my neck.", "answerExample": "This is my neck.", "imageKey": "neck", "targets": ["neck"], "ask": "re_ask"},
+          {"question": {"en": "What is it, {NAME}?", "ko": "{NAME}, 이건 뭐야?"}, "hintKo": "내 이빨이야.", "hintEn": "It is my tooth.", "answerExample": "It is my tooth.", "imageKey": "tooth", "targets": ["tooth"], "ask": "re_ask"},
+          {"question": {"en": "Oh, okay! What is it?", "ko": "오, 그렇구나! 이건 뭐야?"}, "hintKo": "미소야.", "hintEn": "It is a smile.", "answerExample": "It is a smile.", "imageKey": "smile", "targets": ["smile"], "ask": "re_ask"}
+        ]
+      }
+    }
+  ]
+}

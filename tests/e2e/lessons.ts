@@ -130,14 +130,36 @@ export async function levelSpecOf(
   return row.spec as Record<string, unknown>;
 }
 
+/** 쓰기 5단계 견본의 과제 글 · 제목 · 힌트 · 채점표(그 단계 입력 꼴 — 자판, 장부 86행 (2) · 전체 디자인 리뷰 M-11 (2)). */
+const GUIDED_5 = {
+  title: "쓰기 5단계 첫 수업",
+  task: "예시문을 보고 빈칸에 알맞은 낱말을 자판으로 써서 문장을 완성해요.",
+  hints: ["Type the missing word."],
+  rubric: ["빈칸에 알맞은 낱말을 바르게 썼다"],
+} as const;
+
 /**
- * 쓰기 4~5 견본(plan-p11b 브리프 — 견본 빌더 writingLesson(ref, 4), 5단계는 같은 수업을 5단계로 복제). 넣는 꼴(4단계 단어 상자 ·
- * 5단계 기기 자판)은 그 단계 규격(amount.input)에서 오고 문장 틀은 같다.
+ * 쓰기 4~5 견본(plan-p11b 브리프 — 견본 빌더 writingLesson(ref, 4)). 5단계는 같은 문장 틀을 5단계로 옮기고 과제 글 · 제목 · 힌트 · 채점표는
+ * 5단계 입력 꼴(기기 자판)로 바꾼다 — 4단계 '단어 상자에서 골라'가 5단계 화면에 나오지 않게. 넣는 꼴은 그 단계 규격(amount.input)에서 온다.
  */
 export function guidedSample(level: 4 | 5): LessonSample<"writing"> {
   const sample = writingLesson(referenceSet(defaultSettings()), 4);
   if (sample.lesson.content.shape !== "guided") throw new Error("견본 꼴");
-  return { ...sample, level };
+  if (level === 4) return { ...sample, level };
+  return {
+    ...sample,
+    level,
+    lesson: {
+      ...sample.lesson,
+      title: GUIDED_5.title,
+      content: {
+        ...sample.lesson.content,
+        task: GUIDED_5.task,
+        hints: [...GUIDED_5.hints],
+        rubric: [...GUIDED_5.rubric],
+      },
+    },
+  };
 }
 
 /** 쓰기 6단계 견본(자유 작문 — 견본 빌더 writingLesson(ref, 6), 차례 6). */

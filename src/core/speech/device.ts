@@ -138,3 +138,8 @@ export function describeDevice(facts: DeviceFacts): DeviceVerdict {
     name,
   };
 }
+
+/** iPad 의 Safari 인가(판정 이름 — 무음 모드 안내는 이 기기에서만, 13절 C111 · 7절). */
+export function isIpadSafari(verdict: Pick<DeviceVerdict, "name">): boolean {
+  return verdict.name.startsWith("iPad Safari");
+}

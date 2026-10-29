@@ -18,6 +18,7 @@ import {
   speakingConfirmSpec,
   speakingPresentationSpec,
 } from "@/core/ai/calls/speaking";
+import { talkClosingSpec, talkTurnSpec } from "@/core/ai/calls/talk";
 import { thinkoutSpec } from "@/core/ai/calls/thinkout";
 import { writingCheckSpec, writingFeedbackSpec } from "@/core/ai/calls/writing";
 import { SERVER_SIDE_FALLBACK_BETA } from "@/core/ai/combo";
@@ -67,6 +68,7 @@ import {
   SPEAKING_CONFIRM_SAMPLE,
   speakingAnswerSample,
   speakingPresentationSample,
+  talkSampleFor,
   thinkoutSample,
   WRITING_CHECK_SAMPLE,
   writingFeedbackSample,
@@ -86,6 +88,8 @@ type Sample = {
   /** 손으로 만든 표본만 있다. 녹화 표본(recordOf)에는 없다 — 녹화 표본에서 읽을 때는 ?. 로 읽는다. */
   expect: {
     strict?: boolean;
+    /** 회화 턴 견본의 단계(talk_turn). */
+    level?: number;
     refusal?: boolean;
     classify?: string;
     answeredModel?: string;
@@ -157,7 +161,9 @@ function checkRecordedCalls(rec: readonly Sample[]): number {
 
 type AnySpec = CallSpec<never, unknown, unknown>;
 /** 규격 제목 → 규격과 표본을 대 볼 견본 입력(단계는 표본 이름의 l 숫자 또는 기본). */
-function specCase(sample: Pick<Sample, "title" | "case">): {
+function specCase(
+  sample: Pick<Sample, "title" | "case"> & { expect?: Sample["expect"] },
+): {
   spec: AnySpec;
   input: unknown;
   rules: unknown;
@@ -181,6 +187,17 @@ function specCase(sample: Pick<Sample, "title" | "case">): {
       return as(speakingPresentationSpec, speakingPresentationSample(9));
     case "speaking_eval.confirm":
       return as(speakingConfirmSpec, SPEAKING_CONFIRM_SAMPLE);
+    case "talk_turn": {
+      // 회화 턴과 끝맺음 턴은 같은 규격 제목(6.2). 끝맺음 견본은 이름으로 가른다
+      const level =
+        (sample as Partial<Sample>).expect?.level ??
+        Number(/\.l(\d+)-/.exec(sample.case)?.[1] ?? 1);
+      const input = talkSampleFor(sample.case, level);
+      return as(
+        sample.case.includes("closing") ? talkClosingSpec : talkTurnSpec,
+        input,
+      );
+    }
     case "thinkout": {
       const turn = sample.case.endsWith(".done")
         ? TEST_SETTINGS["writing.thinkout_max_turns"].value
@@ -201,7 +218,15 @@ function strictOf(sample: Sample) {
     return { ok: false as const, spec, input, rules };
   let prepared: unknown;
   try {
-    prepared = prepareAnswer(JSON.parse(answerTextOf(body)), spec.enumPaths);
+    // 회화 턴은 흘려 받은 조각을 차례로 잇는다 — fallback 블록 앞뒤 text 가 한 JSON 이다(plan-p13a 위험 4)
+    const text =
+      sample.title === "talk_turn"
+        ? (body.content as readonly { type: string; text?: string }[])
+            .filter((b) => b.type === "text")
+            .map((b) => b.text ?? "")
+            .join("")
+        : answerTextOf(body);
+    prepared = prepareAnswer(JSON.parse(text), spec.enumPaths);
   } catch {
     return { ok: false as const, spec, input, rules };
   }
@@ -227,6 +252,7 @@ describe("9절 계약", () => {
         "speaking_eval.presentation",
         "speaking_eval.confirm",
         "thinkout",
+        "talk_turn",
       ]),
     );
     for (const sample of strict) {

@@ -1,0 +1,4075 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 1,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 소풍 도시락",
+   "newWords": [
+    "apple",
+    "egg",
+    "banana",
+    "milk",
+    "cake"
+   ],
+   "unitWords": [
+    "apple",
+    "egg",
+    "banana",
+    "milk",
+    "cake"
+   ],
+   "preview": [
+    {
+     "word": "apple",
+     "meaningKo": "사과",
+     "example": "It is an apple."
+    },
+    {
+     "word": "egg",
+     "meaningKo": "달걀",
+     "example": "It is an egg."
+    },
+    {
+     "word": "banana",
+     "meaningKo": "바나나",
+     "example": "It is a banana."
+    },
+    {
+     "word": "milk",
+     "meaningKo": "우유",
+     "example": "Milk, please."
+    },
+    {
+     "word": "cake",
+     "meaningKo": "케이크",
+     "example": "It is a cake."
+    }
+   ],
+   "content": {
+    "passage": "An apple and an egg. A banana and a cake. Milk, please!",
+    "targetWords": [
+     "apple",
+     "egg",
+     "banana",
+     "milk",
+     "cake"
+    ],
+    "glossary": [
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "banana",
+      "lemma": "banana",
+      "meaningKo": "바나나"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "egg",
+       "apple",
+       "banana",
+       "cake"
+      ],
+      "answerNo": 2,
+      "explanationKo": "an apple 은 사과 하나예요. apple 은 모음 소리로 시작해서 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "egg",
+       "milk",
+       "cake",
+       "apple"
+      ],
+      "answerNo": 1,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 도 모음 소리로 시작해서 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a banana",
+      "options": [
+       "cake",
+       "apple",
+       "banana",
+       "milk"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a banana 는 바나나 하나예요. 바나나 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "milk",
+      "options": [
+       "banana",
+       "egg",
+       "cake",
+       "milk"
+      ],
+      "answerNo": 4,
+      "explanationKo": "milk 는 우유예요. 컵에 든 우유 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "milk",
+       "cake",
+       "egg",
+       "banana"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cake 는 케이크 하나예요. 조각 케이크 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "곰의 간식 시간",
+   "newWords": [
+    "candy",
+    "cookie",
+    "cheese",
+    "grape",
+    "pizza"
+   ],
+   "unitWords": [
+    "candy",
+    "cookie",
+    "cheese",
+    "grape",
+    "pizza",
+    "apple",
+    "egg",
+    "banana",
+    "cake",
+    "milk"
+   ],
+   "preview": [
+    {
+     "word": "candy",
+     "meaningKo": "사탕",
+     "example": "It is a candy."
+    },
+    {
+     "word": "cookie",
+     "meaningKo": "쿠키, 과자",
+     "example": "It is a cookie."
+    },
+    {
+     "word": "cheese",
+     "meaningKo": "치즈",
+     "example": "Cheese, please."
+    },
+    {
+     "word": "grape",
+     "meaningKo": "포도",
+     "example": "It is a grape."
+    },
+    {
+     "word": "pizza",
+     "meaningKo": "피자",
+     "example": "Pizza, please!"
+    }
+   ],
+   "content": {
+    "passage": "A bear and a cookie. A candy and a grape. Cheese and pizza, please!",
+    "targetWords": [
+     "candy",
+     "cookie",
+     "cheese",
+     "grape",
+     "pizza"
+    ],
+    "glossary": [
+     {
+      "surface": "bear",
+      "lemma": "bear",
+      "meaningKo": "곰"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     },
+     {
+      "surface": "candy",
+      "lemma": "candy",
+      "meaningKo": "사탕"
+     },
+     {
+      "surface": "grape",
+      "lemma": "grape",
+      "meaningKo": "포도"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "candy",
+       "apple",
+       "cookie",
+       "grape"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cookie 는 쿠키 하나예요. 동그란 쿠키 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a candy",
+      "options": [
+       "pizza",
+       "cheese",
+       "egg",
+       "candy"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a candy 는 사탕 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a grape",
+      "options": [
+       "grape",
+       "cookie",
+       "banana",
+       "pizza"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a grape 는 포도예요. 포도송이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cheese",
+      "options": [
+       "cake",
+       "cheese",
+       "candy",
+       "cookie"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cheese 는 치즈예요. 치즈 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "pizza",
+       "grape",
+       "cheese",
+       "milk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "원숭이네 밥상",
+   "newWords": [
+    "jam",
+    "rice",
+    "snack",
+    "hat",
+    "cap"
+   ],
+   "unitWords": [
+    "jam",
+    "rice",
+    "snack",
+    "hat",
+    "cap",
+    "egg",
+    "cookie",
+    "cheese",
+    "candy",
+    "apple",
+    "cake",
+    "grape"
+   ],
+   "preview": [
+    {
+     "word": "jam",
+     "meaningKo": "잼",
+     "example": "Jam, please."
+    },
+    {
+     "word": "rice",
+     "meaningKo": "밥, 쌀",
+     "example": "Rice, please."
+    },
+    {
+     "word": "snack",
+     "meaningKo": "간식",
+     "example": "It is a snack."
+    },
+    {
+     "word": "hat",
+     "meaningKo": "모자",
+     "example": "It is a hat."
+    },
+    {
+     "word": "cap",
+     "meaningKo": "(챙 달린) 모자",
+     "example": "It is a cap."
+    }
+   ],
+   "content": {
+    "passage": "A monkey and a hat. Rice, jam and an egg! A cap and a snack.",
+    "targetWords": [
+     "jam",
+     "rice",
+     "snack",
+     "hat",
+     "cap"
+    ],
+    "glossary": [
+     {
+      "surface": "monkey",
+      "lemma": "monkey",
+      "meaningKo": "원숭이"
+     },
+     {
+      "surface": "hat",
+      "lemma": "hat",
+      "meaningKo": "모자"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hat",
+      "options": [
+       "rice",
+       "jam",
+       "egg",
+       "hat"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a hat 은 모자 하나예요. 밀짚모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "cookie",
+       "jam",
+       "cap",
+       "rice"
+      ],
+      "answerNo": 2,
+      "explanationKo": "jam 은 잼이에요. 유리병에 든 잼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "rice",
+       "hat",
+       "cheese",
+       "jam"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rice 는 밥이에요. 그릇에 담긴 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cap",
+      "options": [
+       "jam",
+       "rice",
+       "cap",
+       "candy"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cap 은 앞에 챙이 달린 모자예요. 야구 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "apple",
+       "cake",
+       "egg",
+       "grape"
+      ],
+      "answerNo": 3,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 는 모음 소리로 시작해서 an 을 붙여요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "비 오는 날 옷 입기",
+   "newWords": [
+    "sock",
+    "shoe",
+    "shirt",
+    "jacket",
+    "ball"
+   ],
+   "unitWords": [
+    "sock",
+    "shoe",
+    "shirt",
+    "jacket",
+    "ball",
+    "hat",
+    "cap",
+    "cookie"
+   ],
+   "preview": [
+    {
+     "word": "sock",
+     "meaningKo": "양말",
+     "example": "It is a sock."
+    },
+    {
+     "word": "shoe",
+     "meaningKo": "신발",
+     "example": "It is a shoe."
+    },
+    {
+     "word": "shirt",
+     "meaningKo": "셔츠",
+     "example": "It is a shirt."
+    },
+    {
+     "word": "jacket",
+     "meaningKo": "재킷, 웃옷",
+     "example": "It is a jacket."
+    },
+    {
+     "word": "ball",
+     "meaningKo": "공",
+     "example": "It is a ball."
+    }
+   ],
+   "content": {
+    "passage": "A shirt and a jacket. A sock and a shoe. A ball, please!",
+    "targetWords": [
+     "sock",
+     "shoe",
+     "shirt",
+     "jacket",
+     "ball"
+    ],
+    "glossary": [
+     {
+      "surface": "shirt",
+      "lemma": "shirt",
+      "meaningKo": "셔츠"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     },
+     {
+      "surface": "sock",
+      "lemma": "sock",
+      "meaningKo": "양말"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shirt",
+      "options": [
+       "shirt",
+       "sock",
+       "ball",
+       "hat"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a shirt 는 셔츠 한 벌이에요. 티셔츠 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a jacket",
+      "options": [
+       "shoe",
+       "ball",
+       "jacket",
+       "shirt"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a jacket 은 재킷이에요. 셔츠 위에 입는 웃옷 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sock",
+      "options": [
+       "jacket",
+       "shoe",
+       "cap",
+       "sock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a sock 은 양말 한 짝이에요. 발에 신는 양말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shoe",
+      "options": [
+       "ball",
+       "shoe",
+       "sock",
+       "jacket"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a shoe 는 신발 한 짝이에요. 운동화 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "shirt",
+       "sock",
+       "cookie",
+       "ball"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a ball 은 공 하나예요. 동그란 공 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "가족 생일 잔치",
+   "newWords": [
+    "doll",
+    "bike",
+    "kite",
+    "ring",
+    "game"
+   ],
+   "unitWords": [
+    "doll",
+    "bike",
+    "kite",
+    "ring",
+    "game",
+    "cake",
+    "ball",
+    "shoe",
+    "sock"
+   ],
+   "preview": [
+    {
+     "word": "doll",
+     "meaningKo": "인형",
+     "example": "It is a doll."
+    },
+    {
+     "word": "bike",
+     "meaningKo": "자전거",
+     "example": "It is a bike."
+    },
+    {
+     "word": "kite",
+     "meaningKo": "연",
+     "example": "It is a kite."
+    },
+    {
+     "word": "ring",
+     "meaningKo": "반지",
+     "example": "It is a ring."
+    },
+    {
+     "word": "game",
+     "meaningKo": "놀이, 게임",
+     "example": "It is a game."
+    }
+   ],
+   "content": {
+    "passage": "A cake and a doll. A kite and a ring. A bike and a game.",
+    "targetWords": [
+     "doll",
+     "bike",
+     "kite",
+     "ring",
+     "game"
+    ],
+    "glossary": [
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     },
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "kite",
+       "doll",
+       "ring",
+       "ball"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a doll 은 인형 하나예요. 헝겊 인형 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "kite",
+       "bike",
+       "shoe",
+       "doll"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a kite 는 연 하나예요. 하늘에 날리는 연 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "doll",
+       "cake",
+       "ring",
+       "bike"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a ring 은 반지 하나예요. 손가락에 끼는 반지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "ring",
+       "kite",
+       "sock",
+       "bike"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a bike 는 자전거 한 대예요. 바퀴가 둘인 자전거 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "bike",
+       "cake",
+       "doll",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cake 는 케이크 하나예요. 생일에 먹는 케이크 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "농장 친구들의 점심",
+   "newWords": [],
+   "unitWords": [
+    "apple",
+    "candy",
+    "jam",
+    "sock",
+    "doll",
+    "banana",
+    "grape",
+    "cake",
+    "cookie",
+    "cheese",
+    "pizza",
+    "rice",
+    "milk",
+    "egg",
+    "shoe",
+    "shirt",
+    "hat",
+    "kite",
+    "ball",
+    "ring"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A cow and an apple. A candy and jam. A sock and a doll.",
+    "targetWords": [
+     "apple",
+     "candy",
+     "jam",
+     "sock",
+     "doll"
+    ],
+    "glossary": [
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "candy",
+      "lemma": "candy",
+      "meaningKo": "사탕"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "sock",
+      "lemma": "sock",
+      "meaningKo": "양말"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "banana",
+       "grape",
+       "apple",
+       "cake"
+      ],
+      "answerNo": 3,
+      "explanationKo": "an apple 은 사과 하나예요. apple 앞에는 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a candy",
+      "options": [
+       "cookie",
+       "cheese",
+       "pizza",
+       "candy"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a candy 는 사탕 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "jam",
+       "rice",
+       "milk",
+       "egg"
+      ],
+      "answerNo": 1,
+      "explanationKo": "jam 은 잼이에요. 유리병에 든 잼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sock",
+      "options": [
+       "shoe",
+       "sock",
+       "shirt",
+       "hat"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a sock 은 양말 한 짝이에요. 신발이 아니라 양말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "doll",
+       "kite",
+       "ball",
+       "ring"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a doll 은 인형 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "들판 아침 산책",
+   "newWords": [],
+   "unitWords": [
+    "egg",
+    "cookie",
+    "rice",
+    "shoe",
+    "bike",
+    "apple",
+    "cake",
+    "banana",
+    "candy",
+    "pizza",
+    "grape",
+    "cheese",
+    "jam",
+    "milk",
+    "sock",
+    "jacket",
+    "cap",
+    "kite",
+    "doll",
+    "ball"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "An egg and a cookie. Rice, please! A shoe and a bike.",
+    "targetWords": [
+     "egg",
+     "cookie",
+     "rice",
+     "shoe",
+     "bike"
+    ],
+    "glossary": [
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "apple",
+       "cake",
+       "banana",
+       "egg"
+      ],
+      "answerNo": 4,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 앞에는 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "candy",
+       "cookie",
+       "pizza",
+       "grape"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cookie 는 쿠키 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "rice",
+       "cheese",
+       "jam",
+       "milk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rice 는 밥이에요. 그릇에 담긴 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shoe",
+      "options": [
+       "sock",
+       "jacket",
+       "shoe",
+       "cap"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a shoe 는 신발 한 짝이에요. 운동화 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "kite",
+       "doll",
+       "bike",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a bike 는 자전거 한 대예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "호숫가 오리 구경",
+   "newWords": [],
+   "unitWords": [
+    "banana",
+    "cheese",
+    "snack",
+    "shirt",
+    "kite",
+    "cake",
+    "apple",
+    "grape",
+    "egg",
+    "pizza",
+    "cookie",
+    "candy",
+    "jacket",
+    "sock",
+    "hat",
+    "ring",
+    "bike",
+    "doll",
+    "milk",
+    "rice",
+    "jam"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A banana and cheese. A snack and a shirt. A kite and a cake.",
+    "targetWords": [
+     "banana",
+     "cheese",
+     "snack",
+     "shirt",
+     "kite",
+     "cake"
+    ],
+    "glossary": [
+     {
+      "surface": "banana",
+      "lemma": "banana",
+      "meaningKo": "바나나"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "shirt",
+      "lemma": "shirt",
+      "meaningKo": "셔츠"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a banana",
+      "options": [
+       "banana",
+       "apple",
+       "grape",
+       "egg"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a banana 는 바나나 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cheese",
+      "options": [
+       "pizza",
+       "cookie",
+       "cheese",
+       "candy"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cheese 는 치즈예요. 치즈 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shirt",
+      "options": [
+       "jacket",
+       "sock",
+       "hat",
+       "shirt"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a shirt 는 셔츠 한 벌이에요. 티셔츠 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "ring",
+       "kite",
+       "bike",
+       "doll"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a kite 는 연 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "milk",
+       "rice",
+       "jam",
+       "cake"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a cake 는 케이크 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "코끼리 가족 나들이",
+   "newWords": [],
+   "unitWords": [
+    "milk",
+    "grape",
+    "hat",
+    "jacket",
+    "ring",
+    "cake",
+    "egg",
+    "apple",
+    "banana",
+    "candy",
+    "cookie",
+    "shirt",
+    "sock",
+    "shoe",
+    "ball",
+    "doll",
+    "kite",
+    "bike"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Milk and a grape. An elephant and a hat. A jacket and a ring.",
+    "targetWords": [
+     "milk",
+     "grape",
+     "hat",
+     "jacket",
+     "ring"
+    ],
+    "glossary": [
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     },
+     {
+      "surface": "grape",
+      "lemma": "grape",
+      "meaningKo": "포도"
+     },
+     {
+      "surface": "elephant",
+      "lemma": "elephant",
+      "meaningKo": "코끼리"
+     },
+     {
+      "surface": "hat",
+      "lemma": "hat",
+      "meaningKo": "모자"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "milk",
+      "options": [
+       "cake",
+       "milk",
+       "egg",
+       "apple"
+      ],
+      "answerNo": 2,
+      "explanationKo": "milk 는 우유예요. 컵에 든 우유 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a grape",
+      "options": [
+       "grape",
+       "banana",
+       "candy",
+       "cookie"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a grape 는 포도예요. 포도송이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hat",
+      "options": [
+       "shirt",
+       "sock",
+       "hat",
+       "shoe"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a hat 은 모자 하나예요. 밀짚모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a jacket",
+      "options": [
+       "shirt",
+       "ball",
+       "shoe",
+       "jacket"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a jacket 은 재킷이에요. 셔츠가 아니라 웃옷 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "doll",
+       "ring",
+       "kite",
+       "bike"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a ring 은 반지 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "할아버지 댁 놀러 가기",
+   "newWords": [],
+   "unitWords": [
+    "pizza",
+    "cake",
+    "apple",
+    "cap",
+    "ball",
+    "game",
+    "cookie",
+    "candy",
+    "shirt",
+    "jacket",
+    "sock",
+    "kite",
+    "doll",
+    "ring",
+    "egg",
+    "banana",
+    "grape",
+    "cheese",
+    "rice",
+    "jam"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Pizza, a cake, an apple! A cap and a ball. A game, please!",
+    "targetWords": [
+     "pizza",
+     "cake",
+     "apple",
+     "cap",
+     "ball",
+     "game"
+    ],
+    "glossary": [
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "cookie",
+       "pizza",
+       "cake",
+       "candy"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cake 는 케이크 하나예요. 조각 케이크 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cap",
+      "options": [
+       "shirt",
+       "jacket",
+       "sock",
+       "cap"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a cap 은 앞에 챙이 달린 모자예요. 야구 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "ball",
+       "kite",
+       "doll",
+       "ring"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a ball 은 공 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "egg",
+       "apple",
+       "banana",
+       "grape"
+      ],
+      "answerNo": 2,
+      "explanationKo": "an apple 은 사과 하나예요. apple 앞에는 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "pizza",
+       "cheese",
+       "rice",
+       "jam"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "아기 돼지 과일 접시",
+   "newWords": [],
+   "unitWords": [
+    "apple",
+    "egg",
+    "cookie",
+    "grape",
+    "milk",
+    "cheese",
+    "banana",
+    "cake",
+    "candy",
+    "pizza",
+    "jacket",
+    "kite",
+    "doll",
+    "rice",
+    "jam",
+    "hat"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "An apple and an egg. A cookie and a grape. Milk and cheese, please!",
+    "targetWords": [
+     "apple",
+     "egg",
+     "cookie",
+     "grape",
+     "milk",
+     "cheese"
+    ],
+    "glossary": [
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     },
+     {
+      "surface": "grape",
+      "lemma": "grape",
+      "meaningKo": "포도"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "banana",
+       "cake",
+       "candy",
+       "apple"
+      ],
+      "answerNo": 4,
+      "explanationKo": "an apple 은 사과 하나예요. 사과 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "pizza",
+       "egg",
+       "jacket",
+       "banana"
+      ],
+      "answerNo": 2,
+      "explanationKo": "an egg 는 달걀 하나예요. apple 처럼 egg 앞에도 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "cookie",
+       "candy",
+       "cake",
+       "kite"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a cookie 는 쿠키 하나예요. 사탕이 아니라 쿠키 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a grape",
+      "options": [
+       "pizza",
+       "banana",
+       "grape",
+       "doll"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a grape 는 포도예요. 포도송이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cheese",
+      "options": [
+       "rice",
+       "jam",
+       "cheese",
+       "hat"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cheese 는 치즈예요. 치즈 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "토끼네 옷장 정리",
+   "newWords": [],
+   "unitWords": [
+    "hat",
+    "sock",
+    "rice",
+    "jam",
+    "snack",
+    "game",
+    "jacket",
+    "shoe",
+    "ball",
+    "milk",
+    "cap",
+    "shirt",
+    "egg",
+    "cheese",
+    "cake",
+    "ring",
+    "bike"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A hat and a sock. Rice, jam and a snack. A game and a jacket.",
+    "targetWords": [
+     "hat",
+     "sock",
+     "rice",
+     "jam",
+     "snack",
+     "game",
+     "jacket"
+    ],
+    "glossary": [
+     {
+      "surface": "hat",
+      "lemma": "hat",
+      "meaningKo": "모자"
+     },
+     {
+      "surface": "sock",
+      "lemma": "sock",
+      "meaningKo": "양말"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hat",
+      "options": [
+       "hat",
+       "shoe",
+       "ball",
+       "milk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a hat 은 모자 하나예요. 밀짚모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sock",
+      "options": [
+       "cap",
+       "shirt",
+       "sock",
+       "egg"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a sock 은 양말 한 짝이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "cheese",
+       "jam",
+       "cake",
+       "rice"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rice 는 밥이에요. 잼이 아니라 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a jacket",
+      "options": [
+       "shoe",
+       "jacket",
+       "ball",
+       "ring"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a jacket 은 재킷이에요. 위에 걸쳐 입는 웃옷 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "cap",
+       "shoe",
+       "bike",
+       "jam"
+      ],
+      "answerNo": 4,
+      "explanationKo": "jam 은 잼이에요. 유리병에 든 잼 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "다람쥐네 장난감 상자",
+   "newWords": [],
+   "unitWords": [
+    "doll",
+    "kite",
+    "ring",
+    "bike",
+    "pizza",
+    "game",
+    "snack",
+    "grape",
+    "ball",
+    "sock",
+    "cookie",
+    "banana",
+    "candy",
+    "apple",
+    "shirt",
+    "cap",
+    "cheese",
+    "rice",
+    "shoe"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A doll and a kite. A ring, a bike, pizza! A game and a snack.",
+    "targetWords": [
+     "doll",
+     "kite",
+     "ring",
+     "bike",
+     "pizza",
+     "game",
+     "snack"
+    ],
+    "glossary": [
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     },
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "kite",
+       "doll",
+       "grape",
+       "ball"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a doll 은 인형 하나예요. 헝겊 인형 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "kite",
+       "ring",
+       "sock",
+       "cookie"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a kite 는 연 하나예요. 하늘에 날리는 연 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "banana",
+       "candy",
+       "ring",
+       "apple"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a ring 은 반지 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "doll",
+       "shirt",
+       "cap",
+       "bike"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a bike 는 자전거 한 대예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "cheese",
+       "pizza",
+       "rice",
+       "shoe"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pizza 는 피자예요. 치즈가 아니라 피자 한 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "우주선 간식 상자",
+   "newWords": [
+    "apple",
+    "egg",
+    "banana",
+    "milk",
+    "cake"
+   ],
+   "unitWords": [
+    "apple",
+    "egg",
+    "banana",
+    "milk",
+    "cake"
+   ],
+   "preview": [
+    {
+     "word": "apple",
+     "meaningKo": "사과",
+     "example": "An apple, please."
+    },
+    {
+     "word": "egg",
+     "meaningKo": "달걀",
+     "example": "An egg, please."
+    },
+    {
+     "word": "banana",
+     "meaningKo": "바나나",
+     "example": "A banana, please."
+    },
+    {
+     "word": "milk",
+     "meaningKo": "우유",
+     "example": "Milk, please!"
+    },
+    {
+     "word": "cake",
+     "meaningKo": "케이크",
+     "example": "A cake, please."
+    }
+   ],
+   "content": {
+    "passage": "A robot and an apple. An egg and a banana. A cake and milk!",
+    "targetWords": [
+     "apple",
+     "egg",
+     "banana",
+     "milk",
+     "cake"
+    ],
+    "glossary": [
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "banana",
+      "lemma": "banana",
+      "meaningKo": "바나나"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "egg",
+       "cake",
+       "apple",
+       "banana"
+      ],
+      "answerNo": 3,
+      "explanationKo": "an apple 은 사과 하나예요. apple 은 모음 소리로 시작해서 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "milk",
+       "banana",
+       "cake",
+       "egg"
+      ],
+      "answerNo": 4,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 도 모음 소리로 시작해서 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a banana",
+      "options": [
+       "banana",
+       "apple",
+       "milk",
+       "egg"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a banana 는 바나나 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "apple",
+       "cake",
+       "egg",
+       "milk"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cake 는 케이크 하나예요. 조각 케이크 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "milk",
+      "options": [
+       "milk",
+       "egg",
+       "banana",
+       "cake"
+      ],
+      "answerNo": 1,
+      "explanationKo": "milk 는 우유예요. 컵에 든 우유 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "축구 끝나고 간식",
+   "newWords": [
+    "candy",
+    "cookie",
+    "cheese",
+    "grape",
+    "pizza"
+   ],
+   "unitWords": [
+    "candy",
+    "cookie",
+    "cheese",
+    "grape",
+    "pizza",
+    "cake",
+    "apple",
+    "banana",
+    "egg",
+    "milk"
+   ],
+   "preview": [
+    {
+     "word": "candy",
+     "meaningKo": "사탕",
+     "example": "A candy, please."
+    },
+    {
+     "word": "cookie",
+     "meaningKo": "쿠키, 과자",
+     "example": "A cookie, please."
+    },
+    {
+     "word": "cheese",
+     "meaningKo": "치즈",
+     "example": "Cheese, please!"
+    },
+    {
+     "word": "grape",
+     "meaningKo": "포도",
+     "example": "A grape, please."
+    },
+    {
+     "word": "pizza",
+     "meaningKo": "피자",
+     "example": "A pizza, please."
+    }
+   ],
+   "content": {
+    "passage": "Hi, Tori! A candy and a cookie. A grape, cheese and pizza.",
+    "targetWords": [
+     "candy",
+     "cookie",
+     "cheese",
+     "grape",
+     "pizza"
+    ],
+    "glossary": [
+     {
+      "surface": "Tori",
+      "lemma": "Tori",
+      "meaningKo": "토리(이름)",
+      "proper": true
+     },
+     {
+      "surface": "candy",
+      "lemma": "candy",
+      "meaningKo": "사탕"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     },
+     {
+      "surface": "grape",
+      "lemma": "grape",
+      "meaningKo": "포도"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a candy",
+      "options": [
+       "cookie",
+       "grape",
+       "pizza",
+       "candy"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a candy 는 사탕 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "cake",
+       "cookie",
+       "cheese",
+       "apple"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cookie 는 쿠키 하나예요. 동그란 쿠키 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a grape",
+      "options": [
+       "grape",
+       "banana",
+       "candy",
+       "pizza"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a grape 는 포도예요. 포도송이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cheese",
+      "options": [
+       "egg",
+       "pizza",
+       "cheese",
+       "cookie"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cheese 는 치즈예요. 치즈 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "candy",
+       "milk",
+       "pizza",
+       "grape"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "캠핑카 타고 출발",
+   "newWords": [
+    "jam",
+    "rice",
+    "snack",
+    "hat",
+    "cap"
+   ],
+   "unitWords": [
+    "jam",
+    "rice",
+    "snack",
+    "hat",
+    "cap",
+    "cookie",
+    "candy",
+    "pizza",
+    "cheese",
+    "cake",
+    "grape",
+    "egg"
+   ],
+   "preview": [
+    {
+     "word": "jam",
+     "meaningKo": "잼",
+     "example": "Jam, please!"
+    },
+    {
+     "word": "rice",
+     "meaningKo": "밥, 쌀",
+     "example": "Rice, please!"
+    },
+    {
+     "word": "snack",
+     "meaningKo": "간식",
+     "example": "A snack, please."
+    },
+    {
+     "word": "hat",
+     "meaningKo": "모자",
+     "example": "A hat, please."
+    },
+    {
+     "word": "cap",
+     "meaningKo": "(챙 달린) 모자",
+     "example": "A cap, please."
+    }
+   ],
+   "content": {
+    "passage": "A hat and a cap. Rice and jam, please! A snack and a cookie.",
+    "targetWords": [
+     "jam",
+     "rice",
+     "snack",
+     "hat",
+     "cap"
+    ],
+    "glossary": [
+     {
+      "surface": "hat",
+      "lemma": "hat",
+      "meaningKo": "모자"
+     },
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hat",
+      "options": [
+       "hat",
+       "rice",
+       "jam",
+       "cookie"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a hat 은 모자 하나예요. 밀짚모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cap",
+      "options": [
+       "jam",
+       "rice",
+       "cap",
+       "candy"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cap 은 앞에 챙이 달린 모자예요. 야구 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "cap",
+       "jam",
+       "pizza",
+       "rice"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rice 는 밥이에요. 그릇에 담긴 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "rice",
+       "jam",
+       "hat",
+       "cheese"
+      ],
+      "answerNo": 2,
+      "explanationKo": "jam 은 잼이에요. 유리병에 든 잼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "cake",
+       "grape",
+       "egg",
+       "cookie"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a cookie 는 쿠키 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "달리기 대회 준비",
+   "newWords": [
+    "sock",
+    "shoe",
+    "shirt",
+    "jacket",
+    "ball"
+   ],
+   "unitWords": [
+    "sock",
+    "shoe",
+    "shirt",
+    "jacket",
+    "ball",
+    "cap",
+    "hat",
+    "rice"
+   ],
+   "preview": [
+    {
+     "word": "sock",
+     "meaningKo": "양말",
+     "example": "A sock, please."
+    },
+    {
+     "word": "shoe",
+     "meaningKo": "신발",
+     "example": "A shoe, please."
+    },
+    {
+     "word": "shirt",
+     "meaningKo": "셔츠",
+     "example": "A shirt, please."
+    },
+    {
+     "word": "jacket",
+     "meaningKo": "재킷, 웃옷",
+     "example": "A jacket, please."
+    },
+    {
+     "word": "ball",
+     "meaningKo": "공",
+     "example": "A ball, please."
+    }
+   ],
+   "content": {
+    "passage": "A ball, please! A shirt and a shoe. A sock and a jacket.",
+    "targetWords": [
+     "sock",
+     "shoe",
+     "shirt",
+     "jacket",
+     "ball"
+    ],
+    "glossary": [
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "shirt",
+      "lemma": "shirt",
+      "meaningKo": "셔츠"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "sock",
+      "lemma": "sock",
+      "meaningKo": "양말"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "shoe",
+       "ball",
+       "sock",
+       "cap"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a ball 은 공 하나예요. 동그란 공 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shirt",
+      "options": [
+       "shirt",
+       "jacket",
+       "ball",
+       "shoe"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a shirt 는 셔츠 한 벌이에요. 티셔츠 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shoe",
+      "options": [
+       "sock",
+       "shirt",
+       "shoe",
+       "hat"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a shoe 는 신발 한 짝이에요. 운동화 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sock",
+      "options": [
+       "jacket",
+       "ball",
+       "shirt",
+       "sock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a sock 은 양말 한 짝이에요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a jacket",
+      "options": [
+       "shoe",
+       "jacket",
+       "sock",
+       "rice"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a jacket 은 재킷이에요. 위에 걸쳐 입는 웃옷 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이공원 선물 가게",
+   "newWords": [
+    "doll",
+    "bike",
+    "kite",
+    "ring",
+    "game"
+   ],
+   "unitWords": [
+    "doll",
+    "bike",
+    "kite",
+    "ring",
+    "game",
+    "ball",
+    "shoe",
+    "cake"
+   ],
+   "preview": [
+    {
+     "word": "doll",
+     "meaningKo": "인형",
+     "example": "A doll, please."
+    },
+    {
+     "word": "bike",
+     "meaningKo": "자전거",
+     "example": "A bike, please."
+    },
+    {
+     "word": "kite",
+     "meaningKo": "연",
+     "example": "A kite, please."
+    },
+    {
+     "word": "ring",
+     "meaningKo": "반지",
+     "example": "A ring, please."
+    },
+    {
+     "word": "game",
+     "meaningKo": "놀이, 게임",
+     "example": "A game, please."
+    }
+   ],
+   "content": {
+    "passage": "A kite and a bike. A doll and a ring. A game and a ball.",
+    "targetWords": [
+     "doll",
+     "bike",
+     "kite",
+     "ring",
+     "game"
+    ],
+    "glossary": [
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "doll",
+       "ring",
+       "kite",
+       "bike"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a kite 는 연 하나예요. 하늘에 날리는 연 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "kite",
+       "ball",
+       "doll",
+       "bike"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a bike 는 자전거 한 대예요. 바퀴가 둘인 자전거 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "doll",
+       "shoe",
+       "ring",
+       "kite"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a doll 은 인형 하나예요. 헝겊 인형 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "bike",
+       "ring",
+       "ball",
+       "cake"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a ring 은 반지 하나예요. 손가락에 끼는 반지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "ball",
+       "doll",
+       "kite",
+       "ring"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a ball 은 공 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "별똥별 구경",
+   "newWords": [],
+   "unitWords": [
+    "egg",
+    "candy",
+    "rice",
+    "shirt",
+    "kite",
+    "apple",
+    "banana",
+    "cake",
+    "cookie",
+    "grape",
+    "pizza",
+    "jam",
+    "cheese",
+    "milk",
+    "jacket",
+    "sock",
+    "cap",
+    "doll",
+    "bike",
+    "ring"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "An egg and a candy. Rice, please! A shirt and a kite.",
+    "targetWords": [
+     "egg",
+     "candy",
+     "rice",
+     "shirt",
+     "kite"
+    ],
+    "glossary": [
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "candy",
+      "lemma": "candy",
+      "meaningKo": "사탕"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "shirt",
+      "lemma": "shirt",
+      "meaningKo": "셔츠"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "apple",
+       "banana",
+       "cake",
+       "egg"
+      ],
+      "answerNo": 4,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 앞에는 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a candy",
+      "options": [
+       "cookie",
+       "candy",
+       "grape",
+       "pizza"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a candy 는 사탕 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "rice",
+       "jam",
+       "cheese",
+       "milk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rice 는 밥이에요. 그릇에 담긴 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shirt",
+      "options": [
+       "jacket",
+       "sock",
+       "shirt",
+       "cap"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a shirt 는 셔츠 한 벌이에요. 티셔츠 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "doll",
+       "bike",
+       "kite",
+       "ring"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a kite 는 연 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "공원 줄넘기 날",
+   "newWords": [],
+   "unitWords": [
+    "banana",
+    "cookie",
+    "hat",
+    "shoe",
+    "doll",
+    "egg",
+    "apple",
+    "cheese",
+    "candy",
+    "pizza",
+    "cake",
+    "shirt",
+    "sock",
+    "jacket",
+    "ball",
+    "kite",
+    "ring",
+    "bike"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A banana and a cookie. A hat and a shoe. A doll, please!",
+    "targetWords": [
+     "banana",
+     "cookie",
+     "hat",
+     "shoe",
+     "doll"
+    ],
+    "glossary": [
+     {
+      "surface": "banana",
+      "lemma": "banana",
+      "meaningKo": "바나나"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키, 과자"
+     },
+     {
+      "surface": "hat",
+      "lemma": "hat",
+      "meaningKo": "모자"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a banana",
+      "options": [
+       "banana",
+       "egg",
+       "apple",
+       "cheese"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a banana 는 바나나 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cookie",
+      "options": [
+       "candy",
+       "pizza",
+       "cookie",
+       "cake"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cookie 는 쿠키 하나예요. 케이크가 아니라 쿠키 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a hat",
+      "options": [
+       "shirt",
+       "shoe",
+       "sock",
+       "hat"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a hat 은 모자 하나예요. 밀짚모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shoe",
+      "options": [
+       "jacket",
+       "shoe",
+       "ball",
+       "sock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a shoe 는 신발 한 짝이에요. 양말이 아니라 운동화 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "kite",
+       "ring",
+       "bike",
+       "doll"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a doll 은 인형 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "보드게임 하는 밤",
+   "newWords": [],
+   "unitWords": [
+    "game",
+    "jacket",
+    "milk",
+    "cheese",
+    "jam",
+    "cake",
+    "shirt",
+    "sock",
+    "ball",
+    "egg",
+    "rice",
+    "apple",
+    "pizza",
+    "cookie",
+    "grape",
+    "banana",
+    "candy"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A game and a jacket. Milk and cheese, please! Jam and a cake.",
+    "targetWords": [
+     "game",
+     "jacket",
+     "milk",
+     "cheese",
+     "jam",
+     "cake"
+    ],
+    "glossary": [
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "jacket",
+      "lemma": "jacket",
+      "meaningKo": "재킷, 웃옷"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     },
+     {
+      "surface": "cheese",
+      "lemma": "cheese",
+      "meaningKo": "치즈"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a jacket",
+      "options": [
+       "shirt",
+       "jacket",
+       "sock",
+       "ball"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a jacket 은 재킷이에요. 셔츠가 아니라 웃옷 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "milk",
+      "options": [
+       "milk",
+       "egg",
+       "rice",
+       "apple"
+      ],
+      "answerNo": 1,
+      "explanationKo": "milk 는 우유예요. 컵에 든 우유 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cheese",
+      "options": [
+       "pizza",
+       "cookie",
+       "cheese",
+       "grape"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cheese 는 치즈예요. 치즈 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "rice",
+       "banana",
+       "candy",
+       "jam"
+      ],
+      "answerNo": 4,
+      "explanationKo": "jam 은 잼이에요. 유리병에 든 잼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "pizza",
+       "cake",
+       "cookie",
+       "banana"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cake 는 케이크 하나예요. 조각 케이크 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "자전거 타고 소풍",
+   "newWords": [],
+   "unitWords": [
+    "bike",
+    "sock",
+    "apple",
+    "grape",
+    "snack",
+    "egg",
+    "kite",
+    "doll",
+    "ring",
+    "shoe",
+    "shirt",
+    "jacket",
+    "cake",
+    "cheese",
+    "banana",
+    "candy",
+    "pizza",
+    "cookie",
+    "milk",
+    "rice",
+    "jam"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A bike and a sock. An apple and a grape. A snack and an egg.",
+    "targetWords": [
+     "bike",
+     "sock",
+     "apple",
+     "grape",
+     "snack",
+     "egg"
+    ],
+    "glossary": [
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "sock",
+      "lemma": "sock",
+      "meaningKo": "양말"
+     },
+     {
+      "surface": "apple",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "grape",
+      "lemma": "grape",
+      "meaningKo": "포도"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "kite",
+       "doll",
+       "bike",
+       "ring"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a bike 는 자전거 한 대예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sock",
+      "options": [
+       "shoe",
+       "shirt",
+       "jacket",
+       "sock"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a sock 은 양말 한 짝이에요. 신발이 아니라 양말 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an apple",
+      "options": [
+       "apple",
+       "cake",
+       "cheese",
+       "banana"
+      ],
+      "answerNo": 1,
+      "explanationKo": "an apple 은 사과 하나예요. apple 앞에는 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a grape",
+      "options": [
+       "candy",
+       "grape",
+       "pizza",
+       "cookie"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a grape 는 포도예요. 포도송이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "egg",
+       "milk",
+       "rice",
+       "jam"
+      ],
+      "answerNo": 1,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 앞에도 an 을 붙여요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "로봇 친구와 공놀이",
+   "newWords": [],
+   "unitWords": [
+    "ball",
+    "cap",
+    "ring",
+    "pizza",
+    "cake",
+    "kite",
+    "doll",
+    "bike",
+    "shirt",
+    "shoe",
+    "sock",
+    "jacket",
+    "cheese",
+    "grape",
+    "cookie",
+    "candy",
+    "banana",
+    "apple"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A robot and a ball. A cap and a ring. Pizza and a cake!",
+    "targetWords": [
+     "ball",
+     "cap",
+     "ring",
+     "pizza",
+     "cake"
+    ],
+    "glossary": [
+     {
+      "surface": "robot",
+      "lemma": "robot",
+      "meaningKo": "로봇"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "kite",
+       "doll",
+       "bike",
+       "ball"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a ball 은 공 하나예요. 동그란 공 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cap",
+      "options": [
+       "shirt",
+       "cap",
+       "shoe",
+       "sock"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cap 은 앞에 챙이 달린 모자예요. 야구 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "ring",
+       "kite",
+       "doll",
+       "jacket"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a ring 은 반지 하나예요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "cheese",
+       "grape",
+       "pizza",
+       "cookie"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "candy",
+       "banana",
+       "cake",
+       "apple"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a cake 는 케이크 하나예요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "우주 식당 다시 보기",
+   "newWords": [],
+   "unitWords": [
+    "banana",
+    "egg",
+    "cake",
+    "candy",
+    "pizza",
+    "milk",
+    "apple",
+    "shoe",
+    "grape",
+    "cookie",
+    "sock",
+    "cheese",
+    "bike",
+    "kite",
+    "cap",
+    "rice",
+    "jam",
+    "ring"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A banana and an egg. A cake and a candy. Pizza and milk, please!",
+    "targetWords": [
+     "banana",
+     "egg",
+     "cake",
+     "candy",
+     "pizza",
+     "milk"
+    ],
+    "glossary": [
+     {
+      "surface": "banana",
+      "lemma": "banana",
+      "meaningKo": "바나나"
+     },
+     {
+      "surface": "egg",
+      "lemma": "egg",
+      "meaningKo": "달걀"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     },
+     {
+      "surface": "candy",
+      "lemma": "candy",
+      "meaningKo": "사탕"
+     },
+     {
+      "surface": "pizza",
+      "lemma": "pizza",
+      "meaningKo": "피자"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a banana",
+      "options": [
+       "banana",
+       "apple",
+       "shoe",
+       "grape"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a banana 는 바나나 하나예요. 사과가 아니라 바나나 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "an egg",
+      "options": [
+       "cookie",
+       "sock",
+       "egg",
+       "cheese"
+      ],
+      "answerNo": 3,
+      "explanationKo": "an egg 는 달걀 하나예요. egg 는 모음 소리로 시작해서 an 을 붙여요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cake",
+      "options": [
+       "apple",
+       "bike",
+       "kite",
+       "cake"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a cake 는 케이크 하나예요. 조각 케이크 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a candy",
+      "options": [
+       "cheese",
+       "candy",
+       "cookie",
+       "cap"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a candy 는 사탕 하나예요. 쿠키가 아니라 사탕 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pizza",
+      "options": [
+       "rice",
+       "jam",
+       "ring",
+       "pizza"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pizza 는 피자예요. 피자 한 조각 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "야구장 다시 보기",
+   "newWords": [],
+   "unitWords": [
+    "cap",
+    "shoe",
+    "rice",
+    "jam",
+    "snack",
+    "ball",
+    "game",
+    "jacket",
+    "doll",
+    "hat",
+    "sock",
+    "milk",
+    "grape",
+    "apple",
+    "shirt",
+    "cookie",
+    "cheese"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A cap and a shoe. Rice, jam and a snack. A ball and a game.",
+    "targetWords": [
+     "cap",
+     "shoe",
+     "rice",
+     "jam",
+     "snack",
+     "ball",
+     "game"
+    ],
+    "glossary": [
+     {
+      "surface": "cap",
+      "lemma": "cap",
+      "meaningKo": "(챙 달린) 모자"
+     },
+     {
+      "surface": "shoe",
+      "lemma": "shoe",
+      "meaningKo": "신발"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥, 쌀"
+     },
+     {
+      "surface": "jam",
+      "lemma": "jam",
+      "meaningKo": "잼"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cap",
+      "options": [
+       "shoe",
+       "cap",
+       "jacket",
+       "doll"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a cap 은 앞에 챙이 달린 모자예요. 야구 모자 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shoe",
+      "options": [
+       "shoe",
+       "hat",
+       "sock",
+       "milk"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a shoe 는 신발 한 짝이에요. 운동화 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rice",
+      "options": [
+       "jam",
+       "grape",
+       "rice",
+       "apple"
+      ],
+      "answerNo": 3,
+      "explanationKo": "rice 는 밥이에요. 그릇에 담긴 밥 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ball",
+      "options": [
+       "jacket",
+       "hat",
+       "shirt",
+       "ball"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a ball 은 공 하나예요. 동그란 공 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "jam",
+      "options": [
+       "rice",
+       "jam",
+       "cookie",
+       "cheese"
+      ],
+      "answerNo": 2,
+      "explanationKo": "jam 은 잼이에요. 밥이 아니라 유리병에 든 잼 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "놀이터 다시 보기",
+   "newWords": [],
+   "unitWords": [
+    "bike",
+    "ring",
+    "doll",
+    "kite",
+    "milk",
+    "snack",
+    "game",
+    "banana",
+    "egg",
+    "sock",
+    "cake",
+    "hat",
+    "candy",
+    "shirt",
+    "pizza",
+    "jacket",
+    "ball"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "A bike and a ring. A doll and a kite. Milk, a snack, a game!",
+    "targetWords": [
+     "bike",
+     "ring",
+     "doll",
+     "kite",
+     "milk",
+     "snack",
+     "game"
+    ],
+    "glossary": [
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "ring",
+      "lemma": "ring",
+      "meaningKo": "반지"
+     },
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "kite",
+      "lemma": "kite",
+      "meaningKo": "연"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     },
+     {
+      "surface": "snack",
+      "lemma": "snack",
+      "meaningKo": "간식"
+     },
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bike",
+      "options": [
+       "kite",
+       "ring",
+       "bike",
+       "banana"
+      ],
+      "answerNo": 3,
+      "explanationKo": "a bike 는 자전거 한 대예요. 바퀴가 둘인 자전거 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ring",
+      "options": [
+       "doll",
+       "egg",
+       "sock",
+       "ring"
+      ],
+      "answerNo": 4,
+      "explanationKo": "a ring 은 반지 하나예요. 손가락에 끼는 반지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a doll",
+      "options": [
+       "doll",
+       "cake",
+       "hat",
+       "kite"
+      ],
+      "answerNo": 1,
+      "explanationKo": "a doll 은 인형 하나예요. 헝겊 인형 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a kite",
+      "options": [
+       "bike",
+       "kite",
+       "candy",
+       "shirt"
+      ],
+      "answerNo": 2,
+      "explanationKo": "a kite 는 연 하나예요. 하늘에 날리는 연 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "milk",
+      "options": [
+       "milk",
+       "pizza",
+       "jacket",
+       "ball"
+      ],
+      "answerNo": 1,
+      "explanationKo": "milk 는 우유예요. 컵에 든 우유 그림을 골라요."
+     }
+    ]
+   }
+  }
+ ]
+}

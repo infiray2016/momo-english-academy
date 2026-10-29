@@ -15,6 +15,18 @@ export type SpeakOutcome =
   | { kind: "error"; code: string }
   | { kind: "unsupported" };
 
+/**
+ * 읽어 주기 선택 칸(plan-p13b 파일별 값 11 · plan 회화-선생님-캐릭터 값 12).
+ * pitch 는 넘긴 때만 utterance.pitch(회화 선생님 높이), voicePrefer 는 목소리 이름 조각 차례(맞는 것이 없거나 비면
+ * pickVoice), onStart 는 발화가 실제로 시작한 알림(onstart) 뒤에 한 번 — 끊긴 발화의 늦은 알림은 넘기지 않는다.
+ */
+export type SpeakOptions = {
+  rate?: number;
+  pitch?: number;
+  voicePrefer?: readonly string[];
+  onStart?: () => void;
+};
+
 /** 마이크 확인 결과(plan-p02 나-5). */
 export type MicrophoneCheck =
   | { ok: true }
@@ -38,7 +50,11 @@ export interface SpeechPort {
   device(): DeviceVerdict;
   /** 누름 처리 안에서 동기로 부른다. iOS 첫 읽어 주기 제약을 푼다. */
   unlockFromGesture(): void;
-  speak(text: string): Promise<SpeakOutcome>;
+  /**
+   * 읽어 주기. options.rate 는 Web Speech 빠르기(단계 구간마다 speech.rate.<구간> — C125, 회화 · 읽기 · 말하기가 넘김). 없으면
+   * 브라우저 기본 빠르기(쓰기 · 배치는 넘기지 않는다).
+   */
+  speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome>;
   cancelSpeaking(): void;
   listen(rule: EndRule, on?: { text?(text: string): void }): ListenHandle;
   checkMicrophone(): Promise<MicrophoneCheck>;
@@ -124,7 +140,14 @@ export type SpeechTraceEntry =
   | { at: number; kind: "button"; listen: number }
   | { at: number; kind: "cancel"; listen: number; reason: CancelReason }
   | { at: number; kind: "listen-done"; listen: number; outcome: ListenOutcome }
-  | { at: number; kind: "speak"; text: string; voice: string | undefined }
+  | {
+      at: number;
+      kind: "speak";
+      text: string;
+      voice: string | undefined;
+      rate?: number;
+      pitch?: number;
+    }
   | {
       at: number;
       kind: "speak-event";

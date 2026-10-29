@@ -1,0 +1,4022 @@
+{
+ "area": "reading",
+ "level": 1,
+ "unit": 2,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "할머니 농장 구경",
+   "newWords": [
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish"
+   ],
+   "unitWords": [
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish"
+   ],
+   "preview": [
+    {
+     "word": "cat",
+     "meaningKo": "고양이",
+     "example": "This is a cat."
+    },
+    {
+     "word": "dog",
+     "meaningKo": "개",
+     "example": "This is my dog."
+    },
+    {
+     "word": "pig",
+     "meaningKo": "돼지",
+     "example": "That is a pig."
+    },
+    {
+     "word": "duck",
+     "meaningKo": "오리",
+     "example": "This is a duck."
+    },
+    {
+     "word": "fish",
+     "meaningKo": "물고기",
+     "example": "It is a fish."
+    }
+   ],
+   "content": {
+    "passage": "This is a pig. A duck and a fish. A cat and a dog.",
+    "targetWords": [
+     "cat",
+     "dog",
+     "pig",
+     "duck",
+     "fish"
+    ],
+    "glossary": [
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pig",
+      "options": [
+       "cow",
+       "pig",
+       "horse",
+       "cat"
+      ],
+      "answerNo": 2,
+      "explanationKo": "pig 의 뜻은 돼지예요. 돼지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a duck",
+      "options": [
+       "duck",
+       "fish",
+       "pig",
+       "dog"
+      ],
+      "answerNo": 1,
+      "explanationKo": "duck 의 뜻은 오리예요. 오리 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a fish",
+      "options": [
+       "dog",
+       "cat",
+       "fish",
+       "cow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cat",
+      "options": [
+       "pig",
+       "horse",
+       "duck",
+       "cat"
+      ],
+      "answerNo": 4,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a dog",
+      "options": [
+       "bear",
+       "dog",
+       "fish",
+       "pig"
+      ],
+      "answerNo": 2,
+      "explanationKo": "dog 의 뜻은 개예요. 개 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "강아지와 들판 산책",
+   "newWords": [
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep",
+    "puppy"
+   ],
+   "unitWords": [
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep",
+    "puppy",
+    "fish",
+    "cat",
+    "pig",
+    "dog"
+   ],
+   "preview": [
+    {
+     "word": "bird",
+     "meaningKo": "새",
+     "example": "This is a bird."
+    },
+    {
+     "word": "rabbit",
+     "meaningKo": "토끼",
+     "example": "That is a rabbit."
+    },
+    {
+     "word": "frog",
+     "meaningKo": "개구리",
+     "example": "It is a frog."
+    },
+    {
+     "word": "sheep",
+     "meaningKo": "양",
+     "example": "This is a sheep."
+    },
+    {
+     "word": "puppy",
+     "meaningKo": "강아지",
+     "example": "This is my puppy."
+    }
+   ],
+   "content": {
+    "passage": "This is my puppy. A rabbit and a sheep. Bird, frog, fish!",
+    "targetWords": [
+     "bird",
+     "rabbit",
+     "frog",
+     "sheep",
+     "puppy"
+    ],
+    "glossary": [
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rabbit",
+      "options": [
+       "rabbit",
+       "cat",
+       "frog",
+       "pig"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rabbit 의 뜻은 토끼예요. 토끼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sheep",
+      "options": [
+       "dog",
+       "bird",
+       "sheep",
+       "cow"
+      ],
+      "answerNo": 3,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Bird",
+      "options": [
+       "fish",
+       "bird",
+       "rabbit",
+       "cat"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bird 의 뜻은 새예요. 새 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "frog",
+      "options": [
+       "sheep",
+       "pig",
+       "fish",
+       "frog"
+      ],
+      "answerNo": 4,
+      "explanationKo": "frog 의 뜻은 개구리예요. 개구리 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fish",
+      "options": [
+       "frog",
+       "rabbit",
+       "fish",
+       "dog"
+      ],
+      "answerNo": 3,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물원 가는 길",
+   "newWords": [
+    "fox",
+    "chicken",
+    "snake",
+    "bus",
+    "car"
+   ],
+   "unitWords": [
+    "fox",
+    "chicken",
+    "snake",
+    "bus",
+    "car",
+    "dog",
+    "cat",
+    "frog",
+    "fish",
+    "bird",
+    "duck",
+    "pig",
+    "sheep"
+   ],
+   "preview": [
+    {
+     "word": "fox",
+     "meaningKo": "여우",
+     "example": "This is a fox."
+    },
+    {
+     "word": "chicken",
+     "meaningKo": "닭",
+     "example": "That is a chicken."
+    },
+    {
+     "word": "snake",
+     "meaningKo": "뱀",
+     "example": "It is a snake."
+    },
+    {
+     "word": "bus",
+     "meaningKo": "버스",
+     "example": "This is a bus."
+    },
+    {
+     "word": "car",
+     "meaningKo": "자동차",
+     "example": "This is my car."
+    }
+   ],
+   "content": {
+    "passage": "This is my car. That is a bus. Fox, snake, chicken!",
+    "targetWords": [
+     "fox",
+     "chicken",
+     "snake",
+     "bus",
+     "car"
+    ],
+    "glossary": [
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my car",
+      "options": [
+       "bus",
+       "car",
+       "bike",
+       "fox"
+      ],
+      "answerNo": 2,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bus",
+      "options": [
+       "car",
+       "snake",
+       "fox",
+       "bus"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Fox",
+      "options": [
+       "fox",
+       "dog",
+       "cat",
+       "chicken"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fox 의 뜻은 여우예요. 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "snake",
+      "options": [
+       "frog",
+       "fish",
+       "snake",
+       "bird"
+      ],
+      "answerNo": 3,
+      "explanationKo": "snake 의 뜻은 뱀이에요. 뱀 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chicken",
+      "options": [
+       "duck",
+       "chicken",
+       "pig",
+       "sheep"
+      ],
+      "answerNo": 2,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 닭 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동생과 목욕 시간",
+   "newWords": [
+    "ship",
+    "truck",
+    "plane",
+    "bed",
+    "bath"
+   ],
+   "unitWords": [
+    "ship",
+    "truck",
+    "plane",
+    "bed",
+    "bath",
+    "bus",
+    "car",
+    "bird"
+   ],
+   "preview": [
+    {
+     "word": "ship",
+     "meaningKo": "배",
+     "example": "This is a ship."
+    },
+    {
+     "word": "truck",
+     "meaningKo": "트럭",
+     "example": "That is a truck."
+    },
+    {
+     "word": "plane",
+     "meaningKo": "비행기",
+     "example": "It is a plane."
+    },
+    {
+     "word": "bed",
+     "meaningKo": "침대",
+     "example": "This is my bed."
+    },
+    {
+     "word": "bath",
+     "meaningKo": "목욕, 욕조",
+     "example": "This is a bath."
+    }
+   ],
+   "content": {
+    "passage": "This is a bath. Ship, truck, plane! This is my bed.",
+    "targetWords": [
+     "ship",
+     "truck",
+     "plane",
+     "bed",
+     "bath"
+    ],
+    "glossary": [
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bath",
+      "options": [
+       "bath",
+       "bed",
+       "box",
+       "door"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bath 의 뜻은 욕조예요. 욕조 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Ship",
+      "options": [
+       "truck",
+       "plane",
+       "ship",
+       "bus"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ship 의 뜻은 배예요. 배 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "truck",
+      "options": [
+       "car",
+       "truck",
+       "bus",
+       "ship"
+      ],
+      "answerNo": 2,
+      "explanationKo": "truck 의 뜻은 트럭이에요. 트럭 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "plane",
+      "options": [
+       "ship",
+       "bird",
+       "kite",
+       "plane"
+      ],
+      "answerNo": 4,
+      "explanationKo": "plane 의 뜻은 비행기예요. 비행기 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my bed",
+      "options": [
+       "bath",
+       "window",
+       "bed",
+       "bus"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bed 의 뜻은 침대예요. 침대 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "우리 동네 나들이",
+   "newWords": [
+    "dish",
+    "tent",
+    "home",
+    "shop",
+    "bank"
+   ],
+   "unitWords": [
+    "dish",
+    "tent",
+    "home",
+    "shop",
+    "bank",
+    "bed"
+   ],
+   "preview": [
+    {
+     "word": "dish",
+     "meaningKo": "접시",
+     "example": "This is a dish."
+    },
+    {
+     "word": "tent",
+     "meaningKo": "텐트",
+     "example": "That is a tent."
+    },
+    {
+     "word": "home",
+     "meaningKo": "집",
+     "example": "This is my home."
+    },
+    {
+     "word": "shop",
+     "meaningKo": "가게",
+     "example": "It is a shop."
+    },
+    {
+     "word": "bank",
+     "meaningKo": "은행",
+     "example": "That is a bank."
+    }
+   ],
+   "content": {
+    "passage": "This is my home. A shop and a bank. Tent, dish, cake!",
+    "targetWords": [
+     "dish",
+     "tent",
+     "home",
+     "shop",
+     "bank"
+    ],
+    "glossary": [
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "cake",
+      "lemma": "cake",
+      "meaningKo": "케이크"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shop",
+      "options": [
+       "bank",
+       "shop",
+       "tent",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bank",
+      "options": [
+       "shop",
+       "tent",
+       "dish",
+       "bank"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Tent",
+      "options": [
+       "tent",
+       "bed",
+       "umbrella",
+       "box"
+      ],
+      "answerNo": 1,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dish",
+      "options": [
+       "cake",
+       "fork",
+       "dish",
+       "egg"
+      ],
+      "answerNo": 3,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cake",
+      "options": [
+       "dish",
+       "cake",
+       "apple",
+       "cookie"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cake 의 뜻은 케이크예요. 케이크 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "할아버지와 동물 동화",
+   "newWords": [],
+   "unitWords": [
+    "pig",
+    "duck",
+    "chicken",
+    "sheep",
+    "dog",
+    "fish",
+    "frog",
+    "cat",
+    "rabbit"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is a pig. A duck and a chicken. Sheep, cow, dog!",
+    "targetWords": [
+     "pig",
+     "duck",
+     "chicken",
+     "sheep",
+     "dog"
+    ],
+    "glossary": [
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     },
+     {
+      "surface": "cow",
+      "lemma": "cow",
+      "meaningKo": "소"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pig",
+      "options": [
+       "cow",
+       "sheep",
+       "pig",
+       "horse"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pig 의 뜻은 돼지예요. 돼지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a duck",
+      "options": [
+       "duck",
+       "chicken",
+       "fish",
+       "frog"
+      ],
+      "answerNo": 1,
+      "explanationKo": "duck 의 뜻은 오리예요. 닭이 아니라 오리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a chicken",
+      "options": [
+       "duck",
+       "pig",
+       "cat",
+       "chicken"
+      ],
+      "answerNo": 4,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 닭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Sheep",
+      "options": [
+       "cow",
+       "sheep",
+       "dog",
+       "rabbit"
+      ],
+      "answerNo": 2,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dog",
+      "options": [
+       "dog",
+       "sheep",
+       "cat",
+       "pig"
+      ],
+      "answerNo": 1,
+      "explanationKo": "dog 의 뜻은 개예요. 개 그림을 찾아요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "숲속 동물 찾기",
+   "newWords": [],
+   "unitWords": [
+    "puppy",
+    "fox",
+    "rabbit",
+    "snake",
+    "bird",
+    "frog",
+    "dog",
+    "cat",
+    "fish"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my puppy. A fox and a rabbit. Snake, bird, frog!",
+    "targetWords": [
+     "puppy",
+     "fox",
+     "rabbit",
+     "snake",
+     "bird",
+     "frog"
+    ],
+    "glossary": [
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a fox",
+      "options": [
+       "dog",
+       "fox",
+       "cat",
+       "rabbit"
+      ],
+      "answerNo": 2,
+      "explanationKo": "fox 의 뜻은 여우예요. 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rabbit",
+      "options": [
+       "frog",
+       "snake",
+       "fox",
+       "rabbit"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rabbit 의 뜻은 토끼예요. 토끼 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Snake",
+      "options": [
+       "snake",
+       "fish",
+       "frog",
+       "bird"
+      ],
+      "answerNo": 1,
+      "explanationKo": "snake 의 뜻은 뱀이에요. 뱀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bird",
+      "options": [
+       "rabbit",
+       "fox",
+       "bird",
+       "frog"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bird 의 뜻은 새예요. 새 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "frog",
+      "options": [
+       "snake",
+       "frog",
+       "fish",
+       "rabbit"
+      ],
+      "answerNo": 2,
+      "explanationKo": "frog 의 뜻은 개구리예요. 개구리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "가족과 항구 구경",
+   "newWords": [],
+   "unitWords": [
+    "ship",
+    "truck",
+    "bus",
+    "car",
+    "plane",
+    "bird",
+    "fish"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is a ship. A truck and a bus. Car, plane, bird!",
+    "targetWords": [
+     "ship",
+     "truck",
+     "bus",
+     "car",
+     "plane",
+     "bird"
+    ],
+    "glossary": [
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a ship",
+      "options": [
+       "ship",
+       "plane",
+       "car",
+       "fish"
+      ],
+      "answerNo": 1,
+      "explanationKo": "ship 의 뜻은 배예요. 배 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a truck",
+      "options": [
+       "bus",
+       "car",
+       "truck",
+       "ship"
+      ],
+      "answerNo": 3,
+      "explanationKo": "truck 의 뜻은 트럭이에요. 트럭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bus",
+      "options": [
+       "truck",
+       "bus",
+       "plane",
+       "bike"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Car",
+      "options": [
+       "bike",
+       "ship",
+       "bus",
+       "car"
+      ],
+      "answerNo": 4,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "plane",
+      "options": [
+       "ship",
+       "truck",
+       "plane",
+       "bird"
+      ],
+      "answerNo": 3,
+      "explanationKo": "plane 의 뜻은 비행기예요. 새가 아니라 비행기 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "저녁 시간 우리 집",
+   "newWords": [],
+   "unitWords": [
+    "home",
+    "bath",
+    "bed",
+    "dish",
+    "fish",
+    "cat",
+    "ship",
+    "frog",
+    "duck",
+    "dog",
+    "pig",
+    "rabbit"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my home. A bath and a bed. Dish, fish, cat!",
+    "targetWords": [
+     "home",
+     "bath",
+     "bed",
+     "dish",
+     "fish",
+     "cat"
+    ],
+    "glossary": [
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bath",
+      "options": [
+       "bed",
+       "dish",
+       "ship",
+       "bath"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bath 의 뜻은 욕조예요. 욕조 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bed",
+      "options": [
+       "bath",
+       "bed",
+       "door",
+       "window"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bed 의 뜻은 침대예요. 침대 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Dish",
+      "options": [
+       "fork",
+       "cake",
+       "dish",
+       "bath"
+      ],
+      "answerNo": 3,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fish",
+      "options": [
+       "fish",
+       "frog",
+       "duck",
+       "cat"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cat",
+      "options": [
+       "dog",
+       "pig",
+       "rabbit",
+       "cat"
+      ],
+      "answerNo": 4,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "엄마와 은행 가는 날",
+   "newWords": [],
+   "unitWords": [
+    "bank",
+    "shop",
+    "tent",
+    "car",
+    "bus",
+    "bed",
+    "truck",
+    "ship",
+    "plane"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is a bank. A shop and a tent. A car and a bus.",
+    "targetWords": [
+     "bank",
+     "shop",
+     "tent",
+     "car",
+     "bus"
+    ],
+    "glossary": [
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bank",
+      "options": [
+       "shop",
+       "bank",
+       "tent",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shop",
+      "options": [
+       "shop",
+       "bank",
+       "bus",
+       "box"
+      ],
+      "answerNo": 1,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a tent",
+      "options": [
+       "umbrella",
+       "bed",
+       "tent",
+       "shop"
+      ],
+      "answerNo": 3,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a car",
+      "options": [
+       "bus",
+       "truck",
+       "bike",
+       "car"
+      ],
+      "answerNo": 4,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bus",
+      "options": [
+       "car",
+       "bus",
+       "ship",
+       "plane"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "아빠와 동물 그리기",
+   "newWords": [],
+   "unitWords": [
+    "puppy",
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish",
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my puppy. Cat, dog, pig, duck. Fish, bird, rabbit, frog, sheep.",
+    "targetWords": [
+     "puppy",
+     "cat",
+     "dog",
+     "pig",
+     "duck",
+     "fish",
+     "bird",
+     "rabbit",
+     "frog",
+     "sheep"
+    ],
+    "glossary": [
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     },
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Cat",
+      "options": [
+       "cat",
+       "dog",
+       "pig",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "duck",
+      "options": [
+       "fish",
+       "pig",
+       "duck",
+       "sheep"
+      ],
+      "answerNo": 3,
+      "explanationKo": "duck 의 뜻은 오리예요. 오리 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bird",
+      "options": [
+       "rabbit",
+       "bird",
+       "frog",
+       "dog"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bird 의 뜻은 새예요. 새 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "rabbit",
+      "options": [
+       "sheep",
+       "cat",
+       "fish",
+       "rabbit"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rabbit 의 뜻은 토끼예요. 토끼 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "sheep",
+      "options": [
+       "frog",
+       "bird",
+       "sheep",
+       "pig"
+      ],
+      "answerNo": 3,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "그림 일기 쓰기",
+   "newWords": [],
+   "unitWords": [
+    "fox",
+    "chicken",
+    "snake",
+    "bus",
+    "car",
+    "ship",
+    "truck",
+    "plane",
+    "bed",
+    "bath",
+    "home",
+    "dog",
+    "cat",
+    "bird"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Fox, chicken, snake, bus, car. Ship, truck, plane, bed, bath. This is my home.",
+    "targetWords": [
+     "fox",
+     "chicken",
+     "snake",
+     "bus",
+     "car",
+     "ship",
+     "truck",
+     "plane",
+     "bed",
+     "bath",
+     "home"
+    ],
+    "glossary": [
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     },
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Fox",
+      "options": [
+       "dog",
+       "cat",
+       "snake",
+       "fox"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fox 의 뜻은 여우예요. 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chicken",
+      "options": [
+       "bus",
+       "chicken",
+       "snake",
+       "cow"
+      ],
+      "answerNo": 2,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 닭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "car",
+      "options": [
+       "truck",
+       "bus",
+       "car",
+       "ship"
+      ],
+      "answerNo": 3,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "plane",
+      "options": [
+       "plane",
+       "ship",
+       "bird",
+       "truck"
+      ],
+      "answerNo": 1,
+      "explanationKo": "plane 의 뜻은 비행기예요. 비행기 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bath",
+      "options": [
+       "bed",
+       "ship",
+       "car",
+       "bath"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bath 의 뜻은 욕조예요. 욕조 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 1,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "새 집에 이사 온 날",
+   "newWords": [],
+   "unitWords": [
+    "home",
+    "shop",
+    "bank",
+    "tent",
+    "dish",
+    "puppy",
+    "cat",
+    "bed",
+    "bath",
+    "dog",
+    "fox",
+    "rabbit"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my home. A shop and a bank. Tent, dish, puppy, cat!",
+    "targetWords": [
+     "home",
+     "shop",
+     "bank",
+     "tent",
+     "dish",
+     "puppy",
+     "cat"
+    ],
+    "glossary": [
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shop",
+      "options": [
+       "bank",
+       "shop",
+       "tent",
+       "box"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bank",
+      "options": [
+       "shop",
+       "dish",
+       "tent",
+       "bank"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Tent",
+      "options": [
+       "tent",
+       "bed",
+       "umbrella",
+       "shop"
+      ],
+      "answerNo": 1,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dish",
+      "options": [
+       "cake",
+       "fork",
+       "dish",
+       "bath"
+      ],
+      "answerNo": 3,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cat",
+      "options": [
+       "dog",
+       "cat",
+       "fox",
+       "rabbit"
+      ],
+      "answerNo": 2,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물 카드 놀이",
+   "newWords": [
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish"
+   ],
+   "unitWords": [
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish"
+   ],
+   "preview": [
+    {
+     "word": "cat",
+     "meaningKo": "고양이",
+     "example": "That is a cat."
+    },
+    {
+     "word": "dog",
+     "meaningKo": "개",
+     "example": "This is a dog."
+    },
+    {
+     "word": "pig",
+     "meaningKo": "돼지",
+     "example": "It is a pig."
+    },
+    {
+     "word": "duck",
+     "meaningKo": "오리",
+     "example": "A duck and a fish."
+    },
+    {
+     "word": "fish",
+     "meaningKo": "물고기",
+     "example": "This is my fish."
+    }
+   ],
+   "content": {
+    "passage": "This is a game. A cat and a dog. Pig, duck, fish!",
+    "targetWords": [
+     "cat",
+     "dog",
+     "pig",
+     "duck",
+     "fish"
+    ],
+    "glossary": [
+     {
+      "surface": "game",
+      "lemma": "game",
+      "meaningKo": "놀이, 게임"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     },
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a cat",
+      "options": [
+       "dog",
+       "robot",
+       "cat",
+       "ball"
+      ],
+      "answerNo": 3,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a dog",
+      "options": [
+       "dog",
+       "kite",
+       "duck",
+       "fish"
+      ],
+      "answerNo": 1,
+      "explanationKo": "dog 의 뜻은 개예요. 개 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Pig",
+      "options": [
+       "ball",
+       "fish",
+       "cat",
+       "pig"
+      ],
+      "answerNo": 4,
+      "explanationKo": "pig 의 뜻은 돼지예요. 돼지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "duck",
+      "options": [
+       "pig",
+       "duck",
+       "robot",
+       "dog"
+      ],
+      "answerNo": 2,
+      "explanationKo": "duck 의 뜻은 오리예요. 오리 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fish",
+      "options": [
+       "fish",
+       "cat",
+       "kite",
+       "duck"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "강아지와 공놀이",
+   "newWords": [
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep",
+    "puppy"
+   ],
+   "unitWords": [
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep",
+    "puppy",
+    "dog",
+    "fish",
+    "pig",
+    "cat"
+   ],
+   "preview": [
+    {
+     "word": "bird",
+     "meaningKo": "새",
+     "example": "That is a bird."
+    },
+    {
+     "word": "rabbit",
+     "meaningKo": "토끼",
+     "example": "This is a rabbit."
+    },
+    {
+     "word": "frog",
+     "meaningKo": "개구리",
+     "example": "A frog and a ball."
+    },
+    {
+     "word": "sheep",
+     "meaningKo": "양",
+     "example": "It is a sheep."
+    },
+    {
+     "word": "puppy",
+     "meaningKo": "강아지",
+     "example": "This is my puppy."
+    }
+   ],
+   "content": {
+    "passage": "This is my ball. A puppy and a rabbit. Bird, frog, sheep!",
+    "targetWords": [
+     "bird",
+     "rabbit",
+     "frog",
+     "sheep",
+     "puppy"
+    ],
+    "glossary": [
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rabbit",
+      "options": [
+       "frog",
+       "dog",
+       "sheep",
+       "rabbit"
+      ],
+      "answerNo": 4,
+      "explanationKo": "rabbit 의 뜻은 토끼예요. 토끼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Bird",
+      "options": [
+       "fish",
+       "bird",
+       "kite",
+       "pig"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bird 의 뜻은 새예요. 연이 아니라 새 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "frog",
+      "options": [
+       "ball",
+       "rabbit",
+       "frog",
+       "cat"
+      ],
+      "answerNo": 3,
+      "explanationKo": "frog 의 뜻은 개구리예요. 개구리 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "sheep",
+      "options": [
+       "sheep",
+       "robot",
+       "bird",
+       "dog"
+      ],
+      "answerNo": 1,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my ball",
+      "options": [
+       "doll",
+       "kite",
+       "bike",
+       "ball"
+      ],
+      "answerNo": 4,
+      "explanationKo": "ball 의 뜻은 공이에요. 공 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "자전거 타고 시골길",
+   "newWords": [
+    "fox",
+    "chicken",
+    "snake",
+    "bus",
+    "car"
+   ],
+   "unitWords": [
+    "fox",
+    "chicken",
+    "snake",
+    "bus",
+    "car",
+    "cat",
+    "dog",
+    "frog",
+    "rabbit",
+    "fish"
+   ],
+   "preview": [
+    {
+     "word": "fox",
+     "meaningKo": "여우",
+     "example": "That is a fox."
+    },
+    {
+     "word": "chicken",
+     "meaningKo": "닭",
+     "example": "This is a chicken."
+    },
+    {
+     "word": "snake",
+     "meaningKo": "뱀",
+     "example": "A snake and a frog."
+    },
+    {
+     "word": "bus",
+     "meaningKo": "버스",
+     "example": "It is a bus."
+    },
+    {
+     "word": "car",
+     "meaningKo": "자동차",
+     "example": "This is a car."
+    }
+   ],
+   "content": {
+    "passage": "This is my bike. A car and a bus. Fox, snake, chicken!",
+    "targetWords": [
+     "fox",
+     "chicken",
+     "snake",
+     "bus",
+     "car"
+    ],
+    "glossary": [
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a car",
+      "options": [
+       "bus",
+       "bike",
+       "car",
+       "kite"
+      ],
+      "answerNo": 3,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bus",
+      "options": [
+       "bus",
+       "ball",
+       "fox",
+       "car"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Fox",
+      "options": [
+       "snake",
+       "cat",
+       "dog",
+       "fox"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fox 의 뜻은 여우예요. 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "snake",
+      "options": [
+       "chicken",
+       "snake",
+       "frog",
+       "robot"
+      ],
+      "answerNo": 2,
+      "explanationKo": "snake 의 뜻은 뱀이에요. 뱀 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chicken",
+      "options": [
+       "chicken",
+       "rabbit",
+       "kite",
+       "fish"
+      ],
+      "answerNo": 1,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 닭 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 4,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "인형 집 꾸미기",
+   "newWords": [
+    "ship",
+    "truck",
+    "plane",
+    "bed",
+    "bath"
+   ],
+   "unitWords": [
+    "ship",
+    "truck",
+    "plane",
+    "bed",
+    "bath",
+    "car",
+    "bird"
+   ],
+   "preview": [
+    {
+     "word": "ship",
+     "meaningKo": "배",
+     "example": "That is a ship."
+    },
+    {
+     "word": "truck",
+     "meaningKo": "트럭",
+     "example": "This is a truck."
+    },
+    {
+     "word": "plane",
+     "meaningKo": "비행기",
+     "example": "This is my plane."
+    },
+    {
+     "word": "bed",
+     "meaningKo": "침대",
+     "example": "It is a bed."
+    },
+    {
+     "word": "bath",
+     "meaningKo": "목욕, 욕조",
+     "example": "This is a bath."
+    }
+   ],
+   "content": {
+    "passage": "This is my doll. A bed and a bath. Ship, truck, plane!",
+    "targetWords": [
+     "ship",
+     "truck",
+     "plane",
+     "bed",
+     "bath"
+    ],
+    "glossary": [
+     {
+      "surface": "doll",
+      "lemma": "doll",
+      "meaningKo": "인형"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bed",
+      "options": [
+       "bath",
+       "ball",
+       "door",
+       "bed"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bed 의 뜻은 침대예요. 침대 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bath",
+      "options": [
+       "bed",
+       "bath",
+       "box",
+       "ship"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bath 의 뜻은 욕조예요. 욕조 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Ship",
+      "options": [
+       "truck",
+       "plane",
+       "ship",
+       "car"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ship 의 뜻은 배예요. 배 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "truck",
+      "options": [
+       "truck",
+       "car",
+       "kite",
+       "bed"
+      ],
+      "answerNo": 1,
+      "explanationKo": "truck 의 뜻은 트럭이에요. 트럭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "plane",
+      "options": [
+       "ship",
+       "bird",
+       "kite",
+       "plane"
+      ],
+      "answerNo": 4,
+      "explanationKo": "plane 의 뜻은 비행기예요. 비행기 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "assigned",
+   "lessonNo": 5,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "블록으로 마을 만들기",
+   "newWords": [
+    "dish",
+    "tent",
+    "home",
+    "shop",
+    "bank"
+   ],
+   "unitWords": [
+    "dish",
+    "tent",
+    "home",
+    "shop",
+    "bank",
+    "bed"
+   ],
+   "preview": [
+    {
+     "word": "dish",
+     "meaningKo": "접시",
+     "example": "That is a dish."
+    },
+    {
+     "word": "tent",
+     "meaningKo": "텐트",
+     "example": "This is my tent."
+    },
+    {
+     "word": "home",
+     "meaningKo": "집",
+     "example": "This is my home."
+    },
+    {
+     "word": "shop",
+     "meaningKo": "가게",
+     "example": "This is a shop."
+    },
+    {
+     "word": "bank",
+     "meaningKo": "은행",
+     "example": "It is a bank."
+    }
+   ],
+   "content": {
+    "passage": "This is my home. That is a shop. Bank, tent, dish, ball!",
+    "targetWords": [
+     "dish",
+     "tent",
+     "home",
+     "shop",
+     "bank"
+    ],
+    "glossary": [
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shop",
+      "options": [
+       "bank",
+       "door",
+       "shop",
+       "box"
+      ],
+      "answerNo": 3,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Bank",
+      "options": [
+       "bank",
+       "tent",
+       "shop",
+       "window"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "tent",
+      "options": [
+       "dish",
+       "bed",
+       "box",
+       "tent"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dish",
+      "options": [
+       "ball",
+       "dish",
+       "fork",
+       "tent"
+      ],
+      "answerNo": 2,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ball",
+      "options": [
+       "ball",
+       "kite",
+       "dish",
+       "yo-yo"
+      ],
+      "answerNo": 1,
+      "explanationKo": "ball 의 뜻은 공이에요. 공 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 6,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물 가면 놀이",
+   "newWords": [],
+   "unitWords": [
+    "pig",
+    "sheep",
+    "dog",
+    "chicken",
+    "duck",
+    "rabbit",
+    "cat",
+    "frog",
+    "fish"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is a pig. That is a sheep. Dog, chicken, duck!",
+    "targetWords": [
+     "pig",
+     "sheep",
+     "dog",
+     "chicken",
+     "duck"
+    ],
+    "glossary": [
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a pig",
+      "options": [
+       "sheep",
+       "cow",
+       "pig",
+       "dog"
+      ],
+      "answerNo": 3,
+      "explanationKo": "pig 의 뜻은 돼지예요. 돼지 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a sheep",
+      "options": [
+       "sheep",
+       "pig",
+       "rabbit",
+       "cow"
+      ],
+      "answerNo": 1,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Dog",
+      "options": [
+       "cat",
+       "sheep",
+       "pig",
+       "dog"
+      ],
+      "answerNo": 4,
+      "explanationKo": "dog 의 뜻은 개예요. 개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chicken",
+      "options": [
+       "duck",
+       "chicken",
+       "frog",
+       "pig"
+      ],
+      "answerNo": 2,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 오리가 아니라 닭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "duck",
+      "options": [
+       "duck",
+       "chicken",
+       "fish",
+       "dog"
+      ],
+      "answerNo": 1,
+      "explanationKo": "duck 의 뜻은 오리예요. 오리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 7,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물 인형극 놀이",
+   "newWords": [],
+   "unitWords": [
+    "fox",
+    "bird",
+    "rabbit",
+    "snake",
+    "frog",
+    "puppy",
+    "cat",
+    "dog",
+    "sheep",
+    "fish"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "That is a fox. A bird and a rabbit. Snake, frog, puppy!",
+    "targetWords": [
+     "fox",
+     "bird",
+     "rabbit",
+     "snake",
+     "frog",
+     "puppy"
+    ],
+    "glossary": [
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a fox",
+      "options": [
+       "cat",
+       "fox",
+       "dog",
+       "snake"
+      ],
+      "answerNo": 2,
+      "explanationKo": "fox 의 뜻은 여우예요. 여우 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bird",
+      "options": [
+       "rabbit",
+       "fox",
+       "kite",
+       "bird"
+      ],
+      "answerNo": 4,
+      "explanationKo": "bird 의 뜻은 새예요. 새 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a rabbit",
+      "options": [
+       "rabbit",
+       "frog",
+       "cat",
+       "sheep"
+      ],
+      "answerNo": 1,
+      "explanationKo": "rabbit 의 뜻은 토끼예요. 토끼 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Snake",
+      "options": [
+       "frog",
+       "fish",
+       "snake",
+       "fox"
+      ],
+      "answerNo": 3,
+      "explanationKo": "snake 의 뜻은 뱀이에요. 뱀 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "frog",
+      "options": [
+       "bird",
+       "frog",
+       "snake",
+       "rabbit"
+      ],
+      "answerNo": 2,
+      "explanationKo": "frog 의 뜻은 개구리예요. 개구리 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 8,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "탈것 경주 놀이",
+   "newWords": [],
+   "unitWords": [
+    "truck",
+    "bus",
+    "car",
+    "ship",
+    "plane",
+    "fish"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my truck. A bus and a car. Ship, plane, bike!",
+    "targetWords": [
+     "truck",
+     "bus",
+     "car",
+     "ship",
+     "plane"
+    ],
+    "glossary": [
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "bike",
+      "lemma": "bike",
+      "meaningKo": "자전거"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my truck",
+      "options": [
+       "truck",
+       "bus",
+       "car",
+       "bike"
+      ],
+      "answerNo": 1,
+      "explanationKo": "truck 의 뜻은 트럭이에요. 트럭 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bus",
+      "options": [
+       "car",
+       "truck",
+       "bus",
+       "ship"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a car",
+      "options": [
+       "bike",
+       "car",
+       "truck",
+       "plane"
+      ],
+      "answerNo": 2,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Ship",
+      "options": [
+       "plane",
+       "bus",
+       "fish",
+       "ship"
+      ],
+      "answerNo": 4,
+      "explanationKo": "ship 의 뜻은 배예요. 배 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "plane",
+      "options": [
+       "ship",
+       "kite",
+       "plane",
+       "car"
+      ],
+      "answerNo": 3,
+      "explanationKo": "plane 의 뜻은 비행기예요. 비행기 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 9,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "별 보기 캠핑 놀이",
+   "newWords": [],
+   "unitWords": [
+    "tent",
+    "bed",
+    "dish",
+    "fish",
+    "cat",
+    "frog",
+    "dog",
+    "rabbit"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my tent. A bed and a dish. Fish, cat, star!",
+    "targetWords": [
+     "tent",
+     "bed",
+     "dish",
+     "fish",
+     "cat"
+    ],
+    "glossary": [
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "star",
+      "lemma": "star",
+      "meaningKo": "별"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my tent",
+      "options": [
+       "bed",
+       "umbrella",
+       "star",
+       "tent"
+      ],
+      "answerNo": 4,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bed",
+      "options": [
+       "tent",
+       "bed",
+       "dish",
+       "window"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bed 의 뜻은 침대예요. 침대 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a dish",
+      "options": [
+       "fork",
+       "cake",
+       "dish",
+       "bed"
+      ],
+      "answerNo": 3,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Fish",
+      "options": [
+       "fish",
+       "frog",
+       "cat",
+       "star"
+      ],
+      "answerNo": 1,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "cat",
+      "options": [
+       "dog",
+       "fish",
+       "rabbit",
+       "cat"
+      ],
+      "answerNo": 4,
+      "explanationKo": "cat 의 뜻은 고양이예요. 고양이 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "reinforce",
+   "lessonNo": 10,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "장난감 정리 시간",
+   "newWords": [],
+   "unitWords": [
+    "home",
+    "shop",
+    "bank",
+    "bath",
+    "car",
+    "bed",
+    "dish",
+    "bus",
+    "truck"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my box. Home, shop, bank! A bath and a car.",
+    "targetWords": [
+     "home",
+     "shop",
+     "bank",
+     "bath",
+     "car"
+    ],
+    "glossary": [
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     },
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "shop",
+      "options": [
+       "bank",
+       "shop",
+       "box",
+       "bath"
+      ],
+      "answerNo": 2,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bank",
+      "options": [
+       "bank",
+       "shop",
+       "car",
+       "door"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bath",
+      "options": [
+       "bed",
+       "box",
+       "bath",
+       "dish"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bath 의 뜻은 욕조예요. 욕조 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a car",
+      "options": [
+       "bus",
+       "truck",
+       "bike",
+       "car"
+      ],
+      "answerNo": 4,
+      "explanationKo": "car 의 뜻은 자동차예요. 자동차 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "my box",
+      "options": [
+       "bath",
+       "box",
+       "ball",
+       "kite"
+      ],
+      "answerNo": 2,
+      "explanationKo": "box 의 뜻은 상자예요. 상자 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 1,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동물 스티커 모으기",
+   "newWords": [],
+   "unitWords": [
+    "puppy",
+    "cat",
+    "dog",
+    "pig",
+    "duck",
+    "fish",
+    "bird",
+    "rabbit",
+    "frog",
+    "sheep"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "My puppy and a ball. Cat, dog, pig, duck, fish. Bird, rabbit, frog, sheep.",
+    "targetWords": [
+     "puppy",
+     "cat",
+     "dog",
+     "pig",
+     "duck",
+     "fish",
+     "bird",
+     "rabbit",
+     "frog",
+     "sheep"
+    ],
+    "glossary": [
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "cat",
+      "lemma": "cat",
+      "meaningKo": "고양이"
+     },
+     {
+      "surface": "dog",
+      "lemma": "dog",
+      "meaningKo": "개"
+     },
+     {
+      "surface": "pig",
+      "lemma": "pig",
+      "meaningKo": "돼지"
+     },
+     {
+      "surface": "duck",
+      "lemma": "duck",
+      "meaningKo": "오리"
+     },
+     {
+      "surface": "fish",
+      "lemma": "fish",
+      "meaningKo": "물고기"
+     },
+     {
+      "surface": "bird",
+      "lemma": "bird",
+      "meaningKo": "새"
+     },
+     {
+      "surface": "rabbit",
+      "lemma": "rabbit",
+      "meaningKo": "토끼"
+     },
+     {
+      "surface": "frog",
+      "lemma": "frog",
+      "meaningKo": "개구리"
+     },
+     {
+      "surface": "sheep",
+      "lemma": "sheep",
+      "meaningKo": "양"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dog",
+      "options": [
+       "cat",
+       "pig",
+       "dog",
+       "kite"
+      ],
+      "answerNo": 3,
+      "explanationKo": "dog 의 뜻은 개예요. 개 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "pig",
+      "options": [
+       "pig",
+       "sheep",
+       "ball",
+       "duck"
+      ],
+      "answerNo": 1,
+      "explanationKo": "pig 의 뜻은 돼지예요. 돼지 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "fish",
+      "options": [
+       "frog",
+       "duck",
+       "cat",
+       "fish"
+      ],
+      "answerNo": 4,
+      "explanationKo": "fish 의 뜻은 물고기예요. 물고기 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "frog",
+      "options": [
+       "rabbit",
+       "frog",
+       "bird",
+       "fish"
+      ],
+      "answerNo": 2,
+      "explanationKo": "frog 의 뜻은 개구리예요. 개구리 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "sheep",
+      "options": [
+       "sheep",
+       "bird",
+       "rabbit",
+       "dog"
+      ],
+      "answerNo": 1,
+      "explanationKo": "sheep 의 뜻은 양이에요. 양 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 2,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "단어 빙고 놀이",
+   "newWords": [],
+   "unitWords": [
+    "bus",
+    "car",
+    "ship",
+    "truck",
+    "plane",
+    "fox",
+    "chicken",
+    "snake",
+    "home",
+    "bed",
+    "bath",
+    "frog",
+    "pig"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "Bus, car, ship, truck, plane! Fox, chicken, snake! Home, bed, bath!",
+    "targetWords": [
+     "bus",
+     "car",
+     "ship",
+     "truck",
+     "plane",
+     "fox",
+     "chicken",
+     "snake",
+     "home",
+     "bed",
+     "bath"
+    ],
+    "glossary": [
+     {
+      "surface": "bus",
+      "lemma": "bus",
+      "meaningKo": "버스"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "ship",
+      "lemma": "ship",
+      "meaningKo": "배"
+     },
+     {
+      "surface": "truck",
+      "lemma": "truck",
+      "meaningKo": "트럭"
+     },
+     {
+      "surface": "plane",
+      "lemma": "plane",
+      "meaningKo": "비행기"
+     },
+     {
+      "surface": "fox",
+      "lemma": "fox",
+      "meaningKo": "여우"
+     },
+     {
+      "surface": "chicken",
+      "lemma": "chicken",
+      "meaningKo": "닭"
+     },
+     {
+      "surface": "snake",
+      "lemma": "snake",
+      "meaningKo": "뱀"
+     },
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "bed",
+      "lemma": "bed",
+      "meaningKo": "침대"
+     },
+     {
+      "surface": "bath",
+      "lemma": "bath",
+      "meaningKo": "욕조"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "Bus",
+      "options": [
+       "bus",
+       "car",
+       "truck",
+       "bike"
+      ],
+      "answerNo": 1,
+      "explanationKo": "bus 의 뜻은 버스예요. 버스 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "ship",
+      "options": [
+       "plane",
+       "truck",
+       "ship",
+       "car"
+      ],
+      "answerNo": 3,
+      "explanationKo": "ship 의 뜻은 배예요. 배 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "snake",
+      "options": [
+       "fox",
+       "snake",
+       "chicken",
+       "frog"
+      ],
+      "answerNo": 2,
+      "explanationKo": "snake 의 뜻은 뱀이에요. 뱀 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "chicken",
+      "options": [
+       "fox",
+       "snake",
+       "pig",
+       "chicken"
+      ],
+      "answerNo": 4,
+      "explanationKo": "chicken 의 뜻은 닭이에요. 닭 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "bed",
+      "options": [
+       "bath",
+       "ship",
+       "bed",
+       "bus"
+      ],
+      "answerNo": 3,
+      "explanationKo": "bed 의 뜻은 침대예요. 침대 그림을 골라요."
+     }
+    ]
+   }
+  },
+  {
+   "kind": "remedial",
+   "lessonNo": 3,
+   "variant": 2,
+   "revision": 2,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "briefHash": "a1b4e5737d0838221ddc22b6d70ef9f3b54cf295469d15f7a19840517b7031e5",
+    "agentHash": "8a8f8510f8d3ce0fe1eb1acdfc871a408d2621b407603ceedd1162370ff17005",
+    "createdOn": "2026-10-23"
+   },
+   "title": "동네 보물찾기",
+   "newWords": [],
+   "unitWords": [
+    "puppy",
+    "shop",
+    "bank",
+    "home",
+    "tent",
+    "dish",
+    "bed"
+   ],
+   "preview": [],
+   "content": {
+    "passage": "This is my puppy. A shop and a bank. Home, tent, dish, box!",
+    "targetWords": [
+     "puppy",
+     "shop",
+     "bank",
+     "home",
+     "tent",
+     "dish"
+    ],
+    "glossary": [
+     {
+      "surface": "puppy",
+      "lemma": "puppy",
+      "meaningKo": "강아지"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "tent",
+      "lemma": "tent",
+      "meaningKo": "텐트"
+     },
+     {
+      "surface": "dish",
+      "lemma": "dish",
+      "meaningKo": "접시"
+     },
+     {
+      "surface": "box",
+      "lemma": "box",
+      "meaningKo": "상자"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a shop",
+      "options": [
+       "bank",
+       "tent",
+       "box",
+       "shop"
+      ],
+      "answerNo": 4,
+      "explanationKo": "shop 의 뜻은 가게예요. 가게 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "a bank",
+      "options": [
+       "shop",
+       "bank",
+       "dish",
+       "door"
+      ],
+      "answerNo": 2,
+      "explanationKo": "bank 의 뜻은 은행이에요. 은행 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "tent",
+      "options": [
+       "box",
+       "dish",
+       "tent",
+       "bed"
+      ],
+      "answerNo": 3,
+      "explanationKo": "tent 의 뜻은 텐트예요. 텐트 그림을 골라요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "dish",
+      "options": [
+       "dish",
+       "fork",
+       "tent",
+       "cake"
+      ],
+      "answerNo": 1,
+      "explanationKo": "dish 의 뜻은 접시예요. 접시 그림을 찾아요."
+     },
+     {
+      "kind": "picture",
+      "type": "picture",
+      "prompt": "box",
+      "options": [
+       "ball",
+       "bank",
+       "kite",
+       "box"
+      ],
+      "answerNo": 4,
+      "explanationKo": "box 의 뜻은 상자예요. 상자 그림을 골라요."
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -73,6 +73,13 @@ export const speechSettingsSchema = z.strictObject({
     "10-12": positiveMs,
   }),
   watchdogExtraMs: ms,
+  rate: z.strictObject({
+    "1-3": positiveMs,
+    "4-6": positiveMs,
+    "7-9": positiveMs,
+    "10-12": positiveMs,
+  }),
+  sentencePauseMs: ms,
 }) satisfies z.ZodType<SpeechSettings>;
 
 const count = z.number().int().nonnegative();
