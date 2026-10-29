@@ -13,6 +13,7 @@ import type { TalkCard, TurnCard } from "@/core/seed/schema/talk";
 import type { AskKind, TALK_SEGMENTS } from "@/core/seed/structure";
 import { splitSentences } from "@/core/seed/text";
 import { type PreviewWord, previewWordsOf } from "@/core/session/preview";
+import { normalizeForMatch } from "@/core/speech/match-rate";
 
 export type TalkSegment = (typeof TALK_SEGMENTS)[number];
 
@@ -897,12 +898,16 @@ export function appendAfter({
   return lines;
 }
 
-/** 같은 문장 견주기 꼴(C125 (3)): 대소문자 · 따옴표(I'm = I’m) · 문장부호 · 띄어쓰기를 지운 낱말 줄. */
+/**
+ * 같은 문장 견주기 꼴(C125 (3)): 대소문자 · 따옴표(I'm = I’m) · 문장부호 · 띄어쓰기를 지운 낱말 줄. 줄임꼴(I'm · it's · don't · let's …)은
+ * 일치율과 같은 표로 펼쳐 'I'm fine' 과 'I am fine' 을 같은 말로 본다(C127 보완(2026-10-29)).
+ */
 export function normalizeSpoken(text: string): string {
-  return text
-    .normalize("NFKC")
+  // 일치율 정규화는 이름 자리를 대문자 '{NAME}' 으로 돌려주므로 소문자로 바꿔 고치기 전처럼 한 낱말 'name' 으로 남긴다
+  return normalizeForMatch(text.normalize("NFKC").replace(/`/g, "'"), [])
+    .join(" ")
     .toLowerCase()
-    .replace(/['’‘`]/g, "")
+    .replace(/['’‘]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
@@ -911,7 +916,8 @@ export function normalizeSpoken(text: string): string {
  * '들어 있음'(낱말 경계)으로 같은 말을 보는 가장 짧은 낱말 수(13절 C127 — C125 (3) '같은 말'의 뜻 풀이, 설정값이 아닌 기술 판정).
  * 찾는 쪽(답 · 붙일 줄의 문장)이 이보다 짧으면 정규화한 문장 전체가 같을 때만 같은 말이다 — 한 낱말 답 'Yes.' 가
  * 'Yes, that's right!' 반응을, 'Good!' 이 'It is good.' 을 같은 말로 보지 않게. 두 낱말인 까닭: 정규화가 따옴표를 지워 "I'm good" 이
- * 'im good' 두 낱말이 되므로, 이 답이 든 'You can say, I'm good.' 을 같은 말로 보려면 두 낱말부터 '들어 있음'을 써야 한다.
+ * 'im good' 두 낱말이 되므로, 이 답이 든 'You can say, I'm good.' 을 같은 말로 보려면 두 낱말부터 '들어 있음'을 써야 한다(줄임꼴을
+ * 펼친 뒤로는 'i am good' 세 낱말이라 문턱 2 를 그대로 넘는다 — C127 보완(2026-10-29)).
  */
 export const SAME_SAYING_MIN_WORDS = 2;
 
@@ -1001,6 +1007,26 @@ export function shownTurnOf(
     said.push(...parts.map(normalizeSpoken).filter((s) => s !== ""));
   }
   return { sentences: shown, append: out };
+}
+
+/**
+ * 겹침 없애기 뒤 그 턴의 토리 뜻 줄(3.3 '답은 화면에 보이지 않는다' · T2): 1~3단계에서 shownTurnOf 가 토리 문장을 하나라도 뺐으면
+ * 그 턴의 뜻 줄은 흘리지도 저장하지도 않는다 — 빠진 문장은 답 두 개를 담은 말이라 그 뜻이 영어 답을 화면 글로 보이게 하고 말풍선과도
+ * 맞지 않는다. 다시 흘리기 · 이어 열기는 저장값을 따른다. 4단계부터는 판정하지 않는다.
+ */
+export function toriKoShownOf({
+  ko,
+  sent,
+  shown,
+  lowBand,
+}: {
+  ko: string | null;
+  sent: readonly string[];
+  shown: readonly string[];
+  lowBand: boolean;
+}): string | null {
+  if (ko === null || !lowBand) return ko;
+  return shown.length < sent.length ? null : ko;
 }
 
 /** 카드가 노리는 단어 목록(P12 연습 수업 고르기): 1~3단계 카드 턴마다, 4단계부터 카드 질문마다. */

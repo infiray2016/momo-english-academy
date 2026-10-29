@@ -4,6 +4,7 @@
 // 응답 뒤 할 일(after)은 모아 두었다가 시험이 돌린다. 시각은 고정 시계 하나. 아이 이름 · 연락처는 지어낸 값(앱 안 이름 Momo)이다.
 import { and, eq, inArray, isNull, max } from "drizzle-orm";
 import type { TalkOutput } from "@/core/ai/calls/talk";
+import type { ClientListen } from "@/core/conversation/client-listen";
 import type { StageTimings } from "@/core/conversation/timing";
 import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
 import { LESSON_SCHEMAS } from "@/core/seed/schema/lesson";
@@ -342,6 +343,10 @@ export type SayOptions = {
   };
   clientAttemptId?: string;
   prevPerceivedWaitMs?: number;
+  /** 말소리 없음으로 넘어간 '모름'(화면의 nospeech 표시, C44 · C149). */
+  nospeech?: boolean;
+  /** 그 턴의 듣기 사건 요약(C149). */
+  clientListen?: ClientListen;
   /** AI 를 부르기 전 구간마다 준비 시간(C125 (4)). */
   onPrepTimings?: (timings: StageTimings) => void;
 };
@@ -363,11 +368,15 @@ export async function say(
       input: {
         mode,
         ...(mode === "speech" ? { text: opts.text ?? "I like it." } : {}),
+        ...(opts.nospeech === undefined ? {} : { nospeech: opts.nospeech }),
       },
       hint: opts.hint ?? { opened: 0, heard: [] },
       ...(opts.prevPerceivedWaitMs === undefined
         ? {}
         : { prevPerceivedWaitMs: opts.prevPerceivedWaitMs }),
+      ...(opts.clientListen === undefined
+        ? {}
+        : { clientListen: opts.clientListen }),
     },
     {
       ...h.deps(),

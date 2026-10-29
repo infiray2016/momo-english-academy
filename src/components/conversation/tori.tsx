@@ -234,6 +234,7 @@ export function ToriBubble({
   waitSeconds,
   picture,
   explanation,
+  listening = false,
   onReplay,
   onAnswer,
   onAllTyped,
@@ -249,6 +250,8 @@ export function ToriBubble({
   /** 그림 턴(C32 — 파일이 있을 때만). */
   picture?: PictureInfo;
   explanation?: string;
+  /** 아이 차례가 듣는 중인가 — 그동안 다시 듣기 · 답 듣기 단추를 끈다(누르면 듣기가 안내 없이 끝남, 7절 말하기 버튼 행(분석 A2 · N3)). */
+  listening?: boolean;
   onReplay: () => void;
   onAnswer: (index: 0 | 1) => void;
   /** 받은 글이 다 흘러나왔는가(바뀔 때마다 — 틀이 아이 차례를 그 뒤에 연다, 화면 검토 M-1). */
@@ -286,7 +289,7 @@ export function ToriBubble({
             type="button"
             data-tori-bubble=""
             aria-label={TEACHER_TEXT.replay(teacherName)}
-            disabled={empty}
+            disabled={empty || listening}
             onClick={onReplay}
             className={cn(
               FOCUS_RING,
@@ -328,6 +331,7 @@ export function ToriBubble({
                     type="button"
                     data-answer-listen={i + 1}
                     aria-label={BUBBLE_TEXT.answer(i + 1)}
+                    disabled={listening}
                     onClick={() => onAnswer(i as 0 | 1)}
                     className={cn(
                       FOCUS_RING,
@@ -356,7 +360,7 @@ export function ToriBubble({
         ) : null}
         {explanation ? (
           <p data-tori-explanation="" className={cn(CHILD_SIZE.guide, "px-2")}>
-            {explanation}
+            {fillName(explanation, englishName)}
           </p>
         ) : null}
       </div>

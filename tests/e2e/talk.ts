@@ -342,6 +342,28 @@ export function failingRun(error: string, at = 100): RecognitionRun {
 }
 
 /**
+ * iPad WebKit(사파리 · 크롬) 꼴의 말소리 없는 듣기(10-22 실측 · C148): 시작 · 소리 받기 시작 뒤 결과 · 오류가 없고(스스로 no-speech 를 내지 않음),
+ * 앱이 stop 하면 error aborted 'No speech detected' → end 로 끝난다.
+ */
+export function webkitSilentRun(): RecognitionRun {
+  return {
+    events: [
+      { at: 50, type: "start" },
+      { at: 100, type: "audiostart" },
+    ],
+    onStop: [
+      {
+        at: 10,
+        type: "error",
+        error: "aborted",
+        message: "No speech detected",
+      },
+      { at: 20, type: "end" },
+    ],
+  };
+}
+
+/**
  * 1-가 하루 안전 상한에 닿은 날(C80): 이 프로필의 ai.safety_daily_calls 를 1 로 두고 오늘 학습일 호출 한 행을 넣는다(쓰기 e2e 와 같은 꼴).
  */
 export async function reachSafetyCap(profileId: string): Promise<void> {

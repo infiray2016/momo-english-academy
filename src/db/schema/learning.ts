@@ -219,6 +219,8 @@ export const talkTurns = pgTable(
     listenEndSeconds: doublePrecision("listen_end_seconds"),
     // C23
     confirmSkipped: boolean("confirm_skipped"),
+    // 아이 행의 듣기 사건 요약(C149 — '모름'의 출처 · 기기 · 3D · 듣기마다 결과 · 끝난 까닭 · 길이 · 소리 · 읽기 관계, 글 · 소리 없음)
+    clientListen: jsonb("client_listen"),
     recordedAt: tstz("recorded_at").notNull(),
   },
   (t) => [

@@ -51,6 +51,7 @@ import {
   talkHousehold,
   talkReply,
   talkScript,
+  webkitSilentRun,
 } from "./talk";
 
 /**
@@ -311,7 +312,18 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
     await untilChildTurn(page);
     const count = await page.locator("[data-talk-count]").innerText();
     const explanation = "괜찮아, 같이 말해 보자.";
-    await pushFakeAi([talkReply({ tori_en: "That's okay.", explanation })]);
+    // 결함 A(2026-10-29): 처음 묻는 턴에 AI 가 답 문장과 답이 든 뜻 줄을 써도 답 문장이 빠지면 뜻 줄도 보이지 않는다(아래 단언이 잡음)
+    await pushFakeAi([
+      talkReply(
+        first.twoAnswers
+          ? {
+              tori_en: `That's okay. Say, ${first.answerExample}`,
+              tori_ko: `괜찮아! '${first.answerExample}' 라고 말해 봐.`,
+              explanation,
+            }
+          : { tori_en: "That's okay.", explanation },
+      ),
+    ]);
     await page.getByRole("button", { name: T.dontKnow }).click();
     await expect(page.locator("[data-tori-explanation]")).toHaveText(
       explanation,
@@ -2214,5 +2226,158 @@ test.describe("회화 정리 다시 읽기(차례 6 fix 1 — 검토 b3 I-1)", (
     ).toHaveLength(2);
     // 누름이 끝인사의 첫 읽기 중이었다(끊김 — 시간이 어긋나 다 읽은 뒤 눌렀으면 이 단언이 빨강, 고치기 전 코드의 거짓 초록을 막음)
     expect(await interruptedSpeech(page)).toContain(card.farewell.en);
+  });
+});
+
+// ── iPad '결과 없음' 고침(13절 C148 · C149, 브리프 task-talk-speech-fix N1 · N2 · N3) ──
+
+/** iPad WebKit 꼴 말소리 없는 듣기 한 번: 말하기를 눌러 듣기를 열고 다시 눌러 끝낸다(10-22 실측 — 단추 stop 뒤 'No speech detected'). */
+async function webkitSilentListen(page: Page) {
+  const speakButton = page.locator("[data-child-turn] [data-speak]");
+  await speakButton.click();
+  await expect(page.locator("[data-child-turn] [data-listening]")).toHaveCount(
+    1,
+  );
+  await speakButton.click();
+  await expect(page.locator("[data-child-turn] [data-listening]")).toHaveCount(
+    0,
+  );
+}
+
+/** iPad WebKit 꼴 말소리 없는 듣기 talk.nospeech_dontknow_count 번으로 '모름' 한 턴(silentTurn 의 WebKit 짝). */
+async function webkitSilentTurn(page: Page) {
+  const before = await turnRequests();
+  await untilChildTurn(page);
+  for (let i = 0; i < NOSPEECH_DONTKNOW; i++) {
+    await webkitSilentListen(page);
+    if (i < NOSPEECH_DONTKNOW - 1) {
+      await expect(page.getByText(G.notHeard)).toBeVisible();
+      expect(await turnRequests()).toBe(before);
+    }
+  }
+  await expect.poll(turnRequests).toBe(before + 1);
+}
+
+/** 그 세션 아이 행의 듣기 사건 요약(C149). */
+async function childListens(sessionId: string) {
+  return (
+    await e2eDb()
+      .select({
+        turnNo: talkTurnRows.turnNo,
+        clientListen: talkTurnRows.clientListen,
+      })
+      .from(talkTurnRows)
+      .where(
+        and(
+          eq(talkTurnRows.sessionId, sessionId),
+          eq(talkTurnRows.speaker, "child"),
+        ),
+      )
+  )
+    .sort((a, b) => a.turnNo - b.turnNo)
+    .map((r) => r.clientListen);
+}
+
+test.describe("iPad '결과 없음' 고침(C148 · C149)", () => {
+  test.setTimeout(FULL);
+
+  test("C148 AC-15g iPad WebKit 꼴(단추 stop 뒤 aborted 'No speech detected')로 끝난 듣기가 같은 질문에서 talk.nospeech_dontknow_count 번 이어지면 '모름'과 같이 처리되고 아이 행에 말소리 없음 출처와 듣기 요약이 남는다", async ({
+    context,
+  }) => {
+    const { page, card, sessionId } = await openTalk(context, [
+      saidRun("I'm good."),
+      ...Array.from({ length: NOSPEECH_DONTKNOW }, webkitSilentRun),
+    ]);
+    const first = await pastGreeting(page, card);
+    await pushFakeAi([talkReply({ tori_en: "That's okay." })]);
+    await webkitSilentTurn(page);
+    // '모름'과 같이: 토리가 같은 질문을 다시 묻고 위 띠 숫자는 그대로
+    await spokenTail(page, dontKnowTailOf(first));
+    await expect(bubble(page)).toContainText(first.question.en);
+    await expect(count(page)).toHaveText(TALK_TEXT.count(1, targetOf(card)));
+    const rows = (await childRows(sessionId)).slice(1);
+    expect(rows.map((r) => r.inputMode)).toEqual(["dont_know"]);
+    // C149: 출처 nospeech · 듣기 둘 모두 no-speech(단추로 끝남 · 소리 없음) · 글 없음
+    const listen = (await childListens(sessionId)).at(-1) as {
+      src?: string;
+      listens?: { o: string; by?: string; snd: boolean }[];
+    } | null;
+    expect(listen?.src).toBe("nospeech");
+    expect(listen?.listens?.slice(-NOSPEECH_DONTKNOW)).toEqual(
+      Array.from({ length: NOSPEECH_DONTKNOW }, () =>
+        expect.objectContaining({
+          o: "error:no-speech",
+          by: "button",
+          snd: false,
+        }),
+      ),
+    );
+    expect(JSON.stringify(listen)).not.toContain(first.question.en);
+  });
+
+  test("C148 AC-N3 iPad WebKit 꼴의 말소리 없는 듣기로 회화 질문 셋이 '모름'으로 넘어가면 '마이크가 멈춤'이 아니라 '말소리가 잘 안 들려요' 안내와 '말소리가 들어오지 않음' 알림이 나온다", async ({
+    context,
+  }) => {
+    const { page, card, profileId, sessionId } = await openTalk(context, [
+      saidRun("I'm good."),
+      ...Array.from(
+        { length: NOSPEECH_DONTKNOW * DONTKNOW_MAX * SILENT_ITEMS_MAX },
+        webkitSilentRun,
+      ),
+    ]);
+    // 시험 값 확인: 한 질문의 말소리 없는 듣기가 여섯 번(마이크 멈춤 셈의 수)에 닿는다 — 고치기 전에는 첫 질문에서 '마이크가 잘 안 돼요'
+    expect(NOSPEECH_DONTKNOW * DONTKNOW_MAX).toBe(
+      TEST_SETTINGS["speech.max_retries"].value * 2,
+    );
+    await pastGreeting(page, card);
+    await pushFakeAi(
+      Array.from({ length: DONTKNOW_MAX * SILENT_ITEMS_MAX }, () =>
+        talkReply({ tori_en: "That's okay." }),
+      ),
+    );
+    for (let q = 1; q <= SILENT_ITEMS_MAX; q++) {
+      for (let k = 0; k < DONTKNOW_MAX; k++) await webkitSilentTurn(page);
+      if (q < SILENT_ITEMS_MAX)
+        await expect(page.locator("[data-blocked]")).toHaveCount(0);
+    }
+    await expect(page.getByText(G.silent)).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    await expect.poll(() => alertKindsOf(profileId)).toContain("speech_silent");
+    const kinds = await alertKindsOf(profileId);
+    expect(kinds).not.toContain("mic_stalled");
+    expect((await sessionOf(sessionId))?.status).toBe("in_progress");
+  });
+
+  test("7절 말하기 버튼 행(분석 A2 · N3) 듣는 동안 토리 말 다시 듣기 · 답 듣기 ①② · 힌트 문장 듣기 단추가 꺼져 있고 듣기가 끝나면 다시 켜진다", async ({
+    context,
+  }) => {
+    const { page, card } = await openTalk(context, [
+      saidRun("I'm good."),
+      webkitSilentRun(),
+    ]);
+    await pastGreeting(page, card);
+    await untilChildTurn(page);
+    // 힌트 두 번: 한국어 뜻 → 영어 문장과 듣기 단추
+    await page.getByRole("button", { name: T.hint, exact: true }).click();
+    await page.getByRole("button", { name: T.hint, exact: true }).click();
+    const readers = [
+      bubble(page),
+      page.locator('[data-answer-listen="1"]'),
+      page.locator('[data-answer-listen="2"]'),
+      page.locator("[data-hint-listen]"),
+    ];
+    for (const reader of readers) await expect(reader).toBeEnabled();
+    const speakButton = page.locator("[data-child-turn] [data-speak]");
+    await speakButton.click();
+    await expect(
+      page.locator("[data-child-turn] [data-listening]"),
+    ).toHaveCount(1);
+    for (const reader of readers) await expect(reader).toBeDisabled();
+    await speakButton.click();
+    await expect(
+      page.locator("[data-child-turn] [data-listening]"),
+    ).toHaveCount(0);
+    for (const reader of readers) await expect(reader).toBeEnabled();
   });
 });

@@ -45,6 +45,7 @@ import { MicNotice } from "@/components/session/speaking";
 import { TeacherChoice } from "@/components/teacher/teacher-choice";
 import { useTeacherLayer } from "@/components/teacher/teacher-layer";
 import { TeacherWindow } from "@/components/teacher/teacher-window";
+import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   type SpeechEvent,
   type SpeechVerdict,
@@ -62,6 +63,7 @@ import {
   readDeviceVerdict,
 } from "@/lib/mic-state";
 import { createBrowserSpeech } from "@/lib/speech/browser";
+import { createListenLog } from "@/lib/speech/listen-log";
 import { teacherSpeech } from "@/lib/speech/teacher";
 import type { SpeechPort } from "@/lib/speech/types";
 import { sendTalkTurnRetrying, type TalkTurnBody } from "@/lib/talk-stream";
@@ -347,8 +349,13 @@ function TalkFrameBody({ view }: { view: TalkView }) {
   // 장마다 그 선생님 높이를 넘긴다. 선생님은 틀의 key 라 바뀌면 틀이 새로 그려진다
   const speechSettings = useRef(view.settings.speech);
   const teacherVoice = useRef(view.teacher?.voice);
+  /** 듣기 사건 기록(C149 — 아이 행 · 따라 말하기 시도에 요약을 남김, 글 · 소리 없음). 음성 접점과 같이 세션 동안 하나. */
+  const [listenLog] = useState(createListenLog);
   useEffect(() => {
-    const created = createBrowserSpeech({ settings: speechSettings.current });
+    const created = createBrowserSpeech({
+      settings: speechSettings.current,
+      onTrace: listenLog.record,
+    });
     const voice = teacherVoice.current;
     setSpeech(
       voice
@@ -360,7 +367,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
         : created,
     );
     return () => created.dispose();
-  }, []);
+  }, [listenLog]);
 
   /** 칭찬을 talk.teacher_praise_seconds 동안 켠다(끝나면 다시 그린다). 5~7단계 미션 체크(P13c)도 이것을 부른다. */
   const praiseSeconds = view.teacherSettings.praiseSeconds;
@@ -688,6 +695,19 @@ function TalkFrameBody({ view }: { view: TalkView }) {
     setBlocked("silent");
   }
 
+  /**
+   * 앞 기록(아이 행 · 따라 말하기 시도) 뒤 끝난 듣기의 요약(C149 · 분석 보고 4.1): 기기 판정 이름 · 3D 그림인가 · 듣기마다 · 세션 실패 셈.
+   * 글 · 소리는 들지 않는다. 부를 때마다 그 뒤 듣기부터 다시 모은다.
+   */
+  function takeClientListen(): ClientListen {
+    return {
+      br: readDeviceVerdict().name,
+      r3d: layerRef.current?.render === "3d",
+      listens: listenLog.take(),
+      mf: counters.current.micFailures,
+    };
+  }
+
   function onChildSend(send: ChildSend) {
     sentDontKnow.current = send.input.mode === "dont_know";
     silent.current = silentCountStep(silent.current, {
@@ -709,6 +729,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
       ...(perceived.current === undefined
         ? {}
         : { prevPerceivedWaitMs: perceived.current }),
+      clientListen: takeClientListen(),
     };
     perceived.current = undefined;
     listenEndedAt.current = send.listenEndedAt;
@@ -817,6 +838,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
     },
     onListening: setListening,
     onPraise: praise,
+    clientListen: takeClientListen,
   };
   const followSteps = useMemo(
     () =>
@@ -848,6 +870,9 @@ function TalkFrameBody({ view }: { view: TalkView }) {
   // 쉼 화면에서는 받지 않음, 검토 4 M-1), 상태 · 움직임 줄이기를 넘기고, 마무리 세 장에 들어가면 닫는다(4절 '회화 마무리 — 초상만',
   // 메모리를 일찍 풂)
   const layer = useTeacherLayer();
+  /** 그림 층(듣기 사건 요약의 3D 여부 — 보낼 때 읽는다). */
+  const layerRef = useRef(layer);
+  layerRef.current = layer;
   useEffect(() => {
     if (micChecked && windowShown) layer?.want();
   }, [layer, micChecked, windowShown]);
@@ -1016,6 +1041,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
                 waitSeconds={view.settings.ui.waitHintSeconds}
                 {...(lowLevel && picture ? { picture } : {})}
                 {...(next.explanation ? { explanation: next.explanation } : {})}
+                listening={listening}
                 onReplay={() => {
                   speech?.unlockFromGesture();
                   queue.replay(spokenOf(bubble));

@@ -255,6 +255,17 @@ describe("회화 턴 규격", () => {
     );
   });
 
+  it("회화 턴 규격: 1~3단계 고정부는 '모름' · 막힘 턴에 짧은 격려만 쓰고 답을 말하지 않으며 recast 를 비우라고 하고 4단계부터는 이 줄이 없다(결함 B)", () => {
+    const line =
+      "Levels 1-3: when Input is dont_know or stuck is true, write only a short encouragement in tori_en and tori_ko. Do not say the answer; the app plays it. Leave recast empty.";
+    expect(talkTurnSpec.system(inputOf(1), rulesOf(inputOf(1)))).toContain(
+      line,
+    );
+    expect(talkTurnSpec.system(inputOf(4), rulesOf(inputOf(4)))).not.toContain(
+      line,
+    );
+  });
+
   it("회화 턴 규격: 설정 키가 없으면 CallSettingError 로 던진다", () => {
     const input = inputOf(5);
     const broken = { ...values };

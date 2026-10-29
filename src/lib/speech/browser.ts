@@ -65,7 +65,7 @@ const INPUT_ORDER: Record<ListenInput["type"], number> = {
 
 type BrowserSpeechOptions = {
   settings: SpeechSettings;
-  /** 관찰 페이지만 넘긴다. */
+  /** 관찰 페이지(기록 전부)와 회화 틀(듣기 사건 요약 — listen-log, C149)이 넘긴다. */
   onTrace?: (entry: SpeechTraceEntry) => void;
   /** 관찰 페이지만 넘긴다('이벤트 무시' · '같은 객체 되풀이' 흉내). */
   recognitionCtor?: RecognitionCtor;
@@ -269,7 +269,8 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
           recognizer: id,
           event: { type: "error", error: event.error, message: event.message },
         });
-        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10)
+        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10), iPad WebKit 말소리 없음의
+        // aborted('No speech detected')는 no-speech 로(C148 — 모은 글이 없으면 말소리 없음 오류)
         push({
           type: "error",
           now: at,

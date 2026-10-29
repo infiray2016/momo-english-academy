@@ -3,6 +3,7 @@
 // 채점하지 않음 — R2). P11a src/core/session/attempt.ts 는 고치지 않는다(회화 시도는 회화 서버만 읽고 쓴다, 정할 것 회3). 순수 모듈이다.
 import { z } from "zod";
 import { TEACHER_KEY } from "@/core/seed/structure";
+import { ClientListenSchema } from "./client-listen";
 
 /** 시도 꼴 판(P11a INPUT_VERSION 과 같은 1). */
 const TALK_INPUT_VERSION = 1;
@@ -28,6 +29,8 @@ const spoken = {
   heard: z.array(z.string()),
   failures: z.int().min(0),
   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
+  /** 그 차례의 듣기 사건 요약(C149 — 글 · 소리 없음). 이 칸 전 옛 시도에는 없다. */
+  clientListen: ClientListenSchema.optional(),
 };
 
 /** 끝맺음 기록의 닫힌 까닭(대화 안전 상한 셈 · 기록 — b closing.ts, 컨트롤러 결정 2026-10-22 fix 1). */

@@ -3,6 +3,7 @@
 // 끊기면 'offline'(화면이 '인터넷이 끊겼어요 …'와 online 때 같은 시도 id 로 다시 — 서버가 저장한 결과를 다시 흘리거나 AI 만 다시).
 // stale 은 '자리가 어긋남 · 같은 시도 id 가 아직 진행 중일 수 있음'(M-1)이라 화면은 STALE_RETRY_MS 기다린 뒤 자료를 다시 읽는다.
 // 아이 글을 로그에 내지 않는다.
+import type { ClientListen } from "@/core/conversation/client-listen";
 import type { AddLine, TalkLine, TurnNext } from "@/server/conversation";
 
 export const TALK_TURN_PATH = "/api/talk/turn";
@@ -25,6 +26,8 @@ export type TalkTurnBody = {
   listenEndSeconds?: number;
   confirmSkipped?: boolean;
   prevPerceivedWaitMs?: number;
+  /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음). */
+  clientListen?: ClientListen;
 };
 
 export type TalkStreamHandlers = {

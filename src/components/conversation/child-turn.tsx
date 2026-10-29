@@ -5,7 +5,8 @@
 // 중에 누르면 읽기를 멈추고 듣는다. '힌트'는 누를 때마다 한 단 — 1~3단계 영어 단은 서버가 미리 내려 주지 않아 연 단만 revealTalkHint 로
 // 받는다(영어 문장 단에 작은 듣기 단추 · 단계 구간 빠르기). 같은 질문 둘째 '모름'부터 마지막 단까지 열린 채. 첫 회화 수업에서 '막히면 눌러요' 한 번.
 // 인식 확인은 a confirmPlanOf — 바로 보냄 · talk.confirm_seconds 동안 아이 말풍선 + '다시 말하기' · '보내기'(아무것도 안 누르면 보냄).
-// '모름'은 단추 · 같은 질문에서 말소리 없는 듣기 talk.nospeech_dontknow_count 번. 녹음하지 않는다(브라우저 인식만).
+// '모름'은 단추 · 같은 질문에서 no-speech 로 끝난 듣기 talk.nospeech_dontknow_count 번(7절 말하기 버튼 행(분석 A2 · N3)). 듣는 동안 힌트 문장 듣기는 끈다. 녹음하지
+// 않는다(브라우저 인식만).
 import { Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
@@ -25,7 +26,11 @@ import {
 } from "@/core/conversation/listen";
 import type { SpeechEvent, SpeechVerdict } from "@/core/speaking/judge";
 import { speechEventOf } from "@/core/speaking/judge";
-import type { SpeechSettings } from "@/core/speech/listen";
+import {
+  type ListenOutcome,
+  NO_SPEECH_CODE,
+  type SpeechSettings,
+} from "@/core/speech/listen";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
@@ -46,8 +51,26 @@ export const CHILD_TURN_TEXT = {
 
 /** 초 → ms(단위 바꿈 상수). */
 const MS_PER_SECOND = 1000;
-/** 말소리 없음 오류 코드(Web Speech). */
-const NO_SPEECH = "no-speech";
+
+/**
+ * 같은 질문 말소리 없음 셈에 드는 듣기인가(순수): no-speech 로 끝난 듣기만(3.3 막힘 문단 · 7절 오류 행). iPad WebKit 의 'aborted · No speech
+ * detected' 는 듣기 층이 no-speech 로 읽으므로 여기 든다(C148). 결과 없음은 들지 않는다.
+ */
+export function silentListenOf(event: SpeechEvent): boolean {
+  return event.type === "error" && event.code === NO_SPEECH_CODE;
+}
+
+/**
+ * 아이가 말을 멈춘 때(순수, 체감 대기의 시작 — C23 · NFR-8): 들은 결과면 듣기 끝 − 끝 조용함(그 대기는 체감 대기에 든다), 결과 없음 · 오류 ·
+ * 멈춤이면 듣기 끝 그대로(말이 없었으므로 끝 조용함을 빼지 않는다).
+ */
+export function speechStoppedAt(
+  outcome: ListenOutcome,
+  doneAt: number,
+  endSilenceMs: number | undefined,
+): number {
+  return outcome.kind === "result" ? doneAt - (endSilenceMs ?? 0) : doneAt;
+}
 
 export type ChildSend = {
   input: { mode: "speech" | "dont_know"; text?: string; nospeech?: boolean };
@@ -205,8 +228,12 @@ export function ChildTurn(props: ChildTurnProps) {
     const current = speech.listen(rule);
     handle.current = current;
     const outcome = await current.outcome;
-    // 말을 멈춘 때 = 듣기가 끝난 때 − 끝 조용함(C23 — 체감 대기는 듣기 끝 대기 · 확인 시간을 포함해 잰다)
-    endedAt.current = performance.now() - (rule.endSilenceMs ?? 0);
+    // 말을 멈춘 때 = 들은 결과면 듣기가 끝난 때 − 끝 조용함(C23 — 체감 대기는 듣기 끝 대기 · 확인 시간을 포함해 잰다), 결과 없음 · 오류면 듣기 끝
+    endedAt.current = speechStoppedAt(
+      outcome,
+      performance.now(),
+      rule.endSilenceMs,
+    );
     handle.current = undefined;
     setListening(false);
     props.onListening(false);
@@ -253,11 +280,8 @@ export function ChildTurn(props: ChildTurnProps) {
       verdict === "speech-silent"
     )
       return;
-    // 말소리 없음이 이어지면 '모름'과 같이(C44 — 같은 질문 talk.nospeech_dontknow_count 번)
-    const silent =
-      event.type === "no-result" ||
-      (event.type === "error" && event.code === NO_SPEECH);
-    if (silent) {
+    // no-speech 로 끝난 듣기가 이어지면 '모름'과 같이(C44 — 같은 질문 talk.nospeech_dontknow_count 번, 결과 없음은 세지 않음 C148)
+    if (silentListenOf(event)) {
       nospeech.current += 1;
       if (nospeech.current >= settings.nospeechDontknowCount) {
         send({ input: { mode: "dont_know", nospeech: true } });
@@ -341,6 +365,8 @@ export function ChildTurn(props: ChildTurnProps) {
                       type="button"
                       data-hint-listen=""
                       aria-label={CHILD_TURN_TEXT.listenHint}
+                      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행(분석 A2 · N3))
+                      disabled={listening}
                       onClick={() => {
                         speech?.unlockFromGesture();
                         void speech?.speak(fillName(text, props.englishName), {

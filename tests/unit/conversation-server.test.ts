@@ -9,6 +9,7 @@ import {
   parseTalkAttemptInput,
   TALK_CLOSING_REASONS,
 } from "@/core/conversation/attempt";
+import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   MORE_PROMPT,
   praiseLineOf,
@@ -136,6 +137,7 @@ function row(over: Partial<TalkTurnRow>): TalkTurnRow {
     perceivedWaitMs: null,
     listenEndSeconds: null,
     confirmSkipped: null,
+    clientListen: null,
     recordedAt: new Date("2026-10-22T10:00:00Z"),
     ...over,
   };
@@ -707,6 +709,55 @@ describe("아이 행 · 끝맺음 상태 · 앞 턴 짝", () => {
     });
   });
 
+  it("C149 아이 행에 듣기 사건 요약(client_listen)을 두고 '모름'의 출처는 화면의 nospeech 표시로 정하며 글은 들지 않는다", () => {
+    const card = lessonAt(1).card;
+    const spec = specOf(1);
+    const position = talkPositionOf({
+      spec,
+      card,
+      metBefore: [],
+      turns: [tori()],
+      segment: "greeting",
+      settings: FLOW,
+    });
+    const clientListen: ClientListen = {
+      br: "iPad Safari 27.0",
+      r3d: true,
+      listens: [
+        { o: "error:no-speech", by: "button", d: 2010, snd: false, tc: "cut" },
+        { o: "error:no-speech", by: "button", d: 1800, snd: false, tc: 900 },
+      ],
+      mf: 0,
+    };
+    const base = {
+      sessionId: "00000000-0000-4000-8000-000000000000",
+      clientAttemptId: "c",
+      hint: { opened: 0, heard: [] },
+    };
+    const silent = childRowOf(
+      { ...base, input: { mode: "dont_know", nospeech: true }, clientListen },
+      { state: { spec, card, position }, masker: identity },
+    );
+    expect(silent.clientListen).toEqual({ ...clientListen, src: "nospeech" });
+    const pressed = childRowOf(
+      { ...base, input: { mode: "dont_know" } },
+      { state: { spec, card, position }, masker: identity },
+    );
+    expect(pressed.clientListen).toEqual({ src: "button" });
+    const said = childRowOf(
+      { ...base, input: { mode: "speech", text: "I'm good." }, clientListen },
+      { state: { spec, card, position }, masker: identity },
+    );
+    expect(said.clientListen).toEqual(clientListen);
+    expect(JSON.stringify(said.clientListen)).not.toContain("good");
+    expect(
+      childRowOf(
+        { ...base, input: { mode: "speech", text: "I'm good." } },
+        { state: { spec, card, position }, masker: identity },
+      ).clientListen,
+    ).toBeNull();
+  });
+
   it("회화 서버: 끝맺음 상태는 옴 · 실패 하나 · 두 번 실패면 못 함이고 하루 안전 상한은 셈에 넣지 않는다", () => {
     const value = {
       farewell: "Bye!",
@@ -815,6 +866,29 @@ describe("fix 1 — 1~3단계 붙일 말 · 끝맺음 기록 꼴", () => {
       if (line.t === "add" && line.kind === "two_answers")
         expect(line).not.toHaveProperty("en");
     }
+  });
+
+  it("회화 서버: '모름' 턴(input dont_know)은 AI 가 recast 를 채워도 비우고 말한 턴은 그대로 둔다(결함 D)", () => {
+    const card = lessonAt(1).card;
+    const first = card.turns?.[0];
+    if (!first) throw new Error("견본 꼴");
+    const value = output({ tori_en: "That's okay!", recast: "I am fine." });
+    const dontKnow = toriPlanOf(
+      success(value, ["That's okay!"]),
+      lowCtx(card, [tori(), kid("greeting"), tori()], {
+        inputMode: "dont_know",
+        text: null,
+        targetWords: [...first.targets],
+      }),
+    );
+    if (dontKnow.kind !== "row") throw new Error("토리 행이어야 한다");
+    expect(dontKnow.recast).toBeNull();
+    const spoke = toriPlanOf(
+      success(value, ["That's okay!"]),
+      lowCtx(card, [tori(), kid("greeting"), tori()]),
+    );
+    if (spoke.kind !== "row") throw new Error("토리 행이어야 한다");
+    expect(spoke.recast).toBe("I am fine.");
   });
 
   it("회화 서버: 끝맺음 기록 입력은 a 시도 꼴의 talk-closing 갈래(닫힌 까닭)로 읽고 모르는 까닭은 받지 않는다", () => {

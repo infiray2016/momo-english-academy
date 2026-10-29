@@ -372,6 +372,7 @@ function lowBandRules(): string[] {
   return [
     "Levels 1-3: tori_en has only a reaction (recast, short agreement, praise, a short explanation if needed) and may end with a short linking line to the next topic (e.g. 'Nice! Now let's talk about colors.'). Do not write questions or answer examples in tori_en. The app adds the next card question.",
     "Levels 1-3: write a Korean explanation from the first don't-know.",
+    "Levels 1-3: when Input is dont_know or stuck is true, write only a short encouragement in tori_en and tori_ko. Do not say the answer; the app plays it. Leave recast empty.",
     "Levels 1-3: only when 'AI question slot: yes', write the next question inside the card topic in next_question_en and next_question_ko, the next hints (next_hint_ko and English hints in next_hints; level 3 adds an English frame first), next_targets and next_answer_example. Otherwise leave them empty.",
   ];
 }

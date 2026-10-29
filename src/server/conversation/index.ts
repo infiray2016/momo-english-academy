@@ -14,6 +14,7 @@ import {
   type TalkAttemptInput,
   talkStartAttemptId,
 } from "@/core/conversation/attempt";
+import { ClientListenSchema } from "@/core/conversation/client-listen";
 import {
   type AppendLine,
   appendAfter,
@@ -674,6 +675,8 @@ const FollowSchema = z.strictObject({
   heard: z.array(z.string().max(TALK_TEXT_MAX)).max(HEARD_MAX),
   failures: z.int().min(0).max(FAILURES_MAX),
   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
+  /** 그 차례의 듣기 사건 요약(C149 — 글 · 소리 없음). */
+  clientListen: ClientListenSchema.optional(),
 });
 
 export type FollowOutcome =
@@ -765,6 +768,7 @@ export async function saveFollowAlong(
         heard: input.heard,
         failures: input.failures,
         ...(input.skipped ? { skipped: input.skipped } : {}),
+        ...(input.clientListen ? { clientListen: input.clientListen } : {}),
       };
       const head = { v: 1 as const, step: "final" as const };
       const attemptInput: TalkAttemptInput =

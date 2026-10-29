@@ -149,6 +149,13 @@ export const START_FAILED_CODE = "start-failed";
 export const DICTATION_DISABLED_CODE = "dictation-disabled";
 /** 그 aborted 를 가르는 메시지(실측 1 — "Siri and Dictation are disabled"). */
 const DICTATION_MESSAGE = /dictation/i;
+/** 말소리 없음 오류 코드(Web Speech). */
+export const NO_SPEECH_CODE = "no-speech";
+/**
+ * iPad WebKit(사파리 · 크롬)이 말소리 없는 듣기를 앱이 stop 한 뒤 끝내는 aborted 의 메시지(10-22 실측 — "No speech detected").
+ * 스스로 no-speech 를 내지 않으므로 이 aborted 를 no-speech 로 읽는다(C148).
+ */
+const NO_SPEECH_MESSAGE = /no speech detected/i;
 
 const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
   "not-allowed",
@@ -159,7 +166,9 @@ const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
 
 /**
  * 인식 오류 사건(error · message)의 코드. aborted 인데 메시지가 받아쓰기를 말하면(iPad Siri · 받아쓰기 꺼짐) DICTATION_DISABLED_CODE —
- * '마이크를 쓸 수 없음' 갈래로 간다. 나머지는 코드 그대로(우리 쪽 멈춤의 aborted 는 메시지가 없다).
+ * '마이크를 쓸 수 없음' 갈래로 간다. 메시지가 'No speech detected' 면(iPad WebKit 의 말소리 없음, C148) no-speech — 모은 글이 없으면
+ * 말소리 없음 오류로 끝나고(여섯 번 셈에 들지 않음, C22), 끊어 듣기(chunk) 중이면 이어 듣는다. 나머지는 코드 그대로(우리 쪽 멈춤의
+ * aborted 는 메시지가 없다).
  */
 export function recognitionErrorCodeOf(
   error: string,
@@ -167,6 +176,8 @@ export function recognitionErrorCodeOf(
 ): string {
   if (error === "aborted" && message && DICTATION_MESSAGE.test(message))
     return DICTATION_DISABLED_CODE;
+  if (error === "aborted" && message && NO_SPEECH_MESSAGE.test(message))
+    return NO_SPEECH_CODE;
   return error;
 }
 
@@ -448,11 +459,19 @@ function onRecognizerInput(
   // 오류
   const { code } = input;
   if (s.phase === "stopping") {
-    return code === "no-speech" || code === "aborted"
+    // 끝내려고 stop 한 뒤 말소리 없음이 오고 모은 글이 없으면 말소리 없음 오류(iPad WebKit 'No speech detected', C148).
+    // 끊어 듣기(chunk) 중이면 그대로 이어 듣고, 우리 쪽 멈춤의 aborted 는 모은 글로 끝낸다(없으면 결과 없음).
+    if (
+      code === NO_SPEECH_CODE &&
+      s.stopReason !== "chunk" &&
+      joinedText(s) === ""
+    )
+      return finish(signalled, errorOutcome(s, code));
+    return code === NO_SPEECH_CODE || code === "aborted"
       ? afterStop(signalled, now)
       : finish(signalled, errorOutcome(s, code));
   }
-  if (code === "no-speech" && joinedText(s) !== "") {
+  if (code === NO_SPEECH_CODE && joinedText(s) !== "") {
     // 두 문장 이상 답은 옛 객체를 abort 한 뒤 새 객체(감시 다시 시작 길과 같게, 검토 M-2 · 위험 20).
     // 옛 객체의 뒤늦은 일은 번호로 버린다.
     return s.rule.endSilenceMs !== undefined

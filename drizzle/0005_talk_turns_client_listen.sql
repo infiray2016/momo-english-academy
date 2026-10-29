@@ -1,0 +1,1 @@
+ALTER TABLE "talk_turns" ADD COLUMN "client_listen" jsonb;

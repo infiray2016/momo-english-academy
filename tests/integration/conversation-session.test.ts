@@ -312,6 +312,101 @@ describe("회화 세션: 시작 · 상태 전이", () => {
     ).toEqual({ ok: false, reason: "invalid" });
   });
 
+  it("C149 아이 행에는 듣기 사건 요약과 '모름'의 출처가 저장되고 따라 말하기 시도에도 듣기 요약이 들며 글은 들지 않는다", async () => {
+    const sessionId = await startTalk(h, 1);
+    const view = await viewOf(h, sessionId);
+    const said = "I'm good.";
+    const clientListen = {
+      br: "iPad Safari 27.0",
+      r3d: true,
+      listens: [
+        {
+          o: "error:no-speech",
+          by: "button" as const,
+          d: 2010,
+          snd: false,
+          tc: "cut" as const,
+        },
+        {
+          o: "error:no-speech",
+          by: "button" as const,
+          d: 1800,
+          snd: false,
+          tc: 900,
+        },
+      ],
+      mf: 0,
+    };
+    // 인사: 말소리 없음 '모름' → 단추 '모름' → 말함(요약 없음)
+    h.fake.push(turnRule({ tori_en: "That's okay!" }));
+    await say(h, sessionId, {
+      mode: "dont_know",
+      nospeech: true,
+      clientListen,
+    });
+    h.fake.push(turnRule({ tori_en: "That's okay!" }));
+    await say(h, sessionId, {
+      mode: "dont_know",
+      clientListen: { ...clientListen, listens: [] },
+    });
+    h.fake.push(turnRule({ tori_en: "Great!" }));
+    await say(h, sessionId, { text: said });
+    const children = (await turnsOf(db, sessionId)).filter(
+      (r) => r.speaker === "child",
+    );
+    expect(children.map((r) => r.clientListen)).toEqual([
+      { ...clientListen, src: "nospeech" },
+      { ...clientListen, listens: [], src: "button" },
+      null,
+    ]);
+    // 따라 말하기 시도(오늘 쓸 말 첫 낱말 건너뜀)에도 듣기 요약
+    const moved = await advanceTalk({ sessionId, to: "today_words" }, h.deps());
+    expect(moved.ok).toBe(true);
+    const word = view.follow.todayWords[0]?.word ?? "";
+    expect(
+      await saveFollowAlong(
+        {
+          sessionId,
+          clientAttemptId: "follow-listen-1",
+          segment: "today_words",
+          index: 0,
+          target: word,
+          heard: [],
+          failures: 3,
+          skipped: "recognition",
+          clientListen,
+        },
+        h.deps(),
+      ),
+    ).toEqual({ ok: true, saved: true });
+    const [saved] = await db
+      .select()
+      .from(attempts)
+      .where(eq(attempts.clientAttemptId, "follow-listen-1"));
+    expect(saved?.input).toMatchObject({ kind: "talk-today", clientListen });
+    // 글 · 인식 글이 든 요약은 받지 않는다
+    expect(
+      await saveFollowAlong(
+        {
+          sessionId,
+          clientAttemptId: "follow-listen-2",
+          segment: "today_words",
+          index: 1,
+          target: word,
+          heard: [],
+          failures: 0,
+          clientListen: {
+            ...clientListen,
+            listens: [{ ...clientListen.listens[0], text: word }],
+          },
+        },
+        h.deps(),
+      ),
+    ).toEqual({ ok: false, reason: "invalid" });
+    const stored = JSON.stringify(children.map((r) => r.clientListen));
+    expect(stored).not.toContain(said);
+  });
+
   it("회화 세션: 두 기기가 같은 턴을 보내면 하나만 받고 늦은 쪽은 다시 읽으라는 답을 받는다", async () => {
     const sessionId = await startTalk(h, 1);
     await intoTalk(h, sessionId);
@@ -1114,6 +1209,36 @@ describe("한 턴에 같은 말 두 번 안 읽기(C125 (3))", () => {
     console.info(
       `회화 '모름' 턴 문장 수: 토리 말에 답 예시 있음 ${withCount} · 없음 ${plainCount}`,
     );
+  });
+
+  it("회화 세션: 1단계 인사 '모름' 턴에 겹침 없애기가 토리 문장을 빼면 그 턴의 뜻 줄을 흘리지도 저장하지도 않고 recast 도 비운다(결함 A · D)", async () => {
+    const sessionId = await startTalk(h, 1);
+    await viewOf(h, sessionId);
+    const card = cardOf(await talkLessonRow(db, 1));
+    const greet =
+      "questions" in card.greeting ? card.greeting.questions[0] : undefined;
+    if (!greet?.twoAnswers) throw new Error("견본 꼴 — 1단계 인사 답 두 개");
+    const answer = greet.twoAnswers[0];
+    const ko = `괜찮아! '${answer}' 라고 말해 봐.`;
+    h.fake.push(
+      turnRule({
+        tori_en: `That's okay! Say, ${answer}`,
+        tori_ko: ko,
+        recast: answer,
+      }),
+    );
+    const { lines, last } = await say(h, sessionId, { mode: "dont_know" });
+    expect(last?.t).toBe("end");
+    // 답 문장은 빠지고 그 뜻 줄도 흘리지 않는다
+    expect(lines.some((l) => l.t === "s" && l.en.includes(answer))).toBe(false);
+    expect(lines.some((l) => l.t === "ko")).toBe(false);
+    const saved = (await turnsOf(db, sessionId)).at(-1);
+    expect(saved?.speaker).toBe("tori");
+    expect(saved?.toriKo).toBeNull();
+    expect(saved?.recast).toBeNull();
+    // 이어 열기도 저장값을 따른다
+    const view = await viewOf(h, sessionId);
+    expect(view.lastTori?.ko).toBeUndefined();
   });
 });
 

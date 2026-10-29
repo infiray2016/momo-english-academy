@@ -207,6 +207,19 @@ describe("차례 5 fix 2 — 그림 깨짐 · 말풍선 폭 · 뜻 자리", () =
     expect(none).not.toContain("data-turn-picture");
   });
 
+  it("AC-16b 말풍선 아래 설명 줄도 {NAME} 을 영어 이름으로 채워 보인다(결함 E)", () => {
+    const html = renderToStaticMarkup(
+      createElement(ToriBubble, {
+        ...base,
+        content: { sentences: ["Nice!"], adds: [], done: true },
+        waiting: null,
+        explanation: "{NAME}, 'fine' 은 좋다는 뜻이야.",
+      }),
+    );
+    expect(html).toMatch(/data-tori-explanation=""[^>]*>Momo, /);
+    expect(html).not.toContain("{NAME}");
+  });
+
   it("회화 화면: 말풍선은 글 길이만큼이고 상한 폭이 있으며 뜻 줄과 답 두 개 단추는 한 묶음 자리에 있다(화면 검토 M-2 · M-3)", () => {
     const html = renderToStaticMarkup(
       createElement(ToriBubble, {

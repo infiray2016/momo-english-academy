@@ -21,6 +21,11 @@ import {
 import { talkSafetyOf } from "@/core/ai/cost-alert";
 import type { Masker } from "@/core/ai/mask";
 import {
+  type ClientListenRow,
+  ClientListenSchema,
+  clientListenRowOf,
+} from "@/core/conversation/client-listen";
+import {
   type AiQuestionLite,
   type AppendLine,
   appendAfter,
@@ -30,6 +35,7 @@ import {
   shownTurnOf,
   type TalkPosition,
   type TalkTurnLite,
+  toriKoShownOf,
   turnSegmentOf,
 } from "@/core/conversation/flow";
 import {
@@ -148,6 +154,8 @@ const TurnRequestSchema = z.strictObject({
   listenEndSeconds: z.number().min(0).max(LISTEN_END_MAX_SECONDS).optional(),
   confirmSkipped: z.boolean().optional(),
   prevPerceivedWaitMs: z.int().min(0).max(PERCEIVED_WAIT_MAX_MS).optional(),
+  /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음, 5절 talk_turns client_listen). */
+  clientListen: ClientListenSchema.optional(),
 });
 export type TurnRequest = z.infer<typeof TurnRequestSchema>;
 
@@ -214,6 +222,7 @@ export function childRowOf(
   askKind: "first" | "re_ask";
   withinTarget: boolean;
   wordCount: number;
+  clientListen: ClientListenRow | null;
 } {
   const { state } = ctx;
   const position = state.position;
@@ -241,6 +250,8 @@ export function childRowOf(
     askKind: pending.askKind,
     withinTarget: position.segment !== "more_talk" && !position.targetReached,
     wordCount: text === null ? 0 : wordsIn(text).length,
+    // 듣기 사건 요약 + '모름'의 출처(화면의 nospeech 표시 — C149)
+    clientListen: clientListenRowOf(request.input, request.clientListen),
   };
 }
 
@@ -395,7 +406,9 @@ export function toriPlanOf(
               usable: [...v.next_usable_phrases],
             }
           : undefined,
-      recast: v.recast === "" ? null : v.recast,
+      // '모름' 턴은 아이가 말한 영어가 없어 되돌려 줄 말(recast)이 없다 — AI 가 채워도 비운다(정리 토막이 한 적 없는 말을 되짚지 않게)
+      recast:
+        child.inputMode === "dont_know" || v.recast === "" ? null : v.recast,
       explanation: v.explanation === "" ? null : v.explanation,
       newWords: [...v.new_words],
       missionChecks: v.mission_done.length > 0 ? [...v.mission_done] : null,
@@ -1083,7 +1096,17 @@ export async function runTalkTurnRequest(
       return true;
     };
     for (const en of [...held, ...plan.speak]) if (keep(en)) send(en);
-    if (plan.ko !== null) write({ t: "ko", ko: plan.ko });
+    // 1~3단계에서 토리 문장이 빠진 턴은 뜻 줄을 흘리지도 저장하지도 않는다(답이 화면 글로 보이지 않게, 3.3 · T2)
+    const koShown = (ko: string | null) =>
+      toriKoShownOf({
+        ko,
+        sent: plan.sentSentences,
+        shown: shown.sentences,
+        lowBand: state.spec.cardShape === "turns",
+      });
+    const ko = koShown(plan.ko);
+    const toriKo = koShown(plan.toriKo);
+    if (ko !== null) write({ t: "ko", ko });
     for (const line of addLinesOf(shown.append)) write(line);
 
     const appended = plan.append.map(appendEnOf);
@@ -1111,7 +1134,7 @@ export async function runTalkTurnRequest(
           }),
           cardQuestionNo: plan.cardQuestionNo,
           aiQuestion: plan.aiQuestion,
-          toriKo: plan.toriKo,
+          toriKo,
           recast: plan.recast,
           explanation: plan.explanation,
           newWords: plan.newWords,

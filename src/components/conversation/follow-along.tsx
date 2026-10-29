@@ -29,6 +29,7 @@ import {
 import { SpeakButton } from "@/components/answer/speak-button";
 import { BigButton, StatusLine } from "@/components/board/board";
 import { fillName } from "@/core/ai/mask";
+import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   type TalkSpeechSettings,
   talkEndRuleFor,
@@ -243,6 +244,8 @@ export type FollowEnv = {
   onListening: (listening: boolean) => void;
   /** 따라 말하기 결과 말이 '잘 말했어요'(C39) — 틀이 선생님 칭찬을 talk.teacher_praise_seconds 동안 켠다. */
   onPraise: () => void;
+  /** 앞 기록 뒤 끝난 듣기의 요약(C149 — 시도에 싣는다, 글 · 소리 없음). 부를 때마다 그 뒤 듣기부터 다시 모은다. */
+  clientListen: () => ClientListen;
 };
 
 /**
@@ -347,7 +350,7 @@ function followAttemptId(
 }
 
 function saveFollow(
-  env: Pick<FollowEnv, "sessionId">,
+  env: Pick<FollowEnv, "sessionId" | "clientListen">,
   at: {
     segment: "today_words" | "practice" | "wrap_up";
     round: number;
@@ -372,6 +375,7 @@ function saveFollow(
     heard: tried.heard,
     failures: tried.failures,
     ...(skipped ? { skipped } : {}),
+    clientListen: env.clientListen(),
   }).catch(() => {});
 }
 

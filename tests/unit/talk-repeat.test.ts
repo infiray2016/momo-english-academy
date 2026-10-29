@@ -8,6 +8,7 @@ import {
   normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
+  toriKoShownOf,
 } from "@/core/conversation/flow";
 import { splitSentences } from "@/core/seed/text";
 
@@ -141,6 +142,86 @@ describe("한 턴에 같은 말 두 번 안 읽기(C125 (3))", () => {
       shownTurnOf(["yes!", "Great."], [question, yesNo]).sentences,
     ).toEqual(["Great."]);
     expect(sayingAnswer("YES", [yesNo.answers])).toBe(true);
+  });
+
+  it("같은 말: 줄임꼴(I'm · it's · that's · don't · you're · let's)은 펼친 꼴과 같은 말이다(C127 보완 2026-10-29, 결함 C)", () => {
+    const pairs: [string, string][] = [
+      ["I'm fine.", "i am fine"],
+      ["It's red!", "It is red."],
+      ["That's okay.", "that is okay"],
+      ["I don't know.", "I do not know."],
+      ["You're great!", "you are great"],
+      ["Let's go!", "let us go"],
+    ];
+    for (const [short, long] of pairs)
+      expect(normalizeSpoken(short)).toBe(normalizeSpoken(long));
+    // 굽은 따옴표 줄임꼴도 같다
+    expect(normalizeSpoken("I’m fine.")).toBe(normalizeSpoken("I am fine."));
+    // 줄임꼴 답 문장을 담은 토리 문장도 답 두 개('I am …')와 같은 말로 빠진다
+    const plain: AppendLine = {
+      kind: "two_answers",
+      answers: ["I am fine.", "I am okay."],
+    };
+    expect(sayingAnswer("Say, I'm fine.", [plain.answers])).toBe(true);
+    expect(
+      shownTurnOf(["That's okay!", "Say, I'm fine."], [question, plain])
+        .sentences,
+    ).toEqual(["That's okay!"]);
+  });
+
+  it("같은 말: 이름 자리 {NAME} 은 줄임꼴을 펼쳐도 한 낱말 'name' 으로 남는다(검토 fix 1 I-2)", () => {
+    expect(normalizeSpoken("Yes! My name is {NAME}.")).toBe(
+      "yes my name is name",
+    );
+    // 선생님 자기소개는 이름 자리가 든 답 두 개와 같은 말이 아니다
+    const names: AppendLine = {
+      kind: "two_answers",
+      answers: ["Yes! My name is {NAME}.", "Hi! My name is {NAME}."],
+    };
+    expect(sayingAnswer("Hi, my name is Mina.", [names.answers])).toBe(false);
+    // 이름 자리가 든 카드 질문은 토리 문장에 'Hi!' · 'are you' 가 있어도 붙일 줄로 남는다
+    const ask: AppendLine = {
+      kind: "question",
+      en: "Hi! Are you {NAME}?",
+      ko: "안녕! 네가 {NAME} 이야?",
+    };
+    const yesNo: AppendLine = {
+      kind: "two_answers",
+      answers: ["Yes, I am.", "No, I am not."],
+    };
+    expect(shownTurnOf(["Hi!", "Are you ready?"], [ask, yesNo]).append).toEqual(
+      [ask, yesNo],
+    );
+  });
+
+  it("같은 말: 겹침 없애기가 토리 문장을 하나라도 뺀 1~3단계 턴은 뜻 줄을 흘리지도 저장하지도 않는다(결함 A)", () => {
+    const ko = "괜찮아! 'I am fine.' 라고 말해 봐.";
+    const sent = ["That's okay!", "Say, I am fine."];
+    const plain: AppendLine = {
+      kind: "two_answers",
+      answers: ["I am fine.", "I am okay."],
+    };
+    const shown = shownTurnOf(sent, [question, plain]);
+    expect(shown.sentences).toEqual(["That's okay!"]);
+    expect(
+      toriKoShownOf({ ko, sent, shown: shown.sentences, lowBand: true }),
+    ).toBeNull();
+    // 빠진 문장이 없으면 뜻 줄은 그대로
+    expect(
+      toriKoShownOf({
+        ko: "괜찮아!",
+        sent: ["That's okay!"],
+        shown: ["That's okay!"],
+        lowBand: true,
+      }),
+    ).toBe("괜찮아!");
+    // 뜻이 없으면 없음, 4단계부터는 판정하지 않는다
+    expect(
+      toriKoShownOf({ ko: null, sent, shown: shown.sentences, lowBand: true }),
+    ).toBeNull();
+    expect(
+      toriKoShownOf({ ko, sent, shown: shown.sentences, lowBand: false }),
+    ).toBe(ko);
   });
 
   it("같은 말: 1단계 처음 묻는 턴의 '모름'은 견본 대화에서 4문장 이하다", () => {
