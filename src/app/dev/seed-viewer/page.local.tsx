@@ -1,6 +1,6 @@
 // 시드 보기 화면(11절 (2-1), AC-7f, plan-p05b '보기 화면'). 로컬 next dev 에서만 경로가 된다(next.config 의 local.tsx,
 // 정할 것 아) — 프리뷰 · 운영 · 로컬 next build 에서는 빠지고, 첫 문장이 NODE_ENV 를 한 번 더 본다(두 겹).
-// 주소: /dev/seed-viewer(목록) · ?file=<내용 파일 경로>(파일) · &cell=<칸 키>(칸). 읽기만 한다(표본 검토 · 사람 확인 쓰기는 P5c).
+// 주소: /dev/seed-viewer(목록) · ?file=<내용 파일 경로>(파일) · &cell=<칸 키>(칸). 읽기와 P5c 쓰기 둘(표본 검토 · 사람 확인)만 한다.
 // 접근 확인은 proxy 가 한다(/dev/* 도 쿠키, C57). 화면 글은 어른용이라 해요체 · 작은 글자다.
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -75,7 +75,7 @@ function ValidateHint({ root }: { root: string }) {
     <p className="text-sm text-neutral-700">
       칸 검사(규격 · 정합 · 분포)는 터미널에서{" "}
       <code className="rounded bg-neutral-100 px-1">pnpm seed:validate</code> 로
-      봐요. 이 화면은 읽기만 해요. 시드 뿌리:{" "}
+      봐요. 이 화면은 표본 검토 · 사람 확인만 남겨요. 시드 뿌리:{" "}
       <code className="break-all">{root}</code>
     </p>
   );

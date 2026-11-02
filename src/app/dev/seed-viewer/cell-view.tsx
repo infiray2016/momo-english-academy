@@ -1,5 +1,5 @@
 // 시드 보기 화면의 칸 하나(plan-p05b '보기 화면' 칸 행): 머리 → 화면 차례마다 아이 화면 틀(너비 820px) + 어른용 덧붙임
-// → 풀이 검사 결과 → 표본 검토 행(읽기만, 쓰기는 P5c). 아이 화면 틀 안에는 시드 글과 정본 · 목업 글만 둔다.
+// → 풀이 검사 결과 → 표본 검토 행 → 쓰기 칸(plan-p05c review-panel: 사람 확인 · 표본 검토). 아이 화면 틀 안에는 시드 글과 정본 · 목업 글만 둔다.
 // 덧붙임 · 머리 · 표는 어른용이라 작은 글자를 쓴다(4절 '이보다 작은 글자는 부모용 정보에만').
 // 이름표의 '문항 k' 는 itemsOf 번호(cell.items)에서 찾는다 — P5c 의 표본 검토 · 사람 확인 문항 번호와 같은 셈(검토 M-1).
 import type { ReactNode } from "react";
@@ -50,6 +50,7 @@ import type {
   WritingLesson,
 } from "@/core/seed/schema/lesson";
 import type { TalkTestSheet } from "@/core/seed/schema/talk";
+import { seedAnswerOf } from "@/core/seed/solve-check";
 import {
   type Area,
   type Band,
@@ -63,6 +64,7 @@ import type {
   PictureNote,
   ViewerCell,
 } from "@/server/seed-viewer/files";
+import { type HumanCheckItem, ReviewPanel } from "./review-panel";
 import { TalkCardTable, TalkSheetTable } from "./talk-card";
 
 /** 아이 화면 틀 너비(10.9형 세로, playwright TABLET_10_9_VIEWPORT 의 너비). */
@@ -811,6 +813,51 @@ function ReviewRowsView({ cell }: { cell: ViewerCell }) {
   );
 }
 
+/** 허용 정답 견주기(앞뒤 공백 · 대소문자 무시, P4c solveStatus 와 같은 셈). */
+function normalizedAnswer(text: string): string {
+  return text.trim().toLowerCase();
+}
+
+/**
+ * 사람 확인 칸에 보일 걸린 문항(plan-p05c '화면'): 칸이 사람 확인 상태일 때, 같은 해시 풀이 기록에서 판단이 '같음'이 아니거나
+ * 시드 밖 허용 정답 후보가 있는 문항(solveStatus 와 같은 셈). 같은 해시로 남긴 확인이 있으면 함께 보인다.
+ */
+function humanCheckItems(cell: ViewerCell): HumanCheckItem[] {
+  const record = cell.record;
+  if (
+    cell.status !== "pending-human" ||
+    !record ||
+    record.contentHash !== cell.hash
+  ) {
+    return [];
+  }
+  const human =
+    record.human?.contentHash === cell.hash ? record.human : undefined;
+  return record.solve.items.flatMap((item) => {
+    const seed = seedAnswerOf(cell, item.no);
+    const accepted = new Set((seed.accepted ?? []).map(normalizedAnswer));
+    const outside = (item.extraAccepted ?? []).filter(
+      (candidate) => !accepted.has(normalizedAnswer(candidate)),
+    );
+    if (item.verdict === "same" && outside.length === 0) return [];
+    const decision = human?.items.find((h) => h.no === item.no)?.decision;
+    return [
+      {
+        no: item.no,
+        verdict: VERDICT_LABEL[item.verdict],
+        solverAnswer:
+          item.solverAnswer === undefined ? "-" : String(item.solverAnswer),
+        candidates: joined(item.extraAccepted ?? []),
+        seedAnswer:
+          seed.answerNo === undefined
+            ? joined(seed.accepted ?? [])
+            : `보기 ${seed.answerNo}`,
+        ...(decision ? { decided: DECISION_LABEL[decision] } : {}),
+      },
+    ];
+  });
+}
+
 function ErrorList({ cell }: { cell: ViewerCell }) {
   return (
     <ul className="list-disc pl-5">
@@ -923,6 +970,15 @@ export function CellView({
         <h2 className="text-lg font-bold">표본 검토</h2>
         <ReviewRowsView cell={cell} />
       </section>
+
+      <ReviewPanel
+        key={cell.key}
+        file={cell.file}
+        cell={cell.key}
+        contentHash={cell.hash}
+        itemNos={cell.items.map((item) => item.no)}
+        humanItems={humanCheckItems(cell)}
+      />
     </article>
   );
 }

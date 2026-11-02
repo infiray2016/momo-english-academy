@@ -2,10 +2,22 @@
 // 개발 서버(next dev)는 SEED_VIEWER_ROOT 로 시험용 시드 뿌리를 읽는다(playwright.local.config.ts).
 // 기대 글은 견본 시드 객체에서 읽는다(시험에 박지 않는다). 견본 나무 밖에 더 쓰는 칸(풀이 기록 · 검토 행 · 깨진 칸 ·
 // 쓰기 · 말하기 평가 · 7~9 구간 이야기)도 이 파일의 객체에서 읽는다.
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+// P5c(plan-p05c 증명 표): 표본 검토 · 사람 확인 쓰기와 아이 눈 순회 메모. 견본 settings 에 app.timezone 행을 더한다.
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { test as base, type Locator, type Page } from "@playwright/test";
 import { SEED_VIEWER_E2E_ROOT } from "../../playwright.local.config";
+import {
+  composeReviewMemo,
+  WALKTHROUGH_QUESTIONS,
+} from "../../src/core/seed/review-walkthrough";
 import type {
   LevelTestFile,
   StoryFile,
@@ -15,7 +27,19 @@ import type {
   SpeakingLesson,
   WritingLesson,
 } from "../../src/core/seed/schema/lesson";
-import type { CheckFile, ReviewFile } from "../../src/core/seed/schema/records";
+import {
+  type CheckFile,
+  CheckFileSchema,
+  type ReviewFile,
+  ReviewFileSchema,
+} from "../../src/core/seed/schema/records";
+import type { SettingsFile } from "../../src/core/seed/schema/reference";
+import {
+  buildCheckRecord,
+  buildSolveRequest,
+  interpretSolveMessage,
+  judgeSolve,
+} from "../../src/core/seed/solve-check";
 import {
   cellKey,
   checksFilePath,
@@ -23,10 +47,17 @@ import {
   levelTestFilePath,
   parseSeedPath,
   reviewFilePath,
+  SEED_FILES,
   STORY_KO_BANDS,
   storyFilePath,
 } from "../../src/core/seed/structure";
-import { cellHash, collectCells, itemsOf } from "../../src/core/seed/validate";
+import {
+  cellHash,
+  collectCells,
+  itemsOf,
+  type SeedReport,
+  solveTargets,
+} from "../../src/core/seed/validate";
 import { expect, test } from "../e2e/fixtures";
 import {
   defaultSettings,
@@ -36,6 +67,8 @@ import {
   storyFile,
   writeSeedTree,
 } from "../fixtures/seed/builders";
+import { fakeSolver } from "../fixtures/seed/fake-solver";
+import { TEST_SETTINGS } from "../fixtures/settings";
 
 const VIEWER_PATH = "/dev/seed-viewer";
 /** 4절 접근 코드 화면 제목(C57). */
@@ -271,7 +304,21 @@ const lateStories: StoryFile = (() => {
     ],
   };
 })();
+/** 견본 settings 에 app.timezone 행(12절 기본)을 더한 것 — 표본 검토 날짜가 이 시간대의 달력 날짜다(plan-p05c 위험 5). */
+const TIMEZONE = TEST_SETTINGS["app.timezone"].value;
+const settingsWithTimezone: SettingsFile = {
+  settings: [
+    ...tree.reference.settings.settings,
+    {
+      key: "app.timezone",
+      scope: TEST_SETTINGS["app.timezone"].scope,
+      value: TIMEZONE,
+      changeVia: "seed",
+    },
+  ],
+};
 const extraFiles: [string, unknown][] = [
+  [SEED_FILES.settings, settingsWithTimezone],
   [checksFilePath(reading1.path), reading1Checks],
   [reviewFilePath("reading", 1), reading1Review],
   [brokenPath, { area: "reading", level: 2, unit: 1, lessons: [brokenLesson] }],
@@ -908,4 +955,194 @@ test("활동 표시: 지문 그림 · 새 단어 표시 · 소리 자리 · 글�
   await expect(prep.getByRole("listitem")).toHaveCount(
     speaking10.lesson.content.presentation?.prepWords.length ?? -1,
   );
+});
+
+// ── P5c 쓰기: 표본 검토 · 사람 확인 · 아이 눈 순회(plan-p05c 증명 표) ─────────────
+
+/** 풀이 검사 견본 모델 · 시각(가짜 풀이 기록). */
+const SOLVE_MODEL = "claude-sonnet-5-5";
+const SOLVE_AT = "2026-10-22T00:00:00.000Z";
+const REPO_ROOT = join(__dirname, "..", "..");
+/** seed:validate 의 --json 보고 크기 상한(기술 값). */
+const VALIDATE_MAX_BUFFER = 64 * 1024 * 1024;
+
+function seedFile(path: string): string {
+  return join(SEED_VIEWER_E2E_ROOT, ...path.split("/"));
+}
+function readSeedJson(path: string): unknown {
+  return JSON.parse(readFileSync(seedFile(path), "utf8"));
+}
+/** 그 순간의 app.timezone 달력 날짜(YYYY-MM-DD). */
+function seedDateOf(instant: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+}
+/** 시험용 시드 뿌리로 `pnpm seed:validate --root <뿌리> --json` 과 같은 명령을 돌려 보고를 읽는다. */
+function seedValidate(): SeedReport {
+  const run = spawnSync(
+    join(REPO_ROOT, "node_modules", ".bin", "tsx"),
+    ["scripts/seed-validate.ts", "--root", SEED_VIEWER_E2E_ROOT, "--json"],
+    { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: VALIDATE_MAX_BUFFER },
+  );
+  if (run.status !== 0 && run.status !== 1) {
+    throw new Error(`seed:validate 종료 ${run.status}: ${run.stderr}`);
+  }
+  return JSON.parse(run.stdout) as SeedReport;
+}
+const reviewPanel = (page: Page) =>
+  page.getByRole("region", { name: "표본 검토 남기기" });
+
+test("AC-7f 시드 보기: '오류'와 메모를 남기면 seed/reviews/<영역>-<단계>.json 에 한 행이 생긴다", async ({
+  page,
+}) => {
+  const { path, key } = lessonOf<SpeakingLesson>("speaking", 6);
+  const reviewPath = reviewFilePath("speaking", 6);
+  expect(existsSync(seedFile(reviewPath))).toBe(false);
+  const memo = "듣기 대본이 이 단계보다 길어요";
+  await page.goto(cellUrl(path, key));
+  const panel = reviewPanel(page);
+  await expect(panel).toContainText(
+    "메모는 적재 때 운영 DB 의 신고 기록으로 들어가요. 아이 이름 · 개인 정보를 적지 않아요",
+  );
+  await panel.getByRole("radio", { name: "오류", exact: true }).check();
+  await panel
+    .getByRole("combobox", { name: "문항" })
+    .selectOption({ label: "문항 1" });
+  await panel.getByRole("textbox", { name: "메모" }).fill(memo);
+  const before = seedDateOf(new Date());
+  await panel.getByRole("button", { name: "남기기", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText("남겼어요");
+  const after = seedDateOf(new Date());
+
+  const file = ReviewFileSchema.parse(readSeedJson(reviewPath));
+  expect(file.rows).toHaveLength(1);
+  const [saved] = file.rows;
+  expect(saved).toMatchObject({ cell: key, itemNo: 1, reason: "error", memo });
+  expect([before, after]).toContain(saved?.date);
+  // 화면이 다시 읽어 표본 검토 행에 보인다
+  const reviews = page.getByRole("table", { name: "표본 검토" });
+  await expect(reviews.getByRole("row")).toHaveCount(2);
+  await expect(reviews).toContainText(memo);
+  await expect(reviews).toContainText("오류");
+});
+
+test("6.4 사람 확인: 다르게 풀린 문항에 '정답 맞음'을 남기면 같은 내용 해시로 seed/checks 에 적히고 seed:validate 가 그 칸을 통과로 센다", async ({
+  page,
+}) => {
+  const { path, key } = lessonOf<WritingLesson>("writing", 1);
+  const cell = cellsOf(path).find((c) => c.key === key);
+  if (!cell) throw new Error("쓰기 1단계 칸 없음");
+  const [no] = solveTargets(cell);
+  const request = buildSolveRequest(cell, collected.index);
+  if (no === undefined || !request) throw new Error("풀이 대상 없음");
+  // P5a 함수와 가짜 풀이로 '다르게 풀린' 기록을 만든다
+  const solver = fakeSolver(files, {
+    model: SOLVE_MODEL,
+    behaviors: { [key]: { kind: "different", no } },
+  });
+  const message = await solver(request);
+  const answer = interpretSolveMessage(message);
+  if (answer.kind === "failed") throw new Error(answer.reason);
+  const judged = judgeSolve(cell, request, answer);
+  if (!judged.ok) throw new Error(judged.reason);
+  const record = buildCheckRecord({
+    request,
+    items: judged.items,
+    model: message.model,
+    usage: message.usage,
+    costUsd: 0,
+    at: SOLVE_AT,
+  });
+  const checksPath = checksFilePath(path);
+  const full = seedFile(checksPath);
+  mkdirSync(dirname(full), { recursive: true });
+  writeFileSync(
+    full,
+    `${JSON.stringify({ records: [record] } satisfies CheckFile, null, 2)}\n`,
+  );
+  expect(seedValidate().pendingHuman).toContain(key);
+
+  await page.goto(cellUrl(path, key));
+  await expect(page.locator("header[data-cell-head]")).toContainText(
+    "사람 확인",
+  );
+  const panel = page.getByRole("region", { name: "사람 확인 남기기" });
+  const item = panel.getByRole("group", { name: `문항 ${no}` });
+  await expect(item).toContainText("다름");
+  await item.getByRole("radio", { name: /^정답 맞음/ }).check();
+  await panel.getByRole("button", { name: "사람 확인 남기기" }).click();
+  await expect(page.getByRole("status", { name: "사람 확인 결과" })).toHaveText(
+    "남겼어요",
+  );
+
+  const hash = cellHash(key, cell.value);
+  const saved = CheckFileSchema.parse(readSeedJson(checksPath)).records.find(
+    (r) => r.cell === key,
+  );
+  expect(saved?.contentHash).toBe(hash);
+  expect(saved?.human?.contentHash).toBe(hash);
+  expect(saved?.human?.items).toEqual([{ no, decision: "correct" }]);
+  expect(saved?.solve).toEqual(record.solve);
+  const report = seedValidate();
+  expect(report.pendingHuman).not.toContain(key);
+  expect(report.unchecked).not.toContain(key);
+  expect(report.errors.filter((e) => e.cell === key)).toEqual([]);
+  // 화면도 다시 읽어 통과로 보인다
+  await expect(page.locator("header[data-cell-head]")).toContainText("통과");
+  await expect(panel).toHaveCount(0);
+});
+
+test("아이 눈 순회: '아니오'로 고른 질문 이름이 남긴 행의 메모 머리에 붙는다", async ({
+  page,
+}) => {
+  const { path, key } = lessonOf<WritingLesson>("writing", 3);
+  const reviewPath = reviewFilePath("writing", 3);
+  const chosen = WALKTHROUGH_QUESTIONS.filter(
+    (q) => q.id === "notice" || q.id === "explanation",
+  );
+  expect(chosen).toHaveLength(2);
+  const memo = "어디를 눌러야 할지 몰라요";
+  await page.goto(cellUrl(path, key));
+  const panel = reviewPanel(page);
+  for (const question of WALKTHROUGH_QUESTIONS) {
+    await expect(
+      panel.getByRole("checkbox", { name: question.question }),
+    ).toHaveCount(1);
+  }
+  await panel.getByRole("radio", { name: "어려움", exact: true }).check();
+  for (const question of chosen) {
+    await panel.getByRole("checkbox", { name: question.question }).check();
+  }
+  await panel.getByRole("textbox", { name: "메모" }).fill(memo);
+  await panel.getByRole("button", { name: "남기기", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText("남겼어요");
+
+  const expected = composeReviewMemo(
+    chosen.map((q) => q.id),
+    memo,
+  );
+  expect(expected).toBe(
+    `[순회 아니오: ${chosen.map((q) => q.short).join(" · ")}] ${memo}`,
+  );
+  const file = ReviewFileSchema.parse(readSeedJson(reviewPath));
+  expect(file.rows.at(-1)).toMatchObject({
+    cell: key,
+    itemNo: null,
+    reason: "hard",
+    memo: expected,
+  });
+  await expect(page.getByRole("table", { name: "표본 검토" })).toContainText(
+    expected,
+  );
+  // 남긴 뒤 점검표 · 메모가 비워진다
+  for (const question of chosen) {
+    await expect(
+      panel.getByRole("checkbox", { name: question.question }),
+    ).not.toBeChecked();
+  }
+  await expect(panel.getByRole("textbox", { name: "메모" })).toHaveValue("");
 });
