@@ -179,3 +179,99 @@ C203 재질문(impl-talk-prompt-1, 같은 시각).
 남은 우려.
 - 재질문 상한 25회는 위쪽 어림이다. 실제 빈도와 첫 질문 지연(재호출만큼 늦음, prompt-1 U-f2)은 첫 --yes 실행에서 잰다.
 - 서버 끝 처리 사본(8절 요청)은 그대로다. 재질문 흐름은 core 함수를 써서 사본이 늘지 않았다.
+
+## fix round 3(설계 검토 task-talk-quality-review-1.md M-6 · M-2 관찰 — 컨트롤러 요청, 2026-11-06)
+
+상태: DONE_WITH_CONCERNS. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`). 아이 말 갈래(child_kind)는 prompt-2 보고가 아직 없어 잇지 않았다(아래).
+
+| 지적 | 판정 | 고친 곳 |
+|---|---|---|
+| M-6 재질문 기록에 첫 시도 글 · 둘째 걸림 까닭 없음 | 닫힘 | `TurnRecord.reask` 에 네 칸을 더했다(608). `firstToriEn` 은 첫 시도 tori_en(정규화 뒤)이다. `firstFail` 은 첫 걸림의 질문 · 까닭 · 걸린 낱말(`QuestionFailNote` 1308)이다. `retryToriEn` 은 다시 쓴 시도 tori_en 이다. `retryFail` 은 이은 질문을 같은 질문 검사에 다시 대 본 걸림이다(1822 — 질문 검사 통과인데 같은 질문으로 바뀌었으면 까닭 same_question). json 은 네 칸을 그대로 담는다. markdown 표시 칸은 `재질문: 첫 시도 "Q1" offband(does) → 다시 쓴 질문 통과("Q2")` 또는 `… → 다시 써도 걸림 "Q2" form → 카드 자리(question_check)` 꼴이다(`failText` 857). 'What does your dog like?' 같은 턴은 이제 까닭과 낱말이 보인다. |
+| M-2 '같은 소리 두 번'이 앱 붙임 줄과 AI 문장을 견주지 않음 | 닫힘 | 새 `sameSoundTwiceOf`(1190)는 읽는 줄 전부를 문장마다 정규화해 견준다. 읽는 줄은 AI 선생님 문장, 앱이 붙인 글 줄(카드 질문 · 답 예시 · 앱 대사), 소리 줄(따라 할 말 · 선택지 · 답 소리)이다. AI 문장이 소리 줄의 답을 담아도 참이다. nospeech 6 의 'The sun is down.'(AI 문장) + 카드 'The sun is down. What do you do now?' 가 이제 잡힌다. |
+
+아이 말 갈래(child_kind) · 막힘 덮어쓰기(impl-talk-prompt-1 고침 2).
+- `task-talk-prompt-2-report.md` 가 아직 없고, `src/core` 에 child_kind 도 아직 없다(2026-11-06 확인).
+- 서명이 적히면 이렇게 잇는다. `evaluateResult` 뒤 `chosenOf` 가 stuck 을 읽는 자리에서 그 순수 함수로 막힘을 다시 판정한다(서버와 같은 함수 — 사본 없음). TurnRecord 에 `childKind` 칸을 두고 턴 표 '계획' 옆에 '아이 말 갈래' 칸을 둔다.
+- 검토 149줄 5 의 사람 판정 두 칸('막힘 판정 맞음 · 틀림' · '선생님 자기 반응 한마디 있음')은 이번 요청 밖이라 더하지 않았다. 갈래 칸과 함께 하면 좋다.
+
+시험 · 관문.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 30 통과(새 하나: 같은 소리 — 카드 줄과 AI 문장 · 다른 줄 · 답 소리를 담은 AI 문장, 넓힌 둘: 재질문 통과 · 다시 써도 걸림에 네 칸 단언) |
+| 되돌림 확인(견줄 줄을 소리 줄만 · 둘째 걸림 계산 끔) | 1 · 1 실패로 잡힘, 되돌림 |
+| `pnpm biome ci`(전체) · `pnpm tsc --noEmit` | 0 · 0 |
+| `pnpm vitest run --project unit`(전체) | 1862 통과 · 6 todo |
+| `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
+
+## fix round 4(아이 말 갈래 · 막힘 무름 잇기 · 사람 판정 두 칸 — 컨트롤러 요청, prompt-2 보고 3절 서명 기준, 2026-11-06)
+
+상태: DONE. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`). 서버 사본은 늘지 않았다. 막힘 판정은 정규화(`normalizeTalkLesson` 안의 `effectiveStuckOf`)를, 통째 다시 쓰기는 core `stuckRewriteNoteOf` · `mergeQuestionRetry({ whole })` 를 그대로 쓴다.
+
+| 요청 | 도구 자리 | 서버 대응 |
+|---|---|---|
+| 같은 함수로 막힘 판정 | 응답 읽기가 정규화 전 AI stuck(`aiStuck`)을 따로 남긴다. 앱이 본 막힘은 정규화 뒤 value.stuck 이다(effectiveStuckOf). 막힘 무름은 말 입력 · AI 참 · 앱 거짓이다(`overriddenOf` 1520). 계획 고르기(`chosenOf`)는 앱이 본 값을 쓴다 | talk.ts kit.stuckOf → onStuck(stuck, overridden) |
+| 무른 1~3단계 턴의 문장 잡아 두기 | 첫 응답 문장을 모두 잡아 둔 문장으로 돌린다(`heldAll` 1522, finish 1796) — 다시 쓰지 못해도 끝 처리가 내보낸다 | holdAll · withQuestionRetry baseFlow |
+| 통째로 다시 쓰기 | `retryOf` 는 무른 턴이고 질문을 쓰는 AI 차례면 `kind: "rewrite"` 요청을 만든다. note 는 `stuckRewriteNoteOf(아이 말)`(1752)이다. finish 는 `whole: true` 로 잇는다(1828). 걸린 질문 재질문(`kind: "question"`)과 같은 1회 상한이다 | withQuestionRetry rewrite · mergeQuestionRetry whole |
+| 턴 표 '갈래' 칸 · '막힘 무름' 표시 | 턴 표 '아이' 옆에 '갈래(child_kind · 막힘)' 칸을 둔다(`childKindCell` 2184). 꼴은 `new_topic · 막힘 참 → 무름` · `answer · 막힘 거짓` 이다. 표시 칸에는 '막힘 무름(AI stuck → 앱이 무름, C204 (3))'을 적는다. 재질문 결과에는 '첫 시도 막힘 무름 — 통째로 다시 쓰기 → …'를 적는다. json 은 `childKind`(614) · `stuck: { ai, app, overridden }` 을 담는다 | — |
+| 사람 판정 두 칸 | JUDGE_KEYS 에 `stuckRight`('막힘 판정 맞음') · `ownReaction`('선생님 자기 반응 한마디 있음')을 더했다. 자동 힌트는 없고(1293), '나란히' 표에 '기대 · 자동 · 사람' 칸으로 붙는다. 대본 expect 에도 같은 키를 쓸 수 있다 | 검토 149줄 5 |
+
+계획 출력의 재질문 설명은 '1~3단계 질문 검사에 걸리거나 막힘을 무른 턴만 — 한 턴에 1회 상한'으로 바꿨다(상한 수는 그대로 말 입력 차례 수).
+
+서버와 다른 점(작음).
+- 서버의 다시 부를 시간 판정(`questionRetryFits`, server-only)은 흉내 내지 않는다. 도구는 늘 다시 부른다. 실호출에서 첫 응답이 25초쯤을 넘는 드문 턴만 다르다.
+- 서버의 holdAll 조건 '아직 보낸 문장 없음'은 stuck 칸이 tori_en 앞이라 늘 참으로 보았다.
+
+시험 · 관문.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 33 통과(새 셋: 무른 질문 차례는 rewrite 요청(앞 tori_en · 'is not stuck' 메시지) · 다시 쓴 응답으로 통째로 바꾸고 갈래 · 막힘 무름 기록 · 막힘 갈래면 무르지 않고 받침 첫째, 넓힌 둘: 사람 판정 두 칸 · 보고 갈래 칸과 판정 칸 머리) |
+| 되돌림 확인(막힘 무름 판정 끔 · finish 잡아 두기 끔) | 2 · 1 실패로 잡힘, 되돌림 |
+| `pnpm biome ci`(전체) · `pnpm tsc --noEmit` | 0 · 0 |
+| `pnpm vitest run --project unit`(전체) | 1878 통과 · 6 todo |
+| `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
+| `pnpm talk:observe` · 가짜 응답으로 대본 다섯 끝까지 | 0(호출 39 · 약 0.76달러 · 재질문 최대 +25회 약 0.52달러) · 모든 차례를 돎 |
+
+대본 3회차에서 볼 것: 갈래 칸이 무른 턴('막힘 참 → 무름')과 그 턴의 재질문 결과, 사람 판정 '막힘 판정 맞음' 칸.
+
+## fix round 5(보낼 응답 규격 펼치기 — 대본 3회차 400 'compiled grammar is too large', 컨트롤러 요청 2026-11-06)
+
+상태: DONE_WITH_CONCERNS. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`). 실호출은 하지 않았다.
+
+- 고침: 새 `talkBodyOf`(talk-observe.ts 480)가 withFormat(SDK zodOutputFormat) 결과의 응답 규격을 core `inlineJsonSchemaRefs`(src/core/ai/inline-refs.ts)로 펼친다. $defs 를 빼고 '#/$defs/…' 참조를 정의로 바꾼다. 서버 `talkOutputFormatOf`(src/server/ai/talk.ts 361)와 같은 꼴이다. 서버 함수는 server-only 라 같은 core 함수를 거치게 했다(사본 없음). 회화 턴 요청 · 재질문 요청 모두 `requestOf` 하나로 만들므로 둘 다 펼친 꼴이다. 검증은 그대로 Zod 규격(wireSchema)이다.
+- 시험(먼저 실패 확인): '보낼 응답 규격은 $defs · $ref 를 펼친 꼴이다'. 인사 끝 요청과 재질문 요청의 output_config.format.schema 에 `hasJsonSchemaRefs` 가 거짓이고, '$defs' 글자가 없으며, child_kind 칸이 남는지 본다. 고치기 전 1 실패 → 고친 뒤 34 통과.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 34 통과 |
+| `pnpm tsc --noEmit` | 0(첫 실행 때는 src/server/ai/run.ts 291 이 inlineJsonSchemaRefs 를 가져오지 않은 오류 — 다른 구현자 작업 중, 다시 돌려 0) |
+| 내 파일 `biome ci` | 0 |
+| 전체 `biome ci` | **1 — 내 파일 아님**: src/server/ai/run.ts 7(가져오기 차례) · tests/unit/ai-output-schema-refs.test.ts(같은 시각 run.ts 펼치기 작업 중) |
+| `pnpm vitest run --project unit`(전체) | 1905 통과 · 6 todo |
+| `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
+| `pnpm talk:observe`(계획만) | 0 |
+
+우려: 펼친 꼴의 크기 울타리(서버 TALK_OUTPUT_SCHEMA_MAX_CHARS · MAX_PROPS)는 서버 시험이 지킨다. 도구는 같은 규격 · 같은 펼치기라 따로 재지 않았다.
+
+## fix round 6(effectiveStuckOf · 잡아 두기 · 다시 쓰기 실패 길 변경 따라가기 — impl-talk-prompt-1 알림, 고침 2 fix 1 검토 rev-prompt-2 D, 2026-11-06)
+
+상태: DONE. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`). 알림을 받은 시점에 도구 시험 1건('갈래가 막힘 갈래면 무르지 않는다')이 실패하고 있었다. 새 effectiveStuckOf 는 영어 낱말 셋 이상 문장이면 갈래와 관계없이 막힘을 무르는데, 시험의 아이 말 'I have a big dog.' 가 그 문장이었다.
+
+| 바뀐 서버 동작 | 도구 자리 |
+|---|---|
+| 잡아 두기는 core `createRewriteHold({ low, rangeOk }).onStuck(overridden, asks)` — 질문을 쓰는 차례만 | `holdsOf`(1555)가 같은 함수로 정한다. 전에는 질문 차례가 아니어도 잡아 두었다. retryOf · finish 둘 다 이 판정이다 |
+| 다시 쓰기에 실패하면 앞 응답 문장을 모두 지우고(reason 'rewrite') view.needsQuestion → 끝 처리가 카드 자리(fail) | `droppedAll`(1565) · finish 1896: 잡아 둔 턴이 잇지 못하면 앞 문장을 지운다. `settleTurn` 새 인자 `needsQuestion` 이 질문이 없으면 why fail 로 카드 자리를 만든다. Entry reason 에 'rewrite' 를 더했다. 재질문 결과 글은 '다시 쓴 응답에 질문 없음 → 앞 문장을 모두 지우고 카드 자리'다 |
+| mergeQuestionRetry whole 은 child_kind · stuck 만 앞 응답 값 | core 함수 그대로라 바꿀 것 없음 |
+
+시험.
+- 깨진 시험의 아이 말을 'Blue car.'(두 낱말)로 바꿨다. 뜻(짧은 말 + 막힘 갈래면 무르지 않고 받침 첫째)은 그대로다.
+- 새 시험: '통째 다시 쓴 응답에 질문이 없으면 앞 문장을 모두 지우고 카드 자리다'. replaced fail · card_slot · 앞 문장 없음 · 지운 까닭 rewrite · 카드 질문 붙임을 본다. 앞 문장 지우기를 빼면 실패로 잡히고, 되돌렸다.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 35 통과 |
+| `pnpm biome ci`(전체) · `pnpm tsc --noEmit` | 0 · 0 |
+| `pnpm vitest run --project unit`(전체) | 1909 통과 · 6 todo |
+| `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
+| 가짜 응답으로 대본 다섯 끝까지 | 모든 차례를 돎 |
