@@ -74,7 +74,7 @@ export function questionRetryNoteOf(
     `App check: your question "${fail.question}" was not shown, because ${REASON_LINE[fail.reason]}${words}.`,
     "Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). Keep the other fields for the new question.",
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
-    `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}).`,
+    `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
   ].join("\n");
 }
 

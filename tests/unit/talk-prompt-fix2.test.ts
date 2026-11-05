@@ -392,13 +392,21 @@ describe("I-2 카드 답 뒤 필수 질문 되돌림(13절 C204 (6))", () => {
   it("'Previous turn was a card chance: yes' 턴의 필수 질문 갈래는 이어 묻기로 되돌리되 카드 항목은 남긴다(들린 필수 질문은 다룬 것, 검토 rev-prompt-2 E), 그 밖은 그대로", () => {
     expect(
       cardChainGuardOf({ nextMove: "required", afterCardChance: true }),
-    ).toEqual({ nextMove: "follow_up", dropCardItem: false });
+    ).toEqual({ nextMove: "follow_up", dropCardItem: false, chained: true });
     expect(
       cardChainGuardOf({ nextMove: "required", afterCardChance: false }),
-    ).toEqual({ nextMove: "required", dropCardItem: false });
+    ).toEqual({ nextMove: "required", dropCardItem: false, chained: false });
     expect(
       cardChainGuardOf({ nextMove: "follow_up", afterCardChance: true }),
-    ).toEqual({ nextMove: "follow_up", dropCardItem: false });
+    ).toEqual({ nextMove: "follow_up", dropCardItem: false, chained: false });
+    // 갈래를 follow_up 으로 적고 카드 항목만 필수 질문인 꼴도 본다(대본 4회차 N-2 (b))
+    expect(
+      cardChainGuardOf({
+        nextMove: "follow_up",
+        cardItemKind: "required",
+        afterCardChance: true,
+      }),
+    ).toEqual({ nextMove: "follow_up", dropCardItem: true, chained: true });
     const input = lessonInput(3, { turn: { afterCardChance: true } });
     const out = normalizeTalkLesson(
       answer({
@@ -448,7 +456,9 @@ describe("고정부 · 응답 칸 문장(고침 2)", () => {
     expect(system).toContain(
       "at Support stage 1 'That's okay! Let's say it together.'; at Support stage 3 or after nospeech 'That's okay! Let's move on.' (never 'say it together' there: the child does not repeat).",
     );
-    expect(system).toContain("In this turn next_move can never be required.");
+    expect(system).toContain(
+      "In this turn next_move can never be required, and card_item can never be a required question either.",
+    );
   });
 
   it("M-1 인사 끝 예 · 뜻 말투, M-2 들리지 않음 카드 자리, M-4 바른 말 바꾸지 않기, M-7 힌트는 자기 질문의 답, I-5 반응 예 둘", () => {

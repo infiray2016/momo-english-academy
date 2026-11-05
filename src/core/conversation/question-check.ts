@@ -331,3 +331,49 @@ export function checkChoices(
     return fail("no_target");
   return OK;
 }
+
+/**
+ * 고르기 답이 아이가 방금 한 말을 되묻는가(대본 4회차 설계 재판정 N-1, 02-2 196 · 184): 두 선택지에서 서로 다른 낱말(바뀌는 자리) 가운데 하나라도
+ * 아이의 마지막 말에 든 낱말(소문자 · 원형)이면 참. 'Cold.' 에 'It is cold.' / 'It is hot.', 'Yes I like fish.' 에 'I like fish.' / 'I like rice.' 처럼
+ * 아이가 이미 한 말을 문장으로 다시 하게 하는 질문이 된다. 바뀌는 자리가 아이 말과 다르면('apple' / 'orange' — 새 물음) 거짓.
+ */
+/** 질문의 '새 것'을 가릴 때 보지 않는 낱말(기능어 · 묻는 말 · 흔한 동사 — 검토 rev-prompt-2 P3-2). */
+const QUESTION_FRAME_WORDS = new Set(
+  "a an the i you it we he she they my your his her its our their is am are was do does did or and to in on at with of for this that what which who where when how like have has can".split(
+    " ",
+  ),
+);
+
+export function choicesEchoChild(
+  pair: readonly [string, string],
+  child: string,
+  lemmaOf: (surface: string) => string | undefined,
+  /**
+   * 그 선택지에 딸린 질문 문장(선생님의 마지막 물음표 문장). 주면, 질문에 아이 말에도 바뀌는 자리에도 없는 내용 낱말(다른 사람 · 다른 물건 —
+   * 'Is the water hot or cold?' 의 water)이 있으면 새 물음으로 보고 되묻기가 아니다(검토 rev-prompt-2 P3-2). 없으면 이 조건을 보지 않는다.
+   */
+  question?: string,
+): boolean {
+  const said = new Set<string>();
+  for (const t of tokenize(child)) {
+    if (t.kind !== "word") continue;
+    said.add(t.text.toLowerCase());
+    const lemma = lemmaOf(t.text)?.toLowerCase();
+    if (lemma !== undefined) said.add(lemma);
+  }
+  const [a, b] = pair.map(plainWords) as [string[], string[]];
+  if (a.length !== b.length) return false;
+  const slot = new Set<string>();
+  a.forEach((word, i) => {
+    const other = b[i] ?? "";
+    if (word !== other) slot.add(word).add(other);
+  });
+  const known = (w: string) =>
+    said.has(w) || said.has(lemmaOf(w)?.toLowerCase() ?? "");
+  const echoes = [...slot].some(known);
+  if (!echoes || question === undefined) return echoes;
+  const fresh = plainWords(question).some(
+    (w) => !QUESTION_FRAME_WORDS.has(w) && !slot.has(w) && !known(w),
+  );
+  return !fresh;
+}

@@ -149,7 +149,11 @@ describe("5.2 1 소리 줄 거름(02-2 180 · 204 · 241 · 271 · 328, C202 (1)
 
   it("1단계(규격 choices 참) 처음 묻는 턴은 선택지를 남기고, 같은 선택지라도 다시 묻는 턴이면 버린다", () => {
     const pair = ["I like soccer.", "I like tag."];
-    expect(norm({ choices: pair }, { choices: true }).choices).toEqual(pair);
+    // 아이 말은 바뀌는 자리(soccer · tag)와 겹치지 않게(되묻는 고르기는 버림 — 대본 4회차 N-1)
+    expect(
+      norm({ choices: pair }, { choices: true }, { turn: { child: "Yes." } })
+        .choices,
+    ).toEqual(pair);
     expect(
       norm({ choices: pair }, { choices: true, reask: ["soccer"] }).choices,
     ).toEqual([]);
@@ -501,7 +505,7 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
   it("카드 질문에 답한 다음 차례는 이어 묻고 다음 카드 기회는 아이 말이 닿을 때(5.1 2), 장면 단정 금지(5.1 3)", () => {
     expect(system3).toContain(
       // 고침 2(13절 C204 (6))에서 더 세게 고친 문장
-      "When 'Previous turn was a card chance: yes' and the child answered, your next question must follow up on the child's answer (next_move follow_up). In this turn next_move can never be required. Bring up the next card chance only in a later turn, when the child's words reach it.",
+      "When 'Previous turn was a card chance: yes' and the child answered, your next question must follow up on the child's answer (next_move follow_up). In this turn next_move can never be required, and card_item can never be a required question either. Bring up the next card chance only in a later turn, when the child's words reach it.",
     );
     expect(system3).toContain(
       "'Teacher turns since last follow-up' counts your turns, including the app's card turns, since your last follow-up question.",
@@ -544,15 +548,20 @@ describe("5.2 3 뜻을 문장마다(plan 정한 것 9 를 바꿈, C202 (5))", ()
   it("정규화: 문장 수와 맞는 뜻 목록은 그대로, 맞지 않으면 한 덩이로, 옛 한 글 꼴도 읽고, 뜻을 보이지 않는 단계는 빈 목록", () => {
     expect(norm({}).tori_ko).toEqual(["와, 축구!", "어떤 운동이 재밌어?"]);
     expect(norm({ tori_ko: ["와, 축구!"] }).tori_ko).toEqual(["와, 축구!"]);
+    // 수가 맞지 않으면 이어 한국어 문장 끝으로 다시 나눠 맞으면 문장마다(대본 4회차 N-6), 그래도 다르면 한 덩이
     expect(
       norm({ tori_ko: ["와,", "축구!", "어떤 운동이 재밌어?"] }).tori_ko,
-    ).toEqual(["와, 축구! 어떤 운동이 재밌어?"]);
+    ).toEqual(["와, 축구!", "어떤 운동이 재밌어?"]);
+    expect(
+      norm({ tori_ko: ["와 축구", "어떤", "운동이 재밌어"] }).tori_ko,
+    ).toEqual(["와 축구 어떤 운동이 재밌어"]);
     const legacy = normalizeTalkLesson(
       { ...answer(), tori_ko: "와, 축구! 어떤 운동이 재밌어?" },
       input3(),
       lessonRules(3),
     );
-    expect(legacy?.tori_ko).toEqual(["와, 축구! 어떤 운동이 재밌어?"]);
+    // 옛 한 글 꼴도 한국어 문장 끝으로 나눠 문장 수가 맞으면 문장마다(대본 4회차 N-6)
+    expect(legacy?.tori_ko).toEqual(["와, 축구!", "어떤 운동이 재밌어?"]);
     const five = normalizeTalkLesson(answer(), lessonInput(5), lessonRules(5));
     expect(five?.tori_ko).toEqual([]);
   });

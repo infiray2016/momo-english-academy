@@ -21,6 +21,7 @@ import {
   talkLessonCheckFields,
   talkLessonClosingSpec,
   talkLessonTurnSpec,
+  talkSceneWordsOf,
 } from "@/core/ai/calls/talk-lesson";
 import {
   type AiRequestConfig,
@@ -342,6 +343,7 @@ function lessonKit(plan: {
         childKind: childKindOf(childKind),
         child: input.turn.child,
         input: input.turn.input,
+        sceneWords: talkSceneWordsOf(input),
       }),
   };
 }

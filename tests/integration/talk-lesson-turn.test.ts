@@ -320,9 +320,15 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     await sayLesson(sessionId);
     h.fake.push(turnRule({ tori_en: "Great!" }));
     await sayLesson(sessionId, "Yes.");
-    const bodies = h.fake.requests
+    // 첫 턴 질문(zebrafish aquariums — 범위 밖 두 낱말)은 질문 검사에 걸려 C203 (3) 다시 쓰기가 한 번 불린다(가짜 서버에 둘째 규칙이 없어 501 →
+    // 카드 자리). 그래서 TURN_MARK 본문은 본 턴 둘 + 다시 쓰기 하나다 — 이 시험은 본 턴 둘째 본문을 본다
+    const all = h.fake.requests
       .filter((r) => r.bodyText.includes(TURN_MARK))
       .map((r) => r.bodyText);
+    expect(all).toHaveLength(3);
+    const retries = all.filter((b) => b.includes("App check: your question"));
+    expect(retries).toHaveLength(1);
+    const bodies = all.filter((b) => !b.includes("App check: your question"));
     expect(bodies).toHaveLength(2);
     const [child] = (
       await db

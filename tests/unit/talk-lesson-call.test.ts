@@ -112,7 +112,11 @@ function norm(
 }
 
 /** 단계 규격 choices 참(1단계 꼴 — 처음 묻는 질문의 선택지). 견본 단계 규격은 3단계라 거짓이다. */
-const CHOICES_ON = { spec: { ...lessonInput(3).spec, choices: true } };
+const CHOICES_ON = {
+  spec: { ...lessonInput(3).spec, choices: true },
+  // 아이 말은 선택지의 바뀌는 자리(soccer · tag)와 겹치지 않게 둔다 — 아이가 방금 한 말을 되묻는 선택지는 버린다(대본 4회차 N-1)
+  turn: { child: "Yes, I do." },
+};
 
 const schemaOf = (level: number, teacher = LESSON_TEACHER) => {
   const input = lessonInput(level, { teacher });

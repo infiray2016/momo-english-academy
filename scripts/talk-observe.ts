@@ -68,7 +68,9 @@ import {
   OPEN_ALL_HINTS_FROM_DONT_KNOW,
 } from "../src/core/conversation/hints";
 import {
+  type LateCardRow,
   type LessonArgs,
+  lateCardAnswerOf,
   lessonTurnSegmentOf,
   nextTeacherTurnOf,
   reaskWordsOf,
@@ -1707,13 +1709,28 @@ export function createTalkSim(
         heardHelp,
       });
       // 인사 끝 턴은 다음 토막을 알린다(서버 lesson-turn.ts 이번 패치 판 — 처음 스냅숏의 짧은 준비 계획이 있으면 준비)
-      const turn: TalkCallTurn =
-        planned.segment === "greeting_end"
-          ? {
-              ...planned,
-              nextPart: prepPlan.length > 0 ? "prep" : "talk",
-            }
-          : planned;
+      // 한 턴 늦게 온 카드 답도 '앞 차례가 카드 기회'로 본다(서버 lesson-turn.ts lessonCallTurnOf 와 같은 차례 — 그 함수 · lateCardRowsOf 는
+      // server-only 라 core lateCardAnswerOf 에 같은 재료(선생님 행 move · 아이 행 인식 글)를 넘긴다. '이미 답함' · 폭 상한까지 같다)
+      const late =
+        mode === "speech" &&
+        planned.afterCardChance !== true &&
+        lateCardAnswerOf({
+          rows: rows.map(
+            (r): LateCardRow =>
+              r.speaker === "child"
+                ? { speaker: "child", text: r.text ?? "" }
+                : { speaker: "teacher", text: r.text, move: r.move },
+          ),
+          child: childText ?? "",
+          lemmaOf: materials.lemmaOf,
+        });
+      const turn: TalkCallTurn = {
+        ...planned,
+        ...(late ? { afterCardChance: true } : {}),
+        ...(planned.segment === "greeting_end"
+          ? { nextPart: prepPlan.length > 0 ? "prep" : "talk" }
+          : {}),
+      };
       const now = contextNow();
       const history = historyOf();
       const opening = history.length === 0 ? openingLine() : undefined;

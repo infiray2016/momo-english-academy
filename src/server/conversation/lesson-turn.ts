@@ -44,7 +44,9 @@ import {
   openedTierCount,
 } from "@/core/conversation/hints";
 import {
+  type LateCardRow,
   type LessonArgs,
+  lateCardAnswerOf,
   lessonTurnSegmentOf,
   nextTeacherTurnOf,
   type TalkLessonPosition,
@@ -1375,6 +1377,61 @@ export function lessonWrapLinesOf(
   }).map(({ en, ko }) => ({ en, ...(ko === undefined ? {} : { ko }) }));
 }
 
+/** 늦은 카드 답 판정 재료(talk_turns 행 → 선생님 행 move · 아이 행 인식 글). */
+export function lateCardRowsOf(
+  rows: readonly Pick<TalkTurnRow, "speaker" | "text" | "move">[],
+): LateCardRow[] {
+  return rows.map((row) =>
+    row.speaker === "child"
+      ? { speaker: "child", text: row.text ?? "" }
+      : {
+          speaker: "teacher",
+          text: row.text ?? "",
+          move: readTalkMove(row.move),
+        },
+  );
+}
+
+type TalkCallTurnLike = {
+  afterCardChance?: boolean;
+  segment: string;
+  nextPart?: "prep" | "talk";
+};
+
+/**
+ * 회화 턴 호출 입력의 마지막 손질(순수, 검토 rev-prompt-2 P3-4 — 서버 배선을 시험이 가르게 뺌): (1) 말로 답한 턴이 한두 턴 늦은 카드 답이면
+ * (lesson-flow lateCardAnswerOf) '앞 차례가 카드 기회'로 둔다(대본 4회차 N-2 (a)). (2) 인사 끝 턴은 다음 토막을 알린다(인사 뒤 짧은 준비 계획이
+ * 있으면 준비 — index.ts 의 준비 쪽지와 같은 판단, 02-2 169줄 · 분석 5.1 4).
+ */
+export function lessonCallTurnOf<T extends TalkCallTurnLike>(
+  planned: T,
+  ctx: {
+    speech: boolean;
+    rows: readonly LateCardRow[];
+    child: string;
+    lemmaOf: (surface: string) => string | undefined;
+    prepPlanned: boolean;
+  },
+): T {
+  const late =
+    ctx.speech &&
+    planned.afterCardChance !== true &&
+    lateCardAnswerOf({
+      rows: ctx.rows,
+      child: ctx.child,
+      lemmaOf: ctx.lemmaOf,
+    });
+  return {
+    ...planned,
+    ...(late ? { afterCardChance: true } : {}),
+    ...(planned.segment === "greeting_end"
+      ? {
+          nextPart: ctx.prepPlanned ? ("prep" as const) : ("talk" as const),
+        }
+      : {}),
+  };
+}
+
 /** 질문 다시 쓰기 한 번의 결과(부르는 쪽이 회화 턴을 다시 불러 만든다 — 흘려 받은 문장은 아이에게 보내지 않고 문장 문에만 넣는다). */
 export type QuestionRetryAnswer = {
   value: TalkLessonOutput;
@@ -1966,17 +2023,13 @@ async function lessonTurnAfterChild(
     hintTier: child.hintLevel ?? 0,
     heardHelp: (child.heardHelp ?? "none") as TalkHeardHelp,
   });
-  // 인사 끝 턴은 다음 토막을 알린다(인사 뒤 짧은 준비 계획이 있으면 준비 — index.ts 의 준비 쪽지와 같은 판단, 02-2 169줄 · 분석 5.1 4)
-  const turn =
-    planned.segment === "greeting_end"
-      ? {
-          ...planned,
-          nextPart:
-            (state.start?.prepPlan.length ?? 0) > 0
-              ? ("prep" as const)
-              : ("talk" as const),
-        }
-      : planned;
+  const turn = lessonCallTurnOf(planned, {
+    speech: mode === "speech",
+    rows: lateCardRowsOf(state.liveRows),
+    child: child.text ?? "",
+    lemmaOf: state.lemmaOf,
+    prepPlanned: (state.start?.prepPlan.length ?? 0) > 0,
+  });
   const summaryLimit = positiveInt(s, "talk.memory_summaries");
   const callInput = await talkLessonInputOf(db, {
     state,

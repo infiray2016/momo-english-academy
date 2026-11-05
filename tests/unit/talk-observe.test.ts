@@ -403,6 +403,44 @@ describe("메모리 대화(가짜 응답)", () => {
     expect(all.met).toEqual(expect.arrayContaining(["eat", "drink"]));
   });
 
+  it("한 턴 늦게 온 카드 답은 '앞 차례가 카드 기회'로 알린다(서버와 같은 lateCardAnswerOf)", () => {
+    const { sim, m } = afterGreeting();
+    const target = m.card.required[0]?.targets[0] ?? "";
+    // 첫 질문(카드 필수 1)에 딴 말로 답한 뒤, 다음 차례에 노린 낱말을 담아 답한다
+    const one = sim.prepare(say("I like the lake."), 1);
+    if (!one.ok) throw new Error(one.reason);
+    sim.finish(
+      one.turn,
+      fakeMessage({
+        tori_en: "The lake is nice! Do you like fish?",
+        next_move: "follow_up",
+      }),
+    );
+    const two = sim.prepare(say(`We ${target} fish.`), 2);
+    if (!two.ok) throw new Error(two.reason);
+    expect(two.turn.input.turn.afterCardChance).toBe(true);
+    expect(two.turn.userMessage).toContain(
+      "Previous turn was a card chance: yes",
+    );
+  });
+
+  it("이미 노린 낱말로 답한 뒤의 말은 늦은 카드 답이 아니다(아이 행 인식 글로 '이미 답함'을 본다)", () => {
+    const { sim, m } = afterGreeting();
+    const target = m.card.required[0]?.targets[0] ?? "";
+    const one = sim.prepare(say(`We ${target} rice.`), 1);
+    if (!one.ok) throw new Error(one.reason);
+    sim.finish(
+      one.turn,
+      fakeMessage({
+        tori_en: "Yum! Do you like fish?",
+        next_move: "follow_up",
+      }),
+    );
+    const two = sim.prepare(say(`We ${target} fish.`), 2);
+    if (!two.ok) throw new Error(two.reason);
+    expect(two.turn.input.turn.afterCardChance).not.toBe(true);
+  });
+
   it("재질문 없이 끝내면 범위 밖 낱말 질문은 앱이 지우고 카드 자리로 바꾼다(question_check)", () => {
     const { sim } = afterGreeting();
     const ready = sim.prepare(say("Rice."), 1);
@@ -495,9 +533,10 @@ describe("메모리 대화(가짜 응답)", () => {
     });
 
     it("짧은 말이고 갈래가 막힘 갈래면 무르지 않는다(AI 막힘 그대로 — 받침 계획)", () => {
-      // 영어 낱말 셋 이상 문장이면 갈래와 관계없이 무른다(child-kind ENGLISH_SENTENCE_MIN_WORDS) — 두 낱말 말로 본다
+      // 영어 낱말 셋 이상 문장이면 갈래와 관계없이 무르고(ENGLISH_SENTENCE_MIN_WORDS), 두 낱말이라도 카드 · 장면 · 단원 낱말을 담으면
+      // 무른다(sceneWords — 카드 3-1 에 car 가 있음). 카드에 없는 두 낱말 말로 본다
       const { sim } = afterGreeting();
-      const ready = sim.prepare(say("Blue car."), 1);
+      const ready = sim.prepare(say("Pink moon."), 1);
       if (!ready.ok) throw new Error(ready.reason);
       const turn = ready.turn;
       const reply = fakeMessage({

@@ -92,16 +92,98 @@ export function effectiveStuckOf({
   childKind,
   child,
   input,
+  sceneWords,
 }: {
   aiStuck: boolean;
   childKind: TalkChildKind | undefined;
   child: string;
   input: string;
+  /**
+   * 질문 · 오늘 장면 · 카드의 내용 낱말(소문자). 영어 낱말 두 개의 말에 이 낱말이 들면 질문 · 장면에 닿는 짧은 말(short_related)이라 막힘이
+   * 아니다('Big fish.' — 대본 4회차 설계 재판정, 앱 안전망 셋 이상 밖의 자리). 없으면 이 조건을 보지 않는다.
+   */
+  sceneWords?: ReadonlySet<string>;
 }): boolean {
   if (!aiStuck || input !== "speech") return aiStuck;
   if (isEnglishSaying(child, ENGLISH_SENTENCE_MIN_WORDS)) return false;
+  if (sceneWords !== undefined && touchesScene(child, sceneWords)) return false;
   if (childKind !== undefined) return STUCK_CHILD_KINDS.has(childKind);
   return !isEnglishSaying(child);
+}
+
+/** 이 낱말들은 장면 낱말로 세지 않는다(기능어 · 대답 말 — 'Yes it.' 이 장면에 닿는다고 보지 않게). */
+const NOT_SCENE_WORDS = new Set([
+  // 진행 · 지시 말(카드 글에 섞이는 흔한 말 — 검토 rev-prompt-2 P3-5)
+  "one",
+  "now",
+  "time",
+  "more",
+  "can",
+  "me",
+  "let",
+  "lets",
+  "here",
+  "there",
+  "today",
+  "a",
+  "an",
+  "the",
+  "i",
+  "you",
+  "it",
+  "we",
+  "he",
+  "she",
+  "they",
+  "my",
+  "your",
+  "is",
+  "am",
+  "are",
+  "do",
+  "does",
+  "yes",
+  "no",
+  "and",
+  "or",
+  "to",
+  "in",
+  "on",
+  "at",
+  "with",
+  "of",
+  "for",
+  "this",
+  "that",
+  "what",
+  "huh",
+  "ok",
+  "okay",
+]);
+
+/**
+ * 영어 낱말 두 개(ENGLISH_SAYING_MIN_WORDS)의 말이고 모름 표현이 아니며, 그 가운데 하나가 질문 · 장면 · 카드의 내용 낱말인가('Big fish.' · 'Cold
+ * juice.'). 'Blue car.' 처럼 장면에 없는 두 낱말은 아니다(갈래가 정함).
+ */
+export function touchesScene(
+  child: string,
+  sceneWords: ReadonlySet<string>,
+): boolean {
+  if (!isEnglishSaying(child)) return false;
+  const words = normalizeSpoken(child)
+    .split(" ")
+    .filter((w) => /^[a-z]+$/.test(w));
+  if (words.length !== ENGLISH_SAYING_MIN_WORDS) return false;
+  return words.some((w) => !NOT_SCENE_WORDS.has(w) && sceneWords.has(w));
+}
+
+/** 장면 낱말 표(카드 글 · 단원 단어에서 기능어를 뺀 소문자 낱말 — 부르는 쪽이 카드 글을 넘긴다). */
+export function sceneWordsOf(texts: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  for (const text of texts)
+    for (const w of normalizeSpoken(text).split(" "))
+      if (/^[a-z]+$/.test(w) && !NOT_SCENE_WORDS.has(w)) out.add(w);
+  return out;
 }
 
 /**

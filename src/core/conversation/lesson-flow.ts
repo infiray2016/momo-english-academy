@@ -485,6 +485,63 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
   };
 }
 
+/** 늦은 카드 답으로 보는 폭: 필수 질문 차례 뒤 이번 말 앞까지의 아이 차례 수 상한(대본 4회차 사례 둘 — 한두 턴 늦은 답, 판정 폭이라 설계 숫자가 아님). */
+export const LATE_CARD_ANSWER_MAX_GAP = 2;
+
+/** 늦은 카드 답 판정이 읽는 대화 행(선생님 행은 move 로 필수 질문을 알고, 아이 행은 인식 글로 노린 단어를 본다). */
+export type LateCardRow = {
+  speaker: "teacher" | "child";
+  text: string;
+  move?: Pick<TalkMove, "item" | "words"> | null;
+};
+
+/**
+ * 한두 턴 늦게 온 카드 답(대본 4회차 설계 재판정 N-2 (a) · 검토 rev-prompt-2 P3-3): 가장 최근 필수 질문 차례(move.item required)의 노린 단원 단어를
+ * 아이의 이번 말이 처음으로 담았으면 참(소문자 · 원형). 그 뒤 아이 말 가운데 이미 노린 단어를 담은 것이 있으면(이미 답함) 거짓이고, 그 질문 뒤
+ * 아이 차례가 LATE_CARD_ANSWER_MAX_GAP 를 넘게 지났으면(그 주제로 계속 말하는 중) 거짓이다. 참이면 '앞 차례가 카드 기회'로 보아 그 답에 먼저
+ * 이어 묻게 한다(C204 (6) · C202 (2)).
+ */
+export function lateCardAnswerOf({
+  rows: given,
+  turns,
+  child,
+  lemmaOf,
+}: {
+  rows?: readonly LateCardRow[];
+  /** 옛 입력(흐름 꼴 — 아이 행 글이 없어 '이미 답함'은 보지 못하고 폭만 본다). rows 가 있으면 rows 를 쓴다. */
+  turns?: readonly TalkLessonTurn[];
+  child: string;
+  lemmaOf: (surface: string) => string | undefined;
+}): boolean {
+  const rows: readonly LateCardRow[] =
+    given ??
+    (turns ?? []).map((row) =>
+      row.speaker === "teacher"
+        ? { speaker: "teacher", text: row.text, move: row.move }
+        : { speaker: "child", text: "" },
+    );
+  const at = rows.findLastIndex(
+    (row) => row.speaker === "teacher" && row.move?.item.kind === "required",
+  );
+  const targets = new Set(
+    (rows[at]?.move?.words ?? []).map((w) => w.toLowerCase()),
+  );
+  if (at < 0 || targets.size === 0) return false;
+  const has = (text: string) =>
+    text
+      .split(/[^A-Za-z']+/)
+      .filter((w) => w !== "")
+      .some(
+        (w) =>
+          targets.has(w.toLowerCase()) ||
+          targets.has(lemmaOf(w)?.toLowerCase() ?? ""),
+      );
+  const between = rows.slice(at + 1).filter((row) => row.speaker === "child");
+  if (between.length > LATE_CARD_ANSWER_MAX_GAP) return false;
+  if (between.some((row) => has(row.text))) return false;
+  return has(child);
+}
+
 /**
  * 다시 묻는 턴이 되는 단원 단어(02-2 271줄 · 13절 C202 (1)): 앞 회화 세션에서 만남(처음 스냅숏 metBefore) · 짧은 준비에서 보임(인사 뒤
  * prepWords — 건너뛴 낱말 포함, 대화 중 연 준비 move.prep) · 이 대화의 선생님 차례가 노렸거나(move.words) 꺼낸(move.intro) 낱말. 이 낱말을
