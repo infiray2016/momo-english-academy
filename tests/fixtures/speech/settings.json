@@ -11,5 +11,12 @@
   "speech.rate.4-6": 0.85,
   "speech.rate.7-9": 0.9,
   "speech.rate.10-12": 1.0,
-  "speech.sentence_pause_ms": 700
+  "speech.sentence_pause_ms": 700,
+  "speech.speak_start_timeout_seconds": 3,
+  "speech.speak_end_timeout_extra_seconds": 5,
+  "speech.speak_chars_per_second": 8,
+  "speech.skip_notice_seconds": 1.5,
+  "speech.read_ko": true,
+  "speech.speak_chars_per_second_ko": 6,
+  "speech.rate_ko": 1.0
 }

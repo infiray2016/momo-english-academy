@@ -2,6 +2,8 @@
 // 상태는 답 기록뿐이다 — 이어 보기는 같은 기록으로 다음 차례를 다시 센다(AC-11d). DB · 시계 없는 순수 함수.
 // 설정 값(시작 단계 · 단계마다 문항 수 · 영역 문항 수 상한)은 level_tests 복사본에서, 시드 범위 끝은 판정 때의 설정에서
 // 부르는 쪽이 넘긴다.
+// 소리를 들려주지 못한 본 문항(UI · UX spec 2판 R-56 · R-57 — 묶음 5-나): 판정 · 문항 수에 넣지 않고 같은 단계 · 같은 번호의 예비 문항을 낸다.
+// 예비 문항에는 기술 오류 기록이 오지 않는다(화면이 같은 자리에서 '다시 듣기'를 기다리고 서버가 거부한다).
 import { LEVEL_MIN } from "@/core/seed/structure";
 
 /** 답 기록 한 줄(level_tests.answers 의 채점 칸). */
@@ -13,6 +15,11 @@ export type PlacementAnswerRecord = {
   dontKnow: boolean;
   /** 한 문항 인식이 두 시도를 합쳐 speech.max_retries 번 실패함 — 틀림으로 세지 않고 그 문항을 예비로 다시 낸다(정할 것 처). */
   repeatFailed: boolean;
+  /**
+   * 소리를 한 번도 들려주지 못한 채 받은 답 · '다음'(R-56 · R-57 기술 오류) — 맞음 · 틀림 · 몰라요로 세지 않고 그 자리만 같은 번호의 예비
+   * 문항으로 다시 낸다(실패 3회와 달리 남은 따라 말하기 자리는 그대로). 본 문항에만 온다. 옛 기록에는 없다.
+   */
+  techError?: boolean;
 };
 
 export type PlacementRules = {
@@ -56,6 +63,37 @@ export type PlacementStep =
     }
   | { kind: "done"; result: PlacementResult };
 
+/**
+ * 소리를 들려주지 못한 답(기술 오류)을 받아 같은 번호의 예비 문항으로 넘길 수 있는 차례인가(순수, R-56): 본 문항이고, 소리가 과제 자극인
+ * 문항(듣기 · 따라 말하기)이고, 같은 (단계, 번호)의 예비 문항이 있을 때만. 아니면 서버가 거부하고 화면은 '다음' 없이 다시 듣기를 기다린다.
+ */
+export function soundSpareAllowed({
+  slot,
+  itemType,
+  hasSpare,
+}: {
+  slot: "main" | "spare";
+  itemType: string;
+  hasSpare: boolean;
+}): boolean {
+  return (
+    slot === "main" &&
+    (itemType === "listening" || itemType === "repeat") &&
+    hasSpare
+  );
+}
+
+/** 배치 총점(level_tests.total_score — 순수): 맞힌 답 수. 실패 3회 · 기술 오류(R-56) 기록은 맞음 · 틀림으로 세지 않는다. */
+export function placementCorrectCount(
+  answers: readonly Pick<
+    PlacementAnswerRecord,
+    "correct" | "repeatFailed" | "techError"
+  >[],
+): number {
+  return answers.filter((a) => !a.repeatFailed && !a.techError && a.correct)
+    .length;
+}
+
 /** (단계, 번호) 칸 이름. */
 export function slotKey(level: number, no: number): string {
   return `${level}:${no}`;
@@ -91,12 +129,15 @@ type ReplayState = {
   skipped: number | undefined;
   counted: number;
   spareMode: boolean;
+  /** 소리를 들려주지 못해 예비로 다시 낼 번호(그 단계 묶음의 다음 자리 — 답 하나를 받으면 지운다). */
+  techSpare: number | undefined;
   usedSpares: boolean;
   done: boolean;
 };
 
 function slotOf(state: ReplayState, input: PlacementInput): "main" | "spare" {
   const no = state.block.length + 1;
+  if (state.techSpare === no) return "spare";
   return state.spareMode && input.repeatSlots.has(slotKey(state.level, no))
     ? "spare"
     : "main";
@@ -142,6 +183,7 @@ function replay(input: PlacementInput): ReplayState {
     skipped: undefined,
     counted: 0,
     spareMode: false,
+    techSpare: undefined,
     usedSpares: false,
     done: false,
   };
@@ -155,17 +197,23 @@ function replay(input: PlacementInput): ReplayState {
       state.done ||
       answer.level !== expected.level ||
       answer.no !== expected.no ||
-      answer.slot !== expected.slot
+      answer.slot !== expected.slot ||
+      (answer.techError === true && expected.slot !== "main")
     ) {
       throw new Error(
         `배치 답 기록이 차례와 맞지 않는다: ${answer.level}:${answer.no}(${answer.slot})`,
       );
     }
     if (answer.slot === "spare") state.usedSpares = true;
+    if (answer.techError === true) {
+      state.techSpare = expected.no;
+      continue;
+    }
     if (answer.repeatFailed) {
       state.spareMode = true;
       continue;
     }
+    state.techSpare = undefined;
     state.block.push(answer);
     state.counted += 1;
     const outcome = judgeBlock(state.block, input.perLevel);

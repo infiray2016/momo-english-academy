@@ -36,8 +36,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: lint
         run: pnpm exec biome ci --reporter=github .
-      - name: check-ids # P7b. 12절 키 · 5절 테이블 ↔ seed/settings.json ↔ 코드(역분석 제안 6 · 조사 P5). 설계 숫자는 보고만(차수 경계에서 막음으로)
-        run: pnpm check:ids --fail-on spec-setting-missing,seed-setting-unknown,setting-scope,setting-change-via,setting-default,code-setting-unknown,table-mismatch,max-corrections,fixture-setting
+      # P7b. 12절 키 · 5절 테이블 ↔ seed/settings.json ↔ 코드(역분석 제안 6 · 조사 P5). 화면 소스의 토큰 밖 색(design-color)도 막고,
+      # 설계 숫자는 하나하나 막지 않고 경고 수가 기준 값을 넘지 않게 막는다(UI · UX plan 묶음 2-다 · 정한 것 8 — 기준 49 는 2-가 시작 때 잰 수, AC-23e (1))
+      - name: check-ids
+        run: pnpm check:ids --fail-on spec-setting-missing,seed-setting-unknown,setting-scope,setting-change-via,setting-default,code-setting-unknown,table-mismatch,max-corrections,fixture-setting,design-color --design-number-max 49
       - name: spec-trace # missing-test 는 묶음 plan 작업 10 에서 0 이 되면 --fail-on 에 더한다(C51 라)
         run: pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec
       - name: depcruise

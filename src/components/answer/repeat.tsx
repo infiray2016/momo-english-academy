@@ -7,6 +7,8 @@
 // 두 시도를 합쳐 speech.max_retries 번이면 repeat-failed 로 넘긴다. network 는 세지 않는다. audio-capture 가 이어서
 // MIC_CAPTURE_STREAK 번이면 '마이크를 쓸 수 없음'이 먼저다(예비 문항보다). mic-unavailable · stalled 는 부르는 쪽이 안내한다.
 // 채점은 서버가 같은 인식 글로 다시 한다 — 여기의 일치율은 '한 번 더'를 정하는 데만 쓴다.
+// 문장 읽어 주기('다시 듣기' · 들어올 때 읽기)를 들려줬는지는 부르는 쪽(배치 화면)이 감싼 접점(sound-retry useSoundCheck)으로 넘겨 센다 — 들려주지
+// 못하면 배치 화면이 판 안 아래에 '다시 듣기' 안내를 두고 그동안 받은 답을 기술 오류로 보낸다(UI · UX spec 2판 R-56 · R-57, 묶음 5-나).
 import { useEffect, useRef, useState } from "react";
 import { EnglishLine } from "@/components/activities/common";
 import { StatusLine } from "@/components/board/board";
@@ -58,6 +60,8 @@ export function RepeatAnswer({
   onMicProblem: (problem: MicProblem) => void;
 }) {
   const [listening, setListening] = useState(false);
+  /** 이 듣기에서 소리가 들어왔는가(말하기 단추의 소리 들어옴 표시 — C166 · UX 검토 U4-2). */
+  const [soundIn, setSoundIn] = useState(false);
   const [message, setMessage] = useState("");
   const heard = useRef<string[]>([]);
   const failures = useRef(0);
@@ -76,17 +80,20 @@ export function RepeatAnswer({
     }
     speech.unlockFromGesture();
     setMessage("");
+    setSoundIn(false);
     setListening(true);
     const current = speech.listen(
       endRuleFor(
         { area: "placement", level, answer: "one-sentence" },
         speechSettings,
       ),
+      { sound: () => setSoundIn(true) },
     );
     handle.current = current;
     const outcome = await current.outcome;
     handle.current = undefined;
     setListening(false);
+    setSoundIn(false);
 
     const failed = (code: string | undefined) => {
       failures.current += 1;
@@ -155,6 +162,7 @@ export function RepeatAnswer({
       <SpeakButton
         label={REPEAT_TEXT.speak}
         listening={listening}
+        soundIn={soundIn}
         capAt={() => handle.current?.capAt}
         disabled={disabled || !speech}
         onPress={() => void listen()}

@@ -3,7 +3,8 @@ import "server-only";
 // C89 · C92 · C95, plan-p13a 파일별 값 4 · 정할 것 회8). P9c runAiCall 과 같은 차례를 스트리밍으로 한다:
 // 설정 · 학습일 · 단가표 · 조합 → 호출 앞 판정 → 시드 목록 · 가림 · 요청 본문 → 시도(흘려 받기 · 문장 검사 · 다음 할 일)
 // → 정규화 · 출력 검사 → 결과. 시도 하나 = ai_calls 한 행. 아이 글 · 응답 글은 로그 · 오류 · 기록 어디에도 남기지 않는다.
-// DB 없이 도는 몫(streamTalk)과 DB 를 읽는 앞머리(runTalkCall)를 나눈다 — 앞쪽은 단위 시험이 가짜 클라이언트로 본다.
+// DB 없이 도는 몫(streamTalkLesson)과 DB 를 읽는 앞머리(runTalkLessonCall)를 나눈다 — 앞쪽은 단위 시험이 가짜 클라이언트로 본다.
+// 규격은 새 꼴 회화 수업 턴(talk-lesson) 하나다(옛 꼴 talk 규격 · streamTalk · runTalkCall 은 회화 plan 묶음 12 가 지웠다).
 import type Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import {
@@ -13,12 +14,14 @@ import {
   prepareAnswer,
 } from "@/core/ai/calls/common";
 import {
-  applyTalkChecks,
-  type TalkOutput,
-  type TalkRules,
-  type TalkTurnInput,
-  talkCheckFields,
-} from "@/core/ai/calls/talk";
+  applyTalkLessonChecks,
+  type TalkLessonInput,
+  type TalkLessonOutput,
+  type TalkLessonRules,
+  talkLessonCheckFields,
+  talkLessonClosingSpec,
+  talkLessonTurnSpec,
+} from "@/core/ai/calls/talk-lesson";
 import {
   type AiRequestConfig,
   aiSettingSchemasOf,
@@ -38,12 +41,16 @@ import {
   type FailureReason,
 } from "@/core/ai/failure";
 import type { Masker } from "@/core/ai/mask";
-import { checkOutputFields } from "@/core/ai/output-check";
+import {
+  type CheckField,
+  checkOutputFields,
+  type FieldHit,
+} from "@/core/ai/output-check";
 import { type BuiltRequest, buildAiRequest } from "@/core/ai/request";
+import { sayingAnswer } from "@/core/conversation/spoken";
 import {
   createToriEnReader,
   createToriSentenceGate,
-  safeLineOf,
   type TalkAttemptEnd,
   type ToriSentenceGate,
   type ToriSentenceReason,
@@ -92,10 +99,10 @@ const DOWN_AFTER_FAILURES_KEY = "ai.down_after_failures";
 
 // ── 결과 꼴(값 5 — index.ts 가 다시 내보낸다) ──────────────────────
 
-export type TalkSuccess = {
+export type TalkSuccessOf<O> = {
   ok: true;
   /** 정규화 · 출력 검사 뒤 값. tori_en 은 내보낸 문장(검사 뒤, 걸린 자리는 안전한 대사)을 이은 글이다. */
-  value: TalkOutput;
+  value: O;
   /** 내보낸 문장(다시 쓸 토리 차례의 재료 — toriRewriteOf). {NAME} 은 채우기 전. */
   sentSentences: string[];
   /** tori_en 문장 검사에 걸린 갈래(걸린 차례). */
@@ -116,10 +123,15 @@ export type TalkSuccess = {
   streamed: boolean;
   /** Haiku 거절 뒤 다른 모델로 다시 불러 받은 턴(6.1). */
   retriedOtherModel: boolean;
+  /**
+   * 새 꼴(회화 plan 묶음 8): 앱 확인(정규화 · 출력 검사)이 1~3단계 소리 줄을 바꿨다 — 따라 할 말을 바꾸거나 비움(model) · 선택지를
+   * 비움(choices). 이 턴의 ai_calls 는 '검증 실패'로 남는다(묶음 6 검토 8절 (라) — talk:observe 가 비율을 본다).
+   */
+  soundFixed?: { model: boolean; choices: boolean; overlap?: boolean };
 };
 
-export type TalkOutcome =
-  | TalkSuccess
+export type TalkOutcomeOf<O> =
+  | TalkSuccessOf<O>
   | {
       ok: false;
       /** 첫 문장 뒤 끊김 · 타임아웃 · 거절 · max_tokens — 보낸 문장을 두고 그 턴을 닫는다(8절). */
@@ -130,6 +142,8 @@ export type TalkOutcome =
       cause: Exclude<TalkAttemptEnd, "end_turn">;
     }
   | { ok: false; reason: AiFailureReason; refusals: number };
+/** 새 꼴 회화 수업 턴 · 끝맺음 턴의 결과(talk-lesson 규격). */
+export type TalkLessonOutcome = TalkOutcomeOf<TalkLessonOutput>;
 
 export type TalkCallContext = AiCallContext & {
   /** 서버가 요청을 받은 때(첫 문장 시간의 시작, 6.1). */
@@ -167,10 +181,8 @@ export type TalkAttemptRecord = {
   calledAt: Date;
 };
 
-export type TalkStreamPlan = {
-  spec: CallSpec<TalkTurnInput, TalkOutput, TalkRules>;
-  input: TalkTurnInput;
-  rules: TalkRules;
+/** 흘려 받기 계획의 공통 몫(규격 · 입력 밖 — 구성 · 가림 · 목록 · 단가 · 클라이언트 · 시각 · 기록). */
+type StreamBase = {
   config: AiRequestConfig;
   /** Haiku 첫 문장 전 거절 때 한 번 부를 구성(없으면 다시 부르지 않음). */
   otherModelConfig: AiRequestConfig | null;
@@ -189,8 +201,118 @@ export type TalkStreamPlan = {
   record(row: TalkAttemptRecord): Promise<void>;
 };
 
-function bodyOf(built: BuiltRequest<TalkOutput>) {
-  const { type, schema } = zodOutputFormat(built.wireSchema);
+/**
+ * 새 꼴 회화 수업 턴의 흘려 받기 계획(회화 plan 묶음 8). 문장 문은 금지어 · 개인 정보 · 연락처 · 메타만 보고 물음표 문장을 지우지 않는다 —
+ * 1~3단계 물음표 문장 잡아 두기 · 검사와 카드 자리 · 마무리 자리의 물음표 지움은 서버 턴 길(onSentence 받는 쪽)이 한다(정한 것 19).
+ */
+export type TalkLessonStreamPlan = StreamBase & {
+  spec: CallSpec<TalkLessonInput, TalkLessonOutput, TalkLessonRules>;
+  input: TalkLessonInput;
+  rules: TalkLessonRules;
+  /** 걸린 문장 첫 자리를 바꿀 카드 안전한 대사(safeLineOf — 부르는 쪽이 카드 · 턴 번호로 고른다). */
+  safeLine: string;
+};
+
+/** 출력 검사 뒤 값과 알림(applyTalkLessonChecks 의 몫). */
+type CheckedOf<O> = {
+  value: O;
+  changed: boolean;
+  hintsBlocked: boolean;
+  farewellBlocked: boolean;
+  summaryBlocked: boolean;
+};
+
+/** 규격마다 다른 흘려 받기 몫(문장 문 · tori_en 칸 · 출력 검사 · 소리 줄 바뀜). */
+type StreamKit<O> = {
+  closing: boolean;
+  safeLine: string;
+  sentenceMaxWords: number;
+  withToriEn(value: O, toriEn: string): O;
+  checkFields(value: O): CheckField[];
+  check(value: O, hits: ReadonlyMap<string, readonly FieldHit[]>): CheckedOf<O>;
+  /** 앱 확인이 소리 줄을 바꿨는가(새 꼴만). raw 는 다듬은 응답(엄격 통과면 그 값). */
+  soundFixed?(
+    raw: unknown,
+    value: O,
+    sent: readonly string[],
+  ): { model: boolean; choices: boolean; overlap?: boolean };
+};
+
+type StreamCore<I, O, R> = StreamBase & {
+  spec: CallSpec<I, O, R>;
+  input: I;
+  rules: R;
+  kit: StreamKit<O>;
+};
+
+const stringsOf = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
+
+/**
+ * 새 꼴 소리 줄 바뀜(묶음 6 검토 8절 (라)): 응답의 따라 할 말 · 선택지가 비지 않았는데 앱 확인 뒤 값이 다르면 참. 앱이 정한 차례
+ * (카드 자리 · 받침 둘째 · 4단계부터)라서 비운 것도 바뀜으로 센다 — AI 가 그 칸을 채운 것 자체가 고정부를 어긴 것이라 함께 본다.
+ * sent(문장 문을 지난 선생님 문장)를 주면 겹침도 본다: 앱 확인 뒤 소리 줄의 답을 담은 선생님 문장이 있었다(C125 · 02-2 204줄 — 잡아 둔
+ * 것은 서버 턴 길이 지우지만 이미 흘린 것은 지울 수 없어 기록으로 남긴다, 묶음 8 검토 I-1).
+ */
+export function lessonSoundFixedOf(
+  raw: unknown,
+  value: Pick<TalkLessonOutput, "model_line" | "choices">,
+  sent?: readonly string[],
+): { model: boolean; choices: boolean; overlap?: boolean } {
+  const r = (raw ?? {}) as { model_line?: unknown; choices?: unknown };
+  const model = typeof r.model_line === "string" ? r.model_line.trim() : "";
+  const choices = stringsOf(r.choices).map((c) => c.trim());
+  const fixed = {
+    model: model !== "" && model !== value.model_line,
+    choices:
+      choices.length > 0 &&
+      (choices.length !== value.choices.length ||
+        choices.some((c, i) => c !== value.choices[i])),
+  };
+  if (sent === undefined) return fixed;
+  const pairs = soundPairsOf(value);
+  return {
+    ...fixed,
+    overlap: pairs.length > 0 && sent.some((s) => sayingAnswer(s, pairs)),
+  };
+}
+
+/** 소리 줄의 답 짝(따라 할 말은 같은 줄 둘, 선택지는 그 둘 — sayingAnswer 의 짝 꼴). */
+export function soundPairsOf(
+  value: Pick<TalkLessonOutput, "model_line" | "choices">,
+): (readonly [string, string])[] {
+  return [
+    ...(value.model_line !== ""
+      ? [[value.model_line, value.model_line] as const]
+      : []),
+    ...(value.choices.length === 2
+      ? [[value.choices[0] ?? "", value.choices[1] ?? ""] as const]
+      : []),
+  ];
+}
+
+function lessonKit(plan: {
+  input: TalkLessonInput;
+  safeLine: string;
+}): StreamKit<TalkLessonOutput> {
+  const { input } = plan;
+  return {
+    closing: input.turn.closing,
+    safeLine: plan.safeLine,
+    sentenceMaxWords: input.sentenceMaxWords,
+    withToriEn: (value, toriEn) => ({ ...value, tori_en: toriEn }),
+    checkFields: talkLessonCheckFields,
+    check: (value, hits) => applyTalkLessonChecks(value, hits, input),
+    soundFixed: lessonSoundFixedOf,
+  };
+}
+
+function bodyOf<O>(built: BuiltRequest<O>) {
+  const { type, schema } = zodOutputFormat(
+    built.wireSchema as Parameters<typeof zodOutputFormat>[0],
+  );
   return {
     ...built.body,
     output_config: { ...built.body.output_config, format: { type, schema } },
@@ -233,12 +355,21 @@ function parsedAnswer(message: TalkMessage): unknown {
 }
 
 /**
- * 시도 · 흘려 보내기 · 정규화 · 출력 검사(DB 없음). 첫 문장 전 연결 · 타임아웃이면 1회 다시, Haiku 첫 문장 전 거절이면 다른 모델로 1회,
- * 첫 문장 뒤 실패는 보낸 문장을 두고 닫는다(stream.ts talkAttemptNext). 기다림은 startedAt 부터 타임아웃의 두 배까지.
+ * 새 꼴 회화 수업 턴 · 끝맺음 턴의 흘려 받기 — 시도 · 흘려 보내기 · 정규화 · 출력 검사(DB 없음). 첫 문장 전 연결 · 타임아웃이면 1회 다시,
+ * Haiku 첫 문장 전 거절이면 다른 모델로 1회, 첫 문장 뒤 실패는 보낸 문장을 두고 닫는다(stream.ts talkAttemptNext). 기다림은 startedAt 부터
+ * 타임아웃의 두 배까지.
  */
-export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
-  const { input, spec, rules, clock } = plan;
-  const closing = input.turn.closing;
+export async function streamTalkLesson(
+  plan: TalkLessonStreamPlan,
+): Promise<TalkLessonOutcome> {
+  return streamCore({ ...plan, kit: lessonKit(plan) });
+}
+
+async function streamCore<I, O, R>(
+  plan: StreamCore<I, O, R>,
+): Promise<TalkOutcomeOf<O>> {
+  const { input, spec, rules, clock, kit } = plan;
+  const closing = kit.closing;
   const streaming = plan.onSentence !== undefined && !closing;
   const built = buildAiRequest(spec, input, {
     config: plan.config,
@@ -260,9 +391,8 @@ export async function streamTalk(plan: TalkStreamPlan): Promise<TalkOutcome> {
     createToriSentenceGate({
       forbidden: plan.forbidden,
       metaPhrases: plan.metaPhrases,
-      lowLevel: input.spec.cardShape === "turns",
-      safeLine: safeLineOf(input.card.safeLines, input.history.length + 1),
-      sentenceMaxWords: input.sentenceMaxWords,
+      safeLine: kit.safeLine,
+      sentenceMaxWords: kit.sentenceMaxWords,
     });
   let gate = gateOf();
   let firstSentenceMs: number | null = null;
@@ -462,8 +592,8 @@ function emptyRecord(
 }
 
 /** end_turn: 남은 문장 · 흘려 보내지 못한 tori_en(위험 3) → 엄격 규격 · 검증 → 정규화(다시 요청하지 않음) → 출력 검사. */
-async function finishTalk(
-  plan: TalkStreamPlan,
+async function finishTalk<I, O, R>(
+  plan: StreamCore<I, O, R>,
   s: {
     message: TalkMessage;
     reader: ReturnType<typeof createToriEnReader>;
@@ -476,9 +606,9 @@ async function finishTalk(
     answered: TalkAttemptRecord;
     retriedOtherModel: boolean;
   },
-): Promise<TalkOutcome> {
-  const { spec, input, rules } = plan;
-  const closing = input.turn.closing;
+): Promise<TalkOutcomeOf<O>> {
+  const { spec, input, rules, kit } = plan;
+  const closing = kit.closing;
   const prepared = parsedAnswer(s.message);
   let streamed = false;
   if (s.streaming) {
@@ -516,19 +646,29 @@ async function finishTalk(
       };
     return { ok: false, reason: "invalid", refusals: 0 };
   }
-  const shown: TalkOutput = closing
+  const shown: O = closing
     ? value
-    : { ...value, tori_en: gate.sent().join(" ") };
-  const hits = checkOutputFields(talkCheckFields(shown), {
+    : kit.withToriEn(value, gate.sent().join(" "));
+  const hits = checkOutputFields(kit.checkFields(shown), {
     forbidden: plan.forbidden,
-    sentenceMaxWords: input.sentenceMaxWords,
+    sentenceMaxWords: kit.sentenceMaxWords,
   });
-  const checked = applyTalkChecks(shown, hits);
+  const checked = kit.check(shown, hits);
   const blocked = gate.blocked();
   const changed = checked.changed || blocked.length > 0;
+  // 새 꼴: 엄격 규격은 소리 줄 범위를 보지 않아 정규화가 바꾼 턴이 '성공'으로 남지 않게 한다(묶음 6 검토 8절 (라))
+  const soundFixed = kit.soundFixed?.(
+    strict ?? prepared,
+    checked.value,
+    gate.sent(),
+  );
+  const fixed =
+    soundFixed !== undefined &&
+    (soundFixed.model || soundFixed.choices || soundFixed.overlap === true);
   await plan.record({
     ...s.answered,
-    status: strict !== null && !changed ? "success" : "validation_failed",
+    status:
+      strict !== null && !changed && !fixed ? "success" : "validation_failed",
   });
   return {
     ok: true,
@@ -545,6 +685,7 @@ async function finishTalk(
     summaryBlocked: checked.summaryBlocked,
     streamed: s.streaming && streamed,
     retriedOtherModel: s.retriedOtherModel,
+    ...(soundFixed === undefined ? {} : { soundFixed }),
   };
 }
 
@@ -581,7 +722,7 @@ function otherModelConfigOf(
 
 type TalkTurnPurpose = "talk_turn" | "talk_closing";
 
-const fail = (reason: AiFailureReason, refusals = 0): TalkOutcome => ({
+const fail = <O>(reason: AiFailureReason, refusals = 0): TalkOutcomeOf<O> => ({
   ok: false,
   reason,
   refusals,
@@ -605,15 +746,51 @@ export function keepTurnOnRecordFailure(
 }
 
 /**
- * 회화 턴 · 끝맺음 턴 하나(runAiCall 과 같은 앞머리). 설정 문제 · 목록 없음 · 키 없음은 config(행 없음),
- * 하루 안전 상한이면 safety_cap 행 하나(스트림 없음). 맥락과 입력의 단계가 다르면 호출부 결함으로 던진다.
+ * 새 꼴 회화 수업 턴 · 끝맺음 턴 하나(회화 plan 묶음 8 — runAiCall 과 같은 앞머리). 설정 문제 · 목록 없음 · 키 없음은 config(행 없음),
+ * 하루 안전 상한이면 safety_cap 행 하나(스트림 없음). 맥락과 입력의 단계가 다르면 호출부 결함으로 던진다. 안전한 대사는
+ * 부르는 쪽이 카드에서 고른다(TalkLessonCardView 에는 그 칸이 없다).
  */
-export async function runTalkCall(
-  spec: CallSpec<TalkTurnInput, TalkOutput, TalkRules>,
-  input: TalkTurnInput,
-  ctx: TalkCallContext,
+export async function runTalkLessonCall(
+  spec: CallSpec<TalkLessonInput, TalkLessonOutput, TalkLessonRules>,
+  input: TalkLessonInput,
+  ctx: TalkCallContext & { safeLine: string },
   deps: TalkDeps = {},
-): Promise<TalkOutcome> {
+): Promise<TalkLessonOutcome> {
+  return runCallCore(spec, input, ctx, deps, () =>
+    lessonKit({ input, safeLine: ctx.safeLine }),
+  );
+}
+
+/** 새 꼴 회화 수업 턴(문장마다 흘려 보냄 — onSentence 는 던지지 않는다). */
+export function talkLessonTurn(
+  input: TalkLessonInput,
+  ctx: TalkCallContext & {
+    onSentence: (sentence: string) => void;
+    safeLine: string;
+  },
+  deps?: TalkDeps,
+): Promise<TalkLessonOutcome> {
+  return runTalkLessonCall(talkLessonTurnSpec, input, ctx, deps);
+}
+
+/** 새 꼴 끝맺음 턴(같은 규격 · 같은 대화, 흘려 보내지 않는다 — 6.1 · C21). */
+export function talkLessonClosing(
+  input: TalkLessonInput,
+  ctx: Omit<TalkCallContext, "onSentence"> & { safeLine: string },
+  deps?: TalkDeps,
+): Promise<TalkLessonOutcome> {
+  if (!input.turn.closing)
+    throw new RangeError("끝맺음 턴 입력은 turn.closing 이 참이어야 한다");
+  return runTalkLessonCall(talkLessonClosingSpec, input, ctx, deps);
+}
+
+async function runCallCore<I extends { level: number }, O, R>(
+  spec: CallSpec<I, O, R>,
+  input: I,
+  ctx: TalkCallContext,
+  deps: TalkDeps,
+  kitOf: () => StreamKit<O>,
+): Promise<TalkOutcomeOf<O>> {
   const db = deps.db ?? getDb();
   const clock = deps.clock ?? now;
   const purpose = spec.purpose as TalkTurnPurpose;
@@ -655,7 +832,7 @@ export async function runTalkCall(
   } catch (error) {
     if (!isConfigError(error)) throw error;
     logConfigProblem(purpose, error);
-    return fail("config");
+    return fail<O>("config");
   }
   const downAfterFailures = values[DOWN_AFTER_FAILURES_KEY] as number;
   const baseRow = {
@@ -677,12 +854,12 @@ export async function runTalkCall(
       ...emptyRecord(config.model, t0),
       status: "safety_cap",
     });
-    return fail("safety_cap");
+    return fail<O>("safety_cap");
   }
 
   let forbidden: ForbiddenList;
   let metaPhrases: readonly string[];
-  let rules: TalkRules;
+  let rules: R;
   let client: Anthropic;
   try {
     forbidden = (deps.lists ?? getOutputCheckLists)().forbidden;
@@ -694,7 +871,7 @@ export async function runTalkCall(
   } catch (error) {
     if (!isConfigError(error)) throw error;
     logConfigProblem(purpose, error);
-    return fail("config");
+    return fail<O>("config");
   }
   const contactPatterns = forbidden.patterns
     .filter((p) => p.category === "contact")
@@ -702,10 +879,11 @@ export async function runTalkCall(
   const masker = await maskerFor(db, ctx.profileId, contactPatterns);
   ctx.onPrepared?.();
 
-  return streamTalk({
+  return streamCore({
     spec,
     input,
     rules,
+    kit: kitOf(),
     config,
     otherModelConfig: otherModelConfigOf(
       purpose,

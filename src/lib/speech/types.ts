@@ -7,20 +7,35 @@ import type {
   ErrorGroup,
   ListenOutcome,
 } from "@/core/speech/listen";
-
-/** 읽어 주기 결과. cancelled 는 앱이나 다른 읽어 주기 · 듣기가 끊은 때다. */
-export type SpeakOutcome =
-  | { kind: "ended" }
-  | { kind: "cancelled" }
-  | { kind: "error"; code: string }
-  | { kind: "unsupported" };
+import type { SpeakHeard } from "@/core/speech/pace";
+import type { SpeakSkipReason } from "@/core/teacher/voice";
 
 /**
- * 읽어 주기 선택 칸(plan-p13b 파일별 값 11 · plan 회화-선생님-캐릭터 값 12).
+ * 읽어 주기 결과. cancelled 는 앱이나 다른 읽어 주기 · 듣기가 끊은 때다. ended 의 heard 는 감시 결과(R-48 — 들려줌 · 끝 알림 없음 ·
+ * 들려주지 못함, core/speech/pace speakHeardOf · 여러 문장은 speakHeardOfAll)다. 들려주지 못함을 기술 오류로 적는 값이라 기본값
+ * 없이 반드시 싣는다.
+ */
+export type SpeakOutcome =
+  | { kind: "ended"; heard: SpeakHeard }
+  | { kind: "cancelled" }
+  /** started 는 시작 알림(onstart) 뒤에 난 오류인가(R-48 — 시작 전 오류는 들려주지 못함, pace speakHeardOutcomeOf). */
+  | { kind: "error"; code: string; started: boolean }
+  | { kind: "unsupported" }
+  /**
+   * 선생님 한국어 줄을 읽지 않음(가르치고 spec 설계 10): speech.read_ko 끔 · 기기에 ko-KR 목소리 없음. 들려주지 못함(R-57)과 달리
+   * 글로만 보이고 단추가 바로 밝으며 안내 줄은 없다. 감시 결과(heard)가 없다.
+   */
+  | { kind: "skipped"; reason: SpeakSkipReason };
+
+/**
+ * 읽어 주기 선택 칸(plan-p13b 파일별 값 11 · plan 회화-선생님-캐릭터 값 12 · 가르치고 spec 설계 4).
+ * lang 은 읽을 말의 언어(없으면 speech.lang). 한국어 lang 이면 선생님 한국어 줄로 ko-KR 목소리 · speech.rate_ko 로 읽고(rate 는
+ * 쓰지 않는다), speech.read_ko 끔이나 ko-KR 목소리가 없으면 읽지 않고 skipped 를 돌린다(core/teacher/voice voiceFor).
  * pitch 는 넘긴 때만 utterance.pitch(회화 선생님 높이), voicePrefer 는 목소리 이름 조각 차례(맞는 것이 없거나 비면
  * pickVoice), onStart 는 발화가 실제로 시작한 알림(onstart) 뒤에 한 번 — 끊긴 발화의 늦은 알림은 넘기지 않는다.
  */
 export type SpeakOptions = {
+  lang?: string;
   rate?: number;
   pitch?: number;
   voicePrefer?: readonly string[];
@@ -45,6 +60,9 @@ export interface ListenHandle {
   readonly capAt: number | undefined;
 }
 
+/** 듣기 알림(SpeechPort.listen 의 둘째 인자). */
+export type ListenCallbacks = { text?(text: string): void; sound?(): void };
+
 export interface SpeechPort {
   /** 렌더 뒤(useEffect)에서만 부른다. */
   device(): DeviceVerdict;
@@ -56,7 +74,11 @@ export interface SpeechPort {
    */
   speak(text: string, options?: SpeakOptions): Promise<SpeakOutcome>;
   cancelSpeaking(): void;
-  listen(rule: EndRule, on?: { text?(text: string): void }): ListenHandle;
+  /**
+   * 듣기. on.text 는 모은 글이 바뀔 때, on.sound 는 그 듣기에서 소리가 처음 들어온 때(soundstart · speechstart) 한 번 — 말하기 단추의
+   * 소리 들어옴 표시(C166 · UX 검토 U4-2).
+   */
+  listen(rule: EndRule, on?: ListenCallbacks): ListenHandle;
   checkMicrophone(): Promise<MicrophoneCheck>;
   dispose(): void;
 }
@@ -151,7 +173,8 @@ export type SpeechTraceEntry =
   | {
       at: number;
       kind: "speak-event";
-      type: "start" | "end" | "error";
+      /** timeout 은 음성 접점의 감시가 끝난 것으로 본 때(code no-start · no-end — C166 R1). */
+      type: "start" | "end" | "error" | "timeout";
       code?: string;
     }
   | { at: number; kind: "mic-check"; result: MicrophoneCheck }

@@ -3,7 +3,13 @@
 // P10 cloneLessons 와 같은 결). 견본 규격은 기본 틀(referenceSet(defaultSettings())) — 작은 틀 규격으로는 읽기 견본이 만들어지지
 // 않는다(plan 의 추측과 다름, 차례 2 보고). 지어낸 낱말이라 DB vocab 에 없을 수 있고 그림은 뜻 글로 보인다.
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { and, eq, max } from "drizzle-orm";
+import {
+  LessonFileSchema,
+  type LessonOf,
+} from "../../src/core/seed/schema/lesson";
 import type { Area } from "../../src/core/seed/structure";
 import { LEVEL_MAX } from "../../src/core/seed/structure";
 import { lessons, levelSpecs } from "../../src/db/schema/content";
@@ -169,6 +175,35 @@ export function compositionSample(): LessonSample<"writing"> {
   return sample;
 }
 
+/**
+ * 가르치는 수업 견본(가르치고 배우는 수업 plan 묶음 라-2 · 말하기는 라-3): 생성 브리프 README(seed/prompts/README.md 3단계 행)가 가리키는 3단계
+ * 단원 1 승인 수업(배정 1 · 변형 1, seed/lessons/<영역>/3/1.json)을 글자 그대로 쓴다 — teach 칸이 있어 여섯 자리 차례다(정한 것 1). 1단계
+ * 견본(견본 빌더)은 teach 가 없어 지금 차례 그대로다.
+ */
+export function teachSample<A extends "reading" | "writing" | "speaking">(
+  area: A,
+): LessonSample<A> {
+  const file = LessonFileSchema.parse(
+    JSON.parse(
+      readFileSync(
+        join(__dirname, "..", "..", "seed", "lessons", area, "3", "1.json"),
+        "utf8",
+      ),
+    ),
+  );
+  const lesson = file.lessons.find(
+    (l) => l.kind === "assigned" && l.lessonNo === 1 && l.variant === 1,
+  );
+  if (!lesson || !("teach" in lesson) || !lesson.teach)
+    throw new Error(`${area} 3단계 승인 수업 없음`);
+  return {
+    area,
+    level: file.level,
+    unit: file.unit,
+    lesson: lesson as LessonOf[A],
+  };
+}
+
 /** 그 수업의 진행 세션을 바로 넣는다(목록을 거치지 않음 — 정규 수업, 수업 행의 판). 세션 id 를 돌려준다. */
 export async function openLessonSession(
   profileId: string,
@@ -283,4 +318,32 @@ export async function insertReadyDraft(
         }),
   });
   return first.id;
+}
+
+/**
+ * 가짜 첨삭 도착(묶음 0-마 N-13): 첨삭을 기다리던 첫 세션(insertReadyDraft pending)의 초고 시도에 첨삭 값을 넣고 점수를 채운다 — 응답 뒤
+ * 첨삭이 끝난 때와 같은 꼴(insertReadyDraft 의 첨삭 옴 갈래와 같은 값).
+ */
+export async function deliverFeedback(firstSessionId: string): Promise<void> {
+  const db = e2eDb();
+  const score =
+    (READY_FEEDBACK.rubric.task +
+      READY_FEEDBACK.rubric.grammar +
+      READY_FEEDBACK.rubric.vocabulary) /
+    3 /
+    4;
+  await db.transaction(async (tx) => {
+    await tx
+      .update(attempts)
+      .set({
+        aiFeedback: { state: "ready", value: READY_FEEDBACK },
+        score,
+        status: "done",
+      })
+      .where(eq(attempts.sessionId, firstSessionId));
+    await tx
+      .update(sessions)
+      .set({ score })
+      .where(eq(sessions.id, firstSessionId));
+  });
 }

@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import {
   type Activity,
   activitiesOf,
+  previewActivityNoOf,
   previewWordsOf,
 } from "@/core/session/preview";
 import {
   defaultSettings,
   referenceSet,
   speakingLesson,
+  teachSeedLessons,
   writingLesson,
 } from "../fixtures/seed/builders";
 import { devSeedTree } from "../fixtures/seed/dev-tree";
@@ -318,5 +320,145 @@ describe("활동 차례", () => {
       }
     }
     expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe("가르치는 수업 차례", () => {
+  const ref = referenceSet(defaultSettings());
+  const teach = teachSeedLessons();
+  const label = (list: Activity[]) =>
+    list.map((a) =>
+      a.kind === "spare"
+        ? `spare:${a.base}:${a.index}`
+        : "index" in a
+          ? `${a.kind}:${a.index}`
+          : a.kind,
+    );
+  const run = (kind: string, count: number) =>
+    Array.from({ length: count }, (_, i) => `${kind}:${i}`);
+  const head = (t: { models: unknown[]; together: unknown[] }) => [
+    "today",
+    "preview",
+    ...run("model", t.models.length),
+    ...run("together", t.together.length),
+  ];
+
+  it("AC-3c 가르치는 수업 차례: 3단계 단원 1 읽기 · 쓰기 수업은 오늘 배울 것 → 새 단어 → 본보기 → 같이 해 보기 → 혼자 해 보기 → 짝(문항 차례)이다", () => {
+    const r = teach.reading;
+    const rt = r.teach;
+    if (!rt) throw new Error("teach 없음");
+    expect(
+      label(
+        activitiesOf({
+          area: "reading",
+          level: 3,
+          content: r.content,
+          teach: rt,
+        }),
+      ),
+    ).toEqual([
+      ...head(rt),
+      "reading-passage",
+      ...run("reading-question", r.content.questions.length),
+      ...run("spare:reading-question", r.content.questions.length),
+    ]);
+    const w = teach.writing;
+    const wt = w.teach;
+    if (!wt || w.content.shape !== "items") throw new Error("teach 없음");
+    expect(
+      label(
+        activitiesOf({
+          area: "writing",
+          level: 3,
+          content: w.content,
+          teach: wt,
+        }),
+      ),
+    ).toEqual([
+      ...head(wt),
+      ...run("writing-item", w.content.items.length),
+      ...run("spare:writing-item", w.content.items.length),
+    ]);
+  });
+
+  it("AC-3c 가르치는 수업 차례: 3단계 말하기 수업의 짝 활동은 질문 → 듣기 → 문장 → 낱말 차례로 모든 짝을 늘 놓는다", () => {
+    const s = teach.speaking;
+    const st = s.teach;
+    if (!st) throw new Error("teach 없음");
+    const c = s.content;
+    const spares = c.repeat.spares;
+    if (!spares) throw new Error("따라 말하기 짝 없음");
+    expect(
+      label(
+        activitiesOf({ area: "speaking", level: 3, content: c, teach: st }),
+      ),
+    ).toEqual([
+      ...head(st),
+      ...run("repeat-word", c.repeat.words.length),
+      ...run("repeat-sentence", c.repeat.sentences.length),
+      ...run("listening", c.listening.length),
+      ...run("question", c.questions.length),
+      ...run("spare:question", c.questions.length),
+      ...run("spare:listening", c.listening.length),
+      ...run("spare:repeat-sentence", spares.sentences.length),
+      ...run("spare:repeat-word", spares.words.length),
+    ]);
+  });
+
+  it("AC-3c 가르치는 수업 차례: 짝이 없는 혼자 문항은 짝 활동을 놓지 않고 teach 가 없는 같은 수업은 지금 차례 그대로다", () => {
+    const r = teach.reading;
+    const rt = r.teach;
+    if (!rt) throw new Error("teach 없음");
+    const [first, ...rest] = r.content.questions;
+    if (!first) throw new Error("문항 없음");
+    const { spare: _spare, ...bare } = first;
+    const content = { ...r.content, questions: [bare, ...rest] };
+    const spareLabels = label(
+      activitiesOf({ area: "reading", level: 3, content, teach: rt }),
+    ).filter((k) => k.startsWith("spare:"));
+    expect(spareLabels).toEqual(
+      rest.map((_, i) => `spare:reading-question:${i + 1}`),
+    );
+    // teach 칸 유무로만 가른다(단계 숫자를 보지 않는다)
+    expect(
+      label(activitiesOf({ area: "reading", level: 3, content: r.content })),
+    ).toEqual([
+      "preview",
+      "reading-passage",
+      ...run("reading-question", r.content.questions.length),
+    ]);
+  });
+
+  it("가르치는 수업 차례(정한 것 4): 미리보기 활동 번호는 teach 수업이면 오늘 배울 것 뒤이고 그 밖은 첫 활동, 미리보기가 없으면 없다", () => {
+    const w = teach.writing;
+    const wt = w.teach;
+    if (!wt) throw new Error("teach 없음");
+    expect(
+      previewActivityNoOf(
+        activitiesOf({
+          area: "writing",
+          level: 3,
+          content: w.content,
+          teach: wt,
+        }),
+      ),
+    ).toBe(2);
+    expect(
+      previewActivityNoOf(
+        activitiesOf({ area: "writing", level: 3, content: w.content }),
+      ),
+    ).toBe(1);
+    const six = writingLesson(ref, 6).lesson.content;
+    expect(
+      previewActivityNoOf(
+        activitiesOf({
+          area: "writing",
+          level: 6,
+          content: six,
+          part: "rewrite",
+          corrections: 1,
+        }),
+      ),
+    ).toBeUndefined();
   });
 });

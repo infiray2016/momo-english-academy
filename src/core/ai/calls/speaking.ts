@@ -59,6 +59,11 @@ export type SpeakingAnswerInput = LevelContext & {
   question: string;
   /** 그림 과제의 시드 영어 장면 설명. */
   scene: string | null;
+  /**
+   * 질문 직전에 들려준 시드 이야기(storyEn — 말하기 3단계 질문, 가르치고 배우는 수업 plan 정한 것 5). 아이 자료가 아니라 시드 글이다
+   * (NFR-4 '보내는 것'이 늘지 않는다). 없으면 null 이고 가변부에 줄을 두지 않는다(이야기 없는 질문 요청은 그대로).
+   */
+  story: string | null;
   transcript: string;
   grammarNoteMax: number;
   /** 시드의 바른 답(1~3단계에 있음). 걸린 바른 답을 바꿀 때 쓴다. */
@@ -137,6 +142,9 @@ export const speakingAnswerSpec: CallSpec<
         ...levelVariable(input),
         ["Question", input.question],
         ["Picture scene", input.scene ?? "(none)"],
+        ...(input.story === null
+          ? []
+          : ([["Story the child heard", input.story]] as const)),
       ],
     }),
   messages: (input): ChatMessage[] => [

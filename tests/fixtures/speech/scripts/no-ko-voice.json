@@ -1,0 +1,17 @@
+{
+  "name": "no-ko-voice",
+  "source": "손으로 씀 — 가르치고 배우는 수업 spec 설계 10 · AC-N20: ko-KR 목소리가 없는 목록. 선생님 한국어 줄은 읽지 않고 글로만 보인다",
+  "expose": { "recognition": "webkit", "synthesis": true },
+  "recognitions": [{ "events": [], "onStop": [{ "at": 100, "type": "end" }] }],
+  "synthesis": {
+    "voices": [
+      {
+        "name": "Test English (US)",
+        "lang": "en-US",
+        "localService": true,
+        "default": true
+      }
+    ],
+    "utterances": [{ "startAfter": 50, "endAfter": 1200 }]
+  }
+}

@@ -19,6 +19,7 @@ import {
   PLACEHOLDER_NAME,
   UNITS_PER_LEVEL,
 } from "@/core/seed/structure";
+import { INPUT_VERSION } from "@/core/session/attempt";
 import { lessons, unitSpecs } from "@/db/schema/content";
 import { attempts, profiles, sessions } from "@/db/schema/learning";
 import {
@@ -50,6 +51,7 @@ import { SAMPLE_FORBIDDEN } from "../fixtures/ai/sample-inputs";
 import {
   defaultSettings,
   referenceSet,
+  teachSeedLessons,
   writingLesson,
 } from "../fixtures/seed/builders";
 import {
@@ -316,7 +318,13 @@ describe("쓰기 4~5 확인", () => {
       activityNo: guidedNo,
       status: "done",
       score: expected,
-      input: { v: 1, kind: "writing-guided", step: "final", sentences },
+      // 서버가 저장하는 끝 시도는 지금 시도 꼴 판(INPUT_VERSION — 가르치고 배우는 수업 plan 나 에서 2)
+      input: {
+        v: INPUT_VERSION,
+        kind: "writing-guided",
+        step: "final",
+        sentences,
+      },
       aiFeedback: { state: "ok" },
     });
     // 고친 뒤에도 점수는 첫 제출 그대로(고친 문장은 진행 시도로만)
@@ -395,6 +403,66 @@ describe("쓰기 4~5 확인", () => {
       status: "completed",
       score: null,
     });
+  });
+
+  it("쓰기 4~5: teach 칸이 든 수업은 쓰기 확인도 세션과 같은 여섯 자리 활동 번호로 받는다", async () => {
+    // 가르치고 배우는 수업 plan 정한 것 1 · 검토 M3: 세션 서버와 쓰기 서버가 같은 활동 차례를 쓴다. teach 는 3단계 정규 시드 것을 빌린다
+    const teach = teachSeedLessons().writing.teach;
+    if (!teach) throw new Error("teach 없음");
+    const opened = await openGuided();
+    const [row] = await db
+      .select()
+      .from(lessons)
+      .where(and(eq(lessons.area, "writing"), eq(lessons.level, sample.level)));
+    if (!row) throw new Error("견본 수업 없음");
+    const { id: _id, ...base } = row;
+    const [clone] = await db
+      .insert(lessons)
+      .values({
+        ...base,
+        lessonNo: base.lessonNo + 90,
+        content: { ...(base.content as object), teach },
+      })
+      .returning({ id: lessons.id });
+    if (!clone) throw new Error("수업 행 없음");
+    await db
+      .update(sessions)
+      .set({ lessonId: clone.id })
+      .where(eq(sessions.id, opened.sessionId));
+    const view = await loadSessionView(
+      { sessionId: opened.sessionId },
+      sessionDeps(),
+    );
+    if (view?.area !== "writing") throw new Error("세션 화면 자료 없음");
+    expect(view.activities[0]).toEqual({ kind: "today" });
+    const guidedNo =
+      view.activities.findIndex((a) => a.kind === "writing-guided") + 1;
+    const oldNo =
+      opened.activities.findIndex((a) => a.kind === "writing-guided") + 1;
+    expect(guidedNo).toBeGreaterThan(oldNo);
+    const { deps } = harness([{ reply: checkReply(models.map(() => true)) }]);
+    // 옛 차례 번호는 그 활동이 아니다
+    expect(
+      await checkGuided(
+        {
+          sessionId: view.sessionId,
+          clientAttemptId: randomUUID(),
+          activityNo: oldNo,
+          sentences: models,
+        },
+        deps,
+      ),
+    ).toEqual({ ok: false, reason: "not_found" });
+    const out = await checkGuided(
+      {
+        sessionId: view.sessionId,
+        clientAttemptId: randomUUID(),
+        activityNo: guidedNo,
+        sentences: models,
+      },
+      deps,
+    );
+    expect(out.ok).toBe(true);
   });
 
   it("쓰기 4~5: 같은 시도 id 로 다시 내면 AI 를 다시 부르지 않고 저장한 결과를 돌려준다", async () => {

@@ -1,0 +1,420 @@
+// 새 꼴 회화 수업 턴 길 통합 시험(회화 plan 묶음 8 — 정적, 실행은 11-01 뒤 CI). 시험용 시드의 회화 1단계 단원 1 카드는 새 꼴이라(묶음 3)
+// 그 수업으로 세션을 넣고 talk_turns(move)를 대화 첫 질문까지 넣은 뒤 runTalkTurnRequest(카드 꼴로 새 갈래)를 가짜 Anthropic 으로 부른다.
+// 증명: AC-15v(선생님 행 move · text 는 화면 글 줄만) · AC-15i(범위 밖 질문 → 카드 자리) · AC-15k(둘째 턴 요청 본문 앞부분 · 앞 선생님 차례의
+// 붙인 카드 질문) · AC-15b(1~3단계 두 번 실패 → 칭찬 대사 + 카드 질문) · 참여 완료(마무리 물음에 답한 턴 · 세션마다 한 번).
+import { and, eq, isNull } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { ClientListen } from "@/core/conversation/client-listen";
+import { readTalkMove, talkMoveOf } from "@/core/conversation/move";
+import { MORE_PROMPT } from "@/core/conversation/spoken";
+import { TalkLessonSchema } from "@/core/seed/schema/lesson";
+import { LEVEL_MAX } from "@/core/seed/structure";
+import { lessons } from "@/db/schema/content";
+import { profileTracks, sessions, talkTurns } from "@/db/schema/learning";
+import { settings } from "@/db/schema/operations";
+import type { TalkLessonLine } from "@/server/conversation/lesson-turn";
+import { runTalkTurnRequest } from "@/server/conversation/turn";
+import type { Db } from "@/server/db";
+import { loadSeed } from "@/server/seed/load";
+import { type FakeRule, messageBody } from "../fixtures/ai/fake-anthropic";
+import {
+  DEV_SEED_AREAS,
+  DEV_SEED_THROUGH,
+  devSeedTree,
+} from "../fixtures/seed/dev-tree";
+import { filesOf } from "../fixtures/seed/loadable";
+import { TEST_SETTINGS } from "../fixtures/settings";
+import {
+  harnessOf,
+  LOADED_AT,
+  LOW_MODEL,
+  lessonAnswer,
+  NOW,
+  resetHousehold,
+  type TalkHarness,
+  TURN_MARK,
+} from "./talk-fixture";
+import { createTestDatabase, type TestDatabase } from "./test-db";
+
+let testDb: TestDatabase;
+let db: Db;
+let h: TalkHarness;
+let lessonId: string;
+let lessonRevision: number;
+let card: ReturnType<typeof TalkLessonSchema.parse>["card"];
+
+beforeAll(async () => {
+  testDb = await createTestDatabase();
+  db = testDb.db;
+  const report = await loadSeed(db, {
+    files: filesOf(devSeedTree()),
+    completeThrough: DEV_SEED_THROUGH,
+    areas: [...DEV_SEED_AREAS],
+    now: LOADED_AT,
+  });
+  if (report.outcome !== "loaded") throw new Error("시험 시드 적재 실패");
+  await db
+    .update(settings)
+    .set({ value: LEVEL_MAX })
+    .where(
+      and(
+        eq(settings.key, "seed.complete_through_level"),
+        isNull(settings.profileId),
+      ),
+    );
+  const [row] = await db
+    .select()
+    .from(lessons)
+    .where(
+      and(
+        eq(lessons.area, "talk"),
+        eq(lessons.level, 1),
+        eq(lessons.unit, 1),
+        eq(lessons.kind, "assigned"),
+        eq(lessons.lessonNo, 1),
+      ),
+    );
+  if (!row) throw new Error("회화 1단계 단원 1 수업 1 이 없다");
+  lessonId = row.id;
+  lessonRevision = row.revision;
+  card = TalkLessonSchema.parse(row.content).card;
+});
+
+afterAll(async () => {
+  await testDb?.drop();
+});
+
+beforeEach(() => {
+  h = harnessOf(db);
+});
+
+const turnRule = (over: Record<string, unknown>, times = 1): FakeRule => ({
+  when: { bodyIncludes: TURN_MARK },
+  reply: {
+    kind: "stream",
+    body: messageBody({ model: LOW_MODEL, json: lessonAnswer(over) }),
+    chunks: 4,
+  },
+  times,
+});
+
+/** 새 꼴 카드 세션을 대화 첫 질문(필수 1)까지 넣는다(인사 질문마다 선생님 행 · 아이 말, 인사 끝 반응, 대화 첫 질문). */
+async function sessionAtFirstQuestion(): Promise<{
+  profileId: string;
+  sessionId: string;
+}> {
+  const profileId = await resetHousehold(db, 1);
+  const [session] = await db
+    .insert(sessions)
+    .values({
+      profileId,
+      area: "talk",
+      level: 1,
+      unit: 1,
+      lessonId,
+      kind: "regular",
+      talkSegment: "greeting",
+      status: "in_progress",
+      startedAt: NOW,
+      seedRevision: lessonRevision,
+      seedCorrection: 0,
+    })
+    .returning({ id: sessions.id });
+  if (!session) throw new Error("세션을 넣지 못했다");
+  const sessionId = session.id;
+  const greeting = "questions" in card.greeting ? card.greeting.questions : [];
+  let turnNo = 1;
+  for (const [i, q] of greeting.slice(0, card.greetingTurns).entries()) {
+    await db.insert(talkTurns).values([
+      {
+        sessionId,
+        turnNo,
+        segment: "greeting",
+        speaker: "tori",
+        text: q.question.en,
+        move: talkMoveOf({ kind: i === 0 ? "first_question" : "card_slot" }),
+        recordedAt: NOW,
+      },
+      {
+        sessionId,
+        turnNo,
+        segment: "greeting",
+        speaker: "child",
+        text: q.answerExample,
+        inputMode: "speech",
+        clientAttemptId: `greet-${sessionId}-${i}`,
+        recordedAt: NOW,
+      },
+    ]);
+    turnNo += 1;
+  }
+  const first = card.required[0];
+  if (!first) throw new Error("필수 질문이 없다");
+  await db.insert(talkTurns).values([
+    {
+      sessionId,
+      turnNo,
+      segment: "greeting",
+      speaker: "tori",
+      text: "Great!",
+      move: talkMoveOf({ kind: "ai" }),
+      recordedAt: NOW,
+    },
+    {
+      sessionId,
+      turnNo: turnNo + 1,
+      segment: "talk",
+      speaker: "tori",
+      text: first.en,
+      move: talkMoveOf({
+        kind: "first_question",
+        item: { kind: "required", no: first.no },
+        words: [...first.targets],
+        goals: [...first.goals],
+      }),
+      recordedAt: NOW,
+    },
+  ]);
+  await db
+    .update(sessions)
+    .set({ talkSegment: "talk" })
+    .where(eq(sessions.id, sessionId));
+  return { profileId, sessionId };
+}
+
+let seq = 0;
+async function sayLesson(
+  sessionId: string,
+  text = "I like it.",
+): Promise<TalkLessonLine[]> {
+  const lines: TalkLessonLine[] = [];
+  seq += 1;
+  await runTalkTurnRequest(
+    {
+      sessionId,
+      clientAttemptId: `lesson-${seq}`,
+      input: { mode: "speech", text },
+      hint: { opened: 0, heard: [] },
+    },
+    {
+      ...h.deps(),
+      write: (line) => lines.push(line as TalkLessonLine),
+      requestReceivedAt: h.clock.now,
+    },
+  );
+  return lines;
+}
+
+async function teacherRows(sessionId: string) {
+  return (
+    await db.select().from(talkTurns).where(eq(talkTurns.sessionId, sessionId))
+  )
+    .filter((r) => r.speaker === "tori")
+    .sort((a, b) => a.turnNo - b.turnNo);
+}
+
+describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
+  it("AC-15v 새 꼴 카드 세션은 새 갈래로 돌고 선생님 행마다 move 가 있으며 text 는 화면 글 줄만이다(끝 줄은 lesson 꼴)", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    h.fake.push(turnRule({ tori_en: "Oh, nice!", support: "none" }));
+    const lines = await sayLesson(sessionId);
+    expect(lines.at(-1)).toMatchObject({
+      t: "end",
+      lesson: { segment: "talk" },
+    });
+    expect(lines).toContainEqual({ t: "s", en: "Oh, nice!" });
+    const rows = await teacherRows(sessionId);
+    const last = rows.at(-1);
+    expect(readTalkMove(last?.move)).not.toBeNull();
+    for (const row of rows) expect(readTalkMove(row.move)).not.toBeNull();
+    expect(last?.text?.split("\n")[0]).toBe("Oh, nice!");
+    expect(last?.toriRewrite).toContain("Oh, nice!");
+  });
+
+  it("AC-15i 어휘 범위 밖 낱말이 든 1단계 AI 질문은 화면 · 읽어 주기 · 응답 본문에 없고 그 턴은 카드 자리가 되어 카드 질문이 붙는다", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    h.fake.push(
+      turnRule({
+        tori_en: "Oh, nice! Do you like zebrafish aquariums?",
+        next_move: "follow_up",
+      }),
+    );
+    const lines = await sayLesson(sessionId);
+    const shown = JSON.stringify(lines);
+    expect(shown).not.toContain("zebrafish");
+    const last = (await teacherRows(sessionId)).at(-1);
+    const move = readTalkMove(last?.move);
+    expect(move).toMatchObject({
+      kind: "card_slot",
+      why: "question_check",
+      next: "none",
+    });
+    expect(last?.text).not.toContain("zebrafish");
+    expect(last?.toriRewrite).not.toContain("zebrafish");
+    const cardQuestions = [...card.required, ...card.more].map((x) => x.en);
+    const added = lines.filter(
+      (l): l is Extract<TalkLessonLine, { t: "add" }> => l.t === "add",
+    );
+    expect(cardQuestions).toContain(added.at(-1)?.en);
+  });
+
+  it("AC-15k 둘째 턴 요청 본문은 앞 턴 사용자 메시지와 다시 쓸 선생님 차례(붙인 카드 질문 포함)를 글자 그대로 앞에 둔다", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    h.fake.push(
+      turnRule({ tori_en: "Oh, nice! Do you like zebrafish aquariums?" }),
+    );
+    await sayLesson(sessionId);
+    h.fake.push(turnRule({ tori_en: "Great!" }));
+    await sayLesson(sessionId, "Yes.");
+    const bodies = h.fake.requests
+      .filter((r) => r.bodyText.includes(TURN_MARK))
+      .map((r) => r.bodyText);
+    expect(bodies).toHaveLength(2);
+    const [child] = (
+      await db
+        .select()
+        .from(talkTurns)
+        .where(eq(talkTurns.sessionId, sessionId))
+    ).filter((r) => r.speaker === "child" && r.sentUserMessage !== null);
+    const firstTeacher = (await teacherRows(sessionId)).at(-2);
+    const quoted = (text: string) => JSON.stringify(text).slice(1, -1);
+    expect(bodies[1]).toContain(quoted(child?.sentUserMessage ?? "?"));
+    expect(bodies[1]).toContain(quoted(firstTeacher?.toriRewrite ?? "?"));
+  });
+
+  it("AC-15b 1~3단계 회화 턴이 두 번 실패한 턴은 끊기지 않고 카드 칭찬 대사와 카드 자리의 카드 질문이 보인다('말했다' 없음)", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    const fail: FakeRule = {
+      when: { bodyIncludes: TURN_MARK },
+      reply: { kind: "error", status: 500, body: { type: "error" } },
+      times: 2,
+    };
+    h.fake.push(fail);
+    const lines = await sayLesson(sessionId);
+    expect(lines.at(-1)?.t).toBe("end");
+    const last = (await teacherRows(sessionId)).at(-1);
+    expect(readTalkMove(last?.move)).toMatchObject({
+      kind: "card_slot",
+      why: "fail",
+    });
+    expect(card.praiseLines).toContain(last?.text?.split("\n")[0]);
+    // 그 턴은 '말했다'를 세지 않는다(8절 회화 턴 실패)
+    const child = (
+      await db
+        .select()
+        .from(talkTurns)
+        .where(eq(talkTurns.sessionId, sessionId))
+    ).findLast((r) => r.speaker === "child");
+    expect(child?.saidWords).toEqual([]);
+  });
+
+  it("참여 완료: 마무리 물음에 말로 답한 턴에 세션이 완료되고 친한 정도가 한 번 오르며, 그 뒤 턴은 다시 올리지 않는다", async () => {
+    const { profileId, sessionId } = await sessionAtFirstQuestion();
+    const rows = await teacherRows(sessionId);
+    const turnNo = (rows.at(-1)?.turnNo ?? 0) + 1;
+    await db.insert(talkTurns).values([
+      {
+        sessionId,
+        turnNo: turnNo - 1,
+        segment: "talk",
+        speaker: "child",
+        text: "I play.",
+        inputMode: "speech",
+        clientAttemptId: `close-${sessionId}`,
+        recordedAt: NOW,
+      },
+      {
+        sessionId,
+        turnNo,
+        segment: "talk",
+        speaker: "tori",
+        text: `Great!\n${MORE_PROMPT.en}`,
+        move: talkMoveOf({ kind: "closing_slot" }),
+        recordedAt: NOW,
+      },
+    ]);
+    const friendshipOf = async () =>
+      (
+        await db
+          .select({ friendship: profileTracks.friendship })
+          .from(profileTracks)
+          .where(
+            and(
+              eq(profileTracks.profileId, profileId),
+              eq(profileTracks.area, "talk"),
+            ),
+          )
+      )[0]?.friendship ?? 0;
+    const before = await friendshipOf();
+    h.fake.push(turnRule({ tori_en: "Yay!" }, 2));
+    await sayLesson(sessionId, "Yes!");
+    const [done] = await db
+      .select({ status: sessions.status })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId));
+    expect(done?.status).toBe("completed");
+    const per = TEST_SETTINGS["talk.friendship_per_talk"].value;
+    expect(await friendshipOf()).toBe(before + per);
+    await sayLesson(sessionId, "I like soccer.");
+    expect(await friendshipOf()).toBe(before + per);
+  });
+});
+
+describe("아이 행 듣기 사건 요약(C149 — 옛 conversation-session 의 0c664c3 고침을 새 갈래로 옮김, 회화 plan 묶음 12)", () => {
+  it("C149 아이 행에는 듣기 사건 요약과 '모름'의 출처(말소리 없음 · 단추)가 저장되고 글은 들지 않는다", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    const clientListen: ClientListen = {
+      br: "iPad Safari 27.0",
+      r3d: true,
+      listens: [
+        { o: "error:no-speech", by: "button", d: 2010, snd: false, tc: "cut" },
+        { o: "error:no-speech", by: "button", d: 1800, snd: false, tc: 900 },
+      ],
+      mf: 0,
+    };
+    const send = async (
+      id: string,
+      input: {
+        mode: "speech" | "dont_know";
+        text?: string;
+        nospeech?: boolean;
+      },
+      listen?: ClientListen,
+    ) => {
+      h.fake.push(turnRule({ tori_en: "That's okay!" }));
+      await runTalkTurnRequest(
+        {
+          sessionId,
+          clientAttemptId: id,
+          input,
+          hint: { opened: 0, heard: [] },
+          ...(listen ? { clientListen: listen } : {}),
+        },
+        { ...h.deps(), write: () => {}, requestReceivedAt: h.clock.now },
+      );
+      const [row] = (
+        await db
+          .select()
+          .from(talkTurns)
+          .where(eq(talkTurns.sessionId, sessionId))
+      ).filter((r) => r.clientAttemptId === id);
+      if (!row) throw new Error("아이 행이 없다");
+      return row;
+    };
+    const silent = await send(
+      "c149-silent",
+      { mode: "dont_know", nospeech: true },
+      clientListen,
+    );
+    expect(silent.text).toBeNull();
+    expect(silent.inputMode).toBe("dont_know");
+    expect(silent.clientListen).toEqual({ ...clientListen, src: "nospeech" });
+    const spoke = await send(
+      "c149-spoke",
+      { mode: "speech", text: "I play soccer." },
+      clientListen,
+    );
+    expect(spoke.clientListen).toEqual(clientListen);
+    expect(JSON.stringify(spoke.clientListen)).not.toContain("soccer");
+  });
+});

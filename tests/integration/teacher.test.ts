@@ -17,6 +17,7 @@ import { profiles, profileTracks, unitProgress } from "@/db/schema/learning";
 import { progressEvents } from "@/db/schema/operations";
 import type { Db } from "@/server/db";
 import { readHome } from "@/server/home";
+import { readLessonList } from "@/server/lesson-list";
 import {
   clearTeacherForPreviewFor,
   jumpUnitForPreviewFor,
@@ -296,7 +297,15 @@ describe("관찰 쪽 단원 바로 가기(컨트롤러 덧 2026-10-23 — 프리
     });
     const card = await homeCard("talk");
     expect(card).toMatchObject({ gate: null, level: 1, unit: 3 });
-    expect(card?.unitCells).toEqual([
+    // 단원 5칸은 수업 목록 위 띠로 옮겼다(UI · UX 묶음 3 · [승인 UX2])
+    const list = await readLessonList({
+      db,
+      area: "talk",
+      now: NOW,
+      band: true,
+    });
+    if (list.kind !== "list") throw new Error("회화 목록이어야 한다");
+    expect(list.view.band.cells).toEqual([
       "upcoming",
       "upcoming",
       "current",

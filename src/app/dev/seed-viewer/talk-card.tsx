@@ -1,17 +1,26 @@
-// 회화 카드 · 회화 평가 장의 어른용 표(plan-p05b 보기 화면 '회화 카드' · '회화 평가 장' 행, 정할 것 파).
+// 회화 카드 · 회화 평가 장의 어른용 표(plan-p05b 보기 화면 '회화 카드' · '회화 평가 장' 행, 정할 것 파). 회화 카드는 새 꼴(C189 —
+// 목표 · 오늘 쓸 말 · 짧은 준비 · 필수 질문 · 더 이야기할 거리 · 미션 · 역할 바꾸기)을 그대로 보인다(요청자 표본 읽기, H11).
 // 회화 아이 화면은 1-나라 그리지 않는다. 어른용 글이라 작은 글자를 쓴다(4절 '부모용 정보').
 import type { ReactNode } from "react";
 import type { TalkLesson } from "@/core/seed/schema/lesson";
 import type {
-  GreetingTurn,
   Line,
-  QuestionCard,
+  TalkGreetingQuestion,
+  TalkMore,
+  TalkRequired,
   TalkTestSheet,
-  TurnCard,
 } from "@/core/seed/schema/talk";
+import type { TalkFirstForm } from "@/core/seed/structure";
 import type { PictureNote } from "@/server/seed-viewer/files";
 
 type NoteOf = (key: string) => PictureNote;
+
+/** 1단계 처음 묻는 턴의 첫 꼴 이름(6.3). */
+const FIRST_FORM_LABEL: Record<TalkFirstForm, string> = {
+  plain: "그냥",
+  choices: "선택지",
+  introduce: "꺼내기",
+};
 
 /** 이름 · 값 한 줄. */
 function Row({ name, children }: { name: string; children: ReactNode }) {
@@ -56,12 +65,12 @@ function PictureText({ note }: { note: PictureNote }) {
   );
 }
 
-/** 1~3단계 인사 질문 · 대화 턴 · 더 이야기할 거리 한 턴. */
-function TurnText({
+/** 1~3단계 인사 질문 한 턴. */
+function GreetingText({
   turn,
   noteOfKey,
 }: {
-  turn: GreetingTurn | TurnCard;
+  turn: TalkGreetingQuestion;
   noteOfKey: NoteOf;
 }) {
   return (
@@ -72,52 +81,68 @@ function TurnText({
         </span>
         <span className="text-neutral-600"> · {turn.question.ko}</span>
       </span>
-      {"targets" in turn ? (
-        <span>
-          노리는 단어 {turn.targets.join(", ")} ·{" "}
-          {turn.ask === "first" ? "처음 묻는 턴" : "다시 묻는 턴"}
-        </span>
-      ) : null}
       <span>힌트(뜻) {turn.hintKo}</span>
       {turn.frameEn ? <span lang="en">힌트(틀) {turn.frameEn}</span> : null}
       <span lang="en">힌트(문장) {turn.hintEn}</span>
       <span lang="en">답 예시 {turn.answerExample}</span>
-      {turn.twoAnswers ? (
-        <span lang="en">답 두 개 {turn.twoAnswers.join(" / ")}</span>
-      ) : null}
       {turn.imageKey ? <PictureText note={noteOfKey(turn.imageKey)} /> : null}
     </div>
   );
 }
 
-/** 4단계부터 카드 질문 목록 한 줄. */
-function QuestionText({ question }: { question: QuestionCard }) {
+/** 필수 질문 · 더 이야기할 거리 한 줄. */
+function ItemText({
+  item,
+  noteOfKey,
+}: {
+  item: TalkRequired | TalkMore;
+  noteOfKey: NoteOf;
+}) {
+  const required = "firstForm" in item || "choices" in item ? item : undefined;
   return (
     <div className="flex flex-col gap-0.5 py-1">
       <span>
         <span lang="en" className="font-semibold">
-          {question.en}
+          {item.en}
         </span>
-        <span className="text-neutral-600"> · {question.ko}</span>
+        {item.ko ? (
+          <span className="text-neutral-600"> · {item.ko}</span>
+        ) : null}
       </span>
-      <span>노리는 단어 {question.targets.join(", ")}</span>
-      <span>힌트(뜻) {question.hintKo}</span>
-      {question.hintTiers.map((tier, i) => (
-        <span key={tier} lang="en">
-          힌트 {i + 1}단 {tier}
+      <span>
+        노리는 단어 {item.targets.join(", ")} ·{" "}
+        {item.ask === "first" ? "처음 묻는 질문" : "다시 묻는 질문"}
+        {required?.firstForm
+          ? ` · 첫 꼴 ${FIRST_FORM_LABEL[required.firstForm]}`
+          : ""}
+      </span>
+      <span>
+        목표 {item.goals.join(", ")}
+        {item.demands ? ` · 요구 능력 ${item.demands.join(", ")}` : ""}
+        {item.purpose ? ` · 상황 ${item.purpose}` : ""}
+      </span>
+      <span>힌트(뜻) {item.hintKo}</span>
+      {item.hints.map((hint, i) => (
+        <span key={hint} lang="en">
+          힌트 {i + 1}단 {hint}
         </span>
       ))}
-      {question.usablePhrases ? (
-        <span lang="en">
-          쓸 수 있는 말 {question.usablePhrases.join(" / ")}
-        </span>
+      <span lang="en">답 예시 {item.answerExample}</span>
+      <span>
+        쉬운 질문 <LineText line={item.easyQuestion} />
+      </span>
+      {required?.choices ? (
+        <span lang="en">선택지 {required.choices.join(" / ")}</span>
       ) : null}
-      <span lang="en">답 예시 {question.answerExample}</span>
+      {item.usablePhrases ? (
+        <span lang="en">쓸 수 있는 말 {item.usablePhrases.join(" / ")}</span>
+      ) : null}
+      {item.imageKey ? <PictureText note={noteOfKey(item.imageKey)} /> : null}
     </div>
   );
 }
 
-/** 회화 수업 카드 표(어른용). */
+/** 회화 수업 카드 표(어른용, 새 꼴). */
 export function TalkCardTable({
   lesson,
   noteOfKey,
@@ -130,6 +155,10 @@ export function TalkCardTable({
     <table className="w-full text-sm" aria-label="회화 카드">
       <tbody>
         <Row name="주제">{card.topic}</Row>
+        <Row name="학습 목표">
+          {card.goals.join(", ")}
+          {card.purpose ? ` · 상황 ${card.purpose}` : ""}
+        </Row>
         <Row name="목표 표현">
           <List items={card.targetExpressions} />
         </Row>
@@ -137,7 +166,7 @@ export function TalkCardTable({
           {"questions" in card.greeting ? (
             <List
               items={card.greeting.questions.map((turn) => (
-                <TurnText
+                <GreetingText
                   key={turn.question.en}
                   turn={turn}
                   noteOfKey={noteOfKey}
@@ -153,18 +182,39 @@ export function TalkCardTable({
         <Row name="오늘 쓸 말">
           <List
             items={card.todayWords.map((word) => (
-              <span key={word.word}>
-                <span lang="en" className="font-semibold">
-                  {word.word}
-                </span>{" "}
-                {word.meaningKo} · <span lang="en">{word.example}</span>
-                {word.exampleKo ? ` · ${word.exampleKo}` : ""}
+              <span key={word.word} className="flex flex-col gap-0.5">
+                <span>
+                  <span lang="en" className="font-semibold">
+                    {word.word}
+                  </span>{" "}
+                  {word.meaningKo} · <span lang="en">{word.example}</span>
+                </span>
+                <span lang="en">들려줄 말 {word.modelLine}</span>
+                {word.imageKey ? (
+                  <PictureText note={noteOfKey(word.imageKey)} />
+                ) : null}
               </span>
             ))}
           />
         </Row>
-        <Row name="대화 첫 질문">
-          <span lang="en">{card.firstQuestion}</span>
+        <Row name="짧은 준비 낱말">
+          {card.prep && card.prep.length > 0
+            ? card.prep.join(", ")
+            : "없음(앱이 고른다)"}
+        </Row>
+        <Row name={`필수 질문(${card.required.length})`}>
+          <List
+            items={card.required.map((item) => (
+              <ItemText key={item.no} item={item} noteOfKey={noteOfKey} />
+            ))}
+          />
+        </Row>
+        <Row name={`더 이야기할 거리(${card.more.length})`}>
+          <List
+            items={card.more.map((item) => (
+              <ItemText key={item.no} item={item} noteOfKey={noteOfKey} />
+            ))}
+          />
         </Row>
         <Row name="예상 흐름">
           <List items={card.flow} />
@@ -172,39 +222,26 @@ export function TalkCardTable({
         <Row name="오늘 이야기 목록">
           <List items={card.todayTopicsKo} />
         </Row>
-        {card.turns ? (
-          <Row name={`대화 턴(${card.turns.length})`}>
+        {card.missions ? (
+          <Row name="미션">
             <List
-              items={card.turns.map((turn) => (
-                <TurnText
-                  key={`${turn.question.en}-${turn.targets.join(",")}`}
-                  turn={turn}
-                  noteOfKey={noteOfKey}
-                />
+              items={card.missions.map((mission) => (
+                <span key={mission.en}>
+                  {mission.ko} · <span lang="en">{mission.en}</span> · 목표{" "}
+                  {mission.goals.join(", ")}
+                  {mission.demands
+                    ? ` · 요구 능력 ${mission.demands.join(", ")}`
+                    : ""}
+                </span>
               ))}
             />
           </Row>
         ) : null}
-        {card.questions ? (
-          <Row name={`질문 목록(${card.questions.length})`}>
-            <List
-              items={card.questions.map((question) => (
-                <QuestionText key={question.en} question={question} />
-              ))}
-            />
-          </Row>
-        ) : null}
-        {card.moreTalk ? (
-          <Row name={`더 이야기할 거리(${card.moreTalk.length})`}>
-            <List
-              items={card.moreTalk.map((turn) => (
-                <TurnText
-                  key={`${turn.question.en}-${turn.targets.join(",")}`}
-                  turn={turn}
-                  noteOfKey={noteOfKey}
-                />
-              ))}
-            />
+        {card.roleSwap ? (
+          <Row name="역할 바꾸기">
+            <span lang="en">{card.roleSwap.firstLine}</span> · 힌트{" "}
+            <span lang="en">{card.roleSwap.hint}</span> · 상황{" "}
+            {card.roleSwap.purpose}
           </Row>
         ) : null}
         <Row name="정리">
@@ -215,17 +252,6 @@ export function TalkCardTable({
           />
         </Row>
         <Row name="끝맺음 조건">{card.endCondition}</Row>
-        {card.missions ? (
-          <Row name="미션">
-            <List
-              items={card.missions.map((mission) => (
-                <span key={mission.en}>
-                  {mission.ko} · <span lang="en">{mission.en}</span>
-                </span>
-              ))}
-            />
-          </Row>
-        ) : null}
         <Row name="끝인사">
           <LineText line={card.farewell} />
         </Row>

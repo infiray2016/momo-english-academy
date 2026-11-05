@@ -128,7 +128,7 @@ export function PresentationTask({
             lang="en"
             className={cn(
               CHILD_SIZE.english,
-              "rounded-lg bg-[#FFFDF7] px-4 py-2 font-bold",
+              "rounded-lg bg-paper px-4 py-2 font-bold",
             )}
           >
             {word}

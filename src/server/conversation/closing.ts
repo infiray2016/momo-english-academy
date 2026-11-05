@@ -18,6 +18,7 @@ import {
 // 전문 · 다시 쓸 토리 차례를 지운다(B5-21 — 끝맺음이 그 대화를 써야 하므로 그 뒤). 아이 글 · AI 글을 로그에 내지 않는다.
 import { after } from "next/server";
 import { z } from "zod";
+import type { TalkCallTurn } from "@/core/ai/calls/talk-lesson";
 import {
   parseTalkAttemptInput,
   TALK_CLOSING_ACTIVITY_NO,
@@ -25,17 +26,24 @@ import {
   type TalkClosingReason,
   talkClosingAttemptId,
 } from "@/core/conversation/attempt";
+import type { TalkEnd } from "@/core/conversation/ending";
+import { friendshipAfter } from "@/core/conversation/friendship";
 import { farewellOf } from "@/core/conversation/wrap-up";
 import { learningDayOf } from "@/core/learning-day";
-import { AI_WAIT_TIMEOUT_MULTIPLE } from "@/core/seed/structure";
+import { bandOf } from "@/core/level-band";
+import {
+  AI_WAIT_TIMEOUT_MULTIPLE,
+  STORIES_PER_BAND,
+} from "@/core/seed/structure";
 import {
   attempts,
+  profileTracks,
   sessions,
   talkSummaries,
   talkTurns,
 } from "@/db/schema/learning";
-import { talkClosing } from "@/server/ai";
 import { maskerFor } from "@/server/ai/run";
+import { type TalkLessonOutcome, talkLessonClosing } from "@/server/ai/talk";
 import { now as appNow } from "@/server/clock";
 import { type Db, type DbOrTx, getDb } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
@@ -49,11 +57,18 @@ import {
   getSettings,
 } from "@/server/settings";
 import {
+  emptyLessonRange,
+  lessonSafeLineOf,
+  readUnitGoalTexts,
+  talkLessonInputOf,
+} from "./lesson-input";
+import {
   onTalkSessionEnded,
   positiveInt,
-  readTalkState,
+  readTalkAnyState,
+  storiesByBandOf,
+  type TalkLessonState,
   type TalkServerDeps,
-  talkInputOf,
 } from "./state";
 
 const MS_PER_SECOND = 1000;
@@ -186,6 +201,154 @@ export async function closeWithoutClosing(
   return inserted;
 }
 
+// ── 새 흐름(C189)의 끝맺음 기록(회화 plan 묶음 7 · 정한 것 6) ─────────────
+
+/** 새 흐름 끝난 길 하나의 끝맺음 기록: 까닭 · 끝맺음 없이 닫는가(건너뜀) · 응답 뒤에 끝맺음을 부르는가. */
+export type LessonClosingPlan = {
+  reason: ClosingReason;
+  skipped: boolean;
+  schedule: boolean;
+};
+
+/**
+ * 새 흐름의 끝난 길(core/conversation/ending talkEndOf · talkStopOf) → 끝맺음 기록(정본 3.3 끝맺음 턴 행: '그만하기'를 누를 때, 바닥선이면
+ * 정리로 갈 때 응답 뒤에서 부른다). 참여 완료 끝(마무리 물음 · 마무리 제안 · 바닥선 · 구석 '그만하기')은 그 까닭으로 대기 기록을 넣고,
+ * 'AI 쉬는 중'(1-가 하루 안전 상한)이면 대기 기록만 두어 풀린 학습일의 첫 홈 진입이 부른다. 확인 쪽지 뒤 그만두기(중단)는 stop_confirmed 이고
+ * 'AI 쉬는 중'이면 끝맺음 없이 닫는다. 끝나지 않은 길(확인 쪽지를 묻는 중 · 취소 · 진행)은 기록이 없다(null).
+ * 바닥선 뒤 끝맺음은 이 꼴만 두고, 바닥선에 드는 흐름은 둘째 묶음 16 이 맡는다.
+ */
+export function lessonClosingOf(
+  end: Pick<TalkEnd, "outcome" | "reason">,
+  { resting }: { resting: boolean },
+): LessonClosingPlan | null {
+  if (end.reason === null) return null;
+  if (end.outcome === "completed")
+    return { reason: end.reason, skipped: false, schedule: !resting };
+  if (end.outcome === "aborted")
+    return resting
+      ? { reason: end.reason, skipped: true, schedule: false }
+      : { reason: end.reason, skipped: false, schedule: true };
+  return null;
+}
+
+/**
+ * 새 흐름 끝맺음 기록을 넣는다(lessonClosingOf 꼴대로). 세션 상태(완료 · 중단 · 정리 토막)는 부르는 쪽(묶음 9 의 끝난 길)이 바꾼다.
+ * 응답 뒤에 끝맺음을 불러야 하면 참(기록을 이번에 넣었을 때만 — 이미 있으면 다른 요청이 닫은 것).
+ */
+export async function insertLessonClosing(
+  tx: DbOrTx,
+  {
+    sessionId,
+    at,
+    end,
+    resting,
+  }: {
+    sessionId: string;
+    at: Date;
+    end: Pick<TalkEnd, "outcome" | "reason">;
+    resting: boolean;
+  },
+): Promise<{ recorded: boolean; schedule: boolean }> {
+  const plan = lessonClosingOf(end, { resting });
+  if (!plan) return { recorded: false, schedule: false };
+  if (plan.skipped) {
+    const recorded = await closeWithoutClosing(tx, {
+      sessionId,
+      at,
+      reason: plan.reason,
+    });
+    return { recorded, schedule: false };
+  }
+  const recorded = await insertClosingRecord(tx, {
+    sessionId,
+    at,
+    reason: plan.reason,
+  });
+  return { recorded, schedule: recorded && plan.schedule };
+}
+
+/**
+ * 참여 완료(회화 plan 묶음 8 · 정한 것 22 · 정본 02-2 3.3 끝난 길 표 — reachTalkTarget 을 새 흐름 뜻으로 바꾼 이름). 참여 완료 셋(마무리 물음에
+ * 답함 · 바닥선 끝 · 참여가 있는 '그만하기')에서 부른다. 세션이 진행일 때만 완료 · 완료 시각 · 학습일(C56 (1))로 바꾸고, 다시 하기가
+ * 아니면 친한 정도(friendshipAfter → profile_tracks(talk) friendship · 지금 구간 연 수 · 구간별 연 수, C98), 그다음 이음매
+ * onTalkSessionEnded completed 를 부른다. 이미 완료면(마무리 물음 뒤 '더 이야기하기' 다음의 '그만하기' 등) 아무것도 하지 않는다 —
+ * 세션마다 한 번. 이번 부름이 완료로 바꿨으면 참. 확인 뒤 중단(aborted)은 부르는 쪽이 이음매를 바로 부른다. 별 장부는 P12 몫이다.
+ */
+export async function completeTalk(
+  tx: DbOrTx,
+  {
+    state,
+    at,
+    rules,
+  }: {
+    state: Pick<
+      TalkLessonState,
+      "session" | "profileId" | "level" | "learningDay"
+    >;
+    at: Date;
+    rules: { per: number; max: number };
+  },
+): Promise<boolean> {
+  const done = await tx
+    .update(sessions)
+    .set({
+      status: "completed",
+      completedAt: at,
+      learningDay: state.learningDay,
+    })
+    .where(
+      and(
+        eq(sessions.id, state.session.id),
+        eq(sessions.status, "in_progress"),
+      ),
+    )
+    .returning({ id: sessions.id });
+  if (done.length === 0) return false;
+  if (state.session.kind !== "retry") {
+    const [track] = await tx
+      .select({
+        id: profileTracks.id,
+        friendship: profileTracks.friendship,
+        byBand: profileTracks.toriStoriesByBand,
+      })
+      .from(profileTracks)
+      .where(
+        and(
+          eq(profileTracks.profileId, state.profileId),
+          eq(profileTracks.area, "talk"),
+        ),
+      )
+      .for("update");
+    if (track) {
+      const band = bandOf(state.level);
+      const byBand = storiesByBandOf(track.byBand);
+      const next = friendshipAfter(
+        {
+          friendship: track.friendship ?? 0,
+          opened: byBand[band] ?? 0,
+          storiesInBand: STORIES_PER_BAND,
+          isRetry: false,
+        },
+        rules,
+      );
+      await tx
+        .update(profileTracks)
+        .set({
+          friendship: next.friendship,
+          toriStoriesOpened: next.opened,
+          toriStoriesByBand: { ...byBand, [band]: next.opened },
+        })
+        .where(eq(profileTracks.id, track.id));
+    }
+  }
+  await onTalkSessionEnded(tx, {
+    sessionId: state.session.id,
+    profileId: state.profileId,
+    ended: "completed",
+  });
+  return true;
+}
+
 /** 그 학습일에 대화 안전 상한으로 닫힌 이 프로필의 회화 수(이번 것 포함 — 끝맺음 기록의 까닭으로 센다). */
 export async function safetyClosesOn(
   db: DbOrTx,
@@ -244,6 +407,99 @@ export function scheduleTalkClosing(
   });
 }
 
+type ClosingCallArgs = {
+  summaryLimit: number;
+  callCtx: { profileId: string; sessionId: string; requestReceivedAt: Date };
+  aiDeps: NonNullable<TalkServerDeps["ai"]> & { db: Db; clock: () => Date };
+};
+
+const levelContextFor = (
+  db: Db,
+  state: Pick<TalkLessonState, "level" | "unit" | "session" | "lessonRow">,
+) =>
+  levelContextOf(
+    {
+      area: "talk",
+      level: state.level,
+      unit: state.unit,
+      revision: state.session.seedRevision ?? state.lessonRow.revision,
+    },
+    { db },
+  );
+
+/**
+ * 새 꼴 끝맺음 턴의 이번 턴 칸(6.1 · 6.2 — 'Closing: yes', 차례 · 기회 칸은 쓰지 않는 빈 값). 같은 고정부 · 가변부 · 앞 턴 전문이라
+ * 대화 캐시를 그대로 탄다.
+ */
+export function lessonClosingTurnOf(
+  state: Pick<TalkLessonState, "liveRows">,
+): Omit<TalkCallTurn, "context"> {
+  const lastChild = state.liveRows.findLast((r) => r.speaker === "child");
+  return {
+    child: "",
+    input: "speech",
+    segment: lastChild?.segment === "more_talk" ? "more_talk" : "talk",
+    hintKind: "none",
+    hintTier: 0,
+    heardHelp: "none",
+    reason: null,
+    kind: "ai",
+    aiAsks: false,
+    cardLine: null,
+    supportStage: 0,
+    stuckQuestion: "",
+    stuckAnswer: "",
+    ifStuck: null,
+    chances: {
+      carry: { goals: [], words: [] },
+      required: [],
+      reuse: [],
+      introduce: [],
+    },
+    returnNudge: false,
+    allChancesUsed: false,
+    followChildTurns: 0,
+    turnsLeft: 0,
+    floor: false,
+    closing: true,
+    levelTest: false,
+  };
+}
+
+/** 새 꼴 끝맺음 입력(talk-lesson 규격 · 같은 대화) → 끝맺음 턴. */
+async function lessonClosingCall(
+  db: Db,
+  state: TalkLessonState,
+  { summaryLimit, callCtx, aiDeps }: ClosingCallArgs,
+): Promise<TalkLessonOutcome> {
+  const [ctx, goalTexts] = await Promise.all([
+    levelContextFor(db, state),
+    readUnitGoalTexts(db, {
+      level: state.level,
+      unit: state.unit,
+      revision: state.session.seedRevision ?? state.lessonRow.revision,
+    }),
+  ]);
+  const input = await talkLessonInputOf(db, {
+    state,
+    ctx,
+    rowsBefore: state.liveRows,
+    turn: lessonClosingTurnOf(state),
+    summaryLimit,
+    range: emptyLessonRange(state),
+    goalTexts,
+  });
+  return talkLessonClosing(
+    input,
+    {
+      ...callCtx,
+      level: state.level,
+      safeLine: lessonSafeLineOf(state, input.history.length + 1),
+    },
+    aiDeps,
+  );
+}
+
 /**
  * 끝맺음 한 번(값 3). (1) 잡기 — 대기이고 아무도 잡지 않았거나 잡은 지 AI 기다림 상한(ai.timeout_seconds.feedback ×
  * AI_WAIT_TIMEOUT_MULTIPLE)이 지난 때만 잡은 시각을 쓰고(SQL 안 now() 대신 매개변수), 못 잡으면 부르지 않는다. 1-가 하루 안전 상한이면
@@ -295,51 +551,22 @@ export async function runTalkClosing(
     let outcome:
       | { ok: true; value: ClosingValue; summary: string | null }
       | { ok: false; reason: string };
-    let state: Awaited<ReturnType<typeof readTalkState>>;
+    let oldCard = false;
     try {
-      state = await readTalkState(db, { sessionId, profileId, at });
-      if (!state) throw new Error("끝맺음할 회화 세션이 없다");
-      const ctx = await levelContextOf(
-        {
-          area: "talk",
-          level: state.level,
-          unit: state.unit,
-          revision: state.session.seedRevision ?? state.lessonRow.revision,
-        },
-        { db },
-      );
-      const lastChild = state.liveRows.findLast((r) => r.speaker === "child");
-      const input = await talkInputOf(db, {
-        state,
-        ctx,
-        rowsBefore: state.liveRows,
-        turn: {
-          child: "",
-          input: "speech",
-          segment: lastChild?.segment === "more_talk" ? "more_talk" : "talk",
-          hintKind: "none",
-          hintTier: 0,
-          heardHelp: "none",
-          dontKnowCount: 0,
-          targetReached: state.position.targetReached,
-          closing: true,
-          levelTest: false,
-          moreTalkUsedUp: state.position.moreTalkUsedUp,
-          aiQuestionSlot: false,
-        },
-        summaryLimit: positiveInt(s, "talk.memory_summaries"),
-      });
-      const result = await talkClosing(
-        input,
-        {
-          profileId,
-          sessionId,
-          level: state.level,
-          requestReceivedAt: at,
-        },
-        { db, clock, ...deps.ai },
-      );
-      if (result.ok) {
+      // 새 꼴 카드 세션만 끝맺음을 부른다(회화 plan 정한 것 1 · 2 — 옛 꼴 카드 세션은 아래에서 끝맺음 없이 닫는다)
+      const any = await readTalkAnyState(db, { sessionId, profileId, at });
+      if (!any) throw new Error("끝맺음할 회화 세션이 없다");
+      oldCard = any.kind === "old";
+      const result: TalkLessonOutcome | null =
+        any.kind === "old"
+          ? null
+          : await lessonClosingCall(db, any.state, {
+              summaryLimit: positiveInt(s, "talk.memory_summaries"),
+              callCtx: { profileId, sessionId, requestReceivedAt: at },
+              aiDeps: { db, clock, ...deps.ai },
+            });
+      if (result === null) outcome = { ok: false, reason: "old_card" };
+      else if (result.ok) {
         const v = result.value;
         outcome = {
           ok: true,
@@ -356,6 +583,17 @@ export async function runTalkClosing(
     } catch (error) {
       logFailure("끝맺음", error);
       outcome = { ok: false, reason: "server" };
+    }
+    if (oldCard) {
+      // 옛 꼴 카드 세션(개발 DB 의 C189 앞 개정)은 끝맺음 없이 닫는다(정한 것 2 — 건너뜀 · 보낸 메시지 지움, AI 를 부르지 않음)
+      await db.transaction(async (tx) => {
+        await tx
+          .update(attempts)
+          .set({ aiFeedback: { state: "skipped" }, status: "done" })
+          .where(eq(attempts.id, head.attempt.id));
+        await clearSentMessages(tx, sessionId);
+      });
+      return false;
     }
 
     const next = nextClosingState(before, outcome);
@@ -429,12 +667,15 @@ export async function talkClosingStatus(
   try {
     const profile = await readHouseholdProfile({ db });
     if (!profile) return { state: "none" };
-    const state = await readTalkState(db, {
+    // 카드 꼴로 가른다(새 꼴 카드 세션도 같은 끝맺음 기록 · 같은 끝인사 규칙 — 묶음 8 · 보정 11-05 M-4)
+    const any = await readTalkAnyState(db, {
       sessionId: parsed.data.sessionId,
       profileId: profile.id,
       at: deps.now(),
     });
-    if (!state) return { state: "none" };
+    // 옛 꼴 카드 세션은 끝맺음을 부르지 않는다(정한 것 2)
+    if (!any || any.kind === "old") return { state: "none" };
+    const state = any.state;
     const [row] = await db
       .select({ aiFeedback: attempts.aiFeedback })
       .from(attempts)

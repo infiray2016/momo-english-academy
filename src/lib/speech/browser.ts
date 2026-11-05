@@ -22,8 +22,10 @@ import {
   startListen,
   stepListen,
 } from "@/core/speech/listen";
-import { preferredVoice } from "@/core/teacher/voice";
+import { speakHeardOf, speakWatchOf } from "@/core/speech/pace";
+import { pickVoice, voiceFor, voiceUseOf } from "@/core/teacher/voice";
 import {
+  type ListenCallbacks,
   type ListenHandle,
   type MicrophoneCheck,
   PLAIN_RECOGNITION_EVENTS,
@@ -97,25 +99,8 @@ function synthesisAvailable(): boolean {
   );
 }
 
-const normalizeLang = (lang: string) => lang.toLowerCase().replaceAll("_", "-");
-
-/**
- * 영어 음성 고르기(plan-p02 나-3). lang 이 settings.lang 과 같은 것 가운데 기본 → 기기 안 → 첫째,
- * 없으면 그 언어 앞부분('en')으로 시작하는 것, 그것도 없으면 고르지 않는다(lang 만으로 읽는다).
- */
-export function pickVoice<
-  V extends { lang: string; default: boolean; localService: boolean },
->(voices: readonly V[], lang: string): V | undefined {
-  const want = normalizeLang(lang);
-  const exact = voices.filter((v) => normalizeLang(v.lang) === want);
-  const chosen =
-    exact.find((v) => v.default) ??
-    exact.find((v) => v.localService) ??
-    exact[0];
-  if (chosen !== undefined) return chosen;
-  const family = want.split("-")[0] ?? want;
-  return voices.find((v) => normalizeLang(v.lang).startsWith(family));
-}
+// 지금 목소리 고르기는 순수 함수 쪽(core/teacher/voice)으로 옮겼다. 관찰 페이지가 여기서 가져오므로 그대로 내보낸다.
+export { pickVoice };
 
 /** 인식 객체 결과 목록 전체의 첫 후보를 확정 · 중간 가리지 않고 잇는다. */
 function resultsOf(
@@ -194,10 +179,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     if (synthesisAvailable()) window.speechSynthesis.cancel();
   }
 
-  function listen(
-    rule: EndRule,
-    on?: { text?(text: string): void },
-  ): ListenHandle {
+  function listen(rule: EndRule, on?: ListenCallbacks): ListenHandle {
     activeListen?.cancelNow("leave");
     activeCheck?.cancelNow("leave");
     // 읽어 주는 중이면 끊고 듣는다(토리 목소리를 인식하지 않게, 7절 · C53).
@@ -229,12 +211,14 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
       }
     };
 
+    /** 이 듣기에서 소리 들어옴을 알렸는가(듣기마다 한 번 — 말하기 단추 표시, U4-2). */
+    let soundTold = false;
     const attach = (id: number, recognition: RecognitionLike) => {
       const fromThis = (
         event: SpeechTraceEntry & { kind: "recognizer-event" },
       ) => trace(event);
       for (const name of PLAIN_RECOGNITION_EVENTS) {
-        recognition[`on${name}`] = () =>
+        recognition[`on${name}`] = () => {
           fromThis({
             at: now(),
             kind: "recognizer-event",
@@ -242,6 +226,15 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
             recognizer: id,
             event: { type: name },
           });
+          if (
+            (name === "soundstart" || name === "speechstart") &&
+            !soundTold &&
+            !finished
+          ) {
+            soundTold = true;
+            on?.sound?.();
+          }
+        };
       }
       recognition.onresult = (event) => {
         const at = now();
@@ -424,37 +417,56 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     // 닫은 뒤(화면이 사라진 뒤) 늦게 온 읽기는 하지 않는다(P13b 차례 5 검토 I-2)
     if (disposed || !synthesisAvailable())
       return Promise.resolve({ kind: "unsupported" });
+    // 쓰임별 목소리 · lang · 높이 · 빠르기(가르치고 spec 설계 4, AC-3h). 선생님 한국어 줄을 읽지 않는 때(read_ko 끔 · ko-KR 없음)는
+    // 아무것도 끊지 않고 바로 skipped — 글로만 보이고 단추가 바로 밝다(설계 10)
+    const synth = window.speechSynthesis;
+    const choice = voiceFor({
+      use: voiceUseOf(options ?? {}),
+      voices: synth.getVoices(),
+      teacher: { pitch: options?.pitch, prefer: options?.voicePrefer },
+      rate: options?.rate,
+      speech: settings,
+    });
+    if (choice.kind === "skip")
+      return Promise.resolve({ kind: "skipped", reason: choice.reason });
     // 듣는 중이면 끊고, 밀린 줄을 비운 뒤 읽는다(end 가 안 온 발화 뒤 speak 는 cancel 전까지 대기, 321436).
     activeListen?.cancelNow("speak");
     activeCheck?.cancelNow("speak");
     finishSpeaking({ kind: "cancelled" });
-    const synth = window.speechSynthesis;
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = settings.lang;
-    // 목소리 순서(회화 선생님)가 있으면 그 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice(plan 회화-선생님-캐릭터 값 12)
-    const voices = synth.getVoices();
-    const voice =
-      (options?.voicePrefer?.length
-        ? preferredVoice(voices, settings.lang, options.voicePrefer)
-        : undefined) ?? pickVoice(voices, settings.lang);
+    utterance.lang = choice.lang;
+    // 선생님 영어는 목소리 순서(명단 voice.prefer)의 목소리, 맞는 것이 없거나 순서가 없으면 pickVoice(plan 회화-선생님-캐릭터 값 12)
+    const { voice, rate, pitch } = choice;
     if (voice !== undefined) utterance.voice = voice;
-    // 빠르기 · 높이는 넘긴 때만(없으면 브라우저 기본 — 말하기 · 배치 · 읽기 동작 그대로)
-    if (options?.rate !== undefined) utterance.rate = options.rate;
-    if (options?.pitch !== undefined) utterance.pitch = options.pitch;
+    // 빠르기 · 높이는 정해진 때만(없으면 브라우저 기본 — 말하기 · 배치 · 읽기 동작 그대로)
+    if (rate !== undefined) utterance.rate = rate;
+    if (pitch !== undefined) utterance.pitch = pitch;
     trace({
       at: now(),
       kind: "speak",
       text,
       voice: voice?.name,
-      ...(options?.rate === undefined ? {} : { rate: options.rate }),
-      ...(options?.pitch === undefined ? {} : { pitch: options.pitch }),
+      ...(rate === undefined ? {} : { rate }),
+      ...(pitch === undefined ? {} : { pitch }),
     });
+    // 감시 상한(C166 R1 — U5-1): 시작 알림 · 끝 알림이 상한 안에 오지 않으면 끝난(ended) 것으로 보고 줄을 비운다. WebKit 은 cancel()
+    // 바로 뒤 speak() 의 발화가 사건 없이 사라지기도 해(321436 계열 보고) 읽기 줄을 기다리는 아이 차례 · 따라 말하기가 멈추지 않게 한다.
+    // 한국어 줄은 한국어 글자 수로 잰다(가르치고 spec 설계 10)
+    const watch = speakWatchOf({ text, rate, lang: choice.lang }, settings);
     // await 없이 같은 차례에서 speak 를 부른다(누름 처리 안에서 불릴 수 있다).
     return new Promise<SpeakOutcome>((resolve) => {
+      let watchTimer: number | undefined;
+      // 이 발화의 시작 알림이 왔나(감시 결과 셋을 가른다 — R-48)
+      let started = false;
+      const stopWatch = () => {
+        if (watchTimer !== undefined) window.clearTimeout(watchTimer);
+        watchTimer = undefined;
+      };
       const current = {
         utterance,
         settle(outcome: SpeakOutcome) {
+          stopWatch();
           resolve(outcome);
         },
       };
@@ -462,17 +474,37 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
       const settleIfCurrent = (outcome: SpeakOutcome) => {
         if (speaking === current) {
           speaking = undefined;
+          stopWatch();
           resolve(outcome);
         }
       };
+      const giveUp = (code: "no-start" | "no-end") => {
+        watchTimer = undefined;
+        if (speaking !== current) return;
+        trace({ at: now(), kind: "speak-event", type: "timeout", code });
+        // 감시가 넘긴 발화는 정상 끝과 가른다: 시작이 왔으면 끝 알림 없음, 없으면 들려주지 못함(R-48)
+        settleIfCurrent({
+          kind: "ended",
+          heard: speakHeardOf({ started, endNotified: false }),
+        });
+        synth.cancel();
+      };
+      watchTimer = window.setTimeout(() => giveUp("no-start"), watch.startMs);
       utterance.onstart = () => {
         trace({ at: now(), kind: "speak-event", type: "start" });
         // 실제로 시작한 알림(선생님 말하기 상태의 시작). 이미 끊긴 발화의 늦은 알림은 넘기지 않는다.
-        if (speaking === current) options?.onStart?.();
+        if (speaking !== current) return;
+        started = true;
+        stopWatch();
+        watchTimer = window.setTimeout(() => giveUp("no-end"), watch.endMs);
+        options?.onStart?.();
       };
       utterance.onend = () => {
         trace({ at: now(), kind: "speak-event", type: "end" });
-        settleIfCurrent({ kind: "ended" });
+        settleIfCurrent({
+          kind: "ended",
+          heard: speakHeardOf({ started, endNotified: true }),
+        });
       };
       utterance.onerror = (event) => {
         trace({
@@ -484,7 +516,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
         settleIfCurrent(
           event.error === "interrupted" || event.error === "canceled"
             ? { kind: "cancelled" }
-            : { kind: "error", code: event.error },
+            : { kind: "error", code: event.error, started },
         );
       };
       synth.speak(utterance);

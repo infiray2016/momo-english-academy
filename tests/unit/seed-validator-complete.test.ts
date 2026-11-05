@@ -100,6 +100,29 @@ describe("완전성 · 단계 평가 · 배치 · 이야기", () => {
     expect(exitCodeOf(report)).toBe(0);
   });
 
+  it("AC-7a 완전성(회화 새 꼴, C189): 회화 1단계 단원 수업 파일이 비면 완전성이 막고 PR 모드는 보고만 한다", () => {
+    const tree = mini();
+    const talk = lessonFile(tree, "talk", 1, 1);
+    const keys = talk.lessons.map((l) =>
+      cellKey({
+        type: "lesson",
+        area: "talk",
+        level: 1,
+        unit: 1,
+        kind: l.kind,
+        lessonNo: l.lessonNo,
+        variant: l.variant,
+      }),
+    );
+    expect(keys.length).toBeGreaterThan(0);
+    tree.lessons = tree.lessons.filter((f) => f !== talk);
+    const report = run(tree);
+    expect(report.errors).toEqual([]);
+    expect([...report.empty].sort()).toEqual([...keys].sort());
+    expect(exitCodeOf(report)).toBe(1);
+    expect(exitCodeOf(run(tree, "pr"))).toBe(0);
+  });
+
   it("AC-7a 완전성: 칸 하나를 지우면 실패한다", () => {
     const tree = mini();
     const file = lessonFile(tree, "speaking", 1, 2);
@@ -187,9 +210,7 @@ describe("완전성 · 단계 평가 · 배치 · 이야기", () => {
     const cards = talkUnitCards(ref, 1);
     const corpus = lessonCorpus("talk", cards);
     const cardQuestions = [
-      ...new Set(
-        (cards[0] as TalkLesson).card.turns?.map((t) => t.question.en) ?? [],
-      ),
+      ...new Set((cards[0] as TalkLesson).card.required.map((t) => t.en)),
     ];
     const pick = cardQuestions
       .slice(0, TALK_TEST_SAME_QUESTIONS_MAX + 1)

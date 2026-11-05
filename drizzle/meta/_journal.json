@@ -43,6 +43,20 @@
       "when": 1793253295215,
       "tag": "0005_talk_turns_client_listen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793321182004,
+      "tag": "0006_talk_turns_move_prep",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793859875702,
+      "tag": "0007_unit_specs_goals",
+      "breakpoints": true
     }
   ]
 }

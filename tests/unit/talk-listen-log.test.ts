@@ -285,7 +285,7 @@ describe("듣기 사건 칸 꼴(C149 · 5절 talk_turns client_listen · attempt
   it("C149 따라 말하기 시도 꼴에 듣기 요약 칸(clientListen)을 둘 수 있고 없어도 읽힌다", () => {
     const base = {
       v: 1,
-      kind: "talk-today",
+      kind: "talk-wrapup",
       step: "final",
       target: "fan",
       heard: [],
@@ -304,5 +304,36 @@ describe("듣기 사건 칸 꼴(C149 · 5절 talk_turns client_listen · attempt
         clientListen: { ...valid, listens: [{ ...listen, text: "fan" }] },
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("읽어 주기 감시가 끝낸 발화(C166 R1 · 검토 A M-2)", () => {
+  it("M-2 시작 알림 없이 감시 상한이 끝낸 발화(timeout no-start) 뒤의 듣기는 읽는 중 끊음(cut)이 아니라 감시 끝 뒤 ms 다", () => {
+    const log = logOf([
+      { at: 0, kind: "speak", text: SPOKEN, voice: undefined },
+      // 시작 알림이 오지 않아 감시가 끝냄(browser.ts giveUp)
+      { at: 3000, kind: "speak-event", type: "timeout", code: "no-start" },
+      ...listenTrace(
+        1,
+        3500,
+        [
+          { at: 3540, type: "start" },
+          { at: 3600, type: "result", text: SAID },
+        ],
+        {
+          at: 6600,
+          outcome: {
+            kind: "result",
+            text: SAID,
+            pieces: [],
+            endedBy: "silence",
+            restarts: 0,
+            watchdogRestarts: 0,
+          },
+        },
+      ),
+    ]);
+    const [entry] = log.take();
+    expect(entry?.tc).toBe(500);
   });
 });

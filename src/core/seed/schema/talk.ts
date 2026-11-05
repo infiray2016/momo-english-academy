@@ -1,11 +1,14 @@
-// 회화 대화 시나리오 카드 · 회화 평가 카드 장의 Zod 규격(plan-p04a '회화 카드 TalkCard', 6.3 회화 행 · 6.4).
-// 단계에 맞는 칸이 있는지(1~3단계 turns, 4단계부터 questions 등)는 P4c 의 칸 검사가 level_specs 회화 칸으로 본다.
+// 회화 대화 시나리오 카드 · 회화 평가 카드 장의 Zod 규격(6.3 회화 카드 행 · 6.4, C189 새 꼴 — 회화 plan 묶음 3 · 12).
+// 카드 꼴은 하나다(목표 · 오늘 쓸 말 · 짧은 준비 · 필수 질문 · 더 이야기할 거리 · 미션 · 역할 바꾸기). 옛 꼴(C189 앞 turns · moreTalk ·
+// questions)의 규격은 묶음 12 가 지웠고, talkCardKindOf 는 옛 꼴에만 있던 칸으로 옛 꼴 카드를 알아본다(시드 검증기의 까닭 한 줄 ·
+// 개발 DB 의 옛 개정 세션 닫기). 단계에 맞는 칸이 있는지는 칸 검사(check-talk)가 level_specs 회화 칸으로 본다.
 // 회화 수업(수업 겉 + card)은 수업 파일과 함께 lesson.ts 에 둔다(lesson.ts 가 이 파일을 가져오므로 반대 방향은 순환이 된다).
 import { z } from "zod";
 import {
   ImageKeySchema,
   seedVersionShape,
   Text,
+  uniqueStrings,
   WordIdSchema,
 } from "@/core/seed/schema/reference";
 import {
@@ -14,6 +17,7 @@ import {
   fragmentSink,
   joinPath,
   SLOT_POS,
+  TALK_FIRST_FORMS,
   TALK_GREETING_TURNS,
   type TextFragment,
   UNITS_PER_LEVEL,
@@ -23,89 +27,163 @@ import {
 export const LineSchema = z.strictObject({ en: Text, ko: Text.optional() });
 export type Line = z.infer<typeof LineSchema>;
 
-const greetingTurnShape = {
-  /** 토리 질문(영어 · 한국어 뜻). */
+// ── 새 꼴 카드(6.3 회화 카드 행, C189) ─────────────────────────
+
+/** 목표 ID 목록(하나 이상, 겹침 없음). ID 꼴 · 단원 목표 대조 · 카드 goals 안인지는 칸 검사(check-talk talk-goals)가 본다. */
+const GoalIdsSchema = uniqueStrings(Text).min(1);
+/** 요구 능력(핵심 능력 코드 하나 이상, 첫 값이 주된 요구 능력). 목표가 여럿이면 칸 검사가 필수로 본다(6.4 회화 카드 목표). */
+const DemandsSchema = z.array(Text).min(1);
+
+/** 1~3단계 인사 질문 한 턴(새 꼴 — 1단계 인사 질문의 답 두 개 칸은 없앴다, C189). */
+export const TalkGreetingQuestionSchema = z.strictObject({
   question: z.strictObject({ en: Text, ko: Text }),
-  /** 한국어 뜻 힌트. */
   hintKo: Text,
-  /** 영어 문장 힌트. */
   hintEn: Text,
   /** 3단계 영어 틀(C31). */
   frameEn: Text.optional(),
-  /** 답 예시. */
   answerExample: Text,
-  /** 1단계 답 두 개(C2). */
-  twoAnswers: z.tuple([Text, Text]).optional(),
-  /** 1~3단계 턴 그림(C32). */
   imageKey: ImageKeySchema.optional(),
-};
-/** 1~3단계 인사 질문 한 턴. */
-export const GreetingTurnSchema = z.strictObject(greetingTurnShape);
-export type GreetingTurn = z.infer<typeof GreetingTurnSchema>;
-
-/** 1~3단계 대화 턴 · 더 이야기할 거리 한 턴. */
-export const TurnCardSchema = z.strictObject({
-  ...greetingTurnShape,
-  /** 노리는 단원 단어(1~2개, 수는 P4c). */
-  targets: z.array(WordIdSchema),
-  ask: z.enum(ASK_KINDS),
 });
-export type TurnCard = z.infer<typeof TurnCardSchema>;
+export type TalkGreetingQuestion = z.infer<typeof TalkGreetingQuestionSchema>;
 
-/** 4단계부터 카드 질문 목록 한 줄(배열 차례가 번호, C19). */
-export const QuestionCardSchema = z.strictObject({
+/** 오늘 쓸 말 한 낱말(새 단어마다). 짧은 준비 · 꺼내기 · 바닥선 듣기 활동이 읽는다(6.3). */
+export const TalkTodayWordSchema = z.strictObject({
+  word: WordIdSchema,
+  meaningKo: Text,
+  example: Text,
+  /** 그림 키(있으면, 1~3단계 쪽지 · 꺼내기 그림). */
+  imageKey: ImageKeySchema.optional(),
+  /** 들려줄 짧은 말(1~3단계는 'An apple.' 꼴, 4단계부터 예문). 선생님이 읽고 아이가 한 번 따라 말한다. */
+  modelLine: Text,
+});
+export type TalkTodayWord = z.infer<typeof TalkTodayWordSchema>;
+
+/** 필수 질문 · 더 이야기할 거리가 함께 쓰는 칸(6.3 '필수 질문과 같은 칸에서 첫 꼴을 뺀다'). */
+const talkItemShape = {
+  /** 번호(1부터, 그 목록 안 차례 그대로). 회화 턴 출력의 카드 항목(card_item.no)이 가리킨다. */
+  no: z.int().min(1),
+  /** 질문(영어). */
   en: Text,
-  ko: Text,
+  /** 질문의 한국어 뜻(1~4단계, 칸 검사가 단계 규격 koMeaning 으로 본다). */
+  ko: Text.optional(),
+  /** 노리는 단원 단어 1~2(수 · 단원 단어인지는 칸 검사). */
   targets: z.array(WordIdSchema),
+  /** 노리는 목표 ID(카드 goals 안). */
+  goals: GoalIdsSchema,
+  demands: DemandsSchema.optional(),
+  /** 상황 · 목적 꼬리표(비면 카드 purpose, 그것도 비면 목표 home). */
+  purpose: Text.optional(),
+  /** 처음 묻는 턴 · 다시 묻는 턴(C2). 더 이야기할 거리는 모두 다시(칸 검사). */
+  ask: z.enum(ASK_KINDS),
+  /** 한국어 뜻 힌트. */
   hintKo: Text,
-  /** 단계 규격 수만큼의 영어 힌트 단. */
-  hintTiers: z.array(Text),
+  /** 영어 힌트 단(단계 규격 hintTiers 의 ko 밖 차례 그대로 — 3단계는 [영어 틀, 영어 문장]). */
+  hints: z.array(Text),
+  answerExample: Text,
+  /** 받침 둘째의 쉬운 질문(물음표로 끝남 · 그 질문과 정규화한 글이 다름, 1~4단계 한국어 뜻 — 13절 C194 (2)). */
+  easyQuestion: z.strictObject({ en: Text, ko: Text.optional() }),
+  /** 1~3단계 그림 키. */
+  imageKey: ImageKeySchema.optional(),
   /** 5~6단계 쓸 수 있는 말. */
   usablePhrases: z.array(Text).optional(),
-  answerExample: Text,
+};
+/** 필수 질문 한 줄(6.3, C181 · C188 — 카드가 준비하는 기회이고 수업 완료 조건이 아니다). 첫 필수 질문이 대화 첫 질문이다. */
+export const TalkRequiredSchema = z.strictObject({
+  ...talkItemShape,
+  /** 1단계 처음 묻는 턴의 첫 꼴(그냥 · 선택지 · 꺼내기). 다른 단계 · 다시 묻는 턴에는 없다. */
+  firstForm: z.enum(TALK_FIRST_FORMS).optional(),
+  /** 1단계 첫 꼴이 선택지일 때의 선택지 둘(같은 꼴 · 하나는 노리는 단어). */
+  choices: z.tuple([Text, Text]).optional(),
 });
-export type QuestionCard = z.infer<typeof QuestionCardSchema>;
+export type TalkRequired = z.infer<typeof TalkRequiredSchema>;
+/** 더 이야기할 거리 한 줄(다시 묻는 질문, 모든 단계). */
+export const TalkMoreSchema = z.strictObject(talkItemShape);
+export type TalkMore = z.infer<typeof TalkMoreSchema>;
 
+/** 미션 하나(5~7단계): 글(ko · en) · 목표 ID · 요구 능력(목표가 여럿이면). */
+export const TalkMissionSchema = z.strictObject({
+  ko: Text,
+  en: Text,
+  goals: GoalIdsSchema,
+  demands: DemandsSchema.optional(),
+  purpose: Text.optional(),
+});
+export type TalkMission = z.infer<typeof TalkMissionSchema>;
+
+/** 역할 바꾸기(5~7단계, 선택적 확장): 선생님 첫 말 · 아이 쪽 힌트 하나 · purpose. 목표 ID 는 두지 않는다(3.3 승인 바). */
+export const TalkRoleSwapSchema = z.strictObject({
+  firstLine: Text,
+  hint: Text,
+  purpose: Text,
+});
+export type TalkRoleSwap = z.infer<typeof TalkRoleSwapSchema>;
+
+/**
+ * 새 꼴 회화 카드(6.3 회화 카드 행, C189). 그대로인 칸에 학습 목표 · 오늘 쓸 말(그림 키 · 들려줄 말) · 짧은 준비 낱말 · 필수 질문 ·
+ * 더 이야기할 거리 · 미션 · 역할 바꾸기를 더했다. 옛 칸(turns · moreTalk · questions · firstQuestion · 말해 보기 예문 뜻 · 1단계 인사 답 두 개)은
+ * 모르는 키라 거부된다(AC-15m).
+ */
 export const TalkCardSchema = z.strictObject({
   topic: Text,
   targetExpressions: z.array(Text).min(1),
+  /** 학습 목표: 이 카드가 기회를 준비하는 단원 목표 ID(단원 규격 goals 의 id). */
+  goals: GoalIdsSchema,
+  /** 카드의 상황 · 목적 꼬리표(비면 목표 home). */
+  purpose: Text.optional(),
   greetingTurns: z
     .int()
     .min(TALK_GREETING_TURNS.min)
     .max(TALK_GREETING_TURNS.max),
-  /** 1~3단계 인사 질문, 4단계부터 토리의 첫 말. */
+  /** 1~3단계 인사 질문, 4단계부터 선생님의 첫 말. */
   greeting: z.union([
-    z.strictObject({ questions: z.array(GreetingTurnSchema).min(1) }),
+    z.strictObject({ questions: z.array(TalkGreetingQuestionSchema).min(1) }),
     z.strictObject({ firstLine: LineSchema }),
   ]),
-  /** 오늘 쓸 말. `exampleKo` 는 말해 보기 예문의 뜻(1~3단계). */
-  todayWords: z.array(
-    z.strictObject({
-      word: WordIdSchema,
-      meaningKo: Text,
-      example: Text,
-      exampleKo: Text.optional(),
-    }),
-  ),
-  firstQuestion: Text,
-  /** 턴마다의 예상 흐름(영어). */
+  todayWords: z.array(TalkTodayWordSchema),
+  /** 짧은 준비 낱말(배정 수업, 오늘 쓸 말 가운데 talk.prep_words.<구간> 개와 그 차례). 다지기 · 보강은 비우고 앱이 고른다. */
+  prep: uniqueStrings(WordIdSchema).optional(),
+  required: z.array(TalkRequiredSchema).min(1),
+  more: z.array(TalkMoreSchema),
+  /** 예상 흐름(영어, 'The teacher asks …' 꼴 — 필수 질문을 꺼내기 좋은 이야기 흐름의 예). */
   flow: z.array(Text).min(1),
   /** 옆 칸에 보일 오늘 이야기 목록(한국어). */
   todayTopicsKo: z.array(Text),
   closingLines: z.array(LineSchema).min(1),
   safeLines: z.array(LineSchema).min(1),
   endCondition: Text,
-  /** 5~7단계 미션 목록(칸 꼴은 제안). */
-  missions: z.array(z.strictObject({ ko: Text, en: Text })).optional(),
+  missions: z.array(TalkMissionSchema).optional(),
+  roleSwap: TalkRoleSwapSchema.optional(),
   farewell: LineSchema,
   /** '새 이야기로 이어 가자' 끝인사(안전 상한용). */
   safetyFarewell: LineSchema,
   praiseLines: z.array(Text).min(1),
-  turns: z.array(TurnCardSchema).optional(),
-  moreTalk: z.array(TurnCardSchema).optional(),
-  questions: z.array(QuestionCardSchema).optional(),
 });
 export type TalkCard = z.infer<typeof TalkCardSchema>;
+
+// ── 꼴 가르기(회화 plan 정한 것 1 · 2) ─────────
+
+/** 카드 꼴: 새 꼴 · 옛 꼴(C189 앞) · 틀림. */
+export type TalkCardKind = "new" | "old" | "invalid";
+
+/** 옛 꼴 카드에만 있던 칸(firstQuestion 은 옛 꼴의 필수 칸, turns · moreTalk 는 1~3단계, questions 는 4단계부터). */
+const OLD_TALK_CARD_KEYS = [
+  "firstQuestion",
+  "turns",
+  "moreTalk",
+  "questions",
+] as const;
+
+/** 카드 꼴 가르기(순수 함수). 새 꼴 규격에 맞으면 새 꼴, 아니고 옛 꼴에만 있던 칸이 있으면 옛 꼴, 둘 다 아니면 틀림이다. */
+export function talkCardKindOf(card: unknown): TalkCardKind {
+  if (TalkCardSchema.safeParse(card).success) return "new";
+  if (
+    typeof card === "object" &&
+    card !== null &&
+    OLD_TALK_CARD_KEYS.some((key) => key in card)
+  )
+    return "old";
+  return "invalid";
+}
 
 // ── 회화 평가 카드 장(5절 level_test_items · 6.4 회화 평가 카드) ──
 
@@ -158,10 +236,10 @@ function lineTexts(sink: Sink, path: string, line: Line | undefined): void {
   sink.one(joinPath(path, "ko"), "ko", line.ko);
 }
 
-function greetingTurnTexts(
+function greetingQuestionTexts(
   sink: Sink,
   path: string,
-  turn: GreetingTurn | TurnCard,
+  turn: TalkGreetingQuestion,
 ): void {
   sink.one(joinPath(path, "question.en"), "tori", turn.question.en);
   sink.one(joinPath(path, "question.ko"), "ko", turn.question.ko);
@@ -169,10 +247,30 @@ function greetingTurnTexts(
   sink.one(joinPath(path, "hintEn"), "hint", turn.hintEn);
   sink.one(joinPath(path, "frameEn"), "hint", turn.frameEn);
   sink.one(joinPath(path, "answerExample"), "child", turn.answerExample);
-  sink.all(joinPath(path, "twoAnswers"), "pair", turn.twoAnswers);
 }
 
-/** 회화 카드의 글 조각. id(노리는 단어 · 오늘 쓸 말 단어) · 그림 키 · 열거 값은 내지 않는다. */
+function itemTexts(
+  sink: Sink,
+  path: string,
+  item: TalkRequired | TalkMore,
+): void {
+  sink.one(joinPath(path, "en"), "tori", item.en);
+  sink.one(joinPath(path, "ko"), "ko", item.ko);
+  sink.one(joinPath(path, "hintKo"), "ko", item.hintKo);
+  sink.all(joinPath(path, "hints"), "hint", item.hints);
+  sink.one(joinPath(path, "answerExample"), "child", item.answerExample);
+  sink.one(joinPath(path, "easyQuestion.en"), "tori", item.easyQuestion.en);
+  sink.one(joinPath(path, "easyQuestion.ko"), "ko", item.easyQuestion.ko);
+  sink.all(joinPath(path, "usablePhrases"), "hint", item.usablePhrases);
+  if ("choices" in item)
+    sink.all(joinPath(path, "choices"), "pair", item.choices);
+}
+
+/**
+ * 새 꼴 회화 카드의 글 조각. id(노리는 단어 · 오늘 쓸 말 단어 · 짧은 준비 낱말 · 목표 ID) · 그림 키 · 열거 값 · 꼬리표(purpose ·
+ * demands)는 내지 않는다. 들려줄 말은 role example(영어 범위 검사 안 · 어휘 배정 세기 밖), 쉬운 질문은 tori, 선택지는 pair,
+ * 역할 바꾸기 첫 말은 tori · 힌트는 hint 다.
+ */
 export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
   const sink = fragmentSink();
   const at = (key: string) => joinPath(prefix, key);
@@ -180,7 +278,7 @@ export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
   sink.all(at("targetExpressions"), "expression", card.targetExpressions);
   if ("questions" in card.greeting) {
     card.greeting.questions.forEach((turn, i) => {
-      greetingTurnTexts(sink, at(`greeting.questions.${i}`), turn);
+      greetingQuestionTexts(sink, at(`greeting.questions.${i}`), turn);
     });
   } else {
     lineTexts(sink, at("greeting.firstLine"), card.greeting.firstLine);
@@ -188,9 +286,14 @@ export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
   card.todayWords.forEach((word, i) => {
     sink.one(at(`todayWords.${i}.meaningKo`), "ko", word.meaningKo);
     sink.one(at(`todayWords.${i}.example`), "example", word.example);
-    sink.one(at(`todayWords.${i}.exampleKo`), "ko", word.exampleKo);
+    sink.one(at(`todayWords.${i}.modelLine`), "example", word.modelLine);
   });
-  sink.one(at("firstQuestion"), "tori", card.firstQuestion);
+  card.required.forEach((item, i) => {
+    itemTexts(sink, at(`required.${i}`), item);
+  });
+  card.more.forEach((item, i) => {
+    itemTexts(sink, at(`more.${i}`), item);
+  });
   sink.all(at("flow"), "flow", card.flow);
   sink.all(at("todayTopicsKo"), "ko", card.todayTopicsKo);
   card.closingLines.forEach((line, i) => {
@@ -204,24 +307,13 @@ export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
     sink.one(at(`missions.${i}.ko`), "ko", mission.ko);
     sink.one(at(`missions.${i}.en`), "prompt", mission.en);
   });
+  if (card.roleSwap) {
+    sink.one(at("roleSwap.firstLine"), "tori", card.roleSwap.firstLine);
+    sink.one(at("roleSwap.hint"), "hint", card.roleSwap.hint);
+  }
   lineTexts(sink, at("farewell"), card.farewell);
   lineTexts(sink, at("safetyFarewell"), card.safetyFarewell);
   sink.all(at("praiseLines"), "tori", card.praiseLines);
-  card.turns?.forEach((turn, i) => {
-    greetingTurnTexts(sink, at(`turns.${i}`), turn);
-  });
-  card.moreTalk?.forEach((turn, i) => {
-    greetingTurnTexts(sink, at(`moreTalk.${i}`), turn);
-  });
-  card.questions?.forEach((question, i) => {
-    const q = at(`questions.${i}`);
-    sink.one(joinPath(q, "en"), "tori", question.en);
-    sink.one(joinPath(q, "ko"), "ko", question.ko);
-    sink.one(joinPath(q, "hintKo"), "ko", question.hintKo);
-    sink.all(joinPath(q, "hintTiers"), "hint", question.hintTiers);
-    sink.all(joinPath(q, "usablePhrases"), "hint", question.usablePhrases);
-    sink.one(joinPath(q, "answerExample"), "child", question.answerExample);
-  });
   return sink.out;
 }
 

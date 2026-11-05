@@ -38,6 +38,7 @@ import {
   ModelPricesFileSchema,
   RangeSchema,
   SettingsFileSchema,
+  TalkWaitLinesFileSchema,
   UnitSpecsFileSchema,
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
@@ -728,10 +729,15 @@ describe("시드 규격(schema)", () => {
       `content\\.items\\.${N}\\.(?:type|picture)`,
       `content\\.listening\\.${N}\\.kind`,
       `content\\.pictureTask\\.images\\.${N}`,
-      `card\\.todayWords\\.${N}\\.word`,
+      // 회화 카드 새 꼴(C189): id · 그림 키 · 열거 값 · 목표 ID · 꼬리표(purpose · demands)는 글 조각이 아니다
+      `card\\.goals\\.${N}`,
+      "card\\.purpose",
+      `card\\.prep\\.${N}`,
+      `card\\.todayWords\\.${N}\\.(?:word|imageKey)`,
       `card\\.greeting\\.questions\\.${N}\\.imageKey`,
-      `card\\.(?:turns|moreTalk)\\.${N}\\.(?:targets\\.${N}|ask|imageKey)`,
-      `card\\.questions\\.${N}\\.targets\\.${N}`,
+      `card\\.(?:required|more)\\.${N}\\.(?:targets\\.${N}|goals\\.${N}|demands\\.${N}|purpose|ask|firstForm|imageKey)`,
+      `card\\.missions\\.${N}\\.(?:goals\\.${N}|demands\\.${N}|purpose)`,
+      "card\\.roleSwap\\.purpose",
       // 파일(파일 객체 기준)
       "area",
       "band",
@@ -1072,6 +1078,7 @@ describe("시드 규격(schema)", () => {
             forbidden: ForbiddenFileSchema,
             forms: ListFormsFileSchema,
             metaSentences: MetaSentencesFileSchema,
+            talkWaitLines: TalkWaitLinesFileSchema,
             teachers: TeachersFileSchema,
           }[parsed.name];
         case "lessons":

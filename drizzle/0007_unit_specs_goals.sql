@@ -1,0 +1,1 @@
+ALTER TABLE "unit_specs" ADD COLUMN "goals" jsonb;

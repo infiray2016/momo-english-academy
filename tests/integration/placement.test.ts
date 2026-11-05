@@ -465,6 +465,104 @@ describe("배치 평가 서버", () => {
     });
   });
 
+  it("AC-23a R-56 말하기 배치: 소리를 들려주지 못한 본 문항(답 없는 '다음')은 점수 없는 기술 오류로 적혀 같은 번호의 예비 문항이 나오고, 총점 · 판정에 들지 않는다", async () => {
+    const profileId = await household();
+    const first = await start("speaking");
+    if (first.kind !== "item") throw new Error("문항이어야 한다");
+    expect(first.techSpare).toBe(true);
+    const out = await submitPlacementAnswer(
+      {
+        sessionId: first.sessionId,
+        clientAttemptId: randomUUID(),
+        itemId: first.itemId,
+        techError: "speak_fail",
+      },
+      deps(),
+    );
+    if (!out.ok) throw new Error(`답 거부: ${out.reason}`);
+    const spare = out.screen;
+    if (spare.kind !== "item") throw new Error("예비 문항이어야 한다");
+    // 같은 문제 번호 · 같은 단계의 예비 문항(예비는 더 넘길 수 없다)
+    expect(spare.itemNo).toBe(first.itemNo);
+    expect(spare.level).toBe(first.level);
+    expect(spare.techSpare).toBe(false);
+    const spareRow = await itemRow(spare.itemId);
+    expect(spareRow.isSpare).toBe(true);
+    const [saved] = await db
+      .select()
+      .from(attempts)
+      .where(eq(attempts.sessionId, first.sessionId));
+    expect(saved?.score).toBeNull();
+    expect(saved?.input).toEqual({ techError: "speak_fail" });
+    // 끝까지 다 맞히면 총점은 기술 오류를 뺀 맞힌 답 수
+    const done = await runToEnd(spare, () => true);
+    expect(done).toMatchObject({ kind: "done", usedSpares: true });
+    const [lt] = await db
+      .select()
+      .from(levelTests)
+      .where(eq(levelTests.profileId, profileId));
+    const answers = lt?.answers as {
+      slot: string;
+      correct: boolean;
+      techError?: boolean;
+    }[];
+    expect(answers[0]).toMatchObject({
+      slot: "main",
+      correct: false,
+      techError: true,
+    });
+    expect(answers[1]).toMatchObject({ slot: "spare", correct: true });
+    expect(lt?.totalScore).toBe(answers.length - 1);
+  });
+
+  it("AC-23a R-56 배치 기술 오류 거부: 예비 문항 · 소리 아닌 문항 · 실패 3회와 함께 온 기술 오류, 답도 기술 오류도 없는 입력은 invalid 다", async () => {
+    await household();
+    const send = (screen: Item, over: Record<string, unknown>) =>
+      submitPlacementAnswer(
+        {
+          sessionId: screen.sessionId,
+          clientAttemptId: randomUUID(),
+          itemId: screen.itemId,
+          ...over,
+        },
+        deps(),
+      );
+    const invalid = { ok: false, reason: "invalid" };
+    const main = await start("speaking");
+    if (main.kind !== "item") throw new Error("문항이어야 한다");
+    expect(
+      await send(main, {
+        answer: { kind: "repeat-failed" },
+        techError: "speak_fail",
+      }),
+    ).toEqual(invalid);
+    // 답도 기술 오류도 없음
+    expect(await send(main, {})).toEqual(invalid);
+    // 예비 문항(본 문항 기술 오류 뒤)에는 기술 오류가 오지 않는다(같은 자리에서 다시 듣기)
+    const moved = await send(main, { techError: "speak_fail" });
+    if (!moved.ok || moved.screen.kind !== "item")
+      throw new Error("예비 문항이어야 한다");
+    expect(await send(moved.screen, { techError: "speak_fail" })).toEqual(
+      invalid,
+    );
+    expect(
+      await send(moved.screen, {
+        answer: { kind: "dont-know" },
+        techError: "speak_fail",
+      }),
+    ).toEqual(invalid);
+    // 소리 아닌 문항(읽기)
+    const reading = await start("reading");
+    if (reading.kind !== "item") throw new Error("문항이어야 한다");
+    expect(reading.techSpare).toBe(false);
+    expect(
+      await send(reading, {
+        answer: { kind: "dont-know" },
+        techError: "speak_fail",
+      }),
+    ).toEqual(invalid);
+  });
+
   it("배치 평가: 마이크 알림(mic_unavailable · mic_stalled)은 그 학습일에 종류마다 한 번 남고 브라우저 이름 · 코드만 담는다", async () => {
     const profileId = await household();
     const raw = { kind: "mic_stalled", code: "stalled", browser: "Chrome" };

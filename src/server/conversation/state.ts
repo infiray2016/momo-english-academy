@@ -5,44 +5,37 @@ import "server-only";
 // 세션이 끝날 때의 이음매. AI 를 부르지 않는다. 시각은 인자로 받고 SQL 안에 now() 를 쓰지 않는다. 아이 글을 로그에 내지 않는다.
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
-import type { LevelContext } from "@/core/ai/calls/common";
+import type { TalkHistoryEntry } from "@/core/ai/calls/talk-lesson";
 import {
-  type TalkHistoryEntry,
-  type TalkTurn,
-  type TalkTurnContext,
-  type TalkTurnInput,
-  talkContextDelta,
-  twoAnswersLine,
-} from "@/core/ai/calls/talk";
-import { parseTalkAttemptInput } from "@/core/conversation/attempt";
-import {
-  type AiQuestionLite,
-  type AppendLine,
-  MORE_PROMPT,
-  type PendingQuestion,
-  practiceItemsOf,
-  type TalkFlowSettings,
-  type TalkPosition,
-  type TalkSegment,
-  type TalkTurnLite,
-  talkFlowOf,
-  talkFlowSettingsFrom,
-  talkPositionOf,
-} from "@/core/conversation/flow";
-import { friendshipAfter } from "@/core/conversation/friendship";
+  type LessonFollowDone,
+  lessonFollowDoneOf,
+  parseTalkAttemptInput,
+  prepWordsShownOf,
+} from "@/core/conversation/attempt";
+import type { TalkCarry } from "@/core/conversation/chances";
 import type { HintTier } from "@/core/conversation/hints";
-import { metWordsIn, sayStateAfter } from "@/core/conversation/said";
+import {
+  type TalkLessonPosition,
+  talkLessonPositionOf,
+} from "@/core/conversation/lesson-flow";
+import {
+  type TalkLessonSettings,
+  type TalkLessonSpec,
+  type TalkLessonTurn,
+  talkLessonSettingsFrom,
+} from "@/core/conversation/lesson-turns";
+import { readTalkMove } from "@/core/conversation/move";
+import { sayStateAfter } from "@/core/conversation/said";
+import { toriKoShownOf } from "@/core/conversation/spoken";
 import { learningDayOf } from "@/core/learning-day";
-import { bandOf } from "@/core/level-band";
-import { LESSON_SCHEMAS, type TalkLesson } from "@/core/seed/schema/lesson";
+import { type TalkLesson, TalkLessonSchema } from "@/core/seed/schema/lesson";
 import {
   type TalkLevelSpec,
   TalkLevelSpecSchema,
 } from "@/core/seed/schema/reference";
-import type { TalkCard } from "@/core/seed/schema/talk";
+import { type TalkCard, talkCardKindOf } from "@/core/seed/schema/talk";
 import type { Teacher } from "@/core/seed/schema/teachers";
-import { STORIES_PER_BAND } from "@/core/seed/structure";
-import { splitSentences } from "@/core/seed/text";
+import { TALK_LOW_BAND, TALK_SEGMENTS } from "@/core/seed/structure";
 import { lemmaLookup } from "@/core/session/attempt";
 import { resolveTeacher } from "@/core/teacher/roster";
 import { lessons, vocab } from "@/db/schema/content";
@@ -64,7 +57,7 @@ import {
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
-import { rosterOf, teacherPromptOf } from "@/server/teacher";
+import { rosterOf } from "@/server/teacher";
 
 // ── 의존 · 형 ────────────────────────────────────────────────────
 
@@ -83,60 +76,6 @@ export type TalkTurnRow = typeof talkTurns.$inferSelect;
 type SessionRow = typeof sessions.$inferSelect;
 type LessonRow = typeof lessons.$inferSelect;
 
-export type TalkStart = {
-  shownWords: string[];
-  metBefore: string[];
-  practiceOrder: number[][];
-};
-
-/** 따라 말하기 토막의 끝낸 차례(attempts — 같은 차례를 두 번 세지 않는다). */
-export type FollowDone = {
-  today: number[];
-  practice: { round: number; index: number }[];
-  wrapUp: number[];
-  again: boolean;
-};
-
-export type TalkState = {
-  profileId: string;
-  session: SessionRow;
-  lessonRow: LessonRow;
-  lesson: TalkLesson;
-  card: TalkCard;
-  spec: TalkLevelSpec;
-  level: number;
-  unit: number;
-  /** 지금 토막(sessions.talk_segment — 비었으면 인사). */
-  segment: TalkSegment;
-  /** 토막 차례(a talkFlowOf). */
-  flow: TalkSegment[];
-  flowSettings: TalkFlowSettings;
-  /** talk.practice_rounds */
-  practiceRounds: number;
-  start: TalkStart | null;
-  /**
-   * 이 대화의 회화 선생님 — 처음 스냅숏 키, 그 키가 명단에 없으면(또는 스냅숏 전이면) 프로필의 지금 선생님(spec '세션의 선생님' 행,
-   * 선생님 화면 plan 값 7). 둘 다 명단에 없으면 null(스냅숏 전이면 고르는 화면).
-   */
-  teacher: Teacher | null;
-  /** 이 세션 talk_turns(턴 번호 차례, 같은 번호는 토리 행 먼저 — C89). */
-  rows: TalkTurnRow[];
-  /** 끝의 '토리의 말이 없는 아이 행'을 뺀 것(자리 판정은 이것으로). */
-  liveRows: TalkTurnRow[];
-  /** 토리의 말이 없는 마지막 아이 행(같은 시도 id 로 다시 받는다 — 8절 · AC-15f). */
-  orphan: TalkTurnRow | null;
-  /** 지금 자리(a talkPositionOf, liveRows). */
-  position: TalkPosition;
-  follows: FollowDone;
-  lemmaOf: (surface: string) => string | undefined;
-  lemmaEntries: { word: string; forms: string[] }[];
-  /** 단원 회차 복사본(12절 머리 — unit.new_words_per_lesson · talk.known_days). */
-  snapshot: Record<string, unknown>;
-  learningDay: string;
-  timezone: string;
-  dayStartHour: number;
-};
-
 /** 대화가 열려 있는가(진행 · 또는 완료이고 정리 토막 전 — 목표 턴 뒤 '더 이야기하기', 회16). */
 export function isTalkOpen(
   s: Pick<SessionRow, "status" | "talkSegment">,
@@ -146,19 +85,6 @@ export function isTalkOpen(
 }
 
 // ── 설정 ─────────────────────────────────────────────────────────
-
-const STATE_KEYS = [
-  "talk.dontknow_max",
-  "talk.more_talk_round_turns",
-  "talk.nospeech_dontknow_count",
-  "talk.practice_rounds",
-] as const;
-
-const stateSettingSchemas = {
-  ...Object.fromEntries(STATE_KEYS.map((key) => [key, z.unknown()])),
-  "app.timezone": appTimezoneSchema,
-  "app.day_start_hour": appDayStartHourSchema,
-} as Record<string, z.ZodType>;
 
 /** 정수 1 이상 설정 하나(없거나 꼴이 틀리면 던진다 — 조용한 기본값 없음). */
 export function positiveInt(values: Record<string, unknown>, key: string) {
@@ -186,41 +112,17 @@ export function toriLinesOf(text: string | null): {
   return { aiPart, appended: appended.filter((line) => line !== "") };
 }
 
-/** 앱이 붙인 말 한 줄의 영어(토리 행 원문 · 다시 쓸 토리 차례에 넣는 글). */
-export function appendEnOf(line: AppendLine): string {
-  return line.kind === "two_answers" ? twoAnswersLine(line.answers) : line.en;
-}
-
-/** a 보고 '요청 2' — 붙인 질문이 '더 이야기할 거리' 질문이면 그 차례(1~3단계 AI 자리를 대신한 것). */
-export function moreTalkFallbackOf(
-  text: string | null,
-  card: Pick<TalkCard, "moreTalk">,
-): number | null {
-  const { appended } = toriLinesOf(text);
-  const more = card.moreTalk ?? [];
-  for (const line of appended) {
-    const i = more.findIndex((t) => t.question.en === line);
-    if (i >= 0) return i;
-  }
-  return null;
-}
+/** 회화 토막(sessions.talk_segment 가운데 새 흐름이 쓰는 값 — DB 열거에 남은 옛 흐름 토막 값 둘은 쓰지 않는다, 정한 것 8). */
+export type TalkSegment = (typeof TALK_SEGMENTS)[number];
 
 /**
- * a 보고 '요청 2' — 고르기 차례의 토리 행에 아이가 '더 이야기하기'를 골라 앱이 다음 질문을 붙였는가. 1~3단계는 원문 마지막 줄이
- * 'Do you want to talk more?' 가 아니면 참, 4단계부터는 AI 글 줄 뒤에 앱이 붙인 줄이 있고 그 마지막이 그 말이 아니면 참(끊긴 목표 턴에
- * 앱이 붙인 '더 이야기할래?'는 '골랐음'이 아니다 — 차례 2 N1). 고르기 차례가 아닌 행에서 참이어도 흐름은 쓰지 않는다.
+ * DB 토막 값 → 새 흐름 토막(비었으면 인사). 옛 흐름 값(오늘 쓸 말 · 말해 보기 토막)은 새 꼴 세션에 들지 않으므로 던진다(조용히 바꾸지 않음).
  */
-export function moreChosenOf(
-  text: string | null,
-  spec: Pick<TalkLevelSpec, "cardShape">,
-): boolean {
-  const { aiPart, appended } = toriLinesOf(text);
-  if (spec.cardShape === "turns") {
-    const last = appended.at(-1) ?? aiPart;
-    return last !== "" && last !== MORE_PROMPT.en;
-  }
-  const last = appended.at(-1);
-  return last !== undefined && last !== MORE_PROMPT.en;
+export function talkSegmentOf(value: SessionRow["talkSegment"]): TalkSegment {
+  const segment = value ?? "greeting";
+  if (!(TALK_SEGMENTS as readonly string[]).includes(segment))
+    throw new Error(`새 흐름에 없는 회화 토막 값이다(${segment})`);
+  return segment as TalkSegment;
 }
 
 const AiQuestionSchema = z.object({
@@ -231,36 +133,12 @@ const AiQuestionSchema = z.object({
   hints: z.array(z.string()).optional(),
 });
 
-export function aiQuestionOf(raw: unknown): AiQuestionLite | null {
+/** 선생님 행 ai_question 칸(이 차례 AI 질문 — 답 예시를 읽는다, C101). 꼴이 틀리면 null. */
+export function aiQuestionOf(
+  raw: unknown,
+): z.infer<typeof AiQuestionSchema> | null {
   const parsed = AiQuestionSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
-}
-
-/** talk_turns 행 → 흐름의 가벼운 꼴(a TalkTurnLite). */
-export function liteOf(
-  row: TalkTurnRow,
-  ctx: { card: TalkCard; spec: Pick<TalkLevelSpec, "cardShape"> },
-): TalkTurnLite {
-  if (row.speaker === "child")
-    return {
-      speaker: "child",
-      segment:
-        row.segment === "more_talk"
-          ? "more_talk"
-          : row.segment === "greeting"
-            ? "greeting"
-            : "talk",
-      input: row.inputMode ?? "speech",
-      stuck: row.stuckPhrase !== null,
-      targets: [...(row.targetWords ?? [])],
-    };
-  return {
-    speaker: "tori",
-    cardQuestionNo: row.cardQuestionNo,
-    moreTalkFallback: moreTalkFallbackOf(row.text, ctx.card),
-    aiQuestion: aiQuestionOf(row.aiQuestion),
-    moreChosen: moreChosenOf(row.text, ctx.spec),
-  };
 }
 
 /** 턴 번호 차례, 같은 번호는 토리 행 먼저(토리 행 n = 아이 말 n 앞의 토리 말, C89). */
@@ -294,208 +172,6 @@ export type HintView = {
   usable?: string[];
 };
 
-/** 아이가 답할 지금 질문(화면 몫). 1~3단계는 아이가 말할 영어(답 예시 · 힌트 글)를 넣지 않는다. */
-export type PendingView = {
-  source: PendingQuestion["source"];
-  questionNo?: number;
-  /** 토리가 묻는 질문(말풍선 · 읽어 주기). AI 가 tori_en 에 쓴 질문이면 없음. */
-  en?: string;
-  ko?: string;
-  targets: string[];
-  askKind: PendingQuestion["askKind"];
-  /** 1단계 처음 묻는 턴 · 인사 턴의 답 두 개(읽어 주기만 — 글로 보이지 않는다). */
-  twoAnswers?: [string, string];
-  imageKey?: string;
-  /** 4단계부터 '모름' 뒤 답 예시(1~3단계는 앱이 붙인 말로만). */
-  answerExample?: string;
-};
-
-export type TurnNext = {
-  pending: PendingView | null;
-  hints: HintView[];
-  /** '말 주고받기 n'. */
-  talkCount: number;
-  target: number;
-  targetReached: boolean;
-  awaitingChoice: boolean;
-  moreRound: number;
-  moreLeft: number;
-  segment: TalkSegment;
-  greetingDone: boolean;
-  dontKnowCount: number;
-  /** 토리 말풍선 아래 글(읽지 않음). */
-  explanation?: string;
-  missionsDone?: number[];
-};
-
-/**
- * 앱이 붙인 말 한 줄(C92 add). en 은 토리가 묻는 말(말풍선 글 · 읽어 주기). 아이가 말할 영어는 글 칸에 넣지 않는다 —
- * again 의 say(답 예시)와 two_answers 의 answers(답 두 개)는 **읽어 주기 재료**이고 1~3단계 화면은 글로 보이지 않는다(3.3 · T2 ·
- * 검토 I-3). 'Or' 이음은 화면이 공용 twoAnswersLine 으로.
- */
-export type AddLineOut =
-  | { t: "add"; kind: "question" | "more_prompt"; en: string; ko?: string }
-  | {
-      t: "add";
-      kind: "again";
-      /** 읽어 주기 전용: 답 예시(아이가 말할 영어 — 글로 보이지 않는다). */
-      say: string;
-      /** 같은 질문(토리가 다시 묻는 말). AI 질문 자리에서 질문 글이 없으면 비움. */
-      en?: string;
-      ko?: string;
-    }
-  | {
-      t: "add";
-      kind: "two_answers";
-      /** 읽어 주기 전용: 답 두 개(1단계 처음 묻는 턴 · 인사 턴 — 글로 보이지 않는다). */
-      answers: [string, string];
-    };
-
-export type TalkLine =
-  | { t: "s"; en: string }
-  | { t: "ko"; ko: string }
-  | AddLineOut
-  | { t: "end"; next: TurnNext }
-  | { t: "resting" }
-  | { t: "break"; en: string; ko?: string }
-  | {
-      t: "close";
-      reason: "resting" | "safety";
-      lines?: { en: string; ko?: string }[];
-      farewell: { en: string; ko?: string };
-    }
-  | { t: "stale" }
-  | { t: "error" };
-
-export type AddLine = Extract<TalkLine, { t: "s" } | { t: "add" }>;
-
-/**
- * 앱이 붙일 말 → 흘려 보낼 줄. 칭찬 대사는 토리 말(s), 답 예시 뒤 같은 질문은 again 한 줄(say = 답 예시 · en = 질문), 답 두 개는
- * two_answers(answers), 'Do you want to talk more?' 는 more_prompt. 뜻은 koMeaning 단계만(a appendAfter 가 이미 가름).
- */
-export function addLinesOf(lines: readonly AppendLine[]): AddLine[] {
-  const out: AddLine[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] as AppendLine;
-    switch (line.kind) {
-      case "praise":
-        out.push({ t: "s", en: line.en });
-        break;
-      case "answer_example": {
-        const next = lines[i + 1];
-        if (next?.kind === "question") {
-          out.push({
-            t: "add",
-            kind: "again",
-            say: line.en,
-            en: next.en,
-            ...(next.ko === undefined ? {} : { ko: next.ko }),
-          });
-          i += 1;
-        } else out.push({ t: "add", kind: "again", say: line.en });
-        break;
-      }
-      case "question":
-      case "more_prompt":
-        out.push({
-          t: "add",
-          kind: line.kind,
-          en: line.en,
-          ...(line.ko === undefined ? {} : { ko: line.ko }),
-        });
-        break;
-      case "two_answers":
-        out.push({ t: "add", kind: "two_answers", answers: line.answers });
-        break;
-    }
-  }
-  return out;
-}
-
-/** 카드에서 영어 질문의 뜻을 찾는다(이어 할 때 · 다시 흘려 보낼 때). */
-function questionKoOf(card: TalkCard, en: string): string | undefined {
-  const turns = [
-    ...("questions" in card.greeting ? card.greeting.questions : []),
-    ...(card.turns ?? []),
-    ...(card.moreTalk ?? []),
-  ];
-  return (
-    turns.find((t) => t.question.en === en)?.question.ko ??
-    card.questions?.find((q) => q.en === en)?.ko
-  );
-}
-
-/**
- * 저장된 토리 행의 붙인 줄 → 앱이 붙일 말(이어 하기 · 같은 시도 id 다시 흘림 — AI 없음). 저장 글에는 갈래가 없어 줄 글로 가른다:
- * 'Do you want to talk more?' · 카드 칭찬 대사 · 지금 질문의 답 두 개 줄 · 지금 질문의 답 예시(다음 줄이 그 질문) · 그 밖은 질문.
- */
-export function appendLinesFromText(
-  appended: readonly string[],
-  ctx: {
-    card: TalkCard;
-    pending: PendingQuestion | null;
-    koMeaning: boolean;
-  },
-): AppendLine[] {
-  const { card, pending, koMeaning } = ctx;
-  const out: AppendLine[] = [];
-  appended.forEach((line, i) => {
-    if (line === MORE_PROMPT.en) {
-      out.push({
-        kind: "more_prompt",
-        en: line,
-        ...(koMeaning ? { ko: MORE_PROMPT.ko } : {}),
-      });
-      return;
-    }
-    if (card.praiseLines.includes(line)) {
-      out.push({ kind: "praise", en: line });
-      return;
-    }
-    if (pending?.twoAnswers && line === twoAnswersLine(pending.twoAnswers)) {
-      out.push({ kind: "two_answers", answers: pending.twoAnswers });
-      return;
-    }
-    if (
-      pending &&
-      pending.answerExample !== "" &&
-      line === pending.answerExample &&
-      appended[i + 1] === pending.en
-    ) {
-      out.push({ kind: "answer_example", en: line });
-      return;
-    }
-    const ko = pending?.en === line ? pending.ko : questionKoOf(card, line);
-    out.push({
-      kind: "question",
-      en: line,
-      ...(koMeaning && ko !== undefined ? { ko } : {}),
-    });
-  });
-  return out;
-}
-
-/** 지금 질문의 화면 몫. */
-export function pendingViewOf(
-  q: PendingQuestion | null,
-  lowLevel: boolean,
-): PendingView | null {
-  if (!q) return null;
-  return {
-    source: q.source,
-    ...(q.questionNo === undefined ? {} : { questionNo: q.questionNo }),
-    ...(q.en === undefined ? {} : { en: q.en }),
-    ...(q.ko === undefined ? {} : { ko: q.ko }),
-    targets: [...q.targets],
-    askKind: q.askKind,
-    ...(q.twoAnswers ? { twoAnswers: q.twoAnswers } : {}),
-    ...(q.imageKey === undefined ? {} : { imageKey: q.imageKey }),
-    ...(lowLevel || q.answerExample === ""
-      ? {}
-      : { answerExample: q.answerExample }),
-  };
-}
-
 /** 힌트 단의 화면 몫(1~3단계 영어 단은 글을 빼고 연 단만 따로 받는다). */
 export function hintViewsOf(
   tiers: readonly HintTier[],
@@ -511,35 +187,6 @@ export function hintViewsOf(
       ...(tier.usable ? { usable: [...tier.usable] } : {}),
     };
   });
-}
-
-export function nextOf(
-  position: TalkPosition,
-  ctx: {
-    spec: Pick<TalkLevelSpec, "targetTurns" | "cardShape">;
-    hints: readonly HintTier[];
-    explanation?: string;
-    missionsDone?: number[];
-  },
-): TurnNext {
-  const lowLevel = ctx.spec.cardShape === "turns";
-  return {
-    pending: pendingViewOf(position.pending, lowLevel),
-    hints: hintViewsOf(ctx.hints, lowLevel),
-    talkCount: position.talkCount,
-    target: ctx.spec.targetTurns,
-    targetReached: position.targetReached,
-    awaitingChoice: position.awaitingChoice,
-    moreRound: position.moreRound,
-    moreLeft: position.moreTurnsLeft,
-    segment: position.segment,
-    greetingDone: position.greetingDone,
-    dontKnowCount: position.dontKnowCount,
-    ...(ctx.explanation ? { explanation: ctx.explanation } : {}),
-    ...(ctx.missionsDone && ctx.missionsDone.length > 0
-      ? { missionsDone: [...ctx.missionsDone] }
-      : {}),
-  };
 }
 
 // ── 상태 읽기 ────────────────────────────────────────────────────
@@ -562,59 +209,24 @@ export async function lemmaEntriesOf(
   }));
 }
 
-/** 따라 말하기 시도(오늘 쓸 말 · 말해 보기 · 정리 · 한 번 더)의 끝낸 차례. */
-export function followDoneOf(inputs: readonly unknown[]): FollowDone {
-  const out: FollowDone = {
-    today: [],
-    practice: [],
-    wrapUp: [],
-    again: false,
-  };
-  for (const raw of inputs) {
-    const input = parseTalkAttemptInput(raw);
-    if (!input) continue;
-    if (input.kind === "talk-today" && !out.today.includes(input.index))
-      out.today.push(input.index);
-    else if (
-      input.kind === "talk-practice" &&
-      !out.practice.some(
-        (p) => p.round === input.round && p.index === input.index,
-      )
-    )
-      out.practice.push({ round: input.round, index: input.index });
-    else if (input.kind === "talk-wrapup" && !out.wrapUp.includes(input.index))
-      out.wrapUp.push(input.index);
-    else if (input.kind === "talk-again") out.again = true;
-  }
-  return out;
-}
+type ReadTalkArgs = {
+  sessionId: string;
+  profileId: string;
+  lock?: boolean;
+  at: Date;
+};
+type TalkBase = {
+  session: SessionRow & { level: number; unit: number };
+  lessonRow: LessonRow;
+  /** 카드 꼴(talkCardKindOf — 새 꼴 · 옛 꼴 · 틀림). */
+  kind: ReturnType<typeof talkCardKindOf>;
+};
 
-/** 지금 토막의 따라 말하기 자리(a talkPositionOf 의 follow). */
-function followOf(
-  segment: TalkSegment,
-  follows: FollowDone,
-  counts: { today: number; practice: number },
-): { done: number; total: number } | undefined {
-  if (segment === "today_words")
-    return { done: follows.today.length, total: counts.today };
-  if (segment === "practice")
-    return { done: follows.practice.length, total: counts.practice };
-  return undefined;
-}
-
-/**
- * 그 프로필의 회화 세션 상태. lock 이면 세션 행을 FOR UPDATE 로 잡는다(두 기기 줄 세움 — 회18). 회화가 아니거나 남의 세션이면
- * undefined. 카드 · 규격이 깨졌으면 던진다(시드 결함 — 부르는 쪽이 서버 오류로).
- */
-export async function readTalkState(
+/** 세션 행(lock 이면 FOR UPDATE)과 수업 행 · 카드 꼴. 회화가 아니거나 남의 세션 · 수업 행이 없으면 undefined. */
+async function readTalkBase(
   db: DbOrTx,
-  {
-    sessionId,
-    profileId,
-    lock = false,
-    at,
-  }: { sessionId: string; profileId: string; lock?: boolean; at: Date },
-): Promise<TalkState | undefined> {
+  { sessionId, profileId, lock = false }: ReadTalkArgs,
+): Promise<TalkBase | undefined> {
   const base = db
     .select()
     .from(sessions)
@@ -633,155 +245,53 @@ export async function readTalkState(
     .from(lessons)
     .where(eq(lessons.id, session.lessonId));
   if (!lessonRow) return undefined;
-  const lesson = LESSON_SCHEMAS.talk.parse(lessonRow.content);
-  const card = lesson.card;
-  const level = session.level;
-  const unit = session.unit;
-
-  const specRow = await readLevelSpec(
-    {
-      area: "talk",
-      level,
-      startRevision: session.seedRevision ?? lessonRow.revision,
-    },
-    { db },
-  );
-  const spec = TalkLevelSpecSchema.parse(specRow?.spec);
-
-  const values = await getSettings(stateSettingSchemas, { db, profileId });
-  const flowSettings = talkFlowSettingsFrom((key) => values[key]);
-  const practiceRounds = positiveInt(values, "talk.practice_rounds");
-  const timezone = values["app.timezone"] as string;
-  const dayStartHour = values["app.day_start_hour"] as number;
-  const learningDay = learningDayOf(at, timezone, dayStartHour);
-
-  const rows = sortTurns(
-    await db.select().from(talkTurns).where(eq(talkTurns.sessionId, sessionId)),
-  );
-  const { live, orphan } = splitOrphan(rows);
-  const tried = await db
-    .select({ input: attempts.input })
-    .from(attempts)
-    .where(eq(attempts.sessionId, sessionId));
-  let start: TalkStart | null = null;
-  let startTeacherKey: string | undefined;
-  for (const t of tried) {
-    const input = parseTalkAttemptInput(t.input);
-    if (input?.kind === "talk-start") {
-      start = {
-        shownWords: input.shownWords,
-        metBefore: input.metBefore,
-        practiceOrder: input.practiceOrder,
-      };
-      startTeacherKey = input.teacherKey;
-    }
-  }
-  const [chosen] = await db
-    .select({ teacherKey: profiles.teacherKey })
-    .from(profiles)
-    .where(eq(profiles.id, profileId));
-  const teacher =
-    resolveTeacher(rosterOf(), startTeacherKey, chosen?.teacherKey) ?? null;
-  const follows = followDoneOf(tried.map((t) => t.input));
-
-  const [round] = await db
-    .select({ snapshot: unitProgress.settingsSnapshot })
-    .from(unitProgress)
-    .where(
-      and(
-        eq(unitProgress.profileId, profileId),
-        eq(unitProgress.area, "talk"),
-        eq(unitProgress.level, level),
-        eq(unitProgress.unit, unit),
-      ),
-    )
-    .orderBy(desc(unitProgress.round))
-    .limit(1);
-  const snapshot = (round?.snapshot ?? {}) as Record<string, unknown>;
-
-  const lemmaEntries = await lemmaEntriesOf(db, lesson.unitWords);
-  const practiceItems = practiceItemsOf({ spec, card });
-  const todayCount = start?.shownWords.length ?? card.todayWords.length;
-  const flow = talkFlowOf({
-    spec,
-    todayWordCount: todayCount,
-    practiceCount: practiceItems.length,
-  });
-  const segment: TalkSegment = session.talkSegment ?? "greeting";
-  const position = talkPositionOf({
-    spec,
-    card,
-    metBefore: start?.metBefore ?? [],
-    turns: live.map((row) => liteOf(row, { card, spec })),
-    segment,
-    ...(() => {
-      const follow = followOf(segment, follows, {
-        today: todayCount,
-        practice: practiceItems.length * practiceRounds,
-      });
-      return follow ? { follow } : {};
-    })(),
-    settings: flowSettings,
-  });
+  const content = lessonRow.content as { card?: unknown } | null;
   return {
-    profileId,
-    session,
+    session: { ...session, level: session.level, unit: session.unit },
     lessonRow,
-    lesson,
-    card,
-    spec,
-    level,
-    unit,
-    segment,
-    flow,
-    flowSettings,
-    practiceRounds,
-    start,
-    teacher,
-    rows,
-    liveRows: live,
-    orphan,
-    position,
-    follows,
-    lemmaOf: lemmaLookup(lemmaEntries),
-    lemmaEntries,
-    snapshot,
-    learningDay,
-    timezone,
-    dayStartHour,
+    kind: talkCardKindOf(content?.card),
   };
 }
 
-/** 같은 상태에서 턴 행만 바꾼 자리(아이 행 · 토리 행을 더해 본 자리). */
-export function positionWith(
-  state: Pick<
-    TalkState,
-    "spec" | "card" | "start" | "flowSettings" | "segment"
-  >,
-  turns: readonly TalkTurnLite[],
-  segment: TalkSegment = state.segment,
-): TalkPosition {
-  return talkPositionOf({
-    spec: state.spec,
-    card: state.card,
-    metBefore: state.start?.metBefore ?? [],
-    turns,
-    segment,
-    settings: state.flowSettings,
-  });
+/**
+ * 회화 세션 상태 — 카드 꼴로 가른다(회화 plan 정한 것 1 · 2): 새 꼴 카드는 상태, 옛 꼴 카드(C189 앞 — 개발 DB 의 옛 개정 행)는 세션 행만
+ * (부르는 쪽이 끝맺음 없이 닫거나 건너뛴다).
+ */
+export type TalkAnyState =
+  | { kind: "old"; session: TalkBase["session"] }
+  | { kind: "new"; state: TalkLessonState };
+
+/**
+ * 그 프로필의 회화 세션 상태를 카드 꼴로 갈라 읽는다(회화 plan 묶음 7 · 12). lock 이면 세션 행을 FOR UPDATE 로 잡는다. 회화가 아니거나
+ * 남의 세션이면 undefined. 카드 · 규격이 깨졌으면 던진다(시드 결함).
+ */
+export async function readTalkAnyState(
+  db: DbOrTx,
+  args: ReadTalkArgs,
+): Promise<TalkAnyState | undefined> {
+  const base = await readTalkBase(db, args);
+  if (!base) return undefined;
+  if (base.kind === "old") return { kind: "old", session: base.session };
+  if (base.kind !== "new")
+    throw new Error("회화 카드가 새 꼴 규격에 맞지 않는다(시드 결함)");
+  return { kind: "new", state: await lessonStateOf(db, base, args) };
 }
 
-export function liveLites(
-  state: Pick<TalkState, "liveRows" | "card" | "spec">,
-): TalkTurnLite[] {
-  return state.liveRows.map((row) =>
-    liteOf(row, { card: state.card, spec: state.spec }),
-  );
+/** 새 꼴 카드 회화 세션 상태. 옛 꼴 · 틀린 카드 세션이면 던진다. 회화가 아니거나 남의 세션이면 undefined. */
+export async function readTalkLessonState(
+  db: DbOrTx,
+  args: ReadTalkArgs,
+): Promise<TalkLessonState | undefined> {
+  const base = await readTalkBase(db, args);
+  if (!base) return undefined;
+  if (base.kind !== "new")
+    throw new Error("새 꼴 회화 카드가 아닌 세션은 읽지 않는다(정한 것 2)");
+  return lessonStateOf(db, base, args);
 }
 
 /** 단원 복사본의 수(12절 머리). 없으면 던진다. */
 export function snapshotNumber(
-  state: Pick<TalkState, "snapshot">,
+  state: Pick<TalkLessonState, "snapshot">,
   key: string,
 ) {
   const value = state.snapshot[key];
@@ -847,51 +357,6 @@ export function openingLineOf(
     .join(" ");
 }
 
-/**
- * 첫 턴 · 값이 바뀐 턴에만 넣는 값(6.1 · B5-13). 만난 단어는 처음 스냅숏 + 오늘 쓸 말(대화 토막부터) + 그 자리까지의 토리 말에서
- * 찾은 단원 단어, 미션은 그 자리까지 토리 행의 미션 체크. 아직 '안다'가 아닌 단어 · 새 단어 · 친한 정도는 지금 값(대화 안에서
- * 바뀌어도 바뀐 턴으로 보지 않는다 — 보고 '정할 것').
- */
-export function talkContextAt(
-  state: Pick<TalkState, "start" | "lesson" | "lemmaOf">,
-  {
-    rows,
-    inTalk,
-    knownSay,
-    friendship,
-    unitWords,
-  }: {
-    rows: readonly TalkTurnRow[];
-    inTalk: boolean;
-    knownSay: ReadonlySet<string>;
-    friendship: number;
-    unitWords: readonly string[];
-  },
-): TalkTurnContext {
-  const met = new Set(state.start?.metBefore ?? []);
-  if (inTalk) for (const w of state.start?.shownWords ?? []) met.add(w);
-  const missions = new Set<number>();
-  for (const row of rows) {
-    if (row.speaker !== "tori") continue;
-    for (const w of metWordsIn(row.text ?? "", {
-      unitWords,
-      lemmaOf: state.lemmaOf,
-    }))
-      met.add(w);
-    if (Array.isArray(row.missionChecks))
-      for (const n of row.missionChecks)
-        if (Number.isInteger(n)) missions.add(n as number);
-  }
-  const unknownWords = unitWords.filter((w) => !knownSay.has(w));
-  return {
-    unknownWords,
-    metUnknownWords: unknownWords.filter((w) => met.has(w)),
-    newWords: [...state.lesson.newWords],
-    friendship,
-    missionsDone: [...missions].sort((a, b) => a - b),
-  };
-}
-
 /** '말함' known 인 단원 단어(지금). */
 export async function knownSayOf(
   db: DbOrTx,
@@ -928,94 +393,6 @@ export async function friendshipOf(
       ),
     );
   return track?.friendship ?? 0;
-}
-
-/**
- * 고정부 선생님 블록의 재료(6.1): 이 대화의 선생님(처음 스냅숏 키 → 프로필의 지금 선생님, state.teacher). 둘 다 명단에 없는 드문 길
- * (관찰 쪽 지우기를 대화 도중 누른 뒤 옛 스냅숏에 키가 없을 때 정도)은 명단 첫 항목이다(선생님 화면 plan '드문 길' · 정할 것 11).
- * 명단은 규격상 하나 이상이다.
- */
-function talkTeacherOf(state: Pick<TalkState, "teacher">) {
-  const teacher = state.teacher ?? rosterOf()[0];
-  if (!teacher) throw new Error("회화 선생님 명단이 비었다");
-  return teacherPromptOf(teacher);
-}
-
-/**
- * 회화 턴 입력(a TalkTurnInput). 이번 턴 칸(바뀐 값)은 앞 아이 행 자리의 값과 견줘 바뀐 것만, 첫 턴이면 모두.
- * rowsBefore = 이번 아이 말 앞까지의 행(이번 아이 행 · 그 뒤 행 없음). 회화 턴 · 끝맺음 턴이 같이 쓴다(같은 선생님 블록).
- */
-export async function talkInputOf(
-  db: DbOrTx,
-  {
-    state,
-    ctx,
-    rowsBefore,
-    turn,
-    summaryLimit,
-  }: {
-    state: TalkState;
-    ctx: LevelContext;
-    rowsBefore: readonly TalkTurnRow[];
-    turn: Omit<TalkTurn, "context">;
-    summaryLimit: number;
-  },
-): Promise<TalkTurnInput> {
-  const unitWords = ctx.unitWords;
-  const knownSay = await knownSayOf(db, {
-    profileId: state.profileId,
-    words: unitWords,
-  });
-  const friendship = await friendshipOf(db, state.profileId);
-  const inTalkNow = turn.segment === "talk" || turn.segment === "more_talk";
-  const now = talkContextAt(state, {
-    rows: rowsBefore,
-    inTalk: inTalkNow,
-    knownSay,
-    friendship,
-    unitWords,
-  });
-  const prevChildIndex = rowsBefore.findLastIndex(
-    (r) => r.speaker === "child" && r.sentUserMessage !== null,
-  );
-  const prevChild = rowsBefore[prevChildIndex];
-  const prev = prevChild
-    ? talkContextAt(state, {
-        rows: rowsBefore.slice(0, prevChildIndex),
-        inTalk:
-          prevChild.segment === "talk" || prevChild.segment === "more_talk",
-        knownSay,
-        friendship,
-        unitWords,
-      })
-    : null;
-  const history = historyOf(rowsBefore);
-  const summaries = await summariesBefore(db, {
-    profileId: state.profileId,
-    before: state.session.startedAt,
-    limit: summaryLimit,
-  });
-  const opening = openingLineOf(state.rows);
-  return {
-    ...ctx,
-    spec: state.spec,
-    card: state.card,
-    teacher: talkTeacherOf(state),
-    summaries,
-    history,
-    turn: { ...turn, context: talkContextDelta(prev, now) },
-    ...(history.length === 0 && opening !== undefined
-      ? { openingLine: opening }
-      : {}),
-    lemmaOf: state.lemmaOf,
-  };
-}
-
-/** 검사를 지난 영어 글을 문장으로(다시 흘려 보낼 때). */
-export function sentencesOf(aiPart: string): string[] {
-  return splitSentences(aiPart)
-    .map((s) => s.trim())
-    .filter((s) => s !== "");
 }
 
 // ── '말함' 행(5절 vocab_progress · 3.4) ──────────────────────────
@@ -1139,81 +516,259 @@ export async function onTalkSessionEnded(
   _end: TalkSessionEnd,
 ): Promise<void> {}
 
-/**
- * 목표 턴에 닿은 턴(회화 수업 모델 5): 완료 · 완료 시각 · 학습일(C56 (1)), 다시 하기가 아니면 친한 정도(a friendshipAfter) →
- * profile_tracks(talk) friendship · 지금 구간 연 수 · 구간별 연 수(C98), 그다음 이음매.
- */
-export async function reachTalkTarget(
-  tx: DbOrTx,
-  {
-    state,
-    at,
-    rules,
-  }: {
-    state: Pick<TalkState, "session" | "profileId" | "level" | "learningDay">;
-    at: Date;
-    rules: { per: number; max: number };
-  },
-): Promise<void> {
-  await tx
-    .update(sessions)
-    .set({
-      status: "completed",
-      completedAt: at,
-      learningDay: state.learningDay,
-    })
-    .where(
-      and(
-        eq(sessions.id, state.session.id),
-        eq(sessions.status, "in_progress"),
-      ),
-    );
-  if (state.session.kind !== "retry") {
-    const [track] = await tx
-      .select({
-        id: profileTracks.id,
-        friendship: profileTracks.friendship,
-        byBand: profileTracks.toriStoriesByBand,
-      })
-      .from(profileTracks)
-      .where(
-        and(
-          eq(profileTracks.profileId, state.profileId),
-          eq(profileTracks.area, "talk"),
-        ),
-      )
-      .for("update");
-    if (track) {
-      const band = bandOf(state.level);
-      const byBand = storiesByBandOf(track.byBand);
-      const next = friendshipAfter(
-        {
-          friendship: track.friendship ?? 0,
-          opened: byBand[band] ?? 0,
-          storiesInBand: STORIES_PER_BAND,
-          isRetry: false,
-        },
-        rules,
-      );
-      await tx
-        .update(profileTracks)
-        .set({
-          friendship: next.friendship,
-          toriStoriesOpened: next.opened,
-          toriStoriesByBand: { ...byBand, [band]: next.opened },
-        })
-        .where(eq(profileTracks.id, track.id));
-    }
-  }
-  await onTalkSessionEnded(tx, {
-    sessionId: state.session.id,
-    profileId: state.profileId,
-    ended: "completed",
-  });
-}
-
 /** profile_tracks.tori_stories_by_band(구간 → 연 수). 꼴이 틀린 칸은 버린다. */
 export function storiesByBandOf(raw: unknown): Record<string, number> {
   const parsed = z.record(z.string(), z.int().min(0)).safeParse(raw);
   return parsed.success ? parsed.data : {};
+}
+
+// ── 새 갈래(C189 새 꼴 카드, 회화 plan 묶음 7) ─────────────────────
+
+/** 새 갈래 처음 스냅숏(talk-start): 만난 단원 단어 · 짧은 준비 계획 · 이월 · 선생님 키. */
+export type TalkLessonStart = {
+  metBefore: string[];
+  /** 세션 시작 때 정한 짧은 준비 낱말 계획(실제로 보인 낱말은 TalkLessonState.prepWords). */
+  prepPlan: string[];
+  carry: TalkCarry;
+};
+
+export type TalkLessonState = {
+  profileId: string;
+  session: SessionRow & { level: number; unit: number };
+  lessonRow: LessonRow;
+  lesson: TalkLesson;
+  card: TalkCard;
+  /** 단계 규격 행 그대로(choices · koExplainFromStuck 는 필수 칸 — 묶음 12, 흐름은 band · targetTurns · koMeaning 을 읽는다). */
+  spec: TalkLevelSpec;
+  level: number;
+  unit: number;
+  /** 지금 토막(sessions.talk_segment — 비었으면 인사). */
+  segment: TalkSegment;
+  settings: TalkLessonSettings;
+  /** talk.nospeech_dontknow_count — 같은 질문 자리에서 말소리 없는 듣기가 이만큼이면 들리지 않음으로 보낸다(서버 턴 길). */
+  nospeechDontknowCount: number;
+  start: TalkLessonStart | null;
+  teacher: Teacher | null;
+  rows: TalkTurnRow[];
+  liveRows: TalkTurnRow[];
+  orphan: TalkTurnRow | null;
+  /** liveRows 의 흐름 꼴(move 읽기). */
+  turns: TalkLessonTurn[];
+  /**
+   * 흐름 입력 prepWords: 인사 뒤 준비 토막에서 쪽지로 보인 낱말 전부(건너뛴 낱말 포함) — talk-prep 시도(자리 greeting)로 되짚는다.
+   * 처음 스냅숏의 계획(start.prepPlan)이 아니다(묶음 5 검토 I-2).
+   */
+  prepWords: string[];
+  follows: LessonFollowDone;
+  /** 지금 자리(lesson-flow talkLessonPositionOf, turns). */
+  position: TalkLessonPosition;
+  lemmaOf: (surface: string) => string | undefined;
+  lemmaEntries: { word: string; forms: string[] }[];
+  snapshot: Record<string, unknown>;
+  learningDay: string;
+  timezone: string;
+  dayStartHour: number;
+};
+
+/** 새 갈래가 읽는 회화 설정(구간 키는 그 단계 구간 값). lesson-turns talkLessonSettingsFrom 과 같은 키다. */
+const LESSON_STATE_KEYS = [
+  "talk.dontknow_max",
+  "talk.floor_after_stuck",
+  "talk.follow_child_turns",
+  "talk.same_question_max",
+  "talk.required_gap_turns",
+  "talk.prep_offer_stuck",
+  "talk.more_talk_round_turns",
+  "talk.reask_per_word",
+  "talk.nospeech_dontknow_count",
+  "speech.silent_items_max",
+] as const;
+const LESSON_BAND_KEYS = ["talk.prep_words", "talk.prep_mode"] as const;
+
+function lessonSettingSchemas(band: string): Record<string, z.ZodType> {
+  return {
+    ...Object.fromEntries(
+      [
+        ...LESSON_STATE_KEYS,
+        ...LESSON_BAND_KEYS.map((key) => `${key}.${band}`),
+      ].map((key) => [key, z.unknown()]),
+    ),
+    "app.timezone": appTimezoneSchema,
+    "app.day_start_hour": appDayStartHourSchema,
+  };
+}
+
+const ClientListenSrcSchema = z.object({ src: z.enum(["button", "nospeech"]) });
+
+/**
+ * talk_turns 행 → 새 흐름의 가벼운 꼴(lesson-turns TalkLessonTurn). 아이 행: 토막(인사 · 더 이야기하기 · 그 밖은 대화) · 입력 방식(빈 옛 행은 말) ·
+ * 막힘 말 · 들리지 않음(client_listen 출처 nospeech, C149) · 노린 단어. 선생님 행: 화면 글 줄(text, 정한 것 5) · move(readTalkMove — 비었거나
+ * 꼴이 틀리면 null) · 이 차례 AI 질문의 답 예시(C101).
+ */
+export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
+  if (row.speaker === "child") {
+    const src = ClientListenSrcSchema.safeParse(row.clientListen);
+    return {
+      speaker: "child",
+      segment:
+        row.segment === "more_talk"
+          ? "more_talk"
+          : row.segment === "greeting"
+            ? "greeting"
+            : "talk",
+      input: row.inputMode ?? "speech",
+      stuck: row.stuckPhrase !== null,
+      nospeech: src.success && src.data.src === "nospeech",
+      targets: [...(row.targetWords ?? [])],
+    };
+  }
+  const answer = aiQuestionOf(row.aiQuestion)?.answerExample;
+  return {
+    speaker: "teacher",
+    text: row.text ?? "",
+    move: readTalkMove(row.move),
+    answerExample: answer === undefined || answer === "" ? null : answer,
+  };
+}
+
+/**
+ * 선생님 행 tori_ko 저장 값(정한 것 9): 뜻을 보이는 단계(level_specs koMeaning, 1~4단계)면 저장하고, 1~3단계는 겹침 규칙(toriKoShownOf —
+ * 선생님 문장이 빠진 차례는 뜻도 저장하지 않음, T2)을 그대로 따른다. 뜻을 보이지 않는 단계 · 빈 뜻은 null.
+ */
+export function lessonToriKoOf({
+  ko,
+  spec,
+  sent,
+  shown,
+}: {
+  ko: string | null;
+  spec: Pick<TalkLessonSpec, "band" | "koMeaning">;
+  sent: readonly string[];
+  shown: readonly string[];
+}): string | null {
+  if (!spec.koMeaning || ko === null || ko === "") return null;
+  return toriKoShownOf({
+    ko,
+    sent,
+    shown,
+    lowBand: spec.band === TALK_LOW_BAND,
+  });
+}
+
+/** 새 갈래 상태(새 꼴 카드): 카드 · 단계 규격 · 설정 · talk_turns(move 읽기) · 처음 스냅숏 · 짧은 준비 시도 → talkLessonPositionOf. */
+async function lessonStateOf(
+  db: DbOrTx,
+  { session, lessonRow }: TalkBase,
+  { sessionId, profileId, at }: ReadTalkArgs,
+): Promise<TalkLessonState> {
+  const lesson = TalkLessonSchema.parse(lessonRow.content);
+  const card = lesson.card;
+  const { level, unit } = session;
+  const specRow = await readLevelSpec(
+    {
+      area: "talk",
+      level,
+      startRevision: session.seedRevision ?? lessonRow.revision,
+    },
+    { db },
+  );
+  const spec = TalkLevelSpecSchema.parse(specRow?.spec);
+  const values = await getSettings(lessonSettingSchemas(spec.band), {
+    db,
+    profileId,
+  });
+  const settings = talkLessonSettingsFrom((key) => values[key], spec.band);
+  const nospeechDontknowCount = positiveInt(
+    values,
+    "talk.nospeech_dontknow_count",
+  );
+  const timezone = values["app.timezone"] as string;
+  const dayStartHour = values["app.day_start_hour"] as number;
+  const learningDay = learningDayOf(at, timezone, dayStartHour);
+
+  const rows = sortTurns(
+    await db.select().from(talkTurns).where(eq(talkTurns.sessionId, sessionId)),
+  );
+  const { live, orphan } = splitOrphan(rows);
+  const tried = await db
+    .select({ input: attempts.input })
+    .from(attempts)
+    .where(eq(attempts.sessionId, sessionId));
+  const inputs = tried.map((t) => t.input);
+  let start: TalkLessonStart | null = null;
+  let startTeacherKey: string | undefined;
+  for (const raw of inputs) {
+    const input = parseTalkAttemptInput(raw);
+    if (input?.kind !== "talk-start") continue;
+    start = {
+      metBefore: input.metBefore,
+      prepPlan: input.prepWords ?? [],
+      carry: input.carry ?? { goals: [], words: [] },
+    };
+    startTeacherKey = input.teacherKey;
+  }
+  const [chosen] = await db
+    .select({ teacherKey: profiles.teacherKey })
+    .from(profiles)
+    .where(eq(profiles.id, profileId));
+  const teacher =
+    resolveTeacher(rosterOf(), startTeacherKey, chosen?.teacherKey) ?? null;
+  const follows = lessonFollowDoneOf(inputs);
+  const prepWords = prepWordsShownOf(inputs);
+
+  const [round] = await db
+    .select({ snapshot: unitProgress.settingsSnapshot })
+    .from(unitProgress)
+    .where(
+      and(
+        eq(unitProgress.profileId, profileId),
+        eq(unitProgress.area, "talk"),
+        eq(unitProgress.level, level),
+        eq(unitProgress.unit, unit),
+      ),
+    )
+    .orderBy(desc(unitProgress.round))
+    .limit(1);
+  const snapshot = (round?.snapshot ?? {}) as Record<string, unknown>;
+  const lemmaEntries = await lemmaEntriesOf(db, lesson.unitWords);
+  const segment = talkSegmentOf(session.talkSegment);
+  const turns = live.map(lessonTurnOf);
+  const position = talkLessonPositionOf({
+    spec,
+    card,
+    newWords: lesson.newWords,
+    turns,
+    segment,
+    settings,
+    ...(start ? { carry: start.carry } : {}),
+    prepWords,
+  });
+  return {
+    profileId,
+    session,
+    lessonRow,
+    lesson,
+    card,
+    spec,
+    level,
+    unit,
+    segment,
+    settings,
+    nospeechDontknowCount,
+    start,
+    teacher,
+    rows,
+    liveRows: live,
+    orphan,
+    turns,
+    prepWords,
+    follows,
+    position,
+    lemmaOf: lemmaLookup(lemmaEntries),
+    lemmaEntries,
+    snapshot,
+    learningDay,
+    timezone,
+    dayStartHour,
+  };
 }

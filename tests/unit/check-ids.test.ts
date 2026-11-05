@@ -11,8 +11,10 @@ import {
   CI_FAIL_ON,
   checkIds,
   collectCodeKeys,
+  collectDesignColors,
   collectDesignNumbers,
   DATA_SPEC_FILE,
+  DESIGN_COLOR_DEV_DIR,
   expandSpecKeys,
   parseArgs,
   parseSettingsTable,
@@ -20,6 +22,7 @@ import {
   parseTableNames,
   RULES,
   runCheckIds,
+  SCREEN_DIRS,
   SEED_RULES,
   SETTINGS_SPEC_FILE,
   type SeedInput,
@@ -224,6 +227,7 @@ function baseInput(overrides: Partial<Parameters<typeof checkIds>[0]> = {}) {
     schemaTables: ["profiles", "settings"],
     codeFiles: [],
     designFiles: [],
+    screenFiles: [],
     seed: seedOf(),
     testSettings: {},
     ...overrides,
@@ -578,6 +582,118 @@ describe("식별자 대조(pnpm check:ids)", () => {
     expect(result.violations[0]?.detail).toBe("0.8 ← unit.vocab_mastery");
   });
 
+  it("AC-23e (1) 식별자 대조 design-color: 화면 소스(src/components · src/app)의 날값 색(#… · rgb() · hsl()) · 기본 팔레트 색 클래스 · 코르크 토큰을 내고, 주석 · 자료에서 오는 색 · 화면 밖 폴더는 뺀다", () => {
+    expect(SCREEN_DIRS).toEqual(["src/components", "src/app"]);
+    expect(DESIGN_COLOR_DEV_DIR).toBe("src/app/dev/");
+    const source = [
+      "// 주석의 #FFFDF7 · bg-yellow-300 · bg-cork 는 화면 값이 아니다",
+      'const a = "rounded bg-[#FFFDF7] text-ink";',
+      'const b = cn("bg-yellow-300 hover:text-slate-700", ok && "border-t-red-500/40");',
+      "/* 여러 줄 주석 rgb(1 2 3) */",
+      'const c = { background: "rgba(0, 0, 0, 0.5)", color: "hsl(10 20% 30%)" };',
+      `const d = \`bg-cork/20 $\{x} border-cork-frame\`;`,
+      // 자료(명단 accent 등)에서 오는 색은 글자가 아니라 값이라 걸리지 않는다
+      `const e = { background: teacher.color.accent, color: \`color-mix(in oklab, $\{room} 80%, var(--color-ink))\` };`,
+      // 토큰 · 토큰 섞기는 걸리지 않는다
+      'const f = "bg-postit-reading text-ink bg-[color-mix(in_srgb,var(--color-postit-talk)_45%,var(--color-paper))] bg-desk";',
+      'const g = "#main"; const h = "skyline teal-ish redo";',
+      'const i = <div className="text-white bg-black/50">#abc 글</div>;',
+    ].join("\n");
+    const files = [
+      { path: "src/components/x.tsx", text: source },
+      { path: "src/app/(child)/y.tsx", text: 'const z = "fill-amber-400";' },
+      { path: "src/core/z.ts", text: 'const z = "#123456 bg-red-500";' },
+      { path: "src/lib/w.ts", text: 'const w = "rgb(1 2 3)";' },
+      // 개발 도구 쪽은 코르크만 본다
+      {
+        path: "src/app/dev/probe/p.tsx",
+        text: 'const p = "bg-neutral-100 #ffffff";\nconst q = "bg-cork";',
+      },
+    ];
+    const found = collectDesignColors(files);
+    expect(found.map((c) => `${c.file}:${c.line} ${c.kind} ${c.text}`)).toEqual(
+      [
+        "src/components/x.tsx:2 hex #FFFDF7",
+        "src/components/x.tsx:3 palette bg-yellow-300",
+        "src/components/x.tsx:3 palette hover:text-slate-700",
+        "src/components/x.tsx:3 palette border-t-red-500/40",
+        "src/components/x.tsx:5 function rgba(0, 0, 0, 0.5)",
+        "src/components/x.tsx:5 function hsl(10 20% 30%)",
+        "src/components/x.tsx:6 cork bg-cork/20",
+        "src/components/x.tsx:6 cork border-cork-frame",
+        "src/components/x.tsx:10 palette text-white",
+        "src/components/x.tsx:10 palette bg-black/50",
+        "src/app/(child)/y.tsx:1 palette fill-amber-400",
+        "src/app/dev/probe/p.tsx:2 cork bg-cork",
+      ],
+    );
+    const result = checkIds(baseInput({ screenFiles: files }));
+    expect(result.counts["design-color"]).toBe(12);
+    expect(rulesOf(result)[0]).toBe("design-color src/components/x.tsx:2");
+    expect(result.violations[0]?.detail).toBe("날값 색 #FFFDF7");
+    expect(
+      result.violations.find((v) => v.detail.startsWith("코르크"))?.detail,
+    ).toBe("코르크 토큰 bg-cork/20");
+    // 시드가 없어도 돈다(시드 규칙이 아니다)
+    expect(SEED_RULES).not.toContain("design-color");
+    expect(
+      checkIds(baseInput({ screenFiles: files, seed: null })).counts[
+        "design-color"
+      ],
+    ).toBe(12);
+  });
+
+  it("AC-23e (1) 식별자 대조 --design-number-max: 설계 숫자 경고가 상한을 넘으면 1, 같거나 적으면 0 이고 보고 줄에 상한을 적는다(값이 0 이상 정수가 아니면 인자 오류)", () => {
+    const designSource = [
+      "export function f(avg: number) {",
+      "  if (avg >= 0.8) return 30;",
+      "  return 7;",
+      "}",
+    ].join("\n");
+    const io: CheckIdsIo = {
+      readText: (path) =>
+        ({
+          [`specs/${SETTINGS_SPEC_FILE}`]: specText(),
+          [`specs/${DATA_SPEC_FILE}`]: DATA_SPEC,
+          "seed/settings.json": JSON.stringify({ settings: goodSettings() }),
+          "seed/level-specs.json": JSON.stringify({ levelSpecs: [] }),
+        })[path],
+      dirExists: (path) => path === "seed",
+      listFiles: (dirs) =>
+        dirs.includes("src") ? [{ path: "src/a.ts", text: designSource }] : [],
+      schemaTables: () => ["profiles", "settings"],
+      testSettings: {},
+    };
+    const run = (argv: string[]) => {
+      const parsed = parseArgs(argv);
+      if (!parsed.ok) throw new Error(parsed.error);
+      return runCheckIds(parsed.args, io);
+    };
+    // 경고 셋(0.8 · 30 · 7)
+    expect(run([]).code).toBe(0);
+    const under = run(["--design-number-max", "3"]);
+    expect(under.code).toBe(0);
+    expect(under.lines[0]).toContain("design-number 3 · ");
+    expect(under.lines[0]).toContain("design-number 상한 3");
+    const over = run(["--design-number-max", "2"]);
+    expect(over.code).toBe(1);
+    expect(over.lines).toContain("design-number 상한 넘음: 3 > 2");
+    // --fail-on 과 같이 써도 된다
+    expect(
+      run(["--fail-on", "design-color", "--design-number-max", "3"]).code,
+    ).toBe(0);
+    // --json 에 상한을 싣는다
+    const json = JSON.parse(
+      run(["--json", "--design-number-max", "2"]).lines[0] ?? "",
+    );
+    expect(json.designNumberMax).toBe(2);
+    expect(json.counts["design-number"]).toBe(3);
+    for (const bad of ["-1", "1.5", "많이"]) {
+      expect(parseArgs(["--design-number-max", bad]).ok, bad).toBe(false);
+    }
+    expect(parseArgs(["--design-number-max"]).ok).toBe(false);
+  });
+
   it("식별자 대조: --fail-on 규칙에 위반이 있으면 1, 정본을 못 읽거나 모르는 규칙이면 2, seed/ 가 없으면 시드 규칙을 건너뛰고 0", () => {
     expect(parseArgs(["--nope"]).ok).toBe(false);
     expect(parseArgs(["--fail-on"]).ok).toBe(false);
@@ -680,9 +796,10 @@ describe("식별자 대조(pnpm check:ids)", () => {
     );
     expect(SEED_RULES).toContain("fixture-setting");
     expect(CI_FAIL_ON).not.toContain("design-number");
+    expect(CI_FAIL_ON).toContain("design-color");
   });
 
-  it("식별자 대조: 저장소의 5절 테이블이 스키마와 같고 코드의 설정 키 글자가 모두 12절에 있다", async () => {
+  it("식별자 대조: 저장소의 5절 테이블이 스키마와 같고 코드의 설정 키 글자가 모두 12절에 있으며, 화면 소스에 토큰 밖 색이 없다(AC-23e (1))", async () => {
     const content = await import("@/db/schema/content");
     const learning = await import("@/db/schema/learning");
     const operations = await import("@/db/schema/operations");
@@ -696,7 +813,9 @@ describe("식별자 대조(pnpm check:ids)", () => {
         .map((t) => t.name)
         .sort(),
     );
-    const { listCodeFiles } = await import("../../scripts/check-ids");
+    const { listCodeFiles, listSourceFiles } = await import(
+      "../../scripts/check-ids"
+    );
     const settingsSpec = readFileSync(
       resolve(REPO_ROOT, "specs", SETTINGS_SPEC_FILE),
       "utf8",
@@ -707,6 +826,7 @@ describe("식별자 대조(pnpm check:ids)", () => {
       schemaTables: tables,
       codeFiles: listCodeFiles(REPO_ROOT),
       designFiles: [],
+      screenFiles: listSourceFiles(REPO_ROOT, SCREEN_DIRS),
       seed: null,
       testSettings: {},
     });
@@ -714,5 +834,10 @@ describe("식별자 대조(pnpm check:ids)", () => {
       result.violations.filter((v) => v.rule === "code-setting-unknown"),
     ).toEqual([]);
     expect(result.stats.codeKeys).toBeGreaterThan(0);
+    expect(
+      result.violations
+        .filter((v) => v.rule === "design-color")
+        .map((v) => `${v.location} ${v.detail}`),
+    ).toEqual([]);
   });
 });

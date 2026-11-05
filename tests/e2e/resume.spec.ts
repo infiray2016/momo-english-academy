@@ -24,7 +24,13 @@ import {
 } from "./lessons";
 import { photo } from "./photos";
 
-const T = { next: "다음", right: "맞았어요!", written: "다 썼어요" } as const;
+const T = {
+  next: "다음",
+  right: "맞았어요!",
+  written: "다 썼어요",
+  /** 분량 아래 확인 쪽지의 작은 단추(U4-6 — 여기 글은 6단계 분량 최소보다 짧다). */
+  sendAnyway: "보낼래요",
+} as const;
 
 test.beforeEach(resetHousehold);
 // 초고 시험이 가짜 AI(생각 꺼내기)를 쓴다 — 시험마다 비우고 끝에도 비운다(plan-p11b 값 8)
@@ -260,12 +266,20 @@ test("쓰기 6~12: 초고를 낼 때 서버에 빠진 앞 활동이 있으면 �
       );
     await page.locator("[data-draft-text]").fill(text);
     await page.getByRole("button", { name: T.written }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: T.sendAnyway })
+      .click();
     // 빠진 과제로 돌아간다 → 다시 끝내면 초고로, 쓴 글 그대로
     await expect(activity).toHaveAttribute("data-activity", "writing-task");
     await page.getByRole("button", { name: T.next }).click();
     await expect(activity).toHaveAttribute("data-activity", "draft");
     await expect(page.locator("[data-draft-text]")).toHaveValue(text);
     await page.getByRole("button", { name: T.written }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: T.sendAnyway })
+      .click();
     await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
   });
 });

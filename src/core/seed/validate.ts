@@ -57,6 +57,7 @@ import {
 } from "@/core/seed/schema/records";
 import {
   ForbiddenFileSchema,
+  GrammarTermsFileSchema,
   HomophonesFileSchema,
   ImagesFileSchema,
   LevelSpecsFileSchema,
@@ -64,9 +65,11 @@ import {
   MetaSentencesFileSchema,
   ModelPricesFileSchema,
   SettingsFileSchema,
+  TalkWaitLinesFileSchema,
   UnitSpecsFileSchema,
   VocabFileSchema,
 } from "@/core/seed/schema/reference";
+import { talkCardKindOf } from "@/core/seed/schema/talk";
 import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
   ALPHABET_UNIT,
@@ -74,6 +77,7 @@ import {
   type Area,
   BAND_INFOS,
   cellKey,
+  GRAMMAR_TERMS_FILE,
   isAlphabetUnit,
   LESSON_KINDS,
   LEVEL_MAX,
@@ -157,7 +161,7 @@ function field(value: unknown, key: string): unknown {
 
 /**
  * 문항 번호(1부터, plan-p04c itemsOf): 읽기 = 문항 차례, 쓰기 = items 문항 · 문장 틀 차례 · 작문 1,
- * 말하기 = 따라 말하기 단어 → 문장 → 듣기 → 질문 → 그림 보고 말하기 → 발표, 회화 카드 = 인사 → 대화 턴(또는 질문 목록) → 더 이야기할 거리,
+ * 말하기 = 따라 말하기 단어 → 문장 → 듣기 → 질문 → 그림 보고 말하기 → 발표, 회화 카드 = 인사(질문 또는 첫 말) → 필수 질문 → 더 이야기할 거리(C189),
  * 평가 · 배치 문항 칸 = 1, 회화 평가 카드 장 = 턴 차례(5절 '(장, 턴)'), 토리 이야기 = 질문 차례.
  */
 export function itemsOf(cell: SeedCell): SeedItem[] {
@@ -184,14 +188,27 @@ export function itemsOf(cell: SeedCell): SeedItem[] {
       break;
   }
   const content = field(v, "content");
+  // 가르치는 수업의 정답이 있는 같이 해 보기 · 짝은 지금 문항 번호 뒤에 붙인다(지금 번호를 바꾸지 않게, plan 타 · 06:106).
+  const together = () =>
+    each("teach.together", field(field(v, "teach"), "together"));
+  const spares = (path: string, items: unknown) => {
+    list(items).forEach((item, i) => {
+      if (field(item, "spare") !== undefined) push(`${path}.${i}.spare`);
+    });
+  };
   switch (cell.area) {
     case "reading":
       each("content.questions", field(content, "questions"));
+      together();
+      spares("content.questions", field(content, "questions"));
       break;
     case "writing": {
       const shape = field(content, "shape");
-      if (shape === "items") each("content.items", field(content, "items"));
-      else if (shape === "guided")
+      if (shape === "items") {
+        each("content.items", field(content, "items"));
+        together();
+        spares("content.items", field(content, "items"));
+      } else if (shape === "guided")
         each("content.sentences", field(content, "sentences"));
       else push("content");
       break;
@@ -206,6 +223,15 @@ export function itemsOf(cell: SeedCell): SeedItem[] {
         push("content.pictureTask");
       if (field(content, "presentation") !== undefined)
         push("content.presentation");
+      // 고르기 꼴(choices · answerNo)인 같이 해 보기만 정답이 있다(06:199).
+      list(field(field(v, "teach"), "together")).forEach((t, i) => {
+        if (
+          field(t, "choices") !== undefined &&
+          field(t, "answerNo") !== undefined
+        )
+          push(`teach.together.${i}`);
+      });
+      spares("content.listening", field(content, "listening"));
       break;
     }
     case "talk": {
@@ -216,10 +242,8 @@ export function itemsOf(cell: SeedCell): SeedItem[] {
       } else {
         push("card.greeting.firstLine");
       }
-      if (field(card, "turns") !== undefined)
-        each("card.turns", field(card, "turns"));
-      else each("card.questions", field(card, "questions"));
-      each("card.moreTalk", field(card, "moreTalk"));
+      each("card.required", field(card, "required"));
+      each("card.more", field(card, "more"));
       break;
     }
   }
@@ -262,7 +286,11 @@ export function solveTargets(cell: SeedCell): number[] {
         : [];
     case "speaking":
       return items
-        .filter((i) => i.path.startsWith("content.listening."))
+        .filter(
+          (i) =>
+            i.path.startsWith("content.listening.") ||
+            i.path.startsWith("teach.together."),
+        )
         .map((i) => i.no);
     default:
       return [];
@@ -482,6 +510,11 @@ export type ValidateOptions = {
    * 명령(scripts/seed-validate.ts)이 저장소 뿌리에서 만들어 넘긴다.
    */
   teacherAssets?: TeacherAssetIo;
+  /**
+   * 명령 인자 `--require-unit-goals`(기본 끔)면 참: seed.goals_required_levels 단계 단원에 목표가 없으면 오류로 막는다(C186).
+   * 그 밖의 모드 · 개발 적재는 경고로 보고만 한다(평가 spec 2절 '필수 범위', C160).
+   */
+  goalsBlocking?: boolean;
 };
 export type ReportError = {
   rule: string;
@@ -541,6 +574,7 @@ const REFERENCE_SCHEMAS: Record<SeedFileName, z.ZodType> = {
   forbidden: ForbiddenFileSchema,
   forms: ListFormsFileSchema,
   metaSentences: MetaSentencesFileSchema,
+  talkWaitLines: TalkWaitLinesFileSchema,
   teachers: TeachersFileSchema,
 };
 
@@ -654,7 +688,17 @@ export function collectCells(
   // 1) JSON 읽기 · 배치
   const json = new Map<string, unknown>();
   const brokenContent: { path: string; target: SeedPath }[] = [];
+  let grammarTermsJson: unknown;
   for (const [path, text] of files) {
+    // 문법 용어 목록은 시드 파일 배치 밖의 선택 목록이다(델타 spec 2026-10-29 설계 7).
+    if (path === GRAMMAR_TERMS_FILE) {
+      try {
+        grammarTermsJson = JSON.parse(text);
+      } catch {
+        referenceError("json", path, "", "JSON 이 아니다");
+      }
+      continue;
+    }
     const parsed = parseSeedPath(path);
     if (!parsed) {
       error("path", null, path, "", "시드 파일 배치(plan-p04a)에 없는 경로다");
@@ -691,6 +735,18 @@ export function collectCells(
       continue;
     }
     (reference as Record<string, unknown>)[name] = result.data;
+  }
+  if (grammarTermsJson !== undefined) {
+    const result = GrammarTermsFileSchema.safeParse(grammarTermsJson);
+    if (result.success) reference.grammarTerms = result.data;
+    else
+      for (const issue of result.error.issues)
+        referenceError(
+          "schema",
+          GRAMMAR_TERMS_FILE,
+          issuePath("", issue.path),
+          issue.message,
+        );
   }
   const { index, issues: refIssues } = buildReferenceIndex(reference);
   for (const i of refIssues) referenceError(i.rule, i.file, i.path, i.message);
@@ -816,6 +872,15 @@ export function collectCells(
       const result = LESSON_SCHEMAS[area].safeParse(raw);
       if (!result.success) {
         const key = rawLessonKey(area, level, unit, raw);
+        // 옛 꼴 회화 카드(C189 앞)는 시드에 둘 수 없다 — 규격 오류 앞에 까닭을 한 줄로 적는다(AC-15m)
+        if (area === "talk" && talkCardKindOf(field(raw, "card")) === "old")
+          error(
+            "talk-card-v1",
+            key,
+            path,
+            `${at}.card`,
+            "옛 꼴 회화 카드(turns · moreTalk · questions · firstQuestion)는 시드에 둘 수 없다 — 새 꼴(목표 · 짧은 준비 · 필수 질문 · 더 이야기할 거리, C189)로 다시 만든다",
+          );
         for (const issue of result.error.issues)
           error("schema", key, path, issuePath(at, issue.path), issue.message);
         if (key) {
@@ -1182,6 +1247,49 @@ export function validateSeed(
       : expectedCells({ through, areas, index }).filter(
           (key) => !present.has(key),
         );
+  // 필수 단계 단원의 목표(평가 spec 2절 '필수 범위'): 모든 모드에서 영역 · 단계마다 경고 하나, 운영 적재 경로에서만 단원마다 오류.
+  const required = index.ready ? index.goalsRequiredLevels() : undefined;
+  // 막겠다고 켰는데 키가 없으면 건너뛰지 않고 오류로 끝낸다(fix 3 N2).
+  if (options.goalsBlocking && index.ready && required === undefined)
+    errors.push({
+      rule: "unit-goals",
+      cell: null,
+      file: SEED_FILES.settings,
+      path: "settings",
+      message:
+        "--require-unit-goals 인데 설정값 seed.goals_required_levels 가 없거나 수 목록이 아니다",
+    });
+  if (required) {
+    const last = through ?? index.num("seed.complete_through_level");
+    const unitRows = reference.unitSpecs?.unitSpecs ?? [];
+    for (const area of areas) {
+      for (const level of required) {
+        if (level > last) continue;
+        const missing = index
+          .unitsOf(area, level)
+          .filter((u) => (u.goals?.length ?? 0) === 0);
+        if (missing.length === 0) continue;
+        const message = `${area} ${level}단계 단원 ${missing.map((u) => u.unit).join(" · ")} 에 목표(goals)가 없다(seed.goals_required_levels)`;
+        if (options.goalsBlocking) {
+          for (const u of missing)
+            errors.push({
+              rule: "unit-goals",
+              cell: null,
+              file: SEED_FILES.unitSpecs,
+              path: `unitSpecs.${unitRows.indexOf(u)}.goals`,
+              message: `${area} ${level}단계 단원 ${u.unit} 에 목표(goals)가 없다(seed.goals_required_levels)`,
+            });
+        } else {
+          warnings.push({
+            id: `unit-goals:${area}:${level}`,
+            rule: "unit-goals",
+            file: SEED_FILES.unitSpecs,
+            message,
+          });
+        }
+      }
+    }
+  }
   // 칸 키 없는 오류(파일 · 단원 단위)도 실패로 센다. 규격 파일 오류는 따로 센다.
   const otherErrors =
     errors.filter((e) => e.cell === null).length - seed.referenceErrors;

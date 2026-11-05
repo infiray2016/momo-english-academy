@@ -4,8 +4,8 @@
 // 회화 카드 · 회화 평가 카드 · 선생님 이야기에는 선생님 이름(Tori · 토리 · 명단 이름)을 두지 않는다(6.4 '선생님 이름', C130).
 // 읽기 · 쓰기 · 말하기 글의 Tori 는 등장인물이라 그대로 둔다(C122).
 // 견본은 P4a 규격을 통과하면 된다. P4b · P4c 는 자기 검사에 맞게 내용을 고칠 수 있다(함수 이름 · 돌려주는 꼴은 바꾸지 않는다).
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { ENGLISH_ROLES } from "@/core/seed/check-lesson";
 import { TALK_ROLES } from "@/core/seed/check-talk";
 import type {
@@ -16,6 +16,7 @@ import type {
 } from "@/core/seed/schema/assessment";
 import {
   type Generation,
+  LESSON_SCHEMAS,
   type Lesson,
   type LessonFile,
   type LessonOf,
@@ -45,6 +46,8 @@ import type {
   Range,
   SettingRow,
   SettingsFile,
+  TalkLevelSpec,
+  TalkWaitLinesFile,
   UnitSpec,
   UnitSpecsFile,
   VocabEntry,
@@ -52,12 +55,11 @@ import type {
   WritingFrame,
 } from "@/core/seed/schema/reference";
 import type {
-  GreetingTurn,
   Line,
-  QuestionCard,
   TalkCard,
+  TalkMore,
+  TalkRequired,
   TalkTestSheet,
-  TurnCard,
 } from "@/core/seed/schema/talk";
 import type { TeachersFile } from "@/core/seed/schema/teachers";
 import {
@@ -72,6 +74,7 @@ import {
   cefrOf,
   cellKey,
   checksFilePath,
+  GOAL_AREA_PREFIX,
   isAlphabetUnit,
   LEVEL_MAX,
   LEVEL_MIN,
@@ -89,6 +92,8 @@ import {
   STORY_OPTIONS,
   STORY_QUESTIONS,
   storyFilePath,
+  TALK_LOW_BAND,
+  TALK_SPEC_SEGMENTS,
   UNITS_PER_LEVEL,
 } from "@/core/seed/structure";
 import { buildLexicon, type Lexicon, wordIdsIn } from "@/core/seed/text";
@@ -140,7 +145,7 @@ const GENERATION: Generation = {
 type ChangeVia = SettingRow["changeVia"];
 type BandValues = readonly [number, number, number, number];
 
-/** 구간 키 8종(12절 기본값 칸, 구간 차례 1-3 · 4-6 · 7-9 · 10-12). */
+/** 구간 키 9종(12절 기본값 칸, 구간 차례 1-3 · 4-6 · 7-9 · 10-12). talk.prep_words 는 회화 카드 짧은 준비 낱말 수(C189). */
 const BAND_SETTINGS: readonly {
   key: string;
   values: BandValues;
@@ -158,9 +163,10 @@ const BAND_SETTINGS: readonly {
   { key: "seed.remedial_per_unit", values: [3, 4, 4, 5], changeVia: "seed" },
   { key: "seed.remedial_coverage", values: [1, 2, 2, 2], changeVia: "seed" },
   { key: "seed.topic_variants", values: [2, 2, 2, 2], changeVia: "seed" },
+  { key: "talk.prep_words", values: [3, 2, 2, 2], changeVia: "seed" },
 ];
 
-/** 하나짜리 키 15(12절). talk.teacher_model_max_mb · talk.teacher_portrait_max_kb 는 선생님 자산 검사가 읽는다(12절 '자산 검사(CI)가 읽는다'). */
+/** 하나짜리 키 16(12절). talk.required_max_ratio 는 회화 필수 질문 상한(C189). talk.teacher_model_max_mb · talk.teacher_portrait_max_kb 는 선생님 자산 검사가 읽는다(12절 '자산 검사(CI)가 읽는다'). */
 const SINGLE_SETTINGS: readonly {
   key: string;
   value: number;
@@ -176,6 +182,7 @@ const SINGLE_SETTINGS: readonly {
   { key: "talk.more_talk_turns", value: 5, changeVia: "seed" },
   { key: "talk.said_ratio", value: 0.8, changeVia: "decision-first" },
   { key: "talk.known_days", value: 2, changeVia: "decision-first" },
+  { key: "talk.required_max_ratio", value: 0.5, changeVia: "seed" },
   {
     key: "writing.rule_check_until_level",
     value: 3,
@@ -191,7 +198,7 @@ const SINGLE_SETTINGS: readonly {
   { key: "talk.teacher_portrait_max_kb", value: 100, changeVia: "seed" },
 ];
 
-/** 검증기(P4b · P4c)와 선생님 자산 검사가 읽는 47 키의 12절 기본값. */
+/** 검증기(P4b · P4c · 회화 묶음 3)와 선생님 자산 검사가 읽는 52 키의 12절 기본값. */
 export function defaultSettings(): SettingsFile {
   const settings: SettingRow[] = [];
   for (const { key, values, changeVia } of BAND_SETTINGS) {
@@ -263,6 +270,8 @@ export function smallFrameSettings(): SettingsFile {
     "level.test_forms": 1,
     "placement.items_per_level": 1,
     "talk.more_talk_turns": 2,
+    // 짧은 준비 낱말이 앞쪽 절반 안(6.4)에 들게: 새 단어 2 · 필수 질문 2 이면 앞쪽 절반은 1번이다
+    "talk.prep_words": 1,
     "unit.vocab_mastery": 0.5,
   });
 }
@@ -802,20 +811,21 @@ function levelSpecRows(
           ? `선생님과 ${talk.targetTurns}번 말을 주고받으며 미션 ${talk.missions}개를 해낼 수 있다`
           : `선생님과 ${talk.targetTurns}번 말을 주고받을 수 있다`,
       targetMinutes: talk.minutes,
-      segments: low
-        ? ["greeting", "today_words", "practice", "talk", "wrap_up"]
-        : ["greeting", "today_words", "talk", "wrap_up"],
+      // 새 꼴 회화 규격(C189): 네 토막 · 카드 꼴 required 하나 · 더 이야기할 거리 모든 단계 · 1단계 선택지
+      segments: [...TALK_SPEC_SEGMENTS],
       mode: talk.mode,
       targetTurns: talk.targetTurns,
       missions: talk.missions,
       hintTiers: [...talk.hintTiers],
       usablePhrases: talk.usablePhrases,
-      cardShape: low ? "turns" : "questions",
-      twoAnswers: level === 1,
+      cardShape: "required",
+      choices: level === 1,
       frameInTurns: level === 3,
       turnImages: low,
       koMeaning: level <= 4,
-      moreTalk: low,
+      // 한국어 설명 막힘 차례(C195): 1~4단계 첫 막힘 · 5단계부터 둘째 막힘(02-2 263줄)
+      koExplainFromStuck: level <= 4 ? 1 : 2,
+      moreTalk: true,
     });
   }
   const order = new Map(AREAS.map((a, i) => [a, i]));
@@ -931,6 +941,7 @@ export type ReferenceSet = {
   forbidden: ForbiddenFile;
   forms: ListFormsFile;
   metaSentences: MetaSentencesFile;
+  talkWaitLines: TalkWaitLinesFile;
   teachers: TeachersFile;
 };
 
@@ -1253,6 +1264,15 @@ export function referenceSet(
         "the student",
         "I should",
         "I will now",
+      ],
+    },
+    talkWaitLines: {
+      lines: [
+        "Hmm, let me see.",
+        "Let me think.",
+        "Oh, I see.",
+        "Okay!",
+        "Hmm.",
       ],
     },
     teachers: teacherRoster(),
@@ -1909,6 +1929,44 @@ export function speakingLesson(
   return withUsedUnitWords(ref, speakingLessonDraft(ref, level));
 }
 
+// ── 가르치는 수업 견본(3단계 단원 1 정규 시드 셋, 가르치고 배우는 수업 plan 나) ──
+
+/** 저장소 정규 시드 폴더(seed/). */
+const SEED_ROOT = resolve(__dirname, "../../../seed");
+/** 가르치는 수업 견본이 읽는 정규 시드 칸(3단계 단원 1 — 새 칸이 든 첫 묶음). */
+const TEACH_SAMPLE = { level: 3, unit: 1 } as const;
+
+export type TeachLessons = {
+  reading: LessonOf["reading"];
+  writing: LessonOf["writing"];
+  speaking: LessonOf["speaking"];
+};
+
+/**
+ * 3단계 단원 1 세 영역 정규 시드의 첫 수업(teach 칸이 든 수업)을 그대로 읽어 수업 규격으로 푼다. 견본을 손으로 다시 만들지 않고
+ * 원본 시드를 읽어, 활동 차례 · 짝 고르기 시험이 시드와 같은 꼴을 보게 한다. 수업에 teach 가 없으면 던진다.
+ */
+export function teachSeedLessons(): TeachLessons {
+  const read = <A extends keyof TeachLessons>(area: A): TeachLessons[A] => {
+    const path = join(
+      SEED_ROOT,
+      lessonFilePath(area, TEACH_SAMPLE.level, TEACH_SAMPLE.unit),
+    );
+    const file = JSON.parse(readFileSync(path, "utf8")) as {
+      lessons: unknown[];
+    };
+    const lesson = LESSON_SCHEMAS[area].parse(file.lessons[0]);
+    if (!("teach" in lesson) || lesson.teach === undefined)
+      throw new Error(`${path} 첫 수업에 teach 가 없다`);
+    return lesson as TeachLessons[A];
+  };
+  return {
+    reading: read("reading"),
+    writing: read("writing"),
+    speaking: read("speaking"),
+  };
+}
+
 // ── 회화 견본(1 · 3 · 4 · 5단계와 단원 카드) ─────────────────────
 
 type Pos = (typeof POS_CYCLE)[number];
@@ -1991,7 +2049,7 @@ function wordsAt(
   return { words, newWords: [], met: words };
 }
 
-function talkSpecOf(ref: ReferenceSet, level: number) {
+function talkSpecOf(ref: ReferenceSet, level: number): TalkLevelSpec {
   const spec = ref.levelSpecs.levelSpecs.find(
     (s) => s.area === "talk" && s.level === level,
   );
@@ -1999,15 +2057,38 @@ function talkSpecOf(ref: ReferenceSet, level: number) {
   return spec;
 }
 
+/** 쉬운 질문 견본(받침 둘째 — 노리는 단어 없음 · 1단계 문장 길이 안 · 품사 질문 글과 다름). 항목 차례로 돌린다. */
+const EASY_BANK: readonly { en: string; ko: string }[] = [
+  { en: "Do you like it?", ko: "그거 좋아해?" },
+  { en: "Can you see it?", ko: "그거 보여?" },
+  { en: "Do you have it?", ko: "그거 있어?" },
+  { en: "Is this nice?", ko: "이거 좋아?" },
+  { en: "Do they like it?", ko: "걔들은 그거 좋아해?" },
+  { en: "Can we do it?", ko: "우리 그거 할 수 있어?" },
+];
+
 /**
- * 회화 카드 하나(견본). 배정 카드는 새 단어를 앞쪽에서 처음 묻고, 다시 묻는 턴은 이 수업 새 단어 → 최근에 만난 단어 차례로 돌린다.
- * 다지기 · 보강 카드는 단원 단어 전부를 수업 번호만큼 비켜 돌린다(talk.known_days 를 채우게).
+ * 새 꼴 회화 카드 하나(견본, 6.3 회화 카드 행 · C189). 배정 카드는 새 단어마다 처음 묻는 필수 질문 하나(1~3단계는 짧은 준비 낱말을 앞에),
+ * 다지기 · 보강 카드는 다시 묻는 필수 질문 k 개를 단원 단어 전부에서 수업 번호만큼 비켜 돌린다. 더 이야기할 거리는 talk.more_talk_turns 개
+ * (배정 카드는 이 수업 새 단어 → 최근에 만난 단어, 다지기 · 보강은 필수 질문 다음 단어). 목표는 그 단원의 첫 목표 ID 하나다
+ * (`talk-<단계>-<단원>-1` — 견본 단원 규격에는 목표가 없어 단원 검사가 '목표 정의 전' 경고를 낸다).
  */
 export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
   const spec = talkSpecOf(ref, place.level);
+  const low = spec.band === TALK_LOW_BAND;
+  const ko = spec.koMeaning;
   const { words, newWords, met } = wordsAt(ref, "talk", place);
-  const greetingTurns = 1;
+  const k = newWordsPerLesson(ref, "talk", place.level);
+  const goal = `${GOAL_AREA_PREFIX.talk}-${place.level}-${place.unit}-1`;
+  const tiers = spec.hintTiers.filter((t) => t !== "ko");
+  const prepCount = settingNumber(
+    ref.settings,
+    `talk.prep_words.${bandOf(place.level)}`,
+  );
+  const prep =
+    low && place.kind === "assigned" ? newWords.slice(0, prepCount) : [];
   const counters: Record<Pos, number> = { noun: 0, verb: 0, adjective: 0 };
+  let easyAt = 0;
   const nextQuestion = (pos: Pos) => {
     const bank = QUESTION_BANK[pos];
     const q = at(bank, counters[pos] % bank.length);
@@ -2027,93 +2108,113 @@ export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
     );
     return pool?.word ?? word;
   };
-  const turnCard = (
-    word: string,
-    ask: TurnCard["ask"],
-    withPair: boolean,
-  ): TurnCard => {
+  const itemOf = (word: string, ask: TalkMore["ask"], no: number): TalkMore => {
     const pos = posOfWord(ref, word);
     const q = nextQuestion(pos);
     const line = childLine(pos, word);
+    const easy = at(EASY_BANK, easyAt++ % EASY_BANK.length);
     const imageKey = spec.turnImages
       ? vocabEntry(ref, word).imageKey
       : undefined;
     return {
-      question: { en: q.en, ko: q.ko },
+      no,
+      en: q.en,
+      ...(ko ? { ko: q.ko } : {}),
+      targets: [word],
+      goals: [goal],
+      ask,
       hintKo: line.ko,
-      hintEn: line.en,
-      ...(spec.frameInTurns ? { frameEn: line.frame } : {}),
+      hints: tiers.map((t) => (t === "frame" ? line.frame : line.en)),
       answerExample: line.en,
-      ...(withPair
+      easyQuestion: ko ? { en: easy.en, ko: easy.ko } : { en: easy.en },
+      ...(imageKey ? { imageKey } : {}),
+      ...(spec.usablePhrases > 0
         ? {
-            twoAnswers: [line.en, childLine(pos, otherSamePos(word)).en] as [
-              string,
-              string,
-            ],
+            usablePhrases: [line.en, "Here you are.", "Thank you."].slice(
+              0,
+              spec.usablePhrases,
+            ),
           }
         : {}),
-      ...(imageKey ? { imageKey } : {}),
-      targets: [word],
-      ask,
     };
   };
-  // 다시 묻는 턴의 차례: 배정 카드는 새 단어 → 최근 단어, 다지기 · 보강은 수업 번호만큼 비켜 단원 단어 전부.
-  const dialogueTurns = spec.targetTurns - greetingTurns;
+  const requiredOf = (
+    word: string,
+    ask: TalkMore["ask"],
+    no: number,
+  ): TalkRequired => {
+    const item: TalkRequired = itemOf(word, ask, no);
+    if (!spec.choices || ask !== "first") return item;
+    if (prep.includes(word)) return { ...item, firstForm: "plain" };
+    const pos = posOfWord(ref, word);
+    return {
+      ...item,
+      firstForm: "choices",
+      choices: [childLine(pos, word).en, childLine(pos, otherSamePos(word)).en],
+    };
+  };
+  const moreCount = settingNumber(ref.settings, "talk.more_talk_turns");
+  // 다시 묻는 차례: 배정 카드는 새 단어 → 최근 단어, 다지기 · 보강은 수업 번호만큼 비켜 단원 단어 전부.
+  const slots = k + moreCount;
   const again =
     newWords.length > 0
       ? [
           ...newWords,
           ...[...met].reverse().filter((w) => !newWords.includes(w)),
         ]
-      : words.map((_, i) =>
-          at(words, (i + (place.lessonNo - 1) * dialogueTurns) % words.length),
+      : Array.from({ length: slots }, (_, i) =>
+          at(words, (i + (place.lessonNo - 1) * slots) % words.length),
         );
-  const ko = spec.koMeaning;
+  const required: TalkRequired[] =
+    newWords.length > 0
+      ? newWords.map((w, i) => requiredOf(w, "first", i + 1))
+      : again.slice(0, k).map((w, i) => requiredOf(w, "re_ask", i + 1));
+  const moreFrom = newWords.length > 0 ? 0 : k;
+  const more: TalkMore[] = Array.from({ length: moreCount }, (_, i) =>
+    itemOf(at(again, (moreFrom + i) % again.length), "re_ask", i + 1),
+  );
   const focus = newWords.length > 0 ? newWords : words.slice(0, 2);
   const card: TalkCard = {
     topic: "좋아하는 물건 이야기",
     targetExpressions: focus.map((w) => childLine(posOfWord(ref, w), w).en),
-    greetingTurns,
-    greeting:
-      spec.cardShape === "turns"
-        ? {
-            questions: [
-              {
-                question: { en: "How are you today?", ko: "오늘 기분 어때?" },
-                hintKo: "나는 좋아.",
-                hintEn: "I'm good.",
-                ...(spec.frameInTurns ? { frameEn: "I'm ___." } : {}),
-                answerExample: "I'm good.",
-                ...(spec.twoAnswers
-                  ? {
-                      twoAnswers: ["I'm good.", "I'm fine."] as [
-                        string,
-                        string,
-                      ],
-                    }
-                  : {}),
-              } satisfies GreetingTurn,
-            ],
-          }
-        : {
-            firstLine: talkLines(
-              ko,
-              `Hi ${PLACEHOLDER_NAME}! How are you today?`,
-              `안녕 ${PLACEHOLDER_NAME}! 오늘 어때?`,
-            ),
-          },
+    goals: [goal],
+    greetingTurns: 1,
+    greeting: low
+      ? {
+          questions: [
+            {
+              question: { en: "How are you today?", ko: "오늘 기분 어때?" },
+              hintKo: "나는 좋아.",
+              hintEn: "I'm good.",
+              ...(spec.frameInTurns ? { frameEn: "I'm ___." } : {}),
+              answerExample: "I'm good.",
+            },
+          ],
+        }
+      : {
+          firstLine: talkLines(
+            ko,
+            `Hi ${PLACEHOLDER_NAME}! How are you today?`,
+            `안녕 ${PLACEHOLDER_NAME}! 오늘 어때?`,
+          ),
+        },
     todayWords: newWords.map((word) => {
       const entry = vocabEntry(ref, word);
       return {
         word,
         meaningKo: entry.meaningKo,
         example: entry.example,
-        ...(spec.segments.includes("practice")
-          ? { exampleKo: "이건 오늘 쓸 말이야." }
+        ...(spec.turnImages && entry.imageKey
+          ? { imageKey: entry.imageKey }
           : {}),
+        modelLine: low
+          ? childLine(posOfWord(ref, word), word).en
+          : entry.example,
       };
     }),
-    firstQuestion: "",
+    ...(prep.length > 0 ? { prep } : {}),
+    required,
+    more,
     flow: [
       "The teacher asks about things.",
       "The child answers.",
@@ -2130,7 +2231,21 @@ export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
         "재밌다! 계속 이야기하자.",
       ),
     ],
-    endCondition: "대화 턴을 모두 마치면 정리로 간다.",
+    endCondition: "참고 턴에 닿으면 마무리 물음을 하고 정리로 간다.",
+    ...(spec.missions > 0
+      ? {
+          missions: Array.from({ length: spec.missions }, (_, i) => ({
+            ko: `미션 ${i + 1}: 물건 하나 사기`,
+            en: `Buy the ${at(focus, i % focus.length)}.`,
+            goals: [goal],
+          })),
+          roleSwap: {
+            firstLine: "You can do it.",
+            hint: "I can do it.",
+            purpose: "가게와 식당",
+          },
+        }
+      : {}),
     farewell: talkLines(ko, "Bye! See you soon.", "안녕! 또 만나."),
     safetyFarewell: talkLines(
       ko,
@@ -2139,59 +2254,6 @@ export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
     ),
     praiseLines: ["Great job!", "Good!"],
   };
-  if (spec.cardShape === "turns") {
-    const turns: TurnCard[] = newWords.map((w) =>
-      turnCard(w, "first", spec.twoAnswers),
-    );
-    for (let i = 0; turns.length < dialogueTurns; i++) {
-      turns.push(
-        turnCard(at(again, i % again.length), "re_ask", spec.twoAnswers),
-      );
-    }
-    const targets = turns.flatMap((t) => t.targets);
-    card.turns = turns;
-    if (spec.moreTalk) {
-      const more = settingNumber(ref.settings, "talk.more_talk_turns");
-      card.moreTalk = Array.from({ length: more }, (_, i) =>
-        turnCard(at(targets, i % targets.length), "re_ask", false),
-      );
-    }
-    card.firstQuestion = at(turns, 0).question.en;
-  } else {
-    const count = spec.targetTurns - greetingTurns;
-    const tiers = spec.hintTiers.filter((t) => t !== "ko");
-    const order = [...newWords, ...again.filter((w) => !newWords.includes(w))];
-    const questions: QuestionCard[] = Array.from({ length: count }, (_, i) => {
-      const word = at(order, i % order.length);
-      const pos = posOfWord(ref, word);
-      const q = nextQuestion(pos);
-      const line = childLine(pos, word);
-      return {
-        en: q.en,
-        ko: q.ko,
-        targets: [word],
-        hintKo: line.ko,
-        hintTiers: tiers.map((t) => (t === "frame" ? line.frame : line.en)),
-        ...(spec.usablePhrases > 0
-          ? {
-              usablePhrases: [line.en, "Here you are.", "Thank you."].slice(
-                0,
-                spec.usablePhrases,
-              ),
-            }
-          : {}),
-        answerExample: line.en,
-      };
-    });
-    card.questions = questions;
-    card.firstQuestion = at(questions, 0).en;
-    if (spec.missions > 0) {
-      card.missions = Array.from({ length: spec.missions }, (_, i) => ({
-        ko: `미션 ${i + 1}: 물건 하나 사기`,
-        en: `Buy the ${at(focus, i % focus.length)}.`,
-      }));
-    }
-  }
   const lesson: TalkLesson = {
     kind: place.kind,
     lessonNo: place.lessonNo,
@@ -2224,13 +2286,12 @@ export function talkLesson(
   };
 }
 
-/** 한 단원 · 한 주제 변형의 정규 회화 카드 전부(배정 · 다지기, 3.2 배정표 차례). */
-export function talkUnitCards(
+function unitPlaces(
   ref: ReferenceSet,
   level: number,
-  unit = SAMPLE_UNIT,
-  variant = 1,
-): TalkLesson[] {
+  unit: number,
+  variant: number,
+): CellPlace[] {
   const words = unitWordsOf(ref, "talk", level, unit);
   const k = newWordsPerLesson(ref, "talk", level);
   const assigned = Math.ceil(words.length / k);
@@ -2238,14 +2299,24 @@ export function talkUnitCards(
     ref.settings,
     `unit.regular_lessons.${bandOf(level)}`,
   );
-  return Array.from({ length: regular }, (_, i) =>
-    talkCard(ref, {
-      level,
-      unit,
-      kind: i < assigned ? "assigned" : "reinforce",
-      lessonNo: i + 1,
-      variant,
-    }),
+  return Array.from({ length: regular }, (_, i) => ({
+    level,
+    unit,
+    kind: i < assigned ? "assigned" : "reinforce",
+    lessonNo: i + 1,
+    variant,
+  }));
+}
+
+/** 한 단원 · 한 주제 변형의 정규 회화 카드 전부(새 꼴, 배정 · 다지기, 3.2 배정표 차례). */
+export function talkUnitCards(
+  ref: ReferenceSet,
+  level: number,
+  unit = SAMPLE_UNIT,
+  variant = 1,
+): TalkLesson[] {
+  return unitPlaces(ref, level, unit, variant).map((place) =>
+    talkCard(ref, place),
   );
 }
 

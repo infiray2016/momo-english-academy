@@ -8,6 +8,7 @@ import {
   pauseLeftMs,
   speakInTurn,
   speakRateOf,
+  speakWatchOf,
 } from "@/core/speech/pace";
 import { testSettingValues } from "../fixtures/settings";
 
@@ -150,5 +151,90 @@ describe("문장 사이 쉼(C125 (1))", () => {
     expect(await silent).toBe(true);
     expect(said).toEqual(["Hi!", "How are you?"]);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe("읽어 주기 감시(U5-1 · C166 R1)", () => {
+  const START_KEY = "speech.speak_start_timeout_seconds";
+  const EXTRA_KEY = "speech.speak_end_timeout_extra_seconds";
+  const CPS_KEY = "speech.speak_chars_per_second";
+  const SKIP_KEY = "speech.skip_notice_seconds";
+  const startSeconds = values[START_KEY] as number;
+  const extraSeconds = values[EXTRA_KEY] as number;
+  const cps = values[CPS_KEY] as number;
+
+  it("U5-1 읽어 주기 감시: 시작 안 옴 상한은 speech.speak_start_timeout_seconds, 끝 안 옴 상한은 글 길이 ÷ (speech.speak_chars_per_second × 빠르기) + speech.speak_end_timeout_extra_seconds 다", () => {
+    expect(speech.speakStartTimeoutMs).toBe(startSeconds * 1000);
+    expect(speech.speakEndExtraMs).toBe(extraSeconds * 1000);
+    expect(speech.speakCharsPerSecond).toBe(cps);
+    const text = "Hello! How are you today?";
+    const rate = speech.rate["1-3"];
+    const watch = speakWatchOf({ text, rate }, speech);
+    expect(watch.startMs).toBe(startSeconds * 1000);
+    expect(watch.endMs).toBe(
+      Math.ceil((text.length / (cps * rate)) * 1000) + extraSeconds * 1000,
+    );
+    // 빠르기를 넘기지 않으면(브라우저 기본 빠르기 1) 같은 글은 더 짧게, 긴 글은 더 길게 기다린다
+    const plain = speakWatchOf({ text }, speech);
+    expect(plain.endMs).toBeLessThan(watch.endMs);
+    expect(
+      speakWatchOf({ text: text.repeat(4), rate }, speech).endMs,
+    ).toBeGreaterThan(watch.endMs);
+  });
+
+  it("U4-4 건너뜀 안내: speech.skip_notice_seconds 를 ms 로 읽는다", () => {
+    expect(speech.skipNoticeMs).toBe((values[SKIP_KEY] as number) * 1000);
+  });
+
+  it("U5-1 읽어 주기 감시: 감시 키 · 건너뜀 안내 키가 하나라도 없으면 던진다(조용한 기본값 없음)", () => {
+    for (const missing of [START_KEY, EXTRA_KEY, CPS_KEY, SKIP_KEY])
+      expect(() =>
+        speechSettingsFrom((key) => (key === missing ? undefined : read(key))),
+      ).toThrow(missing);
+  });
+});
+
+describe("한국어 줄 감시 · 설정(가르치고 배우는 수업 spec 설계 10 · 12)", () => {
+  const CPS_KO_KEY = "speech.speak_chars_per_second_ko";
+  const RATE_KO_KEY = "speech.rate_ko";
+  const READ_KO_KEY = "speech.read_ko";
+  const extraMs =
+    (values["speech.speak_end_timeout_extra_seconds"] as number) * 1000;
+
+  it("AC-N20 한국어 감시 상한: 한국어 줄은 글자 수 ÷ (speech.speak_chars_per_second_ko × 빠르기) + speech.speak_end_timeout_extra_seconds 로 잰다", () => {
+    const cpsKo = values[CPS_KO_KEY] as number;
+    expect(speech.speakCharsPerSecondKo).toBe(cpsKo);
+    expect(speech.rateKo).toBe(values[RATE_KO_KEY]);
+    expect(speech.readKo).toBe(values[READ_KO_KEY]);
+    const text = "오늘은 동물 이름을 배워요.";
+    const ko = speakWatchOf(
+      { text, rate: speech.rateKo, lang: "ko-KR" },
+      speech,
+    );
+    expect(ko.startMs).toBe(speech.speakStartTimeoutMs);
+    expect(ko.endMs).toBe(
+      Math.ceil((text.length / (cpsKo * speech.rateKo)) * 1000) + extraMs,
+    );
+    // 영어 lang · lang 없음은 지금처럼 speech.speak_chars_per_second 로 잰다
+    const en = speakWatchOf(
+      { text, rate: speech.rateKo, lang: "en-US" },
+      speech,
+    );
+    expect(en).toEqual(speakWatchOf({ text, rate: speech.rateKo }, speech));
+    expect(en.endMs).toBe(
+      Math.ceil(
+        (text.length / (speech.speakCharsPerSecond * speech.rateKo)) * 1000,
+      ) + extraMs,
+    );
+  });
+
+  it("AC-N20 한국어 줄 설정: speech.read_ko · speak_chars_per_second_ko · rate_ko 가 없거나 꼴이 틀리면 던진다(조용한 기본값 없음)", () => {
+    for (const missing of [CPS_KO_KEY, RATE_KO_KEY, READ_KO_KEY])
+      expect(() =>
+        speechSettingsFrom((key) => (key === missing ? undefined : read(key))),
+      ).toThrow(missing);
+    expect(() =>
+      speechSettingsFrom((key) => (key === READ_KO_KEY ? "yes" : read(key))),
+    ).toThrow(READ_KO_KEY);
   });
 });

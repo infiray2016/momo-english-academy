@@ -17,7 +17,7 @@ function fakePort() {
     unlockFromGesture: () => {},
     speak: async (text: string, options?: { rate?: number }) => {
       spoken.push({ text, rate: options?.rate, at: Date.now() });
-      return { kind: "ended" } satisfies SpeakOutcome;
+      return { kind: "ended", heard: "played" } satisfies SpeakOutcome;
     },
     cancelSpeaking: () => {
       cancels += 1;
@@ -44,7 +44,7 @@ describe("세션 읽어 주기 감싸기(C125)", () => {
     const paced = pacedSpeech(fake.port, { rate: RATE, pauseMs: PAUSE });
     const done = paced.speak("Tom has a dog. The dog is big!");
     await vi.advanceTimersByTimeAsync(PAUSE);
-    expect(await done).toEqual({ kind: "ended" });
+    expect(await done).toEqual({ kind: "ended", heard: "played" });
     expect(fake.spoken.map((s) => s.text)).toEqual([
       "Tom has a dog.",
       "The dog is big!",
@@ -75,7 +75,7 @@ describe("세션 읽어 주기 감싸기(C125)", () => {
     const second = paced.speak("Hello.");
     await vi.advanceTimersByTimeAsync(PAUSE * 2);
     expect(await first).toEqual({ kind: "cancelled" });
-    expect(await second).toEqual({ kind: "ended" });
+    expect(await second).toEqual({ kind: "ended", heard: "played" });
     expect(fake.spoken.map((s) => s.text)).toEqual([
       "Tom has a dog.",
       "Hello.",
@@ -85,7 +85,110 @@ describe("세션 읽어 주기 감싸기(C125)", () => {
   it("읽어 주기 빠르기: 빈 글(읽어 주기 잠금 풀기)도 구간 빠르기로 그대로 넘긴다", async () => {
     const fake = fakePort();
     const paced = pacedSpeech(fake.port, { rate: RATE, pauseMs: PAUSE });
-    expect(await paced.speak("")).toEqual({ kind: "ended" });
+    expect(await paced.speak("")).toEqual({ kind: "ended", heard: "played" });
     expect(fake.spoken).toEqual([{ text: "", rate: RATE, at: Date.now() }]);
+  });
+});
+
+describe("문장 나눠 읽기의 감시 결과 모으기(R-48 · 검토 M1)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** 문장마다 정해 둔 결과를 차례로 돌리는 접점. */
+  function scriptedPort(outcomes: SpeakOutcome[]) {
+    const spoken: string[] = [];
+    const port = {
+      device: () => ({ kind: "ok" }) as never,
+      unlockFromGesture: () => {},
+      speak: async (text: string) => {
+        spoken.push(text);
+        return outcomes[spoken.length - 1] ?? { kind: "unsupported" };
+      },
+      cancelSpeaking: () => {},
+      listen: () => {
+        throw new Error("듣지 않는다");
+      },
+      checkMicrophone: async () => ({ ok: true }) as const,
+      dispose: () => {},
+    } satisfies SpeechPort;
+    return { port, spoken };
+  }
+  const played: SpeakOutcome = { kind: "ended", heard: "played" };
+  const failedBefore: SpeakOutcome = {
+    kind: "error",
+    code: "not-allowed",
+    started: false,
+  };
+
+  async function read(outcomes: SpeakOutcome[], text: string) {
+    const fake = scriptedPort(outcomes);
+    const paced = pacedSpeech(fake.port, { rate: RATE, pauseMs: PAUSE });
+    const done = paced.speak(text);
+    await vi.advanceTimersByTimeAsync(PAUSE * outcomes.length);
+    return { outcome: await done, spoken: fake.spoken };
+  }
+
+  it("R-48 모으기: 오류 문장이 앞이든 뒤든 들려준 문장과 섞이면 끝 알림 없음이다", async () => {
+    const front = await read([failedBefore, played], "One. Two.");
+    const back = await read([played, failedBefore], "One. Two.");
+    expect(front.outcome).toEqual({ kind: "ended", heard: "no_end" });
+    expect(back.outcome).toEqual({ kind: "ended", heard: "no_end" });
+  });
+
+  it("R-48 모으기: 가운데 문장이 끊기면 거기서 멈추고 끊김을 돌린다", async () => {
+    const { outcome, spoken } = await read(
+      [played, { kind: "cancelled" }, played],
+      "One. Two. Three.",
+    );
+    expect(outcome).toEqual({ kind: "cancelled" });
+    expect(spoken).toEqual(["One.", "Two."]);
+  });
+
+  it("R-48 모으기: 끝난 문장이 하나도 없으면 마지막 결과를 그대로 돌린다", async () => {
+    const last: SpeakOutcome = {
+      kind: "error",
+      code: "synthesis-failed",
+      started: true,
+    };
+    const { outcome, spoken } = await read([failedBefore, last], "One. Two.");
+    expect(outcome).toEqual(last);
+    expect(spoken).toEqual(["One.", "Two."]);
+  });
+
+  it("R-57 모으기: 들려주지 못한 문장과 시작 전 오류 문장만 있으면 '한 번도 들려주지 못함'이다(0-라 재검토 덧붙임)", async () => {
+    const notPlayed: SpeakOutcome = { kind: "ended", heard: "not_played" };
+    const { outcome, spoken } = await read(
+      [notPlayed, failedBefore],
+      "One. Two.",
+    );
+    expect(outcome).toEqual({ kind: "ended", heard: "not_played" });
+    expect(spoken).toEqual(["One.", "Two."]);
+  });
+
+  it("R-48 모으기: 시작 뒤 오류 문장과 들려준 문장이 섞이면 끝 알림 없음이다(0-라 재검토 덧붙임)", async () => {
+    const failedAfter: SpeakOutcome = {
+      kind: "error",
+      code: "synthesis-failed",
+      started: true,
+    };
+    const { outcome } = await read([failedAfter, played], "One. Two.");
+    expect(outcome).toEqual({ kind: "ended", heard: "no_end" });
+  });
+
+  const skipped: SpeakOutcome = { kind: "skipped", reason: "read_ko_off" };
+
+  it("AC-N20 모으기: 모든 문장을 읽지 않았으면(skipped) 읽지 않음을 그대로 돌린다", async () => {
+    const { outcome, spoken } = await read([skipped, skipped], "One. Two.");
+    expect(outcome).toEqual(skipped);
+    expect(spoken).toEqual(["One.", "Two."]);
+  });
+
+  it("AC-N20 모으기: 읽지 않은 문장은 모으지 않아 나머지를 들려줬으면 들려줌이다", async () => {
+    const { outcome } = await read([skipped, played], "One. Two.");
+    expect(outcome).toEqual({ kind: "ended", heard: "played" });
   });
 });

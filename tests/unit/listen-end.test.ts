@@ -1103,10 +1103,13 @@ describe("iPad WebKit 말소리 없음(C148)", () => {
 
 describe("음성 설정(12절)", () => {
   /** 12절 표에서 speech.* 줄을 읽어 <구간> 을 펼친 키 → 기본값. */
-  function specSpeechDefaults(): Map<string, string | number> {
-    const defaults = new Map<string, string | number>();
+  function specSpeechDefaults(): Map<string, string | number | boolean> {
+    const defaults = new Map<string, string | number | boolean>();
+    // 12절의 '켬' · '끔'은 설정 파일의 true · false 다(speech.read_ko — 가르치고 spec 설계 12)
+    const switches: Record<string, boolean> = { 켬: true, 끔: false };
     const parse = (raw: string) => {
       const value = raw.trim();
+      if (value in switches) return switches[value];
       return /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
     };
     for (const line of readFileSync(SETTINGS_SPEC, "utf8").split("\n")) {

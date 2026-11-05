@@ -392,6 +392,61 @@ describe("설정값 시드 적재(AC-7e · AC-7g · AC-8i · 5절)", () => {
     expect(again.counts.settings.updated).toBe(0);
   });
 
+  it("AC-7a 개발 일부 받기(--partial, 회화 plan 정한 것 15): 완전성 빈 칸은 보고만 하고 넣으며 검증 오류 · 판 규칙 위반은 그대로 거부한다", async () => {
+    // settings 의 완전성 끝(12절 기본값)까지는 비어 있어 일부 받기가 아니면 거부된다
+    const tree = withSetting(loadableSeed(), THROUGH, THROUGH_DEFAULT);
+    const whole = await load(tree);
+    expect(whole.outcome).toBe("refused");
+    expect(whole.partial).toBe(false);
+    expect(whole.validation?.summary.empty).toBeGreaterThan(0);
+    expect((await rowCounts()).settings).toBe(0);
+    const partial = await load(tree, { partial: true });
+    expect(partial.outcome).toBe("loaded");
+    expect(partial.partial).toBe(true);
+    expect(partial.validation).toMatchObject({
+      code: 0,
+      summary: { empty: whole.validation?.summary.empty, failed: 0 },
+    });
+    expect(partial.violations).toEqual([]);
+    expect(cellsOf(partial, "lessons")).toBeGreaterThan(0);
+    // 완전성 끝을 덮어 넣지 않는다(인자가 없으면 settings 값 그대로)
+    expect((await settingRow(THROUGH))?.value).toBe(THROUGH_DEFAULT);
+    const before = await rowCounts();
+    // 검증에 실패한 칸이 있으면 일부 받기도 한 행도 넣지 않는다
+    const broken = withCellVersion(
+      tree,
+      OTHER_LESSON,
+      { revision: 2, correction: 0 },
+      (cell) => {
+        cell.title = "";
+      },
+    );
+    const refused = await load(broken, { partial: true });
+    expect(refused.outcome).toBe("refused");
+    expect(refused.validation?.code).toBe(1);
+    expect(refused.violations[0]?.rule).toBe("validate");
+    expect(await rowCounts()).toEqual(before);
+    // 같은 판 · 다른 내용도 그대로 거부한다
+    const sameVersion = withCellVersion(
+      tree,
+      LESSON,
+      { revision: 1, correction: 0 },
+      (cell) => {
+        cell.title = `${String(cell.title)} 고침`;
+      },
+    );
+    const changed = await load(sameVersion, { partial: true });
+    expect(changed.outcome).toBe("refused");
+    expect(changed.violations).toEqual([
+      expect.objectContaining({
+        rule: "version-content-changed",
+        table: "lessons",
+        cell: LESSON,
+      }),
+    ]);
+    expect(await rowCounts()).toEqual(before);
+  });
+
   it("AC-8i 설정값 시드에 ai.effort.talk_turn.1-3 xhigh(끔)이나 쓰기 확인 Opus 5.5 '끔'이 있으면 적재 전체가 실패하고 settings 가 바뀌지 않는다", async () => {
     expect(TEST_SETTINGS["ai.thinking.talk_turn.1-3"].value).toBe("off");
     const xhigh = withSetting(
@@ -1061,5 +1116,39 @@ describe("적재 명령(pnpm seed:load)", () => {
     expect(result.lines[0]).toMatch(/^seed-load: 넣음 · /);
     expect(close).toHaveBeenCalledTimes(1);
     expect((await rowCounts()).settings).toBeGreaterThan(0);
+  });
+
+  it("AC-7a 적재 명령 --partial: --reference-only 와 함께 못 쓰고, 빈 칸이 있어도 넣음 0 이며 빈 칸 수를 한 줄로 알린다", async () => {
+    expect(args(["--partial"]).partial).toBe(true);
+    expect(args([]).partial).toBe(false);
+    const both = parseArgs([
+      "--reference-only",
+      "--complete-through",
+      "1",
+      "--partial",
+    ]);
+    expect(both.ok).toBe(false);
+    if (!both.ok) expect(both.error).toContain("--partial");
+    const files = filesOf(
+      withSetting(loadableSeed(), THROUGH, THROUGH_DEFAULT),
+    );
+    const whole = await run([], files);
+    expect(whole.code).toBe(1);
+    expect(whole.lines.some((l) => l.startsWith("일부 받기"))).toBe(false);
+    const partial = await run(["--partial"], files);
+    expect(partial.code).toBe(0);
+    expect(partial.lines[0]).toMatch(/^seed-load: 넣음 · /);
+    expect(partial.lines).toContainEqual(
+      expect.stringMatching(
+        /^일부 받기\(--partial\): 완전성 빈 칸 [1-9]\d* 는 막지 않고 보고만 했다$/,
+      ),
+    );
+    const json = await run(["--partial", "--json", "--dry-run"], files);
+    expect(json.lines).toHaveLength(1);
+    expect(JSON.parse(json.lines[0] ?? "")).toMatchObject({
+      version: 1,
+      outcome: "dry-run",
+      partial: true,
+    });
   });
 });

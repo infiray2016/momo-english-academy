@@ -5,7 +5,13 @@ import "server-only";
 // AI 를 부르지 않는다(AC-1b) — 1-가 하루 안전 상한은 ai_calls 를 읽기만 한다(ai-gate, plan-p11b 값 2 · 9). AI 활동의 끝 시도는 서버 액션이
 // 저장하고 이 길(대기열)은 받지 않는다(serverActionOnly). 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
 // DB 오류는 이름 · 코드만 로그에 남긴다(시도 입력 · 인식 글을 내지 않음, safe-error).
-import { and, eq, inArray } from "drizzle-orm";
+// 가르치는 수업(teach 칸이 있는 수업, 가르치고 배우는 수업 plan 나 · 정한 것 1 · 3 · 4): 활동 차례에 teach 를 넘기고, 짝 시도는 서버가
+// 저장된 혼자 첫 시도로 다시 고른 짝(sparesFromFinals)만 받으며, 끝내기 · 이어 하기는 내지 않은 짝을 끝난 것으로 센다.
+// 채점 맥락은 기기와 같은 outcomeContextOf 로 만들고(말하기 질문 품사 표 포함), 질문 짝 · 같이 해 보기 시도의 judge 칸은 저장 때
+// 서버의 앱 판정으로 다시 쓴다(withAppJudge — plan 다, 서버 값이 정본).
+// 가르치는 수업 화면 자료(plan 묶음 라-2 · 장부 L-34): 짝 칸에 서버가 센 혼자 첫 시도 결과(outcomes — 기기가 제 첫 시도 결과와 합쳐 낼 짝을
+// 고름), 고른 선생님 · 칭찬 표지 시간(talk.teacher_praise_seconds), 본보기 그림 키 · 새 단어 그림을 싣는다. 시도 저장 길의 꼴은 그대로다.
+import { and, eq, inArray, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { fillNameDeep } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
@@ -19,17 +25,19 @@ import { sessionScoreOf } from "@/core/scoring/score";
 import { LESSON_SCHEMAS, type LessonOf } from "@/core/seed/schema/lesson";
 import type { Area } from "@/core/seed/structure";
 import {
-  type AppScoringContext,
   ATTEMPTS_PER_BATCH_MAX,
   type AttemptInput,
   aiNeededLesson,
   appActivityResult,
   finalActivityNos,
   inputFitsActivity,
-  lemmaLookup,
+  isSpareInput,
+  type OutcomeContext,
   parseAttemptInput,
   resumePointOf,
+  type SoloOutcome,
   serverActionOnly,
+  withAppJudge,
 } from "@/core/session/attempt";
 import {
   type Activity,
@@ -39,17 +47,25 @@ import {
   previewWordsOf,
 } from "@/core/session/preview";
 import {
+  outcomeContextOf,
+  type SpareChoice,
+  soloOutcomesOf,
+  sparesFromFinals,
+} from "@/core/session/spares";
+import {
   answerMaxSecondsKey,
   answerShapeOf,
   englishSentencesOf,
   type SpeechActivityKind,
 } from "@/core/speaking/judge";
+import type { MeaningWord } from "@/core/speaking/meaning";
 import {
   type AnswerShape,
   SPEECH_SETTING_KEYS,
   type SpeechSettings,
   speechSettingsFrom,
 } from "@/core/speech/listen";
+import type { TeacherView } from "@/core/teacher/roster";
 import { images, lessons, vocab } from "@/db/schema/content";
 import {
   attempts,
@@ -70,6 +86,12 @@ import {
   getSettings,
   SettingMissingError,
 } from "@/server/settings";
+import { meaningWordsOf } from "@/server/speaking/words";
+import {
+  readHouseholdTeacher,
+  rosterOf,
+  teacherChoicesOf,
+} from "@/server/teacher";
 import { type RewriteSource, rewriteSourceOf } from "@/server/writing/status";
 
 type LessonArea = Exclude<Area, "talk">;
@@ -86,8 +108,20 @@ const LESSON_AREAS: readonly LessonArea[] = ["reading", "writing", "speaking"];
 const START_AREAS: readonly Area[] = [...LESSON_AREAS, "talk"];
 const THROUGH_KEY = "seed.complete_through_level";
 const NEW_WORDS_KEY = "unit.new_words_per_lesson";
-/** 새 단어 미리보기 활동 번호(3.3 첫 활동). */
-const PREVIEW_ACTIVITY = 1;
+/** 같이 해 보기 맞음 반응의 칭찬 표지 시간(델타 spec 설계 4 — 회화와 같은 키, 가르치는 수업만 읽는다). */
+const PRAISE_SECONDS_KEY = "talk.teacher_praise_seconds";
+/** 영역마다 짝 상한 키 머리(lesson.spares_per_session.<영역>, 델타 spec 설계 12 — teach 가 있는 수업만 읽는다). */
+const SPARES_KEY = "lesson.spares_per_session.";
+/** P10 꼬리표 없는 미리보기 시도({ shownWords })가 놓인 활동 번호(그때는 미리보기가 늘 첫 활동이었다). */
+const LEGACY_PREVIEW_ACTIVITY = 1;
+
+/**
+ * 미리보기 시도 행(정한 것 4): 판 1 · 2 꼴의 kind "preview", P10 꼬리표 없는 시도는 옛 첫 활동의 shownWords 행. 미리보기 활동 번호가
+ * 옛 세션(1번)과 가르치는 수업(2번)에서 달라 활동 번호로 찾지 않는다. 결과 화면의 오늘 만난 단어도 이 조건으로 읽는다.
+ */
+export function previewAttemptWhere(): SQL {
+  return sql`(${attempts.input}->>'kind' = 'preview' or (${attempts.input}->>'kind' is null and ${attempts.activityNo} = ${LEGACY_PREVIEW_ACTIVITY} and jsonb_typeof(${attempts.input}->'shownWords') = 'array'))`;
+}
 
 // 시도 입력 상한(기술 값 — 묶음 수 · JSON 글자 수는 core/session/attempt 의 상수를 대기열과 같이 쓴다)
 /** 활동 번호 상한. */
@@ -186,6 +220,11 @@ export type SessionConfig = {
     /** 그 단계 구간의 두 문장 이상 답 시간 상한(speaking.answer_max_seconds.<구간>). */
     answerMaxSeconds: number;
     prepareSeconds: number;
+    /**
+     * speech.slow_rate_factor — 듣기 이해 같은 문제 다시에서 답 덩어리를 천천히 읽는 빠르기(speech.rate.<구간> 에 곱함, 가르치고 배우는 수업
+     * 묶음 라-3 · 델타 spec 설계 1 듣기 이해 행).
+     */
+    slowRateFactor: number;
   };
 };
 type SessionSettings = SessionConfig & {
@@ -216,6 +255,7 @@ async function readSessionSettings(
       "ui.auto_next_seconds": z.number().nonnegative(),
       "speaking.answer_match_pass": unitInterval,
       "speaking.prepare_seconds": z.number().positive(),
+      "speech.slow_rate_factor": z.number().positive().max(1),
       "speaking.match_weight": unitInterval,
       "speaking.listening_weight": unitInterval,
       "writing.thinkout_from_level": z.int().min(1),
@@ -238,6 +278,7 @@ async function readSessionSettings(
       answerMatchPass: num("speaking.answer_match_pass"),
       answerMaxSeconds: num(capKey),
       prepareSeconds: num("speaking.prepare_seconds"),
+      slowRateFactor: num("speech.slow_rate_factor"),
     },
     weights: {
       a: num("speaking.match_weight"),
@@ -264,7 +305,7 @@ type SpecBits = {
   };
 };
 
-type SessionContext = {
+export type SessionContext = {
   area: LessonArea;
   level: number;
   lesson: LessonOf[LessonArea];
@@ -275,10 +316,12 @@ type SessionContext = {
   appJudged: boolean;
   /** 쓰기 6~12 둘째 세션이 기대는 첫 세션 · 첨삭(교정 수 = 활동 수, plan-p11b 값 9 · 11). 그 밖 없음. */
   rewrite?: RewriteSource;
+  /** 짝 상한(lesson.spares_per_session.<영역>) — teach 가 있는 수업만. 없으면 짝 활동이 없는 수업. */
+  spareCap?: number;
 };
 
-/** 진행 세션 행과 그 수업 행으로 활동 차례 · 설정 · 규격을 모은다(활동 모델 값 1 — 서버 · 화면이 같은 목록). */
-async function sessionContextOf(
+/** 진행 세션 행과 그 수업 행으로 활동 차례 · 설정 · 규격을 모은다(활동 모델 값 1 — 서버 · 화면이 같은 목록). 말하기 평가 서버도 쓴다. */
+export async function sessionContextOf(
   db: Db | Tx,
   session: SessionRow,
   lessonRow: LessonRow,
@@ -319,7 +362,18 @@ async function sessionContextOf(
     // 둘째 세션의 교정 수 = 그 첫 세션 첨삭의 교정 수(3.3 6~9단계 최대 2 · 10~12단계 3 — 규격 · 설정이 정한 수만큼 AI 가 냄)
     corrections: rewrite?.value.corrections.length ?? 0,
     confirmQuestions: spec.presentation?.confirmQuestions ?? 0,
+    // 여섯 자리 차례는 teach 칸이 있는 수업만(정한 것 1)
+    ...(lesson.teach ? { teach: lesson.teach } : {}),
   } as ActivityModelInput);
+  const spareKey = `${SPARES_KEY}${area}`;
+  const spareCap = lesson.teach
+    ? ((
+        await getSettings(
+          { [spareKey]: z.int().min(0) } as Record<string, z.ZodType>,
+          { db, profileId },
+        )
+      )[spareKey] as number)
+    : undefined;
   return {
     area,
     level,
@@ -329,11 +383,12 @@ async function sessionContextOf(
     spec,
     appJudged,
     ...(rewrite ? { rewrite } : {}),
+    ...(spareCap === undefined ? {} : { spareCap }),
   };
 }
 
 /** 단원 단어의 원형 표 자료(vocab word · forms). */
-async function lemmaEntriesOf(
+export async function lemmaEntriesOf(
   db: Db | Tx,
   words: readonly string[],
 ): Promise<{ word: string; forms: string[] }[]> {
@@ -350,18 +405,59 @@ async function lemmaEntriesOf(
   }));
 }
 
-function scoringOf(
+/**
+ * 채점 · 짝 고르기 맥락(기기와 같은 outcomeContextOf — 나 fix 1 우려 1): 허용 답 기준 · 따라 말하기 맞음('잘 말했어요' = ui.match_phrase_levels
+ * 첫 값) · 동음이의어 · 원형 표 · 앱 판정 단계 · 말하기 질문 품사 표(meaningWordsOf). 말하기 평가 서버도 쓴다.
+ */
+export function scoringOf(
   ctx: SessionContext,
   homophones: string[][],
   lemmaEntries: readonly { word: string; forms: string[] }[],
-): AppScoringContext {
-  return {
-    answerMatchPass: ctx.settings.speaking.answerMatchPass,
+  meaningWords: readonly MeaningWord[],
+): OutcomeContext {
+  return outcomeContextOf({
+    config: ctx.settings,
     homophones,
-    unitWords: ctx.lesson.unitWords,
-    lemmaOf: lemmaLookup(lemmaEntries),
-    appJudgedQuestions: ctx.appJudged,
-  };
+    lemmaEntries,
+    appJudged: ctx.appJudged,
+    lesson: ctx.lesson,
+    meaningWords,
+  });
+}
+
+/**
+ * 낼 짝 · 끝난 것으로 볼 짝(정한 것 3 — 서버 값이 정본). finals 는 활동 번호 → 그 활동의 첫 끝 시도. 짝 상한이 없는 수업(teach 없음)은
+ * undefined(짝 활동도 없다).
+ */
+function spareChoiceOf(
+  ctx: SessionContext,
+  scoring: OutcomeContext,
+  finals: ReadonlyMap<number, AttemptInput>,
+): SpareChoice | undefined {
+  if (ctx.spareCap === undefined) return undefined;
+  return sparesFromFinals({
+    activities: ctx.activities,
+    lesson: ctx.lesson,
+    finals,
+    ctx: scoring,
+    cap: ctx.spareCap,
+  });
+}
+
+/** 시도 행에서 활동 번호마다 가장 먼저 저장된 끝 시도의 입력. */
+function firstFinalInputs(
+  rows: readonly { activityNo: number; input: unknown; attemptedAt: Date }[],
+): Map<number, AttemptInput> {
+  const out = new Map<number, AttemptInput>();
+  const sorted = [...rows].sort(
+    (a, b) => a.attemptedAt.getTime() - b.attemptedAt.getTime(),
+  );
+  for (const row of sorted) {
+    const input = parseAttemptInput(row.input);
+    if (input?.step === "final" && !out.has(row.activityNo))
+      out.set(row.activityNo, input);
+  }
+  return out;
 }
 
 /**
@@ -370,8 +466,10 @@ function scoringOf(
  */
 function needsAiPath(input: AttemptInput, ctx: SessionContext): boolean {
   if (serverActionOnly(input)) return true;
+  // 질문 짝은 단계와 상관없이 앱이 판정한다(델타 spec 설계 1 '채점')
   return (
     input.kind === "question" &&
+    !isSpareInput(input) &&
     !ctx.appJudged &&
     input.step === "final" &&
     input.skipped === undefined
@@ -763,17 +861,27 @@ export async function saveSessionAttempts(
         : [];
     const contexts = new Map<
       string,
-      { ctx: SessionContext; scoring: AppScoringContext; lateOnly: boolean }
+      {
+        ctx: SessionContext;
+        scoring: OutcomeContext;
+        lateOnly: boolean;
+        /** 이 묶음에서 앞에 받은 끝 시도(활동 번호마다 첫 것). */
+        batch: Map<number, AttemptInput>;
+        /** 저장된 첫 끝 시도 — 짝 시도가 올 때만 읽는다. */
+        saved?: Map<number, AttemptInput>;
+      }
     >();
     const groups = homophones();
     for (const { session, lesson } of open) {
       if (session.area === "talk") continue;
       const ctx = await sessionContextOf(db, session, lesson, profile.id);
       const lemmas = await lemmaEntriesOf(db, ctx.lesson.unitWords);
+      const words = await meaningWordsOf(db, ctx.lesson, groups);
       contexts.set(session.id, {
         ctx,
-        scoring: scoringOf(ctx, groups, lemmas),
+        scoring: scoringOf(ctx, groups, lemmas, words),
         lateOnly: session.status === "aborted",
+        batch: new Map(),
       });
     }
     const at = now();
@@ -798,17 +906,48 @@ export async function saveSessionAttempts(
         rejected.push(attempt.clientAttemptId);
         continue;
       }
+      // 짝 시도는 서버가 저장된 혼자 첫 시도(+ 이 묶음 앞의 끝 시도)로 다시 고른 짝만 받는다(정한 것 3)
+      if (activity.kind === "spare") {
+        found.saved ??= firstFinalInputs(
+          await db
+            .select({
+              activityNo: attempts.activityNo,
+              input: attempts.input,
+              attemptedAt: attempts.attemptedAt,
+            })
+            .from(attempts)
+            .where(eq(attempts.sessionId, attempt.sessionId)),
+        );
+        const finals = new Map(found.saved);
+        for (const [no, earlier] of found.batch)
+          if (!finals.has(no)) finals.set(no, earlier);
+        const choice = spareChoiceOf(found.ctx, found.scoring, finals);
+        if (!choice?.show.includes(attempt.activityNo)) {
+          rejected.push(attempt.clientAttemptId);
+          continue;
+        }
+      }
       const result = appActivityResult(
         activity,
         found.ctx.lesson,
         input,
         found.scoring,
       );
+      // 질문 짝 · 같이 해 보기의 judge 칸은 서버의 앱 판정으로 다시 쓴다(기기가 보낸 판정을 믿지 않음 — plan 다)
+      const judged = withAppJudge(
+        activity,
+        found.ctx.lesson,
+        input,
+        found.scoring,
+      );
+      // 뒤에 오는 짝 시도가 이 묶음의 혼자 첫 시도도 보게(저장된 첫 끝 시도가 먼저다)
+      if (input.step === "final" && !found.batch.has(attempt.activityNo))
+        found.batch.set(attempt.activityNo, judged);
       rows.push({
         sessionId: attempt.sessionId,
         clientAttemptId: attempt.clientAttemptId,
         activityNo: attempt.activityNo,
-        input,
+        input: judged,
         attemptedAt: at,
         status: "done",
         score: result.score,
@@ -868,7 +1007,7 @@ function finalRowsOf(
  */
 export async function finishLessonSession(
   raw: unknown,
-  { db = getDb(), now }: SessionDeps,
+  { db = getDb(), now, homophones = seedHomophones }: SessionDeps,
 ): Promise<FinishOutcome> {
   const parsed = FinishInputSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: "invalid" };
@@ -906,9 +1045,24 @@ export async function finishLessonSession(
         .from(attempts)
         .where(eq(attempts.sessionId, session.id));
       const finals = finalRowsOf(rows);
+      // 내지 않은 짝(맞힌 문항 · U 문항 · 상한 넘음)은 시도 행 없이 끝난 것이다(정한 것 3 — 저장된 첫 시도로 서버가 다시 고름)
+      const skipped = new Set(
+        ctx.spareCap === undefined
+          ? []
+          : (spareChoiceOf(
+              ctx,
+              scoringOf(
+                ctx,
+                homophones(),
+                await lemmaEntriesOf(tx, ctx.lesson.unitWords),
+                await meaningWordsOf(tx, ctx.lesson, homophones()),
+              ),
+              new Map([...finals].map(([no, f]) => [no, f.input])),
+            )?.skip ?? []),
+      );
       const missing = ctx.activities
         .map((_, i) => i + 1)
-        .filter((no) => !finals.has(no));
+        .filter((no) => !finals.has(no) && !skipped.has(no));
       if (missing.length > 0)
         return { ok: false, reason: "incomplete", missing };
 
@@ -1033,6 +1187,8 @@ export type SessionView = {
     homophones: string[][];
     /** 단원 단어의 원형 표 자료(vocab word · forms). */
     lemmaEntries: { word: string; forms: string[] }[];
+    /** 말하기 질문 판정의 낱말 품사 표(plan 다 · 정한 것 7 — 기기의 바로 판정이 서버와 같은 표). 질문이 없는 수업은 빈 목록. */
+    meaningWords: MeaningWord[];
     /** 말하기 질문 답을 앱이 판정하는가(level_specs questions.acceptedMin > 0). */
     appJudged: boolean;
     /** 활동마다 말로 답하는 꼴(말하기 활동만, 그 밖은 null — 값 4). */
@@ -1048,6 +1204,11 @@ export type SessionView = {
     showKo: boolean;
     /** AI 가 필요한 수업인데 그 학습일 하루 안전 상한에 닿음 — 틀이 '토리가 잠깐 쉬어요'와 '홈'(세션은 진행, C50 (2) · C80). */
     aiResting: boolean;
+    /**
+     * 말하기 AI 판정 혼자 질문이 있는 세션(3단계부터)인데 그 학습일 하루 안전 상한에 닿음 — 틀이 남은 혼자 질문을 그 앞 이야기 화면과 함께
+     * 건너뛰고 세션을 끝까지 한다(7절 말하기 3~8 예외 · 가르치고 델타 spec 설계 10, 묶음 라-3). 그 밖 false.
+     */
+    aiQuestionsResting: boolean;
     /** 쓰기 4~5: 넣는 꼴(단계 규격 amount.input)과 낸 문장(확인을 낸 뒤 — 고친 문장이 있으면 그것, 내 문장 듣기에 씀). 그 밖 null. */
     guided: {
       input: "word-box" | "slot";
@@ -1057,6 +1218,31 @@ export type SessionView = {
     composition: CompositionView | null;
     /** 쓰기 6~12 둘째 세션 자료(칭찬 · 교정 · 초고 글, 모범 답안은 고쳐 쓰기를 낸 뒤에만 — AC-4c · 위험 9). 그 밖 null. */
     rewrite: RewriteView | null;
+    /**
+     * 가르치는 수업의 짝(정한 것 3): 서버가 저장된 혼자 첫 시도로 고른 낼 짝 · 끝난 것으로 볼 짝(활동 번호)과 상한
+     * (lesson.spares_per_session.<영역> — 화면이 대기열 첫 시도를 더해 sparesFromFinals 로 다시 고름). teach 없는 수업은 null.
+     */
+    spares:
+      | (SpareChoice & {
+          cap: number;
+          /**
+           * 서버가 저장된 혼자 첫 시도로 센 결과(활동 번호 → 맞음 · 틀림 · U, 장부 L-34 '서버 값 합치기'). 기기는 대기열이 지운 앞 문항을 이것으로
+           * 채우고 이 기기에서 낸 첫 시도 결과를 더해 같은 함수로 낼 짝을 고른다.
+           */
+          outcomes: [number, SoloOutcome][];
+        })
+      | null;
+    /**
+     * 가르치는 수업 자리 자료(plan 묶음 라-2): 고른 선생님(고르기 전이면 null — 기본 목소리 · 초상, C130)과 같이 해 보기 칭찬 표지 시간(초,
+     * talk.teacher_praise_seconds). teach 없는 수업은 null.
+     * teacherChoices(묶음 마-2 · 델타 spec 설계 4 [L3 · C177]): '선생님을 골라요'의 선생님(회화 화면 자료 teacherChoices 와 같은 꼴 —
+     * teacher 가 null 일 때만 그 아이에게 보일 선생님, 명단 차례. teacher 가 있으면 빈 목록).
+     */
+    teaching: {
+      teacher: TeacherView | null;
+      praiseSeconds: number;
+      teacherChoices: TeacherView[];
+    } | null;
   };
 }[LessonArea];
 
@@ -1115,6 +1301,16 @@ function pictureWordsOf(lesson: LessonOf[LessonArea]): {
   }
   const task = c.pictureTask as { images?: string[] } | undefined;
   for (const key of task?.images ?? []) keys.add(key);
+  // 가르치는 수업: 본보기 그림 키(1~2단계 사물 그림, C170 (6)) · 그림 문제 짝의 보기
+  for (const model of lesson.teach?.models ?? [])
+    if (model.picture) keys.add(model.picture);
+  if ("questions" in c && Array.isArray(c.questions)) {
+    for (const q of c.questions as {
+      spare?: { kind?: string; options?: string[] };
+    }[])
+      if (q.spare?.kind === "picture")
+        for (const w of q.spare.options ?? []) words.add(w);
+  }
   return { words: [...words], keys: [...keys] };
 }
 
@@ -1283,13 +1479,18 @@ export async function loadSessionView(
     .from(attempts)
     .where(eq(attempts.sessionId, sessionId));
   const finals = finalActivityNos(tried);
-  const point = resumePointOf(activities, finals);
-  const current =
-    "next" in point
-      ? point.next
-      : Math.max(PREVIEW_ACTIVITY, activities.length);
+  const lemmaEntries = await lemmaEntriesOf(db, lesson.unitWords);
+  const meaningWords = await meaningWordsOf(db, lesson, homophones());
+  // 낼 짝 · 끝난 것으로 볼 짝(서버가 저장된 혼자 첫 시도로 고른 값 — 화면이 이 기기 첫 시도 결과를 더해 같은 함수로 다시 고른다)
+  const scoring = scoringOf(ctx, homophones(), lemmaEntries, meaningWords);
+  const firstFinals = firstFinalInputs(tried);
+  const spareChoice = spareChoiceOf(ctx, scoring, firstFinals);
+  const point = resumePointOf(activities, finals, spareChoice?.skip ?? []);
+  // 모두 끝났으면 마지막 활동(활동이 없으면 1)
+  const current = "next" in point ? point.next : Math.max(1, activities.length);
 
-  // 만난 단어(정할 것 ㄹ): 이 영역 다른 세션의 미리보기 시도에 보인 단어(P10 꼬리표 없는 시도 · 새 꼴 둘 다)
+  // 만난 단어(정할 것 ㄹ): 이 영역 다른 세션의 미리보기 시도에 보인 단어(P10 꼬리표 없는 시도 · 새 꼴 둘 다 — 활동 번호가 아니라
+  // 시도 꼴로 찾는다, 정한 것 4)
   const shownRows = await db
     .select({ input: attempts.input })
     .from(attempts)
@@ -1298,7 +1499,7 @@ export async function loadSessionView(
       and(
         eq(sessions.profileId, profile.id),
         eq(sessions.area, area),
-        eq(attempts.activityNo, PREVIEW_ACTIVITY),
+        previewAttemptWhere(),
       ),
     );
   const metWords = shownRows.flatMap((r) => {
@@ -1324,7 +1525,12 @@ export async function loadSessionView(
   if (typeof k !== "number")
     throw new Error(`단원 복사본에 ${NEW_WORDS_KEY} 가 없다`);
 
-  const { words, keys } = pictureWordsOf(lesson);
+  const pictured = pictureWordsOf(lesson);
+  const keys = pictured.keys;
+  // 가르치는 수업의 새 단어 카드는 그림이 있으면 그림을 보인다(설계 5 '보여 주기: 새 단어' — 단원 단어도 미리보기에 더해질 수 있다)
+  const words = lesson.teach
+    ? [...new Set([...pictured.words, ...lesson.unitWords])]
+    : pictured.words;
   const lookupWords = [...new Set([...words, ...lesson.unitWords])];
   const vocabRows =
     lookupWords.length > 0
@@ -1391,18 +1597,45 @@ export async function loadSessionView(
         eq(sessions.status, "in_progress"),
       ),
     );
-  const aiResting =
-    aiNeededLesson({
-      area,
-      content: lesson.content,
-      ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
-    }) && (await aiRestingToday({ profileId: profile.id, at: now() }, { db }));
+  const aiNeeded = aiNeededLesson({
+    area,
+    content: lesson.content,
+    ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
+  });
+  // 말하기 AI 판정 혼자 질문(3단계부터 — 질문 짝 · 같이 해 보기는 앱 판정)이 있는 세션은 쉬는 동안 그 질문만 건너뛴다(설계 10)
+  const aiQuestions =
+    area === "speaking" &&
+    !ctx.appJudged &&
+    activities.some((a) => a.kind === "question");
+  const restingToday =
+    aiNeeded || aiQuestions
+      ? await aiRestingToday({ profileId: profile.id, at: now() }, { db })
+      : false;
+  const aiResting = aiNeeded && restingToday;
+  const aiQuestionsResting = aiQuestions && restingToday;
 
   const composition =
     row.session.writingPart === "rewrite"
       ? null
       : compositionViewOf(ctx, tried, profile.englishName);
   const rewrite = rewriteViewOf(ctx, tried, profile.englishName);
+  const teacher = lesson.teach ? await readHouseholdTeacher({ db }) : null;
+  const teaching = lesson.teach
+    ? {
+        teacher,
+        // 고른 선생님이 없을 때만 고를 선생님(묶음 마-2 — 고르기 저장은 회화의 chooseTeacher 액션을 그대로 쓴다)
+        teacherChoices: teacher ? [] : teacherChoicesOf(rosterOf(), profile),
+        praiseSeconds: (
+          await getSettings(
+            { [PRAISE_SECONDS_KEY]: z.number().positive() } as Record<
+              string,
+              z.ZodType
+            >,
+            { db, profileId: profile.id },
+          )
+        )[PRAISE_SECONDS_KEY] as number,
+      }
+    : null;
   return {
     sessionId,
     area,
@@ -1415,7 +1648,8 @@ export async function loadSessionView(
     finals,
     config,
     homophones: homophones(),
-    lemmaEntries: await lemmaEntriesOf(db, lesson.unitWords),
+    lemmaEntries,
+    meaningWords,
     appJudged: ctx.appJudged,
     answerShapes,
     openSessionIds: open.map((o) => o.id),
@@ -1425,9 +1659,21 @@ export async function loadSessionView(
     keyPictures,
     showKo,
     aiResting,
+    aiQuestionsResting,
     guided: guidedViewOf(ctx, tried),
     composition,
     rewrite,
+    spares:
+      spareChoice && ctx.spareCap !== undefined
+        ? {
+            ...spareChoice,
+            cap: ctx.spareCap,
+            outcomes: [
+              ...soloOutcomesOf(ctx.activities, lesson, firstFinals, scoring),
+            ],
+          }
+        : null,
+    teaching,
   } as SessionView;
 }
 

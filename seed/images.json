@@ -206,6 +206,16 @@
     {"key": "water", "file": "images/vocab/water.svg", "source": "self-made 2026-10-17", "license": "generated", "word": "water"},
     {"key": "whale", "file": "images/vocab/whale.svg", "source": "twemoji v17.0.3 1f433", "license": "cc_by", "attribution": "Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0", "word": "whale"},
     {"key": "woman", "file": "images/vocab/woman.svg", "source": "twemoji v17.0.3 1f469", "license": "cc_by", "attribution": "Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0", "word": "woman"},
-    {"key": "write", "file": "images/vocab/write.svg", "source": "twemoji v17.0.3 270d", "license": "cc_by", "attribution": "Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0", "word": "write"}
+    {"key": "write", "file": "images/vocab/write.svg", "source": "twemoji v17.0.3 270d", "license": "cc_by", "attribution": "Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0", "word": "write"},
+    {"key": "bathroom", "file": "images/vocab/bathroom.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "bathroom"},
+    {"key": "bedroom", "file": "images/vocab/bedroom.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "bedroom"},
+    {"key": "classroom", "file": "images/vocab/classroom.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "classroom"},
+    {"key": "come", "file": "images/vocab/come.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "come"},
+    {"key": "drink", "file": "images/vocab/drink.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "drink"},
+    {"key": "eat", "file": "images/vocab/eat.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "eat"},
+    {"key": "go", "file": "images/vocab/go.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "go"},
+    {"key": "living-room", "file": "images/vocab/living-room.svg", "source": "twemoji v17.0.3 1f6cb", "license": "cc_by", "attribution": "Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0", "word": "living room"},
+    {"key": "restaurant", "file": "images/vocab/restaurant.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "restaurant"},
+    {"key": "wash", "file": "images/vocab/wash.svg", "source": "self-made 2026-10-30", "license": "generated", "word": "wash"}
   ]
 }

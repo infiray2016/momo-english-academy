@@ -136,7 +136,7 @@ export function TypingAnswer({
           aria-live="polite"
           className={cn(
             CHILD_SIZE.english,
-            "flex min-h-16 w-full items-center rounded-xl border-2 border-dashed border-ink bg-white px-5 font-bold whitespace-pre",
+            "flex min-h-16 w-full items-center rounded-xl border-2 border-dashed border-ink bg-paper px-5 font-bold whitespace-pre",
           )}
         >
           {reveal ?? text}
@@ -205,7 +205,7 @@ export function TypingAnswer({
           CHILD_SIZE.english,
           CHILD_SIZE.target,
           FOCUS_RING,
-          "w-full rounded-xl border-2 border-ink bg-white px-5",
+          "w-full rounded-xl border-2 border-ink bg-paper px-5",
         )}
       />
       {reveal !== undefined ? null : (

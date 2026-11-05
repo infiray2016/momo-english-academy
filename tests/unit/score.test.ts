@@ -7,6 +7,19 @@ import {
   type ScoredActivity,
   sessionScoreOf,
 } from "@/core/scoring/score";
+import {
+  type AttemptInput,
+  appActivityResult,
+  lemmaLookup,
+  parseAttemptInput,
+  speakFailFields,
+} from "@/core/session/attempt";
+import { type Activity, activitiesOf } from "@/core/session/preview";
+import {
+  defaultSettings,
+  referenceSet,
+  speakingLesson,
+} from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 
 const weights = {
@@ -208,5 +221,142 @@ describe("세션 점수", () => {
     ).toBeNull();
     expect(cleanSentenceRate([])).toBeNull();
     expect(() => rubricScoreOf([])).toThrow();
+  });
+});
+
+// 소리를 들려주지 못한 문항(UI · UX spec 2판 R-55 · R-57 · AC-23a (5)): 세션 틀이 끝 시도 { v: 1, kind, step, ...내용 } 에 speakFailFields 를
+// 펼친 꼴 그대로 읽고, 앱 채점 결과를 세션 점수에 넣는다.
+describe("기술 오류 문항(R-55)", () => {
+  const ref = referenceSet(defaultSettings());
+  const lesson = speakingLesson(ref, 1).lesson;
+  const ctx = {
+    answerMatchPass: TEST_SETTINGS["speaking.answer_match_pass"].value,
+    homophones: [],
+    unitWords: lesson.unitWords,
+    lemmaOf: lemmaLookup(ref.vocab.vocab),
+    appJudgedQuestions: true,
+    meaningWords: [],
+  };
+  const activities = activitiesOf({
+    area: "speaking",
+    level: 1,
+    content: lesson.content,
+  });
+  /** 세션 틀 complete 와 같은 꼴(내용의 v 가 이긴다). */
+  const frameInput = (kind: string, content: Record<string, unknown>) => {
+    const input = parseAttemptInput({
+      v: 1,
+      kind,
+      step: "final",
+      ...content,
+    });
+    if (!input) throw new Error(`시도 꼴이 틀림: ${kind}`);
+    return input;
+  };
+  const resultOf = (activity: Activity, input: AttemptInput) =>
+    appActivityResult(activity, lesson, input, ctx);
+  const listening = activities.filter((a) => a.kind === "listening");
+  const repeats = activities.filter(
+    (a) => a.kind === "repeat-word" || a.kind === "repeat-sentence",
+  );
+  const items = lesson.content.listening;
+  const targets = [
+    ...lesson.content.repeat.words,
+    ...lesson.content.repeat.sentences,
+  ];
+
+  it("AC-23a (5) R-55 들려주지 못한 채 받은 답 · 답 없이 넘김은 맞고 틀림과 관계없이 점수 · 단어별 정오가 없고(0 이 아님), 판 1 시도에 섞으면 판 2 로 읽힌다", () => {
+    const first = listening[0];
+    const item = items[0];
+    if (!first || !item) throw new Error("견본 꼴 — 듣기");
+    const wrong = item.answerNo === 1 ? 2 : 1;
+    for (const tries of [[item.answerNo], [wrong], []]) {
+      const input = frameInput("listening", { tries, ...speakFailFields });
+      expect(input.v).toBe(speakFailFields.v);
+      expect(resultOf(first, input)).toEqual({
+        score: null,
+        wordResults: [],
+        wordCount: null,
+      });
+    }
+    // 들려준 뒤의 답은 보통대로(맞음 1)
+    expect(
+      resultOf(first, frameInput("listening", { tries: [item.answerNo] }))
+        .score,
+    ).toBe(1);
+    // 기술 오류가 아니면 빈 보기 목록은 받지 않는다
+    expect(
+      parseAttemptInput({ v: 1, kind: "listening", step: "final", tries: [] }),
+    ).toBeUndefined();
+    // 따라 말하기: 본보기를 못 들려준 채 똑같이 말해도 점수 없음, 말한 낱말 수는 남는다
+    const repeat = repeats[0];
+    const target = targets[0];
+    if (!repeat || !target) throw new Error("견본 꼴 — 따라 말하기");
+    const tech = resultOf(
+      repeat,
+      frameInput(repeat.kind, {
+        heard: [target],
+        failures: 0,
+        ...speakFailFields,
+      }),
+    );
+    expect(tech.score).toBeNull();
+    expect(tech.wordResults).toEqual([]);
+    expect(tech.wordCount).toBe(target.split(/\s+/).length);
+  });
+
+  it("AC-23a (5) R-55 기술 오류 문항은 그 종류 평균의 분모 · 분자에서 빠지고, 듣기가 다 빠지면 듣기 가중치가 0 이다", () => {
+    const scoredOf = (techListening: number[]) =>
+      activities.map((activity) => {
+        if (activity.kind === "listening") {
+          const item = items[activity.index];
+          if (!item) throw new Error("견본 꼴 — 듣기");
+          const tech = techListening.includes(activity.index);
+          // 기술 오류 문항은 일부러 틀린 답 — 0 으로 세면 점수가 내려간다
+          const tries = [tech ? (item.answerNo === 1 ? 2 : 1) : item.answerNo];
+          const input = frameInput("listening", {
+            tries,
+            ...(tech ? speakFailFields : {}),
+          });
+          return {
+            kind: activity.kind,
+            score: resultOf(activity, input).score,
+          };
+        }
+        if (
+          activity.kind === "repeat-word" ||
+          activity.kind === "repeat-sentence"
+        ) {
+          const list =
+            activity.kind === "repeat-word"
+              ? lesson.content.repeat.words
+              : lesson.content.repeat.sentences;
+          const input = frameInput(activity.kind, {
+            heard: [list[activity.index] ?? ""],
+            failures: 0,
+          });
+          return {
+            kind: activity.kind,
+            score: resultOf(activity, input).score,
+          };
+        }
+        return { kind: activity.kind, score: null };
+      });
+    expect(items.length).toBeGreaterThan(1);
+    // 듣기 하나만 기술 오류: 남은 듣기는 다 맞음이라 듣기 평균 1(오답 0 이 섞이지 않음)
+    const one = sessionScoreOf({
+      area: "speaking",
+      weights,
+      activities: scoredOf([0]),
+    });
+    expect(one).toBeCloseTo(1, 12);
+    // 듣기가 모두 기술 오류: 듣기 항 가중치 0 — 따라 말하기만으로 1
+    const all = scoredOf(items.map((_item, i) => i));
+    expect(
+      all.filter((a) => a.kind === "listening").every((a) => a.score === null),
+    ).toBe(true);
+    expect(
+      sessionScoreOf({ area: "speaking", weights, activities: all }),
+    ).toBeCloseTo(1, 12);
   });
 });

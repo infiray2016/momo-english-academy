@@ -117,10 +117,17 @@ describe("수업 목록 자료", () => {
     expect(await readLessonList({ db, area: "writing", now: NOW })).toEqual({
       kind: "placement",
     });
-    const list = await readLessonList({ db, area: "reading", now: NOW });
+    const list = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (list.kind !== "list") throw new Error("목록이어야 한다");
     const { view, input } = list;
-    expect(view.band).toEqual({ level: 1, unit: 1 });
+    // 위 띠(R-13): 끝낸 세션이 없는 영역이라 단원 칸만이고 막대는 숨긴다
+    expect(view.band).toMatchObject({ level: 1, unit: 1, bars: null });
+    expect(view.band.cells[0]).toBe("current");
     const assigned =
       input.lessonsByUnit[1]?.filter((c) => c.kind === "assigned") ?? [];
     expect(assigned.length).toBeGreaterThan(0);
@@ -155,7 +162,12 @@ describe("수업 목록 자료", () => {
   it("수업 목록 자료: 이 회차에서 끝낸 정규 수업이 수업 수 줄을 줄이고, 수업 수가 차면 학습일 줄(unit.min_days − 끝낸 학습일 수)이다", async () => {
     const { profileId, round } = await ids();
     const snapshot = round.settingsSnapshot as Record<string, number>;
-    const list = await readLessonList({ db, area: "reading", now: NOW });
+    const list = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (list.kind !== "list") throw new Error("목록이어야 한다");
     const cells = list.input.lessonsByUnit[1] ?? [];
     const regular = cells.filter(
@@ -182,7 +194,12 @@ describe("수업 목록 자료", () => {
       seedCorrection: c.correction,
     }));
     await db.insert(sessions).values(rows);
-    const after = await readLessonList({ db, area: "reading", now: NOW });
+    const after = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (after.kind !== "list") throw new Error("목록이어야 한다");
     const left = minLessons - rows.length;
     expect(after.view.lockedNext?.line).toEqual(
@@ -228,7 +245,7 @@ describe("수업 목록 자료", () => {
         startedAt: fresh,
       },
     ]);
-    await readLessonList({ db, area: "reading", now: NOW });
+    await readLessonList({ db, area: "reading", now: NOW, band: true });
     const rows = await db
       .select()
       .from(sessions)
@@ -265,7 +282,12 @@ describe("수업 목록 자료", () => {
           eq(profileTracks.area, "reading"),
         ),
       );
-    const list = await readLessonList({ db, area: "reading", now: NOW });
+    const list = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (list.kind !== "list") throw new Error("목록이어야 한다");
     expect(list.input.unitsPassed).toEqual([1]);
     expect(list.view.past).toBe(true);
@@ -277,7 +299,12 @@ describe("수업 목록 자료", () => {
   it("수업 목록 자료: 남은 수업 수는 이 회차에서 끝낸 정규 수업만 빼고 다시 하기는 학습일에만 들며, 회차 전에 끝낸 수업은 안 들고 회차 전에 시작해 뒤에 끝낸 수업은 든다", async () => {
     const { profileId, round } = await ids();
     const lessonId = await readingLessonId(1, "assigned", 1);
-    const before = await readLessonList({ db, area: "reading", now: NOW });
+    const before = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (before.kind !== "list") throw new Error("목록이어야 한다");
     const base = before.input.gate;
     const day = (offsetH: number) =>
@@ -300,7 +327,12 @@ describe("수업 목록 자료", () => {
     });
     // (가) 다시 하기 하나: 수업 수는 그대로, 학습일은 하나 준다
     await db.insert(sessions).values(row("retry", day(2), day(2)));
-    const afterRetry = await readLessonList({ db, area: "reading", now: NOW });
+    const afterRetry = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (afterRetry.kind !== "list") throw new Error("목록이어야 한다");
     expect(afterRetry.input.gate).toEqual({
       remainingLessons: base.remainingLessons,
@@ -309,12 +341,22 @@ describe("수업 목록 자료", () => {
     // (나) 회차 시작 전에 시작하고 끝낸 정규 수업은 안 든다
     const beforeRound = new Date(round.startedAt.getTime() - 2 * HOUR_MS);
     await db.insert(sessions).values(row("regular", beforeRound, beforeRound));
-    const afterOld = await readLessonList({ db, area: "reading", now: NOW });
+    const afterOld = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (afterOld.kind !== "list") throw new Error("목록이어야 한다");
     expect(afterOld.input.gate.remainingLessons).toBe(base.remainingLessons);
     // 회차 전에 시작해 뒤에 끝낸 정규 수업은 든다(끝낸 시각이 경계, 검토 M-3)
     await db.insert(sessions).values(row("regular", beforeRound, day(2)));
-    const afterCross = await readLessonList({ db, area: "reading", now: NOW });
+    const afterCross = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (afterCross.kind !== "list") throw new Error("목록이어야 한다");
     expect(afterCross.input.gate.remainingLessons).toBe(
       Math.max(0, base.remainingLessons - 1),
@@ -328,7 +370,12 @@ describe("수업 목록 자료", () => {
       .update(unitProgress)
       .set({ settingsSnapshot: { ...snapshot, "unit.min_lessons": 1 } })
       .where(eq(unitProgress.id, round.id));
-    const list = await readLessonList({ db, area: "reading", now: NOW });
+    const list = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (list.kind !== "list") throw new Error("목록이어야 한다");
     const assigned = (list.input.lessonsByUnit[1] ?? []).filter(
       (c) => c.kind === "assigned",
@@ -340,7 +387,12 @@ describe("수업 목록 자료", () => {
       .update(unitProgress)
       .set({ passedAt: NOW })
       .where(eq(unitProgress.id, round.id));
-    const passed = await readLessonList({ db, area: "reading", now: NOW });
+    const passed = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
     if (passed.kind !== "list") throw new Error("목록이어야 한다");
     expect(passed.input.currentPassed).toBe(true);
     expect(passed.view.lockedNext?.line ?? null).toBeNull();
@@ -414,6 +466,138 @@ describe("수업 목록 자료", () => {
     }
   });
 
+  it("AC-2d 위 띠: 끝낸 세션이 생기면 아는 단어 n/단원 단어 수 · 최근 성적 칸(복사본 unit.recent_window 개, 기준 unit.recent_score 이상만 pass)이 보이고 통과한 회차가 있는 단원은 passed 칸이다", async () => {
+    const { profileId, round } = await ids();
+    const snapshot = round.settingsSnapshot as Record<string, number>;
+    const pass = snapshot["unit.recent_score"] ?? 0;
+    const at = (h: number) => new Date(SAVED_AT.getTime() + h * HOUR_MS);
+    const row = (h: number, score: number) => ({
+      profileId,
+      area: "reading" as const,
+      level: 1,
+      unit: 1,
+      kind: "regular" as const,
+      status: "completed" as const,
+      score,
+      startedAt: at(h),
+      completedAt: at(h),
+      learningDay: learningDay(at(h)),
+    });
+    await db.insert(sessions).values([row(1, pass - 0.1), row(2, pass)]);
+    // 단원 2 를 통과한 회차가 있으면 passed 칸, 통과 시각 없는 단원 3 회차는 남은 칸(검토 review-p10-3-code M-1)
+    await db
+      .insert(unitProgress)
+      .values({ ...round, id: undefined, unit: 2, passedAt: NOW });
+    await db
+      .insert(unitProgress)
+      .values({ ...round, id: undefined, unit: 3, passedAt: null });
+    const list = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
+    if (list.kind !== "list") throw new Error("목록이어야 한다");
+    const { band } = list.view;
+    expect(band.cells.slice(0, 3)).toEqual(["current", "passed", "upcoming"]);
+    if (band.bars?.kind !== "lesson") throw new Error("막대가 있어야 한다");
+    expect(band.bars.known.n).toBe(0);
+    expect(band.bars.known.of).toBeGreaterThan(0);
+    const window = snapshot["unit.recent_window"] ?? 0;
+    expect(band.bars.recent).toHaveLength(window);
+    expect(band.bars.recent.slice(0, 2)).toEqual(["miss", "pass"]);
+    expect(band.bars.recent.filter((c) => c === "empty")).toHaveLength(
+      window - 2,
+    );
+    // 최근 성적 칸 수는 그 회차 복사본의 unit.recent_window 를 따른다(다른 수로 바꿔 봄)
+    await db
+      .update(unitProgress)
+      .set({
+        settingsSnapshot: { ...snapshot, "unit.recent_window": window - 2 },
+      })
+      .where(eq(unitProgress.id, round.id));
+    const again = await readLessonList({
+      db,
+      area: "reading",
+      now: NOW,
+      band: true,
+    });
+    if (again.kind !== "list" || again.view.band.bars?.kind !== "lesson")
+      throw new Error("막대가 있어야 한다");
+    expect(again.view.band.bars.recent).toHaveLength(window - 2);
+  });
+
+  it("AC-2d 위 띠(회화): 끝낸 대화가 없으면 막대를 숨기고, 생기면 아는 단어 · 끝낸 대화 n/최소 수업 수 · 친한 정도 n/talk.friendship_max 이다", async () => {
+    await db.delete(profiles);
+    await db.delete(parentAuth);
+    const saved = await saveFirstRun(
+      {
+        pin: "246813",
+        displayName: "모모",
+        englishName: "Momo",
+        avatar: AVATARS[0].id,
+        topicBundle: TOPIC_BUNDLES[0].id,
+        alphabetUnknown: false,
+        startLevels: { talk: 1 },
+        mic: { result: "not_checked" },
+      },
+      { db, now: () => SAVED_AT },
+    );
+    if (!saved.ok) throw new Error("첫 실행 저장 실패");
+    const before = await readLessonList({
+      db,
+      area: "talk",
+      now: NOW,
+      band: true,
+    });
+    if (before.kind !== "list") throw new Error("회화 목록이어야 한다");
+    expect(before.view.band.bars).toBeNull();
+    const profile = await readHouseholdProfile({ db });
+    if (!profile) throw new Error("프로필 없음");
+    const doneAt = new Date(SAVED_AT.getTime() + HOUR_MS);
+    await db.insert(sessions).values({
+      profileId: profile.id,
+      area: "talk",
+      level: 1,
+      unit: 1,
+      kind: "regular",
+      status: "completed",
+      startedAt: doneAt,
+      completedAt: doneAt,
+      learningDay: learningDay(doneAt),
+    });
+    await db
+      .update(profileTracks)
+      .set({ friendship: 3 })
+      .where(
+        and(
+          eq(profileTracks.profileId, profile.id),
+          eq(profileTracks.area, "talk"),
+        ),
+      );
+    const after = await readLessonList({
+      db,
+      area: "talk",
+      now: NOW,
+      band: true,
+    });
+    if (after.kind !== "list") throw new Error("회화 목록이어야 한다");
+    const bars = after.view.band.bars;
+    if (bars?.kind !== "talk") throw new Error("회화 막대가 있어야 한다");
+    expect(bars.talks.done).toBe(1);
+    // 분모는 잠긴 단원 수와 같은 최소 수업 수
+    expect(bars.talks.min).toBe(
+      (after.view.lockedNext?.line?.kind === "lessons"
+        ? after.view.lockedNext.line.n
+        : 0) + 1,
+    );
+    expect(bars.friendship).toEqual({
+      n: 3,
+      max: TEST_SETTINGS["talk.friendship_max"].value,
+      teacherName: null,
+    });
+  });
+
   it("수업 목록: 시험용 시드를 적재하면 회화 1단계 단원 1 목록에 대화 1 · 2 · 3 이 있고 '여기부터 해요'는 대화 1 이다", async () => {
     // 회화도 1단계에서 시작한 집(시험용 시드 회화 적재 — task-p13-dev-seed-talk)
     await db.delete(profiles);
@@ -439,7 +623,12 @@ describe("수업 목록 자료", () => {
       .filter((l) => l.kind !== "remedial")
       .map((l) => (l as { title: string }).title);
     expect(expected).toHaveLength(3);
-    const list = await readLessonList({ db, area: "talk", now: NOW });
+    const list = await readLessonList({
+      db,
+      area: "talk",
+      now: NOW,
+      band: true,
+    });
     if (list.kind !== "list")
       throw new Error(`회화 목록이 아니다: ${list.kind}`);
     const items = [

@@ -1,0 +1,23 @@
+{
+  "name": "ko-voice",
+  "source": "손으로 씀 — 가르치고 배우는 수업 spec 설계 4 · AC-3h: 영어 목소리와 ko-KR 목소리(기기 기본)가 있는 목록. 선생님 한국어 줄을 ko-KR 로 읽는다",
+  "expose": { "recognition": "webkit", "synthesis": true },
+  "recognitions": [{ "events": [], "onStop": [{ "at": 100, "type": "end" }] }],
+  "synthesis": {
+    "voices": [
+      {
+        "name": "Test English (US)",
+        "lang": "en-US",
+        "localService": true,
+        "default": true
+      },
+      {
+        "name": "Test Korean",
+        "lang": "ko-KR",
+        "localService": true,
+        "default": false
+      }
+    ],
+    "utterances": [{ "startAfter": 50, "endAfter": 1200 }]
+  }
+}

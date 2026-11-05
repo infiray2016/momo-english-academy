@@ -1,0 +1,472 @@
+{
+ "area": "reading",
+ "level": 3,
+ "unit": 1,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 1,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "xhigh",
+    "briefHash": "9970145ead8982e7947311eb1682fd967d10bf49cab10ff9ab5077e8b81ff70e",
+    "agentHash": "f3ecb56ec7831ad994c3a7ccdd7f8d101ef410352fe19b2840b976b112d3086d",
+    "createdOn": "2026-10-29"
+   },
+   "title": "친구가 놀러 온 날",
+   "newWords": [
+    "eat",
+    "drink",
+    "go",
+    "come",
+    "wash"
+   ],
+   "unitWords": [
+    "eat",
+    "drink",
+    "go",
+    "come",
+    "wash"
+   ],
+   "preview": [
+    {
+     "word": "eat",
+     "meaningKo": "먹다",
+     "example": "We eat cake."
+    },
+    {
+     "word": "drink",
+     "meaningKo": "마시다",
+     "example": "I drink water."
+    },
+    {
+     "word": "go",
+     "meaningKo": "가다",
+     "example": "We go to the shop."
+    },
+    {
+     "word": "come",
+     "meaningKo": "오다",
+     "example": "Dan and Tess come to my room."
+    },
+    {
+     "word": "wash",
+     "meaningKo": "씻다",
+     "example": "They wash the dog."
+    }
+   ],
+   "teach": {
+    "goals": [
+     "read-3-1-1"
+    ],
+    "shiftKo": {
+     "before": "I · we · they 가 섞인 짧은 글에서 누가 무엇을 하는지 가려 읽지 못한다",
+     "after": "하는 일 말을 찾고 그 앞 · 뒤를 읽어, 처음 보는 짧은 글의 누가 · 무엇 · 어디 빈칸을 스스로 채운다"
+    },
+    "todayKo": "오늘은 글에서 누가 무엇을 하는지 찾아 읽어요.",
+    "todayEn": "We eat lunch.",
+    "models": [
+     {
+      "en": "We eat cake.",
+      "ko": "우리는 케이크를 먹어.",
+      "chips": [
+       {
+        "text": "We",
+        "role": "who"
+       },
+       {
+        "text": "eat",
+        "role": "do"
+       },
+       {
+        "text": "cake",
+        "role": "what"
+       }
+      ],
+      "lineKo": "하는 일 말을 찾아요. 앞은 누가, 뒤는 무엇이에요.",
+      "picture": "cake"
+     },
+     {
+      "en": "I wash my face. They wash the dog.",
+      "ko": "나는 얼굴을 씻어. 걔네는 강아지를 씻어.",
+      "chips": [
+       {
+        "text": "I",
+        "role": "who"
+       },
+       {
+        "text": "wash",
+        "role": "do"
+       },
+       {
+        "text": "my face",
+        "role": "what"
+       },
+       {
+        "text": "They",
+        "role": "who"
+       },
+       {
+        "text": "wash",
+        "role": "do"
+       },
+       {
+        "text": "the dog",
+        "role": "what"
+       }
+      ],
+      "lineKo": "wash 는 같아도 앞이 달라요. 누가인지 꼭 봐요.",
+      "picture": "dog"
+     },
+     {
+      "en": "We go to the shop.",
+      "ko": "우리는 가게에 가.",
+      "chips": [
+       {
+        "text": "We",
+        "role": "who"
+       },
+       {
+        "text": "go",
+        "role": "do"
+       },
+       {
+        "text": "to the shop",
+        "role": "where"
+       }
+      ],
+      "lineKo": "go · come 뒤에는 어디가 와요.",
+      "picture": "shop"
+     }
+    ],
+    "together": [
+     {
+      "kind": "text",
+      "type": "fact",
+      "textEn": "Dan and Tess come to my room. I eat a cookie.",
+      "prompt": "___ come to my room.",
+      "askRole": "who",
+      "choices": [
+       "Dan and Tess",
+       "I"
+      ],
+      "answerNo": 1,
+      "highlight": [
+       "come"
+      ],
+      "lineKo": "come 을 찾았어요. 바로 앞을 골라 봐요.",
+      "rightKo": "맞아요! come 앞에 Dan and Tess 가 있어요.",
+      "wrongKo": "come 바로 앞을 다시 봐요."
+     },
+     {
+      "kind": "text",
+      "type": "fact",
+      "textEn": "I eat rice. They eat apples.",
+      "prompt": "They eat ___.",
+      "askRole": "what",
+      "choices": [
+       "rice",
+       "apples"
+      ],
+      "answerNo": 2,
+      "highlight": [
+       "They eat"
+      ],
+      "lineKo": "They 가 먹는 것을 골라 봐요.",
+      "rightKo": "맞아요! They eat 뒤에 apples 가 있어요.",
+      "wrongKo": "rice 는 I 가 먹어요. They 를 찾아봐요."
+     }
+    ],
+    "recap": {
+     "frameEn": "We eat lunch.",
+     "chips": [
+      {
+       "text": "We",
+       "role": "who"
+      },
+      {
+       "text": "eat",
+       "role": "do"
+      },
+      {
+       "text": "lunch",
+       "role": "what"
+      }
+     ],
+     "closeKo": "이제 글에서 누가 무엇을 하는지 찾아 읽을 수 있어요.",
+     "closeKoPracticed": "오늘은 누가 무엇을 하는지 찾아 읽기를 배우고 연습했어요."
+    }
+   },
+   "content": {
+    "passage": "I go home with Mom. I wash my hands. Ben and Meg come to my house. They are my friends. We eat lunch. I drink milk. They drink juice. We go to the lake. We play with a ball. I am very happy.",
+    "targetWords": [
+     "eat",
+     "drink",
+     "go",
+     "come",
+     "wash"
+    ],
+    "glossary": [
+     {
+      "surface": "go",
+      "lemma": "go",
+      "meaningKo": "가다"
+     },
+     {
+      "surface": "home",
+      "lemma": "home",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "Mom",
+      "lemma": "mom",
+      "meaningKo": "엄마"
+     },
+     {
+      "surface": "wash",
+      "lemma": "wash",
+      "meaningKo": "씻다"
+     },
+     {
+      "surface": "hands",
+      "lemma": "hand",
+      "meaningKo": "손"
+     },
+     {
+      "surface": "Ben",
+      "lemma": "Ben",
+      "meaningKo": "벤(사람 이름)",
+      "proper": true
+     },
+     {
+      "surface": "Meg",
+      "lemma": "Meg",
+      "meaningKo": "메그(사람 이름)",
+      "proper": true
+     },
+     {
+      "surface": "come",
+      "lemma": "come",
+      "meaningKo": "오다"
+     },
+     {
+      "surface": "house",
+      "lemma": "house",
+      "meaningKo": "집"
+     },
+     {
+      "surface": "friends",
+      "lemma": "friend",
+      "meaningKo": "친구"
+     },
+     {
+      "surface": "eat",
+      "lemma": "eat",
+      "meaningKo": "먹다"
+     },
+     {
+      "surface": "lunch",
+      "lemma": "lunch",
+      "meaningKo": "점심"
+     },
+     {
+      "surface": "drink",
+      "lemma": "drink",
+      "meaningKo": "마시다"
+     },
+     {
+      "surface": "milk",
+      "lemma": "milk",
+      "meaningKo": "우유"
+     },
+     {
+      "surface": "juice",
+      "lemma": "juice",
+      "meaningKo": "주스"
+     },
+     {
+      "surface": "lake",
+      "lemma": "lake",
+      "meaningKo": "호수"
+     },
+     {
+      "surface": "play",
+      "lemma": "play",
+      "meaningKo": "놀다"
+     },
+     {
+      "surface": "ball",
+      "lemma": "ball",
+      "meaningKo": "공"
+     },
+     {
+      "surface": "very",
+      "lemma": "very",
+      "meaningKo": "아주"
+     },
+     {
+      "surface": "happy",
+      "lemma": "happy",
+      "meaningKo": "행복한"
+     },
+     {
+      "surface": "Dan",
+      "lemma": "Dan",
+      "meaningKo": "댄(사람 이름)",
+      "proper": true
+     },
+     {
+      "surface": "Tess",
+      "lemma": "Tess",
+      "meaningKo": "테스(사람 이름)",
+      "proper": true
+     },
+     {
+      "surface": "room",
+      "lemma": "room",
+      "meaningKo": "방"
+     },
+     {
+      "surface": "cookie",
+      "lemma": "cookie",
+      "meaningKo": "쿠키"
+     },
+     {
+      "surface": "rice",
+      "lemma": "rice",
+      "meaningKo": "밥"
+     },
+     {
+      "surface": "apples",
+      "lemma": "apple",
+      "meaningKo": "사과"
+     },
+     {
+      "surface": "shop",
+      "lemma": "shop",
+      "meaningKo": "가게"
+     },
+     {
+      "surface": "cups",
+      "lemma": "cup",
+      "meaningKo": "컵"
+     },
+     {
+      "surface": "car",
+      "lemma": "car",
+      "meaningKo": "자동차"
+     },
+     {
+      "surface": "bank",
+      "lemma": "bank",
+      "meaningKo": "은행"
+     },
+     {
+      "surface": "Dad",
+      "lemma": "dad",
+      "meaningKo": "아빠"
+     }
+    ],
+    "questions": [
+     {
+      "kind": "text",
+      "type": "fact",
+      "prompt": "___ come to my house.",
+      "askRole": "who",
+      "options": [
+       "Mom and Dad",
+       "Ben and Meg",
+       "Ted and Gus",
+       "Momo and Max"
+      ],
+      "answerNo": 2,
+      "goal": "read-3-1-1",
+      "whyKo": "come 을 찾아요. 바로 앞에 Ben and Meg 가 있어요.",
+      "retryHighlight": "Ben and Meg come to my house.",
+      "spare": {
+       "kind": "text",
+       "type": "fact",
+       "textEn": "Meg and I go to the shop. Ben and Dan come home.",
+       "prompt": "___ come home.",
+       "askRole": "who",
+       "options": [
+        "Ben and Dan",
+        "Meg and I",
+        "Mom and Dad",
+        "Tess and Max"
+       ],
+       "answerNo": 1,
+       "whyKo": "come 을 찾아요. 앞에 Ben and Dan 이 있어요."
+      }
+     },
+     {
+      "kind": "text",
+      "type": "fact",
+      "prompt": "They drink ___.",
+      "askRole": "what",
+      "options": [
+       "milk",
+       "water",
+       "juice",
+       "cake"
+      ],
+      "answerNo": 3,
+      "goal": "read-3-1-1",
+      "whyKo": "drink 가 두 번 나와요. They drink 뒤를 봐요.",
+      "retryHighlight": "They drink juice.",
+      "spare": {
+       "kind": "text",
+       "type": "fact",
+       "textEn": "I wash the cups. They wash the car.",
+       "prompt": "They wash the ___.",
+       "askRole": "what",
+       "options": [
+        "cups",
+        "car",
+        "bike",
+        "dog"
+       ],
+       "answerNo": 2,
+       "whyKo": "wash 가 두 번 나와요. They wash 뒤를 봐요."
+      }
+     },
+     {
+      "kind": "text",
+      "type": "fact",
+      "prompt": "We go to the ___.",
+      "askRole": "where",
+      "options": [
+       "lake",
+       "shop",
+       "bank",
+       "room"
+      ],
+      "answerNo": 1,
+      "goal": "read-3-1-1",
+      "whyKo": "go 가 두 번 나와요. We go 뒤를 봐요.",
+      "retryHighlight": "We go to the lake.",
+      "spare": {
+       "kind": "text",
+       "type": "fact",
+       "textEn": "Tess and I go to the bank. Mom and Dad go to the shop.",
+       "prompt": "Mom and Dad go to the ___.",
+       "askRole": "where",
+       "options": [
+        "bank",
+        "lake",
+        "shop",
+        "house"
+       ],
+       "answerNo": 3,
+       "whyKo": "go 가 두 번 나와요. Mom and Dad go 뒤를 봐요."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

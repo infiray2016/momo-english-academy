@@ -4,10 +4,13 @@ import "server-only";
 // 잠긴 다음 단원 수를 모아 순수 함수 lessonListState 로 넘긴다. 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
 // gate 의 단어 · 성적 조건과 단계 평가 · 보강 · 연습 · 복습은 P12 가 채운다(지금은 빈 값). 쓰기 6~12 첫 세션 · 첨삭 상태
 // (writingDrafts · feedbackReady)는 P11b 차례 7 이 채운다(plan-p11b 값 11).
+// 위 띠(UI · UX 묶음 3 · R-13): 단원 5칸 · 막대 재료는 band.ts(readBandFacts)가 모은다. 홈 회화 카드의 오늘 이야기 제목(4절 회화 카드 행)은
+// 같은 입력 · 같은 함수(lessonListState → hereStartTitleOf)로 고른다 — 홈은 쓰지 않으므로 오래 멈춘 세션을 닫지 않고, 닫힐 세션을 빼고 본다.
 import { and, eq, inArray, lt, ne } from "drizzle-orm";
 import { z } from "zod";
 import { learningDayOf } from "@/core/learning-day";
 import {
+  hereStartTitleOf,
   type LessonCellView,
   type LessonKindRef,
   type ListInput,
@@ -20,6 +23,7 @@ import {
   WRITING_FRAME_FROM,
   type WritingDraft,
 } from "@/core/lesson-list/state";
+import { talkCardKindOf } from "@/core/seed/schema/talk";
 import { type Area, UNITS_PER_LEVEL } from "@/core/seed/structure";
 import { parseAttemptInput } from "@/core/session/attempt";
 import { feedbackStateOf } from "@/core/writing/feedback";
@@ -31,7 +35,8 @@ import {
   unitProgress,
 } from "@/db/schema/learning";
 import { type DbOrTx, getDb } from "@/server/db";
-import { readHouseholdProfile } from "@/server/profile";
+import { readBandFacts } from "@/server/lesson-list/band";
+import { type HouseholdProfile, readHouseholdProfile } from "@/server/profile";
 import {
   type LessonRow,
   readLessonsOfUnit,
@@ -65,6 +70,16 @@ export type LessonListResult =
   | { kind: "no_profile" }
   | { kind: "placement" }
   | { kind: "list"; view: ListView; input: ListInput };
+
+/** 오래 멈춘 세션의 경계(now − session.resume_hours): 이보다 일찍 시작한 진행 세션(배치 평가 아님)은 닫는다. */
+async function staleCutoffOf(
+  db: DbOrTx,
+  profileId: string,
+  now: Date,
+): Promise<Date> {
+  const s = await getSettings(settingSchemas, { db, profileId });
+  return new Date(now.getTime() - s["session.resume_hours"] * MS_PER_HOUR);
+}
 
 /**
  * 오래 멈춘 세션 닫기(5절 전이 '진행 → 중단' · 8절): 그 프로필의 진행 세션 가운데 배치 평가가 아니고
@@ -104,6 +119,22 @@ export async function closeStaleSessions({
     )
     .returning({ id: sessions.id });
   return closed.length;
+}
+
+/**
+ * 목록 칸 후보가 되는 수업 행(순수 — 회화 plan 정한 것 2): 회화는 새 꼴 카드(C189) 수업만이다. 옛 꼴 카드(개발 DB 의 앞 개정 — 1단계 회화)는
+ * 둘째 프리뷰의 talk-1 둘째 판까지 열지 않는다(위험 14). 다른 영역은 그대로.
+ */
+export function listableLessonsOf<R extends Pick<LessonRow, "content">>(
+  area: Area,
+  rows: readonly R[],
+): R[] {
+  if (area !== "talk") return [...rows];
+  return rows.filter(
+    (row) =>
+      talkCardKindOf((row.content as { card?: unknown } | null)?.card) ===
+      "new",
+  );
 }
 
 /** 칸(종류 · 번호)마다 프로필 묶음 변형, 그 칸에 없으면 가장 낮은 변형(정할 것 ㅂ). */
@@ -220,21 +251,72 @@ async function writingDraftsOf(
   });
 }
 
-/** 수업 목록 자료. 프로필이 없으면 no_profile, 배치 전 영역이면 placement. 먼저 오래 멈춘 세션을 닫는다. */
+/**
+ * 수업 목록 자료. 프로필이 없으면 no_profile, 배치 전 영역이면 placement. 먼저 오래 멈춘 세션을 닫는다. band 면 위 띠 막대 재료까지 읽는다
+ * (목록 화면만 — 세션 시작 재판정 · 결과 '다음 수업' · 회화는 '여기부터 해요'만 쓰므로 읽지 않는다).
+ */
 export async function readLessonList({
   db = getDb(),
   area,
   now,
+  band = false,
 }: {
   db?: DbOrTx;
   /** 회화도 같은 목록이다(끝낸 수업 = 완료 세션 = 목표 턴에 닿은 회화, plan-p13b 값 6). */
   area: Area;
   now: Date;
+  band?: boolean;
 }): Promise<LessonListResult> {
   const profile = await readHouseholdProfile({ db });
   if (!profile) return { kind: "no_profile" };
   await closeStaleSessions({ db, profileId: profile.id, now });
+  const built = await listInputOf({ db, profile, area, band });
+  if (built.kind === "placement") return built;
+  return {
+    kind: "list",
+    view: lessonListState(built.input),
+    input: built.input,
+  };
+}
 
+/**
+ * 홈 회화 카드의 오늘 이야기 제목(4절 회화 카드 행): 수업 목록에서 '여기부터 해요'인 회화 수업의 제목. 배치 전이거나 '여기부터 해요'가
+ * 수업이 아니면 null. 홈은 세션을 닫지 않으므로 목록이 열릴 때 닫힐 진행 세션(오래 멈춤)은 빼고 본다(같은 판정).
+ */
+export async function readTodayStoryTitle({
+  db = getDb(),
+  profile,
+  now,
+}: {
+  db?: DbOrTx;
+  profile: Pick<HouseholdProfile, "id" | "topicBundle">;
+  now: Date;
+}): Promise<string | null> {
+  const built = await listInputOf({
+    db,
+    profile,
+    area: "talk",
+    band: false,
+    staleBefore: await staleCutoffOf(db, profile.id, now),
+  });
+  if (built.kind === "placement") return null;
+  return hereStartTitleOf(built.input, lessonListState(built.input));
+}
+
+/** 목록 입력(ListInput)을 모은다. band 면 위 띠 막대 재료까지, staleBefore 면 그보다 일찍 시작한 진행 세션(배치 평가 아님)을 뺀다. */
+async function listInputOf({
+  db,
+  profile,
+  area,
+  band,
+  staleBefore,
+}: {
+  db: DbOrTx;
+  profile: Pick<HouseholdProfile, "id" | "topicBundle">;
+  area: Area;
+  band: boolean;
+  staleBefore?: Date;
+}): Promise<{ kind: "placement" } | { kind: "list"; input: ListInput }> {
   const [track] = await db
     .select()
     .from(profileTracks)
@@ -284,7 +366,13 @@ export async function readLessonList({
             .sort((a, b) => b.round - a.round)[0];
     const startRevision = round?.startRevision ?? current.startRevision;
     lessonsByUnit[u] = pickVariant(
-      await readLessonsOfUnit({ area, level, unit: u, startRevision }, { db }),
+      listableLessonsOf(
+        area,
+        await readLessonsOfUnit(
+          { area, level, unit: u, startRevision },
+          { db },
+        ),
+      ),
       bundle,
     );
   }
@@ -302,7 +390,17 @@ export async function readLessonList({
         inArray(sessions.status, ["in_progress", "completed"]),
       ),
     );
-  const sessionsLite: SessionLite[] = rows.map(({ session, lesson }) => ({
+  const live = staleBefore
+    ? rows.filter(
+        ({ session }) =>
+          !(
+            session.status === "in_progress" &&
+            session.kind !== "placement" &&
+            session.startedAt < staleBefore
+          ),
+      )
+    : rows;
+  const sessionsLite: SessionLite[] = live.map(({ session, lesson }) => ({
     id: session.id,
     status: session.status,
     kind: session.kind,
@@ -343,21 +441,22 @@ export async function readLessonList({
     )?.frame?.minLessons;
     if (typeof frameMin === "number") frameMinLessons = frameMin;
   }
+  const minLessons = minLessonsOf({
+    area,
+    level,
+    assignedCount: cells.filter(
+      (c) => c.kind === "assigned" || c.kind === "alphabet",
+    ).length,
+    snapshotMinLessons: snapshotNumber(
+      current.settingsSnapshot,
+      MIN_LESSONS_KEY,
+    ),
+    ...(frameMinLessons !== undefined ? { frameMinLessons } : {}),
+  });
   const gate = unitGateOf({
     unit,
     roundStartedAt: current.startedAt,
-    minLessons: minLessonsOf({
-      area,
-      level,
-      assignedCount: cells.filter(
-        (c) => c.kind === "assigned" || c.kind === "alphabet",
-      ).length,
-      snapshotMinLessons: snapshotNumber(
-        current.settingsSnapshot,
-        MIN_LESSONS_KEY,
-      ),
-      ...(frameMinLessons !== undefined ? { frameMinLessons } : {}),
-    }),
+    minLessons,
     minDays: snapshotNumber(current.settingsSnapshot, MIN_DAYS_KEY),
     sessions: sessionsLite,
   });
@@ -390,6 +489,20 @@ export async function readLessonList({
     practice: [],
     reviewDue: false,
     unitsPerLevel: UNITS_PER_LEVEL,
+    ...(band
+      ? {
+          bandFacts: await readBandFacts({
+            db,
+            profileId: profile.id,
+            area,
+            level,
+            unit,
+            rounds,
+            current,
+            minLessons,
+          }),
+        }
+      : {}),
   };
-  return { kind: "list", view: lessonListState(input), input };
+  return { kind: "list", input };
 }

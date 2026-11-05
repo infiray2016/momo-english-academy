@@ -4,7 +4,7 @@
 
 ## 1. 그림(`public/images/vocab/`)
 
-### Twemoji 그림 159장
+### Twemoji 그림 160장
 
 Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– Jason Sofonia & Justine De Caires, CC-BY 4.0
 
@@ -13,11 +13,11 @@ Twemoji v17.0.3 (github.com/jdecked/twemoji) © 2014–2021 Twitter, © 2022– 
 - 받은 SVG 파일을 바꾸지 않고 그대로 쓴다. 파일 이름만 그 낱말의 키(`<키>.svg`)로 바꾸어 두었다.
 - 행마다 `source` 칸이 `twemoji v17.0.3 <코드>` 꼴이고, `<코드>` 가 Twemoji 원래 파일 이름이다.
 
-### 자체 그림 48장
+### 자체 그림 57장
 
 이 프로젝트가 만든 그림이다(`license` 칸 `generated`, `source` 칸 `self-made <만든 날>`). Twemoji 에 그 뜻을 바로 그린 그림이 없는 낱말에만 그렸다.
 
-arm, ball, catch, coat, cup, desk, dish, doll, draw, face, finger, fly, fork, glasses, hair, head, hungry, insect, jam, jump, kick, king, knee, lake, lamp, neck, nurse, pants, pink, pot, queen, read, sand, shop, shoulder, sing, skate, skirt, student, sweater, swing, table, thirsty, throw, toe, top, water, white
+arm, ball, bathroom, bedroom, catch, classroom, coat, come, cup, desk, dish, doll, draw, drink, eat, face, finger, fly, fork, glasses, go, hair, head, hungry, insect, jam, jump, kick, king, knee, lake, lamp, neck, nurse, pants, pink, pot, queen, read, restaurant, sand, shop, shoulder, sing, skate, skirt, student, sweater, swing, table, thirsty, throw, toe, top, wash, water, white
 
 ## 2. 어휘(`seed/vocab.json`)
 

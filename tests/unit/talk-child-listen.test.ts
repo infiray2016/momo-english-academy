@@ -1,6 +1,7 @@
 // 회화 아이 차례의 듣기 끝 처리(iPad '결과 없음' 고침 N1 · N3 · N4, 13절 C148 · 3.3 막힘 문단 · 7절 오류 · 말하기 버튼 행 · C23).
 // N1: 같은 질문 말소리 없음 셈에는 no-speech 로 끝난 듣기만 든다(결과 없음은 들지 않음).
-// N3: 듣는 동안 토리 말 다시 듣기 · 답 듣기 ①② · 힌트 문장 듣기 단추는 꺼진다(누르면 듣기가 안내 없이 끝나므로).
+// N3: 듣는 동안 선생님 말 다시 듣기 · 답 듣기 ①②(선택지 소리 줄) · 힌트 문장 듣기 단추는 꺼진다(누르면 듣기가 안내 없이 끝나므로 —
+// 회화 plan 묶음 12 가 옛 말풍선 시험을 새 꼴 말풍선 LessonToriBubble 로 옮김).
 // N4: 결과 없음 · 오류로 끝난 듣기는 말을 멈춘 때 = 듣기 끝(끝 조용함을 빼지 않음).
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -12,7 +13,12 @@ import {
   speechStoppedAt,
 } from "@/components/conversation/child-turn";
 import { perceivedWaitOf } from "@/components/conversation/talk-frame";
-import { ToriBubble } from "@/components/conversation/tori";
+import {
+  LESSON_BUBBLE_START,
+  type LessonBubbleContent,
+  LessonToriBubble,
+  lessonBubbleStep,
+} from "@/components/conversation/tori";
 import { OPEN_ALL_HINTS_FROM_DONT_KNOW } from "@/core/conversation/hints";
 import {
   talkEndRuleFor,
@@ -89,27 +95,28 @@ describe("N4 말을 멈춘 때(C23 · NFR-8)", () => {
 });
 
 describe("N3 듣는 동안 읽어 주기 단추(7절 말하기 버튼 행)", () => {
-  const bubbleContent = {
-    sentences: ["How are you?"],
-    adds: [
+  const bubbleContent: LessonBubbleContent = {
+    ...[
+      { t: "s", en: "How are you?" } as const,
       {
-        t: "add" as const,
-        kind: "two_answers" as const,
-        answers: ["I'm good.", "I'm OK."] as [string, string],
-      },
-    ],
+        t: "sound",
+        kind: "choices",
+        answers: ["I'm good.", "I'm OK."],
+      } as const,
+    ].reduce(lessonBubbleStep, LESSON_BUBBLE_START),
     done: true,
   };
   const bubble = (listening: boolean) =>
     renderToStaticMarkup(
-      createElement(ToriBubble, {
+      createElement(LessonToriBubble, {
         content: bubbleContent,
+        level: 1,
         englishName: "Momo",
         waiting: null,
         waitSeconds: values["ui.wait_hint_seconds"] as [number, number],
         listening,
         onReplay: () => {},
-        onAnswer: () => {},
+        onSound: () => {},
       }),
     );
   const disabledOf = (html: string, attr: string) => {
@@ -155,6 +162,7 @@ describe("N3 듣는 동안 읽어 주기 단추(7절 말하기 버튼 행)", () 
       onNudgeShown: () => {},
       onSpeech: () => "heard",
       onListenStart: () => {},
+      onHintListen: () => {},
       onListening: () => {},
       reveal: async () => undefined,
       onSend: () => {},

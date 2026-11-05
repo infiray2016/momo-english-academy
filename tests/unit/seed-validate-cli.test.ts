@@ -263,4 +263,50 @@ describe("명령 seed:validate", () => {
       expect(pr.lines[0]).toMatch(/규격 파일 오류 [1-9]/);
     }
   });
+
+  it("AC-7a 일부 받기 검증(dev-load partial, 회화 plan 정한 것 15): --complete-through 없이 --areas 만 주면 빈 칸은 보고만 하고 0, 검증 실패 칸이 있으면 1", () => {
+    const tree = mini(["talk"]);
+    tree.lessons.find((f) => f.area === "talk")?.lessons.pop();
+    const parsed = parseArgs(["--areas", "talk"]);
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.args.completeThrough).toBeUndefined();
+    const ok = runValidate(parsed.args, seedTreeFiles(tree));
+    expect(ok.code).toBe(0);
+    expect(ok.lines[0]).toMatch(SUMMARY);
+    expect(ok.lines[0]).not.toContain("빈 칸 0 ");
+    // 같은 나무를 완전성 모드로 보면 빈 칸으로 막힌다(일부 받기가 아닌 dev-load 갈래)
+    expect(
+      runValidate({ ...parsed.args, completeThrough: 1 }, seedTreeFiles(tree))
+        .code,
+    ).toBe(1);
+    const broken = mini(["reading"]);
+    const lesson = broken.lessons.find((f) => f.area === "reading")
+      ?.lessons[0] as ReadingLesson | undefined;
+    const question = lesson?.content.questions[0];
+    if (!question) throw new Error("견본 없음");
+    question.answerNo = question.options.length + 1;
+    const reading = parseArgs(["--areas", "reading"]);
+    if (!reading.ok) throw new Error(reading.error);
+    expect(runValidate(reading.args, seedTreeFiles(broken)).code).toBe(1);
+  });
+
+  it("AC-7a dev-load 입력 partial: 기본 끔이고, 켜면 seed:validate 는 --complete-through 없이 --areas 로, seed:load 는 --partial 로 돌며 reference_only 와 함께 켜면 멈추고 운영(main)은 --partial 을 쓰지 않는다", () => {
+    const workflow = (name: string) =>
+      readFileSync(join(REPO_ROOT, ".github/workflows", name), "utf8");
+    const dev = workflow("dev-load.yml");
+    expect(dev).toMatch(
+      / {6}partial:\n(?: {8}.*\n)*? {8}type: boolean\n(?: {8}.*\n)*? {8}default: false\n/,
+    );
+    expect(dev).toMatch(/PARTIAL: \$\{\{ inputs\.partial \}\}\n/);
+    expect(dev).toMatch(
+      /elif \[ "\$PARTIAL" = "true" \]; then\n\s+pnpm seed:validate --areas "\$AREAS"\n/,
+    );
+    expect(dev).toMatch(
+      /elif \[ "\$PARTIAL" = "true" \]; then\n\s+pnpm seed:load --complete-through "\$THROUGH" --areas "\$AREAS" --partial\n/,
+    );
+    expect(dev).toMatch(
+      /if \[ "\$REFERENCE_ONLY" = "true" \] && \[ "\$PARTIAL" = "true" \]; then\n.*\n\s+exit 1\n/,
+    );
+    expect(workflow("main.yml")).not.toContain("--partial");
+  });
 });

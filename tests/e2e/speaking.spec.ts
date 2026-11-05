@@ -155,7 +155,9 @@ async function openSession(
 }
 
 const activity = (page: Page) => page.locator("[data-activity]");
-const speakButton = (page: Page) => page.locator("[data-speak]");
+/** 말하기 단추 — 따라 말하기의 들어올 때 읽기가 끝난 뒤(읽는 중 흐림 data-speak-waiting 이면 누름이 안내 한 줄뿐, C166 R2). */
+const speakButton = (page: Page) =>
+  page.locator("[data-speak]:not([data-speak-waiting])");
 /** 들어올 때의 읽기(effect)가 먼저 돌 틈. 읽기가 듣기 뒤에 시작하면 듣기를 끊는다(P2b speak → cancel 'speak'). */
 const SETTLE_MS = 250;
 /** 남은 시간 고리를 두 번 잴 틈(기술 값 — 1단계 끝 조용함 3초보다 짧게). */
@@ -278,7 +280,11 @@ test("AC-5b 말하기 1단계 세션은 따라 말하기 단어 5 · 문장 5, �
     c.repeat.sentences.length +
     c.listening.length +
     c.questions.length;
-  await expect(page.locator("[data-activity-dots] li")).toHaveCount(total);
+  // 활동 묶음 막대의 칸 수 = 활동 수(UI · UX 묶음 5-가 D-7)
+  await expect(page.locator("[data-activity-progress]")).toHaveAttribute(
+    "data-activity-total",
+    String(total),
+  );
   // 미리보기 → 처음 마이크 안내(사진) → '알겠어요'
   await page.getByRole("button", { name: T.next }).click();
   await expect(page.locator("[data-mic-notice]")).toBeVisible();

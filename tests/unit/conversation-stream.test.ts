@@ -175,18 +175,18 @@ describe("회화 흘려 받기: tori_en 풀기", () => {
     }
   });
 
-  it("회화 흘려 받기: 견본 응답 l1-ok 의 tori_en 이 문장으로 나온다", () => {
-    const text = sampleText("talk_turn.l1-ok");
+  it("회화 흘려 받기: 견본 응답 v2-l3-ai 의 tori_en 이 문장으로 나온다", () => {
+    const text = sampleText("talk_turn.v2-l3-ai");
     const whole = JSON.parse(text) as { tori_en: string };
     expect(readAll(text, 4).sentences).toEqual(splitSentences(whole.tori_en));
   });
 });
 
 describe("회화 흘려 받기: 문장 검사", () => {
-  const low = { forbidden: FORBIDDEN, metaPhrases: META, lowLevel: true };
-  const high = { ...low, lowLevel: false };
+  const low = { forbidden: FORBIDDEN, metaPhrases: META };
+  const high = low;
 
-  it("회화 흘려 받기: 금지어 · 연락처 · 개인 정보 질문 · 메타 문장 · 1~3단계 물음표 문장을 갈래로 가른다", () => {
+  it("회화 흘려 받기: 금지어 · 연락처 · 개인 정보 질문 · 메타 문장을 갈래로 가르고 물음표 문장은 막지 않는다(1~3단계 잡아 두기는 서버 턴 길 — 정한 것 19)", () => {
     expect(checkToriSentence("Two apples! Here you go.", low)).toEqual({
       ok: true,
     });
@@ -210,15 +210,8 @@ describe("회화 흘려 받기: 문장 검사", () => {
       ok: false,
       reason: "meta",
     });
-    expect(checkToriSentence("What color is it?", low)).toEqual({
-      ok: false,
-      reason: "question",
-    });
-    expect(checkToriSentence('Is it "red?"', low)).toEqual({
-      ok: false,
-      reason: "question",
-    });
-    expect(checkToriSentence("What color is it?", high)).toEqual({ ok: true });
+    expect(checkToriSentence("What color is it?", low)).toEqual({ ok: true });
+    expect(checkToriSentence('Is it "red?"', low)).toEqual({ ok: true });
     // 메타 구는 낱말 단위다(the children 은 the child 가 아니다)
     expect(checkToriSentence("The children are happy.", high)).toEqual({
       ok: true,
@@ -231,10 +224,14 @@ describe("회화 흘려 받기: 문장 검사", () => {
     expect(isOverLength("좋아!", 1)).toBe(false);
   });
 
-  it("AC-15b 흘려 받은 tori_en 에서 금지어 · 개인 정보를 묻는 문장 · 메타 문장은 카드의 안전한 대사로 바뀌고 1~3단계 반응의 물음표 문장은 지워진다", () => {
+  it("AC-15b 흘려 받은 tori_en 에서 금지어 · 개인 정보를 묻는 문장 · 메타 문장은 카드의 안전한 대사로 바뀌고 물음표 문장은 문장 문이 지우지 않는다(정한 것 19)", () => {
     const safe = "That's fun! Let's keep talking.";
-    // 견본 l1-blocked: 반응 · 개인 정보 질문 · 메타 문장 · 금지어 · 물음표 문장
-    const text = sampleText("talk_turn.l1-blocked");
+    // 반응 · 개인 정보 질문 · 메타 문장 · 금지어 · 물음표 문장
+    const text = JSON.stringify({
+      stuck: false,
+      tori_en:
+        "Nice! Where do you live? The child is great. That is stupid. What color is it?",
+    });
     const { sentences } = readAll(text, 6);
     const gate = createToriSentenceGate({
       ...low,
@@ -244,28 +241,12 @@ describe("회화 흘려 받기: 문장 검사", () => {
     const out = sentences
       .map((s) => gate.accept(s))
       .filter((s): s is string => s !== null);
-    expect(out).toEqual(["Nice!", safe]);
-    expect(gate.sent()).toEqual(["Nice!", safe]);
-    expect(gate.blocked()).toEqual([
-      "personal",
-      "meta",
-      "forbidden",
-      "question",
-    ]);
+    expect(out).toEqual(["Nice!", safe, "What color is it?"]);
+    expect(gate.sent()).toEqual(["Nice!", safe, "What color is it?"]);
+    expect(gate.blocked()).toEqual(["personal", "meta", "forbidden"]);
     for (const sentence of out) {
       expect(checkToriSentence(sentence, low)).toEqual({ ok: true });
     }
-    // 1~3단계 반응의 물음표 문장만 있는 견본
-    const questionOnly = createToriSentenceGate({
-      ...low,
-      safeLine: safe,
-      sentenceMaxWords: 5,
-    });
-    const reaction = readAll(sampleText("talk_turn.l1-question-in-reaction"), 5)
-      .sentences.map((s) => questionOnly.accept(s))
-      .filter((s): s is string => s !== null);
-    expect(reaction).toEqual(["Wow, a red ball!"]);
-    expect(questionOnly.blocked()).toEqual(["question"]);
   });
 
   it("회화 흘려 받기: 걸린 문장은 한 턴에 처음 걸린 자리만 안전한 대사로 바꾸고 길이 초과는 센다", () => {

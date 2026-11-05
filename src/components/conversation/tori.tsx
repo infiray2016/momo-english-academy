@@ -7,23 +7,65 @@
 // 말풍선을 누르면 그 말을 다시 읽는다(답 두 개까지, AC-15l). 기다리는 동안 점 셋(data-wait-hint) → ui.wait_hint_seconds 둘째 값 뒤
 // '[이름](이/가) 생각하고 있어요'(data-wait-line). 설명(explanation)은 말풍선 아래 글로만(읽지 않음). 녹음 없음.
 // 이름 자리 글은 문구 표(src/core/teacher/name.ts — 선생님 화면 plan 값 9)이고 부르는 쪽이 세션 선생님 이름(teacherName)을 넘긴다.
+// 불편 1차 묶음(13절 C166 · UX 검토 3판 U5-11): ①② 듣기 단추가 처음 뜰 때 '번호를 누르면 답을 들려줘요' 한 줄. 프로필마다 한 번이고 처음 회화
+// 안내 · '막히면 눌러요'와 같이 profiles.notices_seen(talk_answer_tip)에 남긴다(UI · UX 묶음 0-다 · R-29 — 틀이 보일지를 넘기고 본 뒤 기록).
+// 회화 plan 묶음 10(정본 03 4절 '선생님 차례' 행 · 3.3 소리 줄 · 7절 읽어 주기 · '들려주지 못함' 행 · C125 · C166 R1 · 정한 것 10 · 20): 새 꼴 줄
+// (s · ko · add · sound)을 받은 차례대로 쌓는 LessonToriBubble. 1~3단계 소리 줄(따라 할 말 · 선택지 · 받침의 답)은 글로 보이지 않고 말풍선 아래
+// 글 없는 듣기 단추(따라 할 말 하나 · 선택지 ①②)로 그 줄만 다시 읽는다. 1단계 선택지 둘 사이에는 'Or'. 말풍선을 누르면 지금 턴을 소리 줄까지
+// 다시 읽는다. 보낸 뒤 talk.wait_line_seconds 안에 첫 문장이 없으면 맞장구 한 줄을 선생님 목소리로 읽고(useWaitLine — 읽기 줄에 먼저 넣으니
+// 첫 문장은 그 뒤), 맞장구는 말풍선 글 · 기록에 넣지 않는다. 읽기 줄은 줄마다 무엇을 읽었는지(w)를 받아 감시가 끝낸 발화를 알린다(onSpoken).
 import { Volume2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
 import { FOCUS_RING } from "@/components/board/board";
+import { SilentModeNote } from "@/components/conversation/silent-mode-note";
+import {
+  SOUND_RETRY_TEXT,
+  type SoundRetryStep,
+} from "@/components/session/sound-retry";
 import { fillName } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
-import { createSleeper, pauseLeftMs } from "@/core/speech/pace";
+import type { ClientSpeakEntry } from "@/core/conversation/client-listen";
+import {
+  createSleeper,
+  pauseLeftMs,
+  speakHeardOutcomeOf,
+} from "@/core/speech/pace";
 import { TEACHER_TEXT } from "@/core/teacher/name";
-import type { SpeechPort } from "@/lib/speech/types";
+import type { SpeakOutcome, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
-import type { AddLineOut } from "@/server/conversation";
 
 /** 이름 자리 없는 말풍선 글(이름 자리 글은 TEACHER_TEXT). */
 export const BUBBLE_TEXT = {
   answer: (n: number) => `${n === 1 ? "첫째" : "둘째"} 답 듣기`,
+  /** 따라 할 말 · 받침의 답 글 없는 듣기 단추(plan 문구 표 — 정본 밖 문구). */
+  model: "따라 할 말 듣기",
+  /** ①② 한 번 안내(U5-11 — 정본 밖 문구). */
+  answerTip: "번호를 누르면 답을 들려줘요",
+  /**
+   * 선생님 문장 · 붙인 줄을 들려주지 못했을 때 말풍선 아래 한 줄(정본 07 34줄 '소리가 안 나와서 글로 봐요' — 세 영역 수업의 선생님 줄과 같은
+   * 글이지만 회화 쪽 문구로 둔다, 묶음 10 재검토 N-3).
+   */
+  soundless: "소리가 안 나와서 글로 봐요.",
 } as const;
+
+/**
+ * ①② 안내를 이 턴 말풍선에 보일까(순수 함수, R-29): 프로필이 아직 보지 않았고(notices_seen), 이 회화에서 안내한 턴이 아직 없거나 그 턴일 때.
+ * 말풍선은 답 두 개(①②)가 있을 때만 그리므로 처음 ①② 가 뜬 턴이 안내한 턴이 되고, 그 말풍선이 있는 동안은 그대로 둔다.
+ */
+export function answerTipShownOf({
+  seen,
+  tipTurn,
+  turn,
+}: {
+  seen: boolean;
+  tipTurn: number | null;
+  turn: number;
+}): boolean {
+  if (seen) return false;
+  return tipTurn === null || tipTurn === turn;
+}
 
 /** 한 글자가 흘러나오는 간격(ms, 화면 꼴 값). */
 export const TYPE_MS_PER_CHAR = 30;
@@ -44,7 +86,7 @@ export function answersLine(pair: readonly [string, string]): string {
 /** 말풍선 상한 폭(px, 화면 꼴 값 — 목업 B_Talk1 의 480~520). 글이 짧으면 글 길이만큼(화면 검토 M-3). */
 export const TORI_BUBBLE_MAX_PX = 520;
 /** 위 상한을 글자 그대로(Tailwind 는 소스 글을 훑어 클래스를 만든다 — 템플릿 글로 만들지 않는다, 단위 시험이 같은 수인지 본다). */
-const BUBBLE_WIDTH = "w-fit max-w-[520px]";
+export const BUBBLE_WIDTH = "w-fit max-w-[520px]";
 
 /** 그림 턴 그림을 그릴까: 파일이 있고 깨지지 않았을 때만(깨지면 자리도 접는다 — 화면 검토 I-2). */
 export function turnPictureShown(
@@ -83,8 +125,8 @@ function TurnPicture({ picture }: { picture: PictureInfo }) {
   );
 }
 
-/** 토리 말풍선 꼴(단추 · 기다림 칸이 같이 쓴다 — 목업 B_Talk1 연두 옅은 바탕 · 먹색 테). */
-const BUBBLE_CLASS =
+/** 토리 말풍선 꼴(단추 · 기다림 칸 · 대화 기록 칸의 지난 말이 같이 쓴다 — 목업 B_Talk1 연두 옅은 바탕 · 먹색 테). */
+export const BUBBLE_CLASS =
   "flex flex-col gap-2 rounded-[4px_18px_18px_18px] border-[3px] border-ink bg-[color-mix(in_srgb,var(--color-postit-talk)_30%,var(--color-paper))] px-5 py-4 text-ink";
 
 /** 답 두 개 단추 표(글 없는 번호). */
@@ -179,55 +221,301 @@ export function ToriWaiting({
   );
 }
 
-/** 말풍선 한 턴의 내용(흘러 받은 문장 · 뜻 · 붙인 말). */
+/** 정리 말풍선의 내용(되짚을 말 · 끝인사 문장과 뜻). */
 export type BubbleContent = {
   sentences: string[];
   ko?: string;
-  adds: AddLineOut[];
   /** 끝 줄까지 받았다(뜻을 보일 때). */
   done: boolean;
 };
 
-/** 읽어 줄 글 차례: 문장 → 붙인 말(again 은 답 예시 → 질문, 답 두 개는 'Or' 를 사이에). */
-export function spokenOf(
-  content: Pick<BubbleContent, "sentences" | "adds">,
-): string[] {
-  const out = [...content.sentences];
-  for (const add of content.adds) {
-    if (add.kind === "two_answers") out.push(answersLine(add.answers));
-    else if (add.kind === "again") {
-      out.push(add.say);
-      if (add.en) out.push(add.en);
-    } else out.push(add.en);
-  }
-  return out;
+/**
+ * 정리 말풍선(LessonWrapUp 의 한 장 — 되짚을 말 · 끝인사): 문장이 흘러나오듯 보이고 1~4단계 뜻은 영어가 다 흐른 뒤 아래에 한 번에.
+ * 말풍선을 누르면 다시 읽는다. 대화 턴 말풍선은 LessonToriBubble 이다.
+ */
+export function ToriBubble({
+  content,
+  englishName,
+  teacherName,
+  onReplay,
+  onAllTyped,
+}: {
+  content: BubbleContent;
+  /** {NAME} 을 채울 이름(저장 글은 틀 그대로). */
+  englishName: string;
+  /** 세션 선생님 한글 이름(접근 이름 '[이름] 말 다시 듣기' — 없으면 '선생님'). */
+  teacherName?: string | undefined;
+  onReplay: () => void;
+  /** 받은 글이 다 흘러나왔는가(바뀔 때마다). */
+  onAllTyped?: (done: boolean) => void;
+}) {
+  const english = content.sentences;
+  const ko = content.ko ? [content.ko] : [];
+  // 부르는 쪽이 장마다 key 를 바꿔 새로 그린다(흘러나온 수가 처음부터)
+  const [typed, setTyped] = useState(0);
+  const allTyped = typed >= english.length;
+  const empty = english.length === 0;
+  const onTyped = useCallback(() => setTyped((n) => n + 1), []);
+  const reportTyped = useRef(onAllTyped);
+  reportTyped.current = onAllTyped;
+  useEffect(() => {
+    reportTyped.current?.(allTyped);
+  }, [allTyped]);
+  return (
+    <div className="flex items-start gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <button
+          type="button"
+          data-tori-bubble=""
+          aria-label={TEACHER_TEXT.replay(teacherName)}
+          disabled={empty}
+          onClick={onReplay}
+          className={cn(
+            FOCUS_RING,
+            CHILD_SIZE.target,
+            BUBBLE_CLASS,
+            BUBBLE_WIDTH,
+            "text-left",
+          )}
+        >
+          <span
+            lang="en"
+            className="flex flex-col gap-1 font-en text-[28px] font-bold leading-snug"
+          >
+            {/* 받은 차례대로 앞 줄이 다 흐른 뒤 다음 줄(검토 M-5) */}
+            {english.slice(0, typed + 1).map((line, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: 흘러 받은 차례가 곧 열쇠다
+              <span key={i} data-tori-line="" className="block">
+                <TypedText
+                  text={fillName(line, englishName)}
+                  onDone={onTyped}
+                />
+              </span>
+            ))}
+          </span>
+        </button>
+        {ko.length > 0 ? (
+          <div
+            data-tori-under=""
+            className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 px-2"
+          >
+            {content.done && allTyped ? (
+              <p data-tori-ko="" className={CHILD_SIZE.guide}>
+                {ko.map((line) => fillName(line, englishName)).join(" ")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
-/** 말풍선에 글로 보일 영어: 문장 + 토리가 묻는 말(질문 · 다시 묻는 질문 · '더 이야기할래?'). 아이가 말할 영어는 넣지 않는다. */
-export function shownEnglishOf(
-  content: Pick<BubbleContent, "sentences" | "adds">,
-): string[] {
-  const out = [...content.sentences];
-  for (const add of content.adds) {
-    if (add.kind === "two_answers") continue;
-    if (add.en) out.push(add.en);
+// ── 새 꼴 말풍선(회화 plan 묶음 10) ─────────────────────────────
+
+/** 선생님 쪽 발화의 종류(정한 것 10 — client_listen sp 의 w). */
+export type SpeakWhat = ClientSpeakEntry["w"];
+/**
+ * 읽기 줄 한 항목: 읽을 글과 무엇을 읽는지(감시 기록용). 글만 넘기면 선생님 말(tori)이다. line 은 지금 말풍선 줄 차례(소리 줄을 들려줬는지
+ * 되찾는 열쇠 — fix 1 M-5, playedSoundsOf).
+ */
+export type SpeakItem = { text: string; w: SpeakWhat; line?: number };
+
+/** 1~3단계 소리 줄(서버 TalkLessonLine 의 sound 와 같은 꼴). */
+export type LessonSoundLine =
+  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | { t: "sound"; kind: "choices"; answers: readonly [string, string] };
+/** 말풍선에 쌓는 새 꼴 줄: 선생님 문장 · 붙인 화면 글 줄(카드 질문 · 마무리 물음 · 4단계부터 답 글) · 소리 줄. */
+export type LessonBubbleLine =
+  | { t: "s"; en: string }
+  | {
+      t: "add";
+      kind: "question" | "more_prompt" | "answer";
+      en: string;
+      ko?: string;
+    }
+  | LessonSoundLine;
+
+/** 새 꼴 말풍선 한 턴(받은 차례 그대로의 줄 · 선생님 문장 뜻 · 끝 줄을 받았나). */
+export type LessonBubbleContent = {
+  lines: LessonBubbleLine[];
+  ko?: string;
+  done: boolean;
+};
+
+export const LESSON_BUBBLE_START: LessonBubbleContent = {
+  lines: [],
+  done: false,
+};
+
+/** 받은 줄 하나를 말풍선에 쌓는다(순수). 뜻은 ko 에, 그 밖의 줄(끝 · 쉼 · 닫기 · 오류)은 틀이 다루므로 그대로 둔다. */
+export function lessonBubbleStep(
+  content: LessonBubbleContent,
+  line: { t: string } & Partial<Record<string, unknown>>,
+): LessonBubbleContent {
+  switch (line.t) {
+    case "s":
+    case "add":
+    case "sound":
+      return {
+        ...content,
+        lines: [...content.lines, line as unknown as LessonBubbleLine],
+      };
+    case "ko":
+      return typeof line.ko === "string"
+        ? { ...content, ko: line.ko }
+        : content;
+    default:
+      return content;
   }
-  return out;
 }
 
-/** 말풍선에 보일 뜻(반응 뜻 + 붙인 말 뜻). */
-function shownKoOf(content: BubbleContent): string[] {
+/** 말풍선에 글로 보일 영어(순수): 선생님 문장과 붙인 화면 글 줄. 소리 줄은 넣지 않는다(T2). */
+export function lessonShownEnglishOf(
+  content: Pick<LessonBubbleContent, "lines">,
+): string[] {
+  return content.lines.flatMap((l) =>
+    l.t === "s" || l.t === "add" ? [l.en] : [],
+  );
+}
+
+/** 말풍선 아래에 보일 뜻(순수): 선생님 문장 뜻 + 붙인 줄 뜻. */
+function lessonShownKoOf(content: LessonBubbleContent): string[] {
   return [
     ...(content.ko ? [content.ko] : []),
-    ...content.adds.flatMap((a) =>
-      a.kind !== "two_answers" && a.ko ? [a.ko] : [],
-    ),
+    ...content.lines.flatMap((l) => (l.t === "add" && l.ko ? [l.ko] : [])),
   ];
 }
 
-/** 토리 말풍선. */
-export function ToriBubble({
+/** 이 턴의 소리 줄(순수). */
+export function lessonSoundsOf(
+  content: Pick<LessonBubbleContent, "lines">,
+): LessonSoundLine[] {
+  return content.lines.filter((l): l is LessonSoundLine => l.t === "sound");
+}
+
+/**
+ * 받은 줄 하나에서 읽을 것(순수, 7절 읽어 주기 행 · 3.3 소리 줄): 선생님 문장은 tori, 붙인 화면 글 줄은 card, 소리 줄은 sound. 1단계 선택지는
+ * 'Or' 를 사이에 둔 한 줄, 2~3단계는 둘을 차례로 읽는다(문장 사이 쉼, C125).
+ */
+export function lessonSpeakItemsOf(
+  line: LessonBubbleLine,
+  level: number,
+  /** 말풍선 줄 차례(소리 줄 항목에만 싣는다 — 들려줬는지 되찾기, playedSoundsOf). 받은 줄이면 쌓기 전 content.lines.length. */
+  index?: number,
+): SpeakItem[] {
+  switch (line.t) {
+    case "s":
+      return [{ text: line.en, w: "tori" }];
+    case "add":
+      return [{ text: line.en, w: "card" }];
+    case "sound": {
+      const at = index === undefined ? {} : { line: index };
+      if (line.kind !== "choices")
+        return [{ text: line.say, w: "sound", ...at }];
+      return level === 1
+        ? [{ text: answersLine(line.answers), w: "sound", ...at }]
+        : line.answers.map((text) => ({ text, w: "sound" as const, ...at }));
+    }
+  }
+}
+
+/**
+ * 들려준 소리 줄(순수, fix 1 M-5 · 7절 34줄 '들려주지 못한 소리는 들은 도움으로 적지 않는다'): played 는 읽기 결과가 들려주지 못함이 아니었던
+ * 소리 항목의 line 차례(틀이 onSpoken 에서 모은다). 2~3단계 선택지처럼 한 줄이 두 항목이면 하나라도 들려줬으면 들려준 줄이다.
+ */
+export function playedSoundsOf(
+  content: Pick<LessonBubbleContent, "lines">,
+  played: ReadonlySet<number>,
+): LessonSoundLine[] {
+  return content.lines.flatMap((l, i) =>
+    l.t === "sound" && played.has(i) ? [l] : [],
+  );
+}
+
+/** 한 세션에서 '소리가 안 나와서 글로 봐요'가 이 번째부터 아이패드 사파리 무음 모드 줄을 더한다(정본 07 33줄 '두 번 나오면' — 차례이지 설정값이 아님). */
+export const SILENT_MODE_FROM_SOUNDLESS = 2;
+
+/**
+ * '소리가 안 나와서 글로 봐요' 대상인가(순수, 정본 07 34줄 '글이 함께 보이는 설명 자리 … 회화 말풍선' · C179 (2)): 글로 보이는 선생님 문장
+ * (tori) · 붙인 화면 글 줄(card)을 들려주지 못했을 때(speakHeardOutcomeOf not_played — 시작 전 오류 · 읽을 수 없는 기기 포함). 소리 줄은
+ * 소리가 과제 자극이라 다시 듣기 안내(soundRetry)가 맡고, 맞장구는 글이 없으며, 읽지 않음(skipped) · 끊김 · 들려줌은 아니다.
+ */
+export function soundlessOf(item: SpeakItem, outcome: SpeakOutcome): boolean {
+  if (item.w !== "tori" && item.w !== "card") return false;
+  if (outcome.kind === "skipped") return false;
+  return speakHeardOutcomeOf(outcome) === "not_played";
+}
+
+/** 안내를 더 보일 ms(순수): 마지막으로 들려주지 못한 때(at)부터 speech.skip_notice_seconds, 없거나 지났으면 0. */
+export function soundlessNoticeLeftMs(
+  at: number | null,
+  now: number,
+  noticeMs: number,
+): number {
+  if (at === null) return 0;
+  return Math.max(0, at + noticeMs - now);
+}
+
+/** 지금 턴 말풍선을 누를 때 읽을 차례(순수): 받은 차례 그대로 소리 줄까지(정본 03 4절 '지금 턴은 소리 줄까지'). */
+export function lessonSpokenOf(
+  content: Pick<LessonBubbleContent, "lines">,
+  level: number,
+): SpeakItem[] {
+  return content.lines.flatMap((l, i) => lessonSpeakItemsOf(l, level, i));
+}
+
+/** 맞장구를 읽을 때까지 남은 ms(순수): 보낸 때부터 talk.wait_line_seconds, 이미 지났으면 0. */
+export function waitLineDelayMs(
+  startedAt: number,
+  now: number,
+  seconds: number,
+): number {
+  return Math.max(0, startedAt + seconds * MS_PER_SECOND - now);
+}
+
+/**
+ * 맞장구 한 줄(정본 03 4절 '선생님 차례' · AC-N10): 기다리기 시작한 때(waitingSince)부터 talk.wait_line_seconds 안에 첫 문장이 오지 않으면
+ * 한 번 onDue(line). 틀은 onDue 에서 읽기 줄에 { text, w: "wait" } 로 넣는다 — 줄이 차례대로 읽으므로 뒤에 온 첫 문장은 맞장구가 끝난 뒤
+ * 읽힌다. 첫 문장이 와서 waitingSince 가 null 이 되면 타이머를 거둔다. 목록이 비었으면(line null) 읽지 않는다.
+ */
+export function useWaitLine({
+  waitingSince,
+  seconds,
+  line,
+  onDue,
+}: {
+  waitingSince: number | null;
+  seconds: number;
+  line: string | null;
+  onDue: (line: string) => void;
+}): void {
+  const due = useRef(onDue);
+  due.current = onDue;
+  useEffect(() => {
+    if (waitingSince === null || line === null) return;
+    const timer = window.setTimeout(
+      () => due.current(line),
+      waitLineDelayMs(waitingSince, performance.now(), seconds),
+    );
+    return () => window.clearTimeout(timer);
+  }, [waitingSince, seconds, line]);
+}
+
+/** 소리 줄 단추 꼴(답 두 개 단추와 같은 종이 원 — 들려주지 못한 뒤 다시 듣기는 크게). */
+const SOUND_BUTTON_CLASS =
+  "inline-flex items-center gap-2 rounded-full border-2 border-ink bg-paper px-5 font-heading text-[26px]";
+const SOUND_BUTTON_BIG_CLASS = "min-h-16 px-7";
+
+/**
+ * 새 꼴 선생님 말풍선(회화 plan 묶음 10). 글은 선생님 문장과 붙인 화면 글 줄(받은 차례대로 앞 줄이 다 흐른 뒤 다음 줄), 1~4단계 뜻은 끝 줄을
+ * 받고 영어가 다 흐른 뒤 한 번에. 소리 줄은 글 없는 듣기 단추(onSound 로 그 줄만 다시 읽음). 들려주지 못한 소리 줄이 있으면(soundRetry —
+ * sound-retry soundRetryStepOf) 안내 한 줄과 큰 다시 듣기, 다시도 못 들려주면 아이패드 사파리 무음 모드 줄을 더한다(저절로 건너뛰지 않음 —
+ * 아이 차례 말하기 단추는 그대로 열려 있다).
+ */
+export function LessonToriBubble({
   content,
+  level,
   englishName,
   teacherName,
   waiting,
@@ -235,48 +523,102 @@ export function ToriBubble({
   picture,
   explanation,
   listening = false,
+  soundRetry = "none",
+  soundless,
   onReplay,
-  onAnswer,
+  onSound,
   onAllTyped,
+  answerTip,
+  onAnswerTipShown,
 }: {
-  content: BubbleContent;
-  /** {NAME} 을 채울 이름(저장 글은 틀 그대로). */
+  content: LessonBubbleContent;
+  level: number;
   englishName: string;
-  /** 세션 선생님 한글 이름(접근 이름 '[이름] 말 다시 듣기' · 기다림 글 — 없으면 '선생님'). */
   teacherName?: string | undefined;
-  /** 첫 문장을 기다리는 중이면 시작 때(performance.now()). */
   waiting: number | null;
   waitSeconds: readonly [number, number];
-  /** 그림 턴(C32 — 파일이 있을 때만). */
   picture?: PictureInfo;
-  explanation?: string;
-  /** 아이 차례가 듣는 중인가 — 그동안 다시 듣기 · 답 듣기 단추를 끈다(누르면 듣기가 안내 없이 끝남, 7절 말하기 버튼 행(분석 A2 · N3)). */
+  explanation?: string | undefined;
   listening?: boolean;
+  /** 들려주지 못한 소리 줄의 다음 할 일(sound-retry soundRetryStepOf — 없음이면 안내 없음). */
+  soundRetry?: SoundRetryStep;
+  /**
+   * 선생님 문장 · 붙인 줄을 들려주지 못함(soundlessOf — 틀이 onSpoken 에서 센다): 마지막 때(performance.now) · 이 세션의 번째 ·
+   * speech.skip_notice_seconds(ms). 그동안 '소리가 안 나와서 글로 봐요'를 보이고, 둘째부터 아이패드 사파리 무음 모드 줄을 더한다.
+   */
+  soundless?: { at: number | null; count: number; noticeMs: number };
+  /** 말풍선 누름 — 지금 턴을 소리 줄까지 다시 읽는다(lessonSpokenOf). */
   onReplay: () => void;
-  onAnswer: (index: 0 | 1) => void;
-  /** 받은 글이 다 흘러나왔는가(바뀔 때마다 — 틀이 아이 차례를 그 뒤에 연다, 화면 검토 M-1). */
+  /** 소리 줄 단추 누름 — 그 줄만 다시 읽는다. */
+  onSound: (items: SpeakItem[]) => void;
   onAllTyped?: (done: boolean) => void;
+  answerTip?: boolean;
+  onAnswerTipShown?: () => void;
 }) {
-  const english = shownEnglishOf(content);
-  const ko = shownKoOf(content);
-  const pair = content.adds.find((a) => a.kind === "two_answers");
-  // 턴마다 부르는 쪽이 key 를 바꿔 새로 그린다(흘러나온 수가 처음부터)
+  const english = lessonShownEnglishOf(content);
+  const ko = lessonShownKoOf(content);
+  const sounds = lessonSoundsOf(content);
+  const choices = sounds.find(
+    (s): s is Extract<LessonSoundLine, { kind: "choices" }> =>
+      s.kind === "choices",
+  );
+  const models = sounds.filter(
+    (s): s is Extract<LessonSoundLine, { kind: "model" | "answer" }> =>
+      s.kind !== "choices",
+  );
+  const tipShown = choices !== undefined && answerTip === true;
+  const reportTip = useRef(onAnswerTipShown);
+  reportTip.current = onAnswerTipShown;
+  useEffect(() => {
+    if (tipShown) reportTip.current?.();
+  }, [tipShown]);
   const [typed, setTyped] = useState(0);
   const allTyped = typed >= english.length;
   const empty = english.length === 0;
   const onTyped = useCallback(() => setTyped((n) => n + 1), []);
   const reportTyped = useRef(onAllTyped);
   reportTyped.current = onAllTyped;
-  // 글이 없는 말풍선(드묾)도 다 흐른 것으로 본다 — 아이 차례가 막히지 않게(끝 줄이 오기 전에는 틀이 열지 않는다)
-  const typedDone = allTyped;
   useEffect(() => {
-    reportTyped.current?.(typedDone);
-  }, [typedDone]);
+    reportTyped.current?.(allTyped);
+  }, [allTyped]);
+  const retrying = soundRetry !== "none";
+  // '소리가 안 나와서 글로 봐요'(정본 07 34줄): 그린 때 남은 시간이 있으면 보이고, 남은 시간 뒤 거둔다 — 글은 그대로 이어 간다
+  const [soundlessShown, setSoundlessShown] = useState(
+    () =>
+      soundlessNoticeLeftMs(
+        soundless?.at ?? null,
+        performance.now(),
+        soundless?.noticeMs ?? 0,
+      ) > 0,
+  );
+  const soundlessAt = soundless?.at ?? null;
+  const soundlessMs = soundless?.noticeMs ?? 0;
+  useEffect(() => {
+    const left = soundlessNoticeLeftMs(
+      soundlessAt,
+      performance.now(),
+      soundlessMs,
+    );
+    setSoundlessShown(left > 0);
+    if (left <= 0) return;
+    const timer = window.setTimeout(() => setSoundlessShown(false), left);
+    return () => window.clearTimeout(timer);
+  }, [soundlessAt, soundlessMs]);
+  const silentModeLine = (soundless?.count ?? 0) >= SILENT_MODE_FROM_SOUNDLESS;
+  const sized = (base: string) =>
+    cn(
+      FOCUS_RING,
+      CHILD_SIZE.target,
+      base,
+      retrying ? SOUND_BUTTON_BIG_CLASS : undefined,
+    );
+  const sizeMark = retrying ? { "data-size": "big" } : {};
+  // 소리 줄은 선생님 문장 뒤에 오므로(3.3 · 묶음 8 lessonAfterLinesOf) 받은 때 단추를 둔다 — 자리를 먼저 잡아 뜻이 늦게 들어도 뛰지 않는다
+  const soundShown = sounds.length > 0;
   return (
     <div className="flex items-start gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {waiting !== null && empty ? (
-          // 기다림 표시는 단추 밖 같은 말풍선 꼴 칸에(상태 줄이 비활성 단추 안에 들지 않게 — 검토 M-9)
+        {waiting !== null && empty && sounds.length === 0 ? (
           <div data-tori-waiting="" className={cn(BUBBLE_CLASS, BUBBLE_WIDTH)}>
             <ToriWaiting
               startedAt={waiting}
@@ -289,7 +631,7 @@ export function ToriBubble({
             type="button"
             data-tori-bubble=""
             aria-label={TEACHER_TEXT.replay(teacherName)}
-            disabled={empty || listening}
+            disabled={(empty && sounds.length === 0) || listening}
             onClick={onReplay}
             className={cn(
               FOCUS_RING,
@@ -303,9 +645,7 @@ export function ToriBubble({
               lang="en"
               className="flex flex-col gap-1 font-en text-[28px] font-bold leading-snug"
             >
-              {/* 받은 차례대로 앞 줄이 다 흐른 뒤 다음 줄(검토 M-5) */}
               {english.slice(0, typed + 1).map((line, i) => (
-                // 문장은 받은 차례 그대로 쌓이고 바뀌지 않는다
                 // biome-ignore lint/suspicious/noArrayIndexKey: 흘러 받은 차례가 곧 열쇠다
                 <span key={i} data-tori-line="" className="block">
                   <TypedText
@@ -317,45 +657,93 @@ export function ToriBubble({
             </span>
           </button>
         )}
-        {/* 뜻 줄과 답 두 개 단추는 한 묶음 — 자리를 먼저 잡아 뜻이 늦게 들어도 ①② 가 뛰지 않는다(화면 검토 M-2) */}
-        {pair || ko.length > 0 ? (
+        {sounds.length > 0 || ko.length > 0 ? (
           <div
             data-tori-under=""
             className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 px-2"
           >
-            {pair ? (
-              <div data-two-answers="" className="flex gap-4">
-                {ANSWER_MARKS.map((mark, i) => (
+            {soundShown ? (
+              <div data-sound-lines="" className="flex flex-wrap gap-4">
+                {models.map((line, i) => (
                   <button
-                    key={mark}
+                    // biome-ignore lint/suspicious/noArrayIndexKey: 받은 차례가 곧 열쇠다
+                    key={i}
                     type="button"
-                    data-answer-listen={i + 1}
-                    aria-label={BUBBLE_TEXT.answer(i + 1)}
+                    data-sound-listen={line.kind}
+                    {...sizeMark}
+                    aria-label={BUBBLE_TEXT.model}
                     disabled={listening}
-                    onClick={() => onAnswer(i as 0 | 1)}
-                    className={cn(
-                      FOCUS_RING,
-                      CHILD_SIZE.target,
-                      "inline-flex items-center gap-2 rounded-full border-2 border-ink bg-paper px-5 font-heading text-[26px]",
-                    )}
+                    onClick={() => onSound(lessonSpeakItemsOf(line, level))}
+                    className={sized(SOUND_BUTTON_CLASS)}
                   >
-                    <span
-                      aria-hidden
-                      data-answer-mark={mark}
-                      className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink font-en text-[20px] font-bold leading-none"
-                    >
-                      {mark}
-                    </span>
-                    <Volume2 aria-hidden className="size-6" />
+                    <Volume2 aria-hidden className="size-7" />
                   </button>
                 ))}
+                {choices
+                  ? ANSWER_MARKS.map((mark, i) => (
+                      <button
+                        key={mark}
+                        type="button"
+                        data-answer-listen={i + 1}
+                        {...sizeMark}
+                        aria-label={BUBBLE_TEXT.answer(i + 1)}
+                        disabled={listening}
+                        onClick={() =>
+                          onSound([
+                            {
+                              text: choices.answers[i] as string,
+                              w: "sound",
+                            },
+                          ])
+                        }
+                        className={sized(SOUND_BUTTON_CLASS)}
+                      >
+                        <span
+                          aria-hidden
+                          data-answer-mark={mark}
+                          className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink font-en text-[20px] font-bold leading-none"
+                        >
+                          {mark}
+                        </span>
+                        <Volume2 aria-hidden className="size-6" />
+                      </button>
+                    ))
+                  : null}
               </div>
+            ) : null}
+            {tipShown && soundShown ? (
+              <p data-answer-tip="" className={CHILD_SIZE.guide}>
+                {BUBBLE_TEXT.answerTip}
+              </p>
             ) : null}
             {content.done && allTyped && ko.length > 0 ? (
               <p data-tori-ko="" className={CHILD_SIZE.guide}>
                 {ko.map((line) => fillName(line, englishName)).join(" ")}
               </p>
             ) : null}
+          </div>
+        ) : null}
+        {retrying && sounds.length > 0 ? (
+          <div
+            data-sound-retry={soundRetry}
+            className="flex flex-col gap-1 px-2"
+          >
+            <p role="status" className={CHILD_SIZE.guide}>
+              {SOUND_RETRY_TEXT.notice}
+            </p>
+            {soundRetry !== "retry" ? <SilentModeNote /> : null}
+          </div>
+        ) : null}
+        {soundlessShown ? (
+          <div
+            data-tori-soundless=""
+            {...(silentModeLine ? { "data-silent-mode": "" } : {})}
+            className="flex flex-col gap-1 px-2"
+          >
+            <p role="status" className={CHILD_SIZE.guide}>
+              {BUBBLE_TEXT.soundless}
+            </p>
+            {silentModeLine ? <SilentModeNote /> : null}
           </div>
         ) : null}
         {explanation ? (
@@ -380,9 +768,18 @@ export function useSpeakQueue(
     rate,
     pauseMs,
     englishName,
-  }: { rate: number; pauseMs: number; englishName: string },
+    onSpoken,
+  }: {
+    rate: number;
+    pauseMs: number;
+    englishName: string;
+    /** 한 항목을 읽은 결과(묶음 10 — 감시 기록 sp · 들려주지 못함 셈은 틀이 speakHitchOf · soundTrackOf 로). */
+    onSpoken?: (item: SpeakItem, outcome: SpeakOutcome) => void;
+  },
 ) {
-  const queue = useRef<string[]>([]);
+  const queue = useRef<SpeakItem[]>([]);
+  const spoken = useRef(onSpoken);
+  spoken.current = onSpoken;
   const generation = useRef(0);
   /** 늘 지금 음성 접점으로 읽는다(처리기가 보낸 때의 함수를 쥐고 있어도 — 재검토 N-1). */
   const port = useRef(speech);
@@ -402,7 +799,7 @@ export function useSpeakQueue(
     setSpeaking(true);
     const mine = generation.current;
     while (queue.current.length > 0 && mine === generation.current) {
-      const text = queue.current.shift() as string;
+      const item = queue.current.shift() as SpeakItem;
       const wait = pauseLeftMs({
         endedAt: endedAt.current,
         now: performance.now(),
@@ -411,11 +808,12 @@ export function useSpeakQueue(
       if (!(await sleeper.sleep(wait)) || mine !== generation.current) return;
       const current = port.current;
       if (!current) break;
-      const outcome = await current.speak(fillName(text, englishName), {
+      const outcome = await current.speak(fillName(item.text, englishName), {
         rate,
       });
       endedAt.current =
         outcome.kind === "ended" ? performance.now() : undefined;
+      spoken.current?.(item, outcome);
     }
     if (mine !== generation.current) return;
     running.current = false;
@@ -423,9 +821,15 @@ export function useSpeakQueue(
   }, [rate, pauseMs, englishName, sleeper]);
 
   const enqueue = useCallback(
-    (texts: readonly string[]) => {
+    (texts: readonly (string | SpeakItem)[]) => {
       if (disposed.current) return;
-      queue.current.push(...texts.filter((t) => t.trim() !== ""));
+      queue.current.push(
+        ...texts
+          .map((t) =>
+            typeof t === "string" ? { text: t, w: "tori" as const } : t,
+          )
+          .filter((t) => t.text.trim() !== ""),
+      );
       void pump();
     },
     [pump],
@@ -440,7 +844,7 @@ export function useSpeakQueue(
     port.current?.cancelSpeaking();
   }, [sleeper]);
   const replay = useCallback(
-    (texts: readonly string[]) => {
+    (texts: readonly (string | SpeakItem)[]) => {
       cancel();
       enqueue(texts);
     },

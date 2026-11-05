@@ -17,8 +17,11 @@ export type DoneSession = {
   learningDay: string | null;
 };
 
-/** 새 수업(정할 것 ㄴ — 정규 · 보강 · 연습 · 안 해 본 수업). 회화는 목표 턴에 닿아 끝낸 세션이 completed 로 온다(1-나). */
-const NEW_LESSON_KINDS: ReadonlySet<DoneSession["kind"]> = new Set([
+/**
+ * 새 수업(정할 것 ㄴ — 정규 · 보강 · 연습 · 안 해 본 수업). 회화는 목표 턴에 닿아 끝낸 세션이 completed 로 온다(1-나).
+ * 별 셈(core/reward/star — 3.5 R12)도 이 한 벌을 쓴다(오늘 완료와 별이 갈리지 않게).
+ */
+export const NEW_LESSON_KINDS: ReadonlySet<DoneSession["kind"]> = new Set([
   "regular",
   "remedial",
   "practice",

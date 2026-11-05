@@ -47,7 +47,7 @@ function LetterPattern({
               CHILD_SIZE.target,
               "flex items-center justify-center rounded-lg border-2 font-bold",
               blank
-                ? "border-dashed border-neutral-700 bg-white"
+                ? "border-dashed border-ink bg-paper"
                 : "border-transparent",
             )}
           >

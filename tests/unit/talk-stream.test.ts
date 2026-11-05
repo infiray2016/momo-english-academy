@@ -1,13 +1,14 @@
-// 회화 턴 요청 · NDJSON 읽기(plan-p13b 파일별 값 10 · C92 · 재검토 N-1). 가짜 fetch 로 줄을 조각 경계에서 나눠 흘린다.
+// 회화 턴 요청 · NDJSON 읽기(plan-p13b 파일별 값 10 · C92 · 재검토 N-1 · 회화 plan 묶음 11 · 12). 가짜 fetch 로 줄을 조각 경계에서 나눠 흘린다.
+// 묶음 12 가 옛 이름(sendTalkTurn · sendTalkTurnRetrying)을 지우며 읽기 · 되풀이 시험을 새 이름(sendTalkLessonTurn(Retrying))과 새 꼴 끝 줄로 옮겼다.
 import { describe, expect, it, vi } from "vitest";
 import {
   OFFLINE_RETRIES_MAX,
   OFFLINE_RETRY_MS,
   STALE_RESENDS_MAX,
   STALE_RETRY_MS,
-  sendTalkTurn,
-  sendTalkTurnRetrying,
-  type TalkStreamHandlers,
+  sendTalkLessonTurn,
+  sendTalkLessonTurnRetrying,
+  type TalkLessonStreamHandlers,
   type TalkTurnBody,
 } from "@/lib/talk-stream";
 
@@ -41,10 +42,11 @@ function fetchOf(response: Response | Error) {
 
 function handlers() {
   const seen: string[] = [];
-  const h: TalkStreamHandlers = {
+  const h: TalkLessonStreamHandlers = {
     onSentence: (en) => seen.push(`s:${en}`),
     onKo: (ko) => seen.push(`ko:${ko}`),
     onAdd: (line) => seen.push(`add:${line.kind}`),
+    onSound: (line) => seen.push(`sound:${line.kind}`),
     onEnd: (next) => seen.push(`end:${next.talkCount}`),
     onResting: () => seen.push("resting"),
     onBreak: (line) => seen.push(`break:${line.en}`),
@@ -54,20 +56,24 @@ function handlers() {
   return { h, seen };
 }
 
+/** 끝 줄(새 꼴 lesson 칸 — '말 주고받기 2'). */
 const END = JSON.stringify({
   t: "end",
-  next: {
-    pending: null,
-    hints: [],
-    talkCount: 2,
-    target: 15,
-    targetReached: false,
-    awaitingChoice: false,
-    moreRound: 0,
-    moreLeft: 0,
+  lesson: {
     segment: "talk",
     greetingDone: true,
-    dontKnowCount: 0,
+    talkCount: 2,
+    choice: null,
+    closingAsked: false,
+    moreRound: 0,
+    moreInRound: 0,
+    targets: [],
+    hints: [],
+    flashDontKnow: false,
+    silentBlocked: false,
+    prep: null,
+    firstQuestionDue: false,
+    completed: false,
   },
 });
 
@@ -90,7 +96,7 @@ describe("회화 턴 요청(talk-stream)", () => {
       ),
     );
     const { h, seen } = handlers();
-    expect(await sendTalkTurn(BODY, h, { fetchImpl })).toBe("done");
+    expect(await sendTalkLessonTurn(BODY, h, { fetchImpl })).toBe("done");
     expect(seen).toEqual(["s:Nice!", "ko:좋아!", "add:question", "end:2"]);
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [
       string,
@@ -104,10 +110,12 @@ describe("회화 턴 요청(talk-stream)", () => {
   it("회화 턴 요청: 줄을 하나도 받기 전에 끊기거나 끝 줄 없이 끊기면 offline 이다(같은 시도 id 로 다시 보낼 차례)", async () => {
     const { h, seen } = handlers();
     expect(
-      await sendTalkTurn(BODY, h, { fetchImpl: fetchOf(new TypeError("x")) }),
+      await sendTalkLessonTurn(BODY, h, {
+        fetchImpl: fetchOf(new TypeError("x")),
+      }),
     ).toBe("offline");
     expect(
-      await sendTalkTurn(BODY, h, {
+      await sendTalkLessonTurn(BODY, h, {
         fetchImpl: fetchOf(
           new Response(
             streamOf([`${JSON.stringify({ t: "s", en: "Hi!" })}\n`], {
@@ -135,7 +143,7 @@ describe("회화 턴 요청(talk-stream)", () => {
     ] as const) {
       const { h, seen } = handlers();
       expect(
-        await sendTalkTurn(BODY, h, {
+        await sendTalkLessonTurn(BODY, h, {
           fetchImpl: fetchOf(
             new Response(streamOf([`${JSON.stringify(line)}\n`])),
           ),
@@ -145,7 +153,7 @@ describe("회화 턴 요청(talk-stream)", () => {
     }
     const { h, seen } = handlers();
     expect(
-      await sendTalkTurn(BODY, h, {
+      await sendTalkLessonTurn(BODY, h, {
         fetchImpl: fetchOf(new Response("{}", { status: 403 })),
       }),
     ).toBe("done");
@@ -179,7 +187,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
     ]);
     const { h, seen } = handlers();
     const attempts: number[] = [];
-    const out = await sendTalkTurnRetrying(BODY, h, {
+    const out = await sendTalkLessonTurnRetrying(BODY, h, {
       fetchImpl,
       isOnline: () => true,
       wait: async (ms) => {
@@ -201,7 +209,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
     expect(attempts).toEqual([0, 1, 2]);
     expect(seen).toEqual(["s:Hi!", "end:2"]);
 
-    const offline = await sendTalkTurnRetrying(BODY, handlers().h, {
+    const offline = await sendTalkLessonTurnRetrying(BODY, handlers().h, {
       fetchImpl: fetchSeq([() => new TypeError("cut")]),
       isOnline: () => false,
       wait: async () => {},
@@ -212,7 +220,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
 
   it("회화 턴 요청: 온라인 끊김 다시 보내기는 상한까지이고 그 뒤 offline 이다", async () => {
     const fetchImpl = fetchSeq([() => new TypeError("cut")]);
-    const out = await sendTalkTurnRetrying(BODY, handlers().h, {
+    const out = await sendTalkLessonTurnRetrying(BODY, handlers().h, {
       fetchImpl,
       isOnline: () => true,
       wait: async () => {},
@@ -233,7 +241,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
         ),
     ]);
     const { h, seen } = handlers();
-    const out = await sendTalkTurnRetrying(BODY, h, {
+    const out = await sendTalkLessonTurnRetrying(BODY, h, {
       fetchImpl,
       isOnline: () => true,
       wait: async (ms) => {
@@ -258,7 +266,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
   it("회화 턴 요청: 자료를 다시 읽어 틀이 바뀌면(끊음 신호) 되풀이를 멈추고 stale 되풀이는 상한까지다", async () => {
     const controller = new AbortController();
     const fetchImpl = fetchSeq([lineResponse({ t: "stale" })]);
-    const out = await sendTalkTurnRetrying(BODY, handlers().h, {
+    const out = await sendTalkLessonTurnRetrying(BODY, handlers().h, {
       fetchImpl,
       signal: controller.signal,
       isOnline: () => true,
@@ -269,7 +277,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
     expect(fetchImpl).toHaveBeenCalledTimes(1);
 
     const many = fetchSeq([lineResponse({ t: "stale" })]);
-    const gaveUp = await sendTalkTurnRetrying(BODY, handlers().h, {
+    const gaveUp = await sendTalkLessonTurnRetrying(BODY, handlers().h, {
       fetchImpl: many,
       isOnline: () => true,
       wait: async () => {},
@@ -282,7 +290,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
   it("회화 턴 요청: 끊음 신호로 멈춘 요청은 offline 이 아니라 aborted 이고 처리기를 더 부르지 않는다", async () => {
     const controller = new AbortController();
     const seen: string[] = [];
-    const h: TalkStreamHandlers = {
+    const h: TalkLessonStreamHandlers = {
       ...handlers().h,
       onSentence: (en) => {
         seen.push(`s:${en}`);
@@ -292,7 +300,7 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
       onAdd: (line) => seen.push(`add:${line.kind}`),
       onEnd: () => seen.push("end"),
     };
-    const out = await sendTalkTurnRetrying(BODY, h, {
+    const out = await sendTalkLessonTurnRetrying(BODY, h, {
       fetchImpl: fetchSeq([
         () =>
           new Response(
@@ -310,5 +318,125 @@ describe("회화 턴 되풀이(재검토 N-1 · 코드 검토 I-1 · I-2)", () =
     });
     expect(out).toBe("aborted");
     expect(seen).toEqual(["s:One."]);
+  });
+});
+
+// ── 새 꼴 턴 줄(회화 plan 묶음 11 — TalkLessonLine: sound 줄 · 끝 줄 lesson 칸) ──
+
+function lessonHandlers() {
+  const seen: string[] = [];
+  const h: TalkLessonStreamHandlers = {
+    onSentence: (en) => seen.push(`s:${en}`),
+    onKo: (ko) => seen.push(`ko:${ko}`),
+    onAdd: (line) => seen.push(`add:${line.kind}:${line.en}`),
+    onSound: (line) =>
+      seen.push(
+        `sound:${line.kind}:${line.kind === "choices" ? line.answers.join("|") : line.say}`,
+      ),
+    onEnd: (next) => seen.push(`end:${next.talkCount}:${next.segment}`),
+    onResting: () => seen.push("resting"),
+    onBreak: (line) => seen.push(`break:${line.en}`),
+    onClose: (line) => seen.push(`close:${line.reason}`),
+    onError: () => seen.push("error"),
+  };
+  return { h, seen };
+}
+
+const LESSON_END = JSON.stringify({
+  t: "end",
+  lesson: {
+    segment: "talk",
+    greetingDone: true,
+    talkCount: 3,
+    choice: null,
+    closingAsked: false,
+    moreRound: 0,
+    moreInRound: 0,
+    targets: [],
+    hints: [],
+    flashDontKnow: false,
+    silentBlocked: false,
+    prep: null,
+    firstQuestionDue: false,
+    completed: false,
+  },
+});
+
+describe("새 꼴 회화 턴 요청(talk-stream — 묶음 11)", () => {
+  it("AC-15q 새 꼴 턴 줄: 문장 · 뜻 · 소리 줄(따라 할 말 · 선택지 · 받침의 답) · 붙인 줄 · 끝 줄(lesson)을 받은 차례대로 넘긴다", async () => {
+    const lines = [
+      JSON.stringify({ t: "s", en: "Good job!" }),
+      JSON.stringify({ t: "ko", ko: "잘했어!" }),
+      JSON.stringify({ t: "sound", kind: "model", say: "The beach." }),
+      JSON.stringify({ t: "sound", kind: "choices", answers: ["Yes.", "No."] }),
+      JSON.stringify({ t: "sound", kind: "answer", say: "I like the sea." }),
+      JSON.stringify({
+        t: "add",
+        kind: "question",
+        en: "Do you like the sea?",
+      }),
+      LESSON_END,
+    ].join("\n");
+    const cut = Math.floor(lines.length / 2);
+    const fetchImpl = fetchOf(
+      new Response(streamOf([lines.slice(0, cut), `${lines.slice(cut)}\n`])),
+    );
+    const { h, seen } = lessonHandlers();
+    expect(await sendTalkLessonTurn(BODY, h, { fetchImpl })).toBe("done");
+    expect(seen).toEqual([
+      "s:Good job!",
+      "ko:잘했어!",
+      "sound:model:The beach.",
+      "sound:choices:Yes.|No.",
+      "sound:answer:I like the sea.",
+      "add:question:Do you like the sea?",
+      "end:3:talk",
+    ]);
+  });
+
+  it("새 꼴 턴 줄: 끝 줄 갈래(쉼 · 쉬어 감 · 닫힘 · 오류)를 넘기고 끝 줄 없이 끊기면 offline, stale 은 되풀이가 같은 시도 id 로 다시 보낸다", async () => {
+    for (const [line, want] of [
+      [{ t: "resting" }, "resting"],
+      [{ t: "break", en: "Oops!" }, "break:Oops!"],
+      [
+        { t: "close", reason: "safety", farewell: { en: "Bye!" } },
+        "close:safety",
+      ],
+      [{ t: "error" }, "error"],
+    ] as const) {
+      const { h, seen } = lessonHandlers();
+      const fetchImpl = fetchOf(
+        new Response(streamOf([`${JSON.stringify(line)}\n`])),
+      );
+      expect(await sendTalkLessonTurn(BODY, h, { fetchImpl })).toBe("done");
+      expect(seen).toEqual([want]);
+    }
+    const cut = lessonHandlers();
+    expect(
+      await sendTalkLessonTurn(BODY, cut.h, {
+        fetchImpl: fetchOf(
+          new Response(streamOf([`${JSON.stringify({ t: "s", en: "Hi" })}\n`])),
+        ),
+      }),
+    ).toBe("offline");
+    // stale → 기다렸다 자료를 다시 읽고 같은 본문으로 다시 → 끝 줄
+    const responses = [
+      new Response(streamOf([`${JSON.stringify({ t: "stale" })}\n`])),
+      new Response(streamOf([`${LESSON_END}\n`])),
+    ];
+    const fetchImpl = vi.fn(async () => responses.shift() as Response);
+    const refresh = vi.fn();
+    const { h, seen } = lessonHandlers();
+    expect(
+      await sendTalkLessonTurnRetrying(BODY, h, {
+        fetchImpl,
+        refresh,
+        isOnline: () => true,
+        wait: async () => {},
+      }),
+    ).toBe("done");
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(seen).toEqual(["end:3:talk"]);
   });
 });

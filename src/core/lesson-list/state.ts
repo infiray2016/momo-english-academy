@@ -6,6 +6,9 @@
 // 쓰기 6단계 이상 두 세션(plan-p11b 값 11 · 정할 것 ㄱ · 13절 C79): 첫 세션(초고)만 끝난 칸은 남은 수업이고 둘째 세션(고쳐 쓰기)이 끝나야
 // 끝낸 수업이다. 첨삭이 오면 시작 판정이 둘째 세션을 열고(그 첫 세션의 수업 행 · 종류), 대기면 feedback_pending, 못 함이면 새 첫 세션.
 // 잠긴 단원 수의 정규 수업 수는 첫 세션으로 센다(둘째 세션은 빼고, 학습일은 둘 다). P12 단원 통과 판정이 같은 규칙을 쓴다.
+// 위 띠(UI · UX 묶음 3 · 4절 수업 목록 '첫 화면' 행 R-13 · [승인 UX2] · AC-2d): 단원 5칸과 지금 단원 막대 둘(읽기 · 쓰기 · 말하기는 아는 단어 ·
+// 최근 성적, 회화는 아는 단어 · 끝낸 대화 · 친한 정도)을 그린다. 홈 카드에서 옮겨 왔다. 셈 재료(BandFacts)는 서버(lesson-list/band.ts)가
+// 채우고, 그 영역에 끝낸 세션이 없으면 막대를 숨긴다(R-13 — 홈 첫 사용 꼴과 같은 뜻).
 import type { Area } from "@/core/seed/structure";
 
 export type LessonKindRef = "assigned" | "reinforce" | "alphabet" | "remedial";
@@ -69,6 +72,37 @@ export type ListState =
   | "next_level_pending"
   | "graduated";
 
+/** 단원 칸: 통과 · 지금 · 남음. */
+export type UnitCell = "passed" | "current" | "upcoming";
+/** 최근 성적 칸: 기준 넘음 · 못 넘음 · 빈 칸. */
+export type RecentCell = "pass" | "miss" | "empty";
+
+/** 위 띠 막대 재료(서버가 채운다 — lesson-list/band.ts). */
+export type BandFacts = {
+  /** 그 영역에서 배치 평가 말고 끝낸 세션이 있는가(없으면 막대를 숨긴다, R-13). */
+  finished: boolean;
+  /** 이 단계에서 통과한 회차가 있는 단원. */
+  passedUnits: number[];
+  /** 아는 단어 n / 지금 단원 단어 수(3.2 — 읽기 · 말하기 '알아봄', 쓰기 '씀', 회화 '말함'). */
+  known: { n: number; of: number };
+  /** 읽기 · 쓰기 · 말하기: 최근 정규 수업 칸(오래된 것부터). */
+  recent?: RecentCell[];
+  /** 회화: 끝낸 대화 n / 최소 수업 수. */
+  talks?: { done: number; min: number };
+  /** 회화: 친한 정도 n / talk.friendship_max 와 이름 자리(고르기 전 null — '선생님'). */
+  friendship?: { n: number; max: number; teacherName: string | null };
+};
+
+/** 위 띠 막대 둘(회화는 셋째로 친한 정도). */
+export type BandBars =
+  | { kind: "lesson"; known: BandFacts["known"]; recent: RecentCell[] }
+  | {
+      kind: "talk";
+      known: BandFacts["known"];
+      talks: NonNullable<BandFacts["talks"]>;
+      friendship: NonNullable<BandFacts["friendship"]>;
+    };
+
 export type ListInput = {
   area: Area;
   level: number;
@@ -94,6 +128,8 @@ export type ListInput = {
   unitsPerLevel: number;
   /** 쓰기 6~12 첫 세션 · 첨삭 상태(그 밖 영역 · 단계는 비움). feedbackReady 는 이 가운데 ready 의 ref 다. */
   writingDrafts?: WritingDraft[];
+  /** 위 띠 막대 재료(서버가 채움). 없으면 단원 칸은 지난 통과 단원으로 그리고 막대는 숨긴다. */
+  bandFacts?: BandFacts;
 };
 
 export type LessonItem = {
@@ -124,7 +160,13 @@ export type LockLine =
   | { kind: "score" };
 
 export type ListView = {
-  band: { level: number; unit: number };
+  /** 위 띠: 지금 단계 · 단원 · 단원 5칸 · 막대(끝낸 세션이 없으면 null). */
+  band: {
+    level: number;
+    unit: number;
+    cells: UnitCell[];
+    bars: BandBars | null;
+  };
   /** 지금 단원 묶음(앞줄 보강 · 배정 · 알파벳, 뒷줄 다지기). 부모 확인 대기면 비움(안내가 그 자리). */
   current: { front: LessonItem[]; back: LessonItem[] } | null;
   top: TopItem[];
@@ -307,7 +349,16 @@ export function lessonListState(input: ListInput): ListView {
   }
 
   return {
-    band: { level: input.level, unit: input.unit },
+    band: {
+      level: input.level,
+      unit: input.unit,
+      cells: unitCellsOf({
+        unit: input.unit,
+        unitsPerLevel: input.unitsPerLevel,
+        passedUnits: input.bandFacts?.passedUnits ?? input.unitsPassed,
+      }),
+      bars: bandBarsOf(input.area, input.bandFacts),
+    },
     current:
       input.state === "parent_check"
         ? null
@@ -332,6 +383,97 @@ export function lessonListState(input: ListInput): ListView {
         ? input.state
         : null,
   };
+}
+
+/** 단원 칸(4절 '첫 화면' 행 — 단계 안 단원 칸 수): 지금 단원은 current, 통과한 회차가 있는 단원은 passed, 나머지는 upcoming. */
+export function unitCellsOf({
+  unit,
+  unitsPerLevel,
+  passedUnits,
+}: {
+  unit: number;
+  unitsPerLevel: number;
+  passedUnits: readonly number[];
+}): UnitCell[] {
+  return Array.from({ length: unitsPerLevel }, (_, i) => {
+    const u = i + 1;
+    if (u === unit) return "current";
+    return passedUnits.includes(u) ? "passed" : "upcoming";
+  });
+}
+
+/**
+ * 최근 성적 칸(4절 '첫 화면' 행 · 3.7): 이 단원 회차에서 끝낸 정규 수업(최근 것부터)에서 점수 없는 세션과 쓰기 둘째 세션(고쳐 쓰기)을
+ * 빼고 최근 windowSize 개를 오래된 것부터 놓는다. 기준(pass) 이상이면 pass, 아니면 miss, 남는 칸은 empty(수업 하나 = 첫 세션 점수).
+ */
+export function recentCellsOf({
+  sessions,
+  windowSize,
+  pass,
+}: {
+  sessions: readonly { score: number | null; writingPart?: string | null }[];
+  windowSize: number;
+  pass: number;
+}): RecentCell[] {
+  const last = sessions
+    .flatMap((s) =>
+      s.score !== null && s.writingPart !== "rewrite" ? [s.score] : [],
+    )
+    .slice(0, windowSize)
+    .reverse();
+  return Array.from({ length: windowSize }, (_, i) => {
+    const score = last[i];
+    if (score === undefined) return "empty";
+    return score >= pass ? "pass" : "miss";
+  });
+}
+
+/** 위 띠 막대(R-13): 재료가 없거나 그 영역에 끝낸 세션이 없으면 null(막대를 숨김). 회화는 끝낸 대화 · 친한 정도까지 있어야 그린다. */
+export function bandBarsOf(
+  area: Area,
+  facts: BandFacts | undefined,
+): BandBars | null {
+  if (!facts?.finished) return null;
+  if (area === "talk") {
+    if (!facts.talks || !facts.friendship) return null;
+    return {
+      kind: "talk",
+      known: facts.known,
+      talks: facts.talks,
+      friendship: facts.friendship,
+    };
+  }
+  return { kind: "lesson", known: facts.known, recent: facts.recent ?? [] };
+}
+
+/**
+ * '여기부터 해요' 수업의 제목(4절 홈 회화 카드 행 — 오늘 이야기 제목): 새 수업 · 연습이면 그 칸, 하던 수업이면 그 세션의 칸 제목.
+ * 첨삭 · 단계 평가 · 복습이거나 '여기부터 해요'가 없으면 null.
+ */
+export function hereStartTitleOf(
+  input: ListInput,
+  view: ListView,
+): string | null {
+  const here = view.hereStart;
+  if (!here) return null;
+  let ref: LessonRef | undefined;
+  let cells: readonly LessonCellView[] = [];
+  if (here.kind === "lesson") {
+    ref = here.ref;
+    cells = input.lessonsByUnit[here.ref.unit] ?? [];
+  } else if (here.kind === "practice") {
+    ref = here.ref;
+    cells = input.practice.filter((c) => c.variant === here.variant);
+  } else if (here.kind === "resume") {
+    const top = view.top.find(
+      (t) => t.kind === "resume" && t.sessionId === here.sessionId,
+    );
+    ref = top?.kind === "resume" ? top.ref : undefined;
+    cells = ref ? (input.lessonsByUnit[ref.unit] ?? []) : [];
+  }
+  if (!ref) return null;
+  const target = ref;
+  return cells.find((c) => sameRef(refOf(c), target))?.title ?? null;
 }
 
 export type PastItem = {

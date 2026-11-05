@@ -294,4 +294,17 @@ describe("6.1 요청 본문", () => {
       expect(built.body.output_config).not.toHaveProperty("format");
     }
   });
+
+  it("6.1 요청: 말하기 질문 답의 가변부에 질문 직전 이야기(시드 storyEn)가 'Story the child heard' 줄로 들고, 이야기가 없으면 그 줄이 없다(가르치고 배우는 수업 plan 정한 것 5)", () => {
+    const story = "Dan and Tess drink milk. I drink orange juice.";
+    const withStory = speakingAnswerSpec.system({ ...answerInput, story }, {});
+    expect(withStory).toContain(`Story the child heard: ${story}`);
+    // 이야기는 시드 글이라 가리기 대상이 아니다(아이 자료는 인식 글뿐 — 가리기 뒤에도 그대로)
+    expect(
+      speakingAnswerSpec.mask({ ...answerInput, story }, masker).story,
+    ).toBe(story);
+    expect(
+      speakingAnswerSpec.system({ ...answerInput, story: null }, {}),
+    ).not.toContain("Story the child heard");
+  });
 });

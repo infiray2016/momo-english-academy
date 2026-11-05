@@ -1,5 +1,8 @@
 // 새 단어 미리보기 · 활동 차례(3.2 · 3.3 첫 활동 · AC-2f, plan-p10b 파일별 값 3 · 정할 것 ㄹ · ㅁ · ㅈ, plan-p11a 파일별 값 1 · 위험 3).
 // DB 없는 순수 함수다. 활동 차례는 3.3 영역별 세션 순서이고, 돌려준 목록의 차례 번호(1부터)가 attempts.activity_no 다.
+// 가르치는 수업(teach 칸이 있는 수업)은 여섯 자리 차례다(델타 spec 2026-10-29 가르치고 배우는 수업 설계 1 · 9, plan 나 · 정한 것 1 · 3 · 4):
+// 오늘 배울 것 → 새 단어 → 본보기 → 같이 해 보기 → 혼자 해 보기(지금 차례) → 짝(모든 짝, 영역 차례로 고정 번호). 되짚기는 결과 화면 몫.
+// 단계 숫자로 가르지 않고 teach 칸 유무로 가른다.
 import type { LessonOf } from "@/core/seed/schema/lesson";
 import type { Area } from "@/core/seed/structure";
 
@@ -53,8 +56,23 @@ export function previewWordsOf(input: {
   return [...base, ...added];
 }
 
+/** 짝을 두는 혼자 문항 종류(짝 활동의 base — 짝 시도는 이 종류의 꼴에 slot "spare" 를 단다). */
+export type SpareBase =
+  | "reading-question"
+  | "writing-item"
+  | "question"
+  | "listening"
+  | "repeat-sentence"
+  | "repeat-word";
+
 /** 세션 활동 하나(화면이 그릴 자리 — 내용은 수업 content 의 그 차례). b · c 몫 종류도 여기서 차례를 정한다. */
 export type Activity =
+  // 가르치는 수업 자리(teach 칸이 있는 수업만): 오늘 배울 것 · 본보기(teach.models 차례) · 같이 해 보기(teach.together 차례)
+  | { kind: "today" }
+  | { kind: "model"; index: number }
+  | { kind: "together"; index: number }
+  /** 짝(다른 예시에서 스스로): base 종류 혼자 문항 index 의 짝. */
+  | { kind: "spare"; base: SpareBase; index: number }
   | { kind: "preview" }
   // 읽기
   | { kind: "reading-passage" }
@@ -102,6 +120,8 @@ export type ActivityModelInput = {
   corrections?: number;
   /** 확인 질문 수(그 단계 level_specs presentation.confirmQuestions). */
   confirmQuestions?: number;
+  /** 수업 시드의 teach 칸(있으면 여섯 자리 차례 — 정한 것 1). 본보기 · 같이 해 보기 수만 본다. */
+  teach?: { models: readonly unknown[]; together: readonly unknown[] };
 };
 
 const run = <K extends "feedback-correction" | "confirm-question">(
@@ -178,25 +198,106 @@ function speakingActivities(
   ];
 }
 
+/** 짝 활동: 짝이 있는 혼자 문항마다 하나(문항 차례). */
+const sparesOf = (
+  base: SpareBase,
+  list: readonly unknown[],
+  has: (item: unknown, index: number) => boolean,
+): Activity[] =>
+  list.flatMap((item, index) =>
+    has(item, index) ? [{ kind: "spare", base, index } as Activity] : [],
+  );
+const withSpare = (item: unknown) =>
+  typeof item === "object" &&
+  item !== null &&
+  "spare" in item &&
+  item.spare !== undefined;
+
+/**
+ * 짝 활동 차례(정한 것 3): 읽기 · 쓰기는 문항 차례, 말하기는 질문 → 듣기 → 문장 → 낱말(델타 spec 설계 1 '다른 예시' — 짝 고르기가
+ * 먼저 고르는 차례와 같다). 낼 짝은 sparesToShow 가 정하고, 차례 번호는 낸 짝과 상관없이 같다.
+ */
+function spareActivities(input: ActivityModelInput): Activity[] {
+  switch (input.area) {
+    case "reading":
+      return sparesOf("reading-question", input.content.questions, withSpare);
+    case "writing":
+      return input.content.shape === "items"
+        ? sparesOf("writing-item", input.content.items, withSpare)
+        : [];
+    case "speaking": {
+      const c = input.content;
+      const spares = c.repeat.spares;
+      return [
+        ...sparesOf("question", c.questions, withSpare),
+        ...sparesOf("listening", c.listening, withSpare),
+        ...sparesOf(
+          "repeat-sentence",
+          c.repeat.sentences,
+          (_, i) => spares?.sentences[i] !== undefined,
+        ),
+        ...sparesOf(
+          "repeat-word",
+          c.repeat.words,
+          (_, i) => spares?.words[i] !== undefined,
+        ),
+      ];
+    }
+    default:
+      return [];
+  }
+}
+
+/** 지금 차례(미리보기 → 과제)를 여섯 자리로: 미리보기 앞에 오늘 배울 것, 뒤에 본보기 · 같이 해 보기, 끝에 짝. 미리보기가 없는 세션은 그대로. */
+function teachOrder(base: Activity[], input: ActivityModelInput): Activity[] {
+  const { teach } = input;
+  const [first, ...rest] = base;
+  if (!teach || first?.kind !== "preview") return base;
+  return [
+    { kind: "today" },
+    first,
+    ...teach.models.map((_, index): Activity => ({ kind: "model", index })),
+    ...teach.together.map(
+      (_, index): Activity => ({ kind: "together", index }),
+    ),
+    ...rest,
+    ...spareActivities(input),
+  ];
+}
+
 /**
  * 영역 수업의 활동 차례(3.3 영역별 세션 순서 · plan-p11a 값 1): 읽기 미리보기 → 지문 → 문항, 쓰기 1~3 미리보기 → 문항,
  * 4~5 미리보기 → 과제 → 문장 전부 → 내 문장 따라 말하기, 6~12 첫 세션 미리보기 → 과제 → (생각 꺼내기) → 초고 · 둘째 세션
  * 칭찬 → 교정 → 고쳐 쓰기 → 모범 답안 → 내 문장 말하기, 말하기 미리보기 → 따라 말하기 낱말 → 문장 → 듣기 → 그림 보고 말하기 →
- * 질문 → 발표 → 확인 질문. 회화는 빈 목록(1-나).
+ * 질문 → 발표 → 확인 질문. 회화는 빈 목록(1-나). teach 가 있으면 여섯 자리 차례(teachOrder).
  */
 export function activitiesOf(input: ActivityModelInput): Activity[] {
   switch (input.area) {
     case "reading":
-      return [
-        { kind: "preview" },
-        { kind: "reading-passage" },
-        ...each("reading-question", input.content.questions),
-      ];
+      return teachOrder(
+        [
+          { kind: "preview" },
+          { kind: "reading-passage" },
+          ...each("reading-question", input.content.questions),
+        ],
+        input,
+      );
     case "writing":
-      return writingActivities(input.content, input);
+      return teachOrder(writingActivities(input.content, input), input);
     case "speaking":
-      return speakingActivities(input.content, input);
+      return teachOrder(speakingActivities(input.content, input), input);
     default:
       return [];
   }
+}
+
+/**
+ * 새 단어 미리보기 활동 번호(1부터, 정한 것 4). 지금 차례는 1, 가르치는 수업은 오늘 배울 것 뒤라 2 다. 미리보기가 없는 세션(쓰기 6~12
+ * 둘째 세션)은 undefined. 다른 세션의 미리보기 시도는 번호가 아니라 시도 꼴 kind "preview" 로 찾는다(옛 세션 · 새 세션이 섞임).
+ */
+export function previewActivityNoOf(
+  activities: readonly Activity[],
+): number | undefined {
+  const index = activities.findIndex((a) => a.kind === "preview");
+  return index < 0 ? undefined : index + 1;
 }

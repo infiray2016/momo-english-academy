@@ -1,6 +1,9 @@
 // 회화 '말했다' · '안다' · 만남 · 단원 단어 조건 · 영어로 말한 문장 · S-3 단어 수(3.4 '말함' 문단 · 3.2 회화 단원 통과 ·
 // 5절 vocab_progress · C41 · AC-9d · AC-15c, plan-p13a 파일별 값 9). 순수 모듈이다.
-import type { TalkHintKind, TalkInputMode } from "@/core/ai/calls/talk";
+import type {
+  TalkHintKind,
+  TalkInputMode,
+} from "@/core/conversation/lesson-turns";
 import { FLOAT_TOLERANCE } from "@/core/seed/structure";
 import { normalizeForMatch } from "@/core/speech/match-rate";
 
@@ -105,11 +108,14 @@ export function metWordsIn(
   return unitWordsIn(text, { ...lex, homophones: [] });
 }
 
-/** '말했다'를 세는 자리(3.4): 회화 턴만. 오늘 쓸 말 · 말해 보기 · 정리 · 한 번 더 말해 보기의 따라 말하기는 세지 않는다. 다시 하기 · 중단된 대화의 턴은 센다. */
+/**
+ * '말했다'를 세는 자리(3.4): 회화 턴만. 짧은 준비 · 바닥선 듣기 활동(C189) · 정리 · 한 번 더 말해 보기의
+ * 따라 말하기는 세지 않는다. 다시 하기 · 중단된 대화의 턴은 센다. 서버가 붙인 소리 줄을 들은 턴은 힌트 종류 '영어'라 saidWordsOf 가 뺀다.
+ */
 export function countsAsSaid({
   source,
 }: {
-  source: "turn" | "today_words" | "practice" | "wrap_up" | "again";
+  source: "turn" | "prep" | "floor" | "wrap_up" | "again";
   sessionKind: "regular" | "retry" | "aborted";
 }): boolean {
   return source === "turn";

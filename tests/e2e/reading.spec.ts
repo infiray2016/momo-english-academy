@@ -25,6 +25,8 @@ const T = {
   showPassage: "지문 보기",
   close: "닫기",
   done: "수업을 끝냈어요!",
+  /** '한 번 더 풀기' 뒤 할 일(U4-7). */
+  pickAnother: "다른 답을 골라요",
 } as const;
 
 /** 두 방향 모두 쪽이 보는 창보다 길지 않다(화면 검토 review-p11-3-design M-1). 끝나면 세로로 돌려 둔다. */
@@ -100,10 +102,11 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
     await page.goto(`/session/${sessionId}`);
     await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
     await expect(activity).toHaveAttribute("data-activity", "preview");
-    // 문제는 규격 수만큼(활동 점 = 미리보기 · 지문 · 문항)
+    // 문제는 규격 수만큼(활동 묶음 막대의 칸 = 미리보기 · 지문 · 문항 — UI · UX 묶음 5-가 D-7)
     expect(questions).toHaveLength(spec.questions.total);
-    await expect(page.locator("[data-activity-dots] li")).toHaveCount(
-      2 + spec.questions.total,
+    await expect(page.locator("[data-activity-progress]")).toHaveAttribute(
+      "data-activity-total",
+      String(2 + spec.questions.total),
     );
     await page.getByRole("button", { name: T.next }).click();
 
@@ -183,7 +186,9 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
           "data-question-stage",
           "wrong",
         );
-        await expect(page.getByText(question.explanationKo)).toBeVisible();
+        await expect(
+          page.getByText(question.explanationKo ?? ""),
+        ).toBeVisible();
         await expect(
           page.getByRole("button", { name: T.tryAgain }),
         ).toBeVisible();
@@ -193,13 +198,17 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
         await expect(page.getByRole("button", { name: T.next })).toHaveCount(0);
         await photo(page, "p11-reading-wrong");
         await page.getByRole("button", { name: T.tryAgain }).click();
+        // U4-7 할 일 한 줄
+        await expect(page.getByText(T.pickAnother)).toBeVisible();
         // 다시 고르는 동안: 처음 오답은 ✕ 로 남고(고를 수 없음) 해설도 남는다(화면 검토 M-1 · M-2)
         await expect(choice(wrong)).toHaveAttribute(
           "data-choice-state",
           "picked-wrong",
         );
         await expect(choice(wrong)).toBeDisabled();
-        await expect(page.getByText(question.explanationKo)).toBeVisible();
+        await expect(
+          page.getByText(question.explanationKo ?? ""),
+        ).toBeVisible();
         await photo(page, "p11-reading-retry");
         const second = [1, 2, 3, 4].find(
           (no) => no !== wrong && no !== question.answerNo,
@@ -223,7 +232,9 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
         // 고르면 바로 채점과 해설(누름 한 번)
         await choice(question.answerNo).click();
         await expect(page.getByText(T.right)).toBeVisible();
-        await expect(page.getByText(question.explanationKo)).toBeVisible();
+        await expect(
+          page.getByText(question.explanationKo ?? ""),
+        ).toBeVisible();
         if (index === 1) {
           await photo(page, "p11-reading-right");
           await fitsBothWays(page);
@@ -245,6 +256,9 @@ test("AC-3a 읽기 4단계 세션의 지문은 55~80단어이고 문제는 4개�
     // 결과: '수업을 끝냈어요!', 세션 완료 · 점수 = 첫 시도 정답 수 ÷ 문항 수
     await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
     await expect(page.getByRole("heading", { name: T.done })).toBeVisible();
+    // C166 R3(U4-1): 끝낸 수업은 별 하나와 오늘 만난 단어(이 세션 미리보기 단어)
+    await expect(page.locator("[data-reward-star]")).toBeVisible();
+    expect(await page.locator("[data-met-word]").count()).toBeGreaterThan(0);
     await photo(page, "p11-reading-result");
     const [row] = await e2eDb()
       .select({ status: sessions.status, score: sessions.score })

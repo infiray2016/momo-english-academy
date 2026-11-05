@@ -215,6 +215,8 @@ export async function checkGuided(
       level,
       content,
       ...(row.session.writingPart ? { part: row.session.writingPart } : {}),
+      // 세션 서버와 같은 차례(teach 칸이 있으면 여섯 자리 — 가르치고 배우는 수업 plan 정한 것 1)
+      ...(lesson.teach ? { teach: lesson.teach } : {}),
     });
     if (activities[activityNo - 1]?.kind !== "writing-guided")
       return { ok: false, reason: "not_found" };

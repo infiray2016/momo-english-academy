@@ -77,13 +77,13 @@ export function AccessCodeForm() {
           ref={inputRef}
           value={code}
           onChange={(event) => setCode(event.target.value)}
-          className="min-h-14 rounded-2xl border-2 border-neutral-500 bg-white px-4 text-xl focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          className="min-h-14 rounded-2xl border-2 border-ink-soft bg-paper px-4 text-xl focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="min-h-14 rounded-2xl bg-neutral-900 px-6 text-2xl font-bold text-white focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:opacity-60"
+        className="min-h-14 rounded-2xl bg-ink px-6 text-2xl font-bold text-paper focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-60"
       >
         들어가기
       </button>

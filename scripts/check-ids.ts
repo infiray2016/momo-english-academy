@@ -2,8 +2,9 @@
 // 그래프 엔지니어링 '자료 그래프': 점 일곱(12절 키 · settings.json 행 · 코드 글자 · 5절 테이블 · 스키마 테이블 ·
 // 쓰기 단계 규격 행 · 시험 설정값)과 선(펼침 · 같은 키 · 읽음 · 같은 이름 · 같은 값)을 맞댄다.
 // 뽑기는 정규식 · 표 풀기 · TypeScript 구문 트리로만 한다(모델 추출 없음).
-// 사용: pnpm check:ids [--specs <폴더>] [--seed-root <폴더>] [--fail-on <규칙,…>] [--json]
-// 종료 코드: 0 보고만(기본) 또는 --fail-on 규칙에 위반 없음, 1 --fail-on 규칙에 위반,
+// 화면 소스의 토큰 밖 색(design-color)과 설계 숫자 경고 수 상한(--design-number-max)도 본다(UI · UX plan 묶음 2-다 · AC-23e (1)).
+// 사용: pnpm check:ids [--specs <폴더>] [--seed-root <폴더>] [--fail-on <규칙,…>] [--design-number-max <수>] [--json]
+// 종료 코드: 0 보고만(기본) 또는 --fail-on 규칙에 위반 없음 · 설계 숫자가 상한 이하, 1 --fail-on 규칙에 위반 또는 설계 숫자가 상한을 넘음,
 // 2 정본 파일을 못 읽음 · 정본 꼴 오류 · 모르는 인자 · 모르는 규칙 · seed/ 가 있는데 풀리지 않음.
 // 순수 함수와 runCheckIds(args, io) 를 내보내고 파일 읽기 · 출력은 직접 실행될 때만 한다.
 import {
@@ -36,6 +37,16 @@ export const DEFAULT_SEED_ROOT = "seed";
 export const CODE_DIRS = ["src", "scripts", "tests/fixtures"] as const;
 /** 설계 숫자를 훑는 폴더. */
 export const DESIGN_DIRS = ["src"] as const;
+/**
+ * 토큰 밖 색을 훑는 화면 소스 폴더(AC-23e (1), spec UI · UX 설계 5.1). 색 값은 src/app/globals.css 의 토큰 한 곳에만 두고
+ * 화면 소스는 토큰 이름(bg-paper · text-ink · var(--color-…))으로만 쓴다. .css 는 훑지 않는다(토큰을 정의하는 곳).
+ */
+export const SCREEN_DIRS = ["src/components", "src/app"] as const;
+/**
+ * 아이 화면이 아닌 개발 도구 쪽(시드 보기 · 음성 · 선생님 시험 화면, next dev 전용). 날값 색 · 기본 팔레트는 보지 않고
+ * 코르크 토큰만 본다(지운 토큰이라 어디에도 남지 않게, ux-tokens 시험과 같은 나눔).
+ */
+export const DESIGN_COLOR_DEV_DIR = "src/app/dev/";
 const CODE_EXTENSIONS = [".ts", ".tsx"] as const;
 /** 설계 숫자 훑기에서 통째로 빼는 파일(C54 (2) 허용 목록 — 구조 상수). */
 export const DESIGN_NUMBER_EXCLUDED_FILES = ["src/core/seed/structure.ts"];
@@ -117,6 +128,7 @@ export const RULES = [
   "max-corrections",
   "fixture-setting",
   "design-number",
+  "design-color",
 ] as const;
 export type Rule = (typeof RULES)[number];
 /** seed/ 가 없으면 건너뛰는 규칙. */
@@ -130,7 +142,10 @@ export const SEED_RULES: readonly Rule[] = [
   "fixture-setting",
   "design-number",
 ];
-/** CI 작업 check-ids 가 막는 규칙(design-number 는 보고만 — 묶음 plan 작업 10 차수 경계에서 막음으로). */
+/**
+ * CI 작업 check-ids 가 막는 규칙. design-number 는 하나하나 막지 않고 경고 수를 --design-number-max 상한으로 막는다
+ * (UI · UX plan 정한 것 8 — 기준 값은 CI 작업 파일의 인자에만 둔다).
+ */
 export const CI_FAIL_ON: readonly Rule[] = RULES.filter(
   (rule) => rule !== "design-number",
 );
@@ -164,6 +179,14 @@ export type DesignNumber = {
   line: number;
   value: number;
   keys: string[];
+};
+export type DesignColorKind = "hex" | "function" | "palette" | "cork";
+export type DesignColor = {
+  file: string;
+  line: number;
+  kind: DesignColorKind;
+  /** 걸린 글자(날값 색 · 색 함수 호출 · 클래스 한 낱). */
+  text: string;
 };
 export type Violation = { rule: Rule; location: string; detail: string };
 export type Counts = Record<Rule, number>;
@@ -515,6 +538,81 @@ export function collectDesignNumbers(
   return found;
 }
 
+/** 날값 색(#rgb · #rgba · #rrggbb · #rrggbbaa). */
+const RAW_HEX_COLOR = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b/gi;
+/** 색 함수 호출(rgb() · rgba() · hsl() · hsla()). 토큰을 섞는 color-mix(var(--color-…)) 는 날값이 아니다. */
+const RAW_COLOR_FUNCTION = /\b(?:rgba?|hsla?)\([^)]*\)/gi;
+/** Tailwind 기본 팔레트 색 클래스 한 낱(변형 머리 hover: 등 · 진하기 · /투명도 포함). */
+const PALETTE_COLOR_CLASS =
+  /^(?:[^\s:]+:)*!?(?:bg|text|border(?:-[xytrblse])?|ring(?:-offset)?|fill|stroke|from|to|via|outline|decoration|divide|placeholder|accent|caret|shadow)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)(?:-\d{2,3})?(?:\/\d+)?!?$/;
+/** 지운 코르크 토큰(cork · cork-frame, C168 — 코르크 보드에서 밝은 책상으로). */
+const CORK_TOKEN = /\bcork\b/;
+const DESIGN_COLOR_LABEL: Record<DesignColorKind, string> = {
+  hex: "날값 색",
+  function: "날값 색",
+  palette: "기본 팔레트 색",
+  cork: "코르크 토큰",
+};
+
+/** 글 글자 하나에서 걸린 색(글자 안 차례대로). */
+function colorsInText(
+  text: string,
+): { at: number; kind: DesignColorKind; text: string }[] {
+  const found: { at: number; kind: DesignColorKind; text: string }[] = [];
+  for (const m of text.matchAll(RAW_HEX_COLOR))
+    found.push({ at: m.index, kind: "hex", text: m[0] });
+  for (const m of text.matchAll(RAW_COLOR_FUNCTION))
+    found.push({ at: m.index, kind: "function", text: m[0] });
+  for (const m of text.matchAll(/\S+/g)) {
+    const word = m[0];
+    if (PALETTE_COLOR_CLASS.test(word))
+      found.push({ at: m.index, kind: "palette", text: word });
+    else if (CORK_TOKEN.test(word))
+      found.push({ at: m.index, kind: "cork", text: word });
+  }
+  return found.sort((a, b) => a.at - b.at);
+}
+
+/**
+ * 화면 소스(SCREEN_DIRS 아래, 개발 도구 쪽은 코르크만)의 글 글자 · 틀 글자 조각 가운데 토큰 밖 색(AC-23e (1)). 구문 트리의 글자만 보므로 주석과 화면 글(JSX 글)은
+ * 걸리지 않고, 자료에서 오는 색(명단 accent · room 처럼 값으로 넘어오는 것)도 글자가 아니라 걸리지 않는다.
+ */
+export function collectDesignColors(
+  files: readonly SourceFile[],
+): DesignColor[] {
+  const found: DesignColor[] = [];
+  for (const file of files) {
+    if (!SCREEN_DIRS.some((dir) => file.path.startsWith(`${dir}/`))) continue;
+    const devTool = file.path.startsWith(DESIGN_COLOR_DEV_DIR);
+    const sf = parseSource(file);
+    const take = (text: string, node: ts.Node) => {
+      for (const hit of colorsInText(text)) {
+        if (devTool && hit.kind !== "cork") continue;
+        found.push({
+          file: file.path,
+          line: lineOf(sf, node),
+          kind: hit.kind,
+          text: hit.text,
+        });
+      }
+    };
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isStringLiteral(node) ||
+        ts.isNoSubstitutionTemplateLiteral(node) ||
+        ts.isTemplateHead(node) ||
+        ts.isTemplateMiddle(node) ||
+        ts.isTemplateTail(node)
+      ) {
+        take(node.text, node);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+  }
+  return found;
+}
+
 // ── 대조 ────────────────────────────────────────────────────────
 
 export type CheckInput = {
@@ -523,6 +621,8 @@ export type CheckInput = {
   schemaTables: readonly string[];
   codeFiles: readonly SourceFile[];
   designFiles: readonly SourceFile[];
+  /** 토큰 밖 색을 훑는 화면 소스(SCREEN_DIRS 아래). */
+  screenFiles: readonly SourceFile[];
   /** seed/ 가 없으면 null(시드 규칙을 건너뛴다). */
   seed: SeedInput | null;
   testSettings: TestSettings;
@@ -741,6 +841,15 @@ export function checkIds(input: CheckInput): CheckResult {
     }
   }
 
+  // 화면 소스의 토큰 밖 색(시드와 상관없다)
+  for (const c of collectDesignColors(input.screenFiles)) {
+    add(
+      "design-color",
+      `${c.file}:${c.line}`,
+      `${DESIGN_COLOR_LABEL[c.kind]} ${c.text}`,
+    );
+  }
+
   const counts = Object.fromEntries(RULES.map((r) => [r, 0])) as Counts;
   for (const v of violations) counts[v.rule]++;
   return {
@@ -766,6 +875,8 @@ export type CheckIdsArgs = {
   /** --seed-root 를 적었는지(적은 뿌리가 없으면 종료 2, 검토 M-2). */
   seedRootGiven: boolean;
   failOn: string[];
+  /** 설계 숫자 경고 수 상한(없으면 상한 없이 보고만). */
+  designNumberMax?: number;
   json: boolean;
 };
 export type ParsedArgs =
@@ -784,6 +895,18 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     const arg = argv[i];
     if (arg === "--json") {
       args.json = true;
+      continue;
+    }
+    if (arg === "--design-number-max") {
+      const value = argv[i + 1];
+      if (value === undefined || !/^\d+$/.test(value)) {
+        return {
+          ok: false,
+          error: `${arg} 뒤에는 0 이상 정수가 와야 한다`,
+        };
+      }
+      args.designNumberMax = Number(value);
+      i++;
       continue;
     }
     if (arg === "--specs" || arg === "--seed-root" || arg === "--fail-on") {
@@ -878,10 +1001,22 @@ export function runCheckIds(
       schemaTables: io.schemaTables(),
       codeFiles: io.listFiles(CODE_DIRS),
       designFiles: seed ? io.listFiles(DESIGN_DIRS) : [],
+      screenFiles: io.listFiles(SCREEN_DIRS),
       seed,
       testSettings: io.testSettings,
     });
-    const code = args.failOn.some((r) => result.counts[r as Rule] > 0) ? 1 : 0;
+    const max = args.designNumberMax;
+    const overMax =
+      max !== undefined && result.counts["design-number"] > max
+        ? [
+            `design-number 상한 넘음: ${result.counts["design-number"]} > ${max}`,
+          ]
+        : [];
+    const code =
+      args.failOn.some((r) => result.counts[r as Rule] > 0) ||
+      overMax.length > 0
+        ? 1
+        : 0;
     if (args.json) {
       return {
         code,
@@ -893,6 +1028,7 @@ export function runCheckIds(
               violations: result.violations,
               skipped: result.skipped,
               unparsedDefaults: result.unparsedDefaults,
+              ...(max === undefined ? {} : { designNumberMax: max }),
             },
             null,
             2,
@@ -908,12 +1044,14 @@ export function runCheckIds(
       `테이블 ${s.specTables}/${s.schemaTables}`,
       `대조 안 함 ${result.unparsedDefaults.length}`,
       ...RULES.map((r) => `${r} ${result.counts[r]}`),
+      ...(max === undefined ? [] : [`design-number 상한 ${max}`]),
       ...(result.skipped.length > 0 ? ["건너뜀(seed/ 없음)"] : []),
     ].join(" · ");
     return {
       code,
       lines: [
         summary,
+        ...overMax,
         ...result.violations.map((v) => `${v.rule} ${v.location} ${v.detail}`),
       ],
     };

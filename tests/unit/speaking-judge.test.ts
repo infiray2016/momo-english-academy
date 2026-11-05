@@ -1,21 +1,31 @@
 // 말하기 판정(plan-p11a 파일별 값 4 · 3.3 말하기 · 4절 결과 말 · 6.2 허용 답 · 7절 오류 · 감시 타이머 · 마이크를 쓸 수 없음 행).
 // 경계 · 기준 · 재시도 수 · 말소리 없음 수는 시험용 설정(ui.match_phrase_levels · speaking.answer_match_pass · speech.*)에서 읽는다.
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  AI_ANSWER_SCORES,
+  aiAnswerScore,
   answerMaxSecondsKey,
   answerShapeOf,
   englishSentencesOf,
   judgeAppAnswer,
+  judgeSpeakingQuestion,
   MIC_CAPTURE_STREAK,
+  type QuestionJudgeContext,
+  questionTextsOf,
   RESULT_PHRASES,
   resultPhraseOf,
   type SpeakingCounters,
+  type SpeakingJudgement,
   type SpeechEvent,
   type SpeechVerdict,
+  skipAfterAiRest,
   speakingCounters,
   speakingCountersStart,
   speechEventOf,
 } from "@/core/speaking/judge";
+import { type MeaningWord, meaningWordsFor } from "@/core/speaking/meaning";
 import {
   endRuleFor,
   type ListenOutcome,
@@ -29,6 +39,7 @@ import {
   defaultSettings,
   referenceSet,
   speakingLesson,
+  teachSeedLessons,
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 
@@ -418,5 +429,277 @@ describe("영어로 말한 문장 수", () => {
       ]),
     ).toBe(5);
     expect(englishSentencesOf([])).toBe(0);
+  });
+});
+
+// ── 말하기 질문 판정(델타 spec 2026-10-29 가르치고 배우는 수업 설계 8 · plan 다 · 정한 것 6 · 7, 정본 15절 AC-22k) ──
+// 수업은 3단계 단원 1 정규 시드 말하기 수업(가르치는 수업), 낱말 품사 표는 seed/vocab.json 을 그 수업 글로 좁힌 표(정한 것 7),
+// 동음이의어는 seed/lists/homophones.json, 문턱은 시험용 설정(speaking.answer_match_pass)이다.
+const SEED = resolve(__dirname, "../../seed");
+const vocabWords: MeaningWord[] = JSON.parse(
+  readFileSync(join(SEED, "vocab.json"), "utf8"),
+).vocab;
+const seedHomophones: string[][] = JSON.parse(
+  readFileSync(join(SEED, "lists/homophones.json"), "utf8"),
+).groups;
+const teachSpeaking = teachSeedLessons().speaking;
+const judgeCtx: QuestionJudgeContext = {
+  pass: PASS,
+  homophones: seedHomophones,
+  words: meaningWordsFor(
+    questionTextsOf(teachSpeaking),
+    vocabWords,
+    seedHomophones,
+  ),
+};
+const questionAt = (i: number) => {
+  const q = teachSpeaking.content.questions[i];
+  if (!q) throw new Error(`질문 ${i} 없음`);
+  return q;
+};
+const Q1 = questionAt(0); // Do Dan and Tess eat rice? → No, they eat pizza.
+const Q2 = questionAt(1); // Do Dan and Tess drink juice? → No, they drink milk.
+const Q3 = questionAt(2); // Do Dan and Tess go home? → No, they go to the lake.
+const Q4 = questionAt(3); // Do Dan and Tess wash the cups? → Yes, they wash the cups.
+const AI_VALUES: readonly SpeakingJudgement[] = ["correct", "partial", "retry"];
+const opts = { homophones: seedHomophones, nameSlot: "any-word" as const };
+
+describe("말하기 질문 판정(설계 8)", () => {
+  it("AC-22k 의미 검사가 실패한 답은 일치율이 문턱을 넘어도 맞음이 아니고 '다시'다(정한 것 6)", () => {
+    expect(Q2.modelAnswer).toBe("No, they drink milk.");
+    const cases: [typeof Q1, string, string][] = [
+      [Q2, "Yes, they drink milk.", "direction"],
+      [Q2, "They drink juice.", "key"],
+      [Q2, "No, they drink juice.", "key"],
+      [Q2, "They do not drink milk.", "negated"],
+      [Q2, "They drink milk and juice.", "wrong_info"],
+      [Q1, "Yes, they eat pizza.", "direction"],
+      [Q3, "Yes, they go to the lake.", "direction"],
+      [Q3, "No, they go to the park.", "key"],
+      [Q4, "No, they wash the cups.", "direction"],
+      [Q4, "Yes, they wash the bike.", "key"],
+    ];
+    for (const [q, heard, meaning] of cases) {
+      expect(judgeSpeakingQuestion(q, heard, judgeCtx), heard).toEqual({
+        meaning,
+        final: "retry",
+        by: "app",
+        expressionDone: false,
+      });
+    }
+    // 일치율만이면 문턱을 넘는 글이다(증명 절, 2026-10-30 잰 값)
+    const all = (q: typeof Q1) => [
+      ...(q.accepted ?? []),
+      ...(q.acceptedMeaning ?? []),
+    ];
+    for (const [q, heard] of [
+      [Q1, "Yes, they eat pizza."],
+      [Q3, "Yes, they go to the lake."],
+      [Q3, "No, they go to the park."],
+      [Q4, "No, they wash the cups."],
+      [Q4, "Yes, they wash the bike."],
+    ] as const)
+      expect(bestMatchRate(all(q), heard, opts), heard).toBeGreaterThanOrEqual(
+        PASS,
+      );
+  });
+
+  it("AC-22k 의미 검사 긍정 예문: not 으로 틀린 정보를 지우는 답은 맞음이다", () => {
+    for (const heard of [
+      "They drink milk, not juice.",
+      "They don't drink juice, they drink milk.",
+    ])
+      expect(judgeSpeakingQuestion(Q2, heard, judgeCtx).final, heard).toBe(
+        "correct",
+      );
+  });
+
+  it("AC-22k 두 묶음 가르기: 가장 높은 일치율이 높은 쪽 묶음(같으면 accepted)이고 accepted 쪽만 표현 수행이며 acceptedMeaning 쪽은 의사소통 정답이다", () => {
+    expect(
+      judgeSpeakingQuestion(Q3, "No, they go to the lake.", judgeCtx),
+    ).toEqual({
+      meaning: "ok",
+      bundle: "accepted",
+      final: "correct",
+      by: "app",
+      expressionDone: true,
+    });
+    // accepted 와도 문턱 위(0.83)지만 acceptedMeaning 과 더 높다 — accepted 를 먼저 보면 안 된다
+    expect(
+      bestMatchRate(
+        Q3.accepted ?? [],
+        "No, Dan and Tess go to the lake.",
+        opts,
+      ),
+    ).toBeGreaterThanOrEqual(PASS);
+    expect(
+      judgeSpeakingQuestion(Q3, "No, Dan and Tess go to the lake.", judgeCtx),
+    ).toEqual({
+      meaning: "ok",
+      bundle: "meaning",
+      final: "correct",
+      by: "app",
+      communicative: true,
+      expressionDone: false,
+    });
+    expect(judgeSpeakingQuestion(Q4, "Yes, they do.", judgeCtx)).toEqual({
+      meaning: "ok",
+      bundle: "meaning",
+      final: "correct",
+      by: "app",
+      communicative: true,
+      expressionDone: false,
+    });
+    // 두 묶음 모두와 문턱 아래인 바꿔 말하기는 앱 판정에서 맞음이 아니다(짝 · 같이 해 보기)
+    expect(judgeSpeakingQuestion(Q1, "Pizza, they eat.", judgeCtx)).toEqual({
+      meaning: "ok",
+      final: "retry",
+      by: "app",
+      expressionDone: false,
+    });
+  });
+
+  it("AC-22k 일관성: 같은 인식 글 묶음을 혼자 질문(AI 맞음 · 부분 · 다시)과 짝(앱 판정)에 넣으면 맞음 여부 · 묶음 · 표현 수행 · 의사소통 정답이 같고 바꿔 말하기만 알려진 차이다", () => {
+    const negatives: Record<number, string[]> = {
+      0: ["Yes, they eat pizza.", "They eat rice."],
+      1: [
+        "Yes, they drink milk.",
+        "They drink juice.",
+        "No, they drink juice.",
+        "They do not drink milk.",
+        "They drink milk and juice.",
+      ],
+      2: ["Yes, they go to the lake.", "No, they go to the park."],
+      3: ["No, they wash the cups.", "Yes, they wash the bike."],
+    };
+    let compared = 0;
+    teachSpeaking.content.questions.forEach((q, i) => {
+      const texts = [
+        ...(q.accepted ?? []),
+        ...(q.acceptedMeaning ?? []),
+        ...(negatives[i] ?? []),
+      ];
+      for (const heard of texts) {
+        const app = judgeSpeakingQuestion(q, heard, judgeCtx);
+        for (const ai of AI_VALUES) {
+          const solo = judgeSpeakingQuestion(q, heard, judgeCtx, ai);
+          const label = `${q.en} · ${heard} · AI ${ai}`;
+          expect(solo.final === "correct", label).toBe(app.final === "correct");
+          expect(solo.bundle, label).toBe(app.bundle);
+          expect(solo.expressionDone, label).toBe(app.expressionDone);
+          expect(solo.communicative, label).toBe(app.communicative);
+          expect(solo.ai, label).toBe(ai);
+          compared++;
+        }
+      }
+    });
+    expect(compared).toBeGreaterThan(0);
+
+    // AI '부분' + 'Yes, they do.' → 맞음 · acceptedMeaning · 의사소통 정답 · 표현 수행 거짓
+    expect(
+      judgeSpeakingQuestion(Q4, "Yes, they do.", judgeCtx, "partial"),
+    ).toEqual({
+      meaning: "ok",
+      bundle: "meaning",
+      ai: "partial",
+      final: "correct",
+      by: "app",
+      communicative: true,
+      expressionDone: false,
+    });
+    // AI '맞음' + 'Yes, they drink milk.' → '다시'(오답), AI 원 판정은 judge.ai 에 남는다(정한 것 6)
+    expect(
+      judgeSpeakingQuestion(Q2, "Yes, they drink milk.", judgeCtx, "correct"),
+    ).toEqual({
+      meaning: "direction",
+      ai: "correct",
+      final: "retry",
+      by: "app",
+      expressionDone: false,
+    });
+
+    // 알려진 차이(우려 19): 의미가 맞고 두 묶음 모두와 문턱 아래인 바꿔 말하기는 혼자(AI 판정을 따름)와 짝(맞음 아님)이 다르다.
+    // 증명 절의 'They have pizza.' 꼴은 핵심 낱말 eat 이 빠져 의미 검사에서 걸리므로(key), 의미가 맞는 꼴로 잰다.
+    expect(
+      judgeSpeakingQuestion(Q1, "They have pizza.", judgeCtx).meaning,
+    ).toBe("key");
+    for (const [q, heard] of [
+      [Q1, "Pizza, they eat."],
+      [Q4, "Yes, they wash them."],
+    ] as const) {
+      expect(bestMatchRate(q.accepted ?? [], heard, opts)).toBeLessThan(PASS);
+      expect(bestMatchRate(q.acceptedMeaning ?? [], heard, opts)).toBeLessThan(
+        PASS,
+      );
+      const app = judgeSpeakingQuestion(q, heard, judgeCtx);
+      expect(app.final, heard).toBe("retry");
+      expect(
+        judgeSpeakingQuestion(q, heard, judgeCtx, "correct"),
+      ).toMatchObject({
+        meaning: "ok",
+        ai: "correct",
+        final: "correct",
+        by: "ai",
+      });
+      expect(
+        judgeSpeakingQuestion(q, heard, judgeCtx, "partial"),
+      ).toMatchObject({ final: "partial", by: "ai", expressionDone: false });
+      expect(
+        judgeSpeakingQuestion(q, heard, judgeCtx, "partial").bundle,
+      ).toBeUndefined();
+    }
+    // AI 맞음인 바꿔 말하기는 높은 쪽 묶음으로 가르되(accepted 0.67 > acceptedMeaning 0.2), accepted 꼴과 문턱 이상으로 맞지 않았으니
+    // 표현 수행은 거짓이다(spec 설계 9 '목표 표현을 다 갖춰 말했는가' — 컨트롤러 판단, 검토 M2)
+    expect(
+      judgeSpeakingQuestion(Q1, "Pizza, they eat.", judgeCtx, "correct"),
+    ).toEqual({
+      meaning: "ok",
+      bundle: "accepted",
+      ai: "correct",
+      final: "correct",
+      by: "ai",
+      expressionDone: false,
+    });
+  });
+
+  it("AC-22k 바른 답이 없는 문항은 첫 accepted 를 바른 답으로 보고, 허용 답이 없는 문항은 판정하지 않는다", () => {
+    const { modelAnswer: _m, ...noModel } = Q2;
+    expect(
+      judgeSpeakingQuestion(noModel, "Yes, they drink milk.", judgeCtx),
+    ).toMatchObject({ meaning: "direction", final: "retry" });
+    expect(() =>
+      judgeSpeakingQuestion({ en: Q2.en }, "No, they drink milk.", judgeCtx),
+    ).toThrow();
+  });
+
+  it("말하기 판정: AI 판정 점수는 맞음 1 · 부분 0.5 · 다시 0 이다(3.7 · plan-p11c 값 2 질문 답 몫)", () => {
+    expect(AI_ANSWER_SCORES).toEqual({ correct: 1, partial: 0.5, retry: 0 });
+    expect(aiAnswerScore("correct")).toBe(1);
+    expect(aiAnswerScore("partial")).toBe(0.5);
+    expect(aiAnswerScore("retry")).toBe(0);
+  });
+
+  it("말하기 판정: 안전 상한 뒤 건너뛸 활동은 그 차례부터 남은 혼자 질문 답이고 질문 짝 · 같이 해 보기는 앱 판정이라 남는다", () => {
+    const activities = [
+      { kind: "together", index: 0 },
+      { kind: "repeat-word", index: 0 },
+      { kind: "question", index: 0 },
+      { kind: "question", index: 1 },
+      { kind: "spare", base: "question", index: 0 },
+      { kind: "question", index: 2 },
+    ];
+    expect(skipAfterAiRest(activities, 1)).toEqual([3, 4, 6]);
+    expect(skipAfterAiRest(activities, 4)).toEqual([4, 6]);
+    expect(skipAfterAiRest(activities, 7)).toEqual([]);
+  });
+
+  it("AC-22k 낱말 품사 표 재료: 수업의 질문 · 질문 짝 · 같이 해 보기 글(질문 · 바른 답 · 허용 답 · 이야기)을 모으고 다른 영역 수업은 빈 목록이다", () => {
+    const texts = questionTextsOf(teachSpeaking);
+    expect(texts).toContain(Q1.en);
+    expect(texts).toContain("No, they eat pizza.");
+    expect(texts).toContain(Q1.spare?.en);
+    expect(texts).toContain(teachSpeaking.teach?.together[0]?.en);
+    expect(texts).toContain("Momo and Ted eat cookies.");
+    expect(questionTextsOf(teachSeedLessons().reading)).toEqual([]);
   });
 });

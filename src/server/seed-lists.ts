@@ -1,5 +1,5 @@
 import "server-only";
-// 시드 목록 넷과 회화 선생님 명단 읽기(5절 '빌드에 묶어 배포' · 6.4 · C63 (5), plan-p09c 파일별 값 3 · 선생님 화면 plan 값 5).
+// 시드 목록 넷 · 회화 맞장구 목록(회화 plan 정한 것 20)과 회화 선생님 명단 읽기(5절 '빌드에 묶어 배포' · 6.4 · C63 (5), plan-p09c 파일별 값 3 · 선생님 화면 plan 값 5).
 // 빌드 추적(next.config.ts outputFileTracingIncludes)으로 서버 함수 묶음에 든 파일을 실행 때 읽는다.
 // 없거나 규격에 어긋나면 던진다 — 흐름은 AI 를 부르지 않는다(검사하지 않은 출력을 아이에게 보이지 않는다).
 // 오류 메시지에 파일 내용을 넣지 않는다.
@@ -12,6 +12,7 @@ import {
   HomophonesFileSchema,
   ListFormsFileSchema,
   MetaSentencesFileSchema,
+  TalkWaitLinesFileSchema,
 } from "@/core/seed/schema/reference";
 import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import { SEED_FILES } from "@/core/seed/structure";
@@ -27,6 +28,7 @@ const LIST_SCHEMAS = {
   forms: ListFormsFileSchema,
   metaSentences: MetaSentencesFileSchema,
   teachers: TeachersFileSchema,
+  talkWaitLines: TalkWaitLinesFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;
@@ -107,6 +109,31 @@ export function seedHomophones(opts: SeedListOptions = {}): string[][] {
         homophonesMissingWarned = true;
         console.warn(
           "동음이의어 목록(seed/lists/homophones.json)이 없어 빈 묶음으로 채점합니다",
+        );
+      }
+      return [];
+    }
+    throw error;
+  }
+}
+
+/** 맞장구 목록 없음 알림을 한 번만 냈는가(서버 인스턴스마다). */
+let waitLinesMissingWarned = false;
+
+/**
+ * 회화 앱 맞장구 목록(회화 plan 정한 것 20 — 회화 화면 자료가 내리고 화면이 턴 번호로 고른다, core/conversation/wait-line). 시드 목록 파일이
+ * 없는 개발용 · e2e 길에서는 빈 목록으로 본다(맞장구 없이 점 셋 · '생각'만 — 첫 문장은 그대로 온다). 운영에서 빌드 추적이 빠져 없을 때
+ * 조용히 빠지지 않게 처음 한 번 경고를 남긴다(이름만). 규격이 틀린 파일은 던진다.
+ */
+export function seedTalkWaitLines(opts: SeedListOptions = {}): string[] {
+  try {
+    return [...loadSeedList("talkWaitLines", opts).lines];
+  } catch (error) {
+    if (error instanceof SeedListError && error.reason === "missing") {
+      if (!waitLinesMissingWarned) {
+        waitLinesMissingWarned = true;
+        console.warn(
+          "맞장구 목록(seed/lists/talk-wait-lines.json)이 없어 맞장구 없이 기다립니다",
         );
       }
       return [];

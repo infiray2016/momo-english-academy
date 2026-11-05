@@ -210,12 +210,7 @@ export function createToriEnReader(): ToriEnReader {
 
 // ── 문장 검사 ────────────────────────────────────────────────────
 
-export type ToriSentenceReason =
-  | "forbidden"
-  | "contact"
-  | "personal"
-  | "meta"
-  | "question";
+export type ToriSentenceReason = "forbidden" | "contact" | "personal" | "meta";
 
 export type ToriSentenceCheck =
   | { ok: true }
@@ -225,8 +220,6 @@ export type ToriSentenceOptions = {
   forbidden: ForbiddenList;
   /** 시드 meta-sentences.json 의 구(소문자). */
   metaPhrases: readonly string[];
-  /** 1~3단계 반응(물음표로 끝나는 문장을 지운다, 6.4). */
-  lowLevel: boolean;
 };
 
 /** 시드 금지 정규식 범주 → 걸린 갈래(seed/lists/forbidden.json 의 category). */
@@ -270,8 +263,8 @@ export function isQuestionSentence(sentence: string): boolean {
 }
 
 /**
- * 토리 영어 문장 하나의 검사(6.4 회화 턴): 금지어 · 개인 정보 질문 패턴 · 연락처(P9b 출력 검사와 같은 함수) · 메타 문장,
- * 1~3단계는 물음표 문장. 길이 상한은 막지 않는다(`isOverLength` 로 센다, 3.6 '길이 초과').
+ * 토리 영어 문장 하나의 검사(6.4 회화 턴): 금지어 · 개인 정보 질문 패턴 · 연락처(P9b 출력 검사와 같은 함수) · 메타 문장.
+ * 1~3단계 물음표 문장은 서버 턴 길이 잡아 둔다(회화 plan 정한 것 19 — 이 문은 지우지 않는다). 길이 상한은 막지 않는다(`isOverLength` 로 센다, 3.6 '길이 초과').
  */
 export function checkToriSentence(
   sentence: string,
@@ -296,8 +289,6 @@ export function checkToriSentence(
   if (first) return { ok: false, reason: first };
   if (isMetaSentence(sentence, options.metaPhrases))
     return { ok: false, reason: "meta" };
-  if (options.lowLevel && isQuestionSentence(sentence))
-    return { ok: false, reason: "question" };
   return { ok: true };
 }
 
@@ -331,7 +322,7 @@ export type ToriSentenceGate = {
 
 /**
  * 걸린 문장 바꾸기(정할 것 회8): forbidden · contact · personal · meta 는 한 턴에 처음 걸린 자리만 카드 안전한 대사로 바꾸고
- * 그 뒤 걸린 문장은 지운다(같은 대사 되풀이를 막음). question 은 늘 지운다.
+ * 그 뒤 걸린 문장은 지운다(같은 대사 되풀이를 막음).
  */
 export function createToriSentenceGate(
   options: ToriSentenceOptions & { safeLine: string; sentenceMaxWords: number },
@@ -349,7 +340,7 @@ export function createToriSentenceGate(
         return sentence;
       }
       blocked.push(check.reason);
-      if (check.reason === "question" || replaced) return null;
+      if (replaced) return null;
       replaced = true;
       sent.push(options.safeLine);
       return options.safeLine;

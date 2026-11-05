@@ -205,16 +205,54 @@ export const TEST_ITEM_TYPES = [
 ] as const;
 export type TestItemType = (typeof TEST_ITEM_TYPES)[number];
 
-/** 회화 토막(3.3 토막 표)과 힌트 단(3.3 말 표). */
+/**
+ * 회화 토막(3.3 토막 표 — C189 네 토막 + 더 이야기하기)과 힌트 단(3.3 말 표). 토막이 오는 차례다. DB 열거 talk_segment 는 이 값에 옛 흐름 값
+ * 둘을 더 둔다(마이그레이션은 더하기만, 회화 plan 정한 것 8 — 옛 흐름 값은 묶음 12 가 코드에서 지웠다).
+ */
 export const TALK_SEGMENTS = [
   "greeting",
-  "today_words",
-  "practice",
+  "prep",
   "talk",
   "more_talk",
   "wrap_up",
 ] as const;
 export const TALK_HINT_TIERS = ["ko", "frame", "sentence"] as const;
+/** 새 꼴 회화 단계 규격의 토막(02-2:339 '인사 · 준비 · 대화 · 정리', C189). 시드 파일의 회화 행은 이 꼴이어야 한다. */
+export const TALK_SPEC_SEGMENTS = [
+  "greeting",
+  "prep",
+  "talk",
+  "wrap_up",
+] as const;
+/** 회화 단계 규격 cardShape: required(필수 질문 꼴, 모든 단계 — C189. 옛 판 turns · questions 는 묶음 12 가 지웠다). */
+export const TALK_CARD_SHAPES = ["required"] as const;
+/** 회화 턴 출력의 다음 질문 갈래(회화 plan '이름' 절 15번 칸 next_move). */
+export const TALK_NEXT_MOVES = [
+  "required",
+  "more",
+  "follow_up",
+  "follow_child",
+  "introduce",
+  "mission",
+  "role_swap",
+  "closing",
+  "none",
+] as const;
+/** 선생님이 준 도움(회화 plan '이름' 절 18번 칸 support). */
+export const TALK_SUPPORTS = [
+  "none",
+  "together",
+  "easy_question",
+  "choices",
+  "model_line",
+] as const;
+/** 1단계 처음 묻는 필수 질문의 첫 꼴(6.3 '첫 꼴(1단계: 그냥 · 선택지 · 꺼내기)'). */
+export const TALK_FIRST_FORMS = ["plain", "choices", "introduce"] as const;
+export type TalkFirstForm = (typeof TALK_FIRST_FORMS)[number];
+/** 카드 항목 종류(회화 plan '이름' 절 16번 칸 card_item.kind). */
+export const TALK_CARD_ITEM_KINDS = ["required", "more", "none"] as const;
+/** 6.3 회화 카드의 '1~3단계' 구간(인사 질문 · 짧은 준비 늘 · 그림 키 · 소리 줄). 단계 규격 band 로 견준다. */
+export const TALK_LOW_BAND = "1-3";
 
 // ── 꼴 · 구조 수(C54 (2), 줄마다 정본 절) ─────────────────────────
 
@@ -248,6 +286,66 @@ export const TALK_TEST_SAME_ORDER_RUN_MAX = 2;
 export const TEST_AI_ITEMS_MAX = 2;
 /** 6.4 단계 분포 '규격 폭의 절반'. */
 export const DISTRIBUTION_HALF = 0.5;
+
+// ── 가르치는 수업(델타 spec 2026-10-29 가르치고 배우는 수업 설계 6 · 7) ──
+
+/** 설계 6 칩 이름(chips[].role): 읽기 · 말하기 who · do · what · where, 쓰기 thing · is · how · end. */
+export const TEACH_CHIP_ROLES = [
+  "who",
+  "do",
+  "what",
+  "where",
+  "thing",
+  "is",
+  "how",
+  "end",
+] as const;
+export type TeachChipRole = (typeof TEACH_CHIP_ROLES)[number];
+/** 설계 6 이름표(읽기 사실 확인 · 듣기 이해 빈칸 문항, C170 (5)). 시드 칸 이름은 askRole. */
+export const ASK_ROLES = ["who", "what", "where"] as const;
+/** 설계 6 · 7 '왜': whyKo 는 이 단계까지 채점 문항 · 짝에 필수(6단계부터 선택). */
+export const WHY_REQUIRED_UNTIL_LEVEL = 5;
+/** 설계 7 짝 '말하기 질문 짝은 허용 답 셋 이상'(앱 판정, NFR-2). */
+export const SPARE_ACCEPTED_MIN = 3;
+/** 설계 6 목표 ID `<영역>-<단계>-<단원>-<n>` 의 영역 머리(평가 spec 2절, 표본 2판). */
+export const GOAL_AREA_PREFIX: Readonly<Record<Area, string>> = {
+  reading: "read",
+  writing: "write",
+  speaking: "speak",
+  talk: "talk",
+};
+/** 평가 spec 2절 목표 needs(근거 꼴) 여섯. */
+export const GOAL_NEEDS = [
+  "word",
+  "response",
+  "expression",
+  "form",
+  "comprehension",
+  "repeat",
+] as const;
+export type GoalNeed = (typeof GOAL_NEEDS)[number];
+/** 평가 spec 2절 목표 accept(받는 정확도). */
+export const GOAL_ACCEPTS = ["correct", "meaning"] as const;
+/** 평가 spec 2절 '목표 꼴' 행: 영역마다 맞는 needs(C174 (2)). */
+export const GOAL_NEEDS_BY_AREA: Readonly<Record<Area, readonly GoalNeed[]>> = {
+  reading: ["comprehension", "word"],
+  writing: ["word", "form", "response"],
+  speaking: ["repeat", "response", "word", "expression", "comprehension"],
+  talk: ["word", "response", "expression", "form"],
+};
+/** 설계 7 · AC-4c · AC-4d 말하기 이야기 질문 꼴(질문 앞 이야기 · 예 하나 · 이야기 낱말)이 걸리는 단계와 단원 상한(3단계 단원 1~4). */
+export const STORY_QUESTION_LEVELS: readonly number[] = [3];
+export const STORY_QUESTION_UNITS_MAX = 4;
+/** AC-4d '바른 답에서 질문에 없는 낱말(no · yes · they 빼고)'. */
+export const STORY_FREE_WORDS: readonly string[] = ["no", "yes", "they"];
+/** AC-4b 이름표 꼴(빈칸 하나 · askRole)이 걸리는 단계(3단계 단원 1~4, C170 (5)). */
+export const ASK_ROLE_LEVELS: readonly number[] = [3];
+/** 설계 7 짝 '1~3단계 말하기 질문 짝은 허용 답 셋 이상'. */
+export const SPARE_ACCEPTED_UNTIL_LEVEL = 3;
+/** AC-7c 되짚기 연습 줄 closeKoPracticed 에 두지 않는 숙달 단정 꼴('할 수 있' · '찾을 수 있' …). */
+export const RECAP_MASTERY_PHRASES: readonly string[] = ["수 있"];
+/** 설계 7 문법 용어 목록(빌드에 묶는 목록, 규격 파일 SEED_FILES 밖 — 없으면 teach 가 있는 수업만 막는다). */
+export const GRAMMAR_TERMS_FILE = "lists/grammar-terms.json";
 /** 6.4 단계 분포 '상한만 있는 지표는 상한의 20% 를 폭으로'. */
 export const DISTRIBUTION_UPPER_ONLY_WIDTH = 0.2;
 /** 5절 회화 문장 단위 검사 'Mr. · Mrs. · Dr. · a.m. · p.m. 은 문장 끝이 아니다'. */
@@ -316,8 +414,12 @@ export const TEACHER_PERSONA_MAX_SENTENCES = 2;
 export const TEACHER_INTRO_LINES = { min: 1, max: 2 } as const;
 /** 6.4 명단 자료 '색(이름표 글자 대비 4.5:1 이상)'. */
 export const TEACHER_LABEL_CONTRAST_MIN = 4.5;
-/** 이름표 글자색 = 종이색(`--color-paper`, src/app/globals.css). 이름표는 accent 바탕 · 종이색 글자라 명단 대비 짝은 accent ↔ 이 색이다(plan 선생님 '이름표 그리기와 대비 짝', 장부 M-1). */
-export const TEACHER_LABEL_TEXT = "#fffdf7";
+/**
+ * 이름표 종이색 = `--color-paper`(src/app/globals.css, 디자인 ② 값 — UI · UX 묶음 2-가). 명단 대비 짝은 accent ↔ 이 색이다(plan 선생님
+ * '이름표 그리기와 대비 짝', 장부 M-1). 디자인 ② 의 이름표는 흰 종이 · 먹색 글자(spec UI · UX 개선 설계 5.5, 4-가 가 그림)이고, 명단 accent
+ * 대비 검사는 spec 대로 그대로 둔다(토큰 한 줄로 되돌릴 수 있게).
+ */
+export const TEACHER_LABEL_TEXT = "#fffffb";
 /** 6.4 명단 자료 '목소리 높이(0~2)'(Web Speech pitch 범위). */
 export const TEACHER_PITCH = { min: 0, max: 2 } as const;
 /** WCAG 2 상대 휘도 · 대비 식의 상수(설계 숫자 아님, 이름표 대비 검사가 쓴다). */
@@ -610,6 +712,8 @@ export const SEED_FILES = {
   forbidden: "lists/forbidden.json",
   forms: "lists/forms.json",
   metaSentences: "lists/meta-sentences.json",
+  /** 회화 앱 맞장구 목록(회화 plan 정한 것 20). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkWaitLines: "lists/talk-wait-lines.json",
   /** 회화 선생님 명단(5절, C130). 빌드에 묶고 DB 에 넣지 않는다. */
   teachers: "teachers.json",
 } as const;

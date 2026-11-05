@@ -1,12 +1,17 @@
 // 홈 e2e(4절 홈 표 · AC-2a · AC-5c, plan-p10b 증명 표 — 차례 3 몫). 실제 e2e DB(시험용 시드, 완전성 1단계)를 쓴다.
 // '내 단계 찾기'는 배치 평가 화면(차례 5)으로, 카드는 수업 목록(차례 4)으로 간다(여기서는 가는 곳과 첫 화면만 본다).
-// 설계 숫자(최근 성적 칸 수 · 최소 수업 수)는 e2e DB 의 단원 복사본에서 읽는다.
+// 설계 숫자(별 수)는 시험 설정값(TEST_SETTINGS)에서 읽는다.
+// 첫 사용 꼴(13절 C166 R7 · UX 검토 3판 U2-1 · U2-2 · U2-3): 수업을 하나도 안 한 영역은 '첫 수업을 해 봐요'와 큰 단추, 오늘 할 것이 남은
+// 앞 영역 하나에 '여기부터 해요'. 보통 꼴(이번 주 · 오늘)을 보는 시험은 지난 끝낸 수업을 하나 넣고 연다(insertPastLessons).
+// UI · UX 묶음 3([승인 UX2] · R-4 · R-8 · R-12 · AC-23c · AC-23h): 카드는 영역 이름 · 영역 그림 · 단계 · 오늘 · 큰 단추이고 단원 5칸 · 막대는
+// 수업 목록 위 띠로 옮겼다. 회화 카드는 작은 초상과 오늘 이야기 제목(수업 목록 '여기부터 해요' 회화 수업). 위 띠 연속 · 별 칸은 값 1 이상일 때만.
 
 import type { Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import { learningDayOf } from "../../src/core/learning-day";
 import { sessions, unitProgress } from "../../src/db/schema/learning";
 import { settings } from "../../src/db/schema/operations";
+import { TEST_SETTINGS } from "../fixtures/settings";
 import { addAccessCookie } from "./access-cookie";
 import {
   CHILD_VIEWPORTS,
@@ -27,6 +32,9 @@ import { photo } from "./photos";
 
 const T = {
   findLevel: "내 단계 찾기",
+  findSpeakingLevel: "말하기 단계 찾기",
+  firstLesson: "첫 수업을 해 봐요",
+  startHere: "여기부터 해요",
   needsSpeaking: "말하기에서 단계를 찾으면 회화 선생님을 만날 수 있어요",
   needsMic: "마이크가 필요해요. 부모님께 말해 주세요",
   todayDone: "오늘 다 했어요",
@@ -67,17 +75,26 @@ const card = (page: Page, area: string) =>
     .locator(`a, button`)
     .filter({ has: page.locator(`[data-home-card="${area}"]`) });
 
-async function snapshotOf(profileId: string, area: string) {
-  const [row] = await e2eDb()
-    .select({ snapshot: unitProgress.settingsSnapshot })
-    .from(unitProgress)
-    .where(
-      and(
-        eq(unitProgress.profileId, profileId),
-        eq(unitProgress.area, area as "reading"),
-      ),
-    );
-  return row?.snapshot as Record<string, number>;
+/** 오래전에 끝낸 정규 수업(첫 사용 꼴이 아니게 — 이번 주 · 최근 성적 · 끝낸 대화에는 들지 않는다, C166 R7). */
+const PAST_DAY = "2020-01-06";
+async function insertPastLessons(
+  profileId: string,
+  areas: readonly (typeof AREAS)[number][],
+): Promise<void> {
+  const at = new Date(`${PAST_DAY}T03:00:00Z`);
+  await insertSessions(
+    areas.map((area) => ({
+      profileId,
+      area,
+      level: 1,
+      unit: 1,
+      kind: "regular" as const,
+      status: "completed" as const,
+      startedAt: at,
+      completedAt: at,
+      learningDay: PAST_DAY,
+    })),
+  );
 }
 
 async function todayLearningDay(): Promise<string> {
@@ -91,45 +108,63 @@ async function todayLearningDay(): Promise<string> {
   );
 }
 
-test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 둘 · 이번 주 n일 · 오늘 완료가 보이고 카드 · '시작!' · '이야기 고르기'는 수업 목록(배치 전은 배치 평가)으로 간다", async ({
+test("AC-2a 홈의 영역 카드 4개에 영역 이름 · 영역 그림 · 단계 · 오늘 · 이번 주 n일이 보이고 단원 5칸 · 막대는 없으며, 회화 카드는 작은 초상 · 오늘 이야기 제목이고 카드 · '시작!' · '이야기 고르기'는 수업 목록(배치 전은 배치 평가)으로 간다", async ({
   page,
 }) => {
   const { profileId } = await insertHousehold({
     startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
   });
+  // 보통 꼴을 본다(첫 사용 꼴은 아래 U2-1 시험)
+  await insertPastLessons(profileId, AREAS);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "모모의 공부 보드",
   );
-  await expect(page.getByText("별 0개")).toBeVisible();
+  // 별 합(3.5 R12 — P12 전 잠정 셈, C166 R3 fix 1): 지난 수업 넷(정규 · 끝냄)은 하나에 reward.star_complete 개
+  await expect(page.locator("[data-star-total]")).toHaveText(
+    `별 ${AREAS.length * TEST_SETTINGS["reward.star_complete"].value}개`,
+  );
+  // 단원 5칸 · 막대는 홈에 없다(수업 목록 위 띠로 — [승인 UX2])
+  await expect(page.locator("[data-unit-cells]")).toHaveCount(0);
+  await expect(page.locator("[data-recent-cells]")).toHaveCount(0);
   for (const area of AREAS) {
     const c = card(page, area);
     await expect(c).toHaveCount(1);
+    await expect(c.locator(`[data-area-art="${area}"]`)).toHaveCount(1);
     await expect(c).toContainText("1단계");
-    await expect(c).toContainText("단원 1");
-    await expect(c.locator("[data-unit-cells] > *")).toHaveCount(5);
-    await expect(c).toContainText(/아는 단어 0\/\d+/);
+    await expect(c).not.toContainText("단원 1");
+    await expect(c).not.toContainText("아는 단어");
     await expect(c).toContainText("이번 주 0일");
-    await expect(c).toContainText(T.todayNotYet);
-    const snapshot = await snapshotOf(profileId, area);
     if (area === "talk") {
-      await expect(c).toContainText(
-        `끝낸 대화 0/${snapshot["unit.min_lessons"]}`,
-      );
+      // 오늘 자리는 오늘 이야기 제목('오늘 아직이에요' 자리, R-8), 영역 이름 옆 작은 초상(고르기 전 '선')
+      await expect(c).not.toContainText(T.todayNotYet);
+      await expect(c.locator("[data-story-title]")).toHaveCount(1);
+      await expect(
+        c.locator('[data-home-portrait] [data-teacher-portrait="initial"]'),
+      ).toHaveCount(1);
       await expect(c).toContainText(T.chooseStory);
       // 회화 카드도 그 영역 수업 목록으로(plan-p13b 값 12 — '토리가 준비 중이에요' 자리 /talk 는 지움)
       await expect(c).toHaveAttribute("href", "/talk/lessons");
     } else {
-      await expect(c.locator("[data-recent-cells] > *")).toHaveCount(
-        snapshot["unit.recent_window"] ?? 0,
-      );
+      await expect(c).toContainText(T.todayNotYet);
+      await expect(c.locator("[data-home-portrait]")).toHaveCount(0);
       await expect(c).toContainText(T.start);
       // 카드 전체가 그 영역 수업 목록으로 가는 링크(카드 안 '시작!'도 같은 링크 안, R14)
       await expect(c).toHaveAttribute("href", `/${area}/lessons`);
     }
   }
+  // 오늘 이야기 제목 = 회화 수업 목록의 '여기부터 해요' 수업 제목(4절 회화 카드 행)
+  const storyTitle =
+    (await card(page, "talk").locator("[data-story-title]").textContent()) ??
+    "";
+  expect(storyTitle.trim().length).toBeGreaterThan(0);
   await card(page, "talk").click();
   await expect(page).toHaveURL(/\/talk\/lessons$/);
+  await expect(
+    page
+      .locator("[data-lesson]")
+      .filter({ has: page.locator("[data-lesson-badge]") }),
+  ).toContainText(storyTitle.trim());
   await page.getByRole("link", { name: "홈" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "모모의 공부 보드",
@@ -149,6 +184,8 @@ test("AC-2a 홈의 영역 카드 4개에 단계 · 단원 5칸 · 진행 막대 
     );
   }
   await expect(card(page, "talk")).toContainText(T.needsSpeaking);
+  // U2-3 배치 전 회화 카드 단추는 가는 곳대로 '말하기 단계 찾기'
+  await expect(card(page, "talk")).toContainText(T.findSpeakingLevel);
   await expect(card(page, "talk")).toHaveAttribute(
     "href",
     "/speaking/placement",
@@ -207,11 +244,143 @@ test("AC-2a 부모 확인 대기 영역은 다시 하기 하나로, 단계 평�
     );
     await expect(card(page, area)).toContainText("이번 주 1일");
   }
-  // 새 수업도 다시 하기도 없는 영역은 그대로 '오늘 아직이에요'
+  // 새 수업도 다시 하기도 없는 영역은 그대로 '오늘 아직이에요'(수업을 해 본 적 있는 영역 — 첫 사용 꼴이 아님)
   await resetHousehold();
-  await insertHousehold({ startLevels: { reading: 1 } });
+  const again = await insertHousehold({ startLevels: { reading: 1 } });
+  await insertPastLessons(again.profileId, ["reading"]);
   await page.goto("/");
   await expect(card(page, "reading")).toContainText(T.todayNotYet);
+});
+
+test("U2-1 · U2-2 수업을 하나도 안 한 영역 카드는 '첫 수업을 해 봐요'와 큰 단추이고 0 · 빈 막대 · 0일이 없으며 오늘 할 것이 남은 앞 영역 하나에 '여기부터 해요'가 붙는다", async ({
+  page,
+}) => {
+  const { profileId } = await insertHousehold({
+    startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
+  });
+  // 쓰기는 해 본 영역(보통 꼴)
+  await insertPastLessons(profileId, ["writing"]);
+  await page.goto("/");
+  await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  // 끝낸 새 수업 하나 → 별 합(R12 잠정 셈)
+  await expect(page.locator("[data-star-total]")).toHaveText(
+    `별 ${TEST_SETTINGS["reward.star_complete"].value}개`,
+  );
+  for (const area of ["reading", "speaking", "talk"] as const) {
+    const c = card(page, area);
+    await expect(c.locator("[data-first-lesson]")).toHaveText(T.firstLesson);
+    await expect(c).toContainText("1단계");
+    await expect(c).toContainText(area === "talk" ? T.chooseStory : T.start);
+    await expect(c).not.toContainText("아는 단어");
+    await expect(c).not.toContainText("끝낸 대화");
+    await expect(c).not.toContainText("이번 주");
+    await expect(c).not.toContainText(T.todayNotYet);
+    await expect(c.locator("[data-recent-cells]")).toHaveCount(0);
+    await expect(c.locator("[data-story-title]")).toHaveCount(0);
+  }
+  await expect(
+    card(page, "writing").locator("[data-first-lesson]"),
+  ).toHaveCount(0);
+  await expect(card(page, "writing")).toContainText("이번 주 0일");
+  await expect(card(page, "writing")).toContainText(T.todayNotYet);
+  // '여기부터 해요'는 한 장 — 판 차례의 앞 영역(읽기), 카드 링크의 읽히는 이름에 든다
+  await expect(page.locator("[data-start-here]")).toHaveCount(1);
+  await expect(card(page, "reading").locator("[data-start-here]")).toHaveText(
+    T.startHere,
+  );
+  await expect(card(page, "reading")).toHaveAttribute(
+    "href",
+    "/reading/lessons",
+  );
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  await photo(page, "home-first-use");
+});
+
+test("AC-23c 끝낸 세션이 없는 프로필의 첫 사용 홈은 위 띠에 연속 · 별 칸이 없어 0 이 보이지 않고 카드에도 0 · '오늘 아직이에요'가 없으며, 첫 별을 받은 뒤에는 별 칸 하나가 보인다", async ({
+  page,
+}) => {
+  const { profileId } = await insertHousehold({
+    startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
+  });
+  await page.goto("/");
+  await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  // 위 띠(R-12 · C179 (1)): 별 0 → 별 칸 0개, 연속 칸 없음, 띠 글에 0 없음
+  await expect(page.locator("[data-star-total]")).toHaveCount(0);
+  await expect(page.locator("[data-streak]")).toHaveCount(0);
+  const band = (await page.locator("[data-paper-band]").innerText()) ?? "";
+  expect(band).not.toMatch(/(^|\D)0(\D|$)/);
+  // 카드 넷: '첫 수업을 해 봐요' 한 줄 · 숫자 0 · 막대 · '오늘 아직이에요' 없음
+  await expect(page.locator("[data-first-lesson]")).toHaveCount(AREAS.length);
+  await expect(page.getByText(T.todayNotYet)).toHaveCount(0);
+  for (const area of AREAS) {
+    const text = await card(page, area).innerText();
+    expect(text, area).not.toMatch(/(^|\D)0(\D|$)/);
+  }
+  await photo(page, "ux3-home-first-use");
+  // 첫 별(끝낸 새 수업 하나) 뒤에는 별 칸이 하나
+  await insertPastLessons(profileId, ["reading"]);
+  await page.reload();
+  await expect(page.locator("[data-star-total]")).toHaveCount(1);
+  await expect(page.locator("[data-star-total]")).toHaveText(
+    `별 ${TEST_SETTINGS["reward.star_complete"].value}개`,
+  );
+});
+
+test("AC-23h 홈 사진(가로 · 세로)은 시안 ② 홈 구성이다: 책상 바탕 · 같은 크기 카드 넷 · 카드마다 영역 이름과 그림 · 단계 · 오늘 · 단추 · 회화 카드의 작은 초상과 오늘 이야기 · '여기부터 해요' 표지 하나, 단원 5칸 · 막대는 없다", async ({
+  page,
+}) => {
+  const { profileId } = await insertHousehold({
+    startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
+    teacherKey: "mina",
+  });
+  await insertPastLessons(profileId, AREAS);
+  // 읽기는 오늘 새 수업을 끝내 '오늘 다 했어요' 표지(쓰기는 '오늘 아직이에요' — 두 꼴이 한 사진에)
+  const day = await todayLearningDay();
+  const at = new Date();
+  await insertSessions([
+    {
+      profileId,
+      area: "reading",
+      level: 1,
+      unit: 1,
+      kind: "regular",
+      status: "completed",
+      startedAt: at,
+      completedAt: at,
+      learningDay: day,
+    },
+  ]);
+  await page.goto("/");
+  await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  await expect(page.locator("[data-desk]")).toHaveCount(1);
+  await expect(page.locator("[data-home-cards] > *")).toHaveCount(4);
+  await expect(page.locator("[data-area-art]")).toHaveCount(4);
+  await expect(page.locator("[data-unit-cells]")).toHaveCount(0);
+  await expect(page.locator("[data-recent-cells]")).toHaveCount(0);
+  await expect(card(page, "reading").locator('[data-today="done"]')).toHaveText(
+    T.todayDone,
+  );
+  await expect(
+    card(page, "talk").locator(
+      '[data-home-portrait] [data-teacher-portrait="mina"][data-portrait-shape="window"]',
+    ),
+  ).toHaveCount(1);
+  await expect(card(page, "talk").locator("[data-story-title]")).toHaveCount(1);
+  await expect(page.locator("[data-start-here]")).toHaveCount(1);
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+    const cards = await layoutBoxesOf(page.locator("[data-home-cards] > *"));
+    expect(spreadOf(cards.map((c) => c.height)), way).toBeLessThanOrEqual(
+      SAME_PX,
+    );
+    expect(spreadOf(cards.map((c) => c.width)), way).toBeLessThanOrEqual(
+      SAME_PX,
+    );
+  }
+  await photo(page, "ux3-home");
 });
 
 test.describe("인식 API 없음", () => {
@@ -396,11 +565,16 @@ test("홈 화면 꼴: 한 판의 영역 카드 넷은 두 방향 모두 같은 �
   page,
 }, testInfo) => {
   // C114 · design-taste §4.2(같은 줄 아래 끝 · 늘인 카드의 빈 띠) · ui-ux-pro-max §2 tap-delay — 전체 디자인 리뷰 묶음 #12 · #15 · #16
-  await insertHousehold({
+  const { profileId } = await insertHousehold({
     startLevels: { reading: 1, writing: 1, speaking: 1, talk: 1 },
   });
+  // 첫 사용 꼴(읽기 · 말하기)과 보통 꼴(쓰기 · 회화)이 세로 두 줄 · 가로 한 줄 모두에서 한 줄에 섞이게(검토 B I-2 — 섞인 판의 높이 ·
+  // 아래 끝 단추를 함께 잠근다)
+  await insertPastLessons(profileId, ["writing", "talk"]);
   await page.goto("/");
   await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
+  await expect(page.locator("[data-first-lesson]")).toHaveCount(2);
+  await expect(card(page, "writing").locator("[data-week]")).toHaveCount(1);
   for (const way of ["portrait", "landscape"] as const) {
     await page.setViewportSize(CHILD_VIEWPORTS[way]);
     await page.evaluate(
@@ -435,6 +609,7 @@ test("홈 화면 꼴: 한 판의 영역 카드 넷은 두 방향 모두 같은 �
     });
   }
   await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+  // 사진 한 장에 두 꼴(첫 사용 · 보통)
   await photo(page, "home-default");
   // 누르는 곳은 touch-action manipulation(손가락 두 개 확대는 그대로)
   const actions = await page
@@ -452,9 +627,9 @@ test("홈 화면 꼴: 배치 전 홈의 영역 카드 넷은 두 방향 모두 �
   await page.goto("/");
   await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
   for (const area of AREAS) {
-    // 단추 글은 카드 링크의 읽히는 이름에 든다(aria-hidden 아님)
+    // 단추 글은 카드 링크의 읽히는 이름에 든다(aria-hidden 아님). 회화는 '말하기 단계 찾기'(U2-3)
     await expect(card(page, area).locator("[data-find-level]")).toHaveText(
-      T.findLevel,
+      area === "talk" ? T.findSpeakingLevel : T.findLevel,
     );
     await expect(
       card(page, area).locator("[data-find-level]"),

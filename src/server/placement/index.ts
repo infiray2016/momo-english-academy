@@ -4,6 +4,9 @@ import "server-only";
 // 상태는 level_tests.answers(답 기록)뿐이고 다음 차례는 순수 함수 nextPlacementStep 이 다시 센다(AC-11d).
 // 채점은 서버가 checkAnswer 로 한다(따라 말하기는 화면이 보낸 인식 글로 다시 셈). AI 를 부르지 않는다.
 // 시각은 인자(now)로 받고 질의 SQL 안에 now() 를 쓰지 않는다. DB 오류는 이름 · 코드만 로그에 남긴다(답 글 · 인식 글을 내지 않음).
+// 소리를 들려주지 못함(UI · UX spec 2판 R-56 · R-57 — 묶음 5-나): 화면이 소리를 한 번도 들려주지 못한 채 받은 답 · 답 없는 '다음'을 techError 로
+// 보내면 채점하지 않고 기술 오류로 적어(점수 없음) 같은 단계 · 같은 번호의 예비 문항을 낸다(adaptive). 소리 문항(듣기 · 따라 말하기)의 본 문항이고
+// 그 예비 문항이 있을 때만 받는다(화면의 techSpare — 아니면 화면이 같은 자리에서 '다시 듣기'를 기다린다).
 import { and, eq, inArray, max } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -21,7 +24,9 @@ import { learningDayOf } from "@/core/learning-day";
 import {
   nextPlacementStep,
   type PlacementStep,
+  placementCorrectCount,
   slotKey,
+  soundSpareAllowed,
 } from "@/core/placement/adaptive";
 import { placementFinishOf } from "@/core/placement/finish";
 import {
@@ -106,12 +111,19 @@ const AnswerSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("dont-know") }),
 ]);
 
-const AnswerInputSchema = z.strictObject({
-  sessionId: z.uuid(),
-  clientAttemptId: z.uuid(),
-  itemId: z.uuid(),
-  answer: AnswerSchema,
-});
+const AnswerInputSchema = z
+  .strictObject({
+    sessionId: z.uuid(),
+    clientAttemptId: z.uuid(),
+    itemId: z.uuid(),
+    /** 답(기술 오류로 답 없이 넘긴 '다음'만 없다). */
+    answer: AnswerSchema.optional(),
+    /** 소리를 한 번도 들려주지 못한 채 받은 답 · '다음'(R-56 · R-57). */
+    techError: z.literal("speak_fail").optional(),
+  })
+  .refine((input) => input.answer !== undefined || input.techError, {
+    message: "답이 없다",
+  });
 
 const MicAlertSchema = z.strictObject({
   kind: z.enum(["mic_unavailable", "mic_stalled"]),
@@ -128,6 +140,8 @@ const StoredAnswerSchema = z.object({
   correct: z.boolean(),
   dontKnow: z.boolean(),
   repeatFailed: z.boolean(),
+  /** 소리를 들려주지 못한 기술 오류(R-56 — 옛 기록에는 없다). */
+  techError: z.boolean().optional(),
 });
 type StoredAnswer = z.infer<typeof StoredAnswerSchema>;
 
@@ -151,6 +165,11 @@ export type PlacementScreen =
       item: DisplayItem;
       /** 따라 말하기 문항의 기준 · 시도 수(배치 복사본). */
       repeat?: { pass: number; tries: number };
+      /**
+       * 소리를 들려주지 못하면 작은 '다음'으로 같은 번호의 예비 문항에 넘길 수 있는가(R-56 — 소리 문항의 본 문항이고 예비가 있음). 거짓이면
+       * 화면은 '다음' 없이 같은 자리에서 '다시 듣기'를 기다린다(예비 문항).
+       */
+      techSpare: boolean;
     }
   | {
       kind: "done";
@@ -276,6 +295,19 @@ function repeatSlotsOf(form: Form): Set<string> {
   return out;
 }
 
+/** 그 차례에서 소리를 못 들려주면 예비 문항으로 넘길 수 있는가(core soundSpareAllowed — 본 문항 · 소리 문항 · 같은 번호 예비가 있음). */
+function techSpareOf(
+  form: Form,
+  step: { level: number; slot: "main" | "spare"; no: number },
+  item: PlacementItem,
+): boolean {
+  return soundSpareAllowed({
+    slot: step.slot,
+    itemType: item.type,
+    hasSpare: form.has(formKey(step.level, "spare", step.no)),
+  });
+}
+
 function storedAnswers(raw: unknown): StoredAnswer[] {
   return z.array(StoredAnswerSchema).parse(raw ?? []);
 }
@@ -361,6 +393,7 @@ async function screenOf(
     itemNo: step.itemNo,
     level: step.level,
     item,
+    techSpare: techSpareOf(form, step, entry.item),
     ...(entry.item.type === "repeat"
       ? {
           repeat: {
@@ -622,31 +655,43 @@ async function answerUnsafe(
     if (!entry || entry.row.id !== input.itemId)
       return { ok: false, reason: "stale" } as const;
 
-    const answer: Answer = input.answer;
+    const answer: Answer | undefined = input.answer;
     const snapshot = test.settingsSnapshot as Record<string, unknown>;
-    if (!answerFits(entry.item, answer))
+    // 기술 오류는 예비로 넘길 수 있는 소리 문항에서만(R-56). 실패 3회(repeat-failed)는 마이크 쪽 일이라 함께 오지 않는다
+    if (
+      input.techError !== undefined &&
+      (!techSpareOf(form, step, entry.item) || answer?.kind === "repeat-failed")
+    )
+      return { ok: false, reason: "invalid" } as const;
+    if (answer !== undefined && !answerFits(entry.item, answer))
       return { ok: false, reason: "invalid" } as const;
     if (
-      answer.kind === "repeat" &&
+      answer?.kind === "repeat" &&
       answer.heard.length > numberSetting(snapshot, "placement.repeat_tries")
     )
       return { ok: false, reason: "invalid" } as const;
-    if (answer.kind === "repeat-failed" && step.slot !== "main")
+    if (answer?.kind === "repeat-failed" && step.slot !== "main")
       return { ok: false, reason: "invalid" } as const;
 
     const options: CheckOptions = {
       repeatPass: numberSetting(snapshot, "placement.repeat_pass"),
       homophones: homophones(),
     };
-    const checked = checkAnswer(entry.item as CheckItem, answer, options);
+    // 기술 오류는 채점하지 않는다(맞음 · 틀림 · 몰라요로 세지 않음 — R-56)
+    const tech = input.techError !== undefined;
+    const correct =
+      !tech && answer !== undefined
+        ? checkAnswer(entry.item as CheckItem, answer, options).correct
+        : false;
     const record: StoredAnswer = {
       itemId: entry.row.id,
       level: step.level,
       slot: step.slot,
       no: step.no,
-      correct: checked.correct,
-      dontKnow: answer.kind === "dont-know",
-      repeatFailed: answer.kind === "repeat-failed",
+      correct,
+      dontKnow: !tech && answer?.kind === "dont-know",
+      repeatFailed: answer?.kind === "repeat-failed",
+      ...(tech ? { techError: true } : {}),
     };
     const answers = [...storedAnswers(test.answers), record];
     const itemIds = [
@@ -659,9 +704,11 @@ async function answerUnsafe(
         sessionId: session.id,
         clientAttemptId: input.clientAttemptId,
         activityNo: answers.length,
-        input: answer,
+        input: tech
+          ? { techError: input.techError, ...(answer ? { answer } : {}) }
+          : answer,
         attemptedAt: at,
-        score: checked.correct ? 1 : 0,
+        score: tech ? null : correct ? 1 : 0,
         status: "done",
       })
       .onConflictDoNothing()
@@ -689,9 +736,7 @@ async function answerUnsafe(
 
     // ── 끝: 결과(값 12) ──
     const read = (key: string) => values[key];
-    const totalScore = answers.filter(
-      (a) => !a.repeatFailed && a.correct,
-    ).length;
+    const totalScore = placementCorrectCount(answers);
     const learningDay = learningDayOf(
       at,
       values[TIMEZONE_KEY] as string,

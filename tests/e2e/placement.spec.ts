@@ -1,6 +1,8 @@
 // 배치 평가 e2e(4절 배치 평가 행 · 3.2 · 7절 · AC-11b · 11c · 11d · AC-5e 배치 몫, plan-p10a 증명 표).
 // 실제 e2e DB(시험용 시드 — 완전성 1단계, 단계마다 배치 문항 1, 말하기 본 문항은 따라 말하기 · 예비는 듣고 고르기)를 쓴다.
 // 정답은 그 문항의 시드 행에서 읽고, 가짜 음성 대본은 시험 안에서 그 문항의 문장으로 만든다(위험 16). 설계 숫자는 DB 설정에서 읽는다.
+// UI · UX 묶음 5-나(spec 2판 R-56 · R-57 · AC-23a): 소리를 들려주지 못한 본 문항은 기술 오류로 적혀 판정에 들지 않고 같은 번호의 예비 문항이 나온다
+// (상태: '작성됨' — 정적).
 import type { BrowserContext, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import { matchRate } from "../../src/core/speech/match-rate";
@@ -233,6 +235,7 @@ async function placementAnswers(profileId: string) {
       dontKnow: boolean;
       slot: string;
       repeatFailed: boolean;
+      techError?: boolean;
     }[],
   };
 }
@@ -573,5 +576,59 @@ test("답 입력 조각: 쓰기 배치에서 글자 타일 · 문장 조립(대�
     [start + 4, true],
     [start + 6, true],
   ]);
+  await page.close();
+});
+
+test("AC-23a R-56 R-57 말하기 배치: 본 문항 소리를 다시 듣기까지 들려주지 못해 작은 '다음'을 누르면 기술 오류로 적혀 판정에 들지 않고, 같은 문제 번호의 예비 문항을 들려주면 보통대로 채점된다", async ({
+  context,
+}) => {
+  test.setTimeout(LONG);
+  const { profileId } = await insertHousehold();
+  const startMs =
+    Number(await settingValue("speech.speak_start_timeout_seconds")) * 1000;
+  // 읽어 주기 차례: 잠금 풀기('시작') · 본 문항 들어올 때 읽기 · '다시 듣기'는 시작 알림 없이 사라지고, 그 뒤(예비 문항)는 들린다
+  const page = await speechPage(context, {
+    ...script([MIC_OK]),
+    synthesis: {
+      voices: DEFAULT_OK.synthesis?.voices ?? [],
+      utterances: [
+        { neverStart: true },
+        { neverStart: true },
+        { neverStart: true },
+        { startAfter: 0, endAfter: 0 },
+      ],
+    },
+  });
+  await startSpeaking(page);
+  const main = await currentItem(page);
+  expect(main.isSpare).toBe(false);
+  const retry = page.locator("[data-sound-retry]");
+  await expect(retry).toHaveAttribute("data-sound-retry", "retry", {
+    timeout: startMs + LONG / 4,
+  });
+  await retry.locator("[data-sound-retry-replay]").click();
+  await expect(retry).toHaveAttribute("data-sound-retry", "next", {
+    timeout: startMs + LONG / 4,
+  });
+  await retry.locator("[data-sound-retry-next]").click();
+  expect(await nextScreen(page, main.id)).toBe(false);
+  await expectItemNo(page, 1);
+  const spare = await currentItem(page);
+  expect(spare.isSpare).toBe(true);
+  expect(spare.level).toBe(main.level);
+  expect(spare.itemNo).toBe(main.itemNo);
+  // 예비 문항은 들렸다 — 안내 없이 보통대로 답한다
+  await expect(page.locator("[data-sound-retry]")).toHaveCount(0);
+  await answerChoice(page);
+  const { answers } = await placementAnswers(profileId);
+  expect(answers[0]).toMatchObject({
+    slot: "main",
+    techError: true,
+    correct: false,
+    dontKnow: false,
+    repeatFailed: false,
+  });
+  expect(answers[1]).toMatchObject({ slot: "spare", correct: true });
+  expect(answers[1]?.techError).toBeUndefined();
   await page.close();
 });

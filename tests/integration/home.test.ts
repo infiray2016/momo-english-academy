@@ -1,14 +1,15 @@
 // 홈 자료(4절 홈 표 · AC-2a, plan-p10b 파일별 값 4) — 시험 DB 에 시험용 시드를 넣고 첫 실행 저장 뒤 본다.
-// 설계 숫자(최근 성적 칸 수 · 기준)는 단원 복사본(unit_progress)에서 읽어 단언한다.
+// 단원 5칸 · 막대 둘(최근 성적 · 아는 단어 · 끝낸 대화)은 수업 목록 위 띠로 옮겼다(UI · UX 묶음 3 · [승인 UX2] — 그 단언은 lesson-list.test).
+// 회화 카드의 오늘 이야기 제목은 수업 목록 '여기부터 해요' 회화 수업의 제목이다(4절 회화 카드 행).
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { learningDayOf } from "@/core/learning-day";
 import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
-import { UNITS_PER_LEVEL } from "@/core/seed/structure";
 import { profiles, sessions, unitProgress } from "@/db/schema/learning";
 import { parentAlerts, parentAuth } from "@/db/schema/operations";
 import type { Db } from "@/server/db";
 import { readHome } from "@/server/home";
+import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile, saveFirstRun } from "@/server/profile";
 import { loadSeed } from "@/server/seed/load";
 import {
@@ -76,7 +77,7 @@ async function profileId(): Promise<string> {
 }
 
 describe("홈 자료", () => {
-  it("홈 자료: 단계가 정해진 영역은 단계 · 지금 단원 칸 · 단원 단어 수 · 빈 최근 성적 칸이고, 배치 전 영역은 배치, 회화는 말하기 시작 단계 전이다", async () => {
+  it("AC-2a 홈 자료: 단계가 정해진 영역은 단계 · 오늘 · 이번 주이고(단원 5칸 · 막대는 홈에 없음), 배치 전 영역은 배치, 회화는 말하기 시작 단계 전이다", async () => {
     const home = await readHome({ db, now: NOW });
     expect(home?.displayName).toBe("모모");
     expect(home?.starTotal).toBe(0);
@@ -87,23 +88,9 @@ describe("홈 자료", () => {
       level: 1,
       unit: 1,
     });
-    expect(reading?.unitCells).toEqual([
-      "current",
-      ...Array.from({ length: UNITS_PER_LEVEL - 1 }, () => "upcoming"),
-    ]);
-    expect(reading?.unitWords).toBeGreaterThan(0);
-    expect(typeof reading?.unitTopic).toBe("string");
-    const [progress] = await db
-      .select()
-      .from(unitProgress)
-      .where(eq(unitProgress.area, "reading"));
-    const snapshot = progress?.settingsSnapshot as
-      | Record<string, number>
-      | undefined;
-    const window = snapshot?.["unit.recent_window"] ?? 0;
-    expect(reading?.recent).toEqual(
-      Array.from({ length: window }, () => "empty"),
-    );
+    for (const gone of ["unitCells", "knownWords", "recent", "talks"])
+      expect(reading).not.toHaveProperty(gone);
+    expect(reading?.firstLesson).toBe(true);
     expect(reading?.today).toEqual({ done: false, newLessonDone: false });
     expect(writing).toMatchObject({ gate: "placement" });
     expect(speaking).toMatchObject({ gate: "placement" });
@@ -114,7 +101,85 @@ describe("홈 자료", () => {
     expect((await readHome({ db, now: NOW }))?.parentDot).toBe(false);
   });
 
-  it("홈 자료: 오늘 끝낸 새 수업으로 오늘 완료 · 이번 주는 월요일부터 서로 다른 학습일 · 최근 성적은 기준 넘은 수업만 pass 이고 통과한 단원은 passed 칸이다", async () => {
+  it("U2-1 홈 자료: 배치 평가 말고 끝낸 세션이 하나도 없는 영역은 firstLesson 이고, 끝낸 수업(정규 · 다시 하기 · 단계 평가 무엇이든)이 하나라도 있으면 아니다", async () => {
+    const id = await profileId();
+    const first = await readHome({ db, now: NOW });
+    expect(first?.cards.map((c) => [c.area, c.firstLesson])).toEqual([
+      ["reading", true],
+      ["writing", true],
+      ["speaking", true],
+      ["talk", true],
+    ]);
+    const done = (
+      area: "reading" | "writing" | "speaking",
+      kind: "placement" | "retry",
+    ) => ({
+      profileId: id,
+      area,
+      level: 1,
+      unit: 1,
+      kind,
+      status: "completed" as const,
+      startedAt: SAVED_AT,
+      completedAt: SAVED_AT,
+      learningDay: LAST_SUNDAY,
+    });
+    await db
+      .insert(sessions)
+      .values([done("reading", "retry"), done("writing", "placement")]);
+    // 진행 중 세션은 세지 않는다
+    await db.insert(sessions).values({
+      ...done("speaking", "retry"),
+      status: "in_progress",
+      completedAt: null,
+      learningDay: null,
+    });
+    const after = await readHome({ db, now: NOW });
+    expect(after?.cards.map((c) => [c.area, c.firstLesson])).toEqual([
+      ["reading", false],
+      ["writing", true],
+      ["speaking", true],
+      ["talk", true],
+    ]);
+  });
+
+  it("U4-1 fix 1 홈 별 합 = 끝낸 새 수업(정규 · 보강 · 연습 · 안 해 본 수업, 쓰기 초고 · 다시 하기 · 배치 · 중단 · 진행 제외) 수 × reward.star_complete(3.5 R12 — P12 전 잠정)", async () => {
+    const id = await profileId();
+    const row = (over: Partial<typeof sessions.$inferInsert>) => ({
+      profileId: id,
+      area: "reading" as const,
+      level: 1,
+      unit: 1,
+      kind: "regular" as const,
+      status: "completed" as const,
+      startedAt: SAVED_AT,
+      completedAt: SAVED_AT,
+      learningDay: LAST_SUNDAY,
+      ...over,
+    });
+    await db.insert(sessions).values([
+      row({}),
+      row({ kind: "remedial" }),
+      row({ area: "writing", writingPart: "draft" }),
+      row({ area: "writing", writingPart: "rewrite" }),
+      row({ area: "talk" }),
+      row({ area: "talk", status: "aborted" }),
+      row({ kind: "retry" }),
+      row({ area: "speaking", kind: "placement" }),
+      row({
+        area: "speaking",
+        status: "in_progress",
+        completedAt: null,
+        learningDay: null,
+      }),
+    ]);
+    const home = await readHome({ db, now: NOW });
+    expect(home?.starTotal).toBe(
+      4 * TEST_SETTINGS["reward.star_complete"].value,
+    );
+  });
+
+  it("AC-2a 홈 자료: 오늘 끝낸 새 수업으로 오늘 완료 · 이번 주는 월요일부터 서로 다른 학습일이다", async () => {
     const id = await profileId();
     const [progress] = await db
       .select()
@@ -153,43 +218,66 @@ describe("홈 자료", () => {
       .update(unitProgress)
       .set({ startedAt: new Date(`${MONDAY}T00:00:00+09:00`) })
       .where(eq(unitProgress.id, progress.id));
-    // 단원 2 를 통과한 회차가 있으면 passed 칸
-    await db.insert(unitProgress).values({
-      ...progress,
-      id: undefined,
-      unit: 2,
-      passedAt: NOW,
-    });
     const reading = (await readHome({ db, now: NOW }))?.cards[0];
     expect(reading?.today).toEqual({ done: true, newLessonDone: true });
     expect(reading?.thisWeek).toBe(2);
-    expect(reading?.recent.slice(0, 2)).toEqual(["miss", "pass"]);
-    expect(reading?.recent.filter((c) => c === "empty")).toHaveLength(
-      (reading?.recent.length ?? 0) - 2,
-    );
-    expect(reading?.unitCells.slice(0, 2)).toEqual(["current", "passed"]);
+    expect(reading?.firstLesson).toBe(false);
+  });
 
-    // 통과 시각 없는 단원 3 회차는 아직 남은 칸(검토 review-p10-3-code M-1)
-    await db.insert(unitProgress).values({
-      ...progress,
-      id: undefined,
-      unit: 3,
-      passedAt: null,
+  it("AC-2a 홈 자료: 회화 카드의 오늘 이야기 제목은 수업 목록 '여기부터 해요' 회화 수업의 제목이고, 첫 사용 꼴 · 배치 전에는 없다", async () => {
+    const id = await profileId();
+    // 배치 전 회화(말하기 시작 단계 전)는 제목이 없다
+    expect((await readHome({ db, now: NOW }))?.cards[3]).not.toHaveProperty(
+      "storyTitle",
+    );
+    // 회화 1단계를 연 집(첫 실행 다시) — 끝낸 회화가 없으면 첫 사용 꼴이라 제목을 읽지 않는다
+    await db.delete(profiles);
+    await db.delete(parentAuth);
+    const saved = await saveFirstRun(
+      {
+        pin: "246813",
+        displayName: "모모",
+        englishName: "Momo",
+        avatar: AVATARS[0].id,
+        topicBundle: TOPIC_BUNDLES[0].id,
+        alphabetUnknown: false,
+        startLevels: { talk: 1 },
+        mic: { result: "not_checked" },
+      },
+      { db, now: () => SAVED_AT },
+    );
+    if (!saved.ok) throw new Error("첫 실행 저장 실패");
+    const first = (await readHome({ db, now: NOW }))?.cards[3];
+    expect(first).toMatchObject({ area: "talk", firstLesson: true });
+    expect(first).not.toHaveProperty("storyTitle");
+    // 오래전에 끝낸 회화가 있으면(회차 전이라 목록의 끝낸 수업에는 안 듦) 보통 꼴 — 제목은 목록의 '여기부터 해요' 수업 제목
+    const talkId = await profileId();
+    expect(talkId).not.toBe(id);
+    await db.insert(sessions).values({
+      profileId: talkId,
+      area: "talk",
+      level: 1,
+      unit: 1,
+      kind: "regular",
+      status: "completed",
+      startedAt: new Date(`${LAST_SUNDAY}T12:00:00+09:00`),
+      completedAt: new Date(`${LAST_SUNDAY}T12:10:00+09:00`),
+      learningDay: LAST_SUNDAY,
     });
-    // 최근 성적 칸 수는 그 회차 복사본의 unit.recent_window 를 따른다(다른 수로 바꿔 봄)
-    const snapshot = progress.settingsSnapshot as Record<string, number>;
-    const window = (snapshot["unit.recent_window"] ?? 0) - 2;
-    await db
-      .update(unitProgress)
-      .set({ settingsSnapshot: { ...snapshot, "unit.recent_window": window } })
-      .where(eq(unitProgress.id, progress.id));
-    const again = (await readHome({ db, now: NOW }))?.cards[0];
-    expect(again?.unitCells.slice(0, 3)).toEqual([
-      "current",
-      "passed",
-      "upcoming",
-    ]);
-    expect(again?.recent).toHaveLength(window);
+    const list = await readLessonList({ db, area: "talk", now: NOW });
+    if (list.kind !== "list") throw new Error("회화 목록이어야 한다");
+    const here = list.view.hereStart;
+    if (here?.kind !== "lesson") throw new Error("여기부터 해요 수업 없음");
+    const title = list.input.lessonsByUnit[here.ref.unit]?.find(
+      (c) => c.kind === here.ref.kind && c.lessonNo === here.ref.lessonNo,
+    )?.title;
+    expect(title).toBeTruthy();
+    const talk = (await readHome({ db, now: NOW }))?.cards[3];
+    expect(talk).toMatchObject({
+      area: "talk",
+      firstLesson: false,
+      storyTitle: title,
+    });
   });
 
   it("홈 자료: '이번 주 n일'은 배치 평가 세션을 끝낸 날도 세고 오늘 완료는 배치 평가로 켜지지 않는다", async () => {

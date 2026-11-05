@@ -1,22 +1,20 @@
 import "server-only";
-// 홈 자료(4절 홈 표 · AC-2a, plan-p10b 파일별 값 4). 영역 카드 넷의 단계 · 단원 5칸 · 막대 둘 · 이번 주 n일 · 오늘 완료,
-// 별 합 · 부모 점 · 이름. 판정 기준(unit.recent_window · unit.recent_score · unit.min_lessons)은 그 단원 회차의 복사본에서,
-// 학습일은 app.timezone · app.day_start_hour 로 센다. 시각은 인자로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
-// 아는 단어 · 복습 · 연속 일수는 P12, 최근 성적 · 끝낸 대화는 세션 완료(P11 · 1-나)가 생기면 채워진다(그 전에는 0 · 빈 칸).
-// 쓰기 6~12(plan-p11b 값 12): '첨삭이 왔어요'(지금 단계에서 첨삭이 온 가장 오래된 첫 세션의 수업 행), 최근 성적은 점수 없는 세션과
-// 둘째 세션(고쳐 쓰기)을 빼고 센다(수업 하나 = 첫 세션 점수).
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNotNull,
-  isNull,
-  sql,
-} from "drizzle-orm";
+// 홈 자료(4절 홈 표 · AC-2a, plan-p10b 파일별 값 4). 영역 카드 넷의 단계 · 이번 주 n일 · 오늘 완료 · 첫 사용 꼴, 회화 카드의 오늘 이야기
+// 제목, 별 합 · 부모 점 · 이름. 학습일은 app.timezone · app.day_start_hour 로 센다. 시각은 인자로 받고 질의 SQL 안에 now() 를 쓰지 않는다.
+// 단원 5칸 · 막대 둘(아는 단어 · 최근 성적 · 끝낸 대화)은 수업 목록 위 띠로 옮겼다(UI · UX 묶음 3 · [승인 UX2] · R-4 · R-13 —
+// server/lesson-list/band.ts). 연속 일수 · 복습은 P12 몫이다.
+// 쓰기 6~12(plan-p11b 값 12): '첨삭이 왔어요'(지금 단계에서 첨삭이 온 가장 오래된 첫 세션의 수업 행).
+// 첫 사용 꼴(13절 C166 R7 · UX 검토 3판 U2-1): 그 영역에서 배치 평가 말고 끝낸 세션이 하나도 없으면 firstLesson(화면이 0 · '이번 주' ·
+// '오늘 아직이에요'를 숨긴다).
+// 회화 카드의 오늘 이야기 제목(4절 회화 카드 행 · R-8): 수업 목록에서 '여기부터 해요'인 회화 수업의 제목(readTodayStoryTitle — 같은 입력 ·
+// 같은 함수). 첫 사용 꼴 · 배치 전에는 읽지 않는다.
+// 별 합(3.5 R12 · C166 R3 · C167 (5) — P12 전 잠정 셈): 별 장부가 아직 비어 있어, 끝낸 세션을 결과 · 마무리와 같은 셈(core/reward/star
+// earnsStar)으로 세어 reward.star_complete 를 곱한다(설정값을 바꾸면 지난 별도 다시 셈). P12 가 장부를 쓰면 장부 합으로 돌아간다.
+import { and, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { learningDayOf } from "@/core/learning-day";
-import { AREAS, type Area, UNITS_PER_LEVEL } from "@/core/seed/structure";
+import { starTotalOf } from "@/core/reward/star";
+import { AREAS, type Area } from "@/core/seed/structure";
 import { parseAttemptInput } from "@/core/session/attempt";
 import {
   type DoneSession,
@@ -25,27 +23,21 @@ import {
   weekStartOf,
 } from "@/core/today/done";
 import { feedbackStateOf } from "@/core/writing/feedback";
-import { vocab } from "@/db/schema/content";
 import {
   attempts,
   profileTracks,
   sessions,
-  starLedger,
   unitProgress,
-  vocabProgress,
 } from "@/db/schema/learning";
 import { parentAlerts } from "@/db/schema/operations";
 import { type Db, getDb } from "@/server/db";
+import { readTodayStoryTitle } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
-import { readUnitSpec } from "@/server/seed/read";
 import {
   appDayStartHourSchema,
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
-
-export type UnitCell = "passed" | "current" | "upcoming";
-export type RecentCell = "pass" | "miss" | "empty";
 
 export type HomeCard = {
   area: Area;
@@ -53,16 +45,12 @@ export type HomeCard = {
   gate: "placement" | "needs_speaking" | null;
   level?: number;
   unit?: number;
-  unitTopic?: string;
-  unitCells: UnitCell[];
-  knownWords: number;
-  unitWords: number;
-  /** 최근 정규 수업 칸(unit.recent_window 개, 오래된 것부터). 회화는 빈 배열. */
-  recent: RecentCell[];
-  /** 회화: 끝낸 대화 n / 최소 수업 수. */
-  talks?: { done: number; min: number };
   thisWeek: number;
   today: { done: boolean; newLessonDone: boolean };
+  /** 그 영역에서 배치 평가 말고 끝낸 세션이 하나도 없다(첫 사용 꼴 — C166 R7). */
+  firstLesson: boolean;
+  /** 회화: 오늘 이야기 제목(수업 목록 '여기부터 해요' 회화 수업, 없으면 비움). */
+  storyTitle?: string;
 };
 
 export type HomeView = {
@@ -74,26 +62,8 @@ export type HomeView = {
   feedbackReady: { lessonId: string } | null;
 };
 
-/** 아는 단어로 세는 단어장 상태(3.2 — 읽기 · 말하기 '알아봄', 쓰기 '씀', 회화 '말함'). */
-const KNOWN_STATE = {
-  reading: "recognize",
-  writing: "write",
-  speaking: "recognize",
-  talk: "say",
-} as const satisfies Record<Area, "recognize" | "write" | "say">;
-const RECENT_WINDOW_KEY = "unit.recent_window";
-const RECENT_SCORE_KEY = "unit.recent_score";
-const MIN_LESSONS_KEY = "unit.min_lessons";
 /** 부모 확인 대기 값(plan-p10b 정할 것 ㅅ — P12 가 같은 값을 쓴다). */
 const PARENT_CHECK_PENDING = "pending";
-
-const snapshotNumber = (snapshot: unknown, key: string): number => {
-  const value = (snapshot as Record<string, unknown> | null)?.[key];
-  if (typeof value !== "number") {
-    throw new Error(`단원 복사본에 ${key} 가 없다`);
-  }
-  return value;
-};
 
 /** 홈 자료. 프로필이 없으면 undefined(화면은 첫 실행으로). */
 export async function readHome({
@@ -109,6 +79,7 @@ export async function readHome({
     {
       "app.timezone": appTimezoneSchema,
       "app.day_start_hour": appDayStartHourSchema,
+      "reward.star_complete": z.number().int().nonnegative(),
     },
     { db, profileId: profile.id },
   );
@@ -143,8 +114,27 @@ export async function readHome({
       ),
     );
 
+  // 그 프로필의 끝낸 세션(언제든) 한 번 읽기 — 첫 사용 꼴(배치 평가 말고 끝낸 세션이 있는 영역, C166 R7)과 별 합(결과 · 마무리와 같은 셈
+  // earnsStar × reward.star_complete, C167 (5))을 함께 낸다(검토 B M-1)
+  const finished = await db
+    .select({
+      area: sessions.area,
+      kind: sessions.kind,
+      status: sessions.status,
+      writingPart: sessions.writingPart,
+    })
+    .from(sessions)
+    .where(
+      and(eq(sessions.profileId, profile.id), eq(sessions.status, "completed")),
+    );
+  const triedAreas = new Set(
+    finished.filter((s) => s.kind !== "placement").map((s) => s.area),
+  );
+  const starTotal = starTotalOf(finished, settings["reward.star_complete"]);
+
   const cards: HomeCard[] = [];
   for (const area of AREAS) {
+    const firstLesson = !triedAreas.has(area);
     const track = tracks.find((t) => t.area === area);
     const allAreaSessions: DoneSession[] = doneRows
       .filter((s) => s.area === area)
@@ -168,115 +158,29 @@ export async function readHome({
       cards.push({
         area,
         gate: area === "talk" ? "needs_speaking" : "placement",
-        unitCells: Array.from({ length: UNITS_PER_LEVEL }, () => "upcoming"),
-        knownWords: 0,
-        unitWords: 0,
-        recent: [],
         thisWeek,
         today: { done: false, newLessonDone: false },
+        firstLesson,
       });
       continue;
     }
-    const rounds = progressRows.filter(
-      (p) => p.area === area && p.level === level,
-    );
-    // 지금 단원의 가장 늦은 회차
-    const current = rounds
-      .filter((p) => p.unit === unit)
+    // 지금 단원의 가장 늦은 회차(부모 확인 대기)
+    const current = progressRows
+      .filter((p) => p.area === area && p.level === level && p.unit === unit)
       .sort((a, b) => b.round - a.round)[0];
-    const unitCells: UnitCell[] = Array.from(
-      { length: UNITS_PER_LEVEL },
-      (_, i) => {
-        const u = i + 1;
-        if (u === unit) return "current";
-        return rounds.some((p) => p.unit === u && p.passedAt !== null)
-          ? "passed"
-          : "upcoming";
-      },
-    );
-    const spec = current
-      ? await readUnitSpec(
-          { area, level, unit, startRevision: current.startRevision },
-          { db },
-        )
-      : undefined;
-    const targetVocab = spec?.targetVocab ?? [];
-    const knownWords =
-      targetVocab.length === 0
-        ? 0
-        : await db
-            .select({ n: sql<number>`count(*)::int` })
-            .from(vocabProgress)
-            .innerJoin(vocab, eq(vocabProgress.vocabId, vocab.id))
-            .where(
-              and(
-                eq(vocabProgress.profileId, profile.id),
-                eq(vocabProgress.state, KNOWN_STATE[area]),
-                eq(vocabProgress.known, true),
-                inArray(vocab.word, targetVocab),
-              ),
-            )
-            .then(([row]) => row?.n ?? 0);
-
-    // 이 단원 회차에서 끝낸 정규 수업(최근 성적 · 끝낸 대화)
-    const regular = current
-      ? await db
-          .select({ score: sessions.score, writingPart: sessions.writingPart })
-          .from(sessions)
-          .where(
-            and(
-              eq(sessions.profileId, profile.id),
-              eq(sessions.area, area),
-              eq(sessions.level, level),
-              eq(sessions.unit, unit),
-              eq(sessions.kind, "regular"),
-              eq(sessions.status, "completed"),
-              gte(sessions.completedAt, current.startedAt),
-            ),
-          )
-          .orderBy(desc(sessions.completedAt))
-      : [];
-    let recent: RecentCell[] = [];
-    let talks: HomeCard["talks"];
-    if (area === "talk") {
-      talks = {
-        done: regular.length,
-        min: current
-          ? snapshotNumber(current.settingsSnapshot, MIN_LESSONS_KEY)
-          : 0,
-      };
-    } else if (current) {
-      const windowSize = snapshotNumber(
-        current.settingsSnapshot,
-        RECENT_WINDOW_KEY,
-      );
-      const pass = snapshotNumber(current.settingsSnapshot, RECENT_SCORE_KEY);
-      // 점수 없는 세션(쓰기 확인 실패 · 첨삭 전 …)과 쓰기 둘째 세션은 빼고 센다(3.7 · 값 12)
-      const last = regular
-        .filter((s) => s.score !== null && s.writingPart !== "rewrite")
-        .slice(0, windowSize)
-        .reverse();
-      recent = Array.from({ length: windowSize }, (_, i) => {
-        const s = last[i];
-        if (!s) return "empty";
-        return s.score !== null && s.score >= pass ? "pass" : "miss";
-      });
-    }
     const noNewLessonPossible =
       current?.parentCheck === PARENT_CHECK_PENDING ||
       track?.nextLevelPending === true ||
       track?.graduated === true;
+    const storyTitle =
+      area === "talk" && !firstLesson
+        ? await storyTitleOf(db, profile, now)
+        : null;
     cards.push({
       area,
       gate: null,
       level,
       unit,
-      ...(spec ? { unitTopic: spec.topic } : {}),
-      unitCells,
-      knownWords,
-      unitWords: targetVocab.length,
-      recent,
-      ...(talks ? { talks } : {}),
       thisWeek,
       today: todayDone({
         today,
@@ -286,13 +190,11 @@ export async function readHome({
         reviewDoneToday: false,
         noNewLessonPossible,
       }),
+      firstLesson,
+      ...(storyTitle ? { storyTitle } : {}),
     });
   }
 
-  const [stars] = await db
-    .select({ n: sql<number>`coalesce(sum(${starLedger.count}), 0)::int` })
-    .from(starLedger)
-    .where(eq(starLedger.profileId, profile.id));
   const [alert] = await db
     .select({ id: parentAlerts.id })
     .from(parentAlerts)
@@ -302,7 +204,7 @@ export async function readHome({
   const writingLevel = tracks.find((t) => t.area === "writing")?.level;
   return {
     displayName: profile.displayName,
-    starTotal: stars?.n ?? 0,
+    starTotal,
     parentDot: alert !== undefined,
     cards,
     feedbackReady:
@@ -310,6 +212,22 @@ export async function readHome({
         ? null
         : await feedbackReadyOf(db, profile.id, writingLevel),
   };
+}
+
+/** 오늘 이야기 제목. 읽지 못하면(목록 자료 오류) 제목 없이 카드를 그리고 오류 이름만 남긴다 — 홈을 막지 않는다. */
+async function storyTitleOf(
+  db: Db,
+  profile: { id: string; topicBundle: string },
+  now: Date,
+): Promise<string | null> {
+  try {
+    return await readTodayStoryTitle({ db, profile, now });
+  } catch (error) {
+    console.error(
+      `오늘 이야기 제목 읽기 실패(${error instanceof Error ? error.name : "unknown"})`,
+    );
+    return null;
+  }
 }
 
 /** 지금 쓰기 단계에서 첨삭이 온(둘째 세션을 아직 끝내지 않은) 가장 오래된 첫 세션의 수업 행(값 12). */

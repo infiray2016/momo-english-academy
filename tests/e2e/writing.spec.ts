@@ -334,6 +334,9 @@ const G = {
   micOk: "알겠어요",
   /** 선생님을 고르지 않은 집(atLevel)이라 이름 자리는 '선생님'(C123 · 선생님 화면 plan 값 9). */
   rest: "선생님이 잠깐 쉬어요. 다른 공부를 해 볼까요",
+  /** 쉼 다시 확인 뒤에도 쉼(UI · UX spec 설계 6). */
+  restStill: "아직 쉬고 있어요. 조금 뒤에 다시 눌러 봐요",
+  retry: "다시 해 볼래요",
   home: "홈",
   back: "수업 목록",
 } as const;
@@ -594,7 +597,12 @@ async function reachSafetyCap(profileId: string) {
   });
 }
 
-test("1-가 안전 상한: 쓰기 5단계 수업을 고르면 '선생님이 잠깐 쉬어요. 다른 공부를 해 볼까요'(선생님을 고르기 전)와 '홈'이 보인다", async ({
+/** 하루 안전 상한을 푼다(그 프로필의 오늘 호출 기록을 지움 — 같은 판정 함수가 다시 읽으면 쉬지 않음). */
+async function liftSafetyCap(profileId: string) {
+  await e2eDb().delete(aiCalls).where(eq(aiCalls.profileId, profileId));
+}
+
+test("1-가 안전 상한 · 돌아갈 길(UI · UX 0-가 R-15 · N-5 · N-8 · UX3 · UX4): 쓰기 5단계 수업을 고르면 목록은 그대로 카드 아래 한 줄에 '선생님이 잠깐 쉬어요 …', 세션 도중에는 큰 '홈' · 작은 '다시 해 볼래요'로 풀리면 같은 활동이다", async ({
   page,
 }) => {
   const sample = guidedSample(5);
@@ -605,47 +613,56 @@ test("1-가 안전 상한: 쓰기 5단계 수업을 고르면 '선생님이 잠�
     await expect(
       page.locator("[data-lesson-board][data-hydrated]"),
     ).toHaveCount(1);
-    await page.locator('[data-lesson="assigned-1"]').click();
-    await expect(page.getByText(G.rest)).toBeVisible();
-    // 한 화면에 안내와 '홈' 하나(종이 띠의 '홈'은 숨김)
+    const pressed = page.locator('[data-lesson="assigned-1"]');
+    await pressed.click();
+    // 목록은 그대로(띠의 '홈' 링크 · 카드가 남음), 누른 카드 아래 한 줄 칸에 쉼 글 — 단추 없음
+    const line = page.locator("[data-lesson-wait] [data-ai-rest-line]");
+    await expect(line).toContainText(G.rest);
+    await expect(page.locator("[data-lesson-board]")).toBeVisible();
+    await expect(pressed).toBeVisible();
     await expect(page.getByRole("link", { name: G.home })).toHaveCount(1);
-    await expect(
-      page.locator("[data-ai-rest]").getByRole("link", { name: G.home }),
-    ).toBeVisible();
+    await expect(line.getByRole("button")).toHaveCount(0);
     await photo(page, "p11-ai-rest-list");
     // 세션을 열지 않았고 AI 를 부르지 않았다
     expect(await countRows(sessions, eq(sessions.profileId, profileId))).toBe(
       0,
     );
     expect(await fakeAiRequests()).toHaveLength(0);
-    await page
-      .locator("[data-ai-rest]")
-      .getByRole("link", { name: G.home })
-      .click();
-    await expect(page).toHaveURL(/\/$/);
+    // 다시 누르면 다시 판정 — 아직 쉬면 '아직 쉬고 있어요 …'를 더한다
+    await pressed.click();
+    await expect(line.locator("[data-ai-rest-still]")).toHaveText(G.restStill);
 
-    // 지난 수업 쪽도 같은 꼴 — 띠의 '수업 목록' 링크를 숨겨 '홈' 하나(검토 M-2 · 화면 M-5)
+    // 지난 수업 쪽도 같은 꼴 — 띠의 '수업 목록' 링크를 그대로 두고 카드 아래 한 줄
     await passWritingUnitOne(profileId);
     await page.goto("/writing/lessons/past?unit=1");
     await expect(
       page.locator("[data-past-lessons][data-hydrated]"),
     ).toHaveCount(1);
     await page.locator('[data-lesson="assigned-1"]').click();
-    await expect(page.getByText(G.rest)).toBeVisible();
-    await expect(page.getByRole("link", { name: G.back })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: G.home })).toHaveCount(1);
+    await expect(
+      page.locator("[data-lesson-wait] [data-ai-rest-line]"),
+    ).toContainText(G.rest);
+    await expect(page.getByRole("link", { name: G.back })).toHaveCount(1);
     await photo(page, "p11-ai-rest-past");
     expect(await countRows(sessions, eq(sessions.profileId, profileId))).toBe(
       0,
     );
 
-    // 세션 도중(하던 세션을 상한 날 다시 엶) — 안내와 '홈' 하나, 세션은 진행으로 남는다
+    // 세션 도중(하던 세션을 상한 날 다시 엶) — 안내 · 큰 '홈' · 작은 '다시 해 볼래요', 세션은 진행으로 남는다
     const sessionId = await openLessonSession(profileId, lesson);
     await page.goto(`/session/${sessionId}`);
     await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
-    await expect(page.locator("[data-ai-rest]")).toBeVisible();
+    const rest = page.locator("[data-ai-rest]");
+    await expect(rest).toBeVisible();
+    await expect(rest.locator('[data-button-size="big"]')).toHaveText(G.home);
+    await expect(rest.locator('[data-button-size="small"]')).toHaveText(
+      G.retry,
+    );
     await expect(page.getByRole("button", { name: G.home })).toHaveCount(1);
     await photo(page, "p11-ai-rest-session");
+    // 아직 쉬면 같은 화면에 '아직 쉬고 있어요 …'
+    await rest.getByRole("button", { name: G.retry }).click();
+    await expect(rest.locator("[data-ai-rest-still]")).toHaveText(G.restStill);
     await page.getByRole("button", { name: G.home }).click();
     await expect(page).toHaveURL(/\/$/);
     const [row] = await e2eDb()
@@ -653,6 +670,24 @@ test("1-가 안전 상한: 쓰기 5단계 수업을 고르면 '선생님이 잠�
       .from(sessions)
       .where(eq(sessions.id, sessionId));
     expect(row?.status).toBe("in_progress");
+
+    // 다시 열어 쉬는 동안 상한이 풀리면 '다시 해 볼래요'로 같은 세션의 같은 활동(홈을 거치지 않음)
+    await page.goto(`/session/${sessionId}`);
+    await expect(page.locator("[data-ai-rest]")).toBeVisible();
+    const activityNo = await page
+      .locator("[data-activity]")
+      .getAttribute("data-activity-no");
+    await liftSafetyCap(profileId);
+    await page
+      .locator("[data-ai-rest]")
+      .getByRole("button", { name: G.retry })
+      .click();
+    await expect(page.locator("[data-ai-rest]")).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/session/${sessionId}$`));
+    await expect(page.locator("[data-activity]")).toHaveAttribute(
+      "data-activity-no",
+      activityNo ?? "",
+    );
   });
 });
 
@@ -698,8 +733,14 @@ const C = {
   words: "쓸 수 있는 단어",
   starters: "이렇게 시작해 봐요",
   written: "다 썼어요",
+  /** 분량 아래 확인 쪽지(U4-6). */
+  shortConfirm: "이대로 보낼까요?",
+  sendAnyway: "보낼래요",
+  writeMore: "더 쓸래요",
   sent: "글을 보냈어요. 첨삭이 오면 고쳐 쓰고 별을 받아요",
   feedback: "첨삭 보기",
+  /** 첨삭 기다림 한 줄(U4-8). */
+  feedbackWait: "기다리는 동안 다른 공부를 해도 돼요",
 } as const;
 const MAX_TURNS = TEST_SETTINGS["writing.thinkout_max_turns"].value;
 /** 초 → ms(단위 바꿈 상수). */
@@ -818,13 +859,33 @@ test("AC-4c 쓰기 6단계 첫 세션에서 생각 꺼내기는 writing.thinkout
     );
     await photo(page, "p11-writing-6-draft-written");
     await page.getByRole("button", { name: C.written }).click();
+    // U4-6 분량(단계 규격 amount 최소) 아래면 '이대로 보낼까요?' 확인 쪽지 — 큰 '더 쓸래요'(첫 초점)는 입력란으로 돌아가고, 작은 '보낼래요'가 보낸다
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toContainText(C.shortConfirm);
+    await expect(
+      sheet.getByRole("button", { name: C.writeMore }),
+    ).toBeFocused();
+    await photo(page, "p11-writing-6-short-confirm");
+    await sheet.getByRole("button", { name: C.writeMore }).click();
+    await expect(sheet).toHaveCount(0);
+    await expect(draft).toHaveValue(DRAFT_TEXT);
+    // '더 쓸래요' 뒤 초점은 입력란으로(이어 쓰기 — 검토 B M-10)
+    await expect(draft).toBeFocused();
+    await page.getByRole("button", { name: C.written }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: C.sendAnyway })
+      .click();
 
-    // 결과: '글을 보냈어요 …' + 기다림 표시 → 첨삭이 오면 '첨삭 보기'
+    // 결과: '글을 보냈어요 …' + 기다림 표시(U4-8 기다리는 동안 한 줄) → 첨삭이 오면 '첨삭 보기'
     await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
     await expect(page.getByRole("heading", { name: C.sent })).toBeVisible();
     await expect(
       page.locator('[data-result-next="waiting"] [data-wait-hint]'),
     ).toBeVisible();
+    await expect(page.getByText(C.feedbackWait)).toBeVisible();
+    // 첨삭 전 첫 세션은 별이 없다(C166 R3)
+    await expect(page.locator("[data-reward-star]")).toHaveCount(0);
     await photo(page, "p11-writing-6-sent");
     await expect(page.getByRole("button", { name: C.feedback })).toBeVisible({
       timeout: FEEDBACK_SHOWN_MS,

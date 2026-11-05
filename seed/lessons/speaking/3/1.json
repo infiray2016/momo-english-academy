@@ -1,0 +1,456 @@
+{
+ "area": "speaking",
+ "level": 3,
+ "unit": 1,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 1,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "xhigh",
+    "briefHash": "9970145ead8982e7947311eb1682fd967d10bf49cab10ff9ab5077e8b81ff70e",
+    "agentHash": "f3ecb56ec7831ad994c3a7ccdd7f8d101ef410352fe19b2840b976b112d3086d",
+    "createdOn": "2026-10-29"
+   },
+   "title": "친구들이 놀러 왔어요",
+   "newWords": [
+    "eat",
+    "drink",
+    "go",
+    "come",
+    "wash"
+   ],
+   "unitWords": [
+    "eat",
+    "drink",
+    "go",
+    "come",
+    "wash"
+   ],
+   "preview": [
+    {
+     "word": "eat",
+     "meaningKo": "먹다",
+     "example": "Momo and Ted eat cookies."
+    },
+    {
+     "word": "drink",
+     "meaningKo": "마시다",
+     "example": "Max and Gus drink water."
+    },
+    {
+     "word": "go",
+     "meaningKo": "가다",
+     "example": "Mom and Dad go to the shop."
+    },
+    {
+     "word": "come",
+     "meaningKo": "오다",
+     "example": "Ted and Gus come here."
+    },
+    {
+     "word": "wash",
+     "meaningKo": "씻다",
+     "example": "I wash my hands."
+    }
+   ],
+   "teach": {
+    "goals": [
+     "speak-3-1-3",
+     "speak-3-1-2",
+     "speak-3-1-1"
+    ],
+    "shiftKo": {
+     "before": "들은 이야기에 대한 질문에 낱말 하나(Milk.)로만 답한다",
+     "after": "질문 속 이름을 They 로 바꾸고 하는 일 말을 가져와 'No, they drink milk.'처럼 한 문장으로 스스로 답한다"
+    },
+    "todayKo": "오늘은 질문에 한 문장으로 답하는 법을 배워요.",
+    "todayEn": "They drink water.",
+    "models": [
+     {
+      "storyEn": "Max and Gus drink water.",
+      "questionEn": "Do Max and Gus drink milk?",
+      "wordAnswerEn": "Water.",
+      "en": "No, they drink water.",
+      "ko": "아니, 걔네는 물을 마셔.",
+      "chips": [
+       {
+        "text": "They",
+        "role": "who"
+       },
+       {
+        "text": "drink",
+        "role": "do"
+       },
+       {
+        "text": "water",
+        "role": "what"
+       }
+      ],
+      "lineKo": "이제는 낱말 하나 말고 한 문장으로 답해요."
+     },
+     {
+      "storyEn": "Max and Gus drink water.",
+      "questionEn": "Do Max and Gus drink milk?",
+      "en": "No, they drink water.",
+      "ko": "아니, 걔네는 물을 마셔.",
+      "chips": [
+       {
+        "text": "They",
+        "role": "who",
+        "from": "Max and Gus"
+       },
+       {
+        "text": "drink",
+        "role": "do",
+        "from": "drink"
+       },
+       {
+        "text": "water",
+        "role": "what",
+        "from": "milk"
+       }
+      ],
+      "lineKo": "이름 둘은 They 로 바꾸고, drink 는 그대로 가져와요."
+     }
+    ],
+    "together": [
+     {
+      "type": "question",
+      "storyEn": "Momo and Ted eat cookies.",
+      "en": "Do Momo and Ted eat cake?",
+      "ko": "모모랑 테드는 케이크 먹어?",
+      "filled": "No, ___ eat cookies.",
+      "slot": "who",
+      "choices": [
+       "They",
+       "I"
+      ],
+      "answerNo": 1,
+      "modelAnswer": "No, they eat cookies.",
+      "accepted": [
+       "No, they eat cookies.",
+       "They eat cookies.",
+       "They eat cookies, not cake."
+      ],
+      "acceptedMeaning": [
+       "Momo and Ted eat cookies."
+      ],
+      "lineKo": "누가 자리에 무엇이 올까요?",
+      "rightKo": "맞아요! 둘이라 They 예요.",
+      "wrongKo": "Momo and Ted 는 둘이라 They 예요."
+     },
+     {
+      "type": "question",
+      "storyEn": "Mom and Dad go to the shop.",
+      "en": "Do Mom and Dad go home?",
+      "ko": "엄마랑 아빠는 집에 가?",
+      "filled": "No, they ___.",
+      "slot": "rest",
+      "modelAnswer": "No, they go to the shop.",
+      "accepted": [
+       "No, they go to the shop.",
+       "They go to the shop.",
+       "They go to the shop, not home."
+      ],
+      "acceptedMeaning": [
+       "Mom and Dad go to the shop."
+      ],
+      "lineKo": "이번엔 틀만 보고 말해 봐요.",
+      "rightKo": "잘 말했어요!",
+      "wrongKo": "이렇게 말해요. 같이 말해 볼까요?"
+     }
+    ],
+    "recap": {
+     "frameEn": "No, they drink water.",
+     "chips": [
+      {
+       "text": "They",
+       "role": "who"
+      },
+      {
+       "text": "drink",
+       "role": "do"
+      },
+      {
+       "text": "water",
+       "role": "what"
+      }
+     ],
+     "closeKo": "이제 질문을 듣고 한 문장으로 답할 수 있어요.",
+     "closeKoPracticed": "오늘은 질문에 한 문장으로 답하기를 배우고 연습했어요."
+    }
+   },
+   "content": {
+    "repeat": {
+     "words": [
+      "eat",
+      "drink",
+      "go",
+      "come",
+      "wash"
+     ],
+     "sentences": [
+      "Dan and Tess come here.",
+      "They eat pizza with me.",
+      "Dan and Tess drink milk.",
+      "I drink orange juice.",
+      "Dan and Tess wash the cups.",
+      "They go to the lake."
+     ],
+     "goal": "speak-3-1-1",
+     "chunks": [
+      "Dan and Tess / come here.",
+      "They eat pizza / with me.",
+      "Dan and Tess / drink milk.",
+      "I drink / orange juice.",
+      "Dan and Tess / wash the cups.",
+      "They go / to the lake."
+     ],
+     "spares": {
+      "words": [
+       "eat lunch",
+       "drink water",
+       "go home",
+       "come here",
+       "wash hands"
+      ],
+      "sentences": [
+       "Mom and Dad come home.",
+       "We eat cake with Mom.",
+       "Ted and Gus drink water.",
+       "I drink milk with Dad.",
+       "They wash the dog.",
+       "We go to the shop."
+      ]
+     }
+    },
+    "listening": [
+     {
+      "kind": "text",
+      "script": "Ted and Gus eat bananas. I eat an apple.",
+      "prompt": "Ted and Gus eat ___.",
+      "askRole": "what",
+      "options": [
+       "an apple",
+       "bananas",
+       "cookies",
+       "cake"
+      ],
+      "answerNo": 2,
+      "goal": "speak-3-1-2",
+      "whyKo": "Ted and Gus 다음에 eat bananas 가 들렸어요.",
+      "retryHighlight": "Ted and Gus eat bananas.",
+      "spare": {
+       "kind": "text",
+       "script": "Mom and Dad eat rice. I eat a cookie.",
+       "prompt": "Mom and Dad eat ___.",
+       "askRole": "what",
+       "options": [
+        "rice",
+        "a cookie",
+        "cake",
+        "bananas"
+       ],
+       "answerNo": 1,
+       "whyKo": "Mom and Dad 다음에 eat rice 가 들렸어요."
+      }
+     },
+     {
+      "kind": "text",
+      "script": "We go to the lake. Ted and Max go home.",
+      "prompt": "___ go home.",
+      "askRole": "who",
+      "options": [
+       "We",
+       "Mom and Dad",
+       "Ted and Max",
+       "Max and Gus"
+      ],
+      "answerNo": 3,
+      "goal": "speak-3-1-2",
+      "whyKo": "go home 앞에 Ted and Max 가 들렸어요.",
+      "retryHighlight": "Ted and Max go home.",
+      "spare": {
+       "kind": "text",
+       "script": "Momo and I go to the shop. Max and Gus come here.",
+       "prompt": "___ come here.",
+       "askRole": "who",
+       "options": [
+        "Momo and I",
+        "Max and Gus",
+        "Mom and Dad",
+        "Ted and Max"
+       ],
+       "answerNo": 2,
+       "whyKo": "come here 앞에 Max and Gus 가 들렸어요."
+      }
+     },
+     {
+      "kind": "text",
+      "script": "Ted and Max wash the dog. I wash the car.",
+      "prompt": "Ted and Max wash the ___.",
+      "askRole": "what",
+      "options": [
+       "dog",
+       "car",
+       "cups",
+       "bike"
+      ],
+      "answerNo": 1,
+      "goal": "speak-3-1-2",
+      "whyKo": "Ted and Max 다음에 wash the dog 가 들렸어요.",
+      "retryHighlight": "Ted and Max wash the dog.",
+      "spare": {
+       "kind": "text",
+       "script": "Momo and Ted drink milk. I drink water.",
+       "prompt": "Momo and Ted drink ___.",
+       "askRole": "what",
+       "options": [
+        "water",
+        "juice",
+        "milk",
+        "orange juice"
+       ],
+       "answerNo": 3,
+       "whyKo": "Momo and Ted 다음에 drink milk 가 들렸어요."
+      }
+     }
+    ],
+    "questions": [
+     {
+      "storyEn": "Dan and Tess come here. They eat pizza with me.",
+      "en": "Do Dan and Tess eat rice?",
+      "ko": "댄이랑 테스는 밥 먹어?",
+      "modelAnswer": "No, they eat pizza.",
+      "accepted": [
+       "No, they eat pizza.",
+       "They eat pizza.",
+       "They eat pizza, not rice."
+      ],
+      "acceptedMeaning": [
+       "Dan and Tess eat pizza."
+      ],
+      "goal": "speak-3-1-3",
+      "whyKo": "Dan and Tess 는 pizza 를 먹어요. They 로 말해요.",
+      "spare": {
+       "storyEn": "Max and Ted eat rice. I eat cake.",
+       "en": "Do Max and Ted eat cake?",
+       "ko": "맥스랑 테드는 케이크 먹어?",
+       "modelAnswer": "No, they eat rice.",
+       "accepted": [
+        "No, they eat rice.",
+        "They eat rice.",
+        "They eat rice, not cake."
+       ],
+       "acceptedMeaning": [
+        "Max and Ted eat rice."
+       ],
+       "whyKo": "Max and Ted 는 rice 를 먹어요. They 로 말해요."
+      }
+     },
+     {
+      "storyEn": "Dan and Tess drink milk. I drink orange juice.",
+      "en": "Do Dan and Tess drink juice?",
+      "ko": "댄이랑 테스는 주스 마셔?",
+      "modelAnswer": "No, they drink milk.",
+      "accepted": [
+       "No, they drink milk.",
+       "They drink milk.",
+       "They drink milk, not juice."
+      ],
+      "acceptedMeaning": [
+       "Dan and Tess drink milk."
+      ],
+      "goal": "speak-3-1-3",
+      "whyKo": "주스는 이야기 속 '나'가 마셔요. They drink milk 예요.",
+      "spare": {
+       "storyEn": "Momo and Dad drink juice. I drink milk.",
+       "en": "Do Momo and Dad drink milk?",
+       "ko": "모모랑 아빠는 우유 마셔?",
+       "modelAnswer": "No, they drink juice.",
+       "accepted": [
+        "No, they drink juice.",
+        "They drink juice.",
+        "They drink juice, not milk."
+       ],
+       "acceptedMeaning": [
+        "Momo and Dad drink juice."
+       ],
+       "whyKo": "Momo and Dad 는 juice 를 마셔요. They 로 말해요."
+      }
+     },
+     {
+      "storyEn": "Dan and Tess go to the lake.",
+      "en": "Do Dan and Tess go home?",
+      "ko": "댄이랑 테스는 집에 가?",
+      "modelAnswer": "No, they go to the lake.",
+      "accepted": [
+       "No, they go to the lake.",
+       "They go to the lake.",
+       "They go to the lake, not home."
+      ],
+      "acceptedMeaning": [
+       "Dan and Tess go to the lake."
+      ],
+      "goal": "speak-3-1-3",
+      "whyKo": "Dan and Tess 는 lake 에 가요. They 로 말해요.",
+      "spare": {
+       "storyEn": "Ted and Gus go to the bank. I go home.",
+       "en": "Do Ted and Gus go home?",
+       "ko": "테드랑 거스는 집에 가?",
+       "modelAnswer": "No, they go to the bank.",
+       "accepted": [
+        "No, they go to the bank.",
+        "They go to the bank.",
+        "They go to the bank, not home."
+       ],
+       "acceptedMeaning": [
+        "Ted and Gus go to the bank."
+       ],
+       "whyKo": "Ted and Gus 는 bank 에 가요. They 로 말해요."
+      }
+     },
+     {
+      "storyEn": "Dan and Tess wash the cups. I wash my bike.",
+      "en": "Do Dan and Tess wash the cups?",
+      "ko": "댄이랑 테스는 컵 씻어?",
+      "modelAnswer": "Yes, they wash the cups.",
+      "accepted": [
+       "Yes, they wash the cups.",
+       "They wash the cups.",
+       "Yes, they wash cups."
+      ],
+      "acceptedMeaning": [
+       "Yes, they do.",
+       "Dan and Tess wash the cups."
+      ],
+      "goal": "speak-3-1-3",
+      "whyKo": "Dan and Tess 는 cups 를 씻어요. They 로 말해요.",
+      "spare": {
+       "storyEn": "Mom and Dad wash the dog. I wash the car.",
+       "en": "Do Mom and Dad wash the dog?",
+       "ko": "엄마랑 아빠는 개 씻어?",
+       "modelAnswer": "Yes, they wash the dog.",
+       "accepted": [
+        "Yes, they wash the dog.",
+        "They wash the dog.",
+        "Yes, they wash it."
+       ],
+       "acceptedMeaning": [
+        "Yes, they do.",
+        "Mom and Dad wash the dog."
+       ],
+       "whyKo": "Mom and Dad 는 dog 를 씻어요. They 로 말해요."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

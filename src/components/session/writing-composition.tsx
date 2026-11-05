@@ -7,6 +7,8 @@
 // 분량 줄 · 지금 낱말 수, 영어 입력란(자동 수정 · 자동 대문자 · 맞춤법 · 추천 끔), 멈추면 · 떠나면 · 숨으면 자동 저장) → '다 썼어요'.
 // AI 를 기다리는 동안 WaitHint. 서버에 닿지 못하면 7절 끊김 안내 · online 때 같은 시도 id 로 다시. 일기 과제 '부모님도 볼 수 있어요'는
 // 시드에 표시 칸이 없어(정할 것 ㄹ — 2차 P4) 1-가는 그리지 않는다.
+// 불편 1차 묶음(13절 C166 · UX 검토 3판 U4-6): 분량(amount 최소) 아래에서 '다 썼어요'를 누르면 '이대로 보낼까요?' 확인 쪽지 — 큰 단추
+// '더 쓸래요'(계속 씀) · 작은 단추 '보낼래요'(보내면 첫 세션이 끝나 되돌릴 수 없음).
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CHILD_SIZE,
@@ -16,11 +18,13 @@ import {
 import { WritingGuidedTask } from "@/components/activities/writing";
 import {
   BigButton,
+  ConfirmSheet,
   FOCUS_RING,
   SmallButton,
   StatusLine,
 } from "@/components/board/board";
 import { WaitHint } from "@/components/session/wait-hint";
+import { sentenceWords, splitSentences } from "@/core/seed/text";
 import { DRAFT_TEXT_MAX, THINKOUT_ANSWER_MAX } from "@/core/writing/feedback";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
@@ -45,6 +49,10 @@ export const COMPOSITION_TEXT = {
       : `${min}~${max}문장으로 써요`,
   count: (n: number) => `지금 ${n}단어`,
   written: "다 썼어요",
+  /** 분량 아래 확인(U4-6 — 정본 밖 문구). */
+  shortConfirm: "이대로 보낼까요?",
+  sendAnyway: "보낼래요",
+  writeMore: "더 쓸래요",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
   failed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
 } as const;
@@ -61,8 +69,31 @@ const LANDSCAPE_QUERY = "(orientation: landscape)";
 export const INPUT_FOCUS =
   "focus:outline-4 focus:outline-offset-4 focus:outline-dashed focus:outline-ink";
 
-const wordsIn = (text: string) =>
-  text.trim().split(/\s+/).filter(Boolean).length;
+/**
+ * 초고 낱말 수(화면의 '지금 n단어'와 분량 판정이 같이 쓴다 — 검토 B M-7): 시드 검증기와 같은 셈(sentenceWords — 낱말 · 수 토큰, 떨어진
+ * 부호는 낱말이 아니고 축약형은 한 낱말).
+ */
+export function draftWordsOf(text: string): number {
+  return sentenceWords(text);
+}
+
+/**
+ * '다 썼어요'를 켤까(검토 B N-1): 글이 비었는가로만 가른다 — 한글만 · 부호만 쓴 초고도 보낼 수 있어야 아이가 막히지 않는다. 보이는
+ * 낱말 수(draftWordsOf)가 분량 아래면 보낼 때 '이대로 보낼까요?' 쪽지가 묻는다.
+ */
+export function canSubmitDraft(text: string): boolean {
+  return text.trim() !== "";
+}
+
+/** 초고가 분량(amount 최소 — 단어 또는 문장) 아래인가(U4-6). 낱말 · 문장 모두 시드 검증기와 같은 셈(sentenceWords · splitSentences). */
+export function belowAmountOf(
+  text: string,
+  amount: { unit: "words" | "sentences"; min: number },
+): boolean {
+  const n =
+    amount.unit === "words" ? draftWordsOf(text) : splitSentences(text).length;
+  return n < amount.min;
+}
 
 // ── 과제 ──
 
@@ -266,7 +297,7 @@ export function ThinkoutActivity({
                 CHILD_SIZE.choice,
                 CHILD_SIZE.target,
                 INPUT_FOCUS,
-                "w-full rounded-xl border-2 border-ink bg-white px-4",
+                "w-full rounded-xl border-2 border-ink bg-paper px-4",
               )}
             />
           </label>
@@ -369,7 +400,9 @@ export function DraftActivity({
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [waitingOnline, setWaitingOnline] = useState(false);
-  const count = wordsIn(text);
+  /** 분량 아래 확인 쪽지(U4-6). */
+  const [confirmShort, setConfirmShort] = useState(false);
+  const count = draftWordsOf(text);
   const box = useDraftRows(text);
 
   const latest = useRef(text);
@@ -405,7 +438,7 @@ export function DraftActivity({
   }, [registerFlush]);
 
   async function send() {
-    if (busy || count === 0) return;
+    if (busy || !canSubmitDraft(text)) return;
     setBusy(true);
     setStatus("");
     setWaitingOnline(false);
@@ -554,7 +587,7 @@ export function DraftActivity({
           className={cn(
             CHILD_SIZE.english,
             INPUT_FOCUS,
-            "w-full resize-none rounded-xl border-2 border-ink bg-white p-3 leading-snug",
+            "w-full resize-none rounded-xl border-2 border-ink bg-paper p-3 leading-snug",
           )}
         />
         <StatusLine tone="error" className={status ? undefined : "sr-only"}>
@@ -562,12 +595,29 @@ export function DraftActivity({
         </StatusLine>
         <BigButton
           className="self-end"
-          disabled={busy || count === 0}
-          onClick={() => void send()}
+          disabled={busy || !canSubmitDraft(text)}
+          onClick={() => {
+            if (belowAmountOf(text, amount)) setConfirmShort(true);
+            else void send();
+          }}
         >
           {COMPOSITION_TEXT.written}
         </BigButton>
       </div>
+      <ConfirmSheet
+        open={confirmShort}
+        message={COMPOSITION_TEXT.shortConfirm}
+        confirmLabel={COMPOSITION_TEXT.sendAnyway}
+        cancelLabel={COMPOSITION_TEXT.writeMore}
+        onConfirm={() => {
+          setConfirmShort(false);
+          void send();
+        }}
+        onCancel={() => {
+          setConfirmShort(false);
+          box.current?.focus();
+        }}
+      />
     </div>
   );
 }

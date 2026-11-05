@@ -7,11 +7,14 @@ import {
   BAND_NAMES,
   CEFRS,
   EFFORTS,
+  GOAL_ACCEPTS,
+  GOAL_NEEDS,
   LEVEL_MAX,
   LEVEL_MIN,
   READING_QUESTION_TYPES,
+  TALK_CARD_SHAPES,
   TALK_HINT_TIERS,
-  TALK_SEGMENTS,
+  TALK_SPEC_SEGMENTS,
   TEST_ITEM_TYPES,
   UNITS_PER_LEVEL,
   VOCAB_POS,
@@ -260,7 +263,8 @@ export const SpeakingLevelSpecSchema = z.strictObject({
 export const TalkLevelSpecSchema = z.strictObject({
   area: z.literal("talk"),
   ...levelSpecCommon,
-  segments: z.array(z.enum(TALK_SEGMENTS)).min(1),
+  /** TALK_SPEC_SEGMENTS(인사 · 준비 · 대화 · 정리) 그대로다(차례는 규격 정합 level-spec-talk-v1). */
+  segments: z.array(z.enum(TALK_SPEC_SEGMENTS)).min(1),
   mode: Text,
   targetTurns: PositiveInt,
   /** 0 이면 미션 없음. */
@@ -268,11 +272,18 @@ export const TalkLevelSpecSchema = z.strictObject({
   hintTiers: z.array(z.enum(TALK_HINT_TIERS)),
   /** 0 이면 쓸 수 있는 말 없음. */
   usablePhrases: Count,
-  cardShape: z.enum(["turns", "questions"]),
-  twoAnswers: z.boolean(),
+  /** required 하나(C189). */
+  cardShape: z.enum(TALK_CARD_SHAPES),
+  /** 1단계 처음 묻는 턴의 선택지(옛 twoAnswers, C189). */
+  choices: z.boolean(),
   frameInTurns: z.boolean(),
   turnImages: z.boolean(),
   koMeaning: z.boolean(),
+  /**
+   * 한국어 설명(뜻 힌트 한두 문장)을 보이는 같은 질문 자리의 막힘 차례(02-2 263줄 — 1~4단계 1 첫 막힘부터 · 5단계부터 2 둘째 막힘부터,
+   * C195). 힌트 고르기(hints.ts)와 회화 턴 고정부가 같은 칸을 읽는다. 앱 동작만 바꾸는 칸이라 시드를 다시 만드는 키가 아니다.
+   */
+  koExplainFromStuck: PositiveInt,
   moreTalk: z.boolean(),
 });
 
@@ -294,6 +305,24 @@ export type LevelSpecsFile = z.infer<typeof LevelSpecsFileSchema>;
 
 // ── unit-specs.json(5절 unit_specs) ──────────────────────────────
 
+/**
+ * 단원 목표 하나(평가 spec 2절 목표 칸): id(`<영역>-<단계>-<단원>-<n>`, 꼴 · 유일은 규격 파일 정합) · ko(목표 글) · core(주된 핵심 능력) ·
+ * tasks(근거가 되는 과제 유형) · home(배우는 상황) · needs(근거 꼴) · accept(받는 정확도), 선택 demands · words · independent.
+ * core · home · demands 가 목표 용어 목록 안인지는 그 목록(seed/lists/goal-terms.json)이 생기면 본다.
+ */
+export const UnitGoalSchema = z.strictObject({
+  id: Text,
+  ko: Text,
+  core: Text,
+  tasks: uniqueStrings(Text).min(1),
+  home: z.array(Text).min(1),
+  needs: uniqueStrings(z.enum(GOAL_NEEDS)).min(1),
+  accept: z.enum(GOAL_ACCEPTS),
+  demands: z.array(Text).min(1).optional(),
+  words: uniqueStrings(WordIdSchema).optional(),
+  independent: Text.optional(),
+});
+export type UnitGoal = z.infer<typeof UnitGoalSchema>;
 export const UnitSpecSchema = z.strictObject({
   area: AreaSchema,
   level: LevelSchema,
@@ -304,6 +333,12 @@ export const UnitSpecSchema = z.strictObject({
   topic: Text,
   /** 3.2 목표 어휘. 차례가 배정 차례다. */
   words: uniqueStrings(WordIdSchema).min(1),
+  /**
+   * 단원 목표(평가 spec 2절 · 가르치고 배우는 수업 설계 6 teach.goals 의 바탕). 칸 꼴은 UnitGoalSchema, id 꼴 · 유일 · 목표 수 ·
+   * tasks · needs 는 규격 파일 정합(reference-index unit-goals), 수업 teach.goals · 혼자 문항 goal 대조는 칸 검사(check-teach goal, 오류)가 본다.
+   * seed.goals_required_levels 단계에 목표가 없으면 검증 보고에 경고, 명령 인자 --require-unit-goals 일 때만 오류다(C186).
+   */
+  goals: z.array(UnitGoalSchema).optional(),
   ...seedVersionShape,
 });
 export type UnitSpec = z.infer<typeof UnitSpecSchema>;
@@ -484,3 +519,38 @@ export const MetaSentencesFileSchema = z.strictObject({
   phrases: z.array(Text),
 });
 export type MetaSentencesFile = z.infer<typeof MetaSentencesFileSchema>;
+
+/**
+ * 회화 앱 맞장구 목록 lists/talk-wait-lines.json(회화 plan 정한 것 20, 정본 03 4절 '선생님 차례'). 영어 한 줄씩이고 턴 번호로 돌려 고른다
+ * (core/conversation/wait-line). 검사(금지어 · 선생님 이름 · 물음표 · 1단계 문장 길이 상한 · 겹침)는 check-wait-lines.ts 가 한다.
+ */
+export const TalkWaitLinesFileSchema = z.strictObject({
+  lines: z.array(Text).min(1),
+});
+export type TalkWaitLinesFile = z.infer<typeof TalkWaitLinesFileSchema>;
+
+/**
+ * 문법 용어 목록 lists/grammar-terms.json(델타 spec 2026-10-29 설계 7). 항목은 낱말과 열리는 단계(fromLevel, 비면 모든 단계 금지).
+ * 선생님 말 칸 · 칩 글에 이 낱말이 있으면 막는다. 메타 문장 목록과는 별개다.
+ */
+export const GrammarTermsFileSchema = z
+  .strictObject({
+    terms: z.array(
+      z.strictObject({
+        term: Text,
+        fromLevel: LevelSchema.optional(),
+        /** 용어로 시작하는 보통 낱말(주어진 · 주어요 …). 글이 이 낱말로 시작하면 걸지 않는다. */
+        exceptions: z.array(Text).optional(),
+      }),
+    ),
+  })
+  .superRefine((file, ctx) => {
+    for (const i of duplicateIndexes(file.terms, (t) => t.term)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["terms", i, "term"],
+        message: `문법 용어가 겹친다: ${file.terms[i]?.term}`,
+      });
+    }
+  });
+export type GrammarTermsFile = z.infer<typeof GrammarTermsFileSchema>;

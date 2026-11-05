@@ -1,0 +1,408 @@
+{
+ "area": "writing",
+ "level": 3,
+ "unit": 1,
+ "lessons": [
+  {
+   "kind": "assigned",
+   "lessonNo": 1,
+   "variant": 1,
+   "revision": 1,
+   "correction": 0,
+   "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "xhigh",
+    "briefHash": "9970145ead8982e7947311eb1682fd967d10bf49cab10ff9ab5077e8b81ff70e",
+    "agentHash": "f3ecb56ec7831ad994c3a7ccdd7f8d101ef410352fe19b2840b976b112d3086d",
+    "createdOn": "2026-10-29"
+   },
+   "title": "교실이 커요",
+   "newWords": [
+    "classroom",
+    "bedroom",
+    "bathroom",
+    "living room",
+    "restaurant"
+   ],
+   "unitWords": [
+    "classroom",
+    "bedroom",
+    "bathroom",
+    "living room",
+    "restaurant"
+   ],
+   "preview": [
+    {
+     "word": "classroom",
+     "meaningKo": "교실",
+     "example": "The classroom is big."
+    },
+    {
+     "word": "bedroom",
+     "meaningKo": "침실",
+     "example": "The bedroom is small.",
+     "parts": [
+      "bed",
+      "room"
+     ]
+    },
+    {
+     "word": "bathroom",
+     "meaningKo": "욕실",
+     "example": "My bathroom is white.",
+     "parts": [
+      "bath",
+      "room"
+     ]
+    },
+    {
+     "word": "living room",
+     "meaningKo": "거실",
+     "example": "The living room is cold."
+    },
+    {
+     "word": "restaurant",
+     "meaningKo": "식당",
+     "example": "The restaurant is hot."
+    }
+   ],
+   "teach": {
+    "goals": [
+     "write-3-1-1"
+    ],
+    "shiftKo": {
+     "before": "the big classroom 같은 두세 낱말 말은 놓지만 '교실이 커요'를 영어 문장으로 놓지 못한다(차례 · is · 대문자 · 마침표)",
+     "after": "섞인 카드를 무엇 → is → 어때요 차례로 놓고 대문자 · 마침표까지 붙여, 처음 보는 낱말 짝의 문장도 스스로 완성한다"
+    },
+    "todayKo": "오늘은 '무엇이 어때요'를 영어 문장으로 놓아요.",
+    "todayEn": "The classroom is big.",
+    "models": [
+     {
+      "en": "The classroom is big.",
+      "ko": "교실이 커.",
+      "fromEn": "the big classroom",
+      "chips": [
+       {
+        "text": "The classroom",
+        "role": "thing"
+       },
+       {
+        "text": "is",
+        "role": "is"
+       },
+       {
+        "text": "big",
+        "role": "how"
+       },
+       {
+        "text": ".",
+        "role": "end"
+       }
+      ],
+      "lineKo": "'교실이 커요'는 무엇, is, 어때요 차례로 놓아요."
+     },
+     {
+      "en": "The bedroom is small.",
+      "ko": "침실이 작아.",
+      "fromEn": "the bedroom is small",
+      "chips": [
+       {
+        "text": "The bedroom",
+        "role": "thing"
+       },
+       {
+        "text": "is",
+        "role": "is"
+       },
+       {
+        "text": "small",
+        "role": "how"
+       },
+       {
+        "text": ".",
+        "role": "end"
+       }
+      ],
+      "lineKo": "첫 글자는 대문자 단추로, 끝에는 마침표를 놓아요."
+     },
+     {
+      "en": "My bathroom is white.",
+      "ko": "내 욕실은 하얘.",
+      "chips": [
+       {
+        "text": "My bathroom",
+        "role": "thing"
+       },
+       {
+        "text": "is",
+        "role": "is"
+       },
+       {
+        "text": "white",
+        "role": "how"
+       },
+       {
+        "text": ".",
+        "role": "end"
+       }
+      ],
+      "lineKo": "my 로 시작해도 차례는 같아요."
+     }
+    ],
+    "together": [
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "the",
+       "living",
+       "room",
+       "is",
+       "cold",
+       "."
+      ],
+      "meaningKo": "거실이 추워.",
+      "accepted": [
+       "The living room is cold."
+      ],
+      "filled": {
+       "cards": [
+        "the",
+        "living",
+        "room",
+        null,
+        null,
+        "."
+       ],
+       "capital": true
+      },
+      "slot": [
+       4,
+       5
+      ],
+      "choices": [
+       "cold",
+       "is"
+      ],
+      "lineKo": "남은 두 장을 맞는 칸에 놓아 봐요.",
+      "rightKo": "맞아요! 무엇, is, 어때요 차례예요.",
+      "wrongKo": "is 는 '무엇' 뒤, '어때요' 앞이에요."
+     },
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "the",
+       "restaurant",
+       "is",
+       "hot",
+       "."
+      ],
+      "meaningKo": "식당이 더워.",
+      "accepted": [
+       "The restaurant is hot."
+      ],
+      "filled": {
+       "cards": [
+        "the",
+        "restaurant",
+        "is",
+        "hot",
+        "."
+       ],
+       "capital": false
+      },
+      "slot": "capital",
+      "lineKo": "첫 글자를 대문자로 바꿔 볼까요?",
+      "rightKo": "좋아요! 문장은 대문자로 시작해요.",
+      "wrongKo": "대문자 단추를 눌러 봐요."
+     }
+    ],
+    "recap": {
+     "frameEn": "The classroom is big.",
+     "chips": [
+      {
+       "text": "The classroom",
+       "role": "thing"
+      },
+      {
+       "text": "is",
+       "role": "is"
+      },
+      {
+       "text": "big",
+       "role": "how"
+      },
+      {
+       "text": ".",
+       "role": "end"
+      }
+     ],
+     "closeKo": "이제 방이 어떤지 영어 문장으로 놓을 수 있어요.",
+     "closeKoPracticed": "오늘은 '무엇이 어때요' 문장 놓기를 배우고 연습했어요."
+    }
+   },
+   "content": {
+    "shape": "items",
+    "items": [
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "pink",
+       "the",
+       "is",
+       "bedroom",
+       "."
+      ],
+      "meaningKo": "침실이 분홍색이야.",
+      "accepted": [
+       "The bedroom is pink."
+      ],
+      "goal": "write-3-1-1",
+      "whyKo": "bedroom 다음에 is, 그다음 pink 예요.",
+      "spare": {
+       "type": "assemble-sentence",
+       "cards": [
+        "blue",
+        "bedroom",
+        "is",
+        "my",
+        "."
+       ],
+       "meaningKo": "내 침실은 파란색이야.",
+       "accepted": [
+        "My bedroom is blue."
+       ],
+       "whyKo": "bedroom 다음에 is, 그다음 blue 예요."
+      }
+     },
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "is",
+       "nice",
+       "classroom",
+       "my",
+       "."
+      ],
+      "meaningKo": "내 교실은 멋져.",
+      "accepted": [
+       "My classroom is nice."
+      ],
+      "goal": "write-3-1-1",
+      "whyKo": "my classroom 다음에 is, 그다음 nice 예요.",
+      "spare": {
+       "type": "assemble-sentence",
+       "cards": [
+        "classroom",
+        "cold",
+        "the",
+        "is",
+        "."
+       ],
+       "meaningKo": "교실이 추워.",
+       "accepted": [
+        "The classroom is cold."
+       ],
+       "whyKo": "classroom 다음에 is, 그다음 cold 예요."
+      }
+     },
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "small",
+       "bathroom",
+       "is",
+       "the",
+       "."
+      ],
+      "meaningKo": "욕실이 작아.",
+      "accepted": [
+       "The bathroom is small."
+      ],
+      "goal": "write-3-1-1",
+      "whyKo": "bathroom 다음에 is, 그다음 small 이에요.",
+      "spare": {
+       "type": "assemble-sentence",
+       "cards": [
+        "big",
+        "is",
+        "my",
+        "bathroom",
+        "."
+       ],
+       "meaningKo": "내 욕실은 커.",
+       "accepted": [
+        "My bathroom is big."
+       ],
+       "whyKo": "bathroom 다음에 is, 그다음 big 이에요."
+      }
+     },
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "the",
+       "big",
+       "restaurant",
+       "is",
+       "."
+      ],
+      "meaningKo": "식당이 커.",
+      "accepted": [
+       "The restaurant is big."
+      ],
+      "goal": "write-3-1-1",
+      "whyKo": "restaurant 다음에 is, big 은 맨 뒤예요.",
+      "spare": {
+       "type": "assemble-sentence",
+       "cards": [
+        "the",
+        "nice",
+        "restaurant",
+        "is",
+        "."
+       ],
+       "meaningKo": "식당이 멋져.",
+       "accepted": [
+        "The restaurant is nice."
+       ],
+       "whyKo": "'식당이 멋져'는 nice 가 맨 뒤예요."
+      }
+     },
+     {
+      "type": "assemble-sentence",
+      "cards": [
+       "new",
+       "living",
+       "my",
+       "room",
+       "is",
+       "."
+      ],
+      "meaningKo": "내 거실은 새것이야.",
+      "accepted": [
+       "My living room is new."
+      ],
+      "goal": "write-3-1-1",
+      "whyKo": "living room 다음에 is, 그다음 new 예요.",
+      "spare": {
+       "type": "assemble-sentence",
+       "cards": [
+        "small",
+        "room",
+        "the",
+        "living",
+        "is",
+        "."
+       ],
+       "meaningKo": "거실이 작아.",
+       "accepted": [
+        "The living room is small."
+       ],
+       "whyKo": "living room 다음에 is, 그다음 small 이에요."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

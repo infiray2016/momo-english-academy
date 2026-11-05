@@ -17,6 +17,20 @@ export type SpeechSettings = {
   rate: Readonly<Record<Band, number>>;
   /** speech.sentence_pause_ms — 읽어 주기 문장 사이 쉼(ms, C125). */
   sentencePauseMs: number;
+  /** speech.speak_start_timeout_seconds — 읽어 주기 시작 알림을 기다리는 상한(ms, C166 R1 — U5-1). */
+  speakStartTimeoutMs: number;
+  /** speech.speak_end_timeout_extra_seconds — 읽어 주기 끝 알림 상한에서 글 길이로 잰 시간에 더하는 여유(ms, C166 R1). */
+  speakEndExtraMs: number;
+  /** speech.speak_chars_per_second — 끝 알림 상한을 잴 때 빠르기 1 에서 1초에 읽는 글자 수(넉넉히 느리게, C166 R1). */
+  speakCharsPerSecond: number;
+  /** speech.skip_notice_seconds — 인식이 안 돼 다음으로 넘어갈 때 한 줄 안내를 보이는 시간(ms, C166 — U4-4 · U5-4). */
+  skipNoticeMs: number;
+  /** speech.speak_chars_per_second_ko — 선생님 한국어 줄의 끝 알림 상한을 잴 때 빠르기 1 에서 1초에 읽는 글자 수(가르치고 spec 설계 10). */
+  speakCharsPerSecondKo: number;
+  /** speech.rate_ko — 선생님 한국어 줄의 읽어 주기 빠르기(Web Speech rate, 가르치고 spec 설계 4). */
+  rateKo: number;
+  /** speech.read_ko — 선생님 한국어 줄을 읽는가. 끔이면 읽지 않고 글로만 보인다(가르치고 spec 설계 4 · 10). */
+  readKo: boolean;
 };
 
 const LANG_KEY = "speech.lang";
@@ -25,8 +39,18 @@ const WATCHDOG_EXTRA_KEY = "speech.watchdog_extra_seconds";
 const endSilenceKey = (band: Band) => `speech.end_silence_seconds.${band}`;
 const rateKey = (band: Band) => `speech.rate.${band}`;
 const SENTENCE_PAUSE_KEY = "speech.sentence_pause_ms";
+const SPEAK_START_TIMEOUT_KEY = "speech.speak_start_timeout_seconds";
+const SPEAK_END_EXTRA_KEY = "speech.speak_end_timeout_extra_seconds";
+const SPEAK_CPS_KEY = "speech.speak_chars_per_second";
+const SKIP_NOTICE_KEY = "speech.skip_notice_seconds";
+const SPEAK_CPS_KO_KEY = "speech.speak_chars_per_second_ko";
+const RATE_KO_KEY = "speech.rate_ko";
+const READ_KO_KEY = "speech.read_ko";
 
-/** speechSettingsFrom 이 읽는 12절 키(듣기 · 읽어 주기 빠르기 · 문장 사이 쉼). 회화 듣기 키(talk 갈래)는 회화 설정이 더한다. */
+/**
+ * speechSettingsFrom 이 읽는 12절 키(듣기 · 읽어 주기 빠르기 · 문장 사이 쉼 · 읽어 주기 감시 · 건너뜀 안내 · 선생님 한국어 줄). 회화
+ * 듣기 키(talk 갈래)는 회화 설정이 더한다.
+ */
 export const SPEECH_SETTING_KEYS: readonly string[] = [
   LANG_KEY,
   MAX_LISTEN_KEY,
@@ -34,6 +58,13 @@ export const SPEECH_SETTING_KEYS: readonly string[] = [
   WATCHDOG_EXTRA_KEY,
   ...BANDS.map(rateKey),
   SENTENCE_PAUSE_KEY,
+  SPEAK_START_TIMEOUT_KEY,
+  SPEAK_END_EXTRA_KEY,
+  SPEAK_CPS_KEY,
+  SKIP_NOTICE_KEY,
+  SPEAK_CPS_KO_KEY,
+  RATE_KO_KEY,
+  READ_KO_KEY,
 ];
 
 const MS_PER_SECOND = 1000;
@@ -81,6 +112,24 @@ export function speechSettingsFrom(
     SENTENCE_PAUSE_KEY,
     z.int().nonnegative(),
   );
+  const speakStartTimeoutMs =
+    readSetting(read, SPEAK_START_TIMEOUT_KEY, positiveSeconds) * MS_PER_SECOND;
+  const speakEndExtraMs =
+    readSetting(read, SPEAK_END_EXTRA_KEY, nonNegativeSeconds) * MS_PER_SECOND;
+  const speakCharsPerSecond = readSetting(
+    read,
+    SPEAK_CPS_KEY,
+    z.number().positive(),
+  );
+  const skipNoticeMs =
+    readSetting(read, SKIP_NOTICE_KEY, nonNegativeSeconds) * MS_PER_SECOND;
+  const speakCharsPerSecondKo = readSetting(
+    read,
+    SPEAK_CPS_KO_KEY,
+    z.number().positive(),
+  );
+  const rateKo = readSetting(read, RATE_KO_KEY, z.number().positive());
+  const readKo = readSetting(read, READ_KO_KEY, z.boolean());
   return {
     lang,
     maxListenMs,
@@ -88,6 +137,13 @@ export function speechSettingsFrom(
     watchdogExtraMs,
     rate,
     sentencePauseMs,
+    speakStartTimeoutMs,
+    speakEndExtraMs,
+    speakCharsPerSecond,
+    skipNoticeMs,
+    speakCharsPerSecondKo,
+    rateKo,
+    readKo,
   };
 }
 

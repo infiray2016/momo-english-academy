@@ -11,6 +11,7 @@
 // 가로(lg)에서는 장을 눕힌다(화면 검토 1 I-1 — 큰 단추가 가로 1180 × 820 의 보는 창 안에 들게): 왼쪽 칸에 초상(작게)과 그 아래 '인사
 // 듣기', 오른쪽 칸에 이름 · 성격 칩 · 소개. '인사 듣기'는 누름 자리와 같은 격자 칸에 겹쳐 놓을 뿐 누름 자리 밖 단추다(단추 안에 단추를
 // 넣지 않음 — 누름 자리 왼쪽 칸은 그 자리만큼 비워 둔다). 보일 선생님이 하나면 장 하나를 가운데에 같은 크기로(M-7).
+// 장 안 초상은 회화 선생님 창을 줄인 둥근 창 꼴(위 반원 · 방 색 바탕, UI · UX spec 설계 5.5 — plan 묶음 4-가)이고 같은 초상 파일이다.
 import { Check, Volume2 } from "lucide-react";
 import { useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
@@ -138,11 +139,13 @@ export function TeacherChoice({
                 <TeacherPortrait
                   teacher={teacher}
                   size={PORTRAIT_PX.portrait}
+                  shape="window"
                   className="lg:hidden"
                 />
                 <TeacherPortrait
                   teacher={teacher}
                   size={PORTRAIT_PX.landscape}
+                  shape="window"
                   className="hidden justify-self-center lg:flex"
                 />
                 <span className="flex flex-col items-center gap-4 lg:items-start">

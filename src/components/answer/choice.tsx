@@ -19,6 +19,7 @@ import { ReadingPassage } from "@/components/activities/reading";
 import {
   BigButton,
   FOCUS_RING,
+  ICON_STROKE,
   SELECTED_RING,
   SelectedMark,
   SmallButton,
@@ -93,14 +94,11 @@ export function SoundButton({
         void speech?.speak(text);
       }}
     >
-      <Volume2 aria-hidden className="size-7" />
+      <Volume2 aria-hidden className="size-7" strokeWidth={ICON_STROKE} />
       {ANSWER_TEXT.listenAgain}
     </SmallButton>
   );
 }
-
-/** 틀린 보기 표(✕)의 선 굵기 — 고른 표시(SelectedMark 체크)와 같은 굵기(화면 꼴 값). */
-const MARK_STROKE = 3;
 
 /** 정답 보이기의 보기 상태: answer 정답 · wrong 고른 오답. */
 type RevealState = "answer" | "wrong";
@@ -155,7 +153,7 @@ function ChoiceOption({
           aria-hidden
           className="absolute -top-3 -right-3 flex size-9 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink"
         >
-          <X className="size-6" strokeWidth={MARK_STROKE} />
+          <X className="size-6" strokeWidth={ICON_STROKE} />
         </span>
       ) : selected || revealed === "answer" ? (
         <SelectedMark />

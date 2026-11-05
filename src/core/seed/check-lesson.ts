@@ -2,6 +2,7 @@
 // 학습 요소 범위 · 정답 · 그림 · 글로서리 · 금지 내용 행을 건다. 수업 공통 검사(checkLessonCommon)는 P4c 회화 카드 검사가
 // 회화 몫 role 로 다시 부른다. 숫자는 설정값 · 단계 규격에서 읽는다. DB 없는 순수 함수다.
 
+import { checkTeach } from "@/core/seed/check-teach";
 import type { Report } from "@/core/seed/issue";
 import type {
   FormScope,
@@ -84,6 +85,8 @@ export type LessonHead = {
   newWords: readonly string[];
   unitWords: readonly string[];
   preview?: readonly { word: string; meaningKo: string; example: string }[];
+  /** 가르치는 수업 칸(있으면 미리보기 예문을 비울 수 있다, 델타 spec 2026-10-29 설계 6). */
+  teach?: unknown;
 };
 
 export type LessonCellContext = {
@@ -312,8 +315,13 @@ function checkAllocation(
         "새 단어 미리보기의 단어가 새 단어 목록과 다르다",
       );
     }
+    // 가르치는 수업은 예문을 비울 수 있다(C170 (3), 델타 spec 설계 6).
+    const exampleRequired = lesson.teach === undefined;
     lesson.preview.forEach((p, i) => {
-      if (p.meaningKo.trim() === "" || p.example.trim() === "") {
+      if (
+        p.meaningKo.trim() === "" ||
+        (exampleRequired && p.example.trim() === "")
+      ) {
         report(
           "vocab-allocation",
           `preview.${i}`,
@@ -561,13 +569,42 @@ function checkReading(
       `글로서리에 없는 표기형: ${missing.join(", ")}`,
     );
   }
+  // 같이 해 보기 · 짝도 보기 번호 · 그림 키를 본다(코드 검토 I2, 설계 6 '같은 꼴').
+  lesson.teach?.together.forEach((t, i) => {
+    const at = `teach.together.${i}`;
+    checkAnswerNo(t.answerNo, t.choices, `${at}.answerNo`, report);
+    if (t.kind === "picture")
+      t.choices.forEach((word, j) => {
+        checkPictureWord(word, `${at}.choices.${j}`, index, report);
+      });
+  });
   content.questions.forEach((q, i) => {
     const at = `content.questions.${i}`;
+    if (q.explanationKo === undefined && q.whyKo === undefined) {
+      report(
+        "why",
+        `${at}.explanationKo`,
+        "해설(explanationKo)도 '왜' 한 줄(whyKo)도 없다",
+      );
+    }
     checkAnswerNo(q.answerNo, q.options, `${at}.answerNo`, report);
     if (q.kind === "picture") {
       q.options.forEach((word, j) => {
         checkPictureWord(word, `${at}.options.${j}`, index, report);
       });
+    }
+    const spare = q.spare;
+    if (spare) {
+      checkAnswerNo(
+        spare.answerNo,
+        spare.options,
+        `${at}.spare.answerNo`,
+        report,
+      );
+      if (spare.kind === "picture")
+        spare.options.forEach((word, j) => {
+          checkPictureWord(word, `${at}.spare.options.${j}`, index, report);
+        });
     }
   });
 }
@@ -631,6 +668,29 @@ function checkShownWord(
       `${shown} 가 허용 정답 [${accepted.join(", ")}] 가운데 없다`,
     );
   }
+}
+
+/** 대문자로 받는 조립 카드 I(C84 '고유 명사와 I 는 정답 꼴'). */
+const CAPITAL_I = "I";
+/**
+ * 대문자 카드를 받는가(13절 C84): I 이거나 수업 인물 이름이다. 이름은 어휘 목록에 없는 낱말(어휘 목록에는 고유 명사가 없다)이
+ * 첫 허용 정답에 그 꼴(대문자) 그대로 나올 때로 본다. 그 밖의 대문자 카드는 막는다(대문자는 아이가 바꾼다).
+ */
+function capitalAllowed(
+  card: string,
+  answer: string,
+  index: ReferenceIndex,
+): boolean {
+  if (card === CAPITAL_I) return true;
+  const known = index.lexicon.forms.has(card.toLowerCase());
+  const pieces: readonly string[] = answer.match(ANSWER_PIECE) ?? [];
+  const inAnswer = pieces.includes(card);
+  return (
+    !known &&
+    inAnswer &&
+    card.charAt(0) !== card.charAt(0).toLowerCase() &&
+    card.slice(1) === card.slice(1).toLowerCase()
+  );
 }
 
 function answerPieces(text: string): string[] {
@@ -697,7 +757,10 @@ export function checkWritingItem(
       }
       if (item.type === "assemble-sentence") {
         item.cards.forEach((card, j) => {
-          if (card !== card.toLowerCase()) {
+          if (
+            card !== card.toLowerCase() &&
+            !capitalAllowed(card, answer, index)
+          ) {
             report(
               "writing-cards",
               `${at}.cards.${j}`,
@@ -741,8 +804,18 @@ function checkWriting(
     );
   }
   if (content.shape === "items") {
+    lesson.teach?.together.forEach((t, i) => {
+      checkWritingItem(t, `teach.together.${i}`, report, ctx.index);
+    });
     content.items.forEach((item, i) => {
       checkWritingItem(item, `content.items.${i}`, report, ctx.index);
+      if (item.spare)
+        checkWritingItem(
+          item.spare,
+          `content.items.${i}.spare`,
+          report,
+          ctx.index,
+        );
     });
     if (spec.amount.kind !== "items") return;
     const amount = spec.amount;
@@ -879,6 +952,28 @@ function checkSpeaking(
         checkPictureWord(word, `${at}.options.${j}`, index, report);
       });
     }
+    const spare = item.spare;
+    if (spare) {
+      checkAnswerNo(
+        spare.answerNo,
+        spare.options,
+        `${at}.spare.answerNo`,
+        report,
+      );
+      if (spare.kind === "picture")
+        spare.options.forEach((word, j) => {
+          checkPictureWord(word, `${at}.spare.options.${j}`, index, report);
+        });
+    }
+  });
+  lesson.teach?.together.forEach((t, i) => {
+    if (t.choices && t.answerNo !== undefined)
+      checkAnswerNo(
+        t.answerNo,
+        t.choices,
+        `teach.together.${i}.answerNo`,
+        report,
+      );
   });
   const q = spec.questions;
   if (content.questions.length !== q.count) {
@@ -1022,5 +1117,16 @@ export function checkLessonCell<A extends CheckedArea>(
       checkSpeaking(lesson as SpeakingLesson, spec, ctx, report);
       break;
   }
+  checkTeach(
+    lesson,
+    {
+      area: ctx.area,
+      level: ctx.level,
+      unit: ctx.unit,
+      index: ctx.index,
+      fragments,
+    },
+    report,
+  );
   return out;
 }

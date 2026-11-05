@@ -2,14 +2,13 @@
 // 쪽은 앱이 붙이는 답 예시 · 질문 줄과 토리 말 가운데 답 두 개 어느 하나가 든 문장이다. 대소문자 · 문장부호 · 띄어쓰기를 정규화해
 // 견준다. 읽고 보이는 글만 줄이고 저장 글은 그대로다(턴 길이 맡음). 순수 함수만 본다.
 import { describe, expect, it } from "vitest";
-import { twoAnswersLine } from "@/core/ai/calls/talk";
 import {
   type AppendLine,
   normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
   toriKoShownOf,
-} from "@/core/conversation/flow";
+} from "@/core/conversation/spoken";
 import { splitSentences } from "@/core/seed/text";
 
 const example: AppendLine = { kind: "answer_example", en: "I'm good." };
@@ -31,7 +30,7 @@ function sentencesOf(shown: {
   return [
     ...shown.sentences,
     ...shown.append.map((l) =>
-      l.kind === "two_answers" ? twoAnswersLine(l.answers) : l.en,
+      l.kind === "two_answers" ? `${l.answers[0]} Or ${l.answers[1]}` : l.en,
     ),
   ].flatMap(splitSentences).length;
 }

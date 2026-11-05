@@ -1,4 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("client-only", () => ({}));
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { speechSettingsFrom } from "@/core/speech/listen";
+import { speakWatchOf } from "@/core/speech/pace";
 import {
   DEFAULT_EXPOSE,
   DEFAULT_ON_ABORT,
@@ -6,10 +13,13 @@ import {
   parseSpeechScript,
   type ScriptEvent,
 } from "@/core/speech/script";
+import { createBrowserSpeech } from "@/lib/speech/browser";
 import {
   type FakeSpeechRecord,
   installFakeWebSpeech,
 } from "@/lib/speech/fake-web-speech";
+import type { SpeakOutcome } from "@/lib/speech/types";
+import { testSettingValues } from "../fixtures/settings";
 
 // 가짜는 addInitScript 제약(plan-p02 위험 11)으로 script.ts 의 기본값을 가져올 수 없어 함수 안에 다시 적는다.
 // 그 둘이 같은지, 그리고 가짜가 실제로 그 기본값대로 도는지 본다. window 는 시험 안의 작은 흉내다.
@@ -131,5 +141,111 @@ describe("가짜 Web Speech 기본값", () => {
     expect(record.spoken).toEqual(["Hello.", "Plain."]);
     expect(record.pitches).toEqual([1.08, 1]);
     expect(record.voices).toEqual(["Samantha", null]);
+  });
+});
+
+describe("가짜 음성 대본으로 읽어 주기 감시 결과 셋(R-48)", () => {
+  // 설계 숫자(감시 상한)는 시험용 설정(12절 기본값)에서 읽는다
+  const values = testSettingValues();
+  const settings = speechSettingsFrom((key) => values[key]);
+
+  afterEach(() => {
+    vi.useRealTimers();
+    for (const name of ["speechSynthesis", "SpeechSynthesisUtterance"])
+      Reflect.deleteProperty(globalThis, name);
+  });
+
+  it("R-48 가짜 음성: 대본의 보통 발화 · neverEnd · neverStart 가 음성 접점에서 들려줌 · 끝 알림 없음 · 들려주지 못함이 된다", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", globalThis);
+    vi.stubGlobal("document", {
+      hidden: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+    installFakeWebSpeech(
+      parseSpeechScript({
+        name: "speak-watch",
+        source: "손으로 씀 — 시험 안 장면",
+        recognitions: [{ events: [] }],
+        synthesis: {
+          voices: [],
+          utterances: [{}, { neverEnd: true }, { neverStart: true }],
+        },
+      }),
+    );
+    const speech = createBrowserSpeech({ settings });
+    const texts = ["Hello.", "This one never ends.", "Never starts."];
+    const outcomes: SpeakOutcome[] = [];
+    for (const text of texts) {
+      const pending = speech.speak(text);
+      const { startMs, endMs } = speakWatchOf({ text }, settings);
+      await vi.advanceTimersByTimeAsync(startMs + endMs);
+      outcomes.push(await pending);
+    }
+    expect(outcomes).toEqual([
+      { kind: "ended", heard: "played" },
+      { kind: "ended", heard: "no_end" },
+      { kind: "ended", heard: "not_played" },
+    ]);
+    speech.dispose();
+  });
+});
+
+describe("가짜 음성 대본의 ko-KR 목소리 있음 · 없음(AC-3h · AC-N20)", () => {
+  const values = testSettingValues();
+  const settings = speechSettingsFrom((key) => values[key]);
+  const scriptOf = (name: string) =>
+    parseSpeechScript(
+      JSON.parse(
+        readFileSync(
+          join(process.cwd(), "tests/fixtures/speech/scripts", `${name}.json`),
+          "utf8",
+        ),
+      ),
+    );
+
+  afterEach(() => {
+    vi.useRealTimers();
+    for (const name of ["speechSynthesis", "SpeechSynthesisUtterance"])
+      Reflect.deleteProperty(globalThis, name);
+  });
+
+  async function speakKo(script: string) {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", globalThis);
+    vi.stubGlobal("document", {
+      hidden: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+    installFakeWebSpeech(scriptOf(script));
+    const record = (globalThis as unknown as { __fakeSpeech: FakeSpeechRecord })
+      .__fakeSpeech;
+    const speech = createBrowserSpeech({ settings });
+    const text = "오늘은 동물 이름을 배워요.";
+    const pending = speech.speak(text, { lang: "ko-KR", pitch: 1.08 });
+    const { startMs, endMs } = speakWatchOf(
+      { text, rate: settings.rateKo, lang: "ko-KR" },
+      settings,
+    );
+    await vi.advanceTimersByTimeAsync(startMs + endMs);
+    const outcome = await pending;
+    speech.dispose();
+    return { outcome, record };
+  }
+
+  it("AC-3h 가짜 음성: ko-KR 목소리가 있는 대본이면 선생님 한국어 줄을 그 목소리 · 선생님 높이로 읽는다", async () => {
+    const { outcome, record } = await speakKo("ko-voice");
+    expect(outcome).toEqual({ kind: "ended", heard: "played" });
+    expect(record.voices).toEqual(["Test Korean"]);
+    expect(record.pitches).toEqual([1.08]);
+    expect(record.rates).toEqual([settings.rateKo]);
+  });
+
+  it("AC-N20 가짜 음성: ko-KR 목소리가 없는 대본이면 선생님 한국어 줄을 읽지 않고 '읽지 않음'이다", async () => {
+    const { outcome, record } = await speakKo("no-ko-voice");
+    expect(outcome).toEqual({ kind: "skipped", reason: "no_ko_voice" });
+    expect(record.spoken).toEqual([]);
   });
 });

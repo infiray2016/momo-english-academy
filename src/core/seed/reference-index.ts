@@ -7,10 +7,12 @@ import {
   type TeacherNames,
   teacherNamesOf,
 } from "@/core/seed/check-teacher";
+import { checkTalkWaitLines } from "@/core/seed/check-wait-lines";
 import type { SeedIssue } from "@/core/seed/issue";
 import type {
   ForbiddenFile,
   FormEntry,
+  GrammarTermsFile,
   HomophonesFile,
   ImageEntry,
   ImagesFile,
@@ -19,7 +21,9 @@ import type {
   ListFormsFile,
   MetaSentencesFile,
   ModelPricesFile,
+  SettingRow,
   SettingsFile,
+  TalkWaitLinesFile,
   UnitSpec,
   UnitSpecsFile,
   VocabEntry,
@@ -33,12 +37,15 @@ import {
   bandKey,
   bandOf,
   cefrOf,
+  GOAL_AREA_PREFIX,
+  GOAL_NEEDS_BY_AREA,
   isAlphabetUnit,
   isLevel,
   LEVEL_MAX,
   LEVEL_MIN,
   SEED_FILES,
   type SeedFileName,
+  TALK_SPEC_SEGMENTS,
   TEACHER_GREETING_LEVEL,
   UNITS_PER_LEVEL,
 } from "@/core/seed/structure";
@@ -66,10 +73,17 @@ export type ReferenceFiles = {
   forbidden: ForbiddenFile;
   forms: ListFormsFile;
   metaSentences: MetaSentencesFile;
+  /** 회화 앱 맞장구 목록(회화 plan 정한 것 20). */
+  talkWaitLines: TalkWaitLinesFile;
   teachers: TeachersFile;
+  /**
+   * 문법 용어 목록(델타 spec 2026-10-29 설계 7, `GRAMMAR_TERMS_FILE`). 규격 파일 열(SEED_FILES) 밖의 선택 파일이라
+   * 없어도 규격 파일 오류가 아니고, teach 가 있는 수업 칸만 '목록 없음'으로 막는다.
+   */
+  grammarTerms?: GrammarTermsFile;
 };
 
-/** 검증기가 읽는 구간 키 8종(12절, plan-p04a '설정값 시드'). */
+/** 검증기가 읽는 구간 키 9종(12절, plan-p04a '설정값 시드'). talk.prep_words 는 회화 카드 짧은 준비 낱말 수(C189). */
 export const BAND_SETTING_PREFIXES = [
   "unit.vocab_count",
   "unit.new_words_per_lesson",
@@ -79,8 +93,9 @@ export const BAND_SETTING_PREFIXES = [
   "seed.remedial_per_unit",
   "seed.remedial_coverage",
   "seed.topic_variants",
+  "talk.prep_words",
 ] as const;
-/** 검증기가 읽는 하나짜리 키 13(12절). */
+/** 검증기가 읽는 하나짜리 키 14(12절). talk.required_max_ratio 는 회화 필수 질문 상한(C189). */
 export const SINGLE_SETTING_KEYS = [
   "unit.vocab_mastery",
   "seed.max_offband_ratio",
@@ -92,11 +107,12 @@ export const SINGLE_SETTING_KEYS = [
   "talk.more_talk_turns",
   "talk.said_ratio",
   "talk.known_days",
+  "talk.required_max_ratio",
   "writing.rule_check_until_level",
   "writing.light_check_until_level",
   "writing.split_from_level",
 ] as const;
-/** 검증기가 읽는 45 키. */
+/** 검증기가 읽는 50 키. */
 export const REQUIRED_SETTING_KEYS: readonly string[] = [
   ...BAND_SETTING_PREFIXES.flatMap((prefix) =>
     BAND_NAMES.map((band) => bandKey(prefix, band)),
@@ -116,6 +132,12 @@ export type ReferenceIndex = {
   ready: boolean;
   /** 설정값 읽기. 키가 없거나 수가 아니면 예외(정합 `settings` 오류가 먼저 잡는다). */
   num(key: string): number;
+  /** 설정값 그대로(없으면 undefined). 필수 키 밖의 키(가르치는 수업 lesson.* 등)를 읽는 칸 검사가 쓴다. */
+  setting(key: string): SettingRow["value"] | undefined;
+  /** 문법 용어 목록(선택 파일, 없으면 undefined). */
+  grammarTerms: GrammarTermsFile | undefined;
+  /** 단원 목표가 있어야 하는 단계(seed.goals_required_levels). 없거나 수 목록이 아니면 undefined(기본값을 쓰지 않는다). */
+  goalsRequiredLevels(): readonly number[] | undefined;
   levelSpec(area: Area, level: number): LevelSpec | undefined;
   unitSpec(area: Area, level: number, unit: number): UnitSpec | undefined;
   /** 그 (영역, 단계)의 단원 규격(단원 번호 차례, 알파벳 단원 0 포함). */
@@ -151,6 +173,28 @@ function writingShapeOf(
   if (level <= num("writing.rule_check_until_level")) return "items";
   if (level <= num("writing.light_check_until_level")) return "guided";
   return "composition";
+}
+
+/**
+ * 목표 tasks 가 들 수 있는 그 영역 · 단계 과제 유형(평가 spec 2절 '목표 꼴'): 단계 평가 testMix 유형과 수업 문항 유형
+ * (읽기 문항 mix · 쓰기 itemTypes · 말하기 따라 말하기 · 듣기 · 질문). 회화와 규격이 없는 자리는 undefined(보지 않음).
+ */
+function goalTaskTypes(spec: LevelSpec | undefined): string[] | undefined {
+  if (!spec || spec.area === "talk") return undefined;
+  const out = new Set<string>(Object.keys(spec.testMix ?? {}));
+  if (spec.area === "reading")
+    for (const [t, n] of Object.entries(
+      spec.questions.mix as Record<string, number>,
+    ))
+      if (n > 0) out.add(t);
+  if (spec.area === "writing" && spec.amount.kind === "items")
+    for (const t of spec.amount.itemTypes) out.add(t);
+  if (spec.area === "speaking") {
+    if (spec.repeat.words + spec.repeat.sentences > 0) out.add("repeat");
+    if (spec.listening.items > 0) out.add("listening");
+    if (spec.questions.count > 0) out.add("question");
+  }
+  return [...out];
 }
 
 /** 규격 파일을 묶고 정합을 본다. 빠진 파일 이름은 `missing` 에 낸다. */
@@ -308,7 +352,7 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
         issue(
           v.rule,
           SEED_FILES.levelSpecs,
-          `levelSpecs.${at}.frame`,
+          `levelSpecs.${at}.${v.rule === "frame-talk-required" ? "targetTurns" : "frame"}`,
           v.message,
         );
     }
@@ -378,6 +422,21 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
         at,
         `${spec.area} ${spec.level}단계의 구간 · CEFR(${spec.band} · ${spec.cefr})이 ${bandOf(spec.level)} · ${cefrOf(spec.level)} 와 다르다`,
       );
+    }
+    if (spec.area === "talk") {
+      // 시드 파일의 회화 행은 새 꼴 네 토막을 그 차례대로 둔다(C189). 옛 칸(오늘 쓸 말 · 말해 보기 토막 · turns · questions · twoAnswers)과
+      // choices · koExplainFromStuck 빠짐은 단계 규격 스키마가 먼저 거부한다(묶음 12 — 필수 칸).
+      if (
+        spec.segments.length !== TALK_SPEC_SEGMENTS.length ||
+        spec.segments.some((s, j) => s !== TALK_SPEC_SEGMENTS[j])
+      )
+        issue(
+          "level-spec-talk-v1",
+          SEED_FILES.levelSpecs,
+          at,
+          `회화 ${spec.level}단계 규격의 토막이 새 꼴 차례가 아니다(segments [${spec.segments.join(", ")}]) — segments [${TALK_SPEC_SEGMENTS.join(", ")}] 로 바꾼다(C189)`,
+        );
+      return;
     }
     if (spec.area !== "writing" || !settingsOk) return;
     const shape = writingShapeOf(spec.level, num);
@@ -519,6 +578,88 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
   const teacherNames = teacherNamesOf(files.teachers);
   issues.push(...checkTeacherNamesInSpecs(levelSpecs, unitSpecs, teacherNames));
 
+  // 회화 앱 맞장구 목록(회화 plan 정한 것 20): 금지어 · 선생님 이름 · 물음표 · 1단계 문장 길이 상한 · 겹침.
+  if (files.talkWaitLines) {
+    const lowest = levelSpecMap.get(`talk:${LEVEL_MIN}`);
+    issues.push(
+      ...checkTalkWaitLines(files.talkWaitLines, {
+        forbidden: files.forbidden ?? EMPTY_FORBIDDEN,
+        teacherNames,
+        ...(lowest ? { maxWords: lowest.sentenceMaxWords } : {}),
+      }),
+    );
+  }
+
+  // ── unit-goals(평가 spec 2절 '목표 꼴': id 꼴 · 시드 전체 유일 · 단원 일치 · 영역 needs) ──
+  const goalOwners = new Map<string, string>();
+  const goalsMax = settingMap.get("seed.unit_goals_max");
+  if (
+    typeof goalsMax !== "number" &&
+    unitSpecs.some((u) => (u.goals?.length ?? 0) > 0)
+  )
+    issue(
+      "settings",
+      SEED_FILES.settings,
+      "settings",
+      "설정값 seed.unit_goals_max 가 없거나 수가 아니다(단원 목표가 있는 단원 규격이 있다)",
+    );
+  unitSpecs.forEach((spec, i) => {
+    if (typeof goalsMax === "number" && (spec.goals?.length ?? 0) > goalsMax)
+      issue(
+        "unit-goals",
+        SEED_FILES.unitSpecs,
+        `unitSpecs.${i}.goals`,
+        `${spec.area} ${spec.level}단계 단원 ${spec.unit} 의 목표 ${spec.goals?.length}개가 ${goalsMax}개(seed.unit_goals_max)를 넘는다`,
+      );
+    const taskTypes = goalTaskTypes(
+      levelSpecMap.get(`${spec.area}:${spec.level}`),
+    );
+    const pattern = new RegExp(
+      `^${GOAL_AREA_PREFIX[spec.area]}-${spec.level}-${spec.unit}-[1-9][0-9]*$`,
+    );
+    const where = `${spec.area} ${spec.level}단계 단원 ${spec.unit}`;
+    spec.goals?.forEach((goal, j) => {
+      const at = `unitSpecs.${i}.goals.${j}`;
+      if (!pattern.test(goal.id))
+        issue(
+          "unit-goals",
+          SEED_FILES.unitSpecs,
+          `${at}.id`,
+          `목표 id ${goal.id} 가 ${where} 의 ${GOAL_AREA_PREFIX[spec.area]}-${spec.level}-${spec.unit}-<n> 꼴이 아니다`,
+        );
+      const owner = goalOwners.get(goal.id);
+      if (owner !== undefined)
+        issue(
+          "unit-goals",
+          SEED_FILES.unitSpecs,
+          `${at}.id`,
+          `목표 id ${goal.id} 가 ${owner} 와 겹친다(시드 전체에서 하나뿐이어야 한다)`,
+        );
+      else goalOwners.set(goal.id, at);
+      if (taskTypes) {
+        const outside = goal.tasks.filter((t) => !taskTypes.includes(t));
+        if (outside.length > 0)
+          issue(
+            "unit-goals",
+            SEED_FILES.unitSpecs,
+            `${at}.tasks`,
+            `목표 ${goal.id} 의 tasks ${outside.join(", ")} 가 ${spec.area} ${spec.level}단계 과제 유형 [${taskTypes.join(", ")}] 밖이다`,
+          );
+      }
+      const allowed = GOAL_NEEDS_BY_AREA[spec.area];
+      const wrong = goal.needs.filter(
+        (n) => !(allowed as readonly string[]).includes(n),
+      );
+      if (wrong.length > 0)
+        issue(
+          "unit-goals",
+          SEED_FILES.unitSpecs,
+          `${at}.needs`,
+          `목표 ${goal.id} 의 needs ${wrong.join(", ")} 는 ${spec.area} 몫이 아니다(${allowed.join(" · ")})`,
+        );
+    });
+  });
+
   // ── allocation(3.2) ──
   unitSpecs.forEach((spec, i) => {
     const result = allocation(spec.area, spec.level, spec.unit);
@@ -539,6 +680,15 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
       files.unitSpecs !== undefined &&
       files.vocab !== undefined,
     num,
+    setting: (key) => settingMap.get(key),
+    grammarTerms: files.grammarTerms,
+    goalsRequiredLevels: () => {
+      const value = settingMap.get("seed.goals_required_levels");
+      return Array.isArray(value) &&
+        value.every((v): v is number => typeof v === "number")
+        ? value
+        : undefined;
+    },
     levelSpec: (area, level) => levelSpecMap.get(`${area}:${level}`),
     unitSpec: (area, level, unit) =>
       unitSpecMap.get(`${area}:${level}:${unit}`),

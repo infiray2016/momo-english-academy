@@ -92,7 +92,7 @@ export type LessonCorpus = {
   passageSentences: Set<string>;
   itemSignatures: Set<string>;
   talkQuestions: Set<string>;
-  /** 회화 카드마다 토리 질문 차례(인사 → 대화 턴 → 더 이야기할 거리, 또는 질문 목록). */
+  /** 회화 카드마다 필수 질문 차례(새 꼴 카드, C189). */
   talkQuestionLists: string[][];
 };
 
@@ -140,21 +140,15 @@ export function lessonCorpus(
         }
       }
     } else {
+      // 6.4 단계 평가: 그 단계 회화 카드의 질문(필수 질문 · 쉬운 질문 · 더 이야기할 거리, 새 꼴 카드로 다시 센다, C189).
+      // '같은 차례로 두 턴 넘게'는 필수 질문 차례와 견준다.
       const { card } = lesson as TalkLesson;
-      const greeting =
-        "questions" in card.greeting
-          ? card.greeting.questions.map((g) => g.question.en)
-          : [];
-      const list = card.questions
-        ? card.questions.map((q) => q.en)
-        : [
-            ...greeting,
-            ...(card.turns ?? []).map((t) => t.question.en),
-            ...(card.moreTalk ?? []).map((t) => t.question.en),
-          ];
-      const keys = list.map(questionKey);
+      const keys = card.required.map((q) => questionKey(q.en));
       corpus.talkQuestionLists.push(keys);
-      for (const k of keys) corpus.talkQuestions.add(k);
+      for (const item of [...card.required, ...card.more]) {
+        corpus.talkQuestions.add(questionKey(item.en));
+        corpus.talkQuestions.add(questionKey(item.easyQuestion.en));
+      }
     }
   }
   return corpus;

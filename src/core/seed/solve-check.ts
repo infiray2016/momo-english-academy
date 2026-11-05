@@ -45,6 +45,8 @@ export type SolveTextTask =
 export type SolveChoiceView = {
   no: number;
   answer: "choice";
+  /** 이 문항만 보는 짧은 글(가르치는 수업의 읽기 짝 · 같이 해 보기 textEn). 있으면 context 지문 대신 이 글로 푼다. */
+  passage?: string;
   prompt?: string;
   /** 읽어 줄 글(듣기). */
   listen?: string;
@@ -212,16 +214,35 @@ function listeningView(
   };
 }
 
+/** 말하기 같이 해 보기(고르기 꼴)의 보기: 이야기 · 질문을 듣고 틀(filled)의 빈칸에 들 말을 고른다(06:199, 타 fix 1 M1). */
+function speakingTogetherView(
+  no: number,
+  item: Record<string, unknown>,
+): SolveChoiceView {
+  const heard = [text(item.storyEn), text(item.en)].filter(
+    (t): t is string => t !== undefined,
+  );
+  return {
+    no,
+    answer: "choice",
+    ...maybe("listen", heard.length > 0 ? heard.join(" ") : undefined),
+    ...maybe("prompt", text(item.filled)),
+    options: texts(item.choices),
+  };
+}
+
 /** 읽기 문항(수업 · 평가 · 배치)의 보기: 질문 · 보기(그림 문제는 그림 넷). */
 function readingView(
   no: number,
   item: Record<string, unknown>,
   index: SolveIndex,
 ): SolveChoiceView {
-  const options = texts(item.options);
+  // 같이 해 보기는 보기 칸이 choices 다.
+  const options = texts(item.options ?? item.choices);
   return {
     no,
     answer: "choice",
+    ...maybe("passage", text(item.textEn)),
     ...maybe("prompt", text(item.prompt)),
     options:
       item.type === "picture" ? options.map((o) => picture(index, o)) : options,
@@ -269,7 +290,9 @@ export function buildSolveRequest(
       case "lesson":
         if (cell.area === "reading") view = readingView(no, item, index);
         else if (cell.area === "speaking")
-          view = listeningView(no, item, index);
+          view = path.startsWith("teach.together.")
+            ? speakingTogetherView(no, item)
+            : listeningView(no, item, index);
         else if (cell.area === "writing") view = writingView(no, item, index);
         break;
       case "test-item":
@@ -354,6 +377,7 @@ export const SOLVE_INSTRUCTIONS = [
   'answer 가 "text" 인 문항: 아이가 써야 할 답 글을 대소문자 · 문장 부호까지 text 에 쓰고 choice 는 null 로 둔다. copy-tiles 는 word 를 tiles 로 그대로 쓴 글, build-tiles 는 meaningKo 뜻의 낱말을 tiles 로 만든 글, fill-letters 는 pattern 의 밑줄을 tiles 로 채운 낱말 전체, dictation 은 listen 을 듣고 받아 쓴 글, assemble-phrase · assemble-sentence 는 cards 를 모두 한 번씩 써서 만든 글, fill-blank · fix-sentence 는 prompt 가 묻는 글이다. 타일 · 카드 문항은 주어진 타일 · 카드만으로 만든다. 맞는 답이 둘 이상이면 status 는 "multiple", 없으면 "none" 이다.',
   'listAlternatives 가 true 인 문항(조립 · 받아쓰기)은 맞는 답이 여럿이어도 status 를 "one" 으로 하고 하나를 text 에 쓴 뒤, 같이 맞는 다른 답을 모두 alternatives 에 적는다. 다른 답이 없으면 빈 목록이고, 맞는 답이 없으면 status 는 "none" 이다. 그 밖의 문항은 alternatives 를 빈 목록으로 둔다.',
   "listen 은 아이에게 소리로 읽어 주는 글이다. 아이는 이 글을 보지 못하고 듣기만 한다.",
+  "문항에 passage 가 있으면 그 문항만 보는 짧은 글이다. context 의 지문 대신 이 글을 읽고 푼다.",
   '그림은 "그림: <한국어 뜻>" 꼴로 주어진다. 그 뜻을 나타내는 그림으로 본다.',
   "풀이 과정이나 이유는 쓰지 않는다. 답만 낸다.",
 ].join("\n");

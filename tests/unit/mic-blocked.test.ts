@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   MIC_BLOCKED_TEXT,
+  MicBlockedPanel,
   MicBlockedText,
   micBlockedLinesOf,
 } from "@/components/session/mic-blocked";
@@ -57,5 +58,21 @@ describe("마이크 막힘 안내(C111)", () => {
       createElement(MicBlockedText, { kind: "needsMic", ipadSafari: false }),
     );
     expect(other).not.toContain("data-blocked-hint");
+    // 안내 글 조각은 글만 — 단추(큰 '다시 해 볼래요' · 작은 '홈')는 막힘 판이 둔다(UI · UX 묶음 0-가 · UX3)
+    expect(ipad).not.toContain("<button");
+  });
+
+  it("마이크 막힘 판: 아이패드 사파리면 무음 모드 줄이 안내 줄 바로 뒤, 단추보다 앞에 온다", () => {
+    const html = renderToStaticMarkup(
+      createElement(MicBlockedPanel, {
+        kind: "silent",
+        ipadSafari: true,
+        retry: { speech: undefined, onRecovered: () => {} },
+        home: { href: "/" },
+      }),
+    );
+    const hint = html.indexOf(MIC_BLOCKED_TEXT.ipadSilentMode);
+    expect(html.indexOf(MIC_BLOCKED_TEXT.silent)).toBeLessThan(hint);
+    expect(hint).toBeLessThan(html.indexOf("data-mic-retry"));
   });
 });

@@ -2,7 +2,10 @@
 // 연속 학습 일수 · 복습 포스트잇은 P12 몫이라 아직 그리지 않는다. 쓰기 6~12(plan-p11b 값 12): 첨삭이 온 수업이 있으면 영역 카드보다
 // 앞에 '첨삭이 왔어요'(하늘), 앱 진입마다 응답 뒤(after)에 밀린 첨삭을 많아야 둘 부른다(10절 운영 — 쿠키 · 헤더는 after 안에서 읽지 않음).
 // 회화(plan-p13b 값 12): 같은 꼴로 응답 뒤에 홈 진입 정리(closeIdleTalks — 끝맺음 많아야 둘).
-import { Star } from "lucide-react";
+// 위 띠(UI · UX 묶음 0-다 · 3 · R-12 · AC-U3 · AC-23c): 왼쪽 '[홈 이름]의 공부 보드', 오른쪽 연속 학습 일수 · 별 수 칸(HomeBandChips —
+// 값이 1 이상일 때만, 첫 사용 홈의 위 띠에 0 이 없다) · 부모 꼬리표(kraft). 연속 학습 일수는 P12 가 streakDays 로 넘기면 같은 조각이 그린다.
+// 띠 왼쪽 얼굴 자리는 마스코트 그림이 정해진 뒤 채운다(그 전에는 두지 않음).
+// 회화 카드 작은 초상(R-8): 집 선생님(householdTeacher — 고르기 전 null 이면 글자 동그라미 '선')을 카드 조각에 넘긴다.
 import { redirect } from "next/navigation";
 import { after, connection } from "next/server";
 import { z } from "zod";
@@ -12,8 +15,9 @@ import { closeIdleTalks } from "@/server/conversation";
 import { readHome } from "@/server/home";
 import { readHouseholdProfile } from "@/server/profile";
 import { getSettings } from "@/server/settings";
+import { householdTeacher } from "@/server/teacher";
 import { retryPendingFeedback } from "@/server/writing";
-import { FeedbackNote, HomeCards } from "./home-cards";
+import { FeedbackNote, HomeBandChips, HomeCards } from "./home-cards";
 
 export default async function HomePage() {
   // DB 를 읽는 쪽이라 요청 때 그린다(빌드 때 미리 그리지 않는다)
@@ -47,18 +51,12 @@ export default async function HomePage() {
         title={`${home.displayName}의 공부 보드`}
         right={
           <>
-            <span
-              data-star-total=""
-              className="flex items-center gap-2 font-heading text-2xl"
-            >
-              <Star aria-hidden className="size-7 fill-postit-reading" />
-              {`별 ${home.starTotal}개`}
-            </span>
-            {/* 부모 메뉴(정할 것 ㅊ — 1-가는 점만, 누를 수 없음. PIN 화면은 1-나). 점은 먹색 — 목업 #8A6134 는 꼬리표 바탕 대비 2.7:1 이라 3:1 을 넘게(화면 검토 H-M4) */}
+            <HomeBandChips starTotal={home.starTotal} />
+            {/* 부모 메뉴(정할 것 ㅊ — 1-가는 점만, 누를 수 없음. PIN 화면은 1-나). 점은 먹색 — 목업 #8A6134 는 꼬리표 바탕 대비 2.7:1 이라 3:1 을 넘게(화면 검토 H-M4). 꼬리표는 kraft 종이 · 종이 테(시안 ② 띠 .parent) */}
             <span
               data-parent-info=""
               data-parent-menu=""
-              className="flex min-h-11 -rotate-3 items-center gap-2 rounded-md bg-kraft px-4 text-lg text-ink"
+              className="flex min-h-11 -rotate-3 items-center gap-2 rounded-md border-(length:--paper-edge) border-ink bg-kraft px-4 text-lg text-ink"
             >
               {home.parentDot ? (
                 <span
@@ -78,7 +76,7 @@ export default async function HomePage() {
           waitHintSeconds={waitHintSeconds}
         />
       ) : null}
-      <HomeCards cards={home.cards} />
+      <HomeCards cards={home.cards} teacher={await householdTeacher()} />
     </ChildScreen>
   );
 }

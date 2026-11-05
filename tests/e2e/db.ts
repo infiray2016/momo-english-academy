@@ -214,3 +214,35 @@ export async function shiftTimes(
       .where(eq(levelTests.id, id));
   });
 }
+
+/** 집 전체 설정 하나의 값(시험 DB — 앱 설정값이 있는 문턱을 시험이 읽는다, 묶음 0-마). 없으면 던진다. */
+export async function settingValueOf(key: string): Promise<unknown> {
+  const { settings } = operations;
+  const [row] = await e2eDb()
+    .select({ value: settings.value })
+    .from(settings)
+    .where(and(eq(settings.key, key), isNull(settings.profileId)));
+  if (!row) throw new Error(`집 전체 설정이 없다: ${key}`);
+  return row.value;
+}
+
+/**
+ * 집 전체 설정 행 하나를 지우고 되돌리는 함수를 돌려준다(앱 오류 화면 e2e — 서버 그리기가 그 키를 못 읽어 던지게, UI · UX plan 정한 것 6).
+ * 되돌리기는 지운 행을 그대로(같은 id · 값 · 판) 다시 넣고, 두 번 불러도 한 번만 넣는다. 시험은 finally 에서도 부른다.
+ */
+export async function removeHouseholdSetting(
+  key: string,
+): Promise<() => Promise<void>> {
+  const db = e2eDb();
+  const { settings } = operations;
+  const where = and(eq(settings.key, key), isNull(settings.profileId));
+  const rows = await db.select().from(settings).where(where);
+  if (rows.length === 0) throw new Error(`집 전체 설정이 없다: ${key}`);
+  await db.delete(settings).where(where);
+  let restored = false;
+  return async () => {
+    if (restored) return;
+    restored = true;
+    await db.insert(settings).values(rows).onConflictDoNothing();
+  };
+}

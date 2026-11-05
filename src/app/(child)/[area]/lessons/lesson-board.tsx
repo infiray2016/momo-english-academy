@@ -5,9 +5,15 @@
 // 뒷줄 다지기 — 부모 확인 대기면 그 자리에 안내) → 잠긴 다음 단원 한 장 · '지난 수업 다시 하기' 한 장.
 // '여기부터 해요'는 한 화면에 하나(4절 차례, 순수 함수 lessonListState 가 고름).
 // 수업을 고르면 세션을 연다(startLesson — 서버가 다시 판정, 하던 수업이 있으면 한 번 묻고 확인 뒤 중단으로 닫음, 차례 6).
+// 쉼(UI · UX 묶음 0-가 · 3절 R-15 · N-8): 목록은 그대로 두고 누른 카드 아래 한 줄 칸(기다림 줄 자리, C114)에 쉼 글. 카드를 다시 누르면
+// 다시 판정해 풀렸으면 열고, 같은 수업이 또 쉬면 '아직 쉬고 있어요 …'를 더한다.
+// 위 띠(UI · UX 묶음 3 · 4절 '첫 화면' 행 R-13 · [승인 UX2] · AC-2d): 지금 단계 · 단원 줄 · 단원 5칸 · 지금 단원 막대 둘(읽기 · 쓰기 · 말하기는
+// '아는 단어 n/30' · '최근 성적' 칸, 회화는 '아는 단어' · '끝낸 대화' · 친한 정도 n/10). 그 영역에 끝낸 세션이 없으면 막대를 숨긴다
+// (view.band.bars 가 null — 순수 함수 bandBarsOf). 띠 공용 조각(PaperBand)의 둘째 줄 자리에 그린다.
 import { Check, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { AREA_TONE } from "@/components/activities/common";
 import {
   AREA_LABEL,
   ChildScreen,
@@ -16,11 +22,11 @@ import {
   PostIt,
   SmallLink,
   StatusLine,
-  type Tilt,
 } from "@/components/board/board";
-import { AiRest } from "@/components/session/ai-rest";
+import { AiRestLine } from "@/components/session/ai-rest";
 import { WaitHint } from "@/components/session/wait-hint";
 import type {
+  BandBars,
   HereStart,
   LessonItem,
   LessonRef,
@@ -29,6 +35,7 @@ import type {
   TopItem,
 } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
+import { TEACHER_TEXT } from "@/core/teacher/name";
 import { cn } from "@/lib/utils";
 import {
   LESSON_BADGE,
@@ -44,12 +51,16 @@ import {
   useLessonStart,
 } from "./use-lesson-start";
 
-const TILTS: readonly Tilt[] = ["left", "right", "slight", "none"];
-
 /** 화면 문구(4절 수업 목록 표 · plan-p10b 정본 밖 문구 표 그대로). */
 const TEXT = {
   home: "홈",
   band: (level: number, unit: number) => `${level}단계 · 단원 ${unit}`,
+  /** 위 띠 막대 이름(4절 '첫 화면' 행 — 홈 카드에서 옮김). */
+  known: (n: number, of: number) => `아는 단어 ${n}/${of}`,
+  recent: "최근 성적",
+  talks: (n: number, of: number) => `끝낸 대화 ${n}/${of}`,
+  friendship: (name: string | null, n: number, max: number) =>
+    `${TEACHER_TEXT.friendship(name)} ${n}/${max}`,
   hereStart: "여기부터 해요",
   resume: "하던 수업 이어 하기",
   feedback: "첨삭 보기",
@@ -79,6 +90,138 @@ const TEXT = {
     }
   },
 } as const;
+
+/** 위 띠 막대 하나의 너비(화면 꼴 상수 — 세로 820 에서 막대 셋이 한 줄에 들게). */
+const BAND_BAR_W = "w-44";
+
+/** 막대 하나: 이름(안내 글 20px) · 종이 바탕 · 먹색 테 · 영역 색 채움. */
+function BandBar({
+  area,
+  name,
+  label,
+  value,
+  max,
+}: {
+  area: Area;
+  name: string;
+  label: string;
+  value: number;
+  max: number;
+}) {
+  const ratio = max > 0 ? Math.min(1, value / max) : 0;
+  return (
+    <span data-bar={name} className={cn("flex flex-col gap-1", BAND_BAR_W)}>
+      <span data-size-guide="">{label}</span>
+      <span
+        aria-hidden
+        className="h-4 w-full overflow-hidden rounded-full border-2 border-ink bg-paper"
+      >
+        <span
+          className={cn("block h-full", AREA_TONE[area].className)}
+          style={{ width: `calc(${ratio} * 100%)` }}
+        />
+      </span>
+    </span>
+  );
+}
+
+/** 최근 성적 칸(기준을 넘은 수업만 칠함). */
+function RecentBar({
+  cells,
+}: {
+  cells: Extract<BandBars, { kind: "lesson" }>["recent"];
+}) {
+  return (
+    <span data-bar="recent" className={cn("flex flex-col gap-1", BAND_BAR_W)}>
+      <span data-size-guide="">{TEXT.recent}</span>
+      <span data-recent-cells="" aria-hidden className="flex gap-1.5">
+        {cells.map((cell, i) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: 최근 성적 칸은 차례가 열쇠다
+            key={i}
+            data-recent-cell={cell}
+            className={cn(
+              "h-4 flex-1 rounded-full border-2 border-ink",
+              cell === "pass" ? "bg-ink" : "bg-paper",
+            )}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * 위 띠 둘째 줄(R-13 · AC-2d): 단계 · 단원 줄 · 단원 5칸 · 막대(없으면 숨김). 띠 공용 조각의 둘째 줄 글 자리(p) 안이라 span 으로만 쌓고,
+ * 좁으면 줄을 바꾼다.
+ */
+export function ListBandDetail({
+  area,
+  band,
+}: {
+  area: Area;
+  band: ListView["band"];
+}) {
+  const bars = band.bars;
+  return (
+    <span className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <span>{TEXT.band(band.level, band.unit)}</span>
+      <span data-unit-cells="" aria-hidden className="flex gap-1.5">
+        {band.cells.map((cell, i) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: 단원 칸은 자리(단원 번호)가 열쇠다
+            key={i}
+            data-unit-cell={cell}
+            className={cn(
+              "size-7 rounded-md border-2 border-ink",
+              cell === "passed" && "bg-ink",
+              cell === "current" && cn("border-4", AREA_TONE[area].className),
+              cell === "upcoming" && "bg-paper",
+            )}
+          />
+        ))}
+      </span>
+      {bars ? (
+        <span
+          data-band-bars=""
+          className="flex flex-wrap items-end gap-x-6 gap-y-2"
+        >
+          <BandBar
+            area={area}
+            name="known"
+            label={TEXT.known(bars.known.n, bars.known.of)}
+            value={bars.known.n}
+            max={bars.known.of}
+          />
+          {bars.kind === "lesson" ? (
+            <RecentBar cells={bars.recent} />
+          ) : (
+            <>
+              <BandBar
+                area={area}
+                name="talks"
+                label={TEXT.talks(bars.talks.done, bars.talks.min)}
+                value={bars.talks.done}
+                max={bars.talks.min}
+              />
+              <BandBar
+                area={area}
+                name="friendship"
+                label={TEXT.friendship(
+                  bars.friendship.teacherName,
+                  bars.friendship.n,
+                  bars.friendship.max,
+                )}
+                value={bars.friendship.n}
+                max={bars.friendship.max}
+              />
+            </>
+          )}
+        </span>
+      ) : null}
+    </span>
+  );
+}
 
 const refKey = (r: LessonRef) => `${r.unit}:${r.kind}:${r.lessonNo}`;
 const sameRef = (a: LessonRef | undefined, b: LessonRef | undefined) =>
@@ -110,6 +253,17 @@ function HereBadge({ inCard = true }: { inCard?: boolean }) {
   );
 }
 
+/** 누른 카드의 고른 표시를 둘지(순수): 오류 줄이 있거나 쉼 글이 보이면(고르기 실패) 되돌리고, 판정을 기다리는 동안은 둔다. */
+export function selectionKeptOf({
+  status,
+  restShown,
+}: {
+  status: string;
+  restShown: boolean;
+}): boolean {
+  return !status && !restShown;
+}
+
 export function LessonBoard({
   area,
   view,
@@ -135,6 +289,7 @@ export function LessonBoard({
     asking,
     setAsking,
     resting,
+    restAgain,
     waitingSince,
     stillReading,
   } = useLessonStart(waitHintSeconds);
@@ -174,17 +329,20 @@ export function LessonBoard({
   };
 
   const waiting = waitingSince !== undefined || stillReading;
-  // 고르기가 실패하면 고른 표시를 되돌린다(오류 줄은 누른 카드 줄 바로 뒤 — fix 8b N-2 · 전체 디자인 리뷰 M-8)
+  // 쉼 글은 판정이 끝난 뒤에만(다시 누른 동안은 기다림 줄이 그 자리를 쓴다)
+  const restShown = resting && !busy;
+  // 고르기가 실패하면(오류 줄 · 쉼 글) 고른 표시를 되돌린다(오류 줄은 누른 카드 줄 바로 뒤 — fix 8b N-2 · 전체 디자인 리뷰 M-8 · 검토 0-가 M1)
   useEffect(() => {
-    if (status) setSelected(undefined);
-  }, [status]);
+    if (!selectionKeptOf({ status, restShown })) setSelected(undefined);
+  }, [status, restShown]);
   /**
    * 누른 카드 바로 뒤의 기다림 표시 · 안내 · 오류 줄(그 카드일 때만). 격자 안에서는 한 줄 전체 칸(LESSON_ROW)이라 같은 줄 카드가 늘지
    * 않는다(fix 8b N-1 · M-8).
    */
   const waitBelow = (key: string, className?: string) =>
-    (waiting || status) && waitAt === key ? (
+    (waiting || status || restShown) && waitAt === key ? (
       <div data-lesson-wait="" className={className ?? LESSON_ROW}>
+        {restShown ? <AiRestLine again={restAgain} /> : null}
         {waitingSince !== undefined ? (
           <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />
         ) : null}
@@ -201,7 +359,7 @@ export function LessonBoard({
       </div>
     ) : null;
 
-  const lessonCard = (item: LessonItem, i: number) => {
+  const lessonCard = (item: LessonItem) => {
     const here = isHereLesson(view.hereStart, item.ref);
     const key = refKey(item.ref);
     // 이름은 안의 글(여기부터 · 번호 · 보강 · 끝낸 수업 · 제목 · 안 해 본 수업)이다 — 고정 이름을 덮지 않는다(검토 M-4).
@@ -210,7 +368,8 @@ export function LessonBoard({
       <Fragment key={key}>
         <PostIt
           tone={area}
-          tilt={TILTS[i % TILTS.length]}
+          // 같은 카드는 늘 같은 꼴(5.2 · D-9): 기울기 · 테이프를 열쇠로 고른다(묶음 3 검토 M2)
+          paperKey={`${area}:${key}`}
           tape={!here}
           pressed={selected === key}
           onClick={() => choose(item)}
@@ -281,6 +440,7 @@ export function LessonBoard({
         <PostIt
           tone={area}
           tilt="slight"
+          paperKey={`${area}:${key}`}
           onClick={() => {
             // 하던 수업은 그 세션으로, 첨삭 보기는 그 수업의 둘째 세션(plan-p11b 값 11, 단계 평가는 P12)
             if (item.kind === "resume") {
@@ -316,26 +476,12 @@ export function LessonBoard({
 
   const front = view.current?.front ?? [];
   const back = view.current?.back ?? [];
-  // 1-가 하루 안전 상한 — 고른 수업을 열지 못하면 한 화면에 안내와 '홈'만(C50 (2) · C80)
-  if (resting)
-    return (
-      <ChildScreen>
-        <PaperBand
-          heading
-          title={AREA_LABEL[area]}
-          detail={TEXT.band(view.band.level, view.band.unit)}
-        />
-        <PostIt tone="paper" className="p-6 pt-9">
-          <AiRest />
-        </PostIt>
-      </ChildScreen>
-    );
   return (
     <ChildScreen>
       <PaperBand
         heading
         title={AREA_LABEL[area]}
-        detail={TEXT.band(view.band.level, view.band.unit)}
+        detail={<ListBandDetail area={area} band={view.band} />}
         right={<SmallLink href="/">{TEXT.home}</SmallLink>}
       />
       {view.notice === "next_level_pending" ? (
@@ -358,13 +504,15 @@ export function LessonBoard({
           ) : null}
           {view.current ? (
             <section data-current-unit="" className="flex flex-col gap-4">
-              <div className={LESSON_GRID}>{front.map(lessonCard)}</div>
+              <div className={LESSON_GRID}>
+                {front.map((item) => lessonCard(item))}
+              </div>
               {back.length > 0 ? (
                 // 뒷줄(다지기) 앞에 이름표 — 실시드 수에서도 앞줄 줄바꿈과 구별되게(화면 검토)
                 <div className="flex flex-col gap-2">
                   <p className="font-heading text-[22px]">{TEXT.reinforce}</p>
                   <div className={LESSON_GRID}>
-                    {back.map((item, i) => lessonCard(item, i + front.length))}
+                    {back.map((item) => lessonCard(item))}
                   </div>
                 </div>
               ) : null}

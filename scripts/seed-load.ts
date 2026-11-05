@@ -1,5 +1,6 @@
 // 시드 적재 명령(plan-p07a 파일별 값 5, 5절 적재 · 11절 (4-1) · 13절 C68 (1) · (5)).
-// 사용: pnpm seed:load [--root <폴더>] [--complete-through <n>] [--areas <영역,…>] [--reference-only] [--dry-run] [--json]
+// 사용: pnpm seed:load [--root <폴더>] [--complete-through <n>] [--areas <영역,…>] [--reference-only | --partial] [--dry-run] [--json]
+// --partial: 개발 일부 받기(회화 plan 정한 것 15) — 완전성 빈 칸은 보고만 하고 넣는다. 검증 오류 · 판 규칙 위반은 그대로 거부. 운영 적재는 쓰지 않는다.
 // 띄우기: node --conditions=react-server --import tsx — server-only 를 빈 모듈로 풀어 src/server/{db,clock,seed} 를 가져온다.
 // 접속 문자열은 MIGRATION_DATABASE_URL(세션 풀러 — 마이그레이션과 같은 배치 작업 접속, 긴 트랜잭션 하나).
 // 종료 코드: 0 넣음(바뀐 것이 없어도) · 미리 돌림, 1 거부(검증 · 판 규칙 · 설정 · 조합 · 관계 · 단가),
@@ -41,6 +42,8 @@ export type LoadCliArgs = {
   /** --areas 를 적었는지(--reference-only 와 함께 못 쓴다). */
   areasGiven: boolean;
   referenceOnly: boolean;
+  /** 개발 일부 받기(--reference-only 와 함께 못 쓴다). */
+  partial: boolean;
   dryRun: boolean;
   json: boolean;
 };
@@ -54,6 +57,7 @@ export function parseArgs(argv: readonly string[]): ParsedLoadArgs {
     areas: [...AREAS],
     areasGiven: false,
     referenceOnly: false,
+    partial: false,
     dryRun: false,
     json: false,
   };
@@ -101,6 +105,9 @@ export function parseArgs(argv: readonly string[]): ParsedLoadArgs {
       case "--reference-only":
         args.referenceOnly = true;
         break;
+      case "--partial":
+        args.partial = true;
+        break;
       case "--dry-run":
         args.dryRun = true;
         break;
@@ -121,6 +128,12 @@ export function parseArgs(argv: readonly string[]): ParsedLoadArgs {
     return {
       ok: false,
       error: "--reference-only 는 --areas 와 함께 못 쓴다",
+    };
+  }
+  if (args.referenceOnly && args.partial) {
+    return {
+      ok: false,
+      error: "--partial 은 --reference-only 와 함께 못 쓴다",
     };
   }
   return { ok: true, args };
@@ -144,6 +157,7 @@ export function summaryLine(report: LoadReport): string {
     `seed-load: ${OUTCOME_WORDS[report.outcome]}`,
     `칸 넣음 ${sum(c.cells.inserted)}`,
     `건너뜀 ${sum(c.cells.skipped)}`,
+    `목표 채움 ${c.unitGoalsFilled}`,
     `낱말 넣음 ${c.vocab.inserted} 고침 ${c.vocab.updated}`,
     `그림 넣음 ${c.images.inserted} 고침 ${c.images.updated}`,
     `단가 넣음 ${c.modelPrices.inserted}`,
@@ -165,6 +179,13 @@ function keyLines(label: string, keys: readonly string[]): string[] {
 
 function humanLines(report: LoadReport, keys: SettingKeyNames): string[] {
   const lines = [summaryLine(report)];
+  // 일부 받기에서 막지 않은 완전성 빈 칸(회화 plan 정한 것 15 — 보고만)
+  const empty = report.validation?.summary.empty ?? 0;
+  if (report.partial && empty > 0) {
+    lines.push(
+      `일부 받기(--partial): 완전성 빈 칸 ${empty} 는 막지 않고 보고만 했다`,
+    );
+  }
   if (report.validation && report.validation.code !== 0) {
     const s = report.validation.summary;
     lines.push(
@@ -183,8 +204,12 @@ function humanLines(report: LoadReport, keys: SettingKeyNames): string[] {
   );
   if (report.validation && report.validation.code !== 0) {
     const areas = report.referenceOnly ? [] : report.areas;
+    // 일부 받기는 완전성 빈 칸을 막지 않으므로 다시 볼 명령도 --complete-through 없이(dev-load partial 의 검증과 같음, 회화 묶음 1 · 2 검토 M-1)
+    const through = report.partial
+      ? ""
+      : ` --complete-through ${report.completeThrough ?? "settings"}`;
     lines.push(
-      `다시 볼 명령: pnpm seed:validate --complete-through ${report.completeThrough ?? "settings"}${areas.length > 0 ? ` --areas ${areas.join(",")}` : ""}`,
+      `다시 볼 명령: pnpm seed:validate${through}${areas.length > 0 ? ` --areas ${areas.join(",")}` : ""}`,
     );
   }
   return lines;
@@ -256,6 +281,7 @@ export async function runSeedLoad(
         : {}),
       ...(args.referenceOnly ? {} : { areas: args.areas }),
       referenceOnly: args.referenceOnly,
+      partial: args.partial,
       dryRun: args.dryRun,
       now: deps.now(),
     });

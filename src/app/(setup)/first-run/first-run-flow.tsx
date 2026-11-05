@@ -4,6 +4,8 @@
 // PIN → 이름 → 아바타 → 알파벳 → 주제 묶음 → 시작 단계 → 음성 인식 안내 → 넘겨주기, 한 화면에 하나씩.
 // 상태는 화면 메모리에만 둔다(새로 고치면 처음부터, PIN 을 기기에 저장하지 않음 — 정할 것 커). 마지막 한 번 저장한다.
 // '다음'은 그 화면의 값이 맞을 때만 눌린다. 첫 실행은 부모 화면이지만 같은 보드 꼴로 그린다.
+// UI · UX 묶음 5-가(spec 설계 5.4 첫 실행 행 · UX 검토 3판 D-14 · D-10): 종이(FamilyBoard)는 높이를 내용에 맞추고 남는 아래는 책상이다.
+// '이전' · '다음' 단추 줄은 종이 안 아래에 둔다(큰 단추가 책상 위에 홀로 뜨지 않게). 단추 차례 · 문구는 그대로다.
 import { ChevronRight, Mic, Settings, ToggleRight } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import {
@@ -13,6 +15,7 @@ import {
   ChildScreen,
   ChoiceButton,
   FOCUS_RING,
+  ICON_STROKE,
   PaperBand,
   PostIt,
   SELECTED_RING,
@@ -20,6 +23,7 @@ import {
   SmallButton,
   StatusLine,
 } from "@/components/board/board";
+import { FamilyBoard } from "@/components/session/family-board";
 import { romanizeGivenName } from "@/core/profile/romanize";
 import {
   AVATARS,
@@ -57,7 +61,8 @@ const APP_NAME = "모모 잉글리시 아카데미";
 const HOME_PATH = "/";
 
 /** 화면 문구(4절 · 3.1 · 7절 · C72 정본 밖 문구 표 그대로). '(제안)' 은 표에 없어 보고에 올린 문구다. */
-const TEXT = {
+/** 첫 실행 글(4절 첫 실행 행 · 정본 밖 문구 C72 · C166 — U1-1 · U1-3). */
+export const FIRST_RUN_TEXT = {
   next: "다음",
   back: "이전",
   pinTitle: `부모님 PIN ${PIN_LENGTH}자리를 정해 주세요`,
@@ -92,17 +97,27 @@ const TEXT = {
   /** 마이크 확인 단추 아래 안내(C72 — 확인은 소리가 들어와야 성공, fix 5). */
   micSpeakHint: "단추를 누른 뒤 아무 말이나 한마디 해 주세요",
   micOk: "마이크가 잘 돼요",
-  micFailed: "마이크를 쓸 수 없었어요. 그래도 다음으로 넘어갈 수 있어요",
+  /** 실패 줄은 위 상자의 설정 길과 잇는다(U1-1). */
+  micFailed:
+    "마이크를 쓸 수 없었어요. 위 설정을 켠 뒤 다시 눌러 주세요. 그래도 다음으로 넘어갈 수 있어요",
   micInterrupted: "다시 눌러 확인해 주세요",
   handoffTitle: "이제 아이에게 넘겨 주세요",
   handoffPlacement: (minutes: number) =>
     `영역마다 ${minutes}분쯤 단계 찾기를 해요`,
   handoff: "아이에게 넘기기",
+  /** 넘겨주기 화면의 영역별 첫 할 일(U1-3 — handoffLinesOf). */
+  handoffStart: (areas: string) => `${areas}는 고른 단계의 첫 수업부터 해요`,
+  handoffAlphabet: (areas: string) => `${areas}는 알파벳 · 소리 단원부터 해요`,
+  handoffPlacementAreas: (areas: string) =>
+    `${areas}는 짧은 문제로 단계를 찾아요`,
+  handoffTalkFollows: "회화는 말하기 단계를 따라 시작해요",
+  handoffTalkWaits: "회화는 말하기 단계를 찾은 뒤에 시작해요",
   /** 끊김은 7절 네트워크 행 문구. */
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
   /** (제안) 저장이 안 될 때 — C57 '지금은 들어갈 수 없어요 …' 꼴. */
   saveFailed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
 } as const;
+const TEXT = FIRST_RUN_TEXT;
 
 const STEPS = [
   "pin",
@@ -122,6 +137,40 @@ const ALPHABET_AREAS: readonly Area[] = ["reading", "writing"];
 const PLACEMENT_AREAS: readonly Area[] = ["reading", "writing", "speaking"];
 
 type MicStatus = "idle" | "checking" | "ok" | "failed" | "interrupted";
+
+/**
+ * 넘겨주기 화면의 영역별 첫 할 일(U1-3, 순수 함수 — 세 줄 안): 알파벳을 모르면 읽기 · 쓰기는 알파벳 · 소리 단원부터, 고른 영역은 첫 수업부터,
+ * 고르지 않은 읽기 · 쓰기 · 말하기는 단계 찾기, 회화를 고르지 않았으면 말하기 단계를 따름(3.2). 영역 이름은 모두 받침이 없어 '는'.
+ */
+export function handoffLinesOf({
+  startLevels,
+  alphabetUnknown,
+}: {
+  startLevels: Partial<Record<Area, number>>;
+  alphabetUnknown: boolean;
+}): string[] {
+  const alphabet = alphabetUnknown ? ALPHABET_AREAS : [];
+  const chosen = AREAS.filter(
+    (a) => !alphabet.includes(a) && startLevels[a] !== undefined,
+  );
+  const placement = PLACEMENT_AREAS.filter(
+    (a) => !alphabet.includes(a) && !chosen.includes(a),
+  );
+  const names = (areas: readonly Area[]) =>
+    areas.map((a) => AREA_LABEL[a]).join(" · ");
+  const lines: string[] = [];
+  if (alphabet.length > 0) lines.push(TEXT.handoffAlphabet(names(alphabet)));
+  if (chosen.length > 0) lines.push(TEXT.handoffStart(names(chosen)));
+  if (placement.length > 0)
+    lines.push(TEXT.handoffPlacementAreas(names(placement)));
+  if (!chosen.includes("talk"))
+    lines.push(
+      chosen.includes("speaking")
+        ? TEXT.handoffTalkFollows
+        : TEXT.handoffTalkWaits,
+    );
+  return lines;
+}
 
 const inputClass =
   "min-h-14 w-full max-w-md rounded-xl border-2 border-ink bg-paper px-4 text-2xl text-ink focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink";
@@ -167,11 +216,27 @@ function SettingsPath({ steps }: { steps: readonly string[] }) {
     <span className="flex flex-wrap items-center gap-2">
       {steps.map((name, i) => (
         <span key={name} className="flex items-center gap-2">
-          {i > 0 ? <ChevronRight aria-hidden className="size-6" /> : null}
+          {i > 0 ? (
+            <ChevronRight
+              aria-hidden
+              className="size-6"
+              strokeWidth={ICON_STROKE}
+            />
+          ) : null}
           <span className="flex items-center gap-1 font-heading">
-            {i === 0 ? <Settings aria-hidden className="size-6" /> : null}
+            {i === 0 ? (
+              <Settings
+                aria-hidden
+                className="size-6"
+                strokeWidth={ICON_STROKE}
+              />
+            ) : null}
             {i === steps.length - 1 ? (
-              <ToggleRight aria-hidden className="size-6" />
+              <ToggleRight
+                aria-hidden
+                className="size-6"
+                strokeWidth={ICON_STROKE}
+              />
             ) : null}
             {name}
           </span>
@@ -685,7 +750,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             // 안내 상자는 영역 색 · 테 없이 옅은 바탕(화면 검토 M-5 · N-3 — 점선은 초점에만)
             <div
               data-ipad-guide=""
-              className="flex flex-col gap-3 rounded-xl bg-cork/20 p-4"
+              className="flex flex-col gap-3 rounded-xl bg-desk p-4"
             >
               <p>{TEXT.micIpad}</p>
               <SettingsPath steps={TEXT.ipadDictationPath} />
@@ -699,7 +764,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             {/* 확인 전에는 이 화면의 행동이 '마이크 확인'이라 큰 단추, 결과가 나오면 곁 단추(화면 검토 M-7) */}
             {micChecked ? (
               <SmallButton onClick={() => void checkMic()} disabled={!port}>
-                <Mic aria-hidden className="size-7" />
+                <Mic aria-hidden className="size-7" strokeWidth={ICON_STROKE} />
                 {TEXT.micCheck}
               </SmallButton>
             ) : (
@@ -708,7 +773,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
                 disabled={!port || micStatus === "checking"}
                 aria-busy={micStatus === "checking" || undefined}
               >
-                <Mic aria-hidden className="size-7" />
+                <Mic aria-hidden className="size-7" strokeWidth={ICON_STROKE} />
                 {TEXT.micCheck}
               </BigButton>
             )}
@@ -740,6 +805,14 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
       body = (
         <>
           {heading(TEXT.handoffTitle)}
+          <ul data-handoff-lines="" className="flex flex-col gap-2">
+            {handoffLinesOf({
+              startLevels,
+              alphabetUnknown: alphabetUnknown === true,
+            }).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
           {placementLeft ? (
             <p>{TEXT.handoffPlacement(view.targetMinutes)}</p>
           ) : null}
@@ -751,34 +824,40 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
   return (
     <ChildScreen>
       <PaperBand title={APP_NAME} />
-      <section
+      <FamilyBoard
+        as="section"
+        kind="first-run"
+        paperKey="first-run"
         data-first-run-step={step}
         data-hydrated={hydrated ? "" : undefined}
-        className="flex flex-1 flex-col gap-5 rounded bg-paper p-6 shadow-postit sm:p-8"
+        className="gap-5 p-6 sm:p-8"
       >
         {/* 단계마다 입력 요소를 새로 만든다 — 같은 자리의 input 이 재사용되면 PIN 값이 이름 칸에 남는다(컨트롤러 핫픽스 2026-10-17 23:4x) */}
         <Fragment key={step}>{body}</Fragment>
         {step !== "pin" && step !== "mic" ? (
           <StatusLine tone="error">{saveMessage}</StatusLine>
         ) : null}
-      </section>
-      <nav className="flex items-center justify-between gap-4">
-        {index > 0 ? (
-          <SmallButton onClick={goBack} disabled={busy}>
-            {TEXT.back}
-          </SmallButton>
-        ) : (
-          <span />
-        )}
-        {step === "mic" && !micChecked ? (
-          // 마이크 확인 전에는 '다음'이 곁 단추(확인은 선택이라 넘어갈 수 있다)
-          <SmallButton onClick={onNext}>{TEXT.next}</SmallButton>
-        ) : (
-          <BigButton onClick={onNext} disabled={!canNext}>
-            {step === "handoff" ? TEXT.handoff : TEXT.next}
-          </BigButton>
-        )}
-      </nav>
+        <nav
+          data-first-run-nav=""
+          className="flex items-center justify-between gap-4"
+        >
+          {index > 0 ? (
+            <SmallButton onClick={goBack} disabled={busy}>
+              {TEXT.back}
+            </SmallButton>
+          ) : (
+            <span />
+          )}
+          {step === "mic" && !micChecked ? (
+            // 마이크 확인 전에는 '다음'이 곁 단추(확인은 선택이라 넘어갈 수 있다)
+            <SmallButton onClick={onNext}>{TEXT.next}</SmallButton>
+          ) : (
+            <BigButton onClick={onNext} disabled={!canNext}>
+              {step === "handoff" ? TEXT.handoff : TEXT.next}
+            </BigButton>
+          )}
+        </nav>
+      </FamilyBoard>
     </ChildScreen>
   );
 }

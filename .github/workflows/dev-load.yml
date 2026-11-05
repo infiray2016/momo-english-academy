@@ -19,6 +19,11 @@ on:
         type: boolean
         required: true
         default: false
+      partial:
+        description: "개발 일부 받기 — 완전성 빈 칸은 보고만 하고 넣는다(회화 plan 정한 것 15, reference_only 와 함께 못 켬). 완전성 끝(seed.complete_through_level)은 입력한 값으로 덮어 넣는다(AC-7g)"
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -55,18 +60,30 @@ jobs:
           MIGRATION_DATABASE_URL: ${{ secrets.DEV_MIGRATION_DATABASE_URL }}
         run: pnpm db:migrate
       - name: seed-validate
+        # 일부 받기는 단계 env 로만 받는다(작업 수준 env 는 세 입력, 시험 ci-workflows 그대로)
+        env:
+          PARTIAL: ${{ inputs.partial }}
         run: |
+          if [ "$REFERENCE_ONLY" = "true" ] && [ "$PARTIAL" = "true" ]; then
+            echo "::error::reference_only 와 partial 은 함께 켤 수 없다"
+            exit 1
+          fi
           if [ "$REFERENCE_ONLY" = "true" ]; then
             pnpm seed:validate
+          elif [ "$PARTIAL" = "true" ]; then
+            pnpm seed:validate --areas "$AREAS"
           else
             pnpm seed:validate --complete-through "$THROUGH" --areas "$AREAS"
           fi
       - name: seed-load
         env:
           MIGRATION_DATABASE_URL: ${{ secrets.DEV_MIGRATION_DATABASE_URL }}
+          PARTIAL: ${{ inputs.partial }}
         run: |
           if [ "$REFERENCE_ONLY" = "true" ]; then
             pnpm seed:load --reference-only --complete-through "$THROUGH"
+          elif [ "$PARTIAL" = "true" ]; then
+            pnpm seed:load --complete-through "$THROUGH" --areas "$AREAS" --partial
           else
             pnpm seed:load --complete-through "$THROUGH" --areas "$AREAS"
           fi

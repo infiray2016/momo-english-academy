@@ -2,6 +2,8 @@
 // 모든 점수는 0~1 이고 반올림하지 않는다. 점수가 null 인 세션은 P12 가 최근 성적 평균에서 뺀다(첨삭 전 · 쓰기 확인 실패 ·
 // 말하기 9~12 AI 평가 없음). 보강 · 연습 · 안 해 본 수업 · 다시 하기를 빼는 일도 P12 몫이다(점수는 남긴다).
 // a(speaking.match_weight) · L(speaking.listening_weight)는 부르는 쪽이 설정에서 읽어 넘긴다.
+// 기술 오류 문항(소리를 들려주지 못함 — 시도 꼴 techError)과 인식 실패로 건너뛴 문항은 활동 점수가 null 로 와서(attempt.ts appActivityResult)
+// 그 종류 평균의 분모 · 분자에서 빠지고, 한 종류가 다 빠지면 그 항의 가중치가 0 이 된다(UI · UX spec 2판 R-55 — a = 1 로 두는 3.7 표와 같은 꼴).
 import type { ActivityKind } from "@/core/session/preview";
 
 /** 채점표 · AI 평가 항목의 만점(3.7 '각 1~4' — 채점표 꼴의 구조 수). */

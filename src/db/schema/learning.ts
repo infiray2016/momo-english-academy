@@ -221,6 +221,8 @@ export const talkTurns = pgTable(
     confirmSkipped: boolean("confirm_skipped"),
     // 아이 행의 듣기 사건 요약(C149 — '모름'의 출처 · 기기 · 3D · 듣기마다 결과 · 끝난 까닭 · 길이 · 소리 · 읽기 관계, 글 · 소리 없음)
     clientListen: jsonb("client_listen"),
+    // 선생님 행의 차례 정보 칸(C189 — 종류 · 갈래 · 카드 항목 · 노린 것 · 받침 · 도움 · AI 제안 · 소리 줄 글, 꼴은 core/conversation/move)
+    move: jsonb("move"),
     recordedAt: tstz("recorded_at").notNull(),
   },
   (t) => [

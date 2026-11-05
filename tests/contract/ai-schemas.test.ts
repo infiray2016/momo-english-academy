@@ -18,7 +18,10 @@ import {
   speakingConfirmSpec,
   speakingPresentationSpec,
 } from "@/core/ai/calls/speaking";
-import { talkClosingSpec, talkTurnSpec } from "@/core/ai/calls/talk";
+import {
+  talkLessonClosingSpec,
+  talkLessonTurnSpec,
+} from "@/core/ai/calls/talk-lesson";
 import { thinkoutSpec } from "@/core/ai/calls/thinkout";
 import { writingCheckSpec, writingFeedbackSpec } from "@/core/ai/calls/writing";
 import { SERVER_SIDE_FALLBACK_BETA } from "@/core/ai/combo";
@@ -68,11 +71,11 @@ import {
   SPEAKING_CONFIRM_SAMPLE,
   speakingAnswerSample,
   speakingPresentationSample,
-  talkSampleFor,
   thinkoutSample,
   WRITING_CHECK_SAMPLE,
   writingFeedbackSample,
 } from "../fixtures/ai/sample-inputs";
+import { talkLessonSampleFor } from "../fixtures/ai/talk-lesson-inputs";
 import { TEST_SETTINGS, testSettingValues } from "../fixtures/settings";
 
 const SAMPLES_DIR = join(process.cwd(), "tests/fixtures/ai/samples");
@@ -160,6 +163,8 @@ function checkRecordedCalls(rec: readonly Sample[]): number {
 }
 
 type AnySpec = CallSpec<never, unknown, unknown>;
+/** 새 꼴 회화 턴 표본 이름의 머리(회화 plan 묶음 6 — 옛 꼴 표본은 묶음 12 가 지웠다). */
+const TALK_V2_PREFIX = "talk_turn.v2-";
 /** 규격 제목 → 규격과 표본을 대 볼 견본 입력(단계는 표본 이름의 l 숫자 또는 기본). */
 function specCase(
   sample: Pick<Sample, "title" | "case"> & { expect?: Sample["expect"] },
@@ -188,13 +193,13 @@ function specCase(
     case "speaking_eval.confirm":
       return as(speakingConfirmSpec, SPEAKING_CONFIRM_SAMPLE);
     case "talk_turn": {
-      // 회화 턴과 끝맺음 턴은 같은 규격 제목(6.2). 끝맺음 견본은 이름으로 가른다
-      const level =
-        (sample as Partial<Sample>).expect?.level ??
-        Number(/\.l(\d+)-/.exec(sample.case)?.[1] ?? 1);
-      const input = talkSampleFor(sample.case, level);
+      // 회화 표본은 새 꼴(talk_turn.v2-*, 회화 plan 묶음 6 — 옛 꼴 표본은 묶음 12 가 지웠다): 새 꼴 규격과 새 꼴 견본 입력으로, 끝맺음은 견본
+      // 입력의 턴으로 가른다
+      if (!sample.case.startsWith(TALK_V2_PREFIX))
+        throw new Error(`옛 꼴 회화 표본이 남았다: ${sample.case}`);
+      const input = talkLessonSampleFor(sample.case);
       return as(
-        sample.case.includes("closing") ? talkClosingSpec : talkTurnSpec,
+        input.turn.closing ? talkLessonClosingSpec : talkLessonTurnSpec,
         input,
       );
     }
@@ -385,6 +390,131 @@ describe("9절 계약", () => {
         expect(c.request.body).not.toHaveProperty(k);
       }
     }
+  });
+});
+
+// ── 회화 수업 턴 새 꼴 표본(회화 plan 묶음 6, 6.2 회화 턴 출력 칸 · C189) ─────────
+
+/** 표본에 적힌 정규화 기대(수는 목록 길이). */
+function expectNormalized(
+  sample: Sample,
+  value: Record<string, unknown> | null,
+): void {
+  expect(value, sample.case).not.toBeNull();
+  for (const [key, want] of Object.entries(sample.expect.normalized ?? {})) {
+    const got = value?.[key];
+    if (typeof want === "number" && Array.isArray(got)) {
+      expect(got, `${sample.case} ${key}`).toHaveLength(want);
+    } else {
+      expect(got, `${sample.case} ${key}`).toEqual(want);
+    }
+  }
+}
+
+describe("회화 수업 턴 새 꼴 계약 표본", () => {
+  const v2 = messageSamples.filter((s) => s.case.startsWith(TALK_V2_PREFIX));
+
+  it("AC-15c 새 꼴 표본이 3단계 AI 차례 · 카드 자리 · 받침 셋 · 들리지 않음 · 말 입력 막힘 두 갈래 · 마무리 제안 · 4단계(받침 · 들리지 않음 · 막힘 두 갈래) · 5단계 미션 · 끝맺음을 덮는다", () => {
+    const names = v2.map((s) => s.case.slice(TALK_V2_PREFIX.length));
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "l3-ai",
+        "l3-card-slot",
+        "l3-support-together",
+        "l3-support-easy",
+        "l3-support-close",
+        "l3-nospeech",
+        "l3-closing-suggest",
+        "l3-speech-stuck",
+        "l3-speech-answered",
+        "l4-ai",
+        "l4-support-together",
+        "l4-nospeech",
+        "l4-speech-stuck",
+        "l4-speech-answered",
+        "l5-mission",
+        "l5-closing",
+      ]),
+    );
+    for (const sample of v2) {
+      expect(sample.title, sample.case).toBe("talk_turn");
+      expect(sample.purpose, sample.case).toBe(
+        talkLessonSampleFor(sample.case).turn.closing
+          ? "talk_closing"
+          : "talk_turn",
+      );
+    }
+  });
+
+  it("AC-15c 새 꼴 표본은 적힌 대로 엄격 규격을 지나거나 걸리고, 정규화 값이 표본의 기대와 같다", () => {
+    for (const sample of v2) {
+      const result = strictOf(sample);
+      expect(result.ok, sample.case).toBe(sample.expect.strict);
+      expectNormalized(
+        sample,
+        result.spec.normalize(
+          result.prepared,
+          result.input as never,
+          result.rules as never,
+        ) as Record<string, unknown> | null,
+      );
+    }
+  });
+
+  it("AC-15c 새 꼴 응답 본문에는 판정 · 점수 칸이 없고 칸 차례가 stuck → tori_en → model_line → choices 다", () => {
+    for (const sample of v2) {
+      const text = (
+        sample.response.body.content as { type: string; text?: string }[]
+      )
+        .filter((b) => b.type === "text")
+        .map((b) => b.text ?? "")
+        .join("");
+      const keys = Object.keys(JSON.parse(text) as Record<string, unknown>);
+      expect(keys.slice(0, 4), sample.case).toEqual([
+        "stuck",
+        "tori_en",
+        "model_line",
+        "choices",
+      ]);
+      expect(
+        keys.some((k) => /score|judge|verdict|grade/.test(k)),
+        sample.case,
+      ).toBe(false);
+    }
+  });
+
+  it("1~3단계 받침 · 들리지 않음 표본은 카드 자리이고 정규화 뒤 AI 의 따라 할 말 · 선택지 · 다음 질문이 남지 않는다(02-2 259~261줄 · C194 (1))", () => {
+    for (const name of [
+      "l3-support-together",
+      "l3-support-easy",
+      "l3-support-close",
+      "l3-nospeech",
+      "l3-speech-stuck",
+    ]) {
+      const sample = v2.find((s) => s.case === `${TALK_V2_PREFIX}${name}`);
+      if (!sample) throw new Error(`표본 ${name} 이 없다`);
+      const result = strictOf(sample);
+      const value = result.spec.normalize(
+        result.prepared,
+        result.input as never,
+        result.rules as never,
+      ) as Record<string, unknown> | null;
+      expect(value?.model_line, name).toBe("");
+      expect(value?.choices, name).toEqual([]);
+      expect(value?.next_move, name).toBe("none");
+    }
+  });
+
+  it("회화 plan 정한 것 11: 카드 기회를 다 다루지 않은 턴의 갈래 '마무리'는 엄격 검사에 걸리고 '없음'으로 정규화된다", () => {
+    const early = v2.find(
+      (s) => s.case === `${TALK_V2_PREFIX}l3-closing-early`,
+    );
+    const suggest = v2.find(
+      (s) => s.case === `${TALK_V2_PREFIX}l3-closing-suggest`,
+    );
+    if (!early || !suggest) throw new Error("표본이 없다");
+    expect(strictOf(early).ok).toBe(false);
+    expect(strictOf(suggest).ok).toBe(true);
   });
 });
 

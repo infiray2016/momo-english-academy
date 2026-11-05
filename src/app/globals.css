@@ -4,25 +4,132 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 포스트잇 보드 토큰(4절 · 목업 B_Home4 · B_Profile · B_Sticky 의 색, plan-p10a 값 5 · 공용 변경 6). */
-@theme {
-  --color-cork: #d2a86b;
-  --color-cork-frame: #8a6134;
-  --color-paper: #fffdf7;
-  --color-ink: #2b2b2b;
-  --color-ink-soft: #6b5b45;
+/*
+ * 디자인 ② 밝은 책상 토큰(spec UI · UX 개선 설계 5.1 색 · 5.2 모양, C168 · 정본 4절 · plan 묶음 2-가 정한 것 4). 값은 이 한 곳에만 둔다.
+ * 이름은 바꾸지 않고 값만 바꿨고(postit 넷 · ink · ink-soft · paper · kraft · shadow-postit · shadow-band), 새 이름은 더하기만 했다.
+ * 대비(먹색 글자 기준): 종이 15.1 · 노랑 11.4 · 하늘 9.0 · 분홍 7.8 · 연두 11.6 · 책상 13.9 · 꼬리표 11.8. ink-soft 는 종이 · 책상 위에만
+ * (색 종이 위 뜻 줄은 ink, NFR-U1). talk-deep 은 글자가 아니다(듣기 남은 시간 고리 · 소리 물결). static: 화면 소스의 style 이 var() 로만
+ * 읽는 토큰(테이프 색 등)도 늘 내보낸다.
+ */
+@theme static {
+  --color-desk: #fbf5e9;
+  --color-paper: #fffffb;
+  --color-ink: #262626;
+  --color-ink-soft: #5a4c3c;
+  /* 흐린 단추(5.2): 종이 바탕 · 글 먹색 42% · 테 먹색 36% · 그림자 없음 */
+  --color-ink-off: color-mix(
+    in oklab,
+    var(--color-ink) 42%,
+    var(--color-paper)
+  );
+  --color-ink-off-edge: color-mix(
+    in oklab,
+    var(--color-ink) 36%,
+    var(--color-paper)
+  );
+  /* 옛 테이프(흰 55%) — 마지막 사용처(회화 파일, 묶음 6)가 옮긴 뒤 지운다 */
   --color-tape: rgb(255 255 255 / 0.55);
-  /* 부모 메뉴 꼬리표(목업 B_Home4 · B_Profile 오른쪽 아래) */
-  --color-kraft: #c8b48e;
-  --color-postit-reading: #ffe566;
-  --color-postit-writing: #9fd8ff;
-  --color-postit-speaking: #ffb3c7;
-  --color-postit-talk: #c9f2b2;
+  /* 마스킹 테이프 다섯(흰 45° 줄무늬를 얹는다 — paper-tape) */
+  --color-tape-1: #f5b3a4;
+  --color-tape-2: #a9d9cb;
+  --color-tape-3: #c8b9f2;
+  --color-tape-4: #f7d486;
+  --color-tape-5: #a8cbf2;
+  /* 부모 메뉴 꼬리표 */
+  --color-kraft: #f0e2c4;
+  --color-postit-reading: #ffdf37;
+  --color-postit-writing: #88cfff;
+  --color-postit-speaking: #ff9eb9;
+  --color-postit-talk: #adf480;
+  --color-talk-deep: #3f9a2a;
+  /* 꾸밈 선(정보 아님): 모눈 · 여백 선 · 연필 낙서 */
+  --color-grid: rgb(140 165 200 / 0.17);
+  --color-margin-line: rgb(240 130 130 / 0.55);
+  --color-doodle: #7c8592;
   /* 아바타 동그라미 여섯(C72): 포스트잇 넷 + 주황 · 보라 */
   --color-avatar-orange: #ffc98b;
   --color-avatar-purple: #d9c6f5;
-  --shadow-postit: 4px 6px 0 rgb(0 0 0 / 0.16);
-  --shadow-band: 0 4px 0 rgb(0 0 0 / 0.18);
+  /*
+   * 칩 여덟(가르치고 배우는 수업 plan 정한 것 15 · spec 설계 5 칩 이름 — 누가 · 하는 일 · 무엇 · 어디 · is · 어때요 · 마침표 · 예비). 값은 위
+   * ② 팔레트 토큰을 가리키기만 하고(새 색 없음), 먹색 글자 7:1 이상이다. 한 화면에 함께 나오는 칩(읽기 · 말하기 넷, 쓰기 넷)은 색이 겹치지
+   * 않는다. 쓰기 '무엇'(thing)은 읽기 '무엇'과 같은 토큰. 화면 검토가 값을 바꾸면 여기만 고친다.
+   */
+  --color-chip-who: var(--color-tape-1);
+  --color-chip-do: var(--color-tape-4);
+  --color-chip-what: var(--color-tape-2);
+  --color-chip-where: var(--color-tape-5);
+  --color-chip-is: var(--color-tape-3);
+  --color-chip-how: var(--color-avatar-orange);
+  --color-chip-end: var(--color-kraft);
+  --color-chip-spare: var(--color-postit-talk);
+  /* 손으로 자른 둥근 모서리 셋(카드 · 판과 띠 · 단추) */
+  --radius-card: 16px 10px 18px 12px / 12px 18px 10px 16px;
+  --radius-board: 14px 9px 16px 10px / 10px 16px 9px 14px;
+  --radius-button: 20px 14px 22px 16px / 16px 22px 14px 20px;
+  /* 그림자 셋: 카드(shadow-postit) · 판과 띠(shadow-band) · 단추 */
+  --shadow-postit: 6px 7px 0 rgb(38 38 38 / 0.12);
+  --shadow-band: 6px 7px 0 rgb(38 38 38 / 0.1);
+  --shadow-button: 4px 5px 0 rgb(38 38 38 / 0.22);
+}
+
+/* 모양 토큰 가운데 Tailwind 이름 갈래가 없는 것(종이 테 · 바탕 무늬 · 낙서). 쓰는 곳: border-(length:--paper-edge) · desk-surface */
+:root {
+  --paper-edge: 2.6px;
+  --desk-grid: 28px;
+  --desk-grid-line: 1.2px;
+  --desk-margin-x: 58px;
+  --desk-margin-width: 2px;
+  --doodle-opacity: 0.8;
+}
+
+/* 책상 바탕(5.2 · 5.3): 여백 선 왼쪽 58px · 모눈 28px · 종이 결 잡음 한 겹 · 책상 색. 꾸밈이라 정보가 없고 움직이지 않는다 */
+@utility desk-surface {
+  background:
+    linear-gradient(
+      90deg,
+      transparent var(--desk-margin-x),
+      var(--color-margin-line) var(--desk-margin-x)
+        calc(var(--desk-margin-x) + var(--desk-margin-width)),
+      transparent calc(var(--desk-margin-x) + var(--desk-margin-width))
+    ),
+    linear-gradient(
+      var(--color-grid) var(--desk-grid-line),
+      transparent var(--desk-grid-line)
+    )
+    0 0 / var(--desk-grid) var(--desk-grid),
+    linear-gradient(
+      90deg,
+      var(--color-grid) var(--desk-grid-line),
+      transparent var(--desk-grid-line)
+    )
+    0 0 / var(--desk-grid) var(--desk-grid),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+    var(--color-desk);
+}
+
+/* 마스킹 테이프(5.2): 테이프 색(--tape-tone, 쓰는 쪽이 tape-1~5 가운데 하나) 위 흰 45° 줄무늬, 손으로 찢은 양 끝 */
+@utility paper-tape {
+  position: absolute;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 0.5) 0 7px,
+      transparent 7px 14px
+    ),
+    var(--tape-tone, var(--color-tape-1));
+  opacity: 0.92;
+  clip-path: polygon(
+    2% 0,
+    98% 0,
+    100% 22%,
+    97% 50%,
+    100% 78%,
+    98% 100%,
+    2% 100%,
+    0 78%,
+    3% 50%,
+    0 22%
+  );
 }
 
 @theme inline {

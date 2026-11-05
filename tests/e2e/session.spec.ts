@@ -163,6 +163,10 @@ test("세션 틀: 첫 활동은 새 단어 미리보기이고 '다음'을 누르
   await expect(page).toHaveURL(new RegExp(`/result/${sessionId}$`));
   await expect(page.getByRole("heading", { name: T.done })).toBeVisible();
   await expect(page.locator("[data-result][data-hydrated]")).toHaveCount(1);
+  // C166 R3(U4-1): 별 하나 · 오늘 만난 단어 = 이 세션 미리보기에 보인 새 단어
+  await expect(page.locator("[data-reward-star]")).toBeVisible();
+  for (const word of newWords)
+    await expect(page.locator(`[data-met-word="${word}"]`)).toBeVisible();
   await photo(page, "p11-reading-result-next");
   const [row] = await e2eDb()
     .select({ status: sessions.status, score: sessions.score })

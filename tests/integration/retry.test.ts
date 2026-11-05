@@ -1,4 +1,5 @@
 // 다시 하기(3.2 지난 수업 다시 하기 · 3.7 '다시 하기' 행 · AC-2c 읽기 몫, plan-p11a 증명 표). c 가 말하기 몫을 더한다.
+// 말하기 평가 몫(plan-p11c 증명 표 AC-2c 행)은 가르치고 배우는 수업 plan 다 가 3단계 단원 1 말하기 가르치는 수업으로 더했다.
 // 시험용 시드(1단계, 작은 틀)에서 읽기 단원 1 의 배정 수업 1 을 끝낸 뒤 단원 1 을 통과한 것으로 두고(단원 2 회차) 같은 수업을 다시 한다.
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
@@ -12,7 +13,7 @@ import {
   sessions,
   unitProgress,
 } from "@/db/schema/learning";
-import { parentAlerts, parentAuth } from "@/db/schema/operations";
+import { aiCalls, parentAlerts, parentAuth } from "@/db/schema/operations";
 import type { Db } from "@/server/db";
 import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile, saveFirstRun } from "@/server/profile";
@@ -24,12 +25,23 @@ import {
   saveSessionAttempts,
   startLessonSession,
 } from "@/server/session";
+import { evaluateAnswer } from "@/server/speaking";
 import {
   DEV_SEED_AREAS,
   DEV_SEED_THROUGH,
   devSeedTree,
 } from "../fixtures/seed/dev-tree";
 import { filesOf } from "../fixtures/seed/loadable";
+import {
+  answerReply,
+  appFinals,
+  freshSpeakingHousehold,
+  insertTeachSpeakingLesson,
+  openTeachSpeaking,
+  questionNo,
+  SPEAKING_TEACH,
+  speakingHarness,
+} from "./speaking-fixture";
 import { createTestDatabase, type TestDatabase } from "./test-db";
 
 const LOADED_AT = new Date("2026-10-17T10:00:00+09:00");
@@ -216,5 +228,59 @@ describe("다시 하기", () => {
       before.input.gate.remainingLessons,
     );
     expect(after.view.lockedNext).toEqual(before.view.lockedNext);
+  });
+});
+
+describe("다시 하기 — 말하기 평가", () => {
+  beforeAll(async () => {
+    await insertTeachSpeakingLesson(db);
+  });
+
+  it("AC-2c 다시 하기 말하기 세션에서도 말하기 평가 호출이 새 수업과 같이 나가고 그 점수는 sessions 에 남는다", async () => {
+    await freshSpeakingHousehold(db, SAVED_AT);
+    const view = await openTeachSpeaking(db, RETRY);
+    // 다시 하기 세션으로 둔다(목록의 지난 단원 재판정은 읽기 몫 시험이 본다 — 여기는 말하기 평가 길만)
+    await db
+      .update(sessions)
+      .set({ kind: "retry" })
+      .where(eq(sessions.id, view.sessionId));
+    const questions = SPEAKING_TEACH.content.questions;
+    const { fake, deps: evalDeps } = speakingHarness(
+      db,
+      [{ reply: answerReply("correct") }],
+      RETRY,
+    );
+    for (const [i, q] of questions.entries()) {
+      const out = await evaluateAnswer(
+        {
+          sessionId: view.sessionId,
+          clientAttemptId: randomUUID(),
+          activityNo: questionNo(view, i),
+          transcript: q.accepted?.[0] ?? "",
+          failures: 0,
+        },
+        evalDeps,
+      );
+      expect(out).toMatchObject({ ok: true, judgement: "correct" });
+    }
+    expect(fake.requests).toHaveLength(questions.length);
+    expect(
+      await saveSessionAttempts(appFinals(view), deps(RETRY)),
+    ).toMatchObject({ ok: true, rejected: [] });
+    expect(
+      await finishLessonSession({ sessionId: view.sessionId }, deps(RETRY)),
+    ).toEqual({ ok: true, already: false });
+    const [retry] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, view.sessionId));
+    expect(retry).toMatchObject({ kind: "retry", status: "completed" });
+    expect(retry?.score).not.toBeNull();
+    const calls = await db
+      .select()
+      .from(aiCalls)
+      .where(eq(aiCalls.sessionId, view.sessionId));
+    expect(calls).toHaveLength(questions.length);
+    await db.delete(aiCalls);
   });
 });

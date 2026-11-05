@@ -51,6 +51,8 @@ export const sessionStatusEnum = pgEnum("session_status", [
 export const writingPartEnum = pgEnum("writing_part", ["draft", "rewrite"]);
 export const talkSegmentEnum = pgEnum("talk_segment", [
   "greeting",
+  // 짧은 준비(C189, 회화 plan 묶음 7 — 마이그레이션은 더하기만)
+  "prep",
   "today_words",
   "practice",
   "talk",
@@ -204,6 +206,8 @@ export const unitSpecs = pgTable(
     learningPoints: jsonb("learning_points").notNull(),
     topic: text("topic").notNull(),
     targetVocab: text("target_vocab").array().notNull(),
+    // 단원 목표(평가 spec 2절 목표 칸 — UnitGoalSchema 목록, 시드에 없으면 비움). 회화 턴 가변부의 목표 글이 읽는다(회화 plan 묶음 8 fix 1 · 보정 11-05 (7))
+    goals: jsonb("goals"),
     revision: integer("revision").notNull(),
     correction: integer("correction").notNull(),
   },

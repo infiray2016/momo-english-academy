@@ -166,6 +166,8 @@ async function compositionOf(
       content: lesson.content,
       part: "draft",
       thinkout: level >= thinkoutFrom["writing.thinkout_from_level"],
+      // 세션 서버와 같은 차례(teach 칸이 있으면 여섯 자리 — 가르치고 배우는 수업 plan 정한 것 1)
+      ...(lesson.teach ? { teach: lesson.teach } : {}),
     }),
   };
 }
@@ -723,6 +725,8 @@ export async function submitRewrite(
       content: lesson.content,
       part: "rewrite",
       corrections: source.value.corrections.length,
+      // 세션 서버와 같은 차례(teach 칸이 있으면 여섯 자리 — 가르치고 배우는 수업 plan 정한 것 1)
+      ...(lesson.teach ? { teach: lesson.teach } : {}),
     });
     if (activities[activityNo - 1]?.kind !== "rewrite")
       return { ok: false, reason: "not_found" };

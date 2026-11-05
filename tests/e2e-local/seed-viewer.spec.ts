@@ -350,7 +350,9 @@ test("AC-7f 시드 보기: 읽기 수업 칸을 열면 아이 화면 모습에 �
     await expect(extras).toContainText("정답");
     await expect(extras).toContainText(`${question.answerNo}. ${answer}`);
     await expect(extras).toContainText("해설");
-    await expect(extras).toContainText(question.explanationKo);
+    // 해설이 없는 문항(가르치는 수업의 whyKo 문항)은 해설 줄을 보지 않는다(빈 글 단언은 늘 통과하므로).
+    if (question.explanationKo !== undefined)
+      await expect(extras).toContainText(question.explanationKo);
   }
   await expect(childScreens(page)).toHaveCount(
     2 + lesson.content.questions.length,

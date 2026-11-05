@@ -1,6 +1,7 @@
 // 수업 목록 e2e(4절 수업 목록 표 · 3.2 · AC-2b · 2d · 2e · 2f, plan-p10b 증명 표 — 차례 4 · 6 몫).
 // 실제 e2e DB(시험용 시드 — 1단계, 단원마다 배정 · 다지기 · 보강)를 쓴다. 수업을 고르면 세션이 열린다(차례 6).
-// 설계 숫자(최소 수업 수)는 e2e DB 의 단원 복사본 · 수업 칸에서 읽는다.
+// 설계 숫자(최소 수업 수 · 최근 성적 칸 수)는 e2e DB 의 단원 복사본 · 수업 칸에서 읽는다.
+// 위 띠(UI · UX 묶음 3 · R-13 · AC-2d): 단계 · 단원 줄 · 단원 5칸 · 지금 단원 막대 둘(회화는 끝낸 대화 · 친한 정도까지), 끝낸 세션이 없으면 막대 숨김.
 
 import type { Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
@@ -249,6 +250,66 @@ test("AC-2d 수업 포스트잇마다 번호와 한국어 제목이 있고 '여�
   // 첫 화면: 지금 단원 묶음 · 잠긴 다음 단원 한 장 · 지난 단원이 없으면 '지난 수업 다시 하기'도 없다
   await expect(page.locator("[data-locked-next]")).toHaveCount(1);
   await expect(page.getByText(T.past)).toHaveCount(0);
+});
+
+test("AC-2d 수업 목록 위 띠에 지금 단계 · 단원과 단원 진행 5칸이 보이고, 끝낸 세션이 없으면 막대가 없으며, 끝낸 수업이 생기면 '아는 단어 n/m' · '최근 성적' 칸(복사본 unit.recent_window 개)이 보인다. 회화는 '끝낸 대화' · 친한 정도다", async ({
+  page,
+}) => {
+  const { profileId } = await insertHousehold({
+    startLevels: { reading: 1, talk: 1 },
+  });
+  await page.goto("/reading/lessons");
+  const band = page.locator("[data-paper-band]");
+  await expect(band.getByText("1단계 · 단원 1")).toBeVisible();
+  await expect(band.locator("[data-unit-cell]")).toHaveCount(5);
+  await expect(band.locator('[data-unit-cell="current"]')).toHaveCount(1);
+  // 끝낸 세션이 없는 영역은 막대를 숨긴다(R-13)
+  await expect(band.locator("[data-band-bars]")).toHaveCount(0);
+  await expect(band).not.toContainText("아는 단어");
+  await photo(page, "ux3-lesson-list-first");
+
+  const [round] = await e2eDb()
+    .select({ snapshot: unitProgress.settingsSnapshot })
+    .from(unitProgress)
+    .where(
+      and(
+        eq(unitProgress.profileId, profileId),
+        eq(unitProgress.area, "reading"),
+      ),
+    );
+  const snapshot = round?.snapshot as Record<string, number>;
+  const at = new Date();
+  await insertSessions(
+    (["reading", "talk"] as const).map((area) => ({
+      profileId,
+      area,
+      level: 1,
+      unit: 1,
+      kind: "regular" as const,
+      status: "completed" as const,
+      score: snapshot["unit.recent_score"] ?? 0,
+      startedAt: at,
+      completedAt: at,
+    })),
+  );
+  await page.reload();
+  await expect(band.locator("[data-band-bars]")).toHaveCount(1);
+  await expect(band).toContainText(/아는 단어 \d+\/\d+/);
+  await expect(band).toContainText("최근 성적");
+  await expect(band.locator("[data-recent-cell]")).toHaveCount(
+    snapshot["unit.recent_window"] ?? 0,
+  );
+  await expect(band.locator('[data-recent-cell="pass"]')).toHaveCount(1);
+  await photo(page, "ux3-lesson-list");
+
+  await page.goto("/talk/lessons");
+  await expect(band.locator("[data-band-bars]")).toHaveCount(1);
+  await expect(band).toContainText(/아는 단어 \d+\/\d+/);
+  await expect(band).toContainText(/끝낸 대화 1\/\d+/);
+  // 친한 정도 n/talk.friendship_max — 고르기 전 이름 자리는 '선생님'
+  await expect(band).toContainText(/선생님과 친한 정도 \d+\/\d+/);
+  await expect(band).not.toContainText("최근 성적");
+  await photo(page, "ux3-talk-lesson-list");
 });
 
 test("수업 목록: 지난 수업 다시 하기는 단원을 고른 뒤 수업을 고르고 통과한 단원의 안 한 수업에는 '안 해 본 수업' 표시가 붙는다", async ({

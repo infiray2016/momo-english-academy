@@ -1,13 +1,16 @@
 // 회화 턴 끝점 POST /api/talk/turn(plan-p13b 파일별 값 5 · 13절 C92 · a 정할 것 회6, 10절 '회화 스트리밍 포함').
 // 첫 문장 requireAccess()(쿠키 없으면 401), 같은 출처만(403), 본문 크기 상한(413). 줄마다 JSON 한 줄(NDJSON)을 바로 흘려 보낸다 —
-// 검사를 지난 토리 문장(s) · 뜻(ko) · 앱이 붙일 말(add) · 끝 줄(end · resting · break · close · stale · error). 브라우저 연결이 닫혀도
+// 검사를 지난 선생님 문장(s) · 뜻(ko) · 앱이 붙일 말(add) · 1~3단계 소리 줄(sound) · 끝 줄(end · resting · break · close · stale ·
+// error). 끝 줄은 { t: "end", lesson } 다(회화 plan 묶음 8 · 12 — 새 꼴 카드 세션만). 브라우저 연결이 닫혀도
 // 쓰기 실패를 삼키고 턴 길은 응답을 끝까지 받아 토리 행을 저장한다(a2 M1 계약). 오류는 이름만 남긴다(아이 글 없음).
 import { after, type NextRequest } from "next/server";
 import { stageTimingsLine } from "@/core/conversation/timing";
 import { isSameOrigin, requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
-import type { TalkLine } from "@/server/conversation";
-import { runTalkTurnRequest } from "@/server/conversation/turn";
+import {
+  runTalkTurnRequest,
+  type TalkLessonLine,
+} from "@/server/conversation/turn";
 
 export const dynamic = "force-dynamic";
 /** 회화 턴 기다림(ai.timeout_seconds.realtime 의 두 배) + 저장보다 넉넉히(초, 기술 값 — 배포 설정 칸이라 상수). */
@@ -48,7 +51,8 @@ export async function POST(request: NextRequest) {
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
   let open = true;
-  const write = (line: TalkLine) => {
+  // 줄마다 NDJSON 한 줄(새 꼴 카드 세션의 줄, 회화 plan 묶음 8)
+  const write = (line: TalkLessonLine) => {
     if (!open) return;
     // 줄마다 바로 보낸다. 브라우저가 끊으면 쓰기가 실패하는데 삼키고 턴 길은 끝까지 간다(a2 M1 계약)
     writer.write(encoder.encode(`${JSON.stringify(line)}\n`)).catch(() => {

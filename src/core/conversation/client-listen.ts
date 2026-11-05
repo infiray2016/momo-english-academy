@@ -38,6 +38,26 @@ export const ClientListenEntrySchema = z.strictObject({
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 
+/**
+ * 선생님 쪽 발화 감시 기록(회화 plan 정한 것 10 · UI · UX L-15): 무엇을 읽었나(선생님 말 · 붙인 카드 줄 · 소리 줄 · 맞장구 · 짧은 준비 ·
+ * 바닥선 · 정리)와 감시가 끝낸 까닭(끝 신호 없음 · 들려주지 못함). 들려줌(played) · 글 · 소리는 남기지 않는다.
+ */
+export const TALK_SPEAK_WHATS = [
+  "tori",
+  "card",
+  "sound",
+  "wait",
+  "prep",
+  "floor",
+  "wrap",
+] as const;
+export const TALK_SPEAK_HITCHES = ["no_end", "not_played"] as const;
+export const ClientSpeakEntrySchema = z.strictObject({
+  w: z.enum(TALK_SPEAK_WHATS),
+  h: z.enum(TALK_SPEAK_HITCHES),
+});
+export type ClientSpeakEntry = z.infer<typeof ClientSpeakEntrySchema>;
+
 /** 화면이 보내는 꼴(회화 턴 요청 · 따라 말하기 저장). '모름'의 출처(src)는 서버가 입력에서 정하므로 받지 않는다. */
 export const ClientListenSchema = z.strictObject({
   /** 기기 판정 이름(readDeviceVerdict().name — 예: 'iPad Safari 27.0'). */
@@ -48,6 +68,8 @@ export const ClientListenSchema = z.strictObject({
   listens: z.array(ClientListenEntrySchema).max(CLIENT_LISTENS_MAX),
   /** 보낼 때의 세션 실패 셈(여섯 번 셈 — judge micFailures). */
   mf: z.int().min(0).max(FAILURES_MAX),
+  /** 앞 기록 뒤 선생님 쪽 발화 가운데 감시가 끝낸 것(최근 CLIENT_LISTENS_MAX 개, 정한 것 10). 이 칸 전 옛 기록에는 없다. */
+  sp: z.array(ClientSpeakEntrySchema).max(CLIENT_LISTENS_MAX).optional(),
 });
 export type ClientListen = z.infer<typeof ClientListenSchema>;
 

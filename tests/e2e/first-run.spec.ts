@@ -42,7 +42,9 @@ const T = {
   alphabetKnown: "알아요",
   levelTitle: "영역마다 시작 단계를 고를 수 있어요",
   micCheck: "마이크 확인",
-  micFailed: "마이크를 쓸 수 없었어요. 그래도 다음으로 넘어갈 수 있어요",
+  // U1-1: 실패 줄이 위 설정 길과 잇는다
+  micFailed:
+    "마이크를 쓸 수 없었어요. 위 설정을 켠 뒤 다시 눌러 주세요. 그래도 다음으로 넘어갈 수 있어요",
   micOk: "마이크가 잘 돼요",
   handoff: "아이에게 넘기기",
   next: "다음",
@@ -172,6 +174,13 @@ test("AC-1c 첫 실행은 PIN → 이름 → 아바타 → 알파벳 → 주제 
       await expect(page.locator("[data-ipad-screen-time]")).toHaveText(
         "스크린 타임을 쓰면 설정 → 스크린 타임 → 콘텐츠 및 개인정보 보호 제한 → Siri 및 받아쓰기를 허용해 주세요",
       );
+    }
+    // U1-3 넘겨주기 화면은 영역마다 무엇을 먼저 하는지 알린다(이 흐름은 시작 단계를 고르지 않음)
+    if (name === "handoff") {
+      await expect(page.locator("[data-handoff-lines] li")).toHaveText([
+        "읽기 · 쓰기 · 말하기는 짧은 문제로 단계를 찾아요",
+        "회화는 말하기 단계를 찾은 뒤에 시작해요",
+      ]);
     }
     // 화면 검토 사진 여덟(전체 디자인 리뷰 M-11 (4))
     await photo(page, `first-run-${name}`);

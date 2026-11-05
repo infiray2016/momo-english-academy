@@ -6,6 +6,7 @@
 // (2) 명단 검사: 키 · 이름 겹침, vocab 단어인 영어 이름, 성격 낱말 셋, AI 성격 글 · 인사 · 소개 · 이름표 대비 · 빼는 낱말.
 // (3) 자산 검사(AC-19k): 모델 · 초상 파일 있음 · 바이트 · 해시 · 크기 상한 · VRM 메타 · 표정 · 뼈 · 원본 없음 · 출처 문서.
 // DB · 파일 시스템을 읽지 않는 순수 함수다(파일 읽기 · 해시는 부르는 쪽이 io 로 넘긴다).
+import { contrastRatio } from "@/core/color/contrast";
 import type { Report, SeedIssue } from "@/core/seed/issue";
 import type { ForbiddenFile } from "@/core/seed/schema/reference";
 import type { TeachersFile } from "@/core/seed/schema/teachers";
@@ -25,7 +26,6 @@ import {
   type TextFragment,
   VRM_REQUIRED_BONES,
   VRM_REQUIRED_EXPRESSIONS,
-  WCAG,
 } from "@/core/seed/structure";
 import {
   forbiddenHits,
@@ -217,34 +217,8 @@ export type TeacherRosterContext = {
   greetingMaxWords?: number;
 };
 
-/** sRGB 한 채널(0~255)의 선형 값(WCAG 2 상대 휘도 식). */
-function linear(value: number): number {
-  const c = value / WCAG.channelMax;
-  return c <= WCAG.linearKnee
-    ? c / WCAG.linearSlope
-    : ((c + WCAG.gammaOffset) / (1 + WCAG.gammaOffset)) ** WCAG.gamma;
-}
-
-/** WCAG 상대 휘도(`#rrggbb`). */
-function luminance(hex: string): number {
-  const [r, g, b] = (hex.match(/[0-9a-fA-F]{2}/g) ?? []).map((h) =>
-    linear(Number.parseInt(h, 16)),
-  );
-  return (
-    WCAG.weights.r * (r ?? 0) +
-    WCAG.weights.g * (g ?? 0) +
-    WCAG.weights.b * (b ?? 0)
-  );
-}
-
-/** 두 색의 WCAG 대비(1~21). */
-export function contrastRatio(a: string, b: string): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [
-    number,
-    number,
-  ];
-  return (hi + WCAG.flare) / (lo + WCAG.flare);
-}
+/** 두 색의 WCAG 대비(1~21) — 공용 색 모듈의 셈 그대로(2-가 검토 M2, 이 모듈을 가져오던 시험이 그대로 쓴다). */
+export { contrastRatio } from "@/core/color/contrast";
 
 /**
  * 명단 자료 검사(6.4 명단 자료 행 · AC-19a 의 시드 몫). 규칙은 `teacher-roster`, 경로는 `teachers.<차례>.<칸>`.

@@ -1,14 +1,35 @@
+// 회화 카드 새 꼴 검사(회화 plan 묶음 3 — 6.3 회화 카드 행 · 6.4 회화 시나리오 카드 · 회화 카드 목표 · 회화 필수 질문 · 회화 짧은 준비 ·
+// 더 이야기할 거리 · 회화 단원 덮기 · 회화 미션 · 역할 바꾸기 행, C189). 증명: AC-15m(거부 목록 · 안 거부 목록 · 일부 단원 경고) · AC-7a(완전성 몫).
 import { describe, expect, it } from "vitest";
 import type { SeedIssue } from "@/core/seed/check-lesson";
 import { checkTalkCard, checkTalkUnit } from "@/core/seed/check-talk";
 import { buildReferenceIndex } from "@/core/seed/reference-index";
-import type { TalkLesson } from "@/core/seed/schema/lesson";
-import type { TalkLevelSpec } from "@/core/seed/schema/reference";
-import { lessonFilePath, TALK_SAME_QUESTION_MAX } from "@/core/seed/structure";
+import { type TalkLesson, TalkLessonSchema } from "@/core/seed/schema/lesson";
+import {
+  type SettingRow,
+  type TalkLevelSpec,
+  TalkLevelSpecSchema,
+  type UnitGoal,
+} from "@/core/seed/schema/reference";
+import { type TalkRequired, talkCardKindOf } from "@/core/seed/schema/talk";
+import {
+  bandKey,
+  lessonFilePath,
+  TALK_SAME_QUESTION_MAX,
+  TALK_SEGMENTS,
+  TALK_SPEC_SEGMENTS,
+} from "@/core/seed/structure";
+import { itemsOf, validateSeed } from "@/core/seed/validate";
+import { checkFrameRelations } from "@/core/vocab/allocate";
+import { talkSegmentEnum } from "@/db/schema/content";
 import {
   defaultSettings,
+  miniSeed,
+  type ReferenceSet,
   referenceSet,
+  seedTreeFiles,
   settingNumber,
+  talkCard,
   talkLesson,
   talkUnitCards,
   unitWordsOf,
@@ -19,217 +40,624 @@ const { index } = buildReferenceIndex(ref);
 const num = (key: string) => settingNumber(ref.settings, key);
 const UNIT = 1;
 
-function ctx(level: number) {
+function ctxOf(level: number, idx = index) {
   return {
     area: "talk" as const,
     level,
     unit: UNIT,
     file: lessonFilePath("talk", level, UNIT),
-    index,
+    index: idx,
   };
 }
-function check(lesson: TalkLesson, level: number): SeedIssue[] {
-  return checkTalkCard(lesson, ctx(level));
+function check(lesson: TalkLesson, level: number, idx = index): SeedIssue[] {
+  return checkTalkCard(lesson, ctxOf(level, idx));
 }
+const errorsOf = (issues: SeedIssue[]) =>
+  issues.filter((i) => i.severity === "error");
 const rulesOf = (issues: SeedIssue[]) =>
-  [
-    ...new Set(issues.filter((i) => i.severity === "error").map((i) => i.rule)),
-  ].sort();
-const has = (issues: SeedIssue[], rule: string) =>
-  issues.some((i) => i.severity === "error" && i.rule === rule);
+  [...new Set(errorsOf(issues).map((i) => i.rule))].sort();
+const pathsOf = (issues: SeedIssue[], rule: string) =>
+  errorsOf(issues)
+    .filter((i) => i.rule === rule)
+    .map((i) => i.path);
 
 function card(level: 1 | 3 | 4 | 5): TalkLesson {
   return structuredClone(talkLesson(ref, level).lesson);
+}
+function reinforceCard(level: number): TalkLesson {
+  const cards = talkUnitCards(ref, level);
+  const found = cards.find((c) => c.kind === "reinforce");
+  if (!found) throw new Error("다지기 카드가 없다");
+  return structuredClone(found);
 }
 function specOf(level: number): TalkLevelSpec {
   const spec = index.levelSpec("talk", level);
   if (spec?.area !== "talk") throw new Error(`회화 ${level}단계 규격 없음`);
   return spec;
 }
-function turnsOf(lesson: TalkLesson) {
-  const turns = lesson.card.turns;
-  if (!turns) throw new Error("대화 턴이 없다");
-  return turns;
+function requiredAt(lesson: TalkLesson, i: number): TalkRequired {
+  const item = lesson.card.required[i];
+  if (!item) throw new Error(`필수 질문 ${i} 없음`);
+  return item;
 }
 
-describe("칸 검사: 회화 카드", () => {
-  it("AC-15m 회화 1단계 카드: 인사 질문 수와 대화 턴 질문 수의 합이 목표 턴과 같으면 통과하고 하나 적으면 거부한다", () => {
+// ── 목표가 있는 견본(단원 규격 goals · seed.unit_goals_max) ─────────
+
+const CORE = "정보 묻고 답하기";
+function goalOf(id: string, core = CORE): UnitGoal {
+  return {
+    id,
+    ko: "선생님 질문에 한 문장으로 답할 수 있다",
+    core,
+    tasks: ["card-answer"],
+    home: ["선생님과 이야기"],
+    needs: ["word", "response"],
+    accept: "meaning",
+  };
+}
+/** 회화 1 · 3 · 4 · 5단계 단원 1 에 목표(talk-<단계>-1-1 · -2)를 단 규격 묶음. */
+function goalRef(): ReferenceSet {
+  const base = structuredClone(ref);
+  const row: SettingRow = {
+    key: "seed.unit_goals_max",
+    scope: "household",
+    value: 5,
+    changeVia: "seed",
+  };
+  base.settings = { settings: [...base.settings.settings, row] };
+  base.unitSpecs = {
+    unitSpecs: base.unitSpecs.unitSpecs.map((u) =>
+      u.area === "talk" && u.unit === UNIT && [1, 3, 4, 5].includes(u.level)
+        ? {
+            ...u,
+            goals: [
+              goalOf(`talk-${u.level}-1-1`),
+              goalOf(`talk-${u.level}-1-2`, "좋고 싫음 말하기"),
+            ],
+          }
+        : u,
+    ),
+  };
+  return base;
+}
+const goalIndex = buildReferenceIndex(goalRef()).index;
+
+describe("회화 카드 새 꼴(6.3 · C189)", () => {
+  it("AC-15m 새 꼴 견본(1 · 3 · 4 · 5단계)과 단원 정규 카드는 오류 · 경고 없이 통과한다", () => {
     for (const level of [1, 3, 4, 5] as const) {
       expect(check(card(level), level), `${level}단계 견본`).toEqual([]);
+      expect(check(card(level), level, goalIndex), `${level}단계 목표`).toEqual(
+        [],
+      );
     }
-    const lesson = card(1);
-    const spec = specOf(1);
-    expect(lesson.card.greetingTurns + turnsOf(lesson).length).toBe(
-      spec.targetTurns,
-    );
-    turnsOf(lesson).pop();
-    expect(rulesOf(check(lesson, 1))).toEqual(["talk-turns"]);
-  });
-
-  it("AC-15m 회화 배정 카드: 처음 묻는 턴이 대화 토막 뒤쪽 절반에 있으면 거부한다", () => {
-    const lesson = card(1);
-    const turns = turnsOf(lesson);
-    const firstAt = turns.findIndex((t) => t.ask === "first");
-    const [first] = turns.splice(firstAt, 1);
-    if (!first) throw new Error("처음 묻는 턴이 없다");
-    turns.push(first);
-    lesson.card.firstQuestion = turns[0]?.question.en ?? "";
-    const issues = check(lesson, 1);
-    expect(rulesOf(issues)).toEqual(["talk-first-ask"]);
-  });
-
-  it("AC-15m 회화 카드: 글자가 같은 토리 질문이 세 번이면 거부한다", () => {
-    const lesson = card(1);
-    const turns = turnsOf(lesson);
-    const same = turns[0]?.question;
-    if (!same) throw new Error("턴 없음");
-    // 노리는 단어와 상관없는 질문 글을 앞 턴 셋에 똑같이 둔다.
-    const repeated = { en: "What is your toy?", ko: "네 장난감은 뭐야?" };
-    for (const turn of turns.slice(0, TALK_SAME_QUESTION_MAX)) {
-      turn.question = { ...repeated };
+    for (const level of [1, 3, 4]) {
+      const cards = talkUnitCards(ref, level);
+      for (const c of cards)
+        expect(check(c, level), `${level}단계 수업 ${c.lessonNo}`).toEqual([]);
     }
-    lesson.card.firstQuestion = repeated.en;
-    expect(has(check(lesson, 1), "talk-same-question")).toBe(false);
-    const third = turns[TALK_SAME_QUESTION_MAX];
-    if (!third) throw new Error("턴 없음");
-    third.question = { ...repeated };
-    expect(rulesOf(check(lesson, 1))).toEqual(["talk-same-question"]);
   });
 
-  it("AC-15m 회화 1단계 카드: 답 두 개가 같은 꼴 문장이 아니면 거부한다", () => {
+  it("AC-15m 옛 칸(turns · moreTalk · questions · firstQuestion · 말해 보기 예문 뜻 · 1단계 인사 답 두 개)이 있으면 새 꼴 규격이 거부한다", () => {
     const lesson = card(1);
-    const turn = turnsOf(lesson)[0];
-    if (!turn?.twoAnswers) throw new Error("답 두 개가 없다");
-    turn.twoAnswers = [turn.twoAnswers[0], "I like it very much."];
-    expect(rulesOf(check(lesson, 1))).toEqual(["talk-pairs"]);
-    // 3단계(답 두 개를 두지 않는 단계)에 두어도 거부한다.
-    const three = card(3);
-    const t3 = turnsOf(three)[0];
-    if (!t3) throw new Error("턴 없음");
-    t3.twoAnswers = [t3.answerExample, t3.answerExample];
-    expect(rulesOf(check(three, 3))).toEqual(["talk-pairs"]);
+    expect(TalkLessonSchema.safeParse(lesson).success).toBe(true);
+    const oldKeys: Record<string, unknown> = {
+      turns: [],
+      moreTalk: [],
+      questions: [],
+      firstQuestion: "What do you see?",
+    };
+    for (const [key, value] of Object.entries(oldKeys)) {
+      const withOld = { ...lesson, card: { ...lesson.card, [key]: value } };
+      expect(TalkLessonSchema.safeParse(withOld).success, key).toBe(false);
+    }
+    const exampleKo = structuredClone(lesson);
+    Object.assign(exampleKo.card.todayWords[0] ?? {}, { exampleKo: "뜻" });
+    expect(TalkLessonSchema.safeParse(exampleKo).success).toBe(false);
+    const greetingPair = structuredClone(lesson);
+    if (!("questions" in greetingPair.card.greeting))
+      throw new Error("인사 질문 없음");
+    Object.assign(greetingPair.card.greeting.questions[0] ?? {}, {
+      twoAnswers: ["I'm good.", "I'm fine."],
+    });
+    expect(TalkLessonSchema.safeParse(greetingPair).success).toBe(false);
   });
 
-  it("AC-15m 회화 3단계 카드: 영어 틀이 없는 턴을 거부한다", () => {
+  it("AC-15m 틀린 칸(모르는 키 · 첫 꼴 값 · 선택지 셋 · 목표 없음 · 필수 질문 없음)은 새 꼴 규격이 거부한다", () => {
+    const base = card(1);
+    const cases: [string, (l: TalkLesson) => void][] = [
+      ["모르는 키", (l) => Object.assign(requiredAt(l, 0), { extra: 1 })],
+      [
+        "첫 꼴 값",
+        (l) => Object.assign(requiredAt(l, 0), { firstForm: "guess" }),
+      ],
+      [
+        "선택지 셋",
+        (l) => Object.assign(requiredAt(l, 0), { choices: ["a", "b", "c"] }),
+      ],
+      ["카드 목표 없음", (l) => Object.assign(l.card, { goals: [] })],
+      ["질문 목표 없음", (l) => Object.assign(requiredAt(l, 0), { goals: [] })],
+      ["필수 질문 없음", (l) => Object.assign(l.card, { required: [] })],
+      [
+        "쉬운 질문 없음",
+        (l) => {
+          const item = requiredAt(l, 0) as Partial<TalkRequired>;
+          delete item.easyQuestion;
+        },
+      ],
+      [
+        "들려줄 말 없음",
+        (l) => {
+          const word = l.card.todayWords[0] as { modelLine?: string };
+          delete word.modelLine;
+        },
+      ],
+    ];
+    for (const [label, mutate] of cases) {
+      const lesson = structuredClone(base);
+      mutate(lesson);
+      expect(TalkLessonSchema.safeParse(lesson).success, label).toBe(false);
+    }
+  });
+
+  it("AC-15m 꼴 가르기 talkCardKindOf: 새 꼴 · 옛 꼴(옛 꼴에만 있던 칸) · 틀림", () => {
+    const fresh = card(1).card;
+    expect(talkCardKindOf(fresh)).toBe("new");
+    for (const key of ["firstQuestion", "turns", "moreTalk", "questions"])
+      expect(talkCardKindOf({ ...fresh, [key]: [] }), key).toBe("old");
+    expect(talkCardKindOf({ topic: "x" })).toBe("invalid");
+    expect(talkCardKindOf(null)).toBe("invalid");
+  });
+
+  it("AC-15m 시드 나무에 옛 꼴 회화 카드가 있으면 seed:validate 가 talk-card-v1 로 막는다", () => {
+    const tree = miniSeed({ areas: ["talk"], through: 1, frame: "small" });
+    const file = tree.lessons.find((f) => f.area === "talk");
+    if (!file) throw new Error("회화 수업 파일 없음");
+    const [first] = file.lessons;
+    if (!first) throw new Error("수업 없음");
+    // 옛 꼴 카드(C189 앞 칸 firstQuestion · turns 를 가진 카드)
+    const old = {
+      ...first,
+      card: { ...first.card, firstQuestion: "What do you see?", turns: [] },
+    };
+    (file.lessons as unknown[])[0] = old;
+    const report = validateSeed(seedTreeFiles(tree), {
+      mode: "pr",
+      areas: ["talk"],
+    });
+    expect(report.errors.map((e) => e.rule)).toContain("talk-card-v1");
+  });
+});
+
+describe("회화 카드 목표(6.4 회화 카드 목표 · 요구 능력 타당성)", () => {
+  it("AC-15m 카드 목표가 그 단원 목표 밖이거나 필수 질문 · 미션의 목표가 카드 목표 밖이면 거부한다", () => {
+    const outside = card(3);
+    outside.card.goals = ["talk-3-1-9"];
+    requiredAt(outside, 0).goals = ["talk-3-1-9"];
+    expect(rulesOf(check(outside, 3, goalIndex))).toContain("talk-goals");
+    const item = card(3);
+    requiredAt(item, 1).goals = ["talk-3-1-2"];
+    const issues = check(item, 3, goalIndex);
+    expect(rulesOf(issues)).toEqual(["talk-goals"]);
+    expect(pathsOf(issues, "talk-goals")).toEqual(["card.required.1.goals"]);
+    const mission = card(5);
+    const first = mission.card.missions?.[0];
+    if (!first) throw new Error("미션 없음");
+    first.goals = ["talk-5-1-2"];
+    expect(pathsOf(check(mission, 5, goalIndex), "talk-goals")).toEqual([
+      "card.missions.0.goals",
+    ]);
+  });
+
+  it("AC-15m 카드 목표마다 필수 질문 하나 이상이 노린다 · 목표 ID 꼴이 그 단원 꼴이다", () => {
+    const unused = card(3);
+    unused.card.goals = ["talk-3-1-1", "talk-3-1-2"];
+    expect(pathsOf(check(unused, 3, goalIndex), "talk-goals")).toEqual([
+      "card.goals.1",
+    ]);
+    const wrongId = card(3);
+    wrongId.card.goals = ["talk-4-1-1"];
+    for (const r of wrongId.card.required) r.goals = ["talk-4-1-1"];
+    for (const m of wrongId.card.more) m.goals = ["talk-4-1-1"];
+    expect(pathsOf(check(wrongId, 3), "talk-goals")).toContain("card.goals.0");
+  });
+
+  it("AC-15m 질문 하나가 목표 여럿을 가리키면 요구 능력이 있어야 하고 목표마다 그 core 가 요구 능력 안이다", () => {
     const lesson = card(3);
-    const turn = turnsOf(lesson)[2];
-    if (!turn) throw new Error("턴 없음");
-    delete turn.frameEn;
-    const issues = check(lesson, 3);
-    expect(rulesOf(issues)).toEqual(["talk-hints"]);
-    expect(issues[0]?.path).toBe("card.turns.2.frameEn");
+    lesson.card.goals = ["talk-3-1-1", "talk-3-1-2"];
+    requiredAt(lesson, 0).goals = ["talk-3-1-1", "talk-3-1-2"];
+    expect(pathsOf(check(lesson, 3, goalIndex), "talk-demands")).toEqual([
+      "card.required.0.demands",
+    ]);
+    requiredAt(lesson, 0).demands = [CORE];
+    const issues = check(lesson, 3, goalIndex);
+    expect(rulesOf(issues)).toEqual(["talk-demands"]);
+    expect(errorsOf(issues)[0]?.message).toContain("talk-3-1-2");
+    requiredAt(lesson, 0).demands = [CORE, "좋고 싫음 말하기"];
+    expect(check(lesson, 3, goalIndex)).toEqual([]);
   });
 
-  it("AC-15m 회화 카드: 카탈로그에 없는 그림 키를 거부한다", () => {
-    const lesson = card(1);
-    const turn = turnsOf(lesson)[0];
-    if (!turn) throw new Error("턴 없음");
-    turn.imageKey = "no-such-image";
-    const issues = check(lesson, 1);
-    expect(rulesOf(issues)).toEqual(["talk-images"]);
-    expect(issues[0]?.path).toBe("card.turns.0.imageKey");
-    // 그림을 두지 않는 단계(4단계 질문 목록 카드에는 칸이 없다)는 3단계에서 본다.
-    expect(specOf(4).turnImages).toBe(false);
+  it("AC-15m 목표 home 밖 purpose 를 단 질문에 요구 능력이 없으면 거부한다(talk-demands)", () => {
+    const lesson = card(3);
+    requiredAt(lesson, 0).purpose = "가게와 식당";
+    expect(pathsOf(check(lesson, 3, goalIndex), "talk-demands")).toEqual([
+      "card.required.0.demands",
+    ]);
+    // home 안 purpose 는 요구 능력 없이 받는다.
+    const home = card(3);
+    requiredAt(home, 0).purpose = "선생님과 이야기";
+    expect(check(home, 3, goalIndex)).toEqual([]);
+    requiredAt(lesson, 0).demands = [CORE];
+    expect(check(lesson, 3, goalIndex)).toEqual([]);
   });
 
-  it("AC-15m 회화 카드: 토리 질문에 그 턴이 노리는 단원 단어가 있으면 거부한다", () => {
-    const lesson = card(1);
-    const turn = turnsOf(lesson)[1];
-    const target = turn?.targets[0];
-    if (!turn || !target) throw new Error("턴 없음");
-    turn.question = { en: `Is it a ${target}?`, ko: "그거야?" };
-    const issues = check(lesson, 1);
-    expect(rulesOf(issues)).toEqual(["talk-targets"]);
-    expect(issues[0]?.path).toBe("card.turns.1.question.en");
-  });
-
-  it("AC-15m 회화 1단계 단원: 한 주제 변형 정규 카드의 다시 묻는 턴 자리가 단원 단어 수 × talk.said_ratio × talk.known_days 보다 적으면 거부한다", () => {
+  it("AC-15m 단원 목표가 아직 없는 단원은 칸 검사가 막지 않고 단원 검사가 '목표 정의 전' 경고 하나를 낸다", () => {
     const cards = talkUnitCards(ref, 1);
-    const frame = index.frame("talk", 1, UNIT);
-    if (!frame) throw new Error("단원 틀 없음");
-    expect(cards).toHaveLength(frame.regularLessons);
-    for (const c of cards)
-      expect(check(c, 1), `수업 ${c.lessonNo}`).toEqual([]);
-    expect(checkTalkUnit(cards, ctx(1))).toEqual([]);
-    const need =
-      frame.vocabCount * num("talk.said_ratio") * num("talk.known_days");
-    // 첫 수업 카드 하나만이면 다시 묻는 턴 자리가 모자란다.
-    const first = cards.slice(0, 1);
-    const slots = turnsOf(first[0] as TalkLesson).filter(
-      (t) => t.ask === "re_ask",
-    ).length;
-    expect(slots).toBeLessThan(need);
-    const issues = checkTalkUnit(first, ctx(1));
-    expect(issues.map((i) => i.rule)).toContain("talk-again-slots");
+    for (const c of cards) expect(check(c, 1)).toEqual([]);
+    const issues = checkTalkUnit(cards, ctxOf(1));
+    const pending = issues.filter((i) => i.rule === "talk-goals-pending");
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.severity).toBe("warning");
+    expect(errorsOf(issues)).toEqual([]);
+  });
+});
+
+describe("회화 필수 질문 · 받침(6.4 회화 필수 질문)", () => {
+  it("AC-15m 배정 카드: 새 단어마다 처음 묻는 필수 질문이 하나다(빠짐 · 둘 · 새 단어 아닌 단어 거부)", () => {
+    const missing = card(3);
+    missing.card.required = missing.card.required.slice(1);
+    missing.card.required.forEach((r, i) => {
+      r.no = i + 1;
+    });
+    expect(rulesOf(check(missing, 3))).toContain("talk-first-ask");
+    const twice = card(3);
+    const copy = structuredClone(requiredAt(twice, 0));
+    copy.no = twice.card.required.length + 1;
+    copy.en = "Who is it?";
+    twice.card.required.push(copy);
+    expect(rulesOf(check(twice, 3))).toContain("talk-first-ask");
+    const notNew = card(3);
+    const other = unitWordsOf(ref, "talk", 3, UNIT).find(
+      (w) => !notNew.newWords.includes(w),
+    );
+    if (!other) throw new Error("단어 없음");
+    requiredAt(notNew, 0).targets = [other];
+    expect(pathsOf(check(notNew, 3), "talk-first-ask")).toContain(
+      "card.required.0.targets",
+    );
   });
 
-  it("AC-15m 회화 단원: 단원 단어 하나가 서로 다른 수업의 다시 묻는 턴에 talk.known_days 번 나오지 않으면 거부한다", () => {
-    const cards = structuredClone(talkUnitCards(ref, 1));
-    const [word, other] = unitWordsOf(ref, "talk", 1, UNIT);
-    if (!word || !other) throw new Error("단원 단어 없음");
-    // 첫 수업 밖의 다시 묻는 턴에서 그 단어를 다른 단어로 바꾼다.
-    for (const c of cards.slice(1)) {
-      for (const turn of turnsOf(c)) {
-        if (turn.ask === "re_ask") {
-          turn.targets = turn.targets.map((t) => (t === word ? other : t));
-        }
-      }
+  it("AC-15m 다지기 카드: 처음 묻는 필수 질문이 있거나 다시 묻는 필수 질문이 k 개보다 적으면 거부한다", () => {
+    const first = reinforceCard(3);
+    requiredAt(first, 0).ask = "first";
+    expect(pathsOf(check(first, 3), "talk-first-ask")).toEqual([
+      "card.required.0.ask",
+    ]);
+    const fewer = reinforceCard(3);
+    const k = num(bandKey("unit.new_words_per_lesson", "1-3"));
+    expect(fewer.card.required).toHaveLength(k);
+    fewer.card.required = fewer.card.required.slice(0, -1);
+    expect(pathsOf(check(fewer, 3), "talk-required")).toEqual([
+      "card.required",
+    ]);
+  });
+
+  it("AC-15m 필수 질문 수가 참고 턴 × talk.required_max_ratio 를 넘으면 거부한다(하한은 질문으로 참고 턴을 채우게 하지 않는다)", () => {
+    const spec = specOf(3);
+    const max = spec.targetTurns * num("talk.required_max_ratio");
+    const lesson = reinforceCard(3);
+    const words = unitWordsOf(ref, "talk", 3, UNIT);
+    const extra = Math.floor(max) + 1 - lesson.card.required.length;
+    const base = requiredAt(lesson, 0);
+    const easies = [
+      "Is it big?",
+      "Do you see it?",
+      "Is it here?",
+      "Is this it?",
+      "Can I see it?",
+    ];
+    for (let i = 0; i < extra; i++) {
+      lesson.card.required.push({
+        ...structuredClone(base),
+        no: lesson.card.required.length + 1,
+        en: ["Who has it?", "Where is it?", "What is that?"][i % 3] ?? "",
+        targets: [words[(i + 10) % words.length] ?? ""],
+        easyQuestion: { en: easies[i % easies.length] ?? "", ko: "그거야?" },
+      });
     }
-    const issues = checkTalkUnit(cards, ctx(1)).filter(
-      (i) => i.rule === "talk-known-days",
-    );
-    expect(issues).toHaveLength(1);
-    expect(issues[0]?.message).toContain(word);
+    expect(lesson.card.required.length).toBeGreaterThan(max);
+    expect(pathsOf(check(lesson, 3), "talk-required")).toEqual([
+      "card.required",
+    ]);
   });
 
-  it("6.4 회화 시나리오 카드: 4단계 질문 목록이 목표 턴 − 인사 턴 수보다 적거나 영어 힌트 단 수가 다르면 거부한다", () => {
-    const spec = specOf(4);
-    const fewer = card(4);
-    const questions = fewer.card.questions ?? [];
-    expect(questions.length).toBeGreaterThanOrEqual(
-      spec.targetTurns - fewer.card.greetingTurns,
+  it("AC-15m 질문 · 쉬운 질문 · 더 이야기할 거리 질문에 노리는 단원 단어가 있으면 거부한다(A4-03)", () => {
+    const lesson = card(3);
+    const target = requiredAt(lesson, 1).targets[0];
+    const more = lesson.card.more[0];
+    if (!target || !more) throw new Error("칸 없음");
+    requiredAt(lesson, 1).en = `Do you ${target}?`;
+    requiredAt(lesson, 2).easyQuestion.en =
+      `Is it ${requiredAt(lesson, 2).targets[0]}?`;
+    more.en = `Is it ${more.targets[0]}?`;
+    expect(pathsOf(check(lesson, 3), "talk-targets").sort()).toEqual([
+      "card.more.0.en",
+      "card.required.1.en",
+      "card.required.2.easyQuestion.en",
+    ]);
+  });
+
+  it("AC-15m 받침: 쉬운 질문이 물음표로 끝나지 않거나 그 질문과 정규화한 글이 같으면 거부한다", () => {
+    const noMark = card(3);
+    requiredAt(noMark, 0).easyQuestion.en = "Tell me more.";
+    expect(pathsOf(check(noMark, 3), "talk-support")).toEqual([
+      "card.required.0.easyQuestion.en",
+    ]);
+    const same = card(3);
+    const q = requiredAt(same, 0);
+    q.easyQuestion.en = `  ${q.en.toUpperCase()}  `;
+    expect(pathsOf(check(same, 3), "talk-support")).toEqual([
+      "card.required.0.easyQuestion.en",
+    ]);
+  });
+
+  it("AC-15m 1단계 첫 꼴: 짧은 준비 낱말은 그냥, 아니면 선택지 · 꺼내기이고 선택지면 같은 꼴 둘에 하나는 노리는 단어다", () => {
+    const lesson = card(1);
+    const prep = new Set(lesson.card.prep ?? []);
+    const plainAt = lesson.card.required.findIndex((r) =>
+      r.targets.some((t) => prep.has(t)),
     );
-    fewer.card.questions = questions.slice(
-      0,
-      spec.targetTurns - fewer.card.greetingTurns - 1,
+    const choiceAt = lesson.card.required.findIndex(
+      (r) => r.firstForm === "choices",
     );
-    expect(rulesOf(check(fewer, 4))).toEqual(["talk-turns"]);
+    expect(plainAt).toBeGreaterThanOrEqual(0);
+    expect(choiceAt).toBeGreaterThanOrEqual(0);
+    const wrongForm = structuredClone(lesson);
+    requiredAt(wrongForm, plainAt).firstForm = "introduce";
+    expect(pathsOf(check(wrongForm, 1), "talk-first-form")).toEqual([
+      `card.required.${plainAt}.firstForm`,
+    ]);
+    const noChoices = structuredClone(lesson);
+    delete requiredAt(noChoices, choiceAt).choices;
+    expect(pathsOf(check(noChoices, 1), "talk-choices")).toEqual([
+      `card.required.${choiceAt}.choices`,
+    ]);
+    const notPair = structuredClone(lesson);
+    const pair = requiredAt(notPair, choiceAt).choices;
+    if (!pair) throw new Error("선택지 없음");
+    requiredAt(notPair, choiceAt).choices = [pair[0], "I like it very much."];
+    expect(rulesOf(check(notPair, 1))).toEqual(["talk-choices"]);
+    const noForm = structuredClone(lesson);
+    delete requiredAt(noForm, choiceAt).firstForm;
+    expect(pathsOf(check(noForm, 1), "talk-first-form")).toEqual([
+      `card.required.${choiceAt}.firstForm`,
+    ]);
+    // 3단계(선택지를 두지 않는 단계)에 첫 꼴 · 선택지를 두면 거부한다.
+    const three = card(3);
+    requiredAt(three, 0).firstForm = "plain";
+    requiredAt(three, 1).choices = ["I go home.", "I go out."];
+    expect(rulesOf(check(three, 3)).sort()).toEqual([
+      "talk-choices",
+      "talk-first-form",
+    ]);
+  });
+
+  it("AC-15m 처음 묻는 필수 질문의 영어 문장 힌트에 그 질문의 새 단어가 없으면 거부한다", () => {
+    const lesson = card(3);
+    const item = requiredAt(lesson, 0);
+    item.hints = item.hints.map((h) => h.replace(item.targets[0] ?? "", "it"));
+    expect(pathsOf(check(lesson, 3), "talk-first-ask")).toEqual([
+      "card.required.0.hints",
+    ]);
+  });
+
+  it("AC-15m 영어 힌트 단 수가 단계 규격과 다르거나 1~4단계 질문 · 쉬운 질문의 한국어 뜻이 없으면 거부한다", () => {
     const tiers = card(4);
-    const q = tiers.card.questions?.[0];
-    if (!q) throw new Error("질문 없음");
-    q.hintTiers = q.hintTiers.slice(1);
-    const issues = check(tiers, 4);
-    expect(rulesOf(issues)).toEqual(["talk-hints"]);
-    expect(issues[0]?.path).toBe("card.questions.0.hintTiers");
+    requiredAt(tiers, 0).hints = requiredAt(tiers, 0).hints.slice(1);
+    expect(pathsOf(check(tiers, 4), "talk-hints")).toEqual([
+      "card.required.0.hints",
+    ]);
+    const noKo = card(4);
+    delete requiredAt(noKo, 0).ko;
+    delete requiredAt(noKo, 1).easyQuestion.ko;
+    expect(pathsOf(check(noKo, 4), "talk-ko").sort()).toEqual([
+      "card.required.0.ko",
+      "card.required.1.easyQuestion.ko",
+    ]);
+    // 5단계(한국어 뜻 없는 단계)는 보지 않는다.
+    expect(specOf(5).koMeaning).toBe(false);
   });
 
-  it("6.4 회화 시나리오 카드: {NAME} 밖의 틀 자리 · 5단계 미션 수 어긋남 · 1~4단계 한국어 뜻 빠짐을 거부한다", () => {
+  it("AC-15m 인사 꼴: 1~3단계 인사 질문 수가 인사 턴 수와 다르거나 4단계부터 인사 질문을 두면 거부한다(talk-shape)", () => {
+    const count = card(3);
+    count.card.greetingTurns = 2;
+    expect(rulesOf(check(count, 3))).toEqual(["talk-shape"]);
+    expect(pathsOf(check(count, 3), "talk-shape")).toEqual([
+      "card.greeting.questions",
+    ]);
+    const high = card(4);
+    const low = card(3);
+    if (!("questions" in low.card.greeting)) throw new Error("인사 질문 없음");
+    const [first] = low.card.greeting.questions;
+    if (!first) throw new Error("인사 질문 없음");
+    const { frameEn: _frame, ...noFrame } = first;
+    high.card.greeting = { questions: [noFrame] };
+    expect(pathsOf(check(high, 4), "talk-shape")).toEqual(["card.greeting"]);
+  });
+
+  it("AC-15m 힌트: 쓸 수 있는 말 수가 단계 규격과 다르거나 인사 질문의 영어 틀이 단계 규격과 어긋나면 거부한다(talk-hints)", () => {
+    const fewer = card(5);
+    requiredAt(fewer, 0).usablePhrases = requiredAt(
+      fewer,
+      0,
+    ).usablePhrases?.slice(1);
+    expect(pathsOf(check(fewer, 5), "talk-hints")).toEqual([
+      "card.required.0.usablePhrases",
+    ]);
+    const extra = card(4);
+    requiredAt(extra, 0).usablePhrases = ["Here you are."];
+    expect(pathsOf(check(extra, 4), "talk-hints")).toEqual([
+      "card.required.0.usablePhrases",
+    ]);
+    const noFrame = card(3);
+    if (!("questions" in noFrame.card.greeting))
+      throw new Error("인사 질문 없음");
+    delete noFrame.card.greeting.questions[0]?.frameEn;
+    expect(pathsOf(check(noFrame, 3), "talk-hints")).toEqual([
+      "card.greeting.questions.0.frameEn",
+    ]);
+    const withFrame = card(1);
+    if (!("questions" in withFrame.card.greeting))
+      throw new Error("인사 질문 없음");
+    Object.assign(withFrame.card.greeting.questions[0] ?? {}, {
+      frameEn: "I'm ___.",
+    });
+    expect(pathsOf(check(withFrame, 1), "talk-hints")).toEqual([
+      "card.greeting.questions.0.frameEn",
+    ]);
+  });
+
+  it("AC-15m 번호가 1부터 차례가 아니면 거부한다 · 같은 선생님 질문이 세 번이면 거부한다", () => {
+    const numbers = card(3);
+    requiredAt(numbers, 1).no = 5;
+    expect(pathsOf(check(numbers, 3), "talk-numbers")).toEqual([
+      "card.required.1.no",
+    ]);
+    const same = card(3);
+    const repeated = "What is your toy?";
+    same.card.more.slice(0, TALK_SAME_QUESTION_MAX).forEach((m) => {
+      m.en = repeated;
+    });
+    expect(rulesOf(check(same, 3))).toEqual([]);
+    const third = same.card.more[TALK_SAME_QUESTION_MAX];
+    if (!third) throw new Error("더 이야기할 거리 없음");
+    third.en = repeated;
+    expect(rulesOf(check(same, 3))).toEqual(["talk-same-question"]);
+    // 열쇠는 실행 셈과 같은 마지막 물음표 문장이다(turnQuestionOf): 앞 장면이 달라도 꼬리가 같으면 같은 질문이고, 꼬리가 다르면 다른 질문이다.
+    const scenes = ["You see it.", "You like it.", "You have it."];
+    const tails = card(3);
+    tails.card.more.slice(0, TALK_SAME_QUESTION_MAX + 1).forEach((m, i) => {
+      m.en = `${scenes[i]} What do you do?`;
+    });
+    expect(rulesOf(check(tails, 3))).toEqual(["talk-same-question"]);
+    const apart = card(3);
+    const ends = ["What do you see?", "What do you like?", "What do you have?"];
+    apart.card.more.slice(0, TALK_SAME_QUESTION_MAX + 1).forEach((m, i) => {
+      m.en = `${scenes[i]} ${ends[i]}`;
+    });
+    expect(rulesOf(check(apart, 3))).toEqual([]);
+  });
+});
+
+describe("회화 짧은 준비 · 더 이야기할 거리 · 미션(6.4)", () => {
+  it("AC-15m 1~3단계 배정 카드의 짧은 준비 낱말이 talk.prep_words 개 · 오늘 쓸 말 안 · 그 질문이 앞쪽 절반 안이어야 한다", () => {
+    const prepWords = num(bandKey("talk.prep_words", "1-3"));
+    const lesson = card(3);
+    expect(lesson.card.prep).toHaveLength(prepWords);
+    const fewer = structuredClone(lesson);
+    fewer.card.prep = fewer.card.prep?.slice(1);
+    expect(pathsOf(check(fewer, 3), "talk-prep")).toEqual(["card.prep"]);
+    const outside = structuredClone(lesson);
+    const other = unitWordsOf(ref, "talk", 3, UNIT).find(
+      (w) => !outside.newWords.includes(w),
+    );
+    if (!other || !outside.card.prep) throw new Error("단어 없음");
+    outside.card.prep = [other, ...outside.card.prep.slice(1)];
+    expect(pathsOf(check(outside, 3), "talk-prep")).toContain("card.prep.0");
+    const late = structuredClone(lesson);
+    const [firstItem] = late.card.required.splice(0, 1);
+    if (!firstItem) throw new Error("질문 없음");
+    late.card.required.push(firstItem);
+    late.card.required.forEach((r, i) => {
+      r.no = i + 1;
+    });
+    expect(pathsOf(check(late, 3), "talk-prep")).toEqual([
+      `card.required.${late.card.required.length - 1}`,
+    ]);
+    const noPrep = structuredClone(lesson);
+    delete noPrep.card.prep;
+    expect(pathsOf(check(noPrep, 3), "talk-prep")).toEqual(["card.prep"]);
+    // 다지기 카드는 비우고 앱이 고른다.
+    const reinforce = reinforceCard(3);
+    reinforce.card.prep = [...lesson.newWords.slice(0, prepWords)];
+    expect(pathsOf(check(reinforce, 3), "talk-prep")).toEqual(["card.prep"]);
+  });
+
+  it("AC-15m 4단계부터 배정 카드의 짧은 준비 낱말은 두면 개수 · 오늘 쓸 말 안만 보고 앞쪽 절반은 보지 않는다(06:186)", () => {
+    const need = num(bandKey("talk.prep_words", "4-6"));
+    const lesson = card(4);
+    expect(lesson.card.prep).toBeUndefined();
+    // 뒤쪽 필수 질문이 노리는 새 단어를 고른다(1~3단계였다면 앞쪽 절반 밖).
+    lesson.card.prep = lesson.newWords.slice(-need);
+    expect(check(lesson, 4)).toEqual([]);
+    const fewer = structuredClone(lesson);
+    fewer.card.prep = lesson.newWords.slice(-(need - 1));
+    expect(pathsOf(check(fewer, 4), "talk-prep")).toEqual(["card.prep"]);
+  });
+
+  it("AC-15m 더 이야기할 거리가 talk.more_talk_turns 개보다 적거나 처음 묻는 질문이면 거부한다(모든 단계)", () => {
+    for (const level of [1, 4] as const) {
+      const fewer = card(level);
+      expect(fewer.card.more.length).toBeGreaterThanOrEqual(
+        num("talk.more_talk_turns"),
+      );
+      fewer.card.more = fewer.card.more.slice(0, -1);
+      expect(rulesOf(check(fewer, level)), `${level}단계`).toEqual([
+        "talk-more",
+      ]);
+    }
+    const first = card(3);
+    const item = first.card.more[0];
+    if (!item) throw new Error("더 이야기할 거리 없음");
+    item.ask = "first";
+    expect(pathsOf(check(first, 3), "talk-more")).toEqual(["card.more.0.ask"]);
+  });
+
+  it("AC-15m 5~7단계 미션 수가 단계 규격과 다르거나 역할 바꾸기를 미션 없는 단계에 두면 거부한다", () => {
+    const missions = card(5);
+    missions.card.missions = missions.card.missions?.slice(1);
+    expect(rulesOf(check(missions, 5))).toEqual(["talk-missions"]);
+    const swap = card(4);
+    swap.card.roleSwap = {
+      firstLine: "You can do it.",
+      hint: "I can do it.",
+      purpose: "가게와 식당",
+    };
+    expect(pathsOf(check(swap, 4), "talk-missions")).toEqual(["card.roleSwap"]);
+  });
+
+  it("AC-15m 그림 키가 카탈로그에 없거나 그림을 두지 않는 단계에 있으면 거부한다", () => {
+    const missing = card(1);
+    requiredAt(missing, 0).imageKey = "no-such-image";
+    expect(pathsOf(check(missing, 1), "talk-images")).toEqual([
+      "card.required.0.imageKey",
+    ]);
+    const high = card(4);
+    const [word] = high.newWords;
+    const key = word ? index.vocab.get(word)?.imageKey : undefined;
+    if (!key || !high.card.todayWords[0]) throw new Error("그림 키 없음");
+    high.card.todayWords[0].imageKey = key;
+    expect(pathsOf(check(high, 4), "talk-images")).toEqual([
+      "card.todayWords.0.imageKey",
+    ]);
+  });
+
+  it("6.4 회화 시나리오 카드: {NAME} 밖의 틀 자리 · 오늘 쓸 말과 새 단어 어긋남 · 1~4단계 정리 대사 뜻 빠짐을 거부한다", () => {
     const placeholder = card(4);
     if (!("firstLine" in placeholder.card.greeting))
       throw new Error("첫 말 없음");
     placeholder.card.greeting.firstLine.en = "Hi {CHILD}! How are you?";
     expect(rulesOf(check(placeholder, 4))).toEqual(["talk-placeholder"]);
-    const missions = card(5);
-    missions.card.missions = missions.card.missions?.slice(1);
-    expect(rulesOf(check(missions, 5))).toEqual(["talk-missions"]);
-    for (const level of [1, 4] as const) {
-      const noKo = card(level);
-      const line = noKo.card.closingLines[0];
-      if (!line) throw new Error("정리 대사 없음");
-      delete line.ko;
-      const issues = check(noKo, level);
-      expect(rulesOf(issues), `${level}단계`).toEqual(["talk-ko"]);
-      expect(issues[0]?.path).toBe("card.closingLines.0.ko");
-    }
-    // 4단계 질문 목록 카드는 토리 첫 말의 한국어 뜻도 본다.
-    const firstLine = card(4);
-    if (!("firstLine" in firstLine.card.greeting))
-      throw new Error("첫 말 없음");
-    delete firstLine.card.greeting.firstLine.ko;
-    expect(rulesOf(check(firstLine, 4))).toEqual(["talk-ko"]);
+    const today = card(3);
+    today.card.todayWords = today.card.todayWords.slice(1);
+    expect(rulesOf(check(today, 3))).toContain("talk-today");
+    const noKo = card(1);
+    delete noKo.card.closingLines[0]?.ko;
+    expect(pathsOf(check(noKo, 1), "talk-ko")).toEqual([
+      "card.closingLines.0.ko",
+    ]);
   });
 
-  it("6.4 어휘 배정(회화): 새 단어가 아이 차례의 힌트 · 답 예시 · 쓸 수 있는 말 · 목표 표현에 없으면 거부한다", () => {
+  it("6.4 어휘 배정(회화): 새 단어가 아이 차례의 힌트 · 답 예시 · 쓸 수 있는 말 · 목표 표현에 없으면 거부한다(들려줄 말 · 예문은 세지 않음)", () => {
     const lesson = card(5);
     const [word] = lesson.newWords;
     const other = unitWordsOf(ref, "talk", 5, UNIT).find(
@@ -239,19 +667,18 @@ describe("칸 검사: 회화 카드", () => {
     const swap = (text: string) =>
       text.replace(new RegExp(`\\b${word}\\b`, "g"), other);
     lesson.card.targetExpressions = lesson.card.targetExpressions.map(swap);
-    lesson.card.questions = (lesson.card.questions ?? []).map((q) => ({
-      ...q,
-      targets: q.targets.map(swap),
-      hintTiers: q.hintTiers.map(swap),
-      usablePhrases: q.usablePhrases?.map(swap),
-      answerExample: swap(q.answerExample),
-    }));
+    for (const list of [lesson.card.required, lesson.card.more]) {
+      for (const q of list) {
+        q.hints = q.hints.map(swap);
+        q.usablePhrases = q.usablePhrases?.map(swap);
+        q.answerExample = swap(q.answerExample);
+      }
+    }
     lesson.card.missions = lesson.card.missions?.map((m) => ({
       ...m,
       en: swap(m.en),
     }));
-    // 오늘 쓸 말 예문(example)에만 남아 있으면 세지 않는다.
-    expect(lesson.card.todayWords.some((w) => w.example.includes(word))).toBe(
+    expect(lesson.card.todayWords.some((w) => w.modelLine.includes(word))).toBe(
       true,
     );
     const issues = check(lesson, 5).filter(
@@ -260,23 +687,234 @@ describe("칸 검사: 회화 카드", () => {
     expect(issues).toHaveLength(1);
     expect(issues[0]?.message).toContain(word);
   });
+});
 
-  it("6.4 회화 시나리오 카드: 더 이야기할 거리가 talk.more_talk_turns 턴이 아니거나 이 대화에서 묻지 않은 단어를 노리면 거부한다", () => {
-    const more = num("talk.more_talk_turns");
-    const fewer = card(1);
-    expect(fewer.card.moreTalk).toHaveLength(more);
-    fewer.card.moreTalk = fewer.card.moreTalk?.slice(1);
-    expect(rulesOf(check(fewer, 1))).toEqual(["talk-more"]);
-    const unasked = card(1);
-    const asked = new Set(turnsOf(unasked).flatMap((t) => t.targets));
-    const outside = unitWordsOf(ref, "talk", 1, UNIT).find(
-      (w) => !asked.has(w),
+describe("회화 단원 덮기 · 일부 단원(6.4 회화 단원 덮기, 정한 것 15)", () => {
+  it("AC-15m 단원을 다 채운 단원은 단원 단어마다 다지기 · 보강 필수 질문과 더 이야기할 거리가 talk.known_days 번 이상 서로 다른 수업에서 노려야 한다", () => {
+    const cards = structuredClone(talkUnitCards(ref, 1));
+    const frame = index.frame("talk", 1, UNIT);
+    if (!frame) throw new Error("단원 틀 없음");
+    expect(cards).toHaveLength(frame.regularLessons);
+    const complete = { complete: true };
+    expect(
+      errorsOf(checkTalkUnit(cards, ctxOf(1), complete)).map((i) => i.rule),
+    ).toEqual([]);
+    const [word, other] = unitWordsOf(ref, "talk", 1, UNIT);
+    if (!word || !other) throw new Error("단원 단어 없음");
+    for (const c of cards) {
+      for (const list of [c.card.required, c.card.more]) {
+        for (const item of list) {
+          if (item.ask === "re_ask")
+            item.targets = item.targets.map((t) => (t === word ? other : t));
+        }
+      }
+    }
+    const issues = errorsOf(checkTalkUnit(cards, ctxOf(1), complete)).filter(
+      (i) => i.rule === "talk-known-days",
     );
-    const first = unasked.card.moreTalk?.[0];
-    if (!outside || !first) throw new Error("단어 없음");
-    first.targets = [outside];
-    const issues = check(unasked, 1).filter((i) => i.rule === "talk-more");
     expect(issues).toHaveLength(1);
-    expect(issues[0]?.path).toBe("card.moreTalk.0.targets");
+    expect(issues[0]?.message).toContain(word);
+  });
+
+  it("AC-15m 단원 덮기는 배정 카드의 다시 묻는 필수 질문을 세지 않는다(다지기 · 보강 필수 질문 · 더 이야기할 거리만, 06:187)", () => {
+    const cards = structuredClone(talkUnitCards(ref, 1));
+    const [word, other] = unitWordsOf(ref, "talk", 1, UNIT);
+    if (!word || !other) throw new Error("단원 단어 없음");
+    for (const c of cards)
+      for (const list of [c.card.required, c.card.more])
+        for (const item of list)
+          if (item.ask === "re_ask")
+            item.targets = item.targets.map((t) => (t === word ? other : t));
+    // 배정 카드 둘에 그 단어를 다시 묻는 필수 질문을 하나씩 더한다(상한 안).
+    const assigned = cards.filter((c) => c.kind === "assigned").slice(0, 2);
+    expect(assigned).toHaveLength(2);
+    for (const c of assigned) {
+      const base = c.card.required[0];
+      if (!base) throw new Error("필수 질문 없음");
+      c.card.required.push({
+        ...structuredClone(base),
+        no: c.card.required.length + 1,
+        ask: "re_ask",
+        targets: [word],
+      });
+    }
+    const issues = errorsOf(
+      checkTalkUnit(cards, ctxOf(1), { complete: true }),
+    ).filter((i) => i.rule === "talk-known-days");
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.message).toContain(word);
+  });
+
+  it("AC-15m 단원 칸이 다 찼는지는 검증기가 단원 틀로 가른다: 다 찬 단원(정규 · 보강 · 주제 변형 전부)은 덮기 모자람이 오류이고 보강 카드의 필수 질문도 센다", () => {
+    const frame = index.frame("talk", 1, UNIT);
+    if (!frame) throw new Error("단원 틀 없음");
+    const full: TalkLesson[] = [];
+    for (let variant = 1; variant <= frame.topicVariants; variant++) {
+      full.push(...talkUnitCards(ref, 1, UNIT, variant));
+      for (let n = 1; n <= frame.remedialLessons; n++)
+        full.push(
+          talkCard(ref, {
+            level: 1,
+            unit: UNIT,
+            kind: "remedial",
+            lessonNo: n,
+            variant,
+          }),
+        );
+    }
+    const cards = structuredClone(full);
+    expect(errorsOf(checkTalkUnit(cards, ctxOf(1)))).toEqual([]);
+    const [word, other] = unitWordsOf(ref, "talk", 1, UNIT);
+    if (!word || !other) throw new Error("단원 단어 없음");
+    const v1 = cards.filter((c) => c.variant === 1);
+    for (const c of v1)
+      for (const list of [c.card.required, c.card.more])
+        for (const item of list)
+          if (item.ask === "re_ask")
+            item.targets = item.targets.map((t) => (t === word ? other : t));
+    const broken = errorsOf(checkTalkUnit(cards, ctxOf(1)));
+    expect(broken.map((i) => i.rule)).toEqual(["talk-known-days"]);
+    expect(broken[0]?.path).toBe("variant.1");
+    expect(broken[0]?.message).toContain(word);
+    // 보강 카드 둘의 필수 질문이 그 단어를 다시 묻으면 덮기가 찬다.
+    const remedial = v1.filter((c) => c.kind === "remedial").slice(0, 2);
+    expect(remedial).toHaveLength(2);
+    for (const c of remedial) {
+      const item = c.card.required[0];
+      if (!item) throw new Error("필수 질문 없음");
+      item.targets = [word];
+    }
+    expect(errorsOf(checkTalkUnit(cards, ctxOf(1)))).toEqual([]);
+  });
+
+  it("AC-15m 단원 칸이 덜 찬 단원(세 장 먼저)은 옵션 없이도 단원 덮기를 talk-unit-incomplete 경고 하나로만 낸다", () => {
+    const three = talkUnitCards(ref, 3).slice(0, 3);
+    const issues = checkTalkUnit(three, ctxOf(3));
+    expect(errorsOf(issues)).toEqual([]);
+    const incomplete = issues.filter((i) => i.rule === "talk-unit-incomplete");
+    expect(incomplete).toHaveLength(1);
+    expect(incomplete[0]?.severity).toBe("warning");
+    expect(incomplete[0]?.path).toBe("variant.1");
+  });
+
+  it("AC-15m 일부 단원(세 장 먼저)은 단원 덮기를 오류가 아닌 talk-unit-incomplete 경고로만 낸다", () => {
+    const three = talkUnitCards(ref, 3).slice(0, 3);
+    const issues = checkTalkUnit(three, ctxOf(3), { complete: false });
+    expect(errorsOf(issues)).toEqual([]);
+    const incomplete = issues.filter((i) => i.rule === "talk-unit-incomplete");
+    expect(incomplete).toHaveLength(1);
+    expect(incomplete[0]?.severity).toBe("warning");
+    // 다 찬 단원이라고 하면 같은 카드가 오류다.
+    expect(
+      errorsOf(checkTalkUnit(three, ctxOf(3), { complete: true })).length,
+    ).toBeGreaterThan(0);
+  });
+});
+
+/** DB 열거에만 남은 옛 흐름 토막 값(오늘 쓸 말 · 말해 보기 — 코드 토막에서는 묶음 12 가 지웠다, 정한 것 8). */
+const OLD_SEGMENTS = talkSegmentEnum.enumValues.filter(
+  (v) => !(TALK_SEGMENTS as readonly string[]).includes(v),
+);
+
+describe("회화 단계 규격 새 꼴 · 관계 · 문항 번호", () => {
+  it("AC-15m 시드 파일의 회화 단계 규격 행이 옛 꼴(옛 토막 · turns · twoAnswers · choices 없음)이면 단계 규격이 거부하고, 네 토막 차례가 틀리면 규격 정합이 거부한다", () => {
+    for (const level of [1, 3, 4, 12]) {
+      const spec = specOf(level);
+      expect(spec.segments).toEqual([...TALK_SPEC_SEGMENTS]);
+      expect(spec.cardShape).toBe("required");
+      expect(spec.choices).toBe(level === 1);
+      expect(spec.moreTalk).toBe(true);
+      expect("twoAnswers" in spec).toBe(false);
+      expect(spec.koExplainFromStuck).toBe(level <= 4 ? 1 : 2);
+    }
+    // 옛 판 행 꼴(C189 앞): 말해 보기 토막 · turns 카드 · 답 두 개 · choices 없음
+    const { choices: _c, ...noChoices } = specOf(2);
+    const oldRow = {
+      ...noChoices,
+      segments: ["greeting", ...OLD_SEGMENTS, "talk", "wrap_up"],
+      cardShape: "turns",
+      twoAnswers: false,
+    };
+    expect(TalkLevelSpecSchema.safeParse(oldRow).success).toBe(false);
+    // 값은 새 꼴이지만 차례가 틀린 행은 규격 정합(level-spec-talk-v1)이 거부한다
+    const old = structuredClone(ref);
+    old.levelSpecs.levelSpecs = old.levelSpecs.levelSpecs.map((s) =>
+      s.area === "talk" && s.level === 2
+        ? { ...s, segments: ["greeting", "talk", "prep", "wrap_up"] }
+        : s,
+    );
+    const { issues } = buildReferenceIndex(old);
+    const v1 = issues.filter((i) => i.rule === "level-spec-talk-v1");
+    expect(v1).toHaveLength(1);
+    expect(v1[0]?.message).toContain("2단계");
+  });
+
+  it("AC-15m 회화 단계 규격 행의 옛 칸은 하나만 어겨도 거부한다(옛 토막 · cardShape · choices 없음 · twoAnswers · koExplainFromStuck 없음 각각 — 단계 규격 필수 칸, C195 · 묶음 12)", () => {
+    const base = specOf(4) as unknown as Record<string, unknown>;
+    const without = (key: string) => {
+      const { [key]: _drop, ...rest } = base;
+      return rest;
+    };
+    const cases: [string, Record<string, unknown>][] = [
+      [
+        "segments",
+        { ...base, segments: ["greeting", OLD_SEGMENTS[0], "talk", "wrap_up"] },
+      ],
+      ["cardShape", { ...base, cardShape: "turns" }],
+      ["choices 없음", without("choices")],
+      ["twoAnswers", { ...base, twoAnswers: false }],
+      ["koExplainFromStuck 없음", without("koExplainFromStuck")],
+    ];
+    expect(TalkLevelSpecSchema.safeParse(base).success).toBe(true);
+    for (const [label, row] of cases)
+      expect(TalkLevelSpecSchema.safeParse(row).success, label).toBe(false);
+  });
+
+  it("AC-15m 3.2 관계 표: talk.prep_words.1-3 ≤ unit.new_words_per_lesson.1-3 · 새 단어 수 ≤ 참고 턴 × talk.required_max_ratio", () => {
+    const values = new Map(
+      ref.settings.settings.map((r) => [r.key, r.value as number]),
+    );
+    const reader = (over: Record<string, number>) => (key: string) => {
+      const v = over[key] ?? values.get(key);
+      if (typeof v !== "number") throw new Error(`없는 키 ${key}`);
+      return v;
+    };
+    const levelSpecs = ref.levelSpecs.levelSpecs;
+    expect(checkFrameRelations({ settings: reader({}), levelSpecs })).toEqual(
+      [],
+    );
+    const prep = checkFrameRelations({
+      settings: reader({ "talk.prep_words.1-3": 6 }),
+      levelSpecs,
+    });
+    expect(prep.map((v) => v.rule)).toEqual(["frame-talk-prep"]);
+    const required = checkFrameRelations({
+      settings: reader({ "talk.required_max_ratio": 0.2 }),
+      levelSpecs,
+    });
+    expect(new Set(required.map((v) => v.rule))).toEqual(
+      new Set(["frame-talk-required"]),
+    );
+    expect(required.every((v) => v.area === "talk")).toBe(true);
+  });
+
+  it("AC-15m 문항 번호: 회화 카드는 인사 → 필수 질문 → 더 이야기할 거리 차례다", () => {
+    const lesson = card(1);
+    const items = itemsOf({
+      key: "x",
+      kind: "lesson",
+      area: "talk",
+      value: lesson,
+    });
+    const greeting =
+      "questions" in lesson.card.greeting
+        ? lesson.card.greeting.questions.length
+        : 1;
+    expect(items).toHaveLength(
+      greeting + lesson.card.required.length + lesson.card.more.length,
+    );
+    expect(items[0]?.path).toBe("card.greeting.questions.0");
+    expect(items[greeting]?.path).toBe("card.required.0");
+    expect(items.at(-1)?.path).toBe(`card.more.${lesson.card.more.length - 1}`);
   });
 });

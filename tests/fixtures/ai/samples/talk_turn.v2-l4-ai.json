@@ -1,0 +1,54 @@
+{
+  "case": "talk_turn.v2-l4-ai",
+  "purpose": "talk_turn",
+  "title": "talk_turn",
+  "source": "handmade",
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "msg_handmade_talk_v2_12",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"stuck\":false,\"tori_en\":\"You like soccer! Me too. Which sport is hard for you?\",\"model_line\":\"\",\"choices\":[],\"tori_ko\":\"축구 좋아하는구나! 나도. 어떤 운동이 어려워?\",\"recast\":\"I like soccer.\",\"explanation\":\"\",\"new_words\":[\"weekend\"],\"self_used_words\":[\"soccer\"],\"mission_done\":[],\"response_fit\":true,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"required\",\"card_item\":{\"kind\":\"required\",\"no\":9},\"next_goal\":[\"talk-3-1-1\",\"talk-3-2-1\"],\"support\":\"none\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"축구가 어려워.\",\"next_hints\":[\"___ is hard.\",\"Soccer is hard.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"Soccer is hard for me.\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "container": null,
+      "context_management": null,
+      "diagnostics": null,
+      "usage": {
+        "input_tokens": 4900,
+        "output_tokens": 400,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "iterations": null,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        }
+      }
+    }
+  },
+  "expect": {
+    "strict": false,
+    "level": 4,
+    "normalized": {
+      "card_item": {
+        "kind": "none",
+        "no": 0
+      },
+      "next_goal": 1,
+      "new_words": 0,
+      "model_line": ""
+    }
+  }
+}

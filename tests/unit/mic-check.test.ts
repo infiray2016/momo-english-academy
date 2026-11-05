@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // 브라우저 전용 표시 모듈은 시험(node)에서 빈 모듈로
 vi.mock("client-only", () => ({}));
 
+import { speechSettingsFrom } from "@/core/speech/listen";
 import {
   createBrowserSpeech,
   MIC_CHECK_ENDED_CODE,
 } from "@/lib/speech/browser";
 import type { RecognitionLike } from "@/lib/speech/types";
+import { testSettingValues } from "../fixtures/settings";
 
 type Step =
   | "start"
@@ -61,14 +63,9 @@ function fakeCtor(steps: Step[]) {
   } as unknown as new () => RecognitionLike;
 }
 
-const settings = {
-  lang: "en-US",
-  maxListenMs: 15_000,
-  endSilenceMs: { "1-3": 3000, "4-6": 1500, "7-9": 1500, "10-12": 1500 },
-  watchdogExtraMs: 3000,
-  rate: { "1-3": 0.8, "4-6": 0.85, "7-9": 0.9, "10-12": 1 },
-  sentencePauseMs: 700,
-};
+// 음성 설정은 시험용 설정(12절 기본값)에서 읽는다
+const values = testSettingValues();
+const settings = speechSettingsFrom((key) => values[key]);
 
 beforeEach(() => {
   vi.stubGlobal("window", globalThis);

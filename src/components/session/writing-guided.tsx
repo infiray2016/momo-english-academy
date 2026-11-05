@@ -18,6 +18,7 @@ import { WritingGuidedTask } from "@/components/activities/writing";
 import {
   BigButton,
   FOCUS_RING,
+  ICON_STROKE,
   SmallButton,
   StatusLine,
 } from "@/components/board/board";
@@ -65,8 +66,6 @@ export const WRITING_GUIDED_TEXT = {
   failed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
 } as const;
 
-/** 틀린 보기 표(✕)의 선 굵기(답 조각 ChoiceAnswer 와 같은 화면 꼴 값). */
-const MARK_STROKE = 3;
 /** 쓰기 카드 위 말하기 단추의 고리 틈 색(활동 카드 바탕 — 하늘). */
 const WRITING_CARD_GAP = "bg-postit-writing";
 
@@ -140,7 +139,7 @@ const BLANK_FRAME = cn(
   CHILD_SIZE.english,
   CHILD_SIZE.target,
   FOCUS_RING,
-  "mx-1 inline-flex min-w-36 items-center justify-center rounded-t-lg border-b-4 border-ink bg-white px-3 align-middle font-bold",
+  "mx-1 inline-flex min-w-36 items-center justify-center rounded-t-lg border-b-4 border-ink bg-paper px-3 align-middle font-bold",
 );
 /** 글 입력란은 마우스 · 손가락 초점에도 늘 같은 고리(focus-visible 이 아닌 focus — 글 쓰는 자리를 늘 보이게). */
 const INPUT_FOCUS =
@@ -506,7 +505,7 @@ export function GuidedWritingActivity({
                         <X
                           aria-hidden
                           className="size-6"
-                          strokeWidth={MARK_STROKE}
+                          strokeWidth={ICON_STROKE}
                         />
                       ) : null}
                       {option}

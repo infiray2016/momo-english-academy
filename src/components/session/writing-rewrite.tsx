@@ -77,7 +77,7 @@ export function FeedbackCorrectionActivity({
     <div data-feedback-correction="" className="flex flex-col gap-6">
       <GuideLine className="font-bold">{REWRITE_TEXT.correction}</GuideLine>
       <div className="flex flex-col gap-2">
-        <EnglishLine className="text-ink/70 line-through">
+        <EnglishLine className="text-ink line-through">
           {correction.original}
         </EnglishLine>
         <EnglishLine className="font-bold">{correction.corrected}</EnglishLine>
@@ -204,7 +204,7 @@ export function RewriteActivity({
         className={cn(
           CHILD_SIZE.english,
           INPUT_FOCUS,
-          "w-full resize-none rounded-xl border-2 border-ink bg-white p-3 leading-snug",
+          "w-full resize-none rounded-xl border-2 border-ink bg-paper p-3 leading-snug",
         )}
       />
       <StatusLine tone="error" className={status ? undefined : "sr-only"}>

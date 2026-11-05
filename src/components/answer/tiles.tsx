@@ -7,6 +7,10 @@
 // P11 세션(plan-p11a 값 11)은 선택 속성 initial · onChange(놓은 것 되살리기) · reveal(정답 조각을 차례대로 보이기 — 누를 것 없음) ·
 // slots(조립의 놓는 칸을 카드 수만큼 — 칸 너비는 모두 같게, '대문자'는 놓는 줄 오른쪽 끝, 뜻은 제목 글꼴, 목업 B_W3_Order) ·
 // needed(놓아야 할 조각 수 — 다 찼을 때만 '다 놓았어요')를 쓴다. 모두 없으면 지금 그대로다(배치 — 위험 5).
+// 가르치는 수업(가르치고 배우는 수업 plan 묶음 라-2 · 델타 spec 설계 1 '틀린 뒤 차례' 쓰기 행 · 표본 W6 · W7 · W10, 정본 15절 AC-3d · AC-4d):
+// 같은 문제 다시는 slotRoles(칸마다 칩 자리 — 색 칸과 칩 이름표, 정답은 보이지 않음) · flashCapital(대문자 단추 반짝임, 움직임 줄이기
+// 설정이면 멈춘 굵은 고리)을 쓴다. 같이 해 보기는 TogetherCards — 앱이 놓아 둔 카드 사이 빈칸에 남은 카드를 놓거나(빈칸 수 = 남은 카드 수,
+// C174 (3)) 대문자 단추를 누른다. 시도는 빈칸 차례의 카드(pieces)이고, 대문자 단추 문항은 맞출 칸이 없는 시도 하나다(장부 L-34 계약).
 import { useEffect, useRef, useState } from "react";
 import {
   CHILD_SIZE,
@@ -14,8 +18,10 @@ import {
   GuideLine,
 } from "@/components/activities/common";
 import { BigButton, FOCUS_RING, SmallButton } from "@/components/board/board";
+import { CHIP_NAME, CHIP_TONE } from "@/components/session/teach/chips";
 import type { Answer } from "@/core/answer/check";
 import type { DisplayItem } from "@/core/answer/display";
+import type { TeachChipRole } from "@/core/seed/structure";
 import type { SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { AnswerPicture, SoundButton } from "./choice";
@@ -58,6 +64,61 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** 대문자 단추 반짝임(움직임 줄이기 설정이면 고리만 — 멈춘 강조, 설계 1 쓰기 행). */
+const CAPITAL_FLASH = "ring-4 ring-ink ring-offset-2 motion-safe:animate-pulse";
+
+/**
+ * 조립의 빈 칸(점선 · 너비는 가장 긴 조각만큼 — 칸 모양이 차례를 가리키지 않게, 화면 검토 review-p11-3-design I-1). role 이 있으면(같은 문제 다시)
+ * 칸을 칩 색으로 칠하고 아래에 칩 이름표를 단다(색 칸 — 정답 낱말은 보이지 않는다).
+ */
+function EmptySlot({
+  widest,
+  role,
+}: {
+  widest: string;
+  role?: TeachChipRole | undefined;
+}) {
+  const box = (
+    <span
+      data-slot="empty"
+      data-slot-tone={role}
+      aria-hidden
+      className={cn(
+        CHILD_SIZE.choice,
+        CHILD_SIZE.target,
+        "flex items-center rounded-xl border-2 border-dashed border-ink font-bold",
+        role ? CHIP_TONE[role] : "bg-paper/60",
+      )}
+    >
+      <span className="invisible px-4">{widest}</span>
+    </span>
+  );
+  if (!role) return box;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      {box}
+      <SlotTag role={role} />
+    </div>
+  );
+}
+
+/** 칸 아래 칩 이름표(같은 문제 다시의 색 칸 — 칩 색 · 이름은 라-1 칩 표 그대로). */
+function SlotTag({ role }: { role: TeachChipRole }) {
+  return (
+    <span
+      data-slot-role={role}
+      lang="ko"
+      className={cn(
+        CHILD_SIZE.guide,
+        "rounded-card border-(length:--paper-edge) border-ink px-3 font-heading leading-snug text-ink",
+        CHIP_TONE[role],
+      )}
+    >
+      {CHIP_NAME[role]}
+    </span>
+  );
+}
+
 export function TileAnswer({
   item,
   speech,
@@ -67,6 +128,8 @@ export function TileAnswer({
   reveal,
   slots = false,
   needed,
+  slotRoles,
+  flashCapital = false,
   onAnswer,
 }: {
   item: TileItem;
@@ -82,6 +145,10 @@ export function TileAnswer({
   slots?: boolean;
   /** 놓아야 할 조각 수(P11 세션 — 다 찼을 때만 '다 놓았어요', 더 놓을 수 없음). 없으면 지금 조건(fill-letters 는 빈칸 수, 그 밖은 하나 이상). */
   needed?: number;
+  /** 칸마다 칩 자리(조립 · slots — 같은 문제 다시의 색 칸, 가르치는 수업). 칸 차례 그대로다. */
+  slotRoles?: readonly TeachChipRole[];
+  /** 대문자 단추를 반짝인다(같은 문제 다시 — 아직 대문자가 아닐 때). */
+  flashCapital?: boolean;
   onAnswer: (answer: Answer) => void;
 }) {
   const pieces = "cards" in item ? item.cards : item.tiles;
@@ -140,6 +207,11 @@ export function TileAnswer({
     </button>
   );
 
+  /** 칸 아래 칩 이름표(같은 문제 다시 — slots 일 때만). */
+  const slotTagAt = (slot: number) => {
+    const role = slots ? slotRoles?.[slot] : undefined;
+    return role ? <SlotTag role={role} /> : null;
+  };
   const firstCard = placed[0];
   /** 가장 긴 조각(빈 칸 너비를 모두 같게 잡는 숨은 글). */
   const widest = pieces.reduce(
@@ -212,7 +284,7 @@ export function TileAnswer({
                   data-blank=""
                   className={cn(
                     CHILD_SIZE.target,
-                    "rounded-xl border-2 border-dashed border-ink bg-white",
+                    "rounded-xl border-2 border-dashed border-ink bg-paper",
                   )}
                 />
               ) : (
@@ -229,7 +301,7 @@ export function TileAnswer({
       ) : (
         <div
           data-answer-row=""
-          className="flex min-h-20 flex-wrap items-start gap-3 rounded-xl border-2 border-dashed border-ink bg-white p-3"
+          className="flex min-h-20 flex-wrap items-start gap-3 rounded-xl border-2 border-dashed border-ink bg-paper p-3"
         >
           {placed.map((at, slot) => (
             // 놓은 타일 번호(pieces 의 차례)는 놓인 것 가운데 하나뿐이다
@@ -239,6 +311,7 @@ export function TileAnswer({
               className="flex flex-col items-center gap-2"
             >
               {placedButton(at, slot)}
+              {slotTagAt(slot)}
               {slot === 0 && canCapital && !slots ? (
                 <SmallButton
                   aria-pressed={capital}
@@ -254,21 +327,13 @@ export function TileAnswer({
           ))}
           {slots
             ? pieces.slice(placed.length).map((_, i) => (
-                <span
+                <EmptySlot
                   // 빈 칸은 남은 수만큼 — 차례가 곧 자리다
                   // biome-ignore lint/suspicious/noArrayIndexKey: 빈 칸 자리 번호
                   key={`slot-${i}`}
-                  data-slot="empty"
-                  aria-hidden
-                  className={cn(
-                    CHILD_SIZE.choice,
-                    CHILD_SIZE.target,
-                    "flex items-center rounded-xl border-2 border-dashed border-ink bg-paper/60 font-bold",
-                  )}
-                >
-                  {/* 칸 너비는 모두 가장 긴 조각만큼 — 칸 모양이 차례를 가리키지 않게(화면 검토 review-p11-3-design I-1) */}
-                  <span className="invisible px-4">{widest}</span>
-                </span>
+                  widest={widest}
+                  role={slotRoles?.[placed.length + i]}
+                />
               ))
             : null}
           {slots && cards ? (
@@ -277,9 +342,14 @@ export function TileAnswer({
             <SmallButton
               aria-pressed={capital}
               data-capital=""
+              data-capital-flash={flashCapital && !capital ? "" : undefined}
               disabled={disabled || !canCapital}
               onClick={() => setCapital(!capital)}
-              className={cn("ml-auto px-4", capital && "border-4")}
+              className={cn(
+                "ml-auto px-4",
+                capital && "border-4",
+                flashCapital && !capital && CAPITAL_FLASH,
+              )}
             >
               {TILE_TEXT.capital}
             </SmallButton>
@@ -389,9 +459,175 @@ function RevealRow({
   return (
     <div
       data-answer-row=""
-      className="flex min-h-20 flex-wrap items-start gap-3 rounded-xl border-2 border-dashed border-ink bg-white p-3"
+      className="flex min-h-20 flex-wrap items-start gap-3 rounded-xl border-2 border-dashed border-ink bg-paper p-3"
     >
       {reveal.map((text, i) => piece(text, i))}
+    </div>
+  );
+}
+
+/** 같이 해 보기 카드 시도(빈칸 차례의 카드 — 대문자 단추 문항은 맞출 칸이 없어 빈 시도). */
+export type TogetherCardsTry = { pieces?: string[] };
+
+/**
+ * 같이 해 보기 쓰기(표본 W6 · W7 · 델타 spec 설계 1 '같이 해 보기의 꼴과 수'): 지금 조립 화면 꼴로 앱이 놓아 둔 카드(cards 의 글, null 은 빈칸)
+ * 사이 빈칸에 남은 카드(choices)를 놓는다. 빈칸 수 = 남은 카드 수라 모든 빈칸이 차면 '다 놓았어요'로 시도 하나(pieces = 빈칸 차례의 카드)를
+ * 낸다. capitalOnly(대문자 자리 문항)는 카드가 다 놓여 있고 대문자 단추를 누르는 것이 시도다(단추 반짝임). 다시 할 때는 부르는 쪽이 새로 그린다.
+ */
+export function TogetherCards({
+  cards,
+  choices,
+  capital: capitalAtStart,
+  capitalOnly,
+  disabled,
+  onTry,
+}: {
+  cards: readonly (string | null)[];
+  choices: readonly string[];
+  /** 앱이 첫 글자를 이미 대문자로 해 두었나(filled.capital). */
+  capital: boolean;
+  capitalOnly: boolean;
+  disabled: boolean;
+  onTry: (attempt: TogetherCardsTry) => void;
+}) {
+  const blanks = cards.flatMap((card, i) => (card === null ? [i] : []));
+  /** 빈칸마다 놓은 남은 카드 번호(choices 의 차례). */
+  const [placed, setPlaced] = useState<(number | undefined)[]>(() =>
+    blanks.map(() => undefined),
+  );
+  const [capital, setCapital] = useState(capitalAtStart);
+  const full = placed.every((at) => at !== undefined);
+  const textAt = (position: number): string | undefined => {
+    const fixed = cards[position];
+    if (fixed !== null && fixed !== undefined) return fixed;
+    const at = placed[blanks.indexOf(position)];
+    return at === undefined ? undefined : choices[at];
+  };
+  const firstWord = cards.findIndex((_, i) => {
+    const text = textAt(i);
+    return text !== undefined && !PUNCTUATION_CARD.test(text);
+  });
+  const shown = (position: number, text: string) =>
+    capital && position === firstWord ? capitalize(text) : text;
+  const widest = [...cards, ...choices].reduce<string>(
+    (long, piece) => (piece && piece.length > long.length ? piece : long),
+    "",
+  );
+
+  return (
+    <div data-together-cards="" className="flex flex-col gap-6">
+      <div
+        data-answer-row=""
+        className="flex min-h-20 flex-wrap items-start gap-3 rounded-xl border-2 border-dashed border-ink bg-paper p-3"
+      >
+        {cards.map((card, position) => {
+          if (card !== null) {
+            return (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: 칸 차례가 곧 자리다
+                key={position}
+                data-slot="filled"
+                lang="en"
+                className={cn(TILE_FRAME, "shadow-none")}
+              >
+                {shown(position, card)}
+              </span>
+            );
+          }
+          const blank = blanks.indexOf(position);
+          const at = placed[blank];
+          return at === undefined ? (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: 칸 차례가 곧 자리다
+              key={position}
+              data-slot="empty"
+              aria-hidden
+              className={cn(
+                CHILD_SIZE.choice,
+                CHILD_SIZE.target,
+                "flex items-center rounded-xl border-2 border-dashed border-ink bg-paper/60 font-bold",
+              )}
+            >
+              <span className="invisible px-4">{widest}</span>
+            </span>
+          ) : (
+            <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: 칸 차례가 곧 자리다
+              key={position}
+              type="button"
+              data-touch=""
+              data-placed-tile={blank}
+              lang="en"
+              disabled={disabled}
+              onClick={() =>
+                setPlaced(placed.map((p, i) => (i === blank ? undefined : p)))
+              }
+              className={TILE_FRAME}
+            >
+              {shown(position, choices[at] ?? "")}
+            </button>
+          );
+        })}
+        <SmallButton
+          aria-pressed={capital}
+          data-capital=""
+          data-capital-flash={capitalOnly && !capital ? "" : undefined}
+          disabled={disabled || capital || !capitalOnly}
+          onClick={() => {
+            setCapital(true);
+            onTry({});
+          }}
+          className={cn(
+            "ml-auto px-4",
+            capital && "border-4",
+            capitalOnly && !capital && CAPITAL_FLASH,
+          )}
+        >
+          {TILE_TEXT.capital}
+        </SmallButton>
+      </div>
+      {capitalOnly ? null : (
+        <>
+          <ul className="flex flex-wrap gap-3">
+            {choices.map((choice, at) =>
+              placed.includes(at) ? null : (
+                // biome-ignore lint/suspicious/noArrayIndexKey: 같은 글 카드가 둘일 수 있어 차례가 열쇠다
+                <li key={at}>
+                  <button
+                    type="button"
+                    data-touch=""
+                    data-tile={choice}
+                    lang="en"
+                    disabled={disabled || full}
+                    onClick={() => {
+                      const blank = placed.indexOf(undefined);
+                      if (blank < 0) return;
+                      setPlaced(placed.map((p, i) => (i === blank ? at : p)));
+                    }}
+                    className={TILE_FRAME}
+                  >
+                    {choice}
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+          <div className="flex justify-end">
+            <BigButton
+              disabled={disabled || !full}
+              onClick={() =>
+                onTry({
+                  pieces: placed.map((at) =>
+                    at === undefined ? "" : (choices[at] ?? ""),
+                  ),
+                })
+              }
+            >
+              {TILE_TEXT.done}
+            </BigButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }

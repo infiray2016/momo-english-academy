@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  followAlongNo,
   parseTalkAttemptInput,
   TALK_CLOSING_ACTIVITY_NO,
   TALK_START_ACTIVITY_NO,
@@ -103,26 +102,21 @@ describe("회화 '말했다' · '안다'(3.4)", () => {
     ).toEqual([day1, day2]);
   });
 
-  it("AC-9d 답 두 개나 답 예시를 들은 턴과 오늘 쓸 말 · 다시 하기 · 중단된 대화의 턴 처리: 앞의 둘은 세지 않고 뒤의 둘은 센다", () => {
+  it("AC-9d 답 두 개나 답 예시를 들은 턴과 짧은 준비 · 다시 하기 · 중단된 대화의 턴 처리: 앞의 둘은 세지 않고 뒤의 둘은 센다", () => {
     // 답 두 개 · 답 예시를 들은 턴은 힌트 종류가 '영어'다(hints.ts) — 세지 않는다
     expect(said(["apple"], "I like apples", "english")).toEqual([]);
-    // 오늘 쓸 말의 따라 말하기는 세지 않는다
-    expect(
-      countsAsSaid({ source: "today_words", sessionKind: "regular" }),
-    ).toBe(false);
+    // 짧은 준비의 따라 말하기는 세지 않는다
+    expect(countsAsSaid({ source: "prep", sessionKind: "regular" })).toBe(
+      false,
+    );
     // 다시 하기 · 중단된 대화의 회화 턴은 센다
     expect(countsAsSaid({ source: "turn", sessionKind: "retry" })).toBe(true);
     expect(countsAsSaid({ source: "turn", sessionKind: "aborted" })).toBe(true);
     expect(countsAsSaid({ source: "turn", sessionKind: "regular" })).toBe(true);
   });
 
-  it("AC-15n 오늘 쓸 말 · 말해 보기 · 정리의 따라 말하기는 '말했다'에 들지 않는다", () => {
-    for (const source of [
-      "today_words",
-      "practice",
-      "wrap_up",
-      "again",
-    ] as const)
+  it("AC-15n 짧은 준비 · 바닥선 듣기 활동 · 정리 · 한 번 더 말해 보기의 따라 말하기는 '말했다'에 들지 않는다", () => {
+    for (const source of ["prep", "floor", "wrap_up", "again"] as const)
       expect(countsAsSaid({ source, sessionKind: "regular" }), source).toBe(
         false,
       );
@@ -291,18 +285,26 @@ describe("회화 시도 꼴(attempts)", () => {
       failures: 0,
     };
     for (const extra of [
-      { kind: "talk-today", index: 0 },
-      { kind: "talk-practice", index: 0, round: 1 },
+      { kind: "talk-prep", index: 0, word: "apple", place: "greeting" },
       { kind: "talk-wrapup", index: 0 },
       { kind: "talk-again" },
-      { kind: "talk-today", index: 0, skipped: "recognition" },
+      { kind: "talk-wrapup", index: 0, skipped: "recognition" },
     ])
       expect(
         parseTalkAttemptInput({ ...spoken, ...extra }),
         extra.kind,
       ).toBeDefined();
+    // 옛 흐름의 오늘 쓸 말 · 말해 보기 시도 꼴은 묶음 12 가 지웠다
     expect(
-      parseTalkAttemptInput({ ...spoken, kind: "talk-practice", index: 0 }),
+      parseTalkAttemptInput({ ...spoken, kind: "talk-today", index: 0 }),
+    ).toBeUndefined();
+    expect(
+      parseTalkAttemptInput({
+        ...spoken,
+        kind: "talk-practice",
+        index: 0,
+        round: 1,
+      }),
     ).toBeUndefined();
     expect(
       parseTalkAttemptInput({ ...spoken, kind: "preview" }),
@@ -310,35 +312,10 @@ describe("회화 시도 꼴(attempts)", () => {
     expect(
       parseTalkAttemptInput({
         ...spoken,
-        kind: "talk-today",
+        kind: "talk-wrapup",
         index: 0,
         score: 1,
       }),
     ).toBeUndefined();
-  });
-
-  it("회화 시도: 활동 번호는 처음 스냅숏 1 뒤로 오늘 쓸 말 → 말해 보기 바퀴마다 → 정리 → 한 번 더 말해 보기 차례다", () => {
-    const counts = {
-      todayWords: 3,
-      practiceItems: 2,
-      practiceRounds: 2,
-      wrapUp: 3,
-    };
-    expect(followAlongNo({ segment: "today_words", index: 0 }, counts)).toBe(2);
-    expect(followAlongNo({ segment: "today_words", index: 2 }, counts)).toBe(4);
-    expect(
-      followAlongNo({ segment: "practice", index: 0, round: 0 }, counts),
-    ).toBe(5);
-    expect(
-      followAlongNo({ segment: "practice", index: 1, round: 1 }, counts),
-    ).toBe(8);
-    expect(followAlongNo({ segment: "wrap_up", index: 0 }, counts)).toBe(9);
-    expect(followAlongNo({ segment: "again", index: 0 }, counts)).toBe(12);
-    expect(() =>
-      followAlongNo({ segment: "today_words", index: 3 }, counts),
-    ).toThrow();
-    expect(() =>
-      followAlongNo({ segment: "practice", index: 0, round: 2 }, counts),
-    ).toThrow();
   });
 });

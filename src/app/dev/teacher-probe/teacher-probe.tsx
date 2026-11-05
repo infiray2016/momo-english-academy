@@ -187,7 +187,7 @@ function Probe3d({
                   </button>
                 ))}
               </div>
-              <div className="bg-cork p-6">
+              <div className="bg-desk p-6">
                 <TeacherLayerHost
                   key={chosen.key}
                   teacher={chosen}

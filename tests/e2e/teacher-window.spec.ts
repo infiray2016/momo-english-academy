@@ -3,13 +3,17 @@
 // 차례 8(d8): 대신 표시 AC-19i 기본 몫 — WebGL 없음(no-webgl) · 설정(talk.teacher_render=portrait → setting)에서 초상 · 까닭 속성 ·
 // 오류 글 · 새 단추 없음 · 모델(.vrm) 요청 0 · 그만하기 → 정리 → 마무리까지, 관찰 쪽 '3D 보기'의 까닭 칸.
 // 선생님 상태는 쪽 안 기록(MutationObserver — data-teacher-state 바뀜)과 가짜 읽어 주기의 시작 · 끝 · 오류 사건을 같은 시계로 남겨 견준다.
-// 회화 턴은 가짜 Anthropic SSE(talkReply), 듣기는 가짜 Web Speech 대본. 숫자는 시험용 설정 · 명단에서 읽는다. 아이 이름은 지어낸 값이다.
+// 회화 턴은 가짜 Anthropic SSE(talkLessonReply), 듣기는 가짜 Web Speech 대본. 숫자는 시험용 설정 · 명단에서 읽는다. 아이 이름은 지어낸 값이다.
+// 회화 견본은 새 꼴 카드(회화 plan 묶음 12 가 옛 꼴 견본에서 옮김 — 기본은 인사 → 대화 greetingTalkLesson, 칭찬 시험은 짧은 준비 쪽지 ·
+// 마무리 물음).
 // 녹음하지 않는다. 화면 검토 사진은 E2E_PHOTOS 때만(teacher-window-…).
+// UI · UX plan 묶음 4-가(spec 설계 5.5 · 15절 AC-23i): 위가 둥근 창(가로 262 × 288) · 창 밖 테이프 · 흰 종이 이름표(먹색 글자) · 오른쪽 아래
+// 상태 표지 하나.
 import type { BrowserContext, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import teachersFile from "../../seed/teachers.json";
 import { PROBE_TEXT } from "../../src/app/dev/teacher-probe/probe-text";
-import { MORE_PROMPT } from "../../src/core/conversation/flow";
+import { MORE_PROMPT } from "../../src/core/conversation/spoken";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
 import type { TalkCard } from "../../src/core/seed/schema/talk";
 import { RESULT_PHRASES } from "../../src/core/speaking/judge";
@@ -20,6 +24,7 @@ import type {
 } from "../../src/core/speech/script";
 import type { TeacherLayerSignal } from "../../src/core/teacher/layer";
 import { lessons } from "../../src/db/schema/content";
+import { smallReferenceSet } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { CHILD_VIEWPORTS } from "./child-size";
 import {
@@ -34,7 +39,7 @@ import { expect, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
 import { photo } from "./photos";
 import {
-  fullTalkLesson,
+  greetingTalkLesson,
   insertTalkLesson,
   openTalkSession,
   reachSafetyCap,
@@ -42,7 +47,8 @@ import {
   speechRecord,
   TURN_MARK,
   talkHousehold,
-  talkReply,
+  talkLessonCard,
+  talkLessonReply,
   talkScript,
 } from "./talk";
 
@@ -253,9 +259,10 @@ async function openWindowTalk(
   } = {},
 ): Promise<Opened> {
   const profileId = await talkHousehold(1);
-  const row = await insertTalkLesson(
-    lesson ? { level: 1, lesson } : { level: 1 },
-  );
+  const row = await insertTalkLesson({
+    level: 1,
+    lesson: lesson ?? greetingTalkLesson(1),
+  });
   const sessionId = await openTalkSession(profileId, row);
   const script = talkScript(runs);
   const page = await speechPage(
@@ -278,6 +285,10 @@ async function pastStart(page: Page) {
 
 async function untilChildTurn(page: Page) {
   await expect(childTurn(page)).toBeVisible({ timeout: STREAM_END_MS });
+  // 아이 차례는 읽는 중에도 열린다(C166 R1) — 읽기 끝까지
+  await expect(
+    page.locator("[data-talk-panel][data-talk-reading]"),
+  ).toHaveCount(0, { timeout: STREAM_END_MS });
   await page.waitForTimeout(SETTLE_MS);
 }
 
@@ -297,9 +308,13 @@ async function talkTurn(page: Page) {
   await expect.poll(turnRequests, { timeout: STREAM_END_MS }).toBe(before + 1);
 }
 
-/** 목표 턴 수(인사 턴 + 카드 대화 턴 — 회화 e2e targetOf 와 같은 셈). */
-function targetOf(card: TalkCard): number {
-  return card.greetingTurns + (card.turns?.length ?? 0);
+/** 참고 턴 수(시험용 시드 회화 1단계 규격 targetTurns — 말한 아이 턴(인사 포함)이 이만큼이면 다음 선생님 말에 마무리 물음, 02-2). */
+function targetTurnsOf(level: number): number {
+  const spec = smallReferenceSet().levelSpecs.levelSpecs.find(
+    (s) => s.area === "talk" && s.level === level,
+  );
+  if (spec?.area !== "talk") throw new Error(`회화 ${level}단계 규격 없음`);
+  return spec.targetTurns;
 }
 
 async function boxOf(page: Page, selector: string) {
@@ -335,13 +350,13 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     await expect(page.getByRole("img", { name: T.window })).toHaveCount(1);
     await expect(win.locator("figcaption")).toHaveText(T.window);
     await expect(page.locator("canvas")).toHaveCount(0);
-    // 이름표는 accent 바탕 · 종이색 글자(C141)
+    // 이름표는 흰 종이 바탕 · 먹색 글자(C141 이름표 줄을 바꿈 — spec 설계 5.5, 토큰 paper #fffffb · ink #262626)
     const label = await win.locator("figcaption").evaluate((el) => {
       const style = getComputedStyle(el);
       return { bg: style.backgroundColor, color: style.color };
     });
-    expect(label.color).toBe("rgb(255, 253, 247)");
-    expect(label.bg).not.toBe("rgba(0, 0, 0, 0)");
+    expect(label.color).toBe("rgb(38, 38, 38)");
+    expect(label.bg).toBe("rgb(255, 255, 251)");
     const handle = await win.elementHandle();
     await pastStart(page);
     await expect(bubble(page)).toBeVisible();
@@ -369,18 +384,71 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
       expect(topics.y).toBeGreaterThanOrEqual(w.y + w.height);
     }
     // 인사 → 대화: 같은 창(다시 만들지 않음)
-    await pushFakeAi([talkReply({ tori_en: "Great! Let's talk." })]);
+    await pushFakeAi([talkLessonReply({ tori_en: "Great! Let's talk." })]);
     await untilChildTurn(page);
     await page.locator("[data-child-turn] [data-speak]").click();
-    const first = card.turns?.[0];
+    const first = card.required[0];
     if (!first) throw new Error("견본 꼴");
-    await expect(bubble(page)).toContainText(first.question.en, {
+    await expect(bubble(page)).toContainText(first.en, {
       timeout: STREAM_END_MS,
     });
     expect(await handle?.evaluate((el) => el.isConnected)).toBe(true);
     await expect(teacherWindow(page)).toHaveCount(1);
     await untilChildTurn(page);
     await photo(page, "teacher-window-talk");
+  });
+
+  test("AC-23i 선생님 창은 위가 둥근 창(가로 262 × 288)이고 테이프는 창 위 밖으로 나오며 이름표는 창 바로 아래, 듣기 · 생각 때 오른쪽 아래 상태 표지가 하나만 보인다", async ({
+    context,
+  }) => {
+    const { page } = await openWindowTalk(context, [saidRun("I'm good.")]);
+    await page.setViewportSize(CHILD_VIEWPORTS.landscape);
+    await expect(page.locator("[data-talk-start]")).toBeVisible();
+    const win = teacherWindow(page);
+    const glass = await boxOf(page, "[data-teacher-glass]");
+    expect(Math.round(glass.width)).toBe(262);
+    expect(Math.round(glass.height)).toBe(288);
+    // 위가 반원(모서리 반지름 = 너비의 절반) · 바탕은 방 색 벽과 바닥 띠
+    const look = await win.locator("[data-teacher-glass]").evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        topLeft: style.borderTopLeftRadius,
+        bottomLeft: style.borderBottomLeftRadius,
+        image: style.backgroundImage,
+      };
+    });
+    expect(look.topLeft).toBe("131px");
+    expect(look.bottomLeft).toBe("26px");
+    expect(look.image).toContain("linear-gradient");
+    // 테이프는 창 위 밖으로 나온다(머리 · 얼굴 자리인 창 안 위쪽 가운데를 덮지 않음)
+    const tape = await boxOf(
+      page,
+      '[data-teacher-window] [data-tape="window"]',
+    );
+    expect(tape.y).toBeLessThan(glass.y);
+    expect(tape.x).toBeGreaterThan(glass.x + glass.width / 2);
+    // 이름표는 창 바로 아래
+    const caption = await boxOf(page, "[data-teacher-window] figcaption");
+    expect(caption.y).toBeGreaterThanOrEqual(glass.y + glass.height - 2);
+    await expect(page.locator("[data-teacher-indicator]")).toHaveCount(0);
+    await pastStart(page);
+    await pushFakeAi([
+      talkLessonReply(
+        { tori_en: "Great! Let's talk." },
+        { firstDelayMs: 5000 },
+      ),
+    ]);
+    await untilChildTurn(page);
+    await page.locator("[data-child-turn] [data-speak]").click();
+    await expect(win).toHaveAttribute("data-teacher-state", "thinking", {
+      timeout: STREAM_END_MS,
+    });
+    await expect(page.locator("[data-teacher-indicator]")).toHaveCount(1);
+    const badge = await boxOf(page, "[data-teacher-indicator]");
+    // 오른쪽 아래(창 상자 안 오른쪽 아래 사분면)
+    expect(badge.x).toBeGreaterThan(glass.x + glass.width / 2);
+    expect(badge.y).toBeGreaterThan(glass.y + glass.height / 2);
+    await photo(page, "teacher-window-round");
   });
 
   test("AC-19c 선생님 창은 마이크를 쓸 수 없는 기기의 막힌 안내 · 1-가 하루 안전 상한의 쉼 안내에는 없다", async ({
@@ -521,7 +589,10 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     const { page } = await openWindowTalk(context, [saidRun("I'm good.")]);
     await pastStart(page);
     await pushFakeAi([
-      talkReply({ tori_en: "Great! Let's talk." }, { firstDelayMs: 5000 }),
+      talkLessonReply(
+        { tori_en: "Great! Let's talk." },
+        { firstDelayMs: 5000 },
+      ),
     ]);
     await untilChildTurn(page);
     await page.locator("[data-child-turn] [data-speak]").click();
@@ -536,6 +607,8 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     await expect(
       page.locator('[data-teacher-indicator="thinking"]'),
     ).toBeVisible();
+    // 상태 표지는 하나만(AC-23i · 설계 5.5)
+    await expect(page.locator("[data-teacher-indicator]")).toHaveCount(1);
     await photo(page, "teacher-window-thinking");
     await expect(teacherWindow(page)).not.toHaveAttribute(
       "data-teacher-state",
@@ -544,26 +617,30 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     );
   });
 
-  test("AC-19g 오늘 쓸 말 따라 말하기 결과가 '잘 말했어요'면 선생님이 칭찬(작은 별)을 talk.teacher_praise_seconds 동안 보인다", async ({
+  test("AC-19g 짧은 준비 쪽지 따라 말하기 결과가 '잘 말했어요'면 선생님이 칭찬(작은 별)을 talk.teacher_praise_seconds 동안 보인다", async ({
     context,
   }) => {
-    const lesson = fullTalkLesson(1);
-    const w0 = lesson.card.todayWords[0];
-    if (!w0) throw new Error("견본 꼴 — 오늘 쓸 말");
+    const lesson = talkLessonCard(1);
+    const w0 = lesson.card.prep?.[0];
+    if (!w0) throw new Error("견본 꼴 — 짧은 준비 낱말");
     const { page } = await openWindowTalk(
       context,
-      [saidRun("I'm good."), saidRun(w0.word)],
+      [saidRun("I'm good."), saidRun(w0)],
       { lesson },
     );
     await pastStart(page);
-    await pushFakeAi([talkReply({ tori_en: "Great! Let's learn words." })]);
+    await pushFakeAi([
+      talkLessonReply({ tori_en: "Great! Let's learn words." }),
+    ]);
     await untilChildTurn(page);
     await page.locator("[data-child-turn] [data-speak]").click();
     await expect(
-      page.locator('[data-follow-step="today_words:0:0"]'),
+      page.locator('[data-prep-note][data-prep-step="greeting:0"]'),
     ).toBeVisible({ timeout: STREAM_END_MS });
     await page.waitForTimeout(SETTLE_MS);
-    await page.locator("[data-follow] [data-speak]").click();
+    await page
+      .locator("[data-prep-note] [data-speak]:not([data-speak-waiting])")
+      .click();
     await expect(page.locator("[data-follow-result]")).toHaveText(
       RESULT_PHRASES.good,
     );
@@ -579,7 +656,7 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     );
   });
 
-  test("AC-19g 대화 아이 턴 뒤에는 목표 턴 전까지 칭찬이 없고 목표 턴에 닿은 턴은 그 읽어 주기가 끝난 뒤 칭찬한다", async ({
+  test("AC-19g 대화 아이 턴 뒤에는 참고 턴(마무리 물음) 전까지 칭찬이 없고 참고 턴에 닿은 턴은 마무리 물음 읽어 주기가 끝난 뒤 칭찬한다", async ({
     context,
   }) => {
     await withHouseholdSetting(
@@ -590,9 +667,8 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
           "talk.confirm_seconds",
           FAST_CONFIRM_SECONDS,
           async () => {
-            const probe = (await insertTalkLesson({ level: 1 }))
-              .content as TalkLesson;
-            const target = targetOf(probe.card);
+            const probe = greetingTalkLesson(1);
+            const target = targetTurnsOf(1);
             const dialogue = target - probe.card.greetingTurns;
             const { page } = await openWindowTalk(context, [
               saidRun("I'm good."),
@@ -601,15 +677,15 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
             await pastStart(page);
             await pushFakeAi(
               Array.from({ length: 1 + dialogue }, () =>
-                talkReply({ tori_en: "Nice!" }),
+                talkLessonReply({ tori_en: "Nice!" }),
               ),
             );
-            // 인사 턴 + 목표 턴 바로 앞까지
+            // 인사 턴 + 참고 턴 바로 앞까지
             await talkTurn(page);
             for (let i = 0; i < dialogue - 1; i++) await talkTurn(page);
             await untilChildTurn(page);
             expect(statesOf(await teacherLog(page))).not.toContain("praise");
-            // 목표 턴
+            // 참고 턴(다음 선생님 말에 마무리 물음 — 두 버튼)
             await talkTurn(page);
             await expect(page.locator("[data-talk-choice]")).toBeVisible({
               timeout: STREAM_END_MS,
@@ -653,6 +729,8 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
           ),
         );
     expect(await stopped('[data-teacher-indicator="speaking"]')).toBe(true);
+    // 창 둘레 accent 테(R-27)도 멈춘 꼴
+    expect(await stopped('[data-teacher-ring="speaking"]')).toBe(true);
     const noTransition = await teacherWindow(page).evaluate((root) =>
       [root, ...root.querySelectorAll("*")].every((el) =>
         getComputedStyle(el)
@@ -663,7 +741,10 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     expect(noTransition).toBe(true);
     // 생각(점 셋)도 멈춘 꼴
     await pushFakeAi([
-      talkReply({ tori_en: "Great! Let's talk." }, { firstDelayMs: 5000 }),
+      talkLessonReply(
+        { tori_en: "Great! Let's talk." },
+        { firstDelayMs: 5000 },
+      ),
     ]);
     await untilChildTurn(page);
     await page.locator("[data-child-turn] [data-speak]").click();
@@ -767,7 +848,7 @@ test.describe("선생님 창 대신 표시(차례 8)", () => {
   test("AC-19i WebGL 이 없는 기기에서는 선생님 창이 no-webgl 까닭의 초상이고 오류 글 · 새 단추 없이 대화 → 그만하기 → 정리 → 마무리까지 가며 모델(.vrm)을 받지 않는다", async ({
     context,
   }) => {
-    const probe = (await insertTalkLesson({ level: 1 })).content as TalkLesson;
+    const probe = greetingTalkLesson(1);
     const line = wrapLineOf(probe.card);
     let models = () => 0;
     const { page } = await openWindowTalk(
@@ -786,7 +867,7 @@ test.describe("선생님 창 대신 표시(차례 8)", () => {
     await expectNoLayerError(page);
     await pastStart(page);
     // 인사 턴 하나 → 대화 첫 아이 차례(초상에서도 상태가 바뀐다)
-    await pushFakeAi([talkReply({ tori_en: "Great! Let's talk." })]);
+    await pushFakeAi([talkLessonReply({ tori_en: "Great! Let's talk." })]);
     await talkTurn(page);
     await untilChildTurn(page);
     await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
@@ -800,7 +881,9 @@ test.describe("선생님 창 대신 표시(차례 8)", () => {
     await page.getByRole("button", { name: T.stopYes }).click();
     await expect(page.locator("[data-talk-wrap]")).toBeVisible();
     await expect(win).toHaveAttribute("data-teacher-fallback", "no-webgl");
-    await page.locator("[data-talk-wrap] [data-speak]").click();
+    await page
+      .locator("[data-talk-wrap] [data-speak]:not([data-speak-waiting])")
+      .click();
     await expect(page.locator('[data-closing-card="1"]')).toBeVisible({
       timeout: STREAM_END_MS,
     });
@@ -827,7 +910,7 @@ test.describe("선생님 창 대신 표시(차례 8)", () => {
       // 설정이 WebGL 검사보다 먼저다(3D 코드 조각도 받지 않음)
       await expect(win).toHaveAttribute("data-teacher-fallback", "setting");
       await pastStart(page);
-      await pushFakeAi([talkReply({ tori_en: "Great! Let's talk." })]);
+      await pushFakeAi([talkLessonReply({ tori_en: "Great! Let's talk." })]);
       await talkTurn(page);
       await untilChildTurn(page);
       await expect(win).toHaveAttribute("data-teacher-render", "portrait");

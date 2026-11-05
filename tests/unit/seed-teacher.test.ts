@@ -253,10 +253,10 @@ describe("시드 검증 선생님 이름", () => {
       ["card.farewell.en", (l) => (l.card.farewell.en = "Bye! Leo says hi.")],
       ["title", (l) => (l.title = "토리와 이야기")],
       [
-        "card.turns.0.question.ko",
+        "card.required.0.ko",
         (l) => {
-          const turn = l.card.turns?.[0];
-          if (turn) turn.question.ko = "리오는 뭘 좋아해?";
+          const item = l.card.required[0];
+          if (item) item.ko = "리오는 뭘 좋아해?";
         },
       ],
     ];

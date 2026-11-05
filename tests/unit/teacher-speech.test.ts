@@ -89,9 +89,9 @@ describe("선생님 음성 감싸기", () => {
   });
 
   for (const outcome of [
-    { kind: "ended" },
+    { kind: "ended", heard: "played" },
     { kind: "cancelled" },
-    { kind: "error", code: "synthesis-failed" },
+    { kind: "error", code: "synthesis-failed", started: true },
   ] as const) {
     it(`AC-19g 선생님 음성: 시작 알림에 켜고 ${outcome.kind} 뒤 끈다`, async () => {
       const { calls, changes, speech } = wrap();
@@ -123,7 +123,7 @@ describe("선생님 음성 감싸기", () => {
     calls[0]?.finish({ kind: "cancelled" });
     await first;
     expect(changes).toEqual([true]);
-    calls[1]?.finish({ kind: "ended" });
+    calls[1]?.finish({ kind: "ended", heard: "played" });
     await second;
     expect(changes).toEqual([true, false]);
   });
@@ -132,11 +132,11 @@ describe("선생님 음성 감싸기", () => {
     const { calls, changes, speech } = wrap();
     const first = speech.speak("One.");
     calls[0]?.start();
-    calls[0]?.finish({ kind: "ended" });
+    calls[0]?.finish({ kind: "ended", heard: "played" });
     await first;
     const second = speech.speak("Two.");
     calls[1]?.start();
-    calls[1]?.finish({ kind: "ended" });
+    calls[1]?.finish({ kind: "ended", heard: "played" });
     await second;
     expect(changes).toEqual([true, false, true, false]);
   });
@@ -156,7 +156,7 @@ describe("선생님 음성 감싸기", () => {
     const outcome = speech.speak("Twice.");
     calls[0]?.start();
     calls[0]?.start();
-    calls[0]?.finish({ kind: "ended" });
+    calls[0]?.finish({ kind: "ended", heard: "played" });
     await outcome;
     expect(changes).toEqual([true, false]);
   });
@@ -175,6 +175,32 @@ describe("선생님 음성 감싸기", () => {
     expect(port.listen).toHaveBeenCalledTimes(1);
     expect(port.checkMicrophone).toHaveBeenCalledTimes(1);
     expect(port.dispose).toHaveBeenCalledTimes(1);
+    expect(changes).toEqual([]);
+  });
+});
+
+describe("선생님 한국어 줄(가르치고 배우는 수업 spec 설계 4)", () => {
+  it("AC-3h 선생님 음성: 한국어 줄은 선생님 높이와 lang 을 넘기고 영어 목소리 순서는 넘기지 않는다", () => {
+    const { calls, speech } = wrap();
+    void speech.speak("오늘은 동물 이름을 배워요.", { lang: "ko-KR" });
+    void speech.speak("Hello.");
+    expect(
+      calls.map((c) => [
+        c.options?.lang,
+        c.options?.pitch,
+        c.options?.voicePrefer,
+      ]),
+    ).toEqual([
+      ["ko-KR", 1.08, undefined],
+      [undefined, 1.08, ["samantha"]],
+    ]);
+  });
+
+  it("AC-N20 선생님 음성: 읽지 않은 한국어 줄('읽지 않음')은 결과를 그대로 넘기고 말하기 알림이 없다", async () => {
+    const { calls, changes, speech } = wrap();
+    const outcome = speech.speak("왜 그럴까요?", { lang: "ko-KR" });
+    calls[0]?.finish({ kind: "skipped", reason: "read_ko_off" });
+    expect(await outcome).toEqual({ kind: "skipped", reason: "read_ko_off" });
     expect(changes).toEqual([]);
   });
 });

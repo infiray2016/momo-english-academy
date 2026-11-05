@@ -8,7 +8,9 @@ import {
   type PlacementInput,
   type PlacementResult,
   type PlacementStep,
+  placementCorrectCount,
   slotKey,
+  soundSpareAllowed,
 } from "@/core/placement/adaptive";
 import { placementFinishOf } from "@/core/placement/finish";
 import { LEVEL_MAX, LEVEL_MIN } from "@/core/seed/structure";
@@ -29,7 +31,7 @@ const SMALL_PER_LEVEL = loadableSettings().settings.find(
 const REPEAT_PASS = TEST_SETTINGS["placement.repeat_pass"].value;
 const MAX_RETRIES = TEST_SETTINGS["speech.max_retries"].value;
 
-type Reply = "ok" | "no" | "dk" | "failed";
+type Reply = "ok" | "no" | "dk" | "failed" | "tech";
 
 /** 다음 차례마다 reply 로 답하며 끝까지 돈다. 낸 문항(단계 · 자리 · 번호)과 결과를 돌려준다. */
 function drive(
@@ -55,6 +57,7 @@ function drive(
       correct: r === "ok",
       dontKnow: r === "dk",
       repeatFailed: r === "failed",
+      ...(r === "tech" ? { techError: true } : {}),
     });
   }
   throw new Error("끝나지 않았다");
@@ -216,6 +219,113 @@ describe("배치 적응 규칙", () => {
     // 문항 수 상한에도 넣지 않는다
     const counted = run.answers.filter((a) => !a.repeatFailed);
     expect(counted.length).toBeLessThanOrEqual(RULES.maxItems);
+  });
+
+  it("AC-23a R-56 배치: 소리를 들려주지 못한 본 문항은 판정 · 문항 수에 넣지 않고 같은 단계 · 같은 번호의 예비 문항을 낸다", () => {
+    // 3단계 1 · 3 번이 따라 말하기, 2 번이 듣고 고르기. 첫 문항(따라 말하기)을 들려주지 못함
+    const repeatSlots = new Set([slotKey(3, 1), slotKey(3, 3)]);
+    const run = drive((_step, i) => (i === 0 ? "tech" : "ok"), {
+      repeatSlots,
+    });
+    // 그 자리만 예비로 — 실패 3회와 달리 남은 따라 말하기 자리(3:3)는 본 문항 그대로
+    expect(run.served.slice(0, 4)).toEqual(["3:1", "3s:1", "3:2", "3:3"]);
+    // 기술 오류는 맞음 · 틀림 · 몰라요로 세지 않는다 — 3단계 3/3 으로 두 단계 올랐다
+    expect(run.served[4]?.startsWith("5")).toBe(true);
+    expect(run.result.usedSpares).toBe(true);
+    const counted = run.answers.filter((a) => !a.techError && !a.repeatFailed);
+    expect(counted.length).toBeLessThanOrEqual(RULES.maxItems);
+    // 듣고 고르기 자리(3:2)를 들려주지 못해도 같은 번호의 예비 문항
+    const listening = drive((step) =>
+      step.level === 3 && step.no === 2 && step.slot === "main" ? "tech" : "ok",
+    );
+    expect(listening.served.slice(0, 4)).toEqual(["3:1", "3:2", "3s:2", "3:3"]);
+    // 예비 문항이 틀리면 그 단계의 틀림으로 센다(보통 답)
+    const spareWrong = drive((step, i) =>
+      i === 0 ? "tech" : step.slot === "spare" ? "no" : "ok",
+    );
+    expect(spareWrong.served.slice(0, 4)).toEqual([
+      "3:1",
+      "3s:1",
+      "3:2",
+      "3:3",
+    ]);
+    expect(spareWrong.served[4]?.startsWith("4")).toBe(true);
+  });
+
+  it("AC-23a R-56 배치: 예비 문항에는 기술 오류 기록이 올 수 없다(같은 자리에서 다시 듣기를 기다림 — 차례와 맞지 않는 기록)", () => {
+    const answers: PlacementAnswerRecord[] = [
+      {
+        level: 3,
+        slot: "main",
+        no: 1,
+        correct: false,
+        dontKnow: false,
+        repeatFailed: false,
+        techError: true,
+      },
+      {
+        level: 3,
+        slot: "spare",
+        no: 1,
+        correct: false,
+        dontKnow: false,
+        repeatFailed: false,
+        techError: true,
+      },
+    ];
+    expect(() =>
+      nextPlacementStep({ ...RULES, repeatSlots: new Set(), answers }),
+    ).toThrow();
+    // 첫 줄만이면 다음 차례는 같은 번호의 예비 문항이고 문제 번호는 그대로다
+    expect(
+      nextPlacementStep({
+        ...RULES,
+        repeatSlots: new Set(),
+        answers: answers.slice(0, 1),
+      }),
+    ).toEqual({ kind: "item", level: 3, slot: "spare", no: 1, itemNo: 1 });
+  });
+
+  it("AC-23a R-56 배치: 기술 오류로 예비에 넘길 수 있는 차례는 본 문항 · 소리 문항(듣기 · 따라 말하기) · 같은 번호 예비가 있을 때뿐이다", () => {
+    expect(
+      soundSpareAllowed({ slot: "main", itemType: "repeat", hasSpare: true }),
+    ).toBe(true);
+    expect(
+      soundSpareAllowed({
+        slot: "main",
+        itemType: "listening",
+        hasSpare: true,
+      }),
+    ).toBe(true);
+    // 예비 문항(같은 자리에서 다시 듣기를 기다림) · 예비 없음 · 소리 아닌 문항은 거부
+    expect(
+      soundSpareAllowed({
+        slot: "spare",
+        itemType: "listening",
+        hasSpare: true,
+      }),
+    ).toBe(false);
+    expect(
+      soundSpareAllowed({ slot: "main", itemType: "repeat", hasSpare: false }),
+    ).toBe(false);
+    for (const itemType of ["picture", "fact", "copy-tiles", "dictation"])
+      expect(
+        soundSpareAllowed({ slot: "main", itemType, hasSpare: true }),
+      ).toBe(false);
+  });
+
+  it("AC-23a R-56 배치 총점: 기술 오류 · 실패 3회 기록은 맞음으로 세지 않고 맞힌 답만 센다", () => {
+    const base = { correct: true, repeatFailed: false };
+    expect(
+      placementCorrectCount([
+        base,
+        { ...base, techError: true },
+        { ...base, repeatFailed: true },
+        { ...base, correct: false },
+        { ...base, techError: false },
+      ]),
+    ).toBe(2);
+    expect(placementCorrectCount([])).toBe(0);
   });
 
   it("AC-11d 배치: 답 기록만으로 멈춘 문항을 다시 낸다", () => {

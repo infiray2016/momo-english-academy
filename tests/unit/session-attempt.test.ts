@@ -1,5 +1,7 @@
 // 시도 꼴 · 앱 채점 · 단어별 정오 · 단어 수 · 이어 할 자리(plan-p11a 파일별 값 2 · 정할 것 다 · 라 · 위험 2 · 3, 13절 C76).
 // 수업은 견본 빌더(기본 틀) 1 · 3단계, 기준(speaking.answer_match_pass)은 시험용 설정에서 읽는다.
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LessonOf } from "@/core/seed/schema/lesson";
 import {
@@ -14,13 +16,21 @@ import {
   parseAttemptInput,
   resumePointOf,
   serverActionOnly,
+  withAppJudge,
 } from "@/core/session/attempt";
 import { type Activity, activitiesOf } from "@/core/session/preview";
+import {
+  englishSentencesOf,
+  judgeSpeakingQuestion,
+  questionTextsOf,
+} from "@/core/speaking/judge";
+import { type MeaningWord, meaningWordsFor } from "@/core/speaking/meaning";
 import {
   defaultSettings,
   readingLesson,
   referenceSet,
   speakingLesson,
+  teachSeedLessons,
   writingLesson,
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
@@ -37,6 +47,14 @@ const writing6 = writingLesson(ref, 6).lesson;
 const speaking6 = speakingLesson(ref, 6).lesson;
 const speaking10 = speakingLesson(ref, 10).lesson;
 
+/** 말하기 질문 판정 품사 표(plan 다 · 정한 것 7): 3단계 단원 1 정규 시드 말하기 수업 글로 seed/vocab.json 을 좁힌 표. */
+const SEED_VOCAB: MeaningWord[] = JSON.parse(
+  readFileSync(join(resolve(__dirname, "../../seed"), "vocab.json"), "utf8"),
+).vocab;
+const TEACH_WORDS = meaningWordsFor(
+  questionTextsOf(teachSeedLessons().speaking),
+  SEED_VOCAB,
+);
 const ctxOf = (
   lesson: { unitWords: readonly string[] },
   appJudgedQuestions = true,
@@ -46,6 +64,7 @@ const ctxOf = (
   unitWords: lesson.unitWords,
   lemmaOf: lemmaLookup(ref.vocab.vocab),
   appJudgedQuestions,
+  meaningWords: TEACH_WORDS,
 });
 
 const final = <K extends AttemptInput["kind"]>(
@@ -142,7 +161,7 @@ describe("시도 꼴", () => {
     ).toBeDefined();
     // 판 · 종류 · 끝 표시 · 칸이 틀림
     for (const bad of [
-      { v: 2, kind: "preview", step: "final", shownWords: [] },
+      { v: 3, kind: "preview", step: "final", shownWords: [] },
       { v: 1, kind: "nothing", step: "final" },
       { v: 1, kind: "preview", step: "done", shownWords: [] },
       { v: 1, kind: "reading-question", step: "final", tries: [] },
@@ -785,5 +804,493 @@ describe("쓰기 AI 시도(plan-p11b 값 4)", () => {
     expect(
       aiNeededLesson({ area: "speaking", content: speaking10.content }),
     ).toBe(true);
+  });
+});
+
+describe("시도 꼴 판 2(가르치고 배우는 수업 plan 나 · 정한 것 2)", () => {
+  const teach = teachSeedLessons();
+  /** 조립 문장을 놓은 카드 차례로(마침표 카드 따로). */
+  const piecesOf = (text: string) => text.replace(/\.$/, " .").split(" ");
+  const v2 = (kind: string, content: Record<string, unknown> = {}) => ({
+    v: 2,
+    kind,
+    step: "final",
+    ...content,
+  });
+
+  it("시도 꼴 판 2: 판 1 시도(기기 대기열의 옛 시도)를 그대로 읽고 새 자리 꼴은 판 2 로만 읽는다", () => {
+    // 판 1 시도는 판을 바꾸지 않고 읽는다
+    expect(
+      parseAttemptInput({
+        v: 1,
+        kind: "reading-question",
+        step: "final",
+        tries: [2, 1],
+      }),
+    ).toEqual({ v: 1, kind: "reading-question", step: "final", tries: [2, 1] });
+    expect(
+      parseAttemptInput(v2("reading-question", { tries: [1] })),
+    ).toBeDefined();
+    for (const good of [
+      v2("today"),
+      v2("model", { index: 0 }),
+      v2("together", { index: 1, tries: [{ choice: 2 }, { choice: 1 }] }),
+      v2("together", { index: 0, tries: [{ pieces: ["is", "cold"] }] }),
+      v2("together", {
+        index: 0,
+        tries: [{ heard: "no they eat cookies" }],
+        judge: {
+          meaning: "ok",
+          bundle: "accepted",
+          final: "correct",
+          by: "app",
+          expressionDone: true,
+        },
+      }),
+      // 짝은 혼자 문항과 같은 꼴에 slot "spare"
+      v2("reading-question", { tries: [1], slot: "spare" }),
+      v2("repeat-word", { heard: ["eat lunch"], failures: 0, slot: "spare" }),
+      // 혼자 문항의 선택 칸(다 · 라 · 바 가 채움)
+      v2("reading-question", {
+        tries: [1],
+        aid: { readAloud: true, gloss: ["wash"] },
+      }),
+      v2("question", {
+        heard: ["yes they do"],
+        failures: 0,
+        story: { replayed: true },
+        judge: {
+          meaning: "ok",
+          bundle: "meaning",
+          ai: "correct",
+          final: "correct",
+          by: "ai",
+          communicative: true,
+          expressionDone: false,
+        },
+      }),
+      v2("listening", { tries: [2], techError: "speak_fail" }),
+      v2("repeat-sentence", {
+        heard: [],
+        failures: 0,
+        techError: "speak_fail",
+      }),
+    ])
+      expect(parseAttemptInput(good), JSON.stringify(good)).toBeDefined();
+    for (const bad of [
+      { ...v2("today"), v: 1 },
+      { ...v2("model", { index: 0 }), v: 1 },
+      v2("model", {}),
+      v2("together", { index: 0, tries: [{ choice: 0 }] }),
+      v2("reading-question", { tries: [1], slot: "solo" }),
+      v2("reading-passage", { tappedWords: [], slot: "spare" }),
+      v2("listening", { tries: [1], techError: "silent" }),
+      v2("question", {
+        heard: [],
+        failures: 0,
+        judge: { meaning: "ok", final: "maybe", by: "app" },
+      }),
+    ])
+      expect(parseAttemptInput(bad), JSON.stringify(bad)).toBeUndefined();
+  });
+
+  it("시도 꼴 판 2: 판 1 시도에 판 2 칸(slot · aid · story · judge · techError)이 있으면 거부하고 같은 칸의 판 2 시도는 받는다", () => {
+    const judge = {
+      meaning: "ok",
+      bundle: "accepted",
+      final: "correct",
+      by: "app",
+      expressionDone: true,
+    };
+    for (const [kind, base, extra] of [
+      ["reading-question", { tries: [1] }, { slot: "spare" }],
+      ["reading-question", { tries: [1] }, { aid: { readAloud: true } }],
+      ["listening", { tries: [1] }, { techError: "speak_fail" }],
+      [
+        "writing-item",
+        { tries: [{ kind: "choice", no: 1 }] },
+        { slot: "spare" },
+      ],
+      [
+        "repeat-word",
+        { heard: ["a"], failures: 0 },
+        { techError: "speak_fail" },
+      ],
+      ["repeat-sentence", { heard: ["a"], failures: 0 }, { slot: "spare" }],
+      [
+        "question",
+        { heard: ["a"], failures: 0 },
+        { story: { replayed: false } },
+      ],
+      ["question", { heard: ["a"], failures: 0 }, { judge }],
+    ] as const) {
+      const v1 = { v: 1, kind, step: "final", ...base, ...extra };
+      expect(parseAttemptInput(v1), JSON.stringify(v1)).toBeUndefined();
+      // 새 칸이 없는 판 1 시도는 그대로 읽는다
+      expect(
+        parseAttemptInput({ v: 1, kind, step: "final", ...base }),
+      ).toBeDefined();
+      expect(parseAttemptInput({ ...v1, v: 2 })).toBeDefined();
+    }
+  });
+
+  it("시도 꼴 판 2: 짝 시도는 그 짝 활동의 base 종류 꼴에 slot spare 를 단 것만 맞고 본보기 · 같이 해 보기는 차례도 같아야 한다", () => {
+    const spare: Activity = {
+      kind: "spare",
+      base: "reading-question",
+      index: 1,
+    };
+    const spareTry = parseAttemptInput(
+      v2("reading-question", { tries: [1], slot: "spare" }),
+    ) as AttemptInput;
+    const soloTry = parseAttemptInput(
+      v2("reading-question", { tries: [1] }),
+    ) as AttemptInput;
+    expect(inputFitsActivity(spare, spareTry)).toBe(true);
+    expect(inputFitsActivity(spare, soloTry)).toBe(false);
+    expect(
+      inputFitsActivity({ kind: "reading-question", index: 1 }, spareTry),
+    ).toBe(false);
+    expect(
+      inputFitsActivity(
+        { kind: "spare", base: "listening", index: 1 },
+        spareTry,
+      ),
+    ).toBe(false);
+    const model = parseAttemptInput(v2("model", { index: 1 })) as AttemptInput;
+    expect(inputFitsActivity({ kind: "model", index: 1 }, model)).toBe(true);
+    expect(inputFitsActivity({ kind: "model", index: 0 }, model)).toBe(false);
+    const together = parseAttemptInput(
+      v2("together", { index: 0, tries: [{ choice: 1 }] }),
+    ) as AttemptInput;
+    expect(inputFitsActivity({ kind: "together", index: 0 }, together)).toBe(
+      true,
+    );
+    expect(inputFitsActivity({ kind: "together", index: 1 }, together)).toBe(
+      false,
+    );
+    expect(
+      inputFitsActivity(
+        { kind: "today" },
+        parseAttemptInput(v2("today")) as AttemptInput,
+      ),
+    ).toBe(true);
+  });
+
+  it("시도 꼴 판 2: 오늘 배울 것 · 본보기 · 같이 해 보기는 점수 · 단어별 정오가 없고 짝은 점수 없이 짝 내용의 단어별 정오만 낸다", () => {
+    const w = teach.writing;
+    const r = teach.reading;
+    const s = teach.speaking;
+    if (w.content.shape !== "items") throw new Error("쓰기 1~3 아님");
+    const none = { score: null, wordResults: [], wordCount: null };
+    expect(
+      appActivityResult(
+        { kind: "today" },
+        w,
+        parseAttemptInput(v2("today")) as AttemptInput,
+        ctxOf(w),
+      ),
+    ).toEqual(none);
+    expect(
+      appActivityResult(
+        { kind: "model", index: 0 },
+        w,
+        parseAttemptInput(v2("model", { index: 0 })) as AttemptInput,
+        ctxOf(w),
+      ),
+    ).toEqual(none);
+    expect(
+      appActivityResult(
+        { kind: "together", index: 0 },
+        r,
+        parseAttemptInput(
+          v2("together", { index: 0, tries: [{ choice: 1 }] }),
+        ) as AttemptInput,
+        ctxOf(r),
+      ),
+    ).toEqual(none);
+    // 말하기 같이 해 보기: 점수 · 단어별 정오는 없고 말한 낱말 수만
+    expect(
+      appActivityResult(
+        { kind: "together", index: 0 },
+        s,
+        parseAttemptInput(
+          v2("together", {
+            index: 0,
+            tries: [{ heard: "no I eat" }, { heard: "no they eat cookies" }],
+          }),
+        ) as AttemptInput,
+        ctxOf(s),
+      ),
+    ).toEqual({ score: null, wordResults: [], wordCount: 7 });
+
+    // 쓰기 짝: 짝 문장의 단원 단어 정오(혼자 문항 문장이 아니라)
+    const item = w.content.items[0];
+    const spare = item?.spare;
+    if (spare?.type !== "assemble-sentence") throw new Error("짝 없음");
+    const spareText = spare.accepted[0] ?? "";
+    const spareWord = w.unitWords.find((u) => spareText.includes(u));
+    if (!spareWord) throw new Error("짝 문장에 단원 단어 없음");
+    const right = appActivityResult(
+      { kind: "spare", base: "writing-item", index: 0 },
+      w,
+      parseAttemptInput(
+        v2("writing-item", {
+          tries: [{ kind: "tiles", pieces: piecesOf(spareText) }],
+          slot: "spare",
+        }),
+      ) as AttemptInput,
+      ctxOf(w),
+    );
+    expect(right.score).toBeNull();
+    expect(right.wordResults).toContainEqual({
+      word: spareWord,
+      correct: true,
+    });
+    const wrong = appActivityResult(
+      { kind: "spare", base: "writing-item", index: 0 },
+      w,
+      parseAttemptInput(
+        v2("writing-item", {
+          tries: [{ kind: "tiles", pieces: ["zzz"] }],
+          slot: "spare",
+        }),
+      ) as AttemptInput,
+      ctxOf(w),
+    );
+    expect(wrong.wordResults).toContainEqual({
+      word: spareWord,
+      correct: false,
+    });
+
+    // 말하기 낱말 짝: 짝 글(eat lunch 꼴)로 일치율 · 단어별 정오, 점수 없음
+    const target = s.content.repeat.spares?.words[0];
+    if (!target) throw new Error("낱말 짝 없음");
+    const repeatSpare = appActivityResult(
+      { kind: "spare", base: "repeat-word", index: 0 },
+      s,
+      parseAttemptInput(
+        v2("repeat-word", { heard: [target], failures: 0, slot: "spare" }),
+      ) as AttemptInput,
+      ctxOf(s),
+    );
+    expect(repeatSpare.score).toBeNull();
+    expect(repeatSpare.wordResults.every((x) => x.correct)).toBe(true);
+    expect(repeatSpare.wordResults.length).toBeGreaterThan(0);
+    expect(repeatSpare.wordCount).toBe(target.split(" ").length);
+
+    // 말하기 질문 짝은 3단계(AI 판정 단계)에서도 앱이 허용 답으로 본다
+    const qSpare = s.content.questions[0]?.spare;
+    if (!qSpare) throw new Error("질문 짝 없음");
+    const answer = qSpare.accepted[0] ?? "";
+    const question = appActivityResult(
+      { kind: "spare", base: "question", index: 0 },
+      s,
+      parseAttemptInput(
+        v2("question", { heard: [answer], failures: 0, slot: "spare" }),
+      ) as AttemptInput,
+      ctxOf(s, false),
+    );
+    expect(question.score).toBeNull();
+    expect(question.wordResults.length).toBeGreaterThan(0);
+    expect(question.wordResults.every((x) => x.correct)).toBe(true);
+  });
+
+  it("시도 꼴 판 2: 영어로 말한 문장 수는 말하기 같이 해 보기의 인식 글과 짝 시도를 센다", () => {
+    const inputs = [
+      v2("together", {
+        index: 0,
+        tries: [
+          { heard: "no they eat cookies" },
+          { heard: " " },
+          { choice: 1 },
+        ],
+      }),
+      v2("question", {
+        heard: ["no they eat rice"],
+        failures: 0,
+        slot: "spare",
+      }),
+      {
+        ...v2("together", { index: 1, tries: [{ heard: "they" }] }),
+        step: "progress",
+      },
+    ].map((raw) => parseAttemptInput(raw) as AttemptInput);
+    expect(englishSentencesOf(inputs)).toBe(2);
+  });
+
+  it("AC-22k 질문 짝은 혼자 질문과 같은 판정 함수(의미 검사 → 두 묶음)로 단어별 정오를 내고, 일치율이 문턱을 넘어도 의미가 틀리면 틀림이다", () => {
+    const s = teach.speaking;
+    const sp = s.content.questions[0]?.spare;
+    if (!sp) throw new Error("질문 짝 없음");
+    expect(sp.modelAnswer).toBe("No, they eat rice.");
+    const result = (heard: string) =>
+      appActivityResult(
+        { kind: "spare", base: "question", index: 0 },
+        s,
+        parseAttemptInput(
+          v2("question", { heard: [heard], failures: 0, slot: "spare" }),
+        ) as AttemptInput,
+        ctxOf(s, false),
+      );
+    const right = result("No, they eat rice.");
+    expect(right.score).toBeNull();
+    expect(right.wordResults).toContainEqual({ word: "eat", correct: true });
+    // 방향이 틀린 답 — 허용 답 'They eat rice.'와 일치율 1 이지만 틀림
+    const wrong = result("Yes, they eat rice.");
+    expect(wrong.wordResults).toContainEqual({ word: "eat", correct: false });
+    // 의사소통 정답(acceptedMeaning)도 맞음
+    expect(result("Max and Ted eat rice.").wordResults).toContainEqual({
+      word: "eat",
+      correct: true,
+    });
+  });
+
+  it("AC-22k 서버 판정 덧씌우기: 질문 짝 · 말하기 같이 해 보기의 judge 칸은 기기가 보낸 값 대신 앱 판정으로 다시 쓰고, 판정할 말이 없거나 질문 꼴이 아니거나 대기열로 온 혼자 질문이면 뺀다", () => {
+    const s = teach.speaking;
+    const ctx = ctxOf(s, false);
+    const judgeCtx = { pass: PASS, homophones: [], words: TEACH_WORDS };
+    const sp = s.content.questions[3]?.spare;
+    if (!sp) throw new Error("질문 짝 없음");
+    const bogus = {
+      meaning: "ok",
+      final: "correct",
+      by: "app",
+      expressionDone: true,
+    };
+    const spareActivity = {
+      kind: "spare" as const,
+      base: "question" as const,
+      index: 3,
+    };
+    // 'Yes, they do.' — 기기가 표현 수행이라 보냈어도 서버는 의사소통 정답으로 쓴다
+    const judged = withAppJudge(
+      spareActivity,
+      s,
+      parseAttemptInput(
+        v2("question", {
+          heard: ["", "Yes, they do."],
+          failures: 1,
+          slot: "spare",
+          judge: bogus,
+        }),
+      ) as AttemptInput,
+      ctx,
+    );
+    expect(judged).toMatchObject({
+      judge: judgeSpeakingQuestion(sp, "Yes, they do.", judgeCtx),
+    });
+    expect("judge" in judged && judged.judge?.communicative).toBe(true);
+    expect(parseAttemptInput(judged)).toEqual(judged);
+    // 건너뛴 짝은 judge 를 뺀다
+    const skipped = withAppJudge(
+      spareActivity,
+      s,
+      parseAttemptInput(
+        v2("question", {
+          heard: [],
+          failures: 3,
+          slot: "spare",
+          skipped: "recognition",
+          judge: bogus,
+        }),
+      ) as AttemptInput,
+      ctx,
+    );
+    expect("judge" in skipped).toBe(false);
+    // 말하기 같이 해 보기: 처음 말한 시도로 판정한다(고르기 시도는 판정 말이 아님)
+    const t0 = s.teach?.together[0];
+    if (!t0) throw new Error("같이 해 보기 없음");
+    const together = withAppJudge(
+      { kind: "together", index: 0 },
+      s,
+      parseAttemptInput(
+        v2("together", {
+          index: 0,
+          tries: [{ choice: 2 }, { choice: 1, heard: "No, I eat cookies." }],
+        }),
+      ) as AttemptInput,
+      ctx,
+    );
+    expect(together).toMatchObject({
+      judge: judgeSpeakingQuestion(t0, "No, I eat cookies.", judgeCtx),
+    });
+    // 읽기 같이 해 보기(질문 꼴 아님)는 judge 를 뺀다
+    const r = teach.reading;
+    expect(
+      "judge" in
+        withAppJudge(
+          { kind: "together", index: 0 },
+          r,
+          parseAttemptInput(
+            v2("together", { index: 0, tries: [{ choice: 1 }], judge: bogus }),
+          ) as AttemptInput,
+          ctxOf(r),
+        ),
+    ).toBe(false);
+    // 대기열로 온 혼자 질문 시도의 judge 는 뺀다(AI 와 합친 judge 는 서버 액션만 저장 — 검토 M1)
+    const solo = parseAttemptInput(
+      v2("question", {
+        heard: ["Yes, they do."],
+        failures: 0,
+        judge: { ...bogus, ai: "partial", by: "ai" },
+      }),
+    ) as AttemptInput;
+    const queued = withAppJudge({ kind: "question", index: 3 }, s, solo, ctx);
+    expect("judge" in queued).toBe(false);
+    expect(queued).toMatchObject({
+      kind: "question",
+      heard: ["Yes, they do."],
+    });
+    // 그 밖 시도는 그대로
+    const repeat = parseAttemptInput(
+      v2("repeat-word", { heard: ["eat"], failures: 0 }),
+    ) as AttemptInput;
+    expect(
+      withAppJudge({ kind: "repeat-word", index: 0 }, s, repeat, ctx),
+    ).toBe(repeat);
+  });
+
+  it("말하기 AI 시도(plan-p11c 값 3): 'AI 쉬는 중' 뒤 건너뛴 질문 답 끝 시도(skipped ai_rest)를 읽고 점수가 없으며 질문 답 밖 종류에는 그 까닭이 없다", () => {
+    const s = teach.speaking;
+    const input = parseAttemptInput(
+      v2("question", { heard: [], failures: 0, skipped: "ai_rest" }),
+    );
+    expect(input).toMatchObject({ kind: "question", skipped: "ai_rest" });
+    expect(
+      appActivityResult(
+        { kind: "question", index: 0 },
+        s,
+        input as AttemptInput,
+        ctxOf(s, false),
+      ).score,
+    ).toBeNull();
+    expect(
+      parseAttemptInput(
+        v2("repeat-word", { heard: [], failures: 0, skipped: "ai_rest" }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("AC-3d 세션 점수는 혼자 문항 첫 시도로만 센다: 가르치는 수업 쓰기 문항을 처음 틀리고 같은 문제 다시에서 맞혀도 0 이다", () => {
+    const w = teach.writing;
+    if (w.content.shape !== "items") throw new Error("쓰기 1~3 아님");
+    const item = w.content.items[0];
+    if (item?.type !== "assemble-sentence") throw new Error("조립 아님");
+    const right = { kind: "tiles", pieces: piecesOf(item.accepted[0] ?? "") };
+    // 대문자만 틀린 첫 시도(차례 · 마침표는 맞음)
+    const lower = {
+      kind: "tiles",
+      pieces: right.pieces.map((p, i) => (i === 0 ? p.toLowerCase() : p)),
+    };
+    const score = (tries: unknown[]) =>
+      appActivityResult(
+        { kind: "writing-item", index: 0 },
+        w,
+        parseAttemptInput(v2("writing-item", { tries })) as AttemptInput,
+        ctxOf(w),
+      ).score;
+    expect(score([right])).toBe(1);
+    expect(score([lower, right])).toBe(0);
   });
 });

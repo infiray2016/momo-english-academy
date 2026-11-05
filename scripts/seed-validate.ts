@@ -1,5 +1,6 @@
 // 시드 검증 명령(plan-p04c '명령', 6.3 순서 (0) · 6.4 · 9절 시드 검증 행).
-// 사용: pnpm seed:validate [--root <폴더>] [--complete-through <n|settings>] [--areas <영역,…>] [--json] [--stats]
+// 사용: pnpm seed:validate [--root <폴더>] [--complete-through <n|settings>] [--areas <영역,…>] [--require-unit-goals] [--json] [--stats]
+// --require-unit-goals(기본 끔): seed.goals_required_levels 단계 단원 규격에 목표가 없으면 오류(없으면 경고만, plan 정한 것 12 · C186).
 // 종료 코드: 0 통과(경고가 있어도), 1 위반, 2 입력 오류(모르는 인자 · 잘못된 값 · 뿌리 폴더 없음 · 꼭 있어야 하는 규격 파일 없음 ·
 // --complete-through settings 인데 키 없음 · 선생님 자산 크기 상한 설정 없음). 순수 함수(parseArgs · runValidate)를 내보내고 파일 걷기 · 출력은 직접 실행될 때만 한다.
 // API 를 부르지 않는다(seed/checks 의 저장 결과만 읽는다, AC-7d).
@@ -47,6 +48,8 @@ export type CliArgs = {
   areas: Area[];
   json: boolean;
   stats: boolean;
+  /** 필수 단계 단원 규격의 목표 없음을 오류로 막는다(기본 끔 — 끄면 경고만, C162 '개발 적재는 보고만' · C186). */
+  requireUnitGoals?: boolean;
 };
 export type ParsedArgs =
   | { ok: true; args: CliArgs }
@@ -58,6 +61,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     areas: [...AREAS],
     json: false,
     stats: false,
+    requireUnitGoals: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -105,6 +109,9 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
         break;
       case "--stats":
         args.stats = true;
+        break;
+      case "--require-unit-goals":
+        args.requireUnitGoals = true;
         break;
       default:
         return { ok: false, error: `모르는 인자: ${arg}` };
@@ -311,6 +318,8 @@ export function runValidate(
     ...(through === undefined ? {} : { through }),
     areas: args.areas,
     ...(teacherAssets ? { teacherAssets } : {}),
+    // 필수 단계 단원 목표 없음은 --require-unit-goals 일 때만 막는다(C186, 지금은 어느 작업 흐름도 켜지 않음).
+    ...(args.requireUnitGoals ? { goalsBlocking: true } : {}),
   });
   const code = exitCodeOf(report);
   return {

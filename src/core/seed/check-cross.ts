@@ -139,8 +139,9 @@ function amountSignature(area: Area, lesson: Lesson): string {
     case "talk": {
       const { card } = lesson as TalkLesson;
       return JSON.stringify([
-        card.turns?.length ?? 0,
-        card.questions?.length ?? 0,
+        card.required.length,
+        card.more.length,
+        card.missions?.length ?? 0,
       ]);
     }
   }
@@ -213,11 +214,7 @@ function answerTargets(
   }
   if (area === "talk") {
     const { card } = lesson as TalkLesson;
-    for (const t of [
-      ...(card.turns ?? []),
-      ...(card.moreTalk ?? []),
-      ...(card.questions ?? []),
-    ]) {
+    for (const t of [...card.required, ...card.more]) {
       for (const w of t.targets) ids.add(w);
     }
   }

@@ -23,7 +23,9 @@ type Kept =
   | { at: number; k: "done"; listen: number; o: string; by?: EndedBy }
   | { at: number; k: "speak" }
   | { at: number; k: "speak-start" }
-  | { at: number; k: "speak-end" };
+  | { at: number; k: "speak-end" }
+  /** 음성 접점의 감시 상한이 끝낸 발화(C166 R1 — 시작 알림이 없었어도 그때 읽기가 끝난 것으로 본다). */
+  | { at: number; k: "speak-timeout" };
 
 function resultKindOf(outcome: ListenOutcome): string {
   switch (outcome.kind) {
@@ -76,6 +78,7 @@ function keptOf(entry: SpeechTraceEntry): Kept | undefined {
       return entry.text.trim() === "" ? undefined : { at, k: "speak" };
     case "speak-event":
       if (entry.type === "start") return { at, k: "speak-start" };
+      if (entry.type === "timeout") return { at, k: "speak-timeout" };
       return { at, k: "speak-end" };
     default:
       return undefined;
@@ -84,7 +87,8 @@ function keptOf(entry: SpeechTraceEntry): Kept | undefined {
 
 /**
  * 듣기 직전 읽어 주기와의 관계(순수): 시작 앞 마지막 읽기가 시작한 뒤 끝 · 오류 알림이 시작 앞에 왔으면 그 뒤 ms, 아니면 읽는 중 끊음('cut').
- * 앞에 읽기가 없으면 없음.
+ * 감시 상한이 끝낸 발화(speak-timeout)는 시작 알림이 없었어도 그때 끝난 것으로 본다 — 감시가 살린 턴을 '읽는 중 끊음'으로 세지 않게(검토 A
+ * M-2). 앞에 읽기가 없으면 없음.
  */
 function speakRelationOf(
   kept: readonly Kept[],
@@ -100,6 +104,7 @@ function speakRelationOf(
     if (e.k === "speak-start" && startedAt === undefined) startedAt = e.at;
     if (e.k === "speak-end" && startedAt !== undefined && e.at >= startedAt)
       endedAt = e.at;
+    if (e.k === "speak-timeout") endedAt = e.at;
   }
   return endedAt === undefined ? "cut" : Math.round(beginAt - endedAt);
 }

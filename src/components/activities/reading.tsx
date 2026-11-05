@@ -222,7 +222,7 @@ export function ReadingPassage({
                   onClick={() => onWordTap(entry, part.at)}
                   className={cn(
                     "rounded px-0.5 underline decoration-dotted underline-offset-4",
-                    isNew && "bg-[#FFFDF7] font-bold",
+                    isNew && "bg-paper font-bold",
                     open && "outline outline-2 outline-ink",
                   )}
                 >
@@ -255,7 +255,7 @@ export function ReadingPassage({
             <span key={part.at} className="whitespace-nowrap">
               <span
                 data-new-word=""
-                className="rounded bg-[#FFFDF7] px-1 font-bold"
+                className="rounded bg-paper px-1 font-bold"
               >
                 {part.text}
               </span>

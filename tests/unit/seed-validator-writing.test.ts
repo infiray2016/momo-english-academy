@@ -189,7 +189,8 @@ describe("칸 검사: 쓰기", () => {
     const upper = sample(3);
     const item = itemsOf(upper)[0];
     if (item?.type !== "assemble-sentence") throw new Error("조립 문항 없음");
-    item.cards = item.cards.map((c) => (c === "i" ? "I" : c));
+    // C84: I 와 인물 이름은 대문자 카드를 받으므로, 어휘 목록 낱말의 대문자 카드(The)로 막음을 본다.
+    item.cards = item.cards.map((c) => (c === "the" ? "The" : c));
     expect(errorsOf(check(upper, 3), "writing-cards")).toHaveLength(1);
     const glued = sample(3);
     const gluedItem = itemsOf(glued)[0];

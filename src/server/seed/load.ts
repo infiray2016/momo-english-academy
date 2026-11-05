@@ -101,6 +101,11 @@ export type LoadOptions = {
   areas?: readonly Area[];
   /** 규격 파일만 넣는다(C68 (1)). 칸 영역은 비운다. */
   referenceOnly?: boolean;
+  /**
+   * 개발 일부 받기(회화 plan 정한 것 15): 완전성 빈 칸은 막지 않고 보고(validation.summary.empty)만 한다.
+   * 검증 오류 · 사람 확인 남음 · 풀이 검사 안 됨 · 판 규칙 위반은 그대로 막는다. 운영 적재(main.yml)는 쓰지 않는다(AC-7a, C160).
+   */
+  partial?: boolean;
   /** 계획 · 검사만 하고 되돌린다. */
   dryRun?: boolean;
   /** 한 시계 값(settings_history.changed_at · 단가 고르기 학습일). */
@@ -129,6 +134,8 @@ export type LoadReport = {
   completeThrough: number | null;
   areas: Area[];
   referenceOnly: boolean;
+  /** 개발 일부 받기였는지(--partial). */
+  partial: boolean;
   /** 검증 전에 거부하면 null. */
   validation: { code: 0 | 1; summary: SeedReport["summary"] } | null;
   /** DB 를 읽기 전에 거부하면 null. */
@@ -149,6 +156,8 @@ export type LoadReport = {
       version: number;
     };
     history: number;
+    /** 목표 채움: 같은 판에 goals 만 뒤늦게 더해진 단원 규격 행에 goals 를 채운 수(컨트롤러 결정 T-87 — 그 칸은 건너뜀에도 든다). */
+    unitGoalsFilled: number;
   };
   violations: LoadViolation[];
   /** 넣은 칸(seed/manifest 판 기록에 옮겨 쓴다, P8). */
@@ -183,6 +192,7 @@ function zeroCounts(settingsVersion = 0): LoadReport["counts"] {
       version: settingsVersion,
     },
     history: 0,
+    unitGoalsFilled: 0,
   };
 }
 
@@ -212,6 +222,8 @@ type Incoming = {
   rows: VersionRow[];
   payloads: Payloads;
   violations: LoadViolation[];
+  /** 목표가 든 단원 규격 칸 → 목표를 뺀 몸통의 해시(목표 채움 판정 — unitGoalFillsOf). */
+  unitGoalBases: Map<string, string>;
 };
 
 function field(value: unknown, key: string): unknown {
@@ -236,6 +248,15 @@ export function answerOf(item: unknown): Record<string, unknown> {
   return out;
 }
 
+/** 적재할 단원 목표(비었거나 없으면 null — unit_specs.goals 를 비움). */
+function unitGoalsOf(goals: unknown): unknown[] | null {
+  return Array.isArray(goals) && goals.length > 0 ? goals : null;
+}
+
+/**
+ * 단원 규격 판 해시 몸통(DB 열에서 되살릴 수 있는 꼴). 목표는 있을 때만 넣는다 — 목표가 없는 행의 해시는 목표 칸 앞과 같아 이미 적재한 판이
+ * 바뀌지 않는다(회화 plan 묶음 8 fix 1).
+ */
 function unitSpecBody(spec: {
   area: Area;
   level: number;
@@ -243,7 +264,9 @@ function unitSpecBody(spec: {
   learningElement: unknown;
   topic: string;
   words: readonly string[];
+  goals?: unknown;
 }) {
+  const goals = unitGoalsOf(spec.goals);
   return {
     area: spec.area,
     level: spec.level,
@@ -251,6 +274,7 @@ function unitSpecBody(spec: {
     learningElement: spec.learningElement,
     topic: spec.topic,
     words: [...spec.words],
+    ...(goals === null ? {} : { goals }),
   };
 }
 
@@ -285,6 +309,7 @@ export function buildIncoming(
   };
   const rows: VersionRow[] = [];
   const violations: LoadViolation[] = [];
+  const unitGoalBases = new Map<string, string>();
   /** 판은 칸 객체에서, 해시는 cellHash(칸 키, 칸 객체)로(단원 규격은 DB 열에서 되살릴 수 있는 꼴로). */
   const add = (
     table: SeedTable,
@@ -316,7 +341,13 @@ export function buildIncoming(
   }
   for (const spec of unitSpecRows) {
     const cell = unitSpecCell(spec.area, spec.level, spec.unit);
+    const goals = unitGoalsOf(spec.goals);
     add("unit_specs", cell, spec, unitSpecBody(spec));
+    if (goals !== null)
+      unitGoalBases.set(
+        cell,
+        cellHash(cell, unitSpecBody({ ...spec, goals: undefined })),
+      );
     payloads.unit_specs.set(cell, {
       area: spec.area,
       level: spec.level,
@@ -324,6 +355,8 @@ export function buildIncoming(
       learningPoints: spec.learningElement,
       topic: spec.topic,
       targetVocab: [...spec.words],
+      // 목표가 없으면 칸을 두지 않는다(열 NULL — 비울 수 있는 jsonb 에 JSON null 을 넣지 않음, 머리 주석)
+      ...(goals === null ? {} : { goals }),
       revision: spec.revision,
       correction: spec.correction,
     });
@@ -424,15 +457,72 @@ export function buildIncoming(
       }
     }
   }
-  return { rows, payloads, violations };
+  return { rows, payloads, violations, unitGoalBases };
+}
+
+/** 목표 채움 판정의 DB 행 열쇠(칸 · 판). */
+export function unitGoalKeyOf(
+  row: Pick<VersionRow, "cell" | "revision" | "correction">,
+): string {
+  return `${row.cell}\n${row.revision}.${row.correction}`;
+}
+
+export type UnitGoalFill = {
+  cell: string;
+  revision: number;
+  correction: number;
+  goals: unknown[];
+};
+
+/**
+ * 목표 채움(컨트롤러 결정 장부 T-87 · 회화 plan 묶음 8 fix 1): 같은 판(개정 · 정정)의 단원 규격 행이 DB 에 goals 없이 있고, 들어온 행의
+ * goals 를 뺀 몸통 해시가 DB 행의 해시(열에서 되살린 값)와 같으면 '같은 내용에 goals 만 뒤늦게 더해진 것'으로 본다. 그 행은 판 계획에서
+ * 들어온 해시와 같게 보아(건너뜀) version-content-changed 로 거부하지 않고, 넣기 단계가 goals 만 채운다. 다른 칸이 하나라도 다르면 해시가
+ * 달라 지금처럼 거부된다. goalsMissing 은 DB 에서 goals 가 빈 단원 규격 행의 열쇠(unitGoalKeyOf)다.
+ */
+export function unitGoalFillsOf(
+  incoming: Pick<Incoming, "rows" | "payloads" | "unitGoalBases">,
+  existing: readonly VersionRow[],
+  goalsMissing: ReadonlySet<string>,
+): { existing: VersionRow[]; fills: UnitGoalFill[] } {
+  const fills: UnitGoalFill[] = [];
+  const next = existing.map((row) => ({ ...row }));
+  for (const row of incoming.rows) {
+    if (row.table !== "unit_specs") continue;
+    const base = incoming.unitGoalBases.get(row.cell);
+    const goals = unitGoalsOf(
+      incoming.payloads.unit_specs.get(row.cell)?.goals,
+    );
+    if (base === undefined || goals === null) continue;
+    const db = next.find(
+      (e) =>
+        e.table === "unit_specs" &&
+        e.cell === row.cell &&
+        e.revision === row.revision &&
+        e.correction === row.correction,
+    );
+    if (!db || db.hash !== base || !goalsMissing.has(unitGoalKeyOf(db)))
+      continue;
+    db.hash = row.hash;
+    fills.push({
+      cell: row.cell,
+      revision: row.revision,
+      correction: row.correction,
+      goals,
+    });
+  }
+  return { existing: next, fills };
 }
 
 // ── DB 읽기 ──────────────────────────────────────────────────────
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-async function readVersionRows(tx: Tx): Promise<VersionRow[]> {
+async function readVersionRows(
+  tx: Tx,
+): Promise<{ rows: VersionRow[]; unitGoalsMissing: Set<string> }> {
   const out: VersionRow[] = [];
+  const unitGoalsMissing = new Set<string>();
   for (const row of await tx
     .select({
       area: levelSpecs.area,
@@ -453,6 +543,8 @@ async function readVersionRows(tx: Tx): Promise<VersionRow[]> {
   }
   for (const row of await tx.select().from(unitSpecs)) {
     const cell = unitSpecCell(row.area, row.level, row.unit);
+    if (unitGoalsOf(row.goals) === null)
+      unitGoalsMissing.add(unitGoalKeyOf({ cell, ...row }));
     out.push({
       table: "unit_specs",
       cell,
@@ -467,6 +559,7 @@ async function readVersionRows(tx: Tx): Promise<VersionRow[]> {
           learningElement: row.learningPoints,
           topic: row.topic,
           words: row.targetVocab,
+          goals: row.goals,
         }),
       ),
     });
@@ -569,7 +662,7 @@ async function readVersionRows(tx: Tx): Promise<VersionRow[]> {
       hash: cellHash(cell, row.item),
     });
   }
-  return out;
+  return { rows: out, unitGoalsMissing };
 }
 
 // ── 판 없는 표의 계획(C68 (2)) ───────────────────────────────────
@@ -806,6 +899,14 @@ function throughOfSettings(
   }
 }
 
+/** 적재가 보는 검증 종료 코드. 일부 받기면 완전성 빈 칸만 빼고 exitCodeOf 와 같다(풀이 검사 안 됨은 그대로 막음). */
+export function loadValidationCode(
+  report: SeedReport,
+  partial: boolean,
+): 0 | 1 {
+  return exitCodeOf(partial ? { ...report, empty: [] } : report);
+}
+
 function validationViolations(report: SeedReport): LoadViolation[] {
   const out: LoadViolation[] = report.errors
     .slice(0, VALIDATION_ERROR_LINES)
@@ -849,6 +950,7 @@ export async function loadSeedWithKeys(
   const settingKeys: SettingKeyNames = { kept: [], orphans: [] };
   const result = (report: LoadReport): LoadResult => ({ report, settingKeys });
   const referenceOnly = options.referenceOnly ?? false;
+  const partial = options.partial ?? false;
   const areas: Area[] = referenceOnly ? [] : [...(options.areas ?? AREAS)];
   const through = options.completeThrough ?? throughOfSettings(options.files);
   const report: LoadReport = {
@@ -857,6 +959,7 @@ export async function loadSeedWithKeys(
     completeThrough: through ?? null,
     areas,
     referenceOnly,
+    partial,
     validation: null,
     latestRevision: null,
     counts: zeroCounts(),
@@ -878,7 +981,7 @@ export async function loadSeedWithKeys(
     through,
     areas,
   });
-  const code = exitCodeOf(validation);
+  const code = loadValidationCode(validation, partial);
   report.validation = { code, summary: validation.summary };
   if (code !== 0) {
     report.violations = validationViolations(validation);
@@ -936,7 +1039,14 @@ export async function loadSeedWithKeys(
           sql`select pg_advisory_xact_lock(hashtext(${SEED_LOAD_LOCK_KEY}))`,
         );
         // 3) 읽기
-        const existing = await readVersionRows(tx);
+        const read = await readVersionRows(tx);
+        // 목표 채움(T-87): 같은 판에 goals 만 뒤늦게 더해진 단원 규격 행은 거부하지 않고 goals 만 채운다
+        const goalFill = unitGoalFillsOf(
+          incoming,
+          read.rows,
+          read.unitGoalsMissing,
+        );
+        const existing = goalFill.existing;
         const dbImages = await tx.select().from(images);
         const dbVocab = await tx
           .select({
@@ -1097,6 +1207,7 @@ export async function loadSeedWithKeys(
           version,
         };
         counts.history = settingsPlan.updates.length;
+        counts.unitGoalsFilled = goalFill.fills.length;
         const planned: LoadReport = {
           ...report,
           latestRevision: { before: latest, after: versionPlan.latestAfter },
@@ -1129,6 +1240,23 @@ export async function loadSeedWithKeys(
         for (const chunk of chunks(priceInserts))
           await tx.insert(modelPrices).values(chunk);
         await insertSeedRows(tx, versionPlan, incoming.payloads);
+        // 목표 채움(T-87): 같은 판 행의 goals 만 채운다(다른 열은 그대로 — 해시는 열에서 되살리므로 채운 뒤 들어온 해시와 같다)
+        for (const fill of goalFill.fills) {
+          const row = incoming.payloads.unit_specs.get(fill.cell);
+          if (!row) throw new Error(`목표를 채울 행이 없다: ${fill.cell}`);
+          await tx
+            .update(unitSpecs)
+            .set({ goals: fill.goals })
+            .where(
+              and(
+                eq(unitSpecs.area, row.area),
+                eq(unitSpecs.level, row.level),
+                eq(unitSpecs.unit, row.unit),
+                eq(unitSpecs.revision, fill.revision),
+                eq(unitSpecs.correction, fill.correction),
+              ),
+            );
+        }
         for (const chunk of chunks(settingsPlan.inserts)) {
           await tx.insert(settings).values(
             chunk.map((row) => ({

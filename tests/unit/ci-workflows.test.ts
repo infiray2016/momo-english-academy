@@ -287,7 +287,7 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
     expect(runs).toEqual(["pnpm seed:validate"]);
   });
 
-  it("식별자 대조 ci / check-ids: PR 마다 --fail-on 으로 돌고 그 규칙이 check-ids 의 CI 규칙 목록(design-number 뺀 아홉)과 같다", () => {
+  it("식별자 대조 ci / check-ids: PR 마다 --fail-on 으로 돌고 그 규칙이 check-ids 의 CI 규칙 목록(design-number 뺀 열 — design-color 포함)과 같으며, 설계 숫자는 --design-number-max 상한으로 막는다(AC-23e (1))", () => {
     const text = read("ci.yml");
     const job = jobsOf(text).get("checks");
     expect(job).toBeDefined();
@@ -295,8 +295,16 @@ describe("CI 작업 파일(main · dev-load · keepalive · ci)", () => {
     expect(steps.some((s) => s.name === "check-ids")).toBe(true);
     const runs = steps.map((s) => s.run ?? "");
     expect(runs).toContain("pnpm install --frozen-lockfile");
-    expect(runs).toContain(`pnpm check:ids --fail-on ${CI_FAIL_ON.join(",")}`);
+    const checkIds = runs.filter((r) => r.startsWith("pnpm check:ids"));
+    expect(checkIds).toHaveLength(1);
+    // 기준 값은 작업 파일의 인자 한 곳에만 둔다(plan 정한 것 8 — 코드 · 시험에 박지 않는다)
+    expect(checkIds[0]).toMatch(
+      new RegExp(
+        `^pnpm check:ids --fail-on ${CI_FAIL_ON.join(",")} --design-number-max \\d+$`,
+      ),
+    );
     expect(CI_FAIL_ON).not.toContain("design-number");
+    expect(CI_FAIL_ON).toContain("design-color");
   });
 
   it("AC-7g 작업 파일: 입력과 비밀값은 env 로만 넘기고 어느 작업도 CLOCK_SHIFT_DAYS 를 두지 않는다", () => {

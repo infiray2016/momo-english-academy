@@ -1,19 +1,18 @@
 "use client";
 
-// 회화 따라 말하기 · 처음 안내(plan-p13b 파일별 값 14, 4절 회화 세션 '오늘 쓸 말' · '말해 보기' · '정리' · '처음 회화' 행 · 3.3 오늘 쓸 말 ·
-// 말해 보기 · 정리 문단 · 7절 · 13절 C33 · C39 · C41 · C97 · 컨트롤러 결정 '열 때마다 시작! 한 번'(차례 5 정할 것 1)).
+// 회화 따라 말하기 · 처음 안내(plan-p13b 파일별 값 14 · 회화 plan 묶음 11 · 12, 4절 회화 세션 짧은 준비 · 정리 · '처음 회화' 행 · 3.3 짧은
+// 준비 · 정리 문단 · 7절 · 13절 C33 · C39 · C41 · C97 · C161 · C167 (1) · 컨트롤러 결정 '열 때마다 시작! 한 번').
 // - 처음 안내: 처음 회화면 3.3 안내 글 + '시작!', 처음이 아니어도 열 때마다 '시작!' 한 번(그 누름이 첫 읽어 주기를 연다 — iPad Safari).
-// - 오늘 쓸 말: 단어마다 카드 한 장(단어 · 뜻 · 예문 — 모든 단계 뜻), 들어올 때 토리가 단어 → 예문을 읽고(회11 (1)), 말하기 단추로 따라
-//   말함(1~3단계 단어 · 4단계부터 예문) → 결과 말을 ui.auto_next_seconds 보인 뒤 결과와 관계없이 다음(C39), 인식 실패가 speech.max_retries 면
-//   건너뜀.
-// - 말해 보기(1~3단계): 예문 카드 한 장씩, 첫 바퀴 영어 + 뜻(읽어 준 뒤 말함), 둘째 바퀴부터 뜻만 — 일치율이 talk.hint_read_match 아래면
-//   영어를 보이고 들려준 뒤 다음(회11 (2)).
-// - 정리: 되짚을 말을 토리 말풍선으로 보이고 읽음(1~3단계 뜻 함께), 1~3단계는 문장마다 한 번 따라 말함(결과 말만) → 끝인사(끝맺음
-//   끝인사가 와 있으면 그것 — talkClosingStatus 한 번) → 마무리.
-// 따라 말한 것은 점수 · '말했다'에 들지 않는다(서버 saveFollowAlong — 인식 글이 있는 발화만 영어로 말한 문장 수에). 인식 글은 화면에
-// 보이지 않는다(결과 말로만, 4절). 녹음하지 않는다.
-// 선생님 그림은 회화 틀의 선생님 창이 맡는다(선생님 화면 plan 값 13 — 이 조각에는 그림이 없다). 결과 말이 '잘 말했어요'(C39)면 틀의 칭찬을
-// 부른다(env.onPraise — 4절 '선생님 창' 칭찬 행). 선생님의 말하기 · 듣기 상태는 틀의 음성 접점(선생님 음성 감싸기) · onListening 이 낸다.
+// - 짧은 준비 쪽지(PrepNote — 쪽지 한 장에 낱말 하나, 1단계 그림 · 뜻 · 소리 · 2~3단계 낱말 글 · 4단계부터 예문 글): 들려줄 말을 읽고 한 번
+//   따라 말함 → 아이 말풍선에 인식 글 · 그 아래 결과 말 → ui.auto_next_seconds 뒤 다음, 다 하지 않아도 끝나면 대화로.
+// - 정리 한 번(LessonWrapUp): 되짚을 말을 선생님 말풍선으로 보이고 읽음(1~3단계 뜻 함께), 1~3단계는 되짚을 말 전체를 한 번 따라 말함(결과
+//   말만) → 끝인사(끝맺음 끝인사가 와 있으면 그것 — talkClosingStatus 한 번) → 마무리.
+// 저장은 틀이 넘긴 env.saveFollow(saveLessonFollowAlong — 활동 번호는 서버). 따라 말한 것은 점수 · '말했다'에 들지 않는다. 녹음하지 않는다.
+// 선생님 그림은 회화 틀의 선생님 창이 맡는다(이 조각에는 그림이 없다). 결과 말이 '잘 말했어요'(C39)면 틀의 칭찬을 부른다(env.onPraise).
+// 13절 C166(UX 검토 U4-2 · U4-4 · U5-2 · R2): 선생님이 읽는 동안 말하기 단추를 흐리게 두고(누르면 '다 읽은 뒤 눌러요') 읽기가 끝나면 켠다.
+// 듣는 동안 '듣고 있어요' · 소리 들어옴 표시, 인식이 speech.max_retries 번 안 돼 건너뛸 때 '이건 다음에 다시 해요'를
+// speech.skip_notice_seconds 보인 뒤 다음.
+import { Volume2 } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -25,15 +24,21 @@ import {
   CHILD_SIZE,
   EnglishLine,
   GuideLine,
+  VocabPicture,
 } from "@/components/activities/common";
-import { SpeakButton } from "@/components/answer/speak-button";
-import { BigButton, StatusLine } from "@/components/board/board";
+import {
+  SPEAK_BUTTON_TEXT,
+  SpeakButton,
+} from "@/components/answer/speak-button";
+import { BigButton, FOCUS_RING, StatusLine } from "@/components/board/board";
 import { fillName } from "@/core/ai/mask";
+import type { PictureInfo } from "@/core/answer/display";
 import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   type TalkSpeechSettings,
   talkEndRuleFor,
 } from "@/core/conversation/listen";
+import { LEVEL_MIN, TALK_LOW_BAND } from "@/core/seed/structure";
 import {
   RESULT_PHRASES,
   type ResultPhrase,
@@ -48,8 +53,10 @@ import { createSleeper, speakInTurn } from "@/core/speech/pace";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
-import { saveTalkFollowAlong } from "@/server/actions/conversation";
-import { CHILD_TURN_TEXT } from "./child-turn";
+import { saveLessonFollowAlong } from "@/server/actions/conversation";
+import type { PrepWordView, TalkLessonPrep } from "@/server/conversation";
+import { CHILD_TURN_TEXT, ChildBubble } from "./child-turn";
+import { SilentModeNote } from "./silent-mode-note";
 import { type BubbleContent, ToriBubble } from "./tori";
 
 /** 시작 단추(처음 회화 안내 글은 이름 자리라 TEACHER_TEXT.intro — 3.3 글 그대로, 문장마다 한 줄). */
@@ -59,109 +66,14 @@ export const TALK_START_TEXT = {
 
 /** 따라 말하기 화면 글(4절 · 3.3 · plan-p13b 값 14 제안 문구). 이름 자리 글(안내 · 잘 안 들림)은 TEACHER_TEXT. */
 export const FOLLOW_TEXT = {
-  practiceSee: "보고 말해 봐요",
-  practiceMeaning: "뜻을 보고 영어로 말해 봐요",
   speak: "말하기",
   offline: CHILD_TURN_TEXT.offline,
+  /** 인식이 speech.max_retries 번 안 돼 건너뜀(U4-4). */
+  skipped: SPEAK_BUTTON_TEXT.skipped,
 } as const;
 
 /** 초 → ms(단위 바꿈 상수). */
 const MS_PER_SECOND = 1000;
-
-export type FollowSegment = "today_words" | "practice";
-
-/** 따라 말하기 한 차례(오늘 쓸 말 단어 하나 · 말해 보기 바퀴의 예문 하나). */
-export type FollowStep = {
-  segment: FollowSegment;
-  round: number;
-  index: number;
-  /** 따라 말할 글(일치율 견줌 · 저장). */
-  target: string;
-  /** 들어올 때 토리가 읽을 차례(말해 보기 둘째 바퀴부터는 없음 — 뜻만 보고 말함). */
-  read: string[];
-  /** 오늘 쓸 말 단어(말해 보기는 없음). */
-  word?: string;
-  /** 보일 한국어 뜻(단어 뜻 · 예문 뜻). */
-  meaningKo: string;
-  /** 보일 영어 예문(말해 보기 둘째 바퀴부터는 다시 보임 때만). */
-  example: string;
-  /** 영어를 처음부터 보이는가(오늘 쓸 말 · 말해 보기 첫 바퀴). */
-  showEnglish: boolean;
-};
-
-/**
- * 남은 따라 말하기 차례(순수 함수): 오늘 쓸 말은 단어 차례, 말해 보기는 바퀴마다 정한 차례(처음 스냅숏 practiceOrder — 첫 바퀴 카드 차례,
- * 둘째부터 섞음). 따라 말할 것은 1~3단계 오늘 쓸 말 단어 · 4단계부터 예문, 말해 보기는 예문. 이미 저장한 차례는 뺀다(이어 열기).
- */
-export function followStepsOf({
-  todayWords,
-  practice,
-  done,
-  lowLevel,
-}: {
-  todayWords: readonly { word: string; meaningKo: string; example: string }[];
-  practice: {
-    items: readonly { word: string; example: string; exampleKo: string }[];
-    order: readonly (readonly number[])[];
-  };
-  done: {
-    today: readonly number[];
-    practice: readonly { round: number; index: number }[];
-  };
-  /** 1~3단계 꼴(카드 턴). */
-  lowLevel: boolean;
-}): { today: FollowStep[]; practice: FollowStep[] } {
-  const today = todayWords.flatMap((w, index): FollowStep[] =>
-    done.today.includes(index)
-      ? []
-      : [
-          {
-            segment: "today_words",
-            round: 0,
-            index,
-            target: lowLevel ? w.word : w.example,
-            read: [w.word, w.example].filter((t) => t.trim() !== ""),
-            word: w.word,
-            meaningKo: w.meaningKo,
-            example: w.example,
-            showEnglish: true,
-          },
-        ],
-  );
-  const steps: FollowStep[] = [];
-  practice.order.forEach((round, r) => {
-    for (const index of round) {
-      const item = practice.items[index];
-      if (!item) continue;
-      if (done.practice.some((d) => d.round === r && d.index === index))
-        continue;
-      steps.push({
-        segment: "practice",
-        round: r,
-        index,
-        target: item.example,
-        read: r === 0 ? [item.example] : [],
-        meaningKo: item.exampleKo,
-        example: item.example,
-        showEnglish: r === 0,
-      });
-    }
-  });
-  return { today, practice: steps };
-}
-
-/** 말해 보기 둘째 바퀴부터 맞지 않으면(일치율 < talk.hint_read_match) 영어를 보이고 들려준다(3.3 · 회11 (2)). 첫 바퀴는 이미 보임. */
-export function practiceRevealOf({
-  round,
-  rate,
-  hintReadMatch,
-}: {
-  round: number;
-  rate: number;
-  hintReadMatch: number;
-}): boolean {
-  return round > 0 && rate < hintReadMatch;
-}
 
 /** 회화 종이 판(코르크 위 종이 · 연두 테이프 — 시작 · 막힘 · 쉼 안내가 같이 씀, 4절 '글은 종이 위에' · 전체 디자인 리뷰 M-1). */
 export function TalkPaper({
@@ -213,6 +125,8 @@ export function TalkStart({
       <BigButton disabled={disabled} onClick={onStart}>
         {TALK_START_TEXT.start}
       </BigButton>
+      {/* 아이패드 사파리면 무음 모드 한 줄(U5-8 — B 조각) */}
+      <SilentModeNote />
     </TalkPaper>
   );
 }
@@ -246,7 +160,47 @@ export type FollowEnv = {
   onPraise: () => void;
   /** 앞 기록 뒤 끝난 듣기의 요약(C149 — 시도에 싣는다, 글 · 소리 없음). 부를 때마다 그 뒤 듣기부터 다시 모은다. */
   clientListen: () => ClientListen;
+  /** 따라 말하기 한 차례 저장(lessonFollowSaver). */
+  saveFollow: FollowSaver;
 };
+
+/** 따라 말하기 한 차례의 자리(저장 몫). place 는 짧은 준비 쪽지의 자리(인사 뒤 · 대화 중). */
+export type FollowSaveAt = {
+  segment: "wrap_up" | "prep";
+  round: number;
+  index: number;
+  target: string;
+  place?: TalkLessonPrep["place"];
+};
+
+/** 따라 말하기 한 차례를 저장한다(기다리지 않음 — 실패해도 진행은 막지 않는다). */
+export type FollowSaver = (
+  at: FollowSaveAt,
+  tried: Tried,
+  skipped?: "recognition",
+) => void;
+
+/**
+ * 새 흐름 저장(saveLessonFollowAlong — 짧은 준비는 talk-prep, 정리는 talk-wrapup, 활동 번호는 서버). 같은 차례는 같은 시도 id 라 다시 열어도
+ * 한 번만 저장된다.
+ */
+export function lessonFollowSaver(
+  env: Pick<FollowEnv, "sessionId" | "clientListen">,
+): FollowSaver {
+  return (at, tried, skipped) => {
+    void saveLessonFollowAlong({
+      sessionId: env.sessionId,
+      clientAttemptId: `talk-lesson-follow:${env.sessionId}:${at.segment}:${at.place ?? at.round}:${at.index}`,
+      segment: at.segment,
+      index: at.index,
+      target: at.target,
+      heard: tried.heard,
+      failures: tried.failures,
+      ...(skipped ? { skipped } : {}),
+      clientListen: env.clientListen(),
+    }).catch(() => {});
+  };
+}
 
 /**
  * 토리 말 읽기(차례대로 · 끝날 때까지 기다림 · 끊으면 거기서 멈춤). 문장이 끝나면 speech.sentence_pause_ms 쉬고 다음(C125 — 끊으면
@@ -310,6 +264,8 @@ function useSayer(
 function useFollowListen(env: FollowEnv) {
   const handle = useRef<ListenHandle | undefined>(undefined);
   const [listening, setListening] = useState(false);
+  /** 이 듣기에서 소리가 들어왔는가(U4-2). */
+  const [soundIn, setSoundIn] = useState(false);
   useEffect(() => () => handle.current?.cancel(), []);
   const rule = talkEndRuleFor(
     { level: env.level, mode: "follow" },
@@ -323,68 +279,30 @@ function useFollowListen(env: FollowEnv) {
       return undefined;
     }
     env.speech.unlockFromGesture();
+    setSoundIn(false);
     setListening(true);
     env.onListening(true);
-    const current = env.speech.listen(rule);
+    const current = env.speech.listen(rule, { sound: () => setSoundIn(true) });
     handle.current = current;
     const outcome = await current.outcome;
     handle.current = undefined;
     setListening(false);
+    setSoundIn(false);
     env.onListening(false);
     return speechEventOf(outcome);
   }
-  return { listen, listening, capAt: () => handle.current?.capAt };
+  return { listen, listening, soundIn, capAt: () => handle.current?.capAt };
 }
 
 /** 따라 말하기 한 차례의 결과(저장 몫). */
 type Tried = { heard: string[]; failures: number };
-
-/** 따라 말하기 시도 id — 같은 차례는 같은 id(다시 열어도 한 번만 저장). */
-function followAttemptId(
-  sessionId: string,
-  segment: "today_words" | "practice" | "wrap_up",
-  round: number,
-  index: number,
-): string {
-  return `talk-follow:${sessionId}:${segment}:${round}:${index}`;
-}
-
-function saveFollow(
-  env: Pick<FollowEnv, "sessionId" | "clientListen">,
-  at: {
-    segment: "today_words" | "practice" | "wrap_up";
-    round: number;
-    index: number;
-    target: string;
-  },
-  tried: Tried,
-  skipped?: "recognition",
-) {
-  void saveTalkFollowAlong({
-    sessionId: env.sessionId,
-    clientAttemptId: followAttemptId(
-      env.sessionId,
-      at.segment,
-      at.round,
-      at.index,
-    ),
-    segment: at.segment,
-    index: at.index,
-    ...(at.segment === "practice" ? { round: at.round } : {}),
-    target: at.target,
-    heard: tried.heard,
-    failures: tried.failures,
-    ...(skipped ? { skipped } : {}),
-    clientListen: env.clientListen(),
-  }).catch(() => {});
-}
 
 /**
  * 따라 말하기 한 번(듣기 → 판정 → 결과 말). 들음이면 결과 말을 돌려주고, 건너뜀(인식 실패 상한)이면 "skip", 다시면 undefined.
  * 막힌 판정(마이크 · 말소리)은 틀이 안내를 그린다.
  */
 function useFollowTry(env: FollowEnv) {
-  const { listen, listening, capAt } = useFollowListen(env);
+  const { listen, listening, soundIn, capAt } = useFollowListen(env);
   const [message, setMessage] = useState("");
   async function tryOnce(
     target: string,
@@ -411,7 +329,11 @@ function useFollowTry(env: FollowEnv) {
         phrase: resultPhraseOf(rate, env.settings.matchPhraseLevels),
       };
     }
-    if (verdict === "skip") return { kind: "skip" };
+    if (verdict === "skip") {
+      // 말없이 휙 넘어가지 않게 한 줄 안내(U4-4 — 부르는 쪽이 speech.skip_notice_seconds 뒤 넘김)
+      setMessage(FOLLOW_TEXT.skipped);
+      return { kind: "skip" };
+    }
     if (verdict === "retry") {
       setMessage(TEACHER_TEXT.notHeard(env.teacherName));
       return { kind: "retry" };
@@ -419,39 +341,7 @@ function useFollowTry(env: FollowEnv) {
     if (verdict === "offline") setMessage(FOLLOW_TEXT.offline);
     return undefined;
   }
-  return { tryOnce, listening, capAt, message, setMessage };
-}
-
-/** 오늘 쓸 말 · 말해 보기(한 토막의 남은 차례). 다 하면 onDone. */
-export function FollowAlong({
-  segment,
-  steps,
-  env,
-  onDone,
-}: {
-  segment: FollowSegment;
-  steps: readonly FollowStep[];
-  env: FollowEnv;
-  onDone: () => void;
-}) {
-  const [at, setAt] = useState(0);
-  const step = steps[at];
-  // 차례마다 새로 그린다(결과 말 · 실패 수 · 다시 보임이 처음부터)
-  return step ? (
-    <FollowCard
-      key={`${step.segment}:${step.round}:${step.index}`}
-      segment={segment}
-      step={step}
-      env={env}
-      onNext={() => {
-        env.onNextItem();
-        if (at + 1 < steps.length) setAt(at + 1);
-        else onDone();
-      }}
-    />
-  ) : (
-    <FollowEnd onDone={onDone} />
-  );
+  return { tryOnce, listening, soundIn, capAt, message, setMessage };
 }
 
 /** 남은 차례가 없으면(이어 열기 — 다 저장됨) 바로 다음 토막. */
@@ -467,248 +357,35 @@ function FollowEnd({ onDone }: { onDone: () => void }) {
   return null;
 }
 
-function FollowCard({
-  segment,
-  step,
-  env,
-  onNext,
-}: {
-  segment: FollowSegment;
-  step: FollowStep;
-  env: FollowEnv;
-  onNext: () => void;
-}) {
-  const sayer = useSayer(env);
-  const { tryOnce, listening, capAt, message } = useFollowTry(env);
-  const [phrase, setPhrase] = useState<ResultPhrase | undefined>();
-  const [revealed, setRevealed] = useState(false);
-  const [failures, setFailures] = useState(0);
-  const tried = useRef<Tried>({ heard: [], failures: 0 });
-  const moved = useRef(false);
-  const timer = useRef<number | undefined>(undefined);
-  const next = useRef(onNext);
-  next.current = onNext;
-
-  // 들어올 때 토리가 읽는다(오늘 쓸 말 단어 → 예문, 말해 보기 첫 바퀴 예문)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 차례마다 한 번(key 로 새로 그림)
-  useEffect(() => {
-    if (step.read.length > 0) void sayer.say(step.read);
-    return () => {
-      window.clearTimeout(timer.current);
-      sayer.cancel();
-    };
-  }, []);
-
-  function moveOn(delayMs: number) {
-    if (moved.current) return;
-    moved.current = true;
-    timer.current = window.setTimeout(() => next.current(), delayMs);
-  }
-
-  async function speak() {
-    if (moved.current) return;
-    sayer.cancel();
-    const out = await tryOnce(step.target);
-    if (!out) return;
-    if (out.kind === "retry") {
-      tried.current.failures += 1;
-      setFailures(tried.current.failures);
-      return;
-    }
-    if (out.kind === "skip") {
-      tried.current.failures += 1;
-      setFailures(tried.current.failures);
-      saveFollow(env, { ...step, segment }, tried.current, "recognition");
-      moveOn(0);
-      return;
-    }
-    tried.current.heard.push(out.text);
-    setPhrase(out.phrase);
-    if (out.phrase === "good") env.onPraise();
-    saveFollow(env, { ...step, segment }, tried.current);
-    const autoMs = env.settings.autoNextSeconds * MS_PER_SECOND;
-    if (
-      practiceRevealOf({
-        round: step.round,
-        rate: out.rate,
-        hintReadMatch: env.settings.hintReadMatch,
-      })
-    ) {
-      // 맞지 않으면 영어를 보이고 들려준 뒤 다음(3.3 말해 보기)
-      setRevealed(true);
-      moved.current = true;
-      await sayer.say([step.example]);
-      moved.current = false;
-      moveOn(autoMs);
-      return;
-    }
-    // 결과 말을 ui.auto_next_seconds 보인 뒤 결과와 관계없이 다음(C39)
-    moveOn(autoMs);
-  }
-
-  const guide =
-    segment === "today_words"
-      ? TEACHER_TEXT.followGuide(env.teacherName)
-      : step.showEnglish
-        ? FOLLOW_TEXT.practiceSee
-        : FOLLOW_TEXT.practiceMeaning;
-  const englishShown = step.showEnglish;
-  return (
-    <div
-      data-follow={segment}
-      data-follow-step={`${segment}:${step.round}:${step.index}`}
-      data-follow-failures={failures}
-      className="flex flex-col gap-5"
-    >
-      <GuideLine className="font-heading text-[26px]">{guide}</GuideLine>
-      <div
-        data-follow-card=""
-        className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-3 bg-postit-talk px-8 pt-9 pb-7 text-center shadow-postit"
-      >
-        <span
-          aria-hidden
-          className="absolute -top-3 left-1/4 h-6 w-28 -translate-x-1/2 -rotate-3 bg-tape"
-        />
-        {step.word !== undefined ? (
-          <p
-            data-follow-word=""
-            lang="en"
-            className="font-en text-[44px] font-bold leading-tight"
-          >
-            {step.word}
-          </p>
-        ) : null}
-        <p data-follow-meaning="" className={cn(CHILD_SIZE.guide)}>
-          {step.meaningKo}
-        </p>
-        {englishShown && step.example ? (
-          <EnglishLine
-            className={cn(
-              "font-en font-bold",
-              step.word === undefined && "text-[32px] leading-tight",
-            )}
-          >
-            <span data-follow-example="">
-              {fillName(step.example, env.englishName)}
-            </span>
-          </EnglishLine>
-        ) : null}
-        {!englishShown && revealed ? (
-          <EnglishLine className="font-en text-[32px] font-bold leading-tight">
-            <span data-follow-reveal="">
-              {fillName(step.example, env.englishName)}
-            </span>
-          </EnglishLine>
-        ) : null}
-      </div>
-      <StatusLine
-        className="justify-center"
-        tone={phrase === "good" ? "ok" : message ? "error" : "info"}
-      >
-        {phrase && !message ? (
-          <span data-follow-result="">{RESULT_PHRASES[phrase]}</span>
-        ) : (
-          message
-        )}
-      </StatusLine>
-      <SpeakButton
-        label={FOLLOW_TEXT.speak}
-        listening={listening}
-        capAt={capAt}
-        gapClassName="bg-paper"
-        disabled={!env.speech || phrase !== undefined}
-        onPress={() => void speak()}
-      />
-    </div>
-  );
-}
-
 /** 정리 한 줄(되짚을 말 · 끝인사). */
 export type WrapLine = { en: string; ko?: string };
 
-/**
- * 정리 토막(3.3 정리 문단 · C33): 되짚을 말을 토리 말풍선으로 하나씩 보이고 읽는다. 1~3단계는 문장마다 한 번 따라 말한다(결과 말만 —
- * '말했다' 아님). 다 하면 끝맺음 상태를 한 번 보고(와 있으면 그 끝인사, 아니면 카드 끝인사) 끝인사를 보이고 읽은 뒤 마무리로.
- */
-export function WrapUp({
-  lines,
-  farewell,
-  env,
-  closingFarewell,
-  onDone,
-}: {
-  lines: readonly WrapLine[];
-  farewell: WrapLine;
-  env: FollowEnv;
-  /** 끝맺음 끝인사(와 있으면 — talkClosingStatus 한 번). */
-  closingFarewell: () => Promise<WrapLine | undefined>;
-  onDone: () => void;
-}) {
-  const [at, setAt] = useState(0);
-  const [bye, setBye] = useState<WrapLine | null>(null);
-  const asked = useRef(false);
-  const ask = useRef(closingFarewell);
-  ask.current = closingFarewell;
-
-  // 되짚을 말을 다 하면 끝인사를 고른다(한 번)
-  useEffect(() => {
-    if (at < lines.length || asked.current) return;
-    asked.current = true;
-    void ask
-      .current()
-      .catch(() => undefined)
-      .then((closing) => setBye(closing ?? farewell));
-  }, [at, lines.length, farewell]);
-
-  const line = lines[at];
-  if (line)
-    return (
-      <WrapCard
-        key={at}
-        index={at}
-        line={line}
-        env={env}
-        follow={env.lowLevel}
-        onNext={() => {
-          env.onNextItem();
-          setAt(at + 1);
-        }}
-      />
-    );
-  return bye ? (
-    <WrapCard
-      key="farewell"
-      index={-1}
-      line={bye}
-      env={env}
-      follow={false}
-      farewell
-      onNext={onDone}
-    />
-  ) : (
-    <div data-talk-wrap="" />
-  );
-}
-
 function WrapCard({
   index,
-  line,
+  lines,
   env,
   follow,
   farewell = false,
+  all = false,
   onNext,
 }: {
   index: number;
-  line: WrapLine;
+  /** 한 말풍선에 보이고 읽을 줄(1~3단계는 되짚을 말 전체, 4단계부터 · 끝인사는 한 줄). */
+  lines: readonly WrapLine[];
   env: FollowEnv;
-  /** 따라 말하기(1~3단계 되짚을 말). */
+  /** 따라 말하기(1~3단계 되짚을 말). 따라 할 글은 줄을 이은 것이다. */
   follow: boolean;
   farewell?: boolean;
+  /** 되짚을 말 전체를 한 번에(새 흐름 — 화면 표지 data-wrap-all). */
+  all?: boolean;
   onNext: () => void;
 }) {
+  const texts = lines.map((l) => l.en);
+  const target = texts.join(" ");
   const sayer = useSayer(env);
-  const { tryOnce, listening, capAt, message } = useFollowTry(env);
+  const { tryOnce, listening, soundIn, capAt, message } = useFollowTry(env);
   const [phrase, setPhrase] = useState<ResultPhrase | undefined>();
+  const [skipping, setSkipping] = useState(false);
   const [typed, setTyped] = useState(false);
   const [read, setRead] = useState(false);
   const tried = useRef<Tried>({ heard: [], failures: 0 });
@@ -720,7 +397,7 @@ function WrapCard({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: 줄마다 한 번(key 로 새로 그림)
   useEffect(() => {
-    void sayer.say([line.en]).then((ok) => {
+    void sayer.say(texts).then((ok) => {
       if (ok) setRead(true);
     });
     return () => {
@@ -744,7 +421,7 @@ function WrapCard({
   async function speak() {
     if (moved.current) return;
     sayer.cancel();
-    const out = await tryOnce(line.en);
+    const out = await tryOnce(target);
     if (!out || out.kind === "retry") {
       if (out) tried.current.failures += 1;
       return;
@@ -753,31 +430,33 @@ function WrapCard({
       segment: "wrap_up" as const,
       round: 0,
       index,
-      target: line.en,
+      target,
     };
     if (out.kind === "skip") {
       tried.current.failures += 1;
-      saveFollow(env, at, tried.current, "recognition");
-      moveOn(0);
+      setSkipping(true);
+      env.saveFollow(at, tried.current, "recognition");
+      moveOn(env.settings.speech.skipNoticeMs);
       return;
     }
     tried.current.heard.push(out.text);
     setPhrase(out.phrase);
     if (out.phrase === "good") env.onPraise();
-    saveFollow(env, at, tried.current);
+    env.saveFollow(at, tried.current);
     moveOn(autoMs);
   }
 
+  const ko = lines.flatMap((l) => (l.ko ? [l.ko] : [])).join(" ");
   const content: BubbleContent = {
-    sentences: [line.en],
-    ...(line.ko ? { ko: line.ko } : {}),
-    adds: [],
+    sentences: texts,
+    ...(ko ? { ko } : {}),
     done: true,
   };
   return (
     <div
       data-talk-wrap=""
       data-wrap-farewell={farewell ? "" : undefined}
+      data-wrap-all={all ? "" : undefined}
       className="flex flex-col gap-5"
     >
       <div className="min-w-0">
@@ -785,27 +464,28 @@ function WrapCard({
           content={content}
           englishName={env.englishName}
           teacherName={env.teacherName}
-          waiting={null}
-          waitSeconds={env.settings.waitHintSeconds}
           onAllTyped={setTyped}
           onReplay={() => {
             env.speech?.unlockFromGesture();
             // 다시 읽기가 처음 읽기를 끊어도 그 끝에서 '다 읽음'을 세운다 — 따라 말하지 않는 장이 저절로 넘어가게(검토 b3 I-1)
-            void sayer.say([line.en]).then((ok) => {
+            void sayer.say(texts).then((ok) => {
               if (ok) setRead(true);
             });
           }}
-          onAnswer={() => {}}
         />
       </div>
       {follow ? (
         <div className="flex flex-col items-center gap-3 border-t-2 border-dashed border-ink/30 pt-4">
           <GuideLine>{TEACHER_TEXT.followGuide(env.teacherName)}</GuideLine>
           <StatusLine
-            tone={phrase === "good" ? "ok" : message ? "error" : "info"}
+            tone={
+              phrase === "good" ? "ok" : message && !skipping ? "error" : "info"
+            }
           >
             {phrase && !message ? (
               <span data-follow-result="">{RESULT_PHRASES[phrase]}</span>
+            ) : skipping ? (
+              <span data-follow-skipped="">{message}</span>
             ) : (
               message
             )}
@@ -813,14 +493,349 @@ function WrapCard({
           <SpeakButton
             label={FOLLOW_TEXT.speak}
             listening={listening}
+            soundIn={soundIn}
+            // 토리 글이 흐르거나 읽는 동안 흐리게(누르면 '다 읽은 뒤 눌러요' — C166 R2, 화면 검토 b3 M-1 의 '글이 다 흐른 뒤'를 포함)
+            waiting={!typed || sayer.speaking}
             capAt={capAt}
             gapClassName="bg-paper"
-            // 토리 글이 다 흐른 뒤에 연다(차례 5 화면 검토 M-1 결정과 같은 꼴 — 읽는 중 누르면 읽기를 멈추고 듣는 것은 그대로, 화면 검토 b3 M-1)
-            disabled={!env.speech || phrase !== undefined || !typed}
+            disabled={!env.speech || phrase !== undefined || skipping}
             onPress={() => void speak()}
           />
         </div>
       ) : null}
     </div>
+  );
+}
+
+// ── 새 흐름: 짧은 준비 쪽지 · 정리 한 번(회화 plan 묶음 11) ─────────────────────
+
+/** 짧은 준비 쪽지 한 장의 글(word · example 이 없으면 그 글을 그리지 않음). say 는 선생님이 들려줄 말이자 따라 할 글이다. */
+export type PrepNoteCard = {
+  word?: string;
+  meaningKo: string;
+  example?: string;
+  imageKey?: string;
+  say: string;
+};
+
+/**
+ * 짧은 준비 쪽지 글(순수 함수, 3.3 짧은 준비 '쪽지 글' · '말하기' · 4절 짧은 준비 행): 1단계는 그림 · 한국어 뜻 · 소리만(영어 글 없음),
+ * 2~3단계는 낱말 글을 더하고 예문 글이 없으며, 4단계부터 낱말 · 뜻 · 예문 글이다. 들려줄 말은 1~3단계 짧은 말(서버가 고른 modelLine —
+ * 'An apple.' 꼴), 4단계부터 예문(비면 짧은 말). 모든 단계에서 한국어 뜻을 보인다. 짧은 준비는 대화 토막 밖의 연습이라 T2 에 어긋나지 않는다.
+ */
+export function prepNoteCardOf(
+  w: Pick<
+    PrepWordView,
+    "word" | "meaningKo" | "example" | "modelLine" | "imageKey"
+  >,
+  { level, band }: { level: number; band: string },
+): PrepNoteCard {
+  const image = w.imageKey === undefined ? {} : { imageKey: w.imageKey };
+  if (band === TALK_LOW_BAND)
+    return {
+      ...(level === LEVEL_MIN ? {} : { word: w.word }),
+      meaningKo: w.meaningKo,
+      ...image,
+      say: w.modelLine,
+    };
+  const example = w.example.trim();
+  return {
+    word: w.word,
+    meaningKo: w.meaningKo,
+    ...(example === "" ? {} : { example: w.example }),
+    ...image,
+    say: example === "" ? w.modelLine : w.example,
+  };
+}
+
+/** 짧은 준비의 남은 차례(순수 함수 — 이 자리에서 끝낸 차례를 뺀 낱말 번호, 이어 열기). */
+export function prepStepsOf(
+  prep: Pick<TalkLessonPrep, "words" | "done">,
+): number[] {
+  return prep.words.flatMap((_, i) => (prep.done.includes(i) ? [] : [i]));
+}
+
+/**
+ * 짧은 준비 쪽지(3.3 짧은 준비 · 4절 짧은 준비 행): 쪽지 한 장에 낱말 하나, 남은 낱말을 차례대로. 다 하면(건너뛴 낱말이 있어도 — 다 하지 않아도
+ * 대화로 넘길 수 있다, 서버 advanceTalkLesson) onDone. 짧은 준비 화면에는 대화 기록 칸이 없다(4절 대화 기록 행).
+ */
+export function PrepNote({
+  prep,
+  band,
+  pictures,
+  env,
+  onDone,
+}: {
+  prep: TalkLessonPrep;
+  /** 단계 구간(1~3단계 쪽지 꼴 — TALK_LOW_BAND). */
+  band: string;
+  pictures: Record<string, PictureInfo>;
+  env: FollowEnv;
+  onDone: () => void;
+}) {
+  const steps = prepStepsOf(prep);
+  const [at, setAt] = useState(0);
+  const index = steps[at];
+  const word = index === undefined ? undefined : prep.words[index];
+  if (index === undefined || !word) return <FollowEnd onDone={onDone} />;
+  const card = prepNoteCardOf(word, { level: env.level, band });
+  const picture =
+    card.imageKey === undefined ? undefined : pictures[card.imageKey];
+  return (
+    <PrepCard
+      key={`${prep.place}:${index}`}
+      place={prep.place}
+      index={index}
+      card={card}
+      {...(picture?.src ? { picture } : {})}
+      env={env}
+      onNext={() => {
+        env.onNextItem();
+        if (at + 1 < steps.length) setAt(at + 1);
+        else onDone();
+      }}
+    />
+  );
+}
+
+function PrepCard({
+  place,
+  index,
+  card,
+  picture,
+  env,
+  onNext,
+}: {
+  place: TalkLessonPrep["place"];
+  index: number;
+  card: PrepNoteCard;
+  picture?: PictureInfo;
+  env: FollowEnv;
+  onNext: () => void;
+}) {
+  const sayer = useSayer(env);
+  const { tryOnce, listening, soundIn, capAt, message } = useFollowTry(env);
+  const [phrase, setPhrase] = useState<ResultPhrase | undefined>();
+  const [heard, setHeard] = useState<string | undefined>();
+  const [skipping, setSkipping] = useState(false);
+  const [failures, setFailures] = useState(0);
+  const tried = useRef<Tried>({ heard: [], failures: 0 });
+  const moved = useRef(false);
+  const timer = useRef<number | undefined>(undefined);
+  const next = useRef(onNext);
+  next.current = onNext;
+
+  // 들어올 때 선생님이 들려줄 말을 읽는다(3.3 짧은 준비 '말하기')
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 차례마다 한 번(key 로 새로 그림)
+  useEffect(() => {
+    void sayer.say([card.say]);
+    return () => {
+      window.clearTimeout(timer.current);
+      sayer.cancel();
+    };
+  }, []);
+
+  function moveOn(delayMs: number) {
+    if (moved.current) return;
+    moved.current = true;
+    timer.current = window.setTimeout(() => next.current(), delayMs);
+  }
+
+  const at: FollowSaveAt = {
+    segment: "prep",
+    round: 0,
+    index,
+    target: card.say,
+    place,
+  };
+
+  async function speak() {
+    if (moved.current) return;
+    sayer.cancel();
+    const out = await tryOnce(card.say);
+    if (!out) return;
+    if (out.kind === "retry") {
+      tried.current.failures += 1;
+      setFailures(tried.current.failures);
+      return;
+    }
+    if (out.kind === "skip") {
+      tried.current.failures += 1;
+      setFailures(tried.current.failures);
+      setSkipping(true);
+      env.saveFollow(at, tried.current, "recognition");
+      moveOn(env.settings.speech.skipNoticeMs);
+      return;
+    }
+    tried.current.heard.push(out.text);
+    setHeard(out.text);
+    setPhrase(out.phrase);
+    if (out.phrase === "good") env.onPraise();
+    env.saveFollow(at, tried.current);
+    // 결과 말을 ui.auto_next_seconds 보인 뒤 결과와 관계없이 다음(C39)
+    moveOn(env.settings.autoNextSeconds * MS_PER_SECOND);
+  }
+
+  return (
+    <div
+      data-prep-note=""
+      data-prep-step={`${place}:${index}`}
+      data-follow-failures={failures}
+      data-skipping={skipping ? "" : undefined}
+      className="flex flex-col gap-5"
+    >
+      <GuideLine className="font-heading text-[26px]">
+        {TEACHER_TEXT.followGuide(env.teacherName)}
+      </GuideLine>
+      <div
+        data-prep-card=""
+        className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-3 bg-postit-talk px-8 pt-9 pb-7 text-center shadow-postit"
+      >
+        <span
+          aria-hidden
+          className="absolute -top-3 left-1/4 h-6 w-28 -translate-x-1/2 -rotate-3 bg-tape"
+        />
+        {picture ? <VocabPicture picture={picture} /> : null}
+        {card.word !== undefined ? (
+          <p
+            data-prep-word=""
+            lang="en"
+            className="font-en text-[44px] font-bold leading-tight"
+          >
+            {card.word}
+          </p>
+        ) : null}
+        <p data-prep-meaning="" className={CHILD_SIZE.guide}>
+          {card.meaningKo}
+        </p>
+        {card.example !== undefined ? (
+          <EnglishLine className="font-en font-bold">
+            <span data-prep-example="">
+              {fillName(card.example, env.englishName)}
+            </span>
+          </EnglishLine>
+        ) : null}
+        {/* 들려줄 말 다시 듣기(1단계는 글이 없어 소리만 — 글 없는 듣기 단추, 접근 이름은 말풍선 다시 듣기와 같음) */}
+        <button
+          type="button"
+          data-prep-replay=""
+          aria-label={TEACHER_TEXT.replay(env.teacherName)}
+          disabled={listening}
+          onClick={() => {
+            env.speech?.unlockFromGesture();
+            void sayer.say([card.say]);
+          }}
+          className={cn(
+            FOCUS_RING,
+            CHILD_SIZE.target,
+            "inline-flex items-center justify-center rounded-full border-2 border-ink bg-paper disabled:opacity-50",
+          )}
+        >
+          <Volume2 aria-hidden className="size-6" />
+        </button>
+      </div>
+      {/* 아이 말풍선에 인식 글, 그 아래 결과 말(3.3 짧은 준비 '말하기' · 4절) */}
+      {heard ? <ChildBubble text={heard} /> : null}
+      <StatusLine
+        className="justify-center"
+        tone={
+          phrase === "good" ? "ok" : message && !skipping ? "error" : "info"
+        }
+      >
+        {phrase && !message ? (
+          <span data-follow-result="">{RESULT_PHRASES[phrase]}</span>
+        ) : skipping ? (
+          <span data-follow-skipped="">{message}</span>
+        ) : (
+          message
+        )}
+      </StatusLine>
+      <SpeakButton
+        label={FOLLOW_TEXT.speak}
+        listening={listening}
+        soundIn={soundIn}
+        // 선생님이 읽는 동안 흐리게(누르면 '다 읽은 뒤 눌러요', R2 · 7절), 읽기가 끝나면 켬
+        waiting={sayer.speaking}
+        capAt={capAt}
+        gapClassName="bg-paper"
+        disabled={!env.speech || phrase !== undefined || skipping}
+        onPress={() => void speak()}
+      />
+    </div>
+  );
+}
+
+/** 정리 따라 말하기(순수 함수, 3.3 정리 문단): 1~3단계는 되짚을 말 전체를 한 번(차례 0, 줄을 이은 글), 4단계부터 · 되짚을 말이 없으면 없음. */
+export function lessonWrapFollowOf(
+  lines: readonly WrapLine[],
+  lowLevel: boolean,
+): { index: number; target: string } | null {
+  if (!lowLevel || lines.length === 0) return null;
+  return { index: 0, target: lines.map((l) => l.en).join(" ") };
+}
+
+/**
+ * 새 흐름 정리(3.3 정리 문단 · 4절 정리 행 · C167 (1)): 되짚을 말 전체를 한 말풍선으로 보이고 읽는다. 1~3단계는 말하기 단추 하나로 한 번 따라
+ * 말한다(결과 말만 — '말했다' 아님). 다 하면 끝맺음 상태를 한 번 보고(와 있으면 그 끝인사, 아니면 카드 끝인사) 끝인사를 한 번 읽은 뒤 마무리로.
+ */
+export function LessonWrapUp({
+  lines,
+  farewell,
+  env,
+  closingFarewell,
+  onDone,
+}: {
+  lines: readonly WrapLine[];
+  farewell: WrapLine;
+  env: FollowEnv;
+  /** 끝맺음 끝인사(와 있으면 — talkClosingStatus 한 번). */
+  closingFarewell: () => Promise<WrapLine | undefined>;
+  onDone: () => void;
+}) {
+  const [linesDone, setLinesDone] = useState(lines.length === 0);
+  const [bye, setBye] = useState<WrapLine | null>(null);
+  const asked = useRef(false);
+  const ask = useRef(closingFarewell);
+  ask.current = closingFarewell;
+
+  // 되짚을 말을 다 하면 끝인사를 고른다(한 번)
+  useEffect(() => {
+    if (!linesDone || asked.current) return;
+    asked.current = true;
+    void ask
+      .current()
+      .catch(() => undefined)
+      .then((closing) => setBye(closing ?? farewell));
+  }, [linesDone, farewell]);
+
+  if (!linesDone) {
+    const follow = lessonWrapFollowOf(lines, env.lowLevel);
+    return (
+      <WrapCard
+        key="lines"
+        index={follow?.index ?? 0}
+        lines={lines}
+        env={env}
+        follow={follow !== null}
+        all
+        onNext={() => {
+          env.onNextItem();
+          setLinesDone(true);
+        }}
+      />
+    );
+  }
+  return bye ? (
+    <WrapCard
+      key="farewell"
+      index={-1}
+      lines={[bye]}
+      env={env}
+      follow={false}
+      farewell
+      onNext={onDone}
+    />
+  ) : (
+    <div data-talk-wrap="" />
   );
 }

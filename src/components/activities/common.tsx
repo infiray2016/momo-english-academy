@@ -25,6 +25,9 @@ export const CHILD_SIZE = {
   blank: "min-h-14",
 } as const;
 
+/** 아이콘 획(5.2 · D-8 — 아이콘 전부). board 가 이 파일을 가져오므로 여기 두고 board 는 다시 내보낸다(순환 없음). */
+export const ICON_STROKE = 2.75;
+
 /** 지문 위 단어 그림의 상한(화면 구조 수, 13절 C67 (6), P10 이 옮길 수 있다). */
 export const PASSAGE_PICTURE_MAX = 4;
 /** 지문 옆 단어 그림을 붙이는 마지막 단계(3.3 '1~4단계 그림은 어휘 시드의 그림 자산', C67 (6)). */
@@ -49,7 +52,7 @@ const CHOICE_FRAME = cn(
   CHILD_SIZE.choice,
   CHILD_SIZE.target,
   PAPER,
-  "rounded-xl border-2 border-neutral-900 text-neutral-900",
+  "rounded-xl border-2 border-ink text-ink",
 );
 
 /**
@@ -81,7 +84,7 @@ export function ActivityCard({
     <div
       data-activity-card=""
       className={cn(
-        "flex flex-col gap-6 rounded-2xl p-8 text-neutral-900 shadow-md",
+        "flex flex-col gap-6 rounded-2xl p-8 text-ink shadow-md",
         // 안쪽 글의 기본 크기는 안내 크기다(크기를 주지 않은 글 · 그림 대체 글이 물려받는다)
         CHILD_SIZE.guide,
         AREA_TONE[area].className,
@@ -153,7 +156,7 @@ export function VocabPicture({
       data-picture-missing=""
       className={cn(
         PICTURE_BOX,
-        "flex shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-neutral-500 bg-white p-2 text-center",
+        "flex shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-ink-soft bg-paper p-2 text-center",
       )}
     >
       {picture.meaningKo}
@@ -173,11 +176,11 @@ function CorrectBadge({ className }: { className?: string }) {
       role="img"
       aria-label="정답"
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white",
+        "flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-paper",
         className,
       )}
     >
-      <Check aria-hidden="true" strokeWidth={3} className="size-6" />
+      <Check aria-hidden="true" strokeWidth={ICON_STROKE} className="size-6" />
     </span>
   );
 }
@@ -274,7 +277,7 @@ export function AnswerBox({
     <div
       data-correct={shown ? "true" : undefined}
       className={cn(
-        "flex w-full items-center rounded-xl border-2 border-dashed border-neutral-700 bg-white px-5",
+        "flex w-full items-center rounded-xl border-2 border-dashed border-ink bg-paper px-5",
         tall ? "min-h-40 items-start py-4" : "min-h-16",
       )}
     >
@@ -337,7 +340,11 @@ export function SoundMark({
         "inline-flex items-center justify-center self-start rounded-full",
       )}
     >
-      <Volume2 aria-hidden="true" className="size-8" />
+      <Volume2
+        aria-hidden="true"
+        strokeWidth={ICON_STROKE}
+        className="size-8"
+      />
     </button>
   );
 }
@@ -366,7 +373,7 @@ export function FrameText({ frame }: { frame: string }) {
             className={cn(
               CHILD_SIZE.blank,
               // 바탕이 보이는 쓰는 자리(목업 B_Writing). 아래 굵은 테두리를 글줄 바닥에 맞춘다(align-bottom)
-              "mx-1 inline-block w-32 rounded-t-lg border-b-4 border-neutral-900 bg-white align-bottom",
+              "mx-1 inline-block w-32 rounded-t-lg border-b-4 border-ink bg-paper align-bottom",
             )}
           />
         ) : (

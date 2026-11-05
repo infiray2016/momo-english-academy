@@ -1,12 +1,14 @@
 // 아이 화면 크기(4절 · AC-N9, plan-p10b 증명 표 AC-N9 — P10 몫 화면). 실제 e2e DB(시험용 시드)를 쓴다.
 // 화면마다 세로 820 · 가로 1180 에서 child-size.ts 훑기를 돌려 위반을 모은 뒤 한 번에 단언한다(어느 화면 · 방향인지 보이게).
+// UI · UX plan 묶음 2-다: 같은 화면에서 대비 7:1(흐린 단추 글 제외, 글 바로 아래가 책상이면 위반)과 꾸밈 상자 겹침도 훑는다
+// (AC-N9 고친 문장 · AC-23e (2) (3), childLookBothWays). 11-01 전에는 정적으로만 썼고 실행은 CI 에서 한다.
 import type { Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import type { RecognitionRun } from "../../src/core/speech/script";
 import { lessons } from "../../src/db/schema/content";
 import { profileTracks, unitProgress } from "../../src/db/schema/learning";
 import { settings } from "../../src/db/schema/operations";
-import { childSizeBothWays } from "./child-size";
+import { childLookBothWays } from "./child-size";
 import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
@@ -87,7 +89,7 @@ async function passReadingUnitOne(profileId: string) {
 const placementShown = (page: Page) =>
   expect(page.locator("[data-placement-screen][data-hydrated]")).toHaveCount(1);
 
-test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업 · 회화 수업 목록 · 배치 평가 시작 · 문항 · 결과 · 세션 틀)의 안내 20px · 영어 24px · 버튼 글자 22px 이상, 누르는 곳 56px 이상, '%' 가 없고 세로 820 · 가로 1180 에서 가로 넘침이 없다", async ({
+test("AC-N9 · AC-23e 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업 · 회화 수업 목록 · 배치 평가 시작 · 문항 · 결과 · 세션 틀)의 안내 20px · 영어 24px · 버튼 글자 22px 이상, 누르는 곳 56px 이상, '%' 가 없고 세로 820 · 가로 1180 에서 가로 넘침이 없으며, 글자와 바로 아래 바탕의 대비가 7:1 이상이고(흐린 단추 글 제외 · 글 바로 아래가 책상이면 위반) 꾸밈 상자가 글 · 단추 상자와 겹치지 않는다", async ({
   page,
   browser,
   baseURL,
@@ -103,7 +105,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await expect(access.getByRole("heading", { level: 1 })).toHaveText(
     "부모님이 코드를 넣어 주세요",
   );
-  problems.push(...(await childSizeBothWays(access, "접근 코드", "main")));
+  problems.push(...(await childLookBothWays(access, "접근 코드", "main")));
   await anonymous.close();
 
   // 회화도 1단계로(회화 수업 목록을 훑는다 — 값 12)
@@ -116,7 +118,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await expect(page.locator("[data-home-card]")).toHaveCount(4);
   // 마이크 판정이 끝나 '시작!' · '이야기 고르기' 행동 자리까지 그려진 뒤 훑는다(카드 넷은 서버 HTML 에도 있다 — 검토 M-2)
   await expect(page.locator("[data-home-cards][data-hydrated]")).toHaveCount(1);
-  problems.push(...(await childSizeBothWays(page, "홈")));
+  problems.push(...(await childLookBothWays(page, "홈")));
 
   // 회화 수업 목록(값 12 — '토리가 준비 중이에요' 쪽은 지움. 회화 단계를 그 자리에서 넣고 견본 수업 하나)
   await insertTalkLesson({ level: 1 });
@@ -124,7 +126,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await expect(page.locator("[data-lesson-board][data-hydrated]")).toHaveCount(
     1,
   );
-  problems.push(...(await childSizeBothWays(page, "회화 수업 목록")));
+  problems.push(...(await childLookBothWays(page, "회화 수업 목록")));
 
   // 세션 틀(진행 세션을 넣고 연다): 미리보기 → 지문 → 문항
   const cell = await readingCell(1, "assigned", 1);
@@ -144,44 +146,44 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   ]);
   await page.goto(`/session/${sessionId}`);
   await expect(page.locator("[data-activity][data-hydrated]")).toHaveCount(1);
-  problems.push(...(await childSizeBothWays(page, "세션 틀 미리보기")));
+  problems.push(...(await childLookBothWays(page, "세션 틀 미리보기")));
   await page.getByRole("button", { name: "다음" }).click();
   await expect(page.locator("[data-activity]")).toHaveAttribute(
     "data-activity",
     "reading-passage",
   );
-  problems.push(...(await childSizeBothWays(page, "세션 틀 지문")));
+  problems.push(...(await childLookBothWays(page, "세션 틀 지문")));
   await page.getByRole("button", { name: "다음" }).click();
   await expect(page.locator("[data-activity]")).toHaveAttribute(
     "data-activity",
     "reading-question",
   );
-  problems.push(...(await childSizeBothWays(page, "세션 틀 문항")));
+  problems.push(...(await childLookBothWays(page, "세션 틀 문항")));
 
   // 수업 목록(하던 수업 이어 하기가 맨 위에 있는 꼴)
   await page.goto("/reading/lessons");
   await expect(page.locator("[data-lesson-board][data-hydrated]")).toHaveCount(
     1,
   );
-  problems.push(...(await childSizeBothWays(page, "수업 목록")));
+  problems.push(...(await childLookBothWays(page, "수업 목록")));
 
   // 지난 수업(단원 고르기 · 수업 고르기)
   await passReadingUnitOne(profileId);
   await page.goto("/reading/lessons/past");
-  problems.push(...(await childSizeBothWays(page, "지난 수업 단원")));
+  problems.push(...(await childLookBothWays(page, "지난 수업 단원")));
   await page.goto("/reading/lessons/past?unit=1");
   await expect(page.locator("[data-past-lessons][data-hydrated]")).toHaveCount(
     1,
   );
-  problems.push(...(await childSizeBothWays(page, "지난 수업 수업")));
+  problems.push(...(await childLookBothWays(page, "지난 수업 수업")));
 
   // 배치 평가: 시작 → 문항(읽기 그림 고르기 · 쓰기 글자 타일) → 결과
   await page.goto("/writing/placement");
   await placementShown(page);
-  problems.push(...(await childSizeBothWays(page, "배치 시작")));
+  problems.push(...(await childLookBothWays(page, "배치 시작")));
   await page.getByRole("button", { name: "시작" }).click();
   await expect(page.locator("[data-placement-item]")).toHaveCount(1);
-  problems.push(...(await childSizeBothWays(page, "배치 문항(쓰기 타일)")));
+  problems.push(...(await childLookBothWays(page, "배치 문항(쓰기 타일)")));
   for (let i = 0; i < 20; i += 1) {
     if ((await page.locator("[data-placement-result]").count()) > 0) break;
     const before = await page
@@ -193,7 +195,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
     );
   }
   await expect(page.locator("[data-placement-result]")).toBeVisible();
-  problems.push(...(await childSizeBothWays(page, "배치 결과")));
+  problems.push(...(await childLookBothWays(page, "배치 결과")));
 
   // 말하기 배치(가짜 음성 길): 마이크 안내 → 따라 말하기 문항 → 인식 실패 끝에 듣고 고르기 예비 문항(검토 M-1 · M-3)
   const retries = await settingNumber("speech.max_retries");
@@ -209,12 +211,12 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await speaking.getByRole("button", { name: "시작" }).click();
   // 이 기기에서 처음이면 마이크 안내 화면 — 바뀐 화면이 보인 뒤 훑는다
   await expect(speaking.locator("[data-mic-notice]")).toBeVisible();
-  problems.push(...(await childSizeBothWays(speaking, "배치 마이크 안내")));
+  problems.push(...(await childLookBothWays(speaking, "배치 마이크 안내")));
   await speaking.getByRole("button", { name: "마이크 확인" }).click();
   await expect(speaking.locator("[data-placement-item]")).toHaveCount(1);
   await expect(speaking.getByRole("button", { name: "말하기" })).toBeVisible();
   problems.push(
-    ...(await childSizeBothWays(speaking, "배치 문항(따라 말하기)")),
+    ...(await childLookBothWays(speaking, "배치 문항(따라 말하기)")),
   );
   const repeatItem = await speaking
     .locator("[data-placement-item]")
@@ -236,7 +238,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   ).toHaveCount(0);
   await expect(speaking.locator("[data-answer-choice]").first()).toBeVisible();
   problems.push(
-    ...(await childSizeBothWays(speaking, "배치 문항(듣고 고르기 예비)")),
+    ...(await childLookBothWays(speaking, "배치 문항(듣고 고르기 예비)")),
   );
   await speaking.close();
 
@@ -247,7 +249,7 @@ test("AC-N9 아이 화면(접근 코드 · 홈 · 수업 목록 · 지난 수업
   await placementShown(page);
   await page.getByRole("button", { name: "시작" }).click();
   await expect(page.locator("[data-placement-item]")).toHaveCount(1);
-  problems.push(...(await childSizeBothWays(page, "배치 문항(읽기 고르기)")));
+  problems.push(...(await childLookBothWays(page, "배치 문항(읽기 고르기)")));
 
   expect(problems).toEqual([]);
 });

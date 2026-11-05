@@ -9,21 +9,21 @@
 // 한 번 더 부를 수 있어(첨삭 대기 칸 — 많아야 AI 기다림 상한) '첨삭 보기'로 열 때는 바로, 그 밖 고르기는 ui.wait_hint_seconds 첫 값이
 // 지나도 돌아오지 않으면 기다림 표시를 켠다(waitingSince — 4절 '모든 AI 기다림은 첫 값 안에', 코드 검토 review-p11-7-code I-1 (가)).
 // 그래도 첨삭이 없으면 '아직 글을 살펴보고 있어요'.
+// UI · UX 묶음 0-가(3절 R-11 · R-15 · 8절 R-49 · R-50): 쉼은 화면을 떠나지 않는 상태다. 고르기마다 다시 판정하고(서버의 같은 판정 함수),
+// 쉬지 않으면 쉼을 지운다. 같은 수업을 다시 골라도 쉬면 again('아직 쉬고 있어요 …'), retryRest 는 마지막 고르기를 그대로 다시 한다
+// (결과 '다음 수업' · 마무리 '다음 이야기'의 작은 '다시 해 볼래요' — 풀리면 그 수업 시작).
+// 첫 화면 읽어 주기(가르치고 배우는 수업 plan 정한 것 11 · 묶음 마-2): 고르기마다 누름 처리 안(첫 await 앞)에서 문서 단위 읽어 주기 잠금 풀기를
+// 부른다 — 클라이언트 이동으로 연 세션의 오늘 배울 것 첫 줄이 iPad 사파리에서도 읽히게. 새로 고침 · 이어 하기로 연 세션은 감시 길(설계 10)이 받는다.
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { createAttemptQueue } from "@/lib/attempt-queue";
+import { unlockSpeechInDocument } from "@/lib/speech/unlock";
 import { saveAttempts, startLesson } from "@/server/actions/session";
 
 /** 확인 쪽지 · 오류 문구(4절 '다른 수업 고르기' · plan-p10b 정본 밖 문구 표 · C72 · 7절 네트워크 행). */
-export const LESSON_START_TEXT = {
-  confirm: "하던 수업은 처음부터 다시 해야 해요. 새 수업을 할까요?",
-  newLesson: "새 수업 할래요",
-  keepGoing: "하던 수업 할래요",
-  failed: "지금은 저장할 수 없어요. 잠시 뒤에 다시 해 주세요",
-  offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
-  /** 둘째 세션을 열 때 첨삭이 아직 없음(4절 · plan-p11b 값 9). */
-  stillReading: "아직 글을 살펴보고 있어요",
-} as const;
+export { LESSON_START_TEXT } from "@/components/session/lesson-start-text";
+
+import { LESSON_START_TEXT } from "@/components/session/lesson-start-text";
 
 /** 이 기기에 남은 시도를 서버로 보낸다(닿지 않아도 막지 않음 — 다음에 다시). */
 export async function flushAttempts(): Promise<void> {
@@ -51,6 +51,22 @@ export async function flushAttempts(): Promise<void> {
 /** 초 → ms(단위 바꿈 상수). */
 const MS_PER_SECOND = 1000;
 
+/**
+ * 고르기 하나의 결과 뒤 쉼 상태(순수): 쉬면(rested) 쉼을 켜고 바로 앞에 쉰 수업과 같으면 again, 쉬지 않으면 쉼을 지운다.
+ */
+export function restAfterStartOf(
+  restedBefore: string | undefined,
+  lessonId: string,
+  rested: boolean,
+): { resting: boolean; again: boolean; restedLesson: string | undefined } {
+  if (!rested) return { resting: false, again: false, restedLesson: undefined };
+  return {
+    resting: true,
+    again: restedBefore === lessonId,
+    restedLesson: lessonId,
+  };
+}
+
 /** waitHintSeconds: ui.wait_hint_seconds(쓰는 쪽이 서버에서 읽어 넘김). */
 export function useLessonStart(waitHintSeconds: readonly [number, number]) {
   const router = useRouter();
@@ -58,8 +74,15 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
   const [status, setStatus] = useState("");
   /** 확인을 기다리는 수업(쪽지가 열린 동안). */
   const [asking, setAsking] = useState<string | undefined>();
-  /** 1-가 하루 안전 상한으로 열지 못함(안내 화면). */
+  /** 1-가 하루 안전 상한으로 열지 못함(쓰는 화면이 고른 자리에 쉼 글). */
   const [resting, setResting] = useState(false);
+  /** 같은 수업을 다시 골랐는데 또 쉼('아직 쉬고 있어요 …'). */
+  const [restAgain, setRestAgain] = useState(false);
+  /** 바로 앞에 쉰 수업 · 마지막 고르기(retryRest 가 그대로 다시 함). */
+  const restedLesson = useRef<string | undefined>(undefined);
+  const lastStart = useRef<
+    { lessonId: string; confirmAbort: boolean; feedback: boolean } | undefined
+  >(undefined);
   /** 기다림 표시를 켠 고르기의 누른 시각(performance.now — WaitHint 둘째 줄이 그때부터 잼). 없으면 표시 없음. */
   const [waitingSince, setWaitingSince] = useState<number | undefined>();
   /** 첨삭이 아직 없음('아직 글을 살펴보고 있어요' · '수업 목록'). */
@@ -74,6 +97,9 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
   ) {
     if (inFlight.current) return;
     inFlight.current = true;
+    // 누름 처리 안(첫 await 앞)이어야 iOS 가 읽어 주기 제약을 푼다(정한 것 11)
+    unlockSpeechInDocument();
+    lastStart.current = { lessonId, confirmAbort, feedback };
     setBusy(true);
     setStatus("");
     setStillReading(false);
@@ -87,6 +113,14 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
     try {
       await flushAttempts().catch(() => {});
       const out = await startLesson({ lessonId, confirmAbort });
+      const rest = restAfterStartOf(
+        restedLesson.current,
+        lessonId,
+        !out.ok && out.reason === "ai_resting",
+      );
+      restedLesson.current = rest.restedLesson;
+      setResting(rest.resting);
+      setRestAgain(rest.again);
       if (out.ok) {
         router.push(`/session/${out.sessionId}`);
         return;
@@ -95,10 +129,7 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
         setAsking(lessonId);
         return;
       }
-      if (out.reason === "ai_resting") {
-        setResting(true);
-        return;
-      }
+      if (out.reason === "ai_resting") return;
       if (out.reason === "feedback_pending") {
         setStillReading(true);
         return;
@@ -125,6 +156,13 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
     }
   }
 
+  /** 마지막 고르기를 그대로 다시(쉬는 안내의 '다시 해 볼래요' — 서버가 다시 판정해 풀렸으면 그 수업을 연다). */
+  function retryRest() {
+    const last = lastStart.current;
+    if (last)
+      void start(last.lessonId, last.confirmAbort, { feedback: last.feedback });
+  }
+
   return {
     start,
     busy,
@@ -132,6 +170,8 @@ export function useLessonStart(waitHintSeconds: readonly [number, number]) {
     asking,
     setAsking,
     resting,
+    restAgain,
+    retryRest,
     waitingSince,
     stillReading,
   };

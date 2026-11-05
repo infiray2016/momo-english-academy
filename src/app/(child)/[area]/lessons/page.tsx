@@ -16,7 +16,12 @@ export default async function LessonsPage(props: PageProps<"/[area]/lessons">) {
   const { area } = await props.params;
   if (!(AREAS as readonly string[]).includes(area)) notFound();
   await connection();
-  const result = await readLessonList({ area: area as Area, now: now() });
+  // 위 띠 단원 5칸 · 막대 재료까지(UI · UX 묶음 3 · R-13)
+  const result = await readLessonList({
+    area: area as Area,
+    now: now(),
+    band: true,
+  });
   if (result.kind === "no_profile") redirect("/first-run");
   if (result.kind === "placement") redirect(placementPathOf(area as Area));
   const { view, input } = result;

@@ -2,7 +2,8 @@
 
 // 지난 단원의 수업 고르기(4절 수업 목록 표 '지난 수업' 행 · 3.2, plan-p10b 값 7). 고르면 세션을 연다(수업 목록과 같은 useLessonStart —
 // 서버가 다시 판정, 하던 수업이 있으면 서버가 needs_confirm 을 돌려주고 쪽지로 한 번 묻는다).
-import { useEffect, useState } from "react";
+// 쉼(UI · UX 묶음 0-가 · 3절 R-15 · N-8): 쪽과 띠의 링크를 그대로 두고 누른 카드 아래 한 줄 칸에 쉼 글, 다시 누르면 다시 판정한다.
+import { Fragment, useEffect, useState } from "react";
 import {
   ConfirmSheet,
   PaperBand,
@@ -10,7 +11,7 @@ import {
   SmallLink,
   StatusLine,
 } from "@/components/board/board";
-import { AiRest } from "@/components/session/ai-rest";
+import { AiRestLine } from "@/components/session/ai-rest";
 import { WaitHint } from "@/components/session/wait-hint";
 import type { PastItem } from "@/core/lesson-list/state";
 import type { Area } from "@/core/seed/structure";
@@ -19,6 +20,7 @@ import {
   LESSON_CARD,
   LESSON_GRID,
   LESSON_NO,
+  LESSON_ROW,
   LESSON_TITLE,
 } from "../lesson-card";
 import { LESSON_START_TEXT, useLessonStart } from "../use-lesson-start";
@@ -42,21 +44,21 @@ export function PastLessons({
   /** ui.wait_hint_seconds(고른 뒤 서버가 늦으면 기다림 표시). */
   waitHintSeconds: readonly [number, number];
 }) {
-  const { start, busy, status, asking, setAsking, resting, waitingSince } =
-    useLessonStart(waitHintSeconds);
+  const {
+    start,
+    busy,
+    status,
+    asking,
+    setAsking,
+    resting,
+    restAgain,
+    waitingSince,
+  } = useLessonStart(waitHintSeconds);
   // 하이드레이션 끝 표시(e2e 가 누르기 전에 기다린다)
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  // 1-가 하루 안전 상한 — 안내와 '홈'만(C50 (2) · C80, 띠 링크 숨김)
-  if (resting)
-    return (
-      <>
-        <PaperBand heading title={band.title} detail={band.detail} />
-        <PostIt tone="paper" className="p-6 pt-9">
-          <AiRest />
-        </PostIt>
-      </>
-    );
+  /** 쉼 글을 그릴 카드(누른 카드 바로 아래 한 줄 칸 — 수업 목록과 같은 꼴). */
+  const [restAt, setRestAt] = useState<string | undefined>();
   return (
     <>
       <PaperBand
@@ -71,36 +73,48 @@ export function PastLessons({
         // 수업 목록과 같은 카드 격자 · 크기(같은 종류 종이 — C114 · 전체 디자인 리뷰 #14)
         className={LESSON_GRID}
       >
-        {items.map((item, i) => (
-          <PostIt
-            key={`${item.ref.kind}-${item.ref.lessonNo}`}
-            tone={area}
-            tilt={i % 2 === 0 ? "left" : "slight"}
-            onClick={() => {
-              if (!busy) void start(item.lessonId);
-            }}
-            className={LESSON_CARD}
-          >
-            <span
-              data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
-              className="contents"
-            >
-              {/* '안 해 본 수업'은 카드 위 끝 표지(카드 높이를 늘이지 않음 — 같은 크기, C114) */}
-              {item.mark === "untried" ? (
-                <span data-lesson-badge="" className={LESSON_BADGE}>
-                  {UNTRIED}
+        {items.map((item, i) => {
+          const key = `${item.ref.kind}-${item.ref.lessonNo}`;
+          return (
+            <Fragment key={key}>
+              <PostIt
+                tone={area}
+                tilt={i % 2 === 0 ? "left" : "slight"}
+                onClick={() => {
+                  if (busy) return;
+                  setRestAt(key);
+                  void start(item.lessonId);
+                }}
+                className={LESSON_CARD}
+              >
+                <span
+                  data-lesson={`${item.ref.kind}-${item.ref.lessonNo}`}
+                  className="contents"
+                >
+                  {/* '안 해 본 수업'은 카드 위 끝 표지(카드 높이를 늘이지 않음 — 같은 크기, C114) */}
+                  {item.mark === "untried" ? (
+                    <span data-lesson-badge="" className={LESSON_BADGE}>
+                      {UNTRIED}
+                    </span>
+                  ) : null}
+                  <span data-lesson-no="" className={LESSON_NO}>
+                    {item.ref.lessonNo}
+                  </span>
+                  {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82), 두 줄까지 */}
+                  <span data-size-guide="" className={LESSON_TITLE}>
+                    {item.title}
+                  </span>
                 </span>
+              </PostIt>
+              {/* 1-가 하루 안전 상한 — 누른 카드 아래 한 줄 칸(R-15, 판정이 끝난 뒤) */}
+              {resting && !busy && restAt === key ? (
+                <div data-lesson-wait="" className={LESSON_ROW}>
+                  <AiRestLine again={restAgain} />
+                </div>
               ) : null}
-              <span data-lesson-no="" className={LESSON_NO}>
-                {item.ref.lessonNo}
-              </span>
-              {/* 수업 제목은 보조 줄 — 안내 글 20px(13절 C82), 두 줄까지 */}
-              <span data-size-guide="" className={LESSON_TITLE}>
-                {item.title}
-              </span>
-            </span>
-          </PostIt>
-        ))}
+            </Fragment>
+          );
+        })}
       </section>
       {waitingSince !== undefined ? (
         <WaitHint startedAt={waitingSince} seconds={waitHintSeconds} />

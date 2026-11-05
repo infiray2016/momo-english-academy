@@ -15,7 +15,14 @@ import {
 } from "vitest";
 import { learningDayOf } from "@/core/learning-day";
 import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
+import {
+  type AttemptInput,
+  lemmaLookup,
+  parseAttemptInput,
+} from "@/core/session/attempt";
 import type { Activity } from "@/core/session/preview";
+import { outcomeContextOf, sparesFromFinals } from "@/core/session/spares";
+import { spareChoiceOnDevice } from "@/core/session/teach-frame";
 import { lessons } from "@/db/schema/content";
 import { attempts, profiles, sessions } from "@/db/schema/learning";
 import { parentAlerts, parentAuth } from "@/db/schema/operations";
@@ -30,6 +37,7 @@ import {
   startLessonSession,
 } from "@/server/session";
 import { loadResultView } from "@/server/session/result";
+import { teachSeedLessons } from "../fixtures/seed/builders";
 import {
   DEV_SEED_AREAS,
   DEV_SEED_THROUGH,
@@ -38,6 +46,9 @@ import {
 import { filesOf } from "../fixtures/seed/loadable";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { createTestDatabase, type TestDatabase } from "./test-db";
+
+/** 초 → ms(음성 설정의 초 값을 ms 로 견줌). */
+const MS_PER_SECOND = 1000;
 
 const LOADED_AT = new Date("2026-10-17T10:00:00+09:00");
 const SAVED_AT = new Date("2026-10-17T11:00:00+09:00");
@@ -535,7 +546,7 @@ describe("세션 바탕", () => {
 });
 
 describe("결과 틀", () => {
-  it("결과 틀: 끝난 세션의 결과 자료는 영역 · 제목과 다음 수업(목록의 '여기부터 해요')을 주고 진행 세션 · 남의 세션은 없다", async () => {
+  it("결과 틀 · U4-1: 끝난 세션의 결과 자료는 영역 · 제목 · 다음 수업(목록의 '여기부터 해요') · 오늘 만난 단어를 주고 진행 세션 · 남의 세션은 없다", async () => {
     const view = await open("reading");
     expect(
       await loadResultView({ sessionId: view.sessionId }, deps()),
@@ -550,15 +561,310 @@ describe("결과 틀", () => {
       level: 1,
       unit: 1,
       title: view.title,
+      // 결과의 별 수는 서버가 실은 설정값(C167 (5) · 검토 B N-3)
+      starsPerLesson: TEST_SETTINGS["reward.star_complete"].value,
     });
     // 다음 배정 수업이 '다음 수업'이다
     const next = await lessonOf("reading", 2);
     expect(result?.next).toEqual({ kind: "lesson", lessonId: next.id });
+    // U4-1 오늘 만난 단어 = 이 세션 미리보기에 보인 단어(차례 그대로)와 뜻(C166 R3)
+    expect(view.preview.length).toBeGreaterThan(0);
+    expect(result?.metWords).toEqual(
+      view.preview.map((w) => ({ word: w.word, meaningKo: w.meaningKo })),
+    );
     expect(
       await loadResultView({ sessionId: randomUUID() }, deps()),
     ).toBeUndefined();
     expect(
       await loadResultView({ sessionId: "not-a-uuid" }, deps()),
     ).toBeUndefined();
+  });
+});
+
+// 가르치는 수업 짝(가르치고 배우는 수업 plan 나 · 정한 것 3 · 4). 시험 시드(1단계)의 읽기 세션을 연 뒤, 3단계 단원 1 정규 시드 읽기
+// 수업(teach 칸이 든 수업)을 복제한 수업 행으로 세션을 옮겨 본다. 짝 상한은 시험용 설정 고정값(seed/settings.json 과 같은 값)이다.
+// 시험 이름은 정본 15절 번호(AC-3e, 델타 AC-2c)다.
+describe("가르치는 수업 짝", () => {
+  const teach = teachSeedLessons().reading;
+  /** 짝 상한(lesson.spares_per_session.reading — 시험용 설정 고정값, 적재 설정에 함께 든다). */
+  const cap = TEST_SETTINGS["lesson.spares_per_session.reading"].value;
+  let teachLessonId = "";
+
+  beforeAll(async () => {
+    const { id: _id, ...base } = await lessonOf("reading");
+    const [row] = await db
+      .insert(lessons)
+      .values({
+        ...base,
+        // 시험 시드에 없는 수업 번호(같은 칸 유일 색인을 피함)
+        lessonNo: base.lessonNo + 90,
+        content: teach,
+        newWords: teach.newWords,
+        unitWords: teach.unitWords,
+      })
+      .returning({ id: lessons.id });
+    if (!row) throw new Error("가르치는 수업 행 없음");
+    teachLessonId = row.id;
+  });
+
+  /** 1단계 읽기 세션을 열고 그 세션의 수업 행을 가르치는 수업으로 바꾼 뒤 화면 자료를 다시 읽는다. */
+  async function openTeach(): Promise<SessionView & { area: "reading" }> {
+    const started = await open("reading");
+    await db
+      .update(sessions)
+      .set({ lessonId: teachLessonId })
+      .where(eq(sessions.id, started.sessionId));
+    const view = await loadSessionView(
+      { sessionId: started.sessionId },
+      deps(),
+    );
+    if (view?.area !== "reading") throw new Error("세션 화면 자료 없음");
+    return view;
+  }
+
+  const v2 = (kind: string, content: Record<string, unknown> = {}) => ({
+    v: 2,
+    kind,
+    step: "final",
+    ...content,
+  });
+
+  /** 혼자 해 보기까지의 끝 시도(짝 활동 빼고). wrong 에 든 문항은 첫 시도에 틀리고 둘째에 맞힌다. */
+  function soloFinals(view: SessionView, wrong: readonly number[]) {
+    if (view.area !== "reading") throw new Error("읽기가 아니다");
+    return view.activities.flatMap((activity, i) => {
+      const no = i + 1;
+      switch (activity.kind) {
+        case "today":
+          return [attempt(view.sessionId, no, v2("today"))];
+        case "preview":
+          return [
+            attempt(
+              view.sessionId,
+              no,
+              v2("preview", { shownWords: view.preview.map((w) => w.word) }),
+            ),
+          ];
+        case "model":
+          return [
+            attempt(view.sessionId, no, v2("model", { index: activity.index })),
+          ];
+        case "together": {
+          const item = teach.teach?.together[activity.index];
+          if (!item) throw new Error("같이 해 보기 없음");
+          return [
+            attempt(
+              view.sessionId,
+              no,
+              v2("together", {
+                index: activity.index,
+                tries: [{ choice: item.answerNo }],
+              }),
+            ),
+          ];
+        }
+        case "reading-passage":
+          return [
+            attempt(
+              view.sessionId,
+              no,
+              v2("reading-passage", { tappedWords: [] }),
+            ),
+          ];
+        case "reading-question": {
+          const q = view.lesson.content.questions[activity.index];
+          if (!q) throw new Error("문항 없음");
+          const tries = wrong.includes(activity.index)
+            ? [wrongOf(q.answerNo), q.answerNo]
+            : [q.answerNo];
+          return [
+            attempt(view.sessionId, no, v2("reading-question", { tries })),
+          ];
+        }
+        default:
+          return [];
+      }
+    });
+  }
+
+  /** 짝 활동의 끝 시도(짝 보기의 정답). */
+  function spareFinal(view: SessionView, no: number) {
+    const activity = view.activities[no - 1];
+    if (view.area !== "reading" || activity?.kind !== "spare")
+      throw new Error("짝 활동이 아니다");
+    const spare = view.lesson.content.questions[activity.index]?.spare;
+    if (!spare) throw new Error("짝 없음");
+    return attempt(
+      view.sessionId,
+      no,
+      v2("reading-question", { tries: [spare.answerNo], slot: "spare" }),
+    );
+  }
+
+  /** 기기가 같은 함수로 고른 짝(대기열의 첫 시도 · 화면 자료의 설정 — 위험 2). */
+  function deviceChoice(
+    view: SessionView,
+    batch: readonly { activityNo: number; input: unknown }[],
+  ) {
+    const finals = new Map<number, AttemptInput>();
+    for (const a of batch) {
+      const input = parseAttemptInput(a.input);
+      if (input?.step === "final" && !finals.has(a.activityNo))
+        finals.set(a.activityNo, input);
+    }
+    if (!view.spares) throw new Error("짝 자료 없음");
+    return sparesFromFinals({
+      activities: view.activities,
+      lesson: view.lesson,
+      finals,
+      ctx: {
+        answerMatchPass: view.config.speaking.answerMatchPass,
+        homophones: view.homophones,
+        unitWords: view.lesson.unitWords,
+        lemmaOf: lemmaLookup(view.lemmaEntries),
+        appJudgedQuestions: view.appJudged,
+        repeatGoodRate: view.config.ui.matchPhraseLevels[0],
+        meaningWords: view.meaningWords,
+      },
+      cap: view.spares.cap,
+    });
+  }
+
+  it("AC-3e 가르치는 수업 짝: 서버가 저장된 첫 시도로 고른 낼 짝이 기기와 같고 짝 활동 도중 닫았다 열면 같은 짝에서 이어지며 끝내기는 내지 않은 짝을 끝난 것으로 센다", async () => {
+    const view = await openTeach();
+    expect(view.activities[0]).toEqual({ kind: "today" });
+    const spareNos = view.activities.flatMap((a, i) =>
+      a.kind === "spare" ? [i + 1] : [],
+    );
+    expect(spareNos.length).toBe(teach.content.questions.length);
+    // 아직 혼자 첫 시도가 없으면 낼 짝이 없다(서버가 센 혼자 첫 시도 결과도 없음 — 라-2 화면 자료 칸 outcomes)
+    expect(view.spares).toEqual({
+      show: [],
+      skip: spareNos,
+      cap,
+      outcomes: [],
+    });
+
+    const solo = soloFinals(view, [0, 2]);
+    const device = deviceChoice(view, solo);
+    expect(device.show.length).toBe(Math.min(2, Number(cap)));
+    expect(await saveSessionAttempts(solo, deps())).toMatchObject({
+      ok: true,
+      rejected: [],
+    });
+    const reopened = await loadSessionView(
+      { sessionId: view.sessionId },
+      deps(),
+    );
+    expect(reopened?.spares).toMatchObject({ ...device, cap });
+    // 다른 기기에서 이어 하면(대기열 없음) 서버가 센 결과(outcomes)만으로 같은 짝을 고른다(장부 L-34 서버 값 합치기)
+    if (!reopened?.spares) throw new Error("짝 자료 없음");
+    expect(
+      spareChoiceOnDevice({
+        activities: reopened.activities,
+        lesson: reopened.lesson,
+        server: reopened.spares,
+        attempts: [],
+        ctx: outcomeContextOf(reopened),
+      }),
+    ).toEqual(device);
+    const [first, second] = device.show;
+    if (first === undefined || second === undefined)
+      throw new Error("낼 짝이 둘이어야 한다");
+    expect(reopened?.current).toBe(first);
+
+    // 내지 않은 짝의 시도는 받지 않는다(서버가 다시 고른 짝만)
+    const notShown = device.skip[0];
+    if (notShown === undefined) throw new Error("내지 않은 짝 없음");
+    const firstSpare = spareFinal(view, first);
+    const stray = spareFinal(view, notShown);
+    expect(await saveSessionAttempts([firstSpare, stray], deps())).toEqual({
+      ok: true,
+      accepted: [firstSpare.clientAttemptId],
+      rejected: [stray.clientAttemptId],
+    });
+    // 짝 시도는 점수가 없다
+    const rows = await rowsOf(view.sessionId);
+    expect(rows.find((r) => r.activityNo === first)?.score).toBeNull();
+
+    // 둘째 짝 도중 닫았다 열면 같은 짝에서
+    expect(
+      (await loadSessionView({ sessionId: view.sessionId }, deps()))?.current,
+    ).toBe(second);
+    expect(
+      await finishLessonSession({ sessionId: view.sessionId }, deps()),
+    ).toEqual({ ok: false, reason: "incomplete", missing: [second] });
+    await saveSessionAttempts([spareFinal(view, second)], deps());
+    expect(
+      await finishLessonSession({ sessionId: view.sessionId }, deps()),
+    ).toEqual({ ok: true, already: false });
+    // 세션 점수는 혼자 첫 시도만(3.7)
+    const questions = teach.content.questions.length;
+    const [done] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, view.sessionId));
+    expect(done?.score).toBe((questions - 2) / questions);
+    // 오늘 만난 단어는 활동 2 의 판 2 미리보기 시도에서 읽는다(정한 것 4)
+    const result = await loadResultView({ sessionId: view.sessionId }, deps());
+    expect(result?.metWords.map((w) => w.word)).toEqual(
+      view.preview.map((w) => w.word),
+    );
+    // AC-6g 되짚기: 틀린 두 문항은 짝 첫 시도에 맞혀 해냄이고 도움이 없으니 모두 독립 해냄이다(유효 문항 수 · 비율이 시험 설정 문턱 이상)
+    expect(questions).toBeGreaterThanOrEqual(
+      TEST_SETTINGS["lesson.recap_min_evidence"].value,
+    );
+    expect(result?.recap).toEqual({
+      line: "closeKo",
+      evidence: { valid: questions, done: questions, ratio: 1 },
+    });
+    // AC-6f 되짚기 화면 몫(라-4 fix 1 M2): 고른 줄(closeKo)의 시드 글 · 문장 틀 · 칩(글 · role), 선생님은 고르기 전 null, 음성 설정은 결과마다
+    const seedRecap = teach.teach?.recap;
+    if (!seedRecap) throw new Error("견본 수업에 teach.recap 없음");
+    expect(result?.recapView).toEqual({
+      lineKo: seedRecap.closeKo,
+      frame: {
+        frameEn: seedRecap.frameEn,
+        chips: seedRecap.chips.map((c) => ({ text: c.text, role: c.role })),
+      },
+      teacher: null,
+    });
+    expect(result?.speech).toMatchObject({
+      skipNoticeMs:
+        TEST_SETTINGS["speech.skip_notice_seconds"].value * MS_PER_SECOND,
+      readKo: TEST_SETTINGS["speech.read_ko"].value,
+    });
+    // 다시 하기 결과도 첫머리(마무리 한 줄 · 선생님)는 있고 문장 틀은 없다(정본 03:26 — 오늘 만난 말을 두지 않음, fix 1 I1)
+    await db
+      .update(sessions)
+      .set({ kind: "retry" })
+      .where(eq(sessions.id, view.sessionId));
+    const retried = await loadResultView({ sessionId: view.sessionId }, deps());
+    expect(retried?.recapView).toEqual({
+      lineKo: seedRecap.closeKo,
+      frame: null,
+      teacher: null,
+    });
+  });
+
+  it("AC-3e 가르치는 수업 짝: 혼자 첫 시도와 짝 시도가 한 묶음에 와도 서버가 묶음 앞의 첫 시도로 짝을 고르고 다 맞히면 짝 없이 끝난다", async () => {
+    const view = await openTeach();
+    const solo = soloFinals(view, [1]);
+    const [only] = deviceChoice(view, solo).show;
+    if (only === undefined) throw new Error("낼 짝 없음");
+    const spare = spareFinal(view, only);
+    expect(await saveSessionAttempts([...solo, spare], deps())).toMatchObject({
+      ok: true,
+      rejected: [],
+    });
+    expect(
+      await finishLessonSession({ sessionId: view.sessionId }, deps()),
+    ).toEqual({ ok: true, already: false });
+
+    const clean = await openTeach();
+    await saveSessionAttempts(soloFinals(clean, []), deps());
+    expect(
+      await finishLessonSession({ sessionId: clean.sessionId }, deps()),
+    ).toEqual({ ok: true, already: false });
   });
 });

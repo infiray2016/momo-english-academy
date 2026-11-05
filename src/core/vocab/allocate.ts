@@ -4,6 +4,7 @@
 import {
   type Area,
   approxGe,
+  approxLe,
   BAND_NAMES,
   type Band,
   bandKey,
@@ -20,12 +21,13 @@ export type FrameOverride = {
   minLessons: number;
 };
 
-/** 단원 틀 고르기에 쓰는 단계 규격 칸. */
+/** 단원 틀 고르기에 쓰는 단계 규격 칸. targetTurns 는 회화 참고 턴(3.2 관계 표 회화 필수 질문 상한). */
 export type LevelSpecFrameSource = {
   area: Area;
   level: number;
   band: Band;
   frame?: FrameOverride;
+  targetTurns?: number;
 };
 
 export type UnitFrame = {
@@ -139,11 +141,13 @@ export function allocateUnit(input: {
 export type FrameRule =
   | "frame-assigned-fits"
   | "frame-last-lesson"
-  | "frame-remedial";
+  | "frame-remedial"
+  | "frame-talk-prep"
+  | "frame-talk-required";
 export type FrameViolation = {
   rule: FrameRule;
   band: Band;
-  /** 쓰기 단계 규격의 틀이면 영역 · 단계. */
+  /** 쓰기 단계 규격의 틀 · 회화 단계 규격(필수 질문 상한)이면 영역 · 단계. */
   area?: Area;
   level?: number;
   message: string;
@@ -182,6 +186,9 @@ function frameViolations(
 /**
  * 3.2 관계 표의 셈할 수 있는 관계: 구간마다와 frame 이 있는 쓰기 단계마다 배정 수업 수 ≤ 정규 수업 수,
  * 마지막 배정 수업 새 단어 수 ≤ 단원 단어 × (1 − unit.vocab_mastery). 구간마다 unit.max_remedial ≤ seed.remedial_per_unit.
+ * 회화 카드 새 꼴(C189, 회화 spec 설계 10)의 둘: talk.prep_words.1-3 ≤ unit.new_words_per_lesson.1-3(배정 카드의 짧은 준비 낱말은
+ * 새 단어에서 고른다), 회화 단계마다 unit.new_words_per_lesson.<구간> ≤ 참고 턴 × talk.required_max_ratio(새 단어마다 처음 묻는
+ * 필수 질문이 상한 안에 든다).
  */
 export function checkFrameRelations(input: {
   settings: SettingsReader;
@@ -209,6 +216,30 @@ export function checkFrameRelations(input: {
         rule: "frame-remedial",
         band,
         message: `구간 ${band}: unit.max_remedial ${maxRemedial} 이 seed.remedial_per_unit ${seeded} 보다 크다`,
+      });
+    }
+  }
+  const lowBand: Band = "1-3";
+  const prepWords = settings(bandKey("talk.prep_words", lowBand));
+  const lowK = settings(bandKey("unit.new_words_per_lesson", lowBand));
+  if (prepWords > lowK) {
+    out.push({
+      rule: "frame-talk-prep",
+      band: lowBand,
+      message: `구간 ${lowBand}: talk.prep_words ${prepWords} 이 unit.new_words_per_lesson ${lowK} 보다 크다(짧은 준비 낱말은 배정 카드의 새 단어에서 고른다)`,
+    });
+  }
+  const ratio = settings("talk.required_max_ratio");
+  for (const spec of levelSpecs) {
+    if (spec.area !== "talk" || spec.targetTurns === undefined) continue;
+    const k = settings(bandKey("unit.new_words_per_lesson", spec.band));
+    if (!approxLe(k, spec.targetTurns * ratio)) {
+      out.push({
+        rule: "frame-talk-required",
+        band: spec.band,
+        area: spec.area,
+        level: spec.level,
+        message: `회화 ${spec.level}단계: unit.new_words_per_lesson.${spec.band} ${k} 이 참고 턴 ${spec.targetTurns} × talk.required_max_ratio ${ratio} 를 넘는다(새 단어마다 처음 묻는 필수 질문이 상한을 넘는다)`,
       });
     }
   }

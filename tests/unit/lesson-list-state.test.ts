@@ -126,7 +126,9 @@ describe("수업 목록", () => {
         ],
       }),
     );
-    expect(view.band).toEqual({ level: LEVEL, unit: UNIT });
+    // 위 띠: 단계 · 단원과 단원 칸(막대 재료가 없으면 막대 숨김 — R-13, 막대 시험은 ux-home)
+    expect(view.band).toMatchObject({ level: LEVEL, unit: UNIT, bars: null });
+    expect(view.band.cells[UNIT - 1]).toBe("current");
     expect(
       view.current?.front.map((l) => [l.ref.kind, l.ref.lessonNo, l.done]),
     ).toEqual([
