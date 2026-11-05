@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"stuck\":false,\"tori_en\":\"That's okay! Listen!\",\"model_line\":\"\",\"choices\":[\"I like soccer.\",\"I like tag.\"],\"tori_ko\":\"괜찮아! 들어 봐!\",\"recast\":\"\",\"explanation\":\"좋아하는 걸 고르면 돼.\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"follow_up\",\"card_item\":{\"kind\":\"none\",\"no\":0},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"easy_question\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"나는 축구가 좋아.\",\"next_hints\":[\"I like ___.\",\"I like soccer.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"I like soccer.\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"That's okay! Listen!\",\"model_line\":\"\",\"choices\":[\"I like soccer.\",\"I like tag.\"],\"tori_ko\":[\"괜찮아!\",\"들어 봐!\"],\"recast\":\"\",\"explanation\":\"좋아하는 걸 고르면 돼.\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"follow_up\",\"card_item\":{\"kind\":\"none\",\"no\":0},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"easy_question\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"나는 축구가 좋아.\",\"next_hints\":[\"I like ___.\",\"I like soccer.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"I like soccer.\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

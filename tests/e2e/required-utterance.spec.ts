@@ -321,13 +321,12 @@ function firstTurnAnswer(card: TalkCard): string {
 }
 
 /**
- * 1~3단계 선택지 둘(소리 줄): 카드 필수 1 의 노리는 단어를 담은 답과 같은 꼴의 'it' 답(낱말 하나만 다름 — checkChoices). 낱말은 그 단계
- * 어휘 범위 안이다(I · like · it 과 카드 노리는 단어).
+ * 1~3단계 선택지 둘(소리 줄): 단원 단어 없는 이어 묻기의 고르기 답(같은 꼴, 낱말 하나만 다름 — question-check checkChoices). 받침 0 에서 이미 물은 ·
+ * 짧은 준비 낱말을 노린 선택지는 서버가 버리고(13절 C202 (1), talk-lesson.ts keptChoicesOf) 2~3단계는 카드 질문에 선택지가 없으므로, 노리는 단어
+ * 없이(card_item none · next_targets 빈 목록) 시험 어휘(I · like · it · you) 안에서 고른다. 노림이 비면 두 답의 낱말을 노리는 자리로 본다.
  */
-function choicesOf(card: TalkCard): readonly [string, string] {
-  const target = card.required[0]?.targets[0];
-  if (!target) throw new Error("견본 꼴 — 첫 필수 질문 노리는 단어");
-  return [`I like ${target}.`, "I like it."];
+function choicesOf(_card: TalkCard): readonly [string, string] {
+  return ["I like it.", "I like you."];
 }
 
 test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
@@ -354,14 +353,14 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
         { tori_en: replies[0] },
         { firstDelayMs: FIRST_DELAY_MS },
       ),
-      // 대화 첫 질문 답의 응답: AI 질문 + 선택지 둘(소리 줄 — 노리는 단어는 카드 필수 1 의 것, 같은 꼴에서 낱말 하나만 다름)
+      // 대화 첫 질문 답의 응답: AI 이어 묻기 + 선택지 둘(소리 줄 — 단원 단어 없는 고르기 답, 같은 꼴에서 낱말 하나만 다름. 이미 물은 카드 필수 1
+      // 의 낱말을 노린 선택지는 받침 0 에서 서버가 버린다 — 13절 C202 (1))
       talkLessonReply(
         {
           tori_en: `${replies[1]} Do you like it? Listen and say!`,
           choices: [...choices],
           support: "choices",
           next_move: "follow_up",
-          card_item: { kind: "required", no: 1 },
         },
         { firstDelayMs: FIRST_DELAY_MS },
       ),

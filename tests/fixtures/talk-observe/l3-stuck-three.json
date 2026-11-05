@@ -1,0 +1,64 @@
+{
+  "name": "l3-stuck-three",
+  "title": "3단계 · 막힘 셋과 못 알아들은 말",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-15o (다): 막힌 뒤 같은 질문이 다시 나온 턴과 같은 질문이 세 번 나온 대화가 없다. 받침 셋(같이 말하기 · 쉬운 질문 · 닫기)과 막힘 말을 고루 넣는다.",
+  "steps": [
+    {
+      "say": "I am fine.",
+      "expect": { "koMeaning": true }
+    },
+    {
+      "input": "dont_know",
+      "design": "That's okay! Let's say it together. 〈We eat rice and fish.〉 〔괜찮아! 같이 말해 보자.〕(받침 첫째)",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "input": "dont_know",
+      "design": "No problem! Let's try an easy one. Are you hungry? 〔괜찮아! 쉬운 걸로 해 보자. 배고파?〕(받침 둘째)",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "input": "dont_know",
+      "design": "That's okay! 〈We eat rice and fish.〉 + 다음 카드 질문(받침 셋째 닫기)",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "Huh?",
+      "design": "막힘 말 — 같은 질문을 되풀이하지 않고 같이 말하기",
+      "expect": { "koMeaning": true, "sameSoundTwice": false }
+    },
+    {
+      "say": "I drink juice.",
+      "expect": {
+        "recastWord": "juice",
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "I don't know.",
+      "expect": { "koMeaning": true, "sameSoundTwice": false }
+    },
+    {
+      "say": "We go to the lake.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

@@ -138,10 +138,28 @@ export type LowLevelLineReason =
   | "no_target";
 export type LineCheck =
   | { ok: true }
-  | { ok: false; reason: LowLevelLineReason };
+  /** words: 걸린 낱말(노리는 단어 · 범위 밖 낱말 — AI 에 다시 쓰게 알릴 때 쓴다, 13절 C203 (3)). 그 밖의 까닭은 비운다. */
+  | { ok: false; reason: LowLevelLineReason; words?: string[] };
 
 const OK: LineCheck = { ok: true };
-const fail = (reason: LowLevelLineReason): LineCheck => ({ ok: false, reason });
+const fail = (reason: LowLevelLineReason, words?: string[]): LineCheck =>
+  words === undefined ? { ok: false, reason } : { ok: false, reason, words };
+
+/**
+ * 1~3단계 AI 질문에서 범위 밖이어도 한 낱말뿐이면 통과시키는 닫힌 품사 낱말(13절 C203 (2) — 'Do you like rice too?' 의 too 처럼 되묻기에 붙는
+ * 작은 부사 · 지시어). 설계 숫자가 아닌 코드 상수다(C203 '코드 상수'). 질문 검사에만 쓰고 소리 줄 · 선택지에는 쓰지 않는다.
+ */
+export const CLOSED_CLASS_PASS_WORDS: ReadonlySet<string> = new Set([
+  "too",
+  "also",
+  "now",
+  "here",
+  "there",
+  "then",
+  "very",
+  "so",
+  "really",
+]);
 
 function lowerSet(words: readonly string[]): Set<string> {
   return new Set(words.map((w) => w.toLowerCase()));
@@ -166,7 +184,8 @@ function overLength(text: string, max: number): boolean {
   );
 }
 
-function hasOffband(text: string, options: LowLevelLineOptions): boolean {
+/** 범위 밖 낱말(소문자, 같은 낱말은 한 번 — 차례대로). */
+function offbandWordsIn(text: string, options: LowLevelLineOptions): string[] {
   const extra = lowerSet([...options.unitWords, ...options.childWords]);
   const teacher = options.teacherName.toLowerCase();
   const inRange = (word: string) =>
@@ -174,10 +193,18 @@ function hasOffband(text: string, options: LowLevelLineOptions): boolean {
     extra.has(word) ||
     word === teacher ||
     word === `${teacher}'s`;
-  return wordTokens(text, options).some(
-    ({ lower, lemma }) =>
-      !(inRange(lower) || (lemma !== undefined && inRange(lemma))),
-  );
+  const out: string[] = [];
+  for (const { lower, lemma } of wordTokens(text, options))
+    if (
+      !(inRange(lower) || (lemma !== undefined && inRange(lemma))) &&
+      !out.includes(lower)
+    )
+      out.push(lower);
+  return out;
+}
+
+function hasOffband(text: string, options: LowLevelLineOptions): boolean {
+  return offbandWordsIn(text, options).length > 0;
 }
 
 function hasOffbandForm(text: string, options: LowLevelLineOptions): boolean {
@@ -188,16 +215,48 @@ function hasOffbandForm(text: string, options: LowLevelLineOptions): boolean {
   );
 }
 
+/** 글에 든 노리는 단어(원형 포함, 소문자 노리는 단어 꼴 — 같은 낱말은 한 번). */
+function targetWordsIn(
+  text: string,
+  targets: readonly string[],
+  options: Pick<LowLevelLineOptions, "lemmaOf">,
+): string[] {
+  const wanted = lowerSet(targets);
+  const out: string[] = [];
+  for (const { lower, lemma } of wordTokens(text, options)) {
+    const hit = wanted.has(lower)
+      ? lower
+      : lemma !== undefined && wanted.has(lemma)
+        ? lemma
+        : null;
+    if (hit !== null && !out.includes(hit)) out.push(hit);
+  }
+  return out;
+}
+
 function hasTarget(
   text: string,
   targets: readonly string[],
   options: Pick<LowLevelLineOptions, "lemmaOf">,
 ): boolean {
-  const wanted = lowerSet(targets);
-  return wordTokens(text, options).some(
-    ({ lower, lemma }) =>
-      wanted.has(lower) || (lemma !== undefined && wanted.has(lemma)),
-  );
+  return targetWordsIn(text, targets, options).length > 0;
+}
+
+/**
+ * 아이가 이 대화에서 말한 낱말(소문자 꼴과 원형). 노리는 단어라도 아이가 먼저 말했으면 되묻기 질문에 쓸 수 있다(13절 C203 (1) — childWords 와
+ * 같은 자격).
+ */
+function childSaidSet(
+  options: Pick<LowLevelLineOptions, "childWords" | "lemmaOf">,
+): Set<string> {
+  const out = new Set<string>();
+  for (const word of options.childWords) {
+    const lower = word.toLowerCase();
+    out.add(lower);
+    const lemma = options.lemmaOf(word)?.toLowerCase();
+    if (lemma !== undefined) out.add(lemma);
+  }
+  return out;
 }
 
 /** 길이 · 어휘 · 형태 범위(질문 · 소리 줄 공통). */
@@ -209,9 +268,10 @@ function rangeCheck(text: string, options: LowLevelLineOptions): LineCheck {
 }
 
 /**
- * 1~3단계 AI 질문 문장 검사(3.3 · 6.4 06:110 에 더함): 문장 길이 상한 안, 노리는 단원 단어(원형 포함)를 넣지 않음(A4-03),
- * 그 단계 어휘 범위 · 이번 단원 단어 · 아이가 이 대화에서 말한 낱말 · {NAME} · 선생님 영어 이름 밖 낱말 없음, 범위 밖 형태 없음.
- * 걸린 질문 문장은 화면 · 읽어 주기 · 응답 본문에서 빠지고 그 턴은 카드 자리가 된다(부르는 쪽 몫). 같은 질문은 sameQuestionHit.
+ * 1~3단계 AI 질문 문장 검사(3.3 · 6.4 06:110 에 더함, 13절 C203 잠정): 문장 길이 상한 안, 노리는 단원 단어(원형 포함)를 넣지 않음(A4-03 —
+ * 아이가 이 대화에서 말한 낱말은 되묻기에 쓸 수 있어 뺀다, C203 (1)), 그 단계 어휘 범위 · 이번 단원 단어 · 아이가 이 대화에서 말한 낱말 ·
+ * {NAME} · 선생님 영어 이름 밖 낱말 없음(범위 밖이 닫힌 품사 한 낱말뿐이면 통과, C203 (2)), 범위 밖 형태 없음. 걸리면 걸린 낱말을 함께 낸다.
+ * 걸린 질문은 부르는 쪽이 AI 에 한 번 다시 쓰게 하고(C203 (3), question-retry), 그래도 걸리면 카드 자리로 바꾼다. 같은 질문은 sameQuestionHit.
  */
 export function checkLowLevelQuestion(
   sentence: string,
@@ -219,8 +279,16 @@ export function checkLowLevelQuestion(
 ): LineCheck {
   if (sentence.trim() === "") return fail("empty");
   if (overLength(sentence, options.sentenceMaxWords)) return fail("too_long");
-  if (hasTarget(sentence, options.targets, options)) return fail("target_word");
-  return rangeCheck(sentence, options);
+  const said = childSaidSet(options);
+  const targets = options.targets.filter((t) => !said.has(t.toLowerCase()));
+  const hit = targetWordsIn(sentence, targets, options);
+  if (hit.length > 0) return fail("target_word", hit);
+  const off = offbandWordsIn(sentence, options);
+  const closedOnly =
+    off.length === 1 && CLOSED_CLASS_PASS_WORDS.has(off[0] ?? "");
+  if (off.length > 0 && !closedOnly) return fail("offband", off);
+  if (hasOffbandForm(sentence, options)) return fail("form");
+  return OK;
 }
 
 /**

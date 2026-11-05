@@ -1,0 +1,53 @@
+{
+  "name": "l3-nospeech",
+  "title": "3단계 · 말소리 없음",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "들리지 않음(기기 쪽)은 그 자리를 닫고 답을 한 번 들려준 뒤 다음 이야기로 간다. 셋이 이어지면 막힘 화면(speech.silent_items_max)이다.",
+  "steps": [
+    {
+      "say": "I am fine.",
+      "expect": { "koMeaning": true }
+    },
+    {
+      "input": "nospeech",
+      "design": "〈We eat rice and fish.〉 + 다음 카드 질문(답을 한 번 들려주고 다음 이야기로)",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "input": "nospeech",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "input": "nospeech",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "input": "nospeech",
+      "design": "들리지 않음 셋째 — 앱 막힘 화면(대화 밖)",
+      "expect": { "answerFirst": true, "koMeaning": true }
+    },
+    {
+      "say": "We go home.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

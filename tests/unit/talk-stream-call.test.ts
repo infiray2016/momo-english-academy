@@ -219,7 +219,7 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
       json: answer({
         tori_en:
           "Nice! Where do you live? The child is great. That is stupid. What color is it?",
-        tori_ko: "좋아!",
+        tori_ko: ["좋아!"],
       }),
     });
     const { plan, rows, sentences } = harness(
@@ -238,13 +238,13 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
     expect(rows[0]?.firstSentenceMs).toBe(result.firstSentenceMs);
   });
 
-  it("회화 턴 흐름: 한국어 뜻은 영어가 다 흐른 뒤 값으로 오고 뜻에 걸린 말이 있으면 뜻 전체가 빈다", async () => {
+  it("회화 턴 흐름: 한국어 뜻은 영어가 다 흐른 뒤 문장마다 값으로 오고 뜻에 걸린 말이 있으면 그 문장의 뜻만 빈다(13절 C202 (5))", async () => {
     const input = lowInput();
     const body = messageBody({
       model: "claude-sonnet-5-5",
       json: answer({
         tori_en: "Great! Two apples.",
-        tori_ko: "좋아! 너 어디 살아?",
+        tori_ko: ["좋아!", "너 어디 살아?"],
       }),
     });
     const { plan, sentences } = harness(
@@ -254,7 +254,7 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
     const result = await streamTalkLesson(plan);
     expect(sentences).toEqual(["Great!", "Two apples."]);
     if (!result.ok) throw new Error(`실패: ${result.reason}`);
-    expect(result.value.tori_ko).toBe("");
+    expect(result.value.tori_ko).toEqual(["좋아!", ""]);
     expect(result.checked).toBe(true);
   });
 

@@ -142,6 +142,19 @@ export type TalkLessonPosition = {
   childTurns: number;
   /** 따라가기 갈래가 끝에서 이어진 선생님 차례 수. */
   followRun: number;
+  /**
+   * 마지막 이어 묻기(갈래 follow_up · follow_child) 뒤 선생님 차례 수(대화 토막의 AI 차례 · 카드 자리 · 대화 첫 질문 — 받침 차례 · 인사 끝 반응 ·
+   * 마무리 자리는 세지 않음. 이어 묻기 하한이 선생님 차례로 세는 것과 같다, 02-2 184줄 · 검토 rev-night-2 M-5). 사용자 메시지
+   * 'Teacher turns since last follow-up'(13절 C202 (2) · 분석 5.2 2).
+   */
+  teacherTurnsSinceFollowUp: number;
+  /** 마지막 아이 행이 카드 기회(카드 항목 · 단원 단어를 노린 질문 자리)에 말로 답했다(사용자 메시지 'Previous turn was a card chance'). */
+  afterCardChance: boolean;
+  /**
+   * 마지막 아이 행 바로 앞 선생님 행이 앱이 붙인 대화 첫 질문(대화 토막의 first_question — AI 를 부르지 않아 앞 턴 전문에 없음)이면 그 질문 글과
+   * 카드 기회 여부, 아니면 null(사용자 메시지 'App question just before', task-talk-13-report 9절 2).
+   */
+  appAskedBefore: { en: string; card: boolean } | null;
   /** 고르기 차례: 마무리 물음('더 이야기하기' · '그만하기') · 마무리 제안(같은 두 버튼, 말로 답해도 됨). */
   choice: "closing" | "suggestion" | null;
   /** 마무리 물음이 나왔다 · 아이가 답했다(참여 완료 (1)). */
@@ -162,6 +175,18 @@ export type TalkLessonPosition = {
 };
 
 type Ctx = Pick<LessonArgs, "spec" | "card" | "settings">;
+
+/** 이어 묻기 갈래(아이 말에 이어 묻기 · 아이가 꺼낸 이야기 따라가기 — 02-2 184줄 '아이 말에 이어 묻는 질문'). */
+const FOLLOW_UP_MOVES: ReadonlySet<TalkNextMove> = new Set([
+  "follow_up",
+  "follow_child",
+]);
+/** 이어 묻기 뒤 셈에 드는 선생님 차례 종류(AI 차례 · 카드 자리 · 대화 첫 질문). */
+const COUNTED_TURNS: ReadonlySet<TalkMoveKind> = new Set([
+  "ai",
+  "card_slot",
+  "first_question",
+]);
 
 function greetingAnswerOf(ctx: Ctx, index: number): string | null {
   const g = ctx.card.greeting;
@@ -241,6 +266,8 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
   let moreCount = 0;
   let childTurns = 0;
   let followRun = 0;
+  let sinceFollowUp = 0;
+  let appAsked: { en: string; card: boolean } | null = null;
   let choice: "closing" | "suggestion" | null = null;
   let closingAsked = false;
   let closingAnswered = false;
@@ -269,6 +296,14 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
       // 셈은 그 차례의 질문 하나다(반응 부분의 물음 'Really?' 는 들지 않음, 02-2 200 · 202줄)
       const question = turnQuestionOf(row.text, m?.kind ?? null);
       const questions = question === null ? [] : [question];
+      // 앱이 붙인 대화 첫 질문(앞에 아이 행이 없어 앞 턴 전문에 들지 않는다 — 다음 회화 턴 사용자 메시지로 알린다)
+      appAsked =
+        phase === "talk" && !transitionNext && m?.kind === "first_question"
+          ? {
+              en: question ?? row.text,
+              card: m.item.kind !== "none" || m.words.length > 0,
+            }
+          : null;
       if (question !== null) {
         const key = questionKeyOf(question);
         asked.set(key, (asked.get(key) ?? 0) + 1);
@@ -289,6 +324,17 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
         slot = null;
         continue;
       }
+      // 이어 묻기 뒤 선생님 차례 셈(대화 토막 — 받침 차례는 막힘 처리라, 마무리 자리는 마무리 물음이라 세지 않는다)
+      if (
+        phase === "talk" &&
+        m &&
+        COUNTED_TURNS.has(m.kind) &&
+        !isSupportMove(m)
+      )
+        sinceFollowUp =
+          m.kind === "ai" && FOLLOW_UP_MOVES.has(m.next)
+            ? 0
+            : sinceFollowUp + 1;
       if (phase === "talk" && m?.kind === "first_question")
         talkFirstAsked = true;
       if (m?.kind === "closing_slot") {
@@ -410,6 +456,13 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
     turnsLeft,
     childTurns,
     followRun,
+    teacherTurnsSinceFollowUp: sinceFollowUp,
+    afterCardChance:
+      lastRow === "child" &&
+      lastCause === null &&
+      answeredSlot !== null &&
+      (answeredSlot.item.kind !== "none" || answeredSlot.words.length > 0),
+    appAskedBefore: lastRow === "child" ? appAsked : null,
     choice,
     closingAsked,
     closingAnswered,
@@ -427,6 +480,33 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
     reachedNow,
     roundEndedNow,
   };
+}
+
+/**
+ * 다시 묻는 턴이 되는 단원 단어(02-2 271줄 · 13절 C202 (1)): 앞 회화 세션에서 만남(처음 스냅숏 metBefore) · 짧은 준비에서 보임(인사 뒤
+ * prepWords — 건너뛴 낱말 포함, 대화 중 연 준비 move.prep) · 이 대화의 선생님 차례가 노렸거나(move.words) 꺼낸(move.intro) 낱말. 이 낱말을
+ * 노린 질문에는 받침 0 의 따라 할 말 · 선택지를 쓰지 않는다(회화 턴 정규화가 거른다). 차례대로, 같은 낱말은 한 번.
+ */
+export function reaskWordsOf({
+  turns,
+  prepWords,
+  metBefore,
+}: {
+  turns: readonly TalkLessonTurn[];
+  prepWords: readonly string[];
+  metBefore: readonly string[];
+}): string[] {
+  const out = new Set<string>([...metBefore, ...prepWords]);
+  for (const row of turns) {
+    if (row.speaker !== "teacher" || !row.move) continue;
+    for (const w of [
+      ...(row.move.prep?.words ?? []),
+      ...row.move.words,
+      ...row.move.intro,
+    ])
+      out.add(w);
+  }
+  return [...out];
 }
 
 /**
@@ -506,6 +586,12 @@ export type TeacherTurnPlan = {
   /** 이 차례 뒤 열 짧은 준비 낱말(3.3 짧은 준비 (나)). 열지 않으면 null. */
   openPrep: string[] | null;
   followRun: number;
+  /** 앞 차례가 카드 기회였고 아이가 말로 답했다(TalkLessonPosition.afterCardChance). */
+  afterChance: boolean;
+  /** 마지막 이어 묻기 뒤 선생님 차례 수(TalkLessonPosition.teacherTurnsSinceFollowUp). */
+  sinceFollowUp: number;
+  /** 아이가 답한 질문이 앱이 붙인 대화 첫 질문이면 그 글 · 카드 기회 여부(TalkLessonPosition.appAskedBefore). */
+  appAsked: { en: string; card: boolean } | null;
   turnsLeft: number;
   chances: TalkChances;
 };
@@ -582,6 +668,9 @@ function basePlan(c: PlanCtx): TeacherTurnPlan {
     answerFallback: null,
     openPrep: null,
     followRun: pos.followRun,
+    afterChance: pos.afterCardChance,
+    sinceFollowUp: pos.teacherTurnsSinceFollowUp,
+    appAsked: pos.appAskedBefore,
     turnsLeft: pos.turnsLeft,
     chances,
   };

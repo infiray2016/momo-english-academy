@@ -440,7 +440,7 @@ export function talkLessonAnswer(
     tori_en: "Nice!",
     model_line: "",
     choices: [],
-    tori_ko: "좋아!",
+    tori_ko: ["좋아!"],
     recast: "",
     explanation: "",
     new_words: [],

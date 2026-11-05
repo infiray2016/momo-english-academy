@@ -1,0 +1,63 @@
+{
+  "name": "l3-child-topic",
+  "title": "3단계 · 아이가 꺼낸 이야기",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-15o (나): 아이가 꺼낸 이야기에 한 턴 이상 이어 묻고 talk.follow_child_turns 안에 오늘 이야기로 돌아온 턴이 move 갈래로 남는다.",
+  "steps": [
+    {
+      "say": "I am good.",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "I have a dog.",
+      "design": "A dog! What does your dog eat? 〔강아지구나! 강아지는 뭐 먹어?〕",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "My dog eats rice.",
+      "design": "Your dog eats rice! Do you eat rice, too? 〔강아지가 밥을 먹는구나! 너도 밥 먹어?〕",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "My dog is big.",
+      "design": "A big dog! Oh, juice for you. What do you do with it? 〔큰 강아지구나! 오, 너한테 주스가 있네. 그걸로 뭐 해?〕",
+      "expect": {
+        "returns": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I like soccer.",
+      "design": "Soccer! Do you play with your family? 〔축구! 가족이랑 해?〕",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Yes I play with my dad.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We go to the lake.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    }
+  ]
+}

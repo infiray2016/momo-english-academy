@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"stuck\":true,\"tori_en\":\"That's okay! Let's say it together. I play soccer.\",\"model_line\":\"\",\"choices\":[],\"tori_ko\":\"괜찮아! 같이 말해 보자. 나는 축구를 해.\",\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"required\",\"card_item\":{\"kind\":\"required\",\"no\":2},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"together\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"\",\"next_hints\":[\"___ is fun.\",\"Soccer is fun.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":true,\"tori_en\":\"That's okay! Let's say it together. I play soccer.\",\"model_line\":\"\",\"choices\":[],\"tori_ko\":[\"괜찮아!\",\"같이 말해 보자.\",\"나는 축구를 해.\"],\"recast\":\"\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"required\",\"card_item\":{\"kind\":\"required\",\"no\":2},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"together\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"\",\"next_hints\":[\"___ is fun.\",\"Soccer is fun.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

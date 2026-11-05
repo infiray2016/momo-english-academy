@@ -62,7 +62,7 @@ function out(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
     tori_en: "",
     model_line: "",
     choices: [],
-    tori_ko: "",
+    tori_ko: [],
     recast: "",
     explanation: "",
     new_words: [],
@@ -663,7 +663,7 @@ describe("AC-15k · AC-15v 선생님 행 text · 다시 쓸 차례 · move", () 
       ifStuck,
       stuck: true,
       sentences: ["That's okay!", "Let's say it together."],
-      outcome: ok(out({ stuck: true, tori_ko: "괜찮아!" })),
+      outcome: ok(out({ stuck: true, tori_ko: ["괜찮아!"] })),
       child: stuckSaid(),
     });
     expect(result.rewrite).toBe(
@@ -719,7 +719,7 @@ describe("AC-15k · AC-15v 선생님 행 text · 다시 쓸 차례 · move", () 
       args,
       ifAnswered,
       sentences: ["Oh, nice!", "Do you like basketball?"],
-      outcome: ok(out({ next_targets: ["sunday"], tori_ko: "좋아!" })),
+      outcome: ok(out({ next_targets: ["sunday"], tori_ko: ["좋아!"] })),
     });
     const lines = lessonReplayLinesOf(
       { text: result.text, toriKo: result.ko, move: result.move },
@@ -765,7 +765,8 @@ describe("묶음 8 fix 1(검토 I-1 · I-2 · M-1~M-4 · 단원 목표 글)", ()
         out({
           next_targets: ["sunday"],
           choices: ["I like it.", "I like Sunday."],
-          tori_ko: "좋아! 좋아해? 나는 일요일이 좋아! 듣고 따라 해!",
+          // 문장과 맞출 수 없는 뜻(한 덩이)은 옛 규칙이다 — 문장마다의 뜻은 talk-prompt-fix1 시험(13절 C202 (5))
+          tori_ko: ["좋아! 좋아해? 나는 일요일이 좋아! 듣고 따라 해!"],
         }),
       ),
     });
@@ -776,7 +777,7 @@ describe("묶음 8 fix 1(검토 I-1 · I-2 · M-1~M-4 · 단원 목표 글)", ()
       "I like it.",
       "I like Sunday.",
     ]);
-    // 선생님 문장이 빠진 턴의 뜻은 흘리지도 저장하지도 않는다(T2)
+    // 문장과 맞출 수 없는 뜻이면 선생님 문장이 빠진 턴의 뜻은 흘리지도 저장하지도 않는다(T2)
     expect(result.ko).toBeNull();
     const model = play({
       args,

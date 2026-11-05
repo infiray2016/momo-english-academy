@@ -16,6 +16,7 @@ import {
   talkCallTurnOf,
   talkLessonRewriteOf,
   talkLessonUserMessage,
+  teacherSentencesMaxOf,
 } from "@/core/ai/calls/talk-lesson";
 import { talkSafetyOf } from "@/core/ai/cost-alert";
 import type { Masker } from "@/core/ai/mask";
@@ -80,6 +81,11 @@ import {
   turnQuestionOf,
 } from "@/core/conversation/question-check";
 import {
+  heldQuestionFailOf,
+  mergeQuestionRetry,
+  questionRetryNoteOf,
+} from "@/core/conversation/question-retry";
+import {
   metWordsIn,
   saidWordsOf,
   talkEnglishSentenceDelta,
@@ -90,6 +96,7 @@ import {
   normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
+  toriKoShownOf,
 } from "@/core/conversation/spoken";
 import { isQuestionSentence, safeLineOf } from "@/core/conversation/stream";
 import type { StageTimings } from "@/core/conversation/timing";
@@ -106,6 +113,7 @@ import { aiCalls } from "@/db/schema/operations";
 import { createAlertOnce } from "@/server/ai/store";
 import {
   soundPairsOf,
+  TALK_QUESTION_RETRY_TAG,
   type TalkLessonOutcome,
   talkLessonTurn,
 } from "@/server/ai/talk";
@@ -133,7 +141,6 @@ import {
   type HintView,
   hintViewsOf,
   isTalkOpen,
-  lessonToriKoOf,
   onTalkSessionEnded,
   positiveInt,
   readTalkLessonState,
@@ -797,6 +804,8 @@ export type LessonOutcomeView =
       hintsBlocked: boolean;
       soundFixed?: { model: boolean; choices: boolean };
       overLength: number;
+      /** 문장 문(검사)에 걸려 바뀌거나 빠진 선생님 문장 수 — 있으면 뜻 목록을 문장과 맞출 수 없어 뜻을 보이지 않는다(13절 C202 (5)). */
+      blocked?: number;
     }
   /** 첫 문장 뒤 끊김(8절 — 보낸 문장을 두고 그 턴을 닫는다). */
   | { kind: "cut"; overLength: number }
@@ -1063,19 +1072,25 @@ export function settleLessonTurn({
 
   const attach = shownAttachOf(kept, plan.attach);
   const sentAll = all.map((e) => e.en);
-  const koRaw =
-    value && value.tori_ko !== ""
-      ? value.tori_ko
-      : line?.ko !== undefined
-        ? line.ko
-        : null;
-  // 뜻은 뜻을 보이는 단계만, 1~3단계는 선생님 문장이 빠진 턴이면 흘리지도 저장하지도 않는다(정한 것 9 · T2 — 묶음 7 lessonToriKoOf)
-  const ko = lessonToriKoOf({
-    ko: koRaw,
-    spec: ctx.spec,
-    sent: sentAll,
-    shown: kept,
-  });
+  // 뜻은 뜻을 보이는 단계만, 문장마다의 뜻이면 빠진 선생님 문장의 뜻만 뺀다(13절 C202 (5) — plan 정한 것 9 의 '겹침 규칙 그대로'를 바꿈).
+  // 문장과 맞출 수 없는 뜻(수가 다름 · 옛 한 글)은 옛 규칙: 1~3단계는 선생님 문장이 빠진 턴이면 흘리지도 저장하지도 않는다(T2).
+  // 문장 문에 걸린 문장이 있는 응답은 걸린 문장의 뜻을 가려낼 수 없어 뜻을 보이지 않는다
+  const koRaw: string | readonly string[] | null =
+    outcome.kind === "ok" && (outcome.blocked ?? 0) > 0
+      ? null
+      : value && value.tori_ko.length > 0
+        ? value.tori_ko
+        : line?.ko !== undefined
+          ? line.ko
+          : null;
+  const ko = ctx.spec.koMeaning
+    ? toriKoShownOf({
+        ko: koRaw,
+        sent: sentAll,
+        shown: kept,
+        lowBand: isLowBand(ctx.spec),
+      })
+    : null;
 
   const keepNext = plan.kind === "ai" && !questionDropped;
   // 4단계부터 끊긴 턴에 보낸 질문이 남으면 그 질문의 카드 항목을 알 수 없다 — 계획의 카드 항목(막힌 자리)을 남기지 않는다(07 60줄, 검토 M-3)
@@ -1337,6 +1352,132 @@ export function lessonWrapLinesOf(
   }).map(({ en, ko }) => ({ en, ...(ko === undefined ? {} : { ko }) }));
 }
 
+/** 질문 다시 쓰기 한 번의 결과(부르는 쪽이 회화 턴을 다시 불러 만든다 — 흘려 받은 문장은 아이에게 보내지 않고 문장 문에만 넣는다). */
+export type QuestionRetryAnswer = {
+  value: TalkLessonOutput;
+  entries: LessonSentence[];
+  hintsBlocked: boolean;
+  overLength: number;
+  blocked: number;
+  /** 다시 쓴 응답의 소리 줄을 앱 확인이 바꿨다(move.app 'model_line' — 검토 fix1 N-4). */
+  soundFixed?: { model: boolean; choices: boolean };
+};
+
+/**
+ * 질문 다시 쓰기를 부를 시간이 남았는가(검토 fix1 N-3): 받은 때부터 지난 시간 + 다시 부르기의 기다림 상한(AI_WAIT_TIMEOUT_MULTIPLE ×
+ * ai.timeout_seconds.realtime) + 저장 여유(TURN_SAVE_GRACE_MS)가 회화 턴 끝점의 상한(TURN_IN_FLIGHT_MS — Route Handler maxDuration 과
+ * 같은 값) 안이어야 한다. 넘으면 다시 쓰지 않고 지금처럼 카드 자리다.
+ */
+export function questionRetryFits({
+  elapsedMs,
+  timeoutMs,
+}: {
+  elapsedMs: number;
+  timeoutMs: number;
+}): boolean {
+  return (
+    elapsedMs + AI_WAIT_TIMEOUT_MULTIPLE * timeoutMs + TURN_SAVE_GRACE_MS <=
+    TURN_IN_FLIGHT_MS
+  );
+}
+
+/**
+ * 1~3단계 AI 질문이 검사에 걸린 턴을 한 번 다시 쓰게 한다(13절 C203 (3) 잠정). 성공 응답이고 질문을 쓰는 차례이며 잡아 둔 질문이 길이 ·
+ * 노리는 단어 · 범위 밖 낱말 · 형태 검사에 걸렸을 때만, 걸린 까닭 · 낱말 · 범위를 알려 retry 를 한 번 부른다(1회 상한 — 다시 부르지 않는다).
+ * 다시 쓴 응답이 있고 질문이 있으면 앞 응답의 보낸 문장 뒤에 그 질문을 잇고, 아니면 앞 응답 그대로 둔다 — 끝 처리(settleLessonTurn)가 같은
+ * 검사를 다시 해 걸리면 지금처럼 카드 자리로 바꾼다. 같은 질문 · 끊김 · 한 줄 길은 다시 쓰지 않는다.
+ */
+export async function withQuestionRetry({
+  flow,
+  view,
+  lineOptions,
+  sentenceMaxWords,
+  canRetry = true,
+  retry,
+}: {
+  flow: Pick<LessonSentenceFlow, "entries" | "chosen">;
+  view: LessonOutcomeView;
+  lineOptions: LowLevelLineOptions | null;
+  sentenceMaxWords: number;
+  /** 다시 부를 시간이 남았는가(questionRetryFits). 거짓이면 다시 쓰지 않는다. */
+  canRetry?: boolean;
+  retry: (ask: {
+    previous: string;
+    note: string;
+  }) => Promise<QuestionRetryAnswer | null>;
+}): Promise<{
+  flow: Pick<LessonSentenceFlow, "entries" | "chosen">;
+  view: LessonOutcomeView;
+  retried: boolean;
+}> {
+  const same = { flow, view, retried: false };
+  if (!canRetry || view.kind !== "ok" || lineOptions === null) return same;
+  if (!asksQuestion(flow.chosen())) return same;
+  const firstEntries = flow.entries();
+  const targets = view.value.next_targets;
+  const fail = heldQuestionFailOf({
+    entries: firstEntries,
+    targets,
+    options: lineOptions,
+  });
+  if (fail === null) return same;
+  const note = questionRetryNoteOf(fail, {
+    sentenceMaxWords,
+    targets,
+    childWords: lineOptions.childWords,
+  });
+  let answer: QuestionRetryAnswer | null = null;
+  try {
+    answer = await retry({
+      previous: firstEntries.map((e) => e.en).join(" "),
+      note,
+    });
+  } catch (error) {
+    logFailure("회화 질문 다시 쓰기", error);
+  }
+  const retried = { ...same, retried: true };
+  if (answer === null) return retried;
+  const merged = mergeQuestionRetry({
+    first: view.value,
+    firstEntries,
+    retry: answer.value,
+    retryEntries: answer.entries,
+  });
+  if (merged === null) return retried;
+  const blocked = (view.blocked ?? 0) + answer.blocked;
+  return {
+    flow: {
+      entries: () => merged.entries.map((e) => ({ ...e })),
+      chosen: flow.chosen,
+    },
+    view: {
+      kind: "ok",
+      value: merged.value,
+      hintsBlocked: answer.hintsBlocked,
+      ...(answer.soundFixed ? { soundFixed: answer.soundFixed } : {}),
+      overLength: view.overLength + answer.overLength,
+      ...(blocked > 0 ? { blocked } : {}),
+    },
+    retried: true,
+  };
+}
+
+/**
+ * talk_turns 길이 초과(3.6 · 변경 spec 263줄): 선생님 문장 하나가 단계 낱말 수를 넘었거나(문장 문 셈) 한 차례 문장 수가 구간 상한
+ * (talk.teacher_sentences_max.<구간>)을 넘었다(분석 A7). 막지 않고 기록만 한다.
+ */
+export function lessonOverLengthOf({
+  words,
+  sentences,
+  max,
+}: {
+  words: number;
+  sentences: number;
+  max: number;
+}): boolean {
+  return words > 0 || sentences > max;
+}
+
 const lineOf = (
   line: { en: string; ko?: string | undefined },
   koMeaning: boolean,
@@ -1368,6 +1509,9 @@ export function lessonOutcomeViewOf(
       hintsBlocked: outcome.hintsBlocked,
       ...(outcome.soundFixed ? { soundFixed: outcome.soundFixed } : {}),
       overLength: outcome.overLength,
+      ...(outcome.blocked.length > 0
+        ? { blocked: outcome.blocked.length }
+        : {}),
     };
   if (outcome.reason === "cut_after_first")
     return { kind: "cut", overLength: outcome.overLength };
@@ -1756,7 +1900,7 @@ async function lessonTurnAfterChild(
     range = emptyLessonRange(state);
     rangeBroken = true;
   }
-  const turn = talkCallTurnOf({
+  const planned = talkCallTurnOf({
     plan: ifAnswered,
     ifStuck,
     child: child.text ?? "",
@@ -1765,6 +1909,17 @@ async function lessonTurnAfterChild(
     hintTier: child.hintLevel ?? 0,
     heardHelp: (child.heardHelp ?? "none") as TalkHeardHelp,
   });
+  // 인사 끝 턴은 다음 토막을 알린다(인사 뒤 짧은 준비 계획이 있으면 준비 — index.ts 의 준비 쪽지와 같은 판단, 02-2 169줄 · 분석 5.1 4)
+  const turn =
+    planned.segment === "greeting_end"
+      ? {
+          ...planned,
+          nextPart:
+            (state.start?.prepPlan.length ?? 0) > 0
+              ? ("prep" as const)
+              : ("talk" as const),
+        }
+      : planned;
   const summaryLimit = positiveInt(s, "talk.memory_summaries");
   const callInput = await talkLessonInputOf(db, {
     state,
@@ -1839,14 +1994,70 @@ async function lessonTurnAfterChild(
     write({ t: "break", ...viewOrBreak.line });
     return;
   }
-  const view: LessonOutcomeView = viewOrBreak;
+  const lineOptions = low && !rangeBroken ? lineOptionsOf(callInput) : null;
+  // (8-1) 걸린 1~3단계 AI 질문은 카드 자리로 바꾸기 전에 한 번 다시 쓰게 한다(13절 C203 (3)). 다시 쓴 응답의 문장은 아이에게 바로 보내지
+  // 않고 새 문장 문에만 넣는다 — 끝 처리가 앞 응답의 반응 뒤에 그 질문을 잇는다. ai_calls 는 같은 목적(talk_turn)에 표지를 단다
+  const retriedTurn = await withQuestionRetry({
+    flow,
+    view: viewOrBreak,
+    lineOptions,
+    sentenceMaxWords: callInput.sentenceMaxWords,
+    canRetry: questionRetryFits({
+      elapsedMs: deps.now().getTime() - received.getTime(),
+      timeoutMs: (s["ai.timeout_seconds.realtime"] as number) * MS_PER_SECOND,
+    }),
+    retry: async ({ previous, note }) => {
+      const again = createLessonSentenceFlow({
+        low,
+        ifAnswered,
+        ifStuck,
+        asked: position.askedQuestions,
+        max: state.settings.sameQuestionMax,
+      });
+      again.stuck(flow.stuckValue() === true);
+      const answer = await talkLessonTurn(
+        { ...callInput, retry: { previous, note } },
+        {
+          profileId,
+          sessionId: state.session.id,
+          level: state.level,
+          // 다시 쓰기 행의 첫 문장 시간은 다시 부른 때부터 잰다(첫 호출 시간이 섞이지 않게, 검토 fix1 N-4)
+          requestReceivedAt: deps.now(),
+          safeLine,
+          recordTag: TALK_QUESTION_RETRY_TAG,
+          onSentence: (en) => {
+            again.accept(en);
+          },
+        },
+        { db, clock: deps.now, ...deps.ai },
+      );
+      if (!answer.ok) return null;
+      return {
+        value: answer.value,
+        entries: again.entries(),
+        hintsBlocked: answer.hintsBlocked,
+        overLength: answer.overLength,
+        blocked: answer.blocked.length,
+        ...(answer.soundFixed
+          ? {
+              soundFixed: {
+                model: answer.soundFixed.model,
+                choices: answer.soundFixed.choices,
+              },
+            }
+          : {}),
+      };
+    },
+  });
+  const view: LessonOutcomeView = retriedTurn.view;
+  const settleFlow = retriedTurn.flow;
   const stuck = flow.stuckValue() === true && mode === "speech";
   const turnsWithChild = [
     ...args.turns,
     lessonChildLiteOf(position, input, state.settings, stuck),
   ];
   const result = settleLessonTurn({
-    flow,
+    flow: settleFlow,
     outcome: view,
     ctx: {
       card: state.card,
@@ -1857,7 +2068,7 @@ async function lessonTurnAfterChild(
       koMeaning: state.spec.koMeaning,
       dropped: [],
       spec: state.spec,
-      lineOptions: low && !rangeBroken ? lineOptionsOf(callInput) : null,
+      lineOptions,
     },
   });
   for (const en of result.release) send(en);
@@ -1878,7 +2089,14 @@ async function lessonTurnAfterChild(
           homophones: (deps.homophones ?? seedHomophones)(),
         })
       : [];
-  const overLength = view.kind === "line" ? 0 : view.overLength;
+  // AI 가 쓴 선생님 문장 수(문장 문에 든 것 — 앱이 고른 한 줄 · 붙인 줄은 세지 않음)
+  const overLength =
+    view.kind !== "line" &&
+    lessonOverLengthOf({
+      words: view.overLength,
+      sentences: settleFlow.entries().length,
+      max: teacherSentencesMaxOf(s, state.level),
+    });
 
   const saved = await db.transaction(async (tx) => {
     const locked = await relock(tx);
@@ -1905,7 +2123,7 @@ async function lessonTurnAfterChild(
           value && value.mission_done.length > 0
             ? [...value.mission_done]
             : null,
-        overLength: overLength > 0,
+        overLength,
         aiQuestion: result.aiQuestion,
         move: result.move,
         recordedAt: at,

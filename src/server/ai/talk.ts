@@ -154,7 +154,24 @@ export type TalkCallContext = AiCallContext & {
   onStuck?: (stuck: boolean) => void;
   /** 준비(설정 · 단가 · 하루 사용 · 가림)를 마치고 AI 를 부르기 직전(준비 시간 재기 — C125 (4)). */
   onPrepared?: () => void;
+  /**
+   * 이 호출의 ai_calls 행을 가려 적는 표지(13절 C203 (3) 질문 다시 쓰기 — TALK_QUESTION_RETRY_TAG). 오류 갈래가 없는 행은 error_code 에 이 표지를,
+   * 있는 행은 '<표지>:<갈래>' 를 적는다. 목적(purpose)은 talk_turn 그대로라 하루 안전 상한 · 조합 · 비용 셈에 그대로 든다.
+   */
+  recordTag?: string;
 };
+
+/** 질문 다시 쓰기 호출의 ai_calls 표지(13절 C203 (3), error_code 칸 — 스키마 열거형을 늘리지 않는다). */
+export const TALK_QUESTION_RETRY_TAG = "question_retry";
+
+/** 표지를 단 오류 갈래 칸(표지가 없으면 그대로). */
+export function taggedErrorCode(
+  errorCode: string | null,
+  tag: string | undefined,
+): string | null {
+  if (tag === undefined) return errorCode;
+  return errorCode === null ? tag : `${tag}:${errorCode}`;
+}
 
 export type TalkDeps = AiDeps & {
   /** 메타 문장 구(시드 meta-sentences.json). */
@@ -279,17 +296,23 @@ export function lessonSoundFixedOf(
   };
 }
 
-/** 소리 줄의 답 짝(따라 할 말은 같은 줄 둘, 선택지는 그 둘 — sayingAnswer 의 짝 꼴). */
+/**
+ * 소리 줄의 답 짝(따라 할 말은 같은 줄 둘, 선택지는 그 둘 — sayingAnswer 의 짝 꼴). 따라 할 말이 선택지 하나와 같은 말이면 따라 할 말 짝은
+ * 넣지 않는다 — 같은 답을 두 번 견주거나 읽지 않는다(C125 넓힘, 13절 C202 (1) · 분석 A4. 정규화가 먼저 따라 할 말을 버린다).
+ */
 export function soundPairsOf(
   value: Pick<TalkLessonOutput, "model_line" | "choices">,
 ): (readonly [string, string])[] {
-  return [
-    ...(value.model_line !== ""
-      ? [[value.model_line, value.model_line] as const]
-      : []),
-    ...(value.choices.length === 2
+  const choices =
+    value.choices.length === 2
       ? [[value.choices[0] ?? "", value.choices[1] ?? ""] as const]
-      : []),
+      : [];
+  const model = value.model_line;
+  const modelInChoices =
+    model !== "" && choices.length > 0 && sayingAnswer(model, choices);
+  return [
+    ...(model !== "" && !modelInChoices ? [[model, model] as const] : []),
+    ...choices,
   ];
 }
 
@@ -905,7 +928,11 @@ async function runCallCore<I extends { level: number }, O, R>(
     // 시도 기록 · 같은 오류 알림의 DB 실패는 받은 응답 · 흘려 보낸 문장 · 토리 행을 바꾸지 않는다(검토 rev-p13b M-1)
     record: async (attempt) => {
       await keepTurnOnRecordFailure(async ({ failureReason, ...row }) => {
-        await insertAiCall(db, { ...baseRow, ...row });
+        await insertAiCall(db, {
+          ...baseRow,
+          ...row,
+          errorCode: taggedErrorCode(row.errorCode, ctx.recordTag),
+        });
       })(attempt);
       await keepTurnOnRecordFailure(async ({ failureReason, ...row }) => {
         if (failureReason === "same_error" && row.errorCode !== null)

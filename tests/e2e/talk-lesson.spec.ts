@@ -81,13 +81,12 @@ function allChancesLesson(): TalkLesson {
 }
 
 /**
- * 1~3단계 선택지 둘(소리 줄): 카드 필수 1 의 노리는 단어를 담은 답과 같은 꼴의 'it' 답(낱말 하나만 다름 — question-check checkChoices).
- * 낱말은 시험 어휘(I · like · it)와 단원 단어 안이다. 가짜 응답에 card_item 필수 1 을 함께 둔다(노리는 단어의 출처).
+ * 1~3단계 선택지 둘(소리 줄): 단원 단어 없는 이어 묻기의 고르기 답(같은 꼴, 낱말 하나만 다름 — question-check checkChoices). 받침 0 에서 이미 물은 ·
+ * 짧은 준비 낱말을 노린 선택지는 서버가 버리고(13절 C202 (1), talk-lesson.ts keptChoicesOf) 2~3단계는 카드 질문에 선택지가 없으므로, 노리는 단어
+ * 없이(card_item none · next_targets 빈 목록) 시험 어휘(I · like · it · you) 안에서 고른다. 노림이 비면 두 답의 낱말을 노리는 자리로 본다.
  */
-function choicesOf(card: TalkCard): readonly [string, string] {
-  const target = card.required[0]?.targets[0];
-  if (!target) throw new Error("견본 꼴 — 첫 필수 질문 노리는 단어");
-  return [`I like ${target}.`, "I like it."];
+function choicesOf(_card: TalkCard): readonly [string, string] {
+  return ["I like it.", "I like you."];
 }
 
 /** 3단계 새 꼴 견본을 넣고 회화 쪽을 연다(처음 마이크 안내 '알겠어요'까지). 견본은 기본 배정 수업 카드, lesson 으로 바꿀 수 있다. */
@@ -676,7 +675,7 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
   }) => {
     test.setTimeout(LONG);
     // 선택지는 말로 답한 AI 질문 차례에서만 쓰인다(1~3단계 첫 막힘은 카드 자리라 AI choices 를 쓰지 않음). 둘은 시험 어휘 안 · 같은 꼴 ·
-    // 낱말 하나만 다르고, 노리는 단어는 card_item(필수 1)에서 온다(checkChoices no_target — required-utterance AC-23f 와 같은 차림)
+    // 낱말 하나만 다른 이어 묻기 고르기 답이다 — 2~3단계 카드 질문 · 이미 물은 낱말에는 선택지가 없다(13절 C202 (1), required-utterance AC-23f 와 같은 차림)
     const o = await openLesson(context, (card, lesson) => [
       saidRun("I'm good."),
       ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
@@ -691,7 +690,6 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
         choices: [a, b],
         support: "choices",
         next_move: "follow_up",
-        card_item: { kind: "required", no: 1 },
       }),
     ]);
     await speak(o.page);
@@ -830,14 +828,17 @@ test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => 
     ]);
     await throughGreetingAndPrep(o);
     await untilChildTurn(o.page);
-    // 선택지는 시험 어휘 안 · 노리는 단어는 card_item(필수 1)에서(checkChoices offband · no_target — AC-23f 와 같은 차림)
+    // 선택지는 시험 어휘 안 · 단원 단어 없는 이어 묻기 고르기 답(13절 C202 (1) — AC-23f 와 같은 차림). 카드 항목이 없으니 힌트는 AI 질문의
+    // 힌트 묶음에서 온다(마지막 단 영어 문장 · 듣기까지 열려면 그 묶음이 있어야 한다)
     await pushFakeAi([
       talkLessonReply({
         tori_en: "Nice! Do you like it? Listen and say!",
         choices: [...choicesOf(o.card)],
         support: "choices",
         next_move: "follow_up",
-        card_item: { kind: "required", no: 1 },
+        next_hint_ko: "좋아하는 것을 말해 봐.",
+        next_hints: ["I like ___.", "I like it."],
+        next_answer_example: "I like it.",
       }),
     ]);
     await speak(o.page);

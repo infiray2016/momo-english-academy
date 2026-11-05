@@ -1,0 +1,83 @@
+{
+  "name": "l3-preview-1",
+  "title": "3단계 · 첫 프리뷰 기록 장면(준비 인식 실패 → 첫 질문 막힘 둘 → 쉬운 질문 답 → 카드 답)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "source": "preview-1-session-transcript.md(2026-11-05 요청자 시험) · task-talk-design-gap.md 4.1 · 4.2 설계된 대화",
+  "note": "아이 말 넷째까지는 기록 그대로, 그 뒤는 분석의 설계된 대화(4.2)의 아이 말이다. 짧은 준비의 eat · drink 는 인식 실패로 건너뛰었다.",
+  "prep": { "skipped": ["eat", "drink"] },
+  "steps": [
+    {
+      "say": "I am fine I am fine",
+      "design": "Good to hear! Let's learn some new words! 〔다행이다! 새 낱말 배워 보자!〕",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "input": "dont_know",
+      "hint": "meaning_only",
+      "hintTier": 1,
+      "design": "That's okay! Let's say it together. 〈We eat rice and fish.〉(받침 첫째)",
+      "expect": {
+        "answerFirst": true,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "input": "dont_know",
+      "design": "No problem! Let's try an easy one. Are you hungry? 〔괜찮아! 쉬운 걸로 해 보자. 배고파?〕",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Yes I am hungry",
+      "design": "You are hungry! Rice and fish, yum! Do you like fish? 〔배고프구나! 밥이랑 생선, 맛있겠다! 생선 좋아해?〕 — 소리 줄 없음",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "Yes I like fish.",
+      "design": "Me too! Lunch is ready. What do we do now? 〔나도! 점심 다 됐어. 이제 우리 뭐 해?〕 — eat 다시 쓰기 기회를 자기 말로, 소리 줄 없음",
+      "expect": {
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "design": "Yes, we eat lunch! Is the fish big? 〔맞아, 우리 점심 먹어! 생선 커?〕",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Yes big fish.",
+      "design": "A big fish! Oh, cold juice, too. What do you do with it? 〔큰 생선이구나! 오, 시원한 주스도 있네. 그걸로 뭐 해?〕 — 장면 단정 없음",
+      "expect": {
+        "recastWord": "fish",
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    }
+  ]
+}

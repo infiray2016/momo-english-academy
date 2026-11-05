@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"stuck\":false,\"tori_en\":\"That's okay! Let's say it together. Listen and say!\",\"model_line\":\"I play.\",\"choices\":[],\"tori_ko\":\"괜찮아! 같이 말해 보자. 듣고 따라 해!\",\"recast\":\"\",\"explanation\":\"주말에 무엇을 하는지 묻는 거야.\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"none\",\"card_item\":{\"kind\":\"none\",\"no\":0},\"next_goal\":[],\"support\":\"together\",\"next_targets\":[],\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_answer_example\":\"\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"stuck\":false,\"tori_en\":\"That's okay! Let's say it together. Listen and say!\",\"model_line\":\"I play.\",\"choices\":[],\"tori_ko\":[\"괜찮아!\",\"같이 말해 보자.\",\"듣고 따라 해!\"],\"recast\":\"\",\"explanation\":\"주말에 무엇을 하는지 묻는 거야.\",\"new_words\":[],\"self_used_words\":[],\"mission_done\":[],\"response_fit\":false,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"none\",\"card_item\":{\"kind\":\"none\",\"no\":0},\"next_goal\":[],\"support\":\"together\",\"next_targets\":[],\"next_hint_ko\":\"\",\"next_hints\":[],\"next_usable_phrases\":[],\"next_answer_example\":\"\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

@@ -13,7 +13,11 @@ import {
 } from "@/server/conversation/turn";
 
 export const dynamic = "force-dynamic";
-/** 회화 턴 기다림(ai.timeout_seconds.realtime 의 두 배) + 저장보다 넉넉히(초, 기술 값 — 배포 설정 칸이라 상수). */
+/**
+ * 회화 턴 기다림(호출마다 ai.timeout_seconds.realtime 의 두 배) + 저장보다 넉넉히(초, 기술 값 — 배포 설정 칸이라 상수). 1~3단계 질문 다시 쓰기
+ * (13절 C203 (3))가 든 턴은 호출이 둘이라 최악 네 배다 — 서버는 남은 시간이 다시 부르기의 기다림 상한과 저장 여유보다 짧으면 다시 쓰지 않는다
+ * (lesson-turn.ts questionRetryFits, TURN_IN_FLIGHT_MS 와 이 값이 같아야 한다).
+ */
 export const maxDuration = 60;
 
 /** 요청 본문 글자 수 상한(기술 값 — 아이 말 한 턴 + 칸들보다 넉넉히). */

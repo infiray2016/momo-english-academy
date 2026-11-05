@@ -104,7 +104,7 @@
     {"key": "talk.teacher_sentences_max.4-6", "scope": "household", "value": 3, "changeVia": "advanced"},
     {"key": "talk.teacher_sentences_max.7-9", "scope": "household", "value": 4, "changeVia": "advanced"},
     {"key": "talk.teacher_sentences_max.10-12", "scope": "household", "value": 5, "changeVia": "advanced"},
-    {"key": "talk.wait_line_seconds", "scope": "household", "value": 1.5, "changeVia": "advanced"},
+    {"key": "talk.wait_line_seconds", "scope": "household", "value": 3, "changeVia": "advanced"},
     {"key": "talk.role_swap_turns", "scope": "household", "value": 4, "changeVia": "advanced"},
     {"key": "talk.max_answer_seconds", "scope": "household", "value": 30, "changeVia": "advanced"},
     {"key": "talk.teacher_model_max_mb", "scope": "household", "value": 8, "changeVia": "seed"},

@@ -2,7 +2,7 @@ import "server-only";
 // 새 꼴 회화 수업 턴 · 끝맺음 턴의 호출 입력(회화 plan 묶음 8 — 턴 길 lesson-turn.ts 와 끝맺음 closing.ts 가 함께 쓴다. 두 파일이 서로
 // 가져오지 않게 따로 둔다). 6.1 '사용자 메시지(턴마다 바뀌는 값만)' · '앞 턴 전문 그대로' · 가변부 재료, 1~3단계 소리 줄 · 질문 검사
 // 재료(어휘 범위 · 형태 표 · 아이가 이 대화에서 말한 낱말). AI 를 부르지 않는다. 아이 글을 로그에 내지 않는다.
-import { lte } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 import { z } from "zod";
 import type { LevelContext } from "@/core/ai/calls/common";
 import {
@@ -14,12 +14,15 @@ import {
   type TalkLineRange,
   talkLessonContextDelta,
 } from "@/core/ai/calls/talk-lesson";
+import { parseTalkAttemptInput } from "@/core/conversation/attempt";
+import { reaskWordsOf } from "@/core/conversation/lesson-flow";
 import type { LowLevelLineOptions } from "@/core/conversation/question-check";
 import { metWordsIn } from "@/core/conversation/said";
 import { safeLineOf } from "@/core/conversation/stream";
 import { type FormRule, tokenize } from "@/core/seed/text";
 import { lemmaLookup } from "@/core/session/attempt";
 import { vocab } from "@/db/schema/content";
+import { attempts } from "@/db/schema/learning";
 import type { DbOrTx } from "@/server/db";
 import { readUnitSpec } from "@/server/seed/read";
 import { loadSeedList } from "@/server/seed-lists";
@@ -96,8 +99,37 @@ export function childWordsOf(
 }
 
 /**
- * 첫 턴 · 값이 바뀐 턴에만 넣는 값(6.1 · B5-13, 새 꼴). 만난 단어는 처음 스냅숏 + 짧은 준비에서 보인 낱말 + 그 자리까지의 선생님 화면 글에서
- * 찾은 단원 단어, 미션은 그 자리까지 선생님 행의 미션 체크. 아직 '안다'가 아닌 단어 · 새 단어 · 친한 정도는 지금 값이다(옛 갈래와 같다).
+ * 인사 뒤 짧은 준비에서 따라 말하지 못하고 건너뛴 낱말(talk-prep 시도의 skipped — 인식 실패 상한 · 마이크 없음 · 말소리 없음 · 멈춤). 같은 낱말에
+ * 건너뛰지 않은 시도가 있으면 빼지 않는다. 02-2 177줄 '짧은 준비에서 따라 말한 낱말은 만났다'의 반대 몫이다(분석 A9). 쪽지 차례대로.
+ */
+export function skippedPrepWordsOf(inputs: readonly unknown[]): string[] {
+  const skipped: string[] = [];
+  const said = new Set<string>();
+  for (const raw of inputs) {
+    const input = parseTalkAttemptInput(raw);
+    if (input?.kind !== "talk-prep" || input.place !== "greeting") continue;
+    if (input.skipped === undefined) said.add(input.word);
+    else if (!skipped.includes(input.word)) skipped.push(input.word);
+  }
+  return skipped.filter((w) => !said.has(w));
+}
+
+/** 이 세션의 건너뛴 인사 뒤 준비 낱말(attempts 를 읽는다 — skippedPrepWordsOf). */
+export async function readSkippedPrepWords(
+  db: DbOrTx,
+  sessionId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ input: attempts.input })
+    .from(attempts)
+    .where(eq(attempts.sessionId, sessionId));
+  return skippedPrepWordsOf(rows.map((r) => r.input));
+}
+
+/**
+ * 첫 턴 · 값이 바뀐 턴에만 넣는 값(6.1 · B5-13, 새 꼴). 만난 단어는 처음 스냅숏 + 짧은 준비에서 보인 낱말(건너뛴 낱말 뺌 — skippedPrep, 분석 A9)
+ * + 그 자리까지의 선생님 화면 글에서 찾은 단원 단어, 미션은 그 자리까지 선생님 행의 미션 체크. 아직 '안다'가 아닌 단어 · 새 단어 · 친한 정도는
+ * 지금 값이다(옛 갈래와 같다).
  */
 export function lessonContextAt(
   state: Pick<TalkLessonState, "start" | "lesson" | "lemmaOf" | "prepWords">,
@@ -106,14 +138,20 @@ export function lessonContextAt(
     knownSay,
     friendship,
     unitWords,
+    skippedPrep = [],
   }: {
     rows: readonly TalkTurnRow[];
     knownSay: ReadonlySet<string>;
     friendship: number;
     unitWords: readonly string[];
+    /** 인사 뒤 준비에서 건너뛴 낱말(만난 것이 아님). */
+    skippedPrep?: readonly string[];
   },
 ): TalkLessonContext {
-  const met = new Set([...(state.start?.metBefore ?? []), ...state.prepWords]);
+  const met = new Set([
+    ...(state.start?.metBefore ?? []),
+    ...state.prepWords.filter((w) => !skippedPrep.includes(w)),
+  ]);
   const missions = new Set<number>();
   for (const row of rows) {
     if (row.speaker !== "tori") continue;
@@ -148,6 +186,7 @@ const EMPTY_RANGE: TalkLineRange = {
   forms: [],
   allowedForms: new Set(),
   childWords: [],
+  reaskWords: [],
 };
 
 /** 빈 범위(4단계부터 · 끝맺음 턴 · 1~3단계 범위를 읽지 못한 때 — 질문 · 소리 줄 검사는 모두 걸린다). */
@@ -158,12 +197,15 @@ export function emptyLessonRange(
 }
 
 /**
- * 1~3단계 범위 재료를 읽는다(그 단계 이하 vocab 낱말 · 그 단계 · 단원까지 나온 형태). 형태 표를
+ * 1~3단계 범위 재료를 읽는다(그 단계 이하 vocab 낱말 · 그 단계 · 단원까지 나온 형태 · 다시 묻는 턴 낱말 — reaskWordsOf, 13절 C202 (1)). 형태 표를
  * 읽지 못하면 던진다(검사하지 않은 AI 질문 · 소리 줄을 아이에게 보이지 않는다 — 부르는 쪽이 턴을 오류로 닫는다).
  */
 export async function lessonRangeOf(
   db: DbOrTx,
-  state: Pick<TalkLessonState, "level" | "unit" | "lemmaOf" | "liveRows">,
+  state: Pick<
+    TalkLessonState,
+    "level" | "unit" | "lemmaOf" | "liveRows" | "turns" | "prepWords" | "start"
+  >,
   childText: string,
 ): Promise<LessonRange> {
   if (!isLowBandLevel(state.level)) return emptyLessonRange(state);
@@ -199,6 +241,11 @@ export async function lessonRangeOf(
       forms,
       allowedForms,
       childWords: childWordsOf(state.liveRows, childText),
+      reaskWords: reaskWordsOf({
+        turns: state.turns,
+        prepWords: state.prepWords,
+        metBefore: state.start?.metBefore ?? [],
+      }),
     },
     lemmaOf: (surface) => state.lemmaOf(surface) ?? rangeLemma(surface),
   };
@@ -249,7 +296,7 @@ export async function talkLessonInputOf(
   },
 ): Promise<TalkLessonInput> {
   const unitWords = ctx.unitWords;
-  const [knownSay, friendship, summaries] = await Promise.all([
+  const [knownSay, friendship, summaries, skippedPrep] = await Promise.all([
     knownSayOf(db, { profileId: state.profileId, words: unitWords }),
     friendshipOf(db, state.profileId),
     summariesBefore(db, {
@@ -257,12 +304,14 @@ export async function talkLessonInputOf(
       before: state.session.startedAt,
       limit: summaryLimit,
     }),
+    readSkippedPrepWords(db, state.session.id),
   ]);
   const now = lessonContextAt(state, {
     rows: rowsBefore,
     knownSay,
     friendship,
     unitWords,
+    skippedPrep,
   });
   const prevChildIndex = rowsBefore.findLastIndex(
     (r) => r.speaker === "child" && r.sentUserMessage !== null,
@@ -274,6 +323,7 @@ export async function talkLessonInputOf(
           knownSay,
           friendship,
           unitWords,
+          skippedPrep,
         })
       : null;
   const history = historyOf(rowsBefore);

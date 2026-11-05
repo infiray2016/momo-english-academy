@@ -632,8 +632,9 @@ export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
 }
 
 /**
- * 선생님 행 tori_ko 저장 값(정한 것 9): 뜻을 보이는 단계(level_specs koMeaning, 1~4단계)면 저장하고, 1~3단계는 겹침 규칙(toriKoShownOf —
- * 선생님 문장이 빠진 차례는 뜻도 저장하지 않음, T2)을 그대로 따른다. 뜻을 보이지 않는 단계 · 빈 뜻은 null.
+ * 옛 규칙 — 쓰지 않음(13절 C202 (5) 뒤, 검토 rev-night-2 M-7). 회화 턴 끝 처리는 이제 lesson-turn.ts 에서 문장마다의 뜻으로 toriKoShownOf 를
+ * 바로 부른다(빠진 문장의 뜻만 뺌). 아래는 옛 정한 것 9 의 저장 조건(1~3단계는 선생님 문장이 하나라도 빠지면 뜻 전체를 저장하지 않음)을
+ * 한 글 꼴로 남긴 것이며 부르는 곳이 없다. 다음 정리 때 지운다.
  */
 export function lessonToriKoOf({
   ko,

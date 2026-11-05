@@ -70,7 +70,7 @@ function answer(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
     tori_en: "Wow, soccer! What sport is fun?",
     model_line: "",
     choices: [],
-    tori_ko: "와, 축구! 어떤 운동이 재밌어?",
+    tori_ko: ["와, 축구!", "어떤 운동이 재밌어?"],
     recast: "",
     explanation: "",
     new_words: [],
@@ -109,6 +109,9 @@ function norm(
   if (result === null) throw new Error("정규화가 null 이다");
   return result;
 }
+
+/** 단계 규격 choices 참(1단계 꼴 — 처음 묻는 질문의 선택지). 견본 단계 규격은 3단계라 거짓이다. */
+const CHOICES_ON = { spec: { ...lessonInput(3).spec, choices: true } };
 
 const schemaOf = (level: number, teacher = LESSON_TEACHER) => {
   const input = lessonInput(level, { teacher });
@@ -231,8 +234,8 @@ describe("고정부 · 가변부(6.1 회화 턴 고정부 규칙 표)", () => {
       expect(system).toContain("'All card chances used: yes'");
       expect(system).toContain("Never use next_move closing otherwise");
     }
-    expect(three).toContain("Write the line to repeat in model_line");
-    expect(four).not.toContain("Write the line to repeat in model_line");
+    expect(three).toContain("fill model_line only at Support stage 1 or 3");
+    expect(four).not.toContain("fill model_line only at Support stage 1 or 3");
     expect(four).toContain("Leave model_line, choices and image_word empty");
     expect(five).toContain("Missions:");
     expect(four).not.toContain("Missions:");
@@ -444,13 +447,15 @@ describe("정규화 · 앱 확인(6.1 '회화 턴의 새 칸은 앱이 확인한
     });
   });
 
-  it("AC-15c 꺼낸 새 단어는 이번 수업 새 단어이고 tori_en 이나 따라 할 말에 있을 때만 받는다(원형으로)", () => {
+  it("AC-15c 꺼낸 새 단어는 '꺼낼 새 단어'(이번 수업 새 단어 가운데 아직 꺼내지 않은 것)이고 tori_en 이나 따라 할 말에 있을 때만 받는다(원형으로, 13절 C202 · A8)", () => {
     const v = norm(3, {
       tori_en: "Weekends are fun! Listen and say!",
       model_line: "I play.",
       new_words: ["weekends", "play", "sunday", "apple"],
     });
-    expect(v.new_words).toEqual(["weekend", "play"]);
+    // play 는 다시 쓰기 기회(꺼낼 새 단어 아님)이고, 받침 0 의 'I play.' 는 꺼내는 줄이 아니라 버린다
+    expect(v.new_words).toEqual(["weekend"]);
+    expect(v.model_line).toBe("");
   });
 
   it("AC-15c 범위 밖 따라 할 말은 카드 들려줄 말로 바꾸고, 꺼낸 낱말이 없으면 막힌 질문의 답 예시로 바꾼다", () => {
@@ -479,24 +484,36 @@ describe("정규화 · 앱 확인(6.1 '회화 턴의 새 칸은 앱이 확인한
       },
     );
     expect(together.model_line).toBe("I play.");
-    // 범위 안이면 그대로
+    // 범위 안이면 그대로(받침 0 은 꺼낼 새 단어를 꺼내는 줄만 — 13절 C202 (1))
     expect(
-      norm(3, { model_line: "I play soccer.", support: "model_line" })
-        .model_line,
-    ).toBe("I play soccer.");
+      norm(3, {
+        tori_en: "Oh, the weekend! Listen and say!",
+        model_line: "The weekend.",
+        new_words: ["weekend"],
+        support: "model_line",
+      }).model_line,
+    ).toBe("The weekend.");
   });
 
-  it("AC-15c 같은 꼴이 아닌 선택지 · 노리는 단어가 없는 선택지 · 둘이 아닌 선택지는 빈 값이고 같은 꼴이면 그대로다", () => {
+  it("AC-15c 같은 꼴이 아닌 선택지 · 노리는 단어가 없는 선택지 · 둘이 아닌 선택지는 빈 값이고 같은 꼴이면 그대로다(규격 choices 참 — 1단계 꼴)", () => {
     expect(
-      norm(3, { choices: ["I like soccer.", "I like tag."] }).choices,
+      norm(3, { choices: ["I like soccer.", "I like tag."] }, CHOICES_ON)
+        .choices,
     ).toEqual(["I like soccer.", "I like tag."]);
     expect(
-      norm(3, { choices: ["Yes, I do.", "No, I don't."] }).choices,
+      norm(3, { choices: ["Yes, I do.", "No, I don't."] }, CHOICES_ON).choices,
     ).toEqual([]);
     expect(
-      norm(3, { choices: ["I like tag.", "I like apple."] }).choices,
+      norm(3, { choices: ["I like tag.", "I like apple."] }, CHOICES_ON)
+        .choices,
     ).toEqual([]);
-    expect(norm(3, { choices: ["I like soccer."] }).choices).toEqual([]);
+    expect(
+      norm(3, { choices: ["I like soccer."] }, CHOICES_ON).choices,
+    ).toEqual([]);
+    // 2~3단계(규격 choices 거짓)의 카드 질문은 선택지가 없다(13절 C202 (1))
+    expect(
+      norm(3, { choices: ["I like soccer.", "I like tag."] }).choices,
+    ).toEqual([]);
   });
 
   it("AC-15c '모름' 입력 턴의 미션 완료 제안 · 아이가 보인 능력 · 알맞은 응답 · 되풀이를 버리고, 말 입력 턴의 미션 완료는 미션 범위 안만 받는다", () => {
@@ -566,7 +583,7 @@ describe("정규화 · 앱 확인(6.1 '회화 턴의 새 칸은 앱이 확인한
     expect(ten.next_hint_ko).toBe("");
     expect(ten.next_targets).toEqual(["soccer"]);
     expect(ten.next_answer_example).toBe("Soccer is fun.");
-    expect(ten.tori_ko).toBe("");
+    expect(ten.tori_ko).toEqual([]);
   });
 
   it("그림 낱말은 1~3단계에서 카탈로그에 있을 때만 받는다(둘째 묶음 — 첫 프리뷰는 기록만)", () => {
@@ -973,8 +990,9 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
       ifStuck: null,
     });
     expect(chosenCallTurnOf(turn, false)).toBe(turn);
+    // 받침 0 의 따라 할 말은 꺼낼 새 단어(weekend)를 꺼내는 줄만 남는다(13절 C202 (1))
     const value = {
-      model_line: "I play.",
+      model_line: "The weekend.",
       goal_suggest: [{ goal: GOAL_1, why_ko: "x" }],
       mission_done: [],
     };
@@ -985,7 +1003,7 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
     expect(stuck.next_hints).toEqual([]);
     expect(stuck.goal_suggest).toEqual([]);
     const answered = norm(3, { ...value, stuck: false }, { turn });
-    expect(answered.model_line).toBe("I play.");
+    expect(answered.model_line).toBe("The weekend.");
     expect(answered.next_move).toBe("required");
     expect(answered.goal_suggest).toHaveLength(1);
   });
@@ -1061,19 +1079,27 @@ describe("fix 1 Minor(검토 M-1 · M-2 · M-3)", () => {
     expect(three).not.toContain("Put your question at the end of tori_en.");
   });
 
-  it("AC-15c 선택지의 노리는 단어는 next_targets 가 비어도 정규화한 카드 항목의 노리는 단어로 본다(M-3)", () => {
-    const v = norm(3, {
-      choices: ["I like soccer.", "I like tag."],
-      next_targets: [],
-      card_item: { kind: "required", no: 2 },
-    });
-    expect(v.choices).toEqual(["I like soccer.", "I like tag."]);
-    expect(
-      norm(3, {
+  it("AC-15c 선택지의 노리는 단어는 next_targets 가 비어도 정규화한 카드 항목의 노리는 단어로 본다(M-3, 규격 choices 참 — 1단계 꼴)", () => {
+    const v = norm(
+      3,
+      {
         choices: ["I like soccer.", "I like tag."],
         next_targets: [],
-        card_item: { kind: "none", no: 0 },
-      }).choices,
+        card_item: { kind: "required", no: 2 },
+      },
+      CHOICES_ON,
+    );
+    expect(v.choices).toEqual(["I like soccer.", "I like tag."]);
+    expect(
+      norm(
+        3,
+        {
+          choices: ["I like soccer.", "I like tag."],
+          next_targets: [],
+          card_item: { kind: "none", no: 0 },
+        },
+        CHOICES_ON,
+      ).choices,
     ).toEqual([]);
   });
 });
@@ -1348,10 +1374,10 @@ describe("'5-다' fix 2 N-2(support 를 남은 줄과 맞춤)", () => {
   it("남은 따라 할 말이 있으면 1~3단계 support model_line 은 그대로다", () => {
     const v = norm(3, {
       tori_en: "Weekends are fun! Listen and say!",
-      model_line: "I play.",
+      model_line: "The weekend.",
       support: "model_line",
     });
-    expect(v.model_line).toBe("I play.");
+    expect(v.model_line).toBe("The weekend.");
     expect(v.support).toBe("model_line");
   });
 

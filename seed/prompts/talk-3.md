@@ -139,11 +139,11 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 | 무엇인가 | 카드가 준비하는 기회다. 새 단어를 처음 묻는 질문과 단원 목표의 수행 기회를 만드는 질문이다. 한 수업에서 다 물어야 하는 질문이 아니다 |
 | 수 | 배정 카드: 새 단어마다 그 낱말 하나만 노리는 처음 묻는 질문(`ask: "first"`) 하나씩, k 개(`talk-first-ask`). 다지기 · 보강 카드: 처음 묻는 질문이 없고 다시 묻는 질문(`ask: "re_ask"`)이 k 개 이상(`talk-required`). 모든 카드: 필수 질문 수 ≤ 참고 턴 × `talk.required_max_ratio`(`talk-required`). 나머지 턴은 아이 말을 따라갈 자리다 |
 | 번호 | `no` 는 1부터 차례대로(`talk-numbers`). 1번이 대화 첫 질문이다 |
-| 홀로 뜻이 통함 | (제안) 질문은 앞 턴에 무슨 말이 오갔든 그것만으로 뜻이 통하게 쓴다. 필요한 장면은 질문 앞의 짧은 한 문장이나 질문 문장 안의 말로 준다(`You are tired. What do you do in your bed?` ○, `What do you see there?` ×). 앱이 아무 때나 카드 자리로 그대로 붙이기 때문이다. 질문 글은 두 문장까지다(선생님 차례는 반응까지 합쳐 짧고, 카드 자리에는 AI 반응이 앞에 붙는다, 02-2 190줄) |
+| 홀로 뜻이 통함 | (제안) 질문은 앞 턴에 무슨 말이 오갔든 그것만으로 뜻이 통하게 쓴다. 필요한 장면은 질문 앞의 짧은 한 문장이나 질문 문장 안의 말로 준다(`The stars are out! What do you do in your bed?` ○, `What do you see there?` ×). 앱이 아무 때나 카드 자리로 그대로 붙이기 때문이다. 앞 문장은 물건 · 장면 말로 쓴다(`Oh, cold water!` · `Sand on your hands!` · `The sun is down.`). 아이의 상태 · 행동을 단정하는 말(`You are thirsty.` · `You play in the sun.` · `You have a kite.`)과 알림 · 명령(`Lunch is ready!`)은 쓰지 않는다. 아이가 겪지 않은 상태를 선생님이 정해 버리고, '상태 단정 + What do you do ~?' 꼴이 이어지면 낱말 맞히기처럼 들리기 때문이다(첫 프리뷰 2026-11-05, 13절 C202 (3) · (7) 잠정). 질문 글은 두 문장까지다(선생님 차례는 반응까지 합쳐 짧고, 카드 자리에는 AI 반응이 앞에 붙는다, 02-2 190줄) |
 | 노리는 단어 | 한 항목에 단원 단어 1~2개, 이 단원 단어만(`talk-targets`). (제안) 한 항목은 한 낱말을 노린다. 둘을 노리면 같은 갈래(동사끼리 · 명사끼리)만 묶는다(5절 '목표 잇기') |
 | 질문에 노리는 단어 없음 | 질문(`en`)과 쉬운 질문(`easyQuestion.en`)에 그 항목이 노리는 단어가 활용형까지 없다(`talk-targets`, A4-03). 예: go 를 노리는 항목에 `Where do you go?` ×, beach 를 노리는 항목에 `Do you like the beach?` × |
 | 처음 묻는 질문의 힌트 | 영어 문장 힌트(`hints[1]`)에 그 새 단어가 원형이나 활용형으로 든다(`talk-first-ask`). 새 단어는 아이 차례 글(힌트 · 답 예시 · 목표 표현) 어딘가에 원형으로 한 번 이상 나온다(`vocab-allocation`). 들려줄 말 · 오늘 쓸 말 예문은 이 셈에 들지 않는다 |
-| 같은 질문 | 한 카드 안에서 같은 선생님 질문(인사 · 필수 · 더 · 쉬운 질문을 합쳐)은 2번까지다(`talk-same-question`). **같은지는 질문 글의 마지막 물음표 문장으로 본다**(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시). 앱이 선생님 차례의 같은 질문을 이 문장으로 세기 때문이다(02-2 200줄 · 13절 C172, 실행 상한은 설정값 `talk.same_question_max`). 그래서 앞 장면이 달라도 `You are hungry. What do you do?` 와 `You are thirsty. What do you do?` 는 같은 질문이다. (제안) 한 카드 안의 마지막 물음표 문장은 모두 다르게 쓰고, 장면 없는 `What do you do?` 로 끝내지 않는다. 장면은 질문 문장 안에 둔다(`What do you do at the table?`). AI 질문도 같은 셈에 들어가므로(02-2 200줄 '카드 · AI 모두'), 이 단원에서 가장 흔한 꼴을 카드가 먼저 쓰면 셈이 빨리 찬다. 8절 질문 꼴을 돌려 쓰고, 14절 스스로 확인 명령이 이 셈을 본다 |
+| 같은 질문 | 한 카드 안에서 같은 선생님 질문(인사 · 필수 · 더 · 쉬운 질문을 합쳐)은 2번까지다(`talk-same-question`). **같은지는 질문 글의 마지막 물음표 문장으로 본다**(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시). 앱이 선생님 차례의 같은 질문을 이 문장으로 세기 때문이다(02-2 200줄 · 13절 C172, 실행 상한은 설정값 `talk.same_question_max`). 그래서 앞 장면이 달라도 `Sandwiches for lunch! What do you do?` 와 `Oh, cold water! What do you do?` 는 같은 질문이다. (제안) 한 카드 안의 마지막 물음표 문장은 모두 다르게 쓰고, 장면 없는 `What do you do?` 로 끝내지 않는다. 장면은 질문 문장 안에 둔다(`What do you do at the table?`). AI 질문도 같은 셈에 들어가므로(02-2 200줄 '카드 · AI 모두'), 이 단원에서 가장 흔한 꼴을 카드가 먼저 쓰면 셈이 빨리 찬다. 8절 질문 꼴을 돌려 쓰고, 14절 스스로 확인 명령이 이 셈을 본다 |
 | 뒤 수업 단어 | 배정 카드 m 은 어디에도(질문 · 힌트 · 답 예시 · 쉬운 질문 · 오늘 쓸 말 예문 · 들려줄 말 · 대사 · 끝인사 · 칭찬, (제안) 예상 흐름도) 배정 m+1 이후의 단원 단어를 쓰지 않는다(경고 `relation-early-use`). 단원 1 은 see · look · make 가 배정 3 새 단어라, 배정 1 · 2 카드에서는 `See you!` · `Look!` · `I see.` 도 걸린다 |
 
 ### 받침 줄과 힌트
@@ -167,7 +167,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 
 ### 더 이야기할 거리
 
-`more` 는 `talk.more_talk_turns` 개 이상이고 모두 다시 묻는 질문이다(`talk-more`, 칸은 필수 질문과 같고 쉬운 질문 · 한국어 뜻도 똑같이 있어야 한다). 아이가 '더 이야기하기'를 고를 때와, 다시 쓰기가 남은 낱말 · 이월 낱말을 노릴 질문으로 쓴다. 받침 셋째 닫기 · 들리지 않음 닫기에서 붙일 기회가 남지 않으면 앱이 가장 오래전에 쓴 더 이야기할 거리를 카드 자리로 그대로 붙인다(13절 C194 (1), 잠정). 그래서 더 이야기할 거리는 막혔던 질문의 답을 들려준 바로 뒤에 그대로 읽어도 맞는 꼴로 쓴다: 앞 대화를 가리키는 말(there · it · that · too) 없이 장면을 스스로 주는 질문 하나이고(`You are thirsty. What do you do with your cup?` ○, `And what do you do there?` ×), 막힌 질문과 같은 낱말을 노리지 않아도 되게 카드 안에서 노리는 낱말을 고루 나눈다. 더 이야기할 거리도 5절 '같은 질문' 셈에 든다: 선생님 질문의 마지막 물음표 문장이 한 카드에서 글자가 같은 것은 2번까지이고(앱이 이 문장으로 센다), (제안) 필수 질문 · 다른 더 이야기할 거리와 마지막 물음표 문장이 겹치지 않게 쓴다. 막힌 질문의 답 바로 뒤에 꼬리가 같은 질문이 붙으면 C172 의 '막힘에는 질문을 바꾼다'가 아이 귀에 서지 않는다. 노리는 단어는 그 카드에서 이미 열린 단원 단어(배정 카드는 그 수업까지 배정된 낱말, 다지기 · 보강은 단원 단어 전부)이고, (제안) 그 카드의 필수 질문이 덜 노린 낱말을 앞세운다. 단원 덮기(`talk-known-days`, 단원을 다 채운 뒤): 단원 단어마다 다지기 · 보강의 다시 묻는 필수 질문과 모든 카드의 더 이야기할 거리를 합쳐 서로 다른 수업 `talk.known_days` 개 이상에서 노린다.
+`more` 는 `talk.more_talk_turns` 개 이상이고 모두 다시 묻는 질문이다(`talk-more`, 칸은 필수 질문과 같고 쉬운 질문 · 한국어 뜻도 똑같이 있어야 한다). 아이가 '더 이야기하기'를 고를 때와, 다시 쓰기가 남은 낱말 · 이월 낱말을 노릴 질문으로 쓴다. 받침 셋째 닫기 · 들리지 않음 닫기에서 붙일 기회가 남지 않으면 앱이 가장 오래전에 쓴 더 이야기할 거리를 카드 자리로 그대로 붙인다(13절 C194 (1), 잠정). 그래서 더 이야기할 거리는 막혔던 질문의 답을 들려준 바로 뒤에 그대로 읽어도 맞는 꼴로 쓴다: 앞 대화를 가리키는 말(there · it · that · too) 없이 장면을 스스로 주는 질문 하나이고(`Oh, cold water! What do you do with your cup?` ○, `And what do you do there?` ×), 앞 문장은 필수 질문과 같이 물건 · 장면 말로 쓰며(5절 '홀로 뜻이 통함'), 막힌 질문과 같은 낱말을 노리지 않아도 되게 카드 안에서 노리는 낱말을 고루 나눈다. 더 이야기할 거리도 5절 '같은 질문' 셈에 든다: 선생님 질문의 마지막 물음표 문장이 한 카드에서 글자가 같은 것은 2번까지이고(앱이 이 문장으로 센다), (제안) 필수 질문 · 다른 더 이야기할 거리와 마지막 물음표 문장이 겹치지 않게 쓴다. 막힌 질문의 답 바로 뒤에 꼬리가 같은 질문이 붙으면 C172 의 '막힘에는 질문을 바꾼다'가 아이 귀에 서지 않는다. 노리는 단어는 그 카드에서 이미 열린 단원 단어(배정 카드는 그 수업까지 배정된 낱말, 다지기 · 보강은 단원 단어 전부)이고, (제안) 그 카드의 필수 질문이 덜 노린 낱말을 앞세운다. 단원 덮기(`talk-known-days`, 단원을 다 채운 뒤): 단원 단어마다 다지기 · 보강의 다시 묻는 필수 질문과 모든 카드의 더 이야기할 거리를 합쳐 서로 다른 수업 `talk.known_days` 개 이상에서 노린다.
 
 ### 목표 잇기(평가 spec 2절 · 0절 판단 1)
 
@@ -289,7 +289,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 | 쓰는 곳 | 쓸 수 있는 꼴(제안) | 예 |
 |---|---|---|
 | 아이 답(힌트 · 답 예시 · 목표 표현 · 정리 대사) | I · We · They + 하는 일(원형) + 무엇 · 어디 · with ~. 1~2단계 꼴(is · am · are · have · can · like) | `We go to the lake.` · `I eat rice with my family.` · `They watch a soccer game.` · `I see clouds.` · `I am at the beach.` · `It is grass.` |
-| 선생님 질문 | 3.3 회화 3단계 행이 '한 문장으로 답하게 묻고, 이어 묻는다'를 요구하므로 What · Where 물음은 C64 (3)대로 검출하지 않고 쓴다(0절 판단 3, 회화 1단계의 `What is it?` · `What do you like?` 와 같은 길): `What do you do ~?` · `Where do you go ~?` · `What do you see ~?` · `What is it?` · `Where are you?` 와 `Do you ~?` · `Are you ~?`. 장면을 주는 짧은 앞 문장(`You are tired.` · `Your family!` · `Many trees!`)과 질문 문장 안의 장면 말(`at the table` · `with your cup`). 마지막 물음표 문장을 장면 없는 `What do you do?` 로 줄이지 않는다(5절 '같은 질문') | `You are thirsty. What do you do with your cup?` · `With your family, what do you do?` · `Many trees! Where are you?` |
+| 선생님 질문 | 3.3 회화 3단계 행이 '한 문장으로 답하게 묻고, 이어 묻는다'를 요구하므로 What · Where 물음은 C64 (3)대로 검출하지 않고 쓴다(0절 판단 3, 회화 1단계의 `What is it?` · `What do you like?` 와 같은 길): `What do you do ~?` · `Where do you go ~?` · `What do you see ~?` · `What is it?` · `Where are you?` 와 `Do you ~?` · `Are you ~?`. 장면을 주는 짧은 앞 문장은 물건 · 장면 말(`Oh, cold water!` · `Your family!` · `Many trees!` · `The sun is down.`)로 쓰고, 아이 상태 · 행동을 단정하는 문장(`You are tired.` · `You walk up and up.`)과 알림 · 명령(`Lunch is ready!`)은 쓰지 않는다(5절 '홀로 뜻이 통함'). 질문 문장 안의 장면 말(`at the table` · `with your cup`)도 쓴다. 마지막 물음표 문장을 장면 없는 `What do you do?` 로 줄이지 않는다(5절 '같은 질문') | `Oh, cold water! What do you do with your cup?` · `With your family, what do you do?` · `Many trees! Where are you?` |
 | 쉬운 질문 | 예 · 아니요 꼴(`Do you like ~?` · `Are you ~?` · `Do you have ~?` · `Do they like ~?`) | `Do you like your bed?` |
 
 검증기가 오류로 잡는 꼴(형태 표 `forms.json`, 회화 3단계 단원 1 에서 범위 밖. 아래 예는 2026-10-30 실제 검출기로 대조했다):
@@ -306,35 +306,35 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 
 검출기가 못 잡지만 쓰지 않는 꼴: 명령문(`Look at the sky!`, 3단계 단원 4. `I look at the birds.` 는 된다) · 부정 명령문(`Don't worry!` · `Don't go!`. 명령문은 3단계 단원 4, don't 는 4단계 단원 2 요소다. 형태 표 `dont` 는 주어가 있는 꼴만 잡고 14절 어휘 검사는 `don't` 를 `do` 로 펼쳐 넘긴다 → `It is okay!` 꼴로) · go + -ing(`I go swimming.` → `We swim in the sea.`) · 비 · 눈을 동사로(`It rains.` 는 걸리고 `Rain falls.` 도 -s 다 → `I see rain.` · `I like snow.` 처럼 명사로) · 이름 · 가족 뒤 동사의 -s(가족은 `we` · `they` 로 받는다) · 문장을 잇는 and · but · or(명사 둘을 잇는 and 는 된다) · our · their. 그래서 '가족이 집에서 TV 를 본다'는 `They watch a soccer game.` 꼴로, '비가 와요'는 `I see rain.` 꼴로 쓴다.
 
-질문에 넣을 수 없는 낱말의 질문 꼴(제안 · 예. 한 카드 안에서 꼴을 돌려 쓴다). 스물다섯 줄의 열쇠(마지막 물음표 문장을 5절 '같은 질문'대로 정규화한 글)가 모두 다르다. 장면을 바꿔 써도 되지만 꼬리를 장면 없는 `What do you do?` 로 줄이지 않는다:
+질문에 넣을 수 없는 낱말의 질문 꼴(제안 · 예. 한 카드 안에서 꼴을 돌려 쓴다). 스물다섯 줄의 열쇠(마지막 물음표 문장을 5절 '같은 질문'대로 정규화한 글)가 모두 다르다. 장면을 바꿔 써도 되지만 꼬리를 장면 없는 `What do you do?` 로 줄이지 않는다. 앞 문장은 모두 물건 · 장면 말이고 아이 상태 · 행동을 단정하지 않는다(5절 '홀로 뜻이 통함'):
 
 | 낱말 | 질문 예 | 답 예시 예 | 열쇠 |
 |---|---|---|---|
-| eat | `You are hungry. What do you do at the table?` | `I eat a sandwich.` | what do you do at the table |
-| drink | `You are thirsty. What do you do with your cup?` | `I drink water.` | what do you do with your cup |
+| eat | `Sandwiches for lunch! What do you do at the table?` | `I eat a sandwich.` | what do you do at the table |
+| drink | `Oh, cold water! What do you do with your cup?` | `I drink water.` | what do you do with your cup |
 | go | `With your family, what do you do?` | `We go to the lake.` | with your family what do you do |
 | come | `The sun is down. What do you do now?` | `We come home.` | what do you do now |
 | wash | `Sand on your hands! What do you do with water?` | `I wash my hands.` | what do you do with water |
-| sleep | `You are tired. What do you do in your bed?` | `I sleep in my bed.` | what do you do in your bed |
+| sleep | `The stars are out! What do you do in your bed?` | `I sleep in my bed.` | what do you do in your bed |
 | study | `What do you do at your desk?` | `I study at my desk.` | what do you do at your desk |
 | learn | `What do you do with new games?` | `I learn new games.` | what do you do with new games |
 | watch | `What do you do at home?` | `We watch a soccer game.` | what do you do at home |
 | listen | `In the car, what do you do?` | `I listen to songs.` | in the car what do you do |
 | look | `Birds in the tree! What do you do with your eyes?` | `I look at the birds.` | what do you do with your eyes |
 | see | `At the lake, what do you do?` | `I see ducks.` | at the lake what do you do |
-| make | `You have sand. What do you do with it?` | `I make a sand house.` | what do you do with it |
+| make | `Oh, sand! What do you do with it?` | `I make a sand house.` | what do you do with it |
 | sky | `The sun is up. Where is it?` | `It is in the sky.` | where is it |
 | sea | `Fish and whales! Where are they?` | `They are in the sea.` | where are they |
 | cloud | `What is white in the sky?` | `It is a cloud.` | what is white in the sky |
-| rain | `You have an umbrella. What do you see?` | `I see rain.` | what do you see |
+| rain | `A big umbrella! What do you see?` | `I see rain.` | what do you see |
 | snow | `It is very cold. What is on the trees?` | `It is snow.` | what is on the trees |
-| wind | `You have a kite. What do you need?` | `I need the wind.` | what do you need |
+| wind | `A red kite! What do you need?` | `I need the wind.` | what do you need |
 | river | `Where do ducks swim?` | `They swim in the river.` | where do ducks swim |
 | mountain | `With your family, where do you go?` | `We go to the mountain.` | with your family where do you go |
 | beach | `Sand and shells! Where do you play?` | `We play at the beach.` | where do you play |
 | grass | `Cows and sheep! What do they eat?` | `They eat grass.` | what do they eat |
 | forest | `Many trees! Where are you?` | `I am in the forest.` | where are you |
-| air | `You are on a mountain. How is it?` | `The air is good.` | how is it |
+| air | `Up on a mountain! How is it?` | `The air is good.` | how is it |
 
 표의 질문 · 답에 나온 낱말 가운데 그 카드에서 아직 열리지 않은 단원 단어(예: 배정 1 카드의 sand 는 되지만 sky · see 는 안 됨)는 쓰지 않는다. wind · air 처럼 질문으로 끌어내기 어려운 낱말은 (제안) 짧은 준비 낱말에 넣지 말고 꺼내기로 들려준 뒤 묻는다.
 
@@ -422,7 +422,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 
 두지 않는 칸: `card.missions` · `card.roleSwap` · `card.purpose` · 항목의 `firstForm` · `choices` · `usablePhrases` · `purpose`, 옛 칸 `turns` · `moreTalk` · `questions` · `firstQuestion` · `exampleKo` · 인사의 `twoAnswers`.
 
-예시: 단원 1 배정 2 · 변형 2(꼴을 보이는 예이니 그대로 옮기지 않는다. 이 칸을 만들 때도 새로 쓴다). 이 카드 하나만 든 파일을 p13d 규격 파일 사본에 두고 `pnpm -s seed:validate --areas talk` 로 확인했다(2026-10-30 첫 판, 묶음 3 fix 1 뒤의 검증기로 09:3x 에 다시 돌림. 2026-11-05 둘째 판에서 필수 3 · 5 와 더 1 · 2 의 질문을 마지막 물음표 문장이 겹치지 않게 고치고, 열쇠를 맞춘 검증기로 다시 돌림): 칸 오류 0 · 칸 경고 0(단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다) · 14절 스스로 확인 명령 '걸림 없음'(같은 질문 열쇠는 카드에서 가장 많은 것이 1번).
+예시: 단원 1 배정 2 · 변형 2(꼴을 보이는 예이니 그대로 옮기지 않는다. 이 칸을 만들 때도 새로 쓴다). 이 카드 하나만 든 파일을 p13d 규격 파일 사본에 두고 `pnpm -s seed:validate --areas talk` 로 확인했다(2026-10-30 첫 판, 묶음 3 fix 1 뒤의 검증기로 09:3x 에 다시 돌림. 2026-11-05 둘째 판에서 필수 3 · 5 와 더 1 · 2 의 질문을 마지막 물음표 문장이 겹치지 않게 고치고, 열쇠를 맞춘 검증기로 다시 돌림. 넷째 판에서 필수 3 · 더 1 · 2 의 앞 문장을 물건 · 장면 말로 바꾸고 다시 돌림): 칸 오류 0 · 칸 경고 0(단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다) · 14절 스스로 확인 명령 '걸림 없음'(같은 질문 열쇠는 카드에서 가장 많은 것이 1번).
 
 ```json
 {
@@ -452,13 +452,13 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
     "required": [
       {"no": 1, "en": "What do you do at home?", "ko": "집에서 뭐 해?", "targets": ["watch"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "우리는 축구 경기를 봐.", "hints": ["We ___ a soccer game.", "We watch a soccer game."], "answerExample": "We watch a soccer game.", "easyQuestion": {"en": "Do you like soccer games?", "ko": "축구 경기 좋아해?"}},
       {"no": 2, "en": "In the car, what do you do?", "ko": "차 안에서 뭐 해?", "targets": ["listen"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 노래를 들어.", "hints": ["I ___ to songs.", "I listen to songs."], "answerExample": "I listen to songs.", "easyQuestion": {"en": "Do you like songs?", "ko": "노래 좋아해?"}, "imageKey": "car"},
-      {"no": 3, "en": "You are tired. What do you do in your bed?", "ko": "피곤하구나. 침대에서 뭐 해?", "targets": ["sleep"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 내 침대에서 자.", "hints": ["I ___ in my bed.", "I sleep in my bed."], "answerExample": "I sleep in my bed.", "easyQuestion": {"en": "Do you like your bed?", "ko": "네 침대 좋아해?"}},
+      {"no": 3, "en": "The stars are out! What do you do in your bed?", "ko": "별이 떴어! 침대에서 뭐 해?", "targets": ["sleep"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 내 침대에서 자.", "hints": ["I ___ in my bed.", "I sleep in my bed."], "answerExample": "I sleep in my bed.", "easyQuestion": {"en": "Do you like your bed?", "ko": "네 침대 좋아해?"}},
       {"no": 4, "en": "What do you do at your desk?", "ko": "책상에서 뭐 해?", "targets": ["study"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 내 책상에서 공부해.", "hints": ["I ___ at my desk.", "I study at my desk."], "answerExample": "I study at my desk.", "easyQuestion": {"en": "Do you have a desk?", "ko": "책상 있어?"}, "imageKey": "desk"},
       {"no": 5, "en": "What do you do with new games?", "ko": "새 놀이가 생기면 뭐 해?", "targets": ["learn"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 새 놀이를 배워.", "hints": ["I ___ new games.", "I learn new games."], "answerExample": "I learn new games.", "easyQuestion": {"en": "Do you like new games?", "ko": "새 놀이 좋아해?"}}
     ],
     "more": [
-      {"no": 1, "en": "You are hungry. What do you do at the table?", "ko": "배고프구나. 식탁에서 뭐 해?", "targets": ["eat"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 샌드위치를 먹어.", "hints": ["I ___ a sandwich.", "I eat a sandwich."], "answerExample": "I eat a sandwich.", "easyQuestion": {"en": "Do you like sandwiches?", "ko": "샌드위치 좋아해?"}, "imageKey": "table"},
-      {"no": 2, "en": "You are thirsty. What do you do with your cup?", "ko": "목마르구나. 컵으로 뭐 해?", "targets": ["drink"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 물을 마셔.", "hints": ["I ___ water.", "I drink water."], "answerExample": "I drink water.", "easyQuestion": {"en": "Do you like juice?", "ko": "주스 좋아해?"}},
+      {"no": 1, "en": "Sandwiches for lunch! What do you do at the table?", "ko": "점심은 샌드위치야! 식탁에서 뭐 해?", "targets": ["eat"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 샌드위치를 먹어.", "hints": ["I ___ a sandwich.", "I eat a sandwich."], "answerExample": "I eat a sandwich.", "easyQuestion": {"en": "Do you like sandwiches?", "ko": "샌드위치 좋아해?"}, "imageKey": "table"},
+      {"no": 2, "en": "Oh, cold water! What do you do with your cup?", "ko": "오, 시원한 물이야! 컵으로 뭐 해?", "targets": ["drink"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 물을 마셔.", "hints": ["I ___ water.", "I drink water."], "answerExample": "I drink water.", "easyQuestion": {"en": "Do you like juice?", "ko": "주스 좋아해?"}},
       {"no": 3, "en": "What do you do with your friends?", "ko": "친구들이랑 뭐 해?", "targets": ["go"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "우리는 장난감 가게에 가.", "hints": ["We ___ to the toy shop.", "We go to the toy shop."], "answerExample": "We go to the toy shop.", "easyQuestion": {"en": "Do you have a toy shop?", "ko": "장난감 가게 있어?"}},
       {"no": 4, "en": "Your family! What do they do at home?", "ko": "가족! 가족은 집에서 뭐 해?", "targets": ["watch"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "가족은 축구 경기를 봐.", "hints": ["They ___ a soccer game.", "They watch a soccer game."], "answerExample": "They watch a soccer game.", "easyQuestion": {"en": "Do they like soccer?", "ko": "가족은 축구 좋아해?"}},
       {"no": 5, "en": "What do you do on the bus?", "ko": "버스에서 뭐 해?", "targets": ["listen"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 음악을 들어.", "hints": ["I ___ to music.", "I listen to music."], "answerExample": "I listen to music.", "easyQuestion": {"en": "Do you like the bus?", "ko": "버스 좋아해?"}, "imageKey": "bus"}

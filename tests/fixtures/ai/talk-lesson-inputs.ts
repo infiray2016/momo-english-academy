@@ -37,6 +37,7 @@ const SPECS: Record<number, TalkLessonSpecView & { sentenceMaxWords: number }> =
       usablePhrases: 0,
       koMeaning: true,
       koExplainFromStuck: 1,
+      choices: false,
       sentenceMaxWords: 7,
     },
     4: {
@@ -47,6 +48,7 @@ const SPECS: Record<number, TalkLessonSpecView & { sentenceMaxWords: number }> =
       usablePhrases: 0,
       koMeaning: true,
       koExplainFromStuck: 1,
+      choices: false,
       sentenceMaxWords: 8,
     },
     5: {
@@ -57,6 +59,7 @@ const SPECS: Record<number, TalkLessonSpecView & { sentenceMaxWords: number }> =
       usablePhrases: 3,
       koMeaning: false,
       koExplainFromStuck: 2,
+      choices: false,
       sentenceMaxWords: 9,
     },
     10: {
@@ -67,6 +70,7 @@ const SPECS: Record<number, TalkLessonSpecView & { sentenceMaxWords: number }> =
       usablePhrases: 0,
       koMeaning: false,
       koExplainFromStuck: 2,
+      choices: false,
       sentenceMaxWords: 18,
     },
   };
@@ -342,6 +346,7 @@ export function lessonInput(
       forms: [],
       allowedForms: new Set(),
       childWords: ["soccer"],
+      reaskWords: [],
     },
     imageWords: new Set(["soccer", "dinosaur"]),
     lemmaOf,

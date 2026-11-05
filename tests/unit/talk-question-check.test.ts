@@ -174,7 +174,54 @@ describe("1~3단계 AI 질문 검사", () => {
         ...options,
         targets: [],
       }),
-    ).toEqual({ ok: false, reason: "offband" });
+    ).toEqual({ ok: false, reason: "offband", words: ["basketball"] });
+  });
+
+  it("13절 C203 (2) 범위 밖이 닫힌 품사 한 낱말(too · also · now …)뿐이면 통과하고, 다른 범위 밖 낱말과 함께면 둘 다 걸린 낱말로 낸다", () => {
+    expect(
+      checkLowLevelQuestion("Do you like soccer too?", {
+        ...options,
+        targets: [],
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      checkLowLevelQuestion("Do you like basketball too?", {
+        ...options,
+        targets: [],
+      }),
+    ).toEqual({ ok: false, reason: "offband", words: ["basketball", "too"] });
+    // 닫힌 품사 낱말이라도 둘이면 걸린다
+    expect(
+      checkLowLevelQuestion("Do you play there too?", {
+        ...options,
+        targets: [],
+      }),
+    ).toEqual({ ok: false, reason: "offband", words: ["there", "too"] });
+  });
+
+  it("13절 C203 (1) 아이가 이 대화에서 말한 낱말은 노리는 단어라도 되묻기 질문에 쓸 수 있다(원형으로도)", () => {
+    expect(
+      checkLowLevelQuestion("Do you play soccer?", {
+        ...options,
+        childWords: ["soccer"],
+        targets: ["soccer"],
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      checkLowLevelQuestion("Do you play soccer?", {
+        ...options,
+        childWords: ["played"],
+        targets: ["play"],
+      }),
+    ).toEqual({ ok: true });
+    // 말하지 않은 노리는 단어는 그대로 걸린다
+    expect(
+      checkLowLevelQuestion("Do you play soccer?", {
+        ...options,
+        childWords: ["soccer"],
+        targets: ["soccer", "play"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["play"] });
   });
 
   it("AC-15b 문장 길이 상한을 넘으면 걸린다", () => {
@@ -192,13 +239,13 @@ describe("1~3단계 AI 질문 검사", () => {
         ...options,
         targets: ["soccer"],
       }),
-    ).toEqual({ ok: false, reason: "target_word" });
+    ).toEqual({ ok: false, reason: "target_word", words: ["soccer"] });
     expect(
       checkLowLevelQuestion("Is it a plays?", {
         ...options,
         targets: ["play"],
       }),
-    ).toEqual({ ok: false, reason: "target_word" });
+    ).toEqual({ ok: false, reason: "target_word", words: ["play"] });
   });
 
   it("AC-15b 범위 밖 형태는 걸린다", () => {

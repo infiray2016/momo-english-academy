@@ -98,9 +98,11 @@ export function shownTurnOf(
 }
 
 /**
- * 겹침 없애기 뒤 그 턴의 토리 뜻 줄(3.3 '답은 화면에 보이지 않는다' · T2): 1~3단계에서 shownTurnOf 가 토리 문장을 하나라도 뺐으면
- * 그 턴의 뜻 줄은 흘리지도 저장하지도 않는다 — 빠진 문장은 답 두 개를 담은 말이라 그 뜻이 영어 답을 화면 글로 보이게 하고 말풍선과도
- * 맞지 않는다. 다시 흘리기 · 이어 열기는 저장값을 따른다. 4단계부터는 판정하지 않는다.
+ * 겹침 없애기 뒤 그 턴의 토리 뜻 줄(3.3 '답은 화면에 보이지 않는다' · T2 · 13절 C202 (5)). 뜻이 선생님 문장마다의 목록이고 그 수가 보낸 문장
+ * 수와 같으면, 빠진 문장(답 두 개 · 소리 줄의 답을 담은 말, 질문을 쓰지 않는 차례의 물음표 등)의 뜻만 빼고 남은 문장의 뜻을 차례대로 잇는다 —
+ * 모든 단계. 목록의 수가 다르거나 옛 한 글 꼴이면 문장과 맞출 수 없어 옛 규칙이다: 1~3단계에서 shownTurnOf 가 토리 문장을 하나라도 뺐으면 그
+ * 턴의 뜻 줄은 흘리지도 저장하지도 않는다(빠진 문장의 뜻이 영어 답을 화면 글로 보이게 하고 말풍선과도 맞지 않는다). 4단계부터는 판정하지 않는다.
+ * 남은 뜻이 없으면 null. 다시 흘리기 · 이어 열기는 저장값(이은 한 글)을 따른다.
  */
 export function toriKoShownOf({
   ko,
@@ -108,11 +110,32 @@ export function toriKoShownOf({
   shown,
   lowBand,
 }: {
-  ko: string | null;
+  ko: string | readonly string[] | null;
   sent: readonly string[];
   shown: readonly string[];
   lowBand: boolean;
 }): string | null {
-  if (ko === null || !lowBand) return ko;
-  return shown.length < sent.length ? null : ko;
+  if (ko === null) return null;
+  const nonEmpty = (list: readonly string[]) => {
+    const joined = list
+      .map((k) => k.trim())
+      .filter((k) => k !== "")
+      .join(" ");
+    return joined === "" ? null : joined;
+  };
+  if (typeof ko !== "string" && ko.length === sent.length) {
+    // shown 은 sent 의 차례를 지킨 부분 목록이다 — 앞에서부터 짝지어 남은 문장의 뜻만 고른다
+    let at = 0;
+    const kept: string[] = [];
+    sent.forEach((sentence, i) => {
+      if (at < shown.length && shown[at] === sentence) {
+        kept.push(ko[i] ?? "");
+        at += 1;
+      }
+    });
+    return nonEmpty(kept);
+  }
+  const whole = typeof ko === "string" ? nonEmpty([ko]) : nonEmpty(ko);
+  if (whole === null || !lowBand) return whole;
+  return shown.length < sent.length ? null : whole;
 }

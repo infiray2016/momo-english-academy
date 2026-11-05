@@ -1,0 +1,90 @@
+{
+  "name": "l3-word-answers",
+  "title": "3단계 · 낱말 하나로 답하기",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-15o (가): 낱말 답 다음 선생님 말에 문장으로 다시 말하게 하는 질문이 없고 recast 가 그 낱말을 담은 바른 문장이다.",
+  "steps": [
+    {
+      "say": "Fine.",
+      "design": "Good to hear! Let's learn some new words! 〔다행이다! 새 낱말 배워 보자!〕",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Rice.",
+      "design": "We eat rice! Yum. Do you like fish? 〔밥 먹는구나! 맛있겠다. 생선 좋아해?〕",
+      "expect": {
+        "recastWord": "rice",
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "design": "Me too! Oh, juice, too. What do you do with it? 〔나도! 오, 주스도 있네. 그걸로 뭐 해?〕",
+      "expect": {
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Juice.",
+      "design": "You drink juice! Is it cold? 〔주스 마시는구나! 시원해?〕",
+      "expect": {
+        "recastWord": "juice",
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "Cold.",
+      "design": "Cold juice, yum! With your family, what do you do? 〔시원한 주스, 맛있겠다! 가족이랑 뭐 해?〕",
+      "expect": {
+        "recastWord": "cold",
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "Lake.",
+      "design": "You go to the lake! Is it big? 〔호수에 가는구나! 커?〕",
+      "expect": {
+        "recastWord": "lake",
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "Big.",
+      "expect": {
+        "recastWord": "big",
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Water.",
+      "expect": {
+        "recastWord": "water",
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    }
+  ]
+}

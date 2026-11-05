@@ -1,0 +1,52 @@
+{
+  "name": "l4-word-answers",
+  "title": "4단계 · 낱말 답과 아이가 꺼낸 이야기(둘째)",
+  "level": 4,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "4단계는 짧은 준비 없이 대화하고 소리 줄이 없다. 4단계 회화 카드 시드(seed/lessons/talk/4/1.json)가 생기면 돌아간다(plan 묶음 20 둘째 프리뷰).",
+  "steps": [
+    {
+      "say": "I'm good.",
+      "expect": { "koMeaning": true }
+    },
+    {
+      "say": "Singer.",
+      "expect": {
+        "recastWord": "singer",
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "My sister sings well.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I have a cat.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "She sleeps a lot.",
+      "expect": { "returns": true, "contextlessCard": false, "koMeaning": true }
+    },
+    {
+      "input": "dont_know",
+      "expect": { "koMeaning": true, "sameSoundTwice": false }
+    },
+    {
+      "say": "Kitchen.",
+      "expect": {
+        "recastWord": "kitchen",
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    }
+  ]
+}

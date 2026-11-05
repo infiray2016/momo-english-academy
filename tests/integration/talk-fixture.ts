@@ -160,7 +160,7 @@ export function lessonAnswer(
     tori_en: "Nice!",
     model_line: "",
     choices: [],
-    tori_ko: "",
+    tori_ko: [],
     recast: "",
     explanation: "",
     new_words: [],

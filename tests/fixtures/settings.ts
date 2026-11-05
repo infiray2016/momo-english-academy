@@ -169,7 +169,8 @@ export const TEST_SETTINGS = {
   "talk.teacher_sentences_max.4-6": { scope: "household", value: 3 },
   "talk.teacher_sentences_max.7-9": { scope: "household", value: 4 },
   "talk.teacher_sentences_max.10-12": { scope: "household", value: 5 },
-  "talk.wait_line_seconds": { scope: "household", value: 1.5 },
+  // 13절 C202 (6) — 첫 문장 실측 2.2~5.5초라 1.5 에서 올림(컨트롤러 잠정)
+  "talk.wait_line_seconds": { scope: "household", value: 3 },
   "talk.role_swap_turns": { scope: "household", value: 4 },
   "talk.max_answer_seconds": { scope: "household", value: 30 },
   "speech.end_silence_seconds.talk.1-3": { scope: "household", value: 3 },
