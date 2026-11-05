@@ -2,6 +2,8 @@
 // '말하기 질문 판정의 증명' 통합 몫, 정본 15절 AC-22k · AC-N19). 시험 시드에 3단계 단원 1 정규 시드 말하기 가르치는 수업을 더해 말하기
 // 3단계(질문 답을 AI 로 판정)에서 연다. AI 는 P9a 가짜 Anthropic 이고 판정은 시험이 고른다. 이 Mac 에서는 돌리지 않고 CI 에서 돈다.
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
@@ -13,7 +15,9 @@ import {
   it,
 } from "vitest";
 import { INPUT_VERSION } from "@/core/session/attempt";
-import { skipAfterAiRest } from "@/core/speaking/judge";
+import { questionTextsOf, skipAfterAiRest } from "@/core/speaking/judge";
+import { normalizeForMatch } from "@/core/speech/match-rate";
+import { vocab } from "@/db/schema/content";
 import { attempts, sessions, unitProgress } from "@/db/schema/learning";
 import { aiCalls } from "@/db/schema/operations";
 import type { Db } from "@/server/db";
@@ -71,7 +75,58 @@ beforeAll(async () => {
   });
   if (report.outcome !== "loaded") throw new Error("시험 시드 적재 실패");
   await insertTeachSpeakingLesson(db);
+  await insertTeachVocab(db);
 });
+
+/** 정규 시드 어휘 목록(seed/vocab.json)의 한 행(이 시험이 읽는 칸만). */
+type SeedVocabRow = {
+  word: string;
+  meaningKo: string;
+  pos: string[];
+  level: number;
+  example?: string;
+  forms?: string[];
+};
+
+/**
+ * 가르치는 말하기 수업은 정규 시드(3단계 단원 1)인데 시험 시드의 어휘는 작은 견본이라, 그 수업 질문 글의 낱말(eat · drink 같은 동사)이
+ * 어휘 목록에 없다. 의미 검사는 어휘 품사로 질문의 '하는 일'(do 뒤 첫 동사)을 찾으므로(정본 02-2 72줄 · meaning.ts questionCoreOf), 동사가
+ * 없으면 이름(누가 자리)이 핵심 낱말로 남아 이름을 넣은 바른 답이 틀린 정보가 된다. 그래서 질문 글 낱말 가운데 시험 어휘에 없는 행을 정규
+ * 시드 어휘에서 넣는다(그림 키 없이 — 판정은 단어 · 품사 · 꼴만 본다, server/speaking/words.ts). 정규 시드에서는 적재가 어휘를 함께 넣는다.
+ */
+async function insertTeachVocab(target: Db): Promise<void> {
+  const seedVocab = (
+    JSON.parse(
+      readFileSync(join(process.cwd(), "seed/vocab.json"), "utf8"),
+    ) as { vocab: SeedVocabRow[] }
+  ).vocab;
+  const tokens = new Set(
+    questionTextsOf(SPEAKING_TEACH).flatMap((text) =>
+      normalizeForMatch(text, []),
+    ),
+  );
+  const have = new Set(
+    (await target.select({ word: vocab.word }).from(vocab)).map((r) =>
+      r.word.toLowerCase(),
+    ),
+  );
+  const missing = seedVocab.filter(
+    (v) =>
+      !have.has(v.word.toLowerCase()) &&
+      [v.word, ...(v.forms ?? [])].some((f) => tokens.has(f.toLowerCase())),
+  );
+  if (missing.length === 0) return;
+  await target.insert(vocab).values(
+    missing.map((v) => ({
+      word: v.word,
+      meaning: v.meaningKo,
+      partsOfSpeech: v.pos,
+      example: v.example ?? null,
+      bandLevel: v.level,
+      forms: v.forms ?? [],
+    })),
+  );
+}
 afterAll(async () => {
   await testDb.drop();
 });

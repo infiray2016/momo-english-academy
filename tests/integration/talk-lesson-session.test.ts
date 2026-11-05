@@ -463,8 +463,6 @@ describe("대화 안전 상한 · 옛 꼴 카드 닫기(회화 plan 묶음 12)",
     await setHouseholdSetting(db, "talk.safety_max_turns", 1);
     try {
       const { profileId, sessionId: first } = await newSession();
-      const ids = [first];
-      while (ids.length < alertCount) ids.push(await sessionFor(profileId));
       const alerts = async () =>
         (
           await db
@@ -472,7 +470,9 @@ describe("대화 안전 상한 · 옛 꼴 카드 닫기(회화 plan 묶음 12)",
             .from(parentAlerts)
             .where(eq(parentAlerts.profileId, profileId))
         ).filter((a) => a.kind === "talk_safety_cap");
-      for (const [i, sessionId] of ids.entries()) {
+      // 한 프로필 · 영역에 진행 세션은 하나다(sessions_one_in_progress_unique). 앞 대화가 상한으로 중단된 뒤에 다음 대화를 넣는다
+      for (let i = 0; i < alertCount; i++) {
+        const sessionId = i === 0 ? first : await sessionFor(profileId);
         // 처음 열기(첫 선생님 행) 뒤 아이 말 하나가 상한(1)에 닿는다 — 회화 턴 호출 없이 닫힌다(deps 에 AI 가 없다)
         expect(await loadTalkLessonView({ sessionId }, deps())).toBeDefined();
         const lines: TalkLessonLine[] = [];

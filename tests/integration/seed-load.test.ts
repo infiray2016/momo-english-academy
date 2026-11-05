@@ -873,7 +873,7 @@ describe("적재 명령(pnpm seed:load)", () => {
 
   it("적재 명령: 첫 줄 요약 꼴과 --json(version 1) 꼴 · --dry-run 은 계획만 내고 한 행도 넣지 않는다", async () => {
     const SUMMARY =
-      /^seed-load: (넣음|미리 돌림|거부) · 칸 넣음 \d+ · 건너뜀 \d+ · 낱말 넣음 \d+ 고침 \d+ · 그림 넣음 \d+ 고침 \d+ · 단가 넣음 \d+ · 설정 넣음 \d+ 고침 \d+ 지킴 \d+ · 이력 \d+ · 최신 개정 (\d+|-)→(\d+|-) · 위반 \d+$/;
+      /^seed-load: (넣음|미리 돌림|거부) · 칸 넣음 \d+ · 건너뜀 \d+ · 목표 채움 \d+ · 낱말 넣음 \d+ 고침 \d+ · 그림 넣음 \d+ 고침 \d+ · 단가 넣음 \d+ · 설정 넣음 \d+ 고침 \d+ 지킴 \d+ · 이력 \d+ · 최신 개정 (\d+|-)→(\d+|-) · 위반 \d+$/;
     const root = writeTree(loadableSeed());
     const files = readSeedTree(root);
     const dry = await run(["--root", root, "--dry-run"], files);
