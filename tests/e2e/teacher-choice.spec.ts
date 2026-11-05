@@ -362,16 +362,26 @@ test.describe("관찰 쪽 /dev/teacher-probe(차례 6 · 컨트롤러 덧)", () 
     await expect(choice(talk)).toBeVisible();
   });
 
-  test("AC-19b 관찰 쪽 '단원 바로 가기'로 회화 단원 3 을 누르면 회화 지금 단원이 1단계 단원 3 이고 홈 회화 카드가 단원 3 을 보인다", async ({
+  test("AC-19b 관찰 쪽 '단원 바로 가기'로 회화 단원 3 을 골라 '그 단원으로'를 누르면 회화 지금 단원이 1단계 단원 3 이고 홈 회화 카드가 단원 3 을 보인다", async ({
     page,
   }) => {
     const profileId = await talkHousehold(1);
     await openProbe(page);
     await page
-      .getByRole("button", { name: PROBE_TEXT.jumpLabel("회화", 3) })
+      .getByRole("button", { name: PROBE_TEXT.unitPick("회화", 3) })
       .click();
-    await expect(page.getByTestId("jump-line")).toHaveText(
-      PROBE_TEXT.jumped("회화", 1, 3),
+    await page
+      .getByRole("button", { name: PROBE_TEXT.jumpKeepLabel("회화") })
+      .click();
+    // 결과 줄의 시작 개정은 적재된 시드에 따라 달라 그 앞(영역 · 단계 · 단원 · 회차)까지만 본다
+    await expect(page.getByTestId("jump-line")).toContainText(
+      PROBE_TEXT.jumped("회화", {
+        level: 1,
+        unit: 3,
+        round: 1,
+        startRevision: 0,
+        started: true,
+      }).split(" · 시작 개정")[0] ?? "",
     );
     await expect(
       page.locator('[data-probe-track="talk"] [data-probe-now]'),

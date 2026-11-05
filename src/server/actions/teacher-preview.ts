@@ -16,7 +16,7 @@ export async function clearTeacherForPreview(): Promise<{ ok: boolean }> {
   return clearTeacherForPreviewFor();
 }
 
-/** 단원 바로 가기 — 영역 하나의 지금 단원을 1단계 단원 하나로. */
+/** 단원 바로 가기 — 영역 하나의 지금 단원을 고른 단계 · 단원으로(newRound 면 새 회차). 입력 검사는 몸(서버)이 한다. */
 export async function jumpUnitForPreview(
   input: unknown,
 ): Promise<JumpUnitOutcome> {

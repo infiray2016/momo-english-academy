@@ -11,7 +11,7 @@ import "server-only";
 // 서버의 앱 판정으로 다시 쓴다(withAppJudge — plan 다, 서버 값이 정본).
 // 가르치는 수업 화면 자료(plan 묶음 라-2 · 장부 L-34): 짝 칸에 서버가 센 혼자 첫 시도 결과(outcomes — 기기가 제 첫 시도 결과와 합쳐 낼 짝을
 // 고름), 고른 선생님 · 칭찬 표지 시간(talk.teacher_praise_seconds), 본보기 그림 키 · 새 단어 그림을 싣는다. 시도 저장 길의 꼴은 그대로다.
-import { and, eq, inArray, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { fillNameDeep } from "@/core/ai/mask";
 import type { PictureInfo } from "@/core/answer/display";
@@ -1507,7 +1507,7 @@ export async function loadSessionView(
     return input?.kind === "preview" ? input.shownWords : [];
   });
 
-  // k: 그 단원 회차 복사본(12절 머리 — 단원 시작 때의 값)
+  // k: 그 단원 회차 복사본(12절 머리 — 단원 시작 때의 값). 회차가 여럿이면 최신 회차(세션 시작 · 수업 목록과 같음)
   const [round] = await db
     .select({ snapshot: unitProgress.settingsSnapshot })
     .from(unitProgress)
@@ -1518,7 +1518,9 @@ export async function loadSessionView(
         eq(unitProgress.level, level),
         eq(unitProgress.unit, unit),
       ),
-    );
+    )
+    .orderBy(desc(unitProgress.round))
+    .limit(1);
   const k = (round?.snapshot as Record<string, unknown> | undefined)?.[
     NEW_WORDS_KEY
   ];

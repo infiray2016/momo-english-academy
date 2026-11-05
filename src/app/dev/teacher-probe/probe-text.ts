@@ -1,4 +1,5 @@
-// 선생님 관찰 쪽의 글 · 목소리 목록 꼴(선생님 화면 plan 값 16 · 정본 밖 문구 표의 '관찰 쪽' 줄, 컨트롤러 덧 2026-10-23 '단원 바로 가기').
+// 선생님 관찰 쪽의 글 · 목소리 목록 꼴(선생님 화면 plan 값 16 · 정본 밖 문구 표의 '관찰 쪽' 줄, 컨트롤러 덧 2026-10-23 '단원 바로 가기',
+// 회화 plan 정한 것 21 — 단계 고르기 · '새 회차로 열기').
 // 관찰 도구라 아이 화면 원칙 밖이다(음성 관찰 쪽과 같음). e2e 가 같은 글을 읽도록 React 없는 모듈로 둔다. 순수 모듈이다.
 import { TEACHER_TEXT } from "@/core/teacher/name";
 
@@ -13,13 +14,29 @@ export const PROBE_TEXT = {
   clearFailed: "지우지 못했어요",
   jumpHeading: "단원 바로 가기",
   jumpNote:
-    "1단계 단원 하나를 그 영역의 지금 단원으로 바꿔요. 단원 통과 전에 다른 단원 수업을 열어 볼 때 써요(프리뷰 시험용).",
+    "단계와 단원을 골라 그 영역의 지금 단원으로 바꿔요. '그 단원으로'는 있던 회차를 쓰고, '새 회차로 열기'는 지금 최신 개정으로 시작하는 회차를 새로 열어요(프리뷰 시험용).",
+  jumpNoSeed: "자료가 없는 단원은 수업 목록이 비어요",
   trackNow: (level: number | null, unit: number | null) =>
     level === null || unit === null ? "배치 전" : `${level}단계 · 단원 ${unit}`,
-  jumpLabel: (areaLabel: string, unit: number) =>
-    `${areaLabel} 단원 ${unit} 열기`,
-  jumped: (areaLabel: string, level: number, unit: number) =>
-    `바꿨어요 — ${areaLabel} ${level}단계 · 단원 ${unit}`,
+  levelPick: (areaLabel: string) => `${areaLabel} 단계`,
+  levelOption: (level: number) => `${level}단계`,
+  unitPick: (areaLabel: string, unit: number) =>
+    `${areaLabel} 단원 ${unit} 고르기`,
+  jumpKeep: "그 단원으로",
+  jumpNew: "새 회차로 열기",
+  jumpKeepLabel: (areaLabel: string) => `${areaLabel} 그 단원으로`,
+  jumpNewLabel: (areaLabel: string) => `${areaLabel} 새 회차로 열기`,
+  jumped: (
+    areaLabel: string,
+    out: {
+      level: number;
+      unit: number;
+      round: number;
+      startRevision: number;
+      started: boolean;
+    },
+  ) =>
+    `바꿨어요 — ${areaLabel} ${out.level}단계 · 단원 ${out.unit} · 회차 ${out.round} · 시작 개정 ${out.startRevision} · ${out.started ? "새로 열었어요" : "있던 회차예요"}`,
   jumpRefused: "운영 배포에서는 쓸 수 없어요",
   jumpFailed: "바꾸지 못했어요",
   home: "홈에서 보기",
@@ -60,6 +77,22 @@ export const PROBE_TEXT = {
   ms: (ms: number) => `${Math.round(ms)}ms`,
   perSecond: (n: number) => n.toFixed(1),
 } as const;
+
+/** 단원 바로 가기의 처음 단계: 그 영역의 지금 단계, 배치 전이면 가장 낮은 단계(levels 의 첫 값). */
+export function jumpLevelOf(
+  levels: readonly number[],
+  now: number | null,
+): number | undefined {
+  return now !== null && levels.includes(now) ? now : levels[0];
+}
+
+/** 고른 단계의 단원 목록에서 고를 단원: 바라는 단원이 있으면 그것, 없으면 첫 단원(단계를 바꿔 목록이 달라질 때). */
+export function jumpUnitOf(
+  units: readonly number[],
+  wanted: number | null,
+): number | undefined {
+  return wanted !== null && units.includes(wanted) ? wanted : units[0];
+}
 
 /** 목소리 목록 한 줄. */
 export type VoiceRow = {

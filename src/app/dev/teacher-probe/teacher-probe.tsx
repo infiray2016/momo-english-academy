@@ -2,7 +2,9 @@
 
 // 선생님 관찰 쪽 본체(선생님 화면 plan 값 16 — d6 몫, 컨트롤러 덧 2026-10-23). 프리뷰 배포에서 어른(요청자)이 쓰는 시험 도구이고 아이
 // 화면이 아니다. (1) '이 프로필의 선생님 지우기' — 다음 회화에서 '선생님을 골라요'가 다시 나와 미나 · 리오를 둘 다 본다(C117).
-// (2) '단원 바로 가기' — 영역 하나의 지금 단원을 1단계 단원 하나로 바꾼다(단원 통과 P12 전에 진짜 자료의 단원 2~5 를 써 보게).
+// (2) '단원 바로 가기' — 영역 하나의 지금 단원을 고른 단계 · 단원으로 바꾼다(단원 통과 P12 전에 진짜 자료의 다른 단원 · 단계를 써 보게).
+// '그 단원으로'는 있던 회차를 쓰고, '새 회차로 열기'는 지금 최신 개정으로 시작하는 회차를 새로 연다(회화 plan 정한 것 21 — 새 개정 카드는
+// 그 개정으로 시작한 회차에서만 보인다). 결과 줄에 영역 · 단계 · 단원 · 회차 · 시작 개정 · 새로 열었는지를 적는다.
 // (3) 목소리 목록 표 · '목록 복사' — 요청자가 대화창에 붙여 넣어 리오 · 미나 목소리 순서를 정한다.
 // (4) '3D 보기'(d8 — plan 값 16, AC-N11 점검표 칸): 명단 선생님을 고르면 회화 세션과 같은 그림 층 보관 조각 · 선생님 창으로 3D 를 불러오고,
 // 그림 층 사건(momo:teacher)으로 불러오기 · 첫 장 ms 와 대신 표시 까닭을, 캔버스 data-teacher-frames · data-teacher-frames-at(적은 때)
@@ -29,8 +31,10 @@ import {
   clearTeacherForPreview,
   jumpUnitForPreview,
 } from "@/server/actions/teacher-preview";
-import type { PreviewProbeView } from "@/server/preview";
+import type { PreviewProbeView, PreviewTrack } from "@/server/preview";
 import {
+  jumpLevelOf,
+  jumpUnitOf,
   PROBE_TEXT,
   type VoiceRow,
   voiceListText,
@@ -54,6 +58,7 @@ const buttonClass =
   "min-h-11 rounded-md border border-neutral-500 bg-neutral-100 px-4 py-2 text-base disabled:opacity-40";
 const sectionClass =
   "space-y-3 rounded-lg border border-neutral-300 bg-white p-4";
+const pickedClass = "border-2 border-neutral-900 font-bold";
 
 function StatusText({ line, testId }: { line: Line; testId: string }) {
   return (
@@ -237,18 +242,119 @@ function Probe3d({
   );
 }
 
+/** 단계마다 고를 수 있는 단원 번호(previewUnitsOf). */
+export type UnitsByLevel = Record<number, number[]>;
+
+/**
+ * 단원 바로 가기 한 영역 줄: 단계 고르기(처음은 그 영역의 지금 단계, 배치 전이면 가장 낮은 단계) · 단원 고르기 · 단추 둘
+ * ('그 단원으로' = 있는 회차 쓰기, '새 회차로 열기').
+ */
+export function JumpRow({
+  track,
+  levels,
+  units,
+  busy,
+  onJump,
+}: {
+  track: PreviewTrack;
+  levels: number[];
+  units: UnitsByLevel;
+  busy: boolean;
+  onJump: (area: Area, level: number, unit: number, newRound: boolean) => void;
+}) {
+  const label = AREA_LABEL[track.area];
+  const [level, setLevel] = useState(() => jumpLevelOf(levels, track.level));
+  const unitsHere = level === undefined ? [] : (units[level] ?? []);
+  const [unit, setUnit] = useState(() =>
+    jumpUnitOf(unitsHere, track.level === level ? track.unit : null),
+  );
+  const chosen = unit !== undefined && unitsHere.includes(unit);
+  return (
+    <li data-probe-track={track.area} className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-16 font-semibold">{label}</span>
+        <span data-probe-now="" className="w-32">
+          {PROBE_TEXT.trackNow(track.level, track.unit)}
+        </span>
+        <select
+          aria-label={PROBE_TEXT.levelPick(label)}
+          data-probe-level=""
+          className={`${buttonClass} min-w-24`}
+          value={level}
+          disabled={busy}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            setLevel(next);
+            setUnit((was) => jumpUnitOf(units[next] ?? [], was ?? null));
+          }}
+        >
+          {levels.map((l) => (
+            <option key={l} value={l}>
+              {PROBE_TEXT.levelOption(l)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {unitsHere.map((u) => (
+          <button
+            key={u}
+            type="button"
+            aria-label={PROBE_TEXT.unitPick(label, u)}
+            aria-pressed={unit === u}
+            data-probe-unit={u}
+            className={`${buttonClass} min-w-11 ${unit === u ? pickedClass : ""}`}
+            disabled={busy}
+            onClick={() => setUnit(u)}
+          >
+            {u}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          aria-label={PROBE_TEXT.jumpKeepLabel(label)}
+          data-probe-jump="keep"
+          className={buttonClass}
+          disabled={busy || !chosen || level === undefined}
+          onClick={() => {
+            if (chosen && level !== undefined)
+              onJump(track.area, level, unit, false);
+          }}
+        >
+          {PROBE_TEXT.jumpKeep}
+        </button>
+        <button
+          type="button"
+          aria-label={PROBE_TEXT.jumpNewLabel(label)}
+          data-probe-jump="new"
+          className={buttonClass}
+          disabled={busy || !chosen || level === undefined}
+          onClick={() => {
+            if (chosen && level !== undefined)
+              onJump(track.area, level, unit, true);
+          }}
+        >
+          {PROBE_TEXT.jumpNew}
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export function TeacherProbe({
   view,
-  level,
+  levels,
   units,
   roster,
   settings3d,
 }: {
   view: PreviewProbeView | null;
-  /** 단원 바로 가기의 단계(1). */
-  level: number;
-  /** 영역마다 고를 수 있는 단원 번호. */
-  units: Record<Area, number[]>;
+  /** 단원 바로 가기가 고를 수 있는 단계(previewLevels). */
+  levels: number[];
+  /** 영역 · 단계마다 고를 수 있는 단원 번호. */
+  units: Record<Area, UnitsByLevel>;
   /** 명단 선생님 전부(3D 보기). */
   roster: TeacherView[];
   /** 선생님 창 설정(못 읽으면 null — 3D 보기를 끔). */
@@ -288,14 +394,21 @@ export function TeacherProbe({
     if (out.ok) router.refresh();
   }
 
-  async function jump(area: Area, unit: number) {
+  async function jump(
+    area: Area,
+    level: number,
+    unit: number,
+    newRound: boolean,
+  ) {
     setBusy(true);
-    const out = await jumpUnitForPreview({ area, unit }).catch(() => undefined);
+    const out = await jumpUnitForPreview({ area, level, unit, newRound }).catch(
+      () => undefined,
+    );
     setBusy(false);
     if (out?.ok) {
       setJumpLine({
         tone: "ok",
-        text: PROBE_TEXT.jumped(AREA_LABEL[out.area], out.level, out.unit),
+        text: PROBE_TEXT.jumped(AREA_LABEL[out.area], out),
       });
       router.refresh();
       return;
@@ -352,40 +465,19 @@ export function TeacherProbe({
           <section className={sectionClass}>
             <h2 className="font-semibold text-lg">{PROBE_TEXT.jumpHeading}</h2>
             <p>{PROBE_TEXT.jumpNote}</p>
-            <ul className="space-y-3">
+            <p>{PROBE_TEXT.jumpNoSeed}</p>
+            <ul className="space-y-4">
               {view.tracks.map((track) => (
-                <li
+                <JumpRow
                   key={track.area}
-                  data-probe-track={track.area}
-                  className="flex flex-wrap items-center gap-2"
-                >
-                  <span className="w-16 font-semibold">
-                    {AREA_LABEL[track.area]}
-                  </span>
-                  <span data-probe-now="" className="w-32">
-                    {PROBE_TEXT.trackNow(track.level, track.unit)}
-                  </span>
-                  {units[track.area].map((unit) => {
-                    const current =
-                      track.level === level && track.unit === unit;
-                    return (
-                      <button
-                        key={unit}
-                        type="button"
-                        aria-label={PROBE_TEXT.jumpLabel(
-                          AREA_LABEL[track.area],
-                          unit,
-                        )}
-                        aria-current={current ? "true" : undefined}
-                        className={`${buttonClass} min-w-11 ${current ? "border-2 border-neutral-900 font-bold" : ""}`}
-                        disabled={busy}
-                        onClick={() => void jump(track.area, unit)}
-                      >
-                        {unit}
-                      </button>
-                    );
-                  })}
-                </li>
+                  track={track}
+                  levels={levels}
+                  units={units[track.area]}
+                  busy={busy}
+                  onJump={(area, level, unit, newRound) =>
+                    void jump(area, level, unit, newRound)
+                  }
+                />
               ))}
             </ul>
             <StatusText line={jumpLine} testId="jump-line" />
