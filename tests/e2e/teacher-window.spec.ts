@@ -44,6 +44,7 @@ import {
   openTalkSession,
   reachSafetyCap,
   saidRun,
+  skipStartPrep,
   speechRecord,
   TURN_MARK,
   talkHousehold,
@@ -244,7 +245,11 @@ function withUtterances(
 
 type Opened = { page: Page; sessionId: string; card: TalkCard };
 
-/** 회화 견본 수업의 진행 세션을 열고(쪽 안 기록을 단 쪽) 그 쪽으로 간다. '시작!'은 누르지 않는다. */
+/**
+ * 회화 견본 수업의 진행 세션을 열고(쪽 안 기록을 단 쪽) 그 쪽으로 간다. '시작!'은 누르지 않는다. 견본을 넘기지 않으면 인사 → 대화 견본에
+ * 짧은 준비를 건너뛰는 프로필(skipStartPrep)이다 — 인사 끝에서 바로 대화 첫 질문(e2e 첫 실행 묶음 B). 넘긴 견본(칭찬 시험의 짧은 준비 쪽지)은
+ * 설정 그대로다.
+ */
 async function openWindowTalk(
   context: BrowserContext,
   runs: RecognitionRun[],
@@ -259,6 +264,7 @@ async function openWindowTalk(
   } = {},
 ): Promise<Opened> {
   const profileId = await talkHousehold(1);
+  if (lesson === undefined) await skipStartPrep(profileId, 1);
   const row = await insertTalkLesson({
     level: 1,
     lesson: lesson ?? greetingTalkLesson(1),
@@ -623,9 +629,13 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     const lesson = talkLessonCard(1);
     const w0 = lesson.card.prep?.[0];
     if (!w0) throw new Error("견본 꼴 — 짧은 준비 낱말");
+    // 1~3단계 쪽지가 들려주는 말은 그 낱말의 오늘 쓸 말 modelLine('I see a <낱말>.' 꼴 — follow-along.tsx prepNoteCardOf · 서버 prepNoteOf
+    // 카드 출처)이라 따라 말하기 대본도 그 말이다(낱말만이면 '한 번 더 들어 볼까요', e2e 첫 실행 묶음 E)
+    const line = lesson.card.todayWords.find((w) => w.word === w0)?.modelLine;
+    if (!line) throw new Error("견본 꼴 — 짧은 준비 낱말의 오늘 쓸 말");
     const { page } = await openWindowTalk(
       context,
-      [saidRun("I'm good."), saidRun(w0)],
+      [saidRun("I'm good."), saidRun(line)],
       { lesson },
     );
     await pastStart(page);

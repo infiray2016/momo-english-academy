@@ -631,5 +631,8 @@ test("수업 목록: 고르기가 실패하면 오류 줄이 누른 카드 줄 �
   const after = await cards.evaluateAll((els) =>
     els.map((el) => el.getBoundingClientRect().height),
   );
-  expect(after).toEqual(before);
+  // 소수점 아래 반올림 차(164.05682 대 164.05685 — e2e 첫 실행 분류 K)는 같은 높이로 본다(1px 안)
+  expect(after).toHaveLength(before.length);
+  for (const [i, height] of after.entries())
+    expect(Math.abs(height - (before[i] ?? Number.NaN))).toBeLessThan(SAME_PX);
 });

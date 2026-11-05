@@ -89,6 +89,17 @@ jobs:
           name: e2e-photos
           path: test-results/photos
           if-no-files-found: ignore
+      # 실패 증거(e2e 첫 실행 분류 우려 4, 2026-11-05): 실패한 시험의 error-context.md(화면 ARIA 꼴 · 오류)와 trace 가 있으면 올린다.
+      # 실패 때만 돌고 올리기는 몇 초다. trace 는 playwright.config 의 use.trace 를 켜야 생긴다(없으면 건너뜀)
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure-evidence
+          path: |
+            test-results/**/error-context.md
+            test-results/**/trace.zip
+          if-no-files-found: ignore
+          retention-days: 7
   e2e-local: # P5b. 로컬 전용 시드 보기 화면(next dev)을 시험용 시드 나무로 연다. API 0회
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04

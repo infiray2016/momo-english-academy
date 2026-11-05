@@ -405,13 +405,15 @@ export function HomeCards({
 
   // 카드 안 보조 줄(이번 주 · 오늘 아직 · 안내)은 안내 글 20px 라 data-size-guide 를 단다(13절 C82 — 22px 는 영역 · 단계 · 단추 · 표지 이름표)
   // 한 판의 영역 카드는 같은 높이(C114 · 시안 ② 홈 — 네 장 같은 높이), 판 아래로는 책상이 보인다(화면 검토 H-M1).
+  // items-stretch 는 같은 줄만 늘리므로 세로 두 줄(2×2)은 줄 높이도 같은 몫(auto-rows-fr — 가장 높은 줄에 맞춤)으로 둔다(첫 프리뷰 분류 I).
+  // 판은 내용 높이라(flex-1 없음) 남는 화면을 줄에 나눠 주지 않는다.
   // 카드의 읽히는 이름은 안의 글(영역 · 단계 · 상태 · 닫힘 까닭)이다 — label 을 넘기지 않는다(검토 M-3 · H-M3)
   return (
     <div
       data-home-cards=""
       // 마이크 판정이 끝나 행동 자리까지 그려졌다는 표시(e2e 크기 훑기가 기다린다 — 검토 review-p10-7-code M-2)
       data-hydrated={micOk === undefined ? undefined : ""}
-      className="grid grid-cols-2 items-stretch gap-6 landscape:grid-cols-4"
+      className="grid auto-rows-fr grid-cols-2 items-stretch gap-6 landscape:grid-cols-4"
     >
       {cards.map((card, i) => {
         const tilt = TILTS[i] ?? "none";

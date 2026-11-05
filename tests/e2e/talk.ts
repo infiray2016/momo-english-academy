@@ -6,8 +6,10 @@
 import type { Page } from "@playwright/test";
 import { and, desc, eq, inArray, max } from "drizzle-orm";
 import type { TalkLessonOutput } from "../../src/core/ai/calls/talk-lesson";
+import type { TalkPrepMode } from "../../src/core/conversation/lesson-turns";
 import { learningDayOf } from "../../src/core/learning-day";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
+import { bandOf, LEVEL_MAX, LEVEL_MIN } from "../../src/core/seed/structure";
 import type {
   RecognitionRun,
   SpeechScript,
@@ -24,7 +26,7 @@ import {
   talkCard,
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
-import { e2eDb, insertSessions } from "./db";
+import { e2eDb, insertSessions, withHouseholdSetting } from "./db";
 import { insertHousehold } from "./household";
 
 type LessonRow = typeof lessons.$inferSelect;
@@ -131,16 +133,51 @@ export async function insertTalkLesson({
 /**
  * 회화를 그 단계에서 시작한 집(앱 안 이름 Momo). 프로필 id. 회화 선생님은 기본 미나다 — 선생님이 없으면 처음 스냅숏 · 토리 행 1 을
  * 미루고 고르는 화면을 내므로(선생님 화면 plan 값 7) 고르는 화면 시험만 null 을 넘긴다.
+ * e2e DB 의 시드 범위 끝(seed.complete_through_level)은 1 이라(dev-db --ephemeral 1단계 적재) 2단계부터는 집을 넣는 동안만 범위 끝을 마지막
+ * 단계로 두고 되돌린다(lessons.ts atLevel 과 같은 꼴 — 집 넣기의 시작 단계 검사 start.ts trackStartsOf, e2e 첫 실행 묶음 A). 세션은
+ * openTalkSession 이 바로 넣으므로 수업 시작 판정(범위 끝 검사)을 거치지 않는다.
  */
 export async function talkHousehold(
   level: number,
   { teacherKey = "mina" }: { teacherKey?: string | null } = {},
 ): Promise<string> {
-  const { profileId } = await insertHousehold({
-    startLevels: { talk: level },
-    teacherKey,
+  const insert = async () => {
+    const { profileId } = await insertHousehold({
+      startLevels: { talk: level },
+      teacherKey,
+    });
+    return profileId;
+  };
+  return level > LEVEL_MIN
+    ? withHouseholdSetting("seed.complete_through_level", LEVEL_MAX, insert)
+    : insert();
+}
+
+/** 짧은 준비를 필요할 때만 하는 방식(talk.prep_mode.<구간> 값 — 처음 짧은 준비 계획을 비움). */
+const PREP_WHEN_NEEDED: TalkPrepMode = "when_needed";
+
+/**
+ * 그 프로필의 그 단계 구간 짧은 준비 방식을 when_needed 로 둔다(프로필 설정 행 talk.prep_mode.<구간> — 집 비우기로 함께 지워짐). 1~3단계는
+ * always 라 카드 짧은 준비 낱말이 비어도 서버가 노리는 단어(필수 질문 · 더 이야기할 거리 targets)에서 준비 낱말을 골라 쪽지를 붙인다
+ * (C33 — server/conversation/index.ts ensureLessonStarted · core/conversation/chances.ts startPrepWordsOf). 인사 → 대화 견본
+ * (greetingTalkLesson)을 쓰는 시험이 인사 끝에서 바로 대화 첫 질문으로 가게 세션을 열기 전에 부른다(e2e 첫 실행 묶음 B).
+ */
+// 시험 전용 우회: 12절의 집 전체 키 talk.prep_mode.<구간> 을 프로필 행으로 덮는다(앱이 만들 수 없는 상태, getSettings 가 키 범위를 안 보는 데 기댐). 집 비우기로 함께 지워져 되돌림이 필요 없다. 범위 검사가 생기면 withHouseholdSetting 으로 바꾼다(검토 M-3).
+export async function skipStartPrep(
+  profileId: string,
+  level: number,
+): Promise<void> {
+  const db = e2eDb();
+  const [version] = await db
+    .select({ v: max(settings.version) })
+    .from(settings);
+  await db.insert(settings).values({
+    key: `talk.prep_mode.${bandOf(level)}`,
+    scope: "profile",
+    profileId,
+    value: PREP_WHEN_NEEDED,
+    version: Number(version?.v ?? 0) + 1,
   });
-  return profileId;
 }
 
 /** 그 회화 수업의 진행 세션(인사 토막)을 바로 넣는다(kind 기본 정규, 다시 하기는 retry). 세션 id. */
@@ -375,8 +412,10 @@ export function talkLessonCard(
 }
 
 /**
- * 인사 → 대화 견본(새 꼴): 짧은 준비 낱말 · 새 단어 · 단원 단어 · 오늘 쓸 말을 비워 짧은 준비 토막이 없다(인사 끝 → 대화 첫 질문 — 카드 첫
- * 필수 질문). 인사 · 필수 질문 · 더 이야기할 거리는 견본 그대로다. 짧은 준비를 거치지 않는 대화 턴 시험(필수 경로 · 선생님 창 · 막힘)이 쓴다.
+ * 인사 → 대화 견본(새 꼴): 짧은 준비 낱말 · 새 단어 · 단원 단어 · 오늘 쓸 말을 비운다. 인사 · 필수 질문 · 더 이야기할 거리(노리는 단어 포함)는
+ * 견본 그대로다. 카드만으로는 1~3단계 짧은 준비 토막이 없어지지 않는다 — talk.prep_mode.1-3 이 always 면 서버가 노리는 단어로 준비 쪽지를
+ * 붙이므로(C33) 짧은 준비를 거치지 않는 대화 턴 시험(필수 경로 · 선생님 창 · 막힘)은 skipStartPrep 도 부른다(그러면 인사 끝 → 대화 첫 질문
+ * — 카드 첫 필수 질문).
  */
 export function greetingTalkLesson(
   level: number,

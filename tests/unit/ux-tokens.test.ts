@@ -13,7 +13,14 @@ import { describe, expect, it } from "vitest";
 import { SpeakButton } from "@/components/answer/speak-button";
 import { ICON_STROKE } from "@/components/board/board";
 import {
+  DOODLE_INSET,
+  DOODLE_SAFE_CARD_HEIGHT,
+  DOODLE_WIDTH,
+  SCREEN_SIDE_GUTTER,
+} from "@/components/board/decor";
+import {
   NOTE_TILT,
+  PAPER_TILT_MAX,
   PAPER_TILTS,
   paperLookOf,
   TAPE_ANGLE_BASE,
@@ -22,6 +29,7 @@ import {
   TAPE_CORNER_ANGLE,
   TAPE_LENGTH_STEPS,
   TAPE_TONES,
+  tiltOverhangPx,
 } from "@/components/board/paper-key";
 import {
   contrastRatio,
@@ -376,6 +384,30 @@ describe("카드 열쇠 → 꼴(AC-23e (1) · 설계 5.2 · D-9)", () => {
     expect(angles.size).toBe(TAPE_ANGLE_STEPS.length);
     expect(tilts.size).toBe(PAPER_TILTS.length);
     expect(tones.size).toBe(TAPE_TONES.length);
+  });
+
+  it("AC-23e (3) 낙서 띠는 옆 여백 안에 있고, 가장 크게 기운 카드도 높이 상한까지는 회전 모서리가 낙서 띠에 닿지 않는다(첫 프리뷰 분류 J-2)", () => {
+    const doodleEdge = DOODLE_INSET + DOODLE_WIDTH;
+    const room = SCREEN_SIDE_GUTTER - doodleEdge;
+    expect(room).toBeGreaterThan(0);
+    expect(PAPER_TILT_MAX).toBe(1.4);
+    // 기울기 0 이면 나오지 않고, 높을수록 많이 나온다
+    expect(tiltOverhangPx(400, 600, 0)).toBeCloseTo(0, 10);
+    expect(tiltOverhangPx(400, 600, -1.4)).toBe(tiltOverhangPx(400, 600, 1.4));
+    expect(tiltOverhangPx(400, 600, 1.4)).toBeGreaterThan(
+      tiltOverhangPx(400, 400, 1.4),
+    );
+    // 너비가 좁을수록 조금 더 나오므로(cos 몫) 좁은 카드부터 넓은 카드까지 본다
+    for (const width of [0, 200, 265, 374, 400, 600]) {
+      expect(
+        tiltOverhangPx(width, DOODLE_SAFE_CARD_HEIGHT, PAPER_TILT_MAX),
+        `${width}`,
+      ).toBeLessThan(room);
+    }
+    // 고치기 전 꼴(너비 18 · 안쪽 3 → 띠 끝 21px)은 세로 홈 카드(374 × 480)의 회전 모서리와 겹쳤다
+    expect(tiltOverhangPx(374, 480, PAPER_TILT_MAX)).toBeGreaterThan(
+      SCREEN_SIDE_GUTTER - 21,
+    );
   });
 });
 

@@ -19,7 +19,7 @@ import {
 } from "./db";
 import { expect, loadSpeechScript, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { insertSampleLesson } from "./lessons";
+import { E2E_LESSON_NO, insertSampleLesson } from "./lessons";
 import { photo } from "./photos";
 import { speechRecord } from "./talk";
 
@@ -79,6 +79,7 @@ async function insertTeachResult(
   const lesson = teachSeedLessons()[area];
   const row = await insertSampleLesson({
     sample: { area, level: TEACH_LEVEL, unit: TEACH_UNIT, lesson },
+    lessonNo: E2E_LESSON_NO.teach,
   });
   const at = new Date();
   const [sessionId] = await insertSessions([

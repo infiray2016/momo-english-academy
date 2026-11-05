@@ -94,6 +94,17 @@ async function noDeviceKeyboard(page: Page) {
   ).toHaveCount(0);
 }
 
+/**
+ * 활동 본문의 글(정확히 같은 글). 진행 막대(ActivityProgress — [data-activity] 안)의 묶음 이름 '과제' · '생각 꺼내기' · '고쳐 쓰기' ·
+ * '모범 답안'이 화면 글과 같아 page 전체에서 찾으면 두 요소가 잡힌다(UI · UX 묶음 5-가, e2e 첫 실행 분류 H) — 막대 안 요소는 뺀다.
+ */
+function activityText(page: Page, text: string) {
+  return page
+    .locator("[data-activity]")
+    .getByText(text, { exact: true })
+    .and(page.locator(":not([data-activity-progress] *)"));
+}
+
 async function placeTiles(page: Page, pieces: readonly string[]) {
   for (const piece of pieces)
     await page.locator(`[data-tile="${piece}"]`).first().click();
@@ -422,7 +433,7 @@ test("쓰기 4~5: 문장을 다 쓰고 내면 칭찬 한 줄과 고칠 곳 하�
 
       // 과제(과제 · 예시, 4단계는 단어 상자) — 시드 힌트 · 채점표는 보이지 않는다
       await expect(activity).toHaveAttribute("data-activity", "writing-task");
-      await expect(page.getByText(G.task, { exact: true })).toBeVisible();
+      await expect(activityText(page, G.task)).toBeVisible();
       await expect(page.getByText(G.example, { exact: true })).toBeVisible();
       await expect(page.getByText(content.example)).toBeVisible();
       await expect(page.locator("[data-word-box]")).toHaveCount(
@@ -782,13 +793,13 @@ test("AC-4c 쓰기 6단계 첫 세션에서 생각 꺼내기는 writing.thinkout
 
     // 과제(과제 · 예시)
     await expect(activity).toHaveAttribute("data-activity", "writing-task");
-    await expect(page.getByText(C.task, { exact: true })).toBeVisible();
+    await expect(activityText(page, C.task)).toBeVisible();
     await photo(page, "p11-writing-6-task");
     await page.getByRole("button", { name: T.next }).click();
 
     // 생각 꺼내기: 들어오면 첫 질문 — 보기를 누르거나 '직접 쓸래요'로 한글로 짧게
     await expect(activity).toHaveAttribute("data-activity", "thinkout");
-    await expect(page.getByText(C.thinkout, { exact: true })).toBeVisible();
+    await expect(activityText(page, C.thinkout)).toBeVisible();
     for (let turn = 1; turn < MAX_TURNS; turn += 1) {
       await expect(page.locator("[data-thinkout-turn]")).toHaveAttribute(
         "data-thinkout-turn",
@@ -975,7 +986,7 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
 
     // 고쳐 쓰기: 초고를 채운 입력란 + 교정 칩, 모범 답안은 아직 없다
     await expect(activity).toHaveAttribute("data-activity", "rewrite");
-    await expect(page.getByText(R.rewrite, { exact: true })).toBeVisible();
+    await expect(activityText(page, R.rewrite)).toBeVisible();
     const box = page.locator("[data-rewrite-text]");
     await expect(box).toHaveValue(READY_DRAFT);
     await expect(page.locator("[data-rewrite-chips] li")).toHaveCount(
@@ -989,7 +1000,7 @@ test("AC-4c 다음 쓰기 세션은 첨삭(칭찬 → 교정 하나씩) · 고�
 
     // 고쳐 쓰기를 낸 뒤에만 모범 답안
     await expect(activity).toHaveAttribute("data-activity", "model-answer");
-    await expect(page.getByText(R.model, { exact: true })).toBeVisible();
+    await expect(activityText(page, R.model)).toBeVisible();
     await expect(model).toBeVisible();
     await photo(page, "p11-writing-6-model-answer");
     await fitsBothWays(page);

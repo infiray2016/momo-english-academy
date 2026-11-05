@@ -4,8 +4,9 @@
 // DB 를 쓰는 e2e 파일은 test.beforeEach(resetHousehold) 로 시작하고, 접근 쿠키 · 가짜 음성은 ./fixtures 의 test 를 쓴다.
 // 이 도우미의 시각 당기기는 SQL 안 now() 를 쓰지 않고 기록된 시각에서 뺀다(P3a 메모).
 // insertHousehold(첫 실행을 화면으로 거치지 않는 집 넣기)는 src/core/profile/start.ts 의 행 만들기 함수와 함께 차례 2 에서 더한다.
+import { isDeepStrictEqual } from "node:util";
 import { and, count, eq, isNull, max, type SQL } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { e2eDatabaseUrl } from "../../playwright.config";
@@ -37,11 +38,22 @@ export function e2eDb(): E2eDb {
   return cached;
 }
 
-/** 연결을 닫는다(test.afterAll). */
+/**
+ * 아직 되돌리지 않은 집 전체 설정 바꿈(withHouseholdSetting). 시험이 제한 시간을 넘기면 Playwright 가 시험 본문을 버려 둔 채 afterAll 의
+ * closeE2eDb 를 먼저 돌리고, 뒤늦게 돈 finally 의 되돌림이 닫힌 연결에서 CONNECTION_ENDED 로 실패해 바꾼 값이 다음 시험까지 남았다(e2e 첫 실행
+ * 분류 우려 1 — teach:546 뒤 seed.complete_through_level 12). closeE2eDb 가 연결을 닫기 전에 여기 남은 것을 안쪽(나중에 바꾼 것)부터 되돌린다.
+ */
+const pendingRestores: (() => Promise<void>)[] = [];
+
+/** 연결을 닫는다(test.afterAll). 닫기 전에 남은 설정 바꿈을 되돌린다. */
 export async function closeE2eDb(): Promise<void> {
-  const db = cached;
-  cached = undefined;
-  await db?.$client.end();
+  try {
+    for (const restore of [...pendingRestores].reverse()) await restore();
+  } finally {
+    const db = cached;
+    cached = undefined;
+    await db?.$client.end();
+  }
 }
 
 /**
@@ -59,54 +71,132 @@ export async function resetHousehold(): Promise<void> {
   });
 }
 
-/** 집 전체 설정 하나를 그 동안만 바꾸고(설정 판은 가장 큰 판 + 1) 끝나면 되돌린다. 없던 키면 넣었다가 지운다. */
+/**
+ * 집 전체 설정 하나를 그 동안만 바꾸고(설정 판은 가장 큰 판 + 1) 끝나면 되돌린다. 없던 키면 넣었다가 지운다. 되돌림은 한 번만 돌고,
+ * 시험 제한 시간 초과로 finally 가 늦으면 closeE2eDb 가 연결을 닫기 전에 대신 되돌린다(pendingRestores).
+ */
 export async function withHouseholdSetting<T>(
   key: string,
   value: unknown,
   fn: () => Promise<T>,
 ): Promise<T> {
-  const db = e2eDb();
   const { settings } = operations;
   const where = and(eq(settings.key, key), isNull(settings.profileId));
+  // 연결은 부를 때마다 e2eDb() 로 얻는다(closeE2eDb 뒤 닫힌 연결을 붙잡고 있지 않게)
   const nextVersion = async () => {
-    const [row] = await db.select({ v: max(settings.version) }).from(settings);
+    const [row] = await e2eDb()
+      .select({ v: max(settings.version) })
+      .from(settings);
     return Number(row?.v ?? 0) + 1;
   };
-  const [before] = await db
+  const [before] = await e2eDb()
     .select({ value: settings.value })
     .from(settings)
     .where(where);
   if (before) {
-    await db
+    await e2eDb()
       .update(settings)
       .set({ value, version: await nextVersion() })
       .where(where);
   } else {
-    await db.insert(settings).values({
-      key,
-      scope: "household",
-      profileId: null,
-      value,
-      version: await nextVersion(),
-    });
+    await e2eDb()
+      .insert(settings)
+      .values({
+        key,
+        scope: "household",
+        profileId: null,
+        value,
+        version: await nextVersion(),
+      });
   }
-  try {
-    return await fn();
-  } finally {
+  let restored = false;
+  const restore = async () => {
+    if (restored) return;
+    restored = true;
+    const at = pendingRestores.indexOf(restore);
+    if (at >= 0) pendingRestores.splice(at, 1);
     if (before) {
-      await db
+      await e2eDb()
         .update(settings)
         .set({ value: before.value, version: await nextVersion() })
         .where(where);
     } else {
-      await db.delete(settings).where(where);
+      await e2eDb().delete(settings).where(where);
     }
+  };
+  pendingRestores.push(restore);
+  try {
+    return await fn();
+  } finally {
+    await restore();
   }
+}
+
+type LessonRow = typeof content.lessons.$inferSelect;
+type LessonInsert = typeof content.lessons.$inferInsert;
+
+/** 수업 칸(lessons_slot_unique 의 열 여덟 — 빈 단원 · 변형도 같은 칸으로 본다, nullsNotDistinct)을 찾는 조건. */
+function lessonSlotOf(row: LessonInsert): SQL | undefined {
+  const { lessons } = content;
+  const nullable = (column: PgColumn, value: number | null | undefined) =>
+    value === null || value === undefined ? isNull(column) : eq(column, value);
+  return and(
+    eq(lessons.area, row.area),
+    eq(lessons.level, row.level),
+    nullable(lessons.unit, row.unit),
+    eq(lessons.kind, row.kind),
+    eq(lessons.lessonNo, row.lessonNo),
+    nullable(lessons.topicVariant, row.topicVariant),
+    eq(lessons.revision, row.revision),
+    eq(lessons.correction, row.correction),
+  );
+}
+
+/**
+ * 수업 행을 하나씩 넣는다(e2e 첫 실행 분류 G). 시험 DB 는 파일 사이에 수업 행을 지우지 않으므로(resetHousehold 는 집 기록만) 같은 칸에
+ * 앞 파일이 넣은 행이 있을 수 있다. 그때는 넣지 않고 그 행을 쓰되, 그 행의 내용(content — jsonb 로 오간 꼴로 견줌)이 넣으려던 것과 다르면
+ * 던진다: 시험이 조용히 다른 수업으로 도는 것을 막는다. 파일마다 쓰는 칸 · 번호는 lessons.ts 의 E2E_LESSON_NO 표.
+ * 넣었거나 찾은 행을 넣은 차례대로, 새로 넣었는지와 함께 돌려준다.
+ */
+export async function insertLessonRows(
+  rows: readonly LessonInsert[],
+): Promise<{ row: LessonRow; inserted: boolean }[]> {
+  const db = e2eDb();
+  const { lessons } = content;
+  const out: { row: LessonRow; inserted: boolean }[] = [];
+  for (const values of rows) {
+    const [inserted] = await db
+      .insert(lessons)
+      .values(values)
+      .onConflictDoNothing()
+      .returning();
+    if (inserted) {
+      out.push({ row: inserted, inserted: true });
+      continue;
+    }
+    const slot = `${values.area} ${values.level}단계 단원 ${values.unit ?? "-"} ${values.kind} ${values.lessonNo} 변형 ${values.topicVariant ?? "-"} 판 ${values.revision}.${values.correction}`;
+    const [existing] = await db
+      .select()
+      .from(lessons)
+      .where(lessonSlotOf(values));
+    if (!existing) throw new Error(`수업을 넣지 못했다: ${slot}`);
+    if (
+      !isDeepStrictEqual(
+        existing.content,
+        JSON.parse(JSON.stringify(values.content)),
+      )
+    )
+      throw new Error(
+        `수업 칸 충돌: ${slot} 에 내용이 다른 수업이 이미 있다(앞 파일이 넣은 행) — tests/e2e/lessons.ts 의 E2E_LESSON_NO 에서 비어 있는 칸 · 번호를 쓴다`,
+      );
+    out.push({ row: existing, inserted: false });
+  }
+  return out;
 }
 
 /**
  * e2e 전용 수업 복제(정할 것 서): 시험용 시드에 없는 단계 · 주제 변형 칸을 있는 칸의 내용 그대로 만든다(검증 밖).
- * 같은 칸 · 판이 이미 있으면 건너뛴다. 넣은 행 수를 돌려준다.
+ * 같은 칸 · 판이 이미 있으면 건너뛰고, 그 행의 내용이 복제할 내용과 다르면 던진다(insertLessonRows). 넣은 행 수를 돌려준다.
  */
 export async function cloneLessons(opts: {
   area: (typeof content.lessons.$inferSelect)["area"];
@@ -140,12 +230,8 @@ export async function cloneLessons(opts: {
     level: opts.toLevel ?? row.level,
     topicVariant: opts.toVariant ?? row.topicVariant,
   }));
-  const inserted = await db
-    .insert(lessons)
-    .values(copies)
-    .onConflictDoNothing()
-    .returning({ id: lessons.id });
-  return inserted.length;
+  const put = await insertLessonRows(copies);
+  return put.filter((p) => p.inserted).length;
 }
 
 /** e2e 전용 세션 넣기(P11 전에는 세션을 끝낼 길이 없어 끝낸 세션을 그 학습일로 넣는다). 넣은 id 를 차례대로 돌려준다. */

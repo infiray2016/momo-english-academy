@@ -12,7 +12,7 @@ import {
 } from "../../src/core/seed/schema/lesson";
 import type { Area } from "../../src/core/seed/structure";
 import { LEVEL_MAX } from "../../src/core/seed/structure";
-import { lessons, levelSpecs } from "../../src/db/schema/content";
+import { type lessons, levelSpecs } from "../../src/db/schema/content";
 import { attempts, sessions } from "../../src/db/schema/learning";
 import { SEED_REVISION_TABLES } from "../../src/db/schema/seed-revision";
 import {
@@ -21,7 +21,12 @@ import {
   referenceSet,
   writingLesson,
 } from "../fixtures/seed/builders";
-import { e2eDb, insertSessions, withHouseholdSetting } from "./db";
+import {
+  e2eDb,
+  insertLessonRows,
+  insertSessions,
+  withHouseholdSetting,
+} from "./db";
 import { insertHousehold } from "./household";
 
 type LessonKind = "assigned" | "reinforce";
@@ -39,7 +44,36 @@ async function latestRevision(): Promise<number> {
   return latest;
 }
 
-/** 견본 수업 하나를 lessons 행으로 넣는다(같은 칸 · 판이 있으면 그 행). 넣은 행을 돌려준다. */
+/**
+ * e2e 가 넣는 수업 칸 · 번호표(e2e 첫 실행 분류 G, 2026-11-05). 시험 DB 는 파일 사이에 수업 행을 지우지 않고 칸(영역 · 단계 · 단원 · 종류 ·
+ * 번호 · 변형 · 판 · 정정)이 유일하다. 그래서 두 파일이 같은 칸에 다른 내용을 넣으면 뒤 파일이 앞 파일의 수업으로 돈다(첫 실행 10건).
+ * 같은 칸에 같은 견본을 함께 쓰는 것은 된다. 내용이 다르면 insertLessonRows(db.ts)가 던진다. 기본 번호(배정 1 · 2)를 쓰는 칸:
+ * - 1단계 단원 1~5 배정 · 다지기 1~: 적재된 시험용 시드(dev-db --ephemeral). 1단계 견본은 아래 9x 번호를 쓴다.
+ * - 읽기 3단계 단원 1 배정 · 다지기 1~: first-run AC-1b 가 1단계 단원 1 을 복제(cloneLessons). 말하기 4단계 단원 1: speaking AC-5e 가 복제.
+ * - 읽기 1단계 단원 1 변형 2: first-run AC-1c 가 복제하고 끝나면 지운다.
+ * - 쓰기 3단계 배정 1: 견본 빌더 writingLesson(ref, 3)(resume · writing). 쓰기 4 · 5단계 배정 1: guidedSample(4 · 5). 쓰기 6단계 배정 1 · 2 · …:
+ *   compositionSample(). 읽기 4단계 배정 1: readingLesson(ref, 4).
+ * 아래 번호는 같은 칸에 다른 내용을 넣는 견본의 몫이다. 새 견본은 비어 있는 번호를 이 표에 더해 쓴다.
+ */
+export const E2E_LESSON_NO = {
+  /** 가르치는 수업 견본(정규 시드 3단계 단원 1 승인 수업, 세 영역 — teach · teach-result · teacher-choice). 배정 1 은 위 복제 · 견본 몫이다. */
+  teach: 81,
+  /** 말하기 1단계 단원 1: 질문 답만(견본 빌더 + 시드 질문 둘 — speaking AC-5f 질문 답). */
+  speakingQuestions: 91,
+  /** 말하기 1단계 단원 1: 따라 말하기 문장만(speaking AC-5f 일치율 결과 말). */
+  speakingRepeatSentences: 92,
+  /** 말하기 1단계 단원 1: 질문 답 하나(speaking AC-5f 하루 안전 상한). */
+  speakingCapQuestion: 93,
+  /** 말하기 1단계 단원 1: 듣기 이해만(speech-feedback 듣기 — 93 에서 옮김). */
+  speechFeedbackListening: 94,
+  /** 말하기 1단계 단원 1: 질문 답(required-utterance — 92 에서 옮김, 번호는 e2e 고침 1 이 정한다). */
+  requiredUtteranceQuestions: 95,
+} as const;
+
+/**
+ * 견본 수업 하나를 lessons 행으로 넣는다(같은 칸 · 판에 같은 내용이 있으면 그 행, 다른 내용이면 던짐 — insertLessonRows). 넣은 행을 돌려준다.
+ * 칸이 겹치지 않게 번호는 E2E_LESSON_NO 를 쓴다.
+ */
 export async function insertSampleLesson<A extends Exclude<Area, "talk">>({
   sample,
   kind = "assigned",
@@ -51,7 +85,6 @@ export async function insertSampleLesson<A extends Exclude<Area, "talk">>({
   lessonNo?: number;
   variant?: number;
 }): Promise<LessonRow> {
-  const db = e2eDb();
   const revision = await latestRevision();
   const lesson = {
     ...sample.lesson,
@@ -61,9 +94,8 @@ export async function insertSampleLesson<A extends Exclude<Area, "talk">>({
     revision,
     correction: 0,
   };
-  const [inserted] = await db
-    .insert(lessons)
-    .values({
+  const [put] = await insertLessonRows([
+    {
       area: sample.area,
       level: sample.level,
       unit: sample.unit,
@@ -77,27 +109,10 @@ export async function insertSampleLesson<A extends Exclude<Area, "talk">>({
       generation: sample.lesson.generation,
       revision,
       correction: 0,
-    })
-    .onConflictDoNothing()
-    .returning();
-  if (inserted) return inserted;
-  const [existing] = await db
-    .select()
-    .from(lessons)
-    .where(
-      and(
-        eq(lessons.area, sample.area),
-        eq(lessons.level, sample.level),
-        eq(lessons.unit, sample.unit),
-        eq(lessons.kind, kind),
-        eq(lessons.lessonNo, lessonNo),
-        eq(lessons.topicVariant, variant),
-        eq(lessons.revision, revision),
-        eq(lessons.correction, 0),
-      ),
-    );
-  if (!existing) throw new Error("견본 수업을 넣지 못했다");
-  return existing;
+    },
+  ]);
+  if (!put) throw new Error("견본 수업을 넣지 못했다");
+  return put.row;
 }
 
 /**

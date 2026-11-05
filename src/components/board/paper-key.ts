@@ -14,6 +14,22 @@ export const TAPE_ANGLE_STEPS = [-3, -1.5, 0, 1.5, 3] as const;
 export const TAPE_CORNER_ANGLE = { left: -34, right: 32 } as const;
 /** 카드 기울기(°, 시안 ② 판 차례 넷). */
 export const PAPER_TILTS = [-1.4, 1, -0.6, 1.2] as const;
+/** 가장 크게 기운 카드 기울기의 크기(°, PAPER_TILTS 의 절댓값 최대). */
+export const PAPER_TILT_MAX = Math.max(...PAPER_TILTS.map(Math.abs));
+
+/**
+ * 가운데를 축으로 deg 만큼 돌린 종이(너비 × 높이 px)의 회전 상자가 한쪽 옆으로 원래 상자보다 나오는 너비(px, 순수).
+ * 회전 상자 너비는 너비·cos + 높이·sin 이라 높은 카드일수록 많이 나온다(꾸밈 낙서 띠와의 겹침 셈 — AC-23e (3), 첫 프리뷰 분류 J-2).
+ */
+export function tiltOverhangPx(
+  width: number,
+  height: number,
+  deg: number,
+): number {
+  const rad = (Math.abs(deg) * Math.PI) / 180;
+  return (width * Math.cos(rad) + height * Math.sin(rad) - width) / 2;
+}
+
 /** 확인 쪽지 기울기(°). */
 export const NOTE_TILT = 1.4;
 /** 테이프 색 토큰 이름(globals.css --color-tape-1~5). */

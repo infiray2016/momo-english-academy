@@ -1,11 +1,12 @@
 // 필수 경로 가(정본 9절 · 15절 AC-23f · AC-23a (4), UI · UX plan 묶음 0-마 · spec 설계 3, C179): 아이가 말로 낸 말은 그 말에 대한 다음 반응이
 // 화면에 올 때까지 남고, 보낸 뒤 빈 화면이 없다. 회화 1단계 · 4단계에서 말로 보낸 턴마다(1~3단계의 바로 보낸 턴 포함) 아이 말풍선
-// (data-child-said)이 보낸 때(회화 턴 요청의 시작 — 쪽 시계)부터 다음 선생님 말(첫 문장 · 쉬는 안내 · 끝인사)이 보일 때까지 200ms 표본마다
+// (data-child-said)이 보낸 때(앱이 회화 턴 요청 fetch 를 부른 때 — 쪽 시계)부터 다음 선생님 말(첫 문장 · 쉬는 안내 · 끝인사)이 보일 때까지 200ms 표본마다
 // 끊김 없이 있고 글이 인식 글과 같으며, 보낸 뒤 ui.wait_hint_seconds 첫 값(시험 DB 의 설정값) 안에 기다림 표시(data-tori-waiting ·
 // data-wait-hint) 또는 다음 반응이 보이고, 빈 구간(표본 시각 차)은 5초를 넘지 않는다. 말하기 세션 따라 말하기 · 질문 답의 인식 글
 // (data-heard)은 다음 활동으로 넘어갈 때까지 남는다.
 // 재는 법: 회화 턴은 가짜 Anthropic SSE(talkLessonReply — 첫 문장을 늦춰 기다림을 볼 틈), 듣기는 가짜 Web Speech 대본. 표본은 screen-sampler.
-// 회화 견본은 새 꼴 인사 → 대화 카드(greetingTalkLesson — 짧은 준비 없음, 회화 plan 묶음 12 가 옛 꼴 견본에서 옮김). 새 흐름의 인사 턴은 소리
+// 회화 견본은 새 꼴 인사 → 대화 카드(greetingTalkLesson + 프로필 짧은 준비 방식 when_needed(skipStartPrep) — 짧은 준비 없음, 회화 plan
+// 묶음 12 가 옛 꼴 견본에서 옮김 · e2e 첫 실행 묶음 B). 새 흐름의 인사 턴은 소리
 // 줄이 없어 1~3단계도 인식 확인을 거친다(옛 흐름의 '바로 보낸 인사 턴'은 1단계 답 두 개가 있을 때였다). 1~3단계 바로 보낸 턴은 AI 차례가
 // 선택지(소리 줄 choices)를 들려준 뒤 아이가 그 하나를 말한 턴이다(child-turn confirmPlanOf autoSend — 묶음 12 fix 1 I-1).
 // 상태: '작성됨'(tsc · lint) — 이 Mac 에서는 돌릴 수 없고(내장 Postgres), '실행 통과'는 11-01 뒤 CI e2e 에서 확인한다(plan '필수 둘'). 대화
@@ -36,13 +37,12 @@ import {
 import { pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { insertSampleLesson } from "./lessons";
+import { E2E_LESSON_NO, insertSampleLesson } from "./lessons";
 import {
   firstIndexOf,
   heldUntil,
   longestBlankMs,
   MAX_BLANK_MS,
-  requestStartsOf,
   SAMPLE_MS,
   type Sample,
   startSampler,
@@ -55,6 +55,7 @@ import {
   openTalkSession,
   reachSafetyCap,
   saidRun,
+  skipStartPrep,
   talkHousehold,
   talkLessonReply,
   talkScript,
@@ -79,7 +80,7 @@ const STREAM_END_MS = 30_000;
 const SETTLE_MS = 250;
 /** 반응이 보인 뒤 그 표본이 남을 때까지(표본 둘 — 시험 값). */
 const AFTER_REPLY_MS = 400;
-/** 회화 턴 요청 경로(그 시작이 '보낸 때' — 1~3단계는 듣기가 끝나면 저절로 보내므로 누른 때가 아니다). */
+/** 회화 턴 요청 경로(앱이 그 경로로 fetch 를 부른 때가 '보낸 때' — 1~3단계는 듣기가 끝나면 저절로 보내므로 누른 때가 아니다). */
 const TURN_PATH = "/api/talk/turn";
 /** 보낸 처리와 그리기 사이 틈(시험 값 — 아이 말풍선은 요청 앞에 세워지므로 한 프레임이면 되지만 넉넉히). */
 const RENDER_SLACK_MS = 100;
@@ -118,13 +119,48 @@ async function waitHintWithinMs(): Promise<number> {
 /** 첫 문장(말풍선에 처음 보이는 줄 — 반응이 왔다고 보는 글). */
 const firstSentence = (en: string) => en.split(/(?<=[.!?])\s+/)[0] ?? en;
 
-/** 그 단계 회화 견본(인사 → 대화)과 진행 세션을 넣고 '시작!' → 처음 마이크 안내까지 연다. */
+/**
+ * 회화 턴 요청을 보낸 때(쪽 시계 performance.now — 표본 at 과 같은 시계)를 쪽 안에 남긴다: window.fetch 를 감싸 그 경로를 부른 시각을 적는다
+ * (앱은 src/lib/talk-stream.ts 에서 전역 fetch 로 보낸다). WebKit 자원 시간 기록은 page.route 로 붙잡은 요청의 시작을 붙잡은 만큼 늦게
+ * 재므로(e2e 첫 실행 묶음 F) 쓰지 않는다. page.goto 앞에 부른다(init script 차례).
+ */
+async function recordTurnSends(page: Page): Promise<void> {
+  await page.addInitScript((part: string) => {
+    const w = window as unknown as {
+      __turnSends?: number[];
+      fetch: typeof fetch;
+    };
+    const sends: number[] = [];
+    w.__turnSends = sends;
+    const original = w.fetch.bind(window);
+    w.fetch = (input, init) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      if (url.includes(part)) sends.push(performance.now());
+      return original(input, init);
+    };
+  }, TURN_PATH);
+}
+
+/** 쪽 안에 남긴 회화 턴 요청을 보낸 시각들(recordTurnSends). */
+async function turnSendsOf(page: Page): Promise<number[]> {
+  return page.evaluate(
+    () => (window as unknown as { __turnSends?: number[] }).__turnSends ?? [],
+  );
+}
+
+/** 그 단계 회화 견본(인사 → 대화 — 짧은 준비 건너뜀)과 진행 세션을 넣고 '시작!' → 처음 마이크 안내까지 연다. */
 async function openTalkAt(
   context: BrowserContext,
   level: number,
   runs: (card: TalkCard) => RecognitionRun[],
 ) {
   const profileId = await talkHousehold(level);
+  await skipStartPrep(profileId, level);
   const row = await insertTalkLesson({
     level,
     lesson: greetingTalkLesson(level),
@@ -132,6 +168,7 @@ async function openTalkAt(
   const sessionId = await openTalkSession(profileId, row);
   const card = (row.content as TalkLesson).card;
   const page = await speechPage(context, talkScript(runs(card)));
+  await recordTurnSends(page);
   await page.goto(`/session/${sessionId}`);
   await expect(page.locator("[data-talk-start]")).toBeVisible();
   await page.getByRole("button", { name: T.start }).click();
@@ -171,24 +208,21 @@ const brief = (samples: readonly Sample[]) =>
     )
     .join("\n");
 
-/** 이 표본 동안 보낸 회화 턴 요청의 시작 시각(쪽 시계). 없으면 시험 실패. */
+/** 이 표본 동안 회화 턴 요청을 보낸 첫 시각(쪽 시계 — recordTurnSends 가 남긴 fetch 시각). 없으면 시험 실패. */
 async function sentAtOf(
   page: Page,
   samples: readonly Sample[],
 ): Promise<number> {
   const since = samples[0]?.at ?? 0;
-  const startsSince = async () =>
-    (await requestStartsOf(page, TURN_PATH))
-      .filter((t) => t >= since)
-      .sort((a, b) => a - b);
-  // 자원 시간 기록은 응답 본문을 다 받은 뒤 들어온다 — 흘림이 늦게 끝나도 기록이 생길 때까지 기다린다(0-마 재검토 Minor)
+  const sendsSince = async () =>
+    (await turnSendsOf(page)).filter((t) => t >= since).sort((a, b) => a - b);
   await expect
-    .poll(async () => (await startsSince()).length, {
-      message: "이 턴의 회화 턴 요청 기록",
+    .poll(async () => (await sendsSince()).length, {
+      message: "이 턴의 회화 턴 요청을 보낸 기록",
       timeout: STREAM_END_MS,
     })
     .toBeGreaterThan(0);
-  return (await startsSince())[0] ?? since;
+  return (await sendsSince())[0] ?? since;
 }
 
 /**
@@ -588,7 +622,8 @@ test("AC-23f 말하기 세션 질문 답: 인식 글이 '잘 말했어요' 뒤 '
         },
       },
     } as typeof sample,
-    lessonNo: 92,
+    // 이 파일 몫의 번호(말하기 1단계 단원 1 배정 — lessons.ts 번호표, 다른 파일과 겹치지 않게, e2e 첫 실행 묶음 G)
+    lessonNo: E2E_LESSON_NO.requiredUtteranceQuestions,
   });
   const [sessionId] = await insertSessions([
     {

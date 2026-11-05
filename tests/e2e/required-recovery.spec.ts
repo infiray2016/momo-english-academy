@@ -3,7 +3,8 @@
 // - 막힘 셋(N-1 말하기 세션 · N-2 회화 · N-3 말하기 배치): 마이크 막힘 → 막힘 판의 큰 '다시 해 볼래요'(작은 '홈') → 같은 활동 · 턴 · 문항.
 // - 쉼 셋(N-5 세션 · N-6 회화 · N-7 결과 '다음 수업' · 마무리 '다음 이야기'): 하루 안전 상한을 채워 쉼 → 큰 '홈' · 작은 '다시 해 볼래요' →
 //   아직 쉬면 '아직 쉬고 있어요 …' → 상한을 풀고 '다시 해 볼래요' → 같은 자리(결과 · 마무리는 그 수업 시작).
-// - 목록 · 홈 쉼(N-8 · N-9)은 화면을 떠나지 않고 누른 카드 · 쪽지 아래 한 줄 칸, 다시 누르면 다시 판정. N-10 홈 닫힌 카드 다시 확인 줄.
+// - 목록 쉼(N-8)은 화면을 떠나지 않고 누른 카드 아래 한 줄 칸, 다시 누르면 다시 판정. 홈 '첨삭이 왔어요'(N-9)는 둘째 세션(고쳐 쓰기)이라
+//   상한 날에도 막지 않고 바로 열린다(C80). N-10 홈 닫힌 카드 다시 확인 줄.
 // - N-15 앱 오류: 시험 DB 의 설정 행 하나(speech.skip_notice_seconds)를 지워 서버 그리기가 던지게 → '잠깐 문제가 생겼어요' → 행 되돌림 →
 //   큰 '다시 해 볼래요' → data-trouble-retrying 이 붙어 판이 바뀔 때까지 남고 같은 화면(plan 정한 것 6 · 0-나 fix 1 재검토 보탬).
 // - N-16 없는 주소: 모르는 세션 id · 틀린 꼴 id → '찾는 화면이 없어요' + 큰 '홈'(홈으로 보내지 않음, 남의 세션은 단위 · 통합 몫).
@@ -61,6 +62,7 @@ import {
   pastTurnInFlight,
   reachSafetyCap,
   saidRun,
+  skipStartPrep,
   TURN_MARK,
   talkHousehold,
   talkLessonReply,
@@ -251,13 +253,17 @@ async function untilChildTurn(page: Page) {
   await page.waitForTimeout(SETTLE_MS);
 }
 
-/** 그 단계 회화 견본(새 꼴 인사 → 대화, 짧은 준비 없음 — 회화 plan 묶음 12)과 진행 세션을 넣고 회화 쪽을 연다(안내까지). */
+/**
+ * 그 단계 회화 견본(새 꼴 인사 → 대화 — 회화 plan 묶음 12)과 진행 세션을 넣고 회화 쪽을 연다(안내까지). 짧은 준비는 프로필 방식 when_needed
+ * (skipStartPrep)로 건너뛴다 — 1~3단계 always 면 노리는 단어로 준비 쪽지가 붙는다(C33, e2e 첫 실행 묶음 B).
+ */
 async function openTalkAt(
   context: BrowserContext,
   level: number,
   runs: (card: TalkCard) => RecognitionRun[],
 ) {
   const profileId = await talkHousehold(level);
+  await skipStartPrep(profileId, level);
   const row = await insertTalkLesson({
     level,
     lesson: greetingTalkLesson(level),
@@ -288,7 +294,11 @@ async function sendTurn(page: Page) {
     await confirm.getByRole("button", { name: T.send }).click();
 }
 
-/** 그 세션의 대화 기록(차례 · 말한 쪽 · 글 · 시도 id). */
+/**
+ * 그 세션의 대화 기록(차례 · 말한 쪽 · 글 · 시도 id). 같은 차례 번호의 선생님 행 · 아이 행은 말한 쪽 enum 차례(tori → child, content.ts
+ * speakerEnum)로 — 앱 sortTurns(server/conversation/state.ts)와 같은 차례다. 기록 시각은 pastTurnInFlight 가 아이 행을 물리고 id 는 무작위
+ * uuid 라 둘째 정렬로 쓰지 않는다(e2e 첫 실행 flaky — N-12 행 차례 바뀜).
+ */
 async function turnRows(sessionId: string) {
   return e2eDb()
     .select({
@@ -299,7 +309,7 @@ async function turnRows(sessionId: string) {
     })
     .from(talkTurns)
     .where(eq(talkTurns.sessionId, sessionId))
-    .orderBy(talkTurns.turnNo);
+    .orderBy(talkTurns.turnNo, talkTurns.speaker);
 }
 
 // ── 막힘 셋(N-1 · N-2 · N-3) ──
@@ -645,7 +655,9 @@ test.describe("필수 경로 나 — 목록 · 홈은 화면을 떠나지 않는
     );
   });
 
-  test("AC-23g N-9 홈 '첨삭이 왔어요' 쉼: 홈에 머문 채 쪽지 아래 한 줄 칸에 쉼 글, 다시 누르면 다시 판정하고 풀리면 둘째 세션이 열리며 홈을 다시 읽지 않는다", async ({
+  // N-9 의 '첨삭이 왔어요' 경우: 첨삭이 온 쪽지가 여는 것은 둘째 세션(고쳐 쓰기)이고 둘째 세션은 AI 를 부르지 않아 상한 날에도 막지 않는다
+  // (13절 C80 · server/session/index.ts 수업 시작의 rewrite 갈래, e2e 첫 실행 묶음 N — 컨트롤러 결정 (가) C80 유지). 쉼 한 줄 칸은 목록 쉼(N-8)이 본다
+  test("AC-23g N-9 홈 '첨삭이 왔어요'(C80): 하루 안전 상한에 닿은 날에도 쪽지를 누르면 같은 초고의 둘째 세션(고쳐 쓰기)이 바로 열리고 홈을 다시 읽지 않는다", async ({
     page,
   }) => {
     const sample = compositionSample();
@@ -659,23 +671,26 @@ test.describe("필수 경로 나 — 목록 · 홈은 화면을 떠나지 않는
         await expect(
           page.locator("[data-home-cards][data-hydrated]"),
         ).toHaveCount(1);
-        // 홈에 들어온 뒤부터 센다 — 쉼 동안 홈을 다시 읽지 않는다
+        // 홈에 들어온 뒤부터 센다 — 둘째 세션으로 가는 동안 홈을 다시 읽지 않는다
         const watch = watchHomeRequests(page);
-        const note = page.getByText(T.feedbackReady, { exact: true });
-        await note.click();
-        const line = page.locator("[data-ai-rest-line]");
-        await expect(line).toContainText(T.writingRest, { timeout: WAIT_MS });
-        await expect(page).toHaveURL(/\/$/);
-        await note.click();
-        await expect(line.locator("[data-ai-rest-still]")).toHaveText(
-          T.restStill,
-          { timeout: WAIT_MS },
-        );
-        await liftSafetyCap(profileId);
-        await note.click();
+        await page.getByText(T.feedbackReady, { exact: true }).click();
         await expect(page).toHaveURL(/\/session\/[0-9a-f-]+$/, {
           timeout: WAIT_MS,
         });
+        await expect(activity(page)).toHaveAttribute(
+          "data-activity",
+          "feedback-praise",
+        );
+        await expect(page.getByText(READY_FEEDBACK.praise)).toBeVisible();
+        const opened = page.url().split("/").at(-1) ?? "";
+        const [second] = await e2eDb()
+          .select({
+            lessonId: sessions.lessonId,
+            writingPart: sessions.writingPart,
+          })
+          .from(sessions)
+          .where(eq(sessions.id, opened));
+        expect(second).toEqual({ lessonId: lesson.id, writingPart: "rewrite" });
         expectNoHome(watch);
       },
     );

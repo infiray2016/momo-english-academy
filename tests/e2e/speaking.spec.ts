@@ -34,7 +34,12 @@ import {
 } from "./db";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { atLevel, insertSampleLesson, levelSpecOf } from "./lessons";
+import {
+  atLevel,
+  E2E_LESSON_NO,
+  insertSampleLesson,
+  levelSpecOf,
+} from "./lessons";
 import { photo } from "./photos";
 
 const T = {
@@ -518,7 +523,7 @@ test("AC-5f 말하기 1단계 질문 답은 AI 호출 0회로 판정되고 다�
   if (!q1?.modelAnswer || !q2?.accepted?.[0]) throw new Error("견본 질문 꼴");
   const lesson = await customLesson(
     { repeat: { words: [], sentences: [] }, listening: [], questions },
-    91,
+    E2E_LESSON_NO.speakingQuestions,
   );
   const aiBefore = await countRows(aiCalls);
   const { page, sessionId } = await openSession(
@@ -587,7 +592,7 @@ test("AC-5f 따라 말하기 일치율 0.95 는 '잘 말했어요'와 ui.auto_ne
       listening: [],
       questions: [],
     },
-    92,
+    E2E_LESSON_NO.speakingRepeatSentences,
   );
   const { page } = await openSession(
     context,
@@ -636,7 +641,7 @@ test("AC-5f 하루 안전 상한에 닿은 날에도 말하기 1~2단계 질문 
   if (!q?.accepted?.[0]) throw new Error("견본 질문 꼴");
   const lesson = await customLesson(
     { repeat: { words: [], sentences: [] }, listening: [], questions: [q] },
-    93,
+    E2E_LESSON_NO.speakingCapQuestion,
   );
   const now = new Date();
   await e2eDb()

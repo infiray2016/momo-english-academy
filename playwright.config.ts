@@ -79,7 +79,7 @@ export default defineConfig({
   testDir: "tests/e2e",
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? CI_RETRIES : 0,
-  use: { baseURL: `http://localhost:${E2E_PORT}` },
+  use: { baseURL: `http://localhost:${E2E_PORT}`, trace: "retain-on-failure" },
   projects: [
     {
       name: "tablet-10-9-webkit",

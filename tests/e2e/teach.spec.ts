@@ -32,6 +32,7 @@ import { fakeAiRequestsOf, pushFakeAi, resetFakeAi, ruleFor } from "./fake-ai";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import {
   atLevel,
+  E2E_LESSON_NO,
   insertSampleLesson,
   openLessonSession,
   teachSample,
@@ -225,7 +226,10 @@ test.describe("가르치는 수업 읽기(AC-22c · AC-3d · AC-3k)", () => {
       throw new Error("승인 수업 꼴");
     const { spare: spare0, whyKo: why0, retryHighlight } = q0;
     await atTeachLevel({ area: "reading", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       await page.goto(`/session/${sessionId}`);
       await throughShow(page, lesson.teach?.models.length ?? 0);
@@ -316,7 +320,10 @@ test.describe("가르치는 수업 읽기(AC-22c · AC-3d · AC-3k)", () => {
     const sample = teachSample("reading");
     const lesson = sample.lesson;
     await atTeachLevel({ area: "reading", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       await page.goto(`/session/${sessionId}`);
       await throughShow(page, lesson.teach?.models.length ?? 0);
@@ -379,7 +386,10 @@ test.describe("가르치는 수업 쓰기(AC-4d · AC-3d · AC-22c)", () => {
     const blankCards = blanks.cards;
     const blankSlot = blanks.slot;
     await atTeachLevel({ area: "writing", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       await page.goto(`/session/${sessionId}`);
       await throughShow(page, lesson.teach?.models.length ?? 0);
@@ -546,9 +556,14 @@ test.describe("선생님 줄 안내 셈(AC-N20 · UI · UX R-57)", () => {
   test("AC-N20 선생님 줄을 들려주지 못하면 '소리가 안 나와서 글로 봐요'와 밝은 단추이고, 한 세션에서 두 번째부터 무음 모드 줄이 붙는다", async ({
     context,
   }) => {
+    // 감시 상한 + 여유(START_TIMEOUT_MS + WAIT_MS)를 두 번 기다린다 — 기본 제한 시간(30초)보다 길다(e2e 첫 실행 분류 3절 ×T)
+    test.setTimeout(3 * (START_TIMEOUT_MS + WAIT_MS));
     const sample = teachSample("reading");
     await atTeachLevel({ area: "reading", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       const page = await speechPage(context, neverPlaysScript());
       await page.goto(`/session/${sessionId}`);
@@ -840,7 +855,10 @@ test.describe("가르치는 수업 말하기(AC-22c · AC-4d · AC-5d · AC-3k)"
       ruleFor("speaking_eval.answer", speakingEvalReply(q0.modelAnswer)),
     ]);
     await atTeachLevel({ area: "speaking", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       const page = await speechPage(context, speakingScript(answers));
       await page.goto(`/session/${sessionId}`);
@@ -1068,7 +1086,10 @@ test.describe("가르치는 수업 말하기(AC-22c · AC-4d · AC-5d · AC-3k)"
     if (!q0?.storyEn || !q0.modelAnswer) throw new Error("승인 말하기 질문 꼴");
     const q0Model = q0.modelAnswer;
     await atTeachLevel({ area: "speaking", level: 3 }, async (profileId) => {
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       const q0No = await finishedBeforeQuestions(sessionId, lesson);
       const page = await speechPage(
@@ -1128,7 +1149,10 @@ test.describe("가르치는 수업 말하기(AC-22c · AC-4d · AC-5d · AC-3k)"
     const lesson = sample.lesson;
     await atTeachLevel({ area: "speaking", level: 3 }, async (profileId) => {
       await reachSafetyCap(profileId);
-      const row = await insertSampleLesson({ sample });
+      const row = await insertSampleLesson({
+        sample,
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       await finishedBeforeQuestions(sessionId, lesson);
       const page = await speechPage(context, speakingScript([]));

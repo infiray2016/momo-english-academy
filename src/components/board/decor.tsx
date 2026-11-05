@@ -2,14 +2,24 @@
 // 바탕 층은 화면 전체에 붙은 한 장(모눈 28px · 여백 선 왼쪽 58px · 종이 결 한 겹 · 책상 색 — globals.css desk-surface)이고, 연필 낙서는 시안 ②
 // 파일(.superpowers/sdd/2026-10-29-UI-UX-개선 디자인 시안)의 선 그림을 옮겨(세로 띠에 맞게 가로 · 세로만 바꿈) 화면 왼쪽 · 오른쪽 가장자리 띠에만
 // 둔다. 가장자리 띠는 아이 화면 한 장(ChildScreen)의 옆 여백(px-6 = 24px)이라 낙서는 글 · 단추 · 종이와 겹치지 않는다(AC-23e (3)).
+// 기운 카드(paper-key 카드 기울기)는 회전한 모서리가 옆 여백으로 조금 나오므로, 낙서는 화면 끝 쪽에 좁게 두어 그 몫을 비운다
+// (첫 프리뷰 분류 J-2 — 너비 18 · 안쪽 3 일 때 400px 넘는 카드의 회전 모서리와 1~2px 겹침).
 // 꾸밈이라 보조 기술에서 숨기고(aria-hidden) 누름을 받지 않으며 움직이지 않는다. 낙서마다 data-decor(겹침 훑기가 찾는 표지)를 단다.
 // 훅이 없어 서버 · 클라이언트 둘 다에서 그린다.
 import type { CSSProperties } from "react";
 
-/** 낙서 너비(px) — 옆 여백 24px 안. */
-const DOODLE_WIDTH = 18;
+/** 아이 화면 한 장(ChildScreen)의 옆 여백(px, board.tsx main 의 px-6). 낙서 띠는 이 안에 든다. */
+export const SCREEN_SIDE_GUTTER = 24;
+/** 낙서 너비(px). */
+export const DOODLE_WIDTH = 14;
 /** 화면 끝에서 낙서까지(px). */
-const DOODLE_INSET = 3;
+export const DOODLE_INSET = 1;
+/**
+ * 낙서와 겹치지 않는 기운 카드 높이의 상한(px): 가장 크게 기운 카드(PAPER_TILT_MAX)가 이 높이까지는 회전 모서리가 낙서 띠 안쪽 끝
+ * (DOODLE_INSET + DOODLE_WIDTH)에 닿지 않는다(단위 시험 ux-tokens 가 셈을 잠근다). 홈 영역 카드(최소 400px)가 세로 1180 · 가로 820 에서
+ * 이 안에 든다.
+ */
+export const DOODLE_SAFE_CARD_HEIGHT = 720;
 /** 낙서 획(px, 시안 ② .doodle). 크기를 줄여도 굵기는 그대로(non-scaling-stroke). */
 const DOODLE_STROKE = 2.6;
 

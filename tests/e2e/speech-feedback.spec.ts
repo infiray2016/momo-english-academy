@@ -8,6 +8,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
+import { bandOf } from "../../src/core/seed/structure";
 import type {
   RecognitionRun,
   SpeechScript,
@@ -22,17 +23,25 @@ import {
   speakingLesson,
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
-import { closeE2eDb, e2eDb, insertSessions, resetHousehold } from "./db";
+import {
+  closeE2eDb,
+  e2eDb,
+  insertSessions,
+  resetHousehold,
+  settingValueOf,
+  withHouseholdSetting,
+} from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { insertSampleLesson } from "./lessons";
+import { E2E_LESSON_NO, insertSampleLesson } from "./lessons";
 import {
   failingRun,
   greetingTalkLesson,
   insertTalkLesson,
   openTalkSession,
   saidRun,
+  skipStartPrep,
   TURN_MARK,
   talkHousehold,
   talkLessonCard,
@@ -70,6 +79,14 @@ const START_TIMEOUT_MS =
 const SLOW_UTTER_MS = 2500;
 /** 흘려 받기 · 감시 상한 여럿을 기다리는 여유(시험 값). */
 const WAIT_MS = 30_000;
+/**
+ * 인사 턴(견줄 문장이 없는 1~3단계 턴)을 보내기까지의 설정값 몫: 끝 침묵(speech.end_silence_seconds.talk.1-3) 뒤 확인 칸을
+ * talk.confirm_seconds 동안 보이고 보낸다(core/conversation/listen.ts confirmPlanOf). 기본 poll 5초보다 길다(e2e 첫 실행 분류 C).
+ */
+const GREETING_SEND_MS =
+  (TEST_SETTINGS["speech.end_silence_seconds.talk.1-3"].value +
+    TEST_SETTINGS["talk.confirm_seconds"].value) *
+  MS;
 
 test.beforeEach(async () => {
   await resetHousehold();
@@ -99,19 +116,55 @@ function talkScriptWith(
   };
 }
 
-/** 1단계 회화 세션(짧은 준비 쪽지가 있는 견본이면 full, 아니면 인사 → 대화)을 연다. */
+/** 짧은 준비 낱말 둘을 보는 시험의 낱말 수(시험 값 — 첫 낱말 · 둘째 낱말). */
+const PREP_TWO = 2;
+/** 1~3단계 짧은 준비 낱말 수 설정 키(서버가 카드 준비 낱말을 이 수만큼 쓴다 — core/conversation/chances.ts startPrepWordsOf). */
+const PREP_WORDS_KEY = `talk.prep_words.${bandOf(1)}`;
+
+/**
+ * 짧은 준비 낱말이 둘인 1단계 견본(e2e 첫 실행 분류 D). talkLessonCard(1) 은 e2e DB 설정(smallFrameSettings talk.prep_words 1)으로 만든
+ * 견본이라 낱말이 하나다. 새 단어 앞 둘을 준비 낱말로 둔다 — 견본 빌더가 그 설정을 2 로 두고 만든 카드와 같다(오늘 쓸 말 · 필수 질문은 그대로).
+ */
+function twoPrepTalkLesson(): TalkLesson {
+  const lesson = talkLessonCard(1);
+  const prep = lesson.newWords.slice(0, PREP_TWO);
+  if (prep.length < PREP_TWO) throw new Error("견본 꼴 — 새 단어 둘");
+  return { ...lesson, card: { ...lesson.card, prep } };
+}
+
+/**
+ * 짧은 준비 낱말이 n 개 이상 열리게 fn 을 돌린다: 설정값은 시험표가 아니라 e2e DB 값을 읽고(분류 1절 — DB 는 1), 모자라면 그 동안만 n 으로 둔다.
+ */
+async function withPrepWords<T>(n: number, fn: () => Promise<T>): Promise<T> {
+  const now = Number(await settingValueOf(PREP_WORDS_KEY));
+  return now >= n ? fn() : withHouseholdSetting(PREP_WORDS_KEY, n, fn);
+}
+
+/**
+ * 1단계 회화 세션을 연다: lesson 을 주면 그 견본, full 이면 짧은 준비 쪽지가 있는 견본, 아니면 인사 → 대화 견본이다. 인사 → 대화 견본은
+ * 짧은 준비를 건너뛰는 프로필(skipStartPrep)이라 인사 끝에서 바로 대화 첫 질문으로 간다(1~3단계 always 면 노리는 단어로 준비 쪽지가 붙음 —
+ * e2e 첫 실행 묶음 B · U5-4).
+ */
 async function openTalk(
   context: BrowserContext,
   script: SpeechScript,
   {
     full = false,
+    lesson,
     beforeGoto,
-  }: { full?: boolean; beforeGoto?: (page: Page) => Promise<void> } = {},
+  }: {
+    full?: boolean;
+    lesson?: TalkLesson;
+    beforeGoto?: (page: Page) => Promise<void>;
+  } = {},
 ) {
   const profileId = await talkHousehold(1);
+  const greetingOnly = !lesson && !full;
+  if (greetingOnly) await skipStartPrep(profileId, 1);
   const row = await insertTalkLesson({
     level: 1,
-    lesson: full ? talkLessonCard(1) : greetingTalkLesson(1),
+    lesson:
+      lesson ?? (greetingOnly ? greetingTalkLesson(1) : talkLessonCard(1)),
   });
   const sessionId = await openTalkSession(profileId, row);
   const card = (row.content as TalkLesson).card;
@@ -181,7 +234,9 @@ test.describe("회화 — 읽어 주기 감시 · 읽는 중 단추(U5-1 · R1 �
     await childSpeak(page).click();
     // 누르면 읽기를 멈추고(읽는 중 표시 없음) 듣는다
     await expect(reading(page)).toHaveCount(0);
-    await expect.poll(turnRequests).toBe(1);
+    await expect
+      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .toBe(1);
   });
 
   test("U5-1 R2 읽어 주기 시작 알림이 오지 않는 기기에서도 감시 상한 뒤 짧은 준비 쪽지가 열리고, 읽는 동안 흐린 단추를 누르면 '다 읽은 뒤 눌러요'가 보이며 읽기가 끝나면 켜진다", async ({
@@ -250,45 +305,49 @@ test.describe("회화 — 듣는 중 표시 · 한 줄 안내(U4-2 · U4-4 · U5
     await expect(
       page.locator("[data-child-turn] [data-speak][data-sound-in]"),
     ).toBeVisible();
-    await expect.poll(turnRequests).toBe(1);
+    await expect
+      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .toBe(1);
   });
 
   test("U4-4 회화 짧은 준비 쪽지에서 인식이 speech.max_retries 번 안 되면 '이건 다음에 다시 해요'를 보인 뒤 다음 낱말 쪽지로 간다", async ({
     context,
   }) => {
-    const { page, card } = await openTalk(
-      context,
-      talkScript([
-        saidRun("I'm good."),
-        ...Array.from({ length: MAX_RETRIES }, () => failingRun("no-speech")),
-      ]),
-      { full: true },
-    );
-    if ((card.prep?.length ?? 0) < 2)
-      throw new Error("견본 꼴 — 짧은 준비 낱말 둘");
-    await pastStart(page);
-    await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
-    await pushFakeAi([
-      talkLessonReply({ tori_en: "Great! Let's learn words." }),
-    ]);
-    await childSpeak(page).click();
-    const note = page.locator("[data-prep-note]");
-    await expect(note).toHaveAttribute("data-prep-step", "greeting:0", {
-      timeout: WAIT_MS,
-    });
-    const speak = page.locator(
-      "[data-prep-note] [data-speak]:not([data-speak-waiting])",
-    );
-    for (let i = 0; i < MAX_RETRIES; i++) {
-      await speak.click();
-      await expect(
-        page.locator("[data-prep-note] [data-listening]"),
-      ).toHaveCount(0);
-    }
-    await expect(page.locator("[data-follow-skipped]")).toHaveText(T.skipped);
-    // 안내를 speech.skip_notice_seconds 보인 뒤 다음 낱말 쪽지
-    await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
-      timeout: SKIP_NOTICE_MS + WAIT_MS,
+    await withPrepWords(PREP_TWO, async () => {
+      const { page, card } = await openTalk(
+        context,
+        talkScript([
+          saidRun("I'm good."),
+          ...Array.from({ length: MAX_RETRIES }, () => failingRun("no-speech")),
+        ]),
+        { lesson: twoPrepTalkLesson() },
+      );
+      if ((card.prep?.length ?? 0) < PREP_TWO)
+        throw new Error("견본 꼴 — 짧은 준비 낱말 둘");
+      await pastStart(page);
+      await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
+      await pushFakeAi([
+        talkLessonReply({ tori_en: "Great! Let's learn words." }),
+      ]);
+      await childSpeak(page).click();
+      const note = page.locator("[data-prep-note]");
+      await expect(note).toHaveAttribute("data-prep-step", "greeting:0", {
+        timeout: WAIT_MS,
+      });
+      const speak = page.locator(
+        "[data-prep-note] [data-speak]:not([data-speak-waiting])",
+      );
+      for (let i = 0; i < MAX_RETRIES; i++) {
+        await speak.click();
+        await expect(
+          page.locator("[data-prep-note] [data-listening]"),
+        ).toHaveCount(0);
+      }
+      await expect(page.locator("[data-follow-skipped]")).toHaveText(T.skipped);
+      // 안내를 speech.skip_notice_seconds 보인 뒤 다음 낱말 쪽지
+      await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
+        timeout: SKIP_NOTICE_MS + WAIT_MS,
+      });
     });
   });
 
@@ -311,7 +370,9 @@ test.describe("회화 — 듣는 중 표시 · 한 줄 안내(U4-2 · U4-4 · U5
       talkLessonReply({ tori_en: "That's okay." }),
     ]);
     await childSpeak(page).click();
-    await expect.poll(turnRequests).toBe(1);
+    await expect
+      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .toBe(1);
     await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
     for (let i = 0; i < NOSPEECH_DONTKNOW; i++) {
       await childSpeak(page).click();
@@ -381,45 +442,51 @@ test.describe("막힘 화면 '다시 해 볼래요'(U6-1 · U4-5 · R6)", () => 
   test("U4-5 M-3 회화 짧은 준비 쪽지 둘째 낱말에서 막혔다가 '다시 해 볼래요'로 풀리면 첫 낱말이 아니라 둘째 낱말부터 이어진다", async ({
     context,
   }) => {
-    // 견본은 늘 같은 카드다(talk.ts talkLessonCard) — 대본을 만들 낱말을 먼저 읽는다
-    const [w0, w1] = talkLessonCard(1).card.prep ?? [];
+    // 견본은 늘 같은 카드다(twoPrepTalkLesson) — 대본을 만들 낱말을 먼저 읽는다
+    const lesson = twoPrepTalkLesson();
+    const [w0, w1] = lesson.card.prep ?? [];
     if (!w0 || !w1) throw new Error("견본 꼴 — 짧은 준비 낱말 둘");
-    const { page } = await openTalk(
-      context,
-      talkScript([
-        saidRun("I'm good."),
-        // 첫 낱말은 잘 말함 → 둘째 낱말에서 마이크를 쓸 수 없음 → 다시 확인은 소리가 들어옴
-        saidRun(w0),
-        failingRun("not-allowed", 100),
-        soundRun,
-      ]),
-      { full: true },
-    );
-    await pastStart(page);
-    await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
-    await pushFakeAi([
-      talkLessonReply({ tori_en: "Great! Let's learn words." }),
-    ]);
-    await childSpeak(page).click();
-    const speak = page.locator(
-      "[data-prep-note] [data-speak]:not([data-speak-waiting])",
-    );
-    const note = page.locator("[data-prep-note]");
-    await expect(note).toHaveAttribute("data-prep-step", "greeting:0", {
-      timeout: WAIT_MS,
+    // 1~3단계 쪽지가 들려주고 견주는 말은 그 낱말의 짧은 말(modelLine — follow-along prepNoteCardOf)이다. 낱말만 말하면 '한 번 더'(분류 E 와 같은 꼴)
+    const line0 = lesson.card.todayWords.find((w) => w.word === w0)?.modelLine;
+    if (!line0) throw new Error("견본 꼴 — 첫 낱말 짧은 말");
+    await withPrepWords(PREP_TWO, async () => {
+      const { page } = await openTalk(
+        context,
+        talkScript([
+          saidRun("I'm good."),
+          // 첫 낱말은 잘 말함 → 둘째 낱말에서 마이크를 쓸 수 없음 → 다시 확인은 소리가 들어옴
+          saidRun(line0),
+          failingRun("not-allowed", 100),
+          soundRun,
+        ]),
+        { lesson },
+      );
+      await pastStart(page);
+      await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
+      await pushFakeAi([
+        talkLessonReply({ tori_en: "Great! Let's learn words." }),
+      ]);
+      await childSpeak(page).click();
+      const speak = page.locator(
+        "[data-prep-note] [data-speak]:not([data-speak-waiting])",
+      );
+      const note = page.locator("[data-prep-note]");
+      await expect(note).toHaveAttribute("data-prep-step", "greeting:0", {
+        timeout: WAIT_MS,
+      });
+      await speak.click();
+      await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
+        timeout: WAIT_MS,
+      });
+      await speak.click();
+      await expect(page.getByText(T.needsMic)).toBeVisible();
+      await page.getByRole("button", { name: T.retry }).click();
+      // 풀리면 저장된 차례(첫 낱말은 저장됨)부터 — 둘째 낱말
+      await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
+        timeout: WAIT_MS,
+      });
+      await expect(page.getByText(T.needsMic)).toHaveCount(0);
     });
-    await speak.click();
-    await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
-      timeout: WAIT_MS,
-    });
-    await speak.click();
-    await expect(page.getByText(T.needsMic)).toBeVisible();
-    await page.getByRole("button", { name: T.retry }).click();
-    // 풀리면 저장된 차례(첫 낱말은 저장됨)부터 — 둘째 낱말
-    await expect(note).toHaveAttribute("data-prep-step", "greeting:1", {
-      timeout: WAIT_MS,
-    });
-    await expect(page.getByText(T.needsMic)).toHaveCount(0);
   });
 });
 
@@ -566,7 +633,8 @@ async function openListeningOnly(
         },
       },
     } as typeof sample,
-    lessonNo: 93,
+    // 93 은 speaking 상한 날 질문 답 몫(같은 칸 다른 내용 — e2e 첫 실행 분류 G)
+    lessonNo: E2E_LESSON_NO.speechFeedbackListening,
   });
   const [sessionId] = await insertSessions([
     {

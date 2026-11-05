@@ -508,9 +508,21 @@ export function LessonBoard({
                 {front.map((item) => lessonCard(item))}
               </div>
               {back.length > 0 ? (
-                // 뒷줄(다지기) 앞에 이름표 — 실시드 수에서도 앞줄 줄바꿈과 구별되게(화면 검토)
+                // 뒷줄(다지기) 앞에 이름표 — 실시드 수에서도 앞줄 줄바꿈과 구별되게(화면 검토). 이름표는 종이 쪽지(테이프 · 기울기
+                // 없는 종이 한 조각) 위에 둔다 — 글은 종이 위(NFR-U1 · AC-23e (2), 첫 프리뷰 분류 J-1)
                 <div className="flex flex-col gap-2">
-                  <p className="font-heading text-[22px]">{TEXT.reinforce}</p>
+                  <PostIt
+                    tone="paper"
+                    tape={false}
+                    className="self-start px-4 py-1.5"
+                  >
+                    <span
+                      data-reinforce-label=""
+                      className="font-heading text-[22px]"
+                    >
+                      {TEXT.reinforce}
+                    </span>
+                  </PostIt>
                   <div className={LESSON_GRID}>
                     {back.map((item) => lessonCard(item))}
                   </div>

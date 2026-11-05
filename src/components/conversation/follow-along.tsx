@@ -48,9 +48,11 @@ import {
   speechEventOf,
 } from "@/core/speaking/judge";
 import type { SpeechSettings } from "@/core/speech/listen";
+import { listenGapMsOf } from "@/core/speech/listen-gap";
 import { bestMatchRate } from "@/core/speech/match-rate";
 import { createSleeper, speakInTurn } from "@/core/speech/pace";
 import { TEACHER_TEXT } from "@/core/teacher/name";
+import { createSpeakSettle } from "@/lib/speech/speak-settle";
 import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { saveLessonFollowAlong } from "@/server/actions/conversation";
@@ -204,7 +206,8 @@ export function lessonFollowSaver(
 
 /**
  * 토리 말 읽기(차례대로 · 끝날 때까지 기다림 · 끊으면 거기서 멈춤). 문장이 끝나면 speech.sentence_pause_ms 쉬고 다음(C125 — 끊으면
- * 쉼도 끝남). 음성 접점은 늘 지금 것으로(재검토 N-1).
+ * 쉼도 끝남). 음성 접점은 늘 지금 것으로(재검토 N-1). 읽기가 멈춘 뒤 듣기 쉼(listenGapMsOf) 동안도 waiting 이다 — 말하기 단추를 그만큼
+ * 더 흐리게 두어 읽기 멈춤 → 쉼 → 누름 → 듣기 차례를 지킨다(장부 T-125, iPad 사파리 읽기 직후 듣기 no-speech). 듣기는 늦추지 않는다.
  */
 function useSayer(
   env: Pick<FollowEnv, "speech" | "rate" | "englishName" | "settings">,
@@ -215,6 +218,13 @@ function useSayer(
   const speakingRef = useRef(false);
   const [speaking, setSpeaking] = useState(false);
   const [sleeper] = useState(createSleeper);
+  const gapMs = useRef(listenGapMsOf(env.settings.speech));
+  gapMs.current = listenGapMsOf(env.settings.speech);
+  /** 듣기 쉼이 지나 말하기 단추를 켤 수 있는가. */
+  const [settled, setSettled] = useState(true);
+  const [settle] = useState(() =>
+    createSpeakSettle({ gapMs: () => gapMs.current, onReady: setSettled }),
+  );
   const { rate, englishName } = env;
   const pauseMs = env.settings.speech.sentencePauseMs;
   const say = useCallback(
@@ -224,6 +234,7 @@ function useSayer(
       const mine = generation.current;
       speakingRef.current = true;
       setSpeaking(true);
+      settle.began();
       await speakInTurn(texts, {
         speak: async (text) => {
           const current = port.current;
@@ -237,9 +248,10 @@ function useSayer(
       if (mine !== generation.current) return false;
       speakingRef.current = false;
       setSpeaking(false);
+      settle.stopped();
       return true;
     },
-    [rate, englishName, pauseMs, sleeper],
+    [rate, englishName, pauseMs, sleeper, settle],
   );
   const cancel = useCallback(() => {
     generation.current += 1;
@@ -247,17 +259,21 @@ function useSayer(
     if (speakingRef.current) port.current?.cancelSpeaking();
     speakingRef.current = false;
     setSpeaking(false);
-  }, [sleeper]);
+    settle.stopped();
+  }, [sleeper, settle]);
   // 조각이 사라질 때 이 조각이 읽던 것만 멈춘다(틀의 읽기 큐는 건드리지 않음)
   useEffect(
     () => () => {
       generation.current += 1;
       sleeper.cancel();
+      settle.dispose();
       if (speakingRef.current) port.current?.cancelSpeaking();
     },
-    [sleeper],
+    [sleeper, settle],
   );
-  return { say, cancel, speaking };
+  /** 읽는 중이거나 읽기 뒤 듣기 쉼 중(말하기 단추를 흐리게 — 누르면 '다 읽은 뒤 눌러요'). */
+  const waiting = speaking || !settled;
+  return { say, cancel, speaking, waiting };
 }
 
 /** 한 번 듣기(따라 말하기 — 끝 조용함은 회화 따라 말하기 규칙). 듣는 중에 다시 누르면 듣기를 끝낸다. */
@@ -494,8 +510,8 @@ function WrapCard({
             label={FOLLOW_TEXT.speak}
             listening={listening}
             soundIn={soundIn}
-            // 토리 글이 흐르거나 읽는 동안 흐리게(누르면 '다 읽은 뒤 눌러요' — C166 R2, 화면 검토 b3 M-1 의 '글이 다 흐른 뒤'를 포함)
-            waiting={!typed || sayer.speaking}
+            // 토리 글이 흐르거나 읽는 동안 · 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요' — C166 R2, 화면 검토 b3 M-1 의 '글이 다 흐른 뒤'를 포함, T-125)
+            waiting={!typed || sayer.waiting}
             capAt={capAt}
             gapClassName="bg-paper"
             disabled={!env.speech || phrase !== undefined || skipping}
@@ -754,8 +770,8 @@ function PrepCard({
         label={FOLLOW_TEXT.speak}
         listening={listening}
         soundIn={soundIn}
-        // 선생님이 읽는 동안 흐리게(누르면 '다 읽은 뒤 눌러요', R2 · 7절), 읽기가 끝나면 켬
-        waiting={sayer.speaking}
+        // 선생님이 읽는 동안과 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요', R2 · 7절), 쉼이 지나면 켬(T-125 — iPad 읽기 직후 듣기 no-speech)
+        waiting={sayer.waiting}
         capAt={capAt}
         gapClassName="bg-paper"
         disabled={!env.speech || phrase !== undefined || skipping}

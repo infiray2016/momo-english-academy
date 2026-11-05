@@ -286,6 +286,10 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(
       o.page.locator("[data-wrap-log] [data-wrap-shine]").first(),
     ).toHaveClass(/(^|\s)ring-4(\s|$)/);
+    // 정리 단추는 글이 흐르는 동안 · 읽는 동안 · 읽기 뒤 쉼(C201) 동안 흐리다 — 켜진 뒤 누른다(검토 M-5)
+    await expect(
+      o.page.locator("[data-wrap-all] [data-speak]"),
+    ).not.toHaveAttribute("data-speak-waiting", "", { timeout: STREAM_END_MS });
     await o.page.locator("[data-wrap-all] [data-speak]").click();
     const first = o.page.locator('[data-closing-card="1"]');
     await expect(first).toBeVisible({ timeout: STREAM_END_MS });

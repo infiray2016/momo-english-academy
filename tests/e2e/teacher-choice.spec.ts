@@ -27,7 +27,12 @@ import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, e2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { expect, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
-import { insertSampleLesson, openLessonSession, teachSample } from "./lessons";
+import {
+  E2E_LESSON_NO,
+  insertSampleLesson,
+  openLessonSession,
+  teachSample,
+} from "./lessons";
 import { photo } from "./photos";
 import {
   insertTalkLesson,
@@ -275,7 +280,9 @@ test.describe("선생님을 골라요(차례 6)", () => {
         );
         await expect(portrait).toHaveCount(1);
         await expect(portrait).toHaveAttribute("data-portrait-shape", "window");
-        await expect(portrait).toHaveAttribute("src", `/${t.portrait.path}`);
+        // src 속성은 절대 주소로 읽힐 수 있다(http://localhost:3100/teachers/… — e2e 첫 실행 분류 L) — 경로만 견준다
+        const src = (await portrait.getAttribute("src")) ?? "";
+        expect(new URL(src, page.url()).pathname).toBe(`/${t.portrait.path}`);
         const look = await portrait.evaluate((el) => {
           const style = getComputedStyle(el);
           return {
@@ -362,7 +369,7 @@ test.describe("관찰 쪽 /dev/teacher-probe(차례 6 · 컨트롤러 덧)", () 
     await expect(choice(talk)).toBeVisible();
   });
 
-  test("AC-19b 관찰 쪽 '단원 바로 가기'로 회화 단원 3 을 골라 '그 단원으로'를 누르면 회화 지금 단원이 1단계 단원 3 이고 홈 회화 카드가 단원 3 을 보인다", async ({
+  test("AC-19b 관찰 쪽 '단원 바로 가기'로 회화 단원 3 을 골라 '그 단원으로'를 누르면 회화 지금 단원이 1단계 단원 3 이고 회화 수업 목록 위 띠가 단원 3 을 보인다", async ({
     page,
   }) => {
     const profileId = await talkHousehold(1);
@@ -396,13 +403,11 @@ test.describe("관찰 쪽 /dev/teacher-probe(차례 6 · 컨트롤러 덧)", () 
         ),
       );
     expect(track).toEqual({ level: 1, unit: 3 });
-    await page.goto("/");
-    // 홈 회화 카드(카드 링크 안의 표지 — home.spec 과 같은 선택자)
-    await expect(
-      page
-        .locator("a, button")
-        .filter({ has: page.locator('[data-home-card="talk"]') }),
-    ).toContainText("단원 3");
+    // 단원은 홈 카드가 아니라 수업 목록 위 띠가 보인다(R-13 — home-cards.tsx 머리 주석, e2e 첫 실행 분류 M). 띠 글은 lesson-board TEXT.band 꼴
+    await page.goto("/talk/lessons");
+    await expect(page.locator("[data-paper-band]")).toContainText(
+      "1단계 · 단원 3",
+    );
   });
 });
 
@@ -472,6 +477,7 @@ test.describe("가르치는 수업의 '선생님을 골라요'(묶음 마-2 · A
     await teachHousehold(async (profileId) => {
       const readingRow = await insertSampleLesson({
         sample: teachSample("reading"),
+        lessonNo: E2E_LESSON_NO.teach,
       });
       const sessionId = await openLessonSession(profileId, readingRow);
       const page = await speechPage(context, "default-ok");
@@ -520,6 +526,7 @@ test.describe("가르치는 수업의 '선생님을 골라요'(묶음 마-2 · A
       // 다른 영역(쓰기) 가르치는 수업을 처음 열어도 묻지 않는다
       const writingRow = await insertSampleLesson({
         sample: teachSample("writing"),
+        lessonNo: E2E_LESSON_NO.teach,
       });
       const writingSession = await openLessonSession(profileId, writingRow);
       await page.goto(`/session/${writingSession}`);
@@ -570,7 +577,10 @@ test.describe("가르치는 수업의 '선생님을 골라요'(묶음 마-2 · A
     context,
   }) => {
     await teachHousehold(async (profileId) => {
-      const row = await insertSampleLesson({ sample: speakingTeachSample() });
+      const row = await insertSampleLesson({
+        sample: speakingTeachSample(),
+        lessonNo: E2E_LESSON_NO.teach,
+      });
       const sessionId = await openLessonSession(profileId, row);
       const page = await speechPage(context, "default-ok");
       await page.addInitScript((key) => {
