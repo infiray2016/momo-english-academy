@@ -231,3 +231,17 @@ Minor:
 | `pnpm check:ids` · `pnpm check:deps` | 0 · 0(design-number 47 그대로) |
 
 고치지 않고 남긴 것: 없음(P3-6 관사 되풀이는 검토자 판정대로 고칠 것이 아니다 — 도구 기대 쪽, impl-talk-13 몫).
+
+## 고침 3 fix 2(fix1 재검토 rev-prompt-2 Approved 의 새 Minor 넷 — M-1 은 요청자 시험 전)
+
+상태: DONE. 실호출 없음, 새 설정 키 없음. 다른 구현자가 고치는 파일(src/lib/speech · talk-frame · dev/mic-probe · seed/settings.json · tests/fixtures/settings.ts)은 건드리지 않았다. 새 시험마다 해당 코드를 하나씩 망가뜨리는 변이 넷으로 실패를 확인하고 되돌렸다.
+
+| 항목 | 바꾼 곳 | 내용 · 시험 |
+|---|---|---|
+| M-1 | `question-check.ts` choicesEchoChild 다섯째 인자 lead(질문 앞 글), `talk-lesson.ts` questionField(마지막 물음표 문장과 그 앞 글) · keptChoicesOf | 같은 tori_en 에서 질문 앞 문장(반응 · 되풀이)에 나온 낱말은 '새 내용 낱말'로 치지 않는다. 그래서 'Big.' → 'Yes, the lake is big! Is the lake big or small?' 과 'Cold.' → 'Cold juice, yum! Is the juice cold or hot?' 은 다시 버린다. 'My mom is big.' → 'Oh, your mom is big! Is your dad big or small?' 은 dad 가 질문에만 새로 나와 남긴다. 시험은 함수 셋과 정규화 하나다(앞 글 조건을 빼거나 정규화가 앞 글을 안 넘기는 변이 → 실패) |
+| M-2 | `talk-lesson.ts` 되풀이 규칙 | "… using the action your question just asked about, and keep 'like' only when your question asked what the child likes (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!'; 'What food do you like?' + 'Rice.' -> 'You like rice!')." 시험은 고정부 문장이다 |
+| M-3 | `talk-lesson.ts` asksCardQuestionAsIs · 정규화 card_item | 카드 답 뒤 이어 묻기 이름표 + 필수 카드 항목이라도, AI 질문(마지막 물음표 문장)이 그 필수 질문 글과 같은 질문 열쇠(questionKeyOf = cardQuestionKeyOf)면 카드 항목을 남긴다. 아이가 그 질문을 들었으므로 다룬 것으로 세어, 뒤 카드 자리에서 같은 글이 다시 나오지 않게 한다. 다른 질문이면 지금처럼 비운다. 시험 두 경우(같은 질문 남김을 빼는 변이 → 실패). fix 1 의 A 시험 두 곳은 질문 글을 카드 글과 다른 'Do you play a game?' 으로 바꿨다(비움 경우를 그대로 보게) |
+| M-4 | 시험만 — `talk-prompt-fix3.test.ts` 'M-4 talk_turns 꼴 행 …' | talk_turns 꼴 행(tori · child, move 는 talkMoveOf jsonb)을 lateCardRowsOf 로 옮겨 lessonCallTurnOf 까지 잇는다. 늦은 답은 켜지고, 이미 답한 행 · 꼴이 틀린 move 는 켜지지 않는다(행 갈래를 뒤바꾸는 변이 → 실패) |
+
+관문(이 워크트리 그대로, 다른 구현자의 변경 포함): biome ci 0(601 파일) · tsc 0 · 단위 151 파일 1946 통과 · spec:trace 0 · seed:validate 0(경고 둘 그대로) · check:ids 0 · check:deps 0. design-number 는 49 다. 늘어난 둘은 다른 구현자의 `src/app/dev/mic-probe/` 두 파일이고, 이 고침의 파일에는 없다.
+- **CI 일곱째(69b1a4d) 통합 AC-15b(saidWords null 대 [])의 원인은 앱이 아니라 시험의 행 차례다.** 앱의 저장 길은 바뀌지 않았다. 회화 턴이 두 번 실패하면 lessonOutcomeViewOf 가 칭찬 대사 한 줄을 고르고, 카드 자리 why fail 로 닫는다. 아이 행 갱신은 선생님 행 넣기와 같은 블록에서 늘 `saidWords: said`(응답 값이 없으면 [])로 한다. 그런데 시험은 talk_turns 를 ORDER BY 없이 읽고 `findLast(child)` 로 '이번 턴의 아이 행'을 골랐다. fix 1 보탬에서 이 파일에 C203 (3) 통합 사례를 더하자, 앞 시험이 resetHousehold 로 지운 자리에 새 세션 행이 들어가 읽는 차례가 바뀌었다. 그래서 seed 된 인사 쪽 아이 행(saidWords null)을 고른 것으로 본다(이 Mac 에서는 embedded-postgres 가 뜨지 않아 재현은 못 함). 고침은 셋이다. (1) AC-15b · AC-15k 의 아이 행 읽기에 `.orderBy(talkTurns.turnNo)` 를 넣었다(teacherRows 는 이미 턴 번호로 정렬함). (2) 서버의 '말했다' 셈을 순수 함수 `lessonSaidWordsOf`(lesson-turn.ts)로 뺐다. (3) 단위 시험 'CI 일곱째 통합 AC-15b 와 같은 길'이 두 번 실패 → 칭찬 대사 · 카드 자리(why fail) → '말했다' [](null 아님)를 덮는다. 관문 biome · tsc · 단위 1954 · spec:trace · seed:validate · ids · deps 0.
