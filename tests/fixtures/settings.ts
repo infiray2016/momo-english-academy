@@ -189,6 +189,14 @@ export const TEST_SETTINGS = {
   "speech.speak_end_timeout_extra_seconds": { scope: "household", value: 5 },
   "speech.speak_chars_per_second": { scope: "household", value: 8 },
   "speech.skip_notice_seconds": { scope: "household", value: 1.5 },
+  // 못 듣는 마이크 감지(iPad WebKit 326069 · 321436 꼴, 잠정 11-06 — audiostart 문턱 · 그 뒤 소리 없음 · 조용히 다시 열기 수)
+  "speech.deaf_audiostart_ms": { scope: "household", value: 200 },
+  "speech.deaf_silence_ms": { scope: "household", value: 1500 },
+  "speech.deaf_retry_max": { scope: "household", value: 0 },
+  // 감지를 켤 기기(ios · all · off — 데스크톱 크롬 잘못 가름 막기, 잠정 11-06 fix 1)
+  "speech.deaf_detect": { scope: "household", value: "ios" },
+  // 같은 자리 '마이크 안 잡힘'이 이만큼 이어지면 쪽지 · 정리 항목을 기술 사유로 건너뜀(잠정 11-06 fix 2, C210 보완)
+  "speech.deaf_skip_after": { scope: "household", value: 3 },
   // 가르치고 배우는 수업 spec 설계 4 · 10 · 12 — 선생님 한국어 줄(읽기 켬 · 한국어 감시 글자 수 · 한국어 빠르기)
   "speech.read_ko": { scope: "household", value: true },
   "speech.speak_chars_per_second_ko": { scope: "household", value: 6 },

@@ -18,6 +18,12 @@ const read = (key: string) => values[key];
 const speech = speechSettingsFrom(read);
 const talk = talkSpeechSettingsFrom(read);
 const ms = (key: string) => (values[key] as number) * 1000;
+/** 회화 듣기는 어느 꼴이든 못 듣는 마이크를 가른다(speech.deaf_* — 잠정 11-06). */
+const DEAF = {
+  audiostartMs: values["speech.deaf_audiostart_ms"],
+  silenceMs: values["speech.deaf_silence_ms"],
+  retryMax: values["speech.deaf_retry_max"],
+};
 const HOMOPHONES = HomophonesFileSchema.parse(
   JSON.parse(
     readFileSync(join(process.cwd(), "seed/lists/homophones.json"), "utf8"),
@@ -32,6 +38,7 @@ describe("회화 듣기 끝 규칙(C7 · C37)", () => {
       endSilenceMs: ms("speech.end_silence_seconds.talk.4-6"),
       capMs: speech.maxListenMs,
       chunkMs: speech.maxListenMs,
+      deaf: DEAF,
     });
     // 오늘 쓸 말 · 말해 보기 · 정리의 따라 말하기도 회화 구간 값
     expect(
@@ -50,11 +57,13 @@ describe("회화 듣기 끝 규칙(C7 · C37)", () => {
       endSilenceMs: ms("speech.end_silence_seconds.talk_long"),
       capMs: ms("talk.max_answer_seconds"),
       chunkMs: speech.maxListenMs,
+      deaf: DEAF,
     });
     expect(talkEndRuleFor({ level: 8, mode: "test" }, speech, talk)).toEqual({
       endSilenceMs: ms("speech.end_silence_seconds.talk.7-9"),
       capMs: speech.maxListenMs,
       chunkMs: speech.maxListenMs,
+      deaf: DEAF,
     });
     expect(
       talkEndRuleFor({ level: 7, mode: "dialogue" }, speech, talk).endSilenceMs,

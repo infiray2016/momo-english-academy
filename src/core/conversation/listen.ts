@@ -3,7 +3,11 @@
 import { z } from "zod";
 import { BANDS, type Band, bandOf } from "@/core/level-band";
 import { PLACEHOLDER_NAME } from "@/core/seed/structure";
-import type { EndRule, SpeechSettings } from "@/core/speech/listen";
+import {
+  deafRuleOf,
+  type EndRule,
+  type SpeechSettings,
+} from "@/core/speech/listen";
 import {
   bestMatchRate,
   NAME_SLOT,
@@ -55,23 +59,30 @@ export function talkSpeechSettingsFrom(
 /**
  * 회화 듣기 끝 규칙(7절 · C7 · C37): 따라 말하기(오늘 쓸 말 · 말해 보기 · 정리 · 한 번 더) · 평가 대화 · 1~7단계 대화는 한 문장 답 —
  * 구간의 회화 조용함 · speech.max_listen_seconds. 8단계부터 대화는 talk_long 조용함 · 말하기 단추('다 말했어요') ·
- * talk.max_answer_seconds 이고 speech.max_listen_seconds 마다 끊어 듣는다.
+ * talk.max_answer_seconds 이고 speech.max_listen_seconds 마다 끊어 듣는다. 어느 꼴이든 못 듣는 마이크를 가른다(speech.deaf_* — iPad
+ * WebKit 326069 · 321436 꼴을 아이의 말소리 없음으로 세지 않게, 잠정 11-06).
  */
 export function talkEndRuleFor(
   { level, mode }: { level: number; mode: "dialogue" | "follow" | "test" },
-  speech: Pick<SpeechSettings, "maxListenMs">,
+  speech: Pick<
+    SpeechSettings,
+    "maxListenMs" | "deafAudiostartMs" | "deafSilenceMs" | "deafRetryMax"
+  >,
   talk: TalkSpeechSettings,
 ): EndRule {
+  const deaf = deafRuleOf(speech);
   if (mode === "dialogue" && level >= TALK_LONG_ANSWER_FROM_LEVEL)
     return {
       endSilenceMs: talk.longSilenceMs,
       capMs: talk.maxAnswerMs,
       chunkMs: speech.maxListenMs,
+      deaf,
     };
   return {
     endSilenceMs: talk.endSilenceMs[bandOf(level)],
     capMs: speech.maxListenMs,
     chunkMs: speech.maxListenMs,
+    deaf,
   };
 }
 

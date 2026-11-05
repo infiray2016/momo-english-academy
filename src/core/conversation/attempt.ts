@@ -24,8 +24,18 @@ const head = <K extends string>(kind: K) => ({
   step: z.literal("final"),
 });
 const index = z.int().min(0);
-/** 따라 말하기를 건너뛴 까닭(인식 실패 상한 · 마이크 없음 · 말소리 없음 · 멈춤). */
-const SKIPS = ["recognition", "no_mic", "silent", "stalled"] as const;
+/**
+ * 따라 말하기를 건너뛴 까닭(인식 실패 상한 · 마이크 없음 · 말소리 없음 · 멈춤 · 마이크 안 잡힘 이어짐). mic_deaf 는 기술 사유다 — 같은 자리에서
+ * '마이크 안 잡힘'이 speech.deaf_skip_after 번 이어짐(아이의 실패 · 말소리 없음이 아님, 잠정 11-06 fix 2 · 13절 C210 보완).
+ */
+export const TALK_FOLLOW_SKIPS = [
+  "recognition",
+  "no_mic",
+  "silent",
+  "stalled",
+  "mic_deaf",
+] as const;
+const SKIPS = TALK_FOLLOW_SKIPS;
 const spoken = {
   /** 따라 말한 목표 글(단어 · 예문 · 되짚을 말 · 들려줄 말). */
   target: z.string(),

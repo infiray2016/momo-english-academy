@@ -439,7 +439,10 @@ export function speakingCounters(
   }
 }
 
-/** 듣기 결과(P2b)를 셈의 일로. 중단(화면 떠남 · 가려짐 · 말하기 누름)은 세지 않는다(undefined). */
+/**
+ * 듣기 결과(P2b)를 셈의 일로. 중단(화면 떠남 · 가려짐 · 말하기 누름)과 마이크 안 잡힘(deaf — 기기 쪽, 아이의 말소리 없음이 아님)은 세지
+ * 않는다(undefined).
+ */
 export function speechEventOf(outcome: ListenOutcome): SpeechEvent | undefined {
   switch (outcome.kind) {
     case "result":
@@ -451,6 +454,7 @@ export function speechEventOf(outcome: ListenOutcome): SpeechEvent | undefined {
     case "stalled":
       return { type: "stalled" };
     case "interrupted":
+    case "deaf":
       return undefined;
   }
 }

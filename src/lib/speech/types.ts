@@ -151,6 +151,8 @@ export type SpeechTraceEntry =
       recognizer: number;
       call: "start" | "stop" | "abort";
       threw?: boolean;
+      /** start 호출 때의 읽어 주기 상태(speechSynthesis speaking · pending · idle — 듣기 사건 기록 ts). 읽어 주기가 없으면 없다. */
+      synth?: "speaking" | "pending" | "idle";
     }
   | {
       at: number;
@@ -178,6 +180,8 @@ export type SpeechTraceEntry =
       code?: string;
     }
   | { at: number; kind: "mic-check"; result: MicrophoneCheck }
+  /** 쪽이 숨음(visibilitychange → hidden — 듣기 사건 기록 hid). */
+  | { at: number; kind: "page-hidden" }
   // ── 관찰 페이지 2판(task-speech-probe-2) — 관찰 페이지가 직접 남긴다. 음성 접점(browser.ts)은 내지 않는다 ──
   | { at: number; kind: "env"; reason: ProbeEnvReason; facts: ProbeEnvFacts }
   | {

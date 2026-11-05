@@ -121,6 +121,7 @@ import {
   LessonWrapUp,
   lessonFollowSaver,
   PrepNote,
+  prepWithDone,
   TalkPaper,
   TalkStart,
 } from "./follow-along";
@@ -1554,6 +1555,10 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           pictures={view.pictures}
           env={followEnv}
           onDone={afterPrep}
+          // 끝낸 낱말을 쪽지 상태에 더한다 — 막힘 판이 쪽지를 내렸다 풀려 다시 그리면 막힌 그 낱말부터(7절 32줄 · e2e 분류 N1)
+          onWordDone={(index) =>
+            setPrep((p) => (p ? prepWithDone(p, index) : p))
+          }
         />
       );
     panelShown = true;

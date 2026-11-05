@@ -13,6 +13,7 @@ import type { PictureInfo } from "@/core/answer/display";
 import {
   lessonFollowAlongNo,
   parseTalkAttemptInput,
+  TALK_FOLLOW_SKIPS,
   TALK_START_ACTIVITY_NO,
   type TalkAttemptInput,
   type TalkPrepPlace,
@@ -496,7 +497,7 @@ export type LessonFollowInput = {
   target: string;
   heard: readonly string[];
   failures: number;
-  skipped?: "recognition" | "no_mic" | "silent" | "stalled";
+  skipped?: (typeof TALK_FOLLOW_SKIPS)[number];
   clientListen?: ClientListen;
 };
 
@@ -1714,7 +1715,7 @@ const LessonFollowSchema = z.strictObject({
   target: z.string().max(TALK_TEXT_MAX),
   heard: z.array(z.string().max(TALK_TEXT_MAX)).max(HEARD_MAX),
   failures: z.int().min(0).max(FAILURES_MAX),
-  skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
+  skipped: z.enum(TALK_FOLLOW_SKIPS).optional(),
   /** 그 차례의 듣기 사건 요약(C149 · 감시 칸 sp, 정한 것 10 — 글 · 소리 없음). */
   clientListen: ClientListenSchema.optional(),
 });

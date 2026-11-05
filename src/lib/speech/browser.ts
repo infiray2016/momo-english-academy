@@ -11,6 +11,7 @@ import {
 import {
   type CancelReason,
   classifyRecognitionError,
+  deafRuleForDevice,
   type EndRule,
   type ListenInput,
   type ListenOutcome,
@@ -59,6 +60,8 @@ const INPUT_ORDER: Record<ListenInput["type"], number> = {
   result: 0,
   error: 0,
   end: 0,
+  audio: 0,
+  sound: 0,
   "start-failed": 0,
   cancel: 0,
   button: 1,
@@ -89,6 +92,15 @@ function nativeRecognitionCtor(): RecognitionCtor | undefined {
       ? w.SpeechRecognition
       : w.webkitSpeechRecognition;
   return typeof ctor === "function" ? (ctor as RecognitionCtor) : undefined;
+}
+
+/** start 호출 때의 읽어 주기 상태(듣기 사건 기록 ts — 분석 task-ipad-listen-analysis 6.2 H3). 읽기만 한다. */
+function synthesisStateOf(): "speaking" | "pending" | "idle" | undefined {
+  if (!synthesisAvailable()) return undefined;
+  const synth = window.speechSynthesis;
+  if (synth.speaking) return "speaking";
+  if (synth.pending) return "pending";
+  return "idle";
 }
 
 function synthesisAvailable(): boolean {
@@ -179,7 +191,9 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     if (synthesisAvailable()) window.speechSynthesis.cancel();
   }
 
-  function listen(rule: EndRule, on?: ListenCallbacks): ListenHandle {
+  function listen(asked: EndRule, on?: ListenCallbacks): ListenHandle {
+    // 못 듣는 마이크 감지는 speech.deaf_detect 가 켠 기기에서만(기본 iOS · iPadOS WebKit — 잠정 11-06 fix 1)
+    const rule = deafRuleForDevice(asked, settings.deafDetect, device());
     activeListen?.cancelNow("leave");
     activeCheck?.cancelNow("leave");
     // 읽어 주는 중이면 끊고 듣는다(토리 목소리를 인식하지 않게, 7절 · C53).
@@ -226,6 +240,11 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
             recognizer: id,
             event: { type: name },
           });
+          // 못 듣는 마이크 감지(DeafRule — 규칙에 deaf 가 없으면 상태 기계가 버린다)
+          if (name === "audiostart")
+            push({ type: "audio", now: now(), recognizer: id });
+          if (name === "soundstart" || name === "speechstart")
+            push({ type: "sound", now: now(), recognizer: id });
           if (
             (name === "soundstart" || name === "speechstart") &&
             !soundTold &&
@@ -286,6 +305,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
 
     const call = (id: number, which: "start" | "stop" | "abort") => {
       const recognition = recognizers.get(id);
+      const synth = which === "start" ? synthesisStateOf() : undefined;
       let threw = false;
       try {
         recognition?.[which]();
@@ -299,6 +319,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
         recognizer: id,
         call: which,
         ...(threw ? { threw } : {}),
+        ...(synth ? { synth } : {}),
       });
       return threw;
     };
@@ -613,6 +634,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
   // 쪽이 숨으면 듣기는 '끊김', 읽어 주기는 멈춘다. 숨은 동안 다시 시작하지 않는다(나-4).
   const onVisibility = () => {
     if (!document.hidden) return;
+    trace({ at: now(), kind: "page-hidden" });
     activeListen?.cancelNow("hidden");
     activeCheck?.cancelNow("hidden");
     if (speaking !== undefined) cancelSpeaking();

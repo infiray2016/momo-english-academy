@@ -18,5 +18,10 @@
   "speech.skip_notice_seconds": 1.5,
   "speech.read_ko": true,
   "speech.speak_chars_per_second_ko": 6,
-  "speech.rate_ko": 1.0
+  "speech.rate_ko": 1.0,
+  "speech.deaf_audiostart_ms": 200,
+  "speech.deaf_silence_ms": 1500,
+  "speech.deaf_retry_max": 0,
+  "speech.deaf_detect": "ios",
+  "speech.deaf_skip_after": 3
 }

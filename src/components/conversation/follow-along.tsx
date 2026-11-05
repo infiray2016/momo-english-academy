@@ -57,7 +57,12 @@ import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
 import { cn } from "@/lib/utils";
 import { saveLessonFollowAlong } from "@/server/actions/conversation";
 import type { PrepWordView, TalkLessonPrep } from "@/server/conversation";
-import { CHILD_TURN_TEXT, ChildBubble } from "./child-turn";
+import {
+  CHILD_TURN_TEXT,
+  ChildBubble,
+  deafListenOf,
+  deafStreakOf,
+} from "./child-turn";
 import { SilentModeNote } from "./silent-mode-note";
 import { type BubbleContent, ToriBubble } from "./tori";
 
@@ -72,6 +77,10 @@ export const FOLLOW_TEXT = {
   offline: CHILD_TURN_TEXT.offline,
   /** 인식이 speech.max_retries 번 안 돼 건너뜀(U4-4). */
   skipped: SPEAK_BUTTON_TEXT.skipped,
+  /** 마이크 안 잡힘(듣기 deaf, 잠정 11-06) — 건너뜀 셈 · '잘 안 들렸어요' 없이 이 한 줄. */
+  micDeaf: CHILD_TURN_TEXT.micDeaf,
+  /** 마이크 안 잡힘이 speech.deaf_skip_after 번 이어져 기술 사유로 다음(fix 2, C210 보완). */
+  micDeafSkip: CHILD_TURN_TEXT.micDeafSkip,
 } as const;
 
 /** 초 → ms(단위 바꿈 상수). */
@@ -179,7 +188,7 @@ export type FollowSaveAt = {
 export type FollowSaver = (
   at: FollowSaveAt,
   tried: Tried,
-  skipped?: "recognition",
+  skipped?: "recognition" | "mic_deaf",
 ) => void;
 
 /**
@@ -288,7 +297,8 @@ function useFollowListen(env: FollowEnv) {
     env.settings.speech,
     env.settings.talkSpeech,
   );
-  async function listen(): Promise<SpeechEvent | undefined> {
+  /** 듣기 결과를 셈의 일로. 마이크 안 잡힘이면 "deaf"(셈의 일이 아님 — speechEventOf 는 없음을 돌려준다). */
+  async function listen(): Promise<SpeechEvent | "deaf" | undefined> {
     if (!env.speech) return undefined;
     if (handle.current) {
       handle.current.press();
@@ -305,6 +315,7 @@ function useFollowListen(env: FollowEnv) {
     setListening(false);
     setSoundIn(false);
     env.onListening(false);
+    if (deafListenOf(outcome)) return "deaf";
     return speechEventOf(outcome);
   }
   return { listen, listening, soundIn, capAt: () => handle.current?.capAt };
@@ -320,16 +331,33 @@ type Tried = { heard: string[]; failures: number };
 function useFollowTry(env: FollowEnv) {
   const { listen, listening, soundIn, capAt } = useFollowListen(env);
   const [message, setMessage] = useState("");
-  async function tryOnce(
-    target: string,
-  ): Promise<
+  /** 이 차례에서 마이크 안 잡힘이 이어진 수(deafStreakOf — 차례마다 새 카드라 새로 센다). */
+  const deafStreak = useRef(0);
+  async function tryOnce(target: string): Promise<
     | { kind: "heard"; text: string; rate: number; phrase: ResultPhrase }
     | { kind: "skip" }
     | { kind: "retry" }
+    /** 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐 — 기술 사유 건너뜀(셈 없음). */
+    | { kind: "deaf-skip" }
     | undefined
   > {
     const event = await listen();
     if (!event) return undefined;
+    const deaf = deafStreakOf(
+      deafStreak.current,
+      event === "deaf",
+      env.settings.speech.deafSkipAfter,
+    );
+    deafStreak.current = deaf.streak;
+    if (event === "deaf") {
+      // 마이크 안 잡힘: 틀의 셈 · 이 차례의 실패 수(건너뜀)에 넣지 않고 같은 차례를 이어 간다(잠정 11-06). 이어지면 기술 사유로 다음(fix 2)
+      if (deaf.over) {
+        setMessage(FOLLOW_TEXT.micDeafSkip);
+        return { kind: "deaf-skip" };
+      }
+      setMessage(FOLLOW_TEXT.micDeaf);
+      return undefined;
+    }
     const verdict = env.onSpeech(event);
     if (verdict === "heard" && event.type === "heard") {
       setMessage("");
@@ -448,6 +476,13 @@ function WrapCard({
       index,
       target,
     };
+    if (out.kind === "deaf-skip") {
+      // 기술 사유 건너뜀: 실패 수를 올리지 않고 사유(mic_deaf)만 남긴 뒤 안내 시간 뒤 다음(fix 2)
+      setSkipping(true);
+      env.saveFollow(at, tried.current, "mic_deaf");
+      moveOn(env.settings.speech.skipNoticeMs);
+      return;
+    }
     if (out.kind === "skip") {
       tried.current.failures += 1;
       setSkipping(true);
@@ -572,6 +607,19 @@ export function prepStepsOf(
 }
 
 /**
+ * 쪽지에서 끝낸(저장한 — 들음 · 건너뜀) 낱말을 끝낸 차례에 더한다(순수). 막힘 판이 쪽지를 내렸다 다시 그려도 막힌 그 낱말부터 잇게(7절 막힘
+ * 화면 '막힌 그 낱말' · e2e 분류 N1). 이미 있으면 그대로 돌려준다.
+ */
+export function prepWithDone<P extends Pick<TalkLessonPrep, "done">>(
+  prep: P,
+  index: number,
+): P {
+  return prep.done.includes(index)
+    ? prep
+    : { ...prep, done: [...prep.done, index] };
+}
+
+/**
  * 짧은 준비 쪽지(3.3 짧은 준비 · 4절 짧은 준비 행): 쪽지 한 장에 낱말 하나, 남은 낱말을 차례대로. 다 하면(건너뛴 낱말이 있어도 — 다 하지 않아도
  * 대화로 넘길 수 있다, 서버 advanceTalkLesson) onDone. 짧은 준비 화면에는 대화 기록 칸이 없다(4절 대화 기록 행).
  */
@@ -581,6 +629,7 @@ export function PrepNote({
   pictures,
   env,
   onDone,
+  onWordDone,
 }: {
   prep: TalkLessonPrep;
   /** 단계 구간(1~3단계 쪽지 꼴 — TALK_LOW_BAND). */
@@ -588,8 +637,11 @@ export function PrepNote({
   pictures: Record<string, PictureInfo>;
   env: FollowEnv;
   onDone: () => void;
+  /** 낱말 하나를 끝내 저장함(들음 · 건너뜀) — 틀이 prep.done 에 더해 다시 그릴 때 그 뒤 낱말부터(prepWithDone). */
+  onWordDone?: (index: number) => void;
 }) {
-  const steps = prepStepsOf(prep);
+  // 남은 차례는 쪽지를 그린 때 한 번 정한다(그리는 동안 틀이 done 을 늘려도 차례가 밀리지 않게 — 다시 그리면 늘어난 done 으로 다시 센다)
+  const [steps] = useState(() => prepStepsOf(prep));
   const [at, setAt] = useState(0);
   const index = steps[at];
   const word = index === undefined ? undefined : prep.words[index];
@@ -605,6 +657,7 @@ export function PrepNote({
       card={card}
       {...(picture?.src ? { picture } : {})}
       env={env}
+      {...(onWordDone ? { onSaved: () => onWordDone(index) } : {})}
       onNext={() => {
         env.onNextItem();
         if (at + 1 < steps.length) setAt(at + 1);
@@ -620,6 +673,7 @@ function PrepCard({
   card,
   picture,
   env,
+  onSaved,
   onNext,
 }: {
   place: TalkLessonPrep["place"];
@@ -627,6 +681,8 @@ function PrepCard({
   card: PrepNoteCard;
   picture?: PictureInfo;
   env: FollowEnv;
+  /** 이 낱말을 저장함(들음 · 건너뜀). */
+  onSaved?: () => void;
   onNext: () => void;
 }) {
   const sayer = useSayer(env);
@@ -670,6 +726,14 @@ function PrepCard({
     sayer.cancel();
     const out = await tryOnce(card.say);
     if (!out) return;
+    if (out.kind === "deaf-skip") {
+      // 기술 사유 건너뜀: 실패 수를 올리지 않고 사유(mic_deaf)만 남긴 뒤 안내 시간 뒤 다음 낱말(fix 2)
+      setSkipping(true);
+      env.saveFollow(at, tried.current, "mic_deaf");
+      onSaved?.();
+      moveOn(env.settings.speech.skipNoticeMs);
+      return;
+    }
     if (out.kind === "retry") {
       tried.current.failures += 1;
       setFailures(tried.current.failures);
@@ -680,6 +744,7 @@ function PrepCard({
       setFailures(tried.current.failures);
       setSkipping(true);
       env.saveFollow(at, tried.current, "recognition");
+      onSaved?.();
       moveOn(env.settings.speech.skipNoticeMs);
       return;
     }
@@ -688,6 +753,7 @@ function PrepCard({
     setPhrase(out.phrase);
     if (out.phrase === "good") env.onPraise();
     env.saveFollow(at, tried.current);
+    onSaved?.();
     // 결과 말을 ui.auto_next_seconds 보인 뒤 결과와 관계없이 다음(C39)
     moveOn(env.settings.autoNextSeconds * MS_PER_SECOND);
   }

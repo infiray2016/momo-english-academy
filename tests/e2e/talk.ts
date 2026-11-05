@@ -267,13 +267,14 @@ export function failingRun(error: string, at = 100): RecognitionRun {
 
 /**
  * iPad WebKit(사파리 · 크롬) 꼴의 말소리 없는 듣기(10-22 실측 · C148): 시작 · 소리 받기 시작 뒤 결과 · 오류가 없고(스스로 no-speech 를 내지 않음),
- * 앱이 stop 하면 error aborted 'No speech detected' → end 로 끝난다.
+ * 앱이 stop 하면 error aborted 'No speech detected' → end 로 끝난다. 아이가 말하지 않은 꼴이라 audiostart 는 마이크가 듣는 기기처럼 늦게
+ * 둔다(speech.deaf_audiostart_ms 200 보다 빠르면 '마이크 안 잡힘'으로 끝나 셈에 들지 않는다 — 잠정 11-06, 분석 표 A 의 성공 듣기 278ms 이상).
  */
 export function webkitSilentRun(): RecognitionRun {
   return {
     events: [
       { at: 50, type: "start" },
-      { at: 100, type: "audiostart" },
+      { at: 400, type: "audiostart" },
     ],
     onStop: [
       {

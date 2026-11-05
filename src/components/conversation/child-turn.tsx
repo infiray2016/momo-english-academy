@@ -64,6 +64,18 @@ export const CHILD_TURN_TEXT = {
   dontKnow: "잘 모르겠어요",
   /** 인식 실패 시도 · 들리지 않음 차례의 회색 아이 말풍선(plan 문구 표 — 정본 밖 문구). */
   notHeard: "못 들었어요",
+  /**
+   * 마이크 안 잡힘(듣기 deaf — iPad WebKit 326069 · 321436 꼴, 잠정 11-06 · 정본 밖 문구): 아이의 말소리 없음이 아니므로 '못 들었어요' ·
+   * 셈 없이 이 한 줄과 말하기 단추 그대로. 대화 차례 · 짧은 준비 쪽지 · 정리가 같이 쓴다.
+   */
+  micDeaf: "마이크가 안 잡혔어요. 한 번 더 눌러 주세요",
+  /**
+   * 같은 자리에서 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐(잠정 11-06 fix 2, 13절 C210 보완 · 정본 밖 문구). 쪽지 · 정리는 이 줄 뒤 기술
+   * 사유로 다음 항목, 대화 차례는 '잘 모르겠어요'가 길이라 이 줄만 보인다.
+   */
+  micDeafSkip: "마이크가 계속 안 잡혀서 다음으로 넘어가요",
+  /** 대화 차례에서 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐 — 넘어가지 않으므로 '잘 모르겠어요'로 안내한다(fix 3 · 정본 밖 문구). */
+  micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
   again: "다시 말하기",
   send: "보내기",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
@@ -92,6 +104,27 @@ const FLASH_MS = 2000;
 
 /** 초 → ms(단위 바꿈 상수). */
 const MS_PER_SECOND = 1000;
+
+/**
+ * 마이크 안 잡힘으로 끝난 듣기인가(순수, speech.deaf_* — 잠정 11-06). 이런 듣기는 셈의 일이 없고(speechEventOf → 없음) 같은 질문 말소리 없음
+ * 셈(talk.nospeech_dontknow_count)에도 들지 않으며 턴을 보내지 않는다.
+ */
+export function deafListenOf(outcome: ListenOutcome): boolean {
+  return outcome.kind === "deaf";
+}
+
+/**
+ * 같은 자리 '마이크 안 잡힘' 이어짐(순수, speech.deaf_skip_after — 잠정 11-06 fix 2): 마이크 안 잡힘이면 하나 늘리고 다른 결과면 0 으로 되돌린다.
+ * 늘린 수가 문턱에 닿으면 over — 쪽지 · 정리는 기술 사유로 건너뛰고 대화 차례는 안내 한 줄만. 셈(실패 · 말소리 없음 · 건너뜀)에는 넣지 않는다.
+ */
+export function deafStreakOf(
+  streak: number,
+  deaf: boolean,
+  skipAfter: number,
+): { streak: number; over: boolean } {
+  const next = deaf ? streak + 1 : 0;
+  return { streak: next, over: deaf && next >= skipAfter };
+}
 
 /**
  * 같은 질문 말소리 없음 셈에 드는 듣기인가(순수): no-speech 로 끝난 듣기만(3.3 막힘 문단 · 7절 오류 행). iPad WebKit 의 'aborted · No speech
@@ -348,6 +381,8 @@ export function ChildTurn(props: ChildTurnProps) {
   } | null>(null);
   const handle = useRef<ListenHandle | undefined>(undefined);
   const nospeech = useRef(0);
+  /** 이 차례에서 마이크 안 잡힘이 이어진 수(deafStreakOf). */
+  const deafStreak = useRef(0);
   const sent = useRef(false);
   const confirmTimer = useRef<number | undefined>(undefined);
   const moveTimer = useRef<number | undefined>(undefined);
@@ -454,6 +489,20 @@ export function ChildTurn(props: ChildTurnProps) {
     setListening(false);
     setSoundIn(false);
     props.onListening(false);
+    const deaf = deafStreakOf(
+      deafStreak.current,
+      deafListenOf(outcome),
+      settings.speech.deafSkipAfter,
+    );
+    deafStreak.current = deaf.streak;
+    if (deafListenOf(outcome)) {
+      // 마이크 안 잡힘(기기 쪽): '못 들었어요' · 같은 질문 말소리 없음 셈 · 틀의 실패 셈 없이 한 줄 안내, 턴을 보내지 않는다(잠정 11-06).
+      // speech.deaf_skip_after 번 이어지면 안내만 바꾼다 — 대화 차례의 길은 '잘 모르겠어요'(fix 2, C210 보완)
+      setMessage(
+        deaf.over ? CHILD_TURN_TEXT.micDeafStuck : CHILD_TURN_TEXT.micDeaf,
+      );
+      return;
+    }
     const event = speechEventOf(outcome);
     if (!event) return;
     const verdict = props.onSpeech(event);

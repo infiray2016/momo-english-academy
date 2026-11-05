@@ -165,6 +165,10 @@ describe("듣기 사건 요약(C149)", () => {
         as: 60,
         snd: false,
         tc: "cut",
+        // 11-06 칸: 다시 연 객체 없음 · 쪽 숨음 없음 · 끊긴 읽기의 늦은 알림(interrupted)은 끊김(cancel)
+        rs: 0,
+        te: "cancel",
+        hid: false,
       },
       {
         o: "result",
@@ -174,6 +178,12 @@ describe("듣기 사건 요약(C149)", () => {
         snd: true,
         fr: 500,
         tc: 700,
+        // 앞 듣기 객체 end(3020) → 이 start 호출(5700), start 호출 → speechstart(5900), 읽기는 끝 알림으로 끝남
+        pe: 2680,
+        ss: 200,
+        rs: 0,
+        te: "end",
+        hid: false,
       },
     ]);
     // 글 · 인식 글 · 오류 메시지는 들지 않는다(녹음 금지 · 이름 가림)
@@ -203,8 +213,16 @@ describe("듣기 사건 요약(C149)", () => {
       by: "cap",
       d: (RULE.capMs ?? 0) + 10,
       snd: false,
+      rs: 0,
+      hid: false,
     });
-    expect(cut).toEqual({ o: "interrupted:speak", d: 400, snd: false });
+    expect(cut).toEqual({
+      o: "interrupted:speak",
+      d: 400,
+      snd: false,
+      rs: 0,
+      hid: false,
+    });
   });
 
   it("C149 모르는 오류 코드는 error:other 로, 듣기 요약은 최근 CLIENT_LISTENS_MAX 개만 남긴다", () => {

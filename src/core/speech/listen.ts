@@ -4,6 +4,7 @@
 // 돌려받은 일(start · stop · abort · done)을 하고, wakeAt 에 timer 를 넣는다.
 import { z } from "zod";
 import { BANDS, type Band, bandOf } from "../level-band";
+import type { DeviceVerdict } from "./device";
 
 // ── 음성 설정(12절 speech.*) ──
 
@@ -31,7 +32,30 @@ export type SpeechSettings = {
   rateKo: number;
   /** speech.read_ko — 선생님 한국어 줄을 읽는가. 끔이면 읽지 않고 글로만 보인다(가르치고 spec 설계 4 · 10). */
   readKo: boolean;
+  /**
+   * speech.deaf_audiostart_ms — 인식 객체 start 뒤 audiostart 가 이보다 빨리 오면 '못 듣는 마이크' 의심(ms, iPad WebKit 326069 ·
+   * 321436 꼴 — 분석 task-ipad-listen-analysis 표 A, 잠정 11-06).
+   */
+  deafAudiostartMs: number;
+  /** speech.deaf_silence_ms — 그 의심 뒤 소리 · 결과가 이만큼 없으면 '마이크 안 잡힘'으로 끝낸다(ms, 잠정 11-06). */
+  deafSilenceMs: number;
+  /** speech.deaf_retry_max — '마이크 안 잡힘'에서 같은 듣기 안에서 조용히 새 객체를 여는 수(0 이면 안 함, 관찰 쪽 측정 뒤 올림, 잠정 11-06). */
+  deafRetryMax: number;
+  /**
+   * speech.deaf_detect — 못 듣는 마이크 감지를 켤 기기: ios(iOS · iPadOS WebKit 만) · all(모든 기기) · off(끔). 데스크톱 크롬은 audiostart 가
+   * 늘 빠르고 아이가 1.5초 안에 말을 시작하지 않는 일이 흔해 멀쩡한 마이크를 잘못 가르므로 기본은 ios(잠정 11-06 fix 1).
+   */
+  deafDetect: DeafDetect;
+  /**
+   * speech.deaf_skip_after — 같은 자리에서 '마이크 안 잡힘'이 이만큼 이어지면 짧은 준비 쪽지 낱말 · 정리 따라 말하기 항목을 기술 사유(mic_deaf)로
+   * 건너뛴다(아이의 실패 · 말소리 없음 · 건너뜀 셈에 넣지 않음). 대화 차례는 안내 한 줄만(잠정 11-06 fix 2, 13절 C210 보완).
+   */
+  deafSkipAfter: number;
 };
+
+/** speech.deaf_detect 의 값. */
+export const DEAF_DETECT_VALUES = ["ios", "all", "off"] as const;
+export type DeafDetect = (typeof DEAF_DETECT_VALUES)[number];
 
 const LANG_KEY = "speech.lang";
 const MAX_LISTEN_KEY = "speech.max_listen_seconds";
@@ -46,9 +70,15 @@ const SKIP_NOTICE_KEY = "speech.skip_notice_seconds";
 const SPEAK_CPS_KO_KEY = "speech.speak_chars_per_second_ko";
 const RATE_KO_KEY = "speech.rate_ko";
 const READ_KO_KEY = "speech.read_ko";
+const DEAF_AUDIOSTART_KEY = "speech.deaf_audiostart_ms";
+const DEAF_SILENCE_KEY = "speech.deaf_silence_ms";
+const DEAF_RETRY_MAX_KEY = "speech.deaf_retry_max";
+const DEAF_DETECT_KEY = "speech.deaf_detect";
+const DEAF_SKIP_AFTER_KEY = "speech.deaf_skip_after";
 
 /**
- * speechSettingsFrom 이 읽는 12절 키(듣기 · 읽어 주기 빠르기 · 문장 사이 쉼 · 읽어 주기 감시 · 건너뜀 안내 · 선생님 한국어 줄). 회화
+ * speechSettingsFrom 이 읽는 12절 키(듣기 · 읽어 주기 빠르기 · 문장 사이 쉼 · 읽어 주기 감시 · 건너뜀 안내 · 선생님 한국어 줄 · 못 듣는
+ * 마이크 감지). 회화
  * 듣기 키(talk 갈래)는 회화 설정이 더한다.
  */
 export const SPEECH_SETTING_KEYS: readonly string[] = [
@@ -65,6 +95,11 @@ export const SPEECH_SETTING_KEYS: readonly string[] = [
   SPEAK_CPS_KO_KEY,
   RATE_KO_KEY,
   READ_KO_KEY,
+  DEAF_AUDIOSTART_KEY,
+  DEAF_SILENCE_KEY,
+  DEAF_RETRY_MAX_KEY,
+  DEAF_DETECT_KEY,
+  DEAF_SKIP_AFTER_KEY,
 ];
 
 const MS_PER_SECOND = 1000;
@@ -130,6 +165,27 @@ export function speechSettingsFrom(
   );
   const rateKo = readSetting(read, RATE_KO_KEY, z.number().positive());
   const readKo = readSetting(read, READ_KO_KEY, z.boolean());
+  const deafAudiostartMs = readSetting(
+    read,
+    DEAF_AUDIOSTART_KEY,
+    z.int().nonnegative(),
+  );
+  const deafSilenceMs = readSetting(read, DEAF_SILENCE_KEY, z.int().positive());
+  const deafRetryMax = readSetting(
+    read,
+    DEAF_RETRY_MAX_KEY,
+    z.int().nonnegative(),
+  );
+  const deafDetect = readSetting(
+    read,
+    DEAF_DETECT_KEY,
+    z.enum(DEAF_DETECT_VALUES),
+  );
+  const deafSkipAfter = readSetting(
+    read,
+    DEAF_SKIP_AFTER_KEY,
+    z.int().positive(),
+  );
   return {
     lang,
     maxListenMs,
@@ -144,6 +200,11 @@ export function speechSettingsFrom(
     speakCharsPerSecondKo,
     rateKo,
     readKo,
+    deafAudiostartMs,
+    deafSilenceMs,
+    deafRetryMax,
+    deafDetect,
+    deafSkipAfter,
   };
 }
 
@@ -152,13 +213,69 @@ export function speechSettingsFrom(
 /**
  * endSilenceMs 가 있으면 한 문장 답(마지막 결과 뒤 조용하면 stop), 없으면 두 문장 이상 답.
  * capMs 는 듣기 전체 상한, chunkMs 는 인식 객체 하나의 길이(넘으면 끊어 듣고 이어 붙인다).
- * 말하기 버튼은 어느 규칙에서나 듣기를 끝낸다(7절).
+ * 말하기 버튼은 어느 규칙에서나 듣기를 끝낸다(7절). deaf 가 있으면 못 듣는 마이크를 가른다(DeafRule — 회화 듣기만 켠다).
  */
 export type EndRule = {
   endSilenceMs?: number;
   capMs?: number;
   chunkMs: number;
+  deaf?: DeafRule;
 };
+
+/**
+ * 못 듣는 마이크 감지(iPad WebKit 326069 · 321436 꼴, 분석 task-ipad-listen-analysis 5절 (c) 의 감지 절반 · 잠정 11-06): 이 듣기에서 아직
+ * 소리 · 결과가 없고 모은 글도 없을 때 지금 객체의 audiostart 가 start 뒤 audiostartMs 보다 빨리 오면 의심하고, 그 뒤 silenceMs 안에
+ * 소리(soundstart · speechstart) · 결과가 없으면 '마이크 안 잡힘'(deaf)으로 끝낸다. 의심 중에 결과 없음 · 말소리 없음으로 끝나도 deaf 다.
+ * retryMax 번까지는 끝내지 않고 조용히 새 객체를 연다(0 이면 안 함).
+ */
+export type DeafRule = {
+  audiostartMs: number;
+  silenceMs: number;
+  retryMax: number;
+};
+
+/**
+ * iOS · iPadOS WebKit 인가(순수 — 기기 판정 이름, client_listen 의 br 과 같은 판별 describeDevice). iOS 의 브라우저는 모두 WebKit 이라 기기
+ * 이름(iPad · iPhone)으로 가른다. iPadOS 13+ 의 데스크톱 꼴 UA 도 터치 점으로 iPad 가 된다.
+ */
+export function isIosWebkit(verdict: Pick<DeviceVerdict, "name">): boolean {
+  return /^(iPad|iPhone)( |$)/.test(verdict.name);
+}
+
+/** 이 기기에서 못 듣는 마이크 감지를 켜는가(순수, speech.deaf_detect). */
+export function deafDetectsOn(
+  detect: DeafDetect,
+  verdict: Pick<DeviceVerdict, "name">,
+): boolean {
+  if (detect === "all") return true;
+  if (detect === "off") return false;
+  return isIosWebkit(verdict);
+}
+
+/** 기기에 맞춘 듣기 규칙(순수): 감지를 켜지 않는 기기면 deaf 를 뺀다(그 듣기는 지금처럼 말소리 없음 갈래). */
+export function deafRuleForDevice(
+  rule: EndRule,
+  detect: DeafDetect,
+  verdict: Pick<DeviceVerdict, "name">,
+): EndRule {
+  if (rule.deaf === undefined || deafDetectsOn(detect, verdict)) return rule;
+  const { deaf: _off, ...rest } = rule;
+  return rest;
+}
+
+/** 음성 설정의 못 듣는 마이크 감지 규칙(순수). */
+export function deafRuleOf(
+  settings: Pick<
+    SpeechSettings,
+    "deafAudiostartMs" | "deafSilenceMs" | "deafRetryMax"
+  >,
+): DeafRule {
+  return {
+    audiostartMs: settings.deafAudiostartMs,
+    silenceMs: settings.deafSilenceMs,
+    retryMax: settings.deafRetryMax,
+  };
+}
 
 export type AnswerShape = "one-sentence" | "multi-sentence";
 
@@ -273,13 +390,22 @@ export type ListenOutcome =
   | { kind: "no-result" }
   | { kind: "error"; code: string; group: ErrorGroup; partialText: string }
   | { kind: "stalled"; partialText: string }
-  | { kind: "interrupted"; reason: CancelReason; partialText: string };
+  | { kind: "interrupted"; reason: CancelReason; partialText: string }
+  /**
+   * 마이크 안 잡힘(DeafRule): audiostart 가 빨리 오고 소리 · 결과가 없었다. 아이의 말소리 없음이 아니라 기기 쪽이라 셈에 넣지 않는다.
+   * audiostartMs 는 끝낸 객체의 start → audiostart, retries 는 조용히 다시 연 수.
+   */
+  | { kind: "deaf"; audiostartMs: number; retries: number };
 
 export type ListenInput =
   | { type: "begin"; now: number }
   | { type: "result"; now: number; recognizer: number; text: string }
   | { type: "error"; now: number; recognizer: number; code: string }
   | { type: "end"; now: number; recognizer: number }
+  /** audiostart(소리 받기 시작 — 신호로 세지 않는다, 못 듣는 마이크 감지만 쓴다). */
+  | { type: "audio"; now: number; recognizer: number }
+  /** soundstart · speechstart(소리 들어옴 — 신호로 세지 않는다, 못 듣는 마이크 감지만 쓴다). */
+  | { type: "sound"; now: number; recognizer: number }
   | { type: "start-failed"; now: number; recognizer: number }
   | { type: "button"; now: number }
   | { type: "cancel"; now: number; reason: CancelReason }
@@ -311,6 +437,14 @@ export type ListenState = Readonly<{
   restarts: number;
   watchdogRestarts: number;
   stopReason: StopReason | undefined;
+  /** 이 듣기에서 소리 · 결과가 들어왔는가(못 듣는 마이크 감지). */
+  heard: boolean;
+  /** 못 듣는 마이크 의심의 기한(지금 객체의 audiostart + silenceMs). 의심이 없으면 없다. */
+  deafAt: number | undefined;
+  /** 의심한 객체의 start → audiostart(ms). */
+  deafAudiostartMs: number | undefined;
+  /** 못 듣는 마이크로 조용히 다시 연 수. */
+  deafRetries: number;
 }>;
 
 export type ListenStep = {
@@ -325,6 +459,7 @@ type Deadlines = {
   silence?: number;
   chunk?: number;
   watchdog?: number;
+  deaf?: number;
 };
 
 function deadlinesOf(s: ListenState): Deadlines {
@@ -342,6 +477,7 @@ function deadlinesOf(s: ListenState): Deadlines {
       silence,
       chunk: s.recognizerStartAt + rule.chunkMs,
       watchdog,
+      deaf: s.deafAt,
     };
   }
   if (s.phase === "stopping") {
@@ -411,7 +547,7 @@ function errorOutcome(s: ListenState, code: string): ListenOutcome {
 function restart(
   s: ListenState,
   now: number,
-  kind: "continue" | "watchdog",
+  kind: "continue" | "watchdog" | "deaf",
   before: ListenEffect[] = [],
 ): ListenStep {
   const recognizer = s.recognizer + 1;
@@ -431,6 +567,9 @@ function restart(
       kind === "watchdog" ? s.watchdogRestarts + 1 : s.watchdogRestarts,
     windowStartAt: reopenWindow ? now : s.windowStartAt,
     lastResultAt: reopenWindow ? undefined : s.lastResultAt,
+    deafAt: undefined,
+    deafAudiostartMs: undefined,
+    deafRetries: kind === "deaf" ? s.deafRetries + 1 : s.deafRetries,
   };
   return stepOf(next, [...before, { type: "start-recognizer", recognizer }]);
 }
@@ -470,12 +609,63 @@ function onWatchdog(s: ListenState, now: number): ListenStep {
   return finish(s, { kind: "stalled", partialText: joinedText(s) }, [abort]);
 }
 
+/** 못 듣는 마이크로 끝냄(DeafRule): 지금 객체를 abort 하고 deaf. */
+function finishDeaf(s: ListenState): ListenStep {
+  return finish(
+    s,
+    {
+      kind: "deaf",
+      audiostartMs: s.deafAudiostartMs ?? 0,
+      retries: s.deafRetries,
+    },
+    [{ type: "abort-recognizer", recognizer: s.recognizer }],
+  );
+}
+
+/** 의심 기한이 지났다: retryMax 번까지는 옛 객체를 abort 하고 조용히 새 객체, 넘으면 deaf. */
+function onDeaf(s: ListenState, now: number): ListenStep {
+  const retryMax = s.rule.deaf?.retryMax ?? 0;
+  if (s.deafRetries < retryMax)
+    return restart(s, now, "deaf", [
+      { type: "abort-recognizer", recognizer: s.recognizer },
+    ]);
+  return finishDeaf(s);
+}
+
+/** 의심 중(소리 · 결과 · 글 없음)에 결과 없음 · 말소리 없음으로 끝나면 deaf 로 바꾼다(그 밖은 그대로). */
+function deafOr(s: ListenState, step: ListenStep): ListenStep {
+  if (s.deafAt === undefined) return step;
+  const done = step.effects.find(
+    (e): e is Extract<ListenEffect, { type: "done" }> => e.type === "done",
+  );
+  if (done === undefined) return step;
+  const { outcome } = done;
+  const silent =
+    outcome.kind === "no-result" ||
+    (outcome.kind === "error" &&
+      outcome.code === NO_SPEECH_CODE &&
+      outcome.partialText === "");
+  if (!silent) return step;
+  return stepOf(step.state, [
+    ...step.effects.filter((e) => e.type !== "done"),
+    {
+      type: "done",
+      outcome: {
+        kind: "deaf",
+        audiostartMs: s.deafAudiostartMs ?? 0,
+        retries: s.deafRetries,
+      },
+    },
+  ]);
+}
+
 function onTimer(s: ListenState, now: number): ListenStep {
   const due = (t: number | undefined) => t !== undefined && now >= t;
   const d = deadlinesOf(s);
   if (s.phase === "listening") {
     if (due(d.cap)) return stop(s, "cap");
     if (due(d.silence)) return stop(s, "silence");
+    if (due(d.deaf)) return onDeaf(s, now);
     if (due(d.chunk)) return stop(s, "chunk");
     if (due(d.watchdog)) return onWatchdog(s, now);
     return stepOf(s);
@@ -493,6 +683,31 @@ function onRecognizerInput(
   if (input.type === "start-failed") {
     return finish(s, errorOutcome(s, START_FAILED_CODE));
   }
+  if (input.type === "audio") {
+    const deaf = s.rule.deaf;
+    const audiostartMs = now - s.recognizerStartAt;
+    if (
+      deaf === undefined ||
+      s.heard ||
+      s.deafAt !== undefined ||
+      joinedText(s) !== "" ||
+      audiostartMs >= deaf.audiostartMs
+    )
+      return stepOf(s);
+    return stepOf({
+      ...s,
+      deafAt: now + deaf.silenceMs,
+      deafAudiostartMs: Math.max(0, Math.round(audiostartMs)),
+    });
+  }
+  if (input.type === "sound") {
+    return stepOf({
+      ...s,
+      heard: true,
+      deafAt: undefined,
+      deafAudiostartMs: undefined,
+    });
+  }
   const signalled: ListenState = {
     ...s,
     lastSignalAt: now,
@@ -503,6 +718,9 @@ function onRecognizerInput(
       ...signalled,
       currentText: collapse(input.text),
       lastResultAt: now,
+      heard: true,
+      deafAt: undefined,
+      deafAudiostartMs: undefined,
     });
   }
   if (input.type === "end") {
@@ -579,7 +797,7 @@ export function stepListen(state: ListenState, input: ListenInput): ListenStep {
       return onTimer(state, input.now);
     default:
       if (input.recognizer !== state.recognizer) return stepOf(state);
-      return onRecognizerInput(state, input);
+      return deafOr(state, onRecognizerInput(state, input));
   }
 }
 
@@ -607,6 +825,10 @@ export function startListen(
     restarts: 0,
     watchdogRestarts: 0,
     stopReason: undefined,
+    heard: false,
+    deafAt: undefined,
+    deafAudiostartMs: undefined,
+    deafRetries: 0,
   };
   return stepListen(idle, { type: "begin", now });
 }

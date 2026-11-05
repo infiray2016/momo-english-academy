@@ -301,6 +301,8 @@ function describeOutcome(outcome: ListenOutcome): string {
       return "멈춤";
     case "interrupted":
       return `끊김(${outcome.reason})`;
+    case "deaf":
+      return `마이크 안 잡힘 · audiostart ${outcome.audiostartMs} · 조용히 다시 ${outcome.retries}`;
   }
 }
 
@@ -1702,6 +1704,8 @@ function traceDetail(
       return `${JSON.stringify(entry.text)} · 음성 ${entry.voice ?? "없음"}`;
     case "speak-event":
       return `${entry.type}${entry.code ? ` ${entry.code}` : ""}`;
+    case "page-hidden":
+      return "쪽 숨음";
     case "mic-check":
       return entry.result.ok
         ? "성공"

@@ -1,7 +1,12 @@
 // 음성 대본 규격(plan-p02 '파일별 값' 4). 가짜 Web Speech(P2b) · 관찰 페이지 내보내기 · 단위 시험의
 // 다시 돌려 보기가 같은 꼴을 쓴다. at 은 start() · stop() · abort() 를 부른 뒤의 ms 다.
 import { z } from "zod";
-import type { EndRule, ListenOutcome, SpeechSettings } from "./listen";
+import {
+  DEAF_DETECT_VALUES,
+  type EndRule,
+  type ListenOutcome,
+  type SpeechSettings,
+} from "./listen";
 
 const ms = z.number().nonnegative();
 
@@ -61,6 +66,13 @@ export const endRuleSchema = z.strictObject({
   endSilenceMs: positiveMs.optional(),
   capMs: positiveMs.optional(),
   chunkMs: positiveMs,
+  deaf: z
+    .strictObject({
+      audiostartMs: ms,
+      silenceMs: positiveMs,
+      retryMax: z.number().int().nonnegative(),
+    })
+    .optional(),
 }) satisfies z.ZodType<EndRule>;
 
 export const speechSettingsSchema = z.strictObject({
@@ -87,6 +99,11 @@ export const speechSettingsSchema = z.strictObject({
   speakCharsPerSecondKo: z.number().positive(),
   rateKo: z.number().positive(),
   readKo: z.boolean(),
+  deafAudiostartMs: ms,
+  deafSilenceMs: positiveMs,
+  deafRetryMax: z.number().int().nonnegative(),
+  deafDetect: z.enum(DEAF_DETECT_VALUES),
+  deafSkipAfter: z.number().int().positive(),
 }) satisfies z.ZodType<SpeechSettings>;
 
 const count = z.number().int().nonnegative();
@@ -118,6 +135,11 @@ export const listenOutcomeSchema = z.discriminatedUnion("kind", [
     kind: z.literal("interrupted"),
     reason: z.enum(["hidden", "speak", "leave"]),
     partialText: z.string(),
+  }),
+  z.strictObject({
+    kind: z.literal("deaf"),
+    audiostartMs: count,
+    retries: count,
   }),
 ]) satisfies z.ZodType<ListenOutcome>;
 

@@ -186,12 +186,15 @@ const childSpeak = (page: Page) =>
 const reading = (page: Page) =>
   page.locator("[data-talk-panel][data-talk-reading]");
 
-/** 말소리가 들어오는 데 오래 걸리는 듣기(소리 들어옴 표시를 볼 틈 — 시험 값). */
+/**
+ * 말소리가 들어오는 데 오래 걸리는 듣기(소리 들어옴 표시를 볼 틈 — 시험 값). audiostart 는 마이크가 듣는 기기처럼 늦게 둔다 — speech.deaf_audiostart_ms
+ * 200 보다 빠르면 못 듣는 마이크 의심 기한(audiostart + speech.deaf_silence_ms)과 늦은 soundstart 가 100ms 차이로 겨뤄 흔들린다(검토 rev-mic-1 M-1).
+ */
 function lateSoundRun(text: string): RecognitionRun {
   return {
     events: [
       { at: 50, type: "start" },
-      { at: 100, type: "audiostart" },
+      { at: 400, type: "audiostart" },
       { at: 1500, type: "soundstart" },
       { at: 1600, type: "speechstart" },
       {

@@ -7,14 +7,25 @@ import { z } from "zod";
 export const CLIENT_LISTENS_MAX = 20;
 /** 기기 판정 이름 길이 상한(기술 값 — readDeviceVerdict().name). */
 const BROWSER_NAME_MAX = 80;
-/** ms 값 상한(기술 값 — 꼴 검사, 10분). */
-const MS_MAX = 600_000;
+/** ms 값 상한(기술 값 — 꼴 검사, 10분). 화면은 이 값으로 잘라 보낸다(상한에 걸린 값은 이 값 그대로 — 검토 rev-mic-1 I-1). */
+export const CLIENT_LISTEN_MS_MAX = 600_000;
+const MS_MAX = CLIENT_LISTEN_MS_MAX;
 /** 세션 실패 셈 상한(기술 값 — 꼴 검사). */
 const FAILURES_MAX = 1000;
+/** 한 듣기 안에서 다시 연 객체 수 상한(기술 값 — 꼴 검사). */
+const RESTARTS_MAX = 100;
 
-/** 듣기 결과 종류: result · no-result · stalled · error:<코드> · interrupted:<까닭>. 코드는 영어 소문자 · 붙임표만(모르면 other). */
+/**
+ * 듣기 결과 종류: result · no-result · stalled · deaf(마이크 안 잡힘 — audiostart 가 빨리 오고 소리 · 결과 없음, 잠정 11-06) · error:<코드> ·
+ * interrupted:<까닭>. 코드는 영어 소문자 · 붙임표만(모르면 other).
+ */
 export const LISTEN_RESULT_PATTERN =
-  /^(result|no-result|stalled|error:[a-z][a-z-]{0,39}|interrupted:(hidden|speak|leave))$/;
+  /^(result|no-result|stalled|deaf|error:[a-z][a-z-]{0,39}|interrupted:(hidden|speak|leave))$/;
+
+/** start 호출 때 읽어 주기 상태(ts). */
+export const LISTEN_SYNTH_STATES = ["speaking", "pending", "idle"] as const;
+/** 듣기 앞 마지막 읽기의 끝 까닭(te): 끝 알림 · 감시 상한 · 끊김(interrupted · canceled) · 그 밖 오류. */
+export const LISTEN_SPEAK_ENDS = ["end", "timeout", "cancel", "error"] as const;
 
 const ms = z.int().min(0).max(MS_MAX);
 
@@ -35,6 +46,19 @@ export const ClientListenEntrySchema = z.strictObject({
   fr: ms.optional(),
   /** 직전 읽어 주기와의 관계: 읽는 중 끊고 들음이면 'cut', 읽기가 끝난 뒤면 그 뒤 ms. 앞에 읽기가 없으면 없다. */
   tc: z.union([z.literal("cut"), ms]).optional(),
+  // ── 아래 여섯 칸은 2026-11-06 에 더함(분석 task-ipad-listen-analysis 6.2 — 옛 기록에는 없다) ──
+  /** 앞 인식 객체 end(어느 듣기든) → 이 듣기 첫 start 호출(ms). 앞 객체가 없으면 없다. */
+  pe: ms.optional(),
+  /** 첫 start 호출 → 첫 soundstart · speechstart(ms). 소리가 없으면 없다. */
+  ss: ms.optional(),
+  /** 이 듣기 안에서 다시 연 객체 수(끊어 듣기 · 브라우저 끝 · 감시 · 못 듣는 마이크). */
+  rs: z.int().min(0).max(RESTARTS_MAX).optional(),
+  /** 첫 start 호출 때 읽어 주기 상태(speaking · pending · idle). */
+  ts: z.enum(LISTEN_SYNTH_STATES).optional(),
+  /** 듣기 앞 마지막 읽기의 끝 까닭. 앞에 읽기가 없거나 끝 알림이 아직 없으면 없다. */
+  te: z.enum(LISTEN_SPEAK_ENDS).optional(),
+  /** 앞 듣기(없으면 기록 처음) 뒤 이 듣기 앞에 쪽이 숨은 적이 있는가. */
+  hid: z.boolean().optional(),
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 
