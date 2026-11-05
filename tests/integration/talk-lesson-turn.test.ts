@@ -330,11 +330,13 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     expect(retries).toHaveLength(1);
     const bodies = all.filter((b) => !b.includes("App check: your question"));
     expect(bodies).toHaveLength(2);
+    // 행은 턴 번호 차례로 본다(ORDER BY 없는 읽기는 앞 시험이 지운 자리에 새 행이 들어가면 차례가 바뀐다)
     const [child] = (
       await db
         .select()
         .from(talkTurns)
         .where(eq(talkTurns.sessionId, sessionId))
+        .orderBy(talkTurns.turnNo)
     ).filter((r) => r.speaker === "child" && r.sentUserMessage !== null);
     const firstTeacher = (await teacherRows(sessionId)).at(-2);
     const quoted = (text: string) => JSON.stringify(text).slice(1, -1);
@@ -359,11 +361,14 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     });
     expect(card.praiseLines).toContain(last?.text?.split("\n")[0]);
     // 그 턴은 '말했다'를 세지 않는다(8절 회화 턴 실패)
+    // 이번 턴의 아이 행은 턴 번호가 가장 큰 아이 행이다 — ORDER BY 없이 읽으면 앞 시험(C203 (3) 통합 사례 등)이 resetHousehold 로 지운 자리에
+    // 새 행이 들어가 차례가 바뀌어, 인사 쪽 아이 행(saidWords null)을 고를 수 있다(CI 일곱째 AC-15b)
     const child = (
       await db
         .select()
         .from(talkTurns)
         .where(eq(talkTurns.sessionId, sessionId))
+        .orderBy(talkTurns.turnNo)
     ).findLast((r) => r.speaker === "child");
     expect(child?.saidWords).toEqual([]);
   });

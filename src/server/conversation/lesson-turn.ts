@@ -1377,6 +1377,32 @@ export function lessonWrapLinesOf(
   }).map(({ en, ko }) => ({ en, ...(ko === undefined ? {} : { ko }) }));
 }
 
+/**
+ * 이 턴 아이 행의 '말했다' 낱말(3.4 · AC-9d — saidWordsOf). 회화 턴이 실패해 앱이 고른 한 줄로 닫힌 턴(응답 값 없음 — 8절 회화 턴 실패)과 말 입력이
+ * 아닌 턴은 빈 목록이다(null 이 아님 — 통합 AC-15b).
+ */
+export function lessonSaidWordsOf(
+  value: Pick<TalkLessonOutput, "self_used_words"> | null,
+  ctx: {
+    speech: boolean;
+    heard: string;
+    hintKind: TalkHintKind;
+    unitWords: readonly string[];
+    lemmaOf: (surface: string) => string | undefined;
+    homophones: () => string[][];
+  },
+): string[] {
+  if (value === null || !ctx.speech) return [];
+  return saidWordsOf({
+    aiWords: value.self_used_words,
+    heard: ctx.heard,
+    hintKind: ctx.hintKind,
+    unitWords: ctx.unitWords,
+    lemmaOf: ctx.lemmaOf,
+    homophones: ctx.homophones(),
+  });
+}
+
 /** 늦은 카드 답 판정 재료(talk_turns 행 → 선생님 행 move · 아이 행 인식 글). */
 export function lateCardRowsOf(
   rows: readonly Pick<TalkTurnRow, "speaker" | "text" | "move">[],
@@ -2195,17 +2221,14 @@ async function lessonTurnAfterChild(
     ? explainFor(result.plan, stuck, value.explanation)
     : null;
   const unitWords = ctx.unitWords;
-  const said =
-    value && mode === "speech"
-      ? saidWordsOf({
-          aiWords: value.self_used_words,
-          heard: child.text ?? "",
-          hintKind: (child.hintKind ?? "none") as TalkHintKind,
-          unitWords,
-          lemmaOf: state.lemmaOf,
-          homophones: (deps.homophones ?? seedHomophones)(),
-        })
-      : [];
+  const said = lessonSaidWordsOf(value, {
+    speech: mode === "speech",
+    heard: child.text ?? "",
+    hintKind: (child.hintKind ?? "none") as TalkHintKind,
+    unitWords,
+    lemmaOf: state.lemmaOf,
+    homophones: () => (deps.homophones ?? seedHomophones)(),
+  });
   // AI 가 쓴 선생님 문장 수(문장 문에 든 것 — 앱이 고른 한 줄 · 붙인 줄은 세지 않음)
   const overLength =
     view.kind !== "line" &&

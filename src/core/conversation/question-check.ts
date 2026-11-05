@@ -353,6 +353,11 @@ export function choicesEchoChild(
    * 'Is the water hot or cold?' 의 water)이 있으면 새 물음으로 보고 되묻기가 아니다(검토 rev-prompt-2 P3-2). 없으면 이 조건을 보지 않는다.
    */
   question?: string,
+  /**
+   * 같은 선생님 말에서 질문 앞에 나온 글(반응 · 되풀이). 이 낱말은 '새 내용 낱말'로 치지 않는다 — 'Yes, the lake is big! Is the lake big or small?'
+   * 의 lake 는 선생님이 방금 되풀이에서 꺼낸 낱말이라 새 물음이 아니다(검토 rev-prompt-2 fix1 M-1).
+   */
+  lead?: string,
 ): boolean {
   const said = new Set<string>();
   for (const t of tokenize(child)) {
@@ -372,8 +377,10 @@ export function choicesEchoChild(
     said.has(w) || said.has(lemmaOf(w)?.toLowerCase() ?? "");
   const echoes = [...slot].some(known);
   if (!echoes || question === undefined) return echoes;
+  const led = new Set(plainWords(lead ?? ""));
   const fresh = plainWords(question).some(
-    (w) => !QUESTION_FRAME_WORDS.has(w) && !slot.has(w) && !known(w),
+    (w) =>
+      !QUESTION_FRAME_WORDS.has(w) && !slot.has(w) && !known(w) && !led.has(w),
   );
   return !fresh;
 }

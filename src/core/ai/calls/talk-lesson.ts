@@ -38,10 +38,12 @@ import {
   TALK_SUPPORT_STAGE_TOGETHER,
 } from "@/core/conversation/move";
 import {
+  cardQuestionKeyOf,
   checkChoices,
   checkSoundLine,
   choicesEchoChild,
   type LowLevelLineOptions,
+  questionKeyOf,
 } from "@/core/conversation/question-check";
 import {
   sayingAnswer,
@@ -772,7 +774,7 @@ function commonRules(
     "React to what the child actually said first. Start tori_en with a short reaction of at most four words (e.g. 'Oh, soccer!', 'Me too!', 'Yum!').",
     `Ask only one question in a turn. tori_en has at most ${rules.teacherSentencesMax} sentences.`,
     // 되풀이는 대화 토막의 틀린 말 · 짧은 답에만, 인사 답에는 사람처럼 반응(13절 C202 (4) · 분석 5.1 4 · A5)
-    "In the talk (Segment talk or more_talk), if the child's English is wrong, say the correct sentence back naturally (recast), even for a one-sound difference at the end of a word. When the child answers with a word or a short answer, say back one correct sentence with it (e.g. 'No! Easy.' -> 'Art is easy for you!'), using the verb of the question you just asked, not 'like' (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!'). Never say it was wrong, never scold, and never ask the child to say it again as a sentence. If the child's sentence is already correct, do not change its words (never swap in a unit word); do not say it back, just react to it.",
+    "In the talk (Segment talk or more_talk), if the child's English is wrong, say the correct sentence back naturally (recast), even for a one-sound difference at the end of a word. When the child answers with a word or a short answer, say back one correct sentence with it (e.g. 'No! Easy.' -> 'Art is easy for you!'), using the action your question just asked about, and keep 'like' only when your question asked what the child likes (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!'; 'What food do you like?' + 'Rice.' -> 'You like rice!'). Never say it was wrong, never scold, and never ask the child to say it again as a sentence. If the child's sentence is already correct, do not change its words (never swap in a unit word); do not say it back, just react to it.",
     "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
     "Praise concretely by pointing at what the child said. Never hurry the child.",
     `Ask a follow-up question on the child's words at least once every ${rules.followUpEvery} turns.`,
@@ -1351,10 +1353,13 @@ function sameAsChoice(model: string, choices: readonly string[]): boolean {
   );
 }
 
-/** tori_en 의 마지막 물음표 문장(없으면 칸 없음). */
-function questionField(toriEn: string): { question?: string } {
-  const question = splitSentences(toriEn).filter(isQuestionSentence).at(-1);
-  return question === undefined ? {} : { question };
+/** tori_en 의 마지막 물음표 문장과 그 앞 글(반응 · 되풀이). 물음표 문장이 없으면 칸 없음. */
+function questionField(toriEn: string): { question?: string; lead?: string } {
+  const sentences = splitSentences(toriEn);
+  const at = sentences.findLastIndex(isQuestionSentence);
+  const question = sentences[at];
+  if (at < 0 || question === undefined) return {};
+  return { question, lead: sentences.slice(0, at).join(" ") };
 }
 
 /**
@@ -1375,8 +1380,9 @@ function keptChoicesOf(
     reask: ReadonlySet<string>;
     unitWords: ReadonlySet<string>;
     targets: readonly string[];
-    /** 그 선택지에 딸린 질문(tori_en 의 마지막 물음표 문장 — 되묻기 거름이 새 물음인지 본다). */
+    /** 그 선택지에 딸린 질문(tori_en 의 마지막 물음표 문장 — 되묻기 거름이 새 물음인지 본다)과 그 앞 글. */
     question?: string;
+    lead?: string;
   },
 ): string[] {
   if (!ctx.low || raw.length !== 2) return [];
@@ -1386,7 +1392,15 @@ function keptChoicesOf(
     checkChoices(pair, { ...ctx.options, targets }).ok ? [...pair] : [];
   if (ctx.stage === TALK_SUPPORT_STAGE_EASY) return check(ctx.targets);
   // 아이가 방금 한 말을 되묻는 고르기(바뀌는 자리가 아이 말의 낱말)는 버린다(대본 4회차 N-1 · 02-2 196 · 184)
-  if (choicesEchoChild(pair, ctx.input.turn.child, lemmaOf, ctx.question))
+  if (
+    choicesEchoChild(
+      pair,
+      ctx.input.turn.child,
+      lemmaOf,
+      ctx.question,
+      ctx.lead,
+    )
+  )
     return [];
   const inLines = pair.flatMap((line) =>
     tokenize(line)
@@ -1447,6 +1461,21 @@ export function talkSceneWordsOf(
     ]),
     ...input.unitWords,
   ]);
+}
+
+/** AI 질문(tori_en 의 마지막 물음표 문장)이 그 카드 항목의 질문 글과 같은 질문 열쇠인가(question-check cardQuestionKeyOf). */
+function asksCardQuestionAsIs(
+  toriEn: string,
+  card: Pick<TalkLessonCardView, "required" | "more">,
+  item: TalkCardItem,
+): boolean {
+  const target = cardItemOf(card, item);
+  const { question } = questionField(toriEn);
+  return (
+    target !== undefined &&
+    question !== undefined &&
+    questionKeyOf(question) === cardQuestionKeyOf(target.en)
+  );
 }
 
 export function cardChainGuardOf({
@@ -1652,7 +1681,12 @@ export function normalizeTalkLesson(
     ...(asks
       ? {
           next_move: nextMove,
-          card_item: chainGuard.dropCardItem ? NO_CARD_ITEM : cardItem,
+          // 질문 글이 그 필수 질문 글과 같으면(같은 질문 열쇠) 아이가 그 질문을 들은 것이라 카드 항목을 남겨 다룬 것으로 센다(fix1 M-3 — 같은 글 두 번 막음)
+          card_item:
+            chainGuard.dropCardItem &&
+            !asksCardQuestionAsIs(a.tori_en, card, cardItem)
+              ? NO_CARD_ITEM
+              : cardItem,
           next_goal: uniqueNonEmpty(a.next_goal.filter((g) => goals.has(g))),
         }
       : EMPTY_NEXT),

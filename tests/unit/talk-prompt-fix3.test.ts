@@ -12,16 +12,37 @@ import {
   sceneWordsOf,
   touchesScene,
 } from "@/core/conversation/child-kind";
-import { lateCardAnswerOf } from "@/core/conversation/lesson-flow";
+import {
+  type LessonArgs,
+  lateCardAnswerOf,
+  nextTeacherTurnOf,
+  talkLessonPositionOf,
+} from "@/core/conversation/lesson-flow";
+import { talkMoveOf } from "@/core/conversation/move";
 import { choicesEchoChild } from "@/core/conversation/question-check";
 import { questionRetryNoteOf } from "@/core/conversation/question-retry";
-import { lessonCallTurnOf } from "@/server/conversation/lesson-turn";
+import {
+  createLessonSentenceFlow,
+  lateCardRowsOf,
+  lessonCallTurnOf,
+  lessonOutcomeViewOf,
+  lessonSaidWordsOf,
+  settleLessonTurn,
+} from "@/server/conversation/lesson-turn";
 import {
   GOAL_1,
   lessonInput,
   lessonRules,
 } from "../fixtures/ai/talk-lesson-inputs";
-import { aiTurn, opening3, said } from "../fixtures/talk-lesson";
+import {
+  aiTurn,
+  CARD3,
+  LOW,
+  NEW3,
+  opening3,
+  SPEC3,
+  said,
+} from "../fixtures/talk-lesson";
 
 const lemma = (w: string) =>
   ({ plays: "play", played: "play" })[w.toLowerCase()];
@@ -149,7 +170,7 @@ describe("N-2 늦은 카드 답 · 카드 항목만 필수인 되돌림", () => 
   it("앞 차례가 카드 기회인 턴에 갈래를 follow_up 으로 적고 카드 항목만 필수 질문이어도 되돌림이 걸린다(카드 항목은 남김)", () => {
     const out = normalizeTalkLesson(
       answer({
-        tori_en: "Yum! What sport is fun?",
+        tori_en: "Yum! Do you play a game?",
         next_move: "follow_up",
         card_item: { kind: "required", no: 2 },
         next_targets: ["soccer"],
@@ -248,7 +269,7 @@ describe("고침 3 fix 1(검토 rev-prompt-2 P3-1 · P3-2 · P3-3 · P3-4 · P3-
     const after = lessonInput(3, { turn: { afterCardChance: true } });
     const labeled = normalizeTalkLesson(
       answer({
-        tori_en: "Yum! What sport is fun?",
+        tori_en: "Yum! Do you play a game?",
         next_move: "follow_child",
         card_item: { kind: "required", no: 2 },
         next_targets: ["soccer"],
@@ -293,7 +314,7 @@ describe("고침 3 fix 1(검토 rev-prompt-2 P3-1 · P3-2 · P3-3 · P3-4 · P3-
       "In this turn next_move can never be required, and card_item can never be a required question either.",
     );
     expect(system).toContain(
-      "using the verb of the question you just asked, not 'like' (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!').",
+      "using the action your question just asked about, and keep 'like' only when your question asked what the child likes (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!'; 'What food do you like?' + 'Rice.' -> 'You like rice!').",
     );
   });
 
@@ -404,5 +425,190 @@ describe("고침 3 fix 1(검토 rev-prompt-2 P3-1 · P3-2 · P3-3 · P3-4 · P3-
         "Is the fish big or small?",
       ),
     ).toBe(true);
+  });
+});
+
+describe("고침 3 fix 2(검토 rev-prompt-2 fix1 M-1 · M-3 · M-4)", () => {
+  it("M-1 질문 앞 되풀이 · 반응에 나온 낱말은 새 내용 낱말이 아니다 — 4회차 되묻는 고르기는 다시 버리고, 질문에만 새로 나온 낱말이면 남긴다", () => {
+    expect(
+      choicesEchoChild(
+        ["It is big.", "It is small."],
+        "Big.",
+        lemma,
+        "Is the lake big or small?",
+        "Yes, the lake is big!",
+      ),
+    ).toBe(true);
+    expect(
+      choicesEchoChild(
+        ["It is cold.", "It is hot."],
+        "Cold.",
+        lemma,
+        "Is the juice cold or hot?",
+        "Cold juice, yum!",
+      ),
+    ).toBe(true);
+    expect(
+      choicesEchoChild(
+        ["He is big.", "He is small."],
+        "My mom is big.",
+        lemma,
+        "Is your dad big or small?",
+        "Oh, your mom is big!",
+      ),
+    ).toBe(false);
+    // 정규화도 같은 꼴로 거른다(질문 앞 글은 tori_en 에서)
+    const out = normalizeTalkLesson(
+      answer({
+        tori_en: "Yes, the day is fun! Is the day fun or good?",
+        choices: ["It is fun.", "It is good."],
+      }),
+      lessonInput(3, { turn: { child: "Fun.", input: "speech" } }),
+      lessonRules(3),
+    );
+    expect(out?.choices).toEqual([]);
+  });
+
+  it("M-3 카드 답 뒤 이어 묻기 이름표라도 질문 글이 그 필수 질문 글과 같으면(같은 질문 열쇠) 카드 항목을 남겨 다룬 것으로 센다", () => {
+    const after = lessonInput(3, { turn: { afterCardChance: true } });
+    const same = normalizeTalkLesson(
+      answer({
+        tori_en: "Yum! What sport is fun?",
+        next_move: "follow_up",
+        card_item: { kind: "required", no: 2 },
+        next_targets: ["soccer"],
+        choices: [],
+      }),
+      after,
+      lessonRules(3),
+    );
+    expect(same?.card_item).toEqual({ kind: "required", no: 2 });
+    const other = normalizeTalkLesson(
+      answer({
+        tori_en: "Yum! Do you play a game?",
+        next_move: "follow_up",
+        card_item: { kind: "required", no: 2 },
+        next_targets: ["soccer"],
+        choices: [],
+      }),
+      after,
+      lessonRules(3),
+    );
+    expect(other?.card_item).toEqual({ kind: "none", no: 0 });
+  });
+
+  it("M-4 talk_turns 꼴 행(tori · child, move jsonb)을 lateCardRowsOf 로 옮겨 lessonCallTurnOf 까지 이으면 늦은 카드 답이 켜지고, 이미 답한 행이면 켜지지 않는다", () => {
+    const card = {
+      speaker: "tori",
+      text: "What do you do on the weekend?",
+      move: talkMoveOf({
+        kind: "first_question",
+        item: { kind: "required", no: 1 },
+        words: ["play"],
+      }),
+    };
+    const reply = {
+      speaker: "tori",
+      text: "Nice!",
+      move: talkMoveOf({ kind: "ai", next: "follow_up" }),
+    };
+    const kid = (text: string) => ({ speaker: "child", text, move: null });
+    const base: { segment: string; afterCardChance?: boolean } = {
+      segment: "talk",
+      afterCardChance: false,
+    };
+    const run = (rows: Parameters<typeof lateCardRowsOf>[0]) =>
+      lessonCallTurnOf(base, {
+        speech: true,
+        rows: lateCardRowsOf(rows),
+        child: "I play soccer.",
+        lemmaOf: lemma,
+        prepPlanned: false,
+      }).afterCardChance;
+    expect(run([card, kid("I like dogs."), reply] as never)).toBe(true);
+    expect(run([card, kid("I play."), reply] as never)).toBe(false);
+    // move 가 없거나 꼴이 틀린 선생님 행은 필수 질문으로 보지 않는다
+    expect(
+      run([
+        { ...card, move: { bad: true } },
+        kid("I like dogs."),
+        reply,
+      ] as never),
+    ).toBe(false);
+  });
+});
+
+describe("CI 일곱째 통합 AC-15b 와 같은 길(두 번 실패 → 칭찬 대사 · 카드 자리 · '말했다' 없음)", () => {
+  it("회화 턴이 두 번 실패한 1~3단계 턴은 칭찬 대사 한 줄의 카드 자리(why fail)이고, 그 아이 행의 '말했다'는 null 이 아니라 빈 목록이다", () => {
+    const a: LessonArgs = {
+      spec: SPEC3,
+      card: CARD3,
+      newWords: NEW3,
+      turns: [...opening3(), said()],
+      segment: "talk",
+      settings: LOW,
+      prepWords: CARD3.prep ?? [],
+    };
+    const plan = nextTeacherTurnOf(a);
+    const praise = "Good job!";
+    const view = lessonOutcomeViewOf(
+      { ok: false, reason: "server", refusals: 0 },
+      {
+        low: true,
+        koMeaning: true,
+        safeLines: [],
+        praiseLines: [praise],
+        safeLine: "Let's talk!",
+        turnNo: 1,
+      },
+    );
+    expect(view.kind).toBe("line");
+    if (view.kind === "break") throw new Error("1~3단계는 쉼이 아니다");
+    const flow = createLessonSentenceFlow({
+      low: true,
+      ifAnswered: plan,
+      ifStuck: null,
+      asked: talkLessonPositionOf(a).askedQuestions,
+      max: LOW.sameQuestionMax,
+    });
+    flow.stuck(false);
+    const result = settleLessonTurn({
+      flow,
+      outcome: view,
+      ctx: {
+        card: CARD3,
+        turns: a.turns,
+        asked: talkLessonPositionOf(a).askedQuestions,
+        max: LOW.sameQuestionMax,
+        low: true,
+        koMeaning: true,
+        dropped: [],
+        spec: SPEC3,
+        lineOptions: null,
+      },
+    });
+    expect(result.plan.kind).toBe("card_slot");
+    expect(result.replaced).toBe("fail");
+    expect(result.text.split("\n")[0]).toBe(praise);
+    const ctx = {
+      heard: "I like it.",
+      hintKind: "none" as const,
+      unitWords: NEW3,
+      lemmaOf: lemma,
+      homophones: () => [],
+    };
+    expect(lessonSaidWordsOf(null, { ...ctx, speech: true })).toEqual([]);
+    expect(
+      lessonSaidWordsOf(
+        { self_used_words: ["play"] },
+        { ...ctx, speech: false },
+      ),
+    ).toEqual([]);
+    expect(
+      lessonSaidWordsOf(
+        { self_used_words: ["play"] },
+        { ...ctx, heard: "I play soccer.", speech: true },
+      ),
+    ).toContain("play");
   });
 });
