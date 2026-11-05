@@ -176,3 +176,58 @@ Minor:
 3. **크기 울타리.** 지금 꼴 그대로(5,799자) 실호출 한 번과, 설명을 늘린 펼친 꼴(6,502자) 한 번 모두 OK 였다(입력 2,824 · 3,058, 출력 24 · 24 토큰, 약 0.012달러, `prompt1/probe/probe4.ts`). 설명 길이는 문법 한도를 움직이지 않는 것으로 보인다. TALK_OUTPUT_SCHEMA_MAX_CHARS 를 받은 가장 큰 꼴 아래인 6,500 으로 두고 근거를 주석에 적었다. 칸 수 울타리 30 은 그대로다.
 
 관문(이 워크트리 그대로): biome ci 0(저장소 전체) · tsc 0 · 단위 148 파일 1910 통과 · check:ids 0(design-number 47) · check:deps 0. 이 묶음 실호출 누계는 15번(400 셋 · 성공 열둘), 약 0.044달러다.
+
+## 고침 3(대본 4회차 설계 재판정 '조건부 통과' — N-1 · N-2 · 두 낱말 관련 말 · Minor)
+
+상태: DONE_WITH_CONCERNS(N-2 (b)의 앱 되돌림은 이름표만이라 효과가 작다 — 우려 1).
+
+| 항목 | 바꾼 곳(워크트리 줄) | 내용 · 시험 |
+|---|---|---|
+| N-1 프롬프트 | `talk-lesson.ts` 784 | "After you say back a short answer, ask something new about it (another thing, who, where, or whether they like it). Never put the child's last words in the choices (not 'Cold.' -> 'Is it cold or hot?'), and never ask again in the same words a question the child already answered, even with one word." |
+| N-1 앱 거름 | `question-check.ts` 340 choicesEchoChild, `talk-lesson.ts` 1381(keptChoicesOf) | 두 선택지의 바뀌는 자리 가운데 하나가 아이의 마지막 말의 낱말(소문자 · 원형)이면 선택지를 버린다. 'Cold.' → cold/hot, 'Yes I like fish.' → fish/rice, 'Yes big fish.' → big/small 은 버린다. 'I drink the juice.' → apple/orange 는 남긴다. 바뀌지 않는 자리(like)는 보지 않는다. 받침 둘째(쉬운 질문)는 그대로다. 시험 `talk-prompt-fix3.test.ts`(변이: 거름 뺌 → 실패) |
+| N-2 (a) 늦은 카드 답 | `lesson-flow.ts` 493 lateCardAnswerOf, `lesson-turn.ts` 1972 | 가장 최근 필수 질문 차례의 노린 단원 단어를 아이 말이 담으면(원형 포함) 'Previous turn was a card chance: yes' 로 보낸다. 그래서 프롬프트 규칙과 앱 되돌림이 늦은 답에도 걸린다. 프롬프트 785 "If the child answers an earlier card question late, follow up on that answer first too; do not jump to the next card question." 시험은 lateCardAnswerOf 네 경우다(서버 배선 한 줄은 통합 몫) |
+| N-2 (b) 카드 항목만 필수 | `talk-lesson.ts` 1455 | cardChainGuardOf 가 cardItemKind 도 본다. 갈래를 follow_up 으로 적고 card_item 만 required 인 꼴도 되돌림 판정(chained)이 걸린다. 시험은 guard 와 정규화 둘이다 |
+| 두 낱말 관련 말 | `child-kind.ts` 156 touchesScene · 169 sceneWordsOf, `talk-lesson.ts` 1426 talkSceneWordsOf, 정규화 · `talk.ts` 346(흘려 받는 중 막힘도) | 영어 낱말 두 개이고 모름 표현이 아니며 그중 하나가 장면 낱말이면 갈래와 관계없이 막힘을 무른다. 장면 낱말은 카드 주제 · 쓸 표현 · 오늘 쓸 말 · 필수 · 더 이야기할 거리 글과 답 예시 · 흐름 · 단원 단어에서 기능어를 뺀 것이다. 'Big fish.' · 'Cold juice.' → 막힘 아님, 'Blue car.'(장면 밖) · 'Yes it.' · 한 낱말 → 갈래가 정함. 시험 세 건(변이: 장면 조건 뺌 → 2건 실패) |
+| N-3 | `talk-lesson.ts` 788 · `question-retry.ts` 다시 쓰기 메시지 | 노리는 단어 대신 "ask about the thing or the person instead (e.g. 'Do you like fish?')" |
+| N-5 | `talk-lesson.ts` 799 | 들리지 않음 규칙을 "Start with 'I couldn't hear you.'." 로 세게 했다 |
+| N-6 | `talk-lesson.ts` 1407 koPerSentenceOf | 뜻 목록 수가 tori_en 문장 수와 다르면 이어서 한국어 문장 끝(문장부호 뒤 띄어쓰기)으로 다시 나눈다. 맞으면 문장마다, 아니면 한 덩이(옛 규칙)다. 옛 한 글 꼴도 같다(고침 1 시험 두 줄을 이 규칙으로 고침) |
+| N-8 | `talk-lesson.ts` 572 explanation 칸 | "only about the word your question aims at" |
+| N-4 · N-7 · N-9 | 남김 | N-4 다시 쓰기 지연은 도구 몫이다. N-7 꺼내기 턴 신호 말은 규칙이 이미 있다(1~3단계 'When you fill model_line or choices, end tori_en with a cue'). N-9 갈래 오기는 막힘에 영향이 없고 기록 통계만이다 |
+
+알림: 두 낱말 장면 조건 때문에 `tests/unit/talk-observe.test.ts` 의 'Blue car.' 시험(카드 3-1 에 car 가 있음)이 바뀐 규칙과 어긋났다. impl-talk-13 에게 서명 넷과 함께 알렸고, 지금은 단위가 모두 지난다.
+
+관문(이 워크트리 그대로): biome ci 0(594 파일) · tsc 0 · 단위 149 파일 1919 통과 · check:ids 0(design-number 47) · check:deps 0. 실호출 없음.
+
+우려:
+1. **N-2 (b) 앱 되돌림은 이름표만이다.** 갈래가 이미 follow_up 이고 카드 항목은 남기므로(fix 1 E), 판정이 걸려도 정규화 값은 그대로다. 변이(카드 항목 조건 뺌)가 정규화 시험에서 살아남는다. AI 가 쓴 카드 질문 글은 그대로 나가므로, 늦은 · 이른 카드 연쇄를 실제로 막는 몫은 프롬프트(785 · 768)에 있다. 판정을 효과로 잇는 길이 하나 있다. 1~3단계는 질문을 잡아 두므로, chained 인 턴을 C203 다시 쓰기 길로 '아이 답에 이어 묻기'를 한 번 쓰게 하는 것이다(D8 (나) 원안, 그 턴마다 호출 하나 더). 대본에서 연쇄가 남으면 컨트롤러가 정한다.
+2. 장면 낱말 표는 카드 글에서 만든다. 'fun' · 'day' 같은 흔한 내용 낱말도 들어, 장면 밖의 두 낱말 말이 우연히 이 낱말을 담으면 무른다. 막힘이 아닌데 막힘으로 보는 것보다 덜 해로운 쪽이라 받아들였다.
+3. 늦은 카드 답은 아이 말이 최근 필수 질문의 노린 단어를 담았는지로만 본다. 한참 뒤 같은 낱말을 다시 써도 '카드 기회 뒤'로 보아 그 턴의 필수 질문 갈래를 되돌린다(이어 묻기 쪽으로 기우는 오차).
+
+- **CI 여섯째(806801f) 통합 AC-15k 1건.** 첫 턴 가짜 응답의 질문 'Do you like zebrafish aquariums?' 는 범위 밖 두 낱말이라 `question-check.ts` 289 에서 offband 로 걸린다. 그래서 `question-retry.ts` 32 heldQuestionFailOf → `lesson-turn.ts` 1474 · 1488 withQuestionRetry 가 C203 (3) 다시 쓰기를 한 번 부른다. 둘째 규칙이 아직 없어 가짜 서버는 501 이고, 턴은 카드 자리로 닫힌다. 이 시험은 '붙인 카드 질문 포함'을 보려고 일부러 걸리는 질문을 쓰므로 재호출이 맞는 장면이다. 단언을 'TURN_MARK 본문 셋 = 본 턴 둘 + 다시 쓰기 하나(App check 글)' 로 고치고, 둘째 본 턴 본문 대조는 다시 쓰기를 뺀 둘 가운데 둘째로 그대로 둔다(`tests/integration/talk-lesson-turn.test.ts` 323~). biome ci 0 · tsc 0. 통합은 CI 몫이다.
+
+## 고침 3 fix 1(검토 rev-prompt-2 P3-1 NOT ADDRESSED · 설계 재판정 N-10 · Minor P3-2~P3-5, 컨트롤러 잠정 T-161)
+
+상태: DONE. 호출은 늘리지 않았다(D8 (나) 쓰지 않음). 실호출 없음. 새 시험마다 해당 코드를 하나씩 망가뜨리는 변이 여섯으로 실패를 확인하고 되돌렸다(카드 항목 비우기 · 서버 손질의 늦은 답 · 이미 답함 · 폭 · 흐름 글 · 새 낱말 조건).
+
+| 항목 | 바꾼 곳(워크트리 줄) | 내용 · 시험 |
+|---|---|---|
+| A P3-1 · N-2 (b) | `talk-lesson.ts` 1471 cardChainGuardOf, 고정부 781 | 앞 차례가 카드 기회인 턴에 갈래가 follow_up · follow_child 인데 카드 항목이 필수 질문을 가리키면 카드 항목을 비운다. 그 필수 항목은 다룬 것으로 세지 않고 남은 기회로 둔다. 선생님 말은 그대로다. 갈래가 required 면 이름표만 되돌리고 카드 항목은 남긴다(fix 1 E 그대로 — 아이가 들은 필수 질문). 고정부 "In this turn next_move can never be required, and card_item can never be a required question either." 시험은 정규화 세 경우(이름표 + 필수 → 비움, 필수 갈래 → 남김, 카드 기회 아님 → 그대로)와 고정부 문장이다. 카드 항목 비우기를 빼는 변이에 2건이 실패한다. 남는 점: 카드 항목을 비운 이 차례는 이어 묻기 뒤 셈에서 진짜 이어 묻기로 센다(fix 1 E 의 셈 보정은 카드 항목이 있을 때만 걸림) |
+| B 설계 N-10 | `talk-lesson.ts` 775(되풀이 규칙) | "… say back one correct sentence with it …, using the verb of the question you just asked, not 'like' (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!')." 02-2 196 · 198. 시험은 고정부 문장이다 |
+| C P3-3 · P3-4 | `lesson-flow.ts` 489 LATE_CARD_ANSWER_MAX_GAP 2 · 504 lateCardAnswerOf, `lesson-turn.ts` 1381 lateCardRowsOf · 1406 lessonCallTurnOf · 2026(서버는 이 함수 하나를 부름) | 늦은 카드 답은 가장 최근 필수 질문 뒤 노린 단어를 처음 담은 아이 말일 때만이다. 그 뒤 아이 말 가운데 이미 담은 것이 있거나(이미 답함), 아이 차례가 폭 2 를 넘게 지났으면 켜지 않는다. 판정은 talk_turns 행(선생님 move · 아이 인식 글)으로 한다. 늦은 답 · 다음 토막을 붙이던 서버 줄을 순수 함수 lessonCallTurnOf 로 뺐다. 시험은 판정 넷과 lessonCallTurnOf 다섯이다(서버 손질의 늦은 답을 빼는 변이 → 실패). 폭 2 는 판정 폭(대본 4회차 사례 둘)이라 설계 숫자로 두지 않았다. 12절 키로 올릴지는 컨트롤러가 정한다. 옛 { turns } 입력도 받는다(도구 호환, '이미 답함'은 못 봄) |
+| D P3-5 | `talk-lesson.ts` 1439 talkSceneWordsOf, `child-kind.ts` 116 | 장면 낱말 표에서 카드 진행 설명 글(card.flow)과 주제 글을 뺐다. 쓸 표현 · 오늘 쓸 말 · 필수 · 더 이야기할 거리 글과 답 예시 · 단원 단어만 쓴다. 진행 · 지시 말(one · now · time · more · can · me · let · here · there · today)은 장면 낱말로 세지 않는다. 시험: teacher · asks · brings · now · one 이 없고 sport 는 있다(흐름 글을 되살리는 변이 → 실패) |
+| E P3-2 | `question-check.ts` 341 · 375 choicesEchoChild 넷째 인자 question, `talk-lesson.ts` 1355 questionField | 선택지의 바뀌는 낱말이 아이 말과 같아도, 딸린 질문(tori_en 의 마지막 물음표 문장)에 아이 말에도 바뀌는 자리에도 없는 내용 낱말이 있으면 새 물음으로 보고 버리지 않는다. 'My mom is big.' + 'Is your dad big or small?' 과 'It is hot.' + 'Is the water hot or cold?' 는 남기고, 'Cold.' + 'Is it cold or hot?' 과 'Yes big fish.' + 'Is the fish big or small?' 은 버린다(새 낱말 조건을 빼는 변이 → 실패). 1 · 2단계의 해는 이 좁힘으로 줄지만, 3단계만 거를지는 iPad 시험 뒤로 미룬다 |
+
+알림: impl-talk-13 에게 바뀐 서명(lateCardAnswerOf rows · lessonCallTurnOf · cardChainGuardOf dropCardItem · talkSceneWordsOf · choicesEchoChild question)을 알렸다. 도구는 지금도 tsc 를 지난다.
+
+관문(이 워크트리 그대로):
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm biome ci` | 0(594 파일) |
+| `pnpm tsc --noEmit -p .` | 0 |
+| `pnpm vitest run --project unit` | 149 파일 · 1925 통과 · 6 todo · 실패 0 |
+| `pnpm spec:trace` | 0(남은 missing-test 는 AC-10g · AC-10h 등 P12 몫 — 이 고침과 관계없음) |
+| `pnpm seed:validate` | 0(경고 둘 — 회화 4 · 5단계 단원 목표 없음, 이 고침과 관계없음) |
+| `pnpm check:ids` · `pnpm check:deps` | 0 · 0(design-number 47 그대로) |
+
+고치지 않고 남긴 것: 없음(P3-6 관사 되풀이는 검토자 판정대로 고칠 것이 아니다 — 도구 기대 쪽, impl-talk-13 몫).

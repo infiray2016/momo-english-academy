@@ -275,3 +275,49 @@ C203 재질문(impl-talk-prompt-1, 같은 시각).
 | `pnpm vitest run --project unit`(전체) | 1909 통과 · 6 todo |
 | `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
 | 가짜 응답으로 대본 다섯 끝까지 | 모든 차례를 돎 |
+
+## fix round 7(sceneWords · 늦은 카드 답 · 선택지 되묻기 · 카드 연쇄 막기 변경 따라가기 — impl-talk-prompt-1 알림 둘째, 고침 3, 2026-11-06)
+
+상태: DONE_WITH_CONCERNS. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`).
+
+| 바뀐 것 | 도구 |
+|---|---|
+| effectiveStuckOf 선택 인자 sceneWords(talkSceneWordsOf(input)) — 두 낱말 말이라도 카드 · 장면 · 단원 낱말을 담으면 무름 | 정규화(normalizeTalkLesson) 안이라 그대로 든다. 깨진 시험의 아이 말을 카드에 없는 'Pink moon.' 으로 바꿨다(카드 3-1 에 car 가 있어 'Blue car.' 는 이제 무름) |
+| choicesEchoChild — 아이 말을 되묻는 선택지 버림 | 정규화 안(talk-lesson.ts 1381)이라 그대로 든다 |
+| cardChainGuardOf(cardItemKind · chained) | 정규화 안(1563)이라 그대로 든다 |
+| lateCardAnswerOf — 서버가 회화 턴 입력에 afterCardChance 참을 얹음(lesson-turn.ts 1971~1990) | prepare(1712)가 같은 core 함수로 같은 조건(말 입력 · 계획이 이미 참이 아님)에 얹는다. lemmaOf 는 도구 재료(단원 + 단계 범위)다 |
+
+시험.
+- 새 시험 '한 턴 늦게 온 카드 답은 앞 차례가 카드 기회로 알린다': 첫 질문에 딴 말 → AI 이어 묻기 → 노린 낱말을 담은 답에 afterCardChance 참 · 사용자 메시지 'Previous turn was a card chance: yes' 를 본다. 얹기를 빼면 실패로 잡히고, 되돌렸다.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 36 통과 |
+| `pnpm tsc --noEmit` · 내 파일 `biome ci` · `pnpm check:ids` | 0 · 0 · 0(design-number 47 그대로) |
+| 전체 `biome ci` | **1 — 내 파일 아님**: src/core/conversation/child-kind.ts · lesson-flow.ts 507 · src/server/conversation/lesson-turn.ts 46 · tests/unit/talk-prompt-fix3.test.ts(고침 3 작업 중) |
+| 전체 단위 | **1 실패 — 내 파일 아님**: tests/unit/talk-prompt-fix1.test.ts 1건 · 1918 통과 |
+| 가짜 응답으로 대본 다섯 끝까지 | 모든 차례를 돎 |
+
+## fix round 8(lateCardAnswerOf rows 꼴 · 고침 3 fix 1 변경 따라가기 — impl-talk-prompt-1 알림 셋째, 2026-11-06)
+
+상태: DONE. 맡은 파일 둘만 고쳤다(`scripts/talk-observe.ts` · `tests/unit/talk-observe.test.ts`). 알림을 받았을 때 도구 시험은 36 통과로 깨지지 않았다(옛 `turns` 꼴도 받기 때문). 다만 옛 꼴은 '이미 답함'을 보지 못해 서버와 다르게 판정할 수 있어서 맞췄다.
+
+| 바뀐 것 | 도구 |
+|---|---|
+| lateCardAnswerOf({ rows: LateCardRow[] }) — 가장 최근 필수 질문 뒤 노린 단어를 처음 담은 말 · 그 뒤 아이 차례 LATE_CARD_ANSWER_MAX_GAP(2) 안 | prepare(1718)가 메모리 행을 같은 꼴(선생님 행 move · 아이 행 인식 글)로 바꿔 `rows` 로 넘긴다. 서버 `lessonCallTurnOf` · `lateCardRowsOf` 는 server-only 라 가져올 수 없고, 같은 차례(말 입력 · 계획이 이미 참이 아님 · 인사 끝이면 다음 토막)를 core 함수로 밟는다 |
+| cardChainGuardOf — follow_up · follow_child + 필수 항목이면 카드 항목 비움 | 정규화 안이라 그대로 든다 |
+| talkSceneWordsOf — card.flow · topic 뺌 | 정규화 안이라 그대로 든다 |
+| choicesEchoChild 넷째 인자 question | 정규화 안이라 그대로 든다 |
+
+시험.
+- 새 시험 '이미 노린 낱말로 답한 뒤의 말은 늦은 카드 답이 아니다'. 첫 질문에 노린 낱말로 답하고 AI 가 이어 물은 뒤, 같은 낱말을 다시 담은 말에 afterCardChance 가 참이 아님을 본다. 옛 `turns` 꼴로 되돌리면 실패로 잡히고, 되돌렸다.
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm vitest run --project unit tests/unit/talk-observe.test.ts` | 37 통과 |
+| `pnpm biome ci`(전체) · `pnpm tsc --noEmit` | 0 · 0 |
+| `pnpm vitest run --project unit`(전체) | 1926 통과 · 6 todo |
+| `pnpm check:ids` | 0(code-setting-unknown 0 · design-number 47 그대로) |
+| 가짜 응답으로 대본 다섯 끝까지 | 모든 차례를 돎 |
+
+요청하는 변경: `lessonCallTurnOf` · `lateCardRowsOf` 는 DB 없는 순수 함수다. core 로 옮기면 도구가 사본 없이 같은 함수를 부른다(8절 요청과 같은 갈래).
