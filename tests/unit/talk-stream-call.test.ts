@@ -98,9 +98,16 @@ const once = (reply: FakeReply, model?: string): FakeRule => ({
   times: 1,
 });
 
-/** 시험용 새 꼴 회화 턴 응답 칸(성공 견본 + 덮어쓴 칸, 칸 차례는 stuck · tori_en 먼저 — C127). */
+/**
+ * 시험용 새 꼴 회화 턴 응답 칸(성공 견본 + 덮어쓴 칸, 칸 차례는 child_kind · stuck · tori_en 먼저 — C127 · C204). 막힘 참이면 갈래도 막힘 갈래로
+ * 둔다(앱이 갈래로 막힘을 무르므로 — 13절 C204 (3)).
+ */
 function answer(over: Record<string, unknown>): Record<string, unknown> {
-  return { ...sampleAnswer(OK), ...over };
+  return {
+    ...sampleAnswer(OK),
+    ...(over.stuck === true ? { child_kind: "not_understood" } : {}),
+    ...over,
+  };
 }
 
 function harness(
@@ -148,7 +155,14 @@ function harness(
 }
 
 /** 3단계 견본 입력(3단계 AI 차례). */
-const lowInput = () => talkLessonSampleFor(OK);
+/**
+ * 3단계 견본 입력. 아이 말은 짧은 말('What?')로 둔다 — 영어 낱말 셋 이상의 말은 앱이 갈래와 관계없이 막힘을 무르므로(13절 C204 (3) · 검토
+ * rev-prompt-2 D) 막힘 판단을 알리는 시험이 AI 의 막힘 값을 그대로 보게 한다.
+ */
+const lowInput = () => {
+  const input = talkLessonSampleFor(OK);
+  return { ...input, turn: { ...input.turn, child: "What?" } };
+};
 
 /** Haiku 5.5 를 1~3 구간 회화 모델로 고른 요청 구성(C112 뒤 기본은 Sonnet — Haiku 거절 뒤 Sonnet 재시도 길은 이 설정에서만). */
 function haikuConfigOf(level: number) {
@@ -160,9 +174,9 @@ function haikuConfigOf(level: number) {
   });
 }
 const HAIKU = "claude-haiku-5-5";
-/** 성공 견본에서 첫 문장('Oh, soccer!') 뒤 · 둘째 문장 안에서 끊는 글자 자리(앞 칸 stuck 을 더한 C127 차례). */
-const FIRST_SENTENCE_CUT = '{"stuck":false,"tori_en":"Oh, soccer! I like'
-  .length;
+/** 성공 견본에서 첫 문장('Oh, soccer!') 뒤 · 둘째 문장 안에서 끊는 글자 자리(앞 칸 child_kind · stuck 을 더한 C127 · C204 차례). */
+const FIRST_SENTENCE_CUT =
+  '{"child_kind":"answer","stuck":false,"tori_en":"Oh, soccer! I like'.length;
 
 function otherConfigOf(level: number) {
   return requestConfigOf({
@@ -351,6 +365,43 @@ describe("회화 턴 흐름(DB 없는 몫): 흘려 보내기 · 검사", () => {
 });
 
 describe("회화 턴 흐름(DB 없는 몫): 막힘 판단 먼저(C127)", () => {
+  it("회화 턴 흐름: AI 가 막힘이라 해도 갈래가 새 이야기 · 답이면 앱이 막힘을 물러 첫 문장보다 먼저 '막힘 아님 · 무름'을 알리고, 정규화 값도 막힘이 아니다(13절 C204 (3))", async () => {
+    const input = lowInput();
+    for (const [kind, want] of [
+      ["new_topic", "stuck:false:true"],
+      ["not_understood", "stuck:true:false"],
+    ] as const) {
+      const events: string[] = [];
+      const { plan } = harness(
+        [
+          once(
+            stream(
+              messageBody({
+                model: "claude-sonnet-5-5",
+                json: answer({
+                  child_kind: kind,
+                  stuck: true,
+                  tori_en: "Oh, a dog! Nice.",
+                }),
+              }),
+              { chunks: 12 },
+            ),
+          ),
+        ],
+        input,
+        {
+          onStuck: (value, overridden) =>
+            events.push(`stuck:${value}:${overridden}`),
+          onSentence: (sentence) => events.push(sentence),
+        },
+      );
+      const result = await streamTalkLesson(plan);
+      if (!result.ok) throw new Error(`실패: ${result.reason}`);
+      expect(events[0]).toBe(want);
+      expect(result.value.stuck).toBe(kind === "not_understood");
+    }
+  });
+
   it("회화 턴 흐름: tori_en 앞 칸의 막힘 판단(stuck)을 첫 문장보다 먼저 알린다", async () => {
     const input = lowInput();
     for (const stuck of [true, false]) {

@@ -17,6 +17,8 @@ import {
 export const TORI_EN_KEY = "tori_en";
 /** tori_en 앞에 오는 막힘 판단 속성 이름(13절 C127 — 서버가 첫 문장 전에 안다). */
 export const STUCK_KEY = "stuck";
+/** stuck 앞에 오는 아이 말 갈래 속성 이름(13절 C204 (3) — 서버가 첫 문장 전에 막힘을 다시 본다). 값은 낱말 열거값(이스케이프 없음). */
+export const CHILD_KIND_KEY = "child_kind";
 const BOOLEAN_LITERALS = ["true", "false"] as const;
 /** 흘려 받는 중 문장 끝을 가릴 때 글 끝에 붙여 보는 글자(공백이 아닌 아무 글자, 기술 값). */
 const PROBE = "x";
@@ -42,6 +44,10 @@ type ReaderPhase =
   | "after-stuck-key"
   | "stuck-value"
   | "after-stuck-value"
+  | "after-kind-key"
+  | "before-kind-value"
+  | "kind-value"
+  | "after-kind-value"
   | "after-key"
   | "before-value"
   | "string"
@@ -59,6 +65,8 @@ export type ToriEnReader = {
   failed(): boolean;
   /** tori_en 앞 칸에서 읽은 막힘 판단(C127). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
   stuck(): boolean | undefined;
+  /** stuck 앞 칸에서 읽은 아이 말 갈래 글(C204). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
+  childKind(): string | undefined;
   /** tori_en 문자열이 닫혔다. */
   closed(): boolean;
   /** 지금까지 푼 tori_en 글. */
@@ -68,14 +76,16 @@ export type ToriEnReader = {
 /**
  * tori_en 흘려 풀기. 조각 경계에 걸친 이스케이프(\" \\ \/ \n \t \uXXXX)를 잇고, 문장 끝은 P4a `splitSentences` 규칙이다.
  * 흘려 받는 중에는 문장부호 뒤에 공백이 온 뒤에야 끝으로 본다 — 글 끝에 공백 아닌 글자를 붙여 잘라 보고 마지막 조각을 뺀다.
- * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다. 앞 칸은 stuck(참 · 거짓 한 번) 다음 tori_en 이거나
- * tori_en 바로다(C127 — 모델이 칸 차례를 어겨 tori_en 이 먼저 와도 흘려 보내고 stuck 은 모른다). 그 밖의 앞 칸이면 failed.
+ * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다. 앞 칸은 child_kind(낱말 글 한 번, C204) · stuck(참 · 거짓 한 번)
+ * 다음 tori_en 이거나 tori_en 바로다(C127 — 모델이 칸 차례를 어겨 tori_en 이 먼저 와도 흘려 보내고 stuck 은 모른다). 그 밖의 앞 칸이면 failed.
  */
 export function createToriEnReader(): ToriEnReader {
   let phase: ReaderPhase = "start";
   let key = "";
   let literal = "";
   let stuck: boolean | undefined;
+  let kind: string | undefined;
+  let kindText = "";
   let hex = "";
   let decoded = "";
   let emitted = 0;
@@ -103,21 +113,50 @@ export function createToriEnReader(): ToriEnReader {
         return;
       case "key":
         if (ch === '"') {
-          // 앞 칸은 stuck(한 번, C127) 다음 tori_en, 또는 tori_en 바로
+          // 앞 칸은 child_kind(한 번, stuck 앞) · stuck(한 번, C127) 다음 tori_en, 또는 tori_en 바로
           phase =
             key === TORI_EN_KEY
               ? "after-key"
               : key === STUCK_KEY && stuck === undefined
                 ? "after-stuck-key"
-                : "failed";
+                : key === CHILD_KIND_KEY &&
+                    kind === undefined &&
+                    stuck === undefined
+                  ? "after-kind-key"
+                  : "failed";
           return;
         }
         key += ch;
         if (
           !TORI_EN_KEY.startsWith(key) &&
-          !(stuck === undefined && STUCK_KEY.startsWith(key))
+          !(stuck === undefined && STUCK_KEY.startsWith(key)) &&
+          !(
+            kind === undefined &&
+            stuck === undefined &&
+            CHILD_KIND_KEY.startsWith(key)
+          )
         )
           phase = "failed";
+        return;
+      case "after-kind-key":
+        if (JSON_WHITESPACE.test(ch)) return;
+        phase = ch === ":" ? "before-kind-value" : "failed";
+        return;
+      case "before-kind-value":
+        if (JSON_WHITESPACE.test(ch)) return;
+        kindText = "";
+        phase = ch === '"' ? "kind-value" : "failed";
+        return;
+      case "kind-value":
+        if (ch === '"') {
+          kind = kindText;
+          phase = "after-kind-value";
+        } else if (/[a-z_]/.test(ch)) kindText += ch;
+        else phase = "failed";
+        return;
+      case "after-kind-value":
+        if (JSON_WHITESPACE.test(ch)) return;
+        phase = ch === "," ? "before-key" : "failed";
         return;
       case "after-stuck-key":
         if (JSON_WHITESPACE.test(ch)) return;
@@ -203,6 +242,7 @@ export function createToriEnReader(): ToriEnReader {
     },
     failed: isFailed,
     stuck: () => stuck,
+    childKind: () => kind,
     closed: () => phase === "closed",
     text: () => decoded,
   };

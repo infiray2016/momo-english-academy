@@ -139,3 +139,20 @@ export function toriKoShownOf({
   if (whole === null || !lowBand) return whole;
   return shown.length < sent.length ? null : whole;
 }
+
+/** 영어 낱말이 두 개 넘게 이어진 자리(따옴표 · 쉼표 · 띄어쓰기를 사이에 둠 — 영어 문장 · 영어 답의 꼴). 영어 낱말 하나('eat')는 아니다. */
+const ENGLISH_RUN = /[A-Za-z][A-Za-z']*(?:[\s,"'‘’“”]+[A-Za-z][A-Za-z']*)+/;
+
+/**
+ * 한국어 글(설명 · 뜻)에서 영어 문장 · 영어 답을 담은 문장을 뺀다(13절 C204 (4) — 1~3단계는 영어 문장을 글로 미리 보이지 않는다, T2 · 02-2 204 ·
+ * 235). 문장(문장부호 바로 뒤 띄어쓰기로 나눔) 가운데 영어 낱말이 둘 이상 이어진 것(따옴표 안 영어 포함)을 통째로 빼고, 영어 낱말 하나와 뜻('먹다'는 eat 이야)은 남긴다. {NAME} 자리는
+ * 낱말로 보지 않는다. 다 빠지면 빈 글.
+ */
+export function withoutEnglishSentencesOf(text: string): string {
+  // 한국어 문장 끝(문장부호 바로 뒤 띄어쓰기)으로만 나눈다 — 따옴표 안 영어 문장('… big.' 이라고)은 나누지 않고 그 문장째 뺀다
+  return text
+    .split(/(?<=[.!?。])\s+/)
+    .filter((sentence) => !ENGLISH_RUN.test(sentence.replace(/\{NAME\}/g, "")))
+    .join(" ")
+    .trim();
+}

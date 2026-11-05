@@ -156,6 +156,7 @@ export function lessonAnswer(
   over: Record<string, unknown>,
 ): Record<string, unknown> {
   return {
+    child_kind: over.stuck === true ? "not_understood" : "answer",
     stuck: false,
     tori_en: "Nice!",
     model_line: "",

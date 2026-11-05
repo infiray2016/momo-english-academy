@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"stuck\":false,\"tori_en\":\"Soccer! Me too. What sport is fun for you?\",\"model_line\":\"\",\"choices\":[],\"tori_ko\":[\"축구!\",\"나도.\",\"너한테 어떤 운동이 재밌어?\"],\"recast\":\"I like soccer.\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"soccer\"],\"mission_done\":[],\"response_fit\":true,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"required\",\"card_item\":{\"kind\":\"required\",\"no\":2},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"none\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"축구가 재밌어.\",\"next_hints\":[\"___ is fun.\",\"Soccer is fun.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"Soccer is fun.\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
+          "text": "{\"child_kind\":\"answer\",\"stuck\":false,\"tori_en\":\"Soccer! Me too. What sport is fun for you?\",\"model_line\":\"\",\"choices\":[],\"tori_ko\":[\"축구!\",\"나도.\",\"너한테 어떤 운동이 재밌어?\"],\"recast\":\"I like soccer.\",\"explanation\":\"\",\"new_words\":[],\"self_used_words\":[\"soccer\"],\"mission_done\":[],\"response_fit\":true,\"child_topic\":false,\"child_asked\":false,\"goal_suggest\":[],\"next_move\":\"required\",\"card_item\":{\"kind\":\"required\",\"no\":2},\"next_goal\":[\"talk-3-1-1\"],\"support\":\"none\",\"next_targets\":[\"soccer\"],\"next_hint_ko\":\"축구가 재밌어.\",\"next_hints\":[\"___ is fun.\",\"Soccer is fun.\"],\"next_usable_phrases\":[],\"next_answer_example\":\"Soccer is fun.\",\"image_word\":\"\",\"farewell\":\"\",\"farewell_ko\":\"\",\"good_lines\":[],\"next_time_lines\":[],\"summary\":\"\"}",
           "citations": null
         }
       ],

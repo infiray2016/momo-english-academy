@@ -66,6 +66,7 @@ import {
 /** 빈 응답(모든 칸이 빈 값) 위에 고칠 칸만 얹는다. */
 function answer(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
   return {
+    child_kind: over.stuck === true ? "not_understood" : "answer",
     stuck: false,
     tori_en: "Wow, soccer! What sport is fun?",
     model_line: "",
@@ -121,10 +122,11 @@ const schemaOf = (level: number, teacher = LESSON_TEACHER) => {
 };
 
 describe("회화 수업 턴 응답 규격(6.2 회화 턴 출력 칸)", () => {
-  it("AC-15c 새 칸(따라 할 말 · 선택지 · 알맞은 응답 · 아이가 꺼낸 이야기 · 아이가 물음 · 아이가 보인 능력 · 갈래 · 카드 항목 · 노린 목표 · 준 도움 · 그림 낱말)이 있고 판정 · 점수 칸 · 없앤 칸이 없으며 칸 차례가 stuck → tori_en → model_line → choices 다", () => {
+  it("AC-15c 새 칸(따라 할 말 · 선택지 · 알맞은 응답 · 아이가 꺼낸 이야기 · 아이가 물음 · 아이가 보인 능력 · 갈래 · 카드 항목 · 노린 목표 · 준 도움 · 그림 낱말)이 있고 판정 · 점수 칸 · 없앤 칸이 없으며 칸 차례가 child_kind → stuck → tori_en → model_line → choices 다(13절 C204)", () => {
     const schema = schemaOf(3);
     const keys = Object.keys(schema.properties);
-    expect(keys.slice(0, 4)).toEqual([
+    expect(keys.slice(0, 5)).toEqual([
+      "child_kind",
       "stuck",
       "tori_en",
       "model_line",
@@ -967,7 +969,7 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
 
   it("고정부: stuck 을 먼저 정하고 참이면 If stuck 줄을 따르며, 'Question: no' 턴은 질문을 쓰지 않는다", () => {
     const system = talkLessonSystem(lessonInput(3), lessonRules(3));
-    expect(system).toContain("Decide stuck first.");
+    expect(system).toContain("Decide child_kind first, then stuck.");
     expect(system).toContain("follow the 'If stuck' lines");
     expect(system).toContain("When 'Question: no', do not ask any question");
     expect(system).not.toContain("give the help of the next stage");
@@ -1004,7 +1006,10 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
     expect(stuck.goal_suggest).toEqual([]);
     const answered = norm(3, { ...value, stuck: false }, { turn });
     expect(answered.model_line).toBe("The weekend.");
-    expect(answered.next_move).toBe("required");
+    // 대화 첫 질문(카드 필수 1)에 답한 다음 차례라 필수 질문 갈래는 이어 묻기로 되돌린다(13절 C204 (6), cardChainGuardOf)
+    expect(answered.next_move).toBe("follow_up");
+    // 카드 항목은 남긴다 — 들린 필수 질문은 다룬 것으로 센다(검토 rev-prompt-2 E)
+    expect(answered.card_item).toEqual({ kind: "required", no: 2 });
     expect(answered.goal_suggest).toHaveLength(1);
   });
 

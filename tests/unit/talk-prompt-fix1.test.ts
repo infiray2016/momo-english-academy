@@ -68,6 +68,7 @@ import {
 /** 빈 응답 위에 고칠 칸만 얹는다(3단계 AI 차례, 다음 질문은 카드 필수 2 soccer). */
 function answer(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
   return {
+    child_kind: over.stuck === true ? "not_understood" : "answer",
     stuck: false,
     tori_en: "Wow, soccer! What sport is fun?",
     model_line: "",
@@ -499,7 +500,8 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
 
   it("카드 질문에 답한 다음 차례는 이어 묻고 다음 카드 기회는 아이 말이 닿을 때(5.1 2), 장면 단정 금지(5.1 3)", () => {
     expect(system3).toContain(
-      "When 'Previous turn was a card chance: yes' and the child answered, your next question follows up on the child's answer (next_move follow_up). Bring up the next card chance only when the child's words reach it.",
+      // 고침 2(13절 C204 (6))에서 더 세게 고친 문장
+      "When 'Previous turn was a card chance: yes' and the child answered, your next question must follow up on the child's answer (next_move follow_up). In this turn next_move can never be required. Bring up the next card chance only in a later turn, when the child's words reach it.",
     );
     expect(system3).toContain(
       "'Teacher turns since last follow-up' counts your turns, including the app's card turns, since your last follow-up question.",
@@ -514,7 +516,8 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
       "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
     );
     expect(system3).toContain(
-      "When Segment is greeting_end, write only a reaction and a short line moving on to the part in 'Next part' (short preparation: e.g. 'Let's learn some new words!'; talk: e.g. 'Let's talk!'). Do not ask a question.",
+      // 고침 2(M-1)에서 예를 늘린 문장
+      "When Segment is greeting_end, write only a reaction and a short line moving on to the part in 'Next part' (short preparation: e.g. 'Good to hear! Let's learn some new words!',",
     );
     expect(system3).toContain(
       "In the talk (Segment talk or more_talk), if the child's English is wrong, say the correct sentence back naturally (recast)",

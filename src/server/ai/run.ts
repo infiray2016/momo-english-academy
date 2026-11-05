@@ -32,6 +32,7 @@ import {
 } from "@/core/ai/cost";
 import { preCallGate } from "@/core/ai/cost-alert";
 import { classifyFailure, type FailureReason } from "@/core/ai/failure";
+import { inlineJsonSchemaRefs } from "@/core/ai/inline-refs";
 import { createMasker, type Masker, nameVariantsOf } from "@/core/ai/mask";
 import { checkOutputFields } from "@/core/ai/output-check";
 import { buildAiRequest } from "@/core/ai/request";
@@ -274,6 +275,24 @@ export async function alertSameError(
  * 호출 하나를 실행한다. 설정 문제 · 목록 없음 · 키 없음은 `config`(행 없음).
  * 생각 꺼내기 턴 번호 어긋남 · 목적 불일치 같은 호출부 결함(RangeError)은 서버 오류로 그대로 던진다(행 없음, 검토 review-p09b-2 P9c 3).
  */
+/**
+ * 회화 밖 목적(쓰기 확인 · 첨삭 · 말하기 평가 · 생각 꺼내기)의 보낼 응답 규격(구조화 출력 format): SDK 도우미의 JSON 스키마에서 $defs · $ref 를
+ * 펼친다(대본 3회차 400 'compiled grammar is too large' — $ref 꼴은 API 문법 한도를 넘을 수 있다, core/ai/inline-refs · talk.ts talkOutputFormatOf 와
+ * 같은 펼치기). 검증은 그대로 Zod 규격(wireSchema)으로 한다.
+ */
+export function aiOutputFormatOf(wireSchema: unknown): {
+  type: "json_schema";
+  schema: Record<string, unknown>;
+} {
+  const { schema } = zodOutputFormat(
+    wireSchema as Parameters<typeof zodOutputFormat>[0],
+  );
+  return {
+    type: "json_schema",
+    schema: inlineJsonSchemaRefs(schema as Record<string, unknown>),
+  };
+}
+
 export async function runAiCall<I extends LevelContext, O, R>(
   spec: CallSpec<I, O, R>,
   input: I,
@@ -374,10 +393,12 @@ export async function runAiCall<I extends LevelContext, O, R>(
     .map((p) => p.regex);
   const masker = await maskerFor(db, ctx.profileId, contactPatterns);
   const built = buildAiRequest(spec, input, { config, masker, rules });
-  const { type, schema } = zodOutputFormat(built.wireSchema);
   const body = {
     ...built.body,
-    output_config: { ...built.body.output_config, format: { type, schema } },
+    output_config: {
+      ...built.body.output_config,
+      format: aiOutputFormatOf(built.wireSchema),
+    },
   };
 
   // 6. 시도(많아야 둘, 기다림은 타임아웃의 두 배까지)

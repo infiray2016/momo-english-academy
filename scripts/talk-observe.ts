@@ -50,6 +50,7 @@ import {
   formatUsd6,
   type MessageLike,
 } from "../src/core/ai/cost";
+import { inlineJsonSchemaRefs } from "../src/core/ai/inline-refs";
 import { createMasker } from "../src/core/ai/mask";
 import { checkOutputFields } from "../src/core/ai/output-check";
 import { buildAiRequest } from "../src/core/ai/request";
@@ -59,6 +60,7 @@ import {
   slotChanceOf,
   startPrepWordsOf,
 } from "../src/core/conversation/chances";
+import { createRewriteHold } from "../src/core/conversation/child-kind";
 import {
   heardHelpOf,
   heardHelpsOfMove,
@@ -106,6 +108,7 @@ import {
   heldQuestionFailOf,
   mergeQuestionRetry,
   questionRetryNoteOf,
+  stuckRewriteNoteOf,
 } from "../src/core/conversation/question-retry";
 import { metWordsIn } from "../src/core/conversation/said";
 import {
@@ -233,6 +236,8 @@ export const JUDGE_KEYS = [
   "sceneAssert",
   "sameSoundTwice",
   "returns",
+  "stuckRight",
+  "ownReaction",
 ] as const;
 export type JudgeKey = (typeof JUDGE_KEYS)[number];
 export const JUDGE_LABELS: Readonly<Record<JudgeKey, string>> = {
@@ -243,6 +248,8 @@ export const JUDGE_LABELS: Readonly<Record<JudgeKey, string>> = {
   sceneAssert: "장면 단정 문장",
   sameSoundTwice: "같은 소리 두 번",
   returns: "오늘 이야기로 돌아왔는가",
+  stuckRight: "막힘 판정 맞음",
+  ownReaction: "선생님 자기 반응 한마디 있음",
 };
 
 const ExpectSchema = z.strictObject({
@@ -467,6 +474,30 @@ export function materialsOf(
 
 // ── 요청 구성 ────────────────────────────────────────────────────
 
+/**
+ * 회화 턴 요청 본문: 구조화 출력 형식을 붙이고 응답 규격의 $defs · $ref 를 펼친다(서버 src/server/ai/talk.ts talkOutputFormatOf 와 같은 꼴 —
+ * $ref 꼴은 API 가 'compiled grammar is too large' 로 거부한다, 대본 3회차 400). 서버 함수는 server-only 라 같은 core 함수로 펼친다.
+ */
+export function talkBodyOf(
+  body: Record<string, unknown>,
+  wireSchema: z.ZodType,
+): Record<string, unknown> {
+  const withSchema = withFormat(body, wireSchema);
+  const output = withSchema.output_config as Record<string, unknown> & {
+    format: { type: string; schema: Record<string, unknown> };
+  };
+  return {
+    ...withSchema,
+    output_config: {
+      ...output,
+      format: {
+        type: output.format.type,
+        schema: inlineJsonSchemaRefs(output.format.schema),
+      },
+    },
+  };
+}
+
 /** 이 단계 회화 턴의 설정값(--effort 면 그 구간 effort 키만 바꾼 사본 — 설정 파일은 바꾸지 않는다). */
 export function observeValues(
   values: Readonly<Record<string, unknown>>,
@@ -605,7 +636,22 @@ export type TurnRecord = {
    * 재질문(13절 C203 (3) — 1~3단계 질문 검사에 걸린 AI 되묻기를 카드 자리로 바꾸기 전에 AI 에 한 번 다시 쓰게 하는 재호출). 재호출 턴이면
    * 그 시도의 사용량(본 호출과 따로)과 결과, 아니면 null. 판정 · 입력 · 잇기는 core question-retry 의 함수다.
    */
-  reask: { usage: TurnUsage | null; outcome: string } | null;
+  /** 응답 첫 칸 아이 말 갈래(13절 C204, 정규화 뒤 — 읽지 못했으면 null). */
+  childKind: string | null;
+  /** AI 의 stuck(정규화 전) · 앱이 본 막힘(effectiveStuckOf 뒤) · 앱이 막힘을 무름. */
+  stuck: { ai: boolean | null; app: boolean; overridden: boolean };
+  reask: {
+    usage: TurnUsage | null;
+    outcome: string;
+    /** 첫 시도의 tori_en(정규화 뒤 — 걸린 질문이 든 글). */
+    firstToriEn: string;
+    /** 첫 시도의 걸림(retryOf 의 heldQuestionFailOf). */
+    firstFail: QuestionFailNote;
+    /** 다시 쓴 시도의 tori_en(응답을 읽지 못했으면 null). */
+    retryToriEn: string | null;
+    /** 다시 쓴 시도의 걸림(이은 질문의 질문 검사 · 같은 질문, 통과했거나 잇지 못했으면 null). */
+    retryFail: QuestionFailNote | null;
+  } | null;
 };
 
 /** 1~3단계 소리 줄 신호 말(서버 lesson-turn.ts CUE_PHRASES 사본 — 서버 파일은 server-only 라 가져올 수 없다). */
@@ -773,7 +819,7 @@ type Entry = {
   question: boolean;
   cue: boolean;
   state: "sent" | "held" | "dropped";
-  reason?: "question" | "same" | "overlap";
+  reason?: "question" | "same" | "overlap" | "rewrite";
 };
 
 /** 선생님 문장 문(서버 createLessonSentenceFlow 의 accept 사본 — 흘려 받는 대신 응답 끝에 문장마다 차례로 넣는다). */
@@ -842,6 +888,13 @@ function sentenceEntriesOf(
   return list;
 }
 
+/** 걸림 한 건의 글: "질문" 까닭(걸린 낱말). */
+function failText(f: QuestionFailNote): string {
+  if (f.reason === "stuck_overridden")
+    return "막힘 무름(AI stuck → 앱이 무름) — 통째로 다시 쓰기";
+  return `"${f.question}" ${f.reason}${f.words.length > 0 ? `(${f.words.join(", ")})` : ""}`;
+}
+
 /** 뜻 칸(옛 한 글 꼴 · 문장마다 목록 꼴)이 비었으면 null. */
 function koOrNull(
   ko: string | readonly string[],
@@ -876,6 +929,7 @@ export function settleTurn({
   soundFixed,
   blockedSentences = 0,
   entries: givenEntries,
+  needsQuestion = false,
   materials,
   turns,
   asked,
@@ -890,6 +944,8 @@ export function settleTurn({
   blockedSentences?: number;
   /** 문장 문을 지난 문장(재질문을 이은 것 — 주면 sentences 대신 쓴다, 서버 withQuestionRetry 의 flow). */
   entries?: readonly Entry[];
+  /** 통째 다시 쓰기에 실패해 앞 문장을 모두 지운 턴(서버 view.needsQuestion) — 질문이 없으면 카드 자리(fail). */
+  needsQuestion?: boolean;
   materials: Pick<Materials, "card" | "spec">;
   turns: readonly TalkLessonTurn[];
   asked: ReadonlyMap<string, number>;
@@ -940,7 +996,7 @@ export function settleTurn({
   const keptQuestion = entries.some(
     (e) => e.state !== "dropped" && e.question && !e.cue,
   );
-  if (asks && !why && !value && !keptQuestion) why = "fail";
+  if (asks && !why && (!value || needsQuestion) && !keptQuestion) why = "fail";
   let plan = chosen;
   let replaced: TalkSlotWhy | null = null;
   // 재질문(C203 (3))은 부르는 쪽이 먼저 했다(retryOf → 재호출 → mergeQuestionRetry 로 이은 entries) — 여기서 다시 걸리면 카드 자리다
@@ -1167,6 +1223,36 @@ const masker = createMasker({
   contactPatterns: SAMPLE_CONTACT_PATTERNS,
 });
 
+/**
+ * 한 차례에 같은 소리가 두 번 들리는가(자동 힌트, 검토 M-2): 읽는 줄 전부 — AI 선생님 문장 · 앱이 붙인 글 줄(카드 질문 · 답 예시 · 앱 대사,
+ * 문장마다) · 소리 줄(따라 할 말 · 선택지 · 답 소리) — 가운데 정규화한 문장이 같은 것이 있거나, AI 문장이 소리 줄의 답을 담으면 참.
+ */
+export function sameSoundTwiceOf({
+  kept,
+  attach,
+  sound,
+}: {
+  kept: readonly string[];
+  attach: readonly TeacherAttachLine[];
+  sound: Settled["sound"];
+}): boolean {
+  const soundLines = [
+    ...(sound.model !== undefined ? [sound.model] : []),
+    ...(sound.choices ?? []),
+    ...attach.flatMap((l) => (l.kind === "sound" ? [l.en] : [])),
+  ];
+  const textLines = attach.flatMap((l) =>
+    l.kind !== "sound" && "en" in l ? [l.en] : [],
+  );
+  const spoken = [...kept, ...textLines, ...soundLines]
+    .flatMap(splitSentences)
+    .map(normalizeSpoken)
+    .filter((n) => n !== "");
+  if (new Set(spoken).size < spoken.length) return true;
+  const pairs = soundLines.map((l) => [l, l] as const);
+  return pairs.length > 0 && kept.some((k) => sayingAnswer(k, pairs));
+}
+
 /** 선택 판정의 기대 값(대본) · 자동 힌트(이 턴의 사실로 셀 수 있는 것만, 나머지는 null — 사람이 본다). */
 export function judgeOf({
   expect,
@@ -1230,8 +1316,11 @@ export function judgeOf({
         koLines.every((l) => l.kind === "question" && l.ko !== undefined)
       : null,
     sceneAssert: shown.some(isSceneAssert),
-    sameSoundTwice: new Set(soundLines).size < soundLines.length,
+    sameSoundTwice: sameSoundTwiceOf({ kept, attach, sound }),
     returns: returned !== null,
+    // 사람만 본다(검토 task-talk-quality-review-1 149줄 5): 막힘 판정은 턴 표 '갈래' 칸의 child_kind · 막힘 · 무름을 보고 적는다
+    stuckRight: null,
+    ownReaction: null,
   };
   return Object.fromEntries(
     JUDGE_KEYS.map((k) => [k, { expect: expect?.[k] ?? null, auto: auto[k] }]),
@@ -1258,9 +1347,18 @@ export type TalkSim = {
   ): TurnRecord;
 };
 
+/** 걸림 한 건(까닭 · 걸린 낱말 — 질문 검사 까닭이거나 같은 질문 same_question). */
+export type QuestionFailNote = {
+  question: string;
+  reason: string;
+  words: string[];
+};
+
 /** 재질문 요청 하나(retryOf). */
 export type RetryAsk = {
-  fail: HeldQuestionFail;
+  /** question: 걸린 질문만 다시(C203 (3)) · rewrite: 막힘을 무른 턴을 통째로 다시(C204 (3), stuckRewriteNoteOf). */
+  kind: "question" | "rewrite";
+  fail: HeldQuestionFail | null;
   note: string;
   input: TalkLessonInput;
   request: PreparedTurn["request"];
@@ -1269,6 +1367,8 @@ export type RetryAsk = {
 /** 응답 하나를 읽은 값(정규화 · 출력 검사 · 걸린 칸 바꾸기 · 문장 문 — 서버 streamCore 끝 처리 흉내). */
 type Evaluated = {
   value: TalkLessonOutput | null;
+  /** 정규화 전 AI 의 stuck(앱이 무르기 전 — 정규화 effectiveStuckOf 뒤 값은 value.stuck). 읽지 못했으면 null. */
+  aiStuck: boolean | null;
   sentences: string[];
   blocked: number;
   soundFixed: boolean;
@@ -1423,7 +1523,7 @@ export function createTalkSim(
       rules,
     });
     return {
-      body: withFormat(
+      body: talkBodyOf(
         built.body as unknown as Record<string, unknown>,
         built.wireSchema,
       ),
@@ -1442,6 +1542,32 @@ export function createTalkSim(
     value?.stuck === true && p.mode === "speech" && p.ifStuck
       ? p.ifStuck
       : p.ifAnswered;
+  /**
+   * 앱이 막힘을 무른 말 입력 턴(13절 C204 (3)): AI 는 stuck 참이었는데 정규화(effectiveStuckOf)가 거짓으로 무름. 1~3단계면 서버처럼 이 응답
+   * 문장을 하나도 보내지 않고 모두 잡아 두며(holdAll), 질문을 쓰는 차례면 통째로 다시 쓰게 한다(withQuestionRetry rewrite).
+   */
+  const overriddenOf = (p: PreparedTurn, e: Evaluated): boolean =>
+    p.mode === "speech" && e.aiStuck === true && e.value?.stuck === false;
+  /**
+   * 통째 다시 쓰기로 잡아 두는 턴인가(서버와 같은 core createRewriteHold — 앱이 막힘을 물렀고 · 보낸 문장이 없고 · 1~3단계 범위를 읽었고 ·
+   * 고른 계획이 질문을 쓰는 차례). 도구는 stuck 칸이 tori_en 앞이라 늘 '보낸 문장 없음'이다.
+   */
+  const holdsOf = (
+    p: PreparedTurn,
+    e: Evaluated,
+    chosen: TeacherTurnPlan,
+  ): boolean => {
+    const hold = createRewriteHold({ low, rangeOk: true });
+    hold.onStuck(overriddenOf(p, e), chosen.kind === "ai" && chosen.aiAsks);
+    return hold.holding();
+  };
+  /** 다시 쓰기에 실패한 잡아 둔 턴: 앞 응답 문장을 모두 지운다(서버 withQuestionRetry fallback droppedAll — 끝 처리가 카드 자리를 만든다). */
+  const droppedAll = (list: readonly Entry[]): Entry[] =>
+    list.map((e) => ({ ...e, state: "dropped" as const, reason: "rewrite" }));
+  const heldAll = (list: readonly Entry[]): Entry[] =>
+    list.map((e) =>
+      e.state === "dropped" ? { ...e } : { ...e, state: "held" as const },
+    );
   /** 응답 하나 읽기: 정규화 · 출력 검사 · 걸린 칸 바꾸기 · 문장 문(서버는 시도마다 새 문장 문). */
   const evaluateResult = (
     input: TalkLessonInput,
@@ -1451,6 +1577,7 @@ export function createTalkSim(
     if (!result.ok)
       return {
         value: null,
+        aiStuck: null,
         sentences: [],
         blocked: 0,
         soundFixed: false,
@@ -1487,8 +1614,10 @@ export function createTalkSim(
       });
       blocked = gate.blocked().length;
     }
+    const rawStuck = (evaluated.raw as { stuck?: unknown } | null)?.stuck;
     return {
       value,
+      aiStuck: typeof rawStuck === "boolean" ? rawStuck : null,
       sentences,
       blocked,
       soundFixed,
@@ -1654,25 +1783,38 @@ export function createTalkSim(
       if (!first.value) return null;
       const chosen = chosenOf(p, first.value);
       if (!(chosen.kind === "ai" && chosen.aiAsks)) return null;
-      const entries = sentenceEntriesOf(first.sentences, chosen, {
+      const rewrite = holdsOf(p, first, chosen);
+      const listed = sentenceEntriesOf(first.sentences, chosen, {
         low,
         asked: p.before.asked,
         max: settings.sameQuestionMax,
       });
+      const entries = rewrite ? heldAll(listed) : listed;
       const options = lineOptionsOf(childWords(p.childText ?? ""));
       const targets = first.value.next_targets;
-      const fail = heldQuestionFailOf({ entries, targets, options });
-      if (fail === null) return null;
-      const note = questionRetryNoteOf(fail, {
-        sentenceMaxWords: materials.ctx.sentenceMaxWords,
-        targets,
-        childWords: options.childWords,
-      });
+      let fail: HeldQuestionFail | null = null;
+      let note: string;
+      if (rewrite) note = stuckRewriteNoteOf(p.childText ?? "");
+      else {
+        fail = heldQuestionFailOf({ entries, targets, options });
+        if (fail === null) return null;
+        note = questionRetryNoteOf(fail, {
+          sentenceMaxWords: materials.ctx.sentenceMaxWords,
+          targets,
+          childWords: options.childWords,
+        });
+      }
       const input: TalkLessonInput = {
         ...p.input,
         retry: { previous: entries.map((e) => e.en).join(" "), note },
       };
-      return { fail, note, input, request: requestOf(input) };
+      return {
+        kind: rewrite ? "rewrite" : "question",
+        fail,
+        note,
+        input,
+        request: requestOf(input),
+      };
     },
     finish(p, result, retry) {
       const turnNo = lastTori()?.turnNo ?? 0;
@@ -1686,24 +1828,39 @@ export function createTalkSim(
       const stuck = value?.stuck === true && p.mode === "speech";
       const chosen = chosenOf(p, value);
       const asked = p.before.asked;
-      let entries: Entry[] | undefined = value
+      const stuckOverridden = overriddenOf(p, first);
+      // 막힘을 무른 1~3단계 질문 차례는 보낸 문장이 없다 — 통째로 다시 쓰고, 못 하면 앞 문장을 모두 지워 카드 자리로(서버 withQuestionRetry fallback)
+      const listed = value
         ? sentenceEntriesOf(first.sentences, chosen, {
             low,
             asked,
             max: settings.sameQuestionMax,
           })
         : undefined;
+      const holding = holdsOf(p, first, chosen);
+      let entries: Entry[] | undefined =
+        listed && holding ? heldAll(listed) : listed;
       // 재질문(C203 (3)): 다시 쓴 응답의 첫 물음표 문장부터를 앞 응답의 반응 뒤에 잇는다. 끝 처리가 같은 검사를 다시 해 걸리면 카드 자리
-      let reask: TurnRecord["reask"] = null;
+      let reask: {
+        usage: TurnUsage | null;
+        outcome: string;
+        firstToriEn: string;
+        firstFail: QuestionFailNote;
+        retryToriEn: string | null;
+      } | null = null;
       let merged = false;
+      const lineOptions = lineOptionsOf(childWords(p.childText ?? ""));
       if (retry) {
         const second = evaluateResult(
           retry.ask.input,
           retry.ask.request.model,
           retry.result,
         );
-        const why = `${retry.ask.fail.reason}${retry.ask.fail.words.length > 0 ? `(${retry.ask.fail.words.join(", ")})` : ""}`;
-        let outcome = `걸림 ${why} → `;
+        const firstToriEn = value?.tori_en ?? "";
+        const firstFail: QuestionFailNote = retry.ask.fail
+          ? { ...retry.ask.fail, words: [...retry.ask.fail.words] }
+          : { question: "", reason: "stuck_overridden", words: [] };
+        let outcome = `첫 시도 ${failText(firstFail)} → `;
         if (value && entries && second.value) {
           const joined = mergeQuestionRetry({
             first: value,
@@ -1714,6 +1871,7 @@ export function createTalkSim(
               asked,
               max: settings.sameQuestionMax,
             }),
+            whole: retry.ask.kind === "rewrite",
           });
           if (joined) {
             entries = joined.entries;
@@ -1721,11 +1879,22 @@ export function createTalkSim(
             blockedSentences += second.blocked;
             merged = true;
             soundFixed = second.soundFixed;
-          } else outcome += "다시 쓴 응답에 질문 없음 → 앞 응답으로 카드 자리";
+          } else
+            outcome += holding
+              ? "다시 쓴 응답에 질문 없음 → 앞 문장을 모두 지우고 카드 자리"
+              : "다시 쓴 응답에 질문 없음 → 앞 응답으로 카드 자리";
         } else
           outcome += `재호출 실패(${second.failure ?? "응답 없음"}) → 앞 응답으로 카드 자리`;
-        reask = { usage: second.usage, outcome };
+        reask = {
+          usage: second.usage,
+          outcome,
+          firstToriEn,
+          firstFail,
+          retryToriEn: second.value?.tori_en ?? null,
+        };
       }
+      const needsQuestion = holding && !merged && listed !== undefined;
+      if (needsQuestion) entries = droppedAll(listed);
       const child: SimRow = {
         speaker: "child",
         turnNo,
@@ -1746,11 +1915,42 @@ export function createTalkSim(
         soundFixed,
         blockedSentences,
         ...(entries ? { entries } : {}),
+        needsQuestion,
         materials,
         turns: turnsWithChild,
         asked,
         max: settings.sameQuestionMax,
-        lineOptions: lineOptionsOf(childWords(p.childText ?? "")),
+        lineOptions,
+      });
+      // 다시 쓴 시도의 걸림: 이은 질문을 같은 질문 검사에 다시 대 본다(끝 처리와 같은 재료). 같은 질문으로 바뀌었으면 그 까닭
+      let retryFail: QuestionFailNote | null = null;
+      if (reask && merged && settled.replaced !== null) {
+        const fail =
+          entries && value
+            ? heldQuestionFailOf({
+                entries,
+                targets: value.next_targets,
+                options: lineOptions,
+              })
+            : null;
+        retryFail = fail
+          ? { ...fail, words: [...fail.words] }
+          : {
+              question:
+                entries?.findLast((e) => e.question && !e.cue)?.en ?? "",
+              reason: settled.replaced,
+              words: [],
+            };
+      }
+      const reaskRecordOf = (
+        r: NonNullable<typeof reask>,
+        f: QuestionFailNote | null,
+      ): NonNullable<TurnRecord["reask"]> => ({
+        ...r,
+        retryFail: f,
+        outcome: merged
+          ? `${r.outcome}${f === null ? `다시 쓴 질문 통과("${entries?.findLast((e) => e.question && !e.cue)?.en ?? ""}")` : `다시 써도 걸림 ${failText(f)} → 카드 자리(${settled.replaced})`}`
+          : r.outcome,
       });
       rows.push(child);
       const prevTeacher = lastTori()?.move ?? null;
@@ -1796,6 +1996,8 @@ export function createTalkSim(
       if (talkLessonPositionOf(argsOf()).silentBlocked)
         flags.push("들리지 않음이 이어져 막힘 화면(speech.silent_items_max)");
       if (stuck) flags.push("응답이 막힘 말로 봄(stuck)");
+      if (stuckOverridden)
+        flags.push("막힘 무름(AI stuck → 앱이 무름, C204 (3))");
       if ((usage?.checkHits ?? 0) > 0)
         flags.push(`출력 검사 걸림 ${usage?.checkHits}칸`);
       if (soundFixed) flags.push("따라 할 말을 앱이 바꿈");
@@ -1871,15 +2073,13 @@ export function createTalkSim(
         output: value,
         userMessage: p.userMessage,
         appAfter,
-        reask:
-          reask === null
-            ? null
-            : {
-                ...reask,
-                outcome: merged
-                  ? `${reask.outcome}${settled.replaced === null ? "다시 쓴 질문 통과" : `다시 써도 걸림 → 카드 자리(${settled.replaced})`}`
-                  : reask.outcome,
-              },
+        childKind: first.value?.child_kind ?? null,
+        stuck: {
+          ai: first.aiStuck,
+          app: stuck,
+          overridden: stuckOverridden,
+        },
+        reask: reask === null ? null : reaskRecordOf(reask, retryFail),
       };
     },
   };
@@ -2000,7 +2200,7 @@ export function planLines(
         ? `${r.name} · ${r.level}단계 · 아이 차례 ${r.childTurns} · 건너뜀: ${r.skipped}`
         : `${r.name} · ${r.level}단계 · ${r.model} · effort ${r.effort} · 생각 ${r.thinking} · 아이 차례 ${r.childTurns} · 예상 호출 ${r.calls} · 입력 약 ${r.expectedTokens.input} · 출력 약 ${r.expectedTokens.output} 토큰 · 약 ${r.expectedCostUsd.toFixed(4)}달러 · 재질문 최대 +${r.reaskMax}회(약 ${r.reaskMaxCostUsd.toFixed(4)}달러)`,
     ),
-    `합계: 대본 ${runs.length}(돌릴 것 ${live.length}) · 예상 호출 ${calls} · 예상 비용 약 ${cost.toFixed(4)}달러 · 재질문 최대 +${reask}회(한 턴에 1회 상한, 1~3단계 질문 검사에 걸린 턴만 — 약 ${reaskCost.toFixed(4)}달러 더) · 캐시 할인을 셈하지 않은 위쪽 어림`,
+    `합계: 대본 ${runs.length}(돌릴 것 ${live.length}) · 예상 호출 ${calls} · 예상 비용 약 ${cost.toFixed(4)}달러 · 재질문 최대 +${reask}회(한 턴에 1회 상한, 1~3단계 질문 검사에 걸리거나 막힘을 무른 턴만 — 약 ${reaskCost.toFixed(4)}달러 더) · 캐시 할인을 셈하지 않은 위쪽 어림`,
     `보고 자리: ${meta.out}`,
   ];
 }
@@ -2031,6 +2231,15 @@ export type RunReport = {
 const cell = (text: string) =>
   text.replaceAll("|", "\\|").replaceAll("\n", " / ").trim() || "—";
 const yn = (v: boolean | null) => (v === null ? "—" : v ? "예" : "아니요");
+
+/** 갈래 칸: child_kind · 막힘(AI → 앱, 무름 표시). 말 입력이 아니면 갈래가 없다. */
+function childKindCell(t: TurnRecord): string {
+  const kind = t.childKind ?? "—";
+  const ai = t.stuck.ai === null ? "—" : t.stuck.ai ? "참" : "거짓";
+  return t.stuck.overridden
+    ? `${kind} · 막힘 ${ai} → 무름`
+    : `${kind} · 막힘 ${t.stuck.app ? "참" : "거짓"}`;
+}
 
 function soundCell(s: TurnRecord["sound"]): string {
   return [
@@ -2146,13 +2355,13 @@ export function reportMarkdown({
     if (r.opening.length > 0)
       out.push(`앱 첫 차례: ${r.opening.map(cell).join(" / ")}`, "");
     out.push(
-      "| 차례 | 아이(대본) | 계획 | 선생님 말 | 붙인 줄 | tori_ko | 소리 줄 | recast | 갈래 | 카드 자리 까닭 | 되돌림 | 같은 질문 | 토큰(입력 · 출력 · 캐시 읽기) | 첫 문장 · 전체 ms | 비용 | 표시 |",
-      "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+      "| 차례 | 아이(대본) | 갈래(child_kind · 막힘) | 계획 | 선생님 말 | 붙인 줄 | tori_ko | 소리 줄 | recast | 갈래 | 카드 자리 까닭 | 되돌림 | 같은 질문 | 토큰(입력 · 출력 · 캐시 읽기) | 첫 문장 · 전체 ms | 비용 | 표시 |",
+      "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     );
     for (const t of r.turns) {
       const u = t.usage;
       out.push(
-        `| ${t.no} | ${cell(t.child)} | ${cell(t.plan)} | ${cell(t.teacher)} | ${cell(t.attach.join(" / "))} | ${cell(t.toriKo ?? "")} | ${cell(soundCell(t.sound))} | ${cell(t.recast)}${t.recastCheck ? ` (${t.recastCheck.word} ${t.recastCheck.ok ? "담음" : "없음"})` : ""} | ${t.move.kind} · ${t.move.next} | ${cell(t.replaced ?? t.move.why ?? "")} | ${cell(t.returned ?? "")} | ${cell(t.sameQuestion ?? "")} | ${u ? `${u.inputTokens} · ${u.outputTokens} · ${u.cacheReadTokens}` : "—"} | ${u ? `${u.firstSentenceMs ?? "—"} · ${u.latencyMs}` : "—"} | ${u ? u.costUsd.toFixed(6) : "—"}${t.reask ? ` · 재질문 ${t.reask.usage ? t.reask.usage.costUsd.toFixed(6) : "—"}` : ""} | ${cell([...(t.failure ? [t.failure] : []), ...(t.reask ? [`재질문: ${t.reask.outcome}`] : []), ...t.flags, ...(t.appAfter.length > 0 ? [`앱 다음 차례: ${t.appAfter.join(" / ")}`] : [])].join(" · "))} |`,
+        `| ${t.no} | ${cell(t.child)} | ${cell(childKindCell(t))} | ${cell(t.plan)} | ${cell(t.teacher)} | ${cell(t.attach.join(" / "))} | ${cell(t.toriKo ?? "")} | ${cell(soundCell(t.sound))} | ${cell(t.recast)}${t.recastCheck ? ` (${t.recastCheck.word} ${t.recastCheck.ok ? "담음" : "없음"})` : ""} | ${t.move.kind} · ${t.move.next} | ${cell(t.replaced ?? t.move.why ?? "")} | ${cell(t.returned ?? "")} | ${cell(t.sameQuestion ?? "")} | ${u ? `${u.inputTokens} · ${u.outputTokens} · ${u.cacheReadTokens}` : "—"} | ${u ? `${u.firstSentenceMs ?? "—"} · ${u.latencyMs}` : "—"} | ${u ? u.costUsd.toFixed(6) : "—"}${t.reask ? ` · 재질문 ${t.reask.usage ? t.reask.usage.costUsd.toFixed(6) : "—"}` : ""} | ${cell([...(t.failure ? [t.failure] : []), ...(t.reask ? [`재질문: ${t.reask.outcome}`] : []), ...t.flags, ...(t.appAfter.length > 0 ? [`앱 다음 차례: ${t.appAfter.join(" / ")}`] : [])].join(" · "))} |`,
       );
     }
     if (r.stopped) out.push("", `멈춤: ${r.stopped}`);
@@ -2251,10 +2460,18 @@ async function streamTurn(
       error instanceof APIError && typeof error.status === "number"
         ? error.status
         : 0;
+    // 오류 본문의 message 도 200자까지 남긴다(원인 가리기 — 2026-11-06 3회차 400 전부 실패 뒤 보탬). 키 · 비밀값은 본문에 없다
+    const apiError =
+      error instanceof APIError
+        ? (
+            error.error as
+              | { error?: { type?: string; message?: string } }
+              | undefined
+          )?.error
+        : undefined;
     const detail =
       error instanceof APIError
-        ? ((error.error as { error?: { type?: string } } | undefined)?.error
-            ?.type ?? error.constructor.name)
+        ? `${apiError?.type ?? error.constructor.name}${apiError?.message ? ` — ${apiError.message.slice(0, 200)}` : ""}`
         : error instanceof Error
           ? error.name
           : "Error";

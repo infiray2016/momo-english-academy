@@ -331,8 +331,11 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
         COUNTED_TURNS.has(m.kind) &&
         !isSupportMove(m)
       )
+        // 카드 항목을 쓴 차례는 갈래가 이어 묻기여도 이어 묻기로 세지 않는다(카드 답 뒤 되돌린 필수 질문 — 검토 rev-prompt-2 E)
         sinceFollowUp =
-          m.kind === "ai" && FOLLOW_UP_MOVES.has(m.next)
+          m.kind === "ai" &&
+          FOLLOW_UP_MOVES.has(m.next) &&
+          m.item.kind === "none"
             ? 0
             : sinceFollowUp + 1;
       if (phase === "talk" && m?.kind === "first_question")

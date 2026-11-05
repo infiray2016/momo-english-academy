@@ -13,7 +13,8 @@ export type RetrySentence = {
   question: boolean;
   cue: boolean;
   state: "sent" | "held" | "dropped";
-  reason?: "question" | "same" | "overlap";
+  /** 지운 까닭(서버 · 도구의 문장 꼴마다 다르다 — 잇기는 읽지 않고 그대로 옮긴다). */
+  reason?: string;
 };
 
 /** 다시 쓰게 할 까닭이 되는 질문 검사 결과(길이 · 노리는 단어 · 범위 밖 낱말 · 형태). */
@@ -77,8 +78,20 @@ export function questionRetryNoteOf(
   ].join("\n");
 }
 
+/**
+ * 막힘을 무른 턴을 통째로 다시 쓰게 할 사용자 메시지(13절 C204 (3)): AI 가 막힘이라 한 아이 말이 뜻이 통하는 영어 말(답 · 아이 이야기)이라 앱이
+ * 막힘을 물렀음을 알리고, 막힘 거짓으로 짧은 반응과 이어 묻는 질문 하나를 쓰게 한다. 앞 응답은 아이에게 나가지 않았다.
+ */
+export function stuckRewriteNoteOf(child: string): string {
+  return [
+    `App check: the child's words "${child}" make sense, so the child is not stuck (it is an answer or the child's own topic).`,
+    "Nothing of your last answer was shown. Write this turn again with stuck false: a short reaction to what the child said, then one follow-up question about it (next_move follow_up, or follow_child for the child's own topic). Do not say it together and do not give the answer.",
+  ].join("\n");
+}
+
 /** 앞 응답 칸 가운데 아이의 지난 말에 대한 것(다시 쓴 응답이 아니라 앞 응답 값을 쓴다). */
 const CHILD_FIELDS = [
+  "child_kind",
   "stuck",
   "recast",
   "explanation",
@@ -102,19 +115,26 @@ type RetryValue = {
  * 대한 칸(막힘 · 되풀이 · 아이가 보인 능력 …)을 앞 응답에서 가져온다. 뜻은 문장 자리마다 두고, 문장 수와 맞지 않는 응답 쪽의 자리는 빈 뜻,
  * 둘 다 맞지 않으면 빈 목록이다(걸린 질문 · 버린 반응의 뜻이 붙지 않게). 다시 쓴 응답에 질문이 없으면 null(부르는 쪽이 앞 응답으로 카드 자리를 만든다).
  */
-export function mergeQuestionRetry<V extends RetryValue>({
+export function mergeQuestionRetry<
+  V extends RetryValue,
+  E extends RetrySentence = RetrySentence,
+>({
   first,
   firstEntries,
   retry,
   retryEntries,
+  whole = false,
 }: {
   first: V;
-  firstEntries: readonly RetrySentence[];
+  firstEntries: readonly E[];
   retry: V;
-  retryEntries: readonly RetrySentence[];
-}): { entries: RetrySentence[]; value: V } | null {
-  const at = retryEntries.findIndex((e) => e.question && !e.cue);
-  if (at < 0) return null;
+  retryEntries: readonly E[];
+  /** 앞 응답을 통째로 바꾼다(막힘을 무른 턴 — 앞 응답 문장은 모두 잡아 둔 채였다). 다시 쓴 응답의 반응부터 잇는다. */
+  whole?: boolean;
+}): { entries: E[]; value: V } | null {
+  const firstQuestion = retryEntries.findIndex((e) => e.question && !e.cue);
+  if (firstQuestion < 0) return null;
+  const at = whole ? 0 : firstQuestion;
   const kept = firstEntries.filter((e) => e.state !== "held");
   const added = retryEntries
     .slice(at)
@@ -140,8 +160,13 @@ export function mergeQuestionRetry<V extends RetryValue>({
             .map((_, j) => (retryAligned ? (retry.tori_ko[at + j] ?? "") : "")),
         ]
       : [];
+  // 통째로 다시 쓴 턴(막힘을 무름)은 앞 응답이 막힘이라 보고 쓴 것이라 아이 말 칸('말함' · 목표 근거 · 되풀이 …)이 비어 있다 — 앱이 정한 갈래 ·
+  // 막힘만 앞 응답 값으로 두고 나머지 아이 말 칸은 다시 쓴 응답에서 가져온다(검토 rev-prompt-2 A)
+  const firstKeys: readonly (typeof CHILD_FIELDS)[number][] = whole
+    ? ["child_kind", "stuck"]
+    : CHILD_FIELDS;
   const fromFirst = Object.fromEntries(
-    CHILD_FIELDS.map((key) => [key, first[key]]),
+    firstKeys.map((key) => [key, first[key]]),
   );
   const value: V = {
     ...retry,

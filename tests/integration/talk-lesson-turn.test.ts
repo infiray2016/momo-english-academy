@@ -258,6 +258,60 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     expect(cardQuestions).toContain(added.at(-1)?.en);
   });
 
+  it("13절 C203 (3) 질문 검사에 걸린 1단계 AI 질문은 한 번 다시 쓰게 하고(같은 목적 · error_code 표지), 다시 쓴 질문이 지나면 카드 자리 없이 그 질문을 내며 둘째 응답이 없으면 지금처럼 카드 자리다", async () => {
+    // 둘째 응답 있음: 걸린 질문 → 다시 쓰기 → 범위 안 질문
+    {
+      const { sessionId } = await sessionAtFirstQuestion();
+      const before = h.fake.requests.length;
+      h.fake.push(
+        turnRule({
+          tori_en: "Oh, nice! Do you like zebrafish aquariums?",
+          next_move: "follow_up",
+        }),
+      );
+      h.fake.push(
+        turnRule({
+          tori_en: "Oh, nice! Do you like it?",
+          next_move: "follow_up",
+        }),
+      );
+      const lines = await sayLesson(sessionId);
+      const sent = h.fake.requests.slice(before);
+      expect(sent).toHaveLength(2);
+      // 다시 쓰기 요청은 앞 응답(assistant)과 앱의 다시 쓰기 메시지를 끝에 잇는다(question-retry questionRetryNoteOf)
+      expect(sent[1]?.bodyText).toContain("App check: your question");
+      expect(sent[1]?.bodyText).toContain("zebrafish");
+      const shown = JSON.stringify(lines);
+      expect(shown).not.toContain("zebrafish");
+      expect(lines).toContainEqual({ t: "s", en: "Do you like it?" });
+      expect(lines.at(-1)?.t).toBe("end");
+      const last = (await teacherRows(sessionId)).at(-1);
+      expect(readTalkMove(last?.move)).toMatchObject({ kind: "ai" });
+      expect(last?.text).toContain("Do you like it?");
+      expect(last?.text).not.toContain("zebrafish");
+    }
+    // 둘째 응답 없음: 다시 쓰기 요청은 가짜 서버에 맞는 규칙이 없어 실패하고 카드 자리(why question_check)로 닫힌다 — 턴은 오류가 아니다
+    {
+      const { sessionId } = await sessionAtFirstQuestion();
+      const before = h.fake.requests.length;
+      h.fake.push(
+        turnRule({
+          tori_en: "Oh, nice! Do you like zebrafish aquariums?",
+          next_move: "follow_up",
+        }),
+      );
+      const lines = await sayLesson(sessionId);
+      expect(h.fake.requests.length - before).toBe(2);
+      expect(lines.at(-1)?.t).toBe("end");
+      expect(JSON.stringify(lines)).not.toContain("zebrafish");
+      const last = (await teacherRows(sessionId)).at(-1);
+      expect(readTalkMove(last?.move)).toMatchObject({
+        kind: "card_slot",
+        why: "question_check",
+      });
+    }
+  });
+
   it("AC-15k 둘째 턴 요청 본문은 앞 턴 사용자 메시지와 다시 쓸 선생님 차례(붙인 카드 질문 포함)를 글자 그대로 앞에 둔다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(

@@ -58,6 +58,7 @@ import {
 /** 회화 턴 출력(빈 값 + 덮어쓴 칸 — 정규화 · 출력 검사를 지난 꼴). */
 function out(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
   return {
+    child_kind: over.stuck === true ? "not_understood" : "answer",
     stuck: false,
     tori_en: "",
     model_line: "",

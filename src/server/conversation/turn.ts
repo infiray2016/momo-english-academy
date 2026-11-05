@@ -5,6 +5,7 @@ import "server-only";
 // 정한 것 2). 알림 기준(하루 호출 · 비용)은 막지 않는다(AC-8b). 로그에는 오류 이름 · Postgres 코드만(아이 글 없음).
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { TEACHER_SENTENCES_SETTING_SCHEMAS } from "@/core/ai/calls/talk-lesson";
 import { ClientListenSchema } from "@/core/conversation/client-listen";
 import type { StageTimings } from "@/core/conversation/timing";
 import { createStageTimer } from "@/core/conversation/timing";
@@ -59,13 +60,16 @@ export type TurnDeps = TalkServerDeps & {
   onPrepTimings?: (timings: StageTimings) => void;
 };
 
-const turnSettings = {
+/** 회화 턴 길이 한 번에 읽는 설정(lesson-turn 이 positiveInt · teacherSentencesMaxOf 로 읽는 키 — 빠지면 턴이 오류가 된다). */
+export const turnSettings = {
   "talk.safety_max_turns": z.unknown(),
   "talk.safety_alert_count": z.unknown(),
   "talk.memory_summaries": z.unknown(),
   "talk.friendship_per_talk": z.unknown(),
   "talk.friendship_max": z.unknown(),
   "ai.timeout_seconds.realtime": z.number().positive(),
+  // 턴 길의 길이 초과 기록이 읽는 선생님 문장 상한(lesson-turn teacherSentencesMaxOf — 빠지면 턴이 CallSettingError 로 오류가 된다)
+  ...TEACHER_SENTENCES_SETTING_SCHEMAS,
 } as Record<string, z.ZodType>;
 
 function logFailure(what: string, error: unknown) {

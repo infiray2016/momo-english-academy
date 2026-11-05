@@ -26,6 +26,7 @@ import {
   oldestMoreOf,
   slotChanceOf,
 } from "@/core/conversation/chances";
+import { createRewriteHold } from "@/core/conversation/child-kind";
 import {
   type ClientListen,
   type ClientListenRow,
@@ -67,6 +68,7 @@ import {
   NO_CARD_ITEM,
   readTalkMove,
   TALK_SUPPORT_STAGE_EASY,
+  TALK_SUPPORT_STAGE_MAX,
   type TalkAppHelp,
   type TalkCardItemRef,
   type TalkMove,
@@ -84,6 +86,7 @@ import {
   heldQuestionFailOf,
   mergeQuestionRetry,
   questionRetryNoteOf,
+  stuckRewriteNoteOf,
 } from "@/core/conversation/question-retry";
 import {
   metWordsIn,
@@ -593,8 +596,11 @@ export type LessonSentence = {
   question: boolean;
   cue: boolean;
   state: LessonSentenceState;
-  /** 지운 까닭: 질문을 쓰지 않는 차례의 물음표 · 같은 질문(4단계부터 문장이 끝날 때) · 붙일 소리 줄의 답을 담은 문장(C125). */
-  reason?: "question" | "same" | "overlap";
+  /**
+   * 지운 까닭: 질문을 쓰지 않는 차례의 물음표 · 같은 질문(4단계부터 문장이 끝날 때) · 붙일 소리 줄의 답을 담은 문장(C125) · 받침 닫기 · 들리지 않음
+   * 차례의 따라 말하기 신호 말(13절 C204 (5) — 따라 할 차례가 없다).
+   */
+  reason?: "question" | "same" | "overlap" | "together" | "rewrite";
 };
 
 export type LessonSentenceFlow = {
@@ -647,7 +653,13 @@ export function createLessonSentenceFlow({
       const entry: LessonSentence = { en, question, cue, state: "sent" };
       const answers = soundAnswersOf(plan);
       const asks = asksQuestion(plan);
-      if (
+      // 1~3단계 받침 닫기(셋째) · 들리지 않음 차례는 답을 한 번 들려주고 넘어가는 자리라 따라 말하기 신호 말을 지운다(13절 C204 (5) · 02-2 261줄)
+      const closes =
+        plan.stage >= TALK_SUPPORT_STAGE_MAX || plan.cause === "nospeech";
+      if (cue && closes) {
+        entry.state = "dropped";
+        entry.reason = "together";
+      } else if (
         answers.length > 0 &&
         sayingAnswer(
           en,
@@ -806,6 +818,11 @@ export type LessonOutcomeView =
       overLength: number;
       /** 문장 문(검사)에 걸려 바뀌거나 빠진 선생님 문장 수 — 있으면 뜻 목록을 문장과 맞출 수 없어 뜻을 보이지 않는다(13절 C202 (5)). */
       blocked?: number;
+      /**
+       * 질문이 없으면 카드 자리로(검토 rev-prompt-2 B): 막힘을 무른 턴을 다시 쓰지 못해 앞 응답 문장을 모두 지운 결과. 질문을 쓰는 차례가 질문
+       * 없이 끝나지 않게 끝 처리가 카드 질문을 붙인다.
+       */
+      needsQuestion?: boolean;
     }
   /** 첫 문장 뒤 끊김(8절 — 보낸 문장을 두고 그 턴을 닫는다). */
   | { kind: "cut"; overLength: number }
@@ -1029,6 +1046,12 @@ export function settleLessonTurn({
   if (asks && !why) {
     if (outcome.kind === "cut" && !keptQuestion) why = "cut";
     else if (outcome.kind === "line" && !keptQuestion) why = "fail";
+    else if (
+      outcome.kind === "ok" &&
+      outcome.needsQuestion === true &&
+      !keptQuestion
+    )
+      why = "fail";
   }
   let plan = chosen;
   let replaced: TalkSlotWhy | null = null;
@@ -1393,6 +1416,7 @@ export async function withQuestionRetry({
   lineOptions,
   sentenceMaxWords,
   canRetry = true,
+  rewrite = null,
   retry,
 }: {
   flow: Pick<LessonSentenceFlow, "entries" | "chosen">;
@@ -1401,6 +1425,11 @@ export async function withQuestionRetry({
   sentenceMaxWords: number;
   /** 다시 부를 시간이 남았는가(questionRetryFits). 거짓이면 다시 쓰지 않는다. */
   canRetry?: boolean;
+  /**
+   * 막힘을 무른 턴(13절 C204 (3)): AI 가 막힘이라 했지만 앱이 무른 아이 말. 앞 응답 문장은 아무것도 보내지 않고 잡아 둔 채였다 — 통째로 다시 쓰게
+   * 하고(stuckRewriteNoteOf), 못 하면 앞 응답 문장을 끝 처리가 내보내게 잡아 둔 문장으로 돌린다. null 이면 보통 턴이다.
+   */
+  rewrite?: { child: string } | null;
   retry: (ask: {
     previous: string;
     note: string;
@@ -1410,22 +1439,49 @@ export async function withQuestionRetry({
   view: LessonOutcomeView;
   retried: boolean;
 }> {
-  const same = { flow, view, retried: false };
-  if (!canRetry || view.kind !== "ok" || lineOptions === null) return same;
-  if (!asksQuestion(flow.chosen())) return same;
-  const firstEntries = flow.entries();
+  // 막힘을 무른 턴은 보낸 문장이 없다. 앞 응답은 막힘이라 보고 쓴 말이라(같이 말해 보자 · 답) 다시 쓰지 못하면 하나도 내보내지 않고, 끝 처리가
+  // 카드 자리(카드 질문)로 차례를 잇게 한다 — 질문 없이 차례가 끝나지 않는다(검토 rev-prompt-2 B)
+  const heldAll = (list: readonly LessonSentence[]): LessonSentence[] =>
+    list.map((e) =>
+      e.state === "dropped" ? { ...e } : { ...e, state: "held" as const },
+    );
+  const droppedAll = (list: readonly LessonSentence[]): LessonSentence[] =>
+    list.map((e) => ({
+      ...e,
+      state: "dropped" as const,
+      reason: "rewrite" as const,
+    }));
+  const fallback = {
+    flow:
+      rewrite === null
+        ? flow
+        : { entries: () => droppedAll(flow.entries()), chosen: flow.chosen },
+    view:
+      rewrite !== null && view.kind === "ok"
+        ? { ...view, needsQuestion: true }
+        : view,
+    retried: false,
+  };
+  if (!canRetry || view.kind !== "ok" || lineOptions === null) return fallback;
+  if (!asksQuestion(flow.chosen())) return fallback;
+  const firstEntries =
+    rewrite === null ? flow.entries() : heldAll(flow.entries());
   const targets = view.value.next_targets;
-  const fail = heldQuestionFailOf({
-    entries: firstEntries,
-    targets,
-    options: lineOptions,
-  });
-  if (fail === null) return same;
-  const note = questionRetryNoteOf(fail, {
-    sentenceMaxWords,
-    targets,
-    childWords: lineOptions.childWords,
-  });
+  let note: string;
+  if (rewrite !== null) note = stuckRewriteNoteOf(rewrite.child);
+  else {
+    const fail = heldQuestionFailOf({
+      entries: firstEntries,
+      targets,
+      options: lineOptions,
+    });
+    if (fail === null) return fallback;
+    note = questionRetryNoteOf(fail, {
+      sentenceMaxWords,
+      targets,
+      childWords: lineOptions.childWords,
+    });
+  }
   let answer: QuestionRetryAnswer | null = null;
   try {
     answer = await retry({
@@ -1435,13 +1491,14 @@ export async function withQuestionRetry({
   } catch (error) {
     logFailure("회화 질문 다시 쓰기", error);
   }
-  const retried = { ...same, retried: true };
+  const retried = { ...fallback, retried: true };
   if (answer === null) return retried;
   const merged = mergeQuestionRetry({
     first: view.value,
     firstEntries,
     retry: answer.value,
     retryEntries: answer.entries,
+    whole: rewrite !== null,
   });
   if (merged === null) return retried;
   const blocked = (view.blocked ?? 0) + answer.blocked;
@@ -1954,6 +2011,8 @@ async function lessonTurnAfterChild(
     }
   };
   const safeLine = lessonSafeLineOf(state, callInput.history.length + 1);
+  // 앱이 막힘을 무른 1~3단계 턴의 잡아 두기(13절 C204 (3), child-kind createRewriteHold — 시도마다 덮어씀)
+  const hold = createRewriteHold({ low, rangeOk: !rangeBroken });
   let outcome: TalkLessonOutcome;
   try {
     outcome = await talkLessonTurn(
@@ -1968,9 +2027,13 @@ async function lessonTurnAfterChild(
           timer.mark("ai_prep");
           deps.onPrepTimings?.(timer.result());
         },
-        onStuck: (stuck) => flow.stuck(stuck),
+        onStuck: (stuck, overridden) => {
+          flow.stuck(stuck);
+          // 앱이 막힘을 무른 1~3단계 질문 차례: 아직 보낸 문장이 없으면 이 응답 문장을 모두 잡아 두고 끝에서 통째로 다시 쓰게 한다
+          hold.onStuck(overridden, asksQuestion(flow.chosen()));
+        },
         onSentence: (en) => {
-          if (flow.accept(en) === "send") send(en);
+          if (hold.sends(flow.accept(en) === "send")) send(en);
         },
       },
       { db, clock: deps.now, ...deps.ai },
@@ -2006,6 +2069,7 @@ async function lessonTurnAfterChild(
       elapsedMs: deps.now().getTime() - received.getTime(),
       timeoutMs: (s["ai.timeout_seconds.realtime"] as number) * MS_PER_SECOND,
     }),
+    rewrite: hold.holding() ? { child: child.text ?? "" } : null,
     retry: async ({ previous, note }) => {
       const again = createLessonSentenceFlow({
         low,

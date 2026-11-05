@@ -461,7 +461,7 @@ describe("회화 수업 턴 새 꼴 계약 표본", () => {
     }
   });
 
-  it("AC-15c 새 꼴 응답 본문에는 판정 · 점수 칸이 없고 칸 차례가 stuck → tori_en → model_line → choices 다", () => {
+  it("AC-15c 새 꼴 응답 본문에는 판정 · 점수 칸이 없고 칸 차례가 child_kind → stuck → tori_en → model_line → choices 다(13절 C204)", () => {
     for (const sample of v2) {
       const text = (
         sample.response.body.content as { type: string; text?: string }[]
@@ -470,7 +470,8 @@ describe("회화 수업 턴 새 꼴 계약 표본", () => {
         .map((b) => b.text ?? "")
         .join("");
       const keys = Object.keys(JSON.parse(text) as Record<string, unknown>);
-      expect(keys.slice(0, 4), sample.case).toEqual([
+      expect(keys.slice(0, 5), sample.case).toEqual([
+        "child_kind",
         "stuck",
         "tori_en",
         "model_line",

@@ -1,6 +1,7 @@
 // 회화 수업 실호출 표본 평가 명령(talk:observe, 회화 plan 묶음 13 · AC-15o)의 순수 함수: 인자 · 대본 읽기 · 계획 · 비용 어림 ·
 // 메모리 대화(가짜 응답 — 네트워크 없음) · 판정 칸 · 보고 꼴.
 import { describe, expect, it } from "vitest";
+import { hasJsonSchemaRefs } from "@/core/ai/inline-refs";
 import { talkMoveOf } from "@/core/conversation/move";
 import { questionKeyOf } from "@/core/conversation/question-check";
 import { splitSentences } from "@/core/seed/text";
@@ -24,6 +25,7 @@ import {
   readScriptFiles,
   readSeedFiles,
   reportMarkdown,
+  sameSoundTwiceOf,
   selectScripts,
   settleTurn,
   type TurnRecord,
@@ -307,6 +309,31 @@ describe("메모리 대화(가짜 응답)", () => {
       expect(first.text.trim()).toBe(greeting.questions[0]?.question.en);
   });
 
+  it("보낼 응답 규격은 $defs · $ref 를 펼친 꼴이다(서버 talkOutputFormatOf 와 같음 — 400 grammar too large)", () => {
+    const { greeting, sim } = afterGreeting();
+    const format = (body: Record<string, unknown>) =>
+      (body.output_config as { format: { type: string; schema: unknown } })
+        .format;
+    const sent = format(greeting.request.body);
+    expect(sent.type).toBe("json_schema");
+    expect(hasJsonSchemaRefs(sent.schema)).toBe(false);
+    expect(JSON.stringify(sent.schema)).not.toContain("$defs");
+    expect(
+      Object.keys((sent.schema as { properties: object }).properties),
+    ).toContain("child_kind");
+    // 재질문 요청도 같은 꼴이다
+    const ready = sim.prepare(say("Rice."), 1);
+    if (!ready.ok) throw new Error(ready.reason);
+    const ask = sim.retryOf(
+      ready.turn,
+      fakeMessage({ tori_en: "Rice, yum! Do you like xylophones?" }),
+    );
+    expect(ask).not.toBeNull();
+    expect(hasJsonSchemaRefs(format(ask?.request.body ?? {}).schema)).toBe(
+      false,
+    );
+  });
+
   it("인사 답은 인사 끝 차례(질문 없음)로 부르고, 첫 사용자 메시지는 앱 첫 말로 시작한다", () => {
     const { greeting, record, m } = afterGreeting();
     expect(greeting.segment).toBe("greeting_end");
@@ -397,6 +424,94 @@ describe("메모리 대화(가짜 응답)", () => {
     );
   });
 
+  describe("막힘 무름(13절 C204 (3) — 서버 onStuck overridden · withQuestionRetry rewrite 와 같은 길)", () => {
+    // AI 는 막힘이라 했지만 아이 말이 새 이야기(child_kind new_topic)라 앱이 무른다
+    const stuckReply = () =>
+      fakeMessage({
+        child_kind: "new_topic",
+        stuck: true,
+        tori_en: "That's okay! Let's say it together.",
+        support: "together",
+      });
+    function topic() {
+      const { sim } = afterGreeting();
+      const ready = sim.prepare(say("I have a big dog."), 1);
+      if (!ready.ok) throw new Error(ready.reason);
+      return { sim, turn: ready.turn };
+    }
+
+    it("무른 1~3단계 질문 차례는 통째로 다시 쓰게 하는 요청 하나를 만든다", () => {
+      const { sim, turn } = topic();
+      const ask = sim.retryOf(turn, stuckReply());
+      expect(ask?.kind).toBe("rewrite");
+      expect(ask?.fail).toBeNull();
+      const messages = ask?.request.body.messages as {
+        role: string;
+        content: string;
+      }[];
+      expect(messages.at(-2)).toEqual({
+        role: "assistant",
+        content: "That's okay! Let's say it together.",
+      });
+      expect(messages.at(-1)?.content).toContain("is not stuck");
+    });
+
+    it("다시 쓴 응답으로 턴을 통째로 바꾸고 갈래 · 막힘 무름을 적는다", () => {
+      const { sim, turn } = topic();
+      const ask = sim.retryOf(turn, stuckReply());
+      if (!ask) throw new Error("다시 쓰기 없음");
+      const record = sim.finish(turn, stuckReply(), {
+        ask,
+        result: fakeMessage({
+          child_kind: "answer",
+          tori_en: "A big dog! Do you like your dog?",
+          next_move: "follow_child",
+        }),
+      });
+      expect(record.teacher).toBe("A big dog! Do you like your dog?");
+      expect(record.childKind).toBe("new_topic");
+      expect(record.stuck).toEqual({ ai: true, app: false, overridden: true });
+      expect(record.flags.join(" ")).toContain("막힘 무름");
+      expect(record.reask?.outcome).toContain("막힘 무름");
+      expect(record.move.kind).toBe("ai");
+    });
+
+    it("통째 다시 쓴 응답에 질문이 없으면 앞 문장을 모두 지우고 카드 자리다(서버 needsQuestion)", () => {
+      const { sim, turn, m } = { ...topic(), m: materials3() };
+      const ask = sim.retryOf(turn, stuckReply());
+      if (!ask) throw new Error("다시 쓰기 없음");
+      const record = sim.finish(turn, stuckReply(), {
+        ask,
+        result: fakeMessage({ tori_en: "A big dog!" }),
+      });
+      expect(record.replaced).toBe("fail");
+      expect(record.move.kind).toBe("card_slot");
+      expect(record.teacher).not.toContain("say it together");
+      expect(record.dropped.map((d) => d.reason)).toContain("rewrite");
+      expect(
+        record.attach.some((l) => m.card.required.some((r) => r.en === l)),
+      ).toBe(true);
+      expect(record.reask?.outcome).toContain("앞 문장을 모두 지우고");
+    });
+
+    it("짧은 말이고 갈래가 막힘 갈래면 무르지 않는다(AI 막힘 그대로 — 받침 계획)", () => {
+      // 영어 낱말 셋 이상 문장이면 갈래와 관계없이 무른다(child-kind ENGLISH_SENTENCE_MIN_WORDS) — 두 낱말 말로 본다
+      const { sim } = afterGreeting();
+      const ready = sim.prepare(say("Blue car."), 1);
+      if (!ready.ok) throw new Error(ready.reason);
+      const turn = ready.turn;
+      const reply = fakeMessage({
+        child_kind: "not_understood",
+        stuck: true,
+        tori_en: "That's okay! Let's say it together.",
+      });
+      expect(sim.retryOf(turn, reply)).toBeNull();
+      const record = sim.finish(turn, reply);
+      expect(record.stuck).toEqual({ ai: true, app: true, overridden: false });
+      expect(record.move.stage).toBe(1);
+    });
+  });
+
   describe("재질문(13절 C203 (3) — 서버 withQuestionRetry 와 같은 차례)", () => {
     const offband = () =>
       fakeMessage({
@@ -424,8 +539,9 @@ describe("메모리 대화(가짜 응답)", () => {
     it("걸린 질문이면 앞 tori_en · 다시 쓰기 메시지를 이은 요청 하나를 만든다", () => {
       const { sim, turn } = asked();
       const ask = sim.retryOf(turn, offband());
-      expect(ask?.fail.reason).toBe("offband");
-      expect(ask?.fail.words).toContain("xylophones");
+      expect(ask?.kind).toBe("question");
+      expect(ask?.fail?.reason).toBe("offband");
+      expect(ask?.fail?.words).toContain("xylophones");
       const messages = ask?.request.body.messages as {
         role: string;
         content: string;
@@ -457,6 +573,17 @@ describe("메모리 대화(가짜 응답)", () => {
       expect(record.recast).toBe("We eat rice.");
       expect(record.reask?.outcome).toContain("다시 쓴 질문 통과");
       expect(record.reask?.usage?.costUsd).toBeGreaterThan(0);
+      // 첫 시도 글 · 걸림 까닭을 남긴다(검토 M-6)
+      expect(record.reask?.firstToriEn).toBe(
+        "Rice, yum! Do you like xylophones?",
+      );
+      expect(record.reask?.firstFail).toEqual({
+        question: "Do you like xylophones?",
+        reason: "offband",
+        words: ["xylophones"],
+      });
+      expect(record.reask?.retryToriEn).toBe("Do you like fish?");
+      expect(record.reask?.retryFail).toBeNull();
     });
 
     it("다시 써도 걸리면 지금처럼 카드 자리다", () => {
@@ -470,6 +597,19 @@ describe("메모리 대화(가짜 응답)", () => {
       expect(record.replaced).toBe("question_check");
       expect(record.move.kind).toBe("card_slot");
       expect(record.reask?.outcome).toContain("다시 써도 걸림");
+      // 두 번의 걸림 까닭(첫 시도 · 다시 쓴 시도)을 함께 남긴다(검토 M-6)
+      expect(record.reask?.firstFail.words).toContain("xylophones");
+      expect(record.reask?.retryFail).toEqual({
+        question: "Do you like trombones?",
+        reason: "offband",
+        words: ["trombones"],
+      });
+      expect(record.reask?.outcome).toContain(
+        '"Do you like xylophones?" offband(xylophones)',
+      );
+      expect(record.reask?.outcome).toContain(
+        '"Do you like trombones?" offband(trombones)',
+      );
     });
 
     it("다시 쓴 응답에 질문이 없으면 앞 응답으로 카드 자리다", () => {
@@ -583,6 +723,33 @@ describe("메모리 대화(가짜 응답)", () => {
 });
 
 describe("판정 칸", () => {
+  it("같은 소리 두 번은 앱이 붙인 글 줄과 AI 문장도 견준다(검토 M-2)", () => {
+    const card = {
+      kind: "question" as const,
+      role: "card" as const,
+      en: "The sun is down. What do you do now?",
+      item: { kind: "required" as const, no: 5 },
+    };
+    expect(
+      sameSoundTwiceOf({
+        kept: ["The sun is down."],
+        attach: [card],
+        sound: {},
+      }),
+    ).toBe(true);
+    expect(
+      sameSoundTwiceOf({ kept: ["Oh, okay!"], attach: [card], sound: {} }),
+    ).toBe(false);
+    // AI 문장이 소리 줄의 답을 담음
+    expect(
+      sameSoundTwiceOf({
+        kept: ["Yes, we come home."],
+        attach: [{ kind: "sound", role: "answer", en: "We come home." }],
+        sound: {},
+      }),
+    ).toBe(true);
+  });
+
   it("장면 단정 문장은 'You are …' 평서문이다", () => {
     expect(isSceneAssert("You are thirsty.")).toBe(true);
     expect(isSceneAssert("You're hungry!")).toBe(true);
@@ -617,6 +784,9 @@ describe("판정 칸", () => {
     expect(judge.koMeaning.auto).toBe(false);
     expect(judge.followUp.auto).toBe(false);
     expect(judge.returns).toEqual({ expect: null, auto: false });
+    // 사람만 보는 두 칸(검토 149줄 5)
+    expect(judge.stuckRight).toEqual({ expect: null, auto: null });
+    expect(judge.ownReaction).toEqual({ expect: null, auto: null });
   });
 });
 
@@ -641,6 +811,14 @@ describe("보고", () => {
         reask: {
           usage: second.usage ? { ...second.usage, costUsd: 0.0001 } : null,
           outcome: "다시 쓴 질문 통과",
+          firstToriEn: "Rice! Do you like xylophones?",
+          firstFail: {
+            question: "Do you like xylophones?",
+            reason: "offband",
+            words: ["xylophones"],
+          },
+          retryToriEn: "Do you like fish?",
+          retryFail: null,
         },
       },
     ];
@@ -678,6 +856,9 @@ describe("보고", () => {
     );
     expect(md).toContain("재질문 0.000100");
     expect(md).toContain("재질문: 다시 쓴 질문 통과");
+    expect(md).toContain("갈래(child_kind · 막힘)");
+    expect(md).toContain("막힘 판정 맞음: 기대 · 자동 · 사람");
+    expect(md).toContain("선생님 자기 반응 한마디 있음: 기대 · 자동 · 사람");
   });
 
   it("합계는 호출 · 토큰 · 비용 · 첫 문장 · 이어 묻기를 센다", () => {

@@ -13,7 +13,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"stuck\":false,\"tori_en\":\"Oh, soccer! ",
+          "text": "{\"child_kind\":\"answer\",\"stuck\":false,\"tori_en\":\"Oh, soccer! ",
           "citations": null
         },
         {

@@ -52,6 +52,7 @@ import {
   priceRowsOfSeed,
 } from "../src/core/ai/cost";
 import { classifyFailure, httpFailureOf } from "../src/core/ai/failure";
+import { inlineJsonSchemaRefs } from "../src/core/ai/inline-refs";
 import { createMasker } from "../src/core/ai/mask";
 import { buildAiRequest } from "../src/core/ai/request";
 import {
@@ -238,7 +239,10 @@ const scriptMasker = createMasker({
   contactPatterns: SAMPLE_CONTACT_PATTERNS,
 });
 
-/** 요청 본문에 구조화 출력 형식을 붙인다(앱 흐름 run.ts 와 같은 길). 관찰 명령도 쓴다. */
+/**
+ * 요청 본문에 구조화 출력 형식을 붙인다(앱 흐름 run.ts aiOutputFormatOf · talk.ts talkOutputFormatOf 와 같은 길 — $defs · $ref 를 펼친다, 대본 3회차
+ * 400 'compiled grammar is too large'). 관찰 명령(ai:observe · talk:observe)도 쓴다.
+ */
 export function withFormat(
   body: Record<string, unknown>,
   schema: z.ZodType,
@@ -247,7 +251,13 @@ export function withFormat(
   const outputConfig = body.output_config as Record<string, unknown>;
   return {
     ...body,
-    output_config: { ...outputConfig, format: { type, schema: json } },
+    output_config: {
+      ...outputConfig,
+      format: {
+        type,
+        schema: inlineJsonSchemaRefs(json as Record<string, unknown>),
+      },
+    },
   };
 }
 

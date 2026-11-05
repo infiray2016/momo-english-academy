@@ -436,6 +436,7 @@ export function talkLessonAnswer(
   over: Partial<TalkLessonOutput> = {},
 ): TalkLessonOutput {
   return {
+    child_kind: over.stuck === true ? "not_understood" : "answer",
     stuck: false,
     tori_en: "Nice!",
     model_line: "",

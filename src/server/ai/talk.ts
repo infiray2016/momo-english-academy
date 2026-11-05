@@ -40,6 +40,7 @@ import {
   type FailureCallStatus,
   type FailureReason,
 } from "@/core/ai/failure";
+import { inlineJsonSchemaRefs } from "@/core/ai/inline-refs";
 import type { Masker } from "@/core/ai/mask";
 import {
   type CheckField,
@@ -47,6 +48,7 @@ import {
   type FieldHit,
 } from "@/core/ai/output-check";
 import { type BuiltRequest, buildAiRequest } from "@/core/ai/request";
+import { childKindOf, effectiveStuckOf } from "@/core/conversation/child-kind";
 import { sayingAnswer } from "@/core/conversation/spoken";
 import {
   createToriEnReader,
@@ -150,8 +152,11 @@ export type TalkCallContext = AiCallContext & {
   requestReceivedAt: Date;
   /** 검사를 지난(또는 바꾼) 영어 문장마다. 끝맺음 턴은 넘기지 않는다(tori_en 이 빈 글 — C33). */
   onSentence?: (sentence: string) => void;
-  /** tori_en 앞 칸의 막힘 판단을 읽은 때(첫 문장 전, 시도마다 한 번 — 13절 C127). */
-  onStuck?: (stuck: boolean) => void;
+  /**
+   * tori_en 앞 칸의 막힘 판단을 읽은 때(첫 문장 전, 시도마다 한 번 — 13절 C127). stuck 은 앱이 다시 본 값(13절 C204 — 아이 말 갈래 · 인식 글로
+   * 막힘을 무름), overridden 은 AI 가 막힘이라 했는데 앱이 무른 때 참.
+   */
+  onStuck?: (stuck: boolean, overridden: boolean) => void;
   /** 준비(설정 · 단가 · 하루 사용 · 가림)를 마치고 AI 를 부르기 직전(준비 시간 재기 — C125 (4)). */
   onPrepared?: () => void;
   /**
@@ -213,8 +218,8 @@ type StreamBase = {
   startedAt: Date;
   requestReceivedAt: Date;
   onSentence?: (sentence: string) => void;
-  /** tori_en 앞 칸의 막힘 판단(C127) — 첫 문장 전에 부른다. */
-  onStuck?: (stuck: boolean) => void;
+  /** tori_en 앞 칸의 막힘 판단(C127 · C204 앱이 다시 본 값) — 첫 문장 전에 부른다. */
+  onStuck?: (stuck: boolean, overridden: boolean) => void;
   record(row: TalkAttemptRecord): Promise<void>;
 };
 
@@ -253,6 +258,8 @@ type StreamKit<O> = {
     value: O,
     sent: readonly string[],
   ): { model: boolean; choices: boolean; overlap?: boolean };
+  /** AI 의 막힘 판단과 아이 말 갈래 글로 앱이 보는 막힘(새 꼴만, 13절 C204). 없으면 AI 판단 그대로. */
+  stuckOf?(aiStuck: boolean, childKind: unknown): boolean;
 };
 
 type StreamCore<I, O, R> = StreamBase & {
@@ -329,16 +336,49 @@ function lessonKit(plan: {
     checkFields: talkLessonCheckFields,
     check: (value, hits) => applyTalkLessonChecks(value, hits, input),
     soundFixed: lessonSoundFixedOf,
+    stuckOf: (aiStuck, childKind) =>
+      effectiveStuckOf({
+        aiStuck,
+        childKind: childKindOf(childKind),
+        child: input.turn.child,
+        input: input.turn.input,
+      }),
+  };
+}
+
+/**
+ * 회화 턴 보낼 규격의 상한(기술 값 — 2026-11-06 실호출 탐침에서 받은 꼴: $ref 없는 펼친 꼴 5,785 · 5,799자, 설명을 늘린 펼친 꼴 6,502자 모두 OK ·
+ * 칸 서른). 문법 한도는 글자 수가 아니라 규격 꼴($ref · 칸 · 중첩)로 정해지므로 이 값은 '탐침으로 받은 크기를 넘지 않게'의 울타리다(받은 가장 큰
+ * 꼴 6,502자 아래). 칸을 더하거나 규격을 키우면 단위 시험이 걸리고, 그때 탐침을 다시 한다.
+ */
+export const TALK_OUTPUT_SCHEMA_MAX_CHARS = 6500;
+export const TALK_OUTPUT_SCHEMA_MAX_PROPS = 30;
+
+/**
+ * 회화 턴 응답 규격의 보낼 꼴(구조화 출력 format): SDK 도우미의 JSON 스키마에서 $defs · $ref 를 펼친다(대본 3회차 400 'compiled grammar is too
+ * large' — $ref 꼴은 API 문법 한도를 넘고 펼친 꼴은 받는다, core/ai/inline-refs). 검증은 그대로 Zod 규격(wireSchema)으로 한다 — 보낼 꼴은 같은
+ * 규격에서 만들어 칸 · 필수 칸이 같다.
+ */
+export function talkOutputFormatOf(wireSchema: unknown): {
+  type: "json_schema";
+  schema: Record<string, unknown>;
+} {
+  const { schema } = zodOutputFormat(
+    wireSchema as Parameters<typeof zodOutputFormat>[0],
+  );
+  return {
+    type: "json_schema",
+    schema: inlineJsonSchemaRefs(schema as Record<string, unknown>),
   };
 }
 
 function bodyOf<O>(built: BuiltRequest<O>) {
-  const { type, schema } = zodOutputFormat(
-    built.wireSchema as Parameters<typeof zodOutputFormat>[0],
-  );
   return {
     ...built.body,
-    output_config: { ...built.body.output_config, format: { type, schema } },
+    output_config: {
+      ...built.body.output_config,
+      format: talkOutputFormatOf(built.wireSchema),
+    },
   };
 }
 
@@ -440,10 +480,11 @@ async function streamCore<I, O, R>(
     const reader = createToriEnReader();
     // 막힘 판단은 시도마다 한 번만 알린다 — 흘려 받는 동안 읽었거나, 못 읽었으면 응답 끝에서 내보내기 전에(C127 · rev-p13b N-1)
     let stuckTold = false;
-    const tellStuck = (stuck: boolean) => {
+    const tellStuck = (stuck: boolean, childKind?: unknown) => {
       if (stuckTold) return;
       stuckTold = true;
-      plan.onStuck?.(stuck);
+      const seen = kit.stuckOf ? kit.stuckOf(stuck, childKind) : stuck;
+      plan.onStuck?.(seen, seen !== stuck);
     };
     const sentBefore = firstSentenceMs;
     const result = await sendStreamingAttempt(
@@ -464,7 +505,7 @@ async function streamCore<I, O, R>(
           const fresh = reader.push(delta);
           // 막힘 판단은 tori_en 앞 칸이라 첫 문장보다 먼저 알린다(C127)
           const stuck = reader.stuck();
-          if (stuck !== undefined) tellStuck(stuck);
+          if (stuck !== undefined) tellStuck(stuck, reader.childKind());
           for (const sentence of fresh) emit(sentence);
         },
       },
@@ -623,7 +664,7 @@ async function finishTalk<I, O, R>(
     streaming: boolean;
     emit: (sentence: string) => void;
     /** 막힘 판단 알리기(시도에서 아직 알리지 않았을 때만 부른다). */
-    tellStuck: (stuck: boolean) => void;
+    tellStuck: (stuck: boolean, childKind?: unknown) => void;
     gate: () => ToriSentenceGate;
     firstSentenceMs: () => number | null;
     answered: TalkAttemptRecord;
@@ -637,8 +678,11 @@ async function finishTalk<I, O, R>(
   if (s.streaming) {
     // 흘려 받는 동안 막힘 판단을 읽지 못했으면(앞 칸이 stuck · tori_en 이 아님) 응답 전체의 값을 먼저 알린다 — 잡아 둘 짝이
     // 맞아야 같은 답을 두 번 읽지 않는다(C125 (3) · C127 · rev-p13b N-1)
-    const stuck = (prepared as { stuck?: unknown } | undefined)?.stuck;
-    if (typeof stuck === "boolean") s.tellStuck(stuck);
+    const head = prepared as
+      | { stuck?: unknown; child_kind?: unknown }
+      | undefined;
+    const stuck = head?.stuck;
+    if (typeof stuck === "boolean") s.tellStuck(stuck, head?.child_kind);
     for (const sentence of s.reader.finish()) s.emit(sentence);
     streamed = s.reader.closed() && !s.reader.failed();
     // 앞 칸이 stuck · tori_en 이 아니어서 흘려 보내지 못했으면 끝에서 한 번에(위험 3 · C127)

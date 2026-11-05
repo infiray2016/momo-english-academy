@@ -232,7 +232,8 @@ async function say(
 
 /** 대화 토막에서 말로 한 턴(가짜 AI 한 번) — 그 뒤 '그만하기'는 참여 완료(AC-15t (가)). */
 async function talkedOnce(sessionId: string): Promise<void> {
-  h.fake.push(lessonTurnRule({ tori_en: "Nice! What else?" }));
+  // 질문은 1~3단계 어휘 범위 안(else 는 범위 밖이라 C203 재질문이 일어나 가짜 응답 하나가 더 든다)
+  h.fake.push(lessonTurnRule({ tori_en: "Nice! Do you like it?" }));
   const lines = await say(sessionId);
   if (lines.at(-1)?.t !== "end") throw new Error("회화 턴이 끝나지 않았다");
 }
