@@ -1,0 +1,18 @@
+# 브리프: 가르치고 배우는 수업 plan 묶음 자-1 — 생성 브리프 틀 고치기 · 3단계 영역 브리프 셋 · 문법 용어 목록 확인(학습 설계자 · Opus · xhigh, 2026-10-30 00:5x)
+
+plan `intent/2026-10-29-가르치고-배우는-수업/plan.md`(approved C186)의 묶음 자-1 이다. 근거는 spec 3판 `intent/2026-10-29-가르치고-배우는-수업/spec.md` 설계 7 의 '문법 용어 목록' · '생성 브리프' · '다시 생성 · 그림' 세 문단(325~331줄)과 설계 1~6(여섯 자리 · 자리별 칸 · 같이 해 보기 · 틀린 뒤 차례 · 짝 · 영역 방법 · 선생님 줄 · 되짚기 둘), 표본 3판 `.superpowers/sdd/2026-10-29-가르치고-배우는-수업/samples-l3u1.md`(v4 · v5 정정 반영), 정규 시드 셋 `.claude/worktrees/p13d/seed/lessons/{reading,writing,speaking}/3/1.json`(검증 통과한 예시 JSON 의 출처), 단원 규격 `seed/unit-specs.json`(3단계 단원 1 goals 다섯), 검증기 새 검사(구현 보고 `task-seed-schema-report.md` 3판의 규칙 이름: teach-differ · speaking-question · ask-role · recap-line · teach-type · teach-layout · slot-seconds · recap-evidence · 글로서리 · 범위 · 문법 용어), 장부 `ledger-open.md` 의 L-7(We 모호) · L-8(영역 사이 인물 · 사실 겹침) · L-10(두 낱말 단어는 카드 둘) · L-22(글로서리는 그 수업 content.glossary 에, 이름은 proper). 작업 자리는 워크트리 `/Users/hikaru/workspace/momo-english-academy/.claude/worktrees/p13d`(커밋 전 변경 위), 명령은 `( cd <워크트리> && … )` 서브셸로만, PATH 앞에 `/Users/hikaru/.nvm/versions/node/v24.22.0/bin`, 작업 폴더를 옮기지(cd) 않는다.
+
+## 쓰는 파일
+| 파일 | 신규 / 수정 | 무엇을 |
+|---|---|---|
+| `seed/prompts/_template.md` | 수정 | spec 설계 7 '생성 브리프' 문단 그대로: 5절(수업 구성)에 여섯 자리 · 자리별 칸 · 같이 해 보기 꼴 · 틀린 뒤 차례 · 짝 · 영역 방법과 까닭 · 3단계 단원 1~4 빈칸 문장 꼴과 이름표(C170 (5)) · 말하기 질문 꼴(아니요 셋 · 예 하나, C174); 8절(학습 요소 범위와 문장 꼴)에 선생님 한국어 줄의 꼴(용어 없음 · 아이가 아는 말 · 해요체 · 한두 문장 · 40자 안팎) · 칩 role 고르는 법 · 좋은 줄 · 나쁜 줄 보기 · 마무리 줄 둘(closeKo 는 '할 수 있어요', closeKoPracticed 는 배우고 연습한 것, 숙달 단정 없음) · teach.goals 첫 값은 '못 하던 것 → 스스로'가 재는 목표; 10절(인물)에 선생님 말의 이름 규칙(설계 4: 선생님 이름 · {TEACHER} · {NAME} 금지, 토리는 등장인물일 때만)과 같은 단계 읽기 · 말하기 사이 인물 · 사실 겹침 피하기(L-8); 11절에 '한 수업에 문장 틀 하나'(C170 (8))와 두 낱말 단어는 카드 둘(L-10); 12절(출력 규격)에 새 칸 전부와 검증을 통과한 예시 JSON(정규 시드에서 발췌); 13절(금지 목록)에 문법 용어 목록(파일 이름과 규칙); 14절(스스로 확인)에 짝 · '왜' · 줄 길이 · 시간 합 · 유형 경계 · 목표 · 이름표 · 말하기 질문 꼴(이야기 · 허용 답 두 묶음) · 마무리 줄 둘 · 같이 해 보기 빈칸 수; 16절(보고)에 선생님 말 추정 시간 · 자리별 추정 · 짝 수. 말하기 질문 답의 AI 판정 지시에 함께 받을 꼴을 문항마다, 주어가 모호한 이야기 · 질문(We 등) 금지(L-7), 3단계 답은 쉼표 꼴 한 문장, 혼자 질문 · 짝마다 storyEn(1~2문장, 답 낱말은 이야기에만), 허용 답은 accepted 서로 다른 꼴 셋 + acceptedMeaning('Yes, they do.' · 이름 그대로), 이름 앞 No · Yes 꼴은 따로 두지 않음. 1단계 등 다른 단계 브리프에 영향이 없게, 단계별 규칙은 '단계 브리프가 정함'으로 가리킨다 |
+| `seed/prompts/reading-3.md` · `writing-3.md` · `speaking-3.md` | 신규 | 3단계 영역 브리프: 영역 방법과 까닭(spec 설계 2 · 3), 단원 1~4 의 빈칸 문장 · 이름표 · 질문 꼴 · 이야기 · 허용 답 두 묶음 · 의미 검사를 통과하는 답(설계 8 의 넷: 방향 · 핵심 정보 · 부정 · 틀린 정보), 인물 · 사실 겹침 피하기(L-8), 두 낱말 단어 카드 둘(L-10), 글로서리에 짝 · 같이 해 보기 낱말까지(L-22), 쓰기 단원 1 수업 1 은 is 만(C170 (8)), 승인 수업(정규 시드의 배정 수업 1 · 변형 1)을 글자 그대로 두라는 호출 값과 나머지 스물다섯(배정 · 다지기 · 보강 × 변형 둘, 6.3 수업 수)의 생성 지시, S10 비교(말하기 한 단원을 high · xhigh 로, plan 정한 것 13). 1단계 브리프 `reading-1.md` 등의 꼴을 따르되 3단계에 맞는 것만 |
+| `seed/lists/grammar-terms.json` | 확인 · 수정 | 항목 22 를 학습 설계자 눈으로 보고 빠진 것 · 예외(exceptions)를 다듬는다. 아이가 국어 시간에 배운 말(자음 · 모음 · 낱말 · 문장)은 미결 4 라 넣지 않는다. 고치면 `pnpm seed:validate --areas reading,writing,speaking` 종료 0 을 확인 |
+| `seed/prompts/README.md` | 수정 | 3단계 브리프 셋의 줄(판 해시 · 생성 기록은 자-2 에서) |
+
+## 지키는 것
+- 코드 · specs · 시드 JSON · 단원 규격은 고치지 않는다(시드 정정은 따로). 브리프의 예시 JSON 은 정규 시드에서 가져와 검증을 통과한 것만 쓴다. 한국어, 영어 개발 용어 직역 금지, 용어(영역 · 단계 · 단원 · 활동 · 자리 · 목표 · 기회 · 짝). 아이 이름 · 비밀값 없음. 설계 숫자는 설정 키 이름으로 가리킨다(lesson.spares_per_session.<영역> · lesson.slot_seconds_max.<자리> · lesson.together_items.<구간> · lesson.recap_* · speech.*_ko · seed.goals_required_levels — 값은 쓰지 않는다).
+- 끝에 `pnpm seed:validate --areas reading,writing,speaking` 종료 0(원본 셋 그대로)과 `grep -c "teach" seed/prompts/_template.md` 를 보고에 적는다.
+
+## 보고(`task-prompts-3-report.md`, 같은 폴더, 40줄 안)
+바뀐 파일 · 절마다 더한 것 · 문법 용어 목록 변경 · 승인 수업 고정 호출 값 · 열린 질문. 마지막 답은 파일 경로 · 열린 질문 수만. 다음은 시드 검토(design-reviewer · Fable max)가 브리프 셋을 본다.

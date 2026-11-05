@@ -1,6 +1,6 @@
-# 브리프: 회화 수업을 대화로 — 델타 spec(규격 설계자 · Opus · xhigh, 2026-10-29 22:0x)
+# 브리프: 회화 수업을 대화로 — 델타 spec(규격 설계자 · Opus · xhigh, 2026-10-29 17:3x)
 
-승인된 intent `intent/2026-10-29-회화-수업을-대화로/intent.md`(2판 approved 22:0x, C161 · C162 · C164)를 받아 `intent/2026-10-29-회화-수업을-대화로/spec.md`(델타, draft)를 쓴다. 절차 · 템플릿은 `.claude/skills/spec-design/SKILL.md`. 정본은 본 저장소(문서 가지) `specs/`. 정본 · 코드 · 시드는 고치지 않는다.
+승인된 intent `intent/2026-10-29-회화-수업을-대화로/intent.md`(2판 approved 17:3x, C161 · C162 · C164)를 받아 `intent/2026-10-29-회화-수업을-대화로/spec.md`(델타, draft)를 쓴다. 절차 · 템플릿은 `.claude/skills/spec-design/SKILL.md`. 정본은 본 저장소(문서 가지) `specs/`. 정본 · 코드 · 시드는 고치지 않는다.
 
 ## 입력(절대 경로 /Users/hikaru/workspace/momo-english-academy)
 - intent 2판 · 요청자 결정 원문 `docs/research/2026-10-29-회화-수업-방식-결정-요청자-원문.md` · 요청자 말 모음 `.superpowers/sdd/2026-10-29-회화-수업을-대화로/requester-wishes.md` · 표본 `samples.md`(1단계 1 · 2 · 3) · `samples-level4-5.md`(4단계 A · B, 5단계 C, 끝의 '정할 것 여섯') · 의도 문서 원문 `docs/research/2026-10-23-AI-영어-선생님-회화-의도-원문.md`

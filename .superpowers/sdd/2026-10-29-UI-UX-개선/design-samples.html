@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>디자인 시안 다섯</title>
+<meta name="description" content="모모 잉글리시 아카데미의 디자인 방향 시안 다섯을 홈 · 회화 대화 · 결과 세 화면으로 견주는 표본 쪽">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pg-bg:#f4efe5;--pg-ink:#2b2b2b;--pg-soft:#6b5b45;--pg-line:#ddd0b8;--pg-card:#fffdf7;--pg-accent:#8a6134;--pg-chip:#efe6d4;
+  --f-head:'Jua','Gowun Dodum',sans-serif;--f-body:'Gowun Dodum','Apple SD Gothic Neo',sans-serif;--f-en:'Fredoka','Gowun Dodum',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg-bg:#1b1916;--pg-ink:#efe8dc;--pg-soft:#c3b49b;--pg-line:#3a342b;--pg-card:#24211c;--pg-accent:#e2b97f;--pg-chip:#2e2a23;}}
+:root[data-theme="dark"]{--pg-bg:#1b1916;--pg-ink:#efe8dc;--pg-soft:#c3b49b;--pg-line:#3a342b;--pg-card:#24211c;--pg-accent:#e2b97f;--pg-chip:#2e2a23;}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--pg-bg);color:var(--pg-ink);font-family:var(--f-body);font-size:17px;line-height:1.65}
+.wrap{max-width:1520px;margin:0 auto;padding:44px 32px 96px}
+h1,h2,h3{font-family:var(--f-head);font-weight:400;line-height:1.2;margin:0}
+h1{font-size:46px}
+.lead{font-size:20px;margin:14px 0 0;max-width:62ch}
+.lead + p{margin:8px 0 0;max-width:70ch;color:var(--pg-soft)}
+.pick{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0;padding:0;list-style:none}
+.pick a{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:6px 18px 6px 8px;border-radius:999px;background:var(--pg-card);border:1.5px solid var(--pg-line);color:inherit;text-decoration:none;font-family:var(--f-head);font-size:19px}
+.pick a:hover{border-color:var(--pg-accent)}
+.pick a:focus-visible,.frame:focus-visible,.zbtn:focus-visible{outline:3px solid var(--pg-accent);outline-offset:3px}
+.no{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--pg-ink);color:var(--pg-bg);font-family:var(--f-head);font-size:19px;flex:none}
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:30px 0 0}
+.box{background:var(--pg-card);border:1.5px solid var(--pg-line);border-radius:16px;padding:20px 24px}
+.box h3{font-size:22px;margin-bottom:8px}
+.box ul{margin:0;padding-left:20px}.box li{margin:4px 0}
+.tbl{overflow-x:auto;margin:16px 0 0;border:1.5px solid var(--pg-line);border-radius:16px;background:var(--pg-card)}
+table{border-collapse:collapse;width:100%;font-size:16px;line-height:1.5}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--pg-line)}
+tr:last-child th,tr:last-child td{border-bottom:0}
+thead th{font-family:var(--f-head);font-weight:400;font-size:17px;background:var(--pg-chip);white-space:nowrap}
+tbody th{font-family:var(--f-head);font-weight:400;font-size:18px;white-space:nowrap}
+.cmp td:nth-child(n+2){min-width:150px}
+.sec-h{margin:56px 0 0;font-size:30px}
+.prop{margin:64px 0 0;padding-top:28px;border-top:2px solid var(--pg-line);scroll-margin-top:16px}
+.prop-head{display:flex;align-items:flex-start;gap:16px}
+.prop-head .no{width:52px;height:52px;font-size:28px}
+.prop-head h2{font-size:34px}
+.prop-head p{margin:6px 0 0;font-size:18px;max-width:75ch}
+.prop-info{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;margin:20px 0 0;align-items:start}
+.axes th{width:9.5em;color:var(--pg-soft);font-family:var(--f-body);font-size:16px;white-space:normal}
+.axes td{font-size:16.5px}
+.fill{margin:0;font-size:16.5px}
+.fill strong{font-family:var(--f-head);font-weight:400;font-size:18px;display:block;margin-bottom:2px}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:22px 0 0}
+.shot{margin:0}
+.shot>figcaption{flex-wrap:wrap;display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-size:16px;color:var(--pg-soft)}
+.shot>figcaption b{white-space:nowrap;font-family:var(--f-head);font-weight:400;font-size:19px;color:var(--pg-ink)}
+.frame{position:relative;aspect-ratio:1180/820;overflow:hidden;border-radius:12px;cursor:zoom-in;background:#cbb894;box-shadow:0 1px 0 rgba(0,0,0,.06),0 14px 28px -16px rgba(0,0,0,.55)}
+.howto ol{margin:12px 0 0;padding-left:22px;max-width:80ch}.howto li{margin:6px 0}
+.axis-t td,.axis-t th{font-size:15.5px}
+.axis-t tbody th{font-size:17px}
+.axis-t td.n{white-space:nowrap}
+.axis-t td.g{white-space:nowrap;font-family:var(--f-head);font-size:17px}
+.foot{margin-top:40px;font-size:14.5px;color:var(--pg-soft)}
+dialog.zoom{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100vw;height:100vh;margin:0;color:#f3efe6}
+dialog.zoom::backdrop{background:rgba(18,16,14,.86)}
+.zin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px}
+.zstage{position:relative;overflow:hidden;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.zbar{display:flex;align-items:center;gap:10px;font-family:var(--f-head);font-size:19px}
+.zbtn{min-width:48px;min-height:48px;border-radius:999px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-family:var(--f-head);font-size:18px;padding:0 16px;cursor:pointer}
+.zcap{min-width:12em;text-align:center}
+@media (max-width:1080px){.shots{grid-template-columns:1fr}.prop-info{grid-template-columns:1fr}}
+@media (max-width:760px){.axes th{width:6.2em}.wrap{padding:28px 16px 72px}h1{font-size:36px}.notes{grid-template-columns:1fr}.prop-head h2{font-size:28px}.sec-h{font-size:26px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* ===== 목업 화면(1180 × 820, 축소는 --k) ===== */
+.screen{position:absolute;left:0;top:0;width:1180px;height:820px;transform-origin:0 0;transform:scale(var(--k,.36));overflow:hidden;font-family:'Gowun Dodum',sans-serif;font-size:20px;line-height:1.35;color:var(--ink);letter-spacing:-.005em;text-align:left;-webkit-font-smoothing:antialiased}
+.screen *{box-sizing:border-box}
+.screen p,.screen h4,.screen h5,.screen ul{margin:0;font-weight:400}
+.screen .bg{position:absolute;inset:0}
+.screen svg{display:block}
+.cs-a{--read:#FFE566;--write:#9FD8FF;--speak:#FFB3C7;--talk:#C9F2B2;--cork:#D2A86B;--wood:#8A6134;--paper:#FFFDF7;--ink:#2B2B2B;--ink-soft:#5f5243;--kraft:#E7D8BA;--talk-deep:#4f9a3c}
+.cs-b{--read:#FFDF37;--write:#88CFFF;--speak:#FF9EB9;--talk:#ADF480;--cork:#DDB277;--wood:#9A6D38;--paper:#FFFFFB;--ink:#262626;--ink-soft:#5a4c3c;--kraft:#F0E2C4;--talk-deep:#3f9a2a}
+.c-read{--c:var(--read)}.c-write{--c:var(--write)}.c-speak{--c:var(--speak)}.c-talk{--c:var(--talk)}
+.ic{width:30px;height:30px;stroke-width:2.8;flex:none}
+.jua{font-family:'Jua',sans-serif}
+.en{font-family:'Fredoka',sans-serif;font-weight:600}
+
+/* 띠 */
+.band{position:absolute;left:36px;right:36px;top:30px;height:80px;display:flex;align-items:center;gap:18px;padding:0 22px 0 28px;z-index:3}
+.band .title{font-family:'Jua',sans-serif;font-size:34px;line-height:1;white-space:nowrap}
+.band .meta{font-size:20px;color:var(--ink-soft);white-space:nowrap}
+.band .turns{font-family:'Jua',sans-serif;font-size:22px;padding:7px 16px;border-radius:999px;border:2.5px solid var(--ink);background:color-mix(in oklab,var(--talk) 60%,white);white-space:nowrap}
+.band .turns b{font-weight:400;font-size:26px}
+.band-r{margin-left:auto;display:flex;align-items:center;gap:16px}
+.stat{display:flex;align-items:center;gap:8px;font-family:'Jua',sans-serif;font-size:25px;white-space:nowrap}
+.stat .ic{width:32px;height:32px}
+.stat .star{fill:#FFC93A;stroke:#C98A06;stroke-width:1.6}
+.stat .flame{color:#e4572e}
+.parent{position:relative;display:flex;align-items:center;min-height:56px;padding:0 20px;border-radius:12px;background:var(--kraft);font-family:'Jua',sans-serif;font-size:22px}
+.parent i{position:absolute;top:8px;right:8px;width:11px;height:11px;border-radius:50%;background:#e0524a}
+.face-band{position:absolute;left:12px;top:-22px;width:98px;height:114px;z-index:4}
+.has-face .title{margin-left:86px}
+.band>.fx.tl{left:-8px}.band>.fx.tr{right:-8px}
+
+/* 단추 */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:62px;padding:0 22px;border-radius:18px;background:var(--ink);color:#fff;font-family:'Jua',sans-serif;font-size:26px;white-space:nowrap}
+.btn.ghost{background:var(--paper);color:var(--ink);border:2.5px solid var(--ink)}
+.btn.sm{height:56px;font-size:22px;padding:0 20px;border-radius:16px}
+.btn.off{color:color-mix(in oklab,var(--ink) 42%,var(--paper));border-color:color-mix(in oklab,var(--ink) 36%,var(--paper));background:var(--paper)}
+.btn.big{height:76px;font-size:31px;padding:0 54px;border-radius:24px}
+
+/* 홈 카드 */
+.cards{position:absolute;left:36px;right:36px;top:134px;bottom:30px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;z-index:2}
+.card{position:relative;background:var(--c);padding:20px 20px 20px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr) auto;row-gap:10px}
+.card .btn{padding:0 10px}
+.c-body{display:flex;flex-direction:column;gap:12px;min-height:0;margin-top:2px}
+.c-body .stats{flex:1;justify-content:space-evenly}
+.c-foot{display:flex;flex-direction:column;gap:10px}
+.c-head{display:flex;align-items:center;justify-content:space-between;min-height:50px}
+.c-area{font-family:'Jua',sans-serif;font-size:29px;line-height:1}
+.c-ic{width:44px;height:44px;stroke-width:2.6}
+.c-lv{font-family:'Jua',sans-serif;font-size:52px;line-height:1;margin-top:-4px}
+.c-unit{font-size:20px;line-height:1.3}
+.cells{display:flex;gap:8px}
+.cells i{width:31px;height:31px;border-radius:8px;border:2.5px solid var(--ink);background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
+.cells i.d{background:var(--ink)}
+.cells i.d svg{width:20px;height:20px;color:#fff;stroke-width:3.6}
+.cells i.now{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.9)}
+.cells i.lock{opacity:.55}
+.stats{background:rgba(255,255,255,.52);border-radius:14px;padding:11px 14px 13px;display:flex;flex-direction:column;gap:9px}
+.m-l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:20px;line-height:1.2}
+.m-l b{font-family:'Jua',sans-serif;font-weight:400;font-size:22px}
+.bar{position:relative;height:14px;border-radius:999px;background:rgba(0,0,0,.11);overflow:hidden;margin-top:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--ink)}
+.bar i.new{background:repeating-linear-gradient(-45deg,var(--ink) 0 6px,color-mix(in oklab,var(--ink) 55%,white) 6px 12px)}
+.dots5{display:flex;gap:6px;margin-top:6px}.dots5 i{flex:1;height:14px;border-radius:999px;background:rgba(0,0,0,.11)}.dots5 i.on{background:var(--ink)}
+.hearts{display:flex;gap:2px;margin-top:6px}.hearts svg{width:19px;height:19px;fill:rgba(0,0,0,.13);stroke:none}.hearts svg.on{fill:#ef5b7a}
+.c-week{font-size:20px}
+.c-today{display:flex;align-items:center;gap:8px;font-size:20px}
+.c-today .ic{width:26px;height:26px;stroke-width:2.6}
+.c-today.done{align-self:flex-start;font-family:'Jua',sans-serif;font-size:22px;padding:5px 16px 5px 7px;border-radius:999px;border:2.5px solid var(--ink);background:rgba(255,255,255,.7);transform:rotate(-3deg)}
+.c-today.done .ic{width:30px;height:30px;padding:4px;border-radius:50%;background:var(--ink);color:#fff;stroke-width:3.6}
+.c-story{font-size:20px;line-height:1.3}
+.c-story b{display:block;font-family:'Jua',sans-serif;font-weight:400;font-size:23px}
+.c-tp{position:relative;width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--room,#d3ecd9);border:3px solid var(--paper);box-shadow:0 0 0 2px var(--ink);flex:none}
+.c-tp svg{position:absolute;left:-2px;top:2px;width:60px;height:60px}
+.first{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:18px;background:rgba(255,255,255,.5);text-align:center}
+.first p{font-family:'Jua',sans-serif;font-size:27px}
+.first .mascot{width:150px;height:142px}
+.first .big-ic{width:118px;height:118px;stroke-width:1.9}
+
+/* 회화 */
+.side{position:absolute;left:36px;top:134px;width:300px;bottom:76px;display:flex;flex-direction:column;align-items:center;gap:26px;z-index:2}
+.tw{position:relative;margin:0;display:flex;flex-direction:column;align-items:center}
+.tw figcaption{font-family:'Jua',sans-serif;font-size:24px;white-space:nowrap}
+.tw .pic{position:relative;overflow:hidden}
+.tw-state{position:absolute;display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;background:var(--talk);border:3px solid var(--ink);z-index:3}
+.tw-state .ic{width:32px;height:32px;stroke-width:2.6}
+.note{position:relative;align-self:stretch;background:var(--c);padding:22px 22px 18px}
+.side .note{flex:1}
+.note h4{font-family:'Jua',sans-serif;font-size:24px;margin-bottom:8px}
+.note li{list-style:none;position:relative;padding:5px 0 5px 26px;font-size:20px}
+.note li::before{content:"";position:absolute;left:4px;top:15px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.chat{position:absolute;left:362px;right:36px;top:134px;bottom:76px;background:var(--paper);display:flex;flex-direction:column;padding:24px 30px 22px;z-index:2}
+.log{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 120px);mask-image:linear-gradient(to bottom,transparent 0,#000 120px)}
+.msg{position:relative;max-width:600px;padding:13px 20px 14px;border:2.5px solid var(--ink);flex:none}
+.msg .en{font-family:'Fredoka',sans-serif;font-weight:600;font-size:26px;line-height:1.25}
+.msg .ko{font-size:20px;color:var(--ink-soft);margin-top:5px}
+.msg.t{align-self:flex-start;background:color-mix(in oklab,var(--talk) 40%,var(--paper));border-radius:24px 24px 24px 8px}
+.msg.t.now{background:color-mix(in oklab,var(--talk) 70%,var(--paper));box-shadow:0 5px 0 rgba(0,0,0,.14)}
+.msg.t.now .en{font-size:28px}
+.crow{display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;flex:none}
+.msg.c{background:color-mix(in oklab,var(--read) 55%,var(--paper));border-radius:24px 24px 8px 24px}
+.av{width:42px;height:42px;border-radius:50%;background:#FFC98B;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
+.av .ic{width:28px;height:28px;stroke-width:2.2}
+.old{opacity:.6}.gone{opacity:.38}.mine{opacity:.9}
+.turn{display:flex;align-items:center;justify-content:center;gap:26px;margin-top:16px;padding-top:18px;border-top:2.5px dashed rgba(0,0,0,.2);flex:none}
+.mic{position:relative;width:340px;height:96px;border-radius:48px;padding:7px;background:conic-gradient(from 0deg,var(--talk-deep) 0 68%,rgba(0,0,0,.13) 68% 100%)}
+.mic .in{width:100%;height:100%;border-radius:42px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-family:'Jua',sans-serif;font-size:29px}
+.mic .ic{width:34px;height:34px;stroke-width:2.6}
+.lvl{display:flex;align-items:center;gap:4px;height:34px}.lvl i{width:6px;border-radius:3px;background:var(--talk)}
+.aux{display:flex;flex-direction:column;gap:10px}
+.aux .ic{width:24px;height:24px;stroke-width:2.6}
+.promise{position:absolute;left:36px;right:36px;bottom:24px;height:40px;display:flex;align-items:center;gap:12px;padding:0 18px;font-size:20px;z-index:2;white-space:nowrap}
+.promise b{font-family:'Jua',sans-serif;font-weight:400;font-size:21px}
+
+/* 결과 */
+.res{position:absolute;left:36px;right:36px;top:134px;bottom:30px;background:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:10px;padding:38px 30px 32px 48px;z-index:2}
+.res-l{display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.res h4{font-family:'Jua',sans-serif;font-size:54px;line-height:1.08}
+.res .sub{font-size:21px;color:var(--ink-soft);margin-top:10px}
+.res h5{font-family:'Jua',sans-serif;font-size:27px;margin-bottom:12px}
+.wl{display:flex;gap:16px}
+.w{position:relative;width:148px;padding:14px 16px 14px;background:var(--read)}
+.w b{display:block;font-family:'Fredoka',sans-serif;font-weight:600;font-size:30px;line-height:1.15}
+.w span{font-size:20px}
+.res-unit{max-width:560px}
+.res-unit .bar{height:22px;margin-top:10px}
+.plus{display:inline-block;margin-left:10px;font-family:'Jua',sans-serif;font-size:20px;padding:2px 12px;border-radius:999px;background:var(--read);border:2px solid var(--ink);vertical-align:3px}
+.res-act{display:flex;align-items:center;gap:18px}
+.report{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:'Jua',sans-serif;font-size:22px;color:var(--ink-soft);min-height:56px;padding:0 6px}
+.report .ic{width:24px;height:24px;stroke-width:2.4}
+.res-r{position:relative}
+.rew{position:absolute;display:flex;flex-direction:column;align-items:center}
+.rew span{font-family:'Jua',sans-serif;font-size:34px;line-height:1}
+.conf{position:absolute;width:14px;height:22px;border-radius:3px}
+
+/* ===== ① ④ 코르크 ===== */
+.th-cork .bg{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.18' numOctaves='2' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.9 -0.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),linear-gradient(160deg,color-mix(in oklab,var(--wood) 80%,white),var(--wood) 45%,color-mix(in oklab,var(--wood) 80%,black))}
+.th-cork .bg::before{content:"";position:absolute;inset:16px;border-radius:3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.17 0 0 0 0 0.05 0 0 0 -4.6 1.92'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='1' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1.0 0 0 0 0 0.92 0 0 0 0 0.76 0 0 0 4.4 -2.7'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.22 0 0 0 0 0.08 0 0 0 1.1 -0.48'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 30% 20%,rgba(255,240,210,.22),transparent 60%),var(--cork);box-shadow:inset 0 3px 9px rgba(0,0,0,.38),inset 0 0 0 1.5px rgba(0,0,0,.28)}
+.th-cork .band,.th-cork .chat,.th-cork .res{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--paper);box-shadow:0 1px 1px rgba(0,0,0,.18),0 14px 18px -12px rgba(50,25,0,.6);border-radius:3px}
+.th-cork .card,.th-cork .note,.th-cork .w{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),linear-gradient(172deg,color-mix(in oklab,var(--c) 88%,white) 0%,var(--c) 30%,color-mix(in oklab,var(--c) 94%,#5a3a10) 100%);box-shadow:0 1px 1px rgba(0,0,0,.16),0 16px 18px -12px rgba(50,25,0,.6),inset 0 -12px 18px -14px rgba(90,55,10,.35)}
+.th-cork .w{--c:var(--read);box-shadow:0 1px 1px rgba(0,0,0,.14),0 10px 12px -9px rgba(50,25,0,.5)}
+.th-cork .card:nth-child(1){transform:rotate(-1.1deg)}.th-cork .card:nth-child(2){transform:rotate(.7deg)}.th-cork .card:nth-child(3){transform:rotate(-.5deg)}.th-cork .card:nth-child(4){transform:rotate(.9deg)}
+.th-cork .note{transform:rotate(-1.4deg)}
+.th-cork .w:nth-child(odd){transform:rotate(-1.5deg)}.th-cork .w:nth-child(even){transform:rotate(1.2deg)}
+.th-cork .res{transform:rotate(-.25deg)}
+.th-cork .fx,.th-chalk .fx{position:absolute;width:26px;height:26px;border-radius:50%;z-index:5;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.95) 0 3px,rgba(255,255,255,0) 7px),radial-gradient(circle at 50% 55%,var(--pc,#e0524a) 0 52%,color-mix(in oklab,var(--pc,#e0524a) 62%,black) 100%);box-shadow:4px 6px 4px -2px rgba(0,0,0,.42),inset -2px -3px 4px rgba(0,0,0,.22)}
+.fx.t{top:-9px;left:50%;margin-left:-13px}.fx.tl{top:-9px;left:22px}.fx.tr{top:-9px;right:22px}
+.fx.p1{--pc:#e0524a}.fx.p2{--pc:#3f7bd8}.fx.p3{--pc:#2e9e6a}.fx.p4{--pc:#f0a92e}.fx.p5{--pc:#8a5bd6}
+.th-cork .promise{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--kraft);border-radius:4px;box-shadow:0 1px 1px rgba(0,0,0,.18),0 8px 10px -8px rgba(40,20,0,.55);left:180px;right:180px;justify-content:center}
+.th-cork .parent{box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.th-cork .btn{box-shadow:0 4px 0 rgba(0,0,0,.32)}
+.th-cork .btn.ghost{box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.th-cork .btn.off{box-shadow:none}
+/* 둥근 초상 + 선생님 방 단색 */
+.tw-round{--room:#CFE9D6;--tcol:#3A6B4C;padding-top:14px}
+.tw-round .ring{position:absolute;left:50%;top:14px;border-radius:50%;border:3px solid var(--talk-deep);transform:translateX(-50%)}
+.tw-round .ring.r1{width:262px;height:262px;margin-top:-13px;opacity:.5}
+.tw-round .ring.r2{width:290px;height:290px;margin-top:-27px;opacity:.22}
+.tw-round .pic{width:236px;height:236px;border-radius:50%;background:radial-gradient(circle at 50% 38%,color-mix(in oklab,var(--room) 55%,white),var(--room) 70%);border:9px solid var(--paper);box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 14px 18px -8px rgba(40,20,0,.55)}
+.tw-round .pic svg{position:absolute;left:-6px;top:4px;width:230px;height:230px}
+.tw-round figcaption{position:relative;z-index:3;margin-top:-22px;padding:6px 22px;border-radius:999px;background:var(--tcol);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.tw-round .tw-state{right:16px;top:178px}
+.th-cork .face-band svg,.th-desk .face-band svg{width:100%;height:100%}
+
+/* ===== ② 밝은 책상 종이 ===== */
+.th-desk{--room:#DCEFFF}
+.th-desk .bg{background:linear-gradient(90deg,transparent 58px,rgba(240,130,130,.55) 58px 60px,transparent 60px),linear-gradient(var(--grid) 1.2px,transparent 1.2px) 0 0/28px 28px,linear-gradient(90deg,var(--grid) 1.2px,transparent 1.2px) 0 0/28px 28px,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--desk)}
+.th-desk .band,.th-desk .chat,.th-desk .res{background:#fff;border:2.6px solid var(--ink);border-radius:14px 9px 16px 10px/10px 16px 9px 14px;box-shadow:6px 7px 0 rgba(38,38,38,.1)}
+.th-desk .card,.th-desk .note,.th-desk .w{border:2.6px solid var(--ink);border-radius:16px 10px 18px 12px/12px 18px 10px 16px;box-shadow:6px 7px 0 rgba(38,38,38,.12)}
+.th-desk .w{background:var(--read)}
+.th-desk .card:nth-child(1){transform:rotate(-1.4deg)}.th-desk .card:nth-child(2){transform:rotate(1deg)}.th-desk .card:nth-child(3){transform:rotate(-.6deg)}.th-desk .card:nth-child(4){transform:rotate(1.2deg)}
+.th-desk .note{transform:rotate(1.4deg)}
+.th-desk .w:nth-child(odd){transform:rotate(-2deg)}.th-desk .w:nth-child(even){transform:rotate(1.6deg)}
+.th-desk .fx{position:absolute;width:104px;height:30px;z-index:5;background:repeating-linear-gradient(45deg,rgba(255,255,255,.5) 0 7px,transparent 7px 14px),var(--tc,#f6b8a8);opacity:.92;clip-path:polygon(2% 0,98% 0,100% 22%,97% 50%,100% 78%,98% 100%,2% 100%,0 78%,3% 50%,0 22%)}
+.th-desk .fx.t{top:-15px;left:50%;margin-left:-52px;transform:rotate(-3deg)}
+.th-desk .fx.tl{top:-12px;left:-18px;transform:rotate(-34deg)}.th-desk .fx.tr{top:-12px;right:-18px;transform:rotate(32deg)}
+.th-desk .band>.fx.tr{right:-40px;top:-6px}.th-desk .band>.fx.tl{left:-40px;top:-6px}
+.th-desk .fx.p1{--tc:#F5B3A4}.th-desk .fx.p2{--tc:#A9D9CB}.th-desk .fx.p3{--tc:#C8B9F2}.th-desk .fx.p4{--tc:#F7D486}.th-desk .fx.p5{--tc:#A8CBF2}
+.th-desk .btn{border-radius:20px 14px 22px 16px/16px 22px 14px 20px;box-shadow:4px 5px 0 rgba(38,38,38,.22)}
+.th-desk .btn.ghost{background:#fff}
+.th-desk .btn.off{box-shadow:none}
+.th-desk .stats{background:rgba(255,255,255,.62);border:2px dashed rgba(38,38,38,.35)}
+.th-desk .parent{background:#fff;border:2.4px solid var(--ink);border-radius:14px 10px 15px 11px}
+.th-desk .first{background:rgba(255,255,255,.66);border:2px dashed rgba(38,38,38,.35)}
+.th-desk .msg.t{border-radius:26px 20px 26px 8px/20px 26px 22px 8px}
+.th-desk .msg.c{border-radius:20px 26px 8px 26px/26px 20px 8px 22px}
+.th-desk .turn{border-top:2.6px dashed rgba(38,38,38,.32)}
+.th-desk .promise{left:160px;right:160px;justify-content:center;background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 2px,transparent 2px 6px),rgba(247,212,134,.75);clip-path:polygon(1% 0,99% 0,100% 30%,98.6% 60%,100% 100%,1% 100%,0 70%,1.4% 40%)}
+.th-desk .c-tp{border-radius:20px 20px 10px 10px;background:var(--room)}
+/* 둥근 창 */
+.tw-win .pic{width:262px;height:288px;border-radius:131px 131px 26px 26px;border:10px solid var(--talk);box-shadow:0 0 0 2.6px var(--ink),7px 8px 0 rgba(38,38,38,.12);background:linear-gradient(#d6ecff 0,#eef7ff 62%,#fff2dc 62%,#ffeccd 100%)}
+.tw-win .pic::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2.6px var(--ink)}
+.tw-win .pic svg{position:absolute;left:4px;bottom:-6px;width:236px;height:236px}
+.tw-win figcaption{margin-top:14px;padding:4px 20px;background:#fff;border:2.6px solid var(--ink);border-radius:12px 16px 10px 15px;transform:rotate(-2deg);box-shadow:4px 4px 0 rgba(38,38,38,.12)}
+.tw-win .tw-state{right:6px;top:222px}
+.doodle{position:absolute;z-index:1;color:#7c8592;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+
+/* ===== ③ 교실 게시판 ===== */
+.th-chalk{--room:#F4E2C2}
+.th-chalk .bg{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.18' numOctaves='2' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.9 -0.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),linear-gradient(160deg,color-mix(in oklab,var(--wood) 82%,white),var(--wood) 50%,color-mix(in oklab,var(--wood) 85%,black))}
+.th-chalk .bg::before{content:"";position:absolute;inset:16px 16px 34px;border-radius:3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 2.4 -1.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 -0.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 25% 15%,rgba(255,255,255,.07),transparent 55%),var(--board);box-shadow:inset 0 0 0 3px rgba(0,0,0,.28),inset 0 6px 16px rgba(0,0,0,.4)}
+.tray{position:absolute;left:8px;right:8px;bottom:6px;height:26px;border-radius:4px;background:linear-gradient(#e2bd87,#b88a52 60%,#9b713f);box-shadow:0 4px 5px rgba(0,0,0,.35);z-index:6}
+.tray i{position:absolute;top:-7px;height:10px;border-radius:5px;box-shadow:0 2px 2px rgba(0,0,0,.25)}
+.tray .e{position:absolute;top:-16px;width:96px;height:20px;border-radius:5px;background:linear-gradient(#4f5c86 0 55%,#d9cdb5 55%)}
+.th-chalk .band,.th-chalk .chat,.th-chalk .res-l{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--paper);border-radius:3px;box-shadow:0 1px 1px rgba(0,0,0,.25),0 16px 20px -12px rgba(0,0,0,.7)}
+.th-chalk .card,.th-chalk .note,.th-chalk .w{box-shadow:0 1px 1px rgba(0,0,0,.25),0 16px 20px -12px rgba(0,0,0,.75)}
+.th-chalk .w{background:var(--read)}
+.th-chalk .card:nth-child(1){transform:rotate(-.6deg)}.th-chalk .card:nth-child(2){transform:rotate(.5deg)}.th-chalk .card:nth-child(3){transform:rotate(-.3deg)}.th-chalk .card:nth-child(4){transform:rotate(.6deg)}
+.th-chalk .fx{width:36px;height:36px;background:radial-gradient(circle at 50% 40%,color-mix(in oklab,var(--pc,#e0524a) 62%,white) 0 34%,var(--pc,#e0524a) 37% 100%);box-shadow:0 4px 0 color-mix(in oklab,var(--pc,#e0524a) 62%,black),0 9px 9px rgba(0,0,0,.5)}
+.th-chalk .fx.t{top:-14px;margin-left:-18px}
+.th-chalk .cards{top:140px;bottom:46px}
+.th-chalk .band{top:48px;height:72px}
+.th-chalk.talk .band,.th-chalk.result .band{top:30px;height:80px}
+.th-chalk .c-ic{width:52px;height:52px;stroke-width:2.4}
+.th-chalk .c-head{min-height:52px}
+.th-chalk .res{background:none;box-shadow:none;padding:0;bottom:48px;grid-template-columns:minmax(0,1fr) 380px;gap:26px}
+.th-chalk .res-l{padding:38px 40px 30px 48px}
+.th-chalk .chat{bottom:96px}
+.th-chalk .side{bottom:96px}
+.th-chalk .note{padding-top:30px}
+.th-chalk .band{padding-left:40px}
+.th-chalk .promise{bottom:50px;color:var(--chalk);font-size:21px;opacity:.92;text-shadow:0 0 1px rgba(255,255,255,.5)}
+.th-chalk .promise b{font-size:22px}
+.abc{position:absolute;left:44px;right:44px;top:8px;height:30px;display:flex;justify-content:space-between;z-index:4}
+.abc span{width:46px;height:31px;border-radius:4px;background:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:20px;box-shadow:0 3px 4px rgba(0,0,0,.45);border-top:7px solid var(--sc)}
+/* 사진 꼴 */
+.tw-photo .frm{position:relative;background:#fff;padding:14px 14px 60px;box-shadow:0 1px 1px rgba(0,0,0,.25),0 16px 22px -10px rgba(0,0,0,.75);transform:rotate(-2.2deg)}
+.tw-photo .pic{width:240px;height:236px;background:radial-gradient(circle at 50% 40%,color-mix(in oklab,var(--room) 50%,white),var(--room) 75%)}
+.tw-photo .pic svg{position:absolute;left:4px;top:8px;width:232px;height:232px}
+.tw-photo figcaption{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:27px;color:#2b2b2b}
+.tw-photo .tw-state{right:-8px;top:196px}
+.tw-photo .fx{top:-12px;left:50%;margin-left:-15px}
+.th-chalk .c-tp{border-radius:4px;border:4px solid #fff;border-bottom-width:9px;box-shadow:0 3px 5px rgba(0,0,0,.35);transform:rotate(3deg)}
+.chalk-art{position:absolute;inset:0}
+.chalk-star{position:absolute;left:50%;top:50%;width:330px;height:330px;margin:-200px 0 0 -165px}
+.chalk-lbl{position:absolute;left:0;right:0;bottom:92px;text-align:center;font-family:'Jua',sans-serif;font-size:64px;color:var(--chalk);opacity:.95;text-shadow:0 0 1px rgba(255,255,255,.6)}
+
+/* ===== 색 띠(시안 안 색 세트 고르기) ===== */
+.cset{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}
+.cband{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--pg-line);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.cband:hover{border-color:var(--pg-accent)}
+.cband[aria-pressed="true"]{border:2.5px solid var(--pg-ink);background:var(--pg-chip)}
+.cband .lbl{flex:none;width:7.2em;font-family:var(--f-head);font-size:17px;line-height:1.25}
+.cband .lbl small{display:block;font-family:var(--f-body);font-size:13px;color:var(--pg-soft)}
+.cband .chips{display:flex;flex-wrap:wrap;gap:6px}
+.cband .chip{display:flex;flex-direction:column;align-items:center;min-width:58px;font-size:12px;line-height:1.3;color:var(--pg-soft);white-space:nowrap}
+.cband .chip i{display:block;width:58px;height:30px;border-radius:8px;border:1px solid var(--pg-line);margin-bottom:3px}
+.cband .chip b{font-weight:400;color:var(--pg-ink);font-size:12.5px}
+.cband:focus-visible{outline:3px solid var(--pg-accent);outline-offset:3px}
+.cnote{margin:0 0 12px;font-size:15px;color:var(--pg-soft)}
+
+/* ===== 밀도 '낮게' 홈 카드 ===== */
+.card.lo{grid-template-rows:auto auto minmax(0,1fr) auto auto;row-gap:10px}
+.lo .il{display:flex;align-items:center;justify-content:center;min-height:0}
+.lo .il svg{width:100%;max-width:206px;height:100%;max-height:178px}
+.lo .today{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.lo .first-line{font-family:'Jua',sans-serif;font-size:27px;line-height:1.2}
+.lo .c-head{min-height:56px}
+
+/* ===== ③ 자석 카드 · 칠판 값 ===== */
+.screen.th-chalk{--board:#27463A;--wood:#C79D66;--chalk:#F1EEE4;--room:#F4E2C2}
+.th-chalk .card,.th-chalk .note,.th-chalk .w{border-radius:14px;box-shadow:0 5px 0 color-mix(in oklab,var(--c) 60%,#000),0 18px 22px -12px rgba(0,0,0,.78)}
+.th-chalk .w{--c:var(--read)}
+.th-chalk .has-face .title{margin-left:86px}
+.th-chalk .abc{left:168px}
+.th-chalk .res-r .chalk-star{width:260px;height:260px;margin:0 0 0 -130px;top:4px}
+.th-chalk .res-r .chalk-lbl{bottom:auto;top:272px;font-size:52px}
+
+/* ===== ② 크림 종이 · 둥근 종이 ===== */
+.screen.th-desk{--desk:#FBF5E9;--grid:rgba(140,165,200,.17);--room:#DCEFFF}
+.th-desk .card,.th-desk .note,.th-desk .w{border-radius:28px 24px 30px 26px/26px 30px 24px 28px}
+.th-desk .card{padding:22px 22px 22px}
+
+/* ===== ⑤ 지금 + 손질 ===== */
+.screen.th-now{--room:#CFE9D6;--tcol:#3A6B4C}
+.th-now .bg{background:linear-gradient(160deg,#9b6d3b,var(--wood) 55%,#77522b)}
+.th-now .bg::before{content:"";position:absolute;inset:8px;border-radius:2px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.18 0 0 0 0 0.06 0 0 0 0.35 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 58%,rgba(70,40,10,.17) 100%),var(--cork)}
+.th-now .band,.th-now .chat,.th-now .res{background:var(--paper);border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.2),0 12px 20px -12px rgba(60,30,0,.5)}
+.th-now .card,.th-now .note,.th-now .w{background:var(--c);border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.18),0 14px 20px -12px rgba(60,30,0,.52)}
+.th-now .w{--c:var(--read)}
+.th-now .card:nth-child(1){transform:rotate(-.9deg)}.th-now .card:nth-child(2){transform:rotate(.6deg)}.th-now .card:nth-child(3){transform:rotate(-.4deg)}.th-now .card:nth-child(4){transform:rotate(.8deg)}
+.th-now .note{transform:rotate(-1deg)}
+.th-now .fx{position:absolute;z-index:5;height:26px;width:var(--tw,104px);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),color-mix(in oklab,var(--tc,var(--c,#fff)) 34%,rgba(255,255,255,.6));box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.th-now .fx.t{top:-13px;left:50%;margin-left:calc(var(--tw,104px) / -2);transform:rotate(var(--ta,-3deg))}
+.th-now .fx.tl{top:-11px;left:-10px;transform:rotate(-30deg);--tw:84px}.th-now .fx.tr{top:-11px;right:-10px;transform:rotate(28deg);--tw:84px}
+.th-now .card:nth-child(1) .fx{--tw:96px;--ta:-4deg}.th-now .card:nth-child(2) .fx{--tw:112px;--ta:2.5deg}.th-now .card:nth-child(3) .fx{--tw:88px;--ta:-1.5deg}.th-now .card:nth-child(4) .fx{--tw:104px;--ta:3.5deg}
+.th-now .band>.fx{--tc:#ffffff}
+.th-now .btn{box-shadow:0 3px 0 rgba(0,0,0,.28)}
+.th-now .btn.ghost{box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.th-now .first .big-ic{width:110px;height:110px}
+.th-now .promise{background:var(--paper);border-radius:6px;left:36px;right:36px;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+/* 사진 꼴 손질: 테이프는 테 밖, 초상 둘레 12px, 방 단색 */
+.tw-fixed{padding-top:12px}
+.tw-fixed .frm{position:relative;background:var(--paper);padding:12px 12px 0;box-shadow:0 1px 2px rgba(0,0,0,.2),0 12px 18px -10px rgba(60,30,0,.5);transform:rotate(-1deg)}
+.tw-fixed .pic{width:240px;height:232px;background:var(--room)}
+.tw-fixed .pic svg{position:absolute;left:6px;top:12px;width:228px;height:228px}
+.tw-fixed figcaption{display:block;text-align:center;margin:0 -12px;padding:8px 0 10px;background:var(--tcol);color:#fff}
+.tw-fixed .fx{top:-14px;left:50%;--tw:96px;--tc:var(--talk);margin-left:-48px;transform:rotate(-2deg)}
+.tw-fixed .tw-state{right:-14px;top:196px}
+.now-star{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-180px 0 0 -150px;border-radius:50%;background:color-mix(in oklab,var(--read) 32%,var(--paper));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2.5px dashed color-mix(in oklab,var(--ink) 25%,var(--paper))}
+.now-star svg{width:150px;height:150px;fill:#FFC93A;stroke:var(--ink);stroke-width:1.2}
+.now-star span{font-family:'Jua',sans-serif;font-size:38px}
+
+/* ===== ④ 그림책 ===== */
+.screen.th-book{--pg:#FFF8EA;--bk:#E6ECF4;--room:#F7E6CF;--tcol:#3A6B4C}
+.th-book .bg{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 0%,#F4F7FB 0%,var(--bk) 75%)}
+.th-book .band{background:none;box-shadow:none;top:22px;height:76px;padding:0 4px}
+.th-book .band .title{font-size:38px}
+.th-book .parent{background:var(--pg);border:2px solid color-mix(in oklab,var(--ink) 30%,var(--pg))}
+.th-book .btn{border-radius:20px}
+.th-book .btn.ghost{background:var(--pg)}
+.pages{position:absolute;left:36px;right:36px;top:110px;bottom:30px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:22px 26px;z-index:2}
+.pg{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr);gap:10px;padding:14px 26px 16px 12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--pg);border-radius:22px;box-shadow:0 2px 3px rgba(40,50,70,.12),0 18px 26px -16px rgba(40,50,70,.5)}
+.pg .rib{position:absolute;top:-8px;right:30px;width:30px;height:60px;background:var(--c);clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)}
+.pg .scene{position:relative;min-height:0}
+.pg .scene>svg,.pg .scene>span{position:absolute}
+.pg .txt{display:flex;flex-direction:column;justify-content:center;gap:9px;min-width:0}
+.pg .pill{align-self:flex-start;font-family:'Jua',sans-serif;font-size:26px;line-height:1;padding:7px 18px;border-radius:999px;background:var(--c);border:2.5px solid var(--ink)}
+.pg .lv{font-family:'Jua',sans-serif;font-size:58px;line-height:1}
+.pg .one{font-family:'Jua',sans-serif;font-size:25px;line-height:1.2;display:flex;align-items:center;gap:8px}
+.pg .one .ic{width:30px;height:30px;padding:4px;border-radius:50%;background:var(--ink);color:#fff;stroke-width:3.6}
+.pg .one .ic.o{background:none;color:var(--ink);padding:0;stroke-width:2.6}
+.pg .sub{font-size:20px;color:var(--ink-soft)}
+.pg .btn{margin-top:4px}
+.ov{position:absolute;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 38%,color-mix(in oklab,var(--room) 45%,white),var(--room) 72%);box-shadow:0 0 0 3px var(--ink),0 0 0 9px var(--pg),0 0 0 11.5px color-mix(in oklab,var(--ink) 55%,var(--pg))}
+.ov svg{position:absolute;left:3%;top:8%;width:94%;height:94%}
+.spread{position:absolute;left:36px;right:36px;top:110px;bottom:28px;display:grid;grid-template-columns:430px minmax(0,1fr);grid-template-rows:minmax(0,1fr);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.5 -0.16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),var(--pg);border-radius:24px;box-shadow:0 2px 3px rgba(40,50,70,.12),0 22px 30px -18px rgba(40,50,70,.55);z-index:2}
+.spread::before{content:"";position:absolute;left:430px;top:14px;bottom:14px;width:46px;margin-left:-23px;background:linear-gradient(90deg,rgba(120,90,50,0),rgba(120,90,50,.13) 40%,rgba(120,90,50,.25) 50%,rgba(120,90,50,.13) 60%,rgba(120,90,50,0))}
+.lp{position:relative;display:flex;flex-direction:column;align-items:center;padding:28px 30px 22px;min-height:0}
+.rp{position:relative;display:flex;flex-direction:column;padding:24px 36px 14px 44px;min-width:0;min-height:0}
+.tw-oval{margin-top:6px}
+.tw-oval .ov{position:relative;width:286px;height:320px}
+.tw-oval .ov svg{left:0;top:12%;width:100%;height:88%}
+.tw-oval figcaption{margin-top:16px;padding:6px 22px;border-radius:999px;background:var(--tcol);color:#fff;font-size:24px}
+.tw-oval .tw-state{right:-6px;top:236px}
+.lp .dd{position:absolute;width:64px;height:44px}
+.mini-list{margin-top:auto;align-self:stretch;padding:12px 16px 10px;border-radius:16px;background:color-mix(in oklab,var(--talk) 30%,var(--pg));border:2px solid color-mix(in oklab,var(--ink) 25%,var(--pg))}
+.mini-list h4{font-family:'Jua',sans-serif;font-size:22px;margin-bottom:4px}
+.mini-list ul{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;padding:0}
+.mini-list li{list-style:none;font-size:20px;padding:2px 0 2px 18px;position:relative}
+.mini-list li::before{content:"";position:absolute;left:2px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.th-book .log{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 90px);mask-image:linear-gradient(to bottom,transparent 0,#000 90px)}
+.th-book .msg{border-width:2px}
+.th-book .msg.t{border-radius:28px 28px 28px 10px}.th-book .msg.c{border-radius:28px 28px 10px 28px}
+.th-book .msg.t.now .en{font-size:30px}
+.th-book .turn{border-top:2px dashed color-mix(in oklab,var(--ink) 25%,var(--pg))}
+.foot-line{margin-top:12px;text-align:center;font-size:20px;line-height:1.35;color:var(--ink-soft)}
+.rs .rp{justify-content:space-between;padding-top:26px;padding-bottom:20px}
+.rs .rp .res-act{margin-top:0}
+.rs .rp h5{margin-top:0}
+.rs .res-unit{margin-top:0}
+.foot-line b{font-family:'Jua',sans-serif;font-weight:400}
+.rp h4{font-family:'Jua',sans-serif;font-size:56px;line-height:1.08}
+.rp .sub{font-size:21px;color:var(--ink-soft);margin-top:8px}
+.star-pill{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 18px 6px 10px;border-radius:999px;background:color-mix(in oklab,var(--read) 55%,var(--pg));border:2.5px solid var(--ink);font-family:'Jua',sans-serif;font-size:28px}
+.star-pill svg{width:36px;height:36px;fill:#FFC93A;stroke:var(--ink);stroke-width:1.4}
+.rp h5{font-family:'Jua',sans-serif;font-size:26px;margin:22px 0 10px}
+.wl2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+.wl2 .w{display:flex;align-items:baseline;gap:14px;padding:12px 18px}
+.wl2 .w b{font-size:34px}
+.wl2 .w span{font-size:22px}
+.th-book .w{width:auto;background:color-mix(in oklab,var(--read) 50%,var(--pg));border:2px solid var(--ink);border-radius:16px}
+.th-book .res-unit{margin-top:20px}
+.th-book .res-unit .bar{height:16px}
+.rp .res-act{margin-top:auto}
+
+</style></head>
+<body>
+<svg class="defs" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
+<defs>
+ <radialGradient id="g-mb" cx=".36" cy=".3" r=".82"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#fbf0e1"/><stop offset="1" stop-color="#e3c6a2"/></radialGradient>
+ <linearGradient id="g-mi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd6e0"/><stop offset="1" stop-color="#f396b0"/></linearGradient>
+ <radialGradient id="g-ck"><stop offset="0" stop-color="#ff8eaa" stop-opacity=".75"/><stop offset="1" stop-color="#ff8eaa" stop-opacity="0"/></radialGradient>
+ <radialGradient id="g-sh"><stop offset="0" stop-color="#3a2410" stop-opacity=".38"/><stop offset="1" stop-color="#3a2410" stop-opacity="0"/></radialGradient>
+ <radialGradient id="g-tb" cx=".34" cy=".3" r=".8"><stop offset="0" stop-color="#ffc993"/><stop offset=".6" stop-color="#f68b40"/><stop offset="1" stop-color="#d9601f"/></radialGradient>
+ <radialGradient id="g-tl" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#ffdcb5"/></radialGradient>
+ <linearGradient id="g-tw" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#f9a25a"/><stop offset="1" stop-color="#d25a1c"/></linearGradient>
+ <linearGradient id="g-hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93603c"/><stop offset="1" stop-color="#5a3520"/></linearGradient>
+ <radialGradient id="g-skin" cx=".45" cy=".38" r=".75"><stop offset="0" stop-color="#fff4ec"/><stop offset="1" stop-color="#f5d0bc"/></radialGradient>
+ <linearGradient id="g-iris" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f6f78"/><stop offset=".55" stop-color="#2fa39d"/><stop offset="1" stop-color="#7fe0cf"/></linearGradient>
+ <linearGradient id="g-shirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf6dc"/><stop offset="1" stop-color="#e6dca4"/></linearGradient>
+ <radialGradient id="g-star" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#fff6b8"/><stop offset=".55" stop-color="#ffd23f"/><stop offset="1" stop-color="#f0a514"/></radialGradient>
+ <pattern id="p-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#262a33" stroke-width="1.3" opacity=".42"/></pattern>
+ <filter id="f-sketch" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="7" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="3.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+ <filter id="f-chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="1" seed="2" result="n"/><feColorMatrix in="n" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.2 1.7" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in" result="c"/><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="3" result="w"/><feDisplacementMap in="c" in2="w" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>
+
+ <!-- 선 아이콘(24 격자, 획 굵기는 CSS) -->
+ <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.6c2.9-1.1 5.9-.9 9 1.2v13c-3.1-2.1-6.1-2.3-9-1.2z"/><path d="M21 5.6c-2.9-1.1-5.9-.9-9 1.2v13c3.1-2.1 6.1-2.3 9-1.2z"/></symbol>
+ <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3.6l4.4 4.4L8.6 19.8 4 20l.2-4.6z"/><path d="M13.4 6.2l4.4 4.4"/></symbol>
+ <symbol id="i-speak" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9.5a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3.4V15H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M18.6 8.4c.9 1 .9 2.7 0 3.7"/><path d="M21 6.4c2 2.3 2 5.9 0 8.2"/></symbol>
+ <symbol id="i-talk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 5.4A2.4 2.4 0 0 1 5.2 3h7.2a2.4 2.4 0 0 1 2.4 2.4v4a2.4 2.4 0 0 1-2.4 2.4H8.2L4.8 14.6v-2.8A2.4 2.4 0 0 1 2.8 9.4z"/><path d="M18 8h.8a2.4 2.4 0 0 1 2.4 2.4v4a2.4 2.4 0 0 1-2.4 2.4H18v2.8l-3.4-2.8H11a2.4 2.4 0 0 1-2.4-2.4V15"/></symbol>
+ <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.4V21"/></symbol>
+ <symbol id="i-ear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.2a5.5 5.5 0 0 1 11 0c0 3.1-2.5 4-3.3 6-.7 1.7-1.5 4.3-4.2 4.3a3.4 3.4 0 0 1-3.4-3.4"/><path d="M9.6 9.6a2.4 2.4 0 0 1 4.8 0c0 1.6-2.4 1.8-2.4 3.4"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.6l4.4 4.4L19 7.4"/></symbol>
+ <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a6 6 0 0 0 6-6c0-4.2-3.2-6.4-4.6-10.2-1.6 3-3.9 3.4-3.9 6.8-1.5-.9-2-2.6-2-2.6-.9 1.4-1.5 3.4-1.5 6A6 6 0 0 0 12 21z"/></symbol>
+ <symbol id="i-star" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+ <symbol id="i-heart" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.4s-7.6-4.6-7.6-10.3A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.6 2.5c0 5.7-7.6 10.3-7.6 10.3z"/></symbol>
+ <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 21V4"/><path d="M5.5 4.5h11l-2.3 4 2.3 4h-11"/></symbol>
+ <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.8 10.6c.8.7 1.3 1.6 1.3 2.4h5c0-.8.5-1.7 1.3-2.4A6 6 0 0 0 12 3z"/></symbol>
+ <symbol id="i-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/></symbol>
+ <symbol id="i-smile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/><path d="M8.5 14.2q3.5 3 7 0"/></symbol>
+
+ <!-- 모모(3D 결): 둥근 토끼 자리 -->
+ <symbol id="momo3d" viewBox="0 0 200 232">
+  <ellipse cx="100" cy="222" rx="68" ry="9" fill="url(#g-sh)"/>
+  <path d="M62 80 C49 52 47 18 63 10 C80 2 92 34 90 76 Z" fill="url(#g-mb)"/>
+  <path d="M66 71 C59 49 59 25 67 19 C75 14 84 41 83 69 Z" fill="url(#g-mi)"/>
+  <path d="M112 76 C112 40 122 10 140 12 C158 15 152 48 134 82 Z" fill="url(#g-mb)"/>
+  <path d="M118 71 C120 45 128 23 139 23 C150 25 144 51 130 75 Z" fill="url(#g-mi)"/>
+  <ellipse cx="100" cy="178" rx="62" ry="47" fill="url(#g-mb)"/>
+  <ellipse cx="100" cy="188" rx="36" ry="27" fill="#fffaf3"/>
+  <ellipse cx="100" cy="160" rx="50" ry="11" fill="#b48a62" opacity=".22"/>
+  <ellipse cx="100" cy="111" rx="66" ry="59" fill="url(#g-mb)"/>
+  <ellipse cx="74" cy="80" rx="25" ry="13" fill="#fff" opacity=".8" transform="rotate(-24 74 80)"/>
+  <ellipse cx="78" cy="115" rx="8" ry="10" fill="#2b211c"/><ellipse cx="122" cy="115" rx="8" ry="10" fill="#2b211c"/>
+  <circle cx="81" cy="110.5" r="3.4" fill="#fff"/><circle cx="125" cy="110.5" r="3.4" fill="#fff"/>
+  <circle cx="75.5" cy="119" r="1.6" fill="#fff" opacity=".8"/><circle cx="119.5" cy="119" r="1.6" fill="#fff" opacity=".8"/>
+  <ellipse cx="61" cy="133" rx="14" ry="8.5" fill="url(#g-ck)"/><ellipse cx="139" cy="133" rx="14" ry="8.5" fill="url(#g-ck)"/>
+  <path d="M95 127 Q100 123 105 127 Q100 132 95 127 Z" fill="#f2849d"/>
+  <path d="M100 131 v3.6 M100 134.6 q-4 5 -9 2 M100 134.6 q4 5 9 2" stroke="#7a5442" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="74" cy="206" rx="17" ry="11" fill="url(#g-mb)"/><ellipse cx="126" cy="206" rx="17" ry="11" fill="url(#g-mb)"/>
+ </symbol>
+ <!-- 모모(3D 결) 만세 -->
+ <symbol id="momo3d-yay" viewBox="0 0 200 232">
+  <ellipse cx="100" cy="222" rx="68" ry="9" fill="url(#g-sh)"/>
+  <path d="M60 80 C44 54 40 20 56 11 C73 2 88 32 88 76 Z" fill="url(#g-mb)"/>
+  <path d="M64 71 C55 50 53 27 61 20 C69 14 81 40 81 69 Z" fill="url(#g-mi)"/>
+  <path d="M114 76 C116 38 130 8 148 13 C165 19 156 52 136 82 Z" fill="url(#g-mb)"/>
+  <path d="M120 71 C124 44 134 23 145 24 C156 27 148 53 132 76 Z" fill="url(#g-mi)"/>
+  <ellipse cx="100" cy="180" rx="60" ry="45" fill="url(#g-mb)"/>
+  <ellipse cx="100" cy="190" rx="34" ry="25" fill="#fffaf3"/>
+  <ellipse cx="38" cy="150" rx="15" ry="21" fill="url(#g-mb)" transform="rotate(-38 38 150)"/>
+  <ellipse cx="162" cy="150" rx="15" ry="21" fill="url(#g-mb)" transform="rotate(38 162 150)"/>
+  <ellipse cx="100" cy="161" rx="50" ry="11" fill="#b48a62" opacity=".22"/>
+  <ellipse cx="100" cy="112" rx="66" ry="59" fill="url(#g-mb)"/>
+  <ellipse cx="74" cy="81" rx="25" ry="13" fill="#fff" opacity=".8" transform="rotate(-24 74 81)"/>
+  <path d="M68 116 Q78 105 88 116" stroke="#2b211c" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M112 116 Q122 105 132 116" stroke="#2b211c" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="60" cy="133" rx="14" ry="8.5" fill="url(#g-ck)"/><ellipse cx="140" cy="133" rx="14" ry="8.5" fill="url(#g-ck)"/>
+  <path d="M95 127 Q100 123 105 127 Q100 132 95 127 Z" fill="#f2849d"/>
+  <path d="M88 134 Q100 150 112 134 Z" fill="#c75a62" stroke="#7a5442" stroke-width="2.4" stroke-linejoin="round"/>
+  <ellipse cx="76" cy="207" rx="16" ry="10" fill="url(#g-mb)"/><ellipse cx="124" cy="207" rx="16" ry="10" fill="url(#g-mb)"/>
+ </symbol>
+ <!-- 토리(3D 결): 둥근 새 자리 -->
+ <symbol id="tori3d" viewBox="0 0 140 132">
+  <ellipse cx="72" cy="124" rx="40" ry="6" fill="url(#g-sh)"/>
+  <path d="M30 78 C14 76 6 64 10 56 C20 64 30 66 40 66 Z" fill="#df6428"/>
+  <circle cx="74" cy="70" r="48" fill="url(#g-tb)"/>
+  <ellipse cx="85" cy="88" rx="30" ry="25" fill="url(#g-tl)"/>
+  <path d="M44 68 C46 52 62 50 70 64 C76 78 68 96 52 98 C44 92 42 80 44 68 Z" fill="url(#g-tw)"/>
+  <path d="M70 24 C64 12 72 6 80 11 C79 15 81 19 85 21 C87 14 96 15 96 21 C90 23 84 26 80 30 Z" fill="#ee7631"/>
+  <ellipse cx="62" cy="42" rx="15" ry="8" fill="#fff" opacity=".55" transform="rotate(-32 62 42)"/>
+  <ellipse cx="82" cy="62" rx="6" ry="7.6" fill="#2b211c"/><circle cx="84.3" cy="59" r="2.5" fill="#fff"/>
+  <ellipse cx="108" cy="62" rx="6" ry="7.6" fill="#2b211c"/><circle cx="110.3" cy="59" r="2.5" fill="#fff"/>
+  <path d="M90 70 L104 70 L97 81 Z" fill="#ffc63a" stroke="#e39b16" stroke-width="2" stroke-linejoin="round"/>
+  <ellipse cx="74" cy="76" rx="7" ry="4.6" fill="#ff7f99" opacity=".5"/><ellipse cx="117" cy="75" rx="5.5" ry="4" fill="#ff7f99" opacity=".5"/>
+  <path d="M64 116 l-3 8 M74 118 v8 M88 117 l3 8" stroke="#e39b16" stroke-width="3.2" stroke-linecap="round"/>
+ </symbol>
+
+ <!-- 모모 · 토리(손그림 결) -->
+ <symbol id="momo-hand" viewBox="0 0 200 232">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M62 80 C49 52 47 18 63 10 C80 2 92 34 90 76" fill="#fffaf1"/>
+   <path d="M68 66 C62 48 62 28 68 22" fill="none" stroke="#f08aa6" stroke-width="7" opacity=".85"/>
+   <path d="M112 76 C112 40 122 10 140 12 C158 15 152 48 134 82" fill="#fffaf1"/>
+   <path d="M122 68 C124 46 130 28 138 26" fill="none" stroke="#f08aa6" stroke-width="7" opacity=".85"/>
+   <ellipse cx="100" cy="178" rx="62" ry="47" fill="#fffaf1"/>
+   <path d="M138 150 C160 168 160 200 140 214 C150 194 150 172 138 150 Z" fill="url(#p-hatch)" stroke="none"/>
+   <ellipse cx="100" cy="111" rx="66" ry="59" fill="#fffaf1"/>
+   <path d="M150 84 C170 108 164 150 136 164 C154 140 158 112 150 84 Z" fill="url(#p-hatch)" stroke="none"/>
+   <circle cx="78" cy="115" r="7.5" fill="#262a33" stroke="none"/><circle cx="122" cy="115" r="7.5" fill="#262a33" stroke="none"/>
+   <circle cx="80.5" cy="112" r="2.6" fill="#fff" stroke="none"/><circle cx="124.5" cy="112" r="2.6" fill="#fff" stroke="none"/>
+   <path d="M50 131 l6 -4 M56 135 l6 -4 M62 139 l6 -4" stroke="#f0748f" stroke-width="2.6"/>
+   <path d="M134 127 l6 -4 M140 131 l6 -4 M146 135 l6 -4" stroke="#f0748f" stroke-width="2.6"/>
+   <path d="M95 127 Q100 123 105 127 Q100 131 95 127 Z" fill="#f2849d" stroke-width="2"/>
+   <path d="M100 131 v3.6 M100 134.6 q-4 5 -9 2 M100 134.6 q4 5 9 2" fill="none" stroke-width="2.8"/>
+   <ellipse cx="74" cy="206" rx="17" ry="11" fill="#fffaf1"/><ellipse cx="126" cy="206" rx="17" ry="11" fill="#fffaf1"/>
+  </g>
+ </symbol>
+ <symbol id="momo-hand-yay" viewBox="0 0 200 232">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M60 80 C44 54 40 20 56 11 C73 2 88 32 88 76" fill="#fffaf1"/>
+   <path d="M66 66 C58 48 56 30 61 22" fill="none" stroke="#f08aa6" stroke-width="7" opacity=".85"/>
+   <path d="M114 76 C116 38 130 8 148 13 C165 19 156 52 136 82" fill="#fffaf1"/>
+   <path d="M124 68 C128 46 136 28 144 26" fill="none" stroke="#f08aa6" stroke-width="7" opacity=".85"/>
+   <ellipse cx="38" cy="150" rx="15" ry="21" fill="#fffaf1" transform="rotate(-38 38 150)"/>
+   <ellipse cx="162" cy="150" rx="15" ry="21" fill="#fffaf1" transform="rotate(38 162 150)"/>
+   <ellipse cx="100" cy="180" rx="60" ry="45" fill="#fffaf1"/>
+   <ellipse cx="100" cy="112" rx="66" ry="59" fill="#fffaf1"/>
+   <path d="M150 85 C170 109 164 151 136 165 C154 141 158 113 150 85 Z" fill="url(#p-hatch)" stroke="none"/>
+   <path d="M68 116 Q78 105 88 116" fill="none" stroke-width="4.4"/><path d="M112 116 Q122 105 132 116" fill="none" stroke-width="4.4"/>
+   <path d="M50 131 l6 -4 M56 135 l6 -4 M62 139 l6 -4" stroke="#f0748f" stroke-width="2.6"/>
+   <path d="M134 127 l6 -4 M140 131 l6 -4 M146 135 l6 -4" stroke="#f0748f" stroke-width="2.6"/>
+   <path d="M95 127 Q100 123 105 127 Q100 131 95 127 Z" fill="#f2849d" stroke-width="2"/>
+   <path d="M88 135 Q100 151 112 135 Z" fill="#e9858c" stroke-width="2.6"/>
+   <ellipse cx="76" cy="207" rx="16" ry="10" fill="#fffaf1"/><ellipse cx="124" cy="207" rx="16" ry="10" fill="#fffaf1"/>
+  </g>
+ </symbol>
+ <symbol id="tori-hand" viewBox="0 0 140 132">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M30 78 C14 76 6 64 10 56 C20 64 30 66 40 66" fill="#f7884a"/>
+   <circle cx="74" cy="70" r="48" fill="#ffa261"/>
+   <path d="M104 34 C126 52 128 92 104 112 C116 90 116 58 104 34 Z" fill="url(#p-hatch)" stroke="none"/>
+   <ellipse cx="85" cy="88" rx="30" ry="25" fill="#fff4e3"/>
+   <path d="M44 68 C46 52 62 50 70 64 C76 78 68 96 52 98 C44 92 42 80 44 68 Z" fill="#f47d3c"/>
+   <path d="M70 24 C64 12 72 6 80 11 C79 15 81 19 85 21 C87 14 96 15 96 21 C90 23 84 26 80 30" fill="#f47d3c"/>
+   <circle cx="82" cy="62" r="6" fill="#262a33" stroke="none"/><circle cx="84" cy="59.5" r="2" fill="#fff" stroke="none"/>
+   <circle cx="108" cy="62" r="6" fill="#262a33" stroke="none"/><circle cx="110" cy="59.5" r="2" fill="#fff" stroke="none"/>
+   <path d="M90 70 L104 70 L97 81 Z" fill="#ffd24a" stroke-width="2.6"/>
+   <path d="M66 112 l-3 10 M76 114 v10 M88 113 l3 10" stroke-width="3"/>
+  </g>
+ </symbol>
+
+ <!-- 별 셋 -->
+ <symbol id="star3d" viewBox="0 0 100 100">
+  <path d="M50 6 L62.6 33.4 L92.4 36.8 L70.2 57 L76.4 86.4 L50 71.6 L23.6 86.4 L29.8 57 L7.6 36.8 L37.4 33.4 Z" fill="url(#g-star)" stroke="#e0920c" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M50 16 L58.6 35.6 L38 40 Z" fill="#fff" opacity=".55"/>
+ </symbol>
+ <symbol id="star-hand" viewBox="0 0 100 100">
+  <g filter="url(#f-sketch)"><path d="M50 6 L62.6 33.4 L92.4 36.8 L70.2 57 L76.4 86.4 L50 71.6 L23.6 86.4 L29.8 57 L7.6 36.8 L37.4 33.4 Z" fill="#ffd93a" stroke="#262a33" stroke-width="3.6" stroke-linejoin="round"/>
+  <path d="M60 40 L80 42 L66 56 L70 76 Z" fill="url(#p-hatch)"/></g>
+ </symbol>
+
+ <!-- 선생님(3D 선생님을 단순하게 옮긴 자리) -->
+ <symbol id="teacher" viewBox="0 0 220 220">
+  <circle cx="66" cy="48" r="16" fill="url(#g-hair)"/><circle cx="154" cy="48" r="16" fill="url(#g-hair)"/>
+  <path d="M58 118 C52 70 78 34 110 34 C142 34 168 70 162 118 C160 142 158 160 150 168 L70 168 C62 160 60 142 58 118 Z" fill="url(#g-hair)"/>
+  <path d="M98 140 L98 174 Q110 180 122 174 L122 140 Z" fill="#efc4ad"/>
+  <path d="M22 222 C26 192 54 178 84 173 L110 190 L136 173 C166 178 194 192 198 222 Z" fill="url(#g-shirt)"/>
+  <path d="M84 173 L110 197 L136 173" stroke="#cdbb6f" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  <path d="M66 96 C66 66 86 52 110 52 C134 52 154 66 154 96 C154 126 138 150 110 156 C82 150 66 126 66 96 Z" fill="url(#g-skin)"/>
+  <path d="M68 92 C84 100 136 100 152 92 L152 101 C136 108 84 108 68 101 Z" fill="#e2a993" opacity=".28"/>
+  <ellipse cx="92" cy="111" rx="10.5" ry="12.5" fill="#fff"/><ellipse cx="128" cy="111" rx="10.5" ry="12.5" fill="#fff"/>
+  <ellipse cx="92" cy="112" rx="8.2" ry="10.6" fill="url(#g-iris)"/><ellipse cx="128" cy="112" rx="8.2" ry="10.6" fill="url(#g-iris)"/>
+  <ellipse cx="92" cy="113" rx="4" ry="5.4" fill="#0f3036"/><ellipse cx="128" cy="113" rx="4" ry="5.4" fill="#0f3036"/>
+  <circle cx="95.5" cy="107" r="3.3" fill="#fff"/><circle cx="131.5" cy="107" r="3.3" fill="#fff"/>
+  <circle cx="89" cy="117" r="1.6" fill="#fff" opacity=".85"/><circle cx="125" cy="117" r="1.6" fill="#fff" opacity=".85"/>
+  <path d="M80.5 104 Q92 93 104 103" stroke="#3a2216" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+  <path d="M116 103 Q128 93 139.5 104" stroke="#3a2216" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="80" cy="128" rx="10" ry="5.5" fill="#ff9fb0" opacity=".45"/><ellipse cx="140" cy="128" rx="10" ry="5.5" fill="#ff9fb0" opacity=".45"/>
+  <path d="M110 121 q2 3 0 5" stroke="#dc9f88" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M101 135 Q110 142 119 135" stroke="#c0645a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M60 100 C56 124 58 150 68 166 C74 152 74 128 72 106 Z" fill="url(#g-hair)"/>
+  <path d="M160 100 C164 124 162 150 152 166 C146 152 146 128 148 106 Z" fill="url(#g-hair)"/>
+  <path d="M60 100 C58 64 80 40 110 40 C140 40 162 64 160 100 C156 92 152 86 148 82 L146 98 C142 88 136 80 130 76 L128 92 C122 82 116 78 108 76 L104 92 C98 82 92 80 86 80 L82 96 C76 90 68 92 60 100 Z" fill="url(#g-hair)"/>
+  <path d="M80 54 C94 44 118 42 138 50" stroke="#c08a5c" stroke-width="5" fill="none" stroke-linecap="round" opacity=".65"/>
+ </symbol>
+ <!-- 영역 그림(3D 결 · 손그림 결) -->
+ <linearGradient id="g-cover" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f58a5c"/><stop offset="1" stop-color="#c8462b"/></linearGradient>
+ <linearGradient id="g-page" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#efe5d2"/></linearGradient>
+ <linearGradient id="g-spine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7a5028" stop-opacity="0"/><stop offset=".5" stop-color="#7a5028" stop-opacity=".45"/><stop offset="1" stop-color="#7a5028" stop-opacity="0"/></linearGradient>
+ <linearGradient id="g-pencil" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffe06a"/><stop offset=".55" stop-color="#f6b31c"/><stop offset="1" stop-color="#dc930b"/></linearGradient>
+ <linearGradient id="g-ferrule" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f2f5f8"/><stop offset="1" stop-color="#a7b1bc"/></linearGradient>
+ <linearGradient id="g-bub2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9be47a"/><stop offset="1" stop-color="#4ca83a"/></linearGradient>
+
+ <symbol id="il-book-3d" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="140" rx="72" ry="8" fill="url(#g-sh)"/>
+  <path d="M8 46 Q50 34 90 48 Q130 34 172 46 L172 126 Q130 114 90 130 Q50 114 8 126 Z" fill="url(#g-cover)"/>
+  <path d="M16 38 Q52 28 88 42 L88 120 Q52 106 16 116 Z" fill="url(#g-page)"/>
+  <path d="M164 38 Q128 28 92 42 L92 120 Q128 106 164 116 Z" fill="url(#g-page)"/>
+  <path d="M28 54 Q52 47 78 57 M28 68 Q52 61 78 71 M28 82 Q52 75 78 85 M28 96 Q48 90 68 97" stroke="#cdbfa8" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <path d="M102 57 Q128 47 152 54 M102 71 Q128 61 152 68 M102 85 Q128 75 152 82 M112 97 Q132 89 152 95" stroke="#cdbfa8" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <rect x="80" y="42" width="20" height="80" fill="url(#g-spine)"/>
+  <path d="M120 33 L131 33 L131 142 L125.5 134 L120 142 Z" fill="#e0524a"/>
+  <path d="M24 42 Q50 34 76 44" stroke="#fff" stroke-width="4.5" opacity=".85" fill="none" stroke-linecap="round"/>
+ </symbol>
+ <symbol id="il-pencil-3d" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="141" rx="70" ry="7" fill="url(#g-sh)"/>
+  <g transform="rotate(-6 80 80)"><rect x="20" y="20" width="114" height="114" rx="9" fill="url(#g-page)"/>
+   <path d="M36 52 H120 M36 70 H120 M36 88 H120 M36 106 H100" stroke="#a8cdee" stroke-width="3" stroke-linecap="round"/>
+   <path d="M36 52 Q50 41 62 52 T92 52" stroke="#3b5ea8" stroke-width="3.6" fill="none" stroke-linecap="round"/></g>
+  <g transform="translate(100 26) rotate(40)">
+   <rect x="0" y="0" width="26" height="92" rx="4" fill="url(#g-pencil)"/>
+   <rect x="9" y="2" width="7" height="88" fill="#fff" opacity=".3"/>
+   <rect x="-1" y="-14" width="28" height="16" rx="3" fill="url(#g-ferrule)"/>
+   <rect x="0" y="-31" width="26" height="19" rx="8" fill="#ff9db0"/>
+   <path d="M0 92 L26 92 L13 122 Z" fill="#f4cf9e"/>
+   <path d="M8.7 112 L17.3 112 L13 122 Z" fill="#3b3b3b"/>
+  </g>
+ </symbol>
+ <symbol id="il-chat-3d" viewBox="0 0 180 150">
+  <ellipse cx="92" cy="142" rx="66" ry="7" fill="url(#g-sh)"/>
+  <path d="M22 22 h86 a18 18 0 0 1 18 18 v38 a18 18 0 0 1 -18 18 h-52 l-20 16 v-16 h-14 a18 18 0 0 1 -18 -18 v-38 a18 18 0 0 1 18 -18 z" fill="url(#g-page)"/>
+  <path d="M36 48 h56 M36 64 h38" stroke="#c6d4bf" stroke-width="6" stroke-linecap="round"/>
+  <path d="M84 62 h68 a16 16 0 0 1 16 16 v30 a16 16 0 0 1 -16 16 h-8 v16 l-20 -16 h-40 a16 16 0 0 1 -16 -16 v-30 a16 16 0 0 1 16 -16 z" fill="url(#g-bub2)"/>
+  <circle cx="104" cy="93" r="6.5" fill="#fff"/><circle cx="124" cy="93" r="6.5" fill="#fff"/><circle cx="144" cy="93" r="6.5" fill="#fff"/>
+  <path d="M92 69 Q120 63 150 69" stroke="#fff" stroke-width="4" opacity=".5" fill="none" stroke-linecap="round"/>
+  <path d="M30 28 Q60 22 92 28" stroke="#fff" stroke-width="4" opacity=".9" fill="none" stroke-linecap="round"/>
+ </symbol>
+ <symbol id="il-book-hand" viewBox="0 0 180 150">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M8 46 Q50 34 90 48 Q130 34 172 46 L172 126 Q130 114 90 130 Q50 114 8 126 Z" fill="#f47b56"/>
+   <path d="M16 38 Q52 28 88 42 L88 120 Q52 106 16 116 Z" fill="#fffdf6"/>
+   <path d="M164 38 Q128 28 92 42 L92 120 Q128 106 164 116 Z" fill="#fffdf6"/>
+   <path d="M28 56 Q52 50 76 59 M28 72 Q52 66 76 75 M28 88 Q48 83 68 89" fill="none" stroke-width="2.4" opacity=".55"/>
+   <path d="M104 59 Q128 50 152 56 M104 75 Q128 66 152 72 M112 89 Q132 82 152 88" fill="none" stroke-width="2.4" opacity=".55"/>
+   <path d="M120 33 L131 33 L131 142 L125.5 134 L120 142 Z" fill="#e0524a"/>
+   <path d="M136 104 Q152 100 164 106 L164 114 Q150 110 138 114 Z" fill="url(#p-hatch)" stroke="none"/>
+  </g>
+ </symbol>
+ <symbol id="il-pencil-hand" viewBox="0 0 180 150">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+   <g transform="rotate(-6 80 80)"><rect x="20" y="20" width="114" height="114" rx="9" fill="#fffdf6"/>
+    <path d="M36 54 H120 M36 72 H120 M36 90 H120 M36 108 H100" stroke="#8fb9e0" stroke-width="2.4"/>
+    <path d="M36 54 Q50 43 62 54 T92 54" stroke="#3b5ea8" stroke-width="3.2" fill="none"/></g>
+   <g transform="translate(100 26) rotate(40)">
+    <rect x="0" y="0" width="26" height="92" rx="3" fill="#ffd34a"/>
+    <path d="M17 6 V86" stroke-width="2" opacity=".45"/>
+    <rect x="-1" y="-14" width="28" height="16" rx="3" fill="#d7dde4"/>
+    <rect x="0" y="-31" width="26" height="19" rx="8" fill="#ff9db0"/>
+    <path d="M0 92 L26 92 L13 122 Z" fill="#f4cf9e"/>
+    <path d="M8.7 112 L17.3 112 L13 122 Z" fill="#262a33"/>
+   </g>
+  </g>
+ </symbol>
+ <symbol id="il-chat-hand" viewBox="0 0 180 150">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M22 22 h86 a18 18 0 0 1 18 18 v38 a18 18 0 0 1 -18 18 h-52 l-20 16 v-16 h-14 a18 18 0 0 1 -18 -18 v-38 a18 18 0 0 1 18 -18 z" fill="#fffdf6"/>
+   <path d="M36 48 h56 M36 64 h38" stroke-width="3" opacity=".4"/>
+   <path d="M84 62 h68 a16 16 0 0 1 16 16 v30 a16 16 0 0 1 -16 16 h-8 v16 l-20 -16 h-40 a16 16 0 0 1 -16 -16 v-30 a16 16 0 0 1 16 -16 z" fill="#9be07a"/>
+   <circle cx="104" cy="93" r="5" fill="#262a33" stroke="none"/><circle cx="124" cy="93" r="5" fill="#262a33" stroke="none"/><circle cx="144" cy="93" r="5" fill="#262a33" stroke="none"/>
+  </g>
+ </symbol>
+ <symbol id="il-speak-hand" viewBox="0 0 180 150">
+  <g filter="url(#f-sketch)" stroke="#262a33" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M18 24 h96 a20 20 0 0 1 20 20 v40 a20 20 0 0 1 -20 20 h-58 l-22 18 v-18 h-16 a20 20 0 0 1 -20 -20 v-40 a20 20 0 0 1 20 -20 z" fill="#ffc3d3"/>
+   <path d="M40 64 q8 -14 16 0 t16 0 t16 0 t16 0" fill="none" stroke-width="3.6"/>
+   <path d="M148 50 c8 10 8 24 0 34" fill="none"/><path d="M162 40 c14 16 14 38 0 54" fill="none"/>
+  </g>
+ </symbol>
+ <!-- 그림책 꾸밈(잎 · 반짝) -->
+ <symbol id="dd-leaf" viewBox="0 0 60 40">
+  <g fill="none" stroke="#6f8a5c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#f-sketch)">
+   <path d="M4 36 C20 30 36 22 56 6"/>
+   <path d="M22 28 C18 16 26 8 36 8 C36 18 30 26 22 28 Z" fill="#cfe3b8"/>
+   <path d="M40 16 C44 6 54 4 58 10 C54 16 46 18 40 16 Z" fill="#cfe3b8"/>
+  </g>
+ </symbol>
+ <symbol id="dd-spark" viewBox="0 0 40 40">
+  <g fill="none" stroke="#9a8a6a" stroke-width="2.6" stroke-linecap="round" filter="url(#f-sketch)"><path d="M20 4 V36 M4 20 H36 M9 9 L31 31 M31 9 L9 31"/></g>
+ </symbol>
+
+</defs>
+</svg>
+
+<main class="wrap">
+<header>
+<h1>디자인 시안 다섯</h1>
+<p class="lead">같은 세 화면(홈 · 회화 대화 · 결과)을 다섯 가지 시안으로 그렸어요. ⑤는 지금 디자인에 손질만 한 기준판이에요. 마음에 드는 시안을 번호로 골라 주세요.</p>
+<p>번호 하나로 골라도 되고, 축마다 따로 골라도 돼요. 예를 들어 '바탕은 ①, 선생님 창은 ③, 색은 한 단 밝게'처럼 말씀해 주시면 그대로 합쳐요.</p>
+<ul class="pick" aria-label="시안 바로 가기"><li><a href="#s1"><span class="no">1</span>코르크 깊이</a></li><li><a href="#s2"><span class="no">2</span>밝은 책상</a></li><li><a href="#s3"><span class="no">3</span>교실 칠판</a></li><li><a href="#s4"><span class="no">4</span>그림책</a></li><li><a href="#s5"><span class="no">5</span>지금 + 손질</a></li></ul>
+<div class="notes">
+<div class="box"><h3>모든 시안에서 그대로 두는 것</h3><ul>
+<li>포스트잇 네 색의 자리: 읽기 노랑 · 쓰기 하늘 · 말하기 분홍 · 회화 연두예요. 시안마다 쓰는 넓이만 달라요.</li>
+<li>글꼴 셋: 제목 Jua · 본문 Gowun Dodum · 영어 Fredoka예요.</li>
+<li>해요체 안내, 한 화면에 행동 하나, 큰 글자와 큰 단추(안내 20px · 영어 24px · 단추 글 22px 이상, 누르는 곳 56px 이상)를 지켜요.</li>
+<li>세 화면에 들어가는 것은 정본 4절과 지금 프리뷰를 따랐어요. 새로 만든 기능은 없어요.</li>
+</ul></div>
+<div class="box"><h3>그림 · 밀도 · 색에 대해</h3><ul>
+<li>모모 · 토리와 영역 그림은 그림 결(3D 결 · 손그림 결)과 놓일 자리만 보이는 임시 그림이에요. 캐릭터 모양과 이름은 시안을 고른 뒤 따로 표본으로 골라요.</li>
+<li>선생님 그림은 3D 선생님을 단순하게 옮긴 자리예요. 실제 회화 화면의 창 안에서는 지금처럼 3D 선생님이 움직여요.</li>
+<li>밀도 '낮게' · '가장 낮게' 시안은 홈 카드의 막대 · 단원 칸을 수업 목록이나 부모 화면으로 옮긴 꼴이에요. 정본 4절 홈 표를 바꾸는 일이라 고른 뒤 따로 정해요.</li>
+<li>색은 따로 시안을 두지 않았어요. 시안마다 '지금 색 · 한 단 밝은 색' 띠를 누르면 그 시안의 세 화면 색이 바뀌어요.</li>
+<li>UX 검토는 ① · ② · ⑤를 꼭 견주고, ③ · ④는 더 넓게 보고 싶을 때 보기를 권했어요. 아이 이름은 ○○로 비웠고, 단원 · 단어 · 숫자는 보기용이에요.</li>
+</ul></div>
+</div>
+<h2 class="sec-h">한눈에 견주기</h2>
+<div class="tbl"><table class="cmp"><thead><tr><th scope="col">시안</th><th scope="col">바탕 · 질감</th><th scope="col">앱의 얼굴</th><th scope="col">밀도</th><th scope="col">카드 꼴</th><th scope="col">선생님 창 틀</th><th scope="col">색</th></tr></thead><tbody><tr><th scope="row"><a href="#s1" style="color:inherit;text-decoration:none"><span class="no" style="width:28px;height:28px;font-size:16px;margin-right:8px">1</span>코르크 깊이</a></th><td>코르크 + 종이 결 · 핀 · 들림</td><td>3D 결 마스코트</td><td>낮게</td><td>포스트잇</td><td>둥근 초상 + 방 단색</td><td>지금 색</td></tr><tr><th scope="row"><a href="#s2" style="color:inherit;text-decoration:none"><span class="no" style="width:28px;height:28px;font-size:16px;margin-right:8px">2</span>밝은 책상</a></th><td>크림 종이(모눈 · 연필 선)</td><td>손그림 마스코트</td><td>낮게</td><td>둥근 종이</td><td>둥근 창</td><td>한 단 밝은 색</td></tr><tr><th scope="row"><a href="#s3" style="color:inherit;text-decoration:none"><span class="no" style="width:28px;height:28px;font-size:16px;margin-right:8px">3</span>교실 칠판</a></th><td>칠판 결(진초록 + 분필)</td><td>3D 결 마스코트</td><td>지금</td><td>자석 카드</td><td>사진 꼴(폴라로이드)</td><td>진초록 + 분필 흰색</td></tr><tr><th scope="row"><a href="#s4" style="color:inherit;text-decoration:none"><span class="no" style="width:28px;height:28px;font-size:16px;margin-right:8px">4</span>그림책</a></th><td>그림책 종이 결</td><td>손그림 큰 장면</td><td>가장 낮게</td><td>쪽(페이지)</td><td>둥근 초상(그림책 액자)</td><td>파스텔 둘</td></tr><tr><th scope="row"><a href="#s5" style="color:inherit;text-decoration:none"><span class="no" style="width:28px;height:28px;font-size:16px;margin-right:8px">5</span>지금 + 손질</a></th><td>지금 코르크 + 결 2%</td><td>없음</td><td>지금</td><td>포스트잇</td><td>사진 꼴 손질</td><td>지금 색</td></tr></tbody></table></div>
+</header>
+<section class="prop" id="s1" aria-labelledby="h1">
+<div class="prop-head"><span class="no">1</span><div><h2 id="h1">코르크 깊이</h2><p>지금 정한 포스트잇 보드를 끝까지 밀어 '진짜 보드'로 만들어요. 코르크와 종이에 결 · 핀 · 들림 그림자를 입히고, 3D 선생님과 같은 결의 마스코트가 앱의 얼굴이 돼요.</p></div></div>
+<div class="prop-info"><div class="tbl"><table class="axes"><tbody><tr><th scope='row'>바탕 · 질감</th><td>코르크판 + 종이 결 · 핀 · 들림 그림자, 나무 테</td></tr><tr><th scope='row'>앱의 얼굴</th><td>3D 결 마스코트 모모 · 토리(홈 띠 · 첫 수업 · 결과)</td></tr><tr><th scope='row'>밀도</th><td>낮게: 홈 카드에 영역 · 단계 · 오늘 · 단추 넷과 영역 그림</td></tr><tr><th scope='row'>카드 꼴</th><td>포스트잇 그대로, 핀으로 꽂음</td></tr><tr><th scope='row'>선생님 창 틀</th><td>둥근 초상 + 선생님 방 단색, 아래 이름 띠</td></tr><tr><th scope='row'>색</th><td>지금 색</td></tr></tbody></table></div>
+<div class="box"><div class="cset" role="group" aria-label="1번 시안 색 세트"><button type="button" class="cband" data-cs="cs-a" aria-pressed="true"><span class="lbl">지금 색<small>정본 값 그대로</small></span><span class="chips"><span class="chip"><i style="background:#FFE566"></i><b>읽기</b>#FFE566</span><span class="chip"><i style="background:#9FD8FF"></i><b>쓰기</b>#9FD8FF</span><span class="chip"><i style="background:#FFB3C7"></i><b>말하기</b>#FFB3C7</span><span class="chip"><i style="background:#C9F2B2"></i><b>회화</b>#C9F2B2</span><span class="chip"><i style="background:#D2A86B"></i><b>바탕</b>#D2A86B</span><span class="chip"><i style="background:#2B2B2B"></i><b>글자 · 단추</b>#2B2B2B</span></span></button><button type="button" class="cband" data-cs="cs-b" aria-pressed="false"><span class="lbl">한 단 밝은 색<small>채도 · 명도 한 단 위</small></span><span class="chips"><span class="chip"><i style="background:#FFDF37"></i><b>읽기</b>#FFDF37</span><span class="chip"><i style="background:#88CFFF"></i><b>쓰기</b>#88CFFF</span><span class="chip"><i style="background:#FF9EB9"></i><b>말하기</b>#FF9EB9</span><span class="chip"><i style="background:#ADF480"></i><b>회화</b>#ADF480</span><span class="chip"><i style="background:#DDB277"></i><b>바탕</b>#DDB277</span><span class="chip"><i style="background:#262626"></i><b>글자 · 단추</b>#262626</span></span></button></div><p class="cnote">띠를 누르면 이 시안의 세 화면 색이 바뀌어요.</p><p class="fill"><strong>빈 곳(D-1)을 채우는 법</strong>홈 카드를 화면 아래 끝까지 늘리고, 줄인 줄 대신 영역 그림을 넣었어요. 띠 왼쪽에는 모모가 앉아요. 회화는 대화가 판 위에 쌓여 판이 화면을 채우고, 결과는 큰 판 하나에 담아 오른쪽에서 모모와 토리가 축하해요. 코르크는 테두리처럼 가장자리에만 보여요.</p></div></div>
+<div class="shots"><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="① 코르크 깊이 · 홈 크게 보기" data-cap="① 코르크 깊이 · 홈"><div class="screen home th-cork cs-a" aria-hidden="true"><div class="bg"></div><header class="band has-face"><span class="fx tr p2"></span><span class="face-band"><svg class="" viewBox="0 0 200 232"><use href="#momo3d"/></svg></span><div class="title">○○의 공부 보드</div><div class="band-r"><span class="stat"><svg class="ic flame" ><use href="#i-flame"/></svg>연속 5일</span><span class="stat"><svg class="ic star" ><use href="#i-star"/></svg>별 23개</span><span class="parent">부모<i></i></span></div></header><div class="cards"><article class="card lo c-read"><span class="fx t p1"></span><div class="c-head"><span class="c-area">읽기</span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-book-3d"/></svg></div><div class="today"><div class="c-today done"><svg class="ic" ><use href="#i-check"/></svg>오늘 다 했어요</div><div class="c-week">이번 주 3일</div></div><div class="btn">시작!</div></article><article class="card lo c-write"><span class="fx t p2"></span><div class="c-head"><span class="c-area">쓰기</span></div><div class="c-lv">2단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-pencil-3d"/></svg></div><div class="today"><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="c-week">이번 주 2일</div></div><div class="btn">시작!</div></article><article class="card lo c-speak"><span class="fx t p3"></span><div class="c-head"><span class="c-area">말하기</span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 140 132"><use href="#tori3d"/></svg></div><div class="today"><p class="first-line">첫 수업을 해 봐요</p></div><div class="btn">시작!</div></article><article class="card lo c-talk"><span class="fx t p4"></span><div class="c-head"><span class="c-area">회화</span><span class="c-tp"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-chat-3d"/></svg></div><div class="today"><div class="c-story">오늘 이야기<b>좋아하는 음식</b></div><div class="c-week">이번 주 2일</div></div><div class="btn">이야기 고르기</div></article></div></div></div><figcaption><b>홈</b><span>영역 넷 · 이번 주 · 오늘 · 첫 수업</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="① 코르크 깊이 · 회화 대화 크게 보기" data-cap="① 코르크 깊이 · 회화 대화"><div class="screen talk th-cork cs-a" aria-hidden="true"><div class="bg"></div>
+<header class="band"><span class="fx tl p2"></span><div class="title">좋아하는 음식</div><div class="meta">회화 3단계 · 단원 2</div><div class="turns">말 주고받기 <b>6</b> / 15</div><div class="band-r"><span class="btn ghost sm">그만하기</span><span class="btn ghost sm">홈</span></div></header>
+<aside class="side"><figure class="tw tw-round"><span class="ring r1"></span><span class="ring r2"></span><div class="pic"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></div><span class="tw-state"><svg class="ic" ><use href="#i-ear"/></svg></span><figcaption>미나 선생님</figcaption></figure>
+<div class="note c-talk"><span class="fx t p4"></span><h4>오늘 이야기 목록</h4><ul><li>좋아하는 음식</li><li>싫어하는 음식</li><li>음식 색깔</li><li>음식 맛</li></ul></div></aside>
+<section class="chat"><span class="fx tl p1"></span><span class="fx tr p4"></span><div class="log">
+<div class="msg t gone"><p class="en">What food do you like?</p><p class="ko">어떤 음식 좋아해?</p></div>
+<div class="crow gone"><div class="msg c"><p class="en">I like chicken.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t old"><p class="en">Me too! Do you like carrots?</p><p class="ko">나도! 당근도 좋아해?</p></div>
+<div class="crow mine"><div class="msg c"><p class="en">Yes, I like carrot.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t now"><p class="en">Oh, you like carrots! What color are carrots?</p><p class="ko">아, 당근 좋아하는구나! 당근은 무슨 색이야?</p></div>
+</div><div class="turn"><div class="mic"><div class="in"><svg class="ic" ><use href="#i-mic"/></svg>듣고 있어요<span class="lvl"><i style="height:12px"></i><i style="height:22px"></i><i style="height:30px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:8px"></i></span></div></div><div class="aux"><span class="btn ghost sm off"><svg class="ic" ><use href="#i-bulb"/></svg>힌트</span><span class="btn ghost sm off">잘 모르겠어요</span></div></div></section>
+<footer class="promise"><b>선생님의 약속</b><span>미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요</span></footer>
+</div></div><figcaption><b>회화 대화</b><span>듣는 중인 말하기 단추 · 쌓인 대화 · 아이 말</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="① 코르크 깊이 · 결과 크게 보기" data-cap="① 코르크 깊이 · 결과"><div class="screen result th-cork cs-a" aria-hidden="true"><div class="bg"></div>
+<header class="band"><span class="fx tl p3"></span><div class="title">읽기</div><div class="meta">3단계 · 단원 2</div></header>
+<section class="res"><span class="fx tl p2"></span><span class="fx tr p1"></span><div class="res-l" style="position:relative">
+<div><h4>수업을 끝냈어요!</h4><p class="sub">수업 5 · 공원에서 놀아요</p></div>
+<div><h5>오늘 얻은 단어</h5><div class="wl"><div class="w"><b>park</b><span>공원</span></div><div class="w"><b>jump</b><span>뛰어오르다</span></div><div class="w"><b>fast</b><span>빠른</span></div><div class="w"><b>sleep</b><span>자다</span></div></div></div>
+<div class="res-unit"><div class="m-l"><span>단원 2 · 아는 단어</span><b>21/30 <span class="plus">+3</span></b></div><div class="bar"><i style="width:70%"></i><i class="new" style="left:60%;width:10%"></i></div></div>
+<div class="res-act"><span class="btn big">다음 수업</span><span class="btn ghost sm">홈</span><span class="report"><svg class="ic" ><use href="#i-flag"/></svg>이 문제 이상해요</span></div>
+</div><div class="res-r"><span class="conf" style="left:40px;top:70px;transform:rotate(18deg);background:var(--read)"></span><span class="conf" style="left:300px;top:40px;transform:rotate(-24deg);background:var(--write)"></span><span class="conf" style="left:350px;top:210px;transform:rotate(30deg);background:var(--speak)"></span><span class="conf" style="left:16px;top:300px;transform:rotate(-12deg);background:var(--talk)"></span><span class="conf" style="left:320px;top:420px;transform:rotate(16deg);background:#f0a92e"></span><span class="conf" style="left:60px;top:470px;transform:rotate(40deg);background:#e0524a"></span><span class="conf" style="left:200px;top:20px;transform:rotate(12deg);background:var(--read)"></span><span class="conf" style="left:360px;top:330px;transform:rotate(-30deg);background:var(--write)"></span><div class="rew" style="left:94px;top:6px"><svg class="" viewBox="0 0 100 100" style="width:170px;height:170px"><use href="#star3d"/></svg><span>별 1개</span></div><span style="position:absolute;left:60px;bottom:0;width:236px;height:274px"><svg class="" viewBox="0 0 200 232" style="width:100%;height:100%"><use href="#momo3d-yay"/></svg></span><span style="position:absolute;right:0;top:250px;width:118px;height:112px;transform:rotate(-14deg)"><svg class="" viewBox="0 0 140 132" style="width:100%;height:100%"><use href="#tori3d"/></svg></span></div></section>
+</div></div><figcaption><b>결과</b><span>별 · 오늘 얻은 단어 · 다음 수업</span></figcaption></figure></div></section>
+<section class="prop" id="s2" aria-labelledby="h2">
+<div class="prop-head"><span class="no">2</span><div><h2 id="h2">밝은 책상</h2><p>코르크를 걷고 밝은 크림 종이 위에 둥근 종이 카드만 둬요. 연필로 그린 듯한 선과 마스킹 테이프로 따뜻하게 만들어요.</p></div></div>
+<div class="prop-info"><div class="tbl"><table class="axes"><tbody><tr><th scope='row'>바탕 · 질감</th><td>크림 종이 책상(옅은 모눈 · 공책 여백 선 · 연필 낙서)</td></tr><tr><th scope='row'>앱의 얼굴</th><td>손그림 결 마스코트 모모 · 토리</td></tr><tr><th scope='row'>밀도</th><td>낮게: 홈 카드 요소 넷과 손그림 영역 그림</td></tr><tr><th scope='row'>카드 꼴</th><td>둥근 종이, 마스킹 테이프로 붙임</td></tr><tr><th scope='row'>선생님 창 틀</th><td>둥근 창(위가 둥근 창 너머로 선생님 방과 상반신)</td></tr><tr><th scope='row'>색</th><td>한 단 밝은 색</td></tr></tbody></table></div>
+<div class="box"><div class="cset" role="group" aria-label="2번 시안 색 세트"><button type="button" class="cband" data-cs="cs-a" aria-pressed="false"><span class="lbl">지금 색<small>정본 값 그대로</small></span><span class="chips"><span class="chip"><i style="background:#FFE566"></i><b>읽기</b>#FFE566</span><span class="chip"><i style="background:#9FD8FF"></i><b>쓰기</b>#9FD8FF</span><span class="chip"><i style="background:#FFB3C7"></i><b>말하기</b>#FFB3C7</span><span class="chip"><i style="background:#C9F2B2"></i><b>회화</b>#C9F2B2</span><span class="chip"><i style="background:#FBF5E9"></i><b>바탕</b>#FBF5E9</span><span class="chip"><i style="background:#2B2B2B"></i><b>글자 · 단추</b>#2B2B2B</span></span></button><button type="button" class="cband" data-cs="cs-b" aria-pressed="true"><span class="lbl">한 단 밝은 색<small>채도 · 명도 한 단 위</small></span><span class="chips"><span class="chip"><i style="background:#FFDF37"></i><b>읽기</b>#FFDF37</span><span class="chip"><i style="background:#88CFFF"></i><b>쓰기</b>#88CFFF</span><span class="chip"><i style="background:#FF9EB9"></i><b>말하기</b>#FF9EB9</span><span class="chip"><i style="background:#ADF480"></i><b>회화</b>#ADF480</span><span class="chip"><i style="background:#FBF5E9"></i><b>바탕</b>#FBF5E9</span><span class="chip"><i style="background:#262626"></i><b>글자 · 단추</b>#262626</span></span></button></div><p class="cnote">띠를 누르면 이 시안의 세 화면 색이 바뀌어요.</p><p class="fill"><strong>빈 곳(D-1)을 채우는 법</strong>바탕이 밝은 크림 종이라서 남는 곳이 '빈 갈색'으로 보이지 않아요. 카드는 둥근 종이로 크게 쓰고, 영역 그림 · 연필 낙서 · 손그림 마스코트가 틈을 채워요.</p></div></div>
+<div class="shots"><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="② 밝은 책상 · 홈 크게 보기" data-cap="② 밝은 책상 · 홈"><div class="screen home th-desk cs-b" aria-hidden="true"><div class="bg"></div><svg class="doodle" style="left:470px;top:84px;width:120px;height:30px" viewBox="0 0 120 30"><path d="M4 18 C20 6 30 28 46 16 S74 6 90 18 S110 24 116 12"/></svg><header class="band has-face"><span class="fx tr p2"></span><span class="face-band"><svg class="" viewBox="0 0 200 232"><use href="#momo-hand"/></svg></span><div class="title">○○의 공부 보드</div><div class="band-r"><span class="stat"><svg class="ic flame" ><use href="#i-flame"/></svg>연속 5일</span><span class="stat"><svg class="ic star" ><use href="#i-star"/></svg>별 23개</span><span class="parent">부모<i></i></span></div></header><div class="cards"><article class="card lo c-read"><span class="fx t p1"></span><div class="c-head"><span class="c-area">읽기</span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-book-hand"/></svg></div><div class="today"><div class="c-today done"><svg class="ic" ><use href="#i-check"/></svg>오늘 다 했어요</div><div class="c-week">이번 주 3일</div></div><div class="btn">시작!</div></article><article class="card lo c-write"><span class="fx t p2"></span><div class="c-head"><span class="c-area">쓰기</span></div><div class="c-lv">2단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-pencil-hand"/></svg></div><div class="today"><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="c-week">이번 주 2일</div></div><div class="btn">시작!</div></article><article class="card lo c-speak"><span class="fx t p3"></span><div class="c-head"><span class="c-area">말하기</span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 140 132"><use href="#tori-hand"/></svg></div><div class="today"><p class="first-line">첫 수업을 해 봐요</p></div><div class="btn">시작!</div></article><article class="card lo c-talk"><span class="fx t p4"></span><div class="c-head"><span class="c-area">회화</span><span class="c-tp"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></span></div><div class="c-lv">3단계</div><div class="il"><svg class="" viewBox="0 0 180 150"><use href="#il-chat-hand"/></svg></div><div class="today"><div class="c-story">오늘 이야기<b>좋아하는 음식</b></div><div class="c-week">이번 주 2일</div></div><div class="btn">이야기 고르기</div></article></div></div></div><figcaption><b>홈</b><span>영역 넷 · 이번 주 · 오늘 · 첫 수업</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="② 밝은 책상 · 회화 대화 크게 보기" data-cap="② 밝은 책상 · 회화 대화"><div class="screen talk th-desk cs-b" aria-hidden="true"><div class="bg"></div><svg class="doodle" style="left:48px;bottom:20px;width:70px;height:56px" viewBox="0 0 70 56"><path d="M35 50 C10 34 4 22 12 12 C20 4 30 8 35 16 C40 8 50 4 58 12 C66 22 60 34 35 50Z"/></svg><svg class="doodle" style="left:250px;bottom:26px;width:80px;height:40px" viewBox="0 0 80 40"><path d="M6 30 C14 10 26 10 30 22 C34 34 46 34 50 20 C54 6 66 8 74 18"/></svg>
+<header class="band"><span class="fx tl p5"></span><div class="title">좋아하는 음식</div><div class="meta">회화 3단계 · 단원 2</div><div class="turns">말 주고받기 <b>6</b> / 15</div><div class="band-r"><span class="btn ghost sm">그만하기</span><span class="btn ghost sm">홈</span></div></header>
+<aside class="side"><figure class="tw tw-win"><div class="pic"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></div><span class="tw-state"><svg class="ic" ><use href="#i-ear"/></svg></span><figcaption>미나 선생님</figcaption></figure>
+<div class="note c-talk"><span class="fx t p4"></span><h4>오늘 이야기 목록</h4><ul><li>좋아하는 음식</li><li>싫어하는 음식</li><li>음식 색깔</li><li>음식 맛</li></ul></div></aside>
+<section class="chat"><span class="fx tl p3"></span><span class="fx tr p1"></span><div class="log">
+<div class="msg t gone"><p class="en">What food do you like?</p><p class="ko">어떤 음식 좋아해?</p></div>
+<div class="crow gone"><div class="msg c"><p class="en">I like chicken.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t old"><p class="en">Me too! Do you like carrots?</p><p class="ko">나도! 당근도 좋아해?</p></div>
+<div class="crow mine"><div class="msg c"><p class="en">Yes, I like carrot.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t now"><p class="en">Oh, you like carrots! What color are carrots?</p><p class="ko">아, 당근 좋아하는구나! 당근은 무슨 색이야?</p></div>
+</div><div class="turn"><div class="mic"><div class="in"><svg class="ic" ><use href="#i-mic"/></svg>듣고 있어요<span class="lvl"><i style="height:12px"></i><i style="height:22px"></i><i style="height:30px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:8px"></i></span></div></div><div class="aux"><span class="btn ghost sm off"><svg class="ic" ><use href="#i-bulb"/></svg>힌트</span><span class="btn ghost sm off">잘 모르겠어요</span></div></div></section>
+<footer class="promise"><b>선생님의 약속</b><span>미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요</span></footer>
+</div></div><figcaption><b>회화 대화</b><span>듣는 중인 말하기 단추 · 쌓인 대화 · 아이 말</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="② 밝은 책상 · 결과 크게 보기" data-cap="② 밝은 책상 · 결과"><div class="screen result th-desk cs-b" aria-hidden="true"><div class="bg"></div>
+<header class="band"><span class="fx tl p4"></span><div class="title">읽기</div><div class="meta">3단계 · 단원 2</div></header>
+<section class="res"><span class="fx tl p2"></span><span class="fx tr p1"></span><div class="res-l" style="position:relative">
+<div><h4>수업을 끝냈어요!</h4><p class="sub">수업 5 · 공원에서 놀아요</p></div>
+<div><h5>오늘 얻은 단어</h5><div class="wl"><div class="w"><b>park</b><span>공원</span></div><div class="w"><b>jump</b><span>뛰어오르다</span></div><div class="w"><b>fast</b><span>빠른</span></div><div class="w"><b>sleep</b><span>자다</span></div></div></div>
+<div class="res-unit"><div class="m-l"><span>단원 2 · 아는 단어</span><b>21/30 <span class="plus">+3</span></b></div><div class="bar"><i style="width:70%"></i><i class="new" style="left:60%;width:10%"></i></div></div>
+<div class="res-act"><span class="btn big">다음 수업</span><span class="btn ghost sm">홈</span><span class="report"><svg class="ic" ><use href="#i-flag"/></svg>이 문제 이상해요</span></div>
+</div><div class="res-r"><svg class="doodle" style="left:20px;top:40px;width:60px;height:60px;opacity:.9" viewBox="0 0 60 60"><path d="M30 6 L30 54 M6 30 L54 30 M13 13 L47 47 M47 13 L13 47"/></svg><svg class="doodle" style="right:20px;top:120px;width:70px;height:70px;opacity:.9" viewBox="0 0 70 70"><path d="M35 8 C50 8 60 20 60 34 C60 48 48 58 36 58 C24 58 16 50 16 40 C16 30 24 24 32 24 C40 24 46 30 46 36"/></svg><svg class="doodle" style="left:10px;top:400px;width:80px;height:30px;opacity:.9" viewBox="0 0 80 30"><path d="M4 20 C14 4 24 4 28 16 C32 28 44 28 48 14 C52 2 66 4 76 16"/></svg><div class="rew" style="left:100px;top:6px"><svg class="" viewBox="0 0 100 100" style="width:170px;height:170px"><use href="#star-hand"/></svg><span>별 1개</span></div><span style="position:absolute;left:60px;bottom:0;width:236px;height:274px"><svg class="" viewBox="0 0 200 232" style="width:100%;height:100%"><use href="#momo-hand-yay"/></svg></span><span style="position:absolute;right:0;top:250px;width:118px;height:112px;transform:rotate(-14deg)"><svg class="" viewBox="0 0 140 132" style="width:100%;height:100%"><use href="#tori-hand"/></svg></span></div></section>
+</div></div><figcaption><b>결과</b><span>별 · 오늘 얻은 단어 · 다음 수업</span></figcaption></figure></div></section>
+<section class="prop" id="s3" aria-labelledby="h3">
+<div class="prop-head"><span class="no">3</span><div><h2 id="h3">교실 칠판</h2><p>3D 선생님과 같은 '교실' 세계예요. 진초록 칠판에 두께 있는 자석 카드를 붙이고, 3D 결 마스코트가 함께해요.</p></div></div>
+<div class="prop-info"><div class="tbl"><table class="axes"><tbody><tr><th scope='row'>바탕 · 질감</th><td>칠판 결(진초록 + 분필 흰색), 분필 받침, 알파벳 줄</td></tr><tr><th scope='row'>앱의 얼굴</th><td>3D 결 마스코트 모모 · 토리</td></tr><tr><th scope='row'>밀도</th><td>지금: 정본 4절 홈 카드 그대로</td></tr><tr><th scope='row'>카드 꼴</th><td>자석 카드(두께 있는 둥근 모서리 카드)</td></tr><tr><th scope='row'>선생님 창 틀</th><td>사진 꼴(폴라로이드), 자석은 사진 테 위에</td></tr><tr><th scope='row'>색</th><td>진초록 + 분필 흰색, 카드는 한 단 밝은 색</td></tr></tbody></table></div>
+<div class="box"><div class="cset" role="group" aria-label="3번 시안 색 세트"><button type="button" class="cband" data-cs="cs-a" aria-pressed="false"><span class="lbl">지금 색<small>정본 값 그대로</small></span><span class="chips"><span class="chip"><i style="background:#FFE566"></i><b>읽기</b>#FFE566</span><span class="chip"><i style="background:#9FD8FF"></i><b>쓰기</b>#9FD8FF</span><span class="chip"><i style="background:#FFB3C7"></i><b>말하기</b>#FFB3C7</span><span class="chip"><i style="background:#C9F2B2"></i><b>회화</b>#C9F2B2</span><span class="chip"><i style="background:#27463A"></i><b>바탕</b>#27463A</span><span class="chip"><i style="background:#2B2B2B"></i><b>글자 · 단추</b>#2B2B2B</span></span></button><button type="button" class="cband" data-cs="cs-b" aria-pressed="true"><span class="lbl">한 단 밝은 색<small>채도 · 명도 한 단 위</small></span><span class="chips"><span class="chip"><i style="background:#FFDF37"></i><b>읽기</b>#FFDF37</span><span class="chip"><i style="background:#88CFFF"></i><b>쓰기</b>#88CFFF</span><span class="chip"><i style="background:#FF9EB9"></i><b>말하기</b>#FF9EB9</span><span class="chip"><i style="background:#ADF480"></i><b>회화</b>#ADF480</span><span class="chip"><i style="background:#27463A"></i><b>바탕</b>#27463A</span><span class="chip"><i style="background:#262626"></i><b>글자 · 단추</b>#262626</span></span></button></div><p class="cnote">띠를 누르면 이 시안의 세 화면 색이 바뀌어요.</p><p class="fill"><strong>빈 곳(D-1)을 채우는 법</strong>칠판 위에 알파벳 줄을 걸고 카드는 자석 카드로 화면 아래 끝까지 붙였어요. 결과는 왼쪽 종이에 내용을, 오른쪽 칠판에 분필 별과 모모 · 토리를 두었어요. 선생님의 약속 줄은 분필 글씨로 칠판에 적었어요.</p></div></div>
+<div class="shots"><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="③ 교실 칠판 · 홈 크게 보기" data-cap="③ 교실 칠판 · 홈"><div class="screen home th-chalk cs-b" aria-hidden="true"><div class="bg"></div><div class="tray"><i style="left:120px;width:64px;background:#fbfaf5"></i><i style="left:200px;width:46px;background:#fbe38a"></i><i style="left:262px;width:52px;background:#ffc2d3"></i><span class="e" style="right:150px"></span></div><div class="abc"><span style="--sc:var(--read)">Aa</span><span style="--sc:var(--write)">Bb</span><span style="--sc:var(--speak)">Cc</span><span style="--sc:var(--talk)">Dd</span><span style="--sc:var(--read)">Ee</span><span style="--sc:var(--write)">Ff</span><span style="--sc:var(--speak)">Gg</span><span style="--sc:var(--talk)">Hh</span><span style="--sc:var(--read)">Ii</span><span style="--sc:var(--write)">Jj</span><span style="--sc:var(--speak)">Kk</span><span style="--sc:var(--talk)">Ll</span><span style="--sc:var(--read)">Mm</span><span style="--sc:var(--write)">Nn</span><span style="--sc:var(--speak)">Oo</span></div><header class="band has-face"><span class="fx tr p2"></span><span class="face-band"><svg class="" viewBox="0 0 200 232"><use href="#momo3d"/></svg></span><div class="title">○○의 공부 보드</div><div class="band-r"><span class="stat"><svg class="ic flame" ><use href="#i-flame"/></svg>연속 5일</span><span class="stat"><svg class="ic star" ><use href="#i-star"/></svg>별 23개</span><span class="parent">부모<i></i></span></div></header><div class="cards">
+<article class="card c-read"><span class="fx t p1"></span><div class="c-head"><span class="c-area">읽기</span><svg class="c-ic" ><use href="#i-book"/></svg></div><div class="c-lv">3단계</div><div class="c-unit">단원 2 · 동물 친구들</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>21/30</b></div><div class="bar"><i style="width:70%"></i></div></div><div><div class="m-l"><span>최근 성적</span></div><div class="dots5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div><div class="c-week">이번 주 3일</div></div></div>
+<div class="c-foot"><div class="c-today done"><svg class="ic" ><use href="#i-check"/></svg>오늘 다 했어요</div><div class="btn">시작!</div></div></article>
+<article class="card c-write"><span class="fx t p2"></span><div class="c-head"><span class="c-area">쓰기</span><svg class="c-ic" ><use href="#i-pencil"/></svg></div><div class="c-lv">2단계</div><div class="c-unit">단원 4 · 과일과 물건</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>9/30</b></div><div class="bar"><i style="width:30%"></i></div></div><div><div class="m-l"><span>최근 성적</span></div><div class="dots5"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div><div class="c-week">이번 주 2일</div></div></div>
+<div class="c-foot"><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="btn">시작!</div></div></article>
+<article class="card c-speak"><span class="fx t p3"></span><div class="c-head"><span class="c-area">말하기</span><svg class="c-ic" ><use href="#i-speak"/></svg></div><div class="c-lv">3단계</div><div class="c-unit">단원 1 · 나의 하루</div>
+<div class="c-body"><div class="first"><svg class="mascot" viewBox="0 0 140 132"><use href="#tori3d"/></svg><p>첫 수업을 해 봐요</p></div></div><div class="c-foot"><div class="btn">시작!</div></div></article>
+<article class="card c-talk"><span class="fx t p4"></span><div class="c-head"><span class="c-area">회화</span><span class="c-tp"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></span></div><div class="c-lv">3단계</div><div class="c-unit">단원 2 · 맛있는 음식</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>12/30</b></div><div class="bar"><i style="width:40%"></i></div></div><div><div class="m-l"><span>끝낸 대화</span><b>3/6</b></div><div class="bar"><i style="width:50%"></i></div></div><div><div class="m-l"><span>친한 정도</span><b>4/10</b></div><div class="hearts"><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg></div></div><div class="c-week">이번 주 2일</div></div></div>
+<div class="c-foot"><div class="c-story">오늘 이야기<b>좋아하는 음식</b></div><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="btn">이야기 고르기</div></div></article>
+</div></div></div><figcaption><b>홈</b><span>영역 넷 · 이번 주 · 오늘 · 첫 수업</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="③ 교실 칠판 · 회화 대화 크게 보기" data-cap="③ 교실 칠판 · 회화 대화"><div class="screen talk th-chalk cs-b" aria-hidden="true"><div class="bg"></div><div class="tray"><i style="left:120px;width:64px;background:#fbfaf5"></i><i style="left:200px;width:46px;background:#fbe38a"></i><i style="left:262px;width:52px;background:#ffc2d3"></i><span class="e" style="right:150px"></span></div>
+<header class="band"><span class="fx tl p2"></span><div class="title">좋아하는 음식</div><div class="meta">회화 3단계 · 단원 2</div><div class="turns">말 주고받기 <b>6</b> / 15</div><div class="band-r"><span class="btn ghost sm">그만하기</span><span class="btn ghost sm">홈</span></div></header>
+<aside class="side"><figure class="tw tw-photo"><div class="frm"><span class="fx t p2"></span><div class="pic"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></div><figcaption class="jua">미나 선생님</figcaption></div><span class="tw-state"><svg class="ic" ><use href="#i-ear"/></svg></span></figure>
+<div class="note c-talk"><span class="fx t p1"></span><h4>오늘 이야기 목록</h4><ul><li>좋아하는 음식</li><li>싫어하는 음식</li><li>음식 색깔</li><li>음식 맛</li></ul></div></aside>
+<section class="chat"><span class="fx tl p1"></span><span class="fx tr p4"></span><div class="log">
+<div class="msg t gone"><p class="en">What food do you like?</p><p class="ko">어떤 음식 좋아해?</p></div>
+<div class="crow gone"><div class="msg c"><p class="en">I like chicken.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t old"><p class="en">Me too! Do you like carrots?</p><p class="ko">나도! 당근도 좋아해?</p></div>
+<div class="crow mine"><div class="msg c"><p class="en">Yes, I like carrot.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t now"><p class="en">Oh, you like carrots! What color are carrots?</p><p class="ko">아, 당근 좋아하는구나! 당근은 무슨 색이야?</p></div>
+</div><div class="turn"><div class="mic"><div class="in"><svg class="ic" ><use href="#i-mic"/></svg>듣고 있어요<span class="lvl"><i style="height:12px"></i><i style="height:22px"></i><i style="height:30px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:8px"></i></span></div></div><div class="aux"><span class="btn ghost sm off"><svg class="ic" ><use href="#i-bulb"/></svg>힌트</span><span class="btn ghost sm off">잘 모르겠어요</span></div></div></section>
+<footer class="promise"><b>선생님의 약속</b><span>미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요</span></footer>
+</div></div><figcaption><b>회화 대화</b><span>듣는 중인 말하기 단추 · 쌓인 대화 · 아이 말</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="③ 교실 칠판 · 결과 크게 보기" data-cap="③ 교실 칠판 · 결과"><div class="screen result th-chalk cs-b" aria-hidden="true"><div class="bg"></div><div class="tray"><i style="left:120px;width:64px;background:#fbfaf5"></i><i style="left:200px;width:46px;background:#fbe38a"></i><i style="left:262px;width:52px;background:#ffc2d3"></i><span class="e" style="right:150px"></span></div>
+<header class="band"><span class="fx tl p3"></span><div class="title">읽기</div><div class="meta">3단계 · 단원 2</div></header>
+<section class="res"><div class="res-l" style="position:relative"><span class="fx tl p2"></span><span class="fx tr p1"></span>
+<div><h4>수업을 끝냈어요!</h4><p class="sub">수업 5 · 공원에서 놀아요</p></div>
+<div><h5>오늘 얻은 단어</h5><div class="wl"><div class="w"><b>park</b><span>공원</span></div><div class="w"><b>jump</b><span>뛰어오르다</span></div><div class="w"><b>fast</b><span>빠른</span></div><div class="w"><b>sleep</b><span>자다</span></div></div></div>
+<div class="res-unit"><div class="m-l"><span>단원 2 · 아는 단어</span><b>21/30 <span class="plus">+3</span></b></div><div class="bar"><i style="width:70%"></i><i class="new" style="left:60%;width:10%"></i></div></div>
+<div class="res-act"><span class="btn big">다음 수업</span><span class="btn ghost sm">홈</span><span class="report"><svg class="ic" ><use href="#i-flag"/></svg>이 문제 이상해요</span></div>
+</div><div class="res-r"><div class="chalk-art"><svg class="chalk-star" viewBox="-30 -30 390 390"><g filter="url(#f-chalk)" fill="none" stroke="#F1EEE4" stroke-width="7" stroke-linecap="round"><path d="M315 165 L350 165"/><path d="M271 271 L296 296"/><path d="M165 315 L165 350"/><path d="M59 271 L34 296"/><path d="M15 165 L-20 165"/><path d="M59 59 L34 34"/><path d="M165 15 L165 -20"/><path d="M271 59 L296 34"/><circle cx="165" cy="165" r="132" stroke-dasharray="14 12"/></g><path d="M165 50 L192 115 L262 120 L208 166 L226 234 L165 197 L104 234 L122 166 L68 120 L138 115 Z" style="fill:var(--read)" stroke="#242424" stroke-width="5" stroke-linejoin="round"/><circle cx="165" cy="58" r="12" fill="#e0524a"/><circle cx="161" cy="54" r="4" fill="#fff" opacity=".7"/></svg><div class="chalk-lbl">별 1개</div><span style="position:absolute;left:14px;bottom:0;width:196px;height:228px"><svg class="" viewBox="0 0 200 232" style="width:100%;height:100%"><use href="#momo3d-yay"/></svg></span><span style="position:absolute;right:6px;bottom:96px;width:112px;height:106px;transform:rotate(-12deg)"><svg class="" viewBox="0 0 140 132" style="width:100%;height:100%"><use href="#tori3d"/></svg></span></div></div></section>
+</div></div><figcaption><b>결과</b><span>별 · 오늘 얻은 단어 · 다음 수업</span></figcaption></figure></div></section>
+<section class="prop" id="s4" aria-labelledby="h4">
+<div class="prop-head"><span class="no">4</span><div><h2 id="h4">그림책</h2><p>그림이 주인공이고 글은 포스터 크기예요. 홈은 그림책 쪽 넷이고, 회화와 결과는 펼친 책 두 쪽으로 그려요.</p></div></div>
+<div class="prop-info"><div class="tbl"><table class="axes"><tbody><tr><th scope='row'>바탕 · 질감</th><td>그림책 종이 결(크림 쪽 + 옅은 하늘빛 회색 바탕)</td></tr><tr><th scope='row'>앱의 얼굴</th><td>손그림 큰 장면(모모 · 토리가 영역마다 그 일을 해요)</td></tr><tr><th scope='row'>밀도</th><td>가장 낮게: 쪽마다 영역 · 단계 · 오늘 · 단추</td></tr><tr><th scope='row'>카드 꼴</th><td>쪽(페이지), 영역 색은 책갈피 띠와 이름표에만</td></tr><tr><th scope='row'>선생님 창 틀</th><td>둥근 초상(그림책 액자 꼴) + 방 단색</td></tr><tr><th scope='row'>색</th><td>파스텔 둘(크림 + 하늘빛 회색)로 줄임</td></tr></tbody></table></div>
+<div class="box"><div class="cset" role="group" aria-label="4번 시안 색 세트"><button type="button" class="cband" data-cs="cs-a" aria-pressed="true"><span class="lbl">지금 색<small>정본 값 그대로</small></span><span class="chips"><span class="chip"><i style="background:#FFE566"></i><b>읽기</b>#FFE566</span><span class="chip"><i style="background:#9FD8FF"></i><b>쓰기</b>#9FD8FF</span><span class="chip"><i style="background:#FFB3C7"></i><b>말하기</b>#FFB3C7</span><span class="chip"><i style="background:#C9F2B2"></i><b>회화</b>#C9F2B2</span><span class="chip"><i style="background:#FFF8EA"></i><b>바탕</b>#FFF8EA</span><span class="chip"><i style="background:#2B2B2B"></i><b>글자 · 단추</b>#2B2B2B</span></span></button><button type="button" class="cband" data-cs="cs-b" aria-pressed="false"><span class="lbl">한 단 밝은 색<small>채도 · 명도 한 단 위</small></span><span class="chips"><span class="chip"><i style="background:#FFDF37"></i><b>읽기</b>#FFDF37</span><span class="chip"><i style="background:#88CFFF"></i><b>쓰기</b>#88CFFF</span><span class="chip"><i style="background:#FF9EB9"></i><b>말하기</b>#FF9EB9</span><span class="chip"><i style="background:#ADF480"></i><b>회화</b>#ADF480</span><span class="chip"><i style="background:#FFF8EA"></i><b>바탕</b>#FFF8EA</span><span class="chip"><i style="background:#262626"></i><b>글자 · 단추</b>#262626</span></span></button></div><p class="cnote">띠를 누르면 이 시안의 세 화면 색이 바뀌어요. 그림책은 네 색을 책갈피 · 이름표에만 써서 차이가 작게 보여요.</p><p class="fill"><strong>빈 곳(D-1)을 채우는 법</strong>홈은 2 × 2 쪽으로 나눠 쪽마다 큰 그림이 반을 채워요. 회화와 결과는 펼친 책 두 쪽으로 그려 왼쪽은 그림, 오른쪽은 글이에요. 빈 바탕이 거의 남지 않아요.</p></div></div>
+<div class="shots"><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="④ 그림책 · 홈 크게 보기" data-cap="④ 그림책 · 홈"><div class="screen home th-book cs-a" aria-hidden="true"><div class="bg"></div><header class="band"><div class="title">○○의 공부 보드</div><div class="band-r"><span class="stat"><svg class="ic flame" ><use href="#i-flame"/></svg>연속 5일</span><span class="stat"><svg class="ic star" ><use href="#i-star"/></svg>별 23개</span><span class="parent">부모<i></i></span></div></header><div class="pages"><article class="pg c-read"><span class="rib"></span><div class="scene"><svg viewBox="0 0 200 232" style="left:46px;top:14px;width:148px;height:172px"><use href="#momo-hand"/></svg><svg viewBox="0 0 180 150" style="left:22px;top:128px;width:190px;height:158px"><use href="#il-book-hand"/></svg><svg viewBox="0 0 40 40" style="left:8px;top:22px;width:28px;height:28px"><use href="#dd-spark"/></svg><svg viewBox="0 0 40 40" style="left:200px;top:60px;width:22px;height:22px"><use href="#dd-spark"/></svg></div><div class="txt"><span class="pill">읽기</span><div class="lv">3단계</div><div class="one"><svg class="ic" ><use href="#i-check"/></svg>오늘 다 했어요</div><div class="sub">이번 주 3일</div><div class="btn">시작!</div></div></article><article class="pg c-write"><span class="rib"></span><div class="scene"><svg viewBox="0 0 140 132" style="left:10px;top:20px;width:126px;height:119px"><use href="#tori-hand"/></svg><svg viewBox="0 0 180 150" style="left:44px;top:118px;width:190px;height:158px"><use href="#il-pencil-hand"/></svg><svg viewBox="0 0 60 40" style="left:150px;top:30px;width:64px;height:44px"><use href="#dd-leaf"/></svg></div><div class="txt"><span class="pill">쓰기</span><div class="lv">2단계</div><div class="one"><svg class="ic o" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="sub">이번 주 2일</div><div class="btn">시작!</div></div></article><article class="pg c-speak"><span class="rib"></span><div class="scene"><svg viewBox="0 0 180 150" style="left:4px;top:6px;width:150px;height:125px"><use href="#il-speak-hand"/></svg><svg viewBox="0 0 200 232" style="left:60px;top:92px;width:170px;height:197px"><use href="#momo-hand-yay"/></svg></div><div class="txt"><span class="pill">말하기</span><div class="lv">3단계</div><div class="one">첫 수업을 해 봐요</div><div class="btn">시작!</div></div></article><article class="pg c-talk"><span class="rib"></span><div class="scene"><span class="ov" style="left:24px;top:22px;width:150px;height:170px"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></span><svg viewBox="0 0 140 132" style="left:122px;top:168px;width:110px;height:104px"><use href="#tori-hand"/></svg><svg viewBox="0 0 60 40" style="left:150px;top:24px;width:60px;height:40px"><use href="#dd-leaf"/></svg></div><div class="txt"><span class="pill">회화</span><div class="lv">3단계</div><div class="sub">오늘 이야기</div><div class="one">좋아하는 음식</div><div class="sub">이번 주 2일</div><div class="btn">이야기 고르기</div></div></article></div></div></div><figcaption><b>홈</b><span>영역 넷 · 이번 주 · 오늘 · 첫 수업</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="④ 그림책 · 회화 대화 크게 보기" data-cap="④ 그림책 · 회화 대화"><div class="screen talk th-book cs-a" aria-hidden="true"><div class="bg"></div><header class="band"><div class="title">좋아하는 음식</div><div class="meta">회화 3단계 · 단원 2</div><div class="turns">말 주고받기 <b>6</b> / 15</div><div class="band-r"><span class="btn ghost sm">그만하기</span><span class="btn ghost sm">홈</span></div></header><section class="spread"><div class="lp"><svg viewBox="0 0 60 40" style="position:absolute;left:24px;top:22px;width:70px;height:46px"><use href="#dd-leaf"/></svg><svg viewBox="0 0 60 40" style="position:absolute;right:26px;top:300px;width:64px;height:42px;transform:scaleX(-1)"><use href="#dd-leaf"/></svg><svg viewBox="0 0 40 40" style="position:absolute;right:40px;top:40px;width:26px;height:26px"><use href="#dd-spark"/></svg><figure class="tw tw-oval"><div class="ov"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></div><span class="tw-state"><svg class="ic" ><use href="#i-ear"/></svg></span><figcaption>미나 선생님</figcaption></figure><div class="mini-list"><h4>오늘 이야기 목록</h4><ul><li>좋아하는 음식</li><li>싫어하는 음식</li><li>음식 색깔</li><li>음식 맛</li></ul></div><p class="foot-line"><b>선생님의 약속</b> 미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요</p></div><div class="rp"><div class="log">
+<div class="msg t gone"><p class="en">What food do you like?</p><p class="ko">어떤 음식 좋아해?</p></div>
+<div class="crow gone"><div class="msg c"><p class="en">I like chicken.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t old"><p class="en">Me too! Do you like carrots?</p><p class="ko">나도! 당근도 좋아해?</p></div>
+<div class="crow mine"><div class="msg c"><p class="en">Yes, I like carrot.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t now"><p class="en">Oh, you like carrots! What color are carrots?</p><p class="ko">아, 당근 좋아하는구나! 당근은 무슨 색이야?</p></div>
+</div><div class="turn"><div class="mic"><div class="in"><svg class="ic" ><use href="#i-mic"/></svg>듣고 있어요<span class="lvl"><i style="height:12px"></i><i style="height:22px"></i><i style="height:30px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:8px"></i></span></div></div><div class="aux"><span class="btn ghost sm off"><svg class="ic" ><use href="#i-bulb"/></svg>힌트</span><span class="btn ghost sm off">잘 모르겠어요</span></div></div></div></section></div></div><figcaption><b>회화 대화</b><span>듣는 중인 말하기 단추 · 쌓인 대화 · 아이 말</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="④ 그림책 · 결과 크게 보기" data-cap="④ 그림책 · 결과"><div class="screen result th-book cs-a" aria-hidden="true"><div class="bg"></div><header class="band"><div class="title">읽기</div><div class="meta">3단계 · 단원 2</div></header><section class="spread rs"><div class="lp" style="display:block"><svg viewBox="0 0 100 100" style="position:absolute;left:120px;top:26px;width:180px;height:180px"><use href="#star-hand"/></svg><svg viewBox="0 0 40 40" style="position:absolute;left:52px;top:70px;width:34px;height:34px"><use href="#dd-spark"/></svg><svg viewBox="0 0 40 40" style="position:absolute;left:330px;top:150px;width:28px;height:28px"><use href="#dd-spark"/></svg><svg viewBox="0 0 200 232" style="position:absolute;left:70px;bottom:20px;width:270px;height:313px"><use href="#momo-hand-yay"/></svg><svg viewBox="0 0 140 132" style="position:absolute;right:24px;top:236px;width:120px;height:113px;transform:rotate(-12deg)"><use href="#tori-hand"/></svg><svg viewBox="0 0 60 40" style="position:absolute;left:22px;bottom:40px;width:80px;height:54px"><use href="#dd-leaf"/></svg></div><div class="rp"><div><h4>수업을 끝냈어요!</h4><p class="sub">수업 5 · 공원에서 놀아요</p><span class="star-pill"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg>별 1개</span></div><div><h5>오늘 얻은 단어</h5><div class="wl2"><div class="w"><b>park</b><span>공원</span></div><div class="w"><b>jump</b><span>뛰어오르다</span></div><div class="w"><b>fast</b><span>빠른</span></div><div class="w"><b>sleep</b><span>자다</span></div></div></div><div class="res-unit"><div class="m-l"><span>단원 2 · 아는 단어</span><b>21/30 <span class="plus">+3</span></b></div><div class="bar"><i style="width:70%"></i><i class="new" style="left:60%;width:10%"></i></div></div><div class="res-act"><span class="btn big">다음 수업</span><span class="btn ghost sm">홈</span><span class="report"><svg class="ic" ><use href="#i-flag"/></svg>이 문제 이상해요</span></div></div></section></div></div><figcaption><b>결과</b><span>별 · 오늘 얻은 단어 · 다음 수업</span></figcaption></figure></div></section>
+<section class="prop" id="s5" aria-labelledby="h5">
+<div class="prop-head"><span class="no">5</span><div><h2 id="h5">지금 + 손질</h2><p>지금 디자인을 그대로 두고 UX 검토 7.4 의 손질만 한 기준판이에요. 다른 시안이 얼마나 바꾸는지 견주는 잣대예요.</p></div></div>
+<div class="prop-info"><div class="tbl"><table class="axes"><tbody><tr><th scope='row'>바탕 · 질감</th><td>지금 코르크 + 종이 결 2% · 가장자리 그늘, 테 16px → 8px</td></tr><tr><th scope='row'>앱의 얼굴</th><td>없음</td></tr><tr><th scope='row'>밀도</th><td>지금: 정본 4절 홈 카드 그대로</td></tr><tr><th scope='row'>카드 꼴</th><td>포스트잇 그대로, 테이프는 영역 색으로 길이 · 각도를 조금씩 다르게</td></tr><tr><th scope='row'>선생님 창 틀</th><td>사진 꼴 손질: 테이프는 테 밖, 초상 둘레 12px, 방 단색</td></tr><tr><th scope='row'>색</th><td>지금 색</td></tr></tbody></table></div>
+<div class="box"><div class="cset" role="group" aria-label="5번 시안 색 세트"><button type="button" class="cband" data-cs="cs-a" aria-pressed="true"><span class="lbl">지금 색<small>정본 값 그대로</small></span><span class="chips"><span class="chip"><i style="background:#FFE566"></i><b>읽기</b>#FFE566</span><span class="chip"><i style="background:#9FD8FF"></i><b>쓰기</b>#9FD8FF</span><span class="chip"><i style="background:#FFB3C7"></i><b>말하기</b>#FFB3C7</span><span class="chip"><i style="background:#C9F2B2"></i><b>회화</b>#C9F2B2</span><span class="chip"><i style="background:#D2A86B"></i><b>바탕</b>#D2A86B</span><span class="chip"><i style="background:#2B2B2B"></i><b>글자 · 단추</b>#2B2B2B</span></span></button><button type="button" class="cband" data-cs="cs-b" aria-pressed="false"><span class="lbl">한 단 밝은 색<small>채도 · 명도 한 단 위</small></span><span class="chips"><span class="chip"><i style="background:#FFDF37"></i><b>읽기</b>#FFDF37</span><span class="chip"><i style="background:#88CFFF"></i><b>쓰기</b>#88CFFF</span><span class="chip"><i style="background:#FF9EB9"></i><b>말하기</b>#FF9EB9</span><span class="chip"><i style="background:#ADF480"></i><b>회화</b>#ADF480</span><span class="chip"><i style="background:#DDB277"></i><b>바탕</b>#DDB277</span><span class="chip"><i style="background:#262626"></i><b>글자 · 단추</b>#262626</span></span></button></div><p class="cnote">띠를 누르면 이 시안의 세 화면 색이 바뀌어요.</p><p class="fill"><strong>빈 곳(D-1)을 채우는 법</strong>결과는 큰 판 하나에 담고 홈 카드는 화면 아래 끝까지 늘려 빈 코르크를 줄였어요. 그림은 넣지 않았어요. 그 밖에 그림자 두 겹 · 굵은 아이콘 · 흐린 단추 꼴 · 하트 친한 정도를 손질했어요.</p></div></div>
+<div class="shots"><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="⑤ 지금 + 손질 · 홈 크게 보기" data-cap="⑤ 지금 + 손질 · 홈"><div class="screen home th-now cs-a" aria-hidden="true"><div class="bg"></div><header class="band"><span class="fx tl p1"></span><span class="fx tr p2"></span><div class="title">○○의 공부 보드</div><div class="band-r"><span class="stat"><svg class="ic flame" ><use href="#i-flame"/></svg>연속 5일</span><span class="stat"><svg class="ic star" ><use href="#i-star"/></svg>별 23개</span><span class="parent">부모<i></i></span></div></header><div class="cards">
+<article class="card c-read"><span class="fx t p1"></span><div class="c-head"><span class="c-area">읽기</span><svg class="c-ic" ><use href="#i-book"/></svg></div><div class="c-lv">3단계</div><div class="c-unit">단원 2 · 동물 친구들</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>21/30</b></div><div class="bar"><i style="width:70%"></i></div></div><div><div class="m-l"><span>최근 성적</span></div><div class="dots5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div><div class="c-week">이번 주 3일</div></div></div>
+<div class="c-foot"><div class="c-today done"><svg class="ic" ><use href="#i-check"/></svg>오늘 다 했어요</div><div class="btn">시작!</div></div></article>
+<article class="card c-write"><span class="fx t p2"></span><div class="c-head"><span class="c-area">쓰기</span><svg class="c-ic" ><use href="#i-pencil"/></svg></div><div class="c-lv">2단계</div><div class="c-unit">단원 4 · 과일과 물건</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>9/30</b></div><div class="bar"><i style="width:30%"></i></div></div><div><div class="m-l"><span>최근 성적</span></div><div class="dots5"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div><div class="c-week">이번 주 2일</div></div></div>
+<div class="c-foot"><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="btn">시작!</div></div></article>
+<article class="card c-speak"><span class="fx t p3"></span><div class="c-head"><span class="c-area">말하기</span><svg class="c-ic" ><use href="#i-speak"/></svg></div><div class="c-lv">3단계</div><div class="c-unit">단원 1 · 나의 하루</div>
+<div class="c-body"><div class="first"><svg class="big-ic" ><use href="#i-speak"/></svg><p>첫 수업을 해 봐요</p></div></div><div class="c-foot"><div class="btn">시작!</div></div></article>
+<article class="card c-talk"><span class="fx t p4"></span><div class="c-head"><span class="c-area">회화</span><span class="c-tp"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></span></div><div class="c-lv">3단계</div><div class="c-unit">단원 2 · 맛있는 음식</div>
+<div class="c-body"><div class="cells"><i class="d"><svg class="ic" ><use href="#i-check"/></svg></i><i class="now"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></div><div class="stats"><div><div class="m-l"><span>아는 단어</span><b>12/30</b></div><div class="bar"><i style="width:40%"></i></div></div><div><div class="m-l"><span>끝낸 대화</span><b>3/6</b></div><div class="bar"><i style="width:50%"></i></div></div><div><div class="m-l"><span>친한 정도</span><b>4/10</b></div><div class="hearts"><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class="on"><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg><svg class=""><use href="#i-heart"/></svg></div></div><div class="c-week">이번 주 2일</div></div></div>
+<div class="c-foot"><div class="c-story">오늘 이야기<b>좋아하는 음식</b></div><div class="c-today"><svg class="ic" ><use href="#i-circle"/></svg>오늘 아직이에요</div><div class="btn">이야기 고르기</div></div></article>
+</div></div></div><figcaption><b>홈</b><span>영역 넷 · 이번 주 · 오늘 · 첫 수업</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="⑤ 지금 + 손질 · 회화 대화 크게 보기" data-cap="⑤ 지금 + 손질 · 회화 대화"><div class="screen talk th-now cs-a" aria-hidden="true"><div class="bg"></div>
+<header class="band"><span class="fx tl p2"></span><div class="title">좋아하는 음식</div><div class="meta">회화 3단계 · 단원 2</div><div class="turns">말 주고받기 <b>6</b> / 15</div><div class="band-r"><span class="btn ghost sm">그만하기</span><span class="btn ghost sm">홈</span></div></header>
+<aside class="side"><figure class="tw tw-fixed"><div class="frm"><span class="fx t p0"></span><div class="pic"><svg class="" viewBox="0 0 220 220"><use href="#teacher"/></svg></div><figcaption>미나 선생님</figcaption></div><span class="tw-state"><svg class="ic" ><use href="#i-ear"/></svg></span></figure>
+<div class="note c-talk"><span class="fx t p4"></span><h4>오늘 이야기 목록</h4><ul><li>좋아하는 음식</li><li>싫어하는 음식</li><li>음식 색깔</li><li>음식 맛</li></ul></div></aside>
+<section class="chat"><span class="fx tl p1"></span><span class="fx tr p4"></span><div class="log">
+<div class="msg t gone"><p class="en">What food do you like?</p><p class="ko">어떤 음식 좋아해?</p></div>
+<div class="crow gone"><div class="msg c"><p class="en">I like chicken.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t old"><p class="en">Me too! Do you like carrots?</p><p class="ko">나도! 당근도 좋아해?</p></div>
+<div class="crow mine"><div class="msg c"><p class="en">Yes, I like carrot.</p></div><span class="av"><svg class="ic" ><use href="#i-smile"/></svg></span></div>
+<div class="msg t now"><p class="en">Oh, you like carrots! What color are carrots?</p><p class="ko">아, 당근 좋아하는구나! 당근은 무슨 색이야?</p></div>
+</div><div class="turn"><div class="mic"><div class="in"><svg class="ic" ><use href="#i-mic"/></svg>듣고 있어요<span class="lvl"><i style="height:12px"></i><i style="height:22px"></i><i style="height:30px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:8px"></i></span></div></div><div class="aux"><span class="btn ghost sm off"><svg class="ic" ><use href="#i-bulb"/></svg>힌트</span><span class="btn ghost sm off">잘 모르겠어요</span></div></div></section>
+<footer class="promise"><b>선생님의 약속</b><span>미나는 집 · 학교 · 전화번호를 묻지 않아요 · 부모님도 볼 수 있어요</span></footer>
+</div></div><figcaption><b>회화 대화</b><span>듣는 중인 말하기 단추 · 쌓인 대화 · 아이 말</span></figcaption></figure><figure class="shot"><div class="frame" role="button" tabindex="0" aria-label="⑤ 지금 + 손질 · 결과 크게 보기" data-cap="⑤ 지금 + 손질 · 결과"><div class="screen result th-now cs-a" aria-hidden="true"><div class="bg"></div>
+<header class="band"><span class="fx tl p3"></span><div class="title">읽기</div><div class="meta">3단계 · 단원 2</div></header>
+<section class="res"><span class="fx tl p2"></span><span class="fx tr p1"></span><div class="res-l" style="position:relative">
+<div><h4>수업을 끝냈어요!</h4><p class="sub">수업 5 · 공원에서 놀아요</p></div>
+<div><h5>오늘 얻은 단어</h5><div class="wl"><div class="w"><b>park</b><span>공원</span></div><div class="w"><b>jump</b><span>뛰어오르다</span></div><div class="w"><b>fast</b><span>빠른</span></div><div class="w"><b>sleep</b><span>자다</span></div></div></div>
+<div class="res-unit"><div class="m-l"><span>단원 2 · 아는 단어</span><b>21/30 <span class="plus">+3</span></b></div><div class="bar"><i style="width:70%"></i><i class="new" style="left:60%;width:10%"></i></div></div>
+<div class="res-act"><span class="btn big">다음 수업</span><span class="btn ghost sm">홈</span><span class="report"><svg class="ic" ><use href="#i-flag"/></svg>이 문제 이상해요</span></div>
+</div><div class="res-r"><div class="now-star"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><span>별 1개</span></div></div></section>
+</div></div><figcaption><b>결과</b><span>별 · 오늘 얻은 단어 · 다음 수업</span></figcaption></figure></div></section>
+<section class="howto prop" aria-labelledby="hh">
+<h2 id="hh" style="font-size:32px">보는 법</h2>
+<ol>
+<li>화면을 누르면 크게 열려요. 크게 연 화면은 아이패드 가로 화면(1180 × 820)과 같은 비율이에요. 왼쪽 · 오른쪽 화살표 키나 단추로 다음 화면으로 넘겨요.</li>
+<li>같은 화면끼리 시안을 오가며 보세요. 홈은 홈끼리, 결과는 결과끼리 견주면 차이가 잘 보여요.</li>
+<li>⑤는 지금 디자인에 손질만 한 기준판이에요. ⑤와 견주면 다른 시안이 바꾸는 폭이 보여요.</li>
+<li>시안마다 '지금 색 · 한 단 밝은 색' 띠를 누르면 그 시안의 세 화면 색이 바뀌어요.</li>
+<li>고를 때는 '②번'처럼 번호로 말씀해 주시거나, '바탕 ① · 얼굴 ② · 창 ③ · 색은 한 단 밝게'처럼 축마다 말씀해 주세요.</li>
+</ol>
+<h2 class="sec-h" style="margin-top:36px">축별 견줌 표</h2>
+<div class="tbl"><table class="axis-t"><thead><tr><th scope="col">축</th><th scope="col">갈래</th><th scope="col">시안</th><th scope="col">좋은 점</th><th scope="col">마음에 걸리는 점</th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="5">바탕 · 질감</th><td class='g'>코르크 깊이</td><td class='n'>①</td><td>지금 정한 포스트잇 보드를 이어서 정본을 바꾸지 않아요. 핀 · 종이 결 · 들림 그림자로 '진짜 보드'처럼 보여요.</td><td>갈색이 넓으면 무거워 보여서 카드 · 판을 크게 써야 해요.</td></tr><tr><td class='g'>밝은 책상</td><td class='n'>②</td><td>가장 밝고 깨끗해요. 공책에 쓰는 느낌이라 공부와 잘 어울려요.</td><td>'보드에 붙인다'는 느낌이 약해져요. 고르면 정본 4절의 '코르크판 바탕' 결정을 바꾸는 결정 기록 한 줄이 필요해요.</td></tr><tr><td class='g'>교실 칠판</td><td class='n'>③</td><td>3D 선생님과 같은 교실 세계가 되고, 짙은 바탕 위라 종이 색이 또렷해요.</td><td>화면 대부분이 짙어서 무거워 보일 수 있어요. 고르면 정본 결정을 바꾸는 한 줄이 필요해요.</td></tr><tr><td class='g'>그림책</td><td class='n'>④</td><td>그림이 주인공이라 가장 따뜻하고, 글이 커서 읽기 쉬워요.</td><td>화면마다 장면 그림이 필요해서 그림 일이 가장 많아요. 고르면 정본 결정을 바꾸는 한 줄이 필요해요.</td></tr><tr><td class='g'>지금 + 결 2%</td><td class='n'>⑤</td><td>고칠 것이 가장 적고, 다른 시안을 견주는 기준이 돼요.</td><td>질감과 그림이 거의 없어서 첫인상은 크게 달라지지 않아요(검토 7.7 참고 셈: 손질만으로는 디자인 6.5 근처).</td></tr><tr><th scope="rowgroup" rowspan="4">앱의 얼굴</th><td class='g'>3D 결 마스코트</td><td class='n'>① · ③</td><td>회화의 3D 선생님과 결이 같아서 앱 전체가 한 세계처럼 보여요.</td><td>잘 만들기가 가장 어려워요. 3D 느낌의 표정 · 자세를 여러 벌 그려야 해요.</td></tr><tr><td class='g'>손그림 마스코트</td><td class='n'>②</td><td>따뜻하고 친근해요. 표정과 자세를 늘리기 쉬워요.</td><td>3D 선생님과 결이 달라서 회화 화면에서 따로 놀 수 있어요.</td></tr><tr><td class='g'>손그림 큰 장면</td><td class='n'>④</td><td>화면마다 이야기가 있는 그림이 돼서 아이가 반가워해요.</td><td>장면을 화면 수만큼 그려야 해서 그림 일이 가장 많아요.</td></tr><tr><td class='g'>없음</td><td class='n'>⑤</td><td>그림 일이 없어요.</td><td>앱의 얼굴이 없다는 지적(D-2)이 그대로 남아요.</td></tr><tr><th scope="rowgroup" rowspan="3">밀도</th><td class='g'>지금</td><td class='n'>③ · ⑤</td><td>정본 4절 홈 표 그대로라 바꿀 결정이 없어요.</td><td>홈 카드가 아홉 요소라 관리 화면처럼 보여요(D-5).</td></tr><tr><td class='g'>낮게</td><td class='n'>① · ②</td><td>홈 카드가 영역 · 단계 · 오늘 · 단추 넷이라 한눈에 들어오고, 남는 자리에 그림이 들어가요.</td><td>막대 · 단원 칸을 수업 목록이나 부모 화면으로 옮겨야 해서 정본 4절 홈 표를 바꿔야 해요(R7 · D-5).</td></tr><tr><td class='g'>가장 낮게</td><td class='n'>④</td><td>쪽마다 할 일 하나만 보여서 가장 쉬워요.</td><td>홈이 2 × 2 쪽이라 한 화면에 덜 들어가고, 정본 4절 홈 표를 바꿔야 해요.</td></tr><tr><th scope="rowgroup" rowspan="4">카드 꼴</th><td class='g'>포스트잇</td><td class='n'>① · ⑤</td><td>지금 결정 그대로예요.</td><td>꼴이 단순해서 질감 · 그림자로 살려야 해요.</td></tr><tr><td class='g'>둥근 종이</td><td class='n'>②</td><td>부드럽고 아이 앱답게 보여요.</td><td>'포스트잇' 느낌은 조금 약해져요.</td></tr><tr><td class='g'>자석 카드</td><td class='n'>③</td><td>두께가 있어 단단하고 누르고 싶게 보여요.</td><td>칠판 바탕과 함께일 때 가장 어울려요.</td></tr><tr><td class='g'>쪽(페이지)</td><td class='n'>④</td><td>책장을 넘기는 느낌이라 수업 흐름과 맞아요.</td><td>쪽이 커서 영역 넷을 한 줄에 둘 수 없어요.</td></tr><tr><th scope="rowgroup" rowspan="3">선생님 창 틀</th><td class='g'>둥근 초상 + 방 단색</td><td class='n'>① · ④</td><td>머리가 잘리거나 테이프에 가려지지 않아요(D-4). 홈 카드의 작은 초상과 꼴이 같아요.</td><td>어깨 아래 몸짓은 덜 보여요.</td></tr><tr><td class='g'>둥근 창</td><td class='n'>②</td><td>상반신이 보여서 고개 · 손짓이 잘 보이고, 창 너머 선생님 방 느낌이 나요.</td><td>창이 커야 해서 옆 칸 자리가 조금 줄어요.</td></tr><tr><td class='g'>사진 꼴</td><td class='n'>③ · ⑤</td><td>지금 구현과 가장 가까워서 고칠 것이 적어요.</td><td>테이프 · 자석을 사진 테 밖으로 옮겨 머리를 가리지 않게 해야 해요.</td></tr><tr><th scope="rowgroup" rowspan="2">색</th><td class='g'>지금 색</td><td class='n'>① · ④ · ⑤</td><td>눈이 편하고 지금 화면과 같아요.</td><td>파스텔이 평면으로만 쓰이면 밋밋해 보여요.</td></tr><tr><td class='g'>한 단 밝은 색</td><td class='n'>② · ③</td><td>더 또렷하고 밝아 보여요. 검은 글자와 대비는 7:1 넘게 넉넉해요.</td><td>노랑 · 연두는 눈에 띄게 진해지고 하늘 · 분홍은 조금만 바뀌어요. 하늘 · 분홍은 이미 화면이 낼 수 있는 가장 짙은 색에 가까워서예요.</td></tr></tbody></table></div>
+<p class="foot">근거: UX 검토 7절(7.3 지적 D-1 ~ D-15 · 7.4 손질 · 7.6 시안 축과 다섯 시안)과 5절 R9 · R10 · R11 · R13, 정본 4절(화면). 2026-10-29 표본이에요.</p>
+</section>
+</main>
+<dialog class="zoom" id="zoom" aria-label="화면 크게 보기"><div class="zin">
+<div class="zstage" id="zstage"></div>
+<div class="zbar"><button class="zbtn" type="button" id="zprev" aria-label="앞 화면">←</button><span class="zcap" id="zcap"></span><button class="zbtn" type="button" id="znext" aria-label="다음 화면">→</button><button class="zbtn" type="button" id="zclose">닫기</button></div>
+</div></dialog>
+<script>
+(function(){
+  var frames=[].slice.call(document.querySelectorAll('.frame'));
+  function fit(f){var w=f.clientWidth;if(w)f.style.setProperty('--k',(w/1180).toFixed(5));}
+  frames.forEach(fit);
+  if('ResizeObserver' in window){var ro=new ResizeObserver(function(es){es.forEach(function(e){fit(e.target);});});frames.forEach(function(f){ro.observe(f);});}
+  else{window.addEventListener('resize',function(){frames.forEach(fit);});}
+  [].slice.call(document.querySelectorAll('.cset')).forEach(function(g){
+    var sec=g.closest('.prop');var bs=[].slice.call(g.querySelectorAll('button[data-cs]'));
+    bs.forEach(function(b){b.addEventListener('click',function(){
+      bs.forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+      [].slice.call(sec.querySelectorAll('.screen')).forEach(function(s){s.classList.remove('cs-a','cs-b');s.classList.add(b.getAttribute('data-cs'));});
+    });});
+  });
+  var dlg=document.getElementById('zoom'),stage=document.getElementById('zstage'),cap=document.getElementById('zcap'),idx=0;
+  if(!dlg||typeof dlg.showModal!=='function')return;
+  function size(){var W=window.innerWidth-24,H=window.innerHeight-96;var k=Math.min(W/1180,H/820,1.4);stage.style.width=Math.round(1180*k)+'px';stage.style.height=Math.round(820*k)+'px';stage.style.setProperty('--k',k.toFixed(5));}
+  function show(i){idx=(i+frames.length)%frames.length;var f=frames[idx];stage.innerHTML='';stage.appendChild(f.querySelector('.screen').cloneNode(true));cap.textContent=f.getAttribute('data-cap');size();}
+  frames.forEach(function(f,i){
+    f.addEventListener('click',function(){show(i);dlg.showModal();});
+    f.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i);dlg.showModal();}});
+  });
+  document.getElementById('zprev').addEventListener('click',function(){show(idx-1);});
+  document.getElementById('znext').addEventListener('click',function(){show(idx+1);});
+  document.getElementById('zclose').addEventListener('click',function(){dlg.close();});
+  dlg.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')show(idx-1);if(e.key==='ArrowRight')show(idx+1);});
+  dlg.addEventListener('click',function(e){if(e.target===dlg||e.target.classList.contains('zin'))dlg.close();});
+  dlg.addEventListener('close',function(){var f=frames[idx];if(f)f.focus();});
+  window.addEventListener('resize',function(){if(dlg.open)size();});
+})();
+</script>
+</body></html>

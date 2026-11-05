@@ -1,6 +1,6 @@
-# 브리프: 사용자 경험(UX) 검토(design-reviewer · Fable · max, 2026-10-29 21:2x)
+# 브리프: 사용자 경험(UX) 검토(design-reviewer · Fable · max, 2026-10-29 17:0x)
 
-요청자(21:2x): "ui ux 개선도 동시에 하자. 사용자 경험이 너무 별로였어". 10-26 iPad 사파리 3D 프리뷰 시험의 체감(인사만 반복 · 진행하다 인식 안 됨 · 단어 말하기가 말하기 영역과 차이 없음 · 대화 느낌 없음)과 10-29 "말하는 게 보이긴 해야" 가 배경이다. 10-23 전체 디자인 리뷰 2(`.superpowers/sdd/2026-10-16-1-가-구현/review-design-all-2.md`, 시각 일관성 · 크기 · 간격)는 끝났으므로 **이번은 '경험'** — 흐름 · 반응 · 기다림 · 오류와 막힘 · 말 걸기 · 아이가 지금 무엇을 해야 하는지 아는가 — 을 본다. 읽기 전용. 고치지 않는다. 새 변경 단위 'UI · UX 개선'의 첫 걸음이다.
+요청자(17:0x): "ui ux 개선도 동시에 하자. 사용자 경험이 너무 별로였어". 10-26 iPad 사파리 3D 프리뷰 시험의 체감(인사만 반복 · 진행하다 인식 안 됨 · 단어 말하기가 말하기 영역과 차이 없음 · 대화 느낌 없음)과 10-29 "말하는 게 보이긴 해야" 가 배경이다. 10-23 전체 디자인 리뷰 2(`.superpowers/sdd/2026-10-16-1-가-구현/review-design-all-2.md`, 시각 일관성 · 크기 · 간격)는 끝났으므로 **이번은 '경험'** — 흐름 · 반응 · 기다림 · 오류와 막힘 · 말 걸기 · 아이가 지금 무엇을 해야 하는지 아는가 — 을 본다. 읽기 전용. 고치지 않는다. 새 변경 단위 'UI · UX 개선'의 첫 걸음이다.
 
 ## 입력(절대 경로)
 - 화면 사진 243장: `/private/tmp/claude-501/-Users-hikaru-workspace-momo-english-academy/3b649d12-fbb9-4aea-bf0d-1f8734a04e7d/scratchpad/e2e-photos/`(CI 25차 run 39913399098, 1e44de5 — 3D 선생님 프리뷰 판. 이름 꼴 `<화면>-<상태>-<portrait|landscape>.png`, 회화는 teacher-* · talk-* · conversation-*, 첫 실행 first-run-* · setup-*, 홈 home-*, 목록 lesson-list-*, 세션 reading-* · writing-* · speaking-*, 배치 placement-*, 막힘 mic-* · blocked-* 등 — `ls` 로 목록을 먼저 보고 흐름마다 대표 사진을 고른다). 사진은 Read 로 본다(한 번에 너무 많이 열지 말고 흐름마다 6~10장).

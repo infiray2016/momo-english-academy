@@ -1,6 +1,6 @@
-# 브리프: 학습 평가 체계 델타 spec(규격 설계자 · Opus · xhigh, 2026-10-29 19:2x)
+# 브리프: 학습 평가 체계 델타 spec(규격 설계자 · Opus · xhigh, 2026-10-29 16:2x)
 
-승인된 intent `intent/2026-10-29-학습-평가-체계/intent.md`(4판, approved 2026-10-29 19:1x, C152 · C154~C160)를 받아 `intent/2026-10-29-학습-평가-체계/spec.md`(델타)를 쓴다. 절차와 템플릿은 `.claude/skills/spec-design/SKILL.md` 를 읽고 그대로 따른다. 정본은 본 저장소(문서 가지) `specs/`(지도 `specs/README.md`). 정본 · 코드 · 시드는 고치지 않는다(델타만 적는다). 상태 draft.
+승인된 intent `intent/2026-10-29-학습-평가-체계/intent.md`(4판, approved 2026-10-29 16:1x, C152 · C154~C160)를 받아 `intent/2026-10-29-학습-평가-체계/spec.md`(델타)를 쓴다. 절차와 템플릿은 `.claude/skills/spec-design/SKILL.md` 를 읽고 그대로 따른다. 정본은 본 저장소(문서 가지) `specs/`(지도 `specs/README.md`). 정본 · 코드 · 시드는 고치지 않는다(델타만 적는다). 상태 draft.
 
 ## 입력(절대 경로 /Users/hikaru/workspace/momo-english-academy)
 - intent 4판(위) · 요청자 검토 원문 `docs/research/2026-10-29-학습-단계-평가-적용안-요청자-검토-원문.md` · 적용안 `.superpowers/sdd/2026-10-23-학습-평가-분석/apply-report.md`(3절 평가 체계 · 4절 데이터 · 5.1 바뀌는 곳 · 6.2 컨트롤러 결정 9 — 이 가운데 K-5 · K-6 처럼 교육적 평가 기준은 '요청자 승인 대상'으로 표시) · 분석 `eval-report.md`(유지 12 · 보완 14) · 조사 `docs/research/2026-10-23-cefr-j-official.md`(이용 조건 · 판)
