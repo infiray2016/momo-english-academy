@@ -3,7 +3,8 @@
 // task-mic-probe-analysis-report 5.1 P1~P6 · 조사 '추가 조사' 절). fix 3: 쉼 45 · 90초 값, S 한 세션 계속 듣기 · S2 세션 중 읽기 · T abort 로
 // 끝낸 뒤(분석 10.8 Q1 · Q3 · Q4 · Q5 — 분석의 K · K2 가 여기의 S · S2). fix 4: 자동 측정 순서(autoPlanOf)와 서버 로그 몸(recordLogOf ·
 // summaryLogOf · redactLogBody — 들은 글은 길이만), I 의 앱 꼴 읽기(빠르기 0.8 · 문장마다 · 사이 700ms, 검토 M-a). fix 5(분석 10.16): 'speak-call'
-// 사건(speak() 직전의 speaking · pending — iOS 가 누름 밖 첫 speak() 를 사건 없이 버리는지 가름), 세션 중 읽기 앞 · 뒤 결과 칸. 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
+// 사건(speak() 직전의 speaking · pending — iOS 가 누름 밖 첫 speak() 를 사건 없이 버리는지 가름), 세션 중 읽기 앞 · 뒤 결과 칸.
+// fix 6(분석 10.17): 전략 W3 · W10 · W25 '버림 → 진짜'(버림 세션 n초 뒤 진짜 세션), '읽기 제약 풀기' 결과 칸, WebAudio 소리 사건. 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
 // DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다. 시각(at)은 그 쪽을 연 동안의 performance.now() 이고,
 // 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 기기 안(localStorage)에만 두고 복사할 때만 기기 밖(클립보드)으로 나간다.
 // 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음. K 의 WebAudio 는 재생만).
@@ -43,6 +44,9 @@ export const STRATEGIES = [
   "S2",
   "T",
   "T-next",
+  "W3",
+  "W10",
+  "W25",
 ] as const;
 export type Strategy = (typeof STRATEGIES)[number];
 
@@ -52,6 +56,24 @@ export const BUTTON_STRATEGIES: readonly Strategy[] = STRATEGIES.filter(
 );
 /** 한 세션을 멈추지 않고 듣는 전략(S · S2) — 자동 멈춤 없이 SESSION_MAX_MS 상한 · '멈추기'로만 끝난다. */
 export const CONTINUOUS_SESSION: readonly Strategy[] = ["S", "S2"];
+
+/** W: 버림 세션 길이(ms). W 가 아니면 undefined(분석 10.17 — 죽은 세션을 10초 넘게 열면 다음 세션이 살아남 3/3). */
+export const DECOY_MS: Partial<Record<Strategy, number>> = {
+  W3: 3_000,
+  W10: 10_000,
+  W25: 25_000,
+};
+export const DECOY_STRATEGIES = Object.keys(DECOY_MS) as Strategy[];
+/** W: 버림 세션의 시작 알림이 이보다 늦으면 살아 있는 세션으로 본다(살아 있는 띠 278ms 이상 · 못 듣는 띠 200ms 안 사이). abort 하고 곧바로 진짜를 연다. */
+export const DECOY_ALIVE_MS = 250;
+/** W: 버림 세션을 stop 한 뒤(end 뒤) 진짜 세션을 열기까지. */
+export const DECOY_GAP_MS = 1_000;
+/** W 읽기 켬: 버림 세션 start 뒤 이 때 짧은 문장을 읽는다. */
+export const DECOY_SPEAK_AT_MS = 2_000;
+/** WebAudio 소리 단추(V-4): 발진기 높이 · 음량 · 길이(살아 있는 세션 중 WebAudio 재생이 되는지 — 들리는 크기). */
+export const BEEP_HZ = 440;
+export const BEEP_GAIN = 0.2;
+export const BEEP_MS = 1_000;
 
 /** L 전략이 두는 audioSession.type. L 이 아니면 undefined. */
 export function sessionTypeOf(strategy: Strategy): SessionType | undefined {
@@ -151,6 +173,8 @@ export const EVENT_TYPES = [
   "hidden",
   "visible",
   "webaudio-start",
+  "webaudio-beep",
+  "decoy-alive",
   "session-type",
   "session-restore",
 ] as const;
@@ -245,6 +269,21 @@ const recordSchema = z.object({
   /** 자동 측정(fix 4)의 회차 표지와 차례(0 부터). 손으로 누른 기록은 null. */
   autoRun: z.string().nullable().default(null),
   autoStep: z.number().int().nonnegative().nullable().default(null),
+  /** W: 버림 세션 길이 · 읽기 켬 여부. W 가 아니면 null. 시도 1(attempt 0)이 버림, 시도 2 가 진짜다. */
+  decoy: z
+    .object({ lengthMs: z.number(), speak: z.boolean() })
+    .nullable()
+    .default(null),
+  /** 앞 듣기 끝(쪽 연 때) 뒤에 누른 '읽기 제약 풀기'(V-1): 누른 뒤 이 듣기 누름까지 ms · 시작 · 끝 알림 · 오류. 없으면 null. */
+  unlockBefore: z
+    .object({
+      ageMs: z.number(),
+      started: z.boolean(),
+      ended: z.boolean(),
+      error: z.string().nullable(),
+    })
+    .nullable()
+    .default(null),
 });
 export type ProbeRecord = z.infer<typeof recordSchema>;
 
@@ -338,6 +377,22 @@ export type ProbeRow = {
     finalsAfter: number;
     echoed: boolean;
   } | null;
+  /**
+   * W: 버림 세션(시도 1)의 길이 · as · 살아 있음(as > 250 으로 abort) · 버림 중 읽기 부름 · 시작 알림 수와, 진짜 세션(시도 2)의 as · 성공.
+   * 진짜가 열리지 않았으면 realAs · realSuccess 는 null. W 가 아니면 null.
+   */
+  decoy: {
+    lengthMs: number;
+    speak: boolean;
+    as: number | null;
+    alive: boolean;
+    speakCalls: number;
+    speakStarts: number;
+    realAs: number | null;
+    realSuccess: boolean | null;
+  } | null;
+  /** '읽기 제약 풀기'(V-1)를 이 듣기 앞에 했는가와 그 결과. */
+  unlockBefore: ProbeRecord["unlockBefore"];
   error: { ms: number; code: string; message: string } | null;
   end: number | null;
   /** D · F · H · I: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출 ms(F · H · I 는 누르기까지 기다린 시간, I 는 쉼도 포함). */
@@ -476,8 +531,10 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     finalMs: results
       .filter((e) => e.final === true)
       .map((e) => relMs(record, last, e) ?? 0),
+    decoy: decoyOf(record),
+    unlockBefore: record.unlockBefore,
     sessionSpeak:
-      midAnchor === undefined
+      midAnchor === undefined || !CONTINUOUS_SESSION.includes(record.strategy)
         ? null
         : {
             calls: midCalls.length,
@@ -515,6 +572,44 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     heardText: record.attempts[last]?.lastText ?? "",
     success: isSuccess(record),
     interimOnly: isInterimOnly(record),
+  };
+}
+
+/** W 의 버림 · 진짜 칸(행 값 decoy). */
+function decoyOf(record: ProbeRecord): ProbeRow["decoy"] {
+  if (record.decoy === null) return null;
+  const startOf = (attempt: number) => record.attempts[attempt]?.startCallAt;
+  const decoyStart = startOf(0);
+  const realStart = startOf(1);
+  const asOf = (attempt: number) =>
+    relMs(
+      record,
+      attempt,
+      firstOf(record, attempt, (e) => e.type === "audiostart"),
+    );
+  const duringDecoy = (type: ProbeEventType) =>
+    record.events.filter(
+      (e) =>
+        e.type === type &&
+        e.utterance === "line" &&
+        decoyStart !== undefined &&
+        e.at > decoyStart &&
+        (realStart === undefined || e.at < realStart),
+    ).length;
+  return {
+    lengthMs: record.decoy.lengthMs,
+    speak: record.decoy.speak,
+    as: asOf(0),
+    alive: record.events.some((e) => e.type === "decoy-alive"),
+    speakCalls: duringDecoy("speak-call"),
+    speakStarts: duringDecoy("speak-start"),
+    realAs: realStart === undefined ? null : asOf(1),
+    realSuccess:
+      realStart === undefined
+        ? null
+        : record.events.some(
+            (e) => e.type === "result" && e.final === true && e.attempt === 1,
+          ),
   };
 }
 
@@ -648,6 +743,8 @@ export const ROW_COLUMNS = [
   "final(길이)",
   "final ms",
   "세션 중 읽기(부름·시작 / 앞·뒤 결과 · 뒤 final · 들림)",
+  "버림(길이·as·살아 있음·읽기 부름/시작) → 진짜(as·결과)",
+  "앞 제약 풀기(누른 뒤 ms·시작·끝)",
   "오류",
   "end",
   "읽기 끝 뒤",
@@ -687,6 +784,12 @@ export function rowCells(row: ProbeRow): string[] {
     row.sessionSpeak === null
       ? "-"
       : `${row.sessionSpeak.calls}·${row.sessionSpeak.started} / ${row.sessionSpeak.before}·${row.sessionSpeak.after} · ${row.sessionSpeak.finalsAfter} · ${yesNo(row.sessionSpeak.echoed)}`,
+    row.decoy === null
+      ? "-"
+      : `${row.decoy.lengthMs / 1000}s·${cell(row.decoy.as)}·${yesNo(row.decoy.alive)}·${row.decoy.speak ? `${row.decoy.speakCalls}/${row.decoy.speakStarts}` : "끔"} → ${cell(row.decoy.realAs)}·${row.decoy.realSuccess === null ? "-" : row.decoy.realSuccess ? "성공" : "실패"}`,
+    row.unlockBefore === null
+      ? "-"
+      : `${round(row.unlockBefore.ageMs)}·${yesNo(row.unlockBefore.started)}·${yesNo(row.unlockBefore.ended)}${row.unlockBefore.error === null ? "" : `·${row.unlockBefore.error}`}`,
     row.error === null
       ? "-"
       : `${row.error.code}${row.error.message ? ` "${row.error.message}"` : ""} @${row.error.ms}`,
@@ -733,6 +836,7 @@ export function copyTextOf(
     "- ms 는 그 시도의 start 호출 기준. as audiostart · ss soundstart · sp speechstart",
     "- 앞 끝 뒤 · 앞 멈춤 · 사이 읽기: 같은 쪽의 앞 듣기 end → 첫 start 호출 ms · 앞 듣기가 끝난 까닭(·앱이 끝낸 방법 stop · abort) · 그 사이 읽기(무음 포함) 여부",
     "- S · S2 는 한 세션(60초 상한)이라 final ms 가 여럿. 세션 중 읽기: speak() 부른 수 · 시작 알림 수 / 첫 부름 앞 · 뒤 결과 수 · 뒤 final 수 · 들은 글에 읽은 문장 낱말이 들었는지(부름보다 시작이 적으면 iOS 가 버린 것)",
+    "- 버림 → 진짜(W): 버림 세션 길이 · 버림 as · 살아 있음(as > 250 이면 abort 하고 곧바로 진짜) · 버림 중 읽기 부름/시작(끔이면 '끔') → 진짜 as · 진짜 결과. 앞 제약 풀기: '읽기 제약 풀기'를 누른 뒤 이 듣기 누름까지 ms · 시작 · 끝 알림",
     "- 읽기 끝 뒤: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F · H · I 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
     "",
     tableLine(SUMMARY_COLUMNS),

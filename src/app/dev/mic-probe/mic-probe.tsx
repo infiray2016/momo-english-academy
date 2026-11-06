@@ -11,6 +11,8 @@
 // (/api/dev/mic-probe-log — 서버 console 만, 들은 글은 길이만)으로 보낸다. I 는 앱처럼 문장마다 0.8 빠르기 · 사이 700ms 로 읽는다(검토 M-a).
 // fix 5(분석 10.16 — iOS 는 누름 안에서 한 번도 읽지 않은 쪽의 speak() 를 사건 없이 버린다): S · S2 누름 안에서 무음 읽기를 먼저 하고,
 // S 세션 중에는 '세션 중 읽기' 단추로 누름 안에서 읽으며, speak() 직전마다 'speak-call'(speaking · pending)을 남긴다.
+// fix 6(분석 10.17): 무음 읽기는 '읽기 제약 풀기' 단추로 빼고(S · S2 는 start 만 — 캡처 시작과 겹침 제거), '세션 중 읽기'는 줄을 비운 뒤 읽으며,
+// W3 · W10 · W25 는 누름 안에서 버림 세션을 열고 n초 뒤 stop → 1초 뒤 진짜 세션(누름 밖 타이머), WebAudio 소리 1초 단추를 둔다.
 // 단추 한 번 = 듣기 한 번 = 표 한 줄. 기록은 localStorage 에만 두어 새로 고침 · 새 탭 · 사파리 종료를 넘어 잇고, 탭끼리는 저장소 알림으로 맞춘다.
 // DB 에 쓰지 않고 녹음하지 않는다(7절 — getUserMedia · MediaRecorder 없음, K 는 0 음량 재생만). audioSession 은 L 만 바꾸고 끝나면 되돌린다.
 import { useEffect, useRef, useState } from "react";
@@ -20,9 +22,16 @@ import {
   type AutoStep,
   appendRecord,
   autoPlanOf,
+  BEEP_GAIN,
+  BEEP_HZ,
+  BEEP_MS,
   BUTTON_STRATEGIES,
   CONTINUOUS_SESSION,
   copyTextOf,
+  DECOY_ALIVE_MS,
+  DECOY_GAP_MS,
+  DECOY_MS,
+  DECOY_SPEAK_AT_MS,
   deviceKindOf,
   END_SILENCE_MS,
   END_WAIT_MS,
@@ -199,6 +208,7 @@ type Status =
   | { kind: "pausing"; strategy: Strategy }
   | { kind: "await-press"; strategy: Strategy }
   | { kind: "listening"; strategy: Strategy; attempt: number }
+  | { kind: "decoy"; strategy: Strategy; seconds: number }
   | { kind: "no-recognition" };
 
 type Run = {
@@ -209,6 +219,8 @@ type Run = {
   silenceTimer: number | null;
   stopping: boolean;
   restarting: boolean;
+  /** 다시 열기 전에 end 뒤 기다릴 ms(W 의 버림 stop 뒤 1초, 그 밖 0). */
+  restartDelayMs: number;
   /** F · G · H · I: '지금 눌러 말하기'를 받을 때. */
   awaitingPress: boolean;
   /** L: 끝나면 audioSession.type 을 되돌린다. */
@@ -225,6 +237,16 @@ type RunnerContext = {
   navigationType: string;
   resetStep: () => ResetStep;
   teacherLine: TeacherLine | null;
+  /** W 읽기 켬 · 끔(누를 때의 값이 기록에 붙는다). */
+  decoySpeak: () => boolean;
+};
+
+/** '읽기 제약 풀기'(V-1)의 결과(화면 · 다음 기록 칸). */
+export type UnlockLog = {
+  at: number;
+  started: boolean;
+  ended: boolean;
+  error: string | null;
 };
 
 type RunnerEvents = {
@@ -234,6 +256,8 @@ type RunnerEvents = {
   session: (type: string | null) => void;
   /** 듣기가 끝난 때(performance.now — 기록의 '앞 끝 뒤'와 같은 기준). 쉼 타이머가 쓴다. */
   lastEnd: (at: number) => void;
+  unlock: (log: UnlockLog) => void;
+  beep: (state: string) => void;
 };
 
 type SpeakOptions = {
@@ -281,6 +305,8 @@ class ProbeRunner {
   private lastRec: Recognition | null = null;
   private audio: { ctx: AudioContext; osc: OscillatorNode } | null = null;
   private auto: AutoState | null = null;
+  /** 앞 듣기 끝 뒤에 누른 '읽기 제약 풀기'(다음 기록에 붙이고 끝에서 지운다). */
+  private unlockLog: UnlockLog | null = null;
 
   constructor(
     private readonly ctx: RunnerContext,
@@ -304,18 +330,7 @@ class ProbeRunner {
     const sessionType = sessionTypeOf(strategy);
     if (sessionType !== undefined) this.setSessionType(run, sessionType);
     cancelSpeech();
-    if (CONTINUOUS_SESSION.includes(strategy)) {
-      // S · S2: 같은 누름 안에서 앱과 같은 무음 읽기를 먼저 한다(읽기 제약 풀기 — 세션 중 읽기가 버려지지 않게, 분석 10.16 U-1)
-      const synth = synthOf();
-      if (synth !== undefined) {
-        this.speak(
-          run,
-          synth,
-          { text: UNLOCK_TEXT, utterance: "unlock", volume: UNLOCK_VOLUME },
-          undefined,
-        );
-      }
-    }
+    // S · S2 의 누름 안 무음 읽기는 fix 6 에서 '읽기 제약 풀기' 단추로 뺐다(캡처 시작과 겹친 읽기가 멈추는지 가르려고, 분석 10.17 V-1)
     this.on.status({ kind: "listening", strategy, attempt: 1 });
     this.startAttempt(run);
   }
@@ -332,7 +347,97 @@ class ProbeRunner {
       return;
     }
     this.push(run, { type: "press", at: now(), attempt: run.attempt });
+    // 줄을 비운 뒤 읽는다(V-2 — 앞 읽기가 줄에 남아 뒤 읽기가 밀리지 않게). 비우기 전 상태를 남긴다
+    const synth = synthOf();
+    this.push(run, {
+      type: "speak-cancel",
+      at: now(),
+      attempt: run.attempt,
+      code: "queue-clear",
+      speaking: synth?.speaking === true,
+      pending: synth?.pending === true,
+    });
+    cancelSpeech();
     this.midSpeak(run);
+  }
+
+  /** '읽기 제약 풀기'(V-1): 이 누름 안에서 앱과 같은 무음 읽기만 한다(듣기 없음). 결과는 다음 기록의 '앞 제약 풀기' 칸에 붙는다. */
+  unlockSpeech() {
+    if (this.run !== null) return;
+    const log: UnlockLog = {
+      at: now(),
+      started: false,
+      ended: false,
+      error: null,
+    };
+    this.unlockLog = log;
+    const report = () => this.on.unlock({ ...log });
+    const synth = synthOf();
+    if (synth === undefined) {
+      log.error = "no-synthesis";
+      report();
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(UNLOCK_TEXT);
+    utterance.lang = LANG_OF.A;
+    utterance.volume = UNLOCK_VOLUME;
+    utterance.onstart = () => {
+      log.started = true;
+      report();
+    };
+    utterance.onend = () => {
+      log.ended = true;
+      report();
+    };
+    utterance.onerror = (event) => {
+      log.error = event.error;
+      report();
+    };
+    this.spokeSinceEnd = true;
+    synth.speak(utterance);
+    report();
+  }
+
+  /** WebAudio 소리 1초(V-4): 이 누름 안에서 새 AudioContext 로 발진기를 들리게 재생한다. 듣는 중이면 그 기록에 사건을 남긴다. */
+  beep() {
+    const run = this.run;
+    const note = (code: string, message?: string) => {
+      if (run !== null && this.run === run) {
+        this.push(run, {
+          type: "webaudio-beep",
+          at: now(),
+          attempt: run.attempt,
+          code,
+          ...(message === undefined ? {} : { message }),
+        });
+      }
+      this.on.beep(code);
+    };
+    const Ctor = audioContextCtor();
+    if (Ctor === undefined) {
+      note("unsupported");
+      return;
+    }
+    try {
+      const ctx = new Ctor();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = BEEP_HZ;
+      gain.gain.value = BEEP_GAIN;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      void ctx.resume().catch(() => undefined);
+      osc.onended = () => {
+        note("ended", ctx.state);
+        void ctx.close().catch(() => undefined);
+      };
+      osc.start();
+      osc.stop(ctx.currentTime + BEEP_MS / 1000);
+      note(ctx.state, "start");
+    } catch (error) {
+      const fields = errorFields(error);
+      note(fields.code, fields.message);
+    }
   }
 
   /** F · G · H · I 의 '지금 눌러 말하기'. 그 누름 처리 안에서 동기로 start 한다. */
@@ -526,6 +631,22 @@ class ProbeRunner {
         droppedInterims: 0,
         autoRun: auto?.autoRun ?? null,
         autoStep: auto === null ? null : auto.index,
+        decoy:
+          DECOY_MS[strategy] === undefined
+            ? null
+            : {
+                lengthMs: DECOY_MS[strategy],
+                speak: this.ctx.decoySpeak(),
+              },
+        unlockBefore:
+          this.unlockLog === null
+            ? null
+            : {
+                ageMs: now() - this.unlockLog.at,
+                started: this.unlockLog.started,
+                ended: this.unlockLog.ended,
+                error: this.unlockLog.error,
+              },
       },
       rec: null,
       attempt: 0,
@@ -533,6 +654,7 @@ class ProbeRunner {
       silenceTimer: null,
       stopping: false,
       restarting: false,
+      restartDelayMs: 0,
       awaitingPress: false,
       restoreSession: false,
       midSpoken: false,
@@ -865,6 +987,24 @@ class ProbeRunner {
     });
     const current = () =>
       this.run === run && run.attempt === attempt && !run.done;
+    const decoy = run.record.decoy;
+    if (decoy !== null && attempt === 0) {
+      // W 버림 세션: n초 뒤 stop → end 뒤 1초 → 진짜 세션(시도 2). 읽기 켬이면 2초 때 짧은 문장을 읽는다(누름 밖)
+      this.on.status({
+        kind: "decoy",
+        strategy: run.record.strategy,
+        seconds: decoy.lengthMs / 1000,
+      });
+      if (decoy.speak) {
+        this.after(run, DECOY_SPEAK_AT_MS, () => {
+          if (current()) this.midSpeak(run);
+        });
+      }
+      this.after(run, decoy.lengthMs, () => {
+        if (current()) this.endDecoy(run, "stop");
+      });
+      return;
+    }
     if (this.auto !== null) {
       // 자동 측정: 말 없이도 audiostart 띠로 가르므로 4초 뒤 stop(결과가 없으면 no-result)
       this.after(run, AUTO_LISTEN_MS, () => {
@@ -905,7 +1045,27 @@ class ProbeRunner {
     const log = (type: ProbeEvent["type"]) => () => {
       this.push(run, { type, at: now(), attempt });
     };
-    rec.onaudiostart = log("audiostart");
+    rec.onaudiostart = () => {
+      const at = now();
+      this.push(run, { type: "audiostart", at, attempt });
+      // W: 버림 세션이 살아 있으면(as > 250) 그 사실을 남기고 abort 한 뒤 곧바로 진짜를 연다(V-3)
+      const base = run.record.attempts[attempt]?.startCallAt;
+      if (
+        run.record.decoy !== null &&
+        attempt === 0 &&
+        base !== undefined &&
+        at - base > DECOY_ALIVE_MS &&
+        current()
+      ) {
+        this.push(run, {
+          type: "decoy-alive",
+          at: now(),
+          attempt,
+          code: String(Math.round(at - base)),
+        });
+        this.endDecoy(run, "abort");
+      }
+    };
     rec.onsoundstart = log("soundstart");
     rec.onspeechstart = log("speechstart");
     rec.onspeechend = log("speechend");
@@ -976,12 +1136,40 @@ class ProbeRunner {
       this.push(run, { type: "end", at, attempt });
       if (!current()) return;
       if (run.restarting) {
+        const delay = run.restartDelayMs;
+        run.restartDelayMs = 0;
+        if (delay > 0) {
+          this.clearTimers(run);
+          this.after(run, delay, () => {
+            if (this.run === run && !run.done) this.startAttempt(run);
+          });
+          return;
+        }
         this.startAttempt(run);
         return;
       }
       if (!run.stopping) run.record.stopReason ??= "natural";
       this.finish(run, at);
     };
+  }
+
+  /** W: 버림 세션을 끝내고(stop 이면 end 뒤 1초, abort 면 곧바로) 진짜 세션을 연다. end 가 안 오면 END_WAIT_MS 뒤 연다. */
+  private endDecoy(run: Run, method: StopMethod) {
+    if (run.restarting || run.stopping || run.done) return;
+    run.restarting = true;
+    run.restartDelayMs = method === "abort" ? 0 : DECOY_GAP_MS;
+    this.push(run, {
+      type: method === "abort" ? "abort-call" : "stop-call",
+      at: now(),
+      attempt: run.attempt,
+      code: "decoy",
+    });
+    tryCall(() => (method === "abort" ? run.rec?.abort() : run.rec?.stop()));
+    this.after(run, END_WAIT_MS, () => {
+      if (this.run !== run || run.done || !run.restarting) return;
+      this.push(run, { type: "end-missing", at: now(), attempt: run.attempt });
+      this.startAttempt(run);
+    });
   }
 
   /** S2 자동 · S '세션 중 읽기': 세션을 멈추지 않고 짧은 영어 문장을 읽는다(읽는 중 · 뒤에 인식이 살아 있는지, 분석 Q4). */
@@ -1089,6 +1277,7 @@ class ProbeRunner {
     this.lastStopReason = run.record.stopReason;
     this.lastStopMethod = run.record.stopMethod;
     this.spokeSinceEnd = false;
+    this.unlockLog = null;
     this.on.finish(run.record);
     this.on.lastEnd(endedAt);
     if (run.record.stopReason === "no-recognition") {
@@ -1219,6 +1408,11 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   const [autoProgress, setAutoProgress] = useState<AutoProgress | null>(null);
   const [autoDone, setAutoDone] = useState(false);
   const [logStats, setLogStats] = useState<LogStats>({ sent: 0, failed: 0 });
+  /** fix 6: W 읽기 켬 · 끔, '읽기 제약 풀기' 결과, WebAudio 소리 상태. */
+  const [decoySpeak, setDecoySpeak] = useState(true);
+  const decoySpeakRef = useRef(true);
+  const [unlockLog, setUnlockLog] = useState<UnlockLog | null>(null);
+  const [beepState, setBeepState] = useState<string | null>(null);
   const envRef = useRef<ProbeEnv | null>(null);
   useEffect(() => {
     envRef.current = env;
@@ -1284,6 +1478,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         navigationType,
         resetStep: () => resetRef.current,
         teacherLine: teacherRef.current,
+        decoySpeak: () => decoySpeakRef.current,
       },
       {
         status: setStatus,
@@ -1308,6 +1503,8 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         webAudio: (state) => patchEnv({ webAudioState: state }),
         session: (type) => patchEnv({ audioSessionType: type }),
         lastEnd: setLastEndAt,
+        unlock: setUnlockLog,
+        beep: setBeepState,
       },
     );
     runner.current = current;
@@ -1361,6 +1558,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     status.kind === "speaking" ||
     status.kind === "pausing" ||
     status.kind === "await-press" ||
+    status.kind === "decoy" ||
     status.kind === "listening";
   const canPressNow =
     status.kind === "await-press" ||
@@ -1589,6 +1787,41 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
       </section>
 
       <section className="space-y-3">
+        {!newTab && (
+          <>
+            <button
+              type="button"
+              data-testid="mic-unlock"
+              className={bigButton}
+              disabled={!ready || busy}
+              onClick={() => runner.current?.unlockSpeech()}
+            >
+              {MIC_TEXT.unlock}
+            </button>
+            <p role="status" data-testid="mic-unlock-line">
+              {unlockLog === null
+                ? ""
+                : MIC_TEXT.unlockLine(
+                    unlockLog.started,
+                    unlockLog.ended,
+                    unlockLog.error,
+                  )}
+            </p>
+            <button
+              type="button"
+              data-testid="mic-decoy-speak"
+              aria-pressed={decoySpeak}
+              className={bigButton}
+              disabled={busy}
+              onClick={() => {
+                decoySpeakRef.current = !decoySpeak;
+                setDecoySpeak(!decoySpeak);
+              }}
+            >
+              {MIC_TEXT.decoySpeakToggle(decoySpeak)}
+            </button>
+          </>
+        )}
         {shown.map((strategy) => (
           <button
             key={strategy}
@@ -1623,6 +1856,18 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         >
           {MIC_TEXT.speakInSession}
         </button>
+        <button
+          type="button"
+          data-testid="mic-beep"
+          className={bigButton}
+          disabled={!ready}
+          onClick={() => runner.current?.beep()}
+        >
+          {MIC_TEXT.beep}
+        </button>
+        <p role="status" data-testid="mic-beep-line">
+          {beepState === null ? "" : MIC_TEXT.beepLine(beepState)}
+        </p>
         <button
           type="button"
           className={`${bigButton} bg-neutral-200`}
@@ -1789,8 +2034,12 @@ function statusText(status: Status): string {
       return status.strategy === "T-next"
         ? MIC_TEXT.awaitFollowUp
         : MIC_TEXT.awaitPress;
+    case "decoy":
+      return MIC_TEXT.decoyRunning(status.strategy, status.seconds);
     case "listening":
-      return MIC_TEXT.listening(status.strategy, status.attempt);
+      return DECOY_MS[status.strategy] === undefined
+        ? MIC_TEXT.listening(status.strategy, status.attempt)
+        : MIC_TEXT.decoyReal(status.strategy);
     case "no-recognition":
       return MIC_TEXT.noRecognition;
   }

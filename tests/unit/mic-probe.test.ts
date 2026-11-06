@@ -64,6 +64,8 @@ function record(
     droppedInterims: 0,
     autoRun: null,
     autoStep: null,
+    decoy: null,
+    unlockBefore: null,
   };
 }
 
@@ -313,7 +315,7 @@ describe("마이크 점검 쪽 기록", () => {
     expect(text).not.toContain("| B | 0 |");
     // 기록 표: 둘째 줄은 앞 멈춤 no-result · 사이 읽기 아니요 · as 35 · 오류 aborted · 들은 글 없음
     expect(text).toContain(
-      '| 2 | 1 | t1 | as-is | A | en-US | 2 | 2346 | no-result·stop | 아니요 | - | auto | 0 | 35 | - | - | - | - | - | - | aborted "No speech detected" @6100 | 6120 | - | - | - | silence·stop | - | - |',
+      '| 2 | 1 | t1 | as-is | A | en-US | 2 | 2346 | no-result·stop | 아니요 | - | auto | 0 | 35 | - | - | - | - | - | - | - | - | aborted "No speech detected" @6100 | 6120 | - | - | - | silence·stop | - | - |',
     );
     // G: 새 탭 뒤 · WebAudio running · 취소 뒤 10ms(읽기가 이미 끝남) · 버린 중간 2 · 중간 글만
     expect(text).toContain("| 4 | 1 | t1 | new-tab | G |");
@@ -341,6 +343,8 @@ describe("마이크 점검 쪽 기록", () => {
       audioSessionType: _session,
       autoRun: _run,
       autoStep: _step,
+      decoy: _decoy,
+      unlockBefore: _unlock,
       ...oldRecord
     } = silent(2, "A");
     const oldShape = {
@@ -362,6 +366,8 @@ describe("마이크 점검 쪽 기록", () => {
         audioSessionType: null,
         autoRun: null,
         autoStep: null,
+        decoy: null,
+        unlockBefore: null,
       },
     ]);
     expect(parseStored("{깨진")).toEqual([]);
@@ -692,5 +698,98 @@ describe("마이크 점검 쪽 기록", () => {
     expect(summary.steps).toEqual([
       [0, "A", "as-is", 2346, [380], true, "silence", false],
     ]);
+  });
+  it("W 는 버림 세션(시도 1)의 길이 · as · 살아 있음 · 버림 중 읽기 부름/시작과 진짜 세션(시도 2)의 as · 결과를 남기고, 앞 '읽기 제약 풀기'는 누른 뒤 ms · 시작 · 끝 알림으로 남는다", () => {
+    const fin = (at: number, attempt: number): ProbeEvent => ({
+      type: "result",
+      at,
+      attempt,
+      final: true,
+      length: 5,
+      finalText: "apple",
+    });
+    // W10 읽기 켬: 버림 as 35(못 듣는 꼴) · 2초 때 읽기 부름(시작 알림 없음 — 버려짐) → 10초 뒤 stop → 1초 뒤 진짜 as 380 · 성공
+    const w = record(
+      2,
+      "W10",
+      [
+        { type: "start-call", at: 1_000, attempt: 0 },
+        { type: "audiostart", at: 1_035, attempt: 0 },
+        {
+          type: "speak-call",
+          at: 3_000,
+          attempt: 0,
+          utterance: "line",
+          speaking: false,
+          pending: false,
+        },
+        { type: "stop-call", at: 11_000, attempt: 0, code: "decoy" },
+        { type: "end", at: 11_100, attempt: 0 },
+        { type: "start-call", at: 12_100, attempt: 1 },
+        { type: "audiostart", at: 12_480, attempt: 1 },
+        fin(14_000, 1),
+        { type: "end", at: 16_500, attempt: 1 },
+      ],
+      [
+        { startCallAt: 1_000, nth: 2, lastText: "" },
+        { startCallAt: 12_100, nth: 3, lastText: "apple" },
+      ],
+    );
+    w.decoy = { lengthMs: 10_000, speak: true };
+    w.unlockBefore = {
+      ageMs: 4_321.4,
+      started: true,
+      ended: false,
+      error: null,
+    };
+    const row = rowOf(w);
+    expect(row.decoy).toEqual({
+      lengthMs: 10_000,
+      speak: true,
+      as: 35,
+      alive: false,
+      speakCalls: 1,
+      speakStarts: 0,
+      realAs: 380,
+      realSuccess: true,
+    });
+    // W 는 세션 중 읽기 칸에 넣지 않는다(S · S2 만)
+    expect(row.sessionSpeak).toBeNull();
+    const cells = rowCells(row);
+    expect(cells).toContain("10s·35·아니요·1/0 → 380·성공");
+    expect(cells).toContain("4321·예·아니요");
+
+    // W3 읽기 끔: 버림이 살아 있으면(as 300 > 250) 표시하고 abort → 곧바로 진짜. 진짜는 실패
+    const alive = record(
+      3,
+      "W3",
+      [
+        { type: "start-call", at: 1_000, attempt: 0 },
+        { type: "audiostart", at: 1_300, attempt: 0 },
+        { type: "decoy-alive", at: 1_301, attempt: 0, code: "300" },
+        { type: "abort-call", at: 1_302, attempt: 0, code: "decoy" },
+        { type: "end", at: 1_400, attempt: 0 },
+        { type: "start-call", at: 1_401, attempt: 1 },
+        { type: "audiostart", at: 1_440, attempt: 1 },
+        { type: "end", at: 9_000, attempt: 1 },
+      ],
+      [
+        { startCallAt: 1_000, nth: 4, lastText: "" },
+        { startCallAt: 1_401, nth: 5, lastText: "" },
+      ],
+    );
+    alive.decoy = { lengthMs: 3_000, speak: false };
+    expect(rowCells(rowOf(alive))).toContain("3s·300·예·끔 → 39·실패");
+
+    // 버림 뒤 진짜가 열리지 않았으면(멈추기) 진짜 칸은 '-'
+    const cut = record(4, "W25", [
+      { type: "start-call", at: 1_000, attempt: 0 },
+      { type: "audiostart", at: 1_030, attempt: 0 },
+      { type: "end", at: 5_000, attempt: 0 },
+    ]);
+    cut.decoy = { lengthMs: 25_000, speak: true };
+    expect(rowCells(rowOf(cut))).toContain("25s·30·아니요·0/0 → -·-");
+    // W 가 아니면 두 칸 모두 '-'
+    expect(rowOf(ok(5, "A")).decoy).toBeNull();
   });
 });

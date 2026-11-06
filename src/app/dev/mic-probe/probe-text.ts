@@ -15,13 +15,14 @@ export const MIC_TEXT = {
   autoDone: "끝났어요. 이제 한 낱말 확인",
   logStats: (sent: number, failed: number) =>
     `서버 기록: 보냄 ${sent} · 실패 ${failed}`,
-  orderHeading: "순서(2분)",
+  orderHeading: "순서(3분)",
   order: [
-    "S 를 누르고 'apple' 이라고 말해요",
-    "'세션 중 읽기'를 누르고, 읽기가 끝나면 'banana' → 'cat' 이라고 말해요",
-    "'세션 중 읽기'를 다시 누르고, 읽는 중에 'dog' → 'egg' 라고 말해요",
-    "'멈추기'를 눌러요",
-    "10초 쉬고(쉼 시계) A 를 한 번 눌러 말해요. 기록은 서버로 가요(복사하지 않아도 돼요)",
+    "'읽기 제약 풀기'를 한 번 → S 를 누르고 'apple' → '세션 중 읽기'(줄을 비우고 읽어요) → 'banana' → '멈추기'",
+    "'W 읽기: 켬'으로 두고 W10 을 세 번(누를 때마다 버림 10초를 기다렸다가 '진짜 세션'이 보이면 'apple')",
+    "W3 를 두 번(같이 'apple')",
+    "'W 읽기: 끔'으로 바꾸고 W10 을 두 번",
+    "W25 를 한 번",
+    "'WebAudio 소리 1초'를 한 번 눌러요. 기록은 서버로 가요(복사하지 않아도 돼요)",
   ],
   guide:
     "단추를 누를 때마다 'apple' 처럼 한 낱말만, 다른 말 없이 말해 주세요. E 는 '사과'.",
@@ -85,6 +86,9 @@ export const MIC_TEXT = {
     S2: "S2 세션 중 읽기(한 번 말한 뒤 읽기, 두 번 더 말하기)",
     T: "T abort 로 끝낸 뒤 한 번 더",
     "T-next": "T 뒤 한 번 더(A 꼴)",
+    W3: "W3 버림 3초 → 진짜",
+    W10: "W10 버림 10초 → 진짜",
+    W25: "W25 버림 25초 → 진짜",
   } satisfies Record<Strategy, string>,
   newTabListen: "M 새 탭에서 듣기",
   newTabOpened:
@@ -102,7 +106,18 @@ export const MIC_TEXT = {
   pauseNote:
     "이 쪽에서 앞 듣기가 끝난 뒤 지난 시간이에요(기록의 '앞 끝 뒤'와 같은 기준). 45초 · 90초 쉼을 셀 때 써요",
   pressNow: "지금 눌러 말하기",
-  speakInSession: "세션 중 읽기(듣기는 그대로)",
+  speakInSession: "세션 중 읽기(줄을 비우고 읽어요, 듣기는 그대로)",
+  unlock: "읽기 제약 풀기(무음 읽기만, 듣기 없음)",
+  unlockLine: (started: boolean, ended: boolean, error: string | null) =>
+    `읽기 제약 풀기: 시작 알림 ${started ? "예" : "아니요"} · 끝 알림 ${ended ? "예" : "아니요"}${error === null ? "" : ` · 오류 ${error}`}`,
+  decoySpeakToggle: (on: boolean) =>
+    `W 읽기: ${on ? "켬(버림 중 2초 때 읽어요)" : "끔"} · 눌러서 바꿔요`,
+  decoyRunning: (strategy: Strategy, seconds: number) =>
+    `${strategy} 버림 세션 ${seconds}초예요 · 아직 말하지 마세요`,
+  decoyReal: (strategy: Strategy) =>
+    `${strategy} 진짜 세션이에요 · 지금 'apple' 이라고 말해 주세요`,
+  beep: "WebAudio 소리 1초",
+  beepLine: (state: string) => `WebAudio 소리: ${state}`,
   listening: (strategy: Strategy, attempt: number) =>
     `${strategy} 듣는 중이에요 · 시도 ${attempt}`,
   stop: "멈추기",
