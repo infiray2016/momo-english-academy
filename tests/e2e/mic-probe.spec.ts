@@ -1,4 +1,4 @@
-// 마이크 점검 쪽(/dev/mic-probe, 브리프 task-mic-probe 2026-11-06)이 접근 쿠키 뒤에서 뜨고 '자동 W 라운드'(fix 7) · 전략 단추 전부 · '지금 눌러 말하기'(꺼짐) · 지금 한 일 고르기 · 기록 복사 단추가 있다(fix 1 F · G, fix 2 H~M).
+// 마이크 점검 쪽(/dev/mic-probe, 브리프 task-mic-probe 2026-11-06)이 접근 쿠키 뒤에서 뜨고 '자동 W 라운드 2'(fix 8) · '자동 W 라운드'(fix 7) · 전략 단추 전부 · '지금 눌러 말하기'(꺼짐) · 지금 한 일 고르기 · 기록 복사 단추가 있다(fix 1 F · G, fix 2 H~M).
 // 실제 듣기 확인은 요청자 iPad 몫이다(이 시험은 가짜 음성으로 쪽이 뜨는지만 본다).
 import { BUTTON_STRATEGIES } from "../../src/app/dev/mic-probe/probe-log";
 import { MIC_TEXT } from "../../src/app/dev/mic-probe/probe-text";
@@ -13,6 +13,11 @@ test("마이크 점검 쪽이 뜨고 전략 단추 전부와 지금 한 일 고�
     "true",
   );
   await expect(page.getByText(MIC_TEXT.guide)).toBeVisible();
+  // fix 8: '자동 W 라운드 2' 단추(맨 위)와 요청자 안내 글(누르지 않는다)
+  await expect(
+    page.getByRole("button", { name: MIC_TEXT.round2Start, exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByText(MIC_TEXT.round2Guide)).toBeVisible();
   // fix 7: '자동 W 라운드' 단추와 요청자 안내 글(라운드는 요청자 iPad 몫이라 누르지 않는다)
   await expect(
     page.getByRole("button", { name: MIC_TEXT.roundStart, exact: true }),

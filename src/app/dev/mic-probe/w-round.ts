@@ -350,6 +350,11 @@ export class WRoundRunner {
         real: plan.real,
         path: "dead",
         slots: [],
+        sound: null,
+        sentence: null,
+        cancel: null,
+        waitSound: null,
+        group: null,
       },
     };
     const run: StepRun = {
@@ -896,7 +901,7 @@ export class WRoundRunner {
   }
 }
 
-function tryCall(fn: () => void) {
+export function tryCall(fn: () => void) {
   try {
     fn();
   } catch {
@@ -904,7 +909,7 @@ function tryCall(fn: () => void) {
   }
 }
 
-function errorFields(error: unknown): { code: string; message: string } {
+export function errorFields(error: unknown): { code: string; message: string } {
   if (error instanceof Error)
     return { code: error.name, message: error.message };
   return { code: "unknown", message: String(error) };

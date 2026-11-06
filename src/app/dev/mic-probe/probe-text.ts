@@ -5,6 +5,12 @@ import type { ResetStep, Strategy } from "./probe-log";
 
 export const MIC_TEXT = {
   title: "마이크 점검(프리뷰 전용)",
+  // fix 8: '자동 W 라운드 2'(브리프 task-mic-probe-fix8 — 안내 글은 브리프 그대로)
+  round2Start: "자동 W 라운드 2",
+  round2Guide:
+    "'자동 W 라운드 2' 단추를 한 번 누르고 iPad 를 앞에 둔 채 기다려요. 화면에 큰 글씨로 '지금 apple 이라고 말해요'가 나올 때만 'apple' 이라고 말해요. '이제 banana 라고 말해요'가 나오면 'banana' 라고 말해요. 선생님 목소리나 '띵' 소리가 나와도 따라 하지 않아요. 중간에 45초 동안 '쉬는 중'이 나오면 그대로 기다려요. '끝났어요'가 나오면 끝이에요.",
+  round2Rest: (seconds: number) => `쉬는 중 · 남은 ${seconds}초`,
+  round2Done: "끝났어요",
   roundStart: "자동 W 라운드",
   roundGuide:
     "'자동 W 라운드' 단추를 한 번 누르고, iPad 를 앞에 둔 채 기다려요. 화면에 큰 글씨로 '지금 apple 이라고 말해요'가 나올 때만 'apple' 이라고 말해요. 마지막에 '이제 banana 라고 말해요'가 한 번 나와요. 그 밖에는 말하지 않고, 선생님 목소리가 나와도 따라 하지 않아요. 화면에 '끝났어요'가 나오면 끝이에요.",
@@ -90,6 +96,7 @@ export const MIC_TEXT = {
     W10: "W10 버림 10초 → 진짜",
     W25: "W25 버림 25초 → 진짜",
     WR: "WR 자동 W 라운드",
+    WR2: "WR2 자동 W 라운드 2",
   } satisfies Record<Strategy, string>,
   newTabListen: "M 새 탭에서 듣기",
   newTabOpened:
