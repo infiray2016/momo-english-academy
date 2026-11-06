@@ -13,6 +13,8 @@
 // S 세션 중에는 '세션 중 읽기' 단추로 누름 안에서 읽으며, speak() 직전마다 'speak-call'(speaking · pending)을 남긴다.
 // fix 6(분석 10.17): 무음 읽기는 '읽기 제약 풀기' 단추로 빼고(S · S2 는 start 만 — 캡처 시작과 겹침 제거), '세션 중 읽기'는 줄을 비운 뒤 읽으며,
 // W3 · W10 · W25 는 누름 안에서 버림 세션을 열고 n초 뒤 stop → 1초 뒤 진짜 세션(누름 밖 타이머), WebAudio 소리 1초 단추를 둔다.
+// fix 7(분석 10.18.3): '자동 W 라운드' 단추 하나로 차례 0~8 을 스스로 돈다(러너는 React 밖 w-round.ts). 라운드가 도는 동안 화면에는
+// 큰 글씨 '지금 apple 이라고 말해요' · '이제 banana 라고 말해요' · '기다려요' · '준비 중 · 남은 초'만 보이고, 끝에 '끝났어요 · 진짜 살아남 n/m'.
 // 단추 한 번 = 듣기 한 번 = 표 한 줄. 기록은 localStorage 에만 두어 새로 고침 · 새 탭 · 사파리 종료를 넘어 잇고, 탭끼리는 저장소 알림으로 맞춘다.
 // DB 에 쓰지 않고 녹음하지 않는다(7절 — getUserMedia · MediaRecorder 없음, K 는 0 음량 재생만). audioSession 은 L 만 바꾸고 끝나면 되돌린다.
 import { useEffect, useRef, useState } from "react";
@@ -54,6 +56,8 @@ import {
   type ResetStep,
   ROW_COLUMNS,
   recordLogOf,
+  roundLogOf,
+  roundPlanOf,
   rowCells,
   rowOf,
   SESSION_MAX_MS,
@@ -76,6 +80,7 @@ import {
   UNLOCK_VOLUME,
 } from "./probe-log";
 import { MIC_TEXT } from "./probe-text";
+import { type RoundSpeech, type RoundView, WRoundRunner } from "./w-round";
 
 /** 기기 안 저장소(localStorage — 탭 · 사파리 종료를 넘어 남음, 분석 P2). */
 const RECORDS_KEY = "momo.mic-probe.records.v2";
@@ -282,6 +287,11 @@ type AutoHooks = {
   done: (autoRun: string, hiddenCount: number) => void;
 };
 
+type RoundHooks = {
+  view: (view: RoundView | null) => void;
+  done: (autoRun: string, hidden: number, stopped: boolean) => void;
+};
+
 type AutoState = {
   plan: AutoStep[];
   autoRun: string;
@@ -307,6 +317,8 @@ class ProbeRunner {
   private auto: AutoState | null = null;
   /** 앞 듣기 끝 뒤에 누른 '읽기 제약 풀기'(다음 기록에 붙이고 끝에서 지운다). */
   private unlockLog: UnlockLog | null = null;
+  /** '자동 W 라운드'(fix 7)가 도는 동안의 러너. 도는 동안 다른 단추는 받지 않는다. */
+  private round: WRoundRunner | null = null;
 
   constructor(
     private readonly ctx: RunnerContext,
@@ -314,7 +326,7 @@ class ProbeRunner {
   ) {}
 
   press(strategy: Strategy) {
-    if (this.run !== null) return;
+    if (this.run !== null || this.round !== null) return;
     if (strategy === "C") {
       // C: 누름 처리 안의 첫 일로 start 를 동기로 부른다(화면 갱신 · 읽기 취소 · setTimeout · await 없이)
       this.startAttempt(this.begin(strategy));
@@ -363,7 +375,7 @@ class ProbeRunner {
 
   /** '읽기 제약 풀기'(V-1): 이 누름 안에서 앱과 같은 무음 읽기만 한다(듣기 없음). 결과는 다음 기록의 '앞 제약 풀기' 칸에 붙는다. */
   unlockSpeech() {
-    if (this.run !== null) return;
+    if (this.run !== null || this.round !== null) return;
     const log: UnlockLog = {
       at: now(),
       started: false,
@@ -442,6 +454,7 @@ class ProbeRunner {
 
   /** F · G · H · I 의 '지금 눌러 말하기'. 그 누름 처리 안에서 동기로 start 한다. */
   pressNow() {
+    if (this.round !== null) return;
     if (this.run === null && this.followUp) {
       // T 뒤: 같은 누름 안에서 A 꼴로 한 번 더(종료 방식이 다음 세션을 가르는지, 분석 Q5)
       this.followUp = false;
@@ -477,10 +490,88 @@ class ProbeRunner {
 
   /** 자동 측정(fix 4): 첫 차례는 이 누름 안에서 곧바로, 나머지는 타이머로 시작한다. */
   startAuto(plan: AutoStep[], autoRun: string, hooks: AutoHooks) {
-    if (this.run !== null || this.auto !== null) return;
+    if (this.run !== null || this.auto !== null || this.round !== null) return;
     this.followUp = false;
     this.auto = { plan, autoRun, index: -1, timer: null, hidden: 0, hooks };
     this.runStep(0);
+  }
+
+  /**
+   * '자동 W 라운드'(fix 7): 이 누름 안에서 무음 읽기로 읽기 제약을 풀고, 그 뒤는 러너가 타이머로 차례 0~8 을 돈다.
+   * 차례마다 기록이 끝나면 이 쪽의 앞 듣기 끝 · 멈춤을 맞춰 두어 다음 손 측정의 '앞 끝 뒤'가 이어진다.
+   */
+  startRound(autoRun: string, hooks: RoundHooks) {
+    if (this.run !== null || this.auto !== null || this.round !== null) return;
+    this.followUp = false;
+    const round = new WRoundRunner(
+      {
+        header: {
+          load: this.ctx.load,
+          tabId: this.ctx.tabId,
+          tabFirstLoad: this.ctx.tabFirstLoad,
+          navigationType: this.ctx.navigationType,
+        },
+        nextNth: () => {
+          this.nth += 1;
+          return this.nth;
+        },
+        prevEnd: () => ({
+          at: this.lastEndAt,
+          reason: this.lastStopReason,
+          method: this.lastStopMethod,
+        }),
+        spokeSinceEnd: () => this.spokeSinceEnd,
+        markSpoke: () => {
+          this.spokeSinceEnd = true;
+        },
+        snapshot: () => ({
+          webAudioState: this.audio?.ctx.state ?? null,
+          audioSessionType: audioSessionOf()?.type ?? null,
+        }),
+        teacher:
+          this.ctx.teacherLine === null
+            ? null
+            : {
+                pitch: this.ctx.teacherLine.pitch,
+                prefer: this.ctx.teacherLine.prefer,
+              },
+      },
+      {
+        now,
+        later: (fn, ms) => window.setTimeout(fn, ms),
+        cancelLater: (id) => window.clearTimeout(id),
+        createRecognition: () => {
+          const { ctor } = recognitionCtor();
+          if (ctor === undefined) return null;
+          const rec = new ctor();
+          this.lastRec = rec;
+          return rec;
+        },
+        speech: roundSpeechOf,
+        visibility: () => document.visibilityState,
+        isoNow: () => new Date().toISOString(),
+      },
+      {
+        view: hooks.view,
+        finish: (record, endAt) => {
+          this.lastEndAt = endAt;
+          this.lastStopReason = record.stopReason;
+          this.lastStopMethod = record.stopMethod;
+          this.spokeSinceEnd = false;
+          this.unlockLog = null;
+          this.on.finish(record);
+          this.on.lastEnd(endAt);
+        },
+        done: (result) => {
+          if (this.round === round) this.round = null;
+          hooks.done(result.autoRun, result.hidden, result.stopped);
+        },
+      },
+      roundPlanOf(),
+      autoRun,
+    );
+    this.round = round;
+    round.start();
   }
 
   private runStep(index: number) {
@@ -541,6 +632,10 @@ class ProbeRunner {
   }
 
   stopNow() {
+    if (this.round !== null) {
+      this.round.stop();
+      return;
+    }
     this.cancelAuto();
     const run = this.run;
     if (run === null) {
@@ -573,12 +668,15 @@ class ProbeRunner {
   }
 
   note(type: "hidden" | "visible") {
+    this.round?.note(type);
     if (type === "hidden" && this.auto !== null) this.auto.hidden += 1;
     const run = this.run;
     if (run !== null) this.push(run, { type, at: now(), attempt: run.attempt });
   }
 
   dispose() {
+    this.round?.dispose();
+    this.round = null;
     const auto = this.auto;
     if (auto !== null && auto.timer !== null) window.clearTimeout(auto.timer);
     this.auto = null;
@@ -647,6 +745,7 @@ class ProbeRunner {
                 ended: this.unlockLog.ended,
                 error: this.unlockLog.error,
               },
+        round: null,
       },
       rec: null,
       attempt: 0,
@@ -1333,6 +1432,32 @@ function restoreSessionType(): string | null {
   return session.type;
 }
 
+/** 자동 W 라운드의 읽기 몫(speechSynthesis 를 잇는다 — 영어 · 고른 목소리 · 높이 · 빠르기 · 음량). */
+function roundSpeechOf(): RoundSpeech | null {
+  const synth = synthOf();
+  if (synth === undefined) return null;
+  return {
+    state: () => ({ speaking: synth.speaking, pending: synth.pending }),
+    cancel: () => tryCall(() => synth.cancel()),
+    speak: (options, handlers) => {
+      const utterance = new SpeechSynthesisUtterance(options.text);
+      utterance.lang = LANG_OF.A;
+      if (options.volume !== undefined) utterance.volume = options.volume;
+      if (options.rate !== undefined) utterance.rate = options.rate;
+      if (options.pitch !== undefined) utterance.pitch = options.pitch;
+      const voice =
+        options.prefer === undefined
+          ? undefined
+          : preferredVoice(synth, options.prefer);
+      if (voice !== undefined) utterance.voice = voice;
+      utterance.onstart = () => handlers.start(voice?.name ?? "기본");
+      utterance.onend = () => handlers.end();
+      utterance.onerror = (event) => handlers.error(event.error);
+      synth.speak(utterance);
+    },
+  };
+}
+
 function cancelSpeech() {
   const synth = synthOf();
   if (synth !== undefined) tryCall(() => synth.cancel());
@@ -1413,6 +1538,8 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   const decoySpeakRef = useRef(true);
   const [unlockLog, setUnlockLog] = useState<UnlockLog | null>(null);
   const [beepState, setBeepState] = useState<string | null>(null);
+  /** fix 7: 자동 W 라운드가 화면에 보일 것(null 이면 라운드 없음). */
+  const [roundView, setRoundView] = useState<RoundView | null>(null);
   const envRef = useRef<ProbeEnv | null>(null);
   useEffect(() => {
     envRef.current = env;
@@ -1553,7 +1680,9 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     };
   }, []);
 
+  const roundRunning = roundView !== null && roundView.kind !== "done";
   const busy =
+    roundRunning ||
     autoProgress !== null ||
     status.kind === "speaking" ||
     status.kind === "pausing" ||
@@ -1643,10 +1772,92 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     });
   }
 
+  function startRound() {
+    setAutoDone(false);
+    setRoundView({ kind: "wait" });
+    runner.current?.startRound(randomTabId(), {
+      view: setRoundView,
+      done: (autoRun, hidden, stopped) => {
+        const logEnv = envRef.current;
+        if (logEnv !== null) {
+          postLog(
+            roundLogOf(recordsRef.current, logEnv, autoRun, hidden, stopped),
+            countLog,
+          );
+        }
+      },
+    });
+  }
+
   function pickReset(value: string) {
     const step = RESET_STEPS.find((s) => s === value) ?? "as-is";
     resetRef.current = step;
     setResetStep(step);
+  }
+
+  const roundSection = !newTab && (
+    <section className={sectionClass} data-testid="mic-round">
+      {!roundRunning && (
+        <>
+          <button
+            type="button"
+            data-testid="mic-round-start"
+            className={`${bigButton} bg-neutral-900 text-white`}
+            disabled={!ready || busy || status.kind === "no-recognition"}
+            onClick={startRound}
+          >
+            {MIC_TEXT.roundStart}
+          </button>
+          <p className="text-xl">{MIC_TEXT.roundGuide}</p>
+        </>
+      )}
+      {roundView !== null && (
+        <p
+          role="status"
+          data-testid="mic-round-view"
+          data-kind={roundView.kind}
+          className={
+            roundView.kind === "say"
+              ? "py-10 text-center font-bold text-7xl leading-tight"
+              : "py-6 text-center font-bold text-5xl"
+          }
+        >
+          {roundText(roundView, nowMs)}
+        </p>
+      )}
+      {roundView?.kind === "done" && (
+        <button
+          type="button"
+          className={bigButton}
+          disabled={env === null}
+          onClick={() => void copy()}
+        >
+          {MIC_TEXT.copy}
+        </button>
+      )}
+      {roundRunning && (
+        <button
+          type="button"
+          className={`${bigButton} bg-neutral-200`}
+          onClick={() => runner.current?.stopNow()}
+        >
+          {MIC_TEXT.stop}
+        </button>
+      )}
+    </section>
+  );
+
+  if (roundRunning) {
+    // 라운드가 도는 동안은 큰 글씨 한 줄과 '멈추기'만 보인다(X-2 — 그 밖의 안내 글을 없앤다)
+    return (
+      <main
+        data-testid="mic-probe"
+        data-ready={ready ? "true" : undefined}
+        className="mx-auto max-w-4xl space-y-5 bg-neutral-50 p-5 text-lg text-neutral-900"
+      >
+        {roundSection}
+      </main>
+    );
   }
 
   return (
@@ -1666,6 +1877,8 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
           </span>
         )}
       </h1>
+
+      {roundSection}
 
       {!newTab && (
         <section className={sectionClass} data-testid="mic-auto">
@@ -1692,18 +1905,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
       )}
 
       <section className={sectionClass}>
-        {newTab ? (
-          <p className="font-bold text-2xl">{MIC_TEXT.newTabGuide}</p>
-        ) : (
-          <>
-            <h2 className="font-semibold text-xl">{MIC_TEXT.orderHeading}</h2>
-            <ol className="list-decimal space-y-1 pl-6 text-xl">
-              {MIC_TEXT.order.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </>
-        )}
+        {newTab && <p className="font-bold text-2xl">{MIC_TEXT.newTabGuide}</p>}
         <p className="font-bold text-2xl">{MIC_TEXT.guide}</p>
         <p className="text-xl">{MIC_TEXT.pressGuide}</p>
         <p className="text-xl">{MIC_TEXT.reloadGuide}</p>
@@ -2005,6 +2207,22 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   );
 }
 
+/** 자동 W 라운드가 보일 글(X-2): 낱말 · 기다려요 · 준비 중 남은 초 · 끝났어요 n/m. */
+function roundText(view: RoundView, nowMs: number): string {
+  switch (view.kind) {
+    case "say":
+      return view.word === "apple" ? MIC_TEXT.roundSay : MIC_TEXT.roundSayNext;
+    case "wait":
+      return MIC_TEXT.roundWait;
+    case "rest":
+      return MIC_TEXT.roundRest(
+        Math.max(0, Math.ceil((view.until - nowMs) / 1000)),
+      );
+    case "done":
+      return MIC_TEXT.roundDone(view.n, view.m);
+  }
+}
+
 /** 자동 측정 진행 한 줄: 차례 · 전략(지금 한 일) · 다음까지 남은 초 또는 '도는 중'. */
 function autoText(progress: AutoProgress, nowMs: number): string {
   const { step } = progress;
@@ -2035,11 +2253,11 @@ function statusText(status: Status): string {
         ? MIC_TEXT.awaitFollowUp
         : MIC_TEXT.awaitPress;
     case "decoy":
-      return MIC_TEXT.decoyRunning(status.strategy, status.seconds);
+      return MIC_TEXT.decoyRunning;
     case "listening":
       return DECOY_MS[status.strategy] === undefined
         ? MIC_TEXT.listening(status.strategy, status.attempt)
-        : MIC_TEXT.decoyReal(status.strategy);
+        : MIC_TEXT.decoyReal;
     case "no-recognition":
       return MIC_TEXT.noRecognition;
   }

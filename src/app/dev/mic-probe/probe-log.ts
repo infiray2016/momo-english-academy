@@ -4,7 +4,9 @@
 // 끝낸 뒤(분석 10.8 Q1 · Q3 · Q4 · Q5 — 분석의 K · K2 가 여기의 S · S2). fix 4: 자동 측정 순서(autoPlanOf)와 서버 로그 몸(recordLogOf ·
 // summaryLogOf · redactLogBody — 들은 글은 길이만), I 의 앱 꼴 읽기(빠르기 0.8 · 문장마다 · 사이 700ms, 검토 M-a). fix 5(분석 10.16): 'speak-call'
 // 사건(speak() 직전의 speaking · pending — iOS 가 누름 밖 첫 speak() 를 사건 없이 버리는지 가름), 세션 중 읽기 앞 · 뒤 결과 칸.
-// fix 6(분석 10.17): 전략 W3 · W10 · W25 '버림 → 진짜'(버림 세션 n초 뒤 진짜 세션), '읽기 제약 풀기' 결과 칸, WebAudio 소리 사건. 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
+// fix 6(분석 10.17): 전략 W3 · W10 · W25 '버림 → 진짜'(버림 세션 n초 뒤 진짜 세션), '읽기 제약 풀기' 결과 칸, WebAudio 소리 사건.
+// fix 7(분석 10.18.3): '자동 W 라운드'(WR) 차례 0~8 계획(roundPlanOf) · 살아 있는 버림의 길(roundNextOf · roundPathOf) · 차례 칸(round) ·
+// '진짜 살아남 n/m'(roundSurvivalOf) · 라운드 끝 로그(roundLogOf). 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
 // DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다. 시각(at)은 그 쪽을 연 동안의 performance.now() 이고,
 // 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 기기 안(localStorage)에만 두고 복사할 때만 기기 밖(클립보드)으로 나간다.
 // 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음. K 의 WebAudio 는 재생만).
@@ -47,12 +49,13 @@ export const STRATEGIES = [
   "W3",
   "W10",
   "W25",
+  "WR",
 ] as const;
 export type Strategy = (typeof STRATEGIES)[number];
 
-/** 단추로 보이는 전략(T-next 는 T 뒤 '지금 눌러 말하기'로만 연다). */
+/** 단추로 보이는 전략(T-next 는 T 뒤 '지금 눌러 말하기'로만, WR 은 '자동 W 라운드' 단추로만 연다). */
 export const BUTTON_STRATEGIES: readonly Strategy[] = STRATEGIES.filter(
-  (s) => s !== "T-next",
+  (s) => s !== "T-next" && s !== "WR",
 );
 /** 한 세션을 멈추지 않고 듣는 전략(S · S2) — 자동 멈춤 없이 SESSION_MAX_MS 상한 · '멈추기'로만 끝난다. */
 export const CONTINUOUS_SESSION: readonly Strategy[] = ["S", "S2"];
@@ -133,6 +136,8 @@ export const UNLOCK_TEXT = " ";
 export const UNLOCK_VOLUME = 0;
 /** D · F 가 읽어 주는 짧은 영어 한 문장. */
 export const SPEAK_SENTENCE = "Please say one word.";
+/** 자동 W 라운드의 버림 안 · 진짜 세션 중 읽기 문장. 따라 말하게 유도하지 않는 서술문(fix 7 우려 — "Please say one word." 는 요청자가 따라 말할 수 있음). */
+export const W_ROUND_SENTENCE = "The sea is blue and the sun is warm today.";
 /** G 가 읽어 주는 긴 영어 문장(읽는 동안 누를 틈을 준다 — 보통 빠르기로 8초 안팎). */
 export const LONG_SENTENCE =
   "Today we are going to talk about fruit. I like apples and bananas very much. What fruit do you like? Tell me one word when you are ready.";
@@ -177,6 +182,7 @@ export const EVENT_TYPES = [
   "decoy-alive",
   "session-type",
   "session-restore",
+  "prompt",
 ] as const;
 export type ProbeEventType = (typeof EVENT_TYPES)[number];
 
@@ -190,6 +196,7 @@ export const STOP_REASONS = [
   "end-missing",
   "start-failed",
   "no-recognition",
+  "final",
 ] as const;
 export type StopReason = (typeof STOP_REASONS)[number];
 /** 앱이 듣기를 끝낸 방법(T 만 abort, 분석 Q5). 브라우저가 스스로 끝냈으면 null. */
@@ -206,14 +213,15 @@ const eventSchema = z.object({
   length: z.number().int().nonnegative().optional(),
   /** result(final 만): final 결과만 이은 글. */
   finalText: z.string().optional(),
-  /** 읽기 사건: 무음 읽기(unlock)인지 읽어 주기 글(line)인지. */
-  utterance: z.enum(["unlock", "line"]).optional(),
+  /** 읽기 사건: 무음 읽기(unlock)인지 읽어 주기 글(line)인지, WR 의 세션 없이 읽기(bare — 살아 있는 버림 뒤 길 (가))인지. */
+  utterance: z.enum(["unlock", "line", "bare"]).optional(),
   /** speak-call: speak() 를 부르기 직전의 speechSynthesis.speaking · pending(fix 5 — 시작 알림 없이 버려졌는지 가른다). */
   speaking: z.boolean().optional(),
   pending: z.boolean().optional(),
   /**
    * error · start-threw · speak-error: 오류 이름 · 글, stop-call · abort-call: 까닭, speak-cancel: 그때 읽는 중이었는가(speaking · ended),
-   * speak-start: 목소리 이름(message), webaudio-start: AudioContext 상태, session-type · session-restore: 둔 값(code) · 읽은 값(message).
+   * speak-start: 목소리 이름(message), webaudio-start: AudioContext 상태, session-type · session-restore: 둔 값(code) · 읽은 값(message),
+   * prompt(WR): 화면에 크게 보인 낱말(apple · banana).
    */
   code: z.string().optional(),
   message: z.string().optional(),
@@ -228,6 +236,13 @@ const attemptSchema = z.object({
   lastText: z.string().default(""),
 });
 export type ProbeAttempt = z.infer<typeof attemptSchema>;
+
+/** WR 차례 안 시도 하나의 몫(record.attempts 와 같은 차례): 버림이면 정한 길이 · 버림 안 읽기 켬 여부, 진짜면 null · false. */
+const roundSlotSchema = z.object({
+  role: z.enum(["decoy", "real"]),
+  plannedMs: z.number().nullable(),
+  speak: z.boolean(),
+});
 
 const recordSchema = z.object({
   id: z.number().int().positive(),
@@ -281,6 +296,19 @@ const recordSchema = z.object({
       started: z.boolean(),
       ended: z.boolean(),
       error: z.string().nullable(),
+    })
+    .nullable()
+    .default(null),
+  /** WR(fix 7): 차례 번호 · 정한 버림 · 살아 있는 버림의 길 · 진짜 꼴 · 탄 길 · 시도마다의 몫. WR 이 아니면 null. */
+  round: z
+    .object({
+      step: z.number().int().nonnegative(),
+      decoyMs: z.number(),
+      speak: z.boolean(),
+      live: z.enum(["na", "ga"]),
+      real: z.enum(["plain", "s"]),
+      path: z.enum(["dead", "na", "na-ga", "ga"]),
+      slots: z.array(roundSlotSchema),
     })
     .nullable()
     .default(null),
@@ -393,6 +421,8 @@ export type ProbeRow = {
   } | null;
   /** '읽기 제약 풀기'(V-1)를 이 듣기 앞에 했는가와 그 결과. */
   unlockBefore: ProbeRecord["unlockBefore"];
+  /** WR(fix 7)의 차례 칸. WR 이 아니면 null. */
+  round: RoundRow | null;
   error: { ms: number; code: string; message: string } | null;
   end: number | null;
   /** D · F · H · I: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출 ms(F · H · I 는 누르기까지 기다린 시간, I 는 쉼도 포함). */
@@ -533,6 +563,7 @@ export function rowOf(record: ProbeRecord): ProbeRow {
       .map((e) => relMs(record, last, e) ?? 0),
     decoy: decoyOf(record),
     unlockBefore: record.unlockBefore,
+    round: roundRowOf(record),
     sessionSpeak:
       midAnchor === undefined || !CONTINUOUS_SESSION.includes(record.strategy)
         ? null
@@ -753,6 +784,7 @@ export const ROW_COLUMNS = [
   "멈춤",
   "버린 중간",
   "들은 글",
+  "W 라운드(차례·길 / 버림 길이·읽기·as·살아 있음·실제 길이·읽기 시작~끝 → 진짜 as·sp·apple·banana)",
 ] as const;
 
 /** 표 한 줄의 칸 글(화면 표 · 복사 글이 같이 쓴다). */
@@ -804,6 +836,7 @@ export function rowCells(row: ProbeRow): string[] {
       : `${row.stopReason}${row.stopMethod === null ? "" : `·${row.stopMethod}`}`,
     row.droppedInterims === 0 ? "-" : String(row.droppedInterims),
     row.finalText || (row.heardText ? `(중간) ${row.heardText}` : "-"),
+    row.round === null ? "-" : roundCellOf(row.round),
   ];
 }
 
@@ -838,12 +871,17 @@ export function copyTextOf(
     "- S · S2 는 한 세션(60초 상한)이라 final ms 가 여럿. 세션 중 읽기: speak() 부른 수 · 시작 알림 수 / 첫 부름 앞 · 뒤 결과 수 · 뒤 final 수 · 들은 글에 읽은 문장 낱말이 들었는지(부름보다 시작이 적으면 iOS 가 버린 것)",
     "- 버림 → 진짜(W): 버림 세션 길이 · 버림 as · 살아 있음(as > 250 이면 abort 하고 곧바로 진짜) · 버림 중 읽기 부름/시작(끔이면 '끔') → 진짜 as · 진짜 결과. 앞 제약 풀기: '읽기 제약 풀기'를 누른 뒤 이 듣기 누름까지 ms · 시작 · 끝 알림",
     "- 읽기 끝 뒤: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F · H · I 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
+    "- W 라운드(WR): 차례 · 탄 길(dead 버림 죽음 · na 살아 있어 두 번째 버림 · na-ga 두 번째도 살아 있어 세션 없이 읽기 · ga 세션 없이 읽기) / 버림마다 길이 · 읽기 켬 끔 · as · 살아 있음 · 실제 길이 · 버림 안 읽기 시작~끝(ms, 버림 start 기준) → 진짜 as · sp · apple · banana(차례 7 만). 진짜 살아남은 apple · banana final 수",
     "",
     tableLine(SUMMARY_COLUMNS),
     tableLine(SUMMARY_COLUMNS.map(() => "---")),
     ...summaryOf(records)
       .filter((s) => s.tries > 0)
       .map((s) => tableLine(summaryCells(s))),
+    ...roundRunsOf(records).map(
+      (run) =>
+        `- W 라운드 ${run}: ${survivalLineOf(roundSurvivalOf(records, run))}`,
+    ),
     "",
     tableLine(ROW_COLUMNS),
     tableLine(ROW_COLUMNS.map(() => "---")),
@@ -854,6 +892,17 @@ export function copyTextOf(
     "```",
   ];
   return lines.join("\n");
+}
+
+/** WR 기록의 라운드 표지(처음 나온 차례대로). */
+function roundRunsOf(records: readonly ProbeRecord[]): string[] {
+  const runs: string[] = [];
+  for (const r of records) {
+    if (r.round !== null && r.autoRun !== null && !runs.includes(r.autoRun)) {
+      runs.push(r.autoRun);
+    }
+  }
+  return runs;
 }
 
 /** 기기 안에 둔 기록을 읽는다. 꼴이 어긋나면 빈 목록. fix 1 · fix 2 앞의 꼴(새 칸 없음)도 기본값으로 읽힌다. */
@@ -1026,6 +1075,332 @@ export function summaryLogOf(
       row.hiddenDuring,
     ];
   });
+  const full = JSON.stringify({ ...base, steps });
+  return full.length <= LOG_BODY_MAX_CHARS
+    ? full
+    : JSON.stringify({ ...base, truncated: true });
+}
+
+// ---- 자동 W 라운드(fix 7, 분석 10.18.3) ----
+
+/** WR: 누름 안 무음 읽기 끝 뒤 · 차례 8 앞의 쉼(장치가 새로 열릴 만큼 — 분석 10.18.2 speech.discard_window_ms 잠정 45000). */
+export const ROUND_PAUSE_MS = 45_000;
+/** WR: 차례 사이(앞 차례 진짜 end → 다음 차례 버림 start). */
+export const ROUND_GAP_MS = 2_000;
+/** WR 버림 길이 셋(X-3 — 길이 3 · 5 · 10초). */
+export const ROUND_DECOY_MS = { short: 3_000, mid: 5_000, long: 10_000 };
+/** WR 길 (나): 살아 있는 첫 버림을 abort 한 뒤 여는 두 번째 버림의 길이(읽기 켬). */
+export const ROUND_SECOND_DECOY_MS = 10_000;
+/** WR 진짜 세션: 마지막 결과 뒤 이만큼 조용하면 stop(X-6). 결과가 없으면 NO_RESULT_STOP_MS 뒤 stop. */
+export const ROUND_SILENCE_MS = 1_500;
+/** WR 차례 7(S 꼴): 첫 final 뒤 이만큼 지나 줄을 비우고 한 문장을 읽는다(X-5). */
+export const ROUND_S_SPEAK_AFTER_MS = 2_000;
+/** WR 차례 7(S 꼴): 진짜 세션 상한(X-5). */
+export const ROUND_S_MAX_MS = 20_000;
+/** WR 이 화면에 크게 보이는 낱말(차례 7 만 둘째 낱말까지). */
+export const ROUND_WORDS = ["apple", "banana"] as const;
+export type RoundWord = (typeof ROUND_WORDS)[number];
+
+/** 살아 있는 첫 버림 뒤의 길(분석 10.18.2): (나) 두 번째 버림 10초 → 진짜, (가) 세션 없이 읽기 → 진짜. */
+export type RoundLive = "na" | "ga";
+/** 진짜 세션 꼴: 보통(결과 뒤 1.5초 조용하면 stop) · S(멈추지 않고 첫 final 뒤 읽기 → banana, X-5). */
+export type RoundReal = "plain" | "s";
+/** 탄 길: dead 버림 죽음(W 꼴) · na 첫 버림 살아 있음 → 두 번째 버림 죽음 · na-ga 두 번째도 살아 있음 → 세션 없이 읽기 · ga 첫 버림 살아 있음 → 세션 없이 읽기. */
+export type RoundPath = "dead" | "na" | "na-ga" | "ga";
+
+export type RoundPlanStep = {
+  step: number;
+  /** 앞 차례 end(차례 0 은 무음 읽기 끝) 뒤 이 차례를 시작하기까지 ms. */
+  waitMs: number;
+  /** 긴 쉼이면 화면에 '준비 중 · 남은 초'를 보인다(그 밖은 '기다려요'). */
+  rest: boolean;
+  decoyMs: number;
+  /** 버림 2초 때(DECOY_SPEAK_AT_MS) 한 문장을 읽는가. */
+  speak: boolean;
+  live: RoundLive;
+  real: RoundReal;
+  resetStep: ResetStep;
+};
+
+/**
+ * 자동 차례 0~8(브리프 fix 7 표 그대로): 0 쉰 뒤 첫 버림 → 살아 있으면 (나) · 1 10초 읽기 · 2 5초 읽기 · 3 3초 읽기 · 4 10초 끔 · 5 10초 읽기 ·
+ * 6 10초 끔 · 7 10초 읽기 → 진짜 S 꼴 · 8 45초 쉼 뒤 첫 버림 → 살아 있으면 (가). 차례 0 · 8 의 첫 버림이 죽어 있으면 W10(10초 · 읽기 켬)으로 이어 간다.
+ * 차례 1~7 의 버림이 뜻밖에 살아 있으면 (나)로 간다(표에 없는 경우 — 탄 길이 기록에 남는다).
+ */
+export function roundPlanOf(): RoundPlanStep[] {
+  const { short, mid, long } = ROUND_DECOY_MS;
+  const step = (
+    n: number,
+    decoyMs: number,
+    speak: boolean,
+    more: Partial<RoundPlanStep> = {},
+  ): RoundPlanStep => ({
+    step: n,
+    waitMs: ROUND_GAP_MS,
+    rest: false,
+    decoyMs,
+    speak,
+    live: "na",
+    real: "plain",
+    resetStep: "as-is",
+    ...more,
+  });
+  const rested = {
+    waitMs: ROUND_PAUSE_MS,
+    rest: true,
+    resetStep: "pause-45",
+  } as const;
+  return [
+    step(0, long, true, rested),
+    step(1, long, true),
+    step(2, mid, true),
+    step(3, short, true),
+    step(4, long, false),
+    step(5, long, true),
+    step(6, long, false),
+    step(7, long, true, { real: "s" }),
+    step(8, long, true, { ...rested, live: "ga" }),
+  ];
+}
+
+/** 버림 하나가 끝났을 때 다음 할 일: 죽은 버림이면 진짜, 살아 있는 첫 버림은 (나)면 두 번째 버림 · (가)면 세션 없이 읽기, 두 번째도 살아 있으면 세션 없이 읽기. */
+export function roundNextOf(
+  live: RoundLive,
+  decoyIndex: number,
+  alive: boolean,
+): "real" | "decoy" | "bare" {
+  if (!alive) return "real";
+  if (decoyIndex === 0 && live === "na") return "decoy";
+  return "bare";
+}
+
+/** 버림마다 살아 있었는지로 탄 길을 매긴다(첫 버림만 살아 있고 (나)면 두 번째 버림이 열리기 전에도 na). */
+export function roundPathOf(
+  live: RoundLive,
+  alive: readonly boolean[],
+): RoundPath {
+  if (alive[0] !== true) return "dead";
+  if (live === "ga") return "ga";
+  return alive[1] === true ? "na-ga" : "na";
+}
+
+export type RoundDecoyRow = {
+  plannedMs: number | null;
+  speak: boolean;
+  as: number | null;
+  alive: boolean;
+  /** 버림 start 호출 → end(없으면 stop · abort 호출) ms. */
+  actualMs: number | null;
+  /** 버림 안 읽기 시작 · 끝 알림(버림 start 기준 ms). 없으면 null. */
+  speakStart: number | null;
+  speakEnd: number | null;
+};
+
+export type RoundRow = {
+  step: number;
+  path: RoundPath;
+  real: RoundReal;
+  decoys: RoundDecoyRow[];
+  /** 세션 없이 읽기(길 ga · na-ga): 시작 · 끝 알림과 끝 → 진짜 start ms. 없으면 null. */
+  bare: { started: boolean; ended: boolean; endToRealMs: number | null } | null;
+  /** 진짜 세션(진짜 start 기준 ms). 진짜가 열리지 않았으면 null. */
+  session: {
+    as: number | null;
+    speechstart: number | null;
+    finalLength: number;
+    heardLength: number;
+    /** 'banana' 를 보이기 전에 final 이 왔는가. */
+    apple: boolean;
+    /** 차례 7(S 꼴): 'banana' 를 보인 뒤 final 이 왔는가. 보통 꼴이면 null. */
+    banana: boolean | null;
+    /** 차례 7: 세션 중 읽기 시작 · 끝 알림 · 'banana' 를 보인 때. */
+    speakStart: number | null;
+    speakEnd: number | null;
+    bananaAt: number | null;
+  } | null;
+};
+
+/** WR 기록 하나의 차례 칸(시도마다의 몫 slots 로 버림 · 진짜를 가른다). WR 이 아니면 null. */
+export function roundRowOf(record: ProbeRecord): RoundRow | null {
+  const round = record.round;
+  if (round === null) return null;
+  const of = (attempt: number, pick: (e: ProbeEvent) => boolean) =>
+    firstOf(record, attempt, pick);
+  const ms = (attempt: number, e: ProbeEvent | undefined) =>
+    relMs(record, attempt, e);
+  const lineOf = (attempt: number, type: ProbeEventType) =>
+    of(attempt, (e) => e.type === type && e.utterance === "line");
+  const decoys: RoundDecoyRow[] = [];
+  round.slots.forEach((slot, i) => {
+    if (slot.role !== "decoy" || record.attempts[i] === undefined) return;
+    const end =
+      of(i, (e) => e.type === "end") ??
+      of(i, (e) => e.type === "stop-call" || e.type === "abort-call");
+    decoys.push({
+      plannedMs: slot.plannedMs,
+      speak: slot.speak,
+      as: ms(
+        i,
+        of(i, (e) => e.type === "audiostart"),
+      ),
+      alive: of(i, (e) => e.type === "decoy-alive") !== undefined,
+      actualMs: ms(i, end),
+      speakStart: ms(i, lineOf(i, "speak-start")),
+      speakEnd: ms(i, lineOf(i, "speak-end")),
+    });
+  });
+  const r = round.slots.findIndex((s) => s.role === "real");
+  const realStart =
+    r < 0 ? undefined : (record.attempts[r]?.startCallAt ?? undefined);
+  const bareOf = (type: ProbeEventType) =>
+    record.events.find((e) => e.type === type && e.utterance === "bare");
+  const bareCall = bareOf("speak-call");
+  const bareEnd = bareOf("speak-end");
+  const bare =
+    bareCall === undefined
+      ? null
+      : {
+          started: bareOf("speak-start") !== undefined,
+          ended: bareEnd !== undefined,
+          endToRealMs:
+            bareEnd === undefined || realStart === undefined
+              ? null
+              : Math.round(realStart - bareEnd.at),
+        };
+  let session: RoundRow["session"] = null;
+  if (realStart !== undefined) {
+    const banana = of(r, (e) => e.type === "prompt" && e.code === "banana");
+    const finals = record.events.filter(
+      (e) => e.attempt === r && e.type === "result" && e.final === true,
+    );
+    const lastFinal = finals.findLast((e) => e.finalText !== undefined);
+    session = {
+      as: ms(
+        r,
+        of(r, (e) => e.type === "audiostart"),
+      ),
+      speechstart: ms(
+        r,
+        of(r, (e) => e.type === "speechstart"),
+      ),
+      finalLength: lastFinal?.finalText?.length ?? 0,
+      heardLength: record.attempts[r]?.lastText.length ?? 0,
+      apple: finals.some((e) => banana === undefined || e.at < banana.at),
+      banana:
+        round.real === "s"
+          ? banana !== undefined && finals.some((e) => e.at > banana.at)
+          : null,
+      speakStart: ms(r, lineOf(r, "speak-start")),
+      speakEnd: ms(r, lineOf(r, "speak-end")),
+      bananaAt: ms(r, banana),
+    };
+  }
+  return {
+    step: round.step,
+    path: round.path,
+    real: round.real,
+    decoys,
+    bare,
+    session,
+  };
+}
+
+/** 차례 칸 글(표 · 복사 글). */
+export function roundCellOf(row: RoundRow): string {
+  const decoys = row.decoys
+    .map((d) => {
+      const length = d.plannedMs === null ? "-" : `${d.plannedMs / 1000}s`;
+      const speak =
+        d.speakStart === null && d.speakEnd === null
+          ? "-"
+          : `${cell(d.speakStart)}~${cell(d.speakEnd)}`;
+      return `${length}·${d.speak ? "읽기" : "끔"}·${cell(d.as)}·${yesNo(d.alive)}·${cell(d.actualMs)}·${speak}`;
+    })
+    .join(" → ");
+  const bare =
+    row.bare === null
+      ? ""
+      : ` → 세션 없이 읽기 ${yesNo(row.bare.started)}·${yesNo(row.bare.ended)}`;
+  const s = row.session;
+  const real =
+    s === null
+      ? "진짜 없음"
+      : `진짜 ${cell(s.as)}·${cell(s.speechstart)}·apple ${yesNo(s.apple)}${s.banana === null ? "" : `·banana ${yesNo(s.banana)}`}`;
+  return `${row.step}·${row.path} / ${decoys || "-"}${bare} → ${real}`;
+}
+
+/** '진짜 살아남 n/m'(X-6): 차례마다 진짜 세션의 apple final 하나(차례 7 은 banana 도)를 센다. autoRun 을 주면 그 라운드만. */
+export function roundSurvivalOf(
+  records: readonly ProbeRecord[],
+  autoRun?: string,
+): { n: number; m: number } {
+  let n = 0;
+  let m = 0;
+  for (const record of records) {
+    if (autoRun !== undefined && record.autoRun !== autoRun) continue;
+    const row = roundRowOf(record);
+    if (row === null) continue;
+    m += row.real === "s" ? 2 : 1;
+    if (row.session?.apple === true) n += 1;
+    if (row.session?.banana === true) n += 1;
+  }
+  return { n, m };
+}
+
+/** 로그 · 복사 글의 한 줄. */
+export const survivalLineOf = (s: { n: number; m: number }) =>
+  `진짜 살아남 ${s.n}/${s.m}`;
+
+/** 라운드 끝 로그 몸: '진짜 살아남 n/m' 한 줄과 차례마다 짧은 줄(차례 · 길 · 버림 값 · 진짜 값 · 멈춤). 들은 글은 넣지 않는다. */
+export function roundLogOf(
+  records: readonly ProbeRecord[],
+  env: ProbeEnv,
+  autoRun: string,
+  hiddenCount: number,
+  stopped: boolean,
+): string {
+  const survived = roundSurvivalOf(records, autoRun);
+  const base = {
+    kind: "round" as const,
+    autoRun,
+    hiddenCount,
+    stopped,
+    line: survivalLineOf(survived),
+    survived,
+    env: logEnvOf(env),
+  };
+  const steps = records
+    .filter((r) => r.autoRun === autoRun)
+    .map((r) => {
+      const row = roundRowOf(r);
+      if (row === null) return null;
+      return [
+        row.step,
+        row.path,
+        row.decoys.map((d) => [
+          d.plannedMs,
+          d.speak,
+          d.as,
+          d.alive,
+          d.actualMs,
+          d.speakStart,
+          d.speakEnd,
+        ]),
+        row.bare === null ? null : [row.bare.started, row.bare.ended],
+        row.session === null
+          ? null
+          : [
+              row.session.as,
+              row.session.speechstart,
+              row.session.apple,
+              row.session.banana,
+              row.session.speakStart,
+              row.session.speakEnd,
+            ],
+        r.stopReason,
+      ];
+    })
+    .filter((s) => s !== null);
   const full = JSON.stringify({ ...base, steps });
   return full.length <= LOG_BODY_MAX_CHARS
     ? full

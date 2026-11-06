@@ -66,6 +66,7 @@ function record(
     autoStep: null,
     decoy: null,
     unlockBefore: null,
+    round: null,
   };
 }
 
@@ -345,6 +346,7 @@ describe("마이크 점검 쪽 기록", () => {
       autoStep: _step,
       decoy: _decoy,
       unlockBefore: _unlock,
+      round: _round,
       ...oldRecord
     } = silent(2, "A");
     const oldShape = {
@@ -368,6 +370,7 @@ describe("마이크 점검 쪽 기록", () => {
         autoStep: null,
         decoy: null,
         unlockBefore: null,
+        round: null,
       },
     ]);
     expect(parseStored("{깨진")).toEqual([]);

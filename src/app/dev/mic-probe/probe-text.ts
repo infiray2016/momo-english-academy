@@ -1,9 +1,18 @@
-// 마이크 점검 쪽(/dev/mic-probe)의 글(브리프 task-mic-probe 2026-11-06, fix 1 · fix 2). 어른(요청자)이 iPad 로 15분 안에 쓰는 관찰
+// 마이크 점검 쪽(/dev/mic-probe)의 글(브리프 task-mic-probe 2026-11-06, fix 1 · fix 2 · fix 7 '자동 W 라운드' — 진짜 세션을 열 때만 크게
+// '지금 apple 이라고 말해요', 그 밖에는 '기다려요'만, 분석 10.18.3 X-2). 어른(요청자)이 iPad 로 15분 안에 쓰는 관찰
 // 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음). e2e 가 같은 글을 읽도록 React 없는 모듈로 둔다. 순수 모듈이다.
 import type { ResetStep, Strategy } from "./probe-log";
 
 export const MIC_TEXT = {
   title: "마이크 점검(프리뷰 전용)",
+  roundStart: "자동 W 라운드",
+  roundGuide:
+    "'자동 W 라운드' 단추를 한 번 누르고, iPad 를 앞에 둔 채 기다려요. 화면에 큰 글씨로 '지금 apple 이라고 말해요'가 나올 때만 'apple' 이라고 말해요. 마지막에 '이제 banana 라고 말해요'가 한 번 나와요. 그 밖에는 말하지 않고, 선생님 목소리가 나와도 따라 하지 않아요. 화면에 '끝났어요'가 나오면 끝이에요.",
+  roundWait: "기다려요",
+  roundRest: (seconds: number) => `준비 중 · 남은 ${seconds}초`,
+  roundSay: "지금 apple 이라고 말해요",
+  roundSayNext: "이제 banana 라고 말해요",
+  roundDone: (n: number, m: number) => `끝났어요 · 진짜 살아남 ${n}/${m}`,
   autoStart: "자동 측정 시작(혼자 4분쯤)",
   autoGuide:
     "한 번 누르면 쪽이 혼자 순서를 돌려요. 말하지 않아도 돼요. 화면을 켜 둔 채 이 쪽에 머물러 주세요(결과는 서버 기록으로 가요).",
@@ -15,15 +24,6 @@ export const MIC_TEXT = {
   autoDone: "끝났어요. 이제 한 낱말 확인",
   logStats: (sent: number, failed: number) =>
     `서버 기록: 보냄 ${sent} · 실패 ${failed}`,
-  orderHeading: "순서(3분)",
-  order: [
-    "'읽기 제약 풀기'를 한 번 → S 를 누르고 'apple' → '세션 중 읽기'(줄을 비우고 읽어요) → 'banana' → '멈추기'",
-    "'W 읽기: 켬'으로 두고 W10 을 세 번(누를 때마다 버림 10초를 기다렸다가 '진짜 세션'이 보이면 'apple')",
-    "W3 를 두 번(같이 'apple')",
-    "'W 읽기: 끔'으로 바꾸고 W10 을 두 번",
-    "W25 를 한 번",
-    "'WebAudio 소리 1초'를 한 번 눌러요. 기록은 서버로 가요(복사하지 않아도 돼요)",
-  ],
   guide:
     "단추를 누를 때마다 'apple' 처럼 한 낱말만, 다른 말 없이 말해 주세요. E 는 '사과'.",
   pressGuide:
@@ -89,6 +89,7 @@ export const MIC_TEXT = {
     W3: "W3 버림 3초 → 진짜",
     W10: "W10 버림 10초 → 진짜",
     W25: "W25 버림 25초 → 진짜",
+    WR: "WR 자동 W 라운드",
   } satisfies Record<Strategy, string>,
   newTabListen: "M 새 탭에서 듣기",
   newTabOpened:
@@ -112,10 +113,8 @@ export const MIC_TEXT = {
     `읽기 제약 풀기: 시작 알림 ${started ? "예" : "아니요"} · 끝 알림 ${ended ? "예" : "아니요"}${error === null ? "" : ` · 오류 ${error}`}`,
   decoySpeakToggle: (on: boolean) =>
     `W 읽기: ${on ? "켬(버림 중 2초 때 읽어요)" : "끔"} · 눌러서 바꿔요`,
-  decoyRunning: (strategy: Strategy, seconds: number) =>
-    `${strategy} 버림 세션 ${seconds}초예요 · 아직 말하지 마세요`,
-  decoyReal: (strategy: Strategy) =>
-    `${strategy} 진짜 세션이에요 · 지금 'apple' 이라고 말해 주세요`,
+  decoyRunning: "기다려요",
+  decoyReal: "지금 apple 이라고 말해요",
   beep: "WebAudio 소리 1초",
   beepLine: (state: string) => `WebAudio 소리: ${state}`,
   listening: (strategy: Strategy, attempt: number) =>
