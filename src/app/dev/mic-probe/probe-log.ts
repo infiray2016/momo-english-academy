@@ -1,15 +1,82 @@
 // 마이크 점검 쪽(/dev/mic-probe)의 기록 꼴 · 요약 · 복사 글(브리프 task-mic-probe 2026-11-06, iPad Safari 27 듣기 실패 회복 전략 실측).
-// 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음). DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다.
-// 시각(at)은 그 쪽을 연 동안의 performance.now() 이고, 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 쪽 안(sessionStorage)에만
-// 두고 복사할 때만 기기 밖(클립보드)으로 나간다. 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음).
+// fix 1: F · G(검토 I-3), 중간 글 줄이기(M-4 · M-5). fix 2: H · I · K · L · M, 기기 · 권한 · 탭 표지 · 초기화 단계, 앞 세션 칸(분석
+// task-mic-probe-analysis-report 5.1 P1~P6 · 조사 '추가 조사' 절). fix 3: 쉼 45 · 90초 값, S 한 세션 계속 듣기 · S2 세션 중 읽기 · T abort 로
+// 끝낸 뒤(분석 10.8 Q1 · Q3 · Q4 · Q5 — 분석의 K · K2 가 여기의 S · S2). fix 4: 자동 측정 순서(autoPlanOf)와 서버 로그 몸(recordLogOf ·
+// summaryLogOf · redactLogBody — 들은 글은 길이만), I 의 앱 꼴 읽기(빠르기 0.8 · 문장마다 · 사이 700ms, 검토 M-a). 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
+// DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다. 시각(at)은 그 쪽을 연 동안의 performance.now() 이고,
+// 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 기기 안(localStorage)에만 두고 복사할 때만 기기 밖(클립보드)으로 나간다.
+// 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음. K 의 WebAudio 는 재생만).
 import { z } from "zod";
 
+/** L 이 두는 audioSession.type 넷('play-and-record' 는 실패 확인됨, 조사 '추가 조사' 321436 댓글 3). 끝나면 'auto' 로 되돌린다. */
+export const SESSION_TYPES = [
+  "transient",
+  "transient-solo",
+  "ambient",
+  "playback",
+] as const;
+export type SessionType = (typeof SESSION_TYPES)[number];
+export const SESSION_TYPE_RESTORE = "auto";
+
 /**
- * 전략 일곱(브리프 '만들 것' 다섯 + fix 1 의 F · G — 검토 I-3, C210 'TTS 재생 종료 직후 마이크 시작'과 '누름 밖 시작'을 가른다).
- * 단추 한 번 = 듣기 한 번 = 표 한 줄. F · G 는 '지금 눌러 말하기'를 한 번 더 눌러야 듣는다.
+ * 전략(브리프 A~E, fix 1 F · G, fix 2 H · I · K · L 넷 · M). 단추 한 번 = 듣기 한 번 = 표 한 줄.
+ * F · G · H · I 는 '지금 눌러 말하기'를 한 번 더 눌러야 듣는다. M 은 처음 탭에서는 새 탭만 열고, 새 탭에서 A 꼴로 듣는다.
  */
-export const STRATEGIES = ["A", "B", "C", "D", "E", "F", "G"] as const;
+export const STRATEGIES = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "K",
+  "L-transient",
+  "L-transient-solo",
+  "L-ambient",
+  "L-playback",
+  "M",
+  "S",
+  "S2",
+  "T",
+  "T-next",
+] as const;
 export type Strategy = (typeof STRATEGIES)[number];
+
+/** 단추로 보이는 전략(T-next 는 T 뒤 '지금 눌러 말하기'로만 연다). */
+export const BUTTON_STRATEGIES: readonly Strategy[] = STRATEGIES.filter(
+  (s) => s !== "T-next",
+);
+/** 한 세션을 멈추지 않고 듣는 전략(S · S2) — 자동 멈춤 없이 SESSION_MAX_MS 상한 · '멈추기'로만 끝난다. */
+export const CONTINUOUS_SESSION: readonly Strategy[] = ["S", "S2"];
+
+/** L 전략이 두는 audioSession.type. L 이 아니면 undefined. */
+export function sessionTypeOf(strategy: Strategy): SessionType | undefined {
+  return SESSION_TYPES.find((t) => strategy === `L-${t}`);
+}
+
+/** 앱 읽기 대기열처럼 글을 문장으로 나눈다(마침표 · 물음표 · 느낌표 뒤 빈칸에서). 빈 문장은 뺀다. */
+export function sentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t !== "");
+}
+
+/** 기록마다 붙는 '지금 한 일'(요청자가 고름, 분석 P3). */
+export const RESET_STEPS = [
+  "as-is",
+  "reload",
+  "new-tab",
+  "safari-quit",
+  "reboot",
+  "dictation",
+  "pause-45",
+  "pause-90",
+] as const;
+export type ResetStep = (typeof RESET_STEPS)[number];
 
 // 관찰 도구의 시험 값(브리프 · 조사 5절 순위 1). 앱 설정(settings)이 아니라 이 쪽의 측정 조건이다.
 /** B: 시작 알림(audiostart)이 이보다 빨리 오면 못 듣는 징후로 본다(조사 1절 — 실패 31~158ms, 성공 278ms 이상). */
@@ -26,29 +93,36 @@ export const END_SILENCE_MS = 2_000;
 export const NO_RESULT_STOP_MS = 6_000;
 /** 듣기 한 번의 상한. */
 export const MAX_LISTEN_MS = 10_000;
+/** S · S2: 한 세션의 상한(브리프 fix 3 — 10초 간격으로 세 번 말하기). */
+export const SESSION_MAX_MS = 60_000;
 /** stop 뒤 end 를 기다리는 상한. 넘으면 abort 하고 'end 없음'으로 끝낸다. */
 export const END_WAIT_MS = 3_000;
-/** D: 읽어 주기 끝 알림을 기다리는 상한. 넘으면 끝 알림 없이 듣는다. */
-export const SPEAK_END_WAIT_MS = 6_000;
+/** 읽어 주기 끝 알림을 기다리는 상한(I 의 선생님 인사 세 문장 · 사이 쉼까지 덮는다). 넘으면 끝 알림 없이 다음으로 간다. */
+export const SPEAK_END_WAIT_MS = 15_000;
+/** I: 선생님 말 빠르기 — 앱 1~3단계 선생님 말(seed/settings.json speech.rate.1-3, 검토 M-a). 점검 쪽은 설정을 못 읽어 같은 값을 둔다. */
+export const I_RATE = 0.8;
+/** I: 문장 사이 쉼 — 앱 읽기 대기열(seed/settings.json speech.sentence_pause_ms, tori.tsx, 검토 M-a). */
+export const I_SENTENCE_PAUSE_MS = 700;
+/** I: 선생님 말 끝 뒤 '지금 눌러 말하기'를 켜기까지 쉼(앱 성공 턴의 tc 1541ms 꼴, 브리프 fix 2). */
+export const I_PAUSE_MS = 1_500;
+/** H · I 의 무음 읽기(앱 unlockFromGesture 와 같은 글 한 칸 · 음량 0 — src/lib/speech/browser.ts UNLOCK_TEXT · UNLOCK_VOLUME). */
+export const UNLOCK_TEXT = " ";
+export const UNLOCK_VOLUME = 0;
 /** D · F 가 읽어 주는 짧은 영어 한 문장. */
 export const SPEAK_SENTENCE = "Please say one word.";
 /** G 가 읽어 주는 긴 영어 문장(읽는 동안 누를 틈을 준다 — 보통 빠르기로 8초 안팎). */
 export const LONG_SENTENCE =
   "Today we are going to talk about fruit. I like apples and bananas very much. What fruit do you like? Tell me one word when you are ready.";
-/** 시도 하나에 남기는 중간 결과 사건 수 상한(검토 M-4 — 쪽 안 저장소 크기). 넘는 중간 결과는 세기만 한다. final 은 늘 남긴다. */
+/** 시도 하나에 남기는 중간 결과 사건 수 상한(검토 M-4 — 기기 안 저장소 크기). 넘는 중간 결과는 세기만 한다. final 은 늘 남긴다. */
 export const MAX_INTERIM_EVENTS = 20;
+/** 기기 안에 남기는 기록 수 상한. 넘으면 오래된 것부터 버린다. */
+export const MAX_RECORDS = 300;
 /** 전략별 인식 언어(E 만 한국어). */
-export const LANG_OF: Record<Strategy, string> = {
-  A: "en-US",
-  B: "en-US",
-  C: "en-US",
-  D: "en-US",
-  E: "ko-KR",
-  F: "en-US",
-  G: "en-US",
-};
-/** 읽어 준 뒤 듣는 전략(D 누름 밖 자동 시작 · F 읽기 끝 뒤 누름 · G 읽는 중 누름). */
-export const SPEAK_FIRST: readonly Strategy[] = ["D", "F", "G"];
+export const LANG_OF: Record<Strategy, string> = Object.fromEntries(
+  STRATEGIES.map((s) => [s, s === "E" ? "ko-KR" : "en-US"]),
+) as Record<Strategy, string>;
+/** 읽어 준 뒤 듣는 전략(D 누름 밖 자동 시작 · F 읽기 끝 뒤 누름 · G 읽는 중 누름 · H 무음 읽기 뒤 누름 · I 앱 첫 차례 재현). */
+export const SPEAK_FIRST: readonly Strategy[] = ["D", "F", "G", "H", "I"];
 
 export const EVENT_TYPES = [
   "start-call",
@@ -74,9 +148,13 @@ export const EVENT_TYPES = [
   "press",
   "hidden",
   "visible",
+  "webaudio-start",
+  "session-type",
+  "session-restore",
 ] as const;
 export type ProbeEventType = (typeof EVENT_TYPES)[number];
 
+/** 듣기가 끝난 까닭. 다음 기록의 '앞 멈춤'이 된다(no-result 상한 · user · natural · end-missing 은 abort 로 끝냄). */
 export const STOP_REASONS = [
   "silence",
   "no-result",
@@ -88,6 +166,9 @@ export const STOP_REASONS = [
   "no-recognition",
 ] as const;
 export type StopReason = (typeof STOP_REASONS)[number];
+/** 앱이 듣기를 끝낸 방법(T 만 abort, 분석 Q5). 브라우저가 스스로 끝냈으면 null. */
+export const STOP_METHODS = ["stop", "abort"] as const;
+export type StopMethod = (typeof STOP_METHODS)[number];
 
 const eventSchema = z.object({
   type: z.enum(EVENT_TYPES),
@@ -99,7 +180,12 @@ const eventSchema = z.object({
   length: z.number().int().nonnegative().optional(),
   /** result(final 만): final 결과만 이은 글. */
   finalText: z.string().optional(),
-  /** error · start-threw · speak-error: 오류 이름 · 글, stop-call · abort-call: 까닭, speak-cancel: 그때 읽는 중이었는가(speaking · ended). */
+  /** 읽기 사건: 무음 읽기(unlock)인지 읽어 주기 글(line)인지. */
+  utterance: z.enum(["unlock", "line"]).optional(),
+  /**
+   * error · start-threw · speak-error: 오류 이름 · 글, stop-call · abort-call: 까닭, speak-cancel: 그때 읽는 중이었는가(speaking · ended),
+   * speak-start: 목소리 이름(message), webaudio-start: AudioContext 상태, session-type · session-restore: 둔 값(code) · 읽은 값(message).
+   */
   code: z.string().optional(),
   message: z.string().optional(),
 });
@@ -116,8 +202,16 @@ export type ProbeAttempt = z.infer<typeof attemptSchema>;
 
 const recordSchema = z.object({
   id: z.number().int().positive(),
-  /** 몇 번째로 연 쪽인가(새로 고침마다 1 씩 — 새로 고침으로 회복되는지 가른다). */
+  /** 몇 번째로 연 쪽인가(이 기기의 모든 탭을 합쳐 새로 고침 · 새 탭마다 1 씩). */
   load: z.number().int().positive(),
+  /** 탭 표지(sessionStorage 의 무작위 글, 분석 P1 · P2). */
+  tabId: z.string().default("-"),
+  /** 그 탭에서 처음 연 쪽인가(새로 고침이면 아니요). 모르면 null. */
+  tabFirstLoad: z.boolean().nullable().default(null),
+  /** 쪽 연 방법(PerformanceNavigationTiming.type — navigate · reload · back_forward). */
+  navigationType: z.string().default("-"),
+  /** 요청자가 고른 '지금 한 일'(분석 P3). */
+  resetStep: z.enum(RESET_STEPS).default("as-is"),
   strategy: z.enum(STRATEGIES),
   lang: z.string(),
   /** 누른 때(벽시계, ISO). */
@@ -125,32 +219,97 @@ const recordSchema = z.object({
   tapAt: z.number(),
   /** 같은 쪽에서 앞 듣기 end 뒤 첫 start 호출까지 ms(그 쪽 첫 듣기는 null). */
   sincePrevEndMs: z.number().nullable(),
+  /** 같은 쪽 앞 듣기가 끝난 까닭(그 쪽 첫 듣기는 null). */
+  prevStopReason: z.enum(STOP_REASONS).nullable().default(null),
+  /** 같은 쪽 앞 듣기를 앱이 끝낸 방법(stop · abort, 스스로 끝났으면 null). */
+  prevStopMethod: z.enum(STOP_METHODS).nullable().default(null),
+  /** 앞 듣기 끝(그 쪽 첫 듣기면 쪽 연 때) 뒤 첫 start 호출까지 읽기(무음 포함)가 있었는가. 모르면 null. */
+  ttsBetween: z.boolean().nullable().default(null),
+  /** 첫 start 호출 때 무음 WebAudio(K) 상태(running · suspended · closed). 꺼져 있으면 null. */
+  webAudioState: z.string().nullable().default(null),
+  /** 첫 start 호출 때 navigator.audioSession.type(없으면 null). */
+  audioSessionType: z.string().nullable().default(null),
   visibilityAtStart: z.string(),
   attempts: z.array(attemptSchema),
   events: z.array(eventSchema),
   stopReason: z.enum(STOP_REASONS).nullable(),
+  /** 앱이 이 듣기를 끝낸 방법(stop · abort). 브라우저가 스스로 끝냈으면 null. */
+  stopMethod: z.enum(STOP_METHODS).nullable().default(null),
   /** 상한(MAX_INTERIM_EVENTS)을 넘어 남기지 않은 중간 결과 수. */
   droppedInterims: z.number().int().nonnegative().default(0),
+  /** 자동 측정(fix 4)의 회차 표지와 차례(0 부터). 손으로 누른 기록은 null. */
+  autoRun: z.string().nullable().default(null),
+  autoStep: z.number().int().nonnegative().nullable().default(null),
 });
 export type ProbeRecord = z.infer<typeof recordSchema>;
+
+/** 기기 종류(분석 P1 — UA 가 Mac Safari 와 같은 꼴인 iPad 를 가른다). */
+export type DeviceKind = "iPad" | "iPhone" | "Mac" | "기타";
+
+/** iPadOS 의 데스크톱 꼴 UA 는 platform 'MacIntel' + 터치 점 2 이상으로 iPad 다. */
+export function deviceKindOf(input: {
+  userAgent: string;
+  platform: string;
+  maxTouchPoints: number;
+}): DeviceKind {
+  if (/iPad/.test(input.userAgent)) return "iPad";
+  if (/iPhone|iPod/.test(input.userAgent)) return "iPhone";
+  const macLike =
+    /Macintosh/.test(input.userAgent) || input.platform === "MacIntel";
+  if (macLike) return input.maxTouchPoints > 1 ? "iPad" : "Mac";
+  return "기타";
+}
+
+/**
+ * 탭 표지. 이 탭의 sessionStorage 에 표지가 없거나 새 탭으로 열렸으면(window.open 은 sessionStorage 를 복사하므로 '#newtab' 으로
+ * 가른다) 새 표지를 만들고 '처음 연 쪽'이다. 있으면 그 표지를 쓰고 처음이 아니다(새로 고침).
+ */
+export function tabMarkOf(
+  stored: string | null,
+  forceNew: boolean,
+  makeId: () => string,
+): { tabId: string; firstLoad: boolean } {
+  if (stored !== null && stored !== "" && !forceNew) {
+    return { tabId: stored, firstLoad: false };
+  }
+  return { tabId: makeId(), firstLoad: true };
+}
 
 /** 쪽 머리의 환경 줄(복사 글 머리에도 넣는다). */
 export type ProbeEnv = {
   userAgent: string;
+  platform: string;
+  maxTouchPoints: number;
+  device: DeviceKind;
+  /** navigator.permissions 의 microphone 상태(granted · prompt · denied), 못 읽으면 '-'. */
+  micPermission: string;
   visibility: string;
   audioSessionType: string | null;
   recognition: "webkitSpeechRecognition" | "SpeechRecognition" | "없음";
+  tabId: string;
+  tabFirstLoad: boolean;
+  newTab: boolean;
+  navigationType: string;
+  openedAt: string;
   load: number;
+  webAudioState: string | null;
 };
 
 /** 기록 한 줄의 표 값. ms 는 그 시도의 start 호출 기준(반올림), 없으면 null. */
 export type ProbeRow = {
   id: number;
   load: number;
+  tabId: string;
+  resetStep: ResetStep;
   strategy: Strategy;
   lang: string;
   nth: number | null;
   sincePrevEndMs: number | null;
+  prevStopReason: StopReason | null;
+  prevStopMethod: StopMethod | null;
+  ttsBetween: boolean | null;
+  webAudioState: string | null;
+  audioSessionType: string | null;
   restarts: number;
   /** 시도마다 audiostart ms(없으면 null). */
   audiostarts: (number | null)[];
@@ -159,9 +318,16 @@ export type ProbeRow = {
   speechstart: number | null;
   firstInterim: { ms: number; length: number } | null;
   final: { ms: number; length: number } | null;
+  /** 마지막 시도의 final 결과 ms 모두(S · S2 는 세 개를 기대). */
+  finalMs: number[];
+  /**
+   * S2: 세션 중 읽기(듣기 시작 뒤의 읽기 시작) 뒤에 온 결과 · final 수와, 그 결과에 읽은 문장의 낱말이 들었는지(선생님 목소리를 듣는지,
+   * 분석 Q4). 세션 중 읽기가 없으면 null.
+   */
+  afterSpeak: { results: number; finals: number; echoed: boolean } | null;
   error: { ms: number; code: string; message: string } | null;
   end: number | null;
-  /** D · F: 읽어 주기 끝 알림 → 첫 start 호출 ms(F 는 아이가 누르기까지 기다린 시간을 포함한다). */
+  /** D · F · H · I: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출 ms(F · H · I 는 누르기까지 기다린 시간, I 는 쉼도 포함). */
   speakEndToStart: number | null;
   /** G: speechSynthesis.cancel() 호출 → 첫 start 호출 ms. */
   cancelToStart: number | null;
@@ -170,9 +336,12 @@ export type ProbeRow = {
   droppedInterims: number;
   hiddenDuring: boolean;
   stopReason: StopReason | null;
+  stopMethod: StopMethod | null;
   finalText: string;
   heardText: string;
   success: boolean;
+  /** final 없이 중간 결과만 있었다(분석 P6). */
+  interimOnly: boolean;
 };
 
 const round = (ms: number) => Math.round(ms);
@@ -200,6 +369,15 @@ export function isSuccess(record: ProbeRecord): boolean {
   return record.events.some((e) => e.type === "result" && e.final === true);
 }
 
+/** final 없이 중간 결과만 있었다(분석 P6). */
+export function isInterimOnly(record: ProbeRecord): boolean {
+  return (
+    !isSuccess(record) &&
+    (record.events.some((e) => e.type === "result") ||
+      record.droppedInterims > 0)
+  );
+}
+
 /** 기록 하나를 표 한 줄로. 시도별 audiostart 를 빼면 마지막 시도의 값이다. */
 export function rowOf(record: ProbeRecord): ProbeRow {
   const last = Math.max(0, record.attempts.length - 1);
@@ -224,21 +402,34 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     (e) => e.attempt === last && e.type === "result",
   );
   const firstStart = record.attempts[0]?.startCallAt;
-  // 듣기 앞의 읽기 사건만 센다(G 는 cancel 뒤에 끝 알림이 늦게 올 수 있다)
-  const beforeStart = (type: ProbeEventType) =>
+  // 듣기 앞의 읽기 사건만 센다(G 는 cancel 뒤에 끝 알림이 늦게 올 수 있다). I 는 무음 읽기 뒤 선생님 말이라 마지막 끝 알림을 쓴다.
+  const lastBeforeStart = (type: ProbeEventType) =>
     firstStart === undefined
       ? undefined
-      : record.events.find((e) => e.type === type && e.at <= firstStart);
-  const speakEnd = beforeStart("speak-end");
-  const cancel = beforeStart("speak-cancel");
+      : record.events.findLast((e) => e.type === type && e.at <= firstStart);
+  const speakEnd = lastBeforeStart("speak-end");
+  const midSpeak =
+    firstStart === undefined
+      ? undefined
+      : record.events.find(
+          (e) => e.type === "speak-start" && e.at > firstStart,
+        );
+  const cancel = lastBeforeStart("speak-cancel");
   return {
     id: record.id,
     load: record.load,
+    tabId: record.tabId,
+    resetStep: record.resetStep,
     strategy: record.strategy,
     lang: record.lang,
     nth: record.attempts[0]?.nth ?? null,
     sincePrevEndMs:
       record.sincePrevEndMs === null ? null : round(record.sincePrevEndMs),
+    prevStopReason: record.prevStopReason,
+    prevStopMethod: record.prevStopMethod,
+    ttsBetween: record.ttsBetween,
+    webAudioState: record.webAudioState,
+    audioSessionType: record.audioSessionType,
     restarts: Math.max(0, record.attempts.length - 1),
     audiostarts: record.attempts.map((_, i) =>
       relMs(
@@ -264,6 +455,16 @@ export function rowOf(record: ProbeRecord): ProbeRow {
             ms: relMs(record, last, final) ?? 0,
             length: final.length ?? 0,
           },
+    finalMs: results
+      .filter((e) => e.final === true)
+      .map((e) => relMs(record, last, e) ?? 0),
+    afterSpeak:
+      midSpeak === undefined
+        ? null
+        : afterSpeakOf(
+            results.filter((e) => e.at > midSpeak.at),
+            record.attempts[last]?.lastText ?? "",
+          ),
     error:
       error === undefined
         ? null
@@ -286,9 +487,32 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     droppedInterims: record.droppedInterims,
     hiddenDuring: record.events.some((e) => e.type === "hidden"),
     stopReason: record.stopReason,
+    stopMethod: record.stopMethod,
     finalText: [...results].reverse().find((e) => e.finalText)?.finalText ?? "",
     heardText: record.attempts[last]?.lastText ?? "",
     success: isSuccess(record),
+    interimOnly: isInterimOnly(record),
+  };
+}
+
+/** S2 가 세션 중에 읽는 문장의 낱말(소문자). 결과에 들면 인식이 읽기 소리를 들은 것이다. */
+const SPEAK_WORDS: readonly string[] =
+  SPEAK_SENTENCE.toLowerCase().match(/[a-z]+/g) ?? [];
+
+/** 세션 중 읽기 뒤의 결과 수 · final 수와, 들은 글(final 글 · 마지막 들은 글)에 읽은 문장의 낱말이 들었는지. */
+function afterSpeakOf(
+  results: readonly ProbeEvent[],
+  lastText: string,
+): { results: number; finals: number; echoed: boolean } {
+  const heard = [lastText, ...results.map((e) => e.finalText ?? "")]
+    .join(" ")
+    .toLowerCase()
+    .match(/[a-z]+/g);
+  return {
+    results: results.length,
+    finals: results.filter((e) => e.final === true).length,
+    echoed:
+      results.length > 0 && (heard ?? []).some((w) => SPEAK_WORDS.includes(w)),
   };
 }
 
@@ -322,15 +546,30 @@ export function fastRestartDue(input: {
   );
 }
 
+/**
+ * 기록 하나를 저장 목록 끝에 붙인다. 번호는 목록의 가장 큰 번호 + 1(여러 탭이 같은 저장소에 쓰므로 붙일 때 매긴다).
+ * 상한을 넘으면 오래된 것부터 버린다.
+ */
+export function appendRecord(
+  stored: readonly ProbeRecord[],
+  record: ProbeRecord,
+  max: number = MAX_RECORDS,
+): ProbeRecord[] {
+  const id = Math.max(0, ...stored.map((r) => r.id)) + 1;
+  return [...stored, { ...record, id }].slice(-max);
+}
+
 export type StrategySummary = {
   strategy: Strategy;
   tries: number;
   successes: number;
+  /** final 없이 중간 결과만 있었던 수(분석 P6). */
+  interimOnly: number;
   /** 성공률(%, 반올림). 누른 적이 없으면 null. */
   rate: number | null;
 };
 
-/** 전략별 성공률(성공 = final 결과 있음). 전략 차례는 A~G 그대로. */
+/** 전략별 성공률(성공 = final 결과 있음). 전략 차례는 STRATEGIES 그대로. */
 export function summaryOf(records: readonly ProbeRecord[]): StrategySummary[] {
   return STRATEGIES.map((strategy) => {
     const mine = records.filter((r) => r.strategy === strategy);
@@ -339,6 +578,7 @@ export function summaryOf(records: readonly ProbeRecord[]): StrategySummary[] {
       strategy,
       tries: mine.length,
       successes,
+      interimOnly: mine.filter(isInterimOnly).length,
       rate:
         mine.length === 0 ? null : Math.round((successes / mine.length) * 100),
     };
@@ -349,23 +589,42 @@ export function summaryOf(records: readonly ProbeRecord[]): StrategySummary[] {
 export const cell = (value: number | null) =>
   value === null ? "-" : String(value);
 
+const yesNo = (value: boolean | null) =>
+  value === null ? "-" : value ? "예" : "아니요";
+
 /** 마크다운 표 칸 안의 '|' · 줄바꿈을 막는다. */
 const escapeCell = (text: string) =>
   text.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
 
+export const SUMMARY_COLUMNS = [
+  "전략",
+  "누름",
+  "성공",
+  "중간만",
+  "성공률",
+] as const;
+
 export const ROW_COLUMNS = [
   "#",
   "쪽",
+  "탭",
+  "지금 한 일",
   "전략",
   "언어",
   "n번째",
   "앞 끝 뒤",
+  "앞 멈춤",
+  "사이 읽기",
+  "WebAudio",
+  "세션 꼴",
   "재시작",
   "시도별 as",
   "ss",
   "sp",
   "첫 중간(길이)",
   "final(길이)",
+  "final ms",
+  "세션 중 읽기 뒤(결과·final·들림)",
   "오류",
   "end",
   "읽기 끝 뒤",
@@ -381,10 +640,18 @@ export function rowCells(row: ProbeRow): string[] {
   return [
     String(row.id),
     String(row.load),
+    row.tabId,
+    row.resetStep,
     row.strategy,
     row.lang,
     cell(row.nth),
     cell(row.sincePrevEndMs),
+    row.prevStopReason === null
+      ? "-"
+      : `${row.prevStopReason}${row.prevStopMethod === null ? "" : `·${row.prevStopMethod}`}`,
+    yesNo(row.ttsBetween),
+    row.webAudioState ?? "-",
+    row.audioSessionType ?? "-",
     String(row.restarts),
     row.audiostarts.map(cell).join(" → ") || "-",
     cell(row.soundstart),
@@ -393,6 +660,10 @@ export function rowCells(row: ProbeRow): string[] {
       ? "-"
       : `${row.firstInterim.ms}(${row.firstInterim.length})`,
     row.final === null ? "-" : `${row.final.ms}(${row.final.length})`,
+    row.finalMs.length === 0 ? "-" : row.finalMs.join(" · "),
+    row.afterSpeak === null
+      ? "-"
+      : `${row.afterSpeak.results}·${row.afterSpeak.finals}·${yesNo(row.afterSpeak.echoed)}`,
     row.error === null
       ? "-"
       : `${row.error.code}${row.error.message ? ` "${row.error.message}"` : ""} @${row.error.ms}`,
@@ -400,11 +671,24 @@ export function rowCells(row: ProbeRow): string[] {
     cell(row.speakEndToStart),
     row.cancelToStart === null
       ? "-"
-      : `${row.cancelToStart}(${row.cancelWhileSpeaking ? "예" : "아니요"})`,
+      : `${row.cancelToStart}(${yesNo(row.cancelWhileSpeaking)})`,
     row.hiddenDuring ? "예" : "-",
-    row.stopReason ?? "-",
+    row.stopReason === null
+      ? "-"
+      : `${row.stopReason}${row.stopMethod === null ? "" : `·${row.stopMethod}`}`,
     row.droppedInterims === 0 ? "-" : String(row.droppedInterims),
     row.finalText || (row.heardText ? `(중간) ${row.heardText}` : "-"),
+  ];
+}
+
+/** 요약 한 줄의 칸 글. */
+export function summaryCells(s: StrategySummary): string[] {
+  return [
+    s.strategy,
+    String(s.tries),
+    String(s.successes),
+    String(s.interimOnly),
+    s.rate === null ? "-" : `${s.rate}%`,
   ];
 }
 
@@ -416,25 +700,23 @@ export function copyTextOf(
   records: readonly ProbeRecord[],
   env: ProbeEnv,
 ): string {
-  const summary = summaryOf(records);
   const lines = [
     "## 마이크 점검 기록",
     "",
     `- UA: ${env.userAgent}`,
-    `- 화면: ${env.visibility} · audioSession.type: ${env.audioSessionType ?? "없음"} · 인식: ${env.recognition} · 쪽 연 횟수: ${env.load}`,
+    `- 기기: ${env.device}(platform ${env.platform} · 터치 점 ${env.maxTouchPoints}) · 마이크 권한: ${env.micPermission} · 인식: ${env.recognition}`,
+    `- 탭: ${env.tabId}(이 쪽에서 첫 듣기: ${yesNo(env.tabFirstLoad)}${env.newTab ? " · 새 탭" : ""}) · 연 방법: ${env.navigationType} · 연 때: ${env.openedAt} · 쪽 연 횟수: ${env.load}`,
+    `- 화면: ${env.visibility} · audioSession.type: ${env.audioSessionType ?? "없음"} · 무음 WebAudio: ${env.webAudioState ?? "꺼짐"}`,
     "- ms 는 그 시도의 start 호출 기준. as audiostart · ss soundstart · sp speechstart",
-    "- 읽기 끝 뒤: 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
+    "- 앞 끝 뒤 · 앞 멈춤 · 사이 읽기: 같은 쪽의 앞 듣기 end → 첫 start 호출 ms · 앞 듣기가 끝난 까닭(·앱이 끝낸 방법 stop · abort) · 그 사이 읽기(무음 포함) 여부",
+    "- S · S2 는 한 세션(60초 상한)이라 final ms 가 여럿. 세션 중 읽기 뒤: S2 가 첫 낱말 뒤 읽은 다음 온 결과 수 · final 수 · 결과에 읽은 문장 낱말이 들었는지",
+    "- 읽기 끝 뒤: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F · H · I 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
     "",
-    tableLine(["전략", "누름", "성공", "성공률"]),
-    tableLine(["---", "---", "---", "---"]),
-    ...summary.map((s) =>
-      tableLine([
-        s.strategy,
-        String(s.tries),
-        String(s.successes),
-        s.rate === null ? "-" : `${s.rate}%`,
-      ]),
-    ),
+    tableLine(SUMMARY_COLUMNS),
+    tableLine(SUMMARY_COLUMNS.map(() => "---")),
+    ...summaryOf(records)
+      .filter((s) => s.tries > 0)
+      .map((s) => tableLine(summaryCells(s))),
     "",
     tableLine(ROW_COLUMNS),
     tableLine(ROW_COLUMNS.map(() => "---")),
@@ -447,7 +729,7 @@ export function copyTextOf(
   return lines.join("\n");
 }
 
-/** sessionStorage 에 둔 기록을 읽는다. 꼴이 어긋나면 빈 목록(새로 고침 뒤에도 기록을 잇기 위함). */
+/** 기기 안에 둔 기록을 읽는다. 꼴이 어긋나면 빈 목록. fix 1 · fix 2 앞의 꼴(새 칸 없음)도 기본값으로 읽힌다. */
 export function parseStored(raw: string | null): ProbeRecord[] {
   if (raw === null) return [];
   try {
@@ -456,4 +738,169 @@ export function parseStored(raw: string | null): ProbeRecord[] {
   } catch {
     return [];
   }
+}
+
+// ---- 자동 측정(fix 4) ----
+
+/** 자동 측정의 듣기 한 번: 이만큼 뒤에 stop(결과가 없으면 no-result, 있으면 cap). 말 없이도 audiostart 띠로 가른다. */
+export const AUTO_LISTEN_MS = 4_000;
+/** 자동 측정의 듣기 사이 간격(앞 듣기 end → 다음 start). */
+export const AUTO_GAP_MS = 2_000;
+/** 자동 측정의 쉼 두 블록(분석 10절 — 앞 듣기 뒤 40초 넘게 쉬면 5/5 성공). */
+export const AUTO_PAUSE_45_MS = 45_000;
+export const AUTO_PAUSE_90_MS = 90_000;
+/** 자동 측정에서 '지금 눌러 말하기'가 켜진 뒤 대신 누르기까지(H · I · T 뒤). */
+export const AUTO_PRESS_DELAY_MS = 1_000;
+
+export type AutoStep =
+  | {
+      kind: "listen";
+      strategy: Strategy;
+      /** 앞 차례(듣기 end 또는 WebAudio 끄기) 뒤 이 차례를 시작하기까지 ms. 첫 차례는 0(누름 안에서 곧바로). */
+      waitMs: number;
+      resetStep: ResetStep;
+    }
+  | { kind: "webaudio-off"; waitMs: number };
+
+/**
+ * 자동 측정 순서(브리프 fix 4): A → (45초 쉼) A → (90초 쉼) A → H → I → L 넷 → T(+ T 뒤 A) → K 켜고 셋 → K 끄고 A.
+ * 첫 A 만 단추 누름 안에서 시작하고, 나머지는 타이머로 시작한다(WebKit start() 에 사용자 제스처 검사가 없다 — 안 되면 그 사실이 기록).
+ */
+export function autoPlanOf(): AutoStep[] {
+  const listen = (
+    strategy: Strategy,
+    waitMs: number = AUTO_GAP_MS,
+    resetStep: ResetStep = "as-is",
+  ): AutoStep => ({ kind: "listen", strategy, waitMs, resetStep });
+  return [
+    listen("A", 0),
+    listen("A", AUTO_PAUSE_45_MS, "pause-45"),
+    listen("A", AUTO_PAUSE_90_MS, "pause-90"),
+    listen("H"),
+    listen("I"),
+    ...SESSION_TYPES.map((t) => listen(`L-${t}`)),
+    listen("T"),
+    listen("T-next"),
+    listen("K"),
+    listen("K"),
+    listen("K"),
+    { kind: "webaudio-off", waitMs: 0 },
+    listen("A"),
+  ];
+}
+
+// ---- 서버 로그(fix 4) ----
+
+/** 서버 로그 한 줄의 머리(Route Handler 가 console.log 첫 인자로 쓴다). */
+export const LOG_TAG = "[mic-probe]";
+/** 로그 몸 상한(글자 — 브리프 8KB). 보내는 쪽은 넘지 않게 줄이고, 받는 쪽은 넘으면 413. */
+export const LOG_BODY_MAX_CHARS = 8_000;
+/** 들은 글이 들 수 있는 칸. 로그에는 원문 대신 길이(<칸>Length)만 남긴다. */
+const TEXT_KEYS = ["finalText", "lastText", "heardText", "text"] as const;
+
+/** 값 안의 글 칸을 길이로 바꾼다(받는 쪽의 깊이 방어 — 보내는 쪽도 이미 길이만 보낸다). */
+export function redactLogBody(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactLogBody);
+  if (value === null || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, inner] of Object.entries(value)) {
+    if ((TEXT_KEYS as readonly string[]).includes(key)) {
+      out[`${key}Length`] = typeof inner === "string" ? inner.length : null;
+      continue;
+    }
+    out[key] = redactLogBody(inner);
+  }
+  return out;
+}
+
+function logEnvOf(env: ProbeEnv) {
+  return {
+    device: env.device,
+    userAgent: env.userAgent,
+    micPermission: env.micPermission,
+    tabId: env.tabId,
+    load: env.load,
+    navigationType: env.navigationType,
+    visibility: env.visibility,
+    audioSessionType: env.audioSessionType,
+    webAudioState: env.webAudioState,
+  };
+}
+
+/** 사건 한 줄을 짧은 배열로(종류 · 누른 때 기준 ms · 시도 · code · final · 길이). 글은 넣지 않는다. */
+function compactEvent(record: ProbeRecord, e: ProbeEvent) {
+  return [
+    e.type,
+    round(e.at - record.tapAt),
+    e.attempt,
+    e.code ?? null,
+    e.final ?? null,
+    e.length ?? null,
+  ];
+}
+
+/**
+ * 듣기 기록 하나의 로그 몸(JSON 글). 들은 글은 길이만 넣는다. LOG_BODY_MAX_CHARS 를 넘으면 사건 목록을 빼고(수만 남김),
+ * 그래도 넘으면 UA 를 뺀다.
+ */
+export function recordLogOf(record: ProbeRecord, env: ProbeEnv): string {
+  const { finalText, heardText, ...row } = rowOf(record);
+  const base = {
+    kind: "record" as const,
+    autoRun: record.autoRun,
+    autoStep: record.autoStep,
+    env: logEnvOf(env),
+    row: {
+      ...row,
+      finalLength: finalText.length,
+      heardLength: heardText.length,
+    },
+    eventCount: record.events.length,
+  };
+  const full = JSON.stringify({
+    ...base,
+    events: record.events.map((e) => compactEvent(record, e)),
+  });
+  if (full.length <= LOG_BODY_MAX_CHARS) return full;
+  const lean = JSON.stringify({ ...base, truncated: true });
+  if (lean.length <= LOG_BODY_MAX_CHARS) return lean;
+  return JSON.stringify({
+    ...base,
+    env: { ...base.env, userAgent: "" },
+    truncated: true,
+  });
+}
+
+/** 자동 측정 끝의 요약 로그 몸: 전략별 성공률과 차례마다 한 줄(전략 · 지금 한 일 · 시도별 as · 성공 · 멈춤). */
+export function summaryLogOf(
+  records: readonly ProbeRecord[],
+  env: ProbeEnv,
+  autoRun: string,
+  hiddenCount: number,
+): string {
+  const mine = records.filter((r) => r.autoRun === autoRun);
+  const base = {
+    kind: "summary" as const,
+    autoRun,
+    hiddenCount,
+    env: logEnvOf(env),
+    summary: summaryOf(mine).filter((s) => s.tries > 0),
+  };
+  const steps = mine.map((r) => {
+    const row = rowOf(r);
+    return [
+      r.autoStep,
+      r.strategy,
+      r.resetStep,
+      row.sincePrevEndMs,
+      row.audiostarts,
+      row.success,
+      row.stopReason,
+      row.hiddenDuring,
+    ];
+  });
+  const full = JSON.stringify({ ...base, steps });
+  return full.length <= LOG_BODY_MAX_CHARS
+    ? full
+    : JSON.stringify({ ...base, truncated: true });
 }
