@@ -9,6 +9,8 @@
 // fix 3(분석 10절 — 앞 듣기 뒤 40초 넘게 쉬면 성공): 쉼 타이머 · 쉼 45 · 90초 값, S 한 세션 계속 듣기, S2 세션 중 읽기, T abort 로 끝낸 뒤 A.
 // fix 4: '자동 측정 시작' 한 번이면 쪽이 타이머로 순서를 돌리고(autoPlanOf), 듣기 기록마다 · 자동 끝에 요약을 dev 로그 끝점
 // (/api/dev/mic-probe-log — 서버 console 만, 들은 글은 길이만)으로 보낸다. I 는 앱처럼 문장마다 0.8 빠르기 · 사이 700ms 로 읽는다(검토 M-a).
+// fix 5(분석 10.16 — iOS 는 누름 안에서 한 번도 읽지 않은 쪽의 speak() 를 사건 없이 버린다): S · S2 누름 안에서 무음 읽기를 먼저 하고,
+// S 세션 중에는 '세션 중 읽기' 단추로 누름 안에서 읽으며, speak() 직전마다 'speak-call'(speaking · pending)을 남긴다.
 // 단추 한 번 = 듣기 한 번 = 표 한 줄. 기록은 localStorage 에만 두어 새로 고침 · 새 탭 · 사파리 종료를 넘어 잇고, 탭끼리는 저장소 알림으로 맞춘다.
 // DB 에 쓰지 않고 녹음하지 않는다(7절 — getUserMedia · MediaRecorder 없음, K 는 0 음량 재생만). audioSession 은 L 만 바꾸고 끝나면 되돌린다.
 import { useEffect, useRef, useState } from "react";
@@ -302,8 +304,35 @@ class ProbeRunner {
     const sessionType = sessionTypeOf(strategy);
     if (sessionType !== undefined) this.setSessionType(run, sessionType);
     cancelSpeech();
+    if (CONTINUOUS_SESSION.includes(strategy)) {
+      // S · S2: 같은 누름 안에서 앱과 같은 무음 읽기를 먼저 한다(읽기 제약 풀기 — 세션 중 읽기가 버려지지 않게, 분석 10.16 U-1)
+      const synth = synthOf();
+      if (synth !== undefined) {
+        this.speak(
+          run,
+          synth,
+          { text: UNLOCK_TEXT, utterance: "unlock", volume: UNLOCK_VOLUME },
+          undefined,
+        );
+      }
+    }
     this.on.status({ kind: "listening", strategy, attempt: 1 });
     this.startAttempt(run);
+  }
+
+  /** S · S2 세션 중 '세션 중 읽기': 인식을 끊지 않고 이 누름 안에서 짧은 영어 문장을 읽는다. 누를 때마다 읽는다(U-2). */
+  speakInSession() {
+    const run = this.run;
+    if (
+      run === null ||
+      run.rec === null ||
+      run.stopping ||
+      !CONTINUOUS_SESSION.includes(run.record.strategy)
+    ) {
+      return;
+    }
+    this.push(run, { type: "press", at: now(), attempt: run.attempt });
+    this.midSpeak(run);
   }
 
   /** F · G · H · I 의 '지금 눌러 말하기'. 그 누름 처리 안에서 동기로 start 한다. */
@@ -757,6 +786,18 @@ class ProbeRunner {
       done?.();
     };
     this.spokeSinceEnd = true;
+    // speak() 직전의 읽기 상태(U-3): 이 뒤에 speak-start 가 없으면 브라우저가 버린 것이다
+    const speaking = synth.speaking;
+    const pending = synth.pending;
+    this.push(run, {
+      type: "speak-call",
+      at: now(),
+      attempt: 0,
+      utterance: label,
+      speaking,
+      pending,
+      code: `speaking=${speaking} pending=${pending}`,
+    });
     synth.speak(utterance);
   }
 
@@ -943,7 +984,7 @@ class ProbeRunner {
     };
   }
 
-  /** S2: 세션을 멈추지 않고 짧은 영어 문장을 한 번 읽는다(읽는 중 · 뒤에 인식이 살아 있는지, 분석 Q4). */
+  /** S2 자동 · S '세션 중 읽기': 세션을 멈추지 않고 짧은 영어 문장을 읽는다(읽는 중 · 뒤에 인식이 살아 있는지, 분석 Q4). */
   private midSpeak(run: Run) {
     run.midSpoken = true;
     if (run.silenceTimer !== null) window.clearTimeout(run.silenceTimer);
@@ -1324,6 +1365,9 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   const canPressNow =
     status.kind === "await-press" ||
     (status.kind === "speaking" && status.pressable);
+  /** S · S2 세션이 도는 동안만 '세션 중 읽기'를 켠다(U-2 — 다른 전략 단추는 듣는 동안 꺼져 있다). */
+  const canSpeakInSession =
+    status.kind === "listening" && CONTINUOUS_SESSION.includes(status.strategy);
   const newTab = env?.newTab === true;
   const shown: readonly Strategy[] = newTab ? ["M"] : BUTTON_STRATEGIES;
   const pauseSeconds =
@@ -1569,6 +1613,15 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
           onClick={() => runner.current?.pressNow()}
         >
           {MIC_TEXT.pressNow}
+        </button>
+        <button
+          type="button"
+          data-testid="mic-speak-in-session"
+          className={`${bigButton} ${canSpeakInSession ? "bg-neutral-900 text-white" : ""}`}
+          disabled={!canSpeakInSession}
+          onClick={() => runner.current?.speakInSession()}
+        >
+          {MIC_TEXT.speakInSession}
         </button>
         <button
           type="button"

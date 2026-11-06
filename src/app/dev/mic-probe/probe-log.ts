@@ -2,7 +2,8 @@
 // fix 1: F · G(검토 I-3), 중간 글 줄이기(M-4 · M-5). fix 2: H · I · K · L · M, 기기 · 권한 · 탭 표지 · 초기화 단계, 앞 세션 칸(분석
 // task-mic-probe-analysis-report 5.1 P1~P6 · 조사 '추가 조사' 절). fix 3: 쉼 45 · 90초 값, S 한 세션 계속 듣기 · S2 세션 중 읽기 · T abort 로
 // 끝낸 뒤(분석 10.8 Q1 · Q3 · Q4 · Q5 — 분석의 K · K2 가 여기의 S · S2). fix 4: 자동 측정 순서(autoPlanOf)와 서버 로그 몸(recordLogOf ·
-// summaryLogOf · redactLogBody — 들은 글은 길이만), I 의 앱 꼴 읽기(빠르기 0.8 · 문장마다 · 사이 700ms, 검토 M-a). 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
+// summaryLogOf · redactLogBody — 들은 글은 길이만), I 의 앱 꼴 읽기(빠르기 0.8 · 문장마다 · 사이 700ms, 검토 M-a). fix 5(분석 10.16): 'speak-call'
+// 사건(speak() 직전의 speaking · pending — iOS 가 누름 밖 첫 speak() 를 사건 없이 버리는지 가름), 세션 중 읽기 앞 · 뒤 결과 칸. 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
 // DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다. 시각(at)은 그 쪽을 연 동안의 performance.now() 이고,
 // 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 기기 안(localStorage)에만 두고 복사할 때만 기기 밖(클립보드)으로 나간다.
 // 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음. K 의 WebAudio 는 재생만).
@@ -145,6 +146,7 @@ export const EVENT_TYPES = [
   "speak-error",
   "speak-end-missing",
   "speak-cancel",
+  "speak-call",
   "press",
   "hidden",
   "visible",
@@ -182,6 +184,9 @@ const eventSchema = z.object({
   finalText: z.string().optional(),
   /** 읽기 사건: 무음 읽기(unlock)인지 읽어 주기 글(line)인지. */
   utterance: z.enum(["unlock", "line"]).optional(),
+  /** speak-call: speak() 를 부르기 직전의 speechSynthesis.speaking · pending(fix 5 — 시작 알림 없이 버려졌는지 가른다). */
+  speaking: z.boolean().optional(),
+  pending: z.boolean().optional(),
   /**
    * error · start-threw · speak-error: 오류 이름 · 글, stop-call · abort-call: 까닭, speak-cancel: 그때 읽는 중이었는가(speaking · ended),
    * speak-start: 목소리 이름(message), webaudio-start: AudioContext 상태, session-type · session-restore: 둔 값(code) · 읽은 값(message).
@@ -321,10 +326,18 @@ export type ProbeRow = {
   /** 마지막 시도의 final 결과 ms 모두(S · S2 는 세 개를 기대). */
   finalMs: number[];
   /**
-   * S2: 세션 중 읽기(듣기 시작 뒤의 읽기 시작) 뒤에 온 결과 · final 수와, 그 결과에 읽은 문장의 낱말이 들었는지(선생님 목소리를 듣는지,
-   * 분석 Q4). 세션 중 읽기가 없으면 null.
+   * 세션 중 읽기(S '세션 중 읽기' 단추 · S2 자동, 듣기 시작 뒤의 읽어 주기 글): 부른 수(speak-call) · 시작 알림 수(speak-start),
+   * 첫 부름 앞 · 뒤의 결과 수, 뒤의 final 수, 들은 글에 읽은 문장의 낱말이 들었는지(분석 Q4 · 10.16 — 글은 남기지 않고 겹침만).
+   * 세션 중 읽기가 없으면 null.
    */
-  afterSpeak: { results: number; finals: number; echoed: boolean } | null;
+  sessionSpeak: {
+    calls: number;
+    started: number;
+    before: number;
+    after: number;
+    finalsAfter: number;
+    echoed: boolean;
+  } | null;
   error: { ms: number; code: string; message: string } | null;
   end: number | null;
   /** D · F · H · I: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출 ms(F · H · I 는 누르기까지 기다린 시간, I 는 쉼도 포함). */
@@ -408,12 +421,17 @@ export function rowOf(record: ProbeRecord): ProbeRow {
       ? undefined
       : record.events.findLast((e) => e.type === type && e.at <= firstStart);
   const speakEnd = lastBeforeStart("speak-end");
-  const midSpeak =
+  // 세션 중 읽기: 듣기 시작 뒤의 읽어 주기 글. fix 5 앞 기록에는 speak-call 이 없어 speak-start 로 센다
+  const midOf = (type: ProbeEventType) =>
     firstStart === undefined
-      ? undefined
-      : record.events.find(
-          (e) => e.type === "speak-start" && e.at > firstStart,
+      ? []
+      : record.events.filter(
+          (e) =>
+            e.type === type && e.utterance !== "unlock" && e.at > firstStart,
         );
+  const midCalls = midOf("speak-call");
+  const midStarts = midOf("speak-start");
+  const midAnchor = (midCalls[0] ?? midStarts[0])?.at;
   const cancel = lastBeforeStart("speak-cancel");
   return {
     id: record.id,
@@ -458,13 +476,18 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     finalMs: results
       .filter((e) => e.final === true)
       .map((e) => relMs(record, last, e) ?? 0),
-    afterSpeak:
-      midSpeak === undefined
+    sessionSpeak:
+      midAnchor === undefined
         ? null
-        : afterSpeakOf(
-            results.filter((e) => e.at > midSpeak.at),
-            record.attempts[last]?.lastText ?? "",
-          ),
+        : {
+            calls: midCalls.length,
+            started: midStarts.length,
+            before: results.filter((e) => e.at <= midAnchor).length,
+            ...afterSpeakOf(
+              results.filter((e) => e.at > midAnchor),
+              record.attempts[last]?.lastText ?? "",
+            ),
+          },
     error:
       error === undefined
         ? null
@@ -503,14 +526,14 @@ const SPEAK_WORDS: readonly string[] =
 function afterSpeakOf(
   results: readonly ProbeEvent[],
   lastText: string,
-): { results: number; finals: number; echoed: boolean } {
+): { after: number; finalsAfter: number; echoed: boolean } {
   const heard = [lastText, ...results.map((e) => e.finalText ?? "")]
     .join(" ")
     .toLowerCase()
     .match(/[a-z]+/g);
   return {
-    results: results.length,
-    finals: results.filter((e) => e.final === true).length,
+    after: results.length,
+    finalsAfter: results.filter((e) => e.final === true).length,
     echoed:
       results.length > 0 && (heard ?? []).some((w) => SPEAK_WORDS.includes(w)),
   };
@@ -624,7 +647,7 @@ export const ROW_COLUMNS = [
   "첫 중간(길이)",
   "final(길이)",
   "final ms",
-  "세션 중 읽기 뒤(결과·final·들림)",
+  "세션 중 읽기(부름·시작 / 앞·뒤 결과 · 뒤 final · 들림)",
   "오류",
   "end",
   "읽기 끝 뒤",
@@ -661,9 +684,9 @@ export function rowCells(row: ProbeRow): string[] {
       : `${row.firstInterim.ms}(${row.firstInterim.length})`,
     row.final === null ? "-" : `${row.final.ms}(${row.final.length})`,
     row.finalMs.length === 0 ? "-" : row.finalMs.join(" · "),
-    row.afterSpeak === null
+    row.sessionSpeak === null
       ? "-"
-      : `${row.afterSpeak.results}·${row.afterSpeak.finals}·${yesNo(row.afterSpeak.echoed)}`,
+      : `${row.sessionSpeak.calls}·${row.sessionSpeak.started} / ${row.sessionSpeak.before}·${row.sessionSpeak.after} · ${row.sessionSpeak.finalsAfter} · ${yesNo(row.sessionSpeak.echoed)}`,
     row.error === null
       ? "-"
       : `${row.error.code}${row.error.message ? ` "${row.error.message}"` : ""} @${row.error.ms}`,
@@ -709,7 +732,7 @@ export function copyTextOf(
     `- 화면: ${env.visibility} · audioSession.type: ${env.audioSessionType ?? "없음"} · 무음 WebAudio: ${env.webAudioState ?? "꺼짐"}`,
     "- ms 는 그 시도의 start 호출 기준. as audiostart · ss soundstart · sp speechstart",
     "- 앞 끝 뒤 · 앞 멈춤 · 사이 읽기: 같은 쪽의 앞 듣기 end → 첫 start 호출 ms · 앞 듣기가 끝난 까닭(·앱이 끝낸 방법 stop · abort) · 그 사이 읽기(무음 포함) 여부",
-    "- S · S2 는 한 세션(60초 상한)이라 final ms 가 여럿. 세션 중 읽기 뒤: S2 가 첫 낱말 뒤 읽은 다음 온 결과 수 · final 수 · 결과에 읽은 문장 낱말이 들었는지",
+    "- S · S2 는 한 세션(60초 상한)이라 final ms 가 여럿. 세션 중 읽기: speak() 부른 수 · 시작 알림 수 / 첫 부름 앞 · 뒤 결과 수 · 뒤 final 수 · 들은 글에 읽은 문장 낱말이 들었는지(부름보다 시작이 적으면 iOS 가 버린 것)",
     "- 읽기 끝 뒤: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F · H · I 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
     "",
     tableLine(SUMMARY_COLUMNS),

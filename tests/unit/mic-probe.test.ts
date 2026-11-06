@@ -20,6 +20,7 @@ import {
   type ProbeRecord,
   parseStored,
   recordLogOf,
+  rowCells,
   rowOf,
   STRATEGIES,
   type Strategy,
@@ -453,7 +454,7 @@ describe("마이크 점검 쪽 기록", () => {
     expect(sessionTypeOf("A")).toBeUndefined();
     expect(sessionTypeOf("K")).toBeUndefined();
   });
-  it("S · S2 는 한 세션의 final ms 를 모두 남기고, S2 는 세션 중 읽기 뒤의 결과 · final 수와 읽은 문장 낱말이 들렸는지를 남기며, T 는 abort 로 끝낸 것이 다음 기록의 앞 멈춤에 붙는다", () => {
+  it("S · S2 는 한 세션의 final ms 를 모두 남기고, 세션 중 읽기는 부른 수 · 시작 알림 수 · 앞 뒤 결과 수 · 뒤 final 수와 읽은 문장 낱말이 들렸는지를 남기며, T 는 abort 로 끝낸 것이 다음 기록의 앞 멈춤에 붙는다", () => {
     const final = (at: number, text: string): ProbeEvent => ({
       type: "result",
       at,
@@ -480,7 +481,7 @@ describe("마이크 점검 쪽 기록", () => {
     s1.stopReason = "user";
     expect(rowOf(s1)).toMatchObject({
       finalMs: [3_000, 13_000, 23_500],
-      afterSpeak: null,
+      sessionSpeak: null,
       end: 29_100,
     });
     // S2: 첫 final 뒤 읽기, 읽은 문장의 낱말(say · word)이 결과에 들었다
@@ -510,7 +511,15 @@ describe("마이크 점검 쪽 기록", () => {
     const r2 = rowOf(s2);
     expect(r2).toMatchObject({
       finalMs: [2_000, 8_000],
-      afterSpeak: { results: 2, finals: 1, echoed: true },
+      // fix 5 앞 꼴(speak-call 없음)은 시작 알림으로 센다
+      sessionSpeak: {
+        calls: 0,
+        started: 1,
+        before: 1,
+        after: 2,
+        finalsAfter: 1,
+        echoed: true,
+      },
       // 세션 중 읽기는 듣기 앞 읽기가 아니다
       speakEndToStart: null,
       stopReason: "natural",
@@ -523,11 +532,57 @@ describe("마이크 점검 쪽 기록", () => {
       { type: "speak-start", at: 3_050, attempt: 0, utterance: "line" },
       { type: "end", at: 6_000, attempt: 0 },
     ]);
-    expect(rowOf(quiet).afterSpeak).toEqual({
-      results: 0,
-      finals: 0,
+    expect(rowOf(quiet).sessionSpeak).toEqual({
+      calls: 0,
+      started: 1,
+      before: 1,
+      after: 0,
+      finalsAfter: 0,
       echoed: false,
     });
+    // S + '세션 중 읽기' 두 번(fix 5): 누름 안 무음 읽기 부름은 세지 않고, 두 번 불렀는데 시작 알림이 하나면 하나는 버려졌다
+    const sCall = (at: number, speaking: boolean): ProbeEvent => ({
+      type: "speak-call",
+      at,
+      attempt: 0,
+      utterance: "line",
+      speaking,
+      pending: false,
+      code: `speaking=${speaking} pending=false`,
+    });
+    const sMid = record(5, "S", [
+      {
+        type: "speak-call",
+        at: 999,
+        attempt: 0,
+        utterance: "unlock",
+        speaking: false,
+        pending: false,
+      },
+      { type: "start-call", at: 1_000, attempt: 0 },
+      final(3_000, "apple"),
+      { type: "press", at: 4_000, attempt: 0 },
+      sCall(4_001, false),
+      { type: "speak-start", at: 4_050, attempt: 0, utterance: "line" },
+      { type: "speak-end", at: 5_000, attempt: 0, utterance: "line" },
+      final(7_000, "apple banana"),
+      final(9_000, "apple banana cat"),
+      { type: "press", at: 10_000, attempt: 0 },
+      sCall(10_001, false),
+      final(11_000, "apple banana cat dog"),
+      { type: "stop-call", at: 14_000, attempt: 0, code: "user" },
+      { type: "end", at: 14_100, attempt: 0 },
+    ]);
+    const rowMid = rowOf(sMid);
+    expect(rowMid.sessionSpeak).toEqual({
+      calls: 2,
+      started: 1,
+      before: 1,
+      after: 3,
+      finalsAfter: 3,
+      echoed: false,
+    });
+    expect(rowCells(rowMid)).toContain("2·1 / 1·3 · 3 · 아니요");
     // T 뒤 기록: 앞 멈춤에 abort 가 붙는다
     const t = ok(5, "T");
     t.stopMethod = "abort";
