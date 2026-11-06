@@ -1603,9 +1603,9 @@ export function round2SentenceOf(sound: Round2Sound): string | null {
   return sound === "beep" || sound === "none" ? null : ROUND2_SENTENCE[sound];
 }
 
-/** 글에 낱말이 따로 들었는가(대소문자 무시, 낱말 경계). */
+/** 글에 낱말이 따로 들었는가(대소문자 무시, 낱말 경계, 복수형 -s 도 — apples · bananas, 검토 fix 8 M3). */
 export function hasWord(text: string, word: string): boolean {
-  return new RegExp(`\\b${word}\\b`, "i").test(text);
+  return new RegExp(`\\b${word}s?\\b`, "i").test(text);
 }
 
 /** 그 소리의 메아리 낱말이 글에 들었는가(띵 · 없음은 거짓). */
@@ -1634,6 +1634,8 @@ export type Round2Row = {
   decoy: {
     as: number | null;
     alive: boolean;
+    /** stop 전에 저절로 끝났는가(그 차례는 깨끗에서 뺀다). */
+    endedEarly: boolean;
     /** 버림 start → end(없으면 stop 호출) ms. */
     actualMs: number | null;
     stopSpeaking: boolean | null;
@@ -1743,12 +1745,17 @@ export function round2RowOf(record: ProbeRecord): Round2Row | null {
     const own = record.events.filter((e) => e.attempt === d);
     const as = ms(find(own, (e) => e.type === "audiostart"));
     const stop = find(own, (e) => e.type === "stop-call");
-    stopAt = stop?.at ?? null;
-    const ended = find(own, (e) => e.type === "end") ?? stop;
+    const endEvent = find(own, (e) => e.type === "end");
+    // stop 전에 end 가 왔으면 저절로 끝난 버림이다. 소리 끝은 그 end 와 견준다(검토 fix 8 I1)
+    const early =
+      endEvent !== undefined && (stop === undefined || endEvent.at < stop.at);
+    stopAt = early ? endEvent.at : (stop?.at ?? null);
+    const ended = endEvent ?? stop;
     const gap = find(own, (e) => e.type === "speak-state" && e.code === "gap");
     decoy = {
       as,
       alive: as !== null && as > DECOY_ALIVE_MS,
+      endedEarly: early,
       actualMs: ms(ended),
       stopSpeaking:
         stateOf(find(own, (e) => e.type === "speak-state" && e.code === "stop"))
@@ -1812,7 +1819,9 @@ export function round2RowOf(record: ProbeRecord): Round2Row | null {
     missing === undefined &&
     (stopAt === null || end.at < stopAt);
   const clean =
-    group !== "stuck" && soundClean && (decoy === null ? d < 0 : !decoy.alive);
+    group !== "stuck" &&
+    soundClean &&
+    (decoy === null ? d < 0 : !decoy.alive && !decoy.endedEarly);
   return {
     step: meta.step,
     group,
@@ -1846,7 +1855,7 @@ export function round2CellOf(row: Round2Row): string {
   const decoy =
     dc === null
       ? "세션 없이"
-      : `버림 ${(row.decoyMs ?? 0) / 1000}s·${cell(dc.as)}${dc.alive ? "(살아 있음)" : ""}·${cell(dc.actualMs)} · stop ${yesNo(dc.stopSpeaking)} · 거짓 확인 ${yesNo(dc.gapSpeaking === null ? null : !dc.gapSpeaking)}(${cell(dc.gapWaitMs)})${dc.echo > 0 ? ` · 버림 메아리 ${dc.echo}` : ""}`;
+      : `버림 ${(row.decoyMs ?? 0) / 1000}s·${cell(dc.as)}${dc.alive ? "(살아 있음)" : ""}·${cell(dc.actualMs)}${dc.endedEarly ? "(저절로 끝남)" : ""} · stop ${yesNo(dc.stopSpeaking)} · 거짓 확인 ${yesNo(dc.gapSpeaking === null ? null : !dc.gapSpeaking)}(${cell(dc.gapWaitMs)})${dc.echo > 0 ? ` · 버림 메아리 ${dc.echo}` : ""}`;
   const s = row.session;
   const real =
     s === null
@@ -1855,10 +1864,20 @@ export function round2CellOf(row: Round2Row): string {
   return `${row.step}·${ROUND2_GROUP_LABEL[row.group]}·${row.sound} / ${decoy} / ${sound} → ${real} · ${row.clean ? "깨끗" : "뺌"}`;
 }
 
+/**
+ * 차례 12(U16)의 결과(검토 fix 8 C1, 분석 10.19.5 판정 표): 됨 세션 중 읽기가 시작 · 끝나고 banana final 이 듦 · 안 됨 읽기는 끝났는데 banana
+ * final 이 없음 · 읽기 멈춤 세션 중 읽기를 불렀지만 끝 알림이 없음(시작만 했거나 시작도 없음 — 캡처와 겹쳐 멈춘 꼴) · 못 잼 세션 중 읽기를
+ * 부르지 못함(진짜가 죽어 apple 결과가 없음).
+ */
+export type Round2U16 = "됨" | "안 됨" | "읽기 멈춤" | "못 잼";
+
 export type Round2Lines = {
   groups: { group: Round2Group; n: number; m: number }[];
-  /** 차례 12: 세션 중 읽기가 시작되고 final 에 banana 가 들었으면 '됨'. 차례 12 가 없으면 null. */
-  u16: "됨" | "안 됨" | null;
+  /** 차례 12 의 결과와 그 세션의 메아리 결과 수. 차례 12 가 없으면 null. */
+  u16: Round2U16 | null;
+  u16Echo: number;
+  /** 복구 갈래(10 · 11): cancel 뒤 읽기 시작 알림이 온 차례 수 / 그 갈래 차례 수(깨끗함과 무관, 검토 fix 8 M4). */
+  recoverStarted: { n: number; m: number };
   /** 세는 갈래인데 깨끗하지 않아 뺀 차례. */
   excluded: number[];
 };
@@ -1871,17 +1890,20 @@ export function round2LinesOf(
   const groups = ROUND2_LINE_GROUPS.map((group) => ({ group, n: 0, m: 0 }));
   const excluded: number[] = [];
   let u16: Round2Lines["u16"] = null;
+  let u16Echo = 0;
+  const recoverStarted = { n: 0, m: 0 };
   for (const record of records) {
     if (autoRun !== undefined && record.autoRun !== autoRun) continue;
     const row = round2RowOf(record);
     if (row === null) continue;
     if (row.group === "u16") {
-      const s = row.session;
-      u16 =
-        s !== null && s.speakStart !== null && s.banana === true
-          ? "됨"
-          : "안 됨";
+      u16 = u16Of(row);
+      u16Echo = row.session?.echo ?? 0;
       continue;
+    }
+    if (row.group === "recover") {
+      recoverStarted.m += 1;
+      if (row.soundStart !== null) recoverStarted.n += 1;
     }
     const slot = groups.find((g) => g.group === row.group);
     if (slot === undefined) continue;
@@ -1892,15 +1914,32 @@ export function round2LinesOf(
     slot.m += 1;
     if (row.session?.apple === true) slot.n += 1;
   }
-  return { groups, u16, excluded };
+  return { groups, u16, u16Echo, recoverStarted, excluded };
 }
 
-/** 갈래별 줄 글: '대조군 1/1 · 3초 짧은 말 3/3 · … · U16 됨 · 뺀 차례 3'. */
+function u16Of(row: Round2Row): Round2U16 {
+  const s = row.session;
+  // 세션 중 읽기 앞 cancel 표지가 없으면 읽기를 부르지 못한 것(진짜가 apple 결과 없이 멈춤)
+  if (s === null || s.speakCancel === null) return "못 잼";
+  if (s.speakEndMissing || s.speakEnd === null) return "읽기 멈춤";
+  return s.banana === true ? "됨" : "안 됨";
+}
+
+/** 갈래별 줄 글: '대조군 1/1 · 3초 짧은 말 3/3 · … · 복구 2/2 · 복구 읽기 시작 2/2 · … · U16 됨(메아리 0) · 뺀 차례 3'. */
 export function round2LineOf(lines: Round2Lines): string {
-  const parts = lines.groups.map(
-    (g) => `${ROUND2_GROUP_LABEL[g.group]} ${g.n}/${g.m}`,
+  const parts = lines.groups.flatMap((g) => {
+    const part = `${ROUND2_GROUP_LABEL[g.group]} ${g.n}/${g.m}`;
+    if (g.group !== "recover") return [part];
+    const r = lines.recoverStarted;
+    return [part, `복구 읽기 시작 ${r.n}/${r.m}`];
+  });
+  parts.push(
+    lines.u16 === null
+      ? "U16 -"
+      : lines.u16 === "못 잼"
+        ? "U16 못 잼"
+        : `U16 ${lines.u16}(메아리 ${lines.u16Echo})`,
   );
-  parts.push(`U16 ${lines.u16 ?? "-"}`);
   if (lines.excluded.length > 0) {
     parts.push(`뺀 차례 ${lines.excluded.join("·")}`);
   }
@@ -1943,6 +1982,7 @@ export function round2LogOf(
           : [
               row.decoy.as,
               row.decoy.actualMs,
+              row.decoy.endedEarly,
               row.decoy.stopSpeaking,
               row.decoy.gapSpeaking,
               row.decoy.echo,

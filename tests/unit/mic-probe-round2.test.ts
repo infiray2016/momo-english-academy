@@ -172,9 +172,10 @@ class FakeSpeech implements RoundSpeech {
   private frozen = false;
   constructor(
     private readonly clock: Clock,
-    private readonly length: (text: string, n: number) => number | null = (
-      text,
-    ) => LENGTH_OF[text] ?? 1_000,
+    private readonly length: (
+      text: string,
+      n: number,
+    ) => number | null | "never" = (text) => LENGTH_OF[text] ?? 1_000,
   ) {}
   state() {
     return {
@@ -218,6 +219,8 @@ class FakeSpeech implements RoundSpeech {
   }
   private begin(utter: Utter, n: number) {
     const ms = this.length(utter.text, n);
+    // never: 시작 알림도 없다(iOS 가 사건 없이 버림)
+    if (ms === "never") return;
     utter.timers.push(
       this.clock.later(() => {
         utter.state = "speaking";
@@ -262,7 +265,7 @@ const apple: RecScript = {
 const deaf: RecScript = { as: 35 };
 
 type HarnessOptions = {
-  length?: (text: string, n: number) => number | null;
+  length?: (text: string, n: number) => number | null | "never";
   /** 캡처 시작 때 읽는 중이면 줄이 굳는다(기본 켬). */
   freezeOnStart?: boolean;
 };
@@ -560,16 +563,17 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
     );
   });
 
-  it("소리 끝 알림이 3초 안에 안 오면 '끝 없음' 을 남기고 cancel 뒤 stop 하며, 그 차례는 깨끗하지 않아 갈래 셈에서 뺀다", () => {
+  it("소리 끝 알림이 소리 시작 뒤 3초 안에 안 오면 '끝 없음' 을 남기고 cancel 뒤 stop 하며, 그 차례는 깨끗하지 않아 갈래 셈에서 뺀다", () => {
     const h = harness([dead, apple], planAt(3), {
       length: (text) => (text === "Okay." ? null : (LENGTH_OF[text] ?? 0)),
     });
     h.runner.start();
     h.clock.advance(TEN_MIN);
     const record = only(h.records);
-    const call = first(record, (e) => e.type === "speak-call");
+    // 3초는 시작 알림부터 잰다
+    const started = first(record, (e) => e.type === "speak-start");
     const missing = first(record, (e) => e.type === "speak-end-missing");
-    expect(missing.at - call.at).toBe(ROUND2_SOUND_END_WAIT_MS);
+    expect(missing.at - started.at).toBe(ROUND2_SOUND_END_WAIT_MS);
     const cancel = first(
       record,
       (e) => e.type === "speak-cancel" && e.code === "end-missing",
@@ -589,6 +593,23 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
       group: "short3",
       n: 0,
       m: 0,
+    });
+
+    // 시작 알림도 없으면 부른 때부터 3초
+    const never = harness([dead, apple], planAt(4), {
+      length: (text) => (text === "Okay." ? "never" : (LENGTH_OF[text] ?? 0)),
+    });
+    never.runner.start();
+    never.clock.advance(TEN_MIN);
+    const nr = only(never.records);
+    const nCall = first(nr, (e) => e.type === "speak-call");
+    const nMissing = first(nr, (e) => e.type === "speak-end-missing");
+    expect(nMissing.at - nCall.at).toBe(ROUND2_SOUND_END_WAIT_MS);
+    expect(eventsOf(nr, "speak-start")).toHaveLength(0);
+    expect(round2RowOf(nr)).toMatchObject({
+      soundStart: null,
+      soundEndMissing: true,
+      clean: false,
     });
   });
 
@@ -863,7 +884,7 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
     expect(round2RowOf(io)?.session?.banana).toBe(false);
     expect(round2LinesOf(interimOnly.records).u16).toBe("안 됨");
 
-    // 세션 중 읽기가 시작만 하고 끝 알림이 없으면 5초 뒤 '끝 없음' 으로 'banana' 를 보인다(읽기 시작 · banana final 이라 U16 됨)
+    // 세션 중 읽기가 시작만 하고 끝 알림이 없으면 5초 뒤 '끝 없음' 으로 'banana' 를 보인다. banana 를 들어도 '읽기 멈춤'(검토 fix 8 C1)
     const blocked = harness(
       [
         dead,
@@ -885,7 +906,24 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
     expect(blRow?.session?.speakEndMissing).toBe(true);
     expect(blRow?.session?.bananaAt).toBe(1_000 + 2_000 + 300 + 5_000);
     expect(blRow?.session?.banana).toBe(true);
-    expect(round2LinesOf(blocked.records).u16).toBe("됨");
+    expect(round2LinesOf(blocked.records).u16).toBe("읽기 멈춤");
+    expect(round2LineOf(round2LinesOf(blocked.records))).toContain(
+      "U16 읽기 멈춤(메아리 0)",
+    );
+
+    // 진짜가 아무것도 못 들으면 세션 중 읽기를 부르지 못해 '못 잼'(U16 을 재지 못함)
+    const deafReal = harness([dead, deaf], planAt(12));
+    deafReal.runner.start();
+    deafReal.clock.advance(TEN_MIN);
+    const dr = only(deafReal.records);
+    expect(dr.stopReason).toBe("no-result");
+    expect(
+      eventsOf(dr, "speak-call").filter((e) => e.attempt === 1),
+    ).toHaveLength(0);
+    expect(round2LinesOf(deafReal.records).u16).toBe("못 잼");
+    expect(round2LineOf(round2LinesOf(deafReal.records))).toContain(
+      "U16 못 잼",
+    );
   });
 
   it("보통 꼴 진짜: 'apple' 은 중간 결과에만 들어도 들음이고, 'apple' 이 든 결과 전의 메아리 결과로는 멈추지 않으며, 'apple' 이 6초 안에 없으면 stop 한다", () => {
@@ -929,6 +967,107 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
     expect(round2RowOf(n)?.session?.apple).toBe(false);
   });
 
+  it("버림이 소리 도중 저절로 끝나면 소리 끝 + 300ms 를 기다린 뒤 거짓 확인 → 1초 → 진짜를 열고, 그 차례는 '저절로 끝남' 으로 깨끗에서 뺀다(검토 fix 8 I1)", () => {
+    // 차례 1(5초 · 보통 말 1.3초): 버림이 0.8초에 저절로 end
+    const h = harness([dead, apple], planAt(1));
+    h.runner.start();
+    const decoyAt = UNLOCK_MS + 2_000;
+    h.clock.advance(decoyAt + 800);
+    const rec = h.recs[0];
+    if (rec === undefined) throw new Error("인식 없음");
+    rec.onend?.();
+    h.clock.advance(TEN_MIN);
+    const record = only(h.records);
+    expect(
+      eventsOf(record, "stop-call").filter((e) => e.code === "decoy"),
+    ).toHaveLength(0);
+    const soundEnd = first(
+      record,
+      (e) => e.type === "speak-end" && e.attempt === 0,
+    );
+    expect(soundEnd.at - decoyAt).toBe(235 + 1_300);
+    const gap = first(record, (e) => e.code === "gap");
+    expect(gap.at - soundEnd.at).toBe(ROUND2_SOUND_TAIL_MS);
+    expect(startOf(record, 1) - gap.at).toBe(DECOY_GAP_MS);
+    const row = round2RowOf(record);
+    expect(row?.decoy).toMatchObject({ endedEarly: true, actualMs: 800 });
+    expect(row?.clean).toBe(false);
+    expect(rowCells(rowOf(record)).at(-1)).toContain("(저절로 끝남)");
+    expect(round2LinesOf(h.records).excluded).toEqual([1]);
+
+    // 소리를 부르기 전에 끝나면 기다리지 않고 곧바로 거짓 확인 → 1초 → 진짜(소리 없음)
+    const before = harness([{ as: null }, apple], planAt(2));
+    before.runner.start();
+    before.clock.advance(UNLOCK_MS + 2_000 + 500);
+    before.recs[0]?.onend?.();
+    before.clock.advance(TEN_MIN);
+    const b = only(before.records);
+    expect(eventsOf(b, "speak-call")).toHaveLength(0);
+    expect(startOf(b, 1) - (UNLOCK_MS + 2_000 + 500)).toBe(DECOY_GAP_MS);
+    expect(round2RowOf(b)?.clean).toBe(false);
+  });
+
+  it("banana 는 이번 알림에 새로 final 이 된 글만 보고(앞 final 의 banana 뒤 메아리로 멈추지 않음), 낱말 검사는 복수형 apples · bananas 도 센다(검토 fix 8 M2 · M3)", () => {
+    const h = harness(
+      [
+        dead,
+        {
+          as: 380,
+          results: [
+            { at: 1_000, text: "apples", final: true },
+            // banana 를 보이기 전에 말한 banana(final)
+            { at: 3_500, text: " banana", final: true },
+            // 'banana' 를 보인 뒤 온 메아리 final — 이것으로 멈추지 않는다
+            { at: 4_500, text: " Okay", final: true },
+            { at: 6_000, text: " bananas", final: true },
+          ],
+        },
+      ],
+      planAt(12),
+    );
+    h.runner.start();
+    h.clock.advance(TEN_MIN);
+    const record = only(h.records);
+    const realStart = startOf(record, 1);
+    const stop = first(
+      record,
+      (e) => e.type === "stop-call" && e.attempt === 1,
+    );
+    expect(stop.at - realStart).toBe(6_000 + ROUND_SILENCE_MS);
+    expect(record.stopReason).toBe("final");
+    const flagged = record.events
+      .filter((e) => e.type === "result" && e.banana === true)
+      .map((e) => e.at - realStart);
+    expect(flagged).toEqual([3_500, 6_000]);
+    expect(round2RowOf(record)?.session).toMatchObject({
+      apple: true,
+      banana: true,
+    });
+  });
+
+  it("복구 갈래 줄은 깨끗함과 따로 'cancel 뒤 읽기가 시작됐는지' 를 센다(검토 fix 8 M4)", () => {
+    // 차례 10 의 짧은 말은 시작 알림이 없고(굳음이 안 풀린 꼴), 차례 11 은 시작 · 끝
+    const h = harness([dead, apple, dead, apple], planAt(10, 11), {
+      length: (text, n) => (n === 1 ? "never" : (LENGTH_OF[text] ?? 0)),
+    });
+    h.runner.start();
+    h.clock.advance(TEN_MIN);
+    const lines = round2LinesOf(h.records);
+    expect(lines.recoverStarted).toEqual({ n: 1, m: 2 });
+    expect(round2LineOf(lines)).toContain("복구 1/1 · 복구 읽기 시작 1/2");
+    expect(lines.excluded).toEqual([10]);
+  });
+
+  it("버림 없는 차례는 시작하자마자 화면을 '기다려요' 로 바꿔 쉼 화면 '남은 0초' 를 남기지 않는다(검토 fix 8 M1)", () => {
+    const h = harness([apple], planAt(13));
+    h.runner.start();
+    h.clock.advance(UNLOCK_MS + ROUND_PAUSE_MS);
+    expect(h.views.at(-1)).toEqual({
+      at: UNLOCK_MS + ROUND_PAUSE_MS,
+      view: { kind: "wait" },
+    });
+  });
+
   it("차례 13 은 45초 쉼(화면 '쉬는 중 · 남은 초') 뒤 버림 없이 cancel → 세션 없이 보통 말 → 끝 → 1초 → 진짜를 연다", () => {
     const h = harness([apple], planAt(13));
     h.runner.start();
@@ -967,7 +1106,7 @@ describe("마이크 점검 쪽 자동 W 라운드 2", () => {
     expect(doneAt).toBeLessThan(4 * 60_000);
     expect(doneAt).toBeGreaterThan(2 * 60_000 + 30_000);
     const line =
-      "대조군 1/1 · 3초 짧은 말 3/3 · 1.5초 1/2 · 띵 2/2 · 복구 2/2 · 쉰 첫 2/2 · U16 됨";
+      "대조군 1/1 · 3초 짧은 말 3/3 · 1.5초 1/2 · 띵 2/2 · 복구 2/2 · 복구 읽기 시작 2/2 · 쉰 첫 2/2 · U16 됨(메아리 0)";
     expect(h.views.at(-1)?.view).toEqual({ kind: "done", line });
     expect(h.done).toEqual([{ stopped: false, line }]);
     expect(MIC_TEXT.round2Done).toBe("끝났어요");

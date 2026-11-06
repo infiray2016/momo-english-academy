@@ -102,6 +102,8 @@ type Run = {
   minMet: boolean;
   soundDone: boolean;
   soundCalled: boolean;
+  /** 버림이 stop 전에 저절로 끝났는가. */
+  endedEarly: boolean;
   /** 진짜: 'apple' 이 든 결과를 받았는가(보통 꼴은 그 뒤부터 조용함 멈춤), banana final 을 받았는가. */
   appleHit: boolean;
   bananaHit: boolean;
@@ -332,6 +334,7 @@ export class WRound2Runner {
       minMet: false,
       soundDone: false,
       soundCalled: false,
+      endedEarly: false,
       appleHit: false,
       bananaHit: false,
       seen: new Set(),
@@ -385,6 +388,8 @@ export class WRound2Runner {
   /** 버림 없는 차례(0 · 13): 세션 없이 보통 말 → 끝(또는 3초 뒤 '끝 없음' · cancel) → 거짓 확인 → 1초 → 진짜. */
   private bareSpeak(run: Run) {
     run.phase = "bare";
+    // 45초 쉼 화면('남은 0초')을 곧바로 거둔다(검토 fix 8 M1)
+    this.on.view({ kind: "wait" });
     const speak = () => {
       let settled = false;
       const next = () => {
@@ -393,12 +398,13 @@ export class WRound2Runner {
         this.clearTimers(run);
         this.gapThenReal(run, true);
       };
-      this.speakLine(run, "bare", this.sentence(run), next);
-      this.after(run, ROUND2_SOUND_END_WAIT_MS, () => {
+      // '끝 없음' 3초는 시작 알림부터(시작 알림이 없으면 부른 때부터) 잰다(Z-4)
+      const rearm = this.watch(run, ROUND2_SOUND_END_WAIT_MS, () => {
         if (settled) return;
         this.soundMissing(run, "bare");
         next();
       });
+      this.speakLine(run, "bare", this.sentence(run), next, rearm);
     };
     if (run.plan.cancel) this.cancelFirst(run, speak);
     else speak();
@@ -459,16 +465,21 @@ export class WRound2Runner {
       });
     };
     const beep = run.plan.sound === "beep";
+    // '끝 없음' 3초는 소리 시작부터 잰다(Z-4). 읽기는 시작 알림이 오면 다시 재고, 안 오면 부른 때부터다. 띵은 부르는 순간 시작이라 1초를 더한다
+    const rearm = this.watch(
+      run,
+      ROUND2_SOUND_END_WAIT_MS + (beep ? BEEP_MS : 0),
+      () => {
+        if (settled || !this.isCurrent(run, attempt)) return;
+        if (run.phase !== "decoy") return;
+        settled = true;
+        this.soundMissing(run, beep ? "beep" : "line");
+        run.soundDone = true;
+        this.maybeClose(run);
+      },
+    );
     if (beep) this.playBeep(run, ended);
-    else this.speakLine(run, "line", this.sentence(run), ended);
-    this.after(run, ROUND2_SOUND_END_WAIT_MS + (beep ? BEEP_MS : 0), () => {
-      if (settled || !this.isCurrent(run, attempt)) return;
-      if (run.phase !== "decoy") return;
-      settled = true;
-      this.soundMissing(run, beep ? "beep" : "line");
-      run.soundDone = true;
-      this.maybeClose(run);
-    });
+    else this.speakLine(run, "line", this.sentence(run), ended, rearm);
   }
 
   /** 소리 끝이 상한 안에 안 왔다: 표지를 남기고, 읽기면 cancel 한다(Z-4 '소리 끝 없음' → cancel 뒤 stop). */
@@ -503,9 +514,15 @@ export class WRound2Runner {
   }
 
   private maybeClose(run: Run) {
-    if (run.phase === "decoy" && run.minMet && run.soundDone) {
-      this.closeDecoy(run);
+    if (run.phase !== "decoy" || !run.minMet || !run.soundDone) return;
+    if (run.endedEarly) {
+      // 버림은 이미 끝났다: stop 없이 소리 끝 + 300ms 뒤 거짓 확인으로
+      run.phase = "ending";
+      this.clearTimers(run);
+      this.gapThenReal(run, run.plan.waitSound);
+      return;
     }
+    this.closeDecoy(run);
   }
 
   private closeDecoy(run: Run) {
@@ -523,8 +540,16 @@ export class WRound2Runner {
     tryCall(() => run.rec?.stop());
   }
 
-  /** 버림이 저절로 끝났다(end 가 먼저 옴): 그대로 거짓 확인 → 1초 → 진짜. 실제 길이는 기록에 남는다. */
+  /**
+   * 버림이 저절로 끝났다(end 가 먼저 옴, 검토 fix 8 I1): 부른 소리가 아직 나오는 중이면 그 끝(+ 300ms, 또는 '끝 없음' 감시)을 기다린 뒤
+   * 거짓 확인 → 1초 → 진짜. 소리를 부르기 전이거나 차례 9(소리 끝을 안 기다림)면 곧바로 간다. 행은 '저절로 끝남'으로 깨끗에서 뺀다.
+   */
   private decoyEndedEarly(run: Run) {
+    run.endedEarly = true;
+    if (run.plan.waitSound && run.soundCalled && !run.soundDone) {
+      run.minMet = true;
+      return;
+    }
     run.phase = "ending";
     this.clearTimers(run);
     this.gapThenReal(run, run.plan.waitSound);
@@ -803,6 +828,7 @@ export class WRound2Runner {
       let text = "";
       let changed = "";
       let finalText = "";
+      let changedFinal = "";
       let final = false;
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
@@ -811,7 +837,10 @@ export class WRound2Runner {
         if (i >= event.resultIndex) changed += said;
         if (result?.isFinal) {
           finalText += said;
-          if (i >= event.resultIndex) final = true;
+          if (i >= event.resultIndex) {
+            final = true;
+            changedFinal += said;
+          }
         }
       }
       const heard = text.trim();
@@ -820,7 +849,8 @@ export class WRound2Runner {
       const at = this.deps.now();
       // Z-6: apple 은 중간 · final 어디든, banana 는 final 글에만, 메아리는 이번에 바뀐 결과 글에 읽은 문장의 낱말
       const apple = hasWord(heard, "apple");
-      const bananaFinal = final && hasWord(finalText, "banana");
+      // banana 는 이번 알림에 새로 final 이 된 글만 본다(지난 final 의 banana 로 멈추지 않음, 검토 fix 8 M2)
+      const bananaFinal = final && hasWord(changedFinal, "banana");
       const echo = isEcho(changed, run.plan.sound);
       const fresh = (key: string, on: boolean) => {
         const k = `${attempt}:${key}`;
@@ -909,6 +939,7 @@ export class WRound2Runner {
     utterance: "line" | "bare",
     text: string,
     done: () => void,
+    started?: () => void,
   ) {
     const attempt = run.attempt;
     const speech = this.deps.speech();
@@ -950,14 +981,16 @@ export class WRound2Runner {
           : { pitch: teacher.pitch, prefer: teacher.prefer }),
       },
       {
-        start: (voice) =>
+        start: (voice) => {
           this.push(run, {
             type: "speak-start",
             at: this.deps.now(),
             attempt,
             utterance,
             message: voice,
-          }),
+          });
+          started?.();
+        },
         end: () => {
           this.push(run, {
             type: "speak-end",
@@ -1045,6 +1078,17 @@ export class WRound2Runner {
       pending: state?.pending === true,
       ...(message === undefined ? {} : { message }),
     });
+  }
+
+  /** 상한 타이머를 걸고, 다시 재는 함수를 돌려준다(시작 알림이 오면 그때부터 다시 잰다). */
+  private watch(run: Run, ms: number, fire: () => void): () => void {
+    let id = this.deps.later(fire, ms);
+    run.timers.push(id);
+    return () => {
+      this.deps.cancelLater(id);
+      id = this.deps.later(fire, ms);
+      run.timers.push(id);
+    };
   }
 
   private isCurrent(run: Run, attempt: number) {
