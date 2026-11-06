@@ -80,6 +80,8 @@ const STREAM_END_MS = 30_000;
 const SETTLE_MS = 250;
 /** 반응이 보인 뒤 그 표본이 남을 때까지(표본 둘 — 시험 값). */
 const AFTER_REPLY_MS = 400;
+/** 인식 확인 칸을 찾는 간격(ms, 시험 값 — talk.confirm_seconds 안에 '보내기'를 누르게 짧게). */
+const CONFIRM_POLL_MS = 100;
 /** 회화 턴 요청 경로(앱이 그 경로로 fetch 를 부른 때가 '보낸 때' — 1~3단계는 듣기가 끝나면 저절로 보내므로 누른 때가 아니다). */
 const TURN_PATH = "/api/talk/turn";
 /** 보낸 처리와 그리기 사이 틈(시험 값 — 아이 말풍선은 요청 앞에 세워지므로 한 프레임이면 되지만 넉넉히). */
@@ -91,9 +93,12 @@ const SAFETY_MAX_TURNS = 2;
 /** 4단계 회화 턴 모델(그 단계 구간, TEST_SETTINGS — 가짜 응답의 답한 모델). */
 const TALK_MODEL_MID = TEST_SETTINGS["ai.model.talk_turn.4-6"].value;
 
-/** 회화 표본에서 읽는 것: 아이 말풍선 · 인식 확인 말풍선 · 선생님 말풍선 · 기다림 · 쉬는 안내. */
+/**
+ * 회화 표본에서 읽는 것: 아이 말풍선 · 인식 확인 말풍선 · 선생님 말풍선 · 기다림 · 쉬는 안내. 아이 말풍선은 마지막 보이는 것이다 — 대화 기록
+ * 칸이 지난 아이 말을 같은 표지(data-child-said)로 위에 그려, 첫 보이는 것은 둘째 턴부터 인사 답이다(e2e 분류 T1).
+ */
 const TALK_WATCH: Watch = {
-  said: { selector: "[data-child-said]" },
+  said: { selector: "[data-child-said]", pick: "last" },
   confirm: { selector: "[data-child-confirm] [data-child-bubble]" },
   tori: { selector: "[data-tori-bubble]" },
   waiting: { selector: "[data-tori-waiting], [data-wait-hint]" },
@@ -188,15 +193,28 @@ async function untilChildTurn(page: Page) {
   await page.waitForTimeout(SETTLE_MS);
 }
 
-/** 말하기를 눌러 보낸다: 바로 보내지면 그대로, 인식 확인이 뜨면 '보내기'. */
+/**
+ * 말하기를 눌러 보낸다: 바로 보내지면 그대로, 인식 확인이 뜨면 '보내기'. 보냄은 쪽 안 fetch 기록(recordTurnSends)으로 본다 — 대화 기록 칸의
+ * 지난 아이 말도 같은 표지(data-child-said)라 그 표지로는 이 턴을 가를 수 없다(e2e 분류 T1, 셋째 턴부터 엄격 모드 위반). 확인 칸은
+ * talk.confirm_seconds 뒤 저절로 보내므로 그 안에 누르게 짧은 간격으로 본다.
+ */
 async function sendTurn(page: Page) {
+  const before = (await turnSendsOf(page)).length;
   await page.locator("[data-child-turn] [data-speak]").click();
-  const said = page.locator("[data-child-said]");
-  const confirm = page.locator("[data-child-confirm]");
-  await expect(said.or(confirm).first()).toBeVisible();
-  if (await confirm.isVisible())
+  const confirm = page.locator("[data-child-turn] [data-child-confirm]");
+  const sent = async () => (await turnSendsOf(page)).length > before;
+  await expect
+    .poll(async () => (await sent()) || (await confirm.isVisible()), {
+      message: "이 턴을 보냈거나 인식 확인이 떴다",
+      intervals: [CONFIRM_POLL_MS],
+      timeout: STREAM_END_MS,
+    })
+    .toBe(true);
+  if (!(await sent()) && (await confirm.isVisible()))
     await confirm.getByRole("button", { name: T.send }).click();
-  await expect(said).toBeVisible();
+  await expect
+    .poll(sent, { message: "이 턴의 회화 턴 요청", timeout: STREAM_END_MS })
+    .toBe(true);
 }
 
 /** 표본 줄 요약(실패 글 — 표본마다 아이 말풍선 · 선생님 말풍선 · 기다림 · 쉼). */

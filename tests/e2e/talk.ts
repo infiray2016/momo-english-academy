@@ -27,6 +27,7 @@ import {
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { e2eDb, insertSessions, withHouseholdSetting } from "./db";
+import { fakeAiRequests } from "./fake-ai";
 import { insertHousehold } from "./household";
 
 type LessonRow = typeof lessons.$inferSelect;
@@ -35,6 +36,18 @@ type LessonRow = typeof lessons.$inferSelect;
 export const TALK_MODEL_LOW = TEST_SETTINGS["ai.model.talk_turn.1-3"].value;
 /** 회화 턴 요청만 고르는 본문 글(사용자 메시지 줄 — 고정부 설명과 겹치지 않게 줄바꿈부터). */
 export const TURN_MARK = "\\nClosing: no";
+/**
+ * 끝맺음 호출의 본문 글(server/conversation/closing.ts — 'Closing: yes'). 끝맺음 호출은 앞 턴 사용자 메시지 전문을 대화 기록으로 다시
+ * 보내므로 본문에 TURN_MARK 도 든다(core/ai/calls/talk-lesson.ts — e2e 분류 T6).
+ */
+export const CLOSING_MARK = "\\nClosing: yes";
+
+/** 가짜 AI 가 받은 회화 턴 요청 수(끝맺음 호출은 뺀다 — talk-lesson · teacher-window · speech-feedback 가 함께 쓴다, e2e 분류 T6). */
+export async function talkTurnRequests(): Promise<number> {
+  return (await fakeAiRequests()).filter(
+    (r) => r.bodyText.includes(TURN_MARK) && !r.bodyText.includes(CLOSING_MARK),
+  ).length;
+}
 
 async function latestRevision(): Promise<number> {
   let latest = 0;
@@ -285,6 +298,25 @@ export function webkitSilentRun(): RecognitionRun {
       },
       { at: 20, type: "end" },
     ],
+  };
+}
+
+/** '마이크 안 잡힘' 흉내의 audiostart(ms, start() 뒤 — speech.deaf_audiostart_ms 200 보다 빠르게, 분석 표 A 의 실패 듣기 꼴 · 시험 값). */
+const DEAF_AUDIOSTART_AT_MS = 80;
+
+/**
+ * iPad WebKit '못 듣는 마이크' 꼴(13절 C210 · WebKit 326069 · 321436): start() 바로 뒤 audiostart 가 오고 그 뒤 소리 · 결과 · 오류가 없다.
+ * 앱은 speech.deaf_silence_ms 뒤 '마이크 안 잡힘'(deaf)으로 끝내고 stop · abort 한다(가짜는 end 만 낸다). 감지는 speech.deaf_detect(시험값
+ * ios)라 iPad 꼴 기기(playwright.config tablet-10-9-webkit)에서 켜진다.
+ */
+export function deafRun(): RecognitionRun {
+  return {
+    events: [
+      { at: 50, type: "start" },
+      { at: DEAF_AUDIOSTART_AT_MS, type: "audiostart" },
+    ],
+    onStop: [{ at: 10, type: "end" }],
+    onAbort: [{ at: 10, type: "end" }],
   };
 }
 

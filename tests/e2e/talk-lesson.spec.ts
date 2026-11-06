@@ -3,7 +3,7 @@
 // 진행 세션을 바로 연다. 회화 턴은 가짜 Anthropic SSE(talkLessonReply — 새 꼴 응답 칸), 듣기는 가짜 Web Speech 대본(듣기마다 하나).
 // 숫자는 시험용 설정에서 읽는다. 이 파일은 정적이다(이 Mac 에서 돌리지 않음 — 첫 실행은 묶음 14 · CI, 회화 e2e 를 새 꼴 견본으로 옮기는 일은
 // 묶음 12). 녹음하지 않는다.
-import type { BrowserContext, Page } from "@playwright/test";
+import type { BrowserContext, Locator, Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
 import type { TalkCard } from "../../src/core/seed/schema/talk";
@@ -15,15 +15,16 @@ import { closeE2eDb, e2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
 import {
+  deafRun,
   insertTalkLesson,
   openTalkSession,
   saidRun,
   speechRecord,
-  TURN_MARK,
   talkHousehold,
   talkLessonCard,
   talkLessonReply,
   talkScript,
+  talkTurnRequests,
   webkitSilentRun,
 } from "./talk";
 
@@ -39,6 +40,11 @@ const T = {
   stopNo: "더 이야기할래요",
   aborted: "다음에 조금 더 이야기하면 별을 받아요",
   next: "다음",
+  send: "보내기",
+  /** 마이크 안 잡힘 안내(정본 밖 문구 — 화면 CHILD_TURN_TEXT.micDeaf · micDeafSkip · micDeafStuck 과 같은 글, 13절 C210 · 보완 잠정). */
+  micDeaf: "마이크가 안 잡혔어요. 한 번 더 눌러 주세요",
+  micDeafSkip: "마이크가 계속 안 잡혀서 다음으로 넘어가요",
+  micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
 } as const;
 const MS = 1000;
 const LONG = 120_000;
@@ -48,6 +54,13 @@ const WAIT_LINE_MS = TEST_SETTINGS["talk.wait_line_seconds"].value * MS;
 const NOSPEECH_COUNT = TEST_SETTINGS["talk.nospeech_dontknow_count"].value;
 const MORE_ROUND = TEST_SETTINGS["talk.more_talk_round_turns"].value;
 const SILENT_ITEMS_MAX = TEST_SETTINGS["speech.silent_items_max"].value;
+const DEAF_SKIP_AFTER = TEST_SETTINGS["speech.deaf_skip_after"].value;
+const DEAF_SILENCE_MS = TEST_SETTINGS["speech.deaf_silence_ms"].value;
+/**
+ * 말소리 없는 듣기를 아이가 멈추기 전에 두는 틈(ms, 시험 값): webkitSilentRun 의 audiostart(400ms) 뒤에 누르게 — 실제 iPad 꼴(소리 받기는
+ * 시작했고 말소리만 없음). 기다리지 않으면 듣기는 speech.max_listen_seconds 상한에서야 끝난다(e2e 분류 T4).
+ */
+const SILENT_HOLD_MS = 700;
 /** 막힘 화면 글(7절 — 화면 TALK_TEXT.blocked.silent 와 같은 글). */
 const SILENT_BLOCKED = "말소리가 잘 안 들려요. 부모님께 말해 주세요";
 
@@ -132,6 +145,59 @@ async function speak(page: Page) {
   await page.locator("[data-child-turn] [data-speak]").click();
 }
 
+/**
+ * 말하고 보낸다(1~3단계에서 연 힌트 · 들은 답이 없는 턴): 끝 침묵(speech.end_silence_seconds.talk.1-3) 뒤 인식 확인 칸이 뜨면 '보내기'.
+ * 확인 칸을 talk.confirm_seconds 동안 기다리면 보냄이 늦어 짧은 단언 창을 넘긴다(e2e 분류 T3 — required-utterance sendTurn 꼴).
+ */
+async function speakAndSend(page: Page) {
+  await speak(page);
+  const confirm = page.locator("[data-child-turn] [data-child-confirm]");
+  await expect(confirm).toBeVisible({ timeout: STREAM_END_MS });
+  await confirm.getByRole("button", { name: T.send }).click();
+  await expect(confirm).toHaveCount(0);
+}
+
+/**
+ * 말 없이 멈춘 시도 하나(webkitSilentRun — iPad WebKit 은 스스로 no-speech 를 내지 않음, C148): 누름 → 듣는 중 → audiostart 뒤 다시 눌러
+ * 멈춤 → 듣기 끝. 멈추면 가짜가 aborted 'No speech detected' 를 내고 앱은 말소리 없음으로 읽는다. 기다림 없이 두 번 누르면 둘째 누름이 그
+ * 시도를 멈출 뿐이라 시도가 하나만 생긴다(e2e 분류 T4).
+ */
+async function silentAttempt(page: Page) {
+  const button = page.locator("[data-child-turn] [data-speak]");
+  await expect(button).not.toHaveAttribute("data-speak-waiting", "", {
+    timeout: STREAM_END_MS,
+  });
+  await button.click();
+  await expect(button).toHaveAttribute("data-listening", "");
+  await page.waitForTimeout(SILENT_HOLD_MS);
+  await button.click();
+  await expect(button).not.toHaveAttribute("data-listening", "");
+}
+
+/** 말소리 없음 셈이 차 '모름'으로 보낸 차례가 끝나고 다음 아이 차례가 열릴 때까지(옛 차례의 안내 줄이 없어진 뒤 — 옛 차례로 바로 지나지 않게). */
+async function untilNextChildTurnAfterNospeech(page: Page) {
+  const moving = page.locator("[data-nospeech-move]");
+  await expect(moving).toBeVisible();
+  await expect(moving).toHaveCount(0, { timeout: STREAM_END_MS });
+  await untilChildTurn(page);
+}
+
+/**
+ * 마이크 안 잡힘 시도 하나(deafRun — 13절 C210): 누름 → 듣는 중 → speech.deaf_silence_ms 뒤 앱이 스스로 듣기를 끝냄. scope 는 말하기 단추가 든
+ * 자리(대화 차례 · 짧은 준비 쪽지).
+ */
+async function deafAttempt(scope: Locator) {
+  const button = scope.locator("[data-speak]");
+  await expect(button).not.toHaveAttribute("data-speak-waiting", "", {
+    timeout: STREAM_END_MS,
+  });
+  await button.click();
+  await expect(button).toHaveAttribute("data-listening", "");
+  await expect(button).not.toHaveAttribute("data-listening", "", {
+    timeout: DEAF_SILENCE_MS + STREAM_END_MS,
+  });
+}
+
 /** 인사 한 턴 → 짧은 준비 쪽지를 다 따라 말함 → 대화 첫 질문까지. */
 async function throughGreetingAndPrep(o: Opened & { lesson: TalkLesson }) {
   await untilChildTurn(o.page);
@@ -195,9 +261,7 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
       await expect(note.locator("[data-follow-result]")).toBeVisible();
     }
     // 대화 첫 질문: 카드 첫 필수 질문을 앱이 보이고 읽는다(AI 호출 없음 — C19), 앞 말은 대화 기록 칸 위로
-    const before = (await fakeAiRequests()).filter((r) =>
-      r.bodyText.includes(TURN_MARK),
-    ).length;
+    const before = await talkTurnRequests();
     await expect(bubble(o.page)).toContainText(o.card.required[0]?.en ?? "", {
       timeout: STREAM_END_MS,
     });
@@ -206,10 +270,7 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(o.page.locator("[data-talk-log]")).toContainText(
       "Let's learn some new words!",
     );
-    expect(
-      (await fakeAiRequests()).filter((r) => r.bodyText.includes(TURN_MARK))
-        .length,
-    ).toBe(before);
+    expect(await talkTurnRequests()).toBe(before);
     // '그만하기': 대화 토막에 말한 아이 턴이 없으니(참여가 거의 없음) 확인 쪽지(C34) → 그만두기면 정리 뒤 중단
     await untilChildTurn(o.page);
     await o.page.locator("[data-talk-stop]").click();
@@ -261,9 +322,12 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
       }),
     ]);
     await speak(o.page);
-    await expect(band(o.page)).toHaveText("말 주고받기 1", {
+    // 대화 답의 응답이 온 뒤에 그만한다 — 인사 턴도 말 주고받기에 들어(02-2 162 · 227줄) 대화 첫 질문 화면이 이미 '말 주고받기 1'이라 셈만
+    // 보면 대화 답을 보내기 전에 지나간다(e2e 분류 T2). 인사 1 + 대화 1 = 2
+    await expect(bubble(o.page)).toContainText("Wow, me too!", {
       timeout: STREAM_END_MS,
     });
+    await expect(band(o.page)).toHaveText("말 주고받기 2");
     await untilChildTurn(o.page);
     await o.page.locator("[data-talk-stop]").click();
     await expect(o.page.getByRole("button", { name: T.stopYes })).toHaveCount(
@@ -384,11 +448,15 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
       ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
       saidRun("I don't know."),
     ]);
+    // '막히면 눌러요'는 힌트 단추가 있는 첫 아이 차례(인사 질문 — 견본 인사에 힌트가 있음)에서 한 번 보이고 듣기를 시작하면 꺼진다(03절 99줄 ·
+    // C10, child-turn 385줄 · talk-frame 1672줄). 대화 차례에는 없다(e2e 분류 T5)
+    await untilChildTurn(o.page);
+    await expect(o.page.locator("[data-hint-nudge]")).toBeVisible();
     await throughGreetingAndPrep(o);
     await untilChildTurn(o.page);
+    await expect(o.page.locator("[data-hint-nudge]")).toHaveCount(0);
     // 카드 첫 필수 질문 자리의 힌트(카드 힌트 — 3단계는 한국어 뜻 → 영어 틀 → 영어 문장)
     const hint = o.page.locator("[data-hint-button]");
-    await expect(o.page.locator("[data-hint-nudge]")).toBeVisible();
     await hint.click();
     await expect(o.page.locator('[data-hint-tier="ko"]')).toBeVisible();
     await hint.click();
@@ -463,14 +531,13 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
       talkLessonReply({ tori_en: "I couldn't hear you. It's okay!" }),
     ]);
     for (let i = 0; i < NOSPEECH_COUNT; i++) {
-      await speak(o.page);
+      await silentAttempt(o.page);
       if (i < NOSPEECH_COUNT - 1)
         await expect(
           o.page.locator('[data-child-said="not_heard"]'),
         ).toBeVisible();
     }
-    await expect(o.page.locator("[data-nospeech-move]")).toBeVisible();
-    await untilChildTurn(o.page);
+    await untilNextChildTurnAfterNospeech(o.page);
     await expect(o.page.locator("[data-dont-know][data-flash]")).toBeVisible();
     await expect(o.page.locator("[data-talk-log]")).toContainText(
       "못 들었어요",
@@ -505,7 +572,8 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
     await expect(o.page.locator("[data-talk-log]")).toContainText(
       o.card.required[0]?.en ?? "",
     );
-    await expect(band(o.page)).toHaveText("말 주고받기 1");
+    // 인사 턴도 말 주고받기에 든다(02-2 162 · 227줄 · lesson-flow 셈) — 인사 1 + 대화 1(e2e 분류 T2)
+    await expect(band(o.page)).toHaveText("말 주고받기 2");
     expect((await fakeAiRequests()).length).toBe(calls);
   });
 
@@ -525,7 +593,8 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
     await pushFakeAi([
       talkLessonReply({ tori_en: reply }, { firstDelayMs: WAIT_LINE_MS * 2 }),
     ]);
-    await speak(o.page);
+    // 끝 침묵 뒤 확인 칸이 뜨면 바로 보낸다 — 확인 칸 시간까지 기다리면 기다림 표시가 기본 단언 창을 넘긴다(e2e 분류 T3)
+    await speakAndSend(o.page);
     await expect(o.page.locator("[data-tori-waiting]")).toBeVisible();
     await expect(toriLines(o.page)).toContainText(sentencesOf(reply), {
       timeout: STREAM_END_MS,
@@ -569,6 +638,10 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
       }),
     ]);
     await o.page.getByRole("button", { name: T.dontKnow }).click();
+    // 첫 막힘은 카드 자리의 같이 말하기 — 답 소리 줄이 붙은 새 차례를 기다린다(옛 차례로 바로 지나지 않게, e2e 분류 T3)
+    await expect(o.page.locator('[data-sound-listen="answer"]')).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
     await untilChildTurn(o.page);
     await expect(o.page.locator("[data-hint-tier]")).toHaveCount(0);
     // 둘째 막힘: 막힘 말('I don't know.' — AI 가 stuck 으로 알림)
@@ -579,9 +652,11 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
         support: "easy_question",
       }),
     ]);
-    await speak(o.page);
-    await untilChildTurn(o.page);
-    await expect(o.page.locator('[data-hint-tier="sentence"]')).toBeVisible();
+    // 보낸 뒤 새 아이 차례의 힌트 단을 기다린다 — 보내기 전의 옛 차례로 untilChildTurn 이 바로 지나므로 단언에 응답까지의 창을 준다(e2e 분류 T3)
+    await speakAndSend(o.page);
+    await expect(o.page.locator('[data-hint-tier="sentence"]')).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
   });
 
   test("AC-15a 위 띠: 대화 중 셈은 '말 주고받기 n' 이고 분모(참고 턴)가 없다(마무리 물음 뒤 띠는 단위 시험이 본다)", async ({
@@ -732,12 +807,15 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
     );
     await expect(attempt).toBeVisible({ timeout: STREAM_END_MS });
     await expect(attempt).toHaveText("못 들었어요");
-    // AI 질문은 시험 어휘 안(AC-15i). 카드 항목(필수 1)을 둬 그 자리의 답 예시가 카드 답 예시다(lesson-flow slotOf)
+    // AI 질문은 시험 어휘 안(AC-15i). 카드 답 바로 뒤 차례라 카드 항목(필수)은 앱이 비우므로(13절 C204 (6) · talk-lesson.ts cardChainGuardOf,
+    // 69b1a4d) 그 자리의 답 예시는 AI 의 next_answer_example 이다(lesson-flow slotOf → row.answerExample, 여덟째 실행 새 실패)
     await pushFakeAi([
       talkLessonReply({
         tori_en: "Nice! Do you like it?",
         next_move: "follow_up",
-        card_item: { kind: "required", no: 1 },
+        next_hint_ko: "좋아하는 것을 말해 봐.",
+        next_hints: ["I like ___.", "I like it."],
+        next_answer_example: "I like it.",
       }),
     ]);
     await speak(o.page);
@@ -746,7 +824,7 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
       timeout: STREAM_END_MS,
     });
     await untilChildTurn(o.page);
-    // 그 자리의 첫 막힘('잘 모르겠어요')은 같이 말하기 카드 자리 — 앱이 카드 답 예시를 소리 줄(answer)로 붙인다(lesson-flow stuckPlan)
+    // 그 자리의 첫 막힘('잘 모르겠어요')은 같이 말하기 — 1~3단계는 앱이 그 자리 답 예시를 소리 줄(answer)로 붙인다(lesson-flow stuckPlan)
     await pushFakeAi([
       talkLessonReply({
         stuck: true,
@@ -796,11 +874,14 @@ test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => 
         }),
       ),
     );
+    await untilChildTurn(o.page);
     for (let q = 1; q <= SILENT_ITEMS_MAX; q++) {
-      await untilChildTurn(o.page);
-      for (let i = 0; i < NOSPEECH_COUNT; i++) await speak(o.page);
-      if (q < SILENT_ITEMS_MAX)
+      // 시도마다 듣기를 멈춰 질문 자리마다 talk.nospeech_dontknow_count 번(e2e 분류 T4)
+      for (let i = 0; i < NOSPEECH_COUNT; i++) await silentAttempt(o.page);
+      if (q < SILENT_ITEMS_MAX) {
+        await untilNextChildTurnAfterNospeech(o.page);
         await expect(o.page.locator("[data-blocked]")).toHaveCount(0);
+      }
     }
     await expect(o.page.getByText(SILENT_BLOCKED)).toBeVisible({
       timeout: STREAM_END_MS,
@@ -847,9 +928,19 @@ test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => 
     });
     await untilChildTurn(o.page);
     // 힌트를 마지막 단(영어 문장과 듣기)까지 연다
+    // 단이 하나 열린 것을 본 뒤 다음을 누르고, 문장 단이 열리면 서버에서 글을 받아 듣기 단추가 그려질 때까지 기다린다 — 받기 전에 더 누르면 다 열려
+    // 꺼진 단추를 기다린다(e2e 분류 흔들림, child-turn 367 · 594 · 641줄)
     const hint = o.page.getByRole("button", { name: T.hint, exact: true });
-    while ((await o.page.locator("[data-hint-listen]").count()) === 0)
+    const tiers = o.page.locator("[data-hint-tier]");
+    const sentenceTier = o.page.locator('[data-hint-tier="sentence"]');
+    while ((await sentenceTier.count()) === 0) {
+      const opened = await tiers.count();
       await hint.click();
+      await expect(tiers).toHaveCount(opened + 1);
+    }
+    await expect(o.page.locator("[data-hint-listen]")).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
     const readers = [
       bubble(o.page),
       o.page.locator('[data-answer-listen="1"]'),
@@ -871,6 +962,83 @@ test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => 
   });
 });
 
+// ── 마이크 안 잡힘(13절 C210 · 보완 잠정 — 72851d7 의 화면 몫, 단위 시험 talk-mic-deaf 가 판정을 잠근다) ──
+
+test.describe("새 꼴 회화 — 마이크 안 잡힘(C210)", () => {
+  test("C210 iPad 꼴 마이크 안 잡힘(audiostart 가 speech.deaf_audiostart_ms 안 · speech.deaf_silence_ms 동안 소리 없음)은 말소리 없음으로 세지 않는다: 짧은 준비 쪽지는 speech.deaf_skip_after 번 이어지면 기술 사유로 다음 낱말로 넘어가고, 대화 차례는 '못 들었어요' · 턴 보냄 없이 안내 한 줄이며 그 수에 닿으면 '잘 모르겠어요' 안내로 바뀐다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    // 대화 차례에서 talk.nospeech_dontknow_count 를 넘게 이어 마이크 안 잡힘 — 말소리 없음 셈에 들면 '모름'으로 보냈을 수다
+    const dialogDeaf = Math.max(DEAF_SKIP_AFTER, NOSPEECH_COUNT + 1);
+    const o = await openLesson(context, (_card, lesson) => [
+      saidRun("I'm good."),
+      ...Array.from({ length: DEAF_SKIP_AFTER }, () => deafRun()),
+      ...(lesson.card.prep ?? []).slice(1).map((w) => saidRun(w)),
+      ...Array.from({ length: dialogDeaf }, () => deafRun()),
+    ]);
+    if (prepCountOf(o.lesson) < 1) throw new Error("견본 꼴 — 짧은 준비 낱말");
+    await untilChildTurn(o.page);
+    await pushFakeAi([
+      talkLessonReply({ tori_en: "Great! Let's learn some new words!" }),
+    ]);
+    await speak(o.page);
+    // 짧은 준비 첫 낱말: 안 잡힘은 실패 수 · 결과 말 없이 안내 한 줄, speech.deaf_skip_after 번째에 기술 사유 건너뜀 안내 뒤 다음 낱말
+    const note = o.page.locator("[data-prep-note]");
+    await expect(note).toBeVisible({ timeout: STREAM_END_MS });
+    const firstStep = await note.getAttribute("data-prep-step");
+    if (firstStep === null) throw new Error("쪽지 차례 표지 없음");
+    for (let i = 1; i <= DEAF_SKIP_AFTER; i++) {
+      await deafAttempt(note);
+      // 건너뜀 안내는 speech.skip_notice_seconds 뒤 다음 낱말로 바뀌므로 먼저 본다
+      if (i === DEAF_SKIP_AFTER)
+        await expect(note.locator("[data-follow-skipped]")).toHaveText(
+          T.micDeafSkip,
+        );
+      else {
+        await expect(note.getByText(T.micDeaf)).toBeVisible();
+        await expect(note.locator("[data-follow-skipped]")).toHaveCount(0);
+      }
+      await expect(note.locator("[data-follow-result]")).toHaveCount(0);
+      await expect(note).toHaveAttribute("data-follow-failures", "0");
+    }
+    // 남은 낱말은 말한다(쪽지가 다음 낱말로 바뀐 뒤)
+    let step = firstStep;
+    for (let i = 1; i < prepCountOf(o.lesson); i++) {
+      await expect(note).not.toHaveAttribute("data-prep-step", step, {
+        timeout: STREAM_END_MS,
+      });
+      step = (await note.getAttribute("data-prep-step")) ?? step;
+      await expect(note.locator("[data-speak]")).not.toHaveAttribute(
+        "data-speak-waiting",
+        "",
+        { timeout: STREAM_END_MS },
+      );
+      await note.locator("[data-speak]").click();
+      await expect(note.locator("[data-follow-result]")).toBeVisible();
+    }
+    // 대화 첫 질문: 안 잡힘은 '못 들었어요' · 말소리 없음 셈 · 회화 턴 요청 없이 안내 한 줄
+    await expect(bubble(o.page)).toContainText(o.card.required[0]?.en ?? "", {
+      timeout: STREAM_END_MS,
+    });
+    await untilChildTurn(o.page);
+    const before = await talkTurnRequests();
+    const turn = childTurn(o.page);
+    for (let i = 1; i <= dialogDeaf; i++) {
+      await deafAttempt(turn);
+      await expect(
+        turn.getByText(i < DEAF_SKIP_AFTER ? T.micDeaf : T.micDeafStuck),
+      ).toBeVisible();
+      await expect(turn.locator('[data-child-said="not_heard"]')).toHaveCount(
+        0,
+      );
+      await expect(o.page.locator("[data-nospeech-move]")).toHaveCount(0);
+    }
+    expect(await talkTurnRequests()).toBe(before);
+    await expect(o.page.locator("[data-blocked]")).toHaveCount(0);
+  });
+});
+
 // ── 대화 안전 상한(AC-15j — 옛 conversation.spec 의 회귀를 새 꼴로 옮김, 회화 plan 증명 표 묶음 12) ──
 
 test.describe("새 꼴 회화 — 대화 안전 상한(AC-15j)", () => {
@@ -887,17 +1055,13 @@ test.describe("새 꼴 회화 — 대화 안전 상한(AC-15j)", () => {
       ]);
       await throughGreetingAndPrep(o);
       await untilChildTurn(o.page);
-      const before = (await fakeAiRequests()).filter((r) =>
-        r.bodyText.includes(TURN_MARK),
-      ).length;
+      // 셈은 회화 턴 요청만 — 상한 뒤 끝맺음 호출('Closing: yes')은 앞 턴 메시지를 다시 보내 TURN_MARK 도 들므로 뺀다(e2e 분류 T6)
+      const before = await talkTurnRequests();
       await speak(o.page);
       await expect(bubble(o.page)).toContainText(o.card.safetyFarewell.en, {
         timeout: STREAM_END_MS,
       });
-      expect(
-        (await fakeAiRequests()).filter((r) => r.bodyText.includes(TURN_MARK))
-          .length,
-      ).toBe(before);
+      expect(await talkTurnRequests()).toBe(before);
       await expect(o.page.locator("[data-talk-closed]")).toBeVisible();
       await o.page
         .locator("[data-talk-closed]")

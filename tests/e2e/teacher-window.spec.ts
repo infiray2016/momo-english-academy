@@ -34,7 +34,7 @@ import {
   resetHousehold,
   withHouseholdSetting,
 } from "./db";
-import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
+import { pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
 import { photo } from "./photos";
@@ -46,11 +46,11 @@ import {
   saidRun,
   skipStartPrep,
   speechRecord,
-  TURN_MARK,
   talkHousehold,
   talkLessonCard,
   talkLessonReply,
   talkScript,
+  talkTurnRequests,
 } from "./talk";
 
 /** 화면 글(문구 표 TEACHER_TEXT 와 같은 글 — 회화 시험 집의 선생님은 미나). */
@@ -82,6 +82,11 @@ const STREAM_END_MS = 30_000;
 const SETTLE_STATE_MS = 400;
 /** 들어올 때의 읽기가 듣기보다 먼저 돌 틈(회화 e2e 와 같은 값). */
 const SETTLE_MS = 250;
+/**
+ * 취소 시험에서 첫 실제 발화가 읽히는 시간(ms, 시험 값): 시작을 본 poll · 두 단언 · WebKit 누름 동작의 합(CI 여섯째 trace 약 0.9초)보다
+ * 넉넉히 길게 둔다 — 900ms 창은 누르기 전에 저절로 끝났다(e2e 분류 E1).
+ */
+const HELD_UTTER_MS = 6000;
 const MIC_STATE_KEY = "momo.mic.v1";
 /** 긴 흐름 시험의 듣기 끝 조용함 · 인식 확인(초, 시험 값 — 회화 e2e withFastTurns 와 같은 값). */
 const FAST_SILENCE_SECONDS = 0.3;
@@ -298,20 +303,14 @@ async function untilChildTurn(page: Page) {
   await page.waitForTimeout(SETTLE_MS);
 }
 
-/** 회화 턴 요청 수(끝맺음 턴은 뺀다). */
-async function turnRequests(): Promise<number> {
-  return (await fakeAiRequests()).filter(
-    (r) =>
-      r.bodyText.includes(TURN_MARK) && !r.bodyText.includes("\\nClosing: yes"),
-  ).length;
-}
-
 /** 아이 차례에서 '말하기' 한 번(인식 확인이 뜨면 talk.confirm_seconds 뒤 저절로 보냄) → 턴 요청이 하나 늘 때까지. */
 async function talkTurn(page: Page) {
-  const before = await turnRequests();
+  const before = await talkTurnRequests();
   await untilChildTurn(page);
   await page.locator("[data-child-turn] [data-speak]").click();
-  await expect.poll(turnRequests, { timeout: STREAM_END_MS }).toBe(before + 1);
+  await expect
+    .poll(talkTurnRequests, { timeout: STREAM_END_MS })
+    .toBe(before + 1);
 }
 
 /** 참고 턴 수(시험용 시드 회화 1단계 규격 targetTurns — 말한 아이 턴(인사 포함)이 이만큼이면 다음 선생님 말에 마무리 물음, 02-2). */
@@ -492,8 +491,13 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
   test("AC-19g 선생님 창 말하기는 가짜 읽어 주기의 시작 알림 뒤에만 켜지고 끝 · 취소(말풍선 다시 듣기) 뒤에는 꺼지며 문장 사이 쉼에는 말하기가 아니다", async ({
     context,
   }) => {
+    // 발화 차례: 0 잠금 풀기('시작!' 누름) · 1 첫 실제 발화(인사 질문 — 누를 때까지 읽는 중이게 길게) · 그 뒤(다시 듣기 · 다음 문장)는 900ms
     const { page } = await openWindowTalk(context, [saidRun("I'm good.")], {
-      utterances: [{ startAfter: 600, endAfter: 900 }],
+      utterances: [
+        { startAfter: 600, endAfter: 900 },
+        { startAfter: 600, endAfter: HELD_UTTER_MS },
+        { startAfter: 600, endAfter: 900 },
+      ],
     });
     await pastStart(page);
     // 첫 문장이 시작하면 말풍선을 눌러 다시 듣기(읽던 발화가 취소된다)

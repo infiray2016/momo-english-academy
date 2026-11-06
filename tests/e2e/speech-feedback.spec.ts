@@ -31,7 +31,7 @@ import {
   settingValueOf,
   withHouseholdSetting,
 } from "./db";
-import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
+import { pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, loadSpeechScript, speechPage, test } from "./fixtures";
 import { insertHousehold } from "./household";
 import { E2E_LESSON_NO, insertSampleLesson } from "./lessons";
@@ -42,11 +42,11 @@ import {
   openTalkSession,
   saidRun,
   skipStartPrep,
-  TURN_MARK,
   talkHousehold,
   talkLessonCard,
   talkLessonReply,
   talkScript,
+  talkTurnRequests,
 } from "./talk";
 
 /** 아이 화면 글(브리프 A · 정본 문구 그대로). */
@@ -94,12 +94,6 @@ test.beforeEach(async () => {
 });
 test.afterEach(resetFakeAi);
 test.afterAll(closeE2eDb);
-
-/** 회화 턴 요청 수(끝맺음 턴은 대본 꼴상 없다). */
-async function turnRequests(): Promise<number> {
-  return (await fakeAiRequests()).filter((r) => r.bodyText.includes(TURN_MARK))
-    .length;
-}
 
 /** 읽어 주기 꼴을 바꾼 회화 대본(첫 발화는 잠금 풀기). */
 function talkScriptWith(
@@ -238,7 +232,7 @@ test.describe("회화 — 읽어 주기 감시 · 읽는 중 단추(U5-1 · R1 �
     // 누르면 읽기를 멈추고(읽는 중 표시 없음) 듣는다
     await expect(reading(page)).toHaveCount(0);
     await expect
-      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .poll(talkTurnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
       .toBe(1);
   });
 
@@ -309,7 +303,7 @@ test.describe("회화 — 듣는 중 표시 · 한 줄 안내(U4-2 · U4-4 · U5
       page.locator("[data-child-turn] [data-speak][data-sound-in]"),
     ).toBeVisible();
     await expect
-      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .poll(talkTurnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
       .toBe(1);
   });
 
@@ -374,7 +368,7 @@ test.describe("회화 — 듣는 중 표시 · 한 줄 안내(U4-2 · U4-4 · U5
     ]);
     await childSpeak(page).click();
     await expect
-      .poll(turnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
+      .poll(talkTurnRequests, { timeout: GREETING_SEND_MS + WAIT_MS })
       .toBe(1);
     await expect(reading(page)).toHaveCount(0, { timeout: WAIT_MS });
     for (let i = 0; i < NOSPEECH_DONTKNOW; i++) {
@@ -387,9 +381,9 @@ test.describe("회화 — 듣는 중 표시 · 한 줄 안내(U4-2 · U4-4 · U5
       T.nospeechMove,
     );
     // 안내 동안은 아직 보내지 않는다 → speech.skip_notice_seconds 뒤 '모름'으로 보냄
-    expect(await turnRequests()).toBe(1);
+    expect(await talkTurnRequests()).toBe(1);
     await expect
-      .poll(turnRequests, { timeout: SKIP_NOTICE_MS + WAIT_MS })
+      .poll(talkTurnRequests, { timeout: SKIP_NOTICE_MS + WAIT_MS })
       .toBe(2);
   });
 });

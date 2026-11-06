@@ -25,8 +25,14 @@ export const SHOWN_SELECTORS = [
 ] as const;
 const STATUS_SELECTOR = "[role='status']";
 
-/** 이름별로 읽을 것: 고르개의 첫 보이는 요소의 글(attr 이 있으면 그 속성 값). */
-export type Watch = Record<string, { selector: string; attr?: string }>;
+/**
+ * 이름별로 읽을 것: 고르개의 첫 보이는 요소의 글(attr 이 있으면 그 속성 값). pick 이 last 면 마지막 보이는 요소를 읽는다 — 대화 기록 칸이
+ * 지난 아이 말을 같은 표지로 위에 그리고 지금 턴 말풍선은 맨 아래라서(talk-log.tsx data-talk-log-now, e2e 분류 T1).
+ */
+export type Watch = Record<
+  string,
+  { selector: string; attr?: string; pick?: "first" | "last" }
+>;
 
 export type Sample = {
   /** 표본 시각(쪽의 performance.now, ms). */
@@ -54,6 +60,8 @@ function installSampler(args: {
   const visible = (el: Element) => el.getClientRects().length > 0;
   const firstVisible = (selector: string) =>
     Array.from(document.querySelectorAll(selector)).find(visible);
+  const lastVisible = (selector: string) =>
+    Array.from(document.querySelectorAll(selector)).filter(visible).at(-1);
   const take = () => {
     const shown =
       args.shown.some((s) => firstVisible(s) !== undefined) ||
@@ -61,8 +69,9 @@ function installSampler(args: {
         (el) => visible(el) && (el.textContent ?? "").trim() !== "",
       );
     const values: Record<string, string | null> = {};
-    for (const [name, { selector, attr }] of Object.entries(args.watch)) {
-      const el = firstVisible(selector);
+    for (const [name, { selector, attr, pick }] of Object.entries(args.watch)) {
+      const el =
+        pick === "last" ? lastVisible(selector) : firstVisible(selector);
       values[name] =
         el === undefined
           ? null
