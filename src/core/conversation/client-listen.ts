@@ -2,6 +2,12 @@
 // 아이 행(talk_turns.client_listen jsonb)과 따라 말하기 시도 꼴(attempts.input 의 clientListen)이 같은 꼴을 쓴다.
 // 글 · 인식 글 · 오류 메시지 · 소리는 넣지 않는다(녹음 금지 · 이름 가림). 값은 화면이 음성 접점의 기록 사건에서 모은다(lib/speech/listen-log).
 import { z } from "zod";
+import {
+  DISCARD_BRANCHES,
+  DISCARD_END_WHYS,
+  DISCARD_REOPEN_WHYS,
+  DISCARD_SOUND_KINDS,
+} from "@/core/speech/discard";
 
 /** 한 기록에 남기는 듣기 요약 수 상한(기술 값 — 최근 것부터 남김). */
 export const CLIENT_LISTENS_MAX = 20;
@@ -14,6 +20,8 @@ const MS_MAX = CLIENT_LISTEN_MS_MAX;
 const FAILURES_MAX = 1000;
 /** 한 듣기 안에서 다시 연 객체 수 상한(기술 값 — 꼴 검사). */
 const RESTARTS_MAX = 100;
+/** 버림 칸의 셈(np · n) 상한(기술 값 — 꼴 검사). 화면은 이 값으로 잘라 보낸다(ms 와 같음). */
+export const DISCARD_COUNT_MAX = 1000;
 
 /**
  * 듣기 결과 종류: result · no-result · stalled · deaf(마이크 안 잡힘 — audiostart 가 빨리 오고 소리 · 결과 없음, 잠정 11-06) · error:<코드> ·
@@ -28,6 +36,39 @@ export const LISTEN_SYNTH_STATES = ["speaking", "pending", "idle"] as const;
 export const LISTEN_SPEAK_ENDS = ["end", "timeout", "cancel", "error"] as const;
 
 const ms = z.int().min(0).max(MS_MAX);
+const discardCount = z.int().min(0).max(DISCARD_COUNT_MAX);
+
+/**
+ * 진짜 듣기 요약에 붙는 '그 앞 버림' 칸 묶음(dc — iPad 버리는 듣기 spec 설계 5 · plan 접점 표 'client_listen dc'). 모두 선택 칸이고 글 칸이
+ * 없다(C149). 값 목록은 버림 기계(core/speech/discard)의 것을 쓴다. 진짜 as · 진짜 시작 때 읽기 상태는 요약의 as · ts 를 그대로 쓴다.
+ */
+export const DiscardNoteSchema = z.strictObject({
+  /** 갈래: rest(F1 쉰 뒤) · discard(F2) · live(F3) · reopen('버림부터'에서 다시 연 버림). */
+  g: z.enum(DISCARD_BRANCHES).optional(),
+  /** discard · live · reopen 갈래의 대기 사이에 읽은 것이 있는가. */
+  sr: z.boolean().optional(),
+  /** 이 진짜 앞 버림이 닫힌 까닭. */
+  why: z.enum(DISCARD_END_WHYS).optional(),
+  /** reopen 이면 다시 열게 한 앞 닫힘의 까닭. */
+  rw: z.enum(DISCARD_REOPEN_WHYS).optional(),
+  /** 버림 start → audiostart(ms). 오지 않았으면 없다. */
+  as: ms.optional(),
+  /** 버림 길이(start → end 또는 end 상한, ms). */
+  d: ms.optional(),
+  /** 버림 start → 첫 소리 시작 알림(ms). */
+  s0: ms.optional(),
+  /** 버림 start → 마지막 소리 끝(ms). */
+  s1: ms.optional(),
+  /** 누름 → 진짜 start(ms). 기다리지 않았으면 없다. */
+  w: ms.optional(),
+  /** 버림 안에서 낸 소리 종류(마지막 소리). */
+  sk: z.enum(DISCARD_SOUND_KINDS).optional(),
+  /** 들려주지 못한 읽기 수. */
+  np: discardCount.optional(),
+  /** 버림 결과 수(글 없음 — 연속 인식에서 쌓이는 결과 목록의 마지막 길이로 센다, 검토 2-가 4절 6). */
+  n: discardCount.optional(),
+});
+export type DiscardNote = z.infer<typeof DiscardNoteSchema>;
 
 export const ClientListenEntrySchema = z.strictObject({
   /** 결과 종류. */
@@ -47,7 +88,7 @@ export const ClientListenEntrySchema = z.strictObject({
   /** 직전 읽어 주기와의 관계: 읽는 중 끊고 들음이면 'cut', 읽기가 끝난 뒤면 그 뒤 ms. 앞에 읽기가 없으면 없다. */
   tc: z.union([z.literal("cut"), ms]).optional(),
   // ── 아래 여섯 칸은 2026-11-06 에 더함(분석 task-ipad-listen-analysis 6.2 — 옛 기록에는 없다) ──
-  /** 앞 인식 객체 end(어느 듣기든) → 이 듣기 첫 start 호출(ms). 앞 객체가 없으면 없다. */
+  /** 앞 인식 객체 end(어느 인식 객체든, 버리는 듣기의 버림 포함) → 이 듣기 첫 start 호출(ms). 앞 객체가 없으면 없다. */
   pe: ms.optional(),
   /** 첫 start 호출 → 첫 soundstart · speechstart(ms). 소리가 없으면 없다. */
   ss: ms.optional(),
@@ -59,12 +100,14 @@ export const ClientListenEntrySchema = z.strictObject({
   te: z.enum(LISTEN_SPEAK_ENDS).optional(),
   /** 앞 듣기(없으면 기록 처음) 뒤 이 듣기 앞에 쪽이 숨은 적이 있는가. */
   hid: z.boolean().optional(),
+  /** 그 앞 버림(2026-11-07 iPad 버리는 듣기 — 끔 · 켜지 않은 기기와 옛 기록에는 없다). */
+  dc: DiscardNoteSchema.optional(),
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 
 /**
  * 선생님 쪽 발화 감시 기록(회화 plan 정한 것 10 · UI · UX L-15): 무엇을 읽었나(선생님 말 · 붙인 카드 줄 · 소리 줄 · 맞장구 · 짧은 준비 ·
- * 바닥선 · 정리)와 감시가 끝낸 까닭(끝 신호 없음 · 들려주지 못함). 들려줌(played) · 글 · 소리는 남기지 않는다.
+ * 바닥선 · 정리 · 짧은 말 — short 는 2026-11-07 iPad 버리는 듣기 접점 표)와 감시가 끝낸 까닭(끝 신호 없음 · 들려주지 못함). 들려줌(played) · 글 · 소리는 남기지 않는다.
  */
 export const TALK_SPEAK_WHATS = [
   "tori",
@@ -74,6 +117,7 @@ export const TALK_SPEAK_WHATS = [
   "prep",
   "floor",
   "wrap",
+  "short",
 ] as const;
 export const TALK_SPEAK_HITCHES = ["no_end", "not_played"] as const;
 export const ClientSpeakEntrySchema = z.strictObject({

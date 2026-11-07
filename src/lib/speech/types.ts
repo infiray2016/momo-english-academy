@@ -1,5 +1,6 @@
 // 음성 접점(plan-p02 '파일별 값' 6). 앱 화면은 SpeechPort 만 안다. 브라우저 구현은 browser.ts,
 // 시험용 가짜는 fake-web-speech.ts(앱 코드는 가져오지 않는다, 의존 규칙 no-fake-speech-in-app).
+import type { DiscardNote } from "@/core/conversation/client-listen";
 import type { DeviceVerdict } from "@/core/speech/device";
 import type {
   CancelReason,
@@ -60,8 +61,37 @@ export interface ListenHandle {
   readonly capAt: number | undefined;
 }
 
-/** 듣기 알림(SpeechPort.listen 의 둘째 인자). */
-export type ListenCallbacks = { text?(text: string): void; sound?(): void };
+/**
+ * 듣기 알림(SpeechPort.listen 의 둘째 인자). started 는 진짜 듣기가 실제로 열린 때 한 번이다 — 버리는 듣기 층(discard-layer)이
+ * 기다린 누름 뒤 진짜를 연 때 부른다(iPad 버리는 듣기 plan 접점 표). 브라우저 접점(browser.ts)은 부르지 않는다(끔 · 켜지 않은
+ * 기기는 지금 그대로, AC-11).
+ */
+export type ListenCallbacks = {
+  text?(text: string): void;
+  sound?(): void;
+  started?(): void;
+};
+
+/** 읽어 주기 상태(speechSynthesis 의 speaking · pending 을 읽기만 한다). 읽어 주기가 없는 브라우저는 둘 다 거짓이다. */
+export type SynthState = { speaking: boolean; pending: boolean };
+
+/**
+ * 버리는 듣기의 알림(SpeechPort.openDiscard 의 인자). 글은 받지 않는다 — 결과는 그 사건의 결과 목록 길이(count)만, 오류는 코드만이다
+ * (녹음 · 글 보관 없음, iPad 버리는 듣기 spec FR-12). error 의 code 는 진짜 듣기와 같은 정규화(recognitionErrorCodeOf)를 거친다.
+ * start 가 던지거나 인식 API 가 없으면 error 와 end 가 뒤이어(같은 차례 밖에서) 온다.
+ */
+export type DiscardCallbacks = {
+  audio?(): void;
+  result?(count: number): void;
+  end?(): void;
+  error?(code: string): void;
+};
+
+/** 버리는 듣기 손잡이. stop 은 결과를 내며 닫고(살아 있는 버림도 stop, F3), abort 는 숨김 · 떠남처럼 바로 끊는다. end 뒤에는 아무 일도 하지 않는다. */
+export interface DiscardHandle {
+  stop(): void;
+  abort(): void;
+}
 
 export interface SpeechPort {
   /** 렌더 뒤(useEffect)에서만 부른다. */
@@ -81,6 +111,14 @@ export interface SpeechPort {
   listen(rule: EndRule, on?: ListenCallbacks): ListenHandle;
   checkMicrophone(): Promise<MicrophoneCheck>;
   dispose(): void;
+  /**
+   * 버리는 듣기(iPad 버리는 듣기 spec 설계 1 · plan 정한 것 2): 끝 규칙 · 감시 · deaf 판정 없이 인식 객체 하나를 열고 사건만 글 없이
+   * 알린다. 진짜 듣기(listen)와 따로 돌며 읽어 주기가 끊지 않는다(F8 — 읽기를 그 안에서 흘림). 브라우저 접점만 채우는 선택 칸이고,
+   * 버리는 듣기 층이 없으면 부르는 곳이 없다(AC-11). 감싸개(teacher · paced 등)는 넘기지 않는다.
+   */
+  openDiscard?(on: DiscardCallbacks): DiscardHandle;
+  /** 읽어 주기 상태를 읽는다(선택 칸, 브라우저 접점만 채움 — openDiscard 와 같음). */
+  synthState?(): SynthState;
 }
 
 // ── Web Speech 인식 최소 형 ──
@@ -141,6 +179,30 @@ export type RecognitionTraceEvent =
   | { type: "result"; results: { transcript: string; isFinal: boolean }[] }
   | { type: "error"; error: string; message?: string };
 
+/** 버리는 듣기 객체의 사건(글 없음 — 결과는 목록 길이만, 오류는 이름만, FR-12). */
+export type DiscardTraceEvent =
+  | { type: (typeof PLAIN_RECOGNITION_EVENTS)[number] | "end" }
+  | { type: "result"; count: number }
+  | { type: "error"; error: string };
+
+/**
+ * 음성 접점이 스스로 버리는 듣기를 닫은 까닭(discard-call 의 by). 손잡이로 닫으면 없다. listen 은 열린 버림을 만난 진짜 듣기의 안전망
+ * (plan 정한 것 10), open 은 새 버림이 앞 버림을 닫음, hidden · check · dispose 는 숨김 · 마이크 확인 · 닫기다.
+ */
+export type DiscardCloseBy = "listen" | "open" | "hidden" | "check" | "dispose";
+
+// ── 버리는 듣기 요약 칸(client_listen dc — plan 접점 표, iPad 버리는 듣기 spec 설계 5). 글 칸은 없다 ──
+// 값 목록 넷은 버림 기계(core/speech/discard), 칸 꼴(DiscardNote — Zod 의 z.infer)은 기록 칸 묶음(core/conversation/client-listen)이 둔다.
+// 여기서는 다시 내보내기만 한다(lib → core 방향 하나, 검토 2-가 M3).
+
+export {
+  DISCARD_BRANCHES,
+  DISCARD_END_WHYS,
+  DISCARD_REOPEN_WHYS,
+  DISCARD_SOUND_KINDS,
+} from "@/core/speech/discard";
+export type { DiscardNote };
+
 /** at 은 performance.now() 기준 ms. listen 은 듣기 번호, recognizer 는 그 듣기 안의 객체 번호. */
 export type SpeechTraceEntry =
   | { at: number; kind: "listen-begin"; listen: number; rule: EndRule }
@@ -182,6 +244,25 @@ export type SpeechTraceEntry =
   | { at: number; kind: "mic-check"; result: MicrophoneCheck }
   /** 쪽이 숨음(visibilitychange → hidden — 듣기 사건 기록 hid). */
   | { at: number; kind: "page-hidden" }
+  // ── 버리는 듣기(iPad 버리는 듣기 plan 접점 표 '사건 기록') — 셋 모두 글 칸이 없다 ──
+  /** discard 는 버림 번호(진짜 듣기 번호 listen 과 따로 센다). synth 는 start 호출 때의 읽어 주기 상태. */
+  | {
+      at: number;
+      kind: "discard-call";
+      discard: number;
+      call: "start" | "stop" | "abort";
+      threw?: boolean;
+      synth?: "speaking" | "pending" | "idle";
+      by?: DiscardCloseBy;
+    }
+  | {
+      at: number;
+      kind: "discard-event";
+      discard: number;
+      event: DiscardTraceEvent;
+    }
+  /** 버리는 듣기 층이 진짜 listen-begin 바로 앞에 남기는 '그 앞 버림' 칸(듣기 사건 요약이 다음 진짜 요약의 dc 로 붙인다). */
+  | { at: number; kind: "discard-note"; dc: DiscardNote }
   // ── 관찰 페이지 2판(task-speech-probe-2) — 관찰 페이지가 직접 남긴다. 음성 접점(browser.ts)은 내지 않는다 ──
   | { at: number; kind: "env"; reason: ProbeEnvReason; facts: ProbeEnvFacts }
   | {

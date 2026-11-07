@@ -15,6 +15,11 @@
 // 시도는 그 자리에 회색 '못 들었어요'를 보이고 다음 시도가 덮는다(attemptSaidStep). 들리지 않음 뒤 다음 차례에는 '잘 모르겠어요' 단추를 문구
 // 없이 한 번 반짝인다(flashDontKnow). '힌트' 단추는 아이 차례 안에 있고 아이 차례는 끝 줄 뒤에 열리므로, 응답이 끝날 때까지 흐린 단추를
 // 따로 두지 않는다(정본 03 4절 '힌트' 행을 끝 줄 전에 단추가 없는 것으로 지킴 — fix 1 M-2 · plan 보정 11-05 (11)). 선생님 쪽 발화 가운데 감시가 끝낸 것은 sp 로 모아 듣기 사건 기록(C149 client_listen)에 싣는다(createSpeakHitchLog · withSpeakHitches).
+// iPad 버리는 듣기(13절 C213 · C214 · C215, spec 설계 3 · FR-2 · FR-3, 정본 03 97줄 · 07 26 · 29 · 31줄): 틀이 discard 를 넘긴 때만(버리는 듣기를 켠
+// 기기) 누름은 손잡이를 바로 받고, 진짜가 실제로 열린 때(on.started) '듣는 중'을 켠다. 그 전에는 단추 글 '준비 중이에요'와 점 셋이고, 기다린
+// 누름 · 회복으로 열린 진짜면 '말해 보세요'를 보였다가 소리가 들어오면 지운다. 마이크 안 잡힘은 '잠깐만요, 마이크를 다시 켤게요'와 누름 없는
+// 듣기(listenAuto)로 잇고, 누름 없이 다시 말할 차례만 보이는 때(못 들었어요 안내)는 again 을 알린다. 넘김 · 건너뜀에는 알리지 않는다.
+// discard 가 없으면(끔 · 켜지 않은 기기) 지금 그대로다.
 import { Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
@@ -40,12 +45,14 @@ import {
 import type { ChildSaid } from "@/core/conversation/log";
 import type { SpeechEvent, SpeechVerdict } from "@/core/speaking/judge";
 import { speechEventOf } from "@/core/speaking/judge";
+import type { DiscardView } from "@/core/speech/discard";
 import {
   type ListenOutcome,
   NO_SPEECH_CODE,
   type SpeechSettings,
 } from "@/core/speech/listen";
 import { josa, TEACHER_TEXT, teacherNameOf } from "@/core/teacher/name";
+import type { DiscardLayer } from "@/lib/speech/discard-layer";
 import type {
   ListenHandle,
   SpeakOutcome,
@@ -76,6 +83,10 @@ export const CHILD_TURN_TEXT = {
   micDeafSkip: "마이크가 계속 안 잡혀서 다음으로 넘어가요",
   /** 대화 차례에서 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐 — 넘어가지 않으므로 '잘 모르겠어요'로 안내한다(fix 3 · 정본 밖 문구). */
   micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
+  /** 버리는 듣기: 기다린 누름 · 회복으로 진짜가 열림 — 소리가 들어오면 지운다(iPad 버리는 듣기 spec 설계 3 · 정본 밖 문구). */
+  sayNow: "말해 보세요",
+  /** 버리는 듣기: 마이크 안 잡힘 뒤 누름 없이 다시 듣는 동안(F10 · spec 설계 3 · 정본 밖 문구). */
+  micRecover: "잠깐만요, 마이크를 다시 켤게요",
   again: "다시 말하기",
   send: "보내기",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
@@ -124,6 +135,53 @@ export function deafStreakOf(
 ): { streak: number; over: boolean } {
   const next = deaf ? streak + 1 : 0;
   return { streak: next, over: deaf && next >= skipAfter };
+}
+
+/** 버리는 듣기 층에서 아이 차례 · 따라 말하기가 쓰는 몫(틀이 층이 있을 때만 넘긴다 — 없으면 지금 그대로). */
+export type TurnDiscard = Pick<
+  DiscardLayer,
+  "again" | "dontKnow" | "listenAuto" | "soundEnd"
+> & {
+  /** 층 view(틀이 subscribe 로 받은 지금 값). */
+  view: DiscardView;
+};
+
+/**
+ * 버리는 듣기의 안내 한 줄(순수, spec 설계 3): 회복 중이면 '잠깐만요, 마이크를 다시 켤게요', 기다린 누름 · 회복으로 열린 진짜를 듣는 중이고 소리가
+ * 아직 없으면 '말해 보세요', 그 밖은 없음(부르는 쪽의 지금 안내). 층이 없으면 늘 없음.
+ */
+export function discardLineOf(
+  view: DiscardView | undefined,
+  { listening, soundIn }: { listening: boolean; soundIn: boolean },
+): string | undefined {
+  if (view === undefined) return undefined;
+  if (view.recovering) return CHILD_TURN_TEXT.micRecover;
+  if (view.sayNow && listening && !soundIn) return CHILD_TURN_TEXT.sayNow;
+  return undefined;
+}
+
+/** 아이 차례 듣기 하나의 끝(버리는 듣기가 다음에 할 일을 가르는 몫). */
+export type TurnListenEnd =
+  | "heard"
+  | "not-heard"
+  | "nospeech-move"
+  | "offline"
+  | "blocked"
+  | "deaf"
+  | "deaf-over"
+  | "none";
+
+/**
+ * 듣기가 끝난 뒤 층에 알릴 것(순수, plan 정한 것 5 · 기계 검토 6절 9 · 층 검토 5절 1): 마이크 안 잡힘이고 이어진 수가 speech.deaf_skip_after 전이면
+ * 누름 없는 듣기(recover), 누름 없이 다시 말할 차례 안내만 보이는 때(말소리 없음 · 결과 없음 · 다시 듣는 오류 — 회색 '못 들었어요')는 again, 그 밖
+ * (들음 · 넘김 · 건너뜀 · 막힘 · 끊김 · 끊긴 연결)은 없음. '다시 말하기' 누름은 누름만으로 짧은 말이 나오므로 again 을 보내지 않는다.
+ */
+export function turnDiscardAfterOf(
+  end: TurnListenEnd,
+): "recover" | "again" | "none" {
+  if (end === "deaf") return "recover";
+  if (end === "not-heard") return "again";
+  return "none";
 }
 
 /**
@@ -196,6 +254,8 @@ export type ChildTurnProps = {
   onSend: (send: ChildSend) => void;
   /** 들리지 않음 차례 뒤 이 차례에 '잘 모르겠어요' 단추를 문구 없이 한 번 반짝인다(3.3 기기 쪽 — 끝 줄 flashDontKnow). */
   flashDontKnow?: boolean;
+  /** 버리는 듣기 층(켠 기기에서만 틀이 넘긴다 — iPad 버리는 듣기 spec 설계 3). 없으면 지금 그대로다. */
+  discard?: TurnDiscard | undefined;
 };
 
 /**
@@ -207,16 +267,20 @@ export function listenHint({
   text,
   rate,
   stopReading,
+  onSpoken,
 }: {
   speech: SpeechPort | undefined;
   text: string;
   rate: number;
   stopReading: () => void;
+  /** 그 읽기가 끝난 뒤(끝 · 끊김 · 오류 모두) — 버리는 듣기의 소리 끝 알림(spec 설계 2 '힌트 듣기' 행). */
+  onSpoken?: () => void;
 }): void {
   if (!speech) return;
   stopReading();
   speech.unlockFromGesture();
-  void speech.speak(text, { rate });
+  const spoken = speech.speak(text, { rate });
+  if (onSpoken) void spoken.then(onSpoken, onSpoken);
 }
 
 /** 힌트 단 하나의 꼴(순수, U5-10 · 검토 A M-6): 글이 있으면 글, 받는 중이면 점 셋, 받기에 실패하면 빈 단(전과 같음). */
@@ -461,22 +525,38 @@ export function ChildTurn(props: ChildTurnProps) {
     settings.talkSpeech,
   );
 
-  async function speak() {
+  /** 듣기 하나. auto 는 회복(마이크 안 잡힘 뒤 누름 없는 듣기 — 버리는 듣기 층이 있을 때만, plan 정한 것 5). */
+  async function speak(auto = false) {
     if (!speech || sent.current || moving) return;
     if (handle.current) {
       handle.current.press();
       return;
     }
-    speech.unlockFromGesture();
-    // 읽어 주는 중에 누르면 읽기를 멈추고 듣는다(C53 (2))
-    props.onListenStart();
+    const discard = props.discard;
+    if (!auto) {
+      speech.unlockFromGesture();
+      // 읽어 주는 중에 누르면 읽기를 멈추고 듣는다(C53 (2))
+      props.onListenStart();
+    }
     setMessage(undefined);
     setAttemptSaid((c) => attemptSaidStep(c, { kind: "listen" }));
     setConfirm(null);
     setSoundIn(false);
-    setListening(true);
-    props.onListening(true);
-    const current = speech.listen(rule, { sound: () => setSoundIn(true) });
+    // 듣는 중 표시: 층이 없으면 누른 때, 있으면 진짜가 실제로 열린 때(on.started — 버림 동안은 켜지 않음, spec 설계 3 '버림 동안의 화면')
+    const opened = () => {
+      setListening(true);
+      props.onListening(true);
+    };
+    const sound = () => setSoundIn(true);
+    let current: ListenHandle;
+    if (!discard) {
+      opened();
+      current = speech.listen(rule, { sound });
+    } else if (auto) {
+      current = discard.listenAuto(rule, { sound, started: opened });
+    } else {
+      current = speech.listen(rule, { sound, started: opened });
+    }
     handle.current = current;
     const outcome = await current.outcome;
     // 말을 멈춘 때 = 들은 결과면 듣기가 끝난 때 − 끝 조용함(C23 — 체감 대기는 듣기 끝 대기 · 확인 시간을 포함해 잰다), 결과 없음 · 오류면 듣기 끝
@@ -489,6 +569,16 @@ export function ChildTurn(props: ChildTurnProps) {
     setListening(false);
     setSoundIn(false);
     props.onListening(false);
+    const end = listenEnded(outcome);
+    if (!discard) return;
+    // 버리는 듣기: 회복은 누름 없는 듣기, 못 들었어요 안내는 again(기계 검토 6절 9), 넘김 · 건너뜀은 알리지 않는다
+    const next = turnDiscardAfterOf(end);
+    if (next === "recover") void speak(true);
+    else if (next === "again") discard.again();
+  }
+
+  /** 듣기 결과를 안내 · 보냄으로 옮기고 그 끝의 갈래를 돌려준다. */
+  function listenEnded(outcome: ListenOutcome): TurnListenEnd {
     const deaf = deafStreakOf(
       deafStreak.current,
       deafListenOf(outcome),
@@ -496,15 +586,19 @@ export function ChildTurn(props: ChildTurnProps) {
     );
     deafStreak.current = deaf.streak;
     if (deafListenOf(outcome)) {
+      if (props.discard && !deaf.over) {
+        // 버리는 듣기: 선생님 한마디 뒤 '잠깐만요, 마이크를 다시 켤게요'(층 view — discardLineOf)로 누름 없이 다시 듣는다(F10)
+        return "deaf";
+      }
       // 마이크 안 잡힘(기기 쪽): '못 들었어요' · 같은 질문 말소리 없음 셈 · 틀의 실패 셈 없이 한 줄 안내, 턴을 보내지 않는다(잠정 11-06).
       // speech.deaf_skip_after 번 이어지면 안내만 바꾼다 — 대화 차례의 길은 '잘 모르겠어요'(fix 2, C210 보완)
       setMessage(
         deaf.over ? CHILD_TURN_TEXT.micDeafStuck : CHILD_TURN_TEXT.micDeaf,
       );
-      return;
+      return deaf.over ? "deaf-over" : "deaf";
     }
     const event = speechEventOf(outcome);
-    if (!event) return;
+    if (!event) return "none";
     const verdict = props.onSpeech(event);
     if (verdict === "heard" && event.type === "heard") {
       nospeech.current = 0;
@@ -527,25 +621,25 @@ export function ChildTurn(props: ChildTurnProps) {
       };
       if (plan.autoSend) {
         send({ ...payload, confirmSkipped: true });
-        return;
+        return "heard";
       }
       setConfirm({ text, bigRetry: plan.bigRetry });
       confirmTimer.current = window.setTimeout(
         () => send({ ...payload, confirmSkipped: false }),
         plan.waitMs,
       );
-      return;
+      return "heard";
     }
     if (verdict === "offline") {
       setMessage(CHILD_TURN_TEXT.offline);
-      return;
+      return "offline";
     }
     if (
       verdict === "mic-unavailable" ||
       verdict === "mic-stalled" ||
       verdict === "speech-silent"
     )
-      return;
+      return "blocked";
     // no-speech 로 끝난 듣기가 이어지면 '모름'과 같이(C44 — 같은 질문 talk.nospeech_dontknow_count 번, 결과 없음은 세지 않음 C148)
     if (silentListenOf(event)) {
       nospeech.current += 1;
@@ -558,11 +652,12 @@ export function ChildTurn(props: ChildTurnProps) {
           () => send({ input: { mode: "dont_know", nospeech: true } }),
           settings.speech.skipNoticeMs,
         );
-        return;
+        return "nospeech-move";
       }
     }
     setMessage(TEACHER_TEXT.notHeard(props.teacherName));
     setAttemptSaid((c) => attemptSaidStep(c, { kind: "failed" }));
+    return "not-heard";
   }
 
   function retry() {
@@ -572,6 +667,10 @@ export function ChildTurn(props: ChildTurnProps) {
   }
 
   const showHint = hints.length > 0;
+  const discardLine = discardLineOf(props.discard?.view, {
+    listening,
+    soundIn,
+  });
   return (
     <div data-child-turn="" className="flex flex-col gap-3">
       {attemptSaid && !confirm ? (
@@ -655,6 +754,10 @@ export function ChildTurn(props: ChildTurnProps) {
                           rate: props.rate,
                           // 선생님이 읽는 중이면 읽기 줄을 멈춘다(검토 A I-1)
                           stopReading: props.onHintListen,
+                          // 버리는 듣기: 힌트 읽기가 끝나면 소리 끝(spec 설계 2 '힌트 듣기' 행)
+                          ...(props.discard
+                            ? { onSpoken: props.discard.soundEnd }
+                            : {}),
                         })
                       }
                       className={cn(
@@ -679,6 +782,8 @@ export function ChildTurn(props: ChildTurnProps) {
             label={CHILD_TURN_TEXT.speak}
             listening={listening}
             soundIn={soundIn}
+            // 버리는 듣기: 누름이 진짜를 기다리는 동안 '준비 중이에요'와 점 셋(C215)
+            preparing={props.discard?.view.waiting === true}
             capAt={() => handle.current?.capAt}
             gapClassName="bg-postit-talk"
             disabled={!speech || confirm !== null || moving}
@@ -719,6 +824,8 @@ export function ChildTurn(props: ChildTurnProps) {
               disabled={listening || confirm !== null || moving}
               onClick={() => {
                 endedAt.current = performance.now();
+                // 버리는 듣기: 걸린 누름 · 회복 · 다시 말할 차례를 거둔다(층이 걸린 손잡이를 끊김으로 끝낸다)
+                props.discard?.dontKnow();
                 send({ input: { mode: "dont_know" } });
               }}
             >
@@ -727,8 +834,14 @@ export function ChildTurn(props: ChildTurnProps) {
           </div>
         </div>
       </div>
-      <StatusLine tone={message && !moving ? "error" : "info"}>
-        {moving ? <span data-nospeech-move="">{message}</span> : message}
+      <StatusLine tone={message && !moving && !discardLine ? "error" : "info"}>
+        {moving ? (
+          <span data-nospeech-move="">{message}</span>
+        ) : discardLine ? (
+          <span data-discard-line="">{discardLine}</span>
+        ) : (
+          message
+        )}
       </StatusLine>
     </div>
   );

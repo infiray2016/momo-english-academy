@@ -270,6 +270,14 @@ export const TALK_SITUATION_PLACES = [
 export type TalkSituationPlace = (typeof TALK_SITUATION_PLACES)[number];
 /** 상황 금지 구 묶음(02-2:208 (다)): 모든 상황 차례 · 들리지 않음에 더함. */
 export const TALK_SITUATION_FORBIDDEN_SCOPES = ["all", "nospeech"] as const;
+/**
+ * 짧은 말 자리(iPad 버리는 듣기 plan 정한 것 6 · C213): again(대화의 다시 말하기 · 말소리 없음 · 결과 없음 · 다시 듣는 오류 · 읽는 중 끊김 ·
+ * 버림부터의 누름) · mic(마이크 안 잡힘 뒤 회복). 시드 '짧은 말' 목록의 첫 열쇠다.
+ */
+export const TALK_SHORT_PLACES = ["again", "mic"] as const;
+export type TalkShortPlace = (typeof TALK_SHORT_PLACES)[number];
+/** 짧은 말 단계 구간(plan 정한 것 6 '1-3 · 4-6 · 7-9 · 10-12'). 시드 '짧은 말' 목록의 둘째 열쇠다. */
+export const TALK_SHORT_BANDS = BAND_NAMES;
 
 // ── 꼴 · 구조 수(C54 (2), 줄마다 정본 절) ─────────────────────────
 
@@ -741,6 +749,8 @@ export const SEED_FILES = {
   talkAllowedWords: "lists/talk-allowed-words.json",
   /** 회화 지어낸 경험 꼴(C211 (1), 6.4 실시간 검사 · 대본 셈). 빌드에 묶고 DB 에 넣지 않는다. */
   talkMadeUpPhrases: "lists/talk-made-up-phrases.json",
+  /** 회화 다시 말할 차례의 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkShortLines: "lists/talk-short-lines.json",
 } as const;
 export type SeedFileName = keyof typeof SEED_FILES;
 

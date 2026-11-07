@@ -3,6 +3,10 @@
 // 접근 쿠키 준비(plan-p03b 공용 변경 5): 모든 e2e 가 유효한 가족 접근 쿠키를 갖고 시작한다(proxy 가 /dev/* 도 막는다, C57).
 // WebGL(선생님 화면 plan 값 13 · 9절 'WebGL 없는 CI'): 선택 webgl 기본 off — 문맥의 모든 쪽(page · speechPage)에서 캔버스의 webgl ·
 // webgl2 · experimental-webgl 맥락이 null 이라 선생님 창이 늘 초상(대신 표시 길)이다. 3D 프로젝트만 on(d9).
+// 버리는 듣기(iPad 버리는 듣기 plan 정한 것 7): 선택 discardMode 는 기본이 없고, 값이 있으면 시험마다 집 전체 speech.discard_mode 를 그
+// 값으로 바꿨다가 되돌린다(withHouseholdSetting). e2e DB 는 TEST_SETTINGS(ios)로 뜨고 기기도 iPad 꼴이라, 그대로면 버림 객체가 기존 회화
+// e2e 의 대본을 먼저 가져간다. 그래서 본 구성(playwright.config use)이 'off' 를 두고 talk-discard 만 test.use({ discardMode: "ios" }) 다.
+// DB 가 없는 e2e-local 구성은 값을 두지 않는다(값이 없으면 DB 에 닿지 않는다).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -11,6 +15,10 @@ import {
   expect,
   type Page,
 } from "@playwright/test";
+import {
+  DISCARD_MODE_KEY,
+  type DiscardMode,
+} from "../../src/core/speech/discard-settings";
 import {
   type SpeechSettings,
   speechSettingsFrom,
@@ -61,13 +69,29 @@ export function disableWebgl(): void {
 
 export type Webgl = "off" | "on";
 
-export const test = base.extend<{ speechScript: SpeechScript; webgl: Webgl }>({
+export type E2eOptions = {
+  speechScript: SpeechScript;
+  webgl: Webgl;
+  /** 시험 동안의 speech.discard_mode(없으면 DB 를 건드리지 않는다). */
+  discardMode: DiscardMode | undefined;
+};
+
+export const test = base.extend<E2eOptions>({
   speechScript: [loadSpeechScript("default-ok"), { option: true }],
   webgl: ["off", { option: true }],
-  context: async ({ context, baseURL, webgl }, use) => {
+  discardMode: [undefined, { option: true }],
+  context: async ({ context, baseURL, webgl, discardMode }, use) => {
     await addAccessCookie(context, baseURL);
     if (webgl === "off") await context.addInitScript(disableWebgl);
-    await use(context);
+    if (discardMode === undefined) {
+      await use(context);
+      return;
+    }
+    // DB 도우미는 값이 있을 때만 불러온다(e2e-local 은 이 모듈을 가져오되 DB 연결 모듈을 싣지 않는다)
+    const { withHouseholdSetting } = await import("./db");
+    await withHouseholdSetting(DISCARD_MODE_KEY, discardMode, () =>
+      use(context),
+    );
   },
   page: async ({ page, speechScript }, use) => {
     await page.addInitScript(installFakeWebSpeech, speechScript);

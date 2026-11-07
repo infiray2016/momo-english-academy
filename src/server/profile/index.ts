@@ -19,6 +19,11 @@ import {
 } from "@/core/profile/start";
 import { AREAS, type Area } from "@/core/seed/structure";
 import {
+  DISCARD_MODE_KEY,
+  type DiscardMode,
+  discardModeFrom,
+} from "@/core/speech/discard-settings";
+import {
   SPEECH_SETTING_KEYS,
   type SpeechSettings,
   speechSettingsFrom,
@@ -215,6 +220,8 @@ export type FirstRunView = {
   levels: Record<Area, LevelExample[]>;
   bundles: BundleView[];
   speech: SpeechSettings;
+  /** speech.discard_mode — 음성 인식 안내의 부모 줄(discardNoticeShown, iPad 버리는 듣기 spec 설계 3). */
+  discardMode: DiscardMode;
 };
 
 /** 첫 실행 화면이 쓸 값(설정 · 단계 예시 줄 · 묶음 그림 · 음성 설정). */
@@ -225,10 +232,12 @@ export async function readFirstRunView({
     THROUGH_KEY,
     TARGET_MINUTES_KEY,
     ...SPEECH_SETTING_KEYS,
+    DISCARD_MODE_KEY,
   ]);
   const through = z.number().int().min(1).parse(values[THROUGH_KEY]);
   const targetMinutes = z.number().positive().parse(values[TARGET_MINUTES_KEY]);
   const speech = speechSettingsFrom((key) => values[key]);
+  const discardMode = discardModeFrom((key) => values[key]);
 
   const startRevision = await currentSeedRevision({ db });
   const levels = {} as Record<Area, LevelExample[]>;
@@ -263,5 +272,5 @@ export async function readFirstRunView({
       return path ? { label: p.label, src: `/${path}` } : { label: p.label };
     }),
   }));
-  return { through, targetMinutes, levels, bundles, speech };
+  return { through, targetMinutes, levels, bundles, speech, discardMode };
 }

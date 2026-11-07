@@ -493,6 +493,7 @@ describe("첫 실행 종이(D-14)", () => {
           levels: { reading: [], writing: [], speaking: [], talk: [] },
           bundles: [],
           speech: {} as never,
+          discardMode: "off",
         },
       }),
     );

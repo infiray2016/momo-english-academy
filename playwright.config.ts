@@ -12,6 +12,7 @@ import {
   encodeAccessCodeHash,
 } from "./src/core/access-token";
 import { FAKE_AI_READY } from "./tests/e2e/fake-ai-server";
+import type { E2eOptions } from "./tests/e2e/fixtures";
 
 /** 10.9형 태블릿(정본 4절 아이 화면 글자 기준, 잠정). Apple iPad Air(5세대) 2360 × 1640 을 2배율로 나눈 값 */
 export const TABLET_10_9_VIEWPORT = { width: 820, height: 1180 } as const;
@@ -75,11 +76,16 @@ const nextEnv = {
   ANTHROPIC_API_KEY: E2E_FAKE_AI_KEY,
 };
 
-export default defineConfig({
+export default defineConfig<Pick<E2eOptions, "discardMode">>({
   testDir: "tests/e2e",
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? CI_RETRIES : 0,
-  use: { baseURL: `http://localhost:${E2E_PORT}`, trace: "retain-on-failure" },
+  // discardMode 'off': 기존 회화 e2e 는 버리는 듣기 없이 돈다(시드 기본 ios, iPad 버리는 듣기 plan 정한 것 7). 켬은 talk-discard 의 test.use 다
+  use: {
+    baseURL: `http://localhost:${E2E_PORT}`,
+    trace: "retain-on-failure",
+    discardMode: "off",
+  },
   projects: [
     {
       name: "tablet-10-9-webkit",

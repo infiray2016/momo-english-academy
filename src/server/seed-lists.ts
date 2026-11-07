@@ -16,18 +16,25 @@ import {
   TalkAllowedWordsFileSchema,
   type TalkCueLinesFile,
   TalkCueLinesFileSchema,
+  type TalkListLine,
   TalkMadeUpPhrasesFileSchema,
+  type TalkShortLinesFile,
+  TalkShortLinesFileSchema,
   type TalkSituationLinesFile,
   TalkSituationLinesFileSchema,
   TalkWaitLinesFileSchema,
 } from "@/core/seed/schema/reference";
 import { TeachersFileSchema } from "@/core/seed/schema/teachers";
 import {
+  bandOf,
   SEED_FILES,
   TALK_CUE_BANDS,
   TALK_CUE_PLACES,
+  TALK_SHORT_BANDS,
+  TALK_SHORT_PLACES,
   TALK_SITUATION_FORBIDDEN_SCOPES,
   TALK_SITUATION_PLACES,
+  type TalkShortPlace,
 } from "@/core/seed/structure";
 
 /** 시드 폴더 이름(P4a 배치). */
@@ -46,6 +53,7 @@ const LIST_SCHEMAS = {
   talkSituationLines: TalkSituationLinesFileSchema,
   talkAllowedWords: TalkAllowedWordsFileSchema,
   talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
+  talkShortLines: TalkShortLinesFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;
@@ -187,8 +195,10 @@ function seedListOrEmpty<N extends SeedListName>(
   }
 }
 
-const recordOf = <K extends string, V>(keys: readonly K[], value: () => V) =>
-  Object.fromEntries(keys.map((key) => [key, value()])) as Record<K, V>;
+const recordOf = <K extends string, V>(
+  keys: readonly K[],
+  value: (key: K) => V,
+) => Object.fromEntries(keys.map((key) => [key, value(key)])) as Record<K, V>;
 
 /** 신호 말 목록(C207): 자리 × 구간마다 긴 꼴 · 짧은 꼴. 없으면 모든 자리가 빈 목록이다. */
 export function seedTalkCueLines(opts: SeedListOptions = {}): TalkCueLinesFile {
@@ -233,4 +243,26 @@ export function seedTalkMadeUpPhrases(opts: SeedListOptions = {}): string[] {
     ...seedListOrEmpty("talkMadeUpPhrases", () => ({ phrases: [] }), opts)
       .phrases,
   ];
+}
+
+/** 짧은 말 목록(C213 · iPad 버리는 듣기 plan 정한 것 6): 자리 × 단계 구간마다 줄. 없으면 모든 자리가 빈 목록이다. */
+export function seedTalkShortLines(
+  opts: SeedListOptions = {},
+): TalkShortLinesFile {
+  return seedListOrEmpty(
+    "talkShortLines",
+    () =>
+      recordOf(TALK_SHORT_PLACES, () => recordOf(TALK_SHORT_BANDS, () => [])),
+    opts,
+  );
+}
+
+/** 그 단계 구간의 짧은 말(회화 화면 자료 talkShortLines — 화면이 자리마다 고른다). 목록이 없으면 자리마다 빈 목록이다. */
+export function seedTalkShortLinesAt(
+  level: number,
+  opts: SeedListOptions = {},
+): Record<TalkShortPlace, TalkListLine[]> {
+  const file = seedTalkShortLines(opts);
+  const band = bandOf(level);
+  return recordOf(TALK_SHORT_PLACES, (place) => [...file[place][band]]);
 }

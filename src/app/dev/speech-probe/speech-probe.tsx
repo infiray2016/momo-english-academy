@@ -1710,6 +1710,21 @@ function traceDetail(
       return entry.result.ok
         ? "성공"
         : `실패 ${entry.result.code} · ${entry.result.group}`;
+    // 버리는 듣기 기록(회화 층만 낸다 — 이 쪽은 openDiscard 를 부르지 않는다, iPad 버리는 듣기 묶음 2-가)
+    case "discard-call":
+      return `버림 ${entry.discard} · ${entry.call}${entry.threw ? " · 던짐" : ""}${entry.by ? ` · ${entry.by}` : ""}`;
+    case "discard-event": {
+      const { event } = entry;
+      const what =
+        event.type === "result"
+          ? `결과 ${event.count}`
+          : event.type === "error"
+            ? `오류 ${event.error}`
+            : event.type;
+      return `버림 ${entry.discard} · ${what}`;
+    }
+    case "discard-note":
+      return `버림 칸 ${JSON.stringify(entry.dc)}`;
     case "env":
     case "devices":
     case "mic-level":

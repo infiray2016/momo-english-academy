@@ -270,6 +270,7 @@ describe("감시 기록 칸 sp(정한 것 10, client_listen)", () => {
       "prep",
       "floor",
       "wrap",
+      "short",
     ]);
     expect([...TALK_SPEAK_HITCHES]).toEqual(["no_end", "not_played"]);
     const many = Array.from({ length: CLIENT_LISTENS_MAX + 1 }, () => ({

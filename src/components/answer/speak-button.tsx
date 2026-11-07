@@ -9,6 +9,9 @@
 // 13절 C166(UX 검토 U4-2 · R2): 듣는 동안 단추 글은 '듣고 있어요'(두 문장 이상 답의 '다 말했어요'가 이김), 소리가 들어오면(음성 접점
 // listen 의 on.sound — soundstart · speechstart) 마이크 표시가 talk-deep 소리 물결로 바뀐다(data-sound-in, 먹색 단추 위 4.2:1 · 글자 아님). 아이콘 획은 ICON_STROKE(5.2). 따라 말하기에서 선생님이 읽는 동안은
 // 흐리게(waiting — 끄지 않음) 두고, 그때 누르면 듣지 않고 '다 읽은 뒤 눌러요' 한 줄을 보인다.
+// 13절 C215(iPad 버리는 듣기 spec 설계 3 · FR-2): 버리는 듣기를 켠 기기의 대화 차례에서 누름이 진짜를 열 조건을 기다리는 동안(preparing)
+// 단추 글은 '준비 중이에요'이고 글 뒤에 점 셋이 차례로 튄다(표본 쪽 1번). 소리 없음, 단추 크기 · 마이크 표시는 그대로이고 듣는 동안의
+// 고리 · 깜빡임 · 소리 물결을 켜지 않는다. 움직임 줄이기면 멈춘 점이다. 넘기지 않는 화면(다른 영역 · 끔)은 지금 그대로다.
 import { AudioLines, Mic } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
@@ -18,6 +21,9 @@ import { cn } from "@/lib/utils";
 
 /** 고리 한 바퀴(도). */
 const FULL_TURN_DEG = 360;
+/** 기다림 점 셋의 점마다 늦춤(화면 꼴 값 — 힌트 받는 점 셋 · 말풍선 기다림 점과 같은 값, C215). */
+const PREPARING_DOT_DELAY_MS = 150;
+const PREPARING_DOTS = [0, 1, 2] as const;
 
 /** 말하기 단추 둘레 글(브리프 A · C166 — 정본 밖 문구, 해요체 한 줄). */
 export const SPEAK_BUTTON_TEXT = {
@@ -25,22 +31,48 @@ export const SPEAK_BUTTON_TEXT = {
   listening: "듣고 있어요",
   /** 따라 말하기에서 읽는 중 누름(R2). */
   waitReading: "다 읽은 뒤 눌러요",
+  /** 버리는 듣기를 켠 기기의 대화 차례 — 누름이 진짜를 열 조건을 기다림(iPad 버리는 듣기 spec 설계 3 · C215). */
+  preparing: "준비 중이에요",
   /** 인식이 speech.max_retries 번 안 돼 다음으로 넘어감(U4-4 — 말하기 · 회화 따라 말하기가 같이 씀). */
   skipped: "이건 다음에 다시 해요",
 } as const;
 
-/** 단추 글(순수): 듣는 동안은 넘긴 듣는 중 글(두 문장 이상 답 '다 말했어요'), 없으면 '듣고 있어요'. */
+/**
+ * 단추 글(순수): 듣는 동안은 넘긴 듣는 중 글(두 문장 이상 답 '다 말했어요'), 없으면 '듣고 있어요'. 듣기 전 기다림(preparing — 버리는 듣기,
+ * C215)이면 '준비 중이에요'.
+ */
 export function speakButtonLabelOf({
   label,
   listeningLabel,
   listening,
+  preparing = false,
 }: {
   label: string;
   listeningLabel?: string | undefined;
   listening: boolean;
+  preparing?: boolean;
 }): string {
-  if (!listening) return label;
+  if (!listening) return preparing ? SPEAK_BUTTON_TEXT.preparing : label;
   return listeningLabel ?? SPEAK_BUTTON_TEXT.listening;
+}
+
+/** 기다림 점 셋(C215 표본 1번): 단추 글 뒤에서 차례로 튄다. 움직임 줄이기면 멈춘 점(motion-safe). 글자가 아니라 읽지 않는다. */
+function PreparingDots() {
+  return (
+    <span
+      data-speak-dots=""
+      aria-hidden
+      className="inline-flex items-center gap-1"
+    >
+      {PREPARING_DOTS.map((i) => (
+        <span
+          key={i}
+          className="size-2 rounded-full bg-paper motion-safe:animate-bounce"
+          style={{ animationDelay: `${i * PREPARING_DOT_DELAY_MS}ms` }}
+        />
+      ))}
+    </span>
+  );
 }
 
 /** 누름의 뜻(순수): 선생님이 읽는 중(듣기 전)이면 안내 한 줄, 그 밖(듣는 중 누름 = 듣기 끝 포함)은 누름. */
@@ -100,6 +132,7 @@ export function SpeakButton({
   listening,
   soundIn = false,
   waiting = false,
+  preparing = false,
   capAt,
   disabled = false,
   className,
@@ -114,6 +147,11 @@ export function SpeakButton({
   soundIn?: boolean;
   /** 선생님이 읽는 중(따라 말하기 — R2): 흐리게 두고 누르면 듣지 않고 안내 한 줄. */
   waiting?: boolean;
+  /**
+   * 누름이 진짜를 열 조건을 기다림(버리는 듣기 대화 차례 — C215): '준비 중이에요'와 점 셋. 흐리지 않고 누름도 그대로 넘긴다(다시 누른 것은
+   * 층이 하나로 센다). 듣는 동안이면 보이지 않는다.
+   */
+  preparing?: boolean;
   /** 듣기 전체 상한의 시각(performance.now() 기준 ms). 읽을 때마다 지금 값(P2b ListenHandle.capAt). 없으면 고리를 꽉 채운다. */
   capAt?: () => number | undefined;
   disabled?: boolean;
@@ -129,6 +167,7 @@ export function SpeakButton({
     if (!waiting) setWaitNote(false);
   }, [waiting]);
   const heard = listening && soundIn;
+  const prepared = preparing && !listening;
   const startedAt = useRef<number | undefined>(undefined);
   const capOf = useRef(capAt);
   capOf.current = capAt;
@@ -179,6 +218,7 @@ export function SpeakButton({
           data-listening={listening ? "" : undefined}
           data-sound-in={heard ? "" : undefined}
           data-speak-waiting={waiting && !listening ? "" : undefined}
+          data-speak-preparing={prepared ? "" : undefined}
           aria-pressed={listening}
           disabled={disabled}
           className={cn(waiting && !listening && "opacity-50")}
@@ -200,7 +240,8 @@ export function SpeakButton({
               listening && !heard && "motion-safe:animate-pulse",
             )}
           />
-          {speakButtonLabelOf({ label, listeningLabel, listening })}
+          {speakButtonLabelOf({ label, listeningLabel, listening, preparing })}
+          {prepared ? <PreparingDots /> : null}
         </BigButton>
       </span>
     </span>

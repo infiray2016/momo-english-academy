@@ -6,6 +6,8 @@
 // '다음'은 그 화면의 값이 맞을 때만 눌린다. 첫 실행은 부모 화면이지만 같은 보드 꼴로 그린다.
 // UI · UX 묶음 5-가(spec 설계 5.4 첫 실행 행 · UX 검토 3판 D-14 · D-10): 종이(FamilyBoard)는 높이를 내용에 맞추고 남는 아래는 책상이다.
 // '이전' · '다음' 단추 줄은 종이 안 아래에 둔다(큰 단추가 책상 위에 홀로 뜨지 않게). 단추 차례 · 문구는 그대로다.
+// iPad 버리는 듣기(13절 C213, spec 설계 3 · FR-4 · 정본 03 16줄): 음성 인식 안내에 부모 줄 하나를 iOS WebKit 기기이고 speech.discard_mode 가 그
+// 기기에서 켜질 때만 더한다(discardNoticeShown). 문구는 spec 설계 3 초안 그대로다.
 import { ChevronRight, Mic, Settings, ToggleRight } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import {
@@ -38,6 +40,10 @@ import {
 } from "@/core/profile/start";
 import { AREAS, type Area } from "@/core/seed/structure";
 import type { DeviceVerdict } from "@/core/speech/device";
+import {
+  type DiscardMode,
+  discardNoticeShown,
+} from "@/core/speech/discard-settings";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import {
   clearMicState,
@@ -86,6 +92,9 @@ export const FIRST_RUN_TEXT = {
   micBody:
     "말소리는 브라우저가 글자로 바꿔요. Chrome 은 소리를 Google 서버로 보내고, 다른 브라우저도 어디에서 바꾸는지 앱이 정할 수 없어요. 앱은 소리를 저장하지 않아요",
   micIpad: "설정에서 Siri 또는 받아쓰기를 켜야 말소리를 알아들어요",
+  /** 버리는 듣기를 켠 iPad 의 부모 줄(iPad 버리는 듣기 spec 설계 3 초안 · C213). */
+  micDiscard:
+    "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요.",
   /** iPadOS 설정의 메뉴 이름(화면 검토 M-4 · 브리프 — 고유 이름이라 새 안내 문구가 아님). */
   ipadDictationPath: ["설정", "일반", "키보드", "받아쓰기"],
   ipadSiriPath: ["설정", "Siri 및 검색"],
@@ -130,6 +139,19 @@ const STEPS = [
   "handoff",
 ] as const;
 type Step = (typeof STEPS)[number];
+
+/**
+ * 음성 인식 안내의 버리는 듣기 부모 줄(순수, spec 설계 3 · FR-4): iOS WebKit 기기이고 그 기기에서 버리는 듣기가 켜질 때만 문구, 그 밖(끔 ·
+ * 데스크톱 · 기기 판정 전)은 없음.
+ */
+export function firstRunDiscardLineOf(
+  mode: DiscardMode,
+  verdict: Pick<DeviceVerdict, "name"> | undefined,
+): string | undefined {
+  if (verdict === undefined || !discardNoticeShown(mode, verdict))
+    return undefined;
+  return TEXT.micDiscard;
+}
 
 /** 알파벳을 모르면 시작 단계를 고를 수 없는 영역(3.1). */
 const ALPHABET_AREAS: readonly Area[] = ["reading", "writing"];
@@ -742,7 +764,8 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
       );
       break;
     }
-    case "mic":
+    case "mic": {
+      const discardLine = firstRunDiscardLineOf(view.discardMode, verdict);
       body = (
         <>
           {heading(TEXT.micTitle)}
@@ -760,6 +783,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
             </div>
           ) : null}
           <p>{TEXT.micBody}</p>
+          {discardLine ? <p data-mic-discard="">{discardLine}</p> : null}
           <div>
             {/* 확인 전에는 이 화면의 행동이 '마이크 확인'이라 큰 단추, 결과가 나오면 곁 단추(화면 검토 M-7) */}
             {micChecked ? (
@@ -799,6 +823,7 @@ export function FirstRunFlow({ view }: { view: FirstRunView }) {
         </>
       );
       break;
+    }
     case "handoff":
       onNext = () => void save();
       canNext = !busy;

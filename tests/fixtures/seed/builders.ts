@@ -50,6 +50,7 @@ import type {
   TalkCueLinesFile,
   TalkLevelSpec,
   TalkMadeUpPhrasesFile,
+  TalkShortLinesFile,
   TalkSituationLinesFile,
   TalkWaitLinesFile,
   UnitSpec,
@@ -97,6 +98,7 @@ import {
   STORY_QUESTIONS,
   storyFilePath,
   TALK_LOW_BAND,
+  TALK_SHORT_BANDS,
   TALK_SPEC_SEGMENTS,
   UNITS_PER_LEVEL,
 } from "@/core/seed/structure";
@@ -951,6 +953,7 @@ export type ReferenceSet = {
   talkSituationLines: TalkSituationLinesFile;
   talkAllowedWords: TalkAllowedWordsFile;
   talkMadeUpPhrases: TalkMadeUpPhrasesFile;
+  talkShortLines: TalkShortLinesFile;
 };
 
 /** 시제품 출처(seed/teachers.json 과 같은 꼴, 견본 값). */
@@ -1285,6 +1288,22 @@ export function referenceSet(
     },
     teachers: teacherRoster(),
     ...talkAiScopeLists(),
+    talkShortLines: talkShortLinesSample(),
+  };
+}
+
+/**
+ * 짧은 말 목록의 작은 견본(C213 · iPad 버리는 듣기 plan 정한 것 6). 자리 × 구간 여덟 칸에 한 줄씩이고, 낱말은 견본 1단계 범위 · 견본 허용
+ * 낱말 안이라 모든 구간의 검사(check-talk-lists (5))를 지난다.
+ */
+function talkShortLinesSample(): TalkShortLinesFile {
+  const cells = (en: string, ko: string) =>
+    Object.fromEntries(
+      TALK_SHORT_BANDS.map((band) => [band, [{ en, ko }]]),
+    ) as TalkShortLinesFile["again"];
+  return {
+    again: cells("Okay! Say it.", "그래! 말해 봐."),
+    mic: cells("Oops! Okay, go.", "앗! 좋아, 해 봐."),
   };
 }
 

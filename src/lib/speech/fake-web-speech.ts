@@ -14,6 +14,11 @@ export type FakeSpeechRecord = {
   created: number;
   calls: { at: number; id: number; method: "start" | "stop" | "abort" }[];
   spoken: string[];
+  /**
+   * 읽어 달라고 받은 시각(performance.now() 기준 ms, spoken 과 같은 차례 — 버리는 듣기 e2e 가 읽기와 인식 start 의 차례를 본다,
+   * iPad 버리는 듣기 plan 묶음 2-가).
+   */
+  spokenAt: number[];
   /** 읽어 준 빠르기(spoken 과 같은 차례 — 단계 구간 빠르기 speech.rate.<구간>을 e2e 가 본다, C125). */
   rates: number[];
   /** 읽어 준 높이(spoken 과 같은 차례 — 회화 선생님 높이를 e2e 가 본다, plan 회화-선생님-캐릭터 값 12). */
@@ -49,6 +54,7 @@ export function installFakeWebSpeech(script: SpeechScript): void {
     created: 0,
     calls: [],
     spoken: [],
+    spokenAt: [],
     rates: [],
     pitches: [],
     voices: [],
@@ -261,6 +267,7 @@ export function installFakeWebSpeech(script: SpeechScript): void {
     getVoices: () => voices,
     speak(utterance: FakeUtterance) {
       record.spoken.push(utterance.text);
+      record.spokenAt.push(clock());
       record.rates.push(utterance.rate);
       record.pitches.push(utterance.pitch);
       const voice = utterance.voice as { name?: unknown } | null;

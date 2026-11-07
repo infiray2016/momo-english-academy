@@ -72,8 +72,14 @@ import {
 } from "@/core/conversation/wrap-up";
 import { learningDayOf } from "@/core/learning-day";
 import { TalkLessonSchema } from "@/core/seed/schema/lesson";
+import type { TalkListLine } from "@/core/seed/schema/reference";
 import type { TalkTodayWord } from "@/core/seed/schema/talk";
-import type { TALK_SEGMENTS } from "@/core/seed/structure";
+import type { TALK_SEGMENTS, TalkShortPlace } from "@/core/seed/structure";
+import {
+  DISCARD_SETTING_KEYS,
+  type DiscardSettings,
+  discardSettingsFrom,
+} from "@/core/speech/discard-settings";
 import {
   SPEECH_SETTING_KEYS,
   type SpeechSettings,
@@ -86,7 +92,11 @@ import { type Db, type DbOrTx, getDb, type Tx } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 import { readLessonList } from "@/server/lesson-list";
 import { readHouseholdProfile } from "@/server/profile";
-import { seedHomophones, seedTalkWaitLines } from "@/server/seed-lists";
+import {
+  seedHomophones,
+  seedTalkShortLinesAt,
+  seedTalkWaitLines,
+} from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import {
   appDayStartHourSchema,
@@ -1181,6 +1191,8 @@ async function ensureLessonStarted(
 export type TalkLessonViewSettings = {
   speech: SpeechSettings;
   talkSpeech: TalkSpeechSettings;
+  /** 버리는 듣기(speech.discard_* 여섯, iPad 버리는 듣기 spec 설계 4) — 회화 틀이 기기에 켜질 때 층을 만든다. */
+  discard: DiscardSettings;
   /** speech.max_retries */
   maxRetries: number;
   /** speech.silent_items_max(막힘 화면, C22). */
@@ -1228,10 +1240,11 @@ async function lessonViewSettingsOf(
   const values = await getSettings(
     {
       ...Object.fromEntries(
-        [...SPEECH_SETTING_KEYS, ...TALK_SPEECH_KEYS].map((key) => [
-          key,
-          z.unknown(),
-        ]),
+        [
+          ...SPEECH_SETTING_KEYS,
+          ...TALK_SPEECH_KEYS,
+          ...DISCARD_SETTING_KEYS,
+        ].map((key) => [key, z.unknown()]),
       ),
       "speech.max_retries": count,
       "speech.silent_items_max": count,
@@ -1259,6 +1272,7 @@ async function lessonViewSettingsOf(
     view: {
       speech: speechSettingsFrom(read),
       talkSpeech: talkSpeechSettingsFrom(read),
+      discard: discardSettingsFrom(read),
       maxRetries: num("speech.max_retries"),
       silentItemsMax: num("speech.silent_items_max"),
       ui: {
@@ -1477,6 +1491,11 @@ export type TalkLessonView = {
   prep: TalkLessonPrep | null;
   /** 앱 맞장구 목록(정한 것 20) — 화면이 턴 번호로 고른다(core/conversation/wait-line waitLineOf). */
   waitLines: string[];
+  /**
+   * 다시 말할 차례의 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6) — 그 단계 구간 것을 자리(again · mic)마다. 화면이 아이 차례 칸 위
+   * 선생님 줄로 읽고 대화 기록 · talk_turns 에 넣지 않는다(묶음 3).
+   */
+  talkShortLines: Record<TalkShortPlace, TalkListLine[]>;
   settings: TalkLessonViewSettings;
   pictures: Record<string, PictureInfo>;
   homophones: string[][];
@@ -1600,6 +1619,7 @@ export async function loadTalkLessonView(
     retryTurn: lessonRetryTurnOf(state.orphan),
     prep,
     waitLines: seedTalkWaitLines(),
+    talkShortLines: seedTalkShortLinesAt(state.level),
     settings: settings.view,
     pictures: await picturesByKeys(db, lessonImageKeysOf(state.card, prep)),
     homophones: (deps.homophones ?? seedHomophones)(),

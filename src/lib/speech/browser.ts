@@ -26,6 +26,9 @@ import {
 import { speakHeardOf, speakWatchOf } from "@/core/speech/pace";
 import { pickVoice, voiceFor, voiceUseOf } from "@/core/teacher/voice";
 import {
+  type DiscardCallbacks,
+  type DiscardCloseBy,
+  type DiscardHandle,
   type ListenCallbacks,
   type ListenHandle,
   type MicrophoneCheck,
@@ -36,6 +39,7 @@ import {
   type SpeakOutcome,
   type SpeechPort,
   type SpeechTraceEntry,
+  type SynthState,
 } from "./types";
 
 /** 마이크 확인에서 audiostart · 결과 없이 끝이 온 때의 코드. */
@@ -172,6 +176,14 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     | undefined;
   let unlocked = false;
   let disposed = false;
+  let discardCount = 0;
+  /**
+   * 지금 열린 버리는 듣기(iPad 버리는 듣기 plan 묶음 2-가). 진짜 듣기(activeListen)와 따로 두고 읽어 주기가 끊지 않는다(F8).
+   * 숨김 · 마이크 확인 · 닫기는 abort, 진짜 듣기 · 새 버림은 stop 으로 닫는다.
+   */
+  let activeDiscard:
+    | { close(call: "stop" | "abort", by: DiscardCloseBy): void }
+    | undefined;
 
   function prepare(recognition: RecognitionLike) {
     recognition.lang = settings.lang;
@@ -194,6 +206,8 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
   function listen(asked: EndRule, on?: ListenCallbacks): ListenHandle {
     // 못 듣는 마이크 감지는 speech.deaf_detect 가 켠 기기에서만(기본 iOS · iPadOS WebKit — 잠정 11-06 fix 1)
     const rule = deafRuleForDevice(asked, settings.deafDetect, device());
+    // 안전망(plan 정한 것 10): 열린 버림을 만나면 stop 으로 닫는다(버리는 듣기를 쓰지 않으면 닿지 않는다)
+    activeDiscard?.close("stop", "listen");
     activeListen?.cancelNow("leave");
     activeCheck?.cancelNow("leave");
     // 읽어 주는 중이면 끊고 듣는다(토리 목소리를 인식하지 않게, 7절 · C53).
@@ -568,6 +582,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
   }
 
   function checkMicrophone(): Promise<MicrophoneCheck> {
+    activeDiscard?.close("abort", "check");
     activeListen?.cancelNow("leave");
     activeCheck?.cancelNow("leave");
     if (speaking !== undefined) cancelSpeaking();
@@ -627,6 +642,130 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     });
   }
 
+  /**
+   * 버리는 듣기(iPad 버리는 듣기 spec 설계 1 · plan 접점 표): 끝 규칙 · 감시 · deaf 판정 없이 새 인식 객체 하나를 열고(prepare 같음),
+   * 사건은 글 없이 알린다 — 결과는 목록 길이만 읽고 글(transcript)은 읽지도 남기지도 않는다(FR-12). 읽어 주기 · 진짜 듣기 상태는
+   * 건드리지 않는다. start 가 던지거나 API 가 없으면 오류와 end 를 같은 차례 밖에서 알린다(층이 효과를 실행하는 중에 다시 불리지 않게).
+   */
+  function openDiscard(on: DiscardCallbacks): DiscardHandle {
+    activeDiscard?.close("stop", "open");
+    discardCount += 1;
+    const discardId = discardCount;
+    /** end 를 받았거나(또는 열지 못함) 닫기로 알림을 끊음. */
+    let ended = false;
+    let silenced = false;
+    // 음성 접점을 닫은 뒤에는 어느 버림의 사건도 층에 알리지 않는다 — 손잡이로 stop 해 닫는 중인 버림 · 열기 실패의 늦은
+    // error · end 도(2-가 검토 M1: silenced 는 열린 버림을 닫기가 abort 할 때만 켜진다)
+    const tell = (fn: () => void) => {
+      if (!silenced && !disposed) fn();
+    };
+    const traceEvent = (event: SpeechTraceEntry & { kind: "discard-event" }) =>
+      trace(event);
+    const failLater = (code: string) => {
+      ended = true;
+      window.setTimeout(() => {
+        tell(() => on.error?.(code));
+        tell(() => on.end?.());
+      }, 0);
+    };
+    const Ctor = ctorOf();
+    if (Ctor === undefined) {
+      failLater(NO_API_CODE);
+      return { stop() {}, abort() {} };
+    }
+    const recognition = new Ctor();
+    prepare(recognition);
+    for (const name of PLAIN_RECOGNITION_EVENTS) {
+      recognition[`on${name}`] = () => {
+        traceEvent({
+          at: now(),
+          kind: "discard-event",
+          discard: discardId,
+          event: { type: name },
+        });
+        if (name === "audiostart") tell(() => on.audio?.());
+      };
+    }
+    recognition.onresult = (event) => {
+      const count = event.results.length;
+      traceEvent({
+        at: now(),
+        kind: "discard-event",
+        discard: discardId,
+        event: { type: "result", count },
+      });
+      tell(() => on.result?.(count));
+    };
+    recognition.onerror = (event) => {
+      traceEvent({
+        at: now(),
+        kind: "discard-event",
+        discard: discardId,
+        event: { type: "error", error: event.error },
+      });
+      const code = recognitionErrorCodeOf(event.error, event.message);
+      tell(() => on.error?.(code));
+    };
+    recognition.onend = () => {
+      traceEvent({
+        at: now(),
+        kind: "discard-event",
+        discard: discardId,
+        event: { type: "end" },
+      });
+      if (ended) return;
+      ended = true;
+      if (activeDiscard === session) activeDiscard = undefined;
+      tell(() => on.end?.());
+    };
+
+    const call = (which: "start" | "stop" | "abort", by?: DiscardCloseBy) => {
+      const synth = which === "start" ? synthesisStateOf() : undefined;
+      let threw = false;
+      try {
+        recognition[which]();
+      } catch {
+        threw = true;
+      }
+      trace({
+        at: now(),
+        kind: "discard-call",
+        discard: discardId,
+        call: which,
+        ...(threw ? { threw } : {}),
+        ...(synth ? { synth } : {}),
+        ...(by ? { by } : {}),
+      });
+      return threw;
+    };
+
+    const session = {
+      close(which: "stop" | "abort", by?: DiscardCloseBy) {
+        if (ended) return;
+        if (activeDiscard === session) activeDiscard = undefined;
+        // 닫기 뒤의 사건은 기록만 하고 층에 알리지 않는다(층도 함께 닫힘)
+        if (by === "dispose") silenced = true;
+        call(which, by);
+      },
+    };
+    activeDiscard = session;
+    if (call("start")) {
+      if (activeDiscard === session) activeDiscard = undefined;
+      failLater(START_FAILED_CODE);
+    }
+    return {
+      stop: () => session.close("stop"),
+      abort: () => session.close("abort"),
+    };
+  }
+
+  /** 읽어 주기 상태(speaking · pending)를 읽기만 한다. 읽어 주기가 없으면 둘 다 거짓. */
+  function synthState(): SynthState {
+    if (!synthesisAvailable()) return { speaking: false, pending: false };
+    const synth = window.speechSynthesis;
+    return { speaking: synth.speaking, pending: synth.pending };
+  }
+
   function device(): DeviceVerdict {
     return describeDevice(deviceFacts());
   }
@@ -635,6 +774,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
   const onVisibility = () => {
     if (!document.hidden) return;
     trace({ at: now(), kind: "page-hidden" });
+    activeDiscard?.close("abort", "hidden");
     activeListen?.cancelNow("hidden");
     activeCheck?.cancelNow("hidden");
     if (speaking !== undefined) cancelSpeaking();
@@ -651,9 +791,15 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
       return listen(rule, on);
     },
     checkMicrophone,
+    openDiscard(on) {
+      if (disposed) throw new Error("음성 접점을 이미 닫았다");
+      return openDiscard(on);
+    },
+    synthState,
     dispose() {
       if (disposed) return;
       disposed = true;
+      activeDiscard?.close("abort", "dispose");
       activeListen?.cancelNow("leave");
       activeCheck?.cancelNow("leave");
       if (speaking !== undefined) cancelSpeaking();

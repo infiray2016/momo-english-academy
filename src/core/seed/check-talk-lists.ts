@@ -3,6 +3,8 @@
 // (2) 상황 줄: 자리마다 줄 수, 같은 길이 · 어휘 검사(1~3단계 모두에 쓰므로 첫 단계 1), 상황 금지 구에 걸리지 않음.
 // (3) 허용 낱말: 손으로 적지 않고 예 문장을 상황 차례 어휘 검사에 돌려 '걸린' 낱말로 만들므로, 첫 단계 범위 안 낱말은 둘 까닭이 없다.
 // (4) 지어낸 경험 꼴: 1인칭 꼴이고, 신호 말 · 상황 줄이 이 꼴에 걸리지 않는다(카드의 안전한 대사는 check-talk 가 본다).
+// (5) 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6): 자리 × 단계 구간마다 줄 수, 신호 말과 같은 꼴(물음표 없음 · 문장 길이 상한 · 그 구간 첫 단계의
+//     어휘 범위(허용 낱말 포함) · 지어낸 경험 꼴). 뜻(ko)이 비지 않음은 Zod 규격이 막는다.
 // 꼴 수(셋 이상 · 하나 이상 · 둘 이상)는 시드 꼴 검사 상수이고 설정값이 아니다(06:187). 한국어 뜻 · 빈 목록 · 겹침은 Zod 규격이 먼저 막는다.
 // DB · 파일을 읽지 않는 순수 함수다.
 import { normalizeSpoken } from "@/core/conversation/spoken";
@@ -12,13 +14,17 @@ import type {
   TalkCueLinesFile,
   TalkListLine,
   TalkMadeUpPhrasesFile,
+  TalkShortLinesFile,
   TalkSituationLinesFile,
 } from "@/core/seed/schema/reference";
 import {
+  bandInfo,
   LEVEL_MIN,
   SEED_FILES,
   TALK_CUE_BANDS,
   TALK_CUE_PLACES,
+  TALK_SHORT_BANDS,
+  TALK_SHORT_PLACES,
   TALK_SITUATION_PLACES,
   type TalkCueBand,
 } from "@/core/seed/structure";
@@ -35,6 +41,8 @@ import {
 export const TALK_CUE_LONG_MIN = 1;
 export const TALK_CUE_SHORT_MIN = 2;
 export const TALK_SITUATION_LINES_MIN = 3;
+/** 짧은 말 자리 · 구간마다 줄 수 하한(plan 정한 것 6). 시드 꼴 검사 상수다. */
+export const TALK_SHORT_LINES_MIN = 1;
 /** 1인칭 낱말(지어낸 경험 꼴은 '선생님 자신'의 경험 · 기억 꼴이다, 06:187 (4)). 영어 문법 목록이라 코드 상수다. */
 export const FIRST_PERSON_WORDS: ReadonlySet<string> = new Set([
   "i",
@@ -51,6 +59,8 @@ export type TalkListsFiles = {
   talkAllowedWords?: TalkAllowedWordsFile;
   talkMadeUpPhrases?: TalkMadeUpPhrasesFile;
 };
+/** 짧은 말 목록(C213). 1~3단계 목록 넷과 따로 두되 같은 검사가 본다. */
+export type TalkShortListFiles = { talkShortLines?: TalkShortLinesFile };
 
 export type TalkListsContext = {
   /** 어휘 범위를 읽는 사전. vocab 이 없으면 비워 어휘 검사(1)(2)(3)를 건너뛴다. */
@@ -133,9 +143,9 @@ function lineRangeProblems(
   return problems;
 }
 
-/** 시드 목록 넷 검사(06:187). 없는 파일의 몫은 건너뛴다(규격 파일 '없음'은 seed:validate 가 따로 막는다). */
+/** 시드 목록 넷 검사(06:187)와 짧은 말 검사(C213). 없는 파일의 몫은 건너뛴다(규격 파일 '없음'은 seed:validate 가 따로 막는다). */
 export function checkTalkLists(
-  files: TalkListsFiles,
+  files: TalkListsFiles & TalkShortListFiles,
   ctx: TalkListsContext,
 ): SeedIssue[] {
   const out: SeedIssue[] = [];
@@ -266,6 +276,42 @@ export function checkTalkLists(
           `지어낸 경험 꼴 '${phrase}' 에 1인칭 낱말(${[...FIRST_PERSON_WORDS].join(" · ")})이 없다`,
         );
     });
+  }
+
+  // (5) 짧은 말: 신호 말과 같은 꼴, 어휘 · 길이는 그 구간의 첫 단계(bandInfo first)로 본다
+  const short = files.talkShortLines;
+  if (short) {
+    const file = SEED_FILES.talkShortLines;
+    for (const place of TALK_SHORT_PLACES) {
+      for (const band of TALK_SHORT_BANDS) {
+        const lines = short[place][band];
+        const at = `${place}.${band}`;
+        if (lines.length < TALK_SHORT_LINES_MIN)
+          push(
+            "talk-short-lines",
+            file,
+            at,
+            `짧은 말 ${lines.length}개가 ${TALK_SHORT_LINES_MIN}개보다 적다`,
+          );
+        const level = bandInfo(band).first;
+        lines.forEach((line, i) => {
+          const problems = [
+            ...(line.en.includes("?")
+              ? ["물음표가 있다(짧은 말은 질문이 아니다)"]
+              : []),
+            ...lineRangeProblems(line.en, level, ctx, allowed),
+            ...madeUpProblems(line.en),
+          ];
+          if (problems.length > 0)
+            push(
+              "talk-short-lines",
+              file,
+              `${at}.${i}.en`,
+              `짧은 말 '${line.en}': ${problems.join(" · ")}`,
+            );
+        });
+      }
+    }
   }
   return out;
 }

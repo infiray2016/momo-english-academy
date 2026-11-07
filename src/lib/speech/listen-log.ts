@@ -1,10 +1,13 @@
 // 회화 듣기 사건 기록(13절 C149 · 분석 보고 task-talk-speech-analysis 4.1). 음성 접점(browser.ts)의 기록 사건(onTrace)을 받아
 // 듣기마다 요약(o · by · d · as · snd · fr · tc, 11-06 에 pe · ss · rs · ts · te · hid — 분석 task-ipad-listen-analysis 6.2)으로 줄인다. 받을 때 글 · 인식 글 · 오류 메시지를 버리고 시각 · 종류만 남긴다(녹음 금지 ·
-// 이름 가림). window 를 읽지 않는다(단위 시험이 돈다).
+// 이름 가림). window 를 읽지 않는다(단위 시험이 돈다). 버리는 듣기(iPad 버리는 듣기 spec 설계 5)는 버림 객체의 end 만 pe 의 앞 객체로 보고,
+// 층이 남긴 discard-note 를 다음 진짜 요약의 dc 로 붙인다. 버림의 소리 · 결과 사건은 진짜 칸에 넣지 않는다.
 import {
   CLIENT_LISTEN_MS_MAX,
   CLIENT_LISTENS_MAX,
   type ClientListenEntry,
+  DISCARD_COUNT_MAX,
+  type DiscardNote,
   LISTEN_RESULT_PATTERN,
 } from "@/core/conversation/client-listen";
 import type { EndedBy, ListenOutcome } from "@/core/speech/listen";
@@ -23,6 +26,32 @@ export function clampListenMs(ms: number): number {
   return Math.min(CLIENT_LISTEN_MS_MAX, Math.max(0, Math.round(ms)));
 }
 
+/** 셈(np · n)을 서버 꼴(0 ~ DISCARD_COUNT_MAX 정수)에 맞춘다. */
+function clampCount(n: number): number {
+  return Math.min(DISCARD_COUNT_MAX, Math.max(0, Math.round(n)));
+}
+
+/**
+ * 층이 남긴 dc 에서 접점 표 칸만 옮긴다(순수). 섞여 온 다른 칸(글 등)은 버리고, ms · 셈은 서버 꼴 상한으로 잘라 턴 요청 · 따라 말하기 저장이
+ * 통째로 거절되지 않게 한다(clampListenMs 와 같은 뜻).
+ */
+function noteOf(dc: DiscardNote): DiscardNote {
+  const out: DiscardNote = {};
+  if (dc.g !== undefined) out.g = dc.g;
+  if (dc.sr !== undefined) out.sr = dc.sr;
+  if (dc.why !== undefined) out.why = dc.why;
+  if (dc.rw !== undefined) out.rw = dc.rw;
+  if (dc.as !== undefined) out.as = clampListenMs(dc.as);
+  if (dc.d !== undefined) out.d = clampListenMs(dc.d);
+  if (dc.s0 !== undefined) out.s0 = clampListenMs(dc.s0);
+  if (dc.s1 !== undefined) out.s1 = clampListenMs(dc.s1);
+  if (dc.w !== undefined) out.w = clampListenMs(dc.w);
+  if (dc.sk !== undefined) out.sk = dc.sk;
+  if (dc.np !== undefined) out.np = clampCount(dc.np);
+  if (dc.n !== undefined) out.n = clampCount(dc.n);
+  return out;
+}
+
 /** 글을 버린 사건. */
 type Kept =
   | { at: number; k: "begin"; listen: number; capMs: number | undefined }
@@ -30,8 +59,10 @@ type Kept =
   | { at: number; k: "audio"; listen: number }
   | { at: number; k: "sound"; listen: number }
   | { at: number; k: "result"; listen: number }
-  /** 인식 객체 end(pe — 앞 객체 end 뒤 경과). */
-  | { at: number; k: "rec-end"; listen: number }
+  /** 인식 객체 end(pe — 앞 객체 end 뒤 경과). 버림 객체의 end 는 듣기 번호가 없다(그 듣기의 사건으로 세지 않게). */
+  | { at: number; k: "rec-end"; listen?: number }
+  /** 버리는 듣기 층이 진짜 앞에 남긴 '그 앞 버림' 칸(다음 진짜 요약의 dc). */
+  | { at: number; k: "note"; dc: DiscardNote }
   | { at: number; k: "button"; listen: number }
   | { at: number; k: "done"; listen: number; o: string; by?: EndedBy }
   | { at: number; k: "speak" }
@@ -119,6 +150,11 @@ function keptOf(entry: SpeechTraceEntry): Kept | undefined {
       };
     case "page-hidden":
       return { at, k: "hidden" };
+    case "discard-event":
+      // 버림의 audiostart · 소리 · 결과 · 오류는 진짜 칸에 들지 않는다. end 만 pe 의 앞 객체로 센다(설계 5)
+      return entry.event.type === "end" ? { at, k: "rec-end" } : undefined;
+    case "discard-note":
+      return { at, k: "note", dc: noteOf(entry.dc) };
     default:
       return undefined;
   }
@@ -187,7 +223,7 @@ function hiddenBefore(
   );
 }
 
-/** 이 시각 앞 마지막 인식 객체 end(어느 듣기든 — pe, 순수). */
+/** 이 시각 앞 마지막 인식 객체 end(어느 인식 객체든, 버림 포함 — pe, 순수). */
 function recognizerEndBefore(
   kept: readonly Kept[],
   at: number,
@@ -195,6 +231,23 @@ function recognizerEndBefore(
   let last: number | undefined;
   for (const e of kept) if (e.k === "rec-end" && e.at <= at) last = e.at;
   return last;
+}
+
+/**
+ * 이 듣기 시작 바로 앞(앞 듣기 끝 뒤)에 남은 마지막 버림 칸(dc, 순수). 없으면 없음. 앞 듣기의 시작 · 끝에서 멈춘다 —
+ * 층이 note 를 늦게(앞 진짜 도중에) 남기는 순서 실수가 있어도 그 note 가 다음 진짜 요약에 조용히 붙지 않게(묶음 4 검토 M3).
+ */
+function noteBefore(
+  kept: readonly Kept[],
+  begin: Extract<Kept, { k: "begin" }>,
+): DiscardNote | undefined {
+  const i = kept.indexOf(begin);
+  for (let j = i - 1; j >= 0; j--) {
+    const e = kept[j];
+    if (e?.k === "begin" || e?.k === "done") return undefined;
+    if (e?.k === "note") return Object.keys(e.dc).length > 0 ? e.dc : undefined;
+  }
+  return undefined;
 }
 
 /** 끝난 듣기 하나의 요약(순수). */
@@ -227,6 +280,7 @@ function summaryOf(
   const prevEndAt =
     startAt === undefined ? undefined : recognizerEndBefore(kept, startAt);
   const synth = startCalls[0]?.synth;
+  const dc = noteBefore(kept, begin);
   return {
     o: done.o,
     ...(by ? { by } : {}),
@@ -249,6 +303,7 @@ function summaryOf(
     ...(synth ? { ts: synth } : {}),
     ...(te === undefined ? {} : { te }),
     hid: hiddenBefore(kept, begin),
+    ...(dc ? { dc } : {}),
   };
 }
 

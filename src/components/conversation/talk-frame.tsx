@@ -14,6 +14,11 @@
 // 그래도 안 되면 '인터넷이 끊겼어요 …' + 큰 '다시 해 볼래요'(UI · UX N-11). 선생님 말이 없는 마지막 아이 행(view.retryTurn)은 열 때 같은
 // 시도 id 로 다시 보낸다(8절 · AC-15f). ①② 처음 안내는 프로필마다 한 번(noticesSeen.talk_answer_tip → markTalkNotice, R-29). 판정 · 점수 ·
 // 퍼센트를 보이지 않는다(R2). 녹음 없음.
+// iPad 버리는 듣기(13절 C213 · C214 · C215, spec 설계 2 · 3, plan 접점 표 '층' · '소리 끝'): speech.discard_mode 가 이 기기에서 켜지면 음성 접점을
+// 버리는 듣기 층으로 감싸 선생님 목소리 감싸기 아래에 둔다(없으면 지금 객체 그대로 — AC-11). 틀은 아이 차례 · 정리에서 읽기 줄이 빈 때 소리 끝을,
+// 턴을 보낸 뒤 끝 줄까지 서버 기다림을 알리고, 쉬는 안내 · 막힘 · 마무리 · 홈은 새 화면 줄보다 먼저 떠남을 보낸다(끝나는 화면은 층을 닫아 그 뒤
+// 읽기가 버림을 다시 열지 않게). 버림 안 짧은 말은 시드 목록(talkShortLines)에서 자리마다 돌려 고르고, 아이 차례 칸 위에 선생님 줄 꼴로
+// 보이며(1~4단계 뜻) 대화 기록 · talk_turns 에 넣지 않는다. 따라 말하기의 다시 말할 차례는 짧은 말 대신 그 들려줄 말을 읽힌다.
 import { useRouter } from "next/navigation";
 import {
   type ReactNode,
@@ -66,6 +71,12 @@ import {
   speakingCounters,
   speakingCountersStart,
 } from "@/core/speaking/judge";
+import type { DeviceVerdict } from "@/core/speech/device";
+import type { DiscardView } from "@/core/speech/discard";
+import {
+  type DiscardMode,
+  discardOnDevice,
+} from "@/core/speech/discard-settings";
 import { speakHeardOutcomeOf, speakRateOf } from "@/core/speech/pace";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import { praiseUntilOf, teacherStateOf } from "@/core/teacher/state";
@@ -77,9 +88,19 @@ import {
   readDeviceVerdict,
 } from "@/lib/mic-state";
 import { createBrowserSpeech } from "@/lib/speech/browser";
+import {
+  type DiscardLayer,
+  type DiscardSoundLine,
+  type DiscardSoundNeed,
+  discardLayerFor,
+} from "@/lib/speech/discard-layer";
 import { createListenLog } from "@/lib/speech/listen-log";
 import { teacherSpeech } from "@/lib/speech/teacher";
-import type { SpeakOutcome, SpeechPort } from "@/lib/speech/types";
+import type {
+  SpeakOptions,
+  SpeakOutcome,
+  SpeechPort,
+} from "@/lib/speech/types";
 import {
   sendTalkLessonTurnRetrying,
   type TalkTurnBody,
@@ -113,10 +134,12 @@ import {
   childHeardOf,
   createSpeakHitchLog,
   speakHitchOf,
+  type TurnDiscard,
   withSpeakHitches,
 } from "./child-turn";
 import { ClosingCards } from "./closing-cards";
 import {
+  type FollowDiscard,
   type FollowEnv,
   LessonWrapUp,
   lessonFollowSaver,
@@ -128,6 +151,8 @@ import {
 import { TalkLog } from "./talk-log";
 import {
   answerTipShownOf,
+  BUBBLE_CLASS,
+  BUBBLE_WIDTH,
   LESSON_BUBBLE_START,
   type LessonBubbleContent,
   type LessonBubbleLine,
@@ -626,6 +651,170 @@ type LessonPhase =
   | "offline"
   | "failed";
 
+// ── iPad 버리는 듣기(spec 설계 2 · 3, plan 접점 표 '층' · '소리 끝') ──
+
+/** 틀이 소리 끝을 알리는 자리: 아이 차례(대화 child · choice) · 정리, 그 밖(선생님 차례 · 짧은 준비 · 막힘 · 쉼 · 마무리)은 알리지 않음. */
+export type TalkSoundEndScene = "turn" | "wrap" | "none";
+/** 소리 끝을 가르는 한 그림의 값(자리 · 틀의 읽기 줄이 읽는 중인가 — useSpeakQueue speaking). */
+export type TalkSoundEndAt = { scene: TalkSoundEndScene; speaking: boolean };
+
+/** 소리 끝 자리(순수). 짧은 준비 쪽지 · 정리의 따라 말하기 조각은 제 읽기 끝에 스스로 알린다(follow-along useSayer). */
+export function talkSoundEndSceneOf({
+  stage,
+  phase,
+  away,
+}: {
+  stage: Stage;
+  phase: LessonPhase;
+  /** 막힘 판 · 쉬는 안내가 대화를 덮음(떠남을 보낸 뒤). */
+  away: boolean;
+}): TalkSoundEndScene {
+  if (away) return "none";
+  if (stage === "wrap") return "wrap";
+  if (stage === "talk" && (phase === "child" || phase === "choice"))
+    return "turn";
+  return "none";
+}
+
+/**
+ * 틀이 지금 소리 끝을 알릴까(순수, 접점 표 '소리 끝' · spec 설계 2): 아이 차례로 넘긴 뒤 읽기 줄이 빈 때(들어올 때 비어 있었거나 읽던 줄이 끝남)와,
+ * 아이 차례 · 정리에서 다시 듣기 · 힌트 · 말풍선 · 대화 기록 줄을 다시 읽고 줄이 빈 때다. 선생님 차례의 문장 사이 · 흘러 오는 문장 틈 · 정리에
+ * 들어온 때(따라 말하기 조각이 읽기 전)는 알리지 않는다.
+ */
+export function talkSoundEndDue(
+  prev: TalkSoundEndAt | undefined,
+  next: TalkSoundEndAt,
+): boolean {
+  if (next.speaking || next.scene === "none") return false;
+  if (next.scene === "turn")
+    return prev?.scene !== "turn" || prev.speaking === true;
+  return prev?.scene === "wrap" && prev.speaking;
+}
+
+/** 짧은 말 한 줄(시드 talk-short-lines — en · 1~4단계 뜻 ko). */
+export type TalkShortLine = TalkLessonView["talkShortLines"]["again"][number];
+
+/** 아이가 아직 말하지 않은 자리에서 피할 낱말(again · 'one more time' — 짧은 말 판정 M-5). */
+const REPEAT_WORDS = /\b(again|more)\b/i;
+
+/**
+ * 버림 안 짧은 말 고르기(순수, 돌려 쓰기): 자리 목록에서 count 번째(목록 길이로 돌림). fresh(이 아이 차례에서 아직 진짜를 연 적이 없음 —
+ * 읽는 중 끊김 · 버림부터 누름)면 again · more 가 든 줄을 빼고 고른다(남는 줄이 없으면 모두에서). 목록이 비면 없음.
+ */
+export function talkShortLineOf(
+  lines: readonly TalkShortLine[],
+  { fresh, count }: { fresh: boolean; count: number },
+): TalkShortLine | undefined {
+  const plain = fresh ? lines.filter((l) => !REPEAT_WORDS.test(l.en)) : lines;
+  const pool = plain.length > 0 ? plain : lines;
+  return pool.length === 0 ? undefined : pool[count % pool.length];
+}
+
+/**
+ * 층의 대비 줄(순수, 층 fix 1 M-1): 자리마다 그 단계 구간 짧은 말의 첫 줄. 한 자리라도 비면 없음 — 틀은 층을 만들지 않고 지금 그대로 듣는다(대비 줄
+ * 없이 걸린 누름이 소리 없는 버림에서 끝없이 기다리지 않게).
+ */
+export function discardFallbackOf(
+  lines: Readonly<Record<DiscardSoundNeed, readonly TalkShortLine[]>>,
+): Record<DiscardSoundNeed, TalkShortLine> | undefined {
+  const again = lines.again[0];
+  const mic = lines.mic[0];
+  return again && mic ? { again, mic } : undefined;
+}
+
+/**
+ * 켤 기기인데 짧은 말 목록이 비어 층을 만들지 않는가(순수, 묶음 3 fix 1 M-3 · plan 정한 것 3 '조용한 기본값 없음'): 그렇다면 자리마다 줄 수를
+ * 돌려준다 — 틀이 개발 콘솔에 남긴다(아이 화면 글은 그대로). 켜지 않는 기기 · 버림을 열 수 없는 음성 접점 · 목록이 다 있으면 없음.
+ */
+export function talkDiscardMissOf({
+  mode,
+  verdict,
+  canOpen,
+  lines,
+}: {
+  mode: DiscardMode;
+  verdict: Pick<DeviceVerdict, "name">;
+  canOpen: boolean;
+  lines: Readonly<Record<DiscardSoundNeed, readonly TalkShortLine[]>>;
+}): Record<DiscardSoundNeed, number> | undefined {
+  if (!canOpen || !discardOnDevice(mode, verdict)) return undefined;
+  if (discardFallbackOf(lines)) return undefined;
+  return { again: lines.again.length, mic: lines.mic.length };
+}
+
+/** 따라 말하기 자리의 들려줄 말 칸이 받는 일: 장이 들어옴 · 다시 말할 차례 · 장을 떠남(그 장의 말을 함께 넘긴다). */
+export type FollowWordEvent = {
+  kind: "card" | "again" | "leave";
+  word: string;
+};
+
+/**
+ * 따라 말하기 자리의 들려줄 말 칸(순수, 묶음 3 fix 1 M-1): 장(쪽지 · 정리 줄)이 들어오거나 다시 말할 차례면 그 장의 말로 두고, 장을 떠나면
+ * 비운다. 앞 장의 떠남이 새 장이 들어온 뒤에 오면 새 장의 말을 지우지 않는다. 앞 장의 말이 지금 장의 버림 안에서 읽히지 않게 한다.
+ */
+export function followWordStep(
+  word: string | undefined,
+  event: FollowWordEvent,
+): string | undefined {
+  if (event.kind !== "leave") return event.word;
+  return word === event.word ? undefined : word;
+}
+
+/** 층의 소리 요청에 그 장의 들려줄 말로 답할까(순수, plan 정한 것 6): 따라 말하기 자리의 다시 말할 차례에 말이 있을 때만, 그 밖은 짧은 말. */
+export function talkFollowWordOf(
+  need: DiscardSoundNeed,
+  { followScene, word }: { followScene: boolean; word: string | undefined },
+): string | undefined {
+  return need === "again" && followScene ? word : undefined;
+}
+
+/**
+ * 떠남(쉬는 안내 · 막힘 · 마무리 · 홈 — 정리 따라 말하기는 떠남이 아님, 기계 검토 6절 7 · 8): 서버 기다림을 내리고 떠남을 보낸 뒤, 끝나는
+ * 화면(close)이면 층을 닫는다. 닫힌 층은 읽기 · 듣기를 음성 접점에 그대로 넘기므로 그 화면의 줄이 버림을 다시 열지 않는다. 새 화면 줄을
+ * 넣기 전에 부른다(떠남이 보류한 읽기를 거두므로).
+ */
+export function leaveDiscard(
+  layer: Pick<DiscardLayer, "serverWait" | "leave" | "dispose"> | null,
+  { close }: { close: boolean },
+): void {
+  if (!layer) return;
+  layer.serverWait(false);
+  layer.leave();
+  if (close) layer.dispose();
+}
+
+/** 아이 차례 칸 위 짧은 말(선생님 줄 꼴 · 1~4단계 뜻 — 대화 기록 · talk_turns 에 넣지 않음, spec 설계 3 '다시 말할 차례의 소리' 행). */
+function ShortLineBubble({
+  line,
+  koMeaning,
+  englishName,
+}: {
+  line: TalkShortLine;
+  koMeaning: boolean;
+  englishName: string;
+}) {
+  return (
+    <div data-talk-short-line="" className="mb-3 flex flex-col gap-1">
+      <p
+        lang="en"
+        className={cn(
+          BUBBLE_CLASS,
+          BUBBLE_WIDTH,
+          CHILD_SIZE.english,
+          "font-en font-bold leading-snug",
+        )}
+      >
+        {fillName(line.en, englishName)}
+      </p>
+      {koMeaning ? (
+        <p data-talk-short-ko="" className={cn(CHILD_SIZE.guide, "px-2")}>
+          {fillName(line.ko, englishName)}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** 새 꼴 카드 회화 틀. 선생님이 바뀌면 틀을 새로 그려 음성 접점을 그 선생님 목소리로 감싼다(옛 틀과 같음). */
 export function TalkLessonFrame({ view }: { view: TalkLessonView }) {
   return <TalkLessonFrameBody key={view.teacher?.key ?? ""} view={view} />;
@@ -765,23 +954,133 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const speechSettings = useRef(view.settings.speech);
   const teacherVoice = useRef(view.teacher?.voice);
   const [listenLog] = useState(createListenLog);
+  // 버리는 듣기 층(켠 기기에서만 — 없으면 null 이고 아래 discard 몫이 모두 넘어가지 않는다, AC-11)
+  const [discardLayer, setDiscardLayer] = useState<DiscardLayer | null>(null);
+  const discardRef = useRef<DiscardLayer | null>(null);
+  discardRef.current = discardLayer;
+  const [discardView, setDiscardView] = useState<DiscardView | undefined>();
+  /** 층이 버림 안에서 읽는 짧은 말 · 들려줄 말의 선생님 '말하기'(층이 teacherSpeech 아래라 따로 켠다, 층 fix 1 I-2). */
+  const [shortSpeaking, setShortSpeaking] = useState(false);
+  /** 아이 차례 칸 위에 보일 짧은 말(그 말을 고른 말풍선 차례 turn 에서만). */
+  const [shortLine, setShortLine] = useState<{
+    turn: number;
+    line: TalkShortLine;
+  } | null>(null);
+  const discardSettings = useRef(view.settings.discard);
+  const shortLines = useRef(view.talkShortLines);
+  const englishNameRef = useRef(view.englishName);
+  const rateRef = useRef(rate);
+  /** 자리마다 다음에 고를 짧은 말 차례(돌려 쓰기). */
+  const shortCount = useRef<Record<DiscardSoundNeed, number>>({
+    again: 0,
+    mic: 0,
+  });
+  /** 진짜를 연 마지막 말풍선 차례(그 차례에서 아직 진짜가 없으면 again · more 없는 줄 — 짧은 말 판정 M-5). */
+  const turnTried = useRef<number | null>(null);
+  /** 지금 말풍선 차례 · 따라 말하기 자리인가 · 그 들려줄 말(소리 공급이 읽는다). */
+  const turnNow = useRef(0);
+  const followScene = useRef(false);
+  const followWord = useRef<string | undefined>(undefined);
+  /** 소리 공급(층이 need-sound 마다 부른다 — 그때의 차례 · 자리를 위 값들로 읽는다). */
+  const soundSource = useRef<
+    (need: DiscardSoundNeed) => DiscardSoundLine | undefined
+  >(() => undefined);
   useEffect(() => {
     const created = createBrowserSpeech({
       settings: speechSettings.current,
       onTrace: listenLog.record,
     });
     const voice = teacherVoice.current;
+    const options: SpeakOptions = {
+      rate: rateRef.current,
+      ...(voice ? { pitch: voice.pitch, voicePrefer: voice.prefer } : {}),
+    };
+    const fallback = discardFallbackOf(shortLines.current);
+    const miss = talkDiscardMissOf({
+      mode: discardSettings.current.mode,
+      verdict: created.device(),
+      canOpen: created.openDiscard !== undefined,
+      lines: shortLines.current,
+    });
+    if (miss)
+      console.warn(
+        `버리는 듣기: 짧은 말 목록이 비어 이 수업은 층 없이 듣습니다(again ${miss.again} · mic ${miss.mic})`,
+      );
+    const lineOf = (line: TalkShortLine): DiscardSoundLine => ({
+      text: fillName(line.en, englishNameRef.current),
+      sound: "short",
+      options,
+      onStart: () => setShortSpeaking(true),
+      onEnd: () => setShortSpeaking(false),
+    });
+    const layer = fallback
+      ? discardLayerFor(created, {
+          discard: discardSettings.current,
+          speech: speechSettings.current,
+          verdict: created.device(),
+          fallbackLines: {
+            again: lineOf(fallback.again),
+            mic: lineOf(fallback.mic),
+          },
+          onTrace: listenLog.record,
+        })
+      : null;
+    soundSource.current = (need) => {
+      // 따라 말하기 자리의 다시 말할 차례는 짧은 말 대신 그 낱말 · 줄의 들려줄 말(plan 정한 것 6)
+      const word = talkFollowWordOf(need, {
+        followScene: followScene.current,
+        word: followWord.current,
+      });
+      if (word !== undefined)
+        return { ...lineOf({ en: word, ko: "" }), sound: "word" };
+      const line = talkShortLineOf(shortLines.current[need], {
+        fresh: need === "again" && turnTried.current !== turnNow.current,
+        count: shortCount.current[need],
+      });
+      if (line === undefined) return undefined;
+      shortCount.current[need] += 1;
+      // 말풍선은 대화 차례에만(쪽지 · 정리의 회복 한마디는 쪽지 · 말풍선이 이미 그 자리를 보인다)
+      if (!followScene.current) setShortLine({ turn: turnNow.current, line });
+      return lineOf(line);
+    };
+    layer?.setSoundSource((need) => soundSource.current(need));
+    const port = layer?.port ?? created;
+    setDiscardLayer(layer);
     setSpeech(
       voice
-        ? teacherSpeech(created, {
+        ? teacherSpeech(port, {
             pitch: voice.pitch,
             voicePrefer: voice.prefer,
             onSpeaking: setSpeakingNow,
           })
-        : created,
+        : port,
     );
-    return () => created.dispose();
+    return () => {
+      layer?.dispose();
+      created.dispose();
+    };
   }, [listenLog]);
+  useEffect(() => discardLayer?.subscribe(setDiscardView), [discardLayer]);
+  turnNow.current = turnKey;
+  followScene.current = stage === "wrap" || phase === "prep";
+  // 소리 끝(접점 표 '소리 끝'): 아이 차례로 넘긴 뒤 · 아이 차례와 정리에서 다시 읽은 뒤 읽기 줄이 빈 때 알린다(talkSoundEndDue)
+  const soundEndScene = talkSoundEndSceneOf({
+    stage,
+    phase,
+    away: blocked !== undefined || resting,
+  });
+  const soundEndAt = useRef<TalkSoundEndAt | undefined>(undefined);
+  useEffect(() => {
+    const next = { scene: soundEndScene, speaking: queue.speaking };
+    const due = talkSoundEndDue(soundEndAt.current, next);
+    soundEndAt.current = next;
+    if (due) discardLayer?.soundEnd();
+  }, [soundEndScene, queue.speaking, discardLayer]);
+  // 막힘 판 · 쉬는 안내는 떠남이다(돌아오면 다음 읽기가 버림을 다시 연다 — 층은 닫지 않음)
+  useEffect(() => {
+    if (blocked !== undefined || resting)
+      leaveDiscard(discardRef.current, { close: false });
+  }, [blocked, resting]);
 
   const praiseSeconds = view.teacherSettings.praiseSeconds;
   const praise = useCallback(() => {
@@ -1025,6 +1324,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       router.push(LESSONS_PATH);
       return;
     }
+    leaveDiscard(discardRef.current, { close: true });
     setWrap(out.wrap);
     setClosingMode("first");
     setStage("closing");
@@ -1065,6 +1365,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   }
 
   function showClosed(farewell: { en: string; ko?: string }) {
+    // 마무리(끝인사)는 떠남 — 끝인사 줄을 넣기 전에(기계 검토 6절 8)
+    leaveDiscard(discardRef.current, { close: true });
     setCloseLine(farewell);
     pushBubbleToLog();
     setTurnKey((k) => k + 1);
@@ -1081,6 +1383,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   function abortInflight() {
     inflight.current?.abort();
     inflight.current = null;
+    // 거둔 턴은 끝 줄이 오지 않는다 — 서버 기다림을 내린다(새 턴이면 submit 이 다시 켠다)
+    discardRef.current?.serverWait(false);
   }
 
   /** 턴 끝 줄(TalkLessonNext)을 화면에 둔다. */
@@ -1128,6 +1432,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     retryAction.current = () => void submit(body);
     queue.cancel();
     setPhase("tori");
+    // 서버 차례 기다림(끝 줄 · 쉼 줄 · 닫는 줄 · 오류 전 — 그동안 버림의 안전 상한을 세지 않는다, N-1)
+    discardRef.current?.serverWait(true);
+    const waitDone = () => discardRef.current?.serverWait(false);
     let first = true;
     const firstLine = () => {
       if (!first) return;
@@ -1163,6 +1470,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           queue.enqueue(lessonSpeakItemsOf(line, view.level, index));
         },
         onEnd: (n) => {
+          waitDone();
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
@@ -1175,12 +1483,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           setBubble((b) => ({ ...b, done: true }));
         },
         onResting: () => {
+          waitDone();
           pendingSend.current = null;
           retryAction.current = null;
           restResend.current = body;
           setResting(true);
         },
         onBreak: (line) => {
+          // 쉬는 안내는 떠남 — 그 줄을 넣기 전에 층을 닫는다(기계 검토 6절 8)
+          leaveDiscard(discardRef.current, { close: true });
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
@@ -1194,6 +1505,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           setPhase("break");
         },
         onClose: (line) => {
+          waitDone();
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
@@ -1214,6 +1526,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           showClosed(line.farewell);
         },
         onError: () => {
+          waitDone();
           setWaitingSince(null);
           setPhase("failed");
         },
@@ -1239,6 +1552,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     );
     if (inflight.current === controller) inflight.current = null;
     if (result === "offline") {
+      waitDone();
       setWaitingSince(null);
       setPhase("offline");
     }
@@ -1288,6 +1602,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   /** '홈': 참여 완료 전이면 그대로(진행), 뒤면 닫히고 마무리 첫 장 뒤 홈. 막힘 · 쉼의 '홈'은 바로 홈. 정리 · 마무리 중이면 바로 홈. */
   async function home({ firstCard = true }: { firstCard?: boolean } = {}) {
     setBusy(true);
+    // 홈은 떠남(마무리 첫 장 · 홈으로 — 층을 닫는다)
+    leaveDiscard(discardRef.current, { close: true });
     abortInflight();
     queue.cancel();
     if (stage !== "talk") {
@@ -1359,6 +1675,44 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     applyMove(out);
   }
 
+  // 버리는 듣기 층의 화면 몫(층이 없으면 넘기지 않는다 — 아이 차례 · 따라 말하기가 지금 그대로)
+  const turnDiscard: TurnDiscard | undefined =
+    discardLayer && discardView
+      ? {
+          view: discardView,
+          again: discardLayer.again,
+          dontKnow: discardLayer.dontKnow,
+          listenAuto: discardLayer.listenAuto,
+          soundEnd: discardLayer.soundEnd,
+        }
+      : undefined;
+  const followDiscard: FollowDiscard | undefined =
+    discardLayer && discardView
+      ? {
+          view: discardView,
+          listenAuto: discardLayer.listenAuto,
+          soundEnd: discardLayer.soundEnd,
+          again: (word) => {
+            followWord.current = followWordStep(followWord.current, {
+              kind: "again",
+              word,
+            });
+            discardLayer.again();
+          },
+          card: (word) => {
+            followWord.current = followWordStep(followWord.current, {
+              kind: "card",
+              word,
+            });
+            return () => {
+              followWord.current = followWordStep(followWord.current, {
+                kind: "leave",
+                word,
+              });
+            };
+          },
+        }
+      : undefined;
   const followEnv: FollowEnv = {
     sessionId: view.sessionId,
     speech,
@@ -1391,12 +1745,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       sessionId: view.sessionId,
       clientListen: takeClientListen,
     }),
+    discard: followDiscard,
   };
 
   const teacherState = teacherStateOf({
     listening,
     thinking: waitingSince !== null,
-    speaking: speakingNow,
+    speaking: speakingNow || shortSpeaking,
     praiseUntil: praiseClock?.until ?? null,
     now: praiseClock?.now ?? 0,
   });
@@ -1540,6 +1895,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
               return closing;
             }}
             onDone={() => {
+              // 마무리는 떠남 — 층을 닫는다(정리 따라 말하기는 떠남이 아님)
+              leaveDiscard(discardRef.current, { close: true });
               setClosingMode("full");
               setStage("closing");
             }}
@@ -1641,6 +1998,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
               />
             </TalkLog>
             <div className="mt-auto border-t-2 border-dashed border-ink/30 pt-4">
+              {shortLine &&
+              shortLine.turn === turnKey &&
+              (phase === "child" || phase === "choice") ? (
+                <ShortLineBubble
+                  line={shortLine.line}
+                  koMeaning={koMeaning}
+                  englishName={view.englishName}
+                />
+              ) : null}
               {phase === "child" ||
               (phase === "choice" && lessonChoiceSpeechOf(position.choice)) ? (
                 <ChildTurn
@@ -1678,7 +2044,11 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                     queue.cancel();
                     setNudge(false);
                   }}
-                  onListening={setListening}
+                  onListening={(on) => {
+                    // 진짜를 연 차례(버리는 듣기 짧은 말 고르기 — talkShortLineOf fresh)
+                    if (on) turnTried.current = turnKey;
+                    setListening(on);
+                  }}
                   reveal={async (tier) => {
                     setNudge(false);
                     const out = await revealTalkLessonHint({
@@ -1689,6 +2059,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   }}
                   onSend={onChildSend}
                   flashDontKnow={flash}
+                  discard={turnDiscard}
                 />
               ) : null}
               {phase === "choice" ? (

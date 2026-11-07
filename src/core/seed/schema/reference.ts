@@ -16,6 +16,8 @@ import {
   TALK_CUE_BANDS,
   TALK_CUE_PLACES,
   TALK_HINT_TIERS,
+  TALK_SHORT_BANDS,
+  TALK_SHORT_PLACES,
   TALK_SITUATION_FORBIDDEN_SCOPES,
   TALK_SITUATION_PLACES,
   TALK_SPEC_SEGMENTS,
@@ -563,6 +565,16 @@ export const TalkCueLinesFileSchema = z.record(
   z.record(z.enum(TALK_CUE_BANDS), TalkCueFormsSchema),
 );
 export type TalkCueLinesFile = z.infer<typeof TalkCueLinesFileSchema>;
+
+/**
+ * 짧은 말 목록 lists/talk-short-lines.json(C213 · iPad 버리는 듣기 plan 정한 것 6). 자리(again · mic) × 단계 구간("1-3" · "4-6" · "7-9" ·
+ * "10-12")마다 줄 하나 이상(화면이 고른다). 자리 · 구간은 모두 있어야 하고 모르는 열쇠는 거부한다. 물음표 · 길이 · 어휘 범위는 check-talk-lists 가 본다.
+ */
+export const TalkShortLinesFileSchema = z.record(
+  z.enum(TALK_SHORT_PLACES),
+  z.record(z.enum(TALK_SHORT_BANDS), z.array(TalkListLineSchema).min(1)),
+);
+export type TalkShortLinesFile = z.infer<typeof TalkShortLinesFileSchema>;
 
 /**
  * 상황 줄 · 상황 금지 구 목록 lists/talk-situation-lines.json(C209 · C211, 02-2:208). lines 는 자리(인사 끝 · 받침 첫째 · 둘째 · 셋째 ·

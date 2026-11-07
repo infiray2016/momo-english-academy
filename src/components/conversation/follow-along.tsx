@@ -12,6 +12,11 @@
 // 13절 C166(UX 검토 U4-2 · U4-4 · U5-2 · R2): 선생님이 읽는 동안 말하기 단추를 흐리게 두고(누르면 '다 읽은 뒤 눌러요') 읽기가 끝나면 켠다.
 // 듣는 동안 '듣고 있어요' · 소리 들어옴 표시, 인식이 speech.max_retries 번 안 돼 건너뛸 때 '이건 다음에 다시 해요'를
 // speech.skip_notice_seconds 보인 뒤 다음.
+// iPad 버리는 듣기(13절 C213 · C214, spec 설계 2 · 3 · FR-2 · FR-3, 정본 03 90 · 92줄 · 07 26 · 29 · 31줄): 틀이 env.discard 를 넘긴 때만(켠 기기)
+// 흐림을 진짜를 열 수 있을 때(층 view.canListen)까지 늘리고 문구는 '다 읽은 뒤 눌러요' 하나다. 읽기가 끝나면(say 가 참) 소리 끝을 알리고, 다시
+// 말할 차례(못 들었어요 · 끊긴 연결)에는 그 낱말 · 줄의 들려줄 말을 층이 버림 안에서 한 번 더 읽게 한다(again). '버림부터'에서 쉬는 중이면
+// (view.reopenIdle) 들려줄 말을 같은 쉼에서 한 번만 다시 읽는다. 마이크 안 잡힘은 '잠깐만요, 마이크를 다시 켤게요'와 누름 없는 듣기로 잇는다.
+// env.discard 가 없으면(끔 · 켜지 않은 기기) 지금 그대로다.
 import { Volume2 } from "lucide-react";
 import {
   type ReactNode,
@@ -47,6 +52,7 @@ import {
   type SpeechVerdict,
   speechEventOf,
 } from "@/core/speaking/judge";
+import type { DiscardView } from "@/core/speech/discard";
 import type { SpeechSettings } from "@/core/speech/listen";
 import { listenGapMsOf } from "@/core/speech/listen-gap";
 import { bestMatchRate } from "@/core/speech/match-rate";
@@ -62,6 +68,8 @@ import {
   ChildBubble,
   deafListenOf,
   deafStreakOf,
+  discardLineOf,
+  type TurnDiscard,
 } from "./child-turn";
 import { SilentModeNote } from "./silent-mode-note";
 import { type BubbleContent, ToriBubble } from "./tori";
@@ -173,7 +181,75 @@ export type FollowEnv = {
   clientListen: () => ClientListen;
   /** 따라 말하기 한 차례 저장(lessonFollowSaver). */
   saveFollow: FollowSaver;
+  /** 버리는 듣기 층(켠 기기에서만 틀이 넘긴다 — iPad 버리는 듣기 spec 설계 3). 없으면 지금 그대로다. */
+  discard?: FollowDiscard | undefined;
 };
+
+/**
+ * 따라 말하기가 쓰는 층 몫. again 은 그 낱말 · 줄의 들려줄 말을 넘긴다 — 틀이 소리 공급에서 그 말을 버림 안에서 읽힌다(짧은 말 대신, plan
+ * 정한 것 6 · 층 보고 5절 3).
+ */
+export type FollowDiscard = Omit<TurnDiscard, "again" | "dontKnow"> & {
+  again(word: string): void;
+  /** 장이 들어옴: 그 장의 들려줄 말을 틀의 소리 공급에 둔다(묶음 3 fix 1 M-1 — 앞 장의 말이 남지 않게). 돌림값은 장을 떠날 때 부른다. */
+  card(word: string): () => void;
+};
+
+/** 지금 장의 들려줄 말을 층 몫에 알린다(층이 있을 때 · 말이 바뀔 때마다, 장을 떠나면 비움). 층이 없으면 아무것도 하지 않는다. */
+function useFollowCardWord(env: Pick<FollowEnv, "discard">, word: string) {
+  const discard = useRef(env.discard);
+  discard.current = env.discard;
+  const on = env.discard !== undefined;
+  useEffect(() => {
+    if (!on) return;
+    return discard.current?.card(word);
+  }, [on, word]);
+}
+
+/**
+ * 따라 말하기 단추를 버리는 듣기 때문에 더 흐리게 둘까(순수, spec 설계 2 '따라 말하기 흐림' · M-5): 층이 있고 진짜를 바로 열 수 없으면 흐림.
+ * 다만 '버림부터'에서 쉬는 중인데 그 쉼의 다시 읽기를 이미 냈으면(읽지 못해 쉼이 이어짐) 켠다 — 누르면 층이 버림을 다시 열어 들려줄 말 뒤 듣는다.
+ */
+export function followDiscardDimOf(
+  view: DiscardView | undefined,
+  rereadDone: boolean,
+): boolean {
+  if (view === undefined || view.canListen) return false;
+  return !(view.reopenIdle && rereadDone);
+}
+
+/** 같은 '버림부터' 쉼의 다시 읽기 셈(재검토 범위 밖 관찰 — 같은 쉼에서 한 번만). */
+export type FollowReread = { done: boolean };
+export const FOLLOW_REREAD_START: FollowReread = { done: false };
+
+/**
+ * view.reopenIdle 이 바뀔 때의 다시 읽기(순수, 기계 fix 1 · reopenIdle): 쉼이 새로 서면 한 번 읽는다. 이미 읽는 중(busy — 들어올 때 읽기 ·
+ * 다시 듣기)이면 그 읽기를 이 쉼의 읽기로 친다. 쉼이 끝나면(버림이 열림) 셈을 되돌린다. 읽기가 들려주지 못함으로 끝나 쉼이 이어져도 다시 읽지 않는다.
+ */
+export function followRereadStep(
+  state: FollowReread,
+  { reopenIdle, busy }: { reopenIdle: boolean; busy: boolean },
+): { state: FollowReread; reread: boolean } {
+  if (!reopenIdle) return { state: FOLLOW_REREAD_START, reread: false };
+  if (state.done) return { state, reread: false };
+  return { state: { done: true }, reread: !busy };
+}
+
+/** 따라 말하기 한 번의 끝 뒤 층에 알릴 것(순수): 다시 말할 차례(못 들었어요 · 끊긴 연결)는 again, 회복은 누름 없는 듣기, 그 밖은 없음. */
+export function followDiscardAfterOf(
+  kind:
+    | "heard"
+    | "retry"
+    | "offline"
+    | "skip"
+    | "deaf-skip"
+    | "recover"
+    | "none",
+): "again" | "recover" | "none" {
+  if (kind === "retry" || kind === "offline") return "again";
+  if (kind === "recover") return "recover";
+  return "none";
+}
 
 /** 따라 말하기 한 차례의 자리(저장 몫). place 는 짧은 준비 쪽지의 자리(인사 뒤 · 대화 중). */
 export type FollowSaveAt = {
@@ -219,10 +295,15 @@ export function lessonFollowSaver(
  * 더 흐리게 두어 읽기 멈춤 → 쉼 → 누름 → 듣기 차례를 지킨다(장부 T-125, iPad 사파리 읽기 직후 듣기 no-speech). 듣기는 늦추지 않는다.
  */
 function useSayer(
-  env: Pick<FollowEnv, "speech" | "rate" | "englishName" | "settings">,
+  env: Pick<
+    FollowEnv,
+    "speech" | "rate" | "englishName" | "settings" | "discard"
+  >,
 ) {
   const port = useRef(env.speech);
   port.current = env.speech;
+  const discard = useRef(env.discard);
+  discard.current = env.discard;
   const generation = useRef(0);
   const speakingRef = useRef(false);
   const [speaking, setSpeaking] = useState(false);
@@ -258,6 +339,8 @@ function useSayer(
       speakingRef.current = false;
       setSpeaking(false);
       settle.stopped();
+      // 버리는 듣기: 이 조각이 넣은 줄을 다 읽음 — 소리 끝(spec 설계 2, 접점 표 '소리 끝')
+      discard.current?.soundEnd();
       return true;
     },
     [rate, englishName, pauseMs, sleeper, settle],
@@ -282,7 +365,9 @@ function useSayer(
   );
   /** 읽는 중이거나 읽기 뒤 듣기 쉼 중(말하기 단추를 흐리게 — 누르면 '다 읽은 뒤 눌러요'). */
   const waiting = speaking || !settled;
-  return { say, cancel, speaking, waiting };
+  /** 지금 읽는 중인가(렌더를 기다리지 않는 값 — 다시 읽기 셈이 읽는다). */
+  const busy = useCallback(() => speakingRef.current, []);
+  return { say, cancel, speaking, waiting, busy };
 }
 
 /** 한 번 듣기(따라 말하기 — 끝 조용함은 회화 따라 말하기 규칙). 듣는 중에 다시 누르면 듣기를 끝낸다. */
@@ -298,17 +383,32 @@ function useFollowListen(env: FollowEnv) {
     env.settings.talkSpeech,
   );
   /** 듣기 결과를 셈의 일로. 마이크 안 잡힘이면 "deaf"(셈의 일이 아님 — speechEventOf 는 없음을 돌려준다). */
-  async function listen(): Promise<SpeechEvent | "deaf" | undefined> {
+  async function listen(
+    auto = false,
+  ): Promise<SpeechEvent | "deaf" | undefined> {
     if (!env.speech) return undefined;
     if (handle.current) {
       handle.current.press();
       return undefined;
     }
-    env.speech.unlockFromGesture();
+    const discard = env.discard;
+    if (!auto) env.speech.unlockFromGesture();
     setSoundIn(false);
-    setListening(true);
-    env.onListening(true);
-    const current = env.speech.listen(rule, { sound: () => setSoundIn(true) });
+    // 듣는 중 표시: 층이 없으면 누른 때, 있으면 진짜가 실제로 열린 때(on.started — 버림 동안은 켜지 않음)
+    const opened = () => {
+      setListening(true);
+      env.onListening(true);
+    };
+    const sound = () => setSoundIn(true);
+    let current: ListenHandle;
+    if (!discard) {
+      opened();
+      current = env.speech.listen(rule, { sound });
+    } else if (auto) {
+      current = discard.listenAuto(rule, { sound, started: opened });
+    } else {
+      current = env.speech.listen(rule, { sound, started: opened });
+    }
     handle.current = current;
     const outcome = await current.outcome;
     handle.current = undefined;
@@ -333,15 +433,22 @@ function useFollowTry(env: FollowEnv) {
   const [message, setMessage] = useState("");
   /** 이 차례에서 마이크 안 잡힘이 이어진 수(deafStreakOf — 차례마다 새 카드라 새로 센다). */
   const deafStreak = useRef(0);
-  async function tryOnce(target: string): Promise<
+  async function tryOnce(
+    target: string,
+    auto = false,
+  ): Promise<
     | { kind: "heard"; text: string; rate: number; phrase: ResultPhrase }
     | { kind: "skip" }
     | { kind: "retry" }
     /** 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐 — 기술 사유 건너뜀(셈 없음). */
     | { kind: "deaf-skip" }
+    /** 버리는 듣기: 마이크 안 잡힘 뒤 누름 없이 다시 듣는다(F10). */
+    | { kind: "recover" }
+    /** 버리는 듣기: 끊긴 연결 — 다시 누를 수 있게 들려줄 말을 다시 읽힌다. */
+    | { kind: "offline" }
     | undefined
   > {
-    const event = await listen();
+    const event = await listen(auto);
     if (!event) return undefined;
     const deaf = deafStreakOf(
       deafStreak.current,
@@ -354,6 +461,11 @@ function useFollowTry(env: FollowEnv) {
       if (deaf.over) {
         setMessage(FOLLOW_TEXT.micDeafSkip);
         return { kind: "deaf-skip" };
+      }
+      if (env.discard) {
+        // 버리는 듣기: 안내는 층 view 의 '잠깐만요, 마이크를 다시 켤게요'(discardLineOf)
+        setMessage("");
+        return { kind: "recover" };
       }
       setMessage(FOLLOW_TEXT.micDeaf);
       return undefined;
@@ -382,10 +494,61 @@ function useFollowTry(env: FollowEnv) {
       setMessage(TEACHER_TEXT.notHeard(env.teacherName));
       return { kind: "retry" };
     }
-    if (verdict === "offline") setMessage(FOLLOW_TEXT.offline);
+    if (verdict === "offline") {
+      setMessage(FOLLOW_TEXT.offline);
+      if (env.discard) return { kind: "offline" };
+    }
     return undefined;
   }
-  return { tryOnce, listening, soundIn, capAt, message, setMessage };
+  /**
+   * 한 번 따라 말하기(버리는 듣기의 회복 포함): 회복이면 누름 없이 다시 듣고, 다시 말할 차례면 층에 들려줄 말(따라 할 글)을 다시 읽힌다(again). 층이 없으면
+   * tryOnce 한 번과 같다.
+   */
+  async function tryFollow(target: string) {
+    let auto = false;
+    for (;;) {
+      const out = await tryOnce(target, auto);
+      const next = followDiscardAfterOf(out?.kind ?? "none");
+      if (next === "recover") {
+        auto = true;
+        continue;
+      }
+      if (next === "again") env.discard?.again(target);
+      if (out?.kind === "recover" || out?.kind === "offline") return undefined;
+      return out;
+    }
+  }
+  return { tryFollow, listening, soundIn, capAt, message, setMessage };
+}
+
+/**
+ * 버리는 듣기의 따라 말하기 흐림(spec 설계 2 · M-5): '버림부터'에서 쉬는 중이면 들려줄 말을 같은 쉼에서 한 번만 다시 읽고(followRereadStep),
+ * 진짜를 열 수 있을 때까지 흐림을 돌려준다(followDiscardDimOf). 층이 없거나 듣지 않는 장이면 흐림 없음 · 다시 읽기 없음.
+ */
+function useFollowDiscardDim(
+  env: Pick<FollowEnv, "discard">,
+  {
+    follow,
+    busy,
+    reread,
+  }: { follow: boolean; busy: () => boolean; reread: () => void },
+): boolean {
+  const view = follow ? env.discard?.view : undefined;
+  const reopenIdle = view?.reopenIdle === true;
+  const step = useRef(FOLLOW_REREAD_START);
+  const [done, setDone] = useState(false);
+  const again = useRef(reread);
+  again.current = reread;
+  useEffect(() => {
+    const next = followRereadStep(step.current, {
+      reopenIdle,
+      busy: busy(),
+    });
+    step.current = next.state;
+    setDone(next.state.done);
+    if (next.reread) again.current();
+  }, [reopenIdle, busy]);
+  return followDiscardDimOf(view, done);
 }
 
 /** 남은 차례가 없으면(이어 열기 — 다 저장됨) 바로 다음 토막. */
@@ -427,7 +590,8 @@ function WrapCard({
   const texts = lines.map((l) => l.en);
   const target = texts.join(" ");
   const sayer = useSayer(env);
-  const { tryOnce, listening, soundIn, capAt, message } = useFollowTry(env);
+  const { tryFollow, listening, soundIn, capAt, message } = useFollowTry(env);
+  useFollowCardWord(env, target);
   const [phrase, setPhrase] = useState<ResultPhrase | undefined>();
   const [skipping, setSkipping] = useState(false);
   const [typed, setTyped] = useState(false);
@@ -449,6 +613,13 @@ function WrapCard({
       sayer.cancel();
     };
   }, []);
+  // 들어올 때 읽기(위 효과)가 먼저 돌아 그 읽기를 첫 쉼의 읽기로 센다
+  const discardDim = useFollowDiscardDim(env, {
+    follow,
+    busy: sayer.busy,
+    reread: () => void sayer.say(texts),
+  });
+  const discardLine = discardLineOf(env.discard?.view, { listening, soundIn });
 
   function moveOn(delayMs: number) {
     if (moved.current) return;
@@ -465,7 +636,7 @@ function WrapCard({
   async function speak() {
     if (moved.current) return;
     sayer.cancel();
-    const out = await tryOnce(target);
+    const out = await tryFollow(target);
     if (!out || out.kind === "retry") {
       if (out) tried.current.failures += 1;
       return;
@@ -530,13 +701,19 @@ function WrapCard({
           <GuideLine>{TEACHER_TEXT.followGuide(env.teacherName)}</GuideLine>
           <StatusLine
             tone={
-              phrase === "good" ? "ok" : message && !skipping ? "error" : "info"
+              phrase === "good"
+                ? "ok"
+                : message && !skipping && !discardLine
+                  ? "error"
+                  : "info"
             }
           >
             {phrase && !message ? (
               <span data-follow-result="">{RESULT_PHRASES[phrase]}</span>
             ) : skipping ? (
               <span data-follow-skipped="">{message}</span>
+            ) : discardLine ? (
+              <span data-discard-line="">{discardLine}</span>
             ) : (
               message
             )}
@@ -546,7 +723,8 @@ function WrapCard({
             listening={listening}
             soundIn={soundIn}
             // 토리 글이 흐르거나 읽는 동안 · 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요' — C166 R2, 화면 검토 b3 M-1 의 '글이 다 흐른 뒤'를 포함, T-125)
-            waiting={!typed || sayer.waiting}
+            // 버리는 듣기: 진짜를 열 수 있을 때까지 더 흐리게(문구는 같은 '다 읽은 뒤 눌러요' — spec 설계 2 · M-5)
+            waiting={!typed || sayer.waiting || discardDim}
             capAt={capAt}
             gapClassName="bg-paper"
             disabled={!env.speech || phrase !== undefined || skipping}
@@ -686,7 +864,8 @@ function PrepCard({
   onNext: () => void;
 }) {
   const sayer = useSayer(env);
-  const { tryOnce, listening, soundIn, capAt, message } = useFollowTry(env);
+  const { tryFollow, listening, soundIn, capAt, message } = useFollowTry(env);
+  useFollowCardWord(env, card.say);
   const [phrase, setPhrase] = useState<ResultPhrase | undefined>();
   const [heard, setHeard] = useState<string | undefined>();
   const [skipping, setSkipping] = useState(false);
@@ -706,6 +885,13 @@ function PrepCard({
       sayer.cancel();
     };
   }, []);
+  // 들어올 때 읽기(위 효과)가 먼저 돌아 그 읽기를 첫 쉼의 읽기로 센다
+  const discardDim = useFollowDiscardDim(env, {
+    follow: true,
+    busy: sayer.busy,
+    reread: () => void sayer.say([card.say]),
+  });
+  const discardLine = discardLineOf(env.discard?.view, { listening, soundIn });
 
   function moveOn(delayMs: number) {
     if (moved.current) return;
@@ -724,7 +910,7 @@ function PrepCard({
   async function speak() {
     if (moved.current) return;
     sayer.cancel();
-    const out = await tryOnce(card.say);
+    const out = await tryFollow(card.say);
     if (!out) return;
     if (out.kind === "deaf-skip") {
       // 기술 사유 건너뜀: 실패 수를 올리지 않고 사유(mic_deaf)만 남긴 뒤 안내 시간 뒤 다음 낱말(fix 2)
@@ -821,13 +1007,19 @@ function PrepCard({
       <StatusLine
         className="justify-center"
         tone={
-          phrase === "good" ? "ok" : message && !skipping ? "error" : "info"
+          phrase === "good"
+            ? "ok"
+            : message && !skipping && !discardLine
+              ? "error"
+              : "info"
         }
       >
         {phrase && !message ? (
           <span data-follow-result="">{RESULT_PHRASES[phrase]}</span>
         ) : skipping ? (
           <span data-follow-skipped="">{message}</span>
+        ) : discardLine ? (
+          <span data-discard-line="">{discardLine}</span>
         ) : (
           message
         )}
@@ -837,7 +1029,8 @@ function PrepCard({
         listening={listening}
         soundIn={soundIn}
         // 선생님이 읽는 동안과 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요', R2 · 7절), 쉼이 지나면 켬(T-125 — iPad 읽기 직후 듣기 no-speech)
-        waiting={sayer.waiting}
+        // 버리는 듣기: 진짜를 열 수 있을 때까지 더 흐리게(같은 문구 — spec 설계 2 · M-5)
+        waiting={sayer.waiting || discardDim}
         capAt={capAt}
         gapClassName="bg-paper"
         disabled={!env.speech || phrase !== undefined || skipping}

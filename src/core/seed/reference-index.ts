@@ -28,6 +28,7 @@ import type {
   TalkAllowedWordsFile,
   TalkCueLinesFile,
   TalkMadeUpPhrasesFile,
+  TalkShortLinesFile,
   TalkSituationLinesFile,
   TalkWaitLinesFile,
   UnitSpec,
@@ -87,6 +88,8 @@ export type ReferenceFiles = {
   talkSituationLines: TalkSituationLinesFile;
   talkAllowedWords: TalkAllowedWordsFile;
   talkMadeUpPhrases: TalkMadeUpPhrasesFile;
+  /** 회화 다시 말할 차례의 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6). 검사는 같은 check-talk-lists. */
+  talkShortLines: TalkShortLinesFile;
   /**
    * 문법 용어 목록(델타 spec 2026-10-29 설계 7, `GRAMMAR_TERMS_FILE`). 규격 파일 열(SEED_FILES) 밖의 선택 파일이라
    * 없어도 규격 파일 오류가 아니고, teach 가 있는 수업 칸만 '목록 없음'으로 막는다.
@@ -604,6 +607,7 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
   }
 
   // 회화 1~3단계 시드 목록 넷(06:187): 꼴 수 · 물음표 · 길이 · 어휘 범위(허용 낱말 포함) · 상황 금지 구 · 지어낸 경험 꼴.
+  // 짧은 말(C213)도 같은 검사가 본다(줄 수 · 물음표 · 길이 · 그 구간 첫 단계 어휘 범위 · 지어낸 경험 꼴).
   issues.push(
     ...checkTalkLists(files, {
       ...(files.vocab ? { lexicon } : {}),

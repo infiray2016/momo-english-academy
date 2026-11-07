@@ -200,6 +200,14 @@ export const TEST_SETTINGS = {
   "speech.deaf_detect": { scope: "household", value: "ios" },
   // 같은 자리 '마이크 안 잡힘'이 이만큼 이어지면 쪽지 · 정리 항목을 기술 사유로 건너뜀(잠정 11-06 fix 2, C210 보완)
   "speech.deaf_skip_after": { scope: "household", value: 3 },
+  // 버리는 듣기(iPad 버리는 듣기 spec 설계 4 · 13절 C213 — 켤 기기 · 쉰 문턱 · 죽은 버림 문턱 · 버림 하한 · 소리 끝 여유 · 진짜까지 간격, 잠정).
+  // 기본 ios 지만 본 e2e 는 tests/e2e/fixtures.ts 의 discardMode("off", playwright.config)로 돈다(plan 정한 것 7)
+  "speech.discard_mode": { scope: "household", value: "ios" },
+  "speech.discard_rest_ms": { scope: "household", value: 45000 },
+  "speech.discard_live_as_ms": { scope: "household", value: 250 },
+  "speech.discard_min_ms": { scope: "household", value: 1500 },
+  "speech.discard_after_sound_ms": { scope: "household", value: 300 },
+  "speech.discard_gap_ms": { scope: "household", value: 1000 },
   // 가르치고 배우는 수업 spec 설계 4 · 10 · 12 — 선생님 한국어 줄(읽기 켬 · 한국어 감시 글자 수 · 한국어 빠르기)
   "speech.read_ko": { scope: "household", value: true },
   "speech.speak_chars_per_second_ko": { scope: "household", value: 6 },
