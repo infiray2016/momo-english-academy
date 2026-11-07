@@ -406,8 +406,6 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     await expect(button).toBeVisible();
     // 단추 크기 그대로(C215 · 화면 판정 I-1): 누르기 전 · 기다림 · 듣는 중 너비가 같다
     const restWidth = await widthOf(button);
-    // 가로 화면의 단추 자리 그대로(화면 판정 N-1): 누르기 전 · 기다림 · '말해 보세요' 때 x 가 같다
-    const restX = await landscapeXOf(o.page, button);
     await expect(
       o.page.locator("[data-talk-panel][data-talk-reading]"),
     ).toHaveCount(1);
@@ -422,10 +420,9 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
       Math.abs((await widthOf(button)) - restWidth),
       "기다림 너비",
     ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
-    expect(
-      Math.abs((await landscapeXOf(o.page, button)) - restX),
-      "기다림 가로 x",
-    ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
+    // 가로 화면의 단추 자리 그대로(화면 판정 N-1): 안내 줄 없는 기다림과 '말해 보세요' 때 x 가 같다.
+    // 기다림은 누르기 전과 같은 배치(안내 줄 없음)라 기준으로 쓴다 — 누르기 전에 재면 선생님 읽기 창을 먹는다(코드 재검토 m-2)
+    const restX = await landscapeXOf(o.page, button);
     await expect(teacherWindow(o.page)).not.toHaveAttribute(
       "data-teacher-state",
       "listening",
@@ -459,8 +456,11 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
       Math.abs((await landscapeXOf(o.page, button)) - restX),
       "'말해 보세요' 가로 x",
     ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
-    // 잰 뒤에도 '말해 보세요'가 그대로다(소리가 들어오기 전에 쟀음 — 기다리지 않고 읽음)
-    expect(await discardLine(o.page).textContent()).toBe(T.sayNow);
+    // 잰 뒤에도 '말해 보세요'가 그대로다(소리가 들어오기 전에 쟀음 — 기다리지 않고 읽음, 코드 재검토 m-3)
+    expect(
+      await discardLine(o.page).allTextContents(),
+      "잰 동안 '말해 보세요'",
+    ).toEqual([T.sayNow]);
     await expect(teacherWindow(o.page)).toHaveAttribute(
       "data-teacher-state",
       "listening",
@@ -611,7 +611,8 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     const ai = await talkTurnRequests();
     const button = speakButton(o.page);
     const short = o.page.locator("[data-talk-short-line]");
-    // 가로 화면의 단추 자리 그대로(화면 판정 N-1): 누르기 전과 회복 '잠깐만요, …' · 회복 뒤 '말해 보세요' 때 x 가 같다
+    // 가로 화면의 단추 자리 그대로(화면 판정 N-1): 누르기 전과 회복 '잠깐만요, …' 때 x 가 같다.
+    // 회복 뒤 '말해 보세요' x 는 AC-24b 와 같은 배치이고 speech.deaf_silence_ms 창 안이라 재지 않는다(코드 재검토 m-1)
     const restX = await landscapeXOf(o.page, button);
     await button.click();
     await expect(button).toHaveAttribute("data-listening", "", {
@@ -643,7 +644,10 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
           "회복 '잠깐만요, …' 가로 x",
         ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
         // 잰 뒤에도 회복 안내 그대로다(진짜가 열리기 전에 쟀음 — 기다리지 않고 읽음)
-        expect(await discardLine(o.page).textContent()).toBe(T.micRecover);
+        expect(
+          await discardLine(o.page).allTextContents(),
+          "잰 동안 회복 안내",
+        ).toEqual([T.micRecover]);
         await expectInViewBothWays(o.page, [button, discardLine(o.page)]);
         await photo(o.page, "talk-discard-4-mic-recover");
       }
@@ -651,13 +655,6 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
         timeout: STREAM_END_MS,
       });
       await expect(discardLine(o.page)).toHaveText(T.sayNow);
-      if (i === 1) {
-        expect(
-          Math.abs((await landscapeXOf(o.page, button)) - restX),
-          "회복 뒤 '말해 보세요' 가로 x",
-        ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
-        expect(await discardLine(o.page).textContent()).toBe(T.sayNow);
-      }
       // 회복 뒤 누름 없이 진짜가 열린 순간(짧은 말 말풍선 + '듣고 있어요' + '말해 보세요' — 판정 4절 1)
       if (i === 1) await photo(o.page, "talk-discard-4-mic-recover-say-now");
       // 짧은 말이 진짜보다 먼저 읽혔다
