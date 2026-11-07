@@ -48,7 +48,10 @@ export const SCREEN_DIRS = ["src/components", "src/app"] as const;
  */
 export const DESIGN_COLOR_DEV_DIR = "src/app/dev/";
 const CODE_EXTENSIONS = [".ts", ".tsx"] as const;
-/** 설계 숫자 훑기에서 통째로 빼는 파일(C54 (2) 허용 목록 — 구조 상수). */
+/**
+ * 설계 숫자 훑기에서 통째로 빼는 파일(C54 (2) 허용 목록 — 구조 상수). 개발 도구 쪽(DESIGN_COLOR_DEV_DIR, next dev 전용)도 폴더째
+ * 뺀다(design-color 와 같은 나눔 — 마이크 점검 쪽의 ms 수가 설정값과 우연히 같아 상한을 넘겼다, 회화 AI 몫 넓힘 plan 위험 11).
+ */
 export const DESIGN_NUMBER_EXCLUDED_FILES = ["src/core/seed/structure.ts"];
 /**
  * 설계 숫자 훑기에서 빼는 이름(어디에 있든). 맨 위 대문자 이름 상수는 규칙으로 빠지지만
@@ -508,14 +511,18 @@ function isAllowedName(node: ts.Node): boolean {
   );
 }
 
-/** src 의 수 글자 가운데 설정값과 같은 것(structure.ts · 맨 위 대문자 이름 상수 · 허용 이름 · 0 · 1 · 2 뺌). */
+/** src 의 수 글자 가운데 설정값과 같은 것(structure.ts · 개발 도구 쪽 src/app/dev/ · 맨 위 대문자 이름 상수 · 허용 이름 · 0 · 1 · 2 뺌). */
 export function collectDesignNumbers(
   files: readonly SourceFile[],
   numbers: ReadonlyMap<number, readonly string[]>,
 ): DesignNumber[] {
   const found: DesignNumber[] = [];
   for (const file of files) {
-    if (DESIGN_NUMBER_EXCLUDED_FILES.includes(file.path)) continue;
+    if (
+      DESIGN_NUMBER_EXCLUDED_FILES.includes(file.path) ||
+      file.path.startsWith(DESIGN_COLOR_DEV_DIR)
+    )
+      continue;
     const sf = parseSource(file);
     const visit = (node: ts.Node) => {
       if (isTopLevelUpperConst(node) || isAllowedName(node)) return;

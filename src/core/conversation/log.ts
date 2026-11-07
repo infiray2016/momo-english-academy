@@ -6,6 +6,7 @@
 // 자유 대화 (나)가 같은 고르기를 다시 쓴다(C120). 화면 · 서버가 함께 쓰는 순수 모듈이다(서버 모듈을 가져오지 않는다).
 // fix 1(검토 M-1): 기록 줄은 앱이 붙인 줄인지(app)를 남기고, 지난 말 다시 읽기(talkLogReplayOf)는 문장마다 나눠 읽기 줄에 넣는다(C125 문장 사이
 // 쉼, 붙인 줄은 감시 기록 w card).
+import { TALK_CUE_LINE_KIND } from "@/core/conversation/cue-line";
 import { splitSentences } from "@/core/seed/text";
 
 /** 기록 칸이 있는 토막(정본 03 4절 — 인사 · 대화 · 더 이야기하기). */
@@ -134,7 +135,8 @@ export type LiveBubbleLine =
 
 /**
  * 지금 선생님 말풍선 → 기록 줄(다음 턴으로 넘어갈 때 틀이 기록에 더한다). 선생님 문장은 한 줄로 잇고 뜻(ko)을 붙이며, 붙인 화면 글 줄은 줄마다
- * 뜻과 함께 둔다. 소리 줄은 넣지 않는다(T2). 글 줄이 하나도 없으면 null.
+ * 뜻과 함께 둔다. 소리 줄과 1~3단계 신호 말(add · kind cue — 지금 턴 말풍선에만, 'AI 몫 넓힘' spec 설계 6 기록 행 · AC-6 (가))은 넣지 않는다
+ * (T2 · 지난 턴 다시 읽기에서 소리 줄 없이 신호 말만 읽히지 않게). 글 줄이 하나도 없으면 null.
  */
 export function liveTeacherEntryOf({
   turnNo,
@@ -157,7 +159,7 @@ export function liveTeacherEntryOf({
   if (sentences.length > 0)
     lines.push(lineOf(sentences.join(" "), content.ko, koMeaning, false));
   for (const l of content.lines)
-    if (l.t === "add" && l.en.trim() !== "")
+    if (l.t === "add" && l.kind !== TALK_CUE_LINE_KIND && l.en.trim() !== "")
       lines.push(lineOf(l.en.trim(), l.ko, koMeaning, true));
   if (lines.length === 0) return null;
   return { who: "teacher", key: keyOf("teacher", turnNo), turnNo, lines };

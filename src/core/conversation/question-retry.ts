@@ -26,6 +26,30 @@ export type HeldQuestionFail = {
 };
 
 /**
+ * 1~3단계 한 차례 질문 하나(고정부 'your question is the last question sentence of tori_en' · 대본 회차 r2 판정 M-r2-1 — 'Is it apple juice? What
+ * do you do with it?'): 잡아 둔 질문 문장이 둘 이상이면 마지막 것만 남기고 앞의 것은 지운다(까닭 question). 서버 끝 처리와 대본 도구가 같이 쓴다.
+ */
+export function keepLastHeldQuestion(
+  entries: readonly RetrySentence[],
+  /**
+   * 되묻기 질문인가(question-check questionEchoesChild — 아이 말 · 노린 단어로). 주면 남길 질문을 고르기 전에 되묻기를 먼저 뺀다: 되묻기가
+   * 아닌 질문 가운데 마지막을 남기고, 모두 되묻기면 마지막을 남긴다(판정 r3 M-r3-2 — 'Are you hungry now? What do you want?').
+   */
+  isEcho: (question: string) => boolean = () => false,
+): void {
+  const held = entries.filter(
+    (e) => e.state === "held" && e.question && !e.cue,
+  );
+  if (held.length < 2) return;
+  const keep = held.filter((e) => !isEcho(e.en)).at(-1) ?? held.at(-1);
+  for (const e of held) {
+    if (e === keep) continue;
+    e.state = "dropped";
+    e.reason = "question";
+  }
+}
+
+/**
  * 잡아 둔 질문 가운데 처음 걸린 것(서버 끝 처리 settleLessonTurn 의 1~3단계 질문 검사와 같은 판정 — 노리는 단어는 응답의 next_targets).
  * 걸린 것이 없거나 잡아 둔 질문이 없으면 null.
  */
@@ -54,6 +78,7 @@ const REASON_LINE: Record<HeldQuestionFail["reason"], string> = {
   target_word: "it put the unit word the question aims at in the question",
   offband: "it used words above the child's level",
   form: "it used a grammar form above the child's level",
+  echo: "it asked again about what the child already told you",
 };
 
 /**
@@ -75,6 +100,15 @@ export function questionRetryNoteOf(
     "Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). Keep the other fields for the new question.",
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
     `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
+    // [N-3] 아이의 바로 앞 말이 답인 질문 금지(대본 회차 r2 판정 N-3)
+    "Do not ask a question whose answer the child just gave in the last words (after 'I drink juice.', not 'What do you do with the juice?').",
+    // 다시 쓰기의 버릇 꼴 · 비튼 문장(대본 회차 r1 판정 M-7 · M-2)
+    "Prefer a what, who or where question about something new; do not fall back to 'Do you like …?' or 'A or B?' each time.",
+    ...(fail.reason === "too_long"
+      ? [
+          "To make it shorter, leave out extra words but keep a whole question that makes sense (not 'Is the lake with your family?').",
+        ]
+      : []),
   ].join("\n");
 }
 

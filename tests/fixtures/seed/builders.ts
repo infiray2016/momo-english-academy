@@ -46,7 +46,11 @@ import type {
   Range,
   SettingRow,
   SettingsFile,
+  TalkAllowedWordsFile,
+  TalkCueLinesFile,
   TalkLevelSpec,
+  TalkMadeUpPhrasesFile,
+  TalkSituationLinesFile,
   TalkWaitLinesFile,
   UnitSpec,
   UnitSpecsFile,
@@ -943,6 +947,10 @@ export type ReferenceSet = {
   metaSentences: MetaSentencesFile;
   talkWaitLines: TalkWaitLinesFile;
   teachers: TeachersFile;
+  talkCueLines: TalkCueLinesFile;
+  talkSituationLines: TalkSituationLinesFile;
+  talkAllowedWords: TalkAllowedWordsFile;
+  talkMadeUpPhrases: TalkMadeUpPhrasesFile;
 };
 
 /** 시제품 출처(seed/teachers.json 과 같은 꼴, 견본 값). */
@@ -1276,6 +1284,93 @@ export function referenceSet(
       ],
     },
     teachers: teacherRoster(),
+    ...talkAiScopeLists(),
+  };
+}
+
+/**
+ * 회화 1~3단계 시드 목록 넷의 작은 견본('AI 몫 넓힘' plan 정한 것 5). 목록 검사(06:187, check-talk-lists)를 지나게 신호 말은 긴 꼴 하나 ·
+ * 짧은 꼴 둘, 상황 줄은 자리마다 셋이고, 견본 어휘(기능어 · 지어낸 낱말) 밖 낱말은 모두 허용 낱말에 둔다(견본 1단계 범위 안 낱말은 두지 않음).
+ */
+function talkAiScopeLists(): Pick<
+  ReferenceSet,
+  | "talkCueLines"
+  | "talkSituationLines"
+  | "talkAllowedWords"
+  | "talkMadeUpPhrases"
+> {
+  const forms = (long: string, shorts: readonly [string, string]) => ({
+    long: [{ en: long, ko: "듣고 말해 봐!" }],
+    short: shorts.map((en) => ({ en, ko: "네 차례야!" })),
+  });
+  const bands = (long: string, shorts: readonly [string, string]) => ({
+    "1": forms(long, shorts),
+    "2-3": forms(long, shorts),
+  });
+  const lines = (...en: readonly string[]) =>
+    en.map((text) => ({ en: text, ko: "괜찮아!" }));
+  return {
+    talkCueLines: {
+      introduce: bands("Listen and say it!", ["Your turn!", "Say it!"]),
+      together: bands("Say it with me!", ["With me!", "Your turn!"]),
+      choices: bands("Listen and pick!", ["Pick!", "You pick!"]),
+    },
+    talkSituationLines: {
+      lines: {
+        greeting_end: lines(
+          "Okay! Let's talk!",
+          "Okay! Here we go!",
+          "Let's talk!",
+        ),
+        together: lines(
+          "Let's say it together!",
+          "Say it with me!",
+          "We can say it!",
+        ),
+        easy: lines(
+          "That's okay! Try this one.",
+          "It is okay! Try this.",
+          "Okay! Try this one.",
+        ),
+        close: lines(
+          "Good try! Let's go on.",
+          "Okay! Let's go on.",
+          "Let's keep going.",
+        ),
+        nospeech: lines(
+          "Oops, my ears! Let's go on.",
+          "Oops! Let's go on.",
+          "Oh no! Let's go on.",
+        ),
+      },
+      forbidden: {
+        all: ["that's wrong", "you don't know"],
+        nospeech: ["good answer", "you said"],
+      },
+    },
+    talkAllowedWords: {
+      allowed: [
+        "oops",
+        "okay",
+        "listen",
+        "say",
+        "turn",
+        "pick",
+        "talk",
+        "go",
+        "together",
+        "try",
+        "one",
+        "good",
+        "keep",
+        "going",
+        "oh",
+        "no",
+        "ears",
+      ],
+      feeling: ["happy", "sad"],
+    },
+    talkMadeUpPhrases: { phrases: ["yesterday i", "when i was", "i remember"] },
   };
 }
 
@@ -2213,6 +2308,29 @@ export function talkCard(ref: ReferenceSet, place: CellPlace): TalkLesson {
       };
     }),
     ...(prep.length > 0 ? { prep } : {}),
+    // 1~3단계 장면 여는 질문(06:186 · C206 — 견본 어휘만, 필수 · 쉬운 질문 은행과 다른 글)
+    ...(low
+      ? {
+          sceneOpener: {
+            question: ko
+              ? {
+                  en: "This is it. Do we like it?",
+                  ko: "이거야. 우리 이거 좋아해?",
+                }
+              : { en: "This is it. Do we like it?" },
+            hintKo: "응, 좋아.",
+            hintEn: "Yes, I like it.",
+            ...(spec.frameInTurns ? { frameEn: "Yes, I like ___." } : {}),
+            answerExample: "Yes, I do.",
+            easyQuestion: ko
+              ? { en: "Is it here?", ko: "여기 있어?" }
+              : { en: "Is it here?" },
+            ...(spec.choices
+              ? { choices: ["I like it.", "I like this."] as [string, string] }
+              : {}),
+          },
+        }
+      : {}),
     required,
     more,
     flow: [

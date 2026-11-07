@@ -15,11 +15,14 @@ import {
 } from "@/core/ai/calls/common";
 import {
   applyTalkLessonChecks,
+  EMPTY_TORI_EN_STUCK,
+  emptyToriEnStuckOf,
   type TalkLessonInput,
   type TalkLessonOutput,
   type TalkLessonRules,
   talkLessonCheckFields,
   talkLessonClosingSpec,
+  talkLessonInvalidReasonOf,
   talkLessonTurnSpec,
   talkSceneWordsOf,
 } from "@/core/ai/calls/talk-lesson";
@@ -703,7 +706,11 @@ async function finishTalk<I, O, R>(
   const value = spec.normalize(strict ?? prepared, input, rules);
   const firstSentenceMs = s.firstSentenceMs();
   if (value === null) {
-    await plan.record({ ...s.answered, status: "validation_failed" });
+    await plan.record({
+      ...s.answered,
+      status: "validation_failed",
+      errorCode: closing ? null : talkLessonInvalidReasonOf(prepared),
+    }); // 읽지 못한 까닭(대본 회차 r1 판정 I-3 (가))
     if (firstSentenceMs !== null)
       return {
         ok: false,
@@ -738,6 +745,10 @@ async function finishTalk<I, O, R>(
     ...s.answered,
     status:
       strict !== null && !changed && !fixed ? "success" : "validation_failed",
+    // 1~3단계 막힘 응답의 빈 tori_en 을 반응 지워진 막힘 차례로 받은 턴(컨트롤러 결정 2026-11-07)
+    errorCode: emptyToriEnStuckOf(prepared, closing)
+      ? EMPTY_TORI_EN_STUCK
+      : null,
   });
   return {
     ok: true,

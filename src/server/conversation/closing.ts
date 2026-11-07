@@ -18,7 +18,7 @@ import {
 // 전문 · 다시 쓸 토리 차례를 지운다(B5-21 — 끝맺음이 그 대화를 써야 하므로 그 뒤). 아이 글 · AI 글을 로그에 내지 않는다.
 import { after } from "next/server";
 import { z } from "zod";
-import type { TalkCallTurn } from "@/core/ai/calls/talk-lesson";
+import { isLowBandLevel, type TalkCallTurn } from "@/core/ai/calls/talk-lesson";
 import {
   parseTalkAttemptInput,
   TALK_CLOSING_ACTIVITY_NO,
@@ -28,6 +28,7 @@ import {
 } from "@/core/conversation/attempt";
 import type { TalkEnd } from "@/core/conversation/ending";
 import { friendshipAfter } from "@/core/conversation/friendship";
+import { madeUpHit } from "@/core/conversation/made-up";
 import { farewellOf } from "@/core/conversation/wrap-up";
 import { learningDayOf } from "@/core/learning-day";
 import { bandOf } from "@/core/level-band";
@@ -48,7 +49,10 @@ import { now as appNow } from "@/server/clock";
 import { type Db, type DbOrTx, getDb } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
-import { getOutputCheckLists } from "@/server/seed-lists";
+import {
+  getOutputCheckLists,
+  seedTalkMadeUpPhrases,
+} from "@/server/seed-lists";
 import { levelContextOf } from "@/server/session/ai-context";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import {
@@ -399,12 +403,31 @@ const closingSettings = {
 /** 응답 뒤(after)에 끝맺음 한 번. 시험은 schedule 로 바로 돌린다. */
 export function scheduleTalkClosing(
   sessionId: string,
-  deps: TalkServerDeps,
+  deps: ClosingDeps,
 ): void {
   const schedule = deps.schedule ?? ((task) => after(task));
   schedule(async () => {
     await runTalkClosing(sessionId, deps);
   });
+}
+
+/**
+ * 끝맺음 의존: 회화 턴 의존 + 1~3단계 지어낸 경험 꼴 목록(턴 길 LessonTurnDeps.talkLists 와 같은 꼴 — 없으면 seed/lists 를 읽는다, 시험이 바꾼다).
+ */
+export type ClosingDeps = TalkServerDeps & {
+  talkLists?: () => { madeUp: readonly string[] };
+};
+
+/**
+ * 1~3단계 끝인사가 지어낸 경험 꼴에 걸리는가('AI 몫 넓힘' plan 2 행 · spec 설계 2 끝인사 · C211 (1)). 걸리면 부르는 쪽이 끝인사를 비워
+ * 지금 끝인사 걸림 길(farewellOf 의 카드 끝인사)로 보낸다. 4단계부터는 보지 않는다.
+ */
+export function farewellMadeUp(
+  level: number,
+  farewell: string,
+  phrases: readonly string[],
+): boolean {
+  return isLowBandLevel(level) && madeUpHit(farewell, phrases) !== null;
 }
 
 type ClosingCallArgs = {
@@ -508,7 +531,7 @@ async function lessonClosingCall(
  */
 export async function runTalkClosing(
   sessionId: string,
-  deps: TalkServerDeps,
+  deps: ClosingDeps,
 ): Promise<boolean> {
   const db: Db = deps.db ?? getDb();
   const clock = deps.now ?? appNow;
@@ -568,11 +591,19 @@ export async function runTalkClosing(
       if (result === null) outcome = { ok: false, reason: "old_card" };
       else if (result.ok) {
         const v = result.value;
+        // 1~3단계 끝인사의 지어낸 경험 꼴 → 카드 끝인사(걸린 끝인사는 빈 글 — farewellOf)
+        const madeUp =
+          any.kind === "new" &&
+          farewellMadeUp(
+            any.state.level,
+            v.farewell,
+            deps.talkLists?.().madeUp ?? seedTalkMadeUpPhrases(),
+          );
         outcome = {
           ok: true,
           value: {
-            farewell: v.farewell,
-            farewellKo: v.farewell_ko,
+            farewell: madeUp ? "" : v.farewell,
+            farewellKo: madeUp ? "" : v.farewell_ko,
             goodLines: v.good_lines,
             nextTime: v.next_time_lines,
           },

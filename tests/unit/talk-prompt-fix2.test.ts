@@ -374,7 +374,7 @@ describe("I-1 받침 닫기 · 들리지 않음 차례의 따라 말하기 신�
     return flow.accept(en);
   };
 
-  it("받침 셋째(닫기) · 들리지 않음 차례는 'say it together' 꼴 신호 말을 지우고, 받침 첫째는 남긴다", () => {
+  it("받침 셋째(닫기) · 들리지 않음 차례는 'say it together' 꼴 신호 말을 지우고, 받침 첫째도 AI 가 쓴 신호 말은 지운다('AI 몫 넓힘' C207 — 앱이 붙임)", () => {
     expect(
       accept({ stage: 3, cause: "button" }, "Let's say it together."),
     ).toBe("drop");
@@ -384,7 +384,7 @@ describe("I-1 받침 닫기 · 들리지 않음 차례의 따라 말하기 신�
     expect(accept({ stage: 3, cause: "button" }, "That's okay!")).toBe("send");
     expect(
       accept({ stage: 1, cause: "button" }, "Let's say it together."),
-    ).toBe("send");
+    ).toBe("drop");
   });
 });
 
@@ -453,8 +453,12 @@ describe("고정부 · 응답 칸 문장(고침 2)", () => {
     expect(system).toContain(
       "At levels 1-3, never write an English sentence or the English answer in letters in explanation and tori_ko (the app plays the English as sound); one English word with its Korean meaning is fine. At every level, never say the child's words were wrong or not a right answer.",
     );
+    // 'AI 몫 넓힘'(C209): 1~3단계 받침 카드 자리의 말은 고정 문장 대신 자리마다 꼴을 나눈 자기 말(같이 말하자는 안내는 앱 신호 말)
     expect(system).toContain(
-      "at Support stage 1 'That's okay! Let's say it together.'; at Support stage 3 or after nospeech 'That's okay! Let's move on.' (never 'say it together' there: the child does not repeat).",
+      "at Support stage 1 an okay reaction and a short cheer (the app says the cue to say it together, so do not say it);",
+    );
+    expect(system).toContain(
+      "at Support stage 3 or after nospeech an okay reaction and a line that you will play the answer and go on (never ask the child to say it or repeat it).",
     );
     expect(system).toContain(
       "In this turn next_move can never be required, and card_item can never be a required question either.",
@@ -462,7 +466,11 @@ describe("고정부 · 응답 칸 문장(고침 2)", () => {
   });
 
   it("M-1 인사 끝 예 · 뜻 말투, M-2 들리지 않음 카드 자리, M-4 바른 말 바꾸지 않기, M-7 힌트는 자기 질문의 답, I-5 반응 예 둘", () => {
-    expect(system).toContain("'Yay! New words time!'");
+    // 1~3단계 인사 끝 예는 고정부 목록이 아니라 사용자 메시지 'Example line' 한 줄(대본 회차 r1 판정 I-1 (가))
+    expect(system).not.toContain("'Yay! New words time!'");
+    expect(system).toContain(
+      "the 'Example line' in the message shows only the kind of line for this place",
+    );
     expect(system).toContain("(e.g. '다행이다!', '잘 지냈다니 좋다!')");
     expect(system).toContain(
       "When Turn is card_slot after nospeech, write only that short line: no answer and no question.",

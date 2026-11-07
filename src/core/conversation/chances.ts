@@ -100,6 +100,7 @@ export function talkChancesOf({
   missionsDone,
   settings,
   prepWords,
+  childAnswered = [],
 }: {
   card: Pick<TalkLessonCard, "required" | "missions">;
   newWords: readonly string[];
@@ -112,12 +113,14 @@ export function talkChancesOf({
    * (준비 전에 정한 것)을 넘기지 않는다. 낱말 수 설정 talk.prep_words(TalkLessonSettings.prepWords)와 다른 칸이다.
    */
   prepWords: readonly string[];
+  /** 아이가 묻기 전에 먼저 답한 필수 질문 번호(lesson-flow childAnsweredRequiredOf — 다룬 것으로 센다). */
+  childAnswered?: readonly number[];
 }): TalkChances {
   const prep = new Set(prepWords);
   for (const row of turns)
     if (row.speaker === "teacher")
       for (const w of row.move?.prep?.words ?? []) prep.add(w);
-  const covered = new Set<number>();
+  const covered = new Set<number>(childAnswered);
   const touches = new Map<string, number>();
   const introduced = new Set<string>();
   const newSet = new Set(newWords);

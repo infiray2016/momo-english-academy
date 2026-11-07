@@ -13,7 +13,11 @@ import {
   LEVEL_MIN,
   READING_QUESTION_TYPES,
   TALK_CARD_SHAPES,
+  TALK_CUE_BANDS,
+  TALK_CUE_PLACES,
   TALK_HINT_TIERS,
+  TALK_SITUATION_FORBIDDEN_SCOPES,
+  TALK_SITUATION_PLACES,
   TALK_SPEC_SEGMENTS,
   TEST_ITEM_TYPES,
   UNITS_PER_LEVEL,
@@ -528,6 +532,68 @@ export const TalkWaitLinesFileSchema = z.strictObject({
   lines: z.array(Text).min(1),
 });
 export type TalkWaitLinesFile = z.infer<typeof TalkWaitLinesFileSchema>;
+
+// ── 회화 1~3단계 시드 목록 넷('AI 몫 넓힘' plan 정한 것 5 · spec 판 4 설계 6 · 9, 정본 06:187) ──
+// 여기는 꼴만 본다(빈 목록 · 모르는 키 · 겹침 거부). 꼴 수(셋 이상 · 하나 이상 · 둘 이상) · 어휘 · 길이 · 물음표 · 금지 구 · 지어낸 경험 꼴 검사는
+// 시드 검증기(check-talk-lists, 묶음 3)가 한다. 모두 빌드에 묶고(next.config.ts outputFileTracingIncludes) DB 에 넣지 않는다.
+
+/** 목록 한 줄: 영어와 한국어 뜻(1~3단계 화면은 뜻을 보인다 — 뜻은 반말). */
+const TalkListLineSchema = z.strictObject({ en: Text, ko: Text });
+export type TalkListLine = z.infer<typeof TalkListLineSchema>;
+/** 소문자 한 낱말(감탄 · 수업 말 · 느낌 낱말). 상황 차례 어휘 검사가 낱말로 견준다. */
+const ListWordSchema = z
+  .string()
+  .regex(/^[a-z][a-z'-]*$/, { message: "소문자 한 낱말이 아니다" });
+/** 정규화한 구(normalizeSpoken 꼴: 소문자 · 숫자 낱말을 빈칸 하나로 이음). 낱말 경계로 견준다. */
+const NormalizedPhraseSchema = z
+  .string()
+  .regex(/^[a-z0-9]+( [a-z0-9]+)*$/, { message: "정규화한 구가 아니다" });
+
+/** 한 자리 · 한 구간의 신호 말: 첫 신호 말은 긴 꼴, 그 뒤는 짧은 꼴을 돌려 쓴다(02-2:212). */
+const TalkCueFormsSchema = z.strictObject({
+  long: z.array(TalkListLineSchema).min(1),
+  short: z.array(TalkListLineSchema).min(1),
+});
+/**
+ * 신호 말 목록 lists/talk-cue-lines.json(C207). 자리(introduce · together · choices) × 단계 구간("1" · "2-3")마다 긴 꼴 · 짧은 꼴.
+ * 자리 · 구간은 모두 있어야 하고 모르는 열쇠는 거부한다(z.record + z.enum 은 열쇠를 다 요구한다).
+ */
+export const TalkCueLinesFileSchema = z.record(
+  z.enum(TALK_CUE_PLACES),
+  z.record(z.enum(TALK_CUE_BANDS), TalkCueFormsSchema),
+);
+export type TalkCueLinesFile = z.infer<typeof TalkCueLinesFileSchema>;
+
+/**
+ * 상황 줄 · 상황 금지 구 목록 lists/talk-situation-lines.json(C209 · C211, 02-2:208). lines 는 자리(인사 끝 · 받침 첫째 · 둘째 · 셋째 ·
+ * 들리지 않음)마다 줄 여럿(턴 번호로 돌림), forbidden 은 모든 상황 차례(all)와 들리지 않음에 더하는 구(nospeech)다.
+ */
+export const TalkSituationLinesFileSchema = z.strictObject({
+  lines: z.record(
+    z.enum(TALK_SITUATION_PLACES),
+    z.array(TalkListLineSchema).min(1),
+  ),
+  forbidden: z.record(
+    z.enum(TALK_SITUATION_FORBIDDEN_SCOPES),
+    uniqueStrings(Text).min(1),
+  ),
+});
+export type TalkSituationLinesFile = z.infer<
+  typeof TalkSituationLinesFileSchema
+>;
+
+/** 허용 낱말 목록 lists/talk-allowed-words.json(C209 · C211 (1)): 감탄 · 수업 말(allowed, 상황 차례 어휘 범위에 더함) · 느낌 낱말(feeling, 'Child said more'). */
+export const TalkAllowedWordsFileSchema = z.strictObject({
+  allowed: uniqueStrings(ListWordSchema).min(1),
+  feeling: uniqueStrings(ListWordSchema).min(1),
+});
+export type TalkAllowedWordsFile = z.infer<typeof TalkAllowedWordsFileSchema>;
+
+/** 지어낸 경험 꼴 목록 lists/talk-made-up-phrases.json(C211 (1)): 1인칭 과거 경험 · 기억 꼴의 정규화한 구('yesterday i' 꼴). */
+export const TalkMadeUpPhrasesFileSchema = z.strictObject({
+  phrases: uniqueStrings(NormalizedPhraseSchema).min(1),
+});
+export type TalkMadeUpPhrasesFile = z.infer<typeof TalkMadeUpPhrasesFileSchema>;
 
 /**
  * 문법 용어 목록 lists/grammar-terms.json(델타 spec 2026-10-29 설계 7). 항목은 낱말과 열리는 단계(fromLevel, 비면 모든 단계 금지).

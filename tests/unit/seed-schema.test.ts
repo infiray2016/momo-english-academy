@@ -38,6 +38,10 @@ import {
   ModelPricesFileSchema,
   RangeSchema,
   SettingsFileSchema,
+  TalkAllowedWordsFileSchema,
+  TalkCueLinesFileSchema,
+  TalkMadeUpPhrasesFileSchema,
+  TalkSituationLinesFileSchema,
   TalkWaitLinesFileSchema,
   UnitSpecsFileSchema,
   VocabFileSchema,
@@ -1080,6 +1084,10 @@ describe("시드 규격(schema)", () => {
             metaSentences: MetaSentencesFileSchema,
             talkWaitLines: TalkWaitLinesFileSchema,
             teachers: TeachersFileSchema,
+            talkCueLines: TalkCueLinesFileSchema,
+            talkSituationLines: TalkSituationLinesFileSchema,
+            talkAllowedWords: TalkAllowedWordsFileSchema,
+            talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
           }[parsed.name];
         case "lessons":
           return LessonFileSchema;

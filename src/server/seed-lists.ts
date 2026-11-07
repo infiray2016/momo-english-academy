@@ -12,10 +12,23 @@ import {
   HomophonesFileSchema,
   ListFormsFileSchema,
   MetaSentencesFileSchema,
+  type TalkAllowedWordsFile,
+  TalkAllowedWordsFileSchema,
+  type TalkCueLinesFile,
+  TalkCueLinesFileSchema,
+  TalkMadeUpPhrasesFileSchema,
+  type TalkSituationLinesFile,
+  TalkSituationLinesFileSchema,
   TalkWaitLinesFileSchema,
 } from "@/core/seed/schema/reference";
 import { TeachersFileSchema } from "@/core/seed/schema/teachers";
-import { SEED_FILES } from "@/core/seed/structure";
+import {
+  SEED_FILES,
+  TALK_CUE_BANDS,
+  TALK_CUE_PLACES,
+  TALK_SITUATION_FORBIDDEN_SCOPES,
+  TALK_SITUATION_PLACES,
+} from "@/core/seed/structure";
 
 /** 시드 폴더 이름(P4a 배치). */
 const SEED_DIR = "seed";
@@ -29,6 +42,10 @@ const LIST_SCHEMAS = {
   metaSentences: MetaSentencesFileSchema,
   teachers: TeachersFileSchema,
   talkWaitLines: TalkWaitLinesFileSchema,
+  talkCueLines: TalkCueLinesFileSchema,
+  talkSituationLines: TalkSituationLinesFileSchema,
+  talkAllowedWords: TalkAllowedWordsFileSchema,
+  talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;
@@ -140,4 +157,80 @@ export function seedTalkWaitLines(opts: SeedListOptions = {}): string[] {
     }
     throw error;
   }
+}
+
+// ── 회화 1~3단계 시드 목록 넷('AI 몫 넓힘' plan 정한 것 5 · spec 판 4 설계 6 · 9) ──
+// seedHomophones 꼴: 파일이 없는 개발용 · e2e 길에서는 빈 목록으로 보고 처음 한 번 경고를 남긴다(이름만). 규격이 틀린 파일은 던진다.
+// 빈 목록일 때 무엇을 하는지(신호 말 없음 · 상황 줄 대신 길 · 지어낸 경험 검사 안 함)는 부르는 쪽(묶음 2)이 정한다.
+
+/** 없음 경고를 낸 목록(서버 인스턴스마다 목록마다 한 번). */
+const talkListMissingWarned = new Set<SeedListName>();
+
+function seedListOrEmpty<N extends SeedListName>(
+  name: N,
+  empty: () => SeedListOf<N>,
+  opts: SeedListOptions,
+): SeedListOf<N> {
+  try {
+    return loadSeedList(name, opts);
+  } catch (error) {
+    if (error instanceof SeedListError && error.reason === "missing") {
+      if (!talkListMissingWarned.has(name)) {
+        talkListMissingWarned.add(name);
+        console.warn(
+          `회화 목록(seed/${SEED_FILES[name]})이 없어 빈 목록으로 봅니다`,
+        );
+      }
+      return empty();
+    }
+    throw error;
+  }
+}
+
+const recordOf = <K extends string, V>(keys: readonly K[], value: () => V) =>
+  Object.fromEntries(keys.map((key) => [key, value()])) as Record<K, V>;
+
+/** 신호 말 목록(C207): 자리 × 구간마다 긴 꼴 · 짧은 꼴. 없으면 모든 자리가 빈 목록이다. */
+export function seedTalkCueLines(opts: SeedListOptions = {}): TalkCueLinesFile {
+  return seedListOrEmpty(
+    "talkCueLines",
+    () =>
+      recordOf(TALK_CUE_PLACES, () =>
+        recordOf(TALK_CUE_BANDS, () => ({ long: [], short: [] })),
+      ),
+    opts,
+  );
+}
+
+/** 상황 줄 · 상황 금지 구 목록(C209 · C211). 없으면 모든 자리 · 묶음이 빈 목록이다. */
+export function seedTalkSituationLines(
+  opts: SeedListOptions = {},
+): TalkSituationLinesFile {
+  return seedListOrEmpty(
+    "talkSituationLines",
+    () => ({
+      lines: recordOf(TALK_SITUATION_PLACES, () => []),
+      forbidden: recordOf(TALK_SITUATION_FORBIDDEN_SCOPES, () => []),
+    }),
+    opts,
+  );
+}
+
+/** 감탄 · 수업 말 허용 낱말과 느낌 낱말(C209 · C211 (1)). 없으면 둘 다 빈 목록이다. */
+export function seedTalkAllowedWords(
+  opts: SeedListOptions = {},
+): TalkAllowedWordsFile {
+  return seedListOrEmpty(
+    "talkAllowedWords",
+    () => ({ allowed: [], feeling: [] }),
+    opts,
+  );
+}
+
+/** 지어낸 경험 꼴(정규화한 구, C211 (1)). 없으면 빈 목록이다. */
+export function seedTalkMadeUpPhrases(opts: SeedListOptions = {}): string[] {
+  return [
+    ...seedListOrEmpty("talkMadeUpPhrases", () => ({ phrases: [] }), opts)
+      .phrases,
+  ];
 }

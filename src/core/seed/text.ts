@@ -193,14 +193,19 @@ export type LemmaMatch = {
   parts: LemmaPart[];
 };
 
-/** 축약형 표(영어 문법 목록이라 코드 상수다, plan-p04a 글 도구). */
-const IRREGULAR_CONTRACTIONS: Record<string, readonly string[]> = {
+/**
+ * 축약형 표(영어 문법 목록이라 코드 상수다, plan-p04a 글 도구). 회화 1~3단계 상황 차례 검사(core/conversation/situation)도 같은 표로
+ * 펼친다('AI 몫 넓힘' plan 정한 것 8 — 일치율 정규화 core/speech 는 따로 둔다).
+ */
+export const IRREGULAR_CONTRACTIONS: Readonly<
+  Record<string, readonly string[]>
+> = {
   "can't": ["can", "not"],
   "won't": ["will", "not"],
   "shan't": ["shall", "not"],
   "ain't": ["am", "not"],
 };
-const CONTRACTION_SUFFIXES: readonly (readonly [string, string])[] = [
+export const CONTRACTION_SUFFIXES: readonly (readonly [string, string])[] = [
   ["n't", "not"],
   ["'m", "am"],
   ["'re", "are"],
@@ -209,6 +214,20 @@ const CONTRACTION_SUFFIXES: readonly (readonly [string, string])[] = [
   ["'d", "would"],
   ["'s", "is"],
 ];
+
+/**
+ * 낱말 토큰 하나의 축약형을 펼친 조각(소문자, 위 표 — that's → that · is, can't → can · not, let's → let · is). 축약형이 아니면 그 낱말 하나다.
+ * 사전을 보지 않으므로 소유격 's 도 is 로 펼친다(범위 검사에는 둘 다 범위 안 낱말이 된다).
+ */
+export function expandContraction(word: string): string[] {
+  const lower = normalizeQuotes(word).toLowerCase();
+  const irregular = IRREGULAR_CONTRACTIONS[lower];
+  if (irregular) return [...irregular];
+  for (const [suffix, expansion] of CONTRACTION_SUFFIXES)
+    if (lower.endsWith(suffix) && lower.length > suffix.length)
+      return [lower.slice(0, -suffix.length), expansion];
+  return [lower];
+}
 
 function lookup(text: string, lexicon: Lexicon): string[] {
   return [...(lexicon.forms.get(text.toLowerCase()) ?? [])];

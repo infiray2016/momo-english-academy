@@ -67,6 +67,7 @@ import {
   talkHousehold,
   talkLessonReply,
   talkScript,
+  withoutSceneOpener,
 } from "./talk";
 
 /** 아이 화면 글(정본 · spec 설계 6 문구 표 그대로, 회화 시험 집의 선생님은 미나 · 쓰기 집은 고르기 전 '선생님'). */
@@ -266,7 +267,7 @@ async function openTalkAt(
   await skipStartPrep(profileId, level);
   const row = await insertTalkLesson({
     level,
-    lesson: greetingTalkLesson(level),
+    lesson: withoutSceneOpener(greetingTalkLesson(level)),
   });
   const sessionId = await openTalkSession(profileId, row);
   const card = (row.content as TalkLesson).card;

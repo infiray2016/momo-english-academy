@@ -1,0 +1,61 @@
+{
+  "name": "l3-second-session-recall",
+  "title": "3단계 · 둘째 세션(인사 답이 지난 대화 요약에 닿음)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "greeting_recall 켬 · 끔을 가르는 근거용(대본 회차 r1 판정 8.1 — 켬 바퀴에서도 요약을 꺼낸 적이 없어 켬 · 끔 차이가 보이지 않았다). 지난 대화 요약 한 줄(사과 · 공놀이)이 든 둘째 세션이고, 아이가 인사 답에서 요약의 것(사과)을 먼저 꺼내며 대화 중에도 공놀이를 말한다. 대본 칸 settings 로 켜고 돌리며, 끔 바퀴는 명령 '--set talk.greeting_recall=off' 로 한 번 더 돈다. 켬 · 끔 모두 요약에 없는 기억(지난번에 한 일 · 함께 간 곳 꼴)이 0이어야 한다(사람 판정). 켬에서 요약의 것을 이어 받는 것은 허용이고 하한이 없다. 끔에서는 아이가 꺼낸 '사과'에 반응하되 지난 대화를 아는 듯이 말하지 않아야 한다.",
+  "summaries": [
+    "주제: 좋아하는 과일과 놀이. 잘 쓴 말: I like apples. 좋아하는 것: 사과, 공놀이."
+  ],
+  "settings": { "talk.greeting_recall": "on" },
+  "steps": [
+    {
+      "say": "I am good. I like apples!",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I play with a ball.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Apples!",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "We go to the lake.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We come home.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

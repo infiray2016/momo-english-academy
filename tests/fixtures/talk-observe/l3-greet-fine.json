@@ -1,0 +1,41 @@
+{
+  "name": "l3-greet-fine",
+  "title": "3단계 · 인사 답 '잘 지내'",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-2 (다) 인사 대본 셋의 하나(설계 7): 짧고 흔한 인사 답이다. 인사 끝 말이 아이 답에 닿고 질문이 없으며, 다른 인사 대본 둘의 인사 끝 말과 다르다(사람 판정). 인사 끝 뒤 대화 첫 질문(고침 뒤는 장면 여는 질문)에 짧게 답한다.",
+  "steps": [
+    {
+      "say": "I am fine.",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    }
+  ]
+}

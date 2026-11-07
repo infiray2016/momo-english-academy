@@ -3,9 +3,15 @@
 // 진행 세션을 바로 연다. 회화 턴은 가짜 Anthropic SSE(talkLessonReply — 새 꼴 응답 칸), 듣기는 가짜 Web Speech 대본(듣기마다 하나).
 // 숫자는 시험용 설정에서 읽는다. 이 파일은 정적이다(이 Mac 에서 돌리지 않음 — 첫 실행은 묶음 14 · CI, 회화 e2e 를 새 꼴 견본으로 옮기는 일은
 // 묶음 12). 녹음하지 않는다.
+import { readFileSync } from "node:fs";
 import type { BrowserContext, Locator, Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
+import type { TalkLessonOutput } from "../../src/core/ai/calls/talk-lesson";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
+import {
+  TalkCueLinesFileSchema,
+  TalkSituationLinesFileSchema,
+} from "../../src/core/seed/schema/reference";
 import type { TalkCard } from "../../src/core/seed/schema/talk";
 import type { RecognitionRun } from "../../src/core/speech/script";
 import { sessions } from "../../src/db/schema/learning";
@@ -15,17 +21,20 @@ import { closeE2eDb, e2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
 import {
+  CLOSING_MARK,
   deafRun,
   insertTalkLesson,
   openTalkSession,
   saidRun,
   speechRecord,
+  TURN_MARK,
   talkHousehold,
   talkLessonCard,
   talkLessonReply,
   talkScript,
   talkTurnRequests,
   webkitSilentRun,
+  withoutSceneOpener,
 } from "./talk";
 
 /** 이름 자리 글(회화 시험 집 선생님 미나 — 받침 없음). 화면 문구 표 TEACHER_TEXT · TALK_TEXT 와 같은 글이다. */
@@ -83,7 +92,7 @@ const prepCountOf = (lesson: TalkLesson) => lesson.card.prep?.length ?? 0;
  * 카드 칸(prep) 그대로다. 미션은 3단계에 없다.
  */
 function allChancesLesson(): TalkLesson {
-  const lesson = talkLessonCard(LEVEL);
+  const lesson = withoutSceneOpener(talkLessonCard(LEVEL));
   const first = lesson.card.required[0];
   if (!first) throw new Error("견본 꼴 — 필수 질문이 있는 배정 수업");
   return {
@@ -94,19 +103,27 @@ function allChancesLesson(): TalkLesson {
 }
 
 /**
- * 1~3단계 선택지 둘(소리 줄): 단원 단어 없는 이어 묻기의 고르기 답(같은 꼴, 낱말 하나만 다름 — question-check checkChoices). 받침 0 에서 이미 물은 ·
- * 짧은 준비 낱말을 노린 선택지는 서버가 버리고(13절 C202 (1), talk-lesson.ts keptChoicesOf) 2~3단계는 카드 질문에 선택지가 없으므로, 노리는 단어
- * 없이(card_item none · next_targets 빈 목록) 시험 어휘(I · like · it · you) 안에서 고른다. 노림이 비면 두 답의 낱말을 노리는 자리로 본다.
+ * 2~3단계 받침 둘째의 선택지 둘(소리 줄, 'AI 몫 넓힘' 설계 4 · C205): 같은 꼴 · 낱말 하나만 다르고 하나는 노리는 단어다(question-check
+ * checkChoices — 받침 둘째도 노리는 단어가 있어야 남는다). 시험 어휘(like · 단원 단어) 안에서 카드 필수 질문 둘의 노리는 단어로 만들고, 앞 것이
+ * 노리는 단어다(untilEasyChoices 의 next_targets).
  */
-function choicesOf(_card: TalkCard): readonly [string, string] {
-  return ["I like it.", "I like you."];
+function choicesOf(card: TalkCard): readonly [string, string] {
+  const a = card.required[0]?.targets[0];
+  const b = card.required[1]?.targets[0];
+  if (!a || !b) throw new Error("견본 꼴 — 노리는 단어가 있는 필수 질문 둘");
+  return [`I like ${a}.`, `I like ${b}.`];
 }
 
-/** 3단계 새 꼴 견본을 넣고 회화 쪽을 연다(처음 마이크 안내 '알겠어요'까지). 견본은 기본 배정 수업 카드, lesson 으로 바꿀 수 있다. */
+/**
+ * 3단계 새 꼴 견본을 넣고 회화 쪽을 연다(처음 마이크 안내 '알겠어요'까지). 견본은 기본 배정 수업 카드에서 장면 여는 질문 칸을 뺀 것(대화 첫 질문 =
+ * 카드 첫 필수 질문 — 'AI 몫 넓힘' plan 정한 것 3 의 개정 4 꼴 길)이고, lesson 으로 바꿀 수 있다(장면 여는 질문은 talkLessonCard 그대로).
+ */
 async function openLesson(
   context: BrowserContext,
   runs: (card: TalkCard, lesson: TalkLesson) => RecognitionRun[],
-  { lesson = talkLessonCard(LEVEL) }: { lesson?: TalkLesson } = {},
+  {
+    lesson = withoutSceneOpener(talkLessonCard(LEVEL)),
+  }: { lesson?: TalkLesson } = {},
 ): Promise<Opened & { lesson: TalkLesson; profileId: string }> {
   const profileId = await talkHousehold(LEVEL);
   const row = await insertTalkLesson({ level: LEVEL, lesson });
@@ -198,6 +215,10 @@ async function deafAttempt(scope: Locator) {
   });
 }
 
+/** 대화 첫 질문 글: 1~3단계 장면 여는 질문 칸이 있으면 그 질문, 없으면 카드 첫 필수 질문(C206 · plan 정한 것 3). */
+const firstQuestionOf = (card: TalkCard) =>
+  card.sceneOpener?.question.en ?? card.required[0]?.en ?? "";
+
 /** 인사 한 턴 → 짧은 준비 쪽지를 다 따라 말함 → 대화 첫 질문까지. */
 async function throughGreetingAndPrep(o: Opened & { lesson: TalkLesson }) {
   await untilChildTurn(o.page);
@@ -216,7 +237,7 @@ async function throughGreetingAndPrep(o: Opened & { lesson: TalkLesson }) {
     await note.locator("[data-speak]").click();
     await expect(note.locator("[data-follow-result]")).toBeVisible();
   }
-  await expect(bubble(o.page)).toContainText(o.card.required[0]?.en ?? "", {
+  await expect(bubble(o.page)).toContainText(firstQuestionOf(o.card), {
     timeout: STREAM_END_MS,
   });
 }
@@ -236,9 +257,8 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(segmentTag(o.page)).toHaveText("인사");
     await expect(band(o.page)).toHaveText("말 주고받기 0");
     await untilChildTurn(o.page);
-    await pushFakeAi([
-      talkLessonReply({ tori_en: "Great! Let's learn some new words!" }),
-    ]);
+    // 인사 끝은 1~3단계 상황 차례라 반응 문장이 상황 차례 검사(시험 어휘 + 시드 허용 낱말)를 받는다 — 범위 안 글로 둔다('AI 몫 넓힘' 설계 1 말 검사 (가))
+    await pushFakeAi([talkLessonReply({ tori_en: "Great! Now let's start!" })]);
     await speak(o.page);
     // 짧은 준비: 쪽지 한 장에 낱말 하나(2~3단계 낱말 글 · 뜻, 예문 글 없음), 셈은 숨김 · 대화 기록 칸 없음
     const note = o.page.locator("[data-prep-note]");
@@ -268,7 +288,7 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(segmentTag(o.page)).toHaveText("대화");
     await expect(band(o.page)).not.toContainText("/");
     await expect(o.page.locator("[data-talk-log]")).toContainText(
-      "Let's learn some new words!",
+      "Now let's start!",
     );
     expect(await talkTurnRequests()).toBe(before);
     // '그만하기': 대화 토막에 말한 아이 턴이 없으니(참여가 거의 없음) 확인 쪽지(C34) → 그만두기면 정리 뒤 중단
@@ -674,6 +694,65 @@ test.describe("새 꼴 회화 수업 — 대화 토막 화면(3단계)", () => {
   });
 });
 
+/** AI 질문 자리(카드 답 뒤 이어 묻기 — 답 예시는 AI 의 next_answer_example)를 연 응답. 그 자리에서 막히면 받침이 그 답을 쓴다. */
+const AI_QUESTION = "Do you like it?";
+
+/**
+ * 받침 둘째(쉬운 질문)의 AI 선택지까지(spec 'AI 몫 넓힘' 설계 4 · C205 — 2~3단계 선택지는 받침 둘째에만 남고, 이어 묻는 고르기 질문의 선택지는
+ * 질문만 남긴다): 카드 첫 필수 질문에 답 → AI 이어 묻기(AI 질문 자리) → '잘 모르겠어요'(받침 첫째 — 같이 말하기, 답 소리) → '잘 모르겠어요'
+ * (받침 둘째 — AI 가 쉬운 질문과 선택지 둘을 씀). 쉬운 질문은 막힌 질문과 다른 글이어야 같은 질문 막기에 걸리지 않는다. hints 는 둘째 응답의
+ * AI 힌트 칸(그 자리 힌트 단)이다.
+ */
+async function untilEasyChoices(
+  page: Page,
+  card: TalkCard,
+  hints: Partial<
+    Pick<
+      TalkLessonOutput,
+      "next_hint_ko" | "next_hints" | "next_answer_example"
+    >
+  > = {},
+) {
+  const choices = choicesOf(card);
+  const target = card.required[0]?.targets[0] ?? "";
+  await pushFakeAi([
+    talkLessonReply({
+      tori_en: `Nice! ${AI_QUESTION}`,
+      next_move: "follow_up",
+      next_answer_example: "I like it.",
+    }),
+  ]);
+  await speak(page);
+  await expect(bubble(page)).toContainText(AI_QUESTION, {
+    timeout: STREAM_END_MS,
+  });
+  await untilChildTurn(page);
+  await pushFakeAi([
+    talkLessonReply({
+      stuck: true,
+      tori_en: "It's okay!",
+      support: "together",
+    }),
+  ]);
+  await page.getByRole("button", { name: T.dontKnow }).click();
+  await expect(page.locator('[data-sound-listen="answer"]')).toBeVisible({
+    timeout: STREAM_END_MS,
+  });
+  await untilChildTurn(page);
+  await pushFakeAi([
+    talkLessonReply({
+      stuck: true,
+      tori_en: "Let's try! Do you like this?",
+      choices: [...choices],
+      support: "choices",
+      next_move: "follow_up",
+      next_targets: [target],
+      ...hints,
+    }),
+  ]);
+  await page.getByRole("button", { name: T.dontKnow }).click();
+}
+
 // ── 회화 묶음 10 몫(대화 기록 칸 · 아이 말풍선 · 소리 줄 단추, AC-15q — 정본 03 4절 '대화 기록' · '선생님 차례' · '인식 확인 · 아이 말풍선' 행).
 // 소리 줄 글 없음 · 들리지 않음 반짝임 · 이어 하기 다시 그림 · 맞장구(AC-N10)는 위 묶음 11 덩이가 본다. 이 파일은 Edit 로만 고친다.
 test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단추(3단계)", () => {
@@ -749,8 +828,8 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
     context,
   }) => {
     test.setTimeout(LONG);
-    // 선택지는 말로 답한 AI 질문 차례에서만 쓰인다(1~3단계 첫 막힘은 카드 자리라 AI choices 를 쓰지 않음). 둘은 시험 어휘 안 · 같은 꼴 ·
-    // 낱말 하나만 다른 이어 묻기 고르기 답이다 — 2~3단계 카드 질문 · 이미 물은 낱말에는 선택지가 없다(13절 C202 (1), required-utterance AC-23f 와 같은 차림)
+    // 2~3단계 선택지는 받침 둘째(쉬운 질문)의 AI 차례에만 남는다('AI 몫 넓힘' 설계 4 · C205 — 이어 묻는 고르기 질문은 질문만, 1~3단계 첫 막힘은
+    // 카드 자리라 AI choices 를 쓰지 않음). 둘은 시험 어휘 안 · 같은 꼴 · 낱말 하나만 다른 답이다(untilEasyChoices)
     const o = await openLesson(context, (card, lesson) => [
       saidRun("I'm good."),
       ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
@@ -759,15 +838,7 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
     const [a, b] = choicesOf(o.card);
     await throughGreetingAndPrep(o);
     await untilChildTurn(o.page);
-    await pushFakeAi([
-      talkLessonReply({
-        tori_en: "Nice! Do you like it? Listen and say!",
-        choices: [a, b],
-        support: "choices",
-        next_move: "follow_up",
-      }),
-    ]);
-    await speak(o.page);
+    await untilEasyChoices(o.page, o.card);
     const marks = o.page.locator("[data-answer-listen]");
     await expect(marks).toHaveCount(2, { timeout: STREAM_END_MS });
     await untilChildTurn(o.page);
@@ -909,20 +980,13 @@ test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => 
     ]);
     await throughGreetingAndPrep(o);
     await untilChildTurn(o.page);
-    // 선택지는 시험 어휘 안 · 단원 단어 없는 이어 묻기 고르기 답(13절 C202 (1) — AC-23f 와 같은 차림). 카드 항목이 없으니 힌트는 AI 질문의
-    // 힌트 묶음에서 온다(마지막 단 영어 문장 · 듣기까지 열려면 그 묶음이 있어야 한다)
-    await pushFakeAi([
-      talkLessonReply({
-        tori_en: "Nice! Do you like it? Listen and say!",
-        choices: [...choicesOf(o.card)],
-        support: "choices",
-        next_move: "follow_up",
-        next_hint_ko: "좋아하는 것을 말해 봐.",
-        next_hints: ["I like ___.", "I like it."],
-        next_answer_example: "I like it.",
-      }),
-    ]);
-    await speak(o.page);
+    // 선택지는 받침 둘째의 AI 차례에만 남는다('AI 몫 넓힘' 설계 4 · C205 — untilEasyChoices). 카드 항목이 없으니 힌트는 그 AI 질문의 힌트
+    // 묶음에서 온다(마지막 단 영어 문장 · 듣기까지 열려면 그 묶음이 있어야 한다). 같은 자리 둘째 막힘이라 힌트 단은 이미 다 열려 있을 수 있다
+    await untilEasyChoices(o.page, o.card, {
+      next_hint_ko: "좋아하는 것을 말해 봐.",
+      next_hints: ["I like ___.", "I like it."],
+      next_answer_example: "I like it.",
+    });
     await expect(o.page.locator('[data-answer-listen="2"]')).toBeVisible({
       timeout: STREAM_END_MS,
     });
@@ -1069,5 +1133,177 @@ test.describe("새 꼴 회화 — 대화 안전 상한(AC-15j)", () => {
         .click();
       await expect(o.page).toHaveURL(/\/talk\/lessons$/);
     });
+  });
+});
+
+// ── 'AI 몫 넓힘' 묶음 5: 장면 여는 질문 · 신호 말 · 상황 줄 · 요청 수(AC-5 (나) · AC-6 (가) · AC-1 (나)(다) · AC-N1, C206 · C207 · C209 · C210) ──
+// 견본 talkLessonCard 는 1~3단계 카드에 장면 여는 질문 칸을 둔다(빌더 06:186 꼴). 신호 말 · 상황 줄은 서버가 시드 목록(seed/lists)에서 고르므로
+// 기대 글도 같은 파일에서 읽는다. 시험 어휘(기능어 · like · 지어낸 낱말)에는 okay 가 없어 'That's okay!' 꼴 반응은 상황 차례 검사에 걸려 그 자리
+// 상황 줄로 바뀐다(설계 1 말 검사 (가) — 실제 시드 어휘에서는 남는다, 단위 talk-allowed-coverage).
+
+const seedList = (name: string): unknown =>
+  JSON.parse(readFileSync(`seed/lists/${name}`, "utf8"));
+const CUE_LINES = TalkCueLinesFileSchema.parse(seedList("talk-cue-lines.json"));
+const SITUATION_LINES = TalkSituationLinesFileSchema.parse(
+  seedList("talk-situation-lines.json"),
+);
+/**
+ * 3단계(구간 '2-3') 같이 말하기 자리의 긴 꼴(그 대화의 그 자리 첫 신호 말은 긴 꼴 — spec 설계 6, 어느 긴 꼴인지는 그 행이 대화의 몇 번째 선생님
+ * 행인가로 돌리므로 고정하지 않는다, 묶음 2 fix 1 des-3 M-2).
+ */
+const TOGETHER_LONG = CUE_LINES.together["2-3"].long.map((l) => l.en);
+const situationEns = (place: keyof typeof SITUATION_LINES.lines) =>
+  (SITUATION_LINES.lines[place] ?? []).map((l) => l.en);
+
+/** 말풍선 글에 그 자리 상황 줄 하나가 들 때까지(어느 줄인지는 턴 번호 돌림이라 고정하지 않는다). */
+async function expectSituationLine(
+  page: Page,
+  place: keyof typeof SITUATION_LINES.lines,
+) {
+  const lines = situationEns(place);
+  await expect
+    .poll(
+      async () => {
+        const text = (await bubble(page).textContent()) ?? "";
+        return lines.some((l) => text.includes(l));
+      },
+      { timeout: STREAM_END_MS, message: `${place} 상황 줄 하나가 말풍선에` },
+    )
+    .toBe(true);
+}
+
+/** 회화 턴 요청 본문(가짜 AI 가 받은 차례대로 — 끝맺음 호출 뺌). */
+async function turnBodies(): Promise<string[]> {
+  return (await fakeAiRequests())
+    .map((r) => r.bodyText)
+    .filter((b) => b.includes(TURN_MARK) && !b.includes(CLOSING_MARK));
+}
+
+test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 줄(3단계)", () => {
+  test("AC-5 (나) · AC-N1 · AC-1 (다) 짧은 준비 뒤 장면 여는 질문은 AI 없이 보이고 읽히며, 마이크 안 잡힘은 요청 없이 안내 한 줄이고, 아이 답 뒤 첫 AI 차례 사용자 메시지에 그 질문과 'Follow up on the child's answer: yes' 가 든다(요청은 아이 차례마다 하나)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const o = await openLesson(
+      context,
+      (card, lesson) => [
+        saidRun("I'm good."),
+        ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
+        deafRun(),
+        saidRun(card.sceneOpener?.answerExample ?? "Yes, I do."),
+      ],
+      { lesson: talkLessonCard(LEVEL) },
+    );
+    const scene = o.card.sceneOpener?.question.en;
+    if (!scene) throw new Error("견본 꼴 — 1~3단계 카드의 장면 여는 질문");
+    const start = await talkTurnRequests();
+    await throughGreetingAndPrep(o);
+    // 인사 끝 한 번만 불렀다(짧은 준비 · 장면 여는 질문은 앱 — AC-N1)
+    expect(await talkTurnRequests()).toBe(start + 1);
+    await expect(segmentTag(o.page)).toHaveText("대화");
+    await untilChildTurn(o.page);
+    // 장면 여는 질문을 선생님 목소리로 읽었다(그 질문 문장)
+    const sceneQuestion = sentencesOf(scene).at(-1) ?? scene;
+    expect(
+      (await speechRecord(o.page)).spoken.some((t) =>
+        t.includes(sceneQuestion),
+      ),
+    ).toBe(true);
+    // 마이크 안 잡힘: 턴이 아니다 — 요청 · '못 들었어요' · 말소리 없음 셈 없이 안내 한 줄(C210 · AC-1 (다))
+    await deafAttempt(childTurn(o.page));
+    await expect(childTurn(o.page).getByText(T.micDeaf)).toBeVisible();
+    await expect(
+      childTurn(o.page).locator('[data-child-said="not_heard"]'),
+    ).toHaveCount(0);
+    expect(await talkTurnRequests()).toBe(start + 1);
+    // 아이 답 → 첫 AI 차례(이어 묻기). 안내 뒤 말하기 단추가 다시 켜진 뒤 누른다
+    await expect(childTurn(o.page).locator("[data-speak]")).not.toHaveAttribute(
+      "data-speak-waiting",
+      "",
+      { timeout: STREAM_END_MS },
+    );
+    const reply = "Nice! What do you like?";
+    await pushFakeAi([
+      talkLessonReply({ tori_en: reply, next_move: "follow_up" }),
+    ]);
+    await speakAndSend(o.page);
+    await expect(toriLines(o.page)).toContainText(sentencesOf(reply), {
+      timeout: STREAM_END_MS,
+    });
+    expect(await talkTurnRequests()).toBe(start + 2);
+    // 사용자 메시지의 줄 꼴로 본다 — 두 글은 1~3단계 고정부 규칙(system)에도 글자 그대로 들어 낱말만 보면 늘 지난다(rev-5 I-1). 본문은
+    // JSON 이라 줄바꿈은 '\n' 두 글자다(TURN_MARK 와 같은 꼴)
+    const last = (await turnBodies()).at(-1) ?? "";
+    expect(last).toContain(
+      `App question just before (not in the turns above): ${scene}`,
+    );
+    expect(last).toContain("\\nFollow up on the child's answer: yes");
+  });
+
+  test("AC-5 (나) · AC-6 (가) · AC-1 (나) 장면 여는 질문에서 막히면 첫째는 상황 줄 반응 · 앱 신호 말(긴 꼴) · 답 소리(AI 가 쓴 신호 말은 없음), 둘째는 그 칸의 쉬운 질문과 뜻이다(차례마다 요청 하나)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const o = await openLesson(
+      context,
+      (_card, lesson) => [
+        saidRun("I'm good."),
+        ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
+      ],
+      { lesson: talkLessonCard(LEVEL) },
+    );
+    const opener = o.card.sceneOpener;
+    if (!opener) throw new Error("견본 꼴 — 1~3단계 카드의 장면 여는 질문");
+    await throughGreetingAndPrep(o);
+    await untilChildTurn(o.page);
+    const before = await talkTurnRequests();
+    // 받침 첫째(같이 말하기): AI 의 신호 말 문장은 지우고 앱이 시드 신호 말 한 줄을 소리 줄 앞에 붙인다(C207)
+    const aiCue = "Let's say it together.";
+    await pushFakeAi([
+      talkLessonReply({
+        tori_en: `That's okay! ${aiCue}`,
+        support: "together",
+      }),
+    ]);
+    await o.page.getByRole("button", { name: T.dontKnow }).click();
+    await expect(o.page.locator('[data-sound-listen="answer"]')).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    let cue = "";
+    await expect
+      .poll(
+        async () => {
+          const text = (await bubble(o.page).textContent()) ?? "";
+          cue = TOGETHER_LONG.find((l) => text.includes(l)) ?? "";
+          return cue;
+        },
+        { timeout: STREAM_END_MS, message: "같이 말하기 긴 꼴 신호 말 하나" },
+      )
+      .not.toBe("");
+    await expect(bubble(o.page)).not.toContainText(aiCue);
+    await expectSituationLine(o.page, "together");
+    await untilChildTurn(o.page);
+    const spoken = (await speechRecord(o.page)).spoken;
+    const cueAt = spoken.findIndex((t) => t.includes(cue));
+    const answerAt = spoken.findIndex((t) => t.includes(opener.answerExample));
+    expect(cueAt).toBeGreaterThanOrEqual(0);
+    expect(answerAt).toBeGreaterThan(cueAt);
+    expect(await talkTurnRequests()).toBe(before + 1);
+    // 받침 둘째: 그 칸의 쉬운 질문(뜻 함께, 1~3단계 뜻 줄)
+    await pushFakeAi([
+      talkLessonReply({ tori_en: "That's okay!", support: "easy_question" }),
+    ]);
+    await o.page.getByRole("button", { name: T.dontKnow }).click();
+    await expect(bubble(o.page)).toContainText(opener.easyQuestion.en, {
+      timeout: STREAM_END_MS,
+    });
+    if (opener.easyQuestion.ko)
+      await expect(o.page.locator("[data-tori-ko]")).toContainText(
+        opener.easyQuestion.ko,
+        { timeout: STREAM_END_MS },
+      );
+    // 신호 말은 지금 턴 말풍선에만 — 지난 차례가 오른 대화 기록 칸에는 없다(spec 설계 6 기록 행 [M-1] · AC-6 (가))
+    await expect(o.page.locator("[data-talk-log]")).not.toContainText(cue);
+    expect(await talkTurnRequests()).toBe(before + 2);
   });
 });

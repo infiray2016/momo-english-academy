@@ -51,6 +51,7 @@ import {
   talkLessonReply,
   talkScript,
   talkTurnRequests,
+  withoutSceneOpener,
 } from "./talk";
 
 /** 화면 글(문구 표 TEACHER_TEXT 와 같은 글 — 회화 시험 집의 선생님은 미나). */
@@ -272,7 +273,7 @@ async function openWindowTalk(
   if (lesson === undefined) await skipStartPrep(profileId, 1);
   const row = await insertTalkLesson({
     level: 1,
-    lesson: lesson ?? greetingTalkLesson(1),
+    lesson: withoutSceneOpener(lesson ?? greetingTalkLesson(1)),
   });
   const sessionId = await openTalkSession(profileId, row);
   const script = talkScript(runs);

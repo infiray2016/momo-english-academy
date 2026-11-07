@@ -344,7 +344,7 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     expect(bodies[1]).toContain(quoted(firstTeacher?.toriRewrite ?? "?"));
   });
 
-  it("AC-15b 1~3단계 회화 턴이 두 번 실패한 턴은 끊기지 않고 카드 칭찬 대사와 카드 자리의 카드 질문이 보인다('말했다' 없음)", async () => {
+  it("AC-15b 1~3단계 회화 턴이 두 번 실패한 턴은 끊기지 않고 카드 안전한 대사(뜻 있음 — 대본 회차 r1 판정 I-3 (나))와 카드 자리의 카드 질문이 보인다('말했다' 없음)", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     const fail: FakeRule = {
       when: { bodyIncludes: TURN_MARK },
@@ -359,7 +359,9 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
       kind: "card_slot",
       why: "fail",
     });
-    expect(card.praiseLines).toContain(last?.text?.split("\n")[0]);
+    expect(card.safeLines.map((l) => l.en)).toContain(
+      last?.text?.split("\n")[0],
+    );
     // 그 턴은 '말했다'를 세지 않는다(8절 회화 턴 실패)
     // 이번 턴의 아이 행은 턴 번호가 가장 큰 아이 행이다 — ORDER BY 없이 읽으면 앞 시험(C203 (3) 통합 사례 등)이 resetHousehold 로 지운 자리에
     // 새 행이 들어가 차례가 바뀌어, 인사 쪽 아이 행(saidWords null)을 고를 수 있다(CI 일곱째 AC-15b)

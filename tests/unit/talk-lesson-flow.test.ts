@@ -121,27 +121,26 @@ describe("토막 · 대화 첫 질문", () => {
     ]);
   });
 
-  it("1~3단계 인사 둘째 질문은 카드 인사 질문을 앱이 붙인다(선생님은 반응만)", () => {
+  it("1~3단계 인사 둘째 질문(말로 답한 뒤)은 AI 차례이고, 걸리면 붙일 카드 인사 질문을 greetingFallback 에 둔다('AI 몫 넓힘' spec 설계 2 [M-2])", () => {
     const turns = [
       teacher("Hi! How are you today?", { kind: "first_question" }),
       said({ segment: "greeting" }),
     ];
     const plan = nextTeacherTurnOf(args3(turns, { segment: "greeting" }));
     expect(plan).toMatchObject({
-      kind: "card_slot",
+      kind: "ai",
       segment: "greeting",
       callsAi: true,
-      aiAsks: false,
+      aiAsks: true,
+      attach: [],
     });
-    expect(plan.attach).toEqual([
-      {
-        kind: "question",
-        role: "greeting",
-        en: "Do you like Sunday?",
-        ko: "일요일 좋아해?",
-        item: { kind: "none", no: 0 },
-      },
-    ]);
+    expect(plan.greetingFallback).toEqual({
+      kind: "question",
+      role: "greeting",
+      en: "Do you like Sunday?",
+      ko: "일요일 좋아해?",
+      item: { kind: "none", no: 0 },
+    });
   });
 
   it("마지막 인사 질문에 말로 답하면 '인사 끝'이고, 그 응답에는 질문 · 붙일 줄이 없다", () => {
@@ -217,7 +216,7 @@ describe("AI 차례와 카드 자리", () => {
     });
   });
 
-  it("AC-15i 따라가기 갈래가 상한만큼 이어진 다음 턴은 카드 자리가 되어 가장 앞의 남은 기회를 붙인다", () => {
+  it("AC-15i 따라가기 갈래가 상한만큼 이어진 다음 턴은 1~3단계에서 AI 차례 + returnNow 이고, 그 차례도 따라가기면 그다음 턴이 카드 자리가 되어 가장 앞의 남은 기회를 붙인다('AI 몫 넓힘' AC-3 (가))", () => {
     const turns: TalkLessonTurn[] = [...opening3()];
     for (let i = 0; i < LOW.followChildTurns; i++) {
       turns.push(said());
@@ -229,6 +228,14 @@ describe("AI 차례와 카드 자리", () => {
       );
     }
     turns.push(said());
+    expect(nextTeacherTurnOf(args3(turns))).toMatchObject({
+      kind: "ai",
+      returnNow: true,
+    });
+    turns.push(
+      aiTurn("Wow! Can you draw a big one?", { next: "follow_child" }),
+      said(),
+    );
     const plan = nextTeacherTurnOf(args3(turns));
     expect(plan).toMatchObject({
       kind: "card_slot",
@@ -246,7 +253,22 @@ describe("AI 차례와 카드 자리", () => {
         item: { kind: "required", no: 2 },
       },
     ]);
-    expect(plan.followRun).toBe(LOW.followChildTurns);
+    expect(plan.followRun).toBe(LOW.followChildTurns + 1);
+  });
+
+  it("AC-15i 4단계부터는 따라가기 갈래가 상한만큼 이어진 다음 턴이 그대로 카드 자리다(returnNow 없음, 'AI 몫 넓힘' 정한 것 1)", () => {
+    const turns: TalkLessonTurn[] = [...opening4()];
+    for (let i = 0; i < MID.followChildTurns; i++)
+      turns.push(
+        said(),
+        aiTurn(`Dinosaurs ${i}! Do you like a big one?`, {
+          next: "follow_child",
+        }),
+      );
+    turns.push(said());
+    const plan = nextTeacherTurnOf(args4(turns));
+    expect(plan).toMatchObject({ kind: "card_slot", why: "follow_cap" });
+    expect(plan.returnNow).toBeUndefined();
   });
 
   it("AC-15i 따라가기 상한인데 붙일 기회가 없으면 AI 차례로 둔다", () => {

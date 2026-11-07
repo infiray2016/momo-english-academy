@@ -1,0 +1,45 @@
+{
+  "name": "l3-scene-yes",
+  "title": "3단계 · 장면 여는 질문에 '네'",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-5 (다) 장면 대본 셋의 하나(설계 7): 대화 첫 질문(고침 뒤는 장면 여는 질문, 예 · 아니요 질문)에 '네'로 답한다. 그 뒤 첫 AI 차례가 아이 답에 이어 묻고 장면 여는 질문을 다시 묻지 않는다(사람 판정). 고침 전 기준선은 첫 필수 질문에 같은 말을 넣은 것이라 '장면 여는 질문 뒤' 지표의 기준선이 아니다.",
+  "steps": [
+    {
+      "say": "I am good.",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "Yes!",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I swim.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "We go home.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

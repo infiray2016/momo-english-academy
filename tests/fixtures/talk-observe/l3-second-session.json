@@ -1,0 +1,61 @@
+{
+  "name": "l3-second-session",
+  "title": "3단계 · 둘째 세션(지난 대화 요약 한 줄)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-2 (라) 둘째 세션 꼴(설계 7 · 8): 지난 대화 요약 한 줄이 든 세션이다. 대본 칸 settings 로 talk.greeting_recall 을 켜고 돌리며, 끔 바퀴는 명령 '--set talk.greeting_recall=off' 로 한 번 더 돈다. 켬 · 끔 모두 요약에 없는 기억(지난번에 한 일 · 함께 간 곳 꼴)이 0이어야 한다(사람 판정). 켬에서 요약의 것(사과 · 공놀이)을 꺼내는 것은 허용이고 하한이 없다.",
+  "summaries": [
+    "주제: 좋아하는 과일과 놀이. 잘 쓴 말: I like apples. 좋아하는 것: 사과, 공놀이."
+  ],
+  "settings": { "talk.greeting_recall": "on" },
+  "steps": [
+    {
+      "say": "I am good.",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Apples!",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "I play with a ball.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We go to the lake.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We come home.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

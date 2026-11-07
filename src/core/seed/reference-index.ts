@@ -1,6 +1,8 @@
 // 규격 파일 묶음과 정합(plan-p04b '규격 파일 정합'). 규격 파일을 읽기 좋은 꼴로 묶어(index) 칸 검사(P4b · P4c)에 내주고,
 // 규격 파일끼리 맞는지를 본다. 정합 위반은 모두 오류다(plan-p04a 정할 것 ㄹ). DB 없는 순수 함수다.
 // Zod 규격에서 깨진 규격 파일은 넘기지 않는다(Partial). 빠진 파일을 쓰는 정합 검사는 건너뛰고, P4c 가 '규격 파일 오류로 건너뜀'을 보고한다.
+
+import { checkTalkLists } from "@/core/seed/check-talk-lists";
 import {
   checkTeacherNamesInSpecs,
   checkTeacherRoster,
@@ -23,6 +25,10 @@ import type {
   ModelPricesFile,
   SettingRow,
   SettingsFile,
+  TalkAllowedWordsFile,
+  TalkCueLinesFile,
+  TalkMadeUpPhrasesFile,
+  TalkSituationLinesFile,
   TalkWaitLinesFile,
   UnitSpec,
   UnitSpecsFile,
@@ -76,6 +82,11 @@ export type ReferenceFiles = {
   /** 회화 앱 맞장구 목록(회화 plan 정한 것 20). */
   talkWaitLines: TalkWaitLinesFile;
   teachers: TeachersFile;
+  /** 회화 1~3단계 시드 목록 넷('AI 몫 넓힘' plan 정한 것 5). 목록 검사는 check-talk-lists(06:187). */
+  talkCueLines: TalkCueLinesFile;
+  talkSituationLines: TalkSituationLinesFile;
+  talkAllowedWords: TalkAllowedWordsFile;
+  talkMadeUpPhrases: TalkMadeUpPhrasesFile;
   /**
    * 문법 용어 목록(델타 spec 2026-10-29 설계 7, `GRAMMAR_TERMS_FILE`). 규격 파일 열(SEED_FILES) 밖의 선택 파일이라
    * 없어도 규격 파일 오류가 아니고, teach 가 있는 수업 칸만 '목록 없음'으로 막는다.
@@ -151,6 +162,8 @@ export type ReferenceIndex = {
   metaSentences: MetaSentencesFile;
   /** '선생님 이름' 검사가 막는 이름(옛 이름 Tori · 토리 + 명단 이름, 6.4 · C130). 명단이 없거나 깨졌으면 옛 이름만. */
   teacherNames: TeacherNames;
+  /** 지어낸 경험 꼴(lists/talk-made-up-phrases.json, 06:187 (4) — 1~3단계 카드의 안전한 대사 검사). 파일이 없으면 빈 목록. */
+  talkMadeUpPhrases: readonly string[];
   /** 단원 틀(그 단계 규격 · 단원 규격 · 설정값이 있을 때). */
   frame(area: Area, level: number, unit: number): UnitFrame | undefined;
   /** 단원 배정표(단원 틀이 있을 때). */
@@ -590,6 +603,15 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
     );
   }
 
+  // 회화 1~3단계 시드 목록 넷(06:187): 꼴 수 · 물음표 · 길이 · 어휘 범위(허용 낱말 포함) · 상황 금지 구 · 지어낸 경험 꼴.
+  issues.push(
+    ...checkTalkLists(files, {
+      ...(files.vocab ? { lexicon } : {}),
+      maxWordsAt: (level) =>
+        levelSpecMap.get(`talk:${level}`)?.sentenceMaxWords,
+    }),
+  );
+
   // ── unit-goals(평가 spec 2절 '목표 꼴': id 꼴 · 시드 전체 유일 · 단원 일치 · 영역 needs) ──
   const goalOwners = new Map<string, string>();
   const goalsMax = settingMap.get("seed.unit_goals_max");
@@ -704,6 +726,7 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
     homophones: files.homophones ?? { groups: [] },
     metaSentences: files.metaSentences ?? { phrases: [] },
     teacherNames,
+    talkMadeUpPhrases: files.talkMadeUpPhrases?.phrases ?? [],
     frame,
     allocation,
     allowedForms: (area, level, scope) => {

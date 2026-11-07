@@ -115,7 +115,7 @@ describe("N-1 아이가 방금 한 말을 되묻는 고르기(02-2 196 · 184)",
     ).toBe(false);
   });
 
-  it("정규화는 되묻는 고르기를 버리고, 새 것을 묻는 고르기는 남긴다(2~3단계 이어 묻기)", () => {
+  it("정규화는 되묻는 고르기를 버리고, 새 것을 묻는 이어 묻기 고르기도 질문만 남긴다(2~3단계, 'AI 몫 넓힘' C205)", () => {
     const input = (child: string) =>
       lessonInput(3, { turn: { child, input: "speech" } });
     const ask = "Nice! Do you like your friend or your day?";
@@ -137,7 +137,8 @@ describe("N-1 아이가 방금 한 말을 되묻는 고르기(02-2 196 · 184)",
       input("Yes."),
       lessonRules(3),
     );
-    expect(fresh?.choices).toEqual(["I like my friend.", "I like my day."]);
+    expect(fresh?.choices).toEqual([]);
+    expect(fresh?.tori_en).toBe(ask);
   });
 });
 
@@ -198,7 +199,10 @@ describe("두 낱말 관련 말 — 앱 안전망(셋 이상) 밖의 자리", ()
     expect(touchesScene("Cold juice.", scene)).toBe(true);
     expect(touchesScene("Blue car.", scene)).toBe(false);
     expect(touchesScene("Yes it.", scene)).toBe(false);
-    expect(touchesScene("Fish.", scene)).toBe(false);
+    // 낱말 하나도 장면 낱말이면 닿는 말이다(13절 C204 (2) · 대본 회차 r1 판정 I-4 'Rice.'), 기능어 · 대답 말 한 낱말은 아니다
+    expect(touchesScene("Fish.", scene)).toBe(true);
+    expect(touchesScene("Yes.", scene)).toBe(false);
+    expect(touchesScene("Huh?", scene)).toBe(false);
     expect(touchesScene("I don't know.", scene)).toBe(false);
   });
 
@@ -254,7 +258,11 @@ describe("고정부 · 다시 쓰기 메시지 문장(고침 3)", () => {
     expect(system).toContain(
       "ask about the thing or the person instead (e.g. 'Do you like fish?').",
     );
-    expect(system).toContain("Start with 'I couldn't hear you.'.");
+    // 'AI 몫 넓힘'(C211 (4)): 1~3단계 들리지 않음은 자기 말로, 고정 첫 문장은 4단계부터 그대로
+    expect(system).not.toContain("Start with 'I couldn't hear you.'.");
+    expect(talkLessonSystem(lessonInput(4), lessonRules(4))).toContain(
+      "Start with 'I couldn't hear you.'.",
+    );
     expect(
       questionRetryNoteOf(
         { question: "Do you eat rice?", reason: "target_word", words: ["eat"] },
@@ -550,18 +558,22 @@ describe("CI 일곱째 통합 AC-15b 와 같은 길(두 번 실패 → 칭찬 �
       prepWords: CARD3.prep ?? [],
     };
     const plan = nextTeacherTurnOf(a);
-    const praise = "Good job!";
+    // 1~3단계 두 번 실패의 반응 줄은 뜻 있는 안전한 대사(대본 회차 r1 판정 I-3 (나) — 칭찬 대사는 뜻 칸이 없다)
+    const praise = "Oh, okay!";
     const view = lessonOutcomeViewOf(
       { ok: false, reason: "server", refusals: 0 },
       {
         low: true,
         koMeaning: true,
-        safeLines: [],
-        praiseLines: [praise],
+        safeLines: [{ en: praise, ko: "오, 그렇구나!" }],
         safeLine: "Let's talk!",
         turnNo: 1,
       },
     );
+    expect(view).toEqual({
+      kind: "line",
+      line: { en: praise, ko: "오, 그렇구나!" },
+    });
     expect(view.kind).toBe("line");
     if (view.kind === "break") throw new Error("1~3단계는 쉼이 아니다");
     const flow = createLessonSentenceFlow({

@@ -1,0 +1,74 @@
+{
+  "introduce": {
+    "1": {
+      "long": [
+        { "en": "Listen and say it!", "ko": "듣고 말해 봐!" },
+        { "en": "Listen, then say it!", "ko": "잘 듣고 나서 말해 봐!" }
+      ],
+      "short": [
+        { "en": "Your turn!", "ko": "네 차례야!" },
+        { "en": "Say it!", "ko": "말해 봐!" },
+        { "en": "Now you say it!", "ko": "이제 네가 말해 봐!" }
+      ]
+    },
+    "2-3": {
+      "long": [
+        { "en": "Listen and say this!", "ko": "듣고 이걸 말해 봐!" },
+        { "en": "Listen to this, then say it!", "ko": "이거 듣고 나서 말해 봐!" }
+      ],
+      "short": [
+        { "en": "Your turn!", "ko": "네 차례야!" },
+        { "en": "Now you say it!", "ko": "이제 네가 말해 봐!" },
+        { "en": "Your turn to say it!", "ko": "네가 말할 차례야!" }
+      ]
+    }
+  },
+  "together": {
+    "1": {
+      "long": [
+        { "en": "Say it with me!", "ko": "나랑 같이 말해 봐!" },
+        { "en": "Let's say it together!", "ko": "우리 같이 말해 보자!" }
+      ],
+      "short": [
+        { "en": "Let's say it!", "ko": "같이 말하자!" },
+        { "en": "Now, with me!", "ko": "자, 나랑 같이!" },
+        { "en": "One, two, say it!", "ko": "하나, 둘, 같이 말해!" }
+      ]
+    },
+    "2-3": {
+      "long": [
+        { "en": "Listen and say it with me!", "ko": "듣고 나랑 같이 말해 봐!" },
+        { "en": "Listen, then say it with me!", "ko": "잘 듣고 나서 나랑 같이 말해 봐!" }
+      ],
+      "short": [
+        { "en": "Say it with me!", "ko": "나랑 같이 말해 봐!" },
+        { "en": "Let's say it together!", "ko": "우리 같이 말해 보자!" },
+        { "en": "Together now, say it!", "ko": "자, 같이 말해!" }
+      ]
+    }
+  },
+  "choices": {
+    "1": {
+      "long": [
+        { "en": "Listen and pick one!", "ko": "듣고 하나 골라 봐!" },
+        { "en": "Pick one and say it!", "ko": "하나 골라서 말해 봐!" }
+      ],
+      "short": [
+        { "en": "Pick one!", "ko": "하나 골라 봐!" },
+        { "en": "Now pick one!", "ko": "이제 하나 골라 봐!" },
+        { "en": "Pick and say it!", "ko": "골라서 말해 봐!" }
+      ]
+    },
+    "2-3": {
+      "long": [
+        { "en": "Listen and choose one!", "ko": "듣고 하나 골라 봐!" },
+        { "en": "Listen, then pick one!", "ko": "잘 듣고 나서 하나 골라 봐!" }
+      ],
+      "short": [
+        { "en": "Pick one!", "ko": "하나 골라 봐!" },
+        { "en": "Choose one!", "ko": "하나 골라!" },
+        { "en": "Pick one and say it!", "ko": "하나 골라서 말해 봐!" }
+      ]
+    }
+  }
+}

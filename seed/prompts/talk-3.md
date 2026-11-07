@@ -8,8 +8,8 @@
 |---|---|
 | 영역 · 단계 | `talk` · 3 · CEFR Pre-A1 · 구간 `1-3` |
 | 틀 | `seed/prompts/_template.md`(가르치는 수업 규칙 R5~R16 은 옮기지 않는다: 회화 카드에는 `teach` 칸이 없다) |
-| 만든 날 · 만든 이 | 2026-10-30 첫 판 · 2026-11-05 둘째 판(설계 검토 Changes requested 뒤: 같은 질문을 마지막 물음표 문장으로 셈 · 8절 질문 꼴 · 14절 스스로 확인 · 12절 예시, 장부 T-36 · T-53) · 학습 설계자(회화 plan C192 묶음 4 (나)) |
-| 옮긴 곳 | `seed/level-specs.json`(talk 3 행, revision 3) · `unit-specs.json`(talk 3단계 단원 1 goals 둘, 잠정) · `settings.json`(키 이름) · `vocab.json` · `images.json`(217 키) · `lists/forms.json` · `lists/forbidden.json` · `lists/meta-sentences.json` · `src/core/seed/schema/talk.ts`(TalkCardSchema, 2026-10-30 08:5x 에 읽음) · `schema/lesson.ts`(TalkLessonSchema) · `check-talk.ts` · `check-lesson.ts` · `check-cross.ts` · `src/core/vocab/allocate.ts` · 회화 spec 4판(`intent/2026-10-29-회화-수업을-대화로/spec.md` 설계 1~6 · 9, approved C188) · 회화 plan(같은 폴더 plan.md, C192) · 정본 3.3 회화 · 3.6 · 3.8 · 6.3 회화 카드 행 · 6.4 회화 시나리오 카드 행 · 13절 C2 · C19 · C31 · C32 · C64 · C117 · C124 · C130 · C132 · C145 · C161 · C172 · C181 · C188 · C189 · 단원 목표 작업 장부 `.superpowers/sdd/2026-10-29-회화-수업을-대화로/talk-3-1-goals.md` · 승인 표본(5절 끝) · 이 판의 예시 카드 검증(12절) |
+| 만든 날 · 만든 이 | 2026-10-30 첫 판 · 2026-11-05 둘째 판(설계 검토 Changes requested 뒤: 같은 질문을 마지막 물음표 문장으로 셈 · 8절 질문 꼴 · 14절 스스로 확인 · 12절 예시, 장부 T-36 · T-53) · 학습 설계자(회화 plan C192 묶음 4 (나)) · 2026-11-07 다섯째 판(회화 AI 몫 넓힘 묶음 3-(다): 1~3단계 카드의 장면 여는 질문 칸 `sceneOpener`(13절 C206) · 예상 흐름 첫 줄 · 장면 여는 질문 꼴 돌려 쓰기, 5절 '장면 여는 질문 쓰는 법' · 12 · 14 · 17절) · 학습 설계자 |
+| 옮긴 곳 | `seed/level-specs.json`(talk 3 행, revision 3) · `unit-specs.json`(talk 3단계 단원 1 goals 둘, 잠정) · `settings.json`(키 이름) · `vocab.json` · `images.json`(217 키) · `lists/forms.json` · `lists/forbidden.json` · `lists/meta-sentences.json` · `src/core/seed/schema/talk.ts`(TalkCardSchema, 2026-10-30 08:5x 에 읽음) · `schema/lesson.ts`(TalkLessonSchema) · `check-talk.ts` · `check-lesson.ts` · `check-cross.ts` · `src/core/vocab/allocate.ts` · 회화 spec 4판(`intent/2026-10-29-회화-수업을-대화로/spec.md` 설계 1~6 · 9, approved C188) · 회화 plan(같은 폴더 plan.md, C192) · 정본 3.3 회화 · 3.6 · 3.8 · 6.3 회화 카드 행 · 6.4 회화 시나리오 카드 행 · 13절 C2 · C19 · C31 · C32 · C64 · C117 · C124 · C130 · C132 · C145 · C161 · C172 · C181 · C188 · C189 · C202 (3) · C206 · C211 (1) · 회화 AI 몫 넓힘 spec 판 4 설계 5(`intent/2026-11-06-회화-AI-몫-넓힘/spec.md`) · 정본 02-2:200 · 06:186 · `schema/talk.ts` TalkSceneOpenerSchema · `check-talk.ts` checkSceneOpener(2026-11-07 대조) · 장면 여는 질문 표본과 보고(`.superpowers/sdd/2026-11-07-회화-AI-몫-넓힘/task-3b-samples.md` · `task-3b-report.md`) · 단원 목표 작업 장부 `.superpowers/sdd/2026-10-29-회화-수업을-대화로/talk-3-1-goals.md` · 승인 표본(5절 끝) · 이 판의 예시 카드 검증(12절) |
 | 이 판으로 만드는 것 | 단원 1 '주말에 하는 일'의 카드 전부(주제 변형 수 × (정규 + 보강), 4절). 첫 프리뷰 호출은 두 장만 만든다: 배정 1 · 변형 1 과 다지기 6 · 변형 1(1절 (가)). 단원 2~5 는 단원 규격에 목표(goals)가 생긴 뒤 다음 판으로 만든다(6절 규격과 14절 스스로 확인의 `VERBS` · `GOAL_OF` 가 단원 1 전용이라, 단원 2 를 더하면 브리프가 바뀐다) |
 | 12절 꼴의 상태 | 회화 plan 묶음 3(카드 새 꼴 · 검증기) 구현이 끝났고(08:4x, fix 1 09:2x) 코드 검토 Approved(10-30 09:3x)다. 12 · 14절은 2026-10-30 09:3x 에 `src/core/seed/schema/talk.ts` 의 TalkCardSchema 와 `src/core/seed/check-talk.ts` 의 규칙을 다시 대조한 꼴이다(구현 보고 `.superpowers/sdd/2026-10-29-회화-수업을-대화로/task-talk-3-report.md` 의 '새 꼴 칸 표' · '검증기 규칙 목록'). 검토에서 꼴 · 규칙이 바뀌면 컨트롤러가 이 판을 다시 맞춘다. 2026-11-05 둘째 판은 `talk-same-question` 의 열쇠를 실행 셈과 같은 마지막 물음표 문장으로 바꾼 검증기(`question-check.ts` 의 `cardQuestionKeyOf` — 앱 셈 · 카드 자리 고르기 · 검증기가 같은 함수 하나를 쓴다, 컨트롤러 2026-11-05 · '5-다')로 12절 예시를 다시 돌렸다 |
 
@@ -67,7 +67,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 ## 2. 할 일 한눈에
 
 1. 6절에서 단원 1 의 단원 단어 · 배정표 · 목표를 찾는다.
-2. 만들 카드마다 **카드 계획표**를 먼저 짠다. 필수 질문마다 번호 · 노리는 단어 · 목표 · 처음 묻기인지 다시 묻기인지 · 질문 글 · 쉬운 질문 글을 적고, 더 이야기할 거리도 같게 적는다. 배정 카드는 짧은 준비 낱말 셋과 대화 중에 꺼낼 새 단어를 적는다(5절).
+2. 만들 카드마다 **카드 계획표**를 먼저 짠다. 필수 질문마다 번호 · 노리는 단어 · 목표 · 처음 묻기인지 다시 묻기인지 · 질문 글 · 쉬운 질문 글을 적고, 더 이야기할 거리도 같게 적는다. 배정 카드는 짧은 준비 낱말 셋과 대화 중에 꺼낼 새 단어를 적는다(5절). 장면 여는 질문의 글과 꼴(첫 세 낱말)도 적고, 필수 질문 · 더 이야기할 거리와 주제가 겹치지 않는지 이 표에서 본다(5절 '좋은 질문' (라)).
 3. 계획표대로 카드 글(질문 · 힌트 · 답 예시 · 쉬운 질문 · 오늘 쓸 말 · 정리 대사 …)을 쓴다.
 4. 파일 하나 `{ "area": "talk", "level": 3, "unit": <단원>, "lessons": [ … ] }` 에 넣는다. 차례는 (제안) 변형 1 의 정규 1~10 · 보강 1~3, 그다음 변형 2 다. '만들 카드'가 목록이면 그 카드만 넣는다.
 5. (나) 호출이면 14절 붙이기 명령으로 고정 카드를 넣는다.
@@ -128,7 +128,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 |---|---|---|
 | 인사 | `greeting.questions`(1개) · `greetingTurns` 1 | 선생님이 인사하고 안부를 묻는다. 힌트는 `hintKo` → `frameEn` → `hintEn` 이다. 인사는 평가 과제가 아니다 |
 | 짧은 준비 | `prep`(배정 카드만) · `todayWords` 의 `word` · `meaningKo` · `imageKey` · `modelLine` | 선생님이 낱말 셋을 하나씩 소개한다. 쪽지에는 낱말 글 · 한국어 뜻 · (있으면) 그림이 있고 예문 글은 없다. 선생님이 `modelLine` 을 읽고 아이가 한 번 따라 말한다. 1분 안팎이다. 다지기 · 보강 카드는 `prep` 을 두지 않고 `todayWords` 도 `[]` 이며, 앱이 그 카드가 노리는 낱말 가운데 아직 '안다'가 아닌 것을 골라 같은 꼴로 보인다 |
-| 대화 | `required` · `more` · `flow` · `targetExpressions` · `goals` | 대화 첫 질문은 첫 필수 질문이다(앱이 AI 없이 보이고 읽는다). 그 뒤는 선생님이 아이 말에 반응하고 다음 질문을 스스로 쓰며, 카드 기회(필수 질문 · 다시 쓰기 · 꺼낼 새 단어)를 자연스러운 때 고른다. 필수 질문은 카드 글을 바꿔 말해 물어도 된다. 앱은 따라가기 상한 · 질문 검사 실패 · 같은 질문 · 받침 · 마무리 때에만 카드 질문을 그대로 붙인다(카드 자리) |
+| 대화 | `sceneOpener` · `required` · `more` · `flow` · `targetExpressions` · `goals` | 대화 첫 질문은 장면 여는 질문(`sceneOpener`)이다. 앱이 짧은 준비 끝 바로 뒤(준비가 없는 다지기 · 보강 카드는 인사 끝 턴 뒤)에 AI 없이 보이고 읽는다(13절 C206, 아래 '장면 여는 질문 쓰는 법'). 그 뒤는 선생님이 아이 답에 반응하고 그 답을 따라 다음 질문을 스스로 쓰며, 카드 기회(필수 질문 · 다시 쓰기 · 꺼낼 새 단어)를 자연스러운 때 고른다. 필수 질문은 카드 글을 바꿔 말해 물어도 된다. 앱은 따라가기 상한 · 질문 검사 실패 · 같은 질문 · 받침 · 마무리 때에만 카드 질문을 그대로 붙인다(카드 자리) |
 | 정리 | `closingLines` · `farewell` | 대화 기록에서 아이가 스스로 한 말 가운데 오늘 쓸 말이 든 줄을 반짝이고, 되짚을 말을 선생님이 읽는다. 1~3단계는 되짚을 말 전체를 한 번 따라 말한다 |
 | (어디서나) | `safeLines` · `praiseLines` · `safetyFarewell` · `endCondition` · `todayTopicsKo` · `topic` | 걸린 선생님 문장을 바꿀 대사 · 짧은 칭찬 · 안전 상한의 끝인사 · 끝맺음 조건 · 옆 칸 오늘 이야기 목록 · AI 에게 가는 카드 주제 |
 
@@ -138,13 +138,29 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 |---|---|
 | 무엇인가 | 카드가 준비하는 기회다. 새 단어를 처음 묻는 질문과 단원 목표의 수행 기회를 만드는 질문이다. 한 수업에서 다 물어야 하는 질문이 아니다 |
 | 수 | 배정 카드: 새 단어마다 그 낱말 하나만 노리는 처음 묻는 질문(`ask: "first"`) 하나씩, k 개(`talk-first-ask`). 다지기 · 보강 카드: 처음 묻는 질문이 없고 다시 묻는 질문(`ask: "re_ask"`)이 k 개 이상(`talk-required`). 모든 카드: 필수 질문 수 ≤ 참고 턴 × `talk.required_max_ratio`(`talk-required`). 나머지 턴은 아이 말을 따라갈 자리다 |
-| 번호 | `no` 는 1부터 차례대로(`talk-numbers`). 1번이 대화 첫 질문이다 |
+| 번호 | `no` 는 1부터 차례대로(`talk-numbers`). 대화 첫 질문은 필수 질문 1번이 아니라 장면 여는 질문이다(C206). 필수 질문은 그 뒤 선생님이 아이 말이 닿을 때 고르는 기회다 |
 | 홀로 뜻이 통함 | (제안) 질문은 앞 턴에 무슨 말이 오갔든 그것만으로 뜻이 통하게 쓴다. 필요한 장면은 질문 앞의 짧은 한 문장이나 질문 문장 안의 말로 준다(`The stars are out! What do you do in your bed?` ○, `What do you see there?` ×). 앱이 아무 때나 카드 자리로 그대로 붙이기 때문이다. 앞 문장은 물건 · 장면 말로 쓴다(`Oh, cold water!` · `Sand on your hands!` · `The sun is down.`). 아이의 상태 · 행동을 단정하는 말(`You are thirsty.` · `You play in the sun.` · `You have a kite.`)과 알림 · 명령(`Lunch is ready!`)은 쓰지 않는다. 아이가 겪지 않은 상태를 선생님이 정해 버리고, '상태 단정 + What do you do ~?' 꼴이 이어지면 낱말 맞히기처럼 들리기 때문이다(첫 프리뷰 2026-11-05, 13절 C202 (3) · (7) 잠정). 질문 글은 두 문장까지다(선생님 차례는 반응까지 합쳐 짧고, 카드 자리에는 AI 반응이 앞에 붙는다, 02-2 190줄) |
 | 노리는 단어 | 한 항목에 단원 단어 1~2개, 이 단원 단어만(`talk-targets`). (제안) 한 항목은 한 낱말을 노린다. 둘을 노리면 같은 갈래(동사끼리 · 명사끼리)만 묶는다(5절 '목표 잇기') |
 | 질문에 노리는 단어 없음 | 질문(`en`)과 쉬운 질문(`easyQuestion.en`)에 그 항목이 노리는 단어가 활용형까지 없다(`talk-targets`, A4-03). 예: go 를 노리는 항목에 `Where do you go?` ×, beach 를 노리는 항목에 `Do you like the beach?` × |
 | 처음 묻는 질문의 힌트 | 영어 문장 힌트(`hints[1]`)에 그 새 단어가 원형이나 활용형으로 든다(`talk-first-ask`). 새 단어는 아이 차례 글(힌트 · 답 예시 · 목표 표현) 어딘가에 원형으로 한 번 이상 나온다(`vocab-allocation`). 들려줄 말 · 오늘 쓸 말 예문은 이 셈에 들지 않는다 |
 | 같은 질문 | 한 카드 안에서 같은 선생님 질문(인사 · 필수 · 더 · 쉬운 질문을 합쳐)은 2번까지다(`talk-same-question`). **같은지는 질문 글의 마지막 물음표 문장으로 본다**(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시). 앱이 선생님 차례의 같은 질문을 이 문장으로 세기 때문이다(02-2 200줄 · 13절 C172, 실행 상한은 설정값 `talk.same_question_max`). 그래서 앞 장면이 달라도 `Sandwiches for lunch! What do you do?` 와 `Oh, cold water! What do you do?` 는 같은 질문이다. (제안) 한 카드 안의 마지막 물음표 문장은 모두 다르게 쓰고, 장면 없는 `What do you do?` 로 끝내지 않는다. 장면은 질문 문장 안에 둔다(`What do you do at the table?`). AI 질문도 같은 셈에 들어가므로(02-2 200줄 '카드 · AI 모두'), 이 단원에서 가장 흔한 꼴을 카드가 먼저 쓰면 셈이 빨리 찬다. 8절 질문 꼴을 돌려 쓰고, 14절 스스로 확인 명령이 이 셈을 본다 |
 | 뒤 수업 단어 | 배정 카드 m 은 어디에도(질문 · 힌트 · 답 예시 · 쉬운 질문 · 오늘 쓸 말 예문 · 들려줄 말 · 대사 · 끝인사 · 칭찬, (제안) 예상 흐름도) 배정 m+1 이후의 단원 단어를 쓰지 않는다(경고 `relation-early-use`). 단원 1 은 see · look · make 가 배정 3 새 단어라, 배정 1 · 2 카드에서는 `See you!` · `Look!` · `I see.` 도 걸린다 |
+
+### 장면 여는 질문 쓰는 법(정본 02-2:200 · 06:186, 13절 C206)
+
+1~3단계 카드에는 장면 여는 질문(`sceneOpener`)이 하나 있다. 짧은 준비 끝 바로 뒤(준비가 없으면 인사 끝 턴 뒤)에 앱이 대화 첫 질문으로 보이고 읽는다. AI 를 부르지 않으므로 기다림이 없다. 아이가 답하면 선생님(AI)이 그 답을 따라 이어 묻는다. 카드는 장면 · 주제만 준비하고, '예라고 하면 … · 아니요라고 하면 …' 같은 대본을 어느 칸(예상 흐름 포함)에도 두지 않는다(요청자 결정 2026-11-06 '장면 여는 질문 칸은 고정 대본 느낌 금지').
+
+| 규칙 | 내용 |
+|---|---|
+| 무엇인가 | 오늘 장면을 열고 아이 자기 이야기를 묻는 예 · 아니요 질문이다. 필수 질문이 아니고 카드 기회 · 학습 기회 셈에 들지 않으므로, 노리는 단어 · 목표 칸이 없다. 이 판의 카드는 모두 이 칸을 둔다(검증기 `talk-scene-opener` 는 개정 5 부터 칸이 없으면 막는다) |
+| 글 | `question.en` 은 장면 말 한 문장과 예 · 아니요 질문 하나로, 두 문장까지다. 물음표 문장은 마지막 하나뿐이다. 장면 말은 물건 · 곳의 말로 쓰고 아이의 상태 · 행동을 단정하지 않는다(C202 (3), 위 '홀로 뜻이 통함'과 같다). 예: `Bikes and ducks at the lake! Do you ride a bike?` |
+| 질문 꼴 | 질문 문장의 첫 낱말은 조동사 · be 이고 'or' 가 없다(`talk-scene-opener`). 3단계 단원 1 의 형태 범위(8절)에서 쓸 수 있는 첫 낱말은 `Do` · `Is` · `Are` · `Can` 이다. `Does`(3인칭 -s) · `Did` · `Was` · `Were` · `Will` 과 `Is there` 는 형태 범위 밖이다(`learning-elements`) |
+| 낱말 | (제안) 이 단원 단어 25개를 장면 여는 질문의 모든 영어 칸(질문 · 힌트 · 틀 · 답 예시 · 쉬운 질문)에 쓰지 않는다. 검증기는 그 카드가 노리는 단어만 막지만, 다른 단원 단어도 배정 차례(`relation-early-use`) · 단원 단어 목록(`unit-words-unlisted`)에 걸리기 쉽다. 다지기 · 보강 카드는 sea · beach · mountain 같은 곳 이름이 노리는 단어이므로, 장면 말을 물 · 해 · 나무 · 모래 같은 물건으로 그린다(`Hot sun and cool water!`). 어휘는 7절 범위다. weekend · Saturday · day · today · summer · trip · boat · picnic 은 범위 밖이고, `talk-scene-opener` 는 범위 밖 낱말이 하나라도 있으면 막는다 |
+| 같은 질문 | 마지막 물음표 문장 열쇠가 그 카드의 인사 · 필수 · 쉬운 · 더 이야기할 거리 질문과 달라야 한다(`talk-scene-opener`). 정본 예 `We are at the lake! Do you like the lake?` 는 배정 1 카드의 쉬운 질문 `Do you like the lake?` 와 열쇠가 같아서 걸렸다. 정본 예를 그대로 옮기지 않는다 |
+| 좋은 질문 | 요청자가 번호로 고른 표본의 기준이다. (가) 오늘 장면을 연다. (나) 아이가 실제로 하는 일 · 할 수 있는 일을 묻는다(C211 (1) 아이 이야기 우선). (다) 예 · 아니요 어느 답이든 선생님이 이어 물을 거리가 있다. (라) 그 카드 필수 질문의 주제와 겹치지 않는다. 겹치면 아이가 같은 답을 두 번 하거나 '아까 물었는데' 하고 느낀다. 주제 겹침은 14절 스크립트가 보지 못하므로, 카드 계획표에서 장면 여는 질문을 필수 질문 · 더 이야기할 거리의 장면 · 하는 일과 하나씩 견주어 사람이 확인한다(예: 장면 여는 질문이 집에서 책 읽기를 묻는데 필수 질문 1 이 `What do you do at home?` 이면 겹친다). (마) 대부분의 아이가 참으로 '예'라고 답할 수 있다. 답 예시가 `Yes` 로 시작하고, 받침 첫째 · 셋째에서 아이가 그 문장을 같이 말하기 때문이다. 장면 속 사실을 맞히는 질문(`Is the water cold?`)과 대답 뒤 이어 갈 거리가 좁은 질문(`Do you have a hat?`)은 피한다 |
+| 꼴 돌려 쓰기 | (제안) 질문 문장의 첫 세 낱말(정규화, 예 `do you ride` · `can you swim` · `do you play`)을 꼴로 본다. 같은 꼴은 변형마다 세 장까지이고, 같은 변형에서 차례가 바로 앞인 카드와 같은 꼴을 쓰지 않는다. 한 단원에서 장면 여는 질문의 마지막 물음표 문장 열쇠는 모두 다르다. 쉬운 질문에 이미 많은 `Do you like …?` 꼴은 장면 여는 질문에 쓰지 않는다(고정 카드 두 장의 필수 · 더 이야기할 거리 쉬운 질문 21개 가운데 13개가 이 꼴이다). 대본 느낌은 카드 한 장보다 한 단원에서 같은 첫 질문 꼴이 되풀이될 때 커진다. 14절 스스로 확인이 이 셈을 본다 |
+| 받침 칸 | `question.ko` 는 반말 뜻이다. `hintKo` 는 답 예시의 반말 뜻이다. `frameEn` 은 3단계에 꼭 있고(`talk-scene-opener`), 답 예시에서 동사나 아이 자기 말이 들어갈 자리를 `___` 하나로 바꾼 꼴이다(`Yes, I ___ a bike.` · `Yes, I can ___.`). `hintEn` 은 (제안) 답 예시와 같다. `answerExample` 은 `Yes` · `No` 로 시작하는 7낱말 이하 한 문장이다(`Yes, I ride a bike.`). 한 낱말 답(`Yes!`)도 받는 질문이라 대화에서는 그 답으로 충분하다. `easyQuestion` 은 물음표로 끝나는 더 쉬운 예 · 아니요 질문이고 `ko` 가 있으며, 장면 여는 질문 · 그 카드의 다른 질문과 열쇠가 다르다. `choices` 는 1단계 카드만 둔다(3단계 카드에 두면 막힌다) |
+| 예상 흐름 | `flow` 첫 줄은 모든 카드에서 `After the scene question, the teacher follows the child's answer.` 이다(spec 설계 5 '고정 대본 막기'). 주제를 덧붙이거나 '예 뒤 · 아니요 뒤' 갈래를 쓰지 않는다. 둘째 줄부터는 아래 '그 밖의 칸' 규칙대로 쓴다 |
 
 ### 받침 줄과 힌트
 
@@ -187,7 +203,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 |---|---|
 | `targetExpressions` | (제안) 3~5개. 이 카드에서 아이가 쓰게 할 한 문장(필수 질문 답 예시 꼴). 화면에 보이지 않는다 |
 | `closingLines` | (제안) 3~5줄. 오늘 쓸 말(다지기 · 보강은 그 카드가 노린 단원 단어)이 든 7낱말 이하 영어 문장과 `ko`(반말). 아이가 따라 말한다 |
-| `flow` | (제안) 3~5줄. AI 에게 주는 이야기 흐름의 예다. `The teacher …` 꼴로 짧게 쓰고, 필수 질문을 꺼내기 좋은 장면과 꺼낼 새 단어를 적는다. 모든 질문을 차례대로 묻는 꼴로 쓰지 않는다. 문장 길이 · 형태 검사 밖이지만 금지어 · 선생님 이름 검사는 받는다. weekend · day 는 여기에도 쓰지 않는다(0절 판단 2) |
+| `flow` | (제안) 3~5줄. 첫 줄은 `After the scene question, the teacher follows the child's answer.` 이다(5절 '장면 여는 질문 쓰는 법'). AI 에게 주는 이야기 흐름의 예다. `The teacher …` 꼴로 짧게 쓰고, 필수 질문을 꺼내기 좋은 장면과 꺼낼 새 단어를 적는다. 모든 질문을 차례대로 묻는 꼴로 쓰지 않는다. 문장 길이 · 형태 검사 밖이지만 금지어 · 선생님 이름 검사는 받는다. weekend · day 는 여기에도 쓰지 않는다(0절 판단 2) |
 | `todayTopicsKo` | 3~5개(`talk-today`). 아이 옆 칸의 한국어 짧은 이름꼴(`집에서 하는 일` · `바다와 산`) |
 | `topic` | 한국어 한 줄. AI 에게 '카드 주제'로 간다. 단원 주제 + 장면(`주말에 하는 일 · 가족과 강가 나들이`). '주말'은 여기와 제목 · 오늘 이야기 같은 한국어 칸에만 쓴다 |
 | `title` | 한국어 10자 안팎. 단원 안 카드의 제목이 서로 다르다. 선생님 이름을 쓰지 않는다 |
@@ -392,7 +408,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 
 ## 12. 출력 규격(Zod `TalkLessonSchema` · `TalkCardSchema` 와 1:1)
 
-모르는 키는 거부된다. 필드 이름 · 꼴을 그대로 쓴다. 이 절은 `src/core/seed/schema/talk.ts`(TalkCardSchema · TalkGreetingQuestionSchema · TalkTodayWordSchema · TalkRequiredSchema · TalkMoreSchema)와 `src/core/seed/schema/lesson.ts`(TalkLessonSchema)의 꼴이다. 회화 plan 묶음 3 구현이 끝난 뒤(fix 1 09:2x) 2026-10-30 09:3x 에 다시 대조했다. 코드 검토에서 바뀌면 컨트롤러가 이 절을 다시 맞춘다. 옛 꼴 카드(turns · moreTalk · questions · firstQuestion 이 있는 카드)는 모르는 키라 거부되고, 검증기가 `talk-card-v1` 오류 한 줄을 더 낸다.
+모르는 키는 거부된다. 필드 이름 · 꼴을 그대로 쓴다. 이 절은 `src/core/seed/schema/talk.ts`(TalkCardSchema · TalkGreetingQuestionSchema · TalkTodayWordSchema · TalkSceneOpenerSchema · TalkRequiredSchema · TalkMoreSchema)와 `src/core/seed/schema/lesson.ts`(TalkLessonSchema)의 꼴이다. 회화 plan 묶음 3 구현이 끝난 뒤(fix 1 09:2x) 2026-10-30 09:3x 에 다시 대조했다. 코드 검토에서 바뀌면 컨트롤러가 이 절을 다시 맞춘다. 옛 꼴 카드(turns · moreTalk · questions · firstQuestion 이 있는 카드)는 모르는 키라 거부되고, 검증기가 `talk-card-v1` 오류 한 줄을 더 낸다.
 
 파일 겉: `{ "area": "talk", "level": 3, "unit": <단원>, "lessons": [ … ] }`. 회화 수업에는 `preview` 칸이 없다.
 
@@ -411,6 +427,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 | `card.greeting` | `{ "questions": [인사 질문] }` | 인사 질문 = `{ "question": {"en", "ko"}, "hintKo", "hintEn", "frameEn", "answerExample", "imageKey"? }`. 3단계는 `frameEn` 이 있어야 한다 |
 | `card.todayWords` | `[{ "word", "meaningKo", "example", "modelLine", "imageKey"? }]` | 배정은 새 단어 k 개, 다지기 · 보강은 `[]` |
 | `card.prep` | 낱말 id 목록 | 배정 카드만 `talk.prep_words.1-3` 개. 다지기 · 보강은 칸을 두지 않는다 |
+| `card.sceneOpener` | `{ "question": {"en", "ko"}, "hintKo", "hintEn", "frameEn", "answerExample", "easyQuestion": {"en", "ko"} }` | 장면 여는 질문(5절). 모든 카드에 하나. 3단계는 `frameEn` 이 있어야 한다. `choices`(1단계만) · `imageKey` · `targets` · `goals` 는 두지 않는다(모르는 키) |
 | `card.required` | 필수 질문 1개 이상 | 필수 질문 = `{ "no", "en", "ko", "targets", "goals", "demands"?, "ask", "hintKo", "hints": [영어 틀, 영어 문장], "answerExample", "easyQuestion": {"en", "ko"}, "imageKey"? }`. `firstForm` · `choices` · `purpose` · `usablePhrases` 는 두지 않는다 |
 | `card.more` | 더 이야기할 거리 | 필수 질문과 같은 꼴(`firstForm` · `choices` 칸은 꼴에 없다). `ask` 는 모두 `re_ask` |
 | `card.flow` | 영어 글 1개 이상 | 예상 흐름 |
@@ -422,7 +439,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
 
 두지 않는 칸: `card.missions` · `card.roleSwap` · `card.purpose` · 항목의 `firstForm` · `choices` · `usablePhrases` · `purpose`, 옛 칸 `turns` · `moreTalk` · `questions` · `firstQuestion` · `exampleKo` · 인사의 `twoAnswers`.
 
-예시: 단원 1 배정 2 · 변형 2(꼴을 보이는 예이니 그대로 옮기지 않는다. 이 칸을 만들 때도 새로 쓴다). 이 카드 하나만 든 파일을 p13d 규격 파일 사본에 두고 `pnpm -s seed:validate --areas talk` 로 확인했다(2026-10-30 첫 판, 묶음 3 fix 1 뒤의 검증기로 09:3x 에 다시 돌림. 2026-11-05 둘째 판에서 필수 3 · 5 와 더 1 · 2 의 질문을 마지막 물음표 문장이 겹치지 않게 고치고, 열쇠를 맞춘 검증기로 다시 돌림. 넷째 판에서 필수 3 · 더 1 · 2 의 앞 문장을 물건 · 장면 말로 바꾸고 다시 돌림): 칸 오류 0 · 칸 경고 0(단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다) · 14절 스스로 확인 명령 '걸림 없음'(같은 질문 열쇠는 카드에서 가장 많은 것이 1번).
+예시: 단원 1 배정 2 · 변형 2(꼴을 보이는 예이니 그대로 옮기지 않는다. 이 칸을 만들 때도 새로 쓴다). 이 카드 하나만 든 파일을 p13d 규격 파일 사본에 두고 `pnpm -s seed:validate --areas talk` 로 확인했다(2026-10-30 첫 판, 묶음 3 fix 1 뒤의 검증기로 09:3x 에 다시 돌림. 2026-11-05 둘째 판에서 필수 3 · 5 와 더 1 · 2 의 질문을 마지막 물음표 문장이 겹치지 않게 고치고, 열쇠를 맞춘 검증기로 다시 돌림. 넷째 판에서 필수 3 · 더 1 · 2 의 앞 문장을 물건 · 장면 말로 바꾸고 다시 돌림. 2026-11-07 다섯째 판에서 장면 여는 질문 칸과 예상 흐름 첫 줄을 더하고, 장면 여는 질문 검사가 든 검증기로 다시 돌림. 같은 날 설계 검토 I-1 뒤 장면 여는 질문을 필수 1 의 '집에서 하는 일'과 겹치지 않는 집 밖 놀이로 바꾸고 다시 돌림): 칸 오류 0 · 칸 경고 0(단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다) · 14절 스스로 확인 명령 '걸림 없음'(같은 질문 열쇠는 카드에서 가장 많은 것이 1번).
 
 ```json
 {
@@ -449,6 +466,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
       {"word": "learn", "meaningKo": "배우다", "example": "We learn a new game.", "modelLine": "I learn."}
     ],
     "prep": ["watch", "listen", "sleep"],
+    "sceneOpener": {"question": {"en": "Red kites and big trees! Do you fly kites?", "ko": "빨간 연이랑 큰 나무야! 너는 연 날려?"}, "hintKo": "응, 나는 연을 날려.", "hintEn": "Yes, I fly kites.", "frameEn": "Yes, I ___ kites.", "answerExample": "Yes, I fly kites.", "easyQuestion": {"en": "Do you like kites?", "ko": "연 좋아해?"}},
     "required": [
       {"no": 1, "en": "What do you do at home?", "ko": "집에서 뭐 해?", "targets": ["watch"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "우리는 축구 경기를 봐.", "hints": ["We ___ a soccer game.", "We watch a soccer game."], "answerExample": "We watch a soccer game.", "easyQuestion": {"en": "Do you like soccer games?", "ko": "축구 경기 좋아해?"}},
       {"no": 2, "en": "In the car, what do you do?", "ko": "차 안에서 뭐 해?", "targets": ["listen"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 노래를 들어.", "hints": ["I ___ to songs.", "I listen to songs."], "answerExample": "I listen to songs.", "easyQuestion": {"en": "Do you like songs?", "ko": "노래 좋아해?"}, "imageKey": "car"},
@@ -463,7 +481,7 @@ effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
       {"no": 4, "en": "Your family! What do they do at home?", "ko": "가족! 가족은 집에서 뭐 해?", "targets": ["watch"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "가족은 축구 경기를 봐.", "hints": ["They ___ a soccer game.", "They watch a soccer game."], "answerExample": "They watch a soccer game.", "easyQuestion": {"en": "Do they like soccer?", "ko": "가족은 축구 좋아해?"}},
       {"no": 5, "en": "What do you do on the bus?", "ko": "버스에서 뭐 해?", "targets": ["listen"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 음악을 들어.", "hints": ["I ___ to music.", "I listen to music."], "answerExample": "I listen to music.", "easyQuestion": {"en": "Do you like the bus?", "ko": "버스 좋아해?"}, "imageKey": "bus"}
     ],
-    "flow": ["The teacher says hello and asks how the child is.", "The teacher asks what the child does at home and in the car.", "The teacher brings in study and learn when the child talks about a desk or a new game.", "The teacher asks about the child's answers, one question at a time."],
+    "flow": ["After the scene question, the teacher follows the child's answer.", "The teacher asks what the child does at home and in the car.", "The teacher brings in study and learn when the child talks about a desk or a new game.", "The teacher asks about the child's answers, one question at a time."],
     "todayTopicsKo": ["집에서 하는 일", "차 안에서 하는 일", "새 놀이 배우기"],
     "closingLines": [
       {"en": "We watch a soccer game.", "ko": "우리는 축구 경기를 봐."},
@@ -519,9 +537,9 @@ PY
 그다음 하나씩 확인한다.
 
 1. 카드 수가 호출의 '만들 카드'와 같다(전부면 변형 수 × (정규 + 보강), 고정 카드 포함). (kind, lessonNo, variant) 겹침 없음.
-2. 카드마다 인사 1턴(`frameEn` 포함), 필수 질문 수가 4절 하한 · 상한 안, 더 이야기할 거리 `talk.more_talk_turns` 개 이상(모두 re_ask), 번호가 1부터 차례대로. 필수 질문 · 더 이야기할 거리 · 쉬운 질문마다 한국어 뜻 `ko`. `firstForm` · `choices` · `missions` · `roleSwap` · `purpose` · 옛 칸 없음.
+2. 카드마다 인사 1턴(`frameEn` 포함), 장면 여는 질문 하나(질문 · 뜻 · 뜻 힌트 · 영어 문장 힌트 · 영어 틀 · 답 예시 · 쉬운 질문), 예상 흐름 첫 줄이 5절의 고정 줄, 필수 질문 수가 4절 하한 · 상한 안, 더 이야기할 거리 `talk.more_talk_turns` 개 이상(모두 re_ask), 번호가 1부터 차례대로. 필수 질문 · 더 이야기할 거리 · 쉬운 질문마다 한국어 뜻 `ko`. `firstForm` · `choices` · `missions` · `roleSwap` · `purpose` · 옛 칸 없음.
 3. 배정 카드: `newWords` · `todayWords` 가 배정표와 같고 `prep` 이 필수 질문 1~3번의 새 단어이며, 새 단어마다 처음 묻는 필수 질문이 하나씩이고 그 `hints[1]` 에 그 새 단어. 다지기 · 보강 카드: 처음 묻는 질문 없음, 다시 묻는 필수 질문 k 개 이상, `todayWords` `[]`, `prep` 없음.
-4. 질문 · 쉬운 질문에 그 항목이 노리는 단어가 없다. 선생님 질문(인사 · 필수 · 더 · 쉬운 질문)의 마지막 물음표 문장(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시)이 한 카드에서 글자가 같은 것은 2번까지다. 앱이 같은 질문을 이 문장으로 세기 때문이다(5절 '같은 질문'). 장면 없는 `What do you do?` 로 끝나는 질문이 없다. 질문이 홀로 뜻이 통한다. 쉬운 질문이 예 · 아니요 꼴이다.
+4. 질문 · 쉬운 질문에 그 항목이 노리는 단어가 없다. 선생님 질문(인사 · 필수 · 더 · 쉬운 질문)의 마지막 물음표 문장(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시)이 한 카드에서 글자가 같은 것은 2번까지다. 앱이 같은 질문을 이 문장으로 세기 때문이다(5절 '같은 질문'). 장면 없는 `What do you do?` 로 끝나는 질문이 없다. 질문이 홀로 뜻이 통한다. 쉬운 질문이 예 · 아니요 꼴이다. 장면 여는 질문은 두 문장 안이고 물음표 문장이 마지막 하나이며, 첫 낱말이 `Do` · `Is` · `Are` · `Can` 이고 'or' 가 없다. 그 열쇠가 카드의 다른 질문과 다르고, 답 예시가 `Yes` · `No` 로 시작하며, 이 단원 단어가 없다. 한 단원에서 장면 여는 질문 열쇠가 모두 다르고, 꼴(첫 세 낱말)이 변형마다 세 장까지이며 바로 앞 카드와 다르고, `Do you like` 꼴이 없다(5절 '장면 여는 질문 쓰는 법'). 장면 여는 질문이 그 카드 필수 질문 · 더 이야기할 거리와 주제가 겹치지 않는다(스크립트가 보지 못해 눈으로 본다).
 5. 목표: 동사 항목은 [talk-3-1-1], 명사 항목은 [talk-3-1-2], 한 항목에 두 갈래를 섞지 않음, 카드 goals = 항목 목표의 합이고 카드 목표마다 필수 질문이 있다. talk-3-1-1 항목의 답 예시는 'I · We · They + 그 동사'로 시작한다.
 6. 힌트: `hints` 두 단, 영어 틀에 `___` 하나, 영어 문장 = 답 예시, `hintKo` 는 반말 뜻.
 7. 모든 영어 문장 7낱말 이하(예상 흐름 밖), 8절 꼴 밖의 형태 없음(3인칭 -s · don't · 진행형 · 과거 · There is · Let's · 명령문 · 부정 명령문 `Don't ~` · on + 요일), 뒤 배정 수업 단원 단어 없음.
@@ -533,7 +551,7 @@ PY
 13. 인물: n · m 상한 안, 부르는 말 없음, 아이 차례 영어에 이름 없음, 표 밖 이름 없음.
 14. 한국어 뜻이 반말이고 영어 뜻과 맞다. 13절 금지 목록에 걸리는 말이 없다.
 
-검증기가 이 카드에 거는 규칙(`check-talk.ts` · 공통 검사 · 단원 사이 검사, 2026-10-30 09:3x 대조. `talk-same-question` 은 2026-11-05 다시 대조). 오류는 막고 경고는 고치거나 까닭을 보고한다.
+검증기가 이 카드에 거는 규칙(`check-talk.ts` · 공통 검사 · 단원 사이 검사, 2026-10-30 09:3x 대조. `talk-same-question` 은 2026-11-05, `talk-scene-opener` 는 2026-11-07 다시 대조). 오류는 막고 경고는 고치거나 까닭을 보고한다.
 
 | 규칙 | 보는 것 | 브리프 |
 |---|---|---|
@@ -549,6 +567,7 @@ PY
 | `talk-support` | 쉬운 질문이 물음표로 끝나고 그 질문과 정규화한 글이 다름 | 5절 '받침 줄' |
 | `talk-hints` | `hints` 가 두 단(영어 틀 · 영어 문장), 인사 질문에 `frameEn`, `usablePhrases` 없음 | 3 · 5절 |
 | `talk-same-question` | 마지막 물음표 문장(실행 셈과 같은 열쇠, `cardQuestionKeyOf`)이 같은 선생님 질문(인사 · 필수 · 더 · 쉬운 질문) 2번까지 | 5절 |
+| `talk-scene-opener` | 1~3단계 개정 5 부터 칸이 있음, 두 문장 안 · 물음표 문장 마지막 하나 · 첫 낱말 조동사 · be · 'or' 없음, 칸마다 `{NAME}` 하나까지, 범위 밖 낱말 없음(카드 글 범위: 단계 이하 · 새 단어), 인사 · 필수 · 쉬운 · 더 질문과 다름, 뜻 · 답 예시(`Yes` · `No` 로 시작), 쉬운 질문이 물음표로 끝나고 다름, 3단계 `frameEn`, 1단계만 `choices`, 그 카드가 노리는 단어 없음 | 5절 '장면 여는 질문 쓰는 법' |
 | `talk-more` | 더 이야기할 거리 `talk.more_talk_turns` 개 이상 · 모두 `re_ask` | 5절 |
 | `talk-ko` | 1~4단계 뜻: 필수 질문 · 더 이야기할 거리 · 쉬운 질문(13절 C194 (2)) · 정리 대사 · 안전한 대사 · 끝인사 · 안전 상한 끝인사의 `ko` | 3 · 5절 |
 | `talk-today` | `todayWords` 낱말 = `newWords`, `todayTopicsKo` 3~5개 | 5절 |
@@ -557,7 +576,7 @@ PY
 | `topic-variants` · `relation-early-use` · `relation-not-reused` · `remedial-coverage` | 두 변형의 새 단어 · 분량, 뒤 배정 수업 단어 먼저 씀(경고), 다지기에 다시 안 나옴(경고), 보강 덮기 | 5 · 10 · 11절 |
 | `talk-known-days` · `talk-unit-incomplete` · `talk-goals-pending` | 단원 덮기(다지기 · 보강 카드의 필수 질문과 모든 카드의 더 이야기할 거리를 셈, 배정 카드의 필수 질문은 세지 않음)는 단원을 다 채웠을 때만 오류, 덜 찼으면 변형마다 경고 하나, 단원 목표가 없으면 경고 | 5 · 11절 |
 
-스스로 확인 명령. 검증기가 보지 않는 것(어휘 범위 · 목표 잇기 · 답 예시 첫머리 · 힌트 꼴 · 쉬운 질문 꼴 · 선생님 삶 문장 · weekend · day · 이름 · `{NAME}` 뒤 조사 · 인물 셈)과, 검증기 `talk-same-question` 과 같은 같은 질문 열쇠 셈(마지막 물음표 문장, 상한은 `<뿌리>/settings.json` 의 `talk.same_question_max`) · 장면 없는 `What do you do?` 를 본다. `<뿌리>` · `<단원>` · `<k>`(설정값 표의 `unit.new_words_per_lesson.1-3`)를 바꿔 돌린다. '스스로 확인 걸림 없음'이 나올 때까지 고친다(고침 회차는 검증 고침과 따로 세지 않는다).
+스스로 확인 명령. 검증기가 보지 않는 것(어휘 범위 · 목표 잇기 · 답 예시 첫머리 · 힌트 꼴 · 쉬운 질문 꼴 · 선생님 삶 문장 · weekend · day · 이름 · `{NAME}` 뒤 조사 · 인물 셈 · 장면 여는 질문의 단원 단어 · 꼴 돌려 쓰기 · 예상 흐름 첫 줄)과, 검증기 `talk-same-question` 과 같은 같은 질문 열쇠 셈(마지막 물음표 문장, 상한은 `<뿌리>/settings.json` 의 `talk.same_question_max`) · 장면 없는 `What do you do?` 를 본다. `<뿌리>` · `<단원>` · `<k>`(설정값 표의 `unit.new_words_per_lesson.1-3`)를 바꿔 돌린다. '스스로 확인 걸림 없음'이 나올 때까지 고친다(고침 회차는 검증 고침과 따로 세지 않는다).
 
 ```sh
 python3 - <뿌리> <단원> <k> <<'PY'
@@ -582,6 +601,7 @@ def surfaces(entries):
     return out
 
 by_word = {v["word"]: v for v in vocab}
+unit_all = surfaces(by_word[w] for w in words)
 base = surfaces(v for v in vocab if v["level"] <= 2) | {"we", "they"}
 TEACHER_ONLY = {"where"}
 SUFFIX = {"'m": "am", "'re": "are", "'s": "is", "'ve": "have", "'ll": "will", "'d": "would", "n't": "not"}
@@ -593,6 +613,9 @@ SELF_LIFE = re.compile(r"(?<![A-Za-z'])I\s+(?!like\b|am\b|see\b|can\b|know\b)[a-
 TOKEN = re.compile(r"\{[A-Z_]+\}|_{3,}|\d+|[A-Za-z]+(?:'[A-Za-z]+)*(?:-[A-Za-z]+)*")
 SAME_MAX = next(s["value"] for s in json.load(open(f"{root}/settings.json"))["settings"]
                 if s["key"] == "talk.same_question_max")
+FLOW_FIRST = "After the scene question, the teacher follows the child's answer."
+OPENER_STARTS = {"do", "is", "are", "can"}
+OPENER_FRAME_MAX = 3
 CONTRACT = [(r"\bwon't\b", "will not"), (r"\bcan't\b", "can not"), (r"\bshan't\b", "shall not"),
             (r"\b(\w+)n't\b", r"\1 not"), (r"\bcannot\b", "can not"), (r"\blet's\b", "let us"),
             (r"\b(\w+)'m\b", r"\1 am"), (r"\b(\w+)'re\b", r"\1 are"), (r"\b(\w+)'ve\b", r"\1 have"),
@@ -646,6 +669,43 @@ for lesson in lessons:
         teacher.append((f"greeting.{i}.question.en", g["question"]["en"]))
         korean += [(f"greeting.{i}.question.ko", g["question"]["ko"]), (f"greeting.{i}.hintKo", g["hintKo"])]
         child += [(f"greeting.{i}.{k}", g[k]) for k in ("hintEn", "frameEn", "answerExample") if k in g]
+    so = card.get("sceneOpener")
+    if so is None:
+        say(lesson, "sceneOpener", "장면 여는 질문이 없다(5절 '장면 여는 질문 쓰는 법', C206)")
+    else:
+        teacher += [("sceneOpener.question.en", so["question"]["en"]), ("sceneOpener.easyQuestion.en", so["easyQuestion"]["en"])]
+        korean += [("sceneOpener.question.ko", so["question"].get("ko", "")), ("sceneOpener.hintKo", so["hintKo"]),
+                   ("sceneOpener.easyQuestion.ko", so["easyQuestion"].get("ko", ""))]
+        child += [(f"sceneOpener.{k}", so[k]) for k in ("hintEn", "frameEn", "answerExample") if k in so]
+        sents = [x.strip() for x in re.findall(r"[^.!?]+[.!?]+", so["question"]["en"]) if x.strip()]
+        asked = [x for x in sents if x.endswith("?")]
+        if len(sents) > 2 or len(asked) != 1 or not sents[-1].endswith("?"):
+            say(lesson, "sceneOpener.question.en", f"장면 말 한 문장 + 예 · 아니요 질문 하나(물음표 문장은 마지막 하나)가 아니다: {so['question']['en']}")
+        last = sents[-1] if sents else ""
+        first = (re.findall(r"[A-Za-z']+", last) or [""])[0].lower()
+        if first not in OPENER_STARTS:
+            say(lesson, "sceneOpener.question.en", f"질문의 첫 낱말 {first} 가 Do · Is · Are · Can 이 아니다: {last}")
+        if re.search(r"(?i)\bor\b", last):
+            say(lesson, "sceneOpener.question.en", f"질문에 'or' 가 있다(고르기 질문이 아니다): {last}")
+        if question_key(last).startswith("do you like"):
+            say(lesson, "sceneOpener.question.en", f"'Do you like' 꼴은 쓰지 않는다(5절 '꼴 돌려 쓰기'): {last}")
+        if not re.match(r"^(Yes|No)\b", so["answerExample"]):
+            say(lesson, "sceneOpener.answerExample", f"답 예시가 Yes · No 로 시작하지 않는다: {so['answerExample']}")
+        if "___" not in so.get("frameEn", ""):
+            say(lesson, "sceneOpener.frameEn", "3단계 영어 틀이 없거나 빈칸 ___ 이 없다")
+        if so.get("hintEn") != so["answerExample"]:
+            say(lesson, "sceneOpener.hintEn", "영어 문장 힌트와 답 예시가 다르다(제안: 같게)")
+        if not re.match(r"^(Do|Are|Is|Can|Have)\b", so["easyQuestion"]["en"]):
+            say(lesson, "sceneOpener.easyQuestion.en", f"쉬운 질문이 예 · 아니요 꼴이 아니다: {so['easyQuestion']['en']}")
+        for k in ("question.en", "hintEn", "frameEn", "answerExample", "easyQuestion.en"):
+            text = so[k.split(".")[0]]["en"] if "." in k else so.get(k, "")
+            hit = sorted({t.lower() for t in re.findall(r"[A-Za-z]+", text)} & unit_all)
+            if hit:
+                say(lesson, f"sceneOpener.{k}", f"장면 여는 질문에 이 단원 단어 {hit} 가 있다(5절 '낱말'): {text}")
+        lesson["_frame"] = " ".join(question_key(last).split()[:3])
+        lesson["_opener"] = question_key(last)
+    if not card["flow"] or card["flow"][0] != FLOW_FIRST:
+        say(lesson, "flow.0", f"예상 흐름 첫 줄이 '{FLOW_FIRST}' 가 아니다(5절)")
     goals_seen = set()
     for group in ("required", "more"):
         for i, it in enumerate(card[group]):
@@ -694,6 +754,12 @@ for lesson in lessons:
     asks = [(f"greeting.{i}.question.en", g["question"]["en"]) for i, g in enumerate(card["greeting"].get("questions", []))]
     asks += [(f"{group}.{i}.{part}", q) for group in ("required", "more") for i, it in enumerate(card[group])
              for part, q in (("en", it["en"]), ("easyQuestion.en", it["easyQuestion"]["en"]))]
+    if so is not None:
+        opener_key = question_key(so["question"]["en"])
+        clash = [path for path, q in asks if question_key(q) in (opener_key, question_key(so["easyQuestion"]["en"]))]
+        if clash:
+            say(lesson, "sceneOpener", f"장면 여는 질문 · 그 쉬운 질문의 열쇠가 카드의 다른 질문과 같다: {clash}")
+        asks += [("sceneOpener.question.en", so["question"]["en"]), ("sceneOpener.easyQuestion.en", so["easyQuestion"]["en"])]
     by_key = {}
     for path, q in asks:
         by_key.setdefault(question_key(q), []).append(path)
@@ -735,6 +801,26 @@ for lesson in lessons:
     lesson["_names"] = {n for n in NAMES for _, t in teacher + child
                         if re.search(rf"(?<![A-Za-z]){n}(?![A-Za-z])", t)}
 
+rank = {"assigned": 0, "reinforce": 0, "remedial": 1}
+for v in sorted({l["variant"] for l in lessons}):
+    row = sorted((l for l in lessons if l["variant"] == v and "_frame" in l), key=lambda l: (rank[l["kind"]], l["lessonNo"]))
+    frames = {}
+    for l in row:
+        frames.setdefault(l["_frame"], []).append(f"{l['kind']} {l['lessonNo']}")
+    for f, who in frames.items():
+        if len(who) > OPENER_FRAME_MAX:
+            problems.append(f"변형 {v}: 장면 여는 질문 꼴 '{f}' 이 {len(who)}장이다({OPENER_FRAME_MAX}장까지, 5절 '꼴 돌려 쓰기'): {who}")
+    for a, b in zip(row, row[1:]):
+        if a["_frame"] == b["_frame"]:
+            problems.append(f"변형 {v}: {a['kind']} {a['lessonNo']} 과 {b['kind']} {b['lessonNo']} 의 장면 여는 질문 꼴 '{a['_frame']}' 이 이어진다")
+    print(f"장면 여는 질문 꼴(첫 세 낱말) 변형 {v}: " + " · ".join(f"{f} {len(w)}" for f, w in frames.items()))
+opener_keys = {}
+for l in lessons:
+    if "_opener" in l:
+        opener_keys.setdefault(l["_opener"], []).append(f"{l['kind']} {l['lessonNo']} v{l['variant']}")
+for k, who in opener_keys.items():
+    if len(who) > 1:
+        problems.append(f"단원: 장면 여는 질문 '{k}' 이 {len(who)}장에 있다(모두 다르게): {who}")
 N = len(lessons)
 n = sum(1 for l in lessons if l["_names"])
 m = sum(1 for l in lessons if "Momo" in l["_names"])
@@ -778,6 +864,7 @@ pnpm -s seed:validate --root <뿌리> --areas talk --json | python3 -c 'import j
 단원 덮기(전부일 때): talk.known_days 에 닿은 단원 단어 <n>/25
 보강 덮기(전부일 때): 변형마다 1번 이상 <n> · 2번 이상 <n>
 같은 질문: 카드마다 가장 많이 나온 마지막 물음표 문장 열쇠 <n>번(상한 2) · 장면 없는 What do you do? <n>
+장면 여는 질문: 카드마다 있음 <n>/<n> · 꼴(첫 세 낱말) 변형마다 가장 많은 수 <n>(3 까지) · 바로 앞 카드와 같은 꼴 <n> · 단원 안 같은 질문 <n> · Do you like 꼴 <n> · 필수 질문과 주제 겹침(눈으로 확인) <n>
 인물: 이름이 나온 카드 <n> · 그 가운데 Momo 카드 <n> · 쓴 이름 <…>
 선생님: 선생님 이름 · 토리 · {TEACHER} 0 · 선생님 삶 문장 0
 스스로 확인: 14절 1~14 각각 확인함 · 못 함(까닭)
@@ -807,4 +894,7 @@ pnpm -s seed:validate --root <뿌리> --areas talk --json | python3 -c 'import j
 | 10 | 다른 영역 3단계 단원 1 장면(친구가 놀러 옴)을 쓰지 않음 | 같은 날 같은 단원을 하는 아이에게 같은 이야기가 겹친다(브리프 task-talk-4a) |
 | 11 | 다지기 6~10 · 보강 1~3 이 다룰 낱말 묶음, 배정 2~5 의 다시 묻기 필수 질문 하나 | 정본은 '몰아서 다룰 단원 어휘 묶음'의 나누는 법을 정하지 않았다. 다지기 6 은 0절 판단 4 |
 | 13 | 가족 캐묻기 · 무서운 자연 장면 금지 | 주말 나들이 주제에 물 · 산 · 불 장면이 들어오기 쉽다 |
+| 5 · 14 | 장면 여는 질문에 이 단원 단어 25개를 모두 쓰지 않음 | 검증기는 그 카드가 노리는 단어만 막지만, 배정 차례 · 단원 단어 목록 경고에 걸리기 쉽다. 장면 여는 질문은 학습 기회가 아니라 장면을 여는 자리다 |
+| 5 · 14 | 장면 여는 질문 꼴 돌려 쓰기(첫 세 낱말이 같은 꼴은 변형마다 세 장까지 · 바로 앞 카드와 다르게 · 단원 안 질문 모두 다르게 · `Do you like` 꼴 안 씀) | 대본 느낌은 한 단원에서 같은 첫 질문 꼴이 되풀이될 때 커진다(요청자 결정 2026-11-06 '고정 대본 느낌 금지'). 고정 카드 두 장의 쉬운 질문 21개 가운데 13개가 `Do you like` 꼴이다(장면 여는 질문 보고 9절 3) |
+| 5 | 장면 여는 질문의 `hintEn` = 답 예시, 좋은 질문 기준 (가)~(마) | 인사 질문 칸과 같은 꼴이다. 기준은 요청자가 번호로 고른 표본 쪽의 추천 기준이다 |
 | 14 | 스스로 확인 명령(python 한 덩이) · 고정 카드 붙이기 명령 | 검증기가 회화 카드의 어휘 범위 · 목표 잇기 · 선생님 삶 문장을 보지 않는다. 고정 카드는 정규화 해시(키 정렬 · 빈칸 없는 JSON 의 sha256)로 대조한다(회화 plan 정한 것 16 · 읽기 3단계 승인 수업과 같은 꼴) |

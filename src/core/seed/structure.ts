@@ -253,6 +253,23 @@ export type TalkFirstForm = (typeof TALK_FIRST_FORMS)[number];
 export const TALK_CARD_ITEM_KINDS = ["required", "more", "none"] as const;
 /** 6.3 회화 카드의 '1~3단계' 구간(인사 질문 · 짧은 준비 늘 · 그림 키 · 소리 줄). 단계 규격 band 로 견준다. */
 export const TALK_LOW_BAND = "1-3";
+/** 신호 말 자리(02-2:212 · C207): 꺼내기 · 같이 말하기(받침 첫째) · 고르기(선택지). 시드 '신호 말' 목록의 첫 열쇠다. */
+export const TALK_CUE_PLACES = ["introduce", "together", "choices"] as const;
+export type TalkCuePlace = (typeof TALK_CUE_PLACES)[number];
+/** 신호 말 단계 구간(02-2:212 '1단계 · 2~3단계'). 시드 '신호 말' 목록의 둘째 열쇠다. */
+export const TALK_CUE_BANDS = ["1", "2-3"] as const;
+export type TalkCueBand = (typeof TALK_CUE_BANDS)[number];
+/** 상황 줄 자리(02-2:208 · C209): 인사 끝 · 받침 첫째(같이 말하기) · 둘째(쉬운 질문) · 셋째(닫기) · 들리지 않음. */
+export const TALK_SITUATION_PLACES = [
+  "greeting_end",
+  "together",
+  "easy",
+  "close",
+  "nospeech",
+] as const;
+export type TalkSituationPlace = (typeof TALK_SITUATION_PLACES)[number];
+/** 상황 금지 구 묶음(02-2:208 (다)): 모든 상황 차례 · 들리지 않음에 더함. */
+export const TALK_SITUATION_FORBIDDEN_SCOPES = ["all", "nospeech"] as const;
 
 // ── 꼴 · 구조 수(C54 (2), 줄마다 정본 절) ─────────────────────────
 
@@ -716,6 +733,14 @@ export const SEED_FILES = {
   talkWaitLines: "lists/talk-wait-lines.json",
   /** 회화 선생님 명단(5절, C130). 빌드에 묶고 DB 에 넣지 않는다. */
   teachers: "teachers.json",
+  /** 회화 1~3단계 신호 말(C207 · 'AI 몫 넓힘' plan 정한 것 5). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkCueLines: "lists/talk-cue-lines.json",
+  /** 회화 1~3단계 상황 줄 · 상황 금지 구(C209 · C211). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkSituationLines: "lists/talk-situation-lines.json",
+  /** 회화 상황 차례의 감탄 · 수업 말 허용 낱말과 느낌 낱말(C209 · C211 (1)). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkAllowedWords: "lists/talk-allowed-words.json",
+  /** 회화 지어낸 경험 꼴(C211 (1), 6.4 실시간 검사 · 대본 셈). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkMadeUpPhrases: "lists/talk-made-up-phrases.json",
 } as const;
 export type SeedFileName = keyof typeof SEED_FILES;
 

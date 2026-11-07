@@ -2,7 +2,11 @@
 // 더 이야기할 거리 · 회화 단원 덮기 · 회화 미션 · 역할 바꾸기 행, C189). 증명: AC-15m(거부 목록 · 안 거부 목록 · 일부 단원 경고) · AC-7a(완전성 몫).
 import { describe, expect, it } from "vitest";
 import type { SeedIssue } from "@/core/seed/check-lesson";
-import { checkTalkCard, checkTalkUnit } from "@/core/seed/check-talk";
+import {
+  checkTalkCard,
+  checkTalkUnit,
+  TALK_SCENE_OPENER_EXEMPT,
+} from "@/core/seed/check-talk";
 import { buildReferenceIndex } from "@/core/seed/reference-index";
 import { type TalkLesson, TalkLessonSchema } from "@/core/seed/schema/lesson";
 import {
@@ -11,7 +15,11 @@ import {
   TalkLevelSpecSchema,
   type UnitGoal,
 } from "@/core/seed/schema/reference";
-import { type TalkRequired, talkCardKindOf } from "@/core/seed/schema/talk";
+import {
+  type TalkRequired,
+  type TalkSceneOpener,
+  talkCardKindOf,
+} from "@/core/seed/schema/talk";
 import {
   bandKey,
   lessonFilePath,
@@ -916,5 +924,373 @@ describe("회화 단계 규격 새 꼴 · 관계 · 문항 번호", () => {
     expect(items[0]?.path).toBe("card.greeting.questions.0");
     expect(items[greeting]?.path).toBe("card.required.0");
     expect(items.at(-1)?.path).toBe(`card.more.${lesson.card.more.length - 1}`);
+  });
+});
+
+// ── 장면 여는 질문(06:186 · C206 — 'AI 몫 넓힘' plan 묶음 3 · AC-5 (가)) ──
+
+/** 견본 어휘(기능어 · like)만 쓴 장면 여는 질문. 단계 규격에 맞춰 3단계는 영어 틀, 선택지 단계(1단계)는 선택지 둘을 둔다. */
+function openerFor(level: number): TalkSceneOpener {
+  const spec = specOf(level);
+  return {
+    question: {
+      en: "This is it. Do we like it?",
+      ko: "이거야. 우리 이거 좋아해?",
+    },
+    hintKo: "응, 좋아.",
+    hintEn: "Yes, I like it.",
+    ...(spec.frameInTurns ? { frameEn: "Yes, I like ___." } : {}),
+    answerExample: "Yes, I do.",
+    easyQuestion: { en: "Is it here?", ko: "여기 있어?" },
+    ...(spec.choices ? { choices: ["I like it.", "I like this."] } : {}),
+  } as TalkSceneOpener;
+}
+function withOpener(
+  level: 1 | 3,
+  change: (o: TalkSceneOpener) => void = () => {},
+): TalkLesson {
+  const lesson = card(level);
+  const opener = openerFor(level);
+  change(opener);
+  lesson.card.sceneOpener = opener;
+  return lesson;
+}
+/** 예외 카드(3단계 단원 1, 개정 4)와 같은 자리 · 개정의 견본 카드(칸 없음). */
+function exemptLike(
+  kind: "assigned" | "reinforce",
+  lessonNo: number,
+): TalkLesson {
+  const lesson = card(3);
+  lesson.kind = kind;
+  lesson.lessonNo = lessonNo;
+  lesson.variant = 1;
+  lesson.revision = 4;
+  delete lesson.card.sceneOpener;
+  return lesson;
+}
+const openerPaths = (issues: SeedIssue[]) =>
+  pathsOf(issues, "talk-scene-opener");
+
+describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
+  it("AC-5 바른 장면 여는 질문을 단 1 · 3단계 카드는 오류가 없다", () => {
+    for (const level of [1, 3] as const) {
+      expect(rulesOf(check(withOpener(level), level)), `${level}단계`).toEqual(
+        rulesOf(check(card(level), level)),
+      );
+      expect(openerPaths(check(withOpener(level), level))).toEqual([]);
+    }
+  });
+
+  it("AC-5 예외 밖 1~3단계 카드(견본 · 새로 만드는 카드)는 개정이 낮아도 장면 여는 질문이 없으면 거부한다", () => {
+    for (const level of [1, 2, 3] as const) {
+      const lesson =
+        level === 2
+          ? structuredClone(talkUnitCards(ref, 2)[0] as TalkLesson)
+          : card(level);
+      expect(lesson.revision).toBeLessThanOrEqual(4);
+      // 견본 3단계 카드는 예외 자리(단원 1 배정 1)라 수업 번호를 비켜 예외 밖으로 둔다
+      if (level === 3) lesson.lessonNo = 2;
+      expect(openerPaths(check(lesson, level)), `${level}단계 칸 있음`).toEqual(
+        [],
+      );
+      delete lesson.card.sceneOpener;
+      expect(openerPaths(check(lesson, level)), `${level}단계 칸 없음`).toEqual(
+        ["card.sceneOpener"],
+      );
+    }
+    // 예외와 단계 · 단원 · 수업만 같고 변형이 다른 카드도 예외 밖이다
+    const other = exemptLike("assigned", 1);
+    other.variant = 2;
+    expect(openerPaths(check(other, 3))).toEqual(["card.sceneOpener"]);
+  });
+
+  it("AC-5 예외 카드(회화 3단계 단원 1 배정 1 · 다지기 6, 개정 4 이하)는 장면 여는 질문 없이 통과한다", () => {
+    expect(
+      TALK_SCENE_OPENER_EXEMPT.map((e) => [
+        e.level,
+        e.unit,
+        e.kind,
+        e.lessonNo,
+        e.variant,
+        e.maxRevision,
+      ]),
+    ).toEqual([
+      [3, 1, "assigned", 1, 1, 4],
+      [3, 1, "reinforce", 6, 1, 4],
+    ]);
+    for (const [kind, no] of [
+      ["assigned", 1],
+      ["reinforce", 6],
+    ] as const) {
+      const lesson = exemptLike(kind, no);
+      expect(openerPaths(check(lesson, 3)), `${kind} ${no}`).toEqual([]);
+      // 칸이 있으면 예외 카드도 검사를 모두 받는다
+      lesson.card.sceneOpener = openerFor(3);
+      lesson.card.sceneOpener.answerExample = "I like it.";
+      expect(openerPaths(check(lesson, 3))).toEqual([
+        "card.sceneOpener.answerExample",
+      ]);
+    }
+    // 단원 2 의 같은 수업 번호는 예외가 아니다
+    const lesson = exemptLike("assigned", 1);
+    expect(
+      openerPaths(checkTalkCard(lesson, { ...ctxOf(3), unit: 2 })),
+    ).toContain("card.sceneOpener");
+  });
+
+  it("AC-5 예외 카드도 개정 5 이상이면 장면 여는 질문이 없으면 거부한다", () => {
+    for (const [kind, no] of [
+      ["assigned", 1],
+      ["reinforce", 6],
+    ] as const) {
+      const lesson = exemptLike(kind, no);
+      lesson.revision = 5;
+      expect(openerPaths(check(lesson, 3)), `${kind} ${no}`).toEqual([
+        "card.sceneOpener",
+      ]);
+    }
+  });
+
+  it("AC-5 4단계 카드에는 장면 여는 질문을 두지 않고 칸을 요구하지 않는다", () => {
+    const lesson = card(4);
+    expect(openerPaths(check(lesson, 4))).toEqual([]);
+    lesson.card.sceneOpener = openerFor(3);
+    expect(openerPaths(check(lesson, 4))).toEqual(["card.sceneOpener"]);
+  });
+
+  it("AC-5 물음표 문장 둘 · 물음표가 마지막이 아님 · 세 문장을 거부한다", () => {
+    const q = "card.sceneOpener.question.en";
+    for (const en of [
+      "Do you like it? Do we like it?",
+      "Do we like it? It is here.",
+      "This is it. It is here.",
+      "This is it. It is here. Do we like it?",
+    ]) {
+      const lesson = withOpener(3, (o) => {
+        o.question.en = en;
+      });
+      expect(openerPaths(check(lesson, 3)), en).toContain(q);
+    }
+  });
+
+  it("AC-5 예 · 아니요 꼴이 아닌 질문(첫 낱말이 조동사 · be 가 아님 · 'or')을 거부한다", () => {
+    const q = "card.sceneOpener.question.en";
+    for (const en of [
+      "This is it. What do we like?",
+      "This is it. You like it?",
+      "Do you like this or that?",
+    ]) {
+      const issues = check(
+        withOpener(3, (o) => {
+          o.question.en = en;
+        }),
+        3,
+      );
+      expect(openerPaths(issues), en).toContain(q);
+    }
+    for (const en of [
+      "Is it there?",
+      "Can we have it?",
+      "{NAME}, do we like it?",
+    ]) {
+      const issues = check(
+        withOpener(3, (o) => {
+          o.question.en = en;
+        }),
+        3,
+      );
+      expect(openerPaths(issues), en).toEqual([]);
+    }
+  });
+
+  it("AC-5 범위 밖 낱말 · {NAME} 둘 · 노리는 단어가 든 질문을 거부한다", () => {
+    const lesson = card(3);
+    const target = requiredAt(lesson, 0).targets[0] ?? "";
+    const cases: [string, (o: TalkSceneOpener) => void][] = [
+      [
+        "범위 밖",
+        (o) => {
+          o.question.en = "This is a zebra. Do we like it?";
+        },
+      ],
+      [
+        "{NAME} 둘",
+        (o) => {
+          o.question.en = "{NAME}, {NAME}! Do we like it?";
+        },
+      ],
+      [
+        "노리는 단어",
+        (o) => {
+          o.question.en = `Do we like the ${target}?`;
+        },
+      ],
+    ];
+    for (const [label, change] of cases) {
+      expect(openerPaths(check(withOpener(3, change), 3)), label).toContain(
+        "card.sceneOpener.question.en",
+      );
+    }
+  });
+
+  it("AC-5 인사 · 필수 · 쉬운 · 더 이야기할 거리 질문과 같은 글을 거부한다(정규화 · 마지막 물음표 문장)", () => {
+    const lesson = card(3);
+    const greeting =
+      "questions" in lesson.card.greeting
+        ? (lesson.card.greeting.questions[0]?.question.en ?? "")
+        : "";
+    const required = requiredAt(lesson, 0);
+    const more = lesson.card.more[0];
+    for (const en of [
+      greeting,
+      required.en.toUpperCase(),
+      `This is it. ${required.easyQuestion.en}`,
+      more?.en ?? "",
+    ]) {
+      const issues = check(
+        withOpener(3, (o) => {
+          o.question.en = en;
+        }),
+        3,
+      );
+      expect(
+        errorsOf(issues).some(
+          (i) =>
+            i.rule === "talk-scene-opener" && i.message.includes("같은 질문"),
+        ),
+        en,
+      ).toBe(true);
+    }
+  });
+
+  it("AC-5 한국어 뜻 없음 · 답 예시가 Yes · No 로 시작하지 않음 · 쉬운 질문 물음표 없음 · 쉬운 질문이 같은 글을 거부한다", () => {
+    const cases: [string, string, (o: TalkSceneOpener) => void][] = [
+      [
+        "뜻 없음",
+        "card.sceneOpener.question.ko",
+        (o) => {
+          delete o.question.ko;
+        },
+      ],
+      [
+        "답 예시",
+        "card.sceneOpener.answerExample",
+        (o) => {
+          o.answerExample = "I like it.";
+        },
+      ],
+      [
+        "쉬운 질문 물음표",
+        "card.sceneOpener.easyQuestion.en",
+        (o) => {
+          o.easyQuestion.en = "It is here.";
+        },
+      ],
+      [
+        "쉬운 질문 같은 글",
+        "card.sceneOpener.easyQuestion.en",
+        (o) => {
+          o.easyQuestion.en = "Do we like it?";
+        },
+      ],
+      [
+        "쉬운 질문 뜻 없음",
+        "card.sceneOpener.easyQuestion.ko",
+        (o) => {
+          delete o.easyQuestion.ko;
+        },
+      ],
+    ];
+    for (const [label, path, change] of cases) {
+      expect(openerPaths(check(withOpener(3, change), 3)), label).toContain(
+        path,
+      );
+    }
+    for (const answer of ["No, I don't.", "yes!", "Yes."]) {
+      const issues = check(
+        withOpener(3, (o) => {
+          o.answerExample = answer;
+        }),
+        3,
+      );
+      expect(openerPaths(issues), answer).toEqual([]);
+    }
+  });
+
+  it("AC-5 선택지 단계(1단계)는 같은 꼴에 낱말 하나만 다른 선택지 둘을 두고, 다른 단계는 선택지를 두지 않으며 3단계는 영어 틀을 둔다", () => {
+    const c = "card.sceneOpener.choices";
+    expect(
+      openerPaths(
+        check(
+          withOpener(1, (o) => {
+            delete o.choices;
+          }),
+          1,
+        ),
+      ),
+    ).toContain(c);
+    expect(
+      openerPaths(
+        check(
+          withOpener(1, (o) => {
+            o.choices = ["I like it.", "We like this."];
+          }),
+          1,
+        ),
+      ),
+    ).toContain(c);
+    expect(
+      openerPaths(
+        check(
+          withOpener(3, (o) => {
+            o.choices = ["I like it.", "I like this."];
+          }),
+          3,
+        ),
+      ),
+    ).toContain(c);
+    expect(specOf(3).frameInTurns).toBe(true);
+    expect(
+      openerPaths(
+        check(
+          withOpener(3, (o) => {
+            delete o.frameEn;
+          }),
+          3,
+        ),
+      ),
+    ).toContain("card.sceneOpener.frameEn");
+  });
+
+  it("AC-5 선생님 이름이 든 칸 · 문장 길이 상한을 넘는 칸은 카드 글 공통 검사가 sceneOpener 경로로 막는다", () => {
+    const named = check(
+      withOpener(3, (o) => {
+        o.hintEn = "Yes, Mina, I like it.";
+      }),
+      3,
+    );
+    expect(pathsOf(named, "teacher-name")).toContain("card.sceneOpener.hintEn");
+    const long = check(
+      withOpener(1, (o) => {
+        o.question.en = "This is it. Do we like it here with you too?";
+      }),
+      1,
+    );
+    expect(pathsOf(long, "learning-elements")).toContain(
+      "card.sceneOpener.question.en",
+    );
+  });
+
+  it("AC-6 1~3단계 카드의 안전한 대사가 지어낸 경험 꼴에 걸리면 거부하고, 4단계는 보지 않는다", () => {
+    for (const level of [1, 3, 4] as const) {
+      const lesson = card(level);
+      const first = lesson.card.safeLines[0];
+      if (!first) throw new Error("안전한 대사 없음");
+      first.en = "I remember it! Let's talk.";
+      const paths = pathsOf(check(lesson, level), "talk-made-up");
+      expect(paths, `${level}단계`).toEqual(
+        level === 4 ? [] : ["card.safeLines.0.en"],
+      );
+    }
   });
 });

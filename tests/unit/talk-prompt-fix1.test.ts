@@ -173,7 +173,7 @@ describe("5.2 1 소리 줄 거름(02-2 180 · 204 · 241 · 271 · 328, C202 (1)
     ).toEqual([]);
   });
 
-  it("2~3단계(규격 choices 거짓)는 카드 질문 · 단원 단어를 노린 질문의 선택지를 버리고, 단원 단어 없는 이어 묻기의 고르기 답만 남긴다(D1 (나) 잠정)", () => {
+  it("2~3단계(규격 choices 거짓)는 카드 질문 · 단원 단어를 노린 질문의 선택지와 단원 단어 없는 이어 묻기의 고르기 답도 버린다('AI 몫 넓힘' C205 — D1 (나) 잠정을 바꿈)", () => {
     expect(
       norm({ choices: ["I like soccer.", "I like tag."] }).choices,
     ).toEqual([]);
@@ -185,7 +185,7 @@ describe("5.2 1 소리 줄 거름(02-2 180 · 204 · 241 · 271 · 328, C202 (1)
         next_move: "follow_up",
         choices: follow,
       }).choices,
-    ).toEqual(follow);
+    ).toEqual([]);
   });
 
   it("받침 둘째(쉬운 질문)의 고르기 답은 다시 묻는 낱말이어도 남는다(막힘 표의 도움)", () => {
@@ -215,6 +215,8 @@ describe("5.2 1 소리 줄 거름(02-2 180 · 204 · 241 · 271 · 328, C202 (1)
       model_line: "The weekend.",
       new_words: ["weekend"],
       support: "model_line",
+      // 꺼내기 갈래일 때만(13절 C205 · 판정 r1 I-5)
+      next_move: "introduce",
     });
     expect(intro.model_line).toBe("The weekend.");
     expect(intro.new_words).toEqual(["weekend"]);
@@ -475,7 +477,11 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
 
   it("1~3단계 따라 할 말은 받침 1 · 3 · 들리지 않음 · 꺼낼 새 단어에서만, 둘을 한 턴에 함께 쓰지 않는다", () => {
     expect(system3).toContain(
-      "Levels 1-3: fill model_line only at Support stage 1 or 3, after nospeech, or when you bring up a word from 'Chances, new words to introduce' for the first time.",
+      // 꺼내기 갈래일 때만 · 필수 질문 · 이어 묻기 갈래는 따라 할 말 없음(13절 C205 · 대본 회차 r1 판정 I-5)
+      "Levels 1-3: fill model_line only at Support stage 1 or 3, after nospeech, or when your next question brings up a word from 'Chances, new words to introduce' for the first time (next_move introduce).",
+    );
+    expect(system3).toContain(
+      "When next_move is required or a follow-up, never fill model_line, even if the question aims at a new word: let the child answer first.",
     );
     expect(system3).toContain(
       "Never fill model_line and choices in the same turn.",
@@ -487,14 +493,12 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
 
   it("2~3단계(choices 거짓)는 답을 들려주지 않고 힌트 단추에 맡기며 '고르기 꼴 자주'가 없고, 1단계만 그 줄과 장난 오답을 둔다", () => {
     expect(system3).toContain(
-      "At this level, ask so that the child answers with one sentence by themselves. Except at Support stage 2, never give choices with a card question or a question about a unit word; when the child is stuck, the hint button helps.",
+      "At this level, ask so that the child answers with one sentence by themselves; when the child is stuck, the hint button helps. A this-or-that question has only the question: never fill choices for it.",
     );
-    expect(system3).toContain(
-      "Use choices only for a follow-up this-or-that question about the child's own answer.",
-    );
+    expect(system3).toContain("Fill choices only at Support stage 2.");
     expect(system3).not.toContain("ask yes-or-no or choice questions often");
     expect(system1).toContain(
-      "At this level, ask yes-or-no or choice questions often.",
+      "At this level, ask yes-or-no or choice questions often, and keep the choice answers inside the question sentence",
     );
     expect(system1).toContain("'A banana? Or a horse?'");
     expect(system3).toContain(
@@ -520,8 +524,9 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
       "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
     );
     expect(system3).toContain(
-      // 고침 2(M-1)에서 예를 늘린 문장
-      "When Segment is greeting_end, write only a reaction and a short line moving on to the part in 'Next part' (short preparation: e.g. 'Good to hear! Let's learn some new words!',",
+      // 고침 2(M-1)에서 예를 늘린 문장 — 1~3단계는 'AI 몫 넓힘'(C209)에서 아이 답에 먼저 반응하는 상황 차례 줄로 바꿈 · 예는 사용자 메시지
+      // 'Example line' 한 줄(대본 회차 r1 판정 I-1 (가))
+      "When Segment is greeting_end, react first to the child's greeting answer (the feeling or what the child added) like a person, then end with a short line in your own words moving on to the part in 'Next part' (the 'Example line' shows only the kind of line).",
     );
     expect(system3).toContain(
       "In the talk (Segment talk or more_talk), if the child's English is wrong, say the correct sentence back naturally (recast)",
@@ -674,12 +679,9 @@ describe("5.2 3 뜻을 문장마다(plan 정한 것 9 를 바꿈, C202 (5))", ()
       tori_ko: ["좋아!", "좋아해?", "나는 일요일이 좋아!", "듣고 따라 해!"],
     });
     const ok = run({ kind: "ok", value, hintsBlocked: false, overLength: 0 });
-    expect(ok.kept).toEqual([
-      "Oh, nice!",
-      "Do you like it?",
-      "Listen and say!",
-    ]);
-    expect(ok.ko).toBe("좋아! 좋아해? 듣고 따라 해!");
+    // 1~3단계 AI 가 쓴 신호 말은 지운다('AI 몫 넓힘' C207) — 그 문장의 뜻도 빠진다
+    expect(ok.kept).toEqual(["Oh, nice!", "Do you like it?"]);
+    expect(ok.ko).toBe("좋아! 좋아해?");
     const blocked = run({
       kind: "ok",
       value,

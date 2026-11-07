@@ -1,0 +1,46 @@
+{
+  "name": "l3-scene-no",
+  "title": "3단계 · 장면 여는 질문에 '아니요'",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-5 (다) 장면 대본 셋의 하나(설계 7): 대화 첫 질문(고침 뒤는 장면 여는 질문)에 '아니요'로 답하고, 다음 차례에 좋아하는 다른 곳을 말한다. 첫 AI 차례가 '아니요'를 받아 이어 묻고(설득하거나 같은 질문을 다시 하지 않음), 그 뒤 오늘 이야기로 돌아온다(사람 판정).",
+  "steps": [
+    {
+      "say": "I am fine.",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "No.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I like the park.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Juice.",
+      "expect": {
+        "recastWord": "juice",
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "We go home.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

@@ -47,6 +47,7 @@ import {
   talkLessonReply,
   talkScript,
   talkTurnRequests,
+  withoutSceneOpener,
 } from "./talk";
 
 /** 아이 화면 글(브리프 A · 정본 문구 그대로). */
@@ -157,8 +158,9 @@ async function openTalk(
   if (greetingOnly) await skipStartPrep(profileId, 1);
   const row = await insertTalkLesson({
     level: 1,
-    lesson:
+    lesson: withoutSceneOpener(
       lesson ?? (greetingOnly ? greetingTalkLesson(1) : talkLessonCard(1)),
+    ),
   });
   const sessionId = await openTalkSession(profileId, row);
   const card = (row.content as TalkLesson).card;

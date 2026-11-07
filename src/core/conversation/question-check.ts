@@ -6,6 +6,7 @@ import type { TalkMoveKind } from "@/core/conversation/move";
 import { MORE_PROMPT, normalizeSpoken } from "@/core/conversation/spoken";
 import { isQuestionSentence } from "@/core/conversation/stream";
 import {
+  expandContraction,
   type FormRule,
   formsIn,
   isEnglishSentence,
@@ -126,8 +127,14 @@ export type LowLevelLineOptions = {
   /** 형태 표와 그 단계 · 단원에 쓸 수 있는 형태 id. */
   forms: readonly FormRule[];
   allowedForms: ReadonlySet<string>;
+  /**
+   * 이 대화의 아이 말(인식 글, 차례대로 — 끝이 이번 말). 주면 질문 검사가 아이 말을 되묻는 질문을 건다(echo — 대본 회차 r1 판정 I-6). 없으면
+   * 보지 않는다(소리 줄 · 선택지 검사는 쓰지 않음).
+   */
+  childLines?: readonly string[] | undefined;
 };
 
+/** echo: 아이가 방금 · 앞서 한 말을 되묻는 질문(판정 r1 I-6 — 'Big.' → 'Is the lake big or small?', 'I like fish.' → 'Do you like the fish?'). */
 export type LowLevelLineReason =
   | "empty"
   | "too_long"
@@ -135,7 +142,8 @@ export type LowLevelLineReason =
   | "offband"
   | "form"
   | "shape"
-  | "no_target";
+  | "no_target"
+  | "echo";
 export type LineCheck =
   | { ok: true }
   /** words: 걸린 낱말(노리는 단어 · 범위 밖 낱말 — AI 에 다시 쓰게 알릴 때 쓴다, 13절 C203 (3)). 그 밖의 까닭은 비운다. */
@@ -184,22 +192,81 @@ function overLength(text: string, max: number): boolean {
   );
 }
 
-/** 범위 밖 낱말(소문자, 같은 낱말은 한 번 — 차례대로). */
-function offbandWordsIn(text: string, options: LowLevelLineOptions): string[] {
-  const extra = lowerSet([...options.unitWords, ...options.childWords]);
+/** 범위 밖 낱말 셈의 덧붙임('AI 몫 넓힘' 상황 차례 검사 — 질문 검사는 쓰지 않는다). */
+export type OffbandExtra = {
+  /** 늘 범위 안으로 보는 낱말(시드 '감탄 · 수업 말' 허용 목록 — 소문자 표기 · 원형). */
+  allowed?: ReadonlySet<string>;
+  /** 범위 밖 낱말을 축약형 조각으로 펼쳐 다시 본다(that's → that · is, core/seed/text 의 표 — spec 설계 1 말 검사 (가)). */
+  expand?: boolean;
+  /**
+   * 허용 낱말 대조에 쓰는 모든 단계 어휘의 원형 찾기(표기형 → 원형 — 컨트롤러 결정 (나): 허용 목록은 원형만 담고 범위의 lemmaOf 는 그 단계 이하만
+   * 안다). 주면 표기형 그대로 · 이 원형으로만 대조하고, 없으면(사전이 없는 대본 도구 · 순수 시험) 규칙 활용 꼬리를 떼어 본다(allowedBases).
+   */
+  allowedLemmaOf?: (surface: string) => string | undefined;
+};
+
+/**
+ * 사전 없이 허용 낱말 목록이 덮는 꼴(목록은 원형만 적는다 — words → word · going → go · tries → try · liked → like). 모든 단계 원형 사전
+ * (OffbandExtra.allowedLemmaOf)을 넘기지 않는 길의 대신 길이다(영어 문법 꼴이라 코드 상수, 허용 목록에만 쓴다).
+ */
+function allowedBases(word: string): string[] {
+  const out = [word];
+  const cut = (suffix: string, add = "") => {
+    if (word.length > suffix.length + 1 && word.endsWith(suffix))
+      out.push(`${word.slice(0, -suffix.length)}${add}`);
+  };
+  cut("ies", "y");
+  cut("es");
+  cut("s");
+  cut("ing");
+  cut("ing", "e");
+  cut("ed");
+  cut("d");
+  return out;
+}
+
+/**
+ * 범위 밖 낱말(소문자, 같은 낱말은 한 번 — 차례대로). 범위는 그 단계 어휘 범위 · 이번 단원 단어 · 아이가 이 대화에서 말한 낱말 · 선생님 영어
+ * 이름(소유격 포함)이고, extra.allowed 를 더할 수 있다. extra.expand 면 범위 밖 낱말을 축약형 조각으로 펼쳐 조각마다 보고 범위 밖 조각을 낸다.
+ */
+export function offbandWordsIn(
+  text: string,
+  options: LowLevelLineOptions,
+  extra: OffbandExtra = {},
+): string[] {
+  const more = lowerSet([...options.unitWords, ...options.childWords]);
   const teacher = options.teacherName.toLowerCase();
+  const allowed = extra.allowed;
+  const allowedHas = (word: string): boolean => {
+    if (allowed === undefined) return false;
+    if (allowed.has(word)) return true;
+    if (extra.allowedLemmaOf === undefined)
+      return allowedBases(word).some((b) => allowed.has(b));
+    const lemma = extra.allowedLemmaOf(word)?.toLowerCase();
+    return lemma !== undefined && allowed.has(lemma);
+  };
   const inRange = (word: string) =>
     options.allowedWords.has(word) ||
-    extra.has(word) ||
+    more.has(word) ||
+    allowedHas(word) ||
     word === teacher ||
     word === `${teacher}'s`;
+  const fits = (word: string, lemma: string | undefined) =>
+    inRange(word) || (lemma !== undefined && inRange(lemma));
   const out: string[] = [];
-  for (const { lower, lemma } of wordTokens(text, options))
-    if (
-      !(inRange(lower) || (lemma !== undefined && inRange(lemma))) &&
-      !out.includes(lower)
-    )
-      out.push(lower);
+  const add = (word: string) => {
+    if (!out.includes(word)) out.push(word);
+  };
+  for (const { lower, lemma } of wordTokens(text, options)) {
+    if (fits(lower, lemma)) continue;
+    const pieces = extra.expand === true ? expandContraction(lower) : [lower];
+    if (pieces.length < 2) {
+      add(lower);
+      continue;
+    }
+    for (const piece of pieces)
+      if (!fits(piece, options.lemmaOf(piece)?.toLowerCase())) add(piece);
+  }
   return out;
 }
 
@@ -288,7 +355,120 @@ export function checkLowLevelQuestion(
     off.length === 1 && CLOSED_CLASS_PASS_WORDS.has(off[0] ?? "");
   if (off.length > 0 && !closedOnly) return fail("offband", off);
   if (hasOffbandForm(sentence, options)) return fail("form");
+  if (
+    options.childLines !== undefined &&
+    questionEchoesChild(
+      sentence,
+      options.childLines,
+      options.lemmaOf,
+      options.targets,
+    )
+  )
+    return fail("echo");
   return OK;
+}
+
+/** 되묻기 판정에서 보지 않는 낱말(관사 · 대명사 · 조동사 · 이음말 · 전치사 · 대답 말 · 묻는 말 — 내용 낱말만 견준다). */
+const ECHO_SKIP_WORDS = new Set(
+  "a an the i you it we he she they my your his her its our their me us them is am are was were do does did will or and to in on at with of for this that these those too also so very really yes no oh what which who where when how why now today here there".split(
+    " ",
+  ),
+);
+/** 무엇을 하느냐 질문의 do 꼴 수(조동사 하나 + 본동사 하나 — 'What do you do …?', 판정 기준이 아닌 코드 상수). */
+const ACTION_QUESTION_DO_COUNT = 2;
+/** 혼자서는 '같은 물음'을 만들지 않는 낱말('Do you like it?' 은 무엇을 좋아하느냐가 글에 없다). */
+const ECHO_FRAME_VERBS = new Set(["like", "have", "has", "want", "can"]);
+/** 예 · 아니요 질문의 첫 낱말. */
+const YES_NO_STARTS = new Set([
+  "do",
+  "does",
+  "did",
+  "is",
+  "are",
+  "am",
+  "was",
+  "were",
+  "can",
+  "will",
+]);
+
+/** 글의 낱말과 그 원형(소문자). */
+function wordKeysOf(
+  text: string,
+  lemmaOf: (surface: string) => string | undefined,
+): Set<string> {
+  const out = new Set<string>();
+  for (const w of plainWords(text)) {
+    out.add(w);
+    const lemma = lemmaOf(w)?.toLowerCase();
+    if (lemma !== undefined) out.add(lemma);
+  }
+  return out;
+}
+
+/**
+ * 질문이 아이 말을 되묻는가(대본 회차 r1 판정 I-6 · 02-2 196 · 고정부 'never ask again in the same words a question the child already
+ * answered'). (가) 고르기 질문('A or B?')의 'or' 양옆 낱말 가운데 하나가 아이의 이번 말에 있다('Big.' → 'Is the lake big or small?').
+ * (나) 예 · 아니요 질문의 내용 낱말(좋아하다 · 가지다 꼴만이 아닌)이 모두 아이의 한 말에 있다('Yes I like fish.' → 'Do you like the fish?').
+ * 무엇 · 누구 · 어디 질문과 'Do you like it?' 처럼 내용 낱말이 없는 질문은 아니다. 원형으로 견준다.
+ */
+export function questionEchoesChild(
+  question: string,
+  childLines: readonly string[],
+  lemmaOf: (surface: string) => string | undefined,
+  /**
+   * 그 질문이 노리는 단원 단어(응답 next_targets). 주면 (다) 무엇을 하느냐 질문('What do you do …?' — what 과 do 꼴 둘)이 노리는 단어를 아이가
+   * 이번 말에서 이미 말했는데 질문 글에는 없으면(그 질문의 답이 아이가 방금 한 말) 되묻기다('I drink juice.' → 'What do you do with the
+   * juice?', 노림 drink — 대본 회차 r2 판정 N-3). 질문에 그 낱말이 들거나('What juice do you drink?') 무엇을 하느냐 꼴이 아니면 보지 않는다.
+   */
+  targets: readonly string[] = [],
+): boolean {
+  const words = plainWords(question);
+  const last = childLines.at(-1);
+  if (words.length === 0 || last === undefined) return false;
+  const lastKeys = wordKeysOf(last, lemmaOf);
+  const known = (w: string, keys: ReadonlySet<string>) =>
+    keys.has(w) || keys.has(lemmaOf(w)?.toLowerCase() ?? "");
+  // (다) 무엇을 하느냐 질문 · 노리는 단어를 아이가 방금 말함 · 질문 글에는 없음
+  const questionKeys = wordKeysOf(question, lemmaOf);
+  const asksAction =
+    words.includes("what") &&
+    words.filter((w) => w === "do" || w === "does" || w === "did").length >=
+      ACTION_QUESTION_DO_COUNT;
+  if (
+    asksAction &&
+    targets.some(
+      (t) =>
+        known(t.toLowerCase(), lastKeys) &&
+        !known(t.toLowerCase(), questionKeys),
+    )
+  )
+    return true;
+  // (가) 'A or B' 의 바뀌는 자리(기능어는 건너뛰고, 'red apples or green apples' 처럼 같은 명사가 되풀이되면 그 앞 꾸밈말 — 코드 검토 Minor 1)
+  for (const [i, w] of words.entries()) {
+    if (w !== "or") continue;
+    let r = i + 1;
+    while (r < words.length && ECHO_SKIP_WORDS.has(words[r] ?? "")) r++;
+    let l = i - 1;
+    while (l >= 0 && ECHO_SKIP_WORDS.has(words[l] ?? "")) l--;
+    const left = words[l];
+    const right = words[r];
+    const repeatedNoun =
+      left !== undefined && words.slice(r + 1).includes(left);
+    const sides = (repeatedNoun ? [words[l - 1], right] : [left, right]).filter(
+      (s): s is string => s !== undefined && !ECHO_SKIP_WORDS.has(s),
+    );
+    if (sides.some((s) => known(s, lastKeys))) return true;
+  }
+  // (나) 예 · 아니요 질문의 내용 낱말이 모두 아이의 한 말에
+  if (!YES_NO_STARTS.has(words[0] ?? "")) return false;
+  if (words.includes("or")) return false;
+  const content = words.filter((w) => !ECHO_SKIP_WORDS.has(w));
+  if (!content.some((w) => !ECHO_FRAME_VERBS.has(w))) return false;
+  return childLines.some((line) => {
+    const keys = wordKeysOf(line, lemmaOf);
+    return content.every((w) => known(w, keys));
+  });
 }
 
 /**

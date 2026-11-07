@@ -59,6 +59,7 @@ import {
   talkHousehold,
   talkLessonReply,
   talkScript,
+  withoutSceneOpener,
 } from "./talk";
 
 /** 아이 화면 글(회화 시험 집의 선생님은 미나). */
@@ -158,7 +159,10 @@ async function turnSendsOf(page: Page): Promise<number[]> {
   );
 }
 
-/** 그 단계 회화 견본(인사 → 대화 — 짧은 준비 건너뜀)과 진행 세션을 넣고 '시작!' → 처음 마이크 안내까지 연다. */
+/**
+ * 그 단계 회화 견본(인사 → 대화 — 짧은 준비 건너뜀)과 진행 세션을 넣고 '시작!' → 처음 마이크 안내까지 연다. 견본은 장면 여는 질문 칸을 뺀 꼴이라
+ * 대화 첫 질문이 카드 첫 필수 질문이다('AI 몫 넓힘' plan 정한 것 3 — 이 파일은 아이 말풍선을 보고 장면 여는 질문은 talk-lesson.spec 이 본다).
+ */
 async function openTalkAt(
   context: BrowserContext,
   level: number,
@@ -168,7 +172,7 @@ async function openTalkAt(
   await skipStartPrep(profileId, level);
   const row = await insertTalkLesson({
     level,
-    lesson: greetingTalkLesson(level),
+    lesson: withoutSceneOpener(greetingTalkLesson(level)),
   });
   const sessionId = await openTalkSession(profileId, row);
   const card = (row.content as TalkLesson).card;
@@ -339,12 +343,18 @@ function firstTurnAnswer(card: TalkCard): string {
 }
 
 /**
- * 1~3단계 선택지 둘(소리 줄): 단원 단어 없는 이어 묻기의 고르기 답(같은 꼴, 낱말 하나만 다름 — question-check checkChoices). 받침 0 에서 이미 물은 ·
- * 짧은 준비 낱말을 노린 선택지는 서버가 버리고(13절 C202 (1), talk-lesson.ts keptChoicesOf) 2~3단계는 카드 질문에 선택지가 없으므로, 노리는 단어
- * 없이(card_item none · next_targets 빈 목록) 시험 어휘(I · like · it · you) 안에서 고른다. 노림이 비면 두 답의 낱말을 노리는 자리로 본다.
+ * 1단계 선택지 둘(소리 줄): 1단계는 아직 만나지 않은 새 단어를 처음 묻는 AI 질문에서만 선택지가 남는다('AI 몫 넓힘' 설계 4 · C205 — 단원 단어
+ * 없는 이어 묻기의 고르기 답은 질문만 남기고, talk-lesson.ts keptChoicesOf). 그래서 아직 묻지 않은 카드 둘째 필수 질문의 노리는 단어를 노리고
+ * (choiceTargetOf), 같은 꼴 · 낱말 하나만 다르며 바뀌는 자리가 아이가 방금 한 말(첫 필수 질문의 답)의 낱말이 아니게 시험 어휘(like · it) 안에서
+ * 고른다(choicesEchoChild).
  */
-function choicesOf(_card: TalkCard): readonly [string, string] {
-  return ["I like it.", "I like you."];
+function choiceTargetOf(card: TalkCard): string {
+  const target = card.required[1]?.targets[0];
+  if (!target) throw new Error("견본 꼴 — 노리는 단어가 있는 둘째 필수 질문");
+  return target;
+}
+function choicesOf(card: TalkCard): readonly [string, string] {
+  return [`I like ${choiceTargetOf(card)}.`, "I like it."];
 }
 
 test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
@@ -371,14 +381,15 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
         { tori_en: replies[0] },
         { firstDelayMs: FIRST_DELAY_MS },
       ),
-      // 대화 첫 질문 답의 응답: AI 이어 묻기 + 선택지 둘(소리 줄 — 단원 단어 없는 고르기 답, 같은 꼴에서 낱말 하나만 다름. 이미 물은 카드 필수 1
-      // 의 낱말을 노린 선택지는 받침 0 에서 서버가 버린다 — 13절 C202 (1))
+      // 대화 첫 질문 답의 응답: 아직 묻지 않은 새 단어를 노린 AI 질문 + 선택지 둘(소리 줄 — 1단계 처음 묻는 선택지, 'AI 몫 넓힘' 설계 4). AI 가 쓴
+      // 신호 말은 서버가 지우고 시드 신호 말을 붙이므로(C207) tori_en 에 두지 않는다
       talkLessonReply(
         {
-          tori_en: `${replies[1]} Do you like it? Listen and say!`,
+          tori_en: `${replies[1]} Do you like it?`,
           choices: [...choices],
           support: "choices",
           next_move: "follow_up",
+          next_targets: [choiceTargetOf(card)],
         },
         { firstDelayMs: FIRST_DELAY_MS },
       ),

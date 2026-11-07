@@ -6,7 +6,7 @@ import "server-only";
 // 붙일 기회가 없으면 C194 (1)의 대신 질문) · 붙일 줄(카드 질문 · 받침 줄 · 소리 줄 · 마무리 물음, 겹침 없애기 C125) → move → 저장.
 // 선생님 행 text 는 화면에 글로 나온 줄만 둔다(정한 것 5). 1~3단계 소리 줄은 move.sound 에만 둔다. 참여 완료는 completeTalk 다.
 // 접근 확인은 부르는 Route Handler 의 첫 문장. 아이 글 · AI 글을 로그에 내지 않는다(오류 이름 · Postgres 코드만).
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, arrayContains, eq, gte, inArray, sql } from "drizzle-orm";
 import {
   isLowBandLevel,
   type TalkHeardHelp,
@@ -24,6 +24,7 @@ import {
   cardItemOf,
   isSupportMove,
   oldestMoreOf,
+  opensSlot,
   slotChanceOf,
 } from "@/core/conversation/chances";
 import { createRewriteHold } from "@/core/conversation/child-kind";
@@ -32,6 +33,15 @@ import {
   type ClientListenRow,
   clientListenRowOf,
 } from "@/core/conversation/client-listen";
+import {
+  type CueBand,
+  cueBandOf,
+  cueLineForTurn,
+  cueLinesOfMoves,
+  isSoundCue,
+  seedCuePhrasesOf,
+  TALK_CUE_LINE_KIND,
+} from "@/core/conversation/cue-line";
 import {
   type HintTier,
   heardHelpOf,
@@ -44,6 +54,8 @@ import {
   openedTierCount,
 } from "@/core/conversation/hints";
 import {
+  childAnsweredRequiredOf,
+  childLinesOf,
   type LateCardRow,
   type LessonArgs,
   lateCardAnswerOf,
@@ -66,11 +78,11 @@ import {
   type TalkLessonTurn,
 } from "@/core/conversation/lesson-turns";
 import { maskNameAnswer } from "@/core/conversation/listen";
+import { madeUpHit } from "@/core/conversation/made-up";
 import {
   NO_CARD_ITEM,
   readTalkMove,
   TALK_SUPPORT_STAGE_EASY,
-  TALK_SUPPORT_STAGE_MAX,
   type TalkAppHelp,
   type TalkCardItemRef,
   type TalkMove,
@@ -78,14 +90,17 @@ import {
   talkMoveOf,
 } from "@/core/conversation/move";
 import {
+  cardQuestionKeyOf,
   checkLowLevelQuestion,
   type LowLevelLineOptions,
+  questionEchoesChild,
   questionKeyOf,
   sameQuestionKeyHit,
   turnQuestionOf,
 } from "@/core/conversation/question-check";
 import {
   heldQuestionFailOf,
+  keepLastHeldQuestion,
   mergeQuestionRetry,
   questionRetryNoteOf,
   stuckRewriteNoteOf,
@@ -96,9 +111,20 @@ import {
   talkEnglishSentenceDelta,
 } from "@/core/conversation/said";
 import {
+  allowedLemmaOfVocab,
+  checkSituationSentence,
+  echoesTurnSentence,
+  failSituationLineOf,
+  heardFieldsBlankOf,
+  type SituationPlace,
+  situationLineOf,
+  situationPlaceOf,
+  situationRotationOf,
+  situationTailOf,
+} from "@/core/conversation/situation";
+import {
   type AppendLine,
   MORE_PROMPT,
-  normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
   toriKoShownOf,
@@ -106,13 +132,22 @@ import {
 import { isQuestionSentence, safeLineOf } from "@/core/conversation/stream";
 import type { StageTimings } from "@/core/conversation/timing";
 import { wrapUpLinesOf } from "@/core/conversation/wrap-up";
+import type {
+  TalkAllowedWordsFile,
+  TalkCueLinesFile,
+  TalkListLine,
+  TalkSituationLinesFile,
+} from "@/core/seed/schema/reference";
+import type { TalkSceneOpener } from "@/core/seed/schema/talk";
 import {
   AI_WAIT_TIMEOUT_MULTIPLE,
   type AskKind,
+  FUNCTION_POS,
   PLACEHOLDER_NAME,
   type TALK_SEGMENTS,
 } from "@/core/seed/structure";
 import { splitSentences, tokenize } from "@/core/seed/text";
+import { vocab } from "@/db/schema/content";
 import { sessions, talkTurns } from "@/db/schema/learning";
 import { aiCalls } from "@/db/schema/operations";
 import { createAlertOnce } from "@/server/ai/store";
@@ -124,7 +159,13 @@ import {
 } from "@/server/ai/talk";
 import type { Db, Tx } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
-import { seedHomophones } from "@/server/seed-lists";
+import {
+  seedHomophones,
+  seedTalkAllowedWords,
+  seedTalkCueLines,
+  seedTalkMadeUpPhrases,
+  seedTalkSituationLines,
+} from "@/server/seed-lists";
 import { levelContextOf } from "@/server/session/ai-context";
 import { SettingMissingError } from "@/server/settings";
 import {
@@ -283,7 +324,8 @@ export type TalkLessonLine =
   | { t: "ko"; ko: string }
   | {
       t: "add";
-      kind: "question" | "more_prompt" | "answer";
+      /** cue: 1~3단계 신호 말(앱이 시드 목록에서 고름 — 뜻 줄 뒤 · 소리 줄 앞, 기록 · talk_turns 원문 · 다시 쓸 차례 밖, spec 설계 6). */
+      kind: "question" | "more_prompt" | "answer" | typeof TALK_CUE_LINE_KIND;
       en: string;
       ko?: string;
     }
@@ -425,11 +467,37 @@ export function lessonAskKindOf(
   return slot.words.some((w) => before.has(w)) ? "re_ask" : "first";
 }
 
-/** 힌트 단을 고를 때 읽는 카드 칸(카드 항목의 힌트 칸 · 1~3단계 인사 질문의 힌트 칸). */
+/** 힌트 단을 고를 때 읽는 카드 칸(카드 항목의 힌트 칸 · 1~3단계 인사 질문 · 장면 여는 질문의 힌트 칸). */
 export type LessonHintCard = Pick<TalkLessonState["card"], "greeting"> & {
   required: readonly (LessonHintItem & { no: number })[];
   more: readonly (LessonHintItem & { no: number })[];
+  /** 장면 여는 질문의 힌트 칸(영어 틀은 3단계에만 있는 선택 칸 — 0-나 TalkSceneOpenerSchema). */
+  sceneOpener?:
+    | (Pick<TalkSceneOpener, "hintKo" | "hintEn"> & {
+        frameEn?: string | undefined;
+      })
+    | undefined;
 };
+
+/**
+ * 1~3단계 장면 여는 질문 자리의 힌트(그 칸의 뜻 · 영어 틀 · 영어 문장 — 필수 질문의 받침 칸을 따름, spec 설계 5 · C206). 영어 단은 단계 규격
+ * hintTiers 의 ko 밖 차례대로, 쓸 수 있는 말은 없다. 장면 여는 질문 자리가 아니면 null.
+ */
+export function sceneHintItemOf(
+  spec: Pick<LessonHintSpec, "hintTiers">,
+  card: Pick<LessonHintCard, "sceneOpener">,
+  slot: TalkQuestionSlot,
+): LessonHintItem | null {
+  const opener = card.sceneOpener;
+  if (slot.scene !== true || !opener) return null;
+  return {
+    hintKo: opener.hintKo,
+    hints: spec.hintTiers
+      .filter((t) => t !== "ko")
+      .map((t) => (t === "frame" ? (opener.frameEn ?? "") : opener.hintEn)),
+    usablePhrases: [],
+  };
+}
 
 /**
  * 1~3단계 인사 질문 자리의 힌트(카드 인사 질문의 뜻 · 영어 틀 · 영어 문장 칸, 02-2 206줄 · 03 97 · 99줄, 검토 I-2).
@@ -442,9 +510,11 @@ export function greetingHintItemOf(
 ): LessonHintItem | null {
   if (slot.item.kind !== "none" || slot.question === null) return null;
   if (!("questions" in card.greeting)) return null;
-  const key = questionKeyOf(slot.question);
+  // 행의 그 차례 질문(마지막 물음표 문장)과 카드 인사 질문의 질문 열쇠(마지막 물음표 문장)를 견준다 — 시드 꼴 'Hello, {NAME}! How are you?'
+  // 도 'How are you?' 자리와 맞는다(흐름 greetingAnswerOf 와 같은 열쇠 — 답 소리와 힌트가 같은 질문을 가리킨다, 묶음 1 fix 2 N-1)
+  const key = cardQuestionKeyOf(slot.question);
   const q = card.greeting.questions.find(
-    (g) => questionKeyOf(g.question.en) === key,
+    (g) => cardQuestionKeyOf(g.question.en) === key,
   );
   if (!q) return null;
   return {
@@ -457,7 +527,8 @@ export function greetingHintItemOf(
 }
 
 /**
- * 지금 질문 자리의 힌트 단(3.3 힌트 문단): 카드 항목을 노린 자리는 그 카드 항목의 힌트, 1~3단계 인사 질문 자리는 카드 인사 질문의 힌트 칸,
+ * 지금 질문 자리의 힌트 단(3.3 힌트 문단): 카드 항목을 노린 자리는 그 카드 항목의 힌트, 1~3단계 장면 여는 질문 자리는 그 칸의 힌트, 1~3단계
+ * 인사 질문 자리는 카드 인사 질문의 힌트 칸,
  * 아니면 그 질문을 쓴 선생님 행 aiQuestion 의 AI 힌트(검사를 지난 것만 저장됨). 모두 없으면 '힌트' 단추가 없다.
  */
 export function lessonHintsAt(
@@ -477,7 +548,10 @@ export function lessonHintsAt(
           ? state.card.required
           : state.card.more
         ).find((x) => x.no === slot.item.no) ?? null);
-  const item = cardItem ?? greetingHintItemOf(state.spec, state.card, slot);
+  const item =
+    cardItem ??
+    sceneHintItemOf(state.spec, state.card, slot) ??
+    greetingHintItemOf(state.spec, state.card, slot);
   const row =
     item || slot.question === null
       ? undefined
@@ -568,21 +642,8 @@ export function lessonChildRowOf(
 
 // ── 순수: 흘려 받기 문장 문 ─────────────────────────────────────
 
-/** 1~3단계 소리 줄 신호 말('Listen and say!' · 'Let's say it together.' 꼴, 3.3 소리 줄 · 6.1 고정부 예). */
-const CUE_PHRASES = [
-  "listen and say",
-  "listen and repeat",
-  "repeat after me",
-  "say it with me",
-  "say it together",
-  "say after me",
-].map(normalizeSpoken);
-
-/** 소리 줄 신호 말인가(정규화한 글에 신호 구가 낱말 경계로 든다). */
-export function isSoundCue(sentence: string): boolean {
-  const n = ` ${normalizeSpoken(sentence)} `;
-  return CUE_PHRASES.some((p) => p !== "" && n.includes(` ${p} `));
-}
+/** 소리 줄 신호 말인가(신호 구 · 시드 신호 말 줄 — core/conversation/cue-line 으로 옮김, 'AI 몫 넓힘' plan 2 행). */
+export { isSoundCue };
 
 /** 이 차례에 선생님(AI)이 질문을 쓰는가(AI 차례 · 질문함). 아니면 물음표 문장을 지운다(02-2 202줄 · 6.1 고정부). */
 export function asksQuestion(plan: Pick<TeacherTurnPlan, "kind" | "aiAsks">) {
@@ -594,15 +655,29 @@ const soundAnswersOf = (plan: Pick<TeacherTurnPlan, "attach">) =>
 
 export type LessonSentenceState = "sent" | "held" | "dropped";
 export type LessonSentence = {
+  /** 보이고 읽는 글(상황 줄로 바뀌었으면 그 줄). */
   en: string;
   question: boolean;
   cue: boolean;
   state: LessonSentenceState;
   /**
-   * 지운 까닭: 질문을 쓰지 않는 차례의 물음표 · 같은 질문(4단계부터 문장이 끝날 때) · 붙일 소리 줄의 답을 담은 문장(C125) · 받침 닫기 · 들리지 않음
-   * 차례의 따라 말하기 신호 말(13절 C204 (5) — 따라 할 차례가 없다).
+   * 지운 까닭: 질문을 쓰지 않는 차례의 물음표 · 같은 질문(4단계부터 문장이 끝날 때) · 붙일 소리 줄의 답을 담은 문장(C125) · 1~3단계 AI 가 쓴 신호
+   * 말(cue — 신호 말은 앱이 시드 목록에서 붙인다, C207) · 지어낸 경험 꼴(made_up, C211 (1)) · 상황 차례 검사의 둘째 걸림부터(situation).
+   * together 는 옛 까닭(받침 닫기 · 들리지 않음의 신호 말 — 이제 1~3단계 신호 말은 모두 cue)이다.
    */
-  reason?: "question" | "same" | "overlap" | "together" | "rewrite";
+  reason?:
+    | "question"
+    | "same"
+    | "overlap"
+    | "together"
+    | "rewrite"
+    | "cue"
+    | "made_up"
+    | "situation";
+  /** 상황 차례 검사에 걸려 상황 줄로 바뀐 문장의 AI 원문(보이지 않는다 — 대본 · 시험 몫). */
+  ai?: string;
+  /** 상황 줄로 바뀐 문장의 뜻(상황 줄의 뜻 — AI 뜻 목록의 그 문장 자리를 이것으로 바꾼다). */
+  ko?: string;
 };
 
 export type LessonSentenceFlow = {
@@ -610,6 +685,8 @@ export type LessonSentenceFlow = {
   stuck(value: boolean): void;
   /** 검사를 지난 선생님 문장 하나: send 면 바로 보낸다, hold 면 응답 끝까지 잡아 둔다, drop 이면 보이지도 읽지도 않는다. */
   accept(en: string): "send" | "hold" | "drop";
+  /** 마지막으로 받은 문장의 보일 글(상황 줄로 바뀌었으면 그 줄 — send 일 때 부르는 쪽이 이 글을 보낸다). */
+  lastText(): string;
   entries(): LessonSentence[];
   /** 응답 첫 칸으로 고른 계획(막힘 계획이 있고 stuck 이 참이면 그것). */
   chosen(): TeacherTurnPlan;
@@ -617,11 +694,74 @@ export type LessonSentenceFlow = {
 };
 
 /**
+ * 1~3단계 실시간 검사 재료('AI 몫 넓힘' plan 2 행 · spec 판 4 설계 1 · 3 · 6 — 신호 말 · 지어낸 경험 꼴 · 상황 차례 검사). 없으면 이 검사들을
+ * 하지 않는다(4단계부터 · 순수 시험의 옛 길). 신호 구(CUE_PHRASES) 지움은 재료와 관계없이 1~3단계에서 늘 한다.
+ */
+export type LessonLiveChecks = {
+  /** 시드 신호 말 줄(정규화 글 — seedCuePhrasesOf). 문장 전체가 같으면 AI 가 쓴 신호 말로 지운다. */
+  cuePhrases: readonly string[];
+  /** 지어낸 경험 꼴(정규화한 구, 시드 talk-made-up-phrases). 비면 검사하지 않는다. */
+  madeUp: readonly string[];
+  /** 상황 차례 검사 재료. null 이면 상황 차례 검사를 하지 않는다. */
+  situation: LessonSituationChecks | null;
+};
+
+export type LessonSituationChecks = {
+  /** 1~3단계 질문 검사와 같은 범위 재료(범위를 읽지 못한 턴은 null — 상황 차례 문장이 모두 걸린다). */
+  options: LowLevelLineOptions | null;
+  /** 감탄 · 수업 말 허용 낱말(소문자). */
+  allowed: ReadonlySet<string>;
+  /** 허용 낱말 대조의 모든 단계 원형 찾기(허용 낱말의 vocab 활용형 — readAllowedLemmaOf). 없으면 규칙 꼬리 떼기. */
+  allowedLemmaOf?: ((surface: string) => string | undefined) | undefined;
+  forbidden: { all: readonly string[]; nospeech: readonly string[] };
+  /** 상황 줄(자리마다 — 턴 번호로 돌림). */
+  lines: Partial<TalkSituationLinesFile["lines"]>;
+  /** 이 선생님 차례의 턴 번호(상황 줄 돌림). */
+  turnNo: number;
+  /** 답 글 검사의 질문 글(그 자리를 연 선생님 차례부터 지금까지 보인 글 — 장면 문장 포함). */
+  question: string;
+  /** 이 대화의 앞 선생님 행 글(상황 줄 되풀이 피하기 — 검토 rev-2 M-1). 없으면 빈 목록. */
+  spoken?: readonly string[];
+  /**
+   * 참이면 상황 차례 문장이 이 대화의 앞 선생님 말(spoken)과 같거나 상황 차례 예를 그대로 쓴 문장일 때도 걸린다(situation repeat · copy — 대본
+   * 회차 r1 판정 I-1 (나)). 서버 배선 · 대본 도구가 켠다. 없으면 보지 않는다(옛 시험 길).
+   */
+  repeat?: boolean;
+  /** 기능어(어휘 시드의 기능어 표시, 소문자). */
+  functionWords: ReadonlySet<string>;
+};
+
+/** 그 계획의 상황 차례 검사 맥락(답 글은 받침 · 들리지 않음에서 계획의 답 예시가 있을 때만). */
+function situationContextOf(
+  place: SituationPlace,
+  plan: Pick<TeacherTurnPlan, "answerFallback">,
+  checks: LessonSituationChecks,
+) {
+  return {
+    place,
+    options: checks.options,
+    allowed: checks.allowed,
+    ...(checks.allowedLemmaOf ? { allowedLemmaOf: checks.allowedLemmaOf } : {}),
+    forbidden: checks.forbidden,
+    answer:
+      place !== "greeting_end" && plan.answerFallback
+        ? {
+            example: plan.answerFallback,
+            question: checks.question,
+            functionWords: checks.functionWords,
+          }
+        : null,
+    ...(checks.repeat ? { repeat: { spoken: checks.spoken ?? [] } } : {}),
+  };
+}
+
+/**
  * 새 꼴 문장 문(정한 것 19 · 02-2 200 · 202 · 204줄 · 6.4). 질문을 쓰지 않는 차례(카드 자리 · 마무리 자리 · 질문 없는 AI 차례)의 물음표 문장은
  * 지운다. AI 차례 1~3단계는 물음표 문장부터 응답 끝까지 잡아 둔다(A4-03 에 쓰는 next_targets 가 응답 끝에 온다). 4단계부터는 물음표 문장이
- * 끝날 때 같은 질문만 본다(막힌 바로 뒤의 막힌 질문 · talk.same_question_max). 1~3단계 신호 말은 AI 차례면 잡아 두고(소리 줄이 비면 끝에서
- * 지운다 — 묶음 6 검토 8절 (나)), 카드 자리는 계획에 소리 줄이 있을 때만 보낸다. 붙일 소리 줄의 답을 담은 선생님 문장은 지운다(C125 (3)).
- * stuck 이 오기 전에 문장이 오면(칸 차례를 어김) 답함 계획으로 본다.
+ * 끝날 때 같은 질문만 본다(막힌 바로 뒤의 막힌 질문 · talk.same_question_max). 붙일 소리 줄의 답을 담은 선생님 문장은 지운다(C125 (3)).
+ * 1~3단계('AI 몫 넓힘' plan 2 행): AI 가 쓴 신호 말은 늘 지운다(cue — 신호 말은 앱이 붙인다, C207), 물음표 아닌 문장의 지어낸 경험 꼴을 지운다
+ * (made_up — 질문은 남아 질문 검사를 받는다), 상황 차례(인사 끝 · 받침 · 들리지 않음)의 물음표 아닌 문장은 상황 검사를 받아 첫 걸림은 시드 상황
+ * 줄로 바꾸고 뒤 걸림은 지운다(범위를 못 읽은 턴은 모두 걸림). stuck 이 오기 전에 문장이 오면(칸 차례를 어김) 답함 계획으로 본다.
  */
 export function createLessonSentenceFlow({
   low,
@@ -629,20 +769,82 @@ export function createLessonSentenceFlow({
   ifStuck,
   asked,
   max,
+  live = null,
 }: {
   low: boolean;
   ifAnswered: TeacherTurnPlan;
   ifStuck: TeacherTurnPlan | null;
   asked: ReadonlyMap<string, number>;
   max: number;
+  live?: LessonLiveChecks | null;
 }): LessonSentenceFlow {
   let stuck: boolean | undefined;
   let holding = false;
   // 4단계부터 같은 질문으로 한 문장을 지운 뒤의 물음표 문장도 지운다(한 턴에 질문 하나 — 검토 M-1)
   let sameDropped = false;
+  // 상황 차례에서 상황 줄로 바꾼 문장이 있다(뒤 걸림은 지운다 — spec 설계 1 말 검사 끝)
+  let situationUsed = false;
   const list: LessonSentence[] = [];
   const chosen = () => (stuck === true && ifStuck ? ifStuck : ifAnswered);
   const answer = { send: "send", held: "hold", dropped: "drop" } as const;
+  /** 1~3단계 실시간 검사(신호 말 · 지어낸 경험 · 상황 차례) — 지웠으면 참. */
+  const liveDrop = (entry: LessonSentence, plan: TeacherTurnPlan): boolean => {
+    if (!low) return false;
+    if (entry.cue) {
+      entry.state = "dropped";
+      entry.reason = "cue";
+      return true;
+    }
+    if (entry.question || live === null) return false;
+    if (madeUpHit(entry.en, live.madeUp) !== null) {
+      entry.state = "dropped";
+      entry.reason = "made_up";
+      return true;
+    }
+    const checks = live.situation;
+    const place = checks ? situationPlaceOf(plan) : null;
+    if (!checks || place === null) return false;
+    // [N-2] 상황 줄로 바꾼 뒤의 AI 문장은 지운다(상황 줄이 반응 · 넘김을 이미 담는다 — 같은 뜻 두 번 말하기 막음, 대본 회차 r2 판정 N-2)
+    // [N-2] 이 턴에 남긴 문장과 같은 뜻을 되풀이하는 AI 문장도 지운다(echoesTurnSentence)
+    if (
+      situationUsed ||
+      echoesTurnSentence(
+        entry.en,
+        list
+          .filter((e) => e.state !== "dropped" && !e.question)
+          .map((e) => e.en),
+      )
+    ) {
+      entry.state = "dropped";
+      entry.reason = "situation";
+      return true;
+    }
+    const check = checkSituationSentence(
+      entry.en,
+      situationContextOf(place, plan, checks),
+    );
+    if (check.ok) return false;
+    const reacted = list.some(
+      (e) => e.state !== "dropped" && !e.question && !e.cue,
+    );
+    const line = situationLineOf(checks.lines, place, checks.turnNo, {
+      sentences: list.filter((e) => e.state !== "dropped").map((e) => e.en),
+      texts: checks.spoken ?? [],
+      reacted,
+    });
+    if (line === null) {
+      entry.state = "dropped";
+      entry.reason = "situation";
+      return true;
+    }
+    situationUsed = true;
+    // [N-1] 이 턴에 AI 맞장구가 남았으면 상황 줄의 넘김만 붙인다(반응은 AI, 넘김은 앱 — 대본 회차 r2 판정 N-1 (나))
+    const shown = situationTailOf(line, reacted);
+    entry.ai = entry.en;
+    entry.en = shown.en;
+    entry.ko = shown.ko;
+    return false;
+  };
   return {
     // 시도마다 덮어쓴다(다시 부름은 문장이 하나도 닿지 않았을 때만 일어나 앞 판단으로 고른 문장이 없다 — 검토 M-2)
     stuck(value) {
@@ -651,20 +853,16 @@ export function createLessonSentenceFlow({
     accept(en) {
       const plan = chosen();
       const question = isQuestionSentence(en);
-      const cue = low && isSoundCue(en);
+      const cue = low && isSoundCue(en, live?.cuePhrases ?? []);
       const entry: LessonSentence = { en, question, cue, state: "sent" };
       const answers = soundAnswersOf(plan);
       const asks = asksQuestion(plan);
-      // 1~3단계 받침 닫기(셋째) · 들리지 않음 차례는 답을 한 번 들려주고 넘어가는 자리라 따라 말하기 신호 말을 지운다(13절 C204 (5) · 02-2 261줄)
-      const closes =
-        plan.stage >= TALK_SUPPORT_STAGE_MAX || plan.cause === "nospeech";
-      if (cue && closes) {
-        entry.state = "dropped";
-        entry.reason = "together";
+      if (liveDrop(entry, plan)) {
+        // 지움(1~3단계 신호 말 · 지어낸 경험 · 상황 차례 둘째 걸림부터)
       } else if (
         answers.length > 0 &&
         sayingAnswer(
-          en,
+          entry.en,
           answers.map((a) => [a, a] as const),
         )
       ) {
@@ -692,18 +890,11 @@ export function createLessonSentenceFlow({
           entry.reason = "same";
           sameDropped = true;
         }
-      } else if (cue) {
-        if (plan.kind === "ai") {
-          holding = true;
-          entry.state = "held";
-        } else if (answers.length === 0) {
-          entry.state = "dropped";
-          entry.reason = "question";
-        }
       }
       list.push(entry);
       return entry.state === "sent" ? answer.send : answer[entry.state];
     },
+    lastText: () => list.at(-1)?.en ?? "",
     entries: () => list.map((e) => ({ ...e })),
     chosen,
     stuckValue: () => stuck,
@@ -835,7 +1026,20 @@ export type LessonSettleContext = LessonSlotContext & {
   spec: Pick<TalkLessonSpec, "band" | "koMeaning">;
   /** 1~3단계 질문 검사 재료(범위를 읽지 못했으면 null — 그 턴의 AI 질문은 모두 걸린 것으로 본다). */
   lineOptions: LowLevelLineOptions | null;
+  /** 1~3단계 상황 줄 · 신호 말 재료('AI 몫 넓힘' plan 2 행). 없으면 상황 줄 대신 길 · 신호 말이 없다(4단계부터 · 옛 시험). */
+  live?: LessonSettleLive | null;
 };
+
+export type LessonSettleLive = {
+  /** 상황 줄(자리마다) · 이 선생님 차례의 턴 번호(돌림). */
+  situationLines: Partial<TalkSituationLinesFile["lines"]>;
+  turnNo: number;
+  /** 신호 말 목록과 구간(1~3단계 — cueBandOf). 지난 선생님 행 move 는 ctx.turns 에서 센다. */
+  cue: { file: TalkCueLinesFile; band: CueBand } | null;
+};
+
+/** 앱이 붙인 한 줄(신호 말 — 화면에 보이고 읽지만 text · rewrite · 기록에 넣지 않는다). */
+export type LessonCueLine = { en: string; ko?: string };
 
 export type LessonTurnResult = {
   /** 최종 계획(카드 자리로 바뀐 것 포함). */
@@ -860,7 +1064,19 @@ export type LessonTurnResult = {
   text: string;
   /** 다시 쓸 선생님 차례(화면 차례대로, 소리 줄 포함 · 뜻 없음 — 6.1 · AC-15k). */
   rewrite: string;
+  /** 1~3단계 신호 말 한 줄(뜻 줄 뒤 · 소리 줄 앞, text · rewrite 밖 — spec 설계 6 · AC-6 (가)). 없으면 null. */
+  cue: LessonCueLine | null;
 };
+
+/** 선생님 행들의 화면 글(차례대로 — 상황 줄 되풀이 피하기 재료). */
+export function teacherTextsOf(turns: readonly TalkLessonTurn[]): string[] {
+  return turns.flatMap((t) => (t.speaker === "teacher" ? [t.text] : []));
+}
+
+/** 선생님 행들의 move(차례대로 — 신호 말 셈 재료). */
+function teacherMovesOf(turns: readonly TalkLessonTurn[]): (TalkMove | null)[] {
+  return turns.flatMap((t) => (t.speaker === "teacher" ? [t.move] : []));
+}
 
 function toAppend(line: TeacherAttachLine): AppendLine | null {
   if (line.kind === "question")
@@ -993,6 +1209,17 @@ export function settleLessonTurn({
     .map((e) => e.en);
   if (dropped.length > 0) why = "same_question";
 
+  // [M-r2-1] 1~3단계는 한 차례 질문 하나 — 잡아 둔 질문이 둘 이상이면 마지막 것만(core keepLastHeldQuestion)
+  if (low)
+    keepLastHeldQuestion(entries, (q) => {
+      const o = ctx.lineOptions;
+      return (
+        value !== null &&
+        o !== null &&
+        o.childLines !== undefined &&
+        questionEchoesChild(q, o.childLines, o.lemmaOf, value.next_targets)
+      );
+    });
   const heldQuestions = entries.filter((e) => e.state === "held" && e.question);
   if (heldQuestions.length > 0) {
     let fail: TalkSlotWhy | null = null;
@@ -1058,7 +1285,10 @@ export function settleLessonTurn({
   let plan = chosen;
   let replaced: TalkSlotWhy | null = null;
   if (asks && why) {
-    const slot = lessonCardSlotOf(chosen, why, { ...ctx, dropped });
+    // 1~3단계 둘째 인사(AI 인사 질문)가 걸리면 카드 둘째 인사 질문을 붙인다(spec 설계 2 [M-2] — 카드 기회 질문이 아님)
+    const slot = chosen.greetingFallback
+      ? greetingFallbackSlotOf(chosen, chosen.greetingFallback, why)
+      : lessonCardSlotOf(chosen, why, { ...ctx, dropped });
     if (slot) {
       plan = slot;
       replaced = why;
@@ -1092,11 +1322,34 @@ export function settleLessonTurn({
       e.reason = "overlap";
     }
   }
-  const release = all.filter((e) => e.state === "held").map((e) => e.en);
-  const kept = all.filter(willKeep).map((e) => e.en);
+  // 반응이 다 지워진 1~3단계 상황 차례(AI 신호 말뿐 · 걸린 문장뿐 · 물음표뿐)는 상황 줄 하나를 반응 자리에 둔다('AI 몫 넓힘' plan 2 행).
+  // 이 턴은 보낸 반응 문장이 없어(질문은 1~3단계에서 늘 잡아 둠) 상황 줄을 맨 앞에 둬도 화면 차례가 맞다
+  const place = low ? situationPlaceOf(chosen) : null;
+  const reacted = all.some((e) => willKeep(e) && !e.question);
+  const fallbackLine =
+    place !== null && ctx.live && outcome.kind === "ok" && !reacted
+      ? situationLineOf(ctx.live.situationLines, place, ctx.live.turnNo, {
+          sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
+          texts: teacherTextsOf(ctx.turns),
+        })
+      : null;
+  const fallback: LessonSentence[] = fallbackLine
+    ? [
+        {
+          en: fallbackLine.en,
+          question: false,
+          cue: false,
+          state: "held",
+          ko: fallbackLine.ko,
+        },
+      ]
+    : [];
+  const ordered = [...fallback, ...all];
+  const release = ordered.filter((e) => e.state === "held").map((e) => e.en);
+  const kept = ordered.filter(willKeep).map((e) => e.en);
 
   const attach = shownAttachOf(kept, plan.attach);
-  const sentAll = all.map((e) => e.en);
+  const sentAll = ordered.map((e) => e.en);
   // 뜻은 뜻을 보이는 단계만, 문장마다의 뜻이면 빠진 선생님 문장의 뜻만 뺀다(13절 C202 (5) — plan 정한 것 9 의 '겹침 규칙 그대로'를 바꿈).
   // 문장과 맞출 수 없는 뜻(수가 다름 · 옛 한 글)은 옛 규칙: 1~3단계는 선생님 문장이 빠진 턴이면 흘리지도 저장하지도 않는다(T2).
   // 문장 문에 걸린 문장이 있는 응답은 걸린 문장의 뜻을 가려낼 수 없어 뜻을 보이지 않는다
@@ -1108,14 +1361,17 @@ export function settleLessonTurn({
         : line?.ko !== undefined
           ? line.ko
           : null;
-  const ko = ctx.spec.koMeaning
-    ? toriKoShownOf({
-        ko: koRaw,
-        sent: sentAll,
-        shown: kept,
-        lowBand: isLowBand(ctx.spec),
-      })
-    : null;
+  const situationKo = situationKoOf({ koRaw, entries, fallback, ordered });
+  const ko = !ctx.spec.koMeaning
+    ? null
+    : situationKo
+      ? situationKo.ko
+      : toriKoShownOf({
+          ko: koRaw,
+          sent: sentAll,
+          shown: kept,
+          lowBand: isLowBand(ctx.spec),
+        });
 
   const keepNext = plan.kind === "ai" && !questionDropped;
   // 4단계부터 끊긴 턴에 보낸 질문이 남으면 그 질문의 카드 항목을 알 수 없다 — 계획의 카드 항목(막힌 자리)을 남기지 않는다(07 60줄, 검토 M-3)
@@ -1181,6 +1437,16 @@ export function settleLessonTurn({
     },
     appended: attach.flatMap((l) => ("en" in l ? [l.en] : [])),
   });
+  // 신호 말은 이 행 move 와 지난 선생님 행 move 로 다시 고른다(저장하지 않음 — plan 정한 것 6)
+  const cueSource = low ? (ctx.live?.cue ?? null) : null;
+  const cueLine = cueSource
+    ? cueLineForTurn({
+        prior: teacherMovesOf(ctx.turns),
+        move,
+        band: cueSource.band,
+        file: cueSource.file,
+      })
+    : null;
   return {
     plan,
     replaced,
@@ -1194,7 +1460,79 @@ export function settleLessonTurn({
     aiQuestion,
     text,
     rewrite,
+    cue: cueLine ? cueLineView(cueLine, ctx.spec.koMeaning) : null,
   };
+}
+
+/** 신호 말 · 상황 줄 한 줄의 흘림 꼴(뜻은 뜻을 보이는 단계만). */
+function cueLineView(line: TalkListLine, koMeaning: boolean): LessonCueLine {
+  return {
+    en: line.en,
+    ...(koMeaning && line.ko !== "" ? { ko: line.ko } : {}),
+  };
+}
+
+/** 1~3단계 둘째 인사 AI 질문이 걸린 턴(재질문 뒤): 카드 둘째 인사 질문을 붙인 카드 자리(spec 설계 2 [M-2] · AC-2 (나)). */
+function greetingFallbackSlotOf(
+  chosen: TeacherTurnPlan,
+  line: TeacherAttachLine,
+  why: TalkSlotWhy,
+): TeacherTurnPlan {
+  return {
+    ...chosen,
+    kind: "card_slot",
+    callsAi: true,
+    aiAsks: false,
+    why,
+    attach: [line],
+    app: [],
+  };
+}
+
+/**
+ * 상황 줄이 든 턴의 뜻(1~3단계 — 상황 줄로 바뀐 문장 · 반응 자리 상황 줄이 있을 때만, 아니면 null 로 옛 규칙에 맡긴다). AI 뜻이 문장마다이고 수가
+ * 맞으면 바뀐 문장 자리를 상황 줄 뜻으로 바꿔 빠진 문장의 뜻만 뺀다. 맞출 수 없으면 남은 문장이 모두 상황 줄일 때만 그 뜻을 잇고, 아니면 뜻이 없다.
+ */
+function situationKoOf({
+  koRaw,
+  entries,
+  fallback,
+  ordered,
+}: {
+  koRaw: string | readonly string[] | null;
+  entries: readonly LessonSentence[];
+  fallback: readonly LessonSentence[];
+  ordered: readonly LessonSentence[];
+}): { ko: string | null } | null {
+  if (fallback.length === 0 && !entries.some((e) => e.ko !== undefined))
+    return null;
+  const kept = ordered.filter((e) => e.state !== "dropped");
+  if (
+    typeof koRaw !== "string" &&
+    koRaw !== null &&
+    koRaw.length === entries.length
+  ) {
+    const list = [
+      ...fallback.map((e) => e.ko ?? ""),
+      ...entries.map((e, i) => e.ko ?? koRaw[i] ?? ""),
+    ];
+    return {
+      ko: toriKoShownOf({
+        ko: list,
+        sent: ordered.map((e) => e.en),
+        shown: kept.map((e) => e.en),
+        lowBand: true,
+      }),
+    };
+  }
+  if (kept.length > 0 && kept.every((e) => e.ko !== undefined)) {
+    const joined = kept
+      .map((e) => (e.ko ?? "").trim())
+      .filter((k) => k !== "")
+      .join(" ");
+    return { ko: joined === "" ? null : joined };
+  }
+  return { ko: null };
 }
 
 /** 붙일 줄 → 흘려 보낼 줄(1~3단계 받침 답은 소리 줄, 4단계부터 답은 글 줄 — 3.3 막힘 표). */
@@ -1223,12 +1561,28 @@ export function attachLineOf(line: TeacherAttachLine): TalkLessonLine {
   }
 }
 
-/** 선생님 문장 뒤에 흘려 보낼 줄: 뜻 → AI 소리 줄(따라 할 말 · 선택지) → 붙일 줄(화면 차례 — 답 소리 → 다음 질문, 02-2 261줄). */
+/** 신호 말 흘림 줄(add · kind cue). */
+function cueAddOf(cue: LessonCueLine): TalkLessonLine {
+  return {
+    t: "add",
+    kind: TALK_CUE_LINE_KIND,
+    en: cue.en,
+    ...(cue.ko !== undefined ? { ko: cue.ko } : {}),
+  };
+}
+
+/**
+ * 선생님 문장 뒤에 흘려 보낼 줄: 뜻 → 1~3단계 신호 말(있으면) → AI 소리 줄(따라 할 말 · 선택지) → 붙일 줄(화면 차례 — 답 소리 → 다음 질문,
+ * 02-2 261줄).
+ */
 export function lessonAfterLinesOf(
-  result: Pick<LessonTurnResult, "ko" | "sound" | "attach">,
+  result: Pick<LessonTurnResult, "ko" | "sound" | "attach"> & {
+    cue?: LessonCueLine | null;
+  },
 ): TalkLessonLine[] {
   return [
     ...(result.ko !== null ? [{ t: "ko", ko: result.ko } as const] : []),
+    ...(result.cue ? [cueAddOf(result.cue)] : []),
     ...(result.sound.model !== undefined
       ? [{ t: "sound", kind: "model", say: result.sound.model } as const]
       : []),
@@ -1245,15 +1599,26 @@ export function lessonAfterLinesOf(
   ];
 }
 
-/** 카드에서 영어 질문의 뜻(이어 하기 · 같은 시도 id 다시 흘림 — 필수 질문 · 더 이야기할 거리 · 쉬운 질문 · 인사 질문). */
-function questionKoIn(
-  card: Pick<TalkLessonCard, "required" | "more" | "greeting">,
-  en: string,
-): string | undefined {
+/** 다시 흘림 · 뜻 찾기가 읽는 카드 칸(장면 여는 질문은 1~3단계 새 꼴 카드에만 있다). */
+type LessonReplayCard = Pick<
+  TalkLessonCard,
+  "required" | "more" | "greeting"
+> & {
+  sceneOpener?: Pick<TalkSceneOpener, "question" | "easyQuestion"> | undefined;
+};
+
+/**
+ * 카드에서 영어 질문의 뜻(이어 하기 · 같은 시도 id 다시 흘림 — 필수 질문 · 더 이야기할 거리 · 쉬운 질문 · 1~3단계 장면 여는 질문과 그 쉬운 질문
+ * · 인사 질문).
+ */
+function questionKoIn(card: LessonReplayCard, en: string): string | undefined {
   for (const item of [...card.required, ...card.more]) {
     if (item.en === en) return item.ko;
     if (item.easyQuestion.en === en) return item.easyQuestion.ko;
   }
+  const scene = card.sceneOpener;
+  if (scene?.question.en === en) return scene.question.ko;
+  if (scene?.easyQuestion.en === en) return scene.easyQuestion.ko;
   if ("questions" in card.greeting)
     return card.greeting.questions.find((q) => q.question.en === en)?.question
       .ko;
@@ -1267,8 +1632,10 @@ function questionKoIn(
 export function lessonReplayLinesOf(
   row: Pick<TalkTurnRow, "text" | "toriKo" | "move">,
   ctx: {
-    card: Pick<TalkLessonCard, "required" | "more" | "greeting">;
+    card: LessonReplayCard;
     koMeaning: boolean;
+    /** 이 행의 신호 말(지난 선생님 행 move 로 다시 고른 것 — lessonCueOfRows). 없으면 null. */
+    cue?: LessonCueLine | null;
   },
 ): TalkLessonLine[] {
   const { aiPart, appended } = toriLinesOf(row.text);
@@ -1278,6 +1645,7 @@ export function lessonReplayLinesOf(
     .filter((s) => s !== "")
     .map((en) => ({ t: "s", en }) as const);
   if (row.toriKo) out.push({ t: "ko", ko: row.toriKo });
+  if (ctx.cue) out.push(cueAddOf(ctx.cue));
   const sound = move?.sound;
   if (sound?.model) out.push({ t: "sound", kind: "model", say: sound.model });
   if (sound?.choices)
@@ -1628,8 +1996,10 @@ const lineOf = (
 
 /**
  * 회화 턴 결과 → 끝 처리 꼴(8절 회화 턴 실패): 성공 · 첫 문장 뒤 끊김은 그대로, 거절(두 모델)은 카드 안전한 대사 한 줄, 그 밖의 실패
- * (두 번 실패 · 설정 · 하루 안전 상한)는 1~3단계면 카드 칭찬 대사 한 줄(카드 자리 · '말했다' 없음), 4단계부터는 'Oops' 쉼(선생님 행 없음 —
- * 세션은 진행으로 남아 같은 시도 id 로 이어 한다, 4단계는 뜻 함께).
+ * (두 번 실패 · 설정 · 하루 안전 상한)는 1~3단계면 카드 안전한 대사 한 줄(뜻 함께 — 턴 번호로 돌림, 카드 자리 · '말했다' 없음. 대본 회차 r1 판정
+ * I-3 (나): 칭찬 대사는 시드에 뜻 칸이 없어 1~3단계 아이가 아무 글도 못 봤다), 4단계부터는 'Oops' 쉼(선생님 행 없음 — 세션은 진행으로 남아 같은
+ * 시도 id 로 이어 한다, 4단계는 뜻 함께). 1~3단계 상황 차례(인사 끝 · 받침 · 들리지 않음)와 아이 말이 모름 꼴인 차례(failSituationPlaceOf)는
+ * 거절 · 실패 모두 그 자리 상황 줄이다(spec 설계 1 대신 줄 행 · AC-1 (마) — 계획의 붙일 줄은 그대로, 인사 끝 뒤 카드 질문 없음).
  */
 export function lessonOutcomeViewOf(
   outcome: TalkLessonOutcome,
@@ -1637,11 +2007,19 @@ export function lessonOutcomeViewOf(
     low: boolean;
     koMeaning: boolean;
     safeLines: readonly { en: string; ko?: string | undefined }[];
-    praiseLines: readonly string[];
     safeLine: string;
     turnNo: number;
+    /** 1~3단계 상황 차례의 상황 줄(situationLineOf). 상황 차례가 아니거나 목록이 없으면 null. */
+    situation?: TalkListLine | null;
   },
 ): LessonOutcomeView | { kind: "break"; line: { en: string; ko?: string } } {
+  if (
+    !outcome.ok &&
+    outcome.reason !== "cut_after_first" &&
+    ctx.low &&
+    ctx.situation
+  )
+    return { kind: "line", line: cueLineView(ctx.situation, ctx.koMeaning) };
   if (outcome.ok)
     return {
       kind: "ok",
@@ -1661,16 +2039,11 @@ export function lessonOutcomeViewOf(
     };
     return { kind: "line", line: lineOf(safe, true) };
   }
-  if (ctx.low)
-    return {
-      kind: "line",
-      line: {
-        en: safeLineOf(
-          ctx.praiseLines.map((en) => ({ en })),
-          ctx.turnNo,
-        ),
-      },
-    };
+  if (ctx.low) {
+    const en = safeLineOf(ctx.safeLines, ctx.turnNo);
+    const safe = ctx.safeLines.find((l) => l.en === en) ?? { en };
+    return { kind: "line", line: lineOf(safe, ctx.koMeaning) };
+  }
   return {
     kind: "break",
     line: {
@@ -1687,7 +2060,112 @@ export type LessonTurnDeps = TalkServerDeps & {
   write: (line: TalkLessonLine) => void;
   /** AI 를 부르기 직전에 한 번 — 구간마다 준비 시간(13절 C125 (4) · NFR-8). 아이 글은 들지 않는다. */
   onPrepTimings?: (timings: StageTimings) => void;
+  /** 회화 1~3단계 시드 목록 넷(seedHomophones 꼴 — 없으면 seed/lists 를 읽는다, 시험이 바꾼다). */
+  talkLists?: () => LessonTalkLists;
 };
+
+/** 회화 1~3단계 시드 목록 넷('AI 몫 넓힘' plan 정한 것 5 — 신호 말 · 상황 줄과 금지 구 · 허용 · 느낌 낱말 · 지어낸 경험 꼴). */
+export type LessonTalkLists = {
+  cue: TalkCueLinesFile;
+  situation: TalkSituationLinesFile;
+  allowed: TalkAllowedWordsFile;
+  madeUp: readonly string[];
+};
+
+/** 시드 목록 넷을 읽는다(파일이 없으면 빈 목록 — seed-lists 의 경고 한 번). */
+export function seedLessonTalkLists(): LessonTalkLists {
+  return {
+    cue: seedTalkCueLines(),
+    situation: seedTalkSituationLines(),
+    allowed: seedTalkAllowedWords(),
+    madeUp: seedTalkMadeUpPhrases(),
+  };
+}
+
+/**
+ * 상황 차례 답 글 검사의 질문 글(spec 설계 1 말 검사 (나) — '그 질문 글(장면 문장 포함)'): 그 질문 자리를 연 선생님 행(opensSlot)부터 지금까지
+ * 선생님 행의 화면 글을 잇는다(받침 둘째의 쉬운 질문 포함). 선생님 행이 없으면 빈 글.
+ */
+export function slotQuestionTextOf(turns: readonly TalkLessonTurn[]): string {
+  const texts: string[] = [];
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const row = turns[i];
+    if (row?.speaker !== "teacher") continue;
+    texts.unshift(row.text);
+    if (opensSlot(row)) break;
+  }
+  return texts.join(" ");
+}
+
+/** 받침 · 들리지 않음 차례이고 답 예시가 있다(답 글 검사 — 기능어를 읽어야 한다). */
+function answerCheckedPlan(plan: TeacherTurnPlan): boolean {
+  const place = situationPlaceOf(plan);
+  return place !== null && place !== "greeting_end" && !!plan.answerFallback;
+}
+
+/** 기능어(어휘 시드의 기능어 표시 — 소문자). 읽지 못하면 빈 모음(답 예시 낱말을 모두 내용어로 보아 더 걸린다)이고 오류 이름만 남긴다. */
+async function readFunctionWords(db: Db): Promise<Set<string>> {
+  try {
+    const rows = await db
+      .select({ word: vocab.word })
+      .from(vocab)
+      .where(arrayContains(vocab.partsOfSpeech, [FUNCTION_POS]));
+    return new Set(rows.map((r) => r.word.toLowerCase()));
+  } catch (error) {
+    console.error(
+      `회화 상황 차례 기능어를 읽지 못했다(${error instanceof Error ? error.name : "Error"})`,
+    );
+    return new Set();
+  }
+}
+
+/**
+ * 허용 낱말의 모든 단계 원형 찾기(컨트롤러 결정 (나) — 허용 목록은 원형만 담는데 범위 원형 표는 그 단계 이하 vocab 만 안다). 허용 낱말인 vocab 행의
+ * 활용형(단계 무관)을 원형에 잇는다(허용 낱말 수만큼의 행). 읽지 못하면 null(규칙 꼬리 떼기로 대신)이고 오류 이름만 남긴다.
+ */
+async function readAllowedLemmaOf(
+  db: Db,
+  allowed: readonly string[],
+): Promise<((surface: string) => string | undefined) | null> {
+  if (allowed.length === 0) return null;
+  try {
+    const rows = await db
+      .select({ word: vocab.word, forms: vocab.forms })
+      .from(vocab)
+      .where(inArray(vocab.word, [...allowed]));
+    return allowedLemmaOfVocab(
+      rows.map((r) => ({
+        word: r.word,
+        forms: Array.isArray(r.forms)
+          ? r.forms.filter((f): f is string => typeof f === "string")
+          : [],
+      })),
+      allowed,
+    );
+  } catch (error) {
+    console.error(
+      `회화 허용 낱말 원형을 읽지 못했다(${error instanceof Error ? error.name : "Error"})`,
+    );
+    return null;
+  }
+}
+
+/** 1~3단계 선생님 행의 신호 말(같은 시도 id 다시 흘림 — 지난 선생님 행 move 로 다시 고른다, plan 정한 것 6). 마지막 선생님 행 몫이다. */
+export function lessonCueOfRows(
+  state: Pick<TalkLessonState, "level" | "turns"> & {
+    spec: Pick<TalkLessonSpec, "koMeaning">;
+  },
+  lists: Pick<LessonTalkLists, "cue"> | null,
+): LessonCueLine | null {
+  const band = cueBandOf(state.level);
+  if (band === null || lists === null) return null;
+  const line = cueLinesOfMoves({
+    moves: teacherMovesOf(state.turns),
+    band,
+    file: lists.cue,
+  }).at(-1);
+  return line ? cueLineView(line, state.spec.koMeaning) : null;
+}
 
 /** turn.ts 가 갈래 앞에서 함께 읽은 값(프로필 · 가림 · 설정 · 하루 안전 상한 확인 · 시간 재기). */
 export type LessonTurnShared = {
@@ -1718,15 +2196,21 @@ type Begun =
   | { kind: "replay"; state: TalkLessonState; teacher: TalkTurnRow }
   | { kind: "call"; state: TalkLessonState; child: TalkTurnRow };
 
-/** 같은 시도 id 의 저장된 선생님 행을 다시 흘려 보낸다(AI 없음). */
+/** 같은 시도 id 의 저장된 선생님 행을 다시 흘려 보낸다(AI 없음 — 신호 말은 지난 선생님 행 move 로 다시 고른다). */
 function replayLesson(
   state: TalkLessonState,
   teacher: TalkTurnRow,
-  write: LessonTurnDeps["write"],
+  deps: Pick<LessonTurnDeps, "write" | "talkLists">,
 ) {
+  const { write } = deps;
+  const lists =
+    cueBandOf(state.level) === null
+      ? null
+      : (deps.talkLists ?? seedLessonTalkLists)();
   for (const line of lessonReplayLinesOf(teacher, {
     card: state.card,
     koMeaning: state.spec.koMeaning,
+    cue: lessonCueOfRows(state, lists),
   }))
     write(line);
   write({
@@ -1865,7 +2349,7 @@ export async function runTalkLessonTurn(
       return;
     }
     if (begun.kind === "replay") {
-      replayLesson(begun.state, begun.teacher, write);
+      replayLesson(begun.state, begun.teacher, deps);
       return;
     }
     const { state, child } = begun;
@@ -1989,7 +2473,29 @@ async function lessonTurnAfterChild(
     nospeech:
       (child.clientListen as { src?: unknown } | null)?.src === "nospeech",
   };
-  const args = lessonArgsOf(state);
+  // 이 대화의 아이 말(인식 글 — 이번 말을 끝에). 1~3단계는 아이가 먼저 답한 필수 질문을 남은 기회에서 빼고(판정 r1 I-2), 질문 검사가 아이
+  // 말을 되묻는 질문을 건다(I-6). 4단계부터는 고치기 전 그대로다
+  const childLines = childLinesOf(
+    lateCardRowsOf(state.liveRows),
+    mode === "speech" ? (child.text ?? "") : null,
+  );
+  const args: LessonArgs = isLowBandLevel(state.level)
+    ? {
+        ...lessonArgsOf(state),
+        // 따라 말한 · 고른 아이 말은 '먼저 답함'에서 뺀다(코드 검토 Minor 2)
+        childAnswered: childAnsweredRequiredOf({
+          required: state.card.required,
+          childLines: childLinesOf(
+            lateCardRowsOf(state.liveRows),
+            mode === "speech" ? (child.text ?? "") : null,
+            true,
+          ),
+          lemmaOf: state.lemmaOf,
+        }),
+      }
+    : lessonArgsOf(state);
+  // 상황 줄 · 예의 돌림 번호(이 선생님 차례 턴 번호 + 세션마다 다른 값 — 판정 r1 M-6)
+  const rotationNo = situationRotationOf(child.turnNo + 1, state.session.id);
   const lite = lessonChildLiteOf(position, input, state.settings);
   const plans =
     mode === "speech"
@@ -2024,10 +2530,24 @@ async function lessonTurnAfterChild(
       explanation: text,
     });
   explainFor(ifAnswered, false, "");
+  const low = isLowBandLevel(state.level);
+  // 1~3단계 시드 목록 넷 · 답 글 검사의 기능어('AI 몫 넓힘' plan 2 행 — 기능어는 받침 · 들리지 않음 차례에 답 예시가 있을 때만 읽는다)
+  const lists = low ? (deps.talkLists ?? seedLessonTalkLists)() : null;
+  const functionWordsP =
+    low && [ifAnswered, ifStuck].some((p) => p !== null && answerCheckedPlan(p))
+      ? readFunctionWords(db)
+      : Promise.resolve(new Set<string>());
+  // 허용 낱말 대조의 모든 단계 원형(상황 차례가 있을 때만 — 범위 읽기와 나란히)
+  const allowedLemmaP =
+    lists &&
+    [ifAnswered, ifStuck].some(
+      (p) => p !== null && situationPlaceOf(p) !== null,
+    )
+      ? readAllowedLemmaOf(db, lists.allowed.allowed)
+      : Promise.resolve(null);
 
   const ctx = await ctxP;
   timer.mark("checks_context");
-  const low = isLowBandLevel(state.level);
   let range: LessonRange;
   let rangeBroken = false;
   try {
@@ -2048,6 +2568,11 @@ async function lessonTurnAfterChild(
     hintKind: (child.hintKind ?? "none") as TalkHintKind,
     hintTier: child.hintLevel ?? 0,
     heardHelp: (child.heardHelp ?? "none") as TalkHeardHelp,
+    // 1~3단계 'Child said more' 줄(느낌 낱말 · 원형 — 계획이 1~3단계일 때만 줄이 생긴다, 묶음 1 talkCallTurnOf)
+    ...(lists ? { feelingWords: lists.allowed.feeling } : {}),
+    lemmaOf: range.lemmaOf,
+    // 1~3단계 상황 차례의 'Example line'(그 자리 예 하나 — 판정 r1 I-1 (가))
+    exampleTurn: rotationNo,
   });
   const turn = lessonCallTurnOf(planned, {
     speech: mode === "speech",
@@ -2075,12 +2600,36 @@ async function lessonTurnAfterChild(
   );
 
   // (7) 회화 턴 — 문장 문을 지난 문장만 바로 보낸다. onSentence 는 던지지 않는다(a2 M1 계약)
+  const lineOptions =
+    low && !rangeBroken ? { ...lineOptionsOf(callInput), childLines } : null;
+
+  const live: LessonLiveChecks | null = lists
+    ? {
+        cuePhrases: seedCuePhrasesOf(lists.cue),
+        madeUp: lists.madeUp,
+        situation: {
+          options: lineOptions,
+          allowed: new Set(lists.allowed.allowed),
+          allowedLemmaOf: (await allowedLemmaP) ?? undefined,
+          forbidden: lists.situation.forbidden,
+          lines: lists.situation.lines,
+          turnNo: rotationNo,
+          question: slotQuestionTextOf(state.turns),
+          spoken: teacherTextsOf(state.turns),
+          repeat: true,
+          functionWords: await functionWordsP,
+        },
+      }
+    : null;
+  // 들리지 않음 차례(1~3단계)는 앱이 판단한 기술 문제라 응답의 판단 칸을 읽지 않는다(spec 설계 1 응답 칸 행 · AC-1 (가))
+  const notHeardLow = low && mode === "dont_know" && input.nospeech;
   const flow = createLessonSentenceFlow({
     low,
     ifAnswered,
     ifStuck,
     asked: position.askedQuestions,
     max: state.settings.sameQuestionMax,
+    live,
   });
   const send = (en: string) => {
     try {
@@ -2112,7 +2661,7 @@ async function lessonTurnAfterChild(
           hold.onStuck(overridden, asksQuestion(flow.chosen()));
         },
         onSentence: (en) => {
-          if (hold.sends(flow.accept(en) === "send")) send(en);
+          if (hold.sends(flow.accept(en) === "send")) send(flow.lastText());
         },
       },
       { db, clock: deps.now, ...deps.ai },
@@ -2123,20 +2672,33 @@ async function lessonTurnAfterChild(
   }
 
   // (8) 결과 → 선생님 행
+  if (outcome.ok && notHeardLow)
+    outcome = { ...outcome, value: heardFieldsBlankOf(outcome.value) };
   if (outcome.ok) flow.stuck(outcome.value.stuck);
+  // 1~3단계 상황 차례가 두 번 실패 · 거절이면 칭찬 대사 · 안전한 대사 대신 상황 줄(spec 설계 1 대신 줄 행 · AC-1 (마))
+  // 상황 차례가 아닌 1~3단계 턴이 실패하면 뜻이 있는 줄로 — 아이 말이 모름 꼴('Huh?')이면 쉬운 질문으로 넘어가는 상황 줄(판정 r1 I-3 (나)(다))
+  // ('쉬운'을 약속하지 않는 줄 — 코드 검토 Minor 3, core failSituationLineOf)
   const viewOrBreak = lessonOutcomeViewOf(outcome, {
     low,
     koMeaning: state.spec.koMeaning,
     safeLines: state.card.safeLines,
-    praiseLines: state.card.praiseLines,
     safeLine,
     turnNo: child.turnNo,
+    situation:
+      low && lists
+        ? failSituationLineOf(
+            lists.situation.lines,
+            flow.chosen(),
+            mode === "speech" ? (child.text ?? "") : null,
+            rotationNo,
+            teacherTextsOf(state.turns),
+          )
+        : null,
   });
   if (viewOrBreak.kind === "break") {
     write({ t: "break", ...viewOrBreak.line });
     return;
   }
-  const lineOptions = low && !rangeBroken ? lineOptionsOf(callInput) : null;
   // (8-1) 걸린 1~3단계 AI 질문은 카드 자리로 바꾸기 전에 한 번 다시 쓰게 한다(13절 C203 (3)). 다시 쓴 응답의 문장은 아이에게 바로 보내지
   // 않고 새 문장 문에만 넣는다 — 끝 처리가 앞 응답의 반응 뒤에 그 질문을 잇는다. ai_calls 는 같은 목적(talk_turn)에 표지를 단다
   const retriedTurn = await withQuestionRetry({
@@ -2156,6 +2718,7 @@ async function lessonTurnAfterChild(
         ifStuck,
         asked: position.askedQuestions,
         max: state.settings.sameQuestionMax,
+        live,
       });
       again.stuck(flow.stuckValue() === true);
       const answer = await talkLessonTurn(
@@ -2192,9 +2755,16 @@ async function lessonTurnAfterChild(
       };
     },
   });
-  const view: LessonOutcomeView = retriedTurn.view;
+  const view: LessonOutcomeView =
+    notHeardLow && retriedTurn.view.kind === "ok"
+      ? {
+          ...retriedTurn.view,
+          value: heardFieldsBlankOf(retriedTurn.view.value),
+        }
+      : retriedTurn.view;
   const settleFlow = retriedTurn.flow;
   const stuck = flow.stuckValue() === true && mode === "speech";
+  const cueBand = cueBandOf(state.level);
   const turnsWithChild = [
     ...args.turns,
     lessonChildLiteOf(position, input, state.settings, stuck),
@@ -2212,6 +2782,13 @@ async function lessonTurnAfterChild(
       dropped: [],
       spec: state.spec,
       lineOptions,
+      live: lists
+        ? {
+            situationLines: lists.situation.lines,
+            turnNo: rotationNo,
+            cue: cueBand ? { file: lists.cue, band: cueBand } : null,
+          }
+        : null,
     },
   });
   for (const en of result.release) send(en);

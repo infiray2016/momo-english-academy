@@ -1,0 +1,42 @@
+{
+  "name": "l3-greet-tired",
+  "title": "3단계 · 인사 답 '피곤해'",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-2 (다) 인사 대본 셋의 하나(설계 7): 느낌 낱말(tired)이 든 인사 답이다. 인사 끝 말이 피곤하다는 말을 받아 반응하고(다그치지 않음) 질문이 없으며, 다른 인사 대본 둘의 인사 끝 말과 다르다(사람 판정).",
+  "steps": [
+    {
+      "say": "I am tired.",
+      "expect": {
+        "koMeaning": true,
+        "answerFirst": false,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "I eat rice.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "Juice.",
+      "expect": {
+        "recastWord": "juice",
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    }
+  ]
+}

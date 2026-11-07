@@ -1,0 +1,45 @@
+{
+  "name": "l3-scene-other",
+  "title": "3단계 · 장면 여는 질문에 딴 말",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "AC-5 (다) 장면 대본 셋의 하나(설계 7): 대화 첫 질문(고침 뒤는 장면 여는 질문)에 예 · 아니요 대신 제 이야기(고양이)를 꺼낸다. 첫 AI 차례가 그 이야기를 받아 이어 묻고, talk.follow_child_turns 안에 오늘 이야기로 돌아온다(사람 판정 · move 갈래).",
+  "steps": [
+    {
+      "say": "I am fine.",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "I have a cat.",
+      "expect": {
+        "followUp": true,
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "My cat is white.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "We eat rice and fish.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    },
+    {
+      "say": "I drink the juice.",
+      "expect": {
+        "answerFirst": false,
+        "koMeaning": true,
+        "sameSoundTwice": false
+      }
+    },
+    {
+      "say": "We go to the lake.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

@@ -7,7 +7,7 @@
       "kind": "assigned",
       "lessonNo": 1,
       "variant": 1,
-      "revision": 4,
+      "revision": 5,
       "correction": 0,
       "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "44689dd5dffe767b0092d6eea7beabf6156ddaa6a89a1f5c5a1e563238691a39", "agentHash": "38545dfb4447a4c2de79702665448257a3ed4af90d36a6d0dd90c5e8940b06dd", "createdOn": "2026-11-05"},
       "title": "가족과 호수 나들이",
@@ -27,6 +27,7 @@
           {"word": "wash", "meaningKo": "씻다", "example": "I wash my face.", "modelLine": "I wash.", "imageKey": "wash"}
         ],
         "prep": ["eat", "drink", "go"],
+        "sceneOpener": {"question": {"en": "Bikes and ducks at the lake! Do you ride a bike?", "ko": "호수에 자전거랑 오리가 있어! 너는 자전거 타?"}, "hintKo": "응, 나는 자전거를 타.", "hintEn": "Yes, I ride a bike.", "frameEn": "Yes, I ___ a bike.", "answerExample": "Yes, I ride a bike.", "easyQuestion": {"en": "Do you like bikes?", "ko": "자전거 좋아해?"}},
         "required": [
           {"no": 1, "en": "Rice and fish for lunch! What do you do at the table?", "ko": "점심은 밥이랑 생선이야! 식탁에서 뭐 해?", "targets": ["eat"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "우리는 밥이랑 생선을 먹어.", "hints": ["We ___ rice and fish.", "We eat rice and fish."], "answerExample": "We eat rice and fish.", "easyQuestion": {"en": "Are you hungry?", "ko": "배고파?"}},
           {"no": 2, "en": "The sun is hot! What do you do with the juice?", "ko": "햇볕이 뜨거워! 주스로 뭐 해?", "targets": ["drink"], "goals": ["talk-3-1-1"], "ask": "first", "hintKo": "나는 주스를 마셔.", "hints": ["I ___ the juice.", "I drink the juice."], "answerExample": "I drink the juice.", "easyQuestion": {"en": "Do you like juice?", "ko": "주스 좋아해?"}},
@@ -41,7 +42,7 @@
           {"no": 4, "en": "Many dishes on the table! What do you do with the dishes?", "ko": "식탁에 그릇이 많아! 그릇으로 뭐 해?", "targets": ["wash"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "나는 그릇을 씻어.", "hints": ["I ___ the dishes.", "I wash the dishes."], "answerExample": "I wash the dishes.", "easyQuestion": {"en": "Do you help your family?", "ko": "가족을 도와?"}, "imageKey": "dish"},
           {"no": 5, "en": "Food for the ducks! What do the ducks do?", "ko": "오리 먹이야! 오리들은 뭐 해?", "targets": ["come"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "오리들이 나한테 와.", "hints": ["They ___ to me.", "They come to me."], "answerExample": "They come to me.", "easyQuestion": {"en": "Do you like ducks?", "ko": "오리 좋아해?"}, "imageKey": "duck"}
         ],
-        "flow": ["The teacher greets the child and talks about a family trip to the lake.", "The teacher asks about lunch and juice at the lake, one question at a time.", "The teacher brings in come and wash when the child talks about sand or the sun going down.", "The teacher can ask about the family, the dishes or the ducks when the child wants more talk."],
+        "flow": ["After the scene question, the teacher follows the child's answer.", "The teacher asks about lunch and juice at the lake, one question at a time.", "The teacher brings in come and wash when the child talks about sand or the sun going down.", "The teacher can ask about the family, the dishes or the ducks when the child wants more talk."],
         "todayTopicsKo": ["호수에 가기", "점심 먹고 마시기", "손 씻고 집에 오기"],
         "closingLines": [
           {"en": "We go to the lake.", "ko": "우리는 호수에 가."},
@@ -65,7 +66,7 @@
       "kind": "reinforce",
       "lessonNo": 6,
       "variant": 1,
-      "revision": 4,
+      "revision": 5,
       "correction": 0,
       "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "44689dd5dffe767b0092d6eea7beabf6156ddaa6a89a1f5c5a1e563238691a39", "agentHash": "38545dfb4447a4c2de79702665448257a3ed4af90d36a6d0dd90c5e8940b06dd", "createdOn": "2026-11-05"},
       "title": "바닷가와 산 나들이",
@@ -78,6 +79,7 @@
         "greetingTurns": 1,
         "greeting": {"questions": [{"question": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}, "hintKo": "나는 기분 좋아.", "hintEn": "I am happy.", "frameEn": "I am ___.", "answerExample": "I am happy."}]},
         "todayWords": [],
+        "sceneOpener": {"question": {"en": "Hot sun and cool water! Can you swim?", "ko": "뜨거운 해랑 시원한 물이야! 너 수영할 수 있어?"}, "hintKo": "응, 나는 수영할 수 있어.", "hintEn": "Yes, I can swim.", "frameEn": "Yes, I can ___.", "answerExample": "Yes, I can swim.", "easyQuestion": {"en": "Do you like water?", "ko": "물 좋아해?"}},
         "required": [
           {"no": 1, "en": "Sandwiches for lunch! What do you do on the mountain?", "ko": "점심은 샌드위치야! 산에서 뭐 해?", "targets": ["eat"], "goals": ["talk-3-1-1"], "ask": "re_ask", "hintKo": "우리는 샌드위치를 먹어.", "hints": ["We ___ sandwiches.", "We eat sandwiches."], "answerExample": "We eat sandwiches.", "easyQuestion": {"en": "Are you hungry?", "ko": "배고파?"}},
           {"no": 2, "en": "Whales and dolphins! Where do they swim?", "ko": "고래랑 돌고래야! 어디에서 헤엄쳐?", "targets": ["sea"], "goals": ["talk-3-1-2"], "ask": "re_ask", "hintKo": "고래랑 돌고래는 바다에서 헤엄쳐.", "hints": ["They swim in the ___.", "They swim in the sea."], "answerExample": "They swim in the sea.", "easyQuestion": {"en": "Do you like whales?", "ko": "고래 좋아해?"}, "imageKey": "whale"},
@@ -93,7 +95,7 @@
           {"no": 4, "en": "Big rocks and tall trees! Where do you climb?", "ko": "큰 바위랑 키 큰 나무야! 어디를 올라?", "targets": ["mountain"], "goals": ["talk-3-1-2"], "ask": "re_ask", "hintKo": "우리는 산에 올라.", "hints": ["We climb the ___.", "We climb the mountain."], "answerExample": "We climb the mountain.", "easyQuestion": {"en": "Do you like big rocks?", "ko": "큰 바위 좋아해?"}},
           {"no": 5, "en": "Oh, a red kite! Where do you run?", "ko": "오, 빨간 연이야! 어디에서 달려?", "targets": ["beach"], "goals": ["talk-3-1-2"], "ask": "re_ask", "hintKo": "나는 해변에서 달려.", "hints": ["I run on the ___.", "I run on the beach."], "answerExample": "I run on the beach.", "easyQuestion": {"en": "Do you like kites?", "ko": "연 좋아해?"}}
         ],
-        "flow": ["The teacher greets the child and talks about a family trip to the sea and a mountain.", "The teacher asks about food, juice and sandy feet, one question at a time.", "The teacher asks where whales, shells and big rocks are, so the child can say sea, beach and mountain.", "The teacher follows the child's own story and comes back to the sea or the mountain."],
+        "flow": ["After the scene question, the teacher follows the child's answer.", "The teacher asks about food, juice and sandy feet, one question at a time.", "The teacher asks where whales, shells and big rocks are, so the child can say sea, beach and mountain.", "The teacher follows the child's own story and comes back to the sea or the mountain."],
         "todayTopicsKo": ["바다에 가기", "해변에서 놀기", "산에 오르기"],
         "closingLines": [
           {"en": "We go to the sea.", "ko": "우리는 바다에 가."},

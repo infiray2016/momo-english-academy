@@ -14,6 +14,7 @@ import {
   type TalkChances,
   talkChancesOf,
 } from "@/core/conversation/chances";
+import { sceneWordsOf } from "@/core/conversation/child-kind";
 import {
   childCauseOf,
   isLowBand,
@@ -41,10 +42,12 @@ import {
   talkMoveOf,
 } from "@/core/conversation/move";
 import {
+  cardQuestionKeyOf,
   questionKeyOf,
   turnQuestionOf,
 } from "@/core/conversation/question-check";
 import { MORE_PROMPT } from "@/core/conversation/spoken";
+import type { TalkSceneOpener } from "@/core/seed/schema/talk";
 import type {
   TALK_NEXT_MOVES,
   TALK_SEGMENTS,
@@ -63,9 +66,15 @@ type TalkSegment = (typeof TALK_SEGMENTS)[number];
 type TalkNextMove = (typeof TALK_NEXT_MOVES)[number];
 type TalkSupport = (typeof TALK_SUPPORTS)[number];
 
+/**
+ * 흐름이 읽는 카드: 새 꼴 카드 칸(TalkLessonCard)과 1~3단계 장면 여는 질문(선택 칸 — 'AI 몫 넓힘' plan 정한 것 3, 칸이 없는 카드는 첫 필수 질문으로
+ * 시작한다). 서버는 시드 카드(TalkCard)를 그대로 넘기므로 칸이 있으면 함께 온다.
+ */
+export type TalkFlowCard = TalkLessonCard & { sceneOpener?: TalkSceneOpener };
+
 export type LessonArgs = {
   spec: TalkLessonSpec;
-  card: TalkLessonCard;
+  card: TalkFlowCard;
   /** 이번 수업 새 단어(수업 newWords). */
   newWords: readonly string[];
   turns: readonly TalkLessonTurn[];
@@ -83,6 +92,11 @@ export type LessonArgs = {
    * 낱말 수 설정 talk.prep_words(settings.prepWords)와 다른 칸이다.
    */
   prepWords: readonly string[];
+  /**
+   * 아이가 묻기 전에 먼저 답한 필수 질문 번호(childAnsweredRequiredOf — 인식 글로 앱이 센다, 대본 회차 r1 판정 I-2). 남은 기회(기회 알림 ·
+   * 카드 자리)에서 뺀다. 흐름 꼴 행에는 아이 말 글이 없어 부르는 쪽(서버 · 대본 도구)이 넘긴다. 없으면 빼지 않는다.
+   */
+  childAnswered?: readonly number[];
 };
 
 // ── 위치 되짚기 ─────────────────────────────────────────────────
@@ -98,8 +112,14 @@ export type TalkQuestionSlot = {
   goals: string[];
   /** 이 자리의 답(카드 항목 · 인사 질문 · AI 질문의 답 예시). 없으면 null. */
   answerExample: string | null;
-  /** 받침 둘째에 쓸 카드 쉬운 질문(카드 항목일 때만). */
-  easyQuestion: { en: string; ko?: string } | null;
+  /** 받침 둘째에 쓸 카드 쉬운 질문(카드 항목 · 장면 여는 질문일 때만 — 장면 여는 질문은 1단계 선택지 둘을 함께 둔다). */
+  easyQuestion: {
+    en: string;
+    ko?: string;
+    choices?: readonly [string, string];
+  } | null;
+  /** 1~3단계 장면 여는 질문의 자리(C206 — 카드 항목 · 노리는 단어가 없고, 답 예시 · 쉬운 질문은 그 칸의 것). 아니면 없음. */
+  scene?: true;
 };
 
 export type TalkLessonPosition = {
@@ -154,7 +174,7 @@ export type TalkLessonPosition = {
    * 마지막 아이 행 바로 앞 선생님 행이 앱이 붙인 대화 첫 질문(대화 토막의 first_question — AI 를 부르지 않아 앞 턴 전문에 없음)이면 그 질문 글과
    * 카드 기회 여부, 아니면 null(사용자 메시지 'App question just before', task-talk-13-report 9절 2).
    */
-  appAskedBefore: { en: string; card: boolean } | null;
+  appAskedBefore: { en: string; card: boolean; scene?: true } | null;
   /** 고르기 차례: 마무리 물음('더 이야기하기' · '그만하기') · 마무리 제안(같은 두 버튼, 말로 답해도 됨). */
   choice: "closing" | "suggestion" | null;
   /** 마무리 물음이 나왔다 · 아이가 답했다(참여 완료 (1)). */
@@ -188,10 +208,19 @@ const COUNTED_TURNS: ReadonlySet<TalkMoveKind> = new Set([
   "first_question",
 ]);
 
-function greetingAnswerOf(ctx: Ctx, index: number): string | null {
+/**
+ * 인사 질문 자리의 카드 답 예시: 그 행의 질문이 카드 인사 질문과 같은 질문 열쇠일 때만 그 인사의 답이다([I-1] — 1~3단계 둘째 인사는 AI 가 물을 수
+ * 있어(spec 설계 2) 차례 번호로 고르면 다른 질문의 답을 들려준다). 행은 그 차례 질문(마지막 물음표 문장), 카드는 cardQuestionKeyOf 로 견준다([N-1]).
+ * 아니면 null(행의 답 예시).
+ */
+function greetingAnswerOf(ctx: Ctx, question: string | null): string | null {
   const g = ctx.card.greeting;
-  if (!("questions" in g)) return null;
-  const a = g.questions[index]?.answerExample;
+  if (!("questions" in g) || question === null) return null;
+  const key = questionKeyOf(question);
+  // [N-1] 카드 쪽은 마지막 물음표 문장의 열쇠(cardQuestionKeyOf) — 시드 인사 질문은 'Hello, {NAME}! How are you?' 처럼 인사 + 물음표 문장이다
+  const a = g.questions.find(
+    (q) => cardQuestionKeyOf(q.question.en) === key,
+  )?.answerExample;
   return a === undefined || a === "" ? null : a;
 }
 
@@ -199,14 +228,15 @@ function slotOf(
   ctx: Ctx,
   row: TalkLessonTeacherTurn,
   questions: string[],
-  greetingIndex: number | null,
+  inGreeting: boolean,
 ): TalkQuestionSlot {
   const m = row.move;
   const item = m ? { ...m.item } : { ...NO_CARD_ITEM };
   const cardItem = cardItemOf(ctx.card, item);
+  // [I-1] 카드 인사 답은 그 행 질문이 카드 인사 질문일 때만(AI 가 물은 둘째 인사는 AI 답 예시)
   const answer =
     cardItem?.answerExample ??
-    (greetingIndex === null ? null : greetingAnswerOf(ctx, greetingIndex)) ??
+    (inGreeting ? greetingAnswerOf(ctx, questions.at(-1) ?? null) : null) ??
     row.answerExample ??
     null;
   return {
@@ -217,6 +247,46 @@ function slotOf(
     goals: [...(m && m.goals.length > 0 ? m.goals : (cardItem?.goals ?? []))],
     answerExample: answer === "" ? null : answer,
     easyQuestion: cardItem ? { ...cardItem.easyQuestion } : null,
+  };
+}
+
+/**
+ * 이 선생님 행이 1~3단계 장면 여는 질문인가(C206 · 02-2 200줄): 대화 토막의 대화 첫 질문(first_question)이고 카드 항목이 없으며, 그 차례의
+ * 질문이 카드 sceneOpener 질문과 같은 질문 열쇠다. 4단계부터 · 칸 없는 카드는 늘 아니다.
+ */
+function isSceneRow(
+  ctx: Ctx,
+  m: TalkMove | null | undefined,
+  question: string | null,
+): boolean {
+  const opener = ctx.card.sceneOpener;
+  return (
+    isLowBand(ctx.spec) &&
+    opener !== undefined &&
+    m?.kind === "first_question" &&
+    m.item.kind === "none" &&
+    question !== null &&
+    questionKeyOf(question) === cardQuestionKeyOf(opener.question.en)
+  );
+}
+
+/** 장면 여는 질문 자리(카드 항목 · 노리는 단어 · 목표 없음, 답 예시 · 쉬운 질문 · 1단계 선택지는 그 칸의 것 — 02-2 200 · 260줄). */
+function sceneSlotOf(
+  opener: TalkSceneOpener,
+  questions: readonly string[],
+): TalkQuestionSlot {
+  return {
+    question: questions.at(-1) ?? null,
+    questions: [...questions],
+    item: { ...NO_CARD_ITEM },
+    words: [],
+    goals: [],
+    answerExample: opener.answerExample === "" ? null : opener.answerExample,
+    easyQuestion: {
+      ...opener.easyQuestion,
+      ...(opener.choices ? { choices: opener.choices } : {}),
+    },
+    scene: true,
   };
 }
 
@@ -296,12 +366,19 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
       // 셈은 그 차례의 질문 하나다(반응 부분의 물음 'Really?' 는 들지 않음, 02-2 200 · 202줄)
       const question = turnQuestionOf(row.text, m?.kind ?? null);
       const questions = question === null ? [] : [question];
-      // 앱이 붙인 대화 첫 질문(앞에 아이 행이 없어 앞 턴 전문에 들지 않는다 — 다음 회화 턴 사용자 메시지로 알린다)
+      const sceneRow =
+        phase === "talk" && !transitionNext && isSceneRow(ctx, m, question);
+      // 앱이 붙인 대화 첫 질문(앞에 아이 행이 없어 앞 턴 전문에 들지 않는다 — 다음 회화 턴 사용자 메시지로 알린다). 장면 여는 질문은 표시를 단다
+      // [M-2] 장면 여는 질문은 장면 문장까지 칸 글 전체를 넘긴다(spec 설계 5 — 'Follow up' 의 맥락)
+      const sceneText = sceneRow
+        ? ctx.card.sceneOpener?.question.en
+        : undefined;
       appAsked =
         phase === "talk" && !transitionNext && m?.kind === "first_question"
           ? {
-              en: question ?? row.text,
+              en: sceneText ?? question ?? row.text,
               card: m.item.kind !== "none" || m.words.length > 0,
+              ...(sceneRow ? { scene: true as const } : {}),
             }
           : null;
       if (question !== null) {
@@ -350,14 +427,12 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
       } else {
         const opens =
           questions.length > 0 || (m?.item.kind ?? "none") !== "none";
-        slot = opens
-          ? slotOf(
-              ctx,
-              row,
-              questions,
-              phase === "greeting" ? greetingIndex : null,
-            )
-          : null;
+        const opener = ctx.card.sceneOpener;
+        slot = !opens
+          ? null
+          : sceneRow && opener
+            ? sceneSlotOf(opener, questions)
+            : slotOf(ctx, row, questions, phase === "greeting");
         stuckInSlot = 0;
       }
       if (m?.next === "closing" && m.kind !== "closing_slot")
@@ -485,6 +560,94 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
   };
 }
 
+/**
+ * 아이가 먼저 말한 필수 질문 답(대본 회차 r1 판정 I-2 · 13절 C202 · C203 — 셈은 앱): 아이 말 하나가 그 필수 질문의 노리는 단어(소문자 · 원형)를
+ * 모두 담고, 답 예시에 노리는 단어 밖 내용 낱말이 있으면 그 가운데 하나도 담으면(어휘 · 뜻 일치) 그 질문 번호다. 'We eat rice and fish.' 는
+ * 'Rice and fish for lunch! What do you do at the table?'(eat · 답 'We eat rice and fish.')의 답이고, 'I drink water.' 는 'What do you do with the
+ * juice?'(drink · 답 'I drink the juice.')의 답이 아니다. 늦은 카드 답(lateCardAnswerOf)과 같이 인식 글을 읽는다.
+ */
+export function childAnsweredRequiredOf({
+  required,
+  childLines,
+  lemmaOf,
+}: {
+  required: readonly Pick<TalkLessonItem, "no" | "targets" | "answerExample">[];
+  /** 이 대화의 아이 말(인식 글 — 이번 말 포함). */
+  childLines: readonly string[];
+  lemmaOf: (surface: string) => string | undefined;
+}): number[] {
+  const keysOf = (text: string) => {
+    const out = new Set<string>();
+    for (const w of text.split(/[^A-Za-z']+/)) {
+      if (w === "") continue;
+      out.add(w.toLowerCase());
+      const lemma = lemmaOf(w)?.toLowerCase();
+      if (lemma !== undefined) out.add(lemma);
+    }
+    return out;
+  };
+  const lines = childLines.map(keysOf);
+  const lower = (w: string) => w.toLowerCase();
+  return required
+    .filter((item) => {
+      const targets = item.targets.map(lower);
+      if (targets.length === 0) return false;
+      const others = [...sceneWordsOf([item.answerExample])].filter(
+        (w) =>
+          !targets.includes(w) && !targets.includes(lower(lemmaOf(w) ?? w)),
+      );
+      return lines.some(
+        (keys) =>
+          targets.every((t) => keys.has(t)) &&
+          (others.length === 0 ||
+            others.some(
+              (o) => keys.has(o) || keys.has(lower(lemmaOf(o) ?? o)),
+            )),
+      );
+    })
+    .map((item) => item.no);
+}
+
+/** 이 대화의 아이 말(인식 글, 차례대로 — 늦은 카드 답 행 꼴의 비지 않은 아이 글 뒤에 이번 말). 질문 검사 되묻기 · 먼저 답한 필수 질문 재료. */
+export function childLinesOf(
+  rows: readonly LateCardRow[],
+  child: string | null,
+  /**
+   * 참이면 소리 줄(따라 할 말 · 답 소리 · 선택지)을 들려준 선생님 행 바로 뒤 아이 말은 뺀다 — 따라 말하기 · 고르기는 스스로 한 답이 아니다
+   * ('먼저 답함' 셈, 코드 검토 Minor 2). 이번 말은 마지막 선생님 행을 본다.
+   */
+  skipAfterSound = false,
+): string[] {
+  const sounded = (row: LateCardRow | undefined) => {
+    const s = row?.move?.sound;
+    return (
+      row?.speaker === "teacher" &&
+      s !== undefined &&
+      (s.model !== undefined ||
+        s.answer !== undefined ||
+        s.choices !== undefined)
+    );
+  };
+  const out: string[] = [];
+  let prevTeacher: LateCardRow | undefined;
+  for (const row of rows) {
+    if (row.speaker === "teacher") {
+      prevTeacher = row;
+      continue;
+    }
+    if (row.text.trim() === "") continue;
+    if (skipAfterSound && sounded(prevTeacher)) continue;
+    out.push(row.text);
+  }
+  if (
+    child !== null &&
+    child.trim() !== "" &&
+    !(skipAfterSound && sounded(prevTeacher))
+  )
+    out.push(child);
+  return out;
+}
+
 /** 늦은 카드 답으로 보는 폭: 필수 질문 차례 뒤 이번 말 앞까지의 아이 차례 수 상한(대본 4회차 사례 둘 — 한두 턴 늦은 답, 판정 폭이라 설계 숫자가 아님). */
 export const LATE_CARD_ANSWER_MAX_GAP = 2;
 
@@ -492,7 +655,10 @@ export const LATE_CARD_ANSWER_MAX_GAP = 2;
 export type LateCardRow = {
   speaker: "teacher" | "child";
   text: string;
-  move?: Pick<TalkMove, "item" | "words"> | null;
+  /** 선생님 행 move(소리 줄은 '먼저 답함' 셈이 따라 말한 아이 말을 가를 때 본다 — 코드 검토 Minor 2). */
+  move?:
+    | (Pick<TalkMove, "item" | "words"> & { sound?: TalkMove["sound"] })
+    | null;
 };
 
 /**
@@ -599,8 +765,8 @@ export function lessonTurnSegmentOf(
 export type TeacherAttachLine =
   | {
       kind: "question";
-      /** 카드 인사 질문 · 카드 항목 질문 · 받침 둘째의 카드 쉬운 질문. */
-      role: "greeting" | "card" | "easy";
+      /** 카드 인사 질문 · 카드 항목 질문 · 받침 둘째의 카드 쉬운 질문 · 1~3단계 장면 여는 질문(대화 첫 질문, C206). */
+      role: "greeting" | "card" | "easy" | "scene";
       en: string;
       ko?: string;
       item: TalkCardItemRef;
@@ -650,10 +816,24 @@ export type TeacherTurnPlan = {
   afterChance: boolean;
   /** 마지막 이어 묻기 뒤 선생님 차례 수(TalkLessonPosition.teacherTurnsSinceFollowUp). */
   sinceFollowUp: number;
-  /** 아이가 답한 질문이 앱이 붙인 대화 첫 질문이면 그 글 · 카드 기회 여부(TalkLessonPosition.appAskedBefore). */
-  appAsked: { en: string; card: boolean } | null;
+  /** 아이가 답한 질문이 앱이 붙인 대화 첫 질문이면 그 글 · 카드 기회 여부 · 장면 여는 질문 표시(TalkLessonPosition.appAskedBefore). */
+  appAsked: { en: string; card: boolean; scene?: true } | null;
   turnsLeft: number;
   chances: TalkChances;
+  /** 1~3단계 계획이다(사용자 메시지의 1~3단계 줄 — 'Child said more' · 들리지 않음 설명 — 을 넣는 차례인지 호출 입력이 안다). 4단계부터 없음. */
+  lowBand?: true;
+  /**
+   * 1~3단계 따라가기 상한에 닿은 턴: 카드 자리 대신 AI 차례이고 사용자 메시지에 'Come back to today's topic in this turn: yes'
+   * (02-2 194줄 · 05 사용자 메시지 문단, 'AI 몫 넓힘' 정한 것 1). 그 차례도 따라가기면 그다음 턴만 카드 자리다.
+   */
+  returnNow?: true;
+  /**
+   * 1~3단계 장면 여는 질문에 말로 답한 뒤의 차례(02-2 200줄): 사용자 메시지 'Follow up on the child's answer: yes' 이고, 갈래 · 카드 항목이 필수
+   * 질문이면 앱이 되돌린다(cardChainGuardOf). 받침 뒤에 답했어도 그 자리가 장면 여는 질문이면 같다.
+   */
+  followUpAnswer?: true;
+  /** 1~3단계 둘째 인사를 AI 차례로 둔 계획: AI 인사 질문이 6.4 에 걸리면(재질문 뒤) 붙일 카드 둘째 인사 질문(spec 설계 2 [M-2]). */
+  greetingFallback?: TeacherAttachLine;
 };
 
 type PlanCtx = {
@@ -733,6 +913,13 @@ function basePlan(c: PlanCtx): TeacherTurnPlan {
     appAsked: pos.appAskedBefore,
     turnsLeft: pos.turnsLeft,
     chances,
+    ...(c.low ? { lowBand: true as const } : {}),
+    ...(c.low &&
+    pos.lastRow === "child" &&
+    pos.lastCause === null &&
+    pos.answeredSlot?.scene === true
+      ? { followUpAnswer: true as const }
+      : {}),
   };
 }
 
@@ -836,8 +1023,38 @@ function firstQuestionPlan(c: PlanCtx): TeacherTurnPlan {
     streak: c.pos.prepPending ? 0 : c.pos.streak,
     attach: c.pos.prepPending ? [{ kind: "app_line", en: NOW_LETS_TALK }] : [],
   };
+  // 1~3단계 수업 첫 대화 질문은 장면 여는 질문(C206 · 02-2 200줄 — 카드 항목 · 노리는 단어 없음, AI 없음). 대화 중 연 준비 뒤는 지금 길
+  const opener = c.args.card.sceneOpener;
+  if (c.low && !c.pos.prepPending && opener)
+    return { ...base, attach: [sceneLine(c, opener)] };
   const ref = c.pos.prepPending ? chanceOrOldest(c, []) : chanceRef(c, []);
   return ref ? withItem(c, base, ref) : base;
+}
+
+/** 장면 여는 질문 줄(질문 줄 role scene · 카드 항목 없음, 뜻은 단계 규격 koMeaning 일 때). */
+function sceneLine(c: PlanCtx, opener: TalkSceneOpener): TeacherAttachLine {
+  const { en, ko } = opener.question;
+  return {
+    kind: "question",
+    role: "scene",
+    en,
+    ...(c.args.spec.koMeaning && ko ? { ko } : {}),
+    item: { ...NO_CARD_ITEM },
+  };
+}
+
+/** 장면 여는 질문 자리의 받침 둘째 줄(그 칸의 쉬운 질문, 카드 항목 없음 — 02-2 200 · 260줄). */
+function sceneEasyLine(
+  c: PlanCtx,
+  easy: NonNullable<TalkQuestionSlot["easyQuestion"]>,
+): TeacherAttachLine {
+  return {
+    kind: "question",
+    role: "easy",
+    en: easy.en,
+    ...(c.args.spec.koMeaning && easy.ko ? { ko: easy.ko } : {}),
+    item: { ...NO_CARD_ITEM },
+  };
 }
 
 function soundAnswer(answer: string): TeacherAttachLine {
@@ -876,6 +1093,12 @@ function greetingPlan(
   const next = greetingLine(c, pos.greetingIndex);
   if (!low || !next)
     return aiPlan({ ...plan, stage: closedBy ?? 0 }, segment, true);
+  // 1~3단계 둘째 인사(말로 답한 뒤): AI 가 아이 첫 답에 반응하고 인사 질문 하나를 쓴다. 걸리면 카드 둘째 인사 질문(spec 설계 2 [M-2])
+  if (closedBy === null)
+    return {
+      ...aiPlan({ ...plan, stage: 0 }, segment, true),
+      greetingFallback: next,
+    };
   const answer = answered?.answerExample ?? null;
   const attach: TeacherAttachLine[] = [];
   if (closedBy !== null && answer) attach.push(soundAnswer(answer));
@@ -983,6 +1206,13 @@ function stuckPlan(
         attach: [questionLine(c, item, s.item, "easy")],
         app: ["easy_question"],
       };
+    // 장면 여는 질문 자리: 그 칸의 쉬운 질문(02-2 200줄 — 첫째 · 셋째는 답 예시로 위 · 아래 길과 같다)
+    if (low && easy && s?.scene)
+      return {
+        ...slotPlan(support, segment, "support"),
+        attach: [sceneEasyLine(c, easy)],
+        app: ["easy_question"],
+      };
     return { ...aiPlan(support, segment, true), easyFallback: easy };
   }
   // 닫기: 답을 한 번 들려주고 다음 이야기로(1~3단계는 다음 카드 자리 — 붙일 기회가 없으면 대신 질문, 13절 C194 (1) 잠정)
@@ -1026,7 +1256,10 @@ function noSpeechPlan(
   );
 }
 
-/** 말로 답한 차례: 마무리 자리 → 따라가기 상한의 카드 자리 → AI 차례. */
+/**
+ * 말로 답한 차례: 마무리 자리 → 따라가기 상한(4단계부터 닿은 턴이 카드 자리, 1~3단계는 닿은 턴이 AI 차례 + returnNow 이고 넘은 턴만 카드
+ * 자리) → AI 차례.
+ */
 function answeredPlan(
   c: PlanCtx,
   plan: TeacherTurnPlan,
@@ -1048,16 +1281,21 @@ function answeredPlan(
         },
       ],
     };
-  if (pos.followRun >= args.settings.followChildTurns) {
+  const cap = args.settings.followChildTurns;
+  // 1~3단계: 상한에 닿은 턴은 AI 차례 + '이번 차례에 돌아오기', 그 차례도 따라가기였으면(상한을 넘음) 그다음 턴만 카드 자리(02-2 194줄 안전장치)
+  if (c.low && pos.followRun === cap)
+    return { ...aiPlan(plan, segment, true), returnNow: true };
+  if (pos.followRun >= cap) {
     const ref = chanceRef(c, []);
     if (ref) return withItem(c, slotPlan(plan, segment, "follow_cap"), ref);
+    if (c.low) return { ...aiPlan(plan, segment, true), returnNow: true };
   }
   return aiPlan(plan, segment, true);
 }
 
 /**
- * 다음 선생님 차례 계획(3.3 차례 표). 행이 없으면 첫 인사(앱), 대화 첫 질문 차례면 첫 필수 질문(앱 · 대화 중 연 준비 뒤는 'Now let's
- * talk.' 뒤 다음 필수 질문), 마지막 행이 아이 행이면 그 응답 차례다. 카드 자리는 (1) 따라가기 상한 (4) 받침이 카드 줄을 쓰는 때(1~3단계)와
+ * 다음 선생님 차례 계획(3.3 차례 표). 행이 없으면 첫 인사(앱), 대화 첫 질문 차례면 첫 필수 질문(앱 — 1~3단계에서 카드에 장면 여는 질문이
+ * 있으면 그 질문, 대화 중 연 준비 뒤는 'Now let's talk.' 뒤 다음 필수 질문), 마지막 행이 아이 행이면 그 응답 차례다. 카드 자리는 (1) 따라가기 상한 (4) 받침이 카드 줄을 쓰는 때(1~3단계)와
  * 들리지 않음의 닫기에서만 만들고, (2) AI 질문 검사 · (3) 같은 질문은 응답이 끝난 뒤 부르는 쪽이 정한다(blocked · easyFallback ·
  * answerFallback · slotChanceOf · oldestMoreOf). 마무리 자리는 말 주고받기가 참고 턴에 닿은 턴 · '더 이야기하기' 한 번이 끝난 턴뿐이다.
  */
@@ -1071,6 +1309,8 @@ export function nextTeacherTurnOf(args: LessonArgs): TeacherTurnPlan {
     missionsDone: args.missionsDone ?? 0,
     settings: args.settings,
     prepWords: args.prepWords,
+    // 아이가 먼저 답한 필수 질문은 다룬 것으로 센다(판정 r1 I-2 — 남은 기회 · 다 다룸 · 제공 수가 같은 셈, 코드 검토 Minor 2)
+    childAnswered: args.childAnswered ?? [],
   });
   const c: PlanCtx = { args, pos, chances, low: isLowBand(args.spec) };
   const plan = basePlan(c);

@@ -526,3 +526,14 @@ export function talkLessonReply(
     times: 1,
   };
 }
+
+// ── 'AI 몫 넓힘' 묶음 5(장면 여는 질문 · 신호 말 · 상황 줄 — C206 · C207 · C209) ──
+
+/**
+ * 장면 여는 질문 칸을 뺀 견본(개정 4 꼴 카드 — 대화 첫 질문이 카드 첫 필수 질문이다, 'AI 몫 넓힘' plan 정한 것 3). 견본 빌더 talkCard 는 1~3단계
+ * 카드에 칸을 둔다. 장면 여는 질문을 보지 않는 옛 시험(카드 필수 질문 자리의 힌트 · 받침 · 이어 하기 …)은 이 견본으로 그 길을 그대로 본다.
+ */
+export function withoutSceneOpener(lesson: TalkLesson): TalkLesson {
+  const { sceneOpener: _opener, ...card } = lesson.card;
+  return { ...lesson, card };
+}

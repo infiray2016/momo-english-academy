@@ -96,6 +96,25 @@ export const TalkRequiredSchema = z.strictObject({
   choices: z.tuple([Text, Text]).optional(),
 });
 export type TalkRequired = z.infer<typeof TalkRequiredSchema>;
+/**
+ * 1~3단계 장면 여는 질문(C206 · 02-2:200 · 06:186). 장면 말 한 문장과 예 · 아니요 질문 하나이고 노리는 단원 단어가 없으며 필수 질문이
+ * 아니다. 받침 칸은 필수 질문을 따른다: 질문(영어 · 뜻) · 한국어 뜻 힌트 · 영어 문장 힌트 · 영어 틀(3단계) · 답 예시 · 쉬운 질문(1단계는
+ * 선택지 둘). 카드의 선택 칸이다 — '1~3단계 새 꼴 카드의 필수'는 검증기(check-talk)가 보고, Zod 필수로 두면 DB 의 개정 4 카드가
+ * talkCardKindOf 에서 틀림이 되어 세션이 닫힌다('AI 몫 넓힘' plan 정한 것 3). 칸이 없는 카드는 첫 필수 질문으로 시작한다.
+ */
+export const TalkSceneOpenerSchema = z.strictObject({
+  question: z.strictObject({ en: Text, ko: Text.optional() }),
+  hintKo: Text,
+  hintEn: Text,
+  /** 3단계 영어 틀. */
+  frameEn: Text.optional(),
+  answerExample: Text,
+  /** 받침 둘째의 쉬운 질문(물음표로 끝남 · 장면 여는 질문과 정규화한 글이 다름 — 검사는 check-talk). */
+  easyQuestion: z.strictObject({ en: Text, ko: Text.optional() }),
+  /** 1단계 쉬운 질문의 선택지 둘(같은 꼴에 낱말 하나만 다름). */
+  choices: z.tuple([Text, Text]).optional(),
+});
+export type TalkSceneOpener = z.infer<typeof TalkSceneOpenerSchema>;
 /** 더 이야기할 거리 한 줄(다시 묻는 질문, 모든 단계). */
 export const TalkMoreSchema = z.strictObject(talkItemShape);
 export type TalkMore = z.infer<typeof TalkMoreSchema>;
@@ -142,6 +161,8 @@ export const TalkCardSchema = z.strictObject({
   todayWords: z.array(TalkTodayWordSchema),
   /** 짧은 준비 낱말(배정 수업, 오늘 쓸 말 가운데 talk.prep_words.<구간> 개와 그 차례). 다지기 · 보강은 비우고 앱이 고른다. */
   prep: uniqueStrings(WordIdSchema).optional(),
+  /** 1~3단계 장면 여는 질문(C206, 선택 칸 — 위 TalkSceneOpenerSchema). 4단계부터는 없다. */
+  sceneOpener: TalkSceneOpenerSchema.optional(),
   required: z.array(TalkRequiredSchema).min(1),
   more: z.array(TalkMoreSchema),
   /** 예상 흐름(영어, 'The teacher asks …' 꼴 — 필수 질문을 꺼내기 좋은 이야기 흐름의 예). */
@@ -249,6 +270,22 @@ function greetingQuestionTexts(
   sink.one(joinPath(path, "answerExample"), "child", turn.answerExample);
 }
 
+function sceneOpenerTexts(
+  sink: Sink,
+  path: string,
+  opener: TalkSceneOpener,
+): void {
+  sink.one(joinPath(path, "question.en"), "tori", opener.question.en);
+  sink.one(joinPath(path, "question.ko"), "ko", opener.question.ko);
+  sink.one(joinPath(path, "hintKo"), "ko", opener.hintKo);
+  sink.one(joinPath(path, "hintEn"), "hint", opener.hintEn);
+  sink.one(joinPath(path, "frameEn"), "hint", opener.frameEn);
+  sink.one(joinPath(path, "answerExample"), "child", opener.answerExample);
+  sink.one(joinPath(path, "easyQuestion.en"), "tori", opener.easyQuestion.en);
+  sink.one(joinPath(path, "easyQuestion.ko"), "ko", opener.easyQuestion.ko);
+  sink.all(joinPath(path, "choices"), "pair", opener.choices);
+}
+
 function itemTexts(
   sink: Sink,
   path: string,
@@ -269,7 +306,7 @@ function itemTexts(
 /**
  * 새 꼴 회화 카드의 글 조각. id(노리는 단어 · 오늘 쓸 말 단어 · 짧은 준비 낱말 · 목표 ID) · 그림 키 · 열거 값 · 꼬리표(purpose ·
  * demands)는 내지 않는다. 들려줄 말은 role example(영어 범위 검사 안 · 어휘 배정 세기 밖), 쉬운 질문은 tori, 선택지는 pair,
- * 역할 바꾸기 첫 말은 tori · 힌트는 hint 다.
+ * 역할 바꾸기 첫 말은 tori · 힌트는 hint 다. 장면 여는 질문(있으면)은 필수 질문과 같은 역할로 sceneOpener.* 경로에 낸다.
  */
 export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
   const sink = fragmentSink();
@@ -288,6 +325,9 @@ export function textsOfTalkCard(card: TalkCard, prefix = ""): TextFragment[] {
     sink.one(at(`todayWords.${i}.example`), "example", word.example);
     sink.one(at(`todayWords.${i}.modelLine`), "example", word.modelLine);
   });
+  if (card.sceneOpener) {
+    sceneOpenerTexts(sink, at("sceneOpener"), card.sceneOpener);
+  }
   card.required.forEach((item, i) => {
     itemTexts(sink, at(`required.${i}`), item);
   });

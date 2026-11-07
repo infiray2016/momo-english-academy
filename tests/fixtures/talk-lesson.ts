@@ -1,5 +1,6 @@
 // 회화 수업 새 흐름 순수 모듈 시험 견본(회화 plan 묶음 5): 3단계 새 꼴 카드 보기 · talk_turns 가벼운 꼴 만들기 · 시험용 설정.
 // 묶음 3 의 시험 builders(tests/fixtures/seed/builders.ts)와 따로 둔다(나란히 도는 동안 겹치지 않게). 카드는 흐름이 읽는 칸만 둔다.
+import type { TalkFlowCard } from "@/core/conversation/lesson-flow";
 import type {
   TalkLessonCard,
   TalkLessonChildTurn,
@@ -11,6 +12,7 @@ import type {
 } from "@/core/conversation/lesson-turns";
 import { talkLessonSettingsFrom } from "@/core/conversation/lesson-turns";
 import { type TalkMove, talkMoveOf } from "@/core/conversation/move";
+import type { TalkSceneOpener } from "@/core/seed/schema/talk";
 import { testSettingValues } from "./settings";
 
 export const values = testSettingValues();
@@ -81,6 +83,26 @@ export const CARD3: TalkLessonCard = {
 };
 /** 이번 수업 새 단어(카드 오늘 쓸 말 — weekend 는 짧은 준비에 없다). */
 export const NEW3 = ["play", "soccer", "sunday", "weekend"];
+
+/** 3단계 장면 여는 질문('AI 몫 넓힘' C206 — 장면 말 한 문장 + 예 · 아니요 질문, 노리는 단원 단어 없음). */
+export const SCENE3: TalkSceneOpener = {
+  question: {
+    en: "We are at the park! Do you like the park?",
+    ko: "우리 공원에 왔어! 공원 좋아해?",
+  },
+  hintKo: "응, 좋아해.",
+  hintEn: "Yes, I do.",
+  frameEn: "Yes, I ___.",
+  answerExample: "Yes, I do.",
+  easyQuestion: { en: "Is the park big?", ko: "공원이 커?" },
+};
+/** CARD3 에 장면 여는 질문을 더한 카드(CARD3 는 칸 없는 개정 4 꼴 그대로 둔다). */
+export const CARD3_SCENE: TalkFlowCard = { ...CARD3, sceneOpener: SCENE3 };
+/**
+ * 인사 턴 2 표본 카드(spec 설계 2 [M-2] — 둘째 인사가 AI 차례). CARD3 도 인사가 둘이지만, 인사 턴 2 시험이 CARD3 칸 바뀜에 묶이지 않게
+ * 이름을 따로 둔다.
+ */
+export const CARD3_GREET2: TalkFlowCard = { ...CARD3, greetingTurns: 2 };
 
 /** 4단계 카드(인사는 선생님 첫 말, 짧은 준비 낱말 없음). */
 export const CARD4: TalkLessonCard = {

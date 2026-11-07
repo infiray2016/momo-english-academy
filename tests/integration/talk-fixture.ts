@@ -255,6 +255,30 @@ export function requestsOf(h: TalkHarness, mark: string): number {
   return h.fake.requests.filter((r) => r.bodyText.includes(mark)).length;
 }
 
+/**
+ * 가짜에 들어온 요청 본문(시스템 · 메시지)의 글 아닌 블록 종류('AI 몫 넓힘' AC-8 (마) — Anthropic 으로 가는 것은 인식 글뿐, 소리 · 그림 · 파일
+ * 블록이 없어야 한다). 글 꼴 content 는 블록이 아니라 세지 않는다.
+ */
+export function nonTextBlocksOf(h: TalkHarness): string[] {
+  const out: string[] = [];
+  const visit = (content: unknown) => {
+    if (!Array.isArray(content)) return;
+    for (const block of content) {
+      const type = (block as { type?: unknown } | null)?.type;
+      if (type !== "text") out.push(String(type));
+    }
+  };
+  for (const r of h.fake.requests) {
+    const body = r.body as {
+      system?: unknown;
+      messages?: { content?: unknown }[];
+    } | null;
+    visit(body?.system);
+    for (const m of body?.messages ?? []) visit(m.content);
+  }
+  return out;
+}
+
 // ── 행 읽기 · 설정 ─────────────────────────────────────────────────
 
 /** 그 세션의 talk_turns(턴 번호 · 화자 차례). */

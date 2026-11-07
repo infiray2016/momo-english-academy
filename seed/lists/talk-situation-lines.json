@@ -1,0 +1,104 @@
+{
+  "lines": {
+    "greeting_end": [
+      {
+        "en": "Let's start!",
+        "ko": "시작하자!"
+      },
+      {
+        "en": "Nice! Here we go!",
+        "ko": "좋아! 자, 가 보자!"
+      },
+      {
+        "en": "Now, let's learn new words!",
+        "ko": "이제 새 단어 배워 보자!"
+      },
+      {
+        "en": "Great! Let's start now.",
+        "ko": "멋지다! 이제 시작하자."
+      }
+    ],
+    "together": [
+      {
+        "en": "It's okay! I am with you.",
+        "ko": "괜찮아! 내가 같이 있어."
+      },
+      {
+        "en": "No problem! I can help.",
+        "ko": "괜찮아! 내가 도와줄게."
+      },
+      {
+        "en": "Okay! We can do this.",
+        "ko": "그래! 우리는 할 수 있어."
+      }
+    ],
+    "easy": [
+      {
+        "en": "That's okay! Try this one.",
+        "ko": "괜찮아! 이거 해 봐."
+      },
+      {
+        "en": "No problem! Here is an easy one.",
+        "ko": "괜찮아! 쉬운 거야."
+      },
+      {
+        "en": "Okay! Here is a new one.",
+        "ko": "그래! 새로운 거야."
+      }
+    ],
+    "close": [
+      {
+        "en": "That's okay! Let's go on.",
+        "ko": "괜찮아! 계속하자."
+      },
+      {
+        "en": "No problem! Here is the answer.",
+        "ko": "괜찮아! 답은 이거야."
+      },
+      {
+        "en": "It's okay! Now we go on.",
+        "ko": "괜찮아! 이제 계속하자."
+      }
+    ],
+    "nospeech": [
+      {
+        "en": "Oops, my ears! Let's go on.",
+        "ko": "앗, 내 귀가! 계속하자."
+      },
+      {
+        "en": "Hmm, no sound! Let's keep going.",
+        "ko": "음, 소리가 안 들려! 계속 가 보자."
+      },
+      {
+        "en": "Sorry, I can't hear! Let's go on.",
+        "ko": "미안, 안 들려! 계속하자."
+      },
+      {
+        "en": "Oh no, my ears! Here is the answer.",
+        "ko": "이런, 내 귀가! 답은 이거야."
+      }
+    ]
+  },
+  "forbidden": {
+    "all": [
+      "that's wrong",
+      "that's not right",
+      "you're wrong",
+      "you don't know",
+      "try harder",
+      "too bad",
+      "bad answer"
+    ],
+    "nospeech": [
+      "good answer",
+      "nice answer",
+      "you said",
+      "good job",
+      "great job",
+      "well done",
+      "you're right",
+      "that's right",
+      "i heard you"
+    ]
+  }
+}

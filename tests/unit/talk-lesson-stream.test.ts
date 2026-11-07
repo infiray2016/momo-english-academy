@@ -151,4 +151,48 @@ describe("새 꼴 흘려 받기(streamTalkLesson)", () => {
     });
     expect(rows.map((r) => r.status)).toEqual(["validation_failed"]);
   });
+
+  it("대본 회차 r1 판정 I-3 (가) 읽지 못한 응답(빈 tori_en)은 ai_calls '검증 실패' 행의 error_code 에 까닭을 남긴다", async () => {
+    const id = "talk_turn.v2-l3-model-offband";
+    const body = structuredClone(sampleBody(id)) as {
+      content: { type: string; text?: string }[];
+    };
+    for (const block of body.content)
+      if (block.type === "text" && block.text !== undefined)
+        block.text = JSON.stringify({
+          ...JSON.parse(block.text),
+          stuck: false,
+          tori_en: "",
+          tori_ko: [],
+        });
+    const { plan, rows } = harness([once(body)], talkLessonSampleFor(id));
+    const result = await streamTalkLesson(plan);
+    expect(result).toMatchObject({ ok: false, reason: "invalid" });
+    expect(rows.map((r) => [r.status, r.errorCode])).toEqual([
+      ["validation_failed", "tori_en_empty"],
+    ]);
+  });
+
+  it("컨트롤러 결정 2026-11-07 1~3단계 막힘 응답(stuck 참)의 빈 tori_en 은 읽지 못함이 아니라 값으로 받고, ai_calls 에 까닭 empty_tori_en_stuck 을 남긴다(호출 하나)", async () => {
+    const id = "talk_turn.v2-l3-model-offband";
+    const body = structuredClone(sampleBody(id)) as {
+      content: { type: string; text?: string }[];
+    };
+    for (const block of body.content)
+      if (block.type === "text" && block.text !== undefined)
+        block.text = JSON.stringify({
+          ...JSON.parse(block.text),
+          stuck: true,
+          child_kind: "not_understood",
+          tori_en: "",
+          tori_ko: [],
+        });
+    const { plan, rows } = harness([once(body)], talkLessonSampleFor(id));
+    const result = await streamTalkLesson(plan);
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) expect(result.value.tori_en).toBe("");
+    expect(rows.map((r) => [r.status, r.errorCode])).toEqual([
+      ["validation_failed", "empty_tori_en_stuck"],
+    ]);
+  });
 });

@@ -28,6 +28,7 @@
     "ai:contract": "tsx scripts/ai-contract.ts",
     "ai:observe": "tsx scripts/ai-observe.ts",
     "talk:observe": "tsx scripts/talk-observe.ts",
+    "talk:metrics": "tsx scripts/talk-metrics.ts",
     "check:ids": "tsx scripts/check-ids.ts",
     "db:ping": "node --env-file-if-exists=.env.local --import tsx scripts/db-ping.ts",
     "images:fetch": "tsx scripts/vocab-images.ts fetch",

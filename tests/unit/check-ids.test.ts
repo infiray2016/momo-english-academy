@@ -565,6 +565,8 @@ describe("식별자 대조(pnpm check:ids)", () => {
           path: "src/core/seed/structure.ts",
           text: "export const X = [30, 0.8];\nf(30);",
         },
+        // 개발 도구 쪽(next dev 전용)은 설계 숫자 훑기에서 뺀다(design-color 와 같은 나눔, 회화 AI 몫 넓힘 plan 위험 11)
+        { path: "src/app/dev/mic-probe/probe.ts", text: "f(30);\nf(0.8);" },
       ],
       settingNumbers(tokensSeed),
     );

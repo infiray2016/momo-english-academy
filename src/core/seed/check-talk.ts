@@ -12,6 +12,7 @@ import {
   type Report,
   type SeedIssue,
 } from "@/core/seed/check-lesson";
+import { phrasesIn } from "@/core/seed/check-talk-lists";
 import { checkTeacherNames } from "@/core/seed/check-teacher";
 import { type TalkLesson, textsOfLesson } from "@/core/seed/schema/lesson";
 import type { TalkLevelSpec, UnitGoal } from "@/core/seed/schema/reference";
@@ -32,7 +33,13 @@ import {
   TALK_TODAY_TOPICS,
   type TextRole,
 } from "@/core/seed/structure";
-import { placeholdersIn, wordIdsIn } from "@/core/seed/text";
+import {
+  offbandWords,
+  placeholdersIn,
+  splitSentences,
+  tokenize,
+  wordIdsIn,
+} from "@/core/seed/text";
 
 /**
  * 회화 몫의 영어 글 role(6.4 회화 행: 첫 말 · 힌트 · 답 예시 · 들려줄 말 · 쉬운 질문 · 선택지 · 더 이야기할 거리 · 정리 · 안전한 대사 ·
@@ -54,6 +61,80 @@ export const TALK_ALLOCATION_ROLES: readonly TextRole[] = [
   "child",
   "expression",
 ];
+
+/**
+ * 장면 여는 질문 '필수'의 예외(C206 · 'AI 몫 넓힘' plan 정한 것 3 · 4, 컨트롤러 결정 2026-11-07): 1~3단계 회화 카드는 모두 칸이 있어야
+ * 하고, 지금 DB 에 있는 옛 카드 둘(회화 3단계 단원 1 배정 1 · 다지기 6, 개정 4 이하)만 칸 없이 통과한다. 두 장을 개정 5 로 다시 만들면
+ * 예외는 쓰이지 않는다(그때 지워도 된다). 칸이 있으면 예외 카드도 아래 검사를 모두 받는다.
+ */
+export const TALK_SCENE_OPENER_EXEMPT: readonly {
+  level: number;
+  unit: number;
+  kind: TalkLesson["kind"];
+  lessonNo: number;
+  variant: number;
+  maxRevision: number;
+}[] = [
+  {
+    level: 3,
+    unit: 1,
+    kind: "assigned",
+    lessonNo: 1,
+    variant: 1,
+    maxRevision: 4,
+  },
+  {
+    level: 3,
+    unit: 1,
+    kind: "reinforce",
+    lessonNo: 6,
+    variant: 1,
+    maxRevision: 4,
+  },
+];
+
+/** 칸 없이 통과하는 옛 카드인가(TALK_SCENE_OPENER_EXEMPT). */
+export function sceneOpenerExempt(
+  lesson: Pick<TalkLesson, "kind" | "lessonNo" | "variant" | "revision">,
+  level: number,
+  unit: number,
+): boolean {
+  return TALK_SCENE_OPENER_EXEMPT.some(
+    (e) =>
+      e.level === level &&
+      e.unit === unit &&
+      e.kind === lesson.kind &&
+      e.lessonNo === lesson.lessonNo &&
+      e.variant === lesson.variant &&
+      lesson.revision <= e.maxRevision,
+  );
+}
+/** 장면 여는 질문의 문장 수 상한(장면 말 한 문장 + 예 · 아니요 질문 하나, 06:186 '문장은 둘 안'). */
+export const TALK_SCENE_OPENER_MAX_SENTENCES = 2;
+/**
+ * 예 · 아니요 질문의 첫 낱말(조동사 · be, 06:186 — 문법 목록이라 코드에 둔다). 'or' 가 든 고르기 질문은 따로 막는다.
+ */
+export const YES_NO_QUESTION_STARTS: ReadonlySet<string> = new Set([
+  "do",
+  "does",
+  "did",
+  "is",
+  "are",
+  "am",
+  "was",
+  "were",
+  "can",
+  "could",
+  "will",
+  "would",
+  "shall",
+  "should",
+  "may",
+  "have",
+  "has",
+]);
+/** 장면 여는 질문 답 예시의 첫 낱말(06:186 'Yes · No 로 시작'). */
+export const YES_NO_ANSWER_STARTS: ReadonlySet<string> = new Set(["yes", "no"]);
 
 function cellOf(lesson: TalkLesson, ctx: LessonCellContext): string {
   return cellKey({
@@ -616,6 +697,245 @@ function checkHints(
   }
 }
 
+// ── 장면 여는 질문(06:186 · C206) ───────────────────────────────
+
+/** 글의 첫 낱말 토큰(소문자, 틀 자리 · 수는 건너뜀). 없으면 undefined. */
+function firstWordOf(text: string): string | undefined {
+  return tokenize(text)
+    .find((t) => t.kind === "word")
+    ?.text.toLowerCase();
+}
+
+/** 같은 질문 견주기 열쇠 둘: 마지막 물음표 문장 열쇠(앱의 같은 질문 셈) · 글 전체 정규화. */
+function questionKeysOf(text: string): [string, string] {
+  return [cardQuestionKeyOf(text), normalizedQuestion(text)];
+}
+function sameQuestion(a: string, b: string): boolean {
+  const [x1, x2] = questionKeysOf(a);
+  const [y1, y2] = questionKeysOf(b);
+  return x1 === y1 || x2 === y2;
+}
+
+/**
+ * 6.4 회화 장면 여는 질문(06:186, C206): 1~3단계 새 꼴 카드에 있다(옛 카드 예외는 TALK_SCENE_OPENER_EXEMPT). 물음표 문장은 마지막
+ * 하나이고 첫 낱말이 조동사 · be 이며 'or' 가 없다. 문장은 둘 안, 틀 자리 {NAME} 은 칸마다 하나까지, 그 단계 어휘 범위(카드 글 범위:
+ * 단계 이하 · 이번 수업 새 단어) 안이다. 질문은 인사 · 필수 · 쉬운 · 더 이야기할 거리 질문과 다르고, 한국어 뜻 · Yes · No 로 시작하는 답
+ * 예시가 있다. 쉬운 질문은 물음표로 끝나고 장면 여는 질문과 다르며, 선택지 단계(1단계)는 같은 꼴에 낱말 하나만 다른 선택지 둘을 둔다.
+ * 노리는 단원 단어(카드 필수 질문 · 더 이야기할 거리가 노리는 단어)가 질문 · 쉬운 질문에 없다. 문장 길이 · 형태 범위 · 금지어 · 선생님
+ * 이름 · 틀 자리 종류는 카드 글 조각(sceneOpener.*) 공통 검사가 본다. 4단계부터는 칸을 두지 않는다. 예 뒤 · 아니요 뒤 대본 칸은 규격이 없다.
+ */
+function checkSceneOpener(
+  lesson: TalkLesson,
+  spec: TalkLevelSpec,
+  ctx: LessonCellContext,
+  report: Report,
+): void {
+  const { card } = lesson;
+  const opener = card.sceneOpener;
+  const at = "card.sceneOpener";
+  if (!isLow(spec)) {
+    if (opener)
+      report(
+        "talk-scene-opener",
+        at,
+        "장면 여는 질문은 1~3단계 카드에만 둔다(4단계부터는 첫 필수 질문이 대화 첫 질문이다)",
+      );
+    return;
+  }
+  if (!opener) {
+    if (!sceneOpenerExempt(lesson, ctx.level, ctx.unit))
+      report(
+        "talk-scene-opener",
+        at,
+        "1~3단계 회화 카드에 장면 여는 질문이 없다(C206)",
+      );
+    return;
+  }
+  const rule = "talk-scene-opener";
+  const question = opener.question.en;
+  const qAt = `${at}.question.en`;
+  const sentences = splitSentences(question);
+  if (sentences.length > TALK_SCENE_OPENER_MAX_SENTENCES)
+    report(
+      rule,
+      qAt,
+      `장면 여는 질문이 ${sentences.length}문장이다(${TALK_SCENE_OPENER_MAX_SENTENCES}문장 안)`,
+    );
+  const asked = sentences.filter((s) => s.trim().endsWith("?"));
+  const last = sentences.at(-1) ?? "";
+  if (asked.length !== 1 || !last.trim().endsWith("?")) {
+    report(
+      rule,
+      qAt,
+      `물음표 문장이 마지막 하나가 아니다(물음표 문장 ${asked.length}개)`,
+    );
+  } else {
+    const first = firstWordOf(last);
+    if (first === undefined || !YES_NO_QUESTION_STARTS.has(first))
+      report(
+        rule,
+        qAt,
+        `질문 '${last}' 의 첫 낱말 ${first ?? "없음"} 이 조동사 · be(${[...YES_NO_QUESTION_STARTS].join(" · ")})가 아니다(예 · 아니요 질문)`,
+      );
+    if (
+      tokenize(last).some(
+        (t) => t.kind === "word" && t.text.toLowerCase() === "or",
+      )
+    )
+      report(rule, qAt, `질문 '${last}' 에 'or' 가 있다(고르기 질문이 아니다)`);
+  }
+  const texts: { path: string; text: string }[] = [
+    { path: qAt, text: question },
+    { path: `${at}.hintEn`, text: opener.hintEn },
+    ...(opener.frameEn !== undefined
+      ? [{ path: `${at}.frameEn`, text: opener.frameEn }]
+      : []),
+    { path: `${at}.answerExample`, text: opener.answerExample },
+    { path: `${at}.easyQuestion.en`, text: opener.easyQuestion.en },
+    ...(opener.choices ?? []).map((text, i) => ({
+      path: `${at}.choices.${i}`,
+      text,
+    })),
+  ];
+  for (const { path, text } of texts) {
+    const names = placeholdersIn(text).filter(
+      (p) => p === PLACEHOLDER_NAME,
+    ).length;
+    if (names > 1)
+      report(
+        rule,
+        path,
+        `틀 자리 ${PLACEHOLDER_NAME} 이 ${names}개다(하나까지)`,
+      );
+    const off = offbandWords(text, {
+      lexicon: ctx.index.lexicon,
+      level: ctx.level,
+      newWords: lesson.newWords,
+      properNouns: [],
+    })
+      .map((w) => w.toLowerCase())
+      // 답 예시를 Yes · No 로 시작하라는 규칙이 요구하는 낱말은 어휘 범위로 막지 않는다
+      .filter((w) => !YES_NO_ANSWER_STARTS.has(w));
+    if (off.length > 0)
+      report(
+        rule,
+        path,
+        `회화 ${ctx.level}단계 어휘 범위 밖 낱말 ${[...new Set(off)].join(", ")} 가 있다(카드 글 범위)`,
+      );
+  }
+  const greeting = "questions" in card.greeting ? card.greeting.questions : [];
+  const others: { path: string; text: string }[] = [
+    ...greeting.map((g, i) => ({
+      path: `card.greeting.questions.${i}.question.en`,
+      text: g.question.en,
+    })),
+    ...itemsOfCard(lesson).flatMap(({ path, item }) => [
+      { path: `${path}.en`, text: item.en },
+      { path: `${path}.easyQuestion.en`, text: item.easyQuestion.en },
+    ]),
+  ];
+  for (const other of others) {
+    if (sameQuestion(question, other.text))
+      report(
+        rule,
+        qAt,
+        `장면 여는 질문이 ${other.path} 와 같은 질문이다(정규화 글)`,
+      );
+  }
+  if (opener.question.ko === undefined)
+    report(rule, `${at}.question.ko`, "장면 여는 질문의 한국어 뜻이 없다");
+  const answerFirst = firstWordOf(opener.answerExample);
+  if (answerFirst === undefined || !YES_NO_ANSWER_STARTS.has(answerFirst))
+    report(
+      rule,
+      `${at}.answerExample`,
+      `답 예시 '${opener.answerExample}' 가 Yes · No 로 시작하지 않는다`,
+    );
+  const easy = opener.easyQuestion.en.trim();
+  if (!easy.endsWith("?"))
+    report(
+      rule,
+      `${at}.easyQuestion.en`,
+      `쉬운 질문 '${easy}' 이 물음표로 끝나지 않는다`,
+    );
+  else if (sameQuestion(easy, question))
+    report(
+      rule,
+      `${at}.easyQuestion.en`,
+      "쉬운 질문이 장면 여는 질문과 같은 글이다(막힌 뒤 같은 질문을 다시 묻지 않는다)",
+    );
+  if (spec.koMeaning && opener.easyQuestion.ko === undefined)
+    report(rule, `${at}.easyQuestion.ko`, "쉬운 질문의 한국어 뜻이 없다");
+  if ((opener.frameEn !== undefined) !== spec.frameInTurns)
+    report(
+      rule,
+      `${at}.frameEn`,
+      spec.frameInTurns
+        ? "이 단계 장면 여는 질문에는 영어 틀(frameEn)이 있어야 한다"
+        : "이 단계 장면 여는 질문에는 영어 틀(frameEn)을 두지 않는다",
+    );
+  if (spec.choices === true) {
+    if (!opener.choices) {
+      report(
+        rule,
+        `${at}.choices`,
+        "선택지 단계의 장면 여는 질문에 선택지 둘이 없다",
+      );
+    } else {
+      const [a, b] = opener.choices;
+      const x = plainWords(a);
+      const y = plainWords(b);
+      if (x.length !== y.length || x.filter((w, j) => w !== y[j]).length !== 1)
+        report(
+          rule,
+          `${at}.choices`,
+          `선택지 둘(${a} · ${b})이 같은 꼴 문장에서 낱말 하나만 다르지 않다`,
+        );
+    }
+  } else if (opener.choices !== undefined) {
+    report(
+      rule,
+      `${at}.choices`,
+      "선택지는 선택지 단계(1단계) 장면 여는 질문에만 둔다",
+    );
+  }
+  const targets = new Set(
+    itemsOfCard(lesson).flatMap(({ item }) => item.targets),
+  );
+  for (const [path, text] of [
+    [qAt, question],
+    [`${at}.easyQuestion.en`, opener.easyQuestion.en],
+  ] as const) {
+    const ids = wordIdsIn(text, ctx.index.lexicon);
+    const hit = [...targets].filter((t) => ids.has(t));
+    if (hit.length > 0)
+      report(
+        rule,
+        path,
+        `장면 여는 질문에 카드가 노리는 단원 단어 ${hit.join(", ")} 가 있다`,
+      );
+  }
+}
+
+/** 1~3단계 카드의 안전한 대사가 지어낸 경험 꼴에 걸리지 않는다(06:187 (4), C211 (1)). */
+function checkMadeUp(
+  lesson: TalkLesson,
+  spec: TalkLevelSpec,
+  ctx: LessonCellContext,
+  report: Report,
+): void {
+  if (!isLow(spec)) return;
+  lesson.card.safeLines.forEach((line, i) => {
+    const hit = phrasesIn(line.en, ctx.index.talkMadeUpPhrases);
+    if (hit.length > 0)
+      report(
+        "talk-made-up",
+        `card.safeLines.${i}.en`,
+        `안전한 대사 '${line.en}' 가 지어낸 경험 꼴 ${hit.map((p) => `'${p}'`).join(" · ")} 에 걸린다(C211 (1))`,
+      );
+  });
+}
+
 /**
  * 한 카드 안에서 같은 선생님 질문(인사 · 필수 · 더 · 쉬운 질문)은 두 번까지. 열쇠는 실행 셈과 같은 마지막 물음표 문장이다
  * (question-check.ts 의 cardQuestionKeyOf — 카드 자리 항목 고르기와 같은 함수). 앱이 선생님 차례의 같은 질문을 그 문장으로
@@ -845,6 +1165,8 @@ export function checkTalkCard(
   checkFirstForm(lesson, spec, ctx, report);
   checkTargets(lesson, ctx, report);
   checkSupport(lesson, report);
+  checkSceneOpener(lesson, spec, ctx, report);
+  checkMadeUp(lesson, spec, ctx, report);
   checkHints(lesson, spec, report);
   checkSameQuestion(lesson, report);
   checkMore(lesson, ctx, report);

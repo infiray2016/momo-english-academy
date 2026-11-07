@@ -172,6 +172,9 @@ export const TEST_SETTINGS = {
   // 13절 C202 (6) — 첫 문장 실측 2.2~5.5초라 1.5 에서 올림(컨트롤러 잠정)
   "talk.wait_line_seconds": { scope: "household", value: 3 },
   "talk.role_swap_turns": { scope: "household", value: 4 },
+  // 회화 AI 몫 넓힘(C211 (1)) — 자기 이야기 빈도 참고값 · 인사에서 지난 대화 꺼내기(끔)
+  "talk.self_line_every_turns": { scope: "household", value: 3 },
+  "talk.greeting_recall": { scope: "household", value: "off" },
   "talk.max_answer_seconds": { scope: "household", value: 30 },
   "speech.end_silence_seconds.talk.1-3": { scope: "household", value: 3 },
   "speech.end_silence_seconds.talk.4-6": { scope: "household", value: 2.5 },

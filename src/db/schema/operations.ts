@@ -135,7 +135,7 @@ export const aiCalls = pgTable(
     latencyMs: integer("latency_ms"),
     firstSentenceMs: integer("first_sentence_ms"),
     status: aiCallStatusEnum("status").notNull(),
-    // 실패 갈래(값 6 의 errorCode). 성공 · 거절 · 검증 실패 · 안전 상한은 비운다(정할 것 나).
+    // 실패 갈래(값 6 의 errorCode). 성공 · 거절 · 안전 상한은 비우고, 검증 실패는 읽지 못한 까닭을 적는다(2026-11-07 fix r1, 끝맺음 턴은 비움 · 읽었지만 앱이 고친 행은 비움 · 받은 1~3단계 빈 tori_en 막힘은 empty_tori_en_stuck).
     // 값은 `<갈래>` 또는 `<갈래>:<HTTP 상태>` 꼴(timeout · connection · server:529 · same_error:404 …, C63 (3))
     errorCode: text("error_code"),
   },

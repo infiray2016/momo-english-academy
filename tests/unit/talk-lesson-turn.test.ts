@@ -508,7 +508,7 @@ describe("묶음 6 검토 8절 범위 밖 관찰 넷", () => {
     ).toBe("suggestion");
   });
 
-  it("(나) 소리 줄이 빈 AI 차례의 'Listen and say!' 신호 말은 지우고, 따라 할 말이 있으면 남긴다(따라 할 말은 move.sound 에만)", () => {
+  it("(나) 1~3단계 AI 가 쓴 'Listen and say!' 신호 말은 소리 줄이 있어도 없어도 지운다(신호 말은 앱이 붙인다 — 'AI 몫 넓힘' C207, 따라 할 말은 move.sound 에만)", () => {
     const { args, ifAnswered } = plans3();
     const empty = play({
       args,
@@ -516,7 +516,7 @@ describe("묶음 6 검토 8절 범위 밖 관찰 넷", () => {
       sentences: ["The weekend is fun!", "Listen and say!"],
       outcome: ok(out()),
     });
-    expect(empty.states).toEqual(["send", "hold"]);
+    expect(empty.states).toEqual(["send", "drop"]);
     expect(empty.result.release).toEqual([]);
     expect(empty.result.kept).toEqual(["The weekend is fun!"]);
     const withLine = play({
@@ -525,9 +525,9 @@ describe("묶음 6 검토 8절 범위 밖 관찰 넷", () => {
       sentences: ["The weekend is fun!", "Listen and say!"],
       outcome: ok(out({ model_line: "The weekend.", new_words: ["weekend"] })),
     }).result;
-    expect(withLine.release).toEqual(["Listen and say!"]);
+    expect(withLine.release).toEqual([]);
     expect(withLine.move.sound).toEqual({ model: "The weekend." });
-    expect(withLine.text).toBe("The weekend is fun! Listen and say!");
+    expect(withLine.text).toBe("The weekend is fun!");
     // 카드 자리는 계획에 소리 줄이 없으면 신호 말을 바로 지운다
     const { ifStuck } = plans3();
     const noSound: TeacherTurnPlan = { ...ifStuck, attach: [] };
@@ -663,13 +663,12 @@ describe("AC-15k · AC-15v 선생님 행 text · 다시 쓸 차례 · move", () 
       ifAnswered,
       ifStuck,
       stuck: true,
-      sentences: ["That's okay!", "Let's say it together."],
+      // 1~3단계 AI 가 쓴 신호 말('Let's say it together.')은 지워지므로('AI 몫 넓힘' C207) 신호 말 없는 반응 둘로 본다
+      sentences: ["That's okay!", "You can do it!"],
       outcome: ok(out({ stuck: true, tori_ko: ["괜찮아!"] })),
       child: stuckSaid(),
     });
-    expect(result.rewrite).toBe(
-      "That's okay! Let's say it together.\nAnswer first 1.",
-    );
+    expect(result.rewrite).toBe("That's okay! You can do it!\nAnswer first 1.");
     expect(result.rewrite).not.toContain("괜찮아");
     expect(result.ko).toBe("괜찮아!");
   });
@@ -697,7 +696,8 @@ describe("AC-15k · AC-15v 선생님 행 text · 다시 쓸 차례 · move", () 
       ai: "choices",
       sound: { choices: ["I like it.", "I like Sunday."] },
     });
-    expect(result.text).toBe("Oh, nice! Do you like it? Listen and say!");
+    // AI 가 쓴 신호 말은 지운다('AI 몫 넓힘' C207 — 신호 말은 앱이 붙이는 흘림 줄)
+    expect(result.text).toBe("Oh, nice! Do you like it?");
     expect(result.rewrite).toContain("I like it. Or I like Sunday.");
   });
 
@@ -771,8 +771,8 @@ describe("묶음 8 fix 1(검토 I-1 · I-2 · M-1~M-4 · 단원 목표 글)", ()
         }),
       ),
     });
-    expect(result.release).toEqual(["Do you like it?", "Listen and say!"]);
-    expect(result.text).toBe("Oh, nice! Do you like it? Listen and say!");
+    expect(result.release).toEqual(["Do you like it?"]);
+    expect(result.text).toBe("Oh, nice! Do you like it?");
     expect(result.rewrite.split("\n")[0]).not.toContain("Sunday");
     expect(result.move.sound?.choices).toEqual([
       "I like it.",
@@ -965,12 +965,11 @@ describe("묶음 8 fix 1(검토 I-1 · I-2 · M-1~M-4 · 단원 목표 글)", ()
     expect(result.move.words).toEqual([]);
   });
 
-  it("M-4 4단계부터 회화 턴이 두 번 실패하면 'Oops' 쉼 줄(4단계는 뜻 함께)이고 선생님 행을 만들지 않는다 · 1~3단계는 칭찬 대사 · 거절은 안전한 대사", () => {
+  it("M-4 4단계부터 회화 턴이 두 번 실패하면 'Oops' 쉼 줄(4단계는 뜻 함께)이고 선생님 행을 만들지 않는다 · 1~3단계는 뜻 있는 안전한 대사(판정 r1 I-3 (나)) · 거절은 안전한 대사", () => {
     const base = {
       safeLines: [
         { en: "Let's talk about fun things!", ko: "재밌는 이야기 하자!" },
       ],
-      praiseLines: ["Good job!"],
       safeLine: "Let's talk about fun things!",
       turnNo: 3,
     };
@@ -991,7 +990,13 @@ describe("묶음 8 fix 1(검토 I-1 · I-2 · M-1~M-4 · 단원 목표 글)", ()
       lessonOutcomeViewOf(fail, { ...base, low: true, koMeaning: true }),
     ).toEqual({
       kind: "line",
-      line: { en: "Good job!" },
+      line: { en: "Let's talk about fun things!", ko: "재밌는 이야기 하자!" },
+    });
+    expect(
+      lessonOutcomeViewOf(fail, { ...base, low: true, koMeaning: false }),
+    ).toEqual({
+      kind: "line",
+      line: { en: "Let's talk about fun things!" },
     });
     expect(
       lessonOutcomeViewOf(

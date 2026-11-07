@@ -1,5 +1,6 @@
 // 회화 수업 실호출 표본 평가 명령(talk:observe, 회화 plan 묶음 13 · AC-15o)의 순수 함수: 인자 · 대본 읽기 · 계획 · 비용 어림 ·
 // 메모리 대화(가짜 응답 — 네트워크 없음) · 판정 칸 · 보고 꼴.
+import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 import { hasJsonSchemaRefs } from "@/core/ai/inline-refs";
 import { talkMoveOf } from "@/core/conversation/move";
@@ -8,6 +9,8 @@ import { splitSentences } from "@/core/seed/text";
 import { loadScriptConfig } from "../../scripts/ai-contract";
 import {
   type CallResult,
+  CHANCE_ALERT_DEFAULT,
+  chanceAlertOf,
   createTalkSim,
   evaluateLessonMessage,
   isSceneAssert,
@@ -17,6 +20,7 @@ import {
   materialsOf,
   type ObserveScript,
   observeValues,
+  overrideText,
   parseArgs,
   parseObserveScript,
   planLines,
@@ -25,10 +29,17 @@ import {
   readScriptFiles,
   readSeedFiles,
   reportMarkdown,
+  runTalkObserve,
+  runValuesOf,
   sameSoundTwiceOf,
   selectScripts,
+  settingValueOf,
   settleTurn,
+  summariesOf,
+  type TalkObserveArgs,
   type TurnRecord,
+  techErrorOf,
+  techErrorText,
   totalsOf,
 } from "../../scripts/talk-observe";
 
@@ -52,6 +63,12 @@ function materials3(): Materials {
   });
   if (!m.ok) throw new Error(m.missing);
   return m.materials;
+}
+
+/** 장면 여는 질문 칸이 없는 카드(개정 4 꼴): 대화 첫 질문이 필수 질문 1번이다(plan 정한 것 3). */
+function withoutSceneOpener(m: Materials): Materials {
+  const { sceneOpener: _opener, ...card } = m.card;
+  return { ...m, card };
 }
 
 /** 가짜 응답(회화 턴 출력 칸 전부 — 빈 값이 기본). */
@@ -111,9 +128,9 @@ function fakeMessage(over: Record<string, unknown>): CallResult {
 const say = (text: string) => ({ say: text });
 const dontKnow = { input: "dont_know" as const };
 
-/** 인사 끝까지 돌린 메모리 대화(대화 첫 질문 앱 차례가 붙어 있다). */
-function afterGreeting() {
-  const m = materials3();
+/** 인사 끝까지 돌린 메모리 대화(대화 첫 질문 앱 차례가 붙어 있다). opener false 면 장면 여는 질문 없는 카드로 돈다. */
+function afterGreeting(opener = true) {
+  const m = opener ? materials3() : withoutSceneOpener(materials3());
   const sim = createTalkSim(m, config.values, config.book);
   const ready = sim.prepare(say("I am fine."), 0);
   if (!ready.ok) throw new Error(ready.reason);
@@ -125,11 +142,56 @@ function afterGreeting() {
 }
 
 describe("parseArgs", () => {
-  it("기본값은 계획만 · 모든 대본 · 설정 effort · 임시 폴더", () => {
+  it("기본값은 계획만 · 모든 대본 · 설정 effort · 임시 폴더 · 한 바퀴 · 덮는 설정 없음 · 기준선 없음 · 기회 알림 0.5", () => {
     expect(parseArgs([])).toEqual({
       ok: true,
-      args: { yes: false, script: null, level: null, effort: null, out: null },
+      args: {
+        yes: false,
+        script: null,
+        level: null,
+        effort: null,
+        out: null,
+        rounds: 1,
+        set: {},
+        baseline: null,
+        chanceAlert: CHANCE_ALERT_DEFAULT,
+      },
     });
+  });
+
+  it("--rounds · 여러 --set(나중 것이 이김) · --baseline 을 읽는다", () => {
+    const parsed = parseArgs([
+      "--rounds",
+      "2",
+      "--set",
+      "talk.greeting_recall=off",
+      "--set",
+      "talk.self_line_every_turns=4",
+      "--set",
+      "talk.greeting_recall=on",
+      "--baseline",
+      "/tmp/base.json",
+    ]);
+    expect(parsed).toEqual({
+      ok: true,
+      args: expect.objectContaining({
+        rounds: 2,
+        set: {
+          "talk.greeting_recall": "on",
+          "talk.self_line_every_turns": 4,
+        },
+        baseline: "/tmp/base.json",
+      }),
+    });
+  });
+
+  it("--set 값 글은 참거짓 · 수 · 글로 읽는다", () => {
+    expect(settingValueOf("true")).toBe(true);
+    expect(settingValueOf("false")).toBe(false);
+    expect(settingValueOf("3")).toBe(3);
+    expect(settingValueOf("0.5")).toBe(0.5);
+    expect(settingValueOf("off")).toBe("off");
+    expect(settingValueOf("medium")).toBe("medium");
   });
 
   it("--yes --script --level --effort --out 을 읽는다", () => {
@@ -153,6 +215,10 @@ describe("parseArgs", () => {
         level: 3,
         effort: "medium",
         out: "/tmp/x",
+        rounds: 1,
+        set: {},
+        baseline: null,
+        chanceAlert: CHANCE_ALERT_DEFAULT,
       },
     });
   });
@@ -162,22 +228,123 @@ describe("parseArgs", () => {
     expect(parseArgs(["--script"]).ok).toBe(false);
     expect(parseArgs(["--effort", "high"]).ok).toBe(false);
     expect(parseArgs(["--level", "0"]).ok).toBe(false);
+    expect(parseArgs(["--rounds", "0"]).ok).toBe(false);
+    expect(parseArgs(["--rounds", "1.5"]).ok).toBe(false);
+    expect(parseArgs(["--set", "talk.greeting_recall"]).ok).toBe(false);
+    expect(parseArgs(["--set", "talk.greeting_recall="]).ok).toBe(false);
+    expect(parseArgs(["--set", "=on"]).ok).toBe(false);
+    expect(parseArgs(["--set", "Recall=on"]).ok).toBe(false);
+    expect(parseArgs(["--baseline"]).ok).toBe(false);
+    expect(parseArgs(["--chance-alert", "0"]).ok).toBe(false);
+    expect(parseArgs(["--chance-alert", "1.5"]).ok).toBe(false);
+    expect(parseArgs(["--chance-alert", "half"]).ok).toBe(false);
+  });
+
+  it("--chance-alert 는 0 초과 1 이하 수를 읽는다(기본 0.5, spec N-3)", () => {
+    expect(CHANCE_ALERT_DEFAULT).toBe(0.5);
+    const parsed = parseArgs(["--chance-alert", "0.7"]);
+    expect(parsed.ok && parsed.args.chanceAlert).toBe(0.7);
+    expect(chanceAlertOf("1")).toBe(1);
+    expect(chanceAlertOf("-0.1")).toBeNull();
   });
 });
 
 describe("대본", () => {
-  it("대본 여섯: 3단계 다섯(낱말 답 · 아이가 꺼낸 이야기 · 막힘 셋 · 말소리 없음 · 기록 장면)과 4단계 하나", () => {
+  const NEW_SEVEN = [
+    "l3-greet-fine",
+    "l3-greet-more",
+    "l3-greet-tired",
+    "l3-scene-no",
+    "l3-scene-other",
+    "l3-scene-yes",
+    "l3-second-session",
+  ];
+
+  it("대본 열넷: 3단계 열셋(지난 다섯 + 'AI 몫 넓힘' 설계 7 의 새 일곱 + 판정 r1 8.1 의 요약에 닿는 둘째 세션)과 4단계 하나", () => {
     const all = scripts();
-    expect(all.map((s) => s.name).sort()).toEqual([
-      "l3-child-topic",
-      "l3-nospeech",
-      "l3-preview-1",
-      "l3-stuck-three",
-      "l3-word-answers",
-      "l4-word-answers",
-    ]);
-    expect(all.filter((s) => s.level === 3)).toHaveLength(5);
+    expect(all.map((s) => s.name).sort()).toEqual(
+      [
+        "l3-child-topic",
+        "l3-nospeech",
+        "l3-preview-1",
+        "l3-second-session-recall",
+        "l3-stuck-three",
+        "l3-word-answers",
+        "l4-word-answers",
+        ...NEW_SEVEN,
+      ].sort(),
+    );
+    expect(all.filter((s) => s.level === 3)).toHaveLength(13);
     expect(all.filter((s) => s.level === 4)).toHaveLength(1);
+  });
+
+  it("새 일곱은 3단계 단원 1 수업 1 · 미나이고 차례마다 기대 칸이 있다(설계 8 판정 표본)", () => {
+    const fresh = scripts().filter((s) => NEW_SEVEN.includes(s.name));
+    expect(fresh).toHaveLength(7);
+    for (const s of fresh) {
+      expect([s.level, s.unit, s.lesson, s.teacher]).toEqual([3, 1, 1, "mina"]);
+      expect(s.steps.every((step) => step.expect !== undefined)).toBe(true);
+      expect(s.steps.every((step) => step.say !== undefined)).toBe(true);
+    }
+  });
+
+  it("인사 대본 셋은 첫 아이 말(인사 답)이 서로 다르고, 장면 대본 셋은 둘째 아이 말이 예 · 아니요 · 딴 말이다", () => {
+    const byName = new Map(scripts().map((s) => [s.name, s]));
+    const firstOf = (n: string) => byName.get(n)?.steps[0]?.say;
+    const greets = ["l3-greet-fine", "l3-greet-tired", "l3-greet-more"].map(
+      firstOf,
+    );
+    expect(new Set(greets).size).toBe(3);
+    const secondOf = (n: string) => byName.get(n)?.steps[1]?.say;
+    expect(secondOf("l3-scene-yes")).toMatch(/^yes\b/i);
+    expect(secondOf("l3-scene-no")).toMatch(/^no\b/i);
+    expect(secondOf("l3-scene-other")).not.toMatch(/^(?:yes|no)\b/i);
+  });
+
+  it("둘째 세션 대본 둘만 지난 대화 요약 한 줄과 대본 칸 settings(talk.greeting_recall 켬)를 두고, 요약에 닿는 대본은 인사 답이 요약의 것(사과)을 꺼내며 8차례다", () => {
+    const all = scripts();
+    const second = all.find((s) => s.name === "l3-second-session");
+    const recall = all.find((s) => s.name === "l3-second-session-recall");
+    for (const s of [second, recall]) {
+      expect(s?.summaries).toHaveLength(1);
+      expect(s?.settings).toEqual({ "talk.greeting_recall": "on" });
+    }
+    expect(recall?.summaries).toEqual(second?.summaries);
+    expect(recall?.steps).toHaveLength(8);
+    expect(recall?.steps[0]?.say).toMatch(/apples/i);
+    expect(recall?.steps.every((step) => step.expect !== undefined)).toBe(true);
+    expect([
+      recall?.level,
+      recall?.unit,
+      recall?.lesson,
+      recall?.teacher,
+    ]).toEqual([3, 1, 1, "mina"]);
+    expect(
+      all.filter((s) => s.summaries !== undefined || s.settings !== undefined),
+    ).toHaveLength(2);
+  });
+
+  it("대본 칸 settings 는 설정 키 꼴 · 글 · 수 · 참거짓만, summaries 는 빈 줄 없이 받는다", () => {
+    const base = {
+      name: "x",
+      title: "t",
+      level: 3,
+      unit: 1,
+      lesson: 1,
+      teacher: "mina",
+      steps: [{ say: "Hi." }],
+    };
+    const ok = (extra: Record<string, unknown>) =>
+      parseObserveScript({ ...base, ...extra }, "x.json").ok;
+    expect(ok({ settings: { "talk.greeting_recall": "on" } })).toBe(true);
+    expect(ok({ settings: { "talk.self_line_every_turns": 3 } })).toBe(true);
+    expect(ok({ settings: { recall: "on" } })).toBe(false);
+    expect(ok({ settings: { "talk.greeting_recall": { on: true } } })).toBe(
+      false,
+    );
+    expect(ok({ summaries: ["주제: 과일."] })).toBe(true);
+    expect(ok({ summaries: [] })).toBe(false);
+    expect(ok({ summaries: [" "] })).toBe(false);
   });
 
   it("기록 장면은 준비 낱말 eat · drink 를 건너뛰고 첫 질문에 두 번 막힌 뒤 쉬운 질문에 답한다", () => {
@@ -282,9 +449,110 @@ describe("자료 · 계획", () => {
       settingsSource: "s",
       pricesSource: "p",
       out: "/tmp/o",
+      rounds: 1,
+      baseline: null,
     });
     expect(lines.at(-2)).toContain("돌릴 것 1");
     expect(lines.some((l) => l.includes("건너뜀: 카드 없음"))).toBe(true);
+  });
+
+  it("바퀴 수만큼 합계 호출 · 비용을 곱하고, 덮는 설정 · 요약 줄 수 · 기준선 경로를 적는다", () => {
+    const script = scripts().find(
+      (s) => s.name === "l3-second-session",
+    ) as ObserveScript;
+    const run = planRunOf(
+      script,
+      {
+        ok: true,
+        promptChars: 4000,
+        model: "m",
+        effort: "low",
+        thinking: "disabled",
+        price: { input4: 2, output4: 10 },
+      },
+      [
+        {
+          key: "talk.greeting_recall",
+          value: "off",
+          from: "set",
+          known: false,
+        },
+      ],
+    );
+    expect(run.summaries).toBe(1);
+    const lines = planLines([run], {
+      settingsSource: "s",
+      pricesSource: "p",
+      out: "/tmp/o",
+      rounds: 2,
+      baseline: "/tmp/base.json",
+    });
+    expect(lines[0]).toContain("바퀴 2");
+    expect(lines[1]).toContain("지난 대화 요약 1줄");
+    expect(lines[1]).toContain(
+      "덮는 설정 talk.greeting_recall=off(명령 · 설정 파일에 없는 키)",
+    );
+    const total = lines.find((l) => l.startsWith("합계:")) ?? "";
+    expect(total).toContain(`예상 호출 ${run.calls * 2}(한 바퀴 ${run.calls})`);
+    expect(lines.at(-1)).toContain("기준선: /tmp/base.json");
+    expect(lines.at(-1)).toContain("지표 표(talk-metrics)가 대본마다 견준다");
+  });
+
+  it("설정값은 설정 파일 → 대본 칸 → --effort → --set 차례로 덮고, 받은 설정은 바꾸지 않는다", () => {
+    const values = { "talk.greeting_recall": "off", "x.a": 1 };
+    const { values: merged, overrides } = runValuesOf({
+      values,
+      level: 3,
+      effort: "medium",
+      script: {
+        settings: {
+          "talk.greeting_recall": "on",
+          "x.b": 2,
+          "ai.effort.talk_turn.1-3": "low",
+        },
+      },
+      set: { "x.b": 5 },
+    });
+    expect(merged["talk.greeting_recall"]).toBe("on");
+    expect(merged["x.a"]).toBe(1);
+    expect(merged["x.b"]).toBe(5);
+    expect(merged["ai.effort.talk_turn.1-3"]).toBe("medium");
+    expect(values["talk.greeting_recall"]).toBe("off");
+    expect(overrides).toEqual([
+      {
+        key: "talk.greeting_recall",
+        value: "on",
+        from: "script",
+        known: true,
+      },
+      {
+        key: "ai.effort.talk_turn.1-3",
+        value: "low",
+        from: "script",
+        known: false,
+      },
+      { key: "x.b", value: 5, from: "set", known: false },
+    ]);
+    expect(overrideText(overrides[0] as (typeof overrides)[number])).toBe(
+      "talk.greeting_recall=on(대본)",
+    );
+    const setWins = runValuesOf({
+      values,
+      level: 3,
+      effort: "medium",
+      script: {},
+      set: { "ai.effort.talk_turn.1-3": "low" },
+    });
+    expect(setWins.values["ai.effort.talk_turn.1-3"]).toBe("low");
+  });
+
+  it("지난 대화 요약은 talk.memory_summaries 줄까지 넘긴다", () => {
+    const three = ["가", "나", "다"];
+    expect(summariesOf(three, { "talk.memory_summaries": 2 })).toEqual([
+      "가",
+      "나",
+    ]);
+    expect(summariesOf(three, {})).toEqual(three);
   });
 
   it("--effort 는 그 구간 회화 턴 effort 키 하나만 바꾼 사본이다", () => {
@@ -298,6 +566,83 @@ describe("자료 · 계획", () => {
 });
 
 describe("메모리 대화(가짜 응답)", () => {
+  it("대본 summaries 는 회화 턴 입력의 지난 대화 요약으로 들어가고 시스템 프롬프트에 실린다", () => {
+    const m = materials3();
+    const line = "주제: 좋아하는 과일. 좋아하는 것: 사과.";
+    const sim = createTalkSim(m, config.values, config.book, {
+      summaries: [line],
+    });
+    const ready = sim.prepare(say("I am good."), 0);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(ready.turn.input.summaries).toEqual([line]);
+    expect(String(ready.turn.request.body.system)).toContain("좋아하는 과일");
+    const none = createTalkSim(m, config.values, config.book).prepare(
+      say("I am good."),
+      0,
+    );
+    if (!none.ok) throw new Error(none.reason);
+    expect(none.turn.input.summaries).toEqual([]);
+  });
+
+  it("기술 오류 자리: 들리지 않음 차례는 표시하고 정상 말 차례는 표시하지 않는다", () => {
+    const { sim, record } = afterGreeting();
+    expect(record.techError).toBeNull();
+    const ready = sim.prepare({ input: "nospeech" }, 1);
+    if (!ready.ok) throw new Error(ready.reason);
+    const quiet = sim.finish(
+      ready.turn,
+      fakeMessage({ tori_en: "We eat rice and fish. Do you like fish?" }),
+    );
+    expect(quiet.techError).toEqual({ nospeech: true, call: null });
+    expect(quiet.flags).toContain("기술 오류 자리(들리지 않음)");
+  });
+
+  it("기술 오류 자리: 호출 실패 · 거절 · 읽지 못함 · 재질문 실패를 가른다", () => {
+    const ok = fakeMessage({ tori_en: "Nice!" });
+    const failed: CallResult = {
+      ok: false,
+      status: 529,
+      detail: "overloaded_error",
+      latencyMs: 10,
+    };
+    const refusal =
+      ok.ok === true
+        ? ({
+            ...ok,
+            message: { ...ok.message, stop_reason: "refusal" },
+          } as CallResult)
+        : ok;
+    const base = { nospeech: false, readable: true, retryFailed: false };
+    expect(techErrorOf({ ...base, result: ok })).toBeNull();
+    expect(techErrorOf({ ...base, result: failed })).toEqual({
+      nospeech: false,
+      call: "failed",
+    });
+    expect(techErrorOf({ ...base, result: refusal })?.call).toBe("refusal");
+    expect(techErrorOf({ ...base, result: ok, readable: false })?.call).toBe(
+      "unreadable",
+    );
+    expect(techErrorOf({ ...base, result: ok, retryFailed: true })?.call).toBe(
+      "retry_failed",
+    );
+    expect(techErrorText({ nospeech: true, call: "failed" })).toBe(
+      "기술 오류 자리(들리지 않음 · 호출 실패)",
+    );
+  });
+
+  it("호출이 실패한 차례는 기술 오류 자리로 적는다", () => {
+    const { sim } = afterGreeting();
+    const ready = sim.prepare(say("Rice."), 1);
+    if (!ready.ok) throw new Error(ready.reason);
+    const record = sim.finish(ready.turn, {
+      ok: false,
+      status: 500,
+      detail: "api_error",
+      latencyMs: 5,
+    });
+    expect(record.techError).toEqual({ nospeech: false, call: "failed" });
+  });
+
   it("첫 차례는 앱의 카드 인사 질문이다", () => {
     const m = materials3();
     const sim = createTalkSim(m, config.values, config.book);
@@ -345,8 +690,11 @@ describe("메모리 대화(가짜 응답)", () => {
     expect(greeting.userMessage).toContain("Next part: short preparation");
     expect(greeting.request.model).toBe("claude-sonnet-5-5");
     expect(String(greeting.request.body.system)).not.toBe("");
-    // 인사 끝 뒤 짧은 준비를 지나 대화 첫 질문(앱)이 붙는다
-    expect(record.appAfter.join(" ")).toContain(m.card.required[0]?.en);
+    // 인사 끝 뒤 짧은 준비를 지나 대화 첫 질문(앱, 1~3단계는 장면 여는 질문 C206)이 붙는다
+    expect(m.card.sceneOpener).toBeDefined();
+    expect(record.appAfter.join(" ")).toContain(
+      m.card.sceneOpener?.question.en,
+    );
     expect(record.move.kind).toBe("ai");
     expect(record.usage?.firstSentenceMs).toBe(900);
   });
@@ -362,7 +710,8 @@ describe("메모리 대화(가짜 응답)", () => {
       one.turn,
       fakeMessage({ tori_en: "That's okay! Let's say it together." }),
     );
-    expect(r1.sound.answer).toBe(m.card.required[0]?.answerExample);
+    // 첫 질문은 장면 여는 질문이라 받침 줄도 그 칸의 것이다(spec 설계 5 '받침 · 셈')
+    expect(r1.sound.answer).toBe(m.card.sceneOpener?.answerExample);
     expect(r1.move.why).toBe("support");
     expect(r1.judge.answerFirst.auto).toBe(true);
 
@@ -374,7 +723,7 @@ describe("메모리 대화(가짜 응답)", () => {
       two.turn,
       fakeMessage({ tori_en: "No problem! Let's try an easy one." }),
     );
-    expect(r2.attach).toContain(m.card.required[0]?.easyQuestion.en);
+    expect(r2.attach).toContain(m.card.sceneOpener?.easyQuestion.en);
     expect(r2.move.stage).toBe(2);
   });
 
@@ -404,7 +753,8 @@ describe("메모리 대화(가짜 응답)", () => {
   });
 
   it("한 턴 늦게 온 카드 답은 '앞 차례가 카드 기회'로 알린다(서버와 같은 lateCardAnswerOf)", () => {
-    const { sim, m } = afterGreeting();
+    // 첫 질문이 카드 필수 1 인 꼴(장면 여는 질문 없는 카드)로 본다. 장면 여는 질문은 카드 기회가 아니다(spec 설계 5)
+    const { sim, m } = afterGreeting(false);
     const target = m.card.required[0]?.targets[0] ?? "";
     // 첫 질문(카드 필수 1)에 딴 말로 답한 뒤, 다음 차례에 노린 낱말을 담아 답한다
     const one = sim.prepare(say("I like the lake."), 1);
@@ -425,7 +775,8 @@ describe("메모리 대화(가짜 응답)", () => {
   });
 
   it("이미 노린 낱말로 답한 뒤의 말은 늦은 카드 답이 아니다(아이 행 인식 글로 '이미 답함'을 본다)", () => {
-    const { sim, m } = afterGreeting();
+    // 위 시험과 같은 꼴(첫 질문이 카드 필수 1)이라야 '이미 답함'으로 늦은 답이 아님을 본다
+    const { sim, m } = afterGreeting(false);
     const target = m.card.required[0]?.targets[0] ?? "";
     const one = sim.prepare(say(`We ${target} rice.`), 1);
     if (!one.ok) throw new Error(one.reason);
@@ -873,11 +1224,34 @@ describe("보고", () => {
       model: "claude-sonnet-5-5",
       effort: "low",
       thinking: "between_tools",
+      round: 2,
+      systemPrompt: "system",
+      overrides: [
+        {
+          key: "talk.greeting_recall",
+          value: "on",
+          from: "script",
+          known: true,
+        },
+      ],
+      summaries: ["주제: 과일 | 놀이."],
       turns,
       opening: ["Hello, {NAME}! How are you?"],
       stopped: null,
     };
   }
+
+  it("바퀴 · 덮은 설정 · 넘긴 요약 · 기술 오류 자리 합계를 쓴다", () => {
+    const md = reportMarkdown({
+      date: "2026-11-07",
+      runs: [report()],
+      skipped: [],
+    });
+    expect(md).toContain("· 바퀴 2)");
+    expect(md).toContain("덮은 설정: talk.greeting_recall=on(대본)");
+    expect(md).toContain("지난 대화 요약(넘긴 것): 주제: 과일 \\| 놀이.");
+    expect(md).toContain("| 기술 오류 자리(들리지 않음 · 호출) | 0 · 0 |");
+  });
 
   it("턴 표 · 나란히 표 · 합계를 쓰고 표 칸의 | 를 가린다", () => {
     const md = reportMarkdown({
@@ -910,5 +1284,212 @@ describe("보고", () => {
     expect(t.costUsd).toBeGreaterThan(0);
     expect(t.reaskTurns).toBe(1);
     expect(t.reaskCostUsd).toBe(0.0001);
+    expect(t.techErrors).toEqual({ nospeech: 0, call: 0 });
+  });
+});
+
+describe("실행(네트워크 없음)", () => {
+  const argsOf = (over: Partial<TalkObserveArgs>): TalkObserveArgs => ({
+    yes: false,
+    script: null,
+    level: null,
+    effort: null,
+    out: "/tmp/talk-observe-test",
+    rounds: 1,
+    set: {},
+    baseline: null,
+    chanceAlert: CHANCE_ALERT_DEFAULT,
+    ...over,
+  });
+
+  /** 흘려 받기 흉내 클라이언트: 부를 때마다 같은 가짜 응답(인사 끝 꼴 — 질문 없음)을 돌려주고 부른 수를 센다. */
+  function fakeClient() {
+    const calls: unknown[] = [];
+    const reply = fakeMessage({ tori_en: "Good to hear! Let's talk!" });
+    const message = reply.ok ? reply.message : null;
+    const client = {
+      beta: {
+        messages: {
+          stream: (body: unknown) => {
+            calls.push(body);
+            return {
+              on: () => undefined,
+              finalMessage: async () => message,
+              request_id: "req_fake",
+            };
+          },
+        },
+      },
+    } as unknown as Anthropic;
+    return { client, calls };
+  }
+
+  function ioOf(client?: Anthropic, files: Record<string, unknown> = {}) {
+    const logs: string[] = [];
+    const written = new Map<string, string>();
+    return {
+      logs,
+      written,
+      io: {
+        root: ROOT,
+        config,
+        readScripts: () => readScriptFiles(ROOT),
+        readSeed: (level: number, unit: number) =>
+          readSeedFiles(ROOT, level, unit),
+        createClient: () => {
+          if (!client) throw new Error("계획만인데 클라이언트를 만들었다");
+          return client;
+        },
+        log: (line: string) => logs.push(line),
+        write: (path: string, text: string) => written.set(path, text),
+        now: () => new Date("2026-11-07T00:00:00Z"),
+        readJson: (path: string) => {
+          if (!Object.hasOwn(files, path)) throw new Error(`없는 파일 ${path}`);
+          return files[path];
+        },
+      },
+    };
+  }
+
+  it("--yes 없이 3단계는 대본 열셋 · 예상 호출 · 비용을 내고 부르지 않는다", async () => {
+    const { io, logs, written } = ioOf();
+    const code = await runTalkObserve(argsOf({ level: 3, rounds: 2 }), io);
+    expect(code).toBe(0);
+    expect(written.size).toBe(0);
+    const total = logs.find((l) => l.startsWith("합계:")) ?? "";
+    expect(total).toContain("대본 13(돌릴 것 13) × 바퀴 2");
+    const perRound = Number(/한 바퀴 (\d+)\)/.exec(total)?.[1]);
+    expect(perRound).toBeGreaterThan(0);
+    expect(total).toContain(`예상 호출 ${perRound * 2}(`);
+    expect(total).toMatch(/예상 비용 약 \d+\.\d{4}달러/);
+    expect(
+      logs.some(
+        (l) =>
+          l.startsWith("l3-second-session") &&
+          l.includes("덮는 설정 talk.greeting_recall=on(대본"),
+      ),
+    ).toBe(true);
+  });
+
+  it("--yes 는 바퀴마다 대본을 돌리고 JSON 보고에 바퀴 · 시스템 프롬프트 · 덮은 설정 · 요약 · 기술 오류 자리를 적는다", async () => {
+    const { client, calls } = fakeClient();
+    const { io, written } = ioOf(client, {
+      "/tmp/base.json": {
+        date: "2026-11-07",
+        effort: "low",
+        rounds: 1,
+        runs: [],
+      },
+    });
+    const code = await runTalkObserve(
+      argsOf({
+        yes: true,
+        script: "l3-second-session",
+        rounds: 2,
+        set: { "talk.greeting_recall": "off" },
+        baseline: "/tmp/base.json",
+      }),
+      io,
+    );
+    expect(code).toBe(0);
+    const steps =
+      scripts().find((s) => s.name === "l3-second-session")?.steps.length ?? 0;
+    expect(calls.length).toBeGreaterThanOrEqual(steps * 2);
+    const jsonPath = [...written.keys()].find((k) => k.endsWith(".json")) ?? "";
+    const report = JSON.parse(written.get(jsonPath) ?? "{}") as {
+      rounds: number;
+      set: Record<string, unknown>;
+      baseline: string;
+      totals: { techErrors: { nospeech: number; call: number } };
+      runs: RunReport[];
+    };
+    expect(report.rounds).toBe(2);
+    expect(report.set).toEqual({ "talk.greeting_recall": "off" });
+    expect(report.baseline).toBe("/tmp/base.json");
+    expect(report.runs.map((r) => r.round)).toEqual([1, 2]);
+    for (const r of report.runs) {
+      expect(r.systemPrompt.length).toBeGreaterThan(0);
+      expect(r.systemPrompt).toContain("좋아하는 과일");
+      expect(r.summaries).toHaveLength(1);
+      expect(r.overrides).toEqual([
+        {
+          key: "talk.greeting_recall",
+          value: "off",
+          from: "set",
+          known: Object.hasOwn(config.values, "talk.greeting_recall"),
+        },
+      ]);
+      expect(r.turns).toHaveLength(steps);
+      expect(r.turns.every((t) => "techError" in t)).toBe(true);
+    }
+    expect(report.totals.techErrors).toEqual({ nospeech: 0, call: 0 });
+    const md = written.get(jsonPath.replace(/\.json$/, ".md")) ?? "";
+    expect(md).toContain("· 바퀴 1)");
+    expect(md).toContain("· 바퀴 2)");
+  });
+
+  it("--yes 는 끝에 지표 표를 보고에 넣고 지표 · 검토 목록 파일을 따로 쓴다(talk-metrics)", async () => {
+    const { client } = fakeClient();
+    const { io, written, logs } = ioOf(client, {
+      "/tmp/base.json": {
+        date: "2026-11-06",
+        effort: "low",
+        rounds: 1,
+        runs: [],
+      },
+    });
+    const code = await runTalkObserve(
+      argsOf({
+        yes: true,
+        script: "l3-greet-fine",
+        baseline: "/tmp/base.json",
+        chanceAlert: 0.8,
+      }),
+      io,
+    );
+    expect(code).toBe(0);
+    const base = "/tmp/talk-observe-test/2026-11-07-talk-observe-settings";
+    expect([...written.keys()].sort()).toEqual(
+      [
+        `${base}.md`,
+        `${base}.json`,
+        `${base}-metrics.md`,
+        `${base}-metrics.json`,
+        `${base}-review.md`,
+      ].sort(),
+    );
+    const report = JSON.parse(written.get(`${base}.json`) ?? "{}") as {
+      metrics: {
+        chanceAlert: number;
+        baseline: string;
+        scripts: { name: string; values: { fixed: { den: number } } }[];
+      };
+    };
+    expect(report.metrics.chanceAlert).toBe(0.8);
+    expect(report.metrics.baseline).toBe("/tmp/base.json");
+    expect(report.metrics.scripts.map((s) => s.name)).toEqual([
+      "l3-greet-fine",
+    ]);
+    expect(written.get(`${base}.md`)).toContain(
+      "# 회화 대본 지표(talk:metrics",
+    );
+    expect(written.get(`${base}-review.md`)).toContain("## 첫 바퀴 전문");
+    expect(logs.at(-1)).toContain("-metrics.md");
+  });
+
+  it("기준선 JSON 꼴이 틀리면 부르기 전에 멈춘다", async () => {
+    const { client, calls } = fakeClient();
+    const { io } = ioOf(client, { "/tmp/bad.json": { runs: "x" } });
+    await expect(
+      runTalkObserve(
+        argsOf({
+          yes: true,
+          script: "l3-greet-fine",
+          baseline: "/tmp/bad.json",
+        }),
+        io,
+      ),
+    ).rejects.toThrow("talk:observe JSON 보고 꼴이 아니다");
+    expect(calls).toHaveLength(0);
   });
 });

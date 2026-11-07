@@ -99,8 +99,9 @@ export function effectiveStuckOf({
   child: string;
   input: string;
   /**
-   * 질문 · 오늘 장면 · 카드의 내용 낱말(소문자). 영어 낱말 두 개의 말에 이 낱말이 들면 질문 · 장면에 닿는 짧은 말(short_related)이라 막힘이
-   * 아니다('Big fish.' — 대본 4회차 설계 재판정, 앱 안전망 셋 이상 밖의 자리). 없으면 이 조건을 보지 않는다.
+   * 질문 · 오늘 장면 · 카드의 내용 낱말(소문자). 영어 낱말 한두 개의 말에 이 낱말이 들면 질문 · 장면에 닿는 짧은 말(short_related)이라 막힘이
+   * 아니다('Big fish.' — 대본 4회차 설계 재판정 · 'Rice.' — 대본 회차 r1 판정 I-4, 13절 C204 (2) '낱말 하나도 닿으면 답'). 없으면 이 조건을
+   * 보지 않는다.
    */
   sceneWords?: ReadonlySet<string>;
 }): boolean {
@@ -109,6 +110,27 @@ export function effectiveStuckOf({
   if (sceneWords !== undefined && touchesScene(child, sceneWords)) return false;
   if (childKind !== undefined) return STUCK_CHILD_KINDS.has(childKind);
   return !isEnglishSaying(child);
+}
+
+/**
+ * 아이 말이 '내용 있는 말'인가(1~3단계 사용자 메시지 'Child said more', 02-2 3.3 말 길이와 자기 이야기 · spec 설계 3 [I-2]): 영어 낱말
+ * ENGLISH_SENTENCE_MIN_WORDS 개 이상이고 모름 표현이 아닌 말이거나, 느낌 낱말(시드 목록 talk-allowed-words feeling — happy · tired · fun 꼴)이 든
+ * 말이다. 느낌 낱말은 표기형을 원형으로 바꿔 본다(lemmaOf, 없으면 소문자 그대로). 'Rice.' · 'Big fish.' 는 아니고 'Happy!' 는 그렇다.
+ */
+export function childSaidMoreOf(
+  text: string,
+  feelingWords: readonly string[],
+  lemmaOf: (surface: string) => string | undefined,
+): boolean {
+  if (isEnglishSaying(text, ENGLISH_SENTENCE_MIN_WORDS)) return true;
+  const feelings = new Set(feelingWords.map((w) => w.toLowerCase()));
+  if (feelings.size === 0) return false;
+  return normalizeSpoken(text)
+    .split(" ")
+    .filter((w) => /^[a-z]+$/.test(w))
+    .some(
+      (w) => feelings.has(w) || feelings.has((lemmaOf(w) ?? "").toLowerCase()),
+    );
 }
 
 /** 이 낱말들은 장면 낱말로 세지 않는다(기능어 · 대답 말 — 'Yes it.' 이 장면에 닿는다고 보지 않게). */
@@ -162,18 +184,20 @@ const NOT_SCENE_WORDS = new Set([
 ]);
 
 /**
- * 영어 낱말 두 개(ENGLISH_SAYING_MIN_WORDS)의 말이고 모름 표현이 아니며, 그 가운데 하나가 질문 · 장면 · 카드의 내용 낱말인가('Big fish.' · 'Cold
- * juice.'). 'Blue car.' 처럼 장면에 없는 두 낱말은 아니다(갈래가 정함).
+ * 영어 낱말 한두 개(ENGLISH_SAYING_MIN_WORDS 이하)의 말이고 모름 표현이 아니며, 그 가운데 하나가 질문 · 장면 · 카드의 내용 낱말인가('Rice.' ·
+ * 'Big fish.' · 'Cold juice.' — 13절 C204 (2) 경계 그대로, 대본 회차 r1 판정 I-4). 'Blue car.' 처럼 장면에 없는 낱말 · 'Huh?' · 'Yes.' 같은
+ * 기능어 · 대답 말은 아니다(갈래가 정함).
  */
 export function touchesScene(
   child: string,
   sceneWords: ReadonlySet<string>,
 ): boolean {
-  if (!isEnglishSaying(child)) return false;
+  if (isDontKnowSaying(child)) return false;
   const words = normalizeSpoken(child)
     .split(" ")
     .filter((w) => /^[a-z]+$/.test(w));
-  if (words.length !== ENGLISH_SAYING_MIN_WORDS) return false;
+  if (words.length === 0 || words.length > ENGLISH_SAYING_MIN_WORDS)
+    return false;
   return words.some((w) => !NOT_SCENE_WORDS.has(w) && sceneWords.has(w));
 }
 

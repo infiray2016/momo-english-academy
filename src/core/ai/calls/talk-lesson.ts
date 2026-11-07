@@ -21,10 +21,12 @@ import type { Masker } from "@/core/ai/mask";
 import type { CheckField, FieldHit } from "@/core/ai/output-check";
 import {
   childKindOf,
+  childSaidMoreOf,
   effectiveStuckOf,
   sceneWordsOf,
   TALK_CHILD_KINDS,
 } from "@/core/conversation/child-kind";
+import { soundLinePlacesOf } from "@/core/conversation/cue-line";
 import type { TeacherTurnPlan } from "@/core/conversation/lesson-flow";
 import type {
   TalkHeardHelp,
@@ -46,6 +48,12 @@ import {
   questionKeyOf,
 } from "@/core/conversation/question-check";
 import {
+  type SituationPlace,
+  situationExampleOf,
+  situationPlaceOf,
+  TALK_LOW_REACTION_EXAMPLES,
+} from "@/core/conversation/situation";
+import {
   sayingAnswer,
   withoutEnglishSentencesOf,
 } from "@/core/conversation/spoken";
@@ -62,6 +70,9 @@ import {
   TALK_SUPPORTS,
 } from "@/core/seed/structure";
 import { type FormRule, splitSentences, tokenize } from "@/core/seed/text";
+
+/** 1~3단계 상황 차례 예(core/conversation/situation 으로 옮김 — 넓이 시험 · 옛 가져오기 자리를 위해 같은 이름으로 다시 내보낸다). */
+export { TALK_SITUATION_EXAMPLES } from "@/core/conversation/situation";
 
 /** 응답 규격 제목(두 목적이 같은 규격, ai_calls 목적 이름 그대로 — 회화 plan '이름' 절). 가짜 Anthropic 이 이 제목으로 고른다. */
 export const TALK_LESSON_TITLE = "talk_turn";
@@ -142,10 +153,11 @@ export type TalkLessonContext = {
 
 /**
  * 앱이 tori_en 뒤에 붙일 질문 줄(카드 자리 턴): 카드 항목 질문 · 받침 둘째의 카드 쉬운 질문 · 1~3단계 카드 인사 질문
- * (묶음 5 TeacherAttachLine 의 question 줄 role 그대로). 인사 질문은 카드 항목이 없다(none · 0).
+ * (묶음 5 TeacherAttachLine 의 question 줄 role 그대로). 인사 질문 · 장면 여는 질문과 그 쉬운 질문은 카드 항목이 없다(none · 0).
+ * 장면 여는 질문(scene)은 AI 를 부르지 않는 대화 첫 질문 줄이라 호출 입력에는 오지 않는다(형만 같게 둔다).
  */
 export type TalkCardLine = {
-  role: "card" | "easy" | "greeting";
+  role: "card" | "easy" | "greeting" | "scene";
   kind: TalkCardItemKind;
   no: number;
   en: string;
@@ -160,6 +172,7 @@ export type TalkCallStuckPlan = Pick<
   | "supportStage"
   | "stuckQuestion"
   | "stuckAnswer"
+  | "situationExample"
 >;
 
 /** 기회 알림(3.3 '남은 기회 알림' 차례: 이월 → 필수 질문 → 다시 쓰기 → 꺼낼 새 단어). 흐름의 남은 기회 셈이 그대로 들어간다. */
@@ -220,7 +233,23 @@ export type TalkCallTurn = {
   /**
    * 아이가 답한 질문이 앱이 붙인 대화 첫 질문이면 그 글과 카드 기회 여부(앞 턴 전문에 없는 차례 — task-talk-13-report 9절 2). 없으면 줄을 넣지 않는다.
    */
-  appAsked?: { en: string; card: boolean } | null;
+  appAsked?: { en: string; card: boolean; scene?: true } | null;
+  /**
+   * 1~3단계 AI 차례만: 아이 말이 '내용 있는 말'인가(사용자 메시지 'Child said more: yes · no' — childSaidMoreOf, 02-2 198줄). 호출 입력을 만들 때
+   * 느낌 낱말을 받지 않았으면 없음(줄을 넣지 않음).
+   */
+  childSaidMore?: boolean;
+  /** 1~3단계 따라가기 상한에 닿은 턴(사용자 메시지 'Come back to today's topic in this turn: yes', 02-2 194줄). 아니면 없음. */
+  returnNow?: true;
+  /** 1~3단계 장면 여는 질문 답 뒤의 AI 차례(사용자 메시지 'Follow up on the child's answer: yes', 02-2 200줄). 아니면 없음. */
+  followUpAnswer?: true;
+  /** 1~3단계 들리지 않음 차례(사용자 메시지 'Not heard: …' 기술 문제 설명 줄, 02-2 208줄 · C211 (4)). 아니면 없음. */
+  notHeard?: true;
+  /**
+   * 1~3단계 상황 차례(인사 끝 · 받침 · 들리지 않음)의 자리와 예 돌림 번호(사용자 메시지 'Example line' — 그 자리 예 셋 가운데 하나, 판정 r1
+   * I-1 (가) · M-1). 인사 끝 예는 nextPart 로 고른다. 호출 입력을 만들 때 돌림 번호를 받지 않았거나 상황 차례가 아니면 없음.
+   */
+  situationExample?: { place: SituationPlace; at: number };
   /** 인사 끝 턴만: 다음 토막(짧은 준비 · 대화 — 02-2 169줄 '넘어가는 짧은 말', 분석 5.1 4 · A5). 그 밖은 비운다. */
   nextPart?: "prep" | "talk";
   /** 참고 턴까지 남은 수(마무리를 준비하는 참고이고 채울 몫이 아님). */
@@ -296,6 +325,10 @@ export type TalkLessonRules = {
   /** 이 구간의 선생님 한 차례 문장 상한(talk.teacher_sentences_max.<구간>). */
   teacherSentencesMax: number;
   roleSwapTurns: number;
+  /** 1~3단계 자기 이야기 빈도 참고값(talk.self_line_every_turns — 이만큼의 AI 차례에 한 번보다 잦지 않게, C211 (1)). 고정부에 쓰는 것은 묶음 1. */
+  selfLineEvery: number;
+  /** 1~3단계 인사 반응에서 지난 대화 요약 하나를 꺼내도 되는가(talk.greeting_recall "on", 기본 끔 · C211). */
+  greetingRecall: boolean;
 };
 
 const KEYS = {
@@ -306,10 +339,25 @@ const KEYS = {
   followUpEvery: "talk.follow_up_min_every_turns",
   followChildTurns: "talk.follow_child_turns",
   roleSwapTurns: "talk.role_swap_turns",
+  selfLineEvery: "talk.self_line_every_turns",
+  greetingRecall: "talk.greeting_recall",
 } as const;
 const TEACHER_SENTENCES_PREFIX = "talk.teacher_sentences_max";
 const Count = z.int().min(0);
 const Positive = z.int().min(1);
+const OnOff = z.enum(["off", "on"]);
+
+/**
+ * 회화 턴 고정부 규칙 키(회화 AI 몫 넓힘 묶음 0-가, 12절 talk.self_line_every_turns · talk.greeting_recall). 턴 길의 설정 읽기(turn.ts
+ * turnSettings)에도 이 규격을 넣어, 키가 빠지면 턴 입구의 SettingMissingError 로 드러나게 한다(장부 T-157 — 호출 안의 설정 실패는 1~3단계에서
+ * 칭찬 대사로 조용히 바뀐다).
+ */
+export const TALK_PROMPT_SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> =
+  {
+    [KEYS.selfLineEvery]: Positive,
+    [KEYS.greetingRecall]: OnOff,
+  };
+
 const SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   [KEYS.goodLines]: Count,
   [KEYS.nextTimeLines]: z.record(z.string(), Count),
@@ -322,6 +370,7 @@ const SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   [bandKey(TEACHER_SENTENCES_PREFIX, "4-6")]: Positive,
   [bandKey(TEACHER_SENTENCES_PREFIX, "7-9")]: Positive,
   [bandKey(TEACHER_SENTENCES_PREFIX, "10-12")]: Positive,
+  ...TALK_PROMPT_SETTING_SCHEMAS,
 };
 
 function readSetting<T>(values: SettingValues, key: string): T {
@@ -352,6 +401,9 @@ export function talkLessonRulesOf(
       bandKey(TEACHER_SENTENCES_PREFIX, bandOf(input.level)),
     ),
     roleSwapTurns: readSetting<number>(values, KEYS.roleSwapTurns),
+    selfLineEvery: readSetting<number>(values, KEYS.selfLineEvery),
+    greetingRecall:
+      readSetting<"off" | "on">(values, KEYS.greetingRecall) === "on",
   };
 }
 
@@ -449,6 +501,9 @@ export function talkCallTurnOf({
   closing = false,
   levelTest = false,
   context,
+  feelingWords,
+  lemmaOf = () => undefined,
+  exampleTurn,
 }: {
   plan: TeacherTurnPlan;
   ifStuck?: TeacherTurnPlan | null;
@@ -460,11 +515,43 @@ export function talkCallTurnOf({
   closing?: boolean;
   levelTest?: boolean;
   context?: Partial<TalkLessonContext>;
+  /** 느낌 낱말(시드 talk-allowed-words feeling). 주면 1~3단계 AI 차례에 'Child said more' 줄을 넣고, 없으면 넣지 않는다. */
+  feelingWords?: readonly string[];
+  /** 표기형 → 원형(느낌 낱말 견주기). */
+  lemmaOf?: (surface: string) => string | undefined;
+  /** 상황 차례 예의 돌림 번호(situation situationRotationOf). 주면 1~3단계 상황 차례에 'Example line' 줄이 생기고, 없으면 없다. */
+  exampleTurn?: number;
 }): TalkCallTurn {
   const { segment, ...main } = callPlanOf(plan);
   const stuck =
     input === "speech" && ifStuck !== null ? callPlanOf(ifStuck) : null;
+  // 그 계획의 상황 차례 예(1~3단계 계획이고 돌림 번호가 있을 때만 — 4단계부터 사용자 메시지는 고치기 전 글자 그대로)
+  const exampleOf = (p: TeacherTurnPlan) => {
+    const place =
+      exampleTurn === undefined || p.lowBand !== true
+        ? null
+        : situationPlaceOf(p);
+    return place === null || exampleTurn === undefined
+      ? {}
+      : { situationExample: { place, at: exampleTurn } };
+  };
   const { chances } = plan;
+  // 1~3단계 줄(계획이 1~3단계일 때만 — 4단계부터 사용자 메시지는 고치기 전 글자 그대로, 'AI 몫 넓힘' 정한 것 1)
+  const low = plan.lowBand === true;
+  const aiTurn = plan.kind === "ai";
+  const lowLines = {
+    ...(low && aiTurn && feelingWords !== undefined
+      ? {
+          childSaidMore:
+            input === "speech" && childSaidMoreOf(child, feelingWords, lemmaOf),
+        }
+      : {}),
+    ...(low && aiTurn && plan.returnNow ? { returnNow: true as const } : {}),
+    ...(low && aiTurn && plan.followUpAnswer
+      ? { followUpAnswer: true as const }
+      : {}),
+    ...(low && plan.cause === "nospeech" ? { notHeard: true as const } : {}),
+  };
   return {
     child,
     input,
@@ -474,8 +561,9 @@ export function talkCallTurnOf({
     heardHelp,
     reason: plan.cause,
     ...main,
+    ...exampleOf(plan),
     ifStuck:
-      stuck === null
+      stuck === null || ifStuck === null
         ? null
         : {
             kind: stuck.kind,
@@ -484,6 +572,7 @@ export function talkCallTurnOf({
             supportStage: stuck.supportStage,
             stuckQuestion: stuck.stuckQuestion,
             stuckAnswer: stuck.stuckAnswer,
+            ...exampleOf(ifStuck),
           },
     chances: {
       carry: chances.carry,
@@ -497,6 +586,7 @@ export function talkCallTurnOf({
     afterCardChance: plan.afterChance,
     teacherTurnsSinceFollowUp: plan.sinceFollowUp,
     appAsked: plan.appAsked,
+    ...lowLines,
     turnsLeft: plan.turnsLeft,
     floor: plan.app.includes("floor"),
     closing,
@@ -761,12 +851,45 @@ function koExplainRule(
   return `After a stuck turn (Reason: button or stuck, or you set stuck to true), write a short Korean explanation in explanation when Support stage is ${from} or above (when you set stuck, use the If stuck Support stage).`;
 }
 
-/** 모든 단계 규칙(6.1 표의 '모두' 행 · 선생님 규칙 · 끝맺음). 숫자는 설정 · 단계 규격에서 읽은 값이다. */
+/**
+ * 4단계부터의 받침 · 들리지 않음 · 인사 끝 줄(고치기 전 글자 그대로 — 'AI 몫 넓힘' plan 정한 것 1, tests/fixtures/talk-prompt-l4-before.txt).
+ * 1~3단계는 같은 자리에 상황 차례 줄(lowSituationRules)을 둔다.
+ */
+const UPPER_SUPPORT_RULE =
+  "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together ('That's okay! Let's say it together.'), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic ('That's okay! Let's move on.'), with no saying it together.";
+const UPPER_NOSPEECH_RULE =
+  "When Reason is nospeech, the app could not hear the child. Start with 'I couldn't hear you.'. Do not treat it as the child not knowing. When Turn is card_slot after nospeech, write only that short line: no answer and no question.";
+const UPPER_GREETING_END_RULE =
+  "When Segment is greeting_end, write only a reaction and a short line moving on to the part in 'Next part' (short preparation: e.g. 'Good to hear! Let's learn some new words!', 'Yay! New words time!' or 'Nice! Let's learn some new words!'; talk: e.g. 'Let's talk!'). Do not ask a question. Its tori_ko is natural child talk (e.g. '다행이다!', '잘 지냈다니 좋다!').";
+
+/**
+ * 1~3단계 받침 · 들리지 않음 · 인사 끝 줄(commonRules 의 UPPER_* 자리, 정본 6.1 표 1~3 '상황 차례' 행 · 02-2 3.3 받침 표 · 기기 쪽 문단).
+ * 들리지 않음은 앱이 확인해 사용자 메시지 'Not heard' 로 알린 기술 문제다(C211 (4)). 자리마다의 예 목록은 고정부에 두지 않고 사용자 메시지
+ * 'Example line' 으로 그 차례 자리의 예 하나만 돌려 보인다(대본 회차 r1 판정 I-1 · M-1 — 목록의 첫째를 베끼고 자리를 섞음).
+ */
+function lowSituationRules(): {
+  support: string;
+  nospeech: string;
+  greetingEnd: string;
+} {
+  return {
+    support:
+      "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together (the app plays the answer and says the cue), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic, with no saying it together.",
+    nospeech:
+      "When Reason is nospeech, the 'Not heard' line tells you that the app could not get the child's voice. It is a technical problem: never treat it as the child's answer, as not knowing or as a mistake, never blame the child, and never praise or say back words you did not hear. Say in your own words that you could not hear it because of the sound or your ears, then move on (the 'Example line' shows only the kind of line). When Turn is card_slot after nospeech, write only that short line: no answer and no question.",
+    greetingEnd:
+      "When Segment is greeting_end, react first to the child's greeting answer (the feeling or what the child added) like a person, then end with a short line in your own words moving on to the part in 'Next part' (the 'Example line' shows only the kind of line). A second sentence about yourself or today's scene is allowed, not expected; never say or ask the scene question. Do not ask a question. Its tori_ko is natural child talk (e.g. '다행이다!', '잘 지냈다니 좋다!').",
+  };
+}
+
+/** 모든 단계 규칙(6.1 표의 '모두' 행 · 선생님 규칙 · 끝맺음). 숫자는 설정 · 단계 규격에서 읽은 값이다. 받침 · 들리지 않음 · 인사 끝 줄만 단계로 가른다. */
 function commonRules(
   teacher: TalkTeacher,
   rules: TalkLessonRules,
   spec: Pick<TalkLessonSpecView, "koExplainFromStuck">,
+  low: boolean,
 ): string[] {
+  const situation = low ? lowSituationRules() : null;
   return [
     teacherBlockOf(teacher),
     "The learner is a Korean child from 4th grade of elementary school to middle school. Use only content suitable for children.",
@@ -786,7 +909,10 @@ function commonRules(
     "After you say back a short answer, ask something new about it (another thing, who, where, or whether they like it). Never put the child's last words in the choices (not 'Cold.' -> 'Is it cold or hot?'), and never ask again in the same words a question the child already answered, even with one word.",
     "If the child answers an earlier card question late, follow up on that answer first too; do not jump to the next card question.",
     "'App question just before' is the question the app asked right before the child's words (it is not in the turns above). The child's words answer that question.",
-    `When the child brings up a topic of their own, follow it for at most ${rules.followChildTurns} turns (next_move follow_child) and come back to today's topic within them. Never bring up a topic outside the card first.`,
+    // [M-3] 1~3단계는 아이 이야기가 먼저이고 돌아오는 때는 앱이 알린다(C211 (1) · 02-2 194줄 'Come back … in this turn'), 4단계부터 글자 그대로
+    low
+      ? `When the child brings up a topic of their own, following it comes first: follow it for up to ${rules.followChildTurns} turns (next_move follow_child) and do not cut it short to come back to today's topic. When it is time to come back, the app says 'Come back to today's topic in this turn: yes'. Never bring up a topic outside the card first.`
+      : `When the child brings up a topic of their own, follow it for at most ${rules.followChildTurns} turns (next_move follow_child) and come back to today's topic within them. Never bring up a topic outside the card first.`,
     "The Chances lines list the remaining chances in order: carry-over, required questions, words to use again, new words to introduce. Use them when the moment is natural. You may say a card question in your own words. Never put the unit word a question aims at in that question; ask about the thing or the person instead (e.g. 'Do you like fish?').",
     // 장면 단정 금지(13절 C202 (3) · 분석 5.1 3 · A6 — 변경 spec 267줄 '필수 질문은 카드 글을 바꿔 말해 물어도 된다' 안)
     "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.'). Before a card question, set the scene with a thing, not with another question (e.g. 'Oh, cold juice!').",
@@ -795,16 +921,16 @@ function commonRules(
     // 막힘 경계(13절 C204 (1)(2) · 02-2 251 · 194 · 196) — 앱도 갈래로 막힘을 무른다(child-kind effectiveStuckOf)
     "Decide child_kind first, then stuck. stuck is true only for not_understood or unrelated_words. A meaningful English sentence is never stuck: if it answers the question it is answer; if it is about something else it is new_topic, so react and follow it (next_move follow_child), e.g. 'I have a dog.' or 'My dog is big.'. One word from the question or today's scene is never stuck: it is answer or short_related, so say back one correct sentence with it, e.g. 'Rice.' -> 'You eat rice!' or 'Cold.' -> 'Yes, the juice is cold!'. stuck is true for e.g. 'Huh?' or 'I don't know.', or 'Blue car.' when the question and the scene are about lunch.",
     "When Input is speech and you set stuck to true, follow the 'If stuck' lines instead of Turn, Question, Card line, Support stage and Stuck question. The 'If stuck' lines are only a backup; most answers are not stuck.",
-    "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together ('That's okay! Let's say it together.'), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic ('That's okay! Let's move on.'), with no saying it together.",
+    situation?.support ?? UPPER_SUPPORT_RULE,
     "When 'Question: no', do not ask any question. Write only a reaction (from level 4, with the answer example to say together; or a short line moving on).",
     koExplainRule(spec),
-    "When Reason is nospeech, the app could not hear the child. Start with 'I couldn't hear you.'. Do not treat it as the child not knowing. When Turn is card_slot after nospeech, write only that short line: no answer and no question.",
+    situation?.nospeech ?? UPPER_NOSPEECH_RULE,
     "When Turn is card_slot or closing_slot, write only a reaction and a short linking line in tori_en. No question and no answer example: the app adds the card question, the support line or the closing question.",
     "When 'All card chances used: yes', you may suggest a natural closing inside your reaction when the child's talk reaches it (next_move closing). Never use next_move closing otherwise. Never hurry the closing, and never add questions to make the talk longer.",
     "'Turns left before closing question' is only for preparing the ending. It is not a number of turns to fill.",
     "When 'Floor: yes', write only a kind reaction and no question. The app plays listening practice next.",
-    // 인사 끝 예 되살림 · 다음 토막은 사용자 메시지 'Next part'(02-2 169줄, 13절 C202 (4))
-    "When Segment is greeting_end, write only a reaction and a short line moving on to the part in 'Next part' (short preparation: e.g. 'Good to hear! Let's learn some new words!', 'Yay! New words time!' or 'Nice! Let's learn some new words!'; talk: e.g. 'Let's talk!'). Do not ask a question. Its tori_ko is natural child talk (e.g. '다행이다!', '잘 지냈다니 좋다!').",
+    // 인사 끝 예 되살림 · 다음 토막은 사용자 메시지 'Next part'(02-2 169줄, 13절 C202 (4)) — 1~3단계는 상황 차례 줄(C209)
+    situation?.greetingEnd ?? UPPER_GREETING_END_RULE,
     "When the child uses a grammar form beyond this level, say it back once briefly in the correct form, keeping the meaning. Do not ask again with that form, do not have the child repeat it, and do not use it in next_time_lines.",
     "In goal_suggest, write each lesson goal the child's last words showed by themselves (goal ID and one Korean line of evidence), even if your question did not aim at it. Do not write it for simple agreement, words echoed from your line, or words unrelated to the goal. Never say scores, judgments or 'you got it right'.",
     "Set next_move to the kind of your next question, card_item to the card required question or more-talk item it uses (kind none and no 0 otherwise), next_goal to the lesson goal IDs it aims at, and support to the help you gave in this turn.",
@@ -830,31 +956,67 @@ function commonRules(
 }
 
 /**
- * 1~3단계 규칙(6.1 표 '1~3' 행 · 3.3 소리 줄 · 정한 것 19 · 13절 C202 (1) 잠정). 따라 할 말은 받침 1 · 3 · 들리지 않음 · 꺼낼 새 단어에서만
- * (02-2 180 · 204 · 241줄), 다시 묻는 턴에는 소리 줄이 없다(02-2 271줄). 고르기 꼴은 단계 규격 choices 로 가른다: 참(1단계)이면 '자주',
- * 거짓(2~3단계)이면 한 문장으로 스스로 답하게 묻고 막히면 힌트 단추(02-2 328줄)이며 이어 묻는 고르기 질문에만 선택지를 쓴다(D1 (나) 잠정).
+ * 1~3단계 규칙(정본 6.1 표 '1~3' · '1' · '2~3' 행 · 3.3 소리 줄 · 말 길이와 자기 이야기 · 상황 차례 · 장면 여는 질문 · 신호 말 · 정한 것 19,
+ * 'AI 몫 넓힘' spec 설계 2~4 · C205 · C206 · C207 · C209 · C211). 소리 줄 칸은 받침 · 새 단어 꺼내기에서만(따라 할 말은 받침 1 · 3 · 들리지 않음 ·
+ * 꺼낼 새 단어, 선택지는 받침 2 와 1단계 처음 묻는 새 단어), 다시 묻는 턴 · 이어 묻기에는 없다(02-2 271줄 · C205). 고르기 꼴은 단계 규격 choices 로
+ * 가른다: 참(1단계)이면 '자주' 묻되 고르기 답은 질문 글 안에, 거짓(2~3단계)이면 한 문장으로 스스로 답하게 묻고 고르기 꼴 질문은 질문만이다.
+ * 신호 말은 앱이 붙이므로 쓰지 않는다. 숫자는 설정값(talk.teacher_sentences_max.<구간> · talk.self_line_every_turns)이고 품질 지표의 수치 ·
+ * 비율은 넣지 않는다(C211 (2)). 지난 대화 꺼내기 줄은 talk.greeting_recall 이 켜졌을 때만이다.
  */
-function lowBandRules(spec: Pick<TalkLessonSpecView, "choices">): string[] {
+function lowBandRules(
+  spec: Pick<TalkLessonSpecView, "choices">,
+  rules: TalkLessonRules,
+): string[] {
   const choiceRules = spec.choices
     ? [
-        "At this level, ask yes-or-no or choice questions often.",
-        "Choices are two sentences of the same shape, one with the target word. A playful wrong choice is fine at this level (e.g. 'A banana? Or a horse?').",
+        "At this level, ask yes-or-no or choice questions often, and keep the choice answers inside the question sentence (e.g. 'Is it a cat or a dog?').",
+        "Fill choices only at Support stage 2, or when you first ask about a new word the child has not met yet. Choices are two sentences of the same shape, one with the target word. A playful wrong choice is fine at this level (e.g. 'A banana? Or a horse?').",
       ]
     : [
-        "At this level, ask so that the child answers with one sentence by themselves. Except at Support stage 2, never give choices with a card question or a question about a unit word; when the child is stuck, the hint button helps.",
-        "Use choices only for a follow-up this-or-that question about the child's own answer.",
-        "Choices are two sentences of the same shape. Both choices must make sense as answers (e.g. 'It is red.' / 'It is blue.', not 'It is sleepy.').",
+        "At this level, ask so that the child answers with one sentence by themselves; when the child is stuck, the hint button helps. A this-or-that question has only the question: never fill choices for it.",
+        "Fill choices only at Support stage 2. Choices are two sentences of the same shape. Both choices must make sense as answers (e.g. 'It is red.' / 'It is blue.', not 'It is sleepy.').",
       ];
   return [
-    "Levels 1-3: your question is the last question sentence of tori_en; a cue like 'Listen and say!' may come after it only when you fill model_line or choices.",
+    "Levels 1-3: your question is the last question sentence of tori_en. Never write a cue to listen or say (like 'Listen and say!' or 'Your turn!'); the app adds it before the sound line.",
     ...choiceRules,
-    "Levels 1-3: fill model_line only at Support stage 1 or 3, after nospeech, or when you bring up a word from 'Chances, new words to introduce' for the first time. Never fill model_line and choices in the same turn.",
+    // 소리 줄 자리(C205 · 판정 r1 I-5) — 앱도 같은 자리 함수(cue-line soundLinePlacesOf)로 거른다
+    "Levels 1-3: fill model_line only at Support stage 1 or 3, after nospeech, or when your next question brings up a word from 'Chances, new words to introduce' for the first time (next_move introduce). 'Chances, new words to introduce' are the new words that were not in the short preparation and that no question has aimed at yet. When next_move is required or a follow-up, never fill model_line, even if the question aims at a new word: let the child answer first. Never fill model_line and choices in the same turn.",
     "When you ask about a word again (you asked it before, or it was a short preparation word), give no model_line and no choices: let the child try first.",
-    "Levels 1-3: when Turn is card_slot in support turns or after nospeech, the app plays the answer and adds the easier or next question. Write only a short reaction or cue: at Support stage 1 'That's okay! Let's say it together.'; at Support stage 3 or after nospeech 'That's okay! Let's move on.' (never 'say it together' there: the child does not repeat). Do not write the answer or a question.",
+    // 상황 차례(인사 끝 · 받침 · 들리지 않음)의 말은 자리와 아이 말에 맞게 자기 말로(02-2 3.3 받침 표 · 상황 차례, C209)
+    "Levels 1-3: when Turn is card_slot in support turns or after nospeech, the app plays the answer and adds the easier or next question. Write only a short reaction and a short line that fits the place, in your own words: at Support stage 1 an okay reaction and a short cheer (the app says the cue to say it together, so do not say it); at Support stage 2 a reaction and a line moving to an easier question; at Support stage 3 or after nospeech an okay reaction and a line that you will play the answer and go on (never ask the child to say it or repeat it). Do not write the answer or a question.",
+    // 상황 차례 예는 사용자 메시지에 그 자리 하나만(판정 r1 I-1 · M-1) — 앱은 베낀 줄 · 되풀이한 줄을 상황 줄로 바꾼다(situation repeat)
+    "In the greeting end, support and not-heard turns, the 'Example line' in the message shows only the kind of line for this place. Never copy it or any of its sentences word for word, never use a line made for another place, and never repeat a sentence you already said in this conversation: react to what the child said or did in your own short words. The app changes a copied or repeated line.",
     "Levels 1-3, Turn ai with 'Question: no' after a stuck turn (saying it together): put the answer to say in model_line, not in tori_en.",
     "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask an easier yes-or-no question, or put two answer choices in choices.",
     "Levels 1-3, Turn ai at Support stage 3 or after nospeech: put the answer in model_line, not in tori_en, then (when Question: yes) ask about the next topic.",
-    "Levels 1-3: never write in tori_en the English the child should say. When you fill model_line or choices, end tori_en with a cue like 'Listen and say!'.",
+    "Levels 1-3: never write in tori_en the English the child should say.",
+    // 말 길이는 아이 중심(C211 (3)) — 반응 문장 수는 설정 talk.teacher_sentences_max.<구간> 에서 질문 하나를 뺀 수
+    "Keep it short and easy. One short reaction and one question is the usual turn. A second sentence is allowed, not expected.",
+    `The reaction before your question has at most ${rules.teacherSentencesMax - 1} sentences. Write a second sentence about yourself or today's scene only when 'Child said more: yes', or when the child brings up a new topic or asks you something.`,
+    "When the child answers with one word or a short answer, take it: say it back in one sentence or ask more about it. Never make the child wait or talk less because of your own talk.",
+    // 한 낱말 장면 말은 막힘이 아님(13절 C204 (2) · 판정 r1 I-4) — 앱도 한 낱말 장면 · 카드 낱말이면 막힘을 무른다(child-kind touchesScene)
+    "Levels 1-3: one word that answers or describes what you just said or asked, or a word from today's scene or the card (e.g. 'Rice.', 'Big.', 'Juice.'), is answer or short_related and never stuck, even when it does not answer your question: react to it and say it back in one sentence.",
+    // 되묻는 질문 · 버릇 꼴(판정 r1 I-6 · M-7) — 앱도 질문 검사에서 아이 말을 되묻는 질문을 건다(question-check echo)
+    // [N-3] 아이 말이 이미 답인 질문(대본 회차 r2 판정 N-3 — 앱도 노린 단어 되묻기를 건다)
+    "Levels 1-3: never ask again about what the child already told you (not 'Big.' -> 'Is the lake big or small?', not 'I like fish.' -> 'Do you like the fish?', not 'I drink juice.' -> 'What do you do with the juice?'). Ask about something new instead, and prefer what, who and where questions; use 'Do you like …?' and 'A or B?' questions only now and then.",
+    // [N-1] 짧은 반응은 아이 말을 받은 자기 말(대본 회차 r2 판정 N-1 — 맞장구는 앱이 바꾸지 않는다)
+    `Levels 1-3: your first short reaction is your own words about what the child said (e.g. ${TALK_LOW_REACTION_EXAMPLES.map((r) => `'${r}'`).join(", ")}).`,
+    // 장면 줄을 아이 상태 단정으로 바꾸지 않음(13절 C202 (3) · 판정 r1 M-3) · 반응 문장 수(판정 r1 M-4)
+    "Levels 1-3: a card scene line like 'Sand on your hands!' only sets the scene; never turn it into a fact about the child (not 'Sand is on your hands.'). When you set the scene before a card question, keep the reaction to one short sentence.",
+    // 자기 이야기 · 지어낸 경험 금지(C211 (1))
+    `Following what the child brought up comes first; in that turn, do not move the talk to yourself. You may say one short line about yourself (what you like, how you feel now, what you wish, or a pretend game like 'Let's pretend we are ducks!') at most once in ${rules.selfLineEvery} turns, only when it helps.`,
+    "Do not tell made-up past experiences or memories as if they were true.",
+    "In a line about yourself, never use a unit word or an answer example of a card chance you have not asked yet. When the child asks you something, answer it briefly first.",
+    // 따라가기 상한의 '이번 차례에 돌아오기'(02-2 194줄) · 장면 여는 질문 답 뒤(02-2 200줄)
+    "When 'Come back to today's topic in this turn: yes', come back in this turn with a question that links the child's topic to today's scene (e.g. dinosaurs -> 'Can you draw a T-rex?').",
+    "When 'Follow up on the child's answer: yes', the child just answered 'App question just before' (the scene question). Follow up on that answer (next_move follow_up), and never ask the scene question again.",
+    "Levels 1-3, Segment greeting with Turn ai and 'Question: yes': react to the child's answer and ask one greeting question, with no choices.",
+    ...(rules.greetingRecall
+      ? [
+          "In the greeting, you may bring up one thing written in 'Summaries of earlier talks'. Never say anything about earlier talks that is not written there.",
+        ]
+      : []),
+    "Levels 1-3, the farewell: point at one thing the child said or liked today and say goodbye. If the child said almost nothing, do not point at anything. At most two sentences and no question.",
     "Levels 1-3: on AI turns fill next_hint_ko and next_hints (level 3 adds an English frame first), next_targets and next_answer_example for your next question; the hints and the answer example answer your own next question, not an earlier card question. Fill image_word only when the child talks about a thing of their own.",
   ];
 }
@@ -946,12 +1108,11 @@ export function talkLessonSystem(
   input: TalkLessonInput,
   rules: TalkLessonRules,
 ): string {
+  const low = isLowBandLevel(input.level);
   return buildSystem({
     fixed: [
-      ...commonRules(input.teacher, rules, input.spec),
-      ...(isLowBandLevel(input.level)
-        ? lowBandRules(input.spec)
-        : upperBandRules()),
+      ...commonRules(input.teacher, rules, input.spec, low),
+      ...(low ? lowBandRules(input.spec, rules) : upperBandRules()),
       ...(input.spec.missions > 0 ? missionRules(rules) : []),
     ],
     variable: [...levelVariable(input), ...cardVariable(input)],
@@ -961,6 +1122,9 @@ export function talkLessonSystem(
 // ── 사용자 메시지 · 다시 쓸 선생님 차례(6.1 · AC-15k) ────────────────
 
 const yesNo = (value: boolean) => (value ? "yes" : "no");
+/** 1~3단계 들리지 않음 차례의 사용자 메시지 줄('AI 몫 넓힘' plan 옮겨 적는 문구 그대로). */
+const NOT_HEARD_LINE =
+  "Not heard: the microphone did not get the child's voice. It is a technical problem, not the child's answer, not \"don't know\" and not a mistake.";
 /** 인사 끝 다음 토막의 사용자 메시지 글. */
 const NEXT_PART_LABEL = {
   prep: "short preparation",
@@ -970,20 +1134,46 @@ const NEXT_PART_LABEL = {
 function cardLineText(line: TalkCardLine | null): string {
   if (line === null) return "-";
   if (line.role === "greeting") return `greeting: ${line.en}`;
+  if (line.role === "scene") return `scene question: ${line.en}`;
+  // 장면 여는 질문 자리의 쉬운 질문(카드 항목 없음 — 1~3단계만)
+  if (line.role === "easy" && line.kind === "none")
+    return `easy question for the scene question: ${line.en}`;
   const ref = `${line.kind} ${line.no}`;
   return line.role === "easy"
     ? `easy question for ${ref}: ${line.en}`
     : `${ref}: ${line.en}`;
 }
 
-/** 차례 계획 줄(종류 · 질문 여부 · 붙일 줄 · 받침 단계 · 막힌 질문). 막힘 계획은 'If stuck, ' 이름표를 붙인다. */
-function planLines(prefix: string, plan: TalkCallStuckPlan): string[] {
+/** 상황 차례 자리의 이름(사용자 메시지 'Example line' — 지금 자리를 함께 알린다, 판정 r1 M-1). */
+const SITUATION_PLACE_LABEL: Record<SituationPlace, string> = {
+  greeting_end: "greeting end: a reaction and a line moving on",
+  together: "Support stage 1: an okay reaction and a short cheer",
+  easy: "Support stage 2: a line moving to an easier question",
+  close: "Support stage 3: a line that you will play the answer and go on",
+  nospeech: "not heard: you could not hear it, then go on",
+};
+
+/**
+ * 차례 계획 줄(종류 · 질문 여부 · 붙일 줄 · 받침 단계 · 막힌 질문, 1~3단계 상황 차례면 그 자리 예 하나). 막힘 계획은 'If stuck, ' 이름표를
+ * 붙인다. 인사 끝 예는 다음 토막(nextPart)으로 고른다.
+ */
+function planLines(
+  prefix: string,
+  plan: TalkCallStuckPlan,
+  nextPart?: "prep" | "talk",
+): string[] {
+  const ex = plan.situationExample;
   return [
     `${prefix}Turn: ${plan.kind}`,
     `${prefix}Question: ${yesNo(plan.aiAsks)}`,
     `${prefix}Card line: ${cardLineText(plan.cardLine)}`,
     `${prefix}Support stage: ${plan.supportStage}`,
     `${prefix}Stuck question: ${plan.stuckQuestion.trim() === "" ? "-" : plan.stuckQuestion}`,
+    ...(ex === undefined
+      ? []
+      : [
+          `${prefix}Example line (${SITUATION_PLACE_LABEL[ex.place]}; only the kind of line, never copy it): '${situationExampleOf(ex.place, ex.at, nextPart)}'`,
+        ]),
   ];
 }
 const listOf = (words: readonly string[] | undefined) =>
@@ -1022,18 +1212,28 @@ export function talkLessonUserMessage(
       : []),
     `Child: ${child}`,
     `Input: ${turn.input}`,
+    // 1~3단계 AI 차례의 내용 있는 아이 말 알림(02-2 198줄)
+    ...(turn.childSaidMore === undefined
+      ? []
+      : [`Child said more: ${yesNo(turn.childSaidMore)}`]),
     `Segment: ${turn.segment}`,
     `Hint: ${turn.hintKind} (${turn.hintTier})`,
     `Heard help: ${turn.heardHelp === "none" ? "-" : turn.heardHelp}`,
     `Reason: ${turn.reason ?? "-"}`,
-    ...planLines("", turn),
-    ...(turn.ifStuck === null ? [] : planLines("If stuck, ", turn.ifStuck)),
+    // 1~3단계 들리지 않음: 앱이 확인한 기술 문제임을 알린다(02-2 208줄 · C211 (4))
+    ...(turn.notHeard ? [NOT_HEARD_LINE] : []),
+    ...planLines("", turn, turn.nextPart),
+    ...(turn.ifStuck === null
+      ? []
+      : planLines("If stuck, ", turn.ifStuck, turn.nextPart)),
     `Chances, carry-over goals: ${listOf(chances.carry.goals)}`,
     `Chances, carry-over words: ${listOf(chances.carry.words)}`,
     `Chances, required questions: ${required === "" ? "(none)" : required}`,
     `Chances, words to use again: ${listOf(chances.reuse)}`,
     `Chances, new words to introduce: ${listOf(chances.introduce)}`,
     `Return to today's topic: ${yesNo(turn.returnNudge)}`,
+    // 1~3단계 따라가기 상한에 닿은 턴(02-2 194줄 — 위 줄은 기회 알림이라 따로 둔다)
+    ...(turn.returnNow ? ["Come back to today's topic in this turn: yes"] : []),
     `All card chances used: ${yesNo(turn.allChancesUsed)}`,
     `Following child's topic: ${turn.followChildTurns}`,
     // 흐름 계획이 센 두 줄(13절 C202 (2) · 분석 5.2 2) — 끝맺음 턴처럼 계획이 없으면 넣지 않는다
@@ -1045,6 +1245,8 @@ export function talkLessonUserMessage(
       : [
           `Teacher turns since last follow-up: ${turn.teacherTurnsSinceFollowUp}`,
         ]),
+    // 1~3단계 장면 여는 질문 답 뒤(02-2 200줄)
+    ...(turn.followUpAnswer ? ["Follow up on the child's answer: yes"] : []),
     // 인사 끝 턴의 다음 토막(02-2 169줄 '넘어가는 짧은 말', 분석 5.1 4)
     ...(turn.segment === "greeting_end" && turn.nextPart !== undefined
       ? [`Next part: ${NEXT_PART_LABEL[turn.nextPart]}`]
@@ -1366,9 +1568,9 @@ function questionField(toriEn: string): { question?: string; lead?: string } {
  * 남길 선택지(1~3단계 질문을 쓰는 AI 차례만, 13절 C202 (1) · 분석 5.2 1). 둘이고 같은 꼴 · 범위 안이며(question-check) 아래를 지킨다.
  * - 받침 둘째(쉬운 질문): 막힘 표의 도움이라 그대로 본다(노리는 단어가 있어야 함).
  * - 다시 묻는 턴: 노리는 단어나 선택지 안의 단원 단어가 다시 묻는 턴 낱말이면 버린다(02-2 271줄 '다시 묻는 턴에서는 들려주지 않는다').
- * - 단계 규격 choices 거짓(2~3단계): 노리는 단어 · 선택지 안의 단원 단어가 있으면 처음 묻는 질문이라 버린다. 단원 단어 없는 이어 묻기의
- *   고르기 답만 남기고, 노리는 단어가 없으니 두 답의 낱말을 노리는 자리로 본다(D1 (나) 잠정).
- * - 참(1단계): 처음 묻는 질문은 노리는 단어가 있어야 하고, 단원 단어 없는 이어 묻기는 위와 같이 본다.
+ * - 단원 단어 없는 이어 묻기의 고르기 답은 모든 단계에서 버린다(질문만 남김 — C205 · 'AI 몫 넓힘' spec 설계 4, D1 (나) 잠정을 바꿈).
+ * - 단계 규격 choices 거짓(2~3단계): 노리는 단어 · 선택지 안의 단원 단어가 있으면 처음 묻는 질문이라 버린다(받침 둘째 밖 모두 버림).
+ * - 참(1단계): 아직 만나지 않은 새 단어를 처음 묻는 질문(노리는 단어가 있음)만 남긴다.
  */
 function keptChoicesOf(
   raw: readonly string[],
@@ -1412,7 +1614,8 @@ function keptChoicesOf(
     ...inLines.filter((w) => ctx.unitWords.has(w)),
   ]);
   if (aimed.some((w) => ctx.reask.has(w))) return [];
-  if (aimed.length === 0) return check(inLines);
+  // 단원 단어 없는 이어 묻기의 고르기 답은 남기지 않는다(C205 · spec 설계 4 FR-4 — 질문만 남김, C202 (1) 잠정을 바꿈)
+  if (aimed.length === 0) return [];
   if (!ctx.input.spec.choices) return [];
   return check(ctx.targets);
 }
@@ -1482,14 +1685,18 @@ export function cardChainGuardOf({
   nextMove,
   cardItemKind = "none",
   afterCardChance,
+  followUpAnswer = false,
 }: {
   nextMove: TalkNextMove;
   /** 다음 질문이 쓴 카드 항목 종류 — 갈래를 follow_up 으로 적고 카드 항목만 필수 질문인 꼴도 본다(대본 4회차 N-2 (b)). */
   cardItemKind?: TalkCardItemKind;
   afterCardChance: boolean;
+  /** 1~3단계 장면 여는 질문 답 뒤의 차례('Follow up on the child's answer: yes') — 카드 답 뒤와 같이 되돌린다(02-2 200줄 · spec 설계 5 [M-6]). */
+  followUpAnswer?: boolean;
 }): { nextMove: TalkNextMove; dropCardItem: boolean; chained: boolean } {
   const chained =
-    afterCardChance && (nextMove === "required" || cardItemKind === "required");
+    (afterCardChance || followUpAnswer) &&
+    (nextMove === "required" || cardItemKind === "required");
   if (!chained) return { nextMove, dropCardItem: false, chained };
   // 갈래를 이어 묻기(follow_up · follow_child)로 적고 카드 항목만 필수 질문을 가리키면 카드 항목을 비운다 — 이어 묻기 차례로 받고 그 필수 항목은
   // 다룬 것으로 세지 않는다(남은 기회로 둠, 검토 rev-prompt-2 P3-1 · 컨트롤러 잠정 T-161, 호출은 늘리지 않음). 갈래가 required 면 갈래만 이어
@@ -1502,6 +1709,36 @@ export function cardChainGuardOf({
   };
 }
 
+/**
+ * 회화 턴(끝맺음 밖) 응답을 읽지 못한 까닭(대본 회차 r1 판정 I-3 (가) — 기록 몫, 대본 도구가 표시 칸에 적는다): JSON 객체가 아님
+ * (not_json_object) · 느슨한 규격에 걸린 첫 칸(field:<칸>:<까닭>) · tori_en 비어 있음(tori_en_empty). 정규화가 읽을 수 있으면 null.
+ */
+export function talkLessonInvalidReasonOf(loose: unknown): string | null {
+  if (loose === null || typeof loose !== "object" || Array.isArray(loose))
+    return "not_json_object";
+  const parsed = talkLessonLoose.safeParse(prepareAnswer(loose, ENUM_PATHS));
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return `field:${issue?.path.join(".") || "-"}:${issue?.code ?? "-"}`;
+  }
+  if (parsed.data.tori_en === "") return "tori_en_empty";
+  return null;
+}
+
+/** 1~3단계 막힘 응답의 빈 tori_en 을 받은 차례의 ai_calls 까닭(컨트롤러 결정 2026-11-07 — 대본 회차 r1 판정 I-3). */
+export const EMPTY_TORI_EN_STUCK = "empty_tori_en_stuck";
+
+/**
+ * 응답 원문이 '막힘 + 빈 tori_en' 꼴인가(끝맺음 턴 밖 — stuck 참 · tori_en 빈 글). 1~3단계 정규화는 이 응답을 읽지 못함이 아니라 '반응이 지워진
+ * 막힘 차례'로 받고(끝 처리가 받침 자리 시드 상황 줄 · 쉬운 질문을 붙인다 — C204 · C210 '상태 판단 · 복구는 앱'), 서버 기록은 이 꼴이면 까닭
+ * EMPTY_TORI_EN_STUCK 을 적는다. 4단계부터는 정규화가 그대로 읽지 못함으로 둔다(부르는 쪽이 정규화 값이 있을 때만 이 까닭을 쓴다).
+ */
+export function emptyToriEnStuckOf(raw: unknown, closing: boolean): boolean {
+  if (closing || raw === null || typeof raw !== "object") return false;
+  const r = raw as { stuck?: unknown; tori_en?: unknown };
+  return r.stuck === true && r.tori_en === "";
+}
+
 export function normalizeTalkLesson(
   loose: unknown,
   input: TalkLessonInput,
@@ -1512,7 +1749,12 @@ export function normalizeTalkLesson(
   const a = parsed.data;
   const { spec, turn, card, lemmaOf } = input;
   if (turn.closing) return normalizeClosing(a, input, rules);
-  if (a.tori_en === "") return null;
+  // 1~3단계 막힘 응답의 빈 tori_en 은 반응이 지워진 막힘 차례로 받는다(emptyToriEnStuckOf — 컨트롤러 결정 2026-11-07). 그 밖의 빈 tori_en 은 읽지 못함
+  if (
+    a.tori_en === "" &&
+    !(isLowBandLevel(input.level) && emptyToriEnStuckOf(a, false))
+  )
+    return null;
   // 앱이 다시 본 막힘(13절 C204 (3) — 뜻이 통하는 영어 말 · 답 · 새 이야기는 막힘이 아님, 무르기만 함)
   const childKind = childKindOf(a.child_kind);
   const stuck = effectiveStuckOf({
@@ -1559,9 +1801,32 @@ export function normalizeTalkLesson(
     ...nextTargets,
     ...(cardItemOf(card, cardItem)?.targets ?? []),
   ].some((w) => reask.has(lemmaOrLower(w, lemmaOf)));
+  // 갈래 · 카드 항목(소리 줄 자리가 갈래를 본다 — 판정 r1 I-5)
+  let nextMove = asEnum(TALK_NEXT_MOVES, a.next_move, "none");
+  if (nextMove === "closing" && !turn.allChancesUsed) nextMove = "none";
+  if (nextMove === "mission" && spec.missions === 0) nextMove = "none";
+  if (nextMove === "role_swap" && card.roleSwap === undefined)
+    nextMove = "none";
+  // 카드 답을 받은 다음 차례는 이어 묻는다 — 필수 질문 갈래를 이어 묻기로 되돌리고 카드 항목을 비운다(13절 C204 (6) · C202 (2), D8 (나) 앱 몫)
+  const chainGuard = cardChainGuardOf({
+    nextMove,
+    cardItemKind: cardItem.kind,
+    afterCardChance: turn.afterCardChance === true,
+    followUpAnswer: turn.followUpAnswer === true,
+  });
+  nextMove = chainGuard.nextMove;
+  // 소리 줄 자리(13절 C205 · spec 설계 4 — 받침 첫째 · 셋째 · 들리지 않음 · 꺼내기 갈래만, 대본 지표 soundOutsideOf 와 같은 함수). 질문을 쓰지
+  // 않는 차례의 갈래는 비우므로(EMPTY_NEXT) 자리도 갈래 없이 본다
+  const places = soundLinePlacesOf({
+    stage,
+    nospeech: chosen.reason === "nospeech",
+    next: asks ? nextMove : undefined,
+    choicesLevel: spec.choices,
+  });
   const keepsModel =
     low &&
     aiTurn &&
+    places.model &&
     stage !== TALK_SUPPORT_STAGE_EASY &&
     (supportAnswer || (introduces(a.model_line) && !aimsReask));
   const modelSource = keepsModel ? a.model_line : "";
@@ -1583,7 +1848,7 @@ export function normalizeTalkLesson(
   const choices = keptChoicesOf(a.choices, {
     input,
     options,
-    low: low && asks,
+    low: low && asks && places.choices,
     stage,
     reask,
     unitWords,
@@ -1598,20 +1863,6 @@ export function normalizeTalkLesson(
     sameAsChoice(modelLine, choices)
   )
     modelLine = "";
-
-  // 갈래 · 카드 항목 · 노린 목표
-  let nextMove = asEnum(TALK_NEXT_MOVES, a.next_move, "none");
-  if (nextMove === "closing" && !turn.allChancesUsed) nextMove = "none";
-  if (nextMove === "mission" && spec.missions === 0) nextMove = "none";
-  if (nextMove === "role_swap" && card.roleSwap === undefined)
-    nextMove = "none";
-  // 카드 답을 받은 다음 차례는 이어 묻는다 — 필수 질문 갈래를 이어 묻기로 되돌리고 카드 항목을 비운다(13절 C204 (6) · C202 (2), D8 (나) 앱 몫)
-  const chainGuard = cardChainGuardOf({
-    nextMove,
-    cardItemKind: cardItem.kind,
-    afterCardChance: turn.afterCardChance === true,
-  });
-  nextMove = chainGuard.nextMove;
 
   // 힌트 묶음(AI 차례만, 힌트가 없는 단계는 노리는 단어 · 답 예시만 — '모름' 턴 · 다시 묻는 턴, 3.3)
   const hints = !asks

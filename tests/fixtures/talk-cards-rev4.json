@@ -1,0 +1,546 @@
+{
+  "_note": "회화 3단계 단원 1 개정 4 카드 두 장의 고정 사본(2026-11-07, 워크트리 머리 6e86881 의 seed/lessons/talk/3/1.json). sceneOpener 없는 옛 DB 카드가 새 꼴로 읽히는지 보는 시험용이라 시드가 바뀌어도 고치지 않는다.",
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "revision": 4,
+      "correction": 0,
+      "card": {
+        "topic": "주말에 하는 일 · 가족과 호수 나들이",
+        "targetExpressions": [
+          "We eat rice and fish.",
+          "I drink the juice.",
+          "We go to the lake.",
+          "I wash my hands.",
+          "We come home."
+        ],
+        "goals": ["talk-3-1-1"],
+        "greetingTurns": 1,
+        "greeting": {
+          "questions": [
+            {
+              "question": {
+                "en": "Hello, {NAME}! How are you?",
+                "ko": "안녕, {NAME}! 잘 지냈어?"
+              },
+              "hintKo": "나는 잘 지내.",
+              "hintEn": "I am fine.",
+              "frameEn": "I am ___.",
+              "answerExample": "I am fine."
+            }
+          ]
+        },
+        "todayWords": [
+          {
+            "word": "eat",
+            "meaningKo": "먹다",
+            "example": "We eat lunch at the lake.",
+            "modelLine": "I eat.",
+            "imageKey": "eat"
+          },
+          {
+            "word": "drink",
+            "meaningKo": "마시다",
+            "example": "I drink cold juice.",
+            "modelLine": "I drink.",
+            "imageKey": "drink"
+          },
+          {
+            "word": "go",
+            "meaningKo": "가다",
+            "example": "We go to the lake.",
+            "modelLine": "I go.",
+            "imageKey": "go"
+          },
+          {
+            "word": "come",
+            "meaningKo": "오다",
+            "example": "We come home in the car.",
+            "modelLine": "I come.",
+            "imageKey": "come"
+          },
+          {
+            "word": "wash",
+            "meaningKo": "씻다",
+            "example": "I wash my face.",
+            "modelLine": "I wash.",
+            "imageKey": "wash"
+          }
+        ],
+        "prep": ["eat", "drink", "go"],
+        "required": [
+          {
+            "no": 1,
+            "en": "Rice and fish for lunch! What do you do at the table?",
+            "ko": "점심은 밥이랑 생선이야! 식탁에서 뭐 해?",
+            "targets": ["eat"],
+            "goals": ["talk-3-1-1"],
+            "ask": "first",
+            "hintKo": "우리는 밥이랑 생선을 먹어.",
+            "hints": ["We ___ rice and fish.", "We eat rice and fish."],
+            "answerExample": "We eat rice and fish.",
+            "easyQuestion": {
+              "en": "Are you hungry?",
+              "ko": "배고파?"
+            }
+          },
+          {
+            "no": 2,
+            "en": "The sun is hot! What do you do with the juice?",
+            "ko": "햇볕이 뜨거워! 주스로 뭐 해?",
+            "targets": ["drink"],
+            "goals": ["talk-3-1-1"],
+            "ask": "first",
+            "hintKo": "나는 주스를 마셔.",
+            "hints": ["I ___ the juice.", "I drink the juice."],
+            "answerExample": "I drink the juice.",
+            "easyQuestion": {
+              "en": "Do you like juice?",
+              "ko": "주스 좋아해?"
+            }
+          },
+          {
+            "no": 3,
+            "en": "With your family, what do you do?",
+            "ko": "가족이랑 같이 뭐 해?",
+            "targets": ["go"],
+            "goals": ["talk-3-1-1"],
+            "ask": "first",
+            "hintKo": "우리는 호수에 가.",
+            "hints": ["We ___ to the lake.", "We go to the lake."],
+            "answerExample": "We go to the lake.",
+            "easyQuestion": {
+              "en": "Do you like the lake?",
+              "ko": "호수 좋아해?"
+            }
+          },
+          {
+            "no": 4,
+            "en": "Sand on your hands! What do you do with water?",
+            "ko": "손에 모래가 묻었어! 물로 뭐 해?",
+            "targets": ["wash"],
+            "goals": ["talk-3-1-1"],
+            "ask": "first",
+            "hintKo": "나는 손을 씻어.",
+            "hints": ["I ___ my hands.", "I wash my hands."],
+            "answerExample": "I wash my hands.",
+            "easyQuestion": {
+              "en": "Do you like sand?",
+              "ko": "모래 좋아해?"
+            }
+          },
+          {
+            "no": 5,
+            "en": "The sun is down. What do you do now?",
+            "ko": "해가 졌어. 이제 뭐 해?",
+            "targets": ["come"],
+            "goals": ["talk-3-1-1"],
+            "ask": "first",
+            "hintKo": "우리는 집에 와.",
+            "hints": ["We ___ home.", "We come home."],
+            "answerExample": "We come home.",
+            "easyQuestion": {
+              "en": "Are you tired?",
+              "ko": "피곤해?"
+            }
+          }
+        ],
+        "more": [
+          {
+            "no": 1,
+            "en": "Sandwiches for your family! What do they do at the lake?",
+            "ko": "가족을 위한 샌드위치야! 가족은 호수에서 뭐 해?",
+            "targets": ["eat"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "가족은 샌드위치를 먹어.",
+            "hints": ["They ___ sandwiches.", "They eat sandwiches."],
+            "answerExample": "They eat sandwiches.",
+            "easyQuestion": {
+              "en": "Do you like sandwiches?",
+              "ko": "샌드위치 좋아해?"
+            }
+          },
+          {
+            "no": 2,
+            "en": "Oh, cold water! What do you do with your cup?",
+            "ko": "오, 시원한 물이야! 컵으로 뭐 해?",
+            "targets": ["drink"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "나는 시원한 물을 마셔.",
+            "hints": ["I ___ cold water.", "I drink cold water."],
+            "answerExample": "I drink cold water.",
+            "easyQuestion": {
+              "en": "Do you like cold water?",
+              "ko": "시원한 물 좋아해?"
+            }
+          },
+          {
+            "no": 3,
+            "en": "The stars are out! What do you do in your room?",
+            "ko": "별이 떴어! 네 방에서 뭐 해?",
+            "targets": ["go"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "나는 자러 가.",
+            "hints": ["I ___ to bed.", "I go to bed."],
+            "answerExample": "I go to bed.",
+            "easyQuestion": {
+              "en": "Are you sleepy?",
+              "ko": "졸려?"
+            }
+          },
+          {
+            "no": 4,
+            "en": "Many dishes on the table! What do you do with the dishes?",
+            "ko": "식탁에 그릇이 많아! 그릇으로 뭐 해?",
+            "targets": ["wash"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "나는 그릇을 씻어.",
+            "hints": ["I ___ the dishes.", "I wash the dishes."],
+            "answerExample": "I wash the dishes.",
+            "easyQuestion": {
+              "en": "Do you help your family?",
+              "ko": "가족을 도와?"
+            },
+            "imageKey": "dish"
+          },
+          {
+            "no": 5,
+            "en": "Food for the ducks! What do the ducks do?",
+            "ko": "오리 먹이야! 오리들은 뭐 해?",
+            "targets": ["come"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "오리들이 나한테 와.",
+            "hints": ["They ___ to me.", "They come to me."],
+            "answerExample": "They come to me.",
+            "easyQuestion": {
+              "en": "Do you like ducks?",
+              "ko": "오리 좋아해?"
+            },
+            "imageKey": "duck"
+          }
+        ],
+        "flow": [
+          "The teacher greets the child and talks about a family trip to the lake.",
+          "The teacher asks about lunch and juice at the lake, one question at a time.",
+          "The teacher brings in come and wash when the child talks about sand or the sun going down.",
+          "The teacher can ask about the family, the dishes or the ducks when the child wants more talk."
+        ],
+        "todayTopicsKo": [
+          "호수에 가기",
+          "점심 먹고 마시기",
+          "손 씻고 집에 오기"
+        ],
+        "closingLines": [
+          {
+            "en": "We go to the lake.",
+            "ko": "우리는 호수에 가."
+          },
+          {
+            "en": "We eat rice and fish.",
+            "ko": "우리는 밥이랑 생선을 먹어."
+          },
+          {
+            "en": "I drink the juice.",
+            "ko": "나는 주스를 마셔."
+          },
+          {
+            "en": "I wash my hands.",
+            "ko": "나는 손을 씻어."
+          },
+          {
+            "en": "We come home.",
+            "ko": "우리는 집에 와."
+          }
+        ],
+        "safeLines": [
+          {
+            "en": "Oh, okay!",
+            "ko": "오, 그렇구나!"
+          },
+          {
+            "en": "Oh, fun!",
+            "ko": "오, 재밌겠다!"
+          },
+          {
+            "en": "Yes, okay!",
+            "ko": "응, 알겠어!"
+          }
+        ],
+        "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+        "farewell": {
+          "en": "Bye, {NAME}! You are great!",
+          "ko": "안녕, {NAME}! 너 최고야!"
+        },
+        "safetyFarewell": {
+          "en": "That is all for now. Bye, {NAME}!",
+          "ko": "이제 여기까지야. 안녕, {NAME}!"
+        },
+        "praiseLines": ["Very good!", "Great!", "Nice!", "Wow!"]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 6,
+      "revision": 4,
+      "correction": 0,
+      "card": {
+        "topic": "주말에 하는 일 · 가족과 바닷가 · 산 나들이",
+        "targetExpressions": [
+          "We eat sandwiches.",
+          "I wash my feet.",
+          "We go to the sea.",
+          "We play at the beach.",
+          "I am on the mountain."
+        ],
+        "goals": ["talk-3-1-1", "talk-3-1-2"],
+        "greetingTurns": 1,
+        "greeting": {
+          "questions": [
+            {
+              "question": {
+                "en": "Hi, {NAME}! How are you?",
+                "ko": "안녕, {NAME}! 잘 지냈어?"
+              },
+              "hintKo": "나는 기분 좋아.",
+              "hintEn": "I am happy.",
+              "frameEn": "I am ___.",
+              "answerExample": "I am happy."
+            }
+          ]
+        },
+        "todayWords": [],
+        "required": [
+          {
+            "no": 1,
+            "en": "Sandwiches for lunch! What do you do on the mountain?",
+            "ko": "점심은 샌드위치야! 산에서 뭐 해?",
+            "targets": ["eat"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "우리는 샌드위치를 먹어.",
+            "hints": ["We ___ sandwiches.", "We eat sandwiches."],
+            "answerExample": "We eat sandwiches.",
+            "easyQuestion": {
+              "en": "Are you hungry?",
+              "ko": "배고파?"
+            }
+          },
+          {
+            "no": 2,
+            "en": "Whales and dolphins! Where do they swim?",
+            "ko": "고래랑 돌고래야! 어디에서 헤엄쳐?",
+            "targets": ["sea"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "고래랑 돌고래는 바다에서 헤엄쳐.",
+            "hints": ["They swim in the ___.", "They swim in the sea."],
+            "answerExample": "They swim in the sea.",
+            "easyQuestion": {
+              "en": "Do you like whales?",
+              "ko": "고래 좋아해?"
+            },
+            "imageKey": "whale"
+          },
+          {
+            "no": 3,
+            "en": "Sand on your feet! What do you do in the sea?",
+            "ko": "발에 모래가 묻었어! 바다에서 뭐 해?",
+            "targets": ["wash"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "나는 발을 씻어.",
+            "hints": ["I ___ my feet.", "I wash my feet."],
+            "answerExample": "I wash my feet.",
+            "easyQuestion": {
+              "en": "Is the water cold?",
+              "ko": "물이 차가워?"
+            }
+          },
+          {
+            "no": 4,
+            "en": "Sand and shells! Where do you play?",
+            "ko": "모래랑 조개껍데기야! 어디에서 놀아?",
+            "targets": ["beach"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "우리는 해변에서 놀아.",
+            "hints": ["We play at the ___.", "We play at the beach."],
+            "answerExample": "We play at the beach.",
+            "easyQuestion": {
+              "en": "Do you like shells?",
+              "ko": "조개껍데기 좋아해?"
+            },
+            "imageKey": "shell"
+          },
+          {
+            "no": 5,
+            "en": "It is hot at the beach. What do you do with cold juice?",
+            "ko": "해변은 더워. 시원한 주스로 뭐 해?",
+            "targets": ["drink"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "나는 시원한 주스를 마셔.",
+            "hints": ["I ___ cold juice.", "I drink cold juice."],
+            "answerExample": "I drink cold juice.",
+            "easyQuestion": {
+              "en": "Do you like juice?",
+              "ko": "주스 좋아해?"
+            }
+          },
+          {
+            "no": 6,
+            "en": "Up, up, to the top! Where are you?",
+            "ko": "위로, 위로, 꼭대기까지! 너는 어디에 있어?",
+            "targets": ["mountain"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "나는 산에 있어.",
+            "hints": ["I am on the ___.", "I am on the mountain."],
+            "answerExample": "I am on the mountain.",
+            "easyQuestion": {
+              "en": "Do you like big trees?",
+              "ko": "큰 나무 좋아해?"
+            }
+          }
+        ],
+        "more": [
+          {
+            "no": 1,
+            "en": "Bags in the car! What do you do with your family?",
+            "ko": "가방이 차에 있어! 가족이랑 뭐 해?",
+            "targets": ["go"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "우리는 바다에 가.",
+            "hints": ["We ___ to the sea.", "We go to the sea."],
+            "answerExample": "We go to the sea.",
+            "easyQuestion": {
+              "en": "Do you have a bag?",
+              "ko": "가방 있어?"
+            }
+          },
+          {
+            "no": 2,
+            "en": "Oh, the sun is down! What do you do now?",
+            "ko": "오, 해가 졌어! 이제 뭐 해?",
+            "targets": ["come"],
+            "goals": ["talk-3-1-1"],
+            "ask": "re_ask",
+            "hintKo": "우리는 집에 와.",
+            "hints": ["We ___ home.", "We come home."],
+            "answerExample": "We come home.",
+            "easyQuestion": {
+              "en": "Are you cold?",
+              "ko": "추워?"
+            }
+          },
+          {
+            "no": 3,
+            "en": "An octopus and a fish! Where are they?",
+            "ko": "문어랑 물고기야! 어디에 있어?",
+            "targets": ["sea"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "문어랑 물고기는 바다에 있어.",
+            "hints": ["They are in the ___.", "They are in the sea."],
+            "answerExample": "They are in the sea.",
+            "easyQuestion": {
+              "en": "Do you like fish?",
+              "ko": "물고기 좋아해?"
+            },
+            "imageKey": "octopus"
+          },
+          {
+            "no": 4,
+            "en": "Big rocks and tall trees! Where do you climb?",
+            "ko": "큰 바위랑 키 큰 나무야! 어디를 올라?",
+            "targets": ["mountain"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "우리는 산에 올라.",
+            "hints": ["We climb the ___.", "We climb the mountain."],
+            "answerExample": "We climb the mountain.",
+            "easyQuestion": {
+              "en": "Do you like big rocks?",
+              "ko": "큰 바위 좋아해?"
+            }
+          },
+          {
+            "no": 5,
+            "en": "Oh, a red kite! Where do you run?",
+            "ko": "오, 빨간 연이야! 어디에서 달려?",
+            "targets": ["beach"],
+            "goals": ["talk-3-1-2"],
+            "ask": "re_ask",
+            "hintKo": "나는 해변에서 달려.",
+            "hints": ["I run on the ___.", "I run on the beach."],
+            "answerExample": "I run on the beach.",
+            "easyQuestion": {
+              "en": "Do you like kites?",
+              "ko": "연 좋아해?"
+            }
+          }
+        ],
+        "flow": [
+          "The teacher greets the child and talks about a family trip to the sea and a mountain.",
+          "The teacher asks about food, juice and sandy feet, one question at a time.",
+          "The teacher asks where whales, shells and big rocks are, so the child can say sea, beach and mountain.",
+          "The teacher follows the child's own story and comes back to the sea or the mountain."
+        ],
+        "todayTopicsKo": ["바다에 가기", "해변에서 놀기", "산에 오르기"],
+        "closingLines": [
+          {
+            "en": "We go to the sea.",
+            "ko": "우리는 바다에 가."
+          },
+          {
+            "en": "We eat sandwiches.",
+            "ko": "우리는 샌드위치를 먹어."
+          },
+          {
+            "en": "I wash my feet.",
+            "ko": "나는 발을 씻어."
+          },
+          {
+            "en": "I drink juice at the beach.",
+            "ko": "나는 해변에서 주스를 마셔."
+          },
+          {
+            "en": "We come home from the mountain.",
+            "ko": "우리는 산에서 집에 와."
+          }
+        ],
+        "safeLines": [
+          {
+            "en": "Oh, okay!",
+            "ko": "오, 그렇구나!"
+          },
+          {
+            "en": "Oh, really!",
+            "ko": "오, 정말!"
+          },
+          {
+            "en": "Yes, fun!",
+            "ko": "응, 재밌겠다!"
+          }
+        ],
+        "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+        "farewell": {
+          "en": "Goodbye, {NAME}! You are very good!",
+          "ko": "잘 가, {NAME}! 너 정말 멋져!"
+        },
+        "safetyFarewell": {
+          "en": "Okay, {NAME}! That is all for now.",
+          "ko": "좋아, {NAME}! 이제 여기까지야."
+        },
+        "praiseLines": ["Good!", "Very nice!", "Great!", "Wow!"]
+      }
+    }
+  ]
+}

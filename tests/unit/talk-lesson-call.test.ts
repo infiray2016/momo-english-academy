@@ -211,7 +211,8 @@ describe("고정부 · 가변부(6.1 회화 턴 고정부 규칙 표)", () => {
     const rules = talkLessonRulesOf(changed, { level: 3 });
     const system = talkLessonSystem(lessonInput(3), rules);
     expect(system).toContain("tori_en has at most 6 sentences");
-    expect(system).toContain("follow it for at most 5 turns");
+    // 1~3단계 따라가기 줄은 '아이 이야기 먼저'로 바뀜('AI 몫 넓힘' fix 1 [M-3]) — 수는 그대로 설정에서
+    expect(system).toContain("follow it for up to 5 turns");
     expect(system).toContain("at least once every 4 turns");
     const five = talkLessonSystem(
       lessonInput(5),
@@ -470,6 +471,8 @@ describe("정규화 · 앱 확인(6.1 '회화 턴의 새 칸은 앱이 확인한
       model_line: "I adore the glorious weekend.",
       new_words: ["weekend"],
       support: "model_line",
+      // 꺼내기 갈래일 때만(13절 C205 · 판정 r1 I-5)
+      next_move: "introduce",
     });
     expect(introduced.model_line).toBe("The weekend.");
     expect(introduced.new_words).toEqual(["weekend"]);
@@ -497,6 +500,7 @@ describe("정규화 · 앱 확인(6.1 '회화 턴의 새 칸은 앱이 확인한
         model_line: "The weekend.",
         new_words: ["weekend"],
         support: "model_line",
+        next_move: "introduce",
       }).model_line,
     ).toBe("The weekend.");
   });
@@ -1009,7 +1013,20 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
     expect(stuck.next_hints).toEqual([]);
     expect(stuck.goal_suggest).toEqual([]);
     const answered = norm(3, { ...value, stuck: false }, { turn });
-    expect(answered.model_line).toBe("The weekend.");
+    // 필수 질문 갈래가 이어 묻기로 되돌려진 차례라 꺼내는 줄이라도 따라 할 말은 자리 밖이다(13절 C205 · 판정 r1 I-5)
+    expect(answered.model_line).toBe("");
+    expect(
+      norm(
+        3,
+        {
+          ...value,
+          stuck: false,
+          next_move: "introduce",
+          card_item: { kind: "none", no: 0 },
+        },
+        { turn },
+      ).model_line,
+    ).toBe("The weekend.");
     // 대화 첫 질문(카드 필수 1)에 답한 다음 차례라 필수 질문 갈래는 이어 묻기로 되돌린다(13절 C204 (6), cardChainGuardOf)
     expect(answered.next_move).toBe("follow_up");
     // 카드 항목은 남긴다 — 들린 필수 질문은 다룬 것으로 센다(검토 rev-prompt-2 E)
@@ -1072,19 +1089,21 @@ describe("fix 1 Minor(검토 M-1 · M-2 · M-3)", () => {
       tori_en: "The weekend is fun! Listen and say!",
       model_line: "I adore the glorious weekend.",
       new_words: ["weekend", "sunday"],
+      next_move: "introduce",
     });
     expect(ok.new_words).toEqual(["weekend"]);
     expect(ok.model_line).toBe("The weekend.");
   });
 
-  it("tori_en 설명은 AI 차례에만 다음 질문을 요구하고, 1~3단계 질문은 마지막 물음표 문장이며 신호 말은 그 뒤에 와도 된다(M-2)", () => {
+  it("tori_en 설명은 AI 차례에만 다음 질문을 요구하고, 1~3단계 질문은 마지막 물음표 문장이며 신호 말은 선생님이 쓰지 않는다(M-2 · 'AI 몫 넓힘' C207 — 앱이 붙임)", () => {
     const schema = schemaOf(3) as {
       properties: Record<string, { description?: string }>;
     };
     expect(schema.properties.tori_en?.description).toContain("On AI turns");
     const three = talkLessonSystem(lessonInput(3), lessonRules(3));
     expect(three).toContain("last question sentence of tori_en");
-    expect(three).toContain("may come after it");
+    expect(three).toContain("Never write a cue to listen or say");
+    expect(three).not.toContain("may come after it");
     expect(three).not.toContain("Put your question at the end of tori_en.");
   });
 
@@ -1385,6 +1404,7 @@ describe("'5-다' fix 2 N-2(support 를 남은 줄과 맞춤)", () => {
       tori_en: "Weekends are fun! Listen and say!",
       model_line: "The weekend.",
       support: "model_line",
+      next_move: "introduce",
     });
     expect(v.model_line).toBe("The weekend.");
     expect(v.support).toBe("model_line");
