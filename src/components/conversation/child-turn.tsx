@@ -827,7 +827,7 @@ export function ChildTurn(props: ChildTurnProps) {
         <div
           ref={actionsRef}
           data-child-actions=""
-          className="flex shrink-0 flex-wrap items-center justify-center gap-4 lg:ml-auto"
+          className="flex shrink-0 flex-wrap items-center justify-center gap-4 lg:ml-auto lg:justify-start"
         >
           <SpeakButton
             label={CHILD_TURN_TEXT.speak}
@@ -884,9 +884,11 @@ export function ChildTurn(props: ChildTurnProps) {
               {CHILD_TURN_TEXT.dontKnow}
             </SmallButton>
           </div>
-          {/* 버리는 듣기 안내 줄: 단추 묶음 바로 아래 — 세로는 가운데, 가로는 단추 쪽(M-3). 그동안 아래 알림 줄은 비운다(한 줄) */}
+          {/* 버리는 듣기 안내 줄: 단추 묶음 바로 아래 — 세로는 가운데, 가로는 말하기 단추 왼쪽 끝에 맞춤(M-3). 그동안 아래 알림 줄은 비운다(한 줄).
+              w-0 min-w-full: 둘째 줄을 다 쓰되 동작 줄의 내용 너비에는 들지 않는다 — 가로에서 줄이 나고 질 때 단추 묶음이 좌우로 밀리지 않게(화면 판정 N-1).
+              가로의 lg:-mr-4 는 동작 줄 gap-4 가 내용 너비에 더하는 사이 하나를 지운다(동작 줄이 단추 줄 너비 그대로라 lg:justify-start 로 단추 줄이 제자리다) */}
           {discardLine && !moving ? (
-            <StatusLine className="w-full justify-center lg:justify-end">
+            <StatusLine className="w-0 min-w-full justify-center lg:-mr-4 lg:justify-start">
               <span data-discard-line="">{discardLine}</span>
             </StatusLine>
           ) : null}

@@ -272,6 +272,18 @@ export function SpeakButton({
   }, [listening]);
 
   const MicMark = heard ? AudioLines : Mic;
+  // 소리가 들어오면 마이크 표시가 소리 물결로(깜빡임 멈춤 — 들리고 있음을 보임)
+  const mic = (
+    <MicMark
+      aria-hidden
+      strokeWidth={ICON_STROKE}
+      className={cn(
+        "size-7",
+        heard && "text-talk-deep",
+        listening && !heard && "motion-safe:animate-pulse",
+      )}
+    />
+  );
   const ring = (
     <span
       data-speak-ring=""
@@ -307,18 +319,9 @@ export function SpeakButton({
             onPress();
           }}
         >
-          {/* 소리가 들어오면 마이크 표시가 소리 물결로(깜빡임 멈춤 — 들리고 있음을 보임) */}
-          <MicMark
-            aria-hidden
-            strokeWidth={ICON_STROKE}
-            className={cn(
-              "size-7",
-              heard && "text-talk-deep",
-              listening && !heard && "motion-safe:animate-pulse",
-            )}
-          />
           {steady ? (
-            // 세 글을 한 칸에 겹쳐 가장 긴 글의 너비를 늘 차지한다(지금 글이 아닌 칸은 읽지 않고 보이지 않음 — I-1)
+            // 세 글을 한 칸에 겹쳐 가장 긴 글의 너비를 늘 차지한다(지금 글이 아닌 칸은 읽지 않고 보이지 않음 — I-1).
+            // 칸마다 [마이크 + 글(+ 점)]을 한 덩어리로 겹쳐, 보이는 덩어리가 단추 가운데에 선다(화면 판정 N-2 — 글이 마이크와 떨어지지 않게)
             <span data-speak-steady="" className="inline-grid">
               {SPEAK_LABEL_KEYS.map((key) => {
                 const now = key === speakLabelKeyOf({ listening, preparing });
@@ -332,6 +335,15 @@ export function SpeakButton({
                       !now && "invisible",
                     )}
                   >
+                    {now ? (
+                      mic
+                    ) : (
+                      <MicMark
+                        aria-hidden
+                        strokeWidth={ICON_STROKE}
+                        className="size-7"
+                      />
+                    )}
                     {speakButtonLabelOf({
                       label,
                       listeningLabel,
@@ -347,6 +359,7 @@ export function SpeakButton({
             </span>
           ) : (
             <>
+              {mic}
               {speakButtonLabelOf({
                 label,
                 listeningLabel,

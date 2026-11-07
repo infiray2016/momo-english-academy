@@ -167,18 +167,19 @@ describe("버림 화면 말하기 단추 크기 그대로(C215 · 화면 판정 
         ...props,
       }),
     );
-  /** 겹친 글 칸(글 · 숨김 여부 · 지금 글 표지). */
+  /** 겹친 글 칸(글 · 숨김 여부 · 지금 글 표지 · 칸 맨 앞 마이크 표시 — 화면 판정 N-2). */
   const cellsOf = (html: string) =>
     [
       ...html.matchAll(
-        /<span (data-speak-label="" )?(aria-hidden="true" )?class="([^"]*)">([^<]*)/g,
+        /<span (data-speak-label="" )?(aria-hidden="true" )?class="([^"]*)">(<svg[^>]*>(?:(?!<\/svg>).)*<\/svg>)?([^<]*)/g,
       ),
     ]
       .map((m) => ({
         now: m[1] !== undefined,
         hidden: m[2] !== undefined,
         invisible: (m[3] ?? "").split(" ").includes("invisible"),
-        text: m[4],
+        mic: m[4],
+        text: m[5],
       }))
       .filter((c) => c.text !== "");
 
@@ -200,6 +201,26 @@ describe("버림 화면 말하기 단추 크기 그대로(C215 · 화면 판정 
         expect(cell.hidden).toBe(cell.text !== now);
         expect(cell.invisible).toBe(cell.text !== now);
       }
+    },
+  );
+
+  it.each([
+    [{ listening: false }],
+    [{ listening: false, preparing: true }],
+    [{ listening: true, preparing: true }],
+  ])(
+    "버림 화면 겹친 칸(%o)은 칸마다 [마이크 + 글] 한 덩어리이고, 칸 밖 마이크 표시는 없다(화면 판정 N-2 — 보이는 덩어리가 단추 가운데)",
+    (props) => {
+      const html = render(props);
+      const cells = cellsOf(html);
+      expect(cells).toHaveLength(3);
+      for (const cell of cells) {
+        expect(cell.mic).toBeDefined();
+        expect(cell.mic).toContain('aria-hidden="true"');
+      }
+      // 단추 안 마이크 표시는 겹친 칸의 셋뿐이다
+      expect(html.match(/<svg/g)).toHaveLength(3);
+      expect(html).toMatch(/<button[^>]*><span data-speak-steady=""/);
     },
   );
 
@@ -391,11 +412,11 @@ describe("버림 화면 아이 차례 렌더", () => {
       out
         .replace(/<span data-speak-steady="" class="[^"]*">/, "")
         .replace(
-          /<span data-speak-label="" class="[^"]*">([^<]*)<\/span>/,
+          /<span data-speak-label="" class="[^"]*">(<svg[^>]*>(?:(?!<\/svg>).)*<\/svg>[^<]*)<\/span>/,
           "$1",
         )
         .replace(
-          /<span aria-hidden="true" class="[^"]*">[^<]*(<span[^>]*>(<span[^>]*><\/span>)*<\/span>)?<\/span>/g,
+          /<span aria-hidden="true" class="[^"]*"><svg[^>]*>(?:(?!<\/svg>).)*<\/svg>[^<]*(<span[^>]*>(<span[^>]*><\/span>)*<\/span>)?<\/span>/g,
           "",
         )
         .replace(/<\/span><\/button>/, "</button>");
@@ -412,7 +433,7 @@ describe("버림 화면 아이 차례 렌더", () => {
     expect(out).toContain(`data-discard-line="">${CHILD_TURN_TEXT.micRecover}`);
   });
 
-  it("버림 화면 안내 줄은 동작 줄 안 단추 묶음 바로 아래(단추 쪽 정렬)에 하나만 있고, 아래 알림 줄에는 없다(화면 판정 M-3)", () => {
+  it("버림 화면 안내 줄은 동작 줄 안 단추 묶음 바로 아래(가로는 말하기 단추 왼쪽 끝 정렬)에 하나만 있고, 동작 줄 너비를 넓히지 않으며, 아래 알림 줄에는 없다(화면 판정 M-3 · N-1)", () => {
     const out = html(
       viewOf({ waiting: true, recovering: true, canListen: false }),
     );
@@ -421,10 +442,15 @@ describe("버림 화면 아이 차례 렌더", () => {
     const line = out.indexOf("data-discard-line");
     expect(actions).toBeGreaterThan(-1);
     expect(line).toBeGreaterThan(out.indexOf("data-dont-know", actions));
-    // 안내 줄의 자리: 세로는 가운데, 가로는 단추 쪽(오른쪽)
+    // 안내 줄의 자리: 세로는 가운데, 가로는 말하기 단추 왼쪽 끝(M-3). 동작 줄 내용 너비에 들지 않는다(w-0 min-w-full — 화면 판정 N-1)
     expect(out).toMatch(
-      /<p role="status" data-status-tone="info" class="[^"]*w-full[^"]*justify-center[^"]*lg:justify-end[^"]*"><span data-discard-line="">/,
+      /<p role="status" data-status-tone="info" class="[^"]*w-0 min-w-full justify-center lg:-mr-4 lg:justify-start[^"]*"><span data-discard-line="">/,
     );
+    // 가로의 동작 줄은 단추 줄 너비 그대로 왼쪽부터(안내 줄의 -mr-4 가 gap-4 를 지워도 단추 줄이 가운데 정렬로 밀리지 않게)
+    expect(out).toMatch(
+      /data-child-actions="" class="[^"]*gap-4 lg:ml-auto lg:justify-start"/,
+    );
+    expect(out).not.toContain("lg:justify-end");
     // 아래 알림 줄(마지막 줄)은 빈 채 자리만 둔다
     expect(
       out.endsWith(
