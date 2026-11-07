@@ -13,11 +13,12 @@ import type {
   SpeechScript,
 } from "../../src/core/speech/script";
 import { attempts, talkTurns } from "../../src/db/schema/learning";
+import { settings } from "../../src/db/schema/operations";
 import { TALK_TURN_PATH } from "../../src/lib/talk-stream";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { e2eDb } from "./db";
 import { fakeAiRequests } from "./fake-ai";
-import { speechRecord, talkScript } from "./talk";
+import { CLOSING_MARK, speechRecord, TURN_MARK, talkScript } from "./talk";
 
 const MS = 1000;
 
@@ -218,13 +219,17 @@ export function discardScript(
 
 // ── 가짜 음성 기록 읽기 ──
 
-/** 인식 객체 하나의 쓰임(가짜 음성 start · stop · abort 기록에서). endAt 은 대본으로 셈한 end(아직 열려 있으면 없음). */
+/**
+ * 인식 객체 하나의 쓰임(가짜 음성 start · stop · abort 기록에서). close 는 첫 닫힘 호출, aborted 는 그 객체에 abort 가 한 번이라도 왔는지(stop 뒤
+ * abort 도 센다 — 검토 M-4). endAt 은 대본으로 셈한 end(스스로 끝남과 닫힘 + 지연 가운데 이른 쪽, 아직 열려 있으면 없음).
+ */
 export type RecognizerUse = {
   id: number;
   role: Role;
   startAt: number;
   close: "stop" | "abort" | undefined;
   closeAt: number | undefined;
+  aborted: boolean;
   endAt: number | undefined;
 };
 
@@ -256,19 +261,22 @@ export async function recognizersOf(
           ? (endOffsetOf(run?.onAbort) ?? 0)
           : undefined;
     const ownEnd = endOffsetOf(run?.events);
-    const endAt =
-      closing !== undefined && closeOffset !== undefined
-        ? closing.at + closeOffset
-        : ownEnd !== undefined
-          ? start.at + ownEnd
-          : undefined;
+    const ends = [
+      ...(closing !== undefined && closeOffset !== undefined
+        ? [closing.at + closeOffset]
+        : []),
+      ...(ownEnd !== undefined ? [start.at + ownEnd] : []),
+    ];
     return {
       id: start.id,
       role: s.roles[at] ?? "discard",
       startAt: start.at,
       close,
       closeAt: closing?.at,
-      endAt,
+      aborted: calls.some(
+        (c) => c.id === start.id && c.method === "abort" && c.at >= start.at,
+      ),
+      endAt: ends.length > 0 ? Math.min(...ends) : undefined,
     };
   });
 }
@@ -316,12 +324,15 @@ export const DISCARD_MARKERS = [
 export type DiscardWatch = {
   states: { at: number; value: string }[];
   seen: Record<string, boolean>;
+  /** 화면 글에 표지 글이 한 번이라도 들었는지(잠깐 떴다 사라진 글도 — 검토 M-5). */
+  markSeen: boolean;
   media: { getUserMedia: number; recorder: number };
 };
 
 /**
  * 쪽 시작 스크립트(speechPage 뒤 page.goto 앞에 page.addInitScript 로 넣는다). 선생님 창 data-teacher-state 가 바뀔 때마다 한 줄, 새 표지 넷이
- * 한 번이라도 보였는지, getUserMedia · MediaRecorder 호출 수(통과시키며 센다 — AC-24l 녹음 없음). 밖 이름을 쓰지 않는다.
+ * 한 번이라도 보였는지, 화면 글에 표지 글(MARK 와 같은 글)이 든 적이 있는지, getUserMedia · MediaRecorder 호출 수(통과시키며 센다 — AC-24l 녹음
+ * 없음). 밖 이름을 쓰지 않는다.
  */
 export function installDiscardWatch(): void {
   const markers = [
@@ -330,9 +341,11 @@ export function installDiscardWatch(): void {
     "[data-talk-short-line]",
     "[data-mic-discard]",
   ];
+  const mark = "ZEBRA";
   const watch = {
     states: [] as { at: number; value: string }[],
     seen: {} as Record<string, boolean>,
+    markSeen: false,
     media: { getUserMedia: 0, recorder: 0 },
   };
   (window as unknown as { __discardWatch: typeof watch }).__discardWatch =
@@ -349,6 +362,8 @@ export function installDiscardWatch(): void {
       if (!watch.seen[marker] && document.querySelector(marker))
         watch.seen[marker] = true;
     }
+    if (!watch.markSeen && document.body?.textContent?.includes(mark))
+      watch.markSeen = true;
   };
   new MutationObserver(look).observe(document, {
     subtree: true,
@@ -475,6 +490,40 @@ export type ListenEntry = {
   };
 };
 
+/**
+ * 앱이 같은 턴 안에서 다시 부르는 회화 턴 호출의 사용자 메시지 머리(question-retry questionRetryNoteOf · stuckRewriteNoteOf — 13절 C203 (3) 질문
+ * 다시 쓰기 · C204 (3) 막힘 무름). 그 호출 본문에도 TURN_MARK 가 든다.
+ */
+const REWRITE_MARK = "App check:";
+
+/**
+ * 아이 말이 연 회화 턴 호출 수(가짜 AI 가 받은 요청 — 끝맺음과 같은 턴 안의 다시 쓰기 호출은 뺀다). 다시 쓰기는 질문 검사에 걸린 AI 질문을 서버가
+ * 한 번 더 부르는 앱 몫이라(CI 42361488670 첫 실패 — 'Sunday' 는 4단계 낱말), 아이 말 한 번 = 이 수 하나를 볼 때 섞지 않는다.
+ */
+export async function childTurnCalls(): Promise<number> {
+  return (await fakeAiRequests()).filter(
+    (r) =>
+      r.bodyText.includes(TURN_MARK) &&
+      !r.bodyText.includes(CLOSING_MARK) &&
+      !r.bodyText.includes(REWRITE_MARK),
+  ).length;
+}
+
+/**
+ * 하루 안전 상한에 닿게 둔 그 프로필의 상한 행(talk.ts reachSafetyCap 의 ai.safety_daily_calls = 1)을 지운다 — 집 기본 행(시험용 설정)으로
+ * 돌아간다. liftSafetyCap 은 호출 기록만 지워 그 뒤 호출 하나가 쌓이면 다시 쉬므로, 풀린 뒤 두 턴 이상을 보는 시험이 함께 부른다.
+ */
+export async function dropSafetyCap(profileId: string): Promise<void> {
+  await e2eDb()
+    .delete(settings)
+    .where(
+      and(
+        eq(settings.key, "ai.safety_daily_calls"),
+        eq(settings.profileId, profileId),
+      ),
+    );
+}
+
 export async function attemptsOf(sessionId: string) {
   return e2eDb()
     .select({ input: attempts.input })
@@ -482,7 +531,7 @@ export async function attemptsOf(sessionId: string) {
     .where(eq(attempts.sessionId, sessionId));
 }
 
-/** 표지 글이 든 자리(AC-24l — 화면 · 대화 기록 · talk_turns · attempts · 쪽이 보낸 POST · 가짜 AI 가 받은 요청). 늘 빈 목록이어야 한다. */
+/** 표지 글이 든 자리(AC-24l — 화면(지금 · 지나간 글) · 대화 기록 · talk_turns · attempts · 쪽이 보낸 POST · 가짜 AI 가 받은 요청). 늘 빈 목록이어야 한다. */
 export async function markPlaces(
   page: Page,
   sessionId: string,
@@ -490,6 +539,7 @@ export async function markPlaces(
 ): Promise<string[]> {
   const places: string[] = [];
   if ((await page.content()).includes(MARK)) places.push("화면");
+  if ((await watchOf(page)).markSeen) places.push("화면(지나간 글)");
   const all = await e2eDb()
     .select()
     .from(talkTurns)
@@ -501,4 +551,23 @@ export async function markPlaces(
   if ((await fakeAiRequests()).some((r) => r.bodyText.includes(MARK)))
     places.push("AI 요청");
   return places;
+}
+
+/** 실패 때 붙일 대본 기록(검토 M-9 — 첫 CI 실패를 차례 밀림과 앱 결함으로 가르는 첫 단서). 쪽이 닫혔으면 읽은 만큼만. */
+export async function discardTraceOf(
+  page: Page,
+  s: DiscardScript,
+): Promise<Record<string, unknown>> {
+  const trace: Record<string, unknown> = { roles: s.roles };
+  try {
+    const record = await speechRecord(page);
+    trace.calls = record.calls;
+    trace.spoken = record.spoken;
+    trace.spokenAt = record.spokenAt;
+    trace.recognizers = await recognizersOf(page, s);
+    trace.watch = await watchOf(page);
+  } catch (error) {
+    trace.readError = String(error);
+  }
+  return trace;
 }

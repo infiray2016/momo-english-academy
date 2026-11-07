@@ -3,6 +3,7 @@
 // Anthropic), 짧은 준비는 따라 말하기 저장(saveLessonFollowAlong)으로 보낸다. 화면이 보내는 듣기 요약(client_listen)에 '그 앞 버림' 칸(dc)을
 // 실어, 그 칸이 talk_turns.client_listen · attempts.input 에 글 없이 그대로 들고(spec 설계 5), 표지 글이 든 꼴 밖 칸은 거절되며, dc 가 있어도
 // 입력 방식 · 글 · '모름'의 출처 · AI 에 보낸 사용자 메시지(셈 · validity 의 바탕, 04:73 · 04:85)가 dc 없는 같은 턴과 같음을 본다.
+import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { parseTalkAttemptInput } from "@/core/conversation/attempt";
@@ -10,6 +11,7 @@ import type {
   ClientListen,
   ClientListenEntry,
 } from "@/core/conversation/client-listen";
+import { situationRotationOf } from "@/core/conversation/situation";
 import { TalkLessonSchema } from "@/core/seed/schema/lesson";
 import { lessons } from "@/db/schema/content";
 import { attempts, sessions, talkTurns } from "@/db/schema/learning";
@@ -111,11 +113,12 @@ const WITH_DC = listenOf({ ...REAL_ENTRY, dc: DC });
 const WITHOUT_DC = listenOf(REAL_ENTRY);
 
 /** 새 집 · 진행 세션 하나를 열고 처음 화면 자료를 읽는다(처음 스냅숏 · 첫 선생님 행 — 인사 질문). */
-async function openSession(): Promise<string> {
+async function openSession(id?: string): Promise<string> {
   const profileId = await resetHousehold(db, 1);
   const [session] = await db
     .insert(sessions)
     .values({
+      ...(id === undefined ? {} : { id }),
       profileId,
       area: "talk",
       level: 1,
@@ -132,6 +135,18 @@ async function openSession(): Promise<string> {
   if (!(await loadTalkLessonView({ sessionId: session.id }, h.deps())))
     throw new Error("화면 자료가 없다");
   return session.id;
+}
+
+/**
+ * 그 세션과 상황 줄 · 예의 돌림 번호가 같은 새 세션 id(situationRotationOf 는 세션 id 로 돌림을 바꾼다 — 견줄 두 세션이 다른 예문을 받지 않게,
+ * CI 42361488670 AC-24m). 돌림 폭이 작아 몇 번 안에 찾는다.
+ */
+function sameRotationIdAs(sessionId: string): string {
+  const want = situationRotationOf(0, sessionId);
+  for (;;) {
+    const id = randomUUID();
+    if (situationRotationOf(0, id) === want) return id;
+  }
 }
 
 /** 인사 자리의 아이 턴 하나(회화 턴 길 — 가짜 AI 반응 하나). 끝 줄 · 그 시도의 아이 행 · 그 뒤 선생님 행. */
@@ -258,14 +273,25 @@ describe("iPad 버리는 듣기 — 기록 칸(dc) 통합(묶음 5)", () => {
       { mode: "dont_know" },
     ];
     for (const [i, input] of inputs.entries()) {
-      const plain = await turn(
-        await openSession(),
-        `plain-${i}`,
-        input,
-        WITHOUT_DC,
-      );
+      const plainSession = await openSession();
+      const plain = await turn(plainSession, `plain-${i}`, input, WITHOUT_DC);
       const plainCalls = requestsOf(h, TURN_MARK);
-      const withDc = await turn(await openSession(), `dc-${i}`, input, WITH_DC);
+      // 같은 돌림 번호의 세션이라 사용자 메시지의 돌림 예문까지 같아야 한다 — 남는 차이는 dc 몫이다
+      const withDc = await turn(
+        await openSession(sameRotationIdAs(plainSession)),
+        `dc-${i}`,
+        input,
+        WITH_DC,
+      );
+      // 두 턴이 모두 행을 남겼다(둘 다 실패해 빈 값끼리 같아지지 않게 — 검토 M-1)
+      expect(plain.lines.at(-1)?.t, `${input.mode} dc 없음 끝 줄`).not.toBe(
+        "error",
+      );
+      expect(withDc.lines.at(-1)?.t, `${input.mode} dc 있음 끝 줄`).not.toBe(
+        "error",
+      );
+      expect(plain.child, `${input.mode} dc 없음 아이 행`).toBeDefined();
+      expect(withDc.child, `${input.mode} dc 있음 아이 행`).toBeDefined();
       expect(requestsOf(h, TURN_MARK) - plainCalls).toBe(plainCalls);
       expect(coreOf(withDc.child), `${input.mode} 아이 행`).toEqual(
         coreOf(plain.child),
