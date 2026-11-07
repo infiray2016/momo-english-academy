@@ -95,13 +95,16 @@ const SAFETY_MAX_TURNS = 2;
 const TALK_MODEL_MID = TEST_SETTINGS["ai.model.talk_turn.4-6"].value;
 
 /**
- * 회화 표본에서 읽는 것: 아이 말풍선 · 인식 확인 말풍선 · 선생님 말풍선 · 기다림 · 쉬는 안내. 아이 말풍선은 마지막 보이는 것이다 — 대화 기록
- * 칸이 지난 아이 말을 같은 표지(data-child-said)로 위에 그려, 첫 보이는 것은 둘째 턴부터 인사 답이다(e2e 분류 T1).
+ * 회화 표본에서 읽는 것: 아이 말풍선 · 인식 확인 말풍선 · 선생님 말풍선 · 대화 기록 칸의 마지막 선생님 말 · 기다림 · 쉬는 안내. 아이 말풍선은
+ * 마지막 보이는 것이다 — 대화 기록 칸이 지난 아이 말을 같은 표지(data-child-said)로 위에 그려, 첫 보이는 것은 둘째 턴부터 인사 답이다(e2e 분류
+ * T1). 인사 끝 · 대화 첫 질문 차례처럼 턴 끝에 화면 자료를 다시 읽는 턴(talk-frame lessonAfterEndOf 'reload')은 반응 줄이 다 흐르자마자
+ * 기록 칸으로 올라가고 말풍선이 다음 선생님 행으로 바뀌므로(읽어 주기 끝을 기다리지 않음 — C166 R1), 반응은 기록 칸(past)에서도 본다.
  */
 const TALK_WATCH: Watch = {
   said: { selector: "[data-child-said]", pick: "last" },
   confirm: { selector: "[data-child-confirm] [data-child-bubble]" },
   tori: { selector: "[data-tori-bubble]" },
+  past: { selector: "[data-talk-log-teacher]", pick: "last" },
   waiting: { selector: "[data-tori-waiting], [data-wait-hint]" },
   rest: { selector: "[data-ai-rest]" },
 };
@@ -307,7 +310,11 @@ function expectHeldTurn(
     expect(samples.every((s) => s.values.confirm === null)).toBe(true);
 }
 
-/** 한 턴: 아이 차례 → 표본 시작 → 보냄 → 반응 첫 문장(또는 끝인사)이 말풍선에 보일 때까지 → 표본 멈춤 → 단언. */
+/**
+ * 한 턴: 아이 차례 → 표본 시작 → 보냄 → 반응 첫 문장(또는 끝인사)이 말풍선이나 대화 기록 칸에 보일 때까지 → 표본 멈춤 → 단언. 말풍선만
+ * 기다리면 화면 자료를 다시 읽는 턴에서 반응이 말풍선에 머무는 틈(줄 흐름 + 다시 읽기 왕복, 0.5초 안팎)을 기다림 확인 간격(1초)이 건너뛸
+ * 수 있다(CI 42345116809 4단계 첫 시도 — 응답은 'Great to hear!' 를 흘렸고 0.4초 뒤 대화 첫 질문 행으로 바뀜, 트레이스로 확인).
+ */
 async function measuredTurn(
   page: Page,
   {
@@ -321,15 +328,20 @@ async function measuredTurn(
   await startSampler(page, TALK_WATCH);
   await sendTurn(page);
   const first = firstSentence(reply);
-  await expect(page.locator("[data-tori-bubble]")).toContainText(first, {
-    timeout: STREAM_END_MS,
-  });
+  await expect(
+    page
+      .locator("[data-tori-bubble], [data-talk-log-teacher]")
+      .filter({ hasText: first })
+      .first(),
+  ).toBeVisible({ timeout: STREAM_END_MS });
   await page.waitForTimeout(AFTER_REPLY_MS);
   const samples = await stopSampler(page);
   expectHeldTurn(samples, {
     heard,
     sentAt: await sentAtOf(page, samples),
-    next: (s) => (s.values.tori ?? "").includes(first),
+    next: (s) =>
+      (s.values.tori ?? "").includes(first) ||
+      (s.values.past ?? "").includes(first),
     waitWithinMs,
     direct,
   });
@@ -343,10 +355,12 @@ function firstTurnAnswer(card: TalkCard): string {
 }
 
 /**
- * 1단계 선택지 둘(소리 줄): 1단계는 아직 만나지 않은 새 단어를 처음 묻는 AI 질문에서만 선택지가 남는다('AI 몫 넓힘' 설계 4 · C205 — 단원 단어
- * 없는 이어 묻기의 고르기 답은 질문만 남기고, talk-lesson.ts keptChoicesOf). 그래서 아직 묻지 않은 카드 둘째 필수 질문의 노리는 단어를 노리고
- * (choiceTargetOf), 같은 꼴 · 낱말 하나만 다르며 바뀌는 자리가 아이가 방금 한 말(첫 필수 질문의 답)의 낱말이 아니게 시험 어휘(like · it) 안에서
- * 고른다(choicesEchoChild).
+ * 1단계 선택지 둘(소리 줄): 1단계는 아직 만나지 않은 새 단어를 처음 묻는 AI 질문에서만 선택지가 남는다('AI 몫 넓힘' 설계 4 · C205 — 이어 묻는
+ * 고르기 질문은 질문만 남기고, talk-lesson.ts keptChoicesOf · cue-line soundLinePlacesOf). 카드 답 다음 차례의 필수 질문 갈래는 이어 묻기로
+ * 되돌려지고(C204 (6) cardChainGuardOf) 프롬프트도 그 차례에 이어 묻기를 요구하므로, 이어 묻기 한 차례 뒤에 꺼내기 갈래(introduce)로 처음
+ * 묻는다(CI 고침 2 · 검토 I-1 — 노리는 단어는 서버가 단원 규격의 단원 단어 안에서 거른다, 견본 수업 행의 unitWords 가 비어도 bebaba 는 남는다). 아직 묻지 않은 카드 둘째 필수 질문의 노리는 단어를 노리고(choiceTargetOf), 같은 꼴 · 낱말 하나만 다르며 바뀌는 자리가 아이가
+ * 방금 한 말(이어 묻기 답 · 그 앞 첫 필수 질문의 답)의 낱말이 아니게 시험 어휘(like · it) 안에서 고른다(choicesEchoChild). 같은 입력의 서버 거름은 단위
+ * talk-ai-scope-flow '1단계 처음 묻는 선택지'가 본다.
  */
 function choiceTargetOf(card: TalkCard): string {
   const target = card.required[1]?.targets[0];
@@ -364,9 +378,11 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
     context,
   }) => {
     const greeting = "I'm good.";
+    const followUpAnswer = "Yes.";
     const { page, card } = await openTalkAt(context, 1, (c) => [
       saidRun(greeting),
       saidRun(firstTurnAnswer(c)),
+      saidRun(followUpAnswer),
       saidRun(choicesOf(c)[0]),
     ]);
     const waitWithinMs = await waitHintWithinMs();
@@ -374,6 +390,7 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
     const replies = [
       "Great! Let's talk.",
       "Wow, that is nice!",
+      "Good!",
       "Good job!",
     ] as const;
     await pushFakeAi([
@@ -381,20 +398,26 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
         { tori_en: replies[0] },
         { firstDelayMs: FIRST_DELAY_MS },
       ),
-      // 대화 첫 질문 답의 응답: 아직 묻지 않은 새 단어를 노린 AI 질문 + 선택지 둘(소리 줄 — 1단계 처음 묻는 선택지, 'AI 몫 넓힘' 설계 4). AI 가 쓴
-      // 신호 말은 서버가 지우고 시드 신호 말을 붙이므로(C207) tori_en 에 두지 않는다
+      // 대화 첫 질문(카드 필수 1) 답의 응답: 카드 답 바로 다음 차례라 프롬프트대로 아이 답을 이어 묻는다(고정부 'Previous turn was a card
+      // chance: yes' 줄 — 이어 묻기에는 선택지를 채우지 않음, CI 고침 2 · 검토 I-1). 다음 질문은 같은 질문 거름(sameQuestionHit)에 걸리지 않게 글을 달리한다
+      talkLessonReply(
+        { tori_en: `${replies[1]} Do you like it?`, next_move: "follow_up" },
+        { firstDelayMs: FIRST_DELAY_MS },
+      ),
+      // 이어 묻기 답의 응답: 그 뒤 차례에 아직 묻지 않은 새 단어를 처음 꺼내는 꺼내기 갈래 AI 질문 + 선택지 둘(소리 줄 — 1단계 처음 묻는
+      // 선택지, 'AI 몫 넓힘' 설계 4). AI 가 쓴 신호 말은 서버가 지우고 시드 신호 말을 붙이므로(C207) tori_en 에 두지 않는다
       talkLessonReply(
         {
-          tori_en: `${replies[1]} Do you like it?`,
+          tori_en: `${replies[2]} Do you like this?`,
           choices: [...choices],
           support: "choices",
-          next_move: "follow_up",
+          next_move: "introduce",
           next_targets: [choiceTargetOf(card)],
         },
         { firstDelayMs: FIRST_DELAY_MS },
       ),
       talkLessonReply(
-        { tori_en: replies[2] },
+        { tori_en: replies[3] },
         { firstDelayMs: FIRST_DELAY_MS },
       ),
     ]);
@@ -410,13 +433,19 @@ test.describe("필수 경로 가 — 회화 아이 말풍선(AC-23f)", () => {
       reply: replies[1],
       waitWithinMs,
     });
+    // 이어 묻기 답 턴(선택지 없음)
+    await measuredTurn(page, {
+      heard: followUpAnswer,
+      reply: replies[2],
+      waitWithinMs,
+    });
     // 들려준 선택지 하나를 말한 턴은 인식 확인 없이 바로 보내진다(AC-23f '바로 보낸 1~3단계 턴 포함')
     await expect(page.locator("[data-answer-listen]")).toHaveCount(2, {
       timeout: STREAM_END_MS,
     });
     await measuredTurn(page, {
       heard: choices[0],
-      reply: replies[2],
+      reply: replies[3],
       waitWithinMs,
       direct: true,
     });

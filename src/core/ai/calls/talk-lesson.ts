@@ -970,7 +970,8 @@ function lowBandRules(
   const choiceRules = spec.choices
     ? [
         "At this level, ask yes-or-no or choice questions often, and keep the choice answers inside the question sentence (e.g. 'Is it a cat or a dog?').",
-        "Fill choices only at Support stage 2, or when you first ask about a new word the child has not met yet. Choices are two sentences of the same shape, one with the target word. A playful wrong choice is fine at this level (e.g. 'A banana? Or a horse?').",
+        // 처음 묻는 새 단어의 선택지는 갈래 introduce · required 에서만(CI 고침 2 · 3 · 검토 I-1 · N-1 · N-2, C205) — 앱도 1단계 선택지를 introduce · required 갈래에서만 남긴다(cue-line soundLinePlacesOf)
+        "Fill choices only at Support stage 2, or when your next question brings up a word from 'Chances, new words to introduce' for the first time (next_move introduce), or when you ask a card required question whose target word the child has not met yet (next_move required). Outside Support stage 2, never fill choices for a follow-up question (next_move follow_up or follow_child). Choices are two sentences of the same shape, one with the target word. A playful wrong choice is fine at this level (e.g. 'A banana? Or a horse?').",
       ]
     : [
         "At this level, ask so that the child answers with one sentence by themselves; when the child is stuck, the hint button helps. A this-or-that question has only the question: never fill choices for it.",

@@ -20,10 +20,12 @@ import {
 import type { TalkLessonTurn } from "@/core/conversation/lesson-turns";
 import { questionKeyOf } from "@/core/conversation/question-check";
 import {
+  ALLOWED_WORDS,
   lemmaOf,
   lessonInput,
   lessonRules,
 } from "../fixtures/ai/talk-lesson-inputs";
+import { smallReferenceSet, talkCard } from "../fixtures/seed/builders";
 import {
   aiTurn,
   button,
@@ -728,5 +730,120 @@ describe("답 자리(AC-4 (가) — 소리 줄은 받침 · 새 단어 꺼내기
       lessonRules(3),
     );
     expect(intro?.model_line).toBe("The weekend.");
+  });
+});
+
+/**
+ * e2e required-utterance 1단계 견본(talkCard 회화 1단계 단원 1 · greetingTalkLesson 꼴 — 장면 여는 질문 뺌)의 대화 첫 질문(카드 필수 1)에 답한
+ * 다음 AI 차례. CI 42345116809 의 e2e 가 이 응답(이어 묻기 + 선택지 둘, 노리는 단어 = 아직 묻지 않은 필수 2 의 낱말)에서 선택지를 받지 못했다.
+ */
+describe("1단계 처음 묻는 선택지(설계 4 · C205 — e2e required-utterance 1단계 견본, CI 고침 1)", () => {
+  const lesson = talkCard(smallReferenceSet(), {
+    level: 1,
+    unit: 1,
+    kind: "assigned",
+    lessonNo: 1,
+    variant: 1,
+  });
+  const { sceneOpener: _opener, ...card } = lesson.card;
+  const first = card.required[0];
+  const target = card.required[1]?.targets[0] ?? "";
+  const choices = [`I like ${target}.`, "I like it."];
+  const reply = (over: Partial<TalkLessonOutput>) =>
+    answer({
+      tori_en: "Wow, that is nice! Do you like it?",
+      tori_ko: [],
+      choices,
+      support: "choices",
+      next_targets: [target],
+      next_hint_ko: "",
+      next_hints: [],
+      next_answer_example: "",
+      ...over,
+    });
+  // 카드 답 바로 다음 차례는 이어 묻기만 되므로(고정부 'Previous turn was a card chance: yes' 줄) 꺼내기 갈래는 그 뒤 차례(afterCardChance 거짓)로 둔다
+  const input = (unitWords: readonly string[], afterCardChance = true) => {
+    const base = lessonInput(1, {
+      card,
+      unitWords: [...unitWords],
+      turn: {
+        child: first?.answerExample ?? "",
+        afterCardChance,
+        chances: {
+          carry: { goals: [], words: [] },
+          required: [{ no: 2, targets: [target] }],
+          reuse: [],
+          introduce: [...unitWords],
+        },
+      },
+    });
+    return {
+      ...base,
+      spec: { ...base.spec, choices: true },
+      lineRange: {
+        ...base.lineRange,
+        allowedWords: new Set([...ALLOWED_WORDS, "see", ...lesson.unitWords]),
+      },
+    };
+  };
+
+  it("견본 꼴: 단원 단어 둘 · 필수 1 의 답 · 필수 2 의 노리는 단어가 e2e 가 기대는 값이다", () => {
+    expect(lesson.unitWords).toContain(target);
+    expect(first?.answerExample).not.toMatch(/\b(it|like)\b/i);
+  });
+
+  it("e2e 가 쓴 꼴(카드 답 다음 차례의 이어 묻기 갈래)은 단원 단어를 노려도 선택지를 버리고 질문만 남긴다", () => {
+    // 이어 묻는 고르기 질문은 버리는 차례다(설계 4 '버리는 차례' · cue-line soundLinePlacesOf — 1단계 선택지 자리는 꺼내기 · 필수 질문 갈래만).
+    // 서버의 단원 단어는 단원 규격에서 오므로(levelContextOf) 견본 수업 행의 빈 unitWords 와 달리 bebaba 가 있다 — CI 트레이스 끝 줄 targets
+    // ['bebaba'] 와 같다
+    const out = normalizeTalkLesson(
+      reply({ next_move: "follow_up" }),
+      input(lesson.unitWords),
+      lessonRules(1),
+    );
+    expect(out?.next_targets).toEqual([target]);
+    expect(out?.choices).toEqual([]);
+    expect(out?.support).toBe("none");
+    expect(out?.tori_en).toBe("Wow, that is nice! Do you like it?");
+  });
+
+  it("단원 단어 밖 낱말을 노리면 꺼내기 갈래라도 선택지를 버린다(노리는 단어 없음 — C205)", () => {
+    const out = normalizeTalkLesson(
+      reply({ next_move: "introduce" }),
+      input([], false),
+      lessonRules(1),
+    );
+    expect(out?.next_targets).toEqual([]);
+    expect(out?.choices).toEqual([]);
+  });
+
+  it("카드 답 다음 차례가 아닌 때 아직 만나지 않은 단원 단어를 처음 묻는 꺼내기 갈래(1단계)는 선택지 둘을 남긴다", () => {
+    const out = normalizeTalkLesson(
+      reply({ next_move: "introduce" }),
+      input(lesson.unitWords, false),
+      lessonRules(1),
+    );
+    expect(out?.next_move).toBe("introduce");
+    expect(out?.next_targets).toEqual([target]);
+    expect(out?.choices).toEqual(choices);
+    expect(out?.support).toBe("choices");
+  });
+
+  it("카드 답 다음 차례가 아닌 때 아직 만나지 않은 단어를 노리는 카드 필수 질문 갈래(1단계 · 필수 2)는 선택지 둘을 남긴다(검토 N-1 · 02-2 283줄)", () => {
+    const out = normalizeTalkLesson(
+      // AI 가 따라 할 말까지 채워도 required 갈래에서는 서버가 지운다(984줄 · cue-line 자리 — 검토 3 Minor: 빈 응답이면 단언이 늘 참이었다)
+      reply({
+        next_move: "required",
+        card_item: { kind: "required", no: 2 },
+        model_line: `I like ${target}.`,
+      }),
+      input(lesson.unitWords, false),
+      lessonRules(1),
+    );
+    expect(out?.next_move).toBe("required");
+    expect(out?.card_item).toEqual({ kind: "required", no: 2 });
+    expect(out?.choices).toEqual(choices);
+    expect(out?.support).toBe("choices");
+    expect(out?.model_line).toBe("");
   });
 });

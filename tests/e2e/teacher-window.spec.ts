@@ -484,6 +484,11 @@ test.describe("회화 세션 선생님 창(차례 7)", () => {
     const row = await insertTalkLesson({ level: 1 });
     const sessionId = await openTalkSession(profileId, row);
     const page = await speechPage(context, talkScript([]));
+    // 앞 쪽이 넣은 마이크 막힘 기록은 같은 문맥의 localStorage 에 남는다 — 지우지 않으면 쉼 안내 대신 막힌 안내가 설 수 있다(CI 42347764557
+    // 첫 시도 화면 '마이크가 필요해요', 다시 돌려 통과). 이 뒤 반은 마이크를 쓸 수 있는 기기의 쉼 안내다
+    await page.addInitScript((key) => {
+      localStorage.removeItem(key);
+    }, MIC_STATE_KEY);
     await page.goto(`/session/${sessionId}`);
     await expect(page.getByText(T.rest)).toBeVisible();
     await expect(teacherWindow(page)).toHaveCount(0);

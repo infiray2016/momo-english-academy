@@ -276,7 +276,7 @@ describe("회화 수업 새 갈래 액션 · 화면 자료(묶음 9)", () => {
     expect(again?.log).toEqual(view?.log);
   });
 
-  it("토막 넘김: 인사 끝 → 짧은 준비(쪽지 · 들려줄 말) → 저장(만남 · 영어 문장 수 · 같은 시도 한 번) → 대화 첫 질문(카드 첫 필수 질문)", async () => {
+  it("토막 넘김: 인사 끝 → 짧은 준비(쪽지 · 들려줄 말) → 저장(만남 · 영어 문장 수 · 같은 시도 한 번) → 대화 첫 질문(1~3단계는 장면 여는 질문 — C206)", async () => {
     const { profileId, sessionId } = await greeted();
     const view = await loadTalkLessonView({ sessionId }, deps());
     expect(view?.step).toEqual({ kind: "advance", to: "prep" });
@@ -328,8 +328,12 @@ describe("회화 수업 새 갈래 액션 · 화면 자료(묶음 9)", () => {
     expect(toTalk.segment).toBe("talk");
     expect(toTalk.step).toEqual({ kind: "child" });
     expect(toTalk.current?.kind).toBe("first_question");
-    expect(toTalk.current?.item).toEqual({ kind: "required", no: 1 });
-    expect(toTalk.current?.lines.at(-1)?.en).toBe(card.required[0]?.en);
+    // 1~3단계 카드의 대화 첫 질문은 장면 여는 질문이다 — 카드 항목 · 노리는 단어 없음, 앱이 읽고 AI 를 부르지 않는다(C206 · 02-2 200줄)
+    const opener = card.sceneOpener;
+    if (!opener)
+      throw new Error("시험 시드 1단계 카드에 장면 여는 질문이 없다");
+    expect(toTalk.current?.item).toEqual({ kind: "none", no: 0 });
+    expect(toTalk.current?.lines.at(-1)?.en).toBe(opener.question.en);
   });
 
   it("AC-15t (나) 인사만 하고 그만하기는 확인 쪽지, 확인하면 중단 · 끝맺음 까닭 stop_confirmed · 친한 정도 그대로(AC-16a)", async () => {
@@ -406,22 +410,25 @@ describe("회화 수업 새 갈래 액션 · 화면 자료(묶음 9)", () => {
     expect(await friendshipOf(db, profileId)).toBe(before + 1);
   });
 
-  it("AC-15a · AC-15p 대화 첫 질문 자리의 힌트 단: 화면 자료는 1~3단계 영어 단 글을 비우고, 누른 단만 그 카드 항목 힌트 글로 받는다", async () => {
+  it("AC-15a · AC-15p 대화 첫 질문 자리의 힌트 단: 화면 자료는 1~3단계 영어 단 글을 비우고, 누른 단만 장면 여는 질문 칸의 힌트 글로 받는다", async () => {
     const { sessionId } = await inTalk();
     const view = await loadTalkLessonView({ sessionId }, deps());
     const hints = view?.current?.hints ?? [];
-    const item = card.required[0];
-    if (!item) throw new Error("필수 질문이 없다");
-    expect(hints[0]).toEqual({ kind: "ko", text: item.hintKo });
+    // 1~3단계 대화 첫 질문은 장면 여는 질문이라 힌트 단은 그 칸의 뜻 · 영어 문장이다(C206 · 02-2 200줄 '받침 줄은 필수 질문과 같은 카드 칸',
+    // 1단계 힌트 단 ko · sentence)
+    const opener = card.sceneOpener;
+    if (!opener)
+      throw new Error("시험 시드 1단계 카드에 장면 여는 질문이 없다");
+    expect(hints[0]).toEqual({ kind: "ko", text: opener.hintKo });
     expect(hints.length).toBeGreaterThan(1);
     expect(hints.slice(1).every((h) => h.text === undefined)).toBe(true);
     expect(await revealTalkLessonHint({ sessionId, tier: 0 }, deps())).toEqual({
       ok: true,
-      text: item.hintKo,
+      text: opener.hintKo,
     });
     expect(await revealTalkLessonHint({ sessionId, tier: 1 }, deps())).toEqual({
       ok: true,
-      text: item.hints[0],
+      text: opener.hintEn,
     });
     expect(
       await revealTalkLessonHint({ sessionId, tier: hints.length }, deps()),

@@ -1,0 +1,49 @@
+{
+  "name": "l1-first-new-word",
+  "title": "1단계 · 새 단어를 처음 묻는 차례",
+  "level": 1,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "'AI 몫 넓힘' 설계 4 · AC-15a · CI 고침 2(검토 I-1): 이어 묻기 한 차례 뒤 아직 묻지 않은 새 단어를 처음 꺼내는 차례(next_move introduce)에 글 없는 선택지 둘이 서버를 거쳐 남고, 이어 묻기 차례에는 선택지가 없다.",
+  "steps": [
+    {
+      "say": "I am good.",
+      "design": "Good to hear! Let's start! 〔다행이다! 시작하자!〕",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "Apple.",
+      "design": "An apple! Yum. Do you like apples? 〔사과구나! 맛있겠다. 사과 좋아해?〕",
+      "expect": {
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "design": "Me too! Oh, look. A cookie? Or a pizza? (선택지 둘 — 처음 꺼내는 새 단어) 〔나도! 오, 봐. 쿠키야? 피자야?〕",
+      "note": "처음 묻는 차례: AI 가 introduce 갈래로 선택지 둘을 내면 서버가 남겨야 한다.",
+      "expect": {
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "A cookie.",
+      "design": "A cookie! I like cookies. Do you eat cookies at home? 〔쿠키구나! 나는 쿠키 좋아해. 집에서 쿠키 먹어?〕",
+      "expect": {
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "Yes.",
+      "expect": { "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

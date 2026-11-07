@@ -1,0 +1,40 @@
+{
+  "name": "l1-card-follow-up",
+  "title": "1단계 · 카드 답 다음 이어 묻기",
+  "level": 1,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "C204 (6) · C205 · CI 고침 2(검토 I-1): 카드 필수 질문에 답한 바로 다음 차례는 이어 묻기(follow_up)이고 선택지를 채우지 않는다. 채웠다면 서버가 버린 수를 센다.",
+  "steps": [
+    {
+      "say": "Fine.",
+      "design": "Good to hear! Let's start! 〔다행이다! 시작하자!〕",
+      "expect": { "koMeaning": true, "answerFirst": false }
+    },
+    {
+      "say": "I like milk.",
+      "design": "Milk, yum! Is it cold? 〔우유, 맛있겠다! 시원해?〕",
+      "note": "카드 답 다음 차례: 이어 묻기만, 선택지 없음.",
+      "expect": {
+        "followUp": true,
+        "answerFirst": false,
+        "koMeaning": true,
+        "sceneAssert": false
+      }
+    },
+    {
+      "say": "Yes.",
+      "design": "Cold milk! Oh, a banana? Or a cake? (선택지 둘 — 처음 꺼내는 새 단어) 〔시원한 우유! 오, 바나나야? 케이크야?〕",
+      "expect": {
+        "contextlessCard": false,
+        "answerFirst": false,
+        "koMeaning": true
+      }
+    },
+    {
+      "say": "A banana.",
+      "expect": { "followUp": true, "answerFirst": false, "koMeaning": true }
+    }
+  ]
+}

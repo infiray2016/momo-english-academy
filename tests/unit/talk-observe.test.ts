@@ -260,10 +260,12 @@ describe("대본", () => {
     "l3-second-session",
   ];
 
-  it("대본 열넷: 3단계 열셋(지난 다섯 + 'AI 몫 넓힘' 설계 7 의 새 일곱 + 판정 r1 8.1 의 요약에 닿는 둘째 세션)과 4단계 하나", () => {
+  it("대본 열여섯: 1단계 둘(CI 고침 2 — 처음 묻는 선택지 · 카드 답 다음 이어 묻기), 3단계 열셋(지난 다섯 + 'AI 몫 넓힘' 설계 7 의 새 일곱 + 판정 r1 8.1 의 요약에 닿는 둘째 세션)과 4단계 하나", () => {
     const all = scripts();
     expect(all.map((s) => s.name).sort()).toEqual(
       [
+        "l1-card-follow-up",
+        "l1-first-new-word",
         "l3-child-topic",
         "l3-nospeech",
         "l3-preview-1",
@@ -274,6 +276,7 @@ describe("대본", () => {
         ...NEW_SEVEN,
       ].sort(),
     );
+    expect(all.filter((s) => s.level === 1)).toHaveLength(2);
     expect(all.filter((s) => s.level === 3)).toHaveLength(13);
     expect(all.filter((s) => s.level === 4)).toHaveLength(1);
   });

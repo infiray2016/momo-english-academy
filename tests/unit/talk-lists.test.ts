@@ -1,6 +1,8 @@
 // 회화 1~3단계 시드 목록 넷 검사(6.4 '회화 시드 목록' 행 06:187, C207 · C209 · C211 — 'AI 몫 넓힘' plan 묶음 3 · AC-15zf (나)).
 // 신호 말 꼴 수 · 물음표 · 길이 · 구간 첫 단계 어휘 범위(허용 낱말 포함), 상황 줄 수 · 범위 · 상황 금지 구, 허용 낱말이 걸린 낱말인지,
 // 지어낸 경험 꼴의 1인칭 · 줄이 꼴에 걸리지 않는지를 보고, seed:validate 의 규격 파일 정합(buildReferenceIndex)에 들었는지 본다.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   checkTalkLists,
@@ -191,5 +193,23 @@ describe("회화 시드 목록 넷 검사(06:187, AC-15zf (나))", () => {
     expect(index.talkMadeUpPhrases).toEqual(ref.talkMadeUpPhrases.phrases);
     const { talkMadeUpPhrases: _drop, ...rest } = ref;
     expect(buildReferenceIndex(rest).index.talkMadeUpPhrases).toEqual([]);
+  });
+});
+
+describe("실제 시드의 인사 끝 상황 줄 — 짧은 준비가 없는 수업에서도 쓰인다('AI 몫 넓힘' CI 고침 1 우려)", () => {
+  it("인사 끝 줄은 다음 토막을 가정하지 않는다 — 새 단어를 배우자는 꼴도, 이야기하자는 꼴도 없다(예문만 다음 토막으로 가른다, situation.ts situationExamplesOf · greetingEndPrep · greetingEndTalk)", () => {
+    const seed = JSON.parse(
+      readFileSync(
+        join(process.cwd(), "seed", SEED_FILES.talkSituationLines),
+        "utf8",
+      ),
+    ) as { lines: { greeting_end: { en: string }[] } };
+    const lines = seed.lines.greeting_end.map((l) => l.en.toLowerCase());
+    // 줄 수는 시드 검사 하한과 같으므로(check-talk-lists) 고칠 때는 줄을 빼지 말고 더한다(검토 M-2)
+    expect(lines.length).toBeGreaterThanOrEqual(TALK_SITUATION_LINES_MIN);
+    // 넘김 낱말: 짧은 준비 쪽(learn · new · word) · 대화 쪽(talk · chat)
+    expect(
+      lines.filter((en) => /\b(learn|new|words?|talk(ing)?|chat)\b/.test(en)),
+    ).toEqual([]);
   });
 });

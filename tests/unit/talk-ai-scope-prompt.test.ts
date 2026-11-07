@@ -323,6 +323,20 @@ describe("소리 줄 자리 · 신호 말(AC-4 (나) · C205 · C207)", () => {
     );
   });
 
+  it("1단계 선택지 줄은 처음 꺼내는 새 단어(next_move introduce)와 아직 만나지 않은 단어를 노리는 카드 필수 질문(next_move required)에서만 채우고 받침 둘째 밖의 이어 묻기에는 채우지 않으며, 2~3단계 · 4단계 줄은 그대로다(검토 I-1 · N-1 · N-2 · C205)", () => {
+    const introduce =
+      "Fill choices only at Support stage 2, or when your next question brings up a word from 'Chances, new words to introduce' for the first time (next_move introduce), or when you ask a card required question whose target word the child has not met yet (next_move required). Outside Support stage 2, never fill choices for a follow-up question (next_move follow_up or follow_child).";
+    expect(system1()).toContain(introduce);
+    expect(system1()).not.toContain("when you first ask about a new word");
+    expect(system3()).not.toContain(introduce);
+    expect(system3()).toContain(
+      "Fill choices only at Support stage 2. Choices are two sentences of the same shape.",
+    );
+    expect(system4()).not.toContain(
+      "(next_move required). Outside Support stage 2",
+    );
+  });
+
   it("1~3단계 선생님은 신호 말을 쓰지 않는다(앱이 소리 줄 앞에 붙임)", () => {
     for (const text of [system3(), system1()]) {
       expect(text).toContain(

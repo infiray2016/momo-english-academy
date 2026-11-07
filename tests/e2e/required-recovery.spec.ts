@@ -860,7 +860,7 @@ test.describe("필수 경로 나 — 복구 예외(AC-23g · 설계 4.1)", () =>
       "seed.complete_through_level",
       LEVEL_MAX,
       async () => {
-        const { page, sessionId } = await openTalkAt(context, 4, () => [
+        const { page, sessionId, card } = await openTalkAt(context, 4, () => [
           saidRun("I'm fine, thank you."),
         ]);
         const watch = watchHomeRequests(page);
@@ -902,19 +902,31 @@ test.describe("필수 경로 나 — 복구 예외(AC-23g · 설계 4.1)", () =>
         await pastStart(page, { micNotice: false });
         if (countBefore !== undefined)
           await expect(countLine).toHaveText(countBefore);
+        // 끊긴 턴은 인사 끝 턴이라 반응 뒤 화면 자료를 다시 읽어 대화 첫 질문 행(앱, AI 없음)이 이어 선다(talk-frame lessonAfterEndOf
+        // 'reload' — 읽어 주기 끝을 기다리지 않음, C166 R1). 반응은 0.4초 안팎에 기록 칸으로 올라가므로 말풍선 · 기록 칸 어느 쪽이든 보고,
+        // 대화 첫 질문이 말풍선에 선 뒤에 행을 읽는다(그 앞에 읽으면 둘째 행이 시점에 따라 있다 없다 한다 — CI 42347764557 트레이스로 확인)
+        await expect(
+          page
+            .locator("[data-tori-bubble], [data-talk-log-teacher]")
+            .filter({ hasText: "Great to hear!" })
+            .first(),
+        ).toBeVisible({ timeout: WAIT_MS });
+        const firstQuestion = card.required[0]?.en;
+        if (!firstQuestion) throw new Error("견본 꼴 — 첫 필수 질문");
         await expect(page.locator("[data-tori-bubble]")).toContainText(
-          "Great to hear!",
+          firstQuestion,
           { timeout: WAIT_MS },
         );
         const after = await turnRows(sessionId);
-        // 같은 대화 기록(앞 행 그대로) · 같은 시도 id 의 아이 행 하나 · 다음 선생님 말 하나
+        // 같은 대화 기록(앞 행 그대로) · 같은 시도 id 의 아이 행 하나 · 다음 선생님 말 하나(끊긴 턴의 반응) + 대화 첫 질문 행
         expect(after.slice(0, before.length)).toEqual(before);
         expect(
           after.filter((r) => r.clientAttemptId === orphan?.clientAttemptId),
         ).toHaveLength(1);
-        expect(after.slice(before.length).map((r) => r.speaker)).toEqual([
-          "tori",
-        ]);
+        const added = after.slice(before.length);
+        expect(added.map((r) => r.speaker)).toEqual(["tori", "tori"]);
+        expect(added[0]?.text).toContain("Great to hear!");
+        expect(added[1]?.text).toContain(firstQuestion);
         expectNoHome(watch);
       },
     );
