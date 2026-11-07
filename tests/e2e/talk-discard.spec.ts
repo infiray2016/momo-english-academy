@@ -112,10 +112,13 @@ const GREETING_REPLY = "Great! Let's talk.";
 const PREP_REPLY = "Great! Let's learn some new words!";
 /**
  * 대화 반응(질문까지 3단계 어휘 범위 안 · 아이 말을 되묻지 않음 — 1~3단계 질문 검사(13절 C203 (3))에 걸리면 서버가 다시 쓰기 호출을 한 번 더
- * 부르고 카드 질문으로 바꾼다. 옛 첫 줄 'What do you do on Sunday?' 는 Sunday 가 4단계 낱말이라 걸렸다 — CI 42361488670).
+ * 부르고 카드 질문으로 바꾼다. 옛 첫 줄 'What do you do on Sunday?' 는 Sunday 가 4단계 낱말이라 걸렸다 — CI 42361488670). 범위는 e2e DB 가
+ * 적재한 시험용 시드 나무(devSeedTree — 기능어 · like · 가상 낱말)의 3단계 이하 어휘 · 단원 단어 · 아이가 말한 낱말이다(seed/vocab.json 이 아님).
+ * 그다음 'What can you see?' 는 see 가 그 나무 어휘 밖이라 걸렸다(CI 42374458850). 여섯 번 시험의 아이 말로 검사를 지남은
+ * tests/unit/talk-discard-replies.test.ts 가 고정한다(이 배열 · 그 시험의 said 를 이 파일에서 읽는다).
  */
 const REPLIES = [
-  "Wow! What can you see?",
+  "Wow! Who do you like?",
   "Cool! Do you like games?",
   "Nice! Do you like it?",
 ] as const;
