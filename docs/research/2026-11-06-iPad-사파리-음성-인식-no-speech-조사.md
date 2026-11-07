@@ -65,3 +65,50 @@
 
 - 측정 칸 제안: 이 탭에서 몇 번째 인식인지(#1 의 '탭당 한 번' 가설), 앞 인식 end 뒤 경과 ms, audiostart ms, speechstart 여부.
 - 수정 대기: 증상 버그 전부 NEW. 우리 재현 로그를 326069 에 덧붙이는 것은 외부 게시라 하지 않았다.
+
+## 추가 조사(컨트롤러 직접, 2026-11-06 21:4x) — 버그 원문과 WebKit 소스
+
+요청자 지적("iOS 탓으로 쉽게 넘어가지 말라 · 될 때도 있다 · 기준을 모르겠다")에 따라 보고 원문과 소스를 직접 읽었다.
+
+### WebKit 326069(2026-10-02, iPhone 16 · iOS 27.0~27.0.1) 원문 요지
+- 제목: "REGRESSION (iOS 27): SpeechRecognition only works once per tab – subsequent sessions receive silent audio".
+- 쪽이 소리를 전혀 안 내도 난다. 새 인스턴스도 소용없다. **새로 고침은 소용없고 탭 안의 첫 세션만 된다. 탭을 닫고 다시 열면 첫 세션이 한 번 더 된다.** iOS 26 에서는 정상.
+
+### WebKit 321436 댓글 3~6(2026-10-20 ~ 11-04) 원문 요지
+- iPhone 13 mini · iOS 27.2, 홈 화면 앱, 내장 마이크, 소리 재생 전혀 없음, 세션마다 새 인스턴스를 앞 세션 end 뒤에만 시작: **첫 받아쓰기는 늘 되고, 그 뒤 대부분 못 듣지만 가끔 하나가 된다(못 듣기 · 되기가 10초 간격으로 번갈아 나타남). 앱을 완전히 죽였다 켜야 돌아온다.** 되는 세션은 start 사건이 2114ms 뒤, 못 듣는 세션은 37ms 뒤.
+- 소용없던 우회: stop() 대신 abort(), getUserMedia 를 열었다 바로 닫고 300ms 뒤 start, audioSession.type = "play-and-record"(오히려 전부 못 듣게 됨). abort() 한 정상 세션도 'No speech detected' 를 내므로 그 문구만으로는 못 듣는 세션을 가를 수 없다.
+- 댓글 2(iPhone 17 · iOS 27.0, 이어폰): 읽어 주기 전에 abort 하고 끝난 뒤 새 인스턴스로 시작하면 21회 이상 정상(이 사례는 우리와 다르게 '둘째부터'가 아니라 'TTS 중 살려 두면 죽음'이 문제였음). Web Speech 와 getUserMedia 는 공존 불가(getUserMedia 트랙이 1~2초 안에 mute). **WebAudio 재생(120ms 비프)은 인식을 깨지 않음.**
+- 댓글 5~6(2026-11-04): iOS 27.3 Beta 1 에서도 재현. 두 보고 모두 상태 NEW. 비슷한 오디오 세션 문제를 고친 317741 · 317747(RESOLVED FIXED — "음성 인식 마이크 소스가 캡처 중 오디오 세션을 활성으로 유지해야" · "WebProcess AudioSession 이 마이크 캡처 중 활성으로 안 남을 수 있음")이 27.2 에 들었는지는 보고자도 모름.
+
+### WebKit 소스(main)에서 확인한 것
+- `SpeechRecognitionCaptureSourceImpl.cpp`: `sourceMutedChanged()` 가 audio-capture 오류를 낸다(우리 기록 2 의 "Source is muted"). `mute()` 는 소스를 muted 로 둔다. 소스가 시작되면 `sourceStarted()` 가 AudioStart 를 낸다(소리가 흐르는지와 무관).
+- `SpeechRecognizer.cpp`: stop() · abort() 모두 `stopCapture()` 로 소스를 해제한다(참조 · GC 와 무관).
+- `CoreAudioCaptureSource.cpp`(cocoa): 공유 캡처 유닛은 AudioSession 의 interruption 알림으로 `suspend()` · `resume()` 되고, `interrupted()` 는 유닛이 suspended 이면 참이다. 즉 **중단(interruption)이 시작됐는데 끝 알림이 안 오면 유닛은 suspended 로 남고, 그 뒤 새 소스는 audiostart 는 내지만 소리가 안 흐른다** — 우리 기록의 '30~40ms audiostart · 소리 없음' 꼴과 맞는다. 유닛이 완전히 새로 켜질 때(첫 세션 1.1~2.1초 · 가끔 0.28~0.39초)만 소리가 흐른다.
+
+### 지금 자료로 말할 수 있는 규칙(잠정)
+| 상황 | 결과 | 근거 |
+|---|---|---|
+| 기기 재시동 · 탭 닫고 새로 열기 뒤 첫 세션 | 됨 | 기록 2 첫 시도, 326069 |
+| 같은 탭의 둘째 세션부터(새로 고침 포함) | 대부분 못 들음(audiostart 25~160ms) | 기록 1 · 2, 326069, 321436 댓글 3 |
+| 가끔 한 번 됨(0.28~0.39초 띠) | 앱 세션에서 11-05 3/3, 11-06 4/11 | 321436 댓글 3 '번갈아', 우리 DB — 조건은 아직 모름 |
+| 받아쓰기(키보드) | 늘 됨 | 요청자 확인 — 기기 마이크 · Apple 음성 서비스는 정상 |
+
+### 이 조사로 생긴 시험 후보(점검 쪽 fix 2 에 넣을 것)
+- K 무음 WebAudio(AudioContext + 0 음량 발진기)를 첫 누름에 켜 두고 듣기: 317747 의 'WebProcess AudioSession 이 활성으로 안 남음'을 쪽 쪽에서 메우는 시도(댓글 2 가 WebAudio 는 인식을 깨지 않는다고 확인).
+- L audioSession.type 을 'transient' · 'transient-solo' · 'ambient' · 'playback' 으로 두고 듣기('play-and-record' 는 실패 확인됨, 'auto' 가 지금).
+- M window.open 으로 연 새 탭에서 첫 듣기(탭을 닫고 새로 열면 한 번 된다는 326069 — 제품에 쓸 수는 없어도 '탭 단위 상태' 확인용).
+- N 앱 첫 차례 그대로(무음 읽기 unlock → 선생님 말 TTS → 1.5초 쉼 → 누름) — 앱에서만 가끔 되는 조건 재현.
+- 되는 세션의 공통 조건을 찾기 위해 모든 전략에 '앞 세션 끝난 뒤 경과 · 앞 세션 종료 방식 · 그 사이 TTS 유무'를 기록(이미 있음).
+
+### 제품 쪽 길(우회가 하나도 안 되면)
+1. Apple 수정 대기(27.3 beta 1 까지 미수정) + 그동안 '마이크 안 잡힘' 감지로 아이 실패로 안 세고 안내만(이미 배포).
+2. iPad Chrome 에서 같은지 확인(같은 WebKit 이라 같을 가능성 큼, 1분 확인).
+3. 서버형 음성 인식(요청자 불승인 상태, 녹음 안 함 규칙과 충돌 — 다시 물을 때는 이 조사를 근거로).
+4. 네이티브 앱 감싸기(큰 일, 3차 PWA 와 함께).
+
+### 정정(분석가 ana-mic-probe-1, 11-06 22:0x — `task-mic-probe-analysis-report.md` 10.13~10.14)
+- G8(Important): 위 'WebKit 소스에서 확인한 것' 셋째 항의 "중단이 시작됐는데 끝 알림이 안 오면 유닛은 suspended 로 남고 새 소스도 소리가 안 흐른다"는 main 소스와 맞지 않는다. `CoreAudioCaptureSource` 생성자의 prepareForNewCapture 가 중단 표시를 지우고 시작 때 resume 한다. 대신 `BaseAudioCaptureUnit::startUnit` 에서 그 순간 오디오 세션 범주가 PlayAndRecord 가 아니면 lowPriorityError2 → suspend → 소스 음소거로 가는 길이 있다. 이 음소거는 UI 로 올라가지 않아 JS 에는 오류 없이 소리만 없고, 새 듣기마다 되풀이될 수 있다(추정, 317747 영역). 또 audiostart 까지의 시간(as)은 유닛 시동 시간이 아니라 UI 프로세스의 권한 확인 · Speech 프레임워크 준비 시간이다.
+- G9(Minor): '11-05 3/3 · 11-06 4/11' 은 쪽지 듣기를 넣으면 4/10 · 5/18(첫 듣기 포함)이다.
+- G10(Minor): 'Apple 음성 서비스 정상'은 '기기 마이크와 OS 받아쓰기 정상'으로 줄여 읽는다.
+- 규칙 고침: '쪽 첫 듣기'는 '탭 · 웹 프로세스의 첫 세션(새로 고침으로는 회복 안 됨)'이다(326069 · 기록 1 #1). 새벽 성공 넷의 공통 조건은 '앞 듣기가 실패했거나 오래 쉼'뿐 — 성공 바로 뒤 36초 안의 듣기 0/5, 40초 넘게 쉰 듣기 5/5.
+- 다음 실험 순서(분석 10.13.4): 쉼 45 · 90초 → 새 탭(noopener · opener) → 무음 WebAudio(K) → 한 세션 + 읽기(S · S2) → 앱 흐름(I, 10-22 꼴 포함) → audioSession 네 값 → 한국어. abort · iframe · 권한 표시 · 세기 재기는 뺀다. C210 후보: W5(무음 WebAudio 유지)가 가장 싸며 K 결과로 정함(R11); L 이 풀면 C109 를 먼저 고침(R10).

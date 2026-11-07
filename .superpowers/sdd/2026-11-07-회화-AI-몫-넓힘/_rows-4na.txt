@@ -1,0 +1,2 @@
+| 3 | `seed/lessons/talk/3/1.json` | 수정 | 배정 1 · 다지기 6 두 장 개정 5(정한 것 4) |
+| 3 | `tests/unit/seed-validator-talk.test.ts` · `tests/unit/talk-lists.test.ts` | 수정 · 신규 | AC-5 (가) · AC-6 (나) |
