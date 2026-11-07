@@ -18,6 +18,8 @@
 //   화면이 결과를 보고 보낸 again 이 앞서 도착하면 짧은 말이 나오지 않는다(묶음 1 fix 1 재검토 N-1 — 2-나 시험이 순서를 단언한다).
 // - again 은 화면이 다시 말할 차례(못 들었어요 안내 · 다시 말하기 누름)를 보일 때 보낸다. 회복은 deaf 로 끝난 진짜 뒤 화면이 보내는
 //   press(auto)다. 넘김 · 건너뜀(speech.deaf_skip_after 닿음 · 말소리 없음 넘김 · 따라 말하기 건너뜀)에는 둘 다 보내지 않는다(I-1).
+// - 틀이 누름 앞에 읽기를 끊으면(화면 cancel) cut(started: false)를 press 보다 먼저 보낸다. 시작 알림 전 읽기를 끊은 cut 은 열린 죽은
+//   버림에 남아, 그 사이 새 읽기 · 들린 소리 · 짧은 말이 없으면 뒤이은 press 도 F9 짧은 말을 부른다(묶음 1 fix 4 — e2e AC-24c · AC-24h).
 // - 누름 뒤에 온 읽기는 흘리고 소리 끝 알림을 다시 기다린다. 틀은 그 읽기 뒤에도 sound-end 를 보낸다(안 오면 안전 상한까지 연다, M-10).
 // - 버림 안 첫 '들려주지 못함'은 다음 읽기에 맡긴다. 기계가 부른 소리(need-sound — again · 걸린 누름 · 회복)가 들려주지 못함이면
 //   화면은 그 소리를 다시 보내지 않으므로 다음 읽기는 기계가 부른다: 누름이 없어도 cancel-speaking 뒤 need-sound 를 한 번 더 낸다(그
@@ -247,6 +249,8 @@ export type DiscardRecord = Readonly<{
   n: number;
   /** 소리 끝 알림을 받았나(그 뒤 새 읽기 요청이 오면 거둔다). */
   notified: boolean;
+  /** 틀이 시작 알림 전 읽기를 끊었나(cut) — 그 뒤 누름도 F9 짧은 말을 부른다. 짧은 말 · 새 읽기 · 들린 소리에서 지운다(묶음 1 fix 4). */
+  cutUnstarted: boolean;
   /** 이 버림에서 need-sound 를 냈나. */
   asked: boolean;
   /** 마지막 need-sound 를 낸 때의 np(그 뒤 np 가 늘면 부른 소리가 들려주지 못함으로 끝난 것이다). */
@@ -427,7 +431,14 @@ function onInput(
       onSpeakEnd(d, input.id, input.heard, now, fx);
       return;
     case "cut":
-      cutReadings(d, now, input.started);
+      if (
+        cutReadings(d, now, input.started) &&
+        discardOpen(d) &&
+        d.phase === "dead" &&
+        d.discard
+      ) {
+        d.discard.cutUnstarted = true;
+      }
       return;
     case "sound-end":
       if (d.discard && (d.phase === "probe" || d.phase === "dead")) {
@@ -535,7 +546,11 @@ function release(
     started: false,
     discard: inDiscard ? disc.id : undefined,
   });
-  if (inDiscard) disc.called = true;
+  if (inDiscard) {
+    disc.called = true;
+    // 새 읽기가 시작 전에 눌리면 읽는 중 목록이 F9 를 가른다.
+    disc.cutUnstarted = false;
+  }
   if (
     (d.phase === "rest" && effectiveBranch(d, now) !== "rest") ||
     (d.phase === "dead" && !inDiscard)
@@ -604,6 +619,7 @@ function soundEnded(
   const disc = d.discard;
   if (!disc || reading.discard !== disc.id) return;
   disc.heard = true;
+  disc.cutUnstarted = false;
   disc.soundStartAt ??= now;
   disc.soundEndAt = now;
   disc.sk = kind;
@@ -645,8 +661,13 @@ function onPress(
     d.discard.notified = true;
   }
   d.press = { at: now, auto };
-  if (unstartedCut && discardOpen(d) && d.phase === "dead" && d.discard) {
-    // F9: 시작 알림 전에 끊긴 읽기 — 짧은 말 한 줄을 버림 안에서 끝까지 읽은 뒤 진짜.
+  if (
+    (unstartedCut || d.discard?.cutUnstarted === true) &&
+    discardOpen(d) &&
+    d.phase === "dead" &&
+    d.discard
+  ) {
+    // F9: 시작 알림 전에 끊긴 읽기 — 짧은 말 한 줄을 버림 안에서 끝까지 읽은 뒤 진짜. 틀이 누름 앞에 끊은(cut) 읽기도 같다(fix 4).
     askSound(d, d.discard, fx);
   }
 }
@@ -661,6 +682,7 @@ function askSound(
   disc.asked = true;
   disc.askNp = disc.np;
   disc.notified = false;
+  disc.cutUnstarted = false;
   d.againPending = false;
 }
 
@@ -738,6 +760,7 @@ function startProbe(
     np: 0,
     n: 0,
     notified: false,
+    cutUnstarted: false,
     asked: false,
     askNp: 0,
     noReask: false,

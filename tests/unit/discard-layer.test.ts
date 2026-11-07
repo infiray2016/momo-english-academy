@@ -550,6 +550,43 @@ describe("버림 층 누름 — 시작 알림 추적(F9) · 소리 공급", () =
     });
   });
 
+  it("화면 cancel 뒤 listen(시작 알림 전, 앞 줄을 들려준 버림)도 짧은 말을 읽는다(F9 둘째 갈래)", async () => {
+    const { port, layer } = makeLayer();
+    const source = vi.fn(() => ({
+      text: "Okay, say it again.",
+      sound: "short" as const,
+    }));
+    layer.setSoundSource(source);
+    const d = await firstTurnThenDeadDiscard(layer, port);
+    // 앞 줄을 버림 안에서 끝까지 들려준다
+    void layer.port.speak("Great!");
+    port.lastUtterance().start();
+    await advance(800);
+    port.lastUtterance().end();
+    await flush();
+    void layer.port.speak("What do you see?");
+    // 틀은 누름 때 listen 앞에 읽기 줄을 비운다(시작 알림 전)
+    layer.port.cancelSpeaking();
+    layer.port.listen(RULE);
+    expect(source).toHaveBeenCalledWith("again");
+    expect(port.calls.at(-1)).toBe("speak:Okay, say it again.");
+    expect(d.calls).toEqual([]);
+    port.lastUtterance().start();
+    await advance(1200);
+    port.lastUtterance().end();
+    await flush();
+    await advance(discard.afterSoundMs);
+    expect(d.calls).toEqual(["stop"]);
+    d.end();
+    await advance(discard.gapMs);
+    expect(port.listens).toHaveLength(2);
+    expect(notes(port.trace).at(-1)).toMatchObject({
+      g: "discard",
+      sk: "short",
+      why: "sound",
+    });
+  });
+
   it.each([
     ["소리 공급이 없으면", undefined],
     ["공급이 줄을 주지 않으면", () => undefined],

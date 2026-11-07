@@ -793,6 +793,48 @@ describe("버리는 듣기 차례 기계 — 읽기 보류 · 읽는 중 누름(
     f.runUntil(shortEnd + T.afterSoundMs);
     expect(f.find("discard-stop")[0].at).toBe(shortEnd + T.afterSoundMs);
   });
+
+  it("버림 F9 시작 알림 전 읽기를 틀이 끊은(cut) 뒤 온 누름도, 앞 줄을 이미 들려준 버림에서 짧은 말을 부르고 그 끝 알림 뒤에야 닫는다(AC-8)", () => {
+    const { f, id, s } = afterReal("result");
+    toDead(f, id, s);
+    const a = s + T.liveAsMs;
+    read(f, 1, a + 10, a + 1000);
+    f.send({ type: "speak-request", id: 2 }, a + 1100);
+    // 틀은 누름 때 listen 앞에 읽기 줄을 비운다(queue.cancel → 층 cut).
+    f.send({ type: "cut", started: false }, a + 1140);
+    const p = a + 1150;
+    const press = f.send({ type: "press" }, p);
+    expect(types(press)).toEqual(["need-sound", "view"]);
+    f.runUntil(p + T.minMs + T.afterSoundMs);
+    expect(f.find("discard-stop")).toHaveLength(0);
+    read(
+      f,
+      3,
+      p + T.minMs + T.afterSoundMs + 1,
+      p + T.minMs + T.afterSoundMs + 2000,
+    );
+    const shortEnd = p + T.minMs + T.afterSoundMs + 2000;
+    f.send({ type: "sound-end" }, shortEnd);
+    f.runUntil(shortEnd + T.afterSoundMs);
+    expect(f.find("discard-stop")[0].at).toBe(shortEnd + T.afterSoundMs);
+  });
+
+  it("버림 F9 시작 전 끊김(cut) 뒤 다른 줄이 들린 다음의 누름은 짧은 말 없이 F5 로 닫는다", () => {
+    const { f, id, s } = afterReal("result");
+    toDead(f, id, s);
+    const a = s + T.liveAsMs;
+    read(f, 1, a + 10, a + 1000);
+    f.send({ type: "speak-request", id: 2 }, a + 1100);
+    f.send({ type: "cut", started: false }, a + 1140);
+    read(f, 3, a + 1200, a + 2200);
+    const p = a + 2300;
+    const press = f.send({ type: "press" }, p);
+    expect(types(press)).not.toContain("need-sound");
+    const stopAt = Math.max(a + 2200 + T.afterSoundMs, s + T.minMs, p);
+    f.runUntil(stopAt + T.afterSoundMs);
+    expect(f.find("need-sound")).toHaveLength(0);
+    expect(f.find("discard-stop")).toHaveLength(1);
+  });
 });
 
 describe("버리는 듣기 차례 기계 — 기다리는 누름 · 회복(F10)", () => {

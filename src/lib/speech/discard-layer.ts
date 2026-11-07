@@ -8,6 +8,8 @@
 // - unlock 은 첫 누름의 press 보다 먼저 보낸다(listen 이 잠금 풀기를 먼저 부른다). 그 전에는 기계가 start 효과를 내지 않는다(I-4).
 // - synth 는 매 입력 앞에 speechSynthesis.speaking 을 읽어 바뀐 때 보낸다(tick · press · speak-end · cut 앞 모두, 검토 1 6절 3).
 // - 가로챈 읽기는 speak-release 뒤에만 읽고, speak-drop 이면 읽지 않고 끊김(cancelled)으로 돌려준다.
+// - 화면 cancel 은 읽는 중 읽기를 걷을 때 cut(started: false)을 그 자리에서 보낸다. 틀이 listen 앞에 cancel 을 부르므로 press 보다 먼저 오고, 시작 알림 전
+//   읽기를 끊은 누름도 기계가 F9 짧은 말을 부른다(묶음 1 fix 4).
 // - need-sound 에는 늘 읽기 하나(short · word)와 그 끝의 sound-end 로 답한다. 소리 공급이 없거나 비면 틀이 넣은 대비 줄을 읽는다(검토 1 6절 4).
 // - 버림 사건은 openDiscard 를 부를 때 닫아 둔 버림 번호를 싣는다(음성 접점이 따로 세는 번호와 같다 — 이 접점에서 버림을 여는 것은 층뿐).
 // - real-end 는 진짜가 끝난 그 걸음에, 화면에 결과를 넘기기(손잡이 outcome 풀기) 전에 보낸다(진짜 동안 온 again 은 버려짐, 재검토 N-1).
