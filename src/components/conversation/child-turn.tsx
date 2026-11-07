@@ -20,6 +20,8 @@
 // 누름 · 회복으로 열린 진짜면 '말해 보세요'를 보였다가 소리가 들어오면 지운다. 마이크 안 잡힘은 '잠깐만요, 마이크를 다시 켤게요'와 누름 없는
 // 듣기(listenAuto)로 잇고, 누름 없이 다시 말할 차례만 보이는 때(못 들었어요 안내)는 again 을 알린다. 넘김 · 건너뜀에는 알리지 않는다.
 // discard 가 없으면(끔 · 켜지 않은 기기) 지금 그대로다.
+// 화면 · 문구 판정(2026-11-07): 켠 기기의 말하기 단추는 세 상태 글을 겹쳐 너비가 그대로(I-1, SpeakButton steady)이고, 안내 줄은 단추 묶음 바로
+// 아래(단추 쪽 정렬, M-3)이며, 짧은 말 말풍선이나 안내 줄이 나타나면 아이 차례를 움직임 없이 화면 안으로 옮긴다(I-2 — 방향이 바뀌어도).
 import { Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
@@ -160,6 +162,22 @@ export function discardLineOf(
   return undefined;
 }
 
+/**
+ * 아이 차례를 화면 안으로 옮길까(순수, 화면 판정 I-2): 버리는 듣기를 켠 기기에서 짧은 말 말풍선이나 안내 줄이 보일 때다(말풍선이 아이 차례 칸을
+ * 밀어 단추가 첫 화면 아래로 내려가지 않게). 끈 기기는 지금 그대로 옮기지 않는다.
+ */
+export function keepTurnInViewOf({
+  on,
+  discardLine,
+  shortLine,
+}: {
+  on: boolean;
+  discardLine: string | undefined;
+  shortLine: object | undefined;
+}): boolean {
+  return on && (discardLine !== undefined || shortLine !== undefined);
+}
+
 /** 아이 차례 듣기 하나의 끝(버리는 듣기가 다음에 할 일을 가르는 몫). */
 export type TurnListenEnd =
   | "heard"
@@ -256,6 +274,8 @@ export type ChildTurnProps = {
   flashDontKnow?: boolean;
   /** 버리는 듣기 층(켠 기기에서만 틀이 넘긴다 — iPad 버리는 듣기 spec 설계 3). 없으면 지금 그대로다. */
   discard?: TurnDiscard | undefined;
+  /** 이 아이 차례 위에 보이는 짧은 말 말풍선(틀의 값 — 새 줄마다 새 값, 화면 판정 I-2). 없으면 없음. */
+  shortLine?: object | undefined;
 };
 
 /**
@@ -444,6 +464,9 @@ export function ChildTurn(props: ChildTurnProps) {
     bigRetry: boolean;
   } | null>(null);
   const handle = useRef<ListenHandle | undefined>(undefined);
+  /** 아이 차례 칸 · 동작 줄(화면 안으로 옮김 — I-2). */
+  const turnRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   const nospeech = useRef(0);
   /** 이 차례에서 마이크 안 잡힘이 이어진 수(deafStreakOf). */
   const deafStreak = useRef(0);
@@ -671,8 +694,35 @@ export function ChildTurn(props: ChildTurnProps) {
     listening,
     soundIn,
   });
+  const keepInView = keepTurnInViewOf({
+    on: props.discard !== undefined,
+    discardLine,
+    shortLine: props.shortLine,
+  });
+  // 짧은 말 말풍선 · 안내 줄이 나타날 때(새 줄마다)와 방향이 바뀔 때 동작 줄 · 맨 아래 알림 줄을 움직임 없이 화면 안으로(I-2). 이미 보이면 그대로다.
+  // 줄이 사라질 때(소리가 들어와 '말해 보세요'가 지워질 때 등)는 옮기지 않는다 — 아이가 올려 둔 쪽을 되돌리지 않게(코드 확인 m-1)
+  const shownRef = useRef<{ line: unknown; short: unknown }>({
+    line: undefined,
+    short: undefined,
+  });
+  useEffect(() => {
+    const prev = shownRef.current;
+    shownRef.current = { line: discardLine, short: props.shortLine };
+    if (!keepInView) return;
+    const keep = () => {
+      actionsRef.current?.scrollIntoView({ block: "nearest" });
+      turnRef.current?.lastElementChild?.scrollIntoView({ block: "nearest" });
+    };
+    const appeared =
+      (discardLine !== undefined && discardLine !== prev.line) ||
+      (props.shortLine !== undefined && props.shortLine !== prev.short);
+    if (appeared) keep();
+    const turned = window.matchMedia("(orientation: portrait)");
+    turned.addEventListener("change", keep);
+    return () => turned.removeEventListener("change", keep);
+  }, [keepInView, discardLine, props.shortLine]);
   return (
-    <div data-child-turn="" className="flex flex-col gap-3">
+    <div ref={turnRef} data-child-turn="" className="flex flex-col gap-3">
       {attemptSaid && !confirm ? (
         <div data-child-attempt="">
           <ChildBubble said={attemptSaid} />
@@ -775,6 +825,7 @@ export function ChildTurn(props: ChildTurnProps) {
           </ol>
         ) : null}
         <div
+          ref={actionsRef}
           data-child-actions=""
           className="flex shrink-0 flex-wrap items-center justify-center gap-4 lg:ml-auto"
         >
@@ -782,8 +833,9 @@ export function ChildTurn(props: ChildTurnProps) {
             label={CHILD_TURN_TEXT.speak}
             listening={listening}
             soundIn={soundIn}
-            // 버리는 듣기: 누름이 진짜를 기다리는 동안 '준비 중이에요'와 점 셋(C215)
+            // 버리는 듣기: 누름이 진짜를 기다리는 동안 '준비 중이에요'와 점 셋(C215), 세 상태 글을 겹쳐 너비 그대로(I-1)
             preparing={props.discard?.view.waiting === true}
+            steady={props.discard !== undefined}
             capAt={() => handle.current?.capAt}
             gapClassName="bg-postit-talk"
             disabled={!speech || confirm !== null || moving}
@@ -832,14 +884,18 @@ export function ChildTurn(props: ChildTurnProps) {
               {CHILD_TURN_TEXT.dontKnow}
             </SmallButton>
           </div>
+          {/* 버리는 듣기 안내 줄: 단추 묶음 바로 아래 — 세로는 가운데, 가로는 단추 쪽(M-3). 그동안 아래 알림 줄은 비운다(한 줄) */}
+          {discardLine && !moving ? (
+            <StatusLine className="w-full justify-center lg:justify-end">
+              <span data-discard-line="">{discardLine}</span>
+            </StatusLine>
+          ) : null}
         </div>
       </div>
       <StatusLine tone={message && !moving && !discardLine ? "error" : "info"}>
         {moving ? (
           <span data-nospeech-move="">{message}</span>
-        ) : discardLine ? (
-          <span data-discard-line="">{discardLine}</span>
-        ) : (
+        ) : discardLine ? undefined : (
           message
         )}
       </StatusLine>

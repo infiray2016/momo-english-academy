@@ -4,8 +4,10 @@
 // 견본은 3단계 고정 표본(인사 → 대화, 짧은 준비 건너뜀 — talk.ts greetingTalkLesson + skipStartPrep, 쪽지 장면만 짧은 준비 있음)이고, 듣기는
 // 진짜 · 버림 차례를 적은 가짜 음성 대본(discard.ts), 회화 턴은 가짜 Anthropic SSE 다. 화면 검토 장면 일곱(묶음 3 구현 보고 7절)은 photos.ts
 // 로 talk-discard-<장면 번호>-… 사진을 남긴다(E2E_PHOTOS 때만). 숫자는 시험용 설정에서 읽는다. 녹음하지 않는다. 이 Mac 에서 돌리지 않는다(CI 몫).
+// 화면 · 문구 판정(2026-11-07, 묶음 3 fix 2): 단추 너비 그대로(I-1) · 장면 3 · 4 의 세로 · 가로 화면 안(I-2) · 따라 말하기 회복 중 흐린 누름(I-3) ·
+// iPhone 부모 줄(I-4) 단언과 판정 4절의 사진 없는 장면(회복 뒤 진짜 · 확인 칸 · 회복 중 누름 · iPhone · 정리) 사진을 더했다.
 import { readFileSync } from "node:fs";
-import type { BrowserContext, Page } from "@playwright/test";
+import type { BrowserContext, Locator, Page } from "@playwright/test";
 import { AVATARS, TOPIC_BUNDLES } from "../../src/core/profile/start";
 import type { TalkLesson } from "../../src/core/seed/schema/lesson";
 import { TalkShortLinesFileSchema } from "../../src/core/seed/schema/reference";
@@ -14,6 +16,7 @@ import { bandOf } from "../../src/core/seed/structure";
 import { DISCARD_MODE_KEY } from "../../src/core/speech/discard-settings";
 import type { RecognitionRun } from "../../src/core/speech/script";
 import { TEST_SETTINGS } from "../fixtures/settings";
+import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import {
   attemptsOf,
@@ -88,7 +91,10 @@ const T = {
   micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
   waitReading: "다 읽은 뒤 눌러요",
   micDiscard:
-    "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요.",
+    "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요",
+  micDiscardIphone:
+    "아이폰에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이폰의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요",
+  stopYes: "그만할래요",
   pinAgain: "한 번 더 넣어 주세요",
   displayName: "홈에 보일 이름(한글)",
   alphabetKnown: "알아요",
@@ -136,6 +142,10 @@ const NO_NEW_MS =
   DISCARD_TIMES.minMs +
   DISCARD_TIMES.endWaitMs +
   DISCARD_TIMES.gapMs;
+/** 확인 칸을 사진으로 남길 만큼 talk.confirm_seconds 를 늘림(초, 시험 값 — 그 사이 저절로 보내지 않게). */
+const CONFIRM_HOLD_SECONDS = 30;
+/** 단추 너비 견줌의 여유(CSS px, 시험 값 — 글자 반올림). */
+const WIDTH_SLACK_PX = 1;
 
 const SHORT_LINES = TalkShortLinesFileSchema.parse(
   JSON.parse(readFileSync("seed/lists/talk-short-lines.json", "utf8")),
@@ -211,6 +221,30 @@ const speakButton = (page: Page) =>
 const discardLine = (page: Page) =>
   page.locator("[data-child-turn] [data-discard-line]");
 const teacherWindow = (page: Page) => page.locator("[data-teacher-window]");
+/** 말하기 단추의 지금 글(켠 기기는 세 상태 글을 겹쳐 두므로 지금 칸만 — 화면 판정 I-1). */
+const speakLabel = (page: Page) =>
+  speakButton(page).locator("[data-speak-label]");
+/** 아이 차례 맨 아래 알림 줄(경고 · 넘김 안내 자리). */
+const turnStatusLine = (page: Page) =>
+  page.locator("[data-child-turn] > p[role='status']").last();
+
+/**
+ * 세로 · 가로 모두에서 보일 것이 통째로 화면 안에 있다(화면 판정 I-2 — 짧은 말 말풍선 · 안내 줄이 아이 차례 칸을 첫 화면 아래로 밀지 않음). 돌린 뒤
+ * 세로로 돌려 둔다.
+ */
+async function expectInViewBothWays(page: Page, shown: readonly Locator[]) {
+  for (const way of ["portrait", "landscape"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    for (const l of shown)
+      await expect(l, `${way} 화면 안`).toBeInViewport({ ratio: 1 });
+  }
+  await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+}
+
+/** 단추의 너비(CSS px). */
+async function widthOf(l: Locator): Promise<number> {
+  return (await l.boundingBox())?.width ?? 0;
+}
 const firstQuestionOf = (card: TalkCard) => card.required[0]?.en ?? "";
 
 /** 쪽 숨김 · 돌아옴(speech-probe.spec 나-4 와 같은 꼴 — 가짜 문서 상태로 visibilitychange 를 일으킨다). */
@@ -352,16 +386,22 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
       .toBe(true);
     const button = speakButton(o.page);
     await expect(button).toBeVisible();
+    // 단추 크기 그대로(C215 · 화면 판정 I-1): 누르기 전 · 기다림 · 듣는 중 너비가 같다
+    const restWidth = await widthOf(button);
     await expect(
       o.page.locator("[data-talk-panel][data-talk-reading]"),
     ).toHaveCount(1);
     await button.click();
     await expect(button).toHaveAttribute("data-speak-preparing", "");
-    await expect(button).toContainText(T.preparing);
+    await expect(speakLabel(o.page)).toHaveText(T.preparing);
+    await expect(button).toHaveAccessibleName(T.preparing);
     await expect(button.locator("[data-speak-dots]")).toBeVisible();
     await expect(button).not.toHaveAttribute("data-listening", "");
     await expect(button).not.toHaveAttribute("data-sound-in", "");
-    await expect(button).not.toContainText(T.listening);
+    expect(
+      Math.abs((await widthOf(button)) - restWidth),
+      "기다림 너비",
+    ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
     await expect(teacherWindow(o.page)).not.toHaveAttribute(
       "data-teacher-state",
       "listening",
@@ -386,6 +426,11 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     });
     await expect(discardLine(o.page)).toHaveText(T.sayNow);
     await expect(button).not.toHaveAttribute("data-speak-preparing", "");
+    await expect(speakLabel(o.page)).toHaveText(T.listening);
+    expect(
+      Math.abs((await widthOf(button)) - restWidth),
+      "듣는 중 너비",
+    ).toBeLessThanOrEqual(WIDTH_SLACK_PX);
     await expect(teacherWindow(o.page)).toHaveAttribute(
       "data-teacher-state",
       "listening",
@@ -438,8 +483,18 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     );
     const o = await openTalk(context, s);
     await throughGreeting(o);
+    // 다시 쓰기 호출(질문 검사에 걸린 AI 질문 — 13절 C203 (3)) 수: 가짜 반응은 모두 검사 안이라 늘지 않아야 한다(e2e 재검토 N-1)
+    const rewrites = async () =>
+      (await talkTurnRequests()) - (await childTurnCalls());
+    const rewritesBefore = await rewrites();
+    const noRewrite = async (turn: number) =>
+      expect(
+        await rewrites(),
+        `${turn}번째 뒤 다시 쓰기 — 가짜 반응이 질문 검사에 걸림(REPLIES 또는 질문 검사 확인)`,
+      ).toBe(rewritesBefore);
     for (const [i, text] of said.entries()) {
       await untilChildTurn(o.page);
+      if (i > 0) await noRewrite(i);
       const starts = await startsOf(o.page);
       const ai = await childTurnCalls();
       const sent = o.sent.turns.length;
@@ -461,6 +516,7 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
       expect(o.sent.turns.length, `${i + 1}번째 회화 턴 요청`).toBe(sent + 1);
     }
     await untilChildTurn(o.page);
+    await noRewrite(said.length);
     const uses = await recognizersOf(o.page, s);
     expect(uses).toHaveLength(2 + said.length * 2);
     // 닫힌 버림은 모두 소리 끝 뒤 stop(하한을 채움 · 안전 상한 전) — 소리 끝 알림이 빠지면 상한에서야 닫힌다
@@ -548,11 +604,17 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
       const line = (await micSpoken()).at(-1) ?? "";
       await expect(short.locator("p[lang='en']")).toHaveText(line);
       await expect(button).toHaveAttribute("data-speak-preparing", "");
-      if (i === 1) await photo(o.page, "talk-discard-4-mic-recover");
+      if (i === 1) {
+        // 짧은 말 말풍선이 아이 차례를 밀어도 단추 · 안내 줄이 세로 · 가로 모두 화면 안(I-2)
+        await expectInViewBothWays(o.page, [button, discardLine(o.page)]);
+        await photo(o.page, "talk-discard-4-mic-recover");
+      }
       await expect(button).toHaveAttribute("data-listening", "", {
         timeout: STREAM_END_MS,
       });
       await expect(discardLine(o.page)).toHaveText(T.sayNow);
+      // 회복 뒤 누름 없이 진짜가 열린 순간(짧은 말 말풍선 + '듣고 있어요' + '말해 보세요' — 판정 4절 1)
+      if (i === 1) await photo(o.page, "talk-discard-4-mic-recover-say-now");
       // 짧은 말이 진짜보다 먼저 읽혔다
       const uses = await recognizersOf(o.page, s);
       const realUse = uses[2 + i * 2];
@@ -579,82 +641,99 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     context,
   }) => {
     test.setTimeout(LONG);
-    const utterMs = 30;
-    const s = discardScript(
-      [
-        real(saidRun("I'm good.")),
-        dead(),
-        real(NO_RESULT_RUN),
-        dead(),
-        real(saidRun("I like it.")),
-        dead(),
-        real(saidRun("I like soccer.")),
-        dead(),
-      ],
-      { utterMs },
+    // 확인 칸 사진을 찍는 동안 저절로 보내지 않게(시험 값 — '다시 말하기' · '보내기'는 시험이 누른다)
+    await withHouseholdSetting(
+      "talk.confirm_seconds",
+      CONFIRM_HOLD_SECONDS,
+      async () => {
+        const utterMs = 30;
+        const s = discardScript(
+          [
+            real(saidRun("I'm good.")),
+            dead(),
+            real(NO_RESULT_RUN),
+            dead(),
+            real(saidRun("I like it.")),
+            dead(),
+            real(saidRun("I like soccer.")),
+            dead(),
+          ],
+          { utterMs },
+        );
+        const o = await openTalk(context, s);
+        await throughGreeting(o);
+        await untilChildTurn(o.page);
+        const button = speakButton(o.page);
+        const short = o.page.locator("[data-talk-short-line]");
+        await button.click();
+        await expect(
+          o.page.locator('[data-child-attempt] [data-child-said="not_heard"]'),
+        ).toHaveText(T.notHeard, { timeout: STREAM_END_MS });
+        await expect(short).toBeVisible({ timeout: STREAM_END_MS });
+        const first = (await short.locator("p[lang='en']").textContent()) ?? "";
+        expect(shortEns("again")).toContain(first);
+        await expect(short.locator("[data-talk-short-ko]")).toBeVisible();
+        await expect
+          .poll(async () => (await speechRecord(o.page)).spoken.includes(first))
+          .toBe(true);
+        // 짧은 말 말풍선이 아이 차례를 밀어도 단추 · 아래 알림 줄이 세로 · 가로 모두 화면 안(I-2 — 이때는 버리는 듣기 안내 줄이 없다)
+        await expectInViewBothWays(o.page, [button, turnStatusLine(o.page)]);
+        await photo(o.page, "talk-discard-3-not-heard-short");
+        expect(await startsOf(o.page)).toBe(4);
+        await expect(button).not.toHaveAttribute("data-listening", "");
+        const firstAt = (await spokenAtOf(o.page, first)).at(-1) ?? 0;
+        await expect
+          .poll(async () => (await recognizersOf(o.page, s))[3]?.closeAt)
+          .toBeGreaterThanOrEqual(firstAt + utterMs);
+        // 누르면 진짜 → 확인 칸 → '다시 말하기'
+        await button.click();
+        await expect(button).toHaveAttribute("data-listening", "", {
+          timeout: STREAM_END_MS,
+        });
+        const confirm = o.page.locator(
+          "[data-child-turn] [data-child-confirm]",
+        );
+        await expect(confirm).toBeVisible({ timeout: STREAM_END_MS });
+        // 확인 칸과 함께 남은 짧은 말 말풍선(판정 4절 2)
+        await expect(short).toBeVisible();
+        await photo(o.page, "talk-discard-3-confirm-short");
+        const spokenBefore = (await speechRecord(o.page)).spoken.length;
+        await confirm.getByRole("button", { name: T.again }).click();
+        await expect(button).toHaveAttribute("data-listening", "", {
+          timeout: STREAM_END_MS,
+        });
+        const added = (await speechRecord(o.page)).spoken.slice(spokenBefore);
+        const second = added.find((t) => shortEns("again").includes(t));
+        expect(
+          second,
+          `'다시 말하기' 뒤 읽기: ${added.join(" | ")}`,
+        ).toBeDefined();
+        const secondAt = (await spokenAtOf(o.page, second ?? "")).at(-1) ?? 0;
+        const uses = await recognizersOf(o.page, s);
+        const discard = uses[5];
+        const realUse = uses[6];
+        if (!discard || !realUse) throw new Error("대본 차례가 어긋났다");
+        expect(discard.closeAt ?? 0).toBeGreaterThanOrEqual(secondAt + utterMs);
+        expect(realUse.startAt).toBeGreaterThan(secondAt);
+        const bound =
+          Math.max(
+            secondAt + utterMs + DISCARD_TIMES.afterSoundMs,
+            discard.startAt + DISCARD_TIMES.minMs,
+          ) +
+          (s.runs[5]?.onStop?.[0]?.at ?? 0) +
+          DISCARD_TIMES.gapMs +
+          TIME_SLACK_MS;
+        expect(realUse.startAt).toBeLessThanOrEqual(bound);
+        await pushFakeAi([
+          talkLessonReply({ tori_en: REPLIES[1], next_move: "follow_up" }),
+        ]);
+        await sendWhenAsked(o, o.sent.turns.length);
+        await expect(bubble(o.page)).toContainText("Cool!", {
+          timeout: STREAM_END_MS,
+        });
+        await expectDiscardRules(o);
+      },
     );
-    const o = await openTalk(context, s);
-    await throughGreeting(o);
-    await untilChildTurn(o.page);
-    const button = speakButton(o.page);
-    const short = o.page.locator("[data-talk-short-line]");
-    await button.click();
-    await expect(
-      o.page.locator('[data-child-attempt] [data-child-said="not_heard"]'),
-    ).toHaveText(T.notHeard, { timeout: STREAM_END_MS });
-    await expect(short).toBeVisible({ timeout: STREAM_END_MS });
-    const first = (await short.locator("p[lang='en']").textContent()) ?? "";
-    expect(shortEns("again")).toContain(first);
-    await expect(short.locator("[data-talk-short-ko]")).toBeVisible();
-    await expect
-      .poll(async () => (await speechRecord(o.page)).spoken.includes(first))
-      .toBe(true);
-    await photo(o.page, "talk-discard-3-not-heard-short");
-    expect(await startsOf(o.page)).toBe(4);
-    await expect(button).not.toHaveAttribute("data-listening", "");
-    const firstAt = (await spokenAtOf(o.page, first)).at(-1) ?? 0;
-    await expect
-      .poll(async () => (await recognizersOf(o.page, s))[3]?.closeAt)
-      .toBeGreaterThanOrEqual(firstAt + utterMs);
-    // 누르면 진짜 → 확인 칸 → '다시 말하기'
-    await button.click();
-    await expect(button).toHaveAttribute("data-listening", "", {
-      timeout: STREAM_END_MS,
-    });
-    const confirm = o.page.locator("[data-child-turn] [data-child-confirm]");
-    await expect(confirm).toBeVisible({ timeout: STREAM_END_MS });
-    const spokenBefore = (await speechRecord(o.page)).spoken.length;
-    await confirm.getByRole("button", { name: T.again }).click();
-    await expect(button).toHaveAttribute("data-listening", "", {
-      timeout: STREAM_END_MS,
-    });
-    const added = (await speechRecord(o.page)).spoken.slice(spokenBefore);
-    const second = added.find((t) => shortEns("again").includes(t));
-    expect(second, `'다시 말하기' 뒤 읽기: ${added.join(" | ")}`).toBeDefined();
-    const secondAt = (await spokenAtOf(o.page, second ?? "")).at(-1) ?? 0;
-    const uses = await recognizersOf(o.page, s);
-    const discard = uses[5];
-    const realUse = uses[6];
-    if (!discard || !realUse) throw new Error("대본 차례가 어긋났다");
-    expect(discard.closeAt ?? 0).toBeGreaterThanOrEqual(secondAt + utterMs);
-    expect(realUse.startAt).toBeGreaterThan(secondAt);
-    const bound =
-      Math.max(
-        secondAt + utterMs + DISCARD_TIMES.afterSoundMs,
-        discard.startAt + DISCARD_TIMES.minMs,
-      ) +
-      (s.runs[5]?.onStop?.[0]?.at ?? 0) +
-      DISCARD_TIMES.gapMs +
-      TIME_SLACK_MS;
-    expect(realUse.startAt).toBeLessThanOrEqual(bound);
-    await pushFakeAi([
-      talkLessonReply({ tori_en: REPLIES[1], next_move: "follow_up" }),
-    ]);
-    await sendWhenAsked(o, o.sent.turns.length);
-    await expect(bubble(o.page)).toContainText("Cool!", {
-      timeout: STREAM_END_MS,
-    });
-    await expectDiscardRules(o);
   });
 
   test("AC-24c · AC-24h 선생님 줄의 시작 알림 전에 누르면 그 버림 안에서 짧은 말 한 줄이 끝까지 읽힌 뒤에야 진짜가 열린다(층 검토 I-1 회귀)", async ({
@@ -1101,6 +1180,122 @@ test.describe("iPad 버리는 듣기 — 짧은 준비 쪽지(3단계)", () => {
     expect(saved).toContain('"dc":');
     await expectDiscardRules(o);
   });
+
+  test("AC-24c 쪽지 따라 말하기의 마이크 안 잡힘 뒤 회복 중에는 흐린 단추를 눌러도 '다 읽은 뒤 눌러요'가 없고(위 안내 줄 하나), 누름 없이 진짜가 열린 뒤에도 그 안내가 없다(화면 판정 I-3)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    if (DEAF_SKIP_AFTER < 2)
+      throw new Error(
+        "시험 차례는 speech.deaf_skip_after 2 이상을 전제한다(첫 안 잡힘이 회복)",
+      );
+    if (DEAF_RETRY_MAX !== 0)
+      throw new Error(
+        "시험 차례는 speech.deaf_retry_max 0 을 전제한다(진짜 안에서 새 객체가 열리면 대본이 한 칸씩 밀림)",
+      );
+    const prepWords = talkLessonCard(LEVEL).card.prep ?? [];
+    if (prepWords.length < 1) throw new Error("견본 꼴 — 짧은 준비 낱말");
+    const s = discardScript([
+      real(saidRun("I'm good.")),
+      dead({ endAfterStopMs: SLOW_END_MS }),
+      real(deafRun()),
+      dead({ endAfterStopMs: SLOW_END_MS }),
+      ...realsThenDead(prepWords.map((w) => saidRun(w))),
+    ]);
+    const o = await openTalk(context, s, { prep: true });
+    await untilChildTurn(o.page);
+    await pushFakeAi([talkLessonReply({ tori_en: PREP_REPLY })]);
+    await sayTurn(o);
+    const note = o.page.locator("[data-prep-note]");
+    await expect(note).toBeVisible({ timeout: STREAM_END_MS });
+    const button = note.locator("[data-speak]");
+    const waitNote = note.locator("[data-speak-wait-note]");
+    await expect(button).not.toHaveAttribute("data-speak-waiting", "", {
+      timeout: STREAM_END_MS,
+    });
+    await button.click();
+    // 마이크 안 잡힘 → 회복: 안내 줄 '잠깐만요, 마이크를 다시 켤게요' · 흐린 단추
+    await expect(note.locator("[data-discard-line]")).toHaveText(T.micRecover, {
+      timeout: DEAF_SILENCE_MS + STREAM_END_MS,
+    });
+    await expect(button).toHaveAttribute("data-speak-waiting", "");
+    await button.click();
+    await expect(waitNote).toHaveCount(0);
+    await expect(note.locator("[data-discard-line]")).toHaveText(T.micRecover);
+    await photo(o.page, "talk-discard-8-follow-recover-press");
+    // 누름 없이 진짜가 열린 뒤에도 '다 읽은 뒤 눌러요'가 없다
+    await expect(button).toHaveAttribute("data-listening", "", {
+      timeout: STREAM_END_MS,
+    });
+    await expect(waitNote).toHaveCount(0);
+    await expect(note.locator("[data-follow-result]")).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    await expect(waitNote).toHaveCount(0);
+    await expectDiscardRules(o);
+  });
+});
+
+test.describe("iPad 버리는 듣기 — 정리 따라 말하기(3단계)", () => {
+  test("AC-24b · AC-24c 정리 따라 말하기 단추도 읽는 동안 흐리고 누르면 '다 읽은 뒤 눌러요'만 보이며(진짜 start 없음), 결과 없음 뒤에는 되짚을 말이 버림 안에서 한 번 더 읽힌 뒤 켜진다(판정 4절 5 사진)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const s = discardScript(
+      [
+        real(saidRun("I'm good.")),
+        dead(),
+        real(NO_RESULT_RUN),
+        dead({ endAfterStopMs: SLOW_END_MS }),
+      ],
+      { utterMs: TEACHER_UTTER_MS },
+    );
+    const o = await openTalk(context, s);
+    await throughGreeting(o);
+    await untilChildTurn(o.page);
+    // 대화 첫 질문에서 '그만하기' → 정리(되짚을 말 따라 말하기, required-recovery N-7 과 같은 길)
+    await o.page.locator("[data-paper-band] [data-talk-stop]").click();
+    await o.page.getByRole("button", { name: T.stopYes }).click();
+    const wrap = o.page.locator("[data-talk-wrap]");
+    await expect(wrap).toBeVisible({ timeout: STREAM_END_MS });
+    const button = wrap.locator("[data-speak]");
+    await expect(button).toHaveAttribute("data-speak-waiting", "", {
+      timeout: STREAM_END_MS,
+    });
+    const starts = await startsOf(o.page);
+    await button.click();
+    await expect(wrap.locator("[data-speak-wait-note]")).toHaveText(
+      T.waitReading,
+    );
+    await photo(o.page, "talk-discard-9-wrap-dim");
+    expect(await startsOf(o.page)).toBe(starts);
+    await expect(button).not.toHaveAttribute("data-speak-waiting", "", {
+      timeout: STREAM_END_MS,
+    });
+    // 결과 없음 → 되짚을 말 다시(버림 안) → 흐림 → 켜짐
+    const spokenBefore = (await speechRecord(o.page)).spoken;
+    await button.click();
+    await expect
+      .poll(
+        async () =>
+          // 다시 읽기는 되짚을 말을 이은 한 줄이라 들어올 때 읽은 줄(줄마다)을 품는다
+          (await speechRecord(o.page)).spoken
+            .slice(spokenBefore.length)
+            .some(
+              (t) =>
+                t !== "" && spokenBefore.some((b) => b !== "" && t.includes(b)),
+            ),
+        { message: "되짚을 말을 한 번 더 읽음", timeout: STREAM_END_MS },
+      )
+      .toBe(true);
+    await expect(button).toHaveAttribute("data-speak-waiting", "");
+    await photo(o.page, "talk-discard-9-wrap-reread");
+    await expect(button).not.toHaveAttribute("data-speak-waiting", "", {
+      timeout: STREAM_END_MS,
+    });
+    expect(await startsOf(o.page)).toBe(starts + 2);
+    await expectDiscardRules(o);
+  });
 });
 
 test.describe("iPad 버리는 듣기 — 켬 · 끔 같은 표본(AC-N25 · AC-24k)", () => {
@@ -1244,6 +1439,24 @@ test.describe("iPad 버리는 듣기 — 첫 실행 부모 줄(켬 · iPad)", ()
       page.locator("[data-ipad-guide] + p + [data-mic-discard]"),
     ).toHaveCount(1);
     await photo(page, "talk-discard-7-first-run-mic");
+  });
+});
+
+test.describe("iPad 버리는 듣기 — 첫 실행 부모 줄(켬 · iPhone)", () => {
+  /** iPhone 판정(core/speech/device platformOf — 'iPhone' 이 든 사용자 에이전트). */
+  test.use({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+  });
+  test("AC-24d iPhone 기기 판정의 첫 실행 음성 인식 안내에는 부모 줄의 기기 이름이 '아이폰'이다(화면 판정 I-4)", async ({
+    page,
+  }) => {
+    await firstRunToMic(page);
+    await expect(page.locator("[data-mic-discard]")).toHaveText(
+      T.micDiscardIphone,
+    );
+    await expect(page.locator("[data-ipad-guide]")).toHaveCount(0);
+    await photo(page, "talk-discard-7-first-run-mic-iphone");
   });
 });
 

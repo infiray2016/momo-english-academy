@@ -218,6 +218,14 @@ export function followDiscardDimOf(
   return !(view.reopenIdle && rereadDone);
 }
 
+/**
+ * 흐린 따라 말하기 단추를 눌러도 '다 읽은 뒤 눌러요'를 띄우지 않을까(순수, 화면 판정 I-3): 버리는 듣기 회복 중이면 위 안내 줄('잠깐만요, 마이크를
+ * 다시 켤게요') 하나만 둔다 — 앱이 누름 없이 듣기를 여므로 '읽은 뒤 네가 눌러'와 어긋난다. 층이 없으면 지금 그대로다.
+ */
+export function followWaitNoteQuietOf(view: DiscardView | undefined): boolean {
+  return view?.recovering === true;
+}
+
 /** 같은 '버림부터' 쉼의 다시 읽기 셈(재검토 범위 밖 관찰 — 같은 쉼에서 한 번만). */
 export type FollowReread = { done: boolean };
 export const FOLLOW_REREAD_START: FollowReread = { done: false };
@@ -725,6 +733,8 @@ function WrapCard({
             // 토리 글이 흐르거나 읽는 동안 · 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요' — C166 R2, 화면 검토 b3 M-1 의 '글이 다 흐른 뒤'를 포함, T-125)
             // 버리는 듣기: 진짜를 열 수 있을 때까지 더 흐리게(문구는 같은 '다 읽은 뒤 눌러요' — spec 설계 2 · M-5)
             waiting={!typed || sayer.waiting || discardDim}
+            // 회복 중에는 흐린 누름에도 그 안내를 띄우지 않는다(위 안내 줄 하나 — I-3)
+            quietWait={followWaitNoteQuietOf(env.discard?.view)}
             capAt={capAt}
             gapClassName="bg-paper"
             disabled={!env.speech || phrase !== undefined || skipping}
@@ -1031,6 +1041,7 @@ function PrepCard({
         // 선생님이 읽는 동안과 읽기 뒤 듣기 쉼 동안 흐리게(누르면 '다 읽은 뒤 눌러요', R2 · 7절), 쉼이 지나면 켬(T-125 — iPad 읽기 직후 듣기 no-speech)
         // 버리는 듣기: 진짜를 열 수 있을 때까지 더 흐리게(같은 문구 — spec 설계 2 · M-5)
         waiting={sayer.waiting || discardDim}
+        quietWait={followWaitNoteQuietOf(env.discard?.view)}
         capAt={capAt}
         gapClassName="bg-paper"
         disabled={!env.speech || phrase !== undefined || skipping}

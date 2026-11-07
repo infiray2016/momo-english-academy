@@ -12,8 +12,17 @@
 // 13절 C215(iPad 버리는 듣기 spec 설계 3 · FR-2): 버리는 듣기를 켠 기기의 대화 차례에서 누름이 진짜를 열 조건을 기다리는 동안(preparing)
 // 단추 글은 '준비 중이에요'이고 글 뒤에 점 셋이 차례로 튄다(표본 쪽 1번). 소리 없음, 단추 크기 · 마이크 표시는 그대로이고 듣는 동안의
 // 고리 · 깜빡임 · 소리 물결을 켜지 않는다. 움직임 줄이기면 멈춘 점이다. 넘기지 않는 화면(다른 영역 · 끔)은 지금 그대로다.
+// 화면 · 문구 판정(2026-11-07) I-1: 켠 기기의 대화 차례(steady)는 세 상태 글을 한 칸에 겹쳐 두어 단추가 늘 가장 긴 글('준비 중이에요' + 점 셋)의
+// 너비다(수를 박지 않음). M-1: 점은 표본 쪽 1번의 뜀(6px · 흐림 바뀜). I-3: '다 읽은 뒤 눌러요'는 듣기가 시작되면 지우고, 회복 중(quiet)에는
+// 흐린 누름에도 띄우지 않는다.
 import { AudioLines, Mic } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
 import { BigButton, ICON_STROKE } from "@/components/board/board";
 import type { SpeakOutcome, SpeechPort } from "@/lib/speech/types";
@@ -24,6 +33,12 @@ const FULL_TURN_DEG = 360;
 /** 기다림 점 셋의 점마다 늦춤(화면 꼴 값 — 힌트 받는 점 셋 · 말풍선 기다림 점과 같은 값, C215). */
 const PREPARING_DOT_DELAY_MS = 150;
 const PREPARING_DOTS = [0, 1, 2] as const;
+/** 점 한 번 뜀의 길이(화면 꼴 값 — 표본 쪽 1번 hop 1.1초). */
+const PREPARING_DOT_CYCLE_MS = 1100;
+/** 점 뜀 키프레임 이름. */
+const PREPARING_DOT_HOP = "speak-dot-hop";
+/** 점 뜀(표본 쪽 1번 hop 그대로 — 6px 뛰며 흐림이 0.45 → 1, 화면 판정 M-1). React 19 가 한 번만 head 로 올린다. */
+export const PREPARING_DOT_KEYFRAMES = `@keyframes ${PREPARING_DOT_HOP}{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-6px);opacity:1}}`;
 
 /** 말하기 단추 둘레 글(브리프 A · C166 — 정본 밖 문구, 해요체 한 줄). */
 export const SPEAK_BUTTON_TEXT = {
@@ -56,23 +71,78 @@ export function speakButtonLabelOf({
   return listeningLabel ?? SPEAK_BUTTON_TEXT.listening;
 }
 
-/** 기다림 점 셋(C215 표본 1번): 단추 글 뒤에서 차례로 튄다. 움직임 줄이기면 멈춘 점(motion-safe). 글자가 아니라 읽지 않는다. */
-function PreparingDots() {
+/**
+ * 기다림 점 셋(C215 표본 1번): 단추 글 뒤에서 차례로 튄다. 움직임 줄이기면 멈춘 점(motion-safe). 글자가 아니라 읽지 않는다. still 이면 겹친 글의
+ * 숨은 칸이 너비만 잡는 자리(움직임 · 표지 없음)다.
+ */
+function PreparingDots({ still = false }: { still?: boolean }) {
   return (
     <span
-      data-speak-dots=""
+      data-speak-dots={still ? undefined : ""}
       aria-hidden
       className="inline-flex items-center gap-1"
     >
+      {still ? null : (
+        <style href={PREPARING_DOT_HOP} precedence="default">
+          {PREPARING_DOT_KEYFRAMES}
+        </style>
+      )}
       {PREPARING_DOTS.map((i) => (
         <span
           key={i}
-          className="size-2 rounded-full bg-paper motion-safe:animate-bounce"
-          style={{ animationDelay: `${i * PREPARING_DOT_DELAY_MS}ms` }}
+          className={cn(
+            "size-2 rounded-full bg-paper",
+            !still && "motion-safe:animate-(--speak-dot)",
+          )}
+          style={
+            still
+              ? undefined
+              : ({
+                  "--speak-dot": `${PREPARING_DOT_HOP} ${PREPARING_DOT_CYCLE_MS}ms ease-in-out ${i * PREPARING_DOT_DELAY_MS}ms infinite`,
+                } as CSSProperties)
+          }
         />
       ))}
     </span>
   );
+}
+
+/** 겹친 글의 칸(I-1): 누르기 전 · 기다림 · 듣는 중. */
+type SpeakLabelKey = "rest" | "preparing" | "listening";
+const SPEAK_LABEL_KEYS: readonly SpeakLabelKey[] = [
+  "rest",
+  "preparing",
+  "listening",
+];
+
+/** 지금 단추 글의 칸(순수, speakButtonLabelOf 와 같은 갈래). */
+function speakLabelKeyOf({
+  listening,
+  preparing,
+}: {
+  listening: boolean;
+  preparing: boolean;
+}): SpeakLabelKey {
+  if (listening) return "listening";
+  return preparing ? "preparing" : "rest";
+}
+
+/**
+ * 흐린 누름의 '다 읽은 뒤 눌러요'를 보이는가(순수, R2 · 화면 판정 I-3): 누른 적이 있고 아직 흐리며 듣는 중이 아니고, 회복 중(quiet — 위 안내 줄
+ * '잠깐만요, 마이크를 다시 켤게요' 하나만 둠)이 아닐 때.
+ */
+export function speakWaitNoteShownOf({
+  noted,
+  waiting,
+  listening,
+  quiet,
+}: {
+  noted: boolean;
+  waiting: boolean;
+  listening: boolean;
+  quiet: boolean;
+}): boolean {
+  return noted && waiting && !listening && !quiet;
 }
 
 /** 누름의 뜻(순수): 선생님이 읽는 중(듣기 전)이면 안내 한 줄, 그 밖(듣는 중 누름 = 듣기 끝 포함)은 누름. */
@@ -132,7 +202,9 @@ export function SpeakButton({
   listening,
   soundIn = false,
   waiting = false,
+  quietWait = false,
   preparing = false,
+  steady = false,
   capAt,
   disabled = false,
   className,
@@ -147,11 +219,15 @@ export function SpeakButton({
   soundIn?: boolean;
   /** 선생님이 읽는 중(따라 말하기 — R2): 흐리게 두고 누르면 듣지 않고 안내 한 줄. */
   waiting?: boolean;
+  /** 흐린 누름에도 '다 읽은 뒤 눌러요'를 띄우지 않음(버리는 듣기 회복 중 — 위 안내 줄 하나만, 화면 판정 I-3). */
+  quietWait?: boolean;
   /**
    * 누름이 진짜를 열 조건을 기다림(버리는 듣기 대화 차례 — C215): '준비 중이에요'와 점 셋. 흐리지 않고 누름도 그대로 넘긴다(다시 누른 것은
    * 층이 하나로 센다). 듣는 동안이면 보이지 않는다.
    */
   preparing?: boolean;
+  /** 세 상태 글을 겹쳐 두어 단추 너비가 상태마다 그대로(버리는 듣기를 켠 기기의 대화 차례 — C215 '단추 크기 그대로', 화면 판정 I-1). */
+  steady?: boolean;
   /** 듣기 전체 상한의 시각(performance.now() 기준 ms). 읽을 때마다 지금 값(P2b ListenHandle.capAt). 없으면 고리를 꽉 채운다. */
   capAt?: () => number | undefined;
   disabled?: boolean;
@@ -164,8 +240,9 @@ export function SpeakButton({
   /** 읽는 중 누름 안내를 보이는가(읽기가 끝나면 지운다). */
   const [waitNote, setWaitNote] = useState(false);
   useEffect(() => {
-    if (!waiting) setWaitNote(false);
-  }, [waiting]);
+    // 읽기가 끝나거나 듣기가 시작되면 지운다(I-3 — 저절로 열린 듣기 동안 남지 않게)
+    if (!waiting || listening) setWaitNote(false);
+  }, [waiting, listening]);
   const heard = listening && soundIn;
   const prepared = preparing && !listening;
   const startedAt = useRef<number | undefined>(undefined);
@@ -224,7 +301,7 @@ export function SpeakButton({
           className={cn(waiting && !listening && "opacity-50")}
           onClick={() => {
             if (speakPressOf({ waiting, listening }) === "wait-note") {
-              setWaitNote(true);
+              if (!quietWait) setWaitNote(true);
               return;
             }
             onPress();
@@ -240,13 +317,58 @@ export function SpeakButton({
               listening && !heard && "motion-safe:animate-pulse",
             )}
           />
-          {speakButtonLabelOf({ label, listeningLabel, listening, preparing })}
-          {prepared ? <PreparingDots /> : null}
+          {steady ? (
+            // 세 글을 한 칸에 겹쳐 가장 긴 글의 너비를 늘 차지한다(지금 글이 아닌 칸은 읽지 않고 보이지 않음 — I-1)
+            <span data-speak-steady="" className="inline-grid">
+              {SPEAK_LABEL_KEYS.map((key) => {
+                const now = key === speakLabelKeyOf({ listening, preparing });
+                return (
+                  <span
+                    key={key}
+                    data-speak-label={now ? "" : undefined}
+                    aria-hidden={now ? undefined : true}
+                    className={cn(
+                      "col-start-1 row-start-1 inline-flex items-center justify-center gap-2",
+                      !now && "invisible",
+                    )}
+                  >
+                    {speakButtonLabelOf({
+                      label,
+                      listeningLabel,
+                      listening: key === "listening",
+                      preparing: key === "preparing",
+                    })}
+                    {key === "preparing" ? (
+                      <PreparingDots still={!now} />
+                    ) : null}
+                  </span>
+                );
+              })}
+            </span>
+          ) : (
+            <>
+              {speakButtonLabelOf({
+                label,
+                listeningLabel,
+                listening,
+                preparing,
+              })}
+              {prepared ? <PreparingDots /> : null}
+            </>
+          )}
         </BigButton>
       </span>
     </span>
   );
-  if (!waitNote) return ring;
+  if (
+    !speakWaitNoteShownOf({
+      noted: waitNote,
+      waiting,
+      listening,
+      quiet: quietWait,
+    })
+  )
+    return ring;
   return (
     <span className="inline-flex flex-col items-center gap-2 self-center">
       {ring}

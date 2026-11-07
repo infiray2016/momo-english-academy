@@ -18,15 +18,18 @@ import {
   firstRunDiscardLineOf,
 } from "@/app/(setup)/first-run/first-run-flow";
 import {
+  PREPARING_DOT_KEYFRAMES,
   SPEAK_BUTTON_TEXT,
   SpeakButton,
   speakButtonLabelOf,
+  speakWaitNoteShownOf,
 } from "@/components/answer/speak-button";
 import {
   CHILD_TURN_TEXT,
   ChildTurn,
   type ChildTurnProps,
   discardLineOf,
+  keepTurnInViewOf,
   listenHint,
   type TurnListenEnd,
   turnDiscardAfterOf,
@@ -37,6 +40,7 @@ import {
   followDiscardAfterOf,
   followDiscardDimOf,
   followRereadStep,
+  followWaitNoteQuietOf,
 } from "@/components/conversation/follow-along";
 import {
   discardFallbackOf,
@@ -96,6 +100,7 @@ describe("버림 화면 말하기 단추의 기다림 표시(C215 점 셋)", () 
     listening: boolean;
     preparing?: boolean;
     soundIn?: boolean;
+    steady?: boolean;
   }) =>
     renderToStaticMarkup(
       createElement(SpeakButton, {
@@ -126,10 +131,12 @@ describe("버림 화면 말하기 단추의 기다림 표시(C215 점 셋)", () 
     const html = render({ listening: false, preparing: true });
     expect(html).toContain("data-speak-preparing");
     expect(html).toContain("준비 중이에요");
-    const dots = html.match(/<span class="[^"]*animate-bounce[^"]*"/g) ?? [];
+    const dots =
+      html.match(/<span class="[^"]*animate-\(--speak-dot\)[^"]*"/g) ?? [];
     expect(dots).toHaveLength(3);
     // 움직임은 motion-safe 에서만(움직임 줄이기면 멈춘 점)
-    for (const dot of dots) expect(dot).toContain("motion-safe:animate-bounce");
+    for (const dot of dots)
+      expect(dot).toContain("motion-safe:animate-(--speak-dot)");
     expect(html.indexOf("준비 중이에요")).toBeLessThan(
       html.indexOf("data-speak-dots"),
     );
@@ -147,6 +154,114 @@ describe("버림 화면 말하기 단추의 기다림 표시(C215 점 셋)", () 
     expect(plain).not.toContain("data-speak-preparing");
     expect(plain).not.toContain("data-speak-dots");
     expect(plain).toBe(render({ listening: false, preparing: false }));
+  });
+});
+
+describe("버림 화면 말하기 단추 크기 그대로(C215 · 화면 판정 I-1 · M-1)", () => {
+  const render = (props: { listening: boolean; preparing?: boolean }) =>
+    renderToStaticMarkup(
+      createElement(SpeakButton, {
+        label: "말하기",
+        steady: true,
+        onPress: () => {},
+        ...props,
+      }),
+    );
+  /** 겹친 글 칸(글 · 숨김 여부 · 지금 글 표지). */
+  const cellsOf = (html: string) =>
+    [
+      ...html.matchAll(
+        /<span (data-speak-label="" )?(aria-hidden="true" )?class="([^"]*)">([^<]*)/g,
+      ),
+    ]
+      .map((m) => ({
+        now: m[1] !== undefined,
+        hidden: m[2] !== undefined,
+        invisible: (m[3] ?? "").split(" ").includes("invisible"),
+        text: m[4],
+      }))
+      .filter((c) => c.text !== "");
+
+  it.each([
+    [{ listening: false }, "말하기"],
+    [{ listening: false, preparing: true }, "준비 중이에요"],
+    [{ listening: true, preparing: true }, "듣고 있어요"],
+  ])(
+    "버림 화면 켠 기기의 대화 차례 단추(%o)는 세 상태 글을 한 칸에 겹쳐 두고 지금 글 '%s' 만 보인다(가장 긴 글의 너비를 늘 차지함)",
+    (props, now) => {
+      const cells = cellsOf(render(props));
+      expect(cells.map((c) => c.text)).toEqual([
+        "말하기",
+        "준비 중이에요",
+        "듣고 있어요",
+      ]);
+      for (const cell of cells) {
+        expect(cell.now).toBe(cell.text === now);
+        expect(cell.hidden).toBe(cell.text !== now);
+        expect(cell.invisible).toBe(cell.text !== now);
+      }
+    },
+  );
+
+  it("버림 화면 겹친 글의 '준비 중이에요' 칸은 숨었을 때도 점 셋 자리를 두되, 움직이는 점 · 점 표지는 기다리는 동안만이다", () => {
+    const rest = render({ listening: false });
+    const listening = render({ listening: true, preparing: true });
+    for (const html of [rest, listening]) {
+      expect(html).not.toContain("data-speak-dots");
+      expect(html).not.toContain("--speak-dot)");
+      // 숨은 칸의 점 자리(셋)
+      expect(html.match(/size-2 rounded-full/g)).toHaveLength(3);
+    }
+    const preparing = render({ listening: false, preparing: true });
+    expect(preparing).toContain("data-speak-dots");
+    expect(
+      preparing.match(/motion-safe:animate-\(--speak-dot\)/g),
+    ).toHaveLength(3);
+  });
+
+  it("버림 화면 켜지 않은 단추(다른 영역 · 끔)에는 겹친 글이 없다", () => {
+    const plain = renderToStaticMarkup(
+      createElement(SpeakButton, {
+        label: "말하기",
+        listening: false,
+        onPress: () => {},
+      }),
+    );
+    expect(plain).not.toContain("data-speak-steady");
+    expect(plain).not.toContain("data-speak-label");
+    expect(plain).not.toContain("준비 중이에요");
+  });
+
+  it("버림 화면 점 셋은 표본 쪽 1번처럼 6px 뛰며 흐림이 바뀐다(키프레임)", () => {
+    expect(PREPARING_DOT_KEYFRAMES).toContain("translateY(-6px)");
+    expect(PREPARING_DOT_KEYFRAMES).toContain("opacity:.45");
+    expect(PREPARING_DOT_KEYFRAMES).toContain("opacity:1");
+    const html = render({ listening: false, preparing: true });
+    expect(html).toContain(PREPARING_DOT_KEYFRAMES);
+  });
+});
+
+describe("버림 화면 '다 읽은 뒤 눌러요' 안내(화면 판정 I-3)", () => {
+  it("버림 화면 흐린 단추를 누른 안내는 듣기가 시작되면 지우고, 회복 중(quiet)에는 누름이 있어도 띄우지 않는다", () => {
+    const base = { noted: true, waiting: true, listening: false, quiet: false };
+    expect(speakWaitNoteShownOf(base)).toBe(true);
+    expect(speakWaitNoteShownOf({ ...base, listening: true })).toBe(false);
+    expect(speakWaitNoteShownOf({ ...base, quiet: true })).toBe(false);
+    expect(speakWaitNoteShownOf({ ...base, waiting: false })).toBe(false);
+    expect(speakWaitNoteShownOf({ ...base, noted: false })).toBe(false);
+  });
+
+  it("버림 화면 따라 말하기는 회복 중에만 흐린 누름의 안내를 띄우지 않고, 층이 없으면 지금 그대로다", () => {
+    expect(followWaitNoteQuietOf(undefined)).toBe(false);
+    expect(followWaitNoteQuietOf(VIEW_IDLE)).toBe(false);
+    expect(
+      followWaitNoteQuietOf(viewOf({ waiting: true, canListen: false })),
+    ).toBe(false);
+    expect(
+      followWaitNoteQuietOf(
+        viewOf({ recovering: true, waiting: true, canListen: false }),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -268,9 +383,23 @@ describe("버림 화면 아이 차례 렌더", () => {
   const html = (view?: DiscardView) =>
     renderToStaticMarkup(createElement(ChildTurn, props(view)));
 
-  it("버림 화면 층이 없거나 기다림이 없으면 아이 차례 그림이 지금과 글자까지 같다", () => {
-    expect(html(VIEW_IDLE)).toBe(html());
+  it("버림 화면 층이 없으면 아이 차례 그림에 겹친 글 · 안내 줄이 없고, 층이 있어도 기다림이 없으면 단추 글 겹침만 다르다", () => {
     expect(html()).not.toContain("준비 중이에요");
+    expect(html()).not.toContain("data-speak-steady");
+    // 켠 기기: 겹친 글 칸을 걷어 내면 지금 그림과 글자까지 같다(I-1 밖은 그대로)
+    const unstack = (out: string) =>
+      out
+        .replace(/<span data-speak-steady="" class="[^"]*">/, "")
+        .replace(
+          /<span data-speak-label="" class="[^"]*">([^<]*)<\/span>/,
+          "$1",
+        )
+        .replace(
+          /<span aria-hidden="true" class="[^"]*">[^<]*(<span[^>]*>(<span[^>]*><\/span>)*<\/span>)?<\/span>/g,
+          "",
+        )
+        .replace(/<\/span><\/button>/, "</button>");
+    expect(unstack(html(VIEW_IDLE))).toBe(html());
   });
 
   it("버림 화면 회복 중 아이 차례는 단추 하나에 '준비 중이에요' · 점 셋, 안내 자리에 '잠깐만요, 마이크를 다시 켤게요'다", () => {
@@ -281,6 +410,57 @@ describe("버림 화면 아이 차례 렌더", () => {
     expect(out).toContain("준비 중이에요");
     expect(out).toContain("data-speak-dots");
     expect(out).toContain(`data-discard-line="">${CHILD_TURN_TEXT.micRecover}`);
+  });
+
+  it("버림 화면 안내 줄은 동작 줄 안 단추 묶음 바로 아래(단추 쪽 정렬)에 하나만 있고, 아래 알림 줄에는 없다(화면 판정 M-3)", () => {
+    const out = html(
+      viewOf({ waiting: true, recovering: true, canListen: false }),
+    );
+    expect(out.match(/data-discard-line=""/g)).toHaveLength(1);
+    const actions = out.indexOf("data-child-actions");
+    const line = out.indexOf("data-discard-line");
+    expect(actions).toBeGreaterThan(-1);
+    expect(line).toBeGreaterThan(out.indexOf("data-dont-know", actions));
+    // 안내 줄의 자리: 세로는 가운데, 가로는 단추 쪽(오른쪽)
+    expect(out).toMatch(
+      /<p role="status" data-status-tone="info" class="[^"]*w-full[^"]*justify-center[^"]*lg:justify-end[^"]*"><span data-discard-line="">/,
+    );
+    // 아래 알림 줄(마지막 줄)은 빈 채 자리만 둔다
+    expect(
+      out.endsWith(
+        '<p role="status" class="flex min-h-8 items-center gap-2"></p></div>',
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("버림 화면 아이 차례를 화면 안으로(화면 판정 I-2)", () => {
+  it("버림 화면 켠 기기에서 짧은 말 말풍선이나 안내 줄이 보이면 아이 차례를 화면 안으로 옮기고, 층이 없거나 둘 다 없으면 옮기지 않는다", () => {
+    const shortLine = { line: { en: "Okay, it's your turn." } };
+    expect(
+      keepTurnInViewOf({ on: true, discardLine: undefined, shortLine }),
+    ).toBe(true);
+    expect(
+      keepTurnInViewOf({
+        on: true,
+        discardLine: CHILD_TURN_TEXT.micRecover,
+        shortLine: undefined,
+      }),
+    ).toBe(true);
+    expect(
+      keepTurnInViewOf({
+        on: true,
+        discardLine: undefined,
+        shortLine: undefined,
+      }),
+    ).toBe(false);
+    expect(
+      keepTurnInViewOf({
+        on: false,
+        discardLine: CHILD_TURN_TEXT.micRecover,
+        shortLine,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -745,12 +925,15 @@ describe("버림 화면 첫 실행 음성 인식 안내의 부모 줄(FR-4)", ()
     },
   );
 
-  it("버림 화면 첫 실행 부모 줄은 spec 설계 3 초안 그대로이고, 기기 판정 전에는 없다", () => {
+  it("버림 화면 첫 실행 부모 줄은 spec 설계 3 초안에 기기 판정 이름(아이패드 · 아이폰)을 넣고 끝 마침표가 없으며, 기기 판정 전에는 없다", () => {
     expect(firstRunDiscardLineOf("ios", DEVICES.iPad)).toBe(
-      FIRST_RUN_TEXT.micDiscard,
+      "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요",
     );
-    expect(FIRST_RUN_TEXT.micDiscard).toBe(
-      "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요.",
+    expect(firstRunDiscardLineOf("ios", DEVICES.iPhone)).toBe(
+      "아이폰에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이폰의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요",
+    );
+    expect(firstRunDiscardLineOf("all", DEVICES.iPhone)).toBe(
+      FIRST_RUN_TEXT.micDiscard(FIRST_RUN_TEXT.iosDeviceName.iPhone),
     );
     expect(firstRunDiscardLineOf("ios", undefined)).toBeUndefined();
   });

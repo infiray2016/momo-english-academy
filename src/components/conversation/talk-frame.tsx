@@ -2060,6 +2060,10 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   onSend={onChildSend}
                   flashDontKnow={flash}
                   discard={turnDiscard}
+                  // 위에 보이는 짧은 말 말풍선(아이 차례를 화면 안으로 — 화면 판정 I-2)
+                  shortLine={
+                    shortLine?.turn === turnKey ? shortLine : undefined
+                  }
                 />
               ) : null}
               {phase === "choice" ? (

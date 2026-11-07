@@ -92,9 +92,14 @@ export const FIRST_RUN_TEXT = {
   micBody:
     "말소리는 브라우저가 글자로 바꿔요. Chrome 은 소리를 Google 서버로 보내고, 다른 브라우저도 어디에서 바꾸는지 앱이 정할 수 없어요. 앱은 소리를 저장하지 않아요",
   micIpad: "설정에서 Siri 또는 받아쓰기를 켜야 말소리를 알아들어요",
-  /** 버리는 듣기를 켠 iPad 의 부모 줄(iPad 버리는 듣기 spec 설계 3 초안 · C213). */
-  micDiscard:
-    "아이패드에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 아이패드의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요.",
+  /**
+   * 버리는 듣기를 켠 iOS 기기의 부모 줄(iPad 버리는 듣기 spec 설계 3 초안 · C213). 기기 이름은 기기 판정대로 넣고 끝 마침표는 이 화면의 다른 줄처럼
+   * 두지 않는다(화면 · 문구 판정 I-4 · M-2).
+   */
+  micDiscard: (device: string) =>
+    `${device}에서는 선생님이 말하는 동안에도 마이크가 켜져 있어서 화면 위에 주황색 표시가 보여요. 그동안 들린 소리도 ${device}의 음성 인식이 처리하지만, 앱은 소리를 녹음하지 않고 그 말을 글로도 남기지 않아요`,
+  /** 부모 줄의 기기 이름(기기 판정 iPhone · iPad). */
+  iosDeviceName: { iPhone: "아이폰", iPad: "아이패드" },
   /** iPadOS 설정의 메뉴 이름(화면 검토 M-4 · 브리프 — 고유 이름이라 새 안내 문구가 아님). */
   ipadDictationPath: ["설정", "일반", "키보드", "받아쓰기"],
   ipadSiriPath: ["설정", "Siri 및 검색"],
@@ -141,8 +146,8 @@ const STEPS = [
 type Step = (typeof STEPS)[number];
 
 /**
- * 음성 인식 안내의 버리는 듣기 부모 줄(순수, spec 설계 3 · FR-4): iOS WebKit 기기이고 그 기기에서 버리는 듣기가 켜질 때만 문구, 그 밖(끔 ·
- * 데스크톱 · 기기 판정 전)은 없음.
+ * 음성 인식 안내의 버리는 듣기 부모 줄(순수, spec 설계 3 · FR-4): iOS WebKit 기기이고 그 기기에서 버리는 듣기가 켜질 때만 문구(기기 이름은
+ * iPhone 이면 '아이폰', 그 밖 iPad 는 '아이패드' — 판정 I-4), 그 밖(끔 · 데스크톱 · 기기 판정 전)은 없음.
  */
 export function firstRunDiscardLineOf(
   mode: DiscardMode,
@@ -150,7 +155,11 @@ export function firstRunDiscardLineOf(
 ): string | undefined {
   if (verdict === undefined || !discardNoticeShown(mode, verdict))
     return undefined;
-  return TEXT.micDiscard;
+  return TEXT.micDiscard(
+    /^iPhone( |$)/.test(verdict.name)
+      ? TEXT.iosDeviceName.iPhone
+      : TEXT.iosDeviceName.iPad,
+  );
 }
 
 /** 알파벳을 모르면 시작 단계를 고를 수 없는 영역(3.1). */
