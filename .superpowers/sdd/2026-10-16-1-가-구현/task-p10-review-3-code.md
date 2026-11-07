@@ -1,0 +1,18 @@
+# 코드 검토 브리프: P10 차례 3 홈(code-reviewer rev-p10 이어 보기 · Opus · xhigh, 읽기 전용, 2026-10-17 23:2x) — 검토 묶음 B1(코드 몫)
+
+전체 루프(C52) 코드 검토다. plan-p10b 작업 1 · 2(차례 3 — 오늘 완료 · 이번 주 n일 순수 함수, 홈 자료, 홈 카드 넷)가 plan-p10b(값 2 · 값 4 · 정할 것 ㄴ · ㅊ) · 브리프 `task-p10-3.md` (2) · 정본(4절 홈 표 · '배치 평가 전' 행, 3.5 '이번 주 n일' · 연속 학습 일수(P12 몫), 3.2 단원 통과 표(어휘 숙달 · 최근 5회), 5절 sessions · unit_progress · vocab_progress · profile_tracks · parent_alerts, 7절 '마이크를 쓸 수 없음' · '기기 상태는 브라우저에만', 12절 unit.* · app.*, 13절 C50 (1) · C72 · R14)대로인지와 품질(Critical · Important · Minor)을 판정한다. 지적마다 심각도 · 근거(파일:줄 · 재현 · 시험). 화면 · 문구는 des-p10 몫(겹치면 코드 쪽만). 저장소 · 워크트리 파일을 고치지 않는다(복사본 재현은 된다). 3001 · 54331 · 3000 · 54329 · 3302 · 54339 는 건드리지 않고 `pnpm e2e:local` 은 돌리지 않는다. **fix 1 이 같은 시간에 돈다**(impl-p10, `task-p10-fix1.md`: I-1 · M-1 · M-2 · M-3 · spec 중복 — 차례 2 서버 · 순수 함수 · 시험 파일과 `src/server/db/` 도우미, read.ts 의 테이블 목록 상수). 구현자는 차례 3 파일을 손대지 않기로 했다. fix 1 재검토는 뒤에 따로 보낸다(이 검토에 넣지 않음).
+
+## 대상
+- 워크트리 `/Users/hikaru/workspace/momo-english-academy/.claude/worktrees/p10`(feature/1a-p10-first-run-home, 커밋 없음). 차례 3 파일: `src/core/today/done.ts` · `src/server/home/index.ts` · `src/app/(child)/page.tsx` · `src/app/(child)/home-cards.tsx` · `src/app/(child)/talk/page.tsx` · `tests/unit/today-done.test.ts` · `tests/integration/home.test.ts`(plan 표 밖 — 더함) · `tests/e2e/home.spec.ts` · 공용 변경 `src/components/board/board.tsx` `BigLink` · `src/app/globals.css` `--color-kraft`.
+- 구현 보고 `<워크트리>/.superpowers/sdd/2026-10-16-1-가-구현/task-p10-report.md` '차례 3' 절. 다르게 한 것 일곱(부모 꼬리표를 종이 띠 안으로 · `PLACEMENT_OPEN = false` 로 '내 단계 찾기' 비활성 · 카드 → 수업 목록은 차례 4 라 지금 404 · 이번 주 · 오늘 완료에서 배치 세션을 뺌 · 아는 단어 · 최근 성적 · 끝낸 대화는 실제 질의 · 카드 전체가 링크 하나(R14) · 1-나 · P11 · P12 몫은 안 그림). 알릴 것 넷(404 · 마이크 판정 전 깜빡임 · opacity-60 대비 · 끝낸 대화 n/unit.min_lessons). 빨강 먼저: 단위만 봄, 통합 · e2e 는 문구 변이로 확인.
+- 컨트롤러 재확인(23:1x, 워크트리 그대로): tsc 0 · biome 0 · 단위 321 · 통합 79 + 1 · deps 0 · bundle 0(화면 파일 20).
+
+## 볼 것
+1. **순수 함수 `done.ts`**: 정할 것 ㄴ · 4절 홈 표 '오늘 완료' 뜻과 글자 대조 — 새 수업 = 정규 · 보강 · 연습 · 안 해 본 수업 하나, 단계 평가 하나, 새 수업이 없는 날은 다시 하기 · 복습, 복습할 카드가 있으면 그날 복습도. 이번 주 = 월요일 시작 · app.day_start_hour · app.timezone 의 학습일(기존 `learningDayOf` 를 쓰는지) · 서로 다른 학습일 수 · 복습 포함. 배치 세션을 뺀 해석(다르게 한 것 4)이 정본과 어긋나는지 판정. 변이 표본 둘셋 — 특히 구현자가 빨강을 못 본 통합 · e2e 가 규칙을 증명하는지.
+2. **홈 자료 `readHome`**: 카드마다 gate(배치 전 · 보통 — 마이크 닫힘은 서버가 모르니 화면에서) · 단계 · 단원 · 단원 주제 · 5칸 · 아는 단어(vocab_progress known / 시작 개정 unit_specs 의 target_vocab 수) · 최근 성적 칸(unit.recent_window) · 회화 끝낸 대화 / unit.min_lessons · 별 합 · 부모 점 · 이름. 기준을 단원 복사본(settings_snapshot)에서 읽는지(설정값 원칙 · 수가 코드에 안 박힘) · 시작 개정으로 읽는지(장부 :31 · :41) · 한 시계(now 주입) · 질의 수(N+1) · `server-only` · 경계 · 홈 쪽이 접근 쿠키 없이 열리지 않는지(어느 층이 막는지 확인).
+3. **화면 코드 `home-cards.tsx` · `page.tsx`**: 'use client' 경계(서버 자료만 받는지 · 서버 변수 없음) · `micUsable()` 홈 진입마다 다시 판정 · 첫 그리기 깜빡임(알릴 것 2)을 7절 '기기 상태는 브라우저에만' 안에서 줄일 길이 있는지(저장된 기기 상태를 첫 그리기에 읽기 등) · 카드 전체 링크(R14)의 접근성(링크 안 단추 없음 · 이름) · `PLACEMENT_OPEN` 상수 자리(차례 5 에서 바꾸는 꼴) · 가는 곳 `/<area>/lessons` · `/<area>/placement` · `/speaking/placement` · 회화 `/talk`.
+4. **시험**: AC 접두(AC-2a · AC-5c, spec-trace missing-test 44) · e2e 가 e2e DB 도우미(`insertHousehold` · `insertSessions` · 복사본에서 숫자 읽기)를 제대로 쓰는지 · 통합 2 가 gate · 칸 · 부모 점 · pass/miss 를 보는지 · 변이에 깨지는지.
+5. 공용 변경(`BigLink` · `--color-kraft`)이 P5b · 첫 실행을 깨지 않는지. 다르게 한 것 일곱 판정. 장부 P10 행(`ledger-open.md` :9 imageKey · :24 · :31 · :36 · :41) 판정.
+
+## 보고
+`/Users/hikaru/workspace/momo-english-academy/.superpowers/sdd/2026-10-16-1-가-구현/review-p10-3-code.md`(메인 저장소): 판정(Approved · Changes requested) · 지적(심각도 · 근거) · 설계 준수 표 · 다르게 한 것 판정 · 장부 판정. 마지막 메시지는 판정과 요지 5줄 안쪽을 컨트롤러에게 SendMessage 로.

@@ -1,0 +1,173 @@
+--- /private/tmp/claude-501/-Users-hikaru-workspace-momo-english-academy/3b649d12-fbb9-4aea-bf0d-1f8734a04e7d/scratchpad/diag/vault_check.before.py	2026-10-23 02:21:34
++++ /Users/hikaru/.claude/hooks/vault_check.py	2026-10-30 14:27:21
+@@ -12,7 +12,7 @@
+   --stop         Stop: 요청자 메시지 · 답 전문을 대화 원자료에 자동으로 덧붙이고, 이번 턴의 변경이 기록되지 않았으면 차단한다(JSON decision=block)
+   --end          SessionEnd(/clear · 종료): 대화 원자료를 보충하고 이어하기.md 의 자동 기록 절을 다시 쓰며, 오늘 일지가 없으면 밀린 일지로 적어 둔다(debt.json)
+   --compact      PreCompact(컨텍스트 정리 직전): 대화 원자료 보충 + 이어하기 자동 기록 절
+-  --mark-ingest  턴마다 끝에 부른다(/vault-ingest · /wrap-up 끝에도). 이번 턴까지 정리했다고 상태 파일에 적는다(마지막 ingest 시각 · 세션기록의 정리한 턴 수)
++  --mark-ingest  묶음이 닫힐 때 · 요청자 결정을 옮긴 때 · /wrap-up 끝에 부른다. 이번 턴까지 정리했다고 상태 파일에 적는다(마지막 ingest 시각 · 세션기록의 정리한 턴 수). 턴마다 부르지 않는다(요청자 결정 2026-10-30)
+   --report       사람이 보는 상태표(규칙 상수 · 오늘 비용 집계 포함)
+   --rules        규칙 상수 표만
+   --lint         볼트 검사. --fix 면 문서-관계 교차표를 다시 만든다
+@@ -44,15 +44,19 @@
+     "CADENCE_MIN": (45, "코드만 바뀌는 작업은 이 분 간격마다 한 번 log · 이어하기를 요구한다"),
+     "RAW_FILE_MAX_KB": (500, "세션기록 파일 한 개의 최대 크기. 넘으면 같은 날짜의 -2 · -3 파일로 이어 쓴다(메시지 · 답은 자르지 않는다)"),
+     "HANDOFF_ON": ("커밋 · 45분 간격 · 마무리", "이어하기.md 세 절을 요구하는 때. 설계 문서만 바뀐 턴은 log 한 줄만"),
+-    "INGEST_ON": ("턴마다", "세션기록 정리(ingest)와 --mark-ingest 표시를 하는 때. 옮길 것이 없는 턴도 표시한다. 표시 안 된 턴이 남아 있으면 Stop 훅이 턴을 끝내지 못한다(요청자 결정 2026-10-15 08시)"),
+-    "PENDING_MODE": ("차단", "지난 세션에서 정리 안 된 턴 · 원자료가 남아 있으면 다음 세션 첫 턴도 Stop 훅이 끝내지 못한다. SessionStart 가 목록을 알린다"),
++    "INGEST_ON": ("묶음 끝 · 결정 · 마무리", "볼트로 옮기는 때. 묶음(구현 → 검토 → 고침 → 재검토)이 닫힐 때 그 묶음의 보고를 한 번에 옮기고, 요청자 결정(13절 · 결정 목록)과 장부 한 줄은 그 자리에서 쓰며, /wrap-up 때 나머지를 정리한다. 턴마다 옮기지 않는다(요청자 결정 2026-10-30 — 10-15 '턴마다' 를 뒤집음. 턴마다 기록이 하루 449번 · 응답마다 60만 토큰을 먹었다)"),
++    "PENDING_MODE": ("알림", "정리 안 된 세션기록 턴 · 원자료 · 볼트 사본 없는 저장소 보고는 Stop 훅이 막지 않고, SessionStart · --report 가 알린다. Stop 훅은 정리(ingest)가 밀렸다고 막지 않고, 13절이 바뀐 턴에만 결정 목록 옮김을 요구한다(log · 일지 · 이어하기 · 조사 사본 요구는 그대로)"),
+     "SKIP_REPO_PREFIXES": ({"momo-english-academy": ("seed/",)}, "프로젝트마다 저장소 변경으로 세지 않는 경로. 모모의 seed/ 는 시드 생성 결과라 45분 기록 요구에서 뺀다(요청자 결정 2026-10-23 H9, 모모 13절 C116 · 6.3). 생성 결과는 저장소 커밋 · seed/manifest · 검토 보고로 남는다"),
+ }
+ MAX_BLOCKS = RULES["MAX_BLOCKS"][0]
+ CADENCE = RULES["CADENCE_MIN"][0] * 60
+ RAW_FILE_MAX = RULES["RAW_FILE_MAX_KB"][0] * 1024
+-DESIGN_PREFIXES = ("intent/", "specs/", "plans/", ".claude/", "docs/research/", ".superpowers/")   # 설계 · 규약 · 검토 장부
+-RECORD_NEW_PREFIXES = (".superpowers/sdd/", "docs/research/")                                     # 새 파일이면 원자료 사본이 필요
++DESIGN_PREFIXES = ("intent/", "specs/", "plans/", ".claude/", "docs/research/")   # 설계 · 규약(턴마다 log 한 줄). 검토 장부 · 브리프 · 보고(.superpowers/)는 묶음 끝 log 로(요청자 결정 2026-10-30, 검토 I2)
++DECISION_RE = re.compile(r"specs/[^/]*결정-기록\.md$|specs/10-[^/]*\.md$")                            # 요청자 결정이 적히는 정본(13절). 바뀐 턴에는 결정 목록 옮김을 요구한다
++DECISION_VAULT_RE = re.compile(r"위키/결정/결정-목록\.md$")
++UNCOPIED_SINCE = "2026-10-30"   # 볼트 사본 없는 보고 검사는 이 날 뒤 보고만 본다(요청자 결정 2026-10-30, 묶음 끝 정리로 바꾼 날)
++LEDGER_PREFIXES = (".superpowers/",)                                                            # 검토 장부 · 브리프 · 보고. 턴 검사에서 세지 않고 묶음 끝 log 로(요청자 결정 2026-10-30)
++RECORD_NEW_PREFIXES = ("docs/research/",)                                                        # 새 조사 파일은 그 턴에 원자료 사본이 필요. 검토 · 구현 보고(.superpowers/sdd/)는 묶음 끝에(uncopied_reports 가 알림)
+ 
+ PROJECT = os.environ.get("VAULT_PROJECT") or _project_name()
+ SKIP_REPO = tuple(RULES["SKIP_REPO_PREFIXES"][0].get(PROJECT, ()))   # 저장소 변경으로 세지 않는 경로(빈 튜플이면 아무것도 빼지 않음)
+@@ -111,7 +115,7 @@
+ def repo_changed_since(ts, with_new=False):
+     """턴 시작 뒤 바뀐 저장소 파일(추적 · 미추적)과 커밋 수. with_new 면 새 파일 목록도."""
+     files = []; new = []
+-    for line in _git("status", "--porcelain", "--untracked-files=all").splitlines():
++    for line in _git("-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=all").splitlines():   # 한글 경로를 이스케이프 없이(검토 I1)
+         path = line[3:].strip().strip('"')
+         if path.startswith(".claude/state/") or path.startswith(SKIP_REPO): continue
+         full = os.path.join(REPO, path)
+@@ -212,7 +216,7 @@
+             head = ("---\ntype: raw\nkind: 대화\nproject: momo-english-academy\ndate: " + d
+                     + "\nsource: Claude Code 세션 대화(훅 vault_check.py 가 턴마다 자동 기록. 요청자 메시지와 답 전문, 자르지 않음, 비밀값 꼴은 [가림])\nupdated: " + d
+                     + "\nstatus: immutable\ntags: [프로젝트/momo-english-academy, 원자료, 대화, 자동]\n---\n\n# 세션 대화 기록 " + d
+-                    + f" (자동{part_note})\n\n> 원자료. 고치지 않는다. 훅이 턴마다 덧붙인다. 파일이 {RULES['RAW_FILE_MAX_KB'][0]}KB 를 넘으면 다음 부로 이어 쓴다.{prev_note} 정리(ingest)는 턴마다 하고 끝에 `--mark-ingest` 로 표시한다.\n\n")
++                    + f" (자동{part_note})\n\n> 원자료. 고치지 않는다. 훅이 턴마다 덧붙인다. 파일이 {RULES['RAW_FILE_MAX_KB'][0]}KB 를 넘으면 다음 부로 이어 쓴다.{prev_note} 정리(ingest)는 묶음이 닫힐 때 · 요청자 결정 때 · /wrap-up 때 하고 `--mark-ingest` 로 표시한다.\n\n")
+             with open(p, "w", encoding="utf-8") as f: f.write(head)
+         with open(p, "a", encoding="utf-8") as f: f.write(body)
+     except Exception as e:
+@@ -224,6 +228,36 @@
+     return os.path.join(JOURNAL, f"{date.today().isoformat()}.md")
+ 
+ # ───────────────────────── 미처리 원자료 (ingest 앵커는 상태 파일)
++def uncopied_reports():
++    """저장소 .superpowers/sdd · docs/research 의 보고 파일(최근 14일, 이름이 task-*-report · *-review*)에 볼트 원자료 사본이 없는 것. 사본은 원자료 파일의 source 줄이 저장소 경로를 담는지로 본다."""
++    out = []
++    try:
++        srcs = ""
++        for p in glob.glob(os.path.join(VAULT, "원자료", "*", "*.md")):
++            try:
++                with open(p, encoding="utf-8") as f:
++                    head = f.read(1500)
++                m = re.search(r"^source:\s*(.*)$", head, re.M)
++                if m: srcs += " " + _nfc(m.group(1))
++            except Exception: pass
++        cut = max(time.time() - 14 * 86400, time.mktime(time.strptime(UNCOPIED_SINCE, "%Y-%m-%d")))   # 규칙을 바꾼 날 뒤의 보고만(그 전 것은 규칙 밖)
++        for base in (".superpowers/sdd", "docs/research"):
++            for p in glob.glob(os.path.join(REPO, base, "**", "*.md"), recursive=True):
++                name = _nfc(os.path.basename(p))
++                if not re.search(r"(report|review|보고|검토)", name) or re.search(r"(brief|브리프)", name): continue
++                if _mtime(p) < cut: continue
++                try:
++                    head = open(p, encoding="utf-8").read(200)
++                    if not re.search(r"(report|보고)", name) and re.match(r"#\s[^:(\n—]*브리프", head): continue   # 이름에 review 가 있어도 머리글이 '… 브리프' 면 보고가 아니다(검토 M2)
++                except Exception: pass
++                rel = _nfc(os.path.relpath(p, REPO))
++                if rel in srcs: continue
++                if re.search(r"(^|[\s`])" + re.escape(name) + r"($|[\s`()·,])", srcs): continue   # 기본 이름은 경계를 두고 맞댄다(검토 M1 · N1: 왼쪽 경계에 / 를 두면 다른 폴더의 같은 이름이 가린다)
++                out.append(rel)
++    except Exception as e:
++        _err("볼트 사본 없는 보고 검사", e)
++    return sorted(out)[:40]
++
+ def pending_raw():
+     """정리 안 된 원자료. 세션기록은 --mark-ingest 가 적은 턴 수와 비교하고(수정 시각에 걸지 않는다), 그 밖의 원자료는 마지막 표시 뒤에 생기거나 바뀐 것."""
+     ing = _load(INGEST, {})
+@@ -286,7 +320,7 @@
+     log_ok = _mtime(LOG) >= ts
+     content_vault = [f for f in vault_files if not f.startswith("일지")]
+     design = [f for f in repo_files if f.startswith(DESIGN_PREFIXES)]
+-    code = [f for f in repo_files if not f.startswith(DESIGN_PREFIXES)]
++    code = [f for f in repo_files if not f.startswith(DESIGN_PREFIXES) and not f.startswith(LEDGER_PREFIXES)]   # 장부 · 브리프 · 보고는 코드도 설계 문서도 아니다(묶음 끝 log, 검토 I2)
+     new_records = [f for f in new_files if f.startswith(RECORD_NEW_PREFIXES)]
+     stale = (time.time() - _mtime(LOG)) > CADENCE
+     # 기록할 가치가 있는 사건: 설계 문서 · 규약 · 커밋 · 볼트 내용 변경. 코드만 바뀌면 45분마다 한 번. 짧은 턴이라도 변경이 있으면 검사한다
+@@ -295,15 +329,17 @@
+     if trigger and not log_ok:
+         need.append("볼트 log.md 에 이번 턴의 ingest · lint 한 줄을 적는다" + (" (코드 작업이 45분 넘게 기록 없이 이어졌다)" if (code and stale and not (design or commits)) else ""))
+     if new_records and not content_vault:
+-        need.append("검토 보고 · 조사 파일 " + ", ".join(new_records[:4]) + " 의 사본을 원자료에 넣고 닿는 위키 쪽을 고친다")
++        need.append("조사 파일 " + ", ".join(new_records[:4]) + " 의 사본을 원자료에 넣고 닿는 위키 쪽을 고친다")
+     if commits and _mtime(today_journal()) < ts:
+         need.append(f"커밋한 턴이다. 오늘 일지 일지/{date.today().isoformat()}.md 에 한 일 · 결정 · 막힌 것을 더한다(intent · spec · plan 판본이 바뀌었으면 산출물 원자료에 커밋 해시 + 바뀐 절 요약도)")
+     if (commits or (code and stale)) and _mtime(HANDOFF) < ts:
+         need.append("볼트 이어하기.md 의 '지금 하던 것' · '다음 한 걸음' · '열린 질문'을 이번 턴 기준으로 고친다")
+-    pend = pending_raw()                            # 턴마다 정리 · 표시(RULES INGEST_ON). 지난 세션에서 남은 것도 여기서 막는다(PENDING_MODE)
+-    if pend:
+-        need.append("정리 안 된 세션기록 턴 · 원자료: " + ", ".join(pend[:4]) + (" …" if len(pend) > 4 else "")
+-                    + " — 옮길 결정 · 지시 · 지적이 있으면 위키에 넣고(/vault-ingest), 없어도 python3 ~/.claude/hooks/vault_check.py --mark-ingest 로 이번 턴까지 표시한다")
++    # 정리(ingest)는 묶음이 닫힐 때 · 요청자 결정을 옮긴 때 · /wrap-up 때만 한다(RULES INGEST_ON, 요청자 결정 2026-10-30). 턴마다 막지 않고,
++    # 요청자 결정이 적힌 턴(13절 · 결정 목록 변경)에만 그 결정을 볼트 결정 목록에 옮겼는지 본다. 나머지 미정리는 SessionStart · --report 가 알린다(PENDING_MODE 알림).
++    decision_files = [f for f in repo_files if DECISION_RE.search(_nfc(f))]
++    decision_vault = [f for f in vault_files if DECISION_VAULT_RE.search(_nfc(f))]
++    if decision_files and not decision_vault:
++        need.append("요청자 결정이 적힌 파일 " + ", ".join(decision_files[:3]) + " 이 바뀌었다 — 그 결정 한 줄을 볼트 결정-목록에 옮기고 python3 ~/.claude/hooks/vault_check.py --mark-ingest 로 표시한다")
+     debt = _load(DEBT, {}) or {}
+     if isinstance(debt, dict) and "date" in debt: debt = {"journal": debt, "unmet": []}   # 옛 형식
+     unmet = debt.get("unmet") or []
+@@ -344,7 +380,7 @@
+     ts = st.get("session_start") or (time.time() - 8 * 3600)
+     repo_files, commits = repo_changed_since(ts)
+     vault_files = vault_changed_since(ts)
+-    status = _git("status", "--porcelain").rstrip("\n").splitlines()
++    status = _git("-c", "core.quotePath=false", "status", "--porcelain").rstrip("\n").splitlines()
+     head = _git("log", "-3", "--pretty=%h %s").strip().splitlines()
+     prompts = st.get("prompts") or []
+     when = datetime.now().strftime("%Y-%m-%d %H:%M")
+@@ -493,8 +529,8 @@
+     st["session_start"] = time.time(); st["blocks"] = 0; st["bash_vault"] = False
+     if not cut: st["touched"] = []                 # 끊긴 턴은 첫 턴에 합쳐지므로 그때 쓴 파일 목록을 남긴다
+     _save(TURN, st)
+-    lines = [f"[볼트 기록 규칙 — 프로젝트 {PROJECT}] 검토 보고 · 조사 · 산출물 판본은 그 턴에 볼트 원자료에 넣고 닿는 위키 쪽 · index · log 를 같은 턴에 고친다. "
+-             "커밋한 턴에는 일지와 이어하기를 쓴다. 대화는 훅이 자동 기록한다. 세션기록은 턴마다 정리하고 끝에 --mark-ingest 로 표시한다(옮길 것이 없는 턴도). Stop 훅이 검사해 안 됐으면 턴을 끝내지 못한다. "
++    lines = [f"[볼트 기록 규칙 — 프로젝트 {PROJECT}] 검토 보고 · 조사 · 산출물 판본은 묶음이 닫힐 때 볼트 원자료에 넣고 닿는 위키 쪽 · index · log 를 고친다. "
++             "커밋한 턴에는 일지와 이어하기를 쓴다. 대화는 훅이 자동 기록한다. 볼트로 옮기는 일(ingest)은 묶음이 닫힐 때 그 묶음의 보고를 한 번에, 요청자 결정과 장부 한 줄은 그 자리에서, 나머지는 /wrap-up 때 한다(요청자 결정 2026-10-30, 턴마다 하지 않는다). 옮긴 뒤 --mark-ingest 로 표시한다. "
+              "절차: /vault-ingest · /vault-lint · /journal · /wrap-up. 상태표: python3 ~/.claude/hooks/vault_check.py --report"]
+     if cut: lines.append(cut)
+     drift = _tools_drift()
+@@ -514,16 +550,20 @@
+     if pend:
+         _save(PENDING, {"files": pend, "at": time.time()})
+         lines.append("[미처리 원자료 " + str(len(pend)) + "건] " + ", ".join(pend[:6]) + (" …" if len(pend) > 6 else "")
+-                     + " — 지난 세션에서 정리되지 않은 것이다. 이 세션 첫 턴에서 먼저 읽어 옮길 결정 · 지시가 있으면 위키에 넣고(/vault-ingest) --mark-ingest 로 표시한다. 그 전에는 Stop 훅이 턴을 끝내지 못한다.")
++                     + " — 지난 세션에서 정리되지 않은 것이다. 묶음이 닫힐 때나 /wrap-up 때 읽어 옮길 결정 · 지시가 있으면 위키에 넣고(/vault-ingest) --mark-ingest 로 표시한다(알림만, Stop 훅은 막지 않는다).")
+     else:
+         try: os.remove(PENDING)
+         except OSError: pass
++    missing = uncopied_reports()
++    if missing:
++        lines.append("[볼트 사본 없는 저장소 보고 " + str(len(missing)) + "건] " + ", ".join(missing[:6]) + (" …" if len(missing) > 6 else "")
++                     + " — 저장소에는 있고 볼트 원자료 사본이 없는 검토 · 구현 보고다. 그 묶음이 닫힐 때(또는 /wrap-up) 사본을 넣고 닿는 위키 쪽을 고친다(알림만).")
+     if os.path.exists(HANDOFF):
+         try:
+             body = open(HANDOFF, encoding="utf-8").read()
+             body = re.sub(r"^---\n.*?\n---\n", "", body, count=1, flags=re.S)
+             lines.append("[이어하기 — 볼트 이어하기.md, 세션 시작 원인 " + str(inp.get("source") or "-") + "]\n" + body.strip()[:8000])
+-            lines.append("[이어하기 규칙] 위 '지금 하던 것'과 '다음 한 걸음'부터 이어 간다. 커밋한 턴 · 45분 간격 · 마무리에 세 절을 갱신한다(Stop 훅이 검사).")
++            lines.append("[이어하기 규칙] 위 '지금 하던 것'과 '다음 한 걸음'부터 이어 간다. 커밋한 턴 · 45분 간격 · 마무리에 세 절을 갱신한다(Stop 훅이 검사). 새 일은 새 에이전트에 짧은 브리프로 맡기고, 긴 도구 결과는 파일에 두고 요약만 읽으며, 컨트롤러 세션은 반나절마다 정리해 잇는다(요청자 결정 2026-10-30).")
+         except Exception as e:
+             _err("이어하기 읽기", e)
+     if not os.path.isdir(VAULT):
+@@ -559,6 +599,7 @@
+     rcs = raw_conv_parts()
+     rows.append(("오늘 자동 대화 기록", (f"{sum(_raw_turns(r) for r in rcs)}턴, 파일 {len(rcs)}개(" + ", ".join(f"{os.path.getsize(r)//1024}KB" for r in rcs) + ")") if rcs else "없음"))
+     rows.append(("미처리 원자료", ", ".join(pending_raw()[:5]) or "없음"))
++    rows.append((f"볼트 사본 없는 저장소 보고(최근 14일 · {UNCOPIED_SINCE} 뒤)", ", ".join(uncopied_reports()[:5]) or "없음"))
+     errs = _load(ERRORS, [])
+     rows.append(("볼트 접근 실패", f"{len(errs)}건" if errs else "없음"))
+     # 비용 집계(오늘)

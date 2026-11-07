@@ -1,0 +1,28 @@
+# 구현 브리프: P11a 차례 2 — 세션 서버 · 대기열 · 틀 · 읽기 · 결과 틀(implementer impl-p11 이어 보기 · Opus · high, 2026-10-18 06:1x)
+
+plan-p11a 작업 순서 2(검토 묶음 A2 — code-reviewer + design-reviewer). **시작 조건: 차례 1 fix 1 재검토 Approved + 컨트롤러의 시작 알림**(P10 78db3a2 는 6e09901 로 이미 합쳐졌다. 컨트롤러가 specs · intent 를 문서 가지 최신과 맞춘 커밋을 더한 뒤 알린다). 그 전에는 plan · 코드 읽기와 시험 설계만. 워크트리 p11, 커밋 없음. 통합 · e2e 는 CI 로만(컨트롤러가 CI 가지를 만들어 push 하고 결과 · 실패 로그를 전한다 — 한 바퀴가 6분쯤이니 시험을 꼼꼼히 써서 바퀴 수를 줄인다). 단위 · tsc · biome · build 는 로컬.
+
+## 먼저 읽을 것
+plan-p11a **파일별 값 5 · 6 · 7 · 8 · 9 · 10**(세션 서버 · 대기열과 활동 안 입력 · 세션 틀 · 결과 틀 · 읽기 조각 · e2e 단계 견본) · 정본 밖 문구 표(a 행: '맞았어요!' · '정답은 이거예요' · '수업을 끝냈어요!' · '모르는 단어를 누르면 뜻이 보여요' · '읽어 주기' · '지문 보기' · '닫기') · 위험 2 · 3 · 4 · 9 · 정할 것 다 · 마 (1) · 바 · 사 · 증명 표(AC-3a · AC-2c 읽기 몫 · '세션 바탕:' 통합 넷 · '대기열:' 단위). 13절 C77 (1) · C78 · C70 · C75. 정본 4절 읽기 세션 행 · 세션 결과 행 · 세션 공통(`specs/03-화면.md`), 3.3 읽기, 8절 네트워크 끊김 · 같은 프로필 동시 사용, 5절 sessions · attempts. 차례 1 보고의 '차례 2 에 넘기는 것'(`task-p11-report.md`). P10 코드: `src/server/session/index.ts`(saveSessionAttempts · loadSessionView · 세션 시작) · `src/server/actions/session.ts` · `src/lib/attempt-queue.ts` · `session/[id]/{page,session-frame}.tsx` · `src/components/activities/reading.tsx`(P5b `ReadingPassage`) · `src/components/answer/choice.tsx` · `src/server/lessons/*`(`readLessonList` · `lessonListState` hereStart) · `src/server/db/safe-error.ts`(`dbErrorTag` · `safeDbError` · `isUniqueViolation`) · `tests/integration/{global-setup,test-db}.ts` · `tests/e2e/{fixtures,db,access-cookie,session.spec}.ts` · `tests/fixtures/seed/builders.ts`(`readingLesson` 1 · 4) · `playwright.config.ts` · `.github/workflows/ci.yml` e2e 작업.
+
+## 이번 몫(파일 — plan 표 A2 행)
+- 서버: `src/server/session/index.ts`(값 5 — 시도 낱낱 검사 `parseAttemptInput` · `inputFitsActivity` · 거부 id · `appActivityResult` 서버 채점으로 `score` · `word_results` · `word_count`, AI 활동 종류의 끝 시도는 이 길로 받지 않음, 끝나거나 닫힌 세션의 늦은 시도는 받은 것으로 치고 버림, `finishLessonSession` 한 트랜잭션 FOR UPDATE · `incomplete` · `sessionScoreOf` · `learningDayOf` · `englishSentencesOf` · 두 번 불러도 같음, `loadSessionView` 가 `resumePointOf` + config(speech · ui · speaking) · 동음이의어 · 원형 표 · appJudged · showKo 를 넘김, `activitiesOf` 한 인자 꼴로 바꾸고 차례 1 의 두 인자 덧붙임 지움, `ATTEMPTS_PER_BATCH_MAX` · `INPUT_JSON_MAX` 는 core 에서) · `src/server/actions/session.ts`(`finishSession`, 첫 문장 `await requireAccess()`) · `src/server/session/result.ts`(값 8, `server-only`).
+- 기기: `src/lib/attempt-queue.ts`(값 6 — 50개씩 · accepted · rejected 둘 다 지움 · 버린 수만 warn · `idle()` 뒤 `flush()`) · `src/lib/session-input.ts`(값 6 — localStorage `momo.session-input.v1`, 못 쓰면 메모리).
+- 화면: `session/[id]/session-frame.tsx`(값 7 — 활동마다 조각 · `onDone` → 대기열 · 마지막 뒤 idle → finishSession → incomplete 한 번 더 → 끊김 안내 · online 다시 → `/result/<id>`, 첫 누름 `unlockFromGesture()`; 말하기 마이크 문은 차례 4) · `session/[id]/page.tsx`(끝난 세션이면 결과로) · `src/components/activities/reading.tsx`(`onWordTap` 선택 속성만) · `src/components/session/reading.tsx`(값 9 — 지문 활동 · 문항 활동, C77 (1) · 정할 것 사) · `result/[id]/{page,result-view}.tsx`(값 8).
+- 시험: `tests/integration/session-flow.test.ts`(이름 넷 '세션 바탕: …' 글자 그대로 + 'DB 오류 로그에 시도 입력 글이 없다' — safe-error 를 처음 쓰는 자리, 장부 행) · `tests/integration/retry.test.ts`(AC-2c 읽기 몫) · `tests/unit/attempt-queue.test.ts`('대기열: 50개씩 나눠 보내고 거부된 id 도 지운다') · `tests/e2e/lessons.ts`(값 10) · `tests/e2e/reading.spec.ts`(AC-3a 글자 그대로) · `tests/e2e/session.spec.ts`(P10 '둘째 활동부터 보기만' → 끝까지).
+- **사진(공용 변경, 컨트롤러 요청)**: 이 Mac 은 로컬 e2e 를 못 돌려 화면 검토 사진을 CI 에서 받는다. (1) `tests/e2e/photos.ts` 도우미 — 환경 변수 `E2E_PHOTOS`(P10 smoke.spec 의 `SCREENSHOT_ENV` 꼴)가 있으면 `test-results/photos/<이름>-<portrait|landscape>.png` 로 저장, 없으면 아무것도 안 함. (2) reading.spec · session.spec 의 중요 화면(지문 · 낱말 뜻 쪽지 · 문항 맞음 · 문항 틀림 '한 번 더 풀기' · 둘째 뒤 정답 보기 · 세로 '지문 보기' 쪽지 · 결과)에서 두 방향 사진. 이름은 `p11-reading-<화면>`. (3) `.github/workflows/ci.yml` e2e 작업: `pnpm e2e` 단계에 `env: E2E_PHOTOS: "1"` 과 그 뒤 `- uses: actions/upload-artifact@v4` `with: name: e2e-photos, path: test-results/photos, if-no-files-found: ignore` `if: always()`. e2e-local 은 그대로.
+
+## 컨트롤러 결정(이 차례 몫)
+- **문항 활동의 지문 보기(가로 나란히 칸 · 세로 '지문 보기' 쪽지)에는 그림 줄을 두지 않는다**(글만 + '읽어 주기'). 지문 그림의 낱말이 문항 정답이면 그림이 답을 가리키는 문제(장부 P8 행, review-p05b-design-2) — 그림은 지문 활동에서 보고, 문항에서는 글로 돌아본다. 13절 한 줄 없음(화면 세부, 정할 것 사 결).
+- 대기열 · 서버 채점 · 이어 할 자리 · 결과 틀은 plan 값 5~8 그대로. 결과 화면 큰 단추 '다음 수업'은 hereStart 가 lesson · resume · practice 면 P10 `startLesson`, 그 밖 · 없음은 '수업 목록'. 숫자 · 퍼센트 없음.
+- 차례 1 컨트롤러 결정 1(건너뛴 시도 점수 null)은 서버 채점에도 그대로(같은 함수).
+
+## 지킬 것
+- 모든 서버 액션 첫 문장 `await requireAccess()`(`@/server/access/guard` 에서 이름 있는 가져오기 꼴만 — 장부 행). DB 는 서버 Drizzle 로만, 한 시계 `now()`, 질의 SQL 에 `now()` 금지, 학습일 `learningDayOf`. **DB 오류는 `dbErrorTag` · `safeDbError` 로 이름 · 코드만** — 시도 입력 · 인식 글 · 쓴 글을 로그 · 오류 · 알림 값에 넣지 않는다(단위 사례 하나 — 장부 행). jsonb 에 JSON null 금지. 마이그레이션 없음.
+- 설계 숫자는 설정(12절)에서 — 결과 말 경계 · 저절로 넘김 초 · 일치율 기준. 기술 값(묶음 50 · JSON 4000 · 저장 키)은 core · 파일 위 대문자 상수(C72). check:ids design-number 새 줄 없음.
+- 아이 화면 원칙(한 화면 한 행동 · 해요체 · 안내 20px · 영어 24px · 단추 이름표 22px · 카드 보조 줄 `data-size-guide` · 누르는 곳 56 · 퍼센트 없음). 지문 안 낱말 단추는 `data-size-exempt`(P10 차례 7 — 합친 뒤 있음). 정본 밖 문구는 plan 표 글자 그대로. 아이 이름 · 비밀값 없음.
+- `src/core` 는 db · next · react 없음. `check:deps` · `check:bundle`(화면 묶음에 서버 변수 금지) 초록. 시험 이름의 AC 토큰은 증명 표 글자 그대로.
+- P10 배치 · 첫 실행 · 홈 · 목록 e2e 가 그대로 초록이어야 한다(위험 3 · 5).
+
+## 완료 · 보고
+로컬: `pnpm lint` · `pnpm test` · `pnpm build` · `pnpm exec tsc --noEmit` · `pnpm check:deps` · `pnpm check:ids` · `pnpm check:bundle` · `pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec`. CI: 컨트롤러 push → integration · e2e · e2e-local 결과 전달 → 빨강이면 고치고 다시. 보고 `task-p11-report.md` '차례 2' 절(바뀐 파일 · 시험 수 · 다르게 한 것 · 정할 것 · 사진 이름 목록 · 차례 3 에 넘기는 것) → SendMessage 한 줄. 그 뒤 code-reviewer · design-reviewer(사진은 CI 아티팩트에서 컨트롤러가 받아 둠).

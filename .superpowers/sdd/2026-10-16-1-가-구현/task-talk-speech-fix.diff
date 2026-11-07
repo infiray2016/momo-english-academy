@@ -1,0 +1,1603 @@
+diff --git a/drizzle/meta/_journal.json b/drizzle/meta/_journal.json
+index aeee4d3..aff99b4 100644
+--- a/drizzle/meta/_journal.json
++++ b/drizzle/meta/_journal.json
+@@ -36,6 +36,13 @@
+       "when": 1792729119923,
+       "tag": "0004_profiles_teacher_key",
+       "breakpoints": true
++    },
++    {
++      "idx": 5,
++      "version": "7",
++      "when": 1793253295215,
++      "tag": "0005_talk_turns_client_listen",
++      "breakpoints": true
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git "a/specs/02-2-\354\204\270\354\205\230\352\263\274-\353\213\250\352\263\204\355\221\234.md" "b/specs/02-2-\354\204\270\354\205\230\352\263\274-\353\213\250\352\263\204\355\221\234.md"
+index 188203b..42054fc 100644
+--- "a/specs/02-2-\354\204\270\354\205\230\352\263\274-\353\213\250\352\263\204\355\221\234.md"
++++ "b/specs/02-2-\354\204\270\354\205\230\352\263\274-\353\213\250\352\263\204\355\221\234.md"
+@@ -126,7 +126,7 @@
+ 
+ 회화는 채점이 아니라 반응이다(요청자 결정 R2). 선생님은 아이 말에 대화로 반응한다. 턴에 점수나 맞음 · 틀림 판정을 두지 않는다. 아이 말이 틀리면 선생님은 틀렸다고 하지 않고 바른 말로 자연스럽게 되풀이한다(예: 'Two apple' 에 'Two apples! Here you go.'). 5단계(talk.feedback_from_level)부터는 대화가 끝난 뒤 마무리 화면에서 잘한 말 talk.good_lines(2)개와 다음엔 이렇게 talk.next_time_lines(5~9단계 1, 10~12단계 2)개를 보여 준다. 이것도 점수가 아니라 반응의 일부다.
+ 
+-아이가 막히면 선생님이 돕는다(컨트롤러 결정 C2). 막힌 때는 아이가 '잘 모르겠어요' 버튼을 누른 때와, 같은 질문에서 인식된 말 없이 no-speech 로 끝난 듣기가 talk.nospeech_dontknow_count(2)번 이어진 때다. 둘 다 입력 방식 '모름'으로 보낸다. 평가 턴에서는 no-speech 를 막힘으로 보지 않는다(3.2). 선생님은 답 예시를 말로 들려주고 같은 질문을 다시 묻는다. 1~3단계는 카드의 답 예시를, 4단계부터는 AI 가 쓴 답 예시를 쓴다. 5단계부터는 첫 번째 막힘에 질문을 쉬운 영어로 바꿔 묻고, 이 말은 읽어 준다. 한국어 설명 한두 문장은 1~4단계에서는 첫 막힘부터, 5단계부터는 두 번째 막힘부터 붙인다. 설명은 선생님 말풍선 아래에 글로 보이고 읽어 주지 않는다. '모름' 턴은 목표 턴과 '말 주고받기 n'에 세지 않는다. 같은 질문에서 두 번째 '모름'부터는 힌트 버튼의 마지막 단까지 열어 둔다. 같은 질문에 talk.dontknow_max(3)번 '모름'이면 선생님이 다음 질문으로 넘어간다. 답 예시를 들은 뒤의 턴은 힌트 종류가 '영어'다. 아이가 못 알아들은 듯한 말(What? · I don't know · Sorry? 등)이나 질문과 관계없는 한두 낱말을 하면 회화 턴 출력의 '막힘으로 볼 말'이 참이 된다. 앱은 그 턴을 '모름'과 같이 처리한다. 1~3단계는 카드의 답 예시와 같은 질문을 붙이고, 그 턴은 목표 턴과 '말 주고받기 n'에 세지 않는다(컨트롤러 결정 C36). 수업 대화에서 no-speech 로 끝난 듣기 두 번을 막힘으로 보는 수와 '모름' 세 번이면 넘어가는 수는 설정값(talk.nospeech_dontknow_count · talk.dontknow_max, 키는 컨트롤러 결정 C44)이고 값은 잠정이다(검토 4회차).
++아이가 막히면 선생님이 돕는다(컨트롤러 결정 C2). 막힌 때는 아이가 '잘 모르겠어요' 버튼을 누른 때와, 같은 질문에서 인식된 말 없이 no-speech 로 끝난 듣기가 talk.nospeech_dontknow_count(2)번 이어진 때다. iPad 브라우저가 말소리 없는 듣기를 aborted('No speech detected')로 끝내면 그것도 no-speech 로 센다(7절 오류 행, 컨트롤러 결정 C148). 둘 다 입력 방식 '모름'으로 보낸다. 평가 턴에서는 no-speech 를 막힘으로 보지 않는다(3.2). 선생님은 답 예시를 말로 들려주고 같은 질문을 다시 묻는다. 1~3단계는 카드의 답 예시를, 4단계부터는 AI 가 쓴 답 예시를 쓴다. 5단계부터는 첫 번째 막힘에 질문을 쉬운 영어로 바꿔 묻고, 이 말은 읽어 준다. 한국어 설명 한두 문장은 1~4단계에서는 첫 막힘부터, 5단계부터는 두 번째 막힘부터 붙인다. 설명은 선생님 말풍선 아래에 글로 보이고 읽어 주지 않는다. '모름' 턴은 목표 턴과 '말 주고받기 n'에 세지 않는다. 같은 질문에서 두 번째 '모름'부터는 힌트 버튼의 마지막 단까지 열어 둔다. 같은 질문에 talk.dontknow_max(3)번 '모름'이면 선생님이 다음 질문으로 넘어간다. 답 예시를 들은 뒤의 턴은 힌트 종류가 '영어'다. 아이가 못 알아들은 듯한 말(What? · I don't know · Sorry? 등)이나 질문과 관계없는 한두 낱말을 하면 회화 턴 출력의 '막힘으로 볼 말'이 참이 된다. 앱은 그 턴을 '모름'과 같이 처리한다. 1~3단계는 카드의 답 예시와 같은 질문을 붙이고, 그 턴은 목표 턴과 '말 주고받기 n'에 세지 않는다(컨트롤러 결정 C36). 수업 대화에서 no-speech 로 끝난 듣기 두 번을 막힘으로 보는 수와 '모름' 세 번이면 넘어가는 수는 설정값(talk.nospeech_dontknow_count · talk.dontknow_max, 키는 컨트롤러 결정 C44)이고 값은 잠정이다(검토 4회차).
+ 
+ 1~3단계의 선생님 말은 두 부분이다(요청자 결정 S5). 실시간 AI 는 아이 말에 대한 반응(바른 말 되풀이 · 짧은 맞장구 · 칭찬 · 필요하면 짧은 설명)만 쓰고 질문을 쓰지 않는다. 반응 끝에는 다음 질문으로 이어지는 짧은 연결 말(예: 'Nice! Now let's talk about colors.')을 둘 수 있다(요청자 결정 T4). 앱이 그 뒤에 카드의 다음 턴 질문(영어와 한국어 뜻)을 붙여 보이고 읽어 준다. 인사 끝 턴 뒤에는 붙이지 않는다(위 토막 문단). '모름' 턴과 '막힘으로 볼 말'이 참인 턴에는 카드의 답 예시와 같은 질문을 붙인다. 목표 턴에 닿은 턴에는 카드 질문 대신 'Do you want to talk more?'를 붙인다. 요청자 결정 R3 의 '모든 단계 실시간 AI'는 반응 부분으로 지킨다. '더 이야기하기'를 고르면 카드의 '더 이야기할 거리'를 먼저 쓴다. 그것도 다 쓰면 그 턴부터는 AI 가 카드 주제 안에서 다음 질문, 1~3단계 꼴의 힌트(한국어 뜻 힌트 · 영어 문장 힌트, 3단계는 영어 틀을 더해), 답 예시를 만든다. 앱이 그것을 검사하고(6.4), 걸리면 '더 이야기할 거리' 가운데 이 대화에서 가장 오래전에 쓴 질문과 힌트로 되돌린다(컨트롤러 결정 C5). 4단계부터는 선생님이 카드 질문 차례에 묶이지 않고 AI 가 질문까지 쓴다. 대화 첫 질문과 끊긴 턴의 질문은 카드 질문 목록에서 앱이 붙인다(컨트롤러 결정 C19, 8절).
+ 
+diff --git "a/specs/04-\353\215\260\354\235\264\355\204\260.md" "b/specs/04-\353\215\260\354\235\264\355\204\260.md"
+index 7399b36..4e1b952 100644
+--- "a/specs/04-\353\215\260\354\235\264\355\204\260.md"
++++ "b/specs/04-\353\215\260\354\235\264\355\204\260.md"
+@@ -32,7 +32,7 @@ Postgres 테이블은 29개다. 단계 규격, 단원 규격, 어휘, 그림 카
+ | profile_tracks | 프로필 × 영역. 현재 단계 · 단원, 배치 평가 결과와 부모가 고른 시작 단계, 졸업 여부, '다음 단계 준비 중' 여부, 회화 행의 친한 정도와 열린 선생님 이야기 수(지금 구간), 구간마다 연 선생님 이야기 수(구간 → 연 수 jsonb 열. 열 하나로는 구간이 바뀔 때 앞 구간 기록을 잃는다, C98) |
+ | sessions | 세션 1회. profile_id, 영역 · 단계 · 단원, lesson_id(시드 수업과 주제 변형), 종류(정규 · 보강 · 연습 · 안 해 본 수업 · 다시 하기 · 복습 · 단계 평가 · 배치 평가), 쓰기 6단계 이상의 세션 차례(초고 · 고쳐 쓰기), 회화 세션의 지금 토막, 상태, 점수, 영어로 말한 문장 수(말하기 · 회화 세션, 인식 글이 있는 발화마다 늘린다, 컨트롤러 결정 C12 · C41), 시작 · 완료 시각, 학습일(끝낸 학습일 — 완료 · 중단 때 채우고 진행 중은 비움, 컨트롤러 결정 C56), 시드 판 |
+ | attempts | 세션 안의 활동별 시도. 기기가 만든 시도 id(같은 시도 id 는 한 번만 저장된다), 입력(답 · 글 · 생각 꺼내기 대화 · 인식 텍스트), 시도 시각(컨트롤러 결정 C45), AI 피드백 JSON, 점수, 단어별 정오, 단어 수, 상태(완료 · 첨삭 대기 · 첨삭 못 함). 중단된 쓰기 초고도 여기에 남는다. 입력 원문과 AI 피드백 JSON 은 data.text_retention_months 가 지나면 지운다. 회화 턴은 talk_turns 에 두고, 회화의 오늘 쓸 말 · 말해 보기 · 정리에서 따라 말한 시도는 여기에 둔다. 회화 세션의 처음 스냅숏(activity_no 1, 시도 id `talk-start:<세션 id>` — 그때 이미 만난 단원 단어 · 보인 오늘 쓸 말 · 말해 보기 차례, 처음 묻는 턴 판정에 쓴다. 그 세션의 회화 선생님 키도 둔다 — 이어 하기 · 같은 시도 id 다시 받기의 고정부(6.1)와 부모 화면 화자 이름에 쓴다, C130)과 끝맺음 기록(activity_no 0, 상태는 AI 피드백 JSON 의 상태 칸)도 시도 행으로 둔다(C89) |
+-| talk_turns | 회화 턴. session_id, 턴 번호(아이 행과 선생님 행이 같은 번호를 쓴다. 선생님 행 n 은 아이 말 n 앞에 선생님이 한 말이다, C89), 토막(인사 · 대화 · 더 이야기하기 · 정리), 시도 id, 화자(선생님 · 아이, 저장 값은 그대로), 원문(아이 이름은 {NAME} 으로, 전화번호 · 주소 형태는 가린 뒤. 선생님 말은 선생님 이름이 든 글 그대로), 입력 방식(말 · 모름), 힌트 종류(영어 · 뜻만 · 없음), 쓴 힌트 단, 들은 도움(답 두 개 · 답 예시. 둘 다 들은 턴은 '답 예시', C89), 이 턴이 노린 단원 단어와 처음 묻는 턴 · 다시 묻는 턴 구분, AI 가 돌려준 스스로 쓴 단원 단어, 막힘으로 볼 말(컨트롤러 결정 C36. 글 열 stuck_phrase 에 막힘으로 볼 때 아이 말을 적고 아니면 비운다, C89), 회화 턴이 가리킨 카드 질문 번호(컨트롤러 결정 C19), 앱이 센 '말했다' 단어, 선생님이 되풀이한 바른 문장, 설명, 이번 턴에 나온 새 단어, 미션 체크, 목표 턴 안 여부, 길이 초과 여부, 단어 수, 보낸 사용자 메시지 전문과 다시 쓸 선생님 차례(6.1), 체감 대기(아이 말이 멈춘 때부터 첫 문장이 보인 때까지, 브라우저가 잰 값), 그 턴의 듣기 끝 대기(초)와 확인을 건너뛰었는지(컨트롤러 결정 C23). 아이 말은 보내기 전에 저장하고, 선생님의 말은 응답이 끝난 뒤 저장한다. 선생님 · 아이 원문, 되풀이한 바른 문장, 설명은 data.text_retention_months 가 지나거나 부모가 그 대화를 지우면 지운다. 보낸 사용자 메시지 전문과 다시 쓸 선생님 차례는 같은 대화의 다음 턴을 다시 쓰는 데만 쓰므로, 대화가 끝나면(정리 토막 뒤, 끝맺음 없이 떠난 대화의 정리 뒤, 끝맺음 없이 중단으로 닫힌 뒤) 지운다(검토 5회차 B5-21). 단어 수 · 말한 단원 단어 · 입력 방식 · 힌트 종류는 남긴다 선생님 행이 붙인 AI 질문(영어 · 한국어 뜻 · 답 예시 · 힌트 단)은 `ai_question` jsonb(비울 수 있음, C101) 에, 1~3단계 선생님 반응의 한국어 뜻은 `tori_ko` text(비울 수 있음, C103) 에 둔다. |
++| talk_turns | 회화 턴. session_id, 턴 번호(아이 행과 선생님 행이 같은 번호를 쓴다. 선생님 행 n 은 아이 말 n 앞에 선생님이 한 말이다, C89), 토막(인사 · 대화 · 더 이야기하기 · 정리), 시도 id, 화자(선생님 · 아이, 저장 값은 그대로), 원문(아이 이름은 {NAME} 으로, 전화번호 · 주소 형태는 가린 뒤. 선생님 말은 선생님 이름이 든 글 그대로), 입력 방식(말 · 모름), 힌트 종류(영어 · 뜻만 · 없음), 쓴 힌트 단, 들은 도움(답 두 개 · 답 예시. 둘 다 들은 턴은 '답 예시', C89), 이 턴이 노린 단원 단어와 처음 묻는 턴 · 다시 묻는 턴 구분, AI 가 돌려준 스스로 쓴 단원 단어, 막힘으로 볼 말(컨트롤러 결정 C36. 글 열 stuck_phrase 에 막힘으로 볼 때 아이 말을 적고 아니면 비운다, C89), 회화 턴이 가리킨 카드 질문 번호(컨트롤러 결정 C19), 앱이 센 '말했다' 단어, 선생님이 되풀이한 바른 문장, 설명, 이번 턴에 나온 새 단어, 미션 체크, 목표 턴 안 여부, 길이 초과 여부, 단어 수, 보낸 사용자 메시지 전문과 다시 쓸 선생님 차례(6.1), 체감 대기(아이 말이 멈춘 때부터 첫 문장이 보인 때까지, 브라우저가 잰 값), 그 턴의 듣기 끝 대기(초)와 확인을 건너뛰었는지(컨트롤러 결정 C23), 아이 행의 듣기 사건 요약 `client_listen` jsonb(비울 수 있음 — '모름'의 출처(단추 · 말소리 없음) · 기기 판정 이름 · 3D 그림 여부 · 듣기마다 결과 · 끝난 까닭 · 길이 · 소리 받기 시작까지 · 소리 감지 · 첫 결과까지 · 직전 읽어 주기와의 관계(읽는 중 끊음 · 끝난 뒤 ms) · 보낼 때의 실패 셈. 글 · 인식 글 · 소리는 넣지 않는다. 따라 말하기 시도의 입력에도 같은 꼴의 선택 칸을 둔다, 컨트롤러 결정 C149). 아이 말은 보내기 전에 저장하고, 선생님의 말은 응답이 끝난 뒤 저장한다. 선생님 · 아이 원문, 되풀이한 바른 문장, 설명은 data.text_retention_months 가 지나거나 부모가 그 대화를 지우면 지운다. 보낸 사용자 메시지 전문과 다시 쓸 선생님 차례는 같은 대화의 다음 턴을 다시 쓰는 데만 쓰므로, 대화가 끝나면(정리 토막 뒤, 끝맺음 없이 떠난 대화의 정리 뒤, 끝맺음 없이 중단으로 닫힌 뒤) 지운다(검토 5회차 B5-21). 단어 수 · 말한 단원 단어 · 입력 방식 · 힌트 종류는 남긴다 선생님 행이 붙인 AI 질문(영어 · 한국어 뜻 · 답 예시 · 힌트 단)은 `ai_question` jsonb(비울 수 있음, C101) 에, 1~3단계 선생님 반응의 한국어 뜻은 `tori_ko` text(비울 수 있음, C103) 에 둔다. |
+ | talk_summaries | 지난 대화 요약. profile_id, session_id, 학습일, 요약(한국어, {NAME} 바꾸기와 가림을 거친 뒤 talk.summary_max_chars 자 이하). 다음 회화 턴 입력에 최근 talk.memory_summaries 개를 넣는다. data.text_retention_months 가 지나거나 부모가 그 대화를 지우면 지운다 |
+ | vocab_progress | 프로필 × 단어 × 상태(알아봄 · 씀 · 말함). 연속 정답 수, 다음 복습일, '안다' 여부, 처음 만난 영역, 만난 영역 목록, 처음 만난 학습일. '말함'은 '말했다'가 된 학습일 목록을 둔다. '말함' 행은 그 단어를 회화에서 처음 만날 때 만든다. 만남은 오늘 쓸 말 · 말해 보기에 나온 때와, 앱이 선생님의 말(1~3단계는 카드 질문, 4단계부터 검사를 통과한 tori_en)에서 '말했다' 확인과 같은 정규화(단, 동음이의어 묶음은 쓰지 않는다 — C99)로 단원 단어를 찾은 때다. 대화를 지워도 이 행은 남는다(검토 5회차 B5-15). 말하기 두 단계 카드의 철자 연습 결과는 남기지 않는다(컨트롤러 결정 C8). 쓰기 단원 단어이기도 한 단어의 두 단계 카드는 철자 타일 단계의 정오를 '씀' 행에, 뜻 고르기 단계의 정오를 '알아봄' 행에 남긴다(컨트롤러 결정 C24 · C45) |
+ | unit_progress | 프로필 × 영역 × 단계 × 단원 × 회차. 시작 시각, 시작 개정과 설정 판, 판정에 쓰는 설정값 복사본, 보강 횟수, 부모 확인 상태, 마지막 판정 결과 · 시각, 통과 시각. 최근 성적 · 숙달률 · 학습일 수는 저장하지 않고 sessions · vocab_progress 에서 순수 함수로 계산한다 |
+diff --git "a/specs/07-\354\235\214\354\204\261\352\263\274-\354\230\244\353\245\230.md" "b/specs/07-\354\235\214\354\204\261\352\263\274-\354\230\244\353\245\230.md"
+index 2f5ec77..41a5a64 100644
+--- "a/specs/07-\354\235\214\354\204\261\352\263\274-\354\230\244\353\245\230.md"
++++ "b/specs/07-\354\235\214\354\204\261\352\263\274-\354\230\244\353\245\230.md"
+@@ -26,7 +26,7 @@
+ | 말하기 버튼 | 한 번 눌러 듣기를 시작한다. 듣는 동안 버튼 둘레에 남은 시간이 줄어드는 표시를 보인다. 말하는 중에 다시 누르면 바로 끝난다. 두 문장 이상 답하는 말하기 활동과 회화 8단계부터는 듣는 동안 버튼 글자가 '다 말했어요'로 바뀐다(컨트롤러 결정 C37) |
+ | 듣기를 끝내는 때 | 한 문장 답(따라 말하기, 말하기 1~4단계 질문 답, 배치 평가 따라 말하기)은 중간 결과가 마지막으로 온 뒤 speech.end_silence_seconds.<구간>(1~3단계 3초, 4단계부터 1.5초)이 지나면 앱이 stop 을 부른다. 회화의 한 문장 답(1~7단계 대화와 오늘 쓸 말 · 말해 보기 · 정리의 따라 말하기)은 speech.end_silence_seconds.talk.<구간>(3 · 2.5 · 2 · 2초)을 쓴다(컨트롤러 결정 C7). 두 문장 이상 답하는 말하기 활동(5단계부터의 질문 답과 그림 보고 말하기, 9~12단계 발표와 확인 질문)은 조용함으로 끝내지 않는다. 말하기 버튼('다 말했어요')을 다시 누르거나 활동 시간 상한으로 끝낸다. 회화 8단계부터의 대화는 마지막 중간 결과 뒤 speech.end_silence_seconds.talk_long(5초) 조용하거나, 말하기 버튼('다 말했어요')을 다시 누르거나, talk.max_answer_seconds 에 닿으면 끝낸다(컨트롤러 결정 C37). 회화 단계 평가 대화는 단계와 관계없이 한 문장 답으로 보고 speech.end_silence_seconds.talk.<구간> 을 쓴다. 브라우저가 스스로 인식을 끝내면(Chrome Android 는 continuous 를 무시하고 첫 쉼에서 끝낸다) 앱이 바로 다시 시작해 이어 붙인다(잠정, 검토 3회차) |
+ | 인식 결과 확인 | 회화는 인식된 글을 talk.confirm_seconds(2초) 보이고, 그동안 '다시 말하기' · '보내기'를 누를 수 있다. 1~3단계는 인식 글이 그 턴에 연 영어 문장 힌트나 들려준 답과 talk.hint_read_match 이상 맞으면 기다리지 않고 바로 보낸다. 연 힌트나 들은 답이 없는 턴은 4단계부터와 같이 보낸다(4절) |
+-| 오류 | no-speech · aborted · 결과 없음마다 '다시 한 번 말해 볼까요' 같은 안내 문구를 두고, 다시 듣기는 그 활동의 인식 실패 수가 speech.max_retries(3)에 닿을 때까지다(처음 듣기도 실패로 세므로 다시 듣기는 두 번, C83). audio-capture 도 처음에는 이 오류로 보고, 같은 활동에서 세 번 이어지면 '마이크를 쓸 수 없음'으로 둔다. phrases-not-supported · bad-grammar 는 앱이 쓰지 않는 기능의 오류라 '결과 없음'처럼 다시 듣는다(컨트롤러 결정 C53). 그래도 안 되면 말하기 세션은 그 문항을 건너뛰고 점수에서 뺀다. 배치 평가에서는 예비 문항으로 바꾼다(3.2). 배치 평가의 인식 실패 3회는 한 문항의 두 시도를 합쳐 센다(컨트롤러 결정 C7). 회화는 '[이름]에게 잘 안 들렸어요. 조금 더 크게 말해 볼까요'를 보이고 같은 차례를 이어 간다. 그 시도는 턴으로 세지 않는다. 회화 수업에서 같은 질문에 인식된 말 없이 no-speech 로 끝난 듣기가 두 번 이어지면 막힌 것으로 보고 입력 '모름'으로 보낸다(3.3). 평가 턴은 '모름'으로 보내지 않는다(3.2). audio-capture · aborted · 결과 없음이 성공 없이 여섯 번(speech.max_retries 의 두 배) 이어지면 세션을 진행으로 둔 채 '마이크가 잘 안 돼요. 부모님께 말해 주세요'와 '홈'을 보이고, 부모 화면에 '마이크가 멈춤' 알림을 만든다(잠정, 검토 4회차). no-speech 는 이 수에 넣지 않는다. no-speech 로만 끝난 질문(회화에서 '모름'으로 넘어간 질문) · 문항(말하기에서 건너뛴 문항)이 같은 세션에서 speech.silent_items_max(3)개 이어지면 '말소리가 잘 안 들려요. 부모님께 말해 주세요'와 '홈'을 보이고 부모 알림 '말소리가 들어오지 않음'을 만든다. 알림에는 아이가 말하지 않았을 수도 있다고 적는다(컨트롤러 결정 C22) |
++| 오류 | no-speech · aborted · 결과 없음마다 '다시 한 번 말해 볼까요' 같은 안내 문구를 두고, 다시 듣기는 그 활동의 인식 실패 수가 speech.max_retries(3)에 닿을 때까지다(처음 듣기도 실패로 세므로 다시 듣기는 두 번, C83). audio-capture 도 처음에는 이 오류로 보고, 같은 활동에서 세 번 이어지면 '마이크를 쓸 수 없음'으로 둔다. phrases-not-supported · bad-grammar 는 앱이 쓰지 않는 기능의 오류라 '결과 없음'처럼 다시 듣는다(컨트롤러 결정 C53). 그래도 안 되면 말하기 세션은 그 문항을 건너뛰고 점수에서 뺀다. 배치 평가에서는 예비 문항으로 바꾼다(3.2). 배치 평가의 인식 실패 3회는 한 문항의 두 시도를 합쳐 센다(컨트롤러 결정 C7). 회화는 '[이름]에게 잘 안 들렸어요. 조금 더 크게 말해 볼까요'를 보이고 같은 차례를 이어 간다. 그 시도는 턴으로 세지 않는다. 회화 수업에서 같은 질문에 인식된 말 없이 no-speech 로 끝난 듣기가 두 번 이어지면 막힌 것으로 보고 입력 '모름'으로 보낸다(3.3). iPad 의 Safari · Chrome(WebKit)은 말소리가 없으면 스스로 no-speech 를 내지 않고, 앱이 듣기를 멈추면 aborted('No speech detected')로 끝낸다. 앱은 모은 글이 없을 때 이것을 no-speech 로 본다(컨트롤러 결정 C148, 실측 2026-10-22). 평가 턴은 '모름'으로 보내지 않는다(3.2). audio-capture · aborted · 결과 없음이 성공 없이 여섯 번(speech.max_retries 의 두 배) 이어지면 세션을 진행으로 둔 채 '마이크가 잘 안 돼요. 부모님께 말해 주세요'와 '홈'을 보이고, 부모 화면에 '마이크가 멈춤' 알림을 만든다(잠정, 검토 4회차). no-speech 는 이 수에 넣지 않는다. no-speech 로만 끝난 질문(회화에서 '모름'으로 넘어간 질문) · 문항(말하기에서 건너뛴 문항)이 같은 세션에서 speech.silent_items_max(3)개 이어지면 '말소리가 잘 안 들려요. 부모님께 말해 주세요'와 '홈'을 보이고 부모 알림 '말소리가 들어오지 않음'을 만든다. 알림에는 아이가 말하지 않았을 수도 있다고 적는다(컨트롤러 결정 C22) |
+ | 감시 타이머 | 인식을 시작한 뒤 speech.max_listen_seconds + speech.watchdog_extra_seconds(3초) 안에 결과 · 오류 · 끝 이벤트가 하나도 없으면, 앱이 인식을 끊고 한 번 다시 시작한다. 또 멈추면 그 세션을 진행 상태로 둔 채 '마이크가 잘 안 돼요. 부모님께 말해 주세요'를 보이고 홈으로 간다. 부모 화면에 '마이크가 멈춤' 알림(그 기기의 브라우저 이름과 시각)을 만든다 |
+ | 마이크를 쓸 수 없음 | 음성 인식 API 가 없거나 not-allowed · service-not-allowed · language-not-supported(그 기기에서 en-US 인식이 안 됨, 컨트롤러 결정 C53) 오류가 나면 그 기기를 '마이크를 쓸 수 없음'으로 본다. audio-capture 는 위 '오류' 행대로 다시 듣고, 같은 활동에서 세 번 이어질 때만 그렇게 본다. 말하기 · 회화 세션이나 말하기 배치 도중에 이렇게 되면 세션(배치는 멈춘 문항)을 진행으로 둔 채 '마이크가 필요해요. 부모님께 말해 주세요'와 '홈' 버튼 하나를 보인다. 말하기 · 회화 카드는 위 문단대로 닫히고, 부모 화면에 설정 경로와 '마이크 다시 확인' 버튼을 보인다(4절). 음성 인식 API 가 없던 기기는 홈 진입마다 다시 확인한다. 권한 거부와 Siri · 받아쓰기 꺼짐은 부모가 그 기기에서 '마이크 다시 확인'을 눌러 푼다. 누르면 권한을 묻고 인식을 한 번 시작해 보고, 되면 그 기기의 상태를 지우고 카드를 연다. 기기 상태는 그 브라우저에만 둔다(잠정, 검토 4회차) |
+ | 읽어 주기 | en-US 음성을 고르고, 첫 재생은 아이의 버튼 누름으로 시작한다(iOS 의 사용자 동작 요구). 회화는 처음 안내 화면의 시작 버튼 누름과 화면에 들어올 때의 누름을 첫 재생으로 쓴다. 선생님 말과 힌트의 {NAME} 은 영어 이름으로 채워 읽는다. 회화 쪽(회화 세션 · 회화 단계 평가 · 선생님 이야기 · '선생님을 골라요'의 '인사 듣기' · 회화 마무리의 짧은 칭찬 대사)은 고른 선생님의 목소리 높이와 고를 목소리 순서(목소리 이름 조각, 명단 자료)를 쓴다. 기기의 en-US 목소리 가운데 순서에 맞는 첫 목소리를 쓰고, 없으면 지금 목소리 고르기 그대로다. 빠르기는 단계 구간(speech.rate.<구간>, C125)이 정하고 선생님은 바꾸지 않는다. 읽기 · 쓰기 · 말하기 영역의 읽어 주기는 그대로다. 음성 층은 읽어 주기가 실제로 시작 · 끝난 알림을 선생님 창(4절)에 넘기고, 소리 통로 꼴(navigator.audioSession.type)은 건드리지 않는다(C109 · C130) |
+diff --git "a/specs/10-\352\262\260\354\240\225-\352\270\260\353\241\235.md" "b/specs/10-\352\262\260\354\240\225-\352\270\260\353\241\235.md"
+index 7fa7473..ff5848f 100644
+--- "a/specs/10-\352\262\260\354\240\225-\352\270\260\353\241\235.md"
++++ "b/specs/10-\352\262\260\354\240\225-\352\270\260\353\241\235.md"
+@@ -314,3 +314,6 @@
+ | 2026-10-23 | C145. **아이가 먼저 꺼낸 주제는 잠깐 따라가고 학습 목표로 돌아온다**(요청자 15:3x — 물음 3). 6.2 선생님 규칙 '카드 주제 안에서만'을 바꿔, 아이가 꺼낸 이야기에 한두 턴 반응하고 오늘 이야기로 자연스럽게 돌아온다. 선생님이 먼저 주제 밖을 묻지는 않는다. 개인 정보 · 사람의 삶 금지는 그대로다. 처음 회화 안내의 '오늘 이야기에 나오는 것만 물어요'를 뺀다. 반영은 변경 단위 ②(선생님 말 다듬기) | 요청자 결정 |
+ | 2026-10-23 | C146. **학습 평가 로직 분석을 먼저 · 구현 원칙**(요청자 15:3x). 구현 전에 지금 학습 평가 로직(평가 항목 · 데이터 구조 · 판단 기준 · 단원 통과 조건 · 단계 승급 조건)을 기존 구현부터 확인해 정리하고 CEFR-J 기반 평가 관점에서 유지 · 보완을 제안한다. 요청자가 결과를 보고 intent · spec · plan 에 반영한다. 볼 것: 12단계 · 단원 학습 목표 · can-do 연결, '말함' 셈이 재는 것, 단원 통과 · 승급 근거와 조건, 도움받은 수행 · 독립 수행 · 다른 상황 응용 구분, 근거 부족 · 음성 인식 불확실 때 판정 보류, 누적 결과의 다음 수업 · 복습 반영. 원칙: 회화 중 실시간 점수는 없되 학습 목표별 수행 근거는 관리한다. Claude 는 답을 분석해 평가 근거를 제안하고 최종 단원 통과 · 단계 변경은 시스템 기준이 정한다. 기존 기능 · 데이터 구조를 최대한 유지하고, 수준 변경과 대화 중 난이도 조절을 나누며, 학습 목표는 시스템이 관리한다. 기존 평가 체계가 충분하면 새로 만들지 않는다. CEFR-J 공식 can-do 와 앱 자체 점수 · 승급 규칙을 가른다. 바꾸기 전에 기존 구현과 부족한 점을 구체적으로 견준다 | 요청자 결정 |
+ | 2026-10-23 | C147. **가족 접근 코드 최소 길이 12 → 10 · 요청자가 정한 코드로 바꿈**(요청자 15:4x '규칙을 10자로 낮추고 적용해줘'). 10-15 잠정 규칙(영문 · 숫자 12자 이상)을 10자 이상으로 낮춘다. Vercel ACCESS_CODE_HASH(프리뷰 · 개발 · 운영)를 새 해시로 바꿨고 코드 값은 저장소 · 기록에 남기지 않는다. 바꾸면 모든 기기 쿠키가 무효라 기기마다 새 코드를 다시 넣는다. 컨트롤러가 알린 우려: 새 코드는 계정 이름과 같아 프리뷰 주소로 짐작하기 쉽다(요청자 결정으로 그대로) | 요청자 결정 |
++| 2026-10-29 | C127 보완. **'같은 말' 정규화는 영어 줄임꼴(I'm · it's · that's · don't · you're · let's 등)을 펼친 뒤 견주고, 이름 자리 {NAME} 은 한 낱말로 남긴다**(2026-10-29 회화 인사 반복 분석 결함 C · 검토 I-2). "Say, I'm fine." 도 답 두 개 'I am fine.' 과 같은 말로 잡혀 말풍선에서 빠진다. 일치율 정규화(6.2 축약형 펼침)와 한 표를 쓴다 | 컨트롤러 결정(요청자 위임 규칙) — 분석 `.superpowers/sdd/2026-10-16-1-가-구현/task-talk-greeting-analysis-report.md` |
++| 2026-10-29 | C148. **iPad WebKit 이 말소리 없는 듣기를 'aborted · No speech detected'(앱 판정 결과 없음)로 끝내면, 모은 글이 없을 때 듣기 층에서 no-speech 로 읽는다.** 그러면 C22 대로 세션 여섯 번 셈에서 빠지고 7절 '말소리가 잘 안 들려요' 안내(무음 모드 줄 포함)로 간다. 아이 차례의 '결과 없음' 갈래는 3.3 막힘 문단(no-speech 만 셈)과 맞게 뺀다. 근거: 10-24 · 10-26 요청자 시험(iPad Safari 27)에서 '오늘 쓸 말' 첫 낱말의 결과 없음 3번 뒤 '마이크가 잘 안 돼요'로 멈춤(parent_alerts mic_stalled no-result) | 컨트롤러 결정 — 분석 `task-talk-speech-analysis-report.md` D1 (가) |
++| 2026-10-29 | C149. **회화 아이 턴에 듣기 사건 요약 칸 client_listen(jsonb, 글 · 소리 · 개인 정보 없음)을 두고, 따라 말하기 시도 꼴(attempts.input)에도 같은 선택 칸을 둔다.** 값: '모름'의 출처(button · nospeech) · 기기 판정 이름 · 3D 여부 · 듣기마다 끝난 방식 · 길이 · audiostart 지연 · 소리 감지 여부 · 첫 결과 시각 · 듣기 직전 읽기 끊김 여부 · 보낼 때의 실패 셈. 다음 재현에서 '말을 안 함 · 소리가 안 들어옴 · 읽기 끊고 들음 · 3D 때만'을 가르려는 것이다. 5절 talk_turns 에 칸 한 줄 | 컨트롤러 결정 — 분석 D2 (가) |
+diff --git a/src/components/conversation/child-turn.tsx b/src/components/conversation/child-turn.tsx
+index 4432e88..2fe7cd6 100644
+--- a/src/components/conversation/child-turn.tsx
++++ b/src/components/conversation/child-turn.tsx
+@@ -5,7 +5,8 @@
+ // 중에 누르면 읽기를 멈추고 듣는다. '힌트'는 누를 때마다 한 단 — 1~3단계 영어 단은 서버가 미리 내려 주지 않아 연 단만 revealTalkHint 로
+ // 받는다(영어 문장 단에 작은 듣기 단추 · 단계 구간 빠르기). 같은 질문 둘째 '모름'부터 마지막 단까지 열린 채. 첫 회화 수업에서 '막히면 눌러요' 한 번.
+ // 인식 확인은 a confirmPlanOf — 바로 보냄 · talk.confirm_seconds 동안 아이 말풍선 + '다시 말하기' · '보내기'(아무것도 안 누르면 보냄).
+-// '모름'은 단추 · 같은 질문에서 말소리 없는 듣기 talk.nospeech_dontknow_count 번. 녹음하지 않는다(브라우저 인식만).
++// '모름'은 단추 · 같은 질문에서 no-speech 로 끝난 듣기 talk.nospeech_dontknow_count 번(C148). 듣는 동안 힌트 문장 듣기는 끈다. 녹음하지
++// 않는다(브라우저 인식만).
+ import { Volume2 } from "lucide-react";
+ import { useEffect, useRef, useState } from "react";
+ import { CHILD_SIZE } from "@/components/activities/common";
+@@ -25,7 +26,11 @@ import {
+ } from "@/core/conversation/listen";
+ import type { SpeechEvent, SpeechVerdict } from "@/core/speaking/judge";
+ import { speechEventOf } from "@/core/speaking/judge";
+-import type { SpeechSettings } from "@/core/speech/listen";
++import {
++  type ListenOutcome,
++  NO_SPEECH_CODE,
++  type SpeechSettings,
++} from "@/core/speech/listen";
+ import { TEACHER_TEXT } from "@/core/teacher/name";
+ import type { ListenHandle, SpeechPort } from "@/lib/speech/types";
+ import { cn } from "@/lib/utils";
+@@ -46,8 +51,26 @@ export const CHILD_TURN_TEXT = {
+ 
+ /** 초 → ms(단위 바꿈 상수). */
+ const MS_PER_SECOND = 1000;
+-/** 말소리 없음 오류 코드(Web Speech). */
+-const NO_SPEECH = "no-speech";
++
++/**
++ * 같은 질문 말소리 없음 셈에 드는 듣기인가(순수): no-speech 로 끝난 듣기만(3.3 막힘 문단 · 7절 오류 행). iPad WebKit 의 'aborted · No speech
++ * detected' 는 듣기 층이 no-speech 로 읽으므로 여기 든다(C148). 결과 없음은 들지 않는다.
++ */
++export function silentListenOf(event: SpeechEvent): boolean {
++  return event.type === "error" && event.code === NO_SPEECH_CODE;
++}
++
++/**
++ * 아이가 말을 멈춘 때(순수, 체감 대기의 시작 — C23 · NFR-8): 들은 결과면 듣기 끝 − 끝 조용함(그 대기는 체감 대기에 든다), 결과 없음 · 오류 ·
++ * 멈춤이면 듣기 끝 그대로(말이 없었으므로 끝 조용함을 빼지 않는다).
++ */
++export function speechStoppedAt(
++  outcome: ListenOutcome,
++  doneAt: number,
++  endSilenceMs: number | undefined,
++): number {
++  return outcome.kind === "result" ? doneAt - (endSilenceMs ?? 0) : doneAt;
++}
+ 
+ export type ChildSend = {
+   input: { mode: "speech" | "dont_know"; text?: string; nospeech?: boolean };
+@@ -205,8 +228,12 @@ export function ChildTurn(props: ChildTurnProps) {
+     const current = speech.listen(rule);
+     handle.current = current;
+     const outcome = await current.outcome;
+-    // 말을 멈춘 때 = 듣기가 끝난 때 − 끝 조용함(C23 — 체감 대기는 듣기 끝 대기 · 확인 시간을 포함해 잰다)
+-    endedAt.current = performance.now() - (rule.endSilenceMs ?? 0);
++    // 말을 멈춘 때 = 들은 결과면 듣기가 끝난 때 − 끝 조용함(C23 — 체감 대기는 듣기 끝 대기 · 확인 시간을 포함해 잰다), 결과 없음 · 오류면 듣기 끝
++    endedAt.current = speechStoppedAt(
++      outcome,
++      performance.now(),
++      rule.endSilenceMs,
++    );
+     handle.current = undefined;
+     setListening(false);
+     props.onListening(false);
+@@ -253,11 +280,8 @@ export function ChildTurn(props: ChildTurnProps) {
+       verdict === "speech-silent"
+     )
+       return;
+-    // 말소리 없음이 이어지면 '모름'과 같이(C44 — 같은 질문 talk.nospeech_dontknow_count 번)
+-    const silent =
+-      event.type === "no-result" ||
+-      (event.type === "error" && event.code === NO_SPEECH);
+-    if (silent) {
++    // no-speech 로 끝난 듣기가 이어지면 '모름'과 같이(C44 — 같은 질문 talk.nospeech_dontknow_count 번, 결과 없음은 세지 않음 C148)
++    if (silentListenOf(event)) {
+       nospeech.current += 1;
+       if (nospeech.current >= settings.nospeechDontknowCount) {
+         send({ input: { mode: "dont_know", nospeech: true } });
+@@ -341,6 +365,8 @@ export function ChildTurn(props: ChildTurnProps) {
+                       type="button"
+                       data-hint-listen=""
+                       aria-label={CHILD_TURN_TEXT.listenHint}
++                      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행 · C148)
++                      disabled={listening}
+                       onClick={() => {
+                         speech?.unlockFromGesture();
+                         void speech?.speak(fillName(text, props.englishName), {
+diff --git a/src/components/conversation/follow-along.tsx b/src/components/conversation/follow-along.tsx
+index d6c1119..36601ce 100644
+--- a/src/components/conversation/follow-along.tsx
++++ b/src/components/conversation/follow-along.tsx
+@@ -29,6 +29,7 @@ import {
+ import { SpeakButton } from "@/components/answer/speak-button";
+ import { BigButton, StatusLine } from "@/components/board/board";
+ import { fillName } from "@/core/ai/mask";
++import type { ClientListen } from "@/core/conversation/client-listen";
+ import {
+   type TalkSpeechSettings,
+   talkEndRuleFor,
+@@ -243,6 +244,8 @@ export type FollowEnv = {
+   onListening: (listening: boolean) => void;
+   /** 따라 말하기 결과 말이 '잘 말했어요'(C39) — 틀이 선생님 칭찬을 talk.teacher_praise_seconds 동안 켠다. */
+   onPraise: () => void;
++  /** 앞 기록 뒤 끝난 듣기의 요약(C149 — 시도에 싣는다, 글 · 소리 없음). 부를 때마다 그 뒤 듣기부터 다시 모은다. */
++  clientListen: () => ClientListen;
+ };
+ 
+ /**
+@@ -347,7 +350,7 @@ function followAttemptId(
+ }
+ 
+ function saveFollow(
+-  env: Pick<FollowEnv, "sessionId">,
++  env: Pick<FollowEnv, "sessionId" | "clientListen">,
+   at: {
+     segment: "today_words" | "practice" | "wrap_up";
+     round: number;
+@@ -372,6 +375,7 @@ function saveFollow(
+     heard: tried.heard,
+     failures: tried.failures,
+     ...(skipped ? { skipped } : {}),
++    clientListen: env.clientListen(),
+   }).catch(() => {});
+ }
+ 
+diff --git a/src/components/conversation/talk-frame.tsx b/src/components/conversation/talk-frame.tsx
+index d13ec4d..a602a5f 100644
+--- a/src/components/conversation/talk-frame.tsx
++++ b/src/components/conversation/talk-frame.tsx
+@@ -45,6 +45,7 @@ import { MicNotice } from "@/components/session/speaking";
+ import { TeacherChoice } from "@/components/teacher/teacher-choice";
+ import { useTeacherLayer } from "@/components/teacher/teacher-layer";
+ import { TeacherWindow } from "@/components/teacher/teacher-window";
++import type { ClientListen } from "@/core/conversation/client-listen";
+ import {
+   type SpeechEvent,
+   type SpeechVerdict,
+@@ -62,6 +63,7 @@ import {
+   readDeviceVerdict,
+ } from "@/lib/mic-state";
+ import { createBrowserSpeech } from "@/lib/speech/browser";
++import { createListenLog } from "@/lib/speech/listen-log";
+ import { teacherSpeech } from "@/lib/speech/teacher";
+ import type { SpeechPort } from "@/lib/speech/types";
+ import { sendTalkTurnRetrying, type TalkTurnBody } from "@/lib/talk-stream";
+@@ -347,8 +349,13 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+   // 장마다 그 선생님 높이를 넘긴다. 선생님은 틀의 key 라 바뀌면 틀이 새로 그려진다
+   const speechSettings = useRef(view.settings.speech);
+   const teacherVoice = useRef(view.teacher?.voice);
++  /** 듣기 사건 기록(C149 — 아이 행 · 따라 말하기 시도에 요약을 남김, 글 · 소리 없음). 음성 접점과 같이 세션 동안 하나. */
++  const [listenLog] = useState(createListenLog);
+   useEffect(() => {
+-    const created = createBrowserSpeech({ settings: speechSettings.current });
++    const created = createBrowserSpeech({
++      settings: speechSettings.current,
++      onTrace: listenLog.record,
++    });
+     const voice = teacherVoice.current;
+     setSpeech(
+       voice
+@@ -360,7 +367,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+         : created,
+     );
+     return () => created.dispose();
+-  }, []);
++  }, [listenLog]);
+ 
+   /** 칭찬을 talk.teacher_praise_seconds 동안 켠다(끝나면 다시 그린다). 5~7단계 미션 체크(P13c)도 이것을 부른다. */
+   const praiseSeconds = view.teacherSettings.praiseSeconds;
+@@ -688,6 +695,19 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+     setBlocked("silent");
+   }
+ 
++  /**
++   * 앞 기록(아이 행 · 따라 말하기 시도) 뒤 끝난 듣기의 요약(C149 · 분석 보고 4.1): 기기 판정 이름 · 3D 그림인가 · 듣기마다 · 세션 실패 셈.
++   * 글 · 소리는 들지 않는다. 부를 때마다 그 뒤 듣기부터 다시 모은다.
++   */
++  function takeClientListen(): ClientListen {
++    return {
++      br: readDeviceVerdict().name,
++      r3d: layerRef.current?.render === "3d",
++      listens: listenLog.take(),
++      mf: counters.current.micFailures,
++    };
++  }
++
+   function onChildSend(send: ChildSend) {
+     sentDontKnow.current = send.input.mode === "dont_know";
+     silent.current = silentCountStep(silent.current, {
+@@ -709,6 +729,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+       ...(perceived.current === undefined
+         ? {}
+         : { prevPerceivedWaitMs: perceived.current }),
++      clientListen: takeClientListen(),
+     };
+     perceived.current = undefined;
+     listenEndedAt.current = send.listenEndedAt;
+@@ -817,6 +838,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+     },
+     onListening: setListening,
+     onPraise: praise,
++    clientListen: takeClientListen,
+   };
+   const followSteps = useMemo(
+     () =>
+@@ -848,6 +870,9 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+   // 쉼 화면에서는 받지 않음, 검토 4 M-1), 상태 · 움직임 줄이기를 넘기고, 마무리 세 장에 들어가면 닫는다(4절 '회화 마무리 — 초상만',
+   // 메모리를 일찍 풂)
+   const layer = useTeacherLayer();
++  /** 그림 층(듣기 사건 요약의 3D 여부 — 보낼 때 읽는다). */
++  const layerRef = useRef(layer);
++  layerRef.current = layer;
+   useEffect(() => {
+     if (micChecked && windowShown) layer?.want();
+   }, [layer, micChecked, windowShown]);
+@@ -1016,6 +1041,7 @@ function TalkFrameBody({ view }: { view: TalkView }) {
+                 waitSeconds={view.settings.ui.waitHintSeconds}
+                 {...(lowLevel && picture ? { picture } : {})}
+                 {...(next.explanation ? { explanation: next.explanation } : {})}
++                listening={listening}
+                 onReplay={() => {
+                   speech?.unlockFromGesture();
+                   queue.replay(spokenOf(bubble));
+diff --git a/src/components/conversation/tori.tsx b/src/components/conversation/tori.tsx
+index 21f5ea8..51515e6 100644
+--- a/src/components/conversation/tori.tsx
++++ b/src/components/conversation/tori.tsx
+@@ -234,6 +234,7 @@ export function ToriBubble({
+   waitSeconds,
+   picture,
+   explanation,
++  listening = false,
+   onReplay,
+   onAnswer,
+   onAllTyped,
+@@ -249,6 +250,8 @@ export function ToriBubble({
+   /** 그림 턴(C32 — 파일이 있을 때만). */
+   picture?: PictureInfo;
+   explanation?: string;
++  /** 아이 차례가 듣는 중인가 — 그동안 다시 듣기 · 답 듣기 단추를 끈다(누르면 듣기가 안내 없이 끝남, 7절 말하기 버튼 행 · C148). */
++  listening?: boolean;
+   onReplay: () => void;
+   onAnswer: (index: 0 | 1) => void;
+   /** 받은 글이 다 흘러나왔는가(바뀔 때마다 — 틀이 아이 차례를 그 뒤에 연다, 화면 검토 M-1). */
+@@ -286,7 +289,7 @@ export function ToriBubble({
+             type="button"
+             data-tori-bubble=""
+             aria-label={TEACHER_TEXT.replay(teacherName)}
+-            disabled={empty}
++            disabled={empty || listening}
+             onClick={onReplay}
+             className={cn(
+               FOCUS_RING,
+@@ -328,6 +331,7 @@ export function ToriBubble({
+                     type="button"
+                     data-answer-listen={i + 1}
+                     aria-label={BUBBLE_TEXT.answer(i + 1)}
++                    disabled={listening}
+                     onClick={() => onAnswer(i as 0 | 1)}
+                     className={cn(
+                       FOCUS_RING,
+@@ -356,7 +360,7 @@ export function ToriBubble({
+         ) : null}
+         {explanation ? (
+           <p data-tori-explanation="" className={cn(CHILD_SIZE.guide, "px-2")}>
+-            {explanation}
++            {fillName(explanation, englishName)}
+           </p>
+         ) : null}
+       </div>
+diff --git a/src/core/ai/calls/talk.ts b/src/core/ai/calls/talk.ts
+index 6025576..a032607 100644
+--- a/src/core/ai/calls/talk.ts
++++ b/src/core/ai/calls/talk.ts
+@@ -372,6 +372,7 @@ function lowBandRules(): string[] {
+   return [
+     "Levels 1-3: tori_en has only a reaction (recast, short agreement, praise, a short explanation if needed) and may end with a short linking line to the next topic (e.g. 'Nice! Now let's talk about colors.'). Do not write questions or answer examples in tori_en. The app adds the next card question.",
+     "Levels 1-3: write a Korean explanation from the first don't-know.",
++    "Levels 1-3: when Input is dont_know or stuck is true, write only a short encouragement in tori_en and tori_ko. Do not say the answer; the app plays it. Leave recast empty.",
+     "Levels 1-3: only when 'AI question slot: yes', write the next question inside the card topic in next_question_en and next_question_ko, the next hints (next_hint_ko and English hints in next_hints; level 3 adds an English frame first), next_targets and next_answer_example. Otherwise leave them empty.",
+   ];
+ }
+diff --git a/src/core/conversation/attempt.ts b/src/core/conversation/attempt.ts
+index 5067273..40cf847 100644
+--- a/src/core/conversation/attempt.ts
++++ b/src/core/conversation/attempt.ts
+@@ -3,6 +3,7 @@
+ // 채점하지 않음 — R2). P11a src/core/session/attempt.ts 는 고치지 않는다(회화 시도는 회화 서버만 읽고 쓴다, 정할 것 회3). 순수 모듈이다.
+ import { z } from "zod";
+ import { TEACHER_KEY } from "@/core/seed/structure";
++import { ClientListenSchema } from "./client-listen";
+ 
+ /** 시도 꼴 판(P11a INPUT_VERSION 과 같은 1). */
+ const TALK_INPUT_VERSION = 1;
+@@ -28,6 +29,8 @@ const spoken = {
+   heard: z.array(z.string()),
+   failures: z.int().min(0),
+   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
++  /** 그 차례의 듣기 사건 요약(C149 — 글 · 소리 없음). 이 칸 전 옛 시도에는 없다. */
++  clientListen: ClientListenSchema.optional(),
+ };
+ 
+ /** 끝맺음 기록의 닫힌 까닭(대화 안전 상한 셈 · 기록 — b closing.ts, 컨트롤러 결정 2026-10-22 fix 1). */
+diff --git a/src/core/conversation/flow.ts b/src/core/conversation/flow.ts
+index 08e9231..395656f 100644
+--- a/src/core/conversation/flow.ts
++++ b/src/core/conversation/flow.ts
+@@ -13,6 +13,7 @@ import type { TalkCard, TurnCard } from "@/core/seed/schema/talk";
+ import type { AskKind, TALK_SEGMENTS } from "@/core/seed/structure";
+ import { splitSentences } from "@/core/seed/text";
+ import { type PreviewWord, previewWordsOf } from "@/core/session/preview";
++import { normalizeForMatch } from "@/core/speech/match-rate";
+ 
+ export type TalkSegment = (typeof TALK_SEGMENTS)[number];
+ 
+@@ -897,12 +898,16 @@ export function appendAfter({
+   return lines;
+ }
+ 
+-/** 같은 문장 견주기 꼴(C125 (3)): 대소문자 · 따옴표(I'm = I’m) · 문장부호 · 띄어쓰기를 지운 낱말 줄. */
++/**
++ * 같은 문장 견주기 꼴(C125 (3)): 대소문자 · 따옴표(I'm = I’m) · 문장부호 · 띄어쓰기를 지운 낱말 줄. 줄임꼴(I'm · it's · don't · let's …)은
++ * 일치율과 같은 표로 펼쳐 'I'm fine' 과 'I am fine' 을 같은 말로 본다(C127 보완(2026-10-29)).
++ */
+ export function normalizeSpoken(text: string): string {
+-  return text
+-    .normalize("NFKC")
++  // 일치율 정규화는 이름 자리를 대문자 '{NAME}' 으로 돌려주므로 소문자로 바꿔 고치기 전처럼 한 낱말 'name' 으로 남긴다
++  return normalizeForMatch(text.normalize("NFKC").replace(/`/g, "'"), [])
++    .join(" ")
+     .toLowerCase()
+-    .replace(/['’‘`]/g, "")
++    .replace(/['’‘]/g, "")
+     .replace(/[^a-z0-9]+/g, " ")
+     .trim();
+ }
+@@ -911,7 +916,8 @@ export function normalizeSpoken(text: string): string {
+  * '들어 있음'(낱말 경계)으로 같은 말을 보는 가장 짧은 낱말 수(13절 C127 — C125 (3) '같은 말'의 뜻 풀이, 설정값이 아닌 기술 판정).
+  * 찾는 쪽(답 · 붙일 줄의 문장)이 이보다 짧으면 정규화한 문장 전체가 같을 때만 같은 말이다 — 한 낱말 답 'Yes.' 가
+  * 'Yes, that's right!' 반응을, 'Good!' 이 'It is good.' 을 같은 말로 보지 않게. 두 낱말인 까닭: 정규화가 따옴표를 지워 "I'm good" 이
+- * 'im good' 두 낱말이 되므로, 이 답이 든 'You can say, I'm good.' 을 같은 말로 보려면 두 낱말부터 '들어 있음'을 써야 한다.
++ * 'im good' 두 낱말이 되므로, 이 답이 든 'You can say, I'm good.' 을 같은 말로 보려면 두 낱말부터 '들어 있음'을 써야 한다(줄임꼴을
++ * 펼친 뒤로는 'i am good' 세 낱말이라 문턱 2 를 그대로 넘는다 — C127 보완(2026-10-29)).
+  */
+ export const SAME_SAYING_MIN_WORDS = 2;
+ 
+@@ -1003,6 +1009,26 @@ export function shownTurnOf(
+   return { sentences: shown, append: out };
+ }
+ 
++/**
++ * 겹침 없애기 뒤 그 턴의 토리 뜻 줄(3.3 '답은 화면에 보이지 않는다' · T2): 1~3단계에서 shownTurnOf 가 토리 문장을 하나라도 뺐으면
++ * 그 턴의 뜻 줄은 흘리지도 저장하지도 않는다 — 빠진 문장은 답 두 개를 담은 말이라 그 뜻이 영어 답을 화면 글로 보이게 하고 말풍선과도
++ * 맞지 않는다. 다시 흘리기 · 이어 열기는 저장값을 따른다. 4단계부터는 판정하지 않는다.
++ */
++export function toriKoShownOf({
++  ko,
++  sent,
++  shown,
++  lowBand,
++}: {
++  ko: string | null;
++  sent: readonly string[];
++  shown: readonly string[];
++  lowBand: boolean;
++}): string | null {
++  if (ko === null || !lowBand) return ko;
++  return shown.length < sent.length ? null : ko;
++}
++
+ /** 카드가 노리는 단어 목록(P12 연습 수업 고르기): 1~3단계 카드 턴마다, 4단계부터 카드 질문마다. */
+ export function talkTargetsOf(
+   card: Pick<TalkCard, "turns" | "questions">,
+diff --git a/src/core/speech/listen.ts b/src/core/speech/listen.ts
+index 284a363..d9f1711 100644
+--- a/src/core/speech/listen.ts
++++ b/src/core/speech/listen.ts
+@@ -149,6 +149,13 @@ export const START_FAILED_CODE = "start-failed";
+ export const DICTATION_DISABLED_CODE = "dictation-disabled";
+ /** 그 aborted 를 가르는 메시지(실측 1 — "Siri and Dictation are disabled"). */
+ const DICTATION_MESSAGE = /dictation/i;
++/** 말소리 없음 오류 코드(Web Speech). */
++export const NO_SPEECH_CODE = "no-speech";
++/**
++ * iPad WebKit(사파리 · 크롬)이 말소리 없는 듣기를 앱이 stop 한 뒤 끝내는 aborted 의 메시지(10-22 실측 — "No speech detected").
++ * 스스로 no-speech 를 내지 않으므로 이 aborted 를 no-speech 로 읽는다(C148).
++ */
++const NO_SPEECH_MESSAGE = /no speech detected/i;
+ 
+ const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
+   "not-allowed",
+@@ -159,7 +166,9 @@ const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
+ 
+ /**
+  * 인식 오류 사건(error · message)의 코드. aborted 인데 메시지가 받아쓰기를 말하면(iPad Siri · 받아쓰기 꺼짐) DICTATION_DISABLED_CODE —
+- * '마이크를 쓸 수 없음' 갈래로 간다. 나머지는 코드 그대로(우리 쪽 멈춤의 aborted 는 메시지가 없다).
++ * '마이크를 쓸 수 없음' 갈래로 간다. 메시지가 'No speech detected' 면(iPad WebKit 의 말소리 없음, C148) no-speech — 모은 글이 없으면
++ * 말소리 없음 오류로 끝나고(여섯 번 셈에 들지 않음, C22), 끊어 듣기(chunk) 중이면 이어 듣는다. 나머지는 코드 그대로(우리 쪽 멈춤의
++ * aborted 는 메시지가 없다).
+  */
+ export function recognitionErrorCodeOf(
+   error: string,
+@@ -167,6 +176,8 @@ export function recognitionErrorCodeOf(
+ ): string {
+   if (error === "aborted" && message && DICTATION_MESSAGE.test(message))
+     return DICTATION_DISABLED_CODE;
++  if (error === "aborted" && message && NO_SPEECH_MESSAGE.test(message))
++    return NO_SPEECH_CODE;
+   return error;
+ }
+ 
+@@ -448,11 +459,19 @@ function onRecognizerInput(
+   // 오류
+   const { code } = input;
+   if (s.phase === "stopping") {
+-    return code === "no-speech" || code === "aborted"
++    // 끝내려고 stop 한 뒤 말소리 없음이 오고 모은 글이 없으면 말소리 없음 오류(iPad WebKit 'No speech detected', C148).
++    // 끊어 듣기(chunk) 중이면 그대로 이어 듣고, 우리 쪽 멈춤의 aborted 는 모은 글로 끝낸다(없으면 결과 없음).
++    if (
++      code === NO_SPEECH_CODE &&
++      s.stopReason !== "chunk" &&
++      joinedText(s) === ""
++    )
++      return finish(signalled, errorOutcome(s, code));
++    return code === NO_SPEECH_CODE || code === "aborted"
+       ? afterStop(signalled, now)
+       : finish(signalled, errorOutcome(s, code));
+   }
+-  if (code === "no-speech" && joinedText(s) !== "") {
++  if (code === NO_SPEECH_CODE && joinedText(s) !== "") {
+     // 두 문장 이상 답은 옛 객체를 abort 한 뒤 새 객체(감시 다시 시작 길과 같게, 검토 M-2 · 위험 20).
+     // 옛 객체의 뒤늦은 일은 번호로 버린다.
+     return s.rule.endSilenceMs !== undefined
+diff --git a/src/db/schema/learning.ts b/src/db/schema/learning.ts
+index 8c13084..77afaaa 100644
+--- a/src/db/schema/learning.ts
++++ b/src/db/schema/learning.ts
+@@ -219,6 +219,8 @@ export const talkTurns = pgTable(
+     listenEndSeconds: doublePrecision("listen_end_seconds"),
+     // C23
+     confirmSkipped: boolean("confirm_skipped"),
++    // 아이 행의 듣기 사건 요약(C149 — '모름'의 출처 · 기기 · 3D · 듣기마다 결과 · 끝난 까닭 · 길이 · 소리 · 읽기 관계, 글 · 소리 없음)
++    clientListen: jsonb("client_listen"),
+     recordedAt: tstz("recorded_at").notNull(),
+   },
+   (t) => [
+diff --git a/src/lib/speech/browser.ts b/src/lib/speech/browser.ts
+index d0f6682..b28f506 100644
+--- a/src/lib/speech/browser.ts
++++ b/src/lib/speech/browser.ts
+@@ -65,7 +65,7 @@ const INPUT_ORDER: Record<ListenInput["type"], number> = {
+ 
+ type BrowserSpeechOptions = {
+   settings: SpeechSettings;
+-  /** 관찰 페이지만 넘긴다. */
++  /** 관찰 페이지(기록 전부)와 회화 틀(듣기 사건 요약 — listen-log, C149)이 넘긴다. */
+   onTrace?: (entry: SpeechTraceEntry) => void;
+   /** 관찰 페이지만 넘긴다('이벤트 무시' · '같은 객체 되풀이' 흉내). */
+   recognitionCtor?: RecognitionCtor;
+@@ -269,7 +269,8 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
+           recognizer: id,
+           event: { type: "error", error: event.error, message: event.message },
+         });
+-        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10)
++        // iPad Siri · 받아쓰기 꺼짐의 aborted 는 '마이크를 쓸 수 없음'으로(전체 디자인 리뷰 M-10), iPad WebKit 말소리 없음의
++        // aborted('No speech detected')는 no-speech 로(C148 — 모은 글이 없으면 말소리 없음 오류)
+         push({
+           type: "error",
+           now: at,
+diff --git a/src/lib/talk-stream.ts b/src/lib/talk-stream.ts
+index ae8c423..0b4d3fb 100644
+--- a/src/lib/talk-stream.ts
++++ b/src/lib/talk-stream.ts
+@@ -3,6 +3,7 @@
+ // 끊기면 'offline'(화면이 '인터넷이 끊겼어요 …'와 online 때 같은 시도 id 로 다시 — 서버가 저장한 결과를 다시 흘리거나 AI 만 다시).
+ // stale 은 '자리가 어긋남 · 같은 시도 id 가 아직 진행 중일 수 있음'(M-1)이라 화면은 STALE_RETRY_MS 기다린 뒤 자료를 다시 읽는다.
+ // 아이 글을 로그에 내지 않는다.
++import type { ClientListen } from "@/core/conversation/client-listen";
+ import type { AddLine, TalkLine, TurnNext } from "@/server/conversation";
+ 
+ export const TALK_TURN_PATH = "/api/talk/turn";
+@@ -25,6 +26,8 @@ export type TalkTurnBody = {
+   listenEndSeconds?: number;
+   confirmSkipped?: boolean;
+   prevPerceivedWaitMs?: number;
++  /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음). */
++  clientListen?: ClientListen;
+ };
+ 
+ export type TalkStreamHandlers = {
+diff --git a/src/server/conversation/index.ts b/src/server/conversation/index.ts
+index e782a95..6f1ef65 100644
+--- a/src/server/conversation/index.ts
++++ b/src/server/conversation/index.ts
+@@ -14,6 +14,7 @@ import {
+   type TalkAttemptInput,
+   talkStartAttemptId,
+ } from "@/core/conversation/attempt";
++import { ClientListenSchema } from "@/core/conversation/client-listen";
+ import {
+   type AppendLine,
+   appendAfter,
+@@ -674,6 +675,8 @@ const FollowSchema = z.strictObject({
+   heard: z.array(z.string().max(TALK_TEXT_MAX)).max(HEARD_MAX),
+   failures: z.int().min(0).max(FAILURES_MAX),
+   skipped: z.enum(["recognition", "no_mic", "silent", "stalled"]).optional(),
++  /** 그 차례의 듣기 사건 요약(C149 — 글 · 소리 없음). */
++  clientListen: ClientListenSchema.optional(),
+ });
+ 
+ export type FollowOutcome =
+@@ -765,6 +768,7 @@ export async function saveFollowAlong(
+         heard: input.heard,
+         failures: input.failures,
+         ...(input.skipped ? { skipped: input.skipped } : {}),
++        ...(input.clientListen ? { clientListen: input.clientListen } : {}),
+       };
+       const head = { v: 1 as const, step: "final" as const };
+       const attemptInput: TalkAttemptInput =
+diff --git a/src/server/conversation/turn.ts b/src/server/conversation/turn.ts
+index d966b1b..d2e0321 100644
+--- a/src/server/conversation/turn.ts
++++ b/src/server/conversation/turn.ts
+@@ -20,6 +20,11 @@ import {
+ } from "@/core/ai/calls/talk";
+ import { talkSafetyOf } from "@/core/ai/cost-alert";
+ import type { Masker } from "@/core/ai/mask";
++import {
++  type ClientListenRow,
++  ClientListenSchema,
++  clientListenRowOf,
++} from "@/core/conversation/client-listen";
+ import {
+   type AiQuestionLite,
+   type AppendLine,
+@@ -30,6 +35,7 @@ import {
+   shownTurnOf,
+   type TalkPosition,
+   type TalkTurnLite,
++  toriKoShownOf,
+   turnSegmentOf,
+ } from "@/core/conversation/flow";
+ import {
+@@ -148,6 +154,8 @@ const TurnRequestSchema = z.strictObject({
+   listenEndSeconds: z.number().min(0).max(LISTEN_END_MAX_SECONDS).optional(),
+   confirmSkipped: z.boolean().optional(),
+   prevPerceivedWaitMs: z.int().min(0).max(PERCEIVED_WAIT_MAX_MS).optional(),
++  /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음, 5절 talk_turns client_listen). */
++  clientListen: ClientListenSchema.optional(),
+ });
+ export type TurnRequest = z.infer<typeof TurnRequestSchema>;
+ 
+@@ -214,6 +222,7 @@ export function childRowOf(
+   askKind: "first" | "re_ask";
+   withinTarget: boolean;
+   wordCount: number;
++  clientListen: ClientListenRow | null;
+ } {
+   const { state } = ctx;
+   const position = state.position;
+@@ -241,6 +250,8 @@ export function childRowOf(
+     askKind: pending.askKind,
+     withinTarget: position.segment !== "more_talk" && !position.targetReached,
+     wordCount: text === null ? 0 : wordsIn(text).length,
++    // 듣기 사건 요약 + '모름'의 출처(화면의 nospeech 표시 — C149)
++    clientListen: clientListenRowOf(request.input, request.clientListen),
+   };
+ }
+ 
+@@ -395,7 +406,9 @@ export function toriPlanOf(
+               usable: [...v.next_usable_phrases],
+             }
+           : undefined,
+-      recast: v.recast === "" ? null : v.recast,
++      // '모름' 턴은 아이가 말한 영어가 없어 되돌려 줄 말(recast)이 없다 — AI 가 채워도 비운다(정리 토막이 한 적 없는 말을 되짚지 않게)
++      recast:
++        child.inputMode === "dont_know" || v.recast === "" ? null : v.recast,
+       explanation: v.explanation === "" ? null : v.explanation,
+       newWords: [...v.new_words],
+       missionChecks: v.mission_done.length > 0 ? [...v.mission_done] : null,
+@@ -1083,7 +1096,17 @@ export async function runTalkTurnRequest(
+       return true;
+     };
+     for (const en of [...held, ...plan.speak]) if (keep(en)) send(en);
+-    if (plan.ko !== null) write({ t: "ko", ko: plan.ko });
++    // 1~3단계에서 토리 문장이 빠진 턴은 뜻 줄을 흘리지도 저장하지도 않는다(답이 화면 글로 보이지 않게, 3.3 · T2)
++    const koShown = (ko: string | null) =>
++      toriKoShownOf({
++        ko,
++        sent: plan.sentSentences,
++        shown: shown.sentences,
++        lowBand: state.spec.cardShape === "turns",
++      });
++    const ko = koShown(plan.ko);
++    const toriKo = koShown(plan.toriKo);
++    if (ko !== null) write({ t: "ko", ko });
+     for (const line of addLinesOf(shown.append)) write(line);
+ 
+     const appended = plan.append.map(appendEnOf);
+@@ -1111,7 +1134,7 @@ export async function runTalkTurnRequest(
+           }),
+           cardQuestionNo: plan.cardQuestionNo,
+           aiQuestion: plan.aiQuestion,
+-          toriKo: plan.toriKo,
++          toriKo,
+           recast: plan.recast,
+           explanation: plan.explanation,
+           newWords: plan.newWords,
+diff --git a/tests/e2e/conversation.spec.ts b/tests/e2e/conversation.spec.ts
+index c475462..51e9e64 100644
+--- a/tests/e2e/conversation.spec.ts
++++ b/tests/e2e/conversation.spec.ts
+@@ -51,6 +51,7 @@ import {
+   talkHousehold,
+   talkReply,
+   talkScript,
++  webkitSilentRun,
+ } from "./talk";
+ 
+ /**
+@@ -311,7 +312,18 @@ test.describe("회화 1단계 인사 → 대화(차례 5)", () => {
+     await untilChildTurn(page);
+     const count = await page.locator("[data-talk-count]").innerText();
+     const explanation = "괜찮아, 같이 말해 보자.";
+-    await pushFakeAi([talkReply({ tori_en: "That's okay.", explanation })]);
++    // 결함 A(2026-10-29): 처음 묻는 턴에 AI 가 답 문장과 답이 든 뜻 줄을 써도 답 문장이 빠지면 뜻 줄도 보이지 않는다(아래 단언이 잡음)
++    await pushFakeAi([
++      talkReply(
++        first.twoAnswers
++          ? {
++              tori_en: `That's okay. Say, ${first.answerExample}`,
++              tori_ko: `괜찮아! '${first.answerExample}' 라고 말해 봐.`,
++              explanation,
++            }
++          : { tori_en: "That's okay.", explanation },
++      ),
++    ]);
+     await page.getByRole("button", { name: T.dontKnow }).click();
+     await expect(page.locator("[data-tori-explanation]")).toHaveText(
+       explanation,
+@@ -2216,3 +2228,156 @@ test.describe("회화 정리 다시 읽기(차례 6 fix 1 — 검토 b3 I-1)", (
+     expect(await interruptedSpeech(page)).toContain(card.farewell.en);
+   });
+ });
++
++// ── iPad '결과 없음' 고침(13절 C148 · C149, 브리프 task-talk-speech-fix N1 · N2 · N3) ──
++
++/** iPad WebKit 꼴 말소리 없는 듣기 한 번: 말하기를 눌러 듣기를 열고 다시 눌러 끝낸다(10-22 실측 — 단추 stop 뒤 'No speech detected'). */
++async function webkitSilentListen(page: Page) {
++  const speakButton = page.locator("[data-child-turn] [data-speak]");
++  await speakButton.click();
++  await expect(page.locator("[data-child-turn] [data-listening]")).toHaveCount(
++    1,
++  );
++  await speakButton.click();
++  await expect(page.locator("[data-child-turn] [data-listening]")).toHaveCount(
++    0,
++  );
++}
++
++/** iPad WebKit 꼴 말소리 없는 듣기 talk.nospeech_dontknow_count 번으로 '모름' 한 턴(silentTurn 의 WebKit 짝). */
++async function webkitSilentTurn(page: Page) {
++  const before = await turnRequests();
++  await untilChildTurn(page);
++  for (let i = 0; i < NOSPEECH_DONTKNOW; i++) {
++    await webkitSilentListen(page);
++    if (i < NOSPEECH_DONTKNOW - 1) {
++      await expect(page.getByText(G.notHeard)).toBeVisible();
++      expect(await turnRequests()).toBe(before);
++    }
++  }
++  await expect.poll(turnRequests).toBe(before + 1);
++}
++
++/** 그 세션 아이 행의 듣기 사건 요약(C149). */
++async function childListens(sessionId: string) {
++  return (
++    await e2eDb()
++      .select({
++        turnNo: talkTurnRows.turnNo,
++        clientListen: talkTurnRows.clientListen,
++      })
++      .from(talkTurnRows)
++      .where(
++        and(
++          eq(talkTurnRows.sessionId, sessionId),
++          eq(talkTurnRows.speaker, "child"),
++        ),
++      )
++  )
++    .sort((a, b) => a.turnNo - b.turnNo)
++    .map((r) => r.clientListen);
++}
++
++test.describe("iPad '결과 없음' 고침(C148 · C149)", () => {
++  test.setTimeout(FULL);
++
++  test("C148 AC-15g iPad WebKit 꼴(단추 stop 뒤 aborted 'No speech detected')로 끝난 듣기가 같은 질문에서 talk.nospeech_dontknow_count 번 이어지면 '모름'과 같이 처리되고 아이 행에 말소리 없음 출처와 듣기 요약이 남는다", async ({
++    context,
++  }) => {
++    const { page, card, sessionId } = await openTalk(context, [
++      saidRun("I'm good."),
++      ...Array.from({ length: NOSPEECH_DONTKNOW }, webkitSilentRun),
++    ]);
++    const first = await pastGreeting(page, card);
++    await pushFakeAi([talkReply({ tori_en: "That's okay." })]);
++    await webkitSilentTurn(page);
++    // '모름'과 같이: 토리가 같은 질문을 다시 묻고 위 띠 숫자는 그대로
++    await spokenTail(page, dontKnowTailOf(first));
++    await expect(bubble(page)).toContainText(first.question.en);
++    await expect(count(page)).toHaveText(TALK_TEXT.count(1, targetOf(card)));
++    const rows = (await childRows(sessionId)).slice(1);
++    expect(rows.map((r) => r.inputMode)).toEqual(["dont_know"]);
++    // C149: 출처 nospeech · 듣기 둘 모두 no-speech(단추로 끝남 · 소리 없음) · 글 없음
++    const listen = (await childListens(sessionId)).at(-1) as {
++      src?: string;
++      listens?: { o: string; by?: string; snd: boolean }[];
++    } | null;
++    expect(listen?.src).toBe("nospeech");
++    expect(listen?.listens?.slice(-NOSPEECH_DONTKNOW)).toEqual(
++      Array.from({ length: NOSPEECH_DONTKNOW }, () =>
++        expect.objectContaining({
++          o: "error:no-speech",
++          by: "button",
++          snd: false,
++        }),
++      ),
++    );
++    expect(JSON.stringify(listen)).not.toContain(first.question.en);
++  });
++
++  test("C148 AC-N3 iPad WebKit 꼴의 말소리 없는 듣기로 회화 질문 셋이 '모름'으로 넘어가면 '마이크가 멈춤'이 아니라 '말소리가 잘 안 들려요' 안내와 '말소리가 들어오지 않음' 알림이 나온다", async ({
++    context,
++  }) => {
++    const { page, card, profileId, sessionId } = await openTalk(context, [
++      saidRun("I'm good."),
++      ...Array.from(
++        { length: NOSPEECH_DONTKNOW * DONTKNOW_MAX * SILENT_ITEMS_MAX },
++        webkitSilentRun,
++      ),
++    ]);
++    // 시험 값 확인: 한 질문의 말소리 없는 듣기가 여섯 번(마이크 멈춤 셈의 수)에 닿는다 — 고치기 전에는 첫 질문에서 '마이크가 잘 안 돼요'
++    expect(NOSPEECH_DONTKNOW * DONTKNOW_MAX).toBe(
++      TEST_SETTINGS["speech.max_retries"].value * 2,
++    );
++    await pastGreeting(page, card);
++    await pushFakeAi(
++      Array.from({ length: DONTKNOW_MAX * SILENT_ITEMS_MAX }, () =>
++        talkReply({ tori_en: "That's okay." }),
++      ),
++    );
++    for (let q = 1; q <= SILENT_ITEMS_MAX; q++) {
++      for (let k = 0; k < DONTKNOW_MAX; k++) await webkitSilentTurn(page);
++      if (q < SILENT_ITEMS_MAX)
++        await expect(page.locator("[data-blocked]")).toHaveCount(0);
++    }
++    await expect(page.getByText(G.silent)).toBeVisible({
++      timeout: STREAM_END_MS,
++    });
++    await expect.poll(() => alertKindsOf(profileId)).toContain("speech_silent");
++    const kinds = await alertKindsOf(profileId);
++    expect(kinds).not.toContain("mic_stalled");
++    expect((await sessionOf(sessionId))?.status).toBe("in_progress");
++  });
++
++  test("C148 듣는 동안 토리 말 다시 듣기 · 답 듣기 ①② · 힌트 문장 듣기 단추가 꺼져 있고 듣기가 끝나면 다시 켜진다", async ({
++    context,
++  }) => {
++    const { page, card } = await openTalk(context, [
++      saidRun("I'm good."),
++      webkitSilentRun(),
++    ]);
++    await pastGreeting(page, card);
++    await untilChildTurn(page);
++    // 힌트 두 번: 한국어 뜻 → 영어 문장과 듣기 단추
++    await page.getByRole("button", { name: T.hint, exact: true }).click();
++    await page.getByRole("button", { name: T.hint, exact: true }).click();
++    const readers = [
++      bubble(page),
++      page.locator('[data-answer-listen="1"]'),
++      page.locator('[data-answer-listen="2"]'),
++      page.locator("[data-hint-listen]"),
++    ];
++    for (const reader of readers) await expect(reader).toBeEnabled();
++    const speakButton = page.locator("[data-child-turn] [data-speak]");
++    await speakButton.click();
++    await expect(
++      page.locator("[data-child-turn] [data-listening]"),
++    ).toHaveCount(1);
++    for (const reader of readers) await expect(reader).toBeDisabled();
++    await speakButton.click();
++    await expect(
++      page.locator("[data-child-turn] [data-listening]"),
++    ).toHaveCount(0);
++    for (const reader of readers) await expect(reader).toBeEnabled();
++  });
++});
+diff --git a/tests/e2e/talk.ts b/tests/e2e/talk.ts
+index 050aea3..dca4205 100644
+--- a/tests/e2e/talk.ts
++++ b/tests/e2e/talk.ts
+@@ -341,6 +341,28 @@ export function failingRun(error: string, at = 100): RecognitionRun {
+   };
+ }
+ 
++/**
++ * iPad WebKit(사파리 · 크롬) 꼴의 말소리 없는 듣기(10-22 실측 · C148): 시작 · 소리 받기 시작 뒤 결과 · 오류가 없고(스스로 no-speech 를 내지 않음),
++ * 앱이 stop 하면 error aborted 'No speech detected' → end 로 끝난다.
++ */
++export function webkitSilentRun(): RecognitionRun {
++  return {
++    events: [
++      { at: 50, type: "start" },
++      { at: 100, type: "audiostart" },
++    ],
++    onStop: [
++      {
++        at: 10,
++        type: "error",
++        error: "aborted",
++        message: "No speech detected",
++      },
++      { at: 20, type: "end" },
++    ],
++  };
++}
++
+ /**
+  * 1-가 하루 안전 상한에 닿은 날(C80): 이 프로필의 ai.safety_daily_calls 를 1 로 두고 오늘 학습일 호출 한 행을 넣는다(쓰기 e2e 와 같은 꼴).
+  */
+diff --git a/tests/integration/conversation-session.test.ts b/tests/integration/conversation-session.test.ts
+index 5db5310..d804acf 100644
+--- a/tests/integration/conversation-session.test.ts
++++ b/tests/integration/conversation-session.test.ts
+@@ -312,6 +312,101 @@ describe("회화 세션: 시작 · 상태 전이", () => {
+     ).toEqual({ ok: false, reason: "invalid" });
+   });
+ 
++  it("C149 아이 행에는 듣기 사건 요약과 '모름'의 출처가 저장되고 따라 말하기 시도에도 듣기 요약이 들며 글은 들지 않는다", async () => {
++    const sessionId = await startTalk(h, 1);
++    const view = await viewOf(h, sessionId);
++    const said = "I'm good.";
++    const clientListen = {
++      br: "iPad Safari 27.0",
++      r3d: true,
++      listens: [
++        {
++          o: "error:no-speech",
++          by: "button" as const,
++          d: 2010,
++          snd: false,
++          tc: "cut" as const,
++        },
++        {
++          o: "error:no-speech",
++          by: "button" as const,
++          d: 1800,
++          snd: false,
++          tc: 900,
++        },
++      ],
++      mf: 0,
++    };
++    // 인사: 말소리 없음 '모름' → 단추 '모름' → 말함(요약 없음)
++    h.fake.push(turnRule({ tori_en: "That's okay!" }));
++    await say(h, sessionId, {
++      mode: "dont_know",
++      nospeech: true,
++      clientListen,
++    });
++    h.fake.push(turnRule({ tori_en: "That's okay!" }));
++    await say(h, sessionId, {
++      mode: "dont_know",
++      clientListen: { ...clientListen, listens: [] },
++    });
++    h.fake.push(turnRule({ tori_en: "Great!" }));
++    await say(h, sessionId, { text: said });
++    const children = (await turnsOf(db, sessionId)).filter(
++      (r) => r.speaker === "child",
++    );
++    expect(children.map((r) => r.clientListen)).toEqual([
++      { ...clientListen, src: "nospeech" },
++      { ...clientListen, listens: [], src: "button" },
++      null,
++    ]);
++    // 따라 말하기 시도(오늘 쓸 말 첫 낱말 건너뜀)에도 듣기 요약
++    const moved = await advanceTalk({ sessionId, to: "today_words" }, h.deps());
++    expect(moved.ok).toBe(true);
++    const word = view.follow.todayWords[0]?.word ?? "";
++    expect(
++      await saveFollowAlong(
++        {
++          sessionId,
++          clientAttemptId: "follow-listen-1",
++          segment: "today_words",
++          index: 0,
++          target: word,
++          heard: [],
++          failures: 3,
++          skipped: "recognition",
++          clientListen,
++        },
++        h.deps(),
++      ),
++    ).toEqual({ ok: true, saved: true });
++    const [saved] = await db
++      .select()
++      .from(attempts)
++      .where(eq(attempts.clientAttemptId, "follow-listen-1"));
++    expect(saved?.input).toMatchObject({ kind: "talk-today", clientListen });
++    // 글 · 인식 글이 든 요약은 받지 않는다
++    expect(
++      await saveFollowAlong(
++        {
++          sessionId,
++          clientAttemptId: "follow-listen-2",
++          segment: "today_words",
++          index: 1,
++          target: word,
++          heard: [],
++          failures: 0,
++          clientListen: {
++            ...clientListen,
++            listens: [{ ...clientListen.listens[0], text: word }],
++          },
++        },
++        h.deps(),
++      ),
++    ).toEqual({ ok: false, reason: "invalid" });
++    const stored = JSON.stringify(children.map((r) => r.clientListen));
++    expect(stored).not.toContain(said);
++  });
++
+   it("회화 세션: 두 기기가 같은 턴을 보내면 하나만 받고 늦은 쪽은 다시 읽으라는 답을 받는다", async () => {
+     const sessionId = await startTalk(h, 1);
+     await intoTalk(h, sessionId);
+@@ -1115,6 +1210,36 @@ describe("한 턴에 같은 말 두 번 안 읽기(C125 (3))", () => {
+       `회화 '모름' 턴 문장 수: 토리 말에 답 예시 있음 ${withCount} · 없음 ${plainCount}`,
+     );
+   });
++
++  it("회화 세션: 1단계 인사 '모름' 턴에 겹침 없애기가 토리 문장을 빼면 그 턴의 뜻 줄을 흘리지도 저장하지도 않고 recast 도 비운다(결함 A · D)", async () => {
++    const sessionId = await startTalk(h, 1);
++    await viewOf(h, sessionId);
++    const card = cardOf(await talkLessonRow(db, 1));
++    const greet =
++      "questions" in card.greeting ? card.greeting.questions[0] : undefined;
++    if (!greet?.twoAnswers) throw new Error("견본 꼴 — 1단계 인사 답 두 개");
++    const answer = greet.twoAnswers[0];
++    const ko = `괜찮아! '${answer}' 라고 말해 봐.`;
++    h.fake.push(
++      turnRule({
++        tori_en: `That's okay! Say, ${answer}`,
++        tori_ko: ko,
++        recast: answer,
++      }),
++    );
++    const { lines, last } = await say(h, sessionId, { mode: "dont_know" });
++    expect(last?.t).toBe("end");
++    // 답 문장은 빠지고 그 뜻 줄도 흘리지 않는다
++    expect(lines.some((l) => l.t === "s" && l.en.includes(answer))).toBe(false);
++    expect(lines.some((l) => l.t === "ko")).toBe(false);
++    const saved = (await turnsOf(db, sessionId)).at(-1);
++    expect(saved?.speaker).toBe("tori");
++    expect(saved?.toriKo).toBeNull();
++    expect(saved?.recast).toBeNull();
++    // 이어 열기도 저장값을 따른다
++    const view = await viewOf(h, sessionId);
++    expect(view.lastTori?.ko).toBeUndefined();
++  });
+ });
+ 
+ describe("턴 길 준비 시간(C125 (4))", () => {
+diff --git a/tests/integration/talk-fixture.ts b/tests/integration/talk-fixture.ts
+index b0a70e4..1cfdd6d 100644
+--- a/tests/integration/talk-fixture.ts
++++ b/tests/integration/talk-fixture.ts
+@@ -4,6 +4,7 @@
+ // 응답 뒤 할 일(after)은 모아 두었다가 시험이 돌린다. 시각은 고정 시계 하나. 아이 이름 · 연락처는 지어낸 값(앱 안 이름 Momo)이다.
+ import { and, eq, inArray, isNull, max } from "drizzle-orm";
+ import type { TalkOutput } from "@/core/ai/calls/talk";
++import type { ClientListen } from "@/core/conversation/client-listen";
+ import type { StageTimings } from "@/core/conversation/timing";
+ import { AVATARS, TOPIC_BUNDLES } from "@/core/profile/start";
+ import { LESSON_SCHEMAS } from "@/core/seed/schema/lesson";
+@@ -342,6 +343,10 @@ export type SayOptions = {
+   };
+   clientAttemptId?: string;
+   prevPerceivedWaitMs?: number;
++  /** 말소리 없음으로 넘어간 '모름'(화면의 nospeech 표시, C44 · C149). */
++  nospeech?: boolean;
++  /** 그 턴의 듣기 사건 요약(C149). */
++  clientListen?: ClientListen;
+   /** AI 를 부르기 전 구간마다 준비 시간(C125 (4)). */
+   onPrepTimings?: (timings: StageTimings) => void;
+ };
+@@ -363,11 +368,15 @@ export async function say(
+       input: {
+         mode,
+         ...(mode === "speech" ? { text: opts.text ?? "I like it." } : {}),
++        ...(opts.nospeech === undefined ? {} : { nospeech: opts.nospeech }),
+       },
+       hint: opts.hint ?? { opened: 0, heard: [] },
+       ...(opts.prevPerceivedWaitMs === undefined
+         ? {}
+         : { prevPerceivedWaitMs: opts.prevPerceivedWaitMs }),
++      ...(opts.clientListen === undefined
++        ? {}
++        : { clientListen: opts.clientListen }),
+     },
+     {
+       ...h.deps(),
+diff --git a/tests/unit/conversation-call.test.ts b/tests/unit/conversation-call.test.ts
+index 0c66645..ef57129 100644
+--- a/tests/unit/conversation-call.test.ts
++++ b/tests/unit/conversation-call.test.ts
+@@ -255,6 +255,17 @@ describe("회화 턴 규격", () => {
+     );
+   });
+ 
++  it("회화 턴 규격: 1~3단계 고정부는 '모름' · 막힘 턴에 짧은 격려만 쓰고 답을 말하지 않으며 recast 를 비우라고 하고 4단계부터는 이 줄이 없다(결함 B)", () => {
++    const line =
++      "Levels 1-3: when Input is dont_know or stuck is true, write only a short encouragement in tori_en and tori_ko. Do not say the answer; the app plays it. Leave recast empty.";
++    expect(talkTurnSpec.system(inputOf(1), rulesOf(inputOf(1)))).toContain(
++      line,
++    );
++    expect(talkTurnSpec.system(inputOf(4), rulesOf(inputOf(4)))).not.toContain(
++      line,
++    );
++  });
++
+   it("회화 턴 규격: 설정 키가 없으면 CallSettingError 로 던진다", () => {
+     const input = inputOf(5);
+     const broken = { ...values };
+diff --git a/tests/unit/conversation-server.test.ts b/tests/unit/conversation-server.test.ts
+index 6d059a3..f7c25a9 100644
+--- a/tests/unit/conversation-server.test.ts
++++ b/tests/unit/conversation-server.test.ts
+@@ -9,6 +9,7 @@ import {
+   parseTalkAttemptInput,
+   TALK_CLOSING_REASONS,
+ } from "@/core/conversation/attempt";
++import type { ClientListen } from "@/core/conversation/client-listen";
+ import {
+   MORE_PROMPT,
+   praiseLineOf,
+@@ -136,6 +137,7 @@ function row(over: Partial<TalkTurnRow>): TalkTurnRow {
+     perceivedWaitMs: null,
+     listenEndSeconds: null,
+     confirmSkipped: null,
++    clientListen: null,
+     recordedAt: new Date("2026-10-22T10:00:00Z"),
+     ...over,
+   };
+@@ -707,6 +709,55 @@ describe("아이 행 · 끝맺음 상태 · 앞 턴 짝", () => {
+     });
+   });
+ 
++  it("C149 아이 행에 듣기 사건 요약(client_listen)을 두고 '모름'의 출처는 화면의 nospeech 표시로 정하며 글은 들지 않는다", () => {
++    const card = lessonAt(1).card;
++    const spec = specOf(1);
++    const position = talkPositionOf({
++      spec,
++      card,
++      metBefore: [],
++      turns: [tori()],
++      segment: "greeting",
++      settings: FLOW,
++    });
++    const clientListen: ClientListen = {
++      br: "iPad Safari 27.0",
++      r3d: true,
++      listens: [
++        { o: "error:no-speech", by: "button", d: 2010, snd: false, tc: "cut" },
++        { o: "error:no-speech", by: "button", d: 1800, snd: false, tc: 900 },
++      ],
++      mf: 0,
++    };
++    const base = {
++      sessionId: "00000000-0000-4000-8000-000000000000",
++      clientAttemptId: "c",
++      hint: { opened: 0, heard: [] },
++    };
++    const silent = childRowOf(
++      { ...base, input: { mode: "dont_know", nospeech: true }, clientListen },
++      { state: { spec, card, position }, masker: identity },
++    );
++    expect(silent.clientListen).toEqual({ ...clientListen, src: "nospeech" });
++    const pressed = childRowOf(
++      { ...base, input: { mode: "dont_know" } },
++      { state: { spec, card, position }, masker: identity },
++    );
++    expect(pressed.clientListen).toEqual({ src: "button" });
++    const said = childRowOf(
++      { ...base, input: { mode: "speech", text: "I'm good." }, clientListen },
++      { state: { spec, card, position }, masker: identity },
++    );
++    expect(said.clientListen).toEqual(clientListen);
++    expect(JSON.stringify(said.clientListen)).not.toContain("good");
++    expect(
++      childRowOf(
++        { ...base, input: { mode: "speech", text: "I'm good." } },
++        { state: { spec, card, position }, masker: identity },
++      ).clientListen,
++    ).toBeNull();
++  });
++
+   it("회화 서버: 끝맺음 상태는 옴 · 실패 하나 · 두 번 실패면 못 함이고 하루 안전 상한은 셈에 넣지 않는다", () => {
+     const value = {
+       farewell: "Bye!",
+@@ -817,6 +868,29 @@ describe("fix 1 — 1~3단계 붙일 말 · 끝맺음 기록 꼴", () => {
+     }
+   });
+ 
++  it("회화 서버: '모름' 턴(input dont_know)은 AI 가 recast 를 채워도 비우고 말한 턴은 그대로 둔다(결함 D)", () => {
++    const card = lessonAt(1).card;
++    const first = card.turns?.[0];
++    if (!first) throw new Error("견본 꼴");
++    const value = output({ tori_en: "That's okay!", recast: "I am fine." });
++    const dontKnow = toriPlanOf(
++      success(value, ["That's okay!"]),
++      lowCtx(card, [tori(), kid("greeting"), tori()], {
++        inputMode: "dont_know",
++        text: null,
++        targetWords: [...first.targets],
++      }),
++    );
++    if (dontKnow.kind !== "row") throw new Error("토리 행이어야 한다");
++    expect(dontKnow.recast).toBeNull();
++    const spoke = toriPlanOf(
++      success(value, ["That's okay!"]),
++      lowCtx(card, [tori(), kid("greeting"), tori()]),
++    );
++    if (spoke.kind !== "row") throw new Error("토리 행이어야 한다");
++    expect(spoke.recast).toBe("I am fine.");
++  });
++
+   it("회화 서버: 끝맺음 기록 입력은 a 시도 꼴의 talk-closing 갈래(닫힌 까닭)로 읽고 모르는 까닭은 받지 않는다", () => {
+     for (const reason of TALK_CLOSING_REASONS)
+       expect(
+diff --git a/tests/unit/listen-end.test.ts b/tests/unit/listen-end.test.ts
+index 7670bca..bd55f5c 100644
+--- a/tests/unit/listen-end.test.ts
++++ b/tests/unit/listen-end.test.ts
+@@ -80,7 +80,13 @@ function scriptInput(item: Queued): ListenInput | undefined {
+         text: event.results.map((r) => r.transcript).join(" "),
+       };
+     case "error":
+-      return { type: "error", now, recognizer, code: event.error };
++      // 브라우저 구현(browser.ts)과 같이 메시지로 코드를 고른다(받아쓰기 꺼짐 · iPad 말소리 없음 — M-10 · C148)
++      return {
++        type: "error",
++        now,
++        recognizer,
++        code: recognitionErrorCodeOf(event.error, event.message),
++      };
+     case "end":
+       return { type: "end", now, recognizer };
+     default:
+@@ -917,6 +923,184 @@ describe("오류 갈래(7절 · 8절 · C53)", () => {
+   });
+ });
+ 
++describe("iPad WebKit 말소리 없음(C148)", () => {
++  // 10-22 실측: iPad 사파리 · 크롬(같은 WebKit)은 말소리가 없으면 스스로 no-speech 를 내지 않고, 앱이 stop 하면
++  // error aborted "No speech detected" → end 로 끝난다(분석 보고 task-talk-speech-analysis 0 · 2.3)
++  const WEBKIT_NO_SPEECH = "No speech detected";
++  const webkitSilent = (name: string) =>
++    inlineScript(name, [
++      {
++        events: [
++          { at: 50, type: "start" },
++          { at: 60, type: "audiostart" },
++        ],
++        onStop: [
++          {
++            at: 10,
++            type: "error",
++            error: "aborted",
++            message: WEBKIT_NO_SPEECH,
++          },
++          { at: 20, type: "end" },
++        ],
++      },
++    ]);
++  const NO_SPEECH_OUTCOME: ListenOutcome = {
++    kind: "error",
++    code: "no-speech",
++    group: "retry",
++    partialText: "",
++  };
++
++  it("C148 aborted 의 메시지가 'No speech detected' 면 no-speech 코드로 읽고 다른 aborted 는 그대로 둔다", () => {
++    expect(recognitionErrorCodeOf("aborted", WEBKIT_NO_SPEECH)).toBe(
++      "no-speech",
++    );
++    expect(recognitionErrorCodeOf("aborted", "no speech detected")).toBe(
++      "no-speech",
++    );
++    expect(recognitionErrorCodeOf("aborted", undefined)).toBe("aborted");
++    expect(recognitionErrorCodeOf("aborted", "Recognition aborted")).toBe(
++      "aborted",
++    );
++  });
++
++  it("C148 말하기 단추로 stop 한 뒤 'aborted · No speech detected' 로 끝나고 모은 글이 없으면 no-speech 오류다", () => {
++    const sim = simulate(webkitSilent("webkit-button"), oneSentence(1), {
++      buttonAt: 2000,
++    });
++    expect(sim.outcome).toEqual(NO_SPEECH_OUTCOME);
++    expect(sim.doneAt).toBe(2010);
++  });
++
++  it("C148 상한(speech.max_listen_seconds)으로 stop 한 뒤 'aborted · No speech detected' 로 끝나고 모은 글이 없으면 no-speech 오류다", () => {
++    const sim = simulate(webkitSilent("webkit-cap"), oneSentence(1));
++    expect(sim.outcome).toEqual(NO_SPEECH_OUTCOME);
++    expect(sim.doneAt).toBe(SETTINGS.maxListenMs + 10);
++  });
++
++  it("C148 모은 글이 있으면 stop 뒤 'aborted · No speech detected' 여도 모은 글로 끝난다", () => {
++    const script = inlineScript("webkit-text", [
++      {
++        events: [
++          { at: 50, type: "start" },
++          {
++            at: 500,
++            type: "result",
++            results: [{ transcript: "I'm good", isFinal: false }],
++          },
++        ],
++        onStop: [
++          {
++            at: 10,
++            type: "error",
++            error: "aborted",
++            message: WEBKIT_NO_SPEECH,
++          },
++          { at: 20, type: "end" },
++        ],
++      },
++    ]);
++    expect(
++      simulate(script, oneSentence(1), { buttonAt: 1000 }).outcome,
++    ).toEqual({
++      kind: "result",
++      text: "I'm good",
++      pieces: ["I'm good"],
++      endedBy: "button",
++      restarts: 0,
++      watchdogRestarts: 0,
++    });
++  });
++
++  it("C148 끊어 듣기(chunk)로 stop 한 뒤의 'aborted · No speech detected' 는 오류가 아니라 새 객체로 이어 듣는다", () => {
++    const script = inlineScript("webkit-chunk", [
++      {
++        events: [
++          { at: 50, type: "start" },
++          {
++            at: 500,
++            type: "result",
++            results: [{ transcript: "First I wake up", isFinal: true }],
++          },
++        ],
++        onStop: [
++          {
++            at: 10,
++            type: "error",
++            error: "aborted",
++            message: WEBKIT_NO_SPEECH,
++          },
++          { at: 20, type: "end" },
++        ],
++      },
++      {
++        events: [
++          { at: 50, type: "start" },
++          {
++            at: 500,
++            type: "result",
++            results: [{ transcript: "then I eat", isFinal: true }],
++          },
++        ],
++        onStop: [{ at: 20, type: "end" }],
++      },
++    ]);
++    const sim = simulate(script, multiSentence(9), {
++      buttonAt: SETTINGS.maxListenMs + 2000,
++    });
++    expect(sim.outcome).toEqual({
++      kind: "result",
++      text: "First I wake up then I eat",
++      pieces: ["First I wake up", "then I eat"],
++      endedBy: "button",
++      restarts: 1,
++      watchdogRestarts: 0,
++    });
++    // 글 없는 chunk 도 이어 듣는다(오류로 끝나지 않음)
++    const silentChunk = simulate(
++      webkitSilent("webkit-silent-chunk"),
++      multiSentence(9),
++      { buttonAt: SETTINGS.maxListenMs + 2000 },
++    );
++    expect(effectsOf(silentChunk, "start-recognizer")).toHaveLength(2);
++    expect(silentChunk.outcome).toEqual(NO_SPEECH_OUTCOME);
++  });
++
++  it("C148 듣는 중에 'aborted · No speech detected' 가 오고 모은 글이 없으면 no-speech 오류다", () => {
++    const script = inlineScript("webkit-listening", [
++      {
++        events: [
++          { at: 50, type: "start" },
++          {
++            at: 4000,
++            type: "error",
++            error: "aborted",
++            message: WEBKIT_NO_SPEECH,
++          },
++          { at: 4010, type: "end" },
++        ],
++      },
++    ]);
++    expect(simulate(script, oneSentence(1)).outcome).toEqual(NO_SPEECH_OUTCOME);
++  });
++
++  it("C148 우리 쪽 stop 뒤 메시지 없는 aborted 는 그대로 '결과 없음'이다", () => {
++    const script = inlineScript("plain-aborted", [
++      {
++        events: [{ at: 50, type: "start" }],
++        onStop: [
++          { at: 10, type: "error", error: "aborted" },
++          { at: 20, type: "end" },
++        ],
++      },
++    ]);
++    expect(
++      simulate(script, oneSentence(1), { buttonAt: 2000 }).outcome,
++    ).toEqual({ kind: "no-result" });
++  });
++});
++
+ describe("음성 설정(12절)", () => {
+   /** 12절 표에서 speech.* 줄을 읽어 <구간> 을 펼친 키 → 기본값. */
+   function specSpeechDefaults(): Map<string, string | number> {
+diff --git a/tests/unit/speaking-judge.test.ts b/tests/unit/speaking-judge.test.ts
+index f014d2a..66fdad8 100644
+--- a/tests/unit/speaking-judge.test.ts
++++ b/tests/unit/speaking-judge.test.ts
+@@ -16,6 +16,14 @@ import {
+   speakingCountersStart,
+   speechEventOf,
+ } from "@/core/speaking/judge";
++import {
++  endRuleFor,
++  type ListenOutcome,
++  recognitionErrorCodeOf,
++  speechSettingsFrom,
++  startListen,
++  stepListen,
++} from "@/core/speech/listen";
+ import { bestMatchRate } from "@/core/speech/match-rate";
+ import {
+   defaultSettings,
+@@ -237,6 +245,40 @@ describe("말하기 인식 셈(7절 오류 행)", () => {
+     expect(run([{ type: "stalled" }]).verdicts).toEqual(["mic-stalled"]);
+   });
+ 
++  it("C148 iPad WebKit 의 말소리 없는 듣기(단추 stop 뒤 'aborted · No speech detected')는 no-speech 로 세어 '마이크가 멈춤'이 아니라 '말소리 없음'으로 간다", () => {
++    const speech = speechSettingsFrom(
++      (key) =>
++        (TEST_SETTINGS as Record<string, { value: unknown }>)[key]?.value,
++    );
++    const rule = endRuleFor(
++      { area: "speaking", level: 1, answer: "one-sentence" },
++      speech,
++    );
++    // 듣기 하나: 시작 → 단추 → aborted 'No speech detected' → 끝(10-22 실측 꼴)
++    let step = startListen(rule, speech, 0);
++    step = stepListen(step.state, { type: "button", now: 2000 });
++    step = stepListen(step.state, {
++      type: "error",
++      now: 2010,
++      recognizer: 1,
++      code: recognitionErrorCodeOf("aborted", "No speech detected"),
++    });
++    const done = step.effects.find((e) => e.type === "done");
++    const outcome = (done as { outcome: ListenOutcome } | undefined)?.outcome;
++    expect(outcome).toMatchObject({ kind: "error", code: "no-speech" });
++    const event = outcome ? speechEventOf(outcome) : undefined;
++    if (!event) throw new Error("셈의 일이 있어야 한다");
++    const items = limits.silentItemsMax;
++    const events: SpeechEvent[] = [];
++    for (let i = 0; i < items; i++)
++      events.push(...times(limits.maxRetries, event), {
++        type: "next-activity",
++      });
++    const { verdicts } = run(events);
++    expect(verdicts).not.toContain("mic-stalled");
++    expect(verdicts.filter((v) => v !== "none").at(-1)).toBe("speech-silent");
++  });
++
+   it("말하기 인식 셈: no-speech 로만 끝난 활동이 speech.silent_items_max 개 이어지면 '말소리 없음'이고 사이에 들은 활동이 있으면 다시 센다", () => {
+     const silentActivity: SpeechEvent[] = [
+       ...times(limits.maxRetries, {
+diff --git a/tests/unit/talk-bubble.test.ts b/tests/unit/talk-bubble.test.ts
+index 459f552..7c0fd65 100644
+--- a/tests/unit/talk-bubble.test.ts
++++ b/tests/unit/talk-bubble.test.ts
+@@ -207,6 +207,19 @@ describe("차례 5 fix 2 — 그림 깨짐 · 말풍선 폭 · 뜻 자리", () =
+     expect(none).not.toContain("data-turn-picture");
+   });
+ 
++  it("AC-16b 말풍선 아래 설명 줄도 {NAME} 을 영어 이름으로 채워 보인다(결함 E)", () => {
++    const html = renderToStaticMarkup(
++      createElement(ToriBubble, {
++        ...base,
++        content: { sentences: ["Nice!"], adds: [], done: true },
++        waiting: null,
++        explanation: "{NAME}, 'fine' 은 좋다는 뜻이야.",
++      }),
++    );
++    expect(html).toMatch(/data-tori-explanation=""[^>]*>Momo, /);
++    expect(html).not.toContain("{NAME}");
++  });
++
+   it("회화 화면: 말풍선은 글 길이만큼이고 상한 폭이 있으며 뜻 줄과 답 두 개 단추는 한 묶음 자리에 있다(화면 검토 M-2 · M-3)", () => {
+     const html = renderToStaticMarkup(
+       createElement(ToriBubble, {
+diff --git a/tests/unit/talk-repeat.test.ts b/tests/unit/talk-repeat.test.ts
+index 71f4543..cf7d1d9 100644
+--- a/tests/unit/talk-repeat.test.ts
++++ b/tests/unit/talk-repeat.test.ts
+@@ -8,6 +8,7 @@ import {
+   normalizeSpoken,
+   sayingAnswer,
+   shownTurnOf,
++  toriKoShownOf,
+ } from "@/core/conversation/flow";
+ import { splitSentences } from "@/core/seed/text";
+ 
+@@ -143,6 +144,86 @@ describe("한 턴에 같은 말 두 번 안 읽기(C125 (3))", () => {
+     expect(sayingAnswer("YES", [yesNo.answers])).toBe(true);
+   });
+ 
++  it("같은 말: 줄임꼴(I'm · it's · that's · don't · you're · let's)은 펼친 꼴과 같은 말이다(C127 보완 2026-10-29, 결함 C)", () => {
++    const pairs: [string, string][] = [
++      ["I'm fine.", "i am fine"],
++      ["It's red!", "It is red."],
++      ["That's okay.", "that is okay"],
++      ["I don't know.", "I do not know."],
++      ["You're great!", "you are great"],
++      ["Let's go!", "let us go"],
++    ];
++    for (const [short, long] of pairs)
++      expect(normalizeSpoken(short)).toBe(normalizeSpoken(long));
++    // 굽은 따옴표 줄임꼴도 같다
++    expect(normalizeSpoken("I’m fine.")).toBe(normalizeSpoken("I am fine."));
++    // 줄임꼴 답 문장을 담은 토리 문장도 답 두 개('I am …')와 같은 말로 빠진다
++    const plain: AppendLine = {
++      kind: "two_answers",
++      answers: ["I am fine.", "I am okay."],
++    };
++    expect(sayingAnswer("Say, I'm fine.", [plain.answers])).toBe(true);
++    expect(
++      shownTurnOf(["That's okay!", "Say, I'm fine."], [question, plain])
++        .sentences,
++    ).toEqual(["That's okay!"]);
++  });
++
++  it("같은 말: 이름 자리 {NAME} 은 줄임꼴을 펼쳐도 한 낱말 'name' 으로 남는다(검토 fix 1 I-2)", () => {
++    expect(normalizeSpoken("Yes! My name is {NAME}.")).toBe(
++      "yes my name is name",
++    );
++    // 선생님 자기소개는 이름 자리가 든 답 두 개와 같은 말이 아니다
++    const names: AppendLine = {
++      kind: "two_answers",
++      answers: ["Yes! My name is {NAME}.", "Hi! My name is {NAME}."],
++    };
++    expect(sayingAnswer("Hi, my name is Mina.", [names.answers])).toBe(false);
++    // 이름 자리가 든 카드 질문은 토리 문장에 'Hi!' · 'are you' 가 있어도 붙일 줄로 남는다
++    const ask: AppendLine = {
++      kind: "question",
++      en: "Hi! Are you {NAME}?",
++      ko: "안녕! 네가 {NAME} 이야?",
++    };
++    const yesNo: AppendLine = {
++      kind: "two_answers",
++      answers: ["Yes, I am.", "No, I am not."],
++    };
++    expect(shownTurnOf(["Hi!", "Are you ready?"], [ask, yesNo]).append).toEqual(
++      [ask, yesNo],
++    );
++  });
++
++  it("같은 말: 겹침 없애기가 토리 문장을 하나라도 뺀 1~3단계 턴은 뜻 줄을 흘리지도 저장하지도 않는다(결함 A)", () => {
++    const ko = "괜찮아! 'I am fine.' 라고 말해 봐.";
++    const sent = ["That's okay!", "Say, I am fine."];
++    const plain: AppendLine = {
++      kind: "two_answers",
++      answers: ["I am fine.", "I am okay."],
++    };
++    const shown = shownTurnOf(sent, [question, plain]);
++    expect(shown.sentences).toEqual(["That's okay!"]);
++    expect(
++      toriKoShownOf({ ko, sent, shown: shown.sentences, lowBand: true }),
++    ).toBeNull();
++    // 빠진 문장이 없으면 뜻 줄은 그대로
++    expect(
++      toriKoShownOf({
++        ko: "괜찮아!",
++        sent: ["That's okay!"],
++        shown: ["That's okay!"],
++        lowBand: true,
++      }),
++    ).toBe("괜찮아!");
++    // 뜻이 없으면 없음, 4단계부터는 판정하지 않는다
++    expect(
++      toriKoShownOf({ ko: null, sent, shown: shown.sentences, lowBand: true }),
++    ).toBeNull();
++    expect(
++      toriKoShownOf({ ko, sent, shown: shown.sentences, lowBand: false }),
++    ).toBe(ko);
++  });
++
+   it("같은 말: 1단계 처음 묻는 턴의 '모름'은 견본 대화에서 4문장 이하다", () => {
+     // 고치기 전: 토리 말(답 예시 포함) + 답 예시 + 같은 질문 + 답 두 개 = 6문장
+     const ai = ["That's okay!", "You can say, I'm good."];

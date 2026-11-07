@@ -1,0 +1,3 @@
+| 4-가 | `scripts/talk-observe.ts` | 수정 | 대본 꼴 선택 칸 summaries · settings(그 대본만 덮음) · `--set <키>=<값>`(명령 전체, 대본 칸보다 앞섬, 메모리에서만) · `--rounds <n>` · JSON 보고에 바퀴 · 시스템 프롬프트 · 기술 오류 자리 표시. 지금 core 에 있는 것만 가져온다(기준 워크트리에서 돈다) |
+| 4-나 | `scripts/talk-metrics.ts` | 신규 | 설계 8 지표 전부(대본마다 · 합계 분자 · 분모, 분모 10 아래는 건수, 기술 오류 자리 따로, 가르는 것 넷의 자동 보조 셈) · `--baseline <json>` 견줌과 기준 판정 · `--chance-alert`(기본 0.5) · 설계 검토자가 읽을 차례 목록(걸린 차례 + 첫 바퀴 전문). 저장된 보고를 다시 센다 |
+| 4-나 | `scripts/talk-observe.ts` · `package.json` | 수정 | 끝에 talk-metrics 를 불러 보고에 넣음 · `--chance-alert` · `--baseline` · 명령 `"talk:metrics"` |

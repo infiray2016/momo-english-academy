@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P1b 품질 관문
 
-spec: `specs/` 정본(9절 CI 검사 · 15절 수용 기준 번호 · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · 조사 `docs/research/2026-10-16-graph-engineering-ai-coding.md`(F2 · F3) · `docs/research/2026-10-16-graph-engineering.md`(조사 P3 · P4 · P8) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 10:3x)
+spec: `specs/` 정본(9절 CI 검사 · 15절 수용 기준 번호 · AC-N4, approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · 조사 `docs/research/2026-10-16-graph-engineering-ai-coding.md`(F2 · F3) · `docs/research/2026-10-16-graph-engineering.md`(조사 P3 · P4 · P8) · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(approved 컨트롤러 2026-10-16 10:3x → 구현 · 검토 · fix 1 · 컨트롤러 확인 끝 14:1x → 커밋 cf97f62 14:2x, 요청자 지시. push · PR 은 원격 뒤 H15)
 승인: 컨트롤러, 2026-10-16 10:3x(요청자는 PR 병합 때 본다, H14) · 브랜치 · 워크트리: `feature/1a-p01b-quality-gates`(P1a 브랜치 끝에서 가지 침, 워크트리 없음) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P1 의 뒤 절반이다. 앞 절반(스택 · 폴더 규약 · CI 첫 세 작업)은 같은 폴더의 `plan-p01a-뼈대.md` 이고, 이 plan 은 P1a 의 작업 7 이 초록인 뒤 시작한다.
@@ -27,7 +27,7 @@ P1b 가 쓰는 파일은 열이다(새 파일 여덟 · 고치는 파일 둘). �
 | `tests/unit/spec-trace.test.ts` | 신규 | 뽑기 · 규칙 · 종료 코드 시험 |
 | `scripts/check-bundle.ts` | 신규 | 클라이언트 묶음 검사(아래 4) |
 | `tests/unit/check-bundle.test.ts` | 신규 | 시험 이름이 'AC-N4' 로 시작 |
-| `.claude/hooks/implementer-stop-gate.ts` | 신규 | 구현자 끝내기 관문(아래 5) |
+| `.claude/hooks/implementer-stop-gate.mts` | 신규 | 구현자 끝내기 관문(아래 5). fix 1 에서 `.ts` → `.mts`(명시 ESM) |
 | `tests/unit/implementer-stop-gate.test.ts` | 신규 | 판단 함수 시험. 명령 실행은 가짜로 넣는다 |
 | `.claude/agents/implementer.md` | 수정 | 프런트매터 `maxTurns` · `hooks`, 본문 세 줄(아래 6) |
 | `.github/workflows/ci.yml` | 수정 | 작업 depcruise · spec-trace · bundle-secrets(아래 8) |
@@ -115,7 +115,7 @@ module.exports = {
    - 종료 코드: 0 깨끗함, 1 위반, 2 대상 파일 0개 또는 `.env.example` 없음.
    - 접근 코드: 앱은 접근 코드 원문을 갖지 않고 해시만 서버 환경 변수에 둔다(10절). 그래서 AC-N4 의 '접근 코드 없음'은 `ACCESS_CODE_HASH` 의 이름 · 값 검사로 본다.
    - 시험의 가짜 키 · 접속 문자열은 실행 때 조각을 이어 만든다(예: `['sk', 'ant', 'api03', 'x'.repeat(40)].join('-')`). 원문 꼴이 저장소에 들어가면 GitHub push 보호에 걸린다(위험 9).
-5. `.claude/hooks/implementer-stop-gate.ts`. Node 24 이상은 타입을 지우고 `.ts` 를 바로 돈다(Node 22.18 부터 기본). `node:*` 만 쓰고 외부 패키지가 없다. 판단 함수(`decide`)와 실행 함수(`runGate({ cwd, run })`)를 내보내고, 직접 실행될 때만 본문을 돈다.
+5. `.claude/hooks/implementer-stop-gate.mts`. Node 24 이상은 타입을 지우고 `.mts` 를 바로 돈다(Node 22.18 부터 기본. `.mts` 라 package.json 의 type 과 무관하게 ESM 으로 읽혀 typeless 경고가 없다 — fix 1 결정, 아래 '정할 것' 끝). `node:*` 만 쓰고 외부 패키지가 없다. 판단 함수(`decide`)와 실행 함수(`runGate({ cwd, run })`)를 내보내고, 직접 실행될 때만 본문을 돈다.
    - 입력: 표준 입력의 SubagentStop JSON 에서 `cwd` · `stop_hook_active` · `agent_id` · `agent_type` · `last_assistant_message` 를 읽는다.
    - 판단 1: `last_assistant_message` 의 빈 줄을 뺀 첫 줄이 `NEEDS_CONTEXT` 또는 `BLOCKED` 로 시작하면 끝내기를 허락한다(종료 코드 0, 정할 것 나).
    - 판단 2: `cwd` 에 `node_modules/.bin/biome` · `node_modules/.bin/vitest` 가 없으면 막는다(2). 메시지는 'pnpm install 을 먼저 하세요'.
@@ -131,7 +131,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: 'node --disable-warning=ExperimentalWarning "${CLAUDE_PROJECT_DIR}/.claude/hooks/implementer-stop-gate.ts"'
+          command: 'node --disable-warning=ExperimentalWarning "${CLAUDE_PROJECT_DIR}/.claude/hooks/implementer-stop-gate.mts" || exit 2'
           timeout: 300
 ```
 
@@ -147,7 +147,7 @@ hooks:
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PROJECT_DIR}/.claude/hooks/implementer-stop-gate.ts\"",
+            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PROJECT_DIR}/.claude/hooks/implementer-stop-gate.mts\" || exit 2",
             "timeout": 300
           }
         ]
@@ -180,10 +180,10 @@ hooks:
 1. [검증] 의존 규칙. 시험 먼저 `tests/unit/dependency-rules.test.ts`(파일별 값 2 의 표)를 쓰고 실패를 본 뒤 `.dependency-cruiser.cjs` 와 `check:deps` 를 쓴다. 완료: 시험 통과, `pnpm check:deps` 위반 0.
 2. [검증] spec 추적. 시험 먼저(작은 견본 글로 뽑기 · 규칙 · 종료 코드) → `scripts/spec-trace.ts` → `spec:trace`. 완료: 시험 통과, `pnpm spec:trace` 가 종료 코드 0 과 요약(unknown-ac 0 · plan-ac-not-in-spec 0 · missing-test 67)을 낸다. `--fail-on missing-test` 는 1 로 끝난다.
 3. [검증] 번들 검사. 시험 먼저 → `scripts/check-bundle.ts` → `check:bundle`. 완료: 시험 통과, `pnpm build && pnpm check:bundle` 위반 0. `.next/static` 아래 임시 파일에 실행 때 조립한 가짜 키를 넣으면 1, 지우면 0(확인 뒤 지움). 이제 spec-trace 의 missing-test 가 66.
-4. [검증] 구현자 끝내기 관문. 시험 먼저 → `.claude/hooks/implementer-stop-gate.ts` → `implementer.md`(파일별 값 6). 완료: 시험 통과. 직접 실행 확인 둘. 일부러 깨지는 단위 시험 파일을 잠시 두고 `echo '{"cwd":"<저장소>","last_assistant_message":"DONE"}' | node .claude/hooks/implementer-stop-gate.ts` 가 2, 그 파일을 지우면 0. 로그 줄이 생긴다.
+4. [검증] 구현자 끝내기 관문. 시험 먼저 → `.claude/hooks/implementer-stop-gate.mts` → `implementer.md`(파일별 값 6). 완료: 시험 통과. 직접 실행 확인 둘. 일부러 깨지는 단위 시험 파일을 잠시 두고 `echo '{"cwd":"<저장소>","last_assistant_message":"DONE"}' | node .claude/hooks/implementer-stop-gate.mts` 가 2, 그 파일을 지우면 0. 로그 줄이 생긴다. Node 24 와 x64 Node 26 둘 다(fix 1).
 5. [검증] CI 세 작업. `ci.yml` 에 depcruise · spec-trace · bundle-secrets 를 더한다. 완료: 로컬에서 `pnpm lint` · `pnpm build` · `pnpm test` · `pnpm check:deps` · `pnpm spec:trace --fail-on unknown-ac,plan-ac-not-in-spec` · `pnpm check:bundle` 모두 초록, 출력이 구현 보고에 있다.
-6. [검증] 훅 실기 확인(컨트롤러). 구현자는 하위 에이전트를 띄우지 않으므로 컨트롤러가 한다. 작업 브랜치에서 일부러 깨지는 단위 시험을 잠시 두고, implementer(model opus · effort high)를 '아무것도 고치지 말고 DONE 으로 끝내라'는 짧은 브리프로 띄운다. 기대: 관문 로그에 '막음' 줄이 생기고 구현자가 실패 출력을 받는다. 그 뒤 구현자가 BLOCKED 로 끝내면 '허락' 줄이 생긴다. 시험 파일을 지운다. 완료: 장부에 로그 두 줄과 판정. 로그 줄이 없으면 파일별 값 7 의 대안으로 바꾸고 다시 확인한다.
-7. [사람] 커밋 · push · PR(H14). code-reviewer(Opus · xhigh) 검토와 fix 라운드 뒤, 요청자 지시가 있으면 컨트롤러가 `feature/1a-p01b-quality-gates` 에 커밋하고 요청자가 push 한다. 완료: GitHub 에서 `ci / lint · build · unit · depcruise · spec-trace · bundle-secrets` 초록. 묶음 plan 작업 순서 2 완료.
+6. [검증] 훅 실기 확인(컨트롤러). C52(요청자 13:4x)로 따로 띄우지 않고 P3 구현자의 첫 실행으로 겸한다 — 그 실행의 관문 로그 '막음' · '허락' 줄이 증거다. 원래 절차: 구현자는 하위 에이전트를 띄우지 않으므로 컨트롤러가 한다. 작업 브랜치에서 일부러 깨지는 단위 시험을 잠시 두고, implementer(model opus · effort high)를 '아무것도 고치지 말고 DONE 으로 끝내라'는 짧은 브리프로 띄운다. 기대: 관문 로그에 '막음' 줄이 생기고 구현자가 실패 출력을 받는다. 그 뒤 구현자가 BLOCKED 로 끝내면 '허락' 줄이 생긴다. 시험 파일을 지운다. 완료: 장부에 로그 두 줄과 판정. 로그 줄이 없으면 파일별 값 7 의 대안으로 바꾸고 다시 확인한다.
+7. [사람] 커밋 · push · PR(H14). code-reviewer(Opus · xhigh) 검토와 fix 라운드 1 뒤(C52: 정식 재검토 없이 컨트롤러가 Important 넷을 직접 확인), 요청자 지시가 있으면 컨트롤러가 `feature/1a-p01b-quality-gates` 에 커밋하고 요청자가 push 한다. 완료: GitHub 에서 `ci / lint · build · unit · depcruise · spec-trace · bundle-secrets` 초록. 묶음 plan 작업 순서 2 완료.
 
 ## 위험 · 제약 (Risks)
 
@@ -256,9 +256,22 @@ hooks:
 | AC-N4(P1 몫: 클라이언트 번들에 API 키 · DB 접속 문자열 · 접근 코드가 없다) | 단위 "AC-N4 번들 검사: Anthropic 키 꼴이 있으면 위반을 낸다" · "AC-N4 번들 검사: 사용자:비밀번호가 든 DB 접속 문자열이 있으면 위반을 낸다" · "AC-N4 번들 검사: .env.example 의 서버 변수 이름이 있으면 위반을 내고 NEXT_PUBLIC_ 는 뺀다" · "AC-N4 번들 검사: 환경에 있는 서버 변수 값이 있으면 위반을 내고 값은 출력하지 않는다" · "AC-N4 번들 검사: 검사할 파일이 0개면 실패한다" · "AC-N4 번들 검사: 깨끗한 묶음은 위반 0" + `pnpm build && pnpm check:bundle` 0 + CI `ci / bundle-secrets` | `tests/unit/check-bundle.test.ts` · `scripts/check-bundle.ts` |
 | 조사 P8 · 묶음 위험 7 | 단위 "의존 규칙: src/core 가 next 를 가져오면 core-no-framework 위반" 외 파일별 값 2 의 표 한 줄마다 시험 하나 + `pnpm check:deps` 0 + CI `ci / depcruise` | `tests/unit/dependency-rules.test.ts` · `.dependency-cruiser.cjs` |
 | F2(조사 P3 번호 뽑기 · 조사 P4 AC ↔ 시험) | 단위 "spec 추적: 15절 표에서 AC 번호 두 꼴을 뽑는다" · "spec 추적: 증명 표에서 AC 행만 뽑고 '공통' 행은 뺀다" · "spec 추적: test · it · describe · test.describe 의 AC 이름을 뽑는다" · "spec 추적: 15절에 없는 AC 를 쓴 시험은 unknown-ac" · "spec 추적: 시험 없는 증명 표 AC 는 missing-test" · "spec 추적: 기본 0, --fail-on 규칙 위반이면 1, 입력을 못 읽으면 2" + `pnpm spec:trace` 요약 + CI `ci / spec-trace` | `tests/unit/spec-trace.test.ts` · `scripts/spec-trace.ts` |
-| F3(구현자 Stop 훅 · maxTurns) | 단위 "구현자 끝내기 관문: 린트와 단위 시험이 모두 통과하면 허락한다" · "…: 린트가 실패하면 2 로 막고 실패 출력 끝부분을 낸다" · "…: 단위 시험이 실패하면 막는다" · "…: 첫 줄이 NEEDS_CONTEXT · BLOCKED 면 허락한다" · "…: node_modules 가 없으면 막고 pnpm install 을 알린다" · "…: 입력의 cwd 에서 명령을 돈다" · "…: 입력 JSON 이 깨지면 막는다" + 직접 실행 2 / 0(작업 4) + 실기 확인 로그(작업 6) | `tests/unit/implementer-stop-gate.test.ts` · `.claude/hooks/implementer-stop-gate.ts` · `.claude/agents/implementer.md` |
+| F3(구현자 Stop 훅 · maxTurns) | 단위 "구현자 끝내기 관문: 린트와 단위 시험이 모두 통과하면 허락한다" · "…: 린트가 실패하면 2 로 막고 실패 출력 끝부분을 낸다" · "…: 단위 시험이 실패하면 막는다" · "…: 첫 줄이 NEEDS_CONTEXT · BLOCKED 면 허락한다" · "…: node_modules 가 없으면 막고 pnpm install 을 알린다" · "…: 입력의 cwd 에서 명령을 돈다" · "…: 입력 JSON 이 깨지면 막는다" + 직접 실행 2 / 0(작업 4) + 실기 확인 로그(작업 6) | `tests/unit/implementer-stop-gate.test.ts` · `.claude/hooks/implementer-stop-gate.mts` · `.claude/agents/implementer.md` |
 | 공통 | `pnpm lint` · `pnpm build` · `pnpm test` 초록, CI `ci / lint · build · unit · depcruise · spec-trace · bundle-secrets` 초록 | `.github/workflows/ci.yml` |
+
+fix 라운드 1 결정(컨트롤러 2026-10-16 13:3x, 검토 `review-p01b.md` 지적 1~11 모두 수용, 브리프 `task-p01b-fix1.md`). 파일별 값에 반영되는 것: 값 5 — 관문 파일은 `.mts`(typeless 경고 제거), 하위 명령 PATH 앞에 `.nvmrc` 접두와 맞는 nvm 설치 판 가운데 **가장 높은 판**의 bin 을 붙인다(`nvm use` 와 같은 규칙. 아키텍처로 거르지 않는다 — 이 Mac 에 v24.16.0 x64 · v24.22.0 arm64 가 같이 있어 `process.arch` 기준은 x64 Node 26 아래서 틀린 판을 고른다. 검토 지적 1 의 하드웨어 탐침 길보다 단순하고 하위 프로세스가 없다), `COMMAND_TIMEOUT_MS` 120초 + `killSignal: "SIGKILL"`(합 240 < 훅 300, 결정 B), 막을 때 stdout 에 한 줄(Claude Code 는 Stop · SubagentStop 에서 stdout 이 비고 stderr 에 'no such file' 이 있으면 훅이 없는 것으로 보고 막지 않는다 — 지적 4), biome 은 `--colors=off`(지적 7), 로그 줄 끝에 고른 bin 칸. 값 6 · 7 — command 는 `.mts` 경로 + `|| exit 2`(관문이 못 뜨면 조용한 통과 대신 막음, 지적 8. 대가는 8번 막힌 뒤 끝나는 것). 값 3 — spec-trace 는 이름 **앞에 이어진** AC 토큰만 센다(결정 C 를 좁힘, 본문 속 AC 과다 집계 방지, 지적 5), 주석 처리한 호출은 세지 않고 토큰 없는 `AC-` 이름은 unknown-ac(지적 6), `--plan` 절대 경로 허용(지적 10). 값 4 — `.next/static` 대상 0개면 2(지적 9). 값 2 — 패키지 정규식의 두 꼴 · 음성 예 순수 시험(지적 11). 시험 가져오기는 `.mjs` 꼴(TS 가 `.mts` 로 풂, 지적 2). 새 시험 이름은 완료 보고에 적는다. 검토의 범위 밖 관찰대로 병렬 구현자(P2~P4)는 워크트리를 나눈다(관문은 입력 cwd 를 쓴다).
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다. 적을 것: 실제 바뀐 파일(계획과 다른 것 표시), `pnpm spec:trace` 요약 출력, `pnpm check:bundle` 요약(파일 수 · 이름 수 · 대조한 값 수, 값 원문 없이), 관문 로그 두 줄과 실기 판정, settings.json 대안을 썼는지, 명령 출력(통과 수), 남긴 것, 커밋 · PR.
+구현 2026-10-16 11:5x~12:1x(implementer impl-p01b · Opus · high, `task-p01b-report.md`) → 검토 12:2x~13:2x(code-reviewer rev-p01b · Opus · xhigh, Changes requested I 4 · M 7, `review-p01b.md`) → fix 라운드 1 13:3x~13:46(지적 11 모두 ADDRESSED, 보고 '## fix 라운드 1') → 컨트롤러 확인 14:1x(C52 로 정식 재검토 생략). 상태 in-progress(작업 7 커밋 · push · PR 대기).
+
+| 항목 | 결과 |
+|---|---|
+| 실제 바뀐 파일 | 신규 `.dependency-cruiser.cjs` · `scripts/spec-trace.ts`(392줄) · `scripts/check-bundle.ts`(215줄) · `.claude/hooks/implementer-stop-gate.mts`(392줄, 계획의 `.ts` 와 다름 — fix 1 결정) · `tests/unit/{dependency-rules,spec-trace,check-bundle,implementer-stop-gate}.test.ts`(249 · 296 · 225 · 330줄). 수정 `.claude/agents/implementer.md`(maxTurns 100 · hooks.Stop, command 는 `.mts` + `\|\| exit 2` — 계획과 다름) · `.github/workflows/ci.yml`(depcruise · spec-trace · bundle-secrets) · `package.json`(스크립트 셋만, 의존 · 잠금 파일 변화 0). 계획과 다른 것은 보고 '계획과 다르게 한 것' 1~5(검토가 모두 타당 판정)와 fix 1 결정('정할 것' 끝 문단) |
+| `pnpm spec:trace` | `15절 AC 116 · 증명 표 AC 67 · AC 이름 시험 8 · unknown-ac 0 · plan-ac-not-in-spec 0 · missing-test 66`, 종료 0 |
+| `pnpm check:bundle` | `파일 25 · static 10 · 화면 파일 15 · 서버 변수 이름 5 · 대조한 값 0 · 위반 0`, 종료 0 |
+| 관문 직접 실행(컨트롤러 14:19, 로그 agent_id `ctrl-check-*`) | x64 Node 26 셸 흉내(PATH 에 24 없음, `env -i`) DONE → 0, stdout · stderr 0줄, 고른 bin `…/v24.22.0/bin`. 없는 파일을 읽는 시험을 두고 Node 24 DONE → 2, stdout 1줄, stderr 에 'no such file' 1건 · ESC 0개. 지운 뒤 → 0. 구현자 표(보고)와 같다 |
+| 훅 실기 확인(작업 6) | 20:1x P3a 워크트리에서 함(C59): 깨지는 시험을 둔 채 구현자가 DONE 으로 끝내자 관문은 '막음 · vitest 실패'를 기록했지만(로그 11:18Z) 구현자는 끝났다 — 프런트매터 Stop 훅이 SubagentHandback 뒤에 돌아 막음이 끝내기를 되돌리지 못한다. 1-가 동안 관문은 기록용, 막는 역할은 컨트롤러 재확인 · code-reviewer. 값 7 의 settings.json SubagentStop 또는 PreToolUse(SubagentHandback) 대안은 다음 세션 첫 턴에 시험 |
+| 명령(컨트롤러 14:1x, Node 24.22.0) | lint 0(23 파일) · build 0 · test 0(5 파일 49) · test:int 0 · check:deps 0 · spec:trace 0 · check:bundle 0 · 비밀값 grep 0건 |
+| 남긴 것 | 관문을 실제로 막게 하는 대안 시험(C59, 다음 세션 첫 턴, 가벼운 루프). P1c 규칙 셋은 뒤로(C52). 이 Mac 의 nvm 에 x64 판(기본 v26.8.2 · v24.16.0 등)이 남아 있는 것은 요청자 선택(관문은 '가장 높은 설치 판' 규칙으로 돌아 영향 없음). 구현 브리프 `task-p01b.md` 의 `.ts` 표기는 기록이라 그대로 |
+| 커밋 · PR | 커밋 cf97f62(요청자 지시 14:2x, 브랜치 `feature/1a-p01b-quality-gates`). 문서 커밋(C52 · 이 plan done)은 그 다음 커밋. push · PR 은 원격 뒤(H15) |

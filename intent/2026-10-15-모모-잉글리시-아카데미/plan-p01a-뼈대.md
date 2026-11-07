@@ -1,6 +1,6 @@
 # Plan: 모모 잉글리시 아카데미 — 초등 4학년부터 혼자 할 수 있는 영어 읽기 · 쓰기 · 말하기 · 회화 학습 앱 · 1-가 P1a 뼈대
 
-spec: `specs/` 정본(10절 기술 구성 · 9절 테스트 · 11절 1-가 (1), approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: approved(컨트롤러 2026-10-16 10:3x)
+spec: `specs/` 정본(10절 기술 구성 · 9절 테스트 · 11절 1-가 (1), approved 2026-10-16 06:2x) · 묶음 plan `intent/2026-10-15-모모-잉글리시-아카데미/plan.md` 배정표 P1 행 · intent: `intent/2026-10-15-모모-잉글리시-아카데미/intent.md` · 작성일: 2026-10-16 · 상태: done(구현 · 검토 끝 2026-10-16 11:5x, 커밋 11:5x 요청자 지시. 원격 · push · PR 은 H15)
 승인: 컨트롤러, 2026-10-16 10:3x(요청자는 PR 병합 때 본다, H14) · 브랜치 · 워크트리: `feature/1a-p01a-skeleton`(저장소 본 작업 폴더, 워크트리 없음) · 작업 장부: `.superpowers/sdd/2026-10-16-1-가-구현/`
 
 P1 은 파일 열 개 · 단계 여덟을 넘어 둘로 나눴다(묶음 plan 위험 12). 이 파일은 앞 절반(뼈대)이고, 뒤 절반(품질 관문 셋과 구현자 Stop 훅)은 같은 폴더의 `plan-p01b-품질-관문.md` 다. P1b 는 이 plan 이 끝난 브랜치 끝에서 시작한다.
@@ -23,7 +23,7 @@ P1a 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 | `.nvmrc` | 신규 | `24` 한 줄. 로컬 `nvm use` 와 CI `setup-node` 의 `node-version-file` 이 같이 읽는다 |
 | `.env.example` | 신규(생성기 견본을 통째로 바꿈) | 변수 이름만, 값 없음(아래 '파일별 값' 8) |
 | `.gitignore` | 수정(이미 추적 중인 6줄 파일) | Next · 시험 산출물 줄과 `!.env.example`(아래 9) |
-| `vitest.config.ts` | 신규 | 프로젝트 둘(unit · integration), 경로 별칭은 tsconfig 에서 읽음(아래 10) |
+| `vitest.config.mts` | 신규 | 프로젝트 둘(unit · integration), 경로 별칭은 tsconfig 에서 읽음(아래 10). 이름은 fix 1 에서 `.ts` → `.mts`(Vite 8 이 `.ts` 를 CommonJS 로 읽는 경고, 검토 지적 4) |
 | `playwright.config.ts` | 신규 | 10.9형 태블릿 프로젝트 하나(WebKit). 뷰포트 · 포트 · 시간은 파일 위 이름 붙인 상수(아래 11) |
 | `vercel.json` | 신규 | `regions: ["icn1"]`. Cron 은 1-나(아래 12) |
 | `.github/workflows/ci.yml` | 신규 | 작업 lint · build · unit, 자리 integration · e2e · seed-validate(아래 13) |
@@ -33,7 +33,7 @@ P1a 가 쓰는 파일은 아홉이다(새 파일 여덟 · 고치는 파일 하�
 
 ### 폴더 규약
 
-빈 폴더 자리 파일(`.gitkeep`)은 두지 않는다. 규약은 이 표와 `vitest.config.ts` 의 include, P1b 의 의존 규칙으로 고정하고, 폴더는 첫 파일과 함께 생긴다.
+빈 폴더 자리 파일(`.gitkeep`)은 두지 않는다. 규약은 이 표와 `vitest.config.mts` 의 include, P1b 의 의존 규칙으로 고정하고, 폴더는 첫 파일과 함께 생긴다.
 
 | 폴더 | 무엇 | 생기는 때 |
 |---|---|---|
@@ -107,6 +107,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   agentRules: false,
   turbopack: {
+    root: import.meta.dirname, // fix 1: 저장소 밖 잠금 파일 때문의 뿌리 추정 경고를 막는다(검토 지적 3, 결정 가)
     rules: { '*.css': { loaders: ['@tailwindcss/turbopack'], as: '*.css' } },
   },
 }
@@ -158,7 +159,7 @@ seed/reports/inbox.json
 !.env.example
 ```
 
-10. `vitest.config.ts`. Vitest 5 의 인라인 프로젝트는 뿌리 설정(`resolve.tsconfigPaths`)을 물려받는다. 컴포넌트 단위 시험은 두지 않는다(9절).
+10. `vitest.config.mts`. Vitest 5 의 인라인 프로젝트는 뿌리 설정(`resolve.tsconfigPaths`)을 물려받는다. 컴포넌트 단위 시험은 두지 않는다(9절).
 
 ```ts
 import { defineConfig } from 'vitest/config'
@@ -271,7 +272,7 @@ jobs:
 1. [사람] 도구 준비와 결정. 요청자가 저장소 밖 도구를 준비한다. `nvm install 24` 뒤 Node 24 를 켠 채 `npm install -g pnpm@10.34.7`(또는 Node 24 의 `corepack enable pnpm`). 컨트롤러가 '정할 것' 가 · 나 · 다 · 라를 정한다. 완료: 저장소에서 `nvm use 24 && node -v` 가 24.x, `pnpm -v` 가 10.34.7. 정할 것의 답이 장부에 있다.
 2. [검증] 뼈대 만들기. `.nvmrc` 를 먼저 쓰고, 저장소 밖 빈 임시 폴더에서 생성기 명령(파일별 값 1)을 돌려 다섯 가지를 저장소 뿌리로 옮긴다. `pnpm install` 뒤 '설치 판' 표대로 `pnpm add -E`(앱 묶음)와 `pnpm add -D -E`(dev 묶음)를 하고 shadcn init(파일별 값 7)을 한다. 완료: `pnpm dev` 첫 화면이 뜨고, `git status` 에 위 표의 파일과 생성기 파일만 있으며 AGENTS.md 가 없다. pnpm 이 막은 설치 스크립트 이름을 적어 둔다.
 3. [검증] 판 고정과 생성기 파일 손보기(파일별 값 2~6, 9). Biome 를 2.5.15 로 올리고 `biome migrate --write` 를 한다. 완료: `pnpm lint` 오류 0, `pnpm build` 성공(타입 검사 포함), `pnpm ls --depth 0` 이 '설치 판' 표와 같다.
-4. [검증] Vitest. 시험 먼저 `tests/unit/env-example.test.ts` 를 쓰고 실패를 본 뒤 `.env.example` 과 `vitest.config.ts` 를 쓴다. 완료: `pnpm test` 통과(시험 2개), `pnpm test:int` 가 시험 0개로 통과.
+4. [검증] Vitest. 시험 먼저 `tests/unit/env-example.test.ts` 를 쓰고 실패를 본 뒤 `.env.example` 과 `vitest.config.mts` 를 쓴다. 완료: `pnpm test` 통과(시험 2개), `pnpm test:int` 가 시험 0개로 통과.
 5. [화면][검증] Playwright. `pnpm exec playwright install webkit`(저장소 밖 캐시에 받는다) → `playwright.config.ts` → `tests/e2e/smoke.spec.ts`. 완료: `pnpm e2e` 1개 통과, 시험이 뷰포트 820 × 1180 을 확인.
 6. [서버] `vercel.json`. Vercel 연결 · 배포는 하지 않는다(H1). 완료: `pnpm lint` 가 JSON 도 통과.
 7. [검증] CI 와 마무리 검사. `ci.yml` 을 쓰고, CI 와 같은 순서로 로컬에서 돌린다(`pnpm install --frozen-lockfile` → `pnpm exec biome ci .` → `pnpm build` → `pnpm test`). 완료: 넷 모두 초록, `git grep -nE "sk-ant-[A-Za-z0-9_-]{16,}|postgres(ql)?://[^ ]+:[^ ]+@"` 0건(키 · 비밀번호가 든 꼴만 잡는다. 문서의 설명 글 'sk-ant-' 는 걸리지 않는다), 구현 보고에 실행 출력.
@@ -364,8 +365,8 @@ jobs:
 |---|---|---|
 | 공통 — 린트 | `pnpm lint`(biome check) 오류 0, CI `ci / lint` | `biome.json` · `.github/workflows/ci.yml` |
 | 공통 — 빌드 | `pnpm build`(next build, tsc 타입 검사 포함) 성공, CI `ci / build` | `next.config.ts` · `tsconfig.json` |
-| 공통 — 단위 | `pnpm test` 통과. 시험 "환경 변수 견본: 모든 줄이 주석 · 빈 줄 · '이름=' 꼴이고 값이 없다" · "환경 변수 견본: 이름이 겹치지 않는다", CI `ci / unit` | `tests/unit/env-example.test.ts` · `vitest.config.ts` |
-| 공통 — 통합 자리 | `pnpm test:int` 가 시험 0개로 통과 | `vitest.config.ts` |
+| 공통 — 단위 | `pnpm test` 통과. 시험 "환경 변수 견본: 모든 줄이 주석 · 빈 줄 · '이름=' 꼴이고 값이 없다" · "환경 변수 견본: 이름이 겹치지 않는다", CI `ci / unit` | `tests/unit/env-example.test.ts` · `vitest.config.mts` |
+| 공통 — 통합 자리 | `pnpm test:int` 가 시험 0개로 통과 | `vitest.config.mts` |
 | 공통 — 화면 흐름 자리 | `pnpm e2e` 통과. 시험 "뼈대: 첫 화면이 10.9형 태블릿 화면(820 × 1180)에서 열리고 문서 언어가 ko 다" | `tests/e2e/smoke.spec.ts` · `playwright.config.ts` |
 | 10절 판 | `node -v` 24.x · `pnpm -v` 10.34.7 · `pnpm ls --depth 0` 이 '설치 판' 표와 같음(완료 보고에 출력) | `package.json` · `.nvmrc` |
 | 10절 함수 지역 | `vercel.json` 의 `regions` 가 `["icn1"]`. 실제 적용 확인은 H1 | `vercel.json` |
@@ -376,4 +377,45 @@ AC 번호로 시작하는 시험은 이 plan 에 없다. 이 plan 의 몫은 묶
 
 ## 완료 보고 (Done)
 
-구현 뒤 채운다. 적을 것: 실제 바뀐 파일(계획과 다른 것 표시), init 이 넣은 shadcn 의존 판과 고른 값, pnpm 이 막은 설치 스크립트 이름, 명령 출력(통과 수), 남긴 것, 커밋 · PR.
+구현 2026-10-16 10:4x~11:2x(implementer impl-p01a · Opus · high) → 코드 검토 11:3x(code-reviewer rev-p01a · Opus · xhigh, Changes requested, Critical 0 · Important 2 · Minor 4) → fix 1 11:4x(여섯 모두 ADDRESSED) → 재검토 1 11:5x Approved(새 지적 0). 작업 8(커밋 · 원격 · PR)은 요청자 지시 대기(H14 · H15). 장부 `.superpowers/sdd/2026-10-16-1-가-구현/`(task-p01a · task-p01a-report · task-p01a-review · review-p01a · task-p01a-fix1).
+
+### 실제 바뀐 파일(계획과 다른 것은 '다름')
+
+| 파일 | 계획 | 실제 |
+|---|---|---|
+| `.nvmrc` · `.env.example` · `vercel.json` · `.github/workflows/ci.yml` · `playwright.config.ts` | 신규 | 계획 그대로 |
+| `tests/unit/env-example.test.ts` · `tests/e2e/smoke.spec.ts` | 신규 | fix 1 에서 보강: 견본 시험은 주석으로 막은 `이름=값` 줄도 위반으로 세고, 첫 화면 시험은 실제 창 크기(innerWidth · innerHeight)도 잰다 |
+| `vitest.config.mts` | `vitest.config.ts` | 다름: 이름만 `.mts`(Vite 8 이 `.ts` 를 CommonJS 로 읽는 경고, 검토 지적 4). 내용은 계획 값 10 그대로 |
+| `.gitignore` | 15줄 더함 | 16줄: 계획 15줄 + `.claude/settings.local.json`(검토 지적 2. Claude Code 가 만드는 개인 설정이 Biome · git 에 들지 않게) |
+| `next.config.ts` | 생성기 + `agentRules: false` | 다름: `turbopack.root: import.meta.dirname` 한 줄 더함(검토 지적 3. 저장소 밖 `~/package-lock.json` 때문의 뿌리 추정 경고를 막음) |
+| `src/app/layout.tsx` · `page.tsx` · `globals.css` | 생성기 · shadcn 값, lang · title · 빈 main | shadcn init 이 넣은 Geist(`next/font/google`)는 fix 1 에서 뺐다(빌드가 Google Fonts 에 닿지 않게). `globals.css` 의 자기 참조 줄 `--font-sans: var(--font-sans)` 도 함께 지웠다(남기면 글꼴이 브라우저 기본으로 떨어짐). 글꼴은 P5 · P10 몫 |
+| `package.json` · `pnpm-lock.yaml` · `tsconfig.json` · `biome.json` · `components.json` · `src/lib/utils.ts` | 생성기 · init | 다름(타당): shadcn init 이 `clsx` · `tailwind-merge` 대신 `cn@0.4.0` 하나와 런타임 `radix-ui@1.8.1` · `shadcn@4.21.5`(`globals.css` 가 `shadcn/tailwind.css` 를 가져옴)를 넣었다. `^` 판은 잠금 파일 판으로 고정했다. `.env.example` 은 생성기가 만들지 않아 새로 썼다. 생성기의 `pnpm-workspace.yaml` 은 옮기지 않았다 |
+
+### shadcn init 이 넣은 판과 고른 값
+
+`pnpm dlx shadcn@4.21.5 init -b radix -p nova -y`(`-y` 가 프리셋 물음을 건너뛰지 않아 기본 선택 Nova 를 옵션으로 줌). style radix-nova · neutral · CSS 변수 · lucide. 의존: class-variance-authority 0.7.1 · cn 0.4.0 · lucide-react 1.57.0 · radix-ui 1.8.1 · shadcn 4.21.5 · tw-animate-css 1.4.0.
+
+### pnpm 이 막은 설치 스크립트
+
+esbuild 0.18.20 · 0.25.12 · 0.28.2. 도구(tsx · drizzle-kit · depcruise · vitest · next build)가 모두 돌아 `pnpm.onlyBuiltDependencies` 는 더하지 않았다.
+
+### 명령 결과(fix 1 뒤. 구현자 · 검토자 · 컨트롤러가 각각 돌려 같았다)
+
+| 명령 | 결과 |
+|---|---|
+| `pnpm install --frozen-lockfile` | 통과(잠금 파일 바뀜 없음) |
+| `pnpm lint` · `pnpm exec biome ci .` | 15 파일, 오류 0 |
+| `pnpm build` | 성공, 경고 0, `/` · `/_not-found` 정적 |
+| `pnpm test` | 2 통과(CommonJS 경고 없음) |
+| `pnpm test:int` | 시험 0개, 종료 코드 0 |
+| `pnpm e2e` | 1 통과(tablet-10-9-webkit) |
+| 비밀값 `git grep -nE --untracked` | 0건 |
+| `pnpm ls --depth 0` | 30개 = '설치 판' 표 + shadcn 몫 여섯 |
+
+### 남긴 것
+
+- 작업 8: 커밋은 요청자 지시(2026-10-16 11:5x)로 컨트롤러가 `feature/1a-p01a-skeleton` 에 했다(이 커밋). 원격 · push · PR 은 요청자가 GitHub 저장소를 만들어 붙인 뒤(H15). CI 는 그 뒤 처음 돈다.
+- 첫 화면 시험은 P3 가 접근 코드 화면을 넣으면 고친다(위험 15).
+- 견본 시험의 주석 값 판정식은 `# 이름= 값`(`=` 뒤 공백) · 소문자 이름을 통과시킨다(검토 관찰, 지적 아님). 필요하면 뒤 하위 plan 에서 `=\s*\S` 로 좁힌다.
+- 요청자 컴퓨터 홈의 `~/package-lock.json`(저장소 밖)은 두어도 된다(`turbopack.root` 로 경고가 없다).
+- 환경: nvm Node v24.22.0 · 그 Node 의 pnpm 10.34.7(기본 Node 26 은 그대로), Playwright WebKit 은 `~/Library/Caches/ms-playwright`.

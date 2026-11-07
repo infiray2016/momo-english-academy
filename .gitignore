@@ -4,3 +4,27 @@ node_modules/
 .claude/state/
 __pycache__/
 *.swp
+/.next/
+/out/
+/build
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+/playwright-report/
+/test-results/
+/blob-report/
+/tests/.tmp/
+seed/reports/inbox.json
+.DS_Store
+*.pem
+!.env.example
+.claude/settings.local.json
+# 병렬 구현자의 격리 워크트리(Agent isolation · EnterWorktree). 메인 저장소의 biome(vcs.useIgnoreFile) 가 건너뛴다
+.claude/worktrees/
+
+# Codex 아바타 시제품의 VRM 모델(각 18~19MB) — 받는 법은 prototypes/teacher-avatar/README.md
+prototypes/teacher-avatar/public/models/*.vrm
+
+# Playwright MCP 가 남기는 스크린샷 · 기록
+.playwright-mcp/
