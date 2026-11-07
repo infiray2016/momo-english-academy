@@ -1,4 +1,4 @@
-// 회화 1~3단계 '지어낸 경험 꼴' 실시간 검사('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 3 자기 이야기 행 · 13절 C211 (1) · 02-2 198줄 · AC-3 (라)).
+// 회화 1~3단계 '지어낸 경험 꼴' 실시간 검사('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 3 자기 이야기 행 · 13절 C211 (1) · 02-2 198줄 · AC-15zc (라)).
 // 선생님 문장 · 끝인사가 시드 꼴(정규화한 구, 낱말 경계)에 걸리면 지우거나(질문은 남음) 카드 끝인사로 바꾼다. 표는 plan 2 행(69줄) 그대로다.
 import { describe, expect, it } from "vitest";
 import type { TalkLessonOutput } from "@/core/ai/calls/talk-lesson";
@@ -69,7 +69,7 @@ function out(over: Partial<TalkLessonOutput> = {}): TalkLessonOutput {
 }
 
 describe("madeUpHit — 지어낸 경험 꼴(정규화 · 낱말 경계)", () => {
-  it("AC-3 (라) 과거 경험 · 개인 기억 꼴은 걸리고, 좋아하는 것 · 상상 놀이 · 맞장구는 걸리지 않는다", () => {
+  it("AC-15zc (라) 과거 경험 · 개인 기억 꼴은 걸리고, 좋아하는 것 · 상상 놀이 · 맞장구는 걸리지 않는다", () => {
     for (const sentence of HITS)
       expect(madeUpHit(sentence, PHRASES), sentence).not.toBeNull();
     for (const sentence of MISSES)
@@ -85,7 +85,7 @@ describe("madeUpHit — 지어낸 경험 꼴(정규화 · 낱말 경계)", () =>
     expect(madeUpHit("Yesterday I went to the lake.", [])).toBeNull();
   });
 
-  it("AC-3 (라) 시드 지어낸 경험 꼴 목록도 plan 표의 걸림 · 안 걸림을 그대로 가른다", () => {
+  it("AC-15zc (라) 시드 지어낸 경험 꼴 목록도 plan 표의 걸림 · 안 걸림을 그대로 가른다", () => {
     const seed = seedTalkMadeUpPhrases();
     for (const sentence of HITS)
       expect(madeUpHit(sentence, seed), sentence).not.toBeNull();
@@ -94,7 +94,7 @@ describe("madeUpHit — 지어낸 경험 꼴(정규화 · 낱말 경계)", () =>
   });
 });
 
-describe("문장 문 · 끝 처리의 지어낸 경험 지움(AC-3 (라) 서버 몫)", () => {
+describe("문장 문 · 끝 처리의 지어낸 경험 지움(AC-15zc (라) 서버 몫)", () => {
   function args3(): LessonArgs {
     return {
       spec: SPEC3,
@@ -110,7 +110,7 @@ describe("문장 문 · 끝 처리의 지어낸 경험 지움(AC-3 (라) 서버 
     "do you like the lake i go to went yesterday it oh nice me too".split(" "),
   );
 
-  it("AC-3 (라) 1~3단계 AI 차례의 지어낸 경험 꼴 문장은 화면 · 읽어 주기 · 원문에 없고 질문은 남는다", () => {
+  it("AC-15zc (라) 1~3단계 AI 차례의 지어낸 경험 꼴 문장은 화면 · 읽어 주기 · 원문에 없고 질문은 남는다", () => {
     const args = args3();
     const { ifAnswered } = teacherTurnPlansOf(args, {
       segment: "talk",
@@ -193,7 +193,7 @@ describe("문장 문 · 끝 처리의 지어낸 경험 지움(AC-3 (라) 서버 
 });
 
 describe("1~3단계 끝인사(closing.ts farewellMadeUp — 지금 끝인사 걸림 길로 카드 끝인사)", () => {
-  it("AC-3 (라) 1~3단계 끝인사가 지어낸 경험 꼴에 걸리면 카드 끝인사로 바뀌고, 4단계 · 걸리지 않은 끝인사는 그대로다", () => {
+  it("AC-15zc (라) 1~3단계 끝인사가 지어낸 경험 꼴에 걸리면 카드 끝인사로 바뀌고, 4단계 · 걸리지 않은 끝인사는 그대로다", () => {
     expect(farewellMadeUp(3, "I remember my first fish! Bye!", PHRASES)).toBe(
       true,
     );

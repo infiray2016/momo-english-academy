@@ -925,7 +925,7 @@ async function alertKindsOf(profileId: string) {
 }
 
 test.describe("새 꼴 회화 — iPad 결과 없음 고침(C148 · N3)", () => {
-  test("C148 AC-N3 iPad WebKit 꼴의 말소리 없는 듣기로 질문 자리가 speech.silent_items_max 번 이어 들리지 않음으로 닫히면 '마이크가 멈춤'이 아니라 '말소리가 잘 안 들려요' 안내와 '말소리가 들어오지 않음' 알림이 나오고 세션은 진행이다", async ({
+  test("C148 AC-N24 iPad WebKit 꼴의 말소리 없는 듣기로 질문 자리가 speech.silent_items_max 번 이어 들리지 않음으로 닫히면 '마이크가 멈춤'이 아니라 '말소리가 잘 안 들려요' 안내와 '말소리가 들어오지 않음' 알림이 나오고 세션은 진행이다", async ({
     context,
   }) => {
     test.setTimeout(LONG);
@@ -1136,7 +1136,7 @@ test.describe("새 꼴 회화 — 대화 안전 상한(AC-15j)", () => {
   });
 });
 
-// ── 'AI 몫 넓힘' 묶음 5: 장면 여는 질문 · 신호 말 · 상황 줄 · 요청 수(AC-5 (나) · AC-6 (가) · AC-1 (나)(다) · AC-N1, C206 · C207 · C209 · C210) ──
+// ── 'AI 몫 넓힘' 묶음 5: 장면 여는 질문 · 신호 말 · 상황 줄 · 요청 수(AC-15ze (나) · AC-15zf (가) · AC-15za (나)(다) · AC-N22, C206 · C207 · C209 · C210) ──
 // 견본 talkLessonCard 는 1~3단계 카드에 장면 여는 질문 칸을 둔다(빌더 06:186 꼴). 신호 말 · 상황 줄은 서버가 시드 목록(seed/lists)에서 고르므로
 // 기대 글도 같은 파일에서 읽는다. 시험 어휘(기능어 · like · 지어낸 낱말)에는 okay 가 없어 'That's okay!' 꼴 반응은 상황 차례 검사에 걸려 그 자리
 // 상황 줄로 바뀐다(설계 1 말 검사 (가) — 실제 시드 어휘에서는 남는다, 단위 talk-allowed-coverage).
@@ -1180,7 +1180,7 @@ async function turnBodies(): Promise<string[]> {
 }
 
 test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 줄(3단계)", () => {
-  test("AC-5 (나) · AC-N1 · AC-1 (다) 짧은 준비 뒤 장면 여는 질문은 AI 없이 보이고 읽히며, 마이크 안 잡힘은 요청 없이 안내 한 줄이고, 아이 답 뒤 첫 AI 차례 사용자 메시지에 그 질문과 'Follow up on the child's answer: yes' 가 든다(요청은 아이 차례마다 하나)", async ({
+  test("AC-15ze (나) · AC-N22 · AC-15za (다) 짧은 준비 뒤 장면 여는 질문은 AI 없이 보이고 읽히며, 마이크 안 잡힘은 요청 없이 안내 한 줄이고, 아이 답 뒤 첫 AI 차례 사용자 메시지에 그 질문과 'Follow up on the child's answer: yes' 가 든다(요청은 아이 차례마다 하나)", async ({
     context,
   }) => {
     test.setTimeout(LONG);
@@ -1198,7 +1198,7 @@ test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 
     if (!scene) throw new Error("견본 꼴 — 1~3단계 카드의 장면 여는 질문");
     const start = await talkTurnRequests();
     await throughGreetingAndPrep(o);
-    // 인사 끝 한 번만 불렀다(짧은 준비 · 장면 여는 질문은 앱 — AC-N1)
+    // 인사 끝 한 번만 불렀다(짧은 준비 · 장면 여는 질문은 앱 — AC-N22)
     expect(await talkTurnRequests()).toBe(start + 1);
     await expect(segmentTag(o.page)).toHaveText("대화");
     await untilChildTurn(o.page);
@@ -1209,7 +1209,7 @@ test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 
         t.includes(sceneQuestion),
       ),
     ).toBe(true);
-    // 마이크 안 잡힘: 턴이 아니다 — 요청 · '못 들었어요' · 말소리 없음 셈 없이 안내 한 줄(C210 · AC-1 (다))
+    // 마이크 안 잡힘: 턴이 아니다 — 요청 · '못 들었어요' · 말소리 없음 셈 없이 안내 한 줄(C210 · AC-15za (다))
     await deafAttempt(childTurn(o.page));
     await expect(childTurn(o.page).getByText(T.micDeaf)).toBeVisible();
     await expect(
@@ -1240,7 +1240,7 @@ test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 
     expect(last).toContain("\\nFollow up on the child's answer: yes");
   });
 
-  test("AC-5 (나) · AC-6 (가) · AC-1 (나) 장면 여는 질문에서 막히면 첫째는 상황 줄 반응 · 앱 신호 말(긴 꼴) · 답 소리(AI 가 쓴 신호 말은 없음), 둘째는 그 칸의 쉬운 질문과 뜻이다(차례마다 요청 하나)", async ({
+  test("AC-15ze (나) · AC-15zf (가) · AC-15za (나) 장면 여는 질문에서 막히면 첫째는 상황 줄 반응 · 앱 신호 말(긴 꼴) · 답 소리(AI 가 쓴 신호 말은 없음), 둘째는 그 칸의 쉬운 질문과 뜻이다(차례마다 요청 하나)", async ({
     context,
   }) => {
     test.setTimeout(LONG);
@@ -1302,7 +1302,7 @@ test.describe("'AI 몫 넓힘' — 장면 여는 질문 · 신호 말 · 상황 
         opener.easyQuestion.ko,
         { timeout: STREAM_END_MS },
       );
-    // 신호 말은 지금 턴 말풍선에만 — 지난 차례가 오른 대화 기록 칸에는 없다(spec 설계 6 기록 행 [M-1] · AC-6 (가))
+    // 신호 말은 지금 턴 말풍선에만 — 지난 차례가 오른 대화 기록 칸에는 없다(spec 설계 6 기록 행 [M-1] · AC-15zf (가))
     await expect(o.page.locator("[data-talk-log]")).not.toContainText(cue);
     expect(await talkTurnRequests()).toBe(before + 2);
   });

@@ -2,7 +2,6 @@
 // 둘째 · 셋째 · 들리지 않음 차례의 선생님 말은 AI 가 그 자리에 맞게 쓰고, 앱은 그 말에 어휘 · 답 글 · 금지 구 검사를 걸어 걸린 첫 문장을 시드
 // '상황 줄'로 바꾼다(뒤 걸림은 지움 — 6.4 안전한 대사 꼴). 들리지 않음은 앱이 판단한 기술 문제라 그 차례의 판단 칸(막힘 · 갈래 · 아이가 보인
 // 능력 · 스스로 쓴 단어 …)은 읽지 않는다. 순수 모듈이다. 서버 턴 길(lesson-turn)과 대본 도구(talk-observe)가 같이 부른다(plan 정한 것 7).
-import type { TalkLessonOutput } from "@/core/ai/calls/talk-lesson";
 import { isDontKnowSaying } from "@/core/conversation/child-kind";
 import type { TeacherTurnPlan } from "@/core/conversation/lesson-flow";
 import {
@@ -514,7 +513,25 @@ export function situationLineOf(
  * 들리지 않음 차례의 판단 칸을 빈 값으로(spec 설계 1 응답 칸 행 · AC-1 (가) — '모름' 단추 차례와 같다): 막힘 · 아이 말 갈래 · 알맞은 응답 ·
  * 아이가 꺼낸 이야기 · 아이가 물음 · 아이가 보인 능력 · 스스로 쓴 단어 · 미션 체크 · 되풀이. 차례와 셈은 부르기 전에 정한 계획대로다.
  */
-export function heardFieldsBlankOf(value: TalkLessonOutput): TalkLessonOutput {
+/**
+ * heardFieldsBlankOf 가 비우는 판단 칸(회화 턴 응답 꼴 TalkLessonOutput 의 일부). talk-lesson 을 가져오지 않는다 — talk-lesson 이 이 모듈을
+ * 가져오므로 타입만 가져와도 순환이 된다(check:deps no-circular, CI 2026-11-07).
+ */
+type HeardJudgementFields = {
+  child_kind: string;
+  stuck: boolean;
+  response_fit: boolean;
+  child_topic: boolean;
+  child_asked: boolean;
+  goal_suggest: readonly unknown[];
+  self_used_words: readonly unknown[];
+  mission_done: readonly unknown[];
+  recast: string;
+};
+
+export function heardFieldsBlankOf<T extends HeardJudgementFields>(
+  value: T,
+): T {
   return {
     ...value,
     child_kind: "answer",
@@ -526,5 +543,5 @@ export function heardFieldsBlankOf(value: TalkLessonOutput): TalkLessonOutput {
     self_used_words: [],
     mission_done: [],
     recast: "",
-  };
+  } as T;
 }

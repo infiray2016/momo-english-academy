@@ -927,7 +927,7 @@ describe("회화 단계 규격 새 꼴 · 관계 · 문항 번호", () => {
   });
 });
 
-// ── 장면 여는 질문(06:186 · C206 — 'AI 몫 넓힘' plan 묶음 3 · AC-5 (가)) ──
+// ── 장면 여는 질문(06:186 · C206 — 'AI 몫 넓힘' plan 묶음 3 · AC-15ze (가)) ──
 
 /** 견본 어휘(기능어 · like)만 쓴 장면 여는 질문. 단계 규격에 맞춰 3단계는 영어 틀, 선택지 단계(1단계)는 선택지 둘을 둔다. */
 function openerFor(level: number): TalkSceneOpener {
@@ -971,8 +971,8 @@ function exemptLike(
 const openerPaths = (issues: SeedIssue[]) =>
   pathsOf(issues, "talk-scene-opener");
 
-describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
-  it("AC-5 바른 장면 여는 질문을 단 1 · 3단계 카드는 오류가 없다", () => {
+describe("회화 장면 여는 질문(06:186 · C206, AC-15ze (가))", () => {
+  it("AC-15ze 바른 장면 여는 질문을 단 1 · 3단계 카드는 오류가 없다", () => {
     for (const level of [1, 3] as const) {
       expect(rulesOf(check(withOpener(level), level)), `${level}단계`).toEqual(
         rulesOf(check(card(level), level)),
@@ -981,7 +981,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 예외 밖 1~3단계 카드(견본 · 새로 만드는 카드)는 개정이 낮아도 장면 여는 질문이 없으면 거부한다", () => {
+  it("AC-15ze 예외 밖 1~3단계 카드(견본 · 새로 만드는 카드)는 개정이 낮아도 장면 여는 질문이 없으면 거부한다", () => {
     for (const level of [1, 2, 3] as const) {
       const lesson =
         level === 2
@@ -1004,7 +1004,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     expect(openerPaths(check(other, 3))).toEqual(["card.sceneOpener"]);
   });
 
-  it("AC-5 예외 카드(회화 3단계 단원 1 배정 1 · 다지기 6, 개정 4 이하)는 장면 여는 질문 없이 통과한다", () => {
+  it("AC-15ze 예외 카드(회화 3단계 단원 1 배정 1 · 다지기 6, 개정 4 이하)는 장면 여는 질문 없이 통과한다", () => {
     expect(
       TALK_SCENE_OPENER_EXEMPT.map((e) => [
         e.level,
@@ -1038,7 +1038,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     ).toContain("card.sceneOpener");
   });
 
-  it("AC-5 예외 카드도 개정 5 이상이면 장면 여는 질문이 없으면 거부한다", () => {
+  it("AC-15ze 예외 카드도 개정 5 이상이면 장면 여는 질문이 없으면 거부한다", () => {
     for (const [kind, no] of [
       ["assigned", 1],
       ["reinforce", 6],
@@ -1051,14 +1051,14 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 4단계 카드에는 장면 여는 질문을 두지 않고 칸을 요구하지 않는다", () => {
+  it("AC-15ze 4단계 카드에는 장면 여는 질문을 두지 않고 칸을 요구하지 않는다", () => {
     const lesson = card(4);
     expect(openerPaths(check(lesson, 4))).toEqual([]);
     lesson.card.sceneOpener = openerFor(3);
     expect(openerPaths(check(lesson, 4))).toEqual(["card.sceneOpener"]);
   });
 
-  it("AC-5 물음표 문장 둘 · 물음표가 마지막이 아님 · 세 문장을 거부한다", () => {
+  it("AC-15ze 물음표 문장 둘 · 물음표가 마지막이 아님 · 세 문장을 거부한다", () => {
     const q = "card.sceneOpener.question.en";
     for (const en of [
       "Do you like it? Do we like it?",
@@ -1073,7 +1073,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 예 · 아니요 꼴이 아닌 질문(첫 낱말이 조동사 · be 가 아님 · 'or')을 거부한다", () => {
+  it("AC-15ze 예 · 아니요 꼴이 아닌 질문(첫 낱말이 조동사 · be 가 아님 · 'or')을 거부한다", () => {
     const q = "card.sceneOpener.question.en";
     for (const en of [
       "This is it. What do we like?",
@@ -1103,7 +1103,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 범위 밖 낱말 · {NAME} 둘 · 노리는 단어가 든 질문을 거부한다", () => {
+  it("AC-15ze 범위 밖 낱말 · {NAME} 둘 · 노리는 단어가 든 질문을 거부한다", () => {
     const lesson = card(3);
     const target = requiredAt(lesson, 0).targets[0] ?? "";
     const cases: [string, (o: TalkSceneOpener) => void][] = [
@@ -1133,7 +1133,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 인사 · 필수 · 쉬운 · 더 이야기할 거리 질문과 같은 글을 거부한다(정규화 · 마지막 물음표 문장)", () => {
+  it("AC-15ze 인사 · 필수 · 쉬운 · 더 이야기할 거리 질문과 같은 글을 거부한다(정규화 · 마지막 물음표 문장)", () => {
     const lesson = card(3);
     const greeting =
       "questions" in lesson.card.greeting
@@ -1163,7 +1163,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 한국어 뜻 없음 · 답 예시가 Yes · No 로 시작하지 않음 · 쉬운 질문 물음표 없음 · 쉬운 질문이 같은 글을 거부한다", () => {
+  it("AC-15ze 한국어 뜻 없음 · 답 예시가 Yes · No 로 시작하지 않음 · 쉬운 질문 물음표 없음 · 쉬운 질문이 같은 글을 거부한다", () => {
     const cases: [string, string, (o: TalkSceneOpener) => void][] = [
       [
         "뜻 없음",
@@ -1217,7 +1217,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     }
   });
 
-  it("AC-5 선택지 단계(1단계)는 같은 꼴에 낱말 하나만 다른 선택지 둘을 두고, 다른 단계는 선택지를 두지 않으며 3단계는 영어 틀을 둔다", () => {
+  it("AC-15ze 선택지 단계(1단계)는 같은 꼴에 낱말 하나만 다른 선택지 둘을 두고, 다른 단계는 선택지를 두지 않으며 3단계는 영어 틀을 둔다", () => {
     const c = "card.sceneOpener.choices";
     expect(
       openerPaths(
@@ -1262,7 +1262,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     ).toContain("card.sceneOpener.frameEn");
   });
 
-  it("AC-5 선생님 이름이 든 칸 · 문장 길이 상한을 넘는 칸은 카드 글 공통 검사가 sceneOpener 경로로 막는다", () => {
+  it("AC-15ze 선생님 이름이 든 칸 · 문장 길이 상한을 넘는 칸은 카드 글 공통 검사가 sceneOpener 경로로 막는다", () => {
     const named = check(
       withOpener(3, (o) => {
         o.hintEn = "Yes, Mina, I like it.";
@@ -1281,7 +1281,7 @@ describe("회화 장면 여는 질문(06:186 · C206, AC-5 (가))", () => {
     );
   });
 
-  it("AC-6 1~3단계 카드의 안전한 대사가 지어낸 경험 꼴에 걸리면 거부하고, 4단계는 보지 않는다", () => {
+  it("AC-15zf 1~3단계 카드의 안전한 대사가 지어낸 경험 꼴에 걸리면 거부하고, 4단계는 보지 않는다", () => {
     for (const level of [1, 3, 4] as const) {
       const lesson = card(level);
       const first = lesson.card.safeLines[0];

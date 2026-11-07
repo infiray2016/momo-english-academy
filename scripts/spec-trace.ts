@@ -16,8 +16,9 @@ const TEST_FILE = /\.(test|spec)\.ts$/;
 const SPEC_SECTION_HEADING = /^## 15\./;
 const PLAN_PROOF_HEADING = /^## 증명 \(Proof\)/;
 const NEXT_HEADING = /^## /;
-// 15절의 AC 번호 꼴(2026-10-16 셈으로 116개 모두 이 꼴).
-const SPEC_AC = /^AC-(?:\d{1,2}[a-z]|N\d{1,2})$/;
+// 15절의 AC 번호 꼴(2026-10-16 셈으로 116개 모두 이 꼴). 한 절의 글자가 z 를 넘으면 두 글자로 잇는다
+// (AC-15z 다음 AC-15za, 'AC 몫 넓힘' 2026-11-07 — 한 글자 꼴만 읽어 15절의 AC-15za~zh 를 놓치고 unknown-ac 로 걸렸다).
+const SPEC_AC = /^AC-(?:\d{1,2}[a-z]{1,2}|N\d{1,2})$/;
 // 증명 표 · 시험 이름 쪽은 꼴이 어긋난 번호도 뽑아서 15절 대조에서 걸리게 한다.
 const LOOSE_AC = /^AC-[A-Za-z0-9]+$/;
 // test( · it( · describe( · test.describe( 와 뒤에 붙는 수식어. 첫 인자가 'AC-' 로 시작하는 글자 그대로일 때만.

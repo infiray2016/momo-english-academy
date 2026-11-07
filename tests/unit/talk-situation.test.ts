@@ -1,4 +1,4 @@
-// 회화 1~3단계 상황 차례('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 1 · AC-1 (가)(나)(라)(마) · AC-2 (나) 서버 몫 · AC-5 (나) 서버 몫).
+// 회화 1~3단계 상황 차례('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 1 · AC-15za (가)(나)(라)(마) · AC-15zb (나) 서버 몫 · AC-15ze (나) 서버 몫).
 // 순수 몫(core/conversation/situation)과 서버 턴 길의 순수 함수(문장 문 · 끝 처리 · 실패 대신 줄 · 힌트 · 다시 흘림)를 본다. 목록은 시험 안
 // 견본이다(시드 목록 내용은 묶음 3 이 고친다). DB · AI 를 부르는 길은 통합 시험(tests/integration/talk-ai-scope.test.ts, CI)이 본다.
 import { readFileSync } from "node:fs";
@@ -286,7 +286,7 @@ describe("situationPlaceOf — 상황 차례 자리(spec 설계 1)", () => {
       ...over,
     }) as TeacherTurnPlan;
 
-  it("AC-1 인사 끝 · 받침 첫째 · 둘째 · 셋째 · 들리지 않음을 가르고, 말로 답한 대화 차례 · 4단계부터는 상황 차례가 아니다", () => {
+  it("AC-15za 인사 끝 · 받침 첫째 · 둘째 · 셋째 · 들리지 않음을 가르고, 말로 답한 대화 차례 · 4단계부터는 상황 차례가 아니다", () => {
     expect(situationPlaceOf(plan({ segment: "greeting_end" }))).toBe(
       "greeting_end",
     );
@@ -330,8 +330,8 @@ describe("situationPlaceOf — 상황 차례 자리(spec 설계 1)", () => {
   });
 });
 
-describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-1 (나))", () => {
-  it("AC-1 (나) 'That's okay!' 는 축약형을 펼쳐 범위 안이고, 허용 목록 · 닫힌 품사 한 낱말은 통과한다", () => {
+describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-15za (나))", () => {
+  it("AC-15za (나) 'That's okay!' 는 축약형을 펼쳐 범위 안이고, 허용 목록 · 닫힌 품사 한 낱말은 통과한다", () => {
     expect(checkSituationSentence("That's okay!", ctxOf("together")).ok).toBe(
       true,
     );
@@ -425,7 +425,7 @@ describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-1 (나))", (
     ).toBe(false);
   });
 
-  it("AC-1 (나) 범위 밖 내용어가 든 문장은 걸린다(걸린 낱말을 함께 낸다) · 범위 재료가 없으면 모두 걸린다", () => {
+  it("AC-15za (나) 범위 밖 내용어가 든 문장은 걸린다(걸린 낱말을 함께 낸다) · 범위 재료가 없으면 모두 걸린다", () => {
     expect(
       checkSituationSentence("You are a basketball star!", ctxOf("together")),
     ).toEqual({ ok: false, reason: "offband", words: ["basketball", "star"] });
@@ -437,7 +437,7 @@ describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-1 (나))", (
     ).toEqual({ ok: false, reason: "range" });
   });
 
-  it("AC-1 (나) 상황 금지 구: 탓 · 학습 실패 꼴은 모든 상황 차례, 들은 척하는 칭찬 · 되받기는 들리지 않음에서만", () => {
+  it("AC-15za (나) 상황 금지 구: 탓 · 학습 실패 꼴은 모든 상황 차례, 들은 척하는 칭찬 · 되받기는 들리지 않음에서만", () => {
     expect(
       checkSituationSentence("Oh no, that's wrong.", ctxOf("close")),
     ).toMatchObject({ ok: false, reason: "forbidden" });
@@ -460,7 +460,7 @@ describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-1 (나))", (
     ).toBe(true);
   });
 
-  it("AC-1 (나) 답 글: 질문 글(장면 문장 포함)에 없는 답 예시 내용어를 담은 문장은 걸리고, 질문 글의 낱말만 쓴 장면 반응은 남는다(N-2)", () => {
+  it("AC-15za (나) 답 글: 질문 글(장면 문장 포함)에 없는 답 예시 내용어를 담은 문장은 걸리고, 질문 글의 낱말만 쓴 장면 반응은 남는다(N-2)", () => {
     const answer = {
       example: "We eat rice and fish.",
       question: "Rice and fish for lunch! What do you do at the table?",
@@ -547,7 +547,7 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
     expect(shown).toEqual(["That's okay!", "We can do it together!"]);
   });
 
-  it("AC-1 (가) 들리지 않음 차례의 판단 칸(막힘 · 갈래 · 알맞은 응답 · 꺼낸 이야기 · 물음 · 보인 능력 · 스스로 쓴 단어 · 미션 · 되풀이)을 비우고 말 · 차례 칸은 그대로 둔다", () => {
+  it("AC-15za (가) 들리지 않음 차례의 판단 칸(막힘 · 갈래 · 알맞은 응답 · 꺼낸 이야기 · 물음 · 보인 능력 · 스스로 쓴 단어 · 미션 · 되풀이)을 비우고 말 · 차례 칸은 그대로 둔다", () => {
     const value = out({
       child_kind: "not_understood",
       stuck: true,
@@ -579,7 +579,7 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
     expect(blank.next_targets).toEqual(["soccer"]);
   });
 
-  it("AC-1 (가) 비운 응답으로 끝 처리하면 들리지 않음 차례 move 의 받침 단계 · 까닭 · 이어진 막힘은 계획대로이고 AI 제안은 빈 값이다", () => {
+  it("AC-15za (가) 비운 응답으로 끝 처리하면 들리지 않음 차례 move 의 받침 단계 · 까닭 · 이어진 막힘은 계획대로이고 AI 제안은 빈 값이다", () => {
     const args = args3([...opening3(), noSpeech()]);
     const plan = nextTeacherTurnOf(args);
     const { result } = play({
@@ -607,8 +607,8 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
   });
 });
 
-describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () => {
-  it("AC-1 (나) 받침 첫째의 걸린 첫 문장은 상황 줄로 바뀌어 그 글로 보내고, 뒤 걸림은 지운다 · 걸리지 않은 'That's okay!' 는 남는다", () => {
+describe("문장 문 · 끝 처리의 상황 차례(AC-15za (나)(라)(마))", () => {
+  it("AC-15za (나) 받침 첫째의 걸린 첫 문장은 상황 줄로 바뀌어 그 글로 보내고, 뒤 걸림은 지운다 · 걸리지 않은 'That's okay!' 는 남는다", () => {
     const args = args3(opening3());
     const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
       segment: "talk",
@@ -640,7 +640,7 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
     expect(JSON.stringify(result)).not.toContain("basketball");
   });
 
-  it("AC-1 (나) 받침 · 들리지 않음 차례에서 질문 글에 없는 답 예시 낱말을 담은 문장은 상황 줄로 바뀐다(카드 답 소리와 겹치지 않게)", () => {
+  it("AC-15za (나) 받침 · 들리지 않음 차례에서 질문 글에 없는 답 예시 낱말을 담은 문장은 상황 줄로 바뀐다(카드 답 소리와 겹치지 않게)", () => {
     const args = args3(opening3());
     const { ifStuck } = teacherTurnPlansOf(args, {
       segment: "talk",
@@ -657,7 +657,7 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
     expect(result.kept).toEqual(["Okay!", LINES.together[1]?.en]);
   });
 
-  it("AC-1 (나) 범위를 읽지 못한 턴은 상황 차례 문장이 모두 걸려 첫 문장이 상황 줄, 나머지는 지워진다", () => {
+  it("AC-15za (나) 범위를 읽지 못한 턴은 상황 차례 문장이 모두 걸려 첫 문장이 상황 줄, 나머지는 지워진다", () => {
     const args = args3(opening3());
     const plan = nextTeacherTurnOf(args3([...opening3(), noSpeech()]));
     const { result } = play({
@@ -716,7 +716,7 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
     expect(result.ko).toBe(`괜찮아! ${LINES.together[1]?.ko}`);
   });
 
-  it("AC-1 (라) 받침 첫째 · 둘째 · 셋째의 붙일 줄은 상황 검사가 있어도 없어도 같고, 반응은 AI 글이다", () => {
+  it("AC-15za (라) 받침 첫째 · 둘째 · 셋째의 붙일 줄은 상황 검사가 있어도 없어도 같고, 반응은 AI 글이다", () => {
     const base = args3(opening3());
     const first = teacherTurnPlansOf(base, {
       segment: "talk",
@@ -785,7 +785,7 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
     }
   });
 
-  it("AC-1 (마) 상황 차례에서 두 번 실패 · 거절이면 칭찬 대사 · 안전한 대사 대신 상황 줄이고, 인사 끝 뒤에는 카드 질문이 붙지 않는다", () => {
+  it("AC-15za (마) 상황 차례에서 두 번 실패 · 거절이면 칭찬 대사 · 안전한 대사 대신 상황 줄이고, 인사 끝 뒤에는 카드 질문이 붙지 않는다", () => {
     const base = {
       low: true,
       koMeaning: true,
@@ -845,7 +845,7 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
     expect(result.move.kind).toBe("ai");
   });
 
-  it("AC-2 (가) 인사 끝 차례의 물음표 문장은 지워지고 반응이 남지 않으면 인사 끝 상황 줄이 반응 자리에 온다", () => {
+  it("AC-15zb (가) 인사 끝 차례의 물음표 문장은 지워지고 반응이 남지 않으면 인사 끝 상황 줄이 반응 자리에 온다", () => {
     const turns = greetingEndTurns();
     const args = { ...args3(turns), segment: "greeting" as const };
     const plan = nextTeacherTurnOf({
@@ -904,8 +904,8 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-1 (나)(라)(마))", () =
   });
 });
 
-describe("AC-2 (나) 1~3단계 둘째 인사 AI 질문이 걸리면 카드 둘째 인사 질문(서버 몫)", () => {
-  it("AC-2 (나) 둘째 인사 AI 질문이 검사에 걸린 턴은 카드 자리가 되어 카드 둘째 인사 질문이 붙는다(카드 기회 질문이 아님)", () => {
+describe("AC-15zb (나) 1~3단계 둘째 인사 AI 질문이 걸리면 카드 둘째 인사 질문(서버 몫)", () => {
+  it("AC-15zb (나) 둘째 인사 AI 질문이 검사에 걸린 턴은 카드 자리가 되어 카드 둘째 인사 질문이 붙는다(카드 기회 질문이 아님)", () => {
     const turns: TalkLessonTurn[] = [
       teacher("Hi! How are you today?", { kind: "first_question" }),
     ];
@@ -935,7 +935,7 @@ describe("AC-2 (나) 1~3단계 둘째 인사 AI 질문이 걸리면 카드 둘�
     expect(result.text).not.toContain("zebrafish");
   });
 
-  it("AC-2 (나) 걸리지 않은 둘째 인사 AI 질문은 그대로 나가고 카드 인사 질문은 붙지 않는다", () => {
+  it("AC-15zb (나) 걸리지 않은 둘째 인사 AI 질문은 그대로 나가고 카드 인사 질문은 붙지 않는다", () => {
     const turns: TalkLessonTurn[] = [
       teacher("Hi! How are you today?", { kind: "first_question" }),
     ];
@@ -960,7 +960,7 @@ describe("AC-2 (나) 1~3단계 둘째 인사 AI 질문이 걸리면 카드 둘�
   });
 });
 
-describe("AC-5 (나) 장면 여는 질문의 힌트 · 뜻(서버 몫)", () => {
+describe("AC-15ze (나) 장면 여는 질문의 힌트 · 뜻(서버 몫)", () => {
   function sceneTurns(): TalkLessonTurn[] {
     return [
       teacher("Hi! How are you today?", { kind: "first_question" }),
@@ -972,7 +972,7 @@ describe("AC-5 (나) 장면 여는 질문의 힌트 · 뜻(서버 몫)", () => {
     ];
   }
 
-  it("AC-5 (나) 장면 여는 질문 자리의 '힌트' 단은 그 칸의 뜻 · 영어 틀 · 영어 문장이다", () => {
+  it("AC-15ze (나) 장면 여는 질문 자리의 '힌트' 단은 그 칸의 뜻 · 영어 틀 · 영어 문장이다", () => {
     const turns = sceneTurns();
     const slot = talkLessonPositionOf(args3(turns, CARD3_SCENE)).slot;
     expect(slot?.scene).toBe(true);
@@ -1001,7 +1001,7 @@ describe("AC-5 (나) 장면 여는 질문의 힌트 · 뜻(서버 몫)", () => {
     ]);
   });
 
-  it("AC-5 (나) 같은 시도 id 다시 흘림에서 장면 여는 질문 · 그 쉬운 질문 줄의 뜻이 빠지지 않는다", () => {
+  it("AC-15ze (나) 같은 시도 id 다시 흘림에서 장면 여는 질문 · 그 쉬운 질문 줄의 뜻이 빠지지 않는다", () => {
     const row = (text: string) => ({ text, toriKo: null, move: null });
     expect(
       lessonReplayLinesOf(row(`Okay!\n${SCENE3.question.en}`), {

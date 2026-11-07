@@ -1,4 +1,4 @@
-// 회화 1~3단계 신호 말('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 6 · 13절 C207 · AC-6 (가), plan 정한 것 6). 자리 · 몇 번째 · 긴 꼴 · 짧은 꼴 돌림 ·
+// 회화 1~3단계 신호 말('AI 몫 넓힘' 묶음 2 — spec 판 4 설계 6 · 13절 C207 · AC-15zf (가), plan 정한 것 6). 자리 · 몇 번째 · 긴 꼴 · 짧은 꼴 돌림 ·
 // 바로 앞과 같은 줄 안 씀, AI 가 쓴 신호 말 지움, 흘림 줄 차례(뜻 뒤 · 소리 줄 앞), 기록 · text · 다시 쓸 차례 밖, 같은 시도 id 다시 흘림이 같은
 // 줄을 냄을 본다. 목록은 시험 안 견본이다(시드 목록 내용은 묶음 3 몫).
 import { describe, expect, it } from "vitest";
@@ -212,7 +212,7 @@ const mv = (over: Partial<Omit<TalkMove, "v">>): TalkMove =>
   talkMoveOf({ kind: "card_slot", ...over });
 
 describe("cuePlaceOf · cueBandOf — 신호 말 자리(spec 설계 6 자리 행)", () => {
-  it("AC-6 (가) 신호 말은 꺼내기 · 받침 첫째 · 선택지 차례에만 붙고, 받침 셋째 · 들리지 않음 · 소리 줄 없는 차례에는 없다", () => {
+  it("AC-15zf (가) 신호 말은 꺼내기 · 받침 첫째 · 선택지 차례에만 붙고, 받침 셋째 · 들리지 않음 · 소리 줄 없는 차례에는 없다", () => {
     expect(
       cuePlaceOf(
         mv({ stage: 1, cause: "button", sound: { answer: "I play." } }),
@@ -275,7 +275,7 @@ describe("cuePlaceOf · cueBandOf — 신호 말 자리(spec 설계 6 자리 행
 describe("cueLineOf · cueLinesOfMoves — 긴 꼴 · 짧은 꼴 돌림 · 되풀이 없음", () => {
   const lines = FILE.introduce["2-3"];
 
-  it("AC-6 (가) 그 자리의 첫 신호 말은 긴 꼴, 뒤는 짧은 꼴을 차례로 돌린다", () => {
+  it("AC-15zf (가) 그 자리의 첫 신호 말은 긴 꼴, 뒤는 짧은 꼴을 차례로 돌린다", () => {
     expect(
       [0, 1, 2, 3].map(
         (ordinal) => cueLineOf({ lines, ordinal, previous: null })?.en,
@@ -288,7 +288,7 @@ describe("cueLineOf · cueLinesOfMoves — 긴 꼴 · 짧은 꼴 돌림 · 되�
     ]);
   });
 
-  it("AC-6 (가) 바로 앞 신호 말과 같은 줄(정규화 글)은 건너뛰고, 고를 줄이 없으면 null 이다", () => {
+  it("AC-15zf (가) 바로 앞 신호 말과 같은 줄(정규화 글)은 건너뛰고, 고를 줄이 없으면 null 이다", () => {
     expect(cueLineOf({ lines, ordinal: 1, previous: "your turn" })?.en).toBe(
       "You try!",
     );
@@ -304,7 +304,7 @@ describe("cueLineOf · cueLinesOfMoves — 긴 꼴 · 짧은 꼴 돌림 · 되�
     ).toBeNull();
   });
 
-  it("AC-6 (가) 한 대화의 선생님 행 차례대로 자리마다 몇 번째인지 세고, 다른 자리라도 바로 앞과 같은 줄이 오지 않는다", () => {
+  it("AC-15zf (가) 한 대화의 선생님 행 차례대로 자리마다 몇 번째인지 세고, 다른 자리라도 바로 앞과 같은 줄이 오지 않는다", () => {
     const together = mv({
       stage: 1,
       cause: "button",
@@ -438,8 +438,8 @@ describe("isSoundCue — AI 가 쓴 신호 말 알아보기", () => {
   });
 });
 
-describe("끝 처리 · 흘림 줄 · 다시 흘림 · 기록(AC-6 (가) 서버 몫)", () => {
-  it("AC-6 (가) 받침 첫째(같이 말하기)에 앱이 신호 말을 붙이고, AI 가 쓴 신호 말 문장은 화면 · 읽어 주기에 없다 · 흘림 차례는 뜻 → 신호 말 → 소리 줄", () => {
+describe("끝 처리 · 흘림 줄 · 다시 흘림 · 기록(AC-15zf (가) 서버 몫)", () => {
+  it("AC-15zf (가) 받침 첫째(같이 말하기)에 앱이 신호 말을 붙이고, AI 가 쓴 신호 말 문장은 화면 · 읽어 주기에 없다 · 흘림 차례는 뜻 → 신호 말 → 소리 줄", () => {
     const args = args3(opening3());
     const { ifStuck } = teacherTurnPlansOf(args, {
       segment: "talk",
@@ -476,7 +476,7 @@ describe("끝 처리 · 흘림 줄 · 다시 흘림 · 기록(AC-6 (가) 서버 
     expect(result.rewrite).not.toContain("Listen and say");
   });
 
-  it("AC-6 (가) 같은 자리 둘째는 짧은 꼴이고, 받침 셋째 · 들리지 않음 · 소리 줄 없는 AI 차례에는 신호 말이 없다", () => {
+  it("AC-15zf (가) 같은 자리 둘째는 짧은 꼴이고, 받침 셋째 · 들리지 않음 · 소리 줄 없는 AI 차례에는 신호 말이 없다", () => {
     const firstRow = teacher("That's okay!", {
       kind: "card_slot",
       why: "support",
@@ -552,7 +552,7 @@ describe("끝 처리 · 흘림 줄 · 다시 흘림 · 기록(AC-6 (가) 서버 
     expect(intro.cue?.en).toBe("Listen and say this word!");
   });
 
-  it("AC-6 (가) 같은 시도 id 다시 흘림은 저장된 move 로 같은 신호 말을 같은 자리(뜻 뒤 · 소리 줄 앞)에 낸다", () => {
+  it("AC-15zf (가) 같은 시도 id 다시 흘림은 저장된 move 로 같은 신호 말을 같은 자리(뜻 뒤 · 소리 줄 앞)에 낸다", () => {
     const args = args3(opening3());
     const { ifStuck } = teacherTurnPlansOf(args, {
       segment: "talk",
@@ -593,7 +593,7 @@ describe("끝 처리 · 흘림 줄 · 다시 흘림 · 기록(AC-6 (가) 서버 
     expect(lessonCueOfRows({ ...state, level: 4 }, { cue: FILE })).toBeNull();
   });
 
-  it("AC-6 (가) 신호 말은 대화 기록에 들지 않는다(지금 턴 말풍선에만)", () => {
+  it("AC-15zf (가) 신호 말은 대화 기록에 들지 않는다(지금 턴 말풍선에만)", () => {
     const entry = liveTeacherEntryOf({
       turnNo: 9,
       content: {

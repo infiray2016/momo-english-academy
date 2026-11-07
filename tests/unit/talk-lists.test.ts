@@ -1,4 +1,4 @@
-// 회화 1~3단계 시드 목록 넷 검사(6.4 '회화 시드 목록' 행 06:187, C207 · C209 · C211 — 'AI 몫 넓힘' plan 묶음 3 · AC-6 (나)).
+// 회화 1~3단계 시드 목록 넷 검사(6.4 '회화 시드 목록' 행 06:187, C207 · C209 · C211 — 'AI 몫 넓힘' plan 묶음 3 · AC-15zf (나)).
 // 신호 말 꼴 수 · 물음표 · 길이 · 구간 첫 단계 어휘 범위(허용 낱말 포함), 상황 줄 수 · 범위 · 상황 금지 구, 허용 낱말이 걸린 낱말인지,
 // 지어낸 경험 꼴의 1인칭 · 줄이 꼴에 걸리지 않는지를 보고, seed:validate 의 규격 파일 정합(buildReferenceIndex)에 들었는지 본다.
 import { describe, expect, it } from "vitest";
@@ -39,12 +39,12 @@ const at = (issues: SeedIssue[], rule: string) =>
   issues.filter((i) => i.rule === rule).map((i) => `${i.file}:${i.path}`);
 const line = (en: string) => ({ en, ko: "뜻" });
 
-describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
-  it("AC-6 견본 목록 넷은 검사를 지난다(꼴 수 · 범위 · 금지 구 · 지어낸 경험 꼴)", () => {
+describe("회화 시드 목록 넷 검사(06:187, AC-15zf (나))", () => {
+  it("AC-15zf 견본 목록 넷은 검사를 지난다(꼴 수 · 범위 · 금지 구 · 지어낸 경험 꼴)", () => {
     expect(checkTalkLists(lists(), ctx)).toEqual([]);
   });
 
-  it("AC-6 꼴 수는 검사 상수다: 신호 말 긴 꼴 하나 이상 · 짧은 꼴 둘 이상, 상황 줄 자리마다 셋 이상", () => {
+  it("AC-15zf 꼴 수는 검사 상수다: 신호 말 긴 꼴 하나 이상 · 짧은 꼴 둘 이상, 상황 줄 자리마다 셋 이상", () => {
     expect([
       TALK_CUE_LONG_MIN,
       TALK_CUE_SHORT_MIN,
@@ -67,7 +67,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     ]);
   });
 
-  it("AC-6 신호 말은 물음표 · 문장 길이 상한 · 그 구간 첫 단계 어휘 범위(허용 낱말 포함) 밖 낱말을 거부한다", () => {
+  it("AC-15zf 신호 말은 물음표 · 문장 길이 상한 · 그 구간 첫 단계 어휘 범위(허용 낱말 포함) 밖 낱말을 거부한다", () => {
     expect(firstLevelOfBand("1")).toBe(1);
     expect(firstLevelOfBand("2-3")).toBe(2);
     const files = lists();
@@ -92,7 +92,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     );
   });
 
-  it("AC-6 어휘 범위는 축약형을 펼친 조각마다 본다(조각 하나라도 범위 밖이면 그 조각을 낸다)", () => {
+  it("AC-15zf 어휘 범위는 축약형을 펼친 조각마다 본다(조각 하나라도 범위 밖이면 그 조각을 낸다)", () => {
     const none = new Set<string>();
     expect(
       offbandListWords("That's it. Let's go!", index.lexicon, 1, none),
@@ -111,7 +111,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     ).toEqual(["keep"]);
   });
 
-  it("AC-6 상황 줄은 같은 어휘 · 길이 검사(1단계)를 받고, 상황 금지 구(all 은 모든 자리 · nospeech 는 들리지 않음만)에 걸리면 거부한다", () => {
+  it("AC-15zf 상황 줄은 같은 어휘 · 길이 검사(1단계)를 받고, 상황 금지 구(all 은 모든 자리 · nospeech 는 들리지 않음만)에 걸리면 거부한다", () => {
     const files = lists();
     const { lines } = files.talkSituationLines;
     files.talkAllowedWords.allowed.push("said");
@@ -132,7 +132,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     );
   });
 
-  it("AC-6 허용 낱말은 첫 단계 범위 검사에 걸린 낱말만 둔다(범위 안 낱말은 거부)", () => {
+  it("AC-15zf 허용 낱말은 첫 단계 범위 검사에 걸린 낱말만 둔다(범위 안 낱말은 거부)", () => {
     const files = lists();
     files.talkAllowedWords.allowed.push("it", "like");
     const issues = checkTalkLists(files, ctx);
@@ -143,7 +143,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     ]);
   });
 
-  it("AC-6 지어낸 경험 꼴은 1인칭 꼴이고, 신호 말 · 상황 줄이 그 꼴(낱말 경계)에 걸리면 거부한다", () => {
+  it("AC-15zf 지어낸 경험 꼴은 1인칭 꼴이고, 신호 말 · 상황 줄이 그 꼴(낱말 경계)에 걸리면 거부한다", () => {
     expect([...FIRST_PERSON_WORDS]).toContain("i");
     const files = lists();
     files.talkMadeUpPhrases.phrases.push("last summer");
@@ -168,7 +168,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     ]);
   });
 
-  it("AC-6 사전(vocab)이 없으면 어휘 검사는 건너뛰고 꼴 수 · 물음표 · 금지 구는 그대로 본다", () => {
+  it("AC-15zf 사전(vocab)이 없으면 어휘 검사는 건너뛰고 꼴 수 · 물음표 · 금지 구는 그대로 본다", () => {
     const files = lists();
     files.talkCueLines.introduce["1"].short[0] = line("Say the zebra?");
     const issues = checkTalkLists(files, { maxWordsAt: ctx.maxWordsAt });
@@ -179,7 +179,7 @@ describe("회화 시드 목록 넷 검사(06:187, AC-6 (나))", () => {
     expect(at(issues, "talk-allowed-words")).toEqual([]);
   });
 
-  it("AC-6 seed:validate 의 규격 파일 정합(buildReferenceIndex)이 목록 검사를 부르고, 지어낸 경험 꼴을 색인에 낸다", () => {
+  it("AC-15zf seed:validate 의 규격 파일 정합(buildReferenceIndex)이 목록 검사를 부르고, 지어낸 경험 꼴을 색인에 낸다", () => {
     const bad = structuredClone(ref);
     bad.talkCueLines.choices["2-3"].short = [line("Pick!")];
     const built = buildReferenceIndex(bad);

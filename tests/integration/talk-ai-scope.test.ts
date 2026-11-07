@@ -1,9 +1,9 @@
 // '회화 AI 몫 넓힘' 묶음 2 통합 시험(서버 턴 끝 처리 · 실시간 검사 — CI 에서만 돈다, 이 Mac 에서는 돌리지 않음). 시험용 시드의 회화 1단계
 // 단원 1 수업 1 카드(새 꼴 · 장면 여는 질문 칸 있음)로 세션을 넣고 runTalkTurnRequest 를 가짜 Anthropic 으로 부른다. 목록 넷은 저장소의
 // seed/lists 를 서버가 그대로 읽으므로 기대 글은 같은 읽기 함수로 꺼낸다(목록 내용은 묶음 3 몫이라 바뀔 수 있다).
-// 증명: AC-1 (가) 들리지 않음 판단 칸 무시 · (나)(라) 받침 첫째 상황 줄 · 붙일 줄 그대로 · (마) 인사 끝 실패 대신 상황 줄 · AC-2 (가) 인사 끝 물음표
-// 지움 · (나) 인사 턴 2 카드 둘째 인사 질문 · AC-3 (가) 'Child said more' · (라) 지어낸 경험 지움 · AC-5 (나) 장면 여는 질문의 Follow up 줄 ·
-// 쉬운 질문 · 힌트 · AC-6 (가) 신호 말(흘림 줄 · talk_turns 원문 · 다시 쓸 차례 밖 · 같은 시도 id 다시 흘림) · AC-8 (마) 요청은 글 블록뿐.
+// 증명: AC-15za (가) 들리지 않음 판단 칸 무시 · (나)(라) 받침 첫째 상황 줄 · 붙일 줄 그대로 · (마) 인사 끝 실패 대신 상황 줄 · AC-15zb (가) 인사 끝 물음표
+// 지움 · (나) 인사 턴 2 카드 둘째 인사 질문 · AC-15zc (가) 'Child said more' · (라) 지어낸 경험 지움 · AC-15ze (나) 장면 여는 질문의 Follow up 줄 ·
+// 쉬운 질문 · 힌트 · AC-15zf (가) 신호 말(흘림 줄 · talk_turns 원문 · 다시 쓸 차례 밖 · 같은 시도 id 다시 흘림) · AC-15zh (마) 요청은 글 블록뿐.
 import { and, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cueLinesOfMoves } from "@/core/conversation/cue-line";
@@ -256,7 +256,7 @@ const addsOf = (lines: TalkLessonLine[]) =>
 const lastBody = () => h.fake.requests.at(-1)?.bodyText ?? "";
 
 describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () => {
-  it("AC-1 (가) 들리지 않음 차례는 가짜 응답의 막힘 · 갈래 · 알맞은 응답 · 보인 능력 · 스스로 쓴 단어 · 되풀이를 읽지 않고, 반응은 AI 글 그대로다 · 사용자 메시지에 기술 문제 설명 줄이 든다", async () => {
+  it("AC-15za (가) 들리지 않음 차례는 가짜 응답의 막힘 · 갈래 · 알맞은 응답 · 보인 능력 · 스스로 쓴 단어 · 되풀이를 읽지 않고, 반응은 AI 글 그대로다 · 사용자 메시지에 기술 문제 설명 줄이 든다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     const target = card.required[0]?.targets[0] ?? "";
     h.fake.push(
@@ -291,7 +291,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     });
   });
 
-  it("AC-1 (나)(라) · AC-6 (가) 받침 첫째: 범위 밖 반응은 상황 줄로, AI 신호 말은 지우고 앱 신호 말(긴 꼴)을 뜻 뒤 · 답 소리 앞에 붙이며, 신호 말은 원문 · 다시 쓸 차례에 없고 같은 시도 id 다시 흘림이 같은 줄을 낸다", async () => {
+  it("AC-15za (나)(라) · AC-15zf (가) 받침 첫째: 범위 밖 반응은 상황 줄로, AI 신호 말은 지우고 앱 신호 말(긴 꼴)을 뜻 뒤 · 답 소리 앞에 붙이며, 신호 말은 원문 · 다시 쓸 차례에 없고 같은 시도 id 다시 흘림이 같은 줄을 낸다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(
       lessonTurnRule({
@@ -351,7 +351,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     ]);
   });
 
-  it("AC-1 (마) 인사 끝 턴이 두 번 실패하면 칭찬 대사 대신 인사 끝 상황 줄이고 카드 질문이 붙지 않는다", async () => {
+  it("AC-15za (마) 인사 끝 턴이 두 번 실패하면 칭찬 대사 대신 인사 끝 상황 줄이고 카드 질문이 붙지 않는다", async () => {
     const { sessionId } = await sessionAtGreeting();
     h.fake.push(failRule());
     const lines = await say(sessionId, { mode: "speech", text: "I am good." });
@@ -368,7 +368,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     expect(readTalkMove(teacherRow?.move)).toMatchObject({ kind: "ai" });
   });
 
-  it("AC-2 (가) 인사 끝 차례의 물음표 문장은 지워진다(반응은 남음)", async () => {
+  it("AC-15zb (가) 인사 끝 차례의 물음표 문장은 지워진다(반응은 남음)", async () => {
     const { sessionId } = await sessionAtGreeting();
     h.fake.push(
       lessonTurnRule({ tori_en: "We can do this too! What do you like?" }),
@@ -378,7 +378,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     expect(JSON.stringify(lines)).not.toContain("What do you like?");
   });
 
-  it("AC-2 (나) 인사 턴 2 카드의 둘째 인사 AI 질문이 검사에 걸리면(재질문 뒤) 카드 둘째 인사 질문이 붙는다", async () => {
+  it("AC-15zb (나) 인사 턴 2 카드의 둘째 인사 AI 질문이 검사에 걸리면(재질문 뒤) 카드 둘째 인사 질문이 붙는다", async () => {
     const first = greetingQuestions()[0];
     if (!first) throw new Error("인사 질문이 없다");
     const second = {
@@ -430,7 +430,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     }
   });
 
-  it("AC-3 (가) 1~3단계 AI 차례 사용자 메시지에 'Child said more' 가 든다(낱말 셋 이상 · 느낌 낱말 yes, 짧은 답 no)", async () => {
+  it("AC-15zc (가) 1~3단계 AI 차례 사용자 메시지에 'Child said more' 가 든다(낱말 셋 이상 · 느낌 낱말 yes, 짧은 답 no)", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(lessonTurnRule({ tori_en: "We can do this too!" }));
     await say(sessionId, { mode: "speech", text: "I like it a lot." });
@@ -440,7 +440,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     expect(lastBody()).toContain("Child said more: no");
   });
 
-  it("AC-3 (라) 1~3단계 선생님의 지어낸 경험 꼴 문장은 화면 · 읽어 주기 · 원문에 없고 질문은 남는다", async () => {
+  it("AC-15zc (라) 1~3단계 선생님의 지어낸 경험 꼴 문장은 화면 · 읽어 주기 · 원문에 없고 질문은 남는다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(
       lessonTurnRule({
@@ -458,7 +458,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     expect(teacherRow?.toriRewrite).not.toContain("Yesterday");
   });
 
-  it("AC-5 (나) 장면 여는 질문에 말로 답한 뒤 첫 AI 차례 사용자 메시지에 그 질문과 'Follow up' 줄이 들고, 막히면 둘째에 그 칸의 쉬운 질문이 붙으며 힌트는 그 칸의 것이다", async () => {
+  it("AC-15ze (나) 장면 여는 질문에 말로 답한 뒤 첫 AI 차례 사용자 메시지에 그 질문과 'Follow up' 줄이 들고, 막히면 둘째에 그 칸의 쉬운 질문이 붙으며 힌트는 그 칸의 것이다", async () => {
     const scene = card.sceneOpener;
     if (!scene) throw new Error("견본 카드에 장면 여는 질문이 없다");
     {
@@ -500,7 +500,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     }
   });
 
-  it("AC-3 (라) 1~3단계 끝맺음의 끝인사가 지어낸 경험 꼴이면 끝맺음 상태의 끝인사는 카드 끝인사이고, 걸리지 않은 끝인사는 그대로다(검토 rev-2 M-4)", async () => {
+  it("AC-15zc (라) 1~3단계 끝맺음의 끝인사가 지어낸 경험 꼴이면 끝맺음 상태의 끝인사는 카드 끝인사이고, 걸리지 않은 끝인사는 그대로다(검토 rev-2 M-4)", async () => {
     const farewellOf = async (farewell: string) => {
       const { sessionId } = await sessionAtFirstQuestion();
       h.fake.push(lessonTurnRule({ tori_en: "We can do this too!" }));
@@ -524,7 +524,7 @@ describe("'AI 몫 넓힘' 묶음 2 — 상황 차례 · 신호 말(서버)", () 
     expect(await farewellOf(madeUp)).toBe(card.farewell.en);
   });
 
-  it("AC-8 (마) 회화 턴 요청의 시스템 · 메시지는 모두 글 블록이다(소리 · 그림 · 파일 블록 0)", async () => {
+  it("AC-15zh (마) 회화 턴 요청의 시스템 · 메시지는 모두 글 블록이다(소리 · 그림 · 파일 블록 0)", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(lessonTurnRule({ tori_en: "We can do this too!" }));
     await say(sessionId, { mode: "speech", text: "I like it." });

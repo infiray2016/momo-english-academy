@@ -65,6 +65,32 @@ describe("spec 추적", () => {
     expect(acs[0]?.line).toBe(13);
   });
 
+  it("spec 추적: 15절의 두 글자 꼴(AC-15z 다음 AC-15za)도 뽑고, 시험 이름과 맞대면 unknown-ac 가 아니다", () => {
+    const spec = [
+      "## 15. 수용 기준",
+      "",
+      "| AC | 기준 | 증명 |",
+      "|---|---|---|",
+      "| AC-15z | 한 글자 꼴 | 단위 |",
+      "| AC-15za | 두 글자 꼴 | 단위 |",
+      "| AC-15zab | 세 글자는 꼴이 아니다 | 단위 |",
+      "",
+      "## 16. 다음 절",
+    ].join("\n");
+    const acs = parseSpecAcs(spec);
+    expect(acs.map((a) => a.ac)).toEqual(["AC-15z", "AC-15za"]);
+    const result = trace({
+      specAcs: acs,
+      planAcs: [],
+      testAcs: extractTestAcs(
+        "tests/unit/x.test.ts",
+        call("it", "AC-15za 두 글자 꼴 시험"),
+      ),
+      planPath: "plan.md",
+    });
+    expect(result.counts["unknown-ac"]).toBe(0);
+  });
+
   it("spec 추적: 증명 표에서 AC 행만 뽑고 '공통' 행은 뺀다", () => {
     const acs = parsePlanProofAcs(PLAN);
     expect(acs).toEqual([
