@@ -58,8 +58,8 @@
     ],
     "nospeech": [
       {
-        "en": "Oops, my ears! Let's go on.",
-        "ko": "앗, 내 귀가! 계속하자."
+        "en": "Oops, no sound! Let's go on.",
+        "ko": "앗, 소리가 안 들려! 계속하자."
       },
       {
         "en": "Hmm, no sound! Let's keep going.",
@@ -70,8 +70,8 @@
         "ko": "미안, 안 들려! 계속하자."
       },
       {
-        "en": "Oh no, my ears! Here is the answer.",
-        "ko": "이런, 내 귀가! 답은 이거야."
+        "en": "Oh no, no sound! Here is the answer.",
+        "ko": "이런, 소리가 안 들려! 답은 이거야."
       }
     ]
   },

@@ -195,7 +195,11 @@ describe("시드 목록 넷(정한 것 5)", () => {
     expect(Object.keys(file.lines).sort()).toEqual(
       [...TALK_SITUATION_PLACES].sort(),
     );
-    expect(file.lines.nospeech[0]?.en).toBe("Oops, my ears! Let's go on.");
+    // 요청자 iPad 수업(11-08) 뒤 'my ears' 꼴을 뺐다 — 못 들은 것을 소리 쪽 일로 말하는 꼴은 그대로다
+    expect(file.lines.nospeech[0]?.en).toBe("Oops, no sound! Let's go on.");
+    expect(file.lines.nospeech.map((line) => line.en).join(" ")).not.toMatch(
+      /my ears/i,
+    );
     // 정본 · spec 예(설계 1 [I-1])가 들어 있는지 본다. 목록 내용은 묶음 3-(다)가 넓힌다
     expect(file.forbidden.all).toEqual(
       expect.arrayContaining(["that's wrong", "you don't know"]),
