@@ -869,7 +869,7 @@ describe("버림 화면 떠남 차례(기계 검토 6절 7 · 8)", () => {
     expect(() => leaveDiscard(null, { close: true })).not.toThrow();
   });
 
-  /** 첫 누름으로 진짜를 열고 결과로 끝내 버림이 열린 데까지(F2). */
+  /** 첫 누름으로 진짜를 열고 결과로 끝내 버림이 열린 데까지(F2 — 소리를 받은 진짜 뒤 open_after 를 채운 뒤, C216). */
   async function afterFirstTurn() {
     const port = new FakePort();
     const layer = discardLayerFor(port, {
@@ -895,6 +895,7 @@ describe("버림 화면 떠남 차례(기계 검토 6절 7 · 8)", () => {
     });
     await vi.advanceTimersByTimeAsync(0);
     await handle.outcome;
+    await vi.advanceTimersByTimeAsync(discard.openAfterMs);
     expect(port.calls.filter((c) => c.startsWith("openDiscard"))).toEqual([
       "openDiscard:1",
     ]);

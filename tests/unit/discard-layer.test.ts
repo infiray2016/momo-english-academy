@@ -264,7 +264,10 @@ const advance = (ms: number) => vi.advanceTimersByTimeAsync(ms);
 const notes = (trace: SpeechTraceEntry[]) =>
   trace.flatMap((e) => (e.kind === "discard-note" ? [e.dc] : []));
 
-/** 첫 누름으로 진짜를 열고 결과로 끝낸 뒤 버림이 열린 상태까지(F2). 버림은 죽은 버림(audiostart 가 판정 안). */
+/**
+ * 첫 누름으로 진짜를 열고 결과로 끝낸 뒤 버림이 열린 상태까지(F2 — 소리를 받은 진짜 뒤 기다림 open_after 를 채운 뒤, C216). 버림은 죽은
+ * 버림(audiostart 가 판정 안).
+ */
 async function firstTurnThenDeadDiscard(layer: DiscardLayer, port: FakePort) {
   layer.port.unlockFromGesture();
   const handle = layer.port.listen(RULE);
@@ -278,6 +281,8 @@ async function firstTurnThenDeadDiscard(layer: DiscardLayer, port: FakePort) {
   });
   await flush();
   await handle.outcome;
+  expect(port.discards).toHaveLength(0);
+  await advance(discard.openAfterMs);
   const d = port.lastDiscard();
   await advance(DEAD_AS);
   d.audio();
@@ -414,6 +419,7 @@ describe("버림 층 손잡이 꼴과 순서 약속", () => {
     port.lastListen().finish({ kind: "no-result" });
     await flush();
     expect(seenPhase).toEqual(["result"]);
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     d.audio();
     await advance(discard.liveAsMs);
@@ -466,6 +472,7 @@ describe("버림 층 읽기 — 보류 · 흘림(F8 · F1)", () => {
     await handle.outcome;
     await flush();
     expect(port.lastListen().cancels).toBe(0);
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     expect(port.calls).not.toContain("speak:Wait for me.");
     await advance(DEAD_AS);
@@ -504,6 +511,7 @@ describe("버림 층 읽기 — 보류 · 흘림(F8 · F1)", () => {
     port.lastListen().finish({ kind: "no-result" });
     await handle.outcome;
     await flush();
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     d.audio();
     await advance(discard.liveAsMs);
@@ -682,6 +690,7 @@ async function noResultThenDeadDiscard(layer: DiscardLayer, port: FakePort) {
   const handle = layer.port.listen(RULE);
   port.lastListen().finish({ kind: "no-result" });
   await handle.outcome;
+  await advance(discard.openAfterMs);
   const d = port.lastDiscard();
   await advance(DEAD_AS);
   d.audio();
@@ -1060,6 +1069,7 @@ describe("버림 층 닫는 중 end 상한(검토 2-나 M-4)", () => {
       watchdogRestarts: 0,
     });
     await flush();
+    await advance(discard.openAfterMs);
     expect(port.discards).toHaveLength(2);
     const d2 = port.lastDiscard();
     await advance(DEAD_AS);
@@ -1118,6 +1128,8 @@ describe("버림 층 살아 있는 버림 · 떠남 · 숨김 · 마이크 확�
     });
     expect(port.listens[0]?.cancels).toBe(1);
     // 끊긴 진짜 뒤는 '버림부터': 걸린 누름이 버림을 열고 그 안 짧은 말 뒤에 진짜
+    // 소리를 받은 진짜(끊긴 진짜도) 뒤 버림은 open_after 를 채운 뒤 열린다(C216).
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     d.audio();
     await advance(discard.liveAsMs);
@@ -1134,12 +1146,13 @@ describe("버림 층 살아 있는 버림 · 떠남 · 숨김 · 마이크 확�
     await expect(second.outcome).resolves.toEqual({ kind: "no-result" });
   });
 
-  it("버림 층은 살아 있는 버림을 stop 으로만 닫고(abort 0), end 뒤 읽기를 세션 없이 흘린다(F3)", async () => {
+  it("버림 층은 살아 있는 버림을 stop 으로만 닫고(abort 0), end + open_after 뒤 다시 연 버림도 살아 있으면 그 end 뒤 읽기를 세션 없이 흘린다(F3 · AC-24q)", async () => {
     const { port, layer } = makeLayer();
     layer.port.unlockFromGesture();
     const handle = layer.port.listen(RULE);
     port.lastListen().finish({ kind: "no-result" });
     await handle.outcome;
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     const line = layer.port.speak("Are you there?");
     await advance(discard.liveAsMs);
@@ -1147,8 +1160,16 @@ describe("버림 층 살아 있는 버림 · 떠남 · 숨김 · 마이크 확�
     expect(port.calls).not.toContain("speak:Are you there?");
     d.end();
     await flush();
+    expect(port.calls).not.toContain("speak:Are you there?");
+    await advance(discard.openAfterMs);
+    expect(port.discards).toHaveLength(2);
+    const again = port.lastDiscard();
+    await advance(discard.liveAsMs);
+    expect(again.calls).toEqual(["stop"]);
+    again.end();
+    await flush();
     expect(port.calls.at(-1)).toBe("speak:Are you there?");
-    expect(port.discards).toHaveLength(1);
+    expect(port.discards).toHaveLength(2);
     port.lastUtterance().start();
     port.lastUtterance().end();
     await line;
@@ -1180,6 +1201,9 @@ describe("버림 층 살아 있는 버림 · 떠남 · 숨김 · 마이크 확�
     expect(port.lastListen().cancels).toBe(1);
     expect(port.discards).toHaveLength(0);
     void layer.port.speak("See you.");
+    // 끊긴 진짜 끝 + open_after 를 채운 뒤 버림부터 연다(C216).
+    expect(port.discards).toHaveLength(0);
+    await advance(discard.openAfterMs);
     expect(port.discards).toHaveLength(1);
     port.lastDiscard().audio();
     await advance(discard.liveAsMs);
@@ -1219,6 +1243,8 @@ describe("버림 층 살아 있는 버림 · 떠남 · 숨김 · 마이크 확�
       .finish({ kind: "interrupted", reason: "leave", partialText: "" });
     await flush();
     layer.port.listen(RULE);
+    // 소리를 받은 진짜(끊긴 진짜도) 뒤 버림은 open_after 를 채운 뒤 열린다(C216).
+    await advance(discard.openAfterMs);
     const d = port.lastDiscard();
     d.audio();
     await advance(discard.liveAsMs);

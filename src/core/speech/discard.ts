@@ -3,9 +3,9 @@
 // stepListen 꼴). 효과는 음성 접점을 감싸는 층(discard-layer)이 실행한다. 진짜 안의 일(끝 규칙 · 감시 · deaf)은 지금처럼 stepListen 이 맡고,
 // 이 기계는 진짜를 언제 여는지 · 읽기를 언제 흘리는지 · 버림을 언제 여닫는지만 정한다.
 //
-// 시점 숫자는 없다. 모두 DiscardTimes 에서 읽는다(층이 speech.discard_* 다섯과 speech.max_listen_seconds · speech.watchdog_extra_seconds 로
-// 만든다, spec 설계 4 '남은 시점 값'). 상태 이름(대기 · 버림 확인 · 버림 · 살아 있는 버림 · 닫는 중 · 간격 · 버림부터 · 진짜)과 갈래(rest ·
-// discard · live · reopen)는 spec 설계 1 표 그대로다.
+// 시점 숫자는 없다. 모두 DiscardTimes 에서 읽는다(층이 speech.discard_* 여섯과 speech.max_listen_seconds · speech.watchdog_extra_seconds 로
+// 만든다, spec 설계 4 '남은 시점 값'). 상태 이름(대기 · 진짜 뒤 기다림 · 버림 확인 · 버림 · 살아 있는 버림 · 닫는 중 · 간격 · 버림부터 ·
+// 진짜)과 갈래(rest · discard · live · reopen)는 spec 설계 1 표 그대로다(진짜 뒤 기다림은 13절 C216).
 //
 // 층과의 약속(plan 접점 표의 입력을 이렇게 보낸다):
 // - unlock 은 첫 누름 처리 안에서 잠금 풀기(무음 읽기) 뒤, 그 누름의 press 보다 먼저 보낸다. 그 전에는 어떤 start 효과도 내지 않는다(I-4).
@@ -97,19 +97,22 @@ export type DiscardTimes = Readonly<{
   afterSoundMs: number;
   /** speech.discard_gap_ms — 버림 end 와 마지막 소리 끝에서 진짜 start 까지의 최소 간격(F6). */
   gapMs: number;
+  /** speech.discard_open_after_ms — 소리를 받은 세션(deaf 아닌 진짜 · 살아 있는 버림) 끝에서 다음 버림 start 까지(C216 F2 · F3 뒤). */
+  openAfterMs: number;
   /** speech.watchdog_extra_seconds(ms) — stop 뒤 end 를 기다리는 상한. */
   endWaitMs: number;
   /** speech.max_listen_seconds + speech.watchdog_extra_seconds(ms) — 버림의 안전 상한(M-4). */
   capMs: number;
 }>;
 
-/** 버리는 듣기 설정 다섯(묶음 0 의 DiscardSettings 가 이 꼴에 맞춘다). */
+/** 버리는 듣기 설정 여섯(묶음 0 의 DiscardSettings 가 이 꼴에 맞춘다). */
 export interface DiscardTimingSettings {
   restMs: number;
   liveAsMs: number;
   minMs: number;
   afterSoundMs: number;
   gapMs: number;
+  openAfterMs: number;
 }
 
 /** 두 설정에서 기계의 시간 묶음을 만든다(spec 설계 4 '남은 시점 값은 같은 뜻의 기존 키'). */
@@ -123,6 +126,7 @@ export function discardTimesOf(
     minMs: discard.minMs,
     afterSoundMs: discard.afterSoundMs,
     gapMs: discard.gapMs,
+    openAfterMs: discard.openAfterMs,
     endWaitMs: speech.watchdogExtraMs,
     capMs: speech.maxListenMs + speech.watchdogExtraMs,
   };
@@ -204,11 +208,12 @@ export type DiscardFlowEffect =
   | { type: "note"; dc: DiscardFlowNote };
 
 /**
- * 상태 이름(spec 설계 1): rest 대기 · probe 버림 확인 · dead 버림 · closing 닫는 중(살아 있는 버림의 닫힘도 여기, closeNext live) ·
- * gap 간격 · reopen 버림부터 · real 진짜.
+ * 상태 이름(spec 설계 1): rest 대기 · hold 진짜 뒤 기다림(소리를 받은 세션 끝 + openAfterMs 까지 읽기 · 누름 보류, C216) · probe 버림 확인 ·
+ * dead 버림 · closing 닫는 중(살아 있는 버림의 닫힘도 여기, closeNext live) · gap 간격 · reopen 버림부터 · real 진짜.
  */
 export type DiscardPhase =
   | "rest"
+  | "hold"
   | "probe"
   | "dead"
   | "closing"
@@ -229,8 +234,10 @@ type HeldReading = Readonly<{ id: number; sound: DiscardReadKind }>;
 /** 지금 · 마지막 버림 하나의 기록(시각은 now 와 같은 기준의 절대값). */
 export type DiscardRecord = Readonly<{
   id: number;
-  /** discard 는 진짜 끝(F2), reopen 은 '버림부터'에서 연 버림. */
+  /** discard 는 진짜 끝(F2), reopen 은 '버림부터'에서 연 버림과 살아 있는 버림 뒤 다시 연 버림(retry). */
   via: "discard" | "reopen";
+  /** 살아 있는 버림 뒤 다시 연 버림(C216 F3 뒤, rw 없음) — 이것도 살아 있으면 다시 열지 않고 대기(live)로 간다. */
+  retry: boolean;
   rw: DiscardReopenWhy | undefined;
   startAt: number;
   audioAt: number | undefined;
@@ -284,6 +291,10 @@ export type DiscardFlowState = Readonly<{
   inflight: readonly Reading[];
   held: readonly HeldReading[];
   lastSessionEndAt: number | undefined;
+  /** 마지막으로 소리를 받은 세션(deaf · 마이크를 쓸 수 없음이 아닌 진짜 · 살아 있는 버림)의 끝 — 다음 버림은 + openAfterMs 뒤(C216). */
+  lastLiveEndAt: number | undefined;
+  /** 진짜 뒤 기다림 끝에 여는 버림이 살아 있는 버림 뒤 다시 연 버림인가. */
+  holdRetry: boolean;
   lastDiscardEndAt: number | undefined;
   lastSoundEndAt: number | undefined;
   press: Readonly<{ at: number; auto: boolean }> | undefined;
@@ -345,6 +356,8 @@ export function startDiscardFlow(times: DiscardTimes): DiscardStep {
     inflight: [],
     held: [],
     lastSessionEndAt: undefined,
+    lastLiveEndAt: undefined,
+    holdRetry: false,
     lastDiscardEndAt: undefined,
     lastSoundEndAt: undefined,
     press: undefined,
@@ -700,6 +713,8 @@ function onRealEnd(
   d.realWaited = false;
   // 다시 말할 차례인지는 화면이 정한다(again · press(auto)) — 결과 종류만으로 소리 · 회복을 걸지 않는다(I-1).
   d.lastRealDeaf = kind === "deaf";
+  // deaf · 마이크를 쓸 수 없음 밖의 진짜는 소리를 받은 세션으로 본다(끊긴 진짜도 — 그 뒤 '버림부터'도 같은 시간을 채운다, C216).
+  if (kind !== "deaf" && kind !== "unavailable") d.lastLiveEndAt = now;
   if (kind === "interrupted") {
     toReopen(d, why ?? (d.hidden ? "hidden" : "leave"));
     return;
@@ -713,8 +728,10 @@ function onRealEnd(
     toReopen(d, "hidden");
     return;
   }
-  // F2: 진짜가 끝나면 곧바로 버림을 연다.
-  startProbe(d, now, fx, "discard", undefined);
+  // F2(C216): deaf 로 끝난 진짜 뒤에는 곧바로 버림을 연다. 소리를 받은 진짜 뒤 곧바로 연 버림은 찬 시작이라(분석 task-ana-lesson-1
+  // 2.1, 24/24 live) 진짜 뒤 기다림에서 openAfterMs 를 채운 뒤 연다.
+  if (kind === "deaf") startProbe(d, now, fx, "discard", undefined);
+  else toHold(d, false);
 }
 
 function openReal(d: Draft, now: number, fx: DiscardFlowEffect[]): void {
@@ -741,12 +758,14 @@ function startProbe(
   fx: DiscardFlowEffect[],
   via: "discard" | "reopen",
   rw: DiscardReopenWhy | undefined,
+  retry = false,
 ): void {
   const id = d.discards + 1;
   d.discards = id;
   d.discard = {
     id,
     via,
+    retry,
     rw,
     startAt: now,
     audioAt: undefined,
@@ -798,9 +817,9 @@ function onDiscardEnd(d: Draft, discard: number, now: number): void {
   d.lastSessionEndAt = now;
   if (d.phase === "probe") {
     if (disc.audioAt === undefined) {
-      // 판정 전에 audiostart 없이 끝남: 살아 있는 버림과 같게 본다(다음 진짜까지 버림을 다시 열지 않음).
+      // 판정 전에 audiostart 없이 끝남: 살아 있는 버림과 같게 본다(end + openAfterMs 뒤 한 번 다시 연다, C216).
       disc.why = "live";
-      toWait(d, "live");
+      afterLive(d, disc);
     } else {
       selfEndedSilent(d);
     }
@@ -829,6 +848,24 @@ function toWait(d: Draft, branch: "discard" | "live"): void {
   d.phase = "rest";
   d.waitBranch = branch;
   d.closeNext = undefined;
+}
+
+/** 진짜 뒤 기다림: 읽기 · 누름을 보류하고 마지막으로 소리를 받은 세션 끝 + openAfterMs 에 버림을 연다(C216). */
+function toHold(d: Draft, retry: boolean): void {
+  d.phase = "hold";
+  d.holdRetry = retry;
+  d.closeNext = undefined;
+}
+
+/**
+ * 살아 있는 버림이 닫힘(end 또는 end 상한): 판정으로 살아 있던 버림(why live)이면 end + openAfterMs 뒤 버림을 한 번 다시 열고 보류한
+ * 읽기를 그 안에서 흘린다(C216 — 세션 없이 읽은 뒤 진짜는 25/25 deaf 였다). 다시 연 버림도 살아 있거나 들려주지 못함으로 닫힌 버림이면
+ * 지금 길(대기 live — 세션 없이 읽고 진짜)이다.
+ */
+function afterLive(d: Draft, disc: Mutable<DiscardRecord>): void {
+  d.lastLiveEndAt = disc.endAt;
+  if (disc.why === "live" && !disc.retry) toHold(d, true);
+  else toWait(d, "live");
 }
 
 /** 숨김 · 떠남 · 마이크 확인: 걸린 누름 · 보류한 읽기를 거두고, 열린 버림을 닫은 뒤 '버림부터'로 간다(F11 · FR-9). */
@@ -866,6 +903,7 @@ function closeFor(
     case "closing":
       d.closeNext = { to: "reopen", why };
       return;
+    case "hold":
     case "gap":
       toReopen(d, why);
       return;
@@ -887,6 +925,8 @@ function advanceOnce(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
   switch (d.phase) {
     case "rest":
       return advanceRest(d, now, fx);
+    case "hold":
+      return advanceHold(d, now, fx);
     case "reopen":
       return advanceReopen(d, now, fx);
     case "probe":
@@ -912,6 +952,20 @@ function advanceRest(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
   return true;
 }
 
+function advanceHold(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
+  if (restElapsed(d, now)) {
+    toWait(d, "discard");
+    d.waitBranch = "rest";
+    return true;
+  }
+  if (now < openReadyAt(d)) return false;
+  // 기다림이 찼다: 버림 확인부터(보류한 읽기 · 누름은 그 버림이 받는다).
+  if (d.holdRetry) startProbe(d, now, fx, "reopen", undefined, true);
+  else startProbe(d, now, fx, "discard", undefined);
+  d.holdRetry = false;
+  return true;
+}
+
 function advanceReopen(
   d: Draft,
   now: number,
@@ -925,6 +979,8 @@ function advanceReopen(
   }
   if (!d.unlocked) return false;
   if (d.press === undefined && d.held.length === 0) return false;
+  // 버림부터도 마지막으로 소리를 받은 세션 끝 + openAfterMs 를 채운다(C216).
+  if (now < openReadyAt(d)) return false;
   // 버림부터: 읽기 요청이나 누름이 오면 버림 확인부터(설계 1).
   startProbe(d, now, fx, "reopen", d.reopenWhy);
   return true;
@@ -932,7 +988,8 @@ function advanceReopen(
 
 function advanceProbe(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
   const disc = d.discard;
-  if (!disc || now < disc.startAt + d.times.liveAsMs) return false;
+  if (!disc) return false;
+  // audiostart 가 문턱 안에 왔으면 판정 창 끝을 기다리지 않고 죽은 버림으로 넘긴다(C216).
   if (
     disc.audioAt !== undefined &&
     disc.audioAt - disc.startAt <= d.times.liveAsMs
@@ -940,6 +997,7 @@ function advanceProbe(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
     d.phase = "dead";
     return true;
   }
+  if (now < disc.startAt + d.times.liveAsMs) return false;
   // 살아 있는 버림(F3): as 가 문턱을 넘거나 audiostart 없음.
   stopDiscard(d, now, fx, "live", { to: "live" });
   return true;
@@ -1017,12 +1075,16 @@ function advanceClosing(d: Draft, now: number): boolean {
   }
   const next = d.closeNext ?? { to: "gap" };
   d.closeNext = undefined;
+  // 살아 있다고 판정했거나 둘째 '들려주지 못함'으로 닫은 버림은 소리를 받은 세션이다. 닫는 중에 온 숨김 · 떠남 · 마이크 확인이 다음 길을
+  // '버림부터'로 바꿔도 그 end 를 남겨, 다시 여는 버림이 openAfterMs 를 채우게 한다(C216).
+  if (next.to === "live" || disc.why === "live" || disc.why === "not_played")
+    d.lastLiveEndAt = disc.endAt;
   if (next.to === "reopen") {
     toReopen(d, next.why);
   } else if (d.hidden) {
     toReopen(d, "hidden");
   } else if (next.to === "live") {
-    toWait(d, "live");
+    afterLive(d, disc);
   } else {
     d.phase = "gap";
     d.gapFrom = disc.endAt;
@@ -1070,6 +1132,13 @@ function restElapsed(d: Draft, now: number): boolean {
 
 function effectiveBranch(d: Draft, now: number): "rest" | "discard" | "live" {
   return restElapsed(d, now) ? "rest" : d.waitBranch;
+}
+
+/** 버림을 열 수 있는 가장 이른 시각: 마지막으로 소리를 받은 세션 끝 + openAfterMs(C216 — deaf 뒤 F2 는 이것을 보지 않는다). */
+function openReadyAt(d: Draft): number {
+  return d.lastLiveEndAt === undefined
+    ? -Infinity
+    : d.lastLiveEndAt + d.times.openAfterMs;
 }
 
 /** 대기에서 진짜를 열 수 있는 가장 이른 시각(버림 end 와 마지막 소리 끝에서 각각 gap, F6 · 우려 7 (가)). */
@@ -1130,9 +1199,18 @@ function wakeOf(d: Draft, now: number): number | undefined {
       at.push(realReadyAt(d));
       if (d.stuckSince !== undefined) at.push(d.stuckSince + t.afterSoundMs);
       break;
+    case "hold":
+      at.push(openReadyAt(d));
+      if (d.lastSessionEndAt !== undefined) {
+        at.push(d.lastSessionEndAt + t.restMs);
+      }
+      break;
     case "reopen":
       if (d.lastSessionEndAt !== undefined) {
         at.push(d.lastSessionEndAt + t.restMs);
+      }
+      if (d.unlocked && (d.press !== undefined || d.held.length > 0)) {
+        at.push(openReadyAt(d));
       }
       break;
     case "real":

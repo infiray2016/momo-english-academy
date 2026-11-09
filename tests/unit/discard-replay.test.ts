@@ -76,6 +76,17 @@ function deadDiscard(): RecognitionRun {
   };
 }
 
+/** 요청자 iPad 수업(11-08)에서 진짜 끝 2초 뒤에 열 버림의 꼴: audiostart 가 as 40(죽은 띠 10~202)에 오고 결과는 없다. stop 뒤 end. */
+function lessonDiscard(): RecognitionRun {
+  return {
+    events: [
+      { at: 5, type: "start" },
+      { at: 40, type: "audiostart" },
+    ],
+    onStop: [{ at: 20, type: "end" }],
+  };
+}
+
 /** 살아 있는 버림: audiostart 가 판정을 넘겨 온다(기록 7 차례 0 · 8 의 as 803 · 305). */
 function liveDiscard(): RecognitionRun {
   return {
@@ -266,11 +277,12 @@ function noDiscardDuringReal(trace: SpeechTraceEntry[]) {
   return true;
 }
 
-/** 첫 누름으로 진짜를 열고(쪽 첫 · rest), 결과로 끝나 F2 버림이 열릴 때까지. */
+/** 첫 누름으로 진짜를 열고(쪽 첫 · rest), 결과로 끝나 F2 버림이 열릴 때까지(소리를 받은 진짜 뒤 open_after 를 채운 뒤, C216). */
 async function firstPress(layer: DiscardLayer) {
   layer.port.unlockFromGesture();
   const handle = layer.port.listen(RULE);
   const outcome = await settleWithin(handle.outcome);
+  await advance(discard.openAfterMs);
   return outcome;
 }
 
@@ -331,7 +343,7 @@ describe("버림 다시 돌림 — 기록 8 차례 0 · 13(쉰 뒤 F1)", () => {
       discard.gapMs,
     );
     expect(atOf(trace, "real") - firstEnd).toBeLessThan(discard.gapMs + 100);
-    // F2: 진짜가 끝나면 곧바로 버림
+    // F2: 소리를 받은 진짜가 끝나면 open_after 뒤 버림(C216 — firstPress 가 그만큼 돌린다)
     expect(whats(trace).slice(0, 5)).toEqual([
       "speak:Hello, I am Mina.",
       "note",
@@ -415,6 +427,65 @@ describe("버림 다시 돌림 — 기록 8 차례 1~6(죽은 버림 + 소리)",
       expect(discardCalls(trace, "abort")).toHaveLength(0);
     },
   );
+});
+
+describe("버림 다시 돌림 — 요청자 iPad 수업(11-08) 꼴(C216)", () => {
+  it("버림 replay 진짜 결과 → open_after(2초) → 버림 as 40 → 그 안 선생님 줄 → 진짜 결과를 두 차례 되풀이한다(분석 task-ana-lesson-1 2.1 · AC-24p)", async () => {
+    const { layer, trace } = setup(
+      [
+        realRun("apple"),
+        lessonDiscard(),
+        realRun("banana"),
+        lessonDiscard(),
+        realRun("cherry"),
+      ],
+      [UNLOCK, line(), line()],
+    );
+    layer.port.unlockFromGesture();
+    let handle = layer.port.listen(RULE);
+    for (const [round, text] of [
+      [0, "Good! What else do you like?"],
+      [1, "Great! Tell me one more."],
+    ] as const) {
+      await settleWithin(handle.outcome);
+      const realEnd = atOf(trace, "done:result", round);
+      // 서버 첫 문장은 진짜 끝 바로 뒤에 오지만, 버림은 open_after 를 채운 뒤에 연다
+      const said = layer.port.speak(text);
+      await advance(discard.openAfterMs - 50);
+      expect(discardCalls(trace, "start")).toHaveLength(round);
+      expect(whats(trace)).not.toContain(`speak:${text}`);
+      await settleWithin(said);
+      layer.soundEnd();
+      handle = layer.port.listen(RULE);
+      const dStart = atOf(trace, "d-start", round);
+      expect(dStart - realEnd).toBeGreaterThanOrEqual(discard.openAfterMs);
+      expect(dStart - realEnd).toBeLessThan(discard.openAfterMs + 20);
+      // 선생님 줄은 그 버림의 audiostart 걸음에 나간다(판정 일찍 넘김, AC-24r)
+      expect(atOf(trace, `speak:${text}`)).toBe(atOf(trace, "d-audio", round));
+      const order = whats(trace);
+      expect(order.indexOf(`speak:${text}`)).toBeGreaterThan(
+        order.lastIndexOf("d-audio"),
+      );
+      await advance(discard.minMs + discard.gapMs + 200);
+      expect(notes(trace).at(-1)).toMatchObject({
+        g: "discard",
+        why: "sound",
+        sk: "teacher",
+        as: 40,
+        n: 0,
+        sr: false,
+      });
+    }
+    await settleWithin(handle.outcome);
+    expect(whats(trace).filter((w) => w.startsWith("done:"))).toEqual([
+      "done:result",
+      "done:result",
+      "done:result",
+    ]);
+    expect(noSpeakDuringReal(trace)).toBe(true);
+    expect(noDiscardDuringReal(trace)).toBe(true);
+    expect(discardCalls(trace, "abort")).toHaveLength(0);
+  });
 });
 
 describe("버림 다시 돌림 — 요청자 강조 '말하기 → 한 번 더 눌러 멈춤 → 선생님 말 → 다시 말하기'", () => {
@@ -585,7 +656,15 @@ describe("버림 다시 돌림 — 기록 7 차례 0 · 8(abort 뒤 버림부터
     expect(discardCalls(trace, "start")).toHaveLength(0);
     layer.port.unlockFromGesture();
     layer.port.listen(RULE);
-    await advance(discard.liveAsMs + 900 + discard.minMs + discard.gapMs + 200);
+    // 끊긴 진짜 끝 + open_after 를 채운 뒤 버림부터 연다(C216).
+    await advance(
+      discard.openAfterMs +
+        discard.liveAsMs +
+        900 +
+        discard.minMs +
+        discard.gapMs +
+        200,
+    );
     expect(whats(trace).slice(2)).toEqual([
       "done:interrupted",
       "d-start",
@@ -603,19 +682,61 @@ describe("버림 다시 돌림 — 기록 7 차례 0 · 8(abort 뒤 버림부터
     });
   });
 
-  it("버림 replay 살아 있는 버림은 판정 때 stop 으로 닫고(abort 0), end 뒤 읽기는 세션 없이 · 누르면 간격 뒤 진짜(F3)", async () => {
+  it("버림 replay 살아 있는 버림은 판정 때 stop 으로 닫고(abort 0), end + open_after 뒤 다시 연 죽은 버림 안에서 선생님 줄을 읽은 뒤 진짜(AC-24q)", async () => {
     const { layer, trace } = setup(
-      [realRun(), liveDiscard(), realRun()],
+      [realRun(), liveDiscard(), deadDiscard(), realRun()],
       [UNLOCK, line()],
     );
     await firstPress(layer);
     await advance(discard.liveAsMs + 50);
     expect(discardCalls(trace, "stop")).toHaveLength(1);
+    const said = layer.port.speak("Are you ready?");
+    await advance(discard.openAfterMs - 100);
+    expect(discardCalls(trace, "start")).toHaveLength(1);
+    expect(whats(trace)).not.toContain("speak:Are you ready?");
+    await settleWithin(said);
+    layer.soundEnd();
+    layer.port.listen(RULE);
+    await advance(discard.minMs + discard.gapMs + 200);
+    expect(
+      atOf(trace, "d-start", 1) - atOf(trace, "d-end"),
+    ).toBeGreaterThanOrEqual(discard.openAfterMs);
+    expect(whats(trace).slice(3)).toEqual([
+      "d-start",
+      "d-stop",
+      "d-end",
+      "d-start",
+      "d-audio",
+      "speak:Are you ready?",
+      "d-stop",
+      "d-end",
+      "note",
+      "real",
+    ]);
+    expect(notes(trace).at(-1)).toMatchObject({
+      g: "reopen",
+      why: "sound",
+      sk: "teacher",
+      sr: false,
+    });
+    expect(notes(trace).at(-1)?.rw).toBeUndefined();
+    expect(discardCalls(trace, "abort")).toHaveLength(0);
+  });
+
+  it("버림 replay 다시 연 버림도 살아 있으면 되풀이하지 않고, 그 end 뒤 읽기는 세션 없이 · 누르면 간격 뒤 진짜(F3 · AC-24q)", async () => {
+    const { layer, trace } = setup(
+      [realRun(), liveDiscard(), liveDiscard(), realRun()],
+      [UNLOCK, line()],
+    );
+    await firstPress(layer);
+    await advance(discard.liveAsMs + 50 + discard.openAfterMs);
+    await advance(discard.liveAsMs + 50);
+    expect(discardCalls(trace, "stop")).toHaveLength(2);
     await teacherLine(layer, "Are you ready?");
     const lineEnd = speakEnds(trace).at(-1) ?? 0;
     layer.port.listen(RULE);
     await advance(discard.gapMs + 50);
-    expect(discardCalls(trace, "start")).toHaveLength(1);
+    expect(discardCalls(trace, "start")).toHaveLength(2);
     expect(discardCalls(trace, "abort")).toHaveLength(0);
     expect(atOf(trace, "real", 1) - lineEnd).toBeGreaterThanOrEqual(
       discard.gapMs,
@@ -674,7 +795,7 @@ describe("버림 다시 돌림 — 기록 7 차례 4~7(소리 없는 버림)", (
       if (outcome.kind === "no-result") layer.again();
     });
     await settleWithin(handle.outcome);
-    await advance(discard.liveAsMs + 50);
+    await advance(discard.openAfterMs + discard.liveAsMs + 50);
     expect(whats(trace).slice(2)).toEqual([
       "done:no-result",
       "d-start",
@@ -691,7 +812,7 @@ describe("버림 다시 돌림 — 기록 7 차례 4~7(소리 없는 버림)", (
     layer.port.unlockFromGesture();
     const handle = layer.port.listen(RULE);
     await settleWithin(handle.outcome);
-    await advance(discard.liveAsMs + 50);
+    await advance(discard.openAfterMs + discard.liveAsMs + 50);
     layer.again();
     // 시작 알림(2ms) 전에 아이가 '다시 말하기'를 누른다
     const pressAt = performance.now();

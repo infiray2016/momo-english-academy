@@ -24,7 +24,7 @@ import { testSettingValues } from "../fixtures/settings";
 
 const values = testSettingValues();
 const speech = speechSettingsFrom((key) => values[key]);
-// speech.discard_* 다섯은 시험용 설정(TEST_SETTINGS, 묶음 0)에서 읽는다. 없으면 던진다(조용한 기본값 없음).
+// speech.discard_* 여섯은 시험용 설정(TEST_SETTINGS, 묶음 0)에서 읽는다. 없으면 던진다(조용한 기본값 없음).
 function discardValue(key: string): number {
   const value = values[key];
   if (typeof value !== "number")
@@ -38,6 +38,7 @@ const T: DiscardTimes = discardTimesOf(
     minMs: discardValue("speech.discard_min_ms"),
     afterSoundMs: discardValue("speech.discard_after_sound_ms"),
     gapMs: discardValue("speech.discard_gap_ms"),
+    openAfterMs: discardValue("speech.discard_open_after_ms"),
   },
   speech,
 );
@@ -109,7 +110,10 @@ function discardIdOf(effects: DiscardFlowEffect[]): number {
   return start.discard;
 }
 
-/** 첫 진짜를 0 에 열고 realEndAt 에 kind 로 끝낸다. 그 걸음의 버림 번호와 start 시각. */
+/**
+ * 첫 진짜를 0 에 열고 realEndAt 에 kind 로 끝낸다. 소리를 받은 진짜(deaf 아님)이면 진짜 뒤 기다림(open_after)을 채워 버림이 열린
+ * 걸음까지 돌린다(C216 F2). 버림을 연 걸음의 효과 · 버림 번호 · start 시각을 돌려준다.
+ */
 function afterReal(
   kind: RealEndKind = "result",
   times: DiscardTimes = T,
@@ -118,19 +122,26 @@ function afterReal(
   const f = new Flow(times);
   f.send({ type: "unlock" }, 0);
   expect(types(f.send({ type: "press" }, 0))).toContain("real-start");
-  const fx = f.send({ type: "real-end", kind }, realEndAt);
+  let fx = f.send({ type: "real-end", kind }, realEndAt);
+  let s = realEndAt;
+  if (f.state.phase === "hold") {
+    s = realEndAt + times.openAfterMs;
+    fx = f.runUntil(s);
+  }
   return {
     f,
     fx,
     id: has(fx, "discard-start") ? discardIdOf(fx) : 0,
-    s: realEndAt,
+    s,
   };
 }
 
-/** 버림 id 에 as 뒤 audiostart 를 주고 live_as 판정까지 돌린다(죽은 버림). */
+/** 버림 id 에 as 뒤 audiostart 를 주고(그 걸음에 죽은 버림, C216) live_as 창 끝까지 돌린다. 두 몫의 효과를 돌려준다. */
 function toDead(f: Flow, id: number, s: number, as = 30) {
-  f.send({ type: "discard-audio", discard: id }, s + as);
-  const fx = f.runUntil(s + f.times.liveAsMs);
+  const fx = [
+    ...f.send({ type: "discard-audio", discard: id }, s + as),
+    ...f.runUntil(s + f.times.liveAsMs),
+  ];
   expect(f.state.phase).toBe("dead");
   return fx;
 }
@@ -214,7 +225,7 @@ describe("버리는 듣기 차례 기계 — 대기 · 쉰 뒤(F1 · I-4)", () =
 });
 
 describe("버리는 듣기 차례 기계 — 진짜 끝 · 버림 확인(F2 · F3)", () => {
-  it("버림 F2 진짜가 끝난 그 걸음에 버림 start 가 나오고(결과 · 모름 · deaf · 결과 없음), 끊김 · 마이크를 쓸 수 없음 뒤에는 없다(AC-5)", () => {
+  it("버림 F2 진짜가 끝나면 버림 start 가 나오고(결과 · 모름 · deaf · 결과 없음), 끊김 · 마이크를 쓸 수 없음 뒤에는 없다(AC-5)", () => {
     for (const kind of [
       "result",
       "no-result",
@@ -234,16 +245,16 @@ describe("버리는 듣기 차례 기계 — 진짜 끝 · 버림 확인(F2 · F
     expect(unavailable.f.state.reopenWhy).toBe("no_mic");
   });
 
-  it("버림 확인: 그동안 온 읽기는 보류했다가 live_as 판정 뒤 죽은 버림 안에서 흘린다", () => {
+  it("버림 확인: 그동안 온 읽기는 보류했다가 문턱 안 audiostart 로 죽은 버림이 된 그 걸음에 그 안에서 흘린다(AC-24r)", () => {
     const { f, id, s } = afterReal("result");
     expect(f.state.phase).toBe("probe");
     expect(types(f.send({ type: "speak-request", id: 5 }, s + 20))).toEqual([]);
     const fx = toDead(f, id, s);
     expect(types(fx)).toContain("speak-release");
-    expect(f.find("speak-release").at(-1)?.at).toBe(s + T.liveAsMs);
+    expect(f.find("speak-release").at(-1)?.at).toBe(s + 30);
   });
 
-  it("버림 F3 audiostart 없음은 stop 으로 닫고(abort 없음) end 까지 읽기를 보류한 뒤 대기(live)에서 세션 없이 읽는다(AC-6)", () => {
+  it("버림 F3 audiostart 없음은 stop 으로 닫고(abort 없음) 읽기를 보류하며, 다시 연 버림도 살아 있으면 그 end 뒤 대기(live)에서 세션 없이 읽는다(AC-6 · AC-24q)", () => {
     const { f, id, s } = afterReal("result");
     const fx = f.runUntil(s + T.liveAsMs);
     expect(types(fx)).toContain("discard-stop");
@@ -252,33 +263,44 @@ describe("버리는 듣기 차례 기계 — 진짜 끝 · 버림 확인(F2 · F
       [],
     );
     const end = f.send({ type: "discard-end", discard: id }, s + 700);
-    expect(types(end)).toContain("speak-release");
-    expect(has(end, "discard-start")).toBe(false);
+    expect(has(end, "speak-release")).toBe(false);
+    expect(f.state.phase).toBe("hold");
+    const r = s + 700 + T.openAfterMs;
+    const second = discardIdOf(f.runUntil(r));
+    expect(types(f.runUntil(r + T.liveAsMs))).toContain("discard-stop");
+    const end2 = f.send({ type: "discard-end", discard: second }, r + 400);
+    expect(types(end2)).toContain("speak-release");
+    expect(has(end2, "discard-start")).toBe(false);
     expect(f.state.phase).toBe("rest");
-    f.send({ type: "speak-start", id: 5 }, s + 800);
-    f.send({ type: "speak-end", id: 5, heard: true }, s + 2500);
-    f.send({ type: "press" }, s + 2500 + T.gapMs);
-    expect(f.find("discard-start")).toHaveLength(1);
+    f.send({ type: "speak-start", id: 5 }, r + 500);
+    f.send({ type: "speak-end", id: 5, heard: true }, r + 2200);
+    f.send({ type: "press" }, r + 2200 + T.gapMs);
+    expect(f.find("discard-start")).toHaveLength(2);
     expect(f.lastNote()).toMatchObject({
       g: "live",
       why: "live",
       sr: true,
-      d: 700,
+      d: 400,
     });
     expect(f.lastNote().as).toBeUndefined();
     expect(f.log.map((l) => l.effect.type).join(" ")).not.toMatch(/abort/);
   });
 
-  it("버림 F3 as 가 live_as 를 넘은 audiostart(as 260 꼴)도 살아 있는 버림이고 다음 진짜까지 버림을 다시 열지 않는다", () => {
+  it("버림 F3 as 가 live_as 를 넘은 audiostart(as 260 꼴)도 살아 있는 버림이고, 다음 진짜까지 버림을 한 번만 다시 연다(AC-24q)", () => {
     const { f, id, s } = afterReal("result");
     const late = s + T.liveAsMs + 10;
     const fx = f.send({ type: "discard-audio", discard: id }, late);
     expect(types(fx)).toContain("discard-stop");
     f.send({ type: "discard-end", discard: id }, late + 200);
-    read(f, 6, late + 300, late + 1800);
-    read(f, 7, late + 2000, late + 3000);
-    expect(f.find("discard-start")).toHaveLength(1);
-    f.send({ type: "press" }, late + 3000 + T.gapMs);
+    const r = late + 200 + T.openAfterMs;
+    const second = discardIdOf(f.runUntil(r));
+    const lateAs = r + T.liveAsMs + 10;
+    f.send({ type: "discard-audio", discard: second }, lateAs);
+    f.send({ type: "discard-end", discard: second }, lateAs + 200);
+    read(f, 6, lateAs + 300, lateAs + 1800);
+    read(f, 7, lateAs + 2000, lateAs + 3000);
+    expect(f.find("discard-start")).toHaveLength(2);
+    f.send({ type: "press" }, lateAs + 3000 + T.gapMs);
     expect(f.lastNote()).toMatchObject({
       g: "live",
       why: "live",
@@ -306,6 +328,261 @@ describe("버리는 듣기 차례 기계 — 진짜 끝 · 버림 확인(F2 · F
       np: 2,
       sk: "none",
     });
+  });
+});
+
+describe("버리는 듣기 차례 기계 — 진짜 뒤 기다림 · live 뒤 다시 버림 · 판정 일찍 넘김(C216)", () => {
+  /** 0 에 진짜를 열고 3000 에 kind 로 끝낸다(기다림을 돌리지 않는다). */
+  function realEnded(kind: RealEndKind) {
+    const f = new Flow();
+    f.send({ type: "unlock" }, 0);
+    f.send({ type: "press" }, 0);
+    const fx = f.send({ type: "real-end", kind }, 3000);
+    return { f, fx, end: 3000 };
+  }
+
+  it("버림 F2 기다림: 소리를 받은 진짜(결과 · 말소리 없음 · 오류 · 감시 멈춤)가 끝나면 speech.discard_open_after_ms 전에는 버림 start 가 없고 그 시각에 연다(AC-24p)", () => {
+    for (const kind of ["result", "no-result", "error", "stalled"] as const) {
+      const { f, fx, end } = realEnded(kind);
+      expect(has(fx, "discard-start"), kind).toBe(false);
+      expect(f.state.phase, kind).toBe("hold");
+      expect(f.step.wakeAt, kind).toBe(end + T.openAfterMs);
+      f.runUntil(end + T.openAfterMs - 1);
+      expect(f.find("discard-start"), kind).toHaveLength(0);
+      const open = f.runUntil(end + T.openAfterMs);
+      expect(types(open), kind).toContain("discard-start");
+      expect(f.find("discard-start")[0].at, kind).toBe(end + T.openAfterMs);
+      expect(f.state.phase, kind).toBe("probe");
+    }
+  });
+
+  it("버림 F2 기다림: deaf 로 끝난 진짜 뒤에는 기다리지 않고 그 걸음에 버림을 연다(AC-24p)", () => {
+    const { f, fx, end } = realEnded("deaf");
+    expect(types(fx)).toContain("discard-start");
+    expect(f.find("discard-start")[0].at).toBe(end);
+  });
+
+  it("버림 F2 기다림 동안 온 읽기는 보류했다가 그 뒤 연 버림이 죽은 버림이면 그 안에서 흘리고, 누름은 진짜를 열지 않는다(AC-24p)", () => {
+    const { f, end } = realEnded("result");
+    expect(types(f.send({ type: "speak-request", id: 5 }, end + 400))).toEqual(
+      [],
+    );
+    expect(f.lastView()).toMatchObject({ canListen: false, waiting: false });
+    const s = end + T.openAfterMs;
+    const opened = f.runUntil(s);
+    expect(has(opened, "speak-release")).toBe(false);
+    const id = discardIdOf(opened);
+    const dead = f.send({ type: "discard-audio", discard: id }, s + 40);
+    expect(types(dead)).toContain("speak-release");
+    f.send({ type: "speak-start", id: 5 }, s + 60);
+    f.send({ type: "speak-end", id: 5, heard: true }, s + 1800);
+    f.send({ type: "sound-end" }, s + 1800);
+    f.runUntil(s + 1800 + T.afterSoundMs);
+    f.send(
+      { type: "discard-end", discard: id },
+      s + 1800 + T.afterSoundMs + 20,
+    );
+    f.send({ type: "press" }, s + 1800 + T.afterSoundMs + 20 + T.gapMs);
+    expect(f.find("real-start")).toHaveLength(2);
+    expect(f.lastNote()).toMatchObject({
+      g: "discard",
+      why: "sound",
+      sk: "teacher",
+      as: 40,
+      sr: false,
+    });
+
+    // 기다림 동안 누름: 걸어 두고('준비 중이에요'), 버림 안 짧은 말 뒤에야 진짜다.
+    const p = realEnded("no-result");
+    const press = p.f.send({ type: "press" }, p.end + 300);
+    expect(has(press, "real-start")).toBe(false);
+    expect(p.f.lastView()).toMatchObject({ waiting: true, canListen: false });
+    const ps = p.end + T.openAfterMs;
+    const pid = discardIdOf(p.f.runUntil(ps));
+    const asked = p.f.send({ type: "discard-audio", discard: pid }, ps + 30);
+    expect(asked).toContainEqual({ type: "need-sound", kind: "again" });
+    expect(p.f.find("real-start")).toHaveLength(1);
+  });
+
+  it("버림 F2 기다림: '버림부터'에서 여는 버림도 마지막으로 소리를 받은 세션 끝 + open_after 를 채운다(숨김 · 끊긴 진짜, AC-24p)", () => {
+    const { f, end } = realEnded("result");
+    f.send({ type: "hidden" }, end + 200);
+    expect(f.state).toMatchObject({ phase: "reopen", reopenWhy: "hidden" });
+    f.send({ type: "visible" }, end + 500);
+    expect(types(f.send({ type: "speak-request", id: 3 }, end + 600))).toEqual([
+      "view",
+    ]);
+    f.runUntil(end + T.openAfterMs - 1);
+    expect(f.find("discard-start")).toHaveLength(0);
+    f.runUntil(end + T.openAfterMs);
+    expect(f.find("discard-start")[0].at).toBe(end + T.openAfterMs);
+
+    // 진짜가 숨김으로 끊긴 뒤의 누름도 그 진짜 끝 + open_after 에 버림을 연다.
+    const g = new Flow();
+    g.send({ type: "unlock" }, 0);
+    g.send({ type: "press" }, 0);
+    g.send({ type: "hidden" }, 1000);
+    g.send({ type: "real-end", kind: "interrupted", why: "hidden" }, 1001);
+    g.send({ type: "visible" }, 1200);
+    expect(has(g.send({ type: "press" }, 1300), "discard-start")).toBe(false);
+    g.runUntil(1001 + T.openAfterMs);
+    expect(g.find("discard-start")[0].at).toBe(1001 + T.openAfterMs);
+  });
+
+  it("버림 live 뒤 다시 버림: 살아 있는 버림의 end + open_after 뒤 버림을 다시 열고, 보류한 선생님 줄을 그 안에서 읽는다(AC-24q)", () => {
+    const { f, id, s } = afterReal("result");
+    const stop = f.runUntil(s + T.liveAsMs);
+    expect(types(stop)).toContain("discard-stop");
+    expect(types(f.send({ type: "speak-request", id: 5 }, s + 300))).toEqual(
+      [],
+    );
+    const end = s + 700;
+    const ended = f.send({ type: "discard-end", discard: id }, end);
+    expect(has(ended, "speak-release")).toBe(false);
+    expect(has(ended, "discard-start")).toBe(false);
+    expect(f.state.phase).toBe("hold");
+    f.runUntil(end + T.openAfterMs - 1);
+    expect(f.find("discard-start")).toHaveLength(1);
+    expect(f.find("speak-release")).toHaveLength(0);
+    const again = f.runUntil(end + T.openAfterMs);
+    const second = discardIdOf(again);
+    expect(f.find("discard-start")[1].at).toBe(end + T.openAfterMs);
+    const r = end + T.openAfterMs;
+    expect(
+      types(f.send({ type: "discard-audio", discard: second }, r + 40)),
+    ).toContain("speak-release");
+    f.send({ type: "speak-start", id: 5 }, r + 60);
+    f.send({ type: "speak-end", id: 5, heard: true }, r + 1900);
+    f.send({ type: "sound-end" }, r + 1900);
+    f.runUntil(r + 1900 + T.afterSoundMs);
+    f.send({ type: "discard-end", discard: second }, r + 2300);
+    f.send({ type: "press" }, r + 2300 + T.gapMs);
+    expect(f.find("real-start")).toHaveLength(2);
+    // 다시 연 버림은 갈래 reopen · 까닭 칸 없음(앞 닫힘은 살아 있는 버림), 세션 없이 읽은 것은 없다.
+    expect(f.lastNote()).toMatchObject({
+      g: "reopen",
+      why: "sound",
+      sk: "teacher",
+      as: 40,
+      sr: false,
+    });
+    expect(f.lastNote().rw).toBeUndefined();
+  });
+
+  it("버림 live 뒤 다시 버림: 다시 연 버림도 살아 있으면 되풀이하지 않고 대기(live)에서 세션 없이 읽은 뒤 진짜다(판정 전 end 도 같음, AC-24q)", () => {
+    const { f, id, s } = afterReal("result");
+    f.runUntil(s + T.liveAsMs);
+    f.send({ type: "speak-request", id: 5 }, s + 300);
+    f.send({ type: "discard-end", discard: id }, s + 700);
+    const r = s + 700 + T.openAfterMs;
+    const second = discardIdOf(f.runUntil(r));
+    f.runUntil(r + T.liveAsMs);
+    expect(f.find("discard-stop")).toHaveLength(2);
+    const ended = f.send({ type: "discard-end", discard: second }, r + 500);
+    expect(types(ended)).toContain("speak-release");
+    expect(f.state).toMatchObject({ phase: "rest", waitBranch: "live" });
+    f.send({ type: "speak-start", id: 5 }, r + 520);
+    f.send({ type: "speak-end", id: 5, heard: true }, r + 2000);
+    f.runUntil(r + 2000 + T.restMs / 2);
+    expect(f.find("discard-start")).toHaveLength(2);
+    f.send({ type: "press" }, r + 2000 + T.restMs / 2);
+    expect(f.lastNote()).toMatchObject({ g: "live", why: "live", sr: true });
+
+    // 판정 전에 audiostart 없이 끝난 버림도 살아 있는 버림이라 end + open_after 뒤 다시 연다.
+    const early = afterReal("result");
+    early.f.send({ type: "discard-end", discard: early.id }, early.s + 50);
+    expect(early.f.state.phase).toBe("hold");
+    early.f.runUntil(early.s + 50 + T.openAfterMs);
+    expect(early.f.find("discard-start")).toHaveLength(2);
+  });
+
+  it("버림 판정 일찍 넘김: audiostart 가 live_as 안에 오면 판정 창 끝을 기다리지 않고 그 걸음에 죽은 버림으로 넘긴다(AC-24r)", () => {
+    const { f, id, s } = afterReal("deaf");
+    f.send({ type: "speak-request", id: 5 }, s + 10);
+    const audio = f.send({ type: "discard-audio", discard: id }, s + 40);
+    expect(types(audio)).toContain("speak-release");
+    expect(f.state.phase).toBe("dead");
+    expect(f.find("speak-release")[0].at).toBe(s + 40);
+
+    // 회복의 auto 누름: 짧은 말도 audiostart 걸음에 부른다.
+    const rec = afterReal("deaf");
+    rec.f.send({ type: "press", auto: true }, rec.s + 5);
+    const heard = rec.f.send(
+      { type: "discard-audio", discard: rec.id },
+      rec.s + 45,
+    );
+    expect(heard).toContainEqual({ type: "need-sound", kind: "mic" });
+
+    // audiostart 가 없으면 지금처럼 창 끝(live_as)까지 기다려 살아 있는 버림으로 닫는다.
+    const late = afterReal("deaf");
+    late.f.runUntil(late.s + T.liveAsMs - 1);
+    expect(late.f.state.phase).toBe("probe");
+    late.f.runUntil(late.s + T.liveAsMs);
+    expect(late.f.find("discard-stop")).toHaveLength(1);
+  });
+
+  it("버림 F2 기다림: 살아 있는 버림을 닫는 중 숨김 · 떠남 · 마이크 확인이 와도 그 버림 end + open_after 전에는 '버림부터'가 버림을 열지 않는다(AC-24p)", () => {
+    for (const cut of ["hidden", "leave", "check"] as const) {
+      const { f, id, s } = afterReal("result");
+      // 판정 창 끝까지 audiostart 가 없어 살아 있는 버림으로 닫는 중(stop 뒤 end 전)에 끊는다
+      expect(types(f.runUntil(s + T.liveAsMs)), cut).toContain("discard-stop");
+      f.send({ type: cut }, s + T.liveAsMs + 5);
+      const end = s + T.liveAsMs + 20;
+      f.send({ type: "discard-end", discard: id }, end);
+      expect(f.state, cut).toMatchObject({ phase: "reopen", reopenWhy: cut });
+      if (cut === "hidden") f.send({ type: "visible" }, end + 100);
+      // 돌아와 누름: 걸어 두고, 살아 있던 버림의 end + open_after 에야 버림을 연다
+      expect(
+        has(f.send({ type: "press" }, end + 200), "discard-start"),
+        cut,
+      ).toBe(false);
+      f.runUntil(end + T.openAfterMs - 1);
+      expect(f.find("discard-start"), cut).toHaveLength(1);
+      f.runUntil(end + T.openAfterMs);
+      expect(f.find("discard-start")[1]?.at, cut).toBe(end + T.openAfterMs);
+    }
+  });
+
+  it("버림 F2 기다림 동안 떠남 · 마이크 확인: 걸린 누름과 보류한 읽기를 거두고 stop 없이 '버림부터'로 가며, 그 뒤 여는 버림도 open_after 를 채운다(AC-24p)", () => {
+    for (const cut of ["leave", "check"] as const) {
+      // 보류한 읽기만 있을 때: 그 읽기를 거둔다
+      const held = realEnded("result");
+      held.f.send({ type: "speak-request", id: 7 }, held.end + 100);
+      const dropped = held.f.send({ type: cut }, held.end + 300);
+      expect(dropped, cut).toContainEqual({ type: "speak-drop", id: 7 });
+      expect(has(dropped, "discard-stop"), cut).toBe(false);
+      expect(held.f.state, cut).toMatchObject({
+        phase: "reopen",
+        reopenWhy: cut,
+      });
+
+      // 걸린 누름이 있을 때: 그 누름을 거둔다(누름이 보류한 읽기를 이미 거뒀다 — 설계 2 '듣기가 읽기를 끊음')
+      const { f, end } = realEnded("result");
+      f.send({ type: "speak-request", id: 7 }, end + 100);
+      expect(f.send({ type: "press" }, end + 200), cut).toContainEqual({
+        type: "speak-drop",
+        id: 7,
+      });
+      const fx = f.send({ type: cut }, end + 300);
+      expect(fx, cut).toContainEqual({ type: "press-drop", reason: cut });
+      expect(has(fx, "discard-stop"), cut).toBe(false);
+      expect(f.state, cut).toMatchObject({ phase: "reopen", reopenWhy: cut });
+      // 떠난 뒤의 읽기(끝인사 · 쉬는 안내)도 보류하고, 진짜 끝 + open_after 에야 버림을 연다
+      expect(
+        has(
+          f.send({ type: "speak-request", id: 8 }, end + 400),
+          "discard-start",
+        ),
+        cut,
+      ).toBe(false);
+      f.runUntil(end + T.openAfterMs - 1);
+      expect(f.find("discard-start"), cut).toHaveLength(0);
+      expect(types(f.runUntil(end + T.openAfterMs)), cut).toContain(
+        "discard-start",
+      );
+      expect(f.find("discard-start")[0]?.at, cut).toBe(end + T.openAfterMs);
+      expect(f.find("discard-stop"), cut).toHaveLength(0);
+    }
   });
 });
 
@@ -696,22 +973,32 @@ describe("버리는 듣기 차례 기계 — 읽기 보류 · 읽는 중 누름(
     expect(types(f.send({ type: "speak-request", id: 4 }, 500))).toEqual([]);
     const end = f.send({ type: "real-end", kind: "result" }, 3000);
     expect(has(end, "speak-release")).toBe(false);
-    const id = discardIdOf(end);
-    const fx = toDead(f, id, 3000);
+    const s = 3000 + T.openAfterMs;
+    const opened = f.runUntil(s);
+    expect(has(opened, "speak-release")).toBe(false);
+    const fx = toDead(f, discardIdOf(opened), s);
     expect(types(fx)).toContain("speak-release");
-    expect(f.find("speak-release").at(-1)?.at).toBe(3000 + T.liveAsMs);
+    expect(f.find("speak-release").at(-1)?.at).toBe(s + 30);
   });
 
-  it("버림 F8 진짜 동안 온 읽기는 다음 버림이 살아 있으면 그 end 뒤 대기(live)에서 흘린다", () => {
+  it("버림 F8 진짜 동안 온 읽기는 다음 버림이 살아 있으면 다시 연 버림까지 보류하고, 그것도 살아 있으면 그 end 뒤 대기(live)에서 흘린다(AC-24q)", () => {
     const f = new Flow();
     f.send({ type: "unlock" }, 0);
     f.send({ type: "press" }, 0);
     f.send({ type: "speak-request", id: 4 }, 500);
-    const id = discardIdOf(f.send({ type: "real-end", kind: "result" }, 3000));
-    expect(types(f.runUntil(3000 + T.liveAsMs))).toEqual(["discard-stop"]);
-    expect(types(f.send({ type: "discard-end", discard: id }, 3600))).toContain(
-      "speak-release",
-    );
+    f.send({ type: "real-end", kind: "result" }, 3000);
+    const s = 3000 + T.openAfterMs;
+    const id = discardIdOf(f.runUntil(s));
+    expect(types(f.runUntil(s + T.liveAsMs))).toEqual(["discard-stop"]);
+    expect(
+      types(f.send({ type: "discard-end", discard: id }, s + 600)),
+    ).toEqual([]);
+    const r = s + 600 + T.openAfterMs;
+    const second = discardIdOf(f.runUntil(r));
+    expect(types(f.runUntil(r + T.liveAsMs))).toEqual(["discard-stop"]);
+    expect(
+      types(f.send({ type: "discard-end", discard: second }, r + 600)),
+    ).toContain("speak-release");
   });
 
   it("버림 F8 닫는 중 · 간격 동안 온 읽기는 간격 끝 대기에서 버림 start 없이 흘리고, 진짜는 그 소리 끝 + gap 뒤 · dc sr 참이다(M-2)", () => {
@@ -1090,11 +1377,16 @@ describe("버리는 듣기 차례 기계 — 숨김 · 떠남 · 저절로 끝�
 });
 
 describe("버리는 듣기 차례 기계 — 표 빈 곳 · 지난 기다림 · 사이 읽기 표지(M-1 · M-3 · M-4 · M-8)", () => {
-  it("버림 확인 중 end: audiostart 없이 끝나면 대기(live), audiostart 뒤 판정 전에 끝나면 버림부터(self_end)다(갈래 1)", () => {
+  it("버림 확인 중 end: audiostart 없이 끝나면 살아 있는 버림(한 번 다시 연 뒤 대기 live), audiostart 뒤 판정 전에 끝나면 버림부터(self_end)다(갈래 1)", () => {
     const none = afterReal("result");
     none.f.send({ type: "discard-end", discard: none.id }, none.s + 50);
+    // 살아 있는 버림과 같아 end + open_after 뒤 한 번 다시 열고(AC-24q), 그것도 같으면 대기(live)다.
+    expect(none.f.state.phase).toBe("hold");
+    const r = none.s + 50 + T.openAfterMs;
+    const second = discardIdOf(none.f.runUntil(r));
+    none.f.send({ type: "discard-end", discard: second }, r + 50);
     expect(none.f.state).toMatchObject({ phase: "rest", waitBranch: "live" });
-    none.f.send({ type: "press" }, none.s + 50 + T.gapMs);
+    none.f.send({ type: "press" }, r + 50 + T.gapMs);
     expect(none.f.lastNote()).toMatchObject({ g: "live", why: "live", d: 50 });
     expect(none.f.lastNote().as).toBeUndefined();
 
@@ -1296,11 +1588,13 @@ describe("버리는 듣기 차례 기계 — 기록 칸 · 화면 · 시간 묶�
       minMs: T.minMs * 2,
       afterSoundMs: T.afterSoundMs * 3,
       gapMs: T.gapMs * 2,
+      openAfterMs: T.openAfterMs * 2,
       endWaitMs: T.endWaitMs * 2,
       capMs: T.capMs * 2,
     };
     for (const times of [T, scaled]) {
       const { f, id, s } = afterReal("result", times);
+      expect(f.find("discard-start")[0].at).toBe(3000 + times.openAfterMs);
       toDead(f, id, s);
       f.runUntil(s + times.liveAsMs + 1);
       const { stopAt, soundEnd } = closeWithTeacherWithPress(f, id, s);

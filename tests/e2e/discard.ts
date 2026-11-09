@@ -1,7 +1,8 @@
 // iPad 버리는 듣기 e2e 도우미(plan 'iPad 버리는 듣기' 묶음 5 · 바뀌는 파일 표 5 행 · spec 설계 8 '증명 묶음'). 가짜 음성은 인식 객체가 start() 한
 // 차례대로 대본 한 줄을 준다(fake-web-speech runIndex — 마지막 줄은 되풀이). 버리는 듣기에서는 버림 객체도 start 하므로 대본은 진짜 · 버림의
-// 차례를 시험이 적는다(ScriptStep). 차례는 spec 설계 1 표 그대로다: 쪽 첫 누름은 버림 없이 진짜(F1 rest), 진짜가 끝난 그 걸음에 버림(F2),
-// 살아 있는 버림 뒤에는 다음 진짜까지 버림 없음(F3), '버림부터'(떠남 · 저절로 끝남 · 상한)는 읽기 요청이나 누름 때 버림을 다시 엶.
+// 차례를 시험이 적는다(ScriptStep). 차례는 spec 설계 1 표 그대로다: 쪽 첫 누름은 버림 없이 진짜(F1 rest), 소리를 받은 진짜 끝 +
+// speech.discard_open_after_ms 에 버림 · deaf 진짜가 끝난 그 걸음에 버림(F2, C216), 살아 있는 버림 뒤에는 end + open_after 에 버림 한 번 더 ·
+// 그것도 살아 있으면 다음 진짜까지 버림 없음(F3, C216), '버림부터'(떠남 · 저절로 끝남 · 상한)는 읽기 요청이나 누름 때 버림을 다시 엶.
 // 죽은 버림은 선생님 목소리를 받은 꼴로 표지 글(MARK)을 결과로 낸다 — 그 글이 화면 · 기록 · 요청 어디에도 없어야 한다(AC-24l).
 // 쪽 시작 스크립트 installDiscardWatch 는 선생님 창 상태 바뀜 · 새 표지 넷의 등장 · getUserMedia · MediaRecorder 호출을 센다(밖 이름을 쓰지
 // 않는다 — Playwright 가 함수 글을 옮김). 시점 숫자는 시험용 설정(TEST_SETTINGS)에서 읽고, 대본 시각은 이름 붙인 시험 값이다. 녹음하지 않는다.
@@ -31,6 +32,8 @@ export const DISCARD_TIMES = {
   minMs: TEST_SETTINGS["speech.discard_min_ms"].value,
   afterSoundMs: TEST_SETTINGS["speech.discard_after_sound_ms"].value,
   gapMs: TEST_SETTINGS["speech.discard_gap_ms"].value,
+  /** 소리를 받은 진짜 · 살아 있는 버림 끝에서 다음 버림까지(13절 C216). */
+  openAfterMs: TEST_SETTINGS["speech.discard_open_after_ms"].value,
   /** 버림 안전 상한(speech.max_listen_seconds + speech.watchdog_extra_seconds, spec 설계 4). */
   capMs:
     (TEST_SETTINGS["speech.max_listen_seconds"].value +
@@ -174,7 +177,10 @@ export const live = (): ScriptStep => ({
   run: liveDiscardRun(),
 });
 
-/** 진짜마다 그 뒤에 죽은 버림 하나(F2 — 진짜가 끝난 그 걸음에 버림이 열린다). 끝은 버림이라 대본을 넘어선 start 도 버림 꼴을 받는다. */
+/**
+ * 진짜마다 그 뒤에 죽은 버림 하나(F2 — 소리를 받은 진짜 뒤에는 speech.discard_open_after_ms 뒤, deaf 뒤에는 그 걸음에 버림이 열린다, C216). 끝은
+ * 버림이라 대본을 넘어선 start 도 버림 꼴을 받는다.
+ */
 export function realsThenDead(
   runs: readonly RecognitionRun[],
   opts: Parameters<typeof deadDiscardRun>[0] = {},

@@ -2,8 +2,9 @@
 // 파일 안 씨앗 난수(mulberry32, 새 의존 없음)로 사건 차례를 만들고, 효과에 반응하는 가짜 환경(버림 as · end · 읽기 시작 · 끝 · 진짜 결과 ·
 // 숨김 · 떠남 · 누름)을 돌린다. 검사기는 기계와 따로, 입력 · 효과만 보고 F6(진짜는 소리 끝 · 버림 end 뒤 gap 에만, speaking 거짓) ·
 // F8(진짜 중 · 닫는 중 · 간격에 읽지 않음) · I-1(소리 요청은 걸린 누름 · 다시 말할 차례에만, 회복 표시는 deaf 뒤 auto 누름에만) · 막힘(걸린
-// 누름 · 기계가 부른 소리가 소리 없는 안전 상한까지 기다리지 않음, fix 2 · fix 3)을 잰다. 변이 셋(간격 조건 뺌 · 진짜 중 읽기 흘림 · 들려주지
-// 못함 뒤 다시 부르지 않음)이 검사기에 걸리는지도 본다.
+// 누름 · 기계가 부른 소리가 소리 없는 안전 상한까지 기다리지 않음, fix 2 · fix 3) · F2W(소리를 받은 진짜 · 살아 있는 버림 끝 뒤 open_after
+// 안에 버림 start 없음, deaf 진짜 끝 걸음은 뺌 — C216)를 잰다. 변이 넷(간격 조건 뺌 · 진짜 중 읽기 흘림 · 들려주지 못함 뒤 다시 부르지
+// 않음 · 진짜 뒤 기다림 뺌)이 검사기에 걸리는지도 본다.
 import { describe, expect, it } from "vitest";
 import {
   type DiscardFlowEffect,
@@ -35,6 +36,7 @@ const T: DiscardTimes = discardTimesOf(
     minMs: discardValue("speech.discard_min_ms"),
     afterSoundMs: discardValue("speech.discard_after_sound_ms"),
     gapMs: discardValue("speech.discard_gap_ms"),
+    openAfterMs: discardValue("speech.discard_open_after_ms"),
   },
   speech,
 );
@@ -104,6 +106,9 @@ class Checker {
   private stalled = false;
   /** 마지막 진짜 결과 종류 · 그 뒤 걸린 누름이나 다시 말할 차례(again) · auto 누름 — I-1 검사. */
   private lastRealKind: RealEndKind | undefined;
+  /** 마지막 진짜가 끝난 시각 · 그중 소리를 받은 진짜(결과 · 말소리 없음 · 오류 · 감시 멈춤)의 끝 — F2W 검사. */
+  private lastRealEnd: number | undefined;
+  private lastHeardRealEnd: number | undefined;
   private askPending = false;
   private autoPress = false;
   private readonly discards = new Map<number, SeenDiscard>();
@@ -147,10 +152,47 @@ class Checker {
     if (d) d.heard = true;
   }
 
-  /** 걸린 누름이 이 시간 안에 진짜가 되지 않으면 막힘이다(쉼 + 버림 둘의 안전 상한 · end 상한 + 간격 + 여유). */
+  /** 걸린 누름이 이 시간 안에 진짜가 되지 않으면 막힘이다(쉼 + 버림 둘의 안전 상한 · end 상한 · 진짜 뒤 기다림 + 간격 + 여유). */
   private stallBound() {
     const t = this.t;
-    return t.restMs + 2 * (t.capMs + t.endWaitMs) + t.gapMs + t.afterSoundMs;
+    return (
+      t.restMs +
+      2 * (t.capMs + t.endWaitMs + t.openAfterMs) +
+      t.gapMs +
+      t.afterSoundMs
+    );
+  }
+
+  /** 죽은 버림: audiostart 가 문턱 안에 왔다(판정 창 끝을 기다리지 않음, C216). */
+  private isDead(d: SeenDiscard) {
+    return d.audio !== undefined && d.audio - d.start <= this.t.liveAsMs;
+  }
+
+  /** F2W(C216): 소리를 받은 진짜 · 살아 있는 버림의 끝에서 open_after 안에는 버림을 열지 않는다. deaf 진짜가 끝난 그 걸음은 곧바로 연다. */
+  private checkOpenAfter(now: number) {
+    const wait = this.t.openAfterMs;
+    if (this.lastRealKind === "deaf" && this.lastRealEnd === now) return;
+    if (
+      this.lastHeardRealEnd !== undefined &&
+      now < this.lastHeardRealEnd + wait
+    ) {
+      this.fail(
+        now,
+        "F2W",
+        `소리를 받은 진짜 끝 ${Math.round(this.lastHeardRealEnd)} + open_after 전 버림 start`,
+      );
+    }
+    for (const d of this.discards.values()) {
+      if (this.isDead(d) || d.abort !== undefined || d.leaveStop) continue;
+      const end = this.endOf(d, now);
+      if (end !== undefined && now < end + wait) {
+        this.fail(
+          now,
+          "F2W",
+          `살아 있는 버림 end ${Math.round(end)} + open_after 전 버림 start`,
+        );
+      }
+    }
   }
 
   observeInput(input: DiscardFlowInput, now: number) {
@@ -230,6 +272,15 @@ class Checker {
       case "real-end":
         this.realOpen = false;
         this.lastRealKind = input.kind;
+        this.lastRealEnd = now;
+        if (
+          input.kind === "result" ||
+          input.kind === "no-result" ||
+          input.kind === "error" ||
+          input.kind === "stalled"
+        ) {
+          this.lastHeardRealEnd = now;
+        }
         break;
       default:
         break;
@@ -249,6 +300,7 @@ class Checker {
         case "discard-start":
           if (!this.unlocked) this.fail(now, "I-4", "잠금 풀기 전 버림 start");
           if (this.realOpen) this.fail(now, "F8", "진짜가 열린 채 버림 start");
+          this.checkOpenAfter(now);
           this.discards.set(e.discard, {
             start: now,
             heard: false,
@@ -264,8 +316,7 @@ class Checker {
             this.fail(now, "STOP", "같은 버림에 stop 두 번");
           d.stop = now;
           d.leaveStop = this.inputType === "leave";
-          const dead =
-            d.audio !== undefined && d.audio - d.start <= this.t.liveAsMs;
+          const dead = this.isDead(d);
           if (
             dead &&
             !d.heard &&
@@ -402,11 +453,7 @@ class Checker {
       ([, d]) => d.stop === undefined && d.abort === undefined,
     );
     for (const [, d] of live) {
-      const dead =
-        now >= d.start + t.liveAsMs &&
-        d.audio !== undefined &&
-        d.audio - d.start <= t.liveAsMs;
-      if (!dead)
+      if (!this.isDead(d))
         this.fail(
           now,
           "F8",
@@ -416,8 +463,7 @@ class Checker {
     if (open.length === 0) {
       const last = this.latest();
       if (!last || last.stop === undefined) return;
-      const dead =
-        last.audio !== undefined && last.audio - last.start <= t.liveAsMs;
+      const dead = this.isDead(last);
       const end = this.endOf(last, now);
       if (
         dead &&
@@ -456,6 +502,9 @@ type Stats = {
   notPlayedRetries: number;
   /** 그중 걸린 누름 없이 한 번 더 부른 수(따라 말하기 꼴, fix 3). */
   notPlayedRetriesNoPress: number;
+  /** 진짜 뒤 기다림 동안 온 누름 수 · 살아 있는 버림 뒤 다시 연 버림 수(C216). */
+  holdPresses: number;
+  liveRetries: number;
 };
 
 class Sim {
@@ -491,6 +540,8 @@ class Sim {
     recoveries: 0,
     notPlayedRetries: 0,
     notPlayedRetriesNoPress: 0,
+    holdPresses: 0,
+    liveRetries: 0,
   };
 
   constructor(
@@ -524,6 +575,15 @@ class Sim {
       prev.phase !== "real"
     ) {
       this.stats.cutPresses += 1;
+    }
+    if (input.type === "press" && prev.phase === "hold") {
+      this.stats.holdPresses += 1;
+    }
+    if (
+      this.step.state.discard?.retry === true &&
+      this.step.effects.some((e) => e.type === "discard-start")
+    ) {
+      this.stats.liveRetries += 1;
     }
     const disc = this.step.state.discard;
     if (
@@ -823,6 +883,8 @@ function runSeeds(machine: Machine, machineTimes: DiscardTimes) {
     recoveries: 0,
     notPlayedRetries: 0,
     notPlayedRetriesNoPress: 0,
+    holdPresses: 0,
+    liveRetries: 0,
   };
   for (let seed = 1; seed <= SEEDS; seed++) {
     const sim = new Sim(mulberry32(seed), machine, machineTimes);
@@ -838,6 +900,9 @@ function runSeeds(machine: Machine, machineTimes: DiscardTimes) {
 
 /** 변이 1: 간격 조건 뺌 — 기계는 gap 0 으로 돌고 검사기는 설정의 gap 으로 잰다. */
 const NO_GAP: DiscardTimes = { ...T, gapMs: 0 };
+
+/** 변이 4: 진짜 뒤 기다림 뺌(C216 전 F2) — 기계는 open_after 0 으로 돌고 검사기는 설정의 open_after 로 잰다. */
+const NO_OPEN_AFTER: DiscardTimes = { ...T, openAfterMs: 0 };
 
 /** 변이 2: 진짜 중 읽기 흘림 — 진짜 동안 온 읽기 요청을 그 자리에서 흘린다. */
 const leakDuringReal: Machine = (state, input, now) => {
@@ -879,7 +944,7 @@ describe("버리는 듣기 차례 기계 불변식(U23 · AC-7 기계 몫)", () 
     expect(base.violations.slice(0, 10)).toEqual([]);
   });
 
-  it("버림 불변식 표본은 기다린 누름 · 살아 있는 버림 · 읽는 중 누름 · 진짜 중 읽기 요청 · 굳은 읽기 · 숨김 · 소리 요청 · 들려주지 못함 뒤 다시 부름 길을 모두 지난다", () => {
+  it("버림 불변식 표본은 기다린 누름 · 살아 있는 버림 · 읽는 중 누름 · 진짜 중 읽기 요청 · 굳은 읽기 · 숨김 · 소리 요청 · 들려주지 못함 뒤 다시 부름 · 진짜 뒤 기다림 중 누름 · 살아 있는 버림 뒤 다시 연 버림 길을 모두 지난다", () => {
     const t = base.total;
     expect(t.realStarts).toBeGreaterThan(SEEDS * 5);
     for (const key of [
@@ -893,6 +958,8 @@ describe("버리는 듣기 차례 기계 불변식(U23 · AC-7 기계 몫)", () 
       "agains",
       "recoveries",
       "notPlayedRetries",
+      "holdPresses",
+      "liveRetries",
     ] as const) {
       expect(t[key], key).toBeGreaterThan(SEEDS / 4);
     }
@@ -923,6 +990,16 @@ describe("버리는 듣기 차례 기계 불변식(U23 · AC-7 기계 몫)", () 
       mutant.violations.some((v) =>
         v.includes("에서 부른 소리가 소리 없는 안전 상한까지 기다림"),
       ),
+    ).toBe(true);
+  });
+
+  it("버림 변이 4(진짜 뒤 기다림 뺌 — 소리를 받은 진짜 · 살아 있는 버림 끝에 곧바로 버림)는 검사기의 F2W 에 걸린다(AC-24p · AC-24q)", () => {
+    const mutant = runSeeds(stepDiscardFlow, NO_OPEN_AFTER);
+    expect(
+      mutant.violations.some((v) => v.includes("소리를 받은 진짜 끝")),
+    ).toBe(true);
+    expect(
+      mutant.violations.some((v) => v.includes("살아 있는 버림 end")),
     ).toBe(true);
   });
 });

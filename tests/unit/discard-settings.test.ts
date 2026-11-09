@@ -57,9 +57,9 @@ const DEVICES = {
   ),
 } as const;
 
-describe("버리는 듣기 설정 키 여섯(spec 설계 4)", () => {
-  it("키 여섯이 seed/settings.json 에 집 전체 · 바꾸는 곳 시드로 있고, discard_mode 의 시드 값은 ios 다(C213)", () => {
-    expect(DISCARD_SETTING_KEYS).toHaveLength(6);
+describe("버리는 듣기 설정 키 일곱(spec 설계 4 · C216)", () => {
+  it("키 일곱이 seed/settings.json 에 집 전체 · 바꾸는 곳 시드로 있고, discard_mode 의 시드 값은 ios 다(C213)", () => {
+    expect(DISCARD_SETTING_KEYS).toHaveLength(7);
     for (const key of DISCARD_SETTING_KEYS) {
       const row = seedRows.find((r) => r.key === key);
       expect(row, key).toMatchObject({ scope: "household", changeVia: "seed" });
@@ -69,7 +69,7 @@ describe("버리는 듣기 설정 키 여섯(spec 설계 4)", () => {
     );
   });
 
-  it("키 여섯이 TEST_SETTINGS 에 시드와 같은 범위 · 값으로 있다", () => {
+  it("키 일곱이 TEST_SETTINGS 에 시드와 같은 범위 · 값으로 있다", () => {
     for (const key of DISCARD_SETTING_KEYS) {
       const fixture = (
         TEST_SETTINGS as Record<string, { scope: string; value: unknown }>
@@ -79,7 +79,7 @@ describe("버리는 듣기 설정 키 여섯(spec 설계 4)", () => {
     }
   });
 
-  it("시험 설정에서 읽으면 모드와 밀리초 다섯이 시드 값 그대로다", () => {
+  it("시험 설정에서 읽으면 모드와 밀리초 여섯이 시드 값 그대로다", () => {
     const seedValue = (key: string) =>
       seedRows.find((r) => r.key === key)?.value;
     expect(discardSettingsFrom(read)).toEqual({
@@ -89,6 +89,7 @@ describe("버리는 듣기 설정 키 여섯(spec 설계 4)", () => {
       minMs: seedValue("speech.discard_min_ms"),
       afterSoundMs: seedValue("speech.discard_after_sound_ms"),
       gapMs: seedValue("speech.discard_gap_ms"),
+      openAfterMs: seedValue("speech.discard_open_after_ms"),
     });
     expect(discardModeFrom(read)).toBe(seedValue("speech.discard_mode"));
   });
@@ -113,6 +114,9 @@ describe("버리는 듣기 설정 키 여섯(spec 설계 4)", () => {
     expect(() =>
       discardSettingsFrom(withValue("speech.discard_gap_ms", -1)),
     ).toThrow("speech.discard_gap_ms");
+    expect(() =>
+      discardSettingsFrom(withValue("speech.discard_open_after_ms", -1)),
+    ).toThrow("speech.discard_open_after_ms");
     expect(() =>
       discardSettingsFrom(withValue("speech.discard_min_ms", 0.5)),
     ).toThrow("speech.discard_min_ms");

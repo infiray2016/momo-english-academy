@@ -328,6 +328,23 @@ async function sayTurn(o: Opened, { stop = false }: { stop?: boolean } = {}) {
   await sendWhenAsked(o, before);
 }
 
+/**
+ * 말하기 한 번 → 소리를 받은 진짜 끝 + speech.discard_open_after_ms 에 버림이 열려 start 가 starts 개가 될 때까지 → 보냄(C216). 확인 칸을
+ * 시험이 보내는 때(talk.confirm_seconds 를 늘림)에 쓴다: 버림이 열리기 전에 떠나면(끝인사 · 쉬는 안내) 버림 없이 '버림부터'로 간다.
+ */
+async function sayUntilDiscardOpen(o: Opened, starts: number) {
+  const before = o.sent.turns.length;
+  const button = speakButton(o.page);
+  await button.click();
+  await expect(button).toHaveAttribute("data-listening", "", {
+    timeout: STREAM_END_MS,
+  });
+  await expect
+    .poll(() => startsOf(o.page), { timeout: STREAM_END_MS })
+    .toBe(starts);
+  await sendWhenAsked(o, before);
+}
+
 /** 인사 한 턴(가짜 AI 반응) → 대화 첫 질문까지(짧은 준비 없는 견본). */
 async function throughGreeting(o: Opened) {
   await untilChildTurn(o.page);
@@ -374,6 +391,56 @@ async function expectNoMarkNoRecording(o: Opened) {
 }
 
 test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
+  test("AC-24p 소리를 받은 진짜가 결과로 끝나면 버림은 speech.discard_open_after_ms 뒤에 열리고(그동안 다음 질문을 읽지 않음), 다음 질문은 그 버림 안에서 읽히며, 다음 진짜가 결과를 받는다(요청자 iPad 수업 11-08 꼴)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const s = discardScript(
+      realsThenDead([saidRun("I'm good."), saidRun("I like it.")]),
+    );
+    const o = await openTalk(context, s);
+    await throughGreeting(o);
+    await untilChildTurn(o.page);
+    const [realUse, discardUse] = await recognizersOf(o.page, s);
+    if (!realUse?.endAt || !discardUse) throw new Error("대본 차례가 어긋났다");
+    const opened = discardUse.startAt - realUse.endAt;
+    expect(opened, "진짜 끝 → 버림 start").toBeGreaterThanOrEqual(
+      DISCARD_TIMES.openAfterMs - TICK_SLACK_MS,
+    );
+    expect(opened, "진짜 끝 → 버림 start").toBeLessThan(
+      DISCARD_TIMES.openAfterMs + TIME_SLACK_MS,
+    );
+    // 다음 질문은 기다림 동안 보류되었다가 그 버림 안에서 읽힌다
+    const questionAt =
+      (await spokenAtOf(o.page, firstQuestionOf(o.card))).at(-1) ?? 0;
+    expect(questionAt).toBeGreaterThanOrEqual(discardUse.startAt);
+    await pushFakeAi([
+      talkLessonReply({ tori_en: REPLIES[0], next_move: "follow_up" }),
+    ]);
+    await sayTurn(o);
+    await expect(bubble(o.page)).toContainText("Wow!", {
+      timeout: STREAM_END_MS,
+    });
+    const uses = await recognizersOf(o.page, s);
+    expect(uses.map((u) => u.role).slice(0, 3)).toEqual([
+      "real",
+      "discard",
+      "real",
+    ]);
+    expect(uses[1]?.close).toBe("stop");
+    expect(uses[1]?.closeAt ?? 0).toBeGreaterThan(questionAt);
+    const [, row] = await childRowsOf(o.sessionId);
+    if (!row) throw new Error("대화 첫 아이 행이 없다");
+    expect(row.text).toBe("I like it.");
+    const dc = listensOf(row).at(-1)?.dc;
+    expect(dc?.g).toBe("discard");
+    expect(dc?.sk).toBe("teacher");
+    expect(dc?.as ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+      DISCARD_TIMES.liveAsMs,
+    );
+    await expectDiscardRules(o);
+  });
+
   test("AC-24b · AC-24g 선생님 말 도중 누르면 읽기가 멈추고 단추가 '준비 중이에요' · 점 셋이 되며(듣는 중 표시 · 선생님 창 듣기 없음), 조건 뒤 진짜 start 하나와 '말해 보세요'가 보이고 소리가 들어오면 지워진다 — 기다리는 동안 다시 눌러도 진짜는 하나다", async ({
     context,
   }) => {
@@ -535,9 +602,12 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
         }),
       ]);
       await sayTurn(o, { stop: true });
-      // 이 턴의 진짜 하나 + 그 끝에 열린 버림 하나
+      // 이 턴의 진짜 하나 + 그 끝 speech.discard_open_after_ms 뒤에 열린 버림 하나(C216)
       await expect
-        .poll(() => startsOf(o.page), { message: `${i + 1}번째: ${text}` })
+        .poll(() => startsOf(o.page), {
+          message: `${i + 1}번째: ${text}`,
+          timeout: STREAM_END_MS,
+        })
         .toBe(starts + 2);
       // 아이 말 한 번 = 회화 턴 요청 하나 = 그 요청이 연 회화 턴 호출 하나(같은 턴 안의 다시 쓰기 호출은 앱 몫이라 뺀다)
       await expect
@@ -872,12 +942,13 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     await expectDiscardRules(o);
   });
 
-  test("AC-24f 살아 있는 버림(as 가 speech.discard_live_as_ms 밖)은 판정 때 stop 으로 닫히고(abort 0) 그 뒤 읽기는 세션 없이 하며, 다음 진짜까지 버림을 다시 열지 않고 그 진짜의 dc 는 갈래 live 다", async ({
+  test("AC-24f · AC-24q 살아 있는 버림(as 가 speech.discard_live_as_ms 밖)은 판정 때 stop 으로 닫히고(abort 0) 그 end + speech.discard_open_after_ms 뒤 버림을 한 번 다시 열며, 다시 연 버림도 살아 있으면 그 뒤 읽기는 세션 없이 하고 다음 진짜까지 버림을 더 열지 않으며 그 진짜의 dc 는 갈래 live 다", async ({
     context,
   }) => {
     test.setTimeout(LONG);
     const s = discardScript([
       real(saidRun("I'm good.")),
+      live(),
       live(),
       real(saidRun("I like it.")),
       dead(),
@@ -885,16 +956,21 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     const o = await openTalk(context, s);
     await throughGreeting(o);
     await untilChildTurn(o.page);
-    const [, liveUse] = await recognizersOf(o.page, s);
-    if (!liveUse) throw new Error("버림이 열리지 않았다");
-    expect(liveUse.close).toBe("stop");
-    expect((liveUse.closeAt ?? 0) - liveUse.startAt).toBeGreaterThanOrEqual(
-      DISCARD_TIMES.liveAsMs - TICK_SLACK_MS,
+    const [, liveUse, againUse] = await recognizersOf(o.page, s);
+    if (!liveUse || !againUse) throw new Error("버림이 열리지 않았다");
+    for (const use of [liveUse, againUse]) {
+      expect(use.close).toBe("stop");
+      expect((use.closeAt ?? 0) - use.startAt).toBeGreaterThanOrEqual(
+        DISCARD_TIMES.liveAsMs - TICK_SLACK_MS,
+      );
+    }
+    expect(againUse.startAt - (liveUse.endAt ?? 0)).toBeGreaterThanOrEqual(
+      DISCARD_TIMES.openAfterMs - TICK_SLACK_MS,
     );
     const questionAt =
       (await spokenAtOf(o.page, firstQuestionOf(o.card))).at(-1) ?? 0;
-    expect(questionAt).toBeGreaterThan(liveUse.endAt ?? 0);
-    expect(await startsOf(o.page)).toBe(2);
+    expect(questionAt).toBeGreaterThan(againUse.endAt ?? 0);
+    expect(await startsOf(o.page)).toBe(3);
     await pushFakeAi([
       talkLessonReply({ tori_en: REPLIES[2], next_move: "follow_up" }),
     ]);
@@ -914,86 +990,102 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
     context,
   }) => {
     test.setTimeout(LONG);
-    // 상한을 둘째 아이 턴으로(인사 1 + 대화 1 — talk-lesson.spec AC-15j 와 같은 꼴)
-    await withHouseholdSetting("talk.safety_max_turns", 2, async () => {
-      const s = discardScript(
-        realsThenDead([saidRun("I'm good."), saidRun("I like it.")]),
-      );
-      const o = await openTalk(context, s);
-      await throughGreeting(o);
-      await untilChildTurn(o.page);
-      await sayTurn(o);
-      await expect(bubble(o.page)).toContainText(o.card.safetyFarewell.en, {
-        timeout: STREAM_END_MS,
-      });
-      await expect(o.page.locator("[data-talk-closed]")).toBeVisible();
-      const uses = await recognizersOf(o.page, s);
-      expect(uses).toHaveLength(4);
-      expect(uses[3]?.close).toBe("stop");
-      const before = (await speechRecord(o.page)).spoken.length;
-      await bubble(o.page).click();
-      await expect
-        .poll(async () => (await speechRecord(o.page)).spoken.length, {
-          timeout: STREAM_END_MS,
-        })
-        .toBeGreaterThan(before);
-      await o.page.waitForTimeout(NO_NEW_MS);
-      expect(await startsOf(o.page)).toBe(4);
-      await expectDiscardRules(o);
-      await expect(
-        o.page.locator("[data-talk-closed]").getByRole("button", {
-          name: T.lessons,
-        }),
-      ).toBeVisible();
-    });
+    // 상한을 둘째 아이 턴으로(인사 1 + 대화 1 — talk-lesson.spec AC-15j 와 같은 꼴). 확인 칸은 시험이 보낸다(아래 open_after 기다림)
+    await withHouseholdSetting("talk.safety_max_turns", 2, () =>
+      withHouseholdSetting(
+        "talk.confirm_seconds",
+        CONFIRM_HOLD_SECONDS,
+        async () => {
+          const s = discardScript(
+            realsThenDead([saidRun("I'm good."), saidRun("I like it.")]),
+          );
+          const o = await openTalk(context, s);
+          await throughGreeting(o);
+          await untilChildTurn(o.page);
+          await sayUntilDiscardOpen(o, 4);
+          await expect(bubble(o.page)).toContainText(o.card.safetyFarewell.en, {
+            timeout: STREAM_END_MS,
+          });
+          await expect(o.page.locator("[data-talk-closed]")).toBeVisible();
+          const uses = await recognizersOf(o.page, s);
+          expect(uses).toHaveLength(4);
+          expect(uses[3]?.close).toBe("stop");
+          const before = (await speechRecord(o.page)).spoken.length;
+          await bubble(o.page).click();
+          await expect
+            .poll(async () => (await speechRecord(o.page)).spoken.length, {
+              timeout: STREAM_END_MS,
+            })
+            .toBeGreaterThan(before);
+          await o.page.waitForTimeout(NO_NEW_MS);
+          expect(await startsOf(o.page)).toBe(4);
+          await expectDiscardRules(o);
+          await expect(
+            o.page.locator("[data-talk-closed]").getByRole("button", {
+              name: T.lessons,
+            }),
+          ).toBeVisible();
+        },
+      ),
+    );
   });
 
   test("AC-24i AI 쉬는 중으로 떠나면 열린 버림이 stop 으로 닫히고, 돌아와 첫 읽기가 버림을 다시 열어(진짜 없이) 그 뒤 진짜의 dc 는 갈래 reopen · 까닭 leave 다", async ({
     context,
   }) => {
     test.setTimeout(LONG);
-    const s = discardScript([
-      real(saidRun("I'm good.")),
-      dead(),
-      dead(),
-      real(saidRun("I like it.")),
-      dead(),
-    ]);
-    const o = await openTalk(context, s);
-    await untilChildTurn(o.page);
-    await reachSafetyCap(o.profileId);
-    await sayTurn(o);
-    const rest = o.page.locator("[data-ai-rest]");
-    await expect(rest).toBeVisible({ timeout: STREAM_END_MS });
-    await expect
-      .poll(async () => (await recognizersOf(o.page, s))[1]?.close)
-      .toBe("stop");
-    expect(await startsOf(o.page)).toBe(2);
-    await liftSafetyCap(o.profileId);
-    // 풀린 뒤 인사 · 대화 두 턴을 본다 — 상한 행(1)이 남으면 인사 호출 하나로 다시 쉰다(CI 42361488670)
-    await dropSafetyCap(o.profileId);
-    await pastTurnInFlight(o.sessionId);
-    await pushFakeAi([talkLessonReply({ tori_en: GREETING_REPLY })]);
-    await rest.locator('[data-button-size="small"]').click();
-    await expect(rest).toHaveCount(0, { timeout: STREAM_END_MS });
-    await expect(bubble(o.page)).toContainText(firstQuestionOf(o.card), {
-      timeout: STREAM_END_MS,
-    });
-    await expect.poll(() => startsOf(o.page)).toBe(3);
-    await untilChildTurn(o.page);
-    await expect(speakButton(o.page)).not.toHaveAttribute("data-listening", "");
-    await pushFakeAi([
-      talkLessonReply({ tori_en: REPLIES[0], next_move: "follow_up" }),
-    ]);
-    await sayTurn(o);
-    await expect(bubble(o.page)).toContainText("Wow!", {
-      timeout: STREAM_END_MS,
-    });
-    const rows = await childRowsOf(o.sessionId);
-    const dc = listensOf(rows.at(-1) ?? { clientListen: null }).at(-1)?.dc;
-    expect(dc?.g).toBe("reopen");
-    expect(dc?.rw).toBe("leave");
-    await expectDiscardRules(o);
+    // 확인 칸은 시험이 보낸다(아래 open_after 기다림)
+    await withHouseholdSetting(
+      "talk.confirm_seconds",
+      CONFIRM_HOLD_SECONDS,
+      async () => {
+        const s = discardScript([
+          real(saidRun("I'm good.")),
+          dead(),
+          dead(),
+          real(saidRun("I like it.")),
+          dead(),
+        ]);
+        const o = await openTalk(context, s);
+        await untilChildTurn(o.page);
+        await reachSafetyCap(o.profileId);
+        await sayUntilDiscardOpen(o, 2);
+        const rest = o.page.locator("[data-ai-rest]");
+        await expect(rest).toBeVisible({ timeout: STREAM_END_MS });
+        await expect
+          .poll(async () => (await recognizersOf(o.page, s))[1]?.close)
+          .toBe("stop");
+        expect(await startsOf(o.page)).toBe(2);
+        await liftSafetyCap(o.profileId);
+        // 풀린 뒤 인사 · 대화 두 턴을 본다 — 상한 행(1)이 남으면 인사 호출 하나로 다시 쉰다(CI 42361488670)
+        await dropSafetyCap(o.profileId);
+        await pastTurnInFlight(o.sessionId);
+        await pushFakeAi([talkLessonReply({ tori_en: GREETING_REPLY })]);
+        await rest.locator('[data-button-size="small"]').click();
+        await expect(rest).toHaveCount(0, { timeout: STREAM_END_MS });
+        await expect(bubble(o.page)).toContainText(firstQuestionOf(o.card), {
+          timeout: STREAM_END_MS,
+        });
+        await expect.poll(() => startsOf(o.page)).toBe(3);
+        await untilChildTurn(o.page);
+        await expect(speakButton(o.page)).not.toHaveAttribute(
+          "data-listening",
+          "",
+        );
+        await pushFakeAi([
+          talkLessonReply({ tori_en: REPLIES[0], next_move: "follow_up" }),
+        ]);
+        await sayTurn(o);
+        await expect(bubble(o.page)).toContainText("Wow!", {
+          timeout: STREAM_END_MS,
+        });
+        const rows = await childRowsOf(o.sessionId);
+        const dc = listensOf(rows.at(-1) ?? { clientListen: null }).at(-1)?.dc;
+        expect(dc?.g).toBe("reopen");
+        expect(dc?.rw).toBe("leave");
+        await expectDiscardRules(o);
+      },
+    );
   });
 
   test("AC-24i 선생님 말 동안 쪽이 숨으면 열린 버림이 abort 로 닫히고 숨은 동안 새로 열리지 않으며, 돌아와 누르면 버림부터 다시 열려 짧은 말(again) 한 줄 뒤 진짜가 열리고 그 진짜의 dc 는 갈래 reopen · 까닭 hidden 이다(막힘 판에서 돌아오는 길)", async ({

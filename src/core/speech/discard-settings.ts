@@ -23,6 +23,8 @@ export type DiscardSettings = {
   afterSoundMs: number;
   /** speech.discard_gap_ms — 버림 end 와 마지막 소리 끝에서 진짜 start 까지의 최소 간격(F6). */
   gapMs: number;
+  /** speech.discard_open_after_ms — 소리를 받은 세션(deaf 아닌 진짜 · 살아 있는 버림) 끝에서 다음 버림 start 까지(C216 F2 · F3 뒤). */
+  openAfterMs: number;
 };
 
 /** speech.discard_mode(첫 실행 자료는 이 키 하나만 읽는다). */
@@ -32,8 +34,9 @@ const LIVE_AS_KEY = "speech.discard_live_as_ms";
 const MIN_KEY = "speech.discard_min_ms";
 const AFTER_SOUND_KEY = "speech.discard_after_sound_ms";
 const GAP_KEY = "speech.discard_gap_ms";
+const OPEN_AFTER_KEY = "speech.discard_open_after_ms";
 
-/** discardSettingsFrom 이 읽는 12절 키 여섯(회화 화면 자료가 읽는 목록에 더한다. 첫 실행 자료는 DISCARD_MODE_KEY 하나만 읽는다). */
+/** discardSettingsFrom 이 읽는 12절 키 일곱(회화 화면 자료가 읽는 목록에 더한다. 첫 실행 자료는 DISCARD_MODE_KEY 하나만 읽는다). */
 export const DISCARD_SETTING_KEYS: readonly string[] = [
   DISCARD_MODE_KEY,
   REST_KEY,
@@ -41,6 +44,7 @@ export const DISCARD_SETTING_KEYS: readonly string[] = [
   MIN_KEY,
   AFTER_SOUND_KEY,
   GAP_KEY,
+  OPEN_AFTER_KEY,
 ];
 
 const modeSchema = z.enum(DISCARD_MODE_VALUES);
@@ -75,6 +79,7 @@ export function discardSettingsFrom(
     minMs: readSetting(read, MIN_KEY, msSchema),
     afterSoundMs: readSetting(read, AFTER_SOUND_KEY, msSchema),
     gapMs: readSetting(read, GAP_KEY, msSchema),
+    openAfterMs: readSetting(read, OPEN_AFTER_KEY, msSchema),
   };
 }
 
