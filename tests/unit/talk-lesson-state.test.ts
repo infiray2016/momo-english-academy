@@ -46,6 +46,7 @@ function row(over: Partial<TalkTurnRow>): TalkTurnRow {
     listenEndSeconds: null,
     confirmSkipped: null,
     clientListen: null,
+    askAgain: null,
     move: null,
     recordedAt: AT,
     ...over,
@@ -92,6 +93,30 @@ describe("talk_turns 행 → 흐름 꼴(새 갈래 상태 읽기)", () => {
     ).toMatchObject({ input: "dont_know", nospeech: false });
     // 입력 방식이 빈 옛 행은 말로 본다(옛 갈래 liteOf 와 같다)
     expect(lessonTurnOf(row({}))).toMatchObject({ input: "speech" });
+  });
+
+  it("아이 행의 되물음 표지(talk_turns.ask_again, 13절 C218 · 5절 04:35): 참인 행만 흐름 꼴에 askAgain 칸이 있고, 빈 옛 행 · 거짓 행은 칸이 없다", () => {
+    const asked = lessonTurnOf(
+      row({ inputMode: "speech", askAgain: true, stuckPhrase: null }),
+    );
+    expect(asked).toEqual({
+      speaker: "child",
+      segment: "talk",
+      input: "speech",
+      stuck: false,
+      nospeech: false,
+      targets: [],
+      askAgain: true,
+    });
+    for (const askAgain of [null, false])
+      expect(
+        "askAgain" in lessonTurnOf(row({ inputMode: "speech", askAgain })),
+      ).toBe(false);
+    // 선생님 행에는 표지를 싣지 않는다(아이 행의 칸이다)
+    expect(
+      "askAgain" in
+        lessonTurnOf(row({ speaker: "tori", text: "Hi!", askAgain: true })),
+    ).toBe(false);
   });
 
   it("AC-15v 선생님 행: text 는 화면 글 줄 그대로, move 는 꼴을 읽고(틀리거나 비면 null), 답 예시는 AI 질문의 답 예시다", () => {

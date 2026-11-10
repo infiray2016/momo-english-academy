@@ -677,6 +677,7 @@ describe("대화 기록 자료(묶음 10 talkLogOf 의 재료, T2)", () => {
       listenEndSeconds: null,
       confirmSkipped: null,
       clientListen: null,
+      askAgain: null,
       move: null,
       recordedAt: new Date("2026-11-05T10:00:00+09:00"),
       ...over,

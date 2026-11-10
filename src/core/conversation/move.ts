@@ -20,7 +20,8 @@ export const TALK_MOVE_KINDS = [
 ] as const;
 export type TalkMoveKind = (typeof TALK_MOVE_KINDS)[number];
 /**
- * 카드 자리의 까닭(3.3 카드 자리 (1)~(4)): 따라가기 상한 · AI 질문 검사 · 같은 질문 · 받침, 그리고 끊긴 턴 · 실패 길(8절).
+ * 카드 자리의 까닭(3.3 카드 자리 (1)~(4)): 따라가기 상한 · AI 질문 검사 · 같은 질문 · 받침, 그리고 끊긴 턴 · 실패 길(8절), 되묻기(13절 C218 —
+ * 선생님이 못 알아들은 말을 그 질문 자리에서 한 번 더 말해 달라고 하는 차례. 값을 더하기만 해 판은 그대로다, 내용 고침 2 plan 정한 것 4).
  * 인사 토막에서 앱이 카드 인사 질문을 붙인 차례는 까닭이 없다(null).
  */
 export const TALK_SLOT_WHYS = [
@@ -30,10 +31,19 @@ export const TALK_SLOT_WHYS = [
   "support",
   "cut",
   "fail",
+  "ask_again",
 ] as const;
 export type TalkSlotWhy = (typeof TALK_SLOT_WHYS)[number];
-/** 앞 아이 차례의 까닭: '잘 모르겠어요' 단추 · 막힘으로 볼 말 · 들리지 않음(3.3 막힘 문단 · 기기 쪽). 말로 답했으면 null. */
-export const TALK_CHILD_CAUSES = ["button", "stuck", "nospeech"] as const;
+/**
+ * 앞 아이 차례의 까닭: '잘 모르겠어요' 단추 · 막힘으로 볼 말 · 들리지 않음(3.3 막힘 문단 · 기기 쪽) · 되물음(13절 C218 — 선생님이 못 알아들어
+ * 되물은 아이 말. 아이 쪽 막힘으로 세지 않는다). 말로 답했으면 null.
+ */
+export const TALK_CHILD_CAUSES = [
+  "button",
+  "stuck",
+  "nospeech",
+  "unclear",
+] as const;
 export type TalkChildCause = (typeof TALK_CHILD_CAUSES)[number];
 /** 서버가 붙인 도움(5절 '서버가 붙인 소리 줄은 앞 선생님 행 move 로 안다', 정한 것 8). */
 export const TALK_APP_HELPS = [

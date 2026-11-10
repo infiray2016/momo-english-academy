@@ -10,14 +10,18 @@ import {
   firstLevelOfBand,
   offbandListWords,
   phrasesIn,
+  situationLinesMinOf,
+  TALK_ASK_AGAIN_KO_FORBIDDEN,
+  TALK_ASK_AGAIN_LINES_MIN,
   TALK_CUE_LONG_MIN,
   TALK_CUE_SHORT_MIN,
+  TALK_SAME_SENTENCE_MIN_WORDS,
   TALK_SITUATION_LINES_MIN,
   type TalkListsFiles,
 } from "@/core/seed/check-talk-lists";
 import type { SeedIssue } from "@/core/seed/issue";
 import { buildReferenceIndex } from "@/core/seed/reference-index";
-import { SEED_FILES } from "@/core/seed/structure";
+import { SEED_FILES, TALK_SITUATION_PLACES } from "@/core/seed/structure";
 import { buildLexicon } from "@/core/seed/text";
 import { defaultSettings, referenceSet } from "../fixtures/seed/builders";
 
@@ -193,6 +197,143 @@ describe("회화 시드 목록 넷 검사(06:187, AC-15zf (나))", () => {
     expect(index.talkMadeUpPhrases).toEqual(ref.talkMadeUpPhrases.phrases);
     const { talkMadeUpPhrases: _drop, ...rest } = ref;
     expect(buildReferenceIndex(rest).index.talkMadeUpPhrases).toEqual([]);
+  });
+});
+
+describe("되묻기 자리의 상황 줄 검사(06:187 (2) · 13절 C218 · 'C218 · C222 보완 2' — 내용 고침 2 묶음 2-0, AC-15zo (라))", () => {
+  const FILE = SEED_FILES.talkSituationLines;
+  const askAgainAt = (issues: SeedIssue[]) =>
+    at(issues, "talk-situation-lines").filter((p) =>
+      p.startsWith(`${FILE}:lines.ask_again`),
+    );
+
+  it("AC-15zo 줄 수 하한은 되묻기 자리만 다섯이고 그 밖의 자리는 셋이다(시드 꼴 검사 상수)", () => {
+    expect(TALK_ASK_AGAIN_LINES_MIN).toBe(5);
+    expect(
+      Object.fromEntries(
+        TALK_SITUATION_PLACES.map((place) => [
+          place,
+          situationLinesMinOf(place),
+        ]),
+      ),
+    ).toEqual({
+      greeting_end: 3,
+      together: 3,
+      easy: 3,
+      close: 3,
+      nospeech: 3,
+      ask_again: 5,
+    });
+    const files = lists();
+    files.talkSituationLines.lines.ask_again.pop();
+    expect(askAgainAt(checkTalkLists(files, ctx))).toEqual([
+      `${FILE}:lines.ask_again`,
+    ]);
+  });
+
+  it("AC-15zo 되묻기 줄은 물음표가 없다(다른 상황 자리의 줄은 물음표 검사를 받지 않는다 — 고치기 전 그대로)", () => {
+    const files = lists();
+    files.talkSituationLines.lines.ask_again[0] = line("Oh! Say it again?");
+    files.talkSituationLines.lines.easy[0] = line("Okay! Try this one?");
+    const issues = checkTalkLists(files, ctx);
+    expect(at(issues, "talk-situation-lines")).toEqual([
+      `${FILE}:lines.ask_again.0.en`,
+    ]);
+    expect(issues[0]?.message).toContain("물음표");
+  });
+
+  it("AC-15zo 되묻기 줄에는 금지 구 셋(모든 상황 차례 · 들리지 않음 · 되묻기 자리)을 모두 건다 — 'my ears' · 'try again' · 'louder' 꼴", () => {
+    const files = lists();
+    const { lines } = files.talkSituationLines;
+    files.talkAllowedWords.allowed.push("said", "louder", "my");
+    lines.ask_again[0] = line("Oops, my ears! Say it again.");
+    lines.ask_again[1] = line("Oh! Try again.");
+    lines.ask_again[2] = line("Oh! Say it louder.");
+    lines.ask_again[3] = line("You said it! Say it again.");
+    lines.ask_again[4] = line("That's wrong! Say it again.");
+    const issues = checkTalkLists(files, ctx);
+    expect(askAgainAt(issues)).toEqual(
+      [0, 1, 2, 3, 4].map((i) => `${FILE}:lines.ask_again.${i}.en`),
+    );
+    const messages = issues.map((i) => i.message);
+    expect(messages[0]).toContain("'my ears'");
+    expect(messages[1]).toContain("'try again'");
+    expect(messages[2]).toContain("'louder'");
+    expect(messages[3]).toContain("'you said'");
+    expect(messages[4]).toContain("'that's wrong'");
+    // 되묻기 자리의 금지 구는 다른 자리에는 걸지 않는다(들리지 않음 자리의 'my ears' 견본 줄은 그대로 지난다)
+    expect(at(checkTalkLists(lists(), ctx), "talk-situation-lines")).toEqual(
+      [],
+    );
+  });
+
+  it("AC-15zo 되묻기 줄은 들리지 않음 자리의 줄과 같은 줄 · 같은 문장을 쓰지 않는다(한 낱말 감탄은 함께 쓴다)", () => {
+    expect(TALK_SAME_SENTENCE_MIN_WORDS).toBe(2);
+    const files = lists();
+    const { lines } = files.talkSituationLines;
+    // 들리지 않음 견본: "Oops, my ears! Let's go on." · "Oops! Let's go on." · "Oh no! Let's go on."
+    lines.ask_again[0] = line("Okay! Let's go on.");
+    lines.ask_again[1] = line("Oh no! Let's go on.");
+    // 'Oops!' 한 낱말 감탄은 들리지 않음 줄에도 있지만 견주지 않는다
+    lines.ask_again[2] = line("Oops! Say it again.");
+    expect(askAgainAt(checkTalkLists(files, ctx))).toEqual([
+      `${FILE}:lines.ask_again.0.en`,
+      `${FILE}:lines.ask_again.1.en`,
+    ]);
+    expect(checkTalkLists(files, ctx)[0]?.message).toContain(
+      "들리지 않음 자리의 줄과 같은 문장",
+    );
+  });
+
+  it("AC-15zo 되묻기 줄의 한국어 뜻은 '내가 다시 들어 볼게' 쪽이다 — 틀렸다 · 못 알아듣겠다 · 다시 해 봐 · 크게 말해 꼴을 거부한다", () => {
+    expect(TALK_ASK_AGAIN_KO_FORBIDDEN).toEqual([
+      "틀렸",
+      "틀린",
+      "못 알아",
+      "모르겠",
+      "다시 해",
+      "크게",
+    ]);
+    const files = lists();
+    const { lines } = files.talkSituationLines;
+    const ko = (i: number, text: string) => {
+      const row = lines.ask_again[i];
+      if (row) row.ko = text;
+    };
+    ko(0, "틀렸어! 다시 말해 줘.");
+    ko(1, "무슨 말인지 못 알아듣겠어.");
+    ko(2, "다시 해 봐!");
+    ko(3, "더 크게 말해 줘!");
+    ko(4, "미안! 다시 잘 들어 볼게.");
+    // 다른 자리의 뜻에는 걸지 않는다
+    const easy = lines.easy[0];
+    if (easy) easy.ko = "괜찮아! 다시 해 보자.";
+    const issues = checkTalkLists(files, ctx);
+    expect(askAgainAt(issues)).toEqual(
+      [0, 1, 2, 3].map((i) => `${FILE}:lines.ask_again.${i}.ko`),
+    );
+    expect(at(issues, "talk-situation-lines")).toHaveLength(4);
+  });
+
+  it("AC-15zo 실제 시드: 되묻기 줄 다섯은 again 을 쓰는 '한 번 더 말해 줘' 꼴이고, 검사에 걸리는 뜻 · 물음표가 없다", () => {
+    const seed = JSON.parse(
+      readFileSync(join(process.cwd(), "seed", FILE), "utf8"),
+    ) as {
+      lines: { ask_again: { en: string; ko: string }[] };
+      forbidden: { ask_again: string[] };
+    };
+    const rows = seed.lines.ask_again;
+    expect(rows.length).toBeGreaterThanOrEqual(TALK_ASK_AGAIN_LINES_MIN);
+    for (const row of rows) {
+      expect(row.en.toLowerCase(), row.en).toMatch(/\bagain\b/);
+      expect(row.en, row.en).not.toContain("?");
+      expect(phrasesIn(row.en, seed.forbidden.ask_again), row.en).toEqual([]);
+      expect(
+        TALK_ASK_AGAIN_KO_FORBIDDEN.filter((w) => row.ko.includes(w)),
+        row.ko,
+      ).toEqual([]);
+    }
+    expect(new Set(rows.map((row) => row.en)).size).toBe(rows.length);
   });
 });
 

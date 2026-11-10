@@ -197,6 +197,8 @@ export const talkTurns = pgTable(
     selfUsedWords: text("self_used_words").array(),
     // 막힘으로 볼 말(C36)
     stuckPhrase: text("stuck_phrase"),
+    // 되물음 표지(C218 — 1~6단계에서 선생님이 못 알아들어 되물은 아이 차례면 참이고 그 행의 stuck_phrase 는 비운다. 옛 행 · 그 밖은 비움)
+    askAgain: boolean("ask_again"),
     // 회화 턴이 가리킨 카드 질문 번호(C19)
     cardQuestionNo: smallint("card_question_no"),
     saidWords: text("said_words").array(),

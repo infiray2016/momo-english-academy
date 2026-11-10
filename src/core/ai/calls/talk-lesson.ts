@@ -111,8 +111,16 @@ export {
   type TalkInputMode,
   type TalkTurnSegment,
 } from "@/core/conversation/lesson-turns";
-/** 차례의 까닭(3.3 막힘 문단 · 기기 쪽): '잘 모르겠어요' 단추 · 막힘 말 · 들리지 않음. 말로 답했으면 null. */
-export const TALK_TURN_REASONS = ["button", "stuck", "nospeech"] as const;
+/**
+ * 차례의 까닭(3.3 막힘 문단 · 기기 쪽): '잘 모르겠어요' 단추 · 막힘 말 · 들리지 않음 · 되물음(move TALK_CHILD_CAUSES 와 같은 값 — 13절 C218).
+ * 말로 답했으면 null. 되물음(unclear)은 형만 먼저 맞춘 것이고 흐름이 아직 내지 않는다(되묻는 차례의 계획과 호출 입력은 내용 고침 2 묶음 2-가).
+ */
+export const TALK_TURN_REASONS = [
+  "button",
+  "stuck",
+  "nospeech",
+  "unclear",
+] as const;
 export type TalkTurnReason = (typeof TALK_TURN_REASONS)[number];
 /** 이 턴의 선생님 차례 종류(3.3 차례 표): AI 차례 · 카드 자리 · 마무리 자리. 대화 첫 질문은 AI 를 부르지 않는다. */
 export const TALK_CALL_TURN_KINDS = [

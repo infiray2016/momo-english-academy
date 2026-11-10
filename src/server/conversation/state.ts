@@ -580,6 +580,7 @@ const LESSON_STATE_KEYS = [
   "talk.prep_offer_stuck",
   "talk.more_talk_round_turns",
   "talk.reask_per_word",
+  "talk.ask_again_max",
   "talk.nospeech_dontknow_count",
   "speech.silent_items_max",
 ] as const;
@@ -602,8 +603,8 @@ const ClientListenSrcSchema = z.object({ src: z.enum(["button", "nospeech"]) });
 
 /**
  * talk_turns 행 → 새 흐름의 가벼운 꼴(lesson-turns TalkLessonTurn). 아이 행: 토막(인사 · 더 이야기하기 · 그 밖은 대화) · 입력 방식(빈 옛 행은 말) ·
- * 막힘 말 · 들리지 않음(client_listen 출처 nospeech, C149) · 노린 단어. 선생님 행: 화면 글 줄(text, 정한 것 5) · move(readTalkMove — 비었거나
- * 꼴이 틀리면 null) · 이 차례 AI 질문의 답 예시(C101).
+ * 막힘 말 · 들리지 않음(client_listen 출처 nospeech, C149) · 노린 단어 · 되물음 표지(ask_again 참인 행만 칸을 둔다, C218). 선생님 행: 화면 글
+ * 줄(text, 정한 것 5) · move(readTalkMove — 비었거나 꼴이 틀리면 null) · 이 차례 AI 질문의 답 예시(C101).
  */
 export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
   if (row.speaker === "child") {
@@ -620,6 +621,7 @@ export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
       stuck: row.stuckPhrase !== null,
       nospeech: src.success && src.data.src === "nospeech",
       targets: [...(row.targetWords ?? [])],
+      ...(row.askAgain === true ? { askAgain: true } : {}),
     };
   }
   const answer = aiQuestionOf(row.aiQuestion)?.answerExample;

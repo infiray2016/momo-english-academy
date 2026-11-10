@@ -20,9 +20,19 @@ import {
   textsOfTalkCard,
 } from "@/core/seed/schema/talk";
 import {
+  BAND_NAMES,
+  bandOf,
+  isTalkRuleBand,
+  isTalkRuleLevel,
+  LEVEL_MAX,
+  LEVEL_MIN,
   SEED_FILES,
+  TALK_ASK_AGAIN_PLACE,
   TALK_CUE_BANDS,
   TALK_CUE_PLACES,
+  TALK_LOW_BAND,
+  TALK_RULE_BANDS,
+  TALK_SITUATION_FORBIDDEN_SCOPES,
   TALK_SITUATION_PLACES,
 } from "@/core/seed/structure";
 import {
@@ -144,6 +154,23 @@ describe("카드 칸 sceneOpener(정한 것 3 — Zod 선택 칸)", () => {
   });
 });
 
+describe("회화 대화 규칙 구간(내용 고침 2 plan 정한 것 5 · 6 — 13절 C222, 구조 상수)", () => {
+  it("대화 규칙 구간 목록은 소리 줄 꼴 구간과 따로 있고, 지금은 1~3단계뿐이다(4~6단계는 묶음 2-나 가 더한다)", () => {
+    expect([...TALK_RULE_BANDS]).toEqual([TALK_LOW_BAND]);
+    for (const band of BAND_NAMES)
+      expect(isTalkRuleBand(band), band).toBe(TALK_RULE_BANDS.includes(band));
+  });
+
+  it("단계 술어는 그 단계의 구간으로 본다(1~3단계 참, 4단계부터 거짓)", () => {
+    for (let level = LEVEL_MIN; level <= LEVEL_MAX; level++)
+      expect(isTalkRuleLevel(level), `level ${level}`).toBe(
+        TALK_RULE_BANDS.includes(bandOf(level)),
+      );
+    expect([1, 2, 3].every(isTalkRuleLevel)).toBe(true);
+    expect([4, 5, 6, 7, 10, 12].some(isTalkRuleLevel)).toBe(false);
+  });
+});
+
 describe("시드 목록 넷(정한 것 5)", () => {
   const LISTS = [
     ["talkCueLines", "lists/talk-cue-lines.json", TalkCueLinesFileSchema],
@@ -190,7 +217,7 @@ describe("시드 목록 넷(정한 것 5)", () => {
     expect(file.introduce["2-3"].short[0]?.en).toBe("Your turn!");
   });
 
-  it("상황 줄은 자리 다섯이 다 있고, 금지 구는 all · nospeech 다", () => {
+  it("상황 줄은 자리 여섯(되묻기 포함, C218)이 다 있고, 금지 구는 all · nospeech · ask_again 이다", () => {
     const file = seedTalkSituationLines({ root: REPO });
     expect(Object.keys(file.lines).sort()).toEqual(
       [...TALK_SITUATION_PLACES].sort(),
@@ -207,6 +234,32 @@ describe("시드 목록 넷(정한 것 5)", () => {
     expect(file.forbidden.nospeech).toEqual(
       expect.arrayContaining(["good answer", "you said"]),
     );
+    // 되묻기 자리(C218 · C222 보완 2 — plan '옮겨 적는 문구'의 시드 줄 다섯과 금지 구 여섯 그대로)
+    expect(TALK_ASK_AGAIN_PLACE).toBe("ask_again");
+    expect([...TALK_SITUATION_PLACES]).toContain(TALK_ASK_AGAIN_PLACE);
+    expect([...TALK_SITUATION_FORBIDDEN_SCOPES]).toEqual([
+      "all",
+      "nospeech",
+      "ask_again",
+    ]);
+    expect(file.lines.ask_again).toEqual([
+      { en: "Sorry! Say it again, please.", ko: "미안! 한 번만 더 말해 줘." },
+      { en: "Oops! Let me hear it again.", ko: "앗! 다시 한번 들려줘." },
+      { en: "Hmm, again, please!", ko: "음, 한 번 더 말해 줄래!" },
+      { en: "Sorry! I will listen again.", ko: "미안! 다시 잘 들어 볼게." },
+      {
+        en: "Again, please! I am listening.",
+        ko: "한 번 더 말해 줘! 듣고 있어.",
+      },
+    ]);
+    expect(file.forbidden.ask_again).toEqual([
+      "my ears",
+      "my ear",
+      "try again",
+      "louder",
+      "speak up",
+      "i don't understand you",
+    ]);
   });
 
   it("허용 낱말 · 느낌 낱말 · 지어낸 경험 꼴 읽기", () => {
@@ -254,6 +307,23 @@ describe("시드 목록 넷(정한 것 5)", () => {
       { ...situation, lines: { ...situation.lines, stuck: [] } },
       { ...situation, forbidden: { all: ["that's wrong", "that's wrong"] } },
       { lines: situation.lines },
+      // 되묻기 자리(C218): 자리 줄이 빠지거나 금지 구 묶음이 빠지면 거부한다
+      {
+        ...situation,
+        lines: Object.fromEntries(
+          Object.entries(situation.lines).filter(
+            ([place]) => place !== "ask_again",
+          ),
+        ),
+      },
+      {
+        ...situation,
+        forbidden: {
+          all: situation.forbidden.all,
+          nospeech: situation.forbidden.nospeech,
+        },
+      },
+      { ...situation, forbidden: { ...situation.forbidden, ask_again: [] } },
     ];
     for (const bad of situationBad) {
       expect(TalkSituationLinesFileSchema.safeParse(bad).success).toBe(false);
@@ -296,7 +366,11 @@ describe("시드 목록 넷(정한 것 5)", () => {
           const situation = seedTalkSituationLines({ root: empty });
           for (const place of TALK_SITUATION_PLACES)
             expect(situation.lines[place]).toEqual([]);
-          expect(situation.forbidden).toEqual({ all: [], nospeech: [] });
+          expect(situation.forbidden).toEqual({
+            all: [],
+            nospeech: [],
+            ask_again: [],
+          });
           expect(seedTalkAllowedWords({ root: empty })).toEqual({
             allowed: [],
             feeling: [],

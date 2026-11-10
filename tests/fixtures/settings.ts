@@ -159,6 +159,8 @@ export const TEST_SETTINGS = {
   "talk.follow_child_turns": { scope: "household", value: 2 },
   "talk.required_gap_turns": { scope: "household", value: 3 },
   "talk.reask_per_word": { scope: "household", value: 1 },
+  // 되묻기 상한(13절 C218 — seed/settings.json 과 같은 범위 · 값, 0 이면 끔)
+  "talk.ask_again_max": { scope: "household", value: 1 },
   "talk.required_max_ratio": { scope: "household", value: 0.5 },
   "talk.valid_turns_ratio": { scope: "household", value: 0.3 },
   "talk.floor_after_stuck": { scope: "household", value: 3 },

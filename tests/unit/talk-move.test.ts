@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import {
   eraseTalkMoveText,
   readTalkMove,
+  TALK_CHILD_CAUSES,
   TALK_MOVE_VERSION,
+  TALK_SLOT_WHYS,
   TALK_SUPPORT_STAGE_EASY,
   TALK_SUPPORT_STAGE_MAX,
   TALK_SUPPORT_STAGE_TOGETHER,
@@ -80,6 +82,58 @@ describe("move 꼴(판 1)", () => {
     expect(readTalkMove(undefined)).toBeNull();
     expect(readTalkMove({ kind: "ai" })).toBeNull();
     expect(readTalkMove(JSON.parse(JSON.stringify(full)))).toEqual(full);
+  });
+});
+
+describe("되묻는 차례의 열거 값(회화 내용 고침 2 묶음 2-0 — 13절 C218, 5절 04:35 '카드 자리의 까닭 되묻기와 앞 아이 차례의 까닭 되물음')", () => {
+  it("카드 자리의 까닭에 ask_again, 앞 아이 차례의 까닭에 unclear 가 더해졌고 앞의 값과 차례는 그대로다(더하기만)", () => {
+    expect([...TALK_SLOT_WHYS]).toEqual([
+      "follow_cap",
+      "question_check",
+      "same_question",
+      "support",
+      "cut",
+      "fail",
+      "ask_again",
+    ]);
+    expect([...TALK_CHILD_CAUSES]).toEqual([
+      "button",
+      "stuck",
+      "nospeech",
+      "unclear",
+    ]);
+  });
+
+  it("move 판은 올리지 않는다(plan 정한 것 4): 판 1 그대로이고 옛 행(새 값이 없는 move)이 그대로 읽힌다", () => {
+    expect(TALK_MOVE_VERSION).toBe(1);
+    expect(readTalkMove(JSON.parse(JSON.stringify(full)))).toEqual(full);
+  });
+
+  it("되묻는 차례의 move(카드 자리 · 까닭 ask_again · 앞 아이 차례의 까닭 unclear)가 규격을 지나고 읽힌다", () => {
+    const asked = talkMoveOf({
+      kind: "card_slot",
+      why: "ask_again",
+      cause: "unclear",
+      item: { kind: "required", no: 1 },
+      words: ["play"],
+    });
+    expect(asked).toMatchObject({
+      v: 1,
+      kind: "card_slot",
+      why: "ask_again",
+      cause: "unclear",
+      stage: 0,
+      streak: 0,
+    });
+    expect(TalkMoveSchema.safeParse(asked).success).toBe(true);
+    expect(readTalkMove(JSON.parse(JSON.stringify(asked)))).toEqual(asked);
+    // 모르는 까닭은 여전히 거부한다
+    expect(
+      TalkMoveSchema.safeParse({ ...asked, why: "ask_twice" }).success,
+    ).toBe(false);
+    expect(
+      TalkMoveSchema.safeParse({ ...asked, cause: "misheard" }).success,
+    ).toBe(false);
   });
 });
 

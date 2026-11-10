@@ -577,8 +577,9 @@ export const TalkShortLinesFileSchema = z.record(
 export type TalkShortLinesFile = z.infer<typeof TalkShortLinesFileSchema>;
 
 /**
- * 상황 줄 · 상황 금지 구 목록 lists/talk-situation-lines.json(C209 · C211, 02-2:208). lines 는 자리(인사 끝 · 받침 첫째 · 둘째 · 셋째 ·
- * 들리지 않음)마다 줄 여럿(턴 번호로 돌림), forbidden 은 모든 상황 차례(all)와 들리지 않음에 더하는 구(nospeech)다.
+ * 상황 줄 · 상황 금지 구 목록 lists/talk-situation-lines.json(C209 · C211 · C218, 02-2:208). lines 는 자리(인사 끝 · 받침 첫째 · 둘째 · 셋째 ·
+ * 들리지 않음 · 되묻기)마다 줄 여럿(턴 번호로 돌림), forbidden 은 모든 상황 차례(all) · 들리지 않음에 더하는 구(nospeech) · 되묻기 자리에 더하는
+ * 구(ask_again — 되묻기 자리에는 셋을 모두 건다)다. 자리 · 묶음은 모두 있어야 하고 모르는 열쇠는 거부한다.
  */
 export const TalkSituationLinesFileSchema = z.strictObject({
   lines: z.record(

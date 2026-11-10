@@ -73,6 +73,28 @@
         "en": "Oh no, no sound! Here is the answer.",
         "ko": "이런, 소리가 안 들려! 답은 이거야."
       }
+    ],
+    "ask_again": [
+      {
+        "en": "Sorry! Say it again, please.",
+        "ko": "미안! 한 번만 더 말해 줘."
+      },
+      {
+        "en": "Let me hear it again, please!",
+        "ko": "다시 한번 들려줘!"
+      },
+      {
+        "en": "Hmm, again, please!",
+        "ko": "음, 한 번 더 말해 줄래!"
+      },
+      {
+        "en": "Sorry! I will listen again.",
+        "ko": "미안! 다시 잘 들어 볼게."
+      },
+      {
+        "en": "Again, please! I am listening.",
+        "ko": "한 번 더 말해 줘! 듣고 있어."
+      }
     ]
   },
   "forbidden": {
@@ -95,6 +117,14 @@
       "you're right",
       "that's right",
       "i heard you"
+    ],
+    "ask_again": [
+      "my ears",
+      "my ear",
+      "try again",
+      "louder",
+      "speak up",
+      "i don't understand you"
     ]
   }
 }

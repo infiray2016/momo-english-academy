@@ -19,12 +19,21 @@ import type {
   TalkListLine,
   TalkSituationLinesFile,
 } from "@/core/seed/schema/reference";
-import type { TalkSituationPlace } from "@/core/seed/structure";
+import type {
+  TALK_ASK_AGAIN_PLACE,
+  TalkSituationPlace,
+} from "@/core/seed/structure";
 import { expandContraction, splitSentences, tokenize } from "@/core/seed/text";
 import { lemmaLookup } from "@/core/session/attempt";
 
-/** 상황 차례 자리(시드 '상황 줄' 목록의 열쇠와 같다). */
-export type SituationPlace = TalkSituationPlace;
+/**
+ * 상황 차례 자리(시드 '상황 줄' 목록의 열쇠와 같다). 되묻기 자리(ask_again, C218)는 시드 목록 · 검증에만 먼저 들어왔고(내용 고침 2 묶음 2-0)
+ * 상황 차례의 예 · 자리 고르기 · 검사는 묶음 2-가 가 더한다 — 그때 이 형에서 빼는 것을 없앤다.
+ */
+export type SituationPlace = Exclude<
+  TalkSituationPlace,
+  typeof TALK_ASK_AGAIN_PLACE
+>;
 
 /**
  * 1~3단계 상황 차례(인사 끝 · 받침 · 들리지 않음 — 02-2 3.3 상황 차례 · spec 설계 1 · 2, C209 · C211)의 예. 자리마다 꼴이 다른 예 셋이다.

@@ -152,6 +152,17 @@ const LINES: TalkSituationLinesFile["lines"] = {
     },
     { en: "Oops! Let's keep going.", ko: "앗! 계속 가 보자." },
   ],
+  // 되묻기 자리(C218 — 시드와 같은 다섯 줄. 이 자리의 상황 차례 검사 시험은 내용 고침 2 묶음 2-가 가 더한다)
+  ask_again: [
+    { en: "Sorry! Say it again, please.", ko: "미안! 한 번만 더 말해 줘." },
+    { en: "Oops! Let me hear it again.", ko: "앗! 다시 한번 들려줘." },
+    { en: "Hmm, again, please!", ko: "음, 한 번 더 말해 줄래!" },
+    { en: "Sorry! I will listen again.", ko: "미안! 다시 잘 들어 볼게." },
+    {
+      en: "Again, please! I am listening.",
+      ko: "한 번 더 말해 줘! 듣고 있어.",
+    },
+  ],
 };
 /** 이 시험의 선생님 차례 턴 번호(상황 줄 돌림 — 7 % 3 = 1, 각 자리의 둘째 줄). */
 const TURN_NO = 7;

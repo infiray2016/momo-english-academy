@@ -1365,10 +1365,19 @@ function talkAiScopeLists(): Pick<
           "Oops! Let's go on.",
           "Oh no! Let's go on.",
         ),
+        // 되묻기 자리(C218 — 다섯 이상 · 물음표 없음 · 들리지 않음 줄과 같은 문장 없음, 뜻은 '다시 들어 볼게' 쪽)
+        ask_again: [
+          "Oops! Say it again.",
+          "Oh! Say it again with me.",
+          "Okay! I listen again.",
+          "Again! I listen.",
+          "Okay! Say it again.",
+        ].map((en) => ({ en, ko: "한 번 더 말해 줘!" })),
       },
       forbidden: {
         all: ["that's wrong", "you don't know"],
         nospeech: ["good answer", "you said"],
+        ask_again: ["my ears", "try again", "louder"],
       },
     },
     talkAllowedWords: {
@@ -1390,6 +1399,7 @@ function talkAiScopeLists(): Pick<
         "oh",
         "no",
         "ears",
+        "again",
       ],
       feeling: ["happy", "sad"],
     },

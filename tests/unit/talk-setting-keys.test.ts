@@ -10,6 +10,7 @@ import {
   talkLessonRulesOf,
   talkLessonTurnSpec,
 } from "@/core/ai/calls/talk-lesson";
+import { talkLessonSettingsFrom } from "@/core/conversation/lesson-turns";
 import { turnSettings } from "@/server/conversation/turn";
 import { TEST_SETTINGS, testSettingValues } from "../fixtures/settings";
 
@@ -102,5 +103,47 @@ describe("회화 턴 설정 키 짝(T-157)", () => {
   it("1~3단계 회화 턴 effort 는 시드 · 시험용 설정 모두 low 다(AC-7, medium 은 요청자가 따로 정함)", () => {
     expect(seedValues["ai.effort.talk_turn.1-3"]).toBe("low");
     expect(testValues["ai.effort.talk_turn.1-3"]).toBe("low");
+  });
+});
+
+describe("되묻기 상한 talk.ask_again_max(회화 내용 고침 2 묶음 2-0 — 13절 C218 · 'C218 · C222 보완 2' (3), 12절 09:90)", () => {
+  const KEY = "talk.ask_again_max";
+  const settingsWith = (value: unknown) =>
+    talkLessonSettingsFrom(
+      (key) => (key === KEY ? value : testValues[key]),
+      "1-3",
+    );
+
+  it("턴 입구 설정 목록(turnSettings)에 있고(빠지면 턴 입구에서 드러남, T-157) 시드 · 시험 설정 값은 1 이다", () => {
+    expect(Object.keys(turnSettings)).toContain(KEY);
+    expect(seedValues[KEY]).toBe(1);
+    expect(testValues[KEY]).toBe(1);
+    const row = (
+      seed.settings as {
+        key: string;
+        scope?: string;
+        changeVia?: string;
+      }[]
+    ).find((s) => s.key === KEY);
+    expect(row).toMatchObject({
+      scope: "household",
+      changeVia: "decision-first",
+    });
+  });
+
+  it("회화 수업 흐름 설정이 askAgainMax 로 읽는다: 시드 · 시험 설정은 1, 구간과 관계없이 같은 값이다", () => {
+    for (const values of [seedValues, testValues])
+      for (const band of ["1-3", "4-6", "7-9", "10-12"] as const)
+        expect(
+          talkLessonSettingsFrom((key) => values[key], band).askAgainMax,
+          band,
+        ).toBe(1);
+  });
+
+  it("0 이상 정수다: 0 은 끔(되묻지 않음)이고, 음수 · 소수 · 글 · 빠진 키는 던진다(조용한 기본값 없음)", () => {
+    expect(settingsWith(0).askAgainMax).toBe(0);
+    expect(settingsWith(2).askAgainMax).toBe(2);
+    for (const bad of [-1, 1.5, "1", null, undefined, true])
+      expect(() => settingsWith(bad), String(bad)).toThrow(KEY);
   });
 });

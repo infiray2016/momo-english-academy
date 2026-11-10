@@ -70,6 +70,9 @@ export const turnSettings = {
   "talk.memory_summaries": z.unknown(),
   "talk.friendship_per_talk": z.unknown(),
   "talk.friendship_max": z.unknown(),
+  // 되묻기 상한(13절 C218 — 수업 상태 읽기 talkLessonSettingsFrom 이 0 이상 정수로 읽는다). 턴 입구 목록에도 두어 키가 빠진 DB 에서는
+  // 턴 입구의 SettingMissingError 로 바로 드러나게 한다(장부 T-157 꼴, 내용 고침 2 plan 위험 2)
+  "talk.ask_again_max": z.unknown(),
   "ai.timeout_seconds.realtime": z.number().positive(),
   // 턴 길의 길이 초과 기록이 읽는 선생님 문장 상한(lesson-turn teacherSentencesMaxOf — 빠지면 턴이 CallSettingError 로 오류가 된다)
   ...TEACHER_SENTENCES_SETTING_SCHEMAS,

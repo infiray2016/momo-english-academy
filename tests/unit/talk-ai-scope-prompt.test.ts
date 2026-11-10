@@ -15,8 +15,14 @@ import {
   nextTeacherTurnOf,
   teacherTurnPlansOf,
 } from "@/core/conversation/lesson-flow";
-import type { TalkLessonTurn } from "@/core/conversation/lesson-turns";
 import {
+  type TalkLessonCard,
+  type TalkLessonSpec,
+  type TalkLessonTurn,
+  talkLessonSettingsFrom,
+} from "@/core/conversation/lesson-turns";
+import {
+  CARD5,
   lemmaOf,
   lessonInput,
   lessonRules,
@@ -29,6 +35,7 @@ import {
   MID,
   NEW4,
   noSpeech,
+  read,
   SPEC4,
   said,
   teacher,
@@ -153,6 +160,226 @@ const GOLDEN_PATH = join(
 describe("4단계부터 고정부 · 사용자 메시지 불변(plan 정한 것 1 · 위험 3)", () => {
   it("4 · 5 · 10단계 시스템 프롬프트와 4단계 사용자 메시지 다섯 꼴이 고치기 전 골든과 글자까지 같다", () => {
     expect(upperGolden()).toBe(readFileSync(GOLDEN_PATH, "utf8"));
+  });
+});
+
+// ── 7단계부터 골든(고치기 전 글 — tests/fixtures/talk-prompt-l7-before.txt) ──────────────
+// 회화 내용 고침 2(되묻기 C218 · 4~6단계 넓힘 C222)의 어떤 프롬프트 고침보다 먼저 뜬 글이다(plan '내용 고침 2 계획' 정한 것 17 [M-9],
+// 묶음 2-0). 2-나 가 4단계 골든을 내린 뒤에도 '7단계부터 그대로'를 이 골든이 지킨다. 이 덩이도 골든을 뜰 때와 글자까지 같은 생성기다(고치지
+// 않는다). 7 · 10단계 시스템 프롬프트(고정부 + 가변부)와, 7단계 흐름 계획에서 만든 사용자 메시지 아홉 꼴(인사 끝 · AI 차례(문장 답, If stuck
+// 포함) · AI 차례(관계없는 한 낱말 — 1~6단계라면 되묻기 줄이 붙을 턴) · 들리지 않음 · 따라가기 상한에 닿음 · 단추 막힘 첫째 · 이어진 둘째 단추
+// 막힘(대화 중 짧은 준비를 여는 닫기 · 받침 둘째) · 바뀐 값이 든 턴)을 잇는다. 서버가 넘기는 1~3단계 줄의 재료(느낌 낱말 · 상황 차례 예 돌림 번호 · 들은 글 귀띔 재료 · 바로 앞 선생님 말의 첫
+// 낱말)를 모두 넘겨, 7단계에서는 그 줄이 생기지 않음을 함께 못 박는다.
+/** 7단계 단계 규격 가운데 흐름이 읽는 칸(seed/level-specs.json 회화 7단계 행과 같은 값). */
+const SPEC7: TalkLessonSpec = {
+  band: "7-9",
+  targetTurns: 20,
+  koMeaning: false,
+};
+const HIGH = talkLessonSettingsFrom(read, "7-9");
+const MISSIONS7 = [
+  { ko: "길 묻기", en: "Ask the way.", goals: ["talk-3-1-1"] },
+  { ko: "버스 번호 묻기", en: "Ask the bus number.", goals: ["talk-3-1-2"] },
+  {
+    ko: "걸리는 시간 묻기",
+    en: "Ask how long it takes.",
+    goals: ["talk-3-1-1"],
+  },
+  { ko: "다른 길 고르기", en: "Pick another way.", goals: ["talk-3-1-2"] },
+  { ko: "고맙다고 하기", en: "Say thank you.", goals: ["talk-3-1-1"] },
+];
+const FLOW_CARD7: TalkLessonCard = { ...FLOW_CARD4, missions: MISSIONS7 };
+/** 7단계 시스템 프롬프트 입력(단계 규격 칸은 seed/level-specs.json 회화 7단계 행과 같은 값, 카드는 미션 다섯 · 역할 바꾸기). */
+function system7Input() {
+  return lessonInput(7, {
+    sentenceMaxWords: 12,
+    spec: {
+      mode: "상황극(길 묻기 · 계획 세우기), 미션 5개. 선생님이 예상 밖 대답(품절 · 길 막힘)을 한 번 한다. 미션 뒤 역할을 바꿔 이어 갈 수 있다. 아이가 꺼낸 이야기를 한두 턴 따라간다",
+      targetTurns: 20,
+      missions: 5,
+      hintTiers: ["frame", "sentence"],
+      usablePhrases: 0,
+      koMeaning: false,
+      koExplainFromStuck: 2,
+      choices: false,
+    },
+    card: { ...CARD5, missions: MISSIONS7 },
+  });
+}
+function highFlow(
+  turns: TalkLessonTurn[],
+  settings: LessonArgs["settings"] = HIGH,
+): LessonArgs {
+  return {
+    spec: SPEC7,
+    card: FLOW_CARD7,
+    newWords: NEW4,
+    turns,
+    segment: "talk",
+    settings,
+    prepWords: [],
+  };
+}
+/** 서버가 회화 턴 호출 입력에 넘기는 1~3단계 줄의 재료(lesson-turn 의 talkCallTurnOf 호출과 같은 칸 — 7단계에서는 줄이 생기지 않는다). */
+const HIGH_LOW_BAND_SOURCES = {
+  feelingWords: GOLDEN_FEELING_WORDS,
+  lemmaOf,
+  exampleTurn: 0,
+  heard: {
+    answer: "I like math.",
+    targets: ["math"],
+    scene: ["math", "difficult", "subject", "class"],
+    homophones: [["see", "sea"]],
+    soundAlikes: [],
+  },
+  lastStart: "Oh",
+};
+function highSpeechTurn(
+  prefix: TalkLessonTurn[],
+  child: string,
+  segment: "greeting" | "talk" = "talk",
+) {
+  const { ifAnswered, ifStuck } = teacherTurnPlansOf(highFlow(prefix), {
+    segment,
+    targets: [],
+  });
+  return talkCallTurnOf({
+    plan: ifAnswered,
+    ifStuck,
+    child,
+    input: "speech",
+    hintKind: "none",
+    hintTier: 0,
+    heardHelp: "none",
+    ...HIGH_LOW_BAND_SOURCES,
+  });
+}
+function highDontKnowTurn(
+  turns: TalkLessonTurn[],
+  settings: LessonArgs["settings"] = HIGH,
+) {
+  return talkCallTurnOf({
+    plan: nextTeacherTurnOf(highFlow(turns, settings)),
+    child: "",
+    input: "dont_know",
+    hintKind: "none",
+    hintTier: 0,
+    heardHelp: "none",
+    ...HIGH_LOW_BAND_SOURCES,
+  });
+}
+function highGolden(): string {
+  const parts: string[] = [
+    "=== system level 7 ===",
+    talkLessonSystem(system7Input(), lessonRules(7)),
+    "=== system level 10 ===",
+    talkLessonSystem(lessonInput(10), lessonRules(10)),
+  ];
+  const greetingEnd = {
+    ...highSpeechTurn(
+      [teacher("Hi! How was your day?", { kind: "first_question" })],
+      "I am happy. It was fun today.",
+      "greeting",
+    ),
+    nextPart: "talk" as const,
+  };
+  parts.push(
+    "=== user greeting_end (first turn) ===",
+    talkLessonUserMessage(greetingEnd, {
+      line: "Hi! How was your day?",
+      teacherNameEn: "Mina",
+    }),
+  );
+  parts.push(
+    "=== user ai (speech, sentence) ===",
+    talkLessonUserMessage(
+      highSpeechTurn(upperOpening(), "I like math. It is fun and I am happy."),
+    ),
+  );
+  parts.push(
+    "=== user ai (speech, one unrelated word) ===",
+    talkLessonUserMessage(highSpeechTurn(upperOpening(), "Tomorrow.")),
+  );
+  parts.push(
+    "=== user nospeech ===",
+    talkLessonUserMessage(highDontKnowTurn([...upperOpening(), noSpeech()])),
+  );
+  const followed: TalkLessonTurn[] = [
+    ...upperOpening(),
+    said(),
+    aiTurn("Oh, a dog! Is your dog big?", { next: "follow_child" }),
+    said(),
+    aiTurn("Wow! What color is it?", { next: "follow_child" }),
+  ];
+  parts.push(
+    "=== user follow cap reached ===",
+    talkLessonUserMessage(highSpeechTurn(followed, "My dog is white.")),
+  );
+  parts.push(
+    "=== user button stuck (support 1) ===",
+    talkLessonUserMessage(highDontKnowTurn([...upperOpening(), button()])),
+  );
+  const stuckTwice: TalkLessonTurn[] = [
+    ...upperOpening(),
+    button(),
+    aiTurn("That's okay! Say it with me: I like math.", {
+      stage: 1,
+      cause: "button",
+      item: { kind: "required", no: 1 },
+    }),
+    button(),
+  ];
+  parts.push(
+    "=== user button stuck twice (short preparation opens) ===",
+    talkLessonUserMessage(highDontKnowTurn(stuckTwice)),
+  );
+  // 대화 중 짧은 준비를 열지 않는 설정에서의 둘째 막힘(받침 둘째 — 쉬운 질문을 선생님이 쓰는 AI 차례)
+  parts.push(
+    "=== user button stuck twice (support 2) ===",
+    talkLessonUserMessage(
+      highDontKnowTurn(stuckTwice, { ...HIGH, prepOfferStuck: 9 }),
+    ),
+  );
+  parts.push(
+    "=== user ai (speech, changed values) ===",
+    talkLessonUserMessage({
+      ...highSpeechTurn(upperOpening(), "I like math."),
+      context: {
+        unknownWords: ["difficult"],
+        metUnknownWords: [],
+        newWords: ["math", "difficult"],
+        friendship: 3,
+        missionsDone: [1, 2],
+      },
+    }),
+  );
+  return `${parts.join("\n")}\n`;
+}
+// ── 7단계 골든 생성기 끝 ─────────────────────────────────────────
+
+const GOLDEN7_PATH = join(
+  process.cwd(),
+  "tests/fixtures/talk-prompt-l7-before.txt",
+);
+
+describe("7단계부터 고정부 · 가변부 · 사용자 메시지 불변(내용 고침 2 plan 정한 것 17 · 위험 5)", () => {
+  it("7 · 10단계 시스템 프롬프트와 7단계 사용자 메시지 아홉 꼴이 고치기 전 골든과 글자까지 같다", () => {
+    expect(highGolden()).toBe(readFileSync(GOLDEN7_PATH, "utf8"));
+  });
+
+  it("7단계 사용자 메시지에는 1~3단계 줄(귀띔 · 첫 낱말 · 내용 있는 말 · 그 자리 예 · 들리지 않음 설명)이 재료를 넘겨도 생기지 않는다", () => {
+    const golden = highGolden();
+    const users = golden.slice(golden.indexOf("=== user "));
+    for (const label of [
+      "Heard hint",
+      "Your last turn started with",
+      "Child said more",
+      "Example line",
+      "Not heard:",
+      "Come back to today's topic in this turn",
+      "If unclear",
+    ])
+      expect(users, label).not.toContain(label);
   });
 });
 

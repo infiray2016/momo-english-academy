@@ -1,0 +1,1 @@
+ALTER TABLE "talk_turns" ADD COLUMN "ask_again" boolean;

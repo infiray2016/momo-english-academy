@@ -13,6 +13,7 @@ import {
   TALK_LOW_REACTION_EXAMPLES,
 } from "@/core/conversation/situation";
 import { offbandListWords } from "@/core/seed/check-talk-lists";
+import { TALK_ASK_AGAIN_PLACE } from "@/core/seed/structure";
 import { buildLexicon, lemmasOf, tokenize } from "@/core/seed/text";
 import {
   type Materials,
@@ -74,7 +75,12 @@ function examplesOf(m: Materials): Example[] {
     for (const line of lines ?? [])
       out.push({
         source: "상황 줄",
-        place: place as SituationPlace,
+        // 되묻기 자리(C218)의 상황 차례 검사는 묶음 2-가 가 더한다 — 그때까지 넓이는 들리지 않음 자리로 본다(들리지 않음의 금지 구가 함께
+        // 걸리는 자리. 되묻기 자리 금지 구는 시드 검증 check-talk-lists 가 본다)
+        place:
+          place === TALK_ASK_AGAIN_PLACE
+            ? "nospeech"
+            : (place as SituationPlace),
         en: line.en,
       });
   for (const [key, lines] of Object.entries(TALK_SITUATION_EXAMPLES))
@@ -197,6 +203,32 @@ describe("허용 목록의 넓이(1단계 범위)", () => {
         hit.add((part?.ids[0] ?? w).toLowerCase());
       }
     expect([...allowed].filter((w) => !hit.has(w))).toEqual([]);
+  });
+
+  it("again 은 되묻기 자리 줄에서 1단계 범위 밖으로 걸려 허용 낱말로 들어온다(13절 'C218 · C222 보완' (5) · 06:187 (3))", () => {
+    const askAgain = m.talkLists.situation.lines[TALK_ASK_AGAIN_PLACE] ?? [];
+    expect(askAgain.length).toBeGreaterThan(0);
+    const lexicon = buildLexicon(
+      (
+        JSON.parse(readFileSync(`${ROOT}/seed/vocab.json`, "utf8")) as {
+          vocab: Parameters<typeof buildLexicon>[0];
+        }
+      ).vocab,
+    );
+    // 허용 목록 없이 돌리면 되묻기 줄마다 again 이 걸린다(손으로 더한 낱말이 아니다)
+    for (const line of askAgain)
+      expect(
+        offbandListWords(line.en, lexicon, 1, new Set()),
+        line.en,
+      ).toContain("again");
+    expect(allowed.has("again")).toBe(true);
+    // 허용 목록으로는 되묻기 줄이 모두 범위 안이고, again 을 빼면 걸린다
+    const without = new Set([...allowed].filter((w) => w !== "again"));
+    for (const line of askAgain) {
+      const e = { place: "nospeech" as const, en: line.en };
+      expect(checkAt(m, e, allowed), line.en).toEqual({ ok: true });
+      expect(checkAt(m, e, without).ok, line.en).toBe(false);
+    }
   });
 
   it("'That's okay!' 는 받침 · 들리지 않음 자리에서 남는다(AC-1 (나) — 축약형을 펼친 뒤 범위 안)", () => {

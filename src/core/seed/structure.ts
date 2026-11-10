@@ -253,23 +253,48 @@ export type TalkFirstForm = (typeof TALK_FIRST_FORMS)[number];
 export const TALK_CARD_ITEM_KINDS = ["required", "more", "none"] as const;
 /** 6.3 회화 카드의 '1~3단계' 구간(인사 질문 · 짧은 준비 늘 · 그림 키 · 소리 줄). 단계 규격 band 로 견준다. */
 export const TALK_LOW_BAND = "1-3";
+/**
+ * 회화 '대화 규칙' 구간(13절 C222 — 따라가기 · 이어 묻기 · 되묻기 같은 대화 규칙을 거는 단계 구간). 소리 줄 꼴 구간(TALK_LOW_BAND — 따라 할 말 ·
+ * 선택지 · 신호 말)과 따로 둔다(내용 고침 2 plan 정한 것 5). 구조 상수이고 설정값이 아니다. 지금은 1~3단계뿐이고 묶음 2-나 가 4~6단계를 더한다.
+ */
+export const TALK_RULE_BANDS: readonly Band[] = [TALK_LOW_BAND];
+/** 그 단계 구간이 회화 대화 규칙 구간인가. */
+export function isTalkRuleBand(band: Band): boolean {
+  return TALK_RULE_BANDS.includes(band);
+}
+/** 그 단계가 회화 대화 규칙 구간인가(단계 → 구간은 bandOf). */
+export function isTalkRuleLevel(level: number): boolean {
+  return isTalkRuleBand(bandOf(level));
+}
 /** 신호 말 자리(02-2:212 · C207): 꺼내기 · 같이 말하기(받침 첫째) · 고르기(선택지). 시드 '신호 말' 목록의 첫 열쇠다. */
 export const TALK_CUE_PLACES = ["introduce", "together", "choices"] as const;
 export type TalkCuePlace = (typeof TALK_CUE_PLACES)[number];
 /** 신호 말 단계 구간(02-2:212 '1단계 · 2~3단계'). 시드 '신호 말' 목록의 둘째 열쇠다. */
 export const TALK_CUE_BANDS = ["1", "2-3"] as const;
 export type TalkCueBand = (typeof TALK_CUE_BANDS)[number];
-/** 상황 줄 자리(02-2:208 · C209): 인사 끝 · 받침 첫째(같이 말하기) · 둘째(쉬운 질문) · 셋째(닫기) · 들리지 않음. */
+/**
+ * 상황 줄 자리(02-2:208 · C209): 인사 끝 · 받침 첫째(같이 말하기) · 둘째(쉬운 질문) · 셋째(닫기) · 들리지 않음 · 되묻기(C218 — 선생님이 못
+ * 알아들은 말을 한 번 더 말해 달라는 자리, 06:187 (2)).
+ */
 export const TALK_SITUATION_PLACES = [
   "greeting_end",
   "together",
   "easy",
   "close",
   "nospeech",
+  "ask_again",
 ] as const;
 export type TalkSituationPlace = (typeof TALK_SITUATION_PLACES)[number];
-/** 상황 금지 구 묶음(02-2:208 (다)): 모든 상황 차례 · 들리지 않음에 더함. */
-export const TALK_SITUATION_FORBIDDEN_SCOPES = ["all", "nospeech"] as const;
+/** 되묻기 자리(시드 '상황 줄' 목록의 자리 열쇠이자 상황 금지 구 묶음의 열쇠, C218). */
+export const TALK_ASK_AGAIN_PLACE = "ask_again" satisfies TalkSituationPlace;
+/**
+ * 상황 금지 구 묶음(02-2:208 (다)): 모든 상황 차례 · 들리지 않음에 더함 · 되묻기 자리에 더함(C218 · C222 보완 2 — 되묻기 자리에는 셋을 모두 건다).
+ */
+export const TALK_SITUATION_FORBIDDEN_SCOPES = [
+  "all",
+  "nospeech",
+  "ask_again",
+] as const;
 /**
  * 짧은 말 자리(iPad 버리는 듣기 plan 정한 것 6 · C213): again(대화의 다시 말하기 · 말소리 없음 · 결과 없음 · 다시 듣는 오류 · 읽는 중 끊김 ·
  * 버림부터의 누름) · mic(마이크 안 잡힘 뒤 회복). 시드 '짧은 말' 목록의 첫 열쇠다.

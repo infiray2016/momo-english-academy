@@ -46,6 +46,11 @@ export type TalkLessonChildTurn = {
   nospeech: boolean;
   /** '한국어로 물어보기' 질문 턴(변경 단위 ⑤ 뒤). 말 주고받기 · 참여에 들지 않는다. */
   koQuestion?: boolean;
+  /**
+   * 되물은 아이 차례(talk_turns.ask_again 참 — 13절 C218, 5절 '되물음 표지'): 선생님이 못 알아들어 그 질문 자리에서 한 번 더 말해 달라고 한
+   * 아이 말이다. 참인 행만 칸이 있다(빈 옛 행 · 거짓 행은 칸 없음). 이 칸을 읽는 흐름(자리 되짚기 · 셈)은 내용 고침 2 묶음 2-가 몫이다.
+   */
+  askAgain?: boolean;
   /** 이 턴이 노린 단원 단어(talk_turns.target_words). */
   targets: string[];
 };
@@ -113,6 +118,11 @@ export type TalkLessonSettings = {
   requiredGapTurns: number;
   /** talk.reask_per_word — 새 단어마다 준비하는 다시 쓰기 기회 수(0 이면 다시 쓰기 기회 없음). */
   reaskPerWord: number;
+  /**
+   * talk.ask_again_max — 한 질문 자리에서 못 알아들은 말을 막힌 차례로 세기 전에 되묻는 횟수의 상한(13절 C218, 12절). 0 이면 되묻지 않고
+   * 지금대로 바로 받침으로 간다(되돌림 스위치). 값을 바꾸는 길은 결정 기록 먼저다('C218 · C222 보완 2' (3)).
+   */
+  askAgainMax: number;
   /** talk.prep_offer_stuck — 4단계부터 대화 중 짧은 준비를 여는 막힌 차례 수. */
   prepOfferStuck: number;
   /** talk.more_talk_round_turns — '더 이야기하기' 한 번의 턴 수. */
@@ -136,6 +146,7 @@ const POSITIVE_KEYS = {
   silentItemsMax: "speech.silent_items_max",
 } as const;
 const REASK_KEY = "talk.reask_per_word";
+const ASK_AGAIN_KEY = "talk.ask_again_max";
 const PREP_WORDS_KEY = "talk.prep_words";
 const PREP_MODE_KEY = "talk.prep_mode";
 
@@ -166,6 +177,7 @@ export function talkLessonSettingsFrom(
   return {
     ...out,
     reaskPerWord: readValue(read, REASK_KEY, z.int().min(0), "0 이상 정수"),
+    askAgainMax: readValue(read, ASK_AGAIN_KEY, z.int().min(0), "0 이상 정수"),
     prepWords: readValue(
       read,
       `${PREP_WORDS_KEY}.${band}`,

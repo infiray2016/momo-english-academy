@@ -1,6 +1,8 @@
 // 회화 1~3단계 시드 목록 넷 검사(6.4 '회화 시드 목록' 행 06:187, C207 · C209 · C211 — 'AI 몫 넓힘' plan 묶음 3).
 // (1) 신호 말: 자리 × 단계 구간마다 긴 꼴 · 짧은 꼴 수, 물음표 없음, 문장 길이 상한 · 그 구간 첫 단계의 어휘 범위(허용 낱말 포함).
 // (2) 상황 줄: 자리마다 줄 수, 같은 길이 · 어휘 검사(1~3단계 모두에 쓰므로 첫 단계 1), 상황 금지 구에 걸리지 않음.
+//     되묻기 자리(C218 · C222 보완 2): 줄 다섯 이상, 물음표 없음, 금지 구는 모든 상황 차례 + 들리지 않음 + 되묻기 자리 것 셋 모두, 들리지 않음
+//     자리 줄과 같은 줄 · 같은 문장 없음(한 낱말 감탄은 함께 쓴다), 한국어 뜻에 아이 탓 · 못 알아듣겠다는 말 없음('내가 다시 들어 볼게' 쪽).
 // (3) 허용 낱말: 손으로 적지 않고 예 문장을 상황 차례 어휘 검사에 돌려 '걸린' 낱말로 만들므로, 첫 단계 범위 안 낱말은 둘 까닭이 없다.
 // (4) 지어낸 경험 꼴: 1인칭 꼴이고, 신호 말 · 상황 줄이 이 꼴에 걸리지 않는다(카드의 안전한 대사는 check-talk 가 본다).
 // (5) 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6): 자리 × 단계 구간마다 줄 수, 신호 말과 같은 꼴(물음표 없음 · 문장 길이 상한 · 그 구간 첫 단계의
@@ -31,12 +33,14 @@ import {
   bandInfo,
   LEVEL_MIN,
   SEED_FILES,
+  TALK_ASK_AGAIN_PLACE,
   TALK_CUE_BANDS,
   TALK_CUE_PLACES,
   TALK_SHORT_BANDS,
   TALK_SHORT_PLACES,
   TALK_SITUATION_PLACES,
   type TalkCueBand,
+  type TalkSituationPlace,
 } from "@/core/seed/structure";
 import {
   isEnglishSentence,
@@ -51,6 +55,34 @@ import {
 export const TALK_CUE_LONG_MIN = 1;
 export const TALK_CUE_SHORT_MIN = 2;
 export const TALK_SITUATION_LINES_MIN = 3;
+/**
+ * 되묻기 자리의 상황 줄 수 하한(06:187 (2) '되묻기 자리는 다섯 이상' — 한 수업에 여러 번 나올 수 있어 같은 줄이 되풀이되지 않게, C218).
+ * 시드 꼴 검사 상수다.
+ */
+export const TALK_ASK_AGAIN_LINES_MIN = 5;
+/** 그 자리의 상황 줄 수 하한(되묻기 자리만 다섯, 그 밖은 셋). */
+export function situationLinesMinOf(place: TalkSituationPlace): number {
+  return place === TALK_ASK_AGAIN_PLACE
+    ? TALK_ASK_AGAIN_LINES_MIN
+    : TALK_SITUATION_LINES_MIN;
+}
+/**
+ * 되묻기 자리 줄이 들리지 않음 자리 줄과 '같은 문장'인지 볼 때 견주는 문장의 낱말 수 하한(06:187 (2) '들리지 않음 자리의 줄과 같은 문장을 쓰지
+ * 않는다'). 한 낱말 감탄('Oops!' · 'Sorry!')은 두 자리가 함께 쓰는 말머리라 견주지 않는다. 시드 꼴 검사 상수다.
+ */
+export const TALK_SAME_SENTENCE_MIN_WORDS = 2;
+/**
+ * 되묻기 자리 줄의 한국어 뜻에 두지 않는 말(06:187 (2) '한국어 뜻은 내가 다시 들어 볼게 쪽으로 쓴다 — 틀렸다 · 못 알아듣겠다는 뜻으로 쓰지
+ * 않는다', 영어 금지 구 'try again' · 'louder' · 'speak up' · "I don't understand you" 의 우리말 짝). 한국어 문구 목록이라 코드 상수다.
+ */
+export const TALK_ASK_AGAIN_KO_FORBIDDEN: readonly string[] = [
+  "틀렸",
+  "틀린",
+  "못 알아",
+  "모르겠",
+  "다시 해",
+  "크게",
+];
 /** 짧은 말 자리 · 구간마다 줄 수 하한(plan 정한 것 6). 시드 꼴 검사 상수다. */
 export const TALK_SHORT_LINES_MIN = 1;
 /** 1인칭 낱말(지어낸 경험 꼴은 '선생님 자신'의 경험 · 기억 꼴이다, 06:187 (4)). 영어 문법 목록이라 코드 상수다. */
@@ -163,6 +195,15 @@ function lineRangeProblems(
   return problems;
 }
 
+/** 줄의 문장 가운데 낱말 수가 하한 이상인 것(정규화한 글 — 자리 사이 같은 문장 견주기). */
+function sentenceKeysOf(en: string, minWords: number): string[] {
+  return splitSentences(en)
+    .filter(isEnglishSentence)
+    .filter((sentence) => sentenceWords(sentence) >= minWords)
+    .map(normalizeSpoken)
+    .filter((key) => key !== "");
+}
+
 /** 시드 목록 넷 검사(06:187)와 짧은 말 검사(C213). 없는 파일의 몫은 건너뛴다(규격 파일 '없음'은 seed:validate 가 따로 막는다). */
 export function checkTalkLists(
   files: TalkListsFiles & TalkShortListFiles & SoundAlikeListFiles,
@@ -238,26 +279,51 @@ export function checkTalkLists(
     const file = SEED_FILES.talkSituationLines;
     const forbiddenAll = situation.forbidden.all;
     const forbiddenNospeech = situation.forbidden.nospeech;
+    const forbiddenAskAgain = situation.forbidden[TALK_ASK_AGAIN_PLACE];
+    // 들리지 않음 자리 줄의 글(줄 전체와 낱말이 둘 이상인 문장) — 되묻기 자리 줄이 같은 말을 쓰지 않는지 견준다
+    const nospeechWhole = new Set(
+      situation.lines.nospeech.map((line) => normalizeSpoken(line.en)),
+    );
+    const nospeechSentences = new Set(
+      situation.lines.nospeech.flatMap((line) =>
+        sentenceKeysOf(line.en, TALK_SAME_SENTENCE_MIN_WORDS),
+      ),
+    );
     for (const place of TALK_SITUATION_PLACES) {
       const lines = situation.lines[place];
-      if (lines.length < TALK_SITUATION_LINES_MIN)
+      const min = situationLinesMinOf(place);
+      const askAgain = place === TALK_ASK_AGAIN_PLACE;
+      if (lines.length < min)
         push(
           "talk-situation-lines",
           file,
           `lines.${place}`,
-          `상황 줄 ${lines.length}개가 ${TALK_SITUATION_LINES_MIN}개보다 적다`,
+          `상황 줄 ${lines.length}개가 ${min}개보다 적다`,
         );
-      const forbidden =
-        place === "nospeech"
+      const forbidden = askAgain
+        ? [...forbiddenAll, ...forbiddenNospeech, ...forbiddenAskAgain]
+        : place === "nospeech"
           ? [...forbiddenAll, ...forbiddenNospeech]
           : forbiddenAll;
       lines.forEach((line, i) => {
+        const sameAsNospeech =
+          askAgain &&
+          (nospeechWhole.has(normalizeSpoken(line.en)) ||
+            sentenceKeysOf(line.en, TALK_SAME_SENTENCE_MIN_WORDS).some((key) =>
+              nospeechSentences.has(key),
+            ));
         const problems = [
+          ...(askAgain && line.en.includes("?")
+            ? ["물음표가 있다(되묻기 줄은 질문이 아니다)"]
+            : []),
           ...lineRangeProblems(line.en, LEVEL_MIN, ctx, allowed),
           ...phrasesIn(line.en, forbidden).map(
             (p) => `상황 금지 구 '${p}' 에 걸린다`,
           ),
           ...madeUpProblems(line.en),
+          ...(sameAsNospeech
+            ? ["들리지 않음 자리의 줄과 같은 문장이다(두 자리의 말을 가른다)"]
+            : []),
         ];
         if (problems.length > 0)
           push(
@@ -265,6 +331,17 @@ export function checkTalkLists(
             file,
             `lines.${place}.${i}.en`,
             `상황 줄 '${line.en}': ${problems.join(" · ")}`,
+          );
+        // 되묻기 줄의 한국어 뜻: 아이 탓 · 못 알아듣겠다는 말을 두지 않는다
+        const koHits = askAgain
+          ? TALK_ASK_AGAIN_KO_FORBIDDEN.filter((word) => line.ko.includes(word))
+          : [];
+        if (koHits.length > 0)
+          push(
+            "talk-situation-lines",
+            file,
+            `lines.${place}.${i}.ko`,
+            `되묻기 줄의 한국어 뜻 '${line.ko}' 에 ${koHits.map((w) => `'${w}'`).join(" · ")} 가 있다('내가 다시 들어 볼게' 쪽으로 쓴다 — 틀렸다 · 못 알아듣겠다는 뜻으로 쓰지 않는다)`,
           );
       });
     }
