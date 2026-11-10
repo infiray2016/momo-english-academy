@@ -13,6 +13,17 @@ test("마이크 점검 쪽이 뜨고 전략 단추 전부와 지금 한 일 고�
     "true",
   );
   await expect(page.getByText(MIC_TEXT.guide)).toBeVisible();
+  // A 라운드(브리프 task-probe): '자동 A 라운드(받아 온 소리)' 단추(맨 위) · 안내 글 · 횟수 고르기(누르지 않는다 — 라운드는 요청자 iPad 몫).
+  // 새로 연 쪽은 speechSynthesis 를 부른 적이 없어 새로 고침 안내가 없다
+  await expect(
+    page.getByRole("button", { name: MIC_TEXT.roundAStart, exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByText(MIC_TEXT.roundAGuide)).toBeVisible();
+  await expect(page.getByTestId("mic-round-a-count-3")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByTestId("mic-round-a-synth-used")).toHaveCount(0);
   // fix 8: '자동 W 라운드 2' 단추(맨 위)와 요청자 안내 글(누르지 않는다)
   await expect(
     page.getByRole("button", { name: MIC_TEXT.round2Start, exact: true }),

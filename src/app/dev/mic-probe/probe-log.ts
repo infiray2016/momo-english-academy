@@ -9,6 +9,8 @@
 // '진짜 살아남 n/m'(roundSurvivalOf) · 라운드 끝 로그(roundLogOf). 관찰 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음).
 // fix 8(분석 10.19.5 Z-1~Z-7): '자동 W 라운드 2'(WR2) 차례 0~13 계획(round2PlanOf) · 버림 안 소리(짧은 말 · 보통 말 · 긴 문장 · 띵) ·
 // 결과의 낱말 표지(apple · banana · 메아리) · 차례 칸(round2RowOf) · 갈래별 '진짜 살아남' 줄(round2LinesOf) · 라운드 끝 로그(round2LogOf).
+// A 라운드(브리프 task-probe 2026-11-10 — 받아 온 소리): '자동 A 라운드'(AR) 계획(aPlanOf) · 소리 내는 길 셋(Web Audio · 오디오 요소 · 지금
+// 읽기) · 형식 측정 표(aFormatRowsOf) · 차례 칸(aRowOf) · 길 · 꼴별 '진짜 살아남'(aLinesOf) · 요약 줄(aLineOf) · 라운드 끝 로그(aLogOf).
 // DB · React 없는 순수 모듈이고 단위 시험 tests/unit/mic-probe.test.ts 가 덮는다. 시각(at)은 그 쪽을 연 동안의 performance.now() 이고,
 // 표의 ms 는 모두 그 시도의 start 호출 기준이다. 기록은 기기 안(localStorage)에만 두고 복사할 때만 기기 밖(클립보드)으로 나간다.
 // 소리는 저장하지 않는다(7절 — getUserMedia · MediaRecorder 를 쓰지 않음. K 의 WebAudio 는 재생만).
@@ -53,13 +55,33 @@ export const STRATEGIES = [
   "W25",
   "WR",
   "WR2",
+  "AR",
 ] as const;
 export type Strategy = (typeof STRATEGIES)[number];
 
-/** 단추로 보이는 전략(T-next 는 T 뒤 '지금 눌러 말하기'로만, WR · WR2 는 '자동 W 라운드' · '자동 W 라운드 2' 단추로만 연다). */
+/** 단추로 보이는 전략(T-next 는 T 뒤 '지금 눌러 말하기'로만, WR · WR2 · AR 는 '자동 W 라운드' · '자동 W 라운드 2' · '자동 A 라운드' 단추로만 연다). */
 export const BUTTON_STRATEGIES: readonly Strategy[] = STRATEGIES.filter(
-  (s) => s !== "T-next" && s !== "WR" && s !== "WR2",
+  (s) => s !== "T-next" && s !== "WR" && s !== "WR2" && s !== "AR",
 );
+
+/** A 라운드의 소리 내는 길 셋(도는 순서 그대로 — 지금 읽기 speechSynthesis 는 맨 뒤, 브리프 task-probe 할 일 2). */
+export const A_VIAS = ["webaudio", "element", "synth"] as const;
+export type AVia = (typeof A_VIAS)[number];
+/**
+ * A 라운드 차례의 꼴: first 쉰 뒤(또는 문서의) 첫 차례 — 세션 없이 소리 → 진짜 · inside 버림 안에서 소리 → 진짜 · bare 세션 없이 소리 → 진짜 ·
+ * inside-sleep · bare-sleep 은 소리가 끝난 뒤 소리 출력을 재우고(AudioContext.suspend) 진짜를 여는 꼴(Web Audio 길만).
+ */
+export const A_SHAPES = [
+  "first",
+  "inside",
+  "bare",
+  "inside-sleep",
+  "bare-sleep",
+] as const;
+export type AShape = (typeof A_SHAPES)[number];
+/** A 라운드가 재는 소리 형식 셋(WAV 16비트 PCM · MP3 · Ogg Opus). 차례의 소리는 이 순서로 처음 재생이 된 형식을 쓴다. */
+export const A_FORMATS = ["wav", "mp3", "ogg"] as const;
+export type AFormat = (typeof A_FORMATS)[number];
 /** 한 세션을 멈추지 않고 듣는 전략(S · S2) — 자동 멈춤 없이 SESSION_MAX_MS 상한 · '멈추기'로만 끝난다. */
 export const CONTINUOUS_SESSION: readonly Strategy[] = ["S", "S2"];
 
@@ -182,6 +204,7 @@ export const EVENT_TYPES = [
   "visible",
   "webaudio-start",
   "webaudio-beep",
+  "webaudio-sleep",
   "decoy-alive",
   "session-type",
   "session-restore",
@@ -342,6 +365,19 @@ const recordSchema = z.object({
         ])
         .nullable()
         .default(null),
+      /**
+       * AR(A 라운드): 소리 내는 길 · 차례 꼴 · 그 길 · 꼴 안 몇 번째 · 차례의 소리 형식(읽기 길은 null) ·
+       * 차례를 시작할 때까지 이 쪽에서 speechSynthesis 를 부른 수(speak · cancel). AR 이 아니면 없다.
+       */
+      a: z
+        .object({
+          via: z.enum(A_VIAS),
+          shape: z.enum(A_SHAPES),
+          rep: z.number().int().nonnegative(),
+          format: z.enum(A_FORMATS).nullable(),
+          synthCalls: z.number().int().nonnegative(),
+        })
+        .optional(),
     })
     .nullable()
     .default(null),
@@ -458,6 +494,8 @@ export type ProbeRow = {
   round: RoundRow | null;
   /** WR2(fix 8)의 차례 칸. WR2 가 아니면 null. */
   round2: Round2Row | null;
+  /** AR(A 라운드)의 차례 칸. AR 이 아니면 null. */
+  roundA: ARow | null;
   error: { ms: number; code: string; message: string } | null;
   end: number | null;
   /** D · F · H · I: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출 ms(F · H · I 는 누르기까지 기다린 시간, I 는 쉼도 포함). */
@@ -600,6 +638,7 @@ export function rowOf(record: ProbeRecord): ProbeRow {
     unlockBefore: record.unlockBefore,
     round: roundRowOf(record),
     round2: round2RowOf(record),
+    roundA: aRowOf(record),
     sessionSpeak:
       midAnchor === undefined || !CONTINUOUS_SESSION.includes(record.strategy)
         ? null
@@ -820,7 +859,7 @@ export const ROW_COLUMNS = [
   "멈춤",
   "버린 중간",
   "들은 글",
-  "W 라운드(차례·길 / 버림 길이·읽기·as·살아 있음·실제 길이·읽기 시작~끝 → 진짜 as·sp·apple·banana · WR2 는 아래 설명 줄)",
+  "W 라운드(차례·길 / 버림 길이·읽기·as·살아 있음·실제 길이·읽기 시작~끝 → 진짜 as·sp·apple·banana · WR2 · A 라운드는 아래 설명 줄)",
 ] as const;
 
 /** 표 한 줄의 칸 글(화면 표 · 복사 글이 같이 쓴다). */
@@ -872,11 +911,13 @@ export function rowCells(row: ProbeRow): string[] {
       : `${row.stopReason}${row.stopMethod === null ? "" : `·${row.stopMethod}`}`,
     row.droppedInterims === 0 ? "-" : String(row.droppedInterims),
     row.finalText || (row.heardText ? `(중간) ${row.heardText}` : "-"),
-    row.round2 !== null
-      ? round2CellOf(row.round2)
-      : row.round === null
-        ? "-"
-        : roundCellOf(row.round),
+    row.roundA !== null
+      ? aCellOf(row.roundA)
+      : row.round2 !== null
+        ? round2CellOf(row.round2)
+        : row.round === null
+          ? "-"
+          : roundCellOf(row.round),
   ];
 }
 
@@ -912,6 +953,7 @@ export function copyTextOf(
     "- 버림 → 진짜(W): 버림 세션 길이 · 버림 as · 살아 있음(as > 250 이면 abort 하고 곧바로 진짜) · 버림 중 읽기 부름/시작(끔이면 '끔') → 진짜 as · 진짜 결과. 앞 제약 풀기: '읽기 제약 풀기'를 누른 뒤 이 듣기 누름까지 ms · 시작 · 끝 알림",
     "- 읽기 끝 뒤: 듣기 앞 마지막 읽기 끝 알림 → 첫 start 호출(D 누름 밖 자동 · F · H · I 누름). 취소 뒤: G 의 speechSynthesis.cancel() → 첫 start 호출(괄호는 그때 읽는 중이었는지)",
     "- W 라운드 2(WR2): 차례 · 갈래 · 소리(short 짧은 말 · normal 보통 말 · long 긴 문장 · beep 띵 · none) / 버림 하한 · as · 실제 길이 · cancel 때 speaking·pending(0.3초 뒤) · 부른 때 · 소리 시작~끝(없으면 '끝 없음') · stop 때 speaking · 거짓 확인 / 진짜 as · sp · 중간 · final · apple · banana · 메아리 · 깨끗함(ms 는 그 시도 start 기준)",
+    "- A 라운드(AR): 차례 · 소리 내는 길(Web Audio · 오디오 요소 · 지금 읽기) · 꼴(쉰 뒤 첫 차례 · 버림 안 · 세션 없이 · 재움 둘) · 형식 / 버림 하한 · as · 실제 길이 / 소리 부름 → 첫 소리 ms · 소리 시작~끝 · 재움 뒤 상태 / 진짜 as · sp · 중간 · final · apple · 소리 받음 · 깨끗함 · 그때까지 speechSynthesis 부른 수(ms 는 그 시도 start 기준)",
     "- W 라운드(WR): 차례 · 탄 길(dead 버림 죽음 · na 살아 있어 두 번째 버림 · na-ga 두 번째도 살아 있어 세션 없이 읽기 · ga 세션 없이 읽기) / 버림마다 길이 · 읽기 켬 끔 · as · 살아 있음 · 실제 길이 · 버림 안 읽기 시작~끝(ms, 버림 start 기준) → 진짜 as · sp · apple · banana(차례 7 만). 진짜 살아남은 apple · banana final 수",
     "",
     tableLine(SUMMARY_COLUMNS),
@@ -927,6 +969,9 @@ export function copyTextOf(
       (run) =>
         `- W 라운드 2 ${run}: ${round2LineOf(round2LinesOf(records, run))}`,
     ),
+    ...roundRunsOf(records, "AR").map(
+      (run) => `- A 라운드 ${run}: ${aCellsLineOf(aLinesOf(records, run))}`,
+    ),
     "",
     tableLine(ROW_COLUMNS),
     tableLine(ROW_COLUMNS.map(() => "---")),
@@ -939,7 +984,7 @@ export function copyTextOf(
   return lines.join("\n");
 }
 
-/** WR(또는 WR2) 기록의 라운드 표지(처음 나온 차례대로). */
+/** WR(또는 WR2 · AR) 기록의 라운드 표지(처음 나온 차례대로). */
 function roundRunsOf(
   records: readonly ProbeRecord[],
   strategy: Strategy = "WR",
@@ -1677,8 +1722,16 @@ const stateOf = (e: ProbeEvent | undefined): SpeakState | null =>
 export function round2RowOf(record: ProbeRecord): Round2Row | null {
   const meta = record.round;
   if (meta === null || record.strategy !== "WR2") return null;
-  const sound = meta.sound ?? "none";
-  const group = meta.group ?? "stuck";
+  return soundRowOf(record, meta, meta.sound ?? "none", meta.group ?? "stuck");
+}
+
+/** 버림 안 소리(또는 세션 없이 소리) → 진짜 꼴 차례의 칸(WR2 와 A 라운드가 같이 쓴다 — 판정 꼴을 같게). */
+function soundRowOf(
+  record: ProbeRecord,
+  meta: NonNullable<ProbeRecord["round"]>,
+  sound: Round2Sound,
+  group: Round2Group,
+): Round2Row {
   const d = meta.slots.findIndex((s) => s.role === "decoy");
   const r = meta.slots.findIndex((s) => s.role === "real");
   const realStart = r < 0 ? undefined : record.attempts[r]?.startCallAt;
@@ -2006,6 +2059,778 @@ export function round2LogOf(
     })
     .filter((s) => s !== null);
   const full = JSON.stringify({ ...base, steps });
+  return full.length <= LOG_BODY_MAX_CHARS
+    ? full
+    : JSON.stringify({ ...base, truncated: true });
+}
+
+// ---- 자동 A 라운드(브리프 task-probe 2026-11-10 — 받아 온 소리의 재생 길이 iPad 음성 인식과 부딪히는가) ----
+
+/** 길 · 꼴의 이름(차례 칸 · 요약 줄). */
+export const A_VIA_LABEL: Record<AVia, string> = {
+  webaudio: "Web Audio",
+  element: "오디오 요소",
+  synth: "지금 읽기",
+};
+export const A_SHAPE_LABEL: Record<AShape, string> = {
+  first: "쉰 뒤 첫 차례",
+  inside: "버림 안",
+  bare: "세션 없이",
+  "inside-sleep": "버림 안(재움)",
+  "bare-sleep": "세션 없이(재움)",
+};
+/** 버림 세션 없이 소리를 내는 꼴인가 · 소리 뒤 소리 출력을 재우는 꼴인가. */
+export const aIsBare = (shape: AShape) =>
+  shape === "first" || shape === "bare" || shape === "bare-sleep";
+export const aIsSleep = (shape: AShape) =>
+  shape === "inside-sleep" || shape === "bare-sleep";
+/**
+ * '쉰 뒤 첫 차례'를 도는 길: Web Audio(라운드 맨 앞 — 문서를 연 뒤 첫 듣기라 쉼을 기다리지 않는다)와 지금 읽기(앞 듣기 끝 뒤 45초 쉼).
+ * 오디오 요소는 돌지 않는다(쉼 45초가 한 번 더 들어 전체가 6분을 넘는다 — 컨트롤러 2026-11-10 'Web Audio 길만 해도 된다').
+ */
+export const A_FIRST_VIAS: readonly AVia[] = ["webaudio", "synth"];
+/** 소리 출력을 재우는 꼴을 도는 길(AudioContext 가 있는 Web Audio 만). */
+export const A_SLEEP_VIAS: readonly AVia[] = ["webaudio"];
+/** 길마다 도는 꼴(요약 줄 · 셈의 순서). */
+export function aShapesOf(via: AVia): AShape[] {
+  return [
+    ...(A_FIRST_VIAS.includes(via) ? (["first"] as const) : []),
+    "inside",
+    "bare",
+    ...(A_SLEEP_VIAS.includes(via)
+      ? (["inside-sleep", "bare-sleep"] as const)
+      : []),
+  ];
+}
+/** 형식의 MIME(canPlayType 에 묻는 값)과 시험용 소리 파일(public/dev/probe-audio — 같은 문장 2초 남짓, 세 형식). */
+export const A_FORMAT_MIME: Record<AFormat, string> = {
+  wav: "audio/wav",
+  mp3: "audio/mpeg",
+  ogg: 'audio/ogg; codecs="opus"',
+};
+export const A_AUDIO_URL: Record<AFormat, string> = {
+  wav: "/dev/probe-audio/line.wav",
+  mp3: "/dev/probe-audio/line.mp3",
+  ogg: "/dev/probe-audio/line.ogg",
+};
+/** 소리 파일의 문장이자 읽기 길이 읽는 문장(세 길의 소리 길이를 비슷하게 — 따라 말하게 유도하지 않는 서술문). */
+export const A_SENTENCE = W_ROUND_SENTENCE;
+/** 길 · 꼴마다 도는 횟수(화면에서 고른다). 기본 3번이 5분 남짓이다(컨트롤러 2026-11-10 '전체 6분 안, 3번으로 내려도 좋다'). */
+export const A_COUNTS = [2, 3, 4] as const;
+export const A_COUNT_DEFAULT = 3;
+/** '쉰 뒤 첫 차례' 앞의 쉼: 앞 듣기 end 뒤 이만큼 지난 뒤에 소리를 낸다(문서의 첫 듣기면 기다리지 않는다). */
+export const A_REST_MS = ROUND_PAUSE_MS;
+/** 형식 하나를 길마다 재는 횟수(첫 소리까지의 중앙값용). 풀지 못한 형식은 다시 재지 않는다. */
+export const A_FORMAT_REPS = 3;
+/** A 버림 하한(소리 끝 + 0.3초가 더 늦으면 그때 닫는다 — 기록 8 '하한은 소리 끝 + 0.3초가 정한다'). */
+export const A_DECOY_MS = 1_500;
+/** A 진짜: 'apple' 결과가 이 안에 없으면 stop(WR2 는 6초 — 라운드를 줄이려고 1초 줄임). */
+export const A_NO_RESULT_STOP_MS = 5_000;
+/** A 소리 끝을 기다리는 상한(부른 때부터, 시작 알림이 오면 그때부터 다시). 넘으면 '소리 끝 없음'을 남기고 멈춘 뒤 잇는다. */
+export const A_SOUND_END_WAIT_MS = 6_000;
+/** 길 열기 응답 상한. 누름 밖에서 넘으면 '한 번 더 눌러 주세요'로 간다(iOS 는 누름 밖 speak() 를 사건 없이 버림 — 분석 10.16). */
+export const A_OPEN_WAIT_MS = 1_500;
+/** 누름 안에서 연 길의 응답 상한. 넘어도 건너뛰지 않고(답 없음으로 적고) 형식 측정으로 가른다 — 다시 누르게 할 길이 없어서 더 기다린다. */
+export const A_OPEN_GESTURE_WAIT_MS = 4_000;
+/** 형식 측정 한 번의 상한. 넘으면 실패(timeout)로 적는다. */
+export const A_MEASURE_WAIT_MS = 4_000;
+/** 소리 출력 재우기(suspend)의 답을 기다리는 상한. 넘으면 '답 없음'으로 적고 잇는다. */
+export const A_SLEEP_WAIT_MS = 1_000;
+/** 읽기 뒤 다시 재생(M6): 한 번의 재생에 답을 기다리는 상한 · 두 소리 사이 · 끝 물음의 답을 기다리는 상한(넘으면 '답 없음'으로 넘어간다). */
+export const A_REPLAY_WAIT_MS = 8_000;
+export const A_AFTER_GAP_MS = 1_000;
+export const A_ASK_WAIT_MS = 60_000;
+/** 차례 하나의 어림 길이(어림 시간 표시용 — 차례 사이 2초 + 소리 2초 남짓 + 1초 + 진짜 4초쯤)와 차례 밖(형식 측정 · 다시 재생 · 물음)의 어림. */
+export const A_STEP_EST_MS = 9_300;
+export const A_EXTRA_EST_MS = 30_000;
+
+export type APlanStep = {
+  step: number;
+  via: AVia;
+  shape: AShape;
+  /** 그 길 · 꼴 안 몇 번째(1부터). */
+  rep: number;
+  /** 앞 차례 end(차례 0 은 길 준비 끝) 뒤 이 차례를 시작하기까지 ms. */
+  waitMs: number;
+  /** 앞 듣기 end 뒤 적어도 이만큼 쉰 뒤에 시작한다(쉰 뒤 첫 차례만 0 보다 크다 — 문서의 첫 듣기면 기다리지 않는다). */
+  restMs: number;
+  /** 버림 하한 ms. 버림 안 꼴만 0 보다 크다. */
+  decoyMs: number;
+  /** 소리 앞 cancel(읽기 길만 — Web Audio · 오디오 요소 길은 speechSynthesis 를 건드리지 않는다). */
+  cancel: boolean;
+  resetStep: ResetStep;
+};
+
+/**
+ * 자동 차례. 길마다(Web Audio → 오디오 요소 → 지금 읽기): [쉰 뒤 첫 차례 한 번(A_FIRST_VIAS)] → '버림 안 → 세션 없이'를 count 번 번갈아 →
+ * [재우는 꼴 '버림 안(재움) → 세션 없이(재움)'를 count 번(A_SLEEP_VIAS)]. 차례 0 은 Web Audio 의 첫 차례라 문서를 연 뒤 첫 듣기다.
+ * '세션 없이' 차례가 늘 '소리를 받았을 듣기' 바로 뒤에 오게 번갈아 돈다.
+ */
+export function aPlanOf(count: number): APlanStep[] {
+  const plan: APlanStep[] = [];
+  const add = (via: AVia, shape: AShape, rep: number) => {
+    plan.push({
+      step: plan.length,
+      via,
+      shape,
+      rep,
+      waitMs: plan.length === 0 ? 0 : ROUND_GAP_MS,
+      restMs: shape === "first" ? A_REST_MS : 0,
+      decoyMs: aIsBare(shape) ? 0 : A_DECOY_MS,
+      cancel: via === "synth",
+      resetStep: shape === "first" && plan.length > 0 ? "pause-45" : "as-is",
+    });
+  };
+  for (const via of A_VIAS) {
+    if (A_FIRST_VIAS.includes(via)) add(via, "first", 1);
+    for (let rep = 1; rep <= count; rep++) {
+      add(via, "inside", rep);
+      add(via, "bare", rep);
+    }
+    if (!A_SLEEP_VIAS.includes(via)) continue;
+    for (let rep = 1; rep <= count; rep++) {
+      add(via, "inside-sleep", rep);
+      add(via, "bare-sleep", rep);
+    }
+  }
+  return plan;
+}
+
+/** 라운드의 어림 시간(분, 반올림 — 화면의 횟수 고르기 옆에 보인다): 차례 + 쉼(차례 0 은 빼고) + 차례 밖. */
+export function aEstimateMinutes(count: number): number {
+  const plan = aPlanOf(count);
+  const rest = plan.slice(1).reduce((sum, s) => sum + s.restMs, 0);
+  return Math.round(
+    (plan.length * A_STEP_EST_MS + rest + A_EXTRA_EST_MS) / 60_000,
+  );
+}
+
+/** 형식 측정 한 번: 받기 시작 → 첫 소리 ms(Web Audio 는 받기 · 풀기 ms 도), 재생이 됐는가, 오류 이름. */
+export type AMeasure = {
+  via: "webaudio" | "element";
+  format: AFormat;
+  ok: boolean;
+  firstSoundMs: number | null;
+  fetchMs: number | null;
+  decodeMs: number | null;
+  error: string | null;
+};
+/**
+ * 길 열기 한 번: 누름 안이었는가 · 결과 · 덧붙임(AudioContext 상태 · 오류 이름) · 까닭(enter 길에 들어감 · wake 재운 소리 출력을 다음
+ * 소리 앞에 깨움 · after 읽기 뒤 다시 재생)과 그때 이을 차례(after 는 null).
+ */
+export type AOpen = {
+  via: AVia;
+  gesture: boolean;
+  result: "ok" | "need-gesture" | "failed";
+  detail: string;
+  purpose: "enter" | "wake" | "after";
+  step: number | null;
+};
+/**
+ * 읽기 뒤 다시 재생 한 번(M6 — speechSynthesis 를 쓴 뒤에도 받아 온 소리가 나는가): 재생이 시작 · 끝났는가, 시작 · 끝 때의
+ * AudioContext 상태(오디오 요소는 null), 재생하는 동안 흐른 시간 ms(Web Audio 는 AudioContext.currentTime, 요소는 재생 자리), 오류.
+ */
+export type AReplay = {
+  via: "webaudio" | "element";
+  format: AFormat | null;
+  started: boolean;
+  ended: boolean;
+  stateAtStart: string | null;
+  stateAtEnd: string | null;
+  flowedMs: number | null;
+  error: string | null;
+};
+/** '방금 두 소리가 들렸나요?'의 답(첫 번째 = Web Audio, 두 번째 = 오디오 요소). */
+export const A_HEARD = ["both", "first", "second", "none"] as const;
+export type AHeard = (typeof A_HEARD)[number];
+export const A_HEARD_LABEL: Record<AHeard | "no-answer", string> = {
+  both: "둘 다",
+  first: "첫 번째만(Web Audio)",
+  second: "두 번째만(오디오 요소)",
+  none: "둘 다 안 들림",
+  "no-answer": "답 없음",
+};
+/** '듣기가 켜진 동안 소리가 작아졌나요?'의 답(WebKit 236219 — 마이크가 열리면 재생 소리가 작아진다는 보고). */
+export const A_VOLUME = ["same", "quieter", "unknown"] as const;
+export type AVolume = (typeof A_VOLUME)[number];
+export const A_VOLUME_LABEL: Record<AVolume | "no-answer", string> = {
+  same: "그대로",
+  quieter: "작아짐",
+  unknown: "모르겠음",
+  "no-answer": "답 없음",
+};
+
+/** 라운드가 차례 밖에서 잰 것(기록에 안 들어가는 몫 — 라운드 끝 로그 · 요약 줄에 쓴다). */
+export type AReport = {
+  /** 라운드를 시작할 때까지 이 쪽에서 speechSynthesis 를 부른 수(0 이어야 깨끗한 측정). */
+  synthBefore: number;
+  /** '한 번 더 눌러 주세요'를 누른 수(처음 '시작' 누름은 빼고). */
+  taps: number;
+  canPlay: Record<AFormat, string>;
+  opens: AOpen[];
+  measures: AMeasure[];
+  /** 길마다 차례의 소리로 쓴 형식(읽기 길 · 못 고른 길은 null). */
+  played: Record<AVia, AFormat | null>;
+  /** 못 열었거나 재생되는 형식이 없어 차례를 건너뛴 길. */
+  skipped: AVia[];
+  /** 재운 소리 출력을 누름 밖에서 못 깨워(누름이 필요해) 그 뒤로 돌지 않은 재우는 꼴 차례. */
+  sleepDropped: number[];
+  /** 읽기 뒤 다시 재생(M6)의 기계 기록과 요청자의 답(물음 전이면 null). 읽기 길이 돌지 않았으면 null. */
+  after: { plays: AReplay[]; heard: AHeard | "no-answer" | null } | null;
+  /** '듣기가 켜진 동안 소리가 작아졌나요?'의 답(물음 전이면 null). */
+  volume: AVolume | "no-answer" | null;
+};
+
+/** 그 길에서 재생이 된 첫 형식(A_FORMATS 순서). 없으면 null. */
+export function aPlayFormatOf(
+  measures: readonly AMeasure[],
+  via: AVia,
+): AFormat | null {
+  return (
+    A_FORMATS.find((format) =>
+      measures.some((m) => m.via === via && m.format === format && m.ok),
+    ) ?? null
+  );
+}
+
+/** 중앙값(반올림, 짝수 개면 가운데 둘의 평균). 비면 null. */
+export function medianOf(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const upper = sorted[mid] ?? 0;
+  if (sorted.length % 2 === 1) return round(upper);
+  return round(((sorted[mid - 1] ?? upper) + upper) / 2);
+}
+
+/** 형식 하나의 측정 줄: canPlayType 값 · decodeAudioData 로 풀려 재생됐는가 · 오디오 요소로 재생됐는가 · 첫 소리까지의 중앙값. 안 쟀으면 null. */
+export type AFormatRow = {
+  format: AFormat;
+  canPlay: string;
+  decode: boolean | null;
+  element: boolean | null;
+  webaudioMs: number | null;
+  elementMs: number | null;
+  /** Web Audio 의 받기 · 풀기 ms 중앙값. */
+  fetchMs: number | null;
+  decodeMs: number | null;
+  errors: string[];
+};
+
+export function aFormatRowsOf(report: AReport): AFormatRow[] {
+  return A_FORMATS.map((format) => {
+    const of = (via: AMeasure["via"]) =>
+      report.measures.filter((m) => m.via === via && m.format === format);
+    const web = of("webaudio");
+    const element = of("element");
+    const okOf = (list: readonly AMeasure[]) =>
+      list.length === 0 ? null : list.some((m) => m.ok);
+    const msOf = (
+      list: readonly AMeasure[],
+      pick: (m: AMeasure) => number | null,
+    ) =>
+      medianOf(
+        list
+          .filter((m) => m.ok)
+          .map(pick)
+          .filter((v) => v !== null),
+      );
+    return {
+      format,
+      canPlay: report.canPlay[format],
+      decode: okOf(web),
+      element: okOf(element),
+      webaudioMs: msOf(web, (m) => m.firstSoundMs),
+      elementMs: msOf(element, (m) => m.firstSoundMs),
+      fetchMs: msOf(web, (m) => m.fetchMs),
+      decodeMs: msOf(web, (m) => m.decodeMs),
+      errors: [
+        ...new Set(
+          [...web, ...element].map((m) => m.error).filter((e) => e !== null),
+        ),
+      ],
+    };
+  });
+}
+
+/** AR 기록 하나의 차례 칸: WR2 차례 칸의 버림 · 소리 · 진짜 값에 길 · 꼴 · 형식 · 판정 셋을 더한다. */
+export type ARow = Omit<Round2Row, "group" | "sound" | "real"> & {
+  via: AVia;
+  shape: AShape;
+  rep: number;
+  format: AFormat | null;
+  synthCalls: number;
+  /** 소리 부름 → 첫 소리(시작 알림) ms. 차례의 소리는 부를 때마다 새로 받아 온다(받기 · 풀기 포함). */
+  firstSoundMs: number | null;
+  /** 재우는 꼴: 소리 끝 뒤 suspend 를 부른 뒤의 AudioContext 상태(suspended · closed · 답 없음 no-reply)와 걸린 ms. 재우지 않았으면 null. */
+  sleep: { state: string; ms: number | null } | null;
+  /** 진짜 듣기를 열 때 Web Audio 길의 AudioContext 상태(running · suspended · …, 없으면 none). 진짜가 안 열렸으면 null. */
+  audioAtReal: string | null;
+  /** 앞 듣기 end → 이 차례의 첫 start 호출 ms(쉰 뒤 첫 차례를 읽을 때 쓴다 — 문서의 첫 듣기면 null). */
+  sincePrevEndMs: number | null;
+  /** 진짜가 살았는가(WR2 와 같은 판정): 진짜 세션의 결과 글에 'apple' 이 들었다. */
+  apple: boolean;
+  /** 마이크가 소리를 받았는가(기록 8 의 둘째 기준): speechstart 또는 결과 글이 왔다. */
+  heard: boolean;
+  /** 진짜의 audiostart 가 살아 있는 띠(250ms 넘음)인가. 말하지 않고 돌렸을 때의 보조 값(AudioContext 가 도는 동안은 맞지 않음 — 기록 8). */
+  slow: boolean | null;
+};
+
+/** AR 기록 하나의 차례 칸. AR 이 아니면 null. */
+export function aRowOf(record: ProbeRecord): ARow | null {
+  const meta = record.round;
+  const a = meta?.a;
+  if (meta === null || a === undefined || record.strategy !== "AR") return null;
+  // 문장이 W_ROUND_SENTENCE 라 메아리 낱말은 long, 갈래는 굳음 만들기가 아닌 아무 갈래(깨끗함 판정만 쓴다)
+  const base = soundRowOf(record, meta, "long", "control");
+  const s = base.session;
+  const sleepCall = record.events.find(
+    (e) => e.type === "webaudio-sleep" && e.code === "call",
+  );
+  const sleepReply = record.events.find(
+    (e) => e.type === "webaudio-sleep" && e.message === "reply",
+  );
+  return {
+    step: base.step,
+    via: a.via,
+    shape: a.shape,
+    rep: a.rep,
+    format: a.format,
+    synthCalls: a.synthCalls,
+    decoyMs: base.decoyMs,
+    cancel: base.cancel,
+    soundCall: base.soundCall,
+    callState: base.callState,
+    soundStart: base.soundStart,
+    soundEnd: base.soundEnd,
+    soundEndMissing: base.soundEndMissing,
+    decoy: base.decoy,
+    session: s,
+    clean: base.clean,
+    firstSoundMs:
+      base.soundCall === null || base.soundStart === null
+        ? null
+        : base.soundStart - base.soundCall,
+    sleep:
+      sleepCall === undefined
+        ? null
+        : {
+            state: sleepReply?.code ?? "no-reply",
+            ms:
+              sleepReply === undefined
+                ? null
+                : round(sleepReply.at - sleepCall.at),
+          },
+    audioAtReal:
+      record.events.find(
+        (e) => e.type === "webaudio-start" && e.message === "real",
+      )?.code ?? null,
+    sincePrevEndMs:
+      record.sincePrevEndMs === null ? null : round(record.sincePrevEndMs),
+    apple: s?.apple === true,
+    heard:
+      s !== null &&
+      (s.speechstart !== null ||
+        s.interims + s.finals > 0 ||
+        s.heardLength > 0),
+    slow: s === null || s.as === null ? null : s.as > DECOY_ALIVE_MS,
+  };
+}
+
+/** A 차례 칸 글(표 · 복사 글). */
+export function aCellOf(row: ARow): string {
+  const head = `${row.step}·${A_VIA_LABEL[row.via]}·${A_SHAPE_LABEL[row.shape]}·${row.format ?? "-"}`;
+  const dc = row.decoy;
+  const decoy =
+    dc === null
+      ? `세션 없이${row.shape === "first" ? `(앞 끝 뒤 ${cell(row.sincePrevEndMs)})` : ""}`
+      : `버림 ${(row.decoyMs ?? 0) / 1000}s·${cell(dc.as)}${dc.alive ? "(살아 있음)" : ""}·${cell(dc.actualMs)}${dc.endedEarly ? "(저절로 끝남)" : ""}`;
+  const sleep =
+    row.sleep === null
+      ? ""
+      : ` · 재움 ${row.sleep.state}(${cell(row.sleep.ms)})`;
+  const sound = `부름 ${cell(row.soundCall)} → 첫 소리 ${cell(row.firstSoundMs)} · 소리 ${cell(row.soundStart)}~${row.soundEndMissing ? "끝 없음" : cell(row.soundEnd)}${sleep}`;
+  const s = row.session;
+  const real =
+    s === null
+      ? "진짜 없음"
+      : `진짜 ${cell(s.as)}·${cell(s.speechstart)}(AudioContext ${row.audioAtReal ?? "-"}) · 중간 ${s.interims} · final ${s.finals} · apple ${yesNo(row.apple)} · 소리 받음 ${yesNo(row.heard)}${s.echo > 0 ? ` · 메아리 ${s.echo}` : ""}`;
+  return `${head} / ${decoy} / ${sound} → ${real} · ${row.clean ? "깨끗" : "뺌"} · 읽기 부름 ${row.synthCalls}`;
+}
+
+/** audiostart ms 의 분포: 잰 수 · 가장 작은 값 · 중앙값 · 200ms 안(FAST_AUDIOSTART_MS — 앱의 '마이크 안 잡힘' 의심 띠)인 수. */
+export type AAsStat = {
+  n: number;
+  min: number | null;
+  median: number | null;
+  fast: number;
+};
+export function aAsStatOf(values: readonly number[]): AAsStat {
+  return {
+    n: values.length,
+    min: values.length === 0 ? null : round(Math.min(...values)),
+    median: medianOf(values),
+    fast: values.filter((v) => v <= FAST_AUDIOSTART_MS).length,
+  };
+}
+
+/**
+ * 길 · 꼴 하나의 셈: 돈 수 · 깨끗한 수 · 그 가운데 apple 들음 · 소리 받음 · 살아 있는 띠 수 · 첫 소리까지 중앙값, 그리고 돈 차례 모두의
+ * 진짜 듣기 · 버리는 듣기 audiostart 분포(버림이 없는 꼴은 null).
+ */
+export type ACell = {
+  via: AVia;
+  shape: AShape;
+  tries: number;
+  clean: number;
+  apple: number;
+  heard: number;
+  slow: number;
+  firstSoundMs: number | null;
+  realAs: AAsStat;
+  decoyAs: AAsStat | null;
+};
+export type ALines = {
+  cells: ACell[];
+  /** 길마다 차례의 첫 소리까지(부름 → 시작) 중앙값. */
+  firstSound: Record<AVia, number | null>;
+  /** 깨끗하지 않아 뺀 차례. */
+  excluded: number[];
+};
+
+/** 길 · 꼴별 '진짜 살아남'(깨끗한 차례만): apple 을 들은 진짜 수 / 깨끗한 차례 수. autoRun 을 주면 그 라운드만. */
+export function aLinesOf(
+  records: readonly ProbeRecord[],
+  autoRun?: string,
+): ALines {
+  const cells: ACell[] = A_VIAS.flatMap((via) =>
+    aShapesOf(via).map((shape) => ({
+      via,
+      shape,
+      tries: 0,
+      clean: 0,
+      apple: 0,
+      heard: 0,
+      slow: 0,
+      firstSoundMs: null,
+      realAs: aAsStatOf([]),
+      decoyAs: aIsBare(shape) ? null : aAsStatOf([]),
+    })),
+  );
+  const empty = () => new Map<ACell, number[]>(cells.map((c) => [c, []]));
+  const latency = empty();
+  const realAs = empty();
+  const decoyAs = empty();
+  const excluded: number[] = [];
+  for (const record of records) {
+    if (autoRun !== undefined && record.autoRun !== autoRun) continue;
+    const row = aRowOf(record);
+    if (row === null) continue;
+    const slot = cells.find((c) => c.via === row.via && c.shape === row.shape);
+    if (slot === undefined) continue;
+    slot.tries += 1;
+    if (row.firstSoundMs !== null) latency.get(slot)?.push(row.firstSoundMs);
+    // audiostart 분포는 깨끗함과 무관하게 돈 차례 모두에서 모은다
+    const real = row.session?.as ?? null;
+    if (real !== null) realAs.get(slot)?.push(real);
+    const decoy = row.decoy?.as ?? null;
+    if (decoy !== null) decoyAs.get(slot)?.push(decoy);
+    if (!row.clean) {
+      excluded.push(row.step);
+      continue;
+    }
+    slot.clean += 1;
+    if (row.apple) slot.apple += 1;
+    if (row.heard) slot.heard += 1;
+    if (row.slow === true) slot.slow += 1;
+  }
+  for (const c of cells) {
+    c.firstSoundMs = medianOf(latency.get(c) ?? []);
+    c.realAs = aAsStatOf(realAs.get(c) ?? []);
+    if (c.decoyAs !== null) c.decoyAs = aAsStatOf(decoyAs.get(c) ?? []);
+  }
+  const firstSound = Object.fromEntries(
+    A_VIAS.map((via) => [
+      via,
+      medianOf(
+        cells.filter((c) => c.via === via).flatMap((c) => latency.get(c) ?? []),
+      ),
+    ]),
+  ) as Record<AVia, number | null>;
+  return { cells, firstSound, excluded };
+}
+
+/** 길마다 살아난 수 / 깨끗한 차례 수: 'Web Audio 쉰 뒤 첫 차례 1/1 · 버림 안 3/3 · 세션 없이 0/3 · … | 오디오 요소 … | 지금 읽기 …'. 돈 차례가 없는 길은 '안 돎'. */
+export function aCellsLineOf(lines: ALines): string {
+  return A_VIAS.map((via) => {
+    const mine = lines.cells.filter((c) => c.via === via);
+    if (mine.every((c) => c.tries === 0)) return `${A_VIA_LABEL[via]} 안 돎`;
+    const parts = mine.map(
+      (c) =>
+        `${A_SHAPE_LABEL[c.shape]} ${c.apple}/${c.clean}${c.heard > c.apple ? `(소리 받음 ${c.heard})` : ""}`,
+    );
+    return `${A_VIA_LABEL[via]} ${parts.join(" · ")}`;
+  }).join(" | ");
+}
+
+const asStatCell = (s: AAsStat) =>
+  s.n === 0 ? "-" : `${cell(s.min)}·${cell(s.median)}·${s.fast}/${s.n}`;
+
+/**
+ * audiostart 분포 줄(길 · 꼴마다 '가장 작은 값·중앙값·200ms 안인 수/잰 수', 진짜 듣기와 버리는 듣기를 따로):
+ * 'Web Audio 버림 안 진짜 12·14·3/3 버림 11·13·3/3 · 세션 없이 진짜 … | …'. 앱의 '마이크 안 잡힘' 감지(audiostart 200ms 안 + 조용함)가
+ * 새 소리 길에서 살아 있는 듣기를 끊을지를 본다(기록 8 차례 7 · 8 — Web Audio 소리 뒤 진짜 as 14 · 12 인데 들음).
+ */
+export function aAsLineOf(lines: ALines): string {
+  return A_VIAS.flatMap((via) => {
+    const mine = lines.cells.filter((c) => c.via === via && c.tries > 0);
+    if (mine.length === 0) return [];
+    const parts = mine.map(
+      (c) =>
+        `${A_SHAPE_LABEL[c.shape]} 진짜 ${asStatCell(c.realAs)}${c.decoyAs === null ? "" : ` 버림 ${asStatCell(c.decoyAs)}`}`,
+    );
+    return [`${A_VIA_LABEL[via]} ${parts.join(" · ")}`];
+  }).join(" | ");
+}
+
+const msCell = (value: number | null) => (value === null ? "-" : `${value}ms`);
+
+/** 읽기 뒤 다시 재생 줄: '읽기 뒤 재생 Web Audio 시작 예·끝 예(running · 2040ms 흐름) · 오디오 요소 … · 들림: 둘 다'. */
+export function aAfterLineOf(after: NonNullable<AReport["after"]>): string {
+  const plays = after.plays.map((p) => {
+    const label = A_VIA_LABEL[p.via];
+    if (p.error === "skipped") return `${label} 안 함`;
+    const notes = [
+      ...(p.stateAtEnd === null ? [] : [p.stateAtEnd]),
+      ...(p.flowedMs === null ? [] : [`${p.flowedMs}ms 흐름`]),
+      ...(p.error === null ? [] : [p.error]),
+    ];
+    return `${label} 시작 ${yesNo(p.started)}·끝 ${yesNo(p.ended)}${notes.length === 0 ? "" : `(${notes.join(" · ")})`}`;
+  });
+  const heard = after.heard === null ? "묻기 전" : A_HEARD_LABEL[after.heard];
+  return `읽기 뒤 재생 ${plays.join(" · ")} · 들림: ${heard}`;
+}
+
+/** 재운 소리 출력을 다음 소리 앞에 깨운 기록 줄: '깨우기 누름 밖 3/3'(누름이 필요했으면 '· 누름 필요 1 · 안 돈 재움 차례 5·6'). 깨운 적이 없으면 null. */
+export function aWakeLineOf(report: AReport): string | null {
+  const wakes = report.opens.filter((o) => o.purpose === "wake" && !o.gesture);
+  if (wakes.length === 0) return null;
+  const ok = wakes.filter((o) => o.result === "ok").length;
+  const blocked = wakes.filter((o) => o.result === "need-gesture").length;
+  return [
+    `깨우기 누름 밖 ${ok}/${wakes.length}`,
+    ...(blocked === 0 ? [] : [`누름 필요 ${blocked}`]),
+    ...(report.sleepDropped.length === 0
+      ? []
+      : [`안 돈 재움 차례 ${report.sleepDropped.join("·")}`]),
+  ].join(" · ");
+}
+
+/**
+ * 요약 한 줄(화면 끝 · 서버 로그): 길마다 살아난 수/깨끗한 차례 수 || audiostart 분포 || 형식마다 재생 여부(decodeAudioData · 오디오 요소 ·
+ * canPlayType 값) || 첫 소리까지의 중앙값(차례의 길마다 · 형식 측정의 Web Audio/오디오 요소) || 읽기 뒤 다시 재생 || 시작 전 speechSynthesis
+ * 부른 수 · 누른 수 · 깨우기 · 소리 크기 답 · 뺀 차례.
+ */
+export function aLineOf(lines: ALines, report: AReport): string {
+  const rows = aFormatRowsOf(report);
+  const formats = rows
+    .map(
+      (r) =>
+        `${r.format} 풀기 ${yesNo(r.decode)}·요소 ${yesNo(r.element)}(${r.canPlay === "" ? "빈 값" : r.canPlay})`,
+    )
+    .join(" · ");
+  const stepMs = A_VIAS.map(
+    (via) => `${A_VIA_LABEL[via]} ${msCell(lines.firstSound[via])}`,
+  ).join(" · ");
+  const formatMs = rows
+    .map((r) => `${r.format} ${cell(r.webaudioMs)}/${cell(r.elementMs)}`)
+    .join(" · ");
+  const wake = aWakeLineOf(report);
+  const tail = [
+    `시작 전 speechSynthesis ${report.synthBefore}번`,
+    `누름 ${1 + report.taps}번`,
+    ...(wake === null ? [] : [wake]),
+    ...(report.volume === null
+      ? []
+      : [`듣기 중 소리 크기: ${A_VOLUME_LABEL[report.volume]}`]),
+    ...(report.skipped.length === 0
+      ? []
+      : [`건너뛴 길 ${report.skipped.map((v) => A_VIA_LABEL[v]).join("·")}`]),
+    ...(lines.excluded.length === 0
+      ? []
+      : [`뺀 차례 ${lines.excluded.join("·")}`]),
+  ].join(" · ");
+  return [
+    `살아남 ${aCellsLineOf(lines)}`,
+    `audiostart(가장 작은 값·중앙값·200ms 안) ${aAsLineOf(lines)}`,
+    `형식 ${formats}`,
+    `첫 소리 중앙값 ${stepMs} · 형식 측정(Web Audio/요소) ${formatMs}`,
+    ...(report.after === null ? [] : [aAfterLineOf(report.after)]),
+    tail,
+  ].join(" || ");
+}
+
+/** 로그의 cells 줄 순서(칸 이름). */
+export const A_CELL_KEYS =
+  "via,shape,tries,clean,apple,heard,slow,firstSoundMs,realAs[n,min,median,fast200],decoyAs[n,min,median,fast200]";
+/** 로그의 steps 줄 순서(칸 이름). */
+export const A_STEP_KEYS =
+  "step,via,shape,format,synthCalls,sincePrevEndMs,sound[call,start,end,endMissing],sleep[state,ms],decoy[as,actualMs,endedEarly,echo],real[as,speechstart,interims,finals,apple,heard,echo,audioAtReal],clean,stopReason";
+
+const statArray = (s: AAsStat) => [s.n, s.min, s.median, s.fast];
+const opensLog = (report: AReport) =>
+  report.opens.map((o) => [
+    o.via,
+    o.gesture,
+    o.result,
+    o.detail,
+    o.purpose,
+    o.step,
+  ]);
+const samplesLog = (report: AReport) =>
+  report.measures.map((m) => [
+    m.via,
+    m.format,
+    m.ok,
+    m.firstSoundMs,
+    m.fetchMs,
+    m.decodeMs,
+    m.error,
+  ]);
+
+/**
+ * A 라운드 끝 로그 몸(요약): 요약 줄 · 길 · 꼴별 수와 audiostart 분포 · 형식 표 · 길 열기(누름 밖 시도가 막혔는지 · 깨우기) · 다시 재생 ·
+ * 두 답 · 측정 표본. 들은 글은 넣지 않는다. 상한을 넘으면 측정 표본을 뺀다(형식 로그 roundA-formats 에 있다).
+ * 차례 줄은 길어서 따로 보낸다(aStepLogsOf).
+ */
+export function aLogOf(
+  records: readonly ProbeRecord[],
+  env: ProbeEnv,
+  autoRun: string,
+  hiddenCount: number,
+  stopped: boolean,
+  report: AReport,
+): string {
+  const lines = aLinesOf(records, autoRun);
+  const base = {
+    kind: "roundA" as const,
+    autoRun,
+    hiddenCount,
+    stopped,
+    line: aLineOf(lines, report),
+    synthBefore: report.synthBefore,
+    taps: report.taps,
+    played: report.played,
+    skipped: report.skipped,
+    sleepDropped: report.sleepDropped,
+    opens: opensLog(report),
+    after: report.after,
+    volume: report.volume,
+    cellKeys: A_CELL_KEYS,
+    cells: lines.cells.map((c) => [
+      c.via,
+      c.shape,
+      c.tries,
+      c.clean,
+      c.apple,
+      c.heard,
+      c.slow,
+      c.firstSoundMs,
+      statArray(c.realAs),
+      c.decoyAs === null ? null : statArray(c.decoyAs),
+    ]),
+    excluded: lines.excluded,
+    formats: aFormatRowsOf(report),
+    env: logEnvOf(env),
+  };
+  const full = JSON.stringify({ ...base, samples: samplesLog(report) });
+  if (full.length <= LOG_BODY_MAX_CHARS) return full;
+  const lean = JSON.stringify(base);
+  return lean.length <= LOG_BODY_MAX_CHARS
+    ? lean
+    : JSON.stringify({ ...base, opens: [], truncated: true });
+}
+
+/** 차례 줄 로그 한 몸에 담는 차례 수(한 몸이 상한 안에 들게 나눈다). */
+export const A_STEP_LOG_CHUNK = 20;
+
+/**
+ * A 라운드 끝의 차례 줄 로그 몸들(kind roundA-steps, part 몇 번째 / 모두 몇): 차례마다 짧은 줄(A_STEP_KEYS 순서). 들은 글은 넣지 않는다.
+ * 차례 칸 전문은 기록마다의 로그 row.roundA 에도 있다.
+ */
+export function aStepLogsOf(
+  records: readonly ProbeRecord[],
+  autoRun: string,
+): string[] {
+  const steps = records
+    .filter((r) => r.autoRun === autoRun)
+    .map((r) => {
+      const row = aRowOf(r);
+      if (row === null) return null;
+      return [
+        row.step,
+        row.via,
+        row.shape,
+        row.format,
+        row.synthCalls,
+        row.sincePrevEndMs,
+        [row.soundCall, row.soundStart, row.soundEnd, row.soundEndMissing],
+        row.sleep === null ? null : [row.sleep.state, row.sleep.ms],
+        row.decoy === null
+          ? null
+          : [
+              row.decoy.as,
+              row.decoy.actualMs,
+              row.decoy.endedEarly,
+              row.decoy.echo,
+            ],
+        row.session === null
+          ? null
+          : [
+              row.session.as,
+              row.session.speechstart,
+              row.session.interims,
+              row.session.finals,
+              row.apple,
+              row.heard,
+              row.session.echo,
+              row.audioAtReal,
+            ],
+        row.clean,
+        r.stopReason,
+      ];
+    })
+    .filter((s) => s !== null);
+  const parts = Math.ceil(steps.length / A_STEP_LOG_CHUNK);
+  return Array.from({ length: parts }, (_, i) =>
+    JSON.stringify({
+      kind: "roundA-steps" as const,
+      autoRun,
+      part: i + 1,
+      parts,
+      stepKeys: A_STEP_KEYS,
+      steps: steps.slice(i * A_STEP_LOG_CHUNK, (i + 1) * A_STEP_LOG_CHUNK),
+    }),
+  );
+}
+
+/** 길 하나의 형식 측정이 끝날 때마다 보내는 로그 몸(라운드를 끝까지 못 돌아도 형식 표가 남게): 형식 표 · 길 열기 · 측정 표본. */
+export function aFormatLogOf(
+  env: ProbeEnv,
+  autoRun: string,
+  report: AReport,
+): string {
+  const base = {
+    kind: "roundA-formats" as const,
+    autoRun,
+    synthBefore: report.synthBefore,
+    played: report.played,
+    opens: opensLog(report),
+    formats: aFormatRowsOf(report),
+    env: logEnvOf(env),
+  };
+  const full = JSON.stringify({ ...base, samples: samplesLog(report) });
   return full.length <= LOG_BODY_MAX_CHARS
     ? full
     : JSON.stringify({ ...base, truncated: true });

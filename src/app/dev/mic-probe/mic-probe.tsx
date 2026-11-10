@@ -17,14 +17,32 @@
 // 큰 글씨 '지금 apple 이라고 말해요' · '이제 banana 라고 말해요' · '기다려요' · '준비 중 · 남은 초'만 보이고, 끝에 '끝났어요 · 진짜 살아남 n/m'.
 // fix 8(분석 10.19.5): '자동 W 라운드 2' 단추(맨 위)로 차례 0~13 을 스스로 돈다(러너는 w-round2.ts). 누름 안에서 무음 읽기와 함께
 // 띵용 AudioContext 를 만들어 resume 하고, 라운드가 끝나면 닫는다. 화면 글은 '쉬는 중 · 남은 초' 와 끝의 '끝났어요' + 갈래별 줄.
+// A 라운드(브리프 task-probe 2026-11-10): '자동 A 라운드(받아 온 소리)' 단추(맨 위)로 소리 내는 길 셋(Web Audio → 오디오 요소 → 지금 읽기)을
+// 스스로 돈다(러너는 a-round.ts, 두 재생 길은 a-sound.ts). 누름 안에서는 AudioContext 만 열고, 앞 두 길이 도는 동안 speechSynthesis 를
+// 부르지 않는다. 이 쪽에서 speechSynthesis 를 부른 수(synthCalls)를 세어 이미 불렀으면 새로 고침을 안내한다.
 // 단추 한 번 = 듣기 한 번 = 표 한 줄. 기록은 localStorage 에만 두어 새로 고침 · 새 탭 · 사파리 종료를 넘어 잇고, 탭끼리는 저장소 알림으로 맞춘다.
 // DB 에 쓰지 않고 녹음하지 않는다(7절 — getUserMedia · MediaRecorder 없음, K 는 0 음량 재생만). audioSession 은 L 만 바꾸고 끝나면 되돌린다.
 import { useEffect, useRef, useState } from "react";
+import { type ARoundDeps, ARoundRunner, type ARoundView } from "./a-round";
+import { ElementPath, WebAudioPath } from "./a-sound";
 import {
+  A_COUNT_DEFAULT,
+  A_COUNTS,
+  A_HEARD,
+  A_VIA_LABEL,
+  A_VOLUME,
+  type AHeard,
+  type AReport,
   AUTO_LISTEN_MS,
   AUTO_PRESS_DELAY_MS,
   type AutoStep,
+  type AVolume,
+  aEstimateMinutes,
+  aFormatLogOf,
+  aLogOf,
+  aPlanOf,
   appendRecord,
+  aStepLogsOf,
   autoPlanOf,
   BEEP_GAIN,
   BEEP_HZ,
@@ -302,6 +320,18 @@ type Round2Hooks = {
   done: (autoRun: string, hidden: number, stopped: boolean) => void;
 };
 
+type RoundAHooks = {
+  view: (view: ARoundView | null) => void;
+  /** 길 하나의 형식 측정이 끝난 때(라운드를 끝까지 못 돌아도 형식 표가 서버 기록에 남게). */
+  measured: (autoRun: string, report: AReport) => void;
+  done: (
+    autoRun: string,
+    hidden: number,
+    stopped: boolean,
+    report: AReport,
+  ) => void;
+};
+
 type AutoState = {
   plan: AutoStep[];
   autoRun: string;
@@ -332,10 +362,14 @@ class ProbeRunner {
   /** '자동 W 라운드 2'(fix 8)의 러너와 누름 안에서 만든 띵용 AudioContext(라운드가 끝나면 닫는다). */
   private round2: WRound2Runner | null = null;
   private round2Audio: AudioContext | null = null;
+  /** '자동 A 라운드'의 러너와 두 재생 길(라운드가 끝나면 러너가 닫는다). */
+  private roundA: ARoundRunner | null = null;
+  private aWeb: WebAudioPath | null = null;
+  private aElement: ElementPath | null = null;
 
-  /** 자동 라운드(1 · 2) 가운데 하나가 도는가. */
+  /** 자동 라운드(1 · 2 · A) 가운데 하나가 도는가. */
   private get rounding() {
-    return this.round !== null || this.round2 !== null;
+    return this.round !== null || this.round2 !== null || this.roundA !== null;
   }
 
   constructor(
@@ -424,6 +458,7 @@ class ProbeRunner {
       report();
     };
     this.spokeSinceEnd = true;
+    countSynth();
     synth.speak(utterance);
     report();
   }
@@ -719,6 +754,136 @@ class ProbeRunner {
     round.start();
   }
 
+  /**
+   * '자동 A 라운드': 이 누름 안에서는 Web Audio 길(AudioContext)만 연다. speechSynthesis 는 맨 뒤 읽기 길에서 처음 부르고, 오디오 요소 ·
+   * 읽기 길은 누름 밖에서 먼저 열어 보고 막히면 화면의 '한 번 더 눌러 주세요'(resumeRoundA)에서 연다.
+   */
+  startRoundA(autoRun: string, count: number, hooks: RoundAHooks) {
+    if (this.run !== null || this.auto !== null || this.rounding) return;
+    this.followUp = false;
+    const web = new WebAudioPath();
+    const element = new ElementPath();
+    this.aWeb = web;
+    this.aElement = element;
+    // 4분쯤 손을 대지 않으므로 화면이 꺼지지 않게 한다(되는 브라우저만). 라운드가 끝나면 푼다
+    let wake: { release(): Promise<void> } | null = null;
+    let finished = false;
+    const wakeLock = (
+      navigator as {
+        wakeLock?: {
+          request(type: "screen"): Promise<{ release(): Promise<void> }>;
+        };
+      }
+    ).wakeLock;
+    if (wakeLock !== undefined) {
+      wakeLock
+        .request("screen")
+        .then((sentinel) => {
+          if (finished) void sentinel.release().catch(() => undefined);
+          else wake = sentinel;
+        })
+        .catch(() => undefined);
+    }
+    const deps: ARoundDeps = {
+      now,
+      later: (fn, ms) => window.setTimeout(fn, ms),
+      cancelLater: (id) => window.clearTimeout(id),
+      createRecognition: () => {
+        const { ctor } = recognitionCtor();
+        if (ctor === undefined) return null;
+        const rec = new ctor();
+        this.lastRec = rec;
+        return rec;
+      },
+      visibility: () => document.visibilityState,
+      isoNow: () => new Date().toISOString(),
+      sound: (via) =>
+        via === "webaudio"
+          ? web
+          : via === "element"
+            ? element
+            : roundSpeechOf(),
+      open: (via, inGesture, reply) => {
+        if (via === "webaudio") web.open(inGesture, reply);
+        else if (via === "element") element.open(inGesture, reply);
+        else openSynth(inGesture, reply);
+      },
+      // 길을 떠날 때는 쉬게만 한다(읽기 뒤 다시 재생이 같은 AudioContext · 같은 요소를 쓴다). 라운드가 끝나면 아래 done 에서 닫는다
+      close: (via) => {
+        if (via === "webaudio") web.park();
+        else if (via === "element") element.park();
+        else cancelSpeech();
+      },
+      replay: (via, format, reply) => {
+        if (via === "webaudio") web.replay(format, reply);
+        else element.replay(format, reply);
+      },
+      // 재우는 꼴은 Web Audio 길만 돈다(다른 길에는 재울 소리 출력이 없다)
+      sleep: (via, reply) => {
+        if (via === "webaudio") web.sleep(reply);
+        else reply("none");
+      },
+      canPlay: (format) => ElementPath.canPlay(format),
+      measure: (via, format, reply) => {
+        if (via === "webaudio") web.measure(format, reply);
+        else element.measure(format, reply);
+      },
+      synthCalls: synthCallsNow,
+      audioState: () => web.audioState(),
+    };
+    const round = new ARoundRunner(
+      this.roundContext(),
+      deps,
+      {
+        view: hooks.view,
+        finish: (record, endAt) => {
+          this.lastEndAt = endAt;
+          this.lastStopReason = record.stopReason;
+          this.lastStopMethod = record.stopMethod;
+          this.spokeSinceEnd = false;
+          this.unlockLog = null;
+          this.on.finish(record);
+          this.on.lastEnd(endAt);
+        },
+        measured: (report) => hooks.measured(autoRun, report),
+        done: (result) => {
+          if (this.roundA === round) this.roundA = null;
+          web.close();
+          element.close();
+          this.aWeb = null;
+          this.aElement = null;
+          finished = true;
+          void wake?.release().catch(() => undefined);
+          hooks.done(
+            result.autoRun,
+            result.hidden,
+            result.stopped,
+            result.report,
+          );
+        },
+      },
+      aPlanOf(count),
+      autoRun,
+    );
+    this.roundA = round;
+    round.start();
+  }
+
+  /** A 라운드의 '한 번 더 눌러 주세요': 이 누름 안에서 기다리던 길을 연다. */
+  resumeRoundA() {
+    this.roundA?.resume();
+  }
+
+  /** A 라운드 끝의 '방금 두 소리가 들렸나요?' 답. */
+  answerRoundA(heard: AHeard) {
+    this.roundA?.answer(heard);
+  }
+
+  /** A 라운드 맨 끝의 '듣기가 켜진 동안 소리가 작아졌나요?' 답. */
+  answerVolumeRoundA(volume: AVolume) {
+    this.roundA?.answerVolume(volume);
+  }
+
   private runStep(index: number) {
     const auto = this.auto;
     if (auto === null) return;
@@ -785,6 +950,10 @@ class ProbeRunner {
       this.round2.stop();
       return;
     }
+    if (this.roundA !== null) {
+      this.roundA.stop();
+      return;
+    }
     this.cancelAuto();
     const run = this.run;
     if (run === null) {
@@ -819,6 +988,7 @@ class ProbeRunner {
   note(type: "hidden" | "visible") {
     this.round?.note(type);
     this.round2?.note(type);
+    this.roundA?.note(type);
     if (type === "hidden" && this.auto !== null) this.auto.hidden += 1;
     const run = this.run;
     if (run !== null) this.push(run, { type, at: now(), attempt: run.attempt });
@@ -832,6 +1002,13 @@ class ProbeRunner {
     const round2Audio = this.round2Audio;
     this.round2Audio = null;
     if (round2Audio !== null) void round2Audio.close().catch(() => undefined);
+    // A 라운드: 러너가 지금 길을 닫고, 남은 재생 길도 닫는다(안 연 speechSynthesis 는 건드리지 않는다)
+    this.roundA?.dispose();
+    this.roundA = null;
+    this.aWeb?.close();
+    this.aWeb = null;
+    this.aElement?.close();
+    this.aElement = null;
     const auto = this.auto;
     if (auto !== null && auto.timer !== null) window.clearTimeout(auto.timer);
     this.auto = null;
@@ -1050,6 +1227,7 @@ class ProbeRunner {
       afterSpeak();
       return;
     }
+    countSynth();
     synth.cancel();
     if (strategy === "H" || strategy === "I") {
       this.speak(
@@ -1174,6 +1352,7 @@ class ProbeRunner {
       pending,
       code: `speaking=${speaking} pending=${pending}`,
     });
+    countSynth();
     synth.speak(utterance);
   }
 
@@ -1593,7 +1772,10 @@ function roundSpeechOf(): RoundSpeech | null {
   if (synth === undefined) return null;
   return {
     state: () => ({ speaking: synth.speaking, pending: synth.pending }),
-    cancel: () => tryCall(() => synth.cancel()),
+    cancel: () => {
+      countSynth();
+      tryCall(() => synth.cancel());
+    },
     speak: (options, handlers) => {
       const utterance = new SpeechSynthesisUtterance(options.text);
       utterance.lang = LANG_OF.A;
@@ -1608,14 +1790,57 @@ function roundSpeechOf(): RoundSpeech | null {
       utterance.onstart = () => handlers.start(voice?.name ?? "기본");
       utterance.onend = () => handlers.end();
       utterance.onerror = (event) => handlers.error(event.error);
+      countSynth();
       synth.speak(utterance);
     },
   };
 }
 
+/**
+ * A 라운드의 읽기 길 열기: 줄을 비우고 무음 읽기를 부른다(앱 unlockFromGesture 와 같은 글 · 음량 0). 시작 · 끝 알림이 오면 ok,
+ * not-allowed 면 누름이 필요하다. iOS 는 누름 밖 첫 speak() 를 사건 없이 버리므로(분석 10.16) 그때는 러너의 상한이 '한 번 더'로 가른다.
+ */
+function openSynth(
+  inGesture: boolean,
+  reply: (result: "ok" | "need-gesture" | "failed", detail: string) => void,
+) {
+  const speech = roundSpeechOf();
+  if (speech === null) {
+    reply("failed", "no-synthesis");
+    return;
+  }
+  speech.cancel();
+  speech.speak(
+    { text: UNLOCK_TEXT, volume: UNLOCK_VOLUME },
+    {
+      start: () => reply("ok", "started"),
+      end: () => reply("ok", "ended"),
+      error: (code) =>
+        reply(
+          code === "not-allowed" && !inGesture ? "need-gesture" : "failed",
+          code,
+        ),
+    },
+  );
+}
+
 function cancelSpeech() {
   const synth = synthOf();
-  if (synth !== undefined) tryCall(() => synth.cancel());
+  if (synth === undefined) return;
+  countSynth();
+  tryCall(() => synth.cancel());
+}
+
+/**
+ * 이 쪽(문서)을 연 뒤 이 점검 쪽이 speechSynthesis 를 부른 수(speak · cancel). A 라운드는 0 일 때 시작해야 앞 두 길이
+ * 'speechSynthesis 를 한 번도 쓰지 않은 상태'다. 문서가 살아 있는 동안 이어지게 모듈에 둔다(새로 고치면 0).
+ */
+let synthCalls = 0;
+function countSynth() {
+  synthCalls += 1;
+}
+function synthCallsNow() {
+  return synthCalls;
 }
 
 function tryCall(fn: () => void) {
@@ -1663,6 +1888,9 @@ type Line = { tone: "ok" | "error"; text: string } | null;
 
 const bigButton =
   "min-h-20 w-full rounded-2xl border-2 border-neutral-700 bg-white px-5 py-4 text-left font-bold text-2xl disabled:opacity-40";
+/** 눈에 띄는 시작 단추. bigButton 에 어두운 바탕을 덧붙이면 bg-white 가 이겨 흰 글씨가 안 보였다(A 라운드 직접 실행 때 발견) — 따로 둔다. */
+const primaryButton =
+  "min-h-20 w-full rounded-2xl border-2 border-neutral-700 bg-neutral-900 px-5 py-4 text-left font-bold text-2xl text-white disabled:opacity-40";
 const sectionClass =
   "space-y-3 rounded-2xl border border-neutral-300 bg-white p-5";
 
@@ -1697,6 +1925,10 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   const [roundView, setRoundView] = useState<RoundView | null>(null);
   /** fix 8: 자동 W 라운드 2 가 화면에 보일 것(null 이면 라운드 2 없음). */
   const [round2View, setRound2View] = useState<Round2View | null>(null);
+  /** A 라운드가 화면에 보일 것 · 길마다 도는 횟수 · 이 쪽에서 speechSynthesis 를 부른 수(0 이 아니면 새로 고침 안내). */
+  const [roundAView, setRoundAView] = useState<ARoundView | null>(null);
+  const [aCount, setACount] = useState<number>(A_COUNT_DEFAULT);
+  const [synthUsed, setSynthUsed] = useState(0);
   const envRef = useRef<ProbeEnv | null>(null);
   useEffect(() => {
     envRef.current = env;
@@ -1824,7 +2056,10 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("storage", onStorage);
-    const tick = window.setInterval(() => setNowMs(performance.now()), 250);
+    const tick = window.setInterval(() => {
+      setNowMs(performance.now());
+      setSynthUsed(synthCallsNow());
+    }, 250);
     setReady(true);
     return () => {
       alive = false;
@@ -1839,7 +2074,8 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
 
   const round1Running = roundView !== null && roundView.kind !== "done";
   const round2Running = round2View !== null && round2View.kind !== "done";
-  const roundRunning = round1Running || round2Running;
+  const roundARunning = roundAView !== null && roundAView.kind !== "done";
+  const roundRunning = round1Running || round2Running || roundARunning;
   const busy =
     roundRunning ||
     autoProgress !== null ||
@@ -1931,9 +2167,47 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     });
   }
 
+  function startRoundA() {
+    setAutoDone(false);
+    setRoundView(null);
+    setRound2View(null);
+    setRoundAView({ kind: "wait" });
+    // 이 누름 안에서 AudioContext 를 연다(러너의 start 가 같은 호출 안에서 부른다)
+    runner.current?.startRoundA(randomTabId(), aCount, {
+      view: setRoundAView,
+      measured: (autoRun, report) => {
+        const logEnv = envRef.current;
+        if (logEnv !== null) {
+          postLog(aFormatLogOf(logEnv, autoRun, report), countLog);
+        }
+      },
+      done: (autoRun, hidden, stopped, report) => {
+        const logEnv = envRef.current;
+        if (logEnv !== null) {
+          postLog(
+            aLogOf(
+              recordsRef.current,
+              logEnv,
+              autoRun,
+              hidden,
+              stopped,
+              report,
+            ),
+            countLog,
+          );
+          // 차례 줄은 길어서 따로(한 몸이 상한 안에 들게 나눠) 보낸다
+          for (const body of aStepLogsOf(recordsRef.current, autoRun)) {
+            postLog(body, countLog);
+          }
+        }
+      },
+    });
+  }
+
   function startRound2() {
     setAutoDone(false);
     setRoundView(null);
+    setRoundAView(null);
     setRound2View({ kind: "wait" });
     runner.current?.startRound2(randomTabId(), {
       view: setRound2View,
@@ -1952,6 +2226,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
   function startRound() {
     setAutoDone(false);
     setRound2View(null);
+    setRoundAView(null);
     setRoundView({ kind: "wait" });
     runner.current?.startRound(randomTabId(), {
       view: setRoundView,
@@ -1973,14 +2248,167 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     setResetStep(step);
   }
 
-  const round2Section = !newTab && !round1Running && (
+  const startDisabled = !ready || busy || status.kind === "no-recognition";
+  const roundASection = !newTab && !round1Running && !round2Running && (
+    <section className={sectionClass} data-testid="mic-round-a">
+      {!roundARunning && (
+        <>
+          {synthUsed > 0 && (
+            <>
+              <p
+                role="alert"
+                data-testid="mic-round-a-synth-used"
+                className="font-bold text-2xl"
+              >
+                {MIC_TEXT.roundASynthUsed(synthUsed)}
+              </p>
+              <button
+                type="button"
+                className={primaryButton}
+                onClick={() => window.location.reload()}
+              >
+                {MIC_TEXT.roundAReload}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            data-testid="mic-round-a-start"
+            className={synthUsed > 0 ? bigButton : primaryButton}
+            disabled={startDisabled}
+            onClick={startRoundA}
+          >
+            {synthUsed > 0 ? MIC_TEXT.roundAStartAnyway : MIC_TEXT.roundAStart}
+          </button>
+          <fieldset className="flex flex-wrap items-center gap-3">
+            <legend className="font-bold text-xl">
+              {MIC_TEXT.roundACountLabel}
+            </legend>
+            {A_COUNTS.map((count) => (
+              <button
+                key={count}
+                type="button"
+                aria-pressed={aCount === count}
+                data-testid={`mic-round-a-count-${count}`}
+                className={`min-h-14 rounded-2xl border-2 border-neutral-700 px-4 py-2 font-bold text-xl ${
+                  aCount === count ? "bg-neutral-900 text-white" : "bg-white"
+                }`}
+                disabled={startDisabled}
+                onClick={() => setACount(count)}
+              >
+                {MIC_TEXT.roundACount(count, aEstimateMinutes(count))}
+              </button>
+            ))}
+          </fieldset>
+          <p className="text-xl">{MIC_TEXT.roundAGuide}</p>
+        </>
+      )}
+      {roundAView?.kind === "ask" && (
+        <fieldset className="space-y-3">
+          <legend className="py-4 text-center font-bold text-5xl">
+            {MIC_TEXT.roundAAsk}
+          </legend>
+          {A_HEARD.map((heard) => (
+            <button
+              key={heard}
+              type="button"
+              data-testid={`mic-round-a-heard-${heard}`}
+              className={`${primaryButton} min-h-28 text-center text-4xl`}
+              onClick={() => runner.current?.answerRoundA(heard)}
+            >
+              {MIC_TEXT.roundAHeard[heard]}
+            </button>
+          ))}
+        </fieldset>
+      )}
+      {roundAView?.kind === "ask-volume" && (
+        <fieldset className="space-y-3">
+          <legend className="py-4 text-center font-bold text-5xl">
+            {MIC_TEXT.roundAAskVolume}
+          </legend>
+          {A_VOLUME.map((volume) => (
+            <button
+              key={volume}
+              type="button"
+              data-testid={`mic-round-a-volume-${volume}`}
+              className={`${primaryButton} min-h-28 text-center text-4xl`}
+              onClick={() => runner.current?.answerVolumeRoundA(volume)}
+            >
+              {MIC_TEXT.roundAVolume[volume]}
+            </button>
+          ))}
+        </fieldset>
+      )}
+      {roundAView !== null &&
+        roundAView.kind !== "tap" &&
+        roundAView.kind !== "ask" &&
+        roundAView.kind !== "ask-volume" && (
+          <p
+            role="status"
+            data-testid="mic-round-a-view"
+            data-kind={roundAView.kind}
+            className={
+              roundAView.kind === "say"
+                ? "py-10 text-center font-bold text-7xl leading-tight"
+                : "py-6 text-center font-bold text-5xl"
+            }
+          >
+            {roundAText(roundAView, nowMs)}
+          </p>
+        )}
+      {roundAView?.kind === "tap" && (
+        <>
+          <button
+            type="button"
+            data-testid="mic-round-a-tap"
+            className="min-h-48 w-full rounded-2xl border-4 border-neutral-900 bg-neutral-900 px-5 py-8 text-center font-bold text-6xl text-white"
+            onClick={() => runner.current?.resumeRoundA()}
+          >
+            {MIC_TEXT.roundATap}
+          </button>
+          <p role="status" className="text-center text-2xl">
+            {MIC_TEXT.roundATapNote(A_VIA_LABEL[roundAView.via])}
+          </p>
+        </>
+      )}
+      {roundAView?.kind === "done" && (
+        <>
+          <p
+            data-testid="mic-round-a-line"
+            className="break-words font-bold text-xl"
+          >
+            {roundAView.line}
+          </p>
+          <button
+            type="button"
+            className={bigButton}
+            disabled={env === null}
+            onClick={() => void copy()}
+          >
+            {MIC_TEXT.copy}
+          </button>
+        </>
+      )}
+      {roundARunning && (
+        <button
+          type="button"
+          className={`${bigButton} bg-neutral-200`}
+          onClick={() => runner.current?.stopNow()}
+        >
+          {MIC_TEXT.stop}
+        </button>
+      )}
+    </section>
+  );
+
+  const round2Section = !newTab && !round1Running && !roundARunning && (
     <section className={sectionClass} data-testid="mic-round2">
       {!round2Running && (
         <>
           <button
             type="button"
             data-testid="mic-round2-start"
-            className={`${bigButton} bg-neutral-900 text-white`}
+            className={primaryButton}
             disabled={!ready || busy || status.kind === "no-recognition"}
             onClick={startRound2}
           >
@@ -2030,14 +2458,14 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
     </section>
   );
 
-  const roundSection = !newTab && !round2Running && (
+  const roundSection = !newTab && !round2Running && !roundARunning && (
     <section className={sectionClass} data-testid="mic-round">
       {!round1Running && (
         <>
           <button
             type="button"
             data-testid="mic-round-start"
-            className={`${bigButton} bg-neutral-900 text-white`}
+            className={primaryButton}
             disabled={!ready || busy || status.kind === "no-recognition"}
             onClick={startRound}
           >
@@ -2090,6 +2518,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         data-ready={ready ? "true" : undefined}
         className="mx-auto max-w-4xl space-y-5 bg-neutral-50 p-5 text-lg text-neutral-900"
       >
+        {roundASection}
         {round2Section}
         {roundSection}
       </main>
@@ -2114,6 +2543,8 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         )}
       </h1>
 
+      {roundASection}
+
       {round2Section}
 
       {roundSection}
@@ -2122,7 +2553,7 @@ export function MicProbe({ teacherLine }: { teacherLine: TeacherLine | null }) {
         <section className={sectionClass} data-testid="mic-auto">
           <button
             type="button"
-            className={`${bigButton} bg-neutral-900 text-white`}
+            className={primaryButton}
             disabled={!ready || busy || status.kind === "no-recognition"}
             onClick={startAuto}
           >
@@ -2458,6 +2889,27 @@ function roundText(view: RoundView, nowMs: number): string {
       );
     case "done":
       return MIC_TEXT.roundDone(view.n, view.m);
+  }
+}
+
+/** 자동 A 라운드가 보일 글: 낱말 · 기다려요 · 쉬는 중 남은 초 · 끝났어요('한 번 더' · 물음은 단추로 따로 보인다). */
+function roundAText(view: ARoundView, nowMs: number): string {
+  switch (view.kind) {
+    case "say":
+      return MIC_TEXT.roundSay;
+    case "rest":
+      return MIC_TEXT.round2Rest(
+        Math.max(0, Math.ceil((view.until - nowMs) / 1000)),
+      );
+    case "wait":
+    case "tap":
+    case "ask":
+    case "ask-volume":
+      return MIC_TEXT.roundWait;
+    case "after":
+      return MIC_TEXT.roundAAfter(view.n);
+    case "done":
+      return MIC_TEXT.roundADone;
   }
 }
 

@@ -1,10 +1,41 @@
 // 마이크 점검 쪽(/dev/mic-probe)의 글(브리프 task-mic-probe 2026-11-06, fix 1 · fix 2 · fix 7 '자동 W 라운드' — 진짜 세션을 열 때만 크게
 // '지금 apple 이라고 말해요', 그 밖에는 '기다려요'만, 분석 10.18.3 X-2). 어른(요청자)이 iPad 로 15분 안에 쓰는 관찰
 // 도구라 아이 화면 원칙 밖이다(선생님 관찰 쪽과 같음). e2e 가 같은 글을 읽도록 React 없는 모듈로 둔다. 순수 모듈이다.
-import type { ResetStep, Strategy } from "./probe-log";
+import type { AHeard, AVolume, ResetStep, Strategy } from "./probe-log";
 
 export const MIC_TEXT = {
   title: "마이크 점검(프리뷰 전용)",
+  // A 라운드(브리프 task-probe 2026-11-10 — 받아 온 소리): 소리 내는 길 셋을 견준다. 큰 글씨는 W 라운드 글을 같이 쓴다
+  roundAStart: "자동 A 라운드(받아 온 소리)",
+  roundAGuide:
+    "'자동 A 라운드' 단추를 한 번 누르고 iPad 를 앞에 둔 채 기다려요. 화면에 큰 글씨로 '지금 apple 이라고 말해요'가 나올 때만 'apple' 이라고 말해요. 영어 문장 소리가 나와도 따라 하지 않아요. 소리가 날 때마다 크기가 같은지도 들어 봐요. 도중에 '한 번 더 눌러 주세요' 단추가 나오면 그 단추를 한 번 눌러요. '쉬는 중'이 나오면 45초쯤 그대로 기다려요. 말하지 않아도 라운드는 끝까지 돌아요. 끝에 물음이 두 번 나오면 들은 대로 단추를 한 번씩 눌러요. '끝났어요'가 나오면 끝이에요.",
+  roundACount: (count: number, minutes: number) =>
+    `길마다 ${count}번(${minutes}분쯤)`,
+  roundACountLabel: "도는 횟수",
+  roundATap: "한 번 더 눌러 주세요",
+  roundATapNote: (via: string) =>
+    `다음 소리 길(${via})은 누른 뒤에만 소리가 나요. 단추를 누르면 이어서 돌아요.`,
+  roundASynthUsed: (calls: number) =>
+    `이 쪽에서 이미 읽기(speechSynthesis)를 ${calls}번 불렀어요. 새로 고침 뒤에 시작해 주세요.`,
+  roundAReload: "새로 고침",
+  roundAStartAnyway: "새로 고치지 않고 그대로 시작",
+  // 읽기 뒤 다시 재생(M6): 두 소리를 차례로 내고 들렸는지 묻는다(첫 번째 Web Audio · 두 번째 오디오 요소 — 화면에는 차례만 보인다)
+  roundAAfter: (n: number) =>
+    n === 1 ? "첫 번째 소리가 나는 중이에요" : "두 번째 소리가 나는 중이에요",
+  roundAAsk: "방금 두 소리가 들렸나요?",
+  roundAHeard: {
+    both: "둘 다 들렸어요",
+    first: "첫 번째만 들렸어요",
+    second: "두 번째만 들렸어요",
+    none: "둘 다 안 들렸어요",
+  } satisfies Record<AHeard, string>,
+  roundAAskVolume: "듣기가 켜진 동안 소리가 작아졌나요?",
+  roundAVolume: {
+    same: "그대로였어요",
+    quieter: "작아졌어요",
+    unknown: "모르겠어요",
+  } satisfies Record<AVolume, string>,
+  roundADone: "끝났어요",
   // fix 8: '자동 W 라운드 2'(브리프 task-mic-probe-fix8 — 안내 글은 브리프 그대로)
   round2Start: "자동 W 라운드 2",
   round2Guide:
@@ -97,6 +128,7 @@ export const MIC_TEXT = {
     W25: "W25 버림 25초 → 진짜",
     WR: "WR 자동 W 라운드",
     WR2: "WR2 자동 W 라운드 2",
+    AR: "AR 자동 A 라운드(받아 온 소리)",
   } satisfies Record<Strategy, string>,
   newTabListen: "M 새 탭에서 듣기",
   newTabOpened:
