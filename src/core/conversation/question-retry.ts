@@ -3,8 +3,10 @@
 // 순수 모듈이다(시각 · DB · SDK 없음). 숫자는 부르는 쪽이 단계 규격에서 넘긴다.
 import {
   checkLowLevelQuestion,
+  type EasySlotCheck,
   type LowLevelLineOptions,
   type LowLevelLineReason,
+  questionKeyOf,
 } from "@/core/conversation/question-check";
 
 /** 문장 문을 지난 선생님 문장(서버 LessonSentence 와 같은 꼴 — 구조로 맞춘다). */
@@ -17,10 +19,13 @@ export type RetrySentence = {
   reason?: string;
 };
 
-/** 다시 쓰게 할 까닭이 되는 질문 검사 결과(길이 · 노리는 단어 · 범위 밖 낱말 · 형태). */
+/**
+ * 다시 쓰게 할 까닭이 되는 질문 검사 결과(길이 · 노리는 단어 · 범위 밖 낱말 · 형태 · 되묻기 · 받침 둘째의 쉬운 질문 아님)와, 질문 검사에는 걸리지
+ * 않지만 다시 쓰게 하는 까닭 chain(카드 답 바로 뒤 차례에 카드 필수 질문 글이 그대로 옴 — 13절 C217 (2) (ㄷ) · C204 (6)).
+ */
 export type HeldQuestionFail = {
   question: string;
-  reason: Exclude<LowLevelLineReason, "shape" | "no_target">;
+  reason: Exclude<LowLevelLineReason, "shape" | "no_target"> | "chain";
   /** 걸린 낱말(노리는 단어 · 범위 밖 낱말). 다른 까닭이면 빈 목록. */
   words: string[];
 };
@@ -51,21 +56,30 @@ export function keepLastHeldQuestion(
 
 /**
  * 잡아 둔 질문 가운데 처음 걸린 것(서버 끝 처리 settleLessonTurn 의 1~3단계 질문 검사와 같은 판정 — 노리는 단어는 응답의 next_targets).
- * 걸린 것이 없거나 잡아 둔 질문이 없으면 null.
+ * 걸린 것이 없거나 잡아 둔 질문이 없으면 null. 질문 검사를 지난 질문이라도 그 질문 열쇠가 chainKeys(카드 답 바로 뒤 차례의 카드 필수 질문 글 —
+ * talk-lesson talkCardChainKeysOf)에 있으면 까닭 chain 으로 낸다: 다시 쓰게만 하고 끝 처리의 질문 검사는 이 까닭을 보지 않는다(다시 쓴 질문도
+ * 카드 글이면 지금처럼 갈래 표지만 고쳐 내보낸다 — 카드 자리로 바꾸면 같은 카드 글이 다시 붙는다).
  */
 export function heldQuestionFailOf({
   entries,
   targets,
   options,
+  chainKeys = [],
 }: {
   entries: readonly RetrySentence[];
   targets: readonly string[];
-  options: LowLevelLineOptions;
+  options: LowLevelLineOptions & { easySlot?: EasySlotCheck | undefined };
+  /** 카드 답 바로 뒤 차례에 그대로 오면 안 되는 질문 열쇠(questionKeyOf 꼴). 그 차례가 아니면 빈 목록. */
+  chainKeys?: readonly string[];
 }): HeldQuestionFail | null {
   for (const e of entries) {
     if (e.state !== "held" || !e.question || e.cue) continue;
     const check = checkLowLevelQuestion(e.en, { ...options, targets });
-    if (check.ok) continue;
+    if (check.ok) {
+      if (chainKeys.includes(questionKeyOf(e.en)))
+        return { question: e.en, reason: "chain", words: [] };
+      continue;
+    }
     if (check.reason === "shape" || check.reason === "no_target") continue;
     return { question: e.en, reason: check.reason, words: check.words ?? [] };
   }
@@ -79,7 +93,27 @@ const REASON_LINE: Record<HeldQuestionFail["reason"], string> = {
   offband: "it used words above the child's level",
   form: "it used a grammar form above the child's level",
   echo: "it asked again about what the child already told you",
+  not_easy:
+    "at Support stage 2 the question must be an easier yes-or-no question, not a card required question or a what, who or where question",
+  chain:
+    "it asked the next card question right after the child answered a card question",
 };
+
+/**
+ * '무엇을 다시 쓸지' 줄(받침 둘째 · 카드 답 뒤는 새 질문의 꼴이 정해져 있다). 쉬운 질문 자리(받침 둘째의 AI 질문)에서는 걸린 까닭이 길이 · 범위 밖
+ * 낱말 · 되묻기여도 예 · 아니요 질문으로 다시 쓰게 한다 — 자리로 고른다(코드 검토 rev-content-1 M-1: 까닭으로 고르면 다시 쓴 wh 질문이 끝 처리에서
+ * 또 걸린다).
+ */
+function rewriteLineOf(
+  reason: HeldQuestionFail["reason"],
+  easySlot: boolean,
+): string {
+  if (easySlot || reason === "not_easy")
+    return "Your reaction was already shown. Write this turn again: in tori_en write only one easy yes-or-no question about the same thing (e.g. 'Do you like fish?'), or one question with two answer choices in choices. Set next_move follow_up and card_item kind none and no 0, and keep the other fields for the new question.";
+  if (reason === "chain")
+    return "Your reaction was already shown. Write this turn again: in tori_en write only one new question that follows up on the child's last answer, in your own words (next_move follow_up, card_item kind none and no 0). Bring up the next card chance in a later turn. Keep the other fields for the new question.";
+  return "Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). Keep the other fields for the new question.";
+}
 
 /**
  * 다시 쓰게 할 사용자 메시지(같은 응답 꼴로 한 번 — C203 (3)): 걸린 질문 · 까닭 · 걸린 낱말 · 지킬 범위(문장 길이 상한 · 그 단계 쉬운 낱말 ·
@@ -91,19 +125,26 @@ export function questionRetryNoteOf(
     sentenceMaxWords: number;
     targets: readonly string[];
     childWords: readonly string[];
+    /** 쉬운 질문 자리인가(받침 둘째의 AI 질문 — talk-lesson talkEasyAiSlotOf). 참이면 까닭과 관계없이 예 · 아니요 질문으로 다시 쓰게 한다. */
+    easySlot?: boolean;
   },
 ): string {
+  const easy = ctx.easySlot === true || fail.reason === "not_easy";
   const words =
     fail.words.length > 0 ? ` (words: ${fail.words.join(", ")})` : "";
   return [
     `App check: your question "${fail.question}" was not shown, because ${REASON_LINE[fail.reason]}${words}.`,
-    "Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). Keep the other fields for the new question.",
+    rewriteLineOf(fail.reason, easy),
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
     `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
     // [N-3] 아이의 바로 앞 말이 답인 질문 금지(대본 회차 r2 판정 N-3)
     "Do not ask a question whose answer the child just gave in the last words (after 'I drink juice.', not 'What do you do with the juice?').",
-    // 다시 쓰기의 버릇 꼴 · 비튼 문장(대본 회차 r1 판정 M-7 · M-2)
-    "Prefer a what, who or where question about something new; do not fall back to 'Do you like …?' or 'A or B?' each time.",
+    // 다시 쓰기의 버릇 꼴 · 비튼 문장(대본 회차 r1 판정 M-7 · M-2) — 받침 둘째의 쉬운 질문은 예 · 아니요 꼴이 맞으므로 이 줄을 넣지 않는다
+    ...(easy
+      ? []
+      : [
+          "Prefer a what, who or where question about something new; do not fall back to 'Do you like …?' or 'A or B?' each time.",
+        ]),
     ...(fail.reason === "too_long"
       ? [
           "To make it shorter, leave out extra words but keep a whole question that makes sense (not 'Is the lake with your family?').",

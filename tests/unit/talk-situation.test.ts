@@ -114,7 +114,8 @@ const OPTIONS: LowLevelLineOptions = {
   forms: [],
   allowedForms: new Set(),
 };
-const ALLOWED = new Set(["let", "oops", "yay", "ears", "my", "here"]);
+// 범위 견본 밖의 허용 낱말(감탄 · 수업 말). 들리지 않음 줄은 시드와 같이 소리 쪽 말이다('my ears' 꼴은 13절 C217 (3) 로 뺐다)
+const ALLOWED = new Set(["let", "oops", "yay", "sound", "no", "here"]);
 const FORBIDDEN = {
   all: ["that's wrong", "you don't know"],
   nospeech: ["good answer", "you said"],
@@ -144,8 +145,11 @@ const LINES: TalkSituationLinesFile["lines"] = {
     { en: "That's okay! Let's go on.", ko: "괜찮아! 계속하자." },
   ],
   nospeech: [
-    { en: "Oops, my ears! Let's go on.", ko: "앗, 내 귀가! 계속하자." },
-    { en: "Oh no, my ears! Let's go on.", ko: "이런, 내 귀가! 계속하자." },
+    { en: "Oops, no sound! Let's go on.", ko: "앗, 소리가 안 들려! 계속하자." },
+    {
+      en: "Oh no, no sound! Let's go on.",
+      ko: "이런, 소리가 안 들려! 계속하자.",
+    },
     { en: "Oops! Let's keep going.", ko: "앗! 계속 가 보자." },
   ],
 };
@@ -336,7 +340,7 @@ describe("checkSituationSentence — 말 검사(spec 설계 1 · AC-15za (나))"
       true,
     );
     expect(
-      checkSituationSentence("Oops, my ears! Let's go on.", ctxOf("nospeech"))
+      checkSituationSentence("Oops, no sound! Let's go on.", ctxOf("nospeech"))
         .ok,
     ).toBe(true);
     expect(
@@ -551,7 +555,7 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
     const value = out({
       child_kind: "not_understood",
       stuck: true,
-      tori_en: "Oops, my ears!",
+      tori_en: "Oops, no sound!",
       response_fit: true,
       child_topic: true,
       child_asked: true,
@@ -574,7 +578,7 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
       mission_done: [],
       recast: "",
     });
-    expect(blank.tori_en).toBe("Oops, my ears!");
+    expect(blank.tori_en).toBe("Oops, no sound!");
     expect(blank.model_line).toBe("I play.");
     expect(blank.next_targets).toEqual(["soccer"]);
   });
@@ -585,7 +589,7 @@ describe("situationLineOf · heardFieldsBlankOf", () => {
     const { result } = play({
       args: { ...args, turns: opening3() },
       ifAnswered: plan,
-      sentences: ["Oops, my ears! Let's go on."],
+      sentences: ["Oops, no sound! Let's go on."],
       outcome: ok(
         heardFieldsBlankOf(
           out({

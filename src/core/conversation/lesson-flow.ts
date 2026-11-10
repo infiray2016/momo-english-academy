@@ -14,7 +14,11 @@ import {
   type TalkChances,
   talkChancesOf,
 } from "@/core/conversation/chances";
-import { sceneWordsOf } from "@/core/conversation/child-kind";
+import {
+  homophoneHeadOf,
+  isChildFillerWord,
+  sceneWordsOf,
+} from "@/core/conversation/child-kind";
 import {
   childCauseOf,
   isLowBand,
@@ -120,6 +124,12 @@ export type TalkQuestionSlot = {
   } | null;
   /** 1~3단계 장면 여는 질문의 자리(C206 — 카드 항목 · 노리는 단어가 없고, 답 예시 · 쉬운 질문은 그 칸의 것). 아니면 없음. */
   scene?: true;
+  /**
+   * 받침 둘째에서 선생님(AI)이 쓴 쉬운 질문의 답 예시 · 노리는 단어(13절 C217 보완 · 자리 재현 재생 보고 8.5 우려 2). 받침 차례는 새 질문 자리를 열지
+   * 않아 자리의 답(answerExample)은 처음 질문 것 그대로다(받침 줄 · 닫는 답 소리 재료). 아이가 이 쉬운 질문에 답한 말을 알아듣는 데(들은 글 귀띔)만
+   * 이 칸을 쓴다 — 'Where do whales swim?' 뒤 'See' 는 그 질문의 답 sea 와 맞댄다. 카드 쉬운 질문(카드 자리) · 그 밖의 자리에는 없다.
+   */
+  easyAsked?: { answerExample: string | null; words: string[] };
 };
 
 export type TalkLessonPosition = {
@@ -424,6 +434,18 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
       } else if (m && isSupportMove(m) && slot) {
         slot.questions.push(...questions);
         if (questions.length > 0) slot.question = questions.at(-1) ?? null;
+        // 받침 둘째에서 선생님(AI)이 쓴 쉬운 질문의 답 예시 · 노리는 단어(들은 글 귀띔 재료 — 자리의 답은 그대로 둔다)
+        if (
+          m.kind === "ai" &&
+          m.stage === TALK_SUPPORT_STAGE_EASY &&
+          questions.length > 0
+        ) {
+          const answer = row.answerExample ?? null;
+          slot.easyAsked = {
+            answerExample: answer === "" ? null : answer,
+            words: [...m.words],
+          };
+        }
       } else {
         const opens =
           questions.length > 0 || (m?.item.kind ?? "none") !== "none";
@@ -564,30 +586,44 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
  * 아이가 먼저 말한 필수 질문 답(대본 회차 r1 판정 I-2 · 13절 C202 · C203 — 셈은 앱): 아이 말 하나가 그 필수 질문의 노리는 단어(소문자 · 원형)를
  * 모두 담고, 답 예시에 노리는 단어 밖 내용 낱말이 있으면 그 가운데 하나도 담으면(어휘 · 뜻 일치) 그 질문 번호다. 'We eat rice and fish.' 는
  * 'Rice and fish for lunch! What do you do at the table?'(eat · 답 'We eat rice and fish.')의 답이고, 'I drink water.' 는 'What do you do with the
- * juice?'(drink · 답 'I drink the juice.')의 답이 아니다. 늦은 카드 답(lateCardAnswerOf)과 같이 인식 글을 읽는다.
+ * juice?'(drink · 답 'I drink the juice.')의 답이 아니다. 늦은 카드 답(lateCardAnswerOf)과 같이 인식 글을 읽는다. 동음이의어 묶음을 주면 같은
+ * 소리로 들린 낱말도 그 낱말로 센다('They swim in the see.' 는 sea 를 노리는 질문의 답 — 13절 C217 (1) · 분석 A1). 아이 말의 기능어 · 인사 ·
+ * 맞장구 말은 묶음을 거치지 않는다('I want to eat apples.' 의 to · 'I like shells too.' 의 too 가 two 답이 되지 않게 — child-kind isChildFillerWord,
+ * 코드 검토 rev-content-1 M-2).
  */
 export function childAnsweredRequiredOf({
   required,
   childLines,
   lemmaOf,
+  homophones = [],
 }: {
   required: readonly Pick<TalkLessonItem, "no" | "targets" | "answerExample">[];
   /** 이 대화의 아이 말(인식 글 — 이번 말 포함). */
   childLines: readonly string[];
   lemmaOf: (surface: string) => string | undefined;
+  /** 동음이의어 묶음(시드 lists/homophones.json). 없으면 글자 · 원형으로만 견준다. */
+  homophones?: readonly (readonly string[])[];
 }): number[] {
+  const headOf = homophoneHeadOf(homophones);
+  const lower = (w: string) => w.toLowerCase();
+  /** 같은 소리 열쇠(묶음에 든 낱말만 — 묶음 밖 낱말은 글자 · 원형 열쇠로 충분하다). */
+  const soundKey = (w: string) => `~${headOf(w)}`;
   const keysOf = (text: string) => {
     const out = new Set<string>();
     for (const w of text.split(/[^A-Za-z']+/)) {
       if (w === "") continue;
-      out.add(w.toLowerCase());
+      out.add(lower(w));
       const lemma = lemmaOf(w)?.toLowerCase();
       if (lemma !== undefined) out.add(lemma);
+      if (homophones.length > 0 && !isChildFillerWord(w)) out.add(soundKey(w));
     }
     return out;
   };
   const lines = childLines.map(keysOf);
-  const lower = (w: string) => w.toLowerCase();
+  const has = (keys: ReadonlySet<string>, word: string) =>
+    keys.has(word) ||
+    keys.has(lower(lemmaOf(word) ?? word)) ||
+    (homophones.length > 0 && keys.has(soundKey(word)));
   return required
     .filter((item) => {
       const targets = item.targets.map(lower);
@@ -598,11 +634,11 @@ export function childAnsweredRequiredOf({
       );
       return lines.some(
         (keys) =>
-          targets.every((t) => keys.has(t)) &&
-          (others.length === 0 ||
-            others.some(
-              (o) => keys.has(o) || keys.has(lower(lemmaOf(o) ?? o)),
-            )),
+          targets.every(
+            (t) =>
+              keys.has(t) || (homophones.length > 0 && keys.has(soundKey(t))),
+          ) &&
+          (others.length === 0 || others.some((o) => has(keys, o))),
       );
     })
     .map((item) => item.no);

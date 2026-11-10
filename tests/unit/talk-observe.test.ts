@@ -8,23 +8,29 @@ import { questionKeyOf } from "@/core/conversation/question-check";
 import { splitSentences } from "@/core/seed/text";
 import { loadScriptConfig } from "../../scripts/ai-contract";
 import {
+  ANCHORED_NOTICE,
+  anchorCheckOf,
   type CallResult,
   CHANCE_ALERT_DEFAULT,
   chanceAlertOf,
   createTalkSim,
   evaluateLessonMessage,
+  isAnchoredScript,
   isSceneAssert,
   JUDGE_KEYS,
   judgeOf,
   type Materials,
   materialsOf,
+  type ObserveAnchor,
   type ObserveScript,
+  type ObserveStep,
   observeValues,
   overrideText,
   parseArgs,
   parseObserveScript,
   planLines,
   planRunOf,
+  REPLAY_NOTICE,
   type RunReport,
   readScriptFiles,
   readSeedFiles,
@@ -240,6 +246,13 @@ describe("parseArgs", () => {
     expect(parseArgs(["--chance-alert", "half"]).ok).toBe(false);
   });
 
+  it("AC-15zl: --anchored 는 준 때에만 자리 재현 칸을 둔다", () => {
+    const off = parseArgs(["--script", "replay-lesson-1108"]);
+    expect(off.ok && "anchored" in off.args).toBe(false);
+    const on = parseArgs(["--anchored", "--script", "replay-lesson-1108"]);
+    expect(on.ok && on.args.anchored).toBe(true);
+  });
+
   it("--chance-alert 는 0 초과 1 이하 수를 읽는다(기본 0.5, spec N-3)", () => {
     expect(CHANCE_ALERT_DEFAULT).toBe(0.5);
     const parsed = parseArgs(["--chance-alert", "0.7"]);
@@ -260,24 +273,26 @@ describe("대본", () => {
     "l3-second-session",
   ];
 
-  it("대본 열여섯: 1단계 둘(CI 고침 2 — 처음 묻는 선택지 · 카드 답 다음 이어 묻기), 3단계 열셋(지난 다섯 + 'AI 몫 넓힘' 설계 7 의 새 일곱 + 판정 r1 8.1 의 요약에 닿는 둘째 세션)과 4단계 하나", () => {
+  it("대본 열여덟: 1단계 둘(CI 고침 2 — 처음 묻는 선택지 · 카드 답 다음 이어 묻기), 3단계 열다섯(지난 다섯 + 'AI 몫 넓힘' 설계 7 의 새 일곱 + 판정 r1 8.1 의 요약에 닿는 둘째 세션 + 실제 수업 재생 대본, AC-15zl + 답 틀 귀띔의 반대 사례, C217 보완)과 4단계 하나", () => {
     const all = scripts();
     expect(all.map((s) => s.name).sort()).toEqual(
       [
         "l1-card-follow-up",
         "l1-first-new-word",
         "l3-child-topic",
+        "l3-heard-counter",
         "l3-nospeech",
         "l3-preview-1",
         "l3-second-session-recall",
         "l3-stuck-three",
         "l3-word-answers",
         "l4-word-answers",
+        "replay-lesson-1108",
         ...NEW_SEVEN,
       ].sort(),
     );
     expect(all.filter((s) => s.level === 1)).toHaveLength(2);
-    expect(all.filter((s) => s.level === 3)).toHaveLength(13);
+    expect(all.filter((s) => s.level === 3)).toHaveLength(15);
     expect(all.filter((s) => s.level === 4)).toHaveLength(1);
   });
 
@@ -289,6 +304,96 @@ describe("대본", () => {
       expect(s.steps.every((step) => step.expect !== undefined)).toBe(true);
       expect(s.steps.every((step) => step.say !== undefined)).toBe(true);
     }
+  });
+
+  it("AC-15zl: 재생 대본은 실제 수업(2026-11-08)의 아이 차례 23 을 들은 글 그대로 차례대로 두고 다지기 6 카드로 돈다", () => {
+    const replay = scripts().find((s) => s.name === "replay-lesson-1108");
+    expect(replay?.replay).toBe(true);
+    expect([replay?.level, replay?.unit, replay?.lesson]).toEqual([3, 1, 6]);
+    expect(replay?.steps.map((step) => step.say ?? `(${step.input})`)).toEqual([
+      "I'm fine",
+      "I can see",
+      "(dont_know)",
+      "Fish",
+      "See",
+      "Tomorrow",
+      "Sure",
+      "See",
+      "Eat",
+      "(dont_know)",
+      "Apple",
+      "Family",
+      "Yeah",
+      "See See",
+      "(dont_know)",
+      "I wash my feet",
+      "Hot water",
+      "Pad",
+      "Teach",
+      "Beach",
+      "Each shells",
+      "Drink",
+      "Strawberry",
+    ]);
+    // 누른 힌트 수는 기록의 hint_level 그대로이고 힌트 종류는 도구가 앱처럼 정한다(고정하지 않는다)
+    expect(replay?.steps.map((step) => step.hintTier ?? 0)).toEqual([
+      0, 1, 1, 0, 1, 0, 1, 3, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 3, 3, 1, 0,
+    ]);
+    expect(replay?.steps.every((step) => step.hint === undefined)).toBe(true);
+    expect(replay?.steps.every((step) => step.lessonBefore)).toBe(true);
+    // 다지기 6 은 시드 카드 · 단계 규격 · 선생님으로 채워진다(필수 질문 여섯 · 새 단어 없음)
+    const m = materialsOf(readSeedFiles(ROOT, 3, 1), {
+      level: 3,
+      unit: 1,
+      lesson: 6,
+      teacher: replay?.teacher ?? "",
+    });
+    expect(m.ok && m.materials.card.required.length).toBe(6);
+    expect(m.ok && m.materials.newWords).toEqual([]);
+  });
+
+  it("AC-15zl: 재생 대본의 기대 낱말 주석은 여섯이다(See 셋 = sea · I can see = swim · Teach · Each shells = beach)", () => {
+    const replay = scripts().find((s) => s.name === "replay-lesson-1108");
+    expect(
+      replay?.steps.flatMap((step) =>
+        step.meant
+          ? [[step.say, step.meant.word, step.meant.heardAs.join(" ")]]
+          : [],
+      ),
+    ).toEqual([
+      ["I can see", "swim", "see"],
+      ["See", "sea", "see"],
+      ["See", "sea", "see"],
+      ["See See", "sea", "see"],
+      ["Teach", "beach", "teach"],
+      ["Each shells", "beach", "each"],
+    ]);
+  });
+
+  it("AC-15zl: 기대 낱말 주석은 말 차례에만 두고 낱말 · 잘못 들린 낱말이 비면 거부한다", () => {
+    const base = {
+      name: "x",
+      title: "t",
+      level: 3,
+      unit: 1,
+      lesson: 6,
+      teacher: "mina",
+      replay: true,
+    };
+    const meant = { word: "sea", heardAs: ["see"] };
+    const withSteps = (steps: unknown[]) =>
+      parseObserveScript({ ...base, steps }, "x.json");
+    expect(
+      withSteps([{ say: "See", meant, lessonBefore: "Where is the fish?" }]).ok,
+    ).toBe(true);
+    expect(withSteps([{ input: "dont_know", meant }]).ok).toBe(false);
+    expect(
+      withSteps([{ say: "See", meant: { word: "sea", heardAs: [] } }]).ok,
+    ).toBe(false);
+    expect(
+      withSteps([{ say: "See", meant: { word: "", heardAs: ["see"] } }]).ok,
+    ).toBe(false);
+    expect(withSteps([{ say: "See", lessonBefore: " " }]).ok).toBe(false);
   });
 
   it("인사 대본 셋은 첫 아이 말(인사 답)이 서로 다르고, 장면 대본 셋은 둘째 아이 말이 예 · 아니요 · 딴 말이다", () => {
@@ -1115,6 +1220,137 @@ describe("메모리 대화(가짜 응답)", () => {
   });
 });
 
+describe("자리 재현(--anchored, AC-15zl)", () => {
+  function replayScript(): ObserveScript {
+    const script = scripts().find((s) => s.name === "replay-lesson-1108");
+    if (!script) throw new Error("재생 대본이 없다");
+    return script;
+  }
+  function materials6(): Materials {
+    const m = materialsOf(readSeedFiles(ROOT, 3, 1), {
+      level: 3,
+      unit: 1,
+      lesson: 6,
+      teacher: "mina",
+    });
+    if (!m.ok) throw new Error(m.missing);
+    return m.materials;
+  }
+  const fixedOf = (step: ObserveStep): ObserveStep => ({
+    ...step,
+    hint: step.anchor?.child.hint,
+    hintTier: step.anchor?.child.hintTier,
+  });
+
+  it("AC-15zl: 재생 대본은 차례마다 자리 재현 재료(아이 행 칸 · 그 뒤 선생님 행)가 있고, 깐 선생님 행은 스물넷이며 인사 끝 뒤에 장면 여는 질문 앱 차례가 든다", () => {
+    const script = replayScript();
+    expect(isAnchoredScript(script)).toBe(true);
+    expect(
+      scripts()
+        .filter(isAnchoredScript)
+        .map((s) => s.name),
+    ).toEqual(["l3-heard-counter", "replay-lesson-1108"]);
+    const anchors = script.steps.map((step) => step.anchor as ObserveAnchor);
+    expect(anchors.flatMap((a) => a.teachers)).toHaveLength(24);
+    expect(anchors[0]?.teachers.map((t) => t.move.kind)).toEqual([
+      "ai",
+      "first_question",
+    ]);
+    expect(anchors[0]?.teachers[1]?.text.trim()).toBe(
+      "Hot sun and cool water! Can you swim?",
+    );
+    // 차례의 '실제 수업의 앞 선생님 말'은 앞 차례에 깐 선생님 행의 글이다(소리 줄은 move 에 있다)
+    const afterDontKnow = anchors[2]?.teachers[0];
+    expect(afterDontKnow?.text).toBe("No problem! Let's try together.");
+    expect(afterDontKnow?.move.sound?.answer).toBe("I see a fish.");
+    expect(script.steps[3]?.lessonBefore).toBe(
+      "No problem! Let's try together. 〈I see a fish.〉",
+    );
+    // 막힘 말로 저장된 아이 행(Tomorrow · Sure · Yeah · Pad · Teach)
+    expect(
+      script.steps.flatMap((step) =>
+        step.anchor?.child.stuck ? [step.say] : [],
+      ),
+    ).toEqual(["Tomorrow", "Sure", "Yeah", "Pad", "Teach"]);
+  });
+
+  it("AC-15zl: 실제 기록을 깔며 나아가면 스물세 차례가 모두 준비되고, 그 자리에서 셈한 노린 단어 · 들은 도움 · 힌트가 기록과 같다", () => {
+    const script = replayScript();
+    const sim = createTalkSim(materials6(), config.values, config.book);
+    const off: string[] = [];
+    for (const [i, step] of script.steps.entries()) {
+      const ready = sim.prepare(fixedOf(step), i);
+      if (!ready.ok) throw new Error(`차례 ${i + 1}: ${ready.reason}`);
+      const anchor = step.anchor as ObserveAnchor;
+      const check = anchorCheckOf(ready.turn, anchor);
+      if (check.length > 0) off.push(`${i + 1}:${check.join("+")}`);
+      sim.lay(ready.turn, anchor);
+    }
+    expect(off).toEqual([]);
+    // 앱 첫 차례 1 + 아이 23 + 깐 선생님 24
+    expect(sim.rows).toHaveLength(48);
+    expect(sim.rows.at(-1)).toMatchObject({
+      speaker: "tori",
+      turnNo: 25,
+      move: { kind: "closing_slot" },
+    });
+  });
+
+  it("AC-15zl: 깐 상태에서 받은 차례는 앞 턴 전문이 실제 수업의 선생님 말이고, 사본에서 받은 새 응답은 본 대화에 남지 않는다", () => {
+    const script = replayScript();
+    const m = materials6();
+    const sim = createTalkSim(m, config.values, config.book);
+    const steps = script.steps.map(fixedOf);
+    for (const [i, step] of steps.slice(0, 4).entries()) {
+      const ready = sim.prepare(step, i);
+      if (!ready.ok) throw new Error(ready.reason);
+      sim.lay(ready.turn, step.anchor as ObserveAnchor);
+    }
+    const before = sim.rows.length;
+    const fork = createTalkSim(m, config.values, config.book, {
+      seed: sim.snapshot(),
+    });
+    const ready = fork.prepare(steps[4] as ObserveStep, 4);
+    if (!ready.ok) throw new Error(ready.reason);
+    // 다섯째 차례 'See' 의 앞 턴 전문: 기록의 선생님 말(답 소리 줄 포함)
+    const history = ready.turn.input.history;
+    expect(history.map((h) => h.assistant)).toEqual([
+      "Good to hear! Let's start!",
+      "Oh, you can see! What do you see in the water?",
+      "No problem! Let's try together.\nI see a fish.",
+      "Yes, you see a fish! Where is the fish?",
+    ]);
+    expect(history.every((h) => h.user.includes("Child"))).toBe(true);
+    expect(ready.turn.childText).toBe("See");
+    const record = fork.finish(
+      ready.turn,
+      fakeMessage({ tori_en: "Yes, in the sea! Is the fish big?" }),
+    );
+    expect(record.no).toBe(5);
+    expect(record.teacher).toContain("Yes, in the sea!");
+    expect(fork.rows.length).toBeGreaterThan(before);
+    expect(sim.rows).toHaveLength(before);
+    expect(JSON.stringify(sim.rows)).not.toContain("Yes, in the sea!");
+  });
+
+  it("AC-15zl: 깐 상태 대조는 기록과 다른 칸 이름을 낸다", () => {
+    const anchor = replayScript().steps[4]?.anchor as ObserveAnchor;
+    const same = {
+      targets: [...anchor.child.targets],
+      heardHelp: anchor.child.heardHelp,
+      hintKind: anchor.child.hint,
+      hintTier: anchor.child.hintTier,
+    };
+    expect(anchorCheckOf(same, anchor)).toEqual([]);
+    expect(
+      anchorCheckOf(
+        { ...same, targets: ["beach"], heardHelp: "two_answers" },
+        anchor,
+      ),
+    ).toEqual(["targets", "heardHelp"]);
+  });
+});
+
 describe("판정 칸", () => {
   it("같은 소리 두 번은 앱이 붙인 글 줄과 AI 문장도 견준다(검토 M-2)", () => {
     const card = {
@@ -1354,13 +1590,13 @@ describe("실행(네트워크 없음)", () => {
     };
   }
 
-  it("--yes 없이 3단계는 대본 열셋 · 예상 호출 · 비용을 내고 부르지 않는다", async () => {
+  it("--yes 없이 3단계는 대본 열다섯 · 예상 호출 · 비용을 내고 부르지 않는다", async () => {
     const { io, logs, written } = ioOf();
     const code = await runTalkObserve(argsOf({ level: 3, rounds: 2 }), io);
     expect(code).toBe(0);
     expect(written.size).toBe(0);
     const total = logs.find((l) => l.startsWith("합계:")) ?? "";
-    expect(total).toContain("대본 13(돌릴 것 13) × 바퀴 2");
+    expect(total).toContain("대본 15(돌릴 것 15) × 바퀴 2");
     const perRound = Number(/한 바퀴 (\d+)\)/.exec(total)?.[1]);
     expect(perRound).toBeGreaterThan(0);
     expect(total).toContain(`예상 호출 ${perRound * 2}(`);
@@ -1478,6 +1714,163 @@ describe("실행(네트워크 없음)", () => {
     );
     expect(written.get(`${base}-review.md`)).toContain("## 첫 바퀴 전문");
     expect(logs.at(-1)).toContain("-metrics.md");
+  });
+
+  it("AC-15zl: 재생 대본은 계획 줄에 고정 입력 재생을 밝히고 아이 차례 23 · 예상 호출 23 을 낸다", async () => {
+    const { io, logs, written } = ioOf();
+    const code = await runTalkObserve(
+      argsOf({ script: "replay-lesson-1108" }),
+      io,
+    );
+    expect(code).toBe(0);
+    expect(written.size).toBe(0);
+    const line = logs.find((l) => l.startsWith("replay-lesson-1108")) ?? "";
+    expect(line).toContain("아이 차례 23 · 예상 호출 23");
+    expect(line).toContain(" · 고정 입력 재생");
+    expect(logs).toContain(`${REPLAY_NOTICE}.`);
+    // 다른 대본만 고르면 알림 줄이 없다
+    const other = ioOf();
+    await runTalkObserve(argsOf({ script: "l3-greet-fine" }), other.io);
+    expect(other.logs.some((l) => l.includes("고정 입력 재생"))).toBe(false);
+  });
+
+  it("AC-15zl: 재생 대본을 돌리면 보고에 고정 입력 재생 · 기대 낱말 주석 · 실제 수업의 앞 말이 실리고 끝에 지표 넷이 붙는다", async () => {
+    const { client, calls } = fakeClient();
+    const { io, written } = ioOf(client);
+    const code = await runTalkObserve(
+      argsOf({ yes: true, script: "replay-lesson-1108" }),
+      io,
+    );
+    expect(code).toBe(0);
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    const base = "/tmp/talk-observe-test/2026-11-07-talk-observe-settings";
+    const report = JSON.parse(written.get(`${base}.json`) ?? "{}") as {
+      runs: RunReport[];
+      metrics: {
+        replay: {
+          scripts: { name: string; replay: boolean }[];
+          total: { heard: { den: number }; drift: { den: number } };
+        };
+      };
+    };
+    const run = report.runs[0];
+    expect(run?.script.replay).toBe(true);
+    expect(run?.turns[0]?.lessonBefore).toBe("Hi, {NAME}! How are you?");
+    expect(run?.turns[0]?.meant).toBeUndefined();
+    expect(run?.turns[1]?.meant).toEqual({
+      word: "swim",
+      heardAs: ["see"],
+      note: expect.stringContaining("추정"),
+    });
+    expect(report.metrics.replay.scripts).toEqual([
+      expect.objectContaining({ name: "replay-lesson-1108", replay: true }),
+    ]);
+    expect(report.metrics.replay.total.heard.den).toBeGreaterThanOrEqual(1);
+    expect(report.metrics.replay.total.drift.den).toBe(run?.turns.length);
+    const md = written.get(`${base}.md`) ?? "";
+    expect(md).toContain(`${REPLAY_NOTICE}.`);
+    expect(md).toContain("## 실제 입력 지표 넷(13절 C217 (4) · AC-15zl)");
+    expect(md).toContain(
+      "### 차례별 선생님 말: replay-lesson-1108 · 바퀴 1(고정 입력 재생)",
+    );
+    expect(written.get(`${base}-metrics.md`)).toContain(
+      "| replay-lesson-1108(고정 입력 재생) | 1 |",
+    );
+  });
+
+  it("AC-15zl: --anchored 계획은 말 차례 스물만 세고 자리 재현을 밝히며, anchor 없는 대본만 고르면 멈춘다", async () => {
+    const { io, logs, written } = ioOf();
+    const code = await runTalkObserve(
+      argsOf({ script: "replay-lesson-1108", anchored: true }),
+      io,
+    );
+    expect(code).toBe(0);
+    expect(written.size).toBe(0);
+    const line = logs.find((l) => l.startsWith("replay-lesson-1108")) ?? "";
+    expect(line).toContain("아이 차례 20 · 예상 호출 20");
+    expect(line).toContain(" · 자리 재현");
+    expect(line).not.toContain("고정 입력 재생");
+    expect(logs).toContain(`${ANCHORED_NOTICE}.`);
+    expect(logs).not.toContain(`${REPLAY_NOTICE}.`);
+    // 단계로 고르면 anchor 있는 대본만 남는다(실제 수업 재생 대본과 답 틀 귀띔의 반대 사례 대본)
+    const byLevel = ioOf();
+    await runTalkObserve(argsOf({ level: 3, anchored: true }), byLevel.io);
+    expect(byLevel.logs.find((l) => l.startsWith("합계:")) ?? "").toContain(
+      "대본 2(돌릴 것 2)",
+    );
+    await expect(
+      runTalkObserve(
+        argsOf({ script: "l3-greet-fine", anchored: true }),
+        ioOf().io,
+      ),
+    ).rejects.toThrow("자리 재현(--anchored)은 차례마다 anchor 가 있는");
+  });
+
+  it("AC-15zl: --anchored 는 말 차례마다 따로 부르고(스물), 요청의 앞 턴 전문은 실제 수업 기록이며 새 응답을 잇지 않는다", async () => {
+    const { client, calls } = fakeClient();
+    const { io, written } = ioOf(client);
+    const code = await runTalkObserve(
+      argsOf({ yes: true, script: "replay-lesson-1108", anchored: true }),
+      io,
+    );
+    expect(code).toBe(0);
+    const base =
+      "/tmp/talk-observe-test/2026-11-07-talk-observe-settings-anchored";
+    const report = JSON.parse(written.get(`${base}.json`) ?? "{}") as {
+      runs: RunReport[];
+      metrics: {
+        replay: {
+          scripts: { name: string; anchored: boolean }[];
+          total: {
+            heard: { den: number };
+            drift: { den: number; num: number };
+          };
+        };
+      };
+    };
+    const run = report.runs[0];
+    expect(run?.anchored).toBe(true);
+    expect(run?.stopped).toBeNull();
+    // 말 차례 스물(모름 단추 셋 — 차례 3 · 10 · 15 — 은 부르지 않고 깔기만 한다)
+    expect(run?.turns.map((t) => t.no)).toEqual([
+      1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23,
+    ]);
+    expect(run?.turns.every((t) => t.anchored?.check.length === 0)).toBe(true);
+    expect(run?.turns.find((t) => t.no === 5)?.anchored).toMatchObject({
+      lessonAfter: "Yes, you see the fish! Is it big or small?",
+      prevFirstWord: "yes",
+    });
+    // 차례 2 앞에는 대화 토막의 AI 반응이 없다(인사 끝은 세지 않는다)
+    expect(run?.turns.find((t) => t.no === 2)?.anchored?.prevFirstWord).toBe(
+      null,
+    );
+    // 받침 차례(답 소리 줄)는 건너뛰고 그 앞 AI 반응과 견준다: 차례 7(Sure) 앞은 'Yes, you see the fish! …'
+    expect(run?.turns.find((t) => t.no === 7)?.anchored?.prevFirstWord).toBe(
+      "yes",
+    );
+    // 마지막 차례(Strawberry)의 요청: 앞 턴 전문에 실제 수업의 선생님 말이 있고 가짜 응답 글은 없다
+    const requests = calls.map((body) => JSON.stringify(body));
+    const last = requests.findLast((r) => r.includes("Strawberry")) ?? "";
+    expect(last).toContain(
+      "Yes, you drink cold juice! What juice do you like?",
+    );
+    expect(last).toContain("Oh, you see!\\nSandwiches for lunch!");
+    expect(requests.some((r) => r.includes("Good to hear! Let's talk!"))).toBe(
+      false,
+    );
+    // 지표: 여섯 주석 자리가 모두 같은 자리다(어긋남 0)
+    expect(report.metrics.replay.scripts).toEqual([
+      expect.objectContaining({ name: "replay-lesson-1108", anchored: true }),
+    ]);
+    expect(report.metrics.replay.total.heard.den).toBe(6);
+    expect(report.metrics.replay.total.drift).toEqual({ den: 20, num: 0 });
+    const md = written.get(`${base}.md`) ?? "";
+    expect(md).toContain(`${ANCHORED_NOTICE}.`);
+    expect(md).not.toContain(`${REPLAY_NOTICE}.`);
+    expect(md).toContain("### 자리 재현: replay-lesson-1108 · 바퀴 1");
+    expect(written.get(`${base}-metrics.md`)).toContain(
+      "| replay-lesson-1108(자리 재현) | 1 |",
+    );
   });
 
   it("기준선 JSON 꼴이 틀리면 부르기 전에 멈춘다", async () => {

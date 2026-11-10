@@ -155,7 +155,7 @@ function wideOptions(words: readonly string[]): LowLevelLineOptions {
 }
 
 const WIDE_WORDS =
-  "a an the i you it we is am are do does what who where or like fish big small lake rice juice cold hot oh wow yes yum good to hear let's let learn some new words that's okay that no problem can help here easy one tired sorry ears my oops go on".split(
+  "a an the i you it we is am are do does what who where or like fish big small lake rice juice cold hot oh wow yes yum good to hear let's let learn some new words that's okay that no problem can help here easy one tired sorry sound my oops go on".split(
     " ",
   );
 
@@ -240,7 +240,9 @@ describe("I-1 (가) 상황 차례 예는 고정부 목록이 아니라 사용자
     const system = talkLessonSystem(lessonInput(3), lessonRules(3));
     // 근거: 인사 끝 21/24 가 목록 첫째 'Good to hear! Let's learn some new words!' 그대로였다
     expect(system).not.toContain("'Good to hear! Let's learn some new words!'");
-    expect(system).not.toContain("'Oops, my ears! Let's go on.'");
+    // 들리지 않음 예도 표에서 읽는다('my ears' 꼴 예는 13절 C217 (3) 로 바꿨다 — 글자를 박으면 늘 참이 된다)
+    for (const line of TALK_SITUATION_EXAMPLES.nospeech)
+      expect(system, line).not.toContain(`'${line}'`);
     expect(system).toContain("The app changes a copied or repeated line.");
   });
 });
@@ -1125,7 +1127,10 @@ describe("fix 3 — 대본 회차 r3 재판정 I-r3-1 · 코드 재검토 Minor 
         { en: "Okay! We can do this.", ko: "그래! 우리는 할 수 있어." },
       ],
       nospeech: [
-        { en: "Oops, my ears! Let's go on.", ko: "앗, 내 귀가! 계속하자." },
+        {
+          en: "Oops, no sound! Let's go on.",
+          ko: "앗, 소리가 안 들려! 계속하자.",
+        },
         {
           en: "Hmm, no sound! Let's keep going.",
           ko: "음, 소리가 안 들려! 계속 가 보자.",
@@ -1145,7 +1150,7 @@ describe("fix 3 — 대본 회차 r3 재판정 I-r3-1 · 코드 재검토 Minor 
     ).toBe("It's okay! I am with you.");
     expect(
       situationLineOf(lines, "nospeech", 0, {
-        texts: ["Oops, my ears! Let's go on."],
+        texts: ["Oops, no sound! Let's go on."],
       })?.en,
     ).toBe("Hmm, no sound! Let's keep going.");
   });

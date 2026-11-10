@@ -65,6 +65,7 @@ import {
   MetaSentencesFileSchema,
   ModelPricesFileSchema,
   SettingsFileSchema,
+  SoundAlikesFileSchema,
   TalkAllowedWordsFileSchema,
   TalkCueLinesFileSchema,
   TalkMadeUpPhrasesFileSchema,
@@ -586,6 +587,7 @@ const REFERENCE_SCHEMAS: Record<SeedFileName, z.ZodType> = {
   talkAllowedWords: TalkAllowedWordsFileSchema,
   talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
   talkShortLines: TalkShortLinesFileSchema,
+  soundAlikes: SoundAlikesFileSchema,
 };
 
 function issuePath(prefix: string, path: readonly PropertyKey[]): string {

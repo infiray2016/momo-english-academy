@@ -210,7 +210,12 @@ describe("상황 차례 예(AC-2 (가) · spec 설계 1 · 2)", () => {
         expect(line, place).not.toMatch(/\?|say it|together|repeat|listen/i);
       }
     }
-    expect(four).not.toContain("Oops, my ears!");
+    // 4단계 고정부에는 1~3단계 들리지 않음 예가 없다(표에서 읽는다 — 예 글자를 박으면 예가 바뀔 때 늘 참이 된다)
+    for (const line of TALK_SITUATION_EXAMPLES.nospeech) {
+      expect(four, line).not.toContain(line);
+      // 'my ears' 꼴은 예에 두지 않는다(13절 C217 (3) — 요청자 iPad 수업 11-08)
+      expect(line).not.toMatch(/my ears/i);
+    }
     expect(three).toContain(
       "Never copy it or any of its sentences word for word, never use a line made for another place, and never repeat a sentence you already said in this conversation",
     );
@@ -291,7 +296,8 @@ describe("말 길이 · 자기 이야기 · 지어낸 경험(AC-3 (다) · C211 
       "When 'Come back to today's topic in this turn: yes', come back in this turn with a question that links the child's topic to today's scene",
       "When 'Follow up on the child's answer: yes', the child just answered 'App question just before' (the scene question). Follow up on that answer (next_move follow_up), and never ask the scene question again.",
       "Levels 1-3, Segment greeting with Turn ai and 'Question: yes': react to the child's answer and ask one greeting question, with no choices.",
-      "Levels 1-3, the farewell: point at one thing the child said or liked today and say goodbye. If the child said almost nothing, do not point at anything. At most two sentences and no question.",
+      // 끝인사는 아이가 한 말 하나를 짚고 낱말을 세지 않는다(13절 C217 (3))
+      "Levels 1-3, the farewell: point at one thing the child said or liked today and say goodbye. Never list or count the words the child said (not 'You said eat and drink today.'); say one natural line about that one thing. If the child said almost nothing, do not point at anything. At most two sentences and no question.",
     ];
     for (const line of lines) {
       expect(system3()).toContain(line);

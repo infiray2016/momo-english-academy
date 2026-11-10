@@ -1,0 +1,1203 @@
+{
+  "name": "replay-lesson-1108",
+  "title": "3단계 · 실제 수업 재생(2026-11-08 iPad 수업 · 다지기 6)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 6,
+  "teacher": "mina",
+  "replay": true,
+  "source": "요청자 iPad 수업 2026-11-08 세션 5fa29d9f(회화 3단계 단원 1 다지기 6 · 카드 개정 5). 아이 차례 23(말 20 · '잘 모르겠어요' 3)의 들은 글과 누른 힌트 수(hint_level)를 기록 그대로 옮겼다. 분석: task-ana-lesson-content-report.md 2.1 · 3.1, task-ana-lesson-1-report.md 4.1.",
+  "note": "13절 C217 (4) · AC-15zl: 대본 열둘의 아이 말이 모두 틀림 없는 글이라 재지 못한 것(못 알아들음 · 같은 꼴 반응 · 도움 차례 비율 · 카드 글 그대로 붙임)을 실제 입력으로 잰다. meant 는 들은 글이 아이가 하려던 말과 다른 차례의 기대 낱말이고(소리 기록이 없어 'I can see' 는 추정), lessonBefore 는 실제 수업에서 그 입력 바로 앞에 선생님이 한 말이다. Tomorrow · Sure · Yeah · Pad 는 하려던 말을 알 수 없어 주석을 두지 않았다. 선생님은 기록에 없어 도구 기본(미나)이다.",
+  "steps": [
+    {
+      "say": "I'm fine",
+      "lessonBefore": "Hi, {NAME}! How are you?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Good to hear! Let's start!",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "none",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          },
+          {
+            "text": "\nHot sun and cool water! Can you swim?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "first_question",
+              "next": "none",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "I can see",
+      "hintTier": 1,
+      "lessonBefore": "Hot sun and cool water! Can you swim?",
+      "meant": {
+        "word": "swim",
+        "heardAs": ["see"],
+        "note": "추정: 앞 질문 'Can you swim?' 의 답 'I can swim'(소리 기록 없음)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Oh, you can see! What do you see in the water?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 0,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What do you see in the water?",
+              "hintKo": "물속에서 보이는 것을 말해 봐. 예를 들면 물고기야.",
+              "hints": ["I see ___.", "I see a fish."],
+              "answerExample": "I see a fish."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": "dont_know",
+      "hintTier": 1,
+      "lessonBefore": "Oh, you can see! What do you see in the water?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["sea"]
+        },
+        "teachers": [
+          {
+            "text": "No problem! Let's try together.",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "button",
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "sound": {
+                "answer": "I see a fish."
+              },
+              "stage": 1,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Fish",
+      "lessonBefore": "No problem! Let's try together. 〈I see a fish.〉",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 0,
+          "heardHelp": "answer_example",
+          "targets": ["sea"]
+        },
+        "teachers": [
+          {
+            "text": "Yes, you see a fish! Where is the fish?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 0,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Where is the fish?",
+              "hintKo": "물고기가 있는 곳을 말해 봐. 바다는 sea야.",
+              "hints": ["It is in the ___.", "It is in the sea."],
+              "answerExample": "It is in the sea."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "See",
+      "hintTier": 1,
+      "lessonBefore": "Yes, you see a fish! Where is the fish?",
+      "meant": {
+        "word": "sea",
+        "heardAs": ["see"],
+        "note": "확인: 그 질문에 AI 가 적은 답 예시가 'It is in the sea.'(동음이의어 see = sea)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["sea"]
+        },
+        "teachers": [
+          {
+            "text": "Yes, you see the fish! Is it big or small?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Is it big or small?",
+              "hintKo": "큰 물고기인지 작은 물고기인지 말해 봐.",
+              "hints": ["It is ___.", "It is big."],
+              "answerExample": "It is big."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Tomorrow",
+      "lessonBefore": "Yes, you see the fish! Is it big or small?",
+      "anchor": {
+        "child": {
+          "stuck": true,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "That's okay!",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "stuck",
+              "goals": [],
+              "intro": [],
+              "sound": {
+                "answer": "It is big."
+              },
+              "stage": 1,
+              "words": [],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Sure",
+      "hintTier": 1,
+      "lessonBefore": "That's okay! 〈It is big.〉",
+      "anchor": {
+        "child": {
+          "stuck": true,
+          "hint": "english",
+          "hintTier": 1,
+          "heardHelp": "answer_example",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Okay! Here is a new one. Where do whales swim?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 2,
+                "kind": "required"
+              },
+              "kind": "ai",
+              "next": "required",
+              "cause": "stuck",
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 2,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 2,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Where do whales swim?",
+              "hintKo": "고래가 사는 곳을 영어로 말해 봐.",
+              "hints": ["They swim in the ___.", "They swim in the sea."],
+              "answerExample": "They swim in the sea."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "See",
+      "hintTier": 3,
+      "lessonBefore": "Okay! Here is a new one. Where do whales swim?",
+      "meant": {
+        "word": "sea",
+        "heardAs": ["see"],
+        "note": "확인: 카드 필수 2 의 답 'They swim in the sea.'(영어 힌트 셋째 단을 연 뒤)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 3,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Oh, you see!\nSandwiches for lunch! What do you do on the mountain?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": "question_check",
+              "held": [],
+              "item": {
+                "no": 1,
+                "kind": "required"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": null,
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "stage": 0,
+              "words": ["eat"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Eat",
+      "hintTier": 1,
+      "lessonBefore": "Oh, you see! Sandwiches for lunch! What do you do on the mountain?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["eat"]
+        },
+        "teachers": [
+          {
+            "text": "Yum! You eat on the mountain! What do you eat?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "stage": 0,
+              "words": ["eat"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What do you eat?",
+              "hintKo": "산에서 먹는 음식을 말해 봐.",
+              "hints": ["I eat ___.", "I eat sandwiches."],
+              "answerExample": "I eat sandwiches."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": "dont_know",
+      "hintTier": 1,
+      "lessonBefore": "Yum! You eat on the mountain! What do you eat?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["eat"]
+        },
+        "teachers": [
+          {
+            "text": "It's okay! I am with you.",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "button",
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "sound": {
+                "answer": "I eat sandwiches."
+              },
+              "stage": 1,
+              "words": ["eat"],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Apple",
+      "hintTier": 1,
+      "lessonBefore": "It's okay! I am with you. 〈I eat sandwiches.〉",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 1,
+          "heardHelp": "answer_example",
+          "targets": ["eat"]
+        },
+        "teachers": [
+          {
+            "text": "Yum, apples! You eat an apple! Who is with you?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Who is with you?",
+              "hintKo": "누구와 함께 있는지 말해 봐.",
+              "hints": ["I am with ___.", "I am with my mom."],
+              "answerExample": "I am with my mom."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Family",
+      "lessonBefore": "Yum, apples! You eat an apple! Who is with you?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Nice, your family! Whales and dolphins! Where do they swim?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 2,
+                "kind": "required"
+              },
+              "kind": "ai",
+              "next": "required",
+              "cause": null,
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 0,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Where do they swim?",
+              "hintKo": "고래와 돌고래가 헤엄치는 곳을 말해 봐.",
+              "hints": ["They swim in the ___.", "They swim in the sea."],
+              "answerExample": "They swim in the sea."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Yeah",
+      "lessonBefore": "Nice, your family! Whales and dolphins! Where do they swim?",
+      "anchor": {
+        "child": {
+          "stuck": true,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": ["sea"]
+        },
+        "teachers": [
+          {
+            "text": "No problem! I can help.",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 2,
+                "kind": "required"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "stuck",
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "sound": {
+                "answer": "They swim in the sea."
+              },
+              "stage": 1,
+              "words": ["sea"],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "See See",
+      "lessonBefore": "No problem! I can help. 〈They swim in the sea.〉",
+      "meant": {
+        "word": "sea",
+        "heardAs": ["see"],
+        "note": "확인: 바로 앞 답 소리 'They swim in the sea.' 를 듣고 따라 말함"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 0,
+          "heardHelp": "answer_example",
+          "targets": ["sea"]
+        },
+        "teachers": [
+          {
+            "text": "Yes, in the sea! Sand on your feet! What do you do in the sea?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 3,
+                "kind": "required"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "stage": 0,
+              "words": ["wash"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What do you do in the sea?",
+              "hintKo": "바다에서 발을 씻는다고 말해 봐.",
+              "hints": ["I ___ my feet.", "I wash my feet."],
+              "answerExample": "I wash my feet."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": "dont_know",
+      "hintTier": 1,
+      "lessonBefore": "Yes, in the sea! Sand on your feet! What do you do in the sea?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["wash"]
+        },
+        "teachers": [
+          {
+            "text": "Okay! We can do this.",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 3,
+                "kind": "required"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "button",
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "sound": {
+                "answer": "I wash my feet."
+              },
+              "stage": 1,
+              "words": ["wash"],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "I wash my feet",
+      "lessonBefore": "Okay! We can do this. 〈I wash my feet.〉",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 0,
+          "heardHelp": "answer_example",
+          "targets": ["wash"]
+        },
+        "teachers": [
+          {
+            "text": "Nice, you wash your feet! Is the water cold?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Is the water cold?",
+              "hintKo": "물이 차가운지 말해 봐.",
+              "hints": ["It is ___.", "It is cold."],
+              "answerExample": "It is cold."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Hot water",
+      "lessonBefore": "Nice, you wash your feet! Is the water cold?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Oh, hot water! Sand and shells! Where do you play?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 4,
+                "kind": "required"
+              },
+              "kind": "ai",
+              "next": "required",
+              "cause": null,
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 0,
+              "words": ["beach"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Where do you play?",
+              "hintKo": "모래와 조개가 있는 곳에서 놀아요. 그곳은 어디일까요?",
+              "hints": ["I play at the ___.", "I play at the beach."],
+              "answerExample": "I play at the beach."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Pad",
+      "lessonBefore": "Oh, hot water! Sand and shells! Where do you play?",
+      "anchor": {
+        "child": {
+          "stuck": true,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": ["beach"]
+        },
+        "teachers": [
+          {
+            "text": "Oh, that's okay! I am with you.",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": ["together", "answer_example"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 4,
+                "kind": "required"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "stuck",
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "sound": {
+                "answer": "We play at the beach."
+              },
+              "stage": 1,
+              "words": ["beach"],
+              "linked": [],
+              "streak": 1,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Teach",
+      "lessonBefore": "Oh, that's okay! I am with you. 〈We play at the beach.〉",
+      "meant": {
+        "word": "beach",
+        "heardAs": ["teach"],
+        "note": "확인: 바로 앞 답 소리 'We play at the beach.' 를 듣고 따라 말함"
+      },
+      "anchor": {
+        "child": {
+          "stuck": true,
+          "hint": "english",
+          "hintTier": 0,
+          "heardHelp": "answer_example",
+          "targets": ["beach"]
+        },
+        "teachers": [
+          {
+            "text": "No problem! Here is an easy one.\nDo you like shells?",
+            "move": {
+              "v": 1,
+              "ai": "easy_question",
+              "app": ["easy_question"],
+              "why": "support",
+              "held": [],
+              "item": {
+                "no": 4,
+                "kind": "required"
+              },
+              "kind": "card_slot",
+              "next": "none",
+              "cause": "stuck",
+              "goals": ["talk-3-1-2"],
+              "intro": [],
+              "stage": 2,
+              "words": ["beach"],
+              "linked": [],
+              "streak": 2,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "Beach",
+      "hintTier": 3,
+      "lessonBefore": "No problem! Here is an easy one. Do you like shells?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 3,
+          "heardHelp": "none",
+          "targets": ["beach"]
+        },
+        "teachers": [
+          {
+            "text": "Yes, the beach! You play at the beach! What shells do you see?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": ["see"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What shells do you see?",
+              "hintKo": "보이는 조개를 말해 봐요.",
+              "hints": ["I see ___.", "I see a big shell."],
+              "answerExample": "I see a big shell."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Each shells",
+      "hintTier": 3,
+      "lessonBefore": "Yes, the beach! You play at the beach! What shells do you see?",
+      "meant": {
+        "word": "beach",
+        "heardAs": ["each"],
+        "note": "추정: 'beach shells'(같은 대목 C19~22 에 beach 가 Teach · Each 로 들림)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "english",
+          "hintTier": 3,
+          "heardHelp": "none",
+          "targets": ["see"]
+        },
+        "teachers": [
+          {
+            "text": "Oh, many shells! It is hot at the beach. What do you do with cold juice?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 5,
+                "kind": "required"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": ["talk-3-1-1"],
+              "intro": [],
+              "stage": 0,
+              "words": ["drink"],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What do you do with cold juice?",
+              "hintKo": "시원한 주스로 하는 일을 말해 봐.",
+              "hints": ["I ___ juice.", "I drink juice."],
+              "answerExample": "I drink juice."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Drink",
+      "hintTier": 1,
+      "lessonBefore": "Oh, many shells! It is hot at the beach. What do you do with cold juice?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "meaning_only",
+          "hintTier": 1,
+          "heardHelp": "none",
+          "targets": ["drink"]
+        },
+        "teachers": [
+          {
+            "text": "Yes, you drink cold juice! What juice do you like?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "What juice do you like?",
+              "hintKo": "좋아하는 주스를 말해 봐.",
+              "hints": ["I like ___ juice.", "I like apple juice."],
+              "answerExample": "I like apple juice."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "Strawberry",
+      "lessonBefore": "Yes, you drink cold juice! What juice do you like?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Yum, strawberry! You like strawberry juice!\nDo you want to talk more?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "closing_slot",
+              "next": "none",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -108,6 +108,7 @@
     {"key": "talk.role_swap_turns", "scope": "household", "value": 4, "changeVia": "advanced"},
     {"key": "talk.self_line_every_turns", "scope": "household", "value": 3, "changeVia": "advanced"},
     {"key": "talk.greeting_recall", "scope": "household", "value": "off", "changeVia": "advanced"},
+    {"key": "talk.ask_again_max", "scope": "household", "value": 1, "changeVia": "decision-first"},
     {"key": "talk.max_answer_seconds", "scope": "household", "value": 30, "changeVia": "advanced"},
     {"key": "talk.teacher_model_max_mb", "scope": "household", "value": 8, "changeVia": "seed"},
     {"key": "talk.teacher_portrait_max_kb", "scope": "household", "value": 100, "changeVia": "seed"},

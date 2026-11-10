@@ -5,11 +5,21 @@
 // (4) 지어낸 경험 꼴: 1인칭 꼴이고, 신호 말 · 상황 줄이 이 꼴에 걸리지 않는다(카드의 안전한 대사는 check-talk 가 본다).
 // (5) 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6): 자리 × 단계 구간마다 줄 수, 신호 말과 같은 꼴(물음표 없음 · 문장 길이 상한 · 그 구간 첫 단계의
 //     어휘 범위(허용 낱말 포함) · 지어낸 경험 꼴). 뜻(ko)이 비지 않음은 Zod 규격이 막는다.
+// (6) 소리가 가까운 낱말(C217 (1) — 회화 들은 글 귀띔): 표제어는 어휘에 있는 원형이고, 가까운 낱말은 자기 자신 · 같은 원형의 활용형 · 같은 소리
+//     낱말(동음이의어 묶음 몫) · 기능어(I · to · it — 문장마다 귀띔이 붙는다)가 아니다. 표제어 겹침 · 빈 목록은 Zod 규격이 막는다.
+//     표제어와 같은 회화 단원의 단원 단어인 가까운 낱말(wash 의 watch — 아이가 정말 그 낱말을 말했을 수 있다)은 막고, 표제어 둘에 겹친 가까운
+//     낱말(each: eat · beach — 귀띔이 앞 표제어 쪽으로만 난다)은 경고로 알린다(13절 C217 보완 · 코드 검토 rev-content-1 M-3).
 // 꼴 수(셋 이상 · 하나 이상 · 둘 이상)는 시드 꼴 검사 상수이고 설정값이 아니다(06:187). 한국어 뜻 · 빈 목록 · 겹침은 Zod 규격이 먼저 막는다.
 // DB · 파일을 읽지 않는 순수 함수다.
+import {
+  homophoneHeadOf,
+  isSceneFunctionWord,
+} from "@/core/conversation/child-kind";
 import { normalizeSpoken } from "@/core/conversation/spoken";
 import type { SeedIssue } from "@/core/seed/issue";
 import type {
+  HomophonesFile,
+  SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
   TalkListLine,
@@ -61,12 +71,22 @@ export type TalkListsFiles = {
 };
 /** 짧은 말 목록(C213). 1~3단계 목록 넷과 따로 두되 같은 검사가 본다. */
 export type TalkShortListFiles = { talkShortLines?: TalkShortLinesFile };
+/** 소리가 가까운 낱말 목록(C217 (1))과 그 검사가 견주는 동음이의어 묶음. 같은 검사가 본다. */
+export type SoundAlikeListFiles = {
+  soundAlikes?: SoundAlikesFile;
+  homophones?: HomophonesFile;
+};
 
 export type TalkListsContext = {
   /** 어휘 범위를 읽는 사전. vocab 이 없으면 비워 어휘 검사(1)(2)(3)를 건너뛴다. */
   lexicon?: Lexicon;
   /** 회화 그 단계의 문장 길이 상한(level-specs sentenceMaxWords). 단계 규격이 없으면 undefined(길이는 보지 않는다). */
   maxWordsAt: (level: number) => number | undefined;
+  /**
+   * 회화 단원마다의 단원 단어(unit-specs 의 회화 단원 words). 주면 소리가 가까운 낱말 검사 (6)이 '표제어와 같은 단원의 단원 단어인 가까운 낱말'을
+   * 막는다. 단원 규격이 없으면 비운다(그 검사를 건너뛴다).
+   */
+  talkUnitWords?: readonly (readonly string[])[];
 };
 
 /** 단계 구간 열쇠('1' · '2-3')의 첫 단계. */
@@ -145,7 +165,7 @@ function lineRangeProblems(
 
 /** 시드 목록 넷 검사(06:187)와 짧은 말 검사(C213). 없는 파일의 몫은 건너뛴다(규격 파일 '없음'은 seed:validate 가 따로 막는다). */
 export function checkTalkLists(
-  files: TalkListsFiles & TalkShortListFiles,
+  files: TalkListsFiles & TalkShortListFiles & SoundAlikeListFiles,
   ctx: TalkListsContext,
 ): SeedIssue[] {
   const out: SeedIssue[] = [];
@@ -154,8 +174,9 @@ export function checkTalkLists(
     file: string,
     path: string,
     message: string,
+    severity: SeedIssue["severity"] = "error",
   ): void => {
-    out.push({ rule, severity: "error", message, file, path });
+    out.push({ rule, severity, message, file, path });
   };
   const allowed = new Set(files.talkAllowedWords?.allowed ?? []);
   const madeUp = files.talkMadeUpPhrases?.phrases ?? [];
@@ -312,6 +333,66 @@ export function checkTalkLists(
         });
       }
     }
+  }
+
+  // (6) 소리가 가까운 낱말: 표제어는 어휘 원형, 가까운 낱말은 자기 자신 · 활용형 · 같은 소리 낱말 · 기능어가 아니다
+  const alike = files.soundAlikes;
+  if (alike) {
+    const file = SEED_FILES.soundAlikes;
+    const headOf = homophoneHeadOf(files.homophones?.groups ?? []);
+    const lexicon = ctx.lexicon;
+    const units = (ctx.talkUnitWords ?? []).map(
+      (words) => new Set(words.map((w) => w.toLowerCase())),
+    );
+    /** 가까운 낱말 → 그 낱말을 처음 적은 표제어(표제어 둘에 겹친 낱말 찾기). */
+    const firstHead = new Map<string, string>();
+    alike.words.forEach((entry, i) => {
+      if (lexicon && !lexicon.entries.has(entry.word))
+        push(
+          "sound-alikes",
+          file,
+          `words.${i}.word`,
+          `표제어 ${entry.word} 가 어휘(vocab)에 없다(원형으로 적는다)`,
+        );
+      entry.alikes.forEach((word, j) => {
+        const problems = [
+          ...(word === entry.word ? ["표제어와 같은 낱말이다"] : []),
+          ...(word !== entry.word &&
+          lexicon?.forms.get(word)?.includes(entry.word) === true
+            ? ["표제어의 활용형이다(원형으로 이미 맞댄다)"]
+            : []),
+          ...(word !== entry.word && headOf(word) === headOf(entry.word)
+            ? ["표제어와 같은 소리 낱말이다(동음이의어 묶음에 둔다)"]
+            : []),
+          ...(isSceneFunctionWord(word)
+            ? ["기능어다(문장마다 귀띔이 붙는다)"]
+            : []),
+          ...(word !== entry.word &&
+          units.some((unit) => unit.has(entry.word) && unit.has(word))
+            ? [
+                "표제어와 같은 단원의 단원 단어다(아이가 정말 그 낱말을 말했을 수 있다)",
+              ]
+            : []),
+        ];
+        const other = firstHead.get(word);
+        if (other === undefined) firstHead.set(word, entry.word);
+        else if (other !== entry.word)
+          push(
+            "sound-alikes",
+            file,
+            `words.${i}.alikes.${j}`,
+            `소리가 가까운 낱말 '${word}'(표제어 ${entry.word})가 표제어 ${other} 에도 있다(귀띔이 한쪽으로만 난다 — 더 가까운 쪽에만 둔다)`,
+            "warning",
+          );
+        if (problems.length > 0)
+          push(
+            "sound-alikes",
+            file,
+            `words.${i}.alikes.${j}`,
+            `소리가 가까운 낱말 '${word}'(표제어 ${entry.word}): ${problems.join(" · ")}`,
+          );
+      });
+    });
   }
   return out;
 }

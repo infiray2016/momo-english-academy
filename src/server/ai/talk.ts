@@ -173,6 +173,15 @@ export type TalkCallContext = AiCallContext & {
 /** 질문 다시 쓰기 호출의 ai_calls 표지(13절 C203 (3), error_code 칸 — 스키마 열거형을 늘리지 않는다). */
 export const TALK_QUESTION_RETRY_TAG = "question_retry";
 
+/**
+ * 질문 다시 쓰기 호출의 표지에 다시 쓴 까닭을 붙인다('question_retry.chain' — 코드 검토 rev-content-1 M-8: 까닭별 빈도 · 실패를 운영 기록에서 보게).
+ * 까닭은 질문 검사 걸림(too_long · target_word · offband · form · echo · not_easy) · 카드 답 뒤 카드 글(chain) · 막힘 무름(stuck_overridden)이다.
+ * 표지로 가려 읽는 쪽은 앞머리(TALK_QUESTION_RETRY_TAG)로 본다.
+ */
+export function questionRetryTagOf(reason: string): string {
+  return `${TALK_QUESTION_RETRY_TAG}.${reason}`;
+}
+
 /** 표지를 단 오류 갈래 칸(표지가 없으면 그대로). */
 export function taggedErrorCode(
   errorCode: string | null,
@@ -347,6 +356,10 @@ function lessonKit(plan: {
         child: input.turn.child,
         input: input.turn.input,
         sceneWords: talkSceneWordsOf(input),
+        // 같은 소리로 들린 장면 낱말('See.' ↔ sea)도 막힘이 아니다(13절 C217 (1) — 정규화와 같은 판정)
+        ...(input.homophones === undefined
+          ? {}
+          : { homophones: input.homophones }),
       }),
   };
 }

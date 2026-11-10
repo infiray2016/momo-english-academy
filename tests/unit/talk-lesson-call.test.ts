@@ -883,11 +883,13 @@ describe("묶음 5 차례 계획 → 호출 입력(talkCallTurnOf, 검토 I-1 ·
       ),
     );
     expect(second.supportStage).toBe(2);
+    // 1~3단계 카드 항목 줄은 사용자 메시지에 글을 싣지 않는다(hidden — 13절 C217 보완, talk-content-fix1.test.ts)
     expect(second.cardLine).toEqual({
       role: "easy",
       kind: "required",
       no: 1,
       en: "Easy first 1?",
+      hidden: true,
     });
     // 말로 답한 AI 차례: 기회 · 남은 수 · 따라가기
     const plan = nextTeacherTurnOf(flow3([...opening3(), said()]));

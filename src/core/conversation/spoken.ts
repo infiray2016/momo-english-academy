@@ -98,6 +98,70 @@ export function shownTurnOf(
 }
 
 /**
+ * 카드 자리에 붙일 카드 질문 줄에서, 선생님 말에 이미 든 앞 문장(카드의 장면 문장)을 뺀다(13절 C217 보완 · 자리 재현 재생 보고 8.5 우려 1 —
+ * 'Yes, they swim in the sea! Sand on your feet!' 뒤에 'Sand on your feet! What do you do in the sea?' 가 붙어 장면 문장이 두 번 나감). 선생님이
+ * 카드 글을 그대로 쓴 질문이 다시 쓰기 · 질문 검사에 걸려 카드 자리가 되면, 반응에 남은 장면 문장과 앱이 붙이는 카드 줄의 장면 문장이 겹친다.
+ * 줄의 마지막 문장(질문)은 빼지 않는다 — 줄 전체가 이미 나갔으면 겹침 없애기(shownTurnOf)가 줄을 통째로 뺀다. 같은 문장은 정규화한 글 전체가
+ * 같을 때다(낱말 일부가 든 말은 아니다). 뜻은 문장 수가 영어와 같을 때만 같은 자리의 문장을 빼고, 다르면 그대로 둔다(문장을 맞출 수 없다).
+ * 서버 끝 처리(lesson-turn shownAttachOf)와 대본 도구 사본, 다시 흘림의 뜻 찾기가 같이 쓴다.
+ */
+export function cardLineWithoutSaidOf<T extends { en: string; ko?: string }>(
+  sentences: readonly string[],
+  line: T,
+): T {
+  const parts = splitSentences(line.en);
+  if (parts.length < 2) return line;
+  const said = new Set(
+    sentences
+      .flatMap(splitSentences)
+      .map(normalizeSpoken)
+      .filter((s) => s !== ""),
+  );
+  const last = parts.length - 1;
+  const keep = parts.map(
+    (part, i) => i === last || !said.has(normalizeSpoken(part)),
+  );
+  if (keep.every(Boolean)) return line;
+  const kept = <V>(list: readonly V[]) => list.filter((_, i) => keep[i]);
+  const koParts = line.ko === undefined ? [] : splitSentences(line.ko);
+  return {
+    ...line,
+    en: kept(parts).join(" "),
+    ...(line.ko !== undefined && koParts.length === parts.length
+      ? { ko: kept(koParts).join(" ") }
+      : {}),
+  };
+}
+
+/**
+ * 장면 문장을 뺀 카드 줄 글(cardLineWithoutSaidOf 의 결과)에 맞는 카드 뜻 찾기(다시 흘림 — 저장된 화면 글 줄에는 뜻이 없다): 줄의 문장들이 카드 글
+ * 문장의 차례를 지킨 부분이고 마지막 문장(질문)이 같으면, 같은 자리의 뜻 문장을 돌려준다. 뜻의 문장 수가 다르면 뜻 전체, 맞는 글이 아니면 undefined.
+ */
+export function cardLineTailKoOf(
+  card: { en: string; ko?: string },
+  en: string,
+): string | undefined {
+  if (card.ko === undefined) return undefined;
+  if (card.en === en) return card.ko;
+  const parts = splitSentences(card.en);
+  const shown = splitSentences(en);
+  if (shown.length === 0 || shown.length >= parts.length) return undefined;
+  if (shown.at(-1) !== parts.at(-1)) return undefined;
+  const at: number[] = [];
+  let from = 0;
+  for (const sentence of shown) {
+    const i = parts.indexOf(sentence, from);
+    if (i < 0) return undefined;
+    at.push(i);
+    from = i + 1;
+  }
+  const koParts = splitSentences(card.ko);
+  return koParts.length === parts.length
+    ? at.map((i) => koParts[i] ?? "").join(" ")
+    : card.ko;
+}
+
+/**
  * 겹침 없애기 뒤 그 턴의 토리 뜻 줄(3.3 '답은 화면에 보이지 않는다' · T2 · 13절 C202 (5)). 뜻이 선생님 문장마다의 목록이고 그 수가 보낸 문장
  * 수와 같으면, 빠진 문장(답 두 개 · 소리 줄의 답을 담은 말, 질문을 쓰지 않는 차례의 물음표 등)의 뜻만 빼고 남은 문장의 뜻을 차례대로 잇는다 —
  * 모든 단계. 목록의 수가 다르거나 옛 한 글 꼴이면 문장과 맞출 수 없어 옛 규칙이다: 1~3단계에서 shownTurnOf 가 토리 문장을 하나라도 뺐으면 그

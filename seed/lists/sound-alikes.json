@@ -1,0 +1,29 @@
+{
+  "words": [
+    {"word": "eat", "alikes": ["heat", "eight"]},
+    {"word": "drink", "alikes": ["think", "trick", "bring"]},
+    {"word": "go", "alikes": ["goal", "grow", "gold"]},
+    {"word": "come", "alikes": ["calm", "comb", "gum"]},
+    {"word": "wash", "alikes": ["wish"]},
+    {"word": "sleep", "alikes": ["slip", "sheep", "sleeve"]},
+    {"word": "study", "alikes": ["steady", "studio", "sturdy"]},
+    {"word": "learn", "alikes": ["lean", "earn", "burn"]},
+    {"word": "watch", "alikes": ["witch", "match"]},
+    {"word": "listen", "alikes": ["lesson", "risen"]},
+    {"word": "look", "alikes": ["luck", "lock", "rook"]},
+    {"word": "see", "alikes": ["seek", "seem"]},
+    {"word": "make", "alikes": ["mike", "bake", "wake"]},
+    {"word": "sky", "alikes": ["ski", "scar"]},
+    {"word": "sea", "alikes": ["c", "seat", "seed"]},
+    {"word": "cloud", "alikes": ["crowd", "loud", "clown"]},
+    {"word": "rain", "alikes": ["lane", "ran", "train", "brain"]},
+    {"word": "snow", "alikes": ["slow", "show", "snore"]},
+    {"word": "wind", "alikes": ["win", "wing", "window"]},
+    {"word": "river", "alikes": ["liver", "lever", "rubber"]},
+    {"word": "mountain", "alikes": ["mounting", "fountain", "maintain"]},
+    {"word": "beach", "alikes": ["teach", "peach", "each", "beat", "beech"]},
+    {"word": "grass", "alikes": ["glass", "class", "gas", "grace"]},
+    {"word": "forest", "alikes": ["first", "frost", "florist"]},
+    {"word": "air", "alikes": ["hair", "ear"]}
+  ]
+}

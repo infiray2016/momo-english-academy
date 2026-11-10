@@ -9,14 +9,19 @@ import {
   applyTalkLessonChecks,
   isLowBandLevel,
   type TalkLessonOutput,
+  talkCallTurnOf,
+  talkCardChainKeysOf,
   talkLessonCheckFields,
+  talkTurnWiringOf,
 } from "@/core/ai/calls/talk-lesson";
 import type { Masker } from "@/core/ai/mask";
 import { checkOutputFields } from "@/core/ai/output-check";
 import { cueBandOf, seedCuePhrasesOf } from "@/core/conversation/cue-line";
 import {
+  childAnsweredRequiredOf,
   childLinesOf,
   talkLessonPositionOf,
+  teacherTurnPlansOf,
 } from "@/core/conversation/lesson-flow";
 import type { TalkLessonTurn } from "@/core/conversation/lesson-turns";
 import { checkLowLevelQuestion } from "@/core/conversation/question-check";
@@ -26,7 +31,6 @@ import {
   failSituationLineOf,
   heardFieldsBlankOf,
   SITUATION_EXAMPLE_SENTENCES,
-  situationLineOf,
   situationPlaceOf,
 } from "@/core/conversation/situation";
 import { normalizeSpoken } from "@/core/conversation/spoken";
@@ -49,7 +53,9 @@ import {
   settleLessonTurn,
   slotQuestionTextOf,
   teacherTextsOf,
+  withQuestionRetry,
 } from "@/server/conversation/lesson-turn";
+import { seedHomophones } from "@/server/seed-lists";
 import { loadScriptConfig } from "../../scripts/ai-contract";
 import {
   type CallResult,
@@ -289,6 +295,54 @@ function serverTurn(
   p: PreparedTurn,
   message: CallResult,
 ): ServerTurn {
+  const {
+    low,
+    turns,
+    lineOptions,
+    live,
+    settings,
+    flow,
+    view,
+    value,
+    sentences,
+  } = serverPartsOf(m, sim, p, message);
+  const stuck = flow.stuckValue() === true && p.mode === "speech";
+  const position = talkLessonPositionOf(p.flowArgs);
+  const child = lessonChildLiteOf(
+    position,
+    { mode: p.mode, nospeech: p.nospeech },
+    settings,
+    stuck,
+  );
+  const result = settleLessonTurn({
+    flow,
+    outcome: view,
+    ctx: {
+      card: m.card,
+      turns: [...turns, child],
+      asked: p.before.asked,
+      max: settings.sameQuestionMax,
+      low,
+      koMeaning: m.spec.koMeaning,
+      dropped: [],
+      spec: m.spec,
+      lineOptions,
+      live: live?.settle ?? null,
+    },
+  });
+  return { live, entries: flow.entries(), result, sentences, value };
+}
+
+/**
+ * 서버 턴의 끝 처리 앞까지(문장 문 · 응답 꼴 — serverTurn 과 질문 다시 쓰기 짝 시험이 같이 쓴다). 끝 처리(settleLessonTurn)는 문장 상태를 바꾸므로
+ * 질문 다시 쓰기(withQuestionRetry)는 이 재료를 새로 만들어 넣는다(서버도 다시 쓰기가 끝 처리보다 먼저다).
+ */
+function serverPartsOf(
+  m: Materials,
+  sim: TalkSim,
+  p: PreparedTurn,
+  message: CallResult,
+) {
   const low = isLowBandLevel(m.level);
   const lists = low ? seedLessonTalkLists() : null;
   const turns = light(sim.rows);
@@ -392,31 +446,17 @@ function serverTurn(
         : null,
   });
   if (view.kind === "break") throw new Error("4단계 실패는 쉼(선생님 행 없음)");
-  const stuck = flow.stuckValue() === true && p.mode === "speech";
-  const position = talkLessonPositionOf(p.flowArgs);
-  const child = lessonChildLiteOf(
-    position,
-    { mode: p.mode, nospeech: p.nospeech },
+  return {
+    low,
+    turns,
+    lineOptions,
+    live,
     settings,
-    stuck,
-  );
-  const result = settleLessonTurn({
     flow,
-    outcome: view as LessonOutcomeView,
-    ctx: {
-      card: m.card,
-      turns: [...turns, child],
-      asked: p.before.asked,
-      max: settings.sameQuestionMax,
-      low,
-      koMeaning: m.spec.koMeaning,
-      dropped: [],
-      spec: m.spec,
-      lineOptions,
-      live: live?.settle ?? null,
-    },
-  });
-  return { live, entries: flow.entries(), result, sentences, value };
+    view: view as LessonOutcomeView,
+    value,
+    sentences,
+  };
 }
 
 /**
@@ -1504,5 +1544,483 @@ describe("fix 3 — 대본 회차 r3 재판정 I-r3-1 · M-r3-2(서버 · 도구
     );
     expect(server.result.kept).toContain("What food do you like?");
     expect(server.result.kept).not.toContain("Are you hungry now?");
+  });
+});
+
+/** 3단계 단원 1 다지기 6 재료(재생 대본 replay-lesson-1108 의 카드 — 필수 질문 여섯 · 장면 여는 질문 'Can you swim?'). */
+function materialsReinforce(): Materials {
+  const m = materialsOf(readSeedFiles(ROOT, 3, 1), {
+    level: 3,
+    unit: 1,
+    lesson: 6,
+    teacher: "mina",
+  });
+  if (!m.ok) throw new Error(m.missing);
+  return m.materials;
+}
+
+/**
+ * 서버 lessonTurnAfterChild (6) 이 부르는 그대로 알아듣기 재료를 조립한다(내용 고침 1 fix 1 — 코드 검토 rev-content-1 I-3). 조립은 서버 · 도구가 같이
+ * 부르는 core 함수(talkTurnWiringOf) 하나이고, 여기서는 서버가 넘기는 인자(시드 읽기 seedHomophones · seedLessonTalkLists, 아이 행
+ * lessonChildLiteOf, 단계 맥락의 단원 단어)를 그대로 넘긴다 — 시험 안에 배선을 옮겨 적은 사본을 두지 않는다.
+ */
+function serverPlanned(m: Materials, sim: TalkSim, p: PreparedTurn) {
+  const low = isLowBandLevel(m.level);
+  const lists = low ? seedLessonTalkLists() : null;
+  const wiring = talkTurnWiringOf({
+    low,
+    args: p.flowArgs,
+    lite: lessonChildLiteOf(
+      talkLessonPositionOf(p.flowArgs),
+      { mode: p.mode, nospeech: p.nospeech },
+      p.flowArgs.settings,
+    ),
+    childText: p.mode === "speech" ? (p.childText ?? "") : null,
+    rows: sim.rows.map((r) =>
+      r.speaker === "child"
+        ? { speaker: "child" as const, text: r.text ?? "" }
+        : { speaker: "teacher" as const, text: r.text, move: r.move },
+    ),
+    card: m.card,
+    lemmaOf: m.lemmaOf,
+    homophones: low ? seedHomophones() : [],
+    soundAlikes: lists?.soundAlikes ?? [],
+  });
+  const planned = talkCallTurnOf({
+    plan: wiring.plans.ifAnswered,
+    ifStuck: wiring.plans.ifStuck,
+    child: p.childText ?? "",
+    input: p.mode,
+    hintKind: p.hintKind,
+    hintTier: p.hintTier,
+    heardHelp: p.heardHelp,
+    ...(lists ? { feelingWords: lists.allowed.feeling } : {}),
+    lemmaOf: m.lemmaOf,
+    heard: wiring.heardOf(m.ctx.unitWords),
+    lastStart: wiring.lastStart,
+  });
+  return {
+    homophones: wiring.homophones,
+    plans: wiring.plans,
+    planned,
+    answeredSlot: wiring.answeredSlot,
+  };
+}
+
+/** 도구가 준비한 차례가 서버 배선 사본과 같은 계획 · 귀띔 · 동음이의어 묶음인지 본다. */
+function expectPlannedSame(m: Materials, sim: TalkSim, p: PreparedTurn) {
+  const server = serverPlanned(m, sim, p);
+  expect(p.ifAnswered).toEqual(server.plans.ifAnswered);
+  expect(p.ifStuck ?? null).toEqual(server.plans.ifStuck ?? null);
+  expect(p.turn.heardHints).toEqual(server.planned.heardHints);
+  expect(p.turn.lastStart).toBe(server.planned.lastStart);
+  expect(p.input.homophones).toEqual(
+    isLowBandLevel(m.level) ? server.homophones : undefined,
+  );
+  return server;
+}
+
+/**
+ * 서버 질문 다시 쓰기(withQuestionRetry)가 다시 부를 때의 입력(앞 글 · 까닭 줄). 다시 부르지 않으면 null. 재료는 끝 처리 앞의 것을 새로 만든다.
+ * chainKeys 는 서버와 같이 호출 입력의 차례(p.turn)와 카드로 낸다(13절 C217 (2) (ㄷ)).
+ */
+async function serverRetryAsk(
+  m: Materials,
+  sim: TalkSim,
+  p: PreparedTurn,
+  message: CallResult,
+): Promise<{ previous: string; note: string } | null> {
+  return (await serverRetryOf(m, sim, p, message))?.ask ?? null;
+}
+
+/** 서버 질문 다시 쓰기의 입력과 까닭(ai_calls 표지에 남는 값 — 코드 검토 rev-content-1 M-8). 다시 부르지 않으면 null. */
+async function serverRetryOf(
+  m: Materials,
+  sim: TalkSim,
+  p: PreparedTurn,
+  message: CallResult,
+): Promise<{
+  ask: { previous: string; note: string };
+  reason: string;
+} | null> {
+  const parts = serverPartsOf(m, sim, p, message);
+  let asked: {
+    ask: { previous: string; note: string };
+    reason: string;
+  } | null = null;
+  await withQuestionRetry({
+    flow: parts.flow,
+    view: parts.view,
+    lineOptions: parts.lineOptions,
+    sentenceMaxWords: p.input.sentenceMaxWords,
+    chainKeys: parts.low ? talkCardChainKeysOf(p.turn, m.card) : [],
+    retry: async ({ previous, note, reason }) => {
+      asked = { ask: { previous, note }, reason };
+      return null;
+    },
+  });
+  return asked;
+}
+
+describe("내용 고침 1(13절 C217) — 도구 배선이 서버와 같은 길", () => {
+  it("(1) 들은 글 귀띔: 'Can you swim?' 에 'I can see' 면 답 틀이 같다는 것만으로는 귀띔이 없고(서버와 같음 — 13절 'C203 (1) · C217 보완 3'), 호출 입력에 동음이의어 묶음이 든다", () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    const ready = sim.prepare(say("I can see"), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const server = expectPlannedSame(m, sim, ready.turn);
+    expect(server.answeredSlot?.answerExample).toBe("Yes, I can swim.");
+    // see 와 swim 은 같은 소리도 가까운 소리 목록의 낱말도 아니다 — 소리가 닮지 않은 낱말을 답 예시 낱말로 바꿔 듣지 않는다
+    expect(ready.turn.turn.heardHints).toBeUndefined();
+    expect(ready.turn.userMessage).not.toContain("Heard hint");
+    expect(ready.turn.input.homophones).toContainEqual(["see", "sea"]);
+    expect(m.soundAlikes.length).toBeGreaterThan(0);
+  });
+
+  it("(1) · (3) 'Where do they swim?' 에 'See' 면 sea 귀띔이 나가고, 같은 소리로 들린 답도 먼저 답한 필수 질문으로 세어 계획이 서버와 같다", () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    stepBoth(
+      m,
+      sim,
+      say("Yes."),
+      fakeMessage({
+        tori_en: "Oh, good! Whales and dolphins! Where do they swim?",
+        next_move: "required",
+        card_item: { kind: "required", no: 2 },
+        next_targets: ["sea"],
+        next_hint_ko: "바다에서 헤엄쳐.",
+        next_hints: ["They swim in the ___.", "They swim in the sea."],
+        next_answer_example: "They swim in the sea.",
+      }),
+    );
+    const ready = sim.prepare(say("See"), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const server = expectPlannedSame(m, sim, ready.turn);
+    expect(server.answeredSlot?.words).toContain("sea");
+    expect(JSON.stringify(ready.turn.turn.heardHints)).toContain("sea");
+    expect(ready.turn.userMessage).toMatch(/Heard hint[^\n]*sea/);
+  });
+
+  it("(3) 먼저 답한 필수 질문: 장면 여는 질문에 'They swim in the see.' 라고 하면 같은 소리(sea)로 필수 2 를 먼저 답한 것으로 세고 계획이 서버와 같다", () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    const ready = sim.prepare(say("They swim in the see."), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const p = ready.turn;
+    expectPlannedSame(m, sim, p);
+    // 동음이의어 묶음을 넣지 않은 계획과는 다르다(배선이 빠지면 이 단언이 깨진다)
+    const rows = sim.rows.map((r) =>
+      r.speaker === "child"
+        ? { speaker: "child" as const, text: r.text ?? "" }
+        : { speaker: "teacher" as const, text: r.text, move: r.move },
+    );
+    const answered = (homophones: string[][]) =>
+      childAnsweredRequiredOf({
+        required: m.card.required,
+        childLines: childLinesOf(rows, p.childText, true),
+        lemmaOf: m.lemmaOf,
+        homophones,
+      });
+    expect(answered(seedHomophones())).toEqual([2]);
+    expect(answered([])).toEqual([]);
+    const lite = lessonChildLiteOf(
+      talkLessonPositionOf(p.flowArgs),
+      { mode: p.mode, nospeech: p.nospeech },
+      p.flowArgs.settings,
+    );
+    const without = teacherTurnPlansOf(
+      { ...p.flowArgs, childAnswered: [] },
+      lite,
+    );
+    expect(p.ifAnswered).not.toEqual(without.ifAnswered);
+  });
+
+  it("(1) · (2) '잘 모르겠어요' 차례 · 4단계에는 귀띔이 없고, 4단계 호출 입력에는 동음이의어 묶음이 없다", () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    const button = sim.prepare(dontKnow, sim.rows.length);
+    if (!button.ok) throw new Error(button.reason);
+    expectPlannedSame(m, sim, button.turn);
+    expect(button.turn.turn.heardHints).toBeUndefined();
+    expect(button.turn.userMessage).not.toContain("Heard hint");
+    const m4 = materials4();
+    const four = createTalkSim(m4, config.values, config.book);
+    const ready = four.prepare(say("I am fine."), 0);
+    if (!ready.ok) throw new Error(ready.reason);
+    expectPlannedSame(m4, four, ready.turn);
+    expect(ready.turn.turn.heardHints).toBeUndefined();
+    expect(ready.turn.input.homophones).toBeUndefined();
+  });
+
+  /** AI 질문 자리에서 두 번 막힌 대화(다음 선생님 차례가 받침 둘째의 AI 질문 자리). */
+  function stuckTwiceAtAiQuestion(m: Materials) {
+    const { sim } = greeted(m);
+    stepBoth(
+      m,
+      sim,
+      say("Yes."),
+      fakeMessage({
+        tori_en: "Oh, good! What do you see?",
+        next_move: "follow_up",
+        next_hint_ko: "물고기가 보여.",
+        next_hints: ["I see a ___.", "I see a fish."],
+        next_answer_example: "I see a fish.",
+      }),
+    );
+    stepBoth(m, sim, dontKnow, fakeMessage({ tori_en: "That's okay!" }));
+    return sim;
+  }
+
+  it("(4) 받침 둘째의 AI 질문 자리: wh 질문은 서버 · 도구 모두 질문 검사에 걸려 카드 자리가 되고, 다시 쓰기 까닭 줄(not_easy)이 서버와 같다", async () => {
+    const m = materialsReinforce();
+    const sim = stuckTwiceAtAiQuestion(m);
+    const message = fakeMessage({
+      tori_en: "No problem! Where do whales swim?",
+      next_move: "follow_up",
+      next_answer_example: "They swim in the sea.",
+    });
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(ready.turn.ifAnswered).toMatchObject({
+      kind: "ai",
+      aiAsks: true,
+      stage: 2,
+    });
+    const ask = sim.retryOf(ready.turn, message);
+    expect(ask?.fail?.reason).toBe("not_easy");
+    const serverAsk = await serverRetryOf(m, sim, ready.turn, message);
+    expect(serverAsk).not.toBeNull();
+    expect(ask?.input.retry).toEqual(serverAsk?.ask);
+    // 서버가 기록 표지에 남기는 까닭이 도구가 보고에 적는 까닭과 같다
+    expect(serverAsk?.reason).toBe("not_easy");
+    const { record, server } = stepBoth(m, sim, dontKnow, message);
+    expect(server.result.replaced).toBe("question_check");
+    expect(record.replaced).toBe("question_check");
+    expect(record.teacher).not.toContain("Where do whales swim?");
+  });
+
+  it("(4) 받침 둘째의 AI 질문 자리: 예 · 아니요 질문은 서버 · 도구 모두 그대로 나가고 다시 쓰지 않는다", async () => {
+    const m = materialsReinforce();
+    const sim = stuckTwiceAtAiQuestion(m);
+    const message = fakeMessage({
+      tori_en: "No problem! Do you like fish?",
+      next_move: "follow_up",
+      next_answer_example: "Yes, I do.",
+    });
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(sim.retryOf(ready.turn, message)).toBeNull();
+    expect(await serverRetryAsk(m, sim, ready.turn, message)).toBeNull();
+    const { record, server } = stepBoth(m, sim, dontKnow, message);
+    expect(server.result.replaced).toBeNull();
+    expect(record.replaced).toBeNull();
+    expect(record.teacher).toContain("Do you like fish?");
+  });
+
+  it("(5) 카드 답 바로 뒤 차례에 카드 필수 질문 글이 그대로 오면 다시 쓰기 까닭 줄(chain)이 서버와 같고, 끝 처리는 그 까닭을 보지 않는다", async () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    stepBoth(
+      m,
+      sim,
+      say("Yes."),
+      fakeMessage({
+        tori_en: "Oh, good! Whales and dolphins! Where do they swim?",
+        next_move: "required",
+        card_item: { kind: "required", no: 2 },
+        next_targets: ["sea"],
+        next_answer_example: "They swim in the sea.",
+      }),
+    );
+    const message = fakeMessage({
+      tori_en: "Yes, in the sea! Sand on your feet! What do you do in the sea?",
+      next_move: "required",
+      card_item: { kind: "required", no: 3 },
+      next_targets: ["wash"],
+      next_answer_example: "I wash my feet.",
+      self_used_words: ["sea"],
+    });
+    const ready = sim.prepare(say("In the sea."), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(talkCardChainKeysOf(ready.turn.turn, m.card).length).toBe(
+      m.card.required.length,
+    );
+    const ask = sim.retryOf(ready.turn, message);
+    expect(ask?.fail?.reason).toBe("chain");
+    const serverAsk = await serverRetryOf(m, sim, ready.turn, message);
+    expect(ask?.input.retry).toEqual(serverAsk?.ask);
+    expect(serverAsk?.reason).toBe("chain");
+    // 다시 쓰지 못한 턴은 지금처럼 그대로 나간다(카드 자리로 바꾸지 않는다 — 서버와 같음)
+    const { record, server } = stepBoth(m, sim, say("In the sea."), message);
+    expect(server.result.replaced).toBeNull();
+    expect(record.replaced).toBeNull();
+  });
+  it("fix 2 아이가 'See' 라고 한 뒤의 'Do you like the sea?'(노림 sea)는 서버 · 도구 모두 질문 검사를 지나고 다시 쓰지 않는다(같은 소리 낱말 — 13절 'C203 (1) · C217 보완 3' (2))", async () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    stepBoth(
+      m,
+      sim,
+      say("Yes."),
+      fakeMessage({
+        tori_en: "Oh, good! Whales and dolphins! Where do they swim?",
+        next_move: "required",
+        card_item: { kind: "required", no: 2 },
+        next_targets: ["sea"],
+        next_answer_example: "They swim in the sea.",
+      }),
+    );
+    const message = fakeMessage({
+      tori_en: "Right, whales swim there! Do you like the sea?",
+      next_move: "follow_up",
+      next_targets: ["sea"],
+      next_answer_example: "Yes, I do.",
+      self_used_words: ["sea"],
+    });
+    const ready = sim.prepare(say("See"), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    // 서버 · 도구가 같은 core 함수(talkLineOptionsOf)로 만든 재료에 같은 동음이의어 묶음이 든다
+    expect(lineOptionsOf(ready.turn.input).homophones).toContainEqual([
+      "see",
+      "sea",
+    ]);
+    expect(sim.retryOf(ready.turn, message)).toBeNull();
+    expect(await serverRetryAsk(m, sim, ready.turn, message)).toBeNull();
+    const { record, server } = stepBoth(m, sim, say("See"), message);
+    expect(server.result.replaced).toBeNull();
+    expect(record.replaced).toBeNull();
+    expect(record.teacher).toContain("Do you like the sea?");
+  });
+
+  it("fix 2 아이가 sea 도 see 도 말한 적이 없거나 문장으로만 'I can see' 라고 했으면 선생님이 먼저 말한 'Do you like the sea?'(노림 sea)는 서버 · 도구 모두 걸려 다시 쓰기 까닭 줄(target_word)이 같다", async () => {
+    // 'Yes.' — 말한 적 없음, 'I can see' — 문장 속 see 는 sea 를 말한 근거가 아니다(한두 낱말 말만 같은 소리로 넓힌다)
+    for (const child of ["Yes.", "I can see"]) {
+      const m = materialsReinforce();
+      const { sim } = greeted(m);
+      const message = fakeMessage({
+        tori_en: "Oh, good! Do you like the sea?",
+        next_move: "follow_up",
+        next_targets: ["sea"],
+        next_answer_example: "Yes, I do.",
+      });
+      const ready = sim.prepare(say(child), sim.rows.length);
+      if (!ready.ok) throw new Error(ready.reason);
+      const ask = sim.retryOf(ready.turn, message);
+      expect(ask?.fail?.reason).toBe("target_word");
+      const serverAsk = await serverRetryOf(m, sim, ready.turn, message);
+      expect(serverAsk?.reason).toBe("target_word");
+      expect(ask?.input.retry).toEqual(serverAsk?.ask);
+      const { record, server } = stepBoth(m, sim, say(child), message);
+      expect(server.result.replaced).toBe("question_check");
+      expect(record.replaced).toBe("question_check");
+      expect(record.teacher).not.toContain("Do you like the sea?");
+    }
+  });
+
+  it("fix 1 (가) 카드 글 그대로인 AI 질문이 검사에 걸려 카드 자리가 되면, 반응에 남은 장면 문장을 카드 줄에서 빼 한 번만 나간다(서버 · 도구 같음)", () => {
+    const m = materialsReinforce();
+    // 이 자리에서 카드 자리에 붙는 카드 줄을 먼저 알아낸다(같은 대화를 한 번 돌려 본다)
+    const lead = (sim: TalkSim) =>
+      stepBoth(
+        m,
+        sim,
+        say("Yes."),
+        fakeMessage({
+          tori_en: "Oh, good! Whales and dolphins! Where do they swim?",
+          next_move: "required",
+          card_item: { kind: "required", no: 2 },
+          next_targets: ["sea"],
+          next_answer_example: "They swim in the sea.",
+        }),
+      );
+    const probe = greeted(m).sim;
+    lead(probe);
+    // 질문이 문장 길이 상한을 넘어 질문 검사에 걸린다 → 카드 자리
+    const failing = (reaction: string) =>
+      fakeMessage({
+        tori_en: `${reaction} What do you and your mom and your dad do in the water?`,
+        next_move: "follow_up",
+        next_answer_example: "We swim.",
+      });
+    const probed = stepBoth(m, probe, say("In the sea."), failing("Yes!"));
+    expect(probed.server.result.replaced).toBe("question_check");
+    const cardLine = probed.server.result.attach.find(
+      (l) => l.kind === "question",
+    );
+    if (cardLine?.kind !== "question") throw new Error("카드 줄 없음");
+    const parts = splitSentences(cardLine.en);
+    // 장면 문장 + 질문 꼴의 카드 글이다(시험이 빈 조건으로 지나지 않게)
+    expect(parts.length).toBeGreaterThan(1);
+    const scene = parts[0] ?? "";
+    const question = parts.at(-1) ?? "";
+
+    const { sim } = greeted(m);
+    lead(sim);
+    const { server, record } = stepBoth(
+      m,
+      sim,
+      say("In the sea."),
+      failing(`Yes, in the sea! ${scene}`),
+    );
+    expect(server.result.replaced).toBe("question_check");
+    expect(server.result.kept).toContain(scene);
+    const attached = server.result.attach.flatMap((l) =>
+      l.kind === "question" ? [l.en] : [],
+    );
+    // 붙인 카드 줄은 질문 문장만이고, 화면 글 전체에 장면 문장은 한 번이다
+    expect(attached).toEqual([parts.slice(1).join(" ")]);
+    const shown = `${record.teacher} ${record.attach.join(" ")}`;
+    expect(shown.split(scene).length - 1).toBe(1);
+    expect(shown).toContain(question);
+    expect(server.result.text.split(scene).length - 1).toBe(1);
+    // 그 차례의 질문 셈 · 카드 항목은 그대로다(붙인 줄의 마지막 문장이 카드 질문)
+    expect(server.result.move.item).toEqual(cardLine.item);
+    // 다시 흘림도 뺀 줄의 뜻을 찾는다(뜻이 있는 단계)
+    if (m.spec.koMeaning && cardLine.ko !== undefined) {
+      const replay = lessonReplayLinesOf(
+        {
+          text: server.result.text,
+          toriKo: server.result.ko,
+          move: server.result.move,
+        },
+        { card: m.card, koMeaning: true },
+      );
+      const again = replay.find((l) => l.t === "add" && l.kind === "question");
+      expect(again).toMatchObject({ en: attached[0] });
+      expect(again && "ko" in again ? again.ko : undefined).toBeTruthy();
+    }
+  });
+
+  it("fix 1 (나) 받침 둘째의 AI 질문 뒤 'See' 에는 그 질문의 답(sea)과 맞댄 귀띔이 붙는다(자리 재현 차례 8 — 서버 배선과 같음)", () => {
+    const m = materialsReinforce();
+    const sim = stuckTwiceAtAiQuestion(m);
+    // 받침 둘째: 선생님이 쉬운 예 · 아니요 질문을 쓴다(답 예시에 sea)
+    stepBoth(
+      m,
+      sim,
+      dontKnow,
+      fakeMessage({
+        tori_en: "No problem! Do whales swim in the water?",
+        next_move: "follow_up",
+        next_targets: ["sea"],
+        next_answer_example: "Yes, they swim in the sea.",
+      }),
+    );
+    const last = sim.rows.findLast((r) => r.speaker === "tori");
+    expect(last?.move?.stage).toBe(2);
+    expect(last?.text).toContain("Do whales swim in the water?");
+    const ready = sim.prepare(say("See"), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const server = expectPlannedSame(m, sim, ready.turn);
+    // 자리의 답은 처음 질문 것 그대로이고, 귀띔은 쉬운 질문의 답과 맞댄다
+    expect(server.answeredSlot?.answerExample).toBe("I see a fish.");
+    expect(server.answeredSlot?.easyAsked).toEqual({
+      answerExample: "Yes, they swim in the sea.",
+      words: ["sea"],
+    });
+    expect(ready.turn.userMessage).toMatch(
+      /Heard hint[^\n]*'see' may be the answer word 'sea' \(same sound\)/,
+    );
   });
 });

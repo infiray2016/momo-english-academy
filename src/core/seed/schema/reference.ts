@@ -608,6 +608,37 @@ export const TalkMadeUpPhrasesFileSchema = z.strictObject({
 export type TalkMadeUpPhrasesFile = z.infer<typeof TalkMadeUpPhrasesFileSchema>;
 
 /**
+ * 소리가 가까운 낱말 목록 lists/sound-alikes.json(13절 C217 (1) — 회화 들은 글 귀띔, core/conversation/heard-hint). 항목은 어휘 원형(word)과 그
+ * 낱말이 음성 인식에서 잘못 들리는 낱말들(alikes — 'beach' 가 'teach' 로)이다. 같은 소리 낱말(동음이의어)은 여기 두지 않고 homophones.json 에
+ * 둔다. 대화의 귀띔에만 쓰고 '말함' · 일치율 · 평가에는 쓰지 않는다. 표제어 겹침은 여기서, 어휘에 있는 표제어인지 · 활용형 · 동음이의어 · 기능어
+ * 검사는 시드 검증기(check-talk-lists)가 한다. 빌드에 묶고 DB 에 넣지 않는다.
+ */
+export const SoundAlikesFileSchema = z
+  .strictObject({
+    words: z
+      .array(
+        z.strictObject({
+          word: ListWordSchema,
+          alikes: uniqueStrings(ListWordSchema).min(1),
+        }),
+      )
+      .min(1),
+  })
+  .superRefine((file, ctx) => {
+    const seen = new Set<string>();
+    file.words.forEach((entry, i) => {
+      if (seen.has(entry.word))
+        ctx.addIssue({
+          code: "custom",
+          path: ["words", i, "word"],
+          message: `표제어가 겹친다: ${entry.word}`,
+        });
+      seen.add(entry.word);
+    });
+  });
+export type SoundAlikesFile = z.infer<typeof SoundAlikesFileSchema>;
+
+/**
  * 문법 용어 목록 lists/grammar-terms.json(델타 spec 2026-10-29 설계 7). 항목은 낱말과 열리는 단계(fromLevel, 비면 모든 단계 금지).
  * 선생님 말 칸 · 칩 글에 이 낱말이 있으면 막는다. 메타 문장 목록과는 별개다.
  */

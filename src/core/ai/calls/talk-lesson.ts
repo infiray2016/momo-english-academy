@@ -27,11 +27,28 @@ import {
   TALK_CHILD_KINDS,
 } from "@/core/conversation/child-kind";
 import { soundLinePlacesOf } from "@/core/conversation/cue-line";
-import type { TeacherTurnPlan } from "@/core/conversation/lesson-flow";
+import {
+  type HeardHint,
+  heardHintsOf,
+  type SoundAlikeEntry,
+} from "@/core/conversation/heard-hint";
+import {
+  childAnsweredRequiredOf,
+  childLinesOf,
+  type LateCardRow,
+  type LessonArgs,
+  nextTeacherTurnOf,
+  type TalkQuestionSlot,
+  type TeacherTurnPlan,
+  talkLessonPositionOf,
+  teacherTurnPlansOf,
+} from "@/core/conversation/lesson-flow";
 import type {
   TalkHeardHelp,
   TalkHintKind,
   TalkInputMode,
+  TalkLessonChildTurn,
+  TalkLessonTurn,
   TalkTurnSegment,
 } from "@/core/conversation/lesson-turns";
 import {
@@ -46,6 +63,7 @@ import {
   choicesEchoChild,
   type LowLevelLineOptions,
   questionKeyOf,
+  turnQuestionOf,
 } from "@/core/conversation/question-check";
 import {
   type SituationPlace,
@@ -54,6 +72,7 @@ import {
   TALK_LOW_REACTION_EXAMPLES,
 } from "@/core/conversation/situation";
 import {
+  normalizeSpoken,
   sayingAnswer,
   withoutEnglishSentencesOf,
 } from "@/core/conversation/spoken";
@@ -161,6 +180,12 @@ export type TalkCardLine = {
   kind: TalkCardItemKind;
   no: number;
   en: string;
+  /**
+   * 1~3단계의 카드 항목 줄(필수 질문 · 더 이야기할 거리와 그 쉬운 질문)만: 사용자 메시지에 글을 싣지 않고 항목 번호만 알린다(13절 C217 보완 —
+   * 'If stuck, Card line' 에 실린 카드 글을 선생님이 다음 차례 질문으로 그대로 옮겨 적었다, 자리 재현 재생 1바퀴 차례 20 · 21). 줄은 앱이 붙인다.
+   * 인사 질문 · 장면 여는 질문 줄과 4단계부터는 없다(글 그대로).
+   */
+  hidden?: true;
 };
 
 /** 말 입력 턴을 막혔다고 볼 때의 계획(묶음 5 teacherTurnPlansOf 의 ifStuck). 응답 첫 칸 stuck 이 참이면 이 계획을 따른다. */
@@ -239,6 +264,23 @@ export type TalkCallTurn = {
    * 느낌 낱말을 받지 않았으면 없음(줄을 넣지 않음).
    */
   childSaidMore?: boolean;
+  /**
+   * 1~3단계 말 입력 턴만: 들은 글 귀띔(사용자 메시지 'Heard hint' 한 줄 — 13절 C217 (1), heard-hint heardHintsOf). 들은 낱말이 그 차례의 기대
+   * 낱말(답 예시 내용 낱말 · 노리는 단어 · 단원 단어 · 장면 낱말)과 같은 소리 · 가까운 소리로 닿은 것이다. 닿은 것이 없거나 호출 입력을 만들
+   * 때 재료(heard)를 받지 않았으면 없음(줄을 넣지 않음).
+   */
+  heardHints?: readonly HeardHint[];
+  /**
+   * 1~3단계만: 바로 앞 선생님 말(AI 가 쓴 반응)의 첫 낱말(사용자 메시지 'Your last turn started with' — 13절 C217 보완, 같은 낱말로 연달아
+   * 시작하지 않게. talkLastStartOf). 앞 선생님 말이 없거나 호출 입력을 만들 때 받지 않았으면 없음(줄을 넣지 않음).
+   */
+  lastStart?: string;
+  /**
+   * 1~3단계 AI 차례만: 카드 답 · 장면 여는 질문 답 바로 뒤 차례라 이번 차례에는 카드 기회를 꺼내지 않는다(사용자 메시지의 필수 질문 기회 줄을
+   * '이번 차례에는 아이 답에 이어 묻기'로 바꾼다 — 13절 C217 보완 · C204 (6), 카드 답 뒤 카드 질문이 다시 쓰기 chain 으로 이어지던 것을 줄인다).
+   * 남은 기회 셈(chances)은 그대로 둔다(앱 확인 · 흐름이 읽는다).
+   */
+  holdChances?: true;
   /** 1~3단계 따라가기 상한에 닿은 턴(사용자 메시지 'Come back to today's topic in this turn: yes', 02-2 194줄). 아니면 없음. */
   returnNow?: true;
   /** 1~3단계 장면 여는 질문 답 뒤의 AI 차례(사용자 메시지 'Follow up on the child's answer: yes', 02-2 200줄). 아니면 없음. */
@@ -307,6 +349,11 @@ export type TalkLessonInput = LevelContext & {
   openingLine?: string;
   /** 표기형 → 원형(vocab forms). */
   lemmaOf: (surface: string) => string | undefined;
+  /**
+   * 동음이의어 묶음(시드 lists/homophones.json). 주면 막힘 무름의 장면 낱말 대조가 같은 소리 낱말까지 본다('See.' 와 장면 낱말 sea — 13절 C217
+   * (1)). 없으면 글자 그대로만 본다(4단계부터 · 옛 시험).
+   */
+  homophones?: readonly (readonly string[])[];
   /**
    * 질문 다시 쓰기(13절 C203 (3)): 1~3단계 AI 질문이 검사에 걸린 턴을 한 번만 다시 부를 때, 이번 사용자 메시지 뒤에 앞 응답(previous — 선생님이
    * 쓴 tori_en)과 앱의 다시 쓰기 메시지(note — question-retry questionRetryNoteOf)를 잇는다. 없으면 보통 턴이다.
@@ -455,6 +502,18 @@ export function holdsQuestionSentence(
 
 const CALL_KINDS: readonly string[] = TALK_CALL_TURN_KINDS;
 
+/** 들은 글 귀띔의 재료(talkCallTurnOf heard — 기대 낱말과 시드 목록 둘). */
+export type TalkHeardSource = {
+  /** 아이가 답하던 질문 자리의 답 예시(카드 항목 · 장면 여는 질문 · 인사 질문 · AI 질문의 답 예시). 없으면 null. */
+  answer: string | null;
+  /** 그 질문이 노리는 단어. */
+  targets: readonly string[];
+  /** 오늘 장면 낱말(단원 단어 · 카드 내용 낱말, 소문자 — talkSceneWordsOf). */
+  scene: Iterable<string>;
+  homophones: readonly (readonly string[])[];
+  soundAlikes: readonly SoundAlikeEntry[];
+};
+
 function cardLineOf(plan: TeacherTurnPlan): TalkCardLine | null {
   for (const line of plan.attach) {
     if (line.kind !== "question") continue;
@@ -463,6 +522,11 @@ function cardLineOf(plan: TeacherTurnPlan): TalkCardLine | null {
       kind: line.item.kind,
       no: line.item.no,
       en: line.en,
+      ...(plan.lowBand === true &&
+      line.item.kind !== "none" &&
+      (line.role === "card" || line.role === "easy")
+        ? { hidden: true as const }
+        : {}),
     };
   }
   return null;
@@ -504,6 +568,8 @@ export function talkCallTurnOf({
   feelingWords,
   lemmaOf = () => undefined,
   exampleTurn,
+  heard,
+  lastStart,
 }: {
   plan: TeacherTurnPlan;
   ifStuck?: TeacherTurnPlan | null;
@@ -521,6 +587,13 @@ export function talkCallTurnOf({
   lemmaOf?: (surface: string) => string | undefined;
   /** 상황 차례 예의 돌림 번호(situation situationRotationOf). 주면 1~3단계 상황 차례에 'Example line' 줄이 생기고, 없으면 없다. */
   exampleTurn?: number;
+  /**
+   * 들은 글 귀띔의 재료(13절 C217 (1)): 아이가 답하던 질문 자리의 답 예시 · 노리는 단어, 오늘 장면 낱말(단원 단어 · 카드 내용 낱말 —
+   * talkSceneWordsOf), 동음이의어 묶음과 소리가 가까운 낱말 목록(시드). 주면 1~3단계 말 입력 턴에 귀띔 칸(heardHints)을 채우고, 없으면 채우지 않는다.
+   */
+  heard?: TalkHeardSource;
+  /** 바로 앞 선생님 말의 첫 낱말(talkLastStartOf). 주면 1~3단계 턴에 'Your last turn started with' 줄이 생기고, 없으면 없다. */
+  lastStart?: string | undefined;
 }): TalkCallTurn {
   const { segment, ...main } = callPlanOf(plan);
   const stuck =
@@ -551,7 +624,15 @@ export function talkCallTurnOf({
       ? { followUpAnswer: true as const }
       : {}),
     ...(low && plan.cause === "nospeech" ? { notHeard: true as const } : {}),
+    ...(low && aiTurn && (plan.afterChance || plan.followUpAnswer)
+      ? { holdChances: true as const }
+      : {}),
   };
+  // 들은 글 귀띔(1~3단계 말 입력 턴 — 닿은 것이 있을 때만 칸을 둔다)
+  const heardHints =
+    low && input === "speech" && heard !== undefined
+      ? heardHintsOf({ ...heard, heard: child, lemmaOf })
+      : [];
   return {
     child,
     input,
@@ -587,6 +668,10 @@ export function talkCallTurnOf({
     teacherTurnsSinceFollowUp: plan.sinceFollowUp,
     appAsked: plan.appAsked,
     ...lowLines,
+    ...(heardHints.length > 0 ? { heardHints } : {}),
+    ...(low && lastStart !== undefined && lastStart !== ""
+      ? { lastStart }
+      : {}),
     turnsLeft: plan.turnsLeft,
     floor: plan.app.includes("floor"),
     closing,
@@ -602,6 +687,124 @@ export function chosenCallTurnOf(
 ): TalkCallTurn {
   if (!stuck || turn.input !== "speech" || turn.ifStuck === null) return turn;
   return { ...turn, ...turn.ifStuck, reason: "stuck", ifStuck: null };
+}
+
+/**
+ * 바로 앞 선생님 말의 첫 낱말(13절 C217 보완 — 같은 낱말로 연달아 시작하지 않게 사용자 메시지로 알린다): 선생님(AI)이 반응을 쓴 마지막 선생님
+ * 행(AI 차례 · 카드 자리 · 마무리 자리)의 화면 글 첫 줄(선생님 문장)의 첫 낱말이다(적힌 꼴 그대로 — 'Oh' · 'Yes'). 앱이 붙인 대화 첫 질문 행과
+ * 선생님 문장이 없는 행은 건너뛴다(AI 가 쓴 말이 아니다). 그런 행이 없으면 undefined.
+ */
+export function talkLastStartOf(
+  turns: readonly TalkLessonTurn[],
+): string | undefined {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const row = turns[i];
+    if (row?.speaker !== "teacher" || row.move?.kind === "first_question")
+      continue;
+    const word = /[A-Za-z][A-Za-z']*/.exec(row.text.split("\n")[0] ?? "")?.[0];
+    if (word !== undefined) return word;
+  }
+  return undefined;
+}
+
+/** 1~3단계 회화 턴의 알아듣기 재료 조립 결과(talkTurnWiringOf). */
+export type TalkTurnWiring = {
+  /** 동음이의어 묶음(1~3단계만 — 4단계부터 빈 묶음). */
+  homophones: readonly (readonly string[])[];
+  /** 흐름 재료(1~3단계는 먼저 답한 필수 질문 childAnswered 를 넣은 것 — 뒤의 위치 셈 · 끝 처리도 이 재료를 쓴다). */
+  args: LessonArgs;
+  /** 다음 선생님 차례 계획(말 입력이면 막힘 계획도, 아니면 null). */
+  plans: { ifAnswered: TeacherTurnPlan; ifStuck: TeacherTurnPlan | null };
+  /** 아이가 답하던 질문 자리(1~3단계만 — 이번 아이 행으로 닫혔어도 남는다). */
+  answeredSlot: TalkQuestionSlot | null;
+  /**
+   * 들은 글 귀띔의 재료(talkCallTurnOf heard — 1~3단계만, 4단계부터 undefined). 오늘 장면 낱말에 드는 단원 단어는 단계 맥락에서 읽으므로(서버는 계획
+   * 뒤에 읽기가 끝난다) 부를 때 넘긴다.
+   */
+  heardOf: (unitWords: readonly string[]) => TalkHeardSource | undefined;
+  /** 바로 앞 선생님 말의 첫 낱말(talkCallTurnOf lastStart — 1~3단계만). */
+  lastStart: string | undefined;
+  /** 회화 턴 호출 입력에 얹는 칸(막힘 무름의 동음이의어 묶음 — 1~3단계만, 4단계부터 빈 객체). */
+  callInput: { homophones?: readonly (readonly string[])[] };
+};
+
+/**
+ * 회화 턴의 알아듣기 재료 조립(13절 C217 (1) · 보완 — 코드 검토 rev-content-1 I-3): 서버 턴 길(lesson-turn lessonTurnAfterChild (6))과 대본 도구
+ * (talk:observe prepare)가 이 함수 하나를 부른다 — 배선을 따로 옮겨 적은 사본을 두지 않아, 서버 배선이 바뀌면 도구 · 짝 시험이 함께 바뀐다.
+ * 1~3단계: 동음이의어 묶음 → 먼저 답한 필수 질문(따라 말한 · 고른 말은 뺌) → 차례 계획 둘 → 아이가 답하던 질문 자리 → 귀띔 재료(그 자리의
+ * 답 예시 · 노리는 단어, 오늘 장면 낱말, 시드 목록 둘). 받침 둘째에서 선생님이 쓴 쉬운 질문에 답한 말은 그 쉬운 질문의 답 예시 · 노리는 단어와
+ * 맞댄다(slot.easyAsked — 자리 재현 재생 보고 8.5 우려 2). 4단계부터는 묶음 · 먼저 답함 · 귀띔 재료를 넣지 않는다(고치기 전 그대로).
+ */
+export function talkTurnWiringOf({
+  low,
+  args,
+  lite,
+  childText,
+  rows,
+  card,
+  lemmaOf,
+  homophones,
+  soundAlikes,
+}: {
+  /** 1~3단계인가(isLowBandLevel). */
+  low: boolean;
+  /** 흐름 재료(이번 아이 행을 넣기 전 · childAnswered 를 넣기 전). */
+  args: LessonArgs;
+  /** 이번 아이 행(막힘 판단 전 — 서버 lessonChildLiteOf). */
+  lite: TalkLessonChildTurn;
+  /** 말 입력이면 아이 말(인식 글), 아니면 null. */
+  childText: string | null;
+  /** 늦은 카드 답 행 꼴의 이 대화 행(먼저 답한 필수 질문의 아이 말 재료 — 이번 아이 행 앞까지). */
+  rows: readonly LateCardRow[];
+  card: TalkLessonCardView;
+  lemmaOf: (surface: string) => string | undefined;
+  /** 동음이의어 묶음(시드 lists/homophones.json). 1~3단계에만 쓴다. */
+  homophones: readonly (readonly string[])[];
+  /** 소리가 가까운 낱말 목록(시드 lists/sound-alikes.json — 없으면 빈 목록). */
+  soundAlikes: readonly SoundAlikeEntry[];
+}): TalkTurnWiring {
+  const groups = low ? homophones : [];
+  const planArgs: LessonArgs = low
+    ? {
+        ...args,
+        // 따라 말한 · 고른 아이 말은 '먼저 답함'에서 뺀다(코드 검토 Minor 2)
+        childAnswered: childAnsweredRequiredOf({
+          required: card.required,
+          childLines: childLinesOf(rows, childText, true),
+          lemmaOf,
+          homophones: groups,
+        }),
+      }
+    : args;
+  const withChild = { ...planArgs, turns: [...planArgs.turns, lite] };
+  const plans =
+    lite.input === "speech"
+      ? teacherTurnPlansOf(planArgs, lite)
+      : { ifAnswered: nextTeacherTurnOf(withChild), ifStuck: null };
+  // 아이가 답하던 질문 자리(이번 아이 행으로 닫혔어도 남는다 — 들은 글 귀띔의 기대 낱말 재료)
+  const answeredSlot = low
+    ? talkLessonPositionOf(withChild).answeredSlot
+    : null;
+  // 받침 둘째에서 선생님이 쓴 쉬운 질문에 답하던 말이면 그 질문의 답 예시 · 노리는 단어
+  const asked = answeredSlot?.easyAsked ?? answeredSlot;
+  return {
+    homophones: groups,
+    args: planArgs,
+    plans: { ifAnswered: plans.ifAnswered, ifStuck: plans.ifStuck ?? null },
+    answeredSlot,
+    heardOf: (unitWords) =>
+      low
+        ? {
+            answer: asked?.answerExample ?? null,
+            targets: asked?.words ?? [],
+            scene: talkSceneWordsOf({ card, unitWords: [...unitWords] }),
+            homophones: groups,
+            soundAlikes,
+          }
+        : undefined,
+    lastStart: low ? talkLastStartOf(args.turns) : undefined,
+    callInput: low ? { homophones: groups } : {},
+  };
 }
 
 /** 이 차례에 선생님이 다음 질문을 쓰는가(AI 차례 · 질문함 · 인사 끝 · 바닥선 · 평가 대화 밖). 아니면 다음 질문 칸을 비운다. */
@@ -876,7 +1079,7 @@ function lowSituationRules(): {
     support:
       "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together (the app plays the answer and says the cue), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic, with no saying it together.",
     nospeech:
-      "When Reason is nospeech, the 'Not heard' line tells you that the app could not get the child's voice. It is a technical problem: never treat it as the child's answer, as not knowing or as a mistake, never blame the child, and never praise or say back words you did not hear. Say in your own words that you could not hear it because of the sound or your ears, then move on (the 'Example line' shows only the kind of line). When Turn is card_slot after nospeech, write only that short line: no answer and no question.",
+      "When Reason is nospeech, the 'Not heard' line tells you that the app could not get the child's voice. It is a technical problem: never treat it as the child's answer, as not knowing or as a mistake, never blame the child, and never praise or say back words you did not hear. Say in your own words that you could not hear it because of the sound, then move on (the 'Example line' shows only the kind of line). When Turn is card_slot after nospeech, write only that short line: no answer and no question.",
     greetingEnd:
       "When Segment is greeting_end, react first to the child's greeting answer (the feeling or what the child added) like a person, then end with a short line in your own words moving on to the part in 'Next part' (the 'Example line' shows only the kind of line). A second sentence about yourself or today's scene is allowed, not expected; never say or ask the scene question. Do not ask a question. Its tori_ko is natural child talk (e.g. '다행이다!', '잘 지냈다니 좋다!').",
   };
@@ -898,7 +1101,10 @@ function commonRules(
     `Ask only one question in a turn. tori_en has at most ${rules.teacherSentencesMax} sentences.`,
     // 되풀이는 대화 토막의 틀린 말 · 짧은 답에만, 인사 답에는 사람처럼 반응(13절 C202 (4) · 분석 5.1 4 · A5)
     "In the talk (Segment talk or more_talk), if the child's English is wrong, say the correct sentence back naturally (recast), even for a one-sound difference at the end of a word. When the child answers with a word or a short answer, say back one correct sentence with it (e.g. 'No! Easy.' -> 'Art is easy for you!'), using the action your question just asked about, and keep 'like' only when your question asked what the child likes (e.g. 'What do you do with the juice?' + 'Juice.' -> 'You drink juice!'; 'Where do you go?' + 'Lake.' -> 'You go to the lake!'; 'What food do you like?' + 'Rice.' -> 'You like rice!'). Never say it was wrong, never scold, and never ask the child to say it again as a sentence. If the child's sentence is already correct, do not change its words (never swap in a unit word); do not say it back, just react to it.",
-    "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
+    // 인사 반응 예는 1~3단계에서 답 꼴별로(13절 C217 (3) · 판정 r3 M-r3-4 — 'fine' 답 반응이 첫 예 하나로 몰림), 4단계부터 글자 그대로
+    low
+      ? "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person, in words that fit the answer: to a good feeling e.g. 'Yay!' or 'Me too!'; to a tired or sad feeling e.g. 'Oh no!' or 'It is okay.'; when the child added something, react to that thing (e.g. 'I have a new bike.' -> 'Wow, a new bike!')."
+      : "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
     "Praise concretely by pointing at what the child said. Never hurry the child.",
     `Ask a follow-up question on the child's words at least once every ${rules.followUpEvery} turns.`,
     // 카드 기회 연쇄 막기(13절 C202 (2) · D8 (가) 잠정 · 분석 5.1 2 — 02-2 156 · 184 · 192줄 으뜸 원칙의 풀이)
@@ -915,7 +1121,10 @@ function commonRules(
       : `When the child brings up a topic of their own, follow it for at most ${rules.followChildTurns} turns (next_move follow_child) and come back to today's topic within them. Never bring up a topic outside the card first.`,
     "The Chances lines list the remaining chances in order: carry-over, required questions, words to use again, new words to introduce. Use them when the moment is natural. You may say a card question in your own words. Never put the unit word a question aims at in that question; ask about the thing or the person instead (e.g. 'Do you like fish?').",
     // 장면 단정 금지(13절 C202 (3) · 분석 5.1 3 · A6 — 변경 spec 267줄 '필수 질문은 카드 글을 바꿔 말해 물어도 된다' 안)
-    "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.'). Before a card question, set the scene with a thing, not with another question (e.g. 'Oh, cold juice!').",
+    // 1~3단계 이음새(13절 C217 (2) · 분석 A5): 카드 기회는 아이의 바로 앞 말에서 이어 제 말로 묻고 카드의 장면 문장을 그대로 붙이지 않는다
+    low
+      ? "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.'). When you use a card chance, link it to what the child just said and ask it in your own short words (e.g. 'Yes, I like sand.' -> 'Me too! Where do you play in the sand?'). Never paste a card question or its scene sentence from an earlier turn as it is. If nothing in the child's last words leads to a chance, keep following the child's talk and leave the chance for a later turn."
+      : "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.'). Before a card question, set the scene with a thing, not with another question (e.g. 'Oh, cold juice!').",
     "When 'Return to today's topic: yes', you may come back to today's topic when it fits.",
     "When you bring up a new word, make its meaning clear and have the child say it once.",
     // 막힘 경계(13절 C204 (1)(2) · 02-2 251 · 194 · 196) — 앱도 갈래로 막힘을 무른다(child-kind effectiveStuckOf)
@@ -1004,6 +1213,16 @@ function lowBandRules(
     `Levels 1-3: your first short reaction is your own words about what the child said (e.g. ${TALK_LOW_REACTION_EXAMPLES.map((r) => `'${r}'`).join(", ")}).`,
     // 장면 줄을 아이 상태 단정으로 바꾸지 않음(13절 C202 (3) · 판정 r1 M-3) · 반응 문장 수(판정 r1 M-4)
     "Levels 1-3: a card scene line like 'Sand on your hands!' only sets the scene; never turn it into a fact about the child (not 'Sand is on your hands.'). When you set the scene before a card question, keep the reaction to one short sentence.",
+    // 가변부 카드 줄의 꼴(13절 C217 (2) (ㄱ) · 보완 — 노리는 낱말과 답 예시만 보이고 카드 글은 싣지 않는다: 카드 글을 그대로 붙이는 버릇을 끊는다)
+    "In 'Required questions' and 'More talk', each chance shows the word it aims at, an answer example and one way to ask. The way to ask is only an idea: link it to what the child just said and name the thing it is about (never 'they' or 'it' out of nowhere). The word a chance aims at must come from the child, so your question never has it.",
+    // 알아듣기(13절 C217 (1) · 분석 A1 · A2) — 앱이 들은 글을 기대 낱말과 맞대어 'Heard hint' 줄로 알린다(heard-hint heardHintsOf)
+    "Levels 1-3: when Input is speech, the child's words come from speech recognition, and a one-word answer is easily misheard as a word with the same or a close sound (e.g. 'sea' heard as 'See'). Read the child's words as an answer to the question before you decide child_kind.",
+    "When the message has a 'Heard hint' line and the heard word does not fit the question as it is, the child most likely said the hinted word: take it as that word (child_kind answer or short_related, never stuck), use the hinted word in your reaction, and never say the misheard word back (not 'Oh, you see!'). If the child's words make sense as they are, take them as they are.",
+    // 귀띔이 '스스로 쓴 단어' 보고를 밀지 않게(13절 C217 보완 · 코드 검토 rev-content-1 I-2 — 앱도 인사 · 맞장구 말에는 귀띔을 내지 않는다)
+    "Put a hinted word in self_used_words only when you took the child's words as that word in this turn. A greeting or an agreeing word (e.g. 'Hi', 'Me too', 'Right!') is never a unit word.",
+    // 말씨(13절 C217 (3) · 분석 4절 4 — 같은 꼴 반응 'Yes, you ~!')
+    "Levels 1-3: never start two turns in a row with the same word. Look at how your last turn started and start this one another way (not 'Yes, …' and then 'Yes, …' again).",
+    "Start with 'Yes' only when the child's answer is right or the child said yes. It is not a filler.",
     // 자기 이야기 · 지어낸 경험 금지(C211 (1))
     `Following what the child brought up comes first; in that turn, do not move the talk to yourself. You may say one short line about yourself (what you like, how you feel now, what you wish, or a pretend game like 'Let's pretend we are ducks!') at most once in ${rules.selfLineEvery} turns, only when it helps.`,
     "Do not tell made-up past experiences or memories as if they were true.",
@@ -1017,7 +1236,8 @@ function lowBandRules(
           "In the greeting, you may bring up one thing written in 'Summaries of earlier talks'. Never say anything about earlier talks that is not written there.",
         ]
       : []),
-    "Levels 1-3, the farewell: point at one thing the child said or liked today and say goodbye. If the child said almost nothing, do not point at anything. At most two sentences and no question.",
+    // 끝인사는 낱말 세기가 아니라 아이가 한 말 하나(13절 C217 (3) · 분석 A7 — 'You said eat and drink today.')
+    "Levels 1-3, the farewell: point at one thing the child said or liked today and say goodbye. Never list or count the words the child said (not 'You said eat and drink today.'); say one natural line about that one thing. If the child said almost nothing, do not point at anything. At most two sentences and no question.",
     "Levels 1-3: on AI turns fill next_hint_ko and next_hints (level 3 adds an English frame first), next_targets and next_answer_example for your next question; the hints and the answer example answer your own next question, not an earlier card question. Fill image_word only when the child talks about a thing of their own.",
   ];
 }
@@ -1047,12 +1267,26 @@ const itemLine = (
 ) =>
   `${item.no}. ${item.en} (aims at: ${item.targets.join(", ") || "-"}; goals: ${item.goals.join(", ")})`;
 
+/**
+ * 1~3단계 가변부 카드 줄(13절 C217 (2) (ㄱ) · 보완 · 분석 A5): 노리는 낱말과 답 예시만 보이고 카드 글(장면 문장 + 질문)은 싣지 않는다 — 선생님이
+ * 아이의 바로 앞 말에 이어 제 말로 묻는다(자리 재현 재생에서 카드 글을 실으면 그대로 붙이는 차례가 6/19 로 남았다). 카드 글은 앱이 붙이는 자리(카드
+ * 자리 · 대화 첫 질문 · 장면 여는 질문)에서만 나간다. 4단계부터는 itemLine 그대로다(고치기 전 글자 그대로).
+ */
+const lowItemLine = (
+  item: Pick<
+    TalkLessonCardView["required"][number],
+    "no" | "en" | "targets" | "goals" | "answerExample"
+  >,
+) =>
+  `${item.no}. aims at: ${item.targets.join(", ") || "-"}; answer example: ${item.answerExample}; one way to ask: ${turnQuestionOf(item.en, null) ?? item.en} (goals: ${item.goals.join(", ")})`;
+
 function cardVariable(input: TalkLessonInput): (readonly [string, string])[] {
   const { card, spec } = input;
   const goalText = new Map(input.goalTexts.map((g) => [g.id, g.ko]));
   const goalList = (ids: readonly string[]) =>
     ids.map((id) => `${id}: ${goalText.get(id) ?? "-"}`).join(" | ") ||
     "(none)";
+  const line = isLowBandLevel(input.level) ? lowItemLine : itemLine;
   const out: (readonly [string, string])[] = [
     ["Conversation mode", spec.mode],
     // 뜻을 쓰는 단계인지(level_specs koMeaning, 13절 C202 (5))
@@ -1080,8 +1314,8 @@ function cardVariable(input: TalkLessonInput): (readonly [string, string])[] {
         "(none)",
     ],
     ["Short preparation words", (card.prep ?? []).join(", ") || "(none)"],
-    ["Required questions", card.required.map(itemLine).join(" | ")],
-    ["More talk", card.more.map(itemLine).join(" | ") || "(none)"],
+    ["Required questions", card.required.map(line).join(" | ")],
+    ["More talk", card.more.map(line).join(" | ") || "(none)"],
   ];
   if (card.missions && card.missions.length > 0) {
     out.push([
@@ -1140,6 +1374,11 @@ function cardLineText(line: TalkCardLine | null): string {
   if (line.role === "easy" && line.kind === "none")
     return `easy question for the scene question: ${line.en}`;
   const ref = `${line.kind} ${line.no}`;
+  // 1~3단계 카드 항목 줄은 글을 싣지 않는다(앱이 붙인다 — 선생님이 카드 글을 제 질문으로 옮겨 적지 않게)
+  if (line.hidden)
+    return line.role === "easy"
+      ? `easy question for ${ref} (the app adds it; do not write it)`
+      : `${ref} (the app adds this card question; do not write it)`;
   return line.role === "easy"
     ? `easy question for ${ref}: ${line.en}`
     : `${ref}: ${line.en}`;
@@ -1180,6 +1419,33 @@ function planLines(
 const listOf = (words: readonly string[] | undefined) =>
   words && words.length > 0 ? words.join(", ") : "(none)";
 
+/** 귀띔 하나의 글(갈래 · 출처마다 — 사용자 메시지 'Heard hint' 줄의 한 토막). */
+function heardHintText(hint: HeardHint): string {
+  const where = hint.from === "answer" ? "the answer word" : "today's word";
+  const how = hint.by === "homophone" ? "same sound" : "close sound";
+  return `'${hint.heard}' may be ${where} '${hint.expected}' (${how})`;
+}
+
+/**
+ * 사용자 메시지의 들은 글 귀띔 줄(13절 C217 (1)): 아이 말 줄 바로 뒤 한 줄이고 귀띔이 없으면 줄이 없다. 이 턴의 아이 말(가린 뒤 글)에 없는 들은
+ * 낱말은 싣지 않는다 — 서버의 아이 행 글은 저장 때 이미 가린 글이라(lesson-turn lessonChildRowOf) 귀띔도 가린 글로 만들지만, 부르는 쪽이 가리기
+ * 전 글로 귀띔을 만들어도 가림이 지운 낱말이 이 줄로 새지 않게 여기서 한 번 더 거른다.
+ */
+function heardHintLines(
+  turn: Pick<TalkCallTurn, "child" | "heardHints">,
+): string[] {
+  if (turn.heardHints === undefined) return [];
+  const said = new Set(normalizeSpoken(turn.child).split(" "));
+  const parts = turn.heardHints
+    .filter((hint) => said.has(hint.heard))
+    .map(heardHintText);
+  return parts.length === 0
+    ? []
+    : [
+        `Heard hint (speech recognition may have misheard): ${parts.join("; ")}`,
+      ];
+}
+
 /**
  * 사용자 메시지: 영어 이름표 줄. 늘 넣는 값(아이 말 · 입력 · 토막 · 힌트 · 들은 도움 · 차례의 까닭 · 차례 종류 · 질문 여부 · 붙일 카드 줄 ·
  * 받침 단계 · 막힌 질문, 말 입력 턴이면 같은 다섯 줄의 막힘 계획('If stuck, ' — 검토 I-1), 기회 알림 · 돌아오기 알림 · 카드 기회 다 다룸 ·
@@ -1212,7 +1478,15 @@ export function talkLessonUserMessage(
         ]
       : []),
     `Child: ${child}`,
+    // 1~3단계 들은 글 귀띔(13절 C217 (1)) — 닿은 것이 있는 턴만
+    ...heardHintLines(turn),
     `Input: ${turn.input}`,
+    // 1~3단계: 바로 앞 선생님 말의 첫 낱말(13절 C217 보완 — 같은 낱말로 연달아 시작하지 않게)
+    ...(turn.lastStart === undefined
+      ? []
+      : [
+          `Your last turn started with: '${turn.lastStart}' (start this turn with another word)`,
+        ]),
     // 1~3단계 AI 차례의 내용 있는 아이 말 알림(02-2 198줄)
     ...(turn.childSaidMore === undefined
       ? []
@@ -1229,7 +1503,10 @@ export function talkLessonUserMessage(
       : planLines("If stuck, ", turn.ifStuck, turn.nextPart)),
     `Chances, carry-over goals: ${listOf(chances.carry.goals)}`,
     `Chances, carry-over words: ${listOf(chances.carry.words)}`,
-    `Chances, required questions: ${required === "" ? "(none)" : required}`,
+    // 1~3단계 카드 답 바로 뒤 차례: 이번 차례에는 필수 질문 기회를 알리지 않는다(아이 답에 이어 묻는 차례 — 13절 C217 보완)
+    turn.holdChances
+      ? "Chances, required questions: (not in this turn: follow up on the child's answer first)"
+      : `Chances, required questions: ${required === "" ? "(none)" : required}`,
     `Chances, words to use again: ${listOf(chances.reuse)}`,
     `Chances, new words to introduce: ${listOf(chances.introduce)}`,
     `Return to today's topic: ${yesNo(turn.returnNudge)}`,
@@ -1425,7 +1702,23 @@ function cardItemOf(
   );
 }
 
-function lineOptions(input: TalkLessonInput): LowLevelLineOptions {
+/**
+ * 1~3단계 질문 · 소리 줄 검사 재료(question-check LowLevelLineOptions — 호출 입력과 같은 범위). 서버 턴 길(lesson-input lineOptionsOf)과 대본 도구
+ * (talk:observe)가 이 함수 하나를 부른다. 호출 입력의 동음이의어 묶음(talkTurnWiringOf callInput — 1~3단계만)이 있으면 함께 넘겨, 질문 검사의
+ * '아이가 이 대화에서 말한 낱말'이 한두 낱말 말의 같은 소리 낱말까지 본다(13절 'C203 (1) · C217 보완 3' (2) — question-check childSameSoundWordsOf,
+ * 아이 말 줄 childLines 는 부르는 쪽이 얹는다).
+ */
+export function talkLineOptionsOf(
+  input: Pick<
+    TalkLessonInput,
+    | "sentenceMaxWords"
+    | "unitWords"
+    | "teacher"
+    | "lineRange"
+    | "lemmaOf"
+    | "homophones"
+  >,
+): LowLevelLineOptions {
   return {
     sentenceMaxWords: input.sentenceMaxWords,
     allowedWords: input.lineRange.allowedWords,
@@ -1435,6 +1728,7 @@ function lineOptions(input: TalkLessonInput): LowLevelLineOptions {
     lemmaOf: input.lemmaOf,
     forms: input.lineRange.forms,
     allowedForms: input.lineRange.allowedForms,
+    ...(input.homophones === undefined ? {} : { homophones: input.homophones }),
   };
 }
 
@@ -1667,6 +1961,40 @@ export function talkSceneWordsOf(
   ]);
 }
 
+/**
+ * 받침 둘째의 AI 질문 자리인가(1~3단계 — 막힌 질문이 AI 질문이라 카드 쉬운 질문이 없어 선생님이 쉬운 질문을 쓰는 차례, 02-2 3.3 받침 표 둘째).
+ * 이 자리에서는 필수 질문 갈래 · 카드 항목을 받지 않고 예 · 아니요 질문(이나 고르기 답 둘이 딸린 질문)만 받는다(13절 C217 (2) (ㄴ)). 정규화와
+ * 질문 검사(question-check easySlot — 서버 끝 처리 · 다시 쓰기)가 같은 판정을 쓴다. 계획(TeacherTurnPlan)과 호출 입력(TalkCallTurn) 둘 다 받는다.
+ */
+export function talkEasyAiSlotOf(
+  turn: { kind: string; aiAsks: boolean } & (
+    | { supportStage: number }
+    | { stage: number }
+  ),
+  low: boolean,
+): boolean {
+  const stage = "supportStage" in turn ? turn.supportStage : turn.stage;
+  return (
+    low &&
+    turn.kind === "ai" &&
+    turn.aiAsks &&
+    stage === TALK_SUPPORT_STAGE_EASY
+  );
+}
+
+/**
+ * 카드 답 바로 뒤 차례에 그대로 오면 안 되는 질문 열쇠(13절 C217 (2) (ㄷ) · C204 (6) · 분석 A4): 'Previous turn was a card chance: yes' ·
+ * 'Follow up on the child's answer: yes' 인 턴이면 카드 필수 질문 글의 질문 열쇠(마지막 물음표 문장 — cardQuestionKeyOf) 모두, 아니면 빈 목록.
+ * 질문 다시 쓰기(question-retry heldQuestionFailOf chainKeys)가 이 열쇠와 같은 AI 질문을 한 번 다시 쓰게 한다 — 갈래 표지만 고치지 않는다.
+ */
+export function talkCardChainKeysOf(
+  turn: Pick<TalkCallTurn, "afterCardChance" | "followUpAnswer">,
+  card: Pick<TalkLessonCardView, "required">,
+): string[] {
+  if (turn.afterCardChance !== true && turn.followUpAnswer !== true) return [];
+  return [...new Set(card.required.map((item) => cardQuestionKeyOf(item.en)))];
+}
+
 /** AI 질문(tori_en 의 마지막 물음표 문장)이 그 카드 항목의 질문 글과 같은 질문 열쇠인가(question-check cardQuestionKeyOf). */
 function asksCardQuestionAsIs(
   toriEn: string,
@@ -1764,6 +2092,7 @@ export function normalizeTalkLesson(
     child: turn.child,
     input: turn.input,
     sceneWords: talkSceneWordsOf(input),
+    ...(input.homophones === undefined ? {} : { homophones: input.homophones }),
   });
   // 응답 첫 칸(stuck)으로 고른 계획(말 입력 턴의 막힘 계획, 검토 I-1)
   const chosen = chosenCallTurnOf(turn, stuck);
@@ -1816,6 +2145,10 @@ export function normalizeTalkLesson(
     followUpAnswer: turn.followUpAnswer === true,
   });
   nextMove = chainGuard.nextMove;
+  // 받침 둘째의 AI 질문 자리(1~3단계)는 쉬운 질문 자리라 필수 질문 갈래 · 카드 항목을 받지 않는다(13절 C217 (2) (ㄴ) · 분석 A3 — 받침 행은 새 질문
+  // 자리를 열지 않아 거기서 물은 필수 질문이 '다룸'으로 세지지 않고 뒤에 다시 나왔다). 질문 글이 예 · 아니요 꼴인지는 질문 검사가 본다(easySlot)
+  const easyAiSlot = talkEasyAiSlotOf(chosen, low) && asks;
+  if (easyAiSlot && nextMove === "required") nextMove = "follow_up";
   // 소리 줄 자리(13절 C205 · spec 설계 4 — 받침 첫째 · 셋째 · 들리지 않음 · 꺼내기 갈래만, 대본 지표 soundOutsideOf 와 같은 함수). 질문을 쓰지
   // 않는 차례의 갈래는 비우므로(EMPTY_NEXT) 자리도 갈래 없이 본다
   const places = soundLinePlacesOf({
@@ -1839,7 +2172,7 @@ export function normalizeTalkLesson(
       (textHasWord(a.tori_en, w, lemmaOf) ||
         textHasWord(modelSource, w, lemmaOf)),
   );
-  const options = lineOptions(input);
+  const options = talkLineOptionsOf(input);
   let modelLine = "";
   if (modelSource !== "") {
     modelLine = checkSoundLine(a.model_line, options).ok
@@ -1935,8 +2268,9 @@ export function normalizeTalkLesson(
           next_move: nextMove,
           // 질문 글이 그 필수 질문 글과 같으면(같은 질문 열쇠) 아이가 그 질문을 들은 것이라 카드 항목을 남겨 다룬 것으로 센다(fix1 M-3 — 같은 글 두 번 막음)
           card_item:
-            chainGuard.dropCardItem &&
-            !asksCardQuestionAsIs(a.tori_en, card, cardItem)
+            (easyAiSlot && cardItem.kind === "required") ||
+            (chainGuard.dropCardItem &&
+              !asksCardQuestionAsIs(a.tori_en, card, cardItem))
               ? NO_CARD_ITEM
               : cardItem,
           next_goal: uniqueNonEmpty(a.next_goal.filter((g) => goals.has(g))),

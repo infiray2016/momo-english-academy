@@ -514,13 +514,25 @@ describe("5.1 1~6 고정부 규칙 문장(스냅숏이 아니라 규칙 문장 �
     expect(system3).toContain(
       "'Teacher turns since last follow-up' counts your turns, including the app's card turns, since your last follow-up question.",
     );
+    // 장면 단정 금지는 그대로이고, 1~3단계의 카드 질문 앞 말은 '장면 문장을 붙이기'에서 '아이 말에 이어 제 말로 묻기'로 바꿨다(13절 C217 (2))
     expect(system3).toContain(
+      "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.').",
+    );
+    expect(system3).not.toContain(
+      "Before a card question, set the scene with a thing",
+    );
+    expect(talkLessonSystem(lessonInput(4), lessonRules(4))).toContain(
       "Never state the child's feeling, state or action as a fact unless the child said it (not 'You are thirsty.'). Before a card question, set the scene with a thing, not with another question (e.g. 'Oh, cold juice!').",
     );
   });
 
   it("인사 답은 되받기 대신 사람처럼 반응하고, 인사 끝은 다음 토막으로 넘어가는 말(예 되살림), 되풀이는 대화 토막에서만(5.1 4)", () => {
+    // 1~3단계 인사 반응 예는 답 꼴별이다(13절 C217 (3) · 판정 r3 M-r3-4 — 'Good to hear!' 한 예로 몰림), 4단계부터는 그대로
     expect(system3).toContain(
+      "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person, in words that fit the answer:",
+    );
+    expect(system3).not.toContain("(e.g. 'Good to hear!', 'Me too!')");
+    expect(talkLessonSystem(lessonInput(4), lessonRules(4))).toContain(
       "In the greeting, do not say the child's answer back (not 'You are fine!'). React like a person (e.g. 'Good to hear!', 'Me too!').",
     );
     expect(system3).toContain(

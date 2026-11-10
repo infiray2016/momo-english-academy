@@ -93,6 +93,7 @@ export function effectiveStuckOf({
   child,
   input,
   sceneWords,
+  homophones,
 }: {
   aiStuck: boolean;
   childKind: TalkChildKind | undefined;
@@ -104,10 +105,16 @@ export function effectiveStuckOf({
    * 보지 않는다.
    */
   sceneWords?: ReadonlySet<string>;
+  /**
+   * 동음이의어 묶음(시드 lists/homophones.json). 주면 장면 낱말 대조를 같은 소리 낱말까지 넓힌다 — 맞는 답 'sea' 가 'See' 로 들린 한 낱말 말을
+   * 막힘으로 세지 않는다(13절 C217 (1) · 분석 A2). 없으면 글자 그대로만 본다.
+   */
+  homophones?: readonly (readonly string[])[];
 }): boolean {
   if (!aiStuck || input !== "speech") return aiStuck;
   if (isEnglishSaying(child, ENGLISH_SENTENCE_MIN_WORDS)) return false;
-  if (sceneWords !== undefined && touchesScene(child, sceneWords)) return false;
+  if (sceneWords !== undefined && touchesScene(child, sceneWords, homophones))
+    return false;
   if (childKind !== undefined) return STUCK_CHILD_KINDS.has(childKind);
   return !isEnglishSaying(child);
 }
@@ -183,14 +190,85 @@ const NOT_SCENE_WORDS = new Set([
   "okay",
 ]);
 
+/** 장면 낱말로 세지 않는 낱말인가(기능어 · 대답 말 · 진행 말 — 들은 글 귀띔 heard-hint 와 시드 검사가 같은 표를 본다). */
+export function isSceneFunctionWord(word: string): boolean {
+  return NOT_SCENE_WORDS.has(word.toLowerCase());
+}
+
+/**
+ * 아이 말에서 같은 소리 대조를 거르는 낱말(13절 C217 보완 · 코드 검토 rev-content-1 I-2 · M-2): 인사 · 맞장구 · 덧붙이는 말과, 동음이의어 묶음에 든
+ * 흔한 기능어다. 아이가 'Hi!' · 'I like it too.' · 'Right!' 라고 한 것은 단원 단어 high · two · write 를 말해 본 것이 아니므로, 묶음을 거치기 전에 글자로
+ * 걸러 귀띔 · 막힘 무름 · 먼저 답한 필수 질문 셈이 그 낱말을 단원 단어로 읽지 않게 한다. 카드 글 쪽(장면 낱말 표)에는 쓰지 않는다 — 카드의 right ·
+ * well 은 내용 낱말일 수 있다. 영어 말버릇 목록이라 코드 상수다.
+ */
+const CHILD_FILLER_WORDS: ReadonlySet<string> = new Set([
+  // 인사
+  "hi",
+  "hello",
+  "hey",
+  "bye",
+  "goodbye",
+  // 맞장구 · 덧붙이는 말
+  "too",
+  "right",
+  "so",
+  "well",
+  "oh",
+  "wow",
+  "yeah",
+  "yep",
+  "sure",
+  "please",
+  "thanks",
+  // 묶음에 든 기능어(by = buy · be = bee · our = hour · where = wear · would = wood · some = sum · their = there)
+  "by",
+  "be",
+  "our",
+  "where",
+  "would",
+  "some",
+  "their",
+]);
+
+/**
+ * 아이 말의 이 낱말은 같은 소리 묶음으로 넓혀 읽지 않는가(기능어 · 대답 말 NOT_SCENE_WORDS 와 인사 · 맞장구 말 CHILD_FILLER_WORDS). 들은 글 귀띔 ·
+ * 막힘 무름(touchesScene) · 먼저 답한 필수 질문(childAnsweredRequiredOf)이 같은 판정을 쓴다. 글자 그대로의 대조는 막지 않는다.
+ */
+export function isChildFillerWord(word: string): boolean {
+  const lower = word.toLowerCase();
+  return NOT_SCENE_WORDS.has(lower) || CHILD_FILLER_WORDS.has(lower);
+}
+
+/**
+ * 동음이의어 묶음의 대표 낱말 찾기(소문자 낱말 → 그 묶음의 첫 낱말, 묶음에 없으면 그 낱말 그대로). 일치율 정규화(match-rate normalizeForMatch
+ * (6))와 같은 규칙이다: 한 낱말이 두 묶음에 들면 앞 묶음이 이긴다. 묶음이 비면 낱말을 그대로 돌려준다.
+ */
+export function homophoneHeadOf(
+  homophones: readonly (readonly string[])[] = [],
+): (word: string) => string {
+  const heads = new Map<string, string>();
+  for (const group of homophones) {
+    const head = group[0]?.toLowerCase();
+    if (head === undefined) continue;
+    for (const word of group) {
+      const key = word.toLowerCase();
+      if (!heads.has(key)) heads.set(key, head);
+    }
+  }
+  return (word) => heads.get(word.toLowerCase()) ?? word.toLowerCase();
+}
+
 /**
  * 영어 낱말 한두 개(ENGLISH_SAYING_MIN_WORDS 이하)의 말이고 모름 표현이 아니며, 그 가운데 하나가 질문 · 장면 · 카드의 내용 낱말인가('Rice.' ·
  * 'Big fish.' · 'Cold juice.' — 13절 C204 (2) 경계 그대로, 대본 회차 r1 판정 I-4). 'Blue car.' 처럼 장면에 없는 낱말 · 'Huh?' · 'Yes.' 같은
- * 기능어 · 대답 말은 아니다(갈래가 정함).
+ * 기능어 · 대답 말은 아니다(갈래가 정함). 동음이의어 묶음을 주면 같은 소리 낱말도 닿은 것으로 본다('See.' 와 장면 낱말 sea — 13절 C217 (1)).
+ * 아이 말의 기능어 · 인사 · 맞장구 말은 묶음을 거치기 전 글자로 거른다('To.' · 'Me too.' 가 장면 낱말 two 에, 'Hi!' 가 high 에 닿지 않게 —
+ * isChildFillerWord). 글자 그대로 장면 낱말인 말('Right.' 과 장면 낱말 right)은 그대로 닿는다.
  */
 export function touchesScene(
   child: string,
   sceneWords: ReadonlySet<string>,
+  homophones: readonly (readonly string[])[] = [],
 ): boolean {
   if (isDontKnowSaying(child)) return false;
   const words = normalizeSpoken(child)
@@ -198,7 +276,14 @@ export function touchesScene(
     .filter((w) => /^[a-z]+$/.test(w));
   if (words.length === 0 || words.length > ENGLISH_SAYING_MIN_WORDS)
     return false;
-  return words.some((w) => !NOT_SCENE_WORDS.has(w) && sceneWords.has(w));
+  const content = words.filter((w) => !NOT_SCENE_WORDS.has(w));
+  if (content.some((w) => sceneWords.has(w))) return true;
+  if (homophones.length === 0) return false;
+  const headOf = homophoneHeadOf(homophones);
+  const sceneHeads = new Set([...sceneWords].map(headOf));
+  return content
+    .filter((w) => !isChildFillerWord(w))
+    .some((w) => sceneHeads.has(headOf(w)));
 }
 
 /** 장면 낱말 표(카드 글 · 단원 단어에서 기능어를 뺀 소문자 낱말 — 부르는 쪽이 카드 글을 넘긴다). */

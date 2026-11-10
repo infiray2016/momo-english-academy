@@ -38,6 +38,7 @@ import {
   ModelPricesFileSchema,
   RangeSchema,
   SettingsFileSchema,
+  SoundAlikesFileSchema,
   TalkAllowedWordsFileSchema,
   TalkCueLinesFileSchema,
   TalkMadeUpPhrasesFileSchema,
@@ -1090,6 +1091,7 @@ describe("시드 규격(schema)", () => {
             talkAllowedWords: TalkAllowedWordsFileSchema,
             talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
             talkShortLines: TalkShortLinesFileSchema,
+            soundAlikes: SoundAlikesFileSchema,
           }[parsed.name];
         case "lessons":
           return LessonFileSchema;

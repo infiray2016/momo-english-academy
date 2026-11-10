@@ -13,6 +13,7 @@ import {
   type TalkLessonInput,
   type TalkLineRange,
   talkLessonContextDelta,
+  talkLineOptionsOf,
 } from "@/core/ai/calls/talk-lesson";
 import { parseTalkAttemptInput } from "@/core/conversation/attempt";
 import { reaskWordsOf } from "@/core/conversation/lesson-flow";
@@ -251,23 +252,14 @@ export async function lessonRangeOf(
   };
 }
 
-/** 1~3단계 질문 검사 재료(question-check LowLevelLineOptions — 입력과 같은 범위). */
+/**
+ * 1~3단계 질문 검사 재료(question-check LowLevelLineOptions — 입력과 같은 범위). core talkLineOptionsOf 그대로다(대본 도구와 같은 함수 — 호출 입력의
+ * 동음이의어 묶음이 있으면 노리는 단어 검사가 아이가 한두 낱말 말로 한 낱말의 같은 소리 낱말까지 본다, 13절 'C203 (1) · C217 보완 3' (2)).
+ */
 export function lineOptionsOf(
-  input: Pick<
-    TalkLessonInput,
-    "sentenceMaxWords" | "unitWords" | "teacher" | "lineRange" | "lemmaOf"
-  >,
+  input: Parameters<typeof talkLineOptionsOf>[0],
 ): LowLevelLineOptions {
-  return {
-    sentenceMaxWords: input.sentenceMaxWords,
-    allowedWords: input.lineRange.allowedWords,
-    unitWords: input.unitWords,
-    childWords: input.lineRange.childWords,
-    teacherName: input.teacher.nameEn,
-    lemmaOf: input.lemmaOf,
-    forms: input.lineRange.forms,
-    allowedForms: input.lineRange.allowedForms,
-  };
+  return talkLineOptionsOf(input);
 }
 
 /**

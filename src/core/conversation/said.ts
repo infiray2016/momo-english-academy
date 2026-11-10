@@ -72,6 +72,12 @@ function unitWordsIn(text: string, lex: Lexicon): string[] {
 /**
  * '말했다'(3.4 · AC-9d): 힌트 종류가 '영어'면 없음. 아니면 AI 가 돌려준 단어를 원형으로 바꿔 단원 단어 목록에 있고
  * 인식 글(같은 정규화 · 원형)에도 든 것만(돌려준 차례, 같은 말 하나로).
+ * 인식 글의 낱말 하나는 단원 단어 하나에만 잇는다: 글자(소문자 · 숫자 · 축약형 · 원형)가 그대로 맞는 단원 단어를 먼저 잇고, 남은 낱말을 같은 소리
+ * (동음이의어 묶음)로 잇는다. 같은 소리 단원 단어가 한 단원에 둘 다 있어도(회화 3단계 단원 1 see · sea) 들은 글 'Sea.' 는 sea 로, 'I see a fish.' 는
+ * see 로 세고, 철자가 다르게 들린 'See.' 도 AI 가 sea 를 돌려주면 sea 로 센다(기존 기준 — 코드 검토 rev-content-1 O-1: 목록에서 앞선 낱말 하나에만
+ * 이어 sea 가 '말했다'가 될 수 없던 결함). 같은 소리 묶음에 든 활용형은 제 원형으로 세고(knew → know · rode → ride · ate → eat — 원형 먼저, 그다음
+ * 동음이의어), 들은 낱말의 같은 소리 대표 낱말에서 찾은 원형으로도 센다(through → threw → throw — 고치기 전에도 세어지던 꼴, 13절 'C203 (1) · C217
+ * 보완 3' (3)). 소리가 가까운 낱말(teach · beach)은 세지 않는다(13절 C217).
  */
 export function saidWordsOf({
   aiWords,
@@ -84,16 +90,58 @@ export function saidWordsOf({
   hintKind: SaidHintKind;
 }): string[] {
   if (hintKind === "english") return [];
-  const inHeard = new Set(unitWordsIn(heard, lex));
   const unit = new Set(lex.unitWords);
-  const out: string[] = [];
+  // AI 가 돌려준 단원 단어(원형 — 돌려준 차례, 같은 말 하나로)
+  const wanted: string[] = [];
   for (const word of aiWords) {
     const lemma = lex.lemmaOf(word) ?? word.toLowerCase();
-    if (!unit.has(lemma) || !inHeard.has(lemma) || out.includes(lemma))
-      continue;
-    out.push(lemma);
+    if (unit.has(lemma) && !wanted.includes(lemma)) wanted.push(lemma);
   }
-  return out;
+  if (wanted.length === 0) return [];
+  const exact: Lexicon = { ...lex, homophones: [] };
+  const overlaps = (a: readonly string[], b: ReadonlySet<string>) =>
+    a.some((key) => b.has(key));
+  // 인식 글의 낱말마다 글자 열쇠와 같은 소리 열쇠(낱말 수는 두 정규화가 같다 — 동음이의어는 낱말 하나를 하나로 바꾼다).
+  // 같은 소리 열쇠에는 들은 낱말의 대표 낱말에서 찾은 원형도 넣는다: 'through' → 대표 낱말 threw → 원형 throw(고치기 전에도 세어지던 꼴 —
+  // 13절 'C203 (1) · C217 보완 3' (3), 코드 검토 rev-content-1 fix 1 재검토 N-2)
+  const soundTokens = normalizeForMatch(heard, lex.homophones);
+  const tokens = normalizeForMatch(heard, []).map((token, at) => ({
+    exact: new Set(keysOfWord(token, exact)),
+    sound: new Set([
+      ...keysOfWord(token, lex),
+      ...keysOfWord(soundTokens[at] ?? token, lex),
+    ]),
+    used: false,
+  }));
+  const linked = new Set<string>();
+  // 띄어 쓴 단원 단어(여러 낱말)는 정규화한 낱말이 차례대로 이어질 때만 맞는다(낱말 하나만으로 맞지 않게)
+  const single: string[] = [];
+  for (const word of wanted) {
+    const words = normalizeForMatch(word, lex.homophones);
+    if (words.length <= 1) {
+      single.push(word);
+      continue;
+    }
+    for (let i = 0; i + words.length <= soundTokens.length; i++) {
+      if (words.every((w, j) => soundTokens[i + j] === w)) {
+        linked.add(word);
+        break;
+      }
+    }
+  }
+  const link = (by: "exact" | "sound") => {
+    for (const word of single) {
+      if (linked.has(word)) continue;
+      const keys = keysOfWord(word, by === "exact" ? exact : lex);
+      const token = tokens.find((t) => !t.used && overlaps(keys, t[by]));
+      if (token === undefined) continue;
+      token.used = true;
+      linked.add(word);
+    }
+  };
+  link("exact");
+  link("sound");
+  return wanted.filter((word) => linked.has(word));
 }
 
 /**

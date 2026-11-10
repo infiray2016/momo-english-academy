@@ -25,6 +25,7 @@ import type {
   ModelPricesFile,
   SettingRow,
   SettingsFile,
+  SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
   TalkMadeUpPhrasesFile,
@@ -90,6 +91,8 @@ export type ReferenceFiles = {
   talkMadeUpPhrases: TalkMadeUpPhrasesFile;
   /** 회화 다시 말할 차례의 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6). 검사는 같은 check-talk-lists. */
   talkShortLines: TalkShortLinesFile;
+  /** 회화 들은 글 귀띔의 소리가 가까운 낱말(C217 (1)). 검사는 같은 check-talk-lists. */
+  soundAlikes: SoundAlikesFile;
   /**
    * 문법 용어 목록(델타 spec 2026-10-29 설계 7, `GRAMMAR_TERMS_FILE`). 규격 파일 열(SEED_FILES) 밖의 선택 파일이라
    * 없어도 규격 파일 오류가 아니고, teach 가 있는 수업 칸만 '목록 없음'으로 막는다.
@@ -613,6 +616,10 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
       ...(files.vocab ? { lexicon } : {}),
       maxWordsAt: (level) =>
         levelSpecMap.get(`talk:${level}`)?.sentenceMaxWords,
+      // 소리가 가까운 낱말 검사: 표제어와 같은 회화 단원의 단원 단어는 가까운 낱말로 두지 않는다(C217 보완)
+      talkUnitWords: unitSpecs
+        .filter((u) => u.area === "talk")
+        .map((u) => u.words),
     }),
   );
 

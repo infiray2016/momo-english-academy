@@ -65,9 +65,12 @@ export const TALK_SITUATION_EXAMPLES = {
     "No problem. I will help, and then we go on.",
     "It's okay! Let's go on.",
   ],
-  /** 들리지 않음(못 들은 것을 소리 · 선생님 쪽 일로, spec 설계 1 [M-8]). */
+  /**
+   * 들리지 않음(못 들은 것을 소리 쪽 일로, spec 설계 1 [M-8]). 'my ears' 꼴은 두지 않는다(13절 C217 (3) — 요청자 iPad 수업 11-08 '뭐만하면
+   * oh my ear', 시드 상황 줄 · 짧은 말에서도 뺐다).
+   */
   nospeech: [
-    "Oops, my ears! Let's go on.",
+    "Oops, no sound! Let's go on.",
     "Hmm, the sound is not good. Let's go on.",
     "Sorry, I can't hear it well. Here is the answer.",
   ],

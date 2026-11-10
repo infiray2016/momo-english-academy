@@ -751,6 +751,8 @@ export const SEED_FILES = {
   talkMadeUpPhrases: "lists/talk-made-up-phrases.json",
   /** 회화 다시 말할 차례의 짧은 말(C213 · iPad 버리는 듣기 plan 정한 것 6). 빌드에 묶고 DB 에 넣지 않는다. */
   talkShortLines: "lists/talk-short-lines.json",
+  /** 회화 들은 글 귀띔의 소리가 가까운 낱말(C217 (1)). 빌드에 묶고 DB 에 넣지 않는다. */
+  soundAlikes: "lists/sound-alikes.json",
 } as const;
 export type SeedFileName = keyof typeof SEED_FILES;
 

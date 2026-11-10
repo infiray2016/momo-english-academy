@@ -16,6 +16,7 @@ import type { TalkLessonLine } from "@/server/conversation/lesson-turn";
 import { runTalkTurnRequest } from "@/server/conversation/turn";
 import type { Db } from "@/server/db";
 import { loadSeed } from "@/server/seed/load";
+import { seedHomophones } from "@/server/seed-lists";
 import { type FakeRule, messageBody } from "../fixtures/ai/fake-anthropic";
 import {
   DEV_SEED_AREAS,
@@ -342,6 +343,75 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     const quoted = (text: string) => JSON.stringify(text).slice(1, -1);
     expect(bodies[1]).toContain(quoted(child?.sentUserMessage ?? "?"));
     expect(bodies[1]).toContain(quoted(firstTeacher?.toriRewrite ?? "?"));
+  });
+
+  it("AC-15zi 같은 소리로 들린 한 낱말 답 턴은 아이 행의 사용자 메시지(talk_turns.sent_user_message)와 요청 본문에 'Heard hint' 줄이 들고, 동음이의어 묶음이 없으면 줄이 없다(서버 (6) 배선)", async () => {
+    const first = card.required[0];
+    const target = first?.targets[0];
+    if (!target) throw new Error("필수 1 의 노리는 단어가 없다");
+    // 실제 동음이의어 목록(seedHomophones)을 넣는다. 시험용 카드의 단원 단어는 실제 묶음에 없을 수 있어, 그 단어와 같은 소리인 낱말 하나를 묶음으로
+    // 앞에 더한다(앞 묶음이 이긴다 — 실제 묶음에 그 단어가 있어도 이 묶음으로 읽힌다)
+    const heard = `${target}zz`;
+    const groups = [[target, heard], ...seedHomophones()];
+    const say = async (
+      sessionId: string,
+      id: string,
+      homophones: () => string[][],
+    ) => {
+      await runTalkTurnRequest(
+        {
+          sessionId,
+          clientAttemptId: id,
+          input: { mode: "speech", text: `${heard}.` },
+          hint: { opened: 0, heard: [] },
+        },
+        {
+          ...h.deps(),
+          homophones,
+          write: () => {},
+          requestReceivedAt: h.clock.now,
+        },
+      );
+      const [row] = (
+        await db
+          .select()
+          .from(talkTurns)
+          .where(eq(talkTurns.sessionId, sessionId))
+      ).filter((r) => r.clientAttemptId === id);
+      if (!row) throw new Error("아이 행이 없다");
+      return row;
+    };
+    const line = `Heard hint (speech recognition may have misheard): '${heard}' may be the answer word '${target}' (same sound)`;
+    {
+      const { sessionId } = await sessionAtFirstQuestion();
+      const before = h.fake.requests.length;
+      h.fake.push(
+        turnRule({
+          tori_en: "Oh, nice! Do you like it?",
+          next_move: "follow_up",
+        }),
+      );
+      const child = await say(sessionId, "heard-hint-on", () => groups);
+      // 아이가 답하던 질문 자리(필수 1)의 노리는 단어와 같은 소리 → 아이 말 줄 바로 뒤 귀띔 한 줄
+      expect(child.sentUserMessage ?? "").toContain(
+        `Child: ${heard}.\n${line}\nInput: speech`,
+      );
+      const body = h.fake.requests.slice(before)[0]?.bodyText ?? "";
+      expect(body).toContain(JSON.stringify(line).slice(1, -1));
+    }
+    {
+      // 묶음이 비면(시험 기본 의존) 같은 말에 귀띔 줄이 없다 — 배선이 묶음을 읽는다
+      const { sessionId } = await sessionAtFirstQuestion();
+      h.fake.push(
+        turnRule({
+          tori_en: "Oh, nice! Do you like it?",
+          next_move: "follow_up",
+        }),
+      );
+      const child = await say(sessionId, "heard-hint-off", () => []);
+      expect(child.sentUserMessage).not.toBeNull();
+      expect(child.sentUserMessage ?? "").not.toContain("Heard hint");
+    }
   });
 
   it("AC-15b 1~3단계 회화 턴이 두 번 실패한 턴은 끊기지 않고 카드 안전한 대사(뜻 있음 — 대본 회차 r1 판정 I-3 (나))와 카드 자리의 카드 질문이 보인다('말했다' 없음)", async () => {

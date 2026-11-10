@@ -46,6 +46,7 @@ import type {
   Range,
   SettingRow,
   SettingsFile,
+  SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
   TalkLevelSpec,
@@ -954,6 +955,7 @@ export type ReferenceSet = {
   talkAllowedWords: TalkAllowedWordsFile;
   talkMadeUpPhrases: TalkMadeUpPhrasesFile;
   talkShortLines: TalkShortLinesFile;
+  soundAlikes: SoundAlikesFile;
 };
 
 /** 시제품 출처(seed/teachers.json 과 같은 꼴, 견본 값). */
@@ -1289,6 +1291,8 @@ export function referenceSet(
     teachers: teacherRoster(),
     ...talkAiScopeLists(),
     talkShortLines: talkShortLinesSample(),
+    // 소리가 가까운 낱말 견본(C217 (1)): 표제어는 견본 어휘의 원형, 가까운 낱말은 활용형 · 기능어 · 같은 소리 낱말이 아닌 것
+    soundAlikes: { words: [{ word: "like", alikes: ["lake", "bike"] }] },
   };
 }
 

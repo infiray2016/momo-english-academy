@@ -1,19 +1,29 @@
 // 회화 수업 질문 검사(3.3 '1~3단계 AI 질문 검사' · '같은 질문 되풀이 막기' · '1~3단계 소리 줄', 6.4, 회화 plan 정한 것 19 · 이름 절 3 · 4번 칸).
 // 숫자(같은 질문 상한)는 시험용 설정에서 읽는다.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   checkChoices,
   checkLowLevelQuestion,
   checkSoundLine,
+  childSameSoundWordsOf,
   type LowLevelLineOptions,
   questionKeyOf,
   questionsOfText,
   sameQuestionHit,
   turnQuestionOf,
 } from "@/core/conversation/question-check";
+import { HomophonesFileSchema } from "@/core/seed/schema/reference";
 import { testSettingValues } from "../fixtures/settings";
 
 const values = testSettingValues();
+/** 동음이의어 묶음은 시드 목록 그대로(서버 seedHomophones 와 같은 파일). */
+const HOMOPHONES = HomophonesFileSchema.parse(
+  JSON.parse(
+    readFileSync(join(process.cwd(), "seed/lists/homophones.json"), "utf8"),
+  ),
+).groups;
 const SAME_MAX = values["talk.same_question_max"] as number;
 const MAX_WORDS = 6;
 
@@ -222,6 +232,123 @@ describe("1~3단계 AI 질문 검사", () => {
         targets: ["soccer", "play"],
       }),
     ).toEqual({ ok: false, reason: "target_word", words: ["play"] });
+  });
+
+  it("13절 'C203 (1) · C217 보완 3' (2) 아이가 한두 낱말 말로 한 낱말의 같은 소리 낱말도 되묻기에 쓸 수 있다: 'See' 한 낱말 뒤의 sea 질문은 노리는 단어 걸림이 아니다", () => {
+    const sea: LowLevelLineOptions = {
+      ...options,
+      allowedWords: new Set([...options.allowedWords, "have", "two", "fish"]),
+      unitWords: ["sea", "see", "two", "high", "know"],
+      homophones: HOMOPHONES,
+    };
+    const saidAs = (childLines: string[]) => ({
+      ...sea,
+      childLines,
+      childWords: childLines.flatMap(
+        (line) => line.toLowerCase().match(/[a-z]+/g) ?? [],
+      ),
+    });
+    // 아이가 sea 라고 했는데 인식 글이 See 로 온 뒤: 'Do you like the sea?' 는 아이가 먼저 말한 낱말을 되묻는 질문이다
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["Fish.", "See"]),
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["See See"]),
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: true });
+    // 거꾸로도 같다(Sea 로 적힌 한 낱말 말 뒤의 see 질문)
+    expect(
+      checkLowLevelQuestion("What do you see?", {
+        ...saidAs(["Sea."]),
+        targets: ["see"],
+      }),
+    ).toEqual({ ok: true });
+    // 문장으로 한 말의 낱말은 넓히지 않는다: 'I can see' 는 sea 를 말한 근거가 아니다(고치기 전처럼 걸린다)
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["I can see"]),
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["sea"] });
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["I see a fish."]),
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["sea"] });
+    // 묶음이나 아이 말 줄을 주지 않으면 고치기 전 그대로 걸린다(4단계부터 · 옛 시험 · 소리 줄 검사)
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["See"]),
+        homophones: [],
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["sea"] });
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...sea,
+        childWords: ["see"],
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["sea"] });
+    // 선생님이 먼저 말하는 단원 단어는 계속 막는다(아이가 그 낱말도, 같은 소리 낱말도 말한 적이 없다)
+    expect(
+      checkLowLevelQuestion("Do you like the sea?", {
+        ...saidAs(["Yes.", "I like fish."]),
+        targets: ["sea"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["sea"] });
+    // 'I go to school.' 은 two 를 말한 것이 아니다(문장 말)
+    expect(
+      checkLowLevelQuestion("Do you have two fish?", {
+        ...saidAs(["I go to school."]),
+        targets: ["two"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["two"] });
+    // 한두 낱말 말이어도 기능어 · 인사 · 맞장구 말은 넓히지 않는다('Me too.' 는 two 를, 'Hi!' 는 high 를, 'No.' 는 know 를 말한 것이 아니다)
+    expect(
+      checkLowLevelQuestion("Do you have two fish?", {
+        ...saidAs(["Me too.", "To"]),
+        targets: ["two"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["two"] });
+    expect(
+      checkLowLevelQuestion("Is it high?", {
+        ...saidAs(["Hi!"]),
+        allowedWords: new Set([...sea.allowedWords, "is", "it"]),
+        targets: ["high"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["high"] });
+    expect(
+      checkLowLevelQuestion("Do you know it?", {
+        ...saidAs(["No."]),
+        targets: ["know"],
+      }),
+    ).toEqual({ ok: false, reason: "target_word", words: ["know"] });
+  });
+
+  it("13절 'C203 (1) · C217 보완 3' (2) 같은 소리 낱말은 한두 낱말 말에서만 내고, 노리는 단어 걸림만 풀며 어휘 범위는 넓히지 않는다(범위 밖 낱말은 그대로 걸린다)", () => {
+    expect(
+      childSameSoundWordsOf(["See", "Meet you", "To", "I can see"], HOMOPHONES),
+    ).toEqual(["sea", "meat"]);
+    // 세 낱말부터는 내지 않는다(들은 글 귀띔이 같은 소리 귀띔을 한두 낱말 말에만 내는 것과 같은 기준)
+    expect(childSameSoundWordsOf(["I can see"], HOMOPHONES)).toEqual([]);
+    expect(childSameSoundWordsOf(["See"], [])).toEqual([]);
+    // meat 은 단원 단어도 단계 범위 낱말도 아니다 — 아이가 Meet 이라고 했어도 범위 밖이다
+    expect(
+      checkLowLevelQuestion("Do you like meat?", {
+        ...options,
+        homophones: HOMOPHONES,
+        childWords: ["meet"],
+        childLines: ["Meet"],
+        targets: [],
+      }),
+    ).toEqual({ ok: false, reason: "offband", words: ["meat"] });
   });
 
   it("AC-15b 문장 길이 상한을 넘으면 걸린다", () => {

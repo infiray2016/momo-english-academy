@@ -12,6 +12,8 @@ import {
   HomophonesFileSchema,
   ListFormsFileSchema,
   MetaSentencesFileSchema,
+  type SoundAlikesFile,
+  SoundAlikesFileSchema,
   type TalkAllowedWordsFile,
   TalkAllowedWordsFileSchema,
   type TalkCueLinesFile,
@@ -54,6 +56,7 @@ const LIST_SCHEMAS = {
   talkAllowedWords: TalkAllowedWordsFileSchema,
   talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
   talkShortLines: TalkShortLinesFileSchema,
+  soundAlikes: SoundAlikesFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;
@@ -255,6 +258,16 @@ export function seedTalkShortLines(
       recordOf(TALK_SHORT_PLACES, () => recordOf(TALK_SHORT_BANDS, () => [])),
     opts,
   );
+}
+
+/**
+ * 소리가 가까운 낱말 목록(C217 (1) — 회화 들은 글 귀띔, core/conversation/heard-hint): 표제어와 그 낱말로 잘못 들리는 낱말들. 없으면 빈 목록이다
+ * (귀띔은 동음이의어 · 답 틀만 남는다).
+ */
+export function seedSoundAlikes(
+  opts: SeedListOptions = {},
+): SoundAlikesFile["words"] {
+  return [...seedListOrEmpty("soundAlikes", () => ({ words: [] }), opts).words];
 }
 
 /** 그 단계 구간의 짧은 말(회화 화면 자료 talkShortLines — 화면이 자리마다 고른다). 목록이 없으면 자리마다 빈 목록이다. */

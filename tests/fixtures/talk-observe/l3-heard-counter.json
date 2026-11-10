@@ -1,0 +1,253 @@
+{
+  "name": "l3-heard-counter",
+  "title": "3단계 · 답 틀 귀띔의 반대 사례(닫힌 질문에 다른 낱말로 맞게 답한 말)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 6,
+  "teacher": "mina",
+  "replay": true,
+  "source": "코드 검토 task-rev-content-1-report I-1 의 반대 사례 셋(13절 C217 보완). 실제 수업 기록이 아니라 지어 깐 자리다: 인사 끝과 장면 여는 질문은 재생 대본(replay-lesson-1108)의 첫 차례 그대로이고, 그 뒤 선생님 질문 둘은 고정부가 권하는 닫힌 질문 꼴로 적었다.",
+  "note": "자리 재현(--anchored)으로 돌린다. 아이가 닫힌 질문에 답 예시와 다른 낱말로 맞게 답한 말(I can run · No, I like rice · I like dolphins)을 선생님이 답 예시 낱말(swim · fish · whales)로 뒤집지 않는지 본다. meant 의 word 는 아이가 실제로 한 말의 낱말이고 heardAs 는 답 예시 낱말이다 — 판정이 받음이면 아이 낱말을 따라간 것이고, 되풀이면 답 예시 낱말로 뒤집은 것이다(사람이 선생님 말을 함께 읽는다). 한 번이라도 뒤집으면 답 틀 갈래를 뺀다 — 2026-11-10 뒤집힘 1/7 로 뺐다(13절 'C203 (1) · C217 보완 3'). 지금은 세 말 모두 귀띔이 없어야 하고, 귀띔 없이도 뒤집지 않는지 본다.",
+  "steps": [
+    {
+      "say": "I am fine",
+      "lessonBefore": "Hi, {NAME}! How are you?",
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Good to hear! Let's start!",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "none",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          },
+          {
+            "text": "\nHot sun and cool water! Can you swim?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "first_question",
+              "next": "none",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": false,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": null
+          }
+        ]
+      }
+    },
+    {
+      "say": "I can run",
+      "lessonBefore": "Hot sun and cool water! Can you swim?",
+      "meant": {
+        "word": "run",
+        "heardAs": ["swim"],
+        "note": "반대 사례: 답 예시 Yes, I can swim. 과 틀이 같고 낱말만 다른 맞는 답(답 틀 갈래를 뺀 뒤 귀띔 없음)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Oh, you can run! Do you like fish?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Do you like fish?",
+              "hintKo": "물고기를 좋아하는지 말해 봐.",
+              "hints": ["Yes, I like fish."],
+              "answerExample": "Yes, I like fish."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "No, I like rice",
+      "lessonBefore": "Oh, you can run! Do you like fish?",
+      "meant": {
+        "word": "rice",
+        "heardAs": ["fish"],
+        "note": "반대 사례: 반대 답(No ↔ Yes)이라 귀띔이 없어야 한다"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Yum, rice! Do you like whales?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Do you like whales?",
+              "hintKo": "고래를 좋아하는지 말해 봐.",
+              "hints": ["Yes, I like whales."],
+              "answerExample": "Yes, I like whales."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "say": "I like dolphins",
+      "lessonBefore": "Yum, rice! Do you like whales?",
+      "meant": {
+        "word": "dolphin",
+        "heardAs": ["whale"],
+        "note": "반대 사례: 대답 말 없이 다른 낱말을 댄 맞는 답(답 틀 갈래를 뺀 뒤 귀띔 없음)"
+      },
+      "anchor": {
+        "child": {
+          "stuck": false,
+          "hint": "none",
+          "hintTier": 0,
+          "heardHelp": "none",
+          "targets": []
+        },
+        "teachers": [
+          {
+            "text": "Wow, dolphins! Where do dolphins swim?",
+            "move": {
+              "v": 1,
+              "ai": "none",
+              "app": [],
+              "why": null,
+              "held": [],
+              "item": {
+                "no": 0,
+                "kind": "none"
+              },
+              "kind": "ai",
+              "next": "follow_up",
+              "cause": null,
+              "goals": [],
+              "intro": [],
+              "stage": 0,
+              "words": [],
+              "linked": [],
+              "streak": 0,
+              "suggest": {
+                "fit": true,
+                "asked": false,
+                "goals": [],
+                "topic": false
+              }
+            },
+            "aiQuestion": {
+              "en": "Where do dolphins swim?",
+              "hintKo": "돌고래가 사는 곳을 말해 봐.",
+              "hints": ["They swim in the sea."],
+              "answerExample": "They swim in the sea."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

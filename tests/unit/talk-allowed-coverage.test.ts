@@ -92,6 +92,15 @@ function examplesOf(m: Materials): Example[] {
     ...TALK_LOW_REACTION_EXAMPLES,
   ])
     out.push({ source: "고정부 짧은 반응 예", place: "together", en });
+  // 고정부 1~3단계 인사 반응 예(talk-lesson commonRules — 답 꼴별 예, 13절 C217 (3) · 코드 검토 rev-content-1 M-7: 예가 바뀌어도 넓이 시험이 보게)
+  for (const en of [
+    "Yay!",
+    "Me too!",
+    "Oh no!",
+    "It is okay.",
+    "Wow, a new bike!",
+  ])
+    out.push({ source: "고정부 짧은 반응 예", place: "greeting_end", en });
   // 정본 · spec 예(02-2:212 신호 말 · spec 설계 1 들리지 않음 · AC-1 (나))
   out.push(
     {
@@ -103,7 +112,8 @@ function examplesOf(m: Materials): Example[] {
     {
       source: "정본 · spec 예",
       place: "nospeech",
-      en: "Oops, my ears! Let's go on.",
+      // 들리지 않음 예는 소리 쪽 말이다('my ears' 꼴은 13절 C217 (3) 로 뺐다 — 시드 상황 줄과 같은 꼴)
+      en: "Oops, no sound! Let's go on.",
     },
     { source: "정본 · spec 예", place: "together", en: "That's okay!" },
   );

@@ -3,6 +3,8 @@
 // 따로 세며, '가르는 것' 넷의 자동 보조 셈을 적는다. --baseline 기준선 (가) 보고와 견준 표 · 기준 판정 · 기회 알림(--chance-alert)과 설계
 // 검토자가 읽을 차례 목록(걸린 차례 + 첫 바퀴 전문)을 만든다. 수치는 실측 · 검증 기준이고 선생님이 맞출 목표가 아니다(13절 C211 (2)).
 // 자동 셈은 사람 판정의 보조이고 사람 판정 칸은 비워 둔다(□).
+// 표 끝에는 실제 입력 지표 넷(못 알아들음 · 같은 꼴 반응 · 도움 차례 비율 · 카드 글 그대로 붙임 — 13절 C217 (4) · AC-15zl, 셈은
+// talk-replay-metrics)을 붙인다. 재생 대본(대본 칸 replay)은 차례별 선생님 말 표도 함께 낸다.
 // 사용: pnpm talk:metrics <보고 json> [--baseline <json>] [--chance-alert <0~1>] [--out <폴더>]
 import {
   existsSync,
@@ -38,6 +40,13 @@ import {
   readSeedFiles,
   type TurnRecord,
 } from "./talk-observe";
+import {
+  type CardLine,
+  cardLinesOf,
+  replayJson,
+  replayMarkdown,
+  replayMetricsOf,
+} from "./talk-replay-metrics";
 
 // ── 판정 상수(spec 설계 8 표의 잠정 기준 · 판정 단위 — 앱 설정값이 아니라 대본 도구의 판정 문턱) ──
 
@@ -180,6 +189,8 @@ export type MetricsKit = {
   sceneOpener: string | null;
   /** 카드 질문(필수 · 더 이야기할 거리 · 장면 여는 질문 · 그 쉬운 질문, 정규화)과 답 예시. */
   cardItems: readonly CardItemText[];
+  /** 카드 필수 질문 · 더 이야기할 거리 글의 문장(장면 문장 · 질문 문장 — 실제 입력 지표 (라) '카드 글 그대로 붙임', AC-15zl). */
+  cardLines: readonly CardLine[];
   /** 자기 이야기 빈도 참고값(talk.self_line_every_turns — 대본 덮음 › 설정 파일, 없으면 null). */
   selfLineEvery: number | null;
 };
@@ -367,6 +378,7 @@ export function kitOf(
       ? normalizeSpoken(card.sceneOpener.question.en)
       : null,
     cardItems: cardItemsOf(card),
+    cardLines: cardLinesOf(card),
     selfLineEvery: typeof every === "number" && every > 0 ? every : null,
   };
 }
@@ -1764,13 +1776,21 @@ export function metricsFilesOf({
   markdown: string;
   json: string;
   review: string;
-  metrics: ReturnType<typeof metricsJson>;
+  metrics: ReturnType<typeof metricsJson> & {
+    replay: ReturnType<typeof replayJson>;
+  };
 } {
   const now = metricsOf(json, kitFor);
   const base = baseline ? metricsOf(baseline, kitFor) : null;
-  const metrics = metricsJson(now, base, meta);
+  // 실제 입력 지표 넷(AC-15zl): 같은 보고 · 같은 재료로 따로 세어 표 끝에 붙인다(앞 지표의 셈 · 판정 줄은 그대로)
+  const replayNow = replayMetricsOf(json.runs, kitFor);
+  const replayBase = baseline ? replayMetricsOf(baseline.runs, kitFor) : null;
+  const metrics = {
+    ...metricsJson(now, base, meta),
+    replay: replayJson(replayNow, replayBase),
+  };
   return {
-    markdown: metricsMarkdown(now, base, meta),
+    markdown: `${metricsMarkdown(now, base, meta)}\n${replayMarkdown(replayNow, replayBase)}`,
     json: `${JSON.stringify(metrics, null, 2)}\n`,
     review: reviewMarkdown(now, meta),
     metrics,

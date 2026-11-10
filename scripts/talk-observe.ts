@@ -1,6 +1,6 @@
 // 회화 수업 실호출 표본 평가 명령(회화 plan 묶음 13 · AC-15o · 9절 실시간 호출 표본 평가의 회화 몫, 컨트롤러 T-131 로 앞당김).
 // 사용: pnpm talk:observe [--yes] [--script <이름>] [--level <단계>] [--effort low|medium] [--rounds <n>] [--set <키>=<값> …]
-//        [--baseline <json>] [--out <폴더>]
+//        [--baseline <json>] [--out <폴더>] [--anchored]
 // --yes 가 없으면 대본 · 아이 차례 수 · 예상 호출 · 예상 비용만 출력하고 부르지 않는다(종료 0). 설정 파일은 바꾸지 않는다.
 // 설정값은 설정 파일 → 대본 칸 settings(그 대본만) → --effort → --set(명령 전체) 차례로 메모리에서만 덮는다('AI 몫 넓힘' plan 묶음 4-가).
 // --rounds 는 대본마다 같은 대화를 n 바퀴 돌리고, --baseline 은 기준선 보고 경로를 보고에 적기만 한다(지표 셈 · 견줌은 묶음 4-나 talk-metrics).
@@ -12,6 +12,11 @@
 // core 함수로 잇는다. 사본이 서버와 같은 답을 내는지는 tests/unit/talk-observe-parity.test.ts 가 본다(plan 위험 4 — 짝이 다르면 대본을 돌리지 않는다).
 // 아이 말은 대본의 글(인식 결과 흉내)이다. 보고는 턴마다 선생님 말 · 뜻 · 소리 줄 · 갈래 · 카드 자리 까닭 · 되돌림 · 같은 질문 ·
 // 사람 판정 칸 · 토큰 · 첫 문장 시간 · 비용과, 끝에 대본의 설계 예시 · 기대 옆에 실제를 둔 '나란히' 표다.
+// 재생 대본(대본 칸 replay — 13절 C217 (4) · AC-15zl): 실제 수업의 아이 입력(들은 글 · 단추 · 누른 힌트 수)을 그대로 넣는 고정 입력 재생이다.
+// 차례 칸 meant(기대 낱말 · 잘못 들린 낱말) · lessonBefore(실제 수업의 앞 선생님 말)는 보고에 그대로 실려 지표 넷(talk-replay-metrics)이 읽는다.
+// 자리 재현(--anchored — 13절 C217 (4)): 재생 대본의 차례 칸 anchor(실제 수업의 아이 행 칸 · 그 뒤 선생님 행)로, 아이 차례마다 그 차례 바로 앞까지의
+// 실제 기록을 메모리 상태로 깔고 그 입력 하나에 대한 선생님 다음 차례만 새로 받는다(말 차례만 부른다). 새 응답은 다음 차례로 잇지 않는다 —
+// 고정 입력 재생의 어긋남이 없다. 보고 파일 이름 끝에 -anchored 를 붙인다.
 // 순수 함수를 내보내고 네트워크 · 파일 쓰기는 직접 실행될 때만 한다. src/server 를 가져오지 않는다. 키 값은 출력하지 않는다.
 import {
   existsSync,
@@ -44,12 +49,16 @@ import {
   type TalkLessonRules,
   type TalkTeacher,
   talkCallTurnOf,
+  talkCardChainKeysOf,
+  talkEasyAiSlotOf,
   talkLessonCheckFields,
   talkLessonContextDelta,
   talkLessonInvalidReasonOf,
   talkLessonRewriteOf,
   talkLessonTurnSpec,
   talkLessonUserMessage,
+  talkLineOptionsOf,
+  talkTurnWiringOf,
 } from "../src/core/ai/calls/talk-lesson";
 import { requestConfigOf, settingKeysOf } from "../src/core/ai/combo";
 import {
@@ -79,6 +88,7 @@ import {
   isSoundCue as isSoundCueOf,
   seedCuePhrasesOf,
 } from "../src/core/conversation/cue-line";
+import type { SoundAlikeEntry } from "../src/core/conversation/heard-hint";
 import {
   type AiHints,
   type HintTier,
@@ -90,7 +100,6 @@ import {
   openedTierCount,
 } from "../src/core/conversation/hints";
 import {
-  childAnsweredRequiredOf,
   childLinesOf,
   type LateCardRow,
   type LessonArgs,
@@ -104,9 +113,9 @@ import {
   type TeacherTurnPlan,
   talkLessonPositionOf,
   teacherMoveOf,
-  teacherTurnPlansOf,
 } from "../src/core/conversation/lesson-flow";
 import {
+  TALK_HEARD_HELPS,
   TALK_HINT_KINDS,
   type TalkHeardHelp,
   type TalkHintKind,
@@ -122,12 +131,14 @@ import {
   TALK_SUPPORT_STAGE_EASY,
   type TalkAppHelp,
   type TalkMove,
+  TalkMoveSchema,
   type TalkSlotWhy,
   talkMoveOf,
 } from "../src/core/conversation/move";
 import {
   cardQuestionKeyOf,
   checkLowLevelQuestion,
+  type EasySlotCheck,
   type LowLevelLineOptions,
   questionEchoesChild,
   questionKeyOf,
@@ -157,6 +168,7 @@ import {
 } from "../src/core/conversation/situation";
 import {
   type AppendLine,
+  cardLineWithoutSaidOf,
   normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
@@ -170,9 +182,11 @@ import {
 } from "../src/core/conversation/stream";
 import {
   ForbiddenFileSchema,
+  HomophonesFileSchema,
   LevelSpecsFileSchema,
   ListFormsFileSchema,
   MetaSentencesFileSchema,
+  SoundAlikesFileSchema,
   type TalkAllowedWordsFile,
   TalkAllowedWordsFileSchema,
   type TalkCueLinesFile,
@@ -260,6 +274,8 @@ export type TalkObserveArgs = {
   baseline: string | null;
   /** 다룬 필수 질문 수가 기준선 × 이 값 아래인 대본에 알림(판정이 아님, spec N-3 · 0 초과 1 이하). */
   chanceAlert: number;
+  /** 자리 재현 모드(--anchored — 준 때에만 칸이 있다). 재생 대본(차례 칸 anchor)만 돌린다. */
+  anchored?: true;
 };
 
 /** --set 의 값 글 → 값: true · false 는 참거짓, 십진 수는 수, 그 밖은 글 그대로(on · off · low 꼴). */
@@ -305,6 +321,10 @@ export function parseArgs(
     const value = argv[i + 1];
     if (arg === "--yes") {
       args.yes = true;
+      continue;
+    }
+    if (arg === "--anchored") {
+      args.anchored = true;
       continue;
     }
     if (
@@ -389,6 +409,49 @@ const ExpectSchema = z.strictObject({
   recastWord: z.string().min(1).optional(),
 }) as z.ZodType<Partial<Record<JudgeKey, boolean>> & { recastWord?: string }>;
 
+const MeantSchema = z.strictObject({
+  /** 아이가 하려던 말의 낱말(선생님이 이 낱말로 받아야 알아들은 것). */
+  word: z.string().trim().min(1),
+  /** 들은 글에서 잘못 들린 낱말(선생님이 이 낱말을 되풀이하면 못 알아들은 것). */
+  heardAs: z.array(z.string().trim().min(1)).min(1),
+  /** 근거 한 줄(사람이 읽는 글 — 확인된 것인지 추정인지). */
+  note: z.string().optional(),
+});
+/** 재생 대본의 기대 낱말 주석(보고 칸 · 지표가 읽는 꼴). */
+export type ObserveMeant = z.infer<typeof MeantSchema>;
+
+/**
+ * 자리 재현 재료(실제 수업 기록의 칸 그대로 — 13절 C217 (4)). child 는 그 아이 행의 칸(막힘 말로 저장됐는가 stuck_phrase · 힌트 종류 · 단 ·
+ * 들은 도움 · 노린 단어), teachers 는 그 입력 뒤 다음 아이 차례 앞까지의 선생님 행(응답 한 행과 뒤따른 앱 차례 — 화면 글 · move · AI 질문 힌트)이다.
+ */
+const AnchorSchema = z.strictObject({
+  child: z.strictObject({
+    stuck: z.boolean(),
+    hint: z.enum(TALK_HINT_KINDS),
+    hintTier: z.int().min(0),
+    heardHelp: z.enum(TALK_HEARD_HELPS),
+    targets: z.array(z.string()),
+  }),
+  teachers: z
+    .array(
+      z.strictObject({
+        text: z.string(),
+        move: TalkMoveSchema,
+        aiQuestion: z
+          .strictObject({
+            en: z.string(),
+            hintKo: z.string(),
+            hints: z.array(z.string()),
+            answerExample: z.string(),
+            usable: z.array(z.string()).optional(),
+          })
+          .nullable(),
+      }),
+    )
+    .min(1),
+});
+export type ObserveAnchor = z.infer<typeof AnchorSchema>;
+
 const StepSchema = z
   .strictObject({
     /** 아이 말(인식 결과 흉내). */
@@ -402,9 +465,21 @@ const StepSchema = z
     design: z.string().optional(),
     note: z.string().optional(),
     expect: ExpectSchema.optional(),
+    /**
+     * 재생 대본의 주석(13절 C217 (4) · AC-15zl): 들은 글이 아이가 하려던 말과 다를 때 그 기대 낱말(word)과 잘못 들린 낱말(heardAs).
+     * 'See' = sea 면 { word: "sea", heardAs: ["see"] }. 지표 '못 알아들음'이 읽는다(talk-replay-metrics) — 흐름 · 요청에는 닿지 않는다.
+     */
+    meant: MeantSchema.optional(),
+    /** 재생 대본: 실제 수업에서 이 입력 바로 앞에 선생님이 한 말(〈 〉 는 소리 줄). 고정 입력 재생이 어긋난 차례를 가르는 재료다. */
+    lessonBefore: z.string().trim().min(1).optional(),
+    /** 재생 대본: 자리 재현(--anchored) 재료. 고정 입력 재생은 읽지 않는다. */
+    anchor: AnchorSchema.optional(),
   })
   .refine((s) => (s.say === undefined) !== (s.input === undefined), {
     message: "차례마다 say 와 input 가운데 하나만 둔다",
+  })
+  .refine((s) => s.meant === undefined || s.say !== undefined, {
+    message: "기대 낱말 주석(meant)은 말 차례(say)에만 둔다",
   });
 export type ObserveStep = z.infer<typeof StepSchema>;
 
@@ -417,6 +492,11 @@ const ScriptSchema = z.strictObject({
   teacher: z.string().min(1),
   source: z.string().optional(),
   note: z.string().optional(),
+  /**
+   * 고정 입력 재생 대본(13절 C217 (4)): 실제 수업의 아이 입력(들은 글 · 단추 · 누른 힌트 수)을 차례대로 그대로 넣는다. 선생님 말이 실제 수업과
+   * 달라지면 뒤 입력이 그 질문과 어긋날 수 있으므로 계획 줄 · 보고 · 지표 표에 '고정 입력 재생'을 밝힌다.
+   */
+  replay: z.boolean().optional(),
   /** 짧은 준비에서 인식 실패로 건너뛴 낱말(보고에만 — 서버도 보인 낱말 전부를 만난 것으로 넘긴다, 분석 A9). */
   prep: z.strictObject({ skipped: z.array(z.string()) }).optional(),
   /** 지난 대화 요약(최근 것부터 — 서버 summariesBefore 흉내, talk.memory_summaries 줄까지 넘긴다). 둘째 세션 꼴 대본(설계 7). */
@@ -481,6 +561,12 @@ export type SeedFiles = {
   talkSituationLines?: unknown;
   talkAllowedWords?: unknown;
   talkMadeUpPhrases?: unknown;
+  /**
+   * 동음이의어 묶음 · 소리가 가까운 낱말 목록(13절 C217 (1) — 서버 seedHomophones · seedSoundAlikes 와 같은 파일). 파일이 없으면 null 이고 빈
+   * 목록으로 본다. 칸이 없으면(옛 시험 재료) 빈 목록이다.
+   */
+  homophones?: unknown;
+  soundAlikes?: unknown;
 };
 
 /** 회화 1~3단계 시드 목록 넷(서버 lesson-turn.ts LessonTalkLists 와 같은 꼴). */
@@ -490,6 +576,23 @@ export type ObserveTalkLists = {
   allowed: TalkAllowedWordsFile;
   madeUp: readonly string[];
 };
+
+/** 시드 목록 파일을 읽었는가(없으면 null · 칸이 없으면 undefined — 둘 다 빈 목록으로 본다). */
+const hasList = (raw: unknown) => raw !== undefined && raw !== null;
+
+/**
+ * 받침 둘째의 AI 질문 자리면 질문 검사 재료(그 응답에 남은 고르기 답 수), 아니면 undefined(서버 lesson-turn.ts lessonEasySlotOf 사본 — 13절
+ * C217 (2) (ㄴ), 끝 처리와 질문 다시 쓰기가 같이 쓴다). 자리 판정은 core talkEasyAiSlotOf.
+ */
+export function observeEasySlotOf(
+  chosen: Pick<TeacherTurnPlan, "kind" | "aiAsks" | "stage">,
+  value: Pick<TalkLessonOutput, "choices">,
+  low: boolean,
+): EasySlotCheck | undefined {
+  return talkEasyAiSlotOf(chosen, low)
+    ? { choices: value.choices.length }
+    : undefined;
+}
 
 const recordOf = <K extends string, V>(keys: readonly K[], value: () => V) =>
   Object.fromEntries(keys.map((key) => [key, value()])) as Record<K, V>;
@@ -504,7 +607,7 @@ export function talkListsOf(
     | "talkMadeUpPhrases"
   >,
 ): ObserveTalkLists {
-  const has = (raw: unknown) => raw !== undefined && raw !== null;
+  const has = hasList;
   return {
     cue: has(files.talkCueLines)
       ? TalkCueLinesFileSchema.parse(files.talkCueLines)
@@ -545,6 +648,13 @@ export type Materials = {
   metaPhrases: readonly string[];
   /** 회화 1~3단계 시드 목록 넷(4단계부터는 읽지 않는다 — 서버 lists 가 low 일 때만인 것과 같다). */
   talkLists: ObserveTalkLists;
+  /**
+   * 동음이의어 묶음(시드 lists/homophones.json — 서버 seedHomophones). 1~3단계의 먼저 답한 필수 질문 · 들은 글 귀띔 · 막힘 무름이 같은 묶음을
+   * 쓴다(13절 C217 (1)). 파일이 없으면 빈 묶음이다.
+   */
+  homophones: readonly (readonly string[])[];
+  /** 소리가 가까운 낱말 목록(시드 lists/sound-alikes.json — 서버 seedSoundAlikes, 들은 글 귀띔). 파일이 없으면 빈 목록이다. */
+  soundAlikes: readonly SoundAlikeEntry[];
   /** 기능어(어휘 시드의 기능어 표시, 소문자 — 서버 readFunctionWords 와 같이 모든 단계). 상황 차례 답 글 검사가 쓴다. */
   functionWords: ReadonlySet<string>;
   /** 허용 낱말 대조의 모든 단계 원형 찾기(서버 readAllowedLemmaOf 와 같은 core allowedLemmaOfVocab — 모든 단계 어휘 행 · 허용 낱말). */
@@ -671,6 +781,12 @@ export function materialsOf(
       forbidden: ForbiddenFileSchema.parse(files.forbidden),
       metaPhrases: MetaSentencesFileSchema.parse(files.meta).phrases,
       talkLists,
+      homophones: hasList(files.homophones)
+        ? HomophonesFileSchema.parse(files.homophones).groups
+        : [],
+      soundAlikes: hasList(files.soundAlikes)
+        ? SoundAlikesFileSchema.parse(files.soundAlikes).words
+        : [],
       allowedLemmaOf: allowedLemmaOfVocab(allVocab, talkLists.allowed.allowed),
       functionWords: new Set(
         allVocab
@@ -972,6 +1088,20 @@ export type TurnRecord = {
   /** 기술 오류 자리(설계 8 — 지표 분자 · 분모에서 빼고 따로 센다). 정상 차례는 null. */
   techError: TechErrorMark | null;
   design: string | null;
+  /** 재생 대본의 기대 낱말 주석(대본 칸 그대로 — 주석이 있는 차례에만, 지표 '못 알아들음'의 재료). */
+  meant?: ObserveMeant;
+  /** 재생 대본: 실제 수업에서 이 입력 바로 앞에 선생님이 한 말(대본 칸 그대로 — 있는 차례에만). */
+  lessonBefore?: string;
+  /**
+   * 자리 재현으로 받은 차례(--anchored — 그 차례에만 칸이 있다): 앞 상태가 실제 수업 기록이다. lessonAfter 는 실제 수업에서 그 입력 뒤 선생님이
+   * 한 말(화면 글), prevFirstWord 는 기록에서 이 차례 앞의 가장 가까운 AI 반응(대화 토막 · 받침 아님)의 첫 낱말이다(없으면 null — 지표 (나)가
+   * 새 응답의 첫 낱말과 견준다). check 는 깐 상태 대조(도구가 그 자리에서 셈한 값이 기록과 다른 칸 이름 — 같으면 빈 목록).
+   */
+  anchored?: {
+    lessonAfter: string;
+    prevFirstWord: string | null;
+    check: string[];
+  };
   /** 정규화 · 검사 뒤 AI 출력(JSON 보고에만). */
   output: TalkLessonOutput | null;
   /** 이 턴의 사용자 메시지(JSON 보고에만 — 앞 턴 전문 재료). */
@@ -1045,7 +1175,10 @@ function toAppend(line: TeacherAttachLine): AppendLine | null {
   return null;
 }
 
-/** 겹침 없애기(서버 shownAttachOf 사본, C125 (3)). */
+/**
+ * 겹침 없애기(서버 shownAttachOf 사본, C125 (3)). 남은 카드 질문 줄에서는 선생님 문장에 이미 든 앞 문장(카드의 장면 문장)을 뺀다(서버와 같은 core
+ * 함수 cardLineWithoutSaidOf — 13절 C217 보완).
+ */
 function shownAttachOf(
   kept: readonly string[],
   attach: readonly TeacherAttachLine[],
@@ -1055,16 +1188,18 @@ function shownAttachOf(
     return a ? [a] : [];
   });
   const left = [...shownTurnOf(kept, text).append];
-  return attach.filter((l) => {
-    const a = toAppend(l);
-    if (!a) return true;
-    const at = left.findIndex(
-      (s) => s.kind === a.kind && "en" in s && s.en === l.en,
-    );
-    if (at < 0) return false;
-    left.splice(at, 1);
-    return true;
-  });
+  return attach
+    .filter((l) => {
+      const a = toAppend(l);
+      if (!a) return true;
+      const at = left.findIndex(
+        (s) => s.kind === a.kind && "en" in s && s.en === l.en,
+      );
+      if (at < 0) return false;
+      left.splice(at, 1);
+      return true;
+    })
+    .map((l) => (l.kind === "question" ? cardLineWithoutSaidOf(kept, l) : l));
 }
 
 function questionLineOf(
@@ -1669,11 +1804,14 @@ export function settleTurn({
     else if (lineOptions === null) fail = "question_check";
     else {
       const options = lineOptions;
+      // 받침 둘째의 AI 질문 자리는 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 받는다(서버와 같음 — 13절 C217 (2) (ㄴ), 다시 쓰기와 같은 판정)
+      const easySlot = observeEasySlotOf(chosen, value, low);
       const ranged = heldQuestions.every(
         (q) =>
           checkLowLevelQuestion(q.en, {
             ...options,
             targets: value.next_targets,
+            easySlot,
           }).ok,
       );
       const same = sameQuestionKeyHit({
@@ -2232,8 +2370,23 @@ export function judgeOf({
   ) as Record<JudgeKey, JudgeCell>;
 }
 
+/** 메모리 대화의 이어받을 상태(자리 재현 — snapshot 이 내고 createTalkSim 의 seed 가 받는다). */
+export type SimSeed = {
+  rows: SimRow[];
+  segment: LessonArgs["segment"];
+  prepWords: string[];
+  prevContext: TalkLessonContext | null;
+};
+
 export type TalkSim = {
   readonly rows: readonly SimRow[];
+  /** 지금 상태의 사본(자리 재현 — 이 상태에서 한 차례만 새로 받을 대화를 따로 만든다). */
+  snapshot(): SimSeed;
+  /**
+   * 자리 재현: 준비한 차례의 아이 행과 실제 수업 기록의 선생님 행(anchor)을 AI 를 부르지 않고 깐다. 아이 행의 사용자 메시지는 이 코드가 그
+   * 자리에서 만든 것이다(기록에 sent_user_message 가 없다 — 앞 턴 전문 재료).
+   */
+  lay(prepared: PreparedTurn, anchor: ObserveAnchor): void;
   /** 다음 대본 차례를 부를 준비. 흐름이 AI 를 부르지 않는 자리(마무리 고르기 · 닫힘 등)면 멈춘 까닭. */
   prepare(
     step: ObserveStep,
@@ -2305,20 +2458,26 @@ export function createTalkSim(
     summaries?: readonly string[];
     /** 상황 줄 · 예 돌림에 섞는 대화마다 다른 값(서버 세션 id 자리 — 대본 이름 · 바퀴, 판정 r1 M-6). 없으면 턴 번호 그대로. */
     rotationKey?: string;
+    /** 이어받을 메모리 상태(자리 재현 — 다른 대화의 snapshot). 주면 앱 첫 차례를 다시 더하지 않는다. */
+    seed?: SimSeed;
   } = {},
 ): TalkSim {
   const rotationKey = options.rotationKey ?? "";
   const { card, spec, level } = materials;
   const band = bandOf(level);
   const low = isLowBandLevel(level);
+  // 동음이의어 묶음(서버와 같이 1~3단계만 — 4단계부터는 빈 묶음)
+  const homophones = low ? materials.homophones : [];
   const settings = talkLessonSettingsFrom((k) => values[k], band);
   const rules = talkLessonTurnSpec.rulesOf(values, {
     level,
   } as TalkLessonInput);
   const reqConfig = requestConfigOf({ purpose: PURPOSE, level, values, book });
-  const rows: SimRow[] = [];
-  let segment: LessonArgs["segment"] = "greeting";
-  let prepWords: string[] = [];
+  const rows: SimRow[] = options.seed
+    ? options.seed.rows.map((row) => ({ ...row }))
+    : [];
+  let segment: LessonArgs["segment"] = options.seed?.segment ?? "greeting";
+  let prepWords: string[] = [...(options.seed?.prepWords ?? [])];
   // 처음 스냅숏의 짧은 준비 계획(서버 index.ts talk-start prepPlan — 늘 모드만, 새 아이라 '안다' · 이월 없음)
   const prepPlan =
     settings.prepMode === "always"
@@ -2330,7 +2489,7 @@ export function createTalkSim(
           count: settings.prepWords,
         })
       : [];
-  let prevContext: TalkLessonContext | null = null;
+  let prevContext: TalkLessonContext | null = options.seed?.prevContext ?? null;
   const summaries = summariesOf(options.summaries ?? [], values);
 
   const lightTurns = () => rows.map(lightOf);
@@ -2371,7 +2530,7 @@ export function createTalkSim(
       added.push(text.trim());
     }
   };
-  appendAppTurns();
+  if (!options.seed) appendAppTurns();
 
   const historyOf = () =>
     rows.flatMap((child) => {
@@ -2424,16 +2583,23 @@ export function createTalkSim(
       missionsDone: [],
     };
   };
-  const lineOptionsOf = (words: string[]): LowLevelLineOptions => ({
-    sentenceMaxWords: materials.ctx.sentenceMaxWords,
-    allowedWords: materials.allowedWords,
-    unitWords: materials.ctx.unitWords,
-    childWords: words,
-    teacherName: materials.teacher.nameEn,
-    lemmaOf: materials.lemmaOf,
-    forms: materials.forms,
-    allowedForms: materials.allowedForms,
-  });
+  // 서버 lineOptionsOf 와 같은 core 함수(talkLineOptionsOf) — 1~3단계는 호출 입력과 같은 동음이의어 묶음을 넘겨, 노리는 단어 검사가 아이가 한두
+  // 낱말 말로 한 낱말의 같은 소리 낱말까지 본다(13절 'C203 (1) · C217 보완 3' (2))
+  const lineOptionsOf = (words: string[]): LowLevelLineOptions =>
+    talkLineOptionsOf({
+      sentenceMaxWords: materials.ctx.sentenceMaxWords,
+      unitWords: materials.ctx.unitWords,
+      teacher: materials.teacher,
+      lineRange: {
+        allowedWords: materials.allowedWords,
+        forms: materials.forms,
+        allowedForms: materials.allowedForms,
+        childWords: words,
+        reaskWords: [],
+      },
+      lemmaOf: materials.lemmaOf,
+      ...(low ? { homophones } : {}),
+    });
   /** 늦은 카드 답 판정 재료(서버 lateCardRowsOf 사본 — 선생님 행 move · 아이 행 인식 글). */
   const lateRowsNow = (): LateCardRow[] =>
     rows.map(
@@ -2610,6 +2776,73 @@ export function createTalkSim(
 
   return {
     rows,
+    snapshot() {
+      return {
+        rows: rows.map((row) => ({ ...row })),
+        segment,
+        prepWords: [...prepWords],
+        prevContext,
+      };
+    },
+    lay(p, anchor) {
+      const turnNo = lastTori()?.turnNo ?? 0;
+      rows.push({
+        speaker: "child",
+        turnNo,
+        segment: p.segment === "greeting_end" ? "greeting" : p.segment,
+        text: p.childText,
+        input: p.mode,
+        nospeech: p.nospeech,
+        stuck: anchor.child.stuck,
+        targets: [...anchor.child.targets],
+        sentUserMessage: p.userMessage,
+      });
+      anchor.teachers.forEach((t, i) => {
+        const [first = "", ...attached] = t.text.split("\n");
+        rows.push({
+          speaker: "tori",
+          turnNo: turnNo + 1 + i,
+          text: t.text,
+          // 기록에 다시 쓴 글(tori_rewrite)이 없어 화면 글 · 소리 줄로 같은 꼴을 만든다(talkLessonRewriteOf — 소리 줄은 붙인 줄 앞)
+          rewrite: talkLessonRewriteOf({
+            sentSentences: splitSentences(first),
+            sound: {
+              ...(t.move.sound?.model !== undefined
+                ? { modelLine: t.move.sound.model }
+                : {}),
+              ...(t.move.sound?.choices !== undefined
+                ? { choices: t.move.sound.choices }
+                : {}),
+            },
+            appended: [
+              ...(t.move.sound?.answer !== undefined
+                ? [t.move.sound.answer]
+                : []),
+              ...attached,
+            ],
+          }),
+          move: t.move,
+          // 서버 lessonTurnOf 와 같이 AI 질문의 답 예시(빈 글은 없음)
+          answerExample:
+            t.aiQuestion && t.aiQuestion.answerExample !== ""
+              ? t.aiQuestion.answerExample
+              : null,
+          aiQuestion: t.aiQuestion
+            ? {
+                en: t.aiQuestion.en,
+                hintKo: t.aiQuestion.hintKo,
+                hints: [...t.aiQuestion.hints],
+                usable: [...(t.aiQuestion.usable ?? [])],
+              }
+            : null,
+        });
+      });
+      prevContext = p.context;
+      if (p.segment === "greeting_end") {
+        segment = "talk";
+        prepWords = [...prepPlan];
+      }
+    },
     prepare(step, stepIndex) {
       const args = argsOf();
       const position = talkLessonPositionOf(args);
@@ -2635,29 +2868,21 @@ export function createTalkSim(
         nospeech,
         targets: [...(position.slot?.words ?? [])],
       };
-      // 아이가 먼저 답한 필수 질문은 남은 기회에서 뺀다(서버와 같이 1~3단계만 — 판정 r1 I-2)
+      // 알아듣기 재료 조립(서버 lessonTurnAfterChild (6) 과 같은 core 함수 talkTurnWiringOf — 코드 검토 rev-content-1 I-3): 동음이의어 묶음 ·
+      // 먼저 답한 필수 질문(1~3단계만 — 판정 r1 I-2, 따라 말한 · 고른 말은 뺌) · 차례 계획 둘 · 아이가 답하던 질문 자리 · 귀띔 재료
       const said = mode === "speech" ? masker(step.say ?? "").text : null;
-      const planArgs: LessonArgs = low
-        ? {
-            ...args,
-            childAnswered: childAnsweredRequiredOf({
-              required: card.required,
-              // 따라 말한 · 고른 아이 말은 '먼저 답함'에서 뺀다(서버와 같음 — 코드 검토 Minor 2)
-              childLines: childLinesOf(lateRowsNow(), said, true),
-              lemmaOf: materials.lemmaOf,
-            }),
-          }
-        : args;
-      const plans =
-        mode === "speech"
-          ? teacherTurnPlansOf(planArgs, lite)
-          : {
-              ifAnswered: nextTeacherTurnOf({
-                ...planArgs,
-                turns: [...planArgs.turns, lite],
-              }),
-              ifStuck: null,
-            };
+      const wiring = talkTurnWiringOf({
+        low,
+        args,
+        lite,
+        childText: said,
+        rows: lateRowsNow(),
+        card,
+        lemmaOf: materials.lemmaOf,
+        homophones,
+        soundAlikes: materials.soundAlikes,
+      });
+      const plans = wiring.plans;
       const { ifAnswered } = plans;
       if (!ifAnswered.callsAi || ifAnswered.kind === "none")
         return {
@@ -2703,6 +2928,9 @@ export function createTalkSim(
           (lastTori()?.turnNo ?? 0) + 1,
           rotationKey,
         ),
+        // 1~3단계 들은 글 귀띔(13절 C217 (1)) · 바로 앞 선생님 말의 첫 낱말(C217 보완) — 서버와 같이 talkTurnWiringOf 가 조립한 재료 그대로
+        heard: wiring.heardOf(materials.ctx.unitWords),
+        lastStart: wiring.lastStart,
       });
       // 인사 끝 턴은 다음 토막을 알린다(서버 lesson-turn.ts 이번 패치 판 — 처음 스냅숏의 짧은 준비 계획이 있으면 준비)
       // 한 턴 늦게 온 카드 답도 '앞 차례가 카드 기회'로 본다(서버 lesson-turn.ts lessonCallTurnOf 와 같은 차례 — 그 함수 · lateCardRowsOf 는
@@ -2748,6 +2976,8 @@ export function createTalkSim(
         },
         ...(opening !== undefined ? { openingLine: opening } : {}),
         lemmaOf: materials.lemmaOf,
+        // 막힘 무름이 같은 소리로 들린 장면 낱말도 본다(서버와 같이 1~3단계만 — 13절 C217 (1))
+        ...wiring.callInput,
       };
       const userMessage = talkLessonUserMessage(
         input.turn,
@@ -2808,12 +3038,24 @@ export function createTalkSim(
       let note: string;
       if (rewrite) note = stuckRewriteNoteOf(p.childText ?? "");
       else {
-        fail = heldQuestionFailOf({ entries, targets, options });
+        fail = heldQuestionFailOf({
+          entries,
+          targets,
+          // 받침 둘째의 AI 질문 자리면 쉬운 질문 조건을 함께 본다(끝 처리와 같은 판정 — 서버 withQuestionRetry)
+          options: {
+            ...options,
+            easySlot: observeEasySlotOf(chosen, first.value, low),
+          },
+          // 카드 답 바로 뒤 차례의 카드 필수 질문 글(13절 C217 (2) (ㄷ))
+          chainKeys: talkCardChainKeysOf(p.turn, card),
+        });
         if (fail === null) return null;
         note = questionRetryNoteOf(fail, {
           sentenceMaxWords: materials.ctx.sentenceMaxWords,
           targets,
           childWords: options.childWords,
+          // 쉬운 질문 자리면 까닭과 관계없이 예 · 아니요 질문으로 다시 쓰게 한다(서버 withQuestionRetry 와 같음 — 코드 검토 rev-content-1 M-1)
+          easySlot: observeEasySlotOf(chosen, first.value, low) !== undefined,
         });
       }
       const input: TalkLessonInput = {
@@ -2975,7 +3217,11 @@ export function createTalkSim(
             ? heldQuestionFailOf({
                 entries,
                 targets: value.next_targets,
-                options: lineOptions,
+                // 끝 처리와 같은 재료(받침 둘째의 쉬운 질문 조건까지 — 카드 답 뒤 까닭 chain 은 끝 처리가 보지 않는다)
+                options: {
+                  ...lineOptions,
+                  easySlot: observeEasySlotOf(chosen, value, low),
+                },
               })
             : null;
         retryFail = fail
@@ -3143,6 +3389,10 @@ export function createTalkSim(
         flags,
         techError,
         design: p.step.design ?? null,
+        ...(p.step.meant !== undefined ? { meant: p.step.meant } : {}),
+        ...(p.step.lessonBefore !== undefined
+          ? { lessonBefore: p.step.lessonBefore }
+          : {}),
         output: value,
         userMessage: p.userMessage,
         appAfter,
@@ -3181,7 +3431,57 @@ export type PlanRun = {
   overrides: SettingOverride[];
   /** 넘기는 지난 대화 요약 줄 수(대본 summaries). */
   summaries: number;
+  /** 고정 입력 재생 대본인가(대본 칸 replay — 그 대본에만 칸이 있다). */
+  replay?: true;
 };
+
+/** 자리 재현 모드(--anchored)에 붙이는 알림 글(계획 줄 · 보고 · 지표 표가 같은 글을 쓴다). */
+export const ANCHORED_NOTICE =
+  "자리 재현: 아이 차례마다 그 차례 바로 앞까지의 실제 수업 기록을 상태로 깔고 그 입력 하나에 대한 선생님 다음 차례만 새로 받는다(말 차례만 · 새 응답은 다음 차례로 잇지 않는다)";
+
+/** 자리 재현을 돌릴 수 있는 대본인가(재생 대본이고 차례마다 anchor 가 있다). */
+export function isAnchoredScript(script: ObserveScript): boolean {
+  return (
+    script.replay === true &&
+    script.steps.every((step) => step.anchor !== undefined)
+  );
+}
+
+/** 계획 줄의 차례 수: 자리 재현은 말 차례만 부른다(그 밖은 대본 그대로). */
+function planScriptOf(script: ObserveScript, anchored: boolean): ObserveScript {
+  if (!anchored) return script;
+  const said = script.steps.filter((step) => step.say !== undefined);
+  return said.length > 0 ? { ...script, steps: said } : script;
+}
+
+/** 글의 첫 낱말(소문자 — 없으면 null). */
+function firstWordOf(text: string): string | null {
+  for (const t of tokenize(text))
+    if (t.kind === "word") return t.text.toLowerCase();
+  return null;
+}
+
+/**
+ * 깐 상태 대조(자리 재현): 도구가 그 자리에서 셈한 아이 행 칸이 실제 수업 기록과 다른 칸 이름. 같으면 빈 목록이다 — 다르면 기록을 그대로 깔지
+ * 못한 것이라 보고에 적는다(노린 단어 · 들은 도움 · 토막).
+ */
+export function anchorCheckOf(
+  p: Pick<PreparedTurn, "targets" | "heardHelp" | "hintKind" | "hintTier">,
+  anchor: ObserveAnchor,
+): string[] {
+  const same = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && a.every((x, i) => x === b[i]);
+  return [
+    ...(same(p.targets, anchor.child.targets) ? [] : ["targets"]),
+    ...(p.heardHelp === anchor.child.heardHelp ? [] : ["heardHelp"]),
+    ...(p.hintKind === anchor.child.hint ? [] : ["hintKind"]),
+    ...(p.hintTier === anchor.child.hintTier ? [] : ["hintTier"]),
+  ];
+}
+
+/** 고정 입력 재생 대본에 붙이는 알림 글(계획 줄 · 보고 · 지표 표가 같은 글을 쓴다). */
+export const REPLAY_NOTICE =
+  "고정 입력 재생: 실제 수업의 아이 입력을 차례대로 그대로 넣는다. 선생님 말이 실제 수업과 달라지면 뒤 입력이 그 질문과 어긋날 수 있다";
 
 /**
  * 예상 호출 · 비용(추측): 대본의 아이 차례마다 회화 턴 한 번(인사 첫 말 · 대화 첫 질문은 앱). 호출 i 의 입력은 첫 요청의 프롬프트 글자 /
@@ -3209,6 +3509,7 @@ export function planRunOf(
     childTurns: script.steps.length,
     overrides: [...overrides],
     summaries: script.summaries?.length ?? 0,
+    ...(script.replay === true ? { replay: true as const } : {}),
   };
   if (!info.ok)
     return {
@@ -3273,6 +3574,8 @@ export function planLines(
     out: string;
     rounds: number;
     baseline: string | null;
+    /** 자리 재현 모드(--anchored)인가. */
+    anchored?: boolean;
   },
 ): string[] {
   const live = runs.filter((r) => r.skipped === null);
@@ -3283,6 +3586,11 @@ export function planLines(
   const reaskCost = live.reduce((s, r) => s + r.reaskMaxCostUsd, 0);
   const extraOf = (r: PlanRun) =>
     [
+      ...(meta.anchored === true
+        ? ["자리 재현"]
+        : r.replay === true
+          ? ["고정 입력 재생"]
+          : []),
       ...(r.summaries > 0 ? [`지난 대화 요약 ${r.summaries}줄`] : []),
       ...(r.overrides.length > 0
         ? [`덮는 설정 ${r.overrides.map(overrideText).join(" · ")}`]
@@ -3298,6 +3606,11 @@ export function planLines(
         : `${r.name} · ${r.level}단계 · ${r.model} · effort ${r.effort} · 생각 ${r.thinking} · 아이 차례 ${r.childTurns} · 예상 호출 ${r.calls} · 입력 약 ${r.expectedTokens.input} · 출력 약 ${r.expectedTokens.output} 토큰 · 약 ${r.expectedCostUsd.toFixed(4)}달러 · 재질문 최대 +${r.reaskMax}회(약 ${r.reaskMaxCostUsd.toFixed(4)}달러)${extraOf(r)}`,
     ),
     `합계: 대본 ${runs.length}(돌릴 것 ${live.length}) × 바퀴 ${n} · 예상 호출 ${calls * n}(한 바퀴 ${calls}) · 예상 비용 약 ${(cost * n).toFixed(4)}달러(한 바퀴 약 ${cost.toFixed(4)}) · 재질문 최대 +${reask * n}회(한 턴에 1회 상한, 1~3단계 질문 검사에 걸리거나 막힘을 무른 턴만 — 약 ${(reaskCost * n).toFixed(4)}달러 더) · 캐시 할인을 셈하지 않은 위쪽 어림`,
+    ...(meta.anchored === true
+      ? [`${ANCHORED_NOTICE}.`]
+      : runs.some((r) => r.replay === true)
+        ? [`${REPLAY_NOTICE}.`]
+        : []),
     `보고 자리: ${meta.out}`,
     ...(meta.baseline !== null
       ? [
@@ -3321,6 +3634,7 @@ export type RunReport = {
     | "source"
     | "note"
     | "prep"
+    | "replay"
   >;
   model: string;
   effort: string;
@@ -3336,6 +3650,8 @@ export type RunReport = {
   turns: TurnRecord[];
   opening: string[];
   stopped: string | null;
+  /** 자리 재현으로 돈 바퀴(--anchored — 그 바퀴에만 칸이 있다). 차례들은 서로 잇지 않은 따로 받은 응답이다. */
+  anchored?: true;
 };
 
 const cell = (text: string) =>
@@ -3463,6 +3779,8 @@ export function reportMarkdown({
     );
     if (s.source) out.push(`출처: ${s.source}`, "");
     if (s.note) out.push(s.note, "");
+    if (r.anchored === true) out.push(`${ANCHORED_NOTICE}.`, "");
+    else if (s.replay === true) out.push(`${REPLAY_NOTICE}.`, "");
     if (r.overrides.length > 0)
       out.push(`덮은 설정: ${r.overrides.map(overrideText).join(" · ")}`, "");
     if (r.summaries.length > 0)
@@ -3627,9 +3945,15 @@ export async function runTalkObserve(
   args: TalkObserveArgs,
   io: TalkObserveIo,
 ): Promise<number> {
-  const scripts = selectScripts(loadScripts(io), args);
+  const chosen = selectScripts(loadScripts(io), args);
+  // 자리 재현은 차례마다 실제 수업 기록(anchor)이 있는 재생 대본만 돌린다
+  const scripts = args.anchored ? chosen.filter(isAnchoredScript) : chosen;
   if (scripts.length === 0)
-    throw new ScriptInputError("고른 대본이 없다(--script · --level 을 보라)");
+    throw new ScriptInputError(
+      args.anchored && chosen.length > 0
+        ? "자리 재현(--anchored)은 차례마다 anchor 가 있는 재생 대본만 돌린다"
+        : "고른 대본이 없다(--script · --level 을 보라)",
+    );
   const out = args.out ?? join(tmpdir(), "talk-observe");
   const simOptionsOf = (script: ObserveScript) => ({
     skippedPrep: script.prep?.skipped ?? [],
@@ -3679,7 +4003,7 @@ export async function runTalkObserve(
       values,
       overrides,
       run: planRunOf(
-        script,
+        planScriptOf(script, args.anchored === true),
         {
           ok: true,
           promptChars,
@@ -3699,6 +4023,7 @@ export async function runTalkObserve(
     out,
     rounds: args.rounds,
     baseline: args.baseline,
+    anchored: args.anchored === true,
   }))
     io.log(line);
   // 기준선은 부르기 전에 읽어 꼴을 본다(잘못된 기준선으로 실호출을 쓰지 않게)
@@ -3722,46 +4047,117 @@ export async function runTalkObserve(
     for (const p of prepared) {
       if (!p.materials || stopAll) continue;
       // 바퀴마다 다른 돌림 열쇠(서버 세션 id 자리 — 같은 대본 두 바퀴가 같은 자리에서 같은 상황 줄을 내지 않게, 판정 r1 M-6)
-      const sim = createTalkSim(p.materials, p.values, io.config.book, {
+      const simOptions = {
         ...simOptionsOf(p.script),
         rotationKey: `${p.script.name}#${round}`,
-      });
+      };
+      const sim = createTalkSim(
+        p.materials,
+        p.values,
+        io.config.book,
+        simOptions,
+      );
       const opening = sim.rows.flatMap((r) =>
         r.speaker === "tori" ? [r.text.trim()] : [],
       );
       const turns: TurnRecord[] = [];
       let stopped: string | null = null;
       let systemPrompt = "";
-      for (const [i, step] of p.script.steps.entries()) {
-        const ready = sim.prepare(step, i);
-        if (!ready.ok) {
-          stopped = ready.reason;
-          break;
-        }
-        if (i === 0)
-          systemPrompt = String(ready.turn.request.body.system ?? "");
-        const result = await streamTurn(client, ready.turn.request);
+      /** 한 차례를 부르고(재질문 포함) 보고 한 줄을 낸다. 실행 전체를 멈출 실패면 null(stopAll 을 적는다). */
+      const callOne = async (
+        on: TalkSim,
+        turn: PreparedTurn,
+      ): Promise<TurnRecord | null> => {
+        const result = await streamTurn(client, turn.request);
         if (!result.ok) {
           const f = observeFailureOf(result.status, {}, new Headers());
           if (f.stop) {
             stopAll = `${f.key} — 실행 전체를 멈춘다(콘솔 한도 · 계정)`;
             stopped = stopAll;
-            break;
+            return null;
           }
         }
         // 재질문(C203 (3)): 걸린 1~3단계 질문이면 한 번 더 부른다(한 턴에 1회 — 서버 withQuestionRetry 와 같음)
-        const ask = sim.retryOf(ready.turn, result);
+        const ask = on.retryOf(turn, result);
         const again = ask ? await streamTurn(client, ask.request) : null;
-        const record = sim.finish(
-          ready.turn,
+        const record = on.finish(
+          turn,
           result,
           ask && again ? { ask, result: again } : undefined,
         );
-        turns.push(record);
         io.log(
           `${p.script.name}${args.rounds > 1 ? ` · 바퀴 ${round}` : ""} · ${record.no} · ${record.move.kind}/${record.move.next} · ${record.usage ? `${record.usage.firstSentenceMs ?? "-"}ms · 입력 ${record.usage.inputTokens} · 출력 ${record.usage.outputTokens} · ${record.usage.costUsd}달러` : (record.failure ?? "")}${record.reask ? ` · 재질문 ${record.reask.usage?.costUsd ?? "-"}달러 · ${record.reask.outcome}` : ""}`,
         );
-      }
+        return record;
+      };
+      if (args.anchored) {
+        // 자리 재현: sim 은 실제 수업 기록만 깔며 나아가고, 말 차례마다 그 상태의 사본에서 한 차례만 새로 받는다(새 응답은 잇지 않는다)
+        let prevFirstWord: string | null = null;
+        for (const [i, step] of p.script.steps.entries()) {
+          const anchor = step.anchor as ObserveAnchor;
+          const fixed: ObserveStep = {
+            ...step,
+            hint: anchor.child.hint,
+            hintTier: anchor.child.hintTier,
+          };
+          const ready = sim.prepare(fixed, i);
+          if (!ready.ok) {
+            stopped = `차례 ${i + 1}: ${ready.reason}`;
+            break;
+          }
+          if (systemPrompt === "")
+            systemPrompt = String(ready.turn.request.body.system ?? "");
+          if (step.say !== undefined) {
+            const fork = createTalkSim(p.materials, p.values, io.config.book, {
+              ...simOptions,
+              seed: sim.snapshot(),
+            });
+            const forked = fork.prepare(fixed, i);
+            if (!forked.ok) {
+              stopped = `차례 ${i + 1}: ${forked.reason}`;
+              break;
+            }
+            const record = await callOne(fork, forked.turn);
+            if (record === null) break;
+            turns.push({
+              ...record,
+              anchored: {
+                lessonAfter: (anchor.teachers[0]?.text ?? "")
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter((line) => line !== "")
+                  .join(" / "),
+                prevFirstWord,
+                check: anchorCheckOf(forked.turn, anchor),
+              },
+            });
+          }
+          sim.lay(ready.turn, anchor);
+          // 기록에서 이 차례 뒤의 AI 반응(대화 토막 · 받침 아님 · AI 글이 있음)의 첫 낱말 — 다음 차례의 (나) 견줌 재료
+          const answered = anchor.teachers[0];
+          const reaction = answered?.text.split("\n")[0] ?? "";
+          if (
+            answered &&
+            ready.turn.segment !== "greeting" &&
+            ready.turn.segment !== "greeting_end" &&
+            answered.move.stage === 0 &&
+            reaction.trim() !== ""
+          )
+            prevFirstWord = firstWordOf(reaction);
+        }
+      } else
+        for (const [i, step] of p.script.steps.entries()) {
+          const ready = sim.prepare(step, i);
+          if (!ready.ok) {
+            stopped = ready.reason;
+            break;
+          }
+          if (i === 0)
+            systemPrompt = String(ready.turn.request.body.system ?? "");
+          const record = await callOne(sim, ready.turn);
+          if (record === null) break;
+          turns.push(record);
+        }
       reports.push({
         script: p.script,
         model: p.run.model,
@@ -3774,11 +4170,15 @@ export async function runTalkObserve(
         turns,
         opening,
         stopped,
+        ...(args.anchored ? { anchored: true as const } : {}),
       });
     }
   const date = (io.now?.() ?? new Date()).toISOString().slice(0, 10);
   const effort = args.effort ?? "settings";
-  const base = join(out, `${date}-talk-observe-${effort}`);
+  const base = join(
+    out,
+    `${date}-talk-observe-${effort}${args.anchored ? "-anchored" : ""}`,
+  );
   const skipped = runs.filter((r) => r.skipped !== null);
   const json = {
     date,
@@ -3850,6 +4250,8 @@ export function readSeedFiles(
     talkSituationLines: optionalJson(at("lists", "talk-situation-lines.json")),
     talkAllowedWords: optionalJson(at("lists", "talk-allowed-words.json")),
     talkMadeUpPhrases: optionalJson(at("lists", "talk-made-up-phrases.json")),
+    homophones: optionalJson(at("lists", "homophones.json")),
+    soundAlikes: optionalJson(at("lists", "sound-alikes.json")),
   };
 }
 

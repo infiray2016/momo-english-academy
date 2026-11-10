@@ -64,7 +64,7 @@ import {
   talkMoveOf,
 } from "@/core/conversation/move";
 import { metWordsIn, talkEnglishSentenceDelta } from "@/core/conversation/said";
-import { MORE_PROMPT } from "@/core/conversation/spoken";
+import { cardLineTailKoOf, MORE_PROMPT } from "@/core/conversation/spoken";
 import {
   farewellOf,
   type WrapUpLine,
@@ -897,6 +897,11 @@ function cardLineKoOf(
   }
   if (en === MORE_PROMPT.en) return MORE_PROMPT.ko;
   if (en === NOW_LETS_TALK) return NOW_LETS_TALK_KO;
+  // 장면 문장을 뺀 카드 줄(겹침 없애기 — lesson-turn shownAttachOf · core cardLineWithoutSaidOf)은 같은 자리의 뜻 문장을 돌려준다
+  for (const item of [...card.required, ...card.more]) {
+    const ko = cardLineTailKoOf(item, en);
+    if (ko !== undefined) return ko;
+  }
   return undefined;
 }
 

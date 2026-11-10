@@ -2,6 +2,10 @@
 // 이름 절 응답 칸 3 · 4번). 같은 질문은 normalizeSpoken 글로 견주고, 1~3단계 질문 · 소리 줄은 길이 · 어휘 범위 · 형태를 본다.
 // 순수 모듈이다. 숫자(같은 질문 상한 · 문장 길이 상한)는 부르는 쪽이 설정 · 단계 규격에서 넘긴다.
 
+import {
+  ENGLISH_SAYING_MIN_WORDS,
+  isChildFillerWord,
+} from "@/core/conversation/child-kind";
 import type { TalkMoveKind } from "@/core/conversation/move";
 import { MORE_PROMPT, normalizeSpoken } from "@/core/conversation/spoken";
 import { isQuestionSentence } from "@/core/conversation/stream";
@@ -129,12 +133,21 @@ export type LowLevelLineOptions = {
   allowedForms: ReadonlySet<string>;
   /**
    * 이 대화의 아이 말(인식 글, 차례대로 — 끝이 이번 말). 주면 질문 검사가 아이 말을 되묻는 질문을 건다(echo — 대본 회차 r1 판정 I-6). 없으면
-   * 보지 않는다(소리 줄 · 선택지 검사는 쓰지 않음).
+   * 보지 않는다(소리 줄 · 선택지 검사는 쓰지 않음). 노리는 단어 검사의 같은 소리 낱말도 이 줄에서 낸다(homophones 칸).
    */
   childLines?: readonly string[] | undefined;
+  /**
+   * 동음이의어 묶음(시드 lists/homophones.json — 1~3단계 회화 턴의 묶음 그대로). 아이 말 줄(childLines)과 함께 주면 노리는 단어 검사의 '아이가 이
+   * 대화에서 말한 낱말'에 한두 낱말 말의 같은 소리 낱말을 넣는다(childSameSoundWordsOf — 13절 'C203 (1) · C217 보완 3' (2)). 어휘 범위
+   * (offbandWordsIn)는 넓히지 않는다. 둘 가운데 하나라도 없으면 글자 그대로만 본다.
+   */
+  homophones?: readonly (readonly string[])[] | undefined;
 };
 
-/** echo: 아이가 방금 · 앞서 한 말을 되묻는 질문(판정 r1 I-6 — 'Big.' → 'Is the lake big or small?', 'I like fish.' → 'Do you like the fish?'). */
+/**
+ * echo: 아이가 방금 · 앞서 한 말을 되묻는 질문(판정 r1 I-6 — 'Big.' → 'Is the lake big or small?', 'I like fish.' → 'Do you like the fish?').
+ * not_easy: 받침 둘째의 AI 질문 자리인데 예 · 아니요 질문도, 고르기 답 둘이 딸린 질문도 아니다(13절 C217 (2) (ㄴ) — 'Where do whales swim?').
+ */
 export type LowLevelLineReason =
   | "empty"
   | "too_long"
@@ -143,7 +156,23 @@ export type LowLevelLineReason =
   | "form"
   | "shape"
   | "no_target"
-  | "echo";
+  | "echo"
+  | "not_easy";
+
+/**
+ * 받침 둘째의 AI 질문 자리(쉬운 질문 자리 — talk-lesson talkEasyAiSlotOf)의 질문 검사 재료: 그 응답에 남은 고르기 답 수(정규화 뒤 choices).
+ * 질문이 예 · 아니요 꼴(첫 낱말이 do · is · can …)이거나 고르기 답 둘이 딸려 있으면 쉬운 질문이다(02-2 3.3 받침 표 둘째 '예 · 아니요 또는 둘 중
+ * 고르기').
+ */
+export type EasySlotCheck = { choices: number };
+
+/** 선택지 한 쌍의 수(06:30 답 두 개 규칙 — 설계 숫자가 아닌 꼴 상수). */
+const CHOICE_PAIR = 2;
+
+/** 예 · 아니요 꼴 질문인가(첫 낱말이 do · does · is · are · can … — 'Do you like whales?', 고르기 꼴 'Is it a cat or a dog?' 포함). */
+export function isYesNoQuestion(sentence: string): boolean {
+  return YES_NO_STARTS.has(plainWords(sentence)[0] ?? "");
+}
 export type LineCheck =
   | { ok: true }
   /** words: 걸린 낱말(노리는 단어 · 범위 밖 낱말 — AI 에 다시 쓰게 알릴 때 쓴다, 13절 C203 (3)). 그 밖의 까닭은 비운다. */
@@ -310,11 +339,50 @@ function hasTarget(
 }
 
 /**
- * 아이가 이 대화에서 말한 낱말(소문자 꼴과 원형). 노리는 단어라도 아이가 먼저 말했으면 되묻기 질문에 쓸 수 있다(13절 C203 (1) — childWords 와
- * 같은 자격).
+ * 아이가 한두 낱말 말로 한 낱말과 같은 소리인 낱말(소문자 · 차례대로 · 같은 낱말은 한 번, 말한 낱말 자신은 빼고 — 13절 'C203 (1) · C217 보완 3'
+ * (2)). 인식 글은 아이가 sea 라고 한 말을 See 로 적기도 하므로, 그 뒤의 'Do you like the sea?' 는 아이가 먼저 말한 낱말을 되묻는 질문이다(자리 재현
+ * 재생 바퀴 2 · 코드 검토 rev-content-1 fix 1 재검토 N-1 — 헛되이 걸리던 둘).
+ * - 한두 낱말 말(영어 낱말 ENGLISH_SAYING_MIN_WORDS 이하 — 'See' · 'See See')의 낱말만 넓힌다. 문장으로 한 'I can see' · 'I see a fish.' 는 sea 를
+ *   말한 근거가 아니라, 그 뒤 sea 가 든 질문은 고치기 전처럼 걸려야 '말했다'의 앞쪽 막음이 지켜진다(들은 글 귀띔이 같은 소리 귀띔을 한두 낱말
+ *   말에만 내는 것과 같은 기준 — heard-hint).
+ * - 아이 말의 기능어 · 대답 말 · 인사 · 맞장구 말은 넓히지 않는다(isChildFillerWord — 'Me too.' 는 two 를, 'Hi!' 는 high 를, 'No.' 는 know 를 말해 본
+ *   것이 아니다: 들은 글 귀띔 · 막힘 무름 · 먼저 답한 필수 질문과 같은 판정).
+ * 묶음은 서버 · 대본 도구가 회화 턴에 쓰는 동음이의어 목록 그대로다. 소리가 가까울 뿐인 낱말(teach · beach)은 넣지 않는다.
+ */
+export function childSameSoundWordsOf(
+  childLines: readonly string[],
+  homophones: readonly (readonly string[])[] = [],
+): string[] {
+  if (homophones.length === 0) return [];
+  const out: string[] = [];
+  for (const line of childLines) {
+    const words = normalizeSpoken(line)
+      .split(" ")
+      .filter((w) => /^[a-z]+$/.test(w));
+    if (words.length === 0 || words.length > ENGLISH_SAYING_MIN_WORDS) continue;
+    for (const word of words) {
+      if (isChildFillerWord(word)) continue;
+      for (const group of homophones) {
+        const mates = group.map((w) => w.toLowerCase());
+        if (!mates.includes(word)) continue;
+        for (const mate of mates)
+          if (mate !== word && !out.includes(mate)) out.push(mate);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * 아이가 이 대화에서 말한 낱말(소문자 꼴과 원형, 동음이의어 묶음과 아이 말 줄을 주면 한두 낱말 말의 같은 소리 낱말까지). 노리는 단어라도 아이가 먼저
+ * 말했으면 되묻기 질문에 쓸 수 있다(13절 C203 (1) — childWords 와 같은 자격, 같은 소리 낱말은 'C203 (1) · C217 보완 3' (2)). 선생님이 먼저 말하는
+ * 단원 단어는 그대로 걸린다.
  */
 function childSaidSet(
-  options: Pick<LowLevelLineOptions, "childWords" | "lemmaOf">,
+  options: Pick<
+    LowLevelLineOptions,
+    "childWords" | "lemmaOf" | "homophones" | "childLines"
+  >,
 ): Set<string> {
   const out = new Set<string>();
   for (const word of options.childWords) {
@@ -323,6 +391,11 @@ function childSaidSet(
     const lemma = options.lemmaOf(word)?.toLowerCase();
     if (lemma !== undefined) out.add(lemma);
   }
+  for (const word of childSameSoundWordsOf(
+    options.childLines ?? [],
+    options.homophones,
+  ))
+    out.add(word);
   return out;
 }
 
@@ -339,10 +412,15 @@ function rangeCheck(text: string, options: LowLevelLineOptions): LineCheck {
  * 아이가 이 대화에서 말한 낱말은 되묻기에 쓸 수 있어 뺀다, C203 (1)), 그 단계 어휘 범위 · 이번 단원 단어 · 아이가 이 대화에서 말한 낱말 ·
  * {NAME} · 선생님 영어 이름 밖 낱말 없음(범위 밖이 닫힌 품사 한 낱말뿐이면 통과, C203 (2)), 범위 밖 형태 없음. 걸리면 걸린 낱말을 함께 낸다.
  * 걸린 질문은 부르는 쪽이 AI 에 한 번 다시 쓰게 하고(C203 (3), question-retry), 그래도 걸리면 카드 자리로 바꾼다. 같은 질문은 sameQuestionHit.
+ * 받침 둘째의 AI 질문 자리(easySlot)는 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 지난다(13절 C217 (2) (ㄴ)).
  */
 export function checkLowLevelQuestion(
   sentence: string,
-  options: LowLevelLineOptions & { targets: readonly string[] },
+  options: LowLevelLineOptions & {
+    targets: readonly string[];
+    /** 받침 둘째의 AI 질문 자리면 그 재료(없으면 보지 않는다 — 13절 C217 (2) (ㄴ)). */
+    easySlot?: EasySlotCheck | undefined;
+  },
 ): LineCheck {
   if (sentence.trim() === "") return fail("empty");
   if (overLength(sentence, options.sentenceMaxWords)) return fail("too_long");
@@ -365,6 +443,13 @@ export function checkLowLevelQuestion(
     )
   )
     return fail("echo");
+  // 받침 둘째의 AI 질문 자리: 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 받는다(13절 C217 (2) (ㄴ) · 분석 A3)
+  if (
+    options.easySlot !== undefined &&
+    options.easySlot.choices !== CHOICE_PAIR &&
+    !isYesNoQuestion(sentence)
+  )
+    return fail("not_easy");
   return OK;
 }
 

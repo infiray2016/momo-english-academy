@@ -83,6 +83,109 @@ describe("회화 '말했다' · '안다'(3.4)", () => {
     expect(said(["two"], "I have 2 dogs")).toEqual(["two"]);
   });
 
+  it("AC-9d 같은 소리 단원 단어가 한 단원에 둘이면(회화 3단계 단원 1 see · sea) 들은 글과 글자가 맞는 단원 단어를 먼저 잇고 그다음 같은 소리로 잇는다", () => {
+    // 실제 단원 단어(시드 unit-specs) — see 가 sea 보다 앞에 있어, 고치기 전에는 들은 글 'Sea.' 가 see 로만 이어져 sea 가 '말했다'가 될 수 없었다
+    const unit = (
+      JSON.parse(
+        readFileSync(join(process.cwd(), "seed/unit-specs.json"), "utf8"),
+      ) as {
+        unitSpecs: {
+          area: string;
+          level: number;
+          unit: number;
+          words: string[];
+        }[];
+      }
+    ).unitSpecs.find((u) => u.area === "talk" && u.level === 3 && u.unit === 1);
+    const words = unit?.words ?? [];
+    expect(words.indexOf("see")).toBeGreaterThanOrEqual(0);
+    expect(words.indexOf("see")).toBeLessThan(words.indexOf("sea"));
+    const lemma = lemmaLookup([
+      { word: "see", forms: ["sees", "saw", "seen", "seeing"] },
+      { word: "sea", forms: ["seas"] },
+      { word: "beach", forms: ["beaches"] },
+      { word: "swim", forms: ["swims", "swam", "swimming"] },
+    ]);
+    const of = (aiWords: string[], heard: string) =>
+      saidWordsOf({
+        aiWords,
+        heard,
+        hintKind: "none",
+        unitWords: words,
+        lemmaOf: lemma,
+        homophones: HOMOPHONES,
+      });
+    // 글자가 그대로 맞는 단원 단어
+    expect(of(["sea"], "Sea.")).toEqual(["sea"]);
+    expect(of(["sea"], "They swim in the sea.")).toEqual(["sea"]);
+    expect(of(["see"], "I see a fish.")).toEqual(["see"]);
+    // 같은 소리(기존 기준 — 인식 글이 다른 철자로 와도 센다)
+    expect(of(["sea"], "See.")).toEqual(["sea"]);
+    expect(of(["see"], "I sea a fish.")).toEqual(["see"]);
+    // 들은 낱말 하나는 단원 단어 하나에만 잇는다 — 글자가 맞는 쪽이 먼저다
+    expect(of(["sea", "see"], "See.")).toEqual(["see"]);
+    expect(of(["see", "sea"], "Sea.")).toEqual(["sea"]);
+    // 들은 낱말이 둘이면 둘 다 잇는다(돌려준 차례)
+    expect(of(["sea", "see"], "I see the sea.")).toEqual(["sea", "see"]);
+    expect(of(["see", "sea"], "See see.")).toEqual(["see", "sea"]);
+    // 소리가 가까운 낱말은 세지 않는다('말했다'는 동음이의어까지만 — 13절 C217)
+    expect(of(["beach"], "Teach.")).toEqual([]);
+    expect(of(["beach"], "Each shells.")).toEqual([]);
+    expect(of(["swim"], "I can see.")).toEqual([]);
+    // AI 가 돌려주지 않은 낱말은 세지 않는다
+    expect(of([], "Sea.")).toEqual([]);
+  });
+
+  it("AC-9d 같은 소리 묶음에 든 활용형은 제 원형으로 세고(knew → know), 같은 소리 대표 낱말의 원형도 고치기 전처럼 센다(through → threw → throw) — 13절 'C203 (1) · C217 보완 3' (3)", () => {
+    // 실제 단원 단어(시드 unit-specs)와 실제 활용형(시드 vocab) — 코드 검토 rev-content-1 fix 1 재검토 N-2
+    const units = (
+      JSON.parse(
+        readFileSync(join(process.cwd(), "seed/unit-specs.json"), "utf8"),
+      ) as {
+        unitSpecs: {
+          area: string;
+          level: number;
+          unit: number;
+          words: string[];
+        }[];
+      }
+    ).unitSpecs;
+    const vocab = (
+      JSON.parse(
+        readFileSync(join(process.cwd(), "seed/vocab.json"), "utf8"),
+      ) as { vocab: { word: string; forms: string[] }[] }
+    ).vocab;
+    const of = (
+      level: number,
+      unitNo: number,
+      aiWords: string[],
+      heard: string,
+    ) => {
+      const words =
+        units.find(
+          (u) => u.area === "talk" && u.level === level && u.unit === unitNo,
+        )?.words ?? [];
+      for (const word of aiWords) expect(words).toContain(word);
+      return saidWordsOf({
+        aiWords,
+        heard,
+        hintKind: "none",
+        unitWords: words,
+        lemmaOf: lemmaLookup(vocab.filter((v) => words.includes(v.word))),
+        homophones: HOMOPHONES,
+      });
+    };
+    // 묶음 [new, knew] 에 든 활용형 knew 는 대표 낱말 new 로 바뀌기 전에 제 원형 know 로 이어진다(회화 2단계 단원 4)
+    expect(of(2, 4, ["know"], "knew")).toEqual(["know"]);
+    expect(of(2, 4, ["know"], "I knew it.")).toEqual(["know"]);
+    // 묶음 [threw, through]: 들은 글 through 는 대표 낱말 threw 의 원형 throw 로 이어진다(회화 2단계 단원 5 — 고치기 전에도 세어지던 꼴)
+    expect(of(2, 5, ["throw"], "through")).toEqual(["throw"]);
+    expect(of(2, 5, ["throw"], "I through the ball.")).toEqual(["throw"]);
+    expect(of(2, 5, ["throw"], "threw")).toEqual(["throw"]);
+    // 소리가 가까울 뿐인 낱말은 세지 않는다(회화 3단계 단원 1)
+    expect(of(3, 1, ["beach"], "Teach")).toEqual([]);
+  });
+
   it("AC-9d 같은 학습일에 두 번 말한 단어는 '안다'가 아니고 서로 다른 학습일에 두 번이면 '안다'다", () => {
     const knownDays = Number(loadable.get("talk.known_days"));
     expect(knownDays).toBeGreaterThan(1);
