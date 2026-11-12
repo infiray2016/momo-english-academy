@@ -2,7 +2,7 @@ import "server-only";
 // AI 호출 기록 · 단가표 읽기 · 하루 사용량 · 같은 오류 세기 · 알림 한 번(6.1 · 5절 · C17 · C56 (2) · C63 (3), plan-p09a 파일별 값 8).
 // 시각은 부르는 쪽이 한 시계 값으로 넘긴다. 질의 SQL 안에 now() 를 쓰지 않는다(P3a 검토 메모).
 // 프롬프트 · 응답 본문은 저장하지 않는다(5절 · AC-8c).
-import { and, count, eq, isNull, like, ne, sql } from "drizzle-orm";
+import { and, count, eq, isNull, like, ne, or, sql } from "drizzle-orm";
 import type { AiPurpose } from "@/core/ai/combo";
 import { ModelCapabilitiesSchema } from "@/core/ai/combo";
 import {
@@ -11,12 +11,24 @@ import {
   priceBookOf,
   sumToMicros,
 } from "@/core/ai/cost";
+import {
+  LEAD_NARROW_RECORD_TAG,
+  LEAD_RECORD_TAG,
+} from "@/core/conversation/lead-call-tags";
 import { modelPrices } from "@/db/schema/content";
 import { aiCalls, parentAlerts } from "@/db/schema/operations";
 import type { Db } from "@/server/db";
 
 /** 같은 오류 갈래의 error_code 머리(값 6). LIKE 의 '_' 는 한 글자 와일드카드라 백슬래시로 이스케이프해 글자 그대로 맞춘다(검토 M-5). */
 const SAME_ERROR_CODE_PATTERN = "same\\_error:%";
+/**
+ * 새 회화 엔진의 표지(lead · lead.narrow — '<표지>:<갈래>')를 앞에 단 같은 오류 행도 같은 갈래로 센다(13절 C241 보완 · 검토 rev-s1 I-4). 표지는
+ * 방식별로 셀 몫이라 갈래의 열쇠에 섞지 않는다. 그 밖의 표지(질문 다시 쓰기 question_retry)를 단 행은 지금처럼 세지 않는다(지금 엔진의 셈 그대로).
+ */
+const LEAD_SAME_ERROR_CODE_PATTERNS = [
+  LEAD_RECORD_TAG,
+  LEAD_NARROW_RECORD_TAG,
+].map((tag) => `${tag}:${SAME_ERROR_CODE_PATTERN}`);
 
 export type AiCallStatus = (typeof aiCalls.$inferInsert)["status"];
 
@@ -150,7 +162,12 @@ export async function sameErrorCount(
         eq(aiCalls.purpose, purpose),
         eq(aiCalls.learningDay, learningDay),
         eq(aiCalls.status, "error"),
-        like(aiCalls.errorCode, SAME_ERROR_CODE_PATTERN),
+        or(
+          like(aiCalls.errorCode, SAME_ERROR_CODE_PATTERN),
+          ...LEAD_SAME_ERROR_CODE_PATTERNS.map((pattern) =>
+            like(aiCalls.errorCode, pattern),
+          ),
+        ),
       ),
     );
   return row?.n ?? 0;

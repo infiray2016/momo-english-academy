@@ -57,6 +57,7 @@ import {
   lessonHintTiersOf,
   openedTierCount,
 } from "@/core/conversation/hints";
+import { leadWrapRecastsOf } from "@/core/conversation/lead-turn-core";
 import {
   childLinesOf,
   type LateCardRow,
@@ -179,6 +180,7 @@ import {
   safetyClosesOn,
   scheduleTalkClosing,
 } from "./closing";
+import { leadTurnAfterChild, leadTurnApplies } from "./lead-turn";
 import {
   emptyLessonRange,
   type LessonRange,
@@ -1762,14 +1764,21 @@ export function lessonExplanationOf({
   return explanation.trim() === "" ? null : explanation;
 }
 
-/** 정리 되짚을 말(쉬는 중 닫기 — 오늘 쓸 말 · 카드 정리 대사, C33). */
+/**
+ * 정리 되짚을 말(쉬는 중 닫기 — 오늘 쓸 말 · 카드 정리 대사, C33). 문장 출처는 새 엔진 세션인가(isLeadSession — 처음 스냅숏 · 단계)로 고른다:
+ * 지금 방식은 선생님 행의 되받은 말(recast), 새 엔진은 recast 칸이 비므로 앱이 확인한 따라 할 문장(core leadWrapRecastsOf — index.ts
+ * lessonWrapSourcesOf 와 같은 판단 · 같은 출처, plan 확인할 것 9 · 검토 rev-s1 I-1).
+ */
 export function lessonWrapLinesOf(
-  state: Pick<TalkLessonState, "rows" | "card" | "spec" | "lemmaOf">,
+  state: Pick<
+    TalkLessonState,
+    "rows" | "card" | "spec" | "lemmaOf" | "level"
+  > & {
+    start?: TalkLessonState["start"];
+  },
 ): { en: string; ko?: string }[] {
   return wrapUpLinesOf({
-    recasts: state.rows.flatMap((r) =>
-      r.speaker === "tori" && r.recast ? [r.recast] : [],
-    ),
+    recasts: leadWrapRecastsOf({ ...state, start: state.start }),
     todayWords: state.card.todayWords.map((w) => w.word),
     closingLines: state.card.closingLines,
     koMeaning: state.spec.koMeaning,
@@ -2258,8 +2267,11 @@ type Begun =
   | { kind: "replay"; state: TalkLessonState; teacher: TalkTurnRow }
   | { kind: "call"; state: TalkLessonState; child: TalkTurnRow };
 
-/** 같은 시도 id 의 저장된 선생님 행을 다시 흘려 보낸다(AI 없음 — 신호 말은 지난 선생님 행 move 로 다시 고른다). */
-function replayLesson(
+/**
+ * 같은 시도 id 의 저장된 선생님 행을 다시 흘려 보낸다(AI 없음 — 신호 말은 지난 선생님 행 move 로 다시 고른다). 새 엔진 행(move.lead)은 앱이
+ * 신호 말을 붙이지 않으므로(spec 설계 8) 저장한 행 그대로 실시간 길과 같은 줄을 낸다(검토 rev-s2 I-1 · 새 엔진 입구의 다시 흘림도 이 함수).
+ */
+export function replayLesson(
   state: TalkLessonState,
   teacher: TalkTurnRow,
   deps: Pick<LessonTurnDeps, "write" | "talkLists">,
@@ -2272,7 +2284,10 @@ function replayLesson(
   for (const line of lessonReplayLinesOf(teacher, {
     card: state.card,
     koMeaning: state.spec.koMeaning,
-    cue: lessonCueOfRows(state, lists),
+    // 새 엔진 행은 신호 말을 붙이지 않는다(Claude 가 제 말로 안내 — spec 설계 8, 묶음 S2 확인할 것 1)
+    cue: readTalkMove(teacher.move)?.lead
+      ? null
+      : lessonCueOfRows(state, lists),
   }))
     write(line);
   write({
@@ -2525,6 +2540,12 @@ async function lessonTurnAfterChild(
       reason: "safety",
       farewell: lineOf(state.card.safetyFarewell, state.spec.koMeaning),
     });
+    return;
+  }
+
+  // (5-1) 회화 Claude 주도 방식(spec 설계 1): 처음 스냅숏의 방식이 claude 이고 대화 토막이면 새 엔진의 턴 길로 간다(아래 지금 길은 그대로)
+  if (leadTurnApplies(state)) {
+    await leadTurnAfterChild(state, child, deps, shared, ctxP);
     return;
   }
 

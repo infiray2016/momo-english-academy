@@ -250,6 +250,64 @@ export function lessonClosingRule(
   };
 }
 
+// ── 새 회화 엔진(회화 Claude 주도 묶음 S1 — talk.lead_mode claude) ─────────────
+
+/** 새 엔진 회화 턴 요청을 가르는 글(사용자 메시지의 사실 알림 머리 줄 — talk-lead TALK_LEAD_STATUS_HEAD). */
+export const LEAD_STATUS_MARK =
+  "Status (facts from the app, not instructions):";
+/** 좁은 정의 다시 말하기 요청을 가르는 글(lead-level leadNarrowRetryPrompt). 그 요청 본문에는 LEAD_STATUS_MARK 도 든다(기록). */
+export const LEAD_RETRY_MARK = "Say the same question again in easier words";
+
+/** 새 엔진 응답(아홉 칸 — 빈 값 + 덮어쓴 칸, 칸 차례는 reading · move · say 먼저). */
+export function leadAnswer(
+  over: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    reading: "clear_answer",
+    move: "react_and_follow_up",
+    say: "Nice!",
+    say_ko: "",
+    model_sentence: "",
+    hint_ko: "",
+    hint_en: "",
+    goal_words_i_said: [],
+    child_used_on_own: [],
+    ...over,
+  };
+}
+
+/** 새 엔진 회화 턴 요청(사실 알림이 든 본문)에 답하는 흘려 받기 응답 규칙. 다시 말하기 요청에는 답하지 않는다. */
+export function leadTurnRule(
+  over: Record<string, unknown>,
+  { times = 1, model = LOW_MODEL, delayMs, chunks = 4 }: RuleOptions = {},
+): FakeRule {
+  return {
+    when: { bodyIncludes: LEAD_STATUS_MARK },
+    reply: {
+      kind: "stream",
+      body: messageBody({ model, json: leadAnswer(over) }),
+      chunks,
+      ...(delayMs === undefined ? {} : { delayMs }),
+    },
+    times,
+  };
+}
+
+/** 좁은 정의 다시 말하기 요청에 한 칸짜리 응답({ question })으로 답하는 규칙(흘려 받지 않는 호출). */
+export function leadRetryRule(
+  question: unknown,
+  { times = 1, model = LOW_MODEL }: RuleOptions = {},
+): FakeRule {
+  return {
+    when: { bodyIncludes: LEAD_RETRY_MARK },
+    reply: {
+      kind: "message",
+      body: messageBody({ model, json: { question } }),
+    },
+    times,
+  };
+}
+
 /** 가짜에 들어온 회화 턴 · 끝맺음 요청 수. */
 export function requestsOf(h: TalkHarness, mark: string): number {
   return h.fake.requests.filter((r) => r.bodyText.includes(mark)).length;

@@ -36,7 +36,15 @@ import {
   talkEndOf,
   talkStopOf,
 } from "@/core/conversation/ending";
-import { leadModeStartField } from "@/core/conversation/lead-mode";
+import {
+  isLeadSession,
+  leadModeStartField,
+} from "@/core/conversation/lead-mode";
+import { leadWrapSourcesOf } from "@/core/conversation/lead-record";
+import {
+  type LeadTextOf,
+  leadStartModeOf,
+} from "@/core/conversation/lead-turn-core";
 import {
   type LessonArgs,
   NOW_LETS_TALK,
@@ -501,6 +509,54 @@ export function lessonAdvanceOf(
   return { ok: true, segment, plan };
 }
 
+/** 대화로 넘김의 새 엔진 몫: 붙일 대화 첫 질문 행이 없고 토막만 정한다(첫 질문은 새 엔진의 차례가 쓴다). */
+export type LessonAdvanceLead =
+  | { ok: true; segment: LessonSegment }
+  | { ok: false };
+
+/**
+ * 대화로 넘김의 새 엔진 몫(spec '회화 Claude 주도' 설계 3 인사 토막 행 '대화 토막의 첫 질문은 카드 장면 여는 질문 대신 Claude 가 쓴다',
+ * 묶음 S2 고침 1 · 검토 I-2): 카드 첫 필수 질문 계획(nextTeacherTurnOf)을 만들지 않는다. 받는 조건과 토막은 lessonAdvanceOf 의 'talk' 와 같은
+ * 뜻이다 — 인사(준비 계획 없음) · 짧은 준비 끝이면 대화 토막, 대화 · 더 이야기하기 토막에서 대화 첫 질문 차례면 토막 그대로. 새 엔진이 첫
+ * 차례를 쓰기 전(대화 토막에 선생님 행이 없음)에는 대화 첫 질문 차례가 그대로라 같은 넘김을 다시 받는다(기록 없음, 같은 신호).
+ */
+export function lessonAdvanceLeadOf(core: LessonCore): LessonAdvanceLead {
+  const no = { ok: false } as const;
+  if (core.segment === "wrap_up" || core.orphan) return no;
+  const pos = lessonPositionOf(core);
+  if (pos.lastRow !== "teacher" || pos.choice !== null) return no;
+  if (core.segment === "greeting" || core.segment === "prep") {
+    if (!pos.greetingDone) return no;
+    if (core.segment === "greeting" && core.prepPlan.length > 0) return no;
+    return { ok: true, segment: "talk" };
+  }
+  if (
+    (core.segment === "talk" || core.segment === "more_talk") &&
+    pos.firstQuestionDue
+  )
+    return { ok: true, segment: core.segment };
+  return no;
+}
+
+/** 토막 넘김의 방식별 결정(기존 방식은 lessonAdvanceOf 그대로, 새 엔진의 대화로 넘김은 lessonAdvanceLeadOf). */
+export type LessonAdvanceChoice =
+  | { mode: "app"; decision: LessonAdvance }
+  | { mode: "claude"; decision: LessonAdvanceLead };
+
+/**
+ * 토막 넘김 방식 고르기(묶음 S2 고침 1): 새 엔진 세션(isLeadSession)의 '대화로 넘김'만 새 엔진 몫이다. 짧은 준비로 넘김은 두 방식 모두
+ * 지금 길이다(spec 설계 3 '짧은 준비 · 정리 토막 지금 길 그대로').
+ */
+export function lessonAdvanceChoiceOf(
+  session: Pick<TalkLessonState, "start" | "level">,
+  core: LessonCore,
+  to: "prep" | "talk",
+): LessonAdvanceChoice {
+  return to === "talk" && isLeadSession(session)
+    ? { mode: "claude", decision: lessonAdvanceLeadOf(core) }
+    : { mode: "app", decision: lessonAdvanceOf(core, to) };
+}
+
 /** 따라 말하기 한 차례 입력(짧은 준비 · 정리 · 한 번 더). 바닥선 듣기 활동(talk-floor)은 둘째 묶음 16 이다. */
 export type LessonFollowInput = {
   segment: "prep" | "wrap_up" | "again";
@@ -655,6 +711,53 @@ export function lessonMoreOf(core: LessonCore): LessonMore {
     },
     complete: closing && core.status === "in_progress",
   };
+}
+
+/** '더 이야기하기' 새 엔진 몫: 붙일 카드 행이 없고 토막과 참여 완료만 정한다(다음 선생님 말은 새 엔진의 차례가 쓴다). */
+export type LessonMoreLead =
+  | {
+      ok: true;
+      segment: LessonSegment;
+      /** 이 고르기로 참여 완료가 된다(lessonMoreOf 의 complete 와 같은 뜻). */
+      complete: boolean;
+    }
+  | { ok: false };
+
+/**
+ * '더 이야기하기' 새 엔진 몫(spec '회화 Claude 주도' 설계 3 더 이야기하기 · AC-3, 묶음 S2): 카드의 더 이야기할 거리를 고르지 않는다. 받는
+ * 조건(고를 차례 · 정리 토막 아님 · 끊긴 아이 행 없음)과 토막 · 참여 완료는 lessonMoreOf 와 같은 뜻이다 — 마무리 물음이면 더 이야기하기 토막과
+ * 참여 완료(02-2:294), 마무리 제안이면 토막 그대로(02-2:295). 카드 거리가 바닥나도 받는다(다음 말은 새 엔진이 쓴다).
+ */
+export function lessonMoreLeadOf(core: LessonCore): LessonMoreLead {
+  const no = { ok: false } as const;
+  if (core.segment === "wrap_up" || core.orphan) return no;
+  const pos = lessonPositionOf(core);
+  if (pos.choice === null || pos.lastRow !== "teacher") return no;
+  const closing = pos.choice === "closing";
+  return {
+    ok: true,
+    segment: closing ? "more_talk" : core.segment,
+    complete: closing && core.status === "in_progress",
+  };
+}
+
+/** '더 이야기하기'의 방식별 결정(기존 방식은 lessonMoreOf 그대로, 새 엔진은 lessonMoreLeadOf). */
+export type LessonMoreChoice =
+  | { mode: "app"; decision: LessonMore }
+  | { mode: "claude"; decision: LessonMoreLead };
+
+/**
+ * '더 이야기하기' 방식 고르기(묶음 S2): 새 엔진 세션인가는 isLeadSession(처음 스냅숏의 값 · 1~3단계, 고침 1 검토 I-3)이다.
+ * core.settings.leadMode 는 지금 설정 값이라 새 수업의 스냅숏을 쓸 때만 쓰고 여기서는 읽지 않는다(진행 중인 수업은 설정이 바뀌어도 처음
+ * 값으로 끝난다 — 묶음 M 검토 M-3).
+ */
+export function lessonMoreChoiceOf(
+  session: Pick<TalkLessonState, "start" | "level">,
+  core: LessonCore,
+): LessonMoreChoice {
+  return isLeadSession(session)
+    ? { mode: "claude", decision: lessonMoreLeadOf(core) }
+    : { mode: "app", decision: lessonMoreOf(core) };
 }
 
 export type LessonStop =
@@ -1120,6 +1223,7 @@ async function ensureLessonStarted(
   tx: Tx,
   state: TalkLessonState,
   at: Date,
+  leadText?: LeadTextOf,
 ): Promise<boolean> {
   let changed = false;
   if (!state.start) {
@@ -1158,8 +1262,15 @@ async function ensureLessonStarted(
       prepWords: prepPlan,
       carry,
       // 회화 방식(talk.lead_mode, 회화 Claude 주도 묶음 M): 처음 열 때 읽은 설정 값을 claude 일 때만 적고(app 이면 칸 없음 — 이 묶음 전 꼴과 같음)
-      // 그 세션은 끝까지 이 값을 쓴다(leadModeOf)
-      ...leadModeStartField(state.settings.leadMode),
+      // 그 세션은 끝까지 이 값을 쓴다(leadModeOf). claude 는 1~3단계이고 그 단원의 안내문 글이 있을 때만 적는다(13절 C241 보완 — leadStartModeOf)
+      ...leadModeStartField(
+        leadStartModeOf({
+          mode: state.settings.leadMode,
+          level: state.level,
+          unit: state.unit,
+          leadText,
+        }),
+      ),
     };
     if (!parseTalkAttemptInput(input))
       throw new Error("새 흐름 처음 스냅숏 꼴이 틀렸다");
@@ -1566,7 +1677,8 @@ function lessonImageKeysOf(
  */
 export async function loadTalkLessonView(
   { sessionId }: { sessionId: string },
-  deps: TalkServerDeps,
+  // leadText: 처음 스냅숏을 적을 때 보는 안내문 글 출처(기본 talkLeadTextOf — 시험이 1단계 시드로 새 방식을 열게 바꾼다, 운영에서는 넘기지 않음)
+  deps: TalkServerDeps & { leadText?: LeadTextOf },
 ): Promise<TalkLessonView | undefined> {
   if (!z.uuid().safeParse(sessionId).success) return undefined;
   const db: Db = deps.db ?? getDb();
@@ -1587,7 +1699,8 @@ export async function loadTalkLessonView(
     const first = any?.state;
     if (!first || !isTalkOpen(first.session)) return undefined;
     if (!first.teacher && !first.start) return first;
-    if (!(await ensureLessonStarted(tx, first, at))) return first;
+    if (!(await ensureLessonStarted(tx, first, at, deps.leadText)))
+      return first;
     return lessonStateFor(tx, args);
   });
   if (!state) return undefined;
@@ -1657,6 +1770,12 @@ export type LessonMoveOutcome =
       position: LessonPositionView;
       current: TalkLessonCurrent | null;
       prep: TalkLessonPrep | null;
+      /**
+       * 새 엔진 세션만(묶음 S2): 서버가 선생님 행을 붙이지 않았으니 화면이 새 엔진의 차례를 부를 것(spec 설계 3). 'more' 는 '더 이야기하기'
+       * (턴 요청 입력 more, 묶음 S3), 'start' 는 대화로 넘김(아이 말 없이 부르는 대화 토막의 첫 차례, 입구는 묶음 S1 — 고침 1 검토 I-2).
+       * 기존 방식에서는 칸이 없다.
+       */
+      leadTurn?: "more" | "start";
     }
   | {
       ok: false;
@@ -1688,7 +1807,8 @@ const LessonAdvanceSchema = z.strictObject({
 
 /**
  * 토막 넘김 새 갈래(lessonAdvanceOf): 인사 → 짧은 준비 → 대화 첫 질문(앱이 카드 첫 필수 질문을 새 선생님 행으로, AI 없음 — C19), 대화 중 연
- * 준비 끝 → 'Now let's talk.' + 다음 필수 질문(3.3 (나)). 앱이 붙인 질문의 단원 단어는 만남이다.
+ * 준비 끝 → 'Now let's talk.' + 다음 필수 질문(3.3 (나)). 앱이 붙인 질문의 단원 단어는 만남이다. 새 엔진 세션(isLeadSession)의 대화로
+ * 넘김은 행을 붙이지 않고 토막만 바꾼 뒤 leadTurn 'start' 를 돌려준다(lessonAdvanceChoiceOf, 묶음 S2 고침 1).
  */
 export async function advanceTalkLesson(
   raw: unknown,
@@ -1710,7 +1830,24 @@ export async function advanceTalkLesson(
       const state = await lessonStateFor(tx, { ...args, lock: true });
       if (!state || !isTalkOpen(state.session) || !state.start)
         return { ok: false, reason: "not_found" } as const;
-      const decision = lessonAdvanceOf(lessonCoreOf(state), parsed.data.to);
+      const choice = lessonAdvanceChoiceOf(
+        state,
+        lessonCoreOf(state),
+        parsed.data.to,
+      );
+      if (choice.mode === "claude") {
+        // 새 엔진(묶음 S2 고침 1): 카드 첫 질문 행을 붙이지 않고 토막만 바꾼 뒤, 대화 토막의 첫 차례를 새 엔진이 쓰게 한다(만남도 그 차례가 적음)
+        const lead = choice.decision;
+        if (!lead.ok) return { ok: false, reason: "out_of_order" } as const;
+        if (lead.segment !== state.segment)
+          await tx
+            .update(sessions)
+            .set({ talkSegment: lead.segment })
+            .where(eq(sessions.id, state.session.id));
+        const moved = await moveOutcomeOf(tx, args);
+        return moved.ok ? { ...moved, leadTurn: "start" as const } : moved;
+      }
+      const decision = choice.decision;
       if (!decision.ok) return { ok: false, reason: "out_of_order" } as const;
       if (decision.segment !== state.segment)
         await tx
@@ -1749,12 +1886,24 @@ const LessonFollowSchema = z.strictObject({
   clientListen: ClientListenSchema.optional(),
 });
 
-/** 새 흐름 되짚을 말(정리 토막, C33): 선생님이 되풀이한 바른 문장 가운데 오늘 쓸 말이 든 것과 카드 정리 대사. */
+/**
+ * 되짚을 말의 문장 출처(정리 토막, 묶음 S2 · plan 확인할 것 9): 기존 방식은 선생님 행의 되받은 말(recast), 새 엔진은 recast 칸이 비므로
+ * 이 수업에서 앱이 확인한 따라 할 문장(leadWrapSourcesOf, spec 설계 3 · 우려 8). 새 엔진 세션인가는 isLeadSession(처음 스냅숏 · 1~3단계)이다.
+ */
+export function lessonWrapSourcesOf(
+  state: Pick<TalkLessonState, "start" | "level" | "rows">,
+): string[] {
+  if (isLeadSession(state))
+    return leadWrapSourcesOf(state.rows.filter((r) => r.speaker === "tori"));
+  return state.rows.flatMap((r) =>
+    r.speaker === "tori" && r.recast ? [r.recast] : [],
+  );
+}
+
+/** 새 흐름 되짚을 말(정리 토막, C33): 선생님이 되풀이한 바른 문장(새 엔진은 확인된 따라 할 문장) 가운데 오늘 쓸 말이 든 것과 카드 정리 대사. */
 function lessonWrapLinesOf(state: TalkLessonState): WrapUpLine[] {
   return wrapUpLinesOf({
-    recasts: state.rows.flatMap((r) =>
-      r.speaker === "tori" && r.recast ? [r.recast] : [],
-    ),
+    recasts: lessonWrapSourcesOf(state),
     todayWords: state.card.todayWords.map((w) => w.word),
     closingLines: state.card.closingLines,
     koMeaning: state.spec.koMeaning,
@@ -1848,7 +1997,8 @@ export async function saveLessonFollowAlong(
 /**
  * '더 이야기하기' 새 갈래(lessonMoreOf, 정한 것 11): 마무리 물음 · 마무리 제안 뒤 고를 차례에서만. 앱이 더 이야기할 거리 하나를 새 카드 자리
  * 선생님 행으로 붙인다(AI 호출 · 턴 셈 없음). 마무리 물음에 답한 것이면 더 이야기하기 토막과 참여 완료(closing.ts completeTalk — 진행일 때만
- * 완료 · 학습일 · 친한 정도 · 이음매 completed, 세션마다 한 번).
+ * 완료 · 학습일 · 친한 정도 · 이음매 completed, 세션마다 한 번). 새 엔진 세션(isLeadSession — 처음 스냅숏 leadMode claude · 1~3단계)은 행을
+ * 붙이지 않고 토막 · 참여 완료만 같은 뜻으로 처리한 뒤 leadTurn 'more' 를 돌려준다(lessonMoreChoiceOf, 묶음 S2).
  */
 export async function chooseLessonMoreTalk(
   raw: unknown,
@@ -1871,7 +2021,21 @@ export async function chooseLessonMoreTalk(
       const state = await lessonStateFor(tx, { ...args, lock: true });
       if (!state || !isTalkOpen(state.session) || !state.start)
         return { ok: false, reason: "not_found" } as const;
-      const decision = lessonMoreOf(lessonCoreOf(state));
+      const choice = lessonMoreChoiceOf(state, lessonCoreOf(state));
+      if (choice.mode === "claude") {
+        // 새 엔진(묶음 S2): 카드 거리 행을 붙이지 않고 참여 완료 · 토막만 지금 뜻 그대로 처리한 뒤, 화면이 새 엔진의 차례를 부르게 한다
+        const lead = choice.decision;
+        if (!lead.ok) return { ok: false, reason: "out_of_order" } as const;
+        if (lead.complete) await completeTalk(tx, { state, at, rules });
+        if (lead.segment !== state.segment)
+          await tx
+            .update(sessions)
+            .set({ talkSegment: lead.segment })
+            .where(eq(sessions.id, state.session.id));
+        const moved = await moveOutcomeOf(tx, args);
+        return moved.ok ? { ...moved, leadTurn: "more" as const } : moved;
+      }
+      const decision = choice.decision;
       if (!decision.ok) return { ok: false, reason: "out_of_order" } as const;
       if (decision.complete) await completeTalk(tx, { state, at, rules });
       if (decision.segment !== state.segment)

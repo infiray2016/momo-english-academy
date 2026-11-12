@@ -3,11 +3,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { isLowBandLevel } from "@/core/ai/calls/talk-lesson";
 import {
   parseTalkAttemptInput,
   type TalkAttemptInput,
 } from "@/core/conversation/attempt";
 import {
+  isLeadSession,
   leadModeOf,
   leadModeStartField,
   TALK_LEAD_MODE_KEY,
@@ -154,5 +156,45 @@ describe("회화 방식 고르기 talk.lead_mode(회화 Claude 주도 묶음 M)"
     });
     expect(settingsWith("claude").leadMode).toBe("claude");
     expect(leadModeOf(openedApp)).toBe("app");
+  });
+});
+
+describe("새 엔진 세션인가 isLeadSession(묶음 S2 고침 1 · 검토 I-3 — S1 · S2 · S3 가 같은 함수를 부름)", () => {
+  const claude = { leadMode: "claude" };
+  const LEVELS = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  it("AC-26a 처음 스냅숏이 claude 이고 단계가 1~3단계 구간이면 새 엔진이고, 4~12단계는 claude 여도 기존 방식이다", () => {
+    for (const level of [1, 2, 3])
+      expect(isLeadSession({ start: claude, level })).toBe(true);
+    for (const level of [4, 5, 6, 7, 8, 9, 10, 11, 12])
+      expect(isLeadSession({ start: claude, level })).toBe(false);
+  });
+
+  it("AC-26a 단계 구간은 기존 함수 isLowBandLevel 과 같은 판정이다(1~12단계 전부)", () => {
+    for (const level of LEVELS)
+      expect(isLeadSession({ start: claude, level })).toBe(
+        isLowBandLevel(level),
+      );
+  });
+
+  it("AC-26a 칸 없는(app) · 모르는 값 · 없는 스냅숏은 어느 단계든 기존 방식이고, 그때는 단계 값을 읽지 않는다(범위 밖 단계도 던지지 않음)", () => {
+    for (const start of [{}, { leadMode: "app" }, { leadMode: "CLAUDE" }, null])
+      for (const level of [...LEVELS, 0, 99])
+        expect(isLeadSession({ start, level })).toBe(false);
+    expect(isLeadSession({ start: undefined, level: 1 })).toBe(false);
+  });
+
+  it("AC-26a 방식은 처음 스냅숏으로만 정한다: 지금 설정이 claude 여도 칸 없이 연 세션은 기존 방식이다", () => {
+    const openedApp = startOf({
+      ...startInput(),
+      ...leadModeStartField(settingsWith("app").leadMode),
+    });
+    expect(settingsWith("claude").leadMode).toBe("claude");
+    expect(isLeadSession({ start: openedApp, level: 1 })).toBe(false);
+    const openedClaude = startOf({
+      ...startInput(),
+      ...leadModeStartField(settingsWith("claude").leadMode),
+    });
+    expect(isLeadSession({ start: openedClaude, level: 1 })).toBe(true);
   });
 });

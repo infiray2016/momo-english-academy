@@ -5,6 +5,9 @@
 // 설정 값 자체의 검증(app · claude 밖이면 던짐)은 설정 읽기(lesson-turns.ts talkLessonSettingsFrom)가 하고, 여기 읽기는 스냅숏 호환 몫이라 관대하다.
 // 갈림 자체(N 턴 길)는 묶음 S1 몫이다. 순수 모듈이다.
 
+import { bandOf } from "@/core/level-band";
+import { TALK_LOW_BAND } from "@/core/seed/structure";
+
 /** 회화 방식: app 은 지금 방식(앱이 차례를 계획), claude 는 Claude 가 대화를 이끄는 방식(N). */
 export const TALK_LEAD_MODES = ["app", "claude"] as const;
 export type TalkLeadMode = (typeof TALK_LEAD_MODES)[number];
@@ -29,4 +32,21 @@ export function leadModeStartField(mode: TalkLeadMode): {
   leadMode?: "claude";
 } {
   return mode === "claude" ? { leadMode: "claude" } : {};
+}
+
+/**
+ * 이 세션을 새 엔진(N)으로 다루는가(묶음 S2 고침 1 · 검토 I-3): 처음 스냅숏의 방식이 claude 이고(leadModeOf) 단계가 안내문의 값이 정해진
+ * 구간(지금 1~3단계, talk-lesson.ts isLowBandLevel 과 같은 판정)일 때만 참이다. 그 밖의 단계는 설정이 claude 여도 기존 방식이다(컨트롤러
+ * 결정: 새 엔진은 값이 정해지고 실험을 거친 단계 구간에서만 돕는다). S1(턴 길) · S2(토막 접점) · S3(더 이야기하기)가 이 함수 하나로 가른다.
+ * 기존 방식이면 단계 값을 읽지 않는다. 구간 판정은 isLowBandLevel 을 부르지 않고 같은 식(bandOf · TALK_LOW_BAND)을 쓴다 — talk-lesson.ts 가
+ * lesson-turns.ts 를 거쳐 이 모듈을 불러오므로, 여기서 talk-lesson.ts 를 불러오면 순환 불러오기가 된다(같은 판정은 단위 시험이 1~12단계로 지킨다).
+ */
+export function isLeadSession(session: {
+  readonly start: { readonly leadMode?: unknown } | null | undefined;
+  readonly level: number;
+}): boolean {
+  return (
+    leadModeOf(session.start) === "claude" &&
+    bandOf(session.level) === TALK_LOW_BAND
+  );
 }
