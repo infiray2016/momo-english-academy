@@ -1,7 +1,7 @@
 "use client";
 
 // 개발용 회화 방식 전환 쪽 본체(회화 Claude 주도 plan 묶음 D · spec FR-13 · 정본 AC-26o). 프리뷰 배포에서 어른(요청자)이 쓰는 시험 도구이고
-// 아이 화면이 아니다. 지금 값(기존 방식 app · 새 방식 claude)을 보이고 둘 가운데 하나로 바꾸는 단추 둘과 안내 한 줄을 둔다.
+// 아이 화면이 아니다. 지금 값(기존 방식 app · 새 방식 claude)을 보이고 둘 가운데 하나로 바꾸는 단추 둘과 안내 두 줄(바뀌는 때 · 새 방식이 도는 단원)을 둔다.
 // 바꾸기는 쪽(page.preview.tsx)이 넘긴 서버 액션(src/server/dev/talk-mode.ts changeTalkMode — 접근 쿠키 · 운영 배포 거절 · 두 값만)이 한다.
 import { useState, useTransition } from "react";
 import type { TalkLeadMode } from "@/core/conversation/lead-mode";
@@ -20,6 +20,9 @@ export const TALK_MODE_TEXT = {
     app: "기존 방식으로 바꾸기",
   } satisfies Record<TalkLeadMode, string>,
   notice: "진행 중인 수업은 처음 값 그대로이고, 새로 여는 수업부터 바뀌어요.",
+  /** 새 방식이 도는 단원(13절 'C241 보완' — 단원 번호는 적지 않는다, 단원이 늘면 문구가 그대로 맞게). */
+  scope:
+    "새 방식은 안내문이 준비된 단원에서만 돌아요. 그 밖의 단원 수업은 새 방식을 골라도 기존 방식으로 열려요.",
   changed: "바꿨어요",
   same: "이미 그 방식이에요",
   notAllowed: "운영 배포에서는 바꿀 수 없어요",
@@ -75,6 +78,7 @@ export function TalkModePanel({
         ))}
       </div>
       <p>{TALK_MODE_TEXT.notice}</p>
+      <p data-testid="talk-mode-scope">{TALK_MODE_TEXT.scope}</p>
       {line !== null && (
         <p data-testid="talk-mode-line" role="status">
           {line}

@@ -55,6 +55,7 @@ import { useTeacherLayer } from "@/components/teacher/teacher-layer";
 import { TeacherWindow } from "@/components/teacher/teacher-window";
 import { fillName } from "@/core/ai/mask";
 import type { ClientListen } from "@/core/conversation/client-listen";
+import type { LeadOpen } from "@/core/conversation/lead-turn-core";
 import {
   childLogEntryOf,
   liveTeacherEntryOf,
@@ -103,6 +104,7 @@ import type {
 } from "@/lib/speech/types";
 import {
   sendTalkLessonTurnRetrying,
+  type TalkLeadOpenBody,
   type TalkTurnBody,
 } from "@/lib/talk-stream";
 import { cn } from "@/lib/utils";
@@ -127,7 +129,10 @@ import type {
   TalkLessonView,
   WrapView,
 } from "@/server/conversation";
-import type { TalkLessonNext } from "@/server/conversation/lesson-turn";
+import type {
+  TalkLessonLine,
+  TalkLessonNext,
+} from "@/server/conversation/lesson-turn";
 import {
   type ChildSend,
   ChildTurn,
@@ -330,6 +335,14 @@ export function lessonSegmentLabelOf(
 }
 
 type LessonPosition = TalkLessonView["position"];
+/** 토막 넘김 · '더 이야기하기' · 다시 읽은 자료에서 화면에 둘 칸(LessonMoveOutcome 의 ok 갈래 · TalkLessonView 가 함께 갖는 꼴). */
+type LessonMoveFields = {
+  segment: TalkLessonView["segment"];
+  step: TalkLessonView["step"];
+  position: LessonPosition;
+  current: TalkLessonCurrent | null;
+  prep: TalkLessonPrep | null;
+};
 
 /**
  * 새 흐름 위 띠(순수 함수, 4절 위 띠 행 · C188 · C189): 토막 이름과 '말 주고받기 n'(분모 없음). 마무리 물음 뒤에는 '다 했어요! 더 이야기하기
@@ -449,6 +462,60 @@ export function lessonAfterEndOf(
   )
     return { kind: "reload" };
   return { kind: "child" };
+}
+
+/**
+ * 토막 넘김 · '더 이야기하기' 결과를 어떻게 둘까(순수 함수, 묶음 S3 — 'Claude 주도' spec 설계 3 · 13절 C241): 새 엔진 신호(leadTurn)가 없으면
+ * 지금처럼 화면에 둔다(move). 있으면 서버가 선생님 행을 붙이지 않았으니 아이 말 없는 턴 요청으로 그 입구를 부른다(lead). 같은 입구를 이미
+ * 보내는 중이면(연타로 액션이 두 번 돌아옴) 아무것도 하지 않는다(skip — 같은 요청을 두 번 보내지 않는다).
+ */
+export function lessonMoveActionOf(
+  out: { leadTurn?: LeadOpen | undefined },
+  sending: LeadOpen | null,
+): { kind: "move" } | { kind: "lead"; open: LeadOpen } | { kind: "skip" } {
+  const open = out.leadTurn;
+  if (open === undefined) return { kind: "move" };
+  return open === sending ? { kind: "skip" } : { kind: "lead", open };
+}
+
+/** 아이 말 없는 턴 요청 본문(순수 함수, 묶음 S3 — 서버 turn.ts 의 아이 말 없는 요청 꼴: 수업 id 와 입구 하나). */
+export function leadOpenBodyOf(
+  sessionId: string,
+  open: LeadOpen,
+): TalkLeadOpenBody {
+  return { sessionId, lead: open };
+}
+
+/** 턴 요청을 처음 보내는가(아이 말 · 새 엔진 신호) · 다시 보내는가(다시 해 보기 · 연결이 돌아옴 · 쉬는 중이 풀림). */
+export type SubmitSend = "first" | "again";
+
+/**
+ * 턴 요청을 보낼 때의 갈림(순수 함수, 묶음 S3 고침 1 — 검토 rev-s3 M-1 · M-4): 아이 말 요청은 지금처럼 늘 읽기 줄을 끊고 체감 대기를 잰다.
+ * 아이 말 없는 요청(새 엔진 입구 start · more)은 아이가 말을 멈춘 때가 없어 체감 대기를 재지 않고(앞 차례에 잰 값은 다음 아이 말이 그대로
+ * 싣는다), 신호를 받아 처음 보낼 때만 앞 말풍선(인사 끝 · 마무리 물음)을 읽는 중일 수 있어 끊지 않는다. 다시 보낼 때는 실패한 시도에서
+ * 흘러온 문장을 두 번 듣지 않게 끊는다.
+ */
+export function submitPlanOf(
+  body: TalkTurnBody | TalkLeadOpenBody,
+  send: SubmitSend,
+): { cancelReading: boolean; measurePerceived: boolean } {
+  const childTurn = !("lead" in body);
+  return {
+    cancelReading: childTurn || send === "again",
+    measurePerceived: childTurn,
+  };
+}
+
+/**
+ * 닫는 줄을 받은 화면의 처리(순수 함수, 묶음 S3 고침 1): 쉬는 중으로 닫혔고 정리 줄이 있으면(참여 완료 뒤 — 아이 차례 길 · '더 이야기하기'
+ * 입구 모두) 정리로, 아니면 끝인사와 '수업 목록'이다.
+ */
+export function lessonCloseActionOf(
+  line: Extract<TalkLessonLine, { t: "close" }>,
+): "wrap" | "closed" {
+  return line.reason === "resting" && (line.lines?.length ?? 0) > 0
+    ? "wrap"
+    : "closed";
 }
 
 /**
@@ -839,13 +906,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const [noticeSeen, setNoticeSeen] = useState(true);
   const [micChecked, setMicChecked] = useState(false);
   const [resting, setResting] = useState(view.resting);
-  const restResend = useRef<TalkTurnBody | null>(null);
+  const restResend = useRef<TalkTurnBody | TalkLeadOpenBody | null>(null);
   const restRetry = useAiRestRetry({
     recheck: recheckAiRest,
     onReleased: () => {
       const body = takeRestResend({ resend: restResend, listenEndedAt });
       setResting(false);
-      if (body) void submit(body);
+      if (body) void submit(body, "again");
     },
   });
   const [segment, setSegment] = useState(view.segment);
@@ -919,7 +986,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   /** 이 말풍선의 소리 줄을 들려줬는가(들려주지 못함 — C184 · 묶음 10 soundRetry). */
   const [soundTrack, setSoundTrack] = useState<SoundTrack>(SOUND_TRACK_START);
   const counters = useRef(speakingCountersStart());
-  const pendingSend = useRef<TalkTurnBody | null>(null);
+  const pendingSend = useRef<TalkTurnBody | TalkLeadOpenBody | null>(null);
+  /** 보내는 중인 아이 말 없는 요청의 입구(묶음 S3 — 같은 입구를 두 번 보내지 않게, lessonMoveActionOf). */
+  const leadSending = useRef<LeadOpen | null>(null);
   const retryAction = useRef<(() => void) | null>(null);
   const inflight = useRef<AbortController | null>(null);
   const listenEndedAt = useRef<number | undefined>(undefined);
@@ -1195,7 +1264,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     if (phase !== "offline") return;
     const again = () => {
       const body = pendingSend.current;
-      if (body) void submit(body);
+      if (body) void submit(body, "again");
     };
     window.addEventListener("online", again);
     return () => window.removeEventListener("online", again);
@@ -1235,20 +1304,19 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     queue.enqueue(lessonSpokenItemsOf(next, view.level));
   }
 
-  /** 토막 넘김 · '더 이야기하기' · 다시 읽은 자료를 화면에 둔다(새 선생님 행이면 새 말풍선, 짧은 준비면 읽기가 끝난 뒤 쪽지). */
-  function applyMove(out: {
-    segment: TalkLessonView["segment"];
-    step: TalkLessonView["step"];
-    position: LessonPosition;
-    current: TalkLessonCurrent | null;
-    prep: TalkLessonPrep | null;
-  }) {
+  /** 토막 넘김 · '더 이야기하기' · 다시 읽은 자료의 토막 · 자리 · 지금 행 칸을 화면에 둔다(applyMove · openLead 가 함께 쓴다). */
+  function applyMoveFields(out: LessonMoveFields) {
     setSegment(out.segment);
     setPosition(out.position);
     setFlash(out.position.flashDontKnow);
     setExplanation(out.current?.explanation);
     setHints(out.current?.hints ?? []);
     setImageKey(out.current?.imageKey);
+  }
+
+  /** 토막 넘김 · '더 이야기하기' · 다시 읽은 자료를 화면에 둔다(새 선생님 행이면 새 말풍선, 짧은 준비면 읽기가 끝난 뒤 쪽지). */
+  function applyMove(out: LessonMoveFields) {
+    applyMoveFields(out);
     const next = lessonAfterOf(out.step);
     setAfter(next);
     if (next.kind === "prep") {
@@ -1259,6 +1327,35 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     if (out.current && out.current.turnNo !== teacherTurnNo.current)
       showTeacherRow(out.current);
     setPhase("tori");
+  }
+
+  /**
+   * 토막 넘김 · '더 이야기하기' 결과(lessonMoveActionOf): 새 엔진 신호가 없으면 지금처럼(applyMove), 있으면 그 입구를 아이 말 없는 턴 요청으로
+   * 부른다(openLead), 같은 입구를 보내는 중이면 그대로 둔다.
+   */
+  function applyMoveOutcome(out: LessonMoveFields & { leadTurn?: LeadOpen }) {
+    const action = lessonMoveActionOf(out, leadSending.current);
+    if (action.kind === "move") applyMove(out);
+    else if (action.kind === "lead") void openLead(out, action.open);
+  }
+
+  /**
+   * 새 엔진의 아이 말 없는 차례(묶음 S3 — 대화 토막의 첫 차례 · '더 이야기하기' 뒤). 서버가 붙인 행이 없으니 토막 · 자리만 두고, 지금 말풍선을
+   * 기록으로 올린 뒤 턴 요청을 보낸다. 흘려 받은 선생님 말은 아이 차례 뒤와 같은 꼴로 보이고 읽는다(submit — 끊김 · stale · 쉼 · 실패의
+   * 다시 보내기도 같은 꼴, 서버는 그 차례가 쓰이기 전이면 같은 신호 · 쓰인 뒤면 저장한 행을 다시 흘린다). 할 일은 끝 줄이 정한다.
+   */
+  async function openLead(out: LessonMoveFields, open: LeadOpen) {
+    leadSending.current = open;
+    applyMoveFields(out);
+    setAfter({ kind: "child" });
+    pushBubbleToLog();
+    // 아이가 말을 멈춘 때가 없는 차례 — 체감 대기를 재지 않는다(submitPlanOf). 신호로 처음 보내므로 앞 말풍선 읽기는 끊지 않는다
+    listenEndedAt.current = undefined;
+    try {
+      await submit(leadOpenBodyOf(view.sessionId, open), "first");
+    } finally {
+      if (leadSending.current === open) leadSending.current = null;
+    }
   }
 
   /** 실패 줄 · '다시 해 볼래요'(같은 일을 다시). 다른 기기에서 닫혔으면 수업 목록. */
@@ -1288,7 +1385,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       return;
     }
     retryAction.current = null;
-    applyMove(out);
+    applyMoveOutcome(out);
   }
 
   /** 화면 자료를 다시 읽어 서버의 할 일을 따른다(대화 중 짧은 준비 · 인사 끝 · 대화 첫 질문 차례 — 턴 길은 그 차례를 받지 않는다). */
@@ -1423,14 +1520,21 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     }
   }
 
-  /** 턴 하나를 보내고 새 꼴 줄을 받는다(끊김 · stale 은 talk-stream 되풀이 — 같은 시도 id). */
-  async function submit(body: TalkTurnBody) {
+  /**
+   * 턴 하나를 보내고 새 꼴 줄을 받는다(끊김 · stale 은 talk-stream 되풀이 — 같은 시도 id · 아이 말 없는 요청은 같은 본문). 읽기 줄을 끊는지 ·
+   * 체감 대기를 재는지는 submitPlanOf(다시 보내는 길은 send "again").
+   */
+  async function submit(
+    body: TalkTurnBody | TalkLeadOpenBody,
+    send: SubmitSend = "first",
+  ) {
+    const plan = submitPlanOf(body, send);
     abortInflight();
     const controller = new AbortController();
     inflight.current = controller;
     pendingSend.current = body;
-    retryAction.current = () => void submit(body);
-    queue.cancel();
+    retryAction.current = () => void submit(body, "again");
+    if (plan.cancelReading) queue.cancel();
     setPhase("tori");
     // 서버 차례 기다림(끝 줄 · 쉼 줄 · 닫는 줄 · 오류 전 — 그동안 버림의 안전 상한을 세지 않는다, N-1)
     discardRef.current?.serverWait(true);
@@ -1439,10 +1543,11 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     const firstLine = () => {
       if (!first) return;
       first = false;
-      perceived.current = perceivedWaitOf(
-        listenEndedAt.current,
-        performance.now(),
-      );
+      if (plan.measurePerceived)
+        perceived.current = perceivedWaitOf(
+          listenEndedAt.current,
+          performance.now(),
+        );
       setWaitingSince(null);
     };
     const result = await sendTalkLessonTurnRetrying(
@@ -1509,7 +1614,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           pendingSend.current = null;
           retryAction.current = null;
           setWaitingSince(null);
-          if (line.reason === "resting" && (line.lines?.length ?? 0) > 0) {
+          if (lessonCloseActionOf(line) === "wrap") {
             // 참여 완료 뒤 1-가 하루 안전 상한: 정리 → 마무리(8절). 마무리 자료를 못 읽으면 끝인사와 '수업 목록'
             void readTalkLessonWrap({ sessionId: view.sessionId })
               .catch(() => undefined)
@@ -1672,7 +1777,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       return;
     }
     retryAction.current = null;
-    applyMove(out);
+    applyMoveOutcome(out);
   }
 
   // 버리는 듣기 층의 화면 몫(층이 없으면 넘기지 않는다 — 아이 차례 · 따라 말하기가 지금 그대로)

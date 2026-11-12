@@ -35,6 +35,12 @@ export type TalkTurnBody = {
 };
 
 /**
+ * 아이 말 없는 턴 요청(회화 Claude 주도 묶음 S3 — 서버 turn.ts parseTalkTurnRequest 의 둘째 꼴): 대화 토막의 첫 차례(start) · '더 이야기하기'
+ * 뒤 차례(more). 보내기 · 읽기 · 되풀이는 아이 말 요청과 같다.
+ */
+export type TalkLeadOpenBody = { sessionId: string; lead: "start" | "more" };
+
+/**
  * 'done' = 끝 줄을 받음 · 'offline' = 끝 줄 없이 끊김(같은 시도 id 로 다시 보낼 차례) · 'stale' = 자리가 어긋남 · 같은 시도 id 가 아직
  * 진행 중일 수 있음(처리기로 넘기지 않음 — 되풀이가 다룸) · 'aborted' = 화면이 끊음(떠남 · 다음 요청).
  */
@@ -54,7 +60,7 @@ function parseLine<L extends { t: string }>(text: string): L | undefined {
  * onHttpError 뒤 'done', 끝 줄 없이 끊기면 'offline', 화면이 끊으면 'aborted'.
  */
 async function readTurnLines<L extends { t: string }>(
-  body: TalkTurnBody,
+  body: TalkTurnBody | TalkLeadOpenBody,
   lineOf: (line: L) => "line" | "done" | "stale",
   onHttpError: () => void,
   {
@@ -228,7 +234,7 @@ function dispatchLesson(
 
 /** 아이 말 하나를 보내고 줄을 읽는다. 처리기는 줄이 오는 차례대로 불린다. */
 export async function sendTalkLessonTurn(
-  body: TalkTurnBody,
+  body: TalkTurnBody | TalkLeadOpenBody,
   handlers: TalkLessonStreamHandlers,
   opts: { signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
 ): Promise<TalkTurnResult> {
@@ -247,7 +253,7 @@ export async function sendTalkLessonTurn(
  * 다시 보낸다(STALE_RESENDS_MAX 번까지 — 서버는 첫 요청이 끝났으면 다시 흘리고, 아직이면 stale, TURN_IN_FLIGHT_MS 뒤면 AI 를 부름).
  */
 export async function sendTalkLessonTurnRetrying(
-  body: TalkTurnBody,
+  body: TalkTurnBody | TalkLeadOpenBody,
   handlers: TalkLessonStreamHandlers,
   deps: RetryDeps,
 ): Promise<"done" | "offline" | "aborted"> {

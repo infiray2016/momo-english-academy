@@ -3,6 +3,9 @@ import "server-only";
 // Route Handler 의 첫 문장. 입력 Zod → 프로필 · 가림 · 설정 · 1-가 하루 안전 상한 확인을 함께 읽고 → 새 꼴 카드 세션이면 턴 길
 // (lesson-turn.ts runTalkLessonTurn)로 보낸다. 세션이 없거나 옛 꼴 카드 세션이면 stale(화면이 자료를 다시 읽으면 옛 꼴 세션은 닫힌다 —
 // 정한 것 2). 알림 기준(하루 호출 · 비용)은 막지 않는다(AC-8b). 로그에는 오류 이름 · Postgres 코드만(아이 글 없음).
+// 아이 말 없는 요청 둘(묶음 S3 — 'Claude 주도' spec 설계 3 · 13절 C241): 화면이 토막 넘김의 leadTurn 'start'(대화 토막의 첫 차례) ·
+// '더 이야기하기'의 leadTurn 'more' 를 받으면 { sessionId, lead } 만 보낸다. 같은 확인 · 같은 공통 값으로 새 엔진 입구(lead-turn.ts
+// runLeadOpenTurn)에 잇는다. 아이 말 요청의 꼴은 그대로이고 두 꼴은 서로의 칸을 받지 않는다(strictObject 둘).
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -10,6 +13,7 @@ import {
   TEACHER_SENTENCES_SETTING_SCHEMAS,
 } from "@/core/ai/calls/talk-lesson";
 import { ClientListenSchema } from "@/core/conversation/client-listen";
+import type { LeadOpen } from "@/core/conversation/lead-turn-core";
 import type { StageTimings } from "@/core/conversation/timing";
 import { createStageTimer } from "@/core/conversation/timing";
 import { talkCardKindOf } from "@/core/seed/schema/talk";
@@ -23,6 +27,7 @@ import { getOutputCheckLists } from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
 import { CLIENT_ATTEMPT_ID_MAX, TALK_TEXT_MAX } from "./index";
+import { runLeadOpenTurn } from "./lead-turn";
 import { runTalkLessonTurn, type TalkLessonLine } from "./lesson-turn";
 import type { TalkServerDeps } from "./state";
 
@@ -53,6 +58,39 @@ const TurnRequestSchema = z.strictObject({
   /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음, 5절 talk_turns client_listen). */
   clientListen: ClientListenSchema.optional(),
 });
+
+/** 아이 말 없는 요청에서 부를 새 엔진 입구(lead-turn-core LeadOpen 과 같은 값 — 묶음 S3). */
+const LEAD_OPEN_REQUESTS = [
+  "start",
+  "more",
+] as const satisfies readonly LeadOpen[];
+
+/** 아이 말 없는 요청(묶음 S3): 수업 id 와 부를 입구 하나뿐. 아이 말 요청의 칸은 받지 않는다. */
+const LeadOpenRequestSchema = z.strictObject({
+  sessionId: z.uuid(),
+  lead: z.enum(LEAD_OPEN_REQUESTS),
+});
+
+/** 턴 요청 한 건: 아이 말 하나(지금 꼴) 또는 아이 말 없이 부르는 새 엔진 입구(묶음 S3). */
+export type ParsedTurnRequest =
+  | { kind: "child"; request: z.infer<typeof TurnRequestSchema> }
+  | { kind: "open"; request: { sessionId: string; open: LeadOpen } };
+
+/**
+ * 턴 요청 본문 → 꼴 하나(순수). 아이 말 요청은 지금 TurnRequestSchema 그대로 먼저 본다(검증 · 결과 값이 지금과 같다). 그 꼴이 아니면 아이 말
+ * 없는 요청 꼴을 본다. 둘 다 아니면 null.
+ */
+export function parseTalkTurnRequest(raw: unknown): ParsedTurnRequest | null {
+  const child = TurnRequestSchema.safeParse(raw);
+  if (child.success) return { kind: "child", request: child.data };
+  const open = LeadOpenRequestSchema.safeParse(raw);
+  if (open.success)
+    return {
+      kind: "open",
+      request: { sessionId: open.data.sessionId, open: open.data.lead },
+    };
+  return null;
+}
 
 export type TurnDeps = TalkServerDeps & {
   /** 줄 하나를 브라우저로(Route Handler — 던지지 않는다). */
@@ -110,19 +148,20 @@ async function sessionCardKindOf(
 }
 
 /**
- * 아이 말 하나(값 2). 줄은 write 로 흘려 보낸다(던지지 않는다). 끝에 늘 끝 줄(end · resting · break · close · stale · error) 하나.
+ * 아이 말 하나(값 2) 또는 아이 말 없이 부르는 새 엔진 입구(묶음 S3). 줄은 write 로 흘려 보낸다(던지지 않는다). 끝에 늘 끝 줄(end · resting ·
+ * break · close · stale · error) 하나. 입구는 새 방식의 수업이 아니거나 그 차례가 아니면 stale 이다(runLeadOpenTurn 이 정한다).
  */
 export async function runTalkTurnRequest(
   raw: unknown,
   deps: TurnDeps,
 ): Promise<void> {
   const { write } = deps;
-  const parsed = TurnRequestSchema.safeParse(raw);
-  if (!parsed.success) {
+  const parsed = parseTalkTurnRequest(raw);
+  if (!parsed) {
     write({ t: "error" });
     return;
   }
-  const request = parsed.data;
+  const request = parsed.request;
   const db: Db = deps.db ?? getDb();
   const received = deps.requestReceivedAt ?? deps.now();
   // 구간마다 준비 시간(C125 (4)) — 차례로 기다리던 읽기는 서로 기대지 않는 것끼리 함께 돌린다
@@ -158,7 +197,7 @@ export async function runTalkTurnRequest(
       write({ t: "stale" });
       return;
     }
-    await runTalkLessonTurn(request, deps, {
+    const shared = {
       db,
       profileId,
       masker,
@@ -167,7 +206,13 @@ export async function runTalkTurnRequest(
       received,
       restingP,
       timer,
-    });
+    };
+    if (parsed.kind === "open") {
+      // 아이 말 없는 요청 — 공통 값은 아이 차례와 같은 것(task-s1-report 3절)
+      await runLeadOpenTurn(parsed.request, deps, shared);
+      return;
+    }
+    await runTalkLessonTurn(parsed.request, deps, shared);
   } catch (error) {
     logFailure("회화 턴 길", error);
     write({ t: "error" });

@@ -22,6 +22,7 @@ const getDb = vi.fn(() => {
 vi.mock("@/server/db", () => ({ getDb: () => getDb() }));
 
 import { leadModeOf, leadModeStartField } from "@/core/conversation/lead-mode";
+import { leadStartModeOf } from "@/core/conversation/lead-turn-core";
 import {
   changeTalkMode,
   changeTalkModeFor,
@@ -269,17 +270,47 @@ describe("개발용 회화 방식 전환 서버 액션", () => {
     });
   });
 
-  it("AC-26o 개발용 전환: 바꾼 값은 새로 여는 수업의 처음 스냅숏 칸이 되고, 이미 열린 수업의 처음 스냅숏은 처음 값 그대로 읽힌다", async () => {
+  /**
+   * 처음 스냅숏 칸(index.ts ensureLessonStarted 와 같은 식): 방식은 leadStartModeOf(설정 · 단계 구간 · 그 단원의 안내문 글 — 13절 C241 보완)가
+   * 정한다. 안내문 글이 있는 단원은 지금 회화 3단계 단원 1 이다(운영 표 talkLeadTextOf 기본값).
+   */
+  const startFieldOf = (
+    mode: "app" | "claude",
+    level: number,
+    unit: number,
+  ) => ({
+    ...leadModeStartField(leadStartModeOf({ mode, level, unit })),
+  });
+
+  it("AC-26o 개발용 전환: 바꾼 값은 새로 여는 수업(안내문 글이 있는 단원)의 처음 스냅숏 칸이 되고, 이미 열린 수업의 처음 스냅숏은 처음 값 그대로 읽힌다", async () => {
     const { store } = fakeStore(seedRows("app"));
     const deps = { env: PREVIEW_ENV, store, now: () => AT };
     // 바꾸기 전에 연 수업(app — 칸 없음)
-    const openedBefore = { ...leadModeStartField("app") };
+    const openedBefore = startFieldOf("app", 3, 1);
     await changeTalkModeFor("claude", deps);
     const read = await readTalkModeFor(deps);
     if (!read.ok) throw new Error("읽기 실패");
-    const openedAfter = { ...leadModeStartField(read.mode) };
+    const openedAfter = startFieldOf(read.mode, 3, 1);
     expect(leadModeOf(openedAfter)).toBe("claude");
     expect(leadModeOf(openedBefore)).toBe("app");
+  });
+
+  it("AC-26o 개발용 전환: 값이 claude 여도 안내문 글이 없는 단원(또는 새 방식 구간 밖 단계)의 수업은 처음 스냅숏이 기존 방식(app)이다(13절 C241 보완)", async () => {
+    const { store } = fakeStore(seedRows("app"));
+    const deps = { env: PREVIEW_ENV, store, now: () => AT };
+    await changeTalkModeFor("claude", deps);
+    const read = await readTalkModeFor(deps);
+    if (!read.ok) throw new Error("읽기 실패");
+    expect(read.mode).toBe("claude");
+    for (const [level, unit] of [
+      [3, 2],
+      [1, 1],
+      [4, 1],
+    ] as const) {
+      const opened = startFieldOf(read.mode, level, unit);
+      expect(opened).toEqual({});
+      expect(leadModeOf(opened)).toBe("app");
+    }
   });
 });
 
