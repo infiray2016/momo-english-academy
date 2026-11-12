@@ -57,7 +57,10 @@ import {
   lessonHintTiersOf,
   openedTierCount,
 } from "@/core/conversation/hints";
-import { leadWrapRecastsOf } from "@/core/conversation/lead-turn-core";
+import {
+  leadTurnAppliesOf,
+  leadWrapRecastsOf,
+} from "@/core/conversation/lead-turn-core";
 import {
   childLinesOf,
   type LateCardRow,
@@ -180,7 +183,6 @@ import {
   safetyClosesOn,
   scheduleTalkClosing,
 } from "./closing";
-import { leadTurnAfterChild, leadTurnApplies } from "./lead-turn";
 import {
   emptyLessonRange,
   type LessonRange,
@@ -2250,6 +2252,19 @@ export type LessonTurnShared = {
   timer: { mark: (stage: string) => void; result: () => StageTimings };
 };
 
+/**
+ * 새 엔진 수업의 아이 차례 뒤 선생님 차례 처리기(lead-turn.ts leadTurnAfterChild 꼴). 부르는 쪽(turn.ts runTalkTurnRequest)이 넘긴다 — 이
+ * 파일은 lead-turn.ts 를 형으로도 값으로도 불러오지 않는다(의존 방향 검사 no-circular, 묶음 S1 CI 고침). 줄은 write 로 흘려 보내고 끝에 늘 끝
+ * 줄 하나.
+ */
+export type LessonLeadAfterChild = (
+  state: TalkLessonState,
+  child: TalkTurnRow,
+  deps: LessonTurnDeps,
+  shared: LessonTurnShared,
+  ctxP: ReturnType<typeof levelContextOf>,
+) => Promise<void>;
+
 const CHILD_SEGMENTS: readonly TalkSegment[] = [
   "greeting",
   "talk",
@@ -2332,6 +2347,7 @@ export async function runTalkLessonTurn(
   request: LessonTurnRequest,
   deps: LessonTurnDeps,
   shared: LessonTurnShared,
+  leadAfterChild?: LessonLeadAfterChild,
 ): Promise<void> {
   const { write } = deps;
   const { db, profileId, masker, settings: s, at, timer } = shared;
@@ -2431,7 +2447,7 @@ export async function runTalkLessonTurn(
     }
     const { state, child } = begun;
     timer.mark("state");
-    await lessonTurnAfterChild(state, child, deps, shared);
+    await lessonTurnAfterChild(state, child, deps, shared, leadAfterChild);
   } catch (error) {
     logFailure("회화 수업 턴 길", error);
     write({ t: "error" });
@@ -2443,6 +2459,7 @@ async function lessonTurnAfterChild(
   child: TalkTurnRow,
   deps: LessonTurnDeps,
   shared: LessonTurnShared,
+  leadAfterChild: LessonLeadAfterChild | undefined,
 ): Promise<void> {
   const { write } = deps;
   const { db, profileId, masker, settings: s, at, received, timer } = shared;
@@ -2544,8 +2561,11 @@ async function lessonTurnAfterChild(
   }
 
   // (5-1) 회화 Claude 주도 방식(spec 설계 1): 처음 스냅숏의 방식이 claude 이고 대화 토막이면 새 엔진의 턴 길로 간다(아래 지금 길은 그대로)
-  if (leadTurnApplies(state)) {
-    await leadTurnAfterChild(state, child, deps, shared, ctxP);
+  // 처리기는 부르는 쪽이 넘긴다(위 LessonLeadAfterChild). 넘어오지 않았으면 지금 길로 조용히 가지 않고 던진다(프로그램 오류 — 바깥 잡기가 error 줄)
+  if (leadTurnAppliesOf(state)) {
+    if (!leadAfterChild)
+      throw new Error("새 엔진 수업의 턴 처리기가 넘어오지 않았다");
+    await leadAfterChild(state, child, deps, shared, ctxP);
     return;
   }
 

@@ -6,7 +6,15 @@
 // 빔 (라) 좁은 정의 다시 말하기 한 번 · 질문이 사라지지 않음 (마) 금지어는 지금 규칙의 안전한 대사 (바) 1~3단계 글 빼기 (사) 마무리 차례
 // (아) 진행 중 설정이 바뀌어도 처음 값.
 import { and, eq, isNull, like } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { TALK_LEAD_TEXT_L3U1 } from "@/core/ai/calls/talk-lead";
 import {
   parseTalkAttemptInput,
@@ -36,6 +44,7 @@ import {
 } from "@/server/conversation";
 import { runLeadOpenTurn } from "@/server/conversation/lead-turn";
 import {
+  runTalkLessonTurn,
   type TalkLessonLine,
   TURN_IN_FLIGHT_MS,
 } from "@/server/conversation/lesson-turn";
@@ -1101,5 +1110,43 @@ describe("회화 Claude 주도 묶음 S1 새 엔진 턴 길", () => {
     expect(
       await sameErrorCount(db, { purpose: "talk_turn", learningDay }),
     ).toBe(3);
+  });
+
+  it("AC-26a 새 엔진 수업의 대화 차례에 처리기 없이 지금 턴 길(runTalkLessonTurn)을 부르면 지금 길로 조용히 가지 않고 error 줄로 끝나며 AI 를 부르지 않는다(운영의 부르는 곳 turn.ts 는 처리기를 넘긴다 — 의존 방향 고침)", async () => {
+    const { sessionId, profileId } = await inTalk("claude");
+    const before = h.fake.requests.length;
+    const lines: TalkLessonLine[] = [];
+    const contact = getOutputCheckLists()
+      .forbidden.patterns.filter((p) => p.category === "contact")
+      .map((p) => p.regex);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await runTalkLessonTurn(
+        {
+          sessionId,
+          clientAttemptId: `lead-turn-${++seq}`,
+          input: speech("I like apples."),
+          hint: { opened: 0, heard: [] },
+        },
+        { ...h.deps(), write: (line) => lines.push(line) },
+        {
+          db,
+          profileId,
+          masker: await maskerFor(db, profileId, contact),
+          settings: await getSettings(turnSettings, { db, profileId }),
+          at: h.clock.now,
+          received: h.clock.now,
+          restingP: Promise.resolve(false),
+          timer: createStageTimer(() => performance.now()),
+        },
+      );
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining("회화 수업 턴 길 실패"),
+      );
+    } finally {
+      logged.mockRestore();
+    }
+    expect(lines).toEqual([{ t: "error" }]);
+    expect(h.fake.requests.length).toBe(before);
   });
 });

@@ -1,13 +1,14 @@
 import "server-only";
 // 새 회화 엔진의 턴 길(Claude 가 이끄는 대화, talk.lead_mode claude — 13절 C233 · C238 · C240, spec '회화 Claude 주도' 설계 1~8 · 데이터 절,
 // plan 묶음 S1). lesson-turn.ts 의 아이 차례 길이 세션 잠금 · 같은 시도 다시 흘림 · 아이 행 저장 · 하루 안전 상한 · 대화 안전 상한을 지난 뒤,
-// 처음 스냅숏의 방식이 claude 이고 대화 토막이면 여기로 온다(leadTurnApplies). 한 차례: 요청 조립(안내문 · 사실 알림 · 대화 기록) → 흘려 받기
+// 처음 스냅숏의 방식이 claude 이고 대화 토막이면 여기로 온다(core leadTurnAppliesOf). 한 차례: 요청 조립(안내문 · 사실 알림 · 대화 기록) → 흘려 받기
 // (첫 문장을 먼저 내보냄, 1~3단계 model_repeat 는 말 칸을 끝까지 받음) → 문장 문(지금 안전 검사 그대로) → 좁은 정의에 걸린 질문만 같은 뜻 다시
 // 말하기 한 번 → 1~3단계 글 빼기 → 줄 내보내기 → 행 저장. 그 밖에는 응답을 고쳐 쓰지 않고, 차례 종류 · 질문 여부 · 도움 순서 · 카드 전환을
 // 정하지 않는다. 판단은 core lead-turn-core(대본 도구와 같은 함수, NFR-4)가 하고 여기는 DB · 호출 · 줄만 맡는다. 아이 글 · AI 글을 로그에 내지
 // 않는다(오류 이름 · Postgres 코드만).
-// 불러오기 제약(검토 rev-s1 M-6): 이 파일과 lesson-turn.ts 는 서로 불러온다(lesson-turn 이 갈림 · 턴 길을, 여기가 지금 길의 도우미를). 두 파일 모두
-// 최상위(모듈 상수 · 기본값)에서 상대 파일의 값을 읽지 않아야 한다 — 읽으면 불러오는 차례에 따라 초기화 전 값을 읽는다. 함수 안에서만 쓴다.
+// 불러오기 방향(의존 방향 검사 no-circular — 묶음 S1 CI 고침): 이 파일은 lesson-turn.ts 의 형 · 도우미를 불러오고, lesson-turn.ts 는 이 파일을
+// 형으로도 값으로도 불러오지 않는다. 갈림의 판단은 lesson-turn 이 core leadTurnAppliesOf 를 직접 부르고, 아이 차례 뒤 처리기(leadTurnAfterChild)는
+// 부르는 쪽 turn.ts 가 runTalkLessonTurn 의 인자로 넘긴다(lesson-turn 의 LessonLeadAfterChild 꼴).
 import { and, eq, notInArray, sql } from "drizzle-orm";
 import type { LevelContext } from "@/core/ai/calls/common";
 import {

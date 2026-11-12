@@ -27,7 +27,7 @@ import { getOutputCheckLists } from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
 import { CLIENT_ATTEMPT_ID_MAX, TALK_TEXT_MAX } from "./index";
-import { runLeadOpenTurn } from "./lead-turn";
+import { leadTurnAfterChild, runLeadOpenTurn } from "./lead-turn";
 import { runTalkLessonTurn, type TalkLessonLine } from "./lesson-turn";
 import type { TalkServerDeps } from "./state";
 
@@ -212,7 +212,8 @@ export async function runTalkTurnRequest(
       await runLeadOpenTurn(parsed.request, deps, shared);
       return;
     }
-    await runTalkLessonTurn(parsed.request, deps, shared);
+    // 새 엔진 수업의 대화 차례 처리기는 여기서 넘긴다(lesson-turn.ts 는 lead-turn.ts 를 불러오지 않는다 — 의존 방향 검사 no-circular)
+    await runTalkLessonTurn(parsed.request, deps, shared, leadTurnAfterChild);
   } catch (error) {
     logFailure("회화 턴 길", error);
     write({ t: "error" });
