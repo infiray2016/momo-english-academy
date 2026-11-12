@@ -1,14 +1,17 @@
-// 회화 구조 비교 실험(13절 C234 · task-exp-harness): 선생님 쪽 네 방식(A · B · C · C2)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
+// 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
-//        [--children K1,K2,K3] [--seeds 1,2] [--arms A,B,C,C2]
+//        [--children K1,K2,K3] [--seeds 1,2] [--arms A,B,C,C2,P]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
-// 않는다(검사는 기록만). 방식 C · C2 는 브리프의 틀(arch-arms cSystemOf · c2SystemOf)과 say · say_ko 출력뿐이다.
+// 않는다(검사는 기록만). 방식 C · C2 는 브리프의 틀(arch-arms cSystemOf · c2SystemOf)과 say · say_ko 출력뿐이다. 방식 P 는 C 와 같은 길에
+// 시제품의 짧은 안내문 · 일곱 칸 출력 · 차례마다 상태 알림(arch-arm-p)을 쓴다(후처리 없음).
+// 결과 폴더에 앞 실행의 setup.json · run-summary.json 이 있으면 덮지 않고 합친다(공통 재료가 다르면 멈춤).
 // 키 값은 출력하지 않는다. 결과 파일: <out>/runs/<방식>-<아이>-s<씨앗>.jsonl · .transcript.md, <out>/run-summary.json.
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   realpathSync,
@@ -80,6 +83,13 @@ import {
   type TurnRecord,
 } from "../talk-observe";
 import {
+  P_SYSTEM,
+  P_UNIT_WORDS,
+  POutputSchema,
+  pChildMessageOf,
+  pStatusOf,
+} from "./arch-arm-p";
+import {
   C_START_MESSAGE,
   type ChildAction,
   type ChildKey,
@@ -98,7 +108,7 @@ import {
 import { flat, levelFitOf, sentenceDiffOf } from "./arch-metrics";
 import { isNoiseTurn, type NoiseResult, noiseOf } from "./arch-noise";
 
-export const ARMS = ["A", "B", "C", "C2"] as const;
+export const ARMS = ["A", "B", "C", "C2", "P"] as const;
 export type Arm = (typeof ARMS)[number];
 export const CHILDREN = [
   "K1",
@@ -176,8 +186,10 @@ export type TeacherTurnLog = {
   modelFirst: unknown;
   /** 모델이 처음 쓴 말을 소리로 낸 꼴(A · B: tori_en + model_line + 선택지 줄, C: say). */
   modelFirstSpoken: string | null;
-  /** A: 앱이 넘긴 이번 차례의 지시(사용자 메시지에서 B 가 걷는 줄). B: B 가 걷은 줄. C: null. */
+  /** A: 앱이 넘긴 이번 차례의 지시(사용자 메시지에서 B 가 걷는 줄). B: B 가 걷은 줄. C · P: null. */
   directive: string[] | null;
+  /** P: 이 차례 사용자 메시지에 붙인 상태 알림(사실만). 다른 방식은 없음. */
+  status?: string;
   /** A: 앱 검사 · 흐름 결과. B: 기록만 한 검사(A 였다면 걸렸을 것). */
   checks: unknown;
   retry: {
@@ -400,6 +412,10 @@ export type Setup = {
   prepPlan: string[];
   cSystem: string;
   c2System: string;
+  /** 방식 P 시스템(시제품 글 그대로). */
+  pSystem: string;
+  /** 시제품의 낱말 목록이 앱 재료의 단원 단어(C2 가 쓰는 목록)와 순서까지 같은가. */
+  pWordsSameAsUnit: boolean;
   masker: ReturnType<typeof createMasker>;
   sentenceMax: number;
 };
@@ -540,6 +556,10 @@ export function setupOf(root: string): Setup {
       pattern: materials.ctx.learningElement,
       words: materials.ctx.unitWords,
     }),
+    pSystem: P_SYSTEM,
+    pWordsSameAsUnit:
+      JSON.stringify([...P_UNIT_WORDS]) ===
+      JSON.stringify([...materials.ctx.unitWords]),
     masker: maskerOf(),
     sentenceMax: first.turn.rules.teacherSentencesMax,
   };
@@ -1103,6 +1123,92 @@ function teacherC(
   };
 }
 
+/**
+ * 방식 P: C 와 같은 길(호출 값 · 기록 꼴 · 아이 입력 줄)에 시제품의 짧은 안내문(P_SYSTEM)과 일곱 칸 출력, 차례마다 아이 입력 줄 뒤에 붙이는
+ * 상태 알림(pStatusOf). 아이에게 나가는 말은 say 그대로(후처리 없음). 지난 사용자 메시지는 그때의 상태 알림째 그대로 남는다.
+ */
+function teacherP(setup: Setup, ctx: Ctx, lesson: string): Teacher {
+  const { format: _drop, ...outputConfig } = setup.template.body
+    .output_config as Record<string, unknown>;
+  const base = withFormat(
+    {
+      ...setup.template.body,
+      system: setup.pSystem,
+      output_config: outputConfig,
+    },
+    POutputSchema,
+  );
+  const history: { user: string; assistant: string }[] = [];
+  const heardBefore: string[] = [];
+  let lastModelSentence = "";
+  const call = async (
+    childTurn: number,
+    user: string,
+    status: string | null,
+  ): Promise<TeacherOut> => {
+    const req: Req = {
+      ...setup.template,
+      body: {
+        ...base,
+        messages: [
+          ...history.flatMap((h) => [
+            { role: "user", content: h.user },
+            { role: "assistant", content: h.assistant },
+          ]),
+          { role: "user", content: user },
+        ],
+      },
+    };
+    const first = await send(ctx, req, { lesson, childTurn, kind: "turn" });
+    const parsed = POutputSchema.safeParse(parseJson(first.text));
+    if (!parsed.success)
+      throw new CallFailure(
+        `${lesson} 아이 차례 ${childTurn}: P 출력을 읽지 못함`,
+      );
+    history.push({ user, assistant: first.text });
+    lastModelSentence = parsed.data.model_sentence;
+    const say = parsed.data.say.trim();
+    return {
+      childTurn,
+      called: true,
+      modelFirst: parsed.data,
+      modelFirstSpoken: say,
+      directive: null,
+      ...(status !== null ? { status } : {}),
+      checks: null,
+      retry: null,
+      changes: { deleted: [], added: [] },
+      final: say,
+      branches: ["그대로 나감"],
+      calls: 1,
+      ms: first.ms,
+      firstMs: first.ms,
+    };
+  };
+  return {
+    open: () => call(0, C_START_MESSAGE, null),
+    endedBefore: () => null,
+    respond: (childTurn, input) => {
+      const heard =
+        input.action === "speak" ? setup.masker(input.heard ?? "").text : "";
+      const status = pStatusOf({
+        childTurn,
+        heardBefore: [...heardBefore],
+        lastModelSentence,
+        action: input.action,
+        heard: input.action === "speak" ? heard : null,
+        unitWords: P_UNIT_WORDS,
+      });
+      if (input.action === "speak") heardBefore.push(heard);
+      return call(
+        childTurn,
+        pChildMessageOf(input.action, heard, status),
+        status,
+      );
+    },
+  };
+}
+
 // ── 아이 역 ─────────────────────────────────────────────────────
 
 function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
@@ -1172,7 +1278,9 @@ async function runLesson(
       ? teacherA(setup, ctx, lesson)
       : arm === "B"
         ? teacherB(setup, ctx, lesson)
-        : teacherC(setup, ctx, lesson, arm);
+        : arm === "P"
+          ? teacherP(setup, ctx, lesson)
+          : teacherC(setup, ctx, lesson, arm);
   const childCall = childRole(setup, ctx, lesson, child);
   const childWords: string[] = [];
   const pushTeacher = (out: TeacherOut) =>
@@ -1376,6 +1484,67 @@ function writeLesson(dir: string, run: LessonRun): void {
   );
 }
 
+type RunSummaryRow = {
+  lesson: string;
+  attempts: number;
+  ok: boolean;
+  errors: string[];
+};
+
+/** 앞 실행과 같아야 하는 공통 재료(이 값이 다르면 앞 수업과 견줄 수 없다). */
+const SETUP_SAME_KEYS = [
+  "script",
+  "level",
+  "unit",
+  "lesson",
+  "teacher",
+  "settingsSource",
+  "pricesSource",
+  "talkValues",
+  "template",
+  "opening",
+  "openingLine",
+  "firstQuestion",
+  "nextPart",
+  "prepPlan",
+  "appSystemSha",
+  "cSystem",
+  "c2System",
+] as const;
+
+/**
+ * 결과 폴더에 앞 실행의 setup.json 이 있으면 공통 재료가 같은지 보고(다르면 멈춤) 앞 값을 남긴 채 P 값과 이번 실행 인자를 더한다.
+ * 앞 실행의 인자는 argsHistory 첫 칸에 남는다.
+ */
+export function mergeSetup(
+  path: string,
+  next: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!existsSync(path)) return next;
+  const prev = JSON.parse(readFileSync(path, "utf8")) as Record<
+    string,
+    unknown
+  >;
+  const differ = SETUP_SAME_KEYS.filter(
+    (k) => JSON.stringify(prev[k]) !== JSON.stringify(next[k]),
+  );
+  if (differ.length > 0)
+    throw new Error(
+      `앞 실행과 공통 재료가 다름(${differ.join(", ")}) — 같은 폴더에 합치지 않는다`,
+    );
+  const history = Array.isArray(prev.argsHistory)
+    ? prev.argsHistory
+    : [prev.args];
+  return {
+    ...prev,
+    pSystem: next.pSystem,
+    pSystemSha: next.pSystemSha,
+    pWordsSameAsUnit: next.pWordsSameAsUnit,
+    args: next.args,
+    argsHistory: [...history, next.args],
+  };
+}
+
 async function main(): Promise<number> {
   const args = parseRunArgs(process.argv.slice(2));
   const root = process.cwd();
@@ -1392,47 +1561,46 @@ async function main(): Promise<number> {
     console.log(line);
     appendFileSync(progress, `${new Date().toISOString()} ${line}\n`);
   };
+  const setupJson = {
+    script: SOURCE_SCRIPT,
+    level: setup.materials.level,
+    unit: setup.materials.unit,
+    lesson: setup.materials.lessonNo,
+    teacher: setup.materials.teacher.nameEn,
+    settingsSource: setup.config.settingsSource,
+    pricesSource: setup.config.pricesSource,
+    talkValues: Object.fromEntries(
+      Object.entries(setup.values).filter(
+        ([k]) => k.startsWith("talk.") || k.includes("talk_turn"),
+      ),
+    ),
+    template: {
+      ...requestLogOf(setup.template),
+      system: `(A 시스템 ${setup.appSystem.length}자 · sha ${sha(setup.appSystem)})`,
+      messages: "(턴마다)",
+    },
+    opening: setup.opening,
+    openingLine: setup.openingLine,
+    firstQuestion: setup.firstQuestion,
+    nextPart: setup.nextPart,
+    prepPlan: setup.prepPlan,
+    appSystemSha: sha(setup.appSystem),
+    cSystem: setup.cSystem,
+    c2System: setup.c2System,
+    pSystem: setup.pSystem,
+    pSystemSha: sha(setup.pSystem),
+    pWordsSameAsUnit: setup.pWordsSameAsUnit,
+    args,
+  };
   writeFileSync(
     join(args.out, "setup.json"),
-    `${JSON.stringify(
-      {
-        script: SOURCE_SCRIPT,
-        level: setup.materials.level,
-        unit: setup.materials.unit,
-        lesson: setup.materials.lessonNo,
-        teacher: setup.materials.teacher.nameEn,
-        settingsSource: setup.config.settingsSource,
-        pricesSource: setup.config.pricesSource,
-        talkValues: Object.fromEntries(
-          Object.entries(setup.values).filter(
-            ([k]) => k.startsWith("talk.") || k.includes("talk_turn"),
-          ),
-        ),
-        template: {
-          ...requestLogOf(setup.template),
-          system: `(A 시스템 ${setup.appSystem.length}자 · sha ${sha(setup.appSystem)})`,
-          messages: "(턴마다)",
-        },
-        opening: setup.opening,
-        openingLine: setup.openingLine,
-        firstQuestion: setup.firstQuestion,
-        nextPart: setup.nextPart,
-        prepPlan: setup.prepPlan,
-        appSystemSha: sha(setup.appSystem),
-        cSystem: setup.cSystem,
-        c2System: setup.c2System,
-        args,
-      },
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(mergeSetup(join(args.out, "setup.json"), setupJson), null, 2)}\n`,
   );
-  const summary: {
-    lesson: string;
-    attempts: number;
-    ok: boolean;
-    errors: string[];
-  }[] = [];
+  const summaryPath = join(args.out, "run-summary.json");
+  const earlier: RunSummaryRow[] = existsSync(summaryPath)
+    ? (JSON.parse(readFileSync(summaryPath, "utf8")) as RunSummaryRow[])
+    : [];
+  const summary: RunSummaryRow[] = [];
   for (const child of args.children)
     for (const seed of args.seeds) {
       say(`조합 ${child} · 씨앗 ${seed}: ${args.arms.join(" · ")} 동시 시작`);
@@ -1473,9 +1641,14 @@ async function main(): Promise<number> {
         );
       }
     }
+  const now = new Set(summary.map((r) => r.lesson));
   writeFileSync(
-    join(args.out, "run-summary.json"),
-    `${JSON.stringify(summary, null, 2)}\n`,
+    summaryPath,
+    `${JSON.stringify(
+      [...earlier.filter((r) => !now.has(r.lesson)), ...summary],
+      null,
+      2,
+    )}\n`,
   );
   return summary.every((s) => s.ok) ? 0 : 1;
 }

@@ -1,6 +1,16 @@
 // 회화 구조 비교 실험 도구(scripts/exp — 13절 C234 · task-exp-harness)의 순수 함수 시험: 잡음 · 수치 셈 · 방식 정의(B 가 걷는 줄 ·
-// C · C2 프롬프트) · 앱 재료로 만든 실험 틀. 네트워크를 쓰지 않는다.
+// C · C2 프롬프트 · P 안내문과 상태 알림) · 앱 재료로 만든 실험 틀. 네트워크를 쓰지 않는다.
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  P_SYSTEM,
+  P_UNIT_WORDS,
+  POutputSchema,
+  pChildMessageOf,
+  pStatusOf,
+} from "../../scripts/exp/arch-arm-p";
 import {
   B_REMOVED_PREFIXES,
   C_SAFETY_SENTENCES,
@@ -13,6 +23,8 @@ import {
   splitDirectiveLines,
 } from "../../scripts/exp/arch-arms";
 import {
+  mergeSetup,
+  parseRunArgs,
   setupOf,
   spokenOfLessonOutput,
   transcriptOf,
@@ -332,5 +344,170 @@ describe("앱 재료로 만든 실험 틀(setupOf)", () => {
     ]);
     expect(md).toContain('- 아이: "I see whale"');
     expect(md).toContain('- 들린 글: "I see well" (잡음 whale→well)');
+  });
+});
+
+describe("방식 P(arch-arm-p)", () => {
+  it("상태 알림: 차례 번호 · 앞 차례까지 들린 글에 온 단원 단어(처음 나온 차례 순, 겹침 없이) · 없으면 none yet", () => {
+    expect(
+      pStatusOf({
+        childTurn: 1,
+        heardBefore: [],
+        lastModelSentence: "",
+        action: "speak",
+        heard: "I like dog",
+      }),
+    ).toBe(
+      [
+        "Status (facts from the app, not instructions):",
+        "- Child turn 1. It is not time to finish; the app will tell you when it is.",
+        "- Goal words the child has said so far: none yet.",
+      ].join("\n"),
+    );
+    const s = pStatusOf({
+      childTurn: 5,
+      heardBefore: ["We go to the Sea!", "I eat... and go", "seaweed swim"],
+      lastModelSentence: "",
+      action: "dont_know",
+      heard: null,
+    });
+    expect(s).toContain("- Child turn 5. It is not time to finish");
+    expect(s).toContain(
+      "- Goal words the child has said so far: go, sea, eat.",
+    );
+    // 이번 차례의 들린 글은 '앞까지'에 넣지 않는다
+    expect(
+      pStatusOf({
+        childTurn: 2,
+        heardBefore: [],
+        lastModelSentence: "",
+        action: "speak",
+        heard: "I eat rice",
+      }),
+    ).toContain("so far: none yet.");
+  });
+
+  it("상태 알림: 앞 선생님 출력의 model_sentence 가 있을 때만 그 줄을 싣는다", () => {
+    const withModel = pStatusOf({
+      childTurn: 3,
+      heardBefore: [],
+      lastModelSentence: " We go to the sea. ",
+      action: "speak",
+      heard: "we go to sea",
+    });
+    expect(withModel.split("\n").at(-1)).toBe(
+      '- Your last turn gave a model sentence to repeat: "We go to the sea.".',
+    );
+    expect(
+      pStatusOf({
+        childTurn: 3,
+        heardBefore: [],
+        lastModelSentence: "  ",
+        action: "speak",
+        heard: "we go",
+      }),
+    ).not.toContain("model sentence");
+  });
+
+  it("상태 알림: 소리 줄은 들린 글이 두 낱말 이하이고 see · teach · each 일 때만", () => {
+    const one = pStatusOf({
+      childTurn: 4,
+      heardBefore: [],
+      lastModelSentence: "",
+      action: "speak",
+      heard: "See!",
+    });
+    expect(one.split("\n").at(-1)).toBe(
+      '- Sound note: "see" sounds like "sea".',
+    );
+    expect(
+      pStatusOf({
+        childTurn: 4,
+        heardBefore: [],
+        lastModelSentence: "",
+        action: "speak",
+        heard: "the teach",
+      }),
+    ).toContain('- Sound note: "teach" sounds like "beach".');
+    expect(
+      pStatusOf({
+        childTurn: 4,
+        heardBefore: [],
+        lastModelSentence: "",
+        action: "speak",
+        heard: "I see it",
+      }),
+    ).not.toContain("Sound note");
+    expect(
+      pStatusOf({
+        childTurn: 4,
+        heardBefore: [],
+        lastModelSentence: "",
+        action: "silent",
+        heard: null,
+      }),
+    ).not.toContain("Sound note");
+  });
+
+  it("사용자 메시지는 C 와 같은 아이 입력 줄 + 빈 줄 + 상태 알림", () => {
+    expect(pChildMessageOf("speak", "sea", "Status (x)")).toBe(
+      'Child (speech-to-text): "sea"\n\nStatus (x)',
+    );
+    expect(pChildMessageOf("dont_know", "", "S")).toBe(
+      '(The child pressed the "I don\'t know" button.)\n\nS',
+    );
+  });
+
+  it("시스템 글은 시제품 꼴(낱말 목록 채움) · 출력은 일곱 칸 · 낱말 목록은 앱 단원 단어와 같다", () => {
+    expect(P_SYSTEM.startsWith("You are Mina, a warm English teacher")).toBe(
+      true,
+    );
+    expect(P_SYSTEM).toContain(
+      `- Goal words the child should come to say on their own: ${P_UNIT_WORDS.join(", ")}.`,
+    );
+    expect(P_SYSTEM).not.toContain("${");
+    expect(Object.keys(POutputSchema.shape)).toEqual([
+      "reading",
+      "move",
+      "say",
+      "say_ko",
+      "model_sentence",
+      "goal_words_i_said",
+      "child_used_on_own",
+    ]);
+    const setup = setupOf(process.cwd());
+    expect(setup.pSystem).toBe(P_SYSTEM);
+    expect(setup.pWordsSameAsUnit).toBe(true);
+    expect(parseRunArgs(["--out", "x", "--arms", "P"]).arms).toEqual(["P"]);
+  });
+
+  it("앞 실행의 setup.json 과 합칠 때 공통 재료가 다르면 멈추고, 같으면 앞 값과 인자 기록을 남긴다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-setup-"));
+    const path = join(dir, "setup.json");
+    const next = {
+      script: "s",
+      cSystem: "c",
+      pSystem: "p",
+      args: { arms: ["P"] },
+    };
+    expect(mergeSetup(path, next)).toBe(next);
+    writeFileSync(
+      path,
+      JSON.stringify({
+        script: "s",
+        cSystem: "c",
+        extra: 1,
+        args: { arms: ["A"] },
+      }),
+    );
+    expect(mergeSetup(path, next)).toMatchObject({
+      extra: 1,
+      pSystem: "p",
+      args: { arms: ["P"] },
+      argsHistory: [{ arms: ["A"] }, { arms: ["P"] }],
+    });
+    expect(() => mergeSetup(path, { ...next, cSystem: "다름" })).toThrow(
+      "cSystem",
+    );
   });
 });

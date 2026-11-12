@@ -15,6 +15,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type Anthropic from "@anthropic-ai/sdk";
 import { createScriptClient, readApiKey } from "../ai-contract";
+import {
+  P_SYSTEM,
+  P_UNIT_WORDS,
+  pChildMessageOf,
+  pStatusOf,
+} from "./arch-arm-p";
 import { heardByChild } from "./arch-arms";
 import type {
   Arm,
@@ -37,7 +43,7 @@ import {
 } from "./arch-metrics";
 import { NOISE_TURNS } from "./arch-noise";
 
-const ARM_ORDER: readonly Arm[] = ["A", "B", "C", "C2"];
+const ARM_ORDER: readonly Arm[] = ["A", "B", "C", "C2", "P"];
 const BRANCHES: readonly Branch[] = [
   "그대로 나감",
   "질문을 다시 쓰게 함",
@@ -485,7 +491,7 @@ function childCell(c: ChildTurnLog | undefined): string {
 
 function afterNoiseMarkdown(lessons: readonly Lesson[]): string {
   const out = [
-    "# 잡음 · '잘 모르겠어요' · 말 없음 차례 바로 뒤 선생님 말(네 방식 나란히)",
+    "# 잡음 · '잘 모르겠어요' · 말 없음 차례 바로 뒤 선생님 말(방식 나란히)",
     "",
     "칸마다 그 방식 수업의 아이 말(잡음을 넣었으면 들린 글) 다음 줄에 바로 뒤 선생님의 최종 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 다르다. 잡음은 같은 씨앗이면 같은 차례에 넣고, 그 차례에 말하지 않았으면 건너뛴다.",
     "",
@@ -664,6 +670,71 @@ function checksMarkdown(lessons: readonly Lesson[]): string {
       `4. ${arm} 시스템 ${sys.size}개 · 'Card'·'Required questions'·'Lesson goals' 이름표 없음: ${!/Card topic|Required questions|Lesson goals|Unit words/.test(s) ? "예" : "아니요"} · 목표 줄: ${s.includes("Today's learning goals") ? "있음" : "없음"}`,
     );
   }
+  // 4-P. P 시스템이 시제품 글 그대로인지 · 상태 알림 · 기록을 고쳐 쓰지 않았는지 · 최종 말 = say
+  const pLessons = byArm("P");
+  if (pLessons.length > 0) {
+    const pSys = new Set(firstSystem("P"));
+    out.push(
+      `4. P 시스템 ${pSys.size}개 · 시제품 글(arch-arm-p P_SYSTEM)과 글자 그대로 같음: ${pSys.size === 1 && [...pSys][0] === P_SYSTEM ? "예" : "아니요"}`,
+    );
+    let statusOk = 0;
+    let statusAll = 0;
+    let keptOk = 0;
+    let keptAll = 0;
+    let sayOk = 0;
+    let sayAll = 0;
+    for (const l of pLessons) {
+      const turns = l.calls.filter((c) => c.kind === "turn");
+      const heardBefore: string[] = [];
+      let lastModel = "";
+      for (const [k, c] of turns.entries()) {
+        const msgs = c.request.messages as { role: string; content: string }[];
+        const t = l.teachers.find((x) => x.childTurn === c.childTurn);
+        const child = l.children.find((x) => x.childTurn === c.childTurn);
+        if (c.childTurn > 0 && child) {
+          statusAll++;
+          const heard = child.action === "speak" ? (child.heard ?? "") : "";
+          const status = pStatusOf({
+            childTurn: c.childTurn,
+            heardBefore: [...heardBefore],
+            lastModelSentence: lastModel,
+            action: child.action,
+            heard: child.action === "speak" ? heard : null,
+            unitWords: P_UNIT_WORDS,
+          });
+          if (
+            msgs.at(-1)?.content ===
+              pChildMessageOf(child.action, heard, status) &&
+            t?.status === status
+          )
+            statusOk++;
+          if (child.action === "speak") heardBefore.push(heard);
+        }
+        const prev = turns[k - 1];
+        if (prev?.response.text !== undefined) {
+          keptAll++;
+          const prevMsgs = prev.request.messages as unknown[];
+          const expected = JSON.stringify([
+            ...prevMsgs,
+            { role: "assistant", content: prev.response.text },
+          ]);
+          if (JSON.stringify(msgs.slice(0, -1)) === expected) keptOk++;
+        }
+        const first = t?.modelFirst as {
+          say?: string;
+          model_sentence?: string;
+        } | null;
+        lastModel = first?.model_sentence ?? "";
+        if (t) {
+          sayAll++;
+          if (t.final === (first?.say ?? "@@").trim()) sayOk++;
+        }
+      }
+    }
+    out.push(
+      `4. P 상태 알림이 기록(들린 글 · 앞 차례 model_sentence)으로 다시 만든 것과 같고 아이 입력 줄 + 빈 줄 + 알림 꼴인 차례: ${statusOk}/${statusAll} · 지난 메시지를 고쳐 쓰지 않음(앞 요청 messages + 앞 응답 원문 = 이번 요청의 앞부분): ${keptOk}/${keptAll} · 최종 말 = 모델 say 그대로: ${sayOk}/${sayAll}`,
+    );
+  }
   // 5. 호출 값이 같은지
   const sig = (c: CallLog) =>
     JSON.stringify({
@@ -729,6 +800,15 @@ function checksMarkdown(lessons: readonly Lesson[]): string {
 // ── 예시 ─────────────────────────────────────────────────────────
 
 function systemBlocks(arm: Arm, system: string) {
+  if (arm === "P")
+    return [
+      {
+        block:
+          "P 시제품 안내문(전문 — 교사 · 좋은 가르침 · 목표 · 말 한계 · 출력)",
+        lines: system.split("\n").filter((l) => l !== "").length,
+        chars: system.length,
+      },
+    ];
   if (arm === "A" || arm === "B") {
     const [rules = "", context = ""] = system.split("\n\nContext:\n");
     return [
@@ -914,6 +994,15 @@ function examplesOf(
       ...(t.directive && t.directive.length > 0
         ? [
             `- ${arm === "A" ? "앱이 넘긴 이번 차례의 지시" : "B 가 걷은 줄"}: ${t.directive.length}줄(첫 줄 \`${t.directive[0]}\` …)`,
+          ]
+        : []),
+      ...(t.status !== undefined
+        ? [
+            "- 이 차례 사용자 메시지에 붙인 상태 알림:",
+            "",
+            ...t.status.split("\n").map((x) => `> ${x}`),
+            "",
+            `- 모델 출력의 내부 칸: reading \`${(t.modelFirst as { reading?: string }).reading ?? "-"}\` · move \`${(t.modelFirst as { move?: string }).move ?? "-"}\` · model_sentence "${(t.modelFirst as { model_sentence?: string }).model_sentence ?? ""}"`,
           ]
         : []),
       "- 최종 말:",
