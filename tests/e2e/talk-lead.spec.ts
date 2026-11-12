@@ -308,9 +308,12 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     const moreSay = LEAD_SCRIPT.more.reply.say;
     await pushFakeAi([leadReply(LEAD_SCRIPT.more.reply)]);
     await choice.getByRole("button", { name: T.more }).click();
-    await expect(bubble(page)).toContainText(moreSay, {
-      timeout: STREAM_END_MS,
-    });
+    // 말풍선은 문장마다 흐르는 글(aria-hidden)과 전체 글(sr-only)을 나란히 두므로(tori.tsx) 문장 하나씩 본다 — 두 문장을 이은 글은 textContent 에 없다
+    const moreSentences = moreSay.match(/[^.!?]+[.!?]+/g) ?? [moreSay];
+    for (const sentence of moreSentences)
+      await expect(bubble(page)).toContainText(sentence.trim(), {
+        timeout: STREAM_END_MS,
+      });
     await expect(choice).toHaveCount(0);
     const afterMore = await leadRequests();
     expect(afterMore).toHaveLength(before + 1);
@@ -325,7 +328,10 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     await expect(page.locator("[data-wrap-all]")).toBeVisible({
       timeout: STREAM_END_MS,
     });
-    await expect(page.locator("[data-wrap-log]")).toContainText(moreSay);
+    for (const sentence of moreSentences)
+      await expect(page.locator("[data-wrap-log]")).toContainText(
+        sentence.trim(),
+      );
     await photo(page, PHOTO.wrap);
   });
 });
