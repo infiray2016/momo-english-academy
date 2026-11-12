@@ -14,6 +14,16 @@ import {
   prepareAnswer,
 } from "@/core/ai/calls/common";
 import {
+  applyTalkLeadChecks,
+  TALK_LEAD_OUTPUT_FIELDS,
+  type TalkLeadInput,
+  type TalkLeadOutput,
+  TalkLeadOutputSchema,
+  type TalkLeadRules,
+  talkLeadCheckFields,
+  talkLeadTurnSpec,
+} from "@/core/ai/calls/talk-lead";
+import {
   applyTalkLessonChecks,
   EMPTY_TORI_EN_STUCK,
   emptyToriEnStuckOf,
@@ -58,6 +68,8 @@ import {
   createToriEnReader,
   createToriSentenceGate,
   type TalkAttemptEnd,
+  TORI_EN_READER_KEYS,
+  type ToriEnReaderKeys,
   type ToriSentenceGate,
   type ToriSentenceReason,
   talkAttemptNext,
@@ -134,6 +146,11 @@ export type TalkSuccessOf<O> = {
    * 비움(choices). 이 턴의 ai_calls 는 '검증 실패'로 남는다(묶음 6 검토 8절 (라) — talk:observe 가 비율을 본다).
    */
   soundFixed?: { model: boolean; choices: boolean; overlap?: boolean };
+  /**
+   * 회화 N 길(spec 설계 8): 부르는 쪽이 이 시도의 말 칸을 붙잡았다 — 문장 문은 지났지만 흘려 보내지 않았다(sentSentences 에 있고, onSentence ·
+   * firstSentenceMs 에는 없다). 무엇을 낼지는 부르는 쪽이 정한다. 붙잡기 자리가 있는 규격(N)에만 있다.
+   */
+  held?: boolean;
 };
 
 export type TalkOutcomeOf<O> =
@@ -273,6 +290,15 @@ type StreamKit<O> = {
   ): { model: boolean; choices: boolean; overlap?: boolean };
   /** AI 의 막힘 판단과 아이 말 갈래 글로 앱이 보는 막힘(새 꼴만, 13절 C204). 없으면 AI 판단 그대로. */
   stuckOf?(aiStuck: boolean, childKind: unknown): boolean;
+  /** 흘려 받는 말 칸 · 앞 칸 이름(없으면 지금 길의 tori_en · child_kind · stuck — TORI_EN_READER_KEYS). */
+  reader?: ToriEnReaderKeys;
+  /**
+   * 말 칸을 끝까지 받아 둘지(N 만, spec 설계 8 — 1~3단계 따라 할 문장 차례). 시도마다 첫 문장 전에 한 번, 앞 칸 값으로 묻는다(흘려 읽지 못했으면
+   * 응답 끝의 값으로). 참이면 그 시도의 문장은 문장 문만 지나고 흘려 보내지 않는다. 없으면 붙잡지 않는다.
+   */
+  hold?(heads: Readonly<Record<string, string | boolean>>): boolean;
+  /** 읽지 못한 응답의 ai_calls 까닭(없으면 지금 길의 talkLessonInvalidReasonOf). */
+  invalidReasonOf?(prepared: unknown): string | null;
 };
 
 type StreamCore<I, O, R> = StreamBase & {
@@ -446,6 +472,122 @@ export async function streamTalkLesson(
   return streamCore({ ...plan, kit: lessonKit(plan) });
 }
 
+// ── 회화 N 길(talk.lead_mode 'claude', spec 설계 8 '첫 소리까지') ──────────────
+
+/** 앞 칸 값(응답 전체에서 — 흘려 읽지 못한 응답의 붙잡기 묻기). 글 · 참 거짓 값만. */
+function headsOf(
+  prepared: unknown,
+  keys: ToriEnReaderKeys,
+): Record<string, string | boolean> {
+  const out: Record<string, string | boolean> = {};
+  if (prepared === null || typeof prepared !== "object") return out;
+  const r = prepared as Record<string, unknown>;
+  for (const { key } of keys.heads) {
+    const v = r[key];
+    if (typeof v === "string" || typeof v === "boolean") out[key] = v;
+  }
+  return out;
+}
+
+/**
+ * N 의 흘려 받는 칸 이름: 말 칸 say 와 그 앞의 열거 칸(R1 응답 규격의 칸 차례 — reading · move). 앞 칸을 모두 읽은 뒤에만 흘린다 — move 를 알아야
+ * 첫 문장 전에 붙잡을지 정할 수 있다(spec 설계 8). 차례를 어긴 응답은 흘리지 않고 끝에서 한 번에 낸다(지금 길의 위험 3 과 같음).
+ */
+export const TALK_LEAD_READER_KEYS: ToriEnReaderKeys = {
+  sayKey: "say",
+  heads: TALK_LEAD_OUTPUT_FIELDS.slice(
+    0,
+    TALK_LEAD_OUTPUT_FIELDS.indexOf("say"),
+  ).map((key) => ({ key, kind: "enum" as const })),
+  requireHeads: true,
+};
+
+/**
+ * N 의 붙잡기 묻기(부르는 쪽이 정함 — 서버 턴 묶음 S1). 앞 칸 값(reading · move)을 받아 참이면 그 시도의 말 칸을 끝까지 받아 둔다.
+ *
+ * 계약(검토 M4):
+ * - 시도마다 많아야 한 번, 그 시도의 어떤 문장(onSentence)보다 먼저 불린다. 흘려 읽은 응답은 말 칸 문자열이 열린 직후에, 앞 칸이 차례를
+ *   어겨 흘려 읽지 못한 응답은 응답 끝에서 내보내기 전에 응답 끝의 값으로 불린다. 말 칸에 닿기 전에 끝난 시도에서는 불리지 않는다.
+ * - 다시 부르면(끊김 · Haiku 거절 뒤 다른 모델) 새 시도의 값으로 또 한 번 불린다. 마지막 호출의 값이 결과를 낸 시도의 값이다.
+ * - N 의 응답에는 stuck 칸이 없으므로 onStuck(TalkCallContext)은 N 에서 한 번도 불리지 않는다. 앞 칸 값(이 차례의 막힘 reading ·
+ *   행동 move)을 부르는 쪽이 첫 문장 전에 받는 자리는 이 콜백 하나다 — 붙잡지 않을 때도 값을 받아 두려면 여기서 받고 거짓을 돌려준다.
+ */
+export type TalkLeadHoldSay = (
+  heads: Readonly<Record<string, string | boolean>>,
+) => boolean;
+
+/**
+ * N 의 흘려 받기 계획(DB 없음). 문장 문 · 실패 처리는 지금 회화 턴과 같다. N 에는 끝맺음 턴이 없어 문장은 onSentence 로만 나가므로
+ * onSentence 를 필수로 둔다(없으면 말 칸이 빈 글인 채 성공으로 끝난다 — 검토 M3).
+ */
+export type TalkLeadStreamPlan = StreamBase & {
+  onSentence: (sentence: string) => void;
+  spec: CallSpec<TalkLeadInput, TalkLeadOutput, TalkLeadRules>;
+  input: TalkLeadInput;
+  rules: TalkLeadRules;
+  /** 걸린 문장 첫 자리를 바꿀 카드 안전한 대사(safeLineOf — 부르는 쪽이 고른다). */
+  safeLine: string;
+  holdSay?: TalkLeadHoldSay;
+};
+
+/** N 의 회화 턴 결과(talk-lead 규격). */
+export type TalkLeadOutcome = TalkOutcomeOf<TalkLeadOutput>;
+
+/** N 응답을 읽지 못한 까닭(ai_calls error_code — 지금 길의 talkLessonInvalidReasonOf 와 같은 꼴). */
+export function talkLeadInvalidReasonOf(prepared: unknown): string | null {
+  if (
+    prepared === null ||
+    typeof prepared !== "object" ||
+    Array.isArray(prepared)
+  )
+    return "not_json_object";
+  const parsed = TalkLeadOutputSchema.safeParse(prepared);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return `field:${issue?.path.join(".") || "-"}:${issue?.code ?? "-"}`;
+  }
+  if (parsed.data.say.trim() === "") return "say_empty";
+  return null;
+}
+
+function leadKit(plan: {
+  input: TalkLeadInput;
+  safeLine: string;
+  holdSay?: TalkLeadHoldSay;
+}): StreamKit<TalkLeadOutput> {
+  const { holdSay } = plan;
+  return {
+    closing: false,
+    safeLine: plan.safeLine,
+    sentenceMaxWords: plan.input.sentenceMaxWords,
+    withToriEn: (value, say) => ({ ...value, say }),
+    checkFields: talkLeadCheckFields,
+    check: (value, hits) => {
+      const checked = applyTalkLeadChecks(value, hits);
+      return {
+        value: checked.value,
+        changed: checked.changed,
+        hintsBlocked: hits.has("hint_ko") || hits.has("hint_en"),
+        farewellBlocked: false,
+        summaryBlocked: false,
+      };
+    },
+    reader: TALK_LEAD_READER_KEYS,
+    hold: (heads) => holdSay?.(heads) ?? false,
+    invalidReasonOf: talkLeadInvalidReasonOf,
+  };
+}
+
+/**
+ * N 의 회화 턴 흘려 받기(DB 없음 — streamTalkLesson 과 같은 시도 · 문장 문 · 다시 시도 · 기다림). 말 칸 say 의 첫 문장을 응답이 끝나기 전에
+ * 흘려 보내고, holdSay 가 참인 시도는 끝까지 받아 둔다.
+ */
+export async function streamTalkLead(
+  plan: TalkLeadStreamPlan,
+): Promise<TalkLeadOutcome> {
+  return streamCore({ ...plan, kit: leadKit(plan) });
+}
+
 async function streamCore<I, O, R>(
   plan: StreamCore<I, O, R>,
 ): Promise<TalkOutcomeOf<O>> {
@@ -495,7 +637,19 @@ async function streamCore<I, O, R>(
       MIN_ATTEMPT_TIMEOUT_MS,
       deadline - calledAt.getTime(),
     );
-    const reader = createToriEnReader();
+    const reader = createToriEnReader(kit.reader);
+    // 붙잡기(N 만): 시도마다 첫 문장 전에 한 번 묻고, 붙잡은 시도의 문장은 문장 문만 지난다(spec 설계 8)
+    let held = false;
+    let holdAsked = false;
+    const askHold = (heads: Readonly<Record<string, string | boolean>>) => {
+      if (holdAsked || kit.hold === undefined) return;
+      holdAsked = true;
+      held = kit.hold(heads);
+    };
+    const out = (sentence: string) => {
+      if (held) gate.accept(sentence);
+      else emit(sentence);
+    };
     // 막힘 판단은 시도마다 한 번만 알린다 — 흘려 받는 동안 읽었거나, 못 읽었으면 응답 끝에서 내보내기 전에(C127 · rev-p13b N-1)
     let stuckTold = false;
     const tellStuck = (stuck: boolean, childKind?: unknown) => {
@@ -524,7 +678,8 @@ async function streamCore<I, O, R>(
           // 막힘 판단은 tori_en 앞 칸이라 첫 문장보다 먼저 알린다(C127)
           const stuck = reader.stuck();
           if (stuck !== undefined) tellStuck(stuck, reader.childKind());
-          for (const sentence of fresh) emit(sentence);
+          if (reader.sayStarted()) askHold(reader.heads());
+          for (const sentence of fresh) out(sentence);
         },
       },
     );
@@ -577,8 +732,10 @@ async function streamCore<I, O, R>(
           message,
           reader,
           streaming,
-          emit,
+          emit: out,
           tellStuck,
+          askHold,
+          held: () => held,
           gate: () => gate,
           firstSentenceMs: () => firstSentenceMs,
           answered,
@@ -683,6 +840,10 @@ async function finishTalk<I, O, R>(
     emit: (sentence: string) => void;
     /** 막힘 판단 알리기(시도에서 아직 알리지 않았을 때만 부른다). */
     tellStuck: (stuck: boolean, childKind?: unknown) => void;
+    /** 붙잡기 묻기(시도에서 아직 묻지 않았을 때만 묻는다, N 만). */
+    askHold: (heads: Readonly<Record<string, string | boolean>>) => void;
+    /** 이 시도의 말 칸을 붙잡았다. */
+    held: () => boolean;
     gate: () => ToriSentenceGate;
     firstSentenceMs: () => number | null;
     answered: TalkAttemptRecord;
@@ -701,10 +862,15 @@ async function finishTalk<I, O, R>(
       | undefined;
     const stuck = head?.stuck;
     if (typeof stuck === "boolean") s.tellStuck(stuck, head?.child_kind);
+    const readerKeys = kit.reader ?? TORI_EN_READER_KEYS;
+    // 흘려 받는 동안 붙잡기를 묻지 못했으면(앞 칸이 차례를 어김 등) 응답 전체의 앞 칸 값으로 내보내기 전에 묻는다(N 만)
+    s.askHold(headsOf(prepared, readerKeys));
     for (const sentence of s.reader.finish()) s.emit(sentence);
     streamed = s.reader.closed() && !s.reader.failed();
     // 앞 칸이 stuck · tori_en 이 아니어서 흘려 보내지 못했으면 끝에서 한 번에(위험 3 · C127)
-    const toriEn = (prepared as { tori_en?: unknown } | undefined)?.tori_en;
+    const toriEn = (prepared as Record<string, unknown> | undefined)?.[
+      readerKeys.sayKey
+    ];
     if (!streamed && typeof toriEn === "string")
       for (const sentence of splitSentences(toriEn)) s.emit(sentence);
   }
@@ -722,7 +888,9 @@ async function finishTalk<I, O, R>(
     await plan.record({
       ...s.answered,
       status: "validation_failed",
-      errorCode: closing ? null : talkLessonInvalidReasonOf(prepared),
+      errorCode: closing
+        ? null
+        : (kit.invalidReasonOf ?? talkLessonInvalidReasonOf)(prepared),
     }); // 읽지 못한 까닭(대본 회차 r1 판정 I-3 (가))
     if (firstSentenceMs !== null)
       return {
@@ -776,9 +944,10 @@ async function finishTalk<I, O, R>(
     hintsBlocked: checked.hintsBlocked,
     farewellBlocked: checked.farewellBlocked,
     summaryBlocked: checked.summaryBlocked,
-    streamed: s.streaming && streamed,
+    streamed: s.streaming && streamed && !s.held(),
     retriedOtherModel: s.retriedOtherModel,
     ...(soundFixed === undefined ? {} : { soundFixed }),
+    ...(kit.hold === undefined ? {} : { held: s.held() }),
   };
 }
 
@@ -875,6 +1044,28 @@ export function talkLessonClosing(
   if (!input.turn.closing)
     throw new RangeError("끝맺음 턴 입력은 turn.closing 이 참이어야 한다");
   return runTalkLessonCall(talkLessonClosingSpec, input, ctx, deps);
+}
+
+/**
+ * N 의 회화 턴 하나(spec 설계 8 — 지금 회화 턴과 같은 앞머리: 목적 talk_turn 의 모델 · effort · 생각 · 최대 출력 · 기다림 키, 하루 안전 상한,
+ * Haiku 거절 뒤 다른 모델 한 번, 시도 기록). 문장마다 흘려 보낸다(onSentence 는 던지지 않는다). holdSay 는 부르는 쪽(서버 턴 묶음 S1)이 정한다.
+ */
+export function talkLeadTurn(
+  input: TalkLeadInput,
+  ctx: TalkCallContext & {
+    onSentence: (sentence: string) => void;
+    safeLine: string;
+    holdSay?: TalkLeadHoldSay;
+  },
+  deps: TalkDeps = {},
+): Promise<TalkLeadOutcome> {
+  return runCallCore(talkLeadTurnSpec, input, ctx, deps, () =>
+    leadKit({
+      input,
+      safeLine: ctx.safeLine,
+      ...(ctx.holdSay === undefined ? {} : { holdSay: ctx.holdSay }),
+    }),
+  );
 }
 
 async function runCallCore<I extends { level: number }, O, R>(

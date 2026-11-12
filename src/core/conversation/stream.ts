@@ -37,17 +37,37 @@ const SIMPLE_ESCAPES: Readonly<Record<string, string>> = {
   t: "\t",
 };
 
+/** 말 칸 앞에 올 수 있는 칸 하나: 열거 글(낱말 글, 이스케이프 없음) · 참 거짓. */
+export type ReaderHead = { key: string; kind: "enum" | "boolean" };
+
+/**
+ * 흘려 받는 말 칸과 그 앞 칸의 이름(회화 N 길 spec 설계 8 — 말 칸 이름과 앞 칸 이름을 매개로). 앞 칸은 적힌 차례로 한 번씩만 올 수 있고
+ * (뒤 칸을 읽은 뒤 앞 칸이 오면 failed), requireHeads 면 앞 칸을 모두 읽은 뒤에만 말 칸을 흘린다(그 전에 말 칸이 오면 failed).
+ */
+export type ToriEnReaderKeys = {
+  sayKey: string;
+  heads: readonly ReaderHead[];
+  requireHeads?: boolean;
+};
+
+/** 지금 길(A)의 칸 이름: child_kind(C204) · stuck(C127) 다음 tori_en, 앞 칸은 둘 다 없어도 된다. 매개 없는 읽개의 값이다. */
+export const TORI_EN_READER_KEYS: ToriEnReaderKeys = {
+  sayKey: TORI_EN_KEY,
+  heads: [
+    { key: CHILD_KIND_KEY, kind: "enum" },
+    { key: STUCK_KEY, kind: "boolean" },
+  ],
+};
+
 type ReaderPhase =
   | "start"
   | "before-key"
   | "key"
-  | "after-stuck-key"
-  | "stuck-value"
-  | "after-stuck-value"
-  | "after-kind-key"
-  | "before-kind-value"
-  | "kind-value"
-  | "after-kind-value"
+  | "after-head-key"
+  | "before-head-value"
+  | "enum-value"
+  | "boolean-value"
+  | "after-head-value"
   | "after-key"
   | "before-value"
   | "string"
@@ -61,34 +81,55 @@ export type ToriEnReader = {
   push(delta: string): string[];
   /** 흐름이 끝났을 때 아직 내지 않은 문장. 문자열이 닫히지 않았으면(끊김) 끝나지 않은 조각은 내지 않는다. */
   finish(): string[];
-  /** 앞 칸이 stuck · tori_en 이 아니거나 JSON 꼴이 아니다 — 흘려 보내지 않고 끝까지 받아 한 번에 보낸다(위험 3). */
+  /** 앞 칸이 매개의 앞 칸 · 말 칸이 아니거나 JSON 꼴이 아니다 — 흘려 보내지 않고 끝까지 받아 한 번에 보낸다(위험 3). */
   failed(): boolean;
-  /** tori_en 앞 칸에서 읽은 막힘 판단(C127). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
+  /** 말 칸 앞 칸에서 읽은 막힘 판단(C127, 앞 칸 stuck). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
   stuck(): boolean | undefined;
-  /** stuck 앞 칸에서 읽은 아이 말 갈래 글(C204). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
+  /** 앞 칸에서 읽은 아이 말 갈래 글(C204, 앞 칸 child_kind). 그 칸이 없었거나 아직 오지 않았으면 undefined. */
   childKind(): string | undefined;
-  /** tori_en 문자열이 닫혔다. */
+  /** 앞 칸 하나의 값. 그 칸이 없었거나 아직 오지 않았으면 undefined. */
+  head(key: string): string | boolean | undefined;
+  /** 지금까지 읽은 앞 칸 값(칸 이름 → 값). */
+  heads(): Readonly<Record<string, string | boolean>>;
+  /** 말 칸 문자열을 읽기 시작했다(이 뒤로 문장이 나올 수 있다). */
+  sayStarted(): boolean;
+  /** 말 칸 문자열이 닫혔다. */
   closed(): boolean;
-  /** 지금까지 푼 tori_en 글. */
+  /** 지금까지 푼 말 칸 글. */
   text(): string;
 };
 
 /**
- * tori_en 흘려 풀기. 조각 경계에 걸친 이스케이프(\" \\ \/ \n \t \uXXXX)를 잇고, 문장 끝은 P4a `splitSentences` 규칙이다.
+ * 말 칸(기본 tori_en) 흘려 풀기. 조각 경계에 걸친 이스케이프(\" \\ \/ \n \t \uXXXX)를 잇고, 문장 끝은 P4a `splitSentences` 규칙이다.
  * 흘려 받는 중에는 문장부호 뒤에 공백이 온 뒤에야 끝으로 본다 — 글 끝에 공백 아닌 글자를 붙여 잘라 보고 마지막 조각을 뺀다.
- * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다. 앞 칸은 child_kind(낱말 글 한 번, C204) · stuck(참 · 거짓 한 번)
+ * 이미 끝난 문장의 경계는 뒤 글이 붙어도 바뀌지 않으므로 낸 문장 수만 센다. 기본 앞 칸은 child_kind(낱말 글 한 번, C204) · stuck(참 · 거짓 한 번)
  * 다음 tori_en 이거나 tori_en 바로다(C127 — 모델이 칸 차례를 어겨 tori_en 이 먼저 와도 흘려 보내고 stuck 은 모른다). 그 밖의 앞 칸이면 failed.
+ * 칸 이름은 매개로 바꾼다(회화 N 길: 말 칸 say · 앞 칸 reading · move, spec 설계 8).
  */
-export function createToriEnReader(): ToriEnReader {
+export function createToriEnReader(
+  keys: ToriEnReaderKeys = TORI_EN_READER_KEYS,
+): ToriEnReader {
+  const { sayKey, heads } = keys;
   let phase: ReaderPhase = "start";
   let key = "";
   let literal = "";
-  let stuck: boolean | undefined;
-  let kind: string | undefined;
-  let kindText = "";
+  /** 지금 값을 읽는 앞 칸의 차례. */
+  let headAt = -1;
+  /** 마지막으로 읽은(읽는) 앞 칸의 차례 — 이보다 뒤 칸만 올 수 있다. */
+  let lastHead = -1;
+  const values: Record<string, string | boolean> = {};
+  let enumText = "";
   let hex = "";
   let decoded = "";
   let emitted = 0;
+  let sayStarted = false;
+
+  /** 지금 올 수 있는 앞 칸들(차례 · 이름). */
+  const openHeads = (): { at: number; key: string }[] =>
+    heads.map((h, at) => ({ at, key: h.key })).filter((h) => h.at > lastHead);
+  /** requireHeads 면 앞 칸 모두(마지막 칸만이 아니라)의 값을 읽었을 때만 말 칸이 열린다. 아니면 늘 열려 있다(지금 길). */
+  const sayOpen = (): boolean =>
+    !keys.requireHeads || heads.every((h) => Object.hasOwn(values, h.key));
 
   const complete = (): string[] => {
     const pieces =
@@ -111,70 +152,60 @@ export function createToriEnReader(): ToriEnReader {
         key = "";
         phase = ch === '"' ? "key" : "failed";
         return;
-      case "key":
+      case "key": {
         if (ch === '"') {
-          // 앞 칸은 child_kind(한 번, stuck 앞) · stuck(한 번, C127) 다음 tori_en, 또는 tori_en 바로
-          phase =
-            key === TORI_EN_KEY
-              ? "after-key"
-              : key === STUCK_KEY && stuck === undefined
-                ? "after-stuck-key"
-                : key === CHILD_KIND_KEY &&
-                    kind === undefined &&
-                    stuck === undefined
-                  ? "after-kind-key"
-                  : "failed";
+          // 앞 칸은 적힌 차례로 한 번씩(뒤 칸 뒤에 앞 칸이 오지 않음) 다음 말 칸, 또는 말 칸 바로(requireHeads 가 아니면)
+          const open = openHeads().find((h) => h.key === key);
+          if (key === sayKey && sayOpen()) phase = "after-key";
+          else if (open) {
+            headAt = open.at;
+            lastHead = open.at;
+            phase = "after-head-key";
+          } else phase = "failed";
           return;
         }
         key += ch;
         if (
-          !TORI_EN_KEY.startsWith(key) &&
-          !(stuck === undefined && STUCK_KEY.startsWith(key)) &&
-          !(
-            kind === undefined &&
-            stuck === undefined &&
-            CHILD_KIND_KEY.startsWith(key)
-          )
+          !(sayOpen() && sayKey.startsWith(key)) &&
+          !openHeads().some((h) => h.key.startsWith(key))
         )
           phase = "failed";
         return;
-      case "after-kind-key":
+      }
+      case "after-head-key":
         if (JSON_WHITESPACE.test(ch)) return;
-        phase = ch === ":" ? "before-kind-value" : "failed";
+        phase = ch === ":" ? "before-head-value" : "failed";
         return;
-      case "before-kind-value":
+      case "before-head-value":
+        if (heads[headAt]?.kind === "boolean") {
+          literal = "";
+          phase = "boolean-value";
+          step(ch);
+          return;
+        }
         if (JSON_WHITESPACE.test(ch)) return;
-        kindText = "";
-        phase = ch === '"' ? "kind-value" : "failed";
+        enumText = "";
+        phase = ch === '"' ? "enum-value" : "failed";
         return;
-      case "kind-value":
+      case "enum-value":
         if (ch === '"') {
-          kind = kindText;
-          phase = "after-kind-value";
-        } else if (/[a-z_]/.test(ch)) kindText += ch;
+          values[heads[headAt]?.key ?? ""] = enumText;
+          phase = "after-head-value";
+        } else if (/[a-z_]/.test(ch)) enumText += ch;
         else phase = "failed";
         return;
-      case "after-kind-value":
-        if (JSON_WHITESPACE.test(ch)) return;
-        phase = ch === "," ? "before-key" : "failed";
-        return;
-      case "after-stuck-key":
-        if (JSON_WHITESPACE.test(ch)) return;
-        literal = "";
-        phase = ch === ":" ? "stuck-value" : "failed";
-        return;
-      case "stuck-value": {
+      case "boolean-value": {
         if (literal === "" && JSON_WHITESPACE.test(ch)) return;
         literal += ch;
         const done = BOOLEAN_LITERALS.find((l) => l === literal);
         if (done) {
-          stuck = done === "true";
-          phase = "after-stuck-value";
+          values[heads[headAt]?.key ?? ""] = done === "true";
+          phase = "after-head-value";
         } else if (!BOOLEAN_LITERALS.some((l) => l.startsWith(literal)))
           phase = "failed";
         return;
       }
-      case "after-stuck-value":
+      case "after-head-value":
         if (JSON_WHITESPACE.test(ch)) return;
         phase = ch === "," ? "before-key" : "failed";
         return;
@@ -184,7 +215,10 @@ export function createToriEnReader(): ToriEnReader {
         return;
       case "before-value":
         if (JSON_WHITESPACE.test(ch)) return;
-        phase = ch === '"' ? "string" : "failed";
+        if (ch === '"') {
+          sayStarted = true;
+          phase = "string";
+        } else phase = "failed";
         return;
       case "string":
         if (ch === "\\") phase = "escape";
@@ -226,6 +260,8 @@ export function createToriEnReader(): ToriEnReader {
   // step 이 phase 를 바꾸므로 좁힌 형을 믿지 않게 함수로 읽는다
   const stopped = (): boolean => phase === "failed" || phase === "closed";
   const isFailed = (): boolean => phase === "failed";
+  const headValue = (name: string): string | boolean | undefined =>
+    Object.hasOwn(values, name) ? values[name] : undefined;
   return {
     push(delta) {
       if (stopped()) return [];
@@ -241,8 +277,17 @@ export function createToriEnReader(): ToriEnReader {
       return complete();
     },
     failed: isFailed,
-    stuck: () => stuck,
-    childKind: () => kind,
+    stuck: () => {
+      const v = headValue(STUCK_KEY);
+      return typeof v === "boolean" ? v : undefined;
+    },
+    childKind: () => {
+      const v = headValue(CHILD_KIND_KEY);
+      return typeof v === "string" ? v : undefined;
+    },
+    head: headValue,
+    heads: () => ({ ...values }),
+    sayStarted: () => sayStarted,
     closed: () => phase === "closed",
     text: () => decoded,
   };
