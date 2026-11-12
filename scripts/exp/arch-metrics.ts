@@ -8,7 +8,11 @@ import {
   questionKeyOf,
 } from "../../src/core/conversation/question-check";
 import { normalizeSpoken } from "../../src/core/conversation/spoken";
-import { isQuestionSentence } from "../../src/core/conversation/stream";
+import {
+  createToriEnReader,
+  isQuestionSentence,
+  TORI_EN_KEY,
+} from "../../src/core/conversation/stream";
 import {
   formsIn,
   isEnglishSentence,
@@ -16,6 +20,12 @@ import {
   splitSentences,
   tokenize,
 } from "../../src/core/seed/text";
+import type {
+  LessonEnding,
+  LessonLog,
+  TeacherTurnLog,
+  WrapChoice,
+} from "./arch-compare";
 
 /** 글의 영어 낱말 수(앱 tokenize 의 낱말 토큰). */
 export function wordCount(text: string): number {
@@ -195,4 +205,594 @@ export function levelFitOf(
     offbandWords: offband,
     offbandForms: forms,
   };
+}
+
+// ── 첫 문장 시각(흘려 받기 — spec '회화 Claude 주도' 설계 9 · AC-26k) ─────────
+
+/** 아이에게 나갈 말이 든 응답 칸: 방식 A(앱 출력 꼴)는 tori_en, 방식 P 는 say. */
+export type SpeechField = typeof TORI_EN_KEY | "say";
+
+/** 흘려 받는 중 문장 끝을 가르는 덧글자(앱 createToriEnReader 와 같은 규칙 — 문장부호 뒤에 공백이 와야 끝으로 본다). */
+const SENTENCE_PROBE = "x";
+const JSON_SPACE = /[ \t\n\r﻿]/;
+/** 끝나지 않은 글 끝의 이스케이프 조각(\ · \u12)을 떼어 볼 최대 글자 수. */
+const PARTIAL_ESCAPE_MAX = 6;
+
+function stringEndOf(buffer: string, from: number): number {
+  let j = from;
+  while (j < buffer.length) {
+    const c = buffer[j];
+    if (c === "\\") j += 2;
+    else if (c === '"') return j;
+    else j += 1;
+  }
+  return -1;
+}
+
+function decodeJsonString(raw: string, closed: boolean): string | null {
+  const tries = closed ? 1 : PARTIAL_ESCAPE_MAX + 1;
+  for (let cut = 0; cut < tries && cut <= raw.length; cut++) {
+    try {
+      return JSON.parse(`"${raw.slice(0, raw.length - cut)}"`) as string;
+    } catch {
+      // 끝나지 않은 이스케이프 — 한 글자 떼고 다시
+    }
+  }
+  return null;
+}
+
+/**
+ * 흘려 받은 JSON 글(앞부분)에서 맨 바깥 객체의 글 칸 하나를 푼다. 칸이 아직 오지 않았거나 글 칸이 아니면 null, 글이 끝나지 않았으면
+ * 받은 데까지(closed false). 칸 차례는 따지지 않는다(앞에 어떤 칸이 와도 읽는다).
+ */
+export function jsonStringFieldOf(
+  buffer: string,
+  field: string,
+): { text: string; closed: boolean } | null {
+  let depth = 0;
+  let i = 0;
+  const n = buffer.length;
+  const skipSpace = (from: number) => {
+    let k = from;
+    while (k < n && JSON_SPACE.test(buffer[k] ?? "")) k += 1;
+    return k;
+  };
+  while (i < n) {
+    const ch = buffer[i];
+    if (ch === '"') {
+      const end = stringEndOf(buffer, i + 1);
+      if (end < 0) return null;
+      const colon = skipSpace(end + 1);
+      if (depth === 1 && colon < n && buffer[colon] === ":") {
+        if (decodeJsonString(buffer.slice(i + 1, end), true) === field) {
+          const v = skipSpace(colon + 1);
+          if (v >= n || buffer[v] !== '"') return null;
+          const vend = stringEndOf(buffer, v + 1);
+          const closed = vend >= 0;
+          const text = decodeJsonString(
+            buffer.slice(v + 1, closed ? vend : n),
+            closed,
+          );
+          return text === null ? null : { text, closed };
+        }
+        i = colon + 1;
+        continue;
+      }
+      i = end + 1;
+      continue;
+    }
+    if (ch === "{" || ch === "[") depth += 1;
+    else if (ch === "}" || ch === "]") depth -= 1;
+    i += 1;
+  }
+  return null;
+}
+
+export type SpeechReader = {
+  /** 조각 하나를 넣고 이번에 새로 끝난 문장들을 돌려준다. */
+  push(delta: string): string[];
+};
+
+/**
+ * 말 칸 흘려 읽개. tori_en 은 앱의 읽개(createToriEnReader — 앞 칸이 child_kind · stuck 일 때만 흘리고, 칸 차례를 어기면 끝까지
+ * 받아 한 번에 낸다)를 그대로 쓰고, 그 밖의 칸(P 의 say)은 칸 이름으로 찾아 같은 문장 끝 규칙으로 흘린다.
+ */
+export function createSpeechReader(field: SpeechField): SpeechReader {
+  if (field === TORI_EN_KEY) {
+    const app = createToriEnReader();
+    return { push: (delta) => app.push(delta) };
+  }
+  let buffer = "";
+  let emitted = 0;
+  return {
+    push(delta) {
+      buffer += delta;
+      const found = jsonStringFieldOf(buffer, field);
+      if (!found) return [];
+      const pieces = found.closed
+        ? splitSentences(found.text)
+        : splitSentences(found.text + SENTENCE_PROBE).slice(0, -1);
+      const fresh = pieces.slice(emitted);
+      emitted = Math.max(emitted, pieces.length);
+      return fresh;
+    },
+  };
+}
+
+/** 선생님 호출 하나의 첫 문장(아이에게 나갈 말 칸의 첫 문장이 끝난 때). */
+export type FirstSentence = {
+  /** 요청을 보낸 때부터 첫 문장이 끝난 때까지(ms). 흘려 읽지 못했으면 호출이 끝난 때(앱도 그때 한 번에 낸다). */
+  ms: number;
+  /** stream: 흘려 받는 중에 잡음 · end: 호출이 끝난 뒤(읽개가 칸 차례를 어긴 응답 · 말 칸이 빔). */
+  from: "stream" | "end";
+  text: string | null;
+  /** 첫 문장이 물음 문장이다(1~3단계 앱은 물음 문장을 잡아 둔다 — 받아 둔 차례를 가를 재료). */
+  question: boolean;
+};
+
+/** 다 받은 응답 글에서 말 칸의 첫 문장(칸 차례는 따지지 않음). */
+export function firstSentenceOfText(
+  field: SpeechField,
+  text: string,
+): string | null {
+  const found = jsonStringFieldOf(text, field);
+  if (!found) return null;
+  return splitSentences(found.text)[0] ?? null;
+}
+
+/** 흘려 받는 호출 하나의 첫 문장 시계. 만들 때가 요청을 보낸 때이고, 조각마다 text 를, 호출이 끝나면 done 을 부른다. */
+export function createFirstSentenceClock(
+  field: SpeechField,
+  now: () => number,
+): {
+  text(delta: string): void;
+  done(endMs: number, fullText: string): FirstSentence;
+} {
+  const started = now();
+  const reader = createSpeechReader(field);
+  let first: { ms: number; text: string } | null = null;
+  return {
+    text(delta) {
+      if (first) return;
+      const sentence = reader.push(delta)[0];
+      if (sentence !== undefined)
+        first = { ms: now() - started, text: sentence };
+    },
+    done(endMs, fullText) {
+      if (first)
+        return {
+          ms: first.ms,
+          from: "stream",
+          text: first.text,
+          question: isQuestionSentence(first.text),
+        };
+      const text = firstSentenceOfText(field, fullText);
+      return {
+        ms: endMs,
+        from: "end",
+        text,
+        question: text !== null && isQuestionSentence(text),
+      };
+    },
+  };
+}
+
+/** 첫 문장 시간 수치(전부 · 첫 문장이 물음이 아닌 차례 · 흘려 읽지 못한 차례 수). */
+export function firstSentenceStatsOf(items: readonly FirstSentence[]): {
+  turns: number;
+  msMedian: number | null;
+  msP95: number | null;
+  plainTurns: number;
+  plainMsMedian: number | null;
+  plainMsP95: number | null;
+  fromEnd: number;
+} {
+  const all = items.map((f) => f.ms);
+  const plain = items.filter((f) => !f.question).map((f) => f.ms);
+  return {
+    turns: items.length,
+    msMedian: median(all),
+    msP95: percentile(all, 95),
+    plainTurns: plain.length,
+    plainMsMedian: median(plain),
+    plainMsP95: percentile(plain, 95),
+    fromEnd: items.filter((f) => f.from === "end").length,
+  };
+}
+
+// ── 가려 읽는 판정 모음(지난 실험의 모음 스크립트 judge-agg.py 를 옮김) ─────────
+
+/** 파이썬 round(x, n) 과 같은 반올림(이진 값 그대로의 십진 전개에서, 딱 가운데면 짝수 쪽). */
+export function pyRound(x: number, digits: number): number {
+  if (!Number.isFinite(x)) return x;
+  const exact = Math.abs(x).toFixed(100);
+  const [intPart = "0", frac = ""] = exact.split(".");
+  const kept = `${intPart}${frac.slice(0, digits)}`;
+  const next = frac.charAt(digits);
+  const rest = frac.slice(digits + 1);
+  const lastOdd = Number(kept.slice(-1)) % 2 === 1;
+  let scaled = BigInt(kept);
+  if (next > "5" || (next === "5" && (/[1-9]/.test(rest) || lastOdd)))
+    scaled += BigInt(1);
+  const s = scaled.toString().padStart(digits + 1, "0");
+  const v = Number(
+    digits === 0 ? s : `${s.slice(0, -digits)}.${s.slice(-digits)}`,
+  );
+  return x < 0 ? -v : v;
+}
+
+type Maybe<T> = T | null | undefined;
+
+export type JudgeTurn = {
+  n: number;
+  link?: Maybe<number>;
+  uptake?: Maybe<number>;
+  misread?: Maybe<boolean>;
+  repeat?: Maybe<boolean>;
+  repeat_of?: Maybe<number>;
+  q_count?: Maybe<number>;
+  pushy?: Maybe<boolean>;
+  made_up?: Maybe<boolean>;
+  /** 채점표 판 2: 선생님이 사람의 삶(나이 · 가족 · 집 · 학교)을 제 것으로 말함. */
+  own_life?: Maybe<boolean>;
+  /** 채점표 판 2: 일과(먹다 · 가다 꼴)를 제 것으로 말한 문장. */
+  own_routine?: Maybe<string[]>;
+  help?: Maybe<number>;
+  follow?: Maybe<number>;
+  level?: Maybe<number>;
+  note?: Maybe<string>;
+};
+
+export type JudgeLesson = {
+  id: string;
+  turns: JudgeTurn[];
+  feel?: Maybe<number>;
+  memory?: Maybe<string>;
+  memory_turns?: Maybe<number[]>;
+  teaching?: Maybe<number>;
+  child_room?: Maybe<number>;
+};
+
+export type JudgeFile = { lessons: JudgeLesson[] };
+
+/** blind-key.json 의 값(수업 이름 글, 또는 lesson · name 칸을 가진 객체). */
+export type BlindKey = Record<string, unknown>;
+
+function lessonNameOf(value: unknown): string {
+  if (typeof value === "string") return value;
+  const o = (value ?? {}) as { lesson?: unknown; name?: unknown };
+  const v = o.lesson || o.name;
+  return typeof v === "string" ? v : JSON.stringify(value);
+}
+
+function present<T>(xs: readonly Maybe<T>[]): T[] {
+  return xs.filter((x): x is T => x !== null && x !== undefined);
+}
+
+function meanOf(xs: readonly Maybe<number>[]): number | null {
+  const v = present(xs);
+  return v.length === 0
+    ? null
+    : pyRound(v.reduce((a, b) => a + b, 0) / v.length, 2);
+}
+
+function rateOf(xs: readonly Maybe<boolean>[]): number | null {
+  const v = present(xs);
+  return v.length === 0
+    ? null
+    : pyRound((100 * v.filter((x) => x).length) / v.length, 1);
+}
+
+const JUDGE_NUM_FIELDS = [
+  "link",
+  "uptake",
+  "level",
+  "help",
+  "follow",
+  "q_count",
+] as const;
+const JUDGE_FLAG_FIELDS = [
+  "misread",
+  "repeat",
+  "pushy",
+  "made_up",
+  "own_life",
+] as const;
+const JUDGE_LESSON_FIELDS = ["feel", "teaching", "child_room"] as const;
+/** 일과 예문을 방식마다 몇 개까지 적는가. */
+const ROUTINE_EXAMPLES_MAX = 5;
+
+export type JudgeArmRow = {
+  turns: number;
+  link: number | null;
+  uptake: number | null;
+  level: number | null;
+  "misread%": number | null;
+  "repeat%": number | null;
+  "pushy%": number | null;
+  "made_up%": number | null;
+  help: number | null;
+  help_n: number;
+  follow: number | null;
+  follow_n: number;
+  "q/turn": number | null;
+  feel: number | null;
+  teaching: number | null;
+  child_room: number | null;
+  memory: Record<string, number>;
+  feel_by_child: Record<string, number | null>;
+  /** 채점표 판 2 의 셈(옛 판정 파일이면 0 · null). */
+  made_up_n: number;
+  "own_life%": number | null;
+  own_life_n: number;
+  own_routine_n: number;
+  own_routine_examples: { id: string; n: number; text: string }[];
+};
+
+export type JudgeTurnRef = { id: string; n: number };
+
+export type JudgePair = {
+  a: string;
+  b: string;
+  /** 수업마다 '대화하는 느낌'의 두 판정자 차이(지난 스크립트가 찍던 줄). */
+  feel: {
+    lessons: number;
+    meanDiff: number | null;
+    same: number;
+    withinOne: number;
+    corr: number | null;
+  };
+  /** 방식마다 두 판정자가 함께 표시한 차례(AC-11 '둘이 함께 표시한 차례 0'). */
+  both: Record<string, { made_up: JudgeTurnRef[]; own_life: JudgeTurnRef[] }>;
+  lessons: { id: string; name: string; a: number | null; b: number | null }[];
+};
+
+export type JudgeSummary = {
+  arms: string[];
+  judges: Record<string, Record<string, JudgeArmRow>>;
+  pair: JudgePair | null;
+};
+
+/** 피어슨 상관(statistics.correlation 과 같은 뜻). 값이 비거나 한쪽이 한 값뿐이면 null. */
+export function pearson(
+  xs: readonly Maybe<number>[],
+  ys: readonly Maybe<number>[],
+): number | null {
+  if (xs.length !== ys.length || xs.length < 2) return null;
+  if (xs.some((x) => x == null) || ys.some((y) => y == null)) return null;
+  const a = xs as number[];
+  const b = ys as number[];
+  const ma = a.reduce((s, v) => s + v, 0) / a.length;
+  const mb = b.reduce((s, v) => s + v, 0) / b.length;
+  let sab = 0;
+  let saa = 0;
+  let sbb = 0;
+  for (let i = 0; i < a.length; i++) {
+    const da = (a[i] as number) - ma;
+    const db = (b[i] as number) - mb;
+    sab += da * db;
+    saa += da * da;
+    sbb += db * db;
+  }
+  return saa === 0 || sbb === 0 ? null : sab / Math.sqrt(saa * sbb);
+}
+
+/**
+ * 가려 읽는 판정 결과를 방식별로 모은다(지난 실험의 judge-agg.py 와 같은 셈 · 같은 반올림, 방식 목록만 key 에 나온 방식으로).
+ * 채점표 판 2 의 칸(own_life · own_routine)과 두 판정자가 함께 표시한 차례를 더한다.
+ */
+export function judgeSummaryOf(
+  key: BlindKey,
+  judges: Readonly<Record<string, JudgeFile>>,
+  armOrder: readonly string[],
+): JudgeSummary {
+  const map = (
+    key.map && typeof key.map === "object" ? key.map : key
+  ) as BlindKey;
+  const nameOf = (id: string) => lessonNameOf(map[id]);
+  const armOf = (id: string) => nameOf(id).split("-")[0] ?? "";
+  const seen = Object.keys(map).map(armOf);
+  const arms = [
+    ...armOrder.filter((a) => seen.includes(a)),
+    ...seen.filter((a, i) => !armOrder.includes(a) && seen.indexOf(a) === i),
+  ];
+  const out: Record<string, Record<string, JudgeArmRow>> = {};
+  const feelOf: Record<string, Map<string, Maybe<number>>> = {};
+  const flagsOf: Record<string, Map<string, JudgeTurn>> = {};
+  for (const [judge, data] of Object.entries(judges)) {
+    feelOf[judge] = new Map();
+    flagsOf[judge] = new Map();
+    const acc = new Map<string, Record<string, unknown[]>>();
+    const kid = new Map<string, Map<string, Maybe<number>[]>>();
+    const routine = new Map<
+      string,
+      { id: string; n: number; text: string }[]
+    >();
+    for (const a of arms) {
+      acc.set(a, {});
+      kid.set(a, new Map());
+      routine.set(a, []);
+    }
+    const push = (arm: string, f: string, v: unknown) => {
+      const bucket = acc.get(arm);
+      if (!bucket) return;
+      const list = bucket[f] ?? [];
+      list.push(v);
+      bucket[f] = list;
+    };
+    for (const lesson of data.lessons) {
+      const arm = armOf(lesson.id);
+      const child = nameOf(lesson.id).split("-")[1] ?? "";
+      for (const t of lesson.turns) {
+        for (const f of JUDGE_NUM_FIELDS) push(arm, f, t[f]);
+        for (const f of JUDGE_FLAG_FIELDS)
+          push(
+            arm,
+            f,
+            t[f] === null || t[f] === undefined ? null : Boolean(t[f]),
+          );
+        for (const text of t.own_routine ?? [])
+          routine.get(arm)?.push({ id: lesson.id, n: t.n, text });
+        flagsOf[judge]?.set(`${lesson.id}#${t.n}`, t);
+      }
+      for (const f of JUDGE_LESSON_FIELDS) push(arm, f, lesson[f]);
+      const byChild = kid.get(arm);
+      if (byChild) {
+        const list = byChild.get(child) ?? [];
+        list.push(lesson.feel);
+        byChild.set(child, list);
+      }
+      push(arm, "memory", lesson.memory);
+      feelOf[judge]?.set(lesson.id, lesson.feel);
+    }
+    const rows: Record<string, JudgeArmRow> = {};
+    for (const a of arms) {
+      const x = acc.get(a) ?? {};
+      const nums = (f: string) => (x[f] ?? []) as Maybe<number>[];
+      const flags = (f: string) => (x[f] ?? []) as Maybe<boolean>[];
+      const memory: Record<string, number> = {};
+      for (const m of (x.memory ?? []) as Maybe<string>[]) {
+        const k = m === null || m === undefined ? "null" : String(m);
+        memory[k] = (memory[k] ?? 0) + 1;
+      }
+      const routines = routine.get(a) ?? [];
+      rows[a] = {
+        turns: nums("link").length,
+        link: meanOf(nums("link")),
+        uptake: meanOf(nums("uptake")),
+        level: meanOf(nums("level")),
+        "misread%": rateOf(flags("misread")),
+        "repeat%": rateOf(flags("repeat")),
+        "pushy%": rateOf(flags("pushy")),
+        "made_up%": rateOf(flags("made_up")),
+        help: meanOf(nums("help")),
+        help_n: present(nums("help")).length,
+        follow: meanOf(nums("follow")),
+        follow_n: present(nums("follow")).length,
+        "q/turn": meanOf(nums("q_count")),
+        feel: meanOf(nums("feel")),
+        teaching: meanOf(nums("teaching")),
+        child_room: meanOf(nums("child_room")),
+        memory,
+        feel_by_child: Object.fromEntries(
+          [...(kid.get(a) ?? new Map<string, Maybe<number>[]>()).entries()].map(
+            ([c, v]) => [c, meanOf(v)],
+          ),
+        ),
+        made_up_n: present(flags("made_up")).filter((v) => v).length,
+        "own_life%": rateOf(flags("own_life")),
+        own_life_n: present(flags("own_life")).filter((v) => v).length,
+        own_routine_n: routines.length,
+        own_routine_examples: routines.slice(0, ROUTINE_EXAMPLES_MAX),
+      };
+    }
+    out[judge] = rows;
+  }
+  const names = Object.keys(judges);
+  let pair: JudgePair | null = null;
+  const [ja, jb] = names;
+  if (ja !== undefined && jb !== undefined) {
+    const fa = feelOf[ja] ?? new Map();
+    const fb = feelOf[jb] ?? new Map();
+    const ids = [...fa.keys()].filter((id) => fb.has(id)).sort();
+    const va = ids.map((id) => fa.get(id));
+    const vb = ids.map((id) => fb.get(id));
+    const diff = ids.flatMap((_, i) => {
+      const x = va[i];
+      const y = vb[i];
+      return x == null || y == null ? [] : [Math.abs(x - y)];
+    });
+    const corr = pearson(va, vb);
+    const both: JudgePair["both"] = Object.fromEntries(
+      arms.map((a) => [a, { made_up: [], own_life: [] }]),
+    );
+    const ta = flagsOf[ja] ?? new Map();
+    const tb = flagsOf[jb] ?? new Map();
+    for (const [ref, t] of ta) {
+      const u = tb.get(ref);
+      if (!u) continue;
+      const [id = "", n = "0"] = ref.split("#");
+      const slot = both[armOf(id)];
+      if (!slot) continue;
+      if (t.made_up && u.made_up) slot.made_up.push({ id, n: Number(n) });
+      if (t.own_life && u.own_life) slot.own_life.push({ id, n: Number(n) });
+    }
+    pair = {
+      a: ja,
+      b: jb,
+      feel: {
+        lessons: diff.length,
+        meanDiff:
+          diff.length === 0
+            ? null
+            : pyRound(diff.reduce((s, d) => s + d, 0) / diff.length, 2),
+        same: diff.filter((d) => d === 0).length,
+        withinOne: diff.filter((d) => d <= 1).length,
+        corr: corr === null ? null : pyRound(corr, 2),
+      },
+      both,
+      lessons: ids.map((id, i) => ({
+        id,
+        name: nameOf(id),
+        a: va[i] ?? null,
+        b: vb[i] ?? null,
+      })),
+    };
+  }
+  return { arms, judges: out, pair };
+}
+
+// ── 수업이 끝난 길(마무리 기록 — spec '회화 Claude 주도' 설계 9 · AC-26k) ─────────
+
+/** 방식 P 의 선생님이 move wrap_up 으로 스스로 마무리한 차례의 까닭 글(LessonLog.ended · ending.reason). */
+export const TEACHER_CLOSING_REASON = "선생님이 스스로 마무리함(move wrap_up)";
+
+/** 끝난 까닭 글(LessonLog.ended)로 끝난 길을 정한다. 옛 기록도 같은 글을 쓴다(대본 도구의 멈춘 까닭 · 도구의 마무리 글). */
+export function endingHowOf(
+  ended: string | null,
+  failures: readonly string[],
+): LessonEnding["how"] {
+  if (failures.length > 0) return "other";
+  if (ended === null) return "turn_cap";
+  if (ended.includes(TEACHER_CLOSING_REASON)) return "teacher_closing";
+  if (ended.includes("고르기 차례") || ended.includes("대화가 닫혔다"))
+    return "app_closing";
+  return "other";
+}
+
+export function lessonEndingOf(input: {
+  ended: string | null;
+  failures: readonly string[];
+  childTurns: number;
+  /** 마지막 선생님 최종 영어. */
+  lastLine: string | null;
+  choices: readonly WrapChoice[];
+}): LessonEnding {
+  const how = endingHowOf(input.ended, input.failures);
+  return {
+    how,
+    childTurns: input.childTurns,
+    line:
+      how === "app_closing" || how === "teacher_closing"
+        ? input.lastLine
+        : null,
+    reason: input.ended,
+    choices: [...input.choices],
+  };
+}
+
+/** 기록의 끝난 길: 새 기록은 ending 그대로, 옛 기록(ending 없음)은 ended 글과 마지막 선생님 말로 정한다(고른 단추는 없음). */
+export function endingOf(
+  meta: LessonLog,
+  teachers: readonly TeacherTurnLog[],
+): LessonEnding {
+  if (meta.ending) return meta.ending;
+  const last = [...teachers].sort((a, b) => a.childTurn - b.childTurn).at(-1);
+  return lessonEndingOf({
+    ended: meta.ended,
+    failures: meta.failures,
+    childTurns: meta.childTurns,
+    lastLine: last?.final ?? null,
+    choices: [],
+  });
 }
