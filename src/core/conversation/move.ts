@@ -1,6 +1,7 @@
 // 회화 수업 선생님 행의 차례 정보 칸 talk_turns.move(5절 · 3.3 '셋을 가른다' · 회화 plan '이름' 절 move 표 · 정한 것 5 · 6 · 8).
 // 이 칸이 학습 기회 제공 · 이월 · 유효 수행 턴(후보 셈)의 셈과 근거 칸(P12)의 출처다. 저장하지 않고 그때그때 센다(정한 것 7).
-// 원문을 지울 때(data.text_retention_months · 부모의 대화 지우기)는 소리 줄 글과 근거 한 줄만 지우고 나머지는 남긴다(eraseTalkMoveText).
+// 원문을 지울 때(data.text_retention_months · 부모의 대화 지우기)는 소리 줄 글 · 근거 한 줄 · 새 회화 엔진 기록의 글 칸만 지우고 나머지는 남긴다
+// (eraseTalkMoveText).
 // 순수 모듈이다(시각 · DB 없음).
 import { z } from "zod";
 import {
@@ -77,6 +78,72 @@ export type TalkCardItemRef = z.infer<typeof TalkCardItemRefSchema>;
 /** 카드 항목 없음. */
 export const NO_CARD_ITEM: TalkCardItemRef = { kind: "none", no: 0 };
 
+/**
+ * 새 회화 엔진 응답의 읽기 칸(reading) 값(spec '회화 Claude 주도' 설계 2 작은 응답 표). 응답 규격(R1)과 기록(lead)이 같은 목록을 쓴다.
+ * 막힘 값 · 아이 말 갈래로 옮기는 표는 lead-record.ts 에 있다(설계 4).
+ */
+export const TALK_LEAD_READINGS = [
+  "clear_answer",
+  "likely_misheard",
+  "does_not_fit",
+  "new_topic",
+  "asks_teacher",
+  "does_not_know",
+  "repeated_my_model",
+] as const;
+export type TalkLeadReading = (typeof TALK_LEAD_READINGS)[number];
+/** 새 회화 엔진 응답의 차례 갈래(move) 값(설계 2 작은 응답 표). */
+export const TALK_LEAD_MOVES = [
+  "react_and_follow_up",
+  "react_only",
+  "share_about_me",
+  "ask_again",
+  "easier_or_choices",
+  "model_repeat",
+  "bridge_to_goal",
+  "wrap_up",
+] as const;
+export type TalkLeadMove = (typeof TALK_LEAD_MOVES)[number];
+
+/**
+ * 새 회화 엔진 선생님 행의 기록 묶음 move.lead(spec 데이터 절 move 행). 지금 판정의 입력이 아니라 기록이다 — 판정 입력은 같은 행의
+ * 기존 칸(kind · next · stage · cause · ai · sound)에 채운다(lead-record.ts). 글 칸(따라 할 문장 · 다시 받은 문장 · 뺀 문장)은 원문을 지울
+ * 때 비운다(eraseTalkMoveText).
+ */
+export const TalkLeadSchema = z.strictObject({
+  reading: z.enum(TALK_LEAD_READINGS),
+  move: z.enum(TALK_LEAD_MOVES),
+  /** 따라 할 문장 대조(설계 4): 확인한 문장과 나간 말 칸에 그대로 들었는지(맞음 · 어긋남). 문장이 빈 model_repeat 는 칸이 없다. */
+  model: z
+    .strictObject({ sentence: z.string(), inSay: z.boolean() })
+    .optional(),
+  /** 막힌 뒤 고르기 답을 들려준 차례(설계 4 둘째 줄). */
+  choices: z.literal(true).optional(),
+  /** 물음 문장에 든 단원 단어 · 말 칸에서 찾은 단원 단어(원형, 만남과 같은 대조). */
+  asked: Ids,
+  said: Ids,
+  /** 좁은 정의 걸림(설계 6, 묶음 R4 · S1 이 채움): 항목 · 다시 받은 문장 · 다시 걸림 · 걸린 시간(밀리초). */
+  narrow: z
+    .strictObject({
+      item: z.string(),
+      retry: z.string(),
+      again: z.boolean(),
+      ms: z.int().min(0),
+    })
+    .optional(),
+  /** 넓은 검사 수치(기록 전용, 묶음 R4 의 이름 그대로). */
+  wide: z.record(z.string(), z.number()).optional(),
+  /** 문장 문 걸림(걸린 검사 이름). */
+  gate: z.array(z.string()).optional(),
+  /** 마무리 차례에 앱이 상수 물음을 붙였다(설계 3 마무리 물음). */
+  closingAdded: z.literal(true).optional(),
+  /** 1~3단계에서 보이는 글에서 뺀 문장(설계 8, 묶음 R5). */
+  removed: z.array(z.string()).optional(),
+  /** 소리 줄이 원래 문장 차례와 다른 자리에 붙었다(plan 확인할 것 4). */
+  soundMoved: z.literal(true).optional(),
+});
+export type TalkLead = z.infer<typeof TalkLeadSchema>;
+
 export const TalkMoveSchema = z.strictObject({
   v: z.literal(TALK_MOVE_VERSION),
   kind: z.enum(TALK_MOVE_KINDS),
@@ -120,6 +187,11 @@ export const TalkMoveSchema = z.strictObject({
   floor: z.literal(true).optional(),
   /** 대화 중 연 짧은 준비 낱말(3.3 짧은 준비 (나)). */
   prep: z.strictObject({ words: Ids }).optional(),
+  /**
+   * 새 회화 엔진(Claude 가 이끄는 대화, talk.lead_mode claude)의 기록 묶음(spec '회화 Claude 주도' 데이터 절 · 설계 4). 그 엔진의 선생님 행에만
+   * 있고, 지금 길의 행과 옛 행에는 칸이 없다(선택 칸이라 판은 그대로다 — plan 되돌림 4).
+   */
+  lead: TalkLeadSchema.optional(),
 });
 export type TalkMove = z.infer<typeof TalkMoveSchema>;
 
@@ -155,7 +227,27 @@ export function talkMoveOf(input: TalkMoveInput): TalkMove {
   if (input.sound !== undefined) move.sound = { ...input.sound };
   if (input.floor !== undefined) move.floor = input.floor;
   if (input.prep !== undefined) move.prep = { words: [...input.prep.words] };
+  if (input.lead !== undefined) move.lead = copyLead(input.lead);
   return move;
+}
+
+/** lead 묶음 깊은 사본(값이 있는 선택 칸만 둔다). */
+function copyLead(lead: TalkLead): TalkLead {
+  const out: TalkLead = {
+    reading: lead.reading,
+    move: lead.move,
+    asked: [...lead.asked],
+    said: [...lead.said],
+  };
+  if (lead.model !== undefined) out.model = { ...lead.model };
+  if (lead.choices !== undefined) out.choices = lead.choices;
+  if (lead.narrow !== undefined) out.narrow = { ...lead.narrow };
+  if (lead.wide !== undefined) out.wide = { ...lead.wide };
+  if (lead.gate !== undefined) out.gate = [...lead.gate];
+  if (lead.closingAdded !== undefined) out.closingAdded = lead.closingAdded;
+  if (lead.removed !== undefined) out.removed = [...lead.removed];
+  if (lead.soundMoved !== undefined) out.soundMoved = lead.soundMoved;
+  return out;
 }
 
 /** move 읽기(talk_turns.move jsonb). 비었거나 꼴이 틀리면 null(옛 행 · 칸이 빈 행). */
@@ -166,16 +258,27 @@ export function readTalkMove(value: unknown): TalkMove | null {
 }
 
 /**
- * 원문을 지울 때 남는 move(정한 것 5): 소리 줄 글(sound)은 통째로, 근거 한 줄(suggest.goals[].why)은 그 글만 지운다. 나머지 값
+ * 원문을 지울 때 남는 move(정한 것 5): 소리 줄 글(sound)은 통째로, 근거 한 줄(suggest.goals[].why)과 새 회화 엔진 기록(lead)의 글 칸은
+ * 그 글만 지운다. 나머지 값
  * (종류 · 갈래 · 카드 항목 · 노린 것 · 받침 · 도움 · 제안의 참 거짓 · 이은 목표)은 남는다. 원문 정리 Cron · 부모의 대화 지우기가 부른다.
  */
 export function eraseTalkMoveText(move: TalkMove): TalkMove {
-  const { sound: _sound, ...rest } = move;
+  const { sound: _sound, lead, ...rest } = move;
   return {
     ...rest,
     suggest: {
       ...move.suggest,
       goals: move.suggest.goals.map(({ id }) => ({ id, why: "" })),
     },
+    ...(lead === undefined ? {} : { lead: eraseLeadText(lead) }),
   };
+}
+
+/** 새 회화 엔진 기록 묶음의 글 칸(따라 할 문장 · 다시 받은 문장 · 뺀 문장)만 비운다. 값(맞음 · 걸림 · 수치 · 단원 단어)은 남는다. */
+function eraseLeadText(lead: TalkLead): TalkLead {
+  const out = copyLead(lead);
+  if (out.model !== undefined) out.model.sentence = "";
+  if (out.narrow !== undefined) out.narrow.retry = "";
+  if (out.removed !== undefined) out.removed = [];
+  return out;
 }
