@@ -558,6 +558,96 @@ export function materialsNoteOf(lessons: readonly Lesson[]): string | null {
   return "이 기록의 방식 A 는 바로잡기 전 판으로 돌았다: 1~3단계 상황 차례 답 글 검사의 기능어 집합이 비어 있었다(실제 앱보다 문장을 많이 잃음 — 검토 rev-x2 I-1).";
 }
 
+/** 결과 글의 표 하나(머리 · 표 · 빈 줄). 머리 아래 표 앞에 둘 글이 있으면 lead 로 준다. */
+function mdSection(
+  title: string,
+  header: string[],
+  body: string[][],
+  lead: readonly string[] = [],
+): string[] {
+  return [
+    `## ${title}`,
+    "",
+    ...lead.flatMap((line) => [line, ""]),
+    `| ${header.join(" | ")} |`,
+    `|${header.map(() => "---").join("|")}|`,
+    ...body.map((r) => `| ${r.join(" | ")} |`),
+    "",
+  ];
+}
+
+/** (타) 열 이름(요청자에게 보일 말 — 검토 rev-x2-2 3절 권고). */
+export const SAID_COLUMNS = {
+  heardUnit: "(1) 아이 말에 나온 단원 단어",
+  beyondTeacher: "(2) 선생님이 바로 앞에서 말하지 않은 단원 단어(가장 엄격)",
+  heardAccepted: "(3) 새 후보 규칙(들린 글만)이 인정한 단원 단어",
+} as const;
+
+/**
+ * (타) 세 방식을 같은 규칙으로 센 '말했다' 수의 결과 글(방식별 · 수업별). 표 머리에 이 값이 차례 조건을 세 방식 모두 적용하지 않은 넉넉한 값임을
+ * 밝힌다(검토 rev-x2-2 N-2).
+ */
+export function saidMarkdownOf(said: readonly SaidRow[]): string[] {
+  return [
+    ...mdSection(
+      "(타) 세 방식을 같은 규칙으로 센 '말했다' 수 — 방식별(수업 평균 · 갈래는 합)",
+      [
+        "방식",
+        "수업",
+        SAID_COLUMNS.heardUnit,
+        SAID_COLUMNS.beyondTeacher,
+        SAID_COLUMNS.heardAccepted,
+        ...SAID_CATEGORIES.map((k) => `(3) ${k}`),
+      ],
+      ARM_ORDER.filter((a) => said.some((r) => r.arm === a)).map((a) => {
+        const m = saidArmOf(a, said);
+        return [
+          a,
+          String(m.lessons),
+          num(m.heardUnitMean, 1),
+          num(m.beyondTeacherMean, 1),
+          num(m.heardAcceptedMean, 1),
+          ...SAID_CATEGORIES.map((k) => String(m.heardByCategory[k])),
+        ];
+      }),
+      [
+        "이 표의 값은 힌트 종류 · 막힘 · 되묻기 · 한국어 도움의 조건을 세 방식 모두 적용하지 않아, 각 엔진의 지금 판정보다 넉넉한 값이다(세 방식을 같은 자로 견주려고 입력을 같게 맞춘 상한).",
+      ],
+    ),
+    "입력은 기록의 들린 글 · 아이가 들은 바로 앞 선생님 말 · 따라 할 문장 · 단원 단어뿐이다. 따라 할 문장(A: 소리 줄, P: model_sentence, N: 새 엔진 소리 줄 — 새 엔진 기록이 없는 인사 토막 차례는 A 와 같은 소리 줄)은 아이가 들은 선생님 말에 글자 그대로 든 때만 쓴다(core leadModelOf 의 inSay 와 같은 대조). (1) · (2) 는 지금의 '만났다'와 같은 대조이고, (3) 은 core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말)을 세 방식에 같은 꼴의 행으로 적용한 것이다. 새 판정 규칙이 아니며, 각 방식의 지금 판정(Claude 후보에 기댐)과는 다른 자다.",
+    "",
+    ...mdSection(
+      "(타) 수업별",
+      [
+        "수업",
+        "말한 차례",
+        SAID_COLUMNS.heardUnit,
+        SAID_COLUMNS.beyondTeacher,
+        SAID_COLUMNS.heardAccepted,
+        "(3) 갈래(차례 × 낱말)",
+      ],
+      said.map((r) => [
+        r.lesson,
+        String(r.counts.turns),
+        cell(
+          `${r.counts.heardUnit.length}(${r.counts.heardUnit.join(", ") || "-"})`,
+        ),
+        cell(
+          `${r.counts.beyondTeacher.length}(${r.counts.beyondTeacher.join(", ") || "-"})`,
+        ),
+        cell(
+          `${r.counts.heardAccepted.length}(${r.counts.heardAccepted.join(", ") || "-"})`,
+        ),
+        cell(
+          SAID_CATEGORIES.filter((k) => r.counts.heardByCategory[k] > 0)
+            .map((k) => `${k} ${r.counts.heardByCategory[k]}`)
+            .join(", ") || "-",
+        ),
+      ]),
+    ),
+  ];
+}
+
 function metricsMarkdown(
   arms: ReturnType<typeof armMetricsOf>[],
   per: LessonMetrics[],
@@ -567,18 +657,8 @@ function metricsMarkdown(
     said: null,
   },
 ): string {
-  const rows = (
-    title: string,
-    header: string[],
-    body: string[][],
-  ): string[] => [
-    `## ${title}`,
-    "",
-    `| ${header.join(" | ")} |`,
-    `|${header.map(() => "---").join("|")}|`,
-    ...body.map((r) => `| ${r.join(" | ")} |`),
-    "",
-  ];
+  const rows = (title: string, header: string[], body: string[][]) =>
+    mdSection(title, header, body);
   return [
     "# 수치(방식별 · 수업별)",
     "",
@@ -829,65 +909,7 @@ function metricsMarkdown(
             ],
       ),
     ),
-    ...(extra.said
-      ? [
-          ...rows(
-            "(타) 세 방식을 같은 규칙으로 센 '말했다' 수 — 방식별(수업 평균 · 갈래는 합)",
-            [
-              "방식",
-              "수업",
-              "(1) 들린 글의 단원 단어",
-              "(2) 앞 선생님 말 · 따라 할 문장에 없던 낱말",
-              "(3) 셋째 값이 인정한 낱말",
-              ...SAID_CATEGORIES.map((k) => `(3) ${k}`),
-            ],
-            ARM_ORDER.filter((a) => extra.said?.some((r) => r.arm === a)).map(
-              (a) => {
-                const m = saidArmOf(a, extra.said ?? []);
-                return [
-                  a,
-                  String(m.lessons),
-                  num(m.heardUnitMean, 1),
-                  num(m.beyondTeacherMean, 1),
-                  num(m.heardAcceptedMean, 1),
-                  ...SAID_CATEGORIES.map((k) => String(m.heardByCategory[k])),
-                ];
-              },
-            ),
-          ),
-          "입력은 기록의 들린 글 · 아이가 들은 바로 앞 선생님 말 · 따라 할 문장(A: 소리 줄, P: model_sentence, N: 새 엔진 소리 줄) · 단원 단어뿐이다. (1) · (2) 는 지금의 '만났다'와 같은 대조이고, (3) 은 core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말)을 세 방식에 같은 꼴의 행으로 적용한 것이다. 새 판정 규칙이 아니며, 각 방식의 지금 판정(Claude 후보에 기댐)과는 다른 자다.",
-          "",
-          ...rows(
-            "(타) 수업별",
-            [
-              "수업",
-              "말한 차례",
-              "(1) 들린 글의 단원 단어",
-              "(2) 앞 말에 없던 낱말",
-              "(3) 셋째 값이 인정한 낱말",
-              "(3) 갈래(차례 × 낱말)",
-            ],
-            extra.said.map((r) => [
-              r.lesson,
-              String(r.counts.turns),
-              cell(
-                `${r.counts.heardUnit.length}(${r.counts.heardUnit.join(", ") || "-"})`,
-              ),
-              cell(
-                `${r.counts.beyondTeacher.length}(${r.counts.beyondTeacher.join(", ") || "-"})`,
-              ),
-              cell(
-                `${r.counts.heardAccepted.length}(${r.counts.heardAccepted.join(", ") || "-"})`,
-              ),
-              cell(
-                SAID_CATEGORIES.filter((k) => r.counts.heardByCategory[k] > 0)
-                  .map((k) => `${k} ${r.counts.heardByCategory[k]}`)
-                  .join(", ") || "-",
-              ),
-            ]),
-          ),
-        ]
-      : []),
+    ...(extra.said ? saidMarkdownOf(extra.said) : []),
     ...rows(
       "수업별 끝난 길 · 마무리 차례의 말",
       ["수업", "끝난 길", "까닭", "마무리 차례의 말", "고른 단추"],
@@ -1106,15 +1128,46 @@ export function leadMarkdown(lessons: readonly Lesson[]): string {
 
 // ── 가려 읽기 ────────────────────────────────────────────────────
 
-function blindOf(dir: string, lessons: readonly Lesson[]): void {
-  const blind = join(dir, "blind");
-  if (existsSync(blind)) rmSync(blind, { recursive: true });
-  mkdirSync(blind, { recursive: true });
+/**
+ * 가려 읽기 차례. 출력 폴더에 대응표(blind-key.json)가 이미 있고 그 수업 묶음이 지금 수업과 빠짐 · 겹침 없이 같으면 그 차례를 그대로 쓴다 —
+ * 수치만 다시 내도 판정자가 읽고 있는 가려 읽기 글과 대응표가 바뀌지 않게(묶음 X2 고침 2). 그 밖에는 새로 섞는다.
+ */
+export function blindOrderOf<T extends { name: string }>(
+  dir: string,
+  lessons: readonly T[],
+): T[] {
+  const keyFile = join(dir, "blind-key.json");
+  if (existsSync(keyFile)) {
+    const names = Object.entries(
+      JSON.parse(readFileSync(keyFile, "utf8")) as Record<string, unknown>,
+    )
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([, v]) => v);
+    const byName = new Map(lessons.map((l) => [l.name, l]));
+    const kept = names.flatMap((n) => {
+      const l = typeof n === "string" ? byName.get(n) : undefined;
+      return l ? [l] : [];
+    });
+    if (
+      names.length === lessons.length &&
+      kept.length === lessons.length &&
+      new Set(kept).size === lessons.length
+    )
+      return kept;
+  }
   const order = [...lessons];
   for (let i = order.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
-    [order[i], order[j]] = [order[j] as Lesson, order[i] as Lesson];
+    [order[i], order[j]] = [order[j] as T, order[i] as T];
   }
+  return order;
+}
+
+function blindOf(dir: string, lessons: readonly Lesson[]): void {
+  const order = blindOrderOf(dir, lessons);
+  const blind = join(dir, "blind");
+  if (existsSync(blind)) rmSync(blind, { recursive: true });
+  mkdirSync(blind, { recursive: true });
   const key: Record<string, string> = {};
   order.forEach((l, i) => {
     const name = `T${String(i + 1).padStart(2, "0")}`;

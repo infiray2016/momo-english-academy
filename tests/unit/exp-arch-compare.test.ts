@@ -58,6 +58,7 @@ import {
   firstSentenceStatsOf,
   firstSentStatsOf,
   followSentenceOf,
+  heardFollowSentenceOf,
   jaccard,
   jsonStringFieldOf,
   judgeSummaryOf,
@@ -82,6 +83,7 @@ import {
 } from "../../scripts/exp/arch-noise";
 import {
   armMetricsOf,
+  blindOrderOf,
   childOnlyHeardOf,
   JUDGE_SUMMARY_TOOL,
   judgeRubricOf,
@@ -99,6 +101,7 @@ import {
   readJudgeSummary,
   readLessons,
   saidArmOf,
+  saidMarkdownOf,
   saidRowsOf,
 } from "../../scripts/exp/arch-report";
 import {
@@ -1792,12 +1795,17 @@ describe("묶음 X2 고침 1: 세 방식 같은 규칙의 '말했다' 수(I-2) �
     return {
       teachers: [
         teacherLine(0, "Hi! Do you like the sea?", { lesson, arm }),
-        withModel(1, "Me too! Can you say it?"),
+        withModel(1, "Me too! Say it with me: I swim in the sea."),
         teacherLine(2, "Great!", { lesson, arm }),
       ],
       children: [
         childLine(1, "Hi! Do you like the sea?", "Yes, sea!", lesson),
-        childLine(2, "Me too! Can you say it?", "I swim in the sea.", lesson),
+        childLine(
+          2,
+          "Me too! Say it with me: I swim in the sea.",
+          "I swim in the sea.",
+          lesson,
+        ),
         childLine(3, "Great!", "Fish!", lesson),
         childLine(4, "Great!", null, lesson),
       ],
@@ -1849,7 +1857,7 @@ describe("묶음 X2 고침 1: 세 방식 같은 규칙의 '말했다' 수(I-2) �
         },
         {
           role: "teacher",
-          say: "Me too! Can you say it?",
+          say: "Me too! Say it with me: I swim in the sea.",
           move: null,
           model: "I swim in the sea.",
           choices: false,
@@ -1921,6 +1929,150 @@ describe("묶음 X2 고침 1: 세 방식 같은 규칙의 '말했다' 수(I-2) �
     expect(c.heardUnit).toEqual(["fish", "swim"]);
     // fish 는 이음 말에 있었고 swim 은 아이 차례 1 뒤 말에만 있었다(바로 앞 말은 이음) — swim 이 스스로
     expect(c.beyondTeacher).toEqual(["swim"]);
+  });
+
+  it("AC-26l (N-1) 따라 할 문장은 세 방식 모두 아이가 들은 선생님 말에 글자 그대로 든 때만 쓴다(core leadModelOf 의 inSay 와 같은 대조)", () => {
+    const heard = "Me too! Say it with me: I swim in the sea.";
+    for (const arm of ["A", "P", "N"] as const) {
+      const t = sameTalkAs(arm).teachers[1];
+      if (!t) throw new Error("차례 없음");
+      // 대소문자 · 문장 부호가 달라도 정규화한 글에 낱말 경계로 들면 들은 것
+      expect(heardFollowSentenceOf(t, heard)).toBe("I swim in the sea.");
+      expect(
+        heardFollowSentenceOf(
+          t,
+          "me too, say it with me... i swim in the sea!",
+        ),
+      ).toBe("I swim in the sea.");
+      // 말 칸에 없으면(예: P 의 model_sentence 를 say 에 넣지 않음) 들리지 않은 문장 — 쓰지 않는다
+      expect(heardFollowSentenceOf(t, "Me too! Can you say it?")).toBeNull();
+      // 낱말 경계: 'I swim in the seas' 는 'I swim in the sea' 를 담지 않는다
+      expect(heardFollowSentenceOf(t, "I swim in the seashore.")).toBeNull();
+    }
+    expect(heardFollowSentenceOf(teacherLine(1, "Nice!"), "Nice!")).toBeNull();
+  });
+
+  it("AC-26l (N-1) 들리지 않은 따라 할 문장은 셈에서 빠진다: 세 방식의 셈이 같고, 그 차례의 낱말은 앞 말에 없던 것 · 갈래 ① 아님", () => {
+    const unheard = (arm: "A" | "P" | "N") => {
+      const talk = sameTalkAs(arm);
+      const t1 = talk.teachers[1];
+      if (!t1) throw new Error("차례 없음");
+      const said = "Me too! Can you say it?";
+      return {
+        teachers: [
+          talk.teachers[0] as TeacherTurnLog,
+          {
+            ...t1,
+            final: said,
+            ...(t1.lead
+              ? { lead: { ...t1.lead, say: said, rawSay: said } }
+              : {}),
+            ...(arm === "P"
+              ? {
+                  modelFirst: {
+                    say: said,
+                    model_sentence: "I swim in the sea.",
+                  },
+                }
+              : {}),
+          },
+          talk.teachers[2] as TeacherTurnLog,
+        ],
+        children: talk.children.map((c) =>
+          c.childTurn === 2 ? { ...c, heardTeacher: said } : c,
+        ),
+      };
+    };
+    const [a, p, n] = (["A", "P", "N"] as const).map((arm) =>
+      saidCountsOf(unheard(arm), SAID_LEX),
+    ) as [SaidCounts, SaidCounts, SaidCounts];
+    expect(p).toEqual(a);
+    expect(n).toEqual(a);
+    expect(a.heardUnit).toEqual(["sea", "swim", "fish"]);
+    // 차례 2 의 앞 말에는 sea · swim 이 없고(따라 할 문장은 들리지 않음) — 한 번이라도 없던 차례가 있으면 셈
+    expect(a.beyondTeacher).toEqual(["sea", "swim", "fish"]);
+    expect(a.heardByCategory.repeated_model).toBe(0);
+  });
+
+  it("AC-26l (N-1) N 의 새 엔진 기록이 없는 차례(지금 길로 도는 인사 토막)는 A 가 보는 소리 줄(checks.sound.model)로 물러선다", () => {
+    const n = sameTalkAs("N").teachers[1];
+    if (!n) throw new Error("차례 없음");
+    const { lead: _lead, ...noLead } = n;
+    const greeting: TeacherTurnLog = {
+      ...noLead,
+      checks: { sound: { model: "I swim in the sea." } },
+    };
+    expect(followSentenceOf(greeting)).toBe("I swim in the sea.");
+    // 새 엔진 기록이 있으면 그 기록의 소리 줄만 본다(지금 길의 칸은 보지 않음)
+    const leadNoModel: TeacherTurnLog = {
+      ...n,
+      checks: { sound: { model: "I swim in the sea." } },
+      lead: { ...(n.lead as LeadTurnLog), sound: {} },
+    };
+    expect(followSentenceOf(leadNoModel)).toBeNull();
+    // 셈도 A 와 같다(인사 토막 차례의 기록 꼴이 A 와 같으면)
+    const talkN = sameTalkAs("N");
+    const talkA = sameTalkAs("A");
+    const asGreeting = {
+      ...talkN,
+      teachers: talkN.teachers.map((t, i) => (i === 1 ? greeting : t)),
+    };
+    expect(saidCountsOf(asGreeting, SAID_LEX)).toEqual(
+      saidCountsOf(talkA, SAID_LEX),
+    );
+  });
+
+  it("AC-26l (N-2) (타) 표 머리는 조건(힌트 종류 · 막힘 · 되묻기 · 한국어 도움)을 세 방식 모두 적용하지 않아 지금 판정보다 넉넉한 값임을 밝히고, 열 이름은 읽기 쉬운 말로 둔다", () => {
+    const rows = (["A", "P", "N"] as const).map((arm) => ({
+      lesson: `${arm}-K1-s1`,
+      arm,
+      counts: saidCountsOf(sameTalkAs(arm), SAID_LEX),
+    }));
+    const md = saidMarkdownOf(rows).join("\n");
+    const title = md.indexOf("## (타) 세 방식을 같은 규칙으로 센");
+    const note = md.indexOf(
+      "힌트 종류 · 막힘 · 되묻기 · 한국어 도움의 조건을 세 방식 모두 적용하지 않아, 각 엔진의 지금 판정보다 넉넉한 값이다",
+    );
+    const table = md.indexOf("| 방식 |");
+    expect(title).toBeGreaterThanOrEqual(0);
+    expect(note).toBeGreaterThan(title);
+    expect(table).toBeGreaterThan(note);
+    for (const col of [
+      "(1) 아이 말에 나온 단원 단어",
+      "(2) 선생님이 바로 앞에서 말하지 않은 단원 단어(가장 엄격)",
+      "(3) 새 후보 규칙(들린 글만)이 인정한 단원 단어",
+    ])
+      expect(md).toContain(col);
+    // 방식마다 한 줄: 수업 평균 (1) 3 · (2) 1 · (3) 1
+    for (const arm of ["A", "P", "N"])
+      expect(md).toContain(`| ${arm} | 1 | 3 | 1 | 1 |`);
+    // 따라 할 문장의 출처(들은 말에 든 때만 · N 의 물러섬)도 적는다
+    expect(md).toContain("아이가 들은 선생님 말에 글자 그대로 든 때만");
+  });
+
+  it("AC-26l (N-1 다시 내기) 가려 읽기 대응표가 이미 있으면 그 차례를 그대로 쓰고(판정자가 읽는 글이 바뀌지 않음), 수업 묶음이 다르면 새로 섞는다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "blind-key-"));
+    const lessons = ["A-K1-s1", "P-K1-s1", "N-K1-s1"].map((name) => ({
+      name,
+    }));
+    const key = { T01: "N-K1-s1", T02: "A-K1-s1", T03: "P-K1-s1" };
+    writeFileSync(join(dir, "blind-key.json"), JSON.stringify(key));
+    expect(blindOrderOf(dir, lessons).map((l) => l.name)).toEqual([
+      "N-K1-s1",
+      "A-K1-s1",
+      "P-K1-s1",
+    ]);
+    // 수업이 하나 더 있으면 지난 대응표를 쓰지 않는다(빠짐 · 겹침 없이 모든 수업을 한 번씩)
+    const more = [...lessons, { name: "A-K2-s1" }];
+    const order = blindOrderOf(dir, more).map((l) => l.name);
+    expect([...order].sort()).toEqual(more.map((l) => l.name).sort());
+    // 대응표가 없으면 섞는다(모든 수업을 한 번씩)
+    const empty = mkdtempSync(join(tmpdir(), "blind-key-"));
+    expect(
+      blindOrderOf(empty, lessons)
+        .map((l) => l.name)
+        .sort(),
+    ).toEqual(lessons.map((l) => l.name).sort());
   });
 
   it.skipIf(PAST === null)(

@@ -7,6 +7,7 @@ import {
   type LeadCandidateRow,
   leadCandidateTableOf,
 } from "../../src/core/conversation/lead-candidate";
+import { leadModelOf } from "../../src/core/conversation/lead-record";
 import {
   CLOSED_CLASS_PASS_WORDS,
   type LowLevelLineOptions,
@@ -31,6 +32,7 @@ import {
   splitSentences,
   tokenize,
 } from "../../src/core/seed/text";
+import { CHILD_NAME_FILL } from "./arch-arms";
 import type {
   ChildTurnLog,
   LessonEnding,
@@ -485,17 +487,37 @@ export function firstSentStatsOf(items: readonly FirstSent[]): {
 // ── 세 방식을 같은 규칙으로 센 '말했다' 수(검토 rev-x2 I-2 · 미결 7) ─────────────
 
 /**
- * 선생님 차례의 따라 할 문장(기록에 남은 칸만 읽는다): A 는 앱이 낸 소리 줄(checks.sound.model), P 는 응답의 model_sentence, N 은 새 엔진
- * 기록의 소리 줄(lead.sound.model). 없거나 빈 글이면 null.
+ * 선생님 차례의 따라 할 문장 후보(기록에 남은 칸만 읽는다): A 는 앱이 낸 소리 줄(checks.sound.model), P 는 응답의 model_sentence, N 은 새 엔진
+ * 기록의 소리 줄(lead.sound.model). N 의 새 엔진 기록이 없는 차례(지금 길로 도는 인사 토막)는 A 와 같은 칸(checks.sound.model)으로 물러선다
+ * (검토 rev-x2-2 N-1). 없거나 빈 글이면 null. 아이가 실제로 들었는지는 heardFollowSentenceOf 가 본다.
  */
 export function followSentenceOf(t: TeacherTurnLog): string | null {
   const text =
-    t.arm === "N"
-      ? t.lead?.sound.model
+    t.arm === "N" && t.lead !== undefined
+      ? t.lead.sound.model
       : t.arm === "P"
         ? (t.modelFirst as { model_sentence?: unknown } | null)?.model_sentence
         : (t.checks as { sound?: { model?: unknown } } | null)?.sound?.model;
   return typeof text === "string" && text.trim() !== "" ? text.trim() : null;
+}
+
+/**
+ * 아이가 실제로 들은 따라 할 문장(검토 rev-x2-2 N-1 — spec 설계 5 '확인된 따라 할 문장'): followSentenceOf 의 문장이 아이가 들은 선생님 말
+ * (child_turn.heardTeacher)에 글자 그대로 들 때만 그 문장, 아니면 null. 대조는 새 엔진이 기록하는 core leadModelOf 의 inSay(정규화한 글에
+ * 낱말 경계로 듦) 그대로다. 들은 말은 {NAME} 을 지어낸 부름말로 채운 글이므로 문장도 같게 채워 본다. 세 방식에 같게 건다.
+ */
+export function heardFollowSentenceOf(
+  t: TeacherTurnLog,
+  heardTeacher: string,
+): string | null {
+  const sentence = followSentenceOf(t);
+  if (sentence === null) return null;
+  const { inSay } = leadModelOf({
+    move: "model_repeat",
+    modelSentence: sentence.replaceAll("{NAME}", CHILD_NAME_FILL),
+    say: heardTeacher,
+  });
+  return inSay === true ? sentence : null;
 }
 
 /** 아이 차례 n 바로 앞에 아이가 들은 선생님 차례(고르기 뒤 이음이 있으면 그것, 아니면 앞 아이 차례 뒤 선생님 차례). */
@@ -526,9 +548,10 @@ export type SaidCounts = {
 
 /**
  * 한 수업의 '말했다' 수를 세 방식에 같은 규칙으로 센다(검토 rev-x2 I-2). 입력은 기록에 있는 들린 글(child_turn.heard) · 아이가 들은 바로 앞
- * 선생님 말(child_turn.heardTeacher) · 따라 할 문장(followSentenceOf) · 단원 단어뿐이다. 새 판정 규칙을 만들지 않는다: (1) · (2) 는 지금
+ * 선생님 말(child_turn.heardTeacher) · 그 말에 든 따라 할 문장(heardFollowSentenceOf — rev-x2-2 N-1) · 단원 단어뿐이다. 새 판정 규칙을 만들지 않는다: (1) · (2) 는 지금
  * '만났다'와 같은 대조(metWordsIn)이고, (3) 은 core leadCandidateTableOf 에 같은 꼴의 행(Claude 후보 · 저장된 판정 · 힌트 · 막힘 · 읽기 칸
- * 없음)을 넣은 셋째 값이다. 그래서 차례 조건(힌트 종류 · 막힘 · 되물음)은 세 방식 모두 지난 것으로 같게 놓인다.
+ * 없음)을 넣은 셋째 값이다. 그래서 차례 조건(힌트 종류 · 막힘 · 되물음 · 한국어 도움)은 세 방식 모두 적용하지 않은 것으로 같게 놓이고, 값은
+ * 각 엔진의 지금 판정보다 넉넉하다(rev-x2-2 N-2).
  */
 export function saidCountsOf(
   lesson: {
@@ -545,7 +568,7 @@ export function saidCountsOf(
     if (c.action !== "speak" || c.heard === null) continue;
     turns++;
     const before = teacherBeforeOf(lesson.teachers, c.childTurn);
-    const model = before ? followSentenceOf(before) : null;
+    const model = before ? heardFollowSentenceOf(before, c.heardTeacher) : null;
     rows.push(
       {
         role: "teacher",
