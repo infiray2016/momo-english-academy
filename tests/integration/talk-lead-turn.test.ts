@@ -1002,12 +1002,15 @@ describe("회화 Claude 주도 묶음 S1 새 엔진 턴 길", () => {
     expect(await openMarksOf(ids.sessionId)).toHaveLength(1);
   });
 
-  it("AC-26c '더 이야기하기' 뒤의 입구가 'AI 쉬는 중'이면 참여 완료 뒤라 수업을 정리로 닫고 close 줄(쉬는 중 · 되짚을 말)을 내며, AI 호출과 표지 행이 없다(8절 — 아이 차례 길과 같은 규칙, 화면 묶음 S3 보고 4절 1)", async () => {
+  it("AC-26c '더 이야기하기' 뒤의 입구가 'AI 쉬는 중'이면 참여 완료 뒤라 수업을 정리로 닫고 close 줄(쉬는 중 · 되짚을 말)을 내며, AI 호출이 없고 표지 행이 늘지 않는다(대화 첫 차례 입구의 표지 행은 그대로 남는다 · 8절 — 아이 차례 길과 같은 규칙, 화면 묶음 S3 보고 4절 1)", async () => {
     const ids = await inTalk("claude");
     const { sessionId } = ids;
     await toMore(ids);
     const requests = leadRequests().length;
     const rowsBefore = (await rowsOf(sessionId)).length;
+    // 대화 첫 차례 입구(inTalk)가 넣은 표지 행이 이미 있다(표지는 호출이 끝나도 지우지 않는다) — 쉬는 중 닫기가 표지를 더하지 않음을 본다
+    const marksBefore = (await openMarksOf(sessionId)).length;
+    expect(marksBefore).toBe(1);
     const lines = await openLead(ids, "more", { resting: true });
     expect(lines).toHaveLength(1);
     const close = lines[0];
@@ -1016,7 +1019,7 @@ describe("회화 Claude 주도 묶음 S1 새 엔진 턴 길", () => {
     expect(close.farewell.en).toBe(card.farewell.en);
     expect(Array.isArray(close.lines)).toBe(true);
     expect(leadRequests()).toHaveLength(requests);
-    expect(await openMarksOf(sessionId)).toHaveLength(0);
+    expect(await openMarksOf(sessionId)).toHaveLength(marksBefore);
     expect(await rowsOf(sessionId)).toHaveLength(rowsBefore);
     expect(await sessionRowOf(sessionId)).toEqual({
       status: "completed",

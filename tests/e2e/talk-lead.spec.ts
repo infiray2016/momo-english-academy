@@ -6,7 +6,9 @@
 // 가짜 Anthropic 은 사실 알림 머리 줄(TALK_LEAD_STATUS_HEAD)로 새 엔진 요청을 가른다. 화면 검토 사진은 E2E_PHOTOS 가 있을 때
 // test-results/photos/talk-lead-*.png(photos.ts, 아이패드 두 방향) — 정본 15절 AC-26m 이 켜기 전에 캡처로 보라는 여섯(마무리 차례의 두 단추 ·
 // 듣기 단추의 자리 · 뜻 줄 · 되묻는 차례의 듣기 단추 · 힌트 단추가 없는 차례 · 막힌 뒤 hint_ko)을 이 한 번에 남기고, 이름에 보이는 것을 적는다.
-// 가짜 응답은 좁은 정의에 걸리지 않는 1단계 낱말로 쓴다. 이 Mac 은 e2e DB(embedded-postgres)가 뜨지 않아 CI 에서 돈다.
+// 가짜 응답 대본은 talk-lead-script.ts 에 두고 단위 시험(tests/unit/talk-lead-script.test.ts)이 같은 대본을 서버 턴 길의 core 함수로 먼저
+// 지나게 한다 — 물음 문장은 e2e 재료(시험용 시드 3단계 어휘)의 아는 낱말로만 쓴다(시드에 없는 낱말의 고르기는 좁은 정의에 걸려 다시
+// 말하기로 바뀐다, CI 고침 2). 이 Mac 은 e2e DB(embedded-postgres)가 뜨지 않아 CI 에서 돈다.
 import type { Page } from "@playwright/test";
 import { and, eq, max } from "drizzle-orm";
 import { TALK_LEAD_STATUS_HEAD } from "../../src/core/ai/calls/talk-lead";
@@ -31,6 +33,16 @@ import {
   talkScript,
   talkTurnRequests,
 } from "./talk";
+import {
+  LEAD_SCRIPT,
+  LEAD_SCRIPT_CHILD_SAYS,
+  LEAD_SCRIPT_CHOICES,
+  LEAD_SCRIPT_GREETING_END,
+  LEAD_SCRIPT_HINT_KO,
+  LEAD_SCRIPT_MODEL,
+  LEAD_SCRIPT_RETRY,
+  type LeadScriptReply,
+} from "./talk-lead-script";
 
 const T = {
   start: "시작!",
@@ -65,7 +77,7 @@ test.afterEach(resetFakeAi);
 test.afterAll(closeE2eDb);
 
 /** 새 엔진 응답(아홉 칸 — 빈 값 + 덮어쓴 칸, 칸 차례는 reading · move · say 먼저, 통합 시험 talk-fixture leadAnswer 와 같은 꼴). */
-function leadReply(over: Record<string, unknown>): FakeRule {
+function leadReply(over: LeadScriptReply): FakeRule {
   return {
     when: { bodyIncludes: TALK_LEAD_STATUS_HEAD },
     reply: {
@@ -73,16 +85,15 @@ function leadReply(over: Record<string, unknown>): FakeRule {
       body: messageBody({
         model: TALK_MODEL_LOW,
         json: {
-          reading: "clear_answer",
-          move: "react_and_follow_up",
-          say: "Nice!",
-          say_ko: "",
-          model_sentence: "",
-          hint_ko: "",
-          hint_en: "",
+          reading: over.reading ?? "clear_answer",
+          move: over.move,
+          say: over.say,
+          say_ko: over.say_ko ?? "",
+          model_sentence: over.model_sentence ?? "",
+          hint_ko: over.hint_ko ?? "",
+          hint_en: over.hint_en ?? "",
           goal_words_i_said: [],
           child_used_on_own: [],
-          ...over,
         },
       }),
       chunks: 6,
@@ -198,7 +209,9 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     // 듣기는 모두 같은 말(쪽을 다시 열면 가짜 음성 대본이 처음부터 다시 돈다)
     const page = await speechPage(
       context,
-      talkScript(Array.from({ length: 8 }, () => saidRun("I like it."))),
+      talkScript(
+        Array.from({ length: 8 }, () => saidRun(LEAD_SCRIPT_CHILD_SAYS)),
+      ),
     );
     await withHouseholdSetting(LEAD_MODE_KEY, "claude", async () => {
       // 처음 열 때 처음 스냅숏에 새 방식이 적힌다(그 뒤 설정을 되돌려도 이 수업은 새 방식 — AC-26a)
@@ -211,16 +224,11 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
 
     // 인사(지금 길) → 대화 토막의 첫 차례(새 엔진 — 카드 첫 질문 없이 Claude 의 말)
     await untilChildTurn(page);
-    const opening = "Hello again! Do you like it?";
-    const openingKo = "또 만나서 반가워! 너는 그거 좋아하니?";
+    const openingKo = LEAD_SCRIPT.opening.reply.say_ko;
     await pushFakeAi([
-      talkLessonReply({ tori_en: "Great! Now let's start!" }),
-      retryReply("Do you like it?"),
-      leadReply({
-        say: opening,
-        say_ko: openingKo,
-        move: "react_and_follow_up",
-      }),
+      talkLessonReply({ tori_en: LEAD_SCRIPT_GREETING_END }),
+      retryReply(LEAD_SCRIPT_RETRY),
+      leadReply(LEAD_SCRIPT.opening.reply),
     ]);
     await speak(page);
     await expect(bubble(page)).toContainText("Hello again!", {
@@ -240,15 +248,8 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     await photo(page, PHOTO.first);
 
     // 아이 답 → 1~3단계 따라 할 문장: 말풍선 글에 없고 글 뒤 듣기 단추(소리 줄)로만 있다
-    const model = "I like it.";
-    await pushFakeAi([
-      leadReply({
-        say: `Great! Say it with me. ${model}`,
-        say_ko: "좋아! 나랑 같이 말해 봐.",
-        move: "model_repeat",
-        model_sentence: model,
-      }),
-    ]);
+    const model = LEAD_SCRIPT_MODEL;
+    await pushFakeAi([leadReply(LEAD_SCRIPT.model.reply)]);
     await speak(page);
     const listen = page.locator('[data-sound-listen="model"]');
     await expect(listen).toBeVisible({ timeout: STREAM_END_MS });
@@ -259,14 +260,8 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     await photo(page, PHOTO.model);
 
     // '잘 모르겠어요' → 되묻는 차례: 막힌 뒤 고르기 물음은 글에 없고 소리 줄 하나(듣기 단추)로만 있다(뜻 hint_ko 가 비어 한국어 뜻은 없음)
-    const choices = "Cats or dogs?";
-    await pushFakeAi([
-      leadReply({
-        reading: "does_not_know",
-        move: "easier_or_choices",
-        say: `That's okay! ${choices}`,
-      }),
-    ]);
+    const choices = LEAD_SCRIPT_CHOICES;
+    await pushFakeAi([leadReply(LEAD_SCRIPT.choices.reply)]);
     await dontKnow(page);
     const choiceListen = page.locator('[data-sound-listen="answer"]');
     await expect(choiceListen).toBeVisible({ timeout: STREAM_END_MS });
@@ -278,20 +273,13 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     await photo(page, PHOTO.choices);
 
     // 또 '잘 모르겠어요' → 막힌 뒤 한국어 뜻(hint_ko — 1~3단계는 첫 막힘부터, 말풍선 아래 글이고 읽지 않음)
-    const hintKo = "고양이가 좋으면 고양이라고 말해 봐요.";
-    await pushFakeAi([
-      leadReply({
-        reading: "does_not_know",
-        move: "share_about_me",
-        say: "That's okay. I like cats. And you?",
-        hint_ko: hintKo,
-      }),
-    ]);
+    const hintKo = LEAD_SCRIPT_HINT_KO;
+    await pushFakeAi([leadReply(LEAD_SCRIPT.hintKo.reply)]);
     await dontKnow(page);
     await expect(page.locator("[data-tori-explanation]")).toHaveText(hintKo, {
       timeout: STREAM_END_MS,
     });
-    await expect(bubble(page)).toContainText("I like cats.");
+    await expect(bubble(page)).toContainText("I like this.");
     expect(await leadRequests()).toHaveLength(4);
     await untilChildTurn(page);
     await photo(page, PHOTO.hintKo);
@@ -306,9 +294,7 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
     expect((await fakeAiRequests()).length).toBe(calls);
 
     // 마무리 차례: 말 칸에 물음이 없으니 앱이 지금 상수 물음을 붙이고 두 단추가 나온다
-    await pushFakeAi([
-      leadReply({ say: "You did great today!", move: "react_only" }),
-    ]);
+    await pushFakeAi([leadReply(LEAD_SCRIPT.closing.reply)]);
     await speak(page);
     const choice = page.locator("[data-talk-choice]");
     await expect(choice).toBeVisible({ timeout: STREAM_END_MS });
@@ -319,8 +305,8 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
 
     // '더 이야기하기' → 아이 말 없는 턴 요청(more) 하나 → 선생님 말이 새 말풍선으로, 두 단추는 사라진다
     const before = (await leadRequests()).length;
-    const moreSay = "Yay! Let's talk more.";
-    await pushFakeAi([leadReply({ say: moreSay, move: "react_only" })]);
+    const moreSay = LEAD_SCRIPT.more.reply.say;
+    await pushFakeAi([leadReply(LEAD_SCRIPT.more.reply)]);
     await choice.getByRole("button", { name: T.more }).click();
     await expect(bubble(page)).toContainText(moreSay, {
       timeout: STREAM_END_MS,
