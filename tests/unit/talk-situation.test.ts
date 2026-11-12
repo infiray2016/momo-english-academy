@@ -155,7 +155,7 @@ const LINES: TalkSituationLinesFile["lines"] = {
   // 되묻기 자리(C218 — 시드와 같은 다섯 줄. 이 자리의 상황 차례 검사 시험은 내용 고침 2 묶음 2-가 가 더한다)
   ask_again: [
     { en: "Sorry! Say it again, please.", ko: "미안! 한 번만 더 말해 줘." },
-    { en: "Oops! Let me hear it again.", ko: "앗! 다시 한번 들려줘." },
+    { en: "Let me hear it again!", ko: "다시 한번 들려줘!" },
     { en: "Hmm, again, please!", ko: "음, 한 번 더 말해 줄래!" },
     { en: "Sorry! I will listen again.", ko: "미안! 다시 잘 들어 볼게." },
     {

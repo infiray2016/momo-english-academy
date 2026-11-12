@@ -244,7 +244,7 @@ describe("시드 목록 넷(정한 것 5)", () => {
     ]);
     expect(file.lines.ask_again).toEqual([
       { en: "Sorry! Say it again, please.", ko: "미안! 한 번만 더 말해 줘." },
-      { en: "Oops! Let me hear it again.", ko: "앗! 다시 한번 들려줘." },
+      { en: "Let me hear it again!", ko: "다시 한번 들려줘!" },
       { en: "Hmm, again, please!", ko: "음, 한 번 더 말해 줄래!" },
       { en: "Sorry! I will listen again.", ko: "미안! 다시 잘 들어 볼게." },
       {
