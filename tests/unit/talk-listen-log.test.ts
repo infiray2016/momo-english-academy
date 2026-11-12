@@ -3,7 +3,9 @@
 import { describe, expect, it } from "vitest";
 import { parseTalkAttemptInput } from "@/core/conversation/attempt";
 import {
+  CLIENT_LISTEN_MS_MAX,
   CLIENT_LISTENS_MAX,
+  CLIENT_SPEAKS_MAX,
   type ClientListen,
   type ClientListenEntry,
   ClientListenSchema,
@@ -169,6 +171,10 @@ describe("듣기 사건 요약(C149)", () => {
         rs: 0,
         te: "cancel",
         hid: false,
+        // 11-13 칸(묶음 V): 첫 읽기 요청(0) → 듣기 시작(1000), 요청 → 시작 알림(10), 읽는 중 끊어 길이(kd)는 없다
+        k0: 1000,
+        ks: 10,
+        kn: 1,
       },
       {
         o: "result",
@@ -184,6 +190,11 @@ describe("듣기 사건 요약(C149)", () => {
         rs: 0,
         te: "end",
         hid: false,
+        // 앞 듣기 끝(3010) 뒤 첫 읽기 요청(4000) → 이 듣기 시작(5700), 시작 알림 4010 → 끝 알림 5000
+        k0: 1700,
+        ks: 10,
+        kd: 990,
+        kn: 1,
       },
     ]);
     // 글 · 인식 글 · 오류 메시지는 들지 않는다(녹음 금지 · 이름 가림)
@@ -353,5 +364,237 @@ describe("읽어 주기 감시가 끝낸 발화(C166 R1 · 검토 A M-2)", () =>
     ]);
     const [entry] = log.take();
     expect(entry?.tc).toBe(500);
+  });
+});
+
+describe("읽어 주기 시작 · 끝 기록(AC-26p, C238 (6) · 회화 Claude 주도 plan 묶음 V)", () => {
+  const heard: ListenOutcome = {
+    kind: "result",
+    text: SAID,
+    pieces: [SAID],
+    endedBy: "silence",
+    restarts: 0,
+    watchdogRestarts: 0,
+  };
+  /** 결과로 끝난 듣기 하나(시작 begin, 끝 begin + 3000). */
+  const heardListen = (listen: number, begin: number) =>
+    listenTrace(
+      listen,
+      begin,
+      [{ at: begin + 100, type: "result", text: SAID }],
+      {
+        at: begin + 3000,
+        outcome: heard,
+      },
+    );
+  /** 칸 넷과 tc 만 뽑는다(다른 칸은 앞 시험이 본다). */
+  const timing = (e: ClientListenEntry | undefined) =>
+    e === undefined
+      ? undefined
+      : {
+          tc: e.tc,
+          k0: e.k0,
+          ks: e.ks,
+          kd: e.kd,
+          kn: e.kn,
+        };
+
+  it("AC-26p 묶음 V 읽기 하나 뒤 듣기는 k0 · ks · kd · kn 을 듣기 시작에서 거꾸로 잰 ms 로 남기고 시작 · 끝 시각이 tc 와 맞는다", () => {
+    const log = logOf([
+      { at: 1000, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 1300, kind: "speak-event", type: "start" },
+      { at: 3300, kind: "speak-event", type: "end" },
+      ...heardListen(1, 3800),
+    ]);
+    const [entry] = log.take();
+    expect(timing(entry)).toEqual({
+      tc: 500,
+      k0: 2800,
+      ks: 300,
+      kd: 2000,
+      kn: 1,
+    });
+    // 시작 시각 = 듣기 시작 − k0 + ks, 끝 시각 = 듣기 시작 − tc, 길이 = 끝 − 시작(plan 묶음 V)
+    const begin = 3800;
+    const startAt = begin - (entry?.k0 ?? 0) + (entry?.ks ?? 0);
+    const endAt = begin - (typeof entry?.tc === "number" ? entry.tc : 0);
+    expect(startAt).toBe(1300);
+    expect(endAt).toBe(3300);
+    expect(endAt - startAt).toBe(entry?.kd);
+    // 글은 들지 않는다
+    expect(JSON.stringify(entry)).not.toContain(SPOKEN);
+  });
+
+  it("AC-26p 묶음 V 여러 문장은 앞 듣기 끝 뒤 첫 요청부터 세고, kd 는 첫 시작 알림 → 마지막 끝 알림, kn 은 요청 수(소리 없는 풀기 글은 셈 밖)다", () => {
+    const log = logOf([
+      // 앞 듣기 앞의 읽기는 다음 듣기의 칸에 들지 않는다
+      { at: 0, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 100, kind: "speak-event", type: "start" },
+      { at: 900, kind: "speak-event", type: "end" },
+      ...heardListen(1, 1000),
+      // 앞 듣기 끝 4000 뒤
+      { at: 4500, kind: "speak", text: " ", voice: undefined },
+      { at: 4510, kind: "speak-event", type: "start" },
+      { at: 4520, kind: "speak-event", type: "end" },
+      { at: 6000, kind: "speak", text: "Nice.", voice: undefined },
+      { at: 6200, kind: "speak-event", type: "start" },
+      { at: 7000, kind: "speak-event", type: "end" },
+      { at: 7100, kind: "speak", text: "Me too.", voice: undefined },
+      { at: 7250, kind: "speak-event", type: "start" },
+      { at: 8000, kind: "speak-event", type: "end" },
+      { at: 8100, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 8300, kind: "speak-event", type: "start" },
+      { at: 9500, kind: "speak-event", type: "end" },
+      ...heardListen(2, 10_000),
+    ]);
+    const [first, second] = log.take();
+    expect(timing(first)).toEqual({
+      tc: 100,
+      k0: 1000,
+      ks: 100,
+      kd: 800,
+      kn: 1,
+    });
+    expect(timing(second)).toEqual({
+      tc: 500,
+      k0: 4000,
+      ks: 200,
+      kd: 3300,
+      kn: 3,
+    });
+  });
+
+  it("AC-26p 묶음 V 읽는 중 끊고 들으면 tc cut 이고 끝 알림이 듣기 앞에 없어 kd 는 없고 k0 · ks · kn 만 남는다", () => {
+    const log = logOf([
+      { at: 0, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 200, kind: "speak-event", type: "start" },
+      ...heardListen(1, 1500),
+      // 끊긴 읽기의 늦은 알림은 듣기 시작 뒤에 온다
+      { at: 1501, kind: "speak-event", type: "error", code: "interrupted" },
+    ]);
+    const [entry] = log.take();
+    expect(timing(entry)).toEqual({
+      tc: "cut",
+      k0: 1500,
+      ks: 200,
+      kd: undefined,
+      kn: 1,
+    });
+    expect(entry?.te).toBe("cancel");
+    expect(entry).not.toHaveProperty("kd");
+  });
+
+  it("AC-26p 묶음 V 감시 상한이 끝낸 읽기는 그 감시 알림을 끝으로 보고(no-end), 시작 알림이 없으면(no-start) ks · kd 가 없다", () => {
+    const log = logOf([
+      // 시작 알림은 왔고 끝 알림이 없어 감시가 끝냄
+      { at: 0, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 100, kind: "speak-event", type: "start" },
+      { at: 8100, kind: "speak-event", type: "timeout", code: "no-end" },
+      ...heardListen(1, 8600),
+      // 시작 알림이 오지 않아 감시가 끝냄
+      { at: 12_000, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 15_000, kind: "speak-event", type: "timeout", code: "no-start" },
+      ...heardListen(2, 15_500),
+    ]);
+    const [noEnd, noStart] = log.take();
+    expect(timing(noEnd)).toEqual({
+      tc: 500,
+      k0: 8600,
+      ks: 100,
+      kd: 8000,
+      kn: 1,
+    });
+    expect(noEnd?.te).toBe("timeout");
+    expect(timing(noStart)).toEqual({
+      tc: 500,
+      k0: 3500,
+      ks: undefined,
+      kd: undefined,
+      kn: 1,
+    });
+    expect(noStart).not.toHaveProperty("ks");
+    expect(noStart).not.toHaveProperty("kd");
+  });
+
+  it("AC-26p 묶음 V 앞 듣기 끝 뒤 읽기가 없으면 네 칸이 없고, 10분 넘는 틈은 상한 값으로 자른다", () => {
+    const log = logOf([
+      { at: 0, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 100, kind: "speak-event", type: "start" },
+      { at: 900, kind: "speak-event", type: "end" },
+      ...heardListen(1, 1000),
+      // 읽기 없이 다시 듣기
+      ...heardListen(2, 5000),
+      // 오래 쉰 뒤의 읽기
+      { at: 10_000, kind: "speak", text: SPOKEN, voice: undefined },
+      { at: 10_100, kind: "speak-event", type: "start" },
+      { at: 10_900, kind: "speak-event", type: "end" },
+      ...heardListen(3, 10_000 + CLIENT_LISTEN_MS_MAX + 5000),
+    ]);
+    const [, again, late] = log.take();
+    for (const key of ["k0", "ks", "kd", "kn"])
+      expect(again).not.toHaveProperty(key);
+    expect(late?.k0).toBe(CLIENT_LISTEN_MS_MAX);
+    expect(late?.ks).toBe(100);
+    expect(late?.kd).toBe(800);
+    expect(
+      ClientListenSchema.safeParse({
+        br: "iPad Safari 27.0",
+        r3d: false,
+        listens: [late],
+        mf: 0,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("AC-26p 묶음 V 칸 꼴은 네 칸이 없던 옛 기록을 그대로 읽고, 정수 ms · 셈만 받으며 글이나 범위 밖 값은 거른다", () => {
+    const old: ClientListenEntry = {
+      o: "result",
+      by: "silence",
+      d: 3500,
+      snd: true,
+      tc: 700,
+      te: "end",
+    };
+    const wrap = (listens: unknown[]): unknown => ({
+      br: "iPad Safari 27.0",
+      r3d: true,
+      listens,
+      mf: 0,
+    });
+    // 옛 기록(칸 없음)은 그대로
+    expect(ClientListenSchema.parse(wrap([old]))).toEqual(wrap([old]));
+    const withTiming = { ...old, k0: 1700, ks: 10, kd: 990, kn: 1 };
+    expect(ClientListenSchema.safeParse(wrap([withTiming])).success).toBe(true);
+    for (const bad of [
+      { k0: -1 },
+      { ks: 1.5 },
+      { kd: CLIENT_LISTEN_MS_MAX + 1 },
+      { kn: -1 },
+      { kn: CLIENT_SPEAKS_MAX + 1 },
+      { k0: "1700" },
+      { kt: SPOKEN },
+    ])
+      expect(
+        ClientListenSchema.safeParse(wrap([{ ...old, ...bad }])).success,
+      ).toBe(false);
+    // 따라 말하기 시도 꼴도 같은 칸을 읽는다
+    const attempt = {
+      v: 1,
+      kind: "talk-wrapup",
+      step: "final",
+      target: "fan",
+      heard: [],
+      failures: 3,
+      skipped: "recognition",
+      index: 0,
+      clientListen: wrap([withTiming]),
+    };
+    expect(parseTalkAttemptInput(attempt)).toEqual(attempt);
+    expect(
+      parseTalkAttemptInput({
+        ...attempt,
+        clientListen: wrap([{ ...withTiming, kn: -1 }]),
+      }),
+    ).toBeUndefined();
   });
 });

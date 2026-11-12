@@ -22,6 +22,8 @@ const FAILURES_MAX = 1000;
 const RESTARTS_MAX = 100;
 /** 버림 칸의 셈(np · n) 상한(기술 값 — 꼴 검사). 화면은 이 값으로 잘라 보낸다(ms 와 같음). */
 export const DISCARD_COUNT_MAX = 1000;
+/** 듣기 사이 읽기 요청 수(kn) 상한(기술 값 — 꼴 검사). 화면은 이 값으로 잘라 보낸다(ms 와 같음). */
+export const CLIENT_SPEAKS_MAX = 1000;
 
 /**
  * 듣기 결과 종류: result · no-result · stalled · deaf(마이크 안 잡힘 — audiostart 가 빨리 오고 소리 · 결과 없음, 잠정 11-06) · error:<코드> ·
@@ -102,6 +104,16 @@ export const ClientListenEntrySchema = z.strictObject({
   hid: z.boolean().optional(),
   /** 그 앞 버림(2026-11-07 iPad 버리는 듣기 — 끔 · 켜지 않은 기기와 옛 기록에는 없다). */
   dc: DiscardNoteSchema.optional(),
+  // ── 아래 네 칸은 2026-11-13 에 더함(회화 Claude 주도 plan 묶음 V · 13절 C238 (6) — 옛 기록에는 없다). 화면 시각은 서버 시각과 맞출 수 없어
+  // 이 듣기 시작에서 거꾸로 잰다: 읽어 주기 시작 = 듣기 시작 − k0 + ks, 끝 = 듣기 시작 − tc(수치일 때). 앞 듣기 끝 뒤 읽기가 없으면 넷 다 없다 ──
+  /** 앞 듣기 끝(없으면 기록 처음) 뒤 첫 읽기 요청 → 이 듣기 시작(ms). */
+  k0: ms.optional(),
+  /** 그 첫 읽기 요청 → 첫 시작 알림(읽어 주기 시작 지연, ms). 시작 알림이 듣기 앞에 없으면 없다. */
+  ks: ms.optional(),
+  /** 첫 시작 알림 → 마지막 읽기의 끝 · 감시 알림(읽어 주기 길이, ms — tc 와 같은 끝). 읽는 중 끊었거나(tc cut) 시작 알림이 없으면 없다. */
+  kd: ms.optional(),
+  /** 앞 듣기 끝 뒤 이 듣기 앞의 읽기 요청 수(소리 없는 풀기 글은 셈 밖). */
+  kn: z.int().min(0).max(CLIENT_SPEAKS_MAX).optional(),
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 

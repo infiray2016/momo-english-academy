@@ -1,10 +1,12 @@
 // 회화 듣기 사건 기록(13절 C149 · 분석 보고 task-talk-speech-analysis 4.1). 음성 접점(browser.ts)의 기록 사건(onTrace)을 받아
-// 듣기마다 요약(o · by · d · as · snd · fr · tc, 11-06 에 pe · ss · rs · ts · te · hid — 분석 task-ipad-listen-analysis 6.2)으로 줄인다. 받을 때 글 · 인식 글 · 오류 메시지를 버리고 시각 · 종류만 남긴다(녹음 금지 ·
+// 듣기마다 요약(o · by · d · as · snd · fr · tc, 11-06 에 pe · ss · rs · ts · te · hid — 분석 task-ipad-listen-analysis 6.2, 11-13 에 읽어 주기
+// 시각 k0 · ks · kd · kn — 회화 Claude 주도 plan 묶음 V)으로 줄인다. 받을 때 글 · 인식 글 · 오류 메시지를 버리고 시각 · 종류만 남긴다(녹음 금지 ·
 // 이름 가림). window 를 읽지 않는다(단위 시험이 돈다). 버리는 듣기(iPad 버리는 듣기 spec 설계 5)는 버림 객체의 end 만 pe 의 앞 객체로 보고,
 // 층이 남긴 discard-note 를 다음 진짜 요약의 dc 로 붙인다. 버림의 소리 · 결과 사건은 진짜 칸에 넣지 않는다.
 import {
   CLIENT_LISTEN_MS_MAX,
   CLIENT_LISTENS_MAX,
+  CLIENT_SPEAKS_MAX,
   type ClientListenEntry,
   DISCARD_COUNT_MAX,
   type DiscardNote,
@@ -171,6 +173,19 @@ function speakRelationOf(
 ): ClientListenEntry["tc"] {
   const speakAt = lastSpeakAt(kept, beginAt);
   if (speakAt === undefined) return undefined;
+  const endedAt = speakEndedAt(kept, speakAt, beginAt);
+  return endedAt === undefined ? "cut" : clampListenMs(beginAt - endedAt);
+}
+
+/**
+ * 이 읽기(speakAt)가 듣기 시작 앞에 끝난 시각(순수): 그 읽기의 시작 알림 뒤 마지막 끝 · 오류 알림, 또는 감시 알림. 없으면 읽는 중 끊음이라
+ * 없음. tc 와 kd 가 같은 끝을 쓴다.
+ */
+function speakEndedAt(
+  kept: readonly Kept[],
+  speakAt: number,
+  beginAt: number,
+): number | undefined {
   let startedAt: number | undefined;
   let endedAt: number | undefined;
   for (const e of kept) {
@@ -180,7 +195,39 @@ function speakRelationOf(
       endedAt = e.at;
     if (e.k === "speak-timeout") endedAt = e.at;
   }
-  return endedAt === undefined ? "cut" : clampListenMs(beginAt - endedAt);
+  return endedAt;
+}
+
+/**
+ * 앞 듣기 끝 뒤 이 듣기 앞의 읽어 주기 시각(k0 · ks · kd · kn, 순수 — 회화 Claude 주도 plan 묶음 V). 이 듣기 시작에서 거꾸로 잰 ms 다(화면
+ * 시각은 서버 시각과 맞출 수 없음). kd 의 끝은 tc 와 같은 끝(마지막 읽기의 끝 · 감시 알림)이라 읽는 중 끊었으면 없다. 그 사이 읽기가
+ * 없으면 넷 다 없다. 소리 없는 풀기 글은 keptOf 가 이미 버려 셈 밖이다.
+ */
+function speakTimingOf(
+  kept: readonly Kept[],
+  begin: Extract<Kept, { k: "begin" }>,
+): Pick<ClientListenEntry, "k0" | "ks" | "kd" | "kn"> {
+  const from = previousDoneAt(kept, begin);
+  const speaks = kept.filter(
+    (e) => e.k === "speak" && e.at >= from && e.at <= begin.at,
+  );
+  const firstSpeakAt = speaks[0]?.at;
+  const lastSpeak = speaks.at(-1)?.at;
+  if (firstSpeakAt === undefined || lastSpeak === undefined) return {};
+  const startedAt = kept.find(
+    (e) => e.k === "speak-start" && e.at >= firstSpeakAt && e.at <= begin.at,
+  )?.at;
+  const endedAt = speakEndedAt(kept, lastSpeak, begin.at);
+  return {
+    k0: clampListenMs(begin.at - firstSpeakAt),
+    ...(startedAt === undefined
+      ? {}
+      : { ks: clampListenMs(startedAt - firstSpeakAt) }),
+    ...(startedAt !== undefined && endedAt !== undefined && endedAt >= startedAt
+      ? { kd: clampListenMs(endedAt - startedAt) }
+      : {}),
+    kn: Math.min(CLIENT_SPEAKS_MAX, speaks.length),
+  };
 }
 
 /** 시작 앞 마지막 읽기(at), 없으면 없음. */
@@ -209,15 +256,24 @@ function speakEndOf(
   return undefined;
 }
 
+/** 앞 듣기 끝 시각(순수). 앞 듣기가 없으면 기록 처음(-Infinity). hid 와 k0 · kn 이 같은 경계를 쓴다. */
+function previousDoneAt(
+  kept: readonly Kept[],
+  begin: Extract<Kept, { k: "begin" }>,
+): number {
+  let prevDoneAt = Number.NEGATIVE_INFINITY;
+  for (const e of kept)
+    if (e.k === "done" && e.listen < begin.listen && e.at <= begin.at)
+      prevDoneAt = Math.max(prevDoneAt, e.at);
+  return prevDoneAt;
+}
+
 /** 앞 듣기(없으면 기록 처음) 끝 뒤 이 듣기 시작 앞에 쪽이 숨었는가(hid, 순수). */
 function hiddenBefore(
   kept: readonly Kept[],
   begin: Extract<Kept, { k: "begin" }>,
 ): boolean {
-  let prevDoneAt = Number.NEGATIVE_INFINITY;
-  for (const e of kept)
-    if (e.k === "done" && e.listen < begin.listen && e.at <= begin.at)
-      prevDoneAt = Math.max(prevDoneAt, e.at);
+  const prevDoneAt = previousDoneAt(kept, begin);
   return kept.some(
     (e) => e.k === "hidden" && e.at >= prevDoneAt && e.at <= begin.at,
   );
@@ -304,6 +360,7 @@ function summaryOf(
     ...(te === undefined ? {} : { te }),
     hid: hiddenBefore(kept, begin),
     ...(dc ? { dc } : {}),
+    ...speakTimingOf(kept, begin),
   };
 }
 
