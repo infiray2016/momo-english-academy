@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { TEACHER_KEY } from "@/core/seed/structure";
 import { ClientListenSchema } from "./client-listen";
+import { TALK_LEAD_MODES } from "./lead-mode";
 
 /** 시도 꼴 판(P11a INPUT_VERSION 과 같은 1). */
 const TALK_INPUT_VERSION = 1;
@@ -91,6 +92,12 @@ export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
     carry: z
       .strictObject({ goals: z.array(z.string()), words: z.array(z.string()) })
       .optional(),
+    /**
+     * 회화 방식(talk.lead_mode — 회화 Claude 주도 묶음 M): 수업을 처음 열 때 읽은 설정 값. 서버는 claude 일 때만 적는다(leadModeStartField, 칸 없음 = app).
+     * 그 세션은 끝까지 이 값을 쓴다(leadModeOf).
+     * 이 칸 전 옛 스냅숏에는 없고, 모르는 값이 들어 있어도 스냅숏 전체를 버리지 않게 칸만 비운다(둘 다 app 으로 읽음).
+     */
+    leadMode: z.enum(TALK_LEAD_MODES).optional().catch(undefined),
   }),
   z.strictObject({ ...head("talk-wrapup"), ...spoken, index }),
   /** 새 흐름 짧은 준비 따라 말하기(낱말 하나 · 열린 자리). index 는 그 자리 쪽지 차례다. */

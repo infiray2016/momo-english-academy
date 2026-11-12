@@ -177,6 +177,8 @@ export const TEST_SETTINGS = {
   // 회화 AI 몫 넓힘(C211 (1)) — 자기 이야기 빈도 참고값 · 인사에서 지난 대화 꺼내기(끔)
   "talk.self_line_every_turns": { scope: "household", value: 3 },
   "talk.greeting_recall": { scope: "household", value: "off" },
+  // 회화 방식(회화 Claude 주도 묶음 M · 13절 C233 · C238) — 기본은 지금 방식 app, claude 는 Claude 가 대화를 이끄는 방식
+  "talk.lead_mode": { scope: "household", value: "app" },
   "talk.max_answer_seconds": { scope: "household", value: 30 },
   "speech.end_silence_seconds.talk.1-3": { scope: "household", value: 3 },
   "speech.end_silence_seconds.talk.4-6": { scope: "household", value: 2.5 },

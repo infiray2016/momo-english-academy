@@ -15,6 +15,11 @@ import {
 import type { TalkCarry } from "@/core/conversation/chances";
 import type { HintTier } from "@/core/conversation/hints";
 import {
+  leadModeOf,
+  TALK_LEAD_MODE_KEY,
+  type TalkLeadMode,
+} from "@/core/conversation/lead-mode";
+import {
   type TalkLessonPosition,
   talkLessonPositionOf,
 } from "@/core/conversation/lesson-flow";
@@ -530,6 +535,11 @@ export type TalkLessonStart = {
   /** 세션 시작 때 정한 짧은 준비 낱말 계획(실제로 보인 낱말은 TalkLessonState.prepWords). */
   prepPlan: string[];
   carry: TalkCarry;
+  /**
+   * 회화 방식(회화 Claude 주도 묶음 M): 처음 스냅숏의 leadMode 를 leadModeOf 로 읽은 값(칸 없는 옛 스냅숏 · 모르는 값은 app). 세션 도중
+   * 설정이 바뀌어도 이 값이다. 상태 읽기는 늘 채우고, 비어 있으면(시험 재료 등) app 으로 읽는다(leadModeOf(start)).
+   */
+  leadMode?: TalkLeadMode;
 };
 
 export type TalkLessonState = {
@@ -583,6 +593,8 @@ const LESSON_STATE_KEYS = [
   "talk.ask_again_max",
   "talk.nospeech_dontknow_count",
   "speech.silent_items_max",
+  // 회화 방식(회화 Claude 주도 묶음 M) — 처음 열 때 스냅숏에 적는 값. 빠진 DB 는 다른 키처럼 SettingMissingError 로 드러난다
+  TALK_LEAD_MODE_KEY,
 ] as const;
 const LESSON_BAND_KEYS = ["talk.prep_words", "talk.prep_mode"] as const;
 
@@ -707,6 +719,7 @@ async function lessonStateOf(
       metBefore: input.metBefore,
       prepPlan: input.prepWords ?? [],
       carry: input.carry ?? { goals: [], words: [] },
+      leadMode: leadModeOf(input),
     };
     startTeacherKey = input.teacherKey;
   }

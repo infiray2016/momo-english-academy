@@ -36,6 +36,7 @@ import {
   talkEndOf,
   talkStopOf,
 } from "@/core/conversation/ending";
+import { leadModeStartField } from "@/core/conversation/lead-mode";
 import {
   type LessonArgs,
   NOW_LETS_TALK,
@@ -1156,6 +1157,9 @@ async function ensureLessonStarted(
       ...(state.teacher ? { teacherKey: state.teacher.key } : {}),
       prepWords: prepPlan,
       carry,
+      // 회화 방식(talk.lead_mode, 회화 Claude 주도 묶음 M): 처음 열 때 읽은 설정 값을 claude 일 때만 적고(app 이면 칸 없음 — 이 묶음 전 꼴과 같음)
+      // 그 세션은 끝까지 이 값을 쓴다(leadModeOf)
+      ...leadModeStartField(state.settings.leadMode),
     };
     if (!parseTalkAttemptInput(input))
       throw new Error("새 흐름 처음 스냅숏 꼴이 틀렸다");

@@ -3,6 +3,11 @@
 // 카드 형은 묶음 3 의 새 꼴 TalkCard 에서 흐름이 읽는 칸만 골라 둔다(TalkCard 는 이 형에 그대로 들어간다).
 // 순수 모듈이다. 설정값이 없거나 꼴이 틀리면 던진다(조용한 기본값 없음).
 import { z } from "zod";
+import {
+  TALK_LEAD_MODE_KEY,
+  TALK_LEAD_MODES,
+  type TalkLeadMode,
+} from "@/core/conversation/lead-mode";
 import type { TalkChildCause, TalkMove } from "@/core/conversation/move";
 import type { TalkLevelSpec } from "@/core/seed/schema/reference";
 import type { TalkCard, TalkRequired } from "@/core/seed/schema/talk";
@@ -133,6 +138,11 @@ export type TalkLessonSettings = {
   prepWords: number;
   /** talk.prep_mode.<구간> — 짧은 준비를 늘 할지 · 필요할 때만 할지. */
   prepMode: TalkPrepMode;
+  /**
+   * talk.lead_mode — 회화 방식(회화 Claude 주도 묶음 M). 수업을 처음 열 때만 읽어 처음 스냅숏에 적는다. 진행 중 세션의 방식은 이 값이 아니라
+   * 스냅숏(leadModeOf)이다. 값이 없거나 app · claude 밖이면 다른 설정처럼 던진다(조용히 app 으로 바꾸지 않음 — 실험 값 오타가 A 로 도는 것을 막음).
+   */
+  leadMode: TalkLeadMode;
 };
 
 const POSITIVE_KEYS = {
@@ -189,6 +199,12 @@ export function talkLessonSettingsFrom(
       `${PREP_MODE_KEY}.${band}`,
       z.enum(TALK_PREP_MODES),
       "always · when_needed",
+    ),
+    leadMode: readValue(
+      read,
+      TALK_LEAD_MODE_KEY,
+      z.enum(TALK_LEAD_MODES),
+      "app · claude",
     ),
   };
 }
