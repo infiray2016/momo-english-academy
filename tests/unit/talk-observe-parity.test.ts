@@ -6,6 +6,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  type TalkLeadInput,
+  talkLeadMessages,
+  talkLeadRulesOf,
+  talkLeadTextOf,
+  talkLeadTurnSpec,
+} from "@/core/ai/calls/talk-lead";
+import {
   applyTalkLessonChecks,
   isLowBandLevel,
   type TalkLessonOutput,
@@ -14,9 +21,26 @@ import {
   talkLessonCheckFields,
   talkTurnWiringOf,
 } from "@/core/ai/calls/talk-lesson";
+import { requestConfigOf } from "@/core/ai/combo";
 import type { Masker } from "@/core/ai/mask";
+import { createMasker } from "@/core/ai/mask";
 import { checkOutputFields } from "@/core/ai/output-check";
+import { buildAiRequest } from "@/core/ai/request";
 import { cueBandOf, seedCuePhrasesOf } from "@/core/conversation/cue-line";
+import { leadNarrowHitsOf } from "@/core/conversation/lead-level";
+import { TALK_LEAD_MODE_KEY } from "@/core/conversation/lead-mode";
+import {
+  type LeadRowLike,
+  leadChildOf as leadChildLineOf,
+  leadClosingTurnOf,
+  leadConversationOrder,
+  leadExplanationOf,
+  leadFirstTurnOf,
+  leadGreetingOf,
+  leadHistoryOf,
+  leadOpenChildOf,
+  leadStatusOf,
+} from "@/core/conversation/lead-turn-core";
 import {
   childAnsweredRequiredOf,
   childLinesOf,
@@ -24,19 +48,30 @@ import {
   teacherTurnPlansOf,
 } from "@/core/conversation/lesson-flow";
 import type { TalkLessonTurn } from "@/core/conversation/lesson-turns";
+import { talkLessonSettingsFrom } from "@/core/conversation/lesson-turns";
+import { readTalkMove } from "@/core/conversation/move";
 import { checkLowLevelQuestion } from "@/core/conversation/question-check";
 import {
   allowedLemmaOfVocab,
+  answerOnlyWordsOf,
   checkSituationSentence,
   failSituationLineOf,
   heardFieldsBlankOf,
   SITUATION_EXAMPLE_SENTENCES,
   situationPlaceOf,
 } from "@/core/conversation/situation";
-import { normalizeSpoken } from "@/core/conversation/spoken";
+import { MORE_PROMPT, normalizeSpoken } from "@/core/conversation/spoken";
 import { createToriSentenceGate, safeLineOf } from "@/core/conversation/stream";
+import { bandOf, FUNCTION_POS } from "@/core/seed/structure";
 import { splitSentences } from "@/core/seed/text";
 import type { TalkLessonOutcome } from "@/server/ai/talk";
+import {
+  type LessonCore,
+  lessonAdvanceLeadOf,
+  lessonMoreLeadOf,
+  lessonMoreOf,
+} from "@/server/conversation/index";
+import { leadTurnApplies } from "@/server/conversation/lead-turn";
 import { lineOptionsOf } from "@/server/conversation/lesson-input";
 import {
   createLessonSentenceFlow,
@@ -48,10 +83,14 @@ import {
   lessonChildRowOf,
   lessonHintsAt,
   lessonOutcomeViewOf,
+  lessonOverLengthOf,
   lessonReplayLinesOf,
+  questionRetryFits,
   seedLessonTalkLists,
   settleLessonTurn,
   slotQuestionTextOf,
+  TURN_IN_FLIGHT_MS,
+  TURN_SAVE_GRACE_MS,
   teacherTextsOf,
   withQuestionRetry,
 } from "@/server/conversation/lesson-turn";
@@ -61,10 +100,19 @@ import {
   type CallResult,
   createTalkSim,
   evaluateLessonMessage,
+  type LeadLine,
+  type LeadSimEntry,
   type Materials,
   materialsOf,
+  OBSERVE_TURN_IN_FLIGHT_MS,
+  OBSERVE_TURN_SAVE_GRACE_MS,
+  observeChildLiteOf,
   observeFailLineOf,
   observeLiveOf,
+  observeMoreLeadOf,
+  observeMoreOf,
+  observeOverLengthOf,
+  observeQuestionRetryFits,
   type PreparedTurn,
   readSeedFiles,
   type SimRow,
@@ -75,6 +123,10 @@ import {
   talkListsOf,
   slotQuestionTextOf as toolSlotQuestionTextOf,
 } from "../../scripts/talk-observe";
+import {
+  SAMPLE_CONTACT_PATTERNS,
+  SAMPLE_NAMES,
+} from "../fixtures/ai/sample-inputs";
 
 const ROOT = process.cwd();
 const config = loadScriptConfig({ root: ROOT });
@@ -84,6 +136,19 @@ const VOCAB_ROWS = (
     vocab: { word: string; forms: string[] }[];
   }
 ).vocab;
+/**
+ * 서버 readFunctionWords(lesson-turn.ts)가 읽는 기능어: 적재된 vocab.parts_of_speech 에 기능어 표시가 든 낱말(소문자). 적재(seed/load.ts
+ * vocabRowOf)는 시드 vocab.json 의 pos 칸을 parts_of_speech 로 옮기므로, 같은 행을 시드에서 바로 읽는다(검토 rev-x2 I-1).
+ */
+const SERVER_FUNCTION_WORDS = new Set(
+  (
+    JSON.parse(readFileSync(`${ROOT}/seed/vocab.json`, "utf8")) as {
+      vocab: { word: string; pos: string[] }[];
+    }
+  ).vocab
+    .filter((v) => v.pos.includes(FUNCTION_POS))
+    .map((v) => v.word.toLowerCase()),
+);
 /** 허용 낱말 원형 사전을 견줄 표기형(규칙 활용 · 불규칙 · 허용 밖). */
 const LEMMA_PROBES = [
   "words",
@@ -387,7 +452,7 @@ function serverPartsOf(
             question: slotQuestionTextOf(turns),
             spoken: teacherTextsOf(turns),
             repeat: true,
-            functionWords: m.functionWords,
+            functionWords: SERVER_FUNCTION_WORDS,
           },
         },
         settle: {
@@ -2023,5 +2088,943 @@ describe("내용 고침 1(13절 C217) — 도구 배선이 서버와 같은 길"
     expect(ready.turn.userMessage).toMatch(
       /Heard hint[^\n]*'see' may be the answer word 'sea' \(same sound\)/,
     );
+  });
+});
+
+// ── 묶음 X2: 새 엔진 길(talk.lead_mode claude — 회화 Claude 주도 AC-26l) ─────────────────────────
+// 모의 실행기의 새 엔진 길이 서버 턴 길(src/server/conversation/lead-turn.ts)과 같은 요청(안내문 · 사실 알림 · 메시지)을 만들고 같은 응답 처리
+// 결과(저장될 행의 칸 · 화면 줄 · 평가 입력)를 내는지 본다. 서버 턴 길은 DB · AI 를 부르므로 같은 입력의 기대 값은 묶음 S1 통합 시험
+// (tests/integration/talk-lead-turn.test.ts)이 서버에 단언한 꼴 그대로 두고, 서버의 순수 export(lessonChildLiteOf · lessonOverLengthOf ·
+// lessonMoreOf · lessonMoreLeadOf · lessonAdvanceLeadOf · leadTurnApplies · questionRetryFits)와 서버 새 엔진 길이 부르는 core 함수
+// (leadExplanationOf 등 — 서버와 같은 인자)는 직접 맞댄다.
+
+const LEAD_VALUES: Record<string, unknown> = {
+  ...config.values,
+  [TALK_LEAD_MODE_KEY]: "claude",
+};
+/** 도구와 같은 가림(talk-observe masker — 시험용 이름 · 연락처 꼴). */
+const sampleMasker = createMasker({
+  names: SAMPLE_NAMES,
+  isVocabWord: () => false,
+  contactPatterns: SAMPLE_CONTACT_PATTERNS,
+});
+const SAMPLE_CHILD_NAME = SAMPLE_NAMES.englishName ?? "Ganada";
+const LEAD_SYSTEM_GOLDEN = readFileSync(
+  `${ROOT}/tests/fixtures/talk-lead-system-l3u1.txt`,
+  "utf8",
+);
+
+/** 새 엔진 응답(아홉 칸 — 빈 값 + 덮어쓴 칸, 칸 차례는 reading · move · say 먼저 — 통합 시험 leadAnswer 와 같은 꼴). */
+function leadResult(
+  over: Record<string, unknown>,
+  extra: { latencyMs?: number; stop?: string } = {},
+): CallResult {
+  const body = {
+    reading: "clear_answer",
+    move: "react_and_follow_up",
+    say: "Nice!",
+    say_ko: "",
+    model_sentence: "",
+    hint_ko: "",
+    hint_en: "",
+    goal_words_i_said: [],
+    child_used_on_own: [],
+    ...over,
+  };
+  return {
+    ok: true,
+    message: {
+      model: "claude-sonnet-5-5",
+      stop_reason: extra.stop ?? "end_turn",
+      content: [{ type: "text", text: JSON.stringify(body) }],
+      usage: {
+        input_tokens: 4000,
+        output_tokens: 200,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
+      },
+    },
+    latencyMs: extra.latencyMs ?? 1800,
+    firstSentenceMs: 700,
+    requestId: "req_lead",
+  } satisfies CallResult;
+}
+
+function retryResult(question: unknown, latencyMs = 2900): CallResult {
+  return {
+    ok: true,
+    message: {
+      model: "claude-sonnet-5-5",
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: JSON.stringify({ question }) }],
+      usage: {
+        input_tokens: 4100,
+        output_tokens: 20,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
+      },
+    },
+    latencyMs,
+    firstSentenceMs: null,
+    requestId: "req_retry",
+  } satisfies CallResult;
+}
+
+const systemText = (body: Record<string, unknown>): string =>
+  typeof body.system === "string"
+    ? body.system
+    : (body.system as { text: string }[]).map((b) => b.text).join("");
+const messagesOf = (body: Record<string, unknown>) =>
+  body.messages as { role: string; content: string }[];
+const sLines = (rec: { lines: readonly LeadLine[] }) =>
+  rec.lines.flatMap((l) => (l.t === "s" ? [l.en] : []));
+
+/** 3단계 단원 1(안내문 글이 있는 단원)의 새 엔진 수업: 인사를 지금 길로 마친 상태(대화 첫 질문 차례 — 입구 start 가 열림). */
+function leadGreeted(m: Materials = materialsAt(3)) {
+  const sim = createTalkSim(m, LEAD_VALUES, config.book);
+  for (let i = 0; i < 4 && !sim.lead.applies(); i++) {
+    const g = sim.prepare(say("I am fine."), i);
+    if (!g.ok) throw new Error(g.reason);
+    sim.finish(g.turn, fakeMessage({ tori_en: "Good to hear!" }));
+  }
+  return sim;
+}
+
+function leadStep(
+  sim: TalkSim,
+  entry: LeadSimEntry,
+  result: CallResult,
+  retry?: CallResult,
+) {
+  const ready = sim.lead.prepare(entry);
+  if (!ready.ok) throw new Error(ready.reason);
+  const ask = sim.lead.retryOf(ready.turn, result);
+  const rec = sim.lead.finish(
+    ready.turn,
+    result,
+    ask && retry ? { ask, result: retry } : undefined,
+  );
+  return { p: ready.turn, ask, rec };
+}
+
+/** 대화가 열린(입구 start 를 지난) 새 엔진 수업. */
+function leadTalking(m: Materials = materialsAt(3)) {
+  const sim = leadGreeted(m);
+  const opened = leadStep(
+    sim,
+    { kind: "open", open: "start" },
+    leadResult({
+      say: "Let's talk! What do you do on weekends?",
+      move: "react_and_follow_up",
+    }),
+  );
+  return { sim, opened };
+}
+
+const child = (
+  step: { say?: string; input?: "dont_know" | "nospeech" },
+  i = 1,
+) => ({ kind: "child", step, stepIndex: i }) as const;
+
+/** 서버 LessonCore(index.ts lessonCoreOf 꼴)를 메모리 상태로 — 새 아이 · 진행 중 · 이월 없음. */
+function coreOf(
+  m: Materials,
+  sim: TalkSim,
+  segment: LessonCore["segment"],
+): LessonCore {
+  return {
+    spec: m.spec,
+    card: m.card,
+    newWords: m.newWords,
+    turns: light(sim.rows),
+    segment,
+    settings: talkLessonSettingsFrom((k) => LEAD_VALUES[k], bandOf(m.level)),
+    prepWords: sim.snapshot().prepWords,
+    prepPlan: [],
+    status: "in_progress",
+    orphan: false,
+    todayWordCount: m.card.todayWords.length,
+  };
+}
+
+/**
+ * 서버 턴 길의 요청 조립(src/server/conversation/lead-turn.ts leadTeacherTurn (2) — 안내문 · 사실 알림 · 대화 기록)을 시험 안에 옮긴 것: 행은
+ * talk_turns 칸(LeadRowLike), 아이 차례는 server lessonChildLiteOf, 마무리 때 · 사실 값은 core 함수에 서버가 넘기는 값 그대로다. 도구의 요청과
+ * 글자까지 견준다(AC-26l 첫째 항목).
+ */
+function serverLeadRequestOf(
+  m: Materials,
+  sim: TalkSim,
+  entry: LeadSimEntry,
+): { system: unknown; messages: unknown } {
+  const rows: LeadRowLike[] = sim.rows.map((r) =>
+    r.speaker === "tori"
+      ? {
+          speaker: "tori",
+          turnNo: r.turnNo,
+          segment: r.segment ?? "greeting",
+          text: r.text,
+          move: r.move,
+          toriRewrite: r.rewrite === "" ? null : r.rewrite,
+          sentUserMessage: r.sentUserMessage ?? null,
+        }
+      : {
+          speaker: "child",
+          turnNo: r.turnNo,
+          segment: r.segment,
+          text: r.text,
+          sentUserMessage: r.sentUserMessage,
+        },
+  );
+  const settings = talkLessonSettingsFrom(
+    (k) => LEAD_VALUES[k],
+    bandOf(m.level),
+  );
+  const prepWords = sim.snapshot().prepWords;
+  const segment = sim.snapshot().segment;
+  const args = {
+    spec: m.spec,
+    card: m.card,
+    newWords: m.newWords,
+    turns: light(sim.rows),
+    segment,
+    settings,
+    prepWords,
+  };
+  const position = talkLessonPositionOf(args);
+  const child = entry.kind === "child" ? entry.step : null;
+  const mode =
+    child === null || child.say === undefined ? "dont_know" : "speech";
+  const nospeech = child?.input === "nospeech";
+  const input = { mode: child === null ? "speech" : mode, nospeech } as const;
+  const speech = child !== null && mode === "speech";
+  const heard = speech ? sampleMasker(child?.say ?? "").text : "";
+  const closing = leadClosingTurnOf({
+    speech,
+    positionAfter: () =>
+      talkLessonPositionOf({
+        ...args,
+        turns: [
+          ...args.turns,
+          lessonChildLiteOf(position, input, settings, false),
+        ],
+      }),
+  });
+  const ordered = leadConversationOrder(rows);
+  const text = talkLeadTextOf(m.level, m.unit);
+  if (text === null || !m.leadCefr) throw new Error("안내문 재료 없음");
+  const open = entry.kind === "open" ? entry.open : null;
+  const first = leadFirstTurnOf(ordered);
+  const leadInput: TalkLeadInput = {
+    ...m.ctx,
+    teacher: m.teacher,
+    cefr: m.leadCefr,
+    text,
+    history: leadHistoryOf(ordered),
+    turn: {
+      child:
+        open !== null
+          ? leadOpenChildOf(open)
+          : leadChildLineOf({ mode, nospeech, heard }),
+      ...(first ? { greeting: leadGreetingOf(ordered) } : {}),
+      status: leadStatusOf({
+        rows: ordered,
+        hasChild: child !== null,
+        speech,
+        heard,
+        turnsLeft: position.turnsLeft,
+        unitWords: m.ctx.unitWords,
+        homophones: m.homophones,
+        soundAlikes: m.soundAlikes,
+        lemmaOf: m.lemmaOf,
+        open,
+        closing,
+      }),
+    },
+  };
+  const built = buildAiRequest(talkLeadTurnSpec, leadInput, {
+    config: requestConfigOf({
+      purpose: "talk_turn",
+      level: m.level,
+      values: LEAD_VALUES,
+      book: config.book,
+    }),
+    masker: sampleMasker,
+    rules: talkLeadRulesOf(LEAD_VALUES, leadInput),
+  });
+  return { system: built.body.system, messages: built.body.messages };
+}
+
+describe("묶음 X2 새 엔진 길(AC-26l 동등)", () => {
+  it("AC-26l (I-1) 도구의 기능어 집합은 서버가 적재된 vocab.parts_of_speech 에서 읽는 기능어와 같다(시드 pos 칸, 169개) — 지금 길(A)의 상황 차례 답 글 검사가 기능어를 내용어로 보지 않는다", () => {
+    // 기능어는 단계와 상관없이 어휘 시드 전체에서 읽는다(서버 질의에 단계 거름이 없다)
+    for (const m of [materialsAt(3), materials4()]) {
+      expect([...m.functionWords].sort()).toEqual(
+        [...SERVER_FUNCTION_WORDS].sort(),
+      );
+    }
+    expect(SERVER_FUNCTION_WORDS.size).toBe(169);
+    for (const w of ["a", "the", "i", "we", "with", "my", "in", "at"])
+      expect(SERVER_FUNCTION_WORDS.has(w)).toBe(true);
+    // 검토가 든 예: 답 예시 'I swim with my family.' 에서 질문 글에 없는 '내용어'는 swim · family 뿐이다(with · my 는 기능어). 그래서
+    // 'You can do it with me!' 같은 반응이 서버에서는 답 글 검사를 지난다.
+    const m = materialsAt(3);
+    const only = answerOnlyWordsOf(
+      {
+        example: "I swim with my family.",
+        question: "What do you do on weekends?",
+        functionWords: m.functionWords,
+      },
+      m.lemmaOf,
+    );
+    expect(only.has("with")).toBe(false);
+    expect(only.has("my")).toBe(false);
+    expect(only.has("swim")).toBe(true);
+  });
+
+  it("AC-26l (M-3) 다시 말하기의 시간 예산: 도구 사본이 서버 questionRetryFits 와 같고, 좁은 정의 기록에 서버라면 불렀는지(fits)를 남긴다(동작은 그대로 부름)", () => {
+    expect(OBSERVE_TURN_IN_FLIGHT_MS).toBe(TURN_IN_FLIGHT_MS);
+    expect(OBSERVE_TURN_SAVE_GRACE_MS).toBe(TURN_SAVE_GRACE_MS);
+    for (const elapsedMs of [0, 2000, 34_999, 35_000, 35_001, 60_000])
+      for (const timeoutMs of [5000, 10_000, 20_000])
+        expect(observeQuestionRetryFits({ elapsedMs, timeoutMs })).toBe(
+          questionRetryFits({ elapsedMs, timeoutMs }),
+        );
+    const original = "Do you go in summer or winter?";
+    for (const [latencyMs, fits] of [
+      [2000, true],
+      [40_000, false],
+    ] as const) {
+      const { sim } = leadTalking();
+      const ready = sim.lead.prepare(child(say("I play outside.")));
+      if (!ready.ok) throw new Error(ready.reason);
+      const first = leadResult({ say: original }, { latencyMs });
+      const ask = sim.lead.retryOf(ready.turn, first);
+      if (!ask) throw new Error("다시 말하기 요청이 없다");
+      const rec = sim.lead.finish(ready.turn, first, {
+        ask,
+        result: retryResult("Do you go there when it is hot?"),
+      });
+      expect(rec.narrow?.fits).toBe(fits);
+      // 도구는 시간 예산과 관계없이 부른다(기록만)
+      expect(rec.narrow?.called).toBe(true);
+    }
+  });
+
+  it("AC-26l (M-6) 되물은 뒤 하한을 적용할 때 뜻 힌트(meaningHint)도 되물은 차례에서 이어 받는다 — hintKind 와 같은 기록", () => {
+    const m = materialsAt(3);
+    // 입구 start 의 물음에 뜻(hint_ko)이 있어 아이 차례에 뜻 단이 열린다
+    const sim = leadGreeted(m);
+    leadStep(
+      sim,
+      { kind: "open", open: "start" },
+      leadResult({
+        say: "Let's talk! What do you do on weekends?",
+        hint_ko: "주말에 뭐 해?",
+        hint_en: "I play.",
+      }),
+    );
+    const word = m.ctx.unitWords[0] ?? "sea";
+    leadStep(
+      sim,
+      {
+        kind: "child",
+        step: { say: `Pad ${word} pad.`, hintTier: 9 },
+        stepIndex: 1,
+      } as never,
+      leadResult({
+        reading: "likely_misheard",
+        move: "ask_again",
+        say: "Sorry, say it again, please!",
+      }),
+    );
+    const asked = sim.rows.findLast((r) => r.speaker === "child");
+    expect(asked).toMatchObject({ meaningHint: true });
+    const after = leadStep(
+      sim,
+      child(say(`${word}.`), 2),
+      leadResult({ say: "Yes!", move: "react_only" }),
+    );
+    expect(after.rec.child?.hintKind).toBe(
+      asked?.speaker === "child" ? asked.hintKind : undefined,
+    );
+    expect(sim.rows.findLast((r) => r.speaker === "child")).toMatchObject({
+      meaningHint: true,
+    });
+    const rows = sim.lead.candidateRows();
+    expect(rows.findLast((r) => r.role === "child")).toMatchObject({
+      meaningHint: true,
+    });
+  });
+
+  it("AC-26l (첫째) 도구가 Claude 에게 보내는 요청(안내문 · 사실 알림 · 대화 기록 메시지)이 서버 턴 길의 조립과 글자까지 같다 — 입구 start · 말 · 단추 · 말소리 없음 · 마무리 차례 · 입구 more, 아이 차례 꼴은 server lessonChildLiteOf 와 같다", () => {
+    const m = materialsAt(3);
+    const sim = leadGreeted(m);
+    const settings = talkLessonSettingsFrom(
+      (k) => LEAD_VALUES[k],
+      bandOf(m.level),
+    );
+    const check = (entry: LeadSimEntry) => {
+      const expected = serverLeadRequestOf(m, sim, entry);
+      const ready = sim.lead.prepare(entry);
+      if (!ready.ok) throw new Error(ready.reason);
+      expect(ready.turn.request.body.system).toEqual(expected.system);
+      expect(ready.turn.request.body.messages).toEqual(expected.messages);
+      if (ready.turn.child) {
+        const position = talkLessonPositionOf({
+          spec: m.spec,
+          card: m.card,
+          newWords: m.newWords,
+          turns: light(sim.rows),
+          segment: sim.snapshot().segment,
+          settings,
+          prepWords: sim.snapshot().prepWords,
+        });
+        expect(ready.turn.child.lite).toEqual(
+          lessonChildLiteOf(
+            position,
+            {
+              mode: ready.turn.child.mode,
+              nospeech: ready.turn.child.nospeech,
+            },
+            settings,
+          ),
+        );
+      }
+      return ready.turn;
+    };
+    const finish = (
+      turn: ReturnType<typeof check>,
+      over: Record<string, unknown>,
+    ) => sim.lead.finish(turn, leadResult(over));
+    finish(check({ kind: "open", open: "start" }), {
+      say: "Let's talk! What do you do on weekends?",
+    });
+    finish(check(child(say("I go to the sea."))), {
+      say: "The sea! Do you swim?",
+      child_used_on_own: ["sea"],
+    });
+    finish(check(child(dontKnow, 2)), {
+      reading: "does_not_know",
+      move: "model_repeat",
+      say: "That's okay! Say it with me: I see the sea.",
+      model_sentence: "I see the sea.",
+    });
+    finish(check(child(say("I see the sea."), 3)), {
+      reading: "repeated_my_model",
+      move: "react_only",
+      say: "Great!",
+    });
+    finish(check(child(noSpeech, 4)), { say: "Are you there?" });
+    let closed = false;
+    for (let i = 5; i < 40 && !closed; i++) {
+      const turn = check(child(say("I like it."), i));
+      closed = turn.closing;
+      finish(turn, {
+        say: closed ? "You did great today!" : "Nice!",
+        move: "react_only",
+      });
+    }
+    expect(closed).toBe(true);
+    expect(sim.chooseMore()).toEqual({ ok: true, mode: "claude" });
+    finish(check({ kind: "open", open: "more" }), { say: "Yay! What else?" });
+  });
+
+  it("AC-26l 처음 스냅숏: claude · 3단계 단원 1 이면 새 엔진 세션이고 인사 뒤 카드 첫 질문 행 없이 입구 start 가 열린다. app 이거나 안내문 글이 없는 단원(단원 2)은 지금 길이다", () => {
+    const m = materialsAt(3);
+    const sim = leadGreeted(m);
+    expect(sim.lead.on).toBe(true);
+    expect(sim.lead.applies()).toBe(true);
+    expect(sim.lead.openDue()).toBe("start");
+    // 서버 갈림 판정과 같다(처음 스냅숏 · 토막)
+    expect(
+      leadTurnApplies({
+        start: { leadMode: "claude" } as never,
+        segment: "talk",
+        level: 3,
+      }),
+    ).toBe(true);
+    expect(
+      sim.rows.some(
+        (r) =>
+          r.speaker === "tori" &&
+          r.move.kind === "first_question" &&
+          r.turnNo > 1,
+      ),
+    ).toBe(false);
+    // 지금 방식은 같은 인사 뒤 카드 첫 질문 행이 붙는다
+    const app = createTalkSim(m, config.values, config.book);
+    const g = app.prepare(say("I am fine."), 0);
+    if (!g.ok) throw new Error(g.reason);
+    const record = app.finish(
+      g.turn,
+      fakeMessage({ tori_en: "Good to hear!" }),
+    );
+    expect(app.lead.on).toBe(false);
+    expect(record.appAfter.length).toBeGreaterThan(0);
+    // 안내문 글이 없는 단원은 claude 설정이어도 지금 길(13절 C241 보완 — 같은 카드를 3단계 단원 2 로 돌림)
+    expect(
+      createTalkSim({ ...m, unit: 2 }, LEAD_VALUES, config.book).lead.on,
+    ).toBe(false);
+  });
+
+  it("AC-26l 대화로 넘김의 토막은 서버 lessonAdvanceLeadOf 와 같다(인사 · 준비 끝 → 대화 토막, 행 없음)", () => {
+    const m = materialsAt(3);
+    const sim = leadGreeted(m);
+    const decided = lessonAdvanceLeadOf(coreOf(m, sim, "prep"));
+    expect(decided).toEqual({ ok: true, segment: "talk" });
+    expect(sim.lead.applies()).toBe(true);
+  });
+
+  it("AC-26l 입구 start 의 요청: system 이 R1 골든과 글자 그대로, 사용자 메시지는 인사 이음 · 대화 시작 줄(아이 차례 줄 · 소리 귀띔 없음), 행은 first_question 이고 보낸 메시지를 선생님 행에 둔다", () => {
+    const sim = leadGreeted();
+    const ready = sim.lead.prepare({ kind: "open", open: "start" });
+    if (!ready.ok) throw new Error(ready.reason);
+    const body = ready.turn.request.body;
+    expect(systemText(body)).toBe(LEAD_SYSTEM_GOLDEN.trimEnd());
+    const user = messagesOf(body).at(-1)?.content ?? "";
+    expect(messagesOf(body)).toHaveLength(1);
+    expect(user).toContain("Greeting so far:");
+    expect(user).toContain("The talk part starts now.");
+    expect(user).not.toContain("Child turn");
+    expect(user).not.toMatch(/Child \(speech-to-text\)/);
+    expect(user).toBe(ready.turn.userMessage);
+    // 요청은 서버와 같은 조립(buildAiRequest + talkLeadTurnSpec — 같은 입력이면 같은 메시지)
+    expect(
+      talkLeadMessages(
+        talkLeadTurnSpec.mask(ready.turn.input, sampleMasker),
+      ).at(-1)?.content,
+    ).toBe(user);
+    const rec = sim.lead.finish(
+      ready.turn,
+      leadResult({ say: "Let's talk! What do you do on weekends?" }),
+    );
+    expect(rec.child).toBeNull();
+    expect(rec.teacher.move.kind).toBe("first_question");
+    expect(rec.teacher.sentUserMessage).toBe(user);
+    expect(sLines(rec)).toEqual(["Let's talk!", "What do you do on weekends?"]);
+    expect(JSON.parse(rec.teacher.toriRewrite ?? "{}").say).toBe(
+      "Let's talk! What do you do on weekends?",
+    );
+    expect(sim.lead.openDue()).toBeNull();
+  });
+
+  it("AC-26l 아이 첫 답 → 둘째 차례(통합 시험 AC-26b 와 같은 입력): 기록 쌍 · 'Child turn 1' · 나간 글 = 말 칸 · 행 칸 · '말했다' 가 서버와 같다", () => {
+    const m = materialsAt(3);
+    const { sim, opened } = leadTalking(m);
+    const word = m.ctx.unitWords[0] ?? "sea";
+    const { p, rec } = leadStep(
+      sim,
+      child(say(`I like ${word}.`)),
+      leadResult({
+        say: "Oh, nice! Do you like it?",
+        say_ko: "오, 좋아! 그거 좋아해?",
+        hint_ko: "응, 좋아해.",
+        hint_en: `I like ${word}.`,
+        child_used_on_own: [word],
+      }),
+    );
+    const msgs = messagesOf(p.request.body);
+    expect(msgs).toHaveLength(3);
+    expect(msgs[0]?.content).toBe(opened.rec.teacher.sentUserMessage);
+    expect(msgs[1]?.content).toBe(opened.rec.teacher.toriRewrite);
+    const user = msgs[2]?.content ?? "";
+    expect(user).toContain(`Child (speech-to-text): "I like ${word}."`);
+    expect(user).not.toContain("Greeting so far:");
+    expect(user).toMatch(
+      /Child turn 1 \(the app offers to finish around turn \d+\)\./,
+    );
+    expect(sLines(rec)).toEqual(["Oh, nice!", "Do you like it?"]);
+    expect(rec.lines).toContainEqual({ t: "ko", ko: "오, 좋아! 그거 좋아해?" });
+    expect(rec.teacher.text).toBe("Oh, nice! Do you like it?");
+    expect(rec.teacher.toriKo).toBe("오, 좋아! 그거 좋아해?");
+    expect(rec.teacher.sentUserMessage).toBeNull();
+    expect(rec.teacher.aiQuestion).toMatchObject({
+      en: "Do you like it?",
+      answerExample: `I like ${word}.`,
+    });
+    expect(rec.teacher.move.kind).toBe("ai");
+    expect(rec.teacher.move.lead).toMatchObject({
+      reading: "clear_answer",
+      move: "react_and_follow_up",
+    });
+    expect(rec.teacher.move.lead?.wide).toBeDefined();
+    expect(rec.child?.sentUserMessage).toBe(user);
+    expect(rec.child?.selfUsedWords).toEqual([word]);
+    expect(rec.child?.saidWords).toEqual([word]);
+    expect(rec.child?.askAgain).toBe(false);
+    // 둘째 아이 차례: 기록이 둘로 이어지고 아이 차례 번호가 오른다
+    const next = leadStep(
+      sim,
+      child(say("Rice."), 2),
+      leadResult({ say: "Yummy!", move: "react_only" }),
+    );
+    const third = messagesOf(next.p.request.body);
+    expect(third).toHaveLength(5);
+    expect(third[2]?.content).toBe(rec.child?.sentUserMessage);
+    expect(third[3]?.content).toBe(rec.teacher.toriRewrite);
+    expect(third[4]?.content).toContain("Child turn 2");
+  });
+
+  it("AC-26l 1~3단계 model_repeat: 따라 할 문장은 소리 줄 · 뜻 줄의 영어 문장 거름 · 받아 둔 차례(held_say), 다음 아이 차례는 '영어' · 답 예시 · '말했다' 빔과 사실 줄", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const word = m.ctx.unitWords[0] ?? "sea";
+    const { rec } = leadStep(
+      sim,
+      child(dontKnow),
+      leadResult({
+        reading: "does_not_know",
+        move: "model_repeat",
+        say: "That's okay! Say it with me: I see the sun.",
+        say_ko: '맞아, 해가 밝지! "I see the sun."이라고 말해 봐.',
+        model_sentence: "I see the sun.",
+      }),
+    );
+    expect(sLines(rec).join(" ")).not.toContain("I see the sun");
+    expect(rec.lines).toContainEqual({
+      t: "sound",
+      kind: "model",
+      say: "I see the sun.",
+    });
+    expect(rec.lines).toContainEqual({ t: "ko", ko: "맞아, 해가 밝지!" });
+    expect(rec.teacher.toriKo).toBe("맞아, 해가 밝지!");
+    expect(rec.teacher.move.ai).toBe("model_line");
+    expect(rec.teacher.move.sound).toEqual({ model: "I see the sun." });
+    expect(rec.teacher.move.lead?.model).toEqual({
+      sentence: "I see the sun.",
+      inSay: true,
+    });
+    expect(rec.teacher.move.lead?.removed).toEqual(["I see the sun."]);
+    expect(rec.held).toBe("say");
+    expect(rec.teacher.move.lead?.gate).toContain("held_say");
+    expect(rec.heard).toContain("I see the sun.");
+    const next = leadStep(
+      sim,
+      child(say(`I see the sun ${word}.`), 2),
+      leadResult({
+        reading: "repeated_my_model",
+        move: "react_only",
+        say: "Great job!",
+        child_used_on_own: [word],
+      }),
+    );
+    expect(next.p.userMessage).toContain(
+      'Your last turn gave a model sentence to repeat: "I see the sun."',
+    );
+    expect(next.rec.child?.hintKind).toBe("english");
+    expect(next.rec.child?.heardHelp).toBe("answer_example");
+    expect(next.rec.child?.saidWords).toEqual([]);
+  });
+
+  it("AC-26l 1~3단계 막힌 뒤 고르기: or 물음 문장은 소리 줄 하나 · 앞 반응 그대로 · 받아 둔 질문은 아님(앞 문장이 먼저 나감), 막힌 뒤 뜻은 core leadExplanationOf(서버 새 엔진 길과 같은 함수 · 같은 인자)와 같다", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const { p, rec } = leadStep(
+      sim,
+      child(dontKnow),
+      leadResult({
+        reading: "does_not_know",
+        move: "easier_or_choices",
+        say: "That's okay! Apples or bananas?",
+        say_ko: "괜찮아! 사과야, 바나나야?",
+        hint_ko: "사과라고 말해 봐.",
+        hint_en: "Apples.",
+      }),
+    );
+    expect(sLines(rec)).toEqual(["That's okay!"]);
+    expect(rec.lines).toContainEqual({
+      t: "sound",
+      kind: "answer",
+      say: "Apples or bananas?",
+    });
+    expect(rec.teacher.text).toBe("That's okay!");
+    expect(rec.teacher.move.ai).toBe("choices");
+    expect(rec.teacher.move.sound).toEqual({ answer: "Apples or bananas?" });
+    expect(rec.teacher.move.lead?.choices).toBe(true);
+    expect(rec.teacher.move.cause).toBe("button");
+    expect(rec.held).toBeNull();
+    const lite = p.child?.lite;
+    if (!lite) throw new Error("아이 행 없음");
+    const after = talkLessonPositionOf({
+      spec: m.spec,
+      card: m.card,
+      newWords: m.newWords,
+      turns: [...light(sim.rows).slice(0, -2), lite],
+      segment: "talk",
+      settings: talkLessonSettingsFrom((k) => LEAD_VALUES[k], bandOf(m.level)),
+      prepWords: [],
+    });
+    // 서버 lead-turn.ts 와 같은 인자: 이 아이 차례 꼴 · 아이 차례를 더한 위치의 막힘 수 · 단계 규격 · 단계 · 응답의 hint_ko
+    const expected = leadExplanationOf({
+      child: lite,
+      stuckInSlot: () => after.stuckInSlot,
+      spec: m.spec,
+      level: m.level,
+      hintKo: "사과라고 말해 봐.",
+    });
+    expect(expected).not.toBeNull();
+    expect(rec.teacher.explanation).toBe(expected);
+  });
+
+  it("AC-26l 좁은 정의: 걸린 질문은 같은 뜻 다시 말하기 한 번(서버와 같은 요청 글 · 같은 기록), 받는 조건을 지난 문장이 그 자리 · 앞 반응 그대로", () => {
+    const { sim } = leadTalking();
+    const ready = sim.lead.prepare(child(say("I play outside.")));
+    if (!ready.ok) throw new Error(ready.reason);
+    const original = "Do you go in summer or winter?";
+    expect(
+      leadNarrowHitsOf(original, ready.turn.levelInput).length,
+    ).toBeGreaterThan(0);
+    const first = leadResult({
+      say: `You went outside! ${original}`,
+      say_ko: "밖에 나갔구나! 여름에 가, 겨울에 가?",
+    });
+    const ask = sim.lead.retryOf(ready.turn, first);
+    if (!ask) throw new Error("다시 말하기 요청이 없다");
+    const prompt = messagesOf(ask.request.body).at(-1)?.content ?? "";
+    expect(prompt).toContain(`Your question "${original}"`);
+    expect(prompt).not.toMatch(
+      /different question|another question|ask about/i,
+    );
+    // 앞 기록 + 이 차례 응답 원문(assistant) + 요청 글
+    expect(messagesOf(ask.request.body).at(-2)?.role).toBe("assistant");
+    const rec = sim.lead.finish(ready.turn, first, {
+      ask,
+      result: retryResult("Do you go there when it is hot?"),
+    });
+    expect(sLines(rec)).toEqual([
+      "You went outside!",
+      "Do you go there when it is hot?",
+    ]);
+    expect(rec.teacher.text).toBe(
+      "You went outside! Do you go there when it is hot?",
+    );
+    expect(JSON.parse(rec.teacher.toriRewrite ?? "{}").say).toBe(
+      "You went outside! Do you go there when it is hot?",
+    );
+    expect(rec.teacher.move.lead?.narrow).toMatchObject({
+      retry: "Do you go there when it is hot?",
+      ms: 2900,
+    });
+    expect(rec.narrow).toMatchObject({ called: true, sentence: original });
+    expect(rec.held).toBeNull();
+  });
+
+  it("AC-26l 좁은 정의: 다시 받은 글이 두 문장이거나 호출이 없으면 원래 질문이 나간다 · 첫 문장이 걸린 질문이면 받아 둔 질문(held_question)", () => {
+    for (const retry of ["Okay! Do you like big animals?", null] as const) {
+      const { sim } = leadTalking();
+      const original = "Do you go in summer or winter?";
+      const first = leadResult({ say: original });
+      const ready = sim.lead.prepare(child(say("I play outside.")));
+      if (!ready.ok) throw new Error(ready.reason);
+      const ask = sim.lead.retryOf(ready.turn, first);
+      const rec = sim.lead.finish(
+        ready.turn,
+        first,
+        ask && retry !== null ? { ask, result: retryResult(retry) } : undefined,
+      );
+      expect(sLines(rec)).toEqual([original]);
+      expect(rec.teacher.move.lead?.narrow?.retry).toBe("");
+      expect(rec.held).toBe("question");
+      expect(rec.teacher.move.lead?.gate).toContain("held_question");
+      expect(rec.narrow?.called).toBe(retry !== null);
+    }
+  });
+
+  it("AC-26l 문장 문: 금지어 문장은 카드 안전한 대사로 바뀌고 나머지는 그대로 · gate 에 걸린 검사 이름", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const { p, rec } = leadStep(
+      sim,
+      child(say("I like apples.")),
+      leadResult({ say: "Haha! That is stupid. Do you like apples?" }),
+    );
+    expect(sLines(rec)).toEqual(["Haha!", p.safeLine, "Do you like apples?"]);
+    expect(JSON.stringify(rec.lines)).not.toContain("stupid");
+    expect(rec.teacher.move.lead?.gate).toContain("forbidden");
+    // 안전한 대사는 서버와 같은 고르기(lessonSafeLineOf — 기록 쌍 수 + 1)
+    expect(p.safeLine).toBe(safeLineOf(m.card.safeLines, 2));
+  });
+
+  it("AC-26l 말소리 없음 · 되묻기: '(The child said nothing.)' 줄, 되묻기 차례는 되물음 표지 · '말했다' 빔, 다음 답은 되물은 차례의 힌트 칸을 하한으로", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const quiet = leadStep(
+      sim,
+      child(noSpeech),
+      leadResult({ say: "Are you there?", move: "react_only" }),
+    );
+    expect(quiet.p.userMessage).toContain("(The child said nothing.)");
+    const word = m.ctx.unitWords[0] ?? "sea";
+    const again = leadStep(
+      sim,
+      child(say(`Pad ${word} pad pad.`), 2),
+      leadResult({
+        reading: "likely_misheard",
+        move: "ask_again",
+        say: "Sorry, say it again, please!",
+        child_used_on_own: [word],
+      }),
+    );
+    expect(again.rec.child?.askAgain).toBe(true);
+    expect(again.rec.child?.saidWords).toEqual([]);
+    expect(sim.rows.findLast((r) => r.speaker === "child")).toMatchObject({
+      askAgain: true,
+    });
+  });
+
+  it("AC-26l 마무리 차례: 앱이 정한 때에 사실 줄, 물음이 없을 때만 지금 상수 물음 · 두 단추 차례 · move wrap_up 은 마무리 제안 길(통합 시험 AC-26c 와 같은 꼴)", () => {
+    const m = materialsAt(3);
+    for (const ownQuestion of [false, true]) {
+      const { sim } = leadTalking(m);
+      let i = 1;
+      let last: ReturnType<typeof leadStep> | null = null;
+      for (;;) {
+        const ready = sim.lead.prepare(child(say("I like it."), i));
+        if (!ready.ok) throw new Error(ready.reason);
+        if (ready.turn.closing) {
+          last = {
+            p: ready.turn,
+            ask: null,
+            rec: sim.lead.finish(
+              ready.turn,
+              leadResult({
+                say: ownQuestion
+                  ? "You did great! Shall we talk a little more?"
+                  : "You did great today!",
+                move: "react_only",
+              }),
+            ),
+          };
+          break;
+        }
+        sim.lead.finish(
+          ready.turn,
+          leadResult({ say: "Nice!", move: "react_only" }),
+        );
+        i++;
+        if (i > 40) throw new Error("마무리 차례에 닿지 않는다");
+      }
+      expect(last.p.userMessage).toContain("This is the closing turn.");
+      expect(last.rec.teacher.move.kind).toBe("closing_slot");
+      const added = last.rec.lines.filter((l) => l.t === "add");
+      if (ownQuestion) {
+        expect(added).toEqual([]);
+        expect(last.rec.teacher.move.lead?.closingAdded).toBeUndefined();
+      } else {
+        expect(added).toEqual([
+          {
+            t: "add",
+            kind: "more_prompt",
+            en: MORE_PROMPT.en,
+            ...(m.spec.koMeaning ? { ko: MORE_PROMPT.ko } : {}),
+          },
+        ]);
+        expect(last.rec.teacher.text).toBe(
+          `You did great today!\n${MORE_PROMPT.en}`,
+        );
+      }
+      expect(sim.stopBefore()?.choice).toBe("closing");
+      // '더 이야기하기' → 행 없이 토막만(서버 lessonMoreLeadOf 와 같은 결정) → 입구 more
+      const core = coreOf(m, sim, "talk");
+      const server = lessonMoreLeadOf(core);
+      expect(observeMoreLeadOf(core)).toEqual(server);
+      const rowsBefore = sim.rows.length;
+      expect(sim.chooseMore()).toEqual({ ok: true, mode: "claude" });
+      expect(sim.rows).toHaveLength(rowsBefore);
+      expect(sim.lead.openDue()).toBe("more");
+      const more = leadStep(
+        sim,
+        { kind: "open", open: "more" },
+        leadResult({ say: "Yay! What else do you like?" }),
+      );
+      expect(more.p.userMessage).toContain("(The child chose to talk more.)");
+      expect(more.p.userMessage).not.toContain("Child turn");
+      expect(more.rec.teacher.move.kind).toBe("ai");
+      expect(sim.rows.at(-1)).toMatchObject({
+        speaker: "tori",
+        segment: "more_talk",
+      });
+      expect(sim.stopBefore()).toBeNull();
+    }
+    // Claude 가 스스로 마무리를 고른 차례 → 마무리 제안 길(참고 턴 전)
+    const { sim } = leadTalking(m);
+    const wrap = leadStep(
+      sim,
+      child(say("I'm tired.")),
+      leadResult({ say: "That was fun! Shall we stop here?", move: "wrap_up" }),
+    );
+    expect(wrap.p.userMessage).not.toContain("This is the closing turn.");
+    expect(readTalkMove(wrap.rec.teacher.move)?.next).toBe("closing");
+    expect(sim.stopBefore()?.choice).toBe("suggestion");
+  });
+
+  it("AC-26l 아이 이름은 가린 뒤 실린다(이름 자리 밖의 아이 이름 없음)", () => {
+    const { sim } = leadTalking();
+    const ready = sim.lead.prepare(child(say(`I am ${SAMPLE_CHILD_NAME}.`)));
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(JSON.stringify(ready.turn.request.body)).not.toContain(
+      SAMPLE_CHILD_NAME,
+    );
+  });
+
+  it("AC-26l 서버 배선 사본이 서버 export 와 같다: lessonChildLiteOf · lessonOverLengthOf · lessonMoreOf(지금 방식 '더 이야기하기')", () => {
+    const m = materialsAt(3);
+    const settings = talkLessonSettingsFrom(
+      (k) => config.values[k],
+      bandOf(m.level),
+    );
+    const sim = createTalkSim(m, config.values, config.book);
+    const position = talkLessonPositionOf({
+      spec: m.spec,
+      card: m.card,
+      newWords: m.newWords,
+      turns: light(sim.rows),
+      segment: "greeting",
+      settings,
+      prepWords: [],
+    });
+    for (const input of [
+      { mode: "speech" as const },
+      { mode: "dont_know" as const, nospeech: true },
+      { mode: "dont_know" as const, nospeech: false },
+    ])
+      for (const stuck of [false, true])
+        expect(observeChildLiteOf(position, input, settings, stuck)).toEqual(
+          lessonChildLiteOf(position, input, settings, stuck),
+        );
+    for (const words of [0, 1])
+      for (const sentences of [1, 3, 4])
+        expect(observeOverLengthOf({ words, sentences, max: 3 })).toBe(
+          lessonOverLengthOf({ words, sentences, max: 3 }),
+        );
+    // 지금 방식: 마무리 물음까지 가서 '더 이야기하기'
+    const greet = sim.prepare(say("I am fine."), 0);
+    if (!greet.ok) throw new Error(greet.reason);
+    sim.finish(greet.turn, fakeMessage({ tori_en: "Good to hear!" }));
+    for (let i = 1; i < 40 && sim.stopBefore() === null; i++) {
+      const ready = sim.prepare(say("I like it."), i);
+      if (!ready.ok) break;
+      sim.finish(
+        ready.turn,
+        fakeMessage({ tori_en: "Nice! Do you like the sea?" }),
+      );
+    }
+    expect(sim.stopBefore()?.choice).not.toBeNull();
+    const core = coreOf(m, sim, "talk");
+    const server = lessonMoreOf({ ...core, settings });
+    const tool = observeMoreOf({ ...core, settings });
+    expect(tool).toEqual(server);
+    const chosen = sim.chooseMore();
+    if (!server.ok) expect(chosen.ok).toBe(false);
+    else {
+      expect(chosen).toEqual({ ok: true, mode: "app", line: server.line });
+      expect(sim.rows.at(-1)).toMatchObject({
+        speaker: "tori",
+        text: `\n${server.line.en}`,
+        move: server.move,
+      });
+      expect(sim.stopBefore()).toBeNull();
+    }
   });
 });

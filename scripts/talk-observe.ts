@@ -38,6 +38,19 @@ import {
   prepareAnswer,
 } from "../src/core/ai/calls/common";
 import {
+  applyTalkLeadChecks,
+  TALK_LEAD_OUTPUT_FIELDS,
+  type TalkLeadCefr,
+  type TalkLeadInput,
+  type TalkLeadOutput,
+  type TalkLeadRules,
+  talkLeadAssistantOf,
+  talkLeadCheckFields,
+  talkLeadTextOf,
+  talkLeadTurnSpec,
+  talkLeadUserMessage,
+} from "../src/core/ai/calls/talk-lead";
+import {
   applyTalkLessonChecks,
   EMPTY_TORI_EN_STUCK,
   emptyToriEnStuckOf,
@@ -58,7 +71,9 @@ import {
   talkLessonTurnSpec,
   talkLessonUserMessage,
   talkLineOptionsOf,
+  talkSceneWordsOf,
   talkTurnWiringOf,
+  teacherSentencesMaxOf,
 } from "../src/core/ai/calls/talk-lesson";
 import { requestConfigOf, settingKeysOf } from "../src/core/ai/combo";
 import {
@@ -79,6 +94,8 @@ import {
   opensSlot,
   slotChanceOf,
   startPrepWordsOf,
+  type TalkCarry,
+  talkChancesOf,
 } from "../src/core/conversation/chances";
 import { createRewriteHold } from "../src/core/conversation/child-kind";
 import {
@@ -99,6 +116,69 @@ import {
   lessonHintTiersOf,
   openedTierCount,
 } from "../src/core/conversation/hints";
+import type { LeadCandidateRow } from "../src/core/conversation/lead-candidate";
+import {
+  type LeadFormRule,
+  type LeadLevelInput,
+  type LeadNarrowHit,
+  leadNarrowHitsOf,
+  leadNarrowItemOf,
+  leadNarrowOutcomeOf,
+  leadNarrowRetryPrompt,
+  leadWideCheckOf,
+} from "../src/core/conversation/lead-level";
+import { leadKoLineOf } from "../src/core/conversation/lead-low-band";
+import {
+  isLeadSession,
+  leadModeStartField,
+  TALK_LEAD_MODE_KEY,
+  talkLeadModeOf,
+} from "../src/core/conversation/lead-mode";
+import {
+  LEAD_STUCK_READINGS,
+  type LeadExtra,
+  leadPrevStuckOf,
+  leadTeacherMoveOf,
+} from "../src/core/conversation/lead-record";
+import {
+  createLeadSentenceFlow,
+  type LeadAiQuestion,
+  type LeadChildFields,
+  type LeadHeads,
+  type LeadOpen,
+  type LeadRowLike,
+  leadAiQuestionOf,
+  leadAskAgainFloorApplies,
+  leadChildFieldsOf,
+  leadChildHelpAfterOf,
+  leadChildHelpOfRow,
+  leadChildOf,
+  leadChildStuckOf,
+  leadClosingAddsOf,
+  leadClosingTurnOf,
+  leadConversationOrder,
+  leadExplanationOf,
+  leadExtraOf,
+  leadFailedMoveKindOf,
+  leadFirstTurnOf,
+  leadFlowPrevStuckOf,
+  leadGateOf,
+  leadGreetingOf,
+  leadHintsOf,
+  leadHistoryOf,
+  leadHoldSayOf,
+  leadMoveWithSound,
+  leadNarrowTargetOf,
+  leadOpenAcceptsOf,
+  leadOpenChildOf,
+  leadSaidOf,
+  leadSettleOf,
+  leadStartModeOf,
+  leadStatusOf,
+  leadTurnAppliesOf,
+  type TalkLeadRetryInput,
+  talkLeadRetrySpec,
+} from "../src/core/conversation/lead-turn-core";
 import {
   childLinesOf,
   type LateCardRow,
@@ -115,6 +195,7 @@ import {
   teacherMoveOf,
 } from "../src/core/conversation/lesson-flow";
 import {
+  childCauseOf,
   TALK_HEARD_HELPS,
   TALK_HINT_KINDS,
   type TalkHeardHelp,
@@ -128,6 +209,7 @@ import {
 import { madeUpHit } from "../src/core/conversation/made-up";
 import {
   NO_CARD_ITEM,
+  readTalkMove,
   TALK_SUPPORT_STAGE_EASY,
   type TalkAppHelp,
   type TalkMove,
@@ -169,12 +251,14 @@ import {
 import {
   type AppendLine,
   cardLineWithoutSaidOf,
+  MORE_PROMPT,
   normalizeSpoken,
   sayingAnswer,
   shownTurnOf,
   toriKoShownOf,
 } from "../src/core/conversation/spoken";
 import {
+  checkToriSentence,
   createToriEnReader,
   createToriSentenceGate,
   isQuestionSentence,
@@ -201,6 +285,7 @@ import {
 import { type TalkCard, TalkCardSchema } from "../src/core/seed/schema/talk";
 import { TeachersFileSchema } from "../src/core/seed/schema/teachers";
 import {
+  AI_WAIT_TIMEOUT_MULTIPLE,
   type AskKind,
   bandOf,
   FUNCTION_POS,
@@ -209,7 +294,13 @@ import {
   TALK_SITUATION_FORBIDDEN_SCOPES,
   TALK_SITUATION_PLACES,
 } from "../src/core/seed/structure";
-import { type FormRule, splitSentences, tokenize } from "../src/core/seed/text";
+import {
+  buildLexicon,
+  type FormRule,
+  type LexiconEntry,
+  splitSentences,
+  tokenize,
+} from "../src/core/seed/text";
 import { lemmaLookup } from "../src/core/session/attempt";
 import {
   SAMPLE_CONTACT_PATTERNS,
@@ -659,6 +750,12 @@ export type Materials = {
   functionWords: ReadonlySet<string>;
   /** 허용 낱말 대조의 모든 단계 원형 찾기(서버 readAllowedLemmaOf 와 같은 core allowedLemmaOfVocab — 모든 단계 어휘 행 · 허용 낱말). */
   allowedLemmaOf: (surface: string) => string | undefined;
+  /**
+   * 새 엔진 길(talk.lead_mode claude — 묶음 X2)의 재료: 모든 단계 어휘 행(서버 lead-turn.ts readLexiconEntries 와 같은 칸 — 좁은 정의의 단계 ·
+   * 품사 사전과 허용 낱말 원형)과 이 단계 · 다음 단계의 CEFR(서버 leadCefrOf 와 같은 두 행). 옛 시험 재료에는 없다(새 엔진 길이 열리지 않음).
+   */
+  leadLexicon?: readonly LexiconEntry[];
+  leadCefr?: TalkLeadCefr | null;
 };
 
 const LessonFileLite = z.object({
@@ -680,6 +777,8 @@ const VocabLite = z.object({
       level: z.int(),
       forms: z.array(z.string()),
       partsOfSpeech: z.array(z.string()).optional(),
+      /** 시드 vocab.json 의 품사 칸(서버 적재가 vocab.parts_of_speech 로 옮긴다 — 새 엔진 사전이 읽는다). */
+      pos: z.array(z.string()).optional(),
     }),
   ),
 });
@@ -701,11 +800,13 @@ export function materialsOf(
   const card = TalkCardSchema.safeParse(row.card);
   if (!card.success)
     return { ok: false, missing: `새 꼴 카드가 아님(${lessonPath})` };
-  const levelSpec = LevelSpecsFileSchema.parse(
+  const talkSpecs = LevelSpecsFileSchema.parse(
     files.levelSpecs,
-  ).levelSpecs.find((s) => s.area === "talk" && s.level === level);
+  ).levelSpecs.filter((s) => s.area === "talk");
+  const levelSpec = talkSpecs.find((s) => s.level === level);
   if (!levelSpec)
     return { ok: false, missing: `회화 ${level}단계 단계 규격 없음` };
+  const nextSpec = talkSpecs.find((s) => s.level === level + 1);
   const spec = levelSpec as TalkLevelSpec;
   const unitRows = UnitSpecsFileSchema.parse(files.unitSpecs).unitSpecs.filter(
     (u) => u.area === "talk",
@@ -788,11 +889,21 @@ export function materialsOf(
         ? SoundAlikesFileSchema.parse(files.soundAlikes).words
         : [],
       allowedLemmaOf: allowedLemmaOfVocab(allVocab, talkLists.allowed.allowed),
+      // 서버 readFunctionWords 는 적재된 vocab.parts_of_speech(시드 pos 칸을 옮긴 것)를 읽는다 — 시드 파일에는 pos 칸만 있다(검토 rev-x2 I-1)
       functionWords: new Set(
         allVocab
-          .filter((v) => v.partsOfSpeech?.includes(FUNCTION_POS) === true)
+          .filter(
+            (v) => (v.pos ?? v.partsOfSpeech)?.includes(FUNCTION_POS) === true,
+          )
           .map((v) => v.word.toLowerCase()),
       ),
+      leadLexicon: allVocab.map((v) => ({
+        word: v.word,
+        pos: [...(v.pos ?? v.partsOfSpeech ?? [])],
+        level: v.level,
+        forms: [...v.forms],
+      })),
+      leadCefr: { level: levelSpec.cefr, next: nextSpec?.cefr ?? null },
     },
   };
 }
@@ -910,6 +1021,14 @@ export type SimRow =
       answerExample: string | null;
       /** AI 질문 힌트(서버 talk_turns.aiQuestion 의 힌트 칸 — 다음 차례 힌트 단). 앱 차례 · 질문이 남지 않은 행은 null. */
       aiQuestion: ObserveAiQuestion | null;
+      /**
+       * 새 엔진 길(묶음 X2)이 쓴 행에만 있는 칸: 토막(talk_turns.segment — 없으면 인사 토막의 지금 길 행), 아이 말 없이 부른 차례의 보낸 사용자
+       * 메시지(sent_user_message), 막힌 뒤 한국어 뜻(explanation), 뜻 줄(tori_ko). 새 엔진 행의 rewrite 는 tori_rewrite(응답 JSON, say = 나간 말)다.
+       */
+      segment?: TalkTurnSegment;
+      sentUserMessage?: string | null;
+      explanation?: string | null;
+      toriKo?: string | null;
     }
   | {
       speaker: "child";
@@ -921,6 +1040,17 @@ export type SimRow =
       stuck: boolean;
       targets: string[];
       sentUserMessage: string | null;
+      /**
+       * 새 엔진 길(묶음 X2)의 아이 행에만 있는 칸(서버 talk_turns 아이 행 — lessonChildRowOf · lead-turn.ts saveLeadTurn): 힌트 칸 셋(되물은 뒤
+       * 하한을 이어 받은 값), 뜻 힌트를 열었는가(같은 기록에서 — 새 후보 판정 meaningHint), Claude 후보 · '말했다' · 되물음 표지.
+       */
+      hintKind?: TalkHintKind;
+      hintLevel?: number;
+      heardHelp?: Exclude<TalkHeardHelp, "none"> | null;
+      meaningHint?: boolean;
+      selfUsedWords?: string[];
+      saidWords?: string[];
+      askAgain?: boolean;
     };
 
 /** 차례 하나를 부르기 전 준비(요청 본문 · 계획 · 입력). */
@@ -1641,6 +1771,188 @@ export function observeFailLineOf({
   return koMeaning ? withKo(safe) : { en: safe.en };
 }
 
+// ── 서버 배선 사본(새 엔진 길 · '더 이야기하기' — 묶음 X2) ───────────────
+// 아래는 server-only 파일에만 있어 스크립트가 부를 수 없는 작은 배선이다. 판단은 모두 core 함수이고 여기서는 부르는 차례만 옮긴다. 서버 함수와
+// 같은 답을 내는지는 tests/unit/talk-observe-parity.test.ts 가 서버 함수와 맞대어 본다. core 로 옮기면 이 사본을 지운다(task-x2-report '확인할 것').
+
+/** 이번 아이 말의 흐름 꼴(서버 lesson-turn.ts lessonChildLiteOf 사본 — 토막은 core lessonTurnSegmentOf). */
+export function observeChildLiteOf(
+  position: Parameters<typeof lessonTurnSegmentOf>[0] &
+    Pick<ReturnType<typeof talkLessonPositionOf>, "slot">,
+  input: { mode: TalkInputMode; nospeech?: boolean },
+  settings: LessonArgs["settings"],
+  stuck = false,
+): TalkLessonChildTurn {
+  const nospeech = input.mode === "dont_know" && input.nospeech === true;
+  const cause =
+    input.mode === "speech" ? "speech" : nospeech ? "nospeech" : "button";
+  return {
+    speaker: "child",
+    segment: lessonTurnSegmentOf(position, cause, settings),
+    input: input.mode,
+    stuck: input.mode === "speech" && stuck,
+    nospeech,
+    targets: [...(position.slot?.words ?? [])],
+  };
+}
+
+/** 회화 턴 끝점의 상한 · 저장 여유(ms — 서버 lesson-turn.ts TURN_IN_FLIGHT_MS · TURN_SAVE_GRACE_MS 사본, 동등 시험이 값을 맞댄다). */
+export const OBSERVE_TURN_IN_FLIGHT_MS = 60_000;
+export const OBSERVE_TURN_SAVE_GRACE_MS = 5000;
+const OBSERVE_MS_PER_SECOND = 1000;
+
+/**
+ * 좁은 정의 다시 말하기를 부를 시간이 남았는가(서버 lesson-turn.ts questionRetryFits 사본 — 검토 rev-x2 M-3, 기록만). 서버는 받은 때부터 지난
+ * 시간으로 재고, 도구는 본 호출의 지연을 그 값으로 쓴다. 도구의 동작(다시 말하기를 부름)은 바꾸지 않고 이 값을 기록에 남긴다.
+ */
+export function observeQuestionRetryFits({
+  elapsedMs,
+  timeoutMs,
+}: {
+  elapsedMs: number;
+  timeoutMs: number;
+}): boolean {
+  return (
+    elapsedMs +
+      AI_WAIT_TIMEOUT_MULTIPLE * timeoutMs +
+      OBSERVE_TURN_SAVE_GRACE_MS <=
+    OBSERVE_TURN_IN_FLIGHT_MS
+  );
+}
+
+/** talk_turns 길이 초과(서버 lesson-turn.ts lessonOverLengthOf 사본). */
+export function observeOverLengthOf({
+  words,
+  sentences,
+  max,
+}: {
+  words: number;
+  sentences: number;
+  max: number;
+}): boolean {
+  return words > 0 || sentences > max;
+}
+
+/** '더 이야기하기' 지금 방식의 결정(서버 index.ts lessonMoreOf 사본 — 거리 고르기는 core chances 함수). */
+export type ObserveMore =
+  | {
+      ok: true;
+      segment: LessonArgs["segment"];
+      move: TalkMove;
+      line: { en: string; ko?: string };
+      complete: boolean;
+    }
+  | { ok: false };
+
+/**
+ * '더 이야기하기'(지금 방식, 서버 index.ts lessonMoreOf 사본): 고르기 차례에서만, 더 이야기할 거리 하나를 카드 자리로 — 다시 쓰기가 남은 낱말을
+ * 노리는 것 → 가장 오래전에 쓴 것(같은 질문 상한 안) → 가장 오래전에 쓴 것. 마무리 물음이면 더 이야기하기 토막과 참여 완료, 마무리 제안이면 토막 그대로.
+ * 대본 도구의 아이는 새 아이라 이월이 없고 세션은 진행 중이다.
+ */
+export function observeMoreOf(
+  args: LessonArgs & { carry?: TalkCarry },
+): ObserveMore {
+  const no = { ok: false } as const;
+  if (args.segment === "wrap_up") return no;
+  const pos = talkLessonPositionOf(args);
+  if (pos.choice === null || pos.lastRow !== "teacher") return no;
+  const chances = talkChancesOf({
+    card: args.card,
+    newWords: args.newWords,
+    turns: args.turns,
+    carry: args.carry ?? { goals: [], words: [] },
+    missionsDone: 0,
+    settings: args.settings,
+    prepWords: args.prepWords,
+  });
+  const guard = {
+    blocked: [],
+    asked: pos.askedQuestions,
+    max: args.settings.sameQuestionMax,
+  };
+  const ref =
+    slotChanceOf({
+      card: args.card,
+      chances: { required: [], reuse: chances.reuse },
+      ...guard,
+    }) ??
+    oldestMoreOf({ card: args.card, turns: args.turns, ...guard }) ??
+    oldestMoreOf({ card: args.card, turns: args.turns, blocked: [] });
+  const item = ref ? cardItemOf(args.card, ref) : undefined;
+  if (!ref || !item) return no;
+  const closing = pos.choice === "closing";
+  return {
+    ok: true,
+    segment: closing ? "more_talk" : args.segment,
+    move: talkMoveOf({
+      kind: "card_slot",
+      item: ref,
+      words: item.targets,
+      goals: item.goals,
+      streak: pos.streak,
+    }),
+    line: {
+      en: item.en,
+      ...(args.spec.koMeaning && item.ko ? { ko: item.ko } : {}),
+    },
+    complete: closing,
+  };
+}
+
+/**
+ * '더 이야기하기' 새 엔진 몫(서버 index.ts lessonMoreLeadOf 사본): 카드 거리를 고르지 않고 토막만 — 마무리 물음이면 더 이야기하기 토막, 마무리
+ * 제안이면 토막 그대로. 받는 조건은 lessonMoreOf 와 같다.
+ */
+export function observeMoreLeadOf(args: LessonArgs):
+  | { ok: true; segment: LessonArgs["segment"]; complete: boolean }
+  | {
+      ok: false;
+    } {
+  if (args.segment === "wrap_up") return { ok: false };
+  const pos = talkLessonPositionOf(args);
+  if (pos.choice === null || pos.lastRow !== "teacher") return { ok: false };
+  const closing = pos.choice === "closing";
+  return {
+    ok: true,
+    segment: closing ? "more_talk" : args.segment,
+    complete: closing,
+  };
+}
+
+/** N 의 흘려 받는 앞 칸 이름(서버 talk.ts TALK_LEAD_READER_KEYS 의 heads — R1 응답 규격의 말 칸 say 앞 칸들). */
+const LEAD_HEAD_KEYS: readonly string[] = TALK_LEAD_OUTPUT_FIELDS.slice(
+  0,
+  TALK_LEAD_OUTPUT_FIELDS.indexOf("say"),
+);
+
+/** 다 받은 응답의 앞 칸 값(서버 talk.ts headsOf 사본 — 흘려 받는 읽개가 말 칸 앞에서 넘기는 값과 같다). 글 · 참 거짓 값만. */
+export function leadHeadsOf(prepared: unknown): LeadHeads {
+  const out: Record<string, string | boolean> = {};
+  if (prepared === null || typeof prepared !== "object") return out;
+  const r = prepared as Record<string, unknown>;
+  for (const key of LEAD_HEAD_KEYS) {
+    const v = r[key];
+    if (typeof v === "string" || typeof v === "boolean") out[key] = v;
+  }
+  return out;
+}
+
+/** 응답 글 → 다듬은 값(서버 talk.ts parsedAnswer 사본 — 글 블록을 이은 원문, 안 되면 답 글 하나). 읽지 못하면 undefined. */
+function leadPreparedOf(message: TalkMessage): unknown {
+  const joined = message.content
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("");
+  for (const text of [joined, answerTextOf(message)]) {
+    try {
+      return prepareAnswer(JSON.parse(text), []);
+    } catch {
+      // 다음 글로
+    }
+  }
+  return undefined;
+}
+
 /**
  * 상황 줄이 든 턴의 뜻(서버 situationKoOf 사본 — 상황 줄로 바뀐 문장 · 반응 자리 상황 줄이 있을 때만, 아니면 null 로 옛 규칙에 맡긴다).
  */
@@ -2258,6 +2570,8 @@ const lightOf = (row: SimRow): TalkLessonTurn =>
         stuck: row.stuck,
         nospeech: row.nospeech,
         targets: [...row.targets],
+        // 되물음 표지는 참인 행만 칸을 둔다(서버 state.ts lessonTurnOf — 새 엔진 길의 아이 행만 참일 수 있다)
+        ...(row.askAgain === true ? { askAgain: true } : {}),
       };
 
 const masker = createMasker({
@@ -2403,6 +2717,171 @@ export type TalkSim = {
     result: CallResult,
     retry?: { ask: RetryAsk; result: CallResult },
   ): TurnRecord;
+  /**
+   * 아이 차례 앞에서 수업이 멈추는가(대화가 닫힘 · 고르기 차례 — prepare 가 먼저 보는 두 조건 그대로, 상태를 바꾸지 않음). choice 는 고르기 차례의
+   * 갈래(마무리 물음 · 마무리 제안).
+   */
+  stopBefore(): {
+    reason: string;
+    choice: "closing" | "suggestion" | null;
+  } | null;
+  /**
+   * 고르기 차례에서 '더 이야기하기'(서버 index.ts chooseLessonMoreTalk): 지금 방식은 앱이 더 이야기할 거리 하나를 카드 자리 행으로 붙이고
+   * (lessonMoreOf), 새 엔진은 행 없이 토막만 바꾼 뒤 아이 말 없이 부르는 입구 more 를 연다(lessonMoreLeadOf — 다음 선생님 말은 lead.prepare 의
+   * 입구 차례가 쓴다). 받지 않으면 까닭.
+   */
+  chooseMore():
+    | { ok: true; mode: "app"; line: { en: string; ko?: string } }
+    | { ok: true; mode: "claude" }
+    | { ok: false; reason: string };
+  /** 새 엔진 길(talk.lead_mode claude — 회화 Claude 주도 묶음 X2). 처음 스냅숏이 app 이면 on 이 거짓이고 나머지는 부르지 않는다. */
+  readonly lead: LeadSim;
+};
+
+/** 새 엔진 차례를 연 것(서버 lead-turn.ts LeadEntry 의 두 갈래): 대본 차례의 아이 말 · 아이 말 없이 부르는 입구(대화 첫 차례 · 더 이야기하기). */
+export type LeadSimEntry =
+  | { kind: "child"; step: ObserveStep; stepIndex: number }
+  | { kind: "open"; open: LeadOpen };
+
+/** 새 엔진 아이 차례의 아이 행 재료(서버 lessonChildRowOf 와 같은 셈 — 호출 전 값). */
+export type LeadSimChild = {
+  /** 들린 글(가린 뒤). 단추 · 말소리 없음은 null. */
+  text: string | null;
+  mode: TalkInputMode;
+  nospeech: boolean;
+  segment: TalkTurnSegment;
+  /** 아이 행 턴 번호(마지막 선생님 행의 번호 — 서버와 같음). */
+  turnNo: number;
+  hintKind: TalkHintKind;
+  hintLevel: number;
+  heardHelp: Exclude<TalkHeardHelp, "none"> | null;
+  /** 연 힌트 단에 뜻 단이 들었다(hintKind 와 같은 기록 — 새 후보 판정 meaningHint, 검토 rev-r3 8 (나)). */
+  meaningHint: boolean;
+  targets: string[];
+  /** 흐름 꼴(막힘 전 — 서버 lessonChildLiteOf). */
+  lite: TalkLessonChildTurn;
+};
+
+/** 새 엔진 한 차례를 부를 준비(요청 · 사실 값 · 아이 행 재료). */
+export type LeadPreparedTurn = {
+  entry: LeadSimEntry;
+  child: LeadSimChild | null;
+  open: LeadOpen | null;
+  /** 앱이 정한 마무리 차례(서버와 같은 때 — 말로 답한 차례만). */
+  closing: boolean;
+  /** 대화 토막의 첫 선생님 차례(인사 이음 · 대화 시작 줄). */
+  first: boolean;
+  /** 이 차례 선생님 행의 턴 번호 · 토막. */
+  teacherTurnNo: number;
+  segment: TalkTurnSegment;
+  input: TalkLeadInput;
+  rules: TalkLeadRules;
+  /** 보낸 사용자 메시지(가린 뒤 — 아이 행 또는 입구 차례 선생님 행의 sent_user_message). */
+  userMessage: string;
+  request: PreparedTurn["request"];
+  /** 문장 문이 걸린 문장 첫 자리를 바꿀 카드 안전한 대사. */
+  safeLine: string;
+  levelInput: LeadLevelInput;
+  lineOptions: LowLevelLineOptions;
+};
+
+/** 좁은 정의 다시 말하기 한 번의 요청(서버 lead-turn.ts 의 runAiCall(talkLeadRetrySpec) 과 같은 입력). */
+export type LeadRetryAsk = {
+  target: { index: number; sentence: string; hits: LeadNarrowHit[] };
+  prompt: string;
+  input: TalkLeadRetryInput;
+  request: PreparedTurn["request"];
+};
+
+/** 아이에게 나간 줄 하나(서버 lead-turn.ts 가 write 로 흘려 보내는 줄과 같은 꼴 — 끝 줄 밖). */
+export type LeadLine =
+  | { t: "s"; en: string }
+  | { t: "ko"; ko: string }
+  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | { t: "add"; kind: "more_prompt"; en: string; ko?: string };
+
+/** 새 엔진 한 차례의 결과(저장될 행의 칸 · 화면 줄 · 평가 입력 · 기록). */
+export type LeadTurnRecord = {
+  entry: "child" | LeadOpen;
+  /** 대본 차례 번호(1부터, 입구 차례는 0). */
+  no: number;
+  lines: LeadLine[];
+  /** 아이가 들은 영어(글 줄 → 소리 줄 → 상수 물음, 줄마다). */
+  heard: string;
+  teacher: {
+    text: string;
+    toriRewrite: string | null;
+    toriKo: string | null;
+    explanation: string | null;
+    overLength: boolean;
+    aiQuestion: LeadAiQuestion | null;
+    move: TalkMove;
+    sentUserMessage: string | null;
+  };
+  /** 아이 행의 칸(입구 차례는 null). 힌트 칸은 되물은 뒤 하한을 이어 받은 값이다. */
+  child: {
+    text: string | null;
+    selfUsedWords: string[];
+    saidWords: string[];
+    stuckPhrase: string | null;
+    sentUserMessage: string;
+    askAgain: boolean;
+    hintKind: TalkHintKind;
+    hintLevel: number;
+    heardHelp: Exclude<TalkHeardHelp, "none"> | null;
+  } | null;
+  /** '만났다'(나간 말 전체 — 서버 writeSay 의 met). */
+  met: string[];
+  closing: boolean;
+  /** 마무리 차례인데 그 아이 말의 읽기가 막힘이었다(검토 rev-s1 M-4 — reading: 응답 읽기 칸 · effective: 지금 무름 뒤). */
+  closingStuck: { reading: boolean; effective: boolean };
+  /** 받아 둔 차례(첫 문장이 늦게 나감): 말 칸 전체(held_say) · 첫 문장부터 물음(held_question). */
+  held: "say" | "question" | null;
+  /** 좁은 정의 다시 말하기(설계 6): 걸린 질문 · 다시 받은 문장(받는 조건을 지나지 못하면 "") · 다시 걸림. 걸리지 않았으면 null. */
+  narrow: {
+    sentence: string;
+    item: string;
+    prompt: string;
+    called: boolean;
+    retry: string;
+    again: boolean;
+    /**
+     * 서버라면 다시 말하기를 불렀는가(questionRetryFits — 본 호출 지연과 ai.timeout_seconds.realtime 으로 셈, 검토 rev-x2 M-3). 기록만 하고
+     * 도구는 늘 부른다. 옛 기록에는 없다.
+     */
+    fits?: boolean;
+  } | null;
+  /** 응답 값(정규화 · 출력 검사 뒤). 응답이 없는 차례는 null. */
+  value: TalkLeadOutput | null;
+  /** 응답 원문을 다듬은 값(modelFirst — 읽지 못했으면 null). */
+  raw: unknown;
+  usage: TurnUsage | null;
+  retryUsage: TurnUsage | null;
+  /** 응답이 없는 차례의 까닭(그 밖은 null). */
+  failure: string | null;
+  userMessage: string;
+};
+
+export type LeadSim = {
+  /** 처음 스냅숏의 방식이 claude 이고 단계가 새 방식의 구간이다(isLeadSession). */
+  readonly on: boolean;
+  /** 지금 토막에서 선생님 차례를 새 엔진이 만든다(leadTurnAppliesOf). */
+  applies(): boolean;
+  /** 아이 말 없이 부를 입구가 열렸는가(대화 첫 질문 차례면 start, 고르기 뒤면 more — core leadOpenAcceptsOf). */
+  openDue(): LeadOpen | null;
+  prepare(
+    entry: LeadSimEntry,
+  ): { ok: true; turn: LeadPreparedTurn } | { ok: false; reason: string };
+  /** 응답의 말 칸에 좁은 정의에 걸린 질문이 있으면 다시 말하기 요청 하나(한 차례에 한 번), 아니면 null. */
+  retryOf(prepared: LeadPreparedTurn, result: CallResult): LeadRetryAsk | null;
+  /** 결과(와 다시 말하기 응답)로 선생님 행(과 아이 행)을 더하고 결과를 돌려준다. */
+  finish(
+    prepared: LeadPreparedTurn,
+    result: CallResult,
+    retry?: { ask: LeadRetryAsk; result: CallResult },
+  ): LeadTurnRecord;
+  /** 새 후보 판정의 행(대화 · 더 이야기하기 토막의 새 엔진 행, 대화 차례대로 — lead-candidate 입력 꼴). */
+  candidateRows(): LeadCandidateRow[];
 };
 
 /** 걸림 한 건(까닭 · 걸린 낱말 — 질문 검사 까닭이거나 같은 질문 same_question). */
@@ -2491,6 +2970,16 @@ export function createTalkSim(
       : [];
   let prevContext: TalkLessonContext | null = options.seed?.prevContext ?? null;
   const summaries = summariesOf(options.summaries ?? [], values);
+  // 처음 스냅숏의 회화 방식(서버 index.ts ensureLessonStarted — core leadStartModeOf: 설정이 claude · 새 방식의 단계 구간 · 그 단원의 안내문 글이
+  // 있을 때만 claude). 그 뒤 판단은 이 값 하나로 한다(isLeadSession · leadTurnAppliesOf). 설정이 없거나 app 이면 지금 길 그대로다
+  const start = leadModeStartField(
+    leadStartModeOf({
+      mode: talkLeadModeOf(values[TALK_LEAD_MODE_KEY]),
+      level,
+      unit: materials.unit,
+    }),
+  );
+  const leadOn = isLeadSession({ start, level });
 
   const lightTurns = () => rows.map(lightOf);
   const argsOf = (): LessonArgs => ({
@@ -2512,6 +3001,8 @@ export function createTalkSim(
   const appendAppTurns = (): string[] => {
     const added: string[] = [];
     for (;;) {
+      // 새 엔진 세션의 대화 토막은 카드 첫 질문 행을 붙이지 않는다(서버 index.ts lessonAdvanceLeadOf — 첫 질문은 입구 start 의 새 엔진 차례가 쓴다)
+      if (leadTurnAppliesOf({ start, segment, level })) return added;
       const plan = nextTeacherTurnOf(argsOf());
       if (plan.kind !== "first_question" || plan.callsAi) return added;
       const text = lessonTextOf([], plan.attach);
@@ -2774,8 +3265,1060 @@ export function createTalkSim(
     };
   };
 
+  // ── 새 엔진 길(talk.lead_mode claude — 회화 Claude 주도 묶음 X2) ──────
+  // 서버 src/server/conversation/lead-turn.ts leadTeacherTurn 과 같은 차례로 지난다. 판단은 core lead-turn-core · lead-* · talk-lead 의 함수를 그대로
+  // 부르고(NFR-4), 여기는 행 흉내 · 부르는 차례(서버 배선)만 둔다. 서버 배선 가운데 server-only 라 부를 수 없는 자리는 위 '서버 배선 사본'과
+  // 아래 주석의 '서버 lead-turn.ts:줄'이다(task-x2-report '확인할 것'). 응답은 다 받은 메시지 하나로 흘려 받기를 흉내 낸다(문장 차례 · 붙잡기 ·
+  // 문장 문이 같다 — 시도 다시 보내기 · 다른 모델 다시 부르기 · 끊김은 흉내 내지 않는다).
+  const leadText = talkLeadTextOf(level, materials.unit);
+  let leadLexicon: ReturnType<typeof buildLexicon> | null = null;
+  const leadLexiconOf = () => {
+    leadLexicon ??= buildLexicon(materials.leadLexicon ?? []);
+    return leadLexicon;
+  };
+  const leadAllowed = new Set(materials.talkLists.allowed.allowed);
+  const sceneWords = talkSceneWordsOf({
+    card,
+    unitWords: materials.ctx.unitWords,
+  });
+  /** 대화 기록 · 사실 값이 읽는 행(서버 talk_turns 행과 같은 칸 — core LeadRowLike). 토막이 없는 선생님 행은 인사 토막의 지금 길 행이다. */
+  const leadRowOf = (r: SimRow): LeadRowLike =>
+    r.speaker === "tori"
+      ? {
+          speaker: "tori",
+          turnNo: r.turnNo,
+          segment: r.segment ?? "greeting",
+          text: r.text,
+          move: r.move,
+          toriRewrite: r.rewrite === "" ? null : r.rewrite,
+          sentUserMessage: r.sentUserMessage ?? null,
+        }
+      : {
+          speaker: "child",
+          turnNo: r.turnNo,
+          segment: r.segment,
+          text: r.text,
+          sentUserMessage: r.sentUserMessage,
+        };
+  const leadRowsNow = (): LeadRowLike[] => rows.map(leadRowOf);
+  const leadRequestOf = (
+    spec_: typeof talkLeadTurnSpec | typeof talkLeadRetrySpec,
+    input: TalkLeadInput | TalkLeadRetryInput,
+    leadRules: TalkLeadRules,
+  ): PreparedTurn["request"] => {
+    const built = buildAiRequest(
+      spec_ as typeof talkLeadRetrySpec,
+      input as TalkLeadRetryInput,
+      { config: reqConfig, masker, rules: leadRules },
+    );
+    return {
+      body: talkBodyOf(
+        built.body as unknown as Record<string, unknown>,
+        built.wireSchema,
+      ),
+      betas: built.betas,
+      timeoutMs: built.timeoutMs,
+      model: reqConfig.model,
+      effort: reqConfig.effort,
+      thinking: reqConfig.thinking.type,
+    };
+  };
+  const leadStuckOfReading = (p: LeadPreparedTurn, reading: unknown) =>
+    p.child === null
+      ? false
+      : leadChildStuckOf({
+          reading,
+          mode: p.child.mode,
+          heard: p.child.text ?? "",
+          sceneWords,
+          homophones,
+        });
+  const leadHitsOf = (p: LeadPreparedTurn) => (sentence: string) =>
+    leadNarrowHitsOf(sentence, p.levelInput);
+  /** 사용량(옛 길 evaluateResult 와 같은 셈 — 비용은 같은 단가표). */
+  const leadUsageOf = (
+    result: CallResult & { ok: true },
+    model: string,
+    verdict: TurnUsage["verdict"],
+    checkHits: number,
+  ): TurnUsage => {
+    const cost = costOf(billedAttemptsOf(result.message, model), book);
+    return {
+      model: result.message.model,
+      stopReason: result.message.stop_reason ?? "",
+      verdict,
+      inputTokens: cost.tokens.input,
+      outputTokens: cost.tokens.output,
+      cacheReadTokens: cost.tokens.cacheRead,
+      cacheWriteTokens: cost.tokens.cacheWrite,
+      costUsd: Number(formatUsd6(cost.costMicros)),
+      latencyMs: result.latencyMs,
+      firstSentenceMs: result.firstSentenceMs,
+      requestId: result.requestId,
+      checkHits,
+    };
+  };
+  type LeadOutcome =
+    | {
+        ok: true;
+        value: TalkLeadOutput;
+        sentSentences: string[];
+        blocked: string[];
+        overLength: number;
+        held: boolean;
+      }
+    | {
+        ok: false;
+        reason: "cut_after_first";
+        sentSentences: string[];
+        overLength: number;
+      }
+    | { ok: false; reason: "refusal" | "invalid" | "server" };
+  /**
+   * 응답 하나 읽기(서버 talk.ts streamCore · finishTalk 의 N 몫 흉내): 앞 칸 값으로 붙잡기를 묻고(leadHoldSayOf — 흐름에도 앞 칸을 넘김), 말 칸 문장을
+   * 차례로 문장 문(createToriSentenceGate)에 지나 붙잡지 않은 시도면 흐름(createLeadSentenceFlow)에 넘긴다. 정규화 뒤 말 칸은 문장 문을 지난 글이고
+   * 출력 검사는 applyTalkLeadChecks 다. 흐름 상태는 그대로 돌려준다(끝 처리가 앞서 나간 문장 수 · 붙잡음을 읽는다).
+   */
+  type LeadEvaluated = {
+    outcome: LeadOutcome;
+    flow: ReturnType<typeof createLeadSentenceFlow>;
+    /** 흘려 받는 동안 바로 내보낸 문장(차례대로). */
+    sent: string[];
+    usage: TurnUsage | null;
+    raw: unknown;
+    failure: string | null;
+  };
+  const evaluateLead = (
+    p: LeadPreparedTurn,
+    result: CallResult,
+  ): LeadEvaluated => {
+    const flow = createLeadSentenceFlow({
+      low,
+      closing: p.closing,
+      prevStuck: (heads) =>
+        leadFlowPrevStuckOf({
+          hasChild: p.child !== null,
+          mode: p.child?.mode ?? "speech",
+          nospeech: p.child?.nospeech ?? false,
+          reading: heads.reading,
+          heard: p.child?.text ?? "",
+          sceneWords,
+          homophones,
+        }),
+      hitsOf: leadHitsOf(p),
+    });
+    const sent: string[] = [];
+    const none = (
+      reason: "refusal" | "invalid" | "server",
+      failure: string,
+      usage: TurnUsage | null,
+      raw: unknown,
+    ): LeadEvaluated => ({
+      outcome: { ok: false, reason },
+      flow,
+      sent,
+      usage,
+      raw,
+      failure,
+    });
+    if (!result.ok)
+      return none(
+        "server",
+        `호출 실패 ${result.status} · ${result.detail}`,
+        null,
+        null,
+      );
+    const prepared = leadPreparedOf(result.message);
+    const stop = result.message.stop_reason ?? "";
+    if (stop !== "end_turn")
+      return none(
+        stop === "refusal" ? "refusal" : "invalid",
+        `응답이 끝나지 않음(stop ${stop || "-"})`,
+        leadUsageOf(result, p.request.model, "invalid", 0),
+        prepared ?? null,
+      );
+    const heads = leadHeadsOf(prepared);
+    flow.heads(heads);
+    const held = leadHoldSayOf(level)(heads);
+    const gate = createToriSentenceGate({
+      forbidden: materials.forbidden,
+      metaPhrases: materials.metaPhrases,
+      safeLine: p.safeLine,
+      sentenceMaxWords: materials.ctx.sentenceMaxWords,
+    });
+    let emitted = 0;
+    const say = (prepared as { say?: unknown } | undefined)?.say;
+    if (typeof say === "string")
+      for (const sentence of splitSentences(say)) {
+        const out = gate.accept(sentence);
+        if (out === null || held) continue;
+        emitted += 1;
+        if (flow.accept(out)) sent.push(out);
+      }
+    const wire = talkLeadTurnSpec
+      .wireSchema(p.input, p.rules)
+      .safeParse(prepared);
+    const strict =
+      prepared !== undefined &&
+      wire.success &&
+      talkLeadTurnSpec.validate(wire.data, p.input, p.rules).length === 0
+        ? wire.data
+        : null;
+    const value = talkLeadTurnSpec.normalize(
+      strict ?? prepared,
+      p.input,
+      p.rules,
+    );
+    if (value === null) {
+      const usage = leadUsageOf(result, p.request.model, "invalid", 0);
+      const failure = `응답을 읽지 못함(${prepared === undefined ? "not_json" : "normalize_null"})`;
+      return emitted > 0
+        ? {
+            outcome: {
+              ok: false as const,
+              reason: "cut_after_first" as const,
+              sentSentences: gate.sent(),
+              overLength: gate.overLength(),
+            },
+            flow,
+            sent,
+            usage,
+            raw: prepared ?? null,
+            failure,
+          }
+        : none("invalid", failure, usage, prepared ?? null);
+    }
+    const shown: TalkLeadOutput = { ...value, say: gate.sent().join(" ") };
+    const hits = checkOutputFields(talkLeadCheckFields(shown), {
+      forbidden: materials.forbidden,
+      sentenceMaxWords: materials.ctx.sentenceMaxWords,
+    });
+    const checked = applyTalkLeadChecks(shown, hits);
+    return {
+      outcome: {
+        ok: true as const,
+        value: checked.value,
+        sentSentences: gate.sent(),
+        blocked: [...gate.blocked()] as string[],
+        overLength: gate.overLength(),
+        held,
+      },
+      flow,
+      sent,
+      usage: leadUsageOf(
+        result,
+        p.request.model,
+        strict === null ? "normalized" : "strict",
+        hits.size,
+      ),
+      raw: prepared ?? null,
+      failure: null,
+    };
+  };
+  /** 다시 말하기 응답 읽기(서버 run.ts runAiCall 의 한 시도 흉내 — 거절 · 읽지 못함 · 출력 검사의 치명 걸림은 null). */
+  const leadRetryAnswerOf = (
+    ask: LeadRetryAsk,
+    result: CallResult,
+  ): { answer: string | null; usage: TurnUsage | null } => {
+    if (!result.ok) return { answer: null, usage: null };
+    const message = result.message;
+    let prepared: unknown;
+    try {
+      prepared = prepareAnswer(
+        JSON.parse(answerTextOf(message)),
+        talkLeadRetrySpec.enumPaths,
+      );
+    } catch {
+      prepared = undefined;
+    }
+    const rules_ = talkLeadRetrySpec.rulesOf(values, ask.input);
+    const strictOk =
+      message.stop_reason === "end_turn" &&
+      prepared !== undefined &&
+      talkLeadRetrySpec.wireSchema(ask.input, rules_).safeParse(prepared)
+        .success;
+    const value =
+      message.stop_reason === "refusal" || prepared === undefined
+        ? null
+        : talkLeadRetrySpec.normalize(prepared, ask.input, rules_);
+    if (value === null)
+      return {
+        answer: null,
+        usage: leadUsageOf(result, ask.request.model, "invalid", 0),
+      };
+    const hits = checkOutputFields(talkLeadRetrySpec.checkFields(value), {
+      forbidden: materials.forbidden,
+      sentenceMaxWords: materials.ctx.sentenceMaxWords,
+    });
+    const checked = talkLeadRetrySpec.applyChecks(value, hits, ask.input);
+    return {
+      answer: checked.fatal ? null : checked.value.question,
+      usage: leadUsageOf(
+        result,
+        ask.request.model,
+        strictOk ? "strict" : "normalized",
+        hits.size,
+      ),
+    };
+  };
+  /** 대본 차례의 아이 행 재료(서버 lessonChildRowOf · lessonChildLiteOf 와 같은 셈 — 옛 길 prepare 와 같은 core 함수). */
+  const leadSimChildOf = (
+    step: ObserveStep,
+    position: ReturnType<typeof talkLessonPositionOf>,
+    args: LessonArgs,
+  ): LeadSimChild => {
+    const mode: TalkInputMode = step.say === undefined ? "dont_know" : "speech";
+    const nospeech = step.input === "nospeech";
+    const lite = observeChildLiteOf(position, { mode, nospeech }, settings);
+    const prev = lastTori();
+    const heardHelps = [...new Set(heardHelpsOfMove(prev?.move ?? null, spec))];
+    const tiers = observeHintTiersOf({
+      spec,
+      card,
+      turns: args.turns,
+      aiQuestions: rows.flatMap((r) =>
+        r.speaker === "tori" ? [r.aiQuestion] : [],
+      ),
+      slot: position.slot,
+    });
+    const opened = openedTierCount({
+      tiers,
+      pressed: step.hintTier ?? 0,
+      dontKnowCount: position.stuckInSlot,
+    });
+    const openedTiers = tiers.slice(0, opened);
+    const help = heardHelpOf(heardHelps);
+    return {
+      text: mode === "speech" ? masker(step.say ?? "").text : null,
+      mode,
+      nospeech: lite.nospeech,
+      segment: lite.segment === "greeting_end" ? "greeting" : lite.segment,
+      turnNo: lastTori()?.turnNo ?? 0,
+      hintKind:
+        step.hint ?? hintKindOf({ opened: openedTiers, heard: heardHelps }),
+      hintLevel: step.hint !== undefined ? (step.hintTier ?? 0) : opened,
+      heardHelp: help === "none" ? null : help,
+      meaningHint: openedTiers.some((t) => t.kind === "ko"),
+      targets: [...lite.targets],
+      lite,
+    };
+  };
+
+  const lead: LeadSim = {
+    on: leadOn,
+    applies: () => leadTurnAppliesOf({ start, segment, level }),
+    openDue() {
+      if (!leadTurnAppliesOf({ start, segment, level })) return null;
+      const pos = talkLessonPositionOf(argsOf());
+      if (pos.closed || pos.lastRow !== "teacher") return null;
+      for (const open of ["start", "more"] as const)
+        if (
+          leadOpenAcceptsOf(open, {
+            segment,
+            firstQuestionDue: pos.firstQuestionDue,
+            choice: pos.choice,
+          })
+        )
+          return open;
+      return null;
+    },
+    prepare(entry) {
+      if (!leadOn) return { ok: false, reason: "새 엔진 세션이 아니다" };
+      const leadCefr = materials.leadCefr;
+      if (leadText === null || !leadCefr || !materials.leadLexicon)
+        return {
+          ok: false,
+          reason: "새 엔진 재료가 없다(안내문 글 · CEFR · 어휘 사전)",
+        };
+      if (!leadTurnAppliesOf({ start, segment, level }))
+        return { ok: false, reason: `새 엔진 토막이 아니다(${segment})` };
+      const args = argsOf();
+      const position = talkLessonPositionOf(args);
+      if (position.closed) return { ok: false, reason: "대화가 닫혔다" };
+      if (position.lastRow !== "teacher")
+        return { ok: false, reason: "선생님 차례 뒤가 아니다" };
+      if (entry.kind === "open") {
+        if (
+          !leadOpenAcceptsOf(entry.open, {
+            segment,
+            firstQuestionDue: position.firstQuestionDue,
+            choice: position.choice,
+          })
+        )
+          return { ok: false, reason: `입구 ${entry.open} 를 받지 않는 때다` };
+      } else if (position.choice !== null)
+        return {
+          ok: false,
+          reason: `고르기 차례(${position.choice === "closing" ? "마무리 물음" : "마무리 제안"})에 닿아 멈춘다`,
+        };
+      else if (position.firstQuestionDue)
+        return {
+          ok: false,
+          reason: "대화 첫 질문 차례다(입구 start 를 먼저 부른다)",
+        };
+      const child =
+        entry.kind === "child"
+          ? leadSimChildOf(entry.step, position, args)
+          : null;
+      const open = entry.kind === "open" ? entry.open : null;
+      const mode = child?.mode ?? "speech";
+      const nospeech = child?.nospeech ?? false;
+      const speech = child !== null && mode === "speech";
+      const heard = child?.text ?? "";
+      // 마무리 물음을 꺼내는 때는 지금 그대로 앱이 정한다(core leadClosingTurnOf — 말로 답한 차례만, 막힘 없이 더한 위치)
+      const closing = leadClosingTurnOf({
+        speech,
+        positionAfter: () =>
+          talkLessonPositionOf({
+            ...args,
+            turns: [...args.turns, ...(child === null ? [] : [child.lite])],
+          }),
+      });
+      const ordered = leadConversationOrder(leadRowsNow());
+      const unitWords = materials.ctx.unitWords;
+      // 범위 재료(서버 lesson-input.ts lessonRangeOf — 1~3단계 어휘 · 형태 · 이 대화의 아이 낱말 · 다시 묻는 낱말)
+      const lineOptions = talkLineOptionsOf({
+        sentenceMaxWords: materials.ctx.sentenceMaxWords,
+        unitWords,
+        teacher: materials.teacher,
+        lineRange: {
+          allowedWords: materials.allowedWords,
+          forms: materials.forms,
+          allowedForms: materials.allowedForms,
+          childWords: childWords(heard),
+          reaskWords: reaskWordsOf({
+            turns: args.turns,
+            prepWords,
+            metBefore: [],
+          }),
+        },
+        lemmaOf: materials.lemmaOf,
+        homophones,
+      });
+      const levelInput: LeadLevelInput = {
+        level,
+        range: lineOptions,
+        forms: materials.forms as readonly LeadFormRule[],
+        lexicon: leadLexiconOf(),
+        promptLines: [leadText.topicEn, leadText.sentencesLikeEn],
+        allowed: leadAllowed,
+        allowedLemmaOf: materials.allowedLemmaOf,
+      };
+      const history = leadHistoryOf(ordered);
+      const first = leadFirstTurnOf(ordered);
+      const status = leadStatusOf({
+        rows: ordered,
+        hasChild: child !== null,
+        speech,
+        heard,
+        turnsLeft: position.turnsLeft,
+        unitWords,
+        homophones,
+        soundAlikes: materials.soundAlikes,
+        lemmaOf: materials.lemmaOf,
+        open,
+        closing,
+      });
+      const input: TalkLeadInput = {
+        ...materials.ctx,
+        teacher: materials.teacher,
+        cefr: leadCefr,
+        text: leadText,
+        history,
+        turn: {
+          child:
+            open !== null
+              ? leadOpenChildOf(open)
+              : leadChildOf({ mode, nospeech, heard }),
+          ...(first ? { greeting: leadGreetingOf(ordered) } : {}),
+          status,
+        },
+      };
+      const leadRules = talkLeadTurnSpec.rulesOf(values, input);
+      return {
+        ok: true,
+        turn: {
+          entry,
+          child,
+          open,
+          closing,
+          first,
+          teacherTurnNo:
+            child !== null
+              ? child.turnNo + 1
+              : rows.reduce((max, r) => Math.max(max, r.turnNo), 0) + 1,
+          segment: child?.segment ?? (segment as TalkTurnSegment),
+          input,
+          rules: leadRules,
+          userMessage: talkLeadUserMessage(
+            talkLeadTurnSpec.mask(input, masker).turn,
+          ),
+          request: leadRequestOf(talkLeadTurnSpec, input, leadRules),
+          safeLine: safeLineOf(card.safeLines, history.length + 1),
+          levelInput,
+          lineOptions,
+        },
+      };
+    },
+    retryOf(p, result) {
+      const e = evaluateLead(p, result);
+      if (!e.outcome.ok) return null;
+      const target = leadNarrowTargetOf(e.outcome.sentSentences, {
+        closing: p.closing,
+        move: e.outcome.value.move,
+        hitsOf: leadHitsOf(p),
+      });
+      if (target === null) return null;
+      const prompt = leadNarrowRetryPrompt(target.sentence, target.hits);
+      const input: TalkLeadRetryInput = {
+        ...p.input,
+        retry: { assistant: JSON.stringify(e.outcome.value), prompt },
+      };
+      return {
+        target,
+        prompt,
+        input,
+        request: leadRequestOf(talkLeadRetrySpec, input, p.rules),
+      };
+    },
+    finish(p, result, retry) {
+      const e = evaluateLead(p, result);
+      const { outcome, flow } = e;
+      const child = p.child;
+      const mode = child?.mode ?? "speech";
+      const speech = child !== null && mode === "speech";
+      const heard = child?.text ?? "";
+      const args = argsOf();
+      const position = talkLessonPositionOf(args);
+      const unitWords = materials.ctx.unitWords;
+      const lemmaOf = materials.lemmaOf;
+      const liteOf = (stuck: boolean): TalkLessonChildTurn | null =>
+        child === null
+          ? null
+          : { ...child.lite, stuck: child.mode === "speech" && stuck };
+      const positionAfter = (lite: TalkLessonChildTurn) =>
+        talkLessonPositionOf({ ...args, turns: [...args.turns, lite] });
+      const ordered = leadConversationOrder(leadRowsNow());
+      const prevTeacher = ordered.findLast((r) => r.speaker === "tori");
+      const prevMove = readTalkMove(prevTeacher?.move);
+      const askedChild = rows.findLast((r) => r.speaker === "child");
+      // 되물은 뒤의 답(02-2 259줄 — core leadChildHelpAfterOf): 앞 선생님 행이 새 엔진의 되묻기면 되물은 아이 차례의 힌트 칸을 하한으로
+      const helpArgs = {
+        own: child === null ? null : leadChildHelpOfRow(child),
+        prevMove,
+        asked:
+          askedChild?.speaker === "child"
+            ? leadChildHelpOfRow(askedChild)
+            : null,
+      };
+      const { help, fields: helpFields } = leadChildHelpAfterOf(helpArgs);
+      // 뜻 힌트도 같은 하한으로 이어 받는다(hintKind 와 같은 기록에서 — 검토 rev-r3 8 (나) · rev-x2 M-6)
+      const meaningHint =
+        child !== null &&
+        (child.meaningHint ||
+          (leadAskAgainFloorApplies(helpArgs) &&
+            askedChild?.speaker === "child" &&
+            askedChild.meaningHint === true));
+      const sentenceMax = teacherSentencesMaxOf(values, level);
+      const lines: LeadLine[] = e.sent.map((en) => ({ t: "s", en }));
+      const send = (en: string) => lines.push({ t: "s", en });
+      const closingLine = (): LeadLine => ({
+        t: "add",
+        kind: "more_prompt",
+        en: MORE_PROMPT.en,
+        ...(spec.koMeaning ? { ko: MORE_PROMPT.ko } : {}),
+      });
+      const soundLines = (s: { model?: string; answer?: string }) => {
+        if (s.model !== undefined)
+          lines.push({ t: "sound", kind: "model", say: s.model });
+        if (s.answer !== undefined)
+          lines.push({ t: "sound", kind: "answer", say: s.answer });
+      };
+      let teacher: LeadTurnRecord["teacher"];
+      let childFields: LeadChildFields | null;
+      let say: string;
+      let closingAdded: boolean;
+      let stuck = false;
+      let value: TalkLeadOutput | null = null;
+      let narrowLog: LeadTurnRecord["narrow"] = null;
+      let retryUsage: TurnUsage | null = null;
+      let held: LeadTurnRecord["held"] = null;
+      let explanation: string | null = null;
+      if (!outcome.ok) {
+        // (4-가) 응답이 없는 차례(서버 lead-turn.ts:607-701 — 첫 문장 뒤 끊김은 보낸 문장 · 붙잡은 문장으로 닫고, 그 밖은 카드 안전한 대사)
+        let shown: string[];
+        let ko: string | null = null;
+        let sound: { model?: string; answer?: string } = {};
+        if (outcome.reason === "cut_after_first") {
+          const cutMove = flow.move();
+          if (cutMove === undefined) {
+            shown = outcome.sentSentences.slice(0, flow.sentCount());
+          } else {
+            const cut = leadSettleOf({
+              level,
+              move: cutMove,
+              prevStuck: flow.prevStuck(),
+              closing: p.closing,
+              modelSentence: "",
+              sentences: outcome.sentSentences,
+              sentCount: flow.sentCount(),
+              held: false,
+              narrow: null,
+            });
+            for (const en of cut.release) send(en);
+            shown = cut.shown;
+            sound = cut.sound;
+          }
+        } else {
+          const view = observeFailLineOf({
+            low,
+            koMeaning: spec.koMeaning,
+            card,
+            refusal: outcome.reason === "refusal",
+            situation: null,
+            safeLine: p.safeLine,
+            childTurnNo: child?.turnNo ?? p.teacherTurnNo,
+          });
+          send(view.en);
+          ko = view.ko ?? null;
+          shown = [view.en];
+        }
+        if (ko !== null) lines.push({ t: "ko", ko });
+        soundLines(sound);
+        say = shown.join(" ");
+        closingAdded = leadClosingAddsOf({ closing: p.closing, say });
+        if (closingAdded) lines.push(closingLine());
+        const lite = liteOf(false);
+        teacher = {
+          text: [say, ...(closingAdded ? [MORE_PROMPT.en] : [])].join("\n"),
+          toriRewrite: null,
+          toriKo: ko,
+          explanation: null,
+          overLength: observeOverLengthOf({
+            words:
+              outcome.reason === "cut_after_first" ? outcome.overLength : 0,
+            sentences: shown.length,
+            max: sentenceMax,
+          }),
+          aiQuestion: null,
+          move: leadMoveWithSound(
+            talkMoveOf({
+              kind: leadFailedMoveKindOf({ closing: p.closing, open: p.open }),
+              cause: lite === null ? null : childCauseOf(lite),
+            }),
+            sound,
+          ),
+          sentUserMessage: child === null ? p.userMessage : null,
+        };
+        childFields =
+          child === null
+            ? null
+            : leadChildFieldsOf({
+                speech,
+                childUsedOnOwn: [],
+                said: [],
+                stuck: false,
+                heard,
+                sentUserMessage: p.userMessage,
+                askAgain: false,
+                helpFields,
+              });
+      } else {
+        // (4-나) 응답이 있는 차례(서버 lead-turn.ts:704-941)
+        value = outcome.value;
+        stuck = leadStuckOfReading(p, value.reading);
+        const lite = liteOf(stuck);
+        const prevStuck = lite === null ? false : leadPrevStuckOf(lite);
+        const sentences = outcome.sentSentences;
+        const target = leadNarrowTargetOf(sentences, {
+          closing: p.closing,
+          move: value.move,
+          hitsOf: leadHitsOf(p),
+        });
+        let narrow: { index: number; sentence: string } | null = null;
+        let narrowRecord: LeadExtra["narrow"];
+        if (target !== null) {
+          // 서버는 시간 예산(questionRetryFits)이 남을 때만 부른다 — 도구는 retry 가 주어졌으면 부른 것으로 본다
+          const answered = retry
+            ? leadRetryAnswerOf(retry.ask, retry.result)
+            : null;
+          retryUsage = answered?.usage ?? null;
+          const decided = leadNarrowOutcomeOf({
+            original: target.sentence,
+            received: answered?.answer ?? null,
+            input: p.levelInput,
+            passes: (sentence) =>
+              checkToriSentence(sentence, {
+                forbidden: materials.forbidden,
+                metaPhrases: materials.metaPhrases,
+              }).ok,
+          });
+          narrow = { index: target.index, sentence: decided.sentence };
+          narrowRecord = {
+            item: leadNarrowItemOf(target.hits),
+            retry: decided.retry,
+            again: decided.again,
+            ms: retry ? Math.max(0, retry.result.latencyMs) : 0,
+          };
+          narrowLog = {
+            sentence: target.sentence,
+            item: narrowRecord.item,
+            prompt: leadNarrowRetryPrompt(target.sentence, target.hits),
+            called: retry !== undefined,
+            retry: decided.retry,
+            again: decided.again,
+            fits: observeQuestionRetryFits({
+              elapsedMs: Math.max(0, result.latencyMs),
+              timeoutMs:
+                (values["ai.timeout_seconds.realtime"] as number) *
+                OBSERVE_MS_PER_SECOND,
+            }),
+          };
+        }
+        const settled = leadSettleOf({
+          level,
+          move: value.move,
+          prevStuck,
+          closing: p.closing,
+          modelSentence: value.model_sentence,
+          sentences,
+          sentCount: flow.sentCount(),
+          held: outcome.held,
+          narrow,
+        });
+        // (5) 줄: 남은 글 문장 → 뜻 → 소리 줄 → 마무리 상수(서버 lead-turn.ts:786-796)
+        for (const en of settled.release) send(en);
+        const ko = spec.koMeaning
+          ? leadKoLineOf(level, value.say_ko).trim()
+          : "";
+        if (ko !== "") lines.push({ t: "ko", ko });
+        soundLines(settled.sound);
+        say = settled.say;
+        closingAdded = leadClosingAddsOf({ closing: p.closing, say });
+        if (closingAdded) lines.push(closingLine());
+        // (6) 기록: 힌트 재료 · 넓은 검사 · gate · 기록 칸(core leadHintsOf · leadGateOf · leadExtraOf — 서버 턴 길과 같은 함수)
+        const { hintBlock, aiHints } = leadHintsOf({
+          output: value,
+          range: p.levelInput,
+          check: {
+            forbidden: materials.forbidden,
+            sentenceMaxWords: materials.ctx.sentenceMaxWords,
+          },
+          spec,
+          unitWords,
+          lemmaOf,
+        });
+        const wide = leadWideCheckOf(settled.say, {
+          range: p.lineOptions,
+          extra: {
+            allowed: leadAllowed,
+            allowedLemmaOf: materials.allowedLemmaOf,
+          },
+          sentenceMax,
+          same: {
+            blocked: [],
+            asked: position.askedQuestions,
+            max: settings.sameQuestionMax,
+          },
+        });
+        const gate = leadGateOf({
+          blocked: outcome.blocked,
+          heldSay: outcome.held,
+          flowHeld: flow.held(),
+          sentCount: flow.sentCount(),
+          hintBlock,
+          rangeUnread: false,
+        });
+        held = gate.includes("held_say")
+          ? "say"
+          : gate.includes("held_question")
+            ? "question"
+            : null;
+        const extra = leadExtraOf({
+          narrow: narrowRecord,
+          wide,
+          gate,
+          closingAdded,
+          removed: settled.removed,
+          soundMoved: settled.soundMoved,
+        });
+        const move = leadMoveWithSound(
+          leadTeacherMoveOf({
+            response: {
+              reading: value.reading,
+              move: value.move,
+              say: settled.say,
+              model_sentence: value.model_sentence,
+            },
+            prevChild: lite,
+            spec,
+            closingSlot: p.closing,
+            firstQuestion: p.open === "start",
+            unitWords,
+            lemmaOf,
+            extra,
+          }),
+          settled.sound,
+        );
+        const teacherText = [
+          settled.shown.join(" "),
+          ...(closingAdded ? [MORE_PROMPT.en] : []),
+        ].join("\n");
+        explanation = leadExplanationOf({
+          child: lite,
+          stuckInSlot: () =>
+            lite === null ? 0 : positionAfter(lite).stuckInSlot,
+          spec,
+          level,
+          hintKo: value.hint_ko,
+        });
+        const { askAgain, said } = leadSaidOf({
+          hasChild: child !== null,
+          move: value.move,
+          help,
+          candidates: value.child_used_on_own,
+          heard,
+          speech,
+          stuck,
+          unitWords,
+          lemmaOf,
+          homophones,
+        });
+        teacher = {
+          text: teacherText,
+          toriRewrite: talkLeadAssistantOf(JSON.stringify(value), settled.say),
+          toriKo: ko === "" ? null : ko,
+          explanation,
+          overLength: observeOverLengthOf({
+            words: outcome.overLength,
+            sentences: sentences.length,
+            max: sentenceMax,
+          }),
+          aiQuestion: leadAiQuestionOf({
+            question: turnQuestionOf(teacherText, move.kind),
+            ko,
+            hintEn: value.hint_en,
+            hints: aiHints,
+          }),
+          move,
+          sentUserMessage: child === null ? p.userMessage : null,
+        };
+        childFields =
+          child === null
+            ? null
+            : leadChildFieldsOf({
+                speech,
+                childUsedOnOwn: value.child_used_on_own,
+                said,
+                stuck,
+                heard,
+                sentUserMessage: p.userMessage,
+                askAgain,
+                helpFields,
+              });
+      }
+      // 행 저장(서버 saveLeadTurn — 아이 행은 호출 전에 들어가 있고 끝에 칸을 채운다, 입구 차례는 아이 행이 없다)
+      // 아이 행의 힌트 칸: 호출 전 값에 되물은 뒤 하한이 바꾼 칸만 덮는다(서버 update — helpFields)
+      const childHelp =
+        child === null
+          ? null
+          : {
+              hintKind: childFields?.hintKind ?? child.hintKind,
+              hintLevel: childFields?.hintLevel ?? child.hintLevel,
+              heardHelp:
+                childFields?.heardHelp === undefined
+                  ? child.heardHelp
+                  : childFields.heardHelp,
+            };
+      if (child !== null && childFields !== null && childHelp !== null)
+        rows.push({
+          speaker: "child",
+          turnNo: child.turnNo,
+          segment: child.segment,
+          text: child.text,
+          input: child.mode,
+          nospeech: child.nospeech,
+          stuck: childFields.stuckPhrase !== null,
+          targets: [...child.targets],
+          sentUserMessage: p.userMessage,
+          hintKind: childHelp.hintKind,
+          hintLevel: childHelp.hintLevel,
+          heardHelp: childHelp.heardHelp,
+          meaningHint,
+          selfUsedWords: [...childFields.selfUsedWords],
+          saidWords: [...childFields.saidWords],
+          ...(childFields.askAgain ? { askAgain: true } : {}),
+        });
+      const aq = teacher.aiQuestion;
+      rows.push({
+        speaker: "tori",
+        turnNo: p.teacherTurnNo,
+        text: teacher.text,
+        rewrite: teacher.toriRewrite ?? "",
+        move: teacher.move,
+        // 서버 state.ts lessonTurnOf 와 같이 AI 질문의 답 예시(빈 글은 없음)
+        answerExample: aq && aq.answerExample !== "" ? aq.answerExample : null,
+        aiQuestion: aq
+          ? {
+              en: aq.en,
+              hintKo: aq.hintKo ?? "",
+              hints: [...(aq.hints ?? [])],
+              usable: [],
+            }
+          : null,
+        segment: p.segment,
+        sentUserMessage: teacher.sentUserMessage,
+        explanation: teacher.explanation,
+        toriKo: teacher.toriKo,
+      });
+      const heardLines = [
+        lines.flatMap((l) => (l.t === "s" ? [l.en] : [])).join(" "),
+        ...lines.flatMap((l) =>
+          l.t === "sound" ? [l.say] : l.t === "add" ? [l.en] : [],
+        ),
+      ].filter((l) => l.trim() !== "");
+      const reading = value?.reading;
+      return {
+        entry: p.open ?? "child",
+        no: p.entry.kind === "child" ? p.entry.stepIndex + 1 : 0,
+        lines,
+        heard: heardLines.join("\n"),
+        teacher,
+        child:
+          child === null || childFields === null || childHelp === null
+            ? null
+            : {
+                text: child.text,
+                selfUsedWords: [...childFields.selfUsedWords],
+                saidWords: [...childFields.saidWords],
+                stuckPhrase: childFields.stuckPhrase,
+                sentUserMessage: childFields.sentUserMessage,
+                askAgain: childFields.askAgain === true,
+                ...childHelp,
+              },
+        met: metWordsIn(say, { unitWords, lemmaOf }),
+        closing: p.closing,
+        closingStuck: {
+          reading:
+            p.closing &&
+            reading !== undefined &&
+            LEAD_STUCK_READINGS.has(reading),
+          effective: p.closing && stuck,
+        },
+        held,
+        narrow: narrowLog,
+        value,
+        raw: e.raw,
+        usage: e.usage,
+        retryUsage,
+        failure: e.failure,
+        userMessage: p.userMessage,
+      };
+    },
+    candidateRows() {
+      const ordered = leadConversationOrder(
+        rows.map((row) => ({
+          ...leadRowOf(row),
+          row,
+        })),
+      ).filter((r) => r.segment === "talk" || r.segment === "more_talk");
+      return ordered.flatMap((r, i): LeadCandidateRow[] => {
+        const row = r.row;
+        if (row.speaker === "tori") {
+          const lead_ = row.move.lead;
+          let say = row.text.split("\n")[0] ?? "";
+          if (lead_ && row.rewrite !== "")
+            try {
+              const parsed = JSON.parse(row.rewrite) as { say?: unknown };
+              if (typeof parsed.say === "string") say = parsed.say;
+            } catch {
+              // 화면 글 첫 줄로
+            }
+          return [
+            {
+              role: "teacher",
+              say,
+              move: lead_?.move ?? null,
+              model: lead_?.model?.sentence ?? null,
+              choices: lead_?.choices === true,
+              koShown: (row.explanation ?? null) !== null,
+            },
+          ];
+        }
+        const next = ordered
+          .slice(i + 1)
+          .find((x) => x.row.speaker === "tori")?.row;
+        const nextLead = next?.speaker === "tori" ? next.move.lead : undefined;
+        return [
+          {
+            role: "child",
+            heard: row.text ?? "",
+            saidWords: [...(row.saidWords ?? [])],
+            claudeWords: [...(row.selfUsedWords ?? [])],
+            hintKind: row.hintKind ?? "none",
+            // 말 입력이 아닌 차례는 막힘으로 채운다(검토 rev-r3 · R3 고침 1 확인할 것 3 — 지금 판정이 말 입력 아닌 차례를 비우는 것과 같은 조건)
+            stuck: row.stuck || row.input !== "speech",
+            // 수업 안 한국어로 묻기(talk_ko_helps)는 그 가지가 합쳐질 때 생긴다 — 그때까지 거짓(검토 rev-r3 8 (가))
+            koHelp: false,
+            meaningHint: row.meaningHint ?? false,
+            reading: nextLead?.reading ?? null,
+          },
+        ];
+      });
+    },
+  };
+
   return {
     rows,
+    lead,
+    stopBefore() {
+      const position = talkLessonPositionOf(argsOf());
+      if (position.closed) return { reason: "대화가 닫혔다", choice: null };
+      if (position.choice !== null)
+        return {
+          reason: `고르기 차례(${position.choice === "closing" ? "마무리 물음" : "마무리 제안"})에 닿아 멈춘다`,
+          choice: position.choice,
+        };
+      return null;
+    },
+    chooseMore() {
+      if (leadOn) {
+        const decided = observeMoreLeadOf(argsOf());
+        if (!decided.ok) return { ok: false, reason: "고를 차례가 아니다" };
+        segment = decided.segment;
+        return { ok: true, mode: "claude" };
+      }
+      const decided = observeMoreOf(argsOf());
+      if (!decided.ok)
+        return {
+          ok: false,
+          reason: "고를 차례가 아니거나 더 이야기할 거리가 없다",
+        };
+      // 서버 index.ts chooseLessonMoreTalk 의 카드 자리 행(insertTeacherRow — 화면 글은 붙인 줄, 다시 쓴 글은 그 줄)
+      const attach: TeacherAttachLine[] = [
+        {
+          kind: "question",
+          role: "card",
+          en: decided.line.en,
+          ...(decided.line.ko === undefined ? {} : { ko: decided.line.ko }),
+          item: { ...decided.move.item },
+        },
+      ];
+      rows.push({
+        speaker: "tori",
+        turnNo: rows.reduce((max, r) => Math.max(max, r.turnNo), 0) + 1,
+        text: lessonTextOf([], attach),
+        rewrite: talkLessonRewriteOf({
+          sentSentences: [],
+          appended: attach.flatMap((l) => ("en" in l ? [l.en] : [])),
+        }),
+        move: decided.move,
+        answerExample: null,
+        aiQuestion: null,
+      });
+      segment = decided.segment;
+      return { ok: true, mode: "app", line: decided.line };
+    },
     snapshot() {
       return {
         rows: rows.map((row) => ({ ...row })),

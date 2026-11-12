@@ -201,3 +201,24 @@ export function heardByChild(teacherEnglish: string): string {
   const text = teacherEnglish.replaceAll("{NAME}", CHILD_NAME_FILL).trim();
   return text === "" ? "(The teacher said nothing.)" : text;
 }
+
+// ── 앱의 마무리 차례(마무리 물음 · 마무리 제안)의 두 단추(묶음 X1 · X2) ─────────────
+
+/** 마무리 차례의 두 단추('더 이야기하기' · '그만하기'). */
+export const WRAP_PICKS = ["more", "stop"] as const;
+export type WrapPick = (typeof WRAP_PICKS)[number];
+
+/** 마무리 차례에서 아이 역의 출력: 늘 내는 네 칸에 고른 단추를 받을 칸 하나(wrap_choice)를 더한다. */
+export const WrapChildOutputSchema = ChildOutputSchema.extend({
+  wrap_choice: z.enum(WRAP_PICKS),
+});
+
+/**
+ * 마무리 차례에서 아이 역에게 보내는 말: 선생님 말 뒤에 두 단추 안내. 기본은 '더 이야기하기'다 — 고르기는 정해진 아이 차례 수 안에서만
+ * 묻고(arch-compare runLesson), 아이 역은 정말 그만하고 싶을 때만 '그만하기'를 고른다.
+ */
+export function wrapChoiceMessageOf(heardTeacher: string): string {
+  return `Teacher: ${heardTeacher}
+
+(Now the screen shows two buttons: "Talk more" and "Stop". Press one: put "more" or "stop" in wrap_choice. The lesson time is not over yet, so press "Talk more" unless you really want to stop now. "says" may be empty because you only press a button.)`;
+}

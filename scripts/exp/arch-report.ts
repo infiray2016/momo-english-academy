@@ -13,9 +13,10 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type Anthropic from "@anthropic-ai/sdk";
+import type { LeadCandidateLex } from "../../src/core/conversation/lead-candidate";
 import { createScriptClient, readApiKey } from "../ai-contract";
 import {
   P_SYSTEM,
@@ -23,21 +24,25 @@ import {
   pChildMessageOf,
   pStatusOf,
 } from "./arch-arm-p";
-import { heardByChild } from "./arch-arms";
-import type {
-  Arm,
-  Branch,
-  CallLog,
-  ChildTurnLog,
-  LessonLog,
-  LogLine,
-  TeacherTurnLog,
+import { heardByChild, wrapChoiceMessageOf } from "./arch-arms";
+import {
+  type Arm,
+  type Branch,
+  type CallLog,
+  type ChildTurnLog,
+  type LeadTurnLog,
+  type LessonLog,
+  type LogLine,
+  setupOf,
+  type TeacherTurnLog,
 } from "./arch-compare";
 import {
   type AskedQuestion,
   endingOf,
+  type FirstSent,
   type FirstSentence,
   firstSentenceStatsOf,
+  firstSentStatsOf,
   flat,
   type JudgeFile,
   type JudgeSummary,
@@ -46,12 +51,16 @@ import {
   percentile,
   questionStatsOf,
   questionsIn,
+  SAID_CATEGORIES,
+  type SaidCounts,
+  saidCountsOf,
+  sameQuestionsBesideClosingOf,
   sameQuestionsOf,
   wordCount,
 } from "./arch-metrics";
 import { NOISE_TURNS } from "./arch-noise";
 
-const ARM_ORDER: readonly Arm[] = ["A", "B", "C", "C2", "P"];
+const ARM_ORDER: readonly Arm[] = ["A", "B", "C", "C2", "P", "N"];
 const BRANCHES: readonly Branch[] = [
   "그대로 나감",
   "질문을 다시 쓰게 함",
@@ -167,6 +176,8 @@ export function lessonMetricsOf(lesson: Lesson) {
       childShare: sumT + sumC === 0 ? null : sumC / (sumT + sumC),
     },
     sameQuestions: sameQuestionsOf(asked),
+    /** AC-11 '같은 글자 질문 0' 셈: 마무리 상수 물음을 빼고 따로 센다(검토 rev-x2 M-2 — 옛 칸 sameQuestions 는 그대로). */
+    sameQuestionsBesideClosing: sameQuestionsBesideClosingOf(asked),
     intervention: {
       calledTurns: called.length,
       changedTurns: changed.length,
@@ -200,6 +211,11 @@ export function lessonMetricsOf(lesson: Lesson) {
     },
     // X1(spec '회화 Claude 주도' 설계 9): 아래 둘은 옛 기록에도 셈이 나오도록 새 칸으로만 더한다(위 칸의 값은 그대로)
     firstSentence: firstSentenceStatsOf(firstSentencesOf(responses)),
+    // X2: 아이에게 첫 문장이 나간 때(받아 둔 차례를 가름) · 새 엔진(N) 기록 셈 — 새 칸으로만 더한다(옛 기록은 비거나 null)
+    firstSent: firstSentStatsOf(firstSentsOf(responses)),
+    lead: leadMetricsOf(lesson),
+    /** N: 인사 끝 차례에 접은 입구 start 호출(차례당 호출 수 · 시간 밖 — 검토 rev-x2 M-4). 없으면 null. */
+    entryStart: entryStartOf(lesson.teachers),
     ending: {
       how: ending.how,
       line: ending.line,
@@ -211,6 +227,108 @@ export function lessonMetricsOf(lesson: Lesson) {
         continued: c.continued,
       })),
     },
+  };
+}
+
+/** 인사 끝 차례에 접은 입구 start 호출의 수 · 시간 · 첫 문장이 나간 때(N 만, 검토 rev-x2 M-4). */
+function entryStartOf(teachers: readonly TeacherTurnLog[]) {
+  const entries = teachers.flatMap((t) => (t.entryStart ? [t.entryStart] : []));
+  if (entries.length === 0) return null;
+  return {
+    turns: entries.length,
+    calls: entries.reduce((a, e) => a + e.calls, 0),
+    ms: entries.map((e) => e.ms),
+    firstSentMs: entries.flatMap((e) => (e.firstSent ? [e.firstSent.ms] : [])),
+  };
+}
+
+/** 아이에게 첫 문장이 나간 때(아이 차례 뒤 선생님 차례만 — 고르기 뒤 이음 · 옛 기록 · 부르지 않은 차례는 뺀다). */
+function firstSentsOf(responses: readonly TeacherTurnLog[]): FirstSent[] {
+  return responses.flatMap((t) =>
+    t.afterChoice !== true && t.firstSent ? [t.firstSent] : [],
+  );
+}
+
+/** 받아 둔 차례 표지(move.lead.gate 에 문장 문 걸림과 섞여 있어 이름으로 가린다 — 검토 rev-s1 M-3). */
+const HELD_GATES = ["held_say", "held_question"] as const;
+
+/**
+ * 새 엔진(N) 수업 하나의 기록 셈(회화 Claude 주도 설계 5 · 6 · 9, plan 10번 · 브리프 X2 3): (가) 차이 표 셈(LessonLog.lead — core
+ * leadCandidateTableOf), (나) 좁은 정의에 걸린 차례 · 다시 말하기 수와 결과, (다) 받아 둔 차례(held_say · held_question — gate 이름으로 가림)의
+ * 수와 시간(본 호출 시간 + 다시 말하기 시간으로 다시 셈 — 검토 rev-s1 M-2), (라) 마무리 차례인데 읽기가 막힘이었던 차례(검토 rev-s1 M-4).
+ * 새 엔진 기록이 없는 수업은 null.
+ */
+export function leadMetricsOf(lesson: Pick<Lesson, "meta" | "teachers">) {
+  const logs = lesson.teachers.flatMap((t): LeadTurnLog[] =>
+    t.lead ? [t.lead] : [],
+  );
+  if (logs.length === 0 && !lesson.meta.lead) return null;
+  const narrow = logs.flatMap((l) => (l.narrow ? [l.narrow] : []));
+  // (다)는 (차)와 같은 범위로 센다: 아이 차례 뒤 차례만(입구 start · 고르기 뒤 more 는 뺌 — 검토 rev-x2 M-1)
+  const childLogs = logs.filter((l) => l.entry === "child");
+  const heldOf = (name: (typeof HELD_GATES)[number]) =>
+    childLogs.filter((l) => l.gate.includes(name));
+  const heldLogs = childLogs.filter((l) =>
+    HELD_GATES.some((g) => l.gate.includes(g)),
+  );
+  const heldMs = heldLogs.map((l) => l.ms + (l.retryMs ?? 0));
+  const gateCounts: Record<string, number> = {};
+  for (const l of logs)
+    for (const g of l.gate)
+      if (!(HELD_GATES as readonly string[]).includes(g))
+        gateCounts[g] = (gateCounts[g] ?? 0) + 1;
+  const counts = lesson.meta.lead?.table.counts ?? null;
+  return {
+    turns: logs.length,
+    byEntry: {
+      child: logs.filter((l) => l.entry === "child").length,
+      start: logs.filter((l) => l.entry === "start").length,
+      more: logs.filter((l) => l.entry === "more").length,
+    },
+    /** (가) 차이 표 셈(지금 판정에만 · 새 후보에만 · 갈래별 · 막힌 뒤 고르기로 빠진 차례 · Claude 후보 어긋남). */
+    diff: counts,
+    diffWords: (lesson.meta.lead?.table.words ?? [])
+      .filter((w) => w.side === "current_only" || w.side === "candidate_only")
+      .map((w) => ({
+        word: w.word,
+        side: w.side,
+        differFrom: w.differFrom,
+        categories: w.categories,
+      })),
+    /** (나) 좁은 정의. */
+    narrow: {
+      turns: narrow.length,
+      called: narrow.filter((n) => n.called).length,
+      /** 서버라면 시간 예산(questionRetryFits) 밖이라 다시 말하지 않았을 차례(기록만 — 검토 rev-x2 M-3). 옛 기록 · 칸 없음은 세지 않는다. */
+      overBudget: narrow.filter((n) => n.fits === false).length,
+      replaced: narrow.filter((n) => n.retry !== "").length,
+      againHit: narrow.filter((n) => n.again).length,
+      kept: narrow.filter((n) => n.retry === "").length,
+      items: narrow.map((n) => n.item),
+    },
+    /** (다) 받아 둔 차례(아이 차례 뒤만 — (차)와 같은 범위). */
+    held: {
+      say: heldOf("held_say").length,
+      question: heldOf("held_question").length,
+      msMedian: median(heldMs),
+      msP95: percentile(heldMs, 95),
+      ms: heldMs,
+    },
+    /** (라) 마무리 차례 · 막힘. */
+    closing: {
+      turns: logs.filter((l) => l.closing).length,
+      stuckReading: logs.filter((l) => l.closingStuck.reading).length,
+      stuckEffective: logs.filter((l) => l.closingStuck.effective).length,
+      added: logs.filter((l) => l.closingAdded).length,
+    },
+    /** 문장 문 걸림(받아 둔 표지 밖 — 안전 대사로 바뀐 검사 이름 · 힌트 막음). */
+    gate: gateCounts,
+    soundMoved: logs.filter((l) => l.soundMoved).length,
+    removedTurns: logs.filter((l) => l.removed.length > 0).length,
+    sayChanged: logs.filter(
+      (l) => l.rawSay !== null && flat(l.say) !== flat(l.rawSay),
+    ).length,
+    failures: logs.filter((l) => l.failure !== null).length,
   };
 }
 
@@ -275,6 +393,11 @@ export function armMetricsOf(arm: Arm, lessons: readonly Lesson[]) {
       exact: sum((m) => m.sameQuestions.exact),
       similarPairs: sum((m) => m.sameQuestions.similar.length),
     },
+    sameQuestionsBesideClosing: {
+      exact: sum((m) => m.sameQuestionsBesideClosing.exact),
+      similarPairs: sum((m) => m.sameQuestionsBesideClosing.similar.length),
+      closingConstant: sum((m) => m.sameQuestionsBesideClosing.closingConstant),
+    },
     intervention: {
       calledTurns: sum((m) => m.intervention.calledTurns),
       changedTurns: sum((m) => m.intervention.changedTurns),
@@ -320,6 +443,19 @@ export function armMetricsOf(arm: Arm, lessons: readonly Lesson[]) {
       offbandForms: [...new Set(per.flatMap((m) => m.levelFit.offbandForms))],
     },
     firstSentence: firstSentenceStatsOf(firstSentencesOf(responses)),
+    firstSent: firstSentStatsOf(firstSentsOf(responses)),
+    lead: leadArmOf(per),
+    entryStart: (() => {
+      const entries = per.flatMap((m) => (m.entryStart ? [m.entryStart] : []));
+      if (entries.length === 0) return null;
+      const first = entries.flatMap((e) => e.firstSentMs);
+      return {
+        turns: entries.reduce((a, e) => a + e.turns, 0),
+        firstSentTurns: first.length,
+        firstSentMsMedian: median(first),
+        firstSentMsP95: percentile(first, 95),
+      };
+    })(),
     ending: {
       ...Object.fromEntries(
         ENDING_HOWS.map((h) => [
@@ -343,10 +479,93 @@ export function armMetricsOf(arm: Arm, lessons: readonly Lesson[]) {
   };
 }
 
+/** 방식 하나의 새 엔진 기록 셈(수업 셈을 더함 — N 밖은 null). */
+function leadArmOf(per: readonly LessonMetrics[]) {
+  const leads = per.flatMap((m) => (m.lead ? [m.lead] : []));
+  if (leads.length === 0) return null;
+  const sum = (f: (l: (typeof leads)[number]) => number) =>
+    leads.reduce((a, l) => a + f(l), 0);
+  const heldMs = leads.flatMap((l) => l.held.ms);
+  return {
+    lessons: leads.length,
+    turns: sum((l) => l.turns),
+    diffWords: sum((l) => l.diff?.differ ?? 0),
+    currentOnly: sum((l) => l.diff?.currentOnly ?? 0),
+    candidateOnly: sum((l) => l.diff?.candidateOnly ?? 0),
+    choicesDropped: sum((l) => l.diff?.choicesDropped ?? 0),
+    narrowTurns: sum((l) => l.narrow.turns),
+    narrowReplaced: sum((l) => l.narrow.replaced),
+    narrowAgain: sum((l) => l.narrow.againHit),
+    narrowKept: sum((l) => l.narrow.kept),
+    heldSay: sum((l) => l.held.say),
+    heldQuestion: sum((l) => l.held.question),
+    heldMsMedian: median(heldMs),
+    heldMsP95: percentile(heldMs, 95),
+    closingTurns: sum((l) => l.closing.turns),
+    closingStuckReading: sum((l) => l.closing.stuckReading),
+    closingStuckEffective: sum((l) => l.closing.stuckEffective),
+  };
+}
+
+/** 수업 하나의 '말했다' 셈(세 방식 같은 규칙 — 검토 rev-x2 I-2). */
+export type SaidRow = { lesson: string; arm: Arm; counts: SaidCounts };
+
+/** 수업마다 세 방식을 같은 규칙으로 센 '말했다' 수(기록만 읽는다 — 지난 실험의 기록 폴더에도 돈다). */
+export function saidRowsOf(
+  lessons: readonly Lesson[],
+  lex: LeadCandidateLex,
+): SaidRow[] {
+  return lessons.map((l) => ({
+    lesson: l.name,
+    arm: l.meta.arm,
+    counts: saidCountsOf(l, lex),
+  }));
+}
+
+/** 방식 하나의 '말했다' 셈(수업 평균 · 갈래 합). */
+export function saidArmOf(arm: Arm, rows: readonly SaidRow[]) {
+  const mine = rows.filter((r) => r.arm === arm);
+  const n = mine.length;
+  const mean = (f: (c: SaidCounts) => number) =>
+    n === 0 ? null : mine.reduce((a, r) => a + f(r.counts), 0) / n;
+  return {
+    arm,
+    lessons: n,
+    heardUnitMean: mean((c) => c.heardUnit.length),
+    beyondTeacherMean: mean((c) => c.beyondTeacher.length),
+    heardAcceptedMean: mean((c) => c.heardAccepted.length),
+    heardByCategory: Object.fromEntries(
+      SAID_CATEGORIES.map((k) => [
+        k,
+        mine.reduce((a, r) => a + r.counts.heardByCategory[k], 0),
+      ]),
+    ) as SaidCounts["heardByCategory"],
+  };
+}
+
+/**
+ * 결과 글 머리의 재료 줄(검토 rev-x2 I-1): 이 실행의 방식 A 가 실제 앱의 기능어 집합으로 돌았는지 적는다. 수업 줄의 materials 칸(이 고침 뒤의
+ * 실행만 적음)으로 가르므로, 지난 실험의 기록 폴더를 다시 내면 '바로잡기 전'으로 적힌다.
+ */
+export function materialsNoteOf(lessons: readonly Lesson[]): string | null {
+  const a = lessons.filter((l) => l.meta.arm === "A");
+  if (a.length === 0) return null;
+  const words = a.flatMap((l) =>
+    l.meta.materials ? [l.meta.materials.functionWords] : [],
+  );
+  if (words.length === a.length && words.every((w) => w > 0))
+    return `방식 A 를 실제 앱의 재료로 바로잡음(지난 실험의 A 와 이 한 점이 다름): 1~3단계 상황 차례 답 글 검사의 기능어 ${Math.min(...words)}개를 서버처럼 어휘 시드의 품사 칸(적재된 vocab.parts_of_speech)에서 읽었다. 지난 실험의 A 는 이 집합이 비어 기능어도 답 예시의 내용어로 보았다(검토 rev-x2 I-1).`;
+  return "이 기록의 방식 A 는 바로잡기 전 판으로 돌았다: 1~3단계 상황 차례 답 글 검사의 기능어 집합이 비어 있었다(실제 앱보다 문장을 많이 잃음 — 검토 rev-x2 I-1).";
+}
+
 function metricsMarkdown(
   arms: ReturnType<typeof armMetricsOf>[],
   per: LessonMetrics[],
   pricesSource: string,
+  extra: { materialsNote: string | null; said: SaidRow[] | null } = {
+    materialsNote: null,
+    said: null,
+  },
 ): string {
   const rows = (
     title: string,
@@ -363,6 +582,7 @@ function metricsMarkdown(
   return [
     "# 수치(방식별 · 수업별)",
     "",
+    ...(extra.materialsNote ? [extra.materialsNote, ""] : []),
     "선생님 차례는 아이가 들은 최종 영어(앱이 붙인 줄 포함, 수업 처음의 말 포함)다. 아이 낱말은 아이 역이 하려던 말(says)의 낱말이다. 시간은 선생님 쪽 호출(턴 · 다시 쓰기)만 더한 것이고 아이 역 호출은 넣지 않았다. 비용 단가는 저장소의 `" +
       pricesSource +
       "`(claude-sonnet-5-5 입력 $2 · 출력 $10 · 캐시 쓰기 $2.5 · 캐시 읽기 $0.1 / 100만 토큰)을 앱 함수 `src/core/ai/cost.ts` costOf 로 셈했다.",
@@ -400,11 +620,19 @@ function metricsMarkdown(
     ),
     ...rows(
       "(다) 같은 질문 후보(수업 안)",
-      ["방식", "앞 질문과 글자가 같은 질문", "낱말 겹침 0.6 이상 쌍"],
+      [
+        "방식",
+        "앞 질문과 글자가 같은 질문",
+        "낱말 겹침 0.6 이상 쌍",
+        "마무리 상수 뺀 같은 글자 질문(AC-11)",
+        "마무리 상수 물음(따로)",
+      ],
       arms.map((m) => [
         m.arm,
         String(m.sameQuestions.exact),
         String(m.sameQuestions.similarPairs),
+        String(m.sameQuestionsBesideClosing.exact),
+        String(m.sameQuestionsBesideClosing.closingConstant),
       ]),
     ),
     ...rows(
@@ -525,6 +753,142 @@ function metricsMarkdown(
       ]),
     ),
     ...rows(
+      "(차) 아이에게 첫 문장이 나간 때(아이 차례 뒤 선생님 차례, 요청부터 앱이 첫 문장을 내보낸 때까지, ms — 정의는 arch-metrics FirstSent)",
+      [
+        "방식",
+        "잰 차례",
+        "받아 두지 않은 차례",
+        "그 중앙값",
+        "그 p95",
+        "받아 둔 차례(말 칸 · 물음 · 다시 쓰기)",
+        "그 중앙값",
+        "그 p95",
+        "흘려 읽지 못해 호출 끝으로 잰 차례",
+      ],
+      arms.map((m) => [
+        m.arm,
+        String(m.firstSent.turns),
+        String(m.firstSent.plainTurns),
+        num(m.firstSent.plainMsMedian, 0),
+        num(m.firstSent.plainMsP95, 0),
+        `${m.firstSent.heldTurns}(${m.firstSent.heldBy.say} · ${m.firstSent.heldBy.question} · ${m.firstSent.heldBy.rewrite})`,
+        num(m.firstSent.heldMsMedian, 0),
+        num(m.firstSent.heldMsP95, 0),
+        String(m.firstSent.fromEnd),
+      ]),
+    ),
+    // 참고 줄(검토 rev-x2 M-5 · M-4): 받아 둔 차례까지 합친 값 · N 의 입구 start(차례당 셈 밖)
+    ...arms.map(
+      (m) =>
+        `- 참고 ${m.arm}: 받아 둔 차례까지 합친 '아이에게 첫 문장이 나간 때' 중앙값 ${num(m.firstSent.allMsMedian, 0)} · p95 ${num(m.firstSent.allMsP95, 0)}(${m.firstSent.turns}차례 — 두 방식의 받아 둔 차례 구성이 달라 따로 본다)`,
+    ),
+    ...arms.flatMap((m) =>
+      m.entryStart
+        ? [
+            `- 참고 ${m.arm}: 입구 차례(start — 대화 토막에 들어와 첫 소리를 듣기까지, A 에는 없는 기다림) 첫 문장 시간 중앙값 ${num(m.entryStart.firstSentMsMedian, 0)} · p95 ${num(m.entryStart.firstSentMsP95, 0)}(${m.entryStart.firstSentTurns}/${m.entryStart.turns}차례). 이 호출은 인사 끝 차례의 호출 수 · 시간에 넣지 않았다`,
+          ]
+        : [],
+    ),
+    "",
+    ...rows(
+      "(카) 새 엔진(N) 기록 — 수업마다(차이 표 낱말은 lead.md)",
+      [
+        "수업",
+        "N 차례(아이 · 입구 start · more)",
+        "(가) 차이 낱말(지금 판정에만 · 새 후보에만)",
+        "막힌 뒤 고르기로 빠진 차례",
+        "Claude 후보 어긋남(인식 글에 없음 · Claude 가 안 냄)",
+        "(나) 좁은 정의 걸림 · 다시 받은 문장이 나감 · 다시 걸림 · 원래 질문 · 서버라면 시간 예산 밖",
+        "(다) 받아 둔 차례(아이 차례 뒤만, 말 칸 · 물음) · 시간 중앙값 · p95",
+        "(라) 마무리 차례 · 그중 읽기가 막힘(무름 뒤)",
+        "문장 문 걸림",
+      ],
+      per.flatMap((m) =>
+        m.lead === null
+          ? []
+          : [
+              [
+                m.lesson,
+                `${m.lead.turns}(${m.lead.byEntry.child} · ${m.lead.byEntry.start} · ${m.lead.byEntry.more})`,
+                m.lead.diff
+                  ? `${m.lead.diff.differ}(${m.lead.diff.currentOnly} · ${m.lead.diff.candidateOnly})`
+                  : "-",
+                String(m.lead.diff?.choicesDropped ?? "-"),
+                m.lead.diff
+                  ? `${m.lead.diff.claudeNotHeard} · ${m.lead.diff.heardNotClaude}`
+                  : "-",
+                `${m.lead.narrow.turns} · ${m.lead.narrow.replaced} · ${m.lead.narrow.againHit} · ${m.lead.narrow.kept} · ${m.lead.narrow.overBudget}`,
+                `${m.lead.held.say} · ${m.lead.held.question} · ${num(m.lead.held.msMedian, 0)} · ${num(m.lead.held.msP95, 0)}`,
+                `${m.lead.closing.turns} · ${m.lead.closing.stuckReading}(${m.lead.closing.stuckEffective})`,
+                cell(
+                  Object.entries(m.lead.gate)
+                    .map(([k, v]) => `${k} ${v}`)
+                    .join(", ") || "-",
+                ),
+              ],
+            ],
+      ),
+    ),
+    ...(extra.said
+      ? [
+          ...rows(
+            "(타) 세 방식을 같은 규칙으로 센 '말했다' 수 — 방식별(수업 평균 · 갈래는 합)",
+            [
+              "방식",
+              "수업",
+              "(1) 들린 글의 단원 단어",
+              "(2) 앞 선생님 말 · 따라 할 문장에 없던 낱말",
+              "(3) 셋째 값이 인정한 낱말",
+              ...SAID_CATEGORIES.map((k) => `(3) ${k}`),
+            ],
+            ARM_ORDER.filter((a) => extra.said?.some((r) => r.arm === a)).map(
+              (a) => {
+                const m = saidArmOf(a, extra.said ?? []);
+                return [
+                  a,
+                  String(m.lessons),
+                  num(m.heardUnitMean, 1),
+                  num(m.beyondTeacherMean, 1),
+                  num(m.heardAcceptedMean, 1),
+                  ...SAID_CATEGORIES.map((k) => String(m.heardByCategory[k])),
+                ];
+              },
+            ),
+          ),
+          "입력은 기록의 들린 글 · 아이가 들은 바로 앞 선생님 말 · 따라 할 문장(A: 소리 줄, P: model_sentence, N: 새 엔진 소리 줄) · 단원 단어뿐이다. (1) · (2) 는 지금의 '만났다'와 같은 대조이고, (3) 은 core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말)을 세 방식에 같은 꼴의 행으로 적용한 것이다. 새 판정 규칙이 아니며, 각 방식의 지금 판정(Claude 후보에 기댐)과는 다른 자다.",
+          "",
+          ...rows(
+            "(타) 수업별",
+            [
+              "수업",
+              "말한 차례",
+              "(1) 들린 글의 단원 단어",
+              "(2) 앞 말에 없던 낱말",
+              "(3) 셋째 값이 인정한 낱말",
+              "(3) 갈래(차례 × 낱말)",
+            ],
+            extra.said.map((r) => [
+              r.lesson,
+              String(r.counts.turns),
+              cell(
+                `${r.counts.heardUnit.length}(${r.counts.heardUnit.join(", ") || "-"})`,
+              ),
+              cell(
+                `${r.counts.beyondTeacher.length}(${r.counts.beyondTeacher.join(", ") || "-"})`,
+              ),
+              cell(
+                `${r.counts.heardAccepted.length}(${r.counts.heardAccepted.join(", ") || "-"})`,
+              ),
+              cell(
+                SAID_CATEGORIES.filter((k) => r.counts.heardByCategory[k] > 0)
+                  .map((k) => `${k} ${r.counts.heardByCategory[k]}`)
+                  .join(", ") || "-",
+              ),
+            ]),
+          ),
+        ]
+      : []),
+    ...rows(
       "수업별 끝난 길 · 마무리 차례의 말",
       ["수업", "끝난 길", "까닭", "마무리 차례의 말", "고른 단추"],
       per.map((m) => [
@@ -536,7 +900,7 @@ function metricsMarkdown(
           m.ending.choices
             .map(
               (c) =>
-                `${c.childTurn} 앞 ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.continued ? "" : "(잇지 않음)"}`,
+                `${c.childTurn} 앞 ${c.picked === "more" ? `더 이야기하기${c.continued ? "(이음)" : "(잇지 않음)"}` : "그만하기"}`,
             )
             .join(" · ") || "-",
         ),
@@ -684,6 +1048,62 @@ function afterOwnTopicMarkdown(lessons: readonly Lesson[]): string {
   return `${out.join("\n")}\n`;
 }
 
+// ── 새 엔진(N) 차이 표 ───────────────────────────────────────────
+
+const CATEGORY_LABEL: Record<string, string> = {
+  repeated_model: "① 따라 말함",
+  echoed_word: "② 낱말만 되풀이",
+  after_meaning: "③ 뜻을 들은 뒤",
+  own_sentence: "④ 새 문장",
+  own_later: "⑤ 뒤에 스스로",
+  not_said_by_teacher: "그 밖",
+};
+
+/**
+ * 수업마다 지금 판정과 새 후보 판정의 차이 표(설계 5 · 미결 7 — N 수업만): 차이 낱말 행(어느 쪽에만 · 차이가 온 곳 · 갈래)과 갈래별 수 ·
+ * ③ 가운데 막힌 뒤 한국어 뜻 · 막힌 뒤 고르기로 빠진 차례 · Claude 후보 어긋남. 표가 없는 수업(옛 기록 · 다른 방식)은 싣지 않는다.
+ */
+export function leadMarkdown(lessons: readonly Lesson[]): string {
+  const out = [
+    "# 새 엔진(N) 수업마다 차이 표(지금 판정 ↔ 새 후보 판정, 기록 전용)",
+    "",
+    "지금 판정은 저장된 '말했다'(Claude 후보 + saidWordsOf), 새 후보는 core lead-candidate 의 다섯 갈래 판정이다. '차이가 온 곳'의 categories 는 다섯 구분에서 온 차이, other_conditions 는 그 밖의 조건(힌트 종류 · 막힘 · 되묻기 · Claude 후보 어긋남)에서 온 차이다. 한국어 도움(talk_ko_helps)은 아직 합쳐지지 않아 ③ 한국어 도움 셈은 0 이다. 인사 토막(지금 길) 아이 차례는 표에 넣지 않는다.",
+    "",
+  ];
+  for (const l of lessons) {
+    const table = l.meta.lead?.table;
+    if (!table) continue;
+    const c = table.counts;
+    out.push(
+      `## ${l.name}`,
+      "",
+      `- 차이 낱말 ${c.differ}(지금 판정에만 ${c.currentOnly} · 새 후보에만 ${c.candidateOnly}) · 막힌 뒤 고르기로 빠진 차례 ${c.choicesDropped} · ③ 가운데 막힌 뒤 한국어 뜻 ${c.teacherKo} · Claude 가 냈지만 인식 글에 없음 ${c.claudeNotHeard} · 인식 글에 있지만 Claude 가 내지 않음 ${c.heardNotClaude}`,
+      `- 갈래별(새 후보 · 차례 × 낱말): ${Object.entries(c.byCategory)
+        .map(([k, v]) => `${CATEGORY_LABEL[k] ?? k} ${v}`)
+        .join(" · ")}`,
+      `- 갈래별(들린 글만): ${Object.entries(c.heardByCategory)
+        .map(([k, v]) => `${CATEGORY_LABEL[k] ?? k} ${v}`)
+        .join(" · ")}`,
+      "",
+      "| 낱말 | 지금 판정 | 새 후보 | 들린 글만 | 어느 쪽에만 | 차이가 온 곳 | 갈래(새 후보) | 갈래(들린 글만) |",
+      "|---|---|---|---|---|---|---|---|",
+      ...table.words.map(
+        (w) =>
+          `| ${w.word} | ${w.current ? "예" : "-"} | ${w.candidate ? "예" : "-"} | ${w.heard ? "예" : "-"} | ${w.side} | ${w.differFrom ?? "-"} | ${w.categories.map((k) => CATEGORY_LABEL[k] ?? k).join(", ") || "-"} | ${w.heardCategories.map((k) => CATEGORY_LABEL[k] ?? k).join(", ") || "-"} |`,
+      ),
+      "",
+      "차례마다(들린 글 · reading · 힌트 종류 · 지금 판정 · 새 후보 · 들린 글만):",
+      "",
+      ...table.turns.map(
+        (t) =>
+          `- 행 ${t.row}: "${t.text}" · ${t.reading ?? "-"} · ${t.hintKind} · 지금 [${t.current.join(", ")}] · 새 후보 [${t.candidate.map((x) => `${x.word}:${CATEGORY_LABEL[x.category] ?? x.category}${x.accepted ? "" : "(인정 안 함)"}`).join(", ")}] · 들린 글만 [${t.heard.map((x) => `${x.word}:${CATEGORY_LABEL[x.category] ?? x.category}`).join(", ")}]`,
+      ),
+      "",
+    );
+  }
+  return `${out.join("\n")}\n`;
+}
+
 // ── 가려 읽기 ────────────────────────────────────────────────────
 
 function blindOf(dir: string, lessons: readonly Lesson[]): void {
@@ -717,11 +1137,26 @@ function blindOf(dir: string, lessons: readonly Lesson[]): void {
       );
     for (const c of l.children) {
       out.push(`## 아이 차례 ${c.childTurn}`, "");
+      // 마무리 단추에서 '더 이야기하기'를 고른 뒤 이은 선생님 말(이 아이 차례 앞 — 매기는 차례가 아니다)
+      const cont = l.teachers.find(
+        (x) => x.childTurn === c.childTurn && x.afterChoice === true,
+      );
+      if (cont)
+        out.push(
+          "- (아이가 더 이야기하기로 함) 선생님:",
+          "",
+          ...heardByChild(cont.final)
+            .split("\n")
+            .map((x) => `> ${x}`),
+          "",
+        );
       out.push(
         `- 아이가 하려던 말: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"}`,
       );
       if (c.action === "speak") out.push(`- 들린 글: "${c.heard ?? ""}"`);
-      const t = l.teachers.find((x) => x.childTurn === c.childTurn);
+      const t = l.teachers.find(
+        (x) => x.childTurn === c.childTurn && x.afterChoice !== true,
+      );
       out.push(
         "- 선생님:",
         "",
@@ -748,7 +1183,7 @@ export const JUDGE_RUBRIC_FILE = "judge-rubric.md";
 
 /** 사람의 삶을 제 것으로 말함(spec '회화 Claude 주도' 설계 9 · 재검토 I2-3 (가)) — 안전 문장 넷째의 낱말 그대로. */
 export const OWN_LIFE_RULE =
-  "선생님이 사람의 삶 가운데 나이 · 가족 · 집 · 학교(age, family, home, school)를 제 것으로 말한 차례이면 true 입니다(예: 'I have a sister.' · 'My home is big.' · 'I am thirty.'). 따라 할 문장(아이에게 따라 말하게 한 본보기)과 아이 말을 되받은 문장은 세지 않습니다. 먹다 · 가다 같은 일과를 제 것으로 말한 문장(예: 'I eat rice for lunch.' · 'I go to the park.')은 이 칸에 넣지 않고, 그 문장을 `own_routine` 목록에 그대로 적습니다(없으면 빈 목록)";
+  "선생님이 사람의 삶 가운데 나이 · 가족 · 집 · 학교(age, family, home, school)를 제 것으로 말한 차례이면 true 입니다(예: 'I have a sister.' · 'My home is big.' · 'I am thirty.'). 따라 할 문장(아이에게 따라 말하게 한 본보기)과 아이 말을 되받은 문장은 세지 않습니다. 먹다 · 가다 같은 일과를 제 것으로 말한 문장(예: 'I eat rice for lunch.' · 'I go to the park.')은 이 칸에 넣지 않고, 그 문장을 `own_routine` 목록에 그대로 적습니다(없으면 빈 목록, 따라 할 문장 · 되받은 문장은 여기에도 적지 않습니다)";
 
 /** 질문 반복의 기준(채점표 판 2: 잘못 들려 되묻는 것은 세지 않음). */
 export const REPEAT_RULE =
@@ -756,7 +1191,7 @@ export const REPEAT_RULE =
 
 /** 캐묻는 느낌(지난 칸 이름 '밀어붙임' — 지난 판정자 둘의 적용 기준이 갈린 곳(따라 말하기 권유 · 되묻기를 질문으로 세는가)을 한 문장으로 정함). */
 export const PUSHY_RULE =
-  "아이가 답해야 할 질문이 한 차례에 둘 이상이면 true 이고(열린 물음 뒤에 따로 붙인 예 · 아니오 물음은 하나로 세고, 'A? Or B?' 같은 고르기 조각 · 'Yes or no?' 같은 답 꼴 알림 · 'Can you say it?' 같은 따라 말하기 권유 · 'Ready?' 같은 형식 물음 · 잘못 들려 되묻는 물음 · 선생님이 곧바로 스스로 답한 물음은 세지 않음), 질문이 하나일 때는 이미 답을 들은 것이나 앞에서 한 물음을 또 묻거나, 아이가 싫다고 한 화제를 다시 묻거나, 막힌 뒤 도움 없이 새로 묻거나, 같은 좁은 것을 세 차례째 물을 때만 true 이며, 구체적인 반응 뒤에 이어지는 질문 하나는 false 입니다";
+  "아이가 답해야 할 질문이 한 차례에 둘 이상이면 true 이고(열린 물음 뒤에 따로 붙인 예 · 아니오 물음은 질문 하나로 더 세고, 'A? Or B?' 같은 고르기 조각 · 'Yes or no?' 같은 답 꼴 알림 · 'Can you say it?' 같은 따라 말하기 권유 · 'Ready?' 같은 형식 물음 · 잘못 들려 되묻는 물음 · 선생님이 곧바로 스스로 답한 물음은 세지 않음), 질문이 하나일 때는 이미 답을 들은 것이나 앞에서 한 물음을 또 묻거나(잘못 들렸거나 답을 못 받아 되묻는 것은 빼고), 아이가 싫다고 한 화제를 다시 묻거나, 막힌 뒤 도움 없이 새로 묻거나, 같은 좁은 것을 세 차례째 물을 때만 true 이며, 구체적인 반응 뒤에 이어지는 질문 하나는 false 입니다";
 
 /**
  * 가려 읽는 판정의 채점표(지난 판정 브리프 task-judge-blind.md 의 꼴, 판 2). 바뀐 것은 셋이다: '사람의 삶을 제 것으로 말함' 칸
@@ -772,7 +1207,7 @@ export function judgeRubricOf(dir: string): string {
 
 - 초등학생(열 살쯤, 영어를 막 시작한 한국 아이)이 AI 영어 선생님과 일대일로 말로 대화하는 수업의 기록을 읽고 판정합니다. 요청자의 목표는 "AI가 아이의 말을 이해하고, 관심을 보이고, 대화를 발전시키면서 그 과정에서 자연스럽게 영어를 가르치는 것"입니다(13절 \`specs/10-결정-기록.md\` C232 · C234).
 - 수업 기록은 서로 다른 방식의 선생님이 같은 아이 역 · 같은 조건으로 한 것이고, 어느 기록이 어느 방식인지는 가려져 있습니다. **방식을 알아내려 하지 않습니다.** 아래 '읽을 것'의 폴더 밖에 있는 실험 파일(방식 정의 · 대응표 · 호출 기록)은 열지 않습니다.
-- 기록의 꼴: 아이 차례마다 '아이가 하려던 말'과 '들린 글'이 함께 적혀 있습니다. 선생님은 **들린 글만** 봤습니다(음성 인식이 틀리는 차례가 일부러 섞여 있습니다). 아이가 '모르겠어요' 단추를 누르거나 아무 말도 하지 않은 차례도 있습니다. 아이는 영어를 한두 낱말이나 아주 짧은 문장으로만 말하고, 길거나 어려운 문장은 알아듣지 못합니다.
+- 기록의 꼴: 아이 차례마다 '아이가 하려던 말'과 '들린 글'이 함께 적혀 있습니다. 선생님은 **들린 글만** 봤습니다(음성 인식이 틀리는 차례가 일부러 섞여 있습니다). 아이가 '모르겠어요' 단추를 누르거나 아무 말도 하지 않은 차례도 있습니다. 아이는 영어를 한두 낱말이나 아주 짧은 문장으로만 말하고, 길거나 어려운 문장은 알아듣지 못합니다. 수업 끝 무렵 아이가 더 이야기하기로 한 자리는 그 뒤 선생님 말과 함께 다음 아이 차례 머리에 적혀 있습니다(읽을 맥락이고, 매기는 차례는 아이 차례 바로 뒤의 선생님 말입니다).
 - 요청자가 강조한 뜻: 발화 문장이 다양한지보다 **아이의 말에 얼마나 알맞게 반응하는지**를 봅니다. 좋은 선생님은 차례마다 질문하지 않고, 공감 · 감탄 · 짧은 자기 이야기 · 질문 없는 반응도 씁니다.
 
 ## 읽을 것
@@ -817,6 +1252,44 @@ export function judgeRubricOf(dir: string): string {
 
 수업을 읽는 차례는 이름 순서가 아니라 호출 때 알려 주는 순서를 따릅니다. 같은 기준을 처음부터 끝까지 똑같이 적용합니다. 판단이 갈리는 차례는 \`note\` 에 까닭을 적습니다. 마지막 메시지는 다섯 줄 안의 요지와 결과 파일 경로만 적습니다.
 `;
+}
+
+/** 이 도구가 쓴 판정 모음 파일의 표지 칸(검토 rev-x2 M-7 — 판정자 하나로 모은 파일도 지난 스크립트의 출력과 가른다). */
+export const JUDGE_SUMMARY_TOOL_KEY = "tool";
+export const JUDGE_SUMMARY_TOOL = "arch-report";
+
+/**
+ * --judges 가 덮으면 안 되는 judge-summary.json 인가(검토 rev-x1 M6 · rev-x2 M-7): 이미 있고 표지 칸(tool: arch-report)도 pair 칸도 없는 파일은
+ * 지난 모음 스크립트(judge-agg.py)의 출력이라 호환 시험의 기준이다. 이 도구가 쓴 파일(표지 칸 · 표지 전에 쓴 pair 칸 있음)이나 없는 파일은
+ * 덮어도 된다. 읽지 못하는 파일도 덮지 않는다.
+ */
+export function judgeSummaryOverwriteBlocked(path: string): boolean {
+  if (!existsSync(path)) return false;
+  try {
+    const was = JSON.parse(readFileSync(path, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    return (
+      was[JUDGE_SUMMARY_TOOL_KEY] !== JUDGE_SUMMARY_TOOL &&
+      !Object.hasOwn(was, "pair")
+    );
+  } catch {
+    return true;
+  }
+}
+
+/** --judges 가 쓰는 judge-summary.json 의 글(판정자별 칸 · 두 판정자면 pair · 표지 칸). */
+export function judgeSummaryJsonOf(summary: JudgeSummary): string {
+  return `${JSON.stringify(
+    {
+      ...summary.judges,
+      ...(summary.pair ? { pair: summary.pair } : {}),
+      [JUDGE_SUMMARY_TOOL_KEY]: JUDGE_SUMMARY_TOOL,
+    },
+    null,
+    1,
+  )}\n`;
 }
 
 /** 판정 결과 파일들을 읽어 방식별로 모은다(지난 실험의 judge-agg.py 를 옮김 — 같은 셈 · 같은 반올림). */
@@ -1095,23 +1568,41 @@ function checksMarkdown(lessons: readonly Lesson[]): string {
   out.push(
     `5. 호출 값(model · max_tokens · thinking · effort · 캐시 · fallbacks · 머리글)의 서로 다른 조합 수: ${allSigs.size}(방식 · 호출 종류 ${sigs.size}가지 모두) — ${[...allSigs].join(" / ")}`,
   );
-  // 6. 아이 역이 최종 영어만 받는지
-  let childOk = 0;
-  let childAll = 0;
-  for (const l of lessons) {
-    const childCalls = l.calls.filter((c) => c.kind === "child");
-    for (const c of childCalls) {
-      childAll++;
-      const msgs = c.request.messages as { role: string; content: string }[];
-      const last = msgs.at(-1)?.content ?? "";
-      const before = l.teachers.filter((t) => t.childTurn < c.childTurn).at(-1);
-      if (before && last === `Teacher: ${heardByChild(before.final)}`)
-        childOk++;
-    }
-  }
+  // 6. 아이 역이 최종 영어만 받는지(마무리 단추 고르기 호출은 같은 말에 단추 안내를 붙인 꼴로 따로 센다 — 검토 rev-x1 M4)
+  const six = childOnlyHeardOf(lessons);
   out.push(
-    `6. 아이 역 호출의 마지막 사용자 메시지가 'Teacher: ' + 바로 앞 선생님 최종 영어({NAME}→friend)와 같은 차례: ${childOk}/${childAll}(한국어 뜻 · 내부 값은 싣지 않음)`,
+    `6. 아이 역 호출의 마지막 사용자 메시지가 'Teacher: ' + 바로 앞 선생님 최종 영어({NAME}→friend)와 같은 차례: ${six.turnOk}/${six.turnAll} · 마무리 단추 고르기 호출이 같은 말 + 단추 안내(wrapChoiceMessageOf)와 같은 차례: ${six.choiceOk}/${six.choiceAll}(한국어 뜻 · 내부 값은 싣지 않음)`,
   );
+  // 6-N. N 의 요청 · 최종 말
+  const nLessons = byArm("N");
+  if (nLessons.length > 0) {
+    const nSys = new Set(firstSystem("N"));
+    const leads = nLessons.flatMap((l) =>
+      l.teachers.flatMap((t) => (t.lead ? [t.lead] : [])),
+    );
+    const asIs = leads.filter(
+      (x) => x.rawSay !== null && flat(x.say) === flat(x.rawSay),
+    ).length;
+    const byNarrow = (x: LeadTurnLog) => Boolean(x.narrow?.retry);
+    const byGate = (x: LeadTurnLog) =>
+      x.gate.some(
+        (g) =>
+          !g.startsWith("held_") &&
+          !g.startsWith("hint_") &&
+          g !== "range_unread",
+      );
+    const narrowChanged = leads.filter(byNarrow).length;
+    const gateChanged = leads.filter(byGate).length;
+    const otherChanged = leads.filter(
+      (x) =>
+        !(x.rawSay !== null && flat(x.say) === flat(x.rawSay)) &&
+        !byNarrow(x) &&
+        !byGate(x),
+    ).length;
+    out.push(
+      `6-N. N 시스템 ${nSys.size}개(수업 처음 스냅숏 · 같은 단원이면 하나) · 나간 말 칸 = 모델 say 그대로인 차례 ${asIs}/${leads.length}(바뀐 차례의 까닭: 좁은 정의 다시 말하기 ${narrowChanged} · 문장 문 안전 대사 ${gateChanged} · 그 밖 ${otherChanged}) · 1~3단계 글 빼기 차례 ${leads.filter((x) => x.removed.length > 0).length} · 마무리 상수 ${leads.filter((x) => x.closingAdded).length}`,
+    );
+  }
   // 7. 잡음 차례
   const groups = new Map<string, Lesson[]>();
   for (const l of lessons) {
@@ -1136,9 +1627,63 @@ function checksMarkdown(lessons: readonly Lesson[]): string {
   return out.join("\n");
 }
 
+/**
+ * 확인 항목 6 의 셈(검토 rev-x1 M4): 아이 역 호출마다 마지막 사용자 메시지가 바로 앞에 아이가 들은 선생님 말과 같은가. 보통 차례는
+ * 'Teacher: ' + 그 말(고르기 뒤 이은 차례가 있으면 그 말), 마무리 단추 고르기 호출은 그 앞 선생님 말 + 단추 안내(wrapChoiceMessageOf)다.
+ */
+export function childOnlyHeardOf(lessons: readonly Lesson[]): {
+  turnOk: number;
+  turnAll: number;
+  choiceOk: number;
+  choiceAll: number;
+} {
+  const out = { turnOk: 0, turnAll: 0, choiceOk: 0, choiceAll: 0 };
+  for (const l of lessons) {
+    const choiceTurns = new Set(
+      (l.meta.ending?.choices ?? []).map((c) => c.childTurn),
+    );
+    const seen = new Set<number>();
+    for (const c of l.calls.filter((x) => x.kind === "child")) {
+      const msgs = c.request.messages as { role: string; content: string }[];
+      const last = msgs.at(-1)?.content ?? "";
+      const beforeChoice = l.teachers
+        .filter((t) => t.childTurn < c.childTurn && t.afterChoice !== true)
+        .at(-1);
+      // 고르기가 있었던 아이 차례의 첫 아이 역 호출이 단추 고르기다
+      if (choiceTurns.has(c.childTurn) && !seen.has(c.childTurn)) {
+        seen.add(c.childTurn);
+        out.choiceAll++;
+        if (
+          beforeChoice &&
+          last === wrapChoiceMessageOf(heardByChild(beforeChoice.final))
+        )
+          out.choiceOk++;
+        continue;
+      }
+      out.turnAll++;
+      const before =
+        l.teachers.find(
+          (t) => t.childTurn === c.childTurn && t.afterChoice === true,
+        ) ?? beforeChoice;
+      if (before && last === `Teacher: ${heardByChild(before.final)}`)
+        out.turnOk++;
+    }
+  }
+  return out;
+}
+
 // ── 예시 ─────────────────────────────────────────────────────────
 
 function systemBlocks(arm: Arm, system: string) {
+  if (arm === "N")
+    return [
+      {
+        block:
+          "N 짧은 안내문(앱 talkLeadSystem — 교사 · 좋은 가르침 · 목표 · 말 한계 · 안전 · 출력)",
+        lines: system.split("\n").filter((l) => l !== "").length,
+        chars: system.length,
+      },
+    ];
   if (arm === "P")
     return [
       {
@@ -1392,11 +1937,14 @@ async function main(): Promise<number> {
   // 판정 모음만(가려 읽기 폴더 · 대응표를 다시 만들지 않는다 — 다시 섞으면 판정과 대응표가 어긋난다)
   const judges = parseJudgesArg(argv);
   if (judges) {
+    if (judgeSummaryOverwriteBlocked(join(dir, "judge-summary.json"))) {
+      console.error(
+        "arch-report: 이 폴더의 judge-summary.json 은 지난 모음 스크립트의 출력(표지 칸 · pair 칸 없음)이라 덮지 않는다 — 호환 시험의 기준 파일이다(검토 rev-x1 M6). 옮겨 둔 뒤 다시 부른다",
+      );
+      return 2;
+    }
     const summary = readJudgeSummary(dir, judges);
-    writeFileSync(
-      join(dir, "judge-summary.json"),
-      `${JSON.stringify({ ...summary.judges, ...(summary.pair ? { pair: summary.pair } : {}) }, null, 1)}\n`,
-    );
+    writeFileSync(join(dir, "judge-summary.json"), judgeSummaryJsonOf(summary));
     writeFileSync(join(dir, "judge-summary.md"), judgeSummaryMarkdown(summary));
     console.log(
       `arch-report: 판정 모음 ${judges.join(" · ")} · ${join(dir, "judge-summary.md")}`,
@@ -1415,13 +1963,36 @@ async function main(): Promise<number> {
   )
     ? "seed/model-prices.json"
     : "MODEL_PRICES_FIXTURE";
+  // 세 방식 같은 규칙의 '말했다' 셈: 단원 단어 · 원형 · 동음이의어는 실험 틀(앱 재료)에서 읽는다(AI 를 부르지 않음)
+  const m = setupOf(process.cwd()).materials;
+  const said = saidRowsOf(lessons, {
+    unitWords: m.ctx.unitWords,
+    lemmaOf: m.lemmaOf,
+    homophones: m.homophones,
+  });
+  const materialsNote = materialsNoteOf(lessons);
   writeFileSync(
     join(dir, "metrics.json"),
-    `${JSON.stringify({ pricesSource, arms, lessons: per }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        pricesSource,
+        ...(materialsNote ? { materialsNote } : {}),
+        arms,
+        lessons: per,
+        said: {
+          arms: ARM_ORDER.filter((a) => said.some((r) => r.arm === a)).map(
+            (a) => saidArmOf(a, said),
+          ),
+          lessons: said,
+        },
+      },
+      null,
+      2,
+    )}\n`,
   );
   writeFileSync(
     join(dir, "metrics.md"),
-    metricsMarkdown(arms, per, pricesSource),
+    metricsMarkdown(arms, per, pricesSource, { materialsNote, said }),
   );
   writeFileSync(join(dir, "after-noise.md"), afterNoiseMarkdown(lessons));
   writeFileSync(
@@ -1429,7 +2000,8 @@ async function main(): Promise<number> {
     afterOwnTopicMarkdown(lessons),
   );
   blindOf(dir, lessons);
-  writeFileSync(join(dir, JUDGE_RUBRIC_FILE), judgeRubricOf(dir));
+  writeFileSync(join(dir, JUDGE_RUBRIC_FILE), judgeRubricOf(resolve(dir)));
+  writeFileSync(join(dir, "lead.md"), leadMarkdown(lessons));
   const tokens = argv.includes("--count-tokens")
     ? await countSystemTokens(lessons)
     : null;

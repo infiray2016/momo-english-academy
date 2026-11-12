@@ -1,13 +1,24 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness)의 수치 셈(순수 함수). 네트워크 · 파일을 쓰지 않는다.
 // 문장 자르기 · 물음 문장 · 낱말 · 형태 · 범위 밖 낱말은 앱의 함수(src/core)를 그대로 쓴다.
 import {
+  LEAD_CANDIDATE_CATEGORIES,
+  type LeadCandidateCategory,
+  type LeadCandidateLex,
+  type LeadCandidateRow,
+  leadCandidateTableOf,
+} from "../../src/core/conversation/lead-candidate";
+import {
   CLOSED_CLASS_PASS_WORDS,
   type LowLevelLineOptions,
   type OffbandExtra,
   offbandWordsIn,
   questionKeyOf,
 } from "../../src/core/conversation/question-check";
-import { normalizeSpoken } from "../../src/core/conversation/spoken";
+import { metWordsIn } from "../../src/core/conversation/said";
+import {
+  MORE_PROMPT,
+  normalizeSpoken,
+} from "../../src/core/conversation/spoken";
 import {
   createToriEnReader,
   isQuestionSentence,
@@ -21,6 +32,7 @@ import {
   tokenize,
 } from "../../src/core/seed/text";
 import type {
+  ChildTurnLog,
   LessonEnding,
   LessonLog,
   TeacherTurnLog,
@@ -122,6 +134,21 @@ export function sameQuestionsOf(
     }
   });
   return { exact: exactList.length, exactList, similar };
+}
+
+/**
+ * AC-11 '같은 글자 질문 0(마무리 상수는 셈 밖)'의 셈(검토 rev-x2 M-2): 앱이 붙이는 마무리 상수 물음(MORE_PROMPT.en — 앱 상수라 같은 글자가
+ * 되풀이되는 것이 정상)을 빼고 같은 질문을 센다. 뺀 물음의 수는 closingConstant 로 따로 적는다. 옛 셈(sameQuestionsOf)은 그대로 둔다.
+ */
+export function sameQuestionsBesideClosingOf(
+  questions: readonly AskedQuestion[],
+): SameQuestions & { closingConstant: number } {
+  const closingKey = questionKeyOf(MORE_PROMPT.en);
+  const rest = questions.filter((q) => questionKeyOf(q.text) !== closingKey);
+  return {
+    ...sameQuestionsOf(rest),
+    closingConstant: questions.length - rest.length,
+  };
 }
 
 /** 가장 가까운 순위 백분위(빈 목록 null). */
@@ -399,6 +426,168 @@ export function firstSentenceStatsOf(items: readonly FirstSentence[]): {
     fromEnd: items.filter((f) => f.from === "end").length,
   };
 }
+
+/**
+ * 아이에게 첫 문장이 실제로 나간 때(A · P · N 같은 뜻, 묶음 X2 — 검토 rev-x1 M5 · rev-s1 M-2): 요청을 보낸 때부터 앱이 첫 문장을 아이에게 내보낸
+ * 때까지(ms). 앱이 문장을 응답 끝까지 받아 두지 않은 차례는 첫 호출을 흘려 받으며 말 칸의 첫 문장이 끝난 때(FirstSentence 그대로 — P 는 늘 이
+ * 꼴), 받아 둔 차례(held)는 받아 둔 응답이 끝난 때(본 호출의 끝 + 그 차례의 다시 쓰기 · 다시 말하기 호출 시간)다. 받아 둔 차례: A 는 1~3단계 첫
+ * 문장이 물음(question) · 막힘을 무른 질문 차례의 통째 다시 쓰기(rewrite), N 은 1~3단계 model_repeat 의 말 칸 전체(say) · 첫 문장부터 붙잡은
+ * 물음(question — 좁은 정의 · 막힌 뒤 고르기). 대화 첫 질문을 쓰는 N 의 입구 차례(start)와 고르기 뒤 이음(afterChoice)은 아이 차례 뒤가 아니라
+ * 셈에 넣지 않는다(A 의 그 자리는 호출이 없는 앱 줄이다).
+ */
+export type FirstSent = {
+  ms: number;
+  from: "stream" | "end";
+  text: string | null;
+  held: "say" | "question" | "rewrite" | null;
+};
+
+/**
+ * 첫 문장이 나간 때 수치: 받아 두지 않은 차례의 중앙값 · p95(AC-11 '반드시' 행) · 받아 둔 차례의 수와 시간(AC-11 '판단' 행) · 받아 둔 차례까지
+ * 합친 중앙값 · p95(참고 — 두 방식의 차례 구성이 달라 '반드시' 행만으로는 안 보이는 것, 검토 rev-x2 M-5).
+ */
+export function firstSentStatsOf(items: readonly FirstSent[]): {
+  turns: number;
+  allMsMedian: number | null;
+  allMsP95: number | null;
+  plainTurns: number;
+  plainMsMedian: number | null;
+  plainMsP95: number | null;
+  heldTurns: number;
+  heldBy: Record<"say" | "question" | "rewrite", number>;
+  heldMsMedian: number | null;
+  heldMsP95: number | null;
+  fromEnd: number;
+} {
+  const plain = items.filter((f) => f.held === null).map((f) => f.ms);
+  const held = items.filter((f) => f.held !== null);
+  const heldMs = held.map((f) => f.ms);
+  const all = items.map((f) => f.ms);
+  return {
+    turns: items.length,
+    allMsMedian: median(all),
+    allMsP95: percentile(all, 95),
+    plainTurns: plain.length,
+    plainMsMedian: median(plain),
+    plainMsP95: percentile(plain, 95),
+    heldTurns: held.length,
+    heldBy: {
+      say: held.filter((f) => f.held === "say").length,
+      question: held.filter((f) => f.held === "question").length,
+      rewrite: held.filter((f) => f.held === "rewrite").length,
+    },
+    heldMsMedian: median(heldMs),
+    heldMsP95: percentile(heldMs, 95),
+    fromEnd: items.filter((f) => f.held === null && f.from === "end").length,
+  };
+}
+
+// ── 세 방식을 같은 규칙으로 센 '말했다' 수(검토 rev-x2 I-2 · 미결 7) ─────────────
+
+/**
+ * 선생님 차례의 따라 할 문장(기록에 남은 칸만 읽는다): A 는 앱이 낸 소리 줄(checks.sound.model), P 는 응답의 model_sentence, N 은 새 엔진
+ * 기록의 소리 줄(lead.sound.model). 없거나 빈 글이면 null.
+ */
+export function followSentenceOf(t: TeacherTurnLog): string | null {
+  const text =
+    t.arm === "N"
+      ? t.lead?.sound.model
+      : t.arm === "P"
+        ? (t.modelFirst as { model_sentence?: unknown } | null)?.model_sentence
+        : (t.checks as { sound?: { model?: unknown } } | null)?.sound?.model;
+  return typeof text === "string" && text.trim() !== "" ? text.trim() : null;
+}
+
+/** 아이 차례 n 바로 앞에 아이가 들은 선생님 차례(고르기 뒤 이음이 있으면 그것, 아니면 앞 아이 차례 뒤 선생님 차례). */
+function teacherBeforeOf(
+  teachers: readonly TeacherTurnLog[],
+  childTurn: number,
+): TeacherTurnLog | undefined {
+  return (
+    teachers.find((t) => t.childTurn === childTurn && t.afterChoice === true) ??
+    teachers.find(
+      (t) => t.childTurn === childTurn - 1 && t.afterChoice !== true,
+    )
+  );
+}
+
+export type SaidCounts = {
+  /** 말로 들린 아이 차례 수. */
+  turns: number;
+  /** (1) 들린 글에 든 단원 단어(원형 · 서로 다른 낱말, 처음 나온 차례대로). */
+  heardUnit: string[];
+  /** (2) 그 가운데 바로 앞 선생님 말과 따라 할 문장에 없던 차례가 한 번이라도 있는 낱말. */
+  beyondTeacher: string[];
+  /** (3) core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말). */
+  heardByCategory: Record<LeadCandidateCategory, number>;
+  /** 셋째 값이 독립 수행으로 본 낱말(낱말 행의 heard). */
+  heardAccepted: string[];
+};
+
+/**
+ * 한 수업의 '말했다' 수를 세 방식에 같은 규칙으로 센다(검토 rev-x2 I-2). 입력은 기록에 있는 들린 글(child_turn.heard) · 아이가 들은 바로 앞
+ * 선생님 말(child_turn.heardTeacher) · 따라 할 문장(followSentenceOf) · 단원 단어뿐이다. 새 판정 규칙을 만들지 않는다: (1) · (2) 는 지금
+ * '만났다'와 같은 대조(metWordsIn)이고, (3) 은 core leadCandidateTableOf 에 같은 꼴의 행(Claude 후보 · 저장된 판정 · 힌트 · 막힘 · 읽기 칸
+ * 없음)을 넣은 셋째 값이다. 그래서 차례 조건(힌트 종류 · 막힘 · 되물음)은 세 방식 모두 지난 것으로 같게 놓인다.
+ */
+export function saidCountsOf(
+  lesson: {
+    teachers: readonly TeacherTurnLog[];
+    children: readonly ChildTurnLog[];
+  },
+  lex: LeadCandidateLex,
+): SaidCounts {
+  const heardUnit: string[] = [];
+  const beyond: string[] = [];
+  const rows: LeadCandidateRow[] = [];
+  let turns = 0;
+  for (const c of lesson.children) {
+    if (c.action !== "speak" || c.heard === null) continue;
+    turns++;
+    const before = teacherBeforeOf(lesson.teachers, c.childTurn);
+    const model = before ? followSentenceOf(before) : null;
+    rows.push(
+      {
+        role: "teacher",
+        say: c.heardTeacher,
+        move: null,
+        model,
+        choices: false,
+        koShown: false,
+      },
+      {
+        role: "child",
+        heard: c.heard,
+        saidWords: [],
+        claudeWords: [],
+        hintKind: "none",
+        stuck: false,
+        koHelp: false,
+        meaningHint: false,
+        reading: null,
+      },
+    );
+    const given = new Set([
+      ...metWordsIn(c.heardTeacher, lex),
+      ...(model ? metWordsIn(model, lex) : []),
+    ]);
+    for (const w of metWordsIn(c.heard, lex)) {
+      if (!heardUnit.includes(w)) heardUnit.push(w);
+      if (!given.has(w) && !beyond.includes(w)) beyond.push(w);
+    }
+  }
+  const table = leadCandidateTableOf(rows, lex);
+  return {
+    turns,
+    heardUnit,
+    beyondTeacher: heardUnit.filter((w) => beyond.includes(w)),
+    heardByCategory: { ...table.counts.heardByCategory },
+    heardAccepted: table.words.filter((w) => w.heard).map((w) => w.word),
+  };
+}
+
+/** 갈래 이름 차례(표 머리 · 셈). */
+export const SAID_CATEGORIES = LEAD_CANDIDATE_CATEGORIES;
 
 // ── 가려 읽는 판정 모음(지난 실험의 모음 스크립트 judge-agg.py 를 옮김) ─────────
 

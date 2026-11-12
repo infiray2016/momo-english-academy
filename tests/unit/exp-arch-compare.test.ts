@@ -1,6 +1,8 @@
 // 회화 구조 비교 실험 도구(scripts/exp — 13절 C234 · task-exp-harness)의 순수 함수 시험: 잡음 · 수치 셈 · 방식 정의(B 가 걷는 줄 ·
 // C · C2 프롬프트 · P 안내문과 상태 알림) · 앱 재료로 만든 실험 틀. 네트워크를 쓰지 않는다.
 // 묶음 X1(spec '회화 Claude 주도' 설계 9 · plan X1 · AC-26k): 첫 문장 시각 · 끝난 길과 마무리 단추 · 채점표 판 2 · 판정 모음 · 옛 기록 호환.
+// 묶음 X2(plan X2 · AC-26l): 방식 N(대본 도구의 새 엔진 길) · '더 이야기하기' 이음(A · N) · 아이에게 첫 문장이 나간 때 · 새 엔진 기록 셈 ·
+// 넘겨받은 Minor(rev-x1 M1~M7) — 수업 하나를 가짜 client(흘려 받기 on · finalMessage)로 끝까지 돌리는 시험을 둔다(네트워크 없음).
 import {
   existsSync,
   mkdirSync,
@@ -10,6 +12,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 import {
   P_SYSTEM,
@@ -30,10 +33,14 @@ import {
   splitDirectiveLines,
 } from "../../scripts/exp/arch-arms";
 import {
+  appFirstSentOf,
+  type ChildTurnLog,
+  type LeadTurnLog,
   type LessonLog,
   type LogLine,
   mergeSetup,
   parseRunArgs,
+  runLesson,
   setupOf,
   spokenOfLessonOutput,
   type TeacherTurnLog,
@@ -49,6 +56,8 @@ import {
   endingOf,
   type FirstSentence,
   firstSentenceStatsOf,
+  firstSentStatsOf,
+  followSentenceOf,
   jaccard,
   jsonStringFieldOf,
   judgeSummaryOf,
@@ -58,6 +67,9 @@ import {
   percentile,
   pyRound,
   questionStatsOf,
+  type SaidCounts,
+  saidCountsOf,
+  sameQuestionsBesideClosingOf,
   sameQuestionsOf,
   sentenceDiffOf,
   TEACHER_CLOSING_REASON,
@@ -70,16 +82,30 @@ import {
 } from "../../scripts/exp/arch-noise";
 import {
   armMetricsOf,
+  childOnlyHeardOf,
+  JUDGE_SUMMARY_TOOL,
   judgeRubricOf,
+  judgeSummaryJsonOf,
   judgeSummaryMarkdown,
+  judgeSummaryOverwriteBlocked,
+  leadMarkdown,
+  leadMetricsOf,
   lessonMetricsOf,
+  materialsNoteOf,
   OWN_LIFE_RULE,
   PUSHY_RULE,
   parseJudgesArg,
   REPEAT_RULE,
   readJudgeSummary,
   readLessons,
+  saidArmOf,
+  saidRowsOf,
 } from "../../scripts/exp/arch-report";
+import {
+  type LeadCandidateLex,
+  leadCandidateTableOf,
+} from "../../src/core/conversation/lead-candidate";
+import { MORE_PROMPT } from "../../src/core/conversation/spoken";
 
 describe("잡음(arch-noise)", () => {
   it("씨앗마다 정해진 아이 차례에만 넣는다", () => {
@@ -825,7 +851,7 @@ describe("AC-26k 마무리 기록(끝난 길 · 마무리 차례의 말 · 두 �
       lessonLine({ ended: ending.reason, ending }),
     ]);
     expect(md).toContain(
-      "- 마무리 단추(아이 차례 15 앞 · 마무리 제안): 더 이야기하기 · 도구가 잇지 않아 여기서 끝남 · 더 하고 싶다",
+      "- 마무리 단추(아이 차례 15 앞 · 마무리 제안): 더 이야기하기 · 이을 길이 없어 여기서 끝남 · 더 하고 싶다",
     );
     const m = lessonMetricsOf(
       lessonOf([
@@ -1181,7 +1207,10 @@ describe("AC-26k 지난 실행의 기록 꼴을 읽는 호환", () => {
       const was = JSON.parse(
         readFileSync(join(dir, "judge-summary.json"), "utf8"),
       ) as Record<string, Record<string, Record<string, unknown>>>;
-      const judges = Object.keys(was).filter((j) => j !== "pair");
+      // 이 도구가 쓴 파일이면 표지 칸(tool)도 판정자가 아니다(검토 rev-x2 M-7)
+      const judges = Object.keys(was).filter(
+        (j) => j !== "pair" && j !== "tool",
+      );
       const s = readJudgeSummary(dir, judges);
       for (const j of judges)
         for (const [arm, row] of Object.entries(was[j] ?? {})) {
@@ -1193,4 +1222,847 @@ describe("AC-26k 지난 실행의 기록 꼴을 읽는 호환", () => {
         }
     },
   );
+});
+
+// ── 묶음 X2 ─────────────────────────────────────────────────────
+
+const CHILD_ROLE_MARK = "You are role-playing a Korean elementary school child";
+const BUTTONS_MARK = "Now the screen shows two buttons";
+
+type FakeBody = {
+  model?: string;
+  system?: unknown;
+  messages?: { role: string; content: string }[];
+  output_config?: unknown;
+};
+
+/** 가짜 Anthropic(흘려 받기 꼴 — on('text') · finalMessage · request_id). route 가 요청마다 응답 글을 정한다. 요청은 차례대로 남긴다. */
+function fakeClient(route: (body: FakeBody) => string) {
+  const requests: FakeBody[] = [];
+  const client = {
+    beta: {
+      messages: {
+        stream(body: FakeBody) {
+          requests.push(body);
+          const text = route(body);
+          let onText: ((delta: string) => void) | null = null;
+          return {
+            on(event: string, f: (delta: string) => void) {
+              if (event === "text") onText = f;
+              return this;
+            },
+            async finalMessage() {
+              for (const piece of chunks(text, 7)) onText?.(piece);
+              return {
+                model: body.model ?? "claude-sonnet-5-5",
+                stop_reason: "end_turn",
+                usage: {
+                  input_tokens: 1000,
+                  output_tokens: 50,
+                  cache_creation_input_tokens: 0,
+                  cache_read_input_tokens: 0,
+                },
+                content: [{ type: "text", text }],
+              };
+            },
+            request_id: "req_fake",
+          };
+        },
+      },
+    },
+  };
+  return { client: client as unknown as Anthropic, requests };
+}
+
+const lastUser = (body: FakeBody) => body.messages?.at(-1)?.content ?? "";
+const schemaOf = (body: FakeBody) => JSON.stringify(body.output_config ?? {});
+
+/** 아이 역: 보통 차례는 짧은 말, 단추 차례는 '더 이야기하기'. */
+function childReply(body: FakeBody): string {
+  const buttons = lastUser(body).includes(BUTTONS_MARK);
+  return JSON.stringify({
+    action: "speak",
+    says: buttons ? "" : "I like the sea.",
+    kind: "answer",
+    why: "짧게",
+    ...(buttons ? { wrap_choice: "more" } : {}),
+  });
+}
+
+describe("묶음 X2 방식 N · '더 이야기하기' 이음(가짜 client 로 수업 하나)", () => {
+  const setup = setupOf(process.cwd());
+
+  it("AC-26l 방식 N 은 인사 뒤 대화 첫 차례를 입구 start 로 부르고(카드 첫 질문 없음, 인사 끝 차례에 접음), 대화 차례마다 새 엔진 요청 하나 · 기록 칸 · 차이 표를 남긴다", async () => {
+    expect(setup.nSystem).not.toBeNull();
+    const { client, requests } = fakeClient((body) => {
+      if (String(body.system).includes(CHILD_ROLE_MARK))
+        return childReply(body);
+      if (schemaOf(body).includes('"reading"'))
+        return JSON.stringify({
+          reading: "clear_answer",
+          move: "react_and_follow_up",
+          say: "Nice! Do you go to the sea?",
+          say_ko: "좋아! 바다에 가?",
+          model_sentence: "",
+          hint_ko: "",
+          hint_en: "",
+          goal_words_i_said: [],
+          child_used_on_own: ["sea"],
+        });
+      return JSON.stringify({
+        child_kind: "answer",
+        stuck: false,
+        tori_en: "Good to hear!",
+      });
+    });
+    const run = await runLesson(setup, client, "N", "K1", 2, 3, 1);
+    expect(run.error).toBeNull();
+    const teachers = run.lines.filter(
+      (l): l is TeacherTurnLog => l.type === "teacher_turn",
+    );
+    // 인사 끝 차례(지금 길 — 앱의 인사 끝 처리 그대로)에 입구 start 의 말을 접었다 — 앱의 카드 첫 질문 없이 Claude 의 첫 질문
+    const greetEnd = teachers.find((t) => t.lead?.entry === "start");
+    if (!greetEnd) throw new Error("입구 start 차례가 없다");
+    expect(greetEnd.final.split("\n").at(-1)).toBe(
+      "Nice! Do you go to the sea?",
+    );
+    // 접은 입구 start 는 차례당 호출 수 · 시간에 더하지 않고 따로 둔다(검토 rev-x2 M-4 — 실제 앱은 두 호출 사이에 짧은 준비가 있다)
+    expect(greetEnd.calls).toBe(1);
+    expect(greetEnd.entryStart?.calls).toBe(1);
+    expect(greetEnd.entryStart?.firstSent?.text).toBe("Nice!");
+    expect(greetEnd.final).not.toContain(setup.firstQuestion);
+    const lessonOfRun = run.lines.find(
+      (l): l is LessonLog => l.type === "lesson",
+    );
+    // 이 실행의 A · N 이 실제 앱의 기능어 집합(시드 품사 칸)으로 돈다는 표지(검토 rev-x2 I-1)
+    expect(lessonOfRun?.materials?.functionWords).toBe(169);
+    // 대화 차례: 새 엔진 기록 · 첫 문장이 나간 때
+    const talk = teachers.filter((t) => t.lead?.entry === "child");
+    expect(talk.length).toBeGreaterThan(0);
+    for (const t of talk) {
+      expect(t.lead?.kind).toBe("ai");
+      expect(t.lead?.say).toBe("Nice! Do you go to the sea?");
+      expect(t.firstSent?.held).toBeNull();
+      expect(t.branches).toEqual(["그대로 나감"]);
+    }
+    // 새 엔진 요청: 시스템은 수업 처음 값 하나, 사용자 메시지에 사실 알림
+    const leadReqs = requests.filter((b) => schemaOf(b).includes('"reading"'));
+    expect(new Set(leadReqs.map((b) => String(b.system)))).toEqual(
+      new Set([setup.nSystem]),
+    );
+    expect(lastUser(leadReqs.at(-1) ?? {})).toContain("Child turn");
+    const lesson = run.lines.find((l): l is LessonLog => l.type === "lesson");
+    expect(lesson?.lead?.table.turns.length).toBeGreaterThan(0);
+    const m = leadMetricsOf({ meta: lesson as LessonLog, teachers });
+    expect(m?.byEntry.start).toBe(1);
+    expect(m?.byEntry.child).toBe(talk.length);
+    expect(
+      leadMarkdown([
+        {
+          name: run.lesson,
+          meta: lesson as LessonLog,
+          calls: [],
+          teachers,
+          children: [],
+        },
+      ]),
+    ).toContain(`## ${run.lesson}`);
+  });
+
+  it("AC-26l A · N 모두 마무리 차례에서 '더 이야기하기'를 고르면 앱처럼 잇는다(A: 카드 자리 한 줄 · N: 입구 more) — 두 방식이 같은 아이 차례 수로 끝난다", async () => {
+    const results: Record<
+      string,
+      {
+        childTurns: number;
+        cont: TeacherTurnLog | undefined;
+        choices: unknown[];
+      }
+    > = {};
+    for (const arm of ["A", "N"] as const) {
+      const { client } = fakeClient((body) => {
+        if (String(body.system).includes(CHILD_ROLE_MARK))
+          return childReply(body);
+        if (schemaOf(body).includes('"reading"'))
+          return JSON.stringify({
+            reading: "clear_answer",
+            move: "react_only",
+            say: "Nice!",
+            say_ko: "",
+            model_sentence: "",
+            hint_ko: "",
+            hint_en: "",
+            goal_words_i_said: [],
+            child_used_on_own: [],
+          });
+        return JSON.stringify({
+          child_kind: "answer",
+          stuck: false,
+          tori_en: "Nice! Do you like the sea?",
+        });
+      });
+      const run = await runLesson(setup, client, arm, "K1", 2, 16, 1);
+      expect(run.error).toBeNull();
+      const lesson = run.lines.find((l): l is LessonLog => l.type === "lesson");
+      const teachers = run.lines.filter(
+        (l): l is TeacherTurnLog => l.type === "teacher_turn",
+      );
+      results[arm] = {
+        childTurns: lesson?.childTurns ?? 0,
+        cont: teachers.find((t) => t.afterChoice === true),
+        choices: lesson?.ending?.choices ?? [],
+      };
+      expect(transcriptOf(run.lines)).toContain("앱처럼 이음");
+    }
+    expect(results.A?.cont?.called).toBe(false);
+    expect(results.A?.cont?.branches).toEqual(["모델을 부르지 않은 고정 차례"]);
+    expect(results.N?.cont?.called).toBe(true);
+    expect(results.N?.cont?.lead?.entry).toBe("more");
+    for (const arm of ["A", "N"]) {
+      expect(results[arm]?.choices).toHaveLength(1);
+      expect(results[arm]?.choices[0]).toMatchObject({
+        picked: "more",
+        continued: true,
+      });
+      expect(results[arm]?.childTurns).toBe(16);
+    }
+  });
+
+  it("AC-26l 방식 P 는 move wrap_up 에서 수업을 끝낸다(선생님이 스스로 마무리함, 이음 없음)", async () => {
+    let teacherCalls = 0;
+    const { client } = fakeClient((body) => {
+      if (String(body.system).includes(CHILD_ROLE_MARK))
+        return childReply(body);
+      teacherCalls++;
+      return JSON.stringify({
+        reading: "clear_answer",
+        move: teacherCalls >= 3 ? "wrap_up" : "react_only",
+        say: teacherCalls >= 3 ? "Bye!" : "Hi!",
+        say_ko: "",
+        model_sentence: "",
+        goal_words_i_said: [],
+        child_used_on_own: [],
+      });
+    });
+    const run = await runLesson(setup, client, "P", "K1", 1, 16, 1);
+    const lesson = run.lines.find((l): l is LessonLog => l.type === "lesson");
+    expect(lesson?.ending?.how).toBe("teacher_closing");
+    expect(lesson?.childTurns).toBe(2);
+  });
+});
+
+describe("묶음 X2 첫 문장이 나간 때 · 새 엔진 기록 셈 · 넘겨받은 Minor", () => {
+  const fs = (
+    ms: number,
+    text: string | null,
+    question = false,
+  ): FirstSentence => ({
+    ms,
+    from: "stream",
+    text,
+    question,
+  });
+
+  it("AC-26l A 의 받아 둔 차례: 1~3단계 첫 문장이 물음이면 본 호출 + 다시 쓰기 끝, 통째 다시 쓰기는 rewrite, 4단계 · 물음 아닌 첫 문장은 흘린 때", () => {
+    expect(
+      appFirstSentOf({
+        level: 3,
+        first: fs(700, "Do you swim?", true),
+        firstMs: 2000,
+        retryKind: "question",
+        retryMs: 1500,
+      }),
+    ).toEqual({
+      ms: 3500,
+      from: "end",
+      text: "Do you swim?",
+      held: "question",
+    });
+    expect(
+      appFirstSentOf({
+        level: 3,
+        first: fs(700, "Nice!"),
+        firstMs: 2000,
+        retryKind: "rewrite",
+        retryMs: 1500,
+      }),
+    ).toMatchObject({ ms: 3500, held: "rewrite" });
+    expect(
+      appFirstSentOf({
+        level: 3,
+        first: fs(700, "Nice!"),
+        firstMs: 2000,
+        retryKind: null,
+        retryMs: null,
+      }),
+    ).toEqual({ ms: 700, from: "stream", text: "Nice!", held: null });
+    expect(
+      appFirstSentOf({
+        level: 4,
+        first: fs(700, "Do you swim?", true),
+        firstMs: 2000,
+        retryKind: null,
+        retryMs: null,
+      }),
+    ).toMatchObject({ ms: 700, held: null });
+    const stats = firstSentStatsOf([
+      { ms: 700, from: "stream", text: "a", held: null },
+      { ms: 900, from: "end", text: "b", held: null },
+      { ms: 3000, from: "end", text: "c", held: "say" },
+      { ms: 4000, from: "end", text: "d", held: "question" },
+    ]);
+    expect(stats).toMatchObject({
+      turns: 4,
+      plainTurns: 2,
+      plainMsMedian: 800,
+      heldTurns: 2,
+      heldBy: { say: 1, question: 1, rewrite: 0 },
+      heldMsMedian: 3500,
+      fromEnd: 1,
+    });
+  });
+
+  it("AC-26l 새 엔진 기록 셈: 받아 둔 차례는 gate 이름으로 가리고(문장 문 걸림과 섞임) 시간은 본 호출 + 다시 말하기, 좁은 정의 · 마무리 막힘을 센다", () => {
+    const base: LeadTurnLog = {
+      entry: "child",
+      reading: "clear_answer",
+      move: "react_and_follow_up",
+      kind: "ai",
+      closing: false,
+      closingAdded: false,
+      closingStuck: { reading: false, effective: false },
+      held: null,
+      narrow: null,
+      gate: [],
+      removed: [],
+      soundMoved: false,
+      sound: {},
+      say: "Nice!",
+      rawSay: "Nice!",
+      failure: null,
+      ms: 1000,
+      retryMs: null,
+      child: null,
+      explanation: null,
+    };
+    const narrow = {
+      sentence: "Do you go in summer or winter?",
+      item: "choice:summer",
+      prompt: "p",
+      called: true,
+      retry: "Do you go when it is hot?",
+      again: false,
+    };
+    const teachers = [
+      teacherLine(1, "a", {
+        lead: {
+          ...base,
+          gate: ["forbidden", "held_say"],
+          held: "say",
+          ms: 2000,
+        },
+      }),
+      teacherLine(2, "b", {
+        lead: {
+          ...base,
+          gate: ["held_question"],
+          held: "question",
+          narrow,
+          ms: 1500,
+          retryMs: 2500,
+        },
+      }),
+      teacherLine(3, "c", {
+        lead: {
+          ...base,
+          closing: true,
+          closingStuck: { reading: true, effective: false },
+          closingAdded: true,
+        },
+      }),
+      teacherLine(4, "d", {
+        lead: {
+          ...base,
+          narrow: { ...narrow, called: false, retry: "" },
+          gate: ["forbidden"],
+        },
+      }),
+    ];
+    const m = leadMetricsOf({ meta: lessonLine(), teachers });
+    expect(m?.held).toMatchObject({
+      say: 1,
+      question: 1,
+      ms: [2000, 4000],
+      msMedian: 3000,
+    });
+    expect(m?.narrow).toMatchObject({
+      turns: 2,
+      called: 1,
+      replaced: 1,
+      kept: 1,
+      againHit: 0,
+    });
+    expect(m?.closing).toMatchObject({
+      turns: 1,
+      stuckReading: 1,
+      stuckEffective: 0,
+      added: 1,
+    });
+    expect(m?.gate).toEqual({ forbidden: 2 });
+    expect(
+      leadMetricsOf({ meta: lessonLine(), teachers: [teacherLine(1, "x")] }),
+    ).toBeNull();
+  });
+
+  it("AC-26l 채점표 문구(rev-x1 M1 · M2 · M3): 예 · 아니오 물음은 질문 하나로 더 셈 · 답을 못 받아 되묻는 것도 뺌 · 일과 목록에도 따라 할 문장을 넣지 않음, 읽을 폴더는 절대 경로", () => {
+    expect(PUSHY_RULE).toContain(
+      "열린 물음 뒤에 따로 붙인 예 · 아니오 물음은 질문 하나로 더 세고",
+    );
+    expect(PUSHY_RULE).toContain(
+      "앞에서 한 물음을 또 묻거나(잘못 들렸거나 답을 못 받아 되묻는 것은 빼고)",
+    );
+    expect(OWN_LIFE_RULE).toContain(
+      "따라 할 문장 · 되받은 문장은 여기에도 적지 않습니다",
+    );
+    expect(PUSHY_RULE.split(/다\. |니다\. /)).toHaveLength(1);
+    const md = judgeRubricOf("/abs/out");
+    expect(md).toContain("`/abs/out/blind/`");
+    // 화면 · 단추를 가리키는 낱말 없이 중립으로(검토 rev-x2 볼 것 6)
+    expect(md).toContain("아이가 더 이야기하기로 한 자리");
+    expect(md).not.toContain("단추를 누른 자리");
+  });
+
+  it("AC-26l 확인 항목 6(rev-x1 M4): 마무리 단추 고르기 호출은 같은 말 + 단추 안내로 따로 세고, 고르기 뒤 이은 차례의 말을 다음 아이 호출이 받는다", () => {
+    const childCall = (childTurn: number, content: string) => ({
+      type: "call" as const,
+      lesson: "A-K1-s1",
+      childTurn,
+      kind: "child" as const,
+      request: {
+        model: "m",
+        system: "s",
+        messages: [{ role: "user", content }],
+        thinking: null,
+        output_config: {},
+        max_tokens: 1,
+        betas: [],
+      },
+      response: { ok: true },
+      ms: 1,
+    });
+    const closingLine = "You did great! Do you want to talk more?";
+    const cont = "What do you like at the sea?";
+    const lesson = {
+      name: "A-K1-s1",
+      meta: lessonLine({
+        lesson: "A-K1-s1",
+        arm: "A",
+        ending: {
+          how: "turn_cap",
+          childTurns: 16,
+          line: null,
+          reason: null,
+          choices: [
+            {
+              childTurn: 16,
+              kind: "closing",
+              line: closingLine,
+              picked: "more",
+              says: "",
+              why: "",
+              continued: true,
+            },
+          ],
+        },
+      }),
+      calls: [
+        childCall(15, `Teacher: ${heardByChild("Nice!")}`),
+        childCall(16, wrapChoiceMessageOf(heardByChild(closingLine))),
+        childCall(16, `Teacher: ${heardByChild(cont)}`),
+      ],
+      teachers: [
+        teacherLine(14, "Nice!"),
+        teacherLine(15, closingLine),
+        teacherLine(16, cont, { afterChoice: true, called: false }),
+        teacherLine(16, "Cool!"),
+      ],
+      children: [],
+    };
+    expect(childOnlyHeardOf([lesson])).toEqual({
+      turnOk: 2,
+      turnAll: 2,
+      choiceOk: 1,
+      choiceAll: 1,
+    });
+  });
+
+  it("AC-26l --judges 는 지난 모음 스크립트 출력(pair 칸 없음)을 덮지 않는다(rev-x1 M6), 이 도구가 쓴 파일 · 없는 파일은 덮는다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-judge-"));
+    const path = join(dir, "judge-summary.json");
+    expect(judgeSummaryOverwriteBlocked(path)).toBe(false);
+    writeFileSync(path, JSON.stringify({ j1: { A: {} } }));
+    expect(judgeSummaryOverwriteBlocked(path)).toBe(true);
+    writeFileSync(path, JSON.stringify({ j1: { A: {} }, pair: {} }));
+    expect(judgeSummaryOverwriteBlocked(path)).toBe(false);
+  });
+
+  it("AC-26l 방식 목록에 N 이 있고 --arms 로 고른다", () => {
+    expect(parseRunArgs(["--out", "x", "--arms", "A,P,N"]).arms).toEqual([
+      "A",
+      "P",
+      "N",
+    ]);
+  });
+});
+
+// ── 묶음 X2 고침 1(검토 rev-x2 I-1 · I-2 · M-1 · M-2 · M-4 · M-5 · M-7) ──────────────────────
+
+/** 시험용 낱말 재료(단원 단어 셋 · 복수 꼬리만 떼는 원형). */
+const SAID_LEX: LeadCandidateLex = {
+  unitWords: ["sea", "swim", "fish"],
+  lemmaOf: (w) => {
+    const low = w.toLowerCase();
+    return ["sea", "swim", "fish"].includes(low)
+      ? low
+      : low === "seas"
+        ? "sea"
+        : undefined;
+  },
+  homophones: [],
+};
+
+function childLine(
+  childTurn: number,
+  heardTeacher: string,
+  heard: string | null,
+  lesson = "A-K1-s1",
+): ChildTurnLog {
+  return {
+    type: "child_turn",
+    lesson,
+    childTurn,
+    heardTeacher,
+    action: heard === null ? "dont_know" : "speak",
+    says: heard ?? "",
+    kind: "answer",
+    why: "",
+    heard,
+    noise: null,
+    noiseSkipped: false,
+  };
+}
+
+describe("묶음 X2 고침 1: 세 방식 같은 규칙의 '말했다' 수(I-2) · 재료 표지(I-1) · Minor", () => {
+  /** 같은 대화(들린 글 · 앞 선생님 말 · 따라 할 문장)를 방식마다의 기록 칸에 담는다. */
+  function sameTalkAs(arm: "A" | "P" | "N") {
+    const lesson = `${arm}-K1-s1`;
+    const model = "I swim in the sea.";
+    const withModel = (childTurn: number, final: string) =>
+      teacherLine(childTurn, final, {
+        lesson,
+        arm,
+        ...(arm === "A"
+          ? { checks: { sound: { model } } }
+          : arm === "P"
+            ? { modelFirst: { say: final, model_sentence: model } }
+            : {
+                lead: {
+                  entry: "child",
+                  reading: null,
+                  move: null,
+                  kind: "ai",
+                  closing: false,
+                  closingAdded: false,
+                  closingStuck: { reading: false, effective: false },
+                  held: null,
+                  narrow: null,
+                  gate: [],
+                  removed: [],
+                  soundMoved: true,
+                  sound: { model },
+                  say: final,
+                  rawSay: final,
+                  failure: null,
+                  ms: 900,
+                  retryMs: null,
+                  child: null,
+                  explanation: null,
+                },
+              }),
+      });
+    return {
+      teachers: [
+        teacherLine(0, "Hi! Do you like the sea?", { lesson, arm }),
+        withModel(1, "Me too! Can you say it?"),
+        teacherLine(2, "Great!", { lesson, arm }),
+      ],
+      children: [
+        childLine(1, "Hi! Do you like the sea?", "Yes, sea!", lesson),
+        childLine(2, "Me too! Can you say it?", "I swim in the sea.", lesson),
+        childLine(3, "Great!", "Fish!", lesson),
+        childLine(4, "Great!", null, lesson),
+      ],
+    };
+  }
+
+  it("AC-26l (I-2) 따라 할 문장은 방식마다 기록 칸에서 읽는다(A: checks.sound.model · P: model_sentence · N: lead.sound.model)", () => {
+    for (const arm of ["A", "P", "N"] as const) {
+      const t = sameTalkAs(arm).teachers[1];
+      if (!t) throw new Error("차례 없음");
+      expect(followSentenceOf(t)).toBe("I swim in the sea.");
+    }
+    expect(followSentenceOf(teacherLine(1, "Nice!"))).toBeNull();
+  });
+
+  it("AC-26l (I-2) 같은 기록이면 세 방식의 셈이 같다: (1) 들린 글의 단원 단어 · (2) 앞 선생님 말 · 따라 할 문장에 없던 낱말 · (3) core 셋째 값", () => {
+    const counts = (["A", "P", "N"] as const).map((arm) =>
+      saidCountsOf(sameTalkAs(arm), SAID_LEX),
+    );
+    const [a, p, n] = counts as [SaidCounts, SaidCounts, SaidCounts];
+    expect(p).toEqual(a);
+    expect(n).toEqual(a);
+    // 말한 차례 셋(모름 단추 차례는 뺌), 들린 단원 단어 sea · swim · fish
+    expect(a.turns).toBe(3);
+    expect(a.heardUnit).toEqual(["sea", "swim", "fish"]);
+    // sea 는 앞 선생님 말에, swim · sea 는 따라 할 문장에 있었다 — fish 만 스스로
+    expect(a.beyondTeacher).toEqual(["fish"]);
+    // (3) 은 core leadCandidateTableOf 의 셋째 값 그대로(같은 꼴의 행을 넣음)
+    const direct = leadCandidateTableOf(
+      [
+        {
+          role: "teacher",
+          say: "Hi! Do you like the sea?",
+          move: null,
+          model: null,
+          choices: false,
+          koShown: false,
+        },
+        {
+          role: "child",
+          heard: "Yes, sea!",
+          saidWords: [],
+          claudeWords: [],
+          hintKind: "none",
+          stuck: false,
+          koHelp: false,
+          meaningHint: false,
+          reading: null,
+        },
+        {
+          role: "teacher",
+          say: "Me too! Can you say it?",
+          move: null,
+          model: "I swim in the sea.",
+          choices: false,
+          koShown: false,
+        },
+        {
+          role: "child",
+          heard: "I swim in the sea.",
+          saidWords: [],
+          claudeWords: [],
+          hintKind: "none",
+          stuck: false,
+          koHelp: false,
+          meaningHint: false,
+          reading: null,
+        },
+        {
+          role: "teacher",
+          say: "Great!",
+          move: null,
+          model: null,
+          choices: false,
+          koShown: false,
+        },
+        {
+          role: "child",
+          heard: "Fish!",
+          saidWords: [],
+          claudeWords: [],
+          hintKind: "none",
+          stuck: false,
+          koHelp: false,
+          meaningHint: false,
+          reading: null,
+        },
+      ],
+      SAID_LEX,
+    );
+    expect(a.heardByCategory).toEqual(direct.counts.heardByCategory);
+    expect(a.heardByCategory.echoed_word).toBe(1);
+    expect(a.heardByCategory.repeated_model).toBe(2);
+    expect(a.heardByCategory.not_said_by_teacher).toBe(1);
+    expect(a.heardAccepted).toEqual(
+      direct.words.filter((w) => w.heard).map((w) => w.word),
+    );
+    expect(a.heardAccepted).toEqual(["fish"]);
+  });
+
+  it("AC-26l (I-2) 고르기 뒤 이음이 있으면 그 말이 바로 앞 선생님 말이다(따라 할 문장도 그 차례에서)", () => {
+    const teachers = [
+      teacherLine(0, "Hi!", { arm: "N" }),
+      teacherLine(1, "Do you swim?", { arm: "N" }),
+      teacherLine(2, "Fish!", {
+        arm: "N",
+        afterChoice: true,
+        modelFirst: null,
+      }),
+    ];
+    const c = saidCountsOf(
+      {
+        teachers,
+        children: [
+          childLine(1, "Hi!", "Hello."),
+          childLine(2, "Fish!", "Fish and swim."),
+        ],
+      },
+      SAID_LEX,
+    );
+    expect(c.heardUnit).toEqual(["fish", "swim"]);
+    // fish 는 이음 말에 있었고 swim 은 아이 차례 1 뒤 말에만 있었다(바로 앞 말은 이음) — swim 이 스스로
+    expect(c.beyondTeacher).toEqual(["swim"]);
+  });
+
+  it.skipIf(PAST === null)(
+    "AC-26l (I-2) 지난 실험의 기록 폴더에도 그대로 돈다(기록만 읽는 셈 — 모든 수업 · 방식마다 한 줄)",
+    () => {
+      const lessons = readLessons(PAST as string);
+      const setup = setupOf(process.cwd());
+      const rows = saidRowsOf(lessons, {
+        unitWords: setup.materials.ctx.unitWords,
+        lemmaOf: setup.materials.lemmaOf,
+        homophones: setup.materials.homophones,
+      });
+      expect(rows).toHaveLength(lessons.length);
+      const arms = [...new Set(rows.map((r) => r.arm))];
+      for (const arm of arms) {
+        const m = saidArmOf(arm, rows);
+        expect(m.lessons).toBeGreaterThan(0);
+        expect(m.heardUnitMean).not.toBeNull();
+      }
+      for (const r of rows)
+        expect(r.counts.beyondTeacher.length).toBeLessThanOrEqual(
+          r.counts.heardUnit.length,
+        );
+    },
+  );
+
+  it("AC-26l (I-1) 결과 글 머리: 이 실행의 A 가 실제 앱의 기능어로 돌았으면 '바로잡음' 한 줄, 표지 없는 옛 기록이면 '바로잡기 전' 한 줄, A 가 없으면 없음", () => {
+    const lessonWith = (
+      arm: "A" | "N",
+      materials?: { functionWords: number },
+    ) => ({
+      ...lessonOf([lessonLine({ arm, ...(materials ? { materials } : {}) })]),
+      children: [],
+    });
+    expect(
+      materialsNoteOf([lessonWith("A", { functionWords: 169 })]),
+    ).toContain(
+      "방식 A 를 실제 앱의 재료로 바로잡음(지난 실험의 A 와 이 한 점이 다름)",
+    );
+    expect(materialsNoteOf([lessonWith("A")])).toContain("바로잡기 전");
+    expect(
+      materialsNoteOf([lessonWith("N", { functionWords: 169 })]),
+    ).toBeNull();
+  });
+
+  it("AC-26l (M-2) 같은 글자 질문 셈은 마무리 상수 물음을 빼고, 뺀 수를 따로 적는다(옛 셈은 그대로)", () => {
+    const asked = [
+      { turn: 3, text: MORE_PROMPT.en },
+      { turn: 5, text: "Do you swim?" },
+      { turn: 9, text: MORE_PROMPT.en },
+    ];
+    expect(sameQuestionsOf(asked).exact).toBe(1);
+    const beside = sameQuestionsBesideClosingOf(asked);
+    expect(beside.exact).toBe(0);
+    expect(beside.closingConstant).toBe(2);
+    const m = lessonMetricsOf({
+      ...lessonOf([
+        teacherLine(0, "Hi! Do you swim?"),
+        teacherLine(1, `Nice!\n${MORE_PROMPT.en}`),
+        teacherLine(2, `Okay!\n${MORE_PROMPT.en}`),
+        lessonLine(),
+      ]),
+    });
+    expect(m.sameQuestions.exact).toBe(1);
+    expect(m.sameQuestionsBesideClosing.exact).toBe(0);
+    expect(m.sameQuestionsBesideClosing.closingConstant).toBe(2);
+  });
+
+  it("AC-26l (M-5) 아이에게 첫 문장이 나간 때: 받아 둔 차례까지 합친 중앙값 · p95 를 참고로 낸다", () => {
+    const st = firstSentStatsOf([
+      { ms: 1000, from: "stream", text: "a", held: null },
+      { ms: 3000, from: "end", text: "b", held: "question" },
+      { ms: 2000, from: "stream", text: "c", held: null },
+    ]);
+    expect(st.plainMsMedian).toBe(1500);
+    expect(st.allMsMedian).toBe(2000);
+    expect(st.allMsP95).toBe(percentile([1000, 3000, 2000], 95));
+  });
+
+  it("AC-26l (M-1 · M-4) 받아 둔 차례는 아이 차례 뒤만 세고(입구 start · more 는 뺌), 접은 입구 start 는 차례당 셈 밖에 따로 둔다", () => {
+    const lead = (entry: "child" | "start" | "more"): LeadTurnLog => ({
+      entry,
+      reading: null,
+      move: null,
+      kind: "ai",
+      closing: false,
+      closingAdded: false,
+      closingStuck: { reading: false, effective: false },
+      held: "question",
+      narrow: null,
+      gate: ["held_question"],
+      removed: [],
+      soundMoved: false,
+      sound: {},
+      say: "Do you swim?",
+      rawSay: "Do you swim?",
+      failure: null,
+      ms: 1000,
+      retryMs: null,
+      child: null,
+      explanation: null,
+    });
+    const teachers = [
+      teacherLine(1, "a", {
+        arm: "N",
+        lead: lead("start"),
+        calls: 1,
+        ms: 800,
+        entryStart: {
+          calls: 1,
+          ms: 1200,
+          firstSent: { ms: 700, from: "stream", text: "Hi!", held: null },
+        },
+      }),
+      teacherLine(2, "b", { arm: "N", lead: lead("child") }),
+      teacherLine(3, "c", { arm: "N", lead: lead("more"), afterChoice: true }),
+    ];
+    const m = leadMetricsOf({ meta: lessonLine({ arm: "N" }), teachers });
+    expect(m?.held.question).toBe(1);
+    expect(m?.byEntry).toEqual({ child: 1, start: 1, more: 1 });
+    const per = lessonMetricsOf({
+      ...lessonOf([...teachers, lessonLine({ arm: "N" })]),
+    });
+    expect(per.entryStart).toEqual({
+      turns: 1,
+      calls: 1,
+      ms: [1200],
+      firstSentMs: [700],
+    });
+    expect(per.calls.perTurnMs).not.toContain(2000);
+  });
+
+  it("AC-26l (M-7) --judges 가 쓴 파일에는 표지 칸이 있어, 판정자 하나로 모은 파일(pair 없음)도 다음 실행이 덮는다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-judge-tool-"));
+    const path = join(dir, "judge-summary.json");
+    const text = judgeSummaryJsonOf({
+      judges: { j1: {} },
+      pair: null,
+    } as never);
+    expect(JSON.parse(text)).toMatchObject({ tool: JUDGE_SUMMARY_TOOL });
+    expect(JSON.parse(text)).not.toHaveProperty("pair");
+    writeFileSync(path, text);
+    expect(judgeSummaryOverwriteBlocked(path)).toBe(false);
+  });
 });

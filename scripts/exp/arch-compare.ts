@@ -1,11 +1,13 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
-//        [--children K1,K2,K3] [--seeds 1,2] [--arms A,B,C,C2,P]
+//        [--children K1,K2,K3] [--seeds 1,2] [--arms A,B,C,C2,P,N]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
 // 않는다(검사는 기록만). 방식 C · C2 는 브리프의 틀(arch-arms cSystemOf · c2SystemOf)과 say · say_ko 출력뿐이다. 방식 P 는 C 와 같은 길에
-// 시제품의 짧은 안내문 · 일곱 칸 출력 · 차례마다 상태 알림(arch-arm-p)을 쓴다(후처리 없음).
+// 시제품의 짧은 안내문 · 일곱 칸 출력 · 차례마다 상태 알림(arch-arm-p)을 쓴다(후처리 없음). 방식 N 은 앱에 구현된 새 엔진의 길(scripts/talk-observe.ts
+// createTalkSim 에 talk.lead_mode claude — 서버 턴 길과 같은 core 함수, 회화 Claude 주도 묶음 X2)이다. A · N 은 앱의 마무리 차례에서 아이 역이
+// '더 이야기하기'를 고르면 앱처럼 잇는다(A: 카드 자리 한 줄, N: 아이 말 없이 부르는 입구 more).
 // 결과 폴더에 앞 실행의 setup.json · run-summary.json 이 있으면 덮지 않고 합친다(공통 재료가 다르면 멈춤).
 // 키 값은 출력하지 않는다. 결과 파일: <out>/runs/<방식>-<아이>-s<씨앗>.jsonl · .transcript.md, <out>/run-summary.json.
 import { createHash } from "node:crypto";
@@ -21,9 +23,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type Anthropic from "@anthropic-ai/sdk";
 import { APIError } from "@anthropic-ai/sdk";
-import { z } from "zod";
+import type { z } from "zod";
 import {
   choicesLine,
+  holdsQuestionSentence,
+  isLowBandLevel,
   type TalkCallTurn,
   type TalkLessonContext,
   type TalkLessonInput,
@@ -44,6 +48,11 @@ import { checkOutputFields } from "../../src/core/ai/output-check";
 import { buildAiRequest } from "../../src/core/ai/request";
 import { startPrepWordsOf } from "../../src/core/conversation/chances";
 import { heardHintsOf } from "../../src/core/conversation/heard-hint";
+import {
+  type LeadCandidateTable,
+  leadCandidateTableOf,
+} from "../../src/core/conversation/lead-candidate";
+import { TALK_LEAD_MODE_KEY } from "../../src/core/conversation/lead-mode";
 import { talkLessonSettingsFrom } from "../../src/core/conversation/lesson-turns";
 import {
   checkLowLevelQuestion,
@@ -74,6 +83,8 @@ import {
   type CallResult,
   createTalkSim,
   evaluateLessonMessage,
+  type LeadSimEntry,
+  type LeadTurnRecord,
   type Materials,
   materialsOf,
   type ObserveScript,
@@ -82,6 +93,7 @@ import {
   readScriptFiles,
   readSeedFiles,
   runValuesOf,
+  type TalkSim,
   type TurnRecord,
 } from "../talk-observe";
 import {
@@ -106,9 +118,14 @@ import {
   levelLineOf,
   missingSafetySentences,
   splitDirectiveLines,
+  WRAP_PICKS,
+  WrapChildOutputSchema,
+  type WrapPick,
+  wrapChoiceMessageOf,
 } from "./arch-arms";
 import {
   createFirstSentenceClock,
+  type FirstSent,
   type FirstSentence,
   flat,
   lessonEndingOf,
@@ -119,7 +136,7 @@ import {
 } from "./arch-metrics";
 import { isNoiseTurn, type NoiseResult, noiseOf } from "./arch-noise";
 
-export const ARMS = ["A", "B", "C", "C2", "P"] as const;
+export const ARMS = ["A", "B", "C", "C2", "P", "N"] as const;
 export type Arm = (typeof ARMS)[number];
 export const CHILDREN = [
   "K1",
@@ -158,7 +175,7 @@ export type CallLog = {
   type: "call";
   lesson: string;
   childTurn: number;
-  /** turn: 선생님 턴 · rewrite: 앱의 다시 쓰기 · child: 아이 역(그 밖). */
+  /** turn: 선생님 턴 · rewrite: 앱의 다시 쓰기(N 은 좁은 정의 다시 말하기) · child: 아이 역(그 밖). */
   kind: "turn" | "rewrite" | "child";
   request: RequestLog;
   response: {
@@ -225,7 +242,51 @@ export type TeacherTurnLog = {
   firstMs: number | null;
   /** 첫 호출에서 아이에게 나갈 말의 첫 문장이 끝난 시각(A · P, 부르지 않은 차례는 null). 옛 기록에는 없다. */
   firstSentence?: FirstSentence | null;
+  /**
+   * 아이에게 첫 문장이 실제로 나간 때(A · P · N 같은 뜻 — 검토 rev-x1 M5 · rev-s1 M-2, 정의는 arch-metrics FirstSent). 앱이 받아 둔 차례(held)는
+   * 받아 둔 응답이 끝난 때(본 호출 + 다시 쓰기 · 다시 말하기 호출)다. 부르지 않은 차례 · B · C · C2 · 옛 기록에는 없다.
+   */
+  firstSent?: FirstSent | null;
+  /** 마무리 차례에서 아이 역이 '더 이야기하기'를 고른 뒤 이은 선생님 차례(A: 카드 자리 한 줄, N: 입구 more). childTurn 은 그 뒤 아이 차례 번호다. */
+  afterChoice?: true;
+  /** N: 새 엔진 차례의 기록(입구 start 를 접은 인사 끝 차례는 그 입구의 기록). 다른 방식 · 옛 기록에는 없다. */
+  lead?: LeadTurnLog;
+  /**
+   * N: 인사 끝 차례에 접은 입구 start 호출(검토 rev-x2 M-4). 실제 앱에서는 두 호출 사이에 짧은 준비가 있어 아이가 이어 기다리는 시간이 아니므로,
+   * 이 차례의 calls · ms 에 더하지 않고 여기 따로 둔다. firstSent 는 대화 토막에 들어와 첫 소리를 듣기까지(A 에는 없는 N 만의 기다림)다.
+   */
+  entryStart?: { calls: number; ms: number; firstSent: FirstSent | null };
   ended?: string;
+};
+
+/** N 한 차례의 기록(차이 표 · 좁은 정의 · 받아 둔 차례 · 마무리 막힘 셈의 재료 — 회화 Claude 주도 설계 5 · 6 · 9). */
+export type LeadTurnLog = {
+  entry: "child" | "start" | "more";
+  reading: string | null;
+  move: string | null;
+  /** 선생님 행 move.kind(ai · first_question · closing_slot). */
+  kind: string;
+  closing: boolean;
+  closingAdded: boolean;
+  /** 마무리 차례인데 그 아이 말의 읽기가 막힘(reading: 응답 읽기 칸 · effective: 지금 무름 뒤 — 검토 rev-s1 M-4). */
+  closingStuck: { reading: boolean; effective: boolean };
+  /** 받아 둔 차례: 말 칸 전체(say) · 첫 문장부터 물음(question). */
+  held: "say" | "question" | null;
+  narrow: LeadTurnRecord["narrow"];
+  /** move.lead.gate 전체(문장 문 걸림 · 받아 둔 표지 held_say · held_question · 힌트 막음 — 셈은 이름으로 가른다, 검토 rev-s1 M-3). */
+  gate: string[];
+  removed: string[];
+  soundMoved: boolean;
+  sound: { model?: string; answer?: string };
+  /** 나간 말 칸(문장 문 · 다시 말하기 뒤 — 1~3단계에서 소리로 뺀 문장 포함)과 모델이 처음 쓴 말 칸. */
+  say: string;
+  rawSay: string | null;
+  failure: string | null;
+  /** 본 호출 · 다시 말하기 호출의 시간(ms). */
+  ms: number;
+  retryMs: number | null;
+  child: LeadTurnRecord["child"];
+  explanation: string | null;
 };
 
 export type ChildTurnLog = {
@@ -260,6 +321,13 @@ export type LessonLog = {
   finishedAt: string;
   /** 수업이 끝난 길 · 마무리 차례의 말 · 고른 단추. 옛 기록에는 없다(arch-report endingOf 가 ended 글로 정한다). */
   ending?: LessonEnding;
+  /** N: 수업마다 지금 판정과 새 후보 판정의 차이 표(core leadCandidateTableOf — 설계 5 · 미결 7). 다른 방식에는 없다. */
+  lead?: { table: LeadCandidateTable };
+  /**
+   * 이 실행이 쓴 앱 재료의 표지(검토 rev-x2 I-1): 1~3단계 상황 차례 답 글 검사의 기능어 수(서버처럼 어휘 시드의 품사 칸에서 읽음). 옛 기록에는
+   * 없다(그때의 A 는 이 집합이 비어 있었다).
+   */
+  materials?: { functionWords: number };
 };
 
 /** 앱의 마무리 차례(마무리 물음 · 마무리 제안)에서 아이 역이 고른 단추. */
@@ -477,6 +545,8 @@ export type Setup = {
   pSystem: string;
   /** 시제품의 낱말 목록이 앱 재료의 단원 단어(C2 가 쓰는 목록)와 순서까지 같은가. */
   pWordsSameAsUnit: boolean;
+  /** 방식 N 의 안내문(대화 첫 차례 요청의 system — 앱 talkLeadSystem 그대로). 새 엔진을 열 수 없는 단원이면 null. */
+  nSystem: string | null;
   masker: ReturnType<typeof createMasker>;
   sentenceMax: number;
 };
@@ -517,6 +587,44 @@ function firstQuestionOf(
     requestId: "",
   });
   return record.appAfter.join("\n").trim();
+}
+
+/** 방식 N 의 안내문: 버리는 N 대본 도구로 인사를 지금 길로 마치고(짜 맞춘 응답 — AI 를 부르지 않음) 입구 start 의 요청 system 을 읽는다. */
+function nSystemOf(
+  materials: Materials,
+  values: Record<string, unknown>,
+  book: ScriptConfig["book"],
+): string | null {
+  const sim = createTalkSim(
+    materials,
+    { ...values, [TALK_LEAD_MODE_KEY]: "claude" },
+    book,
+    { rotationKey: "probe" },
+  );
+  if (!sim.lead.on) return null;
+  const text = JSON.stringify({
+    child_kind: "answer",
+    stuck: false,
+    tori_en: "Good to hear!",
+  });
+  for (let i = 0; i < 4 && !sim.lead.applies(); i++) {
+    const ready = sim.prepare({ say: "I'm fine." }, i);
+    if (!ready.ok) return null;
+    sim.finish(ready.turn, {
+      ok: true,
+      message: {
+        model: "probe",
+        stop_reason: "end_turn",
+        usage: { input_tokens: 0, output_tokens: 0 },
+        content: [{ type: "text", text }],
+      } as never,
+      latencyMs: 0,
+      firstSentenceMs: null,
+      requestId: "",
+    });
+  }
+  const opened = sim.lead.prepare({ kind: "open", open: "start" });
+  return opened.ok ? String(opened.turn.request.body.system) : null;
 }
 
 export function setupOf(root: string): Setup {
@@ -618,6 +726,7 @@ export function setupOf(root: string): Setup {
       words: materials.ctx.unitWords,
     }),
     pSystem: P_SYSTEM,
+    nSystem: nSystemOf(materials, values, config.book),
     pWordsSameAsUnit:
       JSON.stringify([...P_UNIT_WORDS]) ===
       JSON.stringify([...materials.ctx.unitWords]),
@@ -670,24 +779,9 @@ function wordsOf(text: string): string[] {
 
 export type ChildInput = { action: ChildAction; heard: string | null };
 
-/** 마무리 차례의 두 단추('더 이야기하기' · '그만하기'). */
-export const WRAP_PICKS = ["more", "stop"] as const;
-export type WrapPick = (typeof WRAP_PICKS)[number];
-
-/** 마무리 차례에서 아이 역의 출력: 늘 내는 네 칸에 고른 단추를 받을 칸 하나(wrap_choice)를 더한다. */
-export const WrapChildOutputSchema = ChildOutputSchema.extend({
-  wrap_choice: z.enum(WRAP_PICKS),
-});
-
-/**
- * 마무리 차례에서 아이 역에게 보내는 말: 선생님 말 뒤에 두 단추 안내. 기본은 '더 이야기하기'다 — 고르기는 정해진 아이 차례 수 안에서만
- * 묻고(runLesson), 아이 역은 정말 그만하고 싶을 때만 '그만하기'를 고른다.
- */
-export function wrapChoiceMessageOf(heardTeacher: string): string {
-  return `Teacher: ${heardTeacher}
-
-(Now the screen shows two buttons: "Talk more" and "Stop". Press one: put "more" or "stop" in wrap_choice. The lesson time is not over yet, so press "Talk more" unless you really want to stop now. "says" may be empty because you only press a button.)`;
-}
+export type { WrapPick };
+// 마무리 차례의 두 단추 · 아이 역 출력 · 안내 말은 방식 정의(arch-arms)로 옮겼다(arch-report 의 확인 항목 6 이 같은 글을 쓴다). 여기서 다시 내보낸다.
+export { WRAP_PICKS, WrapChildOutputSchema, wrapChoiceMessageOf };
 
 type TeacherOut = Omit<TeacherTurnLog, "type" | "lesson" | "arm" | "levelFit">;
 
@@ -710,19 +804,81 @@ type Teacher = {
   /** 아이 차례 앞에서 수업이 스스로 끝났는가(A 의 마무리 물음 · 닫힘). */
   endedBefore(childTurn: number): StopBefore | null;
   respond(childTurn: number, input: ChildInput): Promise<TeacherOut>;
+  /**
+   * 마무리 차례에서 '더 이야기하기'를 고른 뒤 앱처럼 잇는다(A · N 만 — 서버 chooseLessonMoreTalk). 이은 선생님 차례(afterChoice), 이을 수 없으면
+   * null(그 자리에서 끝남). childTurn 은 그 뒤 아이 차례 번호다.
+   */
+  more?(childTurn: number): Promise<TeacherOut | null>;
+  /** 수업이 끝난 뒤의 기록(N: 차이 표). */
+  summary?(): LessonLog["lead"];
 };
 
 function sha(text: string): string {
   return createHash("sha256").update(text).digest("hex").slice(0, 16);
 }
 
-/** 방식 A: 앱 코드 그대로(createTalkSim · retryOf · finish). */
-function teacherA(setup: Setup, ctx: Ctx, lesson: string): Teacher {
-  const sim = createTalkSim(setup.materials, setup.values, setup.config.book, {
+/** 방식 A 의 대본 도구(앱 흐름 그대로 — 지난 실험과 같은 선택 값). N 은 같은 값에 talk.lead_mode claude 만 더한다. */
+function simOf(
+  setup: Setup,
+  lesson: string,
+  values: Record<string, unknown> = setup.values,
+): TalkSim {
+  return createTalkSim(setup.materials, values, setup.config.book, {
     skippedPrep: setup.script.prep?.skipped ?? [],
     summaries: setup.script.summaries ?? [],
     rotationKey: lesson,
   });
+}
+
+/**
+ * 아이에게 첫 문장이 실제로 나간 때(검토 rev-x1 M5): A 는 1~3단계 첫 문장이 물음이면 앱이 응답 끝까지 받아 두고(talk-lesson holdsQuestionSentence),
+ * 막힘을 무른 질문 차례는 통째로 다시 쓰게 해 받아 둔다(retryOf 의 rewrite). 받아 둔 차례는 본 호출 + 다시 쓰기 호출이 끝난 때다.
+ */
+export function appFirstSentOf({
+  level,
+  first,
+  firstMs,
+  retryKind,
+  retryMs,
+}: {
+  level: number;
+  first: FirstSentence | null;
+  firstMs: number;
+  retryKind: "question" | "rewrite" | null;
+  retryMs: number | null;
+}): FirstSent | null {
+  const held =
+    retryKind === "rewrite"
+      ? "rewrite"
+      : isLowBandLevel(level) &&
+          first?.text != null &&
+          holdsQuestionSentence(level, first.text)
+        ? "question"
+        : null;
+  if (held !== null)
+    return {
+      ms: firstMs + (retryMs ?? 0),
+      from: "end",
+      text: first?.text ?? null,
+      held,
+    };
+  return first === null
+    ? null
+    : { ms: first.ms, from: first.from, text: first.text, held: null };
+}
+
+/** 방식 A: 앱 코드 그대로(createTalkSim · retryOf · finish). */
+function teacherA(setup: Setup, ctx: Ctx, lesson: string): Teacher {
+  return appTeacher(setup, ctx, lesson, simOf(setup, lesson));
+}
+
+/** 지금 방식의 선생님(A · N 의 인사 토막): 대본 도구의 지금 길(prepare · retryOf · finish)과 '더 이야기하기'(chooseMore). */
+function appTeacher(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  sim: TalkSim,
+): Teacher {
   const reqConfig = requestConfigOf({
     purpose: PURPOSE,
     level: setup.materials.level,
@@ -899,6 +1055,276 @@ function teacherA(setup: Setup, ctx: Ctx, lesson: string): Teacher {
         ms: first.ms + (again?.ms ?? 0),
         firstMs: first.ms,
         firstSentence: first.firstSentence,
+        firstSent: appFirstSentOf({
+          level: setup.materials.level,
+          first: first.firstSentence,
+          firstMs: first.ms,
+          retryKind: ask && again ? ask.kind : null,
+          retryMs: again?.ms ?? null,
+        }),
+      };
+    },
+    async more(childTurn) {
+      // 서버 chooseLessonMoreTalk 의 지금 방식: 더 이야기할 거리 하나를 카드 자리 행으로 붙인다(AI 를 부르지 않음)
+      const chosen = sim.chooseMore();
+      if (!chosen.ok || chosen.mode !== "app") return null;
+      return {
+        childTurn,
+        called: false,
+        modelFirst: null,
+        modelFirstSpoken: null,
+        directive: null,
+        checks: null,
+        retry: null,
+        changes: { deleted: [], added: [] },
+        final: chosen.line.en,
+        branches: ["모델을 부르지 않은 고정 차례"],
+        calls: 0,
+        ms: 0,
+        firstMs: null,
+        afterChoice: true,
+      };
+    },
+  };
+}
+
+const notCalled = (childTurn: number, ended: string): TeacherOut => ({
+  childTurn,
+  called: false,
+  modelFirst: null,
+  modelFirstSpoken: null,
+  directive: null,
+  checks: null,
+  retry: null,
+  changes: { deleted: [], added: [] },
+  final: "",
+  branches: [],
+  calls: 0,
+  ms: 0,
+  firstMs: null,
+  ended,
+});
+
+/** 대본 차례(아이 역 입력 → 대본 도구 차례 꼴). */
+function stepOfInput(input: ChildInput): ObserveStep {
+  return input.action === "speak" && input.heard
+    ? { say: input.heard }
+    : input.action === "silent"
+      ? { input: "nospeech" }
+      : { input: "dont_know" };
+}
+
+/**
+ * 방식 N: 앱에 구현된 새 엔진의 길(대본 도구 createTalkSim 에 talk.lead_mode claude — 회화 Claude 주도 묶음 X2). 인사 토막은 지금 길(A 와 같은
+ * 함수)이고, 인사 끝 뒤 대화 첫 차례는 아이 말 없이 부르는 입구 start 로 Claude 가 쓴다(서버처럼 그 인사 끝 차례 뒤에 이어 들림 — 이 기록에서는
+ * 인사 끝 선생님 차례에 접어 final 을 잇고 lead 에 입구 기록을 둔다). 대화 · 더 이야기하기 토막의 차례는 새 엔진 길(lead.prepare · retryOf ·
+ * finish — 요청은 서버 턴 길과 같은 core 함수, 좁은 정의 다시 말하기는 한 번)이다. 마무리 차례에서 '더 이야기하기'를 고르면 입구 more 로 잇는다.
+ */
+function teacherN(setup: Setup, ctx: Ctx, lesson: string): Teacher {
+  const sim = simOf(setup, lesson, {
+    ...setup.values,
+    [TALK_LEAD_MODE_KEY]: "claude",
+  });
+  if (!sim.lead.on)
+    throw new Error(
+      `${lesson}: 새 엔진 세션이 아니다(안내문 글이 있는 1~3단계 단원인지 확인)`,
+    );
+  const app = appTeacher(setup, ctx, lesson, sim);
+  const leadCall = async (
+    childTurn: number,
+    entry: LeadSimEntry,
+  ): Promise<TeacherOut> => {
+    const ready = sim.lead.prepare(entry);
+    if (!ready.ok) return notCalled(childTurn, ready.reason);
+    const reqOf = (r: {
+      body: Record<string, unknown>;
+      betas: string[];
+      timeoutMs: number;
+    }): Req => ({
+      body: r.body,
+      betas: r.betas,
+      timeoutMs: r.timeoutMs,
+    });
+    const first = await send(
+      ctx,
+      reqOf(ready.turn.request),
+      { lesson, childTurn, kind: "turn" },
+      "say",
+    );
+    const ask = sim.lead.retryOf(ready.turn, first.result);
+    // 좁은 정의 다시 말하기(서버는 흘려 받지 않는 runAiCall — 첫 문장 시각을 재지 않는다)
+    const again = ask
+      ? await send(ctx, reqOf(ask.request), {
+          lesson,
+          childTurn,
+          kind: "rewrite",
+        })
+      : null;
+    const rec = sim.lead.finish(
+      ready.turn,
+      first.result,
+      ask && again ? { ask, result: again.result } : undefined,
+    );
+    const rawSay =
+      typeof (rec.raw as { say?: unknown } | null)?.say === "string"
+        ? (rec.raw as { say: string }).say.trim()
+        : null;
+    const retrySpoken = again
+      ? (() => {
+          const q = (parseJson(again.text) as { question?: unknown } | null)
+            ?.question;
+          return typeof q === "string" ? q : null;
+        })()
+      : null;
+    const final = rec.heard;
+    const changes = sentenceDiffOf([rawSay ?? "", retrySpoken ?? ""], final);
+    const branches: Branch[] = [];
+    if (rec.narrow?.retry) branches.push("질문을 다시 쓰게 함");
+    if (changes.added.length > 0) branches.push("고정 문구를 붙임");
+    if (!again && changes.deleted.length > 0)
+      branches.push("모델의 문장을 지움");
+    if (branches.length === 0) branches.push("그대로 나감");
+    const lead = rec.teacher.move.lead;
+    const firstSent: FirstSent | null =
+      rec.held !== null
+        ? {
+            ms: first.ms + (again?.ms ?? 0),
+            from: "end",
+            text:
+              rec.lines.flatMap((l) => (l.t === "s" ? [l.en] : []))[0] ?? null,
+            held: rec.held,
+          }
+        : first.firstSentence
+          ? {
+              ms: first.firstSentence.ms,
+              from: first.firstSentence.from,
+              text: first.firstSentence.text,
+              held: null,
+            }
+          : null;
+    return {
+      childTurn,
+      called: true,
+      modelFirst: rec.raw ?? first.text,
+      modelFirstSpoken: rawSay,
+      directive: null,
+      status: rec.userMessage,
+      checks: null,
+      retry:
+        ask && again
+          ? {
+              kind: "narrow",
+              note: ask.prompt,
+              fail: ask.target,
+              output: parseJson(again.text) ?? again.text,
+              spoken: retrySpoken,
+              outcome: rec.narrow
+                ? rec.narrow.retry
+                  ? `다시 받은 질문이 그 자리에 나감${rec.narrow.again ? "(다시 걸림 — 그대로 나감)" : ""}`
+                  : "받는 조건을 지나지 못해 원래 질문이 나감"
+                : null,
+            }
+          : null,
+      changes,
+      final,
+      branches,
+      calls: again ? 2 : 1,
+      ms: first.ms + (again?.ms ?? 0),
+      firstMs: first.ms,
+      firstSentence: first.firstSentence,
+      firstSent,
+      lead: {
+        entry: rec.entry,
+        reading: lead?.reading ?? null,
+        move: lead?.move ?? null,
+        kind: rec.teacher.move.kind,
+        closing: rec.closing,
+        closingAdded: lead?.closingAdded === true,
+        closingStuck: rec.closingStuck,
+        held: rec.held,
+        narrow: rec.narrow,
+        gate: [...(lead?.gate ?? [])],
+        removed: [...(lead?.removed ?? [])],
+        soundMoved: lead?.soundMoved === true,
+        sound: { ...(rec.teacher.move.sound ?? {}) },
+        say: (() => {
+          try {
+            const say = (
+              JSON.parse(rec.teacher.toriRewrite ?? "{}") as { say?: unknown }
+            ).say;
+            return typeof say === "string" ? say : rec.teacher.text;
+          } catch {
+            return rec.teacher.text;
+          }
+        })(),
+        rawSay,
+        failure: rec.failure,
+        ms: first.ms,
+        retryMs: again?.ms ?? null,
+        child: rec.child,
+        explanation: rec.teacher.explanation,
+      },
+    };
+  };
+  return {
+    open: () => app.open(),
+    endedBefore() {
+      const stop = sim.stopBefore();
+      return stop === null
+        ? null
+        : { reason: stop.reason, choice: stop.choice };
+    },
+    async respond(childTurn, input) {
+      if (sim.lead.applies())
+        return leadCall(childTurn, {
+          kind: "child",
+          step: stepOfInput(input),
+          stepIndex: childTurn - 1,
+        });
+      // 인사 토막(지금 길). 인사 끝 뒤 대화 첫 질문 차례가 열리면 입구 start 를 이어 부르고 그 차례에 접는다
+      const out = await app.respond(childTurn, input);
+      if (!out.called || sim.lead.openDue() !== "start") return out;
+      const opened = await leadCall(childTurn, { kind: "open", open: "start" });
+      if (!opened.called)
+        return { ...out, ended: opened.ended ?? "입구 start 실패" };
+      return {
+        ...out,
+        final: [out.final, opened.final]
+          .filter((l) => l.trim() !== "")
+          .join("\n"),
+        modelFirstSpoken: [
+          out.modelFirstSpoken ?? "",
+          opened.modelFirstSpoken ?? "",
+        ]
+          .filter((l) => l !== "")
+          .join("\n"),
+        changes: {
+          deleted: [...out.changes.deleted, ...opened.changes.deleted],
+          added: [...out.changes.added, ...opened.changes.added],
+        },
+        // 차례당 호출 수 · 시간은 인사 끝 호출만(입구 start 는 entryStart 에 따로 — 검토 rev-x2 M-4)
+        entryStart: {
+          calls: opened.calls,
+          ms: opened.ms,
+          firstSent: opened.firstSent ?? null,
+        },
+        ...(opened.lead ? { lead: opened.lead } : {}),
+      };
+    },
+    async more(childTurn) {
+      const chosen = sim.chooseMore();
+      if (!chosen.ok || chosen.mode !== "claude") return null;
+      const out = await leadCall(childTurn, { kind: "open", open: "more" });
+      return out.called ? { ...out, afterChoice: true } : null;
+    },
+    summary() {
+      const m = setup.materials;
+      return {
+        table: leadCandidateTableOf(sim.lead.candidateRows(), {
+          unitWords: m.ctx.unitWords,
+          lemmaOf: m.lemmaOf,
+          homophones: m.homophones,
+        }),
       };
     },
   };
@@ -1391,7 +1817,7 @@ export type LessonRun = {
   lines: LogLine[];
 };
 
-async function runLesson(
+export async function runLesson(
   setup: Setup,
   client: Anthropic,
   arm: Arm,
@@ -1415,7 +1841,9 @@ async function runLesson(
         ? teacherB(setup, ctx, lesson)
         : arm === "P"
           ? teacherP(setup, ctx, lesson)
-          : teacherC(setup, ctx, lesson, arm);
+          : arm === "N"
+            ? teacherN(setup, ctx, lesson)
+            : teacherC(setup, ctx, lesson, arm);
   const childCall = childRole(setup, ctx, lesson, child);
   const choices: WrapChoice[] = [];
   const childWords: string[] = [];
@@ -1442,11 +1870,15 @@ async function runLesson(
     for (let t = 1; t <= turns; t++) {
       const before = teacher.endedBefore(t);
       if (before) {
-        ended = `아이 차례 ${t} 앞: ${before.reason}`;
+        let continued = false;
         if (before.choice) {
-          // 앱의 마무리 차례: 아이 역이 두 단추 가운데 하나를 고른다. 대본 도구에 고르기 뒤 이음 길이 없어 '더 이야기하기'여도
-          // 여기서 끝난다(continued false — 보고 '확인할 것')
+          // 앱의 마무리 차례: 아이 역이 두 단추 가운데 하나를 고른다. '더 이야기하기'면 앱처럼 잇는다(A: 카드 자리 한 줄, N: 입구 more —
+          // 두 방식이 같은 길이로 견줘지게, 묶음 X2). 이을 길이 없는 방식 · 이을 거리가 없으면 그 자리에서 끝난다(continued false)
           const pick = await childCall.choose(t, last);
+          const next =
+            pick.wrap_choice === "more" && teacher.more
+              ? await teacher.more(t)
+              : null;
           choices.push({
             childTurn: t,
             kind: before.choice,
@@ -1454,10 +1886,19 @@ async function runLesson(
             picked: pick.wrap_choice,
             says: pick.says.trim(),
             why: pick.why,
-            continued: false,
+            continued: next !== null,
           });
+          if (next !== null) {
+            pushTeacher(next);
+            last = next.final;
+            lastFinal = next.final;
+            continued = true;
+          }
         }
-        break;
+        if (!continued) {
+          ended = `아이 차례 ${t} 앞: ${before.reason}`;
+          break;
+        }
       }
       const { out, heardTeacher } = await childCall.turn(t, last);
       const says = out.says.trim();
@@ -1524,6 +1965,8 @@ async function runLesson(
       lastLine: lastFinal,
       choices,
     }),
+    ...(teacher.summary ? { lead: teacher.summary() } : {}),
+    materials: { functionWords: setup.materials.functionWords.size },
   });
   return {
     lesson,
@@ -1544,7 +1987,7 @@ export function transcriptOf(lines: readonly LogLine[]): string {
     `- 끝: ${lessonLine?.ended ?? "아이 차례 상한"}${lessonLine && lessonLine.failures.length > 0 ? ` · 실패: ${lessonLine.failures.join(" / ")}` : ""}`,
     ...(lessonLine?.ending?.choices ?? []).map(
       (c) =>
-        `- 마무리 단추(아이 차례 ${c.childTurn} 앞 · ${c.kind === "closing" ? "마무리 물음" : "마무리 제안"}): ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.continued ? "" : " · 도구가 잇지 않아 여기서 끝남"} · ${c.why}`,
+        `- 마무리 단추(아이 차례 ${c.childTurn} 앞 · ${c.kind === "closing" ? "마무리 물음" : "마무리 제안"}): ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.picked === "more" ? (c.continued ? " · 앱처럼 이음" : " · 이을 길이 없어 여기서 끝남") : ""} · ${c.why}`,
     ),
     "",
   ];
@@ -1554,7 +1997,10 @@ export function transcriptOf(lines: readonly LogLine[]): string {
   const childLines = lines.filter(
     (l): l is ChildTurnLog => l.type === "child_turn",
   );
-  const teacherAt = (n: number) => teacherLines.find((t) => t.childTurn === n);
+  const teacherAt = (n: number) =>
+    teacherLines.find((t) => t.childTurn === n && t.afterChoice !== true);
+  const continuedAt = (n: number) =>
+    teacherLines.find((t) => t.childTurn === n && t.afterChoice === true);
   const block = (t: TeacherTurnLog | undefined) => {
     if (!t) return [];
     const rows = [
@@ -1581,6 +2027,17 @@ export function transcriptOf(lines: readonly LogLine[]): string {
   out.push("## 처음", "", ...block(teacherAt(0)));
   for (const c of childLines) {
     out.push(`## 아이 차례 ${c.childTurn}`, "");
+    const cont = continuedAt(c.childTurn);
+    if (cont)
+      out.push(
+        "- (마무리 단추에서 '더 이야기하기'를 고름)",
+        "",
+        ...block(cont).map((l) =>
+          l.startsWith("**선생님**")
+            ? l.replace("**선생님**", "**선생님(단추 뒤)**")
+            : l,
+        ),
+      );
     out.push(
       `- 아이: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"} · ${c.kind} · ${c.why}`,
     );
@@ -1703,6 +2160,9 @@ export function mergeSetup(
     ...prev,
     pSystem: next.pSystem,
     pSystemSha: next.pSystemSha,
+    ...(next.nSystem === undefined
+      ? {}
+      : { nSystem: next.nSystem, nSystemSha: next.nSystemSha }),
     pWordsSameAsUnit: next.pWordsSameAsUnit,
     args: next.args,
     argsHistory: [...history, next.args],
@@ -1753,6 +2213,8 @@ async function main(): Promise<number> {
     c2System: setup.c2System,
     pSystem: setup.pSystem,
     pSystemSha: sha(setup.pSystem),
+    nSystem: setup.nSystem,
+    nSystemSha: setup.nSystem === null ? null : sha(setup.nSystem),
     pWordsSameAsUnit: setup.pWordsSameAsUnit,
     args,
   };
