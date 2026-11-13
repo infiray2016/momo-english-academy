@@ -39,6 +39,7 @@ import {
   leadGreetingOf,
   leadHistoryOf,
   leadOpenChildOf,
+  leadRowSoundLinesOf,
   leadStatusOf,
 } from "@/core/conversation/lead-turn-core";
 import {
@@ -2717,6 +2718,186 @@ describe("묶음 X2 새 엔진 길(AC-26l 동등)", () => {
     expect(next.rec.child?.saidWords).toEqual([]);
   });
 
+  it("AC-26l · AC-26i 1~3단계 따라 할 문장 차례 바로 뒤의 되묻는 차례: 대본 도구도 서버와 같은 core 함수로 앞 차례의 소리 줄을 kept 줄로 내고, 그 줄은 들은 영어 · 행 move.sound 에 들지 않는다(평가 입력 그대로 — 묶음 S5 I-1)", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    leadStep(
+      sim,
+      child(dontKnow),
+      leadResult({
+        reading: "does_not_know",
+        move: "model_repeat",
+        say: "That's okay! Say it with me: I see the sun.",
+        model_sentence: "I see the sun.",
+      }),
+    );
+    const asked = leadStep(
+      sim,
+      child(say("Pad pad."), 2),
+      leadResult({
+        reading: "likely_misheard",
+        move: "ask_again",
+        say: "Sorry? Say it again, please.",
+      }),
+    );
+    const { rec } = asked;
+    expect(rec.lines).toContainEqual({
+      t: "sound",
+      kind: "model",
+      say: "I see the sun.",
+      lead: { kept: true },
+    });
+    expect(rec.heard).not.toContain("I see the sun.");
+    expect(rec.teacher.move.sound).toBeUndefined();
+    expect(rec.child?.askAgain).toBe(true);
+    // 다음 아이 차례의 들은 도움 · 힌트 종류는 되물은 차례의 값을 하한으로 이어 받을 뿐이다(kept 줄은 들은 도움으로 세지 않음)
+    const after = leadStep(
+      sim,
+      child(say("I see the sun."), 3),
+      leadResult({ move: "react_only", say: "Great job!" }),
+    );
+    expect(after.rec.child?.hintKind).toBe(asked.rec.child?.hintKind);
+    expect(after.rec.child?.heardHelp).toBe(asked.rec.child?.heardHelp);
+  });
+
+  it("AC-26l · AC-26i 저장된 행에서 다시 만든 소리 줄(같은 시도 다시 흘림 · 이어 하기 — core leadRowSoundLinesOf)이 실시간 길이 낸 소리 줄과 같다: 따라 할 문장 · 되묻는 차례의 kept · 고르기 물음의 ask(묶음 S5 지킬 것 2)", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const steps = [
+      leadStep(
+        sim,
+        child(dontKnow),
+        leadResult({
+          reading: "does_not_know",
+          move: "model_repeat",
+          say: "That's okay! Say it with me: I see the sun.",
+          model_sentence: "I see the sun.",
+        }),
+      ),
+      leadStep(
+        sim,
+        child(say("Pad pad."), 2),
+        leadResult({
+          reading: "likely_misheard",
+          move: "ask_again",
+          say: "Sorry? Say it again, please.",
+        }),
+      ),
+      leadStep(
+        sim,
+        child(dontKnow, 3),
+        leadResult({
+          reading: "does_not_know",
+          move: "easier_or_choices",
+          say: "That's okay! Apples or bananas?",
+        }),
+      ),
+    ];
+    // 행: 선생님 행(턴 번호 n) 뒤 아이 행(같은 번호) — 대화 차례(leadConversationOrder)와 같은 꼴
+    const rows = steps.flatMap(({ rec }, i) => [
+      {
+        speaker: "tori" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: rec.teacher.text,
+        move: rec.teacher.move,
+        sentUserMessage: rec.teacher.sentUserMessage,
+      },
+      {
+        speaker: "child" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: "",
+      },
+    ]);
+    steps.forEach(({ rec }, i) => {
+      const teacher = rows.find(
+        (r) => r.speaker === "tori" && r.turnNo === i + 1,
+      );
+      if (!teacher) throw new Error("행 없음");
+      expect(
+        leadRowSoundLinesOf({ level: 3, rows, teacher }),
+        `${i + 1} 차례`,
+      ).toEqual(rec.lines.filter((l) => l.t === "sound"));
+    });
+    expect(steps[1]?.rec.lines.filter((l) => l.t === "sound")).toEqual([
+      {
+        t: "sound",
+        kind: "model",
+        say: "I see the sun.",
+        lead: { kept: true },
+      },
+    ]);
+  });
+
+  it("AC-26l · AC-26i 되묻기가 둘 이어지면 둘째 되묻는 차례도 앞 행이 보인 듣기 줄(kept)을 이어 받고, 보통 차례에서 사라진다: 실시간 길 · 저장된 행에서 다시 만든 줄이 같고 행 move.sound 는 비어 있다(검토 rev-s5 M-1)", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const ask = leadResult({
+      reading: "likely_misheard",
+      move: "ask_again",
+      say: "Sorry? Say it again, please.",
+    });
+    const steps = [
+      leadStep(
+        sim,
+        child(dontKnow),
+        leadResult({
+          reading: "does_not_know",
+          move: "model_repeat",
+          say: "That's okay! Say it with me: I see the sun.",
+          model_sentence: "I see the sun.",
+        }),
+      ),
+      leadStep(sim, child(say("Pad pad."), 2), ask),
+      leadStep(sim, child(say("Pad."), 3), ask),
+      leadStep(
+        sim,
+        child(say("I see the sun."), 4),
+        leadResult({ move: "react_only", say: "Great job!" }),
+      ),
+    ];
+    const kept = {
+      t: "sound",
+      kind: "model",
+      say: "I see the sun.",
+      lead: { kept: true },
+    };
+    const soundOf = (i: number) =>
+      steps[i]?.rec.lines.filter((l) => l.t === "sound");
+    expect(soundOf(1)).toEqual([kept]);
+    expect(soundOf(2)).toEqual([kept]);
+    expect(soundOf(3)).toEqual([]);
+    expect(steps[1]?.rec.teacher.move.sound).toBeUndefined();
+    expect(steps[2]?.rec.teacher.move.sound).toBeUndefined();
+    const rows = steps.flatMap(({ rec }, i) => [
+      {
+        speaker: "tori" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: rec.teacher.text,
+        move: rec.teacher.move,
+        sentUserMessage: rec.teacher.sentUserMessage,
+      },
+      {
+        speaker: "child" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: "",
+      },
+    ]);
+    steps.forEach((_, i) => {
+      const teacher = rows.find(
+        (r) => r.speaker === "tori" && r.turnNo === i + 1,
+      );
+      if (!teacher) throw new Error("행 없음");
+      expect(
+        leadRowSoundLinesOf({ level: 3, rows, teacher }),
+        `${i + 1} 차례`,
+      ).toEqual(soundOf(i));
+    });
+  });
+
   it("AC-26l 1~3단계 막힌 뒤 고르기: or 물음 문장은 소리 줄 하나 · 앞 반응 그대로 · 받아 둔 질문은 아님(앞 문장이 먼저 나감), 막힌 뒤 뜻은 core leadExplanationOf(서버 새 엔진 길과 같은 함수 · 같은 인자)와 같다", () => {
     const m = materialsAt(3);
     const { sim } = leadTalking(m);
@@ -2733,10 +2914,12 @@ describe("묶음 X2 새 엔진 길(AC-26l 동등)", () => {
       }),
     );
     expect(sLines(rec)).toEqual(["That's okay!"]);
+    // 고르기 물음 줄은 ask 표지를 단다(서버와 같은 core leadSoundLinesOf — 묶음 S5 화면 검토 M-1)
     expect(rec.lines).toContainEqual({
       t: "sound",
       kind: "answer",
       say: "Apples or bananas?",
+      lead: { ask: true },
     });
     expect(rec.teacher.text).toBe("That's okay!");
     expect(rec.teacher.move.ai).toBe("choices");

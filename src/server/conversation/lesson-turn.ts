@@ -58,6 +58,8 @@ import {
   openedTierCount,
 } from "@/core/conversation/hints";
 import {
+  type LeadSoundLine,
+  leadRowSoundLinesOf,
   leadTurnAppliesOf,
   leadWrapRecastsOf,
 } from "@/core/conversation/lead-turn-core";
@@ -338,7 +340,13 @@ export type TalkLessonLine =
       en: string;
       ko?: string;
     }
-  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | {
+      t: "sound";
+      kind: "model" | "answer";
+      say: string;
+      /** 새 엔진만 싣는 표지(core lead-turn-core LeadSoundMark — ask: 고르기 물음, kept: 되묻는 차례에 그대로 둔 앞 차례의 소리 줄). */
+      lead?: { ask?: true; kept?: true };
+    }
   | { t: "sound"; kind: "choices"; answers: [string, string] }
   | { t: "end"; lesson: TalkLessonNext }
   | { t: "resting" }
@@ -1672,6 +1680,11 @@ export function lessonReplayLinesOf(
     koMeaning: boolean;
     /** 이 행의 신호 말(지난 선생님 행 move 로 다시 고른 것 — lessonCueOfRows). 없으면 null. */
     cue?: LessonCueLine | null;
+    /**
+     * 새 엔진 응답 행의 소리 줄(core leadRowSoundLinesOf — 고르기 물음 ask · 되묻는 차례의 kept 표지를 행에서 다시 만든 것, 실시간 길과 같은 줄).
+     * 있으면 move.sound 대신 이 줄을 낸다. 지금 길 · 옛 행은 null.
+     */
+    leadSound?: readonly LeadSoundLine[] | null;
   },
 ): TalkLessonLine[] {
   const { aiPart, appended } = toriLinesOf(row.text);
@@ -1683,11 +1696,14 @@ export function lessonReplayLinesOf(
   if (row.toriKo) out.push({ t: "ko", ko: row.toriKo });
   if (ctx.cue) out.push(cueAddOf(ctx.cue));
   const sound = move?.sound;
-  if (sound?.model) out.push({ t: "sound", kind: "model", say: sound.model });
-  if (sound?.choices)
-    out.push({ t: "sound", kind: "choices", answers: [...sound.choices] });
-  if (sound?.answer)
-    out.push({ t: "sound", kind: "answer", say: sound.answer });
+  if (ctx.leadSound) out.push(...ctx.leadSound);
+  else {
+    if (sound?.model) out.push({ t: "sound", kind: "model", say: sound.model });
+    if (sound?.choices)
+      out.push({ t: "sound", kind: "choices", answers: [...sound.choices] });
+    if (sound?.answer)
+      out.push({ t: "sound", kind: "answer", say: sound.answer });
+  }
   for (const en of appended) {
     if (en === MORE_PROMPT.en) {
       out.push({
@@ -2303,6 +2319,12 @@ export function replayLesson(
     cue: readTalkMove(teacher.move)?.lead
       ? null
       : lessonCueOfRows(state, lists),
+    // 새 엔진 행은 고르기 물음 · 되묻는 차례의 표지까지 실시간 길과 같은 소리 줄(묶음 S5 — 행에서 다시 만듦)
+    leadSound: leadRowSoundLinesOf({
+      level: state.level,
+      rows: state.liveRows,
+      teacher,
+    }),
   }))
     write(line);
   write({

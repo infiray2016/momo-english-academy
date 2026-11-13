@@ -147,6 +147,7 @@ import {
   type LeadHeads,
   type LeadOpen,
   type LeadRowLike,
+  type LeadSoundLine,
   leadAiQuestionOf,
   leadAskAgainFloorApplies,
   leadChildFieldsOf,
@@ -167,12 +168,14 @@ import {
   leadHintsOf,
   leadHistoryOf,
   leadHoldSayOf,
+  leadKeptSoundOf,
   leadMoveWithSound,
   leadNarrowTargetOf,
   leadOpenAcceptsOf,
   leadOpenChildOf,
   leadSaidOf,
   leadSettleOf,
+  leadSoundLinesOf,
   leadStartModeOf,
   leadStatusOf,
   leadTurnAppliesOf,
@@ -2797,7 +2800,7 @@ export type LeadRetryAsk = {
 export type LeadLine =
   | { t: "s"; en: string }
   | { t: "ko"; ko: string }
-  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | LeadSoundLine
   | { t: "add"; kind: "more_prompt"; en: string; ko?: string };
 
 /** 새 엔진 한 차례의 결과(저장될 행의 칸 · 화면 줄 · 평가 입력 · 기록). */
@@ -3828,11 +3831,29 @@ export function createTalkSim(
         en: MORE_PROMPT.en,
         ...(spec.koMeaning ? { ko: MORE_PROMPT.ko } : {}),
       });
-      const soundLines = (s: { model?: string; answer?: string }) => {
-        if (s.model !== undefined)
-          lines.push({ t: "sound", kind: "model", say: s.model });
-        if (s.answer !== undefined)
-          lines.push({ t: "sound", kind: "answer", say: s.answer });
+      // 소리 줄(서버 lead-turn.ts 와 같은 꼴): 응답이 있는 차례는 core leadSoundLinesOf(고르기 물음 ask · 되묻는 차례면 앞 차례의 소리 줄을
+      // 그대로 둔 kept 줄 — leadKeptSoundOf), 응답이 없던 차례(move.lead 없는 행)는 표지 없는 지금 꼴
+      const soundLines = (
+        s: { model?: string; answer?: string },
+        move: TalkLeadOutput["move"] | undefined,
+      ) => {
+        if (move === undefined) {
+          if (s.model !== undefined)
+            lines.push({ t: "sound", kind: "model", say: s.model });
+          if (s.answer !== undefined)
+            lines.push({ t: "sound", kind: "answer", say: s.answer });
+          return;
+        }
+        const kept = leadKeptSoundOf({
+          level,
+          move,
+          hasChild: child !== null,
+          own: s,
+          prevMove,
+          // 앞 행이 보인 소리 줄(되묻기가 이어지면 거슬러 감 — 서버 lead-turn.ts 와 같은 값, 검토 rev-s5 M-1)
+          rows: ordered,
+        });
+        lines.push(...leadSoundLinesOf({ sound: s, kept }));
       };
       let teacher: LeadTurnRecord["teacher"];
       let childFields: LeadChildFields | null;
@@ -3884,7 +3905,7 @@ export function createTalkSim(
           shown = [view.en];
         }
         if (ko !== null) lines.push({ t: "ko", ko });
-        soundLines(sound);
+        soundLines(sound, undefined);
         say = shown.join(" ");
         closingAdded = leadClosingAddsOf({ closing: p.closing, say });
         if (closingAdded) lines.push(closingLine());
@@ -3992,7 +4013,7 @@ export function createTalkSim(
           ? leadKoLineOf(level, value.say_ko).trim()
           : "";
         if (ko !== "") lines.push({ t: "ko", ko });
-        soundLines(settled.sound);
+        soundLines(settled.sound, value.move);
         say = settled.say;
         closingAdded = leadClosingAddsOf({ closing: p.closing, say });
         if (closingAdded) lines.push(closingLine());
@@ -4173,8 +4194,15 @@ export function createTalkSim(
       });
       const heardLines = [
         lines.flatMap((l) => (l.t === "s" ? [l.en] : [])).join(" "),
+        // 되묻는 차례에 그대로 둔 앞 차례의 소리 줄(kept)은 저절로 읽지 않으므로 들은 영어가 아니다(화면 lessonSpokenItemsOf 와 같음)
         ...lines.flatMap((l) =>
-          l.t === "sound" ? [l.say] : l.t === "add" ? [l.en] : [],
+          l.t === "sound"
+            ? l.lead?.kept === true
+              ? []
+              : [l.say]
+            : l.t === "add"
+              ? [l.en]
+              : [],
         ),
       ].filter((l) => l.trim() !== "");
       const reading = value?.reading;

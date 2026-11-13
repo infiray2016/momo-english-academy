@@ -42,7 +42,9 @@ import {
 } from "@/core/conversation/lead-mode";
 import { leadWrapSourcesOf } from "@/core/conversation/lead-record";
 import {
+  type LeadSoundLine,
   type LeadTextOf,
+  leadRowSoundLinesOf,
   leadStartModeOf,
 } from "@/core/conversation/lead-turn-core";
 import {
@@ -1484,12 +1486,22 @@ export type TalkLessonCurrent = {
   imageKey?: string;
   /** 그 행에 저장한 한국어 설명(보인 때만 저장 — 이어 열어도 말풍선 아래에 다시 보인다, 묶음 11 검토 M-6). */
   explanation?: string;
+  /**
+   * 새 엔진 응답 행의 소리 줄(core leadRowSoundLinesOf — 고르기 물음 ask · 되묻는 차례의 kept 표지를 행에서 다시 만든 것, 실시간 길과 같은 줄 ·
+   * 묶음 S5). 있으면 화면은 sound 대신 이 줄로 말풍선을 그린다. 지금 길 · 옛 행은 칸 없음.
+   */
+  leadSound?: LeadSoundLine[];
 };
 
 function currentOf(state: TalkLessonState): TalkLessonCurrent | null {
   const row = state.liveRows.findLast((r) => r.speaker === "tori");
   if (!row) return null;
   const move = readTalkMove(row.move);
+  const leadSound = leadRowSoundLinesOf({
+    level: state.level,
+    rows: state.liveRows,
+    teacher: row,
+  });
   return {
     turnNo: row.turnNo,
     kind: move?.kind ?? null,
@@ -1505,6 +1517,7 @@ function currentOf(state: TalkLessonState): TalkLessonCurrent | null {
       lessonImageKeyOf(state, state.position.slot?.item ?? move?.item),
     ),
     ...(row.explanation ? { explanation: row.explanation } : {}),
+    ...(leadSound === null ? {} : { leadSound }),
   };
 }
 

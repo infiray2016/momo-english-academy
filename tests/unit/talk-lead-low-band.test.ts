@@ -44,13 +44,13 @@ describe("AC-26i 1~3단계 따라 할 문장 글 빼기", () => {
     expect(out.removed).toEqual(["I look at comic books."]);
   });
 
-  it("AC-26i 따옴표로 싼 따라 할 문장은 따옴표 · 끝 쉼표를 정리한다(P-K1-s1 차례 10)", () => {
+  it("AC-26i 따옴표로 싼 따라 할 문장은 따옴표를 정리하고 안내 말 뒤 끝 쉼표를 쌍점으로 바꾼다(P-K1-s1 차례 10 · 화면 검토 M-2)", () => {
     const out = shown({
       move: "model_repeat",
       say: 'Yes, the sun is bright! Say, "I see the sun."',
       modelSentence: "I see the sun.",
     });
-    expect(out.text).toBe("Yes, the sun is bright! Say");
+    expect(out.text).toBe("Yes, the sun is bright! Say:");
     expect(out.removed).toEqual(["I see the sun."]);
   });
 
@@ -64,13 +64,40 @@ describe("AC-26i 1~3단계 따라 할 문장 글 빼기", () => {
     expect(out.removed).toEqual(["I look at comic books"]);
   });
 
-  it("AC-26i 둥근 따옴표 · 따옴표 밖 마침표도 정리한다", () => {
+  it("AC-26i 둥근 따옴표 · 따옴표 밖 마침표도 정리하고 끝 쉼표는 쌍점이다", () => {
     const out = shown({
       move: "model_repeat",
       say: "Good job! Say, “I drink juice at the beach”.",
       modelSentence: "I drink juice at the beach",
     });
-    expect(out.text).toBe("Good job! Say");
+    expect(out.text).toBe("Good job! Say:");
+  });
+
+  it("AC-26i 따라 말하게 하는 안내 말(Repeat after me · Say it) 뒤의 끝 쉼표도 쌍점이다(검토 rev-s5 M-4)", () => {
+    expect(
+      shown({
+        move: "model_repeat",
+        say: 'Great! Repeat after me, "I like it."',
+        modelSentence: "I like it.",
+      }).text,
+    ).toBe("Great! Repeat after me:");
+    expect(
+      shown({
+        move: "model_repeat",
+        say: "Nice! Say it, I see the sun.",
+        modelSentence: "I see the sun.",
+      }).text,
+    ).toBe("Nice! Say it:");
+  });
+
+  it("AC-26i 안내 말이 아닌 말 뒤의 끝 쉼표는 묶음 S5 전처럼 지운다('Wow, I like it.' → 'Wow', 검토 rev-s5 M-4)", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: "Wow, I like it.",
+      modelSentence: "I like it.",
+    });
+    expect(out.text).toBe("Wow");
+    expect(out.removed).toEqual(["I like it."]);
   });
 
   it("AC-26i 가운데 있는 따라 할 문장은 빼고 뒤 글을 남기며 소리 차례가 바뀐 것을 돌려준다", () => {
@@ -355,7 +382,7 @@ describe("AC-26i 4단계부터는 빼지 않는다", () => {
       say: 'Yum, juice! Say, "I drink juice at the beach."',
       modelSentence: "I drink juice at the beach.",
     });
-    expect(out.text).toBe("Yum, juice! Say");
+    expect(out.text).toBe("Yum, juice! Say:");
   });
 });
 

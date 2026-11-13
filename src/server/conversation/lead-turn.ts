@@ -68,6 +68,7 @@ import {
   leadHintsOf,
   leadHistoryOf,
   leadHoldSayOf,
+  leadKeptSoundOf,
   leadMoveWithSound,
   leadNarrowTargetOf,
   leadOpenAcceptsOf,
@@ -76,6 +77,7 @@ import {
   leadOpenReplayOf,
   leadSaidOf,
   leadSettleOf,
+  leadSoundLinesOf,
   leadStatusOf,
   leadTurnAppliesOf,
   talkLeadRetrySpec,
@@ -753,6 +755,7 @@ async function leadTeacherTurn(
       shown = [view.line.en];
     }
     if (ko !== null) write({ t: "ko", ko });
+    // 응답이 없던 차례의 행은 move.lead 가 없어 다시 흘림이 지금 꼴의 줄을 낸다 — 여기도 표지 없는 지금 꼴(같은 값, 컨트롤러 지킬 것 2)
     if (sound.model !== undefined)
       write({ t: "sound", kind: "model", say: sound.model });
     if (sound.answer !== undefined)
@@ -880,17 +883,25 @@ async function leadTeacherTurn(
     narrow,
   });
 
-  // (5) 줄 내보내기: 남은 글 문장 → 뜻 → 소리 줄(따라 할 문장 · 막힌 뒤 고르기 — 글 뒤, 미결 11) → 마무리 상수(물음이 없을 때만). 신호 말은
+  // (5) 줄 내보내기: 남은 글 문장 → 뜻 → 소리 줄(따라 할 문장 · 막힌 뒤 고르기 — 글 뒤, 미결 11 · 되묻는 차례면 앞 차례의 소리 줄을 그대로,
+  // 저절로 읽지 않음 — 정본 03 4절 98줄 · 화면 검토 I-1, 행 move.sound 에는 적지 않음) → 마무리 상수(물음이 없을 때만). 신호 말은
   // 붙이지 않는다(Claude 가 제 말로 안내 — 같은 시도 다시 흘림도 저장한 행 그대로 같은 줄을 낸다)
   for (const en of settled.release) send(en);
   const ko = state.spec.koMeaning
     ? leadKoLineOf(level, value.say_ko).trim()
     : "";
   if (ko !== "") write({ t: "ko", ko });
-  if (settled.sound.model !== undefined)
-    write({ t: "sound", kind: "model", say: settled.sound.model });
-  if (settled.sound.answer !== undefined)
-    write({ t: "sound", kind: "answer", say: settled.sound.answer });
+  const kept = leadKeptSoundOf({
+    level,
+    move: value.move,
+    hasChild: child !== null,
+    own: settled.sound,
+    prevMove,
+    // 앞 행이 보인 소리 줄(되묻기가 이어지면 거슬러 감 — 다시 흘림 · 이어 하기(leadRowSoundLinesOf) · 모의 실행기와 같은 값, 검토 rev-s5 M-1)
+    rows,
+  });
+  for (const line of leadSoundLinesOf({ sound: settled.sound, kept }))
+    write(line);
   const closingAdded = leadClosingAddsOf({ closing, say: settled.say });
   if (closingAdded) write(closingLine(state.spec.koMeaning));
 

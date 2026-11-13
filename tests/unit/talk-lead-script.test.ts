@@ -20,10 +20,14 @@ import {
   leadNarrowOutcomeOf,
 } from "@/core/conversation/lead-level";
 import { leadKoLineOf } from "@/core/conversation/lead-low-band";
-import { leadPrevStuckOf } from "@/core/conversation/lead-record";
+import {
+  leadPrevStuckOf,
+  leadTeacherMoveOf,
+} from "@/core/conversation/lead-record";
 import {
   createLeadSentenceFlow,
   type LeadHeads,
+  type LeadSoundLine,
   leadChildStuckOf,
   leadClosingAddsOf,
   leadClosingTurnOf,
@@ -31,14 +35,17 @@ import {
   leadFlowPrevStuckOf,
   leadHintsOf,
   leadHoldSayOf,
+  leadKeptSoundOf,
   leadNarrowTargetOf,
   leadSettleOf,
+  leadSoundLinesOf,
 } from "@/core/conversation/lead-turn-core";
 import { talkLessonPositionOf } from "@/core/conversation/lesson-flow";
 import type {
   TalkLessonChildTurn,
   TalkLessonTurn,
 } from "@/core/conversation/lesson-turns";
+import { type TalkMove, talkMoveOf } from "@/core/conversation/move";
 import { allowedLemmaOfVocab } from "@/core/conversation/situation";
 import { checkToriSentence } from "@/core/conversation/stream";
 import {
@@ -54,10 +61,13 @@ import {
   LEAD_SCRIPT,
   LEAD_SCRIPT_CHILD_SAYS,
   LEAD_SCRIPT_CHOICES,
+  LEAD_SCRIPT_COUNTED_BEFORE_INSERT,
   LEAD_SCRIPT_GREETING_END,
   LEAD_SCRIPT_HINT_KO,
+  LEAD_SCRIPT_HINT_SAY_KO,
   LEAD_SCRIPT_MODEL,
   LEAD_SCRIPT_RETRY,
+  LEAD_SCRIPT_SAY_COMMA_SHOWN,
   type LeadScriptStep,
 } from "../e2e/talk-lead-script";
 import { devSeedTree } from "../fixtures/seed/dev-tree";
@@ -175,6 +185,10 @@ type StepOut = {
   /** 나간 글 줄(t: s) — 흘려 보낸 앞 문장 + 끝에서 낸 문장. */
   lines: string[];
   sound: { model?: string; answer?: string };
+  /** 흘려 보낸 소리 줄(t: sound — 이 차례의 소리 줄 → 되묻는 차례면 그대로 둔 앞 차례의 소리 줄 kept, 서버 lead-turn.ts 와 같은 core 함수). */
+  soundLines: LeadSoundLine[];
+  /** 아이 차례가 막힘인가(위치 되짚기의 '말 주고받기' 셈에서 빠짐). */
+  stuck: boolean;
   /** 뜻 줄(t: ko — 빈 글이면 줄 없음). */
   ko: string;
   /** 막힌 뒤 한국어 뜻(end 줄의 explanation — 말풍선 아래 글). */
@@ -193,10 +207,13 @@ function runStep(
     closing = false,
     childTexts = [],
     stuckInSlot = 1,
+    prevMove = null,
   }: {
     closing?: boolean;
     childTexts?: readonly string[];
     stuckInSlot?: number;
+    /** 바로 앞 선생님 행 move(되묻는 차례가 그대로 둘 소리 줄을 읽는다). */
+    prevMove?: TalkMove | null;
   } = {},
 ): StepOut {
   const { child, reply } = step;
@@ -288,9 +305,18 @@ function runStep(
     narrow,
   });
   const output = { hint_ko: reply.hint_ko ?? "", hint_en: reply.hint_en ?? "" };
+  const kept = leadKeptSoundOf({
+    level: LEVEL,
+    move: reply.move,
+    hasChild: child !== null,
+    own: settled.sound,
+    prevMove,
+  });
   return {
     lines: [...streamed, ...settled.release],
     sound: settled.sound,
+    soundLines: leadSoundLinesOf({ sound: settled.sound, kept }),
+    stuck,
     ko: spec.koMeaning ? leadKoLineOf(LEVEL, reply.say_ko ?? "").trim() : "",
     explanation: leadExplanationOf({
       child: lite,
@@ -362,29 +388,77 @@ describe("회화 새 엔진 e2e 대본(talk-lead.spec.ts)의 차례마다 서버
     expect(out.hints).toBeUndefined();
   });
 
-  it("AC-26i '잘 모르겠어요' 뒤 되묻는 차례: 막힌 뒤 고르기 물음은 글에서 빠져 소리 줄 answer 하나이고, 앞 반응은 글이며 hint_ko 가 없어 막힌 뒤 뜻이 없다", () => {
+  it("AC-26i 따라 할 문장 차례 바로 뒤의 되묻는 차례(ask_again): 선생님 말만 글이고, 이 차례의 소리 줄 없이 앞 차례의 따라 할 문장 소리 줄을 그대로 둔 kept 줄 하나가 나간다(저절로 읽지 않음 — 정본 03 4절 98줄 · 화면 검토 I-1)", () => {
+    const model = runStep(LEAD_SCRIPT.model, { childTexts: said1 });
+    const out = runStep(LEAD_SCRIPT.askAgain, {
+      childTexts: said1,
+      prevMove: moveWithSound(model.sound),
+    });
+    expect(out.lines).toEqual(["Sorry?", "Say it again, please."]);
+    expect(out.sound).toEqual({});
+    expect(out.soundLines).toEqual([
+      {
+        t: "sound",
+        kind: "model",
+        say: LEAD_SCRIPT_MODEL,
+        lead: { kept: true },
+      },
+    ]);
+    expect(out.ko).toBe(LEAD_SCRIPT.askAgain.reply.say_ko);
+    expect(out.explanation).toBeNull();
+    // 앞 차례가 소리 줄 없는 차례면 그대로 둘 것이 없다
+    expect(
+      runStep(LEAD_SCRIPT.askAgain, {
+        childTexts: said1,
+        prevMove: moveWithSound({}),
+      }).soundLines,
+    ).toEqual([]);
+  });
+
+  it("AC-26i 'Say, \"…\"' 꼴의 따라 할 문장(model_repeat): 따라 할 문장은 소리 줄 model 이고, 안내 말 뒤 끝 쉼표는 쌍점이 되어 글은 'Good! Say:' 다(화면 검토 M-2)", () => {
+    const out = runStep(LEAD_SCRIPT.sayComma, { childTexts: said1 });
+    expect(out.sound).toEqual({ model: LEAD_SCRIPT_MODEL });
+    expect(out.lines).toEqual([...LEAD_SCRIPT_SAY_COMMA_SHOWN]);
+    expect(out.soundLines).toEqual([
+      { t: "sound", kind: "model", say: LEAD_SCRIPT_MODEL },
+    ]);
+  });
+
+  it("AC-26i '잘 모르겠어요' 뒤 막힌 뒤 고르기 차례: 고르기 물음은 글에서 빠져 소리 줄 answer 하나(고르기 물음 표지 ask)이고, 앞 반응은 글이며 hint_ko 가 없어 막힌 뒤 뜻이 없다", () => {
     const out = runStep(LEAD_SCRIPT.choices, { childTexts: said1 });
     expect(out.sound).toEqual({ answer: LEAD_SCRIPT_CHOICES });
+    expect(out.soundLines).toEqual([
+      {
+        t: "sound",
+        kind: "answer",
+        say: LEAD_SCRIPT_CHOICES,
+        lead: { ask: true },
+      },
+    ]);
     expect(out.lines).toEqual(["That's okay!"]);
     expect(out.explanation).toBeNull();
     expect(out.hints).toBeUndefined();
   });
 
-  it("AC-26c 또 '잘 모르겠어요' 뒤: 3단계는 첫 막힘부터 막힌 뒤 한국어 뜻(hint_ko)을 말풍선 아래 글로 내고, 고르기가 아닌 물음은 글로 나간다", () => {
+  it("AC-26c · AC-26m 또 '잘 모르겠어요' 뒤: 3단계는 첫 막힘부터 막힌 뒤 한국어 뜻(hint_ko — 아이가 할 수 있는 답의 한국어)을 말풍선 아래 글로 내고, 같은 차례에 뜻 줄(say_ko)도 있으며, 고르기가 아닌 물음은 글로 나간다", () => {
     // 3단계 규격의 koExplainFromStuck 이 1 이라, 단추 차례(그 자리 막힘 수가 1 이상)마다 보인다
     expect(spec.koExplainFromStuck).toBe(1);
     const out = runStep(LEAD_SCRIPT.hintKo, { childTexts: said1 });
     expect(out.explanation).toBe(LEAD_SCRIPT_HINT_KO);
+    expect(out.ko).toBe(LEAD_SCRIPT_HINT_SAY_KO);
     expect(out.lines).toEqual(["That's okay.", "I like this.", "And you?"]);
     expect(out.sound).toEqual({});
     expect(out.hints).toBeUndefined();
   });
 
-  it("AC-26c 마무리 차례: e2e 가 앞선 대화 차례를 (참고 턴 − 2) 쌍 넣은 뒤의 말 차례가 앱이 정한 마무리 때이고, 말 칸에 물음이 없어 상수 물음이 붙는다(두 단추)", () => {
+  it("AC-26c 마무리 차례: e2e 가 앞선 대화 차례를 (참고 턴 − 1 − 넣기 전에 센 말 차례) 쌍 넣은 뒤의 말 차례가 앱이 정한 마무리 때이고, 말 칸에 물음이 없어 상수 물음이 붙는다(두 단추)", () => {
     const target = spec.targetTurns;
     const shown = (step: LeadScriptStep) =>
       runStep(step, { childTexts: said1 }).lines.join(" ");
-    // e2e 의 차례 그대로(인사 하나 → 인사 끝 → 대화 첫 차례 → 말 · 단추 · 단추 → 넣은 쌍)
+    const askStuck = runStep(LEAD_SCRIPT.askAgain, {
+      childTexts: said1,
+    }).stuck;
+    // e2e 의 차례 그대로(인사 하나 → 인사 끝 → 대화 첫 차례 → 말 · 말(되물음) · 말 · 단추 · 단추 → 넣은 쌍)
     const before: TalkLessonTurn[] = [
       teacher("How are you today?", { kind: "first_question" }),
       said({ segment: "greeting_end" }),
@@ -392,6 +466,10 @@ describe("회화 새 엔진 e2e 대본(talk-lead.spec.ts)의 차례마다 서버
       teacher(shown(LEAD_SCRIPT.opening), { kind: "first_question" }),
       said(),
       aiTurn(shown(LEAD_SCRIPT.model)),
+      said({ stuck: askStuck, askAgain: true }),
+      aiTurn(shown(LEAD_SCRIPT.askAgain)),
+      said(),
+      aiTurn(shown(LEAD_SCRIPT.sayComma)),
       button(),
       aiTurn(shown(LEAD_SCRIPT.choices)),
       button(),
@@ -405,22 +483,25 @@ describe("회화 새 엔진 e2e 대본(talk-lead.spec.ts)의 차례마다 서버
       settings: LOW_SETTINGS,
       prepWords: [],
     };
+    // e2e 가 쓰는 '넣기 전에 센 말 차례' 수(위치 되짚기의 말 주고받기 셈 — 인사 끝의 말도 든다)
+    expect(talkLessonPositionOf({ ...args, turns: before }).talkCount).toBe(
+      LEAD_SCRIPT_COUNTED_BEFORE_INSERT,
+    );
     const closingAfter = (turns: TalkLessonTurn[]) =>
       leadClosingTurnOf({
         speech: true,
         positionAfter: () =>
           talkLessonPositionOf({ ...args, turns: [...turns, said()] }),
       });
-    // 넣기 전의 말 차례는 마무리 때가 아니다(마무리는 넣은 쌍이 정한다)
-    expect(closingAfter(before)).toBe(false);
-    const filled = [
+    const filledWith = (pairs: number) => [
       ...before,
-      ...Array.from({ length: target - 2 }, () => [
-        said(),
-        aiTurn("Nice!"),
-      ]).flat(),
+      ...Array.from({ length: pairs }, () => [said(), aiTurn("Nice!")]).flat(),
     ];
-    expect(closingAfter(filled)).toBe(true);
+    const pairs = target - 1 - LEAD_SCRIPT_COUNTED_BEFORE_INSERT;
+    // 넣기 전 · 한 쌍 덜 넣은 뒤의 말 차례는 마무리 때가 아니다(마무리는 넣은 쌍이 정한다)
+    expect(closingAfter(before)).toBe(false);
+    expect(closingAfter(filledWith(pairs - 1))).toBe(false);
+    expect(closingAfter(filledWith(pairs))).toBe(true);
     const out = runStep(LEAD_SCRIPT.closing, {
       closing: true,
       childTexts: said1,
@@ -437,4 +518,37 @@ describe("회화 새 엔진 e2e 대본(talk-lead.spec.ts)의 차례마다 서버
     expect(out.closingAdded).toBe(false);
     expect(out.explanation).toBeNull();
   });
+
+  it("AC-26c · AC-26m '더 이야기하기' 뒤 아이 말 → 마무리 제안(move wrap_up): 말이 글로 나가고 소리 줄 · 마무리 상수 · 막힌 뒤 뜻이 없으며, 행 move 는 마무리 제안 길(next closing)이다", () => {
+    const out = runStep(LEAD_SCRIPT.wrapUp, { childTexts: said1 });
+    expect(out.lines).toEqual(["You did great today!", "Let's stop here."]);
+    expect(out.soundLines).toEqual([]);
+    expect(out.closingAdded).toBe(false);
+    expect(out.explanation).toBeNull();
+    // 행 move(서버 턴 길 · 대본 도구가 같이 부르는 core leadTeacherMoveOf) — e2e 의 마무리 제안 장면이 이 값에 기댄다(lesson-flow next closing, 검토 rev-s5 M-5)
+    const { reply } = LEAD_SCRIPT.wrapUp;
+    const move = leadTeacherMoveOf({
+      response: {
+        reading: "clear_answer",
+        move: reply.move,
+        say: reply.say,
+        model_sentence: "",
+      },
+      prevChild: { input: "speech", stuck: false, nospeech: false },
+      spec,
+      closingSlot: false,
+      firstQuestion: false,
+      unitWords,
+      lemmaOf,
+    });
+    expect(move.next).toBe("closing");
+  });
 });
+
+/** 앞 선생님 행 move(소리 줄을 적은 새 엔진 행 — 되묻는 차례가 읽는 칸만). */
+function moveWithSound(sound: { model?: string; answer?: string }): TalkMove {
+  const move = talkMoveOf({ kind: "ai" });
+  return sound.model === undefined && sound.answer === undefined
+    ? move
+    : { ...move, sound: { ...sound } };
+}

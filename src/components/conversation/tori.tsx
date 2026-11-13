@@ -41,6 +41,8 @@ export const BUBBLE_TEXT = {
   answer: (n: number) => `${n === 1 ? "첫째" : "둘째"} 답 듣기`,
   /** 따라 할 말 · 받침의 답 글 없는 듣기 단추(plan 문구 표 — 정본 밖 문구). */
   model: "따라 할 말 듣기",
+  /** 새 엔진 1~3단계 막힌 뒤 고르기 물음의 글 없는 듣기 단추(정본 밖 문구 — 화면 검토 M-1, 묶음 S5). */
+  ask: "물어본 말 듣기",
   /** ①② 한 번 안내(U5-11 — 정본 밖 문구). */
   answerTip: "번호를 누르면 답을 들려줘요",
   /**
@@ -321,10 +323,35 @@ export type SpeakWhat = ClientSpeakEntry["w"];
  */
 export type SpeakItem = { text: string; w: SpeakWhat; line?: number };
 
-/** 1~3단계 소리 줄(서버 TalkLessonLine 의 sound 와 같은 꼴). */
+/**
+ * 1~3단계 소리 줄(서버 TalkLessonLine 의 sound 와 같은 꼴). lead 는 새 엔진만 싣는 표지다(core lead-turn-core LeadSoundMark): ask 는 고르기
+ * 물음(접근 이름), kept 는 되묻는 차례에 그대로 둔 앞 차례의 소리 줄(저절로 읽지 않고 말풍선 다시 읽기에도 넣지 않음 — 단추를 누르면 들림).
+ */
 export type LessonSoundLine =
-  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | {
+      t: "sound";
+      kind: "model" | "answer";
+      say: string;
+      lead?: { ask?: true; kept?: true };
+    }
   | { t: "sound"; kind: "choices"; answers: readonly [string, string] };
+
+/** 되묻는 차례에 그대로 둔 앞 차례의 소리 줄인가(순수 — 저절로 읽는 차례 · 말풍선 다시 읽기에서 뺀다, 정본 03 4절 98줄 · 화면 검토 I-1). */
+export function isKeptSoundLine(line: { t: string; lead?: unknown }): boolean {
+  return (
+    line.t === "sound" &&
+    typeof line.lead === "object" &&
+    line.lead !== null &&
+    (line.lead as { kept?: unknown }).kept === true
+  );
+}
+
+/** 따라 할 말 · 받침의 답 · 고르기 물음 듣기 단추의 접근 이름(순수, 화면 검토 M-1 — 새 엔진의 고르기 물음은 따라 할 말이 아니다). */
+export function soundListenLabelOf(line: {
+  lead?: { ask?: true } | undefined;
+}): string {
+  return line.lead?.ask === true ? BUBBLE_TEXT.ask : BUBBLE_TEXT.model;
+}
 /** 말풍선에 쌓는 새 꼴 줄: 선생님 문장 · 붙인 화면 글 줄(카드 질문 · 마무리 물음 · 4단계부터 답 글) · 소리 줄. */
 export type LessonBubbleLine =
   | { t: "s"; en: string }
@@ -457,12 +484,17 @@ export function soundlessNoticeLeftMs(
   return Math.max(0, at + noticeMs - now);
 }
 
-/** 지금 턴 말풍선을 누를 때 읽을 차례(순수): 받은 차례 그대로 소리 줄까지(정본 03 4절 '지금 턴은 소리 줄까지'). */
+/**
+ * 지금 턴 말풍선을 누를 때 읽을 차례(순수): 받은 차례 그대로 소리 줄까지(정본 03 4절 '지금 턴은 소리 줄까지'). 되묻는 차례에 그대로 둔 앞 차례의
+ * 소리 줄(isKeptSoundLine)은 이 차례의 말이 아니므로 넣지 않는다(그 단추를 눌러야 들림).
+ */
 export function lessonSpokenOf(
   content: Pick<LessonBubbleContent, "lines">,
   level: number,
 ): SpeakItem[] {
-  return content.lines.flatMap((l, i) => lessonSpeakItemsOf(l, level, i));
+  return content.lines.flatMap((l, i) =>
+    isKeptSoundLine(l) ? [] : lessonSpeakItemsOf(l, level, i),
+  );
 }
 
 /** 맞장구를 읽을 때까지 남은 ms(순수): 보낸 때부터 talk.wait_line_seconds, 이미 지났으면 0. */
@@ -670,8 +702,11 @@ export function LessonToriBubble({
                     key={i}
                     type="button"
                     data-sound-listen={line.kind}
+                    {...(isKeptSoundLine(line)
+                      ? { "data-sound-kept": "" }
+                      : {})}
                     {...sizeMark}
-                    aria-label={BUBBLE_TEXT.model}
+                    aria-label={soundListenLabelOf(line)}
                     disabled={listening}
                     onClick={() => onSound(lessonSpeakItemsOf(line, level))}
                     className={sized(SOUND_BUTTON_CLASS)}

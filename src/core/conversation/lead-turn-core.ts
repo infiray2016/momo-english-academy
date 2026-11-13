@@ -320,6 +320,155 @@ export function leadMoveWithSound(
 }
 
 /**
+ * 새 엔진 소리 줄의 표지(흘려 보낼 줄의 선택 칸 lead — 지금 길의 줄에는 없다): ask 는 1~3단계 막힌 뒤 고르기 물음(kind answer 가 받침의 답이
+ * 아니라 물음 — 듣기 단추의 접근 이름, 화면 검토 M-1), kept 는 되묻는 차례에 그대로 둔 앞 차례의 소리 줄(저절로 읽지 않고 누르면 들림 — I-1).
+ */
+export type LeadSoundMark = { ask?: true; kept?: true };
+/** 새 엔진이 흘려 보내는 소리 줄 하나(lesson-turn TalkLessonLine 의 sound 와 같은 꼴). */
+export type LeadSoundLine = {
+  t: "sound";
+  kind: "model" | "answer";
+  say: string;
+  lead?: LeadSoundMark;
+};
+
+/**
+ * 되묻는 차례에 그대로 둘 앞 차례의 소리 줄(정본 03 4절 98줄 'Claude 주도 방식은 … 1~3단계는 앞 차례의 글 없는 듣기 버튼을 그대로 둔다' ·
+ * spec 150줄, 화면 검토 I-1): 1~3단계의 아이 말 차례이고 move 가 ask_again 이며 이 차례 응답에 제 소리 줄이 없을 때, 바로 앞 선생님 행이
+ * 화면에 보인 소리 줄(따라 할 문장 model · 막힌 뒤 고르기 물음 answer)을 그대로 돌려준다. 행 move.sound 에는 적지 않는다(다음 아이 차례의
+ * 들은 도움 · 힌트 종류 · '말했다'의 입력을 바꾸지 않게 — leadMoveWithSound). 아니면 빈 값.
+ *
+ * 앞 행이 보인 소리 줄: rows(이 차례 앞의 살아 있는 행)를 주면 그 마지막 선생님 행이 보인 줄(제 move.sound, 그 행도 되묻는 차례로 앞 줄을
+ * 그대로 뒀으면 그 줄 — 되묻기가 둘 넘게 이어져도 듣기 단추가 남는다, 검토 rev-s5 M-1)이고, rows 가 없으면 prevMove.sound 다.
+ */
+export function leadKeptSoundOf({
+  level,
+  move,
+  hasChild,
+  own,
+  prevMove,
+  rows,
+}: {
+  level: number;
+  move: TalkLeadMove | undefined;
+  hasChild: boolean;
+  /** 이 차례 응답이 낸 소리 줄(leadSettleOf sound). */
+  own: { model?: string; answer?: string };
+  prevMove: TalkMove | null;
+  /** 이 차례 앞의 살아 있는 행(이 차례의 선생님 행은 넣지 않는다 — 마지막 선생님 행이 바로 앞 행). */
+  rows?: readonly LeadRowLike[];
+}): { model?: string; answer?: string } {
+  if (!isLowBandLevel(level) || !hasChild || move !== "ask_again") return {};
+  if (own.model !== undefined || own.answer !== undefined) return {};
+  const prev =
+    rows === undefined ? prevMove?.sound : leadLastShownSoundOf(level, rows);
+  return {
+    ...(prev?.model ? { model: prev.model } : {}),
+    ...(prev?.answer ? { answer: prev.answer } : {}),
+  };
+}
+
+/**
+ * 행 목록의 마지막 선생님 행이 화면에 보인 소리 줄(leadKeptSoundOf 의 앞 행 — 새 엔진 응답 행은 leadRowSoundLinesOf 로 다시 만든 줄, 그 밖의
+ * 행은 move.sound). 선생님 행이 없으면 빈 값.
+ */
+function leadLastShownSoundOf(
+  level: number,
+  rows: readonly LeadRowLike[],
+): { model?: string; answer?: string } {
+  const ordered = leadConversationOrder(rows);
+  const prev = ordered.findLast((r) => r.speaker === "tori");
+  if (prev === undefined) return {};
+  const lines = leadRowSoundLinesOf({ level, rows: ordered, teacher: prev });
+  if (lines === null) return readTalkMove(prev.move)?.sound ?? {};
+  const model = lines.find((l) => l.kind === "model")?.say;
+  const answer = lines.find((l) => l.kind === "answer")?.say;
+  return {
+    ...(model === undefined ? {} : { model }),
+    ...(answer === undefined ? {} : { answer }),
+  };
+}
+
+/**
+ * 저장된 선생님 행에서 다시 만든 새 엔진 소리 줄(같은 시도 다시 흘림 · 쪽을 다시 연 이어 하기 — 컨트롤러 지킬 것 2): 행이 새 엔진의 응답 행
+ * (move.lead)일 때만 만든다. 이 차례의 소리 줄은 행 move.sound(실시간 길이 낸 그대로 — leadMoveWithSound), 그대로 둘 앞 차례의 소리 줄은 행
+ * move.lead.move · 대화 차례에서 이 행 앞의 행(바로 앞 선생님 행이 보인 줄 — 되묻기가 이어지면 거슬러 감) · 아이 말 차례인가(입구 차례는 행에
+ * 사용자 메시지를 둔다)로 실시간 길과 같은 leadKeptSoundOf 를 다시 부른다. 그 밖의 행(지금 길 · 옛 행 · 응답이 없던 새 엔진 차례)은 null —
+ * 부르는 쪽이 지금 꼴의 줄을 낸다.
+ */
+export function leadRowSoundLinesOf<R extends LeadRowLike>({
+  level,
+  rows,
+  teacher,
+}: {
+  level: number;
+  /** 이 수업의 살아 있는 행(teacher 포함). */
+  rows: readonly R[];
+  teacher: R;
+}): LeadSoundLine[] | null {
+  const move = readTalkMove(teacher.move);
+  if (!move?.lead) return null;
+  const ordered = leadConversationOrder(rows);
+  const at = ordered.findIndex(
+    (r) => r.speaker === "tori" && r.turnNo === teacher.turnNo,
+  );
+  // 행 목록에 그 행이 없으면 목록 전부가 이 행 앞이다
+  const before = at < 0 ? ordered : ordered.slice(0, at);
+  const prev = before.findLast((r) => r.speaker === "tori") ?? null;
+  const own = {
+    ...(move.sound?.model ? { model: move.sound.model } : {}),
+    ...(move.sound?.answer ? { answer: move.sound.answer } : {}),
+  };
+  const kept = leadKeptSoundOf({
+    level,
+    move: move.lead.move,
+    hasChild: (teacher.sentUserMessage ?? null) === null,
+    own,
+    prevMove: readTalkMove(prev?.move),
+    rows: before,
+  });
+  return leadSoundLinesOf({ sound: own, kept });
+}
+
+/**
+ * 새 엔진이 흘려 보낼 소리 줄(서버 턴 길 · 대본 도구가 같이 부름): 이 차례의 따라 할 문장 → 고르기 물음 → 그대로 둔 앞 차례의 소리 줄(kept).
+ * 고르기 물음 줄에는 ask 표지를 단다. 차례는 지금 길과 같다(model 다음 answer).
+ */
+export function leadSoundLinesOf({
+  sound,
+  kept = {},
+}: {
+  sound: { model?: string; answer?: string };
+  kept?: { model?: string; answer?: string };
+}): LeadSoundLine[] {
+  const out: LeadSoundLine[] = [];
+  if (sound.model !== undefined)
+    out.push({ t: "sound", kind: "model", say: sound.model });
+  if (sound.answer !== undefined)
+    out.push({
+      t: "sound",
+      kind: "answer",
+      say: sound.answer,
+      lead: { ask: true },
+    });
+  if (kept.model !== undefined)
+    out.push({
+      t: "sound",
+      kind: "model",
+      say: kept.model,
+      lead: { kept: true },
+    });
+  if (kept.answer !== undefined)
+    out.push({
+      t: "sound",
+      kind: "answer",
+      say: kept.answer,
+      lead: { ask: true, kept: true },
+    });
+  return out;
+}
+
+/**
  * 'Sound note' 줄의 값(spec 설계 2 · C217): 지금 들은 글 귀띔(heardHintsOf)에 앞 선생님 질문이 노린 단원 단어(새 엔진 행은 물음 문장에 든 단원
  * 단어 lead.asked, 지금 길 행은 move.words)를 '답 낱말'로 넘긴다. 답 예시는 넘기지 않는다 — Claude 의 hint_en 에 들은 낱말이 함께 들면('I see
  * the sea.') 'See.' 가 맞게 들린 말로 읽혀 귀띔이 사라지기 때문이다. 그래서 단원 단어 see · sea 가 함께 있는 3단계 단원 1 에서도 'Do you go to

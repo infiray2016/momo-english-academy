@@ -75,9 +75,68 @@ function PastTeacher({
   );
 }
 
+/** 맨 아래에 붙어 있다고 볼 남은 넘김 거리(px, 화면 꼴 값 — 소수 화소 반올림만큼). */
+export const TALK_LOG_PIN_SLACK_PX = 2;
+
+/** 기록 칸이 맨 아래에 붙어 있는가(순수): 남은 넘김 거리가 TALK_LOG_PIN_SLACK_PX 안. 넘치지 않는 칸은 늘 붙어 있다. */
+export function talkLogPinnedOf({
+  scrollTop,
+  scrollHeight,
+  clientHeight,
+}: {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+}): boolean {
+  return scrollHeight - scrollTop - clientHeight <= TALK_LOG_PIN_SLACK_PX;
+}
+
 /**
- * 대화 기록 칸. entries 가 늘거나 지금 턴(children)이 바뀌면 맨 아래로 넘긴다(bottomKey). 칸 높이는 부르는 쪽 배치가 정하고(className),
- * 기본은 화면 높이의 상한 안에서 넘겨 보는 칸이다.
+ * 넘김 사건 뒤 맨 아래에 붙어 있는가(순수): 앱이 맨 아래로 맞춘 자리(setAt) 그대로면 그 사이 글이 자라 남은 거리가 생겼어도 붙어 있다(앱이 낸
+ * 넘김 사건이 늦게 와 다음 자람을 아이의 넘김으로 읽지 않게). 그 밖(아이가 넘김 · 브라우저가 자리를 줄임)은 talkLogPinnedOf 다.
+ */
+export function talkLogPinnedAfterScrollOf({
+  scrollTop,
+  scrollHeight,
+  clientHeight,
+  setAt,
+}: {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+  /** 앱이 마지막으로 맨 아래로 맞춘 scrollTop(그 뒤 아이가 넘겼으면 null). */
+  setAt: number | null;
+}): boolean {
+  if (setAt !== null && Math.abs(scrollTop - setAt) <= TALK_LOG_PIN_SLACK_PX)
+    return true;
+  return talkLogPinnedOf({ scrollTop, scrollHeight, clientHeight });
+}
+
+/**
+ * 기록 칸을 맨 아래로 다시 맞출까(순수, 정본 03 4절 94줄 '지금 턴이 맨 아래' · '위로 넘겨 다시 본다', 화면 검토 C-1 · M-6): 새 차례(줄 수 ·
+ * 지금 턴 열쇠가 바뀜)면 늘 맞춘다. 그 밖에는 마지막으로 넘김이 멈춘 때 맨 아래에 붙어 있었고(pinned), 지금 턴 영역이 자랐거나(글이 흐름 · 뜻 줄
+ * · 듣기 단추 · 막힌 뒤 뜻 · 기다림 줄) 칸 자체의 높이가 바뀌었을 때(기기를 돌림)만 맞춘다. 아이가 위로 넘겨 지난 말을 보는 중이면 끌어내리지
+ * 않는다.
+ */
+export function talkLogFollowOf({
+  newTurn,
+  pinned,
+  nowGrew,
+  boxResized,
+}: {
+  newTurn: boolean;
+  pinned: boolean;
+  nowGrew: boolean;
+  boxResized: boolean;
+}): boolean {
+  if (newTurn) return true;
+  return pinned && (nowGrew || boxResized);
+}
+
+/**
+ * 대화 기록 칸. entries 가 늘거나 지금 턴(children)이 바뀌면 맨 아래로 넘긴다(bottomKey). 그 뒤 지금 턴 영역 · 지난 줄 영역이 자라거나 칸 높이가 바뀌면,
+ * 맨 아래에 붙어 있던 때만 다시 맨 아래로 맞춘다(talkLogFollowOf — 움직임 없이). 칸 높이는 부르는 쪽 배치가 정하고(className), 기본은 화면
+ * 높이의 상한 안에서 넘겨 보는 칸이다.
  */
 export function TalkLog({
   entries,
@@ -104,11 +163,77 @@ export function TalkLog({
   children?: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 줄 수 · 지금 턴 열쇠가 바뀔 때만 맨 아래로
+  const now = useRef<HTMLDivElement>(null);
+  /** 지난 줄 영역(role log) — 글꼴이 늦게 바뀌거나 너비만 바뀌어 지난 줄이 자라도 지금 턴이 칸 아래로 밀리지 않게 함께 지켜본다(검토 rev-s5 M-2). */
+  const past = useRef<HTMLDivElement>(null);
+  /** 마지막으로 넘김이 멈춘 때 맨 아래에 붙어 있었나(넘김 사건마다 다시 잼 — 글이 자라는 것만으로는 바뀌지 않는다). */
+  const pinned = useRef(true);
+  /** 앱이 마지막으로 맨 아래로 맞춘 자리(talkLogPinnedAfterScrollOf). */
+  const setAt = useRef<number | null>(null);
+  const hasNow = Boolean(children);
+  /** 맞출 때면 맨 아래로(움직임 없이 — 넘김 사건이 pinned 를 다시 잰다). */
+  const follow = useRef(
+    (
+      el: HTMLDivElement,
+      change: { newTurn: boolean; nowGrew: boolean; boxResized: boolean },
+    ) => {
+      if (!talkLogFollowOf({ ...change, pinned: pinned.current })) return;
+      pinned.current = true;
+      el.scrollTop = el.scrollHeight;
+      setAt.current = el.scrollTop;
+    },
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 줄 수 · 지금 턴 열쇠가 바뀔 때만 맨 아래로(새 차례)
   useEffect(() => {
     const el = box.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el)
+      follow.current(el, { newTurn: true, nowGrew: false, boxResized: false });
   }, [entries.length, bottomKey]);
+  // 지금 턴 영역 · 지난 줄 영역이 자라거나 칸 높이가 바뀌면(기기를 돌림) 붙어 있던 때만 다시 맨 아래로(C-1 · M-6 · rev-s5 M-2 — 지난 줄
+  // 영역의 자람은 지금 턴 영역의 자람과 같게 nowGrew 로 넘긴다)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 지금 턴 영역이 생기거나 없어지면(now.current 가 바뀜) 다시 지켜본다
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const onScroll = () => {
+      pinned.current = talkLogPinnedAfterScrollOf({
+        scrollTop: el.scrollTop,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        setAt: setAt.current,
+      });
+      // 앱이 맞춘 자리를 떠났으면(아이가 넘김) 그 자리는 더 보지 않는다
+      if (
+        setAt.current !== null &&
+        Math.abs(el.scrollTop - setAt.current) > TALK_LOG_PIN_SLACK_PX
+      )
+        setAt.current = null;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    if (typeof ResizeObserver === "undefined")
+      return () => el.removeEventListener("scroll", onScroll);
+    const heights = new Map<Element, number>();
+    const observer = new ResizeObserver((records) => {
+      let nowGrew = false;
+      let boxResized = false;
+      for (const record of records) {
+        const height = record.contentRect.height;
+        const before = heights.get(record.target);
+        heights.set(record.target, height);
+        if (before === undefined) continue;
+        if (record.target === el) boxResized ||= height !== before;
+        else nowGrew ||= height > before;
+      }
+      follow.current(el, { newTurn: false, nowGrew, boxResized });
+    });
+    observer.observe(el);
+    if (past.current) observer.observe(past.current);
+    if (now.current) observer.observe(now.current);
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [hasNow]);
   return (
     <div
       ref={box}
@@ -119,7 +244,7 @@ export function TalkLog({
       )}
     >
       {/* 알림 칸(role log = aria-live polite)은 지난 줄만 — 흘러나오는 지금 턴은 넣지 않는다(검토 M-4) */}
-      <div role="log" className="flex flex-col gap-4">
+      <div ref={past} role="log" className="flex flex-col gap-4">
         {entries.map((entry) =>
           entry.who === "teacher" ? (
             <PastTeacher
@@ -135,8 +260,8 @@ export function TalkLog({
           ),
         )}
       </div>
-      {children ? (
-        <div data-talk-log-now="" aria-live="off">
+      {hasNow ? (
+        <div ref={now} data-talk-log-now="" aria-live="off">
           {children}
         </div>
       ) : null}

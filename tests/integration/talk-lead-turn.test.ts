@@ -639,12 +639,15 @@ describe("회화 Claude 주도 묶음 S1 새 엔진 턴 길", () => {
         hint_en: "Apples.",
       }),
     );
-    const lines = await say(sessionId, { mode: "dont_know" });
+    const attempt = `lead-choices-${++seq}`;
+    const lines = await say(sessionId, { mode: "dont_know" }, attempt);
     expect(sOf(lines)).toEqual(["That's okay!"]);
+    // 새 엔진의 고르기 물음 줄은 ask 표지를 단다(묶음 S5 화면 검토 M-1 — 듣기 단추의 접근 이름)
     expect(lines).toContainEqual({
       t: "sound",
       kind: "answer",
       say: "Apples or bananas?",
+      lead: { ask: true },
     });
     const end = lines.at(-1);
     expect(end?.t === "end" ? end.lesson.explanation : undefined).toBe(
@@ -658,6 +661,14 @@ describe("회화 Claude 주도 묶음 S1 새 엔진 턴 길", () => {
     expect(move?.sound).toEqual({ answer: "Apples or bananas?" });
     expect(move?.lead?.choices).toBe(true);
     expect(move?.cause).toBe("button");
+    // 같은 시도 다시 흘림도 저장한 행에서 같은 표지(ask)의 소리 줄을 낸다 — AI 를 다시 부르지 않음(replayLesson 이 liveRows · teacher 를 넘기는
+    // 연결, 검토 rev-s5 참고)
+    const before = h.fake.requests.length;
+    const replay = await say(sessionId, { mode: "dont_know" }, attempt);
+    expect(h.fake.requests.length).toBe(before);
+    expect(replay.filter((l) => l.t !== "end")).toEqual(
+      lines.filter((l) => l.t !== "end"),
+    );
   });
 
   it("AC-26g 좁은 정의에 걸린 질문은 같은 뜻 다시 말하기를 한 번 요청하고, 받는 조건을 지난 문장이 그 자리에 나가며 앞 반응 문장은 그대로다", async () => {

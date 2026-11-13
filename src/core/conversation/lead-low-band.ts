@@ -131,8 +131,17 @@ function mergedSpans(spans: Span[]): Span[] {
 }
 
 /**
+ * 끝 쉼표를 쌍점으로 바꿀 따라 말하게 하는 안내 말(Say · Say it · Say it with me · Repeat · Repeat after me … 가 글 끝 쉼표 바로 앞 — 검토
+ * rev-s5 M-4 로 좁힘). 그 밖의 끝 쉼표('Wow,' 처럼)는 묶음 S5 전처럼 지운다.
+ */
+const GUIDE_TRAILING_COMMA =
+  /(\b(?:say|repeat)(?:\s+(?:it|after me|with me|again|together))*)\s*,\s*$/i;
+
+/**
  * 뺀 뒤 남은 글 다듬기(설계 8 '따옴표 · 끝 쉼표를 정리한다'): 속이 빈(문장 부호 · 빈칸만 든) 따옴표 쌍, 홀로 남은 마침표 · 느낌표 · 물음표,
- * 끝 쉼표를 지우고 빈칸을 하나로 모은다. 안내 말(Say · Say it with me: …)과 쌍점은 그대로 둔다.
+ * 끝 쉼표를 지우고 빈칸을 하나로 모은다. 안내 말(Say · Say it with me: …)과 쌍점은 그대로 두고, 따라 말하게 하는 안내 말 바로 뒤의 끝
+ * 쉼표('Say, "…"' 의 쉼표 — 뺀 문장이 바로 뒤에 있던 자리)만 쌍점으로 바꾼다('Say:' — 다른 꼴 'Say:' · 'Say it with me:' 와 맞춤, 화면 검토
+ * M-2 · r5 검토 권고 · rev-s5 M-4).
  */
 function tidied(text: string): string {
   return text
@@ -140,6 +149,7 @@ function tidied(text: string): string {
     .replace(/(^|\s)[.!?]+(?=\s|$)/g, "$1")
     .replace(/\s+/g, " ")
     .trim()
+    .replace(GUIDE_TRAILING_COMMA, "$1:")
     .replace(/\s*,\s*$/, "");
 }
 

@@ -158,6 +158,7 @@ import {
   answerTipShownOf,
   BUBBLE_CLASS,
   BUBBLE_WIDTH,
+  isKeptSoundLine,
   LESSON_BUBBLE_START,
   type LessonBubbleContent,
   type LessonBubbleLine,
@@ -397,11 +398,16 @@ export function lessonBubbleOf(
     .filter((l) => !l.app)
     .map((l) => ({ t: "s", en: l.en }));
   const sound = current.sound;
-  if (sound?.model) lines.push({ t: "sound", kind: "model", say: sound.model });
-  if (sound?.choices)
-    lines.push({ t: "sound", kind: "choices", answers: sound.choices });
-  if (sound?.answer)
-    lines.push({ t: "sound", kind: "answer", say: sound.answer });
+  // 새 엔진 행은 서버가 행에서 다시 만든 소리 줄(고르기 물음 ask · 되묻는 차례의 kept 표지 — 실시간 길과 같은 줄, 묶음 S5)
+  if (current.leadSound) lines.push(...current.leadSound);
+  else {
+    if (sound?.model)
+      lines.push({ t: "sound", kind: "model", say: sound.model });
+    if (sound?.choices)
+      lines.push({ t: "sound", kind: "choices", answers: sound.choices });
+    if (sound?.answer)
+      lines.push({ t: "sound", kind: "answer", say: sound.answer });
+  }
   for (const l of current.lines)
     if (l.app)
       lines.push({
@@ -572,12 +578,60 @@ export function lessonChoiceSpeechOf(
   return choice === "suggestion";
 }
 
-/** 말풍선 전체의 읽기 차례(소리 줄 항목에 줄 차례를 싣는다 — 들려줬는지 되찾기, playedSoundsOf). */
+/**
+ * 으뜸 단추 줄 아래에 남길 여유(px, 화면 꼴 값 — 실제 사파리의 도구 막대 · 홈 표시 줄이 보는 창 아래 끝을 가리는 몫을 감안, 화면 검토 I-2).
+ * 보는 창 높이는 visualViewport(도구 막대를 뺀 보이는 높이)로 잰다.
+ */
+export const KEEP_IN_VIEW_MARGIN_PX = 16;
+
+/**
+ * 으뜸 단추 줄을 보는 창 안으로 옮길 넘김 거리(순수, 4절 7줄 '한 화면에 행동 하나, 큰 버튼' · 97줄 · 화면 검토 I-2): 줄의 아래 끝 + 여유가 보는 창
+ * 아래를 넘으면 그만큼 아래로 넘긴다. 줄의 위 끝이 보는 창 위로 나가게는 넘기지 않고, 위로는 넘기지 않는다(이미 보이면 0).
+ */
+export function keepInViewScrollOf({
+  top,
+  bottom,
+  viewportHeight,
+  margin,
+}: {
+  top: number;
+  bottom: number;
+  viewportHeight: number;
+  margin: number;
+}): number {
+  const over = bottom + margin - viewportHeight;
+  if (over <= 0) return 0;
+  return Math.max(0, Math.min(over, top));
+}
+
+/**
+ * 으뜸 단추 줄을 보는 창 안에 둘 차례인가(순수, 화면 검토 I-2): 대화 기록 칸 화면의 아이 차례(말하기) · 고르기 차례(마무리 차례의 두 단추 —
+ * 마무리 제안이면 말하기도) · 정리 화면(정리의 말하기). 짧은 준비 쪽지 · 선생님 차례 · 쉼 · 닫힘은 아니다(쪽을 움직이지 않는다).
+ */
+export function lessonKeepInViewOf({
+  wrapShown,
+  inPrep,
+  phase,
+}: {
+  wrapShown: boolean;
+  inPrep: boolean;
+  phase: string;
+}): boolean {
+  if (wrapShown) return true;
+  return !inPrep && (phase === "child" || phase === "choice");
+}
+
+/**
+ * 말풍선 전체의 읽기 차례(소리 줄 항목에 줄 차례를 싣는다 — 들려줬는지 되찾기, playedSoundsOf). 되묻는 차례에 그대로 둔 앞 차례의 소리 줄
+ * (isKeptSoundLine)은 저절로 읽지 않고 말풍선 다시 읽기에도 넣지 않는다(정본 03 4절 98줄 '선생님 말만' · 화면 검토 I-1 — 단추를 눌러야 들림).
+ */
 export function lessonSpokenItemsOf(
   content: Pick<LessonBubbleContent, "lines">,
   level: number,
 ): SpeakItem[] {
-  return content.lines.flatMap((l, i) => lessonSpeakItemsOf(l, level, i));
+  return content.lines.flatMap((l, i) =>
+    isKeptSoundLine(l) ? [] : lessonSpeakItemsOf(l, level, i),
+  );
 }
 
 /** 읽은 항목이 들려준 소리 줄이면 그 줄 차례(07절 34줄 — 들려주지 못함 · 읽지 않음은 들은 도움이 아니다). 아니면 null. */
@@ -1572,7 +1626,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           const index = bubbleLines.current;
           bubbleLines.current += 1;
           setBubble((b) => lessonBubbleStep(b, line));
-          queue.enqueue(lessonSpeakItemsOf(line, view.level, index));
+          // 되묻는 차례에 그대로 둔 앞 차례의 소리 줄은 단추만 두고 읽지 않는다(I-1 — 들은 도움 · 힌트 종류의 입력도 그대로)
+          if (!isKeptSoundLine(line))
+            queue.enqueue(lessonSpeakItemsOf(line, view.level, index));
         },
         onEnd: (n) => {
           waitDone();
@@ -1886,6 +1942,52 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const inDialogue = segment === "talk" || segment === "more_talk";
   const soundRetry = soundRetryStepOf(soundTrack, { canSkip: true });
 
+  // 으뜸 단추 줄(아이 차례 · 두 단추 · 정리의 말하기 — 수업 판의 마지막 조각)이 열리거나 판이 자라거나 기기를 돌리면 움직임 없이 보는 창 안으로
+  // (화면 검토 I-2 — 버리는 듣기 기기의 child-turn 처리를 모든 기기로 넓힘). 이미 보이면 그대로다
+  const panelRef = useRef<HTMLElement>(null);
+  const panelOpen =
+    !blocked &&
+    !resting &&
+    Boolean(view.teacher) &&
+    started &&
+    noticeSeen &&
+    !(stage === "closing" && wrap);
+  const keepActive =
+    panelOpen &&
+    lessonKeepInViewOf({
+      wrapShown: stage === "wrap" && Boolean(wrap),
+      inPrep,
+      phase,
+    });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 차례 · 단계 · 지금 턴이 바뀔 때 다시 건다
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!keepActive || !panel) return;
+    const keep = () => {
+      const target = panel.lastElementChild;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const by = keepInViewScrollOf({
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.visualViewport?.height ?? window.innerHeight,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+      });
+      // 움직임 없이(저장소에 부드러운 넘김 CSS 가 없어 기본값이 곧바로) — behavior "instant" 열거값에 기대지 않는다(검토 rev-s5 M-3)
+      if (by > 0) window.scrollBy(0, by);
+    };
+    keep();
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(keep);
+    observer?.observe(panel);
+    const turned = window.matchMedia("(orientation: portrait)");
+    turned.addEventListener("change", keep);
+    return () => {
+      observer?.disconnect();
+      turned.removeEventListener("change", keep);
+    };
+  }, [keepActive, phase, stage, turnKey]);
+
   let body: ReactNode;
   let panelShown = false;
   if (blocked) {
@@ -2028,6 +2130,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     const heard = childHeardOf(playedSoundsOf(bubble, played));
     body = (
       <section
+        ref={panelRef}
         data-talk-panel=""
         data-talk-phase={phase}
         data-talk-lesson=""
