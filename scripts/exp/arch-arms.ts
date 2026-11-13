@@ -183,6 +183,9 @@ Facts about you: on weekends you play at home and read comic books; you like cat
   // 시나리오 SD2(모름이 잦은 아이) — SD 의 아이 역이 쉬운 말에는 막히지 않아 '잘 모르겠어요' 단추 · 엉뚱한 답이 한 번도 나오지 않은 방식이 있어
   // (R-SD-s1), 선생님 말이 쉬워도 막히는 아이 역을 따로 둔다(2026-11-13 컨트롤러). 잡음은 넣지 않는다.
   SD2: `You often do not understand, even when the teacher speaks simply. In about one turn out of three you press the "I don't know" button. In about one turn out of four you answer with one word that does not fit at all (the teacher talks about cats and you say "Banana." or "Seven."). Sometimes you just stay silent. After the teacher helps you kindly, you try once with one or two words. If the teacher keeps drilling the same thing, you press "I don't know" again.`,
+  // 시나리오 SG(거의 말이 없는 아이) — 요청자 결정 C243 (1) · (6) '질문 없이 반응한 뒤 대화가 끊길 가능성 · 짧게만 답하거나 아무 말도 하지 않는
+  // 아이를 중요하게 본다'를 보려고 더한 아이 역(2026-11-13 컨트롤러). 잡음은 넣지 않는다.
+  SG: `You are very quiet today. When the teacher only says something and does not ask you anything, you usually stay silent (about two times out of three); otherwise you say one word like "Yes." or "Haha.". When the teacher asks an open question ("What do you...?", "Tell me..."), you stay silent or press the "I don't know" button. You can answer a yes-or-no question or a choice between two things with one word. If the teacher stays gentle and playful for a while, you slowly start to say two words.`,
   // 시나리오 SE(아이가 주도하는 대화) — 브리프 task-x3 2절 글 그대로
   SE: `You love to lead. In most turns you either ask the teacher a question or bring up a new thing: your cat, your lunch, a soccer game, a funny dream. You jump between topics quickly and you like it when the teacher goes along and jokes with you. If the teacher tries to pull you back to her own topic, you ignore it once and continue with yours.`,
   // 시나리오 SF(자연스러운 수업 마무리) — 브리프 task-x3 2절 글 그대로
@@ -199,6 +202,7 @@ export const SCENARIO_CHILDREN = [
   "SD2",
   "SE",
   "SF",
+  "SG",
 ] as const;
 export type ScenarioKey = (typeof SCENARIO_CHILDREN)[number];
 
@@ -211,6 +215,7 @@ export const SCENARIO_TITLES: Readonly<Record<ScenarioKey, string>> = {
   SD2: "아이가 이해하지 못함(모름이 잦은 아이)",
   SE: "아이가 주도하는 대화",
   SF: "자연스러운 수업 마무리",
+  SG: "거의 말이 없는 아이",
 };
 
 export function isScenarioChild(child: string): child is ScenarioKey {

@@ -89,6 +89,10 @@ const ARM_ORDER: readonly Arm[] = [
   "Q",
   "QP",
   "R",
+  "R2",
+  "R3",
+  "R3M",
+  "R3O",
 ];
 
 /** 결과 글에 쓰는 방식 이름(QP 는 Q+ — 명령에서만 QP). */

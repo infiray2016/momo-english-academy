@@ -112,8 +112,13 @@ import {
   Q_MORE_MESSAGE,
   type QArm,
   QOutputSchema,
+  qCallOverrideOf,
   qChildMessageOf,
   qSystemOf,
+  r2LessonContextOf,
+  r2StartMessageOf,
+  type SttNote,
+  usesLessonFacts,
 } from "./arch-arm-q";
 import {
   C_START_MESSAGE,
@@ -151,7 +156,21 @@ import {
 } from "./arch-metrics";
 import { isNoiseTurn, type NoiseResult, noiseOf } from "./arch-noise";
 
-export const ARMS = ["A", "B", "C", "C2", "P", "N", "Q", "QP", "R"] as const;
+export const ARMS = [
+  "A",
+  "B",
+  "C",
+  "C2",
+  "P",
+  "N",
+  "Q",
+  "QP",
+  "R",
+  "R2",
+  "R3",
+  "R3M",
+  "R3O",
+] as const;
 export type Arm = (typeof ARMS)[number];
 /** --children 를 주지 않을 때의 아이 역(지난 실험 그대로). */
 export const CHILDREN = [
@@ -325,6 +344,8 @@ export type ChildTurnLog = {
   noise: NoiseResult | null;
   /** 잡음 차례인데 speak 가 아니라 건너뜀. */
   noiseSkipped: boolean;
+  /** 음성 인식기의 알림(실험에서 만든 값 — 방식 R2 의 선생님 호출에만 실었고, 그때만 남긴다). */
+  stt?: SttNote;
 };
 
 export type LessonLog = {
@@ -813,7 +834,34 @@ function wordsOf(text: string): string[] {
 
 // ── 선생님 쪽 ────────────────────────────────────────────────────
 
-export type ChildInput = { action: ChildAction; heard: string | null };
+export type ChildInput = {
+  action: ChildAction;
+  heard: string | null;
+  /** 음성 인식기의 알림(실험에서 만든 값 — 방식 R2 만 선생님 호출에 싣는다). */
+  stt?: SttNote | null;
+};
+
+/**
+ * 실험에서 만드는 인식기 알림(R2 에만 전함): 말 전체가 바뀐 잡음의 첫째는 '확신 없음 + 다른 후보(아이가 하려던 말)', 둘째는 '확신 없음'만, 셋째는
+ * 알림 없음(인식기가 틀린 글을 확신함). 낱말 하나만 바뀐 잡음에는 알림이 없다. 잡음을 넣는 아이 역의 깨끗한 차례 하나(아이 차례 6)에는 '확신 없음'을
+ * 붙인다(맞게 들은 말에 붙는 알림 — 지나치게 되묻지 않는지 본다).
+ */
+export function sttNoteOf(input: {
+  noise: NoiseResult | null;
+  injectedBefore: number;
+  says: string;
+  noiseOn: boolean;
+  childTurn: number;
+}): SttNote | null {
+  if (input.noise !== null) {
+    if (input.noise.how !== "replace") return null;
+    const k = input.injectedBefore % 3;
+    if (k === 0) return { unsure: true, alt: input.says };
+    if (k === 1) return { unsure: true };
+    return null;
+  }
+  return input.noiseOn && input.childTurn === 6 ? { unsure: true } : null;
+}
 
 export type { WrapPick };
 // 마무리 차례의 두 단추 · 아이 역 출력 · 안내 말은 방식 정의(arch-arms)로 옮겼다(arch-report 의 확인 항목 6 이 같은 글을 쓴다). 여기서 다시 내보낸다.
@@ -1783,14 +1831,31 @@ function teacherP(setup: Setup, ctx: Ctx, lesson: string): Teacher {
  * 알림 없음). 호출 값은 다른 방식과 같은 틀(회화 턴), 흘려 받아 첫 문장 시각을 잰다. 아이에게 나가는 말은 say 그대로(후처리 없음). 지난 메시지는
  * 고쳐 쓰지 않는다. wrap_up 이 참이면 다음 아이 차례 앞에서 두 단추를 내고(endedBefore), '더 이야기하기'면 Q_MORE_MESSAGE 로 잇는다(more).
  */
-function teacherQ(setup: Setup, ctx: Ctx, lesson: string, arm: QArm): Teacher {
+function teacherQ(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  arm: QArm,
+  contextIndex: number,
+): Teacher {
   const { format: _drop, ...outputConfig } = setup.template.body
     .output_config as Record<string, unknown>;
+  // 모델 갈래(R3M · R3O): 안내문 · 메시지는 R3 그대로, 호출의 모델 · 추론 수준(· 끌 수 없는 모델의 생각 단계 · 출력 상한)만 바꾼다
+  const over = qCallOverrideOf(arm);
   const base = withFormat(
     {
       ...setup.template.body,
       system: setup.qSystems[arm],
-      output_config: outputConfig,
+      output_config: over
+        ? { ...outputConfig, effort: over.effort }
+        : outputConfig,
+      ...(over ? { model: over.model } : {}),
+      ...(over && over.thinking === "adaptive"
+        ? { thinking: { type: "adaptive" } }
+        : {}),
+      ...(over && over.maxTokens !== null
+        ? { max_tokens: over.maxTokens }
+        : {}),
     },
     QOutputSchema,
   );
@@ -1847,7 +1912,13 @@ function teacherQ(setup: Setup, ctx: Ctx, lesson: string, arm: QArm): Teacher {
     };
   };
   return {
-    open: () => call(0, C_START_MESSAGE),
+    open: () =>
+      call(
+        0,
+        usesLessonFacts(arm)
+          ? r2StartMessageOf(r2LessonContextOf(contextIndex))
+          : C_START_MESSAGE,
+      ),
     endedBefore() {
       if (!wrapPending) return null;
       wrapPending = false;
@@ -1859,6 +1930,14 @@ function teacherQ(setup: Setup, ctx: Ctx, lesson: string, arm: QArm): Teacher {
         qChildMessageOf(
           input.action,
           input.action === "speak" ? setup.masker(input.heard ?? "").text : "",
+          usesLessonFacts(arm) && input.stt
+            ? {
+                unsure: input.stt.unsure,
+                ...(input.stt.alt
+                  ? { alt: setup.masker(input.stt.alt).text }
+                  : {}),
+              }
+            : undefined,
         ),
       ),
     async more(childTurn) {
@@ -1970,7 +2049,13 @@ export async function runLesson(
           : arm === "N"
             ? teacherN(setup, ctx, lesson)
             : isQArm(arm)
-              ? teacherQ(setup, ctx, lesson, arm)
+              ? teacherQ(
+                  setup,
+                  ctx,
+                  lesson,
+                  arm,
+                  ALL_CHILDREN.indexOf(child) + seed,
+                )
               : teacherC(setup, ctx, lesson, arm);
   const childCall = childRole(setup, ctx, lesson, child);
   const choices: WrapChoice[] = [];
@@ -2036,13 +2121,30 @@ export async function runLesson(
         out.action === "speak" && says === "" ? "silent" : out.action;
       let heard: string | null = null;
       let noise: NoiseResult | null = null;
+      let stt: SttNote | null = null;
       const noiseTurn = noiseOn && isNoiseTurn(seed, t);
       if (action === "speak") {
         if (noiseTurn) {
           noise = noiseOf(says, injected);
+          stt = sttNoteOf({
+            noise,
+            injectedBefore: injected,
+            says,
+            noiseOn,
+            childTurn: t,
+          });
           injected++;
           heard = noise.heard;
-        } else heard = says;
+        } else {
+          heard = says;
+          stt = sttNoteOf({
+            noise: null,
+            injectedBefore: injected,
+            says,
+            noiseOn,
+            childTurn: t,
+          });
+        }
         childWords.push(...wordsOf(heard));
       }
       lines.push({
@@ -2057,9 +2159,10 @@ export async function runLesson(
         heard,
         noise,
         noiseSkipped: noiseTurn && action !== "speak",
+        ...(usesLessonFacts(arm) && stt ? { stt } : {}),
       });
       childTurns = t;
-      const res = await teacher.respond(t, { action, heard });
+      const res = await teacher.respond(t, { action, heard, stt });
       if (!res.called && res.ended) {
         ended = `아이 차례 ${t}: ${res.ended}`;
         break;
@@ -2201,6 +2304,10 @@ export function transcriptOf(lines: readonly LogLine[]): string {
         `- 들린 글: "${c.heard ?? ""}"${c.noise ? ` (잡음 ${c.noise.how === "swap" ? `${c.noise.from}→${c.noise.to}` : "말 전체 바꿈"})` : ""}`,
       );
     if (c.noiseSkipped) out.push("- 잡음 차례였으나 말하지 않아 건너뜀");
+    if (c.stt)
+      out.push(
+        `- 인식기 알림(선생님에게 전함): 확신 없음${c.stt.alt ? ` · 다른 후보 "${c.stt.alt}"` : ""}`,
+      );
     out.push("");
     out.push(...block(teacherAt(c.childTurn)));
   }
