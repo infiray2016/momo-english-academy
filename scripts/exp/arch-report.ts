@@ -2,6 +2,7 @@
 // 예시 · 가려 읽는 판정의 채점표(judge-rubric.md)를 쓴다. 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-report.ts --out <폴더>
 // [--checks-only] [--count-tokens]. 판정이 끝난 뒤 --judges j1,j2 로 부르면 판정 결과만 방식별로 모은다(judge-summary.json · .md,
 // 지난 실험의 judge-agg.py 를 옮김 — 가려 읽기 폴더 · 대응표는 건드리지 않는다).
+// 시나리오 아이 역(SA~SF — task-x3)의 수업이 있으면 시나리오마다 방식을 나란히 읽는 글(scenarios/<SA…SF>.md)도 낸다.
 // --count-tokens 만 네트워크를 쓴다(방식마다 시스템 프롬프트의 입력 토큰 수 — count_tokens). 키 값은 출력하지 않는다.
 import { randomInt } from "node:crypto";
 import {
@@ -24,7 +25,24 @@ import {
   pChildMessageOf,
   pStatusOf,
 } from "./arch-arm-p";
-import { heardByChild, wrapChoiceMessageOf } from "./arch-arms";
+import {
+  isQArm,
+  Q_ARM_LABEL,
+  Q_ARMS,
+  Q_MORE_MESSAGE,
+  type QArm,
+  qChildMessageOf,
+} from "./arch-arm-q";
+import {
+  C_START_MESSAGE,
+  CHILD_PERSONAS,
+  childHasNoise,
+  heardByChild,
+  SCENARIO_CHILDREN,
+  SCENARIO_TITLES,
+  type ScenarioKey,
+  wrapChoiceMessageOf,
+} from "./arch-arms";
 import {
   type Arm,
   type Branch,
@@ -44,6 +62,7 @@ import {
   firstSentenceStatsOf,
   firstSentStatsOf,
   flat,
+  followSentenceOf,
   type JudgeFile,
   type JudgeSummary,
   judgeSummaryOf,
@@ -60,7 +79,27 @@ import {
 } from "./arch-metrics";
 import { NOISE_TURNS } from "./arch-noise";
 
-const ARM_ORDER: readonly Arm[] = ["A", "B", "C", "C2", "P", "N"];
+const ARM_ORDER: readonly Arm[] = [
+  "A",
+  "B",
+  "C",
+  "C2",
+  "P",
+  "N",
+  "Q",
+  "QP",
+  "R",
+];
+
+/** 결과 글에 쓰는 방식 이름(QP 는 Q+ — 명령에서만 QP). */
+function armLabel(arm: Arm): string {
+  return isQArm(arm) ? Q_ARM_LABEL[arm] : arm;
+}
+
+/** 기록에 든 방식만(차례대로). */
+function armsIn(lessons: readonly Lesson[]): Arm[] {
+  return ARM_ORDER.filter((a) => lessons.some((l) => l.meta.arm === a));
+}
 const BRANCHES: readonly Branch[] = [
   "그대로 나감",
   "질문을 다시 쓰게 함",
@@ -614,7 +653,7 @@ export function saidMarkdownOf(said: readonly SaidRow[]): string[] {
         "이 표의 값은 힌트 종류 · 막힘 · 되묻기 · 한국어 도움의 조건을 세 방식 모두 적용하지 않아, 각 엔진의 지금 판정보다 넉넉한 값이다(세 방식을 같은 자로 견주려고 입력을 같게 맞춘 상한).",
       ],
     ),
-    "입력은 기록의 들린 글 · 아이가 들은 바로 앞 선생님 말 · 따라 할 문장 · 단원 단어뿐이다. 따라 할 문장(A: 소리 줄, P: model_sentence, N: 새 엔진 소리 줄 — 새 엔진 기록이 없는 인사 토막 차례는 A 와 같은 소리 줄)은 아이가 들은 선생님 말에 글자 그대로 든 때만 쓴다(core leadModelOf 의 inSay 와 같은 대조). (1) · (2) 는 지금의 '만났다'와 같은 대조이고, (3) 은 core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말)을 세 방식에 같은 꼴의 행으로 적용한 것이다. 새 판정 규칙이 아니며, 각 방식의 지금 판정(Claude 후보에 기댐)과는 다른 자다.",
+    "입력은 기록의 들린 글 · 아이가 들은 바로 앞 선생님 말 · 따라 할 문장 · 단원 단어뿐이다. 따라 할 문장(A: 소리 줄, P: model_sentence, N: 새 엔진 소리 줄 — 새 엔진 기록이 없는 인사 토막 차례는 A 와 같은 소리 줄, Q · Q+: listen_sentence)은 아이가 들은 선생님 말에 글자 그대로 든 때만 쓴다(core leadModelOf 의 inSay 와 같은 대조). (1) · (2) 는 지금의 '만났다'와 같은 대조이고, (3) 은 core leadCandidateTableOf 의 셋째 값(후보 없이 들린 글만으로 매긴 갈래, 차례 × 낱말)을 세 방식에 같은 꼴의 행으로 적용한 것이다. 새 판정 규칙이 아니며, 각 방식의 지금 판정(Claude 후보에 기댐)과는 다른 자다.",
     "",
     ...mdSection(
       "(타) 수업별",
@@ -1008,21 +1047,25 @@ function afterNoiseMarkdown(lessons: readonly Lesson[]): string {
     const key = `${l.meta.child} · 씨앗 ${l.meta.seed}`;
     groups.set(key, [...(groups.get(key) ?? []), l]);
   }
+  // 기록에 든 방식만 칸으로 둔다(방식 Q · QP 를 더하면서 — 없는 방식의 빈 칸을 늘리지 않음)
+  const present = armsIn(lessons);
   for (const [key, group] of groups) {
     const byArm = (arm: Arm) => group.find((l) => l.meta.arm === arm);
     const seed = group[0]?.meta.seed ?? 1;
-    const turns = new Set<number>(NOISE_TURNS[seed] ?? []);
+    // 잡음을 넣지 않는 아이 역(SA · SB · SE · SF)은 잡음 차례가 없다(옛 기록은 noise 칸이 없고 모두 넣었다)
+    const noisy = group[0]?.meta.noise !== false;
+    const turns = new Set<number>(noisy ? (NOISE_TURNS[seed] ?? []) : []);
     for (const l of group)
       for (const c of l.children)
         if (c.action !== "speak") turns.add(c.childTurn);
     out.push(
-      `## ${key}(잡음 차례 ${(NOISE_TURNS[seed] ?? []).join(" · ")})`,
+      `## ${key}(잡음 차례 ${noisy ? (NOISE_TURNS[seed] ?? []).join(" · ") : "없음 — 이 아이 역에는 넣지 않음"})`,
       "",
-      `| 차례 | ${ARM_ORDER.join(" | ")} |`,
-      `|---|${ARM_ORDER.map(() => "---").join("|")}|`,
+      `| 차례 | ${present.map(armLabel).join(" | ")} |`,
+      `|---|${present.map(() => "---").join("|")}|`,
     );
     for (const t of [...turns].sort((a, b) => a - b)) {
-      const cells = ARM_ORDER.map((arm) => {
+      const cells = present.map((arm) => {
         const l = byArm(arm);
         const c = l?.children.find((x) => x.childTurn === t);
         const teacher = l?.teachers.find((x) => x.childTurn === t);
@@ -1047,7 +1090,7 @@ function afterOwnTopicMarkdown(lessons: readonly Lesson[]): string {
     "아이 역이 스스로 매긴 kind 를 따른다. 들린 글이 하려던 말과 다르면 둘 다 적는다.",
     "",
   ];
-  for (const arm of ARM_ORDER) {
+  for (const arm of armsIn(lessons)) {
     const rows = lessons
       .filter((l) => l.meta.arm === arm)
       .flatMap((l) =>
@@ -1059,7 +1102,7 @@ function afterOwnTopicMarkdown(lessons: readonly Lesson[]): string {
           }),
       );
     out.push(
-      `## 방식 ${arm}(${rows.length}차례)`,
+      `## 방식 ${armLabel(arm)}(${rows.length}차례)`,
       "",
       "| 수업 | 차례 | 갈래 | 아이 | 바로 뒤 선생님 말 |",
       "|---|---|---|---|---|",
@@ -1600,6 +1643,19 @@ function checksMarkdown(lessons: readonly Lesson[]): string {
       `4. P 상태 알림이 기록(들린 글 · 앞 차례 model_sentence)으로 다시 만든 것과 같고 아이 입력 줄 + 빈 줄 + 알림 꼴인 차례: ${statusOk}/${statusAll} · 지난 메시지를 고쳐 쓰지 않음(앞 요청 messages + 앞 응답 원문 = 이번 요청의 앞부분): ${keptOk}/${keptAll} · 최종 말 = 모델 say 그대로: ${sayOk}/${sayAll}`,
     );
   }
+  // 4-Q. Q · Q+ 안내문 · 메시지 꼴 · 지난 메시지 · 최종 말 = say
+  const q = qChecksOf(lessons);
+  for (const arm of Q_ARMS) {
+    const c = q[arm];
+    if (!c) continue;
+    out.push(
+      `4. ${armLabel(arm)} 안내문 ${c.systems}개 · 사용자 메시지가 다섯 꼴(처음 · 아이 말 · 모름 단추 · 말 없음 · 더 이야기하기) 가운데 그 차례의 것과 같은 차례: ${c.messageOk}/${c.messageAll} · 지난 메시지를 고쳐 쓰지 않음: ${c.keptOk}/${c.keptAll} · 최종 말 = 모델 say 그대로: ${c.sayOk}/${c.sayAll} · listen_sentence 차례 ${c.listenTurns} · wrap_up 차례 ${c.wrapTurns}`,
+    );
+  }
+  if (q.onlyLanguageDiffers !== null)
+    out.push(
+      `4. Q 와 Q+ 안내문이 '말하는 범위' 문단만 다름: ${q.onlyLanguageDiffers ? "예" : "아니요"}`,
+    );
   // 5. 호출 값이 같은지
   const sig = (c: CallLog) =>
     JSON.stringify({
@@ -1725,6 +1781,238 @@ export function childOnlyHeardOf(lessons: readonly Lesson[]): {
   return out;
 }
 
+export type QCheck = {
+  systems: number;
+  messageOk: number;
+  messageAll: number;
+  keptOk: number;
+  keptAll: number;
+  sayOk: number;
+  sayAll: number;
+  listenTurns: number;
+  wrapTurns: number;
+};
+
+/**
+ * 확인 항목 4-Q(task-x3): 방식 Q · QP 의 선생님 호출마다 사용자 메시지가 그 차례의 꼴(처음 C_START_MESSAGE · 아이 입력 줄 · 더 이야기하기)과
+ * 같은가, 지난 메시지를 고쳐 쓰지 않았는가(앞 요청 messages + 앞 응답 원문 = 이번 요청의 앞부분), 최종 말 = say 인가. Q · QP 의 선생님 차례는
+ * 호출 하나씩이라 호출과 차례를 차례대로 짝짓는다. 두 방식이 다 있으면 안내문이 '말하는 범위' 줄 하나만 다른지도 본다.
+ */
+export function qChecksOf(
+  lessons: readonly Lesson[],
+): Partial<Record<QArm, QCheck>> & { onlyLanguageDiffers: boolean | null } {
+  const out: Partial<Record<QArm, QCheck>> & {
+    onlyLanguageDiffers: boolean | null;
+  } = { onlyLanguageDiffers: null };
+  const systemsOf = (arm: QArm) => [
+    ...new Set(
+      lessons
+        .filter((l) => l.meta.arm === arm)
+        .flatMap((l) => l.calls.filter((c) => c.kind === "turn"))
+        .map((c) => String(c.request.system)),
+    ),
+  ];
+  for (const arm of Q_ARMS) {
+    const mine = lessons.filter((l) => l.meta.arm === arm);
+    if (mine.length === 0) continue;
+    const c: QCheck = {
+      systems: systemsOf(arm).length,
+      messageOk: 0,
+      messageAll: 0,
+      keptOk: 0,
+      keptAll: 0,
+      sayOk: 0,
+      sayAll: 0,
+      listenTurns: 0,
+      wrapTurns: 0,
+    };
+    for (const l of mine) {
+      const calls = l.calls.filter((x) => x.kind === "turn");
+      for (const [k, call] of calls.entries()) {
+        const t = l.teachers[k];
+        const msgs = call.request.messages as {
+          role: string;
+          content: string;
+        }[];
+        if (t) {
+          const child = l.children.find((x) => x.childTurn === t.childTurn);
+          const want =
+            t.childTurn === 0
+              ? C_START_MESSAGE
+              : t.afterChoice === true
+                ? Q_MORE_MESSAGE
+                : child
+                  ? qChildMessageOf(
+                      child.action,
+                      child.action === "speak" ? (child.heard ?? "") : "",
+                    )
+                  : null;
+          c.messageAll++;
+          if (want !== null && msgs.at(-1)?.content === want) c.messageOk++;
+          const first = t.modelFirst as {
+            say?: string;
+            listen_sentence?: string;
+            wrap_up?: boolean;
+          } | null;
+          c.sayAll++;
+          if (t.final === (first?.say ?? "@@").trim()) c.sayOk++;
+          if ((first?.listen_sentence ?? "").trim() !== "") c.listenTurns++;
+          if (first?.wrap_up === true) c.wrapTurns++;
+        }
+        const prev = calls[k - 1];
+        if (prev?.response.text !== undefined) {
+          c.keptAll++;
+          const expected = JSON.stringify([
+            ...(prev.request.messages as unknown[]),
+            { role: "assistant", content: prev.response.text },
+          ]);
+          if (JSON.stringify(msgs.slice(0, -1)) === expected) c.keptOk++;
+        }
+      }
+    }
+    out[arm] = c;
+  }
+  const [qs, qps] = [systemsOf("Q"), systemsOf("QP")];
+  if (qs.length === 1 && qps.length === 1) {
+    const a = (qs[0] as string).split("\n");
+    const b = (qps[0] as string).split("\n");
+    const differ = a.flatMap((line, i) => (line === b[i] ? [] : [i]));
+    out.onlyLanguageDiffers =
+      a.length === b.length &&
+      differ.length === 1 &&
+      (a[differ[0] as number] ?? "").startsWith("How you speak: ");
+  }
+  return out;
+}
+
+// ── 시나리오마다 방식 나란히(task-x3) ─────────────────────────────────
+
+/** 시나리오 글의 칸 하나: 그 방식 수업의 아이 차례 n(단추 · 단추 뒤 이음 · 아이 말(들린 글) · 바로 뒤 선생님 말과 표지). */
+function scenarioCell(l: Lesson | undefined, n: number): string {
+  if (!l) return "-";
+  const parts: string[] = [];
+  const choice = (l.meta.ending?.choices ?? []).find((c) => c.childTurn === n);
+  if (choice)
+    parts.push(
+      `[단추: ${choice.picked === "more" ? "더 이야기하기" : "그만하기"}]`,
+    );
+  const cont = l.teachers.find(
+    (t) => t.childTurn === n && t.afterChoice === true,
+  );
+  if (cont) parts.push(...teacherParts(cont, "→ 선생님(단추 뒤): "));
+  const c = l.children.find((x) => x.childTurn === n);
+  if (!c) {
+    if (!choice) parts.push("(그 차례 없음)");
+    return cell(parts.join("\n"));
+  }
+  parts.push(
+    c.action === "speak"
+      ? `아이: "${c.says}"${c.heard !== null && c.heard !== c.says ? ` (들린 글 "${c.heard}"${c.noise ? " · 잡음" : ""})` : ""}`
+      : c.action === "dont_know"
+        ? "아이: ('잘 모르겠어요' 단추)"
+        : "아이: (말 없음)",
+  );
+  const t = l.teachers.find((x) => x.childTurn === n && x.afterChoice !== true);
+  parts.push(...(t ? teacherParts(t, "→ 선생님: ") : ["→ (수업 끝)"]));
+  return cell(parts.join("\n"));
+}
+
+/** 선생님 차례 한 칸의 줄들: 아이가 들은 말 · 따라 할 문장(방식마다 기록 칸 — followSentenceOf) · Q · Q+ 의 wrap_up. */
+function teacherParts(t: TeacherTurnLog, head: string): string[] {
+  const rows = [`${head}${heardByChild(t.final).replaceAll("\n", " / ")}`];
+  const follow = followSentenceOf(t);
+  if (follow !== null) rows.push(`[따라 할 문장] "${follow}"`);
+  if (
+    isQArm(t.arm) &&
+    (t.modelFirst as { wrap_up?: unknown } | null)?.wrap_up === true
+  )
+    rows.push("[wrap_up]");
+  return rows;
+}
+
+/**
+ * 시나리오 하나의 나란히 읽는 글(scenarios/<SA…SF>.md): 씨앗마다 표 하나, 줄은 아이 차례 번호, 칸은 방식. 아이 역은 방식마다 다른 선생님 말을
+ * 듣고 답하므로 칸마다 그 방식 수업의 아이 말(들린 글)과 바로 뒤 선생님 말을 따로 적는다.
+ */
+export function scenarioMarkdownOf(
+  child: ScenarioKey,
+  lessons: readonly Lesson[],
+): string {
+  const mine = lessons.filter((l) => l.meta.child === child);
+  const out = [
+    `# 시나리오 ${child}(${SCENARIO_TITLES[child]})`,
+    "",
+    `- 아이 역 글(지금 아이 역 머리 뒤에 붙음): ${CHILD_PERSONAS[child]}`,
+    `- 잡음: ${childHasNoise(child) ? "넣음(지금 일정 — 씨앗마다 정해진 차례)" : "넣지 않음"}`,
+    "",
+    "칸마다 그 방식 수업의 아이 말(들린 글이 다르면 함께) 다음 줄에 바로 뒤 선생님 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 방식마다 다르다. [따라 할 문장]은 그 차례에 선생님이 낸 따라 할 문장(A · N: 소리 줄, P: model_sentence, Q · Q+: listen_sentence), [wrap_up]은 Q · Q+ 의 선생님이 마무리를 꺼낸 차례, [단추: …]는 그 아이 차례 앞에서 아이가 고른 마무리 단추다.",
+    "",
+  ];
+  if (mine.length === 0) {
+    out.push("(이 시나리오의 수업이 없음)", "");
+    return `${out.join("\n")}\n`;
+  }
+  const seeds = [...new Set(mine.map((l) => l.meta.seed))].sort(
+    (a, b) => a - b,
+  );
+  for (const seed of seeds) {
+    const group = mine.filter((l) => l.meta.seed === seed);
+    const arms = armsIn(group);
+    const byArm = (arm: Arm) => group.find((l) => l.meta.arm === arm);
+    const last = Math.max(
+      0,
+      ...group.flatMap((l) => [
+        ...l.children.map((c) => c.childTurn),
+        ...(l.meta.ending?.choices ?? []).map((c) => c.childTurn),
+      ]),
+    );
+    out.push(
+      `## 씨앗 ${seed}`,
+      "",
+      `| 차례 | ${arms.map(armLabel).join(" | ")} |`,
+      `|---|${arms.map(() => "---").join("|")}|`,
+      `| 처음 | ${arms
+        .map((a) => {
+          const t = byArm(a)?.teachers.find(
+            (x) => x.childTurn === 0 && x.afterChoice !== true,
+          );
+          return t ? cell(teacherParts(t, "선생님: ").join("\n")) : "-";
+        })
+        .join(" | ")} |`,
+    );
+    for (let n = 1; n <= last; n++)
+      out.push(
+        `| ${n} | ${arms.map((a) => scenarioCell(byArm(a), n)).join(" | ")} |`,
+      );
+    out.push(
+      `| 끝 | ${arms
+        .map((a) => {
+          const l = byArm(a);
+          if (!l) return "-";
+          const e = endingOf(l.meta, l.teachers);
+          return cell(
+            `${ENDING_LABEL[e.how]} · 아이 차례 ${l.meta.childTurns}${l.meta.failures.length > 0 ? ` · 실패 ${l.meta.failures.length}` : ""}`,
+          );
+        })
+        .join(" | ")} |`,
+      "",
+    );
+  }
+  return `${out.join("\n")}\n`;
+}
+
+/** 기록에 든 시나리오마다 scenarios/<SA…SF>.md 를 쓴다(시나리오 수업이 없으면 쓰지 않음). */
+function writeScenarios(dir: string, lessons: readonly Lesson[]): void {
+  const present = SCENARIO_CHILDREN.filter((k) =>
+    lessons.some((l) => l.meta.child === k),
+  );
+  if (present.length === 0) return;
+  const at = join(dir, "scenarios");
+  mkdirSync(at, { recursive: true });
+  for (const k of present)
+    writeFileSync(join(at, `${k}.md`), scenarioMarkdownOf(k, lessons));
+}
+
 // ── 예시 ─────────────────────────────────────────────────────────
 
 function systemBlocks(arm: Arm, system: string) {
@@ -1733,6 +2021,14 @@ function systemBlocks(arm: Arm, system: string) {
       {
         block:
           "N 짧은 안내문(앱 talkLeadSystem — 교사 · 좋은 가르침 · 목표 · 말 한계 · 안전 · 출력)",
+        lines: system.split("\n").filter((l) => l !== "").length,
+        chars: system.length,
+      },
+    ];
+  if (isQArm(arm))
+    return [
+      {
+        block: `${armLabel(arm)} 시제품 안내문(전문 — 선생님 · 대화 · 단원 배경 · 말하는 범위 · 안전 · 출력)`,
         lines: system.split("\n").filter((l) => l !== "").length,
         chars: system.length,
       },
@@ -2055,6 +2351,7 @@ async function main(): Promise<number> {
   blindOf(dir, lessons);
   writeFileSync(join(dir, JUDGE_RUBRIC_FILE), judgeRubricOf(resolve(dir)));
   writeFileSync(join(dir, "lead.md"), leadMarkdown(lessons));
+  writeScenarios(dir, lessons);
   const tokens = argv.includes("--count-tokens")
     ? await countSystemTokens(lessons)
     : null;

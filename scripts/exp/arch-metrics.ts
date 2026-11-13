@@ -32,6 +32,7 @@ import {
   splitSentences,
   tokenize,
 } from "../../src/core/seed/text";
+import { isQArm } from "./arch-arm-q";
 import { CHILD_NAME_FILL } from "./arch-arms";
 import type {
   ChildTurnLog,
@@ -488,7 +489,7 @@ export function firstSentStatsOf(items: readonly FirstSent[]): {
 
 /**
  * 선생님 차례의 따라 할 문장 후보(기록에 남은 칸만 읽는다): A 는 앱이 낸 소리 줄(checks.sound.model), P 는 응답의 model_sentence, N 은 새 엔진
- * 기록의 소리 줄(lead.sound.model). N 의 새 엔진 기록이 없는 차례(지금 길로 도는 인사 토막)는 A 와 같은 칸(checks.sound.model)으로 물러선다
+ * 기록의 소리 줄(lead.sound.model), Q · QP 는 응답의 listen_sentence(task-x3). N 의 새 엔진 기록이 없는 차례(지금 길로 도는 인사 토막)는 A 와 같은 칸(checks.sound.model)으로 물러선다
  * (검토 rev-x2-2 N-1). 없거나 빈 글이면 null. 아이가 실제로 들었는지는 heardFollowSentenceOf 가 본다.
  */
 export function followSentenceOf(t: TeacherTurnLog): string | null {
@@ -497,7 +498,10 @@ export function followSentenceOf(t: TeacherTurnLog): string | null {
       ? t.lead.sound.model
       : t.arm === "P"
         ? (t.modelFirst as { model_sentence?: unknown } | null)?.model_sentence
-        : (t.checks as { sound?: { model?: unknown } } | null)?.sound?.model;
+        : isQArm(t.arm)
+          ? (t.modelFirst as { listen_sentence?: unknown } | null)
+              ?.listen_sentence
+          : (t.checks as { sound?: { model?: unknown } } | null)?.sound?.model;
   return typeof text === "string" && text.trim() !== "" ? text.trim() : null;
 }
 
@@ -958,6 +962,9 @@ export function judgeSummaryOf(
 
 /** 방식 P 의 선생님이 move wrap_up 으로 스스로 마무리한 차례의 까닭 글(LessonLog.ended · ending.reason). */
 export const TEACHER_CLOSING_REASON = "선생님이 스스로 마무리함(move wrap_up)";
+/** 방식 Q · QP 의 선생님이 wrap_up 참으로 마무리를 꺼내 두 단추가 나온 차례의 까닭 글('그만하기'면 이 글로 끝난다 — 선생님이 스스로 마무리함). */
+export const TEACHER_WRAP_REASON =
+  "선생님이 마무리를 꺼냄(wrap_up 참) — 두 단추";
 
 /** 끝난 까닭 글(LessonLog.ended)로 끝난 길을 정한다. 옛 기록도 같은 글을 쓴다(대본 도구의 멈춘 까닭 · 도구의 마무리 글). */
 export function endingHowOf(
@@ -966,7 +973,11 @@ export function endingHowOf(
 ): LessonEnding["how"] {
   if (failures.length > 0) return "other";
   if (ended === null) return "turn_cap";
-  if (ended.includes(TEACHER_CLOSING_REASON)) return "teacher_closing";
+  if (
+    ended.includes(TEACHER_CLOSING_REASON) ||
+    ended.includes(TEACHER_WRAP_REASON)
+  )
+    return "teacher_closing";
   if (ended.includes("고르기 차례") || ended.includes("대화가 닫혔다"))
     return "app_closing";
   return "other";

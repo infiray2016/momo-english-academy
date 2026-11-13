@@ -1,6 +1,6 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
-//        [--children K1,K2,K3] [--seeds 1,2] [--arms A,B,C,C2,P,N]
+//        [--children K1,K2,K3 | SA,SB,SC,SD,SE,SF] [--seeds 1,2] [--arms A,B,C,C2,P,N,Q,QP]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
@@ -8,6 +8,9 @@
 // 시제품의 짧은 안내문 · 일곱 칸 출력 · 차례마다 상태 알림(arch-arm-p)을 쓴다(후처리 없음). 방식 N 은 앱에 구현된 새 엔진의 길(scripts/talk-observe.ts
 // createTalkSim 에 talk.lead_mode claude — 서버 턴 길과 같은 core 함수, 회화 Claude 주도 묶음 X2)이다. A · N 은 앱의 마무리 차례에서 아이 역이
 // '더 이야기하기'를 고르면 앱처럼 잇는다(A: 카드 자리 한 줄, N: 아이 말 없이 부르는 입구 more).
+// 방식 Q · QP(Q+)는 제안 구조의 시제품(13절 C242 · task-x3 — arch-arm-q): 짧은 안내문 · 네 칸 출력 · 아이 입력 줄뿐(상태 알림 없음) · 후처리 없음,
+// wrap_up 이 참이면 다음 아이 차례 앞에서 두 단추를 내고 '더 이야기하기'면 그 메시지로 잇는다. 아이 역 SA~SF 는 요청자가 정한 여섯 상황이다
+// (--children SA,SB,SC,SD,SE,SF — 잡음은 SC · SD 에만, arch-arms childHasNoise).
 // 결과 폴더에 앞 실행의 setup.json · run-summary.json 이 있으면 덮지 않고 합친다(공통 재료가 다르면 멈춤).
 // 키 값은 출력하지 않는다. 결과 파일: <out>/runs/<방식>-<아이>-s<씨앗>.jsonl · .transcript.md, <out>/run-summary.json.
 import { createHash } from "node:crypto";
@@ -104,6 +107,15 @@ import {
   pStatusOf,
 } from "./arch-arm-p";
 import {
+  isQArm,
+  Q_ARMS,
+  Q_MORE_MESSAGE,
+  type QArm,
+  QOutputSchema,
+  qChildMessageOf,
+  qSystemOf,
+} from "./arch-arm-q";
+import {
   C_START_MESSAGE,
   type ChildAction,
   type ChildKey,
@@ -112,11 +124,13 @@ import {
   COutputSchema,
   c2SystemOf,
   cChildMessageOf,
+  childHasNoise,
   childSystemOf,
   cSystemOf,
   heardByChild,
   levelLineOf,
   missingSafetySentences,
+  SCENARIO_CHILDREN,
   splitDirectiveLines,
   WRAP_PICKS,
   WrapChildOutputSchema,
@@ -133,15 +147,22 @@ import {
   type SpeechField,
   sentenceDiffOf,
   TEACHER_CLOSING_REASON,
+  TEACHER_WRAP_REASON,
 } from "./arch-metrics";
 import { isNoiseTurn, type NoiseResult, noiseOf } from "./arch-noise";
 
-export const ARMS = ["A", "B", "C", "C2", "P", "N"] as const;
+export const ARMS = ["A", "B", "C", "C2", "P", "N", "Q", "QP", "R"] as const;
 export type Arm = (typeof ARMS)[number];
+/** --children 를 주지 않을 때의 아이 역(지난 실험 그대로). */
 export const CHILDREN = [
   "K1",
   "K2",
   "K3",
+] as const satisfies readonly ChildKey[];
+/** --children 로 고를 수 있는 아이 역 전부(K1~K3 + 시나리오 SA~SF). */
+export const ALL_CHILDREN = [
+  ...CHILDREN,
+  ...SCENARIO_CHILDREN,
 ] as const satisfies readonly ChildKey[];
 export const SEEDS = [1, 2] as const;
 /** 3단계 자리 재현 대본(2026-11-08 실제 수업 — 회화 3단계 단원 1 수업 6 · 미나). 카드 · 선생님을 이 대본에서 읽는다. */
@@ -193,7 +214,7 @@ export type CallLog = {
     error?: string;
   };
   ms: number;
-  /** 흘려 받은 선생님 호출(A · P)의 첫 문장 시각(spec '회화 Claude 주도' 설계 9). 아이 역 호출 · 옛 기록에는 없다. */
+  /** 흘려 받은 선생님 호출(A · P · N · Q · QP)의 첫 문장 시각(spec '회화 Claude 주도' 설계 9). 아이 역 호출 · 옛 기록에는 없다. */
   firstSentence?: FirstSentence;
 };
 
@@ -323,6 +344,8 @@ export type LessonLog = {
   ending?: LessonEnding;
   /** N: 수업마다 지금 판정과 새 후보 판정의 차이 표(core leadCandidateTableOf — 설계 5 · 미결 7). 다른 방식에는 없다. */
   lead?: { table: LeadCandidateTable };
+  /** 이 수업에 잘못 들린 글(잡음)을 지금 일정으로 넣었는가(아이 역으로 정함 — arch-arms childHasNoise). 옛 기록에는 없다(그때는 모두 넣음). */
+  noise?: boolean;
   /**
    * 이 실행이 쓴 앱 재료의 표지(검토 rev-x2 I-1): 1~3단계 상황 차례 답 글 검사의 기능어 수(서버처럼 어휘 시드의 품사 칸에서 읽음). 옛 기록에는
    * 없다(그때의 A 는 이 집합이 비어 있었다).
@@ -334,7 +357,8 @@ export type LessonLog = {
 export type WrapChoice = {
   /** 이 아이 차례 앞에서 골랐다. */
   childTurn: number;
-  kind: "closing" | "suggestion";
+  /** closing: 앱의 마무리 물음 · suggestion: 앱의 마무리 제안 · wrap_up: 방식 Q · QP 의 선생님이 wrap_up 참으로 마무리를 꺼냄. */
+  kind: "closing" | "suggestion" | "wrap_up";
   /** 마무리 차례의 말(아이에게 나간 최종 영어). */
   line: string;
   picked: WrapPick;
@@ -547,6 +571,8 @@ export type Setup = {
   pWordsSameAsUnit: boolean;
   /** 방식 N 의 안내문(대화 첫 차례 요청의 system — 앱 talkLeadSystem 그대로). 새 엔진을 열 수 없는 단원이면 null. */
   nSystem: string | null;
+  /** 방식 Q · QP 의 안내문(arch-arm-q qSystemOf — 선생님 이름 · 단원 낱말은 N 과 같은 재료 값). */
+  qSystems: Record<QArm, string>;
   masker: ReturnType<typeof createMasker>;
   sentenceMax: number;
 };
@@ -727,6 +753,16 @@ export function setupOf(root: string): Setup {
     }),
     pSystem: P_SYSTEM,
     nSystem: nSystemOf(materials, values, config.book),
+    qSystems: Object.fromEntries(
+      Q_ARMS.map((arm) => [
+        arm,
+        qSystemOf({
+          teacherName: materials.teacher.nameEn,
+          unitWords: materials.ctx.unitWords,
+          arm,
+        }),
+      ]),
+    ) as Record<QArm, string>,
     pWordsSameAsUnit:
       JSON.stringify([...P_UNIT_WORDS]) ===
       JSON.stringify([...materials.ctx.unitWords]),
@@ -1742,6 +1778,96 @@ function teacherP(setup: Setup, ctx: Ctx, lesson: string): Teacher {
   };
 }
 
+/**
+ * 방식 Q · QP(제안 구조의 시제품, arch-arm-q): 짧은 안내문(qSystemOf) · 네 칸 출력 · 차례마다 아이 입력 줄 하나(상태 알림 · 목표 낱말 · 턴 수
+ * 알림 없음). 호출 값은 다른 방식과 같은 틀(회화 턴), 흘려 받아 첫 문장 시각을 잰다. 아이에게 나가는 말은 say 그대로(후처리 없음). 지난 메시지는
+ * 고쳐 쓰지 않는다. wrap_up 이 참이면 다음 아이 차례 앞에서 두 단추를 내고(endedBefore), '더 이야기하기'면 Q_MORE_MESSAGE 로 잇는다(more).
+ */
+function teacherQ(setup: Setup, ctx: Ctx, lesson: string, arm: QArm): Teacher {
+  const { format: _drop, ...outputConfig } = setup.template.body
+    .output_config as Record<string, unknown>;
+  const base = withFormat(
+    {
+      ...setup.template.body,
+      system: setup.qSystems[arm],
+      output_config: outputConfig,
+    },
+    QOutputSchema,
+  );
+  const history: { user: string; assistant: string }[] = [];
+  let wrapPending = false;
+  const call = async (childTurn: number, user: string): Promise<TeacherOut> => {
+    const req: Req = {
+      ...setup.template,
+      body: {
+        ...base,
+        messages: [
+          ...history.flatMap((h) => [
+            { role: "user", content: h.user },
+            { role: "assistant", content: h.assistant },
+          ]),
+          { role: "user", content: user },
+        ],
+      },
+    };
+    const first = await send(
+      ctx,
+      req,
+      { lesson, childTurn, kind: "turn" },
+      "say",
+    );
+    const parsed = QOutputSchema.safeParse(parseJson(first.text));
+    if (!parsed.success)
+      throw new CallFailure(
+        `${lesson} 아이 차례 ${childTurn}: ${arm} 출력을 읽지 못함`,
+      );
+    history.push({ user, assistant: first.text });
+    wrapPending = parsed.data.wrap_up;
+    const say = parsed.data.say.trim();
+    const f = first.firstSentence;
+    return {
+      childTurn,
+      called: true,
+      modelFirst: parsed.data,
+      modelFirstSpoken: say,
+      directive: null,
+      checks: null,
+      retry: null,
+      changes: { deleted: [], added: [] },
+      final: say,
+      branches: ["그대로 나감"],
+      calls: 1,
+      ms: first.ms,
+      firstMs: first.ms,
+      firstSentence: f,
+      // 받아 두는 차례가 없다(후처리 없음) — 첫 문장이 나간 때 = 흘려 읽은 첫 문장 시각(A · P · N 과 같은 뜻)
+      firstSent: f
+        ? { ms: f.ms, from: f.from, text: f.text, held: null }
+        : null,
+    };
+  };
+  return {
+    open: () => call(0, C_START_MESSAGE),
+    endedBefore() {
+      if (!wrapPending) return null;
+      wrapPending = false;
+      return { reason: TEACHER_WRAP_REASON, choice: "wrap_up" };
+    },
+    respond: (childTurn, input) =>
+      call(
+        childTurn,
+        qChildMessageOf(
+          input.action,
+          input.action === "speak" ? setup.masker(input.heard ?? "").text : "",
+        ),
+      ),
+    async more(childTurn) {
+      const out = await call(childTurn, Q_MORE_MESSAGE);
+      return { ...out, afterChoice: true };
+    },
+  };
+}
+
 // ── 아이 역 ─────────────────────────────────────────────────────
 
 function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
@@ -1843,10 +1969,14 @@ export async function runLesson(
           ? teacherP(setup, ctx, lesson)
           : arm === "N"
             ? teacherN(setup, ctx, lesson)
-            : teacherC(setup, ctx, lesson, arm);
+            : isQArm(arm)
+              ? teacherQ(setup, ctx, lesson, arm)
+              : teacherC(setup, ctx, lesson, arm);
   const childCall = childRole(setup, ctx, lesson, child);
   const choices: WrapChoice[] = [];
   const childWords: string[] = [];
+  // 잡음은 아이 역으로 정한다(K1~K3 · SC · SD 만 — 같은 아이 · 씨앗이면 방식마다 같은 차례)
+  const noiseOn = childHasNoise(child);
   const pushTeacher = (out: TeacherOut) =>
     lines.push({
       type: "teacher_turn",
@@ -1906,7 +2036,7 @@ export async function runLesson(
         out.action === "speak" && says === "" ? "silent" : out.action;
       let heard: string | null = null;
       let noise: NoiseResult | null = null;
-      const noiseTurn = isNoiseTurn(seed, t);
+      const noiseTurn = noiseOn && isNoiseTurn(seed, t);
       if (action === "speak") {
         if (noiseTurn) {
           noise = noiseOf(says, injected);
@@ -1966,6 +2096,7 @@ export async function runLesson(
       choices,
     }),
     ...(teacher.summary ? { lead: teacher.summary() } : {}),
+    noise: noiseOn,
     materials: { functionWords: setup.materials.functionWords.size },
   });
   return {
@@ -1978,6 +2109,13 @@ export async function runLesson(
 
 // ── 사람이 읽는 대화 기록 ─────────────────────────────────────────
 
+/** 마무리 단추가 나온 차례의 갈래 이름(대화 기록 · 시나리오 글). */
+export const WRAP_KIND_LABEL: Readonly<Record<WrapChoice["kind"], string>> = {
+  closing: "마무리 물음",
+  suggestion: "마무리 제안",
+  wrap_up: "선생님의 마무리(wrap_up)",
+};
+
 export function transcriptOf(lines: readonly LogLine[]): string {
   const lessonLine = lines.find((l): l is LessonLog => l.type === "lesson");
   const out: string[] = [
@@ -1985,9 +2123,12 @@ export function transcriptOf(lines: readonly LogLine[]): string {
     "",
     `- 방식 ${lessonLine?.arm} · 아이 ${lessonLine?.child} · 씨앗 ${lessonLine?.seed} · 아이 차례 ${lessonLine?.childTurns}/${lessonLine?.turnsAsked} · 시도 ${lessonLine?.attempt}`,
     `- 끝: ${lessonLine?.ended ?? "아이 차례 상한"}${lessonLine && lessonLine.failures.length > 0 ? ` · 실패: ${lessonLine.failures.join(" / ")}` : ""}`,
+    ...(lessonLine?.noise === undefined
+      ? []
+      : [`- 잡음: ${lessonLine.noise ? "넣음(지금 일정)" : "넣지 않음"}`]),
     ...(lessonLine?.ending?.choices ?? []).map(
       (c) =>
-        `- 마무리 단추(아이 차례 ${c.childTurn} 앞 · ${c.kind === "closing" ? "마무리 물음" : "마무리 제안"}): ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.picked === "more" ? (c.continued ? " · 앱처럼 이음" : " · 이을 길이 없어 여기서 끝남") : ""} · ${c.why}`,
+        `- 마무리 단추(아이 차례 ${c.childTurn} 앞 · ${WRAP_KIND_LABEL[c.kind]}): ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.picked === "more" ? (c.continued ? (c.kind === "wrap_up" ? " · '더 이야기하기' 메시지로 이음" : " · 앱처럼 이음") : " · 이을 길이 없어 여기서 끝남") : ""} · ${c.why}`,
     ),
     "",
   ];
@@ -2022,6 +2163,20 @@ export function transcriptOf(lines: readonly LogLine[]): string {
       );
     if (t.retry)
       rows.push(`다시 쓰기(${t.retry.kind}): ${t.retry.outcome ?? "-"}`, "");
+    // 방식 Q · QP: 따라 할 문장을 낸 차례 · 마무리를 꺼낸 차례
+    if (isQArm(t.arm)) {
+      const q = t.modelFirst as {
+        listen_sentence?: unknown;
+        wrap_up?: unknown;
+      } | null;
+      const listen =
+        typeof q?.listen_sentence === "string" ? q.listen_sentence.trim() : "";
+      if (listen !== "")
+        rows.push(`- 따라 할 문장(listen_sentence): "${listen}"`);
+      if (q?.wrap_up === true)
+        rows.push("- wrap_up: 참(선생님이 마무리를 꺼냄)");
+      if (listen !== "" || q?.wrap_up === true) rows.push("");
+    }
     return rows;
   };
   out.push("## 처음", "", ...block(teacherAt(0)));
@@ -2083,7 +2238,11 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
     pilot,
     turns: Number(get("--turns") ?? (pilot ? PILOT_TURNS : FULL_TURNS)),
     children:
-      pilot && !get("--children") ? ["K2"] : list(get("--children"), CHILDREN),
+      pilot && !get("--children")
+        ? ["K2"]
+        : get("--children") === undefined
+          ? [...CHILDREN]
+          : list(get("--children"), ALL_CHILDREN),
     seeds:
       pilot && !get("--seeds")
         ? [1]
@@ -2163,6 +2322,9 @@ export function mergeSetup(
     ...(next.nSystem === undefined
       ? {}
       : { nSystem: next.nSystem, nSystemSha: next.nSystemSha }),
+    ...(next.qSystems === undefined
+      ? {}
+      : { qSystems: next.qSystems, qSystemsSha: next.qSystemsSha }),
     pWordsSameAsUnit: next.pWordsSameAsUnit,
     args: next.args,
     argsHistory: [...history, next.args],
@@ -2216,6 +2378,10 @@ async function main(): Promise<number> {
     nSystem: setup.nSystem,
     nSystemSha: setup.nSystem === null ? null : sha(setup.nSystem),
     pWordsSameAsUnit: setup.pWordsSameAsUnit,
+    qSystems: setup.qSystems,
+    qSystemsSha: Object.fromEntries(
+      Q_ARMS.map((arm) => [arm, sha(setup.qSystems[arm])]),
+    ),
     args,
   };
   writeFileSync(
