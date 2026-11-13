@@ -13,9 +13,11 @@ import {
 } from "@/components/conversation/talk-frame";
 import {
   TALK_LOG_PIN_SLACK_PX,
+  TALK_LOG_USER_SCROLL_MS,
   talkLogFollowOf,
   talkLogPinnedAfterScrollOf,
   talkLogPinnedOf,
+  talkLogScrollByUserOf,
 } from "@/components/conversation/talk-log";
 import {
   BUBBLE_TEXT,
@@ -71,88 +73,90 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
     ).toBe(true);
   });
 
-  it("AC-26m 앱이 맨 아래로 맞춘 자리 그대로인 넘김 사건은 그 사이 글이 자라 남은 거리가 생겼어도 붙어 있음이고, 아이가 그 자리를 떠나 위로 넘기면 붙어 있지 않다", () => {
-    // 앱이 300 에 맞춘 뒤 글이 한 줄(40px) 자람 — 늦게 온 넘김 사건이 아이의 넘김으로 읽히지 않는다
+  it("AC-26m 아이의 입력 없이 온 넘김 사건(앱이 맞춤 · 브라우저가 자리를 줄임)은 남은 넘김 거리가 있어도 붙어 있음을 바꾸지 않는다(fix 4 원인 2)", () => {
+    // 줄었다가 다시 커진 뒤에 처리된 넘김 사건 — 남은 거리 172px 이 있어도 붙어 있음 그대로
     expect(
       talkLogPinnedAfterScrollOf({
-        scrollTop: 300,
-        scrollHeight: 1048,
+        byUser: false,
+        pinned: true,
+        scrollTop: 835,
+        scrollHeight: 1715,
         clientHeight: 708,
-        setAt: 300,
+      }),
+    ).toBe(true);
+    // 위로 넘겨 둔 칸도 입력 없는 넘김 사건으로는 다시 붙지 않는다
+    expect(
+      talkLogPinnedAfterScrollOf({
+        byUser: false,
+        pinned: false,
+        scrollTop: 300,
+        scrollHeight: 1008,
+        clientHeight: 708,
+      }),
+    ).toBe(false);
+  });
+
+  it("AC-26m 손이 닿아 있거나 마지막 입력에서 TALK_LOG_USER_SCROLL_MS 안의 넘김 사건은 아이의 넘김이고, 넘김 자리로 다시 잰다(위로 넘기면 거짓 · 맨 아래로 돌아오면 참)", () => {
+    expect(
+      talkLogScrollByUserOf({ touching: true, now: 10_000, lastInputAt: 0 }),
+    ).toBe(true);
+    expect(
+      talkLogScrollByUserOf({
+        touching: false,
+        now: 10_000,
+        lastInputAt: 10_000 - TALK_LOG_USER_SCROLL_MS,
       }),
     ).toBe(true);
     expect(
       talkLogPinnedAfterScrollOf({
+        byUser: true,
+        pinned: true,
         scrollTop: 120,
         scrollHeight: 1048,
         clientHeight: 708,
-        setAt: 300,
       }),
     ).toBe(false);
-    // 맞춘 자리가 없으면(아이가 넘긴 뒤) 남은 거리로만 본다 — 다시 맨 아래까지 내리면 붙는다
     expect(
       talkLogPinnedAfterScrollOf({
+        byUser: true,
+        pinned: false,
         scrollTop: 340,
         scrollHeight: 1048,
         clientHeight: 708,
-        setAt: null,
       }),
     ).toBe(true);
+  });
+
+  it("AC-26m 마지막 입력에서 TALK_LOG_USER_SCROLL_MS 가 지난 뒤의 넘김 사건은 아이의 입력으로 보지 않는다(손이 떨어져 있을 때)", () => {
+    expect(TALK_LOG_USER_SCROLL_MS).toBe(300);
+    expect(
+      talkLogScrollByUserOf({
+        touching: false,
+        now: 10_000,
+        lastInputAt: 10_000 - TALK_LOG_USER_SCROLL_MS - 1,
+      }),
+    ).toBe(false);
+    // 입력이 한 번도 없었으면(처음 연 칸) 아이의 넘김이 아니다
+    expect(
+      talkLogScrollByUserOf({
+        touching: false,
+        now: 10_000,
+        lastInputAt: Number.NEGATIVE_INFINITY,
+      }),
+    ).toBe(false);
   });
 
   it("AC-26m 새 차례(줄 수 · 지금 턴 열쇠가 바뀜)면 아이가 위로 넘겨 둔 때도 맨 아래로 간다(지금처럼)", () => {
-    expect(
-      talkLogFollowOf({
-        newTurn: true,
-        pinned: false,
-        nowGrew: false,
-        boxResized: false,
-      }),
-    ).toBe(true);
+    expect(talkLogFollowOf({ newTurn: true, pinned: false })).toBe(true);
+    expect(talkLogFollowOf({ newTurn: true, pinned: true })).toBe(true);
   });
 
-  it("AC-26m 맨 아래에 붙어 있던 칸은 지금 턴 영역이 자라면(글이 흐름 · 뜻 줄 · 듣기 단추 · 막힌 뒤 뜻 · 기다림 줄) 다시 맨 아래로 맞춘다(C-1)", () => {
-    expect(
-      talkLogFollowOf({
-        newTurn: false,
-        pinned: true,
-        nowGrew: true,
-        boxResized: false,
-      }),
-    ).toBe(true);
+  it("AC-26m 맨 아래에 붙어 있던 칸은 크기 알림(지금 턴 · 지난 줄이 자라거나 줄어듦 · 칸 높이가 바뀜, 첫 알림 포함)마다 다시 맨 아래로 맞춘다(C-1 · M-6 · fix 4 원인 1)", () => {
+    expect(talkLogFollowOf({ newTurn: false, pinned: true })).toBe(true);
   });
 
-  it("AC-26m 맨 아래에 붙어 있던 칸은 칸 자체의 높이가 바뀌면(기기를 돌림) 다시 맨 아래로 맞춘다(M-6)", () => {
-    expect(
-      talkLogFollowOf({
-        newTurn: false,
-        pinned: true,
-        nowGrew: false,
-        boxResized: true,
-      }),
-    ).toBe(true);
-  });
-
-  it("AC-26m 아이가 위로 넘겨 지난 말을 보는 중이면 지금 턴이 자라도 · 기기를 돌려도 끌어내리지 않는다(4절 94줄 '위로 넘겨 다시 본다')", () => {
-    for (const change of [
-      { nowGrew: true, boxResized: false },
-      { nowGrew: false, boxResized: true },
-      { nowGrew: true, boxResized: true },
-    ])
-      expect(
-        talkLogFollowOf({ newTurn: false, pinned: false, ...change }),
-      ).toBe(false);
-  });
-
-  it("AC-26m 아무것도 자라지 않았으면(지금 턴이 줄어듦 — 브라우저가 넘김 자리를 줄여 맞춤) 맞추지 않는다", () => {
-    expect(
-      talkLogFollowOf({
-        newTurn: false,
-        pinned: true,
-        nowGrew: false,
-        boxResized: false,
-      }),
-    ).toBe(false);
+  it("AC-26m 아이가 위로 넘겨 지난 말을 보는 중이면(붙어 있지 않음) 크기 알림에 끌어내리지 않는다(4절 94줄 '위로 넘겨 다시 본다')", () => {
+    expect(talkLogFollowOf({ newTurn: false, pinned: false })).toBe(false);
   });
 });
 
