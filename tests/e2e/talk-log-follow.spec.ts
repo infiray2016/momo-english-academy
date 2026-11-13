@@ -101,6 +101,28 @@ async function nextFrame(page: Page) {
   );
 }
 
+/** 쪽 넘김 · 자리 단언을 기다리는 시간(ms, 시험 값 — talk-in-view 와 같은 값). */
+const SETTLE_MS = 10_000;
+
+/**
+ * 수업 화면 전체가 보는 창 안이다(13절 C241 보완 4 · 화면 재검토 des-s5 D-1 · D-2 — S5 fix 7): 쪽 넘김이 0 이고(시험 창 기준) 위 띠가 보는 창 위로
+ * 나가지 않으며 위 띠의 '그만하기'가 보는 창 안에 온전히 있다. 고치기 전에는 기록 칸이 찬 뒤 아이 차례에서 쪽이 101px 내려가 이 단언이 실패한다.
+ */
+async function expectLessonInView(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => Math.round(window.scrollY)), {
+      timeout: SETTLE_MS,
+    })
+    .toBeLessThanOrEqual(0);
+  const bandTop = await page
+    .locator("[data-paper-band]")
+    .evaluate((el) => el.getBoundingClientRect().top);
+  expect(bandTop).toBeGreaterThanOrEqual(0);
+  await expect(
+    page.locator("[data-paper-band] [data-talk-stop]"),
+  ).toBeInViewport({ ratio: 1 });
+}
+
 async function untilChildTurn(page: Page) {
   await expect(childTurn(page)).toBeVisible({ timeout: STREAM_END_MS });
   await expect(
@@ -109,7 +131,7 @@ async function untilChildTurn(page: Page) {
 }
 
 test.describe("기존 방식 회화의 긴 대화(3단계)", () => {
-  test("AC-26m 기존 방식: 기록 칸이 넘친 뒤 진행한 선생님 차례의 지금 턴 아래 끝이 기록 칸 안에 있고, 말하기 단추가 보는 창 안에 있다", async ({
+  test("AC-26m 기존 방식: 기록 칸이 넘친 뒤 진행한 선생님 차례의 지금 턴 아래 끝이 기록 칸 안에 있고, 말하기 단추가 보는 창 안에 있으며, 세로 · 돌린 뒤 모두 쪽을 넘기지 않고 위 띠의 '그만하기'까지 보인다", async ({
     context,
   }) => {
     test.setTimeout(LONG);
@@ -150,6 +172,8 @@ test.describe("기존 방식 회화의 긴 대화(3단계)", () => {
       .evaluate((el) => el.scrollHeight - el.clientHeight);
     expect(overflow).toBeGreaterThan(0);
     await expectNowInLog(page);
+    // 기록 칸이 찬 뒤 아이 차례: 세로에서 쪽을 넘기지 않고 위 띠까지 보인다(기록 칸이 남는 높이에 맞춤 — S5 fix 7)
+    await expectLessonInView(page);
 
     // 한 차례 진행: 선생님 말(문장 둘 · 뜻)이 흐른 뒤에도 지금 턴이 기록 칸 안에 온전히 있고 말하기 단추가 보는 창 안이다. 새 차례에만 있는 것
     // (가짜 AI 회화 턴 요청이 하나 늚 · 말풍선의 'Great!' — 넣은 행 'Nice! I like it too.' 에 없고 기록의 'Great! Now let's start!' 는 말풍선 밖 ·
@@ -169,14 +193,18 @@ test.describe("기존 방식 회화의 긴 대화(3단계)", () => {
     await untilChildTurn(page);
     await expectNowInLog(page);
     await expectInView(page.locator("[data-child-turn] [data-speak]"));
+    await expectLessonInView(page);
     await photo(page, PHOTO);
     await nextFrame(page);
     // 기기를 돌린 뒤에도 지금 턴은 기록 칸 안이다(칸 높이가 바뀌면 다시 맞춤 — 화면 검토 M-6). 사진 도우미에 기대지 않고 보는 창을 직접 가로로
     // 바꿔 잰 뒤 세로로 되돌린다(검토 rev-s5 M-6 — photo() 는 E2E_PHOTOS 가 없으면 아무것도 하지 않는다)
     await page.setViewportSize(CHILD_VIEWPORTS.landscape);
     await expectNowInLog(page);
+    // 세로에서 가로로 돌린 뒤 필요 없는 쪽 넘김이 남지 않는다(화면 재검토 des-s5 D-2)
+    await expectLessonInView(page);
     await nextFrame(page);
     await page.setViewportSize(CHILD_VIEWPORTS.portrait);
     await expectNowInLog(page);
+    await expectLessonInView(page);
   });
 });

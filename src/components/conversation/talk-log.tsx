@@ -112,6 +112,45 @@ export function talkLogPullOf({
   return Math.max(0, pull + dy);
 }
 
+/**
+ * 손가락 한 움직임 뒤의 손 상태(순수, S5 fix 7 · 코드 재검토 rev-s5-5 M-1): 순거리(talkLogPullOf), 넘기려는 때를 새로 적을지(손가락이 아래로 가고
+ * 순거리가 TALK_LOG_PULL_PX 를 넘음 — 위로 엿본 손이 맨 아래 쪽으로 되돌아오는 동안에는 적지 않는다), 맨 아래 쪽으로 돌아오는 손인가(손가락이 위로
+ * 가면 참 · 아래로 가면 거짓 · 멈추면 그대로).
+ */
+export function talkLogTouchStepOf({
+  pull,
+  back,
+  dy,
+}: {
+  pull: number;
+  /** 마지막 손 움직임이 맨 아래 쪽으로 돌아오는 것이었나. */
+  back: boolean;
+  /** 손가락 세로 자리의 바뀐 값(px, 아래로 가면 양수). */
+  dy: number;
+}): { pull: number; back: boolean; markUp: boolean } {
+  const next = talkLogPullOf({ pull, dy });
+  return {
+    pull: next,
+    back: dy < 0 ? true : dy > 0 ? false : back,
+    markUp: dy > 0 && next > TALK_LOG_PULL_PX,
+  };
+}
+
+/**
+ * 넘김 사건이 넘기려는 때를 지울까(순수, S5 fix 7 · rev-s5-5 M-1): 맨 아래에 닿았고 마지막 손 움직임이 맨 아래 쪽으로 돌아오는 것이었으면 지운다 —
+ * 엿본 뒤 같은 손으로 돌아온 아이는 다시 따라가기를 바란다. 휠 · 키처럼 손이 아닌 입력의 맨 아래 사건은 지우지 않는다(부드럽게 시작하는 넘김의 첫
+ * 사건은 아직 맨 아래에 있다 · rev-s5-4 N-1 (가)).
+ */
+export function talkLogClearUpOf({
+  atBottom,
+  back,
+}: {
+  atBottom: boolean;
+  back: boolean;
+}): boolean {
+  return atBottom && back;
+}
+
 /** 위로 가는 키인가(순수, S5 fix 5): ArrowUp · PageUp · Home · Shift 와 함께 누른 Space. */
 export function talkLogUpKeyOf({
   key,
@@ -179,9 +218,154 @@ export function talkLogFollowOf({
 }
 
 /**
+ * 으뜸 단추 줄 아래에 남길 여유(px, 화면 꼴 값 — 실제 사파리의 도구 막대 · 홈 표시 줄이 보는 창 아래 끝을 가리는 몫을 감안, 화면 검토 I-2).
+ * 보는 창 높이는 visualViewport(도구 막대를 뺀 보이는 높이)로 잰다. 세로에서 기록 칸을 남는 높이에 맞출 때도 같은 여유를 둔다(S5 fix 7).
+ */
+export const KEEP_IN_VIEW_MARGIN_PX = 16;
+
+/**
+ * 으뜸 단추 줄을 보는 창 안으로 옮길 넘김 거리(순수, 4절 7줄 '한 화면에 행동 하나, 큰 버튼' · 97줄 · 화면 검토 I-2): 줄의 아래 끝 + 여유가 보는 창
+ * 아래를 넘으면 그만큼 아래로 넘긴다. 줄의 위 끝이 보는 창 위로 나가게는 넘기지 않고, 위로는 넘기지 않는다(이미 보이면 0).
+ */
+export function keepInViewScrollOf({
+  top,
+  bottom,
+  viewportHeight,
+  margin,
+}: {
+  top: number;
+  bottom: number;
+  viewportHeight: number;
+  margin: number;
+}): number {
+  const over = bottom + margin - viewportHeight;
+  if (over <= 0) return 0;
+  return Math.max(0, Math.min(over, top));
+}
+
+/** 세로에서 남는 높이에 맞춘 기록 칸 높이의 상한(CSS 변수 — TalkLog 의 portrait 상한이 정한 비율과 이 값 가운데 작은 것을 쓴다, S5 fix 7). */
+export const TALK_LOG_FIT_VAR = "--talk-log-fit";
+
+/**
+ * 세로에서 기록 칸 높이의 상한(순수, 13절 C241 보완 4 · 화면 재검토 des-s5 D-1): 쪽을 넘기지 않고 칸 아래의 조각(으뜸 단추 줄 · 빈 알림 줄 자리까지)이
+ * 여유를 두고 보는 창 안에 들어오는 높이다. 보는 창이 낮아 그 높이가 지금 턴(가장 작은 높이)보다 작으면 가장 작은 높이를 지키고, 남는 몫은 으뜸
+ * 단추를 들이는 쪽 넘김(keepInViewScrollOf)이 받친다. 칸의 위 끝은 쪽 위에서 잰 자리(쪽을 넘기지 않은 때의 자리)다.
+ */
+export function talkLogFitOf({
+  viewportHeight,
+  logTop,
+  belowLog,
+  margin,
+  minHeight,
+}: {
+  viewportHeight: number;
+  /** 기록 칸의 위 끝(쪽 위에서, px). */
+  logTop: number;
+  /** 기록 칸의 아래 끝에서 수업 판 마지막 조각의 아래 끝까지(px — 칸 높이와 무관). */
+  belowLog: number;
+  margin: number;
+  /** 지금 턴(없으면 마지막 줄)이 온전히 보이는 칸 높이(px — 배치에서 잰 값). */
+  minHeight: number;
+}): number {
+  return Math.max(
+    Math.ceil(minHeight),
+    Math.floor(viewportHeight - margin - logTop - belowLog),
+  );
+}
+
+/** 쪽 넘김의 기준을 찾을 때 읽는 조각의 꼴(순수 함수가 DOM 없이 돌게 — 시험은 보통 객체를 넘긴다). */
+export type KeepNodeAccess<T> = {
+  top: (node: T) => number;
+  bottom: (node: T) => number;
+  /** 글이 없는 알림 줄(role status — 자리만 잡은 빈 줄)인가. */
+  emptyStatus: (node: T) => boolean;
+  children: (node: T) => readonly T[];
+};
+
+function endsInEmptyStatus<T>(node: T, at: KeepNodeAccess<T>): boolean {
+  const last = at.children(node).at(-1);
+  if (last === undefined) return false;
+  return at.emptyStatus(last) || endsInEmptyStatus(last, at);
+}
+
+/**
+ * 으뜸 단추를 보는 창 안으로 들이는 쪽 넘김의 기준(순수, 화면 재검토 des-s5 D-1 근거 2 · C241 보완 4): 수업 판 마지막 조각의 아래 끝이되, 그 끝이
+ * 빈 알림 줄 자리면 그 자리를 뺀 내용(으뜸 단추 묶음)의 아래 끝이다. 알림 글이 뜨면 그 줄까지다. 빈 줄은 맨 끝 쪽(마지막 자식을 따라 내려간 길)에
+ * 있는 것만 뺀다.
+ */
+export function keepBottomOf<T>(node: T, at: KeepNodeAccess<T>): number {
+  if (!endsInEmptyStatus(node, at)) return at.bottom(node);
+  const kids = at.children(node);
+  for (let i = kids.length - 1; i >= 0; i--) {
+    const kid = kids[i] as T;
+    if (!at.emptyStatus(kid)) return keepBottomOf(kid, at);
+  }
+  return at.top(node);
+}
+
+const DOM_KEEP_ACCESS: KeepNodeAccess<Element> = {
+  top: (el) => el.getBoundingClientRect().top,
+  bottom: (el) => el.getBoundingClientRect().bottom,
+  emptyStatus: (el) =>
+    el.getAttribute("role") === "status" &&
+    (el.textContent ?? "").trim() === "",
+  children: (el) => Array.from(el.children),
+};
+
+/** 지금 턴(없으면 지난 줄의 마지막 줄)이 온전히 보이는 칸 높이(px): 그 조각의 높이 + 칸의 위아래 안쪽 여백. */
+function talkLogMinHeightOf(log: HTMLElement): number {
+  const block =
+    log.querySelector(":scope > [data-talk-log-now]") ??
+    log.querySelector(':scope > [role="log"]')?.lastElementChild;
+  const style = window.getComputedStyle(log);
+  const pad =
+    Number.parseFloat(style.paddingTop) +
+    Number.parseFloat(style.paddingBottom);
+  return (block?.getBoundingClientRect().height ?? 0) + pad;
+}
+
+/**
+ * 수업 판을 보는 창 안에(S5 fix 7 · 13절 C241 보완 3 · 보완 4): (1) 세로면 기록 칸 높이의 상한을 남는 높이에 맞추고(talkLogFitOf — 가로면 지운다,
+ * 가로는 정한 비율 그대로), (2) 그래도 으뜸 단추 묶음이 보는 창 밖이면(낮은 보는 창) 그 아래 끝까지만 움직임 없이 넘긴다(keepBottomOf ·
+ * keepInViewScrollOf). 넘긴 거리를 돌려준다. panel 은 수업 판(대화 기록 칸 · 정리 기록 칸이 든 판)이다.
+ */
+export function keepLessonInView(panel: HTMLElement): number {
+  const target = panel.lastElementChild;
+  if (!target) return 0;
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  const log = panel.querySelector<HTMLElement>("[data-talk-log]");
+  if (log && !log.contains(target)) {
+    if (window.matchMedia("(orientation: portrait)").matches) {
+      const box = log.getBoundingClientRect();
+      const fit = talkLogFitOf({
+        viewportHeight,
+        logTop: box.top + window.scrollY,
+        belowLog: target.getBoundingClientRect().bottom - box.bottom,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+        minHeight: talkLogMinHeightOf(log),
+      });
+      const value = `${fit}px`;
+      if (log.style.getPropertyValue(TALK_LOG_FIT_VAR) !== value)
+        log.style.setProperty(TALK_LOG_FIT_VAR, value);
+    } else log.style.removeProperty(TALK_LOG_FIT_VAR);
+  }
+  const rect = target.getBoundingClientRect();
+  const by = keepInViewScrollOf({
+    top: rect.top,
+    bottom: keepBottomOf(target, DOM_KEEP_ACCESS),
+    viewportHeight,
+    margin: KEEP_IN_VIEW_MARGIN_PX,
+  });
+  // 움직임 없이(저장소에 부드러운 넘김 CSS 가 없어 기본값이 곧바로) — behavior "instant" 열거값에 기대지 않는다(검토 rev-s5 M-3)
+  if (by > 0) window.scrollBy(0, by);
+  return by;
+}
+
+/**
  * 대화 기록 칸. entries 가 늘거나 지금 턴(children)이 바뀌면 맨 아래로 넘긴다(bottomKey). 그 밖에는 지금 턴 영역 · 지난 줄 영역 · 칸의 크기가 바뀔
  * 때마다(첫 알림 포함) 맨 아래에 붙어 있으면 다시 맨 아래로 맞춘다(talkLogFollowOf — 움직임 없이). 붙어 있음은 아이가 위로 넘기려는 입력이 있을 때만
- * 풀리고(talkLogUpwardOf), 어떤 넘김이든 맨 아래에 닿으면 다시 붙는다(talkLogPinnedAfterScrollOf · S5 fix 5 · S5 fix 6). 칸 높이는 부르는 쪽 배치가 정하고(className), 기본은 화면 높이의 상한 안에서 넘겨 보는 칸이다.
+ * 풀리고(talkLogUpwardOf), 어떤 넘김이든 맨 아래에 닿으면 다시 붙는다(talkLogPinnedAfterScrollOf · S5 fix 5 · S5 fix 6). 칸 높이는 부르는 쪽 배치가 정하고(className), 기본은 화면 높이의 상한(세로에서는 그 상한과 수업 판이 적은
+ * 남는 높이 TALK_LOG_FIT_VAR 가운데 작은 것 — keepLessonInView · S5 fix 7) 안에서 넘겨 보는 칸이다.
  */
 export function TalkLog({
   entries,
@@ -219,6 +403,8 @@ export function TalkLog({
   const pull = useRef(0);
   /** 위로 넘기려는 입력이 마지막으로 있던 때(ms). */
   const upAt = useRef(Number.NEGATIVE_INFINITY);
+  /** 마지막 손 움직임이 맨 아래 쪽으로 돌아오는 것이었나(talkLogTouchStepOf · S5 fix 7). */
+  const back = useRef(false);
   const hasNow = Boolean(children);
   /** 맞출 때면 맨 아래로(움직임 없이). */
   const follow = useRef((el: HTMLDivElement, newTurn: boolean) => {
@@ -242,25 +428,31 @@ export function TalkLog({
   useEffect(() => {
     const el = box.current;
     if (!el) return;
+    // 손이 아닌 입력(휠 · 키 · 초점)도 이 길로 적는다 — 돌아오던 손의 표시를 지워, 그 뒤 휠 · 키로 넘긴 첫 맨 아래 사건이 넘기려는 때를 지우지 않게
     const markUp = () => {
       upAt.current = performance.now();
+      back.current = false;
     };
     // 합성 사건으로도 점검하므로 손가락 자리는 touches[0].clientY 로만 읽는다
     const onTouchStart = (event: Event) => {
       lastY.current = (event as TouchEvent).touches?.[0]?.clientY ?? null;
       pull.current = 0;
+      back.current = false;
     };
-    // 손가락이 아래로 충분히 가 있는 동안은 움직일 때마다 넘기려는 때를 새로 적는다(손을 뗀 뒤 미끄러지는 넘김도 그 때에서 잰다 · S5 fix 6)
+    // 손가락이 아래로 가고 충분히 가 있는 동안은 움직일 때마다 넘기려는 때를 새로 적는다(손을 뗀 뒤 미끄러지는 넘김도 그 때에서 잰다 · S5 fix 6).
+    // 맨 아래 쪽으로 되돌아오는 손은 적지 않는다(rev-s5-5 M-1)
     const onTouchMove = (event: Event) => {
       const y = (event as TouchEvent).touches?.[0]?.clientY;
       if (y === undefined) return;
-      if (lastY.current !== null)
-        pull.current = talkLogPullOf({
-          pull: pull.current,
-          dy: y - lastY.current,
-        });
+      const step = talkLogTouchStepOf({
+        pull: pull.current,
+        back: back.current,
+        dy: lastY.current === null ? 0 : y - lastY.current,
+      });
       lastY.current = y;
-      if (pull.current > TALK_LOG_PULL_PX) markUp();
+      pull.current = step.pull;
+      back.current = step.back;
+      if (step.markUp) markUp();
     };
     // 칸에서만 받는다. 손이 닿은 요소가 사라져 오지 않아도 넘기려는 때가 지나면 넘기려는 중이 아니게 되고, 다음 touchstart 에서 0 이 된다(rev-s5-4 N-2)
     const onTouchEnd = () => {
@@ -286,15 +478,19 @@ export function TalkLog({
       }
       if (keyboard) markUp();
     };
-    // 맨 아래면 붙이기만 한다 — 넘기려는 입력을 지우지 않는다(부드럽게 시작하는 넘김의 첫 사건은 아직 맨 아래에 있다 · rev-s5-4 N-1 (가))
+    // 맨 아래면 붙인다. 넘기려는 입력은 지우지 않고(부드럽게 시작하는 넘김의 첫 사건은 아직 맨 아래에 있다 · rev-s5-4 N-1 (가)), 엿본 뒤 같은
+    // 손으로 맨 아래까지 돌아온 때만 지운다(rev-s5-5 M-1)
     const onScroll = () => {
+      const atBottom = talkLogPinnedOf({
+        scrollTop: el.scrollTop,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      });
+      if (talkLogClearUpOf({ atBottom, back: back.current }))
+        upAt.current = Number.NEGATIVE_INFINITY;
       pinned.current = talkLogPinnedAfterScrollOf({
         pinned: pinned.current,
-        atBottom: talkLogPinnedOf({
-          scrollTop: el.scrollTop,
-          scrollHeight: el.scrollHeight,
-          clientHeight: el.clientHeight,
-        }),
+        atBottom,
         upward: talkLogUpwardOf({
           now: performance.now(),
           upAt: upAt.current,
@@ -331,7 +527,8 @@ export function TalkLog({
       ref={box}
       data-talk-log=""
       className={cn(
-        "flex max-h-[60dvh] min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-1 py-2",
+        // 세로에서는 정한 비율과 남는 높이(TALK_LOG_FIT_VAR — 수업 판이 keepLessonInView 로 적음, 없으면 정한 비율) 가운데 작은 것(C241 보완 4)
+        "flex max-h-[60dvh] min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-1 py-2 portrait:max-h-[min(60dvh,var(--talk-log-fit,60dvh))]",
         className,
       )}
     >

@@ -56,6 +56,28 @@ const T = {
   micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
 } as const;
 const MS = 1000;
+/** 쪽 넘김 · 자리 단언을 기다리는 시간(ms, 시험 값 — talk-in-view 와 같은 값). */
+const SETTLE_MS = 10_000;
+
+/**
+ * 수업 화면 전체가 보는 창 안이다(13절 C241 보완 4 · 화면 재검토 des-s5 D-1 — S5 fix 7): 쪽 넘김이 0 이고(시험 창 기준) 위 띠가 보는 창 위로
+ * 나가지 않는다. 대화 중이면(stop) 위 띠의 '그만하기'도 보는 창 안에 온전히 있다.
+ */
+async function expectLessonInView(page: Page, { stop }: { stop: boolean }) {
+  await expect
+    .poll(() => page.evaluate(() => Math.round(window.scrollY)), {
+      timeout: SETTLE_MS,
+    })
+    .toBeLessThanOrEqual(0);
+  const bandTop = await page
+    .locator("[data-paper-band]")
+    .evaluate((el) => el.getBoundingClientRect().top);
+  expect(bandTop).toBeGreaterThanOrEqual(0);
+  if (stop)
+    await expect(
+      page.locator("[data-paper-band] [data-talk-stop]"),
+    ).toBeInViewport({ ratio: 1 });
+}
 const LONG = 120_000;
 const STREAM_END_MS = 30_000;
 const LEVEL = 3;
@@ -373,6 +395,8 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(
       o.page.locator("[data-wrap-all] [data-speak]"),
     ).not.toHaveAttribute("data-speak-waiting", "", { timeout: STREAM_END_MS });
+    // 정리 화면도 쪽을 넘기지 않고 위 띠가 보인다(정리에는 위 띠의 '그만하기'가 없다 — S5 fix 7)
+    await expectLessonInView(o.page, { stop: false });
     await o.page.locator("[data-wrap-all] [data-speak]").click();
     const first = o.page.locator('[data-closing-card="1"]');
     await expect(first).toBeVisible({ timeout: STREAM_END_MS });
@@ -409,6 +433,8 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(bubble(o.page)).not.toContainText("Do you want to talk more?");
     // 마무리 제안 뒤에는 말로도 답할 수 있다(02-2 295줄 — 두 버튼과 함께 말하기 단추)
     await expect(childTurn(o.page)).toBeVisible();
+    // 마무리 제안(말하기와 두 단추)에서도 쪽을 넘기지 않고 위 띠의 '그만하기'까지 보인다(S5 fix 7)
+    await expectLessonInView(o.page, { stop: true });
     const before = (await fakeAiRequests()).length;
     await choice.getByRole("button", { name: T.more }).click();
     await expect(choice).toHaveCount(0);

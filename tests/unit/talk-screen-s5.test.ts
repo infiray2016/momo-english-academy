@@ -12,13 +12,18 @@ import {
   lessonSpokenItemsOf,
 } from "@/components/conversation/talk-frame";
 import {
+  type KeepNodeAccess,
+  keepBottomOf,
   TALK_LOG_PIN_SLACK_PX,
   TALK_LOG_PULL_PX,
   TALK_LOG_UP_INTENT_MS,
+  talkLogClearUpOf,
+  talkLogFitOf,
   talkLogFollowOf,
   talkLogPinnedAfterScrollOf,
   talkLogPinnedOf,
   talkLogPullOf,
+  talkLogTouchStepOf,
   talkLogUpKeyOf,
   talkLogUpwardOf,
 } from "@/components/conversation/talk-log";
@@ -214,6 +219,75 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
       ).toBe(pinned);
   });
 
+  it("AC-26m 한 번 닿은 손으로 위로 엿본 뒤 같은 손으로 맨 아래까지 돌아오면 넘기려는 때가 지워져, 손을 뗀 뒤 곧 '줄었다가 다시 커짐'이 와도 붙어 있다(S5 fix 7 · rev-s5-5 M-1)", () => {
+    // 검토자의 장면(peek): 손가락을 10px 씩 12번 아래로(위로 엿봄) · 12번 위로(맨 아래로 돌아옴), 한 움직임이 16ms
+    let t = 10_000;
+    let hand = { pull: 0, back: false };
+    let upAt = Number.NEGATIVE_INFINITY;
+    let pinned = true;
+    const move = (dy: number) => {
+      t += 16;
+      const step = talkLogTouchStepOf({ ...hand, dy });
+      hand = { pull: step.pull, back: step.back };
+      if (step.markUp) upAt = t;
+    };
+    const scroll = (atBottom: boolean) => {
+      if (talkLogClearUpOf({ atBottom, back: hand.back }))
+        upAt = Number.NEGATIVE_INFINITY;
+      pinned = talkLogPinnedAfterScrollOf({
+        pinned,
+        atBottom,
+        upward: talkLogUpwardOf({ now: t, upAt }),
+      });
+    };
+    for (let i = 0; i < 12; i++) {
+      move(10);
+      scroll(false);
+    }
+    // 엿보는 동안: 넘기려는 중이라 붙어 있음이 풀렸다
+    expect(pinned).toBe(false);
+    expect(hand.back).toBe(false);
+    for (let i = 0; i < 12; i++) {
+      move(-10);
+      scroll(i === 11);
+    }
+    // 되돌아오는 손은 때를 새로 적지 않고, 맨 아래에 닿은 사건이 때를 지운다
+    expect(hand.back).toBe(true);
+    expect(upAt).toBe(Number.NEGATIVE_INFINITY);
+    expect(pinned).toBe(true);
+    // 손을 뗀 바로 뒤(300ms 안) 지금 턴이 줄었다가 다시 커져 브라우저가 자리를 줄인 넘김 사건이 와도 풀리지 않고, 크기 알림에 맨 아래로 맞춘다
+    t += 1;
+    scroll(false);
+    expect(pinned).toBe(true);
+    expect(talkLogFollowOf({ newTurn: false, pinned })).toBe(true);
+  });
+
+  it("AC-26m 손 한 움직임: 아래로 가고 순거리가 문턱을 넘을 때만 넘기려는 때를 적고, 위로 가면 돌아오는 손 · 아래로 가면 아님 · 멈추면 그대로다(S5 fix 7)", () => {
+    expect(
+      talkLogTouchStepOf({ pull: TALK_LOG_PULL_PX, back: false, dy: 1 }),
+    ).toEqual({ pull: TALK_LOG_PULL_PX + 1, back: false, markUp: true });
+    // 순거리가 아직 문턱 위여도 되돌아오는 손은 적지 않는다(고치기 전에는 적었다)
+    expect(talkLogTouchStepOf({ pull: 60, back: false, dy: -10 })).toEqual({
+      pull: 50,
+      back: true,
+      markUp: false,
+    });
+    expect(talkLogTouchStepOf({ pull: 60, back: true, dy: 0 })).toEqual({
+      pull: 60,
+      back: true,
+      markUp: false,
+    });
+    expect(talkLogTouchStepOf({ pull: 0, back: true, dy: 5 })).toEqual({
+      pull: 5,
+      back: false,
+      markUp: false,
+    });
+    // 넘기려는 때를 지우는 것은 돌아오는 손이 맨 아래에 닿은 사건뿐이다(휠 · 키의 첫 맨 아래 사건은 지우지 않음 — N-1 (가))
+    expect(talkLogClearUpOf({ atBottom: true, back: true })).toBe(true);
+    expect(talkLogClearUpOf({ atBottom: true, back: false })).toBe(false);
+    expect(talkLogClearUpOf({ atBottom: false, back: true })).toBe(false);
+  });
+
   it("AC-26m 새 차례(줄 수 · 지금 턴 열쇠가 바뀜)면 아이가 위로 넘겨 둔 때도 맨 아래로 간다(지금처럼)", () => {
     expect(talkLogFollowOf({ newTurn: true, pinned: false })).toBe(true);
     expect(talkLogFollowOf({ newTurn: true, pinned: true })).toBe(true);
@@ -242,15 +316,103 @@ describe("I-2 으뜸 단추 줄을 보는 창 안으로(talk-frame)", () => {
     ).toBe(0);
   });
 
-  it("AC-26m 세로에서 기록 칸이 찬 뒤 보는 창 아래로 나간 말하기 단추 줄(화면 검토 model-P 1154.5~1209.5)은 아래 끝 + 여유만큼 넘긴다", () => {
+  /** 화면 재검토 des-s5 model-P(기록 칸을 맞추기 전 배치, 쪽 위에서): 판의 마지막 조각(점선 1124 ~ 빈 알림 줄 자리 끝 1266) 안의 아이 차례 =
+   * 단추 묶음(말하기 1154~1210 · 묶음 1142~1222) + 빈 알림 줄(1234~1266). */
+  type Box = {
+    top: number;
+    bottom: number;
+    status?: "empty" | "shown";
+    kids?: Box[];
+  };
+  const BOX: KeepNodeAccess<Box> = {
+    top: (b) => b.top,
+    bottom: (b) => b.bottom,
+    emptyStatus: (b) => b.status === "empty",
+    children: (b) => b.kids ?? [],
+  };
+  const footOf = (status: "empty" | "shown", choice?: Box): Box => ({
+    top: 1124,
+    bottom: choice ? choice.bottom : 1266,
+    kids: [
+      {
+        top: 1142,
+        bottom: 1266,
+        kids: [
+          {
+            top: 1142,
+            bottom: 1222,
+            kids: [{ top: 1154, bottom: 1210 }],
+          },
+          { top: 1234, bottom: 1266, status },
+        ],
+      },
+      ...(choice ? [choice] : []),
+    ],
+  });
+
+  it("AC-26m 쪽 넘김의 기준은 판의 마지막 조각 전체가 아니라 으뜸 단추 묶음의 아래 끝이다: 빈 알림 줄 자리는 빼고, 알림 글이 뜨면 그 줄까지(S5 fix 7 · des-s5 D-1 근거 2)", () => {
+    // 고치기 전에는 조각 전체(1266)가 기준이라 실제 화면에서 102px 내려갔다 — 단추 묶음까지면 58px
+    expect(keepBottomOf(footOf("empty"), BOX)).toBe(1222);
     expect(
       keepInViewScrollOf({
-        top: 1154.5,
-        bottom: 1209.5,
+        top: 1124,
+        bottom: keepBottomOf(footOf("empty"), BOX),
         viewportHeight: VIEW,
         margin: KEEP_IN_VIEW_MARGIN_PX,
       }),
-    ).toBe(1209.5 + KEEP_IN_VIEW_MARGIN_PX - VIEW);
+    ).toBe(1222 + KEEP_IN_VIEW_MARGIN_PX - VIEW);
+    expect(keepBottomOf(footOf("shown"), BOX)).toBe(1266);
+    // 마무리 제안: 아이 차례 뒤에 두 단추 줄이 있으면 그 줄의 아래 끝(빈 알림 줄은 맨 끝이 아니라 빼지 않는다)
+    const choice = {
+      top: 1294,
+      bottom: 1350,
+      kids: [{ top: 1294, bottom: 1350 }],
+    };
+    expect(keepBottomOf(footOf("empty", choice), BOX)).toBe(1350);
+    // 빈 알림 줄뿐인 조각은 위 끝
+    expect(
+      keepBottomOf(
+        {
+          top: 10,
+          bottom: 50,
+          kids: [{ top: 10, bottom: 50, status: "empty" }],
+        },
+        BOX,
+      ),
+    ).toBe(10);
+  });
+
+  it("AC-26m 세로 기록 칸 높이의 상한은 남는 높이다: 칸 아래 조각(빈 알림 줄 자리까지)이 여유를 두고 보는 창 안에 들고, 낮은 창에서도 지금 턴보다 낮아지지 않는다(C241 보완 4)", () => {
+    // model-P: 칸 위 끝 396 · 칸 아래에서 조각 끝까지 1266 - 1104 = 162 → 606(요청자에게 알린 708 → 606 쯤)
+    expect(
+      talkLogFitOf({
+        viewportHeight: VIEW,
+        logTop: 396,
+        belowLog: 162,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+        minHeight: 286,
+      }),
+    ).toBe(606);
+    // 낮은 세로(도구 막대를 뺀 1060)
+    expect(
+      talkLogFitOf({
+        viewportHeight: 1060,
+        logTop: 396,
+        belowLog: 162,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+        minHeight: 286,
+      }),
+    ).toBe(486);
+    // 한 화면에 다 들 수 없으면 지금 턴이 온전히 보이는 높이를 지킨다(남는 몫은 쪽 넘김이 받침)
+    expect(
+      talkLogFitOf({
+        viewportHeight: 720,
+        logTop: 396,
+        belowLog: 162,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+        minHeight: 242.5,
+      }),
+    ).toBe(243);
   });
 
   it("AC-26m 정리의 말하기처럼 보는 창보다 아래에 있는 줄도 같은 식이고(화면 검토 wrap-P), 줄의 위 끝이 보는 창 위로 나가게는 넘기지 않는다", () => {

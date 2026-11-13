@@ -77,6 +77,29 @@ const PHOTO = {
 } as const;
 /** 수업을 연 방향(세로는 돌려 찍기로 두 방향 사진, 가로는 가로로 연 상태의 사진 — 화면 검토 1.3). */
 const WAYS = ["portrait", "landscape"] as const;
+/** 쪽 넘김 · 자리 단언을 기다리는 시간(ms, 시험 값 — talk-in-view · talk-lesson 과 같은 값). */
+const IN_VIEW_SETTLE_MS = 10_000;
+
+/**
+ * 수업 화면 전체가 보는 창 안이다(13절 C241 보완 4 · 화면 재검토 des-s5 D-1 — S5 fix 7, talk-lesson.spec 과 같은 단언): 쪽 넘김이 0 이고
+ * (시험 창 기준) 위 띠가 보는 창 위로 나가지 않는다. 대화 중이면(stop) 위 띠의 '그만하기'도 보는 창 안에 온전히 있다. 세로로 연 수업에서만 쓴다
+ * (가로의 마무리 제안 · 정리는 결정 범위 밖).
+ */
+async function expectLessonInView(page: Page, { stop }: { stop: boolean }) {
+  await expect
+    .poll(() => page.evaluate(() => Math.round(window.scrollY)), {
+      timeout: IN_VIEW_SETTLE_MS,
+    })
+    .toBeLessThanOrEqual(0);
+  const bandTop = await page
+    .locator("[data-paper-band]")
+    .evaluate((el) => el.getBoundingClientRect().top);
+  expect(bandTop).toBeGreaterThanOrEqual(0);
+  if (stop)
+    await expect(
+      page.locator("[data-paper-band] [data-talk-stop]"),
+    ).toBeInViewport({ ratio: 1 });
+}
 /** 되묻는 차례의 듣기 단추 접근 이름 · 고르기 물음 듣기 단추 접근 이름(화면 문구 표 BUBBLE_TEXT.model · ask 와 같은 글). */
 const LISTEN_LABEL = {
   model: "따라 할 말 듣기",
@@ -299,6 +322,7 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
       await expectNowInLog(page);
       await expectInView(listen);
       await expectInView(speakButton(page));
+      if (way === "portrait") await expectLessonInView(page, { stop: true });
       await shot(PHOTO.model);
 
       // 아이 말 → 되묻는 차례(ask_again): 선생님 말만 글이고, 앞 차례의 따라 할 문장 듣기 단추를 그대로 둔다 — 저절로 다시 읽지 않고 누르면 들린다
@@ -374,6 +398,7 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
       await expectNowInLog(page);
       await expectInView(explanation);
       await expectInView(speakButton(page));
+      if (way === "portrait") await expectLessonInView(page, { stop: true });
       await shot(PHOTO.hintKo);
 
       // 앞선 대화 차례를 채우고 쪽을 다시 연다(이어 하기 — AI 없이 마지막 선생님 말부터). 다음 말 차례에서 셈이 참고 턴에 닿는다
@@ -434,6 +459,7 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
       await expectNowInLog(page);
       await expectInView(choice);
       await expectInView(speakButton(page));
+      if (way === "portrait") await expectLessonInView(page, { stop: true });
       await shot(PHOTO.wrapUp);
 
       // '그만하기' → 정리(참여 완료 뒤라 확인 쪽지 없음)
@@ -443,6 +469,7 @@ test.describe("회화 새 엔진 수업(3단계 단원 1)", () => {
       for (const sentence of moreSentences)
         await expect(page.locator("[data-wrap-log]")).toContainText(sentence);
       await expectInView(wrapAll.locator("[data-speak]"));
+      if (way === "portrait") await expectLessonInView(page, { stop: false });
       await shot(PHOTO.wrap);
     });
   }

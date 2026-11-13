@@ -153,7 +153,7 @@ import {
   TalkPaper,
   TalkStart,
 } from "./follow-along";
-import { TalkLog } from "./talk-log";
+import { keepLessonInView, TalkLog } from "./talk-log";
 import {
   answerTipShownOf,
   BUBBLE_CLASS,
@@ -578,31 +578,8 @@ export function lessonChoiceSpeechOf(
   return choice === "suggestion";
 }
 
-/**
- * 으뜸 단추 줄 아래에 남길 여유(px, 화면 꼴 값 — 실제 사파리의 도구 막대 · 홈 표시 줄이 보는 창 아래 끝을 가리는 몫을 감안, 화면 검토 I-2).
- * 보는 창 높이는 visualViewport(도구 막대를 뺀 보이는 높이)로 잰다.
- */
-export const KEEP_IN_VIEW_MARGIN_PX = 16;
-
-/**
- * 으뜸 단추 줄을 보는 창 안으로 옮길 넘김 거리(순수, 4절 7줄 '한 화면에 행동 하나, 큰 버튼' · 97줄 · 화면 검토 I-2): 줄의 아래 끝 + 여유가 보는 창
- * 아래를 넘으면 그만큼 아래로 넘긴다. 줄의 위 끝이 보는 창 위로 나가게는 넘기지 않고, 위로는 넘기지 않는다(이미 보이면 0).
- */
-export function keepInViewScrollOf({
-  top,
-  bottom,
-  viewportHeight,
-  margin,
-}: {
-  top: number;
-  bottom: number;
-  viewportHeight: number;
-  margin: number;
-}): number {
-  const over = bottom + margin - viewportHeight;
-  if (over <= 0) return 0;
-  return Math.max(0, Math.min(over, top));
-}
+// 으뜸 단추 줄을 보는 창 안으로 옮기는 넘김 · 세로 기록 칸의 높이 맞춤은 기록 칸 조각에 둔다(실제 브라우저 점검 틀이 이 큰 조각 없이 묶게, S5 fix 7)
+export { KEEP_IN_VIEW_MARGIN_PX, keepInViewScrollOf } from "./talk-log";
 
 /**
  * 으뜸 단추 줄을 보는 창 안에 둘 차례인가(순수, 화면 검토 I-2): 대화 기록 칸 화면의 아이 차례(말하기) · 고르기 차례(마무리 차례의 두 단추 —
@@ -1942,8 +1919,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const inDialogue = segment === "talk" || segment === "more_talk";
   const soundRetry = soundRetryStepOf(soundTrack, { canSkip: true });
 
-  // 으뜸 단추 줄(아이 차례 · 두 단추 · 정리의 말하기 — 수업 판의 마지막 조각)이 열리거나 판이 자라거나 기기를 돌리면 움직임 없이 보는 창 안으로
-  // (화면 검토 I-2 — 버리는 듣기 기기의 child-turn 처리를 모든 기기로 넓힘). 이미 보이면 그대로다
+  // 으뜸 단추 줄(아이 차례 · 두 단추 · 정리의 말하기 — 수업 판의 마지막 조각)이 열리거나 판이 자라거나 기기를 돌리면 보는 창 안으로
+  // (화면 검토 I-2 — 버리는 듣기 기기의 child-turn 처리를 모든 기기로 넓힘). 세로에서는 기록 칸 높이를 남는 높이에 맞춰 쪽을 넘기지 않고, 낮은 보는
+  // 창에서만 으뜸 단추 묶음의 아래 끝까지 움직임 없이 넘긴다(keepLessonInView · C241 보완 4 · S5 fix 7). 이미 보이면 그대로다
   const panelRef = useRef<HTMLElement>(null);
   const panelOpen =
     !blocked &&
@@ -1963,28 +1941,33 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   useEffect(() => {
     const panel = panelRef.current;
     if (!keepActive || !panel) return;
+    // 다음 그림에서 한 번 — 크기 알림 안에서 칸 높이를 바꾸면 알림이 같은 그림에 다 닿지 못한다(ResizeObserver loop)
+    let frame = 0;
     const keep = () => {
-      const target = panel.lastElementChild;
-      if (!target) return;
-      const rect = target.getBoundingClientRect();
-      const by = keepInViewScrollOf({
-        top: rect.top,
-        bottom: rect.bottom,
-        viewportHeight: window.visualViewport?.height ?? window.innerHeight,
-        margin: KEEP_IN_VIEW_MARGIN_PX,
-      });
-      // 움직임 없이(저장소에 부드러운 넘김 CSS 가 없어 기본값이 곧바로) — behavior "instant" 열거값에 기대지 않는다(검토 rev-s5 M-3)
-      if (by > 0) window.scrollBy(0, by);
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => keepLessonInView(panel));
     };
     keep();
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(keep);
-    observer?.observe(panel);
+    // 판 · 기록 칸 · 지금 턴(칸 안에서 자람) · 아이 화면 한 장(위 띠 · 선생님 창의 높이가 바뀌어 칸의 위 끝이 움직임)
+    for (const el of [
+      panel,
+      panel.querySelector("[data-talk-log]"),
+      panel.querySelector("[data-talk-log-now]"),
+      panel.closest("[data-child-screen]"),
+    ])
+      if (el) observer?.observe(el);
     const turned = window.matchMedia("(orientation: portrait)");
     turned.addEventListener("change", keep);
+    // 보는 창 높이(사파리 도구 막대가 나고 짐)가 바뀌면 남는 높이를 다시 잰다
+    const viewport = window.visualViewport ?? window;
+    viewport.addEventListener("resize", keep);
     return () => {
+      window.cancelAnimationFrame(frame);
       observer?.disconnect();
       turned.removeEventListener("change", keep);
+      viewport.removeEventListener("resize", keep);
     };
   }, [keepActive, phase, stage, turnKey]);
 
