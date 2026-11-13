@@ -13,11 +13,14 @@ import {
 } from "@/components/conversation/talk-frame";
 import {
   TALK_LOG_PIN_SLACK_PX,
-  TALK_LOG_USER_SCROLL_MS,
+  TALK_LOG_PULL_PX,
+  TALK_LOG_UP_INTENT_MS,
   talkLogFollowOf,
   talkLogPinnedAfterScrollOf,
   talkLogPinnedOf,
-  talkLogScrollByUserOf,
+  talkLogPullOf,
+  talkLogUpKeyOf,
+  talkLogUpwardOf,
 } from "@/components/conversation/talk-log";
 import {
   BUBBLE_TEXT,
@@ -73,75 +76,116 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
     ).toBe(true);
   });
 
-  it("AC-26m 아이의 입력 없이 온 넘김 사건(앱이 맞춤 · 브라우저가 자리를 줄임)은 남은 넘김 거리가 있어도 붙어 있음을 바꾸지 않는다(fix 4 원인 2)", () => {
-    // 줄었다가 다시 커진 뒤에 처리된 넘김 사건 — 남은 거리 172px 이 있어도 붙어 있음 그대로
+  it("AC-26m 맨 아래에 닿은 넘김 사건은 위로 넘기려는 중이어도 다시 붙는다(입력 없이 맨 아래로 돌아온 칸 포함 · rev-s5-3 M-2)", () => {
     expect(
       talkLogPinnedAfterScrollOf({
-        byUser: false,
-        pinned: true,
-        scrollTop: 835,
-        scrollHeight: 1715,
-        clientHeight: 708,
-      }),
-    ).toBe(true);
-    // 위로 넘겨 둔 칸도 입력 없는 넘김 사건으로는 다시 붙지 않는다
-    expect(
-      talkLogPinnedAfterScrollOf({
-        byUser: false,
         pinned: false,
-        scrollTop: 300,
-        scrollHeight: 1008,
-        clientHeight: 708,
-      }),
-    ).toBe(false);
-  });
-
-  it("AC-26m 손이 닿아 있거나 마지막 입력에서 TALK_LOG_USER_SCROLL_MS 안의 넘김 사건은 아이의 넘김이고, 넘김 자리로 다시 잰다(위로 넘기면 거짓 · 맨 아래로 돌아오면 참)", () => {
-    expect(
-      talkLogScrollByUserOf({ touching: true, now: 10_000, lastInputAt: 0 }),
-    ).toBe(true);
-    expect(
-      talkLogScrollByUserOf({
-        touching: false,
-        now: 10_000,
-        lastInputAt: 10_000 - TALK_LOG_USER_SCROLL_MS,
+        atBottom: true,
+        upward: true,
       }),
     ).toBe(true);
     expect(
       talkLogPinnedAfterScrollOf({
-        byUser: true,
-        pinned: true,
-        scrollTop: 120,
-        scrollHeight: 1048,
-        clientHeight: 708,
-      }),
-    ).toBe(false);
-    expect(
-      talkLogPinnedAfterScrollOf({
-        byUser: true,
         pinned: false,
-        scrollTop: 340,
-        scrollHeight: 1048,
-        clientHeight: 708,
+        atBottom: true,
+        upward: false,
       }),
     ).toBe(true);
   });
 
-  it("AC-26m 마지막 입력에서 TALK_LOG_USER_SCROLL_MS 가 지난 뒤의 넘김 사건은 아이의 입력으로 보지 않는다(손이 떨어져 있을 때)", () => {
-    expect(TALK_LOG_USER_SCROLL_MS).toBe(300);
+  it("AC-26m 맨 아래가 아니고 위로 넘기려는 중이면 붙어 있음이 풀린다", () => {
     expect(
-      talkLogScrollByUserOf({
-        touching: false,
-        now: 10_000,
-        lastInputAt: 10_000 - TALK_LOG_USER_SCROLL_MS - 1,
+      talkLogPinnedAfterScrollOf({
+        pinned: true,
+        atBottom: false,
+        upward: true,
       }),
     ).toBe(false);
-    // 입력이 한 번도 없었으면(처음 연 칸) 아이의 넘김이 아니다
+  });
+
+  it("AC-26m 맨 아래가 아니어도 위로 넘기려는 입력이 없으면 붙어 있음을 바꾸지 않는다(줄었다가 다시 커진 꼴 · 칸 안을 누르기만 한 꼴, rev-s5-3 I-1)", () => {
+    // 줄었다가 다시 커진 뒤에 처리된 넘김 사건 — 입력이 없으므로 위로 넘기려는 중이 아니다
+    const shrunk = talkLogUpwardOf({
+      pull: 0,
+      now: 10_000,
+      upAt: Number.NEGATIVE_INFINITY,
+    });
+    expect(shrunk).toBe(false);
     expect(
-      talkLogScrollByUserOf({
-        touching: false,
+      talkLogPinnedAfterScrollOf({
+        pinned: true,
+        atBottom: false,
+        upward: shrunk,
+      }),
+    ).toBe(true);
+    // 칸 안을 누르기만 함 — 손가락이 거의 움직이지 않음(문턱 안)
+    const tapped = talkLogUpwardOf({
+      pull: talkLogPullOf({ pull: 0, dy: 3 }),
+      now: 10_000,
+      upAt: Number.NEGATIVE_INFINITY,
+    });
+    expect(tapped).toBe(false);
+    expect(
+      talkLogPinnedAfterScrollOf({
+        pinned: true,
+        atBottom: false,
+        upward: tapped,
+      }),
+    ).toBe(true);
+    // 위로 넘겨 둔 칸도 그대로 풀려 있다
+    expect(
+      talkLogPinnedAfterScrollOf({
+        pinned: false,
+        atBottom: false,
+        upward: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("AC-26m 손가락이 아래로 간 거리는 쌓이고 위로 가면 0 으로 돌아가며, TALK_LOG_PULL_PX 를 넘어야 위로 넘기려는 손짓이다", () => {
+    expect(TALK_LOG_PULL_PX).toBe(8);
+    expect(talkLogPullOf({ pull: 0, dy: 5 })).toBe(5);
+    expect(talkLogPullOf({ pull: 5, dy: 6 })).toBe(11);
+    expect(talkLogPullOf({ pull: 11, dy: -1 })).toBe(0);
+    expect(talkLogPullOf({ pull: 11, dy: 0 })).toBe(0);
+    const far = Number.NEGATIVE_INFINITY;
+    expect(
+      talkLogUpwardOf({ pull: TALK_LOG_PULL_PX, now: 10_000, upAt: far }),
+    ).toBe(false);
+    expect(
+      talkLogUpwardOf({ pull: TALK_LOG_PULL_PX + 1, now: 10_000, upAt: far }),
+    ).toBe(true);
+  });
+
+  it("AC-26m 위로 가는 키(ArrowUp · PageUp · Home · Shift+Space)만 위로 넘기려는 입력으로 센다", () => {
+    for (const key of ["ArrowUp", "PageUp", "Home"])
+      expect(talkLogUpKeyOf({ key, shiftKey: false })).toBe(true);
+    expect(talkLogUpKeyOf({ key: " ", shiftKey: true })).toBe(true);
+    for (const key of ["ArrowDown", "PageDown", "End", " ", "Enter", "Tab"])
+      expect(talkLogUpKeyOf({ key, shiftKey: false })).toBe(false);
+  });
+
+  it("AC-26m 위로 넘기려는 입력에서 TALK_LOG_UP_INTENT_MS 안이면 넘기려는 중이고, 지나면 아니다(입력이 없었으면 아니다)", () => {
+    expect(TALK_LOG_UP_INTENT_MS).toBe(300);
+    expect(
+      talkLogUpwardOf({
+        pull: 0,
         now: 10_000,
-        lastInputAt: Number.NEGATIVE_INFINITY,
+        upAt: 10_000 - TALK_LOG_UP_INTENT_MS,
+      }),
+    ).toBe(true);
+    expect(
+      talkLogUpwardOf({
+        pull: 0,
+        now: 10_000,
+        upAt: 10_000 - TALK_LOG_UP_INTENT_MS - 1,
+      }),
+    ).toBe(false);
+    expect(
+      talkLogUpwardOf({
+        pull: 0,
+        now: 10_000,
+        upAt: Number.NEGATIVE_INFINITY,
       }),
     ).toBe(false);
   });

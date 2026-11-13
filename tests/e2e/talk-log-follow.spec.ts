@@ -90,6 +90,17 @@ async function insertExchanges(sessionId: string, count: number) {
 
 const childTurn = (page: Page) => page.locator("[data-child-turn]");
 
+/**
+ * 그림 한 장을 기다린다(photos.ts 와 같은 꼴). 그림 한 장 사이 없이 보는 창을 두 번 바꾸면(가로 → 세로 → 가로) 사이의 배치가 기록 칸의 넘김
+ * 자리를 줄이는데 크기 알림(ResizeObserver)은 가로 → 가로로 보여 오지 않는다. 실제 기기의 돌림에서는 생기지 않는 순서라(CI 43372686213 ·
+ * S5 fix 5) 보는 창을 바꾸는 사이마다 기다린다.
+ */
+async function nextFrame(page: Page) {
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+  );
+}
+
 async function untilChildTurn(page: Page) {
   await expect(childTurn(page)).toBeVisible({ timeout: STREAM_END_MS });
   await expect(
@@ -159,10 +170,12 @@ test.describe("기존 방식 회화의 긴 대화(3단계)", () => {
     await expectNowInLog(page);
     await expectInView(page.locator("[data-child-turn] [data-speak]"));
     await photo(page, PHOTO);
+    await nextFrame(page);
     // 기기를 돌린 뒤에도 지금 턴은 기록 칸 안이다(칸 높이가 바뀌면 다시 맞춤 — 화면 검토 M-6). 사진 도우미에 기대지 않고 보는 창을 직접 가로로
     // 바꿔 잰 뒤 세로로 되돌린다(검토 rev-s5 M-6 — photo() 는 E2E_PHOTOS 가 없으면 아무것도 하지 않는다)
     await page.setViewportSize(CHILD_VIEWPORTS.landscape);
     await expectNowInLog(page);
+    await nextFrame(page);
     await page.setViewportSize(CHILD_VIEWPORTS.portrait);
     await expectNowInLog(page);
   });

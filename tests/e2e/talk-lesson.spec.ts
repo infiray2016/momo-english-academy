@@ -804,10 +804,12 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
       log(o.page).locator('[data-child-said="speech"]', { hasText: second }),
     ).toHaveCount(1);
     await untilChildTurn(o.page);
-    // 위로 넘겨 지난 턴을 본다. 기록 칸은 입력이 있는 넘김만 '아이가 위로 넘겼다'로 보므로(묶음 S5 fix 4 — talkLogScrollByUserOf) 손이 닿은
-    // 동안 넘기고, 넘김 사건이 온 뒤에 손을 뗀다(입력 없이 scrollTop 만 바꾸면 다음 크기 알림에 칸이 맨 아래로 돌아갈 수 있다)
+    // 위로 넘겨 지난 턴을 본다(입력 없이 scrollTop 만 바꾸면 다음 크기 알림에 칸이 맨 아래로 돌아갈 수 있다)
     await log(o.page).evaluate(async (el) => {
-      el.dispatchEvent(new Event("touchstart", { bubbles: true }));
+      // 아이가 위로 넘김: 위로 가는 휠 입력 뒤에 넘김 자리가 바뀐다(S5 fix 5 — 붙어 있음은 위로 넘기려는 입력이 있을 때만 풀린다)
+      el.dispatchEvent(
+        new WheelEvent("wheel", { deltaY: -400, bubbles: true }),
+      );
       if (el.scrollTop > 0) {
         const scrolled = new Promise<void>((resolve) =>
           el.addEventListener("scroll", () => resolve(), { once: true }),
@@ -815,7 +817,6 @@ test.describe("회화 묶음 10 — 대화 기록 · 말풍선 · 소리 줄 단
         el.scrollTop = 0;
         await scrolled;
       }
-      el.dispatchEvent(new Event("touchend", { bubbles: true }));
     });
     const past = log(o.page).locator("[data-talk-log-teacher]", {
       hasText: "Wow!",

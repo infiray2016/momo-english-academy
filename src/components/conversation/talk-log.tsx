@@ -91,47 +91,76 @@ export function talkLogPinnedOf({
   return scrollHeight - scrollTop - clientHeight <= TALK_LOG_PIN_SLACK_PX;
 }
 
-/** 마지막 입력(손 닿음 · 휠 · 키 · 누름 · 초점)에서 이 시간 안의 넘김 사건은 아이의 넘김으로 본다(ms, 화면 꼴 값 — 손을 뗀 뒤 미끄러지는 넘김 포함). */
-export const TALK_LOG_USER_SCROLL_MS = 300;
+/** 손가락이 방향을 바꾸지 않고 아래로 이만큼 넘게 가야 위로 넘기려는 손짓이다(px, 화면 꼴 값 — 누르기만 한 손의 떨림은 세지 않는다). */
+export const TALK_LOG_PULL_PX = 8;
 
-/**
- * 넘김 사건이 아이의 넘김인가(순수, S5 fix 4): 손가락이 칸에 닿아 있거나 칸에서 마지막 입력이 있은 지 TALK_LOG_USER_SCROLL_MS 안이다. 넘김 자리만으로는
- * 아이가 넘긴 것과 브라우저가 자리를 줄인 것(지금 턴이 줄었다가 다시 커짐)을 가를 수 없어 입력으로 가른다.
- */
-export function talkLogScrollByUserOf({
-  touching,
-  now,
-  lastInputAt,
+/** 위로 넘기려는 입력(휠 · 키 · 키보드 초점 · 튕긴 손)에서 이 시간 안의 넘김 사건은 아이가 위로 넘긴 것으로 본다(ms, 화면 꼴 값 — 손을 뗀 뒤 미끄러지는 넘김 포함). */
+export const TALK_LOG_UP_INTENT_MS = 300;
+
+/** 손가락이 아래로 간 거리(순수, S5 fix 5): 아래로 갔으면(dy > 0 — 내용을 위로 넘기는 손짓) 쌓고, 위로 갔거나 멈췄으면 0 으로 되돌린다. */
+export function talkLogPullOf({
+  pull,
+  dy,
 }: {
-  touching: boolean;
-  /** 넘김 사건을 처리하는 때(ms). */
-  now: number;
-  /** 칸에서 마지막 입력이 있던 때(ms, 없었으면 -Infinity). */
-  lastInputAt: number;
+  pull: number;
+  /** 손가락 세로 자리의 바뀐 값(px, 아래로 가면 양수). */
+  dy: number;
+}): number {
+  return dy > 0 ? pull + dy : 0;
+}
+
+/** 위로 가는 키인가(순수, S5 fix 5): ArrowUp · PageUp · Home · Shift 와 함께 누른 Space. */
+export function talkLogUpKeyOf({
+  key,
+  shiftKey,
+}: {
+  key: string;
+  shiftKey: boolean;
 }): boolean {
-  return touching || now - lastInputAt <= TALK_LOG_USER_SCROLL_MS;
+  if (key === "ArrowUp" || key === "PageUp" || key === "Home") return true;
+  return key === " " && shiftKey;
 }
 
 /**
- * 넘김 사건 뒤 맨 아래에 붙어 있는가(순수, S5 fix 4): 아이의 넘김(byUser)이면 넘김 자리로 다시 재고(talkLogPinnedOf), 아니면(앱이 맞춤 · 브라우저가
- * 자리를 줄임) 붙어 있음을 바꾸지 않는다 — 남은 넘김 거리가 생겨 있어도 따라가기를 잃지 않게.
+ * 아이가 위로 넘기려는 중인가(순수, S5 fix 5): 손가락이 TALK_LOG_PULL_PX 넘게 아래로 갔거나, 위로 넘기려는 입력에서 TALK_LOG_UP_INTENT_MS 안이다.
+ * 넘김 자리만으로는 아이가 넘긴 것과 브라우저가 자리를 줄인 것(지금 턴이 줄었다가 다시 커짐)을 가를 수 없고, 칸 안을 누르기만 한 것도 넘김이
+ * 아니므로 위로 넘기려는 입력으로 가른다(rev-s5-3 I-1).
+ */
+export function talkLogUpwardOf({
+  pull,
+  now,
+  upAt,
+}: {
+  /** 손가락이 방향을 바꾸지 않고 아래로 간 거리(px). */
+  pull: number;
+  /** 넘김 사건을 처리하는 때(ms). */
+  now: number;
+  /** 위로 넘기려는 입력이 마지막으로 있던 때(ms, 없었으면 -Infinity). */
+  upAt: number;
+}): boolean {
+  return pull > TALK_LOG_PULL_PX || now - upAt <= TALK_LOG_UP_INTENT_MS;
+}
+
+/**
+ * 넘김 사건 뒤 맨 아래에 붙어 있는가(순수, S5 fix 5): 맨 아래(talkLogPinnedOf)에 닿았으면 어떤 넘김이든 다시 붙고(rev-s5-3 M-2), 맨 아래가 아니고
+ * 위로 넘기려는 중이면 풀린다. 그 밖(앱이 맞춤 · 브라우저가 자리를 줄임 · 누르기만 함)에는 바꾸지 않는다 — 남은 넘김 거리가 생겨 있어도
+ * 따라가기를 잃지 않게.
  */
 export function talkLogPinnedAfterScrollOf({
-  byUser,
   pinned,
-  scrollTop,
-  scrollHeight,
-  clientHeight,
+  atBottom,
+  upward,
 }: {
-  byUser: boolean;
   /** 이 넘김 사건 앞의 붙어 있음. */
   pinned: boolean;
-  scrollTop: number;
-  scrollHeight: number;
-  clientHeight: number;
+  /** 넘김 자리가 맨 아래(여유 안)인가. */
+  atBottom: boolean;
+  /** 위로 넘기려는 중인가(talkLogUpwardOf). */
+  upward: boolean;
 }): boolean {
-  if (!byUser) return pinned;
-  return talkLogPinnedOf({ scrollTop, scrollHeight, clientHeight });
+  if (atBottom) return true;
+  if (upward) return false;
+  return pinned;
 }
 
 /**
@@ -151,8 +180,8 @@ export function talkLogFollowOf({
 
 /**
  * 대화 기록 칸. entries 가 늘거나 지금 턴(children)이 바뀌면 맨 아래로 넘긴다(bottomKey). 그 밖에는 지금 턴 영역 · 지난 줄 영역 · 칸의 크기가 바뀔
- * 때마다(첫 알림 포함) 맨 아래에 붙어 있으면 다시 맨 아래로 맞춘다(talkLogFollowOf — 움직임 없이). 붙어 있음은 아이의 입력이 있는 넘김에서만 다시
- * 잰다(talkLogScrollByUserOf · S5 fix 4). 칸 높이는 부르는 쪽 배치가 정하고(className), 기본은 화면 높이의 상한 안에서 넘겨 보는 칸이다.
+ * 때마다(첫 알림 포함) 맨 아래에 붙어 있으면 다시 맨 아래로 맞춘다(talkLogFollowOf — 움직임 없이). 붙어 있음은 아이가 위로 넘기려는 입력이 있을 때만
+ * 풀리고(talkLogUpwardOf), 어떤 넘김이든 맨 아래에 닿으면 다시 붙는다(talkLogPinnedAfterScrollOf · S5 fix 5). 칸 높이는 부르는 쪽 배치가 정하고(className), 기본은 화면 높이의 상한 안에서 넘겨 보는 칸이다.
  */
 export function TalkLog({
   entries,
@@ -182,17 +211,23 @@ export function TalkLog({
   const now = useRef<HTMLDivElement>(null);
   /** 지난 줄 영역(role log) — 글꼴이 늦게 바뀌거나 너비만 바뀌어 지난 줄이 자라도 지금 턴이 칸 아래로 밀리지 않게 함께 지켜본다(검토 rev-s5 M-2). */
   const past = useRef<HTMLDivElement>(null);
-  /** 맨 아래에 붙어 있는가(아이의 입력이 있는 넘김에서만 다시 잼 — 글이 자라거나 브라우저가 자리를 줄이는 것으로는 바뀌지 않는다). */
+  /** 맨 아래에 붙어 있는가(위로 넘기려는 입력이 있는 넘김에서만 풀림 — 글이 자라거나 브라우저가 자리를 줄이는 것으로는 풀리지 않는다). */
   const pinned = useRef(true);
-  /** 손가락이 기록 칸에 닿아 있는가. */
-  const touching = useRef(false);
-  /** 기록 칸에서 마지막 입력이 있던 때(ms). */
-  const lastInputAt = useRef(Number.NEGATIVE_INFINITY);
+  /** 닿아 있는 손가락의 마지막 세로 자리(px, 닿아 있지 않으면 null). */
+  const lastY = useRef<number | null>(null);
+  /** 손가락이 방향을 바꾸지 않고 아래로 간 거리(px). */
+  const pull = useRef(0);
+  /** 위로 넘기려는 입력이 마지막으로 있던 때(ms). */
+  const upAt = useRef(Number.NEGATIVE_INFINITY);
   const hasNow = Boolean(children);
   /** 맞출 때면 맨 아래로(움직임 없이). */
   const follow = useRef((el: HTMLDivElement, newTurn: boolean) => {
     if (!talkLogFollowOf({ newTurn, pinned: pinned.current })) return;
     pinned.current = true;
+    if (newTurn) {
+      upAt.current = Number.NEGATIVE_INFINITY;
+      pull.current = 0;
+    }
     el.scrollTop = el.scrollHeight;
   });
   // biome-ignore lint/correctness/useExhaustiveDependencies: 줄 수 · 지금 턴 열쇠가 바뀔 때만 맨 아래로(새 차례)
@@ -200,54 +235,99 @@ export function TalkLog({
     const el = box.current;
     if (el) follow.current(el, true);
   }, [entries.length, bottomKey]);
-  // 아이의 입력(손 닿음 · 휠 · 키 · 누름 · 초점)을 적고, 넘김 사건이 아이의 넘김일 때만 붙어 있음을 다시 잰다. 지금 턴 영역 · 지난 줄 영역 · 칸의
-  // 크기가 바뀔 때마다(첫 알림 포함, 커졌든 줄었든) 붙어 있으면 다시 맨 아래로(C-1 · M-6 · rev-s5 M-2 · S5 fix 4)
+  // 위로 넘기려는 입력(손가락을 아래로 끎 · 위로 가는 휠 · 위로 가는 키 · 키보드로 옮긴 초점)을 적고, 넘김 사건에 맨 아래면 다시 붙이고 위로
+  // 넘기려는 중이면 푼다. 지금 턴 영역 · 지난 줄 영역 · 칸의 크기가 바뀔 때마다(첫 알림 포함, 커졌든 줄었든) 붙어 있으면 다시 맨 아래로
+  // (C-1 · M-6 · rev-s5 M-2 · S5 fix 5)
   // biome-ignore lint/correctness/useExhaustiveDependencies: 지금 턴 영역이 생기거나 없어지면(now.current 가 바뀜) 다시 지켜본다
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const onInput = () => {
-      lastInputAt.current = performance.now();
+    const markUp = () => {
+      upAt.current = performance.now();
     };
-    const onTouchStart = () => {
-      touching.current = true;
-      onInput();
+    // 합성 사건으로도 점검하므로 손가락 자리는 touches[0].clientY 로만 읽는다
+    const onTouchStart = (event: Event) => {
+      lastY.current = (event as TouchEvent).touches?.[0]?.clientY ?? null;
+      pull.current = 0;
     };
+    const onTouchMove = (event: Event) => {
+      const y = (event as TouchEvent).touches?.[0]?.clientY;
+      if (y === undefined) return;
+      if (lastY.current !== null)
+        pull.current = talkLogPullOf({
+          pull: pull.current,
+          dy: y - lastY.current,
+        });
+      lastY.current = y;
+    };
+    // 손이 닿은 요소가 사라지면 칸에 오지 않으므로 window 에서도 받는다(rev-s5-3 M-1)
     const onTouchEnd = () => {
-      touching.current = false;
-      onInput();
+      // 빠르게 튕긴 뒤의 넘김 사건이 손을 뗀 뒤에 오는 경우
+      if (pull.current > TALK_LOG_PULL_PX) markUp();
+      lastY.current = null;
+      pull.current = 0;
+    };
+    const onWheel = (event: Event) => {
+      if ((event as WheelEvent).deltaY < 0) markUp();
+    };
+    const onKeyDown = (event: Event) => {
+      const { key, shiftKey } = event as KeyboardEvent;
+      if (talkLogUpKeyOf({ key, shiftKey })) markUp();
+    };
+    // 키보드로 옮긴 초점만 센다(눌러서 생긴 초점은 넘기려는 입력이 아니다)
+    const onFocusIn = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      let keyboard = false;
+      try {
+        keyboard = target.matches(":focus-visible");
+      } catch {
+        keyboard = false;
+      }
+      if (keyboard) markUp();
     };
     const onScroll = () => {
-      const at = performance.now();
-      const byUser = talkLogScrollByUserOf({
-        touching: touching.current,
-        now: at,
-        lastInputAt: lastInputAt.current,
-      });
-      // 손을 뗀 뒤 미끄러지는 넘김이 이어지는 동안은 아이의 넘김으로 본다
-      if (byUser) lastInputAt.current = at;
-      pinned.current = talkLogPinnedAfterScrollOf({
-        byUser,
-        pinned: pinned.current,
+      const atBottom = talkLogPinnedOf({
         scrollTop: el.scrollTop,
         scrollHeight: el.scrollHeight,
         clientHeight: el.clientHeight,
       });
+      if (atBottom) {
+        upAt.current = Number.NEGATIVE_INFINITY;
+        pull.current = 0;
+      }
+      pinned.current = talkLogPinnedAfterScrollOf({
+        pinned: pinned.current,
+        atBottom,
+        upward: talkLogUpwardOf({
+          pull: pull.current,
+          now: performance.now(),
+          upAt: upAt.current,
+        }),
+      });
     };
-    const listeners: [string, () => void][] = [
+    const listeners: [string, (event: Event) => void][] = [
       ["touchstart", onTouchStart],
+      ["touchmove", onTouchMove],
       ["touchend", onTouchEnd],
       ["touchcancel", onTouchEnd],
-      ["wheel", onInput],
-      ["keydown", onInput],
-      ["pointerdown", onInput],
-      ["focusin", onInput],
+      ["wheel", onWheel],
+      ["keydown", onKeyDown],
+      ["focusin", onFocusIn],
       ["scroll", onScroll],
+    ];
+    const windowListeners: [string, (event: Event) => void][] = [
+      ["touchend", onTouchEnd],
+      ["touchcancel", onTouchEnd],
     ];
     for (const [type, fn] of listeners)
       el.addEventListener(type, fn, { passive: true });
+    for (const [type, fn] of windowListeners)
+      window.addEventListener(type, fn, { passive: true });
     const unlisten = () => {
       for (const [type, fn] of listeners) el.removeEventListener(type, fn);
+      for (const [type, fn] of windowListeners)
+        window.removeEventListener(type, fn);
     };
     if (typeof ResizeObserver === "undefined") return unlisten;
     const observer = new ResizeObserver(() => follow.current(el, false));
