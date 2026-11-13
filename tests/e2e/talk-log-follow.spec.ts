@@ -91,9 +91,9 @@ async function insertExchanges(sessionId: string, count: number) {
 const childTurn = (page: Page) => page.locator("[data-child-turn]");
 
 /**
- * 그림 한 장을 기다린다(photos.ts 와 같은 꼴). 그림 한 장 사이 없이 보는 창을 두 번 바꾸면(가로 → 세로 → 가로) 사이의 배치가 기록 칸의 넘김
- * 자리를 줄이는데 크기 알림(ResizeObserver)은 가로 → 가로로 보여 오지 않는다. 실제 기기의 돌림에서는 생기지 않는 순서라(CI 43372686213 ·
- * S5 fix 5) 보는 창을 바꾸는 사이마다 기다린다.
+ * 그림 한 장을 기다린다(photos.ts 와 같은 꼴). 사진 도우미의 전체 쪽 캡처 뒤에 그림 한 장 사이 없이 보는 창을 바꾸면, 캡처가 만든 잠깐의
+ * 배치가 기록 칸의 넘김 자리를 깎는데 크기 알림(ResizeObserver)은 순 변화가 없어 오지 않는다(CI 43372686213, 재현 틀 flip · flip2 — 그림 없이
+ * 보는 창을 두 번 바꾼 것만으로는 실패하지 않는다). 실제 기기의 돌림에서는 생기지 않는 순서라 캡처 뒤와 보는 창을 바꾸는 사이마다 기다린다.
  */
 async function nextFrame(page: Page) {
   await page.evaluate(

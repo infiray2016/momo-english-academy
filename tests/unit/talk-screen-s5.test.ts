@@ -106,7 +106,6 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
   it("AC-26m 맨 아래가 아니어도 위로 넘기려는 입력이 없으면 붙어 있음을 바꾸지 않는다(줄었다가 다시 커진 꼴 · 칸 안을 누르기만 한 꼴, rev-s5-3 I-1)", () => {
     // 줄었다가 다시 커진 뒤에 처리된 넘김 사건 — 입력이 없으므로 위로 넘기려는 중이 아니다
     const shrunk = talkLogUpwardOf({
-      pull: 0,
       now: 10_000,
       upAt: Number.NEGATIVE_INFINITY,
     });
@@ -118,9 +117,11 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
         upward: shrunk,
       }),
     ).toBe(true);
-    // 칸 안을 누르기만 함 — 손가락이 거의 움직이지 않음(문턱 안)
+    // 칸 안을 누르기만 함 — 손가락이 거의 움직이지 않아(문턱 안) 넘기려는 때가 적히지 않는다
+    expect(talkLogPullOf({ pull: 0, dy: 3 })).toBeLessThanOrEqual(
+      TALK_LOG_PULL_PX,
+    );
     const tapped = talkLogUpwardOf({
-      pull: talkLogPullOf({ pull: 0, dy: 3 }),
       now: 10_000,
       upAt: Number.NEGATIVE_INFINITY,
     });
@@ -142,19 +143,19 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
     ).toBe(false);
   });
 
-  it("AC-26m 손가락이 아래로 간 거리는 쌓이고 위로 가면 0 으로 돌아가며, TALK_LOG_PULL_PX 를 넘어야 위로 넘기려는 손짓이다", () => {
+  it("AC-26m 손가락이 아래로 간 거리는 touchstart 뒤의 순거리다: 멈추면 그대로, 위로 가면 그만큼 줄고, 0 아래로 내려가지 않는다(S5 fix 6 N-1 (나))", () => {
     expect(TALK_LOG_PULL_PX).toBe(8);
     expect(talkLogPullOf({ pull: 0, dy: 5 })).toBe(5);
     expect(talkLogPullOf({ pull: 5, dy: 6 })).toBe(11);
-    expect(talkLogPullOf({ pull: 11, dy: -1 })).toBe(0);
-    expect(talkLogPullOf({ pull: 11, dy: 0 })).toBe(0);
-    const far = Number.NEGATIVE_INFINITY;
-    expect(
-      talkLogUpwardOf({ pull: TALK_LOG_PULL_PX, now: 10_000, upAt: far }),
-    ).toBe(false);
-    expect(
-      talkLogUpwardOf({ pull: TALK_LOG_PULL_PX + 1, now: 10_000, upAt: far }),
-    ).toBe(true);
+    expect(talkLogPullOf({ pull: 11, dy: 0 })).toBe(11);
+    expect(talkLogPullOf({ pull: 11, dy: -1 })).toBe(10);
+    expect(talkLogPullOf({ pull: 3, dy: -5 })).toBe(0);
+    expect(talkLogPullOf({ pull: 0, dy: -2 })).toBe(0);
+    // 느리게 떨며 끄는 손(아래로 3 · 위로 1 · 멈춤 · 아래로 3 · 위로 1 · 아래로 4)도 순거리로 문턱을 넘는다
+    let pull = 0;
+    for (const dy of [3, -1, 0, 3, -1, 4]) pull = talkLogPullOf({ pull, dy });
+    expect(pull).toBe(8);
+    expect(talkLogPullOf({ pull, dy: 1 })).toBeGreaterThan(TALK_LOG_PULL_PX);
   });
 
   it("AC-26m 위로 가는 키(ArrowUp · PageUp · Home · Shift+Space)만 위로 넘기려는 입력으로 센다", () => {
@@ -165,29 +166,52 @@ describe("C-1 · M-6 기록 칸을 맨 아래로 다시 맞출지(talk-log)", ()
       expect(talkLogUpKeyOf({ key, shiftKey: false })).toBe(false);
   });
 
-  it("AC-26m 위로 넘기려는 입력에서 TALK_LOG_UP_INTENT_MS 안이면 넘기려는 중이고, 지나면 아니다(입력이 없었으면 아니다)", () => {
+  it("AC-26m 위로 넘기려는 중인지는 때로만 판단한다: 위로 넘기려는 입력에서 TALK_LOG_UP_INTENT_MS 안이면 참, 지나면 거짓(입력이 없었으면 거짓 · S5 fix 6)", () => {
     expect(TALK_LOG_UP_INTENT_MS).toBe(300);
+    expect(talkLogUpwardOf({ now: 10_000, upAt: 10_000 })).toBe(true);
     expect(
-      talkLogUpwardOf({
-        pull: 0,
-        now: 10_000,
-        upAt: 10_000 - TALK_LOG_UP_INTENT_MS,
-      }),
+      talkLogUpwardOf({ now: 10_000, upAt: 10_000 - TALK_LOG_UP_INTENT_MS }),
     ).toBe(true);
     expect(
       talkLogUpwardOf({
-        pull: 0,
         now: 10_000,
         upAt: 10_000 - TALK_LOG_UP_INTENT_MS - 1,
       }),
     ).toBe(false);
     expect(
-      talkLogUpwardOf({
-        pull: 0,
-        now: 10_000,
-        upAt: Number.NEGATIVE_INFINITY,
-      }),
+      talkLogUpwardOf({ now: 10_000, upAt: Number.NEGATIVE_INFINITY }),
     ).toBe(false);
+  });
+
+  it("AC-26m 맨 아래에 닿은 넘김 사건은 붙이기만 하고, 이어지는 맨 아래가 아닌 넘김 사건이 넘기려는 중이면 풀린다(부드럽게 시작하는 넘김 · S5 fix 6 N-1 (가))", () => {
+    // 위로 가는 키(ArrowUp)를 10_000 에 누름 — 부드러운 넘김의 첫 사건은 아직 맨 아래(2px 안)에 있다
+    const upAt = 10_000;
+    let pinned = true;
+    pinned = talkLogPinnedAfterScrollOf({
+      pinned,
+      atBottom: true,
+      upward: talkLogUpwardOf({ now: 10_016, upAt }),
+    });
+    expect(pinned).toBe(true);
+    // 맨 아래 사건이 넘기려는 때를 지우지 않으므로, 뒤의 사건(맨 아래가 아님)은 넘기려는 중이고 붙어 있음이 풀린다
+    const upward = talkLogUpwardOf({ now: 10_032, upAt });
+    expect(upward).toBe(true);
+    pinned = talkLogPinnedAfterScrollOf({ pinned, atBottom: false, upward });
+    expect(pinned).toBe(false);
+    // 그 뒤 크기 알림이 와도 끌어내리지 않는다
+    expect(talkLogFollowOf({ newTurn: false, pinned })).toBe(false);
+  });
+
+  it("AC-26m 넘기려는 입력이 없으면 맨 아래가 아닌 넘김 사건이 와도 붙어 있음을 바꾸지 않는다(S5 fix 6)", () => {
+    const upward = talkLogUpwardOf({
+      now: 10_000,
+      upAt: Number.NEGATIVE_INFINITY,
+    });
+    expect(upward).toBe(false);
+    for (const pinned of [true, false])
+      expect(
+        talkLogPinnedAfterScrollOf({ pinned, atBottom: false, upward }),
+      ).toBe(pinned);
   });
 
   it("AC-26m 새 차례(줄 수 · 지금 턴 열쇠가 바뀜)면 아이가 위로 넘겨 둔 때도 맨 아래로 간다(지금처럼)", () => {
