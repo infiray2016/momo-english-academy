@@ -197,6 +197,7 @@ export type ChatReplyRecord = Pick<
   | "choices"
   | "removed"
   | "soundMoved"
+  | "soundAt"
   | "level"
   | "madeUp"
   | "wrapUpHeld"
@@ -261,7 +262,8 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
   const listen = output.listen_sentence.trim();
   const literals = listenLiteralsOf(say, listen);
 
-  // 첫 조각과 고르기 물음을 한 번에 뺀다(move model_repeat 는 leadChoicesOf 에서 '앞 차례 막힘일 때만 고르기'와 같은 판정이다)
+  // 첫 조각 · 같은 문장의 다른 글자 조각(줄임꼴 · 대소문자)과 고르기 물음을 한 번에 뺀다(move model_repeat 는 leadChoicesOf 에서 '앞 차례 막힘일
+  // 때만 고르기'와 같은 판정이다). 자리는 모두 say 위에서 정한다 — 소리 줄의 제자리를 잃지 않게(13절 C241 보완 7)
   const first = leadLowBandShownOf({
     level,
     move: "model_repeat",
@@ -269,28 +271,15 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
     modelSentence: literals[0] ?? "",
     prevStuck: appStuck,
     closing,
+    moreModels: literals.slice(1),
   });
-  let text = first.text;
+  const text = first.text;
   const removed = [...first.removed];
-  const listenRemoved: string[] =
-    first.model?.removed === true ? [first.model.sentence] : [];
-  let soundMoved = first.soundMoved;
-  // 같은 문장이 다른 글자(줄임꼴 · 대소문자)로 또 들면 그 조각도 뺀다(고르기 물음은 이미 뺐다)
-  for (const literal of literals.slice(1)) {
-    const next = leadLowBandShownOf({
-      level,
-      move: "model_repeat",
-      say: text,
-      modelSentence: literal,
-      prevStuck: false,
-      closing: true,
-    });
-    if (next.model?.removed !== true) continue;
-    text = next.text;
-    removed.push(...next.removed);
-    listenRemoved.push(next.model.sentence);
-    soundMoved = soundMoved || next.soundMoved;
-  }
+  const listenRemoved: string[] = [
+    ...(first.model?.removed === true ? [first.model.sentence] : []),
+    ...first.moreRemoved,
+  ];
+  const soundMoved = first.soundMoved;
 
   // 이야기 방식은 1~3단계에서만 열린다(spec 설계 1). 4단계부터는 글 빼기가 문장 경계를 보지 않고 아무것도 빼지 않으므로, inSay 는 정규화로 든
   // 것만 본다(문장 일부 꼴도 참). 1~3단계와 같은 판정으로 맞추려면 lead-low-band 의 문장 경계 판정을 고치거나 베껴야 해서 두었다(검토 M-4).
@@ -303,7 +292,8 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
     prevStuck: appStuck,
     closing,
   });
-  // 소리 줄: 따라 할 문장 조각과 글자째 같은 빼낸 자리는 model, 나머지 자리(or 물음 — 따라 할 문장을 품은 자리 포함)는 answer
+  // 소리 줄: 따라 할 문장 조각과 글자째 같은 빼낸 자리는 model(글자는 첫 조각 — 흘림 판단 chatListenLiteralOf 가 잡는 조각과 같다. 같은 문장이
+  // 두 자리면 소리 줄은 마지막 자리 하나에서 읽는다 — C241 보완 7, chat-turn-result), 나머지 자리(or 물음 — 따라 할 문장을 품은 자리 포함)는 answer
   const model = removed.find((r) => listenRemoved.includes(r));
   const answers = removed.filter((r) => !listenRemoved.includes(r));
   const record: ChatReplyRecord = {

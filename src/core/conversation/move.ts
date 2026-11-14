@@ -111,6 +111,16 @@ export type TalkLeadMove = (typeof TALK_LEAD_MOVES)[number];
  * 기존 칸(kind · next · stage · cause · ai · sound)에 채운다(lead-record.ts). 글 칸(따라 할 문장 · 다시 받은 문장 · 뺀 문장)은 원문을 지울
  * 때 비운다(eraseTalkMoveText).
  */
+/**
+ * 1~3단계 소리 줄을 글 사이(선생님 말 칸의 제자리)에서 읽은 차례의 자리(13절 C241 보완 7): 갈래마다 행 글 첫 줄(말풍선 글)에서 그 소리 줄 앞에 오는
+ * 글자 수. 같은 시도 다시 흘림 · 이어 하기 · 대본 도구가 이 자리에서 글을 나눠 같은 줄 차례를 낸다. 뒤에 글이 남는 소리 줄만 적고, 칸이 없는 소리
+ * 줄(지난 행 포함)은 지금 차례(글 뒤)로 읽는다. 글이 아니라 수라 원문을 지울 때 남는다.
+ */
+export const LowBandSoundAtSchema = z.strictObject({
+  model: z.int().min(0).optional(),
+  answer: z.int().min(0).optional(),
+});
+
 export const TalkLeadSchema = z.strictObject({
   reading: z.enum(TALK_LEAD_READINGS),
   move: z.enum(TALK_LEAD_MOVES),
@@ -140,8 +150,10 @@ export const TalkLeadSchema = z.strictObject({
   closingAdded: z.literal(true).optional(),
   /** 1~3단계에서 보이는 글에서 뺀 문장(설계 8, 묶음 R5). */
   removed: z.array(z.string()).optional(),
-  /** 소리 줄이 원래 문장 차례와 다른 자리에 붙었다(plan 확인할 것 4). */
+  /** 소리 줄 뒤에 글이 남아 글 뒤의 듣기 단추 자리가 원래 문장 차례(소리 줄을 읽는 제자리)와 다르다(plan 확인할 것 4 · 13절 C241 보완 7). */
   soundMoved: z.literal(true).optional(),
+  /** 글 사이에서 읽은 소리 줄의 자리(LowBandSoundAtSchema). 칸이 없으면 글 뒤다. */
+  soundAt: LowBandSoundAtSchema.optional(),
 });
 export type TalkLead = z.infer<typeof TalkLeadSchema>;
 
@@ -170,8 +182,10 @@ export const TalkChatSchema = z.strictObject({
   choices: z.literal(true).optional(),
   /** 1~3단계에서 보이는 글에서 뺀 문장(소리 줄). */
   removed: z.array(z.string()).optional(),
-  /** 소리 줄이 원래 문장 차례와 다른 자리에 붙었다. */
+  /** 소리 줄 뒤에 글이 남아 글 뒤의 듣기 단추 자리가 원래 문장 차례(소리 줄을 읽는 제자리)와 다르다(13절 C241 보완 7). */
   soundMoved: z.literal(true).optional(),
+  /** 글 사이에서 읽은 소리 줄의 자리(LowBandSoundAtSchema). 칸이 없으면 글 뒤다. */
+  soundAt: LowBandSoundAtSchema.optional(),
   /** 수준 검사 수치(기록 전용 — 문장 수 · 물음 수 · 문장 길이 · 범위 밖 낱말 · 범위 밖 형태). */
   level: z.record(z.string(), z.number()),
   /** 지어낸 경험 꼴에 걸린 문장마다 걸린 꼴(정규화 글, 기록 전용). 수는 길이다. */
@@ -298,6 +312,7 @@ function copyChat(chat: TalkChat): TalkChat {
   if (chat.choices !== undefined) out.choices = chat.choices;
   if (chat.removed !== undefined) out.removed = [...chat.removed];
   if (chat.soundMoved !== undefined) out.soundMoved = chat.soundMoved;
+  if (chat.soundAt !== undefined) out.soundAt = { ...chat.soundAt };
   if (chat.gate !== undefined) out.gate = [...chat.gate];
   if (chat.quiet !== undefined) out.quiet = chat.quiet;
   if (chat.firstMs !== undefined) out.firstMs = chat.firstMs;
@@ -322,6 +337,7 @@ function copyLead(lead: TalkLead): TalkLead {
   if (lead.closingAdded !== undefined) out.closingAdded = lead.closingAdded;
   if (lead.removed !== undefined) out.removed = [...lead.removed];
   if (lead.soundMoved !== undefined) out.soundMoved = lead.soundMoved;
+  if (lead.soundAt !== undefined) out.soundAt = { ...lead.soundAt };
   return out;
 }
 

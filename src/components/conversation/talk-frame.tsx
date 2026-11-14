@@ -414,12 +414,41 @@ export function lessonBubbleOf(
   current: TalkLessonCurrent | null,
 ): LessonBubbleContent {
   if (!current) return { lines: [], done: true };
-  const lines: LessonBubbleLine[] = current.lines
-    .filter((l) => !l.app)
-    .map((l) => ({ t: "s", en: l.en }));
+  const own = current.lines.filter((l) => !l.app);
+  // 글 사이에서 읽은 소리 줄(서버가 행의 소리 줄 자리 at 을 실은 줄 — 두 새 방식, 13절 C241 보완 7): 행 글 한 줄을 그 자리에서 나눠 앞 글 →
+  // 소리 줄 → 뒤 글 차례로 둔다(말풍선을 누르면 이 차례로 다시 읽는다). 단추 자리는 말풍선이 정한다(글 뒤 그대로)
+  const text = own.length === 1 ? (own[0]?.en ?? "") : null;
+  const placed =
+    text === null
+      ? []
+      : (current.leadSound ?? [])
+          .filter(
+            (l) =>
+              l.at !== undefined &&
+              l.at <= text.length &&
+              text.slice(l.at).trim() !== "",
+          )
+          .sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+  const lines: LessonBubbleLine[] = [];
+  if (text !== null && placed.length > 0) {
+    let prev = 0;
+    for (const { at, ...line } of placed) {
+      const chunk = text.slice(prev, at).trim();
+      if (chunk !== "") lines.push({ t: "s", en: chunk });
+      lines.push(line);
+      prev = at ?? prev;
+    }
+    const last = text.slice(prev).trim();
+    if (last !== "") lines.push({ t: "s", en: last });
+  } else lines.push(...own.map((l) => ({ t: "s" as const, en: l.en })));
   const sound = current.sound;
   // 새 엔진 행은 서버가 행에서 다시 만든 소리 줄(고르기 물음 ask · 되묻는 차례의 kept 표지 — 실시간 길과 같은 줄, 묶음 S5)
-  if (current.leadSound) lines.push(...current.leadSound);
+  if (current.leadSound)
+    for (const line of current.leadSound) {
+      if (placed.includes(line)) continue;
+      const { at: _at, ...rest } = line;
+      lines.push(rest);
+    }
   else {
     if (sound?.model)
       lines.push({ t: "sound", kind: "model", say: sound.model });

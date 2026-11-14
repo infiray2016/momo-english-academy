@@ -44,11 +44,14 @@ import {
   leadOpenAttemptId,
   leadOpenChildOf,
   leadOpenReplayOf,
+  leadPlacedLinesOf,
+  leadRowSoundLinesOf,
   leadSettleOf,
   leadSoundNotesFor,
   leadStartModeOf,
   leadStatusOf,
   leadTurnAppliesOf,
+  leadTurnLinesOf,
   leadWrapRecastsOf,
   TALK_LEAD_RETRY_TITLE,
   talkLeadRetrySpec,
@@ -812,6 +815,12 @@ describe("끝에서 낼 글과 소리 줄(spec 설계 8)", () => {
     expect(out.sound).toEqual({ answer: "Watch TV, or go outside?" });
     expect(out.release).toEqual(["Which one?"]);
     expect(out.shown).toEqual(["Okay!", "Which one?"]);
+    // 소리 줄은 뺀 자리에서: 앞서 나간 'Okay!' 뒤 · 'Which one?' 앞(13절 C241 보완 7)
+    expect(out.lines).toEqual([
+      { t: "slot", kind: "answer", before: 0 },
+      { t: "s", en: "Which one?" },
+    ]);
+    expect(out.soundAt).toEqual({ answer: "Okay!".length });
     expect(out.soundMoved).toBe(true);
     // 나뉜 고르기는 두 문장을 한 소리 줄로
     const split = settle({
@@ -822,7 +831,168 @@ describe("끝에서 낼 글과 소리 줄(spec 설계 8)", () => {
     });
     expect(split.sound).toEqual({ answer: "Beach? Or mountain?" });
     expect(split.release).toEqual([]);
+    expect(split.lines).toEqual([]);
+    expect(split.soundAt).toEqual({});
     expect(split.soundMoved).toBe(false);
+  });
+
+  it("AC-26i 1~3단계 model_repeat 를 붙잡은 차례(#8 · #2): 뺀 자리 앞 글 줄 → 소리 줄 → 뒤 글 줄 차례이고, 행에는 소리 줄 자리(행 글의 글자 수)를 남긴다(13절 C241 보완 7)", () => {
+    const out = settle({
+      move: "model_repeat",
+      modelSentence: "I play soccer.",
+      sentences: [
+        "Soccer is fun!",
+        'Say "I play soccer."',
+        "What else do you do?",
+      ],
+      held: true,
+    });
+    expect(out.lines).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+      { t: "slot", kind: "model", before: 2 },
+      { t: "s", en: "What else do you do?" },
+    ]);
+    expect(out.shown).toEqual([
+      "Soccer is fun!",
+      "Say:",
+      "What else do you do?",
+    ]);
+    expect(out.release).toEqual(out.shown);
+    expect(out.soundAt).toEqual({ model: "Soccer is fun! Say:".length });
+    expect(out.soundMoved).toBe(true);
+    // 서버 · 대본 도구가 내는 줄 차례: 글 → 소리 줄 → 글 → 뜻
+    expect(
+      leadTurnLinesOf({
+        lines: out.lines,
+        sound: out.sound,
+        ko: "축구 재밌지!",
+      }),
+    ).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "I play soccer." },
+      { t: "s", en: "What else do you do?" },
+      { t: "ko", ko: "축구 재밌지!" },
+    ]);
+    const tryThis = settle({
+      move: "model_repeat",
+      modelSentence: "I go to the park.",
+      sentences: [
+        "Oh, tomorrow!",
+        'Try this: "I go to the park."',
+        "Say it with me!",
+      ],
+      held: true,
+    });
+    expect(
+      leadTurnLinesOf({ lines: tryThis.lines, sound: tryThis.sound, ko: "" }),
+    ).toEqual([
+      { t: "s", en: "Oh, tomorrow!" },
+      { t: "s", en: "Try this:" },
+      { t: "sound", kind: "model", say: "I go to the park." },
+      { t: "s", en: "Say it with me!" },
+    ]);
+  });
+
+  it("AC-26i 소리 줄이 글 끝이면 slot · 자리 없이 지금 차례(뜻 뒤 · 그대로 둔 앞 차례 줄 앞)다", () => {
+    const out = settle({
+      move: "model_repeat",
+      modelSentence: "I see the sea.",
+      sentences: ["Good try!", "Say it with me: I see the sea."],
+      held: true,
+    });
+    expect(out.lines.some((l) => l.t === "slot")).toBe(false);
+    expect(out.soundAt).toEqual({});
+    expect(
+      leadTurnLinesOf({
+        lines: out.lines,
+        sound: out.sound,
+        kept: { answer: "Cats or dogs?" },
+        ko: "잘했어!",
+      }),
+    ).toEqual([
+      { t: "s", en: "Good try!" },
+      { t: "s", en: "Say it with me:" },
+      { t: "ko", ko: "잘했어!" },
+      { t: "sound", kind: "model", say: "I see the sea." },
+      {
+        t: "sound",
+        kind: "answer",
+        say: "Cats or dogs?",
+        lead: { ask: true, kept: true },
+      },
+    ]);
+  });
+
+  it("AC-26i 저장된 행의 소리 줄 자리(move.lead.soundAt)로 다시 만든 줄(leadRowSoundLinesOf)과 글(leadPlacedLinesOf)이 실시간 길과 같은 차례다 · 이야기 방식 행도 자리가 있을 때만 그 줄이다", () => {
+    const out = settle({
+      move: "model_repeat",
+      modelSentence: "I play soccer.",
+      sentences: ['Say "I play soccer."', "What else do you do?"],
+      held: true,
+    });
+    const live = leadTurnLinesOf({
+      lines: out.lines,
+      sound: out.sound,
+      ko: "",
+    });
+    const teacher = {
+      speaker: "tori" as const,
+      turnNo: 3,
+      segment: "talk",
+      text: out.shown.join(" "),
+      move: leadMoveWithSound(
+        talkMoveOf({
+          kind: "ai",
+          lead: {
+            reading: "clear_answer",
+            move: "model_repeat",
+            asked: [],
+            said: [],
+            soundAt: out.soundAt,
+          },
+        }),
+        out.sound,
+      ),
+      sentUserMessage: "(start)",
+    };
+    const sound = leadRowSoundLinesOf({ level: 3, rows: [teacher], teacher });
+    expect(sound).toEqual([
+      { t: "sound", kind: "model", say: "I play soccer.", at: "Say:".length },
+    ]);
+    const placed = leadPlacedLinesOf(teacher.text, sound ?? []);
+    expect([...placed.lines, ...placed.tail]).toEqual(live);
+    // 자리가 없는 지난 행은 글 뒤(지금 차례)
+    const old = leadPlacedLinesOf(teacher.text, [
+      { t: "sound", kind: "model", say: "I play soccer." },
+    ]);
+    expect(old.lines).toEqual([{ t: "s", en: "Say: What else do you do?" }]);
+    expect(old.tail).toEqual([
+      { t: "sound", kind: "model", say: "I play soccer." },
+    ]);
+    // 이야기 방식 행: 자리가 있으면 표지 없는 줄에 자리를 싣고, 없으면 null(지금 꼴)
+    const chatMove = (soundAt?: { answer: number }) => ({
+      ...talkMoveOf({
+        kind: "ai",
+        sound: { answer: "Cats or dogs?" },
+        chat: {
+          level: {},
+          madeUp: [],
+          facts: [],
+          run: 0,
+          ...(soundAt ? { soundMoved: true as const, soundAt } : {}),
+        },
+      }),
+    });
+    const chatRow = { ...teacher, move: chatMove({ answer: 5 }) };
+    expect(
+      leadRowSoundLinesOf({ level: 3, rows: [chatRow], teacher: chatRow }),
+    ).toEqual([{ t: "sound", kind: "answer", say: "Cats or dogs?", at: 5 }]);
+    const chatOld = { ...teacher, move: chatMove() };
+    expect(
+      leadRowSoundLinesOf({ level: 3, rows: [chatOld], teacher: chatOld }),
+    ).toBeNull();
   });
 
   it("AC-26i 보통 차례의 이어 묻는 고르기 질문 · 4단계는 글로 남는다", () => {

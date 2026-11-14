@@ -67,6 +67,7 @@ import {
 import { isChatSession } from "@/core/conversation/lead-mode";
 import {
   type LeadSoundLine,
+  leadPlacedLinesOf,
   leadRowSoundLinesOf,
   leadTurnAppliesOf,
   leadWrapRecastsOf,
@@ -164,7 +165,7 @@ import {
   PLACEHOLDER_NAME,
   type TALK_SEGMENTS,
 } from "@/core/seed/structure";
-import { splitSentences, tokenize } from "@/core/seed/text";
+import { tokenize } from "@/core/seed/text";
 import { vocab } from "@/db/schema/content";
 import { sessions, talkTurns } from "@/db/schema/learning";
 import { aiCalls } from "@/db/schema/operations";
@@ -1705,14 +1706,14 @@ export function lessonReplayLinesOf(
 ): TalkLessonLine[] {
   const { aiPart, appended } = toriLinesOf(row.text);
   const move = readTalkMove(row.move);
-  const out: TalkLessonLine[] = splitSentences(aiPart)
-    .map((s) => s.trim())
-    .filter((s) => s !== "")
-    .map((en) => ({ t: "s", en }) as const);
+  // 새 엔진 행이 글 사이에서 읽은 소리 줄은 그 자리에 끼운다(core leadPlacedLinesOf — 실시간 길과 같은 차례, 13절 C241 보완 7). 소리 줄이 없으면
+  // 글 줄은 지금처럼 문장마다다
+  const placed = leadPlacedLinesOf(aiPart, ctx.leadSound ?? []);
+  const out: TalkLessonLine[] = [...placed.lines];
   if (row.toriKo) out.push({ t: "ko", ko: row.toriKo });
   if (ctx.cue) out.push(cueAddOf(ctx.cue));
   const sound = move?.sound;
-  if (ctx.leadSound) out.push(...ctx.leadSound);
+  if (ctx.leadSound) out.push(...placed.tail);
   else {
     if (sound?.model) out.push({ t: "sound", kind: "model", say: sound.model });
     if (sound?.choices)

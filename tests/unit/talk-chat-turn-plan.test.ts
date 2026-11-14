@@ -841,6 +841,54 @@ describe("선생님 행 move 와 다시 흘림(브리프 4 · 7)", () => {
     ).toBe(false);
   });
 
+  it("AC-27d 행에 소리 줄 자리(move.chat.soundAt)가 있으면 다시 흘림은 그 자리에 소리 줄을 끼워 실시간 길과 같은 차례(글 → 소리 줄 → 글 → 뜻)이고, 자리가 없는 지난 행은 지금 차례(뜻 뒤)다(13절 C241 보완 7)", () => {
+    const base = {
+      ...chatFallbackReplyOf({ en: "Okay." }),
+      sound: { model: "I like cats." },
+    };
+    const moveWith = (soundAt?: { model: number }) =>
+      chatTeacherRowMoveOf({
+        plan,
+        reply: {
+          ...base,
+          record: {
+            ...base.record,
+            ...(soundAt ? { soundMoved: true as const, soundAt } : {}),
+          },
+        },
+        text: "Okay. Say: Your turn!",
+        stage: 1,
+        run: 0,
+        gate: [],
+        firstMs: null,
+      });
+    const placed = moveWith({ model: "Okay. Say:".length });
+    expect(placed.chat?.soundAt).toEqual({ model: 10 });
+    expect(
+      chatReplayLinesOf(
+        { text: "Okay. Say: Your turn!", toriKo: "괜찮아.", move: placed },
+        true,
+      ),
+    ).toEqual([
+      { t: "s", en: "Okay." },
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "I like cats." },
+      { t: "s", en: "Your turn!" },
+      { t: "ko", ko: "괜찮아." },
+    ]);
+    expect(
+      chatReplayLinesOf(
+        { text: "Okay. Say: Your turn!", toriKo: "괜찮아.", move: moveWith() },
+        true,
+      ),
+    ).toEqual([
+      { t: "s", en: "Okay." },
+      { t: "s", en: "Say: Your turn!" },
+      { t: "ko", ko: "괜찮아." },
+      { t: "sound", kind: "model", say: "I like cats." },
+    ]);
+  });
+
   it("AC-27f 저장된 행으로 다시 정한 끝 줄 신호가 실시간 길의 신호와 같다", () => {
     const sim = lessonSim();
     sim.toTalk();

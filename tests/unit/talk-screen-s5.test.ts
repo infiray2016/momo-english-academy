@@ -721,6 +721,114 @@ describe("I-1 · M-1 화면: 그대로 둔 소리 줄은 단추만 있고 읽지
   });
 });
 
+describe("13절 C241 보완 7 소리 줄은 선생님 말 칸의 제자리에서 읽고 단추는 말풍선 아래 그대로(다시 흘림 · 이어 하기도 같은 차례)", () => {
+  // 실시간 길이 낸 줄(#8 'Soccer is fun! Say "I play soccer." What else do you do?' — core leadSettleOf · leadTurnLinesOf)
+  const live: LessonBubbleLine[] = [
+    { t: "s", en: "Soccer is fun!" },
+    { t: "s", en: "Say:" },
+    { t: "sound", kind: "model", say: "I play soccer." },
+    { t: "s", en: "What else do you do?" },
+  ];
+  const text = "Soccer is fun! Say: What else do you do?";
+  const row = {
+    speaker: "tori" as const,
+    turnNo: 4,
+    segment: "talk",
+    text,
+    move: {
+      ...leadRowMove("model_repeat", { model: "I play soccer." }),
+      lead: {
+        reading: "clear_answer",
+        move: "model_repeat",
+        asked: [],
+        said: [],
+        soundMoved: true,
+        soundAt: { model: "Soccer is fun! Say:".length },
+      },
+    } as TalkMove,
+    sentUserMessage: "(start)",
+  };
+  const card = {
+    required: [],
+    more: [],
+    greeting: { firstLine: { en: "Hi!" } },
+  };
+
+  it("AC-26i 같은 시도 다시 흘림(lessonReplayLinesOf)은 행의 소리 줄 자리에서 글을 나눠 실시간 길과 같은 줄 차례(s → sound → s)를 낸다", () => {
+    const replay = lessonReplayLinesOf(
+      { text: row.text, toriKo: null, move: row.move },
+      {
+        card: card as never,
+        koMeaning: false,
+        leadSound: leadRowSoundLinesOf({ level: 3, rows: [row], teacher: row }),
+      },
+    );
+    expect(replay).toEqual(live);
+  });
+
+  it("AC-26m 이어 하기(lessonBubbleOf)도 같은 자리에서 나눠 앞 글 → 소리 줄 → 뒤 글 차례이고, 말풍선을 누르면 그 차례로 읽으며, 단추는 말풍선 아래 그대로다", () => {
+    const bubble = lessonBubbleOf({
+      turnNo: 4,
+      kind: "ai",
+      lines: [{ en: text, app: false }],
+      sound: { model: "I play soccer." },
+      app: [],
+      item: null,
+      hints: [],
+      leadSound:
+        leadRowSoundLinesOf({ level: 3, rows: [row], teacher: row }) ?? [],
+    });
+    expect(bubble.lines).toEqual([
+      { t: "s", en: "Soccer is fun! Say:" },
+      { t: "sound", kind: "model", say: "I play soccer." },
+      { t: "s", en: "What else do you do?" },
+    ]);
+    expect(lessonSpokenOf(bubble, 3).map((i) => i.text)).toEqual([
+      "Soccer is fun! Say:",
+      "I play soccer.",
+      "What else do you do?",
+    ]);
+    // 실시간 길의 말풍선도 받은 차례로 읽는다(글 줄 · 소리 줄 · 글 줄)
+    expect(lessonSpokenOf({ lines: live }, 3).map((i) => i.text)).toEqual([
+      "Soccer is fun!",
+      "Say:",
+      "I play soccer.",
+      "What else do you do?",
+    ]);
+    // 단추 자리는 그대로: 말풍선 글은 흐르는 글 줄만, 듣기 단추는 말풍선 아래 줄(data-tori-under)에 하나
+    const html = renderToStaticMarkup(
+      createElement(LessonToriBubble, {
+        content: { lines: live, done: true },
+        level: 3,
+        englishName: "Momo",
+        waiting: null,
+        waitSeconds: [1, 5] as const,
+        onReplay: () => {},
+        onSound: () => {},
+      }),
+    );
+    expect(html.match(/data-sound-listen="model"/g)?.length).toBe(1);
+    const under = html.indexOf("data-tori-under");
+    expect(under).toBeGreaterThan(html.indexOf("data-tori-bubble"));
+    expect(html.indexOf('data-sound-listen="model"')).toBeGreaterThan(under);
+    // 자리가 없는 지난 행 · 지금 길 행은 지금 꼴 그대로(한 줄 글 → 소리 줄)
+    const old = lessonBubbleOf({
+      turnNo: 4,
+      kind: "ai",
+      lines: [{ en: text, app: false }],
+      sound: { model: "I play soccer." },
+      app: [],
+      item: null,
+      hints: [],
+      leadSound: [{ t: "sound", kind: "model", say: "I play soccer." }],
+    });
+    expect(old.lines).toEqual([
+      { t: "s", en: text },
+      { t: "sound", kind: "model", say: "I play soccer." },
+    ]);
+  });
+});
+
 /** 새 엔진 응답 행의 move(lead 칸 — 행에서 다시 만들 때 읽는 move · 소리 줄만). */
 function leadRowMove(
   move: "model_repeat" | "ask_again" | "easier_or_choices",

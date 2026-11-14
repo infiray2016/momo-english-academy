@@ -77,6 +77,7 @@ import {
   leadGreetingOf,
   leadHistoryOf,
   leadOpenChildOf,
+  leadPlacedLinesOf,
   leadRowSoundLinesOf,
   leadStatusOf,
 } from "@/core/conversation/lead-turn-core";
@@ -2928,6 +2929,87 @@ describe("묶음 X2 새 엔진 길(AC-26l 동등)", () => {
     ]);
   });
 
+  it("AC-26l · AC-26i 대본 도구의 새 엔진 줄도 소리 줄을 뺀 자리에서 낸다(13절 C241 보완 7 · O-1 탐침 #8 · 가운데 고르기 물음): 글까지 서버와 같은 core 차례이고, 저장된 행으로 다시 흘린 줄(leadRowSoundLinesOf · leadPlacedLinesOf)이 같은 차례다 · 들은 영어도 그 차례다", () => {
+    const m = materialsAt(3);
+    const { sim } = leadTalking(m);
+    const steps = [
+      leadStep(
+        sim,
+        child(say("I play soccer.")),
+        leadResult({
+          reading: "clear_answer",
+          move: "model_repeat",
+          say: 'Soccer is fun! Say "I play soccer." What else do you do?',
+          model_sentence: "I play soccer.",
+        }),
+      ),
+      leadStep(
+        sim,
+        child(dontKnow, 2),
+        leadResult({
+          reading: "does_not_know",
+          move: "easier_or_choices",
+          say: "Okay! Watch TV, or go outside? Which one?",
+        }),
+      ),
+    ];
+    const textOf = (lines: readonly { t: string }[]) =>
+      lines.filter((l) => l.t === "s" || l.t === "sound");
+    expect(textOf(steps[0]?.rec.lines ?? [])).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "I play soccer." },
+      { t: "s", en: "What else do you do?" },
+    ]);
+    expect(steps[0]?.rec.teacher.text).toBe(
+      "Soccer is fun! Say: What else do you do?",
+    );
+    expect(steps[0]?.rec.heard.split("\n")).toEqual([
+      "Soccer is fun! Say:",
+      "I play soccer.",
+      "What else do you do?",
+    ]);
+    expect(textOf(steps[1]?.rec.lines ?? [])).toEqual([
+      { t: "s", en: "Okay!" },
+      {
+        t: "sound",
+        kind: "answer",
+        say: "Watch TV, or go outside?",
+        lead: { ask: true },
+      },
+      { t: "s", en: "Which one?" },
+    ]);
+    const rows = steps.flatMap(({ rec }, i) => [
+      {
+        speaker: "tori" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: rec.teacher.text,
+        move: rec.teacher.move,
+        sentUserMessage: rec.teacher.sentUserMessage,
+      },
+      {
+        speaker: "child" as const,
+        turnNo: i + 1,
+        segment: "talk",
+        text: "",
+      },
+    ]);
+    steps.forEach(({ rec }, i) => {
+      const teacher = rows.find(
+        (r) => r.speaker === "tori" && r.turnNo === i + 1,
+      );
+      if (!teacher) throw new Error("행 없음");
+      const placed = leadPlacedLinesOf(
+        (teacher.text ?? "").split("\n")[0] ?? "",
+        leadRowSoundLinesOf({ level: 3, rows, teacher }) ?? [],
+      );
+      expect([...placed.lines, ...placed.tail], `${i + 1} 차례`).toEqual(
+        textOf(rec.lines),
+      );
+    });
+  });
+
   it("AC-26l · AC-26i 되묻기가 둘 이어지면 둘째 되묻는 차례도 앞 행이 보인 듣기 줄(kept)을 이어 받고, 보통 차례에서 사라진다: 실시간 길 · 저장된 행에서 다시 만든 줄이 같고 행 move.sound 는 비어 있다(검토 rev-s5 M-1)", () => {
     const m = materialsAt(3);
     const { sim } = leadTalking(m);
@@ -4066,6 +4148,14 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
       }),
     );
     expect(talk.lines.some((l) => l.t === "sound")).toBe(true);
+    // 글까지(검토 O-1 · 13절 C241 보완 7): 안내 말 'Say:' 뒤에서 소리 줄을 읽고 뒤 물음이 이어진다
+    expect(talk.lines.filter((l) => l.t !== "ko")).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "I play soccer." },
+      { t: "s", en: "What else do you do?" },
+    ]);
+    expect(talk.teacher?.text).toBe("Soccer is fun! Say: What else do you do?");
     // 인식기 알림(확신 정도가 낮음)
     const unsure = await bothChat(
       m,

@@ -36,6 +36,7 @@ import {
   chatTurnEndOf,
   isChatQuietRow,
 } from "@/core/conversation/chat-turn-core";
+import { lowBandPlacedLinesOf } from "@/core/conversation/lead-low-band";
 import {
   leadConversationOrder,
   leadOpenAcceptsOf,
@@ -53,7 +54,6 @@ import type {
 } from "@/core/conversation/lesson-turns";
 import { readTalkMove, type TalkMove } from "@/core/conversation/move";
 import { isQuestionSentence } from "@/core/conversation/stream";
-import { splitSentences } from "@/core/seed/text";
 
 // ── 입구(spec 설계 3 · 5 · 6 · 10, 보완 4 (5)) ─────────────────────────────
 
@@ -613,15 +613,40 @@ export function chatReplayLinesOf(
   row: { text: string | null; toriKo: string | null; move?: unknown },
   koMeaning: boolean,
 ): ChatReplayLine[] {
-  const out: ChatReplayLine[] = splitSentences(row.text ?? "").map((en) => ({
-    t: "s" as const,
-    en,
-  }));
+  const move = readTalkMove(row.move);
+  const sound = move?.sound;
+  const say = {
+    ...(sound?.model ? { model: sound.model } : {}),
+    ...(sound?.answer ? { answer: sound.answer } : {}),
+  };
+  // 글 사이에서 읽은 소리 줄은 행에 남긴 자리(move.chat.soundAt)에 끼운다 — 실시간 길(chatTurnResultOf)과 같은 차례(13절 C241 보완 7). 자리가 없는
+  // 소리 줄(지난 행 포함)은 지금처럼 뜻 줄 뒤다
+  const at = move?.chat?.soundAt ?? {};
+  const out: ChatReplayLine[] = [];
+  const placed = new Set<"model" | "answer">();
+  for (const line of lowBandPlacedLinesOf(row.text ?? "", {
+    ...(say.model === undefined || at.model === undefined
+      ? {}
+      : { model: at.model }),
+    ...(say.answer === undefined || at.answer === undefined
+      ? {}
+      : { answer: at.answer }),
+  })) {
+    if (line.t === "s") {
+      out.push(line);
+      continue;
+    }
+    const text = say[line.kind];
+    if (text === undefined) continue;
+    placed.add(line.kind);
+    out.push({ t: "sound", kind: line.kind, say: text });
+  }
   if (koMeaning && row.toriKo) out.push({ t: "ko", ko: row.toriKo });
-  const sound = readTalkMove(row.move)?.sound;
-  if (sound?.model) out.push({ t: "sound", kind: "model", say: sound.model });
-  if (sound?.answer)
-    out.push({ t: "sound", kind: "answer", say: sound.answer });
+  for (const kind of ["model", "answer"] as const) {
+    const text = say[kind];
+    if (text !== undefined && !placed.has(kind))
+      out.push({ t: "sound", kind, say: text });
+  }
   return out;
 }
 

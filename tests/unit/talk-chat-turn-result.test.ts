@@ -8,6 +8,7 @@ import {
 import type { ChatInput } from "@/core/conversation/chat-message";
 import type { ChatReplyCheck } from "@/core/conversation/chat-reply";
 import {
+  chatReplayLinesOf,
   chatTurnPlanOf,
   createChatSentenceFlow,
 } from "@/core/conversation/chat-turn-plan";
@@ -129,19 +130,32 @@ const SAY: ChatInput = { kind: "speech", heard: "Yes." };
 const DK: ChatInput = { kind: "dont_know" };
 
 describe("보통 차례", () => {
-  it("AC-27d 남은 문장 · 뜻 · 소리 줄 차례로 줄을 내고, 선생님 행 글은 흘린 줄을 이은 글이며 만남은 나간 say 전체에서 센다", () => {
+  it("AC-27d 소리 줄은 뺀 자리(남은 문장 앞)에서 읽고 뜻은 글 뒤이며, 선생님 행 글은 흘린 줄을 이은 글 · 행에 소리 줄 자리를 남기고 만남은 나간 say 전체에서 센다(13절 C241 보완 7)", () => {
     const r = resultOf(
       SAY,
       ok("Nice! I like cats. What about you?", { listen: "I like cats." }),
       { sent: ["Nice!"], held: ["I like cats.", "What about you?"] },
     );
     expect(r.lines).toEqual([
+      { t: "sound", kind: "model", say: "I like cats." },
       { t: "s", en: "What about you?" },
       { t: "ko", ko: "뜻" },
-      { t: "sound", kind: "model", say: "I like cats." },
     ]);
     expect(r.teacher?.text).toBe("Nice! What about you?");
     expect(r.teacher?.move.chat?.removed).toEqual(["I like cats."]);
+    expect(r.teacher?.move.chat?.soundAt).toEqual({ model: "Nice!".length });
+    expect(r.teacher?.move.chat?.soundMoved).toBe(true);
+    // 같은 시도 다시 흘림은 행에서 같은 차례를 낸다(앞서 흘린 'Nice!' 포함)
+    expect(
+      chatReplayLinesOf(
+        {
+          text: r.teacher?.text ?? "",
+          toriKo: r.teacher?.toriKo ?? null,
+          move: r.teacher?.move,
+        },
+        true,
+      ),
+    ).toEqual([{ t: "s", en: "Nice!" }, ...r.lines]);
     expect(r.met).toEqual(["cats"]);
     expect(r.diverged).toBe(false);
     expect(r.farewell).toEqual({ en: "Nice! What about you?", ko: "뜻" });
@@ -384,6 +398,63 @@ describe("두 문장에 걸친 조각 · 문장 부호만 다른 차이", () => 
     const r = streamed(SAY, "Can you say, I like cats?", "I like cats.");
     expect(r.teacher?.text).toBe("Can you say:");
     expect(r.diverged).toBe(false);
+  });
+
+  it("AC-27d #8 'Say \"…\" What else do you do?' 는 흘림이 그 문장부터 잡아 두고, 줄은 'Soccer is fun!' → 'Say:' → 소리 줄 → 뒤 물음 · 다시 흘림도 같은 차례다(13절 C241 보완 7)", () => {
+    const say = 'Soccer is fun! Say "I play soccer." What else do you do?';
+    const r = streamed(SAY, say, "I play soccer.");
+    const live = [
+      ...splitSentences(say)
+        .slice(0, 1)
+        .map((en) => ({ t: "s" as const, en })),
+      ...r.lines,
+    ];
+    expect(live).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "I play soccer." },
+      { t: "s", en: "What else do you do?" },
+      { t: "ko", ko: "뜻" },
+    ]);
+    expect(r.teacher?.text).toBe("Soccer is fun! Say: What else do you do?");
+    expect(r.diverged).toBe(false);
+    expect(
+      chatReplayLinesOf(
+        {
+          text: r.teacher?.text ?? "",
+          toriKo: r.teacher?.toriKo ?? null,
+          move: r.teacher?.move,
+        },
+        true,
+      ),
+    ).toEqual(live);
+  });
+
+  it("AC-27d 같은 따라 할 문장이 두 자리에서 빠지면 소리 줄은 마지막 자리 하나(그 사이 글 뒤 · 뒤 글 앞)다", () => {
+    const say = "Say: I like cats. Good! I like cats. Your turn!";
+    const r = streamed(SAY, say, "I like cats.");
+    expect(r.lines).toEqual([
+      { t: "s", en: "Say: Good!" },
+      { t: "sound", kind: "model", say: "I like cats." },
+      { t: "s", en: "Your turn!" },
+      { t: "ko", ko: "뜻" },
+    ]);
+    expect(r.lines.filter((l) => l.t === "sound")).toHaveLength(1);
+  });
+
+  it("AC-27d 소리 줄이 글 끝이면 행에 자리를 남기지 않고 지금 차례(뜻 뒤)다", () => {
+    const r = streamed(
+      SAY,
+      "Nice! Say it with me: I like cats.",
+      "I like cats.",
+    );
+    expect(r.lines.at(-1)).toEqual({
+      t: "sound",
+      kind: "model",
+      say: "I like cats.",
+    });
+    expect(r.teacher?.move.chat?.soundAt).toBeUndefined();
+    expect(r.teacher?.move.chat?.soundMoved).toBeUndefined();
   });
 
   it("AC-27d 문장 부호만 다른 차이는 갈린 길로 세지 않는다(낱말이 다르면 센다)", () => {

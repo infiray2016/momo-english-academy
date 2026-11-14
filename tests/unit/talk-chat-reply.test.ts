@@ -192,10 +192,38 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
     });
   });
 
-  it("지금 행동 고정(M-5, 서버 묶음에 넘김): 조각으로 된 따라 할 문장이 문장 뒷부분과 맞으면 그 부분만 빠진다 — 6.4 가 조각 꼴을 거르는지는 S0 · S1 이 본다", () => {
+  it("AC-27d 조각으로 된 따라 할 문장이 문장 뒷부분과만 맞으면(문장 첫머리가 아님) 빼지 않고 글로 둔다(13절 C241 보완 7 — 앞 판의 'I' 꼴을 바꿈)", () => {
     const r = reply({ listen_sentence: "like cats.", say: "I like cats." });
-    expect(r.text).toBe("I");
-    expect(r.sound).toEqual({ model: "like cats." });
+    expect(r.text).toBe("I like cats.");
+    expect(r.sound).toEqual({});
+    expect(r.record.listen).toEqual({
+      sentence: "like cats.",
+      inSay: false,
+      partial: true,
+    });
+  });
+
+  it("AC-27d #4 앞 조각이 문장의 일부('Rain sounds go tap, tap, tap.')면 글로 두고, 끝의 온전한 문장 'Tap, tap, tap!' 만 빼 그 글자로 소리 줄을 낸다(분석 L2 2-2 #4)", () => {
+    const r = reply({
+      listen_sentence: "tap, tap, tap.",
+      say: "Yes! Rain sounds go tap, tap, tap. Can you say it with me? Tap, tap, tap!",
+    });
+    expect(r.text).toBe(
+      "Yes! Rain sounds go tap, tap, tap. Can you say it with me?",
+    );
+    expect(r.sound).toEqual({ model: "Tap, tap, tap!" });
+    expect(r.record.removed).toEqual(["Tap, tap, tap!"]);
+    expect(r.record.listen?.inSay).toBe(true);
+    expect(r.record.soundMoved).toBeUndefined();
+  });
+
+  it("AC-27d 같은 따라 할 문장이 다른 글자로 두 자리에서 빠지면 소리 줄은 하나이고 그 글자는 첫 조각(흘림 판단이 잡는 조각과 같음), 자리는 마지막 뺀 자리다(13절 C241 보완 7)", () => {
+    const say = "I'm fine. Say it: I am fine. Your turn!";
+    const r = reply({ listen_sentence: "I am fine.", say });
+    expect(r.sound).toEqual({ model: "I'm fine." });
+    expect(chatListenLiteralOf(say, "I am fine.", 3)).toBe("I'm fine.");
+    expect(r.text).toBe("Say it: Your turn!");
+    expect(r.record.soundMoved).toBe(true);
   });
 
   it("AC-27d 6.4 출력 검사가 비운 따라 할 문장(빈 글)은 빼지 않는다: say 에 그 문장이 있어도 글 그대로이고 대조 칸이 없다", () => {
@@ -219,7 +247,11 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
 
   it("chatListenLiteralOf: 1~3단계에서 본체가 실제로 빼는 조각일 때만 그 조각을 돌려준다(없거나 문장 경계 밖이면 null)", () => {
     expect(chatListenLiteralOf("I'm fine.", "I am fine", 3)).toBe("I'm fine.");
-    expect(chatListenLiteralOf("Wow, I like cats!", "i like cats", 3)).toBe(
+    // 쉼표 뒤 문장의 일부는 첫머리가 아니다(13절 C241 보완 7 — 본체도 글로 둔다)
+    expect(
+      chatListenLiteralOf("Wow, I like cats!", "i like cats", 3),
+    ).toBeNull();
+    expect(chatListenLiteralOf("Wow! I like cats!", "i like cats", 3)).toBe(
       "I like cats!",
     );
     expect(
@@ -251,6 +283,10 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
       "I like cats and dogs. Say it: I like cats.",
       "i LIKE cats.",
       "I like dogs.",
+      // 13절 C241 보완 7: 문장의 일부(쉼표 · 낱말 뒤)는 첫머리가 아니고, 따옴표 · 쌍점 뒤는 첫머리다
+      "Rain sounds go I like cats.",
+      'Say "I like cats." What do you like?',
+      "Wow! I like cats. Your turn!",
     ];
     for (const level of [1, 2, 3]) {
       for (const say of cases) {

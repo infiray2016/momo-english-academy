@@ -16,10 +16,16 @@ import {
   chatTeacherRowMoveOf,
   chatTurnFinishOf,
 } from "@/core/conversation/chat-turn-plan";
+import {
+  type LowBandSoundAt,
+  lowBandPlacedLinesOf,
+  lowBandSoundAtOf,
+  lowBandStrippedOf,
+} from "@/core/conversation/lead-low-band";
 import type { TalkMove } from "@/core/conversation/move";
 import { metWordsIn } from "@/core/conversation/said";
+import { normalizeSpoken } from "@/core/conversation/spoken";
 import { safeLineOf } from "@/core/conversation/stream";
-import { splitSentences } from "@/core/seed/text";
 
 /**
  * 대화 호출 결과(서버 talkChatTurn 의 결과 · 대본 도구의 가짜 응답을 옮긴 꼴): ok 는 응답(value 는 문장 문 · 6.4 뒤 값, assistant 는 대화 기록 글,
@@ -77,39 +83,6 @@ function lineOf(
 /** 길이 초과(지금 길 lessonOverLengthOf 와 같은 판정): 길이를 넘은 문장이 있거나 문장 수가 상한을 넘음. */
 function overLengthOf(words: number, sentences: number, max: number): boolean {
   return words > 0 || sentences > max;
-}
-
-/** 빈칸을 모은 글(흘린 줄과 본체 글을 견줄 때). */
-const squash = (text: string) => text.replace(/\s+/g, " ").trim();
-
-/** 조각을 뺀 뒤 남은 글이 낱말 없이 부호 · 빈 따옴표 · 괄호뿐인가. */
-const NO_WORD = /^[\s"“”‘’'()[\].,!?:;-]*$/;
-
-/**
- * 끝 쉼표를 쌍점으로 바꿀 따라 말하게 하는 안내 말(글 빼기 lead-low-band 의 GUIDE_TRAILING_COMMA 와 같은 식 — 그 파일은 다듬기를 내보내지 않아 같은
- * 식을 둔다. 잡아 둔 글은 say 의 끝 조각이라 '글 끝'이 본체와 같은 자리다).
- */
-const GUIDE_TRAILING_COMMA =
-  /(\b(?:say|repeat)(?:\s+(?:it|after me|with me|again|together))*)\s*,\s*$/i;
-
-/**
- * 잡아 둔 글(잡아 둔 문장들을 빈칸으로 이은 say 의 끝 조각)에서 본체가 뺀 조각을 지운 글(검토 M-2 · 재검토 N-1 — 두 문장에 걸친 조각(두 문장으로 나뉜
- * 고르기 물음)도 한 번에 지운다. 본체 글을 다시 나누지 않는다). 다듬기는 글 빼기와 같은 뜻이다: 속이 빈 따옴표 쌍 · 괄호와 홀로 남은 부호를 지우고
- * 빈칸을 모은 뒤, 안내 말 뒤 끝 쉼표는 쌍점으로 · 그 밖의 끝 쉼표는 지운다. 낱말이 하나도 남지 않으면 빈 글이다.
- */
-function strippedOf(held: string, pieces: readonly string[]): string {
-  let text = held;
-  for (const piece of pieces) if (piece !== "") text = text.replace(piece, " ");
-  if (text === held) return squash(text);
-  const out = squash(
-    text
-      .replace(/(^|[\s:,])["“‘'][\s.,!?]*["”’'](?=$|[\s.,!?])/g, "$1")
-      .replace(/\(\s*\)/g, " ")
-      .replace(/(^|\s)[.!?]+(?=\s|$)/g, "$1"),
-  )
-    .replace(GUIDE_TRAILING_COMMA, "$1:")
-    .replace(/\s*,\s*$/, "");
-  return NO_WORD.test(out) ? "" : out;
 }
 
 /** 낱말만 남긴 글(문장 부호 · 빈칸 차이는 갈림으로 세지 않음 — 재검토 N-2). {NAME} 자리는 낱말로 둔다. */
@@ -172,6 +145,22 @@ function unchangedOf(reply: ChatReply, say: string): ChatReply {
     ...rest
   } = reply.record;
   return { ...reply, text: say, sound: {}, record: rest };
+}
+
+/**
+ * 실제로 낸 줄 차례의 소리 줄 자리를 응답 처리 기록에 싣는다(move.chat.soundAt · soundMoved — 13절 C241 보완 7): 글 사이에서 읽은 소리 줄이 있으면
+ * 그 자리와 '단추 자리가 원래 차례와 다름'을, 없으면 두 칸을 모두 뺀다(흘린 줄이 본체 글과 갈려도 행 글과 맞는 값).
+ */
+function withSoundAt(reply: ChatReply, soundAt: LowBandSoundAt): ChatReply {
+  const { soundMoved: _moved, soundAt: _at, ...rest } = reply.record;
+  const moved = Object.keys(soundAt).length > 0;
+  return {
+    ...reply,
+    record: {
+      ...rest,
+      ...(moved ? { soundMoved: true as const, soundAt: { ...soundAt } } : {}),
+    },
+  };
 }
 
 export type ChatTurnResult = {
@@ -306,17 +295,56 @@ export function chatTurnResultOf({
         diverged: false,
       };
     }
-    const reply = withoutSent(processed, flow.sent);
-    const pieces = reply.record.removed ?? [];
-    const rest = strippedOf(flow.held.join(" "), pieces);
-    const release = rest === "" ? [] : splitSentences(rest);
+    const sentReply = withoutSent(processed, flow.sent);
+    const pieces = sentReply.record.removed ?? [];
+    // 잡아 둔 글에서 본체가 뺀 조각을 지운 글(본체와 같은 다듬기 — lead-low-band lowBandStrippedOf)과 소리 줄의 제자리(13절 C241 보완 7):
+    // model 은 따라 할 문장 조각을 뺀 마지막 자리, answer 는 그 밖(고르기 물음)의 마지막 자리. 뒤에 글이 남는 소리 줄만 글 사이에 끼운다
+    const stripped = lowBandStrippedOf(flow.held.join(" "), pieces);
+    const modelKey =
+      sentReply.sound.model === undefined
+        ? null
+        : normalizeSpoken(sentReply.sound.model);
+    const isModelPiece = (piece: string) =>
+      modelKey !== null && normalizeSpoken(piece) === modelKey;
+    const lastAt = (test: (piece: string) => boolean): number | undefined => {
+      for (let i = pieces.length - 1; i >= 0; i--) {
+        const piece = pieces[i];
+        const at = stripped.cutsAt[i];
+        if (piece !== undefined && at !== undefined && test(piece)) return at;
+      }
+      return undefined;
+    };
+    const modelAt =
+      sentReply.sound.model === undefined ? undefined : lastAt(isModelPiece);
+    const answerAt =
+      sentReply.sound.answer === undefined
+        ? undefined
+        : lastAt((piece) => !isModelPiece(piece));
+    const placed = lowBandPlacedLinesOf(stripped.text, {
+      ...(modelAt === undefined ? {} : { model: modelAt }),
+      ...(answerAt === undefined ? {} : { answer: answerAt }),
+    });
+    const release = placed.flatMap((l) => (l.t === "s" ? [l.en] : []));
     const text = [...flow.sent, ...release].join(" ");
-    const lines: ChatReplayLine[] = release.map((en) => ({ t: "s", en }));
+    const soundAt = lowBandSoundAtOf(placed, flow.sent);
+    const reply = withSoundAt(sentReply, soundAt);
+    const soundLineOf = (kind: "model" | "answer"): ChatReplayLine | null => {
+      const say = reply.sound[kind];
+      return say === undefined ? null : { t: "sound", kind, say };
+    };
+    const lines: ChatReplayLine[] = [];
+    for (const line of placed) {
+      if (line.t === "s") lines.push(line);
+      else {
+        const sound = soundLineOf(line.kind);
+        if (sound !== null) lines.push(sound);
+      }
+    }
     if (ko !== "") lines.push({ t: "ko", ko });
-    if (reply.sound.model !== undefined)
-      lines.push({ t: "sound", kind: "model", say: reply.sound.model });
-    if (reply.sound.answer !== undefined)
-      lines.push({ t: "sound", kind: "answer", say: reply.sound.answer });
+    for (const kind of ["model", "answer"] as const) {
+      const sound = soundLineOf(kind);
+      if (sound !== null && soundAt[kind] === undefined) lines.push(sound);
+    }
     return {
       lines,
       teacher: draft(reply, text),
@@ -324,7 +352,8 @@ export function chatTurnResultOf({
       met,
       finish,
       diverged:
-        reply !== processed || wordsOnly(text) !== wordsOnly(processed.text),
+        sentReply !== processed ||
+        wordsOnly(text) !== wordsOnly(processed.text),
     };
   }
 

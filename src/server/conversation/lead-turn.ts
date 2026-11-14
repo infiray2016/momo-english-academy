@@ -77,9 +77,9 @@ import {
   leadOpenReplayOf,
   leadSaidOf,
   leadSettleOf,
-  leadSoundLinesOf,
   leadStatusOf,
   leadTurnAppliesOf,
+  leadTurnLinesOf,
   talkLeadRetrySpec,
 } from "@/core/conversation/lead-turn-core";
 import { talkLessonPositionOf } from "@/core/conversation/lesson-flow";
@@ -885,14 +885,13 @@ async function leadTeacherTurn(
     narrow,
   });
 
-  // (5) 줄 내보내기: 남은 글 문장 → 뜻 → 소리 줄(따라 할 문장 · 막힌 뒤 고르기 — 글 뒤, 미결 11 · 되묻는 차례면 앞 차례의 소리 줄을 그대로,
-  // 저절로 읽지 않음 — 정본 03 4절 98줄 · 화면 검토 I-1, 행 move.sound 에는 적지 않음) → 마무리 상수(물음이 없을 때만). 신호 말은
-  // 붙이지 않는다(Claude 가 제 말로 안내 — 같은 시도 다시 흘림도 저장한 행 그대로 같은 줄을 낸다)
-  for (const en of settled.release) send(en);
+  // (5) 줄 내보내기: 남은 글 문장(소리 줄은 뺀 자리에서 — 뺀 자리 앞 글 줄 → 소리 줄 → 뒤 글 줄, 13절 C241 보완 7) → 뜻 → 글 뒤의 소리 줄
+  // (뒤에 글이 없는 따라 할 문장 · 막힌 뒤 고르기 → 되묻는 차례면 앞 차례의 소리 줄을 그대로, 저절로 읽지 않음 — 정본 03 4절 98줄 · 화면 검토
+  // I-1, 행 move.sound 에는 적지 않음) → 마무리 상수(물음이 없을 때만). 신호 말은 붙이지 않는다(Claude 가 제 말로 안내 — 같은 시도 다시 흘림도
+  // 저장한 행 그대로 같은 줄을 낸다 · 듣기 단추 자리는 화면이 말풍선 아래에 둔다)
   const ko = state.spec.koMeaning
     ? leadKoLineOf(level, value.say_ko).trim()
     : "";
-  if (ko !== "") write({ t: "ko", ko });
   const kept = leadKeptSoundOf({
     level,
     move: value.move,
@@ -902,8 +901,14 @@ async function leadTeacherTurn(
     // 앞 행이 보인 소리 줄(되묻기가 이어지면 거슬러 감 — 다시 흘림 · 이어 하기(leadRowSoundLinesOf) · 모의 실행기와 같은 값, 검토 rev-s5 M-1)
     rows,
   });
-  for (const line of leadSoundLinesOf({ sound: settled.sound, kept }))
-    write(line);
+  for (const line of leadTurnLinesOf({
+    lines: settled.lines,
+    sound: settled.sound,
+    kept,
+    ko,
+  }))
+    if (line.t === "s") send(line.en);
+    else write(line);
   const closingAdded = leadClosingAddsOf({ closing, say: settled.say });
   if (closingAdded) write(closingLine(state.spec.koMeaning));
 
@@ -948,6 +953,7 @@ async function leadTeacherTurn(
     closingAdded,
     removed: settled.removed,
     soundMoved: settled.soundMoved,
+    soundAt: settled.soundAt,
   });
   const move = leadMoveWithSound(
     leadTeacherMoveOf({

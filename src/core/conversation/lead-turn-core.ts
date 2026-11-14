@@ -47,8 +47,12 @@ import type {
   LeadNarrowHit,
 } from "@/core/conversation/lead-level";
 import {
+  type LowBandPlacedLine,
+  type LowBandSoundAt,
   leadKoLineOf,
   leadLowBandShownOf,
+  lowBandPlacedLinesOf,
+  lowBandSoundAtOf,
 } from "@/core/conversation/lead-low-band";
 import {
   isLeadSession,
@@ -71,6 +75,7 @@ import {
   readTalkMove,
   TALK_LEAD_MOVES,
   TALK_LEAD_READINGS,
+  type TalkLead,
   type TalkLeadMove,
   type TalkLeadReading,
   type TalkMove,
@@ -334,6 +339,11 @@ export type LeadSoundLine = {
   kind: "model" | "answer";
   say: string;
   lead?: LeadSoundMark;
+  /**
+   * 저장된 행에서 다시 만든 줄만(leadRowSoundLinesOf): 글 사이에서 읽은 소리 줄의 자리(행 글 첫 줄의 글자 수 — move.lead · move.chat 의
+   * soundAt). 받는 쪽이 이 자리에서 글을 나눠 소리 줄을 끼우고(leadPlacedLinesOf · 화면 lessonBubbleOf), 흘려 보내는 줄에는 싣지 않는다.
+   */
+  at?: number;
 };
 
 /**
@@ -411,7 +421,20 @@ export function leadRowSoundLinesOf<R extends LeadRowLike>({
   teacher: R;
 }): LeadSoundLine[] | null {
   const move = readTalkMove(teacher.move);
-  if (!move?.lead) return null;
+  // 이야기 방식 행(move.chat)은 글 사이에서 읽은 소리 줄이 있을 때만 그 자리를 실은 줄(표지 없음 — 실시간 길과 같은 꼴), 아니면 지금 꼴(null)
+  if (!move?.lead) {
+    const at = move?.chat?.soundAt;
+    if (at === undefined || move?.sound === undefined) return null;
+    return withSoundAt(
+      leadSoundLinesOf({
+        sound: {
+          ...(move.sound.model ? { model: move.sound.model } : {}),
+          ...(move.sound.answer ? { answer: move.sound.answer } : {}),
+        },
+      }).map(({ lead: _mark, ...line }) => line),
+      at,
+    );
+  }
   const ordered = leadConversationOrder(rows);
   const at = ordered.findIndex(
     (r) => r.speaker === "tori" && r.turnNo === teacher.turnNo,
@@ -431,7 +454,97 @@ export function leadRowSoundLinesOf<R extends LeadRowLike>({
     prevMove: readTalkMove(prev?.move),
     rows: before,
   });
-  return leadSoundLinesOf({ sound: own, kept });
+  return withSoundAt(leadSoundLinesOf({ sound: own, kept }), move.lead.soundAt);
+}
+
+/** 이 차례의 소리 줄(kept 가 아닌 줄)에 행의 소리 줄 자리를 싣는다(자리가 없으면 그대로). */
+function withSoundAt(
+  lines: LeadSoundLine[],
+  at: LowBandSoundAt | undefined,
+): LeadSoundLine[] {
+  if (at === undefined) return lines;
+  return lines.map((line) => {
+    const pos = line.lead?.kept === true ? undefined : at[line.kind];
+    return pos === undefined ? line : { ...line, at: pos };
+  });
+}
+
+/**
+ * 저장된 행의 글(행 글 첫 줄)과 다시 만든 소리 줄(leadRowSoundLinesOf) → 다시 흘릴 줄 차례(같은 시도 다시 흘림 — 13절 C241 보완 7): 글 줄은
+ * 소리 줄 자리에서 나눈 조각마다 문장으로, 자리(at)가 있는 소리 줄은 그 앞 글 줄 뒤에 끼운다(실시간 길 leadSettleOf 의 lines 와 같은 차례). 나머지
+ * 소리 줄(자리 없음 · 그대로 둔 앞 차례 줄)은 tail 로 돌려 부르는 쪽이 뜻 줄 뒤에 낸다. 소리 줄이 없으면 글 줄은 splitSentences 그대로다.
+ * 흘려 보내는 줄에는 at 을 싣지 않는다.
+ */
+export function leadPlacedLinesOf(
+  text: string,
+  sound: readonly LeadSoundLine[],
+): {
+  lines: ({ t: "s"; en: string } | LeadSoundLine)[];
+  tail: LeadSoundLine[];
+} {
+  const placedLine = (kind: "model" | "answer") =>
+    sound.find((l) => l.kind === kind && l.at !== undefined);
+  const at: LowBandSoundAt = {};
+  for (const kind of ["model", "answer"] as const) {
+    const line = placedLine(kind);
+    if (line?.at !== undefined) at[kind] = line.at;
+  }
+  const strip = ({ at: _at, ...line }: LeadSoundLine): LeadSoundLine => line;
+  const lines: ({ t: "s"; en: string } | LeadSoundLine)[] = [];
+  const used = new Set<LeadSoundLine>();
+  for (const line of lowBandPlacedLinesOf(text, at)) {
+    if (line.t === "s") {
+      lines.push(line);
+      continue;
+    }
+    const sl = placedLine(line.kind);
+    if (sl === undefined) continue;
+    used.add(sl);
+    lines.push(strip(sl));
+  }
+  return {
+    lines,
+    tail: sound.filter((l) => !used.has(l)).map(strip),
+  };
+}
+
+/**
+ * 새 엔진 응답 차례의 흘림 뒤 줄 차례(서버 턴 길 · 대본 도구가 같이 부름 — 13절 C241 보완 7): 지금 낼 글 줄과 글 사이의 소리 줄(leadSettleOf
+ * lines — 뺀 자리 앞 글 줄 → 소리 줄 → 뒤 글 줄) → 뜻 줄(빈 글이면 없음) → 글 뒤의 소리 줄(이 차례의 따라 할 문장 · 고르기 물음 가운데 뒤에 글이
+ * 없는 것) → 그대로 둔 앞 차례의 소리 줄(kept). 표지는 leadSoundLinesOf 그대로다.
+ */
+export function leadTurnLinesOf({
+  lines,
+  sound,
+  kept = {},
+  ko,
+}: {
+  lines: readonly LowBandPlacedLine[];
+  sound: { model?: string; answer?: string };
+  kept?: { model?: string; answer?: string };
+  ko: string;
+}): ({ t: "s"; en: string } | { t: "ko"; ko: string } | LeadSoundLine)[] {
+  const own = leadSoundLinesOf({ sound });
+  const placed = new Set<"model" | "answer">();
+  const out: (
+    | { t: "s"; en: string }
+    | { t: "ko"; ko: string }
+    | LeadSoundLine
+  )[] = [];
+  for (const line of lines) {
+    if (line.t === "s") {
+      out.push(line);
+      continue;
+    }
+    const sl = own.find((l) => l.kind === line.kind);
+    if (sl === undefined || placed.has(line.kind)) continue;
+    placed.add(line.kind);
+    out.push(sl);
+  }
+  if (ko !== "") out.push({ t: "ko", ko });
+  out.push(...own.filter((l) => !placed.has(l.kind)));
+  out.push(...leadSoundLinesOf({ sound: {}, kept }));
+  return out;
 }
 
 /**
@@ -723,19 +836,27 @@ export type LeadSettled = {
   say: string;
   /** 지금 내보낼 글 문장(앞서 나간 문장 뒤). */
   release: string[];
+  /**
+   * 지금 내보낼 줄 차례(13절 C241 보완 7): release 의 글 줄과, 뒤에 글이 남는 소리 줄의 제자리(slot — 뺀 자리 앞 글 줄 → 소리 줄 → 뒤 글 줄).
+   * 뒤에 글이 없는 소리 줄은 slot 이 없다(뜻 줄 뒤, 지금 차례 — leadTurnLinesOf).
+   */
+  lines: LowBandPlacedLine[];
   /** 화면 글 문장 전체(앞서 나간 것 + release) — 선생님 행 text 의 첫 줄. */
   shown: string[];
   /** 1~3단계 소리 줄: 확인된 따라 할 문장 · 막힌 뒤 고르기 물음(둘 이상이면 이은 한 줄 — 듣기 단추 하나). */
   sound: { model?: string; answer?: string };
+  /** 글 사이에서 읽는 소리 줄의 자리(shown 을 이은 글의 글자 수 — move.lead.soundAt). 모두 글 뒤면 빈 값. */
+  soundAt: LowBandSoundAt;
   /** 글에서 뺀 문장(move.lead.removed). */
   removed: string[];
-  /** 소리 줄(글 뒤)이 원래 문장 차례와 달라졌다(move.lead.soundMoved — 미결 11). */
+  /** 소리 줄 뒤에 글이 남아 단추 자리가 원래 차례와 다르다(move.lead.soundMoved — 미결 11 의 화면 판단 재료). */
   soundMoved: boolean;
 };
 
 /**
- * 끝에서 낼 글 · 소리 줄(spec 설계 8): 다시 받은 질문을 그 자리에 넣은 말 칸에 1~3단계 글 빼기(leadLowBandShownOf, 묶음 R5)를 건다. 말 칸 전체를
- * 붙잡은 차례는 정리한 화면 글을 문장으로, 흘려 보낸 차례는 붙잡은 문장 가운데 뺀 것만 빼고 차례대로 낸다(앞서 나간 문장은 그대로). 그 밖에는
+ * 끝에서 낼 글 · 소리 줄(spec 설계 8 · 13절 C241 보완 7): 다시 받은 질문을 그 자리에 넣은 말 칸에 1~3단계 글 빼기(leadLowBandShownOf, 묶음 R5)를
+ * 건다. 말 칸 전체를 붙잡은 차례는 정리한 화면 글을 뺀 자리에서 나눠 문장으로, 흘려 보낸 차례는 붙잡은 문장 가운데 뺀 것만 빼고 차례대로 낸다(앞서
+ * 나간 문장은 그대로). 소리 줄은 뺀 자리(같은 문장이 두 자리면 마지막 자리)에서 읽는다 — 뒤에 글이 남으면 그 글 앞(slot), 아니면 글 뒤. 그 밖에는
  * 말을 고치지 않는다.
  */
 export function leadSettleOf(input: LeadSettleInput): LeadSettled {
@@ -762,35 +883,61 @@ export function leadSettleOf(input: LeadSettleInput): LeadSettled {
     ...(modelSound === undefined ? {} : { model: modelSound }),
     ...(choiceSpans.length === 0 ? {} : { answer: choiceSpans.join(" ") }),
   };
-  if (input.held) {
-    const shown = splitSentences(low.text)
-      .map((s) => s.trim())
-      .filter((s) => s !== "");
+  const settled = (
+    prefix: string[],
+    lines: LowBandPlacedLine[],
+  ): LeadSettled => {
+    const release = lines.flatMap((l) => (l.t === "s" ? [l.en] : []));
+    const soundAt = lowBandSoundAtOf(lines, prefix);
     return {
       say,
-      release: shown,
-      shown,
+      release,
+      lines,
+      shown: [...prefix, ...release],
       sound,
+      soundAt,
       removed: low.removed,
-      soundMoved: low.soundMoved,
+      soundMoved: Object.keys(soundAt).length > 0,
     };
+  };
+  if (input.held) {
+    return settled(
+      [],
+      lowBandPlacedLinesOf(low.text, {
+        ...(modelSound === undefined ? {} : { model: low.soundAt.model }),
+        ...(choiceSpans.length === 0 ? {} : { answer: low.soundAt.answer }),
+      }),
+    );
   }
-  const isRemoved = (s: string) =>
-    s.trim() !== "" && low.removed.some((r) => r.includes(s.trim()));
+  // 흘려 보낸 차례: 뺀 것은 붙잡은 문장 통째(고르기 물음)다. 소리 줄은 그 갈래의 마지막 뺀 문장 자리 — 뒤에 남은 글 문장이 있을 때만 그 앞
+  const removedOf = (s: string) =>
+    s.trim() === "" ? undefined : low.removed.find((r) => r.includes(s.trim()));
   const prefix = finals.slice(0, input.sentCount);
   const rest = finals.slice(input.sentCount);
-  const release = rest.filter((s) => !isRemoved(s));
-  const firstRemoved = rest.findIndex(isRemoved);
-  return {
-    say,
-    release,
-    shown: [...prefix, ...release],
-    sound,
-    removed: low.removed,
-    soundMoved:
-      firstRemoved >= 0 &&
-      rest.slice(firstRemoved + 1).some((s) => !isRemoved(s)),
+  const kinds = rest.map((s) => {
+    const piece = removedOf(s);
+    if (piece === undefined) return null;
+    return piece === modelSound ? ("model" as const) : ("answer" as const);
+  });
+  const release = rest.filter((_, i) => kinds[i] === null);
+  const slotAt = (kind: "model" | "answer") => {
+    const last = kinds.lastIndexOf(kind);
+    if (last < 0) return null;
+    const before = kinds.slice(0, last).filter((k) => k === null).length;
+    return before < release.length ? before : null;
   };
+  const lines: LowBandPlacedLine[] = [];
+  const slots = (["model", "answer"] as const).flatMap((kind) => {
+    const before = slotAt(kind);
+    return before === null ? [] : [{ kind, before }];
+  });
+  release.forEach((en, i) => {
+    for (const slot of slots)
+      if (slot.before === i)
+        lines.push({ t: "slot", kind: slot.kind, before: i });
+    lines.push({ t: "s", en });
+  });
+  return settled(prefix, lines);
 }
 
 /** 마무리 차례에 앱이 지금 상수 물음을 붙이는가(spec 설계 3 마무리 물음): 말 칸에 물음 문장이 없을 때만. */
@@ -1160,6 +1307,12 @@ export function leadHintsOf({
 }
 
 /**
+ * leadExtraOf 의 값: lead-record 의 LeadExtra 칸에 소리 줄 자리(soundAt — 13절 C241 보완 7)를 더한 것. leadTeacherMoveOf 가 extra 를 move.lead 에
+ * 그대로 펼치므로 이 칸도 move.lead.soundAt 으로 들어간다(lead-record 의 LeadExtra 이름표에 soundAt 을 더하는 것은 요청한 변경 — 보고).
+ */
+export type LeadExtraWithSound = LeadExtra & Pick<TalkLead, "soundAt">;
+
+/**
  * move.lead 의 기록 칸(데이터 절 — 좁은 정의 · 넓은 검사 수치 · gate · 마무리 상수 · 글에서 뺀 문장 · 소리 차례 바뀜). 빈 값은 칸을 두지 않고,
  * wide 는 수 값 칸만 남긴다(범위를 못 읽은 차례는 null — 칸 없음).
  */
@@ -1170,6 +1323,7 @@ export function leadExtraOf({
   closingAdded,
   removed,
   soundMoved,
+  soundAt = {},
 }: {
   narrow: LeadExtra["narrow"];
   /** 넓은 검사 수치(leadWideCheckOf — 범위를 못 읽은 차례는 null). */
@@ -1182,7 +1336,9 @@ export function leadExtraOf({
   removed: string[];
   /** leadSettleOf 의 soundMoved. */
   soundMoved: boolean;
-}): LeadExtra {
+  /** leadSettleOf 의 soundAt(글 사이에서 읽은 소리 줄의 자리 — 빈 값이면 칸 없음). */
+  soundAt?: LowBandSoundAt;
+}): LeadExtraWithSound {
   return {
     ...(narrow === undefined ? {} : { narrow }),
     ...(wide === null
@@ -1198,6 +1354,7 @@ export function leadExtraOf({
     ...(closingAdded ? { closingAdded: true as const } : {}),
     ...(removed.length === 0 ? {} : { removed }),
     ...(soundMoved ? { soundMoved: true as const } : {}),
+    ...(Object.keys(soundAt).length === 0 ? {} : { soundAt: { ...soundAt } }),
   };
 }
 

@@ -438,6 +438,41 @@ describe("서버 턴 길의 남은 배선(검토 rev-s1-2 N-3 — 서버 턴 길
     ]);
   });
 
+  it("AC-26i 소리 줄 자리(soundAt)는 값이 있을 때만 move.lead 칸이 되고, 빈 값이면 칸이 없다(13절 C241 보완 7)", () => {
+    const base = {
+      narrow: undefined,
+      wide: null,
+      gate: [],
+      closingAdded: false,
+      removed: ["I play soccer."],
+      soundMoved: true,
+    };
+    expect(leadExtraOf({ ...base, soundAt: { model: 4 } })).toEqual({
+      removed: ["I play soccer."],
+      soundMoved: true,
+      soundAt: { model: 4 },
+    });
+    expect(leadExtraOf({ ...base, soundAt: {} })).not.toHaveProperty("soundAt");
+  });
+
+  it("AC-26i 서버 응답 차례의 줄은 core leadTurnLinesOf 하나로 낸다: 글 줄(send) · 소리 줄 · 뜻을 settled.lines 차례로 내고(s → sound → s), 소리 줄 자리를 기록 칸에 넘긴다 · 대본 도구도 같은 함수(13절 C241 보완 7)", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/server/conversation/lead-turn.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/for \(const en of settled\.release\) send\(en\)/);
+    expect(src).toMatch(
+      /for \(const line of leadTurnLinesOf\(\{\s*lines: settled\.lines,\s*sound: settled\.sound,\s*kept,\s*ko,\s*\}\)\)\s*if \(line\.t === "s"\) send\(line\.en\);\s*else write\(line\);/,
+    );
+    expect(src).toMatch(/soundAt: settled\.soundAt,/);
+    const tool = readFileSync(
+      join(process.cwd(), "scripts/talk-observe.ts"),
+      "utf8",
+    );
+    expect(tool).toMatch(/leadTurnLinesOf\(\{\s*lines: settled\.lines,/);
+    expect(tool).toMatch(/soundAt: settled\.soundAt,/);
+  });
+
   it("AC-26l 서버는 move 소리 줄 맞추기를 core 의 leadMoveWithSound 로 부르고 제 사본을 두지 않는다(검토 rev-s1-3 O-2)", () => {
     const src = readFileSync(
       join(process.cwd(), "src/server/conversation/lead-turn.ts"),

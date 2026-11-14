@@ -7,6 +7,9 @@ import {
   type LeadLowBandInput,
   leadKoLineOf,
   leadLowBandShownOf,
+  lowBandPlacedLinesOf,
+  lowBandSoundAtOf,
+  lowBandStrippedOf,
 } from "@/core/conversation/lead-low-band";
 
 const base: LeadLowBandInput = {
@@ -90,17 +93,19 @@ describe("AC-26i 1~3단계 따라 할 문장 글 빼기", () => {
     ).toBe("Nice! Say it:");
   });
 
-  it("AC-26i 안내 말이 아닌 말 뒤의 끝 쉼표는 묶음 S5 전처럼 지운다('Wow, I like it.' → 'Wow', 검토 rev-s5 M-4)", () => {
+  it("AC-26i 쉼표 뒤 문장의 일부로만 든 따라 할 문장은 빼지 않고 글로 둔다('Wow, I like it.' — 13절 C241 보완 7 · D-2 (1), 앞 판의 'Wow' 꼴을 바꿈)", () => {
+    const say = "Wow, I like it.";
     const out = shown({
       move: "model_repeat",
-      say: "Wow, I like it.",
+      say,
       modelSentence: "I like it.",
     });
-    expect(out.text).toBe("Wow");
-    expect(out.removed).toEqual(["I like it."]);
+    expect(out.text).toBe(say);
+    expect(out.removed).toEqual([]);
+    expect(out.model).toEqual({ sentence: "I like it.", removed: false });
   });
 
-  it("AC-26i 가운데 있는 따라 할 문장은 빼고 뒤 글을 남기며 소리 차례가 바뀐 것을 돌려준다", () => {
+  it("AC-26i 가운데 있는 따라 할 문장은 빼고 뒤 글을 남기며, 소리 줄은 뺀 자리(안내 말 'Say it:' 뒤 · 뒤 글 앞)에서 읽는다(13절 C241 보완 7)", () => {
     const out = shown({
       move: "model_repeat",
       say: "Good! Say it: I swim at the pool. You can do it!",
@@ -108,6 +113,14 @@ describe("AC-26i 1~3단계 따라 할 문장 글 빼기", () => {
     });
     expect(out.text).toBe("Good! Say it: You can do it!");
     expect(out.removed).toEqual(["I swim at the pool."]);
+    expect(out.soundAt).toEqual({ model: "Good! Say it:".length });
+    expect(lowBandPlacedLinesOf(out.text, out.soundAt)).toEqual([
+      { t: "s", en: "Good!" },
+      { t: "s", en: "Say it:" },
+      { t: "slot", kind: "model", before: 2 },
+      { t: "s", en: "You can do it!" },
+    ]);
+    // 단추는 말풍선 아래 글 뒤에 있어 원래 차례와 다르다(soundMoved 의 뜻을 좁힘)
     expect(out.soundMoved).toBe(true);
   });
 
@@ -248,6 +261,13 @@ describe("AC-26i 1~3단계 막힌 뒤 고르기 물음 글 빼기", () => {
     });
     expect(out.text).toBe("Okay! Which one?");
     expect(out.removed).toEqual(["Watch TV, or go outside?"]);
+    // 소리 줄은 뺀 자리에서 읽는다: Okay! → 고르기 물음 → Which one?(13절 C241 보완 7)
+    expect(out.soundAt).toEqual({ answer: "Okay!".length });
+    expect(lowBandPlacedLinesOf(out.text, out.soundAt)).toEqual([
+      { t: "s", en: "Okay!" },
+      { t: "slot", kind: "answer", before: 1 },
+      { t: "s", en: "Which one?" },
+    ]);
     expect(out.soundMoved).toBe(true);
   });
 
@@ -322,11 +342,27 @@ describe("AC-26i 1~3단계 막힌 뒤 고르기 물음 글 빼기", () => {
     const a = "That's okay! Do you like it? Do you swim?";
     expect(
       shown({ move: "easier_or_choices", say: a, prevStuck: true }),
-    ).toEqual({ text: a, removed: [], model: null, soundMoved: false });
+    ).toEqual({
+      text: a,
+      removed: [],
+      cutsAt: [],
+      model: null,
+      moreRemoved: [],
+      soundAt: {},
+      soundMoved: false,
+    });
     const b = "I like cats. Or what?";
     expect(
       shown({ move: "easier_or_choices", say: b, prevStuck: true }),
-    ).toEqual({ text: b, removed: [], model: null, soundMoved: false });
+    ).toEqual({
+      text: b,
+      removed: [],
+      cutsAt: [],
+      model: null,
+      moreRemoved: [],
+      soundAt: {},
+      soundMoved: false,
+    });
   });
 
   it("AC-26i 마무리 차례의 나뉜 고르기 물음은 빼지 않는다", () => {
@@ -349,6 +385,200 @@ describe("AC-26i 1~3단계 막힌 뒤 고르기 물음 글 빼기", () => {
   });
 });
 
+describe("AC-26i 뺀 자리의 글 · 쌍점 · 문장 첫머리 · 소리 줄 자리(13절 C241 보완 7, 분석 L2 2-2 예문)", () => {
+  /** 글과 소리 줄 자리로 낸 줄 차례를 읽는 차례로(글 줄은 글, 소리 줄은 '🔊 갈래:소리 글'). */
+  const heardOf = (
+    out: ReturnType<typeof shown>,
+    sound: { model?: string; answer?: string },
+  ) => {
+    const lines = lowBandPlacedLinesOf(out.text, out.soundAt);
+    const placed = new Set(
+      lines.flatMap((l) => (l.t === "slot" ? [l.kind] : [])),
+    );
+    return [
+      ...lines.map((l) =>
+        l.t === "s" ? l.en : `🔊 ${sound[l.kind] ?? "(없음)"}`,
+      ),
+      ...(["model", "answer"] as const).flatMap((k) =>
+        sound[k] !== undefined && !placed.has(k) ? [`🔊 ${sound[k]}`] : [],
+      ),
+    ];
+  };
+
+  it("AC-26i #8 'Say \"…\"' 뒤에 다른 물음이 오면 안내 말 뒤에 쌍점을 두고 줄을 나눠, 들리는 차례가 선생님 말 그대로다", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'Soccer is fun! Say "I play soccer." What else do you do?',
+      modelSentence: "I play soccer.",
+    });
+    expect(out.text).toBe("Soccer is fun! Say: What else do you do?");
+    expect(out.removed).toEqual(["I play soccer."]);
+    expect(heardOf(out, { model: "I play soccer." })).toEqual([
+      "Soccer is fun!",
+      "Say:",
+      "🔊 I play soccer.",
+      "What else do you do?",
+    ]);
+    expect(out.soundMoved).toBe(true);
+  });
+
+  it("AC-26i #9 'You can say \"…\" Nice!' 는 'You can say:' → 소리 줄 → 'Nice!'", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'You can say "I play soccer." Nice!',
+      modelSentence: "I play soccer.",
+    });
+    expect(out.text).toBe("You can say: Nice!");
+    expect(heardOf(out, { model: "I play soccer." })).toEqual([
+      "You can say:",
+      "🔊 I play soccer.",
+      "Nice!",
+    ]);
+  });
+
+  it("AC-26i #10 'Say, \"…\"' 뒤에 다른 물음이 와도 쉼표는 쌍점이다", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'Soccer is fun! Say, "I play soccer." What else do you do?',
+      modelSentence: "I play soccer.",
+    });
+    expect(out.text).toBe("Soccer is fun! Say: What else do you do?");
+    expect(heardOf(out, { model: "I play soccer." })).toEqual([
+      "Soccer is fun!",
+      "Say:",
+      "🔊 I play soccer.",
+      "What else do you do?",
+    ]);
+  });
+
+  it("AC-26i #11 쉼표 없는 'Say \"…\"' 가 글 끝이면 'Say:' 이고 소리 줄은 글 뒤(지금 차례)다", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'Soccer is fun! Say "I play soccer."',
+      modelSentence: "I play soccer.",
+    });
+    expect(out.text).toBe("Soccer is fun! Say:");
+    expect(lowBandPlacedLinesOf(out.text, out.soundAt)).toEqual([
+      { t: "s", en: "Soccer is fun!" },
+      { t: "s", en: "Say:" },
+    ]);
+    expect(out.soundMoved).toBe(false);
+  });
+
+  it("AC-26i #12 문장의 일부로 든 앞 자리는 글로 두고 문장 첫머리인 뒤 자리만 뺀다('Wow, I play soccer.' 가 보임 — D-2 (1))", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: "Wow, I play soccer. Say it with me: I play soccer.",
+      modelSentence: "I play soccer.",
+    });
+    expect(out.text).toBe("Wow, I play soccer. Say it with me:");
+    expect(out.removed).toEqual(["I play soccer."]);
+    expect(out.model).toEqual({ sentence: "I play soccer.", removed: true });
+    expect(out.soundMoved).toBe(false);
+  });
+
+  it("AC-26i #1 'Try this: \"…\" Can you say it?' 는 쌍점 뒤에서 소리 줄을 읽고 물음이 뒤에 온다", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'It\'s okay! Try this: "I watch TV." Can you say it?',
+      modelSentence: "I watch TV.",
+    });
+    expect(out.text).toBe("It's okay! Try this: Can you say it?");
+    expect(heardOf(out, { model: "I watch TV." })).toEqual([
+      "It's okay!",
+      "Try this:",
+      "🔊 I watch TV.",
+      "Can you say it?",
+    ]);
+  });
+
+  it("AC-26i #4 'Rain sounds go tap, tap, tap.' 의 뒤 조각은 문장의 일부라 빼지 않고, 끝의 온전한 'Tap, tap, tap!' 만 뺀다(다른 글자 조각 moreModels)", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: "Yes! Rain sounds go tap, tap, tap. Can you say it with me? Tap, tap, tap!",
+      modelSentence: "tap, tap, tap.",
+      moreModels: ["Tap, tap, tap!"],
+    });
+    expect(out.text).toBe(
+      "Yes! Rain sounds go tap, tap, tap. Can you say it with me?",
+    );
+    expect(out.removed).toEqual(["Tap, tap, tap!"]);
+    expect(out.model).toEqual({ sentence: "tap, tap, tap.", removed: false });
+    expect(out.moreRemoved).toEqual(["Tap, tap, tap!"]);
+    expect(out.soundMoved).toBe(false);
+  });
+
+  it("AC-26i #7 'He says, \"More, please!\"' 처럼 안내 말이 say · repeat 가 아니어도 뺀 자리 앞 쉼표는 쌍점이다", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: 'Yes! The monkey likes banana milk. He says, "More, please!"',
+      modelSentence: "More, please!",
+    });
+    expect(out.text).toBe("Yes! The monkey likes banana milk. He says:");
+    expect(out.removed).toEqual(["More, please!"]);
+  });
+
+  it("AC-26i 같은 따라 할 문장이 두 자리에서 빠지면 소리 줄은 마지막 자리 하나다(그 사이 글 뒤)", () => {
+    const out = shown({
+      move: "model_repeat",
+      say: "Say: I see the sky. Good! I see the sky. Your turn!",
+      modelSentence: "I see the sky.",
+    });
+    expect(out.text).toBe("Say: Good! Your turn!");
+    expect(out.removed).toEqual(["I see the sky.", "I see the sky."]);
+    expect(out.cutsAt).toEqual(["Say:".length, "Say: Good!".length]);
+    expect(out.soundAt).toEqual({ model: "Say: Good!".length });
+    // 소리 줄이 없는 앞 자리에서는 줄을 나누지 않는다(글 줄은 문장마다)
+    expect(heardOf(out, { model: "I see the sky." })).toEqual([
+      "Say: Good!",
+      "🔊 I see the sky.",
+      "Your turn!",
+    ]);
+  });
+
+  it("AC-26i 행에 남길 소리 줄 자리는 앞서 나간 글 줄과 그 앞 글 줄을 이은 글의 글자 수이고, 그 글을 같은 자리에서 나누면 같은 줄 차례다", () => {
+    const lines = lowBandPlacedLinesOf("Okay! Which one?", { answer: 5 });
+    const at = lowBandSoundAtOf(lines, ["Hi!"]);
+    expect(at).toEqual({ answer: "Hi! Okay!".length });
+    expect(lowBandPlacedLinesOf("Hi! Okay! Which one?", at)).toEqual([
+      { t: "s", en: "Hi!" },
+      { t: "s", en: "Okay!" },
+      { t: "slot", kind: "answer", before: 2 },
+      { t: "s", en: "Which one?" },
+    ]);
+    // 자리가 없거나 뒤에 글이 없으면 slot 이 없다(지금 차례 — 글 뒤)
+    expect(lowBandPlacedLinesOf("Okay!", { answer: 5 })).toEqual([
+      { t: "s", en: "Okay!" },
+    ]);
+    expect(lowBandPlacedLinesOf("Okay! Which one?", {})).toEqual([
+      { t: "s", en: "Okay!" },
+      { t: "s", en: "Which one?" },
+    ]);
+  });
+
+  it("AC-26i 이야기 방식의 잡아 둔 글 지우기는 본체와 같은 다듬기 · 같은 자리다(다듬기 한 곳, S1 재검토 2 M2-1)", () => {
+    const say = 'Say "I play soccer." What else do you do?';
+    const body = shown({
+      move: "model_repeat",
+      say,
+      modelSentence: "I play soccer.",
+    });
+    expect(lowBandStrippedOf(say, ["I play soccer."])).toEqual({
+      text: body.text,
+      cutsAt: body.cutsAt,
+    });
+    // 빈 괄호 · 낱말 없는 조각은 지우고, 못 찾은 조각의 자리는 undefined
+    expect(lowBandStrippedOf("Say (I play.) now.", ["I play.", "x"])).toEqual({
+      text: "Say: now.",
+      cutsAt: ["Say:".length, undefined],
+    });
+    expect(lowBandStrippedOf("Hi  there.", ["x"])).toEqual({
+      text: "Hi there.",
+      cutsAt: [undefined],
+    });
+  });
+});
+
 describe("AC-26i 4단계부터는 빼지 않는다", () => {
   it("AC-26i 4단계 model_repeat · 막힌 뒤 고르기는 글 그대로", () => {
     const say = "Yes, grass! Say it with me: I see grass.";
@@ -361,7 +591,10 @@ describe("AC-26i 4단계부터는 빼지 않는다", () => {
     expect(model).toEqual({
       text: say,
       removed: [],
+      cutsAt: [],
       model: null,
+      moreRemoved: [],
+      soundAt: {},
       soundMoved: false,
     });
     const choice = "That's okay! Do you watch TV, or play games?";

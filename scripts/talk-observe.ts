@@ -287,10 +287,10 @@ import {
   leadOpenChildOf,
   leadSaidOf,
   leadSettleOf,
-  leadSoundLinesOf,
   leadStartModeOf,
   leadStatusOf,
   leadTurnAppliesOf,
+  leadTurnLinesOf,
   type TalkLeadRetryInput,
   talkLeadRetrySpec,
 } from "../src/core/conversation/lead-turn-core";
@@ -3555,6 +3555,35 @@ export type LeadRetryAsk = {
   request: PreparedTurn["request"];
 };
 
+/**
+ * 아이가 들은 영어의 줄(보고의 heard): 받은 줄 차례 그대로 잇단 글 줄은 빈칸으로 이은 한 줄, 소리 줄 · 붙인 줄은 한 줄씩이다(글 사이에서 읽은 소리 줄은
+ * 그 자리 — 13절 C241 보완 7. 소리 줄이 모두 글 뒤인 차례는 지난 꼴 '글 전부 → 소리 줄 → 붙인 줄' 그대로다). 되묻는 차례에 그대로 둔 앞 차례의
+ * 소리 줄(kept)과 뜻 줄은 넣지 않는다.
+ */
+export function observeHeardLinesOf(
+  lines: readonly (LeadLine | ChatReplayLine)[],
+): string[] {
+  const out: string[] = [];
+  let text: string[] = [];
+  const flush = () => {
+    if (text.length > 0) out.push(text.join(" "));
+    text = [];
+  };
+  for (const line of lines) {
+    if (line.t === "s") text.push(line.en);
+    else if (line.t === "sound") {
+      if ("lead" in line && line.lead?.kept === true) continue;
+      flush();
+      out.push(line.say);
+    } else if (line.t === "add") {
+      flush();
+      out.push(line.en);
+    }
+  }
+  flush();
+  return out.filter((l) => l.trim() !== "");
+}
+
 /** 아이에게 나간 줄 하나(서버 lead-turn.ts 가 write 로 흘려 보내는 줄과 같은 꼴 — 끝 줄 밖). */
 export type LeadLine =
   | { t: "s"; en: string }
@@ -4619,29 +4648,13 @@ export function createTalkSim(
         en: MORE_PROMPT.en,
         ...(spec.koMeaning ? { ko: MORE_PROMPT.ko } : {}),
       });
-      // 소리 줄(서버 lead-turn.ts 와 같은 꼴): 응답이 있는 차례는 core leadSoundLinesOf(고르기 물음 ask · 되묻는 차례면 앞 차례의 소리 줄을
-      // 그대로 둔 kept 줄 — leadKeptSoundOf), 응답이 없던 차례(move.lead 없는 행)는 표지 없는 지금 꼴
-      const soundLines = (
-        s: { model?: string; answer?: string },
-        move: TalkLeadOutput["move"] | undefined,
-      ) => {
-        if (move === undefined) {
-          if (s.model !== undefined)
-            lines.push({ t: "sound", kind: "model", say: s.model });
-          if (s.answer !== undefined)
-            lines.push({ t: "sound", kind: "answer", say: s.answer });
-          return;
-        }
-        const kept = leadKeptSoundOf({
-          level,
-          move,
-          hasChild: child !== null,
-          own: s,
-          prevMove,
-          // 앞 행이 보인 소리 줄(되묻기가 이어지면 거슬러 감 — 서버 lead-turn.ts 와 같은 값, 검토 rev-s5 M-1)
-          rows: ordered,
-        });
-        lines.push(...leadSoundLinesOf({ sound: s, kept }));
+      // 응답이 없던 차례(move.lead 없는 행)의 소리 줄: 표지 없는 지금 꼴 — 글 뒤(서버 lead-turn.ts 와 같은 꼴). 응답이 있는 차례는 아래의 core
+      // leadTurnLinesOf(고르기 물음 ask · 되묻는 차례의 kept · 글 사이의 소리 줄)
+      const failedSoundLines = (s: { model?: string; answer?: string }) => {
+        if (s.model !== undefined)
+          lines.push({ t: "sound", kind: "model", say: s.model });
+        if (s.answer !== undefined)
+          lines.push({ t: "sound", kind: "answer", say: s.answer });
       };
       let teacher: LeadTurnRecord["teacher"];
       let childFields: LeadChildFields | null;
@@ -4693,7 +4706,7 @@ export function createTalkSim(
           shown = [view.en];
         }
         if (ko !== null) lines.push({ t: "ko", ko });
-        soundLines(sound, undefined);
+        failedSoundLines(sound);
         say = shown.join(" ");
         closingAdded = leadClosingAddsOf({ closing: p.closing, say });
         if (closingAdded) lines.push(closingLine());
@@ -4795,13 +4808,26 @@ export function createTalkSim(
           held: outcome.held,
           narrow,
         });
-        // (5) 줄: 남은 글 문장 → 뜻 → 소리 줄 → 마무리 상수(서버 lead-turn.ts:786-796)
-        for (const en of settled.release) send(en);
+        // (5) 줄: 남은 글 문장(소리 줄은 뺀 자리에서 — 13절 C241 보완 7) → 뜻 → 글 뒤의 소리 줄 · 그대로 둔 앞 차례 줄 → 마무리 상수(서버
+        // lead-turn.ts 와 같은 core leadTurnLinesOf)
         const ko = spec.koMeaning
           ? leadKoLineOf(level, value.say_ko).trim()
           : "";
-        if (ko !== "") lines.push({ t: "ko", ko });
-        soundLines(settled.sound, value.move);
+        lines.push(
+          ...leadTurnLinesOf({
+            lines: settled.lines,
+            sound: settled.sound,
+            kept: leadKeptSoundOf({
+              level,
+              move: value.move,
+              hasChild: child !== null,
+              own: settled.sound,
+              prevMove,
+              rows: ordered,
+            }),
+            ko,
+          }),
+        );
         say = settled.say;
         closingAdded = leadClosingAddsOf({ closing: p.closing, say });
         if (closingAdded) lines.push(closingLine());
@@ -4850,6 +4876,7 @@ export function createTalkSim(
           closingAdded,
           removed: settled.removed,
           soundMoved: settled.soundMoved,
+          soundAt: settled.soundAt,
         });
         const move = leadMoveWithSound(
           leadTeacherMoveOf({
@@ -4980,19 +5007,9 @@ export function createTalkSim(
         explanation: teacher.explanation,
         toriKo: teacher.toriKo,
       });
-      const heardLines = [
-        lines.flatMap((l) => (l.t === "s" ? [l.en] : [])).join(" "),
-        // 되묻는 차례에 그대로 둔 앞 차례의 소리 줄(kept)은 저절로 읽지 않으므로 들은 영어가 아니다(화면 lessonSpokenItemsOf 와 같음)
-        ...lines.flatMap((l) =>
-          l.t === "sound"
-            ? l.lead?.kept === true
-              ? []
-              : [l.say]
-            : l.t === "add"
-              ? [l.en]
-              : [],
-        ),
-      ].filter((l) => l.trim() !== "");
+      // 들은 영어: 줄 차례 그대로(글 사이의 소리 줄도 제자리 — 13절 C241 보완 7). 되묻는 차례에 그대로 둔 앞 차례의 소리 줄(kept)은 저절로
+      // 읽지 않으므로 들은 영어가 아니다(화면 lessonSpokenItemsOf 와 같음)
+      const heardLines = observeHeardLinesOf(lines);
       const reading = value?.reading;
       return {
         entry: p.open ?? "child",
@@ -5795,8 +5812,7 @@ export function createTalkSim(
       if (p.plan.lastTurn) segment = "wrap_up";
       else chatAdvanceAfterTurn();
       const heardLines = [
-        lines.flatMap((l) => (l.t === "s" ? [l.en] : [])).join(" "),
-        ...lines.flatMap((l) => (l.t === "sound" ? [l.say] : [])),
+        ...observeHeardLinesOf(lines),
         ...(p.plan.lastTurn ? [result_.farewell.en] : []),
       ].filter((l) => l.trim() !== "");
       return {
