@@ -14,9 +14,16 @@ import {
 import {
   type KeepNodeAccess,
   keepBottomOf,
+  lessonFitLandscapeOf,
+  lessonFitOnlyOf,
+  PAGE_ZOOM_SLACK,
+  pageZoomedOf,
+  TALK_LOG_FIT_LANDSCAPE_VAR,
+  TALK_LOG_FIT_VAR,
   TALK_LOG_PIN_SLACK_PX,
   TALK_LOG_PULL_PX,
   TALK_LOG_UP_INTENT_MS,
+  TalkLog,
   talkLogClearUpOf,
   talkLogFitOf,
   talkLogFollowOf,
@@ -26,6 +33,7 @@ import {
   talkLogTouchStepOf,
   talkLogUpKeyOf,
   talkLogUpwardOf,
+  turnedBackScrollOf,
 } from "@/components/conversation/talk-log";
 import {
   BUBBLE_TEXT,
@@ -467,6 +475,95 @@ describe("I-2 으뜸 단추 줄을 보는 창 안으로(talk-frame)", () => {
     ])
       expect(at(phase), phase).toBe(false);
     expect(at("child", { inPrep: true })).toBe(false);
+  });
+
+  it("AC-26m 가로에서도 기록 칸 높이를 맞추는 차례는 마무리 제안(고르기 차례)과 정리 화면뿐이고, 가로의 대화 장면은 정한 비율 그대로다(C241 보완 5 · D-7)", () => {
+    expect(lessonFitLandscapeOf({ wrapShown: false, phase: "choice" })).toBe(
+      true,
+    );
+    expect(lessonFitLandscapeOf({ wrapShown: true, phase: "tori" })).toBe(true);
+    for (const phase of ["child", "tori", "moving", "prep", "break", "closed"])
+      expect(lessonFitLandscapeOf({ wrapShown: false, phase }), phase).toBe(
+        false,
+      );
+  });
+
+  it("AC-26m 선생님 차례(말풍선 · 다음 말을 기다림)에는 쪽을 넘기지 않고 칸 높이만 다시 재고, 짧은 준비 쪽지 · 쉼 · 닫힘 · 막힘은 재지 않는다(D-6)", () => {
+    expect(lessonFitOnlyOf({ inPrep: false, phase: "tori" })).toBe(true);
+    expect(lessonFitOnlyOf({ inPrep: false, phase: "moving" })).toBe(true);
+    for (const phase of [
+      "child",
+      "choice",
+      "prep",
+      "break",
+      "closed",
+      "offline",
+      "failed",
+    ])
+      expect(lessonFitOnlyOf({ inPrep: false, phase }), phase).toBe(false);
+    expect(lessonFitOnlyOf({ inPrep: true, phase: "tori" })).toBe(false);
+  });
+
+  it("AC-26m 쪽을 확대한 동안(보는 창 배율이 1 보다 큼)에는 칸 높이를 확대된 보는 창 높이로 맞추지 않는다(rev-s5-6 N-1)", () => {
+    expect(pageZoomedOf(1)).toBe(false);
+    expect(pageZoomedOf(1 + PAGE_ZOOM_SLACK / 2)).toBe(false);
+    expect(pageZoomedOf(2)).toBe(true);
+    expect(pageZoomedOf(1.2)).toBe(true);
+  });
+
+  it("AC-26m 기기를 돌린 뒤에는 남는 쪽 넘김을 단추 묶음 아래 여유까지만 거둔다(D-5 · rev-s5-6 N-2)", () => {
+    // 세로로 되돌린 정리(Chromium 102px): 맞춘 뒤 말하기 묶음 아래 끝 1050 → 남는 몫 1180 - 16 - 1050 = 114 ≥ 102 → 다 거둠
+    expect(
+      turnedBackScrollOf({
+        scrollY: 102,
+        keepBottom: 1050,
+        viewportHeight: VIEW,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+      }),
+    ).toBe(102);
+    // 남는 몫이 쪽 넘김보다 작으면 그만큼만(단추를 보는 창 밖으로 내보내지 않음)
+    expect(
+      turnedBackScrollOf({
+        scrollY: 102,
+        keepBottom: 1150,
+        viewportHeight: VIEW,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+      }),
+    ).toBe(14);
+    // 단추가 이미 여유 안쪽 끝이거나 넘김이 없으면 0(위로만 거두고, 아래로는 keepInViewScrollOf 가 넘김)
+    expect(
+      turnedBackScrollOf({
+        scrollY: 40,
+        keepBottom: 1170,
+        viewportHeight: VIEW,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+      }),
+    ).toBe(0);
+    expect(
+      turnedBackScrollOf({
+        scrollY: 0,
+        keepBottom: 900,
+        viewportHeight: VIEW,
+        margin: KEEP_IN_VIEW_MARGIN_PX,
+      }),
+    ).toBe(0);
+  });
+
+  it("AC-26m 기록 칸의 상한은 세로 · 가로가 따로인 변수다(맞추지 않는 차례에 기기를 돌려도 다른 방향에서 잰 값이 쓰이지 않음 — S5 fix 8)", () => {
+    const html = renderToStaticMarkup(
+      createElement(TalkLog, {
+        entries: [],
+        englishName: "Momo",
+        onReplay: () => {},
+      }),
+    );
+    expect(TALK_LOG_FIT_VAR).not.toBe(TALK_LOG_FIT_LANDSCAPE_VAR);
+    expect(html).toContain(
+      `portrait:max-h-[min(60dvh,var(${TALK_LOG_FIT_VAR},60dvh))]`,
+    );
+    expect(html).toContain(
+      `landscape:max-h-[min(60dvh,var(${TALK_LOG_FIT_LANDSCAPE_VAR},60dvh))]`,
+    );
   });
 });
 

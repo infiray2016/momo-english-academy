@@ -103,6 +103,8 @@ const T = {
 } as const;
 const LONG = 180_000;
 const STREAM_END_MS = 30_000;
+/** 쪽 넘김 · 자리 단언을 기다리는 시간(ms, 시험 값 — talk-lesson.spec 의 SETTLE_MS 와 같은 값). */
+const SETTLE_MS = 10_000;
 const LEVEL = 3;
 const DEAF_SKIP_AFTER = TEST_SETTINGS["speech.deaf_skip_after"].value;
 const DEAF_SILENCE_MS = TEST_SETTINGS["speech.deaf_silence_ms"].value;
@@ -243,6 +245,26 @@ async function expectInViewBothWays(page: Page, shown: readonly Locator[]) {
       await expect(l, `${way} 화면 안`).toBeInViewport({ ratio: 1 });
   }
   await page.setViewportSize(CHILD_VIEWPORTS.portrait);
+}
+
+/**
+ * 세로로 연 수업 화면 전체가 보는 창 안이다(13절 C241 보완 4 · 5 · 화면 재검토 des-s5-2 D-5 — S5 fix 8, talk-lesson.spec 의 expectLessonInView 와
+ * 같은 꼴): 쪽 넘김이 0 이고 위 띠가 보는 창 위로 나가지 않으며, 위 띠의 '그만하기'가 보는 창 안에 온전히 있다. 짧은 말 말풍선 · 안내 줄이 뜬 직후
+ * 아이 차례 조각의 화면 안 넘김이 높이 맞춤보다 먼저 돌면 쪽이 내려간 채 남는다(고치기 전 점검 틀에서 짧은 말 99px · 안내 줄 32px).
+ */
+async function expectLessonInView(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => Math.round(window.scrollY)), {
+      timeout: SETTLE_MS,
+    })
+    .toBeLessThanOrEqual(0);
+  const bandTop = await page
+    .locator("[data-paper-band]")
+    .evaluate((el) => el.getBoundingClientRect().top);
+  expect(bandTop).toBeGreaterThanOrEqual(0);
+  await expect(
+    page.locator("[data-paper-band] [data-talk-stop]"),
+  ).toBeInViewport({ ratio: 1 });
 }
 
 /** 단추의 너비(CSS px). */
@@ -718,7 +740,10 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
           await discardLine(o.page).allTextContents(),
           "잰 동안 회복 안내",
         ).toEqual([T.micRecover]);
+        // (회복 안내가 그대로인 동안 재려고 돌리기 앞 단언은 두지 않는다 — 돌리지 않은 세로의 안내 줄은 점검 틀 talk-lesson-discard 가 봄)
         await expectInViewBothWays(o.page, [button, discardLine(o.page)]);
+        // 세로 → 가로 → 세로로 돌린 뒤에도 쪽 넘김이 남지 않는다(D-5 — 고치기 전 사진 25px)
+        await expectLessonInView(o.page);
         await photo(o.page, "talk-discard-4-mic-recover");
       }
       await expect(button).toHaveAttribute("data-listening", "", {
@@ -789,7 +814,11 @@ test.describe("iPad 버리는 듣기 — 대화 차례(3단계)", () => {
           .poll(async () => (await speechRecord(o.page)).spoken.includes(first))
           .toBe(true);
         // 짧은 말 말풍선이 아이 차례를 밀어도 단추 · 아래 알림 줄이 세로 · 가로 모두 화면 안(I-2 — 이때는 버리는 듣기 안내 줄이 없다)
+        // 돌리지 않은 세로에서 짧은 말 말풍선이 뜬 직후에도 쪽을 넘기지 않는다(D-5)
+        await expectLessonInView(o.page);
         await expectInViewBothWays(o.page, [button, turnStatusLine(o.page)]);
+        // 세로 → 가로 → 세로로 돌린 뒤에도 쪽 넘김이 남지 않는다(D-5 — 고치기 전 사진 51px)
+        await expectLessonInView(o.page);
         await photo(o.page, "talk-discard-3-not-heard-short");
         expect(await startsOf(o.page)).toBe(4);
         await expect(button).not.toHaveAttribute("data-listening", "");

@@ -17,6 +17,7 @@ import type { RecognitionRun } from "../../src/core/speech/script";
 import { sessions } from "../../src/db/schema/learning";
 import { parentAlerts } from "../../src/db/schema/operations";
 import { TEST_SETTINGS } from "../fixtures/settings";
+import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, e2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
@@ -77,6 +78,21 @@ async function expectLessonInView(page: Page, { stop }: { stop: boolean }) {
     await expect(
       page.locator("[data-paper-band] [data-talk-stop]"),
     ).toBeInViewport({ ratio: 1 });
+}
+
+/**
+ * 가로로 돌려도 · 다시 세로로 되돌려도 수업 화면 전체가 보는 창 안이다(13절 C241 보완 5 · 화면 재검토 des-s5-2 D-7 · 코드 재검토 rev-s5-6 N-2 —
+ * S5 fix 8): 마무리 제안 · 정리는 가로에서도 기록 칸 높이를 남는 높이에 맞추므로 쪽 넘김이 0 이고, 세로로 되돌린 뒤에도 쪽 넘김이 남지 않는다(고치기
+ * 전 가로 46 · 237px, Chromium 에서 되돌린 뒤 46 · 102px). 세로로 돌려 둔다.
+ */
+async function expectLessonInViewBothWays(
+  page: Page,
+  { stop }: { stop: boolean },
+) {
+  for (const way of ["landscape", "portrait"] as const) {
+    await page.setViewportSize(CHILD_VIEWPORTS[way]);
+    await expectLessonInView(page, { stop });
+  }
 }
 const LONG = 120_000;
 const STREAM_END_MS = 30_000;
@@ -395,8 +411,9 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(
       o.page.locator("[data-wrap-all] [data-speak]"),
     ).not.toHaveAttribute("data-speak-waiting", "", { timeout: STREAM_END_MS });
-    // 정리 화면도 쪽을 넘기지 않고 위 띠가 보인다(정리에는 위 띠의 '그만하기'가 없다 — S5 fix 7)
+    // 정리 화면도 쪽을 넘기지 않고 위 띠가 보인다(정리에는 위 띠의 '그만하기'가 없다 — S5 fix 7). 가로로 돌려도 · 되돌려도 같다(S5 fix 8)
     await expectLessonInView(o.page, { stop: false });
+    await expectLessonInViewBothWays(o.page, { stop: false });
     await o.page.locator("[data-wrap-all] [data-speak]").click();
     const first = o.page.locator('[data-closing-card="1"]');
     await expect(first).toBeVisible({ timeout: STREAM_END_MS });
@@ -433,8 +450,9 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(bubble(o.page)).not.toContainText("Do you want to talk more?");
     // 마무리 제안 뒤에는 말로도 답할 수 있다(02-2 295줄 — 두 버튼과 함께 말하기 단추)
     await expect(childTurn(o.page)).toBeVisible();
-    // 마무리 제안(말하기와 두 단추)에서도 쪽을 넘기지 않고 위 띠의 '그만하기'까지 보인다(S5 fix 7)
+    // 마무리 제안(말하기와 두 단추)에서도 쪽을 넘기지 않고 위 띠의 '그만하기'까지 보인다(S5 fix 7). 가로로 돌려도 · 되돌려도 같다(S5 fix 8)
     await expectLessonInView(o.page, { stop: true });
+    await expectLessonInViewBothWays(o.page, { stop: true });
     const before = (await fakeAiRequests()).length;
     await choice.getByRole("button", { name: T.more }).click();
     await expect(choice).toHaveCount(0);

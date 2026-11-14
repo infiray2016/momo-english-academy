@@ -2,9 +2,12 @@
 // 위 띠 · 단추 · 선생님 창 · 기록 칸 · 말풍선 · 아이 차례 · 정리)을 그리고, 수업 틀(talk-frame)의 판 짜임과 '보는 창 지키기' 효과는 옮겨 둔다
 // (그 조각은 서버 액션 · 말소리 · 흐름에 기대어 이 틀에서 묶지 않는다 — 옮긴 클래스 글은 장면이 talk-frame.tsx 의 글과 같은지 먼저 본다).
 // 쿼리: scene=child(아이 차례) · hint(가장 큰 지금 턴의 아이 차례) · suggest(마무리 제안: 말하기와 두 단추) · teacher(선생님 차례 — 지키지 않음) ·
-// wrap(정리) · legacy=1(고치기 전 틀의 효과 — 조각 전체의 아래 끝으로 넘김, 기록 칸 높이 맞춤 없음).
-// window.__scene(이름) 으로 같은 쪽에서 차례를 바꾼다(차례가 바뀔 때 쪽이 움직이는지 잼).
-import { useEffect, useRef, useState } from "react";
+// wrap(정리) · legacy=1(고치기 전 틀의 효과 — 조각 전체의 아래 끝으로 넘김, 기록 칸 높이 맞춤 없음) · discard=1(버리는 듣기를 켠 기기 — 아이
+// 차례 조각에 층 몫을 넘겨 짧은 말 · 안내 줄이 뜰 때 그 조각이 스스로 화면 안으로 넘기게 함, S5 fix 8).
+// window.__scene(이름) 으로 같은 쪽에서 차례를 바꾼다(차례가 바뀔 때 쪽이 움직이는지 잼). window.__short(참 · 거짓) 은 아이 차례 칸 위 짧은 말
+// 말풍선을 띄우거나 거두고(틀의 ShortLineBubble 짜임을 옮김 — 새 줄마다 새 값), window.__recover(참 · 거짓) 은 버리는 듣기의 회복 안내 줄
+// ('잠깐만요, 마이크를 다시 켤게요')을 켜거나 끈다(층 view 의 recovering).
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CHILD_SIZE } from "@/components/activities/common";
 import {
@@ -13,10 +16,17 @@ import {
   PaperBand,
   SmallButton,
 } from "@/components/board/board";
-import { ChildTurn } from "@/components/conversation/child-turn";
+import {
+  ChildTurn,
+  type TurnDiscard,
+} from "@/components/conversation/child-turn";
 import { LessonWrapUp } from "@/components/conversation/follow-along";
 import * as talkLog from "@/components/conversation/talk-log";
-import { LessonToriBubble } from "@/components/conversation/tori";
+import {
+  BUBBLE_CLASS,
+  BUBBLE_WIDTH,
+  LessonToriBubble,
+} from "@/components/conversation/tori";
 import { TeacherWindow } from "@/components/teacher/teacher-window";
 import type { TalkLogEntry } from "@/core/conversation/log";
 import { TEACHER_TEXT } from "@/core/teacher/name";
@@ -28,6 +38,7 @@ const { TalkLog } = talkLog;
 const params = new URLSearchParams(location.search);
 const LEGACY = params.get("legacy") === "1";
 const PAIRS = Number(params.get("pairs") ?? 7);
+const DISCARD = params.get("discard") === "1";
 
 const TEACHER: TeacherView = {
   key: "mina",
@@ -85,20 +96,62 @@ function App() {
     (params.get("scene") as Scene | null) ?? "child",
   );
   const [turnKey, setTurnKey] = useState(0);
+  const [shortLine, setShortLine] = useState<object | undefined>(undefined);
+  const [recovering, setRecovering] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    (window as unknown as { __scene: (s: Scene) => void }).__scene = (s) => {
+    const w = window as unknown as {
+      __scene: (s: Scene) => void;
+      __short: (on: boolean) => void;
+      __recover: (on: boolean) => void;
+    };
+    w.__scene = (s) => {
       setScene(s);
       setTurnKey((k) => k + 1);
+      setShortLine(undefined);
+      setRecovering(false);
     };
+    w.__short = (on) => setShortLine(on ? {} : undefined);
+    w.__recover = (on) => setRecovering(on);
   }, []);
+  // 버리는 듣기 층의 화면 몫(틀의 turnDiscard 꼴 — 누름 몫은 쓰지 않음)
+  const discard: TurnDiscard | undefined = DISCARD
+    ? {
+        view: {
+          waiting: false,
+          sayNow: false,
+          recovering,
+          canListen: true,
+          reopenIdle: false,
+        },
+        again: noop,
+        dontKnow: noop,
+        listenAuto: (() => undefined) as never,
+        soundEnd: noop,
+      }
+    : undefined;
+  const shortShown =
+    shortLine !== undefined && (scene === "child" || scene === "suggest");
+  // 틀의 차례 값(talk-frame 의 phase · wrapShown 꼴): 아이 차례 child · 마무리 제안 choice · 선생님 차례 tori
+  const phase =
+    scene === "teacher" ? "tori" : scene === "suggest" ? "choice" : "child";
+  const wrapShown = scene === "wrap";
   const keepActive = scene !== "teacher";
-  // 틀의 효과를 옮김(talk-frame.tsx 의 keepActive 효과 — 장면이 그 글과 같은지 본다)
+  const fitOnly =
+    !keepActive && talkLog.lessonFitOnlyOf({ inPrep: false, phase });
+  const fitLandscape = talkLog.lessonFitLandscapeOf({ wrapShown, phase });
+  const childBelow = useRef<number | undefined>(undefined);
+  // 틀의 효과를 옮김(talk-frame.tsx 의 keepActive 효과 둘 — 장면이 그 글과 같은지 본다)
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (LEGACY) return;
+    if (keepActive && panel) talkLog.keepLessonInView(panel, { fitLandscape });
+  });
   // biome-ignore lint/correctness/useExhaustiveDependencies: 실제 틀처럼 차례 · 턴 열쇠가 바뀔 때 다시 건다
   useEffect(() => {
     const panel = panelRef.current;
-    if (!keepActive || !panel) return;
     if (LEGACY) {
+      if (!keepActive || !panel) return;
       const keep = () => legacyKeep(panel);
       keep();
       const observer = new ResizeObserver(keep);
@@ -110,12 +163,30 @@ function App() {
         turned.removeEventListener("change", keep);
       };
     }
+    if (!(keepActive || fitOnly) || !panel) return;
     let frame = 0;
+    let rotated = false;
+    let least = Number.POSITIVE_INFINITY;
+    const run = () => {
+      const out = talkLog.keepLessonInView(panel, {
+        fitLandscape,
+        fitOnly,
+        belowFloor: fitOnly ? childBelow.current : undefined,
+        turned: rotated,
+      });
+      rotated = false;
+      if (phase === "child" && out.below !== undefined) {
+        least = Math.min(least, out.below);
+        childBelow.current = least;
+      }
+    };
     const keep = () => {
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() =>
-        talkLog.keepLessonInView(panel),
-      );
+      frame = window.requestAnimationFrame(run);
+    };
+    const turn = () => {
+      rotated = true;
+      keep();
     };
     keep();
     const observer =
@@ -128,16 +199,16 @@ function App() {
     ])
       if (el) observer?.observe(el);
     const turned = window.matchMedia("(orientation: portrait)");
-    turned.addEventListener("change", keep);
+    turned.addEventListener("change", turn);
     const viewport = window.visualViewport ?? window;
     viewport.addEventListener("resize", keep);
     return () => {
       window.cancelAnimationFrame(frame);
       observer?.disconnect();
-      turned.removeEventListener("change", keep);
+      turned.removeEventListener("change", turn);
       viewport.removeEventListener("resize", keep);
     };
-  }, [keepActive, scene, turnKey]);
+  }, [keepActive, fitOnly, fitLandscape, phase, scene, turnKey]);
 
   const entries = entriesOf(PAIRS);
   const bubble =
@@ -188,6 +259,8 @@ function App() {
       onListening={noop}
       reveal={async () => undefined}
       onSend={noop}
+      discard={discard}
+      shortLine={shortShown ? shortLine : undefined}
     />
   );
   const main =
@@ -299,6 +372,30 @@ function App() {
                   />
                 </TalkLog>
                 <div className={FRAME_CLASSES.foot}>
+                  {shortShown ? (
+                    <div
+                      data-talk-short-line=""
+                      className={FRAME_CLASSES.short}
+                    >
+                      <p
+                        lang="en"
+                        className={cn(
+                          BUBBLE_CLASS,
+                          BUBBLE_WIDTH,
+                          CHILD_SIZE.english,
+                          FRAME_CLASSES.shortEn,
+                        )}
+                      >
+                        Can you say it again?
+                      </p>
+                      <p
+                        data-talk-short-ko=""
+                        className={cn(CHILD_SIZE.guide, FRAME_CLASSES.shortKo)}
+                      >
+                        다시 말해 줄래?
+                      </p>
+                    </div>
+                  ) : null}
                   {scene === "child" || scene === "hint" || scene === "suggest"
                     ? childTurn
                     : null}

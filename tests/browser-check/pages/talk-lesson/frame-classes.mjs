@@ -18,15 +18,27 @@ export const FRAME_CLASSES = {
   detail: "flex flex-wrap items-center gap-x-4",
   segment: "rounded-lg bg-postit-talk px-3 font-heading",
   promise: "mt-auto rounded bg-paper/80 px-4 py-2",
+  // 아이 차례 칸 위 짧은 말(ShortLineBubble — S5 fix 8)
+  short: "mb-3 flex flex-col gap-1",
+  shortEn: "font-en font-bold leading-snug",
+  shortKo: "px-2",
 };
 
 /** 틀의 '보는 창 지키기' 효과에서 쪽이 옮긴 글(장면이 talk-frame.tsx 에 있는지 본다). */
 export const FRAME_EFFECT_TEXTS = [
-  "frame = window.requestAnimationFrame(() => keepLessonInView(panel));",
+  "if (keepActive && panel) keepLessonInView(panel, { fitLandscape });",
+  "if (!(keepActive || fitOnly) || !panel) return;",
+  "const out = keepLessonInView(panel, {",
+  "belowFloor: fitOnly ? childBelow.current : undefined,",
+  "turned: rotated,",
+  'if (phase === "child" && out.below !== undefined) {',
+  "frame = window.requestAnimationFrame(run);",
   'panel.querySelector("[data-talk-log]"),',
   'panel.querySelector("[data-talk-log-now]"),',
   'panel.closest("[data-child-screen]"),',
-  'turned.addEventListener("change", keep);',
+  'turned.addEventListener("change", turn);',
   'viewport.addEventListener("resize", keep);',
-  "}, [keepActive, phase, stage, turnKey]);",
+  "}, [keepActive, fitOnly, fitLandscape, phase, stage, turnKey]);",
+  "const fitOnly =\n    panelOpen && !keepActive && lessonFitOnlyOf({ inPrep, phase });",
+  "const fitLandscape = lessonFitLandscapeOf({ wrapShown, phase });",
 ];

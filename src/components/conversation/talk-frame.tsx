@@ -24,6 +24,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -167,7 +168,12 @@ import {
   TalkPaper,
   TalkStart,
 } from "./follow-along";
-import { keepLessonInView, TalkLog } from "./talk-log";
+import {
+  keepLessonInView,
+  lessonFitLandscapeOf,
+  lessonFitOnlyOf,
+  TalkLog,
+} from "./talk-log";
 import {
   answerTipShownOf,
   BUBBLE_CLASS,
@@ -2336,8 +2342,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const soundRetry = soundRetryStepOf(soundTrack, { canSkip: true });
 
   // 으뜸 단추 줄(아이 차례 · 두 단추 · 정리의 말하기 — 수업 판의 마지막 조각)이 열리거나 판이 자라거나 기기를 돌리면 보는 창 안으로
-  // (화면 검토 I-2 — 버리는 듣기 기기의 child-turn 처리를 모든 기기로 넓힘). 세로에서는 기록 칸 높이를 남는 높이에 맞춰 쪽을 넘기지 않고, 낮은 보는
-  // 창에서만 으뜸 단추 묶음의 아래 끝까지 움직임 없이 넘긴다(keepLessonInView · C241 보완 4 · S5 fix 7). 이미 보이면 그대로다
+  // (화면 검토 I-2 — 버리는 듣기 기기의 child-turn 처리를 모든 기기로 넓힘). 세로(가로는 마무리 제안 · 정리만)에서는 기록 칸 높이를 남는 높이에 맞춰
+  // 쪽을 넘기지 않고, 낮은 보는 창에서만 으뜸 단추 묶음의 아래 끝까지 움직임 없이 넘긴다(keepLessonInView · C241 보완 4 · 5 · S5 fix 7 · 8). 이미
+  // 보이면 그대로다. 선생님 차례에는 쪽을 넘기지 않고 칸 높이만 앞 아이 차례의 보통 높이로 다시 잰다(D-6)
   const panelRef = useRef<HTMLElement>(null);
   const panelOpen =
     !blocked &&
@@ -2346,22 +2353,47 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     started &&
     noticeSeen &&
     !(stage === "closing" && wrap);
+  const wrapShown = stage === "wrap" && Boolean(wrap);
   const keepActive =
-    panelOpen &&
-    lessonKeepInViewOf({
-      wrapShown: stage === "wrap" && Boolean(wrap),
-      inPrep,
-      phase,
-    });
+    panelOpen && lessonKeepInViewOf({ wrapShown, inPrep, phase });
+  const fitOnly =
+    panelOpen && !keepActive && lessonFitOnlyOf({ inPrep, phase });
+  const fitLandscape = lessonFitLandscapeOf({ wrapShown, phase });
+  // 앞 아이 차례에 잰 칸 아래 조각의 가장 작은 높이(잠깐 생긴 짧은 말 · 확인 칸을 뺀 보통 높이 — 선생님 차례의 칸 높이를 이 값으로 셈)
+  const childBelow = useRef<number | undefined>(undefined);
+  // 그린 바로 뒤 한 번 맞춘다 — 아이 차례 조각이 짧은 말 · 안내 줄에 따라 스스로 하는 화면 안 넘김(child-turn 의 효과)이 맞춘 배치를 보게(D-5)
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (keepActive && panel) keepLessonInView(panel, { fitLandscape });
+  });
   // biome-ignore lint/correctness/useExhaustiveDependencies: 차례 · 단계 · 지금 턴이 바뀔 때 다시 건다
   useEffect(() => {
     const panel = panelRef.current;
-    if (!keepActive || !panel) return;
+    if (!(keepActive || fitOnly) || !panel) return;
     // 다음 그림에서 한 번 — 크기 알림 안에서 칸 높이를 바꾸면 알림이 같은 그림에 다 닿지 못한다(ResizeObserver loop)
     let frame = 0;
+    let rotated = false;
+    let least = Number.POSITIVE_INFINITY;
+    const run = () => {
+      const out = keepLessonInView(panel, {
+        fitLandscape,
+        fitOnly,
+        belowFloor: fitOnly ? childBelow.current : undefined,
+        turned: rotated,
+      });
+      rotated = false;
+      if (phase === "child" && out.below !== undefined) {
+        least = Math.min(least, out.below);
+        childBelow.current = least;
+      }
+    };
     const keep = () => {
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => keepLessonInView(panel));
+      frame = window.requestAnimationFrame(run);
+    };
+    const turn = () => {
+      rotated = true;
+      keep();
     };
     keep();
     const observer =
@@ -2375,17 +2407,17 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     ])
       if (el) observer?.observe(el);
     const turned = window.matchMedia("(orientation: portrait)");
-    turned.addEventListener("change", keep);
-    // 보는 창 높이(사파리 도구 막대가 나고 짐)가 바뀌면 남는 높이를 다시 잰다
+    turned.addEventListener("change", turn);
+    // 보는 창 높이(사파리 도구 막대가 나고 짐 · 확대를 풂)가 바뀌면 남는 높이를 다시 잰다
     const viewport = window.visualViewport ?? window;
     viewport.addEventListener("resize", keep);
     return () => {
       window.cancelAnimationFrame(frame);
       observer?.disconnect();
-      turned.removeEventListener("change", keep);
+      turned.removeEventListener("change", turn);
       viewport.removeEventListener("resize", keep);
     };
-  }, [keepActive, phase, stage, turnKey]);
+  }, [keepActive, fitOnly, fitLandscape, phase, stage, turnKey]);
 
   let body: ReactNode;
   let panelShown = false;

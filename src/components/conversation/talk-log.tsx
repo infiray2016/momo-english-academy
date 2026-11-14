@@ -245,6 +245,67 @@ export function keepInViewScrollOf({
 
 /** 세로에서 남는 높이에 맞춘 기록 칸 높이의 상한(CSS 변수 — TalkLog 의 portrait 상한이 정한 비율과 이 값 가운데 작은 것을 쓴다, S5 fix 7). */
 export const TALK_LOG_FIT_VAR = "--talk-log-fit";
+/**
+ * 가로에서 남는 높이에 맞춘 기록 칸 높이의 상한(CSS 변수 — TalkLog 의 landscape 상한, 마무리 제안 · 정리에서만 적음, S5 fix 8 · 13절 C241 보완 5).
+ * 세로의 변수와 따로 두어, 맞추지 않는 차례에 기기를 돌려도 다른 방향에서 잰 값이 쓰이지 않는다.
+ */
+export const TALK_LOG_FIT_LANDSCAPE_VAR = "--talk-log-fit-landscape";
+/** 쪽을 확대했다고 볼 보는 창 배율의 문턱(1 의 반올림 여유 — 화면 꼴 값, 코드 재검토 rev-s5-6 N-1). */
+export const PAGE_ZOOM_SLACK = 0.01;
+
+/** 쪽을 확대한 동안인가(순수, N-1): 보는 창의 배율이 1 보다 크면 보는 창 높이가 확대된 높이라 칸 높이를 그 값으로 맞추지 않는다. */
+export function pageZoomedOf(scale: number): boolean {
+  return scale > 1 + PAGE_ZOOM_SLACK;
+}
+
+/**
+ * 가로에서도 기록 칸 높이를 맞추는 차례인가(순수, S5 fix 8 · 13절 C241 보완 5 · 화면 재검토 des-s5-2 D-7): 마무리 제안(고르기 차례)과 정리 화면이다.
+ * 가로의 대화 장면(아이 차례 · 선생님 차례)은 정한 비율 그대로 둔다.
+ */
+export function lessonFitLandscapeOf({
+  wrapShown,
+  phase,
+}: {
+  wrapShown: boolean;
+  phase: string;
+}): boolean {
+  return wrapShown || phase === "choice";
+}
+
+/**
+ * 쪽은 넘기지 않고 기록 칸 높이만 다시 재는 차례인가(순수, S5 fix 8 · 화면 재검토 des-s5-2 D-6): 선생님 차례(말풍선 · 다음 말을 기다림)다. 아래 조각이
+ * 큰 차례(마무리 제안 · 짧은 말 · 확인 칸) 뒤에 낮게 맞춘 칸이 그대로 남지 않게 한다. 짧은 준비 쪽지 · 쉼 · 닫힘 · 막힘은 지금 그대로 재지 않는다.
+ */
+export function lessonFitOnlyOf({
+  inPrep,
+  phase,
+}: {
+  inPrep: boolean;
+  phase: string;
+}): boolean {
+  return !inPrep && (phase === "tori" || phase === "moving");
+}
+
+/**
+ * 기기를 돌린 뒤 거둘 쪽 넘김(순수, S5 fix 8 · D-5 · 코드 재검토 rev-s5-6 N-2): 칸 높이를 맞춘 뒤 으뜸 단추 묶음의 아래 끝 + 여유와 보는 창 아래 끝
+ * 사이에 남는 만큼(쪽 넘김보다 크지 않게) 위로 넘긴다. 돌리기 전 배치로 아이 차례 조각 · 브라우저가 내린 쪽을, 단추를 보는 창 밖으로 내보내지 않는
+ * 데까지 되돌린다.
+ */
+export function turnedBackScrollOf({
+  scrollY,
+  keepBottom,
+  viewportHeight,
+  margin,
+}: {
+  scrollY: number;
+  /** 으뜸 단추 묶음의 아래 끝(보는 창 위에서, px — keepBottomOf). */
+  keepBottom: number;
+  viewportHeight: number;
+  margin: number;
+}): number {
+  const room = Math.floor(viewportHeight - margin - keepBottom);
+  return Math.max(0, Math.min(Math.floor(scrollY), room));
+}
 
 /**
  * 세로에서 기록 칸 높이의 상한(순수, 13절 C241 보완 4 · 화면 재검토 des-s5 D-1): 쪽을 넘기지 않고 칸 아래의 조각(으뜸 단추 줄 · 빈 알림 줄 자리까지)이
@@ -324,41 +385,87 @@ function talkLogMinHeightOf(log: HTMLElement): number {
   return (block?.getBoundingClientRect().height ?? 0) + pad;
 }
 
+/** keepLessonInView 의 갈래(S5 fix 8). 모두 없으면 fix 7 그대로(세로만 맞춤 · 아래로만 넘김). */
+export type LessonKeepOptions = {
+  /** 가로에서도 칸 높이를 맞춘다(마무리 제안 · 정리 — lessonFitLandscapeOf). */
+  fitLandscape?: boolean;
+  /** 칸 높이만 맞추고 쪽은 넘기지 않는다(선생님 차례 — lessonFitOnlyOf). */
+  fitOnly?: boolean;
+  /** 칸 아래 조각의 높이로 셈에 넣을 가장 작은 값(px — 선생님 차례에 앞 아이 차례의 보통 높이, 잠깐 생긴 조각을 뺀 값). */
+  belowFloor?: number | undefined;
+  /** 기기를 돌린 뒤다: 맞춘 뒤 남는 쪽 넘김을 거둔다(turnedBackScrollOf — 맞추는 방향에서만). */
+  turned?: boolean;
+};
+
+/** keepLessonInView 의 결과: 넘긴 거리(위로 거두면 음수)와 이번에 잰 칸 아래 조각의 높이(칸을 맞춘 때만). */
+export type LessonKeep = { by: number; below?: number };
+
 /**
- * 수업 판을 보는 창 안에(S5 fix 7 · 13절 C241 보완 3 · 보완 4): (1) 세로면 기록 칸 높이의 상한을 남는 높이에 맞추고(talkLogFitOf — 가로면 지운다,
- * 가로는 정한 비율 그대로), (2) 그래도 으뜸 단추 묶음이 보는 창 밖이면(낮은 보는 창) 그 아래 끝까지만 움직임 없이 넘긴다(keepBottomOf ·
- * keepInViewScrollOf). 넘긴 거리를 돌려준다. panel 은 수업 판(대화 기록 칸 · 정리 기록 칸이 든 판)이다.
+ * 수업 판을 보는 창 안에(S5 fix 7 · fix 8 · 13절 C241 보완 3 · 4 · 5): (1) 맞추는 방향(세로, 가로는 fitLandscape 일 때)이면 기록 칸 높이의 상한을
+ * 남는 높이에 맞추고(talkLogFitOf — 맞추지 않는 방향의 변수는 지운다), (2) fitOnly 가 아니면 그래도 으뜸 단추 묶음이 보는 창 밖일 때(낮은 보는 창)
+ * 그 아래 끝까지만 움직임 없이 넘기고(keepBottomOf · keepInViewScrollOf), 기기를 돌린 뒤면 남는 쪽 넘김을 거둔다(turnedBackScrollOf). 쪽을 확대한
+ * 동안(pageZoomedOf)에는 아무것도 바꾸지 않는다(확대를 풀면 보는 창 높이 바뀜으로 다시 잼). panel 은 수업 판(대화 기록 칸 · 정리 기록 칸이 든 판)이다.
  */
-export function keepLessonInView(panel: HTMLElement): number {
+export function keepLessonInView(
+  panel: HTMLElement,
+  options: LessonKeepOptions = {},
+): LessonKeep {
   const target = panel.lastElementChild;
-  if (!target) return 0;
+  if (!target) return { by: 0 };
+  if (pageZoomedOf(window.visualViewport?.scale ?? 1)) return { by: 0 };
   const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  const portrait = window.matchMedia("(orientation: portrait)").matches;
+  const fits = portrait || options.fitLandscape === true;
   const log = panel.querySelector<HTMLElement>("[data-talk-log]");
+  let below: number | undefined;
   if (log && !log.contains(target)) {
-    if (window.matchMedia("(orientation: portrait)").matches) {
+    const [fitVar, otherVar] = portrait
+      ? [TALK_LOG_FIT_VAR, TALK_LOG_FIT_LANDSCAPE_VAR]
+      : [TALK_LOG_FIT_LANDSCAPE_VAR, TALK_LOG_FIT_VAR];
+    log.style.removeProperty(otherVar);
+    if (fits) {
       const box = log.getBoundingClientRect();
+      below = target.getBoundingClientRect().bottom - box.bottom;
       const fit = talkLogFitOf({
         viewportHeight,
         logTop: box.top + window.scrollY,
-        belowLog: target.getBoundingClientRect().bottom - box.bottom,
+        belowLog: Math.max(below, options.belowFloor ?? 0),
         margin: KEEP_IN_VIEW_MARGIN_PX,
         minHeight: talkLogMinHeightOf(log),
       });
       const value = `${fit}px`;
-      if (log.style.getPropertyValue(TALK_LOG_FIT_VAR) !== value)
-        log.style.setProperty(TALK_LOG_FIT_VAR, value);
-    } else log.style.removeProperty(TALK_LOG_FIT_VAR);
+      if (log.style.getPropertyValue(fitVar) !== value)
+        log.style.setProperty(fitVar, value);
+    } else log.style.removeProperty(fitVar);
   }
+  const kept = below === undefined ? {} : { below };
+  if (options.fitOnly) return { by: 0, ...kept };
   const rect = target.getBoundingClientRect();
+  const keepBottom = keepBottomOf(target, DOM_KEEP_ACCESS);
   const by = keepInViewScrollOf({
     top: rect.top,
-    bottom: keepBottomOf(target, DOM_KEEP_ACCESS),
+    bottom: keepBottom,
     viewportHeight,
     margin: KEEP_IN_VIEW_MARGIN_PX,
   });
   // 움직임 없이(저장소에 부드러운 넘김 CSS 가 없어 기본값이 곧바로) — behavior "instant" 열거값에 기대지 않는다(검토 rev-s5 M-3)
-  if (by > 0) window.scrollBy(0, by);
-  return by;
+  if (by > 0) {
+    window.scrollBy(0, by);
+    return { by, ...kept };
+  }
+  if (options.turned && fits) {
+    const back = turnedBackScrollOf({
+      scrollY: window.scrollY,
+      keepBottom,
+      viewportHeight,
+      margin: KEEP_IN_VIEW_MARGIN_PX,
+    });
+    if (back > 0) {
+      window.scrollBy(0, -back);
+      return { by: -back, ...kept };
+    }
+  }
+  return { by: 0, ...kept };
 }
 
 /**
@@ -527,8 +634,9 @@ export function TalkLog({
       ref={box}
       data-talk-log=""
       className={cn(
-        // 세로에서는 정한 비율과 남는 높이(TALK_LOG_FIT_VAR — 수업 판이 keepLessonInView 로 적음, 없으면 정한 비율) 가운데 작은 것(C241 보완 4)
-        "flex max-h-[60dvh] min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-1 py-2 portrait:max-h-[min(60dvh,var(--talk-log-fit,60dvh))]",
+        // 정한 비율과 남는 높이(세로 TALK_LOG_FIT_VAR · 가로 TALK_LOG_FIT_LANDSCAPE_VAR — 수업 판이 keepLessonInView 로 적음, 없으면 정한 비율) 가운데
+        // 작은 것(C241 보완 4 · 5)
+        "flex max-h-[60dvh] min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-1 py-2 portrait:max-h-[min(60dvh,var(--talk-log-fit,60dvh))] landscape:max-h-[min(60dvh,var(--talk-log-fit-landscape,60dvh))]",
         className,
       )}
     >
