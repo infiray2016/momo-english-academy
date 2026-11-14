@@ -32,6 +32,10 @@ const PHOTO = {
     "talk-chat-quiet-teacher-bubbles-stacked-no-child-bubble-and-hint-loading-dots",
   hint: "talk-chat-hint-tier-from-reply",
   explain: "talk-chat-explain-after-stuck-under-bubble",
+  /** 조용함 요청 뒤 첫 줄까지: 지금 말풍선 아래의 기다림 칸(W fix 2 — 13절 C243 보완 7 (3)). */
+  quietWaiting: "talk-chat-quiet-waiting-cell-under-current-bubble",
+  /** 힌트 호출 실패: 그 단에 '힌트를 못 가져왔어요' 한 줄과 '다시 받기'(정본 03 4절 99줄). */
+  hintFailed: "talk-chat-hint-tier-failed-line-and-retry",
 } as const;
 const LONG = 240_000;
 const STREAM_END_MS = 30_000;
@@ -47,6 +51,11 @@ const HINT_MARK = "The child pressed the hint button";
 const HINT_DELAY_MS = 3000;
 /** 기다림 시간(talk.chat_quiet_seconds 시드 잠정 8초)보다 넉넉히 — 조용함 요청이 나갈 때까지 기다리는 상한(ms, 시험 값). */
 const QUIET_WAIT_MS = 30_000;
+/**
+ * 조용함 차례 대화 호출의 첫 조각 늦춤(ms, 시험 값 — 기다림 칸과 둘째 값(ui.wait_hint_seconds 5초) 뒤 한 줄이 사진 · 단언에 잡히게. 시간 상한
+ * ai.timeout_seconds.realtime 10초 안).
+ */
+const QUIET_REPLY_DELAY_MS = 7000;
 
 /**
  * 선생님 차례마다 화면에 보이는 문장(말풍선 · 기록 칸은 문장마다 줄 하나로 그리고 줄 사이에 빈칸이 없다 — tori.tsx data-tori-line · talk-log.tsx.
@@ -89,6 +98,27 @@ function chatReply(say: string, sayKo = ""): FakeRule {
       chunks: 4,
     },
     times: 1,
+  };
+}
+
+/** 첫 조각을 늦춘 대화 호출 응답(조용함 요청 뒤 기다림 칸 — W fix 2). */
+function chatReplyLate(say: string, sayKo: string, firstDelayMs: number) {
+  const rule = chatReply(say, sayKo);
+  return {
+    ...rule,
+    reply: { ...(rule.reply as object), firstDelayMs },
+  } as FakeRule;
+}
+
+/** 규격에 맞지 않는 힌트 호출 응답(만든 단 없음 — 'AI 호출 하나의 실패', 다시 받기가 남음). */
+function hintBadReply(times = 3): FakeRule {
+  return {
+    when: { bodyIncludes: HINT_MARK },
+    reply: {
+      kind: "message",
+      body: messageBody({ model: TALK_MODEL_LOW, json: { nothing: true } }),
+    },
+    times,
   };
 }
 
@@ -224,5 +254,65 @@ test.describe("회화 이야기 방식 수업(3단계 단원 1)", () => {
     expect(quietCount(turnBodies)).toBe(1);
     expect(turnBodies.filter((b) => b.input !== undefined)).toHaveLength(1);
     await photo(page, PHOTO.explain);
+  });
+
+  test("AC-27f · AC-27g(화면, W fix 2) 조용함 요청 뒤 첫 줄까지 지금 말풍선 아래 기다림 칸(5초 뒤 한 줄) → 첫 줄에서 칸이 사라짐 → 힌트 호출 실패의 한 줄과 '다시 받기'", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const profileId = await talkHousehold(LEVEL);
+    await skipStartPrep(profileId, LEVEL);
+    const row = await insertTalkLesson({
+      level: LEVEL,
+      lesson: talkLessonCard(LEVEL),
+    });
+    const sessionId = await openTalkSession(profileId, row);
+    const page = await speechPage(
+      context,
+      talkScript(Array.from({ length: 6 }, () => saidRun("I like ducks"))),
+    );
+    const turnBodies = turnRequestsOf(page);
+    await pushFakeAi([
+      chatReply(SAY.opening, "안녕 모모! 나는 오늘 호수에 갔어."),
+      chatReplyLate(SAY.quiet, "오리가 정말 귀여웠어.", QUIET_REPLY_DELAY_MS),
+      hintBadReply(),
+    ]);
+    await withHouseholdSetting(LEAD_MODE_KEY, "chat", async () => {
+      await page.goto(`/session/${sessionId}`);
+      await expect(page.locator("[data-talk-start]")).toBeVisible();
+    });
+    await page.getByRole("button", { name: T.start }).click();
+    await expect(page.locator("[data-mic-notice]")).toBeVisible();
+    await page.getByRole("button", { name: T.micOk }).click();
+    await expectLines(bubble(page), SHOWN.opening);
+    await untilChildTurn(page);
+
+    // 아무것도 누르지 않음 → 조용함 요청 → 첫 줄이 늦는 동안 지금 말풍선은 그대로, 그 아래에 기다림 칸(점 셋)
+    const waiting = page.locator("[data-tori-waiting-quiet]");
+    await expect(waiting).toBeVisible({ timeout: QUIET_WAIT_MS });
+    expect(quietCount(turnBodies)).toBe(1);
+    await expect(bubble(page)).toHaveCount(1);
+    await expect(bubble(page)).toContainText(SHOWN.opening[1]);
+    await expect(waiting.locator("[data-wait-hint]")).toBeVisible();
+    await photo(page, PHOTO.quietWaiting);
+    // 둘째 값(5초)이 넘으면 '[이름](이/가) 생각하고 있어요'
+    await expect(waiting.locator("[data-wait-line]")).toBeVisible({
+      timeout: QUIET_REPLY_DELAY_MS,
+    });
+    // 첫 줄이 오면 칸이 사라지고 앞 말풍선은 기록으로
+    await expectLines(bubble(page), SHOWN.quiet, STREAM_END_MS);
+    await expect(waiting).toHaveCount(0);
+    await expectLines(page.locator("[data-talk-log]"), SHOWN.opening);
+    await untilChildTurn(page);
+
+    // 힌트 호출 실패: 그 단 자리에 한 줄과 '다시 받기'(사진 전에 누름 — 누름은 입력이라 이 차례의 조용함이 나가지 않음)
+    await hintButton(page).click();
+    const firstTier = page.locator("[data-hint-tier]").first();
+    await expect(firstTier.locator("[data-hint-failed]")).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    await expect(firstTier.locator("[data-hint-retry]")).toBeVisible();
+    await photo(page, PHOTO.hintFailed);
+    expect(quietCount(turnBodies)).toBe(1);
   });
 });

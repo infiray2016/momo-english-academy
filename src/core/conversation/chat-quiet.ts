@@ -13,6 +13,8 @@
 // - 설명 기다림 칸이 있는 차례는 읽기 끝과 '설명이 보인 때 · 설명 호출이 실패로 끝난 때 · 설명 기다림 상한이 지난 때 가운데 가장 이른 때'
 //   가운데 늦은 때부터 잰다. 상한 뒤에 온 설명은 재는 때를 바꾸지 않는다. 상한은 아이 차례가 열린 때(끝 줄을 받은 때)부터 센다.
 // - 쪽이 가려지면 그 차례의 타이머를 거두고 돌아와도 다시 재지 않는다.
+// - 대화 기록 칸 넘김(휠 · 손 끌기 · 키, 13절 C243 보완 7 (7)): 칸이 맨 아래를 떠나 있는 동안은 보내지 않고(거두지는 않음 — 다른 입력과 다르다),
+//   맨 아래로 돌아오면 그때부터 기다림 시간을 처음부터 잰다(돌아온 때와 위의 재기 시작 가운데 늦은 때). 지난 말을 다시 읽는 아이는 화면을 보는 아이다.
 // 기다림 시간(talk.chat_quiet_seconds)과 설명 기다림(talk.chat_explain_wait_seconds)은 끝 줄 신호(chat-turn-core ChatEndSignal)의 초 값으로
 // 받는다. 기다림 시간 칸이 없거나 0 이하이면 그 차례는 끔이다(서버가 싣지 않는 때 · 0 이면 끔).
 
@@ -56,6 +58,10 @@ export type ChatQuietEvent =
   | { type: "explain-failed"; now: number }
   /** 쪽이 가려짐. */
   | { type: "hidden"; now: number }
+  /** 대화 기록 칸이 넘김으로 맨 아래를 떠남(기록 칸이 아는 '맨 아래에 붙어 있음'이 풀림). */
+  | { type: "log-away"; now: number }
+  /** 대화 기록 칸이 맨 아래로 돌아옴(다시 붙음) — 떠나 있던 때만 재기 시작을 이 때로 민다. */
+  | { type: "log-back"; now: number }
   /** 시계 걸음(화면의 setTimeout · 가짜 시계). */
   | { type: "tick"; now: number };
 
@@ -73,6 +79,10 @@ export type ChatQuietState =
       explainCapAt?: number;
       /** 설명이 보였거나 실패로 끝난 가장 이른 때. */
       explainAt?: number;
+      /** 대화 기록 칸이 맨 아래를 떠나 있음(그동안은 보낼 시각이 없다). */
+      away?: true;
+      /** 대화 기록 칸이 맨 아래로 마지막으로 돌아온 때(재기 시작은 이 때보다 이르지 않다). */
+      backAt?: number;
     }
   /** 그 차례의 타이머를 거둠(입력 · 쪽 가림). */
   | { phase: "dropped"; turnKey: string; why: "input" | "hidden"; at: number }
@@ -103,14 +113,23 @@ function explainWaitSeconds(value: number | undefined): number | undefined {
  */
 export function chatQuietStartOf(state: ChatQuietState): number | undefined {
   if (state.phase === "sent") return state.startAt;
-  if (state.phase !== "armed" || state.readEndAt === undefined)
+  if (
+    state.phase !== "armed" ||
+    state.readEndAt === undefined ||
+    state.away === true
+  )
     return undefined;
-  if (state.explainCapAt === undefined) return state.readEndAt;
-  const explained = Math.min(
-    state.explainAt ?? Number.POSITIVE_INFINITY,
-    state.explainCapAt,
-  );
-  return Math.max(state.readEndAt, explained);
+  const read =
+    state.explainCapAt === undefined
+      ? state.readEndAt
+      : Math.max(
+          state.readEndAt,
+          Math.min(
+            state.explainAt ?? Number.POSITIVE_INFINITY,
+            state.explainCapAt,
+          ),
+        );
+  return Math.max(read, state.backAt ?? Number.NEGATIVE_INFINITY);
 }
 
 /** 보낼 시각(ms) — 화면이 setTimeout 을 거는 때. 재는 중이 아니면 없음. */
@@ -164,6 +183,16 @@ export function reduceChatQuiet(
       };
     case "hint-auto-open":
       return state;
+    case "log-away":
+      return state.away === true ? state : { ...state, away: true };
+    case "log-back": {
+      if (state.away !== true) return state;
+      const { away: _away, ...rest } = state;
+      return {
+        ...rest,
+        backAt: Math.max(state.backAt ?? event.now, event.now),
+      };
+    }
     case "explain-shown":
     case "explain-failed":
       if (state.explainCapAt === undefined) return state;

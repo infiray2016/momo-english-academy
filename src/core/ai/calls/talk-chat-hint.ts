@@ -135,7 +135,7 @@ function required(value: string, what: string): string {
 
 /**
  * 안내문 전문. 1~3단계 글 규칙(영어 문장 한 개 · 그 단계 문장 낱말 상한 · 뜻에 영어 문장을 쓰지 않음 · explain_ko 에 선생님의 영어 문장을 옮겨
- * 적지 않음, m-4 (가))과 이름 자리 규칙(대화 호출 안내문의 이름 자리 문단과 같은 꼴)을 싣는다. 문장 낱말 상한이 1 이상의 정수가 아니면 던진다.
+ * 적지 않음, m-4 (가)) · 말투(hint_ko 는 아이 말투의 반말, explain_ko 는 선생님 목소리의 반말 — 정본 03 4절 7줄 · 13절 C243 보완 7 (6))와 이름 자리 규칙(대화 호출 안내문의 이름 자리 문단과 같은 꼴)을 싣는다. 문장 낱말 상한이 1 이상의 정수가 아니면 던진다.
  */
 export function talkChatHintSystem(
   input: TalkChatHintInput,
@@ -153,9 +153,9 @@ Read the teacher's latest turn and the chat before it. Then write one thing the 
 The app shows your hint step by step, one step each time the child presses: ${chatHintStepsLineOf(input.hintTiers)}
 
 Rules:
-- "hint_ko": that thing in natural Korean, one sentence, as the child would say it. Do not write English sentences in it.
+- "hint_ko": that thing in natural Korean, one sentence, as the child would say it, in casual 반말 (the child talking to a friend, not polite 해요체). Do not write English sentences in it.
 - "hint_en": the same thing in English, exactly one short sentence of at most ${input.sentenceMaxWords} words, with only very easy words.
-- "explain_ko": what the teacher's latest turn means, in one or two short Korean sentences, for a child who did not understand it. Do not copy the teacher's English sentences into it; tell the meaning in Korean.
+- "explain_ko": what the teacher's latest turn means, in one or two short Korean sentences in casual 반말 in the teacher's own voice, as the teacher would say it to the child (not polite 해요체), for a child who did not understand it. Do not copy the teacher's English sentences into it; tell the meaning in Korean.
 - Use only content suitable for children. Never write or ask for a name, school, address, phone number, or photo.
 
 The child's name: if you see {NAME} in the chat, it is the child's name, hidden by the app. If your hint needs the child's name, write {NAME}; never write any other name for the child.

@@ -481,6 +481,7 @@ export function TalkLog({
   listening = false,
   onReplay,
   bottomKey,
+  onPinnedChange,
   className,
   children,
 }: {
@@ -494,6 +495,11 @@ export function TalkLog({
   onReplay: (items: TalkLogReplayItem[]) => void;
   /** 지금 턴이 바뀐 열쇠(바뀌면 맨 아래로). */
   bottomKey?: string | number;
+  /**
+   * 맨 아래에 붙어 있음이 바뀔 때마다(넘김으로 풀림 · 다시 붙음) 알린다(이야기 방식 조용함 타이머의 넘김 입력, 13절 C243 보완 7 (7)). 넘김 · 맞춤
+   * 동작은 바꾸지 않는다.
+   */
+  onPinnedChange?: ((pinned: boolean) => void) | undefined;
   className?: string;
   /** 지금 턴(선생님 말풍선 · 아이 차례). */
   children?: ReactNode;
@@ -513,16 +519,28 @@ export function TalkLog({
   /** 마지막 손 움직임이 맨 아래 쪽으로 돌아오는 것이었나(talkLogTouchStepOf · S5 fix 7). */
   const back = useRef(false);
   const hasNow = Boolean(children);
+  const pinnedChange = useRef(onPinnedChange);
+  pinnedChange.current = onPinnedChange;
+  /** 붙어 있음을 바꾸고, 바뀌었으면 알린다. */
+  const setPinned = useRef((next: boolean) => {
+    if (pinned.current === next) return;
+    pinned.current = next;
+    pinnedChange.current?.(next);
+  });
   /** 맞출 때면 맨 아래로(움직임 없이). */
   const follow = useRef((el: HTMLDivElement, newTurn: boolean) => {
     if (!talkLogFollowOf({ newTurn, pinned: pinned.current })) return;
-    pinned.current = true;
+    setPinned.current(true);
     if (newTurn) {
       upAt.current = Number.NEGATIVE_INFINITY;
       pull.current = 0;
     }
     el.scrollTop = el.scrollHeight;
   });
+  // 칸이 새로 그려지면(짧은 준비 · 정리 뒤 다시 나옴) 붙어 있음에서 시작하므로 그것을 한 번 알린다 — 부르는 쪽이 앞 칸의 떠남을 들고 있지 않게
+  useEffect(() => {
+    pinnedChange.current?.(pinned.current);
+  }, []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: 줄 수 · 지금 턴 열쇠가 바뀔 때만 맨 아래로(새 차례)
   useEffect(() => {
     const el = box.current;
@@ -595,14 +613,16 @@ export function TalkLog({
       });
       if (talkLogClearUpOf({ atBottom, back: back.current }))
         upAt.current = Number.NEGATIVE_INFINITY;
-      pinned.current = talkLogPinnedAfterScrollOf({
-        pinned: pinned.current,
-        atBottom,
-        upward: talkLogUpwardOf({
-          now: performance.now(),
-          upAt: upAt.current,
+      setPinned.current(
+        talkLogPinnedAfterScrollOf({
+          pinned: pinned.current,
+          atBottom,
+          upward: talkLogUpwardOf({
+            now: performance.now(),
+            upAt: upAt.current,
+          }),
         }),
-      });
+      );
     };
     const listeners: [string, (event: Event) => void][] = [
       ["touchstart", onTouchStart],

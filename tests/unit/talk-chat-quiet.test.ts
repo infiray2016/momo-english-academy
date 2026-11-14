@@ -502,3 +502,107 @@ describe("조용함 타이머 — 쪽 가림", () => {
     expect(sendCount(events)).toBe(0);
   });
 });
+
+describe("조용함 타이머 — 대화 기록 칸 넘김(13절 C243 보완 7 (7))", () => {
+  const away = (now: number) =>
+    ({ type: "log-away", now }) as const satisfies ChatQuietEvent;
+  const back = (now: number) =>
+    ({ type: "log-back", now }) as const satisfies ChatQuietEvent;
+
+  it("AC-27f 넘김으로 칸이 맨 아래를 떠나 있는 동안은 기다림 시간이 지나도 보내지 않는다", () => {
+    const events: ChatQuietEvent[] = [
+      open(0, 8),
+      readEnd(1_000),
+      away(4_000),
+      tick(9_000),
+      tick(60_000),
+      tick(1_000_000),
+    ];
+    expect(run(events).phase).toBe("armed");
+    expect(chatQuietDueAt(run(events))).toBeUndefined();
+    expect(sendCount(events)).toBe(0);
+  });
+
+  it("AC-27f 맨 아래로 돌아오면 그때부터 기다림 시간을 처음부터 잰다(끝 줄의 초 값 그대로)", () => {
+    for (const quietSeconds of [8, 5, 11]) {
+      const events: ChatQuietEvent[] = [
+        open(0, quietSeconds),
+        readEnd(1_000),
+        away(4_000),
+        back(20_000),
+      ];
+      expect(chatQuietStartOf(run(events))).toBe(20_000);
+      expect(chatQuietDueAt(run(events))).toBe(20_000 + quietSeconds * 1000);
+      expect(
+        sendCount([...events, tick(20_000 + quietSeconds * 1000 - 1)]),
+      ).toBe(0);
+      expect(sendCount([...events, tick(20_000 + quietSeconds * 1000)])).toBe(
+        1,
+      );
+    }
+  });
+
+  it("AC-27f 읽기가 끝나기 전에 떠났다 돌아오면 읽기 끝부터 잰다(늦은 쪽)", () => {
+    const events: ChatQuietEvent[] = [
+      open(0, 8),
+      away(500),
+      back(1_500),
+      readEnd(3_000),
+    ];
+    expect(chatQuietStartOf(run(events))).toBe(3_000);
+    expect(sendCount([...events, tick(11_000)])).toBe(1);
+  });
+
+  it("AC-27f 떠난 채 읽기가 끝나면 돌아온 때부터 잰다 · 여러 번 떠나고 돌아오면 마지막 돌아옴부터", () => {
+    const events: ChatQuietEvent[] = [
+      open(0, 8),
+      away(500),
+      readEnd(3_000),
+      tick(11_000),
+      back(12_000),
+      away(15_000),
+      tick(20_000),
+      back(25_000),
+    ];
+    expect(sendCount(events)).toBe(0);
+    expect(chatQuietDueAt(run(events))).toBe(33_000);
+    expect(sendCount([...events, tick(33_000)])).toBe(1);
+  });
+
+  it("AC-27f 설명 기다림 차례도 돌아온 때가 늦으면 그때부터 잰다", () => {
+    const events: ChatQuietEvent[] = [
+      open(0, 8, 6),
+      readEnd(2_000),
+      { type: "explain-shown", now: 3_000 },
+      away(4_000),
+      back(9_000),
+    ];
+    expect(chatQuietStartOf(run(events))).toBe(9_000);
+    const early: ChatQuietEvent[] = [
+      open(0, 8, 6),
+      readEnd(2_000),
+      away(2_500),
+      back(2_800),
+      { type: "explain-shown", now: 3_000 },
+    ];
+    expect(chatQuietStartOf(run(early))).toBe(3_000);
+  });
+
+  it("AC-27f 붙어 있는 채 오는 돌아옴은 재기 시작을 바꾸지 않는다 · 넘김은 입력처럼 그 차례를 거두지 않는다", () => {
+    const events: ChatQuietEvent[] = [open(0, 8), readEnd(1_000), back(5_000)];
+    expect(chatQuietStartOf(run(events))).toBe(1_000);
+    expect(run([open(0, 8), readEnd(1_000), away(2_000)]).phase).toBe("armed");
+  });
+
+  it("AC-27f 거둔 · 보낸 · 끈 차례에는 넘김이 아무것도 바꾸지 않는다", () => {
+    const sent: ChatQuietEvent[] = [open(0, 8), readEnd(1_000), tick(9_000)];
+    expect(run([...sent, away(10_000), back(11_000)])).toEqual(run(sent));
+    const dropped: ChatQuietEvent[] = [
+      open(0, 8),
+      { type: "input", now: 500, input: "talk" },
+    ];
+    expect(run([...dropped, away(1_000), back(2_000)])).toEqual(run(dropped));
+    expect(run([open(0), away(1_000), back(2_000)])).toEqual(run([open(0)]));
+    expect(run([away(1_000), back(2_000)])).toEqual(CHAT_QUIET_OFF);
+  });
+});

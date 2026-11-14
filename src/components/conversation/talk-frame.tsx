@@ -533,8 +533,8 @@ export function chatTurnOf(
 
 /**
  * 아이 차례가 열릴 때 조용함 타이머에 넣을 사건(순수, P6 보고의 화면 계약): 열림 한 번(끝 줄을 받은 때 — 설명 기다림 상한의 기준), 쪽이 이미
- * 가려져 있으면 곧바로 가림, '그만하기' 요청이 나가 있거나 확인 쪽지가 떠 있으면 곧바로 그만하기 입력, 읽는 중이 아니면(열림 전에 읽기가 끝남)
- * 열림 바로 뒤에 읽기 끝. 차례가 없으면(신호 없음) 아무 사건도 없다.
+ * 가려져 있으면 곧바로 가림, '그만하기' 요청이 나가 있거나 확인 쪽지가 떠 있으면 곧바로 그만하기 입력, 대화 기록 칸이 맨 아래를 떠나 있으면
+ * 곧바로 떠남(C243 보완 7 (7)), 읽는 중이 아니면(열림 전에 읽기가 끝남) 열림 바로 뒤에 읽기 끝. 차례가 없으면(신호 없음) 아무 사건도 없다.
  */
 export function chatOpenEventsOf({
   turn,
@@ -542,12 +542,15 @@ export function chatOpenEventsOf({
   hidden,
   stopping,
   reading,
+  logAway = false,
 }: {
   turn: ChatTurn | null;
   now: number;
   hidden: boolean;
   stopping: boolean;
   reading: boolean;
+  /** 대화 기록 칸이 맨 아래를 떠나 있는가(기록 칸이 알린 '맨 아래에 붙어 있음'의 반대). */
+  logAway?: boolean;
 }): ChatQuietEvent[] {
   if (turn === null) return [];
   const events: ChatQuietEvent[] = [
@@ -567,8 +570,37 @@ export function chatOpenEventsOf({
   ];
   if (hidden) events.push({ type: "hidden", now });
   if (stopping) events.push({ type: "input", now, input: "stop" });
+  if (logAway) events.push({ type: "log-away", now });
   if (!reading) events.push({ type: "read-end", now });
   return events;
+}
+
+/**
+ * 조용함 요청 뒤 지금 말풍선 아래 기다림 칸의 시작 때(순수, 13절 C243 보완 7 (3) · 정본 03 4절 97줄): 조용함 요청을 보내고 선생님 첫 줄을 아직
+ * 받지 않은 동안만 그 기다림의 시작 때(선생님 생각 표시와 같은 때)이고, 그 밖에는 없음. 첫 줄 · 요청 실패에서 둘 다 내려가 칸이 지워진다.
+ */
+export function chatQuietWaitOf({
+  quietWaiting,
+  waitingSince,
+}: {
+  quietWaiting: boolean;
+  waitingSince: number | null;
+}): number | null {
+  return quietWaiting ? waitingSince : null;
+}
+
+/**
+ * 막힌 뒤 설명의 한 줄 자리를 잡을까(순수, 13절 C243 보완 7 (4)): 끝 줄에 설명 기다림 칸이 있는 차례이고 그 차례의 말풍선이 끝 줄까지 받았을 때
+ * (새 선생님 차례가 흐르는 동안에는 앞 차례의 신호로 잡지 않음). 기존 두 방식(신호 없음)은 잡지 않는다.
+ */
+export function chatExplainSlotOf({
+  turn,
+  done,
+}: {
+  turn: ChatTurn | null;
+  done: boolean;
+}): boolean {
+  return done && turn !== null && turn.signal.explainWait !== undefined;
 }
 
 /** 사건 하나를 넣은 상태와 이 걸음에서 조용함 요청을 보낼지(순수 — 상태가 sent 로 바뀐 걸음에서 한 번). */
@@ -1174,6 +1206,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const [openedKey, setOpenedKey] = useState<string | null>(null);
   /** 조용함 요청을 보내고 선생님 줄을 아직 받지 않음(그동안 맞장구 · 다시 듣기 같은 다른 읽기를 넣지 않는다, V 검토 2b). */
   const [quietWaiting, setQuietWaiting] = useState(false);
+  /** 대화 기록 칸이 맨 아래에 붙어 있는가(기록 칸이 알림 — 조용함 타이머의 넘김 입력, C243 보완 7 (7)). */
+  const logPinned = useRef(true);
   /** 조용함 타이머(P6 reduceChatQuiet — 상태는 ref, 화면은 사건을 넣고 걸린 시각에 맞춰 시계를 다시 건다). */
   const quietRef = useRef<ChatQuietState>(CHAT_QUIET_OFF);
   const quietTimer = useRef<number | undefined>(undefined);
@@ -1228,6 +1262,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   function quietInput(input: ChatQuietInput) {
     quietEvent({ type: "input", now: performance.now(), input });
   }
+  /** 대화 기록 칸의 붙어 있음이 바뀜(넘김으로 맨 아래를 떠남 · 돌아옴). 이야기 방식 차례가 없으면(기존 두 방식) 사건을 넣지 않는다. */
+  function logPinnedChange(pinned: boolean) {
+    logPinned.current = pinned;
+    if (chatTurnRef.current === null) return;
+    quietEvent({
+      type: pinned ? "log-back" : "log-away",
+      now: performance.now(),
+    });
+  }
   /** 이야기 방식 차례를 둔다(끝 줄 · 다시 읽은 자료). 새 차례면 열림 사건들을 넣는다 — 같은 열쇠는 함수가 무시한다. */
   function chatOpen(turn: ChatTurn | null, reading: boolean) {
     chatTurnRef.current = turn;
@@ -1239,6 +1282,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       hidden: document.visibilityState === "hidden",
       stopping: stopping.current || confirmStopRef.current,
       reading,
+      logAway: !logPinned.current,
     }))
       quietEvent(event);
     setOpenedKey(turn.key);
@@ -2589,6 +2633,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
               // 조용함 요청 뒤 선생님 줄이 오기 전에는 다시 듣기를 막는다(그 사이 다른 읽기를 넣지 않음)
               listening={listening || quietWaiting}
               bottomKey={turnKey}
+              onPinnedChange={logPinnedChange}
               onReplay={(texts) => {
                 quietInput("replay");
                 speech?.unlockFromGesture();
@@ -2603,6 +2648,12 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                 teacherName={teacherName}
                 waiting={waitingSince}
                 waitSeconds={view.settings.ui.waitHintSeconds}
+                // 이야기 방식: 조용함 요청 뒤 말풍선 아래 기다림 칸 · 막힌 뒤 설명의 한 줄 자리(C243 보완 7 (3) · (4))
+                quietWait={chatQuietWaitOf({ quietWaiting, waitingSince })}
+                explainSlot={chatExplainSlotOf({
+                  turn: chatTurn,
+                  done: bubble.done,
+                })}
                 {...(explanation ? { explanation } : {})}
                 {...(picture ? { picture } : {})}
                 listening={listening || quietWaiting}
@@ -2706,6 +2757,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   // 이야기 방식(끝 줄 신호가 있는 차례만): 힌트 단추 · 후보 수 · 조용함 입력
                   chatHint={chatTurn?.signal.hint ? chatHintFetch : undefined}
                   alternatives={chatTurn?.signal.alternatives}
+                  waitSeconds={view.settings.ui.waitHintSeconds}
                   onInput={quietInput}
                   onHintAutoOpen={() =>
                     quietEvent({

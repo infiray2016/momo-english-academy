@@ -540,6 +540,25 @@ const SOUND_BUTTON_CLASS =
 const SOUND_BUTTON_BIG_CLASS = "min-h-16 px-7";
 
 /**
+ * 말풍선 자리의 기다림 칸(순수): 말풍선이 비어 있고 소리 줄도 없으면 그 자리에(in-place — 보통 선생님 차례), 이야기 방식 조용함 요청 뒤
+ * (quietWait)에 지금 말풍선이 있으면 그 아래에(below — 13절 C243 보완 7 (3)), 그 밖에는 없다. 제자리 칸이 있으면 아래 칸은 더 그리지 않는다.
+ */
+export function lessonBubbleWaitOf({
+  waiting,
+  quietWait,
+  empty,
+  sounds,
+}: {
+  waiting: number | null;
+  quietWait: number | null;
+  empty: boolean;
+  sounds: number;
+}): "in-place" | "below" | "none" {
+  if (waiting !== null && empty && sounds === 0) return "in-place";
+  return quietWait !== null ? "below" : "none";
+}
+
+/**
  * 새 꼴 선생님 말풍선(회화 plan 묶음 10). 글은 선생님 문장과 붙인 화면 글 줄(받은 차례대로 앞 줄이 다 흐른 뒤 다음 줄), 1~4단계 뜻은 끝 줄을
  * 받고 영어가 다 흐른 뒤 한 번에. 소리 줄은 글 없는 듣기 단추(onSound 로 그 줄만 다시 읽음). 들려주지 못한 소리 줄이 있으면(soundRetry —
  * sound-retry soundRetryStepOf) 안내 한 줄과 큰 다시 듣기, 다시도 못 들려주면 아이패드 사파리 무음 모드 줄을 더한다(저절로 건너뛰지 않음 —
@@ -552,6 +571,8 @@ export function LessonToriBubble({
   teacherName,
   waiting,
   waitSeconds,
+  quietWait = null,
+  explainSlot = false,
   picture,
   explanation,
   listening = false,
@@ -569,6 +590,16 @@ export function LessonToriBubble({
   teacherName?: string | undefined;
   waiting: number | null;
   waitSeconds: readonly [number, number];
+  /**
+   * 이야기 방식 조용함 요청 뒤 첫 줄까지의 기다림 시작 때(talk-frame chatQuietWaitOf). 있으면 지금 말풍선은 그대로 두고 그 아래에 보통 차례와
+   * 같은 기다림 칸(점 셋 → 둘째 값 뒤 '[이름](이/가) 생각하고 있어요')을 둔다. 없으면(기존 두 방식) 그리지 않는다.
+   */
+  quietWait?: number | null;
+  /**
+   * 이야기 방식 설명 기다림 차례(talk-frame chatExplainSlotOf): 설명이 아직 없으면 그 자리에 글 없는 한 줄을 잡아 둔다(늦게 붙는 설명이 아이 차례
+   * 단추 묶음을 밀지 않게 — 기다리는 표시가 아님, C243 보완 7 (4)).
+   */
+  explainSlot?: boolean;
   picture?: PictureInfo;
   explanation?: string | undefined;
   listening?: boolean;
@@ -647,10 +678,16 @@ export function LessonToriBubble({
   const sizeMark = retrying ? { "data-size": "big" } : {};
   // 소리 줄은 선생님 문장 뒤에 오므로(3.3 · 묶음 8 lessonAfterLinesOf) 받은 때 단추를 둔다 — 자리를 먼저 잡아 뜻이 늦게 들어도 뛰지 않는다
   const soundShown = sounds.length > 0;
+  const wait = lessonBubbleWaitOf({
+    waiting,
+    quietWait,
+    empty,
+    sounds: sounds.length,
+  });
   return (
     <div className="flex items-start gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {waiting !== null && empty && sounds.length === 0 ? (
+        {wait === "in-place" && waiting !== null ? (
           <div data-tori-waiting="" className={cn(BUBBLE_CLASS, BUBBLE_WIDTH)}>
             <ToriWaiting
               startedAt={waiting}
@@ -785,6 +822,28 @@ export function LessonToriBubble({
           <p data-tori-explanation="" className={cn(CHILD_SIZE.guide, "px-2")}>
             {fillName(explanation, englishName)}
           </p>
+        ) : explainSlot ? (
+          // 글 없는 한 줄 자리(설명과 같은 꼴 · 같은 높이, 읽지 않음)
+          <p
+            data-tori-explanation-slot=""
+            aria-hidden
+            className={cn(CHILD_SIZE.guide, "px-2")}
+          >
+            {"\u00a0"}
+          </p>
+        ) : null}
+        {wait === "below" && quietWait !== null ? (
+          <div
+            data-tori-waiting=""
+            data-tori-waiting-quiet=""
+            className={cn(BUBBLE_CLASS, BUBBLE_WIDTH)}
+          >
+            <ToriWaiting
+              startedAt={quietWait}
+              seconds={waitSeconds}
+              teacherName={teacherName}
+            />
+          </div>
         ) : null}
       </div>
       {picture ? <TurnPicture picture={picture} /> : null}

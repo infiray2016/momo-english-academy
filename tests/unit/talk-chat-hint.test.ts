@@ -691,6 +691,20 @@ describe("AC-27g 힌트 호출 규격(spec 설계 7 '호출 입력' · '호출 �
     expect(one).not.toContain("left blank");
   });
 
+  it("AC-27g 안내문은 hint_ko 를 아이 말투의 반말로, explain_ko 를 선생님 목소리의 반말로 정한다(정본 03 4절 7줄 · 13절 C243 보완 7 (6))", () => {
+    const system = talkChatHintSystem(hintInput(), { contextTurns: 6 });
+    const line = (field: string) =>
+      system.split("\n").find((l) => l.startsWith(`- "${field}"`)) ?? "";
+    expect(line("hint_ko")).toContain(
+      "as the child would say it, in casual 반말 (the child talking to a friend, not polite 해요체)",
+    );
+    expect(line("explain_ko")).toContain(
+      "in casual 반말 in the teacher's own voice, as the teacher would say it to the child (not polite 해요체)",
+    );
+    // hint_en 은 영어라 말투 줄이 없다
+    expect(line("hint_en")).not.toContain("반말");
+  });
+
   it("AC-27g 힌트 호출 입력에 단원 단어 · 목표 글이 없다", () => {
     const built = buildAiRequest(
       talkChatHintSpec,

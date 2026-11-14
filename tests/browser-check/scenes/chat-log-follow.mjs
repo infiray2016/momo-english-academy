@@ -1,7 +1,8 @@
 // W 장면 (10): 넘김 세 장면(대화 기록 칸 talk-log 는 고치지 않고 확인만). (가) 누른 뒤 몇 초 만에 차는 힌트 단 (나) 끝 줄 뒤에 늦게 붙는 막힌 뒤
 // 설명 (다) 아이 말풍선 없이 잇달아 쌓이는 선생님 말풍선(조용함 차례). 기준: 맨 아래 맞춤(지금 턴이 칸 안 · 세로에서 쪽이 넘겨지지 않음 · 말하기
-// 단추가 보는 창 안). (가) · (나)는 아이가 위로 넘겨 둔 때(위로 가는 휠)는 끌어내리지 않는다(같은 차례 안에서 자람). (다)는 위로 넘겨 둔 때도
-// 새 선생님 말풍선이 칸 안에 온다(컨트롤러 결정 '새 차례는 맨 아래로' — talk-log 의 지금 규칙, 코드 검토 rev-chat-w M-4).
+// 단추가 보는 창 안). (가) · (나)는 아이가 위로 넘겨 둔 때(위로 가는 휠)는 끌어내리지 않는다(같은 차례 안에서 자람). (다)는 위로 넘겨 둔 동안은
+// 조용함 차례가 오지 않고(13절 C243 보완 7 (7) — W fix 2 에서 바뀐 기준, 앞 판은 넘겨 둔 채 조용함 2 를 통과로 봄), 맨 아래로 돌아온 뒤 온 새 선생님
+// 말풍선이 칸 안에 온다(컨트롤러 결정 '새 차례는 맨 아래로'). 넘겨 둔 동안의 판정은 chat-log-away 가 자세히 본다.
 import {
   LANDSCAPE,
   openChat,
@@ -38,6 +39,23 @@ function measure(p) {
       viewport: window.innerHeight,
     };
   });
+}
+
+/** 위로 넘겨 둔 칸을 휠로 맨 아래까지 되돌린다(맨 아래에 닿을 때까지 최대 3초). */
+async function wheelDown(p) {
+  const box = await p.locator("[data-talk-log]").boundingBox();
+  await p.mouse.move(box.x + box.width / 2, box.y + 40);
+  await p.mouse.wheel(0, 4000);
+  for (let t = 0; t < 3000; t += 100) {
+    const bottom = await p.evaluate(() => {
+      const log = document.querySelector("[data-talk-log]");
+      return log
+        ? log.scrollTop >= log.scrollHeight - log.clientHeight - 2
+        : false;
+    });
+    if (bottom) break;
+    await advance(p, 100);
+  }
 }
 
 async function wheelUp(p) {
@@ -156,8 +174,15 @@ export async function run({ browserType, url, check }) {
             if (up) await wheelUp(p);
             const before = await measure(p);
             await advance(p, 9000);
+            let held = null;
+            if (up) {
+              // 넘겨 둔 동안은 조용함 차례가 오지 않는다 → 맨 아래로 돌아온 뒤 기다림 시간이 지나면 온다
+              held = (await recordOf(p)).quiet;
+              await wheelDown(p);
+              await advance(p, 9000);
+            }
             await untilChild(p, 5000);
-            seen.push({ before, after: await measure(p) });
+            seen.push({ before, held, after: await measure(p) });
           }
           const r = await recordOf(p);
           {
@@ -170,6 +195,7 @@ export async function run({ browserType, url, check }) {
             const ok =
               raised &&
               r.quiet === 2 &&
+              (!up || seen.every((s, k) => s.held === k)) &&
               seen.every(
                 (s) =>
                   inView(s.after) &&
@@ -178,7 +204,7 @@ export async function run({ browserType, url, check }) {
             check(
               `되풀이 ${i + 1} · ${tag} · 쌓이는 선생님 말풍선 · ${how}`,
               ok,
-              `칸을 올려 둠 ${raised} · 조용함 ${r.quiet} · ${JSON.stringify(seen.map((s) => s.after))}`,
+              `칸을 올려 둠 ${raised} · 조용함 ${r.quiet} · 넘겨 둔 동안 조용함 ${JSON.stringify(seen.map((s) => s.held))} · ${JSON.stringify(seen.map((s) => s.after))}`,
             );
           }
           await p.context().close();

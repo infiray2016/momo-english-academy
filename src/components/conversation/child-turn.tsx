@@ -73,7 +73,7 @@ import {
 } from "@/lib/talk-stream";
 import { cn } from "@/lib/utils";
 import type { HintView } from "@/server/conversation";
-import { HintLoadingDots } from "./hint-loading-dots";
+import { chatHintLoadingMinHOf, HintLoadingDots } from "./hint-loading-dots";
 
 export const CHILD_TURN_TEXT = {
   speak: "말하기",
@@ -300,6 +300,8 @@ export type ChildTurnProps = {
   chatHint?: ChatHintFetch | undefined;
   /** 이야기 방식: 끝 줄의 후보 수(talk.chat_alternatives) — 이 차례의 모든 듣기에 넘긴다(spec 설계 11). 없으면 지금처럼 넘기지 않는다. */
   alternatives?: number | undefined;
+  /** 이야기 방식 힌트 받기 단의 5초 줄(ui.wait_hint_seconds, C243 보완 7 (5)). chatHint 가 없으면(기존 방식) 쓰지 않는다. */
+  waitSeconds?: readonly [number, number] | undefined;
   /** 이야기 방식 조용함 타이머의 입력(누름 처리의 첫 줄에서 — 막힌 누름도). 없으면 부르지 않는다. */
   onInput?: ((input: ChatQuietInput) => void) | undefined;
   /** 이야기 방식: 이어진 둘째 막힘으로 힌트 단이 저절로 열림(입력이 아님 — 조용함 타이머는 그대로 돈다). */
@@ -998,7 +1000,15 @@ export function ChildTurn(props: ChildTurnProps) {
               className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-dashed border-ink bg-paper px-4 py-2"
             >
               {slot.state === "loading" ? (
-                <HintLoadingDots />
+                // 글 단과 같은 높이 · 둘째 값 뒤 5초 줄(C243 보완 7 (5))
+                <HintLoadingDots
+                  chat={{
+                    minH: chatHintLoadingMinHOf(tier),
+                    ...(props.waitSeconds
+                      ? { waitSeconds: props.waitSeconds }
+                      : {}),
+                  }}
+                />
               ) : slot.state === "failed" ? (
                 <>
                   <span data-hint-failed="" className={CHILD_SIZE.guide}>

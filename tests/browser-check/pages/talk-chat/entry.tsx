@@ -16,7 +16,9 @@ import { installFakeWebSpeech } from "@/lib/speech/fake-web-speech";
 import type { TalkLessonView } from "@/server/conversation";
 import settingsSeed from "../../../../seed/settings.json";
 
-type Reply =
+/** 턴 요청 응답 하나. delayMs 는 첫 줄(또는 거절 · 오류 줄) 앞 늦춤(ms — 조용함 요청 뒤 기다림 칸 장면). */
+type Reply = ReplyBody & { delayMs?: number };
+type ReplyBody =
   /** 보통 응답: 선생님 문장 하나 · 뜻 · 끝 줄(신호는 chat 이 있으면 그것, 없으면 설정의 신호). */
   | {
       kind: "turn";
@@ -315,6 +317,7 @@ window.fetch = (async (
   chat.requests.push({ at: clock(), body });
   const reply: Reply = cfg.replies[replyAt] ?? { kind: "turn" };
   replyAt += 1;
+  if (reply.delayMs !== undefined) await wait(reply.delayMs);
   if (reply.kind === "offline") {
     if (reply.saved) turnNo += 1;
     if (reply.orphan) orphan = true;

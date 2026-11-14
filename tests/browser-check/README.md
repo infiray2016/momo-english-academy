@@ -12,6 +12,7 @@
 
 - 수업 화면의 배치(`talk-lesson` 쪽, S5 fix 7): 앱의 실제 스타일(`src/app/globals.css` 를 저장소의 `@tailwindcss/node` 로 묶음)과 실제 조각으로 그리고, 수업 틀의 판 짜임 · 효과는 `pages/talk-lesson/frame-classes.mjs` 에 옮겨 둔다(장면이 `talk-frame.tsx` 의 글과 같은지 먼저 본다). 글꼴은 마지막 빌드(`.next/static`)에 있으면 쓰고, 없으면 대체 글꼴이라고 알린다. 고치기 전 틀로 돌리기: `BROWSER_CHECK_LEGACY=1 pnpm check:browser talk-lesson-fit --swap src/components/conversation/talk-log.tsx=<옛 판>`.
 - 수업 화면 쪽의 장면 셋(S5 fix 8): `talk-lesson-land` 는 가로로 연 수업 · 돌려 찍은 가로의 마무리 제안 · 정리에서 쪽 넘김 0 과 위 띠를, `talk-lesson-discard` 는 버리는 듣기 기기 세로의 짧은 말 · 회복 안내 줄에서 쪽 넘김 0 을, `talk-lesson-regrow` 는 큰 아래 조각 뒤 선생님 차례에서 칸이 보통 높이로 돌아오는지와 두 손가락 확대(Chromium 만) 동안 칸이 줄지 않는지를 본다. 쪽 쿼리 `discard=1` 은 버리는 듣기 기기 꼴로 열고, 쪽 안의 `window.__short(켬)` · `window.__recover(켬)` 가 짧은 말 말풍선 · 회복 안내 줄을 띄우고 지운다.
+- 이야기 방식 화면 쪽의 장면 넷(W fix 2, 13절 C243 보완 7): `chat-quiet-wait` 는 조용함 요청 뒤 첫 줄까지 지금 말풍선 아래의 기다림 칸(점 셋 · 5초 줄)과 첫 줄 · 거절 · 오류에서 그 칸이 사라지는지를, `chat-explain-slot` 은 설명이 올 차례의 한 줄 자리로 늦은 설명이 단추 묶음을 밀지 않는지(2px 안)를, `chat-hint-height` 는 힌트 받기 점 셋 단과 글 단의 높이가 같고 5초가 넘으면 '확인하고 있어요'가 보이는지를(실제 시간대로), `chat-log-away` 는 기록 칸을 위로 넘겨 둔 동안 조용함 요청이 나가지 않고 맨 아래로 돌아온 뒤 처음부터 재는지를 본다. 쪽의 응답 늦춤은 `pages/talk-chat/entry.tsx` 가 맡는다.
 
 ## 짜임
 
