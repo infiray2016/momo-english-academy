@@ -5,7 +5,7 @@
 // 막힌 뒤 한국어 설명이 말풍선 아래 늦은 글로 붙음. 가짜 Anthropic 은 요청 본문의 글로 대화 호출(안내문 마지막 문단) · 힌트 호출(힌트 안내문 첫
 // 문단)을 가른다(통합 시험 talk-fixture CHAT_SYSTEM_MARK 와 같은 글). 화면 검토 사진은 E2E_PHOTOS 가 있을 때 test-results/photos/talk-chat-*.png
 // (photos.ts, 아이패드 두 방향). 이 Mac 은 e2e DB 가 뜨지 않아 CI 에서 돈다(로컬에서 돌려 보지 않은 시험 — 묶음 W 보고).
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { type FakeRule, messageBody } from "../fixtures/ai/fake-anthropic";
 import { closeE2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
@@ -48,10 +48,20 @@ const HINT_DELAY_MS = 3000;
 /** 기다림 시간(talk.chat_quiet_seconds 시드 잠정 8초)보다 넉넉히 — 조용함 요청이 나갈 때까지 기다리는 상한(ms, 시험 값). */
 const QUIET_WAIT_MS = 30_000;
 
+/**
+ * 선생님 차례마다 화면에 보이는 문장(말풍선 · 기록 칸은 문장마다 줄 하나로 그리고 줄 사이에 빈칸이 없다 — tori.tsx data-tori-line · talk-log.tsx.
+ * 말풍선 줄은 흐르는 글과 화면 낭독기용 온 글을 함께 둔다). 그래서 단언은 문장 하나씩 한다(talk-lead.spec 의 LEAD_SCRIPT_SAY_COMMA_SHOWN 과 같은 꼴 —
+ * 두 문장을 한 글로 찾으면 늘 실패한다, CI 43565405821). 응답의 say 는 이 문장들을 빈칸으로 이은 글이다.
+ */
+const SHOWN = {
+  opening: ["Hi Momo!", "I went to the lake today."],
+  quiet: ["The ducks were so cute."],
+  afterStuck: ["That is okay.", "Do you like ducks?"],
+} as const;
 const SAY = {
-  opening: "Hi Momo! I went to the lake today.",
-  quiet: "The ducks were so cute.",
-  afterStuck: "That is okay. Do you like ducks?",
+  opening: SHOWN.opening.join(" "),
+  quiet: SHOWN.quiet.join(" "),
+  afterStuck: SHOWN.afterStuck.join(" "),
 } as const;
 const HINT_JSON = {
   hint_ko: "나도 오리가 좋아요.",
@@ -124,6 +134,16 @@ const childTurn = (page: Page) => page.locator("[data-child-turn]");
 const hintButton = (page: Page) =>
   page.locator("[data-child-turn] [data-hint-button]");
 
+/** 그 차례의 문장이 차례대로 다 보일 때까지(첫 문장은 timeout 까지 기다리고, 뒤 문장은 앞 문장이 흐른 뒤 나온다). */
+async function expectLines(
+  target: Locator,
+  lines: readonly string[],
+  timeout = STREAM_END_MS,
+) {
+  for (const line of lines)
+    await expect(target).toContainText(line, { timeout });
+}
+
 async function untilChildTurn(page: Page) {
   await expect(childTurn(page)).toBeVisible({ timeout: STREAM_END_MS });
   await expect(
@@ -165,20 +185,16 @@ test.describe("회화 이야기 방식 수업(3단계 단원 1)", () => {
     await page.getByRole("button", { name: T.micOk }).click();
 
     // 수업 첫 말(입구 start) → 아이 차례. 끝 줄에 힌트 표지가 있어 질문 없는 말 뒤에도 힌트 단추가 있다
-    await expect(bubble(page)).toContainText(SAY.opening, {
-      timeout: STREAM_END_MS,
-    });
+    await expectLines(bubble(page), SHOWN.opening);
     await untilChildTurn(page);
     await expect(hintButton(page)).toBeVisible();
 
     // 아무것도 누르지 않으면 기다림 시간 뒤 조용함 요청 하나 → 아이 말풍선 없이 선생님 말풍선이 이어 쌓인다
-    await expect(bubble(page)).toContainText(SAY.quiet, {
-      timeout: QUIET_WAIT_MS,
-    });
+    await expectLines(bubble(page), SHOWN.quiet, QUIET_WAIT_MS);
     expect(quietCount(turnBodies)).toBe(1);
     // 대화 호출은 수업 첫 말과 조용함 차례 둘
     expect(await chatRequests()).toHaveLength(2);
-    await expect(page.locator("[data-talk-log]")).toContainText(SAY.opening);
+    await expectLines(page.locator("[data-talk-log]"), SHOWN.opening);
     await expect(page.locator("[data-talk-log] [data-child-said]")).toHaveCount(
       0,
     );
@@ -198,9 +214,7 @@ test.describe("회화 이야기 방식 수업(3단계 단원 1)", () => {
 
     // '잘 모르겠어요'(앱이 아는 막힘) → 다음 선생님 차례의 끝 줄에 설명 기다림 → 말풍선 아래 늦은 설명(읽지 않음)
     await page.locator("[data-child-turn] [data-dont-know]").click();
-    await expect(bubble(page)).toContainText(SAY.afterStuck, {
-      timeout: STREAM_END_MS,
-    });
+    await expectLines(bubble(page), SHOWN.afterStuck);
     await expect(page.locator("[data-tori-explanation]")).toContainText(
       HINT_JSON.explain_ko,
       { timeout: STREAM_END_MS },

@@ -233,19 +233,23 @@ function cardOpeningEn(c: Card): string {
     : g.firstLine.en;
 }
 
+/**
+ * 턴 길의 단원 주제 출처(chat-turn ChatTurnDeps.chatTopic): 수업을 연 재료 표(openSession 의 leadText — 3단계 단원 1 의 표)와 같은 표에서 읽는다.
+ * 기본 출처 talkChatTopicOf 는 시험 시드의 1단계 단원 1 에 주제가 없어 null 을 내고, 턴 길은 그 수업을 '재료 없음' 오류로 닫는다(행 없음 — CI 43565405821).
+ */
+const chatTopicOfL3U1 = () => TALK_LEAD_TEXT_L3U1.chatTopicEn ?? null;
+
 async function openTurn(
   sessionId: string,
   lead: "start" | "back" | "more",
 ): Promise<TalkLessonLine[]> {
   const lines: TalkLessonLine[] = [];
-  await runTalkTurnRequest(
-    { sessionId, lead },
-    {
-      ...h.deps(),
-      write: (line) => lines.push(line as TalkLessonLine),
-      requestReceivedAt: h.clock.now,
-    },
-  );
+  await runTalkTurnRequest({ sessionId, lead }, {
+    ...h.deps(),
+    write: (line: TalkLessonLine) => lines.push(line),
+    requestReceivedAt: h.clock.now,
+    chatTopic: chatTopicOfL3U1,
+  } as Parameters<typeof runTalkTurnRequest>[1]);
   return lines;
 }
 

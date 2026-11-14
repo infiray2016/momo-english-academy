@@ -245,11 +245,11 @@ describe("이야기 방식 턴 길(묶음 S1)", () => {
     expect(JSON.parse(teacher?.toriRewrite ?? "{}")).toMatchObject({
       say: "Hi! How are you today?",
     });
-    expect(readTalkMove(teacher?.move)?.chat).toMatchObject({
-      facts: [],
-      run: 0,
-      wrapUpHeld: undefined,
-    });
+    const chat = readTalkMove(teacher?.move)?.chat;
+    expect(chat).toMatchObject({ facts: [], run: 0 });
+    // 마무리 보류가 없는 차례는 그 칸을 두지 않는다(move.ts copyChat — 값이 있는 선택 칸만, DB JSON 에서도 빠짐). toMatchObject 의 undefined 칸은
+    // 받은 쪽에 그 열쇠가 있어야 맞으므로 따로 본다(CI 43565405821)
+    expect(chat).not.toHaveProperty("wrapUpHeld");
     expect(textOf(lines)).toBe(teacher?.text);
     expect(endOf(lines)?.chat).toEqual({
       quietSeconds: 8,
