@@ -894,5 +894,13 @@ export function useSpeakQueue(
       sleeper.cancel();
     };
   }, [sleeper]);
-  return { enqueue, cancel, replay, speaking };
+  /**
+   * 지금 읽기 줄이 읽는 중인가(그림을 기다리지 않는 값 — 같은 처리 안에서 막 넣은 줄도 셈). speaking 은 그린 뒤의 값이라, 흘림 줄과 끝 줄이 한 덩이로
+   * 와 처리기가 한 번에 돌면 아직 거짓이다(이야기 방식 조용함 타이머의 열림 · 걸린 때 — 코드 검토 rev-chat-w I-2).
+   */
+  const isSpeaking = useCallback(
+    () => running.current || queue.current.length > 0,
+    [],
+  );
+  return { enqueue, cancel, replay, speaking, isSpeaking };
 }

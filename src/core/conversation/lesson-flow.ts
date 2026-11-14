@@ -431,6 +431,10 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
         choice = "closing";
         closingAsked = true;
         slot = null;
+      } else if (m?.chat !== undefined && isSupportMove(m) && slot === null) {
+        // 이야기 방식 받침 행(move.chat 이 있음 — intent 2026-11-13-회화-대화-구조-R, 묶음 P3 fix 2): 막히기 전 선생님 말에 물음이 없어 질문 자리가
+        // 없어도 새 자리를 열지 않고 자리 막힘 수를 잇는다(talk.dontknow_max 번째 닫기 · 인사 끝 · 이어진 둘째 막힘). 자리가 없으니 질문 목록 ·
+        // 쉬운 질문의 답 예시 줄은 건너뛴다. chat 묶음이 없는 행(기존 두 방식)은 이 갈래에 들지 않고 아래 줄을 그대로 지난다.
       } else if (m && isSupportMove(m) && slot) {
         slot.questions.push(...questions);
         if (questions.length > 0) slot.question = questions.at(-1) ?? null;

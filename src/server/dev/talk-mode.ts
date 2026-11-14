@@ -5,14 +5,14 @@ import "server-only";
 // - 서버 액션 둘(readTalkMode · changeTalkMode)은 함수 안 지시 'use server' 이고 첫 문장이 requireAccess() 다(쿠키 없으면 401). 쪽(page.preview.tsx)이
 //   본체에 넘긴다 — 이 파일은 순수 꼴 · 가짜 저장소 시험을 위해 파일 지시를 두지 않는다.
 // - 운영 배포(VERCEL_ENV=production)면 읽지도 쓰지도 않는다(쪽이 운영 빌드에 없는 것에 더한 깊이 방어 — previewToolsAllowed).
-// - talk.lead_mode 한 키의 집 행(profile_id 빈 행)만, app · claude 두 값만 쓴다. 바꿀 때 설정 판을 settings 전체 최대 판 + 1 로 올리고
+// - talk.lead_mode 한 키의 집 행(profile_id 빈 행)만, app · claude 두 값만 쓴다(DEV_TALK_MODES — 설정 값에는 셋째 값 chat 이 있으나, 이야기 방식
+//   plan 묶음 C 가 묶음 E(켜기 전 관문 뒤)까지 이 쪽에서 chat 을 고르지 못하게 둘로 고정한다. 집 행이 chat 이면 읽기는 invalid 다). 바꿀 때 설정 판을 settings 전체 최대 판 + 1 로 올리고
 //   settings_history 에 한 줄 남긴다(5절 · 12절 머리 — 시드 적재와 같은 꼴). 같은 값이면 쓰지 않는다. 다른 설정 행은 건드리지 않는다.
 // DB 오류는 이름 · 코드만 담아 다시 던진다(safeDbError).
 import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import {
   TALK_LEAD_MODE_KEY,
-  TALK_LEAD_MODES,
   type TalkLeadMode,
 } from "@/core/conversation/lead-mode";
 import { settings, settingsHistory } from "@/db/schema/operations";
@@ -25,23 +25,30 @@ import { previewToolsAllowed } from "@/server/preview";
 /** settings_history.source 의 개발용 전환 쪽 값(시드 적재 seed_load 와 가른다). */
 export const TALK_MODE_HISTORY_SOURCE = "dev_talk_mode";
 
-const talkLeadModeSchema = z.enum(TALK_LEAD_MODES);
+/** 이 쪽이 받고 보이는 방식(묶음 E 전까지 app · claude 둘 — 이야기 방식 plan 묶음 C). */
+export const DEV_TALK_MODES = [
+  "app",
+  "claude",
+] as const satisfies readonly TalkLeadMode[];
+export type DevTalkMode = (typeof DEV_TALK_MODES)[number];
+
+const talkLeadModeSchema = z.enum(DEV_TALK_MODES);
 
 type Env = Readonly<Record<string, string | undefined>>;
 
 export type TalkModeRead =
-  | { ok: true; mode: TalkLeadMode }
+  | { ok: true; mode: DevTalkMode }
   | { ok: false; reason: "not-allowed" | "missing" | "invalid" };
 
 export type TalkModeOutcome =
-  | { ok: true; mode: TalkLeadMode; changed: boolean }
+  | { ok: true; mode: DevTalkMode; changed: boolean }
   | { ok: false; reason: "not-allowed" | "invalid-input" | "missing" };
 
 export type TalkModeHistoryRow = {
   key: string;
   profileId: null;
   oldValue: unknown;
-  newValue: TalkLeadMode;
+  newValue: DevTalkMode;
   changedAt: Date;
   appliesFrom: null;
   source: string;
@@ -53,7 +60,7 @@ export type TalkModeChange =
   | {
       kind: "change";
       key: string;
-      value: TalkLeadMode;
+      value: DevTalkMode;
       version: number;
       history: TalkModeHistoryRow;
     };
@@ -70,7 +77,7 @@ export type TalkModeStore = {
 };
 
 /** 바꿀 값: app · claude 두 글만 받는다(그 밖은 null). */
-export function talkModeInputOf(input: unknown): TalkLeadMode | null {
+export function talkModeInputOf(input: unknown): DevTalkMode | null {
   const parsed = talkLeadModeSchema.safeParse(input);
   return parsed.success ? parsed.data : null;
 }
@@ -83,7 +90,7 @@ export function talkModeChangeOf({
   at,
 }: {
   current: { value: unknown } | undefined;
-  next: TalkLeadMode;
+  next: DevTalkMode;
   maxVersion: number;
   at: Date;
 }): TalkModeChange {

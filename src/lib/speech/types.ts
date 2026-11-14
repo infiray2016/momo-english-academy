@@ -70,6 +70,37 @@ export type ListenCallbacks = {
   text?(text: string): void;
   sound?(): void;
   started?(): void;
+  /**
+   * 인식 객체의 maxAlternatives(회화 대화 구조 R spec 설계 11 — 끝 줄이 후보 수를 실은 이야기 방식 차례에만 화면이 넘긴다). 알림이 아니라
+   * 듣기 매개지만, 감싸개(teacher · paced · pieces · 버리는 듣기 층)가 on 을 그대로 넘기므로 여기에 둔다. 없으면 지금처럼 1 이고 인식기
+   * 정보를 읽지 않는다(기록 · 요약이 지금 그대로, NFR-5).
+   */
+  alternatives?: number;
+  /** alternatives 를 넘긴 듣기가 끝날 때(결과가 하나라도 있었으면) 결과 바로 앞에 한 번 — 확신 정도 · 둘째 후보 글 · 중간 결과 표지. */
+  recognizer?(info: RecognizerInfo): void;
+};
+
+/** 듣기 끝 기록의 인식기 칸(RecognizerInfo 에서 글을 뺀 수 · 참거짓). mx 는 섞인 글일 때만 참으로 싣는다. */
+export type RecognizerTraceInfo = {
+  cf?: number;
+  na: number;
+  int: boolean;
+  mx?: boolean;
+};
+
+/**
+ * 듣기 하나의 인식기 정보(spec 설계 11 '값의 뜻'). confidence 는 아이 말 글을 이룬 확정 결과들의 confidence 가운데 가장 낮은 값(소수 둘째
+ * 자리)이고, 확정 결과가 없거나 값이 없거나 0 이면 없다. alternative 는 아이 말의 결과 전체(모든 인식 객체의 확정 · 중간 결과)가 확정 결과
+ * 하나일 때만 그 결과의 둘째 후보 글이다(턴 요청 본문에만 싣는다 — 기록 · 듣기 요약에는 넣지 않음). alternatives 는 확정 결과가 낸 후보
+ * 수의 최댓값(확정 결과가 없으면 중간 결과의 것), interim 은 확정 결과 없이 중간 결과만으로 끝났는가다. mixed 는 확정 결과와 중간 결과가
+ * 섞인 글로 끝났을 때만 참으로 있다(그때 confidence 는 확정 조각들의 값이고 alternative 는 없다).
+ */
+export type RecognizerInfo = {
+  confidence?: number;
+  alternative?: string;
+  alternatives: number;
+  interim: boolean;
+  mixed?: boolean;
 };
 
 /** 읽어 주기 상태(speechSynthesis 의 speaking · pending 을 읽기만 한다). 읽어 주기가 없는 브라우저는 둘 다 거짓이다. */
@@ -225,7 +256,17 @@ export type SpeechTraceEntry =
     }
   | { at: number; kind: "button"; listen: number }
   | { at: number; kind: "cancel"; listen: number; reason: CancelReason }
-  | { at: number; kind: "listen-done"; listen: number; outcome: ListenOutcome }
+  | {
+      at: number;
+      kind: "listen-done";
+      listen: number;
+      outcome: ListenOutcome;
+      /**
+       * 인식기 정보(alternatives 를 넘긴 듣기에서 결과가 있었을 때만 — 회화 대화 구조 R spec 설계 11). 수와 참거짓만이고 글이 없다(C149 —
+       * 둘째 후보 글은 ListenCallbacks.recognizer 로만 넘긴다). cf 확신 정도 · na 후보 수 · int 중간 결과만으로 끝남. 그 밖의 듣기에는 없다.
+       */
+      rec?: RecognizerTraceInfo;
+    }
   | {
       at: number;
       kind: "speak";

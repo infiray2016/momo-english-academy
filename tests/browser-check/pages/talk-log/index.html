@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; font: 20px/1.4 system-ui; }
+  main { padding: 16px; }
+  .top { height: 250px; background: #cfe; margin-bottom: 16px; }
+  .tall .top { height: 520px; }
+  .tall main { padding-bottom: 600px; }
+  .panel { display: flex; flex-direction: column; gap: 16px; background: #fffdf6; padding: 16px; }
+  /* 실제 조각의 클래스: flex max-h-[60dvh] min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-1 py-2 */
+  [data-talk-log] { display: flex; flex-direction: column; gap: 16px; max-height: 60dvh; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 4px; }
+  [role="log"] { display: flex; flex-direction: column; gap: 16px; }
+  /* 실제 꼴: BUBBLE_CLASS(py-4 · border 3px) · 단추는 min-h-14(56px) · 기다림 칸은 점 줄(py-2 + 16px) */
+  .bubble { border: 3px solid #222; border-radius: 4px 18px 18px 18px; padding: 16px 20px; background: #e8fbd8; box-sizing: border-box; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+  button.bubble { min-height: 56px; min-width: 56px; }
+  .dots { display: block; height: 16px; width: 60px; padding: 8px 0; background: #222; background-clip: content-box; }
+  .bubblew { width: fit-content; max-width: 520px; }
+  .childbubble { align-self: flex-end; border: 2px solid #222; border-radius: 12px; padding: 10px 14px; background: #ffd83a; }
+  .row { display: flex; align-items: flex-start; gap: 16px; }
+  .col { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 12px; }
+  .lines { display: flex; flex-direction: column; gap: 4px; font-size: 28px; font-weight: 700; line-height: 1.375; }
+  .line { display: block; }
+  .under { display: flex; min-height: 56px; flex-wrap: wrap; align-items: center; padding: 0 8px; }
+  .under p { margin: 0; }
+  [data-talk-log-ko] { margin: 0; padding: 0 8px; }
+  .foot { border-top: 2px dashed #999; padding-top: 16px; min-height: 80px; }
+  [data-speak] { font: inherit; padding: 16px 28px; }
+</style></head>
+<body><script>if (new URLSearchParams(location.search).get('tall') === '1') document.documentElement.classList.add('tall');</script><div id="root"></div>
+<script src="./bundle.js"></script>
+</body></html>

@@ -1,5 +1,5 @@
 // 회화 선생님 명단의 화면 몫 · 보일 선생님 · 선생님 정하기(선생님 화면 plan 값 5, 5절 명단 자료 · 6.1 이름 변형 · C130 · C141).
-// 명단(seed/teachers.json)은 서버가 읽어 넘긴다. 화면에는 TeacherView 만 보낸다 — 성격 글(personaEn) · 출처 · 영어 이름은 보내지 않는다(5절).
+// 명단(seed/teachers.json)은 서버가 읽어 넘긴다. 화면에는 TeacherView 만 보낸다 — 성격 글(personaEn) · 이야기 방식 재료(chatPersonaEn · chatFavoritesEn) · 출처 · 영어 이름은 보내지 않는다(5절).
 // 아이 이름과 같은 이름의 선생님은 그 아이에게 보이지 않는다(6.1 과 같은 이름 변형). 순수 모듈이다.
 import { nameVariantsOf } from "@/core/ai/mask";
 import type { Teacher } from "@/core/seed/schema/teachers";
@@ -40,6 +40,20 @@ export function teacherViewOf(t: Teacher): TeacherView {
     portraitPath: assetUrlOf(t.portrait.path),
     voice: { pitch: t.voice.pitch, prefer: [...t.voice.prefer] },
   };
+}
+
+/** 이야기 방식 안내문의 선생님 재료(자리 {PERSONA} · {FAVORITES} — 이야기 방식 spec 설계 2). 서버의 AI 몫이고 화면에 보내지 않는다. */
+export type ChatMaterial = { personaEn: string; favoritesEn: string };
+
+/**
+ * 그 선생님의 이야기 방식 재료. 두 칸(chatPersonaEn · chatFavoritesEn)이 다 있을 때만 있고, 하나라도 없으면 null 이다
+ * (null 인 선생님의 수업은 기존 방식 — spec AC-1 의 '미나 재료', 리오는 비움 · 미결 2).
+ */
+export function chatMaterialOf(
+  t: Pick<Teacher, "chatPersonaEn" | "chatFavoritesEn">,
+): ChatMaterial | null {
+  if (!t.chatPersonaEn || !t.chatFavoritesEn) return null;
+  return { personaEn: t.chatPersonaEn, favoritesEn: t.chatFavoritesEn };
 }
 
 /**

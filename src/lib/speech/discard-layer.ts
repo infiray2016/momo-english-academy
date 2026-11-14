@@ -120,6 +120,12 @@ export interface DiscardLayer {
   soundEnd(): void;
   /** 서버 차례 기다림(턴을 보낸 뒤 끝 줄 전). 켜진 동안 버림의 안전 상한을 세지 않는다(N-1). */
   serverWait(on: boolean): void;
+  /**
+   * 이야기 방식의 조용함 입구(회화 대화 구조 R spec 설계 6 '고른 길'): 화면이 아이 말 없는 턴 요청(lead quiet)을 보낼 때 부른다. 대기의
+   * discard 갈래 · 닫는 중 · 간격이면 버림을 다시 열어 서버에서 오는 선생님 말을 그 안에서 읽게 하고, 열린 죽은 버림이면 닫지 않는다.
+   * 서버 차례 기다림(serverWait)은 보통 턴처럼 따로 켠다. 부르지 않으면 지금 그대로다(기존 방식 · 지금 새 방식 · discard_mode off).
+   */
+  quiet(): void;
   /** 떠남(쉬는 안내 · 막힘 · 마무리 · 홈 — 정리 따라 말하기는 떠남이 아님): 열린 버림을 stop 하고 진짜 · 걸린 누름을 끊는다. */
   leave(): void;
   setSoundSource(source: DiscardSoundSource | undefined): void;
@@ -804,6 +810,7 @@ function createDiscardLayer(
     },
     soundEnd: () => send({ type: "sound-end" }),
     serverWait: (on) => send({ type: "server-wait", on }),
+    quiet: () => send({ type: "quiet" }),
     leave,
     setSoundSource(next) {
       source = next;

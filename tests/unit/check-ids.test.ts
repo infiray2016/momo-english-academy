@@ -26,6 +26,7 @@ import {
   SEED_RULES,
   SETTINGS_SPEC_FILE,
   type SeedInput,
+  type SpecSettingRow,
   schemaTableNames,
   settingNumbers,
 } from "../../scripts/check-ids";
@@ -60,7 +61,7 @@ const ROWS: [string, string, string, string][] = [
   [
     "ai.max_tokens.<호출>",
     "집 전체",
-    "writing_feedback 8000 · writing_check · speaking_eval · thinkout 4000 · talk_turn 1000 · talk_closing(끝맺음 턴) 2000 · probe 1",
+    "writing_feedback 8000 · writing_check · speaking_eval · thinkout 4000 · talk_turn 1000 · talk_closing(끝맺음 턴) 2000 · probe 1 · talk_chat_hint 600 · talk_chat_eval 400",
     "고급",
   ],
 ];
@@ -108,11 +109,14 @@ function goodSettings(): Row[] {
       value: values[i],
       changeVia,
     }));
-  const calls4 = [
+  // 자기 ai.model · effort · thinking 키가 있는 호출(이야기 방식의 talk_chat_hint · talk_chat_eval 포함)
+  const ownKeyCalls = [
     "writing_feedback",
     "writing_check",
     "speaking_eval",
     "thinkout",
+    "talk_chat_hint",
+    "talk_chat_eval",
   ];
   const tokens: Record<string, number> = {
     writing_feedback: 8000,
@@ -122,6 +126,8 @@ function goodSettings(): Row[] {
     talk_turn: 1000,
     talk_closing: 2000,
     probe: 1,
+    talk_chat_hint: 600,
+    talk_chat_eval: 400,
   };
   return [
     ...band("unit.vocab_count", [25, 30, 30, 30], "seed"),
@@ -167,19 +173,19 @@ function goodSettings(): Row[] {
       value: 1,
       changeVia: "basic",
     },
-    ...calls4.map((c) => ({
+    ...ownKeyCalls.map((c) => ({
       key: `ai.model.${c}`,
       scope: "household" as const,
       value: "claude-sonnet-5-5",
       changeVia: "advanced",
     })),
-    ...calls4.map((c) => ({
+    ...ownKeyCalls.map((c) => ({
       key: `ai.effort.${c}`,
       scope: "household" as const,
       value: "low",
       changeVia: "advanced",
     })),
-    ...calls4.map((c) => ({
+    ...ownKeyCalls.map((c) => ({
       key: `ai.thinking.${c}`,
       scope: "household" as const,
       value: "adaptive",
@@ -238,7 +244,7 @@ const rulesOf = (result: ReturnType<typeof checkIds>) =>
   result.violations.map((v) => `${v.rule} ${v.location}`);
 
 describe("식별자 대조(pnpm check:ids)", () => {
-  it("식별자 대조: 12절 표를 읽어 <구간> 넷 · <영역> 넷 · <호출>(ai.max_tokens 일곱, ai.model · effort · thinking 넷)으로 펼친다", () => {
+  it("식별자 대조: 12절 표를 읽어 <구간> 넷 · <영역> 넷 · <호출>(ai.max_tokens 아홉, ai.model · effort · thinking 여섯)으로 펼친다", () => {
     const rows = parseSettingsTable(specText());
     expect(rows.map((r) => r.key)).toEqual(ROWS.map((r) => r[0]));
     expect(rows[0]).toMatchObject({
@@ -257,18 +263,22 @@ describe("식별자 대조(pnpm check:ids)", () => {
       "ai.model.writing_check",
       "ai.model.speaking_eval",
       "ai.model.thinkout",
+      "ai.model.talk_chat_hint",
+      "ai.model.talk_chat_eval",
     ]);
     expect(keys.filter((k) => k.startsWith("ai.effort."))).toEqual([
       "ai.effort.writing_feedback",
       "ai.effort.writing_check",
       "ai.effort.speaking_eval",
       "ai.effort.thinkout",
+      "ai.effort.talk_chat_hint",
+      "ai.effort.talk_chat_eval",
     ]);
     expect(keys.filter((k) => /^ai\.thinking\.[a-z_]+$/.test(k))).toHaveLength(
-      4,
+      6,
     );
     expect(keys).toHaveLength(
-      BAND_NAMES.length * 2 + AREAS.length + AI_PURPOSES.length + 4 * 3 + 7,
+      BAND_NAMES.length * 2 + AREAS.length + AI_PURPOSES.length + 6 * 3 + 7,
     );
     // 같은 머리의 표가 둘 이상이면 모두 읽는다(검토 M-1)
     const twoTables = [
@@ -386,17 +396,48 @@ describe("식별자 대조(pnpm check:ids)", () => {
       "ai.max_tokens.talk_turn": 1000,
       "ai.max_tokens.talk_closing": 2000,
       "ai.max_tokens.probe": 1,
+      "ai.max_tokens.talk_chat_hint": 600,
+      "ai.max_tokens.talk_chat_eval": 400,
     });
     expect(parse("ai.thinking.<호출>")).toEqual({
       "ai.thinking.writing_feedback": "adaptive",
       "ai.thinking.writing_check": "adaptive",
       "ai.thinking.speaking_eval": "adaptive",
       "ai.thinking.thinkout": "adaptive",
+      "ai.thinking.talk_chat_hint": "adaptive",
+      "ai.thinking.talk_chat_eval": "adaptive",
     });
     expect(parse("ai.thinking.talk_turn.<구간>")).toMatchObject({
       "ai.thinking.talk_turn.1-3": "off",
     });
     expect(parse("ai.model.<호출>")).toBeUndefined();
+
+    // '이름 · 이름 '값', 나머지 '값'' 꼴(이야기 방식 묶음 C fix 1): 칸 안의 호출 이름 묶음이 먼저 그 값이고, '회화 턴'처럼 이름이 아닌 조각은 건너뛰며
+    // 남은 키가 '나머지' 값이다
+    const thinkingRow = {
+      ...(rows.find((r) => r.key === "ai.thinking.<호출>") as SpecSettingRow),
+      defaultCell:
+        "회화 턴 · talk_chat_hint · talk_chat_eval '끔', 나머지 '적응'",
+    };
+    expect(
+      Object.fromEntries(
+        parseSpecDefault(thinkingRow, keysOf("ai.thinking.<호출>")) ?? [],
+      ),
+    ).toEqual({
+      "ai.thinking.writing_feedback": "adaptive",
+      "ai.thinking.writing_check": "adaptive",
+      "ai.thinking.speaking_eval": "adaptive",
+      "ai.thinking.thinkout": "adaptive",
+      "ai.thinking.talk_chat_hint": "off",
+      "ai.thinking.talk_chat_eval": "off",
+    });
+    // 펼친 키에 없는 호출 이름이 묶음에 있으면 풀지 않는다(대조 안 함 — 잘못 적은 이름을 조용히 넘기지 않게)
+    expect(
+      parseSpecDefault(
+        { ...thinkingRow, defaultCell: "talk_chat_hnit '끔', 나머지 '적응'" },
+        keysOf("ai.thinking.<호출>"),
+      ),
+    ).toBeUndefined();
 
     const changed = goodSettings().map((r) =>
       r.key === "unit.vocab_count.1-3"
@@ -410,16 +451,20 @@ describe("식별자 대조(pnpm check:ids)", () => {
       "setting-default ai.thinking.talk_turn.4-6",
       "setting-default unit.vocab_count.1-3",
     ]);
-    // ai.model · ai.effort 의 <호출> 넷은 '6.1 표'라 대조 안 함, 첫 실행 화면 키는 행이 없어 세지 않는다
+    // ai.model · ai.effort 의 <호출> 여섯은 '6.1 표'라 대조 안 함, 첫 실행 화면 키는 행이 없어 세지 않는다
     expect(result.unparsedDefaults).toEqual([
       "ai.model.writing_feedback",
       "ai.model.writing_check",
       "ai.model.speaking_eval",
       "ai.model.thinkout",
+      "ai.model.talk_chat_hint",
+      "ai.model.talk_chat_eval",
       "ai.effort.writing_feedback",
       "ai.effort.writing_check",
       "ai.effort.speaking_eval",
       "ai.effort.thinkout",
+      "ai.effort.talk_chat_hint",
+      "ai.effort.talk_chat_eval",
     ]);
   });
 
@@ -836,6 +881,10 @@ describe("식별자 대조(pnpm check:ids)", () => {
       result.violations.filter((v) => v.rule === "code-setting-unknown"),
     ).toEqual([]);
     expect(result.stats.codeKeys).toBeGreaterThan(0);
+    // 12절 ai.thinking.<호출> 칸은 '나머지' 꼴로 풀려 기본값을 대조한다(이야기 방식 묶음 C fix 1 — 대조 안 함에 빠지지 않음)
+    expect(
+      result.unparsedDefaults.filter((k) => k.startsWith("ai.thinking.")),
+    ).toEqual([]);
     expect(
       result.violations
         .filter((v) => v.rule === "design-color")

@@ -33,7 +33,7 @@ import {
   tokenize,
 } from "../../src/core/seed/text";
 import { isQArm } from "./arch-arm-q";
-import { CHILD_NAME_FILL } from "./arch-arms";
+import { CHILD_NAME_FILL, type ChildKey, heardByChild } from "./arch-arms";
 import type {
   ChildTurnLog,
   LessonEnding,
@@ -498,7 +498,7 @@ export function followSentenceOf(t: TeacherTurnLog): string | null {
       ? t.lead.sound.model
       : t.arm === "P"
         ? (t.modelFirst as { model_sentence?: unknown } | null)?.model_sentence
-        : isQArm(t.arm)
+        : isQArm(t.arm) || t.arm === "CHAT"
           ? (t.modelFirst as { listen_sentence?: unknown } | null)
               ?.listen_sentence
           : (t.checks as { sound?: { model?: unknown } } | null)?.sound?.model;
@@ -529,11 +529,12 @@ function teacherBeforeOf(
   teachers: readonly TeacherTurnLog[],
   childTurn: number,
 ): TeacherTurnLog | undefined {
+  // 한 아이 차례 뒤에 선생님 차례가 여럿이면(CHAT 의 인사 끝 → 돌아옴) 마지막 것이 바로 앞 말이다. 다른 방식은 하나라 지난 셈과 같다
   return (
     teachers.find((t) => t.childTurn === childTurn && t.afterChoice === true) ??
-    teachers.find(
-      (t) => t.childTurn === childTurn - 1 && t.afterChoice !== true,
-    )
+    [...teachers]
+      .reverse()
+      .find((t) => t.childTurn === childTurn - 1 && t.afterChoice !== true)
   );
 }
 
@@ -1018,4 +1019,503 @@ export function endingOf(
     lastLine: last?.final ?? null,
     choices: [],
   });
+}
+
+// ── 방식 CHAT(묶음 T2 — spec '회화 대화 구조 R' 설계 13 '대본에서 셀 것' · AC-14 (가) · AC-11 · AC-15 · AC-16) ─────────────
+
+/** 계획의 호출 갈래(실행 전 어림). */
+export type PlanCalls = {
+  dialog: number;
+  rewrite: number;
+  child: number;
+  hint: number;
+  explain: number;
+  eval: number;
+};
+
+/** 어림 값(추측 — 대본 도구 talk-observe 계획 줄과 같은 값): 글자 넷에 토큰 하나 · 앞 차례 하나에 기록 400 토큰 · 호출 하나에 출력 600 토큰. */
+export const PLAN_CHARS_PER_TOKEN = 4;
+export const PLAN_HISTORY_TOKENS_PER_TURN = 400;
+export const PLAN_OUTPUT_TOKENS_PER_CALL = 600;
+/**
+ * 캐시 어림의 출력 토큰(추측 — 지난 실험 docs/research/2026-11-13-회화-구조-비교-실험-2 의 N 선생님 호출 출력 19,121 토큰 / 아이 차례 96 ≈ 200).
+ */
+export const PLAN_OUTPUT_TOKENS_CACHED = 200;
+/** 단가표의 input4 · output4 를 마이크로달러로 바꾸는 나눗수(src/core/ai/cost 와 같은 셈). */
+const PLAN_PRICE4_PER_MICRO = 10_000;
+
+export type PlanPrice = {
+  input4: number;
+  output4: number;
+  cacheWrite4?: number;
+  cacheRead4?: number;
+};
+
+/**
+ * 호출 n 번의 어림 비용(달러): growing 이면 차례마다 대화 기록이 한 차례씩 늘고(대화 · 아이 역 — 차례 i 의 입력은 안내문 + 기록 i 차례), 아니면 앞
+ * contextTurns 차례만 싣는 꼴(힌트 · 설명 · 평가)이다. upper(기본)는 캐시 할인 없이 출력 600 토큰의 위쪽 어림, cached 는 growing 호출의 앞 기록을
+ * 캐시 읽기 단가 · 새 몫을 캐시 쓰기 단가로 보고 출력을 200 토큰으로 본 어림이다(둘 다 재지 않은 추측). 단가가 없으면 0.
+ */
+export function planCallsCostUsdOf({
+  n,
+  systemChars,
+  growing,
+  contextTurns = 0,
+  price,
+  mode = "upper",
+}: {
+  n: number;
+  systemChars: number;
+  growing: boolean;
+  contextTurns?: number;
+  price: PlanPrice | null;
+  mode?: "upper" | "cached";
+}): number {
+  if (price === null || n <= 0) return 0;
+  const system = Math.ceil(systemChars / PLAN_CHARS_PER_TOKEN);
+  const H = PLAN_HISTORY_TOKENS_PER_TURN;
+  if (mode === "upper") {
+    const input = growing
+      ? n * system + (H * n * (n - 1)) / 2
+      : n * (system + H * contextTurns);
+    return (
+      (input * price.input4 + n * PLAN_OUTPUT_TOKENS_PER_CALL * price.output4) /
+      PLAN_PRICE4_PER_MICRO /
+      1_000_000
+    );
+  }
+  const write4 = Math.max(price.input4, price.cacheWrite4 ?? 0);
+  const read4 = price.cacheRead4 ?? price.input4;
+  // 차례 i(0 부터): 앞 차례까지의 앞머리(안내문 + 기록 i-1 차례)는 캐시 읽기, 새 몫(첫 호출은 안내문 · 그 뒤는 기록 한 차례)은 캐시 쓰기
+  let micros4 = 0;
+  for (let i = 0; i < n; i++) {
+    if (growing) {
+      const fresh = i === 0 ? system : H;
+      const cached = i === 0 ? 0 : system + H * (i - 1);
+      micros4 += fresh * write4 + cached * read4;
+    } else micros4 += (system + H * contextTurns) * price.input4;
+    micros4 += PLAN_OUTPUT_TOKENS_CACHED * price.output4;
+  }
+  return micros4 / PLAN_PRICE4_PER_MICRO / 1_000_000;
+}
+
+type ChatLessonLike = {
+  meta: LessonLog;
+  teachers: readonly TeacherTurnLog[];
+  children: readonly ChildTurnLog[];
+};
+
+/** 작별 인사 꼴(spec 설계 9 (ㄴ) 'Bye' · 'See you' · 'Good night'). */
+export const FAREWELL_PATTERN = /\b(?:bye|goodbye|see you|good night)\b/i;
+/**
+ * 되묻기 · 확인 꼴(기계 어림 — N-2 의 '되묻거나 확인한' 차례를 모두 잡지 못하므로 목록을 사람이 함께 읽는다): 'Did you say' · 'Do you mean' ·
+ * 'You said' · 'Is that right' · 'Say it again' · 'One more time' · 'Pardon'.
+ */
+export const REASK_PATTERN =
+  /\b(?:did you say|do you mean|you mean|you said|is that right|say (?:it|that) again|one more time|pardon)\b/i;
+
+const isChatLesson = (l: ChatLessonLike) =>
+  l.meta.arm === "CHAT" && l.meta.variant !== "long";
+
+/** 앱의 마무리 차례(사실 줄 closing)와 선생님이 맺은 차례(wrap_up 참 — 거짓으로 다룬 자리 밖). */
+function isChatClosingTurn(t: TeacherTurnLog): boolean {
+  const c = t.chat;
+  if (!c) return false;
+  return c.facts.includes("closing") || (c.wrapUp && c.wrapUpHeld === null);
+}
+
+/** 말 없음 뒤 셈 하나(답한 선생님 차례 수 · 그 뒤 아이가 말한 수). */
+export type SilenceCount = { turns: number; spokeAfter: number };
+
+/**
+ * 말 없음 뒤 아이가 말한 차례(AC-14 (가) M-8 잣대 — 방식마다 같은 무리, fix 1 I-2): 아이의 말없음 차례에 답한 선생님 차례 뒤의 다음 아이 차례에
+ * 아이가 말했는가. CHAT 의 말없음은 누르지 않음(조용함 입구로 연 선생님 차례가 답함)과 눌렀으나 들리지 않음(그 아이 행에 답한 선생님 차례) 둘이고,
+ * 둘을 합친 값이 R3 · N 과 견줄 값이다. 선생님이 답하지 않은 말없음(잇달아 말한 수 상한 뒤의 기다림)과 다음 아이 차례가 없는 것(수업 끝)은 세지
+ * 않는다. byInput 은 CHAT 의 두 갈래로 나눈 값(그 밖 방식은 null)이다.
+ */
+export function afterSilenceOf(lesson: ChatLessonLike): SilenceCount & {
+  byInput: { quiet: SilenceCount; nospeech: SilenceCount } | null;
+} {
+  const chat = lesson.meta.arm === "CHAT";
+  const next = (n: number) =>
+    lesson.children.find((c) => c.childTurn === n + 1);
+  const all: SilenceCount = { turns: 0, spokeAfter: 0 };
+  const by = {
+    quiet: { turns: 0, spokeAfter: 0 },
+    nospeech: { turns: 0, spokeAfter: 0 },
+  };
+  for (const c of lesson.children) {
+    if (c.action !== "silent") continue;
+    const answered = lesson.teachers.some(
+      (t) =>
+        t.childTurn === c.childTurn &&
+        t.afterChoice !== true &&
+        (!chat ||
+          (c.chat?.input === "quiet"
+            ? t.chat?.entry === "quiet"
+            : t.chat?.entry === "child")),
+    );
+    const after = next(c.childTurn);
+    if (!answered || !after) continue;
+    const spoke = after.action === "speak" ? 1 : 0;
+    all.turns += 1;
+    all.spokeAfter += spoke;
+    const kind = c.chat?.input;
+    if (chat && (kind === "quiet" || kind === "nospeech")) {
+      by[kind].turns += 1;
+      by[kind].spokeAfter += spoke;
+    }
+  }
+  return { ...all, byInput: chat ? by : null };
+}
+
+export type ChatCounts = {
+  lessons: number;
+  /** I-1: 인사 끝 차례(사실 줄 prep_next)의 말에 물음이 든 수업 수. */
+  greetingEnd: {
+    lessons: number;
+    withQuestion: number;
+    list: { lesson: string; text: string; question: boolean }[];
+  };
+  /**
+   * 설계 9: (ㄱ) 앱의 마무리 차례(사실 줄 closing) 가운데 물음 없는 차례의 비율 — turns · noQuestion 은 그 차례만(fix 1 I-3), (ㄴ) 정리 앞(앱의 마무리
+   * 차례 · 선생님이 맺은 wrap_up 차례)에 작별 인사를 한 수업 수. list 는 두 꼴 모두.
+   */
+  closing: {
+    turns: number;
+    noQuestion: number;
+    noQuestionRatio: number | null;
+    farewellLessons: number;
+    list: {
+      lesson: string;
+      childTurn: number;
+      text: string;
+      question: boolean;
+      farewell: boolean;
+      by: "app" | "teacher";
+    }[];
+  };
+  /** M-8: 말없음(누르지 않음 · 들리지 않음 모두)에 답한 선생님 차례 뒤 아이가 말한 비율(아이 역별 — 두 갈래로 나눈 값을 함께). */
+  afterSilence: Partial<
+    Record<
+      ChildKey,
+      SilenceCount & {
+        ratio: number | null;
+        quiet: SilenceCount;
+        nospeech: SilenceCount;
+      }
+    >
+  >;
+  /** 설계 4: 따라 할 문장 어긋남(말에 들지 않음 · 문장 일부로만 듦). */
+  listen: {
+    turns: number;
+    mismatch: number;
+    partial: number;
+    list: {
+      lesson: string;
+      childTurn: number;
+      sentence: string;
+      text: string;
+    }[];
+  };
+  /** 설계 4 · M-12: 지어낸 경험 꼴 검사에 걸린 차례 · 걸린 수. */
+  madeUp: {
+    turns: number;
+    hits: number;
+    list: { lesson: string; childTurn: number; hits: string[]; text: string }[];
+  };
+  /** I-6: {NAME} 을 쓴 선생님 차례 수. */
+  nameTurns: number;
+  /**
+   * M-1: 정리에 닿은 수업(reached) 가운데 되짚을 말이 모두 카드 정리 대사였던 수업 수와, 그 수업의 대화 화제(아이가 한 말 — 사람이 읽음). 목록은
+   * 정리에 닿지 않은 수업(아이 차례 상한 · 안전 상한)의 되짚을 말도 함께 낸다(fix 1 m-4).
+   */
+  wrapCard: {
+    lessons: number;
+    reached: number;
+    list: {
+      lesson: string;
+      reached: boolean;
+      wrap: string[];
+      topics: string[];
+    }[];
+  };
+  /** N-2: 맞게 들린 말에 알림이 붙은 차례 · 그 뒤 선생님이 되묻거나 확인한 차례(기계 어림 + 사람이 읽을 목록). */
+  alertedClean: {
+    turns: number;
+    reasked: number;
+    list: {
+      lesson: string;
+      childTurn: number;
+      heard: string;
+      teacher: string;
+      reasked: boolean;
+    }[];
+  };
+  /** m-6: 물음이 있는 앱의 마무리 차례(사실 줄 closing — 두 단추로 답할 수 없는 물음인지 사람이 읽어 센다). */
+  closingQuestions: {
+    lesson: string;
+    childTurn: number;
+    questions: string[];
+  }[];
+};
+
+/** 대본에서 셀 것(spec 설계 13 — 긴 대본 밖의 CHAT 수업만). 기계로 셀 수 없는 것은 사람이 읽을 목록으로 함께 낸다. */
+export function chatCountsOf(lessons: readonly ChatLessonLike[]): ChatCounts {
+  const chats = lessons.filter(isChatLesson);
+  const out: ChatCounts = {
+    lessons: chats.length,
+    greetingEnd: { lessons: 0, withQuestion: 0, list: [] },
+    closing: {
+      turns: 0,
+      noQuestion: 0,
+      noQuestionRatio: null,
+      farewellLessons: 0,
+      list: [],
+    },
+    afterSilence: {},
+    listen: { turns: 0, mismatch: 0, partial: 0, list: [] },
+    madeUp: { turns: 0, hits: 0, list: [] },
+    nameTurns: 0,
+    wrapCard: { lessons: 0, reached: 0, list: [] },
+    alertedClean: { turns: 0, reasked: 0, list: [] },
+    closingQuestions: [],
+  };
+  for (const l of chats) {
+    const name = l.meta.lesson;
+    const said = (t: TeacherTurnLog) => heardByChild(t.final);
+    const greet = l.teachers.find((t) => t.chat?.facts.includes("prep_next"));
+    if (greet) {
+      const question = questionsIn(said(greet)).length > 0;
+      out.greetingEnd.lessons += 1;
+      if (question) out.greetingEnd.withQuestion += 1;
+      out.greetingEnd.list.push({ lesson: name, text: greet.final, question });
+    }
+    let farewell = false;
+    for (const t of l.teachers.filter(isChatClosingTurn)) {
+      const questions = questionsIn(said(t));
+      const bye = FAREWELL_PATTERN.test(said(t));
+      // (ㄱ) · m-6 은 앱의 마무리 차례만, (ㄴ)은 두 꼴 모두(spec 설계 9)
+      if (t.chat?.facts.includes("closing")) {
+        out.closing.turns += 1;
+        if (questions.length === 0) out.closing.noQuestion += 1;
+        else
+          out.closingQuestions.push({
+            lesson: name,
+            childTurn: t.childTurn,
+            questions,
+          });
+      }
+      if (bye) farewell = true;
+      out.closing.list.push({
+        lesson: name,
+        childTurn: t.childTurn,
+        text: t.final,
+        question: questions.length > 0,
+        farewell: bye,
+        by: t.chat?.facts.includes("closing") ? "app" : "teacher",
+      });
+    }
+    if (farewell) out.closing.farewellLessons += 1;
+    const silence = afterSilenceOf(l);
+    const prev = out.afterSilence[l.meta.child] ?? {
+      turns: 0,
+      spokeAfter: 0,
+      ratio: null,
+      quiet: { turns: 0, spokeAfter: 0 },
+      nospeech: { turns: 0, spokeAfter: 0 },
+    };
+    const add = (a: SilenceCount, b: SilenceCount | undefined) => ({
+      turns: a.turns + (b?.turns ?? 0),
+      spokeAfter: a.spokeAfter + (b?.spokeAfter ?? 0),
+    });
+    const sum = add(prev, silence);
+    out.afterSilence[l.meta.child] = {
+      ...sum,
+      ratio: sum.turns === 0 ? null : sum.spokeAfter / sum.turns,
+      quiet: add(prev.quiet, silence.byInput?.quiet),
+      nospeech: add(prev.nospeech, silence.byInput?.nospeech),
+    };
+    for (const t of l.teachers) {
+      const c = t.chat;
+      if (!c) continue;
+      if (c.listen && c.listen.sentence.trim() !== "") {
+        out.listen.turns += 1;
+        if (!c.listen.inSay || c.listen.partial) {
+          out.listen.mismatch += 1;
+          if (c.listen.partial) out.listen.partial += 1;
+          out.listen.list.push({
+            lesson: name,
+            childTurn: t.childTurn,
+            sentence: c.listen.sentence,
+            text: t.final,
+          });
+        }
+      }
+      if (c.madeUp.length > 0) {
+        out.madeUp.turns += 1;
+        out.madeUp.hits += c.madeUp.length;
+        out.madeUp.list.push({
+          lesson: name,
+          childTurn: t.childTurn,
+          hits: [...c.madeUp],
+          text: t.final,
+        });
+      }
+      if (t.final.includes("{NAME}")) out.nameTurns += 1;
+    }
+    const wrap = l.meta.chat?.wrap ?? [];
+    const reached = l.meta.chat?.reachedWrap === true;
+    if (reached) out.wrapCard.reached += 1;
+    if (wrap.length > 0 && wrap.every((w) => w.card)) {
+      if (reached) out.wrapCard.lessons += 1;
+      out.wrapCard.list.push({
+        lesson: name,
+        reached,
+        wrap: wrap.map((w) => w.en),
+        topics: l.children.flatMap((c) =>
+          c.action === "speak" ? [c.says] : [],
+        ),
+      });
+    }
+    for (const c of l.children) {
+      if (!c.stt || c.noise !== null || c.action !== "speak") continue;
+      const t = l.teachers.find(
+        (x) =>
+          x.childTurn === c.childTurn &&
+          x.afterChoice !== true &&
+          x.chat?.entry === "child",
+      );
+      if (!t) continue;
+      const reasked = REASK_PATTERN.test(said(t));
+      out.alertedClean.turns += 1;
+      if (reasked) out.alertedClean.reasked += 1;
+      out.alertedClean.list.push({
+        lesson: name,
+        childTurn: c.childTurn,
+        heard: c.heard ?? "",
+        teacher: t.final,
+        reasked,
+      });
+    }
+  }
+  out.closing.noQuestionRatio =
+    out.closing.turns === 0 ? null : out.closing.noQuestion / out.closing.turns;
+  return out;
+}
+
+/** CHAT 선생님 차례 하나의 값(AC-11 · AC-15 · AC-16): 첫 문장 시간 · 입력 토큰 · 비용 · 호출 갈래별 수. */
+export type ChatTurnRow = {
+  lesson: string;
+  /** 수업 안 선생님 차례의 차례(1부터 — 대화 기록 길이의 자리). */
+  order: number;
+  childTurn: number;
+  entry: string;
+  facts: string[];
+  firstSentenceMs: number | null;
+  inputTokens: number | null;
+  cacheReadTokens: number | null;
+  outputTokens: number | null;
+  costUsd: number;
+  calls: { dialog: number; hint: number; explain: number; eval: number };
+  waitedMs: number;
+  closed: boolean;
+  /** 따라 할 문장(listen_sentence)이 비지 않은 차례(설계 2 의 첫 문장 시간 대조). */
+  listen: boolean;
+  /** 응답 say 의 첫 문장이 소리 줄로 빠진 차례(fix 1 m-6). */
+  firstMoved: boolean;
+};
+
+/** CHAT 수업들(긴 대본 포함)의 차례마다 값. */
+export function chatTurnRowsOf(
+  lessons: readonly ChatLessonLike[],
+): ChatTurnRow[] {
+  return lessons
+    .filter((l) => l.meta.arm === "CHAT")
+    .flatMap((l) =>
+      l.teachers.flatMap((t, i) => {
+        const c = t.chat;
+        if (!c) return [];
+        return [
+          {
+            lesson: l.meta.lesson,
+            order: i + 1,
+            childTurn: t.childTurn,
+            entry: c.entry,
+            facts: [...c.facts],
+            firstSentenceMs: c.usage?.firstSentenceMs ?? null,
+            inputTokens: c.usage?.inputTokens ?? null,
+            cacheReadTokens: c.usage?.cacheReadTokens ?? null,
+            outputTokens: c.usage?.outputTokens ?? null,
+            costUsd: c.costUsd,
+            calls: { ...c.calls },
+            waitedMs: c.waitedMs,
+            closed: c.closed,
+            listen: c.listen !== null && c.listen.sentence.trim() !== "",
+            firstMoved: c.firstMoved === true,
+          },
+        ];
+      }),
+    );
+}
+
+/** AC-11 잣대(spec 수용 기준): 아이 차례 31~40 대 1~15 의 첫 문장 시간 중앙값 차이 1초 · 긴 대본 수업 하나의 비용 0.3달러. */
+export const AC11_EARLY_TURNS = [1, 15] as const;
+export const AC11_LATE_TURNS = [31, 40] as const;
+export const AC11_DIFF_MS = 1000;
+export const AC11_COST_USD = 0.3;
+
+/**
+ * 긴 대본 한 벌의 잣대 셈(AC-11): 아이 차례 1~15 와 31~40 의 첫 문장 시간 중앙값과 그 차이, 수업 비용. 차이가 1초를 넘거나 비용이 0.3달러를 넘으면
+ * over(켜기 전에 컨트롤러가 대화 기록 길이 상한을 정함). 한쪽 차례가 없으면 차이는 null 이고 비용으로만 본다.
+ */
+export function chatLongSummaryOf(
+  rows: readonly ChatTurnRow[],
+  costUsd: number,
+): {
+  earlyMs: number | null;
+  lateMs: number | null;
+  diffMs: number | null;
+  costUsd: number;
+  over: boolean;
+} {
+  const msIn = ([lo, hi]: readonly [number, number]) =>
+    rows.flatMap((r) =>
+      r.childTurn >= lo && r.childTurn <= hi && r.firstSentenceMs !== null
+        ? [r.firstSentenceMs]
+        : [],
+    );
+  const earlyMs = median(msIn(AC11_EARLY_TURNS));
+  const lateMs = median(msIn(AC11_LATE_TURNS));
+  const diffMs = earlyMs === null || lateMs === null ? null : lateMs - earlyMs;
+  return {
+    earlyMs,
+    lateMs,
+    diffMs,
+    costUsd,
+    over: (diffMs !== null && diffMs > AC11_DIFF_MS) || costUsd > AC11_COST_USD,
+  };
+}
+
+/** 호출 갈래 하나의 지연(호출 기록 ms — 호출을 보낸 때부터 끝날 때까지). */
+export type CallLatency = {
+  n: number;
+  medianMs: number | null;
+  p90Ms: number | null;
+};
+
+/** CHAT 의 힌트 · 설명 · 평가 호출 지연(NFR-1 · AC-15 · AC-7 의 재료 — 호출 기록 CallLog 의 ms 에서 갈래마다). */
+export function chatCallLatencyOf(
+  lessons: readonly {
+    meta: LessonLog;
+    calls: readonly { kind: string; ms: number }[];
+  }[],
+): Record<"hint" | "explain" | "eval", CallLatency> {
+  const of = (kind: "hint" | "explain" | "eval"): CallLatency => {
+    const ms = lessons
+      .filter((l) => l.meta.arm === "CHAT")
+      .flatMap((l) => l.calls.filter((c) => c.kind === kind).map((c) => c.ms));
+    return { n: ms.length, medianMs: median(ms), p90Ms: percentile(ms, 90) };
+  };
+  return { hint: of("hint"), explain: of("explain"), eval: of("eval") };
 }

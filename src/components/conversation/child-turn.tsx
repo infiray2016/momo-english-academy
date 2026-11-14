@@ -33,6 +33,11 @@ import {
   StatusLine,
 } from "@/components/board/board";
 import { fillName } from "@/core/ai/mask";
+import type {
+  ChatHintReply,
+  ChatHintTierView,
+} from "@/core/conversation/chat-hints";
+import type { ChatQuietInput } from "@/core/conversation/chat-quiet";
 import {
   CLIENT_LISTENS_MAX,
   type ClientListen,
@@ -56,10 +61,16 @@ import {
 import { josa, TEACHER_TEXT, teacherNameOf } from "@/core/teacher/name";
 import type { DiscardLayer } from "@/lib/speech/discard-layer";
 import type {
+  ListenCallbacks,
   ListenHandle,
+  RecognizerInfo,
   SpeakOutcome,
   SpeechPort,
 } from "@/lib/speech/types";
+import {
+  chatRecognizerBodyOf,
+  type TalkRecognizerBody,
+} from "@/lib/talk-stream";
 import { cn } from "@/lib/utils";
 import type { HintView } from "@/server/conversation";
 import { HintLoadingDots } from "./hint-loading-dots";
@@ -93,6 +104,10 @@ export const CHILD_TURN_TEXT = {
   send: "보내기",
   offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
   listenHint: "힌트 문장 듣기",
+  /** 이야기 방식: 힌트를 받지 못한 단의 한 줄(회화 대화 구조 R plan 문구 표 — 그 단 자리에, 읽지 않음). */
+  hintFailed: "힌트를 못 가져왔어요",
+  /** 이야기 방식: 그 단 안의 다시 받기 단추(plan 문구 표 — 누르는 곳 56 × 56px 이상, 03:7). 상한 · 'AI 쉬는 중'이면 단추 없이 위 한 줄만. */
+  hintRetry: "다시 받기",
   /**
    * 말소리 없음이 이어져 '모름'으로 넘어감(U5-4). '모름' 뒤 선생님이 답 예시를 들려주고 같은 질문을 다시 묻는다(3.3 막힘 문단) — 그 일과
    * 맞게 '도와줄게요'(검토 A I-2 · 컨트롤러 결정, UX 검토 꼴). 이름 · 조사는 문구 표의 이름 채움(선생님 이름 — 없으면 '선생님').
@@ -229,6 +244,8 @@ export type ChildSend = {
   confirmSkipped?: boolean;
   /** 아이가 말을 멈춘 때(performance.now() — 인식 결과가 온 때 − 끝 조용함, '모름' 단추는 누른 때). 체감 대기의 시작(C23). */
   listenEndedAt: number;
+  /** 이야기 방식: 후보 수를 넘긴 듣기의 인식기 칸(말 입력만 — spec 설계 11). 없으면 칸 없음. */
+  recognizer?: TalkRecognizerBody;
 };
 
 export type ChildTurnProps = {
@@ -276,7 +293,155 @@ export type ChildTurnProps = {
   discard?: TurnDiscard | undefined;
   /** 이 아이 차례 위에 보이는 짧은 말 말풍선(틀의 값 — 새 줄마다 새 값, 화면 판정 I-2). 없으면 없음. */
   shortLine?: object | undefined;
+  /**
+   * 이야기 방식(끝 줄에 힌트 표지가 있는 차례만 — spec 설계 7): 힌트 단추를 두고, 누르면 이 함수로 단을 받는다(단 목록은 응답이 정함). 없으면
+   * 지금 그대로(hints 의 단).
+   */
+  chatHint?: ChatHintFetch | undefined;
+  /** 이야기 방식: 끝 줄의 후보 수(talk.chat_alternatives) — 이 차례의 모든 듣기에 넘긴다(spec 설계 11). 없으면 지금처럼 넘기지 않는다. */
+  alternatives?: number | undefined;
+  /** 이야기 방식 조용함 타이머의 입력(누름 처리의 첫 줄에서 — 막힌 누름도). 없으면 부르지 않는다. */
+  onInput?: ((input: ChatQuietInput) => void) | undefined;
+  /** 이야기 방식: 이어진 둘째 막힘으로 힌트 단이 저절로 열림(입력이 아님 — 조용함 타이머는 그대로 돈다). */
+  onHintAutoOpen?: (() => void) | undefined;
 };
+
+/** 이야기 방식 힌트 단 하나 받기(틀이 서버 액션과 응답 읽기를 감싼다 — 실패도 응답 꼴로 돌려준다). */
+export type ChatHintFetch = (args: {
+  tier: number;
+  retry: number;
+}) => Promise<ChatHintReply>;
+
+// ── 이야기 방식 힌트 단(spec 설계 7 '누를 때' · '실패와 다시 받기', 보완 4 (11)) ──
+
+/** 단 하나의 자리: 받는 중(점 셋) · 글 · 받지 못함(다시 받기가 남았는가). */
+export type ChatHintSlot =
+  | { state: "loading" }
+  | { state: "text"; text: string }
+  | { state: "failed"; retry: boolean };
+
+/**
+ * 한 아이 차례의 힌트 단 상태: 단 목록(첫 응답 전에는 null — 단 수 · 종류는 응답이 정함), 연 자리들(차례대로), 쓴 다시 받기 수, 둘째 막힘으로
+ * 저절로 열렸는가(단 목록을 알면 남은 단을 모두 연다).
+ */
+export type ChatHintTiers = {
+  tiers: readonly ChatHintTierView[] | null;
+  slots: readonly ChatHintSlot[];
+  retries: number;
+  auto: boolean;
+};
+
+export const CHAT_HINT_START: ChatHintTiers = {
+  tiers: null,
+  slots: [],
+  retries: 0,
+  auto: false,
+};
+
+/** 받으러 갈 단(retry 는 그 선생님 행에서 지금까지 쓴 다시 받기 수 — 서버 표지 행의 차례). */
+export type ChatHintFetchArgs = { tier: number; retry: number };
+
+function busySlotOf(s: ChatHintTiers): boolean {
+  return s.slots.some((slot) => slot.state !== "text");
+}
+
+/** 힌트 단추를 누를 수 있나(순수): 받는 중 · 받지 못한 단이 없고, 단 목록을 모르면 아직 연 단이 없을 때, 알면 열 단이 남았을 때. */
+export function chatHintCanPressOf(s: ChatHintTiers): boolean {
+  if (busySlotOf(s)) return false;
+  return s.tiers === null
+    ? s.slots.length === 0
+    : s.slots.length < s.tiers.length;
+}
+
+/** 힌트 누름(순수): 다음 단을 점 셋으로 열고 그 단을 받으러 간다. 누를 수 없으면 그대로(받으러 가지 않음). */
+export function chatHintPressOf(s: ChatHintTiers): {
+  state: ChatHintTiers;
+  fetch: ChatHintFetchArgs | null;
+} {
+  if (!chatHintCanPressOf(s)) return { state: s, fetch: null };
+  const tier = s.slots.length;
+  return {
+    state: { ...s, slots: [...s.slots, { state: "loading" }] },
+    fetch: { tier, retry: s.retries },
+  };
+}
+
+/** 단 목록을 아는 저절로 열림에서 남은 단을 모두 점 셋으로 연다(순수). */
+function openRest(s: ChatHintTiers): {
+  state: ChatHintTiers;
+  fetches: ChatHintFetchArgs[];
+} {
+  if (s.tiers === null) return { state: s, fetches: [] };
+  const fetches: ChatHintFetchArgs[] = [];
+  const slots = [...s.slots];
+  for (let tier = slots.length; tier < s.tiers.length; tier++) {
+    slots.push({ state: "loading" });
+    fetches.push({ tier, retry: s.retries });
+  }
+  return { state: { ...s, slots }, fetches };
+}
+
+/**
+ * 이어진 둘째 막힘으로 저절로 열림(순수, spec 설계 7 끝 · 아이의 입력이 아님): 단 목록을 모르고 연 단이 없으면 단 0 을 받으러 가고(목록을 알면 남은
+ * 단을 연다 — chatHintReplyStepOf), 목록을 알면 남은 단을 모두 연다.
+ */
+export function chatHintAutoOf(s: ChatHintTiers): {
+  state: ChatHintTiers;
+  fetches: ChatHintFetchArgs[];
+} {
+  const marked = { ...s, auto: true };
+  if (s.tiers !== null) return openRest(marked);
+  if (s.slots.length > 0) return { state: marked, fetches: [] };
+  return {
+    state: { ...marked, slots: [{ state: "loading" }] },
+    fetches: [{ tier: 0, retry: s.retries }],
+  };
+}
+
+/**
+ * 단 응답(순수): 받는 중인 그 단만 바꾼다(다른 차례 · 늦게 온 응답은 그대로). 성공이면 글과 단 목록(처음이면 둔다 — 목록 밖의 단이면 실패), 실패면
+ * 그 단 자리에 실패(다시 받기 여부는 응답 그대로). 저절로 열린 차례에서 단 목록을 처음 알면 남은 단을 연다.
+ */
+export function chatHintReplyStepOf(
+  s: ChatHintTiers,
+  tier: number,
+  reply: ChatHintReply,
+): { state: ChatHintTiers; fetches: ChatHintFetchArgs[] } {
+  if (s.slots[tier]?.state !== "loading") return { state: s, fetches: [] };
+  const slots = [...s.slots];
+  if (!reply.ok) {
+    slots[tier] = { state: "failed", retry: reply.retry };
+    return { state: { ...s, slots }, fetches: [] };
+  }
+  const tiers = s.tiers ?? reply.tiers;
+  if (tier >= tiers.length) {
+    slots[tier] = { state: "failed", retry: false };
+    return { state: { ...s, slots }, fetches: [] };
+  }
+  slots[tier] = { state: "text", text: reply.text };
+  const next = { ...s, tiers, slots };
+  return s.tiers === null && s.auto
+    ? openRest(next)
+    : { state: next, fetches: [] };
+}
+
+/** 다시 받기(순수): 받지 못했고 다시 받기가 남은 단만 — 쓴 수를 하나 늘리고 그 번호로 받으러 간다. */
+export function chatHintRetryOf(
+  s: ChatHintTiers,
+  tier: number,
+): { state: ChatHintTiers; fetch: ChatHintFetchArgs | null } {
+  const slot = s.slots[tier];
+  if (slot?.state !== "failed" || !slot.retry) return { state: s, fetch: null };
+  const retries = s.retries + 1;
+  const slots = [...s.slots];
+  slots[tier] = { state: "loading" };
+  return { state: { ...s, slots, retries }, fetch: { tier, retry: retries } };
+}
+
+/** 다음 턴 요청의 연 단 수(순수): 누른 수가 아니라 글이 실제로 보인 단 수(실패 문구로 끝난 단 · 받는 중인 단은 세지 않음). */
+export function chatHintOpenedOf(s: ChatHintTiers): number {
+  return s.slots.filter((slot) => slot.state === "text").length;
+}
 
 /**
  * 힌트 문장 듣기(검토 A I-1): 틀의 읽기 줄을 먼저 멈추고(stopReading — 줄이 끊긴 발화 뒤 다음 문장을 이어 읽어 힌트를 덮지 않게) 힌트를
@@ -475,9 +640,18 @@ export function ChildTurn(props: ChildTurnProps) {
   const moveTimer = useRef<number | undefined>(undefined);
   /** 이 턴에 아이가 말을 멈춘 때(체감 대기 시작). */
   const endedAt = useRef<number | undefined>(undefined);
+  /** 이야기 방식 힌트 단(chatHint 가 있을 때만 쓴다 — 응답이 비동기로 오므로 지금 값은 ref 에도 둔다). */
+  const [chatTiers, setChatTiers] = useState<ChatHintTiers>(CHAT_HINT_START);
+  const chatRef = useRef<ChatHintTiers>(CHAT_HINT_START);
+  /** 이 듣기의 인식기 정보(후보 수를 넘긴 듣기만 — spec 설계 11). 듣기를 시작할 때 비운다. */
+  const recognizerInfo = useRef<RecognizerInfo | undefined>(undefined);
+  /** 그려져 있는가(늦게 온 힌트 응답을 버림). */
+  const alive = useRef(true);
 
-  const opened =
-    dontKnowCount >= OPEN_ALL_HINTS_FROM_DONT_KNOW
+  const chatHint = props.chatHint;
+  const opened = chatHint
+    ? chatHintOpenedOf(chatTiers)
+    : dontKnowCount >= OPEN_ALL_HINTS_FROM_DONT_KNOW
       ? hints.length
       : Math.min(pressed, hints.length);
   const heardHelp: ("two_answers" | "answer_example")[] = [
@@ -485,9 +659,47 @@ export function ChildTurn(props: ChildTurnProps) {
     ...(heard.answerExample ? (["answer_example"] as const) : []),
   ];
 
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  /** 이야기 방식 힌트 단 상태를 바꾼다(ref 와 그림 둘 다). */
+  function chatSet(next: ChatHintTiers) {
+    chatRef.current = next;
+    setChatTiers(next);
+  }
+
+  /** 이야기 방식 힌트 단 하나를 받는다(실패도 응답 꼴 — 던지면 다시 받기가 있는 실패). 저절로 열린 차례면 남은 단을 이어 받는다. */
+  function chatFetch(args: ChatHintFetchArgs) {
+    if (!chatHint) return;
+    void chatHint(args)
+      .catch((): ChatHintReply => ({ ok: false, retry: true }))
+      .then((reply) => {
+        if (!alive.current) return;
+        const step = chatHintReplyStepOf(chatRef.current, args.tier, reply);
+        chatSet(step.state);
+        for (const next of step.fetches) chatFetch(next);
+      });
+  }
+
+  // 이야기 방식: 이어진 둘째 막힘이면 힌트 단을 저절로 연다(아이의 입력이 아님 — 조용함 타이머는 그대로, spec 설계 6 의 예외)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 처음 그릴 때 한 번
+  useEffect(() => {
+    if (!chatHint || dontKnowCount < OPEN_ALL_HINTS_FROM_DONT_KNOW) return;
+    if (chatRef.current.auto) return;
+    const step = chatHintAutoOf(chatRef.current);
+    chatSet(step.state);
+    for (const next of step.fetches) chatFetch(next);
+    props.onHintAutoOpen?.();
+  }, []);
+
   // 연 단 가운데 글이 없는 단(1~3단계 영어)을 그때 받는다
   // biome-ignore lint/correctness/useExhaustiveDependencies: 연 단 수가 늘 때만
   useEffect(() => {
+    if (chatHint) return;
     for (let i = 0; i < opened; i++) {
       const tier = hints[i];
       if (!tier || tier.text !== undefined || revealed[i] !== undefined)
@@ -506,7 +718,8 @@ export function ChildTurn(props: ChildTurnProps) {
   // '막히면 눌러요'를 보인 때만 한 번 남긴다(힌트 단추가 있는 턴 — 다른 기기에서도 한 번, 검토 M-8)
   // biome-ignore lint/correctness/useExhaustiveDependencies: 처음 그릴 때 한 번
   useEffect(() => {
-    if (shouldMarkNudge(props.nudge, hints.length)) props.onNudgeShown();
+    if (shouldMarkNudge(props.nudge, chatHint ? 1 : hints.length))
+      props.onNudgeShown();
   }, []);
 
   useEffect(() => {
@@ -526,6 +739,12 @@ export function ChildTurn(props: ChildTurnProps) {
 
   const textOf = (i: number) => hints[i]?.text ?? revealed[i];
   const openedSentence = (() => {
+    if (chatHint) {
+      for (const [i, slot] of chatTiers.slots.entries())
+        if (chatTiers.tiers?.[i]?.kind === "sentence" && slot.state === "text")
+          return slot.text;
+      return undefined;
+    }
     for (let i = 0; i < opened; i++)
       if (hints[i]?.kind === "sentence") return textOf(i);
     return undefined;
@@ -537,9 +756,20 @@ export function ChildTurn(props: ChildTurnProps) {
     window.clearTimeout(confirmTimer.current);
     onSend({
       ...payload,
-      hint: { opened, heard: heardHelp },
+      hint: {
+        // 이야기 방식은 글이 실제로 보인 단 수(누른 수가 아님 — 실패 문구로 끝난 단은 세지 않음, spec 설계 7)
+        opened: chatHint ? chatHintOpenedOf(chatRef.current) : opened,
+        heard: heardHelp,
+      },
       listenEndedAt: endedAt.current ?? performance.now(),
     });
+  }
+
+  /** 말 입력에 실을 인식기 칸(후보 수를 넘긴 차례의 듣기만 — 다른 후보 글은 이 요청 본문에만, spec 설계 11). */
+  function recognizerPart(): { recognizer?: TalkRecognizerBody } {
+    if (props.alternatives === undefined) return {};
+    const body = chatRecognizerBodyOf(recognizerInfo.current);
+    return body ? { recognizer: body } : {};
   }
 
   const rule = talkEndRuleFor(
@@ -550,6 +780,8 @@ export function ChildTurn(props: ChildTurnProps) {
 
   /** 듣기 하나. auto 는 회복(마이크 안 잡힘 뒤 누름 없는 듣기 — 버리는 듣기 층이 있을 때만, plan 정한 것 5). */
   async function speak(auto = false) {
+    // 조용함 타이머의 입력은 누름 처리의 첫 줄에서(막힌 누름도 — 회복 듣기는 누름이 아님)
+    if (!auto) props.onInput?.("talk");
     if (!speech || sent.current || moving) return;
     if (handle.current) {
       handle.current.press();
@@ -571,14 +803,25 @@ export function ChildTurn(props: ChildTurnProps) {
       props.onListening(true);
     };
     const sound = () => setSoundIn(true);
+    // 이야기 방식: 끝 줄의 후보 수를 이 차례의 모든 듣기(다시 말하기 · 회복 듣기 포함)에 넘기고 인식기 정보를 받는다(spec 설계 11)
+    recognizerInfo.current = undefined;
+    const chatOn: Pick<ListenCallbacks, "alternatives" | "recognizer"> =
+      props.alternatives === undefined
+        ? {}
+        : {
+            alternatives: props.alternatives,
+            recognizer: (info) => {
+              recognizerInfo.current = info;
+            },
+          };
     let current: ListenHandle;
     if (!discard) {
       opened();
-      current = speech.listen(rule, { sound });
+      current = speech.listen(rule, { sound, ...chatOn });
     } else if (auto) {
-      current = discard.listenAuto(rule, { sound, started: opened });
+      current = discard.listenAuto(rule, { sound, started: opened, ...chatOn });
     } else {
-      current = speech.listen(rule, { sound, started: opened });
+      current = speech.listen(rule, { sound, started: opened, ...chatOn });
     }
     handle.current = current;
     const outcome = await current.outcome;
@@ -641,6 +884,7 @@ export function ChildTurn(props: ChildTurnProps) {
       const payload = {
         input: { mode: "speech" as const, text },
         listenEndSeconds: (rule.endSilenceMs ?? 0) / MS_PER_SECOND,
+        ...recognizerPart(),
       };
       if (plan.autoSend) {
         send({ ...payload, confirmSkipped: true });
@@ -689,7 +933,112 @@ export function ChildTurn(props: ChildTurnProps) {
     void speak();
   }
 
-  const showHint = hints.length > 0;
+  const showHint = hints.length > 0 || chatHint !== undefined;
+  /** 힌트 단추 자리의 눌림(이야기 방식 — 막힌 단추도, rev-chat-w M-1). 단추 밖(안내 글)의 눌림은 세지 않는다. */
+  const hintPointerDown = (event: {
+    clientX: number;
+    clientY: number;
+    currentTarget: Element;
+  }) => {
+    const button = event.currentTarget.querySelector("[data-hint-button]");
+    if (!button) return;
+    const box = button.getBoundingClientRect();
+    const inside =
+      event.clientX >= box.left &&
+      event.clientX <= box.right &&
+      event.clientY >= box.top &&
+      event.clientY <= box.bottom;
+    if (inside) props.onInput?.("hint");
+  };
+  /** 힌트 단추를 이미 다 열었거나(지금 꼴) 받는 중 · 받지 못한 단이 있음(이야기 방식). */
+  const hintSpent = chatHint
+    ? !chatHintCanPressOf(chatTiers)
+    : opened >= hints.length;
+  /** 힌트 문장 듣기 단추(두 꼴이 같이 쓴다 — 누름 처리의 첫 줄에서 조용함 입력). */
+  const hintListenButton = (text: string) => (
+    <button
+      type="button"
+      data-hint-listen=""
+      aria-label={CHILD_TURN_TEXT.listenHint}
+      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행(분석 A2 · N3))
+      disabled={listening}
+      onClick={() => {
+        props.onInput?.("hint_listen");
+        listenHint({
+          speech,
+          text: fillName(text, props.englishName),
+          rate: props.rate,
+          // 선생님이 읽는 중이면 읽기 줄을 멈춘다(검토 A I-1)
+          stopReading: props.onHintListen,
+          // 버리는 듣기: 힌트 읽기가 끝나면 소리 끝(spec 설계 2 '힌트 듣기' 행)
+          ...(props.discard ? { onSpoken: props.discard.soundEnd } : {}),
+        });
+      }}
+      className={cn(
+        FOCUS_RING,
+        CHILD_SIZE.target,
+        "inline-flex items-center justify-center rounded-full border-2 border-ink bg-paper",
+      )}
+    >
+      <Volume2 aria-hidden className="size-6" />
+    </button>
+  );
+  /** 이야기 방식 힌트 단(응답의 단 목록으로 — 받는 중 점 셋 · 실패 한 줄과 다시 받기, spec 설계 7). */
+  const chatTierList =
+    chatHint && chatTiers.slots.length > 0 ? (
+      <ol data-hint-tiers="" className="flex min-w-0 flex-1 flex-col gap-2">
+        {chatTiers.slots.map((slot, i) => {
+          const tier = chatTiers.tiers?.[i];
+          return (
+            <li
+              // biome-ignore lint/suspicious/noArrayIndexKey: 단 차례가 곧 열쇠다
+              key={i}
+              data-hint-tier={tier?.kind ?? ""}
+              data-hint-state={slot.state}
+              className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-dashed border-ink bg-paper px-4 py-2"
+            >
+              {slot.state === "loading" ? (
+                <HintLoadingDots />
+              ) : slot.state === "failed" ? (
+                <>
+                  <span data-hint-failed="" className={CHILD_SIZE.guide}>
+                    {CHILD_TURN_TEXT.hintFailed}
+                  </span>
+                  {slot.retry ? (
+                    <SmallButton
+                      data-hint-retry=""
+                      disabled={listening || confirm !== null || moving}
+                      onClick={() => {
+                        props.onInput?.("hint");
+                        const step = chatHintRetryOf(chatRef.current, i);
+                        chatSet(step.state);
+                        if (step.fetch) chatFetch(step.fetch);
+                      }}
+                    >
+                      {CHILD_TURN_TEXT.hintRetry}
+                    </SmallButton>
+                  ) : null}
+                </>
+              ) : tier?.kind === "ko" ? (
+                <span className={CHILD_SIZE.guide}>
+                  {fillName(slot.text, props.englishName)}
+                </span>
+              ) : (
+                <span
+                  lang="en"
+                  className={cn(CHILD_SIZE.english, "font-en font-bold")}
+                >
+                  {fillName(slot.text, props.englishName)}
+                </span>
+              )}
+              {tier?.listen && slot.state === "text"
+                ? hintListenButton(slot.text)
+                : null}
+            </li>
+          );
+        })}
+      </ol>
+    ) : null;
   const discardLine = discardLineOf(props.discard?.view, {
     listening,
     soundIn,
@@ -747,13 +1096,15 @@ export function ChildTurn(props: ChildTurnProps) {
               </SmallButton>
             )}
             <SmallButton
-              onClick={() =>
+              onClick={() => {
+                props.onInput?.("talk");
                 send({
                   input: { mode: "speech", text: confirm.text },
                   listenEndSeconds: (rule.endSilenceMs ?? 0) / MS_PER_SECOND,
                   confirmSkipped: false,
-                })
-              }
+                  ...recognizerPart(),
+                });
+              }}
             >
               {CHILD_TURN_TEXT.send}
             </SmallButton>
@@ -763,7 +1114,8 @@ export function ChildTurn(props: ChildTurnProps) {
       {/* 가로(넓은 칸)에서는 힌트 단을 왼쪽(넓게) · 단추 묶음을 오른쪽 끝에 — 힌트가 없는 턴에도 단추는 오른쪽(목업 B_Talk1 · 화면 검토 I-1 ·
           전체 디자인 리뷰 M-3) */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-        {opened > 0 ? (
+        {chatHint ? chatTierList : null}
+        {!chatHint && opened > 0 ? (
           <ol data-hint-tiers="" className="flex min-w-0 flex-1 flex-col gap-2">
             {hints.slice(0, opened).map((tier, i) => {
               const text = textOf(i);
@@ -790,35 +1142,9 @@ export function ChildTurn(props: ChildTurnProps) {
                       {fillName(text, props.englishName)}
                     </span>
                   )}
-                  {tier.listen && text !== undefined ? (
-                    <button
-                      type="button"
-                      data-hint-listen=""
-                      aria-label={CHILD_TURN_TEXT.listenHint}
-                      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행(분석 A2 · N3))
-                      disabled={listening}
-                      onClick={() =>
-                        listenHint({
-                          speech,
-                          text: fillName(text, props.englishName),
-                          rate: props.rate,
-                          // 선생님이 읽는 중이면 읽기 줄을 멈춘다(검토 A I-1)
-                          stopReading: props.onHintListen,
-                          // 버리는 듣기: 힌트 읽기가 끝나면 소리 끝(spec 설계 2 '힌트 듣기' 행)
-                          ...(props.discard
-                            ? { onSpoken: props.discard.soundEnd }
-                            : {}),
-                        })
-                      }
-                      className={cn(
-                        FOCUS_RING,
-                        CHILD_SIZE.target,
-                        "inline-flex items-center justify-center rounded-full border-2 border-ink bg-paper",
-                      )}
-                    >
-                      <Volume2 aria-hidden className="size-6" />
-                    </button>
-                  ) : null}
+                  {tier.listen && text !== undefined
+                    ? hintListenButton(text)
+                    : null}
                 </li>
               );
             })}
@@ -843,17 +1169,28 @@ export function ChildTurn(props: ChildTurnProps) {
           />
           <div className="flex flex-col items-start gap-2">
             {showHint ? (
-              <div className="flex items-center gap-3">
+              <div
+                className="flex items-center gap-3"
+                // 이야기 방식: 막힌 힌트 단추를 누른 것도 조용함 타이머의 입력이다(누름은 막힌 채 — 단추의 모습 · 동작은 그대로, rev-chat-w M-1).
+                // 막힌 단추는 누름 처리기가 돌지 않아 그 자리의 눌림을 묶음에서 받는다
+                {...(chatHint ? { onPointerDown: hintPointerDown } : {})}
+              >
                 <SmallButton
                   data-hint-button=""
                   // 인식 확인 중에는 힌트를 열지 않는다(한 화면 한 행동 — 화면 검토 M-4)
                   disabled={
-                    opened >= hints.length ||
-                    listening ||
-                    confirm !== null ||
-                    moving
+                    hintSpent || listening || confirm !== null || moving
                   }
-                  onClick={() => setPressed((n) => n + 1)}
+                  onClick={() => {
+                    props.onInput?.("hint");
+                    if (!chatHint) {
+                      setPressed((n) => n + 1);
+                      return;
+                    }
+                    const step = chatHintPressOf(chatRef.current);
+                    chatSet(step.state);
+                    if (step.fetch) chatFetch(step.fetch);
+                  }}
                 >
                   {CHILD_TURN_TEXT.hint}
                 </SmallButton>
@@ -875,6 +1212,7 @@ export function ChildTurn(props: ChildTurnProps) {
               }
               disabled={listening || confirm !== null || moving}
               onClick={() => {
+                props.onInput?.("dont_know");
                 endedAt.current = performance.now();
                 // 버리는 듣기: 걸린 누름 · 회복 · 다시 말할 차례를 거둔다(층이 걸린 손잡이를 끊김으로 끝낸다)
                 props.discard?.dontKnow();

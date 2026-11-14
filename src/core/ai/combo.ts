@@ -19,6 +19,8 @@ export const AI_PURPOSES = [
   "talk_turn",
   "talk_closing",
   "probe",
+  "talk_chat_hint",
+  "talk_chat_eval",
 ] as const;
 export type AiPurpose = (typeof AI_PURPOSES)[number];
 
@@ -43,19 +45,22 @@ export const STRUCTURED_OUTPUTS_BETA = "structured-outputs-2025-12-15";
 const MS_PER_SECOND = 1000;
 /** 확인 호출의 effort — 가장 가벼운 값(6.1 표 확인 호출 행 'low'). */
 const PROBE_EFFORT: Effort = EFFORTS[0];
-/** 조합 검사를 하는 호출 목적(회화 턴은 구간마다 따로, 끝맺음 턴은 회화 턴 값을 쓴다 — 12절). */
+/** 조합 검사를 하는 호출 목적(회화 턴은 구간마다 따로, 끝맺음 턴은 회화 턴 값을 쓴다 — 12절. 이야기 방식의 힌트 · 평가 호출은 자기 키를 가진다). */
 const SINGLE_COMBO_PURPOSES = [
   "writing_feedback",
   "writing_check",
   "speaking_eval",
   "thinkout",
+  "talk_chat_hint",
+  "talk_chat_eval",
 ] as const satisfies readonly AiPurpose[];
 /** 회화 턴의 구간 키 접두(12절 `talk_turn.<구간>`). */
 const TALK_TURN_KEY = "talk_turn";
-/** feedback 타임아웃을 쓰는 호출(6.1 표: 첨삭 · 끝맺음 턴). */
+/** feedback 타임아웃을 쓰는 호출(6.1 표: 첨삭 · 끝맺음 턴 · 이야기 방식의 응답 뒤 평가 호출 — 이야기 방식 spec 설계 8-2). */
 const FEEDBACK_TIMEOUT_PURPOSES: readonly AiPurpose[] = [
   "writing_feedback",
   "talk_closing",
+  "talk_chat_eval",
 ];
 
 // ── 조합 칸 ──────────────────────────────────────────────────────
@@ -197,7 +202,7 @@ const ComboSettingSchema = z.object({
 });
 
 /**
- * 호출 목적 넷과 회화 턴 구간 넷의 조합을 모두 본다(P7 설정값 시드 적재 · 2차 고급 화면, AC-8i).
+ * 자기 키가 있는 호출 목적 여섯(이야기 방식의 talk_chat_hint · talk_chat_eval 포함)과 회화 턴 구간 넷의 조합을 모두 본다(P7 설정값 시드 적재 · 2차 고급 화면, AC-8i).
  * 값이 없거나 꼴이 틀리면 'invalid-setting'.
  */
 export function checkSettingsCombos(

@@ -1,9 +1,10 @@
 // 회화 듣기 사건 기록(13절 C149 · 분석 보고 task-talk-speech-analysis 4.1). 음성 접점(browser.ts)의 기록 사건(onTrace)을 받아
 // 듣기마다 요약(o · by · d · as · snd · fr · tc, 11-06 에 pe · ss · rs · ts · te · hid — 분석 task-ipad-listen-analysis 6.2, 11-13 에 읽어 주기
-// 시각 k0 · ks · kd · kn — 회화 Claude 주도 plan 묶음 V)으로 줄인다. 받을 때 글 · 인식 글 · 오류 메시지를 버리고 시각 · 종류만 남긴다(녹음 금지 ·
+// 시각 k0 · ks · kd · kn — 회화 Claude 주도 plan 묶음 V, 이야기 방식의 인식기 칸 cf · na · int — 회화 대화 구조 R spec 설계 11)으로 줄인다. 받을 때 글 · 인식 글 · 오류 메시지를 버리고 시각 · 종류만 남긴다(녹음 금지 ·
 // 이름 가림). window 를 읽지 않는다(단위 시험이 돈다). 버리는 듣기(iPad 버리는 듣기 spec 설계 5)는 버림 객체의 end 만 pe 의 앞 객체로 보고,
 // 층이 남긴 discard-note 를 다음 진짜 요약의 dc 로 붙인다. 버림의 소리 · 결과 사건은 진짜 칸에 넣지 않는다.
 import {
+  CLIENT_ALTERNATIVES_MAX,
   CLIENT_LISTEN_MS_MAX,
   CLIENT_LISTENS_MAX,
   CLIENT_SPEAKS_MAX,
@@ -51,7 +52,40 @@ function noteOf(dc: DiscardNote): DiscardNote {
   if (dc.sk !== undefined) out.sk = dc.sk;
   if (dc.np !== undefined) out.np = clampCount(dc.np);
   if (dc.n !== undefined) out.n = clampCount(dc.n);
+  if (dc.qa !== undefined) out.qa = clampListenMs(dc.qa);
+  if (dc.ql !== undefined) out.ql = dc.ql;
   return out;
+}
+
+/** 확신 정도의 자릿수(소수 둘째 자리, 회화 대화 구조 R spec 설계 11 '싣는 곳'). */
+const CONFIDENCE_PLACES = 100;
+
+/**
+ * 듣기 끝 기록의 인식기 칸을 서버 꼴에 맞춘다(순수): 확신 정도는 0 ~ 1 · 소수 둘째 자리(수가 아니면 뺌), 후보 수는 0 ~ CLIENT_ALTERNATIVES_MAX
+ * 정수, 섞인 글 표지 mx 는 참일 때만 싣는다. 섞여 온 다른 칸(글 등)은 버린다.
+ */
+function recOf(rec: { cf?: number; na: number; int: boolean; mx?: boolean }): {
+  cf?: number;
+  na: number;
+  int: boolean;
+  mx?: boolean;
+} {
+  const cf =
+    rec.cf !== undefined && Number.isFinite(rec.cf)
+      ? Math.min(
+          1,
+          Math.max(
+            0,
+            Math.round(rec.cf * CONFIDENCE_PLACES) / CONFIDENCE_PLACES,
+          ),
+        )
+      : undefined;
+  return {
+    ...(cf === undefined ? {} : { cf }),
+    na: Math.min(CLIENT_ALTERNATIVES_MAX, Math.max(0, Math.round(rec.na))),
+    int: rec.int === true,
+    ...(rec.mx === true ? { mx: true } : {}),
+  };
 }
 
 /** 글을 버린 사건. */
@@ -66,7 +100,15 @@ type Kept =
   /** 버리는 듣기 층이 진짜 앞에 남긴 '그 앞 버림' 칸(다음 진짜 요약의 dc). */
   | { at: number; k: "note"; dc: DiscardNote }
   | { at: number; k: "button"; listen: number }
-  | { at: number; k: "done"; listen: number; o: string; by?: EndedBy }
+  | {
+      at: number;
+      k: "done";
+      listen: number;
+      o: string;
+      by?: EndedBy;
+      /** 인식기 정보(후보 수를 넘겨 연 듣기만 — 수 · 참거짓, 글 없음). */
+      rec?: { cf?: number; na: number; int: boolean; mx?: boolean };
+    }
   | { at: number; k: "speak" }
   | { at: number; k: "speak-start" }
   /** 읽기 끝 · 오류 알림. why 는 끝 알림 · 끊김(interrupted · canceled) · 그 밖 오류(te). */
@@ -134,6 +176,7 @@ function keptOf(entry: SpeechTraceEntry): Kept | undefined {
         ...(entry.outcome.kind === "result"
           ? { by: entry.outcome.endedBy }
           : {}),
+        ...(entry.rec === undefined ? {} : { rec: recOf(entry.rec) }),
       };
     case "speak":
       // 읽어 주기 제약을 푸는 소리 없는 글(unlockFromGesture)은 읽기로 보지 않는다
@@ -337,6 +380,7 @@ function summaryOf(
     startAt === undefined ? undefined : recognizerEndBefore(kept, startAt);
   const synth = startCalls[0]?.synth;
   const dc = noteBefore(kept, begin);
+  const info = done.rec;
   return {
     o: done.o,
     ...(by ? { by } : {}),
@@ -361,6 +405,14 @@ function summaryOf(
     hid: hiddenBefore(kept, begin),
     ...(dc ? { dc } : {}),
     ...speakTimingOf(kept, begin),
+    ...(info === undefined
+      ? {}
+      : {
+          ...(info.cf === undefined ? {} : { cf: info.cf }),
+          na: info.na,
+          int: info.int,
+          ...(info.mx === true ? { mx: true } : {}),
+        }),
   };
 }
 

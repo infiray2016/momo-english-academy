@@ -3,7 +3,8 @@
 // 세션은 시험용 시드의 회화 1단계 단원 1 수업 1 로 열고, 안내문 글은 3단계 단원 1 에만 있으므로 처음 스냅숏 · 턴 길에 의존 leadText 로 그 글을
 // 넘긴다(묶음 S1 고침 1 의 talk-lead-turn.test.ts 와 같은 꼴). 가짜 Anthropic 은 사실 알림 머리 줄로 새 엔진 요청을 가른다.
 // 증명: (가) start → 대화 토막 첫 차례의 선생님 행 하나 (나) more → 더 이야기하기 토막의 선생님 행 하나 · 그 말의 단원 단어가 '만났다'
-// (다) 새 방식이 아닌 수업 · 그 차례가 아닌 요청은 거절(AI 없음 · 행 그대로) (라) 기존 방식의 아이 말 턴 요청은 그대로.
+// (다) 새 방식이 아닌 수업 · 그 차례가 아닌 요청은 거절(AI 없음 · 행 그대로) (라) 기존 방식의 아이 말 턴 요청은 그대로
+// (마) 고침 L1: 마무리 제안으로 끝난 more 차례 뒤의 more 는 새로 부르고, 받지 않는 상태의 같은 more 는 저장한 행을 다시 흘린다.
 import { and, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { TALK_LEAD_TEXT_L3U1 } from "@/core/ai/calls/talk-lead";
@@ -349,6 +350,52 @@ describe("회화 Claude 주도 묶음 S3 아이 말 없는 턴 요청", () => {
     const met = await sayRowOf(profileId, word);
     expect(met).toBeDefined();
     expect(met?.saidDays ?? ["x"]).toEqual([]);
+  });
+
+  it("AC-26c more 입구 차례가 마무리 제안(wrap_up)으로 끝나면 다음 more 는 저장한 행을 다시 흘리지 않고 새로 부른다(같은 말 · 두 단추가 되풀이되지 않음 — 고침 L1)", async () => {
+    const { sessionId } = await toMoreSignal();
+    h.fake.push(
+      leadTurnRule({ say: "That was fun. See you!", move: "wrap_up" }),
+    );
+    const first = await request({ sessionId, lead: "more" });
+    const firstEnd = first.at(-1);
+    expect(firstEnd?.t).toBe("end");
+    // 마무리 제안(두 단추)으로 끝났다(다른 고를 차례로 바뀌면 알아채게 좁힘 — 검토 rev-l1 M-2)
+    expect(firstEnd?.t === "end" ? firstEnd.lesson.choice : null).toBe(
+      "suggestion",
+    );
+    const calls = leadRequests().length;
+    const before = await rowsOf(sessionId);
+    const again = await chooseLessonMoreTalk({ sessionId }, h.deps());
+    expect(again.ok).toBe(true);
+    const say = "Okay! What else do you like?";
+    h.fake.push(leadTurnRule({ say, move: "react_and_follow_up" }));
+    const second = await request({ sessionId, lead: "more" });
+    expect(second.at(-1)?.t).toBe("end");
+    expect(sOf(second).join(" ")).toBe(say);
+    expect(leadRequests()).toHaveLength(calls + 1);
+    expect(lastUserOf(leadRequests().at(-1)?.body)).toContain(
+      "(The child chose to talk more.)",
+    );
+    const after = await rowsOf(sessionId);
+    expect(after).toHaveLength(before.length + 1);
+    expect(after.at(-1)?.text).toBe(say);
+  });
+
+  it("AC-26c 같은 more 를 다시 보냈는데 새 more 를 받지 않는 상태(마무리 제안으로 끝나지 않음)면 AI 없이 저장한 행을 다시 흘린다(고침 L1)", async () => {
+    const { sessionId } = await toMoreSignal();
+    const say = "Yay! What else do you like?";
+    h.fake.push(leadTurnRule({ say, move: "react_and_follow_up" }));
+    const first = await request({ sessionId, lead: "more" });
+    const firstEnd = first.at(-1);
+    expect(firstEnd?.t === "end" ? firstEnd.lesson.choice : "x").toBeNull();
+    const calls = h.fake.requests.length;
+    const rows = await rowsOf(sessionId);
+    const again = await request({ sessionId, lead: "more" });
+    expect(sOf(again)).toEqual(sOf(first));
+    expect(again.at(-1)?.t).toBe("end");
+    expect(h.fake.requests).toHaveLength(calls);
+    expect(await rowsOf(sessionId)).toHaveLength(rows.length);
   });
 
   it("AC-26c 새 방식이 아닌 수업(app)의 start · more 요청은 거절되고(stale) AI 를 부르지 않으며 행이 늘지 않는다", async () => {

@@ -38,6 +38,11 @@ export type TalkLeadLevelText = {
   sentencesLikeEn: string;
   /** 'Only very easy words.' 뒤의 형태 문장('Present simple with …'). */
   formsEn: string;
+  /**
+   * 이야기 방식(talk.lead_mode 'chat') 안내문의 짧은 주제({TOPIC}, intent 2026-11-13-회화-대화-구조-R spec 설계 2 · 데이터 절). 이 방식의 재료가 있는
+   * 단원만 둔다. 지금 새 방식(claude)의 안내문은 이 칸을 읽지 않는다.
+   */
+  chatTopicEn?: string;
 };
 
 /** 3단계 단원 1 의 글(실험 P 의 안내문 글 그대로, spec 설계 2). */
@@ -47,6 +52,7 @@ export const TALK_LEAD_TEXT_L3U1: TalkLeadLevelText = {
   sentencesLikeEn: '"I/we/they + verb" (I eat..., We go to...)',
   formsEn:
     'Present simple with I / you / we / they. No "he/she/it + verb-s", no "Who + verb-s", no past or future tense.',
+  chatTopicEn: "weekends and nature",
 };
 
 const LEVEL_TEXTS: Readonly<Record<string, TalkLeadLevelText>> = {

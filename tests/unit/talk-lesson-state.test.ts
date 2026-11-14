@@ -48,6 +48,7 @@ function row(over: Partial<TalkTurnRow>): TalkTurnRow {
     clientListen: null,
     askAgain: null,
     move: null,
+    chatJudge: null,
     recordedAt: AT,
     ...over,
   };

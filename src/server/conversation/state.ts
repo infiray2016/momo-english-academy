@@ -13,8 +13,10 @@ import {
   prepWordsShownOf,
 } from "@/core/conversation/attempt";
 import type { TalkCarry } from "@/core/conversation/chances";
+import { chatFlowRowsOf } from "@/core/conversation/chat-turn-core";
 import type { HintTier } from "@/core/conversation/hints";
 import {
+  isChatSession,
   leadModeOf,
   TALK_LEAD_MODE_KEY,
   type TalkLeadMode,
@@ -24,6 +26,8 @@ import {
   talkLessonPositionOf,
 } from "@/core/conversation/lesson-flow";
 import {
+  TALK_CHAT_KEYS,
+  type TalkInputMode,
   type TalkLessonSettings,
   type TalkLessonSpec,
   type TalkLessonTurn,
@@ -595,16 +599,23 @@ const LESSON_STATE_KEYS = [
   "speech.silent_items_max",
   // 회화 방식(회화 Claude 주도 묶음 M) — 처음 열 때 스냅숏에 적는 값. 빠진 DB 는 다른 키처럼 SettingMissingError 로 드러난다
   TALK_LEAD_MODE_KEY,
-] as const;
+  // 이야기 방식 talk.chat_*(이야기 방식 묶음 C — 세 방식 모두 늘 읽는다, 코드 배포 전에 개발 DB 에 적재)
+  ...Object.values(TALK_CHAT_KEYS),
+];
 const LESSON_BAND_KEYS = ["talk.prep_words", "talk.prep_mode"] as const;
+
+/** 수업 상태가 읽는 회화 설정 키(구간 키는 그 단계 구간 값 — 시험이 목록을 본다). */
+export function lessonStateKeysOf(band: string): string[] {
+  return [
+    ...LESSON_STATE_KEYS,
+    ...LESSON_BAND_KEYS.map((key) => `${key}.${band}`),
+  ];
+}
 
 function lessonSettingSchemas(band: string): Record<string, z.ZodType> {
   return {
     ...Object.fromEntries(
-      [
-        ...LESSON_STATE_KEYS,
-        ...LESSON_BAND_KEYS.map((key) => `${key}.${band}`),
-      ].map((key) => [key, z.unknown()]),
+      lessonStateKeysOf(band).map((key) => [key, z.unknown()]),
     ),
     "app.timezone": appTimezoneSchema,
     "app.day_start_hour": appDayStartHourSchema,
@@ -612,6 +623,21 @@ function lessonSettingSchemas(band: string): Record<string, z.ZodType> {
 }
 
 const ClientListenSrcSchema = z.object({ src: z.enum(["button", "nospeech"]) });
+
+/**
+ * 아이 행의 입력 방식(talk_turns.input_mode)을 흐름이 읽는 두 값으로 좁힌다. 빈 옛 행은 말(speech)이다. quiet(이야기 방식의 조용함 입구 행)는 아이의
+ * 답이 아니라 말한 차례로 세면 참여 완료 · 참고 턴의 셈이 틀어지므로 speech 로 읽지 않고 던진다. 기존 방식 · 지금 새 방식 수업에는 quiet 행이 생기지
+ * 않는다(turn.ts 의 아이 말 요청 꼴이 두 값만 받음). 이야기 방식 수업은 흐름 꼴로 바꾸기 전 한 자리(lessonFlowTurnsOf)에서 quiet 행을 거르므로, 이 던짐은
+ * 그 거름을 빠뜨린 자리를 잡는 안전망으로 남긴다(묶음 S1). 대화 기록 · 이어하기 · 다시 보내기의 quiet 행 읽기는 묶음 S2 의 몫이다.
+ */
+export function childInputModeOf(
+  mode: TalkTurnRow["inputMode"],
+): TalkInputMode {
+  if (mode === null) return "speech";
+  if (mode === "quiet")
+    throw new Error("아이 행 입력 방식 quiet 는 흐름이 읽는 두 값이 아니다");
+  return mode;
+}
 
 /**
  * talk_turns 행 → 새 흐름의 가벼운 꼴(lesson-turns TalkLessonTurn). 아이 행: 토막(인사 · 더 이야기하기 · 그 밖은 대화) · 입력 방식(빈 옛 행은 말) ·
@@ -629,7 +655,7 @@ export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
           : row.segment === "greeting"
             ? "greeting"
             : "talk",
-      input: row.inputMode ?? "speech",
+      input: childInputModeOf(row.inputMode),
       stuck: row.stuckPhrase !== null,
       nospeech: src.success && src.data.src === "nospeech",
       targets: [...(row.targetWords ?? [])],
@@ -643,6 +669,21 @@ export function lessonTurnOf(row: TalkTurnRow): TalkLessonTurn {
     move: readTalkMove(row.move),
     answerExample: answer === undefined || answer === "" ? null : answer,
   };
+}
+
+/**
+ * 살아 있는 행 → 흐름 꼴(위치 되짚기 · 참여 판정의 입력). 이야기 방식 수업(isChatSession — 처음 스냅숏 · 단계)은 행을 흐름 꼴로 바꾸기 전 이 한 자리에서
+ * quiet 행을 거른다(묶음 P3 chatFlowRowsOf, spec 설계 6 · 보완 4 (1) — quiet 행은 아이의 답이 아님). 거르지 않은 행(state.rows · liveRows)은 잇달아 말한
+ * 수 · 안전 상한 · 조용함 입구를 받을지 · 끝맺음 턴의 입력만 읽는다. 기존 두 방식은 거르지 않으므로 quiet 행이 있으면 lessonTurnOf 의
+ * childInputModeOf 가 던진다(빠뜨린 자리를 잡는 안전망 — 그 수업에는 quiet 행이 생기지 않는다).
+ */
+export function lessonFlowTurnsOf(
+  live: readonly TalkTurnRow[],
+  session: Parameters<typeof isChatSession>[0],
+): TalkLessonTurn[] {
+  return (isChatSession(session) ? chatFlowRowsOf(live) : live).map(
+    lessonTurnOf,
+  );
 }
 
 /**
@@ -748,7 +789,7 @@ async function lessonStateOf(
   const snapshot = (round?.snapshot ?? {}) as Record<string, unknown>;
   const lemmaEntries = await lemmaEntriesOf(db, lesson.unitWords);
   const segment = talkSegmentOf(session.talkSegment);
-  const turns = live.map(lessonTurnOf);
+  const turns = lessonFlowTurnsOf(live, { start, level });
   const position = talkLessonPositionOf({
     spec,
     card,

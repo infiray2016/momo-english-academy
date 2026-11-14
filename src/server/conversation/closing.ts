@@ -25,10 +25,13 @@ import {
   type TalkAttemptInput,
   type TalkClosingReason,
   talkClosingAttemptId,
+  talkStartAttemptId,
 } from "@/core/conversation/attempt";
 import type { TalkEnd } from "@/core/conversation/ending";
 import { friendshipAfter } from "@/core/conversation/friendship";
+import { isChatSession, leadModeOf } from "@/core/conversation/lead-mode";
 import { madeUpHit } from "@/core/conversation/made-up";
+import { metWordsIn } from "@/core/conversation/said";
 import { farewellOf } from "@/core/conversation/wrap-up";
 import { learningDayOf } from "@/core/learning-day";
 import { bandOf } from "@/core/level-band";
@@ -51,6 +54,7 @@ import { dbErrorTag } from "@/server/db/safe-error";
 import { readHouseholdProfile } from "@/server/profile";
 import {
   getOutputCheckLists,
+  seedHomophones,
   seedTalkMadeUpPhrases,
 } from "@/server/seed-lists";
 import { levelContextOf } from "@/server/session/ai-context";
@@ -60,6 +64,9 @@ import {
   appTimezoneSchema,
   getSettings,
 } from "@/server/settings";
+import { runChatEvalsOnClose, writeChatCompare } from "./chat-eval";
+import { chatDialogRowsOf, chatSaidSayOf } from "./chat-hint";
+import { chatJudgeContextFrom, readChatUnitWords } from "./chat-unit-words";
 import {
   emptyLessonRange,
   lessonSafeLineOf,
@@ -409,6 +416,125 @@ export function scheduleTalkClosing(
   schedule(async () => {
     await runTalkClosing(sessionId, deps);
   });
+}
+
+// ── 이야기 방식 수업이 닫힐 때의 평가 · 비교 표지 행(intent 2026-11-13-회화-대화-구조-R spec 설계 8-2 · 13, plan '응답 뒤 작업', 묶음 S2) ──
+
+/**
+ * 비교 표지 행의 만남 낱말: 대화 토막(인사 · 대화 · 더 이야기하기) 선생님 행의 나간 say 전체(chatSaidSayOf — 소리 줄로 뺀 따라 할 문장 포함)에서 찾은
+ * 단원 단어(spec 데이터 '만남(met)' — 지금 계산 그대로 선생님의 나간 말에서 단원 단어를 찾음).
+ */
+export function chatMetWordsOf(
+  state: Pick<TalkLessonState, "liveRows" | "lesson" | "lemmaOf">,
+): string[] {
+  const said = chatDialogRowsOf(state.liveRows)
+    .filter((row) => row.speaker === "tori")
+    .map((row) => chatSaidSayOf(row))
+    .join("\n");
+  return metWordsIn(said, {
+    unitWords: state.lesson.unitWords,
+    lemmaOf: state.lemmaOf,
+  });
+}
+
+/**
+ * 이야기 방식 수업이 닫힌 뒤 한 번: 남은 '기다림' 아이 행의 평가 호출과 비교 표지 행(S0 runChatEvalsOnClose — 동시에 둘까지, 모두 온 뒤 표지 행).
+ * 닫기 거래 밖에서 부른다(닫는 길은 세션 행을 잠그므로 거래 안에서 부르면 평가 쓰기가 같은 잠금을 기다리며 멈춘다 — 검토 rev-chat-s0 4절 S2-3).
+ * 판정 맥락의 단원 단어는 턴 길과 같은 단계 맥락의 값이다(core chatJudgeContextOf, 검토 rev-chat-s2 I-2 — 다르면 닫을 때의 다시 세기가 앞 차례의
+ * 저장된 판정을 고쳐 쓴다). 'AI 쉬는 중'이면 평가를 부르지 않고 기다림으로 남긴 채 비교 표지 행만 쓴다(M-1 — 하루 안전 상한으로 실패한 평가가
+ * '판정 없음'으로 굳지 않게, 기다림 수로 드러남). 이야기 방식이 아니면(스냅숏 · 단계로 isChatSession) 아무것도 하지 않는다. 던지지 않는다(실패해도
+ * 닫힘은 그대로). 평가 · 표지 행 가운데 하나라도 했으면 참.
+ */
+export async function runChatCloseEvals(
+  sessionId: string,
+  deps: TalkServerDeps,
+): Promise<boolean> {
+  const db: Db = deps.db ?? getDb();
+  const clock = deps.now ?? appNow;
+  try {
+    const [head] = await db
+      .select({ profileId: sessions.profileId })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId));
+    if (!head) return false;
+    const any = await readTalkAnyState(db, {
+      sessionId,
+      profileId: head.profileId,
+      at: clock(),
+    });
+    if (any?.kind !== "new" || !isChatSession(any.state)) return false;
+    const state = any.state;
+    const homophones = (deps.homophones ?? seedHomophones)();
+    const met = chatMetWordsOf(state);
+    if (
+      await aiRestingToday({ profileId: head.profileId, at: clock() }, { db })
+    ) {
+      await writeChatCompare(db, { sessionId, met, homophones, at: clock() });
+      return true;
+    }
+    const level = await levelContextFor(db, state);
+    await runChatEvalsOnClose(
+      {
+        profileId: head.profileId,
+        sessionId,
+        level: state.level,
+        sentenceMaxWords: level.sentenceMaxWords,
+        contextTurns: state.settings.chat.evalContextTurns,
+        // 판정 맥락은 턴 길과 같은 단원 낱말 재료(단계 맥락의 단원 단어 · 그 원형 표 — 묶음 S2 fix 2)
+        ctx: chatJudgeContextFrom(
+          state,
+          await readChatUnitWords(db, level.unitWords),
+          homophones,
+        ),
+        met,
+      },
+      { db, clock, ...deps.ai },
+    );
+    return true;
+  } catch (error) {
+    logFailure("이야기 방식 닫을 때 평가", error);
+    return false;
+  }
+}
+
+/**
+ * 이야기 방식 수업이 닫힌 뒤의 응답 뒤 작업 하나(묶음 S2): 남은 평가 · 비교 표지 행(runChatCloseEvals)을 먼저 시작하고, 끝맺음을 불러야 하면(closing)
+ * 끝맺음 턴을 함께 돌린다. 끝맺음의 보낸 메시지 지우기는 기존 두 방식과 같이 끝맺음 결과와 한 거래다(B5-21 · AC-16c — 닫힌 수업에 아이 말 원문이
+ * 남지 않게, 검토 rev-chat-s2 I-3). 평가가 지운 뒤에 행을 읽으면 입력이 다시 만든 줄로 조금 달라지는 것은 알고 둔다(13절 C243 보완 5 (10)).
+ * 다른 방식의 수업은 이 함수를 부르지 않는다(scheduleTalkClosing 그대로). 시험은 schedule 로 모으거나 바로 돌린다.
+ */
+export function scheduleChatClose(
+  sessionId: string,
+  deps: ClosingDeps,
+  { closing }: { closing: boolean },
+): void {
+  const schedule = deps.schedule ?? ((task) => after(task));
+  schedule(async () => {
+    const evals = runChatCloseEvals(sessionId, deps);
+    if (closing) await runTalkClosing(sessionId, deps);
+    await evals;
+  });
+}
+
+/**
+ * 세션 id 가운데 처음 스냅숏의 방식이 chat 인 것(홈 진입 정리가 닫는 수업 가운데 이야기 방식만 평가하려고 — 처음 스냅숏 한 행씩만 읽는다, 기존 두
+ * 방식의 수업은 상태를 읽지 않는다). 단계 판단은 runChatCloseEvals 가 isChatSession 으로 다시 한다.
+ */
+async function chatStartedOf(
+  db: DbOrTx,
+  sessionIds: readonly string[],
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (const sessionId of sessionIds) {
+    const [start] = await db
+      .select({ input: attempts.input })
+      .from(attempts)
+      .where(eq(attempts.clientAttemptId, talkStartAttemptId(sessionId)));
+    const input = parseTalkAttemptInput(start?.input);
+    if (input?.kind === "talk-start" && leadModeOf(input) === "chat")
+      out.add(sessionId);
+  }
+  return out;
 }
 
 /**
@@ -800,6 +926,25 @@ export async function closeIdleTalks(
           ),
         ),
       );
+    // 이야기 방식(묶음 S2 — 30분 닫힘 · 중단): 닫기 거래와 끝맺음 · 건너뜀의 보낸 메시지 지우기 앞에, 잠금 없이 남은 평가 · 비교 표지 행을 한 번
+    // 부른다(평가 입력이 그 행의 보낸 사용자 메시지 · 기록 글을 읽는다). 홈 쪽 응답 뒤 작업 안이라 아이 화면을 늦추지 않는다
+    // (다)의 목록도 여기서 읽는다((가)가 닫는 완료 세션과 겹치지 않는다 — 중단 세션만)
+    const aborted = await db
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(
+        and(
+          talkOf,
+          eq(sessions.status, "aborted"),
+          notExists(closingOf(sessions.id)),
+        ),
+      );
+    const chatClosing = await chatStartedOf(db, [
+      ...idle.map((t) => t.id),
+      ...aborted.map((t) => t.id),
+    ]);
+    for (const sessionId of chatClosing)
+      await runChatCloseEvals(sessionId, { ...deps, db });
     for (const talk of idle) {
       await db.transaction(async (tx) => {
         const [locked] = await tx
@@ -820,17 +965,7 @@ export async function closeIdleTalks(
       });
     }
 
-    // (다) 끝맺음 기록 없이 중단으로 닫힌 회화(다른 수업 고르기 · 시간 지남)
-    const aborted = await db
-      .select({ id: sessions.id })
-      .from(sessions)
-      .where(
-        and(
-          talkOf,
-          eq(sessions.status, "aborted"),
-          notExists(closingOf(sessions.id)),
-        ),
-      );
+    // (다) 끝맺음 기록 없이 중단으로 닫힌 회화(다른 수업 고르기 · 시간 지남 — 목록은 위에서 읽음)
     for (const talk of aborted) {
       await db.transaction(async (tx) => {
         const inserted = await closeWithoutClosing(tx, {

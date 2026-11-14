@@ -189,12 +189,16 @@ export function leadOpenAcceptsOf(
 
 /**
  * 같은 입구를 다시 보냈을 때(연결이 끊겨 다시 부름 등) 다시 흘릴 마지막 선생님 행인가: 그 입구가 쓴 새 엔진 행(move.lead 와 행에 둔 사용자
- * 메시지가 있음 — 아이 행이 없어 선생님 행에 둔다)이고, start 는 대화 첫 질문(first_question), more 는 그 밖의 종류다.
+ * 메시지가 있음 — 아이 행이 없어 선생님 행에 둔다)이고, start 는 대화 첫 질문(first_question), more 는 그 밖의 종류다. 그 입구를 지금 새로
+ * 받을 수 있으면(acceptsNew — leadOpenAcceptsOf) 다시 흘리지 않는다: '더 이야기하기' 입구 차례가 마무리 제안으로 끝나면 다음 '더 이야기하기'는
+ * 새 차례여야 한다(같은 말 · 두 단추가 되풀이되지 않게 — 고침 L1, 이야기 방식 chatOpenReplayOf 와 같은 규칙 · 검토 rev-chat-s1 I-1).
  */
 export function leadOpenReplayOf(
   open: LeadOpen,
   last: Pick<LeadRowLike, "speaker" | "move" | "sentUserMessage"> | undefined,
+  acceptsNew: boolean,
 ): boolean {
+  if (acceptsNew) return false;
   if (last?.speaker !== "tori" || !last.sentUserMessage) return false;
   const move = readTalkMove(last.move);
   if (!move?.lead) return false;

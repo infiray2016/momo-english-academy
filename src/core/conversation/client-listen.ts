@@ -24,6 +24,8 @@ const RESTARTS_MAX = 100;
 export const DISCARD_COUNT_MAX = 1000;
 /** 듣기 사이 읽기 요청 수(kn) 상한(기술 값 — 꼴 검사). 화면은 이 값으로 잘라 보낸다(ms 와 같음). */
 export const CLIENT_SPEAKS_MAX = 1000;
+/** 인식기 후보 수(na) 상한(기술 값 — 꼴 검사, 화면이 여는 maxAlternatives 는 설정값 talk.chat_alternatives). 화면은 이 값으로 잘라 보낸다. */
+export const CLIENT_ALTERNATIVES_MAX = 100;
 
 /**
  * 듣기 결과 종류: result · no-result · stalled · deaf(마이크 안 잡힘 — audiostart 가 빨리 오고 소리 · 결과 없음, 잠정 11-06) · error:<코드> ·
@@ -69,6 +71,11 @@ export const DiscardNoteSchema = z.strictObject({
   np: discardCount.optional(),
   /** 버림 결과 수(글 없음 — 연속 인식에서 쌓이는 결과 목록의 마지막 길이로 센다, 검토 2-가 4절 6). */
   n: discardCount.optional(),
+  // ── 아래 두 칸은 2026-11-13 에 더함(회화 대화 구조 R spec 설계 6 '기록 칸' (ㄴ) — 조용함 입구가 버림을 연 다음 진짜에만 있다) ──
+  /** 조용함 입구에서 처음 연 버림의 start → audiostart(ms). 오지 않았으면 없다. */
+  qa: ms.optional(),
+  /** 조용함 입구에서 처음 연 버림이 살아 있는 버림으로 판정되었나. */
+  ql: z.boolean().optional(),
 });
 export type DiscardNote = z.infer<typeof DiscardNoteSchema>;
 
@@ -114,6 +121,15 @@ export const ClientListenEntrySchema = z.strictObject({
   kd: ms.optional(),
   /** 앞 듣기 끝 뒤 이 듣기 앞의 읽기 요청 수(소리 없는 풀기 글은 셈 밖). */
   kn: z.int().min(0).max(CLIENT_SPEAKS_MAX).optional(),
+  // ── 아래 세 칸은 2026-11-13 에 더함(회화 대화 구조 R spec 설계 11 — 이야기 방식에서 후보 수를 넘겨 연 듣기만, 결과가 있었을 때. 글은 없다 ──
+  /** 확신 정도: 아이 말 글을 이룬 확정 결과들의 confidence 가운데 가장 낮은 값(소수 둘째 자리). 확정 결과가 없거나 값이 없거나 0 이면 없다. */
+  cf: z.number().min(0).max(1).optional(),
+  /** 후보 수: 확정 결과가 낸 후보 수의 최댓값(확정 결과가 없으면 중간 결과의 것). */
+  na: z.int().min(0).max(CLIENT_ALTERNATIVES_MAX).optional(),
+  /** 중간 결과 표지: 확정 결과 없이 중간 결과만으로 끝났는가. */
+  int: z.boolean().optional(),
+  /** 섞인 글 표지(묶음 V fix 1 컨트롤러 결정): 확정 결과와 중간 결과가 섞인 글로 끝났을 때만 참으로 싣는다(int 의 뜻은 그대로). */
+  mx: z.boolean().optional(),
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 

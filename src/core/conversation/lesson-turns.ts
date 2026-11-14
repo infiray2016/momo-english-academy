@@ -139,11 +139,61 @@ export type TalkLessonSettings = {
   /** talk.prep_mode.<구간> — 짧은 준비를 늘 할지 · 필요할 때만 할지. */
   prepMode: TalkPrepMode;
   /**
-   * talk.lead_mode — 회화 방식(회화 Claude 주도 묶음 M). 수업을 처음 열 때만 읽어 처음 스냅숏에 적는다. 진행 중 세션의 방식은 이 값이 아니라
-   * 스냅숏(leadModeOf)이다. 값이 없거나 app · claude 밖이면 다른 설정처럼 던진다(조용히 app 으로 바꾸지 않음 — 실험 값 오타가 A 로 도는 것을 막음).
+   * talk.lead_mode — 회화 방식(회화 Claude 주도 묶음 M · 이야기 방식 묶음 C). 수업을 처음 열 때만 읽어 처음 스냅숏에 적는다. 진행 중 세션의 방식은
+   * 이 값이 아니라 스냅숏(leadModeOf)이다. 값이 없거나 app · claude · chat 밖이면 다른 설정처럼 던진다(조용히 app 으로 바꾸지 않음 — 실험 값 오타가
+   * A 로 도는 것을 막음).
    */
   leadMode: TalkLeadMode;
+  /** 이야기 방식(talk.lead_mode chat)이 읽는 talk.chat_* (12절, 이야기 방식 spec 설정 표). 세 방식 모두 늘 읽는다(키가 빠진 DB 는 다른 키처럼 드러남). */
+  chat: TalkChatSettings;
 };
+
+/**
+ * 이야기 방식 설정(12절 talk.chat_* — 이야기 방식 spec 판 3 설정 표 · 설계 2 · 6 · 7 · 8-2 · 11, 값은 잠정). 이야기 방식은 1~3단계 구간에서만 돌므로
+ * 낱말 수는 그 구간 키 하나만 둔다(talk.chat_turn_words.1-3 — 다른 구간은 행이 없다).
+ */
+export type TalkChatSettings = {
+  /** talk.chat_turn_words.1-3 — 안내문 '말하는 범위'의 한 차례 낱말 수. */
+  turnWords: number;
+  /** talk.chat_quiet_seconds — 아이 차례가 열리고 읽기가 끝난 뒤 입력 없이 기다리는 시간(초). 0 이면 조용함 입구를 보내지 않는다(끔). */
+  quietSeconds: number;
+  /** talk.chat_teacher_run_max — 조용함으로 선생님이 혼자 잇달아 말하는 차례 수의 상한. */
+  teacherRunMax: number;
+  /** talk.chat_hint_context_turns — 힌트 호출에 싣는 앞 대화 차례 수(선생님 · 아이 합침). */
+  hintContextTurns: number;
+  /** talk.chat_hint_retry_max — 힌트 호출이 실패한 뒤 선생님 행당 다시 받기 수의 상한(0 이면 다시 받지 않음). */
+  hintRetryMax: number;
+  /** talk.chat_eval_context_turns — 평가 호출에 싣는 아이 차례 앞의 대화 차례 수(선생님 · 아이 합침). */
+  evalContextTurns: number;
+  /** talk.chat_alternatives — 이야기 방식 듣기의 maxAlternatives. */
+  alternatives: number;
+  /** talk.chat_unsure_confidence — 인식기 알림을 붙이는 확신 정도 문턱(0~1). */
+  unsureConfidence: number;
+  /** talk.chat_unsure_on_partial — 아이 말 글이 중간 결과만으로 끝났을 때 인식기 알림을 붙일지(첫 판은 거짓). */
+  unsureOnPartial: boolean;
+  /** talk.chat_explain_wait_seconds — 막힌 뒤 설명을 기다리는 차례에서 조용함 타이머가 설명을 기다리는 상한(초). */
+  explainWaitSeconds: number;
+  /** talk.chat_day_part_hours — 수업 시작 사실의 morning · afternoon · evening 경계 시각(0~23 정수, 오름차순 셋). */
+  dayPartHours: readonly [number, number, number];
+};
+
+/** 이야기 방식 설정 키(12절). 칸 이름 → 키. */
+export const TALK_CHAT_KEYS = {
+  turnWords: "talk.chat_turn_words.1-3",
+  quietSeconds: "talk.chat_quiet_seconds",
+  teacherRunMax: "talk.chat_teacher_run_max",
+  hintContextTurns: "talk.chat_hint_context_turns",
+  hintRetryMax: "talk.chat_hint_retry_max",
+  evalContextTurns: "talk.chat_eval_context_turns",
+  alternatives: "talk.chat_alternatives",
+  unsureConfidence: "talk.chat_unsure_confidence",
+  unsureOnPartial: "talk.chat_unsure_on_partial",
+  explainWaitSeconds: "talk.chat_explain_wait_seconds",
+  dayPartHours: "talk.chat_day_part_hours",
+} as const satisfies Record<keyof TalkChatSettings, string>;
+
+/** 하루 시각(0~23 정수). */
+const HOUR_SCHEMA = z.int().min(0).max(23);
 
 const POSITIVE_KEYS = {
   dontknowMax: "talk.dontknow_max",
@@ -204,7 +254,58 @@ export function talkLessonSettingsFrom(
       read,
       TALK_LEAD_MODE_KEY,
       z.enum(TALK_LEAD_MODES),
-      "app · claude",
+      TALK_LEAD_MODES.join(" · "),
+    ),
+    chat: talkChatSettingsFrom(read),
+  };
+}
+
+/** 이야기 방식 설정을 읽는다(talkLessonSettingsFrom 이 부른다 — 구간과 관계없이 같은 키). 없거나 꼴이 틀리면 던진다. */
+function talkChatSettingsFrom(
+  read: (key: string) => unknown,
+): TalkChatSettings {
+  const k = TALK_CHAT_KEYS;
+  const positive = z.int().min(1);
+  const count = z.int().min(0);
+  const seconds = z.number().min(0);
+  return {
+    turnWords: readValue(read, k.turnWords, positive, "1 이상 정수"),
+    quietSeconds: readValue(read, k.quietSeconds, seconds, "0 이상 수"),
+    teacherRunMax: readValue(read, k.teacherRunMax, positive, "1 이상 정수"),
+    hintContextTurns: readValue(
+      read,
+      k.hintContextTurns,
+      positive,
+      "1 이상 정수",
+    ),
+    hintRetryMax: readValue(read, k.hintRetryMax, count, "0 이상 정수"),
+    evalContextTurns: readValue(
+      read,
+      k.evalContextTurns,
+      positive,
+      "1 이상 정수",
+    ),
+    alternatives: readValue(read, k.alternatives, positive, "1 이상 정수"),
+    unsureConfidence: readValue(
+      read,
+      k.unsureConfidence,
+      z.number().min(0).max(1),
+      "0~1 사이 수",
+    ),
+    unsureOnPartial: readValue(read, k.unsureOnPartial, z.boolean(), "참거짓"),
+    explainWaitSeconds: readValue(
+      read,
+      k.explainWaitSeconds,
+      seconds,
+      "0 이상 수",
+    ),
+    dayPartHours: readValue(
+      read,
+      k.dayPartHours,
+      z
+        .tuple([HOUR_SCHEMA, HOUR_SCHEMA, HOUR_SCHEMA])
+        .refine(([a, b, c]) => a < b && b < c),
+      "오름차순 시각 셋",
     ),
   };
 }

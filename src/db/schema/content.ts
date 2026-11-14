@@ -65,7 +65,12 @@ export const attemptStatusEnum = pgEnum("attempt_status", [
   "feedback_failed",
 ]);
 export const speakerEnum = pgEnum("speaker", ["tori", "child"]);
-export const inputModeEnum = pgEnum("input_mode", ["speech", "dont_know"]);
+// quiet: 이야기 방식에서 아이 입력이 하나도 없던 차례 뒤 선생님 차례(조용함 차례, 이야기 방식 spec 설계 6 · 마이그레이션 0009 는 끝에 더하기만)
+export const inputModeEnum = pgEnum("input_mode", [
+  "speech",
+  "dont_know",
+  "quiet",
+]);
 export const hintKindEnum = pgEnum("hint_kind", [
   "english",
   "meaning_only",
@@ -111,6 +116,9 @@ export const aiPurposeEnum = pgEnum("ai_purpose", [
   "talk_turn",
   "talk_closing",
   "probe",
+  // 이야기 방식의 힌트 호출 · 기존 꼴 평가 호출(이야기 방식 spec 설계 7 · 8-2 · 마이그레이션 0009 는 끝에 더하기만)
+  "talk_chat_hint",
+  "talk_chat_eval",
 ]);
 export const aiCallStatusEnum = pgEnum("ai_call_status", [
   "success",

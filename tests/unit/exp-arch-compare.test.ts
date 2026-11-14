@@ -21,11 +21,18 @@ import {
   pChildMessageOf,
   pStatusOf,
 } from "../../scripts/exp/arch-arm-p";
+import { R2_LESSON_CONTEXTS } from "../../scripts/exp/arch-arm-q";
 import {
   B_REMOVED_PREFIXES,
   C_SAFETY_SENTENCES,
+  CHAT_LOW_CONFIDENCE,
   c2SystemOf,
   cChildMessageOf,
+  chatChildMessageOf,
+  chatForcedPickOf,
+  chatHintTurnOf,
+  chatRecognizerOf,
+  chatSilentInputOf,
   childSystemOf,
   cSystemOf,
   heardByChild,
@@ -33,14 +40,26 @@ import {
   splitDirectiveLines,
 } from "../../scripts/exp/arch-arms";
 import {
+  ALL_CHILDREN,
   appFirstSentOf,
+  CHAT_LONG_TURNS,
+  type ChatChildLog,
+  type ChatTeacherLog,
   type ChildTurnLog,
+  chatAtOf,
+  chatReplay,
+  createChatCallCache,
+  isCapError,
   type LeadTurnLog,
   type LessonLog,
   type LogLine,
   mergeSetup,
   parseRunArgs,
+  planLinesOf,
+  plannedLessonsOf,
+  planOverCap,
   runLesson,
+  runPlanOf,
   setupOf,
   spokenOfLessonOutput,
   type TeacherTurnLog,
@@ -50,6 +69,11 @@ import {
   wrapChoiceMessageOf,
 } from "../../scripts/exp/arch-compare";
 import {
+  afterSilenceOf,
+  chatCallLatencyOf,
+  chatCountsOf,
+  chatLongSummaryOf,
+  chatTurnRowsOf,
   createFirstSentenceClock,
   createSpeechReader,
   endingHowOf,
@@ -84,6 +108,7 @@ import {
 import {
   armMetricsOf,
   blindOrderOf,
+  chatMarkdownOf,
   childOnlyHeardOf,
   JUDGE_SUMMARY_TOOL,
   judgeRubricOf,
@@ -104,6 +129,15 @@ import {
   saidMarkdownOf,
   saidRowsOf,
 } from "../../scripts/exp/arch-report";
+import {
+  type CallResult,
+  type ChatCaller,
+  type ChatCallKind,
+  createTalkSim,
+  type ObserveStep,
+  runChatScenario,
+} from "../../scripts/talk-observe";
+import { chatClockOf } from "../../src/core/conversation/chat-message";
 import {
   type LeadCandidateLex,
   leadCandidateTableOf,
@@ -2216,5 +2250,1102 @@ describe("묶음 X2 고침 1: 세 방식 같은 규칙의 '말했다' 수(I-2) �
     expect(JSON.parse(text)).not.toHaveProperty("pair");
     writeFileSync(path, text);
     expect(judgeSummaryOverwriteBlocked(path)).toBe(false);
+  });
+});
+
+// ── 묶음 T2(이야기 방식 묶음 — plan '묶음 표' T2 실험 도구 · 실행, spec 설계 13 '시나리오 여덟' · '대본에서 셀 것' · '긴 대본 한 벌') ─────────
+
+const CHAT_HINT_REPLY = {
+  hint_ko: "좋아하는 것을 말해 봐요.",
+  hint_en: "I like cats.",
+  explain_ko: "선생님은 좋아하는 것을 물었어요.",
+};
+const CHAT_EVAL_REPLY = {
+  reading: "clear_answer",
+  teacher_move: "react_and_follow_up",
+  model_sentence: "",
+  child_used_on_own: [],
+};
+
+type ChildPlay = {
+  action: "speak" | "dont_know" | "silent";
+  says?: string;
+};
+
+/**
+ * 이야기 방식 수업의 가짜 Anthropic 경로: 아이 역은 차례마다 정한 행동(단추 차례는 pick), 대화 호출은 기본 말(teacher 가 바꿈), 힌트 · 설명은
+ * 꼴만 맞춘 응답, 평가는 꼴만 맞춘 응답.
+ */
+function chatClient(opts: {
+  plays: readonly ChildPlay[];
+  pick?: "more" | "stop";
+  teacher?: (user: string) => Partial<{
+    say: string;
+    wrap_up: boolean;
+    listen_sentence: string;
+  }>;
+}) {
+  let childAt = 0;
+  return fakeClient((body) => {
+    if (String(body.system).includes(CHILD_ROLE_MARK)) {
+      if (lastUser(body).includes(BUTTONS_MARK))
+        return JSON.stringify({
+          action: "speak",
+          says: "",
+          kind: "answer",
+          why: "단추",
+          wrap_choice: opts.pick ?? "stop",
+        });
+      const play = opts.plays[Math.min(childAt, opts.plays.length - 1)] ?? {
+        action: "speak",
+        says: "Yes.",
+      };
+      childAt++;
+      return JSON.stringify({
+        action: play.action,
+        says: play.says ?? "",
+        kind: "answer",
+        why: "시험",
+      });
+    }
+    const schema = schemaOf(body);
+    if (schema.includes('"hint_ko"')) return JSON.stringify(CHAT_HINT_REPLY);
+    if (schema.includes('"teacher_move"'))
+      return JSON.stringify(CHAT_EVAL_REPLY);
+    return JSON.stringify({
+      listen_sentence: "",
+      say: "Nice! What do you like?",
+      say_ko: "좋아! 뭘 좋아해?",
+      wrap_up: false,
+      ...(opts.teacher?.(lastUser(body)) ?? {}),
+    });
+  });
+}
+
+const isChatDialog = (b: FakeBody) =>
+  !String(b.system).includes(CHILD_ROLE_MARK) &&
+  schemaOf(b).includes('"listen_sentence"');
+const isChildPlay = (b: FakeBody) =>
+  String(b.system).includes(CHILD_ROLE_MARK) &&
+  !lastUser(b).includes(BUTTONS_MARK);
+const isChildButton = (b: FakeBody) =>
+  String(b.system).includes(CHILD_ROLE_MARK) &&
+  lastUser(b).includes(BUTTONS_MARK);
+
+const chatTeachers = (lines: readonly LogLine[]) =>
+  lines.filter((l): l is TeacherTurnLog => l.type === "teacher_turn");
+const chatChildren = (lines: readonly LogLine[]) =>
+  lines.filter((l): l is ChildTurnLog => l.type === "child_turn");
+const chatMeta = (lines: readonly LogLine[]) =>
+  lines.find((l): l is LessonLog => l.type === "lesson");
+
+describe("묶음 T2 이야기 방식(CHAT)의 앱 행동 일정(arch-arms — 순수)", () => {
+  it("AC-27n 힌트 누름은 SC · SD2 에서 차례 셋에 한 번(2 · 5 · 8 … — N-2 차례 6 과 잡음 차례를 피함), 말없음은 덩이마다 누르지 않음(조용함)과 눌렀으나 들리지 않음을 번갈아, SE 는 첫 마무리 단추만 '더 이야기하기', 긴 대본은 마무리마다", () => {
+    const turns = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    for (const child of ["SC", "SD2"] as const)
+      expect(turns.filter((t) => chatHintTurnOf(child, t))).toEqual([2, 5, 8]);
+    for (const child of ["SA", "SB", "SD", "SE", "SF", "SG"] as const)
+      expect(turns.filter((t) => chatHintTurnOf(child, t))).toEqual([]);
+    expect([0, 1, 2, 3].map(chatSilentInputOf)).toEqual([
+      "quiet",
+      "nospeech",
+      "quiet",
+      "nospeech",
+    ]);
+    expect(
+      chatForcedPickOf({ child: "SE", long: false, forcedBefore: 0 }),
+    ).toBe("more");
+    expect(
+      chatForcedPickOf({ child: "SE", long: false, forcedBefore: 1 }),
+    ).toBeNull();
+    expect(
+      chatForcedPickOf({ child: "SA", long: false, forcedBefore: 0 }),
+    ).toBeNull();
+    expect(chatForcedPickOf({ child: "SE", long: true, forcedBefore: 5 })).toBe(
+      "more",
+    );
+  });
+
+  it("AC-27n 인식기 알림 일정(지난 sttNoteOf)을 낮은 확신 정도 · 다른 후보로 옮긴다: 다른 후보는 끝 줄이 후보 수 2 이상을 실은 차례에만, 알림 없는 차례는 인식기 칸 없음", () => {
+    const low = { lowConfidence: CHAT_LOW_CONFIDENCE, alternatives: 2 };
+    expect(chatRecognizerOf({ unsure: true, alt: "Cake." }, low)).toEqual({
+      confidence: CHAT_LOW_CONFIDENCE,
+      alternative: "Cake.",
+    });
+    expect(
+      chatRecognizerOf(
+        { unsure: true, alt: "Cake." },
+        { ...low, alternatives: 0 },
+      ),
+    ).toEqual({ confidence: CHAT_LOW_CONFIDENCE });
+    expect(chatRecognizerOf({ unsure: true }, low)).toEqual({
+      confidence: CHAT_LOW_CONFIDENCE,
+    });
+    expect(chatRecognizerOf(null, low)).toBeUndefined();
+  });
+
+  it("AC-27n 아이 역에게 보내는 말: 선생님 차례마다 한 줄 · 짧은 준비 쪽지를 따라 말함 · 화면에서 고른 단추 · 힌트 글, 선생님이 말하지 않은 차례", () => {
+    const message = chatChildMessageOf(
+      [
+        { kind: "teacher", text: "Hi {NAME}! How are you?" },
+        { kind: "prep", words: ["eat", "drink", "go"] },
+        { kind: "teacher", text: "Welcome back." },
+      ],
+      null,
+    );
+    expect(message).toContain("Teacher: Hi friend! How are you?");
+    expect(message).toContain("eat, drink, go");
+    expect(message.indexOf("eat, drink, go")).toBeLessThan(
+      message.indexOf("Teacher: Welcome back."),
+    );
+    expect(chatChildMessageOf([], null)).toBe(
+      "Teacher: (The teacher said nothing.)",
+    );
+    expect(
+      chatChildMessageOf(
+        [
+          { kind: "teacher", text: "Fun talk!" },
+          { kind: "picked", pick: "more" },
+          { kind: "teacher", text: "Okay!" },
+        ],
+        null,
+      ),
+    ).toContain('"Talk more"');
+    const hinted = chatChildMessageOf(
+      [{ kind: "teacher", text: "What do you like?" }],
+      { ok: true, text: "좋아하는 것을 말해 봐요." },
+    );
+    expect(hinted).toContain("hint");
+    expect(hinted).toContain("좋아하는 것을 말해 봐요.");
+    expect(
+      chatChildMessageOf([{ kind: "teacher", text: "Hm?" }], { ok: false }),
+    ).toContain("did not come");
+  });
+});
+
+describe("묶음 T2 실제 카드(회화 3단계 단원 1 첫 수업)와 수업 시작 맥락", () => {
+  const lesson1 = setupOf(process.cwd(), { card: "lesson1" });
+
+  it("AC-27n 실제 카드 첫 수업은 짧은 준비가 열린 꼴이고 이야기 방식 안내문이 있으며, 홀로 선 R3 의 안내문은 지난 재료(재생 대본)와 같다", () => {
+    expect(lesson1.card).toBe("lesson1");
+    expect(lesson1.materials.lessonNo).toBe(1);
+    expect(lesson1.prepPlan).toEqual(["eat", "drink", "go"]);
+    expect(lesson1.chatSystem).not.toBeNull();
+    const replay = setupOf(process.cwd());
+    expect(replay.card).toBe("replay");
+    expect(replay.materials.lessonNo).toBe(6);
+    expect(lesson1.qSystems.R3).toBe(replay.qSystems.R3);
+  });
+
+  it("AC-27n 수업 시작 시각: 같은 수업의 R3 맥락(요일 · 때)과 같은 때를 가족 시간대로 고른다", () => {
+    const tz = String(lesson1.values["app.timezone"]);
+    const hours = lesson1.values["talk.chat_day_part_hours"] as [
+      number,
+      number,
+      number,
+    ];
+    for (const ctx of R2_LESSON_CONTEXTS) {
+      const clock = chatClockOf(chatAtOf(ctx.now, tz, hours), tz, hours);
+      expect(`${clock.weekday} ${clock.dayPart}`).toBe(ctx.now);
+    }
+  });
+});
+
+/** 꼴만 맞춘 가짜 응답(갈래별). */
+function chatCallResultOf(kind: ChatCallKind): CallResult {
+  const text =
+    kind === "dialog"
+      ? JSON.stringify({
+          listen_sentence: "",
+          say: "Nice! What do you like?",
+          say_ko: "좋아! 뭘 좋아해?",
+          wrap_up: false,
+        })
+      : kind === "eval"
+        ? JSON.stringify(CHAT_EVAL_REPLY)
+        : JSON.stringify(CHAT_HINT_REPLY);
+  return {
+    ok: true,
+    message: {
+      model: "claude-sonnet-5-5",
+      stop_reason: "end_turn",
+      usage: { input_tokens: 1000, output_tokens: 50 },
+      content: [{ type: "text", text }],
+    } as never,
+    latencyMs: 300,
+    firstSentenceMs: null,
+    requestId: "",
+  };
+}
+
+describe("묶음 T2 다시 돌리기(대본 도구 runChatScenario 를 그대로 부르는 접점)", () => {
+  const lesson1 = setupOf(process.cwd(), { card: "lesson1" });
+  const makeSim = () =>
+    createTalkSim(
+      lesson1.materials,
+      { ...lesson1.values, "talk.lead_mode": "chat" },
+      lesson1.config.book,
+      {
+        rotationKey: "parity",
+        chatAt: new Date("2026-11-13T06:00:00Z"),
+        chatMet: 0,
+      },
+    );
+  const steps: ObserveStep[] = [
+    { say: "I am fine." },
+    { input: "quiet" },
+    { say: "Cats.", hintTier: 1 },
+    { input: "dont_know" },
+    { input: "nospeech" },
+    { say: "Yes." },
+  ];
+  const fake = () => {
+    const kinds: ChatCallKind[] = [];
+    const call: ChatCaller = async (kind) => {
+      kinds.push(kind);
+      return chatCallResultOf(kind);
+    };
+    return { call, kinds };
+  };
+
+  it("AC-27n 앞 응답을 그대로 되돌려 주며 한 차례씩 늘려 다시 돌리면, 한 번에 돌린 runChatScenario 와 같은 기록 · 같은 호출 차례가 나온다", async () => {
+    const once = fake();
+    const direct = await runChatScenario(makeSim(), steps, {
+      call: once.call,
+      evalOn: true,
+    });
+    const twice = fake();
+    const cache = createChatCallCache(twice.call);
+    let last: Awaited<ReturnType<typeof chatReplay>> | null = null;
+    for (let k = 0; k <= steps.length; k++)
+      last = await chatReplay(
+        makeSim,
+        steps.slice(0, k),
+        cache.callerFor(false),
+      );
+    expect(JSON.stringify(last?.run)).toBe(JSON.stringify(direct));
+    expect(twice.kinds).toEqual(once.kinds);
+    expect(cache.size()).toBe(once.kinds.length);
+  });
+
+  it("AC-27n 힌트 미리 보기는 힌트까지만 부르고 대화 호출 앞에서 멈추며, 그 힌트를 다음 다시 돌리기가 그대로 쓴다(힌트 호출이 한 번)", async () => {
+    const calls = fake();
+    const cache = createChatCallCache(calls.call);
+    await chatReplay(makeSim, steps.slice(0, 2), cache.callerFor(false));
+    const before = calls.kinds.length;
+    const probe = await chatReplay(
+      makeSim,
+      [...steps.slice(0, 2), { say: "-", hintTier: 1 }],
+      cache.callerFor(true),
+    );
+    expect(probe.run).toBeNull();
+    expect(calls.kinds.slice(before)).toEqual(["hint"]);
+    expect(probe.sim.chat.hintAsk("hint", 0).kind).toBe("stored");
+    await chatReplay(makeSim, steps.slice(0, 3), cache.callerFor(false));
+    expect(calls.kinds.filter((k) => k === "hint")).toHaveLength(1);
+  });
+
+  it("AC-27n 다시 돌린 요청이 앞과 다르면 멈춘다(되돌려 준 응답이 다른 요청의 것이 되지 않게)", async () => {
+    const cache = createChatCallCache(fake().call);
+    await chatReplay(makeSim, steps.slice(0, 1), cache.callerFor(false));
+    await expect(
+      chatReplay(makeSim, [{ say: "Other words." }], cache.callerFor(false)),
+    ).rejects.toThrow("앞과 다름");
+  });
+});
+
+describe("묶음 T2 방식 CHAT 수업 하나(가짜 client — 앱 행동이 시나리오대로 들어감)", () => {
+  const lesson1 = setupOf(process.cwd(), { card: "lesson1" });
+
+  it("AC-27n SC 씨앗 1: 수업 첫 말(R3 와 같은 맥락) · 인사 끝 사실 줄 · 짧은 준비 쪽지 · 돌아옴 · 조용함 · 힌트(2 · 5 · 8, 아이 역이 힌트 글을 봄) · 잡음과 인식기 알림 · 눌렀으나 들리지 않음 · 모름 단추와 막힌 뒤 설명", async () => {
+    const { client, requests } = chatClient({
+      plays: [
+        { action: "speak", says: "Hi." },
+        { action: "speak", says: "I like cats." },
+        { action: "silent" },
+        { action: "speak", says: "Cake." },
+        { action: "speak", says: "Dog." },
+        { action: "speak", says: "Yes." },
+        { action: "silent" },
+        { action: "dont_know" },
+        { action: "speak", says: "Okay." },
+      ],
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SC", 1, 9, 1);
+    expect(run.error).toBeNull();
+    const dialogs = requests.filter(isChatDialog).map(lastUser);
+    const ctx = R2_LESSON_CONTEXTS[ALL_CHILDREN.indexOf("SC") + 1];
+    expect(dialogs[0]).toContain(`(The chat starts now. It is ${ctx?.now}.`);
+    expect(dialogs[0]).toContain(`chatted ${ctx?.met} times before`);
+    expect(dialogs[1]).toContain('Child (speech-to-text): "Hi."');
+    expect(dialogs[1]).toContain(
+      "After your turn the app does a short word practice",
+    );
+    expect(dialogs[2]).toContain(
+      "(The child is back from a short word practice in the app.)",
+    );
+    expect(dialogs[3]).toContain('Child (speech-to-text): "I like cats."');
+    // 첫 말없음 덩이: 누르지 않음(조용함 입구)
+    expect(dialogs[4]).toContain("(The child did not press the talk button.)");
+    // 잡음 차례 4(씨앗 1): 말 전체가 바뀐 첫 잡음 — 낮은 확신 정도와 다른 후보(아이가 하려던 말)
+    expect(dialogs[5]).toContain('Child (speech-to-text): "Tomorrow"');
+    expect(dialogs[5]).toContain('It may also have been: "Cake."');
+    expect(dialogs[6]).toContain('Child (speech-to-text): "Dog."');
+    // 깨끗한 차례 6: 맞게 들린 말에 낮은 확신 정도만(N-2) — 힌트 차례가 아니다
+    expect(dialogs[7]).toContain('Child (speech-to-text): "Yes."');
+    expect(dialogs[7]).toContain("(The recognizer was unsure about this.)");
+    expect(dialogs[7]).not.toContain("It may also have been");
+    // 둘째 말없음 덩이: 눌렀으나 들리지 않음
+    expect(dialogs[8]).toContain(
+      "(The child pressed the talk button, but the app could not hear any words.)",
+    );
+    expect(dialogs[9]).toContain(
+      `(The child pressed the "I don't know" button.)`,
+    );
+    // 잡음 차례 9: 둘째 말 전체 바뀜 — 낮은 확신 정도만
+    expect(dialogs[10]).toContain('Child (speech-to-text): "Pad"');
+    expect(dialogs[10]).toContain("(The recognizer was unsure about this.)");
+    expect(dialogs[10]).not.toContain("It may also have been");
+    expect(dialogs).toHaveLength(11);
+    // 아이 역: 짧은 준비 쪽지를 따라 말한 것으로 넘기고, 힌트 차례에는 힌트 글을 본 뒤 말을 정한다
+    const plays = requests.filter(isChildPlay).map(lastUser);
+    expect(plays[1]).toContain("eat, drink, go");
+    expect(plays[1]).toContain(CHAT_HINT_REPLY.hint_ko);
+    expect(plays[2]).not.toContain(CHAT_HINT_REPLY.hint_ko);
+    const children = chatChildren(run.lines);
+    expect(children.map((c) => c.chat?.input)).toEqual([
+      "say",
+      "say",
+      "quiet",
+      "say",
+      "say",
+      "say",
+      "nospeech",
+      "dont_know",
+      "say",
+    ]);
+    expect(
+      children.filter((c) => c.chat?.hintTier === 1).map((c) => c.childTurn),
+    ).toEqual([2, 5, 8]);
+    expect(children[5]?.stt).toEqual({ unsure: true });
+    expect(children[5]?.chat?.hintTier).toBe(0);
+    const teachers = chatTeachers(run.lines);
+    expect(teachers.map((t) => t.chat?.entry)).toEqual([
+      "start",
+      "child",
+      "back",
+      "child",
+      "quiet",
+      "child",
+      "child",
+      "child",
+      "child",
+      "child",
+      "child",
+    ]);
+    expect(teachers.map((t) => t.childTurn)).toEqual([
+      0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+    expect(teachers[1]?.chat?.facts).toEqual(["prep_next"]);
+    // 호출 갈래: 대화 · 힌트 · 설명 · 평가가 따로 남고, 힌트 호출 기록의 아이 차례는 누른 차례 번호다(m-3)
+    const calls = run.lines.filter((l) => l.type === "call");
+    const kinds = calls.map((l) => l.kind);
+    expect(kinds.filter((k) => k === "turn")).toHaveLength(11);
+    expect(
+      calls.filter((l) => l.kind === "hint").map((l) => l.childTurn),
+    ).toEqual([2, 5, 8]);
+    expect(kinds.filter((k) => k === "explain").length).toBeGreaterThan(0);
+    expect(kinds.filter((k) => k === "eval").length).toBeGreaterThan(0);
+    const meta = chatMeta(run.lines);
+    expect(meta?.arm).toBe("CHAT");
+    expect(meta?.ended).toBeNull();
+    expect(meta?.childTurns).toBe(9);
+    expect(meta?.chat?.calls.dialog).toBe(11);
+    expect(meta?.chat?.prepWords).toEqual(["eat", "drink", "go"]);
+    expect(meta?.chat?.wrap.length).toBeGreaterThan(0);
+    // 상한으로 끝난 수업은 정리에 닿지 않았다(m-4)
+    expect(meta?.chat?.reachedWrap).toBe(false);
+    // 차례마다 첫 문장 시간 · 입력 토큰 · 비용 · 호출 수
+    const rows = chatTurnRowsOf([
+      {
+        meta: meta as LessonLog,
+        teachers,
+        children,
+      },
+    ]);
+    expect(rows).toHaveLength(11);
+    expect(rows.every((r) => r.inputTokens === 1000)).toBe(true);
+    expect(rows.find((r) => r.childTurn === 2)?.calls.hint).toBe(1);
+    const transcript = transcriptOf(run.lines);
+    expect(transcript).toContain("입구 back");
+    expect(transcript).toContain("누르지 않음(조용함)");
+    expect(transcript).toContain("눌렀으나 들리지 않음");
+  });
+
+  it("AC-27n 힌트를 누른 차례의 말없음은 누름이 있었으므로 '눌렀으나 들리지 않음'이고, 말없음 덩이를 끊으며 덩이 셈에 들지 않는다(다음 말없음은 첫 덩이 — 조용함)", async () => {
+    const { client, requests } = chatClient({
+      plays: [
+        { action: "speak", says: "Hi." },
+        { action: "silent" },
+        { action: "silent" },
+        { action: "speak", says: "Yes." },
+      ],
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SD2", 2, 4, 1);
+    expect(run.error).toBeNull();
+    expect(chatChildren(run.lines).map((c) => c.chat?.input)).toEqual([
+      "say",
+      "nospeech",
+      "quiet",
+      "say",
+    ]);
+    const dialogs = requests.filter(isChatDialog).map(lastUser);
+    expect(dialogs[3]).toContain(
+      "(The child pressed the talk button, but the app could not hear any words.)",
+    );
+    expect(dialogs[4]).toContain("(The child did not press the talk button.)");
+  });
+
+  it("AC-27n SG: 말없음 갈래는 잇단 말없음 한 덩이 단위다 — 첫 덩이는 모두 누르지 않음(조용함 → 조용함 → 상한 뒤 기다림), 둘째 덩이는 모두 눌렀으나 들리지 않음", async () => {
+    const { client, requests } = chatClient({
+      plays: [
+        { action: "speak", says: "Hi." },
+        { action: "silent" },
+        { action: "silent" },
+        { action: "silent" },
+        { action: "silent" },
+        { action: "speak", says: "Yes." },
+        { action: "silent" },
+        { action: "silent" },
+        { action: "speak", says: "Okay." },
+      ],
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SG", 1, 9, 1);
+    expect(run.error).toBeNull();
+    const children = chatChildren(run.lines);
+    expect(children.map((c) => c.chat?.input)).toEqual([
+      "say",
+      "quiet",
+      "quiet",
+      "quiet",
+      "quiet",
+      "say",
+      "nospeech",
+      "nospeech",
+      "say",
+    ]);
+    expect(
+      children.filter((c) => c.chat?.waited).map((c) => c.childTurn),
+    ).toEqual([4, 5]);
+    const teachers = chatTeachers(run.lines);
+    expect(teachers.map((t) => [t.childTurn, t.chat?.entry])).toEqual([
+      [0, "start"],
+      [1, "child"],
+      [1, "back"],
+      [2, "quiet"],
+      [3, "quiet"],
+      [6, "child"],
+      [7, "child"],
+      [8, "child"],
+      [9, "child"],
+    ]);
+    // 선생님이 말하지 않은 차례에 아이 역은 '선생님이 말하지 않음'을 듣는다
+    const plays = requests.filter(isChildPlay).map(lastUser);
+    expect(plays[4]).toContain("(The teacher said nothing.)");
+    // 말 없음 뒤 말함(I-2): 말없음에 답한 선생님 차례(조용함 · 들리지 않음 모두) 뒤의 다음 아이 차례 — 기다림 차례는 답이 없어 빠진다
+    const meta = chatMeta(run.lines) as LessonLog;
+    expect(afterSilenceOf({ meta, teachers, children })).toEqual({
+      turns: 4,
+      spokeAfter: 1,
+      byInput: {
+        quiet: { turns: 2, spokeAfter: 0 },
+        nospeech: { turns: 2, spokeAfter: 1 },
+      },
+    });
+  });
+
+  it("AC-27n 지금 새 방식(N) 아이 역에게도 짧은 준비 쪽지 줄을 같은 꼴로 붙인다(인사 끝 말 → 쪽지 → 대화 첫 말)", async () => {
+    let childAt = 0;
+    const says = ["Hi.", "Yes.", "Okay."];
+    const { client, requests } = fakeClient((body) => {
+      if (String(body.system).includes(CHILD_ROLE_MARK))
+        return JSON.stringify({
+          action: "speak",
+          says: says[Math.min(childAt++, says.length - 1)],
+          kind: "answer",
+          why: "시험",
+        });
+      if (schemaOf(body).includes('"reading"'))
+        return JSON.stringify({
+          reading: "clear_answer",
+          move: "react_and_follow_up",
+          say: "Great! What do you eat?",
+          say_ko: "좋아! 뭘 먹어?",
+          model_sentence: "",
+          hint_ko: "",
+          hint_en: "",
+          goal_words_i_said: [],
+          child_used_on_own: [],
+        });
+      return JSON.stringify({
+        child_kind: "answer",
+        stuck: false,
+        tori_en: "Good to hear!",
+      });
+    });
+    const run = await runLesson(lesson1, client, "N", "SA", 1, 3, 1);
+    expect(run.error).toBeNull();
+    const plays = requests
+      .filter((b) => String(b.system).includes(CHILD_ROLE_MARK))
+      .map(lastUser);
+    const withNote = plays.find((m) => m.includes("eat, drink, go"));
+    if (!withNote) throw new Error("쪽지 줄이 없다");
+    expect(withNote.indexOf("eat, drink, go")).toBeLessThan(
+      withNote.indexOf("Teacher: Great! What do you eat?"),
+    );
+    expect(withNote.indexOf("Teacher:")).toBeLessThan(
+      withNote.indexOf("eat, drink, go"),
+    );
+  });
+
+  it("AC-27o 첫 say 문장이 따라 할 문장이라 소리 줄로 빠진 차례에 표지가 붙는다(첫 문장 시간을 그 차례를 넣은 값 · 뺀 값으로 낸다)", async () => {
+    const { client } = chatClient({
+      plays: [
+        { action: "speak", says: "Hi." },
+        { action: "speak", says: "Cats!" },
+        { action: "speak", says: "Dog." },
+      ],
+      teacher: (user) =>
+        user.includes('"Cats!"')
+          ? {
+              listen_sentence: "I like cats.",
+              say: "I like cats. Do you like dogs?",
+            }
+          : {},
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SE", 1, 3, 1);
+    expect(run.error).toBeNull();
+    const teachers = chatTeachers(run.lines);
+    const moved = teachers.filter((t) => t.chat?.firstMoved);
+    expect(moved.map((t) => t.childTurn)).toEqual([2]);
+    const md = chatMarkdownOf([
+      {
+        name: run.lesson,
+        meta: chatMeta(run.lines) as LessonLog,
+        calls: run.lines.filter((l) => l.type === "call"),
+        teachers,
+        children: chatChildren(run.lines),
+      },
+    ]);
+    expect(md).toContain("첫 say 문장이 소리 줄로 빠진 차례를 뺀");
+    expect(md).toContain("따라 할 문장이 든 차례");
+    expect(md).toContain("힌트 · 설명 · 평가 호출 지연");
+  });
+
+  it("AC-27n SE: 첫 마무리 단추는 앱 행동으로 '더 이야기하기'(아이 역에게 묻지 않음, 다음 말에 고른 단추가 보임), 둘째는 아이 역이 고른다", async () => {
+    const { client, requests } = chatClient({
+      plays: [
+        { action: "speak", says: "Hi." },
+        { action: "speak", says: "I have cat." },
+        { action: "speak", says: "Soccer!" },
+        { action: "speak", says: "Pizza!" },
+        { action: "speak", says: "Bye." },
+      ],
+      pick: "stop",
+      teacher: (user) =>
+        user.includes('"Soccer!"') || user.includes('"Pizza!"')
+          ? { say: "That was fun!", wrap_up: true }
+          : {},
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SE", 1, 6, 1);
+    expect(run.error).toBeNull();
+    const meta = chatMeta(run.lines);
+    expect(
+      meta?.ending?.choices.map((c) => [c.kind, c.picked, c.continued]),
+    ).toEqual([
+      ["wrap_up", "more", true],
+      ["wrap_up", "stop", false],
+    ]);
+    expect(meta?.ending?.choices[0]?.why).toContain("앱 행동");
+    expect(meta?.ending?.how).toBe("teacher_closing");
+    expect(requests.filter(isChildButton)).toHaveLength(1);
+    expect(requests.filter(isChatDialog).map(lastUser)).toContain(
+      "(The child chose to talk more.)",
+    );
+    const plays = requests.filter(isChildPlay).map(lastUser);
+    expect(plays[3]).toContain('"Talk more"');
+    const more = chatTeachers(run.lines).find((t) => t.chat?.entry === "more");
+    expect(more?.afterChoice).toBe(true);
+    expect(more?.childTurn).toBe(4);
+  });
+
+  it("AC-27k 긴 대본: 마무리 차례마다 '더 이야기하기'(묻지 않음), 안전 상한 사실 줄 차례에서 닫히고 기록에 차례마다 입력 토큰 · 비용이 남는다", async () => {
+    const says = [
+      "Hi.",
+      "Cat!",
+      "Soccer!",
+      "Pizza!",
+      "Dog!",
+      "Rain!",
+      "Soccer!",
+      "Game!",
+      "Ball!",
+      "Fish!",
+      "Cake!",
+      "Bye!",
+    ];
+    const { client, requests } = chatClient({
+      plays: says.map((s) => ({ action: "speak" as const, says: s })),
+      teacher: (user) =>
+        user.includes('"Soccer!"') ? { say: "Fun!", wrap_up: true } : {},
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SE", 1, 12, 1, {
+      variant: "long",
+      safetyMax: 12,
+    });
+    expect(run.error).toBeNull();
+    expect(run.lesson).toBe("CHAT-SE-s1-long");
+    const meta = chatMeta(run.lines);
+    expect(meta?.variant).toBe("long");
+    expect(meta?.chat?.overrides).toEqual({ "talk.safety_max_turns": 12 });
+    expect(meta?.ended).toContain("대화가 닫혔다");
+    expect(meta?.ending?.choices.every((c) => c.picked === "more")).toBe(true);
+    expect(meta?.ending?.choices.length).toBeGreaterThan(0);
+    expect(requests.filter(isChildButton)).toHaveLength(0);
+    const teachers = chatTeachers(run.lines);
+    const last = teachers.at(-1);
+    expect(last?.childTurn).toBe(12);
+    expect(last?.chat?.facts).toContain("last_turn");
+    const rows = chatTurnRowsOf([
+      {
+        meta: meta as LessonLog,
+        teachers,
+        children: chatChildren(run.lines),
+      },
+    ]);
+    expect(rows.map((r) => r.order)).toEqual(rows.map((_, i) => i + 1));
+    expect(rows.at(-1)?.facts).toContain("last_turn");
+    expect(CHAT_LONG_TURNS).toBe(40);
+  });
+
+  it("AC-27p 실제 호출의 문: 호출 수 상한에 닿으면 더 부르지 않고 수업을 멈춘다(상한 오류는 다시 돌리지 않는 표지)", async () => {
+    const { client, requests } = chatClient({
+      plays: [{ action: "speak", says: "Hi." }],
+    });
+    const run = await runLesson(lesson1, client, "CHAT", "SA", 1, 4, 1, {
+      budget: { left: 3 },
+    });
+    expect(run.ok).toBe(false);
+    expect(isCapError(run.error ?? "")).toBe(true);
+    expect(requests).toHaveLength(3);
+  });
+});
+
+/** 합성 CHAT 기록(손으로 센 값과 맞댐). */
+function chatT(
+  lesson: string,
+  childTurn: number,
+  final: string,
+  chat: Partial<ChatTeacherLog>,
+  extra: Partial<TeacherTurnLog> = {},
+): TeacherTurnLog {
+  return {
+    ...teacherLine(childTurn, final, { lesson, arm: "CHAT" }),
+    chat: {
+      entry: "child",
+      turnEnd: null,
+      facts: [],
+      signal: null,
+      wrapUp: false,
+      wrapUpHeld: null,
+      listen: null,
+      removed: [],
+      firstMoved: false,
+      madeUp: [],
+      closed: false,
+      failure: null,
+      diverged: false,
+      usage: {
+        firstSentenceMs: 800,
+        inputTokens: 1200,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        outputTokens: 40,
+        costUsd: 0.002,
+        latencyMs: 900,
+      },
+      calls: { dialog: 1, hint: 0, explain: 0, eval: 0 },
+      costUsd: 0.002,
+      waitedMs: 0,
+      hints: [],
+      explain: null,
+      evals: [],
+      ...chat,
+    },
+    ...extra,
+  };
+}
+
+function chatC(
+  lesson: string,
+  childTurn: number,
+  input: ChatChildLog["input"],
+  says = "",
+  extra: Partial<ChildTurnLog> = {},
+): ChildTurnLog {
+  return {
+    type: "child_turn",
+    lesson,
+    childTurn,
+    heardTeacher: "",
+    action:
+      input === "say"
+        ? "speak"
+        : input === "dont_know"
+          ? "dont_know"
+          : "silent",
+    says,
+    kind: "answer",
+    why: "",
+    heard: input === "say" ? says : null,
+    noise: null,
+    noiseSkipped: false,
+    chat: { input, hintTier: 0, hint: null, recognizer: null, waited: false },
+    ...extra,
+  };
+}
+
+function chatLessonOf(
+  name: string,
+  child: "SC" | "SD2",
+  teachers: TeacherTurnLog[],
+  children: ChildTurnLog[],
+  wrap: { en: string; card: boolean }[],
+  reachedWrap = false,
+) {
+  return {
+    name,
+    meta: lessonLine({
+      lesson: name,
+      arm: "CHAT",
+      child,
+      childTurns: children.length,
+      chat: {
+        calls: { dialog: teachers.length, hint: 0, explain: 0, eval: 0 },
+        costUsd: 0.02,
+        wrap,
+        prepWords: ["eat", "drink", "go"],
+        overrides: {},
+        start: { now: "Friday afternoon", met: 0 },
+        reachedWrap,
+      },
+    }),
+    calls: [],
+    teachers,
+    children,
+  };
+}
+
+describe("묶음 T2 대본에서 셀 것 열 가지(arch-metrics — 합성 기록에서 손으로 센 값)", () => {
+  const A = "CHAT-SC-s1";
+  const B = "CHAT-SD2-s1";
+  const lessonA = chatLessonOf(
+    A,
+    "SC",
+    [
+      chatT(A, 0, "Hi {NAME}! How are you?", { entry: "start" }),
+      chatT(A, 1, "Good! Do you like cake?", { facts: ["prep_next"] }),
+      chatT(A, 1, "Welcome back!", { entry: "back" }),
+      chatT(A, 2, "I like rain.", { entry: "quiet" }),
+      chatT(A, 3, "Cool.", { wrapUp: true }),
+      chatT(A, 4, "Do you like cats?", { entry: "quiet" }),
+      chatT(A, 5, "It's okay.", {}),
+      chatT(A, 6, "Did you say yes? Nice!", {
+        listen: { sentence: "I like cats.", inSay: false },
+        madeUp: ["i ate"],
+      }),
+      chatT(A, 7, "Great talk today! See you next time!", {
+        facts: ["closing"],
+      }),
+    ],
+    [
+      chatC(A, 1, "say", "Fine."),
+      chatC(A, 2, "quiet"),
+      chatC(A, 3, "say", "Yes."),
+      chatC(A, 4, "quiet"),
+      chatC(A, 5, "nospeech"),
+      chatC(A, 6, "say", "Yes.", { stt: { unsure: true } }),
+      chatC(A, 7, "say", "Cake."),
+    ],
+    [{ en: "We go to the lake.", card: true }],
+    true,
+  );
+  const lessonB = chatLessonOf(
+    B,
+    "SD2",
+    [
+      chatT(B, 0, "Hello {NAME}!", { entry: "start" }),
+      chatT(B, 1, "Nice to meet you.", { facts: ["prep_next"] }),
+      chatT(B, 2, "Hmm. Bye!", { entry: "quiet", wrapUp: true }),
+      chatT(B, 3, "What will you do tomorrow?", { facts: ["closing"] }),
+    ],
+    [
+      chatC(B, 1, "say", "Hi."),
+      chatC(B, 2, "quiet"),
+      chatC(B, 3, "say", "Banana."),
+    ],
+    [{ en: "I like cats.", card: false }],
+  );
+
+  it("AC-27n (가) 열 가지: 인사 끝 물음 · 마무리 두 잣대 · 조용함 뒤 말함(SC · SD2) · 따라 할 문장 어긋남 · 지어낸 경험 꼴 · {NAME} · 카드 정리 대사 · 알림 뒤 되물음 · 두 단추로 답할 수 없는 마무리 물음(사람이 읽을 목록)", () => {
+    const c = chatCountsOf([lessonA, lessonB]);
+    expect(c.lessons).toBe(2);
+    expect(c.greetingEnd).toMatchObject({ lessons: 2, withQuestion: 1 });
+    // (ㄱ)은 앱의 마무리 차례(사실 줄 closing)만 — 물음 없는 wrap_up 차례(A 차례 3 · B 차례 2)는 세지 않는다(I-3), (ㄴ)은 두 꼴 모두
+    expect(c.closing).toMatchObject({
+      turns: 2,
+      noQuestion: 1,
+      noQuestionRatio: 0.5,
+      farewellLessons: 2,
+    });
+    // 말 없음 뒤 말함(I-2): 말없음(누르지 않음 · 들리지 않음 모두)에 답한 선생님 차례 뒤 — 나눈 값을 함께
+    expect(c.afterSilence.SC).toEqual({
+      turns: 3,
+      spokeAfter: 2,
+      ratio: 2 / 3,
+      quiet: { turns: 2, spokeAfter: 1 },
+      nospeech: { turns: 1, spokeAfter: 1 },
+    });
+    expect(c.afterSilence.SD2).toEqual({
+      turns: 1,
+      spokeAfter: 1,
+      ratio: 1,
+      quiet: { turns: 1, spokeAfter: 1 },
+      nospeech: { turns: 0, spokeAfter: 0 },
+    });
+    expect(c.listen).toMatchObject({ turns: 1, mismatch: 1 });
+    expect(c.madeUp).toMatchObject({ turns: 1, hits: 1 });
+    expect(c.nameTurns).toBe(2);
+    expect(c.wrapCard.lessons).toBe(1);
+    expect(c.wrapCard.reached).toBe(1);
+    expect(c.wrapCard.list[0]).toMatchObject({ lesson: A, reached: true });
+    expect(c.wrapCard.list[0]?.topics).toContain("Cake.");
+    expect(c.alertedClean).toMatchObject({ turns: 1, reasked: 1 });
+    expect(c.closingQuestions.map((q) => [q.lesson, q.childTurn])).toEqual([
+      [B, 3],
+    ]);
+    // 정리에 닿지 않은 수업은 수에서 빼고 목록에는 남긴다(m-4)
+    const chatA = lessonA.meta.chat as NonNullable<LessonLog["chat"]>;
+    const notReached = chatCountsOf([
+      {
+        ...lessonA,
+        meta: { ...lessonA.meta, chat: { ...chatA, reachedWrap: false } },
+      },
+      lessonB,
+    ]);
+    expect(notReached.wrapCard.lessons).toBe(0);
+    expect(notReached.wrapCard.reached).toBe(0);
+    expect(notReached.wrapCard.list.map((r) => [r.lesson, r.reached])).toEqual([
+      [A, false],
+    ]);
+  });
+
+  it("AC-27n (가) 말 없음 뒤 아이가 말한 비율은 방식마다 같은 무리로 센다: 말없음(CHAT 은 누르지 않음 · 들리지 않음 모두)에 답한 선생님 차례 뒤, CHAT 은 나눈 값을 함께", () => {
+    expect(afterSilenceOf(lessonA)).toEqual({
+      turns: 3,
+      spokeAfter: 2,
+      byInput: {
+        quiet: { turns: 2, spokeAfter: 1 },
+        nospeech: { turns: 1, spokeAfter: 1 },
+      },
+    });
+    const r3 = {
+      ...lessonOf([
+        teacherLine(0, "Hi!", { lesson: "R3-SC-s1", arm: "R3" }),
+        teacherLine(1, "Okay.", { lesson: "R3-SC-s1", arm: "R3" }),
+        teacherLine(2, "Cats?", { lesson: "R3-SC-s1", arm: "R3" }),
+        lessonLine({ lesson: "R3-SC-s1", arm: "R3", child: "SC" }),
+      ]),
+      children: [
+        { ...childLine(1, "Hi!", null, "R3-SC-s1"), action: "silent" as const },
+        childLine(2, "Okay.", "Yes.", "R3-SC-s1"),
+      ],
+    };
+    expect(afterSilenceOf(r3)).toEqual({
+      turns: 1,
+      spokeAfter: 1,
+      byInput: null,
+    });
+    const md = chatMarkdownOf([lessonA, lessonB, r3]);
+    expect(md).toContain("대본에서 셀 것");
+    expect(md).toContain("| R3 |");
+    expect(md).toContain("| CHAT |");
+    expect(md).toContain("| CHAT 누르지 않음만 |");
+    expect(md).toContain("| CHAT 들리지 않음만 |");
+    expect(md).toContain("인사 끝 차례");
+    expect(md).toContain("두 단추로 답할 수 없는");
+  });
+});
+
+describe("묶음 T2 계획만 모드 · 호출 수 상한(13절 C243 보완 5 (6))", () => {
+  const lesson1 = setupOf(process.cwd(), { card: "lesson1" });
+
+  it("AC-27p 기본은 계획만이고, 실제 호출은 --call 과 --max-calls 가 함께 있을 때만이다", () => {
+    const args = parseRunArgs([
+      "--out",
+      "x",
+      "--arms",
+      "R3,N,CHAT",
+      "--children",
+      "SC,SE",
+      "--card",
+      "lesson1",
+      "--long",
+    ]);
+    expect(args).toMatchObject({
+      call: false,
+      maxCalls: null,
+      long: true,
+      card: "lesson1",
+    });
+    expect(() => parseRunArgs(["--out", "x", "--call"])).toThrow("--max-calls");
+    expect(
+      parseRunArgs(["--out", "x", "--call", "--max-calls", "900"]),
+    ).toMatchObject({ call: true, maxCalls: 900 });
+  });
+
+  it("AC-27p 계획: 수업마다 · 방식마다 호출 갈래(대화 · 다시 쓰기 · 아이 역 · 힌트 · 설명 · 평가)별 위쪽 어림 수와 어림 비용, 긴 대본 한 벌, 상한을 넘으면 부르지 않음", () => {
+    const args = parseRunArgs([
+      "--out",
+      "x",
+      "--arms",
+      "R3,N,CHAT",
+      "--children",
+      "SC,SE",
+      "--card",
+      "lesson1",
+      "--long",
+    ]);
+    const plan = runPlanOf(lesson1, args);
+    expect(plan.lessons).toHaveLength(13);
+    const at = (name: string) => plan.lessons.find((l) => l.lesson === name);
+    expect(at("CHAT-SC-s1")?.calls.hint).toBeGreaterThan(0);
+    expect(at("CHAT-SC-s1")?.calls.explain).toBeGreaterThan(0);
+    expect(at("CHAT-SC-s1")?.calls.eval).toBeGreaterThan(0);
+    expect(at("CHAT-SE-s1")?.calls.hint).toBe(0);
+    expect(at("R3-SC-s1")?.calls).toMatchObject({
+      hint: 0,
+      explain: 0,
+      eval: 0,
+    });
+    expect(at("R3-SC-s1")?.calls.dialog).toBeGreaterThan(0);
+    expect(at("R3-SC-s1")?.calls.child).toBeGreaterThan(0);
+    expect(at("CHAT-SE-s1-long")?.calls.dialog).toBeGreaterThan(
+      at("CHAT-SE-s1")?.calls.dialog ?? 0,
+    );
+    const sum = plan.lessons.reduce(
+      (n, l) => n + Object.values(l.calls).reduce((a, b) => a + b, 0),
+      0,
+    );
+    expect(plan.total.all).toBe(sum);
+    expect(plan.total.costUsd).toBeGreaterThan(0);
+    // 캐시를 받는 어림은 0 보다 크고 위쪽 어림보다 작다
+    expect(plan.total.cachedCostUsd).toBeGreaterThan(0);
+    expect(plan.total.cachedCostUsd).toBeLessThan(plan.total.costUsd);
+    const lines = planLinesOf(plan).join("\n");
+    expect(lines).toContain("CHAT");
+    expect(lines).toContain("힌트");
+    expect(lines).toContain("합계");
+    expect(lines).toContain("캐시 어림");
+    expect(planOverCap(plan, plan.total.all - 1)).toBe(true);
+    expect(planOverCap(plan, plan.total.all)).toBe(false);
+  });
+});
+
+describe("묶음 T2 fix 1 요약 줄 · 계획 · 합치기(m-5 · m-7)", () => {
+  it("AC-27k 긴 대본 잣대: 아이 차례 31~40 의 첫 문장 시간 중앙값이 1~15 보다 1초 넘게 길거나 수업 비용이 0.3달러를 넘으면 넘음", () => {
+    const L = "CHAT-SE-s1-long";
+    const t = (childTurn: number, ms: number) =>
+      chatT(L, childTurn, "Hi.", {
+        usage: {
+          firstSentenceMs: ms,
+          inputTokens: 1000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 40,
+          costUsd: 0.002,
+          latencyMs: ms,
+        },
+      });
+    const rows = chatTurnRowsOf([
+      {
+        meta: lessonLine({ lesson: L, arm: "CHAT", variant: "long" }),
+        teachers: [t(2, 800), t(3, 1000), t(33, 2000), t(35, 2400)],
+        children: [],
+      },
+    ]);
+    expect(chatLongSummaryOf(rows, 0.1)).toMatchObject({
+      earlyMs: 900,
+      lateMs: 2200,
+      diffMs: 1300,
+      over: true,
+    });
+    expect(chatLongSummaryOf(rows.slice(0, 2), 0.31)).toMatchObject({
+      lateMs: null,
+      over: true,
+    });
+    expect(chatLongSummaryOf(rows.slice(0, 2), 0.1).over).toBe(false);
+  });
+
+  it("AC-27o 힌트 · 설명 · 평가 호출 지연은 호출 기록(ms)에서 갈래마다 센다", () => {
+    const call = (kind: "hint" | "explain" | "eval" | "turn", ms: number) =>
+      ({ type: "call", lesson: "CHAT-SC-s1", childTurn: 1, kind, ms }) as never;
+    const lat = chatCallLatencyOf([
+      {
+        meta: lessonLine({ lesson: "CHAT-SC-s1", arm: "CHAT" }),
+        calls: [
+          call("hint", 1000),
+          call("hint", 3000),
+          call("eval", 500),
+          call("turn", 9000),
+        ],
+      },
+    ]);
+    expect(lat.hint).toMatchObject({ n: 2, medianMs: 2000 });
+    expect(lat.eval).toMatchObject({ n: 1, medianMs: 500 });
+    expect(lat.explain).toMatchObject({ n: 0, medianMs: null });
+  });
+
+  it("AC-27p --long 은 --arms 에 CHAT 이 있을 때만 긴 대본을 더한다", () => {
+    const base = ["--out", "x", "--children", "SE", "--seeds", "1", "--long"];
+    expect(
+      plannedLessonsOf(parseRunArgs([...base, "--arms", "R3"])).map(
+        (l) => l.lesson,
+      ),
+    ).toEqual(["R3-SE-s1"]);
+    expect(
+      plannedLessonsOf(parseRunArgs([...base, "--arms", "R3,CHAT"])).map(
+        (l) => l.lesson,
+      ),
+    ).toEqual(["R3-SE-s1", "CHAT-SE-s1", "CHAT-SE-s1-long"]);
+  });
+
+  it("AC-27p 같은 결과 폴더에 다시 돌리면 setup.json 의 계획은 이번 실행의 값이고, 앞 계획은 기록으로 남는다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-plan-merge-"));
+    const path = join(dir, "setup.json");
+    const first = {
+      script: "s",
+      pSystem: "p",
+      args: { a: 1 },
+      plan: { all: 10 },
+    };
+    writeFileSync(path, JSON.stringify(first));
+    const merged = mergeSetup(path, {
+      ...first,
+      args: { a: 2 },
+      plan: { all: 20 },
+    });
+    expect(merged.plan).toEqual({ all: 20 });
+    expect(merged.planHistory).toEqual([{ all: 10 }, { all: 20 }]);
   });
 });

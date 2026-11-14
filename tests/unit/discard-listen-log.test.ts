@@ -118,7 +118,7 @@ const REOPEN: DiscardNote = {
 };
 
 describe("dc 칸 꼴(설계 5 · 접점 표 'client_listen dc')", () => {
-  it("진짜 요약 한 줄이 접점 표의 열두 칸 dc 를 받고 값 목록은 버림 기계(core/speech/discard)의 목록이다(AC-10)", () => {
+  it("진짜 요약 한 줄이 접점 표의 열네 칸 dc 를 받고 값 목록은 버림 기계(core/speech/discard)의 목록이다(AC-10)", () => {
     const entry: ClientListenEntry = { o: "result", d: 4000, snd: true };
     for (const dc of [FULL, REOPEN, { g: "rest" } as DiscardNote])
       expect(ClientListenEntrySchema.parse({ ...entry, dc })).toEqual({
@@ -140,6 +140,9 @@ describe("dc 칸 꼴(설계 5 · 접점 표 'client_listen dc')", () => {
         "sk",
         "np",
         "n",
+        // 회화 대화 구조 R spec 설계 6 '기록 칸' (ㄴ) — 조용함 입구 버림의 audiostart · 판정(묶음 V, 2026-11-13)
+        "qa",
+        "ql",
       ].sort(),
     );
     expect(shape.g.unwrap().options).toEqual([...DISCARD_BRANCHES]);

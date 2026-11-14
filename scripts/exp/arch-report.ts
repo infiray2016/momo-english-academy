@@ -4,6 +4,8 @@
 // 지난 실험의 judge-agg.py 를 옮김 — 가려 읽기 폴더 · 대응표는 건드리지 않는다).
 // 시나리오 아이 역(SA~SF — task-x3)의 수업이 있으면 시나리오마다 방식을 나란히 읽는 글(scenarios/<SA…SF>.md)도 낸다.
 // --count-tokens 만 네트워크를 쓴다(방식마다 시스템 프롬프트의 입력 토큰 수 — count_tokens). 키 값은 출력하지 않는다.
+// 방식 CHAT(묶음 T2)의 수업이 있으면 chat.md · chat.json(spec '회화 대화 구조 R' 설계 13 '대본에서 셀 것' · 차례마다 값 · 긴 대본)을 더 쓴다. 긴 대본
+// (variant long)은 시나리오 셈 · 나란히 글 · 가려 읽기에서 빼고 chat.md 에만 둔다. 재료 카드는 결과 폴더 setup.json 의 card 로 읽는다(없으면 replay).
 import { randomInt } from "node:crypto";
 import {
   existsSync,
@@ -51,11 +53,23 @@ import {
   type LeadTurnLog,
   type LessonLog,
   type LogLine,
+  SETUP_CARDS,
+  type SetupCard,
   setupOf,
   type TeacherTurnLog,
 } from "./arch-compare";
 import {
+  AC11_COST_USD,
+  AC11_DIFF_MS,
+  AC11_EARLY_TURNS,
+  AC11_LATE_TURNS,
   type AskedQuestion,
+  afterSilenceOf,
+  type ChatCounts,
+  chatCallLatencyOf,
+  chatCountsOf,
+  chatLongSummaryOf,
+  chatTurnRowsOf,
   endingOf,
   type FirstSent,
   type FirstSentence,
@@ -93,6 +107,7 @@ const ARM_ORDER: readonly Arm[] = [
   "R3",
   "R3M",
   "R3O",
+  "CHAT",
 ];
 
 /** 결과 글에 쓰는 방식 이름(QP 는 Q+ — 명령에서만 QP). */
@@ -1916,8 +1931,30 @@ function scenarioCell(l: Lesson | undefined, n: number): string {
         ? "아이: ('잘 모르겠어요' 단추)"
         : "아이: (말 없음)",
   );
-  const t = l.teachers.find((x) => x.childTurn === n && x.afterChoice !== true);
-  parts.push(...(t ? teacherParts(t, "→ 선생님: ") : ["→ (수업 끝)"]));
+  if (c.chat?.input === "quiet" || c.chat?.input === "nospeech")
+    parts[parts.length - 1] =
+      c.chat.input === "quiet"
+        ? "아이: (말 없음 — 누르지 않음(조용함))"
+        : "아이: (말 없음 — 눌렀으나 들리지 않음)";
+  if (c.chat && c.chat.hintTier > 0) parts.push(`[힌트 ${c.chat.hintTier}단]`);
+  // CHAT 은 한 아이 차례 뒤 선생님 차례가 여럿일 수 있다(인사 끝 → 돌아옴). 다른 방식은 하나다
+  const ts = l.teachers.filter(
+    (x) => x.childTurn === n && x.afterChoice !== true,
+  );
+  parts.push(
+    ...(ts.length > 0
+      ? ts.flatMap((t) =>
+          teacherParts(
+            t,
+            t.chat && t.chat.entry !== "child"
+              ? `→ 선생님(${t.chat.entry}): `
+              : "→ 선생님: ",
+          ),
+        )
+      : c.chat?.waited
+        ? ["→ (선생님이 기다림)"]
+        : ["→ (수업 끝)"]),
+  );
   return cell(parts.join("\n"));
 }
 
@@ -1949,7 +1986,7 @@ export function scenarioMarkdownOf(
     `- 아이 역 글(지금 아이 역 머리 뒤에 붙음): ${CHILD_PERSONAS[child]}`,
     `- 잡음: ${childHasNoise(child) ? "넣음(지금 일정 — 씨앗마다 정해진 차례)" : "넣지 않음"}`,
     "",
-    "칸마다 그 방식 수업의 아이 말(들린 글이 다르면 함께) 다음 줄에 바로 뒤 선생님 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 방식마다 다르다. [따라 할 문장]은 그 차례에 선생님이 낸 따라 할 문장(A · N: 소리 줄, P: model_sentence, Q · Q+: listen_sentence), [wrap_up]은 Q · Q+ 의 선생님이 마무리를 꺼낸 차례, [단추: …]는 그 아이 차례 앞에서 아이가 고른 마무리 단추다.",
+    "칸마다 그 방식 수업의 아이 말(들린 글이 다르면 함께) 다음 줄에 바로 뒤 선생님 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 방식마다 다르다. [따라 할 문장]은 그 차례에 선생님이 낸 따라 할 문장(A · N: 소리 줄, P: model_sentence, Q · Q+ · CHAT: listen_sentence), [wrap_up]은 Q · Q+ 의 선생님이 마무리를 꺼낸 차례, [단추: …]는 그 아이 차례 앞에서 아이가 고른 마무리 단추다. CHAT 의 '선생님(back · quiet)'은 아이 말 없이 연 선생님 차례(짧은 준비 뒤 돌아옴 · 조용함), [힌트 n단]은 앱 행동으로 누른 힌트다.",
     "",
   ];
   if (mine.length === 0) {
@@ -2020,6 +2057,15 @@ function writeScenarios(dir: string, lessons: readonly Lesson[]): void {
 // ── 예시 ─────────────────────────────────────────────────────────
 
 function systemBlocks(arm: Arm, system: string) {
+  if (arm === "CHAT")
+    return [
+      {
+        block:
+          "CHAT 이야기 방식 안내문(앱 talkChatTurnSpec — 선생님 · 대화 · 말하는 범위 · 안전 · 출력)",
+        lines: system.split("\n").filter((l) => l !== "").length,
+        chars: system.length,
+      },
+    ];
   if (arm === "N")
     return [
       {
@@ -2251,6 +2297,289 @@ function examplesOf(
   writeFileSync(join(dir, "examples.md"), `${md.join("\n")}\n`);
 }
 
+// ── 방식 CHAT(묶음 T2 — spec '회화 대화 구조 R' 설계 13 · 14, AC-11 · AC-14 (가) · AC-15 · AC-16) ─────────────
+
+/** 결과 폴더 setup.json 의 재료 카드(없거나 모르는 값이면 replay — 지난 실험). */
+function setupCardOf(dir: string): SetupCard {
+  const path = join(dir, "setup.json");
+  if (!existsSync(path)) return "replay";
+  const card = (JSON.parse(readFileSync(path, "utf8")) as { card?: unknown })
+    .card;
+  return (SETUP_CARDS as readonly unknown[]).includes(card)
+    ? (card as SetupCard)
+    : "replay";
+}
+
+/** spec 설계 14 의 보통 수업 비용 어림(달러)과 AC-16 잣대(어림 상단의 1.5배). */
+const DESIGN14_COST_USD = { low: 0.06, high: 0.12 } as const;
+const AC16_COST_FACTOR = 1.5;
+/** 말 없음 뒤 셈을 따로 읽는 아이 역(C243 (6) — 짧게만 답하거나 말하지 않는 아이). */
+const QUIET_CHILDREN = ["SC", "SD2", "SG"] as const;
+
+const frac = (n: number, d: number) =>
+  d === 0 ? "-" : `${n}/${d}(${pct(n / d)})`;
+
+function chatCountRows(c: ChatCounts): string[] {
+  const silence = (k: "SC" | "SD2") => {
+    const q = c.afterSilence[k];
+    return q
+      ? `${frac(q.spokeAfter, q.turns)} — 누르지 않음만 ${frac(q.quiet.spokeAfter, q.quiet.turns)} · 들리지 않음만 ${frac(q.nospeech.spokeAfter, q.nospeech.turns)}`
+      : "-";
+  };
+  return [
+    "| 셀 것 | 값 | 잣대 · 쓰임(spec) |",
+    "|---|---|---|",
+    `| 인사 끝 차례의 말에 물음이 든 수업(I-1) | ${frac(c.greetingEnd.withQuestion, c.greetingEnd.lessons)} | 기록(아래 목록) |`,
+    `| (ㄱ) 앱의 마무리 차례(사실 줄 closing) 가운데 물음 없는 차례(설계 9) | ${frac(c.closing.noQuestion, c.closing.turns)} | 1/3 을 넘으면 '물음이 없을 때만 상수 물음' 길로 바꿈(선생님이 맺은 wrap_up 차례는 세지 않음) |`,
+    `| (ㄴ) 정리 앞(앱의 마무리 차례 · wrap_up 차례) 작별 인사를 한 수업(설계 9) | ${frac(c.closing.farewellLessons, c.lessons)} | 16 가운데 4(1/4)를 넘으면 컨트롤러가 정리 끝인사를 정함 |`,
+    `| 말없음에 답한 선생님 차례 뒤 아이가 말함 — SC(M-8) | ${silence("SC")} | 앞 값(두 갈래 합침)이 같은 시나리오의 R3 보다 낮으면 (라)에서 까닭을 예문으로(아래 표) |`,
+    `| 말없음에 답한 선생님 차례 뒤 아이가 말함 — SD2(M-8) | ${silence("SD2")} | 같음 |`,
+    `| 따라 할 문장 어긋남(설계 4) | ${c.listen.mismatch}(문장 일부로만 듦 ${c.listen.partial}) / 따라 할 문장 ${c.listen.turns} | 하나라도 나오면 켜기 전에 대조를 넓힘(아래 목록 — 사실상 그대로 보였는지 사람이 읽음) |`,
+    `| 지어낸 경험 꼴 검사 걸림(설계 4 · M-12) | 차례 ${c.madeUp.turns} · 걸림 ${c.madeUp.hits} | (라)에서 눈 판독과 함께 |`,
+    `| {NAME} 을 쓴 선생님 차례(I-6) | ${c.nameTurns} | 기록 |`,
+    `| 정리의 되짚을 말이 모두 카드 정리 대사였던 수업(M-1, 정리에 닿은 수업만) | ${frac(c.wrapCard.lessons, c.wrapCard.reached)} | 그 수업의 대화 화제와 함께(아래 목록 — 정리에 닿지 않은 수업도 표지와 함께 냄) |`,
+    `| 맞게 들린 말에 알림이 붙은 차례 뒤 되묻거나 확인함(N-2, 기계 어림) | ${frac(c.alertedClean.reasked, c.alertedClean.turns)} | 넷 가운데 셋 이상이면 켜기 전에 문턱(talk.chat_unsure_confidence)을 다시 봄 — 기계 어림이라 목록을 사람이 읽어 고친다 |`,
+    `| 물음이 있어도 두 단추로 답할 수 없는 앱의 마무리 차례(m-6) | 후보 ${c.closingQuestions.length}(사람이 읽어 셈) | 아래 목록 |`,
+  ];
+}
+
+export function chatMarkdownOf(lessons: readonly Lesson[]): string {
+  const main = lessons.filter((l) => l.meta.variant !== "long");
+  const longs = lessons.filter(
+    (l) => l.meta.arm === "CHAT" && l.meta.variant === "long",
+  );
+  const chats = main.filter((l) => l.meta.arm === "CHAT");
+  const c = chatCountsOf(lessons);
+  const out: string[] = [
+    "# 이야기 방식(CHAT) 실행 — 대본에서 셀 것 · 차례마다의 값",
+    "",
+    "모의 실행 기록이다. 아이 역은 AI 가 맡은 지어낸 아이이고 실제 아이의 말은 없다(C243 (6) — 모의 대화는 개발 검증에만 쓰고 실제 아이와 같다고 보지 않는다). 셈은 긴 대본을 뺀 CHAT 수업에서 낸다. '기계 어림'은 글 꼴로 센 값이라 목록을 사람이 함께 읽는다.",
+    "",
+    `CHAT 수업 ${chats.length} · 긴 대본 ${longs.length}`,
+    "",
+    "## 대본에서 셀 것(spec 설계 13 · AC-14 (가))",
+    "",
+    ...chatCountRows(c),
+    "",
+    "## 말 없음 뒤 아이가 말한 비율(방식 · 아이 역별 — 말없음에 답한 선생님 차례 뒤의 다음 아이 차례, 방식마다 같은 무리. CHAT 은 누르지 않음 · 들리지 않음을 합친 줄과 나눈 줄)",
+    "",
+    `| 방식 | ${QUIET_CHILDREN.join(" | ")} | 모든 아이 역 |`,
+    `|---|${QUIET_CHILDREN.map(() => "---").join("|")}|---|`,
+  ];
+  for (const arm of armsIn(main)) {
+    const mine = main.filter((l) => l.meta.arm === arm);
+    const pick = (l: Lesson, part: "all" | "quiet" | "nospeech") => {
+      const a = afterSilenceOf(l);
+      return part === "all"
+        ? a
+        : (a.byInput?.[part] ?? { turns: 0, spokeAfter: 0 });
+    };
+    const cellOf = (
+      ls: readonly Lesson[],
+      part: "all" | "quiet" | "nospeech",
+    ) => {
+      const s = ls
+        .map((l) => pick(l, part))
+        .reduce(
+          (a, b) => ({
+            turns: a.turns + b.turns,
+            spokeAfter: a.spokeAfter + b.spokeAfter,
+          }),
+          { turns: 0, spokeAfter: 0 },
+        );
+      return frac(s.spokeAfter, s.turns);
+    };
+    const row = (label: string, part: "all" | "quiet" | "nospeech") =>
+      `| ${label} | ${QUIET_CHILDREN.map((k) =>
+        cellOf(
+          mine.filter((l) => l.meta.child === k),
+          part,
+        ),
+      ).join(" | ")} | ${cellOf(mine, part)} |`;
+    out.push(row(armLabel(arm), "all"));
+    if (arm === "CHAT")
+      out.push(
+        row("CHAT 누르지 않음만", "quiet"),
+        row("CHAT 들리지 않음만", "nospeech"),
+      );
+  }
+  out.push("");
+  const list = (title: string, rows: readonly string[]) => {
+    out.push(`### ${title}`, "", ...(rows.length > 0 ? rows : ["- 없음"]), "");
+  };
+  out.push("## 사람이 읽을 목록", "");
+  list(
+    "인사 끝 차례의 말",
+    c.greetingEnd.list.map(
+      (r) =>
+        `- ${r.lesson}${r.question ? " · 물음" : ""}: ${r.text.replaceAll("\n", " / ")}`,
+    ),
+  );
+  list(
+    "마무리 차례의 말(앱의 마무리 차례 · 선생님이 맺은 차례)",
+    c.closing.list.map(
+      (r) =>
+        `- ${r.lesson} 아이 차례 ${r.childTurn}(${r.by === "app" ? "앱의 마무리 차례" : "wrap_up"}${r.question ? " · 물음" : " · 물음 없음"}${r.farewell ? " · 작별 인사" : ""}): ${r.text.replaceAll("\n", " / ")}`,
+    ),
+  );
+  list(
+    "두 단추로 답할 수 없는 물음인지 읽을 마무리 물음(m-6)",
+    c.closingQuestions.map(
+      (r) =>
+        `- ${r.lesson} 아이 차례 ${r.childTurn}: ${r.questions.join(" / ")}`,
+    ),
+  );
+  list(
+    "맞게 들린 말에 알림이 붙은 차례 뒤 선생님 말(N-2)",
+    c.alertedClean.list.map(
+      (r) =>
+        `- ${r.lesson} 아이 차례 ${r.childTurn} · 들린 글 "${r.heard}"${r.reasked ? " · 기계 어림: 되물음" : ""}: ${r.teacher.replaceAll("\n", " / ")}`,
+    ),
+  );
+  list(
+    "따라 할 문장 어긋남(설계 4)",
+    c.listen.list.map(
+      (r) =>
+        `- ${r.lesson} 아이 차례 ${r.childTurn} · "${r.sentence}": ${r.text.replaceAll("\n", " / ")}`,
+    ),
+  );
+  list(
+    "지어낸 경험 꼴 걸림(설계 4)",
+    c.madeUp.list.map(
+      (r) =>
+        `- ${r.lesson} 아이 차례 ${r.childTurn} · ${r.hits.join(" · ")}: ${r.text.replaceAll("\n", " / ")}`,
+    ),
+  );
+  list(
+    "정리의 되짚을 말이 카드 정리 대사였던 수업과 대화 화제(M-1 — 아이가 한 말)",
+    c.wrapCard.list.map(
+      (r) =>
+        `- ${r.lesson}(${r.reached ? "정리에 닿음" : "정리에 닿지 않음 — 수에서 뺌"}): 되짚을 말 ${r.wrap.map((w) => `"${w}"`).join(" · ")} · 화제 ${r.topics.map((t) => `"${t}"`).join(" · ") || "(아이 말 없음)"}`,
+    ),
+  );
+  // 수업마다 호출 · 비용(AC-16)
+  const costs = chats.map((l) => l.meta.chat?.costUsd ?? 0);
+  const mid = median(costs);
+  out.push(
+    "## 수업마다 호출 · 비용(AC-16 — 선생님 쪽 호출만, 아이 역 호출은 실험 몫이라 뺌)",
+    "",
+    "| 수업 | 아이 차례 | 대화 | 힌트 | 설명 | 평가 | 비용(달러) | 끝 |",
+    "|---|---|---|---|---|---|---|---|",
+    ...chats.map((l) => {
+      const k = l.meta.chat?.calls;
+      return `| ${l.name} | ${l.meta.childTurns} | ${k?.dialog ?? "-"} | ${k?.hint ?? "-"} | ${k?.explain ?? "-"} | ${k?.eval ?? "-"} | ${l.meta.chat?.costUsd ?? "-"} | ${cell(l.meta.ended ?? "아이 차례 상한")} |`;
+    }),
+    "",
+    `수업당 비용 중앙값 ${mid === null ? "-" : mid.toFixed(4)}달러 · 설계 14 어림 ${DESIGN14_COST_USD.low}~${DESIGN14_COST_USD.high}달러 · 잣대(상단의 ${AC16_COST_FACTOR}배) ${(DESIGN14_COST_USD.high * AC16_COST_FACTOR).toFixed(2)}달러: ${mid === null ? "-" : mid > DESIGN14_COST_USD.high * AC16_COST_FACTOR ? "넘음 — 켜기 전에 평가 호출의 입력 꼴을 다시 봄" : "넘지 않음"}`,
+    "",
+  );
+  // 차례당 호출(AC-16): 대화 · 평가 · 힌트
+  const rows = chatTurnRowsOf(main);
+  const speechTurns = chats.reduce(
+    (n, l) => n + l.children.filter((x) => x.chat?.input === "say").length,
+    0,
+  );
+  const evals = chats.reduce((n, l) => n + (l.meta.chat?.calls.eval ?? 0), 0);
+  const hintMax = Math.max(
+    0,
+    ...chats.flatMap((l) => l.teachers.map((t) => t.chat?.calls.hint ?? 0)),
+  );
+  out.push(
+    "## 차례당 호출(AC-16)",
+    "",
+    `- 선생님 차례당 대화 호출 최대 ${Math.max(0, ...rows.map((r) => r.calls.dialog))}(1 이어야 함)`,
+    `- 말 입력 차례 ${speechTurns} · 평가 호출 ${evals}(말 입력 차례당 1 이하 — 수업 끝의 마지막 차례는 닫지 않아 부르지 않음)`,
+    `- 한 아이 차례의 힌트 호출 최대 ${hintMax}(첫 누름 + 다시 받기 상한 이하)`,
+    "",
+  );
+  // 첫 문장 시간(AC-15): 아이 차례 뒤 첫 문장이 나간 때
+  out.push(
+    "## 첫 문장이 나간 때(AC-15 — 아이 차례 뒤만, 입구 차례 뺌)",
+    "",
+    "| 방식 | 차례 | 중앙값 ms | p95 ms |",
+    "|---|---|---|---|",
+  );
+  const sentRow = (label: string, ms: readonly number[]) =>
+    `| ${label} | ${ms.length} | ${num(median(ms), 0)} | ${num(percentile(ms, 95), 0)} |`;
+  for (const arm of armsIn(main)) {
+    const ts = main
+      .filter((l) => l.meta.arm === arm)
+      .flatMap((l) => l.teachers.filter((t) => t.firstSent));
+    if (ts.length === 0) continue;
+    out.push(
+      sentRow(
+        armLabel(arm),
+        ts.map((t) => t.firstSent?.ms ?? 0),
+      ),
+    );
+    // CHAT 은 say 의 첫 문장으로 재므로, 그 문장이 소리 줄로 빠진 차례는 아이가 들은 첫 문장보다 이르게 잰다(fix 1 m-6)
+    if (arm === "CHAT")
+      out.push(
+        sentRow(
+          "CHAT(첫 say 문장이 소리 줄로 빠진 차례를 뺀 값)",
+          ts
+            .filter((t) => t.chat?.firstMoved !== true)
+            .map((t) => t.firstSent?.ms ?? 0),
+        ),
+      );
+  }
+  out.push("");
+  // 요약 줄(fix 1 m-5): 따라 할 문장이 든 차례의 첫 문장 시간(설계 2) · 힌트 · 설명 · 평가 호출 지연(NFR-1 · AC-15 · AC-7)
+  const listenMs = rows.flatMap((r) =>
+    r.listen && r.firstSentenceMs !== null ? [r.firstSentenceMs] : [],
+  );
+  const plainMs = rows.flatMap((r) =>
+    !r.listen && r.firstSentenceMs !== null ? [r.firstSentenceMs] : [],
+  );
+  const lat = chatCallLatencyOf(main);
+  out.push(
+    "## 요약 줄",
+    "",
+    `- 따라 할 문장이 든 차례(listen_sentence 가 비지 않음)의 첫 문장 시간 중앙값 ${num(median(listenMs), 0)}ms(${listenMs.length}차례) · 그 밖 차례 ${num(median(plainMs), 0)}ms(${plainMs.length}차례)`,
+    `- 힌트 · 설명 · 평가 호출 지연(호출 기록 ms): ${(
+      ["hint", "explain", "eval"] as const
+    )
+      .map(
+        (k) =>
+          `${k} ${lat[k].n}건 · 중앙값 ${num(lat[k].medianMs, 0)}ms · p90 ${num(lat[k].p90Ms, 0)}ms`,
+      )
+      .join(" / ")}(AC-7 힌트 지연 잣대 p90 6초)`,
+    "",
+  );
+  const turnTable = (rs: readonly (typeof rows)[number][]) => [
+    "| 수업 | 차례 | 아이 차례 | 입구 | 사실 줄 | 첫 문장 ms | 입력 토큰 | 캐시 읽기 | 출력 | 호출 | 비용 |",
+    "|---|---|---|---|---|---|---|---|---|---|---|",
+    ...rs.map(
+      (r) =>
+        `| ${r.lesson} | ${r.order} | ${r.childTurn} | ${r.entry} | ${r.facts.join(" · ")} | ${r.firstSentenceMs ?? "-"} | ${r.inputTokens ?? "-"} | ${r.cacheReadTokens ?? "-"} | ${r.outputTokens ?? "-"} | ${(
+          ["dialog", "hint", "explain", "eval"] as const
+        )
+          .filter((k) => r.calls[k] > 0)
+          .map((k) => `${k} ${r.calls[k]}`)
+          .join(" · ")} | ${r.costUsd} |`,
+    ),
+  ];
+  out.push(
+    "## 긴 대본 한 벌(AC-11 — 대화 기록 길이에 따른 첫 문장 시간 · 입력 토큰 · 비용 · 안전 상한 사실 줄 차례)",
+    "",
+  );
+  if (longs.length === 0) out.push("(긴 대본 없음)", "");
+  for (const l of longs) {
+    const lr = chatTurnRowsOf([l]);
+    const safety = lr.find((r) => r.facts.includes("last_turn"));
+    const sum = chatLongSummaryOf(lr, l.meta.chat?.costUsd ?? 0);
+    out.push(
+      `- ${l.name}: 아이 차례 ${l.meta.childTurns} · 끝 ${l.meta.ended ?? "아이 차례 상한"} · 덮은 설정 ${JSON.stringify(l.meta.chat?.overrides ?? {})} · 안전 상한 사실 줄 차례 ${safety ? `${safety.order}(아이 차례 ${safety.childTurn})` : "없음"} · 비용 ${l.meta.chat?.costUsd ?? "-"}달러`,
+      `- AC-11 잣대: 아이 차례 ${AC11_EARLY_TURNS.join("~")} 의 첫 문장 시간 중앙값 ${num(sum.earlyMs, 0)}ms · ${AC11_LATE_TURNS.join("~")} ${num(sum.lateMs, 0)}ms · 차이 ${num(sum.diffMs, 0)}ms(잣대 ${AC11_DIFF_MS}ms) · 수업 비용 ${sum.costUsd}달러(잣대 ${AC11_COST_USD}달러): ${sum.over ? "넘음 — 켜기 전에 컨트롤러가 대화 기록 길이 상한을 정함" : "넘지 않음"}`,
+      "",
+      ...turnTable(lr),
+      "",
+    );
+  }
+  out.push("## 차례마다의 값(긴 대본 밖)", "", ...turnTable(rows), "");
+  return `${out.join("\n")}\n`;
+}
+
 async function countSystemTokens(
   lessons: readonly Lesson[],
 ): Promise<Record<string, number> | null> {
@@ -2304,7 +2633,20 @@ async function main(): Promise<number> {
     );
     return 0;
   }
-  const lessons = readLessons(dir);
+  const all = readLessons(dir);
+  // 긴 대본 한 벌(CHAT)은 시나리오 셈 · 나란히 글 · 가려 읽기에서 빼고 chat.md 에만 둔다
+  const lessons = all.filter((l) => l.meta.variant !== "long");
+  if (all.some((l) => l.meta.arm === "CHAT")) {
+    writeFileSync(join(dir, "chat.md"), chatMarkdownOf(all));
+    writeFileSync(
+      join(dir, "chat.json"),
+      `${JSON.stringify(
+        { counts: chatCountsOf(all), turns: chatTurnRowsOf(all) },
+        null,
+        2,
+      )}\n`,
+    );
+  }
   writeFileSync(join(dir, "checks.md"), checksMarkdown(lessons));
   if (argv.includes("--checks-only")) return 0;
   const per = lessons.map(lessonMetricsOf);
@@ -2317,7 +2659,7 @@ async function main(): Promise<number> {
     ? "seed/model-prices.json"
     : "MODEL_PRICES_FIXTURE";
   // 세 방식 같은 규칙의 '말했다' 셈: 단원 단어 · 원형 · 동음이의어는 실험 틀(앱 재료)에서 읽는다(AI 를 부르지 않음)
-  const m = setupOf(process.cwd()).materials;
+  const m = setupOf(process.cwd(), { card: setupCardOf(dir) }).materials;
   const said = saidRowsOf(lessons, {
     unitWords: m.ctx.unitWords,
     lemmaOf: m.lemmaOf,

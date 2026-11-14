@@ -75,6 +75,13 @@ export const TeacherSchema = z.strictObject({
   traitsKo: z.array(Text),
   /** AI 성격 글(영어, 두 문장 이하는 check-teacher). 화면에 보내지 않는다. */
   personaEn: Text,
+  /**
+   * 이야기 방식 안내문의 성격 한 문장(영어, 자리 {PERSONA} — 이야기 방식 spec 설계 2). 선택 칸이고 chatFavoritesEn 과 함께 둘 다 있을 때만
+   * 그 선생님이 이야기 방식 재료를 가진다(한 문장 · 짝은 check-teacher). 화면에 보내지 않는다. personaEn 은 기존 방식 · 지금 새 방식 몫이다.
+   */
+  chatPersonaEn: Text.optional(),
+  /** 이야기 방식 안내문의 좋아하는 것 한 문장(영어, 자리 {FAVORITES} — 'when the child asks: ' 뒤에 이어지는 글). 선택 칸, 화면에 보내지 않는다. */
+  chatFavoritesEn: Text.optional(),
   /** 고르는 화면 인사(영어). */
   greetingEn: Text,
   /** 창 바탕(room) · 이름표 색(accent). */

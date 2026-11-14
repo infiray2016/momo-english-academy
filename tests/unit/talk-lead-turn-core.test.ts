@@ -21,6 +21,7 @@ import {
   LEAD_OPEN_ACTIVITY_NO,
   LEAD_OPEN_INPUT,
   LEAD_RECORD_TAG,
+  type LeadOpen,
   leadAiQuestionOf,
   leadAskAgainFloorApplies,
   leadChildHelpAfterOf,
@@ -52,6 +53,8 @@ import {
   TALK_LEAD_RETRY_TITLE,
   talkLeadRetrySpec,
 } from "@/core/conversation/lead-turn-core";
+import { talkLessonPositionOf } from "@/core/conversation/lesson-flow";
+import type { TalkLessonTurn } from "@/core/conversation/lesson-turns";
 import {
   type TalkLead,
   type TalkMove,
@@ -60,6 +63,14 @@ import {
 import { parseAttemptInput } from "@/core/session/attempt";
 import { lessonWrapSourcesOf } from "@/server/conversation";
 import { lessonWrapLinesOf } from "@/server/conversation/lesson-turn";
+import {
+  CARD3,
+  LOW,
+  NEW3,
+  opening3,
+  SPEC3,
+  said,
+} from "../fixtures/talk-lesson";
 
 const leadOf = (over: Partial<TalkLead> = {}): TalkLead => ({
   reading: "clear_answer",
@@ -246,21 +257,138 @@ describe("아이 말 없이 부르는 입구(검토 rev-s2 I-2)", () => {
       sentUserMessage: "U",
       move: talkMoveOf({ kind: "first_question", lead: leadOf() }),
     };
-    expect(leadOpenReplayOf("start", opened)).toBe(true);
-    expect(leadOpenReplayOf("more", opened)).toBe(false);
-    expect(leadOpenReplayOf("more", { ...opened, move: leadMove() })).toBe(
-      true,
-    );
+    expect(leadOpenReplayOf("start", opened, false)).toBe(true);
+    expect(leadOpenReplayOf("more", opened, false)).toBe(false);
+    expect(
+      leadOpenReplayOf("more", { ...opened, move: leadMove() }, false),
+    ).toBe(true);
     // 아이 차례 뒤 행(사용자 메시지는 아이 행에 있음) · 지금 길 행은 다시 흘리지 않는다
     expect(
-      leadOpenReplayOf("start", { ...opened, sentUserMessage: null }),
+      leadOpenReplayOf("start", { ...opened, sentUserMessage: null }, false),
     ).toBe(false);
     expect(
-      leadOpenReplayOf("start", {
-        ...opened,
-        move: talkMoveOf({ kind: "first_question" }),
-      }),
+      leadOpenReplayOf(
+        "start",
+        {
+          ...opened,
+          move: talkMoveOf({ kind: "first_question" }),
+        },
+        false,
+      ),
     ).toBe(false);
+  });
+});
+
+// ── 고침 L1('더 이야기하기' 되풀이 — 이야기 방식 검토 rev-chat-s1 I-1 과 같은 결함) ──────────────
+
+describe("'더 이야기하기' 입구의 다시 흘림(고침 L1)", () => {
+  /** 새 엔진 선생님 행의 move(lead-record leadTeacherMoveOf 와 같이 move wrap_up 이면 next closing). */
+  const leadRowMove = (
+    kind: "ai" | "first_question",
+    move: TalkLead["move"],
+  ): TalkMove =>
+    talkMoveOf({
+      kind,
+      next: move === "wrap_up" ? "closing" : "none",
+      lead: leadOf({ move }),
+    });
+  /** 위치 되짚기의 선생님 행과 서버가 마지막 행으로 읽는 talk_turns 행(입구가 쓴 행 — 사용자 메시지를 행에 둠)을 함께 만든다. */
+  const leadTeacher = (text: string, move: TalkMove) => ({
+    turn: { speaker: "teacher" as const, text, move },
+    row: {
+      speaker: "tori" as const,
+      sentUserMessage: "(The child chose to talk more.)",
+      move,
+    },
+  });
+  /** 서버 runLeadOpenTurn 과 같은 차례: 받을 수 있는지를 먼저 셈하고 그 값으로 다시 흘릴지 정한다. */
+  const openOf = (
+    open: LeadOpen,
+    turns: TalkLessonTurn[],
+    segment: "talk" | "more_talk",
+    last: Parameters<typeof leadOpenReplayOf>[1],
+  ) => {
+    const pos = talkLessonPositionOf({
+      spec: SPEC3,
+      card: CARD3,
+      newWords: NEW3,
+      turns,
+      segment,
+      settings: LOW,
+      prepWords: CARD3.prep ?? [],
+    });
+    const accepts = leadOpenAcceptsOf(open, {
+      segment,
+      firstQuestionDue: pos.firstQuestionDue,
+      choice: pos.choice,
+    });
+    return { pos, accepts, replay: leadOpenReplayOf(open, last, accepts) };
+  };
+  /** 대화 첫 질문 → 아이 답 → 선생님의 마무리 제안(wrap_up)까지 온 새 방식 수업. */
+  const toSuggestion = (): TalkLessonTurn[] => [
+    ...opening3().slice(0, 5),
+    leadTeacher(
+      "What do you do on the weekend?",
+      leadRowMove("first_question", "react_and_follow_up"),
+    ).turn,
+    said(),
+    leadTeacher("You did great today!", leadRowMove("ai", "wrap_up")).turn,
+  ];
+
+  it("AC-26c more 입구 차례가 마무리 제안(wrap_up 참)으로 끝나면 다음 more 는 다시 흘리지 않고 새로 부른다", () => {
+    const before = openOf("more", toSuggestion(), "talk", undefined);
+    expect(before.pos.choice).toBe("suggestion");
+    expect(before.accepts).toBe(true);
+    // '더 이야기하기'로 연 차례의 응답이 다시 마무리 제안이다. 마무리 제안 뒤의 '더 이야기하기'는 토막을 바꾸지 않으므로 토막은 talk 그대로다
+    // (서버와 같은 차례 — 검토 rev-l1 M-3, more_talk 길은 통합 (가)가 덮음)
+    const more = leadTeacher(
+      "That was fun. See you!",
+      leadRowMove("ai", "wrap_up"),
+    );
+    const after = openOf(
+      "more",
+      [...toSuggestion(), more.turn],
+      "talk",
+      more.row,
+    );
+    expect(after.pos.choice).toBe("suggestion");
+    expect(after.accepts).toBe(true);
+    expect(after.replay).toBe(false);
+  });
+
+  it("AC-26c 같은 more 를 다시 보냈는데 새 more 를 받지 않는 상태(마무리 제안으로 끝나지 않음)면 지금처럼 다시 흘린다", () => {
+    const more = leadTeacher(
+      "What else do you like?",
+      leadRowMove("ai", "react_and_follow_up"),
+    );
+    const after = openOf(
+      "more",
+      [...toSuggestion(), more.turn],
+      "more_talk",
+      more.row,
+    );
+    expect(after.pos.choice).toBeNull();
+    expect(after.accepts).toBe(false);
+    expect(after.replay).toBe(true);
+  });
+
+  it("AC-26c start 입구의 다시 흘림은 그대로다(대화 첫 질문 행이 마지막이면 start 를 받지 않고 그 행을 다시 흘린다)", () => {
+    const first = leadTeacher(
+      "What do you do on the weekend?",
+      leadRowMove("first_question", "react_and_follow_up"),
+    );
+    const before = openOf("start", opening3().slice(0, 5), "talk", undefined);
+    expect(before.accepts).toBe(true);
+    const after = openOf(
+      "start",
+      [...opening3().slice(0, 5), first.turn],
+      "talk",
+      { ...first.row, sentUserMessage: "The talk part starts now." },
+    );
+    expect(after.accepts).toBe(false);
+    expect(after.replay).toBe(true);
+    // 받을 수 있다는 값이 오면(입구를 새로 받는 차례) 어느 입구도 다시 흘리지 않는다
+    expect(leadOpenReplayOf("start", first.row, true)).toBe(false);
   });
 });
 

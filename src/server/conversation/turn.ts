@@ -12,8 +12,9 @@ import {
   TALK_PROMPT_SETTING_SCHEMAS,
   TEACHER_SENTENCES_SETTING_SCHEMAS,
 } from "@/core/ai/calls/talk-lesson";
+import { chatRecognizerSchemaOf } from "@/core/conversation/chat-message";
+import { CHAT_OPENS, type ChatOpen } from "@/core/conversation/chat-turn-plan";
 import { ClientListenSchema } from "@/core/conversation/client-listen";
-import type { LeadOpen } from "@/core/conversation/lead-turn-core";
 import type { StageTimings } from "@/core/conversation/timing";
 import { createStageTimer } from "@/core/conversation/timing";
 import { talkCardKindOf } from "@/core/seed/schema/talk";
@@ -26,6 +27,7 @@ import { readHouseholdProfile } from "@/server/profile";
 import { getOutputCheckLists } from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
+import { chatSessionOf, lessonChatTurn, runChatOpenTurn } from "./chat-turn";
 import { CLIENT_ATTEMPT_ID_MAX, TALK_TEXT_MAX } from "./index";
 import { leadTurnAfterChild, runLeadOpenTurn } from "./lead-turn";
 import { runTalkLessonTurn, type TalkLessonLine } from "./lesson-turn";
@@ -57,24 +59,29 @@ const TurnRequestSchema = z.strictObject({
   prevPerceivedWaitMs: z.int().min(0).max(PERCEIVED_WAIT_MAX_MS).optional(),
   /** 그 턴의 듣기 사건 요약(C149 — 글 · 소리 없음, 5절 talk_turns client_listen). */
   clientListen: ClientListenSchema.optional(),
+  /**
+   * 인식기 정보(이야기 방식 spec 설계 11 · 묶음 P1 의 꼴 — 확신 정도 · 다른 후보 글 · 중간 결과만). 이야기 방식 수업만 읽고, 다른 후보 글은 다듬기 ·
+   * 이름 가림을 지나 알림 줄(보낸 사용자 메시지)에만 남는다. 듣기 요약(client_listen)의 칸 이름(cf · na · int · mx)과는 층이 달라 맞추지 않는다.
+   */
+  recognizer: chatRecognizerSchemaOf(TALK_TEXT_MAX).optional(),
 });
 
-/** 아이 말 없는 요청에서 부를 새 엔진 입구(lead-turn-core LeadOpen 과 같은 값 — 묶음 S3). */
-const LEAD_OPEN_REQUESTS = [
-  "start",
-  "more",
-] as const satisfies readonly LeadOpen[];
+/**
+ * 아이 말 없는 요청에서 부를 입구: 새 엔진(묶음 S3)의 start · more 와 이야기 방식(묶음 S1)의 quiet(조용함) · back(짧은 준비 뒤 돌아옴). 이야기 방식
+ * 수업의 start 는 수업 첫 말이다. 값 목록은 chat-turn-plan CHAT_OPENS 하나다.
+ */
+const OPEN_REQUESTS = CHAT_OPENS;
 
-/** 아이 말 없는 요청(묶음 S3): 수업 id 와 부를 입구 하나뿐. 아이 말 요청의 칸은 받지 않는다. */
+/** 아이 말 없는 요청(묶음 S3 · S1): 수업 id 와 부를 입구 하나뿐. 아이 말 요청의 칸은 받지 않는다. */
 const LeadOpenRequestSchema = z.strictObject({
   sessionId: z.uuid(),
-  lead: z.enum(LEAD_OPEN_REQUESTS),
+  lead: z.enum(OPEN_REQUESTS),
 });
 
-/** 턴 요청 한 건: 아이 말 하나(지금 꼴) 또는 아이 말 없이 부르는 새 엔진 입구(묶음 S3). */
+/** 턴 요청 한 건: 아이 말 하나(지금 꼴) 또는 아이 말 없이 부르는 입구(묶음 S3 · S1). */
 export type ParsedTurnRequest =
   | { kind: "child"; request: z.infer<typeof TurnRequestSchema> }
-  | { kind: "open"; request: { sessionId: string; open: LeadOpen } };
+  | { kind: "open"; request: { sessionId: string; open: ChatOpen } };
 
 /**
  * 턴 요청 본문 → 꼴 하나(순수). 아이 말 요청은 지금 TurnRequestSchema 그대로 먼저 본다(검증 · 결과 값이 지금과 같다). 그 꼴이 아니면 아이 말
@@ -206,10 +213,22 @@ export async function runTalkTurnRequest(
       received,
       restingP,
       timer,
+      // 이야기 방식 수업의 처리기(lesson-turn 은 chat-turn 을 불러오지 않는다 — 의존 방향 검사 no-circular)
+      chat: lessonChatTurn,
     };
     if (parsed.kind === "open") {
-      // 아이 말 없는 요청 — 공통 값은 아이 차례와 같은 것(task-s1-report 3절)
-      await runLeadOpenTurn(parsed.request, deps, shared);
+      // 아이 말 없는 요청 — 공통 값은 아이 차례와 같은 것(task-s1-report 3절). quiet · back 은 이야기 방식에만 있고, start · more 는 이야기 방식
+      // 수업이면 그 입구로, 아니면 지금 새 엔진 입구로 간다(이야기 방식인지는 처음 스냅숏 · 단계만 읽어 본다)
+      const { open, sessionId } = parsed.request;
+      if (
+        open === "quiet" ||
+        open === "back" ||
+        (await chatSessionOf(db, { sessionId, profileId }))
+      ) {
+        await runChatOpenTurn(parsed.request, deps, shared);
+        return;
+      }
+      await runLeadOpenTurn({ sessionId, open }, deps, shared);
       return;
     }
     // 새 엔진 수업의 대화 차례 처리기는 여기서 넘긴다(lesson-turn.ts 는 lead-turn.ts 를 불러오지 않는다 — 의존 방향 검사 no-circular)

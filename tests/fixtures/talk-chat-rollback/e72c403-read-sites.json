@@ -1,0 +1,110 @@
+{
+  "commit": "e72c403",
+  "note": "git show e72c403:<경로> 로 뜬 기준 커밋의 줄(앞뒤 빈칸 뺀 글). 기준 커밋은 바뀌지 않으므로 다시 뜨지 않는다.",
+  "sites": {
+    "inputMode": [
+      {
+        "file": "src/server/conversation/index.ts",
+        "line": 1056,
+        "text": "input: row.inputMode ?? \"speech\","
+      },
+      {
+        "file": "src/server/conversation/index.ts",
+        "line": 1661,
+        "text": "mode: orphan.inputMode ?? \"speech\","
+      },
+      {
+        "file": "src/server/conversation/lead-turn.ts",
+        "line": 501,
+        "text": "const mode = (child?.inputMode ?? \"speech\") as TalkInputMode;"
+      },
+      {
+        "file": "src/server/conversation/lesson-turn.ts",
+        "line": 2595,
+        "text": "const mode = (child.inputMode ?? \"speech\") as TalkInputMode;"
+      },
+      {
+        "file": "src/server/conversation/state.ts",
+        "line": 632,
+        "text": "input: row.inputMode ?? \"speech\","
+      }
+    ],
+    "purpose": [
+      {
+        "file": "src/server/ai/store.ts",
+        "line": 144,
+        "text": "and(eq(aiCalls.learningDay, learningDay), ne(aiCalls.purpose, \"probe\")),"
+      },
+      {
+        "file": "src/server/ai/store.ts",
+        "line": 162,
+        "text": "eq(aiCalls.purpose, purpose),"
+      },
+      {
+        "file": "src/server/conversation/lead-turn.ts",
+        "line": 231,
+        "text": "eq(aiCalls.purpose, \"talk_turn\"),"
+      },
+      {
+        "file": "src/server/conversation/lead-turn.ts",
+        "line": 836,
+        "text": "eq(aiCalls.purpose, \"talk_turn\"),"
+      },
+      {
+        "file": "src/server/conversation/lesson-turn.ts",
+        "line": 260,
+        "text": "eq(aiCalls.purpose, \"talk_turn\"),"
+      }
+    ],
+    "leadMode": [
+      {
+        "file": "src/core/conversation/lead-mode.ts",
+        "line": 12,
+        "text": "export const TALK_LEAD_MODES = [\"app\", \"claude\"] as const;"
+      },
+      {
+        "file": "src/core/conversation/lesson-turns.ts",
+        "line": 206,
+        "text": "z.enum(TALK_LEAD_MODES),"
+      },
+      {
+        "file": "src/core/conversation/attempt.ts",
+        "line": 100,
+        "text": "leadMode: z.enum(TALK_LEAD_MODES).optional().catch(undefined),"
+      },
+      {
+        "file": "src/core/conversation/lead-mode.ts",
+        "line": 20,
+        "text": "return value === \"claude\" ? \"claude\" : \"app\";"
+      }
+    ],
+    "inputCause": [
+      {
+        "file": "src/core/conversation/lesson-flow.ts",
+        "line": 304,
+        "text": "function inputCauseOf("
+      },
+      {
+        "file": "src/core/conversation/lesson-flow.ts",
+        "line": 307,
+        "text": "if (row.input === \"speech\") return \"speech\";"
+      },
+      {
+        "file": "src/core/conversation/lesson-flow.ts",
+        "line": 308,
+        "text": "return row.nospeech ? \"nospeech\" : \"button\";"
+      }
+    ],
+    "inputModeEnum": [
+      {
+        "file": "src/db/schema/content.ts",
+        "line": 68,
+        "text": "export const inputModeEnum = pgEnum(\"input_mode\", [\"speech\", \"dont_know\"]);"
+      }
+    ]
+  },
+  "schema": {
+    "learningHasChatJudge": false,
+    "contentHasTalkChatPurposes": false
+  }
+}

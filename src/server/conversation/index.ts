@@ -5,6 +5,7 @@ import "server-only";
 // 시각은 now() 한 시계. AI 를 부르지 않는다(끝맺음 턴은 closing.ts 가 응답 뒤에, 회화 턴은 turn.ts → lesson-turn.ts). 아이 글을 로그에 내지 않는다.
 import { and, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+import { talkLeadTextOf } from "@/core/ai/calls/talk-lead";
 import {
   type TalkInputMode,
   talkLessonRewriteOf,
@@ -28,6 +29,23 @@ import {
   talkChancesOf,
 } from "@/core/conversation/chances";
 import {
+  type ChatHintReply,
+  chatExplainReplyOf,
+  chatHintReplyOf,
+} from "@/core/conversation/chat-hints";
+import { chatWrapSourcesOf } from "@/core/conversation/chat-reply";
+import {
+  chatResumeSignalOf,
+  chatStepOf,
+  type LessonAdvanceChat,
+  lessonAdvanceChatOf,
+} from "@/core/conversation/chat-segments";
+import {
+  type ChatEndSignal,
+  chatFlowRowsOf,
+  isChatQuietRow,
+} from "@/core/conversation/chat-turn-core";
+import {
   type ClientListen,
   ClientListenSchema,
 } from "@/core/conversation/client-listen";
@@ -37,8 +55,11 @@ import {
   talkStopOf,
 } from "@/core/conversation/ending";
 import {
+  chatStartAllowed,
+  isChatSession,
   isLeadSession,
   leadModeStartField,
+  type TalkLeadMode,
 } from "@/core/conversation/lead-mode";
 import { leadWrapSourcesOf } from "@/core/conversation/lead-record";
 import {
@@ -85,6 +106,7 @@ import { learningDayOf } from "@/core/learning-day";
 import { TalkLessonSchema } from "@/core/seed/schema/lesson";
 import type { TalkListLine } from "@/core/seed/schema/reference";
 import type { TalkTodayWord } from "@/core/seed/schema/talk";
+import type { Teacher } from "@/core/seed/schema/teachers";
 import type { TALK_SEGMENTS, TalkShortPlace } from "@/core/seed/structure";
 import {
   DISCARD_SETTING_KEYS,
@@ -96,7 +118,11 @@ import {
   type SpeechSettings,
   speechSettingsFrom,
 } from "@/core/speech/listen";
-import { type TeacherView, teacherViewOf } from "@/core/teacher/roster";
+import {
+  chatMaterialOf,
+  type TeacherView,
+  teacherViewOf,
+} from "@/core/teacher/roster";
 import { images, lessons, vocab } from "@/db/schema/content";
 import { attempts, profiles, sessions, talkTurns } from "@/db/schema/learning";
 import { type Db, type DbOrTx, getDb, type Tx } from "@/server/db";
@@ -108,6 +134,7 @@ import {
   seedTalkShortLinesAt,
   seedTalkWaitLines,
 } from "@/server/seed-lists";
+import { levelContextOf } from "@/server/session/ai-context";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import {
   appDayStartHourSchema,
@@ -116,15 +143,19 @@ import {
   SettingMissingError,
 } from "@/server/settings";
 import { rosterOf, teacherChoicesOf } from "@/server/teacher";
+import { chatHintInputOf, requestChatHint } from "./chat-hint";
+import { readChatUnitWords } from "./chat-unit-words";
 import {
   closeWithoutClosing,
   completeTalk,
   insertClosingRecord,
   insertLessonClosing,
+  scheduleChatClose,
   scheduleTalkClosing,
 } from "./closing";
 import { lessonHintsAt, lessonImageKeyOf } from "./lesson-turn";
 import {
+  childInputModeOf,
   friendshipOf,
   type HintView,
   hintViewsOf,
@@ -146,6 +177,12 @@ import {
   writeSay,
 } from "./state";
 
+// 이야기 방식의 토막 판단은 core 모듈에 있다(대본 도구가 같은 함수를 부름 — 묶음 S2 fix 1). 서버 쪽 이름 그대로 다시 내보낸다
+export {
+  chatResumeSignalOf,
+  type LessonAdvanceChat,
+  lessonAdvanceChatOf,
+} from "@/core/conversation/chat-segments";
 export {
   type ClosingStatus,
   closeIdleTalks,
@@ -153,7 +190,6 @@ export {
   scheduleTalkClosing,
   talkClosingStatus,
 } from "./closing";
-
 export {
   type HintView,
   onTalkSessionEnded,
@@ -377,6 +413,11 @@ export type LessonCore = {
   orphan: boolean;
   /** 카드 오늘 쓸 말 수(활동 번호의 바닥선 범위, 다지기 · 보강은 0). */
   todayWordCount: number;
+  /**
+   * 이야기 방식 수업이다(isChatSession — 처음 스냅숏 chat · 1~3단계, intent 2026-11-13-회화-대화-구조-R 묶음 S2). 참일 때만 칸이 있다(기존 두 방식의
+   * 꼴은 이 묶음 전과 같음). 할 일 · 토막 넘김의 이야기 방식 갈래만 읽는다.
+   */
+  chat?: true;
 };
 
 export function lessonCoreOf(state: TalkLessonState): LessonCore {
@@ -393,6 +434,7 @@ export function lessonCoreOf(state: TalkLessonState): LessonCore {
     status: state.session.status,
     orphan: state.orphan !== null,
     todayWordCount: state.card.todayWords.length,
+    ...(isChatSession(state) ? { chat: true as const } : {}),
   };
 }
 
@@ -454,6 +496,10 @@ function prepWordsAt(core: LessonCore, place: TalkPrepPlace): string[] {
 export function lessonStepOf(core: LessonCore): TalkLessonStep {
   if (core.segment === "wrap_up") return { kind: "closed" };
   if (core.orphan) return { kind: "retry" };
+  if (core.chat) {
+    const chat = chatStepOf(core);
+    if (chat) return chat;
+  }
   const pos = lessonPositionOf(core);
   const place = prepPlaceOf(core, pos);
   if (place) return { kind: "prep", place };
@@ -540,20 +586,24 @@ export function lessonAdvanceLeadOf(core: LessonCore): LessonAdvanceLead {
   return no;
 }
 
-/** 토막 넘김의 방식별 결정(기존 방식은 lessonAdvanceOf 그대로, 새 엔진의 대화로 넘김은 lessonAdvanceLeadOf). */
+/** 토막 넘김의 방식별 결정(기존 방식은 lessonAdvanceOf 그대로, 새 엔진의 대화로 넘김은 lessonAdvanceLeadOf, 이야기 방식은 lessonAdvanceChatOf). */
 export type LessonAdvanceChoice =
   | { mode: "app"; decision: LessonAdvance }
-  | { mode: "claude"; decision: LessonAdvanceLead };
+  | { mode: "claude"; decision: LessonAdvanceLead }
+  | { mode: "chat"; decision: LessonAdvanceChat };
 
 /**
  * 토막 넘김 방식 고르기(묶음 S2 고침 1): 새 엔진 세션(isLeadSession)의 '대화로 넘김'만 새 엔진 몫이다. 짧은 준비로 넘김은 두 방식 모두
- * 지금 길이다(spec 설계 3 '짧은 준비 · 정리 토막 지금 길 그대로').
+ * 지금 길이다(spec 설계 3 '짧은 준비 · 정리 토막 지금 길 그대로'). 이야기 방식 세션(isChatSession)의 대화로 넘김은 이야기 방식 몫이다(이야기 방식
+ * 묶음 S2 — 짧은 준비로 넘김은 세 방식 모두 지금 길).
  */
 export function lessonAdvanceChoiceOf(
   session: Pick<TalkLessonState, "start" | "level">,
   core: LessonCore,
   to: "prep" | "talk",
 ): LessonAdvanceChoice {
+  if (to === "talk" && isChatSession(session))
+    return { mode: "chat", decision: lessonAdvanceChatOf(core) };
   return to === "talk" && isLeadSession(session)
     ? { mode: "claude", decision: lessonAdvanceLeadOf(core) }
     : { mode: "app", decision: lessonAdvanceOf(core, to) };
@@ -746,17 +796,20 @@ export function lessonMoreLeadOf(core: LessonCore): LessonMoreLead {
 /** '더 이야기하기'의 방식별 결정(기존 방식은 lessonMoreOf 그대로, 새 엔진은 lessonMoreLeadOf). */
 export type LessonMoreChoice =
   | { mode: "app"; decision: LessonMore }
-  | { mode: "claude"; decision: LessonMoreLead };
+  | { mode: "claude" | "chat"; decision: LessonMoreLead };
 
 /**
  * '더 이야기하기' 방식 고르기(묶음 S2): 새 엔진 세션인가는 isLeadSession(처음 스냅숏의 값 · 1~3단계, 고침 1 검토 I-3)이다.
  * core.settings.leadMode 는 지금 설정 값이라 새 수업의 스냅숏을 쓸 때만 쓰고 여기서는 읽지 않는다(진행 중인 수업은 설정이 바뀌어도 처음
- * 값으로 끝난다 — 묶음 M 검토 M-3).
+ * 값으로 끝난다 — 묶음 M 검토 M-3). 이야기 방식 세션(isChatSession)도 새 엔진과 같은 몫이다: 카드 거리 행 없이 토막 · 참여 완료만 처리하고
+ * 신호 more 로 이야기 방식의 차례를 부른다(이야기 방식 spec 설계 10 '더 이야기하기', 묶음 S2).
  */
 export function lessonMoreChoiceOf(
   session: Pick<TalkLessonState, "start" | "level">,
   core: LessonCore,
 ): LessonMoreChoice {
+  if (isChatSession(session))
+    return { mode: "chat", decision: lessonMoreLeadOf(core) };
   return isLeadSession(session)
     ? { mode: "claude", decision: lessonMoreLeadOf(core) }
     : { mode: "app", decision: lessonMoreOf(core) };
@@ -1037,6 +1090,8 @@ function teacherLinesOf(
  * 대화 기록 자료(정본 03 4절 '대화 기록', FR-7): 선생님 행은 화면 글 줄과 뜻(1~4단계), 아이 행은 인식 글 · 입력 방식 · 들리지 않음 · 막힘.
  * 선생님 행 text 에는 화면에 글로 나온 줄만 있으므로(정한 것 5) 1~3단계 소리 줄(move.sound) · 소리로만 준 답은 들지 않는다(T2). 힌트 글 ·
  * 맞장구는 talk_turns 에 없다. 무엇을 그릴지(잘 모르겠어요 · 못 들었어요 글)는 묶음 10 의 talkLogOf 가 고른다.
+ * 이야기 방식의 조용함 행(input_mode quiet — 아이의 답이 아님)은 기록에 넣지 않는다(chatFlowRowsOf, 묶음 S2): 그 차례 뒤에는 선생님 말풍선이 잇달아
+ * 쌓인다. 기존 두 방식에는 그 행이 없어 이 거름이 아무것도 바꾸지 않는다.
  */
 export function lessonLogOf(
   rows: readonly TalkTurnRow[],
@@ -1045,7 +1100,7 @@ export function lessonLogOf(
     koMeaning: boolean;
   },
 ): TalkLessonLogRow[] {
-  return rows.map((row) => {
+  return chatFlowRowsOf(rows).map((row) => {
     if (row.speaker === "child") {
       const lite = lessonTurnOf(row);
       return {
@@ -1053,7 +1108,7 @@ export function lessonLogOf(
         turnNo: row.turnNo,
         segment: talkSegmentOf(row.segment),
         text: row.text,
-        input: row.inputMode ?? "speech",
+        input: childInputModeOf(row.inputMode),
         nospeech: lite.speaker === "child" && lite.nospeech,
         stuck: lite.speaker === "child" && lite.stuck,
       };
@@ -1216,10 +1271,53 @@ function lessonTargetWordsOf(state: TalkLessonState): string[] {
 }
 
 /**
+ * 이야기 방식 단원 재료가 있는가(단원 표의 chatTopicEn 이 빈 글이 아님 — talk-chat.ts talkChatTopicOf 와 같은 판단). 표 출처는 처음 스냅숏의 안내문 글
+ * 출처와 같은 함수다(기본 talkLeadTextOf — 시험이 1단계 시드로 열게 바꾼다).
+ */
+export function chatUnitMaterialOf(
+  leadText: LeadTextOf,
+  level: number,
+  unit: number,
+): boolean {
+  return (leadText(level, unit)?.chatTopicEn?.trim() ?? "") !== "";
+}
+
+/**
+ * 처음 스냅숏에 적을 회화 방식(이야기 방식 spec 설계 1 '스냅숏 조건', 묶음 S2). 설정이 chat 이면 넷(설정 · 1~3단계 구간 · 단원 재료 · 고른 선생님의
+ * 이야기 방식 재료)이 모두 설 때만 chat 이고, 하나라도 빠지면 기존 방식(app — 리오 · 다른 단원 · 4단계 이상)이다. 설정이 app · claude 면 지금
+ * 판단(leadStartModeOf) 그대로다.
+ */
+export function lessonStartModeOf({
+  mode,
+  level,
+  unit,
+  teacher,
+  leadText = talkLeadTextOf,
+}: {
+  mode: TalkLeadMode;
+  level: number;
+  unit: number;
+  teacher: Pick<Teacher, "chatPersonaEn" | "chatFavoritesEn"> | null;
+  leadText?: LeadTextOf | undefined;
+}): TalkLeadMode {
+  if (mode !== "chat") return leadStartModeOf({ mode, level, unit, leadText });
+  return chatStartAllowed({
+    setting: true,
+    lowBand: isChatSession({ start: { leadMode: "chat" }, level }),
+    unitMaterial: chatUnitMaterialOf(leadText, level, unit),
+    teacherMaterial: teacher !== null && chatMaterialOf(teacher) !== null,
+  })
+    ? "chat"
+    : "app";
+}
+
+/**
  * 새 갈래 처음 열기(한 트랜잭션 — 세션 행 FOR UPDATE): 처음 스냅숏(talk-start — 만난 단원 단어 · 짧은 준비 계획 · 이월 · 선생님 키)과
  * 첫 선생님 행(카드 인사 질문 · 4단계부터 선생님 첫 말, kind first_question — AI 없음). 짧은 준비 계획은 talk.prep_mode.<구간> 이 always 일 때
  * 카드 짧은 준비 낱말(다지기 · 보강은 이월 단어를 앞세워 아직 '안다'가 아닌 노리는 단어 talk.prep_words.<구간> 개, C33)이고 when_needed 면
  * 비운다((가) 앞 수업 바닥선은 둘째 묶음 16, (나)는 대화 중 move.prep). 이월은 둘째 묶음 18 이 채운다(지금은 빈 목록). 넣었으면 참.
+ * 이야기 방식 수업(스냅숏 chat — lessonStartModeOf)은 카드 인사 행을 넣지 않는다: 할 일이 토막 넘김이고, 토막 넘김이 수업 첫 말 신호를 돌려준다
+ * (spec 설계 5, 묶음 S2 — lessonStepOf · lessonAdvanceChatOf).
  */
 async function ensureLessonStarted(
   tx: Tx,
@@ -1228,6 +1326,7 @@ async function ensureLessonStarted(
   leadText?: LeadTextOf,
 ): Promise<boolean> {
   let changed = false;
+  let chat = isChatSession(state);
   if (!state.start) {
     const unitWords = state.lesson.unitWords;
     const metBefore = await metSayOf(tx, {
@@ -1252,6 +1351,14 @@ async function ensureLessonStarted(
             count: state.settings.prepWords,
           })
         : [];
+    const mode = lessonStartModeOf({
+      mode: state.settings.leadMode,
+      level: state.level,
+      unit: state.unit,
+      teacher: state.teacher,
+      leadText,
+    });
+    chat = mode === "chat";
     const input: TalkAttemptInput = {
       v: 1,
       kind: "talk-start",
@@ -1264,15 +1371,9 @@ async function ensureLessonStarted(
       prepWords: prepPlan,
       carry,
       // 회화 방식(talk.lead_mode, 회화 Claude 주도 묶음 M): 처음 열 때 읽은 설정 값을 claude 일 때만 적고(app 이면 칸 없음 — 이 묶음 전 꼴과 같음)
-      // 그 세션은 끝까지 이 값을 쓴다(leadModeOf). claude 는 1~3단계이고 그 단원의 안내문 글이 있을 때만 적는다(13절 C241 보완 — leadStartModeOf)
-      ...leadModeStartField(
-        leadStartModeOf({
-          mode: state.settings.leadMode,
-          level: state.level,
-          unit: state.unit,
-          leadText,
-        }),
-      ),
+      // 그 세션은 끝까지 이 값을 쓴다(leadModeOf). claude 는 1~3단계이고 그 단원의 안내문 글이 있을 때만 적는다(13절 C241 보완 — leadStartModeOf).
+      // chat 은 조건 넷이 설 때만 적는다(이야기 방식 묶음 S2 — lessonStartModeOf)
+      ...leadModeStartField(mode),
     };
     if (!parseTalkAttemptInput(input))
       throw new Error("새 흐름 처음 스냅숏 꼴이 틀렸다");
@@ -1289,7 +1390,8 @@ async function ensureLessonStarted(
       .onConflictDoNothing({ target: attempts.clientAttemptId });
     changed = true;
   }
-  if (!state.rows.some((r) => r.speaker === "tori")) {
+  // 이야기 방식은 카드 인사 행을 넣지 않는다(수업 첫 말은 이야기 방식의 차례 — 토막 넘김의 신호 start)
+  if (!chat && !state.rows.some((r) => r.speaker === "tori")) {
     const plan = nextTeacherTurnOf(
       lessonArgsOf(lessonCoreOf(state), { turns: [] }),
     );
@@ -1469,6 +1571,16 @@ export function lessonHintTextOf(
   return lessonHintsAt(state, state.position.slot)[tier]?.text ?? null;
 }
 
+/**
+ * 이어 하기 자료의 힌트 단(TalkLessonCurrent.hints): 기존 두 방식은 지금 질문 자리의 단(lessonHintViewsOf), 이야기 방식은 빈 목록이다 — 카드 인사 질문 ·
+ * 장면 질문과 열쇠가 같은 말이어도 카드 힌트를 끼우지 않는다(검토 rev-chat-p35 5절 · rev-chat-s2 M-5). 이야기 방식의 단은 힌트 받는 서버 액션이 낸다.
+ */
+export function lessonCurrentHintsOf(
+  state: LessonHintState & Pick<TalkLessonState, "start" | "level">,
+): HintView[] {
+  return isChatSession(state) ? [] : lessonHintViewsOf(state);
+}
+
 /** 지금 선생님 차례(이어 할 때 다시 보이고 읽는 마지막 선생님 행 — AI 호출 없음, AC-15f). */
 export type TalkLessonCurrent = {
   turnNo: number;
@@ -1491,9 +1603,17 @@ export type TalkLessonCurrent = {
    * 묶음 S5). 있으면 화면은 sound 대신 이 줄로 말풍선을 그린다. 지금 길 · 옛 행은 칸 없음.
    */
   leadSound?: LeadSoundLine[];
+  /**
+   * 이야기 방식 수업만(묶음 S2): 다시 들어왔을 때의 끝 줄 신호(조용함 기다림 · 힌트 단추 · 설명 기다림 · 인식 후보 수 — 턴 길의 끝 줄과 같은 판단
+   * chatEndSignalOf). 이야기 방식의 힌트 단은 hints 가 아니라 힌트 받는 서버 액션의 응답이 정하므로 hints 는 빈 목록이다. 기존 두 방식은 칸 없음.
+   */
+  chat?: ChatEndSignal;
 };
 
-function currentOf(state: TalkLessonState): TalkLessonCurrent | null {
+function currentOf(
+  state: TalkLessonState,
+  { aiResting }: { aiResting: boolean },
+): TalkLessonCurrent | null {
   const row = state.liveRows.findLast((r) => r.speaker === "tori");
   if (!row) return null;
   const move = readTalkMove(row.move);
@@ -1502,6 +1622,7 @@ function currentOf(state: TalkLessonState): TalkLessonCurrent | null {
     rows: state.liveRows,
     teacher: row,
   });
+  const chat = isChatSession(state);
   return {
     turnNo: row.turnNo,
     kind: move?.kind ?? null,
@@ -1512,12 +1633,13 @@ function currentOf(state: TalkLessonState): TalkLessonCurrent | null {
     sound: move?.sound ?? null,
     app: move?.app ?? [],
     item: move ? { ...move.item } : null,
-    hints: lessonHintViewsOf(state),
+    hints: lessonCurrentHintsOf(state),
     ...imageKeyOf(
       lessonImageKeyOf(state, state.position.slot?.item ?? move?.item),
     ),
     ...(row.explanation ? { explanation: row.explanation } : {}),
     ...(leadSound === null ? {} : { leadSound }),
+    ...(chat ? { chat: chatResumeSignalOf(state, aiResting) } : {}),
   };
 }
 
@@ -1620,6 +1742,11 @@ export type TalkLessonView = {
   current: TalkLessonCurrent | null;
   /** 선생님 말이 없는 마지막 아이 행 — 화면이 같은 시도 id 로 다시 보낸다(8절 · AC-15f). 들리지 않음 행이면 nospeech(묶음 11 재검토 N-3). */
   retryTurn: LessonRetryTurn | null;
+  /**
+   * 이야기 방식만(묶음 S2): 선생님 말이 없는 마지막 아이 행이 조용함 행이면 quiet — 화면은 retryTurn(이때 null) 대신 조용함 입구 요청을 다시
+   * 보낸다(lessonRetryLeadOf). 그 밖은 null.
+   */
+  retryLead: "quiet" | null;
   /** 짧은 준비 쪽지(준비 차례 · 준비로 넘길 차례만). */
   prep: TalkLessonPrep | null;
   /** 앱 맞장구 목록(정한 것 20) — 화면이 턴 번호로 고른다(core/conversation/wait-line waitLineOf). */
@@ -1650,20 +1777,32 @@ export type LessonRetryTurn = {
   nospeech?: true;
 };
 
-/** 선생님 말이 없는 마지막 아이 행 → 다시 보낼 자료(시도 id 가 없으면 null). 들리지 않음은 lessonTurnOf 의 nospeech 와 같은 판정이다. */
+/**
+ * 선생님 말이 없는 마지막 아이 행 → 다시 보낼 자료(시도 id 가 없으면 null). 들리지 않음은 lessonTurnOf 의 nospeech 와 같은 판정이다. 이야기 방식의
+ * 조용함 행(아이의 답이 아님)은 아이 말로 다시 보내지 않으므로 null 이다 — 그 행은 lessonRetryLeadOf 가 조용함 입구로 낸다(묶음 S2).
+ */
 export function lessonRetryTurnOf(
   orphan: TalkTurnRow | null,
 ): LessonRetryTurn | null {
+  if (orphan !== null && isChatQuietRow(orphan)) return null;
   if (!orphan?.clientAttemptId) return null;
   const lite = lessonTurnOf(orphan);
   return {
     clientAttemptId: orphan.clientAttemptId,
-    mode: orphan.inputMode ?? "speech",
+    mode: childInputModeOf(orphan.inputMode),
     text: orphan.text,
     ...(lite.speaker === "child" && lite.nospeech
       ? { nospeech: true as const }
       : {}),
   };
+}
+
+/**
+ * 선생님 말이 없는 마지막 아이 행이 이야기 방식의 조용함 행이면 다시 보낼 입구(quiet — 화면은 아이 말 없는 턴 요청 { sessionId, lead: "quiet" } 을
+ * 다시 보낸다. 턴 길은 그 행을 새로 쓰지 않고 이어 쓴다, 검토 rev-chat-p35 6절 S1-6). 그 밖은 null(기존 lessonRetryTurnOf 그대로).
+ */
+export function lessonRetryLeadOf(orphan: TalkTurnRow | null): "quiet" | null {
+  return orphan !== null && isChatQuietRow(orphan) ? "quiet" : null;
 }
 
 /** 새 꼴 카드 · 쪽지 낱말의 그림 키(인사 질문 · 필수 질문 · 더 이야기할 거리 · 오늘 쓸 말 · 쪽지). */
@@ -1750,8 +1889,9 @@ export async function loadTalkLessonView(
       card: state.card,
       koMeaning: state.spec.koMeaning,
     }),
-    current: currentOf(state),
+    current: currentOf(state, { aiResting: resting }),
     retryTurn: lessonRetryTurnOf(state.orphan),
+    retryLead: lessonRetryLeadOf(state.orphan),
     prep,
     waitLines: seedTalkWaitLines(),
     talkShortLines: seedTalkShortLinesAt(state.level),
@@ -1786,9 +1926,10 @@ export type LessonMoveOutcome =
       /**
        * 새 엔진 세션만(묶음 S2): 서버가 선생님 행을 붙이지 않았으니 화면이 새 엔진의 차례를 부를 것(spec 설계 3). 'more' 는 '더 이야기하기'
        * (턴 요청 입력 more, 묶음 S3), 'start' 는 대화로 넘김(아이 말 없이 부르는 대화 토막의 첫 차례, 입구는 묶음 S1 — 고침 1 검토 I-2).
-       * 기존 방식에서는 칸이 없다.
+       * 기존 방식에서는 칸이 없다. 이야기 방식(이야기 방식 묶음 S2)은 'start' 가 수업 첫 말, 'back' 이 짧은 준비 뒤 돌아옴(입구 back — 보완 4 (5)),
+       * 'more' 가 '더 이야기하기'다.
        */
-      leadTurn?: "more" | "start";
+      leadTurn?: "more" | "start" | "back";
     }
   | {
       ok: false;
@@ -1808,7 +1949,8 @@ async function moveOutcomeOf(
     segment: after.segment,
     step,
     position: positionViewOf(after.position),
-    current: currentOf(after),
+    // 'AI 쉬는 중'은 이 액션이 읽지 않는다(이야기 방식 끝 줄 신호는 거짓으로 낸다 — 쉬는 중이면 턴 길이 그 요청에서 알린다)
+    current: currentOf(after, { aiResting: false }),
     prep: place ? await prepViewOf(tx, after, place) : null,
   };
 }
@@ -1848,6 +1990,21 @@ export async function advanceTalkLesson(
         lessonCoreOf(state),
         parsed.data.to,
       );
+      if (choice.mode === "chat") {
+        // 이야기 방식(묶음 S2): 카드 행을 붙이지 않는다. 수업 첫 말은 신호 start, 짧은 준비 뒤 돌아옴은 신호 back, 준비가 없는 수업의 인사 → 대화는
+        // 토막만 바꾸고 신호 없이 같은 대화를 잇는다
+        const chat = choice.decision;
+        if (!chat.ok) return { ok: false, reason: "out_of_order" } as const;
+        if (chat.segment !== state.segment)
+          await tx
+            .update(sessions)
+            .set({ talkSegment: chat.segment })
+            .where(eq(sessions.id, state.session.id));
+        const moved = await moveOutcomeOf(tx, args);
+        return moved.ok && chat.lead !== null
+          ? { ...moved, leadTurn: chat.lead }
+          : moved;
+      }
       if (choice.mode === "claude") {
         // 새 엔진(묶음 S2 고침 1): 카드 첫 질문 행을 붙이지 않고 토막만 바꾼 뒤, 대화 토막의 첫 차례를 새 엔진이 쓰게 한다(만남도 그 차례가 적음)
         const lead = choice.decision;
@@ -1906,6 +2063,9 @@ const LessonFollowSchema = z.strictObject({
 export function lessonWrapSourcesOf(
   state: Pick<TalkLessonState, "start" | "level" | "rows">,
 ): string[] {
+  // 이야기 방식(묶음 S2 · spec 설계 5 정리): 이 수업에서 say 에 든 것으로 확인된 따라 할 문장(chat-reply chatWrapSourcesOf)
+  if (isChatSession(state))
+    return chatWrapSourcesOf(state.rows.filter((r) => r.speaker === "tori"));
   if (isLeadSession(state))
     return leadWrapSourcesOf(state.rows.filter((r) => r.speaker === "tori"));
   return state.rows.flatMap((r) =>
@@ -2035,8 +2195,9 @@ export async function chooseLessonMoreTalk(
       if (!state || !isTalkOpen(state.session) || !state.start)
         return { ok: false, reason: "not_found" } as const;
       const choice = lessonMoreChoiceOf(state, lessonCoreOf(state));
-      if (choice.mode === "claude") {
-        // 새 엔진(묶음 S2): 카드 거리 행을 붙이지 않고 참여 완료 · 토막만 지금 뜻 그대로 처리한 뒤, 화면이 새 엔진의 차례를 부르게 한다
+      if (choice.mode !== "app") {
+        // 새 엔진(묶음 S2) · 이야기 방식(이야기 방식 묶음 S2): 카드 거리 행을 붙이지 않고 참여 완료 · 토막만 지금 뜻 그대로 처리한 뒤, 화면이 그 방식의
+        // 차례를 부르게 한다
         const lead = choice.decision;
         if (!lead.ok) return { ok: false, reason: "out_of_order" } as const;
         if (lead.complete) await completeTalk(tx, { state, at, rules });
@@ -2195,7 +2356,13 @@ export async function stopTalkLesson(
       return { ok: true, state, aborted, schedule: closing.schedule } as const;
     });
     if (!done.ok) return done;
-    if (done.schedule) scheduleTalkClosing(done.state.session.id, deps);
+    // 이야기 방식(묶음 S2): 닫기 거래가 끝난 뒤 남은 '기다림' 평가와 비교 표지 행을 끝맺음과 한 응답 뒤 작업으로(닫는 응답을 늦추지 않고, 실패해도
+    // 닫힘은 그대로 — 보낸 메시지 지우기는 끝맺음 결과와 한 거래, 검토 rev-chat-s2 I-3). 다른 방식은 지금 그대로
+    if (isChatSession(done.state))
+      scheduleChatClose(done.state.session.id, deps, {
+        closing: done.schedule,
+      });
+    else if (done.schedule) scheduleTalkClosing(done.state.session.id, deps);
     return {
       ok: true,
       wrap: await lessonWrapViewOf(db, done.state, {
@@ -2256,7 +2423,12 @@ export async function leaveTalkLesson(
     if (!done.ok) return done;
     if (!done.closed) return { ok: true, closed: false };
     if (!done.state) return { ok: true, closed: true, wrap: null };
-    if (done.schedule) scheduleTalkClosing(done.state.session.id, deps);
+    // 이야기 방식(묶음 S2): 정리로 닫은 뒤 남은 평가 · 비교 표지 행과 끝맺음(응답 뒤 작업 하나, stopTalkLesson 과 같음)
+    if (isChatSession(done.state))
+      scheduleChatClose(done.state.session.id, deps, {
+        closing: done.schedule,
+      });
+    else if (done.schedule) scheduleTalkClosing(done.state.session.id, deps);
     return {
       ok: true,
       closed: true,
@@ -2302,17 +2474,111 @@ export async function readTalkLessonWrap(
 const LessonRevealSchema = z.strictObject({
   sessionId: z.uuid(),
   tier: z.int().min(0),
+  /** 이야기 방식만: 힌트의 다시 받기 번호(0 = 첫 누름, n = n 번째 '다시 받기'). 없으면 0. */
+  retry: z.int().min(0).optional(),
+  /** 이야기 방식만: 막힌 뒤 설명 요청(끝 줄의 설명 기다림 표지를 받은 화면이 보낸다 — 힌트 누름과 다른 표지 행). */
+  explain: z.literal(true).optional(),
 });
+
+/**
+ * 힌트 받는 서버 액션의 응답: 기존 두 방식은 연 단의 글 하나({ ok, text }), 이야기 방식의 힌트는 단 목록 · 청한 단 · 그 글 또는 실패와 다시 받기
+ * (P5 chatHintReplyOf), 막힌 뒤 설명은 그 글 또는 ok 거짓(P5 chatExplainReplyOf — 화면은 문구 없이 차례를 잇는다).
+ */
+export type LessonHintReply =
+  | { ok: true; text: string }
+  | { ok: false }
+  | ChatHintReply;
+
+/** 이야기 방식 힌트 요청의 입력(서버 액션 꼴에서 이야기 방식 칸만). */
+type ChatRevealInput = { tier: number; retry: number; explain: boolean };
+
+const MS_PER_SECOND = 1000;
+
+/**
+ * 이야기 방식 수업의 힌트 · 막힌 뒤 설명(spec 설계 7, 묶음 S2): 지금 선생님 차례(마지막 선생님 행)의 힌트를 S0 의 힌트 요청(requestChatHint — 저장된
+ * 단이 있으면 그것, 없으면 표지 행으로 묶은 호출 하나)으로 받는다. 그 행이 그 수업의 대화 토막 선생님 행이 아니면(chatHintInputOf 가 null) 부르지
+ * 않는다(검토 rev-chat-s0 4절 S2-1). 카드 인사 질문 · 장면 질문의 카드 힌트는 끼우지 않는다(검토 rev-chat-p35 5절). 설명 요청은 힌트와 다른 표지
+ * 행으로 묶인다(kind explain — 설명의 실패가 힌트의 첫 누름 · 다시 받기 수에 닿지 않음). 'AI 쉬는 중'이면 부르지 않고 저장된 단만 낸다.
+ */
+async function chatRevealOf(
+  db: Db,
+  state: TalkLessonState,
+  input: ChatRevealInput,
+  deps: Pick<TalkServerDeps, "now" | "ai">,
+): Promise<LessonHintReply> {
+  const teacher = state.liveRows.findLast((r) => r.speaker === "tori");
+  if (!teacher)
+    return input.explain ? { ok: false } : { ok: false, retry: false };
+  const ctx = await levelContextOf(
+    {
+      area: "talk",
+      level: state.level,
+      unit: state.unit,
+      revision: state.session.seedRevision ?? state.lessonRow.revision,
+    },
+    { db },
+  );
+  const hintInput = chatHintInputOf({
+    rows: state.liveRows,
+    teacherRowId: teacher.id,
+    level: state.level,
+    sentenceMaxWords: ctx.sentenceMaxWords,
+    hintTiers: state.spec.hintTiers,
+    teacherNameEn: state.teacher?.nameEn ?? "",
+  });
+  if (hintInput === null)
+    return input.explain ? { ok: false } : { ok: false, retry: false };
+  const at = deps.now();
+  // 힌트 단 재료(틀 단의 단원 단어 · 원형 표)는 단계 맥락의 단원 단어로 만든다 — 판정 맥락 · 턴 길과 같은 재료(묶음 S2 fix 2, 13절 C243 보완 6 (5))
+  const [aiResting, timeouts, unit] = await Promise.all([
+    aiRestingToday({ profileId: state.profileId, at }, { db }),
+    getSettings(
+      { "ai.timeout_seconds.realtime": z.number().positive() },
+      { db, profileId: state.profileId },
+    ),
+    readChatUnitWords(db, ctx.unitWords),
+  ]);
+  const retryMax = state.settings.chat.hintRetryMax;
+  const result = await requestChatHint(
+    {
+      profileId: state.profileId,
+      sessionId: state.session.id,
+      teacherRowId: teacher.id,
+      kind: input.explain ? "explain" : "hint",
+      retry: input.retry,
+      retryMax,
+      waitMs:
+        (timeouts["ai.timeout_seconds.realtime"] as number) * MS_PER_SECOND,
+      aiResting,
+      spec: state.spec,
+      unitWords: unit.unitWords,
+      lemmaOf: unit.lemmaOf,
+      input: hintInput,
+    },
+    { db, clock: deps.now, ...deps.ai },
+  );
+  const record = result.ok ? result.record : null;
+  if (input.explain) return chatExplainReplyOf(record);
+  return chatHintReplyOf({
+    record,
+    tier: input.tier,
+    retriesUsed: result.ok ? input.retry : result.retriesUsed,
+    retryMax,
+    aiResting,
+  });
+}
 
 /**
  * 새 꼴 세션 힌트 단 하나의 글(옛 revealTalkHint 의 새 갈래, 검토 I-1): 아이가 '힌트'를 눌러 연 단만(1~3단계 영어 문장을 미리 내리지 않음,
  * 3.3 · CLAUDE.md). 지금 질문 자리의 단(lessonHintTextOf)이 없으면 ok 거짓. 연 단 수는 따로 쓰지 않는다 — 화면이 다음 턴 요청의 hint.opened 로
  * 보내고 턴 길이 아이 행 hint_kind · hint_level 로 남긴다(lesson-turn lessonChildRowOf, 같은 단 함수). AI 없음.
+ * 이야기 방식 수업(isChatSession)은 chatRevealOf 로 간다(힌트 호출 · 막힌 뒤 설명 — 묶음 S2). 수업 상태는 조용함 행을 거른 상태로 읽는다(묶음 S1 의
+ * 상태 읽기). 이야기 방식 칸(retry · explain)은 기존 두 방식에서 읽지 않는다.
  */
 export async function revealTalkLessonHint(
   raw: unknown,
-  deps: Pick<TalkServerDeps, "db" | "now">,
-): Promise<{ ok: true; text: string } | { ok: false }> {
+  deps: Pick<TalkServerDeps, "db" | "now" | "ai">,
+): Promise<LessonHintReply> {
   const parsed = LessonRevealSchema.safeParse(raw);
   if (!parsed.success) return { ok: false };
   const db = deps.db ?? getDb();
@@ -2325,6 +2591,21 @@ export async function revealTalkLessonHint(
       at: deps.now(),
     });
     if (!state || !isTalkOpen(state.session)) return { ok: false };
+    if (isChatSession(state)) {
+      const explain = parsed.data.explain === true;
+      try {
+        return await chatRevealOf(
+          db,
+          state,
+          { tier: parsed.data.tier, retry: parsed.data.retry ?? 0, explain },
+          deps,
+        );
+      } catch (error) {
+        // 이야기 방식의 실패 꼴(P5): 힌트는 다시 받기 없는 실패, 설명은 문구 없는 실패(검토 rev-chat-s2 M-6)
+        logFailure("회화 힌트(이야기 방식)", error);
+        return explain ? { ok: false } : { ok: false, retry: false };
+      }
+    }
     const text = lessonHintTextOf(state, parsed.data.tier);
     return text === null ? { ok: false } : { ok: true, text };
   } catch (error) {

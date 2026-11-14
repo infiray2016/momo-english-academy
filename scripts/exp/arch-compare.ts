@@ -1,6 +1,7 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
-//        [--children K1,K2,K3 | SA,SB,SC,SD,SE,SF] [--seeds 1,2] [--arms A,B,C,C2,P,N,Q,QP]
+//        [--children K1,K2,K3 | SA,SB,SC,SD,SD2,SE,SF,SG] [--seeds 1,2] [--arms A,B,C,C2,P,N,Q,QP,R,R2,R3,R3M,R3O,CHAT]
+//        [--card replay|lesson1] [--long [--long-turns 40] [--long-safety-max 40]] [--call --max-calls <수>]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
@@ -13,6 +14,11 @@
 // (--children SA,SB,SC,SD,SE,SF — 잡음은 SC · SD 에만, arch-arms childHasNoise).
 // 결과 폴더에 앞 실행의 setup.json · run-summary.json 이 있으면 덮지 않고 합친다(공통 재료가 다르면 멈춤).
 // 키 값은 출력하지 않는다. 결과 파일: <out>/runs/<방식>-<아이>-s<씨앗>.jsonl · .transcript.md, <out>/run-summary.json.
+// 방식 CHAT(묶음 T2)은 앱 길의 이야기 방식(대본 도구 runChatScenario — 서버와 같은 함수, talk.lead_mode chat)에 아이 역 AI 가 차례마다 말을 정하고
+// 앱 행동(조용함 · 말 없음 · 힌트 · 모름 · 더 이야기하기 · 인식기 알림)을 넣는다(spec '회화 대화 구조 R' 설계 13). --card lesson1 은 실제 카드(회화 3단계
+// 단원 1 첫 수업, 짧은 준비가 열림), --long 은 긴 대본 한 벌(CHAT · SE · 아이 차례 40)을 더한다.
+// 실제 AI 호출은 --call 과 --max-calls <수> 가 함께 있을 때만 나간다(13절 C243 보완 5 (6)). 기본은 계획만: 수업 · 방식 · 호출 갈래별 위쪽 어림 수와
+// 어림 비용을 찍고 끝낸다. 어림이 상한을 넘으면 부르지 않고, 실행 중 상한에 닿으면 더 부르지 않고 멈춘다.
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
@@ -27,6 +33,12 @@ import { fileURLToPath } from "node:url";
 import type Anthropic from "@anthropic-ai/sdk";
 import { APIError } from "@anthropic-ai/sdk";
 import type { z } from "zod";
+import { TALK_CHAT_EVAL_SYSTEM } from "../../src/core/ai/calls/talk-chat-eval";
+import {
+  type TalkChatHintInput,
+  talkChatHintSpec,
+  talkChatHintSystem,
+} from "../../src/core/ai/calls/talk-chat-hint";
 import {
   choicesLine,
   holdsQuestionSentence,
@@ -50,6 +62,11 @@ import { createMasker } from "../../src/core/ai/mask";
 import { checkOutputFields } from "../../src/core/ai/output-check";
 import { buildAiRequest } from "../../src/core/ai/request";
 import { startPrepWordsOf } from "../../src/core/conversation/chances";
+import { chatHintReplyOf } from "../../src/core/conversation/chat-hints";
+import {
+  type ChatDayPartHours,
+  chatClockOf,
+} from "../../src/core/conversation/chat-message";
 import { heardHintsOf } from "../../src/core/conversation/heard-hint";
 import {
   type LeadCandidateTable,
@@ -62,6 +79,7 @@ import {
   type LowLevelLineOptions,
 } from "../../src/core/conversation/question-check";
 import { metWordsIn } from "../../src/core/conversation/said";
+import { normalizeSpoken } from "../../src/core/conversation/spoken";
 import {
   createToriSentenceGate,
   isQuestionSentence,
@@ -84,6 +102,12 @@ import {
 } from "../ai-contract";
 import {
   type CallResult,
+  CHAT_CALL_KINDS,
+  type ChatCallCounts,
+  type ChatCaller,
+  type ChatCallKind,
+  type ChatScenarioRun,
+  type ChatScenarioTurn,
   createTalkSim,
   evaluateLessonMessage,
   type LeadSimEntry,
@@ -95,6 +119,7 @@ import {
   parseObserveScript,
   readScriptFiles,
   readSeedFiles,
+  runChatScenario,
   runValuesOf,
   type TalkSim,
   type TurnRecord,
@@ -115,6 +140,7 @@ import {
   qCallOverrideOf,
   qChildMessageOf,
   qSystemOf,
+  type R2LessonContext,
   r2LessonContextOf,
   r2StartMessageOf,
   type SttNote,
@@ -122,6 +148,9 @@ import {
 } from "./arch-arm-q";
 import {
   C_START_MESSAGE,
+  CHAT_LOW_CONFIDENCE,
+  type ChatHeardSegment,
+  type ChatHintShown,
   type ChildAction,
   type ChildKey,
   type ChildOutput,
@@ -129,6 +158,11 @@ import {
   COutputSchema,
   c2SystemOf,
   cChildMessageOf,
+  chatChildMessageOf,
+  chatForcedPickOf,
+  chatHintTurnOf,
+  chatRecognizerOf,
+  chatSilentInputOf,
   childHasNoise,
   childSystemOf,
   cSystemOf,
@@ -149,6 +183,8 @@ import {
   flat,
   lessonEndingOf,
   levelFitOf,
+  type PlanCalls,
+  planCallsCostUsdOf,
   type SpeechField,
   sentenceDiffOf,
   TEACHER_CLOSING_REASON,
@@ -170,8 +206,16 @@ export const ARMS = [
   "R3",
   "R3M",
   "R3O",
+  "CHAT",
 ] as const;
 export type Arm = (typeof ARMS)[number];
+/** 앱 길의 이야기 방식(talk.lead_mode chat — 묶음 T2). 다른 방식 이름과 겹치지 않는다. */
+export const CHAT_ARM = "CHAT" as const satisfies Arm;
+/** 긴 대본 한 벌의 아이 차례(spec 설계 13 '긴 대본 한 벌'). */
+export const CHAT_LONG_TURNS = 40;
+/** 긴 대본의 바탕 아이 역(SE)과 씨앗. */
+export const CHAT_LONG_CHILD = "SE" as const satisfies ChildKey;
+export const CHAT_LONG_SEED = 1;
 /** --children 를 주지 않을 때의 아이 역(지난 실험 그대로). */
 export const CHILDREN = [
   "K1",
@@ -193,8 +237,13 @@ const RERUN_MAX = 2;
 /** 앱이 쓰는 PURPOSE(회화 턴). */
 const PURPOSE = "talk_turn" as const;
 
-export function lessonName(arm: Arm, child: ChildKey, seed: number): string {
-  return `${arm}-${child}-s${seed}`;
+export function lessonName(
+  arm: Arm,
+  child: ChildKey,
+  seed: number,
+  variant?: "long",
+): string {
+  return `${arm}-${child}-s${seed}${variant === "long" ? "-long" : ""}`;
 }
 
 // ── 기록 꼴 ────────────────────────────────────────────────────
@@ -215,8 +264,11 @@ export type CallLog = {
   type: "call";
   lesson: string;
   childTurn: number;
-  /** turn: 선생님 턴 · rewrite: 앱의 다시 쓰기(N 은 좁은 정의 다시 말하기) · child: 아이 역(그 밖). */
-  kind: "turn" | "rewrite" | "child";
+  /**
+   * turn: 선생님 턴(CHAT 은 대화 호출) · rewrite: 앱의 다시 쓰기(N 은 좁은 정의 다시 말하기) · child: 아이 역(그 밖) · hint · explain · eval: CHAT 의
+   * 힌트 · 막힌 뒤 설명 · 기록 전용 평가 호출(옛 기록에는 없다).
+   */
+  kind: "turn" | "rewrite" | "child" | "hint" | "explain" | "eval";
   request: RequestLog;
   response: {
     ok: boolean;
@@ -295,8 +347,72 @@ export type TeacherTurnLog = {
    * N: 인사 끝 차례에 접은 입구 start 호출(검토 rev-x2 M-4). 실제 앱에서는 두 호출 사이에 짧은 준비가 있어 아이가 이어 기다리는 시간이 아니므로,
    * 이 차례의 calls · ms 에 더하지 않고 여기 따로 둔다. firstSent 는 대화 토막에 들어와 첫 소리를 듣기까지(A 에는 없는 N 만의 기다림)다.
    */
-  entryStart?: { calls: number; ms: number; firstSent: FirstSent | null };
+  entryStart?: {
+    calls: number;
+    ms: number;
+    firstSent: FirstSent | null;
+    /** 접기 전 인사 끝 차례의 말과 입구 start 의 말(아이 역에게 그 사이 짧은 준비 쪽지 줄을 넣는 재료 — T2 fix 1 m-2). 옛 기록에는 없다. */
+    before?: string;
+    said?: string;
+  };
   ended?: string;
+  /** CHAT: 이야기 방식 차례의 기록(대본 도구 차례 기록을 줄인 것). 다른 방식 · 옛 기록에는 없다. */
+  chat?: ChatTeacherLog;
+};
+
+/**
+ * CHAT 선생님 차례 하나(대본 도구 ChatScenarioTurn · ChatTurnRecord 에서 셀 것만): 입구 · 끝 갈래 · 사실 줄 · 끝 줄 신호 · 응답의 wrap_up(거짓으로
+ * 다룬 자리) · 따라 할 문장 대조 · 지어낸 경험 꼴 · 안전 상한으로 닫음 · 사용량 · 이 차례 호출 갈래별 수(앞 아이 차례의 힌트 누름 · 뒤 평가 · 설명
+ * 포함) · 비용.
+ */
+export type ChatTeacherLog = {
+  entry: "child" | "start" | "back" | "more" | "quiet";
+  turnEnd: string | null;
+  facts: string[];
+  signal: {
+    quietSeconds?: number;
+    hint?: true;
+    explainWait?: number;
+    alternatives?: number;
+  } | null;
+  wrapUp: boolean;
+  wrapUpHeld: string | null;
+  listen: { sentence: string; inSay: boolean; partial?: true } | null;
+  /** 1~3단계에서 보이는 글에서 빼 소리 줄로 낸 문장(move.chat.removed). */
+  removed: string[];
+  /**
+   * 응답 say 의 첫 문장이 소리 줄로 빠진 차례(따라 할 문장 · 막힌 뒤 고르기 물음 — fix 1 m-6): 첫 문장 시간은 say 의 첫 문장으로 재므로 이 차례는 아이가
+   * 들은 첫 문장보다 이르게 잰다. 첫 문장 시간 수치는 이 차례를 넣은 값과 뺀 값을 함께 낸다.
+   */
+  firstMoved: boolean;
+  madeUp: string[];
+  closed: boolean;
+  failure: string | null;
+  diverged: boolean;
+  usage: {
+    firstSentenceMs: number | null;
+    inputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    latencyMs: number;
+  } | null;
+  calls: ChatCallCounts;
+  costUsd: number;
+  waitedMs: number;
+  hints: { tier: number; retry: number; called: boolean; ok: boolean }[];
+  explain: { called: boolean; ok: boolean } | null;
+  evals: { status: string; called: boolean }[];
+};
+
+/** CHAT 아이 차례의 앱 행동(턴 요청에 실은 입력 · 누른 힌트 단 · 아이 역이 본 힌트 글 · 인식기 정보 · 선생님이 기다리기만 한 차례). */
+export type ChatChildLog = {
+  input: "say" | "dont_know" | "nospeech" | "quiet";
+  hintTier: number;
+  hint: ChatHintShown | null;
+  recognizer: { confidence?: number | null; alternative?: string } | null;
+  waited: boolean;
 };
 
 /** N 한 차례의 기록(차이 표 · 좁은 정의 · 받아 둔 차례 · 마무리 막힘 셈의 재료 — 회화 Claude 주도 설계 5 · 6 · 9). */
@@ -346,6 +462,8 @@ export type ChildTurnLog = {
   noiseSkipped: boolean;
   /** 음성 인식기의 알림(실험에서 만든 값 — 방식 R2 의 선생님 호출에만 실었고, 그때만 남긴다). */
   stt?: SttNote;
+  /** CHAT: 앱 행동(턴 요청에 실은 입력 · 힌트 · 인식기 정보). */
+  chat?: ChatChildLog;
 };
 
 export type LessonLog = {
@@ -372,6 +490,22 @@ export type LessonLog = {
    * 없다(그때의 A 는 이 집합이 비어 있었다).
    */
   materials?: { functionWords: number };
+  /** 긴 대본 한 벌(CHAT 만 — 시나리오 셈에서 빼고 따로 읽는다). */
+  variant?: "long";
+  /**
+   * CHAT: 수업 호출 갈래별 수 · 비용, 정리의 되짚을 말(카드 정리 대사인가), 짧은 준비 쪽지 낱말, 이 수업만 덮은 설정값, 수업 시작 맥락(R3 와 같은
+   * 요일 · 때 · 만남 수).
+   */
+  chat?: {
+    calls: ChatCallCounts;
+    costUsd: number;
+    wrap: { en: string; card: boolean }[];
+    prepWords: string[];
+    overrides: Record<string, unknown>;
+    start: R2LessonContext;
+    /** 아이가 '그만하기'를 골라 정리 토막에 닿았다(옛 기록에는 없다 — 없으면 닿지 않음으로 읽는다). */
+    reachedWrap?: boolean;
+  };
 };
 
 /** 앱의 마무리 차례(마무리 물음 · 마무리 제안)에서 아이 역이 고른 단추. */
@@ -414,6 +548,16 @@ export type Req = {
 
 class CallFailure extends Error {}
 
+/** 실행 전체의 실제 호출 수 상한(--max-calls). left 는 남은 호출 수다(호출 하나를 부르기 전에 줄인다). */
+export type CallBudget = { left: number };
+
+/** 상한에 닿아 부르지 않은 오류의 글 머리(이 오류로 실패한 수업은 다시 돌리지 않고 실행을 멈춘다). */
+export const CALL_CAP_ERROR = "호출 수 상한에 닿아 부르지 않음";
+
+export function isCapError(message: string): boolean {
+  return message.includes(CALL_CAP_ERROR);
+}
+
 function requestLogOf(req: Req): RequestLog {
   const b = req.body;
   return {
@@ -435,6 +579,8 @@ type Ctx = {
   client: Anthropic;
   book: ScriptConfig["book"];
   log: (line: LogLine) => void;
+  /** 실행 전체의 호출 수 상한(없으면 상한 없음 — 시험 · 옛 길). */
+  budget?: CallBudget;
 };
 
 /**
@@ -452,6 +598,13 @@ async function send(
   ms: number;
   firstSentence: FirstSentence | null;
 }> {
+  if (ctx.budget !== undefined) {
+    if (ctx.budget.left <= 0)
+      throw new CallFailure(
+        `${meta.lesson} 아이 차례 ${meta.childTurn} ${meta.kind}: ${CALL_CAP_ERROR}`,
+      );
+    ctx.budget.left -= 1;
+  }
   const started = Date.now();
   const clock = speech ? createFirstSentenceClock(speech, Date.now) : null;
   const stream = ctx.client.beta.messages.stream(
@@ -563,8 +716,28 @@ export function spokenOfLessonOutput(raw: unknown): string | null {
 
 // ── 공통 재료 ────────────────────────────────────────────────────
 
+/** 실험 재료의 카드: replay 는 지난 실험의 재생 대본(회화 3단계 단원 1 수업 6 — 짧은 준비 없음), lesson1 은 실제 카드 첫 수업(짧은 준비가 열림). */
+export const SETUP_CARDS = ["replay", "lesson1"] as const;
+export type SetupCard = (typeof SETUP_CARDS)[number];
+
+/**
+ * 실제 카드 첫 수업의 대본 틀(spec 설계 13 '재료는 실제 카드(seed/lessons/talk/3/1.json 첫 수업)'): 재료를 읽는 자리(단계 · 단원 · 수업 · 선생님)만
+ * 쓰고 차례는 쓰지 않는다. 덮는 설정값 · 건너뛴 준비 낱말 · 지난 요약은 없다(새 아이).
+ */
+export const CHAT_CARD_SCRIPT: ObserveScript = {
+  name: "exp-chat-l3u1-lesson1",
+  title: "3단계 · 실제 카드 첫 수업(이야기 방식 실험 재료)",
+  level: 3,
+  unit: 1,
+  lesson: 1,
+  teacher: "mina",
+  steps: [{ say: "I'm fine." }],
+};
+
 export type Setup = {
   root: string;
+  /** 실험 재료의 카드(지난 실험은 replay). */
+  card: SetupCard;
   config: ScriptConfig;
   script: ObserveScript;
   materials: Materials;
@@ -594,6 +767,8 @@ export type Setup = {
   nSystem: string | null;
   /** 방식 Q · QP 의 안내문(arch-arm-q qSystemOf — 선생님 이름 · 단원 낱말은 N 과 같은 재료 값). */
   qSystems: Record<QArm, string>;
+  /** 방식 CHAT 의 안내문(입구 start 요청의 system — 앱 talkChatTurnSpec 그대로). 이야기 방식을 열 수 없는 단원이면 null. */
+  chatSystem: string | null;
   masker: ReturnType<typeof createMasker>;
   sentenceMax: number;
 };
@@ -674,15 +849,38 @@ function nSystemOf(
   return opened.ok ? String(opened.turn.request.body.system) : null;
 }
 
-export function setupOf(root: string): Setup {
-  const config = loadScriptConfig({ root });
+/** 방식 CHAT 의 안내문: 버리는 이야기 방식 대본 도구로 입구 start 요청의 system 을 읽는다(AI 를 부르지 않음). */
+function chatSystemOf(
+  materials: Materials,
+  values: Record<string, unknown>,
+  book: ScriptConfig["book"],
+): string | null {
+  const sim = createTalkSim(
+    materials,
+    { ...values, [TALK_LEAD_MODE_KEY]: "chat" },
+    book,
+    { rotationKey: "probe" },
+  );
+  if (!sim.chat.on) return null;
+  const opened = sim.chat.prepare({ kind: "open", open: "start" });
+  return opened.ok ? String(opened.turn.request.body.system) : null;
+}
+
+function sourceScriptOf(root: string, card: SetupCard): ObserveScript {
+  if (card === "lesson1") return CHAT_CARD_SCRIPT;
   const scriptFile = readScriptFiles(root).find(
     (f) => f.file === `${SOURCE_SCRIPT}.json`,
   );
   if (!scriptFile) throw new Error(`대본 없음: ${SOURCE_SCRIPT}`);
   const parsed = parseObserveScript(scriptFile.raw, scriptFile.file);
   if (!parsed.ok) throw new Error(parsed.error);
-  const script = parsed.script;
+  return parsed.script;
+}
+
+export function setupOf(root: string, opts: { card?: SetupCard } = {}): Setup {
+  const card = opts.card ?? "replay";
+  const config = loadScriptConfig({ root });
+  const script = sourceScriptOf(root, card);
   const { values } = runValuesOf({
     values: config.values,
     level: script.level,
@@ -754,6 +952,7 @@ export function setupOf(root: string): Setup {
       : [];
   return {
     root,
+    card,
     config,
     script,
     materials,
@@ -784,6 +983,7 @@ export function setupOf(root: string): Setup {
         }),
       ]),
     ) as Record<QArm, string>,
+    chatSystem: chatSystemOf(materials, values, config.book),
     pWordsSameAsUnit:
       JSON.stringify([...P_UNIT_WORDS]) ===
       JSON.stringify([...materials.ctx.unitWords]),
@@ -1391,6 +1591,8 @@ function teacherN(setup: Setup, ctx: Ctx, lesson: string): Teacher {
           calls: opened.calls,
           ms: opened.ms,
           firstSent: opened.firstSent ?? null,
+          before: out.final,
+          said: opened.final,
         },
         ...(opened.lead ? { lead: opened.lead } : {}),
       };
@@ -1947,6 +2149,694 @@ function teacherQ(
   };
 }
 
+// ── 방식 CHAT(앱 길의 이야기 방식 — 묶음 T2, spec '회화 대화 구조 R' 설계 13) ─────────────────
+
+/** 수업 시작 시각을 고를 한 주의 첫 때(2026-11-09 월요일 00:00 UTC — 앞뒤 하루를 넉넉히 훑는다). */
+const CHAT_WEEK_START_MS = Date.UTC(2026, 10, 9, 0, 0, 0);
+const HOUR_MS = 3_600_000;
+const CHAT_WEEK_SCAN_HOURS = 8 * 24;
+
+/**
+ * 홀로 선 R3 의 수업 시작 맥락(요일 · 때 — 'Friday afternoon')과 같은 때의 시각을 가족 시간대 벽시계로 고른다(앱 chatClockOf 로 확인). 한 주를
+ * 한 시간씩 훑어 처음 맞는 시각이고, 다음 한 시간도 같은 때면 그것(경계 바로 위를 피함)이다. 못 찾으면 멈춘다.
+ */
+export function chatAtOf(
+  now: string,
+  timeZone: string,
+  hours: ChatDayPartHours,
+): Date {
+  const label = (at: Date) => {
+    const c = chatClockOf(at, timeZone, hours);
+    return `${c.weekday} ${c.dayPart}`;
+  };
+  for (let h = 0; h < CHAT_WEEK_SCAN_HOURS; h++) {
+    const at = new Date(CHAT_WEEK_START_MS + h * HOUR_MS);
+    if (label(at) !== now) continue;
+    const next = new Date(at.getTime() + HOUR_MS);
+    return label(next) === now ? next : at;
+  }
+  throw new Error(`수업 시작 맥락을 시각으로 옮기지 못함: ${now}`);
+}
+
+/** 미리 보기 다시 돌리기가 기억에 없는 대화 호출 앞에서 멈췄다는 표지(힌트 글을 아이 역에게 보이려고 힌트까지만 부른다). */
+class ChatProbeStop extends Error {}
+
+/**
+ * 다시 돌리기의 호출 기억(묶음 T2 의 대본 도구 접점): 같은 수업을 처음부터 다시 돌릴 때 앞서 받은 응답을 차례대로 되돌려 주고(요청 본문이
+ * 글자까지 같아야 한다 — 다르면 멈춤), 기억에 없는 호출만 real 로 부른다. 미리 보기(probe)는 기억에 없는 대화 호출 앞에서 멈춘다. 대본 도구가
+ * 정해진 차례 목록을 받으므로(runChatScenario), 아이 역 AI 가 차례마다 말을 정하는 실험은 차례를 하나씩 늘려 처음부터 다시 돌린다 — 화면 흉내
+ * (조용함 타이머 · 힌트 누름 · 설명 · 평가)를 이 도구에 베끼지 않으려는 것이다.
+ */
+export function createChatCallCache(real: ChatCaller): {
+  size(): number;
+  callerFor(probe: boolean): ChatCaller;
+} {
+  const cache: { kind: ChatCallKind; body: string; result: CallResult }[] = [];
+  return {
+    size: () => cache.length,
+    callerFor(probe) {
+      let at = 0;
+      return async (kind, request) => {
+        const i = at;
+        at += 1;
+        const body = JSON.stringify(request.body);
+        const hit = cache[i];
+        if (hit !== undefined) {
+          if (hit.kind !== kind || hit.body !== body)
+            throw new Error(
+              `다시 돌린 호출 ${i + 1}(${kind})의 요청이 앞과 다름 — 되돌려 줄 응답이 없다`,
+            );
+          return hit.result;
+        }
+        if (probe && kind === "dialog")
+          throw new ChatProbeStop("미리 보기: 대화 호출 앞에서 멈춤");
+        const result = await real(kind, request);
+        cache.push({ kind, body, result });
+        return result;
+      };
+    },
+  };
+}
+
+/**
+ * 이야기 방식 대본을 처음부터 돌린다(대본 도구 runChatScenario 그대로 — 기록 전용 평가 켬, 앱과 같음). 미리 보기가 멈추면 run 은 null 이고 sim 은
+ * 멈춘 때의 상태다(그 차례에 받은 힌트가 선생님 행에 저장되어 있다). 대본 도구를 부르는 자리는 이 함수와 chatSimFor 둘뿐이다.
+ */
+export async function chatReplay(
+  makeSim: () => TalkSim,
+  steps: readonly ObserveStep[],
+  call: ChatCaller,
+): Promise<{ sim: TalkSim; run: ChatScenarioRun | null }> {
+  const sim = makeSim();
+  try {
+    return {
+      sim,
+      run: await runChatScenario(sim, steps, { call, evalOn: true }),
+    };
+  } catch (error) {
+    if (error instanceof ChatProbeStop) return { sim, run: null };
+    throw error;
+  }
+}
+
+/** 미리 보기 대본 차례의 말(대화 호출 앞에서 멈추므로 요청에 실리지 않는다). */
+const CHAT_PROBE_SAY = "(probe)";
+/** 대본 도구의 호출 갈래 → 기록의 호출 갈래. */
+const CHAT_CALL_LOG_KIND: Readonly<Record<ChatCallKind, CallLog["kind"]>> = {
+  dialog: "turn",
+  hint: "hint",
+  explain: "explain",
+  eval: "eval",
+};
+
+/** 이야기 방식 수업 하나를 돌리는 동안의 상태(실패해도 그때까지의 기록을 남기려고 밖에 둔다). */
+type ChatProgress = {
+  steps: ObserveStep[];
+  /** 대본 차례마다 아이 차례 번호(고르기 차례는 null). */
+  stepTurn: (number | null)[];
+  children: ChildTurnLog[];
+  choices: WrapChoice[];
+  sim: TalkSim | null;
+  run: ChatScenarioRun | null;
+  ended: string | null;
+  childTurns: number;
+  /** 호출 기록(CallLog)에 적을 아이 차례 번호 — 그 차례의 힌트 미리 보기 · 대화 호출 앞에서 지금 차례로 옮긴다(fix 1 m-3). */
+  callTurn: number;
+  /** 아이가 '그만하기'를 골라 정리 토막에 닿았다(정리의 되짚을 말을 세는 수업 — fix 1 m-4). */
+  reachedWrap: boolean;
+  prepWords: string[];
+  overrides: Record<string, unknown>;
+  start: R2LessonContext;
+};
+
+export type RunLessonOptions = {
+  /** 긴 대본 한 벌(CHAT 만 — 마무리마다 '더 이야기하기', 힌트 누름 없음). */
+  variant?: "long";
+  /** 이 수업만 덮는 대화 안전 상한(talk.safety_max_turns — 긴 대본이 안전 상한 사실 줄 차례에 닿게). */
+  safetyMax?: number;
+  /** 실행 전체의 호출 수 상한. */
+  budget?: CallBudget;
+};
+
+/**
+ * 대본 도구 접점: 이야기 방식 메모리 세션 하나(그 수업의 이름 · 수업 시작 시각 · 만남 수). '더 이야기하기' 입구는 대본 도구가 고른 뒤에만 연다
+ * (talk-observe openDue — T2 가 찾은 결함을 T1 이 고침. 그래서 이 묶음의 비켜 가기를 지웠다, fix 1 m-8).
+ */
+function chatSimFor(
+  setup: Setup,
+  values: Record<string, unknown>,
+  lesson: string,
+  start?: { at: Date; met: number },
+): TalkSim {
+  return createTalkSim(setup.materials, values, setup.config.book, {
+    rotationKey: lesson,
+    ...(start === undefined ? {} : { chatAt: start.at, chatMet: start.met }),
+  });
+}
+
+/** 미리 보기 sim 의 마지막 선생님 행 힌트(첫 단 글) — 아이 역에게 보일 글. 받지 못했으면 ok false. */
+function chatHintShownOf(sim: TalkSim): ChatHintShown {
+  const ask = sim.chat.hintAsk("hint", 0);
+  if (ask.kind !== "stored") return { ok: false };
+  const reply = chatHintReplyOf({
+    record: ask.record,
+    tier: 0,
+    retriesUsed: 0,
+    retryMax: sim.chat.settings.hintRetryMax,
+    aiResting: false,
+  });
+  return reply.ok ? { ok: true, text: reply.text } : { ok: false };
+}
+
+/** 대본 차례 기록에서 마지막 끝 줄 신호(선생님 행이 있는 차례). */
+function lastSignalOf(run: ChatScenarioRun): ChatTeacherLog["signal"] {
+  for (let i = run.turns.length - 1; i >= 0; i--) {
+    const rec = run.turns[i]?.record;
+    if (rec && rec.teacher !== null) return rec.signal;
+  }
+  return null;
+}
+
+/**
+ * 방식 CHAT 수업 하나(spec 설계 13 '시나리오 여덟'): 아이 역 AI 가 차례마다 말을 정하고, 앱 행동을 넣어 대본 차례를 하나씩 늘리며 처음부터 다시
+ * 돌린다(chatReplay — 앞 응답은 기억에서). 앱 행동: 말없음은 누르지 않음(조용함 입구 — 가짜 시계) · 눌렀으나 들리지 않음을 번갈아, 힌트 누름(SC ·
+ * SD2 셋째 차례마다 첫 단 — 미리 보기로 힌트를 받아 아이 역이 그 글을 본 뒤 말을 정함), 모름 단추, 마무리 단추(SE 첫 마무리 · 긴 대본 마무리마다
+ * '더 이야기하기', 그 밖은 아이 역이 고름), 잡음(지난 일정)과 인식기 알림(지난 일정을 낮은 확신 정도 · 다른 후보로). 수업 시작 맥락은 같은 수업의
+ * R3 와 같다(요일 · 때 · 만남 수).
+ */
+async function chatLessonRun(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  child: ChildKey,
+  seed: number,
+  turns: number,
+  opts: { long: boolean; safetyMax: number | null },
+  p: ChatProgress,
+): Promise<void> {
+  const values: Record<string, unknown> = {
+    ...setup.values,
+    [TALK_LEAD_MODE_KEY]: "chat",
+    ...p.overrides,
+  };
+  const probe = chatSimFor(setup, values, lesson);
+  if (!probe.chat.on)
+    throw new Error(
+      `${lesson}: 이야기 방식 세션이 아니다(1~3단계 · 선생님 이야기 방식 칸 확인)`,
+    );
+  const settings = probe.chat.settings;
+  if (!(CHAT_LOW_CONFIDENCE < settings.unsureConfidence))
+    throw new Error(
+      `${lesson}: 실험의 낮은 확신 정도(${CHAT_LOW_CONFIDENCE})가 문턱 talk.chat_unsure_confidence(${settings.unsureConfidence}) 아래가 아니다`,
+    );
+  p.prepWords = probe.chat.prepOpens ? [...setup.prepPlan] : [];
+  const start = {
+    at: chatAtOf(
+      p.start.now,
+      String(values["app.timezone"]),
+      settings.dayPartHours,
+    ),
+    met: p.start.met,
+  };
+  const makeSim = () => chatSimFor(setup, values, lesson, start);
+  const cache = createChatCallCache(
+    async (kind, request) =>
+      (
+        await send(
+          ctx,
+          {
+            body: request.body,
+            betas: request.betas,
+            timeoutMs: request.timeoutMs,
+          },
+          { lesson, childTurn: p.callTurn, kind: CHAT_CALL_LOG_KIND[kind] },
+          kind === "dialog" ? "say" : undefined,
+        )
+      ).result,
+  );
+  const childCall = childRole(setup, ctx, lesson, child);
+  const replay = async (): Promise<ChatScenarioRun> => {
+    const r = await chatReplay(makeSim, p.steps, cache.callerFor(false));
+    if (r.run === null) throw new Error(`${lesson}: 다시 돌리기가 멈춤`);
+    p.sim = r.sim;
+    p.run = r.run;
+    return r.run;
+  };
+  let run = await replay();
+  let consumed = 0;
+  let pending: ChatHeardSegment[] = [];
+  const takeHeard = () => {
+    for (const t of run.turns.slice(consumed)) {
+      if (t.entry === "wait") {
+        pending.push({ kind: "teacher", text: "" });
+        continue;
+      }
+      if (t.record === null) continue;
+      if (t.entry === "back" && p.prepWords.length > 0)
+        pending.push({ kind: "prep", words: p.prepWords });
+      pending.push({ kind: "teacher", text: t.record.heard });
+    }
+    consumed = run.turns.length;
+  };
+  const noiseOn = childHasNoise(child);
+  // 말없음 덩이(fix 1 I-1): 앞 아이 차례가 힌트 없는 말없음이면 같은 덩이의 갈래를 잇고, 아니면 새 덩이를 연다
+  let silentBlocks = 0;
+  let blockInput: ChatChildLog["input"] | null = null;
+  let injected = 0;
+  let forced = 0;
+  for (let t = 1; t <= turns; t++) {
+    if (run.stopped !== null) {
+      p.ended = `아이 차례 ${t} 앞: ${run.stopped}`;
+      return;
+    }
+    let stop = (p.sim as TalkSim).stopBefore();
+    while (stop !== null && stop.choice !== null) {
+      takeHeard();
+      const kind: WrapChoice["kind"] =
+        stop.choice === "closing" ? "closing" : "wrap_up";
+      const line =
+        [...pending]
+          .reverse()
+          .find(
+            (s): s is Extract<ChatHeardSegment, { kind: "teacher" }> =>
+              s.kind === "teacher",
+          )?.text ?? "";
+      const forcedPick = chatForcedPickOf({
+        child,
+        long: opts.long,
+        forcedBefore: forced,
+      });
+      let picked: WrapPick;
+      let says = "";
+      let why: string;
+      if (forcedPick !== null) {
+        forced += 1;
+        picked = forcedPick;
+        why = `앱 행동: 시나리오가 정한 단추(${opts.long ? "긴 대본 — 마무리 차례마다" : "SE — 첫 마무리 단추"} '더 이야기하기')`;
+        pending.push({ kind: "picked", pick: picked });
+      } else {
+        const message = chatChildMessageOf(pending, null);
+        const out = await childCall.chooseWith(
+          t,
+          wrapChoiceMessageOf(message.replace(/^Teacher: /, "")),
+        );
+        picked = out.wrap_choice;
+        says = out.says.trim();
+        why = out.why;
+        pending = [];
+      }
+      const choice: WrapChoice = {
+        childTurn: t,
+        kind,
+        line,
+        picked,
+        says,
+        why,
+        continued: false,
+      };
+      p.choices.push(choice);
+      p.steps.push({ choose: picked });
+      p.stepTurn.push(null);
+      p.callTurn = t;
+      run = await replay();
+      if (picked === "stop") {
+        p.reachedWrap = true;
+        p.ended = `아이 차례 ${t} 앞: ${kind === "wrap_up" ? TEACHER_WRAP_REASON : stop.reason}`;
+        return;
+      }
+      choice.continued = run.turns
+        .slice(consumed)
+        .some((x) => x.entry === "more" && x.record !== null);
+      if (!choice.continued) {
+        p.ended = `아이 차례 ${t} 앞: ${stop.reason} — '더 이야기하기'를 잇지 못함`;
+        return;
+      }
+      stop = (p.sim as TalkSim).stopBefore();
+    }
+    if (stop !== null) {
+      p.ended = `아이 차례 ${t} 앞: ${stop.reason}`;
+      return;
+    }
+    takeHeard();
+    const signal = lastSignalOf(run);
+    let hint: ChatHintShown | null = null;
+    let hintTier = 0;
+    p.callTurn = t;
+    if (!opts.long && chatHintTurnOf(child, t) && signal?.hint === true) {
+      hintTier = 1;
+      const peek = await chatReplay(
+        makeSim,
+        [...p.steps, { say: CHAT_PROBE_SAY, hintTier }],
+        cache.callerFor(true),
+      );
+      hint = chatHintShownOf(peek.sim);
+    }
+    const heardTeacher = pending
+      .flatMap((s) => (s.kind === "teacher" ? [heardByChild(s.text)] : []))
+      .join("\n");
+    const { out } = await childCall.ask(t, chatChildMessageOf(pending, hint));
+    pending = [];
+    const says = out.says.trim();
+    const action: ChildAction =
+      out.action === "speak" && says === "" ? "silent" : out.action;
+    let heard: string | null = null;
+    let noise: NoiseResult | null = null;
+    let stt: SttNote | null = null;
+    const noiseTurn = noiseOn && isNoiseTurn(seed, t);
+    let step: ObserveStep;
+    let input: ChatChildLog["input"];
+    let recognizer: ChatChildLog["recognizer"] = null;
+    const tier = hintTier > 0 ? { hintTier } : {};
+    if (action === "speak") {
+      if (noiseTurn) {
+        noise = noiseOf(says, injected);
+        stt = sttNoteOf({
+          noise,
+          injectedBefore: injected,
+          says,
+          noiseOn,
+          childTurn: t,
+        });
+        injected += 1;
+        heard = noise.heard;
+      } else {
+        heard = says;
+        stt = sttNoteOf({
+          noise: null,
+          injectedBefore: injected,
+          says,
+          noiseOn,
+          childTurn: t,
+        });
+      }
+      recognizer =
+        chatRecognizerOf(stt, {
+          lowConfidence: CHAT_LOW_CONFIDENCE,
+          alternatives: signal?.alternatives ?? 0,
+        }) ?? null;
+      input = "say";
+      step = {
+        say: heard,
+        ...tier,
+        ...(recognizer === null ? {} : { chat: { recognizer } }),
+      };
+    } else if (action === "dont_know") {
+      input = "dont_know";
+      step = { input: "dont_know", ...tier };
+    } else {
+      // 힌트를 누른 차례는 입력이 있었으므로 조용함이 아니라 '눌렀으나 들리지 않음'이다(spec 설계 6 타이머의 범위) — 덩이를 끊고 덩이 셈에 넣지 않는다
+      if (hintTier > 0) input = "nospeech";
+      else {
+        if (blockInput === null) {
+          blockInput = chatSilentInputOf(silentBlocks);
+          silentBlocks += 1;
+        }
+        input = blockInput;
+      }
+      step = { input, ...tier };
+    }
+    if (!(action === "silent" && hintTier === 0)) blockInput = null;
+    p.children.push({
+      type: "child_turn",
+      lesson,
+      childTurn: t,
+      heardTeacher: heardTeacher === "" ? heardByChild("") : heardTeacher,
+      action,
+      says,
+      kind: out.kind,
+      why: out.why,
+      heard,
+      noise,
+      noiseSkipped: noiseTurn && action !== "speak",
+      ...(stt ? { stt } : {}),
+      chat: { input, hintTier, hint, recognizer, waited: false },
+    });
+    p.childTurns = t;
+    p.steps.push(step);
+    p.stepTurn.push(t);
+    run = await replay();
+  }
+  if (run.stopped !== null) {
+    p.ended = `아이 차례 ${p.childTurns}: ${run.stopped}`;
+    return;
+  }
+  const after = (p.sim as TalkSim).stopBefore();
+  if (after !== null && after.choice === null)
+    p.ended = `아이 차례 ${p.childTurns}: ${after.reason}`;
+}
+
+/** 대본 도구 차례 기록 하나 → CHAT 선생님 차례 기록. */
+function chatTeacherLogOf(t: ChatScenarioTurn): ChatTeacherLog {
+  const rec = t.record;
+  const chat = rec?.teacher?.move.chat;
+  const usage = t.usage;
+  return {
+    entry: t.entry as ChatTeacherLog["entry"],
+    turnEnd: rec?.turnEnd ?? null,
+    facts: [...(rec?.facts ?? [])],
+    signal: rec?.signal ? { ...rec.signal } : null,
+    wrapUp: rec?.value?.wrap_up === true,
+    wrapUpHeld: chat?.wrapUpHeld ?? null,
+    listen: chat?.listen ? { ...chat.listen } : null,
+    removed: [...(chat?.removed ?? [])],
+    firstMoved: false,
+    madeUp: [...(chat?.madeUp ?? [])],
+    closed: rec?.close != null,
+    failure: rec?.failure ?? null,
+    diverged: rec?.diverged === true,
+    usage: usage
+      ? {
+          firstSentenceMs: usage.firstSentenceMs,
+          inputTokens: usage.inputTokens,
+          cacheReadTokens: usage.cacheReadTokens,
+          cacheWriteTokens: usage.cacheWriteTokens,
+          outputTokens: usage.outputTokens,
+          costUsd: usage.costUsd,
+          latencyMs: usage.latencyMs,
+        }
+      : null,
+    calls: { ...t.calls },
+    costUsd: t.costUsd,
+    waitedMs: t.waitedMs,
+    hints: t.hints.map((h) => ({
+      tier: h.tier,
+      retry: h.retry,
+      called: h.called,
+      ok: h.reply.ok,
+    })),
+    explain: t.explain
+      ? { called: t.explain.called, ok: t.explain.reply.ok }
+      : null,
+    evals: t.evals.map((e) => ({ status: e.status, called: e.called })),
+  };
+}
+
+/** 방식 CHAT 수업 하나의 기록 줄(선생님 차례 · 아이 차례)을 마지막으로 다시 돌린 차례 기록에서 만든다. */
+function chatLinesOf(
+  setup: Setup,
+  lesson: string,
+  p: ChatProgress,
+): { teachers: TeacherTurnLog[]; children: ChildTurnLog[] } {
+  const children = p.children.map((c) => ({
+    ...c,
+    ...(c.chat ? { chat: { ...c.chat } } : {}),
+  }));
+  const teachers: TeacherTurnLog[] = [];
+  const run = p.run;
+  if (run === null) return { teachers, children };
+  let lastChild = 0;
+  for (const t of run.turns) {
+    if (t.entry === "choose") continue;
+    if (t.entry === "wait") {
+      const turn = p.stepTurn[t.no - 1];
+      const c = children.find((x) => x.childTurn === turn);
+      if (c?.chat) c.chat.waited = true;
+      continue;
+    }
+    const rec = t.record;
+    if (rec === null) continue;
+    let childTurn = lastChild;
+    let afterChoice = false;
+    if (t.no > 0) {
+      childTurn = p.stepTurn[t.no - 1] ?? lastChild;
+      lastChild = childTurn;
+    } else if (t.entry === "more") {
+      childTurn = lastChild + 1;
+      afterChoice = true;
+    }
+    const raw = rec.raw as { say?: unknown } | null;
+    const rawSay = typeof raw?.say === "string" ? raw.say.trim() : null;
+    const final = rec.heard;
+    const changes = sentenceDiffOf([rawSay ?? ""], final);
+    const branches: Branch[] = [];
+    if (rec.failure !== null) branches.push("고정 문구를 붙임");
+    else {
+      if (changes.added.length > 0) branches.push("고정 문구를 붙임");
+      if (changes.deleted.length > 0) branches.push("모델의 문장을 지움");
+    }
+    if (branches.length === 0) branches.push("그대로 나감");
+    const latency = t.usage?.latencyMs ?? 0;
+    const firstText =
+      splitSentences((rawSay ?? final).replaceAll("\n", " "))[0] ?? null;
+    // 첫 문장 시간의 글은 응답 say 의 첫 문장이다(소리 줄로 빠진 차례도 — 표지 firstMoved)
+    const firstMs = t.usage?.firstSentenceMs ?? null;
+    const firstSentence: FirstSentence | null =
+      t.usage === null
+        ? null
+        : {
+            ms: firstMs ?? latency,
+            from: firstMs === null ? "end" : "stream",
+            text: firstText,
+            question: firstText !== null && isQuestionSentence(firstText),
+          };
+    const childWords = children
+      .filter((c) => c.childTurn <= childTurn && c.heard !== null)
+      .flatMap((c) => wordsOf(c.heard ?? ""));
+    teachers.push({
+      type: "teacher_turn",
+      lesson,
+      arm: CHAT_ARM,
+      childTurn,
+      called: t.calls.dialog > 0,
+      modelFirst: rec.raw,
+      modelFirstSpoken: rawSay,
+      directive: null,
+      status: rec.userMessage,
+      checks: null,
+      retry: null,
+      changes,
+      final,
+      branches,
+      levelFit: levelFitFor(setup, final.replaceAll("{NAME}", ""), childWords),
+      calls: t.calls.dialog,
+      ms: latency,
+      firstMs: t.usage === null ? null : latency,
+      firstSentence,
+      // 아이에게 첫 문장이 나간 때는 아이 차례 뒤(말 · 조용함)만 — 입구(수업 첫 말 · 돌아옴 · 더 이야기하기)는 N 과 같이 뺀다
+      firstSent:
+        firstSentence !== null && (t.entry === "child" || t.entry === "quiet")
+          ? {
+              ms: firstSentence.ms,
+              from: firstSentence.from,
+              text: firstSentence.text,
+              held: null,
+            }
+          : null,
+      ...(afterChoice ? { afterChoice: true as const } : {}),
+      chat: {
+        ...chatTeacherLogOf(t),
+        firstMoved:
+          rawSay !== null &&
+          firstText !== null &&
+          (rec.teacher?.move.chat?.removed ?? []).some(
+            (r) => normalizeSpoken(r) === normalizeSpoken(firstText),
+          ),
+      },
+    });
+  }
+  return { teachers, children };
+}
+
+/** 방식 CHAT 수업 하나를 돌려 기록 줄을 낸다(runLesson 의 CHAT 갈래). */
+async function runChatLesson(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  child: ChildKey,
+  seed: number,
+  turns: number,
+  attempt: number,
+  opts: RunLessonOptions,
+  lines: LogLine[],
+): Promise<LessonRun> {
+  const startedAt = new Date().toISOString();
+  const failures: string[] = [];
+  const p: ChatProgress = {
+    steps: [],
+    stepTurn: [],
+    children: [],
+    choices: [],
+    sim: null,
+    run: null,
+    ended: null,
+    childTurns: 0,
+    callTurn: 0,
+    reachedWrap: false,
+    prepWords: [],
+    overrides:
+      opts.safetyMax === undefined
+        ? {}
+        : { "talk.safety_max_turns": opts.safetyMax },
+    start: r2LessonContextOf(ALL_CHILDREN.indexOf(child) + seed),
+  };
+  try {
+    await chatLessonRun(
+      setup,
+      ctx,
+      lesson,
+      child,
+      seed,
+      turns,
+      { long: opts.variant === "long", safetyMax: opts.safetyMax ?? null },
+      p,
+    );
+  } catch (error) {
+    failures.push(error instanceof Error ? error.message : String(error));
+  }
+  const { teachers, children } = chatLinesOf(setup, lesson, p);
+  lines.push(...teachers, ...children);
+  const closing = new Set(setup.materials.card.closingLines.map((l) => l.en));
+  const lastFinal = teachers.at(-1)?.final ?? null;
+  lines.push({
+    type: "lesson",
+    lesson,
+    arm: CHAT_ARM,
+    child,
+    seed,
+    turnsAsked: turns,
+    childTurns: p.childTurns,
+    ended: p.ended,
+    attempt,
+    failures,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    ending: lessonEndingOf({
+      ended: p.ended,
+      failures,
+      childTurns: p.childTurns,
+      lastLine: lastFinal,
+      choices: p.choices,
+    }),
+    noise: childHasNoise(child),
+    materials: { functionWords: setup.materials.functionWords.size },
+    ...(opts.variant === "long" ? { variant: "long" as const } : {}),
+    chat: {
+      calls: p.run ? { ...p.run.calls } : noChatCalls(),
+      costUsd: p.run?.costUsd ?? 0,
+      wrap: (p.sim?.chat.wrapLines() ?? []).map((l) => ({
+        en: l.en,
+        card: closing.has(l.en),
+      })),
+      prepWords: [...p.prepWords],
+      overrides: { ...p.overrides },
+      start: { ...p.start },
+      reachedWrap: p.reachedWrap,
+    },
+  });
+  return {
+    lesson,
+    ok: failures.length === 0,
+    error: failures[0] ?? null,
+    lines,
+  };
+}
+
+function noChatCalls(): ChatCallCounts {
+  return Object.fromEntries(
+    CHAT_CALL_KINDS.map((k) => [k, 0]),
+  ) as ChatCallCounts;
+}
+
 // ── 아이 역 ─────────────────────────────────────────────────────
 
 function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
@@ -2002,6 +2892,13 @@ function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
       );
       return { out, heardTeacher: heard };
     },
+    /** CHAT: 앱 행동을 담은 말(chatChildMessageOf)을 그대로 보낸다(보통 차례 출력 규격). */
+    ask: async (childTurn: number, user: string) => ({
+      out: await ask(childTurn, base, user, ChildOutputSchema),
+    }),
+    /** CHAT: 마무리 차례의 두 단추 안내를 붙인 말(wrapChoiceMessageOf 꼴)을 그대로 보낸다. */
+    chooseWith: (childTurn: number, user: string) =>
+      ask(childTurn, wrapBase, user, WrapChildOutputSchema),
     /** 앱의 마무리 차례: 선생님 말 뒤 두 단추 가운데 하나를 고르게 한다. */
     choose: (childTurn: number, teacherFinal: string) =>
       ask(
@@ -2030,14 +2927,28 @@ export async function runLesson(
   seed: number,
   turns: number,
   attempt: number,
+  opts: RunLessonOptions = {},
 ): Promise<LessonRun> {
-  const lesson = lessonName(arm, child, seed);
+  const lesson = lessonName(arm, child, seed, opts.variant);
   const lines: LogLine[] = [];
   const ctx: Ctx = {
     client,
     book: setup.config.book,
     log: (l) => lines.push(l),
+    ...(opts.budget === undefined ? {} : { budget: opts.budget }),
   };
+  if (arm === CHAT_ARM)
+    return runChatLesson(
+      setup,
+      ctx,
+      lesson,
+      child,
+      seed,
+      turns,
+      attempt,
+      opts,
+      lines,
+    );
   const startedAt = new Date().toISOString();
   const teacher =
     arm === "A"
@@ -2075,6 +2986,9 @@ export async function runLesson(
   let ended: string | null = null;
   let childTurns = 0;
   let lastFinal: string | null = null;
+  // N 의 인사 끝 차례 뒤 짧은 준비가 열리면(실제 카드 첫 수업) 아이 역에게 쪽지 줄을 넣는다
+  const prepWords = setup.nextPart === "prep" ? [...setup.prepPlan] : [];
+  let prepSplit: ChatHeardSegment[] | null = null;
   const failures: string[] = [];
   try {
     const opened = await teacher.open();
@@ -2115,7 +3029,16 @@ export async function runLesson(
           break;
         }
       }
-      const { out, heardTeacher } = await childCall.turn(t, last);
+      // N 이 짧은 준비 길을 지난 차례(인사 끝 → 쪽지 → 입구 start)는 CHAT 과 같은 꼴로 쪽지 줄을 넣는다(T2 fix 1 m-2)
+      const { out, heardTeacher } =
+        prepSplit === null
+          ? await childCall.turn(t, last)
+          : {
+              out: (await childCall.ask(t, chatChildMessageOf(prepSplit, null)))
+                .out,
+              heardTeacher: heardByChild(last),
+            };
+      prepSplit = null;
       const says = out.says.trim();
       const action: ChildAction =
         out.action === "speak" && says === "" ? "silent" : out.action;
@@ -2170,6 +3093,17 @@ export async function runLesson(
       pushTeacher(res);
       last = res.final;
       lastFinal = res.final;
+      prepSplit =
+        arm === "N" &&
+        prepWords.length > 0 &&
+        res.entryStart?.before !== undefined &&
+        res.entryStart.said !== undefined
+          ? [
+              { kind: "teacher", text: res.entryStart.before },
+              { kind: "prep", words: prepWords },
+              { kind: "teacher", text: res.entryStart.said },
+            ]
+          : null;
       if (res.ended) {
         ended = `아이 차례 ${t}: ${res.ended}`;
         break;
@@ -2241,18 +3175,54 @@ export function transcriptOf(lines: readonly LogLine[]): string {
   const childLines = lines.filter(
     (l): l is ChildTurnLog => l.type === "child_turn",
   );
-  const teacherAt = (n: number) =>
-    teacherLines.find((t) => t.childTurn === n && t.afterChoice !== true);
+  // CHAT 은 한 아이 차례 뒤에 선생님 차례가 여럿일 수 있다(인사 끝 차례 → 짧은 준비 → 돌아옴). 다른 방식은 하나라 지난 글과 같다
+  const teachersAt = (n: number) =>
+    teacherLines.filter((t) => t.childTurn === n && t.afterChoice !== true);
   const continuedAt = (n: number) =>
     teacherLines.find((t) => t.childTurn === n && t.afterChoice === true);
   const block = (t: TeacherTurnLog | undefined) => {
     if (!t) return [];
     const rows = [
-      `**선생님**(${t.branches.join(" · ")}):`,
+      `**선생님**(${[...(t.chat ? [`입구 ${t.chat.entry}`] : []), ...t.branches].join(" · ")}):`,
       "",
       ...t.final.split("\n").map((l) => `> ${l}`),
       "",
     ];
+    // CHAT: 사실 줄 · 따라 할 문장 대조 · 지어낸 경험 꼴 · 힌트 · 설명 · 호출(갈래별) · 안전 상한
+    if (t.chat) {
+      const c = t.chat;
+      const notes = [
+        ...(c.facts.length > 0 ? [`사실 줄: ${c.facts.join(" · ")}`] : []),
+        ...(c.listen
+          ? [
+              `따라 할 문장 "${c.listen.sentence}"(${c.listen.inSay ? (c.listen.partial ? "문장 일부로만 듦" : "말에 듦") : "어긋남"})`,
+            ]
+          : []),
+        ...(c.madeUp.length > 0
+          ? [`지어낸 경험 꼴: ${c.madeUp.join(" · ")}`]
+          : []),
+        ...(c.wrapUp
+          ? [
+              `wrap_up 참${c.wrapUpHeld ? `(거짓으로 다룸 — ${c.wrapUpHeld})` : ""}`,
+            ]
+          : []),
+        ...(c.hints.length > 0
+          ? [
+              `힌트 누름 ${c.hints.map((h) => `${h.tier + 1}단${h.retry > 0 ? ` 다시 받기 ${h.retry}` : ""} ${h.ok ? "받음" : "실패"}`).join(" · ")}`,
+            ]
+          : []),
+        ...(c.explain
+          ? [`막힌 뒤 설명 ${c.explain.ok ? "보임" : "실패"}`]
+          : []),
+        ...(c.closed ? ["안전 상한 — 수업 닫음"] : []),
+        `호출 ${CHAT_CALL_KINDS.filter((k) => c.calls[k] > 0)
+          .map((k) => `${k} ${c.calls[k]}`)
+          .join(
+            " · ",
+          )} · ${c.costUsd}달러${c.usage?.firstSentenceMs != null ? ` · 첫 문장 ${c.usage.firstSentenceMs}ms` : ""}`,
+      ];
+      rows.push(...notes.map((x) => `- ${x}`), "");
+    }
     if (
       t.called &&
       t.modelFirstSpoken !== null &&
@@ -2282,7 +3252,7 @@ export function transcriptOf(lines: readonly LogLine[]): string {
     }
     return rows;
   };
-  out.push("## 처음", "", ...block(teacherAt(0)));
+  out.push("## 처음", "", ...teachersAt(0).flatMap(block));
   for (const c of childLines) {
     out.push(`## 아이 차례 ${c.childTurn}`, "");
     const cont = continuedAt(c.childTurn);
@@ -2297,8 +3267,14 @@ export function transcriptOf(lines: readonly LogLine[]): string {
         ),
       );
     out.push(
-      `- 아이: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"} · ${c.kind} · ${c.why}`,
+      `- 아이: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : c.chat?.input === "quiet" ? "(말 없음 — 누르지 않음(조용함))" : c.chat?.input === "nospeech" ? "(말 없음 — 눌렀으나 들리지 않음)" : "(말 없음)"} · ${c.kind} · ${c.why}`,
     );
+    if (c.chat && c.chat.hintTier > 0)
+      out.push(
+        `- 힌트 ${c.chat.hintTier}단을 누름${c.chat.hint?.ok ? `(아이 역이 본 글 "${c.chat.hint.text}")` : "(받지 못함)"}`,
+      );
+    if (c.chat?.waited)
+      out.push("- 선생님이 더 말하지 않고 기다림(잇달아 말한 수 상한)");
     if (c.action === "speak")
       out.push(
         `- 들린 글: "${c.heard ?? ""}"${c.noise ? ` (잡음 ${c.noise.how === "swap" ? `${c.noise.from}→${c.noise.to}` : "말 전체 바꿈"})` : ""}`,
@@ -2306,10 +3282,12 @@ export function transcriptOf(lines: readonly LogLine[]): string {
     if (c.noiseSkipped) out.push("- 잡음 차례였으나 말하지 않아 건너뜀");
     if (c.stt)
       out.push(
-        `- 인식기 알림(선생님에게 전함): 확신 없음${c.stt.alt ? ` · 다른 후보 "${c.stt.alt}"` : ""}`,
+        c.chat
+          ? `- 인식기 정보(턴 요청에 실음): ${c.chat.recognizer ? `확신 정도 ${c.chat.recognizer.confidence}${c.chat.recognizer.alternative ? ` · 다른 후보 "${c.chat.recognizer.alternative}"` : ""}` : "없음"}`
+          : `- 인식기 알림(선생님에게 전함): 확신 없음${c.stt.alt ? ` · 다른 후보 "${c.stt.alt}"` : ""}`,
       );
     out.push("");
-    out.push(...block(teacherAt(c.childTurn)));
+    out.push(...teachersAt(c.childTurn).flatMap(block));
   }
   return `${out.join("\n")}\n`;
 }
@@ -2323,6 +3301,18 @@ export type RunArgs = {
   children: ChildKey[];
   seeds: number[];
   arms: Arm[];
+  /** 실험 재료의 카드(--card replay | lesson1, 기본 replay — 지난 실험). */
+  card: SetupCard;
+  /** 실제 AI 호출을 한다(--call). 없으면 계획만 찍고 끝낸다. */
+  call: boolean;
+  /** 실행 전체의 실제 호출 수 상한(--max-calls — --call 이면 꼭 둔다). */
+  maxCalls: number | null;
+  /** 긴 대본 한 벌(--long — CHAT · SE · 씨앗 1)을 더한다. */
+  long: boolean;
+  /** 긴 대본의 아이 차례(--long-turns, 기본 40). */
+  longTurns: number;
+  /** 긴 대본의 대화 안전 상한(--long-safety-max, 기본 긴 대본의 아이 차례 — 그 차례에 안전 상한 사실 줄이 붙는다). */
+  longSafetyMax: number;
 };
 
 export function parseRunArgs(argv: readonly string[]): RunArgs {
@@ -2340,6 +3330,24 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
           if (!all.includes(x as T)) throw new Error(`모르는 값: ${x}`);
           return x as T;
         });
+  const positive = (flag: string): number | null => {
+    const v = get(flag);
+    if (v === undefined) return null;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n <= 0)
+      throw new Error(`${flag} 는 1 이상 정수다: ${v}`);
+    return n;
+  };
+  const call = argv.includes("--call");
+  const maxCalls = positive("--max-calls");
+  if (call && maxCalls === null)
+    throw new Error(
+      "--call 에는 --max-calls <수> 가 필요하다(호출 수 상한 — 13절 C243 보완 5 (6))",
+    );
+  const card = get("--card") ?? "replay";
+  if (!(SETUP_CARDS as readonly string[]).includes(card))
+    throw new Error(`모르는 카드: ${card}(replay · lesson1)`);
+  const longTurns = positive("--long-turns") ?? CHAT_LONG_TURNS;
   return {
     out,
     pilot,
@@ -2355,7 +3363,273 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
         ? [1]
         : (get("--seeds") ?? SEEDS.join(",")).split(",").map(Number),
     arms: list(get("--arms"), ARMS),
+    card: card as SetupCard,
+    call,
+    maxCalls,
+    long: argv.includes("--long"),
+    longTurns,
+    longSafetyMax: positive("--long-safety-max") ?? longTurns,
   };
+}
+
+// ── 계획(부르기 전 — 수업 · 방식 · 호출 갈래별 위쪽 어림 수와 어림 비용) ─────────────────
+
+/** 실행할 수업 하나(시나리오 수업 · 긴 대본). */
+export type PlannedLesson = {
+  lesson: string;
+  arm: Arm;
+  child: ChildKey;
+  seed: number;
+  turns: number;
+  variant?: "long";
+};
+
+/** costUsd 는 위쪽 어림(캐시 할인 없음 · 출력 600), cachedCostUsd 는 캐시를 받는 어림(앞 기록은 캐시 읽기 · 출력 200) — 둘 다 추측. */
+export type LessonPlan = PlannedLesson & {
+  calls: PlanCalls;
+  costUsd: number;
+  cachedCostUsd: number;
+};
+
+export type RunPlan = {
+  lessons: LessonPlan[];
+  total: {
+    calls: PlanCalls;
+    all: number;
+    costUsd: number;
+    cachedCostUsd: number;
+  };
+};
+
+const PLAN_KIND_LABEL: Readonly<Record<keyof PlanCalls, string>> = {
+  dialog: "대화",
+  rewrite: "다시 쓰기",
+  child: "아이 역",
+  hint: "힌트",
+  explain: "설명",
+  eval: "평가",
+};
+
+/** 이 실행이 돌 수업(방식 × 아이 × 씨앗, --long 이면 긴 대본 한 벌을 끝에). */
+export function plannedLessonsOf(args: RunArgs): PlannedLesson[] {
+  const out: PlannedLesson[] = [];
+  for (const child of args.children)
+    for (const seed of args.seeds)
+      for (const arm of args.arms)
+        out.push({
+          lesson: lessonName(arm, child, seed),
+          arm,
+          child,
+          seed,
+          turns: args.turns,
+        });
+  // 긴 대본은 CHAT 을 돌릴 때만(fix 1 m-7)
+  if (args.long && args.arms.includes(CHAT_ARM))
+    out.push({
+      lesson: lessonName(CHAT_ARM, CHAT_LONG_CHILD, CHAT_LONG_SEED, "long"),
+      arm: CHAT_ARM,
+      child: CHAT_LONG_CHILD,
+      seed: CHAT_LONG_SEED,
+      turns: args.longTurns,
+      variant: "long",
+    });
+  return out;
+}
+
+const noPlanCalls = (): PlanCalls => ({
+  dialog: 0,
+  rewrite: 0,
+  child: 0,
+  hint: 0,
+  explain: 0,
+  eval: 0,
+});
+
+/**
+ * 수업 하나의 위쪽 어림 호출 수(재지 않은 값 — 상한을 정하는 근거): 마무리 단추는 '더 이야기하기' 한 바퀴(talk.more_talk_round_turns)마다 한 번 +
+ * 하나까지. 아이 역은 아이 차례 + 단추. 선생님 쪽: R · Q 갈래는 수업 첫 말 + 아이 차례 + 이음, N 은 + 입구 start · 좁은 정의 다시 말하기(차례마다),
+ * A 는 + 다시 쓰기(차례마다), B · C · C2 · P 는 첫 말 + 아이 차례. CHAT 은 대화(수업 첫 말 + 돌아옴 + 아이 차례 + 이음) · 힌트(누르는 차례 ×
+ * (첫 누름 + 다시 받기 상한)) · 설명(아이 차례마다 — 모두 막힘일 때) · 평가(아이 차례마다 — 모두 말일 때).
+ */
+function lessonCallsOf(
+  l: PlannedLesson,
+  k: {
+    roundTurns: number;
+    prepOpens: boolean;
+    hintRetryMax: number;
+  },
+): PlanCalls {
+  const c = noPlanCalls();
+  const wraps = Math.floor(l.turns / k.roundTurns) + 1;
+  c.child = l.turns + wraps;
+  if (l.arm === CHAT_ARM) {
+    c.dialog = 1 + (k.prepOpens ? 1 : 0) + l.turns + wraps;
+    const hintTurns =
+      l.variant === "long"
+        ? 0
+        : Array.from({ length: l.turns }, (_, i) => i + 1).filter((t) =>
+            chatHintTurnOf(l.child, t),
+          ).length;
+    c.hint = hintTurns * (1 + k.hintRetryMax);
+    c.explain = l.turns;
+    c.eval = l.turns;
+  } else if (l.arm === "N") {
+    c.dialog = 1 + l.turns + 1 + wraps;
+    c.rewrite = l.turns;
+  } else if (l.arm === "A") {
+    c.dialog = 1 + l.turns + wraps;
+    c.rewrite = l.turns;
+  } else if (isQArm(l.arm)) c.dialog = 1 + l.turns + wraps;
+  else c.dialog = 1 + l.turns;
+  return c;
+}
+
+/** 방식마다 선생님 대화 호출의 안내문(어림 입력 토큰의 바탕). */
+function dialogSystemOf(setup: Setup, arm: Arm): string {
+  if (arm === CHAT_ARM) return setup.chatSystem ?? "";
+  if (arm === "N") return setup.nSystem ?? "";
+  if (arm === "A" || arm === "B") return setup.appSystem;
+  if (arm === "C") return setup.cSystem;
+  if (arm === "C2") return setup.c2System;
+  if (arm === "P") return setup.pSystem;
+  return isQArm(arm) ? setup.qSystems[arm] : "";
+}
+
+/**
+ * 실행 계획(부르기 전): 수업마다 호출 갈래별 위쪽 어림 수와 어림 비용(planCallsCostUsdOf — 캐시 할인 없음). 단가는 그 호출의 모델(대화 · 아이 역은
+ * 회화 턴 모델, 모델 갈래 R3M · R3O 는 그 모델, 힌트 · 설명 · 평가는 그 목적의 모델)이다. AI 를 부르지 않는다.
+ */
+export function runPlanOf(setup: Setup, args: RunArgs): RunPlan {
+  const values = { ...setup.values, [TALK_LEAD_MODE_KEY]: "chat" };
+  const probe = chatSimFor(setup, values, "plan");
+  const chat = probe.chat.settings;
+  const roundTurns = Number(setup.values["talk.more_talk_round_turns"]);
+  if (!Number.isInteger(roundTurns) || roundTurns <= 0)
+    throw new Error("talk.more_talk_round_turns 를 읽지 못함");
+  const book = setup.config.book;
+  const level = setup.materials.level;
+  const modelOf = (
+    purpose: "talk_turn" | "talk_chat_hint" | "talk_chat_eval",
+  ) => requestConfigOf({ purpose, level, values, book }).model;
+  const priceOf = (model: string) => book.get(model) ?? null;
+  const hintChars = (() => {
+    try {
+      const dummy: TalkChatHintInput = {
+        level,
+        sentenceMaxWords: setup.materials.ctx.sentenceMaxWords,
+        hintTiers: [...setup.materials.spec.hintTiers],
+        teacherNameEn: setup.materials.teacher.nameEn,
+        say: "",
+        context: [],
+      };
+      return talkChatHintSystem(dummy, talkChatHintSpec.rulesOf(values, dummy))
+        .length;
+    } catch {
+      return 0;
+    }
+  })();
+  const lessons = plannedLessonsOf(args).map((l): LessonPlan => {
+    const calls = lessonCallsOf(l, {
+      roundTurns,
+      prepOpens: probe.chat.prepOpens,
+      hintRetryMax: chat.hintRetryMax,
+    });
+    const over = isQArm(l.arm) ? qCallOverrideOf(l.arm) : null;
+    const dialogPrice = priceOf(over?.model ?? modelOf(PURPOSE));
+    const systemChars = dialogSystemOf(setup, l.arm).length;
+    const costOf = (mode: "upper" | "cached") =>
+      planCallsCostUsdOf({
+        n: calls.dialog,
+        systemChars,
+        growing: true,
+        price: dialogPrice,
+        mode,
+      }) +
+      planCallsCostUsdOf({
+        n: calls.rewrite,
+        systemChars,
+        growing: true,
+        price: dialogPrice,
+        mode,
+      }) +
+      planCallsCostUsdOf({
+        n: calls.child,
+        systemChars: childSystemOf(l.child).length,
+        growing: true,
+        price: priceOf(modelOf(PURPOSE)),
+        mode,
+      }) +
+      planCallsCostUsdOf({
+        n: calls.hint + calls.explain,
+        systemChars: hintChars,
+        growing: false,
+        contextTurns: chat.hintContextTurns,
+        price: priceOf(modelOf("talk_chat_hint")),
+        mode,
+      }) +
+      planCallsCostUsdOf({
+        n: calls.eval,
+        systemChars: TALK_CHAT_EVAL_SYSTEM.length,
+        growing: false,
+        contextTurns: chat.evalContextTurns,
+        price: priceOf(modelOf("talk_chat_eval")),
+        mode,
+      });
+    const round6 = (x: number) => Math.round(x * 1e6) / 1e6;
+    return {
+      ...l,
+      calls,
+      costUsd: round6(costOf("upper")),
+      cachedCostUsd: round6(costOf("cached")),
+    };
+  });
+  const calls = noPlanCalls();
+  for (const l of lessons)
+    for (const k of Object.keys(calls) as (keyof PlanCalls)[])
+      calls[k] += l.calls[k];
+  return {
+    lessons,
+    total: {
+      calls,
+      all: Object.values(calls).reduce((a, b) => a + b, 0),
+      costUsd:
+        Math.round(lessons.reduce((a, l) => a + l.costUsd, 0) * 1e6) / 1e6,
+      cachedCostUsd:
+        Math.round(lessons.reduce((a, l) => a + l.cachedCostUsd, 0) * 1e6) /
+        1e6,
+    },
+  };
+}
+
+/** 계획 줄: 방식마다(긴 대본은 따로) 수업 수 · 호출 갈래별 어림 수 · 어림 비용, 끝에 합계. */
+export function planLinesOf(plan: RunPlan): string[] {
+  const groups = new Map<string, LessonPlan[]>();
+  for (const l of plan.lessons) {
+    const key = l.variant === "long" ? `${l.arm} 긴 대본` : l.arm;
+    groups.set(key, [...(groups.get(key) ?? []), l]);
+  }
+  const kinds = Object.keys(PLAN_KIND_LABEL) as (keyof PlanCalls)[];
+  const callsText = (c: PlanCalls) =>
+    kinds
+      .filter((k) => c[k] > 0)
+      .map((k) => `${PLAN_KIND_LABEL[k]} ${c[k]}`)
+      .join(" · ");
+  const lines = [...groups.entries()].map(([key, ls]) => {
+    const c = noPlanCalls();
+    for (const l of ls) for (const k of kinds) c[k] += l.calls[k];
+    const cost = ls.reduce((a, l) => a + l.costUsd, 0);
+    const cached = ls.reduce((a, l) => a + l.cachedCostUsd, 0);
+    return `${key} · 수업 ${ls.length} · 호출 어림(위쪽) ${callsText(c)} · 위쪽 약 ${cost.toFixed(4)}달러 · 캐시 어림 약 ${cached.toFixed(4)}달러`;
+  });
+  lines.push(
+    `합계: 수업 ${plan.lessons.length} · 호출 어림(위쪽) ${plan.total.all}(${callsText(plan.total.calls)}) · 위쪽 약 ${plan.total.costUsd.toFixed(4)}달러(캐시 할인 없음 · 출력 600 토큰) · 캐시 어림 약 ${plan.total.cachedCostUsd.toFixed(4)}달러(앞 기록 캐시 읽기 · 출력 200 토큰) — 둘 다 재지 않은 추측. 이 호출은 앱의 호출 기록 · 하루 알림에 들지 않는다(쓴 비용은 장부에)`,
+  );
+  return lines;
+}
+
+/** 어림 호출 수가 상한을 넘는가(넘으면 부르지 않고 끝낸다). */
+export function planOverCap(plan: RunPlan, maxCalls: number): boolean {
+  return plan.total.all > maxCalls;
 }
 
 function writeLesson(dir: string, run: LessonRun): void {
@@ -2381,6 +3655,7 @@ type RunSummaryRow = {
 /** 앞 실행과 같아야 하는 공통 재료(이 값이 다르면 앞 수업과 견줄 수 없다). */
 const SETUP_SAME_KEYS = [
   "script",
+  "card",
   "level",
   "unit",
   "lesson",
@@ -2432,7 +3707,24 @@ export function mergeSetup(
     ...(next.qSystems === undefined
       ? {}
       : { qSystems: next.qSystems, qSystemsSha: next.qSystemsSha }),
+    ...(next.chatSystem === undefined
+      ? {}
+      : { chatSystem: next.chatSystem, chatSystemSha: next.chatSystemSha }),
     pWordsSameAsUnit: next.pWordsSameAsUnit,
+    // 계획은 이번 실행의 값이고, 앞 계획은 기록으로 남긴다(fix 1 m-7)
+    ...(next.plan === undefined
+      ? {}
+      : {
+          plan: next.plan,
+          planHistory: [
+            ...(Array.isArray(prev.planHistory)
+              ? prev.planHistory
+              : prev.plan === undefined
+                ? []
+                : [prev.plan]),
+            next.plan,
+          ],
+        }),
     args: next.args,
     argsHistory: [...history, next.args],
   };
@@ -2441,13 +3733,30 @@ export function mergeSetup(
 async function main(): Promise<number> {
   const args = parseRunArgs(process.argv.slice(2));
   const root = process.cwd();
-  const setup = setupOf(root);
+  const setup = setupOf(root, { card: args.card });
+  // 부르기 전: 수업 · 방식 · 호출 갈래별 어림 수와 어림 비용(늘 찍는다)
+  const plan = runPlanOf(setup, args);
+  for (const line of planLinesOf(plan)) console.log(line);
+  if (!args.call) {
+    console.log(
+      "arch-compare: 계획만 — 부르지 않았다(실제 호출은 --call --max-calls <수>, 컨트롤러가 비용을 확인한 뒤)",
+    );
+    return 0;
+  }
+  const maxCalls = args.maxCalls as number;
+  if (planOverCap(plan, maxCalls)) {
+    console.error(
+      `arch-compare: 어림 호출 수 ${plan.total.all} 가 상한 ${maxCalls} 를 넘어 부르지 않는다(--max-calls 를 올리거나 수업을 줄인다)`,
+    );
+    return 3;
+  }
   const key = readApiKey();
   if (key === null) {
     console.error("arch-compare: ANTHROPIC_API_KEY 가 없습니다(.env.local)");
     return 2;
   }
   const client = createScriptClient(key) as unknown as Anthropic;
+  const budget: CallBudget = { left: maxCalls };
   mkdirSync(args.out, { recursive: true });
   const progress = join(args.out, "progress.log");
   const say = (line: string) => {
@@ -2455,7 +3764,8 @@ async function main(): Promise<number> {
     appendFileSync(progress, `${new Date().toISOString()} ${line}\n`);
   };
   const setupJson = {
-    script: SOURCE_SCRIPT,
+    script: setup.script.name,
+    ...(setup.card === "replay" ? {} : { card: setup.card }),
     level: setup.materials.level,
     unit: setup.materials.unit,
     lesson: setup.materials.lessonNo,
@@ -2489,6 +3799,9 @@ async function main(): Promise<number> {
     qSystemsSha: Object.fromEntries(
       Q_ARMS.map((arm) => [arm, sha(setup.qSystems[arm])]),
     ),
+    chatSystem: setup.chatSystem,
+    chatSystemSha: setup.chatSystem === null ? null : sha(setup.chatSystem),
+    plan: { total: plan.total, maxCalls },
     args,
   };
   writeFileSync(
@@ -2500,46 +3813,104 @@ async function main(): Promise<number> {
     ? (JSON.parse(readFileSync(summaryPath, "utf8")) as RunSummaryRow[])
     : [];
   const summary: RunSummaryRow[] = [];
-  for (const child of args.children)
+  let capped = false;
+  // 쓴 비용의 누계(호출 기록의 costUsd 합 — 수업 줄마다 progress.log 에 적는다, fix 1 m-7)
+  let spentUsd = 0;
+  const spentOf = (r: LessonRun) =>
+    r.lines.reduce(
+      (a, l) => a + (l.type === "call" ? (l.response.costUsd ?? 0) : 0),
+      0,
+    );
+  /** 수업 하나를 돌리고(실패하면 그 수업만 두 번까지 다시 — 상한 오류는 다시 돌리지 않음) 기록을 쓴다. */
+  const settle = async (
+    first: LessonRun,
+    again: (attempt: number) => Promise<LessonRun>,
+  ) => {
+    let run = first;
+    spentUsd += spentOf(first);
+    const errors: string[] = [];
+    let attempts = 1;
+    while (
+      !run.ok &&
+      attempts <= RERUN_MAX &&
+      !isCapError(run.error ?? "") &&
+      !capped
+    ) {
+      errors.push(run.error ?? "-");
+      say(
+        `  ${run.lesson} 실패(${run.error}) → 그 수업만 다시(시도 ${attempts + 1})`,
+      );
+      attempts++;
+      run = await again(attempts);
+      spentUsd += spentOf(run);
+    }
+    if (!run.ok) errors.push(run.error ?? "-");
+    if (isCapError(run.error ?? "")) capped = true;
+    writeLesson(args.out, run);
+    summary.push({ lesson: run.lesson, attempts, ok: run.ok, errors });
+    const lessonLine = run.lines.find(
+      (l): l is LessonLog => l.type === "lesson",
+    );
+    say(
+      `  ${run.lesson}: ${run.ok ? "끝" : "실패"} · 아이 차례 ${lessonLine?.childTurns ?? 0} · ${lessonLine?.ended ?? "상한"} · 남은 호출 ${budget.left} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러`,
+    );
+  };
+  for (const child of args.children) {
+    if (capped) break;
     for (const seed of args.seeds) {
+      if (capped) break;
       say(`조합 ${child} · 씨앗 ${seed}: ${args.arms.join(" · ")} 동시 시작`);
       const runs = await Promise.all(
         args.arms.map((arm) =>
-          runLesson(setup, client, arm, child, seed, args.turns, 1),
+          runLesson(setup, client, arm, child, seed, args.turns, 1, {
+            budget,
+          }),
         ),
       );
       for (const [i, first] of runs.entries()) {
         const arm = args.arms[i] as Arm;
-        let run = first;
-        const errors: string[] = [];
-        let attempts = 1;
-        while (!run.ok && attempts <= RERUN_MAX) {
-          errors.push(run.error ?? "-");
-          say(
-            `  ${run.lesson} 실패(${run.error}) → 그 수업만 다시(시도 ${attempts + 1})`,
-          );
-          attempts++;
-          run = await runLesson(
-            setup,
-            client,
-            arm,
-            child,
-            seed,
-            args.turns,
-            attempts,
-          );
-        }
-        if (!run.ok) errors.push(run.error ?? "-");
-        writeLesson(args.out, run);
-        summary.push({ lesson: run.lesson, attempts, ok: run.ok, errors });
-        const lessonLine = run.lines.find(
-          (l): l is LessonLog => l.type === "lesson",
-        );
-        say(
-          `  ${run.lesson}: ${run.ok ? "끝" : "실패"} · 아이 차례 ${lessonLine?.childTurns ?? 0} · ${lessonLine?.ended ?? "상한"}`,
+        await settle(first, (attempt) =>
+          runLesson(setup, client, arm, child, seed, args.turns, attempt, {
+            budget,
+          }),
         );
       }
     }
+  }
+  if (args.long && args.arms.includes(CHAT_ARM) && !capped) {
+    const opts: RunLessonOptions = {
+      variant: "long",
+      safetyMax: args.longSafetyMax,
+      budget,
+    };
+    say(
+      `긴 대본: ${CHAT_ARM} · ${CHAT_LONG_CHILD} · 씨앗 ${CHAT_LONG_SEED} · 아이 차례 ${args.longTurns} · 안전 상한 ${args.longSafetyMax}`,
+    );
+    const first = await runLesson(
+      setup,
+      client,
+      CHAT_ARM,
+      CHAT_LONG_CHILD,
+      CHAT_LONG_SEED,
+      args.longTurns,
+      1,
+      opts,
+    );
+    await settle(first, (attempt) =>
+      runLesson(
+        setup,
+        client,
+        CHAT_ARM,
+        CHAT_LONG_CHILD,
+        CHAT_LONG_SEED,
+        args.longTurns,
+        attempt,
+        opts,
+      ),
+    );
+  }
+  if (capped)
+    say(`호출 수 상한 ${maxCalls} 에 닿아 멈췄다 — 남은 수업은 돌리지 않았다`);
   const now = new Set(summary.map((r) => r.lesson));
   writeFileSync(
     summaryPath,
@@ -2548,6 +3919,9 @@ async function main(): Promise<number> {
       null,
       2,
     )}\n`,
+  );
+  say(
+    `쓴 호출 ${maxCalls - budget.left} / 상한 ${maxCalls} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러(실패해 다시 돌린 시도의 호출 포함)`,
   );
   return summary.every((s) => s.ok) ? 0 : 1;
 }

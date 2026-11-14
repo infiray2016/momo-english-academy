@@ -282,3 +282,118 @@ export function wrapChoiceMessageOf(heardTeacher: string): string {
 
 (Now the screen shows two buttons: "Talk more" and "Stop". Press one: put "more" or "stop" in wrap_choice. The lesson time is not over yet, so press "Talk more" unless you really want to stop now. "says" may be empty because you only press a button.)`;
 }
+
+// ── 방식 CHAT(앱 길의 이야기 방식 — 묶음 T2, spec '회화 대화 구조 R' 설계 13 '시나리오 여덟')의 앱 행동 일정 ─────────────
+
+/** 힌트를 누르는 아이 역(spec 설계 13: SC · SD2 에서 차례 셋에 한 번). */
+export const CHAT_HINT_CHILDREN: readonly ChildKey[] = ["SC", "SD2"];
+export const CHAT_HINT_EVERY = 3;
+/**
+ * 힌트를 누르는 차례의 자리(셋으로 나눈 나머지): 2 · 5 · 8 · 11 · 14(컨트롤러 결정, T2 fix 1 m-1 — 맞게 들린 말에 알림을 붙이는 차례 6 과 씨앗 2 의
+ * 잡음 차례 3 · 12 를 피함).
+ */
+export const CHAT_HINT_REMAINDER = 2;
+
+/** 이 아이 차례에 힌트 단 하나를 누르는가(아이 차례 2 · 5 · 8 …). 힌트 단추가 없는 차례(마무리 등)는 부르는 쪽이 거른다. */
+export function chatHintTurnOf(child: ChildKey, childTurn: number): boolean {
+  return (
+    CHAT_HINT_CHILDREN.includes(child) &&
+    childTurn % CHAT_HINT_EVERY === CHAT_HINT_REMAINDER
+  );
+}
+
+/**
+ * 아이 역이 말없음(silent)을 고른 차례를 앱 행동 둘로 나눈다(spec 설계 13 '말없음은 두 갈래'): 누르지 않음은 조용함 입구(quiet), 눌렀으나 들리지
+ * 않음은 지금 규칙의 '말 없음' 차례(nospeech). 갈래는 '잇단 말없음 한 덩이' 단위로 정한다(컨트롤러 결정, T2 fix 1 I-1): 그 수업의 말없음 덩이
+ * 가운데 첫째 · 셋째 …는 모두 누르지 않음, 둘째 · 넷째 …는 모두 눌렀으나 들리지 않음이다. 그래서 길이 2 이상의 누르지 않음 덩이에서 잇단 조용함
+ * 차례와 상한 뒤 기다림이 나온다. blocksBefore 는 그 수업에서 앞서 시작한 말없음 덩이 수다. 힌트를 누른 차례의 말없음은 누름이 있었으므로 늘
+ * nospeech 이고, 덩이를 끊으며 덩이 셈에 넣지 않는다(부르는 쪽).
+ */
+export type ChatSilentInput = "quiet" | "nospeech";
+export function chatSilentInputOf(blocksBefore: number): ChatSilentInput {
+  return blocksBefore % 2 === 0 ? "quiet" : "nospeech";
+}
+
+/** 마무리 단추에서 앱 행동으로 '더 이야기하기'를 한 번 누르는 아이 역(spec 설계 13: SE). */
+export const CHAT_MORE_ONCE_CHILDREN: readonly ChildKey[] = ["SE"];
+
+/**
+ * 마무리 단추를 아이 역에게 묻지 않고 정하는 때: 긴 대본은 마무리 차례마다 '더 이야기하기', SE 는 그 수업의 첫 마무리 단추만 '더 이야기하기'.
+ * 그 밖은 null(지난 실험처럼 아이 역이 고른다 — 홀로 선 R3 · 지금 새 방식과 같은 길).
+ */
+export function chatForcedPickOf({
+  child,
+  long,
+  forcedBefore,
+}: {
+  child: ChildKey;
+  long: boolean;
+  forcedBefore: number;
+}): WrapPick | null {
+  if (long) return "more";
+  return CHAT_MORE_ONCE_CHILDREN.includes(child) && forcedBefore === 0
+    ? "more"
+    : null;
+}
+
+/**
+ * 실험에서 '낮은 확신 정도'로 싣는 값(지어낸 값 — 앱 문턱 talk.chat_unsure_confidence 보다 낮아야 알림 줄이 붙는다. 실행 때 설정값과 견줘 아니면
+ * 멈춘다).
+ */
+export const CHAT_LOW_CONFIDENCE = 0.3;
+
+export type ChatRecognizerNote = { confidence: number; alternative?: string };
+
+/**
+ * 지난 실험의 인식기 알림(arch-compare sttNoteOf — 확신 없음 · 다른 후보)을 턴 요청의 인식기 정보로 옮긴다(spec 설계 13). 확신 없음은 낮은 확신
+ * 정도로, 다른 후보는 앞 선생님 차례의 끝 줄이 후보 수(talk.chat_alternatives) 2 이상을 실었을 때만 싣는다(화면은 그때만 maxAlternatives 를 연다,
+ * 설계 11). 알림이 없는 차례는 인식기 칸을 싣지 않는다(확신 정도가 오지 않은 것과 같다 — 알림 줄이 붙지 않음).
+ */
+export function chatRecognizerOf(
+  note: { unsure: boolean; alt?: string } | null,
+  {
+    lowConfidence,
+    alternatives,
+  }: { lowConfidence: number; alternatives: number },
+): ChatRecognizerNote | undefined {
+  if (note === null || !note.unsure) return undefined;
+  return note.alt !== undefined && note.alt.trim() !== "" && alternatives >= 2
+    ? { confidence: lowConfidence, alternative: note.alt }
+    : { confidence: lowConfidence };
+}
+
+/** 아이 역이 이번에 들은 것 하나: 선생님 차례 · 짧은 준비 쪽지(앱 행동) · 화면에서 앱 행동으로 누른 단추. */
+export type ChatHeardSegment =
+  | { kind: "teacher"; text: string }
+  | { kind: "prep"; words: readonly string[] }
+  | { kind: "picked"; pick: WrapPick };
+
+/** 힌트 글(앱 행동으로 누른 힌트 단 — 받았으면 그 글, 못 받았으면 ok false). */
+export type ChatHintShown = { ok: true; text: string } | { ok: false };
+
+/**
+ * 이야기 방식 수업에서 아이 역에게 보내는 말(지난 실험의 'Teacher: …' 꼴을 차례마다 한 줄로): 선생님이 아이 말 없이 잇달아 말한 차례(돌아옴 ·
+ * 조용함)는 줄마다, 짧은 준비는 낱말 쪽지를 따라 말한 것으로, 앱 행동으로 누른 단추와 힌트 글은 괄호 줄로 알린다. 선생님이 말하지 않은 차례
+ * (잇달아 말한 수 상한의 기다림)는 heardByChild 의 빈 말 꼴이다.
+ */
+export function chatChildMessageOf(
+  segments: readonly ChatHeardSegment[],
+  hint: ChatHintShown | null,
+): string {
+  const lines = segments.map((s) =>
+    s.kind === "teacher"
+      ? `Teacher: ${heardByChild(s.text)}`
+      : s.kind === "prep"
+        ? `(The app showed you word cards and you repeated each word after the teacher: ${s.words.join(", ")}.)`
+        : `(You pressed the "${s.pick === "more" ? "Talk more" : "Stop"}" button.)`,
+  );
+  if (!segments.some((s) => s.kind === "teacher"))
+    lines.push(`Teacher: ${heardByChild("")}`);
+  if (hint !== null)
+    lines.push(
+      hint.ok
+        ? `(You pressed the hint button. The screen shows this hint: "${hint.text}")`
+        : "(You pressed the hint button, but the hint did not come.)",
+    );
+  return lines.join("\n");
+}

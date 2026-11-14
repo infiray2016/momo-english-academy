@@ -3,7 +3,7 @@
 //     영어는 대소문자를 가리지 않고 낱말 경계로, 한국어는 앞 글자가 한글이 아니면 뒤에 무엇이 붙어도 걸고 이름으로 시작하는 보통 낱말만 뺀다(C132 (1)).
 //     회화 영역의 단원 규격 주제 · 단계 규격 can-do 글과 대화 방식(C135)도 본다(C132 (2)). 명단이 검사 입력이라 명단을 늘리면 모든 시드를 다시 본다.
 //     읽기 · 쓰기 · 말하기 글은 이 검사가 보지 않는다(토리는 그 글의 등장인물, C122). {TEACHER} 는 틀 자리 검사(talk-placeholder)가 막는다.
-// (2) 명단 검사: 키 · 이름 겹침, vocab 단어인 영어 이름, 성격 낱말 셋, AI 성격 글 · 인사 · 소개 · 이름표 대비 · 빼는 낱말.
+// (2) 명단 검사: 키 · 이름 겹침, vocab 단어인 영어 이름, 성격 낱말 셋, AI 성격 글 · 이야기 방식 재료(짝 · 한 문장) · 인사 · 소개 · 이름표 대비 · 빼는 낱말.
 // (3) 자산 검사(AC-19k): 모델 · 초상 파일 있음 · 바이트 · 해시 · 크기 상한 · VRM 메타 · 표정 · 뼈 · 원본 없음 · 출처 문서.
 // DB · 파일 시스템을 읽지 않는 순수 함수다(파일 읽기 · 해시는 부르는 쪽이 io 로 넘긴다).
 import { contrastRatio } from "@/core/color/contrast";
@@ -217,6 +217,14 @@ export type TeacherRosterContext = {
   greetingMaxWords?: number;
 };
 
+/** 이야기 방식 재료 칸의 짝(칸 · 짝 칸). */
+const CHAT_MATERIAL_PAIRS = [
+  ["chatPersonaEn", "chatFavoritesEn"],
+  ["chatFavoritesEn", "chatPersonaEn"],
+] as const;
+/** 이야기 방식 재료 칸의 문장 수(spec 설계 2 '성격 한 문장' · '좋아하는 것 한 문장' — 안내문 글의 꼴이라 설정값이 아니다). */
+const CHAT_MATERIAL_SENTENCES = 1;
+
 /** 두 색의 WCAG 대비(1~21) — 공용 색 모듈의 셈 그대로(2-가 검토 M2, 이 모듈을 가져오던 시험이 그대로 쓴다). */
 export { contrastRatio } from "@/core/color/contrast";
 
@@ -288,6 +296,32 @@ export function checkTeacherRoster(
     for (const p of placeholdersIn(t.personaEn))
       report(at("personaEn"), `AI 성격 글에 틀 자리 ${p} 를 쓸 수 없다`);
 
+    // 이야기 방식 재료(이야기 방식 spec 설계 2 자리 {PERSONA} · {FAVORITES}): 둘 다 있거나 둘 다 없음 · 칸마다 한 문장 · 마침표 끝 · 틀 자리 없음
+    for (const [key, other] of CHAT_MATERIAL_PAIRS) {
+      const text = t[key];
+      if (text === undefined) {
+        if (t[other] !== undefined)
+          report(
+            at(key),
+            `이야기 방식 재료가 ${other} 만 있다(둘 다 있거나 둘 다 없음)`,
+          );
+        continue;
+      }
+      const sentences = splitSentences(text).length;
+      if (sentences !== CHAT_MATERIAL_SENTENCES)
+        report(
+          at(key),
+          `이야기 방식 재료가 ${sentences}문장이라 ${CHAT_MATERIAL_SENTENCES}문장이 아니다`,
+        );
+      if (!text.trimEnd().endsWith("."))
+        report(
+          at(key),
+          "이야기 방식 재료가 마침표로 끝나지 않는다(뒤 문장에 이어 붙는다)",
+        );
+      for (const p of placeholdersIn(text))
+        report(at(key), `이야기 방식 재료에 틀 자리 ${p} 를 쓸 수 없다`);
+    }
+
     if (t.greetingEn.includes("?"))
       report(at("greetingEn"), "인사에 물음표가 있다(답할 길이 없다)");
     if (ctx.greetingMaxWords !== undefined) {
@@ -301,8 +335,13 @@ export function checkTeacherRoster(
         }
       }
     }
-    for (const key of ["personaEn", "greetingEn"] as const) {
-      for (const hit of forbiddenHits(t[key], ctx.forbidden)) {
+    for (const key of [
+      "personaEn",
+      "greetingEn",
+      "chatPersonaEn",
+      "chatFavoritesEn",
+    ] as const) {
+      for (const hit of forbiddenHits(t[key] ?? "", ctx.forbidden)) {
         const what =
           hit.kind === "pattern"
             ? `금지 정규식 ${hit.id}(${hit.category})`

@@ -64,6 +64,13 @@
       "when": 1794290688829,
       "tag": "0008_talk_turns_ask_again",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794559619348,
+      "tag": "0009_talk_chat",
+      "breakpoints": true
     }
   ]
 }

@@ -300,6 +300,9 @@ describe("6.1 조합 · 요청 구성", () => {
       speaking_eval: realtimeMs,
       thinkout: realtimeMs,
       talk_turn: realtimeMs,
+      // 이야기 방식: 응답 뒤 평가 호출은 feedback(설계 8-2), 힌트 호출은 realtime(설계 7)
+      talk_chat_eval: feedbackMs,
+      talk_chat_hint: realtimeMs,
     };
     for (const [purpose, ms] of Object.entries(expected)) {
       const config = requestConfigOf({
@@ -355,6 +358,15 @@ describe("6.1 조합 · 요청 구성", () => {
       models: [{ ...opus48, thinkingDefault: "enabled" }],
     };
     expect(ModelPricesFileSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("AC-27a 조합 검사는 이야기 방식의 힌트 · 평가 호출 키도 본다(잘못된 조합 · 빠진 키)", () => {
+    const values = settingsWith({ "ai.effort.talk_chat_eval": "xhigh" });
+    delete values["ai.model.talk_chat_hint"];
+    expect(checkSettingsCombos(values, book)).toEqual([
+      { keyBase: "talk_chat_hint", reasons: ["invalid-setting"] },
+      { keyBase: "talk_chat_eval", reasons: ["effort-not-allowed-with-off"] },
+    ]);
   });
 
   it("6.1 조합 검사: 설정값이 없거나 꼴이 틀리면 invalid-setting 이다", () => {

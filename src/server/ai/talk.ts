@@ -14,6 +14,20 @@ import {
   prepareAnswer,
 } from "@/core/ai/calls/common";
 import {
+  applyTalkChatChecks,
+  type ChatSayChange,
+  TALK_CHAT_OUTPUT_FIELDS,
+  TALK_CHAT_RECORD_TAG,
+  type TalkChatInput,
+  type TalkChatOutput,
+  TalkChatOutputSchema,
+  type TalkChatRules,
+  talkChatAssistantOf,
+  talkChatCheckFields,
+  talkChatMessages,
+  talkChatTurnSpec,
+} from "@/core/ai/calls/talk-chat";
+import {
   applyTalkLeadChecks,
   TALK_LEAD_OUTPUT_FIELDS,
   type TalkLeadInput,
@@ -588,6 +602,244 @@ export async function streamTalkLead(
   return streamCore({ ...plan, kit: leadKit(plan) });
 }
 
+// ── 이야기 방식(talk.lead_mode 'chat', spec '회화 대화 구조 R' 설계 2 '흘려 받기' · 설계 4 · 데이터 절, plan 묶음 S0) ──────────
+
+/**
+ * 이야기 방식의 흘려 받는 칸 이름: 말 칸 say 와 그 앞의 글 칸 listen_sentence(응답 규격의 칸 차례 — 앞 칸은 글이라 이스케이프를 풀어 끝까지 받는다).
+ * 앞 칸을 끝까지 읽은 뒤에만 흘린다: 따라 할 문장을 알아야 부르는 쪽이 say 의 그 문장을 소리 줄로 뺄지 정할 수 있다(설계 4). 차례를 어긴 응답은
+ * 흘리지 않고 끝에서 한 번에 낸다(지금 길의 위험 3 과 같음).
+ */
+export const TALK_CHAT_READER_KEYS: ToriEnReaderKeys = {
+  sayKey: "say",
+  heads: TALK_CHAT_OUTPUT_FIELDS.slice(
+    0,
+    TALK_CHAT_OUTPUT_FIELDS.indexOf("say"),
+  ).map((key) => ({ key, kind: "string" as const })),
+  requireHeads: true,
+};
+
+/**
+ * 따라 할 문장의 6.4 출력 검사(응답 끝의 출력 검사와 같은 칸 · 같은 함수 — talkChatCheckFields 의 listen_sentence, 길이는 보지 않음). 걸리면 빈 글이다.
+ * 흘려 받는 동안 say 의 첫 문장보다 먼저 부른다(검토 rev-chat-p1 H2: 6.4 가 비운 문장은 소리 줄로 빼지 않는다).
+ */
+export function chatListenCheckedOf(
+  listen: string,
+  forbidden: ForbiddenList,
+  sentenceMaxWords: number,
+): string {
+  if (listen === "") return "";
+  const fields = talkChatCheckFields({
+    say_ko: "",
+    listen_sentence: listen,
+  }).filter((field) => field.path === "listen_sentence");
+  const hits = checkOutputFields(fields, { forbidden, sentenceMaxWords });
+  return hits.has("listen_sentence") ? "" : listen;
+}
+
+/**
+ * 따라 할 문장을 받은 때(시도마다 한 번, 그 시도의 어떤 문장보다 먼저): 6.4 를 지난 글(걸렸거나 비었으면 ''). 흘려 읽은 응답은 say 문자열이 열린 직후에,
+ * 앞 칸이 차례를 어긴 응답은 응답 끝에서 문장을 내기 전에 응답 전체의 값으로 불린다. 다시 부른 시도(끊김 · 다른 모델)는 새 값으로 또 불리고, 마지막
+ * 값이 결과를 낸 시도의 값이다. say 에 닿기 전에 끝난 시도에서는 불리지 않는다.
+ */
+export type TalkChatOnListen = (listen: string) => void;
+
+/** 문장 문(createToriSentenceGate)의 재료. */
+type ChatGateOptions = {
+  forbidden: ForbiddenList;
+  metaPhrases: readonly string[];
+  safeLine: string;
+  sentenceMaxWords: number;
+};
+
+/**
+ * 문장 문이 바꾸거나 지운 문장의 짝(검토 rev-chat-p1 H3): 응답의 say 를 같은 문장 나누기(splitSentences — 흘려 읽기와 같은 경계)로 나눠 같은 문장 문에
+ * 차례대로 넣고, 나간 글이 원래 문장과 다른 것만 { 원래 문장 → 나간 글(지우면 '') } 으로 남긴다. sent 는 문장 문을 지나 나간 문장(흘린 문장과 같아야 한다).
+ * 문장 문을 다시 쓰지 않고 그 함수를 그대로 돌린다.
+ */
+export function chatSayChangesOf(
+  say: string,
+  options: ChatGateOptions,
+): { changes: ChatSayChange[]; sent: string[] } {
+  const gate = createToriSentenceGate(options);
+  const changes: ChatSayChange[] = [];
+  for (const sentence of splitSentences(say)) {
+    const out = gate.accept(sentence);
+    if (out !== sentence) changes.push({ from: sentence, to: out ?? "" });
+  }
+  return { changes, sent: gate.sent() };
+}
+
+/** 이야기 방식 응답을 읽지 못한 까닭(ai_calls error_code — 지금 새 방식의 talkLeadInvalidReasonOf 와 같은 꼴). */
+export function talkChatInvalidReasonOf(prepared: unknown): string | null {
+  if (
+    prepared === null ||
+    typeof prepared !== "object" ||
+    Array.isArray(prepared)
+  )
+    return "not_json_object";
+  const parsed = TalkChatOutputSchema.safeParse(prepared);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return `field:${issue?.path.join(".") || "-"}:${issue?.code ?? "-"}`;
+  }
+  if (parsed.data.say.trim() === "") return "say_empty";
+  return null;
+}
+
+/** 이야기 방식 대화 호출의 성공 결과: 지금 결과 꼴에 응답 원래 값 · 바뀐 문장 짝 · 대화 기록에 넣을 선생님 차례를 더한다. */
+export type TalkChatSuccess = TalkSuccessOf<TalkChatOutput> & {
+  /** 모델이 낸 응답(정규화만 — 문장 문 · 6.4 앞의 원래 값, 칸 차례 그대로). */
+  answer: TalkChatOutput;
+  /** 문장 문이 바꾸거나 지운 문장의 짝(원래 문장 → 나간 글, 지운 문장은 ''). */
+  sayChanges: ChatSayChange[];
+  /**
+   * 6.4 출력 검사가 비지 않은 따라 할 문장을 비웠다(검토 rev-chat-p2 4절 — 그 문장은 소리 줄로 빠지지 않고 1~3단계 글에 남는다). 켜기 전 관문이 셀 수
+   * 있게 부르는 쪽(S1)이 선생님 행 move.chat.gate 에 CHAT_LISTEN_BLOCKED_GATE 를 적는다.
+   */
+  listenBlocked: boolean;
+  /**
+   * 다음 차례 대화 기록의 assistant 글(tori_rewrite): 응답 JSON 에서 문장 문이 바꾼 문장만 나간 글로(talkChatAssistantOf). 1~3단계 소리 줄로 뺀 문장은
+   * 그대로다. 6.4 가 비운 따라 할 문장(listenBlocked)은 빈 글이다.
+   */
+  assistant: string;
+};
+export type TalkChatOutcome =
+  | TalkChatSuccess
+  | Exclude<TalkOutcomeOf<TalkChatOutput>, { ok: true }>;
+
+/** 6.4 가 따라 할 문장을 비운 차례를 move.chat.gate 에 적는 이름(문장 문 걸림 갈래 forbidden · contact · personal · meta 와 겹치지 않음). */
+export const CHAT_LISTEN_BLOCKED_GATE = "listen_check";
+
+/** 응답 원래 값을 받아 두는 자리(응답이 끝나 정규화한 뒤 한 번 찬다). */
+type ChatCapture = { answer: TalkChatOutput | null };
+
+function chatKit(plan: {
+  safeLine: string;
+  sentenceMaxWords: number;
+  forbiddenOf: () => ForbiddenList;
+  onListen?: TalkChatOnListen;
+  capture: ChatCapture;
+}): StreamKit<TalkChatOutput> {
+  const { capture, onListen } = plan;
+  return {
+    closing: false,
+    safeLine: plan.safeLine,
+    sentenceMaxWords: plan.sentenceMaxWords,
+    // 정규화는 응답을 고쳐 쓰지 않으므로(FR-4) 여기 오는 값이 모델이 낸 응답이다 — 원래 값으로 받아 둔다
+    withToriEn: (value, say) => {
+      capture.answer = value;
+      return { ...value, say };
+    },
+    checkFields: talkChatCheckFields,
+    check: (value, hits) => {
+      const checked = applyTalkChatChecks(value, hits);
+      return {
+        value: checked.value,
+        changed: checked.changed,
+        hintsBlocked: false,
+        farewellBlocked: false,
+        summaryBlocked: false,
+      };
+    },
+    reader: TALK_CHAT_READER_KEYS,
+    // 붙잡지 않는다(spec 설계 4 '쓰지 않는 것' — 1~3단계 따라 할 문장 밖의 붙잡기 없음). 앞 칸을 끝까지 읽은 이 자리에서 6.4 를 지난 따라 할 문장을
+    // 첫 문장보다 먼저 알린다 — 그 문장을 소리 줄로 뺄지는 문장을 받는 쪽이 정한다(지금 새 방식의 lead-turn 처럼)
+    hold: (heads) => {
+      const raw = heads[TALK_CHAT_READER_KEYS.heads[0]?.key ?? ""];
+      onListen?.(
+        chatListenCheckedOf(
+          typeof raw === "string" ? raw : "",
+          plan.forbiddenOf(),
+          plan.sentenceMaxWords,
+        ),
+      );
+      return false;
+    },
+    invalidReasonOf: talkChatInvalidReasonOf,
+  };
+}
+
+/** 성공 결과에 응답 원래 값 · 바뀐 문장 짝 · 기록 글을 붙인다. 다시 돌린 문장 문의 나간 문장이 흘린 문장과 다르면 기록 글은 나간 문장을 이은 say 다. */
+function chatOutcomeOf(
+  outcome: TalkOutcomeOf<TalkChatOutput>,
+  capture: ChatCapture,
+  options: () => ChatGateOptions,
+): TalkChatOutcome {
+  if (!outcome.ok) return outcome;
+  const answer = capture.answer ?? outcome.value;
+  const replay = chatSayChangesOf(answer.say, options());
+  const same =
+    replay.sent.length === outcome.sentSentences.length &&
+    replay.sent.every((sentence, i) => sentence === outcome.sentSentences[i]);
+  const listenBlocked =
+    answer.listen_sentence.trim() !== "" &&
+    outcome.value.listen_sentence === "";
+  // 6.4 가 비운 따라 할 문장은 기록 글에서도 빈 글로 둔다 — 모델이 다음 차례에 자기가 그 문장을 권했다고 보지 않게(검토 rev-chat-s0 M-3). 기록 글은
+  // 이 차례에 한 번 정해져 저장되고 다음 차례들이 그대로 실으므로 캐시 앞머리는 깨지지 않는다
+  const recorded = listenBlocked ? { ...answer, listen_sentence: "" } : answer;
+  return {
+    ...outcome,
+    answer,
+    sayChanges: same ? replay.changes : [],
+    listenBlocked,
+    assistant: same
+      ? talkChatAssistantOf(JSON.stringify(recorded), replay.changes)
+      : JSON.stringify({ ...recorded, say: outcome.sentSentences.join(" ") }),
+  };
+}
+
+/**
+ * 이야기 방식 흘려 받기 계획(DB 없음). 문장 문 · 실패 처리 · 다시 시도는 지금 회화 턴과 같다. onSentence 는 필수다(없으면 말 칸이 빈 글인 채 성공으로
+ * 끝난다 — 지금 새 방식 검토 M3 와 같음). sentenceMaxWords 는 그 단계의 문장 낱말 상한(문장 문의 길이 초과 셈 · 6.4 검사)이다.
+ */
+export type TalkChatStreamPlan = StreamBase & {
+  onSentence: (sentence: string) => void;
+  spec: CallSpec<TalkChatInput, TalkChatOutput, TalkChatRules>;
+  input: TalkChatInput;
+  rules: TalkChatRules;
+  safeLine: string;
+  sentenceMaxWords: number;
+  onListen?: TalkChatOnListen;
+};
+
+/**
+ * 이야기 방식 대화 호출의 흘려 받기(DB 없음 — streamTalkLead 와 같은 시도 · 문장 문 · 다시 시도 · 기다림). 앞 칸 listen_sentence 를 끝까지 받아 6.4 를
+ * 건 뒤 onListen 으로 알리고, 그 다음에 say 의 문장을 문장 문을 지나 하나씩 onSentence 로 낸다(첫 문장은 응답이 끝나기 전에 나간다).
+ */
+export async function streamTalkChat(
+  plan: TalkChatStreamPlan,
+): Promise<TalkChatOutcome> {
+  const capture: ChatCapture = { answer: null };
+  const kit = chatKit({
+    safeLine: plan.safeLine,
+    sentenceMaxWords: plan.sentenceMaxWords,
+    forbiddenOf: () => plan.forbidden,
+    ...(plan.onListen === undefined ? {} : { onListen: plan.onListen }),
+    capture,
+  });
+  const outcome = await streamCore({ ...plan, kit });
+  return chatOutcomeOf(outcome, capture, () => ({
+    forbidden: plan.forbidden,
+    metaPhrases: plan.metaPhrases,
+    safeLine: plan.safeLine,
+    sentenceMaxWords: plan.sentenceMaxWords,
+  }));
+}
+
+/**
+ * 저장할 sent_user_message(검토 rev-chat-p1 H3): 요청 본문의 마지막 사용자 메시지 글과 같은 글 — 규격의 가림을 지난 입력으로 메시지를 만든 끝 칸이다
+ * (buildAiRequest 가 만드는 글과 같다). chatUserMessageOf 를 가리지 않은 입력으로 다시 부르지 않는다. 다음 차례는 이 글을 대화 기록의 user 칸에 그대로
+ * 넘긴다(캐시 앞머리).
+ */
+export function talkChatSentUserMessageOf(
+  input: TalkChatInput,
+  masker: Masker,
+): string {
+  return (
+    talkChatMessages(talkChatTurnSpec.mask(input, masker)).at(-1)?.content ?? ""
+  );
+}
+
 async function streamCore<I, O, R>(
   plan: StreamCore<I, O, R>,
 ): Promise<TalkOutcomeOf<O>> {
@@ -1066,6 +1318,48 @@ export function talkLeadTurn(
       ...(ctx.holdSay === undefined ? {} : { holdSay: ctx.holdSay }),
     }),
   );
+}
+
+/**
+ * 이야기 방식 대화 호출 하나(spec 설계 2 '모델 · 호출 값' — 지금 회화 턴과 같은 앞머리: 목적 talk_turn 의 모델 · effort · 생각 · 최대 출력 · 기다림 키,
+ * 하루 안전 상한, Haiku 거절 뒤 다른 모델 한 번, 시도 기록). ai_calls 표지는 늘 chat 이다(방식별로 셈 — 같은 오류 셈은 store.ts 가 이 표지도 센다).
+ * 실패는 지금 엔진의 실패와 같은 갈래로 기록되어 'AI 쉬는 중' · 오류 알림이 그대로 걸린다. onSentence 는 던지지 않는다.
+ */
+export async function talkChatTurn(
+  input: TalkChatInput,
+  ctx: Omit<TalkCallContext, "recordTag" | "onStuck"> & {
+    onSentence: (sentence: string) => void;
+    safeLine: string;
+    sentenceMaxWords: number;
+    onListen?: TalkChatOnListen;
+  },
+  deps: TalkDeps = {},
+): Promise<TalkChatOutcome> {
+  const capture: ChatCapture = { answer: null };
+  const forbiddenOf = () => (deps.lists ?? getOutputCheckLists)().forbidden;
+  const outcome = await runCallCore(
+    talkChatTurnSpec,
+    input,
+    { ...ctx, recordTag: TALK_CHAT_RECORD_TAG },
+    deps,
+    () =>
+      chatKit({
+        safeLine: ctx.safeLine,
+        sentenceMaxWords: ctx.sentenceMaxWords,
+        // 목록은 runCallCore 가 호출 앞에서 이미 읽었다(같은 읽개 — 흘려 받는 동안 다시 읽어도 같은 값)
+        forbiddenOf,
+        ...(ctx.onListen === undefined ? {} : { onListen: ctx.onListen }),
+        capture,
+      }),
+  );
+  return chatOutcomeOf(outcome, capture, () => ({
+    forbidden: forbiddenOf(),
+    metaPhrases: (
+      deps.metaPhrases ?? (() => loadSeedList("metaSentences").phrases)
+    )(),
+    safeLine: ctx.safeLine,
+    sentenceMaxWords: ctx.sentenceMaxWords,
+  }));
 }
 
 async function runCallCore<I extends { level: number }, O, R>(

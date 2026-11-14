@@ -42,7 +42,10 @@ export const DISCARD_END_WHYS = [
   "live",
 ] as const;
 export type DiscardEndWhy = (typeof DISCARD_END_WHYS)[number];
-/** reopen 이면 다시 열게 한 앞 닫힘의 까닭. check 는 마이크 확인, no_mic 은 '마이크를 쓸 수 없음'으로 끝난 진짜(M-5). */
+/**
+ * reopen 이면 다시 열게 한 앞 닫힘의 까닭. check 는 마이크 확인, no_mic 은 '마이크를 쓸 수 없음'으로 끝난 진짜(M-5). quiet 는 이야기 방식의
+ * 조용함 입구로 연 버림과 그 버림이 살아 있어 다시 연 버림이다(회화 대화 구조 R spec 설계 6 '기록 칸' (ㄱ)).
+ */
 export const DISCARD_REOPEN_WHYS = [
   "self_end",
   "cap",
@@ -50,6 +53,7 @@ export const DISCARD_REOPEN_WHYS = [
   "leave",
   "check",
   "no_mic",
+  "quiet",
 ] as const;
 export type DiscardReopenWhy = (typeof DISCARD_REOPEN_WHYS)[number];
 /** 버림 안에서 낸 소리 종류(마지막 소리). cut 은 읽는 중 끊긴 읽기(대개 누름 — 화면이 누름 없이 끊은 때도 같은 값, 묶음 2-나 검토 M-3), none 은 소리 없음. */
@@ -81,6 +85,10 @@ export type DiscardFlowNote = {
   sk?: DiscardSoundKind;
   np?: number;
   n?: number;
+  /** 조용함 입구에서 처음 연 버림의 start → audiostart(ms). 오지 않았으면 없다(spec 설계 6 '기록 칸' (ㄴ)). */
+  qa?: number;
+  /** 조용함 입구에서 처음 연 버림이 살아 있는 버림으로 판정되었나. 조용함 입구가 버림을 열지 않았으면 없다. */
+  ql?: boolean;
 };
 
 // ── 시간 묶음(plan 정한 것 4) ──
@@ -173,6 +181,12 @@ export type DiscardFlowInput =
   /** 마이크 확인이 열린 세션을 닫음(음성 접점이 닫는다). */
   | { type: "check" }
   | { type: "synth"; speaking: boolean }
+  /**
+   * 이야기 방식의 조용함 입구(화면이 아이 말 없는 턴 요청을 보낸 때 — 회화 대화 구조 R spec 설계 6 '고른 길'). 대기의 discard 갈래 · 닫는 중
+   * · 간격에서는 버림부터(까닭 quiet)로 가 읽기 요청이나 누름을 기다리지 않고 버림을 열고, 열린 죽은 버림이면 닫지 않고 소리 끝 알림을
+   * 다시 기다린다. 대기의 rest · live 갈래와 그 밖의 상태에서는 그대로다. 이 입력이 오지 않으면 기계는 지금 그대로 돈다(NFR-5).
+   */
+  | { type: "quiet" }
   | { type: "tick" };
 
 /** 화면이 받는 기다림 상태(층 subscribe 의 view). */
@@ -245,6 +259,8 @@ export type DiscardRecord = Readonly<{
   endAt: number | undefined;
   /** 이 버림 안에서 흘린 읽기가 있었나. */
   called: boolean;
+  /** 조용함 입구에서 처음 연 버림인가(그 audiostart · 판정을 다음 진짜의 qa · ql 로 남긴다). 다시 연 버림(retry)은 거짓이다. */
+  quiet: boolean;
   /** 이 버림 안에서 들려준 소리가 있었나(시작 알림 뒤 끊긴 읽기 포함). */
   heard: boolean;
   soundStartAt: number | undefined;
@@ -310,6 +326,10 @@ export type DiscardFlowState = Readonly<{
   serverWaitEndAt: number | undefined;
   /** 굳은 speaking 에 cancel 을 부른 때(그 뒤 afterSoundMs 를 기다린다). */
   stuckSince: number | undefined;
+  /** 닫는 중 · 간격 · 끝난 죽은 버림에서 받은 조용함 입구 — 간격 끝에 대기 대신 버림부터(까닭 quiet)로 간다. */
+  quietPending: boolean;
+  /** 조용함 입구에서 처음 연 버림의 qa · ql(다음 진짜의 dc 에 한 번 남기고 지운다). */
+  quietNote: Readonly<{ qa?: number; ql: boolean }> | undefined;
   view: DiscardView;
 }>;
 
@@ -369,6 +389,8 @@ export function startDiscardFlow(times: DiscardTimes): DiscardStep {
     serverWaiting: false,
     serverWaitEndAt: undefined,
     stuckSince: undefined,
+    quietPending: false,
+    quietNote: undefined,
     view,
   };
   return { state, effects: [{ type: "view", view }], wakeAt: undefined };
@@ -474,6 +496,14 @@ function onInput(
     case "discard-audio":
       if (isCurrent(d, input.discard) && d.discard) {
         d.discard.audioAt ??= now;
+        // 판정 뒤 end 전에 온 audiostart 도 조용함 입구 버림의 qa 로 남긴다(살아 있는 버림의 as, spec 설계 6 '흐름별 기대값' (ㄴ)).
+        // 판정이 나지 않은 버림(quietNote 없음)에는 남기지 않는다.
+        if (d.discard.quiet && d.quietNote && d.quietNote.qa === undefined) {
+          d.quietNote = {
+            ...d.quietNote,
+            qa: ms(d.discard.audioAt - d.discard.startAt),
+          };
+        }
       }
       return;
     case "discard-result":
@@ -500,6 +530,38 @@ function onInput(
       return;
     case "check":
       closeFor(d, now, fx, "check", false);
+      return;
+    case "quiet":
+      onQuiet(d, now);
+      return;
+  }
+}
+
+/**
+ * 조용함 입구(spec 설계 6 '고른 길' · 'iPad 버리는 듣기의 델타'). 대기의 discard 갈래는 버림부터(까닭 quiet — advanceReopen 이 읽기 요청 ·
+ * 누름 없이 연다), 열린 죽은 버림은 닫지 않고 소리 끝 알림을 다시 기다리며, 닫는 중 · 간격 · 끝난 죽은 버림은 간격 끝에 버림부터로 간다.
+ * 대기의 rest · live 갈래 · 진짜 뒤 기다림 · 버림 확인 · 버림부터 · 진짜에서는 아무것도 바꾸지 않는다.
+ */
+function onQuiet(d: Draft, now: number): void {
+  switch (d.phase) {
+    case "rest":
+      if (!d.hidden && effectiveBranch(d, now) === "discard") {
+        toReopen(d, "quiet");
+      }
+      return;
+    case "dead":
+      if (discardOpen(d) && d.discard) {
+        // 새 읽기가 올 것이므로 지난 소리 끝으로 닫지 않는다(안전 상한은 그대로 센다).
+        d.discard.notified = false;
+      } else {
+        d.quietPending = true;
+      }
+      return;
+    case "closing":
+    case "gap":
+      d.quietPending = true;
+      return;
+    default:
       return;
   }
 }
@@ -748,6 +810,8 @@ function openReal(d: Draft, now: number, fx: DiscardFlowEffect[]): void {
   d.betweenRead = false;
   d.stuckSince = undefined;
   d.reopenWhy = undefined;
+  d.quietPending = false;
+  d.quietNote = undefined;
 }
 
 // ── 버림 ──
@@ -772,6 +836,7 @@ function startProbe(
     stopAt: undefined,
     endAt: undefined,
     called: false,
+    quiet: rw === "quiet" && !retry,
     heard: false,
     soundStartAt: undefined,
     soundEndAt: undefined,
@@ -787,6 +852,11 @@ function startProbe(
   };
   d.phase = "probe";
   d.reopenWhy = undefined;
+  // 새 버림이 열렸으니 걸어 둔 조용함 입구는 이 버림이 받는다.
+  d.quietPending = false;
+  // 조용함 입구에서 처음 연 버림이면 앞 조용함 입구의 qa · ql 을 지운다. 값은 판정(advanceProbe · 판정 전 end)이 난 때에만 남긴다 —
+  // 판정 전에 숨김 · 마이크 확인 · 떠남으로 끊긴 버림에는 남기지 않는다(검토 rev-chat-v M-1).
+  if (d.discard.quiet) d.quietNote = undefined;
   // 사이 읽기 표지는 그 뒤 연 버림까지만이다(M-4).
   d.betweenRead = false;
   fx.push({ type: "discard-start", discard: id });
@@ -819,6 +889,7 @@ function onDiscardEnd(d: Draft, discard: number, now: number): void {
     if (disc.audioAt === undefined) {
       // 판정 전에 audiostart 없이 끝남: 살아 있는 버림과 같게 본다(end + openAfterMs 뒤 한 번 다시 연다, C216).
       disc.why = "live";
+      if (disc.quiet) d.quietNote = { ql: true };
       afterLive(d, disc);
     } else {
       selfEndedSilent(d);
@@ -842,12 +913,16 @@ function toReopen(d: Draft, why: DiscardReopenWhy): void {
   d.phase = "reopen";
   d.reopenWhy = why;
   d.closeNext = undefined;
+  // 다른 까닭의 버림부터(숨김 · 떠남 · 마이크 확인 · 저절로 끝남 · 상한)가 걸어 둔 조용함 입구를 대신한다(그 버림부터의 지금 규칙대로).
+  d.quietPending = false;
 }
 
 function toWait(d: Draft, branch: "discard" | "live"): void {
   d.phase = "rest";
   d.waitBranch = branch;
   d.closeNext = undefined;
+  // 대기 live · 쉼 넘음은 지금 규칙 그대로 세션 없이 읽는다(조용함 입구는 버림을 열지 않음).
+  d.quietPending = false;
 }
 
 /** 진짜 뒤 기다림: 읽기 · 누름을 보류하고 마지막으로 소리를 받은 세션 끝 + openAfterMs 에 버림을 연다(C216). */
@@ -960,8 +1035,11 @@ function advanceHold(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
   }
   if (now < openReadyAt(d)) return false;
   // 기다림이 찼다: 버림 확인부터(보류한 읽기 · 누름은 그 버림이 받는다).
-  if (d.holdRetry) startProbe(d, now, fx, "reopen", undefined, true);
-  else startProbe(d, now, fx, "discard", undefined);
+  // 조용함 입구로 연 버림이 살아 있어 다시 여는 버림에는 까닭 quiet 를 잇는다(spec 설계 6 '기록 칸' (ㄱ)).
+  if (d.holdRetry) {
+    const rw = d.discard?.rw === "quiet" ? "quiet" : undefined;
+    startProbe(d, now, fx, "reopen", rw, true);
+  } else startProbe(d, now, fx, "discard", undefined);
   d.holdRetry = false;
   return true;
 }
@@ -978,7 +1056,9 @@ function advanceReopen(
     return true;
   }
   if (!d.unlocked) return false;
-  if (d.press === undefined && d.held.length === 0) return false;
+  // 조용함 입구의 버림부터는 읽기 요청이나 누름을 기다리지 않는다(회화 대화 구조 R spec 설계 6 — 선생님 말이 서버에서 오기 전에 연다).
+  if (d.press === undefined && d.held.length === 0 && d.reopenWhy !== "quiet")
+    return false;
   // 버림부터도 마지막으로 소리를 받은 세션 끝 + openAfterMs 를 채운다(C216).
   if (now < openReadyAt(d)) return false;
   // 버림부터: 읽기 요청이나 누름이 오면 버림 확인부터(설계 1).
@@ -995,10 +1075,19 @@ function advanceProbe(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
     disc.audioAt - disc.startAt <= d.times.liveAsMs
   ) {
     d.phase = "dead";
+    if (disc.quiet) {
+      d.quietNote = { qa: ms(disc.audioAt - disc.startAt), ql: false };
+    }
     return true;
   }
   if (now < disc.startAt + d.times.liveAsMs) return false;
   // 살아 있는 버림(F3): as 가 문턱을 넘거나 audiostart 없음.
+  if (disc.quiet) {
+    d.quietNote =
+      disc.audioAt === undefined
+        ? { ql: true }
+        : { qa: ms(disc.audioAt - disc.startAt), ql: true };
+  }
   stopDiscard(d, now, fx, "live", { to: "live" });
   return true;
 }
@@ -1100,7 +1189,9 @@ function advanceGap(d: Draft, now: number, fx: DiscardFlowEffect[]): boolean {
   );
   if (now < ready) return false;
   if (!settled(d, now, fx)) return false;
-  toWait(d, "discard");
+  // 닫는 중 · 간격에서 받은 조용함 입구: 대기 대신 버림부터(까닭 quiet, spec 설계 6 '고른 길').
+  if (d.quietPending) toReopen(d, "quiet");
+  else toWait(d, "discard");
   return true;
 }
 
@@ -1209,7 +1300,10 @@ function wakeOf(d: Draft, now: number): number | undefined {
       if (d.lastSessionEndAt !== undefined) {
         at.push(d.lastSessionEndAt + t.restMs);
       }
-      if (d.unlocked && (d.press !== undefined || d.held.length > 0)) {
+      if (
+        d.unlocked &&
+        (d.press !== undefined || d.held.length > 0 || d.reopenWhy === "quiet")
+      ) {
         at.push(openReadyAt(d));
       }
       break;
@@ -1229,7 +1323,8 @@ function viewOf(d: Draft, now: number): DiscardView {
     sayNow: d.phase === "real" && d.realWaited,
     recovering: d.recovering,
     canListen: idle && d.phase === "rest" && now >= realReadyAt(d),
-    reopenIdle: idle && d.phase === "reopen",
+    // 조용함 입구의 버림부터는 스스로 버림을 여니 따라 말하기가 들려줄 말을 더 읽게 하지 않는다.
+    reopenIdle: idle && d.phase === "reopen" && d.reopenWhy !== "quiet",
   };
 }
 
@@ -1266,6 +1361,12 @@ function noteOf(d: Draft, now: number): DiscardFlowNote {
     dc.sk = disc.sk ?? "none";
     dc.np = disc.np;
     dc.n = disc.n;
+  }
+  // 조용함 입구에서 처음 연 버림의 audiostart · 판정(spec 설계 6 '기록 칸' (ㄴ)) — 갈래와 상관없이 다음 진짜에 한 번 남긴다.
+  const quiet = d.quietNote;
+  if (quiet !== undefined) {
+    if (quiet.qa !== undefined) dc.qa = quiet.qa;
+    dc.ql = quiet.ql;
   }
   const press = d.press;
   if (press !== undefined && now > press.at) dc.w = ms(now - press.at);

@@ -37,8 +37,11 @@ const SIMPLE_ESCAPES: Readonly<Record<string, string>> = {
   t: "\t",
 };
 
-/** 말 칸 앞에 올 수 있는 칸 하나: 열거 글(낱말 글, 이스케이프 없음) · 참 거짓. */
-export type ReaderHead = { key: string; kind: "enum" | "boolean" };
+/**
+ * 말 칸 앞에 올 수 있는 칸 하나: 열거 글(낱말 글, 이스케이프 없음) · 참 거짓 · 글(이야기 방식의 따라 할 문장 listen_sentence — 이스케이프를 풀어
+ * 끝까지 받는다, spec '회화 대화 구조 R' 설계 2 '흘려 받기').
+ */
+export type ReaderHead = { key: string; kind: "enum" | "boolean" | "string" };
 
 /**
  * 흘려 받는 말 칸과 그 앞 칸의 이름(회화 N 길 spec 설계 8 — 말 칸 이름과 앞 칸 이름을 매개로). 앞 칸은 적힌 차례로 한 번씩만 올 수 있고
@@ -68,6 +71,9 @@ type ReaderPhase =
   | "enum-value"
   | "boolean-value"
   | "after-head-value"
+  | "head-string"
+  | "head-escape"
+  | "head-unicode"
   | "after-key"
   | "before-value"
   | "string"
@@ -119,6 +125,8 @@ export function createToriEnReader(
   let lastHead = -1;
   const values: Record<string, string | boolean> = {};
   let enumText = "";
+  /** 글 앞 칸을 읽는 중의 푼 글. */
+  let headText = "";
   let hex = "";
   let decoded = "";
   let emitted = 0;
@@ -184,6 +192,11 @@ export function createToriEnReader(
           return;
         }
         if (JSON_WHITESPACE.test(ch)) return;
+        if (heads[headAt]?.kind === "string") {
+          headText = "";
+          phase = ch === '"' ? "head-string" : "failed";
+          return;
+        }
         enumText = "";
         phase = ch === '"' ? "enum-value" : "failed";
         return;
@@ -208,6 +221,40 @@ export function createToriEnReader(
       case "after-head-value":
         if (JSON_WHITESPACE.test(ch)) return;
         phase = ch === "," ? "before-key" : "failed";
+        return;
+      // 글 앞 칸(이야기 방식 listen_sentence): 말 칸과 같은 이스케이프 풀기로 끝까지 받는다. 닫히면 그 값이 앞 칸 값이다
+      case "head-string":
+        if (ch === "\\") phase = "head-escape";
+        else if (ch === '"') {
+          values[heads[headAt]?.key ?? ""] = headText;
+          phase = "after-head-value";
+        } else headText += ch;
+        return;
+      case "head-escape": {
+        if (ch === "u") {
+          hex = "";
+          phase = "head-unicode";
+          return;
+        }
+        const plain = SIMPLE_ESCAPES[ch];
+        if (plain === undefined) {
+          phase = "failed";
+          return;
+        }
+        headText += plain;
+        phase = "head-string";
+        return;
+      }
+      case "head-unicode":
+        hex += ch;
+        if (!/^[0-9a-fA-F]*$/.test(hex)) {
+          phase = "failed";
+          return;
+        }
+        if (hex.length === UNICODE_HEX_DIGITS) {
+          headText += String.fromCharCode(Number.parseInt(hex, HEX_RADIX));
+          phase = "head-string";
+        }
         return;
       case "after-key":
         if (JSON_WHITESPACE.test(ch)) return;

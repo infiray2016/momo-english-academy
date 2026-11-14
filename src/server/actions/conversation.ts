@@ -13,6 +13,7 @@ import {
   talkClosingStatus as closingStatus,
   type FollowOutcome,
   type LeaveOutcome,
+  type LessonHintReply,
   type LessonMoveOutcome,
   advanceTalkLesson as lessonAdvance,
   saveLessonFollowAlong as lessonFollow,
@@ -96,10 +97,13 @@ export async function readTalkLessonWrap(input: unknown): Promise<WrapOutcome> {
   return lessonWrap(input, { now });
 }
 
-/** 지금 질문 자리 힌트 단 하나의 글(아이가 연 단만 — 1~3단계 영어 문장을 미리 내려 주지 않는다). */
+/**
+ * 지금 질문 자리 힌트 단 하나의 글(아이가 연 단만 — 1~3단계 영어 문장을 미리 내려 주지 않는다). 이야기 방식 수업은 단 목록 · 실패와 다시 받기 ·
+ * 막힌 뒤 설명의 꼴(LessonHintReply 의 넓힌 갈래 — 기존 두 방식의 응답 꼴은 그대로)이고, 화면은 talk-stream 의 읽는 함수로 받는다.
+ */
 export async function revealTalkLessonHint(
   input: unknown,
-): Promise<{ ok: true; text: string } | { ok: false }> {
+): Promise<LessonHintReply> {
   await requireAccess();
   return lessonHint(input, { now });
 }

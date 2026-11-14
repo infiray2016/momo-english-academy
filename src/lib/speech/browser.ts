@@ -35,6 +35,7 @@ import {
   PLAIN_RECOGNITION_EVENTS,
   type RecognitionCtor,
   type RecognitionLike,
+  type RecognizerInfo,
   type SpeakOptions,
   type SpeakOutcome,
   type SpeechPort,
@@ -134,12 +135,88 @@ function resultsOf(
   return out;
 }
 
+/** 결과 하나에서 읽은 인식기 값(글은 둘째 후보만 — 턴 요청에만 간다, spec 설계 11). */
+export type ResultReadout = {
+  isFinal: boolean;
+  confidence: number | undefined;
+  second: string | undefined;
+  count: number;
+};
+
+/** 결과마다 첫 후보의 확신 정도 · 둘째 후보 글 · 후보 수를 읽는다(후보 수를 넘겨 연 듣기만 부른다). */
+function readoutsOf(list: SpeechRecognitionResultList): ResultReadout[] {
+  const out: ResultReadout[] = [];
+  for (let i = 0; i < list.length; i += 1) {
+    const result = list[i];
+    if (result === undefined) continue;
+    const confidence = result[0]?.confidence;
+    out.push({
+      isFinal: result.isFinal,
+      confidence: typeof confidence === "number" ? confidence : undefined,
+      second: result.length > 1 ? result[1]?.transcript : undefined,
+      count: result.length,
+    });
+  }
+  return out;
+}
+
+/** 확신 정도는 소수 둘째 자리로 남긴다(spec 설계 11 '싣는 곳'). */
+const CONFIDENCE_PLACES = 100;
+
+/**
+ * 듣기 하나의 인식기 정보(순수 — spec 설계 11 '값의 뜻'). 인식 객체마다 마지막 결과 목록(연속 인식은 목록 전체를 다시 낸다)을 차례로
+ * 이어 본다. 확신 정도는 확정 결과들의 confidence 가운데 가장 낮은 값이고, 확정 결과가 없거나 그 가운데 값이 없거나 0 인 것이 있으면
+ * 비운다(가장 낮은 값을 모름 — 0 을 '모름'으로 내는 브라우저가 있다). 둘째 후보는 결과 전체가 확정 결과 하나일 때만 쓴다(뒤에 중간
+ * 결과가 붙었거나 다른 인식 객체의 결과가 있으면 그 후보는 글의 일부만 담으므로 쓰지 않음 — 검토 rev-chat-v I-1). 확정 결과와 중간
+ * 결과가 섞인 글이면 mixed 를 단다(컨트롤러 결정, fix 1). 결과가 하나도 없으면 없음.
+ */
+export function recognizerInfoOf(
+  lists: readonly (readonly ResultReadout[])[],
+): RecognizerInfo | undefined {
+  const all = lists.flat();
+  if (all.length === 0) return undefined;
+  const finals = all.filter((r) => r.isFinal);
+  const known = finals.every(
+    (r) =>
+      r.confidence !== undefined &&
+      Number.isFinite(r.confidence) &&
+      r.confidence > 0,
+  );
+  const lowest = Math.min(...finals.map((r) => r.confidence ?? 0));
+  const counted = finals.length > 0 ? finals : all;
+  const second =
+    all.length === 1 && finals.length === 1
+      ? finals[0]?.second?.trim()
+      : undefined;
+  const mixed = finals.length > 0 && finals.length < all.length;
+  return {
+    ...(finals.length > 0 && known
+      ? {
+          confidence:
+            Math.round(Math.min(1, lowest) * CONFIDENCE_PLACES) /
+            CONFIDENCE_PLACES,
+        }
+      : {}),
+    ...(second ? { alternative: second } : {}),
+    alternatives: Math.max(...counted.map((r) => r.count)),
+    interim: finals.length === 0,
+    ...(mixed ? { mixed: true } : {}),
+  };
+}
+
 const joinTranscripts = (results: { transcript: string }[]) =>
   results
     .map((r) => r.transcript)
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
+
+/** 듣기 매개의 후보 수(1 이상 정수). 없거나 틀린 값이면 없음(지금처럼 1 · 인식기 정보 없음). */
+function alternativesOf(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isInteger(value) || value < 1)
+    return undefined;
+  return value;
+}
 
 function collectedText(state: ListenState): string {
   return [...state.pieces, state.currentText].filter((t) => t !== "").join(" ");
@@ -185,11 +262,12 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     | { close(call: "stop" | "abort", by: DiscardCloseBy): void }
     | undefined;
 
-  function prepare(recognition: RecognitionLike) {
+  /** alternatives 는 듣기 매개(ListenCallbacks.alternatives — 이야기 방식 차례만), 없으면 지금처럼 1 이다. */
+  function prepare(recognition: RecognitionLike, alternatives = 1) {
     recognition.lang = settings.lang;
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = alternatives;
   }
 
   function finishSpeaking(outcome: SpeakOutcome) {
@@ -215,6 +293,12 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
 
     listenCount += 1;
     const listenId = listenCount;
+    // 후보 수를 넘긴 듣기만 인식기 정보를 읽는다(그 밖은 maxAlternatives 1 · 기록 그대로, spec 설계 11 · NFR-5).
+    const alternatives = alternativesOf(on?.alternatives);
+    const readouts =
+      alternatives === undefined
+        ? undefined
+        : new Map<number, ResultReadout[]>();
     const recognizers = new Map<number, RecognitionLike>();
     const pending: { input: ListenInput; seq: number }[] = [];
     let seq = 0;
@@ -272,6 +356,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
       recognition.onresult = (event) => {
         const at = now();
         const results = resultsOf(event.results);
+        readouts?.set(id, readoutsOf(event.results));
         fromThis({
           at,
           kind: "recognizer-event",
@@ -343,11 +428,32 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
       for (const effect of next.effects) {
         if (effect.type === "done") {
           finished = true;
+          const info =
+            readouts === undefined
+              ? undefined
+              : recognizerInfoOf(
+                  [...readouts.entries()]
+                    .sort(([a], [b]) => a - b)
+                    .map(([, list]) => list),
+                );
+          if (info !== undefined) on?.recognizer?.(info);
           trace({
             at: now(),
             kind: "listen-done",
             listen: listenId,
             outcome: effect.outcome,
+            ...(info === undefined
+              ? {}
+              : {
+                  rec: {
+                    ...(info.confidence === undefined
+                      ? {}
+                      : { cf: info.confidence }),
+                    na: info.alternatives,
+                    int: info.interim,
+                    ...(info.mixed === true ? { mx: true } : {}),
+                  },
+                }),
           });
           resolveOutcome(effect.outcome);
           continue;
@@ -361,7 +467,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
             continue;
           }
           const recognition = new Ctor();
-          prepare(recognition);
+          prepare(recognition, alternatives);
           attach(id, recognition);
           recognizers.set(id, recognition);
           if (call(id, "start")) {

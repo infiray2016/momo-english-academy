@@ -63,6 +63,7 @@ function row(over: Partial<TalkTurnRow>): TalkTurnRow {
     clientListen: null,
     askAgain: null,
     move: null,
+    chatJudge: null,
     recordedAt: new Date("2026-10-22T10:00:00Z"),
     ...over,
   };

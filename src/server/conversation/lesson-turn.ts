@@ -30,6 +30,13 @@ import {
   opensSlot,
   slotChanceOf,
 } from "@/core/conversation/chances";
+import type { ChatRecognizer } from "@/core/conversation/chat-message";
+import { chatWrapSourcesOf } from "@/core/conversation/chat-reply";
+import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
+import {
+  chatFirstQuestionBlocksOf,
+  chatTurnSegmentOf,
+} from "@/core/conversation/chat-turn-plan";
 import { createRewriteHold } from "@/core/conversation/child-kind";
 import {
   type ClientListen,
@@ -57,6 +64,7 @@ import {
   lessonHintTiersOf,
   openedTierCount,
 } from "@/core/conversation/hints";
+import { isChatSession } from "@/core/conversation/lead-mode";
 import {
   type LeadSoundLine,
   leadRowSoundLinesOf,
@@ -183,6 +191,7 @@ import {
   completeTalk,
   insertClosingRecord,
   safetyClosesOn,
+  scheduleChatClose,
   scheduleTalkClosing,
 } from "./closing";
 import {
@@ -228,8 +237,8 @@ export const TALK_BREAK_LINE = {
 /** 초 → ms(단위 바꿈 상수). */
 const MS_PER_SECOND = 1000;
 /** 대화 안전 상한 알림 종류 · 기준 키(3.3 · 8절 · AC-15j, P9c AI_ALERT_KINDS). */
-const SAFETY_ALERT_KIND = "talk_safety_cap";
-const SAFETY_ALERT_KEY = "talk.safety_alert_count";
+export const SAFETY_ALERT_KIND = "talk_safety_cap";
+export const SAFETY_ALERT_KEY = "talk.safety_alert_count";
 
 /**
  * 같은 시도 id 의 고아 아이 행이 아직 진행 중인가(검토 M-1 · 재검토 N-2 · P-1): TURN_IN_FLIGHT_MS 안이고, 그 아이 행 뒤 회화 턴 호출 기록이
@@ -348,7 +357,12 @@ export type TalkLessonLine =
       lead?: { ask?: true; kept?: true };
     }
   | { t: "sound"; kind: "choices"; answers: [string, string] }
-  | { t: "end"; lesson: TalkLessonNext }
+  | {
+      t: "end";
+      lesson: TalkLessonNext;
+      /** 이야기 방식 선생님 차례의 끝 줄 신호(묶음 P3 ChatEndSignal — 화면은 방식을 읽지 않고 이 칸만 따른다). 다른 방식은 칸이 없다. */
+      chat?: ChatEndSignal;
+    }
   | { t: "resting" }
   | { t: "break"; en: string; ko?: string }
   | {
@@ -376,6 +390,8 @@ export type LessonTurnRequest = {
   confirmSkipped?: boolean | undefined;
   prevPerceivedWaitMs?: number | undefined;
   clientListen?: ClientListen | undefined;
+  /** 인식기 정보(이야기 방식 spec 설계 11 — 확신 정도 · 다른 후보 · 중간 결과만). 이야기 방식 수업만 읽는다. */
+  recognizer?: ChatRecognizer | undefined;
 };
 
 /** 흐름 입력(묶음 5 LessonArgs). 흐름 입력 prepWords 는 state.prepWords 다(state.start.prepPlan 이 아님 — 묶음 7 보고). */
@@ -1729,10 +1745,15 @@ export function lessonNextOf(
   state: Pick<
     TalkLessonState,
     "spec" | "card" | "turns" | "liveRows" | "segment" | "position" | "session"
-  >,
+  > & { start?: TalkLessonState["start"]; level?: number },
   extra: { explanation?: string | null } = {},
 ): TalkLessonNext {
   const pos = state.position;
+  // 이야기 방식은 짧은 준비가 열렸을 때만 대화 첫 질문(돌아옴 입구)을 기다린다(chat-turn-plan chatFirstQuestionBlocksOf — 아이 차례 받기와 같은 판단,
+  // 토막 접점 검토 rev-chat-s2 6절). 다른 방식 · 방식을 모르는 재료는 위치 값 그대로다
+  const chat =
+    state.level !== undefined &&
+    isChatSession({ start: state.start, level: state.level });
   const lastTeacher = state.turns.findLast((r) => r.speaker === "teacher");
   const prep =
     pos.prepPending && lastTeacher?.speaker === "teacher"
@@ -1752,7 +1773,9 @@ export function lessonNextOf(
     flashDontKnow: pos.flashDontKnow,
     silentBlocked: pos.silentBlocked,
     prep: prep ? [...prep] : null,
-    firstQuestionDue: pos.firstQuestionDue,
+    firstQuestionDue: chat
+      ? chatFirstQuestionBlocksOf(pos)
+      : pos.firstQuestionDue,
     completed: state.session.status === "completed",
     stuckInSlot: pos.stuckInSlot,
     ...imageKeyField(lessonImageKeyOf(state, pos.slot?.item)),
@@ -1796,7 +1819,10 @@ export function lessonWrapLinesOf(
   },
 ): { en: string; ko?: string }[] {
   return wrapUpLinesOf({
-    recasts: leadWrapRecastsOf({ ...state, start: state.start }),
+    // 이야기 방식은 say 에 든 것으로 확인된 따라 할 문장(묶음 P2 chatWrapSourcesOf — spec 설계 5 정리, 묶음 S1)
+    recasts: isChatSession({ start: state.start, level: state.level })
+      ? chatWrapSourcesOf(state.rows.filter((r) => r.speaker === "tori"))
+      : leadWrapRecastsOf({ ...state, start: state.start }),
     todayWords: state.card.todayWords.map((w) => w.word),
     closingLines: state.card.closingLines,
     koMeaning: state.spec.koMeaning,
@@ -2266,7 +2292,38 @@ export type LessonTurnShared = {
   received: Date;
   restingP: Promise<boolean>;
   timer: { mark: (stage: string) => void; result: () => StageTimings };
+  /**
+   * 이야기 방식 수업의 처리기(chat-turn.ts lessonChatTurn — 부르는 쪽 turn.ts 가 넘긴다. 이 파일은 chat-turn.ts 를 불러오지 않는다: 의존 방향 검사
+   * no-circular). 넘어오지 않았는데 이야기 방식 수업의 대화 차례에 닿으면 지금 길로 가지 않고 던진다.
+   */
+  chat?: LessonChatTurn;
 };
+
+/** 이야기 방식 수업의 아이 차례 뒤 선생님 차례(afterChild)와 같은 시도 id 다시 흘림(replay — 신호 말 없이 저장한 행 그대로 · 끝 줄 신호). */
+export type LessonChatTurn = {
+  afterChild: (
+    state: TalkLessonState,
+    child: TalkTurnRow,
+    request: LessonTurnRequest,
+    deps: LessonTurnDeps,
+    shared: LessonTurnShared,
+    ctxP: ReturnType<typeof levelContextOf>,
+  ) => Promise<void>;
+  replay: (
+    state: TalkLessonState,
+    teacher: TalkTurnRow,
+    deps: Pick<LessonTurnDeps, "write">,
+    /** 지금 'AI 쉬는 중'인가(끝 줄 신호의 조용함 · 설명 기다림 — 실시간 길과 같은 판단). */
+    aiResting: boolean,
+  ) => void;
+};
+
+/** 이 수업의 이 토막을 이야기 방식이 맡는가(처음 스냅숏의 방식 chat · 1~3단계 — isChatSession, 토막은 인사 · 대화 · 더 이야기하기). */
+export function chatTurnAppliesOf(
+  state: Parameters<typeof isChatSession>[0] & { segment: string },
+): boolean {
+  return isChatSession(state) && chatTurnSegmentOf(state.segment);
+}
 
 /**
  * 새 엔진 수업의 아이 차례 뒤 선생님 차례 처리기(lead-turn.ts leadTurnAfterChild 꼴). 부르는 쪽(turn.ts runTalkTurnRequest)이 넘긴다 — 이
@@ -2337,7 +2394,7 @@ export function replayLesson(
  * 대화 안전 상한 · 참여 완료 뒤 'AI 쉬는 중'으로 정리에 닫는다. 참여 완료 전이면(안전 상한만) 중단 + 학습일 + 이음매 aborted. 끝맺음 기록은
  * 그 까닭으로 대기에 두고, 넣었으면 참(응답 뒤 끝맺음은 부르는 쪽 — 쉬는 중이면 풀린 뒤 홈 진입이 부른다).
  */
-async function closeLessonOnTurn(
+export async function closeLessonOnTurn(
   tx: Tx,
   state: TalkLessonState,
   { at, reason }: { at: Date; reason: "resting" | "safety" },
@@ -2415,7 +2472,11 @@ export async function runTalkLessonTurn(
         pos.closed ||
         pos.lastRow !== "teacher" ||
         lastTeacher?.speaker !== "tori" ||
-        pos.firstQuestionDue ||
+        // 이야기 방식은 짧은 준비가 열렸을 때만 대화 첫 질문(돌아옴 입구)을 기다린다(chat-turn-plan chatFirstQuestionBlocksOf — 준비 없는 수업은 그
+        // 행이 없다). 기존 두 방식은 고치기 전과 같은 조건이다
+        (isChatSession(state)
+          ? chatFirstQuestionBlocksOf(pos)
+          : pos.firstQuestionDue) ||
         pos.prepPending ||
         !CHILD_SEGMENTS.includes(state.segment)
       )
@@ -2464,12 +2525,27 @@ export async function runTalkLessonTurn(
       return;
     }
     if (begun.kind === "replay") {
-      replayLesson(begun.state, begun.teacher, deps);
+      // 이야기 방식 행은 신호 말 없이 저장한 행 그대로 · 끝 줄 신호와 함께 다시 흘린다(chat-turn.ts — 지금 길의 신호 말 고르기에 걸리지 않게)
+      if (shared.chat && chatTurnAppliesOf(begun.state))
+        shared.chat.replay(
+          begun.state,
+          begun.teacher,
+          deps,
+          await shared.restingP,
+        );
+      else replayLesson(begun.state, begun.teacher, deps);
       return;
     }
     const { state, child } = begun;
     timer.mark("state");
-    await lessonTurnAfterChild(state, child, deps, shared, leadAfterChild);
+    await lessonTurnAfterChild(
+      state,
+      child,
+      request,
+      deps,
+      shared,
+      leadAfterChild,
+    );
   } catch (error) {
     logFailure("회화 수업 턴 길", error);
     write({ t: "error" });
@@ -2479,6 +2555,7 @@ export async function runTalkLessonTurn(
 async function lessonTurnAfterChild(
   state: TalkLessonState,
   child: TalkTurnRow,
+  request: LessonTurnRequest,
   deps: LessonTurnDeps,
   shared: LessonTurnShared,
   leadAfterChild: LessonLeadAfterChild | undefined,
@@ -2523,12 +2600,26 @@ async function lessonTurnAfterChild(
       write({ t: "stale" });
       return;
     }
+    // 이야기 방식 수업은 남은 '기다림' 평가 · 비교 표지 행을 응답 뒤 작업으로(묶음 S2 scheduleChatClose — 끝맺음은 쉬는 중이 풀린 뒤, 토막 접점
+    // 검토 rev-chat-s2 6절 S1). 다른 방식은 지금 그대로다
+    if (isChatSession(state))
+      scheduleChatClose(state.session.id, deps, { closing: false });
     write({
       t: "close",
       reason: "resting",
       lines: lessonWrapLinesOf(state),
       farewell: lineOf(state.card.farewell, state.spec.koMeaning),
     });
+    return;
+  }
+
+  // (4-1) 회화 이야기 방식(intent 2026-11-13-회화-대화-구조-R spec 설계 1 · 묶음 S1): 처음 스냅숏의 방식이 chat 이고 인사 · 대화 · 더 이야기하기
+  // 토막이면 이야기 방식의 턴 길로 간다(지금 새 방식의 갈림보다 앞). 대화 안전 상한은 그 길이 거르지 않은 행으로 세고 사실 줄을 붙여 부르므로(spec
+  // 설계 10) 아래 (5) 앞에 둔다. 처리기는 부르는 쪽이 넘긴다 — 넘어오지 않았으면 지금 길로 조용히 가지 않고 던진다(바깥 잡기가 error 줄)
+  if (chatTurnAppliesOf(state)) {
+    if (!shared.chat)
+      throw new Error("이야기 방식 수업의 턴 처리기가 넘어오지 않았다");
+    await shared.chat.afterChild(state, child, request, deps, shared, ctxP);
     return;
   }
 

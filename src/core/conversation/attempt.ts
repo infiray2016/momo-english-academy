@@ -93,8 +93,8 @@ export const TalkAttemptInputSchema = z.discriminatedUnion("kind", [
       .strictObject({ goals: z.array(z.string()), words: z.array(z.string()) })
       .optional(),
     /**
-     * 회화 방식(talk.lead_mode — 회화 Claude 주도 묶음 M): 수업을 처음 열 때 읽은 설정 값. 서버는 claude 일 때만 적는다(leadModeStartField, 칸 없음 = app).
-     * 그 세션은 끝까지 이 값을 쓴다(leadModeOf).
+     * 회화 방식(talk.lead_mode — 회화 Claude 주도 묶음 M · 이야기 방식 묶음 C): 수업을 처음 열 때 읽은 설정 값. 서버는 claude · chat 일 때만 적는다
+     * (leadModeStartField, 칸 없음 = app). 그 세션은 끝까지 이 값을 쓴다(leadModeOf).
      * 이 칸 전 옛 스냅숏에는 없고, 모르는 값이 들어 있어도 스냅숏 전체를 버리지 않게 칸만 비운다(둘 다 app 으로 읽음).
      */
     leadMode: z.enum(TALK_LEAD_MODES).optional().catch(undefined),

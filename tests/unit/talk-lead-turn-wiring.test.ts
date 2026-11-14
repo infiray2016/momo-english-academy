@@ -434,6 +434,7 @@ describe("서버 턴 길의 남은 배선(검토 rev-s1-2 N-3 — 서버 턴 길
     expect(Object.keys(tags).sort()).toEqual([
       "LEAD_NARROW_RECORD_TAG",
       "LEAD_RECORD_TAG",
+      "TALK_CHAT_RECORD_TAG",
     ]);
   });
 

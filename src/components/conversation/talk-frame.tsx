@@ -54,8 +54,17 @@ import { TeacherChoice } from "@/components/teacher/teacher-choice";
 import { useTeacherLayer } from "@/components/teacher/teacher-layer";
 import { TeacherWindow } from "@/components/teacher/teacher-window";
 import { fillName } from "@/core/ai/mask";
+import {
+  CHAT_QUIET_OFF,
+  type ChatQuietEvent,
+  type ChatQuietInput,
+  type ChatQuietState,
+  chatQuietDueAt,
+  reduceChatQuiet,
+} from "@/core/conversation/chat-quiet";
+import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
+import type { ChatOpen } from "@/core/conversation/chat-turn-plan";
 import type { ClientListen } from "@/core/conversation/client-listen";
-import type { LeadOpen } from "@/core/conversation/lead-turn-core";
 import {
   childLogEntryOf,
   liveTeacherEntryOf,
@@ -103,9 +112,13 @@ import type {
   SpeechPort,
 } from "@/lib/speech/types";
 import {
+  chatExplainOfRaw,
+  chatHintReplyOfRaw,
+  sendTalkLessonTurn,
   sendTalkLessonTurnRetrying,
   type TalkLeadOpenBody,
   type TalkTurnBody,
+  type TalkTurnResult,
 } from "@/lib/talk-stream";
 import { cn } from "@/lib/utils";
 import {
@@ -134,6 +147,7 @@ import type {
   TalkLessonNext,
 } from "@/server/conversation/lesson-turn";
 import {
+  type ChatHintFetch,
   type ChildSend,
   ChildTurn,
   childHeardOf,
@@ -459,11 +473,16 @@ export function lessonAfterEndOf(
     TalkLessonNext,
     "choice" | "prep" | "firstQuestionDue" | "segment" | "greetingDone"
   >,
+  /**
+   * 이야기 방식 끝 줄 신호(칸이 있으면 이야기 방식 — 비어 있어도). 이야기 방식은 대화 첫 질문 차례 값으로 아이 차례를 막지 않는다(짧은 준비가 없는
+   * 수업에서 그 값이 계속 참으로 남음 — 서버 턴 길 검토 rev-chat-s1 6절 W 3). 기존 두 방식은 칸이 없어 지금 그대로다.
+   */
+  chat?: ChatEndSignal,
 ): LessonAfter {
   if (n.choice) return { kind: "choice" };
   if (
     n.prep ||
-    n.firstQuestionDue ||
+    (n.firstQuestionDue && chat === undefined) ||
     (n.segment === "greeting" && n.greetingDone)
   )
     return { kind: "reload" };
@@ -482,6 +501,118 @@ export function lessonMoveActionOf(
   const open = out.leadTurn;
   if (open === undefined) return { kind: "move" };
   return open === sending ? { kind: "skip" } : { kind: "lead", open };
+}
+
+/**
+ * 아이 말 없는 요청의 입구(서버 chat-turn-plan CHAT_OPENS 와 같은 값): 새 엔진의 start · more 와 이야기 방식의 quiet(조용함) · back(짧은 준비 뒤
+ * 돌아옴, 보완 4 (5)). 기존 두 방식에는 back · quiet 이 오지 않는다.
+ */
+type LeadOpen = ChatOpen;
+
+// ── 이야기 방식 화면(회화 대화 구조 R plan 묶음 W — spec 설계 6 · 7 · 11, 보완 4 (4) · (9) · (11)) ──
+
+/** 이야기 방식 아이 차례 하나: 차례 열쇠(선생님 행 번호로 만듦 — 다시 그려도 같고 차례마다 다름)와 그 끝 줄 신호. */
+export type ChatTurn = { key: string; signal: ChatEndSignal };
+
+/** 끝 줄 신호 → 이야기 방식 차례(순수). 신호가 없으면(기존 두 방식) 없음 — 그 차례에는 타이머 · 힌트 호출 · 설명 · 후보 수가 없다. */
+export function chatTurnOf(
+  sessionId: string,
+  turnNo: number,
+  signal: ChatEndSignal | undefined,
+): ChatTurn | null {
+  return signal === undefined
+    ? null
+    : { key: `${sessionId}:${turnNo}`, signal };
+}
+
+/**
+ * 아이 차례가 열릴 때 조용함 타이머에 넣을 사건(순수, P6 보고의 화면 계약): 열림 한 번(끝 줄을 받은 때 — 설명 기다림 상한의 기준), 쪽이 이미
+ * 가려져 있으면 곧바로 가림, '그만하기' 요청이 나가 있거나 확인 쪽지가 떠 있으면 곧바로 그만하기 입력, 읽는 중이 아니면(열림 전에 읽기가 끝남)
+ * 열림 바로 뒤에 읽기 끝. 차례가 없으면(신호 없음) 아무 사건도 없다.
+ */
+export function chatOpenEventsOf({
+  turn,
+  now,
+  hidden,
+  stopping,
+  reading,
+}: {
+  turn: ChatTurn | null;
+  now: number;
+  hidden: boolean;
+  stopping: boolean;
+  reading: boolean;
+}): ChatQuietEvent[] {
+  if (turn === null) return [];
+  const events: ChatQuietEvent[] = [
+    {
+      type: "open",
+      now,
+      turnKey: turn.key,
+      signal: {
+        ...(turn.signal.quietSeconds === undefined
+          ? {}
+          : { quietSeconds: turn.signal.quietSeconds }),
+        ...(turn.signal.explainWait === undefined
+          ? {}
+          : { explainWait: turn.signal.explainWait }),
+      },
+    },
+  ];
+  if (hidden) events.push({ type: "hidden", now });
+  if (stopping) events.push({ type: "input", now, input: "stop" });
+  if (!reading) events.push({ type: "read-end", now });
+  return events;
+}
+
+/** 사건 하나를 넣은 상태와 이 걸음에서 조용함 요청을 보낼지(순수 — 상태가 sent 로 바뀐 걸음에서 한 번). */
+export function chatQuietStepOf(
+  state: ChatQuietState,
+  event: ChatQuietEvent,
+): { state: ChatQuietState; send: boolean } {
+  const next = reduceChatQuiet(state, event);
+  return { state: next, send: next.phase === "sent" && state.phase !== "sent" };
+}
+
+/**
+ * 조용함 요청이 끝난 꼴 → 화면이 할 일(순수, V 검토 6절 · spec 설계 6): 줄을 하나도 받기 전에 거절(stale — 상한 등) · 끊김 · 오류 · 쉼으로
+ * 끝나면 서버 기다림을 내리고 아이 차례를 다시 연다(reopen — 열림은 다시 넣지 않음). 선생님 줄을 받은 뒤 끊겼으면 지금의 끊김 · 실패 길(trouble),
+ * 끝 줄을 받았거나 화면이 끊었으면 할 일 없음.
+ */
+export function chatQuietFailOf({
+  result,
+  lines,
+}: {
+  result: TalkTurnResult | "error" | "resting";
+  lines: number;
+}): "reopen" | "resume" | "trouble" | "none" {
+  if (result === "done" || result === "aborted") return "none";
+  // 연결 끊김은 다시 보내지 않고 이어 하기로 받는다(조용함 요청은 시도 id 가 없어 서버가 새 조용함 차례로 받음 — rev-chat-s1 6절 W 2)
+  if (result === "offline") return "resume";
+  return lines === 0 ? "reopen" : "trouble";
+}
+
+/**
+ * 끊긴 조용함 요청의 이어 하기(순수, rev-chat-s1 6절 W 2): 다시 읽은 화면 자료가 그대로면(같은 선생님 행 · 끊긴 조용함 행 없음 — 서버가 받지 않음)
+ * 아이 차례를 다시 연다. 새 선생님 행이 있거나(서버가 끝냄 — 아이가 듣지 못한 말을 보임) 끊긴 조용함 행이 있으면(서버가 그 행으로 이어 부름) 판을
+ * 다시 읽어 이어 하기 길로 연다(refresh — 판이 바뀌어 틀이 새로 그려짐). 자료를 못 읽으면 줄을 받기 전이면 다시 열고, 받은 뒤면 끊김 줄(다시 해 볼래요
+ * = 이 이어 하기)이다.
+ */
+export function chatQuietResumeOf({
+  fresh,
+  turnNo,
+  lines,
+}: {
+  fresh:
+    | { retryLead: "quiet" | null; current: { turnNo: number } | null }
+    | undefined;
+  /** 조용함 요청을 보낸 차례의 선생님 행 번호. */
+  turnNo: number;
+  lines: number;
+}): "reopen" | "refresh" | "trouble" {
+  if (fresh === undefined) return lines === 0 ? "reopen" : "trouble";
+  if (fresh.retryLead === "quiet") return "refresh";
+  return (fresh.current?.turnNo ?? 0) === turnNo ? "reopen" : "refresh";
 }
 
 /** 아이 말 없는 턴 요청 본문(순수 함수, 묶음 S3 — 서버 turn.ts 의 아이 말 없는 요청 꼴: 수업 id 와 입구 하나). */
@@ -1030,6 +1161,27 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   const rate = speakRateOf(view.level, view.settings.speech);
   const counterLimits = talkCounterLimits(view.settings.maxRetries);
   const [hitchLog] = useState(createSpeakHitchLog);
+  /** 이야기 방식 지금 차례(끝 줄 신호 · 다시 들어올 때 current.chat). 없으면 기존 두 방식처럼 아무 기능도 켜지 않는다. */
+  const [chatTurn, setChatTurn] = useState<ChatTurn | null>(null);
+  const chatTurnRef = useRef<ChatTurn | null>(null);
+  /** 조용함 타이머에 열림을 넣은 차례 열쇠(설명 요청 · 읽기 끝 효과가 이 값으로 다시 돈다). */
+  const [openedKey, setOpenedKey] = useState<string | null>(null);
+  /** 조용함 요청을 보내고 선생님 줄을 아직 받지 않음(그동안 맞장구 · 다시 듣기 같은 다른 읽기를 넣지 않는다, V 검토 2b). */
+  const [quietWaiting, setQuietWaiting] = useState(false);
+  /** 조용함 타이머(P6 reduceChatQuiet — 상태는 ref, 화면은 사건을 넣고 걸린 시각에 맞춰 시계를 다시 건다). */
+  const quietRef = useRef<ChatQuietState>(CHAT_QUIET_OFF);
+  const quietTimer = useRef<number | undefined>(undefined);
+  /** 보낼 때가 된 걸음에서 지금 보내도 되는가(아이 차례 · 대화 · 막힘 · 쉼 · 고르는 중이 아님 — 그림마다 고침). */
+  const quietAllowed = useRef(false);
+  const sendQuietRef = useRef<() => void>(() => {});
+  /** '그만하기' 요청이 나가 있는가(열림 때 곧바로 그만하기 입력 — P6 재검토 N6). */
+  const stopping = useRef(false);
+  const confirmStopRef = useRef(false);
+  confirmStopRef.current = confirmStop;
+  const explanationRef = useRef<string | undefined>(undefined);
+  /** 막힌 뒤 설명 요청의 세대(턴을 보낼 때마다 올림 — 늦게 온 앞 차례의 설명을 다음 말풍선에 붙이지 않음, rev-chat-w I-1). */
+  const explainGen = useRef(0);
+  explanationRef.current = explanation;
   const queue = useSpeakQueue(speech, {
     rate,
     pauseMs: view.settings.speech.sentencePauseMs,
@@ -1043,6 +1195,59 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       setSoundless((s) => soundlessStepOf(s, item, outcome, performance.now()));
     },
   });
+
+  /** 조용함 타이머에 사건 하나(모든 시각은 performance.now() 한 시계). 상태가 sent 로 바뀐 걸음에서 조용함 요청을 한 번 보낸다. */
+  function quietEvent(event: ChatQuietEvent) {
+    const step = chatQuietStepOf(quietRef.current, event);
+    quietRef.current = step.state;
+    window.clearTimeout(quietTimer.current);
+    const due = chatQuietDueAt(step.state);
+    if (due !== undefined)
+      quietTimer.current = window.setTimeout(
+        quietDue,
+        Math.max(0, due - performance.now()),
+      );
+    if (step.send) sendQuietRef.current();
+  }
+  /** 걸린 시각: 지금 보내도 되면 시계 걸음, 아니면(아이 차례가 아님 · 막힘 · 쉼 · 고르는 중) 그 차례를 거둔다(늦게 보내는 쪽). */
+  function quietDue() {
+    const now = performance.now();
+    // 선생님 말을 아직 읽는 중이면 보내지 않는다(두 겹 막음 — 읽기 줄이 비면 읽기 끝 효과가 재기 시작을 다시 넣고 시계를 다시 건다, rev-chat-w I-2)
+    if (quietAllowed.current && queue.isSpeaking()) return;
+    quietEvent(
+      quietAllowed.current ? { type: "tick", now } : { type: "hidden", now },
+    );
+  }
+  /** 아이의 입력 한 갈래(누름 처리의 첫 줄에서). */
+  function quietInput(input: ChatQuietInput) {
+    quietEvent({ type: "input", now: performance.now(), input });
+  }
+  /** 이야기 방식 차례를 둔다(끝 줄 · 다시 읽은 자료). 새 차례면 열림 사건들을 넣는다 — 같은 열쇠는 함수가 무시한다. */
+  function chatOpen(turn: ChatTurn | null, reading: boolean) {
+    chatTurnRef.current = turn;
+    setChatTurn(turn);
+    if (turn === null) return;
+    for (const event of chatOpenEventsOf({
+      turn,
+      now: performance.now(),
+      hidden: document.visibilityState === "hidden",
+      stopping: stopping.current || confirmStopRef.current,
+      reading,
+    }))
+      quietEvent(event);
+    setOpenedKey(turn.key);
+  }
+  useEffect(() => () => window.clearTimeout(quietTimer.current), []);
+  // 쪽이 가려지면 그 차례의 타이머를 거두고 돌아와도 다시 재지 않는다(spec 설계 6)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 한 번 건다(quietEvent 는 ref 만 읽는다)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden")
+        quietEvent({ type: "hidden", now: performance.now() });
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
   useEffect(() => {
     if (!micUsable()) setBlocked("needsMic");
@@ -1177,9 +1382,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     if (due) discardLayer?.soundEnd();
   }, [soundEndScene, queue.speaking, discardLayer]);
   // 막힘 판 · 쉬는 안내는 떠남이다(돌아오면 다음 읽기가 버림을 다시 연다 — 층은 닫지 않음)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 막힘 · 쉼이 바뀔 때만(quietEvent 는 ref 만 읽는다)
   useEffect(() => {
-    if (blocked !== undefined || resting)
+    if (blocked !== undefined || resting) {
       leaveDiscard(discardRef.current, { close: false });
+      // 이야기 방식: 막힘 판 · 쉬는 안내가 덮은 차례의 조용함 타이머는 거둔다(쪽 가림과 같이 다시 재지 않음 — 늦게 보내는 쪽)
+      quietEvent({ type: "hidden", now: performance.now() });
+    }
   }, [blocked, resting]);
 
   const praiseSeconds = view.teacherSettings.praiseSeconds;
@@ -1217,6 +1426,12 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       void openClosedWrap();
       return;
     }
+    // 이야기 방식: 끊긴 조용함 행이면 조용함 입구를 다시 보낸다(retryTurn 은 이때 null — 묶음 S2 lessonRetryLeadOf)
+    if (after.kind === "retry" && view.retryLead === "quiet") {
+      pushBubbleToLog();
+      void submit(leadOpenBodyOf(view.sessionId, "quiet"), "first", "resume");
+      return;
+    }
     const retry = view.retryTurn;
     if (after.kind === "retry" && retry) {
       // 들리지 않음 행은 같은 입력(nospeech)으로 — 기록은 회색 '못 들었어요'(03절 94 · 100줄, 재검토 N-3)
@@ -1237,12 +1452,74 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       });
       return;
     }
+    // 이야기 방식으로 다시 들어옴: 마지막 선생님 차례의 끝 줄 신호(current.chat)로 차례를 연다(읽기는 지금 시작 — 읽기 끝은 그 뒤에)
+    if (view.current)
+      chatOpen(
+        chatTurnOf(view.sessionId, view.current.turnNo, view.current.chat),
+        true,
+      );
     queue.enqueue(lessonSpokenItemsOf(bubble, view.level));
   }, [ready]);
+
+  // 조용함 타이머의 읽기 끝: 아이 차례가 열려 있고 읽기 줄이 빈 때(그 선생님 차례의 마지막 읽기 끝 — 소리 줄 포함, 버리는 듣기 층의 보류 읽기도
+  // 끝나야 줄이 빈다). 열림 전에 끝난 읽기는 열림 뒤 이 효과가 다시 넣는다. 아이가 연 읽기는 이미 입력으로 거두었으므로 늦은 읽기 끝은 일이 없다
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 차례 · 읽기 · 열림이 바뀔 때만(quietEvent 는 ref 만 읽는다)
+  useEffect(() => {
+    if (phase !== "child" || queue.speaking || openedKey === null) return;
+    quietEvent({ type: "read-end", now: performance.now() });
+  }, [phase, queue.speaking, openedKey]);
+
+  // 막힌 뒤 설명(spec 설계 7 · 보완 4 (4)): 끝 줄에 설명 기다림 칸이 있으면(값이 0 이어도) 힌트 받는 액션으로 청하고, 오면 말풍선 아래 늦은
+  // 글로 붙인다. 오지 않거나 실패하면 문구 없이 차례를 잇는다 — 설명이 보이지 않고 끝난 모든 길에 설명 실패를 넣는다(타이머가 상한까지 기다리지 않게)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 열린 차례가 바뀔 때만
+  useEffect(() => {
+    const turn = chatTurnRef.current;
+    if (
+      openedKey === null ||
+      turn?.key !== openedKey ||
+      turn.signal.explainWait === undefined
+    )
+      return;
+    // 다시 들어온 차례에 저장된 설명이 이미 보이면 그때를 설명이 보인 때로
+    if (explanationRef.current) {
+      quietEvent({ type: "explain-shown", now: performance.now() });
+      return;
+    }
+    let live = true;
+    const gen = explainGen.current;
+    void revealTalkLessonHint({
+      sessionId: view.sessionId,
+      tier: 0,
+      explain: true,
+    })
+      .catch(() => undefined)
+      .then((raw) => {
+        // 그사이 턴을 보냈으면(아이의 말 · '잘 모르겠어요' · 조용함) 이 설명은 버린다 — 다음 말풍선 아래에 붙이지 않음(rev-chat-w I-1)
+        if (
+          !live ||
+          chatTurnRef.current?.key !== turn.key ||
+          explainGen.current !== gen
+        )
+          return;
+        const text = chatExplainOfRaw(raw);
+        const now = performance.now();
+        if (text === undefined) {
+          quietEvent({ type: "explain-failed", now });
+          return;
+        }
+        setExplanation(text);
+        quietEvent({ type: "explain-shown", now });
+      });
+    return () => {
+      live = false;
+    };
+  }, [openedKey]);
 
   // 끝 줄까지 받고 글이 다 흐르면 할 일(C166 R1 — 읽어 주기 끝은 기다리지 않는다). 같은 말풍선에 줄을 이어 붙이는 중이면 그 줄까지 흐른 뒤
   // biome-ignore lint/correctness/useExhaustiveDependencies: 말풍선 · 흐름 · 할 일이 바뀔 때만
   useEffect(() => {
+    // 조용함 요청 뒤 선생님 줄을 기다리는 동안은 앞 말풍선이 다 흘렀어도 아이 차례를 다시 열지 않는다(차례는 닫힌 채 — 줄을 받으면 새 말풍선)
+    if (quietWaiting) return;
     if (
       !lessonTurnReadyOf({
         opening,
@@ -1272,7 +1549,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       default:
         return;
     }
-  }, [opening, phase, bubble, typedDone, typedLines, after]);
+  }, [opening, phase, bubble, typedDone, typedLines, after, quietWaiting]);
 
   // 짧은 준비 쪽지는 선생님 말 읽기가 끝난 뒤 그린다(쪽지가 들려줄 말을 읽는다 — 두 읽기가 겹치지 않게)
   useEffect(() => {
@@ -1304,7 +1581,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   // 맞장구(정한 것 20 · 4절 선생님 차례 · AC-N10): 보낸 뒤 talk.wait_line_seconds 안에 첫 문장이 없으면 한 줄 — 읽기 줄이 차례대로라 첫
   // 문장은 그 뒤에 읽힌다. 대화 기록에 넣지 않는다
   useWaitLine({
-    waitingSince,
+    // 조용함 요청 뒤에는 맞장구를 읽지 않는다(조용함 입력과 그 차례 선생님 말 사이에 다른 읽기를 넣지 않음, V 검토 2b)
+    waitingSince: quietWaiting ? null : waitingSince,
     seconds: view.settings.talk.waitLineSeconds,
     line: waitLineOf(view.waitLines, teacherTurnNo.current + 1),
     onDue: (line) => queue.enqueue([{ text: line, w: "wait" }]),
@@ -1341,8 +1619,16 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     setPosition(out.position);
     setFlash(out.position.flashDontKnow);
     setExplanation(out.current?.explanation);
+    explanationRef.current = out.current?.explanation;
     setHints(out.current?.hints ?? []);
     setImageKey(out.current?.imageKey);
+    // 이야기 방식: 토막 넘김 · 다시 읽은 자료의 끝 줄 신호(current.chat — 같은 차례면 열림은 무시된다)
+    chatOpen(
+      out.current
+        ? chatTurnOf(view.sessionId, out.current.turnNo, out.current.chat)
+        : null,
+      queue.isSpeaking(),
+    );
   }
 
   /** 토막 넘김 · '더 이야기하기' · 다시 읽은 자료를 화면에 둔다(새 선생님 행이면 새 말풍선, 짧은 준비면 읽기가 끝난 뒤 쪽지). */
@@ -1515,8 +1801,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     discardRef.current?.serverWait(false);
   }
 
-  /** 턴 끝 줄(TalkLessonNext)을 화면에 둔다. */
-  function applyEnd(n: TalkLessonNext) {
+  /** 턴 끝 줄(TalkLessonNext)을 화면에 둔다. chat 은 이야기 방식 끝 줄 신호(없으면 기존 두 방식 — 아무것도 켜지 않음). */
+  function applyEnd(n: TalkLessonNext, chat?: ChatEndSignal) {
     // 이 차례 선생님 행 번호는 서버가 싣는다(어림하지 않음 — 검토 M-2)
     teacherTurnNo.current = n.turnNo;
     setSegment(n.segment);
@@ -1535,11 +1821,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     setHints(n.hints);
     setImageKey(n.imageKey);
     setExplanation(n.explanation);
+    explanationRef.current = n.explanation;
     setFlash(n.flashDontKnow);
+    // 이야기 방식 차례(끝 줄을 받은 때가 열림 — 설명 기다림 상한의 기준)
+    // 읽는 중인지는 읽기 줄의 지금 상태로(같은 처리 안에서 막 넣은 문장 — 한 덩이로 온 응답, rev-chat-w I-2)
+    chatOpen(chatTurnOf(view.sessionId, n.turnNo, chat), queue.isSpeaking());
     if (targetReachedNow(closingAskedBefore.current, n.closingAsked))
       setPraiseAfterReading(true);
     closingAskedBefore.current = n.closingAsked;
-    setAfter(lessonAfterEndOf(n));
+    setAfter(lessonAfterEndOf(n, chat));
     if (n.silentBlocked) {
       // 들리지 않음으로 닫힌 자리가 speech.silent_items_max 번 이어짐(7절 막힘 화면 · 부모 알림 — C22, 셈은 서버)
       void reportSessionMic({
@@ -1554,23 +1844,80 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   /**
    * 턴 하나를 보내고 새 꼴 줄을 받는다(끊김 · stale 은 talk-stream 되풀이 — 같은 시도 id · 아이 말 없는 요청은 같은 본문). 읽기 줄을 끊는지 ·
    * 체감 대기를 재는지는 submitPlanOf(다시 보내는 길은 send "again").
+   * quiet 는 이야기 방식 조용함 입구(spec 설계 6 · V 검토 6절): "timer" 는 타이머가 보낸 것 — 버리는 듣기 층에 quiet 를 넣고, 한 번만 보내며(되풀이 없음),
+   * 선생님 줄이 오기 전에는 지금 말풍선을 그대로 둔다(줄이 오면 그 말풍선을 기록에 올리고 새 말풍선 — 아이 말풍선 없이 잇달아 쌓임). 줄을 받기 전에
+   * 거절 · 끊김 · 오류 · 쉼으로 끝나면 서버 기다림을 내리고 아이 차례를 다시 연다(chatQuietFailOf). "resume" 은 끊긴 조용함 행을 다시 보내는 것
+   * (지금 되풀이 길 그대로, 층에 quiet). 둘 다 그 사이 맞장구를 읽지 않는다.
    */
   async function submit(
     body: TalkTurnBody | TalkLeadOpenBody,
     send: SubmitSend = "first",
+    quiet?: "timer" | "resume",
   ) {
     const plan = submitPlanOf(body, send);
     abortInflight();
+    // 기다리는 막힌 뒤 설명은 이 턴으로 무효(rev-chat-w I-1)
+    explainGen.current += 1;
+    // 앞 차례에 걸린 조용함 타이머는 거둔다(새 턴을 보냄 — 늦게 보내는 쪽)
+    if (quietRef.current.phase === "armed")
+      quietEvent({ type: "hidden", now: performance.now() });
     const controller = new AbortController();
     inflight.current = controller;
-    pendingSend.current = body;
+    pendingSend.current = quiet === "timer" ? null : body;
     retryAction.current = () => void submit(body, "again");
+    if (quiet === "timer") retryAction.current = () => router.refresh();
     if (plan.cancelReading) queue.cancel();
     setPhase("tori");
+    // 이야기 방식 조용함 입구: 층에 quiet(대기 · 열린 죽은 버림 · 닫는 중 · 간격에서 버림을 다시 엶 — spec 설계 6 '고른 길')
+    if (quiet) discardRef.current?.quiet();
+    // 조용함 요청이면 첫 줄까지 기다림 표지(끊긴 앞 요청이 남긴 표지는 새 요청이 지운다)
+    setQuietWaiting(quiet !== undefined);
     // 서버 차례 기다림(끝 줄 · 쉼 줄 · 닫는 줄 · 오류 전 — 그동안 버림의 안전 상한을 세지 않는다, N-1)
     discardRef.current?.serverWait(true);
     const waitDone = () => discardRef.current?.serverWait(false);
     let first = true;
+    /** 받은 선생님 줄 수(조용함 요청의 실패 갈래 — chatQuietFailOf). */
+    let lines = 0;
+    /** 보낸 때의 선생님 행 번호(끊긴 조용함 요청의 이어 하기 — chatQuietResumeOf). */
+    const sentTurnNo = teacherTurnNo.current;
+    /** 타이머 조용함: 첫 줄이 오기 전에는 지금 말풍선을 그대로 둔다. */
+    let deferred = quiet === "timer";
+    const resetForAttempt = () => {
+      setTurnKey((k) => k + 1);
+      setTypedDone(false);
+      setTypedLines(0);
+      setSoundTrack(SOUND_TRACK_START);
+      setPlayed(new Set());
+      // 새 턴이 흐르는 동안 앞 턴의 그림 · 받침 설명을 붙이지 않는다(끝 줄이 이 턴 값을 다시 싣는다 — 재검토 N-2)
+      setImageKey(undefined);
+      setExplanation(undefined);
+      explanationRef.current = undefined;
+      bubbleLines.current = 0;
+      setBubble(LESSON_BUBBLE_START);
+    };
+    const lineIn = () => {
+      lines += 1;
+      setQuietWaiting(false);
+      if (!deferred) return;
+      deferred = false;
+      // 조용함 차례: 아이 말풍선 없이 지금 말풍선을 기록에 올리고 새 선생님 말풍선을 연다
+      pushBubbleToLog();
+      resetForAttempt();
+    };
+    /** 조용함 요청이 줄을 받기 전에 끝남: 서버 기다림을 내리고 아이 차례를 다시 연다(열림은 다시 넣지 않음 — 그 차례 상태는 보냄). */
+    const quietFailed = (result: TalkTurnResult | "error" | "resting") => {
+      if (quiet !== "timer") return false;
+      const next = chatQuietFailOf({ result, lines });
+      if (next !== "reopen" && next !== "resume") return false;
+      waitDone();
+      pendingSend.current = null;
+      retryAction.current = null;
+      setWaitingSince(null);
+      setQuietWaiting(false);
+      if (next === "resume") void quietResume(lines, sentTurnNo);
+      else setPhase("child");
+      return true;
+    };
     const firstLine = () => {
       if (!first) return;
       first = false;
@@ -1581,119 +1928,158 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         );
       setWaitingSince(null);
     };
-    const result = await sendTalkLessonTurnRetrying(
-      body,
-      {
-        onSentence: (en) => {
-          firstLine();
-          bubbleLines.current += 1;
-          setBubble((b) => lessonBubbleStep(b, { t: "s", en }));
-          queue.enqueue([{ text: en, w: "tori" }]);
-        },
-        onKo: (ko) => setBubble((b) => lessonBubbleStep(b, { t: "ko", ko })),
-        onAdd: (line) => {
-          firstLine();
-          bubbleLines.current += 1;
-          setBubble((b) => lessonBubbleStep(b, line));
-          queue.enqueue([{ text: line.en, w: "card" }]);
-        },
-        onSound: (line) => {
-          firstLine();
-          // 쌓기 전 줄 차례를 싣는다(들려줬는지 되찾기 — playedSoundsOf)
-          const index = bubbleLines.current;
-          bubbleLines.current += 1;
-          setBubble((b) => lessonBubbleStep(b, line));
-          // 되묻는 차례에 그대로 둔 앞 차례의 소리 줄은 단추만 두고 읽지 않는다(I-1 — 들은 도움 · 힌트 종류의 입력도 그대로)
-          if (!isKeptSoundLine(line))
-            queue.enqueue(lessonSpeakItemsOf(line, view.level, index));
-        },
-        onEnd: (n) => {
-          waitDone();
-          pendingSend.current = null;
-          retryAction.current = null;
-          setWaitingSince(null);
-          counters.current = speakingCounters(
-            counters.current,
-            { type: "next-activity" },
-            counterLimits,
-          ).state;
-          applyEnd(n);
-          setBubble((b) => ({ ...b, done: true }));
-        },
-        onResting: () => {
-          waitDone();
-          pendingSend.current = null;
-          retryAction.current = null;
-          restResend.current = body;
-          setResting(true);
-        },
-        onBreak: (line) => {
-          // 쉬는 안내는 떠남 — 그 줄을 넣기 전에 층을 닫는다(기계 검토 6절 8)
-          leaveDiscard(discardRef.current, { close: true });
-          pendingSend.current = null;
-          retryAction.current = null;
-          setWaitingSince(null);
-          bubbleLines.current = 1;
-          setBubble({
-            lines: [{ t: "s", en: line.en }],
-            ...(line.ko ? { ko: line.ko } : {}),
-            done: true,
-          });
-          queue.enqueue([line.en]);
-          setPhase("break");
-        },
-        onClose: (line) => {
-          waitDone();
-          pendingSend.current = null;
-          retryAction.current = null;
-          setWaitingSince(null);
-          if (lessonCloseActionOf(line) === "wrap") {
-            // 참여 완료 뒤 1-가 하루 안전 상한: 정리 → 마무리(8절). 마무리 자료를 못 읽으면 끝인사와 '수업 목록'
-            void readTalkLessonWrap({ sessionId: view.sessionId })
-              .catch(() => undefined)
-              .then((out) => {
-                if (out?.ok) {
-                  setWrap(out.wrap);
-                  setStage("wrap");
-                  return;
-                }
-                showClosed(line.farewell);
-              });
-            return;
-          }
-          showClosed(line.farewell);
-        },
-        onError: () => {
-          waitDone();
-          setWaitingSince(null);
-          setPhase("failed");
-        },
+    const handlers = {
+      onSentence: (en: string) => {
+        lineIn();
+        firstLine();
+        bubbleLines.current += 1;
+        setBubble((b) => lessonBubbleStep(b, { t: "s", en }));
+        queue.enqueue([{ text: en, w: "tori" }]);
       },
-      {
+      onKo: (ko: string) => {
+        lineIn();
+        setBubble((b) => lessonBubbleStep(b, { t: "ko", ko }));
+      },
+      onAdd: (line: Extract<TalkLessonLine, { t: "add" }>) => {
+        lineIn();
+        firstLine();
+        bubbleLines.current += 1;
+        setBubble((b) => lessonBubbleStep(b, line));
+        queue.enqueue([{ text: line.en, w: "card" }]);
+      },
+      onSound: (line: Extract<TalkLessonLine, { t: "sound" }>) => {
+        lineIn();
+        firstLine();
+        // 쌓기 전 줄 차례를 싣는다(들려줬는지 되찾기 — playedSoundsOf)
+        const index = bubbleLines.current;
+        bubbleLines.current += 1;
+        setBubble((b) => lessonBubbleStep(b, line));
+        // 되묻는 차례에 그대로 둔 앞 차례의 소리 줄은 단추만 두고 읽지 않는다(I-1 — 들은 도움 · 힌트 종류의 입력도 그대로)
+        if (!isKeptSoundLine(line))
+          queue.enqueue(lessonSpeakItemsOf(line, view.level, index));
+      },
+      onEnd: (n: TalkLessonNext, chat?: ChatEndSignal) => {
+        lineIn();
+        waitDone();
+        pendingSend.current = null;
+        retryAction.current = null;
+        setWaitingSince(null);
+        counters.current = speakingCounters(
+          counters.current,
+          { type: "next-activity" },
+          counterLimits,
+        ).state;
+        applyEnd(n, chat);
+        setBubble((b) => ({ ...b, done: true }));
+      },
+      onResting: () => {
+        if (quietFailed("resting")) {
+          // 쉬는 안내로 간다(떠남은 쉼 효과가 보낸다). 풀리면 다시 연 아이 차례로 돌아온다 — 조용함 요청은 다시 보내지 않는다
+          setResting(true);
+          return;
+        }
+        waitDone();
+        pendingSend.current = null;
+        retryAction.current = null;
+        restResend.current = quiet === "timer" ? null : body;
+        setQuietWaiting(false);
+        setResting(true);
+      },
+      onBreak: (line: { en: string; ko?: string }) => {
+        lineIn();
+        // 쉬는 안내는 떠남 — 그 줄을 넣기 전에 층을 닫는다(기계 검토 6절 8)
+        leaveDiscard(discardRef.current, { close: true });
+        pendingSend.current = null;
+        retryAction.current = null;
+        setWaitingSince(null);
+        bubbleLines.current = 1;
+        setBubble({
+          lines: [{ t: "s", en: line.en }],
+          ...(line.ko ? { ko: line.ko } : {}),
+          done: true,
+        });
+        queue.enqueue([line.en]);
+        setPhase("break");
+      },
+      onClose: (line: Extract<TalkLessonLine, { t: "close" }>) => {
+        lineIn();
+        waitDone();
+        pendingSend.current = null;
+        retryAction.current = null;
+        setWaitingSince(null);
+        if (lessonCloseActionOf(line) === "wrap") {
+          // 참여 완료 뒤 1-가 하루 안전 상한: 정리 → 마무리(8절). 마무리 자료를 못 읽으면 끝인사와 '수업 목록'
+          void readTalkLessonWrap({ sessionId: view.sessionId })
+            .catch(() => undefined)
+            .then((out) => {
+              if (out?.ok) {
+                setWrap(out.wrap);
+                setStage("wrap");
+                return;
+              }
+              showClosed(line.farewell);
+            });
+          return;
+        }
+        showClosed(line.farewell);
+      },
+      onError: () => {
+        if (quietFailed("error")) return;
+        waitDone();
+        setQuietWaiting(false);
+        setWaitingSince(null);
+        setPhase("failed");
+      },
+    };
+    let result: TalkTurnResult;
+    if (quiet === "timer") {
+      // 한 번만 보낸다(되풀이가 같은 조용함을 두 번 부르지 않게). 선생님 생각 표시는 켜되 말풍선은 첫 줄까지 그대로
+      setWaitingSince(performance.now());
+      result = await sendTalkLessonTurn(body, handlers, {
+        signal: controller.signal,
+      });
+    } else {
+      result = await sendTalkLessonTurnRetrying(body, handlers, {
         signal: controller.signal,
         refresh: () => router.refresh(),
         onAttempt: () => {
           first = true;
-          setTurnKey((k) => k + 1);
-          setTypedDone(false);
-          setTypedLines(0);
-          setSoundTrack(SOUND_TRACK_START);
-          setPlayed(new Set());
-          // 새 턴이 흐르는 동안 앞 턴의 그림 · 받침 설명을 붙이지 않는다(끝 줄이 이 턴 값을 다시 싣는다 — 재검토 N-2)
-          setImageKey(undefined);
-          setExplanation(undefined);
-          bubbleLines.current = 0;
-          setBubble(LESSON_BUBBLE_START);
+          resetForAttempt();
           setWaitingSince(performance.now());
         },
-      },
-    );
+      });
+    }
     if (inflight.current === controller) inflight.current = null;
-    if (result === "offline") {
+    if (quietFailed(result)) return;
+    if (result === "offline" || result === "stale") {
       waitDone();
+      setQuietWaiting(false);
       setWaitingSince(null);
       setPhase("offline");
     }
+  }
+
+  /**
+   * 끊긴 조용함 요청의 이어 하기(rev-chat-s1 6절 W 2 — 같은 요청을 다시 보내지 않음): 화면 자료를 다시 읽어 서버가 받지 않았으면 아이 차례를 다시
+   * 열고(열림은 다시 넣지 않음), 서버가 끝냈거나 끊긴 조용함 행이 있으면 판을 다시 읽어 이어 하기 길로 연다(chatQuietResumeOf). 자료를 못 읽었고
+   * 선생님 줄을 이미 받았으면 끊김 줄이고, '다시 해 볼래요'가 이 이어 하기를 다시 한다. 읽는 동안은 아이 차례를 열지 않는다(moving).
+   */
+  async function quietResume(lines: number, turnNo: number) {
+    setPhase("moving");
+    const fresh = await loadTalkLessonView({ sessionId: view.sessionId }).catch(
+      () => undefined,
+    );
+    const next = chatQuietResumeOf({ fresh, turnNo, lines });
+    if (next === "reopen") {
+      setPhase("child");
+      return;
+    }
+    if (next === "refresh") {
+      router.refresh();
+      return;
+    }
+    retryAction.current = () => void quietResume(lines, turnNo);
+    setPhase("offline");
   }
 
   /** 앞 기록 뒤 끝난 듣기 · 선생님 쪽 발화 감시의 요약(C149 · 정한 것 10 — 글 · 소리 없음). */
@@ -1731,6 +2117,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         ? {}
         : { prevPerceivedWaitMs: perceived.current }),
       clientListen: takeClientListen(),
+      // 이야기 방식: 후보 수를 넘긴 차례의 인식기 칸(다른 후보 글은 이 본문에만 — spec 설계 11). 없으면 칸 없음
+      ...(send.recognizer === undefined ? {} : { recognizer: send.recognizer }),
     };
     perceived.current = undefined;
     listenEndedAt.current = send.listenEndedAt;
@@ -1739,6 +2127,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
 
   /** '홈': 참여 완료 전이면 그대로(진행), 뒤면 닫히고 마무리 첫 장 뒤 홈. 막힘 · 쉼의 '홈'은 바로 홈. 정리 · 마무리 중이면 바로 홈. */
   async function home({ firstCard = true }: { firstCard?: boolean } = {}) {
+    // 떠나는 중에는 조용함 요청을 보내지 않는다(그 차례를 거둠)
+    quietEvent({ type: "hidden", now: performance.now() });
     setBusy(true);
     // 홈은 떠남(마무리 첫 장 · 홈으로 — 층을 닫는다)
     leaveDiscard(discardRef.current, { close: true });
@@ -1767,10 +2157,12 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
    */
   async function stop(confirmed: boolean) {
     setBusy(true);
+    stopping.current = true;
     const out = await stopTalkLesson({
       sessionId: view.sessionId,
       confirmed,
     }).catch(() => undefined);
+    stopping.current = false;
     setBusy(false);
     if (out && !out.ok && out.reason === "needs_confirm") {
       setConfirmStop(true);
@@ -1812,6 +2204,30 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     retryAction.current = null;
     applyMoveOutcome(out);
   }
+
+  // 이야기 방식: 타이머가 보낼 때가 되면 조용함 입구를 한 번(층의 quiet · 서버 기다림 · 아이 차례 닫기를 같은 처리 안에서 — submit)
+  sendQuietRef.current = () => {
+    void submit(leadOpenBodyOf(view.sessionId, "quiet"), "first", "timer");
+  };
+  quietAllowed.current =
+    phase === "child" &&
+    stage === "talk" &&
+    blocked === undefined &&
+    !resting &&
+    !busy &&
+    !confirmStop &&
+    started &&
+    noticeSeen;
+  /** 이야기 방식 힌트 단 하나(힌트 받는 서버 액션 — 응답 읽기는 talk-stream chatHintReplyOfRaw 한 곳). */
+  const chatHintFetch: ChatHintFetch = async ({ tier, retry }) => {
+    setNudge(false);
+    const raw = await revealTalkLessonHint({
+      sessionId: view.sessionId,
+      tier,
+      ...(retry > 0 ? { retry } : {}),
+    }).catch(() => undefined);
+    return chatHintReplyOfRaw(raw);
+  };
 
   // 버리는 듣기 층의 화면 몫(층이 없으면 넘기지 않는다 — 아이 차례 · 따라 말하기가 지금 그대로)
   const turnDiscard: TurnDiscard | undefined =
@@ -2138,9 +2554,11 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
               entries={log}
               englishName={view.englishName}
               teacherName={teacherName}
-              listening={listening}
+              // 조용함 요청 뒤 선생님 줄이 오기 전에는 다시 듣기를 막는다(그 사이 다른 읽기를 넣지 않음)
+              listening={listening || quietWaiting}
               bottomKey={turnKey}
               onReplay={(texts) => {
+                quietInput("replay");
                 speech?.unlockFromGesture();
                 queue.replay(texts);
               }}
@@ -2155,7 +2573,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                 waitSeconds={view.settings.ui.waitHintSeconds}
                 {...(explanation ? { explanation } : {})}
                 {...(picture ? { picture } : {})}
-                listening={listening}
+                listening={listening || quietWaiting}
                 soundRetry={soundRetry}
                 soundless={{
                   ...soundless,
@@ -2179,10 +2597,12 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   setTypedLines(lessonShownEnglishOf(bubble).length);
                 }}
                 onReplay={() => {
+                  quietInput("replay");
                   speech?.unlockFromGesture();
                   queue.replay(lessonSpokenItemsOf(bubble, view.level));
                 }}
                 onSound={(items) => {
+                  quietInput("sound_line");
                   speech?.unlockFromGesture();
                   queue.replay(items);
                 }}
@@ -2251,6 +2671,16 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   onSend={onChildSend}
                   flashDontKnow={flash}
                   discard={turnDiscard}
+                  // 이야기 방식(끝 줄 신호가 있는 차례만): 힌트 단추 · 후보 수 · 조용함 입력
+                  chatHint={chatTurn?.signal.hint ? chatHintFetch : undefined}
+                  alternatives={chatTurn?.signal.alternatives}
+                  onInput={quietInput}
+                  onHintAutoOpen={() =>
+                    quietEvent({
+                      type: "hint-auto-open",
+                      now: performance.now(),
+                    })
+                  }
                   // 위에 보이는 짧은 말 말풍선(아이 차례를 화면 안으로 — 화면 판정 I-2)
                   shortLine={
                     shortLine?.turn === turnKey ? shortLine : undefined
@@ -2261,7 +2691,10 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                 <LessonChoice
                   busy={busy}
                   onMore={() => void more()}
-                  onStop={() => void stop(false)}
+                  onStop={() => {
+                    quietInput("stop");
+                    void stop(false);
+                  }}
                 />
               ) : null}
               {phase === "break" ? (
@@ -2393,7 +2826,11 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
               tabIndex={showStop ? undefined : -1}
               className={cn(!showStop && "invisible")}
               disabled={busy || !showStop}
-              onClick={() => void stop(false)}
+              onClick={() => {
+                // 구석 '그만하기' 누름도 그 차례의 입력이다(입력 갈래 여덟 — 보완 4 (9))
+                quietInput("stop");
+                void stop(false);
+              }}
             >
               {TALK_TEXT.stop}
             </SmallButton>

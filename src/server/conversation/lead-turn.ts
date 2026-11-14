@@ -197,7 +197,7 @@ async function leadCefrOf(
 }
 
 /** 모든 단계 어휘(좁은 정의의 단계 · 품사 사전과 허용 낱말 원형 — vocab.json 과 같은 행, 묶음 R4 LeadLevelInput.lexicon). */
-async function readLexiconEntries(db: Db): Promise<LexiconEntry[]> {
+export async function readLexiconEntries(db: Db): Promise<LexiconEntry[]> {
   const rows = await db
     .select({
       word: vocab.word,
@@ -242,7 +242,7 @@ async function tagNarrowRows(
  * 길(안내문 글 없음 · 재료 읽기 예외 등)은 표지를 지운다(13절 C241 보완 2 '호출하지 않고 끝나는 길에서는 표지를 남기지 않는다', 검토 rev-s1-2 N-1).
  * 호출이 나간 뒤의 실패는 ai_calls 행이 있어 지금 규칙(turnInFlight)대로 둔다.
  */
-type LeadOpenClaim = { id: string; at: Date; called: boolean };
+export type LeadOpenClaim = { id: string; at: Date; called: boolean };
 
 /** 이 차례를 연 것: 아이 말(아이 행이 이미 저장됨) 또는 아이 말 없이 부르는 입구(대화 토막 첫 차례 · 더 이야기하기 — 아이 행 없음). */
 type LeadEntry =
@@ -250,7 +250,10 @@ type LeadEntry =
   | { kind: "open"; open: LeadOpen; turnNo: number; claim: LeadOpenClaim };
 
 /** 호출 전에 끝난 입구의 표지를 지운다(시도 id 와 그 요청이 넣은 시각이 같을 때만 — 그 사이 다른 요청이 고쳐 잡았으면 남긴다). 실패는 기록만. */
-async function releaseOpenClaim(db: Db, claim: LeadOpenClaim): Promise<void> {
+export async function releaseOpenClaim(
+  db: Db,
+  claim: LeadOpenClaim,
+): Promise<void> {
   try {
     await db
       .delete(attempts)
@@ -266,7 +269,7 @@ async function releaseOpenClaim(db: Db, claim: LeadOpenClaim): Promise<void> {
 }
 
 /** 카드 대사 한 줄(뜻은 그 단계가 뜻 줄을 보일 때만 — lesson-turn.ts 의 내보내지 않은 lineOf 와 같은 꼴). */
-function cardLineOf(
+export function cardLineOf(
   line: { en: string; ko?: string | undefined },
   koMeaning: boolean,
 ): { en: string; ko?: string } {
@@ -293,7 +296,7 @@ export function leadTurnAfterChild(
 /**
  * 아이 말 없이 부르는 입구(검토 rev-s2 I-2 — 화면이 토막 넘김의 leadTurn start · 더 이야기하기의 leadTurn more 를 받으면 턴 요청으로 부른다,
  * 묶음 S3 가 turn.ts 에서 잇는다). 아이 행을 만들지 않고 턴 셈 · 대화 안전 상한에 넣지 않는다. 받지 않는 때는 stale, 같은 입구를 다시 보내
- * 그 입구가 쓴 행이 마지막 행이면 저장한 행을 그대로 다시 흘린다(AI 없음). 'AI 쉬는 중'이면 아이 차례 길과 같은 규칙(8절)으로, 참여 완료 전
+ * 그 입구가 쓴 행이 마지막 행이면 저장한 행을 그대로 다시 흘린다(AI 없음 — 그 입구를 지금 새로 받을 수 없을 때만, 고침 L1). 'AI 쉬는 중'이면 아이 차례 길과 같은 규칙(8절)으로, 참여 완료 전
  * (대화 토막 첫 차례)은 resting, 참여 완료 뒤('더 이야기하기')는 수업을 정리로 닫고 close 줄(쉬는 중 · 되짚을 말)을 낸다(화면 묶음 S3 보고 4절 1 —
  * 쉬는 줄만 내면 참여 완료를 한 아이가 정리에 닿지 못한다). 같은 차례의 입구가 아직 돌고 있으면
  * (화면의 다시 보냄 · 연결 끊김 뒤 다시 부름) stale 이다 — 잠금 안에서 호출 전에 표지 행(leadOpenAttemptId)을 넣고, 이미 있으면 그 시각부터
@@ -341,16 +344,15 @@ export async function runLeadOpenTurn(
           last?.speaker !== "tori"
         )
           return { kind: "stale" };
-        if (leadOpenReplayOf(request.open, last))
+        const accepts = leadOpenAcceptsOf(request.open, {
+          segment: state.segment,
+          firstQuestionDue: pos.firstQuestionDue,
+          choice: pos.choice,
+        });
+        // 다시 흘림은 그 입구를 지금 새로 받을 수 없을 때만이다(마무리 제안으로 끝난 more 차례 뒤의 more 는 새 차례 — 고침 L1)
+        if (leadOpenReplayOf(request.open, last, accepts))
           return { kind: "replay", state, teacher: last };
-        if (
-          !leadOpenAcceptsOf(request.open, {
-            segment: state.segment,
-            firstQuestionDue: pos.firstQuestionDue,
-            choice: pos.choice,
-          })
-        )
-          return { kind: "stale" };
+        if (!accepts) return { kind: "stale" };
         // 'AI 쉬는 중'이면 표지 행을 남기지 않고 닫는다(쉬는 중이 풀린 뒤 다시 부르면 바로 받게). 값은 트랜잭션 앞에서 기다려 둔 것이다.
         // 아이 차례 길(lesson-turn.ts (4))과 같은 규칙: 참여 완료 전이면 쉼(세션 진행), 뒤면 정리로 닫고 끝맺음은 미룬다(쉬는 중이 풀린 뒤
         // 홈 진입이 부른다). 닫기는 그 길의 closeLessonOnTurn 의 참여 완료 뒤 갈래와 같다(토막 wrap_up · 끝맺음 기록 대기 — 그 함수는

@@ -58,7 +58,7 @@ const settingsWith = (value: unknown) =>
 describe("회화 방식 고르기 talk.lead_mode(회화 Claude 주도 묶음 M)", () => {
   it('AC-26a 설정 키 talk.lead_mode 는 시드에 household · advanced · "app" 이고 TEST_SETTINGS 도 "app" 이다', () => {
     expect(TALK_LEAD_MODE_KEY).toBe("talk.lead_mode");
-    expect([...TALK_LEAD_MODES]).toEqual(["app", "claude"]);
+    expect([...TALK_LEAD_MODES]).toEqual(["app", "claude", "chat"]);
     const row = seed.settings.find((s) => s.key === TALK_LEAD_MODE_KEY);
     expect(row).toEqual({
       key: TALK_LEAD_MODE_KEY,

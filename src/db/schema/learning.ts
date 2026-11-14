@@ -225,6 +225,8 @@ export const talkTurns = pgTable(
     clientListen: jsonb("client_listen"),
     // 선생님 행의 차례 정보 칸(C189 — 종류 · 갈래 · 카드 항목 · 노린 것 · 받침 · 도움 · AI 제안 · 소리 줄 글, 꼴은 core/conversation/move)
     move: jsonb("move"),
+    // 아이 행의 이야기 방식 판정 기록(이야기 방식 spec 설계 8-4 — 앱 판정 · 기존 꼴 판정 · 차이 표지, 이야기 방식에서만 채우고 그 밖은 null. 학습 근거 · 흐름의 입력이 아니다)
+    chatJudge: jsonb("chat_judge"),
     recordedAt: tstz("recorded_at").notNull(),
   },
   (t) => [

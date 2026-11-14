@@ -1,0 +1,5202 @@
+{
+  "note": "묶음 V 변경 앞 기계 · 층에 고정 표본을 돌려 뜬 음성 기록 차례(AC-19). 다시 뜨지 않는다 — tests/unit/discard-quiet.test.ts",
+  "machine": [
+    {
+      "name": "보통 차례 둘(진짜 → 기다림 → 죽은 버림 안 선생님 말 → 진짜)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 2822,
+                "s0": 1002,
+                "s1": 2502,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 15000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 15000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 17000,
+          "ph": "hold"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 17250,
+          "ph": "probe"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [],
+          "wake": 17250,
+          "ph": "probe"
+        },
+        {
+          "t": 17040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 17042,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 18542,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 36542,
+          "ph": "dead"
+        },
+        {
+          "t": 18542,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 18842,
+          "ph": "dead"
+        },
+        {
+          "t": 18842,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 2
+            }
+          ],
+          "wake": 21842,
+          "ph": "closing"
+        },
+        {
+          "t": 18862,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 19862,
+          "ph": "gap"
+        },
+        {
+          "t": 19862,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 24000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 1862,
+                "s0": 42,
+                "s1": 1542,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 27000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 29000,
+          "ph": "hold"
+        },
+        {
+          "t": 29000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            }
+          ],
+          "wake": 29250,
+          "ph": "probe"
+        },
+        {
+          "t": 29040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 47000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "살아 있는 버림 뒤 다시 연 버림이 죽은 버림(C216)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5250,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 8250,
+          "ph": "closing"
+        },
+        {
+          "t": 5270,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 5400,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 7270,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 7520,
+          "ph": "probe"
+        },
+        {
+          "t": 7310,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7312,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 8812,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 26812,
+          "ph": "dead"
+        },
+        {
+          "t": 8812,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 9112,
+          "ph": "dead"
+        },
+        {
+          "t": 9112,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 2
+            }
+          ],
+          "wake": 12112,
+          "ph": "closing"
+        },
+        {
+          "t": 9132,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 10132,
+          "ph": "gap"
+        },
+        {
+          "t": 10132,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 14000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "reopen",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 1862,
+                "s0": 42,
+                "s1": 1542,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 19000,
+          "ph": "hold"
+        },
+        {
+          "t": 19000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            }
+          ],
+          "wake": 19250,
+          "ph": "probe"
+        },
+        {
+          "t": 19040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 37000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "다시 연 버림도 살아 있음(대기 live, 세션 없이 읽음)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5250,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 8250,
+          "ph": "closing"
+        },
+        {
+          "t": 5270,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 5400,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [],
+          "wake": 7270,
+          "ph": "hold"
+        },
+        {
+          "t": 7270,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 7520,
+          "ph": "probe"
+        },
+        {
+          "t": 7520,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 2
+            }
+          ],
+          "wake": 10520,
+          "ph": "closing"
+        },
+        {
+          "t": 7540,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 7542,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 7670,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 9042,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 10042,
+          "ph": "rest"
+        },
+        {
+          "t": 9042,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 10042,
+          "ph": "rest"
+        },
+        {
+          "t": 10042,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 14000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "live",
+                "sr": true,
+                "why": "live",
+                "d": 270,
+                "sk": "none",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 19000,
+          "ph": "hold"
+        },
+        {
+          "t": 19000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            }
+          ],
+          "wake": 19250,
+          "ph": "probe"
+        },
+        {
+          "t": 19040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 37000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "마이크 안 잡힘(deaf) 뒤 곧바로 버림 · 다시 말할 차례 · 회복",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 2000,
+          "in": {
+            "type": "real-end",
+            "kind": "deaf"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 2250,
+          "ph": "probe"
+        },
+        {
+          "t": 2030,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 20000,
+          "ph": "dead"
+        },
+        {
+          "t": 2500,
+          "in": {
+            "type": "again"
+          },
+          "fx": [
+            {
+              "type": "need-sound",
+              "kind": "again"
+            }
+          ],
+          "wake": 20000,
+          "ph": "dead"
+        },
+        {
+          "t": 2500,
+          "in": {
+            "type": "press",
+            "auto": true
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": true,
+                "sayNow": false,
+                "recovering": true,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 20000,
+          "ph": "dead"
+        },
+        {
+          "t": 2500,
+          "in": {
+            "type": "speak-request",
+            "id": 1,
+            "sound": "short"
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 2502,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 4002,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 22002,
+          "ph": "dead"
+        },
+        {
+          "t": 4002,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 4302,
+          "ph": "dead"
+        },
+        {
+          "t": 4302,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 7302,
+          "ph": "closing"
+        },
+        {
+          "t": 4322,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 5322,
+          "ph": "gap"
+        },
+        {
+          "t": 5322,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 30,
+                "d": 2322,
+                "s0": 502,
+                "s1": 2002,
+                "sk": "short",
+                "np": 0,
+                "n": 0,
+                "w": 2822
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": true,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 8322,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 10322,
+          "ph": "hold"
+        },
+        {
+          "t": 10322,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 10572,
+          "ph": "probe"
+        },
+        {
+          "t": 10362,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 28322,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "'잘 모르겠어요' 차례(대기 discard 에서 세션 없이 읽음)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "dont-know"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 14000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 14000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 14002,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 15502,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 16502,
+          "ph": "rest"
+        },
+        {
+          "t": 15502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 16502,
+          "ph": "rest"
+        },
+        {
+          "t": 16502,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 20000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": true,
+                "why": "sound",
+                "as": 40,
+                "d": 2822,
+                "s0": 1002,
+                "s1": 2502,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 23000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 25000,
+          "ph": "hold"
+        },
+        {
+          "t": 25000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 25250,
+          "ph": "probe"
+        },
+        {
+          "t": 25040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 43000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "숨김 · 돌아옴 뒤 버림부터(까닭 hidden)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 9000,
+          "in": {
+            "type": "hidden"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 52822,
+          "ph": "reopen"
+        },
+        {
+          "t": 11000,
+          "in": {
+            "type": "visible"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": true
+              }
+            }
+          ],
+          "wake": 52822,
+          "ph": "reopen"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 12250,
+          "ph": "probe"
+        },
+        {
+          "t": 12040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 12042,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 13542,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 31542,
+          "ph": "dead"
+        },
+        {
+          "t": 13542,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 13842,
+          "ph": "dead"
+        },
+        {
+          "t": 13842,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 2
+            }
+          ],
+          "wake": 16842,
+          "ph": "closing"
+        },
+        {
+          "t": 13862,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 14862,
+          "ph": "gap"
+        },
+        {
+          "t": 14862,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 16000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "reopen",
+                "sr": false,
+                "why": "sound",
+                "rw": "hidden",
+                "as": 40,
+                "d": 1862,
+                "s0": 42,
+                "s1": 1542,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 19000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 21000,
+          "ph": "hold"
+        },
+        {
+          "t": 21000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            }
+          ],
+          "wake": 21250,
+          "ph": "probe"
+        },
+        {
+          "t": 21040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 39000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "버림 안 들려주지 못함 두 번(살아 있는 버림으로 닫음)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6005,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": false
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6005,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 7000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7005,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": false
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10005,
+          "ph": "closing"
+        },
+        {
+          "t": 7005,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 10005,
+          "ph": "closing"
+        },
+        {
+          "t": 7025,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8025,
+          "ph": "rest"
+        },
+        {
+          "t": 8025,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "live",
+                "sr": false,
+                "why": "not_played",
+                "as": 40,
+                "d": 2025,
+                "sk": "none",
+                "np": 2,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 15000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 17000,
+          "ph": "hold"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 17250,
+          "ph": "probe"
+        },
+        {
+          "t": 17040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 35000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "소리 없는 죽은 버림의 안전 상한 → 버림부터(cap)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 23000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 26000,
+          "ph": "closing"
+        },
+        {
+          "t": 23020,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": true
+              }
+            }
+          ],
+          "wake": 68020,
+          "ph": "reopen"
+        },
+        {
+          "t": 30000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 30250,
+          "ph": "probe"
+        },
+        {
+          "t": 30040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 30042,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 31542,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 49542,
+          "ph": "dead"
+        },
+        {
+          "t": 31542,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 31842,
+          "ph": "dead"
+        },
+        {
+          "t": 31842,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 2
+            }
+          ],
+          "wake": 34842,
+          "ph": "closing"
+        },
+        {
+          "t": 31862,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 32862,
+          "ph": "gap"
+        },
+        {
+          "t": 32862,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 36000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "reopen",
+                "sr": false,
+                "why": "sound",
+                "rw": "cap",
+                "as": 40,
+                "d": 1862,
+                "s0": 42,
+                "s1": 1542,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 39000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 41000,
+          "ph": "hold"
+        },
+        {
+          "t": 41000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            }
+          ],
+          "wake": 41250,
+          "ph": "probe"
+        },
+        {
+          "t": 41040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 59000,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "읽는 중 누름(시작 전 끊김 — F9 짧은 말)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6001,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "cancel-speaking"
+            },
+            {
+              "type": "need-sound",
+              "kind": "again"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": true,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6001,
+          "in": {
+            "type": "speak-request",
+            "id": 2,
+            "sound": "short"
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6003,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7503,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25503,
+          "ph": "dead"
+        },
+        {
+          "t": 7503,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7803,
+          "ph": "dead"
+        },
+        {
+          "t": 7803,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10803,
+          "ph": "closing"
+        },
+        {
+          "t": 7823,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8823,
+          "ph": "gap"
+        },
+        {
+          "t": 8823,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 2823,
+                "s0": 1003,
+                "s1": 2503,
+                "sk": "short",
+                "np": 0,
+                "n": 0,
+                "w": 2822
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": true,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 11823,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 13823,
+          "ph": "hold"
+        },
+        {
+          "t": 13823,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 14073,
+          "ph": "probe"
+        },
+        {
+          "t": 13863,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 31823,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "쉰 뒤(rest 넘음) 세션 없이 읽고 누르면 간격 뒤 진짜",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 60000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 60002,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 61502,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 62502,
+          "ph": "rest"
+        },
+        {
+          "t": 61502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 62502,
+          "ph": "rest"
+        },
+        {
+          "t": 62000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": true,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 62502,
+          "ph": "rest"
+        },
+        {
+          "t": 62502,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest",
+                "w": 502
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": true,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 65502,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 67502,
+          "ph": "hold"
+        },
+        {
+          "t": 67502,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 67752,
+          "ph": "probe"
+        },
+        {
+          "t": 67542,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 85502,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "저절로 끝난 버림 · 떠남 · 마이크 확인",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 2822,
+                "s0": 1002,
+                "s1": 2502,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 15000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 17000,
+          "ph": "hold"
+        },
+        {
+          "t": 17000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 17250,
+          "ph": "probe"
+        },
+        {
+          "t": 17040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 35000,
+          "ph": "dead"
+        },
+        {
+          "t": 17600,
+          "in": {
+            "type": "discard-end",
+            "discard": 2
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": true
+              }
+            }
+          ],
+          "wake": 62600,
+          "ph": "reopen"
+        },
+        {
+          "t": 20000,
+          "in": {
+            "type": "check"
+          },
+          "fx": [],
+          "wake": 62600,
+          "ph": "reopen"
+        },
+        {
+          "t": 22000,
+          "in": {
+            "type": "speak-request",
+            "id": 2
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 3
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 22250,
+          "ph": "probe"
+        },
+        {
+          "t": 22040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 3
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 22042,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 23542,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 41542,
+          "ph": "dead"
+        },
+        {
+          "t": 23542,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 23842,
+          "ph": "dead"
+        },
+        {
+          "t": 23842,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 3
+            }
+          ],
+          "wake": 26842,
+          "ph": "closing"
+        },
+        {
+          "t": 23862,
+          "in": {
+            "type": "discard-end",
+            "discard": 3
+          },
+          "fx": [],
+          "wake": 24862,
+          "ph": "gap"
+        },
+        {
+          "t": 24862,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 26000,
+          "in": {
+            "type": "leave"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": true
+              }
+            }
+          ],
+          "wake": 68862,
+          "ph": "reopen"
+        }
+      ]
+    },
+    {
+      "name": "틀이 시작 알림 전 읽기를 끊음(cut) 뒤 누름 — F9 짧은 말",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6001,
+          "in": {
+            "type": "cut",
+            "started": false
+          },
+          "fx": [],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6001,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "need-sound",
+              "kind": "again"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": true,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 23000,
+          "ph": "dead"
+        },
+        {
+          "t": 6001,
+          "in": {
+            "type": "speak-request",
+            "id": 2,
+            "sound": "short"
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 2
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6003,
+          "in": {
+            "type": "speak-start",
+            "id": 2
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7503,
+          "in": {
+            "type": "speak-end",
+            "id": 2,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25503,
+          "ph": "dead"
+        },
+        {
+          "t": 7503,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7803,
+          "ph": "dead"
+        },
+        {
+          "t": 7803,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10803,
+          "ph": "closing"
+        },
+        {
+          "t": 7823,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8823,
+          "ph": "gap"
+        },
+        {
+          "t": 8823,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 2823,
+                "s0": 1003,
+                "s1": 2503,
+                "sk": "short",
+                "np": 0,
+                "n": 0,
+                "w": 2822
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": true,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 11823,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 13823,
+          "ph": "hold"
+        },
+        {
+          "t": 13823,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 14073,
+          "ph": "probe"
+        },
+        {
+          "t": 13863,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 31823,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "굳은 speaking: 간격 끝에서 cancel 뒤 after 기다림 · 걸린 누름",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "server-wait",
+            "on": true
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 3000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 5000,
+          "ph": "hold"
+        },
+        {
+          "t": 5000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            }
+          ],
+          "wake": 5250,
+          "ph": "probe"
+        },
+        {
+          "t": 5040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "server-wait",
+            "on": false
+          },
+          "fx": [],
+          "wake": 24000,
+          "ph": "dead"
+        },
+        {
+          "t": 6000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 6002,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 25502,
+          "ph": "dead"
+        },
+        {
+          "t": 7502,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7600,
+          "in": {
+            "type": "synth",
+            "speaking": true
+          },
+          "fx": [],
+          "wake": 7802,
+          "ph": "dead"
+        },
+        {
+          "t": 7802,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 10802,
+          "ph": "closing"
+        },
+        {
+          "t": 7822,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": true,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 8822,
+          "ph": "gap"
+        },
+        {
+          "t": 8822,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "cancel-speaking"
+            }
+          ],
+          "wake": 9122,
+          "ph": "gap"
+        },
+        {
+          "t": 9122,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "discard",
+                "sr": false,
+                "why": "sound",
+                "as": 40,
+                "d": 2822,
+                "s0": 1002,
+                "s1": 2502,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0,
+                "w": 1122
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": true,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "synth",
+            "speaking": false
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 12122,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 14122,
+          "ph": "hold"
+        },
+        {
+          "t": 14122,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 14372,
+          "ph": "probe"
+        },
+        {
+          "t": 14162,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 32122,
+          "ph": "dead"
+        }
+      ]
+    },
+    {
+      "name": "마이크를 쓸 수 없음(unavailable)으로 끝난 진짜 뒤 버림부터(no_mic)",
+      "log": [
+        {
+          "t": 0,
+          "in": {
+            "type": "unlock"
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 0,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "rest"
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 2000,
+          "in": {
+            "type": "real-end",
+            "kind": "unavailable"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": true
+              }
+            }
+          ],
+          "wake": 47000,
+          "ph": "reopen"
+        },
+        {
+          "t": 4000,
+          "in": {
+            "type": "speak-request",
+            "id": 1
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 1
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": 4250,
+          "ph": "probe"
+        },
+        {
+          "t": 4040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 1
+          },
+          "fx": [
+            {
+              "type": "speak-release",
+              "id": 1
+            }
+          ],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 4042,
+          "in": {
+            "type": "speak-start",
+            "id": 1
+          },
+          "fx": [],
+          "wake": null,
+          "ph": "dead"
+        },
+        {
+          "t": 5542,
+          "in": {
+            "type": "speak-end",
+            "id": 1,
+            "heard": true
+          },
+          "fx": [],
+          "wake": 23542,
+          "ph": "dead"
+        },
+        {
+          "t": 5542,
+          "in": {
+            "type": "sound-end"
+          },
+          "fx": [],
+          "wake": 5842,
+          "ph": "dead"
+        },
+        {
+          "t": 5842,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-stop",
+              "discard": 1
+            }
+          ],
+          "wake": 8842,
+          "ph": "closing"
+        },
+        {
+          "t": 5862,
+          "in": {
+            "type": "discard-end",
+            "discard": 1
+          },
+          "fx": [],
+          "wake": 6862,
+          "ph": "gap"
+        },
+        {
+          "t": 6862,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": true,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "rest"
+        },
+        {
+          "t": 9000,
+          "in": {
+            "type": "press"
+          },
+          "fx": [
+            {
+              "type": "note",
+              "dc": {
+                "g": "reopen",
+                "sr": false,
+                "why": "sound",
+                "rw": "no_mic",
+                "as": 40,
+                "d": 1862,
+                "s0": 42,
+                "s1": 1542,
+                "sk": "teacher",
+                "np": 0,
+                "n": 0
+              }
+            },
+            {
+              "type": "real-start"
+            },
+            {
+              "type": "view",
+              "view": {
+                "waiting": false,
+                "sayNow": false,
+                "recovering": false,
+                "canListen": false,
+                "reopenIdle": false
+              }
+            }
+          ],
+          "wake": null,
+          "ph": "real"
+        },
+        {
+          "t": 12000,
+          "in": {
+            "type": "real-end",
+            "kind": "result"
+          },
+          "fx": [],
+          "wake": 14000,
+          "ph": "hold"
+        },
+        {
+          "t": 14000,
+          "in": {
+            "type": "tick"
+          },
+          "fx": [
+            {
+              "type": "discard-start",
+              "discard": 2
+            }
+          ],
+          "wake": 14250,
+          "ph": "probe"
+        },
+        {
+          "t": 14040,
+          "in": {
+            "type": "discard-audio",
+            "discard": 2
+          },
+          "fx": [],
+          "wake": 32000,
+          "ph": "dead"
+        }
+      ]
+    }
+  ],
+  "layerOn": [
+    {
+      "at": 0,
+      "kind": "speak",
+      "text": " "
+    },
+    {
+      "at": 0,
+      "kind": "speak-event",
+      "type": "error",
+      "code": "interrupted"
+    },
+    {
+      "at": 300,
+      "kind": "discard-note",
+      "dc": {
+        "g": "rest",
+        "w": 300
+      }
+    },
+    {
+      "at": 300,
+      "kind": "listen-begin",
+      "listen": 1,
+      "rule": {
+        "endSilenceMs": 1000,
+        "chunkMs": 60000
+      }
+    },
+    {
+      "at": 300,
+      "kind": "recognizer-call",
+      "listen": 1,
+      "recognizer": 1,
+      "call": "start",
+      "synth": "idle"
+    },
+    {
+      "at": 310,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "start"
+      }
+    },
+    {
+      "at": 600,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "audiostart"
+      }
+    },
+    {
+      "at": 700,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "speechstart"
+      }
+    },
+    {
+      "at": 900,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "apple",
+            "isFinal": false
+          }
+        ]
+      }
+    },
+    {
+      "at": 1100,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "apple",
+            "isFinal": true
+          }
+        ]
+      }
+    },
+    {
+      "at": 2101,
+      "kind": "recognizer-call",
+      "listen": 1,
+      "recognizer": 1,
+      "call": "stop"
+    },
+    {
+      "at": 2121,
+      "kind": "recognizer-event",
+      "listen": 1,
+      "recognizer": 1,
+      "event": {
+        "type": "end"
+      }
+    },
+    {
+      "at": 2122,
+      "kind": "listen-done",
+      "listen": 1,
+      "outcome": {
+        "kind": "result",
+        "text": "apple",
+        "pieces": ["apple"],
+        "endedBy": "silence",
+        "restarts": 0,
+        "watchdogRestarts": 0
+      }
+    },
+    {
+      "at": 4122,
+      "kind": "discard-call",
+      "discard": 1,
+      "call": "start",
+      "synth": "idle"
+    },
+    {
+      "at": 4127,
+      "kind": "discard-event",
+      "discard": 1,
+      "event": {
+        "type": "start"
+      }
+    },
+    {
+      "at": 4162,
+      "kind": "discard-event",
+      "discard": 1,
+      "event": {
+        "type": "audiostart"
+      }
+    },
+    {
+      "at": 4650,
+      "kind": "speak",
+      "text": "Nice.",
+      "voice": "Samantha"
+    },
+    {
+      "at": 4652,
+      "kind": "speak-event",
+      "type": "start"
+    },
+    {
+      "at": 6152,
+      "kind": "speak-event",
+      "type": "end"
+    },
+    {
+      "at": 6452,
+      "kind": "discard-call",
+      "discard": 1,
+      "call": "stop"
+    },
+    {
+      "at": 6472,
+      "kind": "discard-event",
+      "discard": 1,
+      "event": {
+        "type": "end"
+      }
+    },
+    {
+      "at": 10200,
+      "kind": "discard-note",
+      "dc": {
+        "g": "discard",
+        "sr": false,
+        "why": "sound",
+        "as": 40,
+        "d": 2350,
+        "s0": 530,
+        "s1": 2030,
+        "sk": "teacher",
+        "np": 0,
+        "n": 0
+      }
+    },
+    {
+      "at": 10200,
+      "kind": "listen-begin",
+      "listen": 2,
+      "rule": {
+        "endSilenceMs": 1000,
+        "chunkMs": 60000
+      }
+    },
+    {
+      "at": 10200,
+      "kind": "recognizer-call",
+      "listen": 2,
+      "recognizer": 1,
+      "call": "start",
+      "synth": "idle"
+    },
+    {
+      "at": 10210,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "start"
+      }
+    },
+    {
+      "at": 10500,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "audiostart"
+      }
+    },
+    {
+      "at": 10600,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "speechstart"
+      }
+    },
+    {
+      "at": 10800,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "banana",
+            "isFinal": false
+          }
+        ]
+      }
+    },
+    {
+      "at": 11000,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "banana",
+            "isFinal": true
+          }
+        ]
+      }
+    },
+    {
+      "at": 12001,
+      "kind": "recognizer-call",
+      "listen": 2,
+      "recognizer": 1,
+      "call": "stop"
+    },
+    {
+      "at": 12021,
+      "kind": "recognizer-event",
+      "listen": 2,
+      "recognizer": 1,
+      "event": {
+        "type": "end"
+      }
+    },
+    {
+      "at": 12022,
+      "kind": "listen-done",
+      "listen": 2,
+      "outcome": {
+        "kind": "result",
+        "text": "banana",
+        "pieces": ["banana"],
+        "endedBy": "silence",
+        "restarts": 0,
+        "watchdogRestarts": 0
+      }
+    },
+    {
+      "at": 14022,
+      "kind": "discard-call",
+      "discard": 2,
+      "call": "start",
+      "synth": "idle"
+    },
+    {
+      "at": 14027,
+      "kind": "discard-event",
+      "discard": 2,
+      "event": {
+        "type": "start"
+      }
+    },
+    {
+      "at": 14062,
+      "kind": "discard-event",
+      "discard": 2,
+      "event": {
+        "type": "audiostart"
+      }
+    },
+    {
+      "at": 14550,
+      "kind": "speak",
+      "text": "Great.",
+      "voice": "Samantha"
+    },
+    {
+      "at": 14552,
+      "kind": "speak-event",
+      "type": "start"
+    },
+    {
+      "at": 16052,
+      "kind": "speak-event",
+      "type": "end"
+    },
+    {
+      "at": 16352,
+      "kind": "discard-call",
+      "discard": 2,
+      "call": "stop"
+    },
+    {
+      "at": 16372,
+      "kind": "discard-event",
+      "discard": 2,
+      "event": {
+        "type": "end"
+      }
+    },
+    {
+      "at": 20100,
+      "kind": "discard-note",
+      "dc": {
+        "g": "discard",
+        "sr": false,
+        "why": "sound",
+        "as": 40,
+        "d": 2350,
+        "s0": 530,
+        "s1": 2030,
+        "sk": "teacher",
+        "np": 0,
+        "n": 0
+      }
+    },
+    {
+      "at": 20100,
+      "kind": "listen-begin",
+      "listen": 3,
+      "rule": {
+        "endSilenceMs": 1000,
+        "chunkMs": 60000
+      }
+    },
+    {
+      "at": 20100,
+      "kind": "recognizer-call",
+      "listen": 3,
+      "recognizer": 1,
+      "call": "start",
+      "synth": "idle"
+    },
+    {
+      "at": 20110,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "start"
+      }
+    },
+    {
+      "at": 20400,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "audiostart"
+      }
+    },
+    {
+      "at": 20500,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "speechstart"
+      }
+    },
+    {
+      "at": 20700,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "cherry",
+            "isFinal": false
+          }
+        ]
+      }
+    },
+    {
+      "at": 20900,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "result",
+        "results": [
+          {
+            "transcript": "cherry",
+            "isFinal": true
+          }
+        ]
+      }
+    },
+    {
+      "at": 21901,
+      "kind": "recognizer-call",
+      "listen": 3,
+      "recognizer": 1,
+      "call": "stop"
+    },
+    {
+      "at": 21921,
+      "kind": "recognizer-event",
+      "listen": 3,
+      "recognizer": 1,
+      "event": {
+        "type": "end"
+      }
+    },
+    {
+      "at": 21922,
+      "kind": "listen-done",
+      "listen": 3,
+      "outcome": {
+        "kind": "result",
+        "text": "cherry",
+        "pieces": ["cherry"],
+        "endedBy": "silence",
+        "restarts": 0,
+        "watchdogRestarts": 0
+      }
+    }
+  ],
+  "layerOff": {
+    "layer": null,
+    "trace": [
+      {
+        "at": 0,
+        "kind": "speak",
+        "text": " "
+      },
+      {
+        "at": 0,
+        "kind": "listen-begin",
+        "listen": 1,
+        "rule": {
+          "endSilenceMs": 1000,
+          "chunkMs": 60000
+        }
+      },
+      {
+        "at": 0,
+        "kind": "recognizer-call",
+        "listen": 1,
+        "recognizer": 1,
+        "call": "start",
+        "synth": "speaking"
+      },
+      {
+        "at": 0,
+        "kind": "speak-event",
+        "type": "start"
+      },
+      {
+        "at": 1,
+        "kind": "speak-event",
+        "type": "end"
+      },
+      {
+        "at": 10,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "start"
+        }
+      },
+      {
+        "at": 300,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "audiostart"
+        }
+      },
+      {
+        "at": 400,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "speechstart"
+        }
+      },
+      {
+        "at": 600,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "result",
+          "results": [
+            {
+              "transcript": "apple",
+              "isFinal": false
+            }
+          ]
+        }
+      },
+      {
+        "at": 800,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "result",
+          "results": [
+            {
+              "transcript": "apple",
+              "isFinal": true
+            }
+          ]
+        }
+      },
+      {
+        "at": 1801,
+        "kind": "recognizer-call",
+        "listen": 1,
+        "recognizer": 1,
+        "call": "stop"
+      },
+      {
+        "at": 1821,
+        "kind": "recognizer-event",
+        "listen": 1,
+        "recognizer": 1,
+        "event": {
+          "type": "end"
+        }
+      },
+      {
+        "at": 1822,
+        "kind": "listen-done",
+        "listen": 1,
+        "outcome": {
+          "kind": "result",
+          "text": "apple",
+          "pieces": ["apple"],
+          "endedBy": "silence",
+          "restarts": 0,
+          "watchdogRestarts": 0
+        }
+      },
+      {
+        "at": 1850,
+        "kind": "speak",
+        "text": "Nice.",
+        "voice": "Samantha"
+      },
+      {
+        "at": 1852,
+        "kind": "speak-event",
+        "type": "start"
+      },
+      {
+        "at": 3352,
+        "kind": "speak-event",
+        "type": "end"
+      },
+      {
+        "at": 4400,
+        "kind": "listen-begin",
+        "listen": 2,
+        "rule": {
+          "endSilenceMs": 1000,
+          "chunkMs": 60000
+        }
+      },
+      {
+        "at": 4400,
+        "kind": "recognizer-call",
+        "listen": 2,
+        "recognizer": 1,
+        "call": "start",
+        "synth": "idle"
+      },
+      {
+        "at": 4410,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "start"
+        }
+      },
+      {
+        "at": 4700,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "audiostart"
+        }
+      },
+      {
+        "at": 4800,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "speechstart"
+        }
+      },
+      {
+        "at": 5000,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "result",
+          "results": [
+            {
+              "transcript": "banana",
+              "isFinal": false
+            }
+          ]
+        }
+      },
+      {
+        "at": 5200,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "result",
+          "results": [
+            {
+              "transcript": "banana",
+              "isFinal": true
+            }
+          ]
+        }
+      },
+      {
+        "at": 6201,
+        "kind": "recognizer-call",
+        "listen": 2,
+        "recognizer": 1,
+        "call": "stop"
+      },
+      {
+        "at": 6221,
+        "kind": "recognizer-event",
+        "listen": 2,
+        "recognizer": 1,
+        "event": {
+          "type": "end"
+        }
+      },
+      {
+        "at": 6222,
+        "kind": "listen-done",
+        "listen": 2,
+        "outcome": {
+          "kind": "result",
+          "text": "banana",
+          "pieces": ["banana"],
+          "endedBy": "silence",
+          "restarts": 0,
+          "watchdogRestarts": 0
+        }
+      }
+    ]
+  }
+}

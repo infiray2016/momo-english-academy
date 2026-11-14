@@ -14,6 +14,7 @@ import {
 import {
   LEAD_NARROW_RECORD_TAG,
   LEAD_RECORD_TAG,
+  TALK_CHAT_RECORD_TAG,
 } from "@/core/conversation/lead-call-tags";
 import { modelPrices } from "@/db/schema/content";
 import { aiCalls, parentAlerts } from "@/db/schema/operations";
@@ -24,11 +25,33 @@ const SAME_ERROR_CODE_PATTERN = "same\\_error:%";
 /**
  * 새 회화 엔진의 표지(lead · lead.narrow — '<표지>:<갈래>')를 앞에 단 같은 오류 행도 같은 갈래로 센다(13절 C241 보완 · 검토 rev-s1 I-4). 표지는
  * 방식별로 셀 몫이라 갈래의 열쇠에 섞지 않는다. 그 밖의 표지(질문 다시 쓰기 question_retry)를 단 행은 지금처럼 세지 않는다(지금 엔진의 셈 그대로).
+ * 이야기 방식 대화 호출의 표지(chat)도 같다(spec '회화 대화 구조 R' 설계 2 — 지금 엔진의 실패와 같은 오류로 세어 알림이 그대로 걸림, 묶음 S0).
  */
 const LEAD_SAME_ERROR_CODE_PATTERNS = [
   LEAD_RECORD_TAG,
   LEAD_NARROW_RECORD_TAG,
+  TALK_CHAT_RECORD_TAG,
 ].map((tag) => `${tag}:${SAME_ERROR_CODE_PATTERN}`);
+
+/** 같은 오류로 세는 error_code 꼴 전부(표지 없는 꼴 + 표지를 단 꼴, LIKE 글). */
+export const SAME_ERROR_CODE_PATTERNS: readonly string[] = [
+  SAME_ERROR_CODE_PATTERN,
+  ...LEAD_SAME_ERROR_CODE_PATTERNS,
+];
+
+/**
+ * ai.down_after_failures 셈(같은 오류 알림 · 1-나의 이어진 실패 수) 밖의 목적: 기록 전용 평가 호출(talk_chat_eval)은 실패를 넣지 않고, 성공이 다른
+ * 목적(대화 호출)의 셈을 끊지도 않는다(spec '회화 대화 구조 R' 설계 8-2 · M-9 · 우려 8, 묶음 S0). 셈은 목적별이라 그 목적의 셈만 늘 0 이다.
+ */
+const DOWN_COUNT_EXCLUDED_PURPOSES: readonly AiPurpose[] = ["talk_chat_eval"];
+
+/**
+ * 이 목적의 호출이 ai.down_after_failures 셈에 드는가(목적 판단 — 실패 갈래 판단 core/ai/failure 의 countsTowardDown 과 다른 함수, 검토 rev-chat-s0 M-2).
+ * 평가 호출은 같은 오류 알림도 세지 않는다(spec 8-2 '셈 밖'을 넓게 읽음 — 평가 호출의 설정 오류는 켜기 전 관문이 비교 기록의 판정 없음 수와 까닭으로 본다).
+ */
+export function purposeCountsTowardDown(purpose: AiPurpose): boolean {
+  return !DOWN_COUNT_EXCLUDED_PURPOSES.includes(purpose);
+}
 
 export type AiCallStatus = (typeof aiCalls.$inferInsert)["status"];
 
@@ -154,6 +177,7 @@ export async function sameErrorCount(
   db: Db,
   { purpose, learningDay }: { purpose: AiPurpose; learningDay: string },
 ): Promise<number> {
+  if (!purposeCountsTowardDown(purpose)) return 0;
   const [row] = await db
     .select({ n: count() })
     .from(aiCalls)

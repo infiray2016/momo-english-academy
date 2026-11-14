@@ -347,13 +347,28 @@ export function parseSpecDefault(
     return new Map(keys.map((k, i) => [k, values[i]]));
   }
   if (row.key.includes("<호출>")) {
+    const prefix = row.key.slice(0, row.key.indexOf("<호출>"));
     const rest = /나머지\s*'([^']+)'/.exec(cell);
     if (rest) {
       const value = scalarOf(rest[1] ?? "");
       if (value === undefined) return undefined;
-      return new Map(keys.map((k) => [k, value]));
+      const out = new Map<string, unknown>(keys.map((k) => [k, value]));
+      // '나머지' 앞의 '이름 · 이름 '값'' 묶음을 먼저 그 값으로 둔다. 호출 이름 꼴이 아닌 조각('회화 턴')은 건너뛰고, 펼친 키에 없는 이름이면 풀지 않는다
+      for (const group of cell
+        .slice(0, rest.index)
+        .matchAll(/([^']*)'([^']+)'/g)) {
+        const groupValue = scalarOf(group[2] ?? "");
+        if (groupValue === undefined) return undefined;
+        for (const part of (group[1] ?? "").split("·")) {
+          const name = part.replace(/^[\s,]+|[\s,]+$/g, "");
+          if (!/^[a-z_]+$/.test(name)) continue;
+          const key = `${prefix}${name}`;
+          if (!out.has(key)) return undefined;
+          out.set(key, groupValue);
+        }
+      }
+      return out;
     }
-    const prefix = row.key.slice(0, row.key.indexOf("<호출>"));
     const byCall = new Map<string, number>();
     let pending: string[] = [];
     for (const part of parts) {

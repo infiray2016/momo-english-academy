@@ -308,6 +308,44 @@ export function leadRetryRule(
   };
 }
 
+// ── 이야기 방식(회화 대화 구조 R 묶음 S1 — talk.lead_mode chat) ─────────────────
+
+/**
+ * 이야기 방식 대화 호출 요청을 가르는 글(안내문 마지막 문단 — talk-chat CHAT_SYSTEM_TEMPLATE 에만 있다. 힌트 · 평가 · 다른 방식의 요청에는 없다).
+ */
+export const CHAT_SYSTEM_MARK =
+  "Output JSON only, with the fields in this order.";
+
+/** 이야기 방식 응답(네 칸 — 칸 차례는 listen_sentence · say · say_ko · wrap_up, 빈 값 + 덮어쓴 칸). */
+export function chatAnswer(
+  over: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    listen_sentence: "",
+    say: "Nice!",
+    say_ko: "",
+    wrap_up: false,
+    ...over,
+  };
+}
+
+/** 이야기 방식 대화 호출에 답하는 흘려 받기 응답 규칙. */
+export function chatTurnRule(
+  over: Record<string, unknown>,
+  { times = 1, model = LOW_MODEL, delayMs, chunks = 4 }: RuleOptions = {},
+): FakeRule {
+  return {
+    when: { bodyIncludes: CHAT_SYSTEM_MARK },
+    reply: {
+      kind: "stream",
+      body: messageBody({ model, json: chatAnswer(over) }),
+      chunks,
+      ...(delayMs === undefined ? {} : { delayMs }),
+    },
+    times,
+  };
+}
+
 /** 가짜에 들어온 회화 턴 · 끝맺음 요청 수. */
 export function requestsOf(h: TalkHarness, mark: string): number {
   return h.fake.requests.filter((r) => r.bodyText.includes(mark)).length;

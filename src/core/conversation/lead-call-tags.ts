@@ -6,3 +6,8 @@
 export const LEAD_RECORD_TAG = "lead";
 /** 좁은 정의 다시 말하기 호출의 ai_calls 표지. */
 export const LEAD_NARROW_RECORD_TAG = "lead.narrow";
+/**
+ * 이야기 방식(talk.lead_mode chat) 대화 호출의 ai_calls 표지(spec '회화 대화 구조 R' 설계 2 — 목적은 talk_turn 그대로, 방식별로 셈. 오류가 있는
+ * 행은 '<표지>:<갈래>'). talk-chat 이 같은 이름으로 다시 내보낸다(plan 묶음 S0 · 검토 rev-chat-p1 H7).
+ */
+export const TALK_CHAT_RECORD_TAG = "chat";
