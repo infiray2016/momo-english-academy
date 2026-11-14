@@ -88,6 +88,8 @@ import {
   judgeSummaryOf,
   lessonEndingOf,
   levelFitOf,
+  OWN_WORDS,
+  ownWordTurnsOf,
   pearson,
   percentile,
   pyRound,
@@ -97,6 +99,7 @@ import {
   sameQuestionsBesideClosingOf,
   sameQuestionsOf,
   sentenceDiffOf,
+  silenceBlocksOf,
   TEACHER_CLOSING_REASON,
   wordCount,
 } from "../../scripts/exp/arch-metrics";
@@ -964,7 +967,7 @@ describe("AC-26k 가려 읽는 판정의 채점표(판 2)", () => {
       `| \`own_life\` 사람의 삶을 제 것으로 말함 | true · false, \`own_routine\` 은 문장 목록 | ${OWN_LIFE_RULE} |`,
     );
     expect(OWN_LIFE_RULE).toContain(
-      "나이 · 가족 · 집 · 학교(age, family, home, school)",
+      "나이 · 가족 · 반려동물 · 집 · 학교(age, family, pet, home, school)",
     );
     expect(OWN_LIFE_RULE).toContain(
       "따라 할 문장(아이에게 따라 말하게 한 본보기)과 아이 말을 되받은 문장은 세지 않습니다",
@@ -3181,7 +3184,7 @@ describe("묶음 T2 대본에서 셀 것 열 가지(arch-metrics — 합성 기�
     expect(md).toContain("| R3 |");
     expect(md).toContain("| CHAT |");
     expect(md).toContain("| CHAT 누르지 않음만 |");
-    expect(md).toContain("| CHAT 들리지 않음만 |");
+    expect(md).toContain("| CHAT 들리지 않음만(힌트를 누른 말없음 포함) |");
     expect(md).toContain("인사 끝 차례");
     expect(md).toContain("두 단추로 답할 수 없는");
   });
@@ -3347,5 +3350,226 @@ describe("묶음 T2 fix 1 요약 줄 · 계획 · 합치기(m-5 · m-7)", () => 
     });
     expect(merged.plan).toEqual({ all: 20 });
     expect(merged.planHistory).toEqual([{ all: 10 }, { all: 20 }]);
+  });
+});
+
+describe("묶음 T2 fix 2 말없음 덩이 단위 · 선생님이 제 것으로 말한 꼴 목록 · 판정 기준표 반려동물", () => {
+  const G = "CHAT-SG-s1";
+  const sg = (() => {
+    const base = chatLessonOf(
+      G,
+      "SC",
+      [
+        chatT(G, 0, "Hi {NAME}!", { entry: "start" }),
+        chatT(G, 1, "Nice!", {}),
+        chatT(G, 2, "I like rain.", { entry: "quiet" }),
+        chatT(G, 3, "I watched a cat video in my head.", { entry: "quiet" }),
+        chatT(
+          G,
+          5,
+          "My cat was wearing a tiny yellow hat. It fell on his nose!",
+          {},
+        ),
+        chatT(G, 6, "That's okay.", {}),
+        chatT(G, 7, "Take your time.", {}),
+        chatT(G, 8, "Hmm, I see.", {}),
+      ],
+      [
+        chatC(G, 1, "say", "Hi."),
+        chatC(G, 2, "quiet"),
+        chatC(G, 3, "quiet"),
+        chatC(G, 4, "quiet", "", {
+          chat: {
+            input: "quiet",
+            hintTier: 0,
+            hint: null,
+            recognizer: null,
+            waited: true,
+          },
+        }),
+        chatC(G, 5, "say", "Yes."),
+        // 힌트를 누른 말없음(nospeech)과 들리지 않음이 이어진 덩이 — 뒤가 '모르겠어요'라 말하지 않은 덩이
+        chatC(G, 6, "nospeech", "", {
+          chat: {
+            input: "nospeech",
+            hintTier: 1,
+            hint: null,
+            recognizer: null,
+            waited: false,
+          },
+        }),
+        chatC(G, 7, "nospeech"),
+        chatC(G, 8, "dont_know"),
+        // 수업 끝의 말없음 — 다음 아이 차례가 없어 분모에 넣지 않는다
+        chatC(G, 9, "quiet"),
+      ],
+      [],
+    );
+    return { ...base, meta: { ...base.meta, child: "SG" as const } };
+  })();
+  const R = "R3-SG-s1";
+  const r3 = {
+    ...lessonOf([
+      teacherLine(0, "Hi!", { lesson: R, arm: "R3" }),
+      teacherLine(1, "Our school has a big garden. Do you like gardens?", {
+        lesson: R,
+        arm: "R3",
+      }),
+      teacherLine(2, "My puppies love it. I like your cat.", {
+        lesson: R,
+        arm: "R3",
+      }),
+      teacherLine(3, "My favorite cat is orange. Okay!", {
+        lesson: R,
+        arm: "R3",
+      }),
+      lessonLine({ lesson: R, arm: "R3", child: "SG" }),
+    ]),
+    children: [
+      { ...childLine(1, "Hi!", null, R), action: "silent" as const },
+      { ...childLine(2, "Garden?", null, R), action: "silent" as const },
+      childLine(3, "Ok.", "Yes.", R),
+    ],
+  };
+
+  it("AC-27n (가) n-1 말없음 덩이 단위: 분모는 다음 아이 차례가 있는 잇단 말없음 덩이(누르지 않음 · 들리지 않음 · 힌트를 누른 말없음을 가리지 않음), 분자는 덩이 바로 뒤 아이 차례에 말한 덩이", () => {
+    // 덩이 2~4(기다림 포함) → 5 말함, 덩이 6~7(힌트 누름 + 들리지 않음) → 8 모르겠어요, 덩이 9 는 다음 차례 없음
+    expect(silenceBlocksOf(sg)).toEqual({ turns: 2, spokeAfter: 1 });
+    // R3 는 덩이 1~2 → 3 말함
+    expect(silenceBlocksOf(r3)).toEqual({ turns: 1, spokeAfter: 1 });
+    const md = chatMarkdownOf([sg, r3]);
+    // 기존 줄은 그대로 두고 방식마다 덩이 단위 줄을 하나 더한다
+    expect(md).toContain("| CHAT 누르지 않음만 |");
+    expect(md).toContain("| R3 | - | - |");
+    expect(md).toContain(
+      "| CHAT 말없음 덩이 단위 | - | - | 1/2(50%) | 1/2(50%) |",
+    );
+    expect(md).toContain(
+      "| R3 말없음 덩이 단위 | - | - | 1/1(100%) | 1/1(100%) |",
+    );
+  });
+
+  it("AC-27n n-2 'CHAT 들리지 않음만' 줄 이름에 힌트를 누른 말없음이 든다고 밝히고, 상한 뒤 기다림 장면은 SG 수업에서 읽는다고 안내한다", () => {
+    const md = chatMarkdownOf([sg, r3]);
+    expect(md).toContain("| CHAT 들리지 않음만(힌트를 누른 말없음 포함) |");
+    expect(md).not.toContain("| CHAT 들리지 않음만 |");
+    expect(md).toContain("상한 뒤 기다림 장면은 SG 수업에서 읽는다");
+  });
+
+  it("AC-27n 선생님이 제 것으로 말한 꼴(읽기용 — 셈 아님): 모든 방식의 선생님 최종 말에서 my · our 바로 뒤에 가족 · 반려동물 · 집 · 학교 낱말(복수형 포함)이 오는 차례를 수업 · 아이 차례 · 문장으로 모은다", () => {
+    expect(OWN_WORDS).toEqual(
+      expect.arrayContaining([
+        "mom",
+        "dad",
+        "brother",
+        "sister",
+        "grandma",
+        "family",
+        "cat",
+        "dog",
+        "pet",
+        "puppy",
+        "house",
+        "home",
+        "room",
+        "school",
+        "class",
+      ]),
+    );
+    expect(ownWordTurnsOf([sg, r3])).toEqual([
+      {
+        lesson: G,
+        arm: "CHAT",
+        childTurn: 5,
+        words: ["cat"],
+        sentence: "My cat was wearing a tiny yellow hat.",
+        long: false,
+      },
+      {
+        lesson: R,
+        arm: "R3",
+        childTurn: 1,
+        words: ["school"],
+        sentence: "Our school has a big garden.",
+        long: false,
+      },
+      {
+        lesson: R,
+        arm: "R3",
+        childTurn: 2,
+        words: ["puppies"],
+        sentence: "My puppies love it.",
+        long: false,
+      },
+    ]);
+    // 목록에 없는 낱말('in my head') · 바로 뒤가 아님('My favorite cat') · 남의 것('your cat')은 걸리지 않는다
+    const texts = ownWordTurnsOf([sg, r3]).map((r) => r.sentence);
+    expect(texts.join(" ")).not.toContain("head");
+    expect(texts.join(" ")).not.toContain("favorite");
+    expect(texts.join(" ")).not.toContain("your cat");
+    const md = chatMarkdownOf([sg, r3]);
+    expect(md).toContain("### 선생님이 제 것으로 말한 꼴");
+    expect(md).toContain(
+      `- ${G} 아이 차례 5 · cat: My cat was wearing a tiny yellow hat.`,
+    );
+    expect(md).toContain(`- ${R} 아이 차례 2 · puppies: My puppies love it.`);
+    expect(md).toContain(OWN_WORDS.join(" · "));
+    expect(md).toContain("판정자가");
+    // 셈 표에는 넣지 않는다(걸림 수로 세지 않음)
+    const table = md.slice(0, md.indexOf("## 사람이 읽을 목록"));
+    expect(table).not.toContain("제 것으로 말한 꼴");
+  });
+
+  it("AC-27n 선생님이 제 것으로 말한 꼴 목록에는 긴 대본 수업의 차례도 들고, 줄에 '긴 대본' 표시가 붙는다(셈 표 · 다른 목록은 그대로 긴 대본을 뺌)", () => {
+    const L = "CHAT-SG-s1-long";
+    const base = chatLessonOf(
+      L,
+      "SC",
+      [
+        chatT(L, 0, "Hi {NAME}!", { entry: "start" }),
+        chatT(L, 38, "My dog likes snow. Do you like snow?", {}),
+      ],
+      [chatC(L, 38, "say", "Yes.")],
+      [],
+    );
+    const long = {
+      ...base,
+      meta: { ...base.meta, child: "SG" as const, variant: "long" as const },
+    };
+    expect(ownWordTurnsOf([sg, long])).toEqual([
+      {
+        lesson: G,
+        arm: "CHAT",
+        childTurn: 5,
+        words: ["cat"],
+        sentence: "My cat was wearing a tiny yellow hat.",
+        long: false,
+      },
+      {
+        lesson: L,
+        arm: "CHAT",
+        childTurn: 38,
+        words: ["dog"],
+        sentence: "My dog likes snow.",
+        long: true,
+      },
+    ]);
+    const md = chatMarkdownOf([sg, long]);
+    expect(md).toContain(
+      `- ${L}(긴 대본) 아이 차례 38 · dog: My dog likes snow.`,
+    );
+    expect(md).toContain(
+      `- ${G} 아이 차례 5 · cat: My cat was wearing a tiny yellow hat.`,
+    );
+    // 셈 표의 CHAT 수업 수에는 긴 대본이 들지 않는다
+    expect(md).toContain("CHAT 수업 1 · 긴 대본 1");
+  });
+
+  it("AC-26k 판정 기준표: own_life 정의에 반려동물(pet)을 더하고 예에 'My cat is cute.' 를 더한다", () => {
+    expect(OWN_LIFE_RULE).toContain(
+      "나이 · 가족 · 반려동물 · 집 · 학교(age, family, pet, home, school)",
+    );
+    expect(OWN_LIFE_RULE).toContain("'My cat is cute.'");
+    expect(judgeRubricOf("/out/run")).toContain("'My cat is cute.'");
   });
 });

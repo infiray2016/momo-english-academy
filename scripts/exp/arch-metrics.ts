@@ -35,6 +35,7 @@ import {
 import { isQArm } from "./arch-arm-q";
 import { CHILD_NAME_FILL, type ChildKey, heardByChild } from "./arch-arms";
 import type {
+  Arm,
   ChildTurnLog,
   LessonEnding,
   LessonLog,
@@ -1167,6 +1168,127 @@ export function afterSilenceOf(lesson: ChatLessonLike): SilenceCount & {
     }
   }
   return { ...all, byInput: chat ? by : null };
+}
+
+/**
+ * 말없음 덩이 단위 셈(T2 fix 2 — 재검토 n-1, 방식마다 같은 정의): 잇단 아이 차례의 말없음(silent — CHAT 의 누르지 않음 · 들리지 않음 · 힌트를
+ * 누른 말없음을 가리지 않음, 선생님이 답했는지 · 기다리기만 했는지도 가리지 않음)을 한 덩이로 본다. turns 는 다음 아이 차례가 있는 덩이 수,
+ * spokeAfter 는 덩이 바로 뒤 아이 차례에 말한(speak) 덩이 수다. afterSilenceOf 와 달리 기다림 뒤에 말문이 열린 일도 든다.
+ */
+export function silenceBlocksOf(lesson: {
+  children: readonly ChildTurnLog[];
+}): SilenceCount {
+  const byTurn = new Map(lesson.children.map((c) => [c.childTurn, c]));
+  const out: SilenceCount = { turns: 0, spokeAfter: 0 };
+  for (const c of lesson.children) {
+    if (c.action !== "silent") continue;
+    // 덩이의 끝 차례만 본다(다음 차례가 말없음이면 덩이가 이어짐)
+    const after = byTurn.get(c.childTurn + 1);
+    if (!after || after.action === "silent") continue;
+    out.turns += 1;
+    if (after.action === "speak") out.spokeAfter += 1;
+  }
+  return out;
+}
+
+/**
+ * 선생님이 제 것으로 말한 꼴을 사람이 읽을 목록으로 모을 때 'my' · 'our' 바로 뒤에 오는 낱말(T2 fix 2 — 가족 · 반려동물 · 집 · 학교, C243
+ * '선생님은 좋아하는 것과 상상만'). 복수형은 ownWordFormsOf 가 만든다. 셈이 아니라 판정자가 읽을 목록의 재료다.
+ */
+export const OWN_WORDS: readonly string[] = [
+  // 가족
+  "mom",
+  "mommy",
+  "mother",
+  "dad",
+  "daddy",
+  "father",
+  "parent",
+  "brother",
+  "sister",
+  "grandma",
+  "grandmother",
+  "grandpa",
+  "grandfather",
+  "family",
+  "aunt",
+  "uncle",
+  "cousin",
+  // 반려동물
+  "cat",
+  "kitten",
+  "kitty",
+  "dog",
+  "puppy",
+  "pet",
+  "hamster",
+  "rabbit",
+  "bunny",
+  // 집
+  "house",
+  "home",
+  "room",
+  "bedroom",
+  // 학교
+  "school",
+  "class",
+  "classroom",
+  "classmate",
+];
+
+/** 낱말 하나와 그 복수형(-y → -ies, -s · -sh · -ch · -x → -es, 그 밖 -s). */
+function ownWordFormsOf(word: string): string[] {
+  if (/[^aeiou]y$/.test(word)) return [word, `${word.slice(0, -1)}ies`];
+  if (/(?:s|sh|ch|x)$/.test(word)) return [word, `${word}es`];
+  return [word, `${word}s`];
+}
+
+const OWN_WORD_PATTERN = new RegExp(
+  `\\b(?:my|our)\\s+(${OWN_WORDS.flatMap(ownWordFormsOf)
+    .sort((a, b) => b.length - a.length)
+    .join("|")})\\b`,
+  "gi",
+);
+
+/** 선생님이 제 것으로 말한 꼴 한 문장(수업 · 아이 차례 · 걸린 낱말 · 문장). */
+export type OwnWordTurn = {
+  lesson: string;
+  arm: Arm;
+  childTurn: number;
+  words: string[];
+  sentence: string;
+  /** 긴 대본 수업의 차례(아이 차례가 많아 이런 말이 가장 많이 나올 수 있어 목록에 함께 낸다). */
+  long: boolean;
+};
+
+/**
+ * 모든 방식의 선생님 최종 말(아이가 들은 꼴)에서 'my' · 'our' 바로 뒤에 OWN_WORDS 낱말이 오는 문장을 모은다(T2 fix 2 — 읽기용, 걸림 수로
+ * 세지 않는다, 긴 대본 수업도 넣고 long 으로 표시). 'in my head' 처럼 목록에 없는 낱말과 'my favorite cat' 처럼 바로 뒤가 아닌 것은 걸리지 않는다.
+ */
+export function ownWordTurnsOf(
+  lessons: readonly { meta: LessonLog; teachers: readonly TeacherTurnLog[] }[],
+): OwnWordTurn[] {
+  const out: OwnWordTurn[] = [];
+  for (const l of lessons) {
+    for (const t of l.teachers) {
+      const said = heardByChild(t.final);
+      for (const sentence of said.split(/(?<=[.!?])\s+/)) {
+        const words = [...sentence.matchAll(OWN_WORD_PATTERN)].map((m) =>
+          (m[1] ?? "").toLowerCase(),
+        );
+        if (words.length === 0) continue;
+        out.push({
+          lesson: l.meta.lesson,
+          arm: l.meta.arm,
+          childTurn: t.childTurn,
+          words,
+          sentence: sentence.trim(),
+          long: l.meta.variant === "long",
+        });
+      }
+    }
+  }
+  return out;
 }
 
 export type ChatCounts = {
