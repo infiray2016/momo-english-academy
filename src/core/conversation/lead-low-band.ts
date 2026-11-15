@@ -79,25 +79,35 @@ const CLOSER = /["”’')\]]/;
 /** 문장 앞에 바로 붙는 여는 따옴표 · 괄호(곧은 따옴표는 바로 뒤에 낱말이 붙으면 여는 쪽이다). */
 const OPENER = /["“‘'([]/;
 /**
- * 따라 말하게 하는 안내 말 바로 뒤의 쉼표('Say it, I see the sun.' · 'Can you say, I like cats?' — 검토 rev-s5 M-4 · rev-chat 의 꼴): 그 뒤는
- * 들려줄 말의 첫머리로 본다.
+ * 따라 말하게 하는 안내 말 바로 뒤의 쉼표('Say it, I see the sun.' · 'Can you say, I like cats?' — 검토 rev-s5 M-4 · rev-chat 의 꼴, 13절 C241
+ * 보완 7 의 해석): 그 뒤는 들려줄 말의 첫머리로 본다. say · repeat 뒤 낱말 셋까지(Say it like me · Say it slowly · Repeat after me …), Try ·
+ * Try saying · Try this, Your turn, '[이름] says' 꼴이다(검토 rev-l2 M-1). 'I said,' 처럼 지난 일을 옮기는 말은 넣지 않는다.
  */
 const GUIDE_BEFORE_COMMA =
-  /\b(?:say|repeat)(?:\s+(?:it|after me|with me|again|together))*\s*,$/i;
+  /\b(?:(?:say|repeat)(?:\s+[\p{L}']+){0,3}|try(?:\s+(?:saying|to say|this|it))?|your turn|says)\s*,$/iu;
+/** 절을 가르는 부호(쌍점 · 쌍반점 · 긴 줄표 — 그 뒤는 첫머리, 검토 rev-l2 M-1). 짧은 줄표 '-' 는 앞뒤를 띄어 쓸 때만이다. */
+const CLAUSE_MARK = /[:;–—]/;
 
 /**
- * 찾은 자리가 문장 첫머리인가(13절 C241 보완 7 · 분석 L2 4-2): 앞이 글 처음이거나, 바로 앞이 여는 따옴표 · 괄호이거나, 빈칸을 건너 앞이 쌍점 ·
- * 문장 끝 부호(닫는 따옴표 · 괄호를 건너)이거나, 따라 말하게 하는 안내 말 뒤의 쉼표다. 문장의 일부('Rain sounds go tap, tap, tap.' 의 뒤 조각 ·
- * 'Wow, I play soccer.' 의 'I play soccer.')는 첫머리가 아니다.
+ * 찾은 자리가 문장 첫머리인가(13절 C241 보완 7 · 분석 L2 4-2 · 검토 rev-l2 M-1): 앞이 글 처음이거나, 바로 앞이 여는 따옴표 · 괄호이거나, 빈칸을
+ * 건너 앞이 줄바꿈(splitSentences 가 문장을 나누는 자리) · 쌍점 · 쌍반점 · 긴 줄표 · 띄어 쓴 짧은 줄표 · 문장 끝 부호(닫는 따옴표 · 괄호를 건너)이거나,
+ * 따라 말하게 하는 안내 말 뒤의 쉼표다. 문장의 일부('Rain sounds go tap, tap, tap.' 의 뒤 조각 · 'Wow, I play soccer.' 의 'I play soccer.')는
+ * 첫머리가 아니다.
  */
 function atSentenceHead(text: string, start: number): boolean {
   if (start === 0) return true;
   if (OPENER.test(text.charAt(start - 1))) return true;
   let i = start - 1;
-  while (i >= 0 && /\s/.test(text.charAt(i))) i--;
-  if (i < 0) return true;
+  let newline = false;
+  while (i >= 0 && /\s/.test(text.charAt(i))) {
+    if (/[\n\r]/.test(text.charAt(i))) newline = true;
+    i--;
+  }
+  if (i < 0 || newline) return true;
   const c = text.charAt(i);
-  if (c === ":") return true;
+  if (CLAUSE_MARK.test(c)) return true;
+  if (c === "-")
+    return i < start - 1 && (i === 0 || /\s/.test(text.charAt(i - 1)));
   if (c === "," && GUIDE_BEFORE_COMMA.test(text.slice(0, i + 1))) return true;
   let j = i;
   while (j >= 0 && CLOSER.test(text.charAt(j))) j--;
@@ -117,10 +127,10 @@ function atSentenceBounds(text: string, start: number, piece: string): boolean {
   return SENTENCE_END.test(after) || CLOSER.test(after);
 }
 
-/** 말 칸에서 글자 그대로 든 자리(문장 경계에 맞는 것만, 겹치지 않게 앞에서부터 모두). */
-function literalSpansOf(text: string, piece: string): Span[] {
+/** 말 칸에서 글자 그대로 든 자리(문장 경계에 맞는 것만, 겹치지 않게 from 부터 모두). */
+function literalSpansOf(text: string, piece: string, from0 = 0): Span[] {
   const spans: Span[] = [];
-  let from = 0;
+  let from = from0;
   for (;;) {
     const at = text.indexOf(piece, from);
     if (at < 0) return spans;
@@ -236,7 +246,7 @@ function cutTextOf(
 
 /**
  * 이야기 방식의 잡아 둔 글(say 의 끝 조각)에서 본체가 뺀 조각들을 지운 글(chat-turn-result — 본체와 같은 다듬기 cutTextOf). 조각은 받은 차례대로
- * 앞에서부터 찾고(같은 조각이 둘이면 두 자리), 찾은 조각의 자리마다 cutsAt(그 앞 글자 수)을, 못 찾은 조각은 undefined 를 둔다. 하나도 못
+ * 앞에서부터 본체와 같은 경계 판정으로 찾고(같은 조각이 둘이면 두 자리), 찾은 조각의 자리마다 cutsAt(그 앞 글자 수)을, 못 찾은 조각은 undefined 를 둔다. 하나도 못
  * 찾으면 빈칸만 모은 글이다.
  */
 export function lowBandStrippedOf(
@@ -247,14 +257,16 @@ export function lowBandStrippedOf(
   const found: number[] = [];
   let from = 0;
   for (const piece of pieces) {
-    const at = piece === "" ? -1 : held.indexOf(piece, from);
-    if (at < 0) {
+    // 본체와 같은 경계 판정으로 찾는다(글자로만 든 앞 자리 — 문장의 일부 — 를 지우지 않게, 검토 rev-l2 I-1)
+    const span =
+      piece === "" ? undefined : literalSpansOf(held, piece, from)[0];
+    if (span === undefined) {
       found.push(-1);
       continue;
     }
     found.push(spans.length);
-    spans.push({ start: at, end: at + piece.length });
-    from = at + piece.length;
+    spans.push(span);
+    from = span.end;
   }
   if (spans.length === 0)
     return {
@@ -266,6 +278,14 @@ export function lowBandStrippedOf(
     text: cut.text,
     cutsAt: found.map((i) => (i < 0 ? undefined : cut.cutsAt[i])),
   };
+}
+
+/**
+ * 글에 그 조각이 문장 경계에 맞게 드는가(본체 leadLowBandShownOf 가 빼는 판정과 같음): 이야기 방식 흘림 길이 '이미 글로 나간 조각'을 가를 때
+ * 쓴다(검토 rev-l2 I-1 — 글자로 들기만 한 'Wow, I play soccer.' 안의 조각은 나간 것이 아니다). 고르기 물음 조각은 통째 문장이라 그대로 찾힌다.
+ */
+export function lowBandHasPiece(text: string, piece: string): boolean {
+  return piece !== "" && literalSpansOf(text, piece).length > 0;
 }
 
 /** 글자 자리 뒤에 낱말이 남았는가(그 자리의 소리 줄이 글 사이에 놓이는가). */

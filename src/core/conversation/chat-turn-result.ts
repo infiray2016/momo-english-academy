@@ -18,6 +18,7 @@ import {
 } from "@/core/conversation/chat-turn-plan";
 import {
   type LowBandSoundAt,
+  lowBandHasPiece,
   lowBandPlacedLinesOf,
   lowBandSoundAtOf,
   lowBandStrippedOf,
@@ -93,13 +94,14 @@ const wordsOnly = (text: string) =>
     .trim();
 
 /**
- * 이미 글로 나간 조각을 응답 처리 결과에서 거둔다: 그 조각은 move.chat.removed 에서 빼고 소리 줄로 내지 않는다(따라 할 문장이면 model, 고르기 물음이면
+ * 이미 글로 나간 조각(나간 문장 안에 문장 경계로 든 것 — lowBandHasPiece)을 응답 처리 결과에서 거둔다: 그 조각은 move.chat.removed 에서 빼고 소리 줄로 내지 않는다(따라 할 문장이면 model, 고르기 물음이면
  * answer — 남은 answer 가 없으면 고르기 표시도 뺀다). 나간 조각이 없으면 그대로다.
  */
 function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
   const removed = reply.record.removed ?? [];
+  // 나간 문장 안에 본체와 같은 경계 판정으로 든 조각만 나간 것이다(글자로만 든 'Wow, I play soccer.' 안의 조각은 아님 — 검토 rev-l2 I-1)
   const out = removed.filter((piece) =>
-    sent.some((sentence) => sentence.includes(piece)),
+    sent.some((sentence) => lowBandHasPiece(sentence, piece)),
   );
   if (out.length === 0) return reply;
   const kept = removed.filter((piece) => !out.includes(piece));

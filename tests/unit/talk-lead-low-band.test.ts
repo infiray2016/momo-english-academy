@@ -7,6 +7,7 @@ import {
   type LeadLowBandInput,
   leadKoLineOf,
   leadLowBandShownOf,
+  lowBandHasPiece,
   lowBandPlacedLinesOf,
   lowBandSoundAtOf,
   lowBandStrippedOf,
@@ -576,6 +577,76 @@ describe("AC-26i 뺀 자리의 글 · 쌍점 · 문장 첫머리 · 소리 줄 �
       text: "Hi there.",
       cutsAt: [undefined],
     });
+  });
+});
+
+describe("AC-26i 문장 첫머리 판정의 빈틈(검토 rev-l2 M-1) — 넘치지 않음도 함께", () => {
+  const model = "I go to the park.";
+  it("AC-26i 안내 말 + 쉼표의 다른 꼴(Say it like me · Say it slowly · Try saying · Your turn · Mina says)과 띄어 쓴 줄표 · 붙은 긴 줄표 · 쌍반점 뒤도 첫머리라 뺀다", () => {
+    const cases: [string, string][] = [
+      [`Good! Say it like me, ${model}`, "Good! Say it like me:"],
+      [`Good! Say it slowly, ${model}`, "Good! Say it slowly:"],
+      [`Good! Try saying, ${model}`, "Good! Try saying:"],
+      [`Good! Your turn, ${model}`, "Good! Your turn:"],
+      [`Good! Mina says, ${model}`, "Good! Mina says:"],
+      [`Good! Try this - ${model}`, "Good! Try this -"],
+      [`Good! Try this – ${model}`, "Good! Try this –"],
+      [`Good! Try this — ${model}`, "Good! Try this —"],
+      [`Good! Try this—${model}`, "Good! Try this—"],
+      [`Good! Try this; ${model}`, "Good! Try this;"],
+    ];
+    for (const [say, text] of cases) {
+      const out = shown({ move: "model_repeat", say, modelSentence: model });
+      expect(out.removed, say).toEqual([model]);
+      expect(out.text, say).toBe(text);
+    }
+  });
+
+  it("AC-26i 문장의 일부(쉼표 · 붙은 짧은 줄표 뒤, 안내 말이 아닌 말 뒤)는 여전히 글로 둔다", () => {
+    for (const say of [
+      `Wow, ${model}`,
+      `I said, ${model}`,
+      `Cats are fun, ${model}`,
+      `My mom-${model}`,
+      `Today ${model}`,
+    ]) {
+      const out = shown({ move: "model_repeat", say, modelSentence: model });
+      expect(out.removed, say).toEqual([]);
+      expect(out.text, say).toBe(say);
+    }
+    // 'Rain sounds go tap, tap, tap.' 의 뒤 조각 · 물음 속 조각도 그대로
+    expect(
+      shown({
+        move: "model_repeat",
+        say: "Rain sounds go tap, tap, tap.",
+        modelSentence: "tap, tap, tap.",
+      }).removed,
+    ).toEqual([]);
+    expect(
+      shown({
+        move: "model_repeat",
+        say: "What do you say, I like cats or dogs?",
+        modelSentence: "I like cats.",
+      }).removed,
+    ).toEqual([]);
+  });
+
+  it("AC-26i 글 안에서 문장 경계에 든 조각만 찾는다(lowBandHasPiece — 흘림 길의 나간 문장 판정과 잡아 둔 글 지우기가 본체와 같은 판정)", () => {
+    expect(lowBandHasPiece("Wow, I play soccer.", "I play soccer.")).toBe(
+      false,
+    );
+    expect(
+      lowBandHasPiece("Say it with me: I play soccer.", "I play soccer."),
+    ).toBe(true);
+    expect(
+      lowBandHasPiece("Do you like cats or dogs?", "Do you like cats or dogs?"),
+    ).toBe(true);
+    // 잡아 둔 글에 두 자리가 다 들면 경계에 든 뒤 자리를 지운다
+    expect(
+      lowBandStrippedOf("Wow, I play soccer. Say it with me: I play soccer.", [
+        "I play soccer.",
+      ]).text,
+    ).toBe("Wow, I play soccer. Say it with me:");
   });
 });
 

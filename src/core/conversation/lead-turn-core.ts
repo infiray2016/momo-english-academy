@@ -75,7 +75,6 @@ import {
   readTalkMove,
   TALK_LEAD_MOVES,
   TALK_LEAD_READINGS,
-  type TalkLead,
   type TalkLeadMove,
   type TalkLeadReading,
   type TalkMove,
@@ -1307,12 +1306,6 @@ export function leadHintsOf({
 }
 
 /**
- * leadExtraOf 의 값: lead-record 의 LeadExtra 칸에 소리 줄 자리(soundAt — 13절 C241 보완 7)를 더한 것. leadTeacherMoveOf 가 extra 를 move.lead 에
- * 그대로 펼치므로 이 칸도 move.lead.soundAt 으로 들어간다(lead-record 의 LeadExtra 이름표에 soundAt 을 더하는 것은 요청한 변경 — 보고).
- */
-export type LeadExtraWithSound = LeadExtra & Pick<TalkLead, "soundAt">;
-
-/**
  * move.lead 의 기록 칸(데이터 절 — 좁은 정의 · 넓은 검사 수치 · gate · 마무리 상수 · 글에서 뺀 문장 · 소리 차례 바뀜). 빈 값은 칸을 두지 않고,
  * wide 는 수 값 칸만 남긴다(범위를 못 읽은 차례는 null — 칸 없음).
  */
@@ -1338,7 +1331,7 @@ export function leadExtraOf({
   soundMoved: boolean;
   /** leadSettleOf 의 soundAt(글 사이에서 읽은 소리 줄의 자리 — 빈 값이면 칸 없음). */
   soundAt?: LowBandSoundAt;
-}): LeadExtraWithSound {
+}): LeadExtra {
   return {
     ...(narrow === undefined ? {} : { narrow }),
     ...(wide === null

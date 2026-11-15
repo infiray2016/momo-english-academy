@@ -287,6 +287,12 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
       "Rain sounds go I like cats.",
       'Say "I like cats." What do you like?',
       "Wow! I like cats. Your turn!",
+      // #12 꼴과 첫머리 빈틈(검토 rev-l2 I-1 · M-1)
+      "Wow, I like cats. Say it with me: I like cats.",
+      "Say it like me, I like cats.",
+      "Try this — I like cats.",
+      "Try this; I like cats.",
+      "I said, I like cats.",
     ];
     for (const level of [1, 2, 3]) {
       for (const say of cases) {

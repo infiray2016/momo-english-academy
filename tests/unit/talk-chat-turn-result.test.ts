@@ -430,6 +430,83 @@ describe("두 문장에 걸친 조각 · 문장 부호만 다른 차이", () => 
     ).toEqual(live);
   });
 
+  it("AC-27d #12 꼴(따라 할 문장이 앞에서는 문장의 일부 · 뒤에서는 첫머리)도 흘림 길이 본체와 같은 자리를 뺀다: 보통 흘림 · 막힌 뒤 · 모두 잡아 둔 차례 셋 모두 앞 자리는 글, 뒤 자리는 소리 줄이고 다시 흘림이 같다(검토 rev-l2 I-1)", () => {
+    const listen = "I play soccer.";
+    const twelve = "Wow, I play soccer. Say it with me: I play soccer.";
+    const cases: {
+      name: string;
+      input: ChatInput;
+      say: string;
+      holdAll: boolean;
+      prefix: string[];
+    }[] = [
+      {
+        name: "보통 흘림",
+        input: SAY,
+        say: twelve,
+        holdAll: false,
+        prefix: [],
+      },
+      {
+        name: "막힌 뒤(물음부터 잡아 둠)",
+        input: DK,
+        say: `Do you like soccer? ${twelve}`,
+        holdAll: false,
+        prefix: ["Do you like soccer?"],
+      },
+      {
+        name: "모두 잡아 둠",
+        input: SAY,
+        say: twelve,
+        holdAll: true,
+        prefix: [],
+      },
+    ];
+    for (const c of cases) {
+      const flow = createChatSentenceFlow({
+        level: 3,
+        appStuck: c.input.kind === "dont_know",
+        holdAll: c.holdAll,
+      });
+      flow.listen(listen);
+      for (const sentence of splitSentences(c.say)) flow.accept(sentence);
+      const r = resultOf(
+        c.input,
+        ok(c.say, { listen, sentSentences: splitSentences(c.say) }),
+        { sent: flow.sent(), held: flow.held() },
+      );
+      const want = [
+        ...[...c.prefix, "Wow, I play soccer.", "Say it with me:"].map(
+          (en) => ({ t: "s" as const, en }),
+        ),
+        { t: "ko" as const, ko: "뜻" },
+        { t: "sound" as const, kind: "model" as const, say: listen },
+      ];
+      const live = [
+        ...flow.sent().map((en) => ({ t: "s" as const, en })),
+        ...r.lines,
+      ];
+      expect(live, c.name).toEqual(want);
+      expect(r.teacher?.text, c.name).toBe(
+        [...c.prefix, "Wow, I play soccer.", "Say it with me:"].join(" "),
+      );
+      expect(r.teacher?.move.chat?.removed, c.name).toEqual([listen]);
+      expect(r.teacher?.move.sound, c.name).toEqual({ model: listen });
+      expect(r.diverged, c.name).toBe(false);
+      expect(
+        chatReplayLinesOf(
+          {
+            text: r.teacher?.text ?? "",
+            toriKo: r.teacher?.toriKo ?? null,
+            move: r.teacher?.move,
+          },
+          true,
+        ),
+        c.name,
+      ).toEqual(want);
+    }
+  });
+
   it("AC-27d 같은 따라 할 문장이 두 자리에서 빠지면 소리 줄은 마지막 자리 하나(그 사이 글 뒤 · 뒤 글 앞)다", () => {
     const say = "Say: I like cats. Good! I like cats. Your turn!";
     const r = streamed(SAY, say, "I like cats.");

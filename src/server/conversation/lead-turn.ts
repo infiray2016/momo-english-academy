@@ -758,6 +758,7 @@ async function leadTeacherTurn(
     }
     if (ko !== null) write({ t: "ko", ko });
     // 응답이 없던 차례의 행은 move.lead 가 없어 다시 흘림이 지금 꼴의 줄을 낸다 — 여기도 표지 없는 지금 꼴(같은 값, 컨트롤러 지킬 것 2)
+    // 첫 문장 뒤 끊긴 차례의 소리 줄은 제자리가 아니라 글 뒤에 둔다(행에 자리 칸이 없음 — 13절 C241 보완 7 의 예외, 검토 rev-l2 M-2)
     if (sound.model !== undefined)
       write({ t: "sound", kind: "model", say: sound.model });
     if (sound.answer !== undefined)

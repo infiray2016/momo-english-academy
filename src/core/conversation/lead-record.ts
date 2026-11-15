@@ -205,7 +205,13 @@ function supportStageOf(move: TalkLeadMove, prevStuck: boolean): number {
 /** S1 이 문장 문 · 좁은 정의 · 글 빼기 뒤에 채우는 lead 칸(이 모듈이 정하지 않는 기록). */
 export type LeadExtra = Pick<
   TalkLead,
-  "narrow" | "wide" | "gate" | "closingAdded" | "removed" | "soundMoved"
+  | "narrow"
+  | "wide"
+  | "gate"
+  | "closingAdded"
+  | "removed"
+  | "soundMoved"
+  | "soundAt"
 >;
 
 /**
