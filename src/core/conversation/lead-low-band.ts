@@ -80,11 +80,13 @@ const CLOSER = /["”’')\]]/;
 const OPENER = /["“‘'([]/;
 /**
  * 따라 말하게 하는 안내 말 바로 뒤의 쉼표('Say it, I see the sun.' · 'Can you say, I like cats?' — 검토 rev-s5 M-4 · rev-chat 의 꼴, 13절 C241
- * 보완 7 의 해석): 그 뒤는 들려줄 말의 첫머리로 본다. say · repeat 뒤 낱말 셋까지(Say it like me · Say it slowly · Repeat after me …), Try ·
- * Try saying · Try this, Your turn, '[이름] says' 꼴이다(검토 rev-l2 M-1). 'I said,' 처럼 지난 일을 옮기는 말은 넣지 않는다.
+ * 보완 7 의 해석): 그 뒤는 들려줄 말의 첫머리로 본다. say · repeat 뒤는 정한 안내 말 낱말만 받는다(it · this · that · again · together ·
+ * with me · after me · like me · like this · slowly · loudly · the word · now · too — Say it like me · Say it slowly · Repeat after me …). 그 밖의 낱말이
+ * 오면('Cows say moo, moo!' · 'I say yes, …') 쉼표 뒤는 문장의 일부다(검토 rev-l2-2 N-1). 그리고 Try · Try saying · Try this, Your turn,
+ * '[이름] says' 꼴이다(검토 rev-l2 M-1). 'I said,' 처럼 지난 일을 옮기는 말은 넣지 않는다.
  */
 const GUIDE_BEFORE_COMMA =
-  /\b(?:(?:say|repeat)(?:\s+[\p{L}']+){0,3}|try(?:\s+(?:saying|to say|this|it))?|your turn|says)\s*,$/iu;
+  /\b(?:(?:say|repeat)(?:\s+(?:it|this|that|again|together|with me|after me|like me|like this|slowly|loudly|the word|now|too))*|try(?:\s+(?:saying|to say|this|it))?|your turn|says)\s*,$/i;
 /** 절을 가르는 부호(쌍점 · 쌍반점 · 긴 줄표 — 그 뒤는 첫머리, 검토 rev-l2 M-1). 짧은 줄표 '-' 는 앞뒤를 띄어 쓸 때만이다. */
 const CLAUSE_MARK = /[:;–—]/;
 

@@ -217,6 +217,15 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
     expect(r.record.soundMoved).toBeUndefined();
   });
 
+  it("AC-27d 소리 흉내 꼴('Cows say moo, moo! Can you say it?', listen 'Moo!')은 뒤 조각이 문장의 일부라 글 그대로이고 흘림 판단도 잡지 않는다(검토 rev-l2-2 N-1)", () => {
+    const say = "Cows say moo, moo! Can you say it?";
+    const r = reply({ listen_sentence: "Moo!", say });
+    expect(r.text).toBe(say);
+    expect(r.sound).toEqual({});
+    expect(r.record.listen?.inSay).toBe(false);
+    expect(chatListenLiteralOf("Cows say moo, moo!", "Moo!", 3)).toBeNull();
+  });
+
   it("AC-27d 같은 따라 할 문장이 다른 글자로 두 자리에서 빠지면 소리 줄은 하나이고 그 글자는 첫 조각(흘림 판단이 잡는 조각과 같음), 자리는 마지막 뺀 자리다(13절 C241 보완 7)", () => {
     const say = "I'm fine. Say it: I am fine. Your turn!";
     const r = reply({ listen_sentence: "I am fine.", say });

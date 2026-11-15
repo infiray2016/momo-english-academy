@@ -631,6 +631,37 @@ describe("AC-26i 문장 첫머리 판정의 빈틈(검토 rev-l2 M-1) — 넘치
     ).toEqual([]);
   });
 
+  it("AC-26i say · repeat 뒤가 안내 말 목록 밖의 낱말(소리 흉내 · 대답)이면 쉼표 뒤는 문장의 일부라 글로 둔다('Cows say moo, moo!' — 검토 rev-l2-2 N-1)", () => {
+    for (const [say, piece] of [
+      ["Cows say moo, moo! Can you say it?", "moo!"],
+      ["Cows say moo, moo.", "moo."],
+      ["Ducks say quack, quack. Your turn!", "quack."],
+      ["Birds say tweet, tweet! Now you!", "tweet!"],
+      ["I say yes, I like cats.", "I like cats."],
+    ] as const) {
+      const out = shown({ move: "model_repeat", say, modelSentence: piece });
+      expect(out.removed, say).toEqual([]);
+      expect(out.text, say).toBe(say);
+    }
+    // 목록 안의 안내 말은 그대로 첫머리다
+    for (const [say, text] of [
+      ["Nice! Say it, I see the sun.", "Nice! Say it:"],
+      ["Nice! Say it again, I see the sun.", "Nice! Say it again:"],
+      ["Nice! Say it with me, I see the sun.", "Nice! Say it with me:"],
+      ["Nice! Say it like this, I see the sun.", "Nice! Say it like this:"],
+      ["Nice! Say it loudly, I see the sun.", "Nice! Say it loudly:"],
+      ["Nice! Repeat after me, I see the sun.", "Nice! Repeat after me:"],
+      ["Nice! Can you say, I see the sun.", "Nice! Can you say:"],
+    ] as const) {
+      const out = shown({
+        move: "model_repeat",
+        say,
+        modelSentence: "I see the sun.",
+      });
+      expect(out.text, say).toBe(text);
+    }
+  });
+
   it("AC-26i 글 안에서 문장 경계에 든 조각만 찾는다(lowBandHasPiece — 흘림 길의 나간 문장 판정과 잡아 둔 글 지우기가 본체와 같은 판정)", () => {
     expect(lowBandHasPiece("Wow, I play soccer.", "I play soccer.")).toBe(
       false,
