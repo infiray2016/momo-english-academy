@@ -1641,3 +1641,1056 @@ export function chatCallLatencyOf(
   };
   return { hint: of("hint"), explain: of("explain"), eval: of("eval") };
 }
+
+// ── 아홉 관점(13절 C245 (3) — 결정 원문 3절, 묶음 T2 fix 3) ─────────────────────────
+//
+// 관점마다 방식 모두에 같은 정의로 센 수치와 사람이 읽을 사례 목록을 낸다. 도구는 사례를 좋다 · 나쁘다로 판정하지 않는다(판정은 사람과 판정자의
+// 몫 — 좋았던 · 부자연스러운 · 실패 사례는 이 목록에서 고른다). 글 꼴로 센 값('기계 어림')은 목록을 함께 읽는다.
+
+/** 결정 원문 3절의 아홉 관점(그 차례 그대로). */
+export const NINE_VIEW_TITLES = [
+  "아이가 새로운 이야기를 꺼냈을 때의 반응",
+  "아이의 이야기가 여러 차례 이어지는지",
+  "아이가 선생님에게 질문했을 때의 반응",
+  "짧게 대답하거나 말이 없는 아이를 돕는 방식",
+  "질문 반복 및 불필요한 따라 말하기",
+  "잘못 인식된 발화를 처리하는 방식",
+  "학습 수준에 맞는 문장과 낱말",
+  "선생님 캐릭터의 자연스러움과 일관성",
+  "응답 지연 및 실제 비용",
+] as const;
+
+/** 짧은 대답의 낱말 수 상한(관점 4 — 실험 셈의 잣대, 앱 설정값이 아님). */
+export const SHORT_ANSWER_WORDS = 2;
+/** 느린 차례 목록에 방식마다 내는 수(관점 9). */
+export const SLOW_TURNS_LISTED = 5;
+
+/** 내용 낱말을 고를 때 빼는 흔한 낱말(관점 1 · 2 · 6 — 소문자, 끝 s 를 떼기 전에도 뒤에도 본다). */
+export const VIEW_STOP_WORDS: ReadonlySet<string> = new Set([
+  "the",
+  "and",
+  "but",
+  "you",
+  "your",
+  "yours",
+  "are",
+  "was",
+  "were",
+  "is",
+  "am",
+  "can",
+  "for",
+  "yes",
+  "not",
+  "have",
+  "has",
+  "had",
+  "too",
+  "like",
+  "this",
+  "that",
+  "that's",
+  "what",
+  "how",
+  "who",
+  "why",
+  "when",
+  "where",
+  "with",
+  "she",
+  "her",
+  "his",
+  "him",
+  "they",
+  "them",
+  "their",
+  "our",
+  "its",
+  "it's",
+  "i'm",
+  "you're",
+  "don't",
+  "did",
+  "does",
+  "let's",
+  "okay",
+  "yeah",
+  "wow",
+  "haha",
+  "hmm",
+  "very",
+  "really",
+  "then",
+  "there",
+  "here",
+  "from",
+  "out",
+  "all",
+  "now",
+  "just",
+  "want",
+  "one",
+  "some",
+  "any",
+  "about",
+  "also",
+  "will",
+  "would",
+  "could",
+  "teacher",
+  "friend",
+]);
+
+/** 선생님이 제 이야기를 한 문장의 꼴(관점 3 · 8 — 글 꼴 어림): I · I'm · I've · I'd · I'll · me · my · mine · myself 가 든 문장. */
+export const SELF_PATTERN = /\b(?:i|i'm|i've|i'd|i'll|me|my|mine|myself)\b/i;
+
+/** 수치 칸 하나(방식마다 같은 정의). frac 은 분자 · 분모(분모 0 이면 '-'). */
+export type ViewCell =
+  | { kind: "num"; v: number | null }
+  | { kind: "frac"; n: number; d: number }
+  | { kind: "ms"; v: number | null }
+  | { kind: "usd"; v: number | null };
+
+export type ViewStat = {
+  /** '관점:수치' 꼴(점 대신 쌍점 — 설정 키 글자로 읽히지 않게, pnpm check:ids code-setting-unknown). */
+  key: string;
+  label: string;
+  byArm: Partial<Record<Arm, ViewCell>>;
+};
+
+/** 사례 한 줄(수업 · 아이 차례 · 아이 말 · 선생님 말 · 참고). childTurn 이 null 이면 수업 단위 줄이다. */
+export type ViewCase = {
+  lesson: string;
+  childTurn: number | null;
+  child: string;
+  teacher: string;
+  note: string | null;
+};
+
+export type ViewList = {
+  title: string;
+  /** 이 목록의 셈 정의 한 줄(목록 머리에 싣는다). */
+  rule: string;
+  byArm: Partial<Record<Arm, ViewCase[]>>;
+};
+
+export type NineView = {
+  no: number;
+  title: (typeof NINE_VIEW_TITLES)[number];
+  /** 이 관점의 셈 정의(절 머리). */
+  rule: string;
+  /** 이미 있는 목록 · 표의 자리(그대로 쓴다). */
+  existing: string[];
+  stats: ViewStat[];
+  lists: ViewList[];
+};
+
+export type ViewLesson = {
+  meta: LessonLog;
+  teachers: readonly TeacherTurnLog[];
+  children: readonly ChildTurnLog[];
+  calls: readonly {
+    kind: string;
+    response: { costUsd?: number };
+  }[];
+};
+
+/** 사례 칸의 아이 말(하려던 말 · 들린 글 · 앱 행동). */
+export function childSaidOf(c: ChildTurnLog | undefined): string {
+  if (!c) return "(수업 처음)";
+  if (c.action === "dont_know") return "('잘 모르겠어요' 단추)";
+  if (c.action === "silent") {
+    const input = c.chat?.input;
+    const base =
+      input === "quiet"
+        ? "(말 없음 — 누르지 않음)"
+        : input === "nospeech"
+          ? "(말 없음 — 눌렀으나 들리지 않음)"
+          : "(말 없음)";
+    return (c.chat?.hintTier ?? 0) > 0
+      ? `${base} · 힌트 ${c.chat?.hintTier}단 누름`
+      : base;
+  }
+  return c.noise !== null && c.heard !== null && c.heard !== c.says
+    ? `"${c.says}" → 들린 글 "${c.heard}"`
+    : `"${c.says}"`;
+}
+
+/** 아이 차례 n 바로 뒤 선생님 말(고르기 뒤 이음은 빼고, 차례가 여럿이면 차례대로 잇는다 — CHAT 의 인사 끝 → 돌아옴). */
+export function replyAfterOf(
+  l: Pick<ViewLesson, "teachers" | "children">,
+  childTurn: number,
+): string | null {
+  const said = l.teachers
+    .filter((t) => t.childTurn === childTurn && t.afterChoice !== true)
+    .map((t) => heardByChild(t.final));
+  return said.length === 0 ? null : said.join("\n");
+}
+
+function replyCellOf(l: ViewLesson, c: ChildTurnLog): string {
+  const r = replyAfterOf(l, c.childTurn);
+  if (r !== null) return r;
+  return c.chat?.waited
+    ? "(선생님 말 없음 — 기다리기만 함)"
+    : "(선생님 말 없음 — 수업 끝)";
+}
+
+/** 내용 낱말(관점 1 · 2 · 6): 소문자 낱말에서 흔한 낱말을 빼고 끝 s 를 뗀 꼴(네 글자 이상 · ss 아님), 세 글자 이상만. */
+export function contentWordsOf(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const t of tokenize(text)) {
+    if (t.kind !== "word") continue;
+    const w = t.text.toLowerCase();
+    if (VIEW_STOP_WORDS.has(w)) continue;
+    const stem = w.length > 3 && /[^s]s$/.test(w) ? w.slice(0, -1) : w;
+    if (stem.length < 3 || VIEW_STOP_WORDS.has(stem)) continue;
+    out.add(stem);
+  }
+  return out;
+}
+
+const overlaps = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+  [...a].some((w) => b.has(w));
+
+const firstSentenceIsQuestion = (text: string): boolean => {
+  const first = splitSentences(text)[0];
+  return first !== undefined && isQuestionSentence(first);
+};
+
+const round6 = (x: number) => Math.round(x * 1e6) / 1e6;
+
+/**
+ * 아홉 관점의 수치와 사례(방식 arms 의 차례 — 수업은 긴 대본을 뺀 것을 넘긴다). 셈 정의는 관점 · 목록마다 rule 에 적고, 방식마다 같은 정의를 쓴다.
+ * 이미 있는 셈(말없음 덩이 · 같은 물음 · 따라 할 문장 · 제 것으로 말한 꼴 · 단계 검사 · 첫 문장이 나간 때)은 그 함수를 그대로 부른다.
+ */
+export function nineViewsOf(
+  lessons: readonly ViewLesson[],
+  arms: readonly Arm[],
+): NineView[] {
+  const mine = (arm: Arm) => lessons.filter((l) => l.meta.arm === arm);
+  const childAt = (l: ViewLesson, n: number) =>
+    l.children.find((c) => c.childTurn === n);
+  const perArm = <T>(f: (ls: ViewLesson[], arm: Arm) => T) =>
+    Object.fromEntries(arms.map((a) => [a, f(mine(a), a)])) as Record<Arm, T>;
+  const stat = (
+    key: string,
+    label: string,
+    f: (ls: ViewLesson[], arm: Arm) => ViewCell,
+  ): ViewStat => ({ key, label, byArm: perArm(f) });
+  const list = (
+    title: string,
+    rule: string,
+    f: (ls: ViewLesson[], arm: Arm) => ViewCase[],
+  ): ViewList => ({ title, rule, byArm: perArm(f) });
+  const num = (v: number | null): ViewCell => ({ kind: "num", v });
+  const frac = (n: number, d: number): ViewCell => ({ kind: "frac", n, d });
+  const caseOf = (
+    l: ViewLesson,
+    c: ChildTurnLog,
+    note: string | null = null,
+  ): ViewCase => ({
+    lesson: l.meta.lesson,
+    childTurn: c.childTurn,
+    child: childSaidOf(c),
+    teacher: replyCellOf(l, c),
+    note,
+  });
+  const nextNote = (l: ViewLesson, c: ChildTurnLog) => {
+    const next = childAt(l, c.childTurn + 1);
+    return next
+      ? `다음 아이 차례 ${next.childTurn}: ${childSaidOf(next)}`
+      : "다음 아이 차례 없음(수업 끝)";
+  };
+
+  // 1 · 새 이야기
+  const ownTopic = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.children
+        .filter((c) => c.action === "speak" && c.kind === "own_topic")
+        .map((c) => ({ l, c, reply: replyAfterOf(l, c.childTurn) })),
+    );
+  const view1: NineView = {
+    no: 1,
+    title: NINE_VIEW_TITLES[0],
+    rule: "아이 역이 스스로 own_topic(제 이야기를 꺼냄)으로 매기고 말한 차례와 바로 뒤 선생님 말.",
+    existing: [
+      "after-own-topic.md(own_topic · ask_teacher 차례 바로 뒤 선생님 말 — 같은 재료)",
+    ],
+    stats: [
+      stat("own_topic:turns", "own_topic 차례", (ls) =>
+        num(ownTopic(ls).length),
+      ),
+      stat(
+        "own_topic:picked_word",
+        "바로 뒤 선생님 말이 아이 말의 내용 낱말을 받은 차례(기계 어림)",
+        (ls) => {
+          const xs = ownTopic(ls).filter((x) => x.reply !== null);
+          return frac(
+            xs.filter((x) =>
+              overlaps(
+                contentWordsOf(x.c.says),
+                contentWordsOf(x.reply as string),
+              ),
+            ).length,
+            xs.length,
+          );
+        },
+      ),
+      stat("own_topic:question", "바로 뒤 선생님 말에 물음이 든 차례", (ls) => {
+        const xs = ownTopic(ls).filter((x) => x.reply !== null);
+        return frac(
+          xs.filter((x) => questionsIn(x.reply as string).length > 0).length,
+          xs.length,
+        );
+      }),
+    ],
+    lists: [
+      list(
+        "아이가 새 이야기를 꺼낸 차례",
+        "아이 역이 own_topic 으로 매기고 말한 차례 · 바로 뒤 선생님 말(참고: 아이 말의 내용 낱말 가운데 선생님이 받은 것).",
+        (ls) =>
+          ownTopic(ls).map(({ l, c, reply }) => {
+            const got = [...contentWordsOf(c.says)].filter((w) =>
+              contentWordsOf(reply ?? "").has(w),
+            );
+            return caseOf(
+              l,
+              c,
+              got.length > 0
+                ? `받은 낱말: ${got.join(" · ")}`
+                : "받은 낱말 없음",
+            );
+          }),
+      ),
+    ],
+  };
+
+  // 2 · 이야기 줄
+  type Run = { l: ViewLesson; turns: ChildTurnLog[] };
+  const runsOf = (ls: ViewLesson[]): Run[] =>
+    ls.flatMap((l) => {
+      const out: Run[] = [];
+      const covered = new Set<number>();
+      const sorted = [...l.children].sort((a, b) => a.childTurn - b.childTurn);
+      for (const c of sorted) {
+        if (c.action !== "speak" || c.kind !== "own_topic") continue;
+        if (covered.has(c.childTurn)) continue;
+        const turns = [c];
+        const words = contentWordsOf(c.says);
+        for (;;) {
+          const prev = turns[turns.length - 1] as ChildTurnLog;
+          const next = childAt(l, prev.childTurn + 1);
+          if (next?.action !== "speak") break;
+          const nw = contentWordsOf(next.says);
+          if (next.kind !== "own_topic" && !overlaps(nw, words)) break;
+          turns.push(next);
+          for (const w of nw) words.add(w);
+        }
+        for (const t of turns) covered.add(t.childTurn);
+        out.push({ l, turns });
+      }
+      return out;
+    });
+  const view2: NineView = {
+    no: 2,
+    title: NINE_VIEW_TITLES[1],
+    rule: "이야기 줄: 아이가 own_topic 으로 말한 차례에서 시작해, 다음 아이 차례가 잇달아 말함이고 own_topic 이거나 줄 안 앞 아이 말의 내용 낱말을 다시 쓰는 동안 이어진 아이 차례(시작 포함).",
+    existing: [
+      "scenarios/<아이 역>.md(같은 아이 역 · 씨앗을 방식마다 나란히 — 대화 전문)",
+    ],
+    stats: [
+      stat("story:runs", "이야기 줄 수", (ls) => num(runsOf(ls).length)),
+      stat("story:long_runs", "2차례 이상 이어진 줄", (ls) => {
+        const rs = runsOf(ls);
+        return frac(rs.filter((r) => r.turns.length >= 2).length, rs.length);
+      }),
+      stat("story:mean", "줄 길이 평균(아이 차례)", (ls) => {
+        const rs = runsOf(ls);
+        return num(
+          rs.length === 0
+            ? null
+            : rs.reduce((a, r) => a + r.turns.length, 0) / rs.length,
+        );
+      }),
+      stat("story:max", "가장 긴 줄(아이 차례)", (ls) => {
+        const rs = runsOf(ls);
+        return num(
+          rs.length === 0 ? null : Math.max(...rs.map((r) => r.turns.length)),
+        );
+      }),
+    ],
+    lists: [
+      list(
+        "이야기 줄의 차례",
+        "이야기 줄마다 그 줄의 아이 차례와 바로 뒤 선생님 말(참고: 줄 번호 · 범위 · 길이).",
+        (ls) =>
+          runsOf(ls).flatMap((r, i) => {
+            const a = r.turns[0]?.childTurn;
+            const b = r.turns[r.turns.length - 1]?.childTurn;
+            return r.turns.map((c) =>
+              caseOf(
+                r.l,
+                c,
+                `줄 ${i + 1}(아이 차례 ${a}~${b} · ${r.turns.length}차례)`,
+              ),
+            );
+          }),
+      ),
+    ],
+  };
+
+  // 3 · 아이가 물었을 때
+  const asks = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.children
+        .filter(
+          (c) =>
+            c.action === "speak" &&
+            (c.kind === "ask_teacher" || questionsIn(c.says).length > 0),
+        )
+        .map((c) => ({ l, c, reply: replyAfterOf(l, c.childTurn) })),
+    );
+  const replied = (ls: ViewLesson[]) =>
+    asks(ls).filter((x) => x.reply !== null);
+  const view3: NineView = {
+    no: 3,
+    title: NINE_VIEW_TITLES[2],
+    rule: "아이 말이 물음인 차례: 아이가 말했고 아이 말(하려던 말)에 물음 문장이 있거나 아이 역이 ask_teacher 로 매긴 차례 · 그다음 선생님 말.",
+    existing: [
+      "after-own-topic.md(ask_teacher 로 매긴 차례만 — 이 절은 물음 문장인 차례도 넣는다)",
+    ],
+    stats: [
+      stat("ask:turns", "아이 말이 물음인 차례", (ls) => num(asks(ls).length)),
+      stat(
+        "ask:first_not_question",
+        "그다음 선생님 말의 첫 문장이 물음이 아닌 차례(먼저 말로 받은 꼴)",
+        (ls) => {
+          const xs = replied(ls);
+          return frac(
+            xs.filter((x) => !firstSentenceIsQuestion(x.reply as string))
+              .length,
+            xs.length,
+          );
+        },
+      ),
+      stat("ask:question", "그다음 선생님 말에 물음이 든 차례", (ls) => {
+        const xs = replied(ls);
+        return frac(
+          xs.filter((x) => questionsIn(x.reply as string).length > 0).length,
+          xs.length,
+        );
+      }),
+      stat(
+        "ask:self",
+        "그다음 선생님 말에 제 이야기 문장(I · me · my)이 든 차례",
+        (ls) => {
+          const xs = replied(ls);
+          return frac(
+            xs.filter((x) => SELF_PATTERN.test(x.reply as string)).length,
+            xs.length,
+          );
+        },
+      ),
+    ],
+    lists: [
+      list(
+        "아이가 선생님에게 물은 차례",
+        "아이 말이 물음인 차례(물음 문장 · ask_teacher)와 그다음 선생님 말(참고: 아이 역이 매긴 갈래 · 첫 문장이 물음인가).",
+        (ls) =>
+          asks(ls).map(({ l, c, reply }) =>
+            caseOf(
+              l,
+              c,
+              `갈래 ${c.kind} · ${
+                reply === null
+                  ? "선생님 말 없음"
+                  : firstSentenceIsQuestion(reply)
+                    ? "첫 문장이 물음"
+                    : "첫 문장이 물음 아님"
+              }`,
+            ),
+          ),
+      ),
+    ],
+  };
+
+  // 4 · 짧은 대답 · 말 없음 · 모름
+  const isShort = (c: ChildTurnLog) =>
+    c.action === "speak" && wordCount(c.says) <= SHORT_ANSWER_WORDS;
+  const turnsWhere = (ls: ViewLesson[], f: (c: ChildTurnLog) => boolean) =>
+    ls.flatMap((l) => l.children.filter(f).map((c) => ({ l, c })));
+  const nextSpoke = (
+    xs: { l: ViewLesson; c: ChildTurnLog }[],
+    more: (c: ChildTurnLog, next: ChildTurnLog) => boolean = () => true,
+  ): ViewCell => {
+    const withNext = xs.flatMap(({ l, c }) => {
+      const next = childAt(l, c.childTurn + 1);
+      return next ? [{ c, next }] : [];
+    });
+    return frac(
+      withNext.filter(({ c, next }) => next.action === "speak" && more(c, next))
+        .length,
+      withNext.length,
+    );
+  };
+  const quietList = (
+    title: string,
+    what: string,
+    f: (c: ChildTurnLog) => boolean,
+  ) =>
+    list(
+      title,
+      `${what} 차례 · 바로 뒤 선생님 말(참고: 다음 아이 차례의 말${title === "말 없음" ? " · 선생님이 기다리기만 했는가" : ""}).`,
+      (ls) =>
+        turnsWhere(ls, f).map(({ l, c }) =>
+          caseOf(
+            l,
+            c,
+            `${nextNote(l, c)}${c.chat?.waited ? " · 선생님이 기다리기만 함" : ""}`,
+          ),
+        ),
+    );
+  const view4: NineView = {
+    no: 4,
+    title: NINE_VIEW_TITLES[3],
+    rule: `짧은 대답: 말했고 아이 말(하려던 말)이 ${SHORT_ANSWER_WORDS}낱말 이하인 차례. 말 없음: action silent(CHAT 의 누르지 않음 · 눌렀으나 들리지 않음 · 힌트를 누른 말없음을 가리지 않음). 모름: '잘 모르겠어요' 단추. 비율의 분모는 다음 아이 차례가 있는 차례다.`,
+    existing: [
+      "after-noise.md(잡음 · 모름 · 말 없음 차례 바로 뒤 선생님 말 — 방식 나란히)",
+      "chat.md '말 없음 뒤 아이가 말한 비율'(말없음에 답한 선생님 차례 뒤 셈 · 덩이 단위)",
+    ],
+    stats: [
+      stat("quiet:short", "짧은 대답 차례", (ls) =>
+        num(turnsWhere(ls, isShort).length),
+      ),
+      stat(
+        "quiet:short_next_spoke",
+        "짧은 대답 뒤 다음 아이 차례에 말함",
+        (ls) => nextSpoke(turnsWhere(ls, isShort)),
+      ),
+      stat(
+        "quiet:short_next_longer",
+        "짧은 대답 뒤 다음 아이 말이 더 길어짐(낱말 수)",
+        (ls) =>
+          nextSpoke(
+            turnsWhere(ls, isShort),
+            (c, next) => wordCount(next.says) > wordCount(c.says),
+          ),
+      ),
+      stat("quiet:silent", "말 없음 차례", (ls) =>
+        num(turnsWhere(ls, (c) => c.action === "silent").length),
+      ),
+      stat(
+        "quiet:silent_next_spoke",
+        "말 없음 뒤 다음 아이 차례에 말함",
+        (ls) => nextSpoke(turnsWhere(ls, (c) => c.action === "silent")),
+      ),
+      stat("quiet:dont_know", "'잘 모르겠어요' 차례", (ls) =>
+        num(turnsWhere(ls, (c) => c.action === "dont_know").length),
+      ),
+      stat(
+        "quiet:dont_know_next_spoke",
+        "'잘 모르겠어요' 뒤 다음 아이 차례에 말함",
+        (ls) => nextSpoke(turnsWhere(ls, (c) => c.action === "dont_know")),
+      ),
+      stat(
+        "quiet:blocks",
+        "말없음 덩이 뒤 아이가 말함(chat.md 덩이 단위와 같은 셈)",
+        (ls) => {
+          const s = ls.map(silenceBlocksOf);
+          return frac(
+            s.reduce((a, x) => a + x.spokeAfter, 0),
+            s.reduce((a, x) => a + x.turns, 0),
+          );
+        },
+      ),
+    ],
+    lists: [
+      quietList("짧은 대답", `${SHORT_ANSWER_WORDS}낱말 이하로 말한`, isShort),
+      quietList("말 없음", "말 없음(silent)", (c) => c.action === "silent"),
+      quietList(
+        "'잘 모르겠어요'",
+        "'잘 모르겠어요' 단추를 누른",
+        (c) => c.action === "dont_know",
+      ),
+    ],
+  };
+
+  // 5 · 같은 물음 · 따라 말하기
+  const sameOf = (l: ViewLesson) =>
+    sameQuestionsBesideClosingOf(
+      l.teachers.flatMap((t) =>
+        questionsIn(heardByChild(t.final)).map((q) => ({
+          turn: t.childTurn,
+          text: q,
+        })),
+      ),
+    );
+  const teacherWith = (l: ViewLesson, turn: number, text: string) => {
+    const said = l.teachers
+      .filter((t) => t.childTurn === turn)
+      .map((t) => heardByChild(t.final));
+    return said.find((s) => s.includes(text)) ?? said.join("\n");
+  };
+  type Follow = {
+    l: ViewLesson;
+    t: TeacherTurnLog;
+    sentence: string;
+    next: ChildTurnLog | undefined;
+  };
+  const followsOf = (ls: ViewLesson[]): { filled: number; heard: Follow[] } => {
+    let filled = 0;
+    const heard: Follow[] = [];
+    for (const l of ls)
+      for (const t of l.teachers) {
+        if (followSentenceOf(t) === null) continue;
+        filled += 1;
+        const sentence = heardFollowSentenceOf(t, heardByChild(t.final));
+        if (sentence === null) continue;
+        heard.push({ l, t, sentence, next: childAt(l, t.childTurn + 1) });
+      }
+    return { filled, heard };
+  };
+  const repeated = (f: Follow) =>
+    f.next !== undefined &&
+    f.next.action === "speak" &&
+    (f.next.kind === "repeat" ||
+      jaccard(f.next.says, f.sentence) >= SIMILAR_JACCARD);
+  const view5: NineView = {
+    no: 5,
+    title: NINE_VIEW_TITLES[4],
+    rule: `같은 물음: 한 수업 안 선생님 최종 말의 물음 문장이 앞 물음과 글자가 같은 것(앱 questionKeyOf 꼴 · 앱의 마무리 상수 물음은 뺌), 비슷한 물음은 낱말 겹침 ${SIMILAR_JACCARD} 이상인 쌍. 따라 할 문장: 방식마다의 따라 할 문장 칸(followSentenceOf)이 선생님이 실제로 한 말에 글자 그대로 든 차례.`,
+    existing: [
+      "metrics.md '(다) 같은 질문 후보' · '같은 질문 후보 목록(수업별)'(마무리 상수를 넣은 옛 셈)",
+      "chat.md '따라 할 문장 어긋남'(CHAT 만)",
+    ],
+    stats: [
+      stat("repeat:exact", "같은 물음을 다시 한 수(마무리 상수 뺌)", (ls) =>
+        num(ls.reduce((a, l) => a + sameOf(l).exact, 0)),
+      ),
+      stat("repeat:similar", "비슷한 물음 쌍", (ls) =>
+        num(ls.reduce((a, l) => a + sameOf(l).similar.length, 0)),
+      ),
+      stat("follow:filled", "따라 할 문장 칸이 채워진 선생님 차례", (ls) =>
+        num(followsOf(ls).filled),
+      ),
+      stat("follow:heard", "따라 할 문장이 선생님 말에 든 차례", (ls) =>
+        num(followsOf(ls).heard.length),
+      ),
+      stat(
+        "follow:repeated",
+        "그 뒤 아이가 따라 말함(repeat 로 매김 · 낱말 겹침 0.6 이상)",
+        (ls) => {
+          const h = followsOf(ls).heard.filter((f) => f.next !== undefined);
+          return frac(h.filter(repeated).length, h.length);
+        },
+      ),
+    ],
+    lists: [
+      list(
+        "같은 물음을 다시 한 차례",
+        "같은 글자의 물음을 다시 한 선생님 차례(앞 아이 차례 뒤의 아이 말 · 그 선생님 말, 참고: 물음과 처음 물은 차례).",
+        (ls) =>
+          ls.flatMap((l) =>
+            sameOf(l).exactList.map((q) => ({
+              lesson: l.meta.lesson,
+              childTurn: q.turn,
+              child: childSaidOf(childAt(l, q.turn)),
+              teacher: teacherWith(l, q.turn, q.text),
+              note: `물음 "${q.text}" — 앞서 아이 차례 ${q.firstTurn} 뒤에 같은 물음`,
+            })),
+          ),
+      ),
+      list(
+        "비슷한 물음 쌍",
+        `낱말 겹침 ${SIMILAR_JACCARD} 이상인 물음 쌍의 뒤 물음 차례(참고: 앞 물음 · 겹침).`,
+        (ls) =>
+          ls.flatMap((l) =>
+            sameOf(l).similar.map((p) => ({
+              lesson: l.meta.lesson,
+              childTurn: p.b.turn,
+              child: childSaidOf(childAt(l, p.b.turn)),
+              teacher: p.b.text,
+              note: `앞 물음(아이 차례 ${p.a.turn}) "${p.a.text}" · 낱말 겹침 ${p.jaccard}`,
+            })),
+          ),
+      ),
+      list(
+        "따라 할 문장이 든 차례",
+        "따라 할 문장 칸이 선생님 말에 글자 그대로 든 선생님 차례(참고: 그 문장 · 다음 아이 차례의 말).",
+        (ls) =>
+          followsOf(ls).heard.map((f) => ({
+            lesson: f.l.meta.lesson,
+            childTurn: f.t.childTurn,
+            child: childSaidOf(childAt(f.l, f.t.childTurn)),
+            teacher: heardByChild(f.t.final),
+            note: `따라 할 문장 "${f.sentence}" · ${
+              f.next
+                ? `다음 아이 차례 ${f.next.childTurn}: ${childSaidOf(f.next)}${repeated(f) ? "(따라 말함)" : ""}`
+                : "다음 아이 차례 없음"
+            }`,
+          })),
+      ),
+    ],
+  };
+
+  // 6 · 잘못 들린 말
+  const noisy = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.children
+        .filter((c) => c.noise !== null && c.action === "speak")
+        .map((c) => ({ l, c, reply: replyAfterOf(l, c.childTurn) })),
+    );
+  const wrongWordsOf = (c: ChildTurnLog) => {
+    const meant = contentWordsOf(c.says);
+    return new Set(
+      [...contentWordsOf(c.heard ?? "")].filter((w) => !meant.has(w)),
+    );
+  };
+  const hasRecognizerNote = (c: ChildTurnLog) =>
+    (c.chat?.recognizer ?? null) !== null || c.stt !== undefined;
+  const view6: NineView = {
+    no: 6,
+    title: NINE_VIEW_TITLES[5],
+    rule: "잡음 차례: 실험이 들린 글을 바꿔 넣은(noise) 아이 차례와 바로 뒤 선생님 말. 같은 씨앗이면 방식마다 같은 차례에 넣는다(아이 역이 그 차례에 말하지 않으면 건너뜀).",
+    existing: [
+      "after-noise.md(잡음 차례를 방식마다 나란히)",
+      "chat.md '맞게 들린 말에 알림이 붙은 차례 뒤 선생님 말'(CHAT 의 인식기 알림)",
+    ],
+    stats: [
+      stat("noise:turns", "잡음 차례", (ls) => num(noisy(ls).length)),
+      stat(
+        "noise:reask",
+        "바로 뒤 선생님 말이 되묻기 · 확인 꼴(기계 어림)",
+        (ls) => {
+          const xs = noisy(ls).filter((x) => x.reply !== null);
+          return frac(
+            xs.filter((x) => REASK_PATTERN.test(x.reply as string)).length,
+            xs.length,
+          );
+        },
+      ),
+      stat(
+        "noise:took_wrong",
+        "바로 뒤 선생님 말이 잘못 들린 낱말(들린 글에만 있는 내용 낱말)을 씀",
+        (ls) => {
+          const xs = noisy(ls).filter((x) => x.reply !== null);
+          return frac(
+            xs.filter((x) =>
+              overlaps(wrongWordsOf(x.c), contentWordsOf(x.reply as string)),
+            ).length,
+            xs.length,
+          );
+        },
+      ),
+      stat("noise:question", "바로 뒤 선생님 말에 물음이 든 차례", (ls) => {
+        const xs = noisy(ls).filter((x) => x.reply !== null);
+        return frac(
+          xs.filter((x) => questionsIn(x.reply as string).length > 0).length,
+          xs.length,
+        );
+      }),
+      stat(
+        "noise:recognizer",
+        "인식기 알림을 실은 아이 차례(방식 고유 — CHAT · R2 만 싣는다)",
+        (ls) => num(turnsWhere(ls, hasRecognizerNote).length),
+      ),
+    ],
+    lists: [
+      list(
+        "잡음 차례",
+        "잡음 차례의 하려던 말 → 들린 글과 바로 뒤 선생님 말(참고: 잘못 들린 낱말 · 선생님이 그 낱말을 썼는가 · 되묻기 꼴).",
+        (ls) =>
+          noisy(ls).map(({ l, c, reply }) => {
+            const wrong = [...wrongWordsOf(c)];
+            const used = wrong.filter((w) =>
+              contentWordsOf(reply ?? "").has(w),
+            );
+            return caseOf(
+              l,
+              c,
+              `잘못 들린 낱말 ${wrong.length > 0 ? wrong.join(" · ") : "없음"}${used.length > 0 ? ` · 선생님이 씀: ${used.join(" · ")}` : ""}${reply !== null && REASK_PATTERN.test(reply) ? " · 되묻기 꼴" : ""}`,
+            );
+          }),
+      ),
+      list(
+        "인식기 알림을 실은 차례(방식 고유)",
+        "아이 차례에 인식기 알림(믿음도 · 다른 후보)을 실은 차례와 바로 뒤 선생님 말.",
+        (ls) =>
+          turnsWhere(ls, hasRecognizerNote).map(({ l, c }) =>
+            caseOf(
+              l,
+              c,
+              c.chat?.recognizer
+                ? `믿음도 ${c.chat.recognizer.confidence ?? "-"}${c.chat.recognizer.alternative ? ` · 다른 후보 "${c.chat.recognizer.alternative}"` : ""}`
+                : "인식기 알림(stt)",
+            ),
+          ),
+      ),
+    ],
+  };
+
+  // 7 · 단계에 맞는 말
+  const responsesOf = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.teachers.filter((t) => t.childTurn > 0).map((t) => ({ l, t })),
+    );
+  const flagsOf = (t: TeacherTurnLog): string[] => {
+    const f = t.levelFit;
+    const out: string[] = [];
+    if (f.overSentenceMax) out.push(`문장 수 상한 넘음(${f.sentences}문장)`);
+    if (f.longSentences.length > 0)
+      out.push(`긴 문장: ${f.longSentences.join(" / ")}`);
+    if (f.offbandWords.length > 0)
+      out.push(`범위 밖 낱말: ${f.offbandWords.join(" · ")}`);
+    if ((f.offbandForms ?? []).length > 0)
+      out.push(`범위 밖 형태: ${f.offbandForms.join(" · ")}`);
+    return out;
+  };
+  const view7: NineView = {
+    no: 7,
+    title: NINE_VIEW_TITLES[6],
+    rule: "아이 차례 뒤 선생님 차례마다 앱의 기존 검사(문장 수 상한 · 단계 문장 길이 · 범위 밖 낱말 · 범위 밖 형태)를 기록 전용으로 건 값(levelFit — 실행 때 적음).",
+    existing: ["metrics.md '(사) 단계에 맞는 말'(같은 값의 방식별 합)"],
+    stats: [
+      stat("level:flagged", "검사에 하나라도 걸린 선생님 차례", (ls) => {
+        const xs = responsesOf(ls);
+        return frac(
+          xs.filter((x) => flagsOf(x.t).length > 0).length,
+          xs.length,
+        );
+      }),
+      stat("level:over_sentences", "문장 수 상한을 넘은 차례", (ls) =>
+        num(responsesOf(ls).filter((x) => x.t.levelFit.overSentenceMax).length),
+      ),
+      stat("level:long_sentences", "단계 길이를 넘은 문장", (ls) =>
+        num(
+          responsesOf(ls).reduce(
+            (a, x) => a + x.t.levelFit.longSentences.length,
+            0,
+          ),
+        ),
+      ),
+      stat("level:offband_turns", "범위 밖 낱말이 든 차례", (ls) =>
+        num(
+          responsesOf(ls).filter((x) => x.t.levelFit.offbandWords.length > 0)
+            .length,
+        ),
+      ),
+      stat("level:teacher_words", "선생님 차례당 낱말 수(평균)", (ls) => {
+        const xs = responsesOf(ls);
+        return num(
+          xs.length === 0
+            ? null
+            : xs.reduce((a, x) => a + wordCount(heardByChild(x.t.final)), 0) /
+                xs.length,
+        );
+      }),
+    ],
+    lists: [
+      list(
+        "단계 검사에 걸린 선생님 차례",
+        "검사에 하나라도 걸린 아이 차례 뒤 선생님 차례(참고: 걸린 것).",
+        (ls) =>
+          responsesOf(ls)
+            .filter((x) => flagsOf(x.t).length > 0)
+            .map(({ l, t }) => ({
+              lesson: l.meta.lesson,
+              childTurn: t.childTurn,
+              child: childSaidOf(childAt(l, t.childTurn)),
+              teacher: heardByChild(t.final),
+              note: flagsOf(t).join(" · "),
+            })),
+      ),
+    ],
+  };
+
+  // 8 · 선생님 캐릭터
+  const selfOf = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.teachers.flatMap((t) =>
+        splitSentences(heardByChild(t.final))
+          .filter((s) => SELF_PATTERN.test(s))
+          .map((sentence) => ({ l, t, sentence })),
+      ),
+    );
+  const madeUpOf = (ls: ViewLesson[]) =>
+    ls.flatMap((l) =>
+      l.teachers.flatMap((t) =>
+        (t.chat?.madeUp ?? []).map((m) => ({ l, t, m })),
+      ),
+    );
+  const view8: NineView = {
+    no: 8,
+    title: NINE_VIEW_TITLES[7],
+    rule: "선생님이 제 이야기를 한 문장(I · me · my 가 든 문장 — 캐릭터의 말투 · 좋아하는 것 · 지어낸 경험이 일관한지 읽는 재료)과 제 것으로 말한 꼴('my' · 'our' 바로 뒤 가족 · 반려동물 · 집 · 학교 낱말). 자연스러움 자체는 판정자가 매긴다(judge-rubric.md).",
+    existing: [
+      "chat.md '선생님이 제 것으로 말한 꼴'(긴 대본 포함) · '지어낸 경험 꼴 걸림'(CHAT 만)",
+      "metrics.md '수업별 끝난 길 · 마무리 차례의 말'",
+      "judge-rubric.md(판정자 채점표 — own_life 등)",
+    ],
+    stats: [
+      stat("persona:self_sentences", "제 이야기 문장(I · me · my)", (ls) =>
+        num(selfOf(ls).length),
+      ),
+      stat("persona:self_turns", "제 이야기 문장이 든 선생님 차례", (ls) => {
+        const all = ls.reduce((a, l) => a + l.teachers.length, 0);
+        const turns = new Set(
+          selfOf(ls).map((x) => `${x.l.meta.lesson}#${x.t.childTurn}`),
+        );
+        return frac(turns.size, all);
+      }),
+      stat("persona:own_words", "제 것으로 말한 꼴(문장)", (ls) =>
+        num(ownWordTurnsOf(ls).length),
+      ),
+      stat(
+        "persona:made_up",
+        "지어낸 경험 꼴 검사 걸림(방식 고유 — CHAT 만 기록)",
+        (ls) => num(madeUpOf(ls).length),
+      ),
+    ],
+    lists: [
+      list(
+        "선생님이 제 이야기를 한 문장",
+        "I · me · my 가 든 선생님 문장(참고: 그 문장 — 선생님 말 칸은 그 차례 전체).",
+        (ls) =>
+          selfOf(ls).map(({ l, t, sentence }) => ({
+            lesson: l.meta.lesson,
+            childTurn: t.childTurn,
+            child: childSaidOf(childAt(l, t.childTurn)),
+            teacher: heardByChild(t.final),
+            note: sentence,
+          })),
+      ),
+      list(
+        "선생님이 제 것으로 말한 꼴",
+        "'my' · 'our' 바로 뒤에 가족 · 반려동물 · 집 · 학교 낱말(복수형도)이 오는 선생님 문장(참고: 걸린 낱말).",
+        (ls) =>
+          ownWordTurnsOf(ls).map((o) => {
+            const l = ls.find((x) => x.meta.lesson === o.lesson) as ViewLesson;
+            return {
+              lesson: o.lesson,
+              childTurn: o.childTurn,
+              child: childSaidOf(childAt(l, o.childTurn)),
+              teacher: o.sentence,
+              note: o.words.join(" · "),
+            };
+          }),
+      ),
+      list(
+        "지어낸 경험 꼴 검사 걸림(방식 고유)",
+        "CHAT 의 지어낸 경험 꼴 검사에 걸린 선생님 차례(참고: 걸린 글).",
+        (ls) =>
+          madeUpOf(ls).map(({ l, t, m }) => ({
+            lesson: l.meta.lesson,
+            childTurn: t.childTurn,
+            child: childSaidOf(childAt(l, t.childTurn)),
+            teacher: heardByChild(t.final),
+            note: m,
+          })),
+      ),
+    ],
+  };
+
+  // 9 · 지연 · 비용
+  const firstSentOf = (ls: ViewLesson[]) =>
+    responsesOf(ls).flatMap((x) =>
+      x.t.firstSent ? [{ ...x, ms: x.t.firstSent.ms }] : [],
+    );
+  const costOf = (l: ViewLesson, child: boolean) =>
+    round6(
+      l.calls
+        .filter((c) => (c.kind === "child") === child)
+        .reduce((a, c) => a + (c.response.costUsd ?? 0), 0),
+    );
+  const view9: NineView = {
+    no: 9,
+    title: NINE_VIEW_TITLES[8],
+    rule: "지연: 아이 차례 뒤 선생님 차례에서 아이에게 첫 문장이 나간 때(firstSent — 요청부터, 앱이 받아 둔 차례는 받아 둔 응답이 끝난 때, 방식마다 같은 뜻)와 차례 전체 시간(ms). 비용: 호출 기록의 costUsd 합 — 선생님 쪽(아이 역 호출 뺌)과 아이 역(실험 몫)을 따로.",
+    existing: [
+      "metrics.md '(마) 호출 수 · 걸린 시간' · '(바) 수업당 토큰 · 비용' · '(차) 아이에게 첫 문장이 나간 때'",
+      "chat.md '수업마다 호출 · 비용' · '첫 문장이 나간 때' · '긴 대본 한 벌'(CHAT)",
+      "progress.log '쓴 비용 누계'(실패해 다시 돌린 시도 포함)",
+    ],
+    stats: [
+      stat("cost:first_sent_median", "첫 문장이 나간 때 중앙값", (ls) => ({
+        kind: "ms",
+        v: median(firstSentOf(ls).map((x) => x.ms)),
+      })),
+      stat("cost:first_sent_p95", "첫 문장이 나간 때 p95", (ls) => ({
+        kind: "ms",
+        v: percentile(
+          firstSentOf(ls).map((x) => x.ms),
+          95,
+        ),
+      })),
+      stat("cost:turn_ms_median", "차례 전체 시간 중앙값(부른 차례)", (ls) => ({
+        kind: "ms",
+        v: median(
+          responsesOf(ls)
+            .filter((x) => x.t.called)
+            .map((x) => x.t.ms),
+        ),
+      })),
+      stat("cost:teacher_per_lesson", "수업당 선생님 쪽 비용(평균)", (ls) => ({
+        kind: "usd",
+        v:
+          ls.length === 0
+            ? null
+            : round6(ls.reduce((a, l) => a + costOf(l, false), 0) / ls.length),
+      })),
+      stat("cost:teacher_total", "선생님 쪽 비용 합", (ls) => ({
+        kind: "usd",
+        v: round6(ls.reduce((a, l) => a + costOf(l, false), 0)),
+      })),
+      stat("cost:per_child_turn", "아이 차례당 선생님 쪽 비용", (ls) => {
+        const turns = ls.reduce((a, l) => a + l.meta.childTurns, 0);
+        return {
+          kind: "usd",
+          v:
+            turns === 0
+              ? null
+              : round6(ls.reduce((a, l) => a + costOf(l, false), 0) / turns),
+        };
+      }),
+      stat(
+        "cost:child_role",
+        "아이 역 호출 비용 합(실험 몫 — 앱 비용 아님)",
+        (ls) => ({
+          kind: "usd",
+          v: round6(ls.reduce((a, l) => a + costOf(l, true), 0)),
+        }),
+      ),
+    ],
+    lists: [
+      list(
+        "느린 차례",
+        `첫 문장이 나간 때가 가장 늦은 아이 차례 뒤 선생님 차례(방식마다 ${SLOW_TURNS_LISTED}개, 참고: 첫 문장 시간 · 차례 전체 시간).`,
+        (ls) =>
+          [...firstSentOf(ls)]
+            .sort((a, b) => b.ms - a.ms)
+            .slice(0, SLOW_TURNS_LISTED)
+            .map(({ l, t, ms }) => ({
+              lesson: l.meta.lesson,
+              childTurn: t.childTurn,
+              child: childSaidOf(childAt(l, t.childTurn)),
+              teacher: heardByChild(t.final),
+              note: `${Math.round(ms)}ms(첫 문장이 나간 때) · 차례 전체 ${Math.round(t.ms)}ms`,
+            })),
+      ),
+      list(
+        "수업마다 비용",
+        "수업마다 선생님 쪽 · 아이 역 호출 비용과 아이 차례 수(수업 단위 줄 — 아이 말 · 선생님 말 칸은 비움).",
+        (ls) =>
+          ls.map((l) => ({
+            lesson: l.meta.lesson,
+            childTurn: null,
+            child: "-",
+            teacher: "-",
+            note: `선생님 쪽 ${costOf(l, false).toFixed(4)}달러 · 아이 역 ${costOf(l, true).toFixed(4)}달러 · 아이 차례 ${l.meta.childTurns} · 끝난 길 ${l.meta.ended ?? "아이 차례 상한"}`,
+          })),
+      ),
+    ],
+  };
+
+  return [view1, view2, view3, view4, view5, view6, view7, view8, view9];
+}

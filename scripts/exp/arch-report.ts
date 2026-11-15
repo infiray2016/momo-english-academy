@@ -4,6 +4,7 @@
 // 지난 실험의 judge-agg.py 를 옮김 — 가려 읽기 폴더 · 대응표는 건드리지 않는다).
 // 시나리오 아이 역(SA~SF — task-x3)의 수업이 있으면 시나리오마다 방식을 나란히 읽는 글(scenarios/<SA…SF>.md)도 낸다.
 // --count-tokens 만 네트워크를 쓴다(방식마다 시스템 프롬프트의 입력 토큰 수 — count_tokens). 키 값은 출력하지 않는다.
+// 아홉 관점(13절 C245 (3) — 묶음 T2 fix 3)은 nine-views.md · .json 에 방식마다 같은 정의의 수치와 사례 목록으로 낸다.
 // 방식 CHAT(묶음 T2)의 수업이 있으면 chat.md · chat.json(spec '회화 대화 구조 R' 설계 13 '대본에서 셀 것' · 차례마다 값 · 긴 대본)을 더 쓴다. 긴 대본
 // (variant long)은 시나리오 셈 · 나란히 글 · 가려 읽기에서 빼고 chat.md 에만 둔다. 재료 카드는 결과 폴더 setup.json 의 card 로 읽는다(없으면 replay).
 import { randomInt } from "node:crypto";
@@ -81,6 +82,9 @@ import {
   type JudgeSummary,
   judgeSummaryOf,
   median,
+  NINE_VIEW_TITLES,
+  type NineView,
+  nineViewsOf,
   OWN_WORDS,
   ownWordTurnsOf,
   percentile,
@@ -92,6 +96,7 @@ import {
   sameQuestionsBesideClosingOf,
   sameQuestionsOf,
   silenceBlocksOf,
+  type ViewCell,
   wordCount,
 } from "./arch-metrics";
 import { NOISE_TURNS } from "./arch-noise";
@@ -1131,6 +1136,97 @@ function afterOwnTopicMarkdown(lessons: readonly Lesson[]): string {
       ...rows,
       "",
     );
+  }
+  return `${out.join("\n")}\n`;
+}
+
+// ── 아홉 관점(13절 C245 (3) — 결정 원문 3절, 묶음 T2 fix 3) ─────────────────────
+
+function viewCellText(c: ViewCell | undefined): string {
+  if (!c) return "-";
+  if (c.kind === "frac")
+    return c.d === 0 ? `0/0` : `${c.n}/${c.d}(${pct(c.n / c.d)})`;
+  if (c.v === null) return "-";
+  if (c.kind === "ms") return `${Math.round(c.v)}ms`;
+  if (c.kind === "usd") return `${c.v.toFixed(4)}달러`;
+  return num(c.v);
+}
+
+/** nine-views.json(관점마다 수치 · 사례 — 판정자 · 사람이 읽는 재료). */
+export function nineViewsJsonOf(lessons: readonly Lesson[]): {
+  arms: Arm[];
+  lessons: Record<string, number>;
+  views: NineView[];
+} {
+  const arms = armsIn(lessons);
+  return {
+    arms,
+    lessons: Object.fromEntries(
+      arms.map((a) => [a, lessons.filter((l) => l.meta.arm === a).length]),
+    ),
+    views: nineViewsOf(lessons, arms),
+  };
+}
+
+/**
+ * nine-views.md: 결정 원문 3절의 아홉 관점마다 셈 정의 · 이미 있는 목록의 자리 · 방식 칸의 수치 표 · 사례 목록(목록 머리에 셈 정의 한 줄). 도구는
+ * 사례를 좋다 · 나쁘다로 판정하지 않는다. 수업은 긴 대본을 뺀 것을 넘긴다.
+ */
+export function nineViewsMarkdownOf(lessons: readonly Lesson[]): string {
+  const arms = armsIn(lessons);
+  const views = nineViewsOf(lessons, arms);
+  const out = [
+    "# 아홉 관점 — 방식마다 같은 정의로 센 수치와 사람이 읽을 사례(13절 C245 (3) · 결정 원문 3절)",
+    "",
+    "모의 실행 기록이다. 아이 역은 AI 가 맡은 지어낸 아이이고 실제 아이의 말은 없다(C243 (6)). 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 다르고, 그 말은 기록 그대로 둔다. 셈은 긴 대본을 뺀 수업에서 방식마다 같은 정의로 낸다. '기계 어림'은 글 꼴로 센 값이라 목록을 함께 읽는다.",
+    "",
+    "도구는 사례를 좋다 · 나쁘다로 판정하지 않는다. 좋았던 사례 · 부자연스러운 사례 · 실패 사례는 사람과 판정자가 이 목록에서 고른다. 대화 전문은 `runs/<수업>.transcript.md`, 같은 아이 역 · 씨앗을 방식마다 나란히 읽는 글은 `scenarios/<아이 역>.md` 다.",
+    "",
+    `수업 수: ${arms.map((a) => `${armLabel(a)} ${lessons.filter((l) => l.meta.arm === a).length}`).join(" · ")}`,
+    "",
+    "## 차례",
+    "",
+    ...NINE_VIEW_TITLES.map((t, i) => `${i + 1}. ${t}`),
+    "",
+  ];
+  for (const v of views) {
+    out.push(
+      `## ${v.no}. ${v.title}`,
+      "",
+      `셈 정의: ${v.rule}`,
+      "",
+      `이미 있는 목록 · 표: ${v.existing.join(" · ")}`,
+      "",
+      `| 수치 | ${arms.map(armLabel).join(" | ")} |`,
+      `|---|${arms.map(() => "---").join("|")}|`,
+      ...v.stats.map(
+        (st) =>
+          `| ${cell(st.label)} | ${arms.map((a) => viewCellText(st.byArm[a])).join(" | ")} |`,
+      ),
+      "",
+    );
+    for (const l of v.lists) {
+      const rows = arms.flatMap((a) => l.byArm[a] ?? []);
+      out.push(
+        `### 사례 — ${l.title}`,
+        "",
+        `셈 정의: ${l.rule}`,
+        "",
+        `방식별 사례 수: ${arms.map((a) => `${armLabel(a)} ${(l.byArm[a] ?? []).length}`).join(" · ")}`,
+        "",
+      );
+      if (rows.length === 0) out.push("- 없음", "");
+      else
+        out.push(
+          "| 수업 | 아이 차례 | 아이 말 | 선생님 말 | 참고 |",
+          "|---|---|---|---|---|",
+          ...rows.map(
+            (r) =>
+              `| ${r.lesson} | ${r.childTurn ?? "-"} | ${cell(r.child)} | ${cell(r.teacher)} | ${cell(r.note ?? "")} |`,
+          ),
+          "",
+        );
+    }
   }
   return `${out.join("\n")}\n`;
 }
@@ -2719,6 +2815,12 @@ async function main(): Promise<number> {
   writeFileSync(
     join(dir, "after-own-topic.md"),
     afterOwnTopicMarkdown(lessons),
+  );
+  // 아홉 관점(13절 C245 (3)): 방식마다 같은 정의의 수치와 사람이 읽을 사례 목록
+  writeFileSync(join(dir, "nine-views.md"), nineViewsMarkdownOf(lessons));
+  writeFileSync(
+    join(dir, "nine-views.json"),
+    `${JSON.stringify(nineViewsJsonOf(lessons), null, 2)}\n`,
   );
   blindOf(dir, lessons);
   writeFileSync(join(dir, JUDGE_RUBRIC_FILE), judgeRubricOf(resolve(dir)));

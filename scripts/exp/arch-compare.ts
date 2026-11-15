@@ -1,7 +1,7 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
 //        [--children K1,K2,K3 | SA,SB,SC,SD,SD2,SE,SF,SG] [--seeds 1,2] [--arms A,B,C,C2,P,N,Q,QP,R,R2,R3,R3M,R3O,CHAT]
-//        [--card replay|lesson1] [--long [--long-turns 40] [--long-safety-max 40]] [--call --max-calls <수>]
+//        [--card replay|lesson1] [--long [--long-turns 40] [--long-safety-max 40]] [--shuffle <씨앗>] [--call --max-calls <수>]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
@@ -19,6 +19,8 @@
 // 단원 1 첫 수업, 짧은 준비가 열림), --long 은 긴 대본 한 벌(CHAT · SE · 아이 차례 40)을 더한다.
 // 실제 AI 호출은 --call 과 --max-calls <수> 가 함께 있을 때만 나간다(13절 C243 보완 5 (6)). 기본은 계획만: 수업 · 방식 · 호출 갈래별 위쪽 어림 수와
 // 어림 비용을 찍고 끝낸다. 어림이 상한을 넘으면 부르지 않고, 실행 중 상한에 닿으면 더 부르지 않고 멈춘다.
+// 묶음 T2 fix 3(13절 C245 (3)): --shuffle <씨앗> 이면 조합 차례와 조합 안 방식의 요청 차례를 그 씨앗대로 섞고(setup.json plan.order · progress.log),
+// 계획 단계에서 방식마다 선생님 대화 · 아이 역 호출의 모델 · effort · thinking · max_tokens 를 표로 찍어 다르면 부르기 전에 끝 코드 4 로 멈춘다.
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
@@ -817,6 +819,16 @@ function nSystemOf(
   values: Record<string, unknown>,
   book: ScriptConfig["book"],
 ): string | null {
+  const body = nStartBodyOf(materials, values, book);
+  return body === null ? null : String(body.system);
+}
+
+/** 방식 N 입구 start 의 요청 본문(같은 조건 확인 · 안내문의 재료 — AI 를 부르지 않음). 새 엔진을 열 수 없으면 null. */
+function nStartBodyOf(
+  materials: Materials,
+  values: Record<string, unknown>,
+  book: ScriptConfig["book"],
+): Record<string, unknown> | null {
   const sim = createTalkSim(
     materials,
     { ...values, [TALK_LEAD_MODE_KEY]: "claude" },
@@ -846,7 +858,7 @@ function nSystemOf(
     });
   }
   const opened = sim.lead.prepare({ kind: "open", open: "start" });
-  return opened.ok ? String(opened.turn.request.body.system) : null;
+  return opened.ok ? opened.turn.request.body : null;
 }
 
 /** 방식 CHAT 의 안내문: 버리는 이야기 방식 대본 도구로 입구 start 요청의 system 을 읽는다(AI 를 부르지 않음). */
@@ -855,6 +867,16 @@ function chatSystemOf(
   values: Record<string, unknown>,
   book: ScriptConfig["book"],
 ): string | null {
+  const body = chatStartBodyOf(materials, values, book);
+  return body === null ? null : String(body.system);
+}
+
+/** 방식 CHAT 입구 start 의 요청 본문(같은 조건 확인 · 안내문의 재료 — AI 를 부르지 않음). 이야기 방식을 열 수 없으면 null. */
+function chatStartBodyOf(
+  materials: Materials,
+  values: Record<string, unknown>,
+  book: ScriptConfig["book"],
+): Record<string, unknown> | null {
   const sim = createTalkSim(
     materials,
     { ...values, [TALK_LEAD_MODE_KEY]: "chat" },
@@ -863,7 +885,7 @@ function chatSystemOf(
   );
   if (!sim.chat.on) return null;
   const opened = sim.chat.prepare({ kind: "open", open: "start" });
-  return opened.ok ? String(opened.turn.request.body.system) : null;
+  return opened.ok ? opened.turn.request.body : null;
 }
 
 function sourceScriptOf(root: string, card: SetupCard): ObserveScript {
@@ -2033,18 +2055,13 @@ function teacherP(setup: Setup, ctx: Ctx, lesson: string): Teacher {
  * 알림 없음). 호출 값은 다른 방식과 같은 틀(회화 턴), 흘려 받아 첫 문장 시각을 잰다. 아이에게 나가는 말은 say 그대로(후처리 없음). 지난 메시지는
  * 고쳐 쓰지 않는다. wrap_up 이 참이면 다음 아이 차례 앞에서 두 단추를 내고(endedBefore), '더 이야기하기'면 Q_MORE_MESSAGE 로 잇는다(more).
  */
-function teacherQ(
-  setup: Setup,
-  ctx: Ctx,
-  lesson: string,
-  arm: QArm,
-  contextIndex: number,
-): Teacher {
+/** 방식 Q 무리의 선생님 호출 본문(메시지 없음 — teacherQ · 같은 조건 확인이 같이 쓴다). */
+function qBaseBodyOf(setup: Setup, arm: QArm): Record<string, unknown> {
   const { format: _drop, ...outputConfig } = setup.template.body
     .output_config as Record<string, unknown>;
   // 모델 갈래(R3M · R3O): 안내문 · 메시지는 R3 그대로, 호출의 모델 · 추론 수준(· 끌 수 없는 모델의 생각 단계 · 출력 상한)만 바꾼다
   const over = qCallOverrideOf(arm);
-  const base = withFormat(
+  return withFormat(
     {
       ...setup.template.body,
       system: setup.qSystems[arm],
@@ -2061,6 +2078,16 @@ function teacherQ(
     },
     QOutputSchema,
   );
+}
+
+function teacherQ(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  arm: QArm,
+  contextIndex: number,
+): Teacher {
+  const base = qBaseBodyOf(setup, arm);
   const history: { user: string; assistant: string }[] = [];
   let wrapPending = false;
   const call = async (childTurn: number, user: string): Promise<TeacherOut> => {
@@ -2839,14 +2866,28 @@ function noChatCalls(): ChatCallCounts {
 
 // ── 아이 역 ─────────────────────────────────────────────────────
 
+/** 아이 역 호출 본문(보통 차례 — 메시지 없음, 방식과 상관없이 같은 틀 · childRole · 같은 조건 확인이 같이 쓴다). */
+function childBaseBodyOf(
+  setup: Setup,
+  child: ChildKey,
+): Record<string, unknown> {
+  const { format: _drop, ...outputConfig } = setup.template.body
+    .output_config as Record<string, unknown>;
+  return withFormat(
+    {
+      ...setup.template.body,
+      system: childSystemOf(child),
+      output_config: outputConfig,
+    },
+    ChildOutputSchema,
+  );
+}
+
 function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
   const system = childSystemOf(child);
   const { format: _drop, ...outputConfig } = setup.template.body
     .output_config as Record<string, unknown>;
-  const base = withFormat(
-    { ...setup.template.body, system, output_config: outputConfig },
-    ChildOutputSchema,
-  );
+  const base = childBaseBodyOf(setup, child);
   // 마무리 차례에서만 고른 단추 칸(wrap_choice)을 더한 출력 규격으로 부른다(보통 차례의 요청은 지난 실험 그대로)
   const wrapBase = withFormat(
     { ...setup.template.body, system, output_config: outputConfig },
@@ -3313,6 +3354,11 @@ export type RunArgs = {
   longTurns: number;
   /** 긴 대본의 대화 안전 상한(--long-safety-max, 기본 긴 대본의 아이 차례 — 그 차례에 안전 상한 사실 줄이 붙는다). */
   longSafetyMax: number;
+  /**
+   * 실행 순서를 섞는 씨앗(--shuffle <0 이상 정수>, 13절 C245 (3) '실행 순서는 가능하면 섞는다'): 조합(아이 역 × 씨앗)의 차례와 조합 안 방식이
+   * 요청을 내는 차례를 이 씨앗으로 정해진 대로 섞는다. null 이면 지금 순서 그대로다. 긴 대본 한 벌은 늘 끝이다.
+   */
+  shuffle: number | null;
 };
 
 export function parseRunArgs(argv: readonly string[]): RunArgs {
@@ -3348,6 +3394,10 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
   if (!(SETUP_CARDS as readonly string[]).includes(card))
     throw new Error(`모르는 카드: ${card}(replay · lesson1)`);
   const longTurns = positive("--long-turns") ?? CHAT_LONG_TURNS;
+  const shuffleText = get("--shuffle");
+  const shuffle = shuffleText === undefined ? null : Number(shuffleText);
+  if (shuffle !== null && (!Number.isInteger(shuffle) || shuffle < 0))
+    throw new Error(`--shuffle 는 0 이상 정수다: ${shuffleText}`);
   return {
     out,
     pilot,
@@ -3369,6 +3419,333 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
     long: argv.includes("--long"),
     longTurns,
     longSafetyMax: positive("--long-safety-max") ?? longTurns,
+    shuffle,
+  };
+}
+
+// ── 실행 순서(13절 C245 (3) — 섞기) ─────────────────────────────────────
+
+/** 조합 하나(아이 역 × 씨앗)와 그 안에서 방식이 요청을 내는 차례(동시에 시작하되 이 차례로 첫 요청을 낸다). */
+export type RunCombo = { child: ChildKey; seed: number; arms: Arm[] };
+
+/** 씨앗으로 정해지는 수 생성(mulberry32 — 0 이상 1 미만). 실험 순서를 다시 만들 수 있게 한다. */
+function seededRandomOf(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffledOf<T>(items: readonly T[], next: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [out[i], out[j]] = [out[j] as T, out[i] as T];
+  }
+  return out;
+}
+
+/**
+ * 실행 순서: 씨앗이 없으면 지금 순서(아이 역 → 씨앗, 방식은 --arms 차례). 씨앗이 있으면 조합 차례를 먼저 섞고, 이어서 조합마다 방식 차례를 같은
+ * 수 생성으로 섞는다(같은 씨앗이면 늘 같은 순서). 긴 대본 한 벌은 여기에 들지 않는다(늘 끝 — CHAT 한 방식뿐이라 방식 사이 차례가 없다).
+ */
+export function runOrderOf(
+  args: Pick<RunArgs, "children" | "seeds" | "arms" | "shuffle">,
+): RunCombo[] {
+  const combos: RunCombo[] = args.children.flatMap((child) =>
+    args.seeds.map((seed) => ({ child, seed, arms: [...args.arms] })),
+  );
+  if (args.shuffle === null) return combos;
+  const next = seededRandomOf(args.shuffle);
+  return shuffledOf(combos, next).map((c) => ({
+    ...c,
+    arms: shuffledOf(c.arms, next),
+  }));
+}
+
+/** 실행 순서 줄(계획 출력 · progress.log): 머리 한 줄 + 조합마다 '번호. 아이 역 · 씨앗: 방식 → 방식'. */
+export function runOrderLinesOf(
+  order: readonly RunCombo[],
+  shuffle: number | null,
+): string[] {
+  return [
+    shuffle === null
+      ? `실행 순서(섞지 않음 — 아이 역 → 씨앗, 방식은 --arms 차례 · 조합 ${order.length}):`
+      : `실행 순서(--shuffle ${shuffle} — 조합 차례와 조합 안 방식의 요청 차례를 섞음 · 조합 ${order.length}, 긴 대본은 끝):`,
+    ...order.map(
+      (c, i) => `${i + 1}. ${c.child} · 씨앗 ${c.seed}: ${c.arms.join(" → ")}`,
+    ),
+  ];
+}
+
+// ── 같은 조건 확인(13절 C245 (3) '같은 모델 · effort · 아이 역 조건') ─────────────────
+
+/** 같은 조건 표의 칸 하나: dialog 는 선생님 대화 호출, child 는 아이 역 호출(둘 다 방식 사이에 같아야 함), own 은 방식 고유(견주지 않음). */
+export type CallCondition = {
+  call: "dialog" | "child" | "own";
+  arm: Arm;
+  part: string;
+  model: string;
+  effort: string;
+  thinking: string;
+  maxTokens: number | null;
+  /** body: AI 없이 만든 요청 본문에서 읽음 · settings: 첫 응답이 있어야 요청을 만드는 호출이라 그 목적의 설정값(requestConfigOf)에서 읽음. */
+  from: "body" | "settings";
+};
+
+/** 견주는 칸(요청 본문의 이름). */
+export const CONDITION_FIELDS = [
+  "model",
+  "effort",
+  "thinking",
+  "max_tokens",
+] as const;
+
+export type CallConditions = {
+  rows: CallCondition[];
+  /** 방식 사이에 값이 다른 무리와 다른 칸(비면 같은 조건). */
+  differ: {
+    call: "dialog" | "child";
+    fields: (typeof CONDITION_FIELDS)[number][];
+  }[];
+};
+
+/** 같은 조건이 아니어서 실제 호출 전에 멈출 때의 끝 코드(1 실패 수업 · 2 인자 · 키 · 3 호출 수 상한과 겹치지 않게). */
+export const CONDITION_DIFFER_EXIT = 4;
+
+function thinkingLabelOf(t: unknown): string {
+  if (t === undefined || t === null) return "-";
+  if (typeof t === "object") {
+    const o = t as Record<string, unknown>;
+    const keys = Object.keys(o);
+    if (keys.length === 1 && keys[0] === "type") return String(o.type);
+  }
+  return JSON.stringify(t);
+}
+
+function conditionOfBody(
+  call: CallCondition["call"],
+  arm: Arm,
+  part: string,
+  body: Record<string, unknown> | null,
+): CallCondition {
+  if (body === null)
+    return {
+      call,
+      arm,
+      part: `${part}(요청을 만들지 못함)`,
+      model: "-",
+      effort: "-",
+      thinking: "-",
+      maxTokens: null,
+      from: "body",
+    };
+  const effort = (body.output_config as { effort?: unknown } | undefined)
+    ?.effort;
+  return {
+    call,
+    arm,
+    part,
+    model: String(body.model ?? "-"),
+    effort: effort === undefined ? "-" : String(effort),
+    thinking: thinkingLabelOf(body.thinking),
+    maxTokens: typeof body.max_tokens === "number" ? body.max_tokens : null,
+    from: "body",
+  };
+}
+
+/**
+ * 방식마다 선생님 대화 호출 · 아이 역 호출의 모델 · effort · thinking · max_tokens(실제 호출 전 — 요청 본문을 AI 없이 만들어 읽는다). 다시 쓰기 ·
+ * 다시 말하기 · 힌트 · 설명 · 평가처럼 한 방식에만 있는 호출은 '방식 고유'로 적고 견주지 않는다.
+ */
+export function callConditionsOf(
+  setup: Setup,
+  arms: readonly Arm[],
+): CallConditions {
+  const m = setup.materials;
+  const book = setup.config.book;
+  const template = setup.template.body;
+  const fromSettings = (
+    arm: Arm,
+    part: string,
+    purpose: "talk_turn" | "talk_chat_hint" | "talk_chat_eval",
+    values: Record<string, unknown>,
+  ): CallCondition => {
+    const c = requestConfigOf({ purpose, level: m.level, values, book });
+    return {
+      call: "own",
+      arm,
+      part,
+      model: c.model,
+      effort: String(c.effort),
+      thinking: thinkingLabelOf(c.thinking),
+      maxTokens: c.maxTokens,
+      from: "settings",
+    };
+  };
+  const rows: CallCondition[] = [];
+  const own: CallCondition[] = [];
+  for (const arm of arms) {
+    if (arm === "N") {
+      rows.push(
+        conditionOfBody("dialog", arm, "인사 토막(앱 지금 길)", template),
+        conditionOfBody(
+          "dialog",
+          arm,
+          "입구 · 대화(새 엔진)",
+          nStartBodyOf(
+            m,
+            { ...setup.values, [TALK_LEAD_MODE_KEY]: "claude" },
+            book,
+          ),
+        ),
+      );
+      own.push(
+        fromSettings(
+          arm,
+          "좁은 정의 다시 말하기(대화 호출과 같은 목적 설정)",
+          PURPOSE,
+          setup.values,
+        ),
+      );
+    } else if (arm === CHAT_ARM) {
+      const values = { ...setup.values, [TALK_LEAD_MODE_KEY]: "chat" };
+      rows.push(
+        conditionOfBody(
+          "dialog",
+          arm,
+          "대화(입구 start — 수업 안 차례도 같은 목적 설정)",
+          chatStartBodyOf(m, values, book),
+        ),
+      );
+      own.push(
+        fromSettings(arm, "힌트 · 막힌 뒤 설명", "talk_chat_hint", values),
+        fromSettings(arm, "평가(기록 전용)", "talk_chat_eval", values),
+      );
+    } else if (isQArm(arm)) {
+      rows.push(
+        conditionOfBody("dialog", arm, "대화", qBaseBodyOf(setup, arm)),
+      );
+    } else {
+      rows.push(
+        conditionOfBody(
+          "dialog",
+          arm,
+          "대화(앱 요청 틀 — 안내문 · 출력 규격만 방식마다)",
+          template,
+        ),
+      );
+      if (arm === "A")
+        own.push(fromSettings(arm, "다시 쓰기", PURPOSE, setup.values));
+    }
+  }
+  for (const arm of arms)
+    rows.push(
+      conditionOfBody(
+        "child",
+        arm,
+        "아이 역(보통 차례 · 마무리 단추 — 아이 역 안내문만 아이마다)",
+        childBaseBodyOf(setup, CHILDREN[0]),
+      ),
+    );
+  const fieldOf = (
+    r: CallCondition,
+    f: (typeof CONDITION_FIELDS)[number],
+  ): string =>
+    f === "model"
+      ? r.model
+      : f === "effort"
+        ? r.effort
+        : f === "thinking"
+          ? r.thinking
+          : String(r.maxTokens);
+  const differ: CallConditions["differ"] = [];
+  for (const call of ["dialog", "child"] as const) {
+    const group = rows.filter((r) => r.call === call);
+    const fields = CONDITION_FIELDS.filter(
+      (f) => new Set(group.map((r) => fieldOf(r, f))).size > 1,
+    );
+    if (fields.length > 0) differ.push({ call, fields });
+  }
+  return { rows: [...rows, ...own], differ };
+}
+
+const CONDITION_CALL_LABEL: Readonly<Record<CallCondition["call"], string>> = {
+  dialog: "선생님 대화",
+  child: "아이 역",
+  own: "방식 고유",
+};
+
+/** 같은 조건 표 줄(계획 출력 · setup.json 옆): 머리 · 칸마다 한 줄 · 맺음 한 줄. */
+export function conditionLinesOf(c: CallConditions): string[] {
+  const differOf = (call: CallCondition["call"]) =>
+    c.differ.find((d) => d.call === call);
+  const judge = (r: CallCondition) => {
+    if (r.call === "own")
+      return r.from === "settings"
+        ? "방식 고유(견주지 않음 · 설정값에서 읽음)"
+        : "방식 고유(견주지 않음)";
+    const d = differOf(r.call);
+    return d ? `다름(${d.fields.join(" · ")})` : "같음";
+  };
+  const summary = (["dialog", "child"] as const)
+    .map((call) => {
+      const d = differOf(call);
+      return `${CONDITION_CALL_LABEL[call]} ${d ? `다름(${d.fields.join(" · ")})` : "같음"}`;
+    })
+    .join(" · ");
+  return [
+    "같은 조건 표(실제 호출 전 — 요청 본문을 AI 없이 만들어 읽음, 13절 C245 (3)):",
+    "| 호출 | 방식 | 자리 | 모델 | effort | thinking | max_tokens | 가름 |",
+    "|---|---|---|---|---|---|---|---|",
+    ...c.rows.map(
+      (r) =>
+        `| ${CONDITION_CALL_LABEL[r.call]} | ${r.arm} | ${r.part} | ${r.model} | ${r.effort} | ${r.thinking} | ${r.maxTokens ?? "-"} | ${judge(r)} |`,
+    ),
+    `같은 조건 확인: ${summary}`,
+  ];
+}
+
+/** 부르기 전 확인 하나(계획 · 실행 순서 · 같은 조건): 찍을 줄 · 끝 코드(같은 조건이 아니면 CONDITION_DIFFER_EXIT) · setup.json 의 plan 칸에 적을 값. */
+export function preflightOf(
+  setup: Setup,
+  args: RunArgs,
+): {
+  lines: string[];
+  exitCode: 0 | typeof CONDITION_DIFFER_EXIT;
+  plan: RunPlan;
+  record: {
+    shuffle: number | null;
+    order: RunCombo[];
+    conditions: CallConditions;
+  };
+} {
+  const plan = runPlanOf(setup, args);
+  const order = runOrderOf(args);
+  const conditions = callConditionsOf(setup, args.arms);
+  const lines = [
+    ...planLinesOf(plan),
+    ...runOrderLinesOf(order, args.shuffle),
+    ...conditionLinesOf(conditions),
+  ];
+  const differ = conditions.differ.length > 0;
+  if (differ)
+    lines.push(
+      `arch-compare: 세 방식의 호출 조건이 같지 않음(${conditions.differ
+        .map((d) => `${CONDITION_CALL_LABEL[d.call]}: ${d.fields.join(" · ")}`)
+        .join(
+          " / ",
+        )}) — 실제 호출 전에 멈추고 부르지 않는다(끝 코드 ${CONDITION_DIFFER_EXIT})`,
+    );
+  return {
+    lines,
+    exitCode: differ ? CONDITION_DIFFER_EXIT : 0,
+    plan,
+    record: { shuffle: args.shuffle, order, conditions },
   };
 }
 
@@ -3734,9 +4111,11 @@ async function main(): Promise<number> {
   const args = parseRunArgs(process.argv.slice(2));
   const root = process.cwd();
   const setup = setupOf(root, { card: args.card });
-  // 부르기 전: 수업 · 방식 · 호출 갈래별 어림 수와 어림 비용(늘 찍는다)
-  const plan = runPlanOf(setup, args);
-  for (const line of planLinesOf(plan)) console.log(line);
+  // 부르기 전: 수업 · 방식 · 호출 갈래별 어림 수와 어림 비용 · 실행 순서 · 같은 조건 표(늘 찍는다). 같은 조건이 아니면 계획만이어도 그 끝 코드로 끝낸다
+  const pre = preflightOf(setup, args);
+  const plan = pre.plan;
+  for (const line of pre.lines) console.log(line);
+  if (pre.exitCode !== 0) return pre.exitCode;
   if (!args.call) {
     console.log(
       "arch-compare: 계획만 — 부르지 않았다(실제 호출은 --call --max-calls <수>, 컨트롤러가 비용을 확인한 뒤)",
@@ -3801,7 +4180,7 @@ async function main(): Promise<number> {
     ),
     chatSystem: setup.chatSystem,
     chatSystemSha: setup.chatSystem === null ? null : sha(setup.chatSystem),
-    plan: { total: plan.total, maxCalls },
+    plan: { total: plan.total, maxCalls, ...pre.record },
     args,
   };
   writeFileSync(
@@ -3855,26 +4234,28 @@ async function main(): Promise<number> {
       `  ${run.lesson}: ${run.ok ? "끝" : "실패"} · 아이 차례 ${lessonLine?.childTurns ?? 0} · ${lessonLine?.ended ?? "상한"} · 남은 호출 ${budget.left} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러`,
     );
   };
-  for (const child of args.children) {
+  // 실행 순서(--shuffle 이면 섞인 순서)를 먼저 적는다(setup.json 의 plan.order 와 같은 값)
+  for (const line of runOrderLinesOf(pre.record.order, args.shuffle)) say(line);
+  for (const [n, { child, seed, arms }] of pre.record.order.entries()) {
     if (capped) break;
-    for (const seed of args.seeds) {
-      if (capped) break;
-      say(`조합 ${child} · 씨앗 ${seed}: ${args.arms.join(" · ")} 동시 시작`);
-      const runs = await Promise.all(
-        args.arms.map((arm) =>
-          runLesson(setup, client, arm, child, seed, args.turns, 1, {
-            budget,
-          }),
-        ),
+    // 동시에 시작하되 arms 차례로 첫 요청을 낸다(섞였으면 섞인 차례)
+    say(
+      `조합 ${n + 1}/${pre.record.order.length} ${child} · 씨앗 ${seed}: ${arms.join(" → ")} 차례로 동시 시작`,
+    );
+    const runs = await Promise.all(
+      arms.map((arm) =>
+        runLesson(setup, client, arm, child, seed, args.turns, 1, {
+          budget,
+        }),
+      ),
+    );
+    for (const [i, first] of runs.entries()) {
+      const arm = arms[i] as Arm;
+      await settle(first, (attempt) =>
+        runLesson(setup, client, arm, child, seed, args.turns, attempt, {
+          budget,
+        }),
       );
-      for (const [i, first] of runs.entries()) {
-        const arm = args.arms[i] as Arm;
-        await settle(first, (attempt) =>
-          runLesson(setup, client, arm, child, seed, args.turns, attempt, {
-            budget,
-          }),
-        );
-      }
     }
   }
   if (args.long && args.arms.includes(CHAT_ARM) && !capped) {

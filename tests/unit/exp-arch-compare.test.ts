@@ -42,12 +42,16 @@ import {
 import {
   ALL_CHILDREN,
   appFirstSentOf,
+  type CallLog,
   CHAT_LONG_TURNS,
   type ChatChildLog,
   type ChatTeacherLog,
   type ChildTurnLog,
+  CONDITION_DIFFER_EXIT,
+  callConditionsOf,
   chatAtOf,
   chatReplay,
+  conditionLinesOf,
   createChatCallCache,
   isCapError,
   type LeadTurnLog,
@@ -58,7 +62,10 @@ import {
   planLinesOf,
   plannedLessonsOf,
   planOverCap,
+  preflightOf,
   runLesson,
+  runOrderLinesOf,
+  runOrderOf,
   runPlanOf,
   setupOf,
   spokenOfLessonOutput,
@@ -88,6 +95,7 @@ import {
   judgeSummaryOf,
   lessonEndingOf,
   levelFitOf,
+  nineViewsOf,
   OWN_WORDS,
   ownWordTurnsOf,
   pearson,
@@ -122,6 +130,7 @@ import {
   leadMetricsOf,
   lessonMetricsOf,
   materialsNoteOf,
+  nineViewsMarkdownOf,
   OWN_LIFE_RULE,
   PUSHY_RULE,
   parseJudgesArg,
@@ -3571,5 +3580,465 @@ describe("묶음 T2 fix 2 말없음 덩이 단위 · 선생님이 제 것으로 
     );
     expect(OWN_LIFE_RULE).toContain("'My cat is cute.'");
     expect(judgeRubricOf("/out/run")).toContain("'My cat is cute.'");
+  });
+});
+
+describe("묶음 T2 fix 3 세 방식 비교 실행 준비(13절 C245 (3)): 실행 순서 섞기 · 같은 조건 확인 · 아홉 관점", () => {
+  const lesson1 = setupOf(process.cwd(), { card: "lesson1" });
+  const briefArgv = [
+    "--out",
+    "x",
+    "--arms",
+    "R3,N,CHAT",
+    "--children",
+    "SA,SB,SC,SD,SD2,SE,SF,SG",
+    "--card",
+    "lesson1",
+    "--long",
+  ];
+
+  it("AC-27q 실행 순서 섞기: --shuffle <씨앗> 을 읽고, 주지 않으면 null 이며 지금 순서 그대로다", () => {
+    expect(parseRunArgs(briefArgv).shuffle).toBeNull();
+    expect(parseRunArgs([...briefArgv, "--shuffle", "1"]).shuffle).toBe(1);
+    expect(parseRunArgs([...briefArgv, "--shuffle", "0"]).shuffle).toBe(0);
+    expect(() => parseRunArgs([...briefArgv, "--shuffle", "x"])).toThrow(
+      "--shuffle",
+    );
+    const plain = runOrderOf(parseRunArgs(briefArgv));
+    expect(plain).toHaveLength(16);
+    expect(plain[0]).toEqual({
+      child: "SA",
+      seed: 1,
+      arms: ["R3", "N", "CHAT"],
+    });
+    expect(plain[1]).toEqual({
+      child: "SA",
+      seed: 2,
+      arms: ["R3", "N", "CHAT"],
+    });
+    expect(plain.every((c) => c.arms.join() === "R3,N,CHAT")).toBe(true);
+  });
+
+  it("AC-27q 섞인 순서는 씨앗으로 정해지고(같은 씨앗 같은 순서), 조합 순서와 조합 안 방식의 요청 차례가 모두 섞이며 빠지거나 겹치는 것이 없다", () => {
+    const a = runOrderOf(parseRunArgs([...briefArgv, "--shuffle", "1"]));
+    const b = runOrderOf(parseRunArgs([...briefArgv, "--shuffle", "1"]));
+    const c = runOrderOf(parseRunArgs([...briefArgv, "--shuffle", "2"]));
+    const plain = runOrderOf(parseRunArgs(briefArgv));
+    expect(a).toEqual(b);
+    expect(a).not.toEqual(c);
+    const key = (o: { child: string; seed: number }) => `${o.child}-${o.seed}`;
+    expect(a.map(key)).not.toEqual(plain.map(key));
+    expect([...a.map(key)].sort()).toEqual([...plain.map(key)].sort());
+    for (const o of a) expect([...o.arms].sort()).toEqual(["CHAT", "N", "R3"]);
+    // 조합 안 차례도 섞인다(16 조합이 모두 R3 · N · CHAT 차례일 수는 없다)
+    expect(a.some((o) => o.arms.join() !== "R3,N,CHAT")).toBe(true);
+    const lines = runOrderLinesOf(a, 1);
+    expect(lines[0]).toContain("--shuffle 1");
+    const first = a[0] as { child: string; seed: number; arms: string[] };
+    expect(lines[1]).toBe(
+      `1. ${first.child} · 씨앗 ${first.seed}: ${first.arms.join(" → ")}`,
+    );
+    expect(runOrderLinesOf(plain, null)[0]).toContain("섞지 않음");
+  });
+
+  it("AC-27r 같은 조건 확인: R3 · N · CHAT 의 선생님 대화 호출과 아이 역 호출이 같은 모델 · effort · thinking · max_tokens 이면 멈추지 않고, 힌트 · 평가 · 다시 말하기는 '방식 고유'로 가른다", () => {
+    const c = callConditionsOf(lesson1, ["R3", "N", "CHAT"]);
+    expect(c.differ).toEqual([]);
+    const dialog = c.rows.filter((r) => r.call === "dialog");
+    expect(dialog.map((r) => r.arm)).toEqual(["R3", "N", "N", "CHAT"]);
+    const body = lesson1.template.body as {
+      model: string;
+      max_tokens: number;
+      output_config: { effort: string };
+    };
+    for (const r of [...dialog, ...c.rows.filter((x) => x.call === "child")])
+      expect(r).toMatchObject({
+        model: body.model,
+        effort: body.output_config.effort,
+        maxTokens: body.max_tokens,
+      });
+    expect(c.rows.filter((r) => r.call === "child").map((r) => r.arm)).toEqual([
+      "R3",
+      "N",
+      "CHAT",
+    ]);
+    const own = c.rows.filter((r) => r.call === "own");
+    expect(own.map((r) => `${r.arm} ${r.part}`)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("N 좁은 정의 다시 말하기"),
+        expect.stringContaining("CHAT 힌트"),
+        expect.stringContaining("CHAT 평가"),
+      ]),
+    );
+    const lines = conditionLinesOf(c);
+    expect(lines.join("\n")).toContain(
+      "| 호출 | 방식 | 자리 | 모델 | effort | thinking | max_tokens | 가름 |",
+    );
+    expect(lines.join("\n")).toContain("방식 고유");
+    expect(lines.join("\n")).toContain("같음");
+  });
+
+  it("AC-27r 같은 조건 확인: 선생님 대화 호출의 모델 · effort · thinking · max_tokens 가 다르면(R3O) 다른 칸을 적고 실제 호출 전에 따로 둔 끝 코드로 멈춘다", () => {
+    const c = callConditionsOf(lesson1, ["R3", "R3O", "CHAT"]);
+    expect(c.differ).toEqual([
+      {
+        call: "dialog",
+        fields: ["model", "effort", "thinking", "max_tokens"],
+      },
+    ]);
+    expect(conditionLinesOf(c).join("\n")).toContain("다름");
+    const stop = preflightOf(
+      lesson1,
+      parseRunArgs([
+        "--out",
+        "x",
+        "--arms",
+        "R3,R3O,CHAT",
+        "--children",
+        "SC",
+        "--card",
+        "lesson1",
+        "--call",
+        "--max-calls",
+        "99999",
+      ]),
+    );
+    expect(stop.exitCode).toBe(CONDITION_DIFFER_EXIT);
+    expect(CONDITION_DIFFER_EXIT).not.toBe(0);
+    expect(CONDITION_DIFFER_EXIT).not.toBe(2);
+    expect(CONDITION_DIFFER_EXIT).not.toBe(3);
+    expect(stop.lines.join("\n")).toContain("부르지 않는다");
+    const ok = preflightOf(
+      lesson1,
+      parseRunArgs([...briefArgv, "--shuffle", "1"]),
+    );
+    expect(ok.exitCode).toBe(0);
+    const text = ok.lines.join("\n");
+    expect(text).toContain("합계: 수업 49");
+    expect(text).toContain("실행 순서(--shuffle 1");
+    expect(text).toContain("| 선생님 대화 |");
+    // setup.json 의 plan 칸에 적을 순서 · 조건
+    expect(ok.record.shuffle).toBe(1);
+    expect(ok.record.order).toHaveLength(16);
+    expect(ok.record.conditions.differ).toEqual([]);
+  });
+
+  // ── 아홉 관점(결정 원문 3절) ──
+  const fs = (ms: number) => ({
+    ms,
+    from: "stream" as const,
+    text: null,
+    held: null,
+  });
+  const callOf = (
+    lesson: string,
+    kind: "turn" | "child",
+    costUsd: number,
+  ): CallLog => ({
+    type: "call",
+    lesson,
+    childTurn: 1,
+    kind,
+    request: {} as CallLog["request"],
+    response: { ok: true, costUsd },
+    ms: 100,
+  });
+  const R = "R3-SA-s1";
+  const r3 = {
+    ...lessonOf([
+      teacherLine(0, "Hi {NAME}! How are you?", { lesson: R, arm: "R3" }),
+      teacherLine(1, "Cats are fun! Do you like cats?", {
+        lesson: R,
+        arm: "R3",
+        firstSent: fs(1000),
+      }),
+      teacherLine(2, "A big cat! What does your cat eat?", {
+        lesson: R,
+        arm: "R3",
+        firstSent: fs(2000),
+      }),
+      teacherLine(3, "I like rain. I walk in the rain.", {
+        lesson: R,
+        arm: "R3",
+        modelFirst: { listen_sentence: "I like rain." },
+        levelFit: {
+          ...FIT,
+          longSentences: ["I walk in the rain."],
+          offbandWords: ["walk"],
+        },
+        firstSent: fs(3000),
+      }),
+      teacherLine(4, "Do you like cats?", {
+        lesson: R,
+        arm: "R3",
+        firstSent: fs(4000),
+      }),
+      teacherLine(5, "That's okay. Take your time.", {
+        lesson: R,
+        arm: "R3",
+        firstSent: fs(5000),
+      }),
+      teacherLine(6, "Did you say cake? Yummy.", {
+        lesson: R,
+        arm: "R3",
+        firstSent: fs(6000),
+      }),
+      lessonLine({ lesson: R, arm: "R3", child: "SA", childTurns: 7 }),
+    ]),
+    calls: [
+      callOf(R, "turn", 0.01),
+      callOf(R, "turn", 0.01),
+      callOf(R, "child", 0.005),
+    ],
+    children: [
+      {
+        ...childLine(1, "", "I have a cat. My cat is big.", R),
+        kind: "own_topic" as const,
+      },
+      childLine(2, "", "My cat eats fish.", R),
+      {
+        ...childLine(3, "", "Do you like rain?", R),
+        kind: "ask_teacher" as const,
+      },
+      childLine(4, "", "Yes.", R),
+      { ...childLine(5, "", null, R), action: "silent" as const },
+      {
+        ...childLine(6, "", "I bike lake", R),
+        says: "I like cake",
+        noise: { heard: "I bike lake", how: "replace" as const },
+      },
+      childLine(7, "", "Cake!", R),
+    ],
+  };
+  const N = "N-SA-s1";
+  const n = {
+    ...lessonOf([
+      teacherLine(0, "Hello!", { lesson: N, arm: "N" }),
+      teacherLine(1, "Soccer! Me too.", {
+        lesson: N,
+        arm: "N",
+        firstSent: fs(1500),
+      }),
+      lessonLine({ lesson: N, arm: "N", child: "SA", childTurns: 1 }),
+    ]),
+    children: [
+      {
+        ...childLine(1, "", "I like soccer.", N),
+        kind: "own_topic" as const,
+      },
+    ],
+  };
+  const G = "CHAT-SA-s1";
+  const chatBase = chatLessonOf(
+    G,
+    "SC",
+    [
+      chatT(G, 0, "Hi {NAME}!", { entry: "start" }),
+      chatT(G, 1, "Do you like pizza?", {}, { firstSent: fs(800) }),
+      chatT(G, 2, "Take your time.", { entry: "quiet" }),
+      chatT(G, 3, "That's okay! Pizza is yummy.", {}),
+    ],
+    [
+      chatC(G, 1, "say", "What do you like?"),
+      chatC(G, 2, "quiet"),
+      chatC(G, 3, "dont_know"),
+    ],
+    [],
+  );
+  const chat = {
+    ...chatBase,
+    meta: { ...chatBase.meta, child: "SA" as const },
+  };
+  const lessons = [r3, n, chat];
+  const statOf = (key: string, arm: "R3" | "N" | "CHAT") => {
+    const views = nineViewsOf(lessons, ["N", "R3", "CHAT"]);
+    for (const v of views) {
+      const s = v.stats.find((x) => x.key === key);
+      if (s) return s.byArm[arm];
+    }
+    throw new Error(`없는 수치: ${key}`);
+  };
+
+  it("AC-27s 아홉 관점: 결정 원문 3절의 차례대로 아홉 절이 있고, 절마다 셈 정의 · 수치(세 방식 모두) · 사례 목록이 있다", () => {
+    const views = nineViewsOf(lessons, ["N", "R3", "CHAT"]);
+    expect(views.map((v) => v.title)).toEqual([
+      "아이가 새로운 이야기를 꺼냈을 때의 반응",
+      "아이의 이야기가 여러 차례 이어지는지",
+      "아이가 선생님에게 질문했을 때의 반응",
+      "짧게 대답하거나 말이 없는 아이를 돕는 방식",
+      "질문 반복 및 불필요한 따라 말하기",
+      "잘못 인식된 발화를 처리하는 방식",
+      "학습 수준에 맞는 문장과 낱말",
+      "선생님 캐릭터의 자연스러움과 일관성",
+      "응답 지연 및 실제 비용",
+    ]);
+    for (const v of views) {
+      expect(v.stats.length).toBeGreaterThan(0);
+      for (const s of v.stats)
+        expect(Object.keys(s.byArm).sort()).toEqual(["CHAT", "N", "R3"]);
+      expect(v.lists.length).toBeGreaterThan(0);
+      for (const l of v.lists) {
+        expect(l.rule.length).toBeGreaterThan(0);
+        expect(Object.keys(l.byArm).sort()).toEqual(["CHAT", "N", "R3"]);
+      }
+    }
+  });
+
+  it("AC-27s 관점 1 · 2: 새 이야기(own_topic) 뒤 선생님이 아이 말의 낱말을 받은 차례 · 물음, 이야기 줄(잇달아 말하며 앞 낱말을 다시 쓴 차례)의 길이", () => {
+    expect(statOf("own_topic:turns", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("own_topic:picked_word", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 1,
+    });
+    expect(statOf("own_topic:question", "N")).toEqual({
+      kind: "frac",
+      n: 0,
+      d: 1,
+    });
+    expect(statOf("own_topic:turns", "CHAT")).toEqual({ kind: "num", v: 0 });
+    expect(statOf("story:runs", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("story:long_runs", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 1,
+    });
+    expect(statOf("story:max", "R3")).toEqual({ kind: "num", v: 2 });
+    expect(statOf("story:max", "N")).toEqual({ kind: "num", v: 1 });
+    const story = nineViewsOf(lessons, ["N", "R3", "CHAT"])[1];
+    const cases = story?.lists[0]?.byArm.R3 ?? [];
+    expect(cases.map((c) => c.childTurn)).toEqual([1, 2]);
+    expect(cases[0]?.child).toBe('"I have a cat. My cat is big."');
+    expect(cases[0]?.teacher).toBe("Cats are fun! Do you like cats?");
+  });
+
+  it("AC-27s 관점 3: 아이 말이 물음(물음 문장 · ask_teacher)인 차례와 그다음 선생님 말 — 첫 문장이 물음이 아닌 차례 · 선생님이 제 이야기를 한 차례", () => {
+    expect(statOf("ask:turns", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("ask:first_not_question", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 1,
+    });
+    expect(statOf("ask:self", "R3")).toEqual({ kind: "frac", n: 1, d: 1 });
+    // CHAT 아이 말 'What do you like?'(kind answer 라도 물음 문장이면 든다) → 첫 문장이 물음
+    expect(statOf("ask:turns", "CHAT")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("ask:first_not_question", "CHAT")).toEqual({
+      kind: "frac",
+      n: 0,
+      d: 1,
+    });
+    const ask = nineViewsOf(lessons, ["N", "R3", "CHAT"])[2];
+    expect(ask?.lists[0]?.byArm.CHAT?.[0]).toMatchObject({
+      lesson: G,
+      childTurn: 1,
+      child: '"What do you like?"',
+      teacher: "Do you like pizza?",
+    });
+  });
+
+  it("AC-27s 관점 4: 짧은 대답 · 말 없음 · 모르겠어요 차례 뒤 다음 아이 차례에 말한 비율(같은 정의) · 말없음 덩이 단위(기존 셈 그대로)", () => {
+    expect(statOf("quiet:short", "R3")).toEqual({ kind: "num", v: 2 });
+    expect(statOf("quiet:short_next_spoke", "R3")).toEqual({
+      kind: "frac",
+      n: 0,
+      d: 1,
+    });
+    expect(statOf("quiet:silent_next_spoke", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 1,
+    });
+    expect(statOf("quiet:silent_next_spoke", "CHAT")).toEqual({
+      kind: "frac",
+      n: 0,
+      d: 1,
+    });
+    expect(statOf("quiet:dont_know", "CHAT")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("quiet:blocks", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 1,
+    });
+    const quiet = nineViewsOf(lessons, ["N", "R3", "CHAT"])[3];
+    const silent = quiet?.lists
+      .flatMap((l) => l.byArm.CHAT ?? [])
+      .find((c) => c.childTurn === 2);
+    expect(silent?.child).toBe("(말 없음 — 누르지 않음)");
+    expect(silent?.teacher).toBe("Take your time.");
+    expect(silent?.note).toContain("다음 아이 차례 3: ('잘 모르겠어요' 단추)");
+  });
+
+  it("AC-27s 관점 5: 같은 물음을 다시 한 차례(마무리 상수 뺌) · 비슷한 물음 쌍 · 따라 할 문장이 든 차례의 목록", () => {
+    expect(statOf("repeat:exact", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("repeat:similar", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("follow:heard", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("follow:heard", "CHAT")).toEqual({ kind: "num", v: 0 });
+    const v = nineViewsOf(lessons, ["N", "R3", "CHAT"])[4];
+    const repeated = v?.lists[0]?.byArm.R3 ?? [];
+    expect(repeated[0]).toMatchObject({
+      childTurn: 4,
+      child: '"Yes."',
+      teacher: "Do you like cats?",
+    });
+    expect(repeated[0]?.note).toContain("아이 차례 1");
+    const follow = v?.lists[2]?.byArm.R3 ?? [];
+    expect(follow[0]).toMatchObject({ childTurn: 3 });
+    expect(follow[0]?.note).toContain("I like rain.");
+  });
+
+  it("AC-27s 관점 6 · 7 · 8 · 9: 잡음 차례 뒤 되묻기 · 잘못 들린 낱말을 받은 차례, 단계 검사 걸린 차례, 선생님이 제 이야기를 한 문장, 첫 문장이 나간 때 · 수업당 비용", () => {
+    expect(statOf("noise:turns", "R3")).toEqual({ kind: "num", v: 1 });
+    expect(statOf("noise:reask", "R3")).toEqual({ kind: "frac", n: 1, d: 1 });
+    expect(statOf("noise:took_wrong", "R3")).toEqual({
+      kind: "frac",
+      n: 0,
+      d: 1,
+    });
+    expect(statOf("level:flagged", "R3")).toEqual({
+      kind: "frac",
+      n: 1,
+      d: 6,
+    });
+    expect(statOf("persona:self_sentences", "R3")).toEqual({
+      kind: "num",
+      v: 2,
+    });
+    expect(statOf("cost:first_sent_median", "R3")).toEqual({
+      kind: "ms",
+      v: 3500,
+    });
+    expect(statOf("cost:teacher_per_lesson", "R3")).toEqual({
+      kind: "usd",
+      v: 0.02,
+    });
+    expect(statOf("cost:child_role", "R3")).toEqual({ kind: "usd", v: 0.005 });
+    const views = nineViewsOf(lessons, ["N", "R3", "CHAT"]);
+    const noise = views[5]?.lists[0]?.byArm.R3?.[0];
+    expect(noise?.child).toBe('"I like cake" → 들린 글 "I bike lake"');
+    expect(noise?.teacher).toBe("Did you say cake? Yummy.");
+    const slow = views[8]?.lists[0]?.byArm.R3 ?? [];
+    expect(slow[0]?.childTurn).toBe(6);
+    expect(slow[0]?.note).toContain("6000ms");
+  });
+
+  it("AC-27s nine-views.md: 관점마다 세 방식 칸의 수치 표 · 사례 목록 머리의 셈 정의 한 줄 · 이미 있는 목록의 자리를 적고, 도구가 좋다 · 나쁘다로 판정하지 않는다고 밝힌다", () => {
+    const md = nineViewsMarkdownOf(lessons);
+    expect(md).toContain("## 1. 아이가 새로운 이야기를 꺼냈을 때의 반응");
+    expect(md).toContain("## 9. 응답 지연 및 실제 비용");
+    expect(md).toContain("| 수치 | N | R3 | CHAT |");
+    expect(md).toContain("판정하지 않는다");
+    expect(md).toContain("after-own-topic.md");
+    expect(md).toContain("after-noise.md");
+    // 사례 목록 머리마다 '셈 정의:' 한 줄
+    const heads = md.split("\n").filter((l) => l.startsWith("### "));
+    expect(heads.length).toBeGreaterThan(9);
+    const lines = md.split("\n");
+    for (const h of heads) {
+      const at = lines.indexOf(h);
+      expect(lines[at + 2]).toMatch(/^셈 정의: /);
+    }
+    expect(md).toContain(
+      `| ${R} | 3 | "Do you like rain?" | I like rain. I walk in the rain. |`,
+    );
   });
 });
