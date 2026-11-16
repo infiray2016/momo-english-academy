@@ -21,6 +21,7 @@ import { CHILD_VIEWPORTS } from "./child-size";
 import { closeE2eDb, e2eDb, resetHousehold, withHouseholdSetting } from "./db";
 import { fakeAiRequests, pushFakeAi, resetFakeAi } from "./fake-ai";
 import { expect, speechPage, test } from "./fixtures";
+import { PHOTOS_DIR, PHOTOS_ENV } from "./photos";
 import {
   CLOSING_MARK,
   deafRun,
@@ -81,9 +82,43 @@ async function expectLessonInView(page: Page, { stop }: { stop: boolean }) {
 }
 
 /**
+ * 보는 창을 바꾼 뒤 잇단 두 표본 사이(ms, 시험 값 — 300ms 넘게): 맞춤 · 쪽 넘김이 다음 그림에서 일어나도 바꾼 바로 뒤의 첫 표본으로 통과하지
+ * 않게 한다(코드 재검토 rev-s5-7 M-2 — 고치기 전 판의 Chromium 은 돌린 바로 뒤 0 이었다가 0.5초 뒤 46px).
+ */
+const STEADY_GAP_MS = 350;
+/** 정리 칸 시험(S5 fix 9): 대화 첫 답 뒤 이어 말할 답 수(인사 · 첫 답과 합쳐 참고 턴 15 가까이 — 마무리 물음 전) · 그 답(오늘 쓸 말 없음). */
+const WRAP_FILLER_TURNS = 11;
+const WRAP_FILLER_SAID = "Okay.";
+/** 반짝이는 줄의 멈춘 강조 테 두께(px — talk-frame WRAP_SHINE_RING_PX 와 같은 값, ring-4). */
+const SHINE_RING_PX = 4;
+/** 정리 칸 사진 이름(창 높이를 붙임). */
+const PHOTO_WRAP_SHINE = "talk-lesson-wrap-shine-line-in-log";
+
+/** 지금 표본 하나: 쪽 넘김이 0 이고 위 띠가 보는 창 위로 나가지 않으며, stop 이면 '그만하기'가 보는 창 안에 온전히 있다. */
+function lessonInViewNow(page: Page, stop: boolean): Promise<boolean> {
+  return page.evaluate((withStop) => {
+    if (Math.round(window.scrollY) > 0) return false;
+    const band = document.querySelector("[data-paper-band]");
+    if (!band || band.getBoundingClientRect().top < 0) return false;
+    if (!withStop) return true;
+    const b = document
+      .querySelector("[data-paper-band] [data-talk-stop]")
+      ?.getBoundingClientRect();
+    return (
+      b !== undefined &&
+      b.top >= 0 &&
+      b.left >= 0 &&
+      b.bottom <= window.innerHeight &&
+      b.right <= window.innerWidth
+    );
+  }, stop);
+}
+
+/**
  * 가로로 돌려도 · 다시 세로로 되돌려도 수업 화면 전체가 보는 창 안이다(13절 C241 보완 5 · 화면 재검토 des-s5-2 D-7 · 코드 재검토 rev-s5-6 N-2 —
  * S5 fix 8): 마무리 제안 · 정리는 가로에서도 기록 칸 높이를 남는 높이에 맞추므로 쪽 넘김이 0 이고, 세로로 되돌린 뒤에도 쪽 넘김이 남지 않는다(고치기
- * 전 가로 46 · 237px, Chromium 에서 되돌린 뒤 46 · 102px). 세로로 돌려 둔다.
+ * 전 가로 46 · 237px, Chromium 에서 되돌린 뒤 46 · 102px). 창마다 그 조건이 STEADY_GAP_MS 떨어진 잇단 두 표본에서 함께 맞을 때까지 기다린다(첫
+ * 표본으로 통과하지 않음 — S5 fix 9 · M-2). 세로로 돌려 둔다.
  */
 async function expectLessonInViewBothWays(
   page: Page,
@@ -91,7 +126,18 @@ async function expectLessonInViewBothWays(
 ) {
   for (const way of ["landscape", "portrait"] as const) {
     await page.setViewportSize(CHILD_VIEWPORTS[way]);
-    await expectLessonInView(page, { stop });
+    let before = false;
+    await expect
+      .poll(
+        async () => {
+          const now = await lessonInViewNow(page, stop);
+          const steady = before && now;
+          before = now;
+          return steady;
+        },
+        { timeout: SETTLE_MS, intervals: [STEADY_GAP_MS] },
+      )
+      .toBe(true);
   }
 }
 const LONG = 120_000;
@@ -420,6 +466,99 @@ test.describe("새 꼴 회화 수업 — 네 토막(3단계)", () => {
     await expect(first.locator("[data-closing-stars] *")).not.toHaveCount(0);
     await expect(first).not.toContainText(T.aborted);
   });
+
+  // 정리 칸의 반짝이는 줄(13절 C241 보완 8 · 화면 재검토 des-s5-3 D-8 · 정본 03 4절 92줄 — S5 fix 9): 말 주고받기가 참고 턴만큼 길고 오늘 쓸 말을
+  // 쓴 아이 말(반짝이는 줄)이 대화 앞쪽(대화 첫 답)에 있는 정리를 세 창 크기에서 연다. 정리가 열린 직후부터 마지막 반짝이는 줄이 정리 칸 안에
+  // 온전히(강조 테까지) 들고 쪽 넘김이 없다(정리를 열기 전 아이 차례에 남은 넘김을 넘지 않음). 고치기 전 판은 정리 칸이 늘 맨 아래라 그 줄이 칸
+  // 위에 있었다(점검 장면 chat-wrap-shine 의 고치기 전 값 -2772~-2710). 이 시험은 에이전트를 부르지 않는다(가짜 AI 만).
+  for (const [label, size] of [
+    ["세로", { width: 820, height: 1180 }],
+    ["가로", { width: 1180, height: 820 }],
+    ["낮은 가로", { width: 1180, height: 740 }],
+  ] as const) {
+    test(`AC-15t '그만하기' 뒤 정리 칸 · ${label} ${size.width}×${size.height}: 긴 대화 앞쪽의 반짝이는 줄이 정리가 열릴 때 칸 안에 든다(C241 보완 8)`, async ({
+      context,
+    }) => {
+      test.setTimeout(LONG * 3);
+      const o = await openLesson(context, (card, lesson) => [
+        saidRun("I'm good."),
+        ...(lesson.card.prep ?? []).map((w) => saidRun(w)),
+        saidRun(card.required[0]?.answerExample ?? "I like it."),
+        ...Array.from({ length: WRAP_FILLER_TURNS }, () =>
+          saidRun(WRAP_FILLER_SAID),
+        ),
+      ]);
+      await throughGreetingAndPrep(o);
+      await untilChildTurn(o.page);
+      // 대화 첫 답(오늘 쓸 말이 든 아이 말) → 그 뒤 오늘 쓸 말이 없는 답을 이어 기록 칸을 참고 턴 가까이 길게(인사 1 + 대화 첫 답 1 + 이은 답)
+      for (let i = 0; i <= WRAP_FILLER_TURNS; i++) {
+        await pushFakeAi([
+          talkLessonReply({ tori_en: "Wow, me too!", next_move: "follow_up" }),
+        ]);
+        await speak(o.page);
+        await expect(band(o.page)).toHaveText(`말 주고받기 ${i + 2}`, {
+          timeout: STREAM_END_MS,
+        });
+        await untilChildTurn(o.page);
+      }
+      await o.page.setViewportSize(size);
+      const before = await o.page.evaluate(() => Math.round(window.scrollY));
+      await o.page.locator("[data-talk-stop]").click();
+      await expect(o.page.locator("[data-wrap-all]")).toBeVisible({
+        timeout: STREAM_END_MS,
+      });
+      // 마지막 반짝이는 줄은 대화 첫 답이다(이은 답에는 오늘 쓸 말이 없음 — 시험이 앞쪽 줄을 보는지 지킴)
+      const shines = o.page.locator("[data-wrap-log] [data-wrap-shine]");
+      await expect(shines.last()).toHaveText(
+        o.card.required[0]?.answerExample ?? "I like it.",
+      );
+      const inBox = () =>
+        o.page.evaluate(
+          ({ ring, pageScroll }) => {
+            const log = document.querySelector<HTMLElement>(
+              "[data-wrap-log] [data-talk-log]",
+            );
+            const all = log?.querySelectorAll("[data-wrap-shine]");
+            const line = all?.[all.length - 1];
+            if (!log || !line) return false;
+            const box = log.getBoundingClientRect();
+            const top = box.top + log.clientTop;
+            const r = line.getBoundingClientRect();
+            return (
+              r.top - ring >= top - 1 &&
+              r.bottom + ring <= top + log.clientHeight + 1 &&
+              Math.round(window.scrollY) <= pageScroll
+            );
+          },
+          { ring: SHINE_RING_PX, pageScroll: Math.max(0, before) },
+        );
+      // 열린 직후부터(잇단 두 표본이 함께 맞음) · 정리 말풍선 글이 다 흐른 뒤에도
+      let prev = false;
+      await expect
+        .poll(
+          async () => {
+            const now = await inBox();
+            const steady = prev && now;
+            prev = now;
+            return steady;
+          },
+          { timeout: SETTLE_MS, intervals: [STEADY_GAP_MS] },
+        )
+        .toBe(true);
+      await expect(
+        o.page.locator("[data-wrap-all] [data-speak]"),
+      ).not.toHaveAttribute("data-speak-waiting", "", {
+        timeout: STREAM_END_MS,
+      });
+      expect(await inBox()).toBe(true);
+      // 사진(E2E_PHOTOS 일 때): 그 창 크기 그대로 한 장(photos.ts 의 두 방향 사진은 창을 820 높이로 바꾸므로 쓰지 않음)
+      if (process.env[PHOTOS_ENV])
+        await o.page.screenshot({
+          path: `${PHOTOS_DIR}/${PHOTO_WRAP_SHINE}-${size.width}x${size.height}.png`,
+          fullPage: true,
+        });
+    });
+  }
 
   test("AC-15t 마무리 제안(갈래 '마무리') 뒤 두 버튼이 나오고 '더 이야기하기'는 AI 없이 더 이야기할 거리 하나를 붙인다(정한 것 11)", async ({
     context,

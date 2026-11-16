@@ -9,6 +9,8 @@
 //     제안 · 정리는 S5 fix 8 부터 가로에서도 높이를 맞춤 — talk-lesson-land 가 봄).
 // (5) 한 화면에 다 들 수 없는 세로(700 × 720)에서는 기록 칸이 지금 턴보다 낮아지지 않고, 으뜸 단추가 보는 창 안이며, 쪽 넘김은 단추 묶음의 아래
 //     끝까지만이다(빈 알림 줄 자리는 보는 창 밖에 남을 수 있음).
+// 가장 큰 지금 턴(hint)은 지금 턴이 다 자란 뒤에 잰다(뜻 줄 · 설명까지 들고 높이가 300ms 넘게 떨어진 잇단 두 표본에서 같을 때 — 코드 재검토
+// rev-s5-7 M-1: 쪽을 연 뒤 곧바로 재면 다 자라기 전 227px 를 잡고, 부하가 있으면 칸이 앞 높이로 남은 순간을 잡아 흔들렸다. 다 자란 값은 270px).
 // BROWSER_CHECK_LEGACY=1 이면 쪽을 고치기 전 틀의 효과로 연다(--swap 으로 옛 talk-log.tsx 와 함께 — 고치기 전에 실패하는지 볼 때).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -33,6 +35,44 @@ export const page = "talk-lesson";
 const LEGACY = process.env.BROWSER_CHECK_LEGACY === "1";
 /** 정리 말풍선의 글이 다 흐를 때까지(ms, 점검 값). */
 const WRAP_TYPED_MS = 2500;
+/** 지금 턴이 다 자랐는지 보는 표본 사이(ms — 잇단 두 표본이 이만큼 넘게 떨어져야 한다) · 기다림 상한(ms). */
+const GROWN_GAP_MS = 350;
+const GROWN_LIMIT_MS = 8000;
+
+/**
+ * 지금 턴이 다 자랄 때까지 기다린다(M-1): 말풍선의 뜻 줄과 설명이 들고, 지금 턴 높이가 GROWN_GAP_MS 떨어진 잇단 두 표본에서 같으면 그림 몇 장
+ * (칸 맞춤)을 더 기다린다. 다 자랐으면 참.
+ */
+async function untilNowGrown(page) {
+  const sample = () =>
+    page.evaluate(() => {
+      const now = document.querySelector("[data-talk-log] [data-talk-log-now]");
+      if (!now) return null;
+      const full =
+        now.querySelector("[data-tori-ko]") !== null &&
+        now.querySelector("[data-tori-explanation]") !== null;
+      return full ? Math.round(now.getBoundingClientRect().height) : null;
+    });
+  let last = await sample();
+  for (let t = 0; t < GROWN_LIMIT_MS; t += GROWN_GAP_MS) {
+    await page.waitForTimeout(GROWN_GAP_MS);
+    const next = await sample();
+    if (next !== null && next === last) {
+      await settle(page);
+      return true;
+    }
+    last = next;
+  }
+  return false;
+}
+
+/** 장면 하나를 열고(정리는 글이 흐를 때까지, 가장 큰 지금 턴은 다 자랄 때까지) 잰다. grown 은 지금 턴이 다 자랐는지(hint 밖은 참). */
+async function openMeasured(browser, url, log, viewport, scene) {
+  const page = await openLesson(browser, url, log, viewport);
+  if (scene === "wrap") await settle(page, WRAP_TYPED_MS);
+  const grown = scene === "hint" ? await untilNowGrown(page) : true;
+  return { page, grown, m: await measure(page) };
+}
 
 const short = (m) =>
   `넘김 ${m.scrollY} · 띠 ${m.band?.top}~${m.band?.bottom} · 그만하기 ${m.stop?.top}~${m.stop?.bottom} · 선생님 창 ${m.teacher?.top}~${m.teacher?.bottom} · 기록 칸 ${m.log?.top}~${m.log?.bottom}(높이 ${m.logH}, 맞춤 ${m.logFit || "없음"}) · 지금 턴 ${m.nowH ?? "-"}(가려짐 ${m.hidden ?? "-"}) · 말하기 ${m.speak?.top}~${m.speak?.bottom}${m.choice ? ` · 두 단추 ${m.choice.top}~${m.choice.bottom}` : ""} · 마지막 조각 ${m.foot?.top}~${m.foot?.bottom} · 보는 창 ${m.vh}`;
@@ -64,10 +104,15 @@ export async function run({ browserType, url, check, log }) {
       ["낮은 세로", PORTRAIT_LOW],
     ]) {
       for (const scene of ["child", "hint", "suggest", "wrap"]) {
-        const page = await openLesson(browser, url(q(scene)), log, viewport);
-        if (scene === "wrap") await settle(page, WRAP_TYPED_MS);
-        const m = await measure(page);
+        const { page, grown, m } = await openMeasured(
+          browser,
+          url(q(scene)),
+          log,
+          viewport,
+          scene,
+        );
         const parts = [
+          ["지금 턴이 다 자람", grown],
           ["쪽 넘김 0", m.scrollY <= 1],
           ["그만하기", inView(m.stop, m.vh)],
           ["선생님 창", inView(m.teacher, m.vh)],
@@ -141,10 +186,15 @@ export async function run({ browserType, url, check, log }) {
     }
     // (4)
     for (const scene of ["child", "hint"]) {
-      const page = await openLesson(browser, url(q(scene)), log, LANDSCAPE);
-      const m = await measure(page);
+      const { page, grown, m } = await openMeasured(
+        browser,
+        url(q(scene)),
+        log,
+        LANDSCAPE,
+        scene,
+      );
       const ratio = Math.abs(m.logH - LANDSCAPE.height * 0.6) <= 1;
-      const ok = ratio && m.scrollY <= 1 && inView(m.speak, m.vh);
+      const ok = grown && ratio && m.scrollY <= 1 && inView(m.speak, m.vh);
       check(
         `가로로 연 수업 · ${scene}(기록 칸 높이는 정한 비율 그대로)`,
         ok,
@@ -154,9 +204,15 @@ export async function run({ browserType, url, check, log }) {
     }
     // (5)
     for (const scene of ["child", "hint"]) {
-      const page = await openLesson(browser, url(q(scene)), log, PORTRAIT_TINY);
-      const m = await measure(page);
+      const { page, grown, m } = await openMeasured(
+        browser,
+        url(q(scene)),
+        log,
+        PORTRAIT_TINY,
+        scene,
+      );
       const ok =
+        grown &&
         inView(m.speak, m.vh) &&
         m.hidden <= 1 &&
         m.logH >= m.nowH &&

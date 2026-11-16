@@ -29,6 +29,11 @@ type ReplyBody =
       firstQuestionDue?: boolean;
       /** 모든 줄(문장 · 뜻 · 끝 줄)을 한 덩이로 보냄(서버 다시 흘림 replayChat · 잡아 둔 줄과 끝 줄이 망에서 붙은 꼴 — 처리기가 한 번에 돎). */
       burst?: boolean;
+      /**
+       * 대화 중 짧은 준비를 연 차례(끝 줄의 prep — 화면이 자료를 다시 읽으면 할 일이 짧은 준비이고 쪽지 낱말은 없음, 그래서 쪽지가 곧바로 끝나
+       * 토막 넘김을 부름). 토막 넘김은 이야기 방식이면 돌아옴(leadTurn back) 입구를, 기존 방식이면 새 선생님 행을 돌려준다(S5 fix 9 — m-2).
+       */
+      prep?: boolean;
     }
   /** 서버가 받지 않음(stale — 상한 등). */
   | { kind: "stale" }
@@ -79,6 +84,10 @@ type ChatConfig = {
   sound: string | null;
   /** 시드 설정값 가운데 장면이 바꿀 것(speech.deaf_detect 등). */
   settings: Record<string, unknown>;
+  /** 처음 기록 칸의 아이 말(차례 i 의 글 — 모자라면 'I like it.', 정리의 반짝이는 줄 장면). */
+  childTexts: string[];
+  /** 있으면 '그만하기'가 확인 쪽지 없이 이 오늘 쓸 말로 정리를 연다(stopTalkLesson ok — S5 fix 9 · D-8). 없으면 확인 쪽지(needs_confirm). */
+  wrap: { words: string[] } | null;
 };
 
 const params = new URLSearchParams(location.search);
@@ -116,6 +125,8 @@ const cfg: ChatConfig = {
   pairs: 3,
   sound: null,
   settings: {},
+  childTexts: [],
+  wrap: null,
   ...given,
 };
 const chatMode = cfg.mode === "chat";
@@ -165,6 +176,8 @@ const HINT_TEXT = [
 let turnNo = cfg.pairs + 1;
 /** 서버에 끊긴 조용함 아이 행이 남았는가(화면 자료의 retryLead quiet). */
 let orphan = false;
+/** 짧은 준비를 연 차례를 보냈고 아직 토막을 넘기지 않았는가(화면 자료의 할 일이 짧은 준비). */
+let prepOpen = false;
 /** 안전 상한 차례의 카드 끝인사(이름 자리). */
 const FAREWELL = "Thank you for talking with me, {NAME}. Bye!";
 let replyAt = 0;
@@ -247,9 +260,12 @@ const chat = {
         : { ok: true, tiers: kinds, tier, text };
     }
     if (name === "loadTalkLessonView") return viewOf();
+    if (name === "advanceTalkLesson") return advanceOf();
     if (name === "markTalkNotice") return { ok: true };
     if (name === "stopTalkLesson")
-      return { ok: false, reason: "needs_confirm" };
+      return cfg.wrap
+        ? { ok: true, wrap: wrapOf(cfg.wrap.words) }
+        : { ok: false, reason: "needs_confirm" };
     if (name === "leaveTalkLesson") return { ok: true, closed: false };
     if (name === "talkClosingStatus") return { ok: true, closing: "none" };
     if (name === "reportSessionMic" || name === "recheckAiRest")
@@ -292,6 +308,7 @@ function streamOf(
 
 function turnLines(reply: Extract<Reply, { kind: "turn" }>): object[] {
   turnNo += 1;
+  if (reply.prep) prepOpen = true;
   const sentence = SENTENCES[(turnNo - 2) % SENTENCES.length] as string;
   const signal = reply.chat === undefined ? cfg.signal : reply.chat;
   return [
@@ -303,6 +320,7 @@ function turnLines(reply: Extract<Reply, { kind: "turn" }>): object[] {
       lesson: {
         ...lessonNext(turnNo, reply.stuck ?? 0, reply.choice ?? null),
         firstQuestionDue: reply.firstQuestionDue === true,
+        ...(reply.prep ? { prep: ["duck"] } : {}),
       },
       ...(chatMode && signal ? { chat: signal } : {}),
     },
@@ -436,7 +454,7 @@ function logOf(pairs: number) {
       speaker: "child",
       turnNo: i + 1,
       segment: "talk",
-      text: "I like it.",
+      text: cfg.childTexts[i] ?? "I like it.",
       input: "speech",
     },
   ]).flat();
@@ -457,7 +475,11 @@ function viewOf(): TalkLessonView {
     card: { topic: "lake", todayTopicsKo: ["호수에 가기", "오리 보기"] },
     spec: { band: TALK_LOW_BAND, koMeaning: true },
     segment: "talk",
-    step: orphan ? { kind: "retry" } : { kind: "child" },
+    step: orphan
+      ? { kind: "retry" }
+      : prepOpen
+        ? { kind: "prep" }
+        : { kind: "child" },
     position: {
       phase: "talk",
       greetingDone: true,
@@ -490,7 +512,7 @@ function viewOf(): TalkLessonView {
     },
     retryTurn: null,
     retryLead: orphan ? "quiet" : null,
-    prep: null,
+    prep: prepOpen ? { place: "talk", words: [], done: [] } : null,
     waitLines: ["Hmm, let me think."],
     talkShortLines: {
       again: [{ en: "Can you say that again?", ko: "다시 말해 줄래?" }],
@@ -535,6 +557,61 @@ function viewOf(): TalkLessonView {
       praiseSeconds: 2,
     },
   } as unknown as TalkLessonView;
+}
+
+/**
+ * 토막 넘김(짧은 준비 쪽지 뒤 대화로): 이야기 방식은 서버가 행을 붙이지 않고 돌아옴 입구(leadTurn back)를 돌려주고, 기존 방식은 새 선생님 행을
+ * 붙여 돌려준다(서버 advanceTalkLesson 꼴).
+ */
+function advanceOf() {
+  prepOpen = false;
+  if (!chatMode) turnNo += 1;
+  const view = viewOf();
+  return {
+    ok: true,
+    segment: view.segment,
+    step: { kind: "child" },
+    position: view.position,
+    current: chatMode
+      ? view.current
+      : {
+          ...view.current,
+          lines: [{ en: "Now let's talk.", ko: "이제 이야기하자." }],
+        },
+    prep: null,
+    ...(chatMode ? { leadTurn: "back" } : {}),
+  };
+}
+
+/** 정리 자료(WrapView 꼴 — 오늘 쓸 말 words, 되짚을 말 둘 · 끝인사). */
+function wrapOf(words: string[]) {
+  return {
+    lines: [
+      {
+        en: "You talked about the lake.",
+        ko: "호수 이야기를 했어요.",
+        source: "card",
+      },
+      {
+        en: "You said, I like ducks.",
+        ko: "오리가 좋다고 말했어요.",
+        source: "recast",
+      },
+    ],
+    farewell: { en: "Bye, {NAME}!", ko: "안녕!" },
+    aborted: false,
+    retry: false,
+    kind: "regular",
+    starsPerLesson: 1,
+    metWords: words.map((word) => ({
+      word,
+      meaningKo: "오리",
+      example: `I like ${word}s.`,
+      inTalk: true,
+    })),
+    friendship: null,
+    nextLesson: null,
+  };
 }
 
 createRoot(document.getElementById("root") as HTMLElement).render(

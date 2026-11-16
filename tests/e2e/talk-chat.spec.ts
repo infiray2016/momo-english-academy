@@ -32,7 +32,7 @@ const PHOTO = {
     "talk-chat-quiet-teacher-bubbles-stacked-no-child-bubble-and-hint-loading-dots",
   hint: "talk-chat-hint-tier-from-reply",
   explain: "talk-chat-explain-after-stuck-under-bubble",
-  /** 조용함 요청 뒤 첫 줄까지: 지금 말풍선 아래의 기다림 칸(W fix 2 — 13절 C243 보완 7 (3)). */
+  /** 조용함 요청 뒤 첫 줄까지: 지금 말풍선 아래의 기다림 칸과 5초 뒤 한 줄(W fix 2 — 13절 C243 보완 7 (3), 사진은 S5 fix 9 · m-1 부터 그 줄이 뜬 뒤). */
   quietWaiting: "talk-chat-quiet-waiting-cell-under-current-bubble",
   /** 힌트 호출 실패: 그 단에 '힌트를 못 가져왔어요' 한 줄과 '다시 받기'(정본 03 4절 99줄). */
   hintFailed: "talk-chat-hint-tier-failed-line-and-retry",
@@ -294,11 +294,12 @@ test.describe("회화 이야기 방식 수업(3단계 단원 1)", () => {
     await expect(bubble(page)).toHaveCount(1);
     await expect(bubble(page)).toContainText(SHOWN.opening[1]);
     await expect(waiting.locator("[data-wait-hint]")).toBeVisible();
-    await photo(page, PHOTO.quietWaiting);
-    // 둘째 값(5초)이 넘으면 '[이름](이/가) 생각하고 있어요'
+    // 둘째 값(5초)이 넘으면 '[이름](이/가) 생각하고 있어요' — 그 줄을 먼저 기다린 뒤 칸과 줄이 함께 든 사진을 세로 · 가로 한 번씩 찍는다(코드
+    // 검토 rev-chat-w-3 m-1: 사진을 먼저 찍으면 느린 CI 에서 첫 줄이 와 칸과 줄이 사라진 뒤에야 줄을 기다릴 수 있었다)
     await expect(waiting.locator("[data-wait-line]")).toBeVisible({
       timeout: QUIET_REPLY_DELAY_MS,
     });
+    await photo(page, PHOTO.quietWaiting);
     // 첫 줄이 오면 칸이 사라지고 앞 말풍선은 기록으로
     await expectLines(bubble(page), SHOWN.quiet, STREAM_END_MS);
     await expect(waiting).toHaveCount(0);

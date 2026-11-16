@@ -172,7 +172,9 @@ import {
   keepLessonInView,
   lessonFitLandscapeOf,
   lessonFitOnlyOf,
+  TALK_LOG_PIN_SLACK_PX,
   TalkLog,
+  talkLogPinnedOf,
 } from "./talk-log";
 import {
   answerTipShownOf,
@@ -872,6 +874,43 @@ export function wrapShineTextsOf(
 const WRAP_SHINE_CLASS = ["ring-4", "ring-postit-talk"] as const;
 /** 반짝임 한 바퀴(움직임을 허용한 기기만). */
 const WRAP_SHINE_PULSE = "motion-safe:animate-pulse";
+/** 반짝이는 줄의 멈춘 강조 테 두께(px, 화면 꼴 값 — WRAP_SHINE_CLASS 의 ring-4). 줄이 칸 안에 '온전히' 드는지는 테까지 넣어 센다. */
+export const WRAP_SHINE_RING_PX = 4;
+
+/**
+ * 정리가 열릴 때 정리 칸의 넘김 자리(순수, 13절 C241 보완 8 · 정본 03 4절 92줄 '반짝인다'): 마지막 반짝이는 줄이 맨 아래에 붙은 칸 안에 이미 온전히
+ * 들면 null(지금처럼 맨 아래). 아니면 그 줄이 칸 안에 온전히 드는 자리 가운데 맨 아래에서 가장 가까운 자리 — 줄은 맨 아래 자리보다 위에 있으므로
+ * 줄의 위 끝이 칸 위 끝에 닿는 자리이고(그 아래로 뒤의 대화가 이어 보임), 줄이 칸보다 높아도 같은 자리다(줄의 첫머리가 보임). 길이는 칸 안 내용
+ * 위 끝에서 잰 px 이고, 줄의 위아래는 강조 테까지 넣은 값이다.
+ */
+export function wrapShineScrollOf({
+  lineTop,
+  lineBottom,
+  clientHeight,
+  scrollHeight,
+}: {
+  lineTop: number;
+  lineBottom: number;
+  clientHeight: number;
+  scrollHeight: number;
+}): number | null {
+  const bottom = Math.max(0, scrollHeight - clientHeight);
+  if (lineTop >= bottom && lineBottom <= bottom + clientHeight) return null;
+  return Math.max(0, Math.min(bottom, lineTop));
+}
+
+/** 정리 칸 안에서 줄의 자리(칸 안 내용 위 끝에서 잰 px, 강조 테까지)와 칸의 크기(wrapShineScrollOf 의 입력). */
+function wrapShineGeometryOf(log: HTMLElement, line: Element) {
+  const box = log.getBoundingClientRect();
+  const rect = line.getBoundingClientRect();
+  const top = rect.top - box.top - log.clientTop + log.scrollTop;
+  return {
+    lineTop: top - WRAP_SHINE_RING_PX,
+    lineBottom: top + rect.height + WRAP_SHINE_RING_PX,
+    clientHeight: log.clientHeight,
+    scrollHeight: log.scrollHeight,
+  };
+}
 
 /**
  * 정리 화면의 대화 기록 칸(03절 92줄 — 동작만, 꼴은 UI · UX 묶음 6): 기록을 다시 보이고, 오늘 쓸 말이 든 아이 말 줄(꼴 목록 포함)에 표지
@@ -896,6 +935,13 @@ function WrapLog({
   onReplay: (items: TalkLogReplayItem[]) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  /**
+   * 정리 칸을 둘 자리(13절 C241 보완 8): 'shine' 은 아이가 칸을 넘기기 전(마지막 반짝이는 줄이 드는 자리 — wrapShineScrollOf, 칸 크기가 바뀌면 같은
+   * 규칙으로 다시 셈), 숫자는 아이가 손으로 넘겨 둔 자리, 'free' 는 아이가 맨 아래까지 넘긴 뒤(기록 칸의 맨 아래 붙음 그대로).
+   */
+  const rest = useRef<"shine" | number | "free">("shine");
+  /** 정리가 열린 뒤 아이가 칸에 손 · 휠 · 키를 댔는가(그 뒤의 넘김만 아이의 넘김으로 센다). */
+  const touched = useRef(false);
   const shine = useMemo(
     () => wrapShineTextsOf(entries, words, lemmaEntries),
     [entries, words, lemmaEntries],
@@ -916,9 +962,67 @@ function WrapLog({
         { once: true },
       );
     }
-    return () => {
+    const unmark = () => {
       for (const said of marked)
         said.classList.remove(...WRAP_SHINE_CLASS, WRAP_SHINE_PULSE);
+    };
+    // 정리가 열릴 때 정리 칸을 마지막 반짝이는 줄이 온전히 드는 가장 가까운 자리로 움직임 없이 넘긴다(13절 C241 보완 8 — 정리 칸 안에서만, 쪽은
+    // 넘기지 않음). 기록 칸(TalkLog)은 크기가 바뀔 때마다 맨 아래에 붙어 있으면 맨 아래로 맞추므로(그 크기 알림은 이 효과보다 먼저 만든 것이라 먼저
+    // 돈다), 같은 그림 안에서 이 자리를 다시 둔다. 아이가 손으로 넘긴 자리는 끌어오지 않고, 맨 아래까지 넘기면 기록 칸의 맨 아래 붙음에 맡긴다.
+    const log = el.querySelector<HTMLElement>("[data-talk-log]");
+    const line = marked.at(-1);
+    if (!log || !line) return unmark;
+    const near = (a: number, b: number) =>
+      Math.abs(a - b) <= TALK_LOG_PIN_SLACK_PX;
+    const expected = (): number | null => {
+      const at = rest.current;
+      if (at === "free") return null;
+      if (at !== "shine") return at;
+      return wrapShineScrollOf(wrapShineGeometryOf(log, line));
+    };
+    const place = () => {
+      const target = expected();
+      if (target !== null && !near(log.scrollTop, target))
+        log.scrollTop = target;
+    };
+    const onInput = () => {
+      touched.current = true;
+    };
+    // 아이의 넘김(손 · 휠 · 키 뒤)으로 자리가 바뀌면 그 자리를 둔다. 맨 아래면 기록 칸에 맡긴다
+    const onScroll = () => {
+      if (!touched.current || rest.current === "free") return;
+      const target =
+        expected() ?? Math.max(0, log.scrollHeight - log.clientHeight);
+      if (near(log.scrollTop, target)) return;
+      rest.current = talkLogPinnedOf({
+        scrollTop: log.scrollTop,
+        scrollHeight: log.scrollHeight,
+        clientHeight: log.clientHeight,
+      })
+        ? "free"
+        : log.scrollTop;
+    };
+    const inputs = [
+      "touchstart",
+      "wheel",
+      "keydown",
+      "pointerdown",
+      "focusin",
+    ] as const;
+    for (const type of inputs)
+      log.addEventListener(type, onInput, { passive: true });
+    log.addEventListener("scroll", onScroll, { passive: true });
+    place();
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    observer?.observe(log);
+    const past = log.querySelector(':scope > [role="log"]');
+    if (past) observer?.observe(past);
+    return () => {
+      observer?.disconnect();
+      for (const type of inputs) log.removeEventListener(type, onInput);
+      log.removeEventListener("scroll", onScroll);
+      unmark();
     };
   }, [shine]);
   if (entries.length === 0) return null;
