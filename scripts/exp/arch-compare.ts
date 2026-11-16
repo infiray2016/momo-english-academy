@@ -392,6 +392,11 @@ export type ChatTeacherLog = {
    */
   firstMoved: boolean;
   madeUp: string[];
+  /**
+   * 앱이 마무리 물음(상수 물음 add more_prompt 줄)을 붙인 차례(13절 C243 보완 9 (2) — 대본 도구 기록의 실제로 낸 줄로 정함, 코드 검토 M-2). 이 칸이 생기기
+   * 전 기록에는 없다(arch-report chatClosingAskOf 가 나간 글의 줄 꼴로 어림한다).
+   */
+  closingAsked?: boolean;
   closed: boolean;
   failure: string | null;
   diverged: boolean;
@@ -2617,7 +2622,7 @@ async function chatLessonRun(
 }
 
 /** 대본 도구 차례 기록 하나 → CHAT 선생님 차례 기록. */
-function chatTeacherLogOf(t: ChatScenarioTurn): ChatTeacherLog {
+export function chatTeacherLogOf(t: ChatScenarioTurn): ChatTeacherLog {
   const rec = t.record;
   const chat = rec?.teacher?.move.chat;
   const usage = t.usage;
@@ -2632,6 +2637,9 @@ function chatTeacherLogOf(t: ChatScenarioTurn): ChatTeacherLog {
     removed: [...(chat?.removed ?? [])],
     firstMoved: false,
     madeUp: [...(chat?.madeUp ?? [])],
+    closingAsked: (rec?.lines ?? []).some(
+      (l) => l.t === "add" && l.kind === "more_prompt",
+    ),
     closed: rec?.close != null,
     failure: rec?.failure ?? null,
     diverged: rec?.diverged === true,

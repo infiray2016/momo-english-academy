@@ -53,6 +53,7 @@ import type {
   TalkLessonSettings,
 } from "@/core/conversation/lesson-turns";
 import { readTalkMove, type TalkMove } from "@/core/conversation/move";
+import { MORE_PROMPT } from "@/core/conversation/spoken";
 import { isQuestionSentence } from "@/core/conversation/stream";
 
 // ── 입구(spec 설계 3 · 5 · 6 · 10, 보완 4 (5)) ─────────────────────────────
@@ -603,16 +604,51 @@ export function chatChildFieldsOf({
 
 // ── 다시 흘리기 · 이어 하기의 끝 줄 신호 ─────────────────────────────────────
 
-/** 저장된 선생님 행을 다시 흘릴 줄(실시간 길과 같은 꼴 — 문장마다 글 · 뜻 · 소리 줄). 신호 말 · 마무리 상수는 이 방식에 없다. */
+/**
+ * 저장된 선생님 행을 다시 흘릴 줄(실시간 길과 같은 꼴 — 문장마다 글 · 뜻 · 소리 줄, 마무리 상수 물음). 신호 말은 이 방식에 없다. 마무리 상수 물음
+ * (add more_prompt)은 앱의 마무리 차례에 선생님 말 칸에 물음이 없을 때 앱이 붙인 줄이다(13절 C243 보완 9 (2) — 지금 새 방식 lead-turn.ts closingLine 과
+ * 같은 꼴).
+ */
 export type ChatReplayLine =
   | { t: "s"; en: string }
   | { t: "ko"; ko: string }
-  | { t: "sound"; kind: "model" | "answer"; say: string };
+  | { t: "sound"; kind: "model" | "answer"; say: string }
+  | { t: "add"; kind: "more_prompt"; en: string; ko?: string };
+
+/** 마무리 상수 물음 줄(지금 새 방식 lead-turn.ts closingLine 과 같은 꼴 — 뜻은 koMeaning 일 때만). */
+export function chatClosingAskLineOf(koMeaning: boolean): ChatReplayLine {
+  return {
+    t: "add",
+    kind: "more_prompt",
+    en: MORE_PROMPT.en,
+    ...(koMeaning ? { ko: MORE_PROMPT.ko } : {}),
+  };
+}
+
+/** 선생님 행 글 끝에 앱이 붙인 마무리 상수 물음(지금 새 방식 toriTextOf 의 꼴 — 말 칸 뒤 줄바꿈 하나 · 상수 물음). */
+const CLOSING_ASK_TAIL = `\n${MORE_PROMPT.en}`;
+
+/** 선생님 행 글(지금 새 방식 toriTextOf 와 같은 꼴): 앱이 상수 물음을 붙였으면 말 칸 뒤에 줄을 바꿔 붙인다. */
+export function chatTeacherTextOf(said: string, asked: boolean): string {
+  return asked ? `${said}${CLOSING_ASK_TAIL}` : said;
+}
+
+/** 저장된 선생님 행 글을 말 칸과 앱이 붙인 마무리 상수 물음으로 나눈다(chatTeacherTextOf 의 거꾸로 — 붙인 물음이 없는 행은 글 그대로). */
+export function chatRowTextOf(text: string | null): {
+  said: string;
+  asked: boolean;
+} {
+  const t = text ?? "";
+  return t.endsWith(CLOSING_ASK_TAIL)
+    ? { said: t.slice(0, -CLOSING_ASK_TAIL.length), asked: true }
+    : { said: t, asked: false };
+}
 
 export function chatReplayLinesOf(
   row: { text: string | null; toriKo: string | null; move?: unknown },
   koMeaning: boolean,
 ): ChatReplayLine[] {
+  const { said, asked } = chatRowTextOf(row.text);
   const move = readTalkMove(row.move);
   const sound = move?.sound;
   const say = {
@@ -624,7 +660,7 @@ export function chatReplayLinesOf(
   const at = move?.chat?.soundAt ?? {};
   const out: ChatReplayLine[] = [];
   const placed = new Set<"model" | "answer">();
-  for (const line of lowBandPlacedLinesOf(row.text ?? "", {
+  for (const line of lowBandPlacedLinesOf(said, {
     ...(say.model === undefined || at.model === undefined
       ? {}
       : { model: at.model }),
@@ -647,6 +683,8 @@ export function chatReplayLinesOf(
     if (text !== undefined && !placed.has(kind))
       out.push({ t: "sound", kind, say: text });
   }
+  // 앱이 붙인 마무리 상수 물음은 실시간 길처럼 맨 뒤(뜻 · 소리 줄 뒤)다
+  if (asked) out.push(chatClosingAskLineOf(koMeaning));
   return out;
 }
 

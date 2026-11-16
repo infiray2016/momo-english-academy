@@ -300,7 +300,10 @@ const CLOSED_BY_LAST_TURN: ReadonlySet<ChatFact["kind"]> = new Set([
   "prep_next",
 ]);
 
-/** 사실 줄의 글(spec 설계 3 표의 글 그대로 — 마무리 줄의 셋째 문장 '더 이야기하기면 여기서 이어짐'은 13절 C243 보완 8 (4)). */
+/**
+ * 사실 줄의 글(spec 설계 3 표의 글 그대로 — 마무리 줄의 셋째 문장 '더 이야기하기면 여기서 이어짐'은 13절 C243 보완 8 (4), 넷째 문장 끝의 '아직 작별하지
+ * 않음'과 다섯째 문장 '제 말로 더 이야기할지 물음'은 13절 C243 보완 9 (1)).
+ */
 export function chatFactLineOf(fact: ChatFact): string {
   switch (fact.kind) {
     case "prep_next":
@@ -312,7 +315,7 @@ export function chatFactLineOf(fact: ChatFact): string {
         : `Korean help before this answer: taught '${taught}'`;
     }
     case "closing":
-      return "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye.";
+      return "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye, so do not say goodbye yet. In your own words, ask the child if they want to talk more.";
     case "last_turn":
       return "This is the last turn of today's chat. After your turn the app ends the chat.";
   }

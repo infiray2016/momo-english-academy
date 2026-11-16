@@ -4,8 +4,10 @@ import "server-only";
 // 더 이야기하기 토막이면 여기로 온다(chatTurnAppliesOf — 지금 새 방식의 갈림 앞). 아이 말 없는 입구 넷(start 수업 첫 말 · more · quiet 조용함 · back
 // 짧은 준비 뒤 돌아옴)은 turn.ts 가 runChatOpenTurn 으로 보낸다. 한 차례: 요청 조립(묶음 P1) → 흘려 받기(묶음 S0 talkChatTurn — 문장 문 · 6.4) →
 // 응답 처리(묶음 P2) → 줄 내보내기(끝 줄 신호 — 묶음 P3) → 행 저장 → 응답 뒤 평가 호출(묶음 S0, 거래가 끝난 뒤). 무엇을 부르고 무엇을 저장할지는
-// core chat-turn-plan(대본 도구와 같은 함수)이 정하고, 여기는 DB · 호출 · 줄만 맡는다. 앱은 선생님 말을 고쳐 쓰지 않고(C242) 신호 말 · 받침 문구 ·
-// 마무리 상수 물음을 붙이지 않는다(spec 설계 4 '쓰지 않는 것'). 아이 글 · AI 글을 로그에 내지 않는다(오류 이름 · Postgres 코드만).
+// core chat-turn-plan(대본 도구와 같은 함수)이 정하고, 여기는 DB · 호출 · 줄만 맡는다. 앱은 선생님 말을 고쳐 쓰지 않고(C242) 신호 말 · 받침 문구를
+// 붙이지 않는다(spec 설계 4 '쓰지 않는 것'). 마무리 상수 물음만은 앱의 마무리 차례에 선생님 말 칸에 물음이 없을 때 붙인다(13절 C243 보완 9 (2) — 판단 ·
+// 줄 · 행 글은 core chatTurnResultOf 가 대본 도구와 같은 함수로 정하고(chatClosingAddsOf), 여기는 그 줄을 그대로 낸다. 다시 흘림은 chatReplayLinesOf).
+// 아이 글 · AI 글을 로그에 내지 않는다(오류 이름 · Postgres 코드만).
 // 불러오기 방향: 이 파일은 lesson-turn.ts · lead-turn.ts 를 불러오고, lesson-turn.ts 는 이 파일을 불러오지 않는다(처리기는 turn.ts 가 넘긴다).
 import { and, eq } from "drizzle-orm";
 import { after } from "next/server";

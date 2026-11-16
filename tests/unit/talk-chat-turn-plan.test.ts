@@ -1011,7 +1011,7 @@ describe("대화 기록과 인식기 알림(브리프 8 · 12)", () => {
 // ── 마무리 · 상수 물음 ────────────────────────────────────────────────
 
 describe("마무리 차례(spec 설계 9)", () => {
-  it("AC-27j 앱의 마무리 차례는 사실 줄 closing 을 붙이고 끝 줄은 두 단추 차례(신호 없음 · 설명 기다림만), move 는 마무리 자리이고 상수 물음을 붙이지 않는다", () => {
+  it("AC-27j 앱의 마무리 차례는 사실 줄 closing 을 붙이고 끝 줄은 두 단추 차례(신호 없음 · 설명 기다림만), move 는 마무리 자리이고 앱 받침(move.app)이 없다(물음 없는 차례의 상수 물음은 chatTurnResultOf 가 줄 · 행 글에만 붙인다 — 13절 C243 보완 9 (2), talk-chat-closing-ask 시험)", () => {
     const sim = lessonSim();
     sim.toTalk();
     let last: ReturnType<typeof sim.step> | null = null;

@@ -244,6 +244,16 @@ const C243_8 = {
     new: "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye.",
   },
 } as const;
+/**
+ * 13절 C243 보완 9 (1)의 마무리 사실 줄(판 5 의 줄 → 판 6 의 줄): 넷째 문장 끝에 '아직 작별하지 않음'을 잇고, 제 말로 더 이야기할지 묻는 문장 하나를
+ * 더한다. 안내문은 바꾸지 않는다.
+ */
+const C243_9 = {
+  closing: {
+    old: C243_8.closing.new,
+    new: "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye, so do not say goodbye yet. In your own words, ask the child if they want to talk more.",
+  },
+} as const;
 /** 마무리 사실 줄에 더한 문장(마무리 차례에서만 붙는다). */
 const TALK_MORE_SENTENCE =
   "If the child chooses 'talk more', the chat goes on from here.";
@@ -384,7 +394,8 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
     );
     // 넷째(마무리 사실 줄)는 안내문 밖의 사실 줄이라 안내문에 없다
     expect(CHAT_SYSTEM_TEMPLATE).not.toContain(TALK_MORE_SENTENCE);
-    expect(chatFactLineOf({ kind: "closing" })).toBe(C243_8.closing.new);
+    // 마무리 사실 줄은 그 뒤 C243 보완 9 (1)로 다시 바뀌었다(판 6)
+    expect(chatFactLineOf({ kind: "closing" })).toBe(C243_9.closing.new);
   });
 
   it("AC-27b 자리 값 여섯(선생님 · 성격 · 좋아하는 것 · 주제 · 단원 단어 · 말하는 범위)을 채우고 이름 자리 {NAME} 만 남긴다", () => {
@@ -803,16 +814,22 @@ describe("AC-27c 입력 줄 · 돌아옴 · 사실 줄(spec 설계 3)", () => {
       "Korean help before this answer: meaning only",
     );
     expect(chatFactLineOf({ kind: "closing" })).toBe(
-      "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye.",
+      "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye, so do not say goodbye yet. In your own words, ask the child if they want to talk more.",
     );
     // 앞 두 문장은 지금 새 방식의 마무리 줄과 글자까지 같다(I-7)
     expect(chatFactLineOf({ kind: "closing" })).toMatch(
       /^This is the closing turn\. After your turn the app shows the buttons 'talk more' and 'finish'\. /,
     );
     // C243 보완 8 (4): 판 4 의 줄에서 두 단추 문장 바로 뒤에 '더 이야기하기면 여기서 이어짐' 한 문장만 더했다
-    expect(
-      chatFactLineOf({ kind: "closing" }).replace(` ${TALK_MORE_SENTENCE}`, ""),
-    ).toBe(C243_8.closing.old);
+    // C243 보완 9 (1): 판 5 의 줄에서 넷째 문장 끝 '아직 작별하지 않음'과 '제 말로 더 이야기할지 물음' 한 문장만 더했다
+    const v5 = chatFactLineOf({ kind: "closing" })
+      .replace(", so do not say goodbye yet.", ".")
+      .replace(
+        " In your own words, ask the child if they want to talk more.",
+        "",
+      );
+    expect(v5).toBe(C243_9.closing.old);
+    expect(v5.replace(` ${TALK_MORE_SENTENCE}`, "")).toBe(C243_8.closing.old);
     expect(chatFactLineOf({ kind: "last_turn" })).toBe(
       "This is the last turn of today's chat. After your turn the app ends the chat.",
     );

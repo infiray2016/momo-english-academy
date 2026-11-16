@@ -1,7 +1,8 @@
 // 회화 이야기 방식 선생님 차례의 응답 갈래 조립(intent 2026-11-13-회화-대화-구조-R plan 묶음 S1 fix 1 — 검토 rev-chat-s1 I-2 · M-1 · M-2 · M-6).
 // 대화 호출의 결과(응답 · 첫 문장 뒤 끊김 · 실패)와 흘리는 동안 내보낸 문장 · 잡아 둔 문장으로, 흘림 뒤에 낼 줄(남은 문장 · 뜻 · 소리 줄) · 선생님 행 초안 ·
 // 안전 상한 차례의 끝인사 · 만남 낱말 · 받침 단계와 끝 줄 신호를 정한다. 서버 턴 길(chat-turn.ts)과 대본 도구(묶음 T1)가 같은 함수를 부른다(NFR-4 ·
-// AC-18). 순수 모듈이다(DB · 서버 · SDK · 시각 없음). 줄을 쓰고 행을 저장하는 일은 부르는 쪽이 한다.
+// AC-18). 앱의 마무리 차례에 선생님 말 칸에 물음이 없으면 상수 물음을 붙이는 판단도 여기서 한다(13절 C243 보완 9 (2) — 지금 새 방식과 같은 규칙 ·
+// 같은 꼴). 순수 모듈이다(DB · 서버 · SDK · 시각 없음). 줄을 쓰고 행을 저장하는 일은 부르는 쪽이 한다.
 import type { TalkChatOutput } from "@/core/ai/calls/talk-chat";
 import {
   type ChatReply,
@@ -12,8 +13,10 @@ import {
   type ChatReplayLine,
   type ChatTurnPlan,
   chatCardGreetingLineOf,
+  chatClosingAskLineOf,
   chatFallbackReplyOf,
   chatTeacherRowMoveOf,
+  chatTeacherTextOf,
   chatTurnFinishOf,
 } from "@/core/conversation/chat-turn-plan";
 import {
@@ -23,10 +26,13 @@ import {
   lowBandSoundAtOf,
   lowBandStrippedOf,
 } from "@/core/conversation/lead-low-band";
+import { leadClosingAddsOf } from "@/core/conversation/lead-turn-core";
 import type { TalkMove } from "@/core/conversation/move";
+import { isClosingQuestion } from "@/core/conversation/question-check";
 import { metWordsIn } from "@/core/conversation/said";
 import { normalizeSpoken } from "@/core/conversation/spoken";
 import { safeLineOf } from "@/core/conversation/stream";
+import { splitSentences } from "@/core/seed/text";
 
 /**
  * 대화 호출 결과(서버 talkChatTurn 의 결과 · 대본 도구의 가짜 응답을 옮긴 꼴): ok 는 응답(value 는 문장 문 · 6.4 뒤 값, assistant 는 대화 기록 글,
@@ -58,6 +64,24 @@ export const CHAT_RESTING_REASON = "safety_cap";
 const REFUSAL_REASON = "refusal";
 /** 6.4 가 따라 할 문장을 비운 차례를 move.chat.gate 에 적는 이름(서버 talk.ts CHAT_LISTEN_BLOCKED_GATE 와 같은 값 — 짝 시험이 묶음). */
 export const CHAT_LISTEN_BLOCKED_GATE_NAME = "listen_check";
+
+/**
+ * 앱의 마무리 차례에 앱이 상수 물음('Do you want to talk more?')을 붙이는가(13절 C243 보완 9 (2)): 지금 새 방식의 판단 leadClosingAddsOf(말 칸에 물음
+ * 문장이 없을 때만)를 그대로 쓴다. 그 판단은 상수 물음과 같은 물음을 물음 셈에서 빼므로, 선생님이 제 말로 그 물음을 이미 했으면 두 번 붙이지 않게 그 경우만
+ * 더 거른다(13절 글 '선생님 말 칸에 물음 문장이 없으면'). say 는 아이에게 소리로 나간 말(1~3단계 소리 줄로 뺀 문장 포함 — 지금 새 방식 settled.say 와 같은 자리).
+ */
+export function chatClosingAddsOf({
+  closing,
+  say,
+}: {
+  closing: boolean;
+  say: string;
+}): boolean {
+  return (
+    leadClosingAddsOf({ closing, say }) &&
+    !splitSentences(say).some(isClosingQuestion)
+  );
+}
 
 /** 선생님 행 초안(저장 앞 — 보낸 사용자 메시지 · 행 번호는 부르는 쪽이 붙인다). */
 export type ChatTeacherDraft = {
@@ -275,8 +299,12 @@ export function chatTurnResultOf({
     const ko = koMeaning ? processed.sayKo.trim() : "";
     const finish = finishOf(processed.wrapUp, false);
     const met = metWordsIn(value.say, lexicon);
-    const draft = (reply: ChatReply, text: string): ChatTeacherDraft => ({
-      text,
+    const draft = (
+      reply: ChatReply,
+      text: string,
+      asked = false,
+    ): ChatTeacherDraft => ({
+      text: chatTeacherTextOf(text, asked),
       toriRewrite: call.assistant,
       toriKo: ko === "" ? null : ko,
       overLength: overLengthOf(
@@ -347,9 +375,12 @@ export function chatTurnResultOf({
       const sound = soundLineOf(kind);
       if (sound !== null && soundAt[kind] === undefined) lines.push(sound);
     }
+    // 앱의 마무리 차례에 물음이 없으면 상수 물음을 맨 뒤(뜻 · 소리 줄 뒤)에 — 지금 새 방식 lead-turn.ts 와 같은 차례(C243 보완 9 (2))
+    const asked = chatClosingAddsOf({ closing: plan.closing, say: value.say });
+    if (asked) lines.push(chatClosingAskLineOf(koMeaning));
     return {
       lines,
-      teacher: draft(reply, text),
+      teacher: draft(reply, text, asked),
       farewell: { en: text, ...(ko === "" ? {} : { ko }) },
       met,
       finish,
@@ -374,10 +405,13 @@ export function chatTurnResultOf({
 
   if (call.kind === "cut") {
     const text = call.sentSentences.join(" ");
+    const asked = chatClosingAddsOf({ closing: plan.closing, say: text });
+    const lines: ChatReplayLine[] = flow.held.map((en) => ({ t: "s", en }));
+    if (asked) lines.push(chatClosingAskLineOf(koMeaning));
     return {
-      lines: flow.held.map((en) => ({ t: "s", en })),
+      lines,
       teacher: {
-        text,
+        text: chatTeacherTextOf(text, asked),
         toriRewrite: null,
         toriKo: null,
         overLength: overLengthOf(
@@ -414,10 +448,12 @@ export function chatTurnResultOf({
   }
   const lines: ChatReplayLine[] = [{ t: "s", en: line.en }];
   if (line.ko !== undefined) lines.push({ t: "ko", ko: line.ko });
+  const asked = chatClosingAddsOf({ closing: plan.closing, say: line.en });
+  if (asked) lines.push(chatClosingAskLineOf(koMeaning));
   return {
     lines,
     teacher: {
-      text: line.en,
+      text: chatTeacherTextOf(line.en, asked),
       toriRewrite: null,
       toriKo: line.ko ?? null,
       overLength: false,

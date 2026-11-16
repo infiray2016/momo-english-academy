@@ -4248,6 +4248,75 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
     expect(sim.stopBefore()?.choice).toBe("suggestion");
   });
 
+  it("AC-27r 물음 없는 앱의 마무리 차례(13절 C243 보완 9 (2)): 서버 · 도구 모두 줄 끝에 상수 물음(add more_prompt)을 붙이고 선생님 행 글 · 들은 말에 같은 꼴로 든다, 물음 있는 마무리 차례 · wrap_up 차례에는 붙지 않는다", async () => {
+    const base = materialsAt(3);
+    const m: Materials = { ...base, spec: { ...base.spec, targetTurns: 3 } };
+    const sim = await chatTalking(m);
+    const said = "Me too! That was a fun talk.";
+    let closing: ChatTurnRecord | null = null;
+    for (let i = 0; i < 6 && sim.stopBefore() === null; i++)
+      closing = await bothChat(
+        m,
+        CHAT_VALUES,
+        sim,
+        chatChild({ say: "I like the beach." }),
+        chatAnswerOf({ say: said, say_ko: "나도! 재미있었어." }),
+      );
+    expect(closing?.facts).toContain("closing");
+    expect(closing?.turnEnd).toBe("closing");
+    expect(closing?.lines.at(-1)).toEqual({
+      t: "add",
+      kind: "more_prompt",
+      en: MORE_PROMPT.en,
+      ...(m.spec.koMeaning ? { ko: MORE_PROMPT.ko } : {}),
+    });
+    expect(closing?.teacher?.text).toBe(`${said}\n${MORE_PROMPT.en}`);
+    expect(closing?.heard.split("\n").at(-1)).toBe(MORE_PROMPT.en);
+    expect(sim.stopBefore()?.choice).toBe("closing");
+    // 더 이야기하기 → 선생님이 wrap_up 으로 맺은 차례(물음 없음)에는 붙지 않는다
+    sim.chooseMore();
+    await bothChat(
+      m,
+      CHAT_VALUES,
+      sim,
+      chatOpen("more"),
+      chatAnswerOf({ say: "Yay! What is your favorite food?" }),
+    );
+    const suggestion = await bothChat(
+      m,
+      CHAT_VALUES,
+      sim,
+      chatChild({ say: "Pizza." }),
+      chatAnswerOf({ say: "Pizza is yummy! That was fun.", wrap_up: true }),
+    );
+    expect(suggestion.turnEnd).toBe("suggestion");
+    expect(suggestion.lines.some((l) => l.t === "add")).toBe(false);
+    expect(suggestion.teacher?.text).toBe("Pizza is yummy! That was fun.");
+    // 물음 있는 앱의 마무리 차례: 선생님이 상수 물음과 같은 물음을 제 말로 이미 했으면(core chatClosingAddsOf 의 거름) 서버 · 도구 모두 붙이지 않는다
+    const asking = await chatTalking(m);
+    const askSaid = `Me too! That was a fun talk. ${MORE_PROMPT.en}`;
+    let asked: ChatTurnRecord | null = null;
+    for (let i = 0; i < 6 && asking.stopBefore() === null; i++)
+      asked = await bothChat(
+        m,
+        CHAT_VALUES,
+        asking,
+        chatChild({ say: "I like the beach." }),
+        chatAnswerOf({
+          say: askSaid,
+          say_ko: "나도! 재미있었어. 더 이야기할래?",
+        }),
+      );
+    expect(asked?.facts).toContain("closing");
+    expect(asked?.turnEnd).toBe("closing");
+    expect(asked?.lines.some((l) => l.t === "add")).toBe(false);
+    expect(asked?.teacher?.text).toBe(askSaid);
+    expect(
+      asked?.heard.split("\n").filter((l) => l.includes(MORE_PROMPT.en)),
+    ).toHaveLength(1);
+    expect(asking.stopBefore()?.choice).toBe("closing");
+  });
+
   it("AC-27r 안전 상한 차례(quiet 행을 포함한 아이 차례 수): 사실 줄 last_turn · 닫는 줄 하나 · 수업이 닫힌다 — 서버와 같다", async () => {
     const m = materialsAt(3);
     const values = { ...CHAT_VALUES, "talk.safety_max_turns": 4 };

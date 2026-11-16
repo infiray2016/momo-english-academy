@@ -21,6 +21,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { LeadCandidateLex } from "../../src/core/conversation/lead-candidate";
+import { isClosingQuestion } from "../../src/core/conversation/question-check";
+import { MORE_PROMPT } from "../../src/core/conversation/spoken";
 import { createScriptClient, readApiKey } from "../ai-contract";
 import {
   P_SYSTEM,
@@ -2508,7 +2510,64 @@ const QUIET_CHILDREN = ["SC", "SD2", "SG"] as const;
 const frac = (n: number, d: number) =>
   d === 0 ? "-" : `${n}/${d}(${pct(n / d)})`;
 
-function chatCountRows(c: ChatCounts): string[] {
+/**
+ * (ㄱ)의 두 값(13절 C243 보완 9): 앱의 마무리 차례(사실 줄 closing — 긴 대본 밖 CHAT 수업, which 가 long 이면 긴 대본만) 가운데 물음 없는 차례를 모델
+ * 원문 기준과 나간 글 기준으로 함께 센다. 나간 글(final — 아이에게 나간 줄, 앱이 붙인 상수 물음 줄 포함)은 chatCountsOf 의 (ㄱ)과 같은 값이고, 모델 원문은
+ * 응답 say(응답이 없던 차례는 나간 글에서 앱이 붙인 물음 줄을 뺀 글)다. 앱이 붙인 차례는 기록 칸 closingAsked(실제로 낸 add more_prompt 줄 — 코드 검토
+ * M-2)로 정하고, 그 칸이 없는 지난 기록에만 나간 줄의 마지막 줄이 상수 물음 줄 하나인 차례로 어림한다(그 줄은 앱이 따로 낸 add 줄이라 선생님 말 줄과
+ * 이어지지 않음). 고치기 전 기록에는 붙인 물음이 없어 두 값이 같다.
+ */
+export function chatClosingAskOf(
+  lessons: readonly Pick<Lesson, "meta" | "teachers">[],
+  which: "main" | "long" = "main",
+): {
+  turns: number;
+  rawNoQuestion: number;
+  sentNoQuestion: number;
+  appAsked: number;
+} {
+  const out = { turns: 0, rawNoQuestion: 0, sentNoQuestion: 0, appAsked: 0 };
+  for (const l of lessons) {
+    if (l.meta.arm !== "CHAT") continue;
+    if ((l.meta.variant === "long") !== (which === "long")) continue;
+    for (const t of l.teachers) {
+      if (!t.chat?.facts.includes("closing")) continue;
+      const lines = t.final.split("\n");
+      const asked =
+        t.chat.closingAsked ??
+        (lines.length > 1 && lines.at(-1) === MORE_PROMPT.en);
+      const raw =
+        t.modelFirstSpoken ??
+        (asked && lines.at(-1) === MORE_PROMPT.en
+          ? lines.slice(0, -1)
+          : lines
+        ).join(" ");
+      out.turns += 1;
+      if (asked) out.appAsked += 1;
+      if (questionsIn(heardByChild(raw)).length === 0) out.rawNoQuestion += 1;
+      if (questionsIn(heardByChild(t.final)).length === 0)
+        out.sentNoQuestion += 1;
+    }
+  }
+  return out;
+}
+
+/**
+ * m-6 후보(물음이 있어도 두 단추로 답할 수 없는 앱의 마무리 차례 — 사람이 읽어 셈): chatCountsOf 의 closingQuestions 에서 상수 물음(또는 그와 같은
+ * 물음)만 든 차례를 뺀다. 그 물음은 두 단추로 답할 수 있는 물음이라 m-6 의 뜻에 들지 않는다(코드 검토 M-1). 다른 물음이 함께 든 차례는 그대로 둔다.
+ */
+export function chatM6CandidatesOf(
+  c: Pick<ChatCounts, "closingQuestions">,
+): ChatCounts["closingQuestions"] {
+  return c.closingQuestions.filter(
+    (r) => !r.questions.every((q) => isClosingQuestion(q)),
+  );
+}
+
+function chatCountRows(
+  c: ChatCounts,
+  ask: ReturnType<typeof chatClosingAskOf>,
+): string[] {
   const silence = (k: "SC" | "SD2") => {
     const q = c.afterSilence[k];
     return q
@@ -2519,7 +2578,7 @@ function chatCountRows(c: ChatCounts): string[] {
     "| 셀 것 | 값 | 잣대 · 쓰임(spec) |",
     "|---|---|---|",
     `| 인사 끝 차례의 말에 물음이 든 수업(I-1) | ${frac(c.greetingEnd.withQuestion, c.greetingEnd.lessons)} | 기록(아래 목록) |`,
-    `| (ㄱ) 앱의 마무리 차례(사실 줄 closing) 가운데 물음 없는 차례(설계 9) | ${frac(c.closing.noQuestion, c.closing.turns)} | 1/3 을 넘으면 '물음이 없을 때만 상수 물음' 길로 바꿈(선생님이 맺은 wrap_up 차례는 세지 않음) |`,
+    `| (ㄱ) 앱의 마무리 차례(사실 줄 closing) 가운데 물음 없는 차례(설계 9) | 모델 원문 기준 ${frac(ask.rawNoQuestion, ask.turns)} · 나간 글 기준(앱이 붙인 상수 물음 포함) ${frac(c.closing.noQuestion, c.closing.turns)} · 앱이 상수 물음을 붙인 차례 ${ask.appAsked} | 1/3 을 넘으면 '물음이 없을 때만 상수 물음' 길로 바꿈(선생님이 맺은 wrap_up 차례는 세지 않음). 그 길을 켠 뒤(13절 C243 보완 9)에는 나간 글 기준이 붙인 물음을 넣은 값이고, 선생님이 제 말로 물었는지는 모델 원문 기준으로 읽는다 |`,
     `| (ㄴ) 정리 앞(앱의 마무리 차례 · wrap_up 차례) 작별 인사를 한 수업(설계 9) | ${frac(c.closing.farewellLessons, c.lessons)} | 16 가운데 4(1/4)를 넘으면 컨트롤러가 정리 끝인사를 정함 |`,
     `| 말없음에 답한 선생님 차례 뒤 아이가 말함 — SC(M-8) | ${silence("SC")} | 앞 값(두 갈래 합침)이 같은 시나리오의 R3 보다 낮으면 (라)에서 까닭을 예문으로(아래 표) |`,
     `| 말없음에 답한 선생님 차례 뒤 아이가 말함 — SD2(M-8) | ${silence("SD2")} | 같음 |`,
@@ -2528,7 +2587,7 @@ function chatCountRows(c: ChatCounts): string[] {
     `| {NAME} 을 쓴 선생님 차례(I-6) | ${c.nameTurns} | 기록 |`,
     `| 정리의 되짚을 말이 모두 카드 정리 대사였던 수업(M-1, 정리에 닿은 수업만) | ${frac(c.wrapCard.lessons, c.wrapCard.reached)} | 그 수업의 대화 화제와 함께(아래 목록 — 정리에 닿지 않은 수업도 표지와 함께 냄) |`,
     `| 맞게 들린 말에 알림이 붙은 차례 뒤 되묻거나 확인함(N-2, 기계 어림) | ${frac(c.alertedClean.reasked, c.alertedClean.turns)} | 넷 가운데 셋 이상이면 켜기 전에 문턱(talk.chat_unsure_confidence)을 다시 봄 — 기계 어림이라 목록을 사람이 읽어 고친다 |`,
-    `| 물음이 있어도 두 단추로 답할 수 없는 앱의 마무리 차례(m-6) | 후보 ${c.closingQuestions.length}(사람이 읽어 셈) | 아래 목록 |`,
+    `| 물음이 있어도 두 단추로 답할 수 없는 앱의 마무리 차례(m-6) | 후보 ${chatM6CandidatesOf(c).length}(사람이 읽어 셈) | 아래 목록 |`,
   ];
 }
 
@@ -2548,7 +2607,7 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
     "",
     "## 대본에서 셀 것(spec 설계 13 · AC-14 (가))",
     "",
-    ...chatCountRows(c),
+    ...chatCountRows(c, chatClosingAskOf(lessons)),
     "",
     "## 말 없음 뒤 아이가 말한 비율(방식 · 아이 역별 — 말없음에 답한 선생님 차례 뒤의 다음 아이 차례, 방식마다 같은 무리. CHAT 은 누르지 않음 · 들리지 않음을 합친 줄과 나눈 줄)",
     "",
@@ -2620,7 +2679,7 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
   );
   list(
     "두 단추로 답할 수 없는 물음인지 읽을 마무리 물음(m-6)",
-    c.closingQuestions.map(
+    chatM6CandidatesOf(c).map(
       (r) =>
         `- ${r.lesson} 아이 차례 ${r.childTurn}: ${r.questions.join(" / ")}`,
     ),
@@ -2796,10 +2855,12 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
     const safety = lr.find((r) => r.facts.includes("last_turn"));
     const sum = chatLongSummaryOf(lr, l.meta.chat?.costUsd ?? 0);
     const hard = hardFormCountsOf(l.teachers.filter((t) => t.childTurn > 0));
+    const ask = chatClosingAskOf([l], "long");
     out.push(
       `- ${l.name}: 아이 차례 ${l.meta.childTurns} · 끝 ${l.meta.ended ?? "아이 차례 상한"} · 덮은 설정 ${JSON.stringify(l.meta.chat?.overrides ?? {})} · 안전 상한 사실 줄 차례 ${safety ? `${safety.order}(아이 차례 ${safety.childTurn})` : "없음"} · 비용 ${l.meta.chat?.costUsd ?? "-"}달러`,
       `- AC-11 잣대: 아이 차례 ${AC11_EARLY_TURNS.join("~")} 의 첫 문장 시간 중앙값 ${num(sum.earlyMs, 0)}ms · ${AC11_LATE_TURNS.join("~")} ${num(sum.lateMs, 0)}ms · 차이 ${num(sum.diffMs, 0)}ms(잣대 ${AC11_DIFF_MS}ms) · 수업 비용 ${sum.costUsd}달러(잣대 ${AC11_COST_USD}달러): ${sum.over ? "넘음 — 켜기 전에 컨트롤러가 대화 기록 길이 상한을 정함" : "넘지 않음"}`,
       `- 어려운 꼴(기록 전용 · 기계 어림) 차례 ${hard.turns} · 문장 ${hard.sentences}(${HARD_FORMS.map((f) => `${f.label} ${hard.byForm[f.key]}`).join(" · ")}) — 긴 대본 밖 수업의 셈은 metrics.md (사-2)`,
+      `- (ㄱ) 셈(긴 대본 · 같은 함수): 앱의 마무리 차례 ${ask.turns} · 모델 원문 기준 물음 없음 ${frac(ask.rawNoQuestion, ask.turns)} · 앱이 상수 물음을 붙인 차례 ${ask.appAsked} — 바퀴마다 같은 물음이 되풀이되는지 읽는 값(판정은 judge-long 그대로)`,
       "",
       ...turnTable(lr),
       "",
@@ -2870,7 +2931,11 @@ async function main(): Promise<number> {
     writeFileSync(
       join(dir, "chat.json"),
       `${JSON.stringify(
-        { counts: chatCountsOf(all), turns: chatTurnRowsOf(all) },
+        {
+          counts: chatCountsOf(all),
+          closingAsk: chatClosingAskOf(all),
+          turns: chatTurnRowsOf(all),
+        },
         null,
         2,
       )}\n`,
