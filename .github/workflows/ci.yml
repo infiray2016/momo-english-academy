@@ -69,7 +69,7 @@ jobs:
   e2e: # P2b 가 켰다(가짜 음성 e2e, 다-2). Playwright 가 스스로 빌드하고 띄운다(playwright.config.ts webServer)
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45 # 최근 실측 21~27분(검토 I-2)
+    timeout-minutes: 70 # 실측 38.3분(2026-11-15, 228건) → 45분 제한에 끊김(11-16, 231건 · 160건까지 실패 0). 시험이 늘어 넉넉히(검토 I-2 의 21~27분은 옛 값)
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
