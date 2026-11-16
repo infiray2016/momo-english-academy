@@ -209,7 +209,11 @@ export async function run({ browserType, browserName, url, check, log }) {
       ]);
     if (spot.trigger === "nospeech") {
       extra.push([`턴 요청 한 번(말하기 ${pressed}번)`, r.childTurns === 1]);
-      extra.push(["회색 '못 들었어요' 말풍선", text.includes("못 들었어요")]);
+      // 같은 회색 글이 지금 시도 자리에도 뜨므로 기록 칸에 남았는지까지는 증명하지 않는다 — 판정 이름을 그만큼으로 둔다(검토 rev-g-spots-2 N-4)
+      extra.push([
+        "회색 '못 들었어요' 글이 화면에 있음",
+        text.includes("못 들었어요"),
+      ]);
     }
     const ok =
       opened &&
@@ -228,6 +232,12 @@ export async function run({ browserType, browserName, url, check, log }) {
     }
     await p.context().close();
   }
+  // 닿지 못한 자리가 있으면 이 판정 하나가 실패해 실행기 끝 줄 · 종료 코드에도 드러난다(자리별 통과 · 실패 셈은 그대로 — 검토 rev-g-spots-2 N-2)
+  check(
+    "모든 자리에 닿음",
+    count.unreached.length === 0,
+    count.unreached.join(", ") || "-",
+  );
   log(
     `자리 ${screens.length} · 통과 ${count.pass} · 실패 ${count.fail} · 닿지 못함 ${count.unreached.length}${count.unreached.length > 0 ? `(${count.unreached.join(", ")})` : ""}`,
   );

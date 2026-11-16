@@ -1003,11 +1003,15 @@ function viewOf(
   sr: SpotScriptRun,
   index: number,
   withTeacherSay = false,
+  spotId?: SpotId,
 ): SpotTurnView {
   const t = sr.run.turns[index] as ChatScenarioTurn;
   const calls = sr.turnCalls[index] ?? [];
   const dialog = calls.find((c) => c.kind === "dialog");
   const help = calls.find((c) => c.kind === "hint" || c.kind === "explain");
+  // 그 자리 표지가 붙은 호출을 먼저 보인다 — 힌트 · 설명 자리는 힌트 · 설명 호출의 요청 글 · 원문(검토 rev-g-spots-2 N-1)
+  const tagged =
+    spotId === undefined ? undefined : calls.find((c) => c.spot === spotId);
   const r = t.record;
   const user = dialog?.userMessage ?? help?.userMessage ?? "";
   const chat = moveChatOf(t);
@@ -1015,8 +1019,8 @@ function viewOf(
     script: sr.script.name,
     no: t.no,
     entry: t.entry,
-    userMessage: dialog?.userMessage ?? "",
-    raw: dialog?.raw ?? help?.raw ?? "",
+    userMessage: (tagged ?? dialog)?.userMessage ?? "",
+    raw: (tagged ?? dialog ?? help)?.raw ?? "",
     calls: calls.map((c) => ({ kind: c.kind, live: c.live, ok: c.ok })),
     shown: shownOf(t),
     lines: r?.lines ?? [],
@@ -1523,7 +1527,7 @@ export function spotsOf(
       call: found.call,
       liveCalls,
       turns: picks.map((p) =>
-        viewOf(p.run, p.index, found.teacherSay === true),
+        viewOf(p.run, p.index, found.teacherSay === true, id),
       ),
       conditions,
       reached: why.length === 0,

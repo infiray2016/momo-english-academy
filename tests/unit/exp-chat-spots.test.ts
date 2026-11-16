@@ -152,10 +152,13 @@ describe("G (나) 자리 재현 — 가짜 실행에서 열여섯 자리에 닿�
     expect(t?.userMessage).toBe(
       `Child (speech-to-text): "My name is ${NAME_SLOT}."`,
     );
+    // 대본별 호출 기록 전부(scripts)와 끝 절이 붙은 읽는 글도 덮는다(검토 rev-g-spots-2 N-3)
     const all = JSON.stringify({
       spots,
       screens: screensOf(spots, runs),
       md: spotsMarkdown(spots, false),
+      scripts: scriptLogsOf(runs),
+      mdLive: spotsMarkdown(spots, true, scriptLogsOf(runs)),
     });
     expect(all).not.toContain(SPOT_CHILD_NAME);
     expect(all).not.toContain(SAMPLE_NAMES.displayName);
@@ -467,6 +470,19 @@ describe("G (나) 자리 재현 — 실호출 길(두 번째 가짜 클라이언
     );
     expect(screen?.reached).toBe(false);
     expect(screen?.trigger).toBe("speech");
+  });
+
+  it("힌트 · 설명 자리의 차례는 그 자리 표지가 붙은 호출(실호출 힌트)의 사용자 메시지 · 원문을 보인다(검토 rev-g-spots-2 N-1)", () => {
+    const t = liveSpots.find((s) => s.id === "hint_no_question")?.turns[0];
+    const hintCall = scriptLogsOf(live)
+      .flatMap((l) => l.turns.flatMap((x) => x.calls))
+      .find((c) => c.spot === "hint_no_question");
+    expect(hintCall?.kind).toBe("hint");
+    expect(hintCall?.live).toBe(true);
+    expect(t?.raw).toContain("I drink milk.");
+    expect(t?.raw).toBe(hintCall?.raw);
+    expect(t?.userMessage).not.toBe("");
+    expect(t?.userMessage).toBe(hintCall?.userMessage);
   });
 
   it("힌트가 한 번 실패해 다시 받기를 해도 다음 자리의 표지를 먹지 않는다(검토 M-1)", async () => {
