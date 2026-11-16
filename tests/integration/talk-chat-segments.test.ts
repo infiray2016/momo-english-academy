@@ -244,12 +244,15 @@ async function openTurn(
   lead: "start" | "back" | "more",
 ): Promise<TalkLessonLine[]> {
   const lines: TalkLessonLine[] = [];
-  await runTalkTurnRequest({ sessionId, lead }, {
-    ...h.deps(),
-    write: (line: TalkLessonLine) => lines.push(line),
-    requestReceivedAt: h.clock.now,
-    chatTopic: chatTopicOfL3U1,
-  } as Parameters<typeof runTalkTurnRequest>[1]);
+  await runTalkTurnRequest(
+    { sessionId, lead },
+    {
+      ...h.deps(),
+      write: (line: TalkLessonLine) => lines.push(line),
+      requestReceivedAt: h.clock.now,
+      chatTopic: chatTopicOfL3U1,
+    },
+  );
   return lines;
 }
 

@@ -42,28 +42,20 @@ import {
   applyTalkChatChecks,
   CHAT_QUESTION_MAX,
   CHAT_SENTENCE_MAX,
-  type ChatSayChange,
-  TALK_CHAT_OUTPUT_FIELDS,
   type TalkChatInput,
   type TalkChatOutput,
   talkChatAssistantOf,
   talkChatCheckFields,
-  talkChatMessages,
   talkChatTopicOf,
   talkChatTurnSpec,
 } from "../src/core/ai/calls/talk-chat";
 import {
-  type ChatEvalEntry,
   TALK_CHAT_EVAL_SYSTEM,
   type TalkChatEvalInput,
   type TalkChatEvalOutput,
-  talkChatEvalInputOf,
   talkChatEvalSpec,
 } from "../src/core/ai/calls/talk-chat-eval";
 import {
-  type ChatHintChildInput,
-  type ChatHintContextEntry,
-  type ChatHintTierKind,
   type TalkChatHintInput,
   talkChatHintSpec,
   talkChatHintSystem,
@@ -144,17 +136,12 @@ import {
   type ChatEvalState,
   type ChatJudge,
   type ChatJudgeContext,
-  type ChatJudgeInputKind,
-  type ChatJudgeRow,
-  chatJudgeChangesOf,
   chatJudgesOf,
-  readChatJudge,
 } from "../src/core/conversation/chat-judge";
 import {
   type ChatInput,
   type ChatRecognizer,
   chatClockOf,
-  chatInputLineOf,
   chatRecognizerSchemaOf,
 } from "../src/core/conversation/chat-message";
 import {
@@ -166,15 +153,33 @@ import {
 import type { ChatReplyCheck } from "../src/core/conversation/chat-reply";
 import { chatWrapSourcesOf } from "../src/core/conversation/chat-reply";
 import {
+  chatDialogRowsOf,
+  chatEvalFailureOf,
+  chatEvalInputFor,
+  chatEvalPendingOf,
+  chatEvalWritesOf,
+  chatHintInputOf,
+  chatJudgeRowsOf,
+  chatLessonSayLostOf,
+  levelCallSpecOf,
+  levelInputOf,
+} from "../src/core/conversation/chat-rows";
+import {
   type ChatSegmentCore,
   chatStepOf,
   lessonAdvanceChatOf,
 } from "../src/core/conversation/chat-segments";
+import { lessonStartModeOf } from "../src/core/conversation/chat-start";
+import {
+  chatListenCheckedOf,
+  chatSayChangesOf,
+  TALK_CHAT_READER_KEYS,
+  talkChatSentUserMessageOf,
+} from "../src/core/conversation/chat-stream-check";
 import {
   type ChatEndSignal,
   type ChatTurnEnd,
   chatEvalAfterTeacherOf,
-  chatEvalDueOf,
   chatEvalOnCloseOf,
   chatFlowRowsOf,
 } from "../src/core/conversation/chat-turn-core";
@@ -238,12 +243,10 @@ import {
 } from "../src/core/conversation/lead-level";
 import { leadKoLineOf } from "../src/core/conversation/lead-low-band";
 import {
-  chatStartAllowed,
   isChatSession,
   isLeadSession,
   leadModeStartField,
   TALK_LEAD_MODE_KEY,
-  type TalkLeadMode,
   talkLeadModeOf,
 } from "../src/core/conversation/lead-mode";
 import {
@@ -287,7 +290,6 @@ import {
   leadOpenChildOf,
   leadSaidOf,
   leadSettleOf,
-  leadStartModeOf,
   leadStatusOf,
   leadTurnAppliesOf,
   leadTurnLinesOf,
@@ -422,7 +424,6 @@ import {
   tokenize,
 } from "../src/core/seed/text";
 import { lemmaLookup } from "../src/core/session/attempt";
-import { chatMaterialOf } from "../src/core/teacher/roster";
 import {
   SAMPLE_CONTACT_PATTERNS,
   SAMPLE_NAMES,
@@ -2888,19 +2889,14 @@ export function judgeOf({
   ) as Record<JudgeKey, JudgeCell>;
 }
 
-// ── 이야기 방식 서버 배선 사본(이야기 방식 묶음 T1 — 회화 대화 구조 R plan 'T1', NFR-4 · AC-18) ─────────────────────────────
-// 이야기 방식의 판단(요청 조립 · 사실 줄 · 응답 처리 · 소리 줄 · 기록 도출 · 두 판정)은 모두 core 함수를 그대로 부른다(아래 createTalkSim 의 chat 길).
-// 여기 둔 것은 그 core 함수를 잇는 서버 배선 가운데 server-only 파일에 있어 이 도구가 가져올 수 없는 것의 사본이다(판단을 새로 쓰지 않고 원본 몸을
-// 그대로 옮김). 원본과 같은 답을 내는지는 tests/unit/talk-observe-parity.test.ts 'AC-27r 서버 배선 사본이 서버 export 와 같다' 가 서버 export 와
-// 맞대어 본다. 원본 자리: src/server/conversation/index.ts lessonStartModeOf · src/server/ai/talk.ts TALK_CHAT_READER_KEYS · chatListenCheckedOf ·
-// chatSayChangesOf · chatOutcomeOf · talkChatSentUserMessageOf · src/server/conversation/chat-hint.ts chatDialogRowsOf · chatSayFromRowOf ·
-// chatSaidSayLostOf · chatSaidSayOf · chatChildInputOf · chatHintInputOf · levelCallSpecOf · levelInputOf · src/server/conversation/chat-eval.ts
-// chatEvalEntriesOf · chatEvalInputFor · chatEvalStateOf · chatEvalPendingOf · chatLessonSayLostOf · chatEvalFailureOf · chatJudgeRowsOf ·
-// chatEvalWritesOf. 모두 DB 없는 순수 함수라 core 로 옮기면 사본이 없어진다(보고 task-chat-t1-report.md '서버와 같은 함수를 부르지 못한 자리').
+// ── 이야기 방식 서버 배선(이야기 방식 묶음 T1 — 회화 대화 구조 R plan 'T1', NFR-4 · AC-18) ─────────────────────────────
+// 이야기 방식의 판단과 그 판단을 잇는 서버 배선(처음 스냅숏 방식 · 흘려 받는 칸 이름 · 따라 할 문장 6.4 · 문장 문 짝 · 보낸 메시지 · 수업 행 읽기 ·
+// 힌트 입력 · 평가 입력 · 판정 행 · 평가 쓰기)은 모두 서버와 같은 core 함수를 부른다(core chat-start.ts · chat-stream-check.ts · chat-rows.ts —
+// 13절 C243 보완 10 (1) 로 server-only 파일에서 옮겨 이 파일의 사본을 지웠다. 옮기기 전 판과 같음은 tests/unit/chat-core-move-baseline.test.ts).
 
 /**
  * 이야기 방식 수업의 행(서버 talk_turns 행에서 서버 함수가 읽는 칸 — TalkTurnRow · chat-hint ChatTurnRowLike 와 같은 이름 · 꼴). 대본 도구의 행
- * (SimRow)을 이 꼴로 옮겨 서버 배선 사본 · core 함수에 넘긴다. id 는 '말한 쪽-차례 번호'다.
+ * (SimRow)을 이 꼴로 옮겨 core 함수(chat-rows · chat-start · chat-stream-check)에 넘긴다. id 는 '말한 쪽-차례 번호'다.
  */
 export type ChatSimRow = {
   id: string;
@@ -2923,384 +2919,6 @@ export type ChatSimRow = {
   askAgain: boolean | null;
   overLength: boolean | null;
 };
-
-/**
- * 처음 스냅숏에 적을 회화 방식(서버 index.ts lessonStartModeOf 사본): 설정이 chat 이면 넷(설정 · 1~3단계 구간 · 단원 재료 · 고른 선생님의 이야기 방식
- * 재료)이 모두 설 때만 chat, 하나라도 빠지면 app 이다. 설정이 app · claude 면 지금 판단(core leadStartModeOf) 그대로다.
- */
-export function observeChatStartModeOf({
-  mode,
-  level,
-  unit,
-  teacher,
-}: {
-  mode: TalkLeadMode;
-  level: number;
-  unit: number;
-  teacher: { chatPersonaEn?: string; chatFavoritesEn?: string } | null;
-}): TalkLeadMode {
-  if (mode !== "chat") return leadStartModeOf({ mode, level, unit });
-  return chatStartAllowed({
-    setting: true,
-    lowBand: isChatSession({ start: { leadMode: "chat" }, level }),
-    unitMaterial:
-      (talkLeadTextOf(level, unit)?.chatTopicEn?.trim() ?? "") !== "",
-    teacherMaterial: teacher !== null && chatMaterialOf(teacher) !== null,
-  })
-    ? "chat"
-    : "app";
-}
-
-/** 이야기 방식의 흘려 받는 칸 이름(서버 talk.ts TALK_CHAT_READER_KEYS 사본 — 말 칸 say 와 그 앞의 글 칸 listen_sentence). */
-const OBSERVE_CHAT_READER_KEYS: ToriEnReaderKeys = {
-  sayKey: "say",
-  heads: TALK_CHAT_OUTPUT_FIELDS.slice(
-    0,
-    TALK_CHAT_OUTPUT_FIELDS.indexOf("say"),
-  ).map((key) => ({ key, kind: "string" as const })),
-  requireHeads: true,
-};
-
-/** 따라 할 문장의 6.4 출력 검사(서버 talk.ts chatListenCheckedOf 사본): 걸리면 빈 글이다. */
-export function observeChatListenCheckedOf(
-  listen: string,
-  forbidden: z.infer<typeof ForbiddenFileSchema>,
-  sentenceMaxWords: number,
-): string {
-  if (listen === "") return "";
-  const fields = talkChatCheckFields({
-    say_ko: "",
-    listen_sentence: listen,
-  }).filter((field) => field.path === "listen_sentence");
-  const hits = checkOutputFields(fields, { forbidden, sentenceMaxWords });
-  return hits.has("listen_sentence") ? "" : listen;
-}
-
-/** 문장 문이 바꾸거나 지운 문장의 짝(서버 talk.ts chatSayChangesOf 사본). */
-export function observeChatSayChangesOf(
-  say: string,
-  options: {
-    forbidden: z.infer<typeof ForbiddenFileSchema>;
-    metaPhrases: readonly string[];
-    safeLine: string;
-    sentenceMaxWords: number;
-  },
-): { changes: ChatSayChange[]; sent: string[] } {
-  const gate = createToriSentenceGate(options);
-  const changes: ChatSayChange[] = [];
-  for (const sentence of splitSentences(say)) {
-    const out = gate.accept(sentence);
-    if (out !== sentence) changes.push({ from: sentence, to: out ?? "" });
-  }
-  return { changes, sent: gate.sent() };
-}
-
-/**
- * 저장할 sent_user_message(서버 talk.ts talkChatSentUserMessageOf 사본 — 요청 본문의 마지막 사용자 메시지 글, 규격의 가림을 지난 입력으로 만든 글). 가림은
- * 이 도구의 가림(시험용 이름 · 연락처 꼴)이다.
- */
-export function observeChatSentUserMessageOf(input: TalkChatInput): string {
-  return (
-    talkChatMessages(talkChatTurnSpec.mask(input, masker)).at(-1)?.content ?? ""
-  );
-}
-
-/** 서버 chat-hint.ts CHAT_DIALOG_SEGMENTS 사본(대화 호출이 도는 토막). */
-const OBSERVE_CHAT_DIALOG_SEGMENTS: readonly string[] = [
-  "greeting",
-  "talk",
-  "more_talk",
-];
-
-/** 대화 토막의 행만, 대화 차례로(서버 chat-hint.ts chatDialogRowsOf 사본). */
-function observeChatDialogRowsOf<R extends ChatSimRow>(
-  rows: readonly R[],
-): R[] {
-  return leadConversationOrder(
-    rows.filter((row) => OBSERVE_CHAT_DIALOG_SEGMENTS.includes(row.segment)),
-  );
-}
-
-/** 닫힌 뒤에도 남는 칸만으로 다시 세운 선생님 말(서버 chat-hint.ts chatSayFromRowOf 사본). */
-function observeChatSayFromRowOf(
-  row: Pick<ChatSimRow, "text" | "move">,
-): string {
-  const shown = ((row.text ?? "").split("\n")[0] ?? "").trim();
-  const move = readTalkMove(row.move ?? null);
-  const removed = move?.chat?.removed ?? move?.lead?.removed ?? [];
-  return [shown, ...removed]
-    .map((part) => part.trim())
-    .filter((part) => part !== "")
-    .join(" ");
-}
-
-/** 원문이 지워져 나간 말을 다시 세울 수 없는 선생님 행인가(서버 chat-hint.ts chatSaidSayLostOf 사본). */
-export function observeChatSaidSayLostOf(
-  row: Pick<ChatSimRow, "toriRewrite" | "move">,
-): boolean {
-  if (row.toriRewrite !== null) return false;
-  const move = readTalkMove(row.move ?? null);
-  const { chat, lead } = move ?? {};
-  return (
-    chat?.removed?.length === 0 ||
-    chat?.listen?.sentence === "" ||
-    lead?.removed?.length === 0 ||
-    lead?.model?.sentence === ""
-  );
-}
-
-/** 선생님 행의 나간 say 전체(서버 chat-hint.ts chatSaidSayOf 사본). */
-function observeChatSaidSayOf(
-  row: Pick<ChatSimRow, "toriRewrite" | "text" | "move">,
-): string {
-  if (row.toriRewrite !== null) {
-    try {
-      const parsed: unknown = JSON.parse(row.toriRewrite);
-      const say = (parsed as { say?: unknown } | null)?.say;
-      if (typeof say === "string") return say;
-    } catch {
-      // 아래 다시 세운 글로
-    }
-  }
-  return observeChatSayFromRowOf(row);
-}
-
-/** 아이 행의 입력 갈래(서버 chat-hint.ts chatChildInputOf 사본). */
-function observeChatChildInputOf(
-  row: Pick<ChatSimRow, "inputMode" | "clientListen" | "text">,
-): ChatHintChildInput {
-  if (row.inputMode === "quiet") return { kind: "quiet" };
-  if (row.inputMode === "dont_know") {
-    const src = (row.clientListen as { src?: unknown } | null | undefined)?.src;
-    return src === "nospeech" ? { kind: "not_heard" } : { kind: "dont_know" };
-  }
-  const heard = (row.text ?? "").trim();
-  return heard === "" ? { kind: "not_heard" } : { kind: "speech", heard };
-}
-
-/** 힌트 호출 입력(서버 chat-hint.ts chatHintInputOf 사본). 그 선생님 행이 대화 토막에 없으면 null. */
-export function observeChatHintInputOf({
-  rows,
-  teacherRowId,
-  level,
-  sentenceMaxWords,
-  hintTiers,
-  teacherNameEn,
-}: {
-  rows: readonly ChatSimRow[];
-  teacherRowId: string;
-  level: number;
-  sentenceMaxWords: number;
-  hintTiers: readonly ChatHintTierKind[];
-  teacherNameEn: string;
-}): TalkChatHintInput | null {
-  const dialog = observeChatDialogRowsOf(rows);
-  const at = dialog.findIndex(
-    (row) => row.id === teacherRowId && row.speaker === "tori",
-  );
-  const teacher = dialog[at];
-  if (teacher === undefined) return null;
-  const context: ChatHintContextEntry[] = dialog
-    .slice(0, at)
-    .map((row) =>
-      row.speaker === "tori"
-        ? { speaker: "teacher", say: observeChatSaidSayOf(row) }
-        : { speaker: "child", input: observeChatChildInputOf(row) },
-    );
-  return {
-    level,
-    sentenceMaxWords,
-    hintTiers: [...hintTiers],
-    teacherNameEn,
-    say: observeChatSaidSayOf(teacher),
-    context,
-  };
-}
-
-/** 단계 맥락 칸을 덧댄 규격(서버 chat-hint.ts levelCallSpecOf 사본 — runAiCall 의 입력 꼴). */
-function observeLevelCallSpecOf<I, O, R>(
-  spec: CallSpec<I, O, R>,
-): CallSpec<I & LevelContext, O, R> {
-  return {
-    ...spec,
-    mask: (input, mask) => ({ ...input, ...spec.mask(input, mask) }),
-  };
-}
-
-/** 입력에 단계 맥락 칸을 덧댄다(서버 chat-hint.ts levelInputOf 사본). */
-function observeLevelInputOf<I extends object>(
-  input: I,
-  { level, sentenceMaxWords }: { level: number; sentenceMaxWords: number },
-): I & LevelContext {
-  return {
-    canDo: "",
-    learningElement: "",
-    prevLearningElements: [],
-    unitWords: [],
-    ...input,
-    level,
-    sentenceMaxWords,
-  } as I & LevelContext;
-}
-
-/** 대화 토막의 행 → 평가 호출의 기록 꼴(서버 chat-eval.ts chatEvalEntriesOf 사본). */
-function observeChatEvalEntriesOf(rows: readonly ChatSimRow[]): {
-  entries: ChatEvalEntry[];
-  childAt: Map<string, number>;
-} {
-  const entries: ChatEvalEntry[] = [];
-  const childAt = new Map<string, number>();
-  for (const row of rows) {
-    if (row.speaker === "child") {
-      childAt.set(row.id, entries.length);
-      entries.push({
-        speaker: "child",
-        message:
-          row.sentUserMessage ?? chatInputLineOf(observeChatChildInputOf(row)),
-      });
-      continue;
-    }
-    if (row.sentUserMessage !== null)
-      entries.push({ speaker: "child", message: row.sentUserMessage });
-    entries.push({ speaker: "teacher", say: observeChatSaidSayOf(row) });
-  }
-  return { entries, childAt };
-}
-
-/** 아이 행 하나의 평가 입력(서버 chat-eval.ts chatEvalInputFor 사본). 대화 토막의 아이 행이 아니면 null. */
-export function observeChatEvalInputOf({
-  rows,
-  childRowId,
-  contextTurns,
-  unitWords,
-}: {
-  rows: readonly ChatSimRow[];
-  childRowId: string;
-  contextTurns: number;
-  unitWords: readonly string[];
-}): TalkChatEvalInput | null {
-  const { entries, childAt } = observeChatEvalEntriesOf(
-    observeChatDialogRowsOf(rows),
-  );
-  const at = childAt.get(childRowId);
-  if (at === undefined) return null;
-  return talkChatEvalInputOf({ entries, at, contextTurns, unitWords });
-}
-
-/** 아이 행의 평가 상태(서버 chat-eval.ts chatEvalStateOf 사본). */
-export function observeChatEvalStateOf(
-  row: Pick<ChatSimRow, "chatJudge" | "inputMode" | "clientListen" | "text">,
-): ChatEvalState {
-  const judge = readChatJudge(row.chatJudge);
-  if (judge !== null) {
-    const { status, output, failure } = judge.legacy;
-    if (status === "failed")
-      return failure === undefined ? { status } : { status, failure };
-    if (status !== "done") return { status };
-    return output === null ? { status: "failed" } : { status: "done", output };
-  }
-  return chatEvalDueOf(observeChatChildInputOf(row))
-    ? { status: "waiting" }
-    : { status: "not_called" };
-}
-
-/** 아직 평가 값을 기다리는 아이 행인가(서버 chat-eval.ts chatEvalPendingOf 사본). */
-function observeChatEvalPendingOf(row: ChatSimRow): boolean {
-  return (
-    row.speaker === "child" && observeChatEvalStateOf(row).status === "waiting"
-  );
-}
-
-/** 원문이 지워진 수업인가(서버 chat-eval.ts chatLessonSayLostOf 사본). */
-function observeChatLessonSayLostOf(rows: readonly ChatSimRow[]): boolean {
-  return observeChatDialogRowsOf(rows).some(
-    (row) => row.speaker === "tori" && observeChatSaidSayLostOf(row),
-  );
-}
-
-/** AI 호출 실패 갈래 → 판정 없음의 까닭(서버 chat-eval.ts chatEvalFailureOf 사본 — 도구의 실패 갈래 이름으로 받는다). */
-export function observeChatEvalFailureOf(reason: string): ChatEvalFailure {
-  if (reason === "timeout") return "timeout";
-  if (reason === "invalid" || reason === "output_blocked") return "invalid";
-  return "other";
-}
-
-/** 판정 함수에 넘기는 행(서버 chat-eval.ts chatJudgeRowsOf 사본). */
-export function observeChatJudgeRowsOf(
-  rows: readonly ChatSimRow[],
-  spec: ChatJudgeContext["spec"],
-  override?: { id: string; state: ChatEvalState },
-): { rows: ChatJudgeRow[]; ids: string[]; stored: Map<number, unknown> } {
-  const dialog = observeChatDialogRowsOf(rows);
-  const out: ChatJudgeRow[] = [];
-  const ids: string[] = [];
-  const stored = new Map<number, unknown>();
-  let prevTeacher: ChatSimRow | null = null;
-  for (const row of dialog) {
-    ids.push(row.id);
-    if (row.speaker === "tori") {
-      const move = readTalkMove(row.move);
-      const listen = move?.chat?.listen;
-      out.push({
-        role: "teacher",
-        say: observeChatSayFromRowOf(row),
-        listenSentence: listen?.inSay === true ? listen.sentence : null,
-        explainShown: move?.chat?.explain === true,
-        closing: move?.kind === "closing_slot",
-        first: move?.kind === "first_question",
-      });
-      prevTeacher = row;
-      continue;
-    }
-    const input: ChatJudgeInputKind = observeChatChildInputOf(row).kind;
-    const tiers =
-      prevTeacher === null
-        ? []
-        : (chatHintRecordOfRow(prevTeacher.aiQuestion, spec)?.tiers ?? []);
-    stored.set(out.length, row.chatJudge);
-    out.push({
-      role: "child",
-      input,
-      heard: input === "speech" ? (row.text ?? "").trim() : "",
-      opened: tiers.slice(0, row.hintLevel ?? 0).map((tier) => tier.kind),
-      koHelp: null,
-      eval:
-        override !== undefined && override.id === row.id
-          ? override.state
-          : observeChatEvalStateOf(row),
-    });
-  }
-  return { rows: out, ids, stored };
-}
-
-/** 새 평가 값의 쓰기(서버 chat-eval.ts chatEvalWritesOf 사본). 그 행이 기다림이 아니면 null(두 번 쓰지 않음). */
-export function observeChatEvalWritesOf({
-  rows,
-  childRowId,
-  state,
-  ctx,
-}: {
-  rows: readonly ChatSimRow[];
-  childRowId: string;
-  state: ChatEvalState;
-  ctx: ChatJudgeContext;
-}): { id: string; judge: ChatJudge }[] | null {
-  const target = rows.find(
-    (row) => row.id === childRowId && row.speaker === "child",
-  );
-  if (target === undefined || !observeChatEvalPendingOf(target)) return null;
-  if (observeChatLessonSayLostOf(rows)) return null;
-  const judged = observeChatJudgeRowsOf(rows, ctx.spec, {
-    id: childRowId,
-    state,
-  });
-  if (!judged.ids.includes(childRowId)) return null;
-  return chatJudgeChangesOf({
-    rows: judged.rows,
-    stored: judged.stored,
-    ctx,
-  }).map(({ row, judge }) => ({ id: judged.ids[row] ?? "", judge }));
-}
 
 /** 메모리 대화의 이어받을 상태(자리 재현 — snapshot 이 내고 createTalkSim 의 seed 가 받는다). */
 export type SimSeed = {
@@ -3770,7 +3388,7 @@ export function createTalkSim(
   // 설정이 chat 이면 서버 index.ts lessonStartModeOf 와 같은 조건 넷(설정 · 1~3단계 · 단원 재료 · 선생님 재료)으로 chat · app 을 고른다(묶음 T1 —
   // app · claude 는 위 판단 그대로)
   const start = leadModeStartField(
-    observeChatStartModeOf({
+    lessonStartModeOf({
       mode: talkLeadModeOf(values[TALK_LEAD_MODE_KEY]),
       level,
       unit: materials.unit,
@@ -5288,9 +4906,9 @@ export function createTalkSim(
     const askHold = (heads: Readonly<Record<string, unknown>>) => {
       if (asked) return;
       asked = true;
-      const raw = heads[OBSERVE_CHAT_READER_KEYS.heads[0]?.key ?? ""];
+      const raw = heads[TALK_CHAT_READER_KEYS.heads[0]?.key ?? ""];
       flow.listen(
-        observeChatListenCheckedOf(
+        chatListenCheckedOf(
           typeof raw === "string" ? raw : "",
           forbidden,
           sentenceMaxWords,
@@ -5301,7 +4919,7 @@ export function createTalkSim(
       .filter((b) => b.type === "text")
       .map((b) => b.text ?? "")
       .join("");
-    const reader = createToriEnReader(OBSERVE_CHAT_READER_KEYS);
+    const reader = createToriEnReader(TALK_CHAT_READER_KEYS);
     const fresh = reader.push(text);
     if (reader.sayStarted()) askHold(reader.heads());
     for (const sentence of fresh) emit(sentence);
@@ -5333,7 +4951,7 @@ export function createTalkSim(
     // 끝(서버 finishTalk): 앞 칸을 흘려 읽지 못했으면 응답 전체의 앞 칸으로 묻고, 남은 문장 · 흘리지 못한 말 칸을 낸다
     const heads: Record<string, unknown> = {};
     if (prepared !== null && typeof prepared === "object")
-      for (const { key } of OBSERVE_CHAT_READER_KEYS.heads) {
+      for (const { key } of TALK_CHAT_READER_KEYS.heads) {
         const v = (prepared as Record<string, unknown>)[key];
         if (typeof v === "string" || typeof v === "boolean") heads[key] = v;
       }
@@ -5373,7 +4991,7 @@ export function createTalkSim(
     });
     const checked = applyTalkChatChecks(shown, hits);
     // 서버 chatOutcomeOf: 문장 문 짝 · 6.4 가 비운 따라 할 문장 · 대화 기록 글
-    const replay = observeChatSayChangesOf(value.say, {
+    const replay = chatSayChangesOf(value.say, {
       forbidden,
       metaPhrases: materials.metaPhrases,
       safeLine: p.safeLine,
@@ -5651,7 +5269,7 @@ export function createTalkSim(
           teacherTurnNo,
           segment: (child?.segment ?? segment) as TalkTurnSegment,
           chatInput,
-          userMessage: observeChatSentUserMessageOf(chatInput),
+          userMessage: talkChatSentUserMessageOf(chatInput, masker),
           request: chatRequestOf(
             talkChatTurnSpec,
             chatInput,
@@ -5757,7 +5375,7 @@ export function createTalkSim(
         });
         childRow = { ...child, ...fields };
         // 첫 판정 기록(서버 saveChatTurn — 서버 chatJudgeRowsOf 사본 + core chatJudgesOf, 그 행에만)
-        const judged = observeChatJudgeRowsOf(
+        const judged = chatJudgeRowsOf(
           [
             ...live.filter((r) => r.id !== child.id),
             childRow,
@@ -5848,7 +5466,7 @@ export function createTalkSim(
       if (!chatOn || teacher === undefined) return { kind: "none" };
       const live = chatRowsNow();
       const teacherRowId = chatRowOf(teacher).id;
-      const input = observeChatHintInputOf({
+      const input = chatHintInputOf({
         rows: live,
         teacherRowId,
         level,
@@ -5866,8 +5484,8 @@ export function createTalkSim(
       const n = explain ? 0 : retry;
       if (n > chatSettings.hintRetryMax)
         return { kind: "failed", reason: "retry_max" };
-      const spec_ = observeLevelCallSpecOf(talkChatHintSpec);
-      const leveled = observeLevelInputOf(input, {
+      const spec_ = levelCallSpecOf(talkChatHintSpec);
+      const leveled = levelInputOf(input, {
         level,
         sentenceMaxWords: materials.ctx.sentenceMaxWords,
       });
@@ -5886,8 +5504,8 @@ export function createTalkSim(
     },
     hintFinish(ask, result) {
       const read = chatCallValueOf(
-        observeLevelCallSpecOf(talkChatHintSpec),
-        observeLevelInputOf(ask.input, {
+        levelCallSpecOf(talkChatHintSpec),
+        levelInputOf(ask.input, {
           level,
           sentenceMaxWords: materials.ctx.sentenceMaxWords,
         }),
@@ -5916,25 +5534,22 @@ export function createTalkSim(
     },
     evalDue() {
       if (!chatOn) return null;
-      const due = chatEvalAfterTeacherOf(
-        observeChatDialogRowsOf(chatRowsNow()),
-      );
-      return due !== null && observeChatEvalPendingOf(due) ? due.id : null;
+      const due = chatEvalAfterTeacherOf(chatDialogRowsOf(chatRowsNow()));
+      return due !== null && chatEvalPendingOf(due) ? due.id : null;
     },
     evalAsk(childRowId) {
       const live = chatRowsNow();
       const target = live.find((r) => r.id === childRowId);
-      if (target === undefined || !observeChatEvalPendingOf(target))
-        return null;
-      if (observeChatLessonSayLostOf(live)) return null;
-      const input = observeChatEvalInputOf({
+      if (target === undefined || !chatEvalPendingOf(target)) return null;
+      if (chatLessonSayLostOf(live)) return null;
+      const input = chatEvalInputFor({
         rows: live,
         childRowId,
         contextTurns: chatSettings.evalContextTurns,
         unitWords: materials.ctx.unitWords,
       });
       if (input === null) return null;
-      const leveled = observeLevelInputOf(input, {
+      const leveled = levelInputOf(input, {
         level,
         sentenceMaxWords: materials.ctx.sentenceMaxWords,
       });
@@ -5942,7 +5557,7 @@ export function createTalkSim(
         childRowId,
         input,
         request: chatRequestOf(
-          observeLevelCallSpecOf(talkChatEvalSpec),
+          levelCallSpecOf(talkChatEvalSpec),
           leveled,
           talkChatEvalSpec.rulesOf(values, leveled),
         ),
@@ -5950,8 +5565,8 @@ export function createTalkSim(
     },
     evalFinish(ask, result) {
       const read = chatCallValueOf(
-        observeLevelCallSpecOf(talkChatEvalSpec),
-        observeLevelInputOf(ask.input, {
+        levelCallSpecOf(talkChatEvalSpec),
+        levelInputOf(ask.input, {
           level,
           sentenceMaxWords: materials.ctx.sentenceMaxWords,
         }),
@@ -5960,9 +5575,9 @@ export function createTalkSim(
       );
       const state: ChatEvalState = read.ok
         ? { status: "done", output: read.value }
-        : { status: "failed", failure: observeChatEvalFailureOf(read.reason) };
+        : { status: "failed", failure: chatEvalFailureOf(read.reason) };
       // 늦게 온 값의 쓰기(서버 writeChatEval — 그 값에 기대는 뒤 행까지 다시 센 판정을 한꺼번에)
-      const writes = observeChatEvalWritesOf({
+      const writes = chatEvalWritesOf({
         rows: chatRowsNow(),
         childRowId: ask.childRowId,
         state,
@@ -5981,8 +5596,8 @@ export function createTalkSim(
     closeEvalIds() {
       if (!chatOn) return [];
       return chatEvalOnCloseOf(
-        observeChatDialogRowsOf(chatRowsNow()),
-        observeChatEvalPendingOf,
+        chatDialogRowsOf(chatRowsNow()),
+        chatEvalPendingOf,
       ).map((r) => r.id);
     },
     close() {
@@ -8067,7 +7682,7 @@ export async function runTalkObserve(
             streamTurn(
               client,
               request,
-              kind === "dialog" ? OBSERVE_CHAT_READER_KEYS : undefined,
+              kind === "dialog" ? TALK_CHAT_READER_KEYS : undefined,
             ),
           evalOn: args.chatEval !== false,
           stopOn: (result) => {

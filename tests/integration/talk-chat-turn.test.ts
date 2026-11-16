@@ -147,7 +147,7 @@ async function turn(body: Record<string, unknown>): Promise<TalkLessonLine[]> {
     ...h.deps(),
     write: (line) => lines.push(line),
     chatTopic: () => TOPIC,
-  } as Parameters<typeof runTalkTurnRequest>[1]);
+  });
   return lines;
 }
 

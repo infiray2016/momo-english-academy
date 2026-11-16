@@ -54,6 +54,12 @@ export const PAGES = {
     },
   },
 };
+// 자리 재현 화면(회화 대화 구조 R G (나), 장면 chat-spots): talk-chat 쪽과 같은 대역 표를 함께 가리킨다(둘이 갈라지지 않게)
+PAGES["talk-chat-spots"] = {
+  dir: join(HERE, "pages", "talk-chat-spots"),
+  tailwind: true,
+  stubs: PAGES["talk-chat"].stubs,
+};
 
 /** 워크트리의 node_modules 에서 @tailwindcss/node · @tailwindcss/oxide 를 찾는다(@tailwindcss/turbopack 이 가진 것 — 새 의존을 더하지 않는다). */
 function loadTailwind() {

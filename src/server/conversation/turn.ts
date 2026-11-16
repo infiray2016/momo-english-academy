@@ -27,7 +27,12 @@ import { readHouseholdProfile } from "@/server/profile";
 import { getOutputCheckLists } from "@/server/seed-lists";
 import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
-import { chatSessionOf, lessonChatTurn, runChatOpenTurn } from "./chat-turn";
+import {
+  type ChatTurnDeps,
+  chatSessionOf,
+  lessonChatTurn,
+  runChatOpenTurn,
+} from "./chat-turn";
 import { CLIENT_ATTEMPT_ID_MAX, TALK_TEXT_MAX } from "./index";
 import { leadTurnAfterChild, runLeadOpenTurn } from "./lead-turn";
 import { runTalkLessonTurn, type TalkLessonLine } from "./lesson-turn";
@@ -100,6 +105,11 @@ export function parseTalkTurnRequest(raw: unknown): ParsedTurnRequest | null {
 }
 
 export type TurnDeps = TalkServerDeps & {
+  /**
+   * 이야기 방식 단원 주제 출처(chat-turn ChatTurnDeps.chatTopic 과 같은 선택 칸 — 기본 talkChatTopicOf. 시험이 이야기 방식 재료가 없는 시험 시드
+   * 단원으로 이 길을 돌리게 바꾼다, 운영에서는 넘기지 않음. 13절 C243 보완 10 (1) — 시험의 형 변환을 뺀다).
+   */
+  chatTopic?: ChatTurnDeps["chatTopic"];
   /** 줄 하나를 브라우저로(Route Handler — 던지지 않는다). */
   write: (line: TalkLessonLine) => void;
   /** 서버가 요청을 받은 때(첫 문장 시간의 시작, 6.1). */

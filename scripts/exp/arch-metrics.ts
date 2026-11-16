@@ -2017,18 +2017,53 @@ export type ViewLesson = {
   }[];
 };
 
+/** 말없음 차례의 글(아홉 관점 사례 칸 · 가린 기록이 함께 쓴다 — 13절 C243 보완 10 (3), 장부 T-581). 갈래를 모르는 말없음은 SILENT_LABEL. */
+export const SILENT_LABEL = "(말 없음)";
+/** 말하기 단추를 누르지 않음(이야기 방식의 조용함 입구). */
+export const SILENT_QUIET_LABEL = "(말 없음 — 누르지 않음)";
+/** 단추를 눌렀으나 앱이 말을 듣지 못함. */
+export const SILENT_NOSPEECH_LABEL = "(말 없음 — 눌렀으나 들리지 않음)";
+
+/**
+ * 앱이 '들리지 않음'(눌렀으나 들리지 않음)으로 받은 말없음의 방식: 아이 역의 말없음을 선생님 쪽에 nospeech 입력(대본 도구 차례 · 새 엔진 턴의
+ * notHeard)으로 넘기는 방식이다(arch-compare teacherA · teacherB · teacherN). C · C2 · P · Q 무리(R3 등)는 '아무 말도 안 함' 한 줄로만 넘겨 갈래가 없다.
+ */
+export const NOSPEECH_SILENT_ARMS: readonly Arm[] = ["A", "B", "N"];
+
+/**
+ * 말없음 차례의 갈래(가린 기록 — 방식 이름 없이 같은 글로 적을 재료): CHAT 은 아이 차례에 기록한 앱 행동(누르지 않음 quiet · 눌렀으나 들리지 않음
+ * nospeech — 힌트를 누른 말없음도 nospeech), NOSPEECH_SILENT_ARMS 는 늘 nospeech, 그 밖과 말한 차례 · 모름 단추는 null(갈래 없음).
+ */
+export function silentInputOf(
+  c: ChildTurnLog,
+  arm: Arm,
+): "quiet" | "nospeech" | null {
+  if (c.action !== "silent") return null;
+  const input = c.chat?.input;
+  if (input === "quiet" || input === "nospeech") return input;
+  if (c.chat === undefined && NOSPEECH_SILENT_ARMS.includes(arm))
+    return "nospeech";
+  return null;
+}
+
+/** 말없음 갈래의 글. */
+export function silentLabelOf(input: "quiet" | "nospeech" | null): string {
+  return input === "quiet"
+    ? SILENT_QUIET_LABEL
+    : input === "nospeech"
+      ? SILENT_NOSPEECH_LABEL
+      : SILENT_LABEL;
+}
+
 /** 사례 칸의 아이 말(하려던 말 · 들린 글 · 앱 행동). */
 export function childSaidOf(c: ChildTurnLog | undefined): string {
   if (!c) return "(수업 처음)";
   if (c.action === "dont_know") return "('잘 모르겠어요' 단추)";
   if (c.action === "silent") {
     const input = c.chat?.input;
-    const base =
-      input === "quiet"
-        ? "(말 없음 — 누르지 않음)"
-        : input === "nospeech"
-          ? "(말 없음 — 눌렀으나 들리지 않음)"
-          : "(말 없음)";
+    const base = silentLabelOf(
+      input === "quiet" || input === "nospeech" ? input : null,
+    );
     return (c.chat?.hintTier ?? 0) > 0
       ? `${base} · 힌트 ${c.chat?.hintTier}단 누름`
       : base;

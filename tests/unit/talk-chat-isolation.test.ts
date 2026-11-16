@@ -563,9 +563,12 @@ function codeOf(text: string): string {
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
-/** 판정 · 비교 · 평가 모듈을 가져오거나 판정 기록 열(chatJudge)을 읽고 쓰는가. */
+/**
+ * 판정 · 비교 · 평가 모듈을 가져오거나 판정 기록 열(chatJudge)을 읽고 쓰는가. 평가 상태 · 판정 행 · 평가 쓰기 함수를 옮긴 core chat-rows 를
+ * 가져오는 파일도 판정 함수에 닿는다(13절 C243 보완 10 (1), 코드 검토 rev-g-core I-1).
+ */
 const JUDGE_USE =
-  /from\s+"(@\/core\/conversation\/chat-(judge|compare)|@\/core\/ai\/calls\/talk-chat-eval|@\/server\/conversation\/chat-eval|\.\/chat-eval)"|\bchatJudge\b/;
+  /from\s+"(@\/core\/conversation\/chat-(judge|compare|rows)|@\/core\/ai\/calls\/talk-chat-eval|@\/server\/conversation\/chat-eval|\.\/chat-(eval|rows))"|\bchatJudge\b/;
 
 /**
  * 판정 기록과 그 모듈에 닿아도 되는 src 파일: 판정 · 비교 · 평가 모듈 자신, 표 정의, 평가 · 힌트 저장(S0), 턴 길의 첫 판정 기록 쓰기(S1), 닫는 길의
@@ -585,6 +588,8 @@ const JUDGE_ALLOWED = new Set([
   "src/server/conversation/chat-unit-words.ts",
   // 그 순수 몫(판정 맥락 · 단원 낱말 재료)을 옮긴 core 모듈(묶음 S2 fix 3)
   "src/core/conversation/chat-unit-words.ts",
+  // 서버 chat-eval.ts · chat-hint.ts 의 평가 상태 · 판정 행 · 평가 쓰기 계산을 옮긴 core 모듈(13절 C243 보완 10 (1))
+  "src/core/conversation/chat-rows.ts",
   "src/server/conversation/closing.ts",
 ]);
 

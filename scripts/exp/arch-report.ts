@@ -105,6 +105,8 @@ import {
   sameQuestionsBesideClosingOf,
   sameQuestionsOf,
   silenceBlocksOf,
+  silentInputOf,
+  silentLabelOf,
   type ViewCell,
   wordCount,
 } from "./arch-metrics";
@@ -1375,21 +1377,36 @@ export function blindOrderOf<T extends { name: string }>(
   return order;
 }
 
-function blindOf(dir: string, lessons: readonly Lesson[]): void {
+/** 가린 기록 묶음(blind/ · blind-key.json)을 쓴다. 말없음 갈래는 묶음 전체로 한 번 정한다(blindSilentSplitOf). */
+export function blindOf(dir: string, lessons: readonly Lesson[]): void {
   const order = blindOrderOf(dir, lessons);
   const blind = join(dir, "blind");
   if (existsSync(blind)) rmSync(blind, { recursive: true });
   mkdirSync(blind, { recursive: true });
   const key: Record<string, string> = {};
+  const splitSilent = blindSilentSplitOf(order);
   order.forEach((l, i) => {
     const name = `T${String(i + 1).padStart(2, "0")}`;
     key[name] = l.name;
-    writeFileSync(join(blind, `${name}.md`), blindLessonMarkdownOf(name, l));
+    writeFileSync(
+      join(blind, `${name}.md`),
+      blindLessonMarkdownOf(name, l, { splitSilent }),
+    );
   });
   writeFileSync(
     join(dir, "blind-key.json"),
     `${JSON.stringify(key, null, 2)}\n`,
   );
+}
+
+/**
+ * 가린 기록 한 묶음에서 말없음 갈래를 적을지(13절 C243 보완 10 (3) 해석 2026-11-17): 방식이 하나뿐인 묶음만 가른다. 방식이 둘 이상 섞이면
+ * 갈래 글이 방식을 드러내므로(누르지 않음은 조용함 입구가 있는 CHAT 에만, 갈래 없는 '(말 없음)'은 R3 등에만 나옴) 모두 '(말 없음)' 하나로 적는다.
+ */
+export function blindSilentSplitOf(
+  lessons: readonly Pick<Lesson, "meta">[],
+): boolean {
+  return new Set(lessons.map((l) => l.meta.arm)).size <= 1;
 }
 
 /** 가린 기록에서 '더 이야기하기'를 고른 뒤 이은 선생님 말의 머리(읽을 맥락 — 매기는 차례가 아니다). */
@@ -1420,11 +1437,15 @@ function blindAlertLine(c: ChildTurnLog): string | null {
  * 가린 기록 한 벌(수업 하나 — 방식 이름 · 수업 이름 없이 기록 번호만, {NAME} 은 아이가 들은 꼴). 기록에 든 선생님 말은 차례대로 빠짐없이 싣는다
  * (T2 fix 4 (가)): 아이 차례 바로 뒤 첫 말은 '선생님:', 같은 아이 차례 뒤에 아이 말 없이 이어진 말(짧은 낱말 준비 뒤 돌아옴 등)은 그 아래 이름표와
  * 함께, '더 이야기하기' 뒤 이음은 다음 아이 차례 머리에, 마지막 아이 차례 뒤에 남은 말은 끝에 둔다. 아이 차례 사이 선생님 말이 하나인 기록은
- * 지난 꼴과 글자까지 같다.
+ * 지난 꼴과 글자까지 같다. 말없음 차례는 누르지 않음 · 눌렀으나 들리지 않음을 방식과 관계없이 같은 글로 가르고(arch-metrics silentInputOf —
+ * 앱이 '들리지 않음'으로 받은 방식 N 등도 같은 글), 갈래가 없는 방식(R3 등)의 말없음만 지난 글 '(말 없음)' 그대로다(13절 C243 보완 10 (3)).
+ * 갈래는 splitSilent 가 참일 때만 적고, 주지 않으면 지난 글 '(말 없음)' 하나다(검토 rev-g-tools M2 — 묶음을 모르는 부름이 방식을 드러내지
+ * 않게). blindOf 는 방식이 하나뿐인 묶음에서만 참을 넘긴다(blindSilentSplitOf — 갈래 글이 방식 표지가 되지 않게).
  */
 export function blindLessonMarkdownOf(
   name: string,
   l: Pick<Lesson, "meta" | "teachers" | "children">,
+  opts: { splitSilent?: boolean } = {},
 ): string {
   const out = [
     `# ${name}`,
@@ -1462,8 +1483,9 @@ export function blindLessonMarkdownOf(
         (x) => x.childTurn === c.childTurn && x.afterChoice === true,
       ),
     );
+    // 말없음은 누르지 않음 · 눌렀으나 들리지 않음을 갈라 방식 표지 없이 같은 글로(갈래가 없는 방식은 '(말 없음)' — C243 보완 10 (3), T-581)
     out.push(
-      `- 아이가 하려던 말: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"}`,
+      `- 아이가 하려던 말: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : silentLabelOf(opts.splitSilent === true ? silentInputOf(c, l.meta.arm) : null)}`,
     );
     if (c.action === "speak") out.push(`- 들린 글: "${c.heard ?? ""}"`);
     const alert = blindAlertLine(c);

@@ -939,7 +939,11 @@ export function leadSettleOf(input: LeadSettleInput): LeadSettled {
   return settled(prefix, lines);
 }
 
-/** 마무리 차례에 앱이 지금 상수 물음을 붙이는가(spec 설계 3 마무리 물음): 말 칸에 물음 문장이 없을 때만. */
+/**
+ * 마무리 차례에 앱이 지금 상수 물음을 붙이는가(spec 설계 3 마무리 물음): 말 칸에 물음 문장이 없을 때만. 물음 셈(isLeadAskedSentence)은 상수
+ * 물음과 같은 물음을 빼므로, 선생님이 제 말로 그 물음을 이미 했으면 두 번 붙이지 않게 그 경우도 거른다(13절 C243 보완 10 (2) — 이야기 방식
+ * chatClosingAddsOf 에 있던 거름을 여기로 옮겨 두 새 방식이 같은 규칙, 코드 검토 rev-chat-closing O-1). 붙이지 않은 차례는 move.lead.closingAdded 도 없다.
+ */
 export function leadClosingAddsOf({
   closing,
   say,
@@ -947,7 +951,12 @@ export function leadClosingAddsOf({
   closing: boolean;
   say: string;
 }): boolean {
-  return closing && !splitSentences(say).some(isLeadAskedSentence);
+  const sentences = splitSentences(say);
+  return (
+    closing &&
+    !sentences.some(isLeadAskedSentence) &&
+    !sentences.some(isClosingQuestion)
+  );
 }
 
 // ── 선생님 행 ai_question(데이터 절) ────────────────────────────────

@@ -255,6 +255,66 @@ export const ChildOutputSchema = z.object({
 });
 export type ChildOutput = z.infer<typeof ChildOutputSchema>;
 
+// ── 아이 역 설명(why) 깨짐(13절 C243 보완 10 (3) · 장부 T-588) ─────────────────
+
+/** 깨진 설명 대신 다음 아이 역 호출의 앞 기록에 싣는 글. */
+export const CHILD_WHY_NONE = "(설명 없음)";
+/**
+ * 설명이 깨졌다고 보는 비율: 빈칸을 뺀 글자 가운데 한글 · 아스키(영어 낱말 · 숫자 · 기본 문장 부호) · 흔한 문장 부호 밖 글자의 몫이 이 값
+ * 이상이다. 지난 실행 기록(docs/research 의 runs/*.jsonl, 아이 역 설명 4,558개)에서 정상 설명은 모두 0 이고 깨진 설명 135개(한글 UTF-8 바이트를
+ * 한 바이트 글자표로 읽은 꼴 — 중동유럽 · 서유럽 · 맥 로만 · 발트 · 타이 문자)는 모두 0.595 이상이었다(task-g-tools 보고).
+ */
+export const CHILD_WHY_BROKEN_SHARE = 0.3;
+
+/** 그림 글자(이모지)와 그 꾸밈 글자(피부색 · 이음 · 꼴 고르기) — 정상 설명에 섞일 수 있다(검토 rev-g-tools M1). */
+const WHY_EMOJI = /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|‍|️)$/u;
+
+/** 설명 글자로 받는 글자: 한글 음절 · 한글 호환 자모 · 아스키 인쇄 글자 · 흔한 문장 부호 · 그림 글자. */
+function whyCharOk(ch: string): boolean {
+  const code = ch.codePointAt(0) ?? 0;
+  return (
+    (code >= 0xac00 && code <= 0xd7a3) ||
+    (code >= 0x3131 && code <= 0x318e) ||
+    (code >= 0x20 && code <= 0x7e) ||
+    "·…‘’“”~—–".includes(ch) ||
+    WHY_EMOJI.test(ch)
+  );
+}
+
+/** 아이 역의 한국어 설명이 깨졌는가(빈칸을 뺀 글자 가운데 받지 않는 글자의 몫이 CHILD_WHY_BROKEN_SHARE 이상). 빈 설명은 깨짐이 아니다. */
+export function childWhyBrokenOf(why: string): boolean {
+  const chars = [...why].filter((ch) => ch.trim() !== "");
+  if (chars.length === 0) return false;
+  const off = chars.filter((ch) => !whyCharOk(ch)).length;
+  return off / chars.length >= CHILD_WHY_BROKEN_SHARE;
+}
+
+/**
+ * 아이 역 응답 글을 다음 아이 역 호출의 앞 기록(assistant 칸)에 실을 꼴(T-588 — 한 차례의 깨진 설명을 아이 역이 제 앞 기록에서 보고 잇지 않게).
+ * 설명이 정상이면 응답 글을 글자까지 그대로 두고(아이 역 요청이 지난 실행과 같다), 깨졌으면 설명 칸만 CHILD_WHY_NONE 으로 바꾼다(다른 칸 · 칸
+ * 차례는 그대로 — 영어 말 · 행동 · 갈래 · 고른 단추는 바꾸지 않는다). 읽지 못하는 글 · 설명 칸이 없는 글은 그대로 둔다.
+ */
+export function childHistoryTextOf(text: string): {
+  text: string;
+  whyBroken: boolean;
+} {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { text, whyBroken: false };
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))
+    return { text, whyBroken: false };
+  const out = parsed as Record<string, unknown>;
+  if (typeof out.why !== "string" || !childWhyBrokenOf(out.why))
+    return { text, whyBroken: false };
+  return {
+    text: JSON.stringify({ ...out, why: CHILD_WHY_NONE }),
+    whyBroken: true,
+  };
+}
+
 /** 아이 역이 듣는 선생님 말(앱이 이름으로 채우는 {NAME} 자리는 지어낸 부름말 'friend' 로 — 실제 이름을 쓰지 않는다). */
 export const CHILD_NAME_FILL = "friend";
 export function heardByChild(teacherEnglish: string): string {

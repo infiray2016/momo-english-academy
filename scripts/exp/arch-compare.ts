@@ -151,6 +151,7 @@ import {
 import {
   C_START_MESSAGE,
   CHAT_LOW_CONFIDENCE,
+  CHILD_WHY_NONE,
   type ChatHeardSegment,
   type ChatHintShown,
   type ChildAction,
@@ -166,6 +167,7 @@ import {
   chatRecognizerOf,
   chatSilentInputOf,
   childHasNoise,
+  childHistoryTextOf,
   childSystemOf,
   cSystemOf,
   heardByChild,
@@ -504,6 +506,11 @@ export type LessonLog = {
   /** 긴 대본 한 벌(CHAT 만 — 시나리오 셈에서 빼고 따로 읽는다). */
   variant?: "long";
   /**
+   * 아이 역의 한국어 설명(why)이 깨진 응답 수와 그 아이 차례(겹침 없이 오름차순 — 13절 C243 보완 10 (3), 장부 T-588). 깨진 설명은 다음 아이 역
+   * 호출의 앞 기록에 '(설명 없음)'으로 실었다(arch-arms childHistoryTextOf). 아이 차례 기록의 why 는 아이 역이 낸 원문 그대로다. 옛 기록에는 없다.
+   */
+  childWhy?: ChildWhyTally;
+  /**
    * CHAT: 수업 호출 갈래별 수 · 비용, 정리의 되짚을 말(카드 정리 대사인가), 짧은 준비 쪽지 낱말, 이 수업만 덮은 설정값, 수업 시작 맥락(R3 와 같은
    * 요일 · 때 · 만남 수).
    */
@@ -518,6 +525,25 @@ export type LessonLog = {
     reachedWrap?: boolean;
   };
 };
+
+/** 아이 역 설명 깨짐 셈(수업 하나): broken 은 깨진 응답 수(마무리 단추 호출 포함), turns 는 그 아이 차례. */
+export type ChildWhyTally = { broken: number; turns: number[] };
+
+/** 수업 요약에 싣는 꼴(사본 — 아이 차례는 겹침 없이 오름차순). */
+export function childWhyOf(t: ChildWhyTally): ChildWhyTally {
+  return {
+    broken: t.broken,
+    turns: [...new Set(t.turns)].sort((a, b) => a - b),
+  };
+}
+
+/** 실행 기록(수업 하나)의 아이 역 설명 깨짐 수(실행 요약 · 진행 줄). 수업 요약에 칸이 없는 옛 기록은 0. */
+export function childWhyBrokenOfRun(run: {
+  lines: readonly LogLine[];
+}): number {
+  const meta = run.lines.find((l): l is LessonLog => l.type === "lesson");
+  return meta?.childWhy?.broken ?? 0;
+}
 
 /** 앱의 마무리 차례(마무리 물음 · 마무리 제안)에서 아이 역이 고른 단추. */
 export type WrapChoice = {
@@ -2303,6 +2329,8 @@ type ChatProgress = {
   prepWords: string[];
   overrides: Record<string, unknown>;
   start: R2LessonContext;
+  /** 아이 역 설명 깨짐 셈(childRole 이 센다 — T-588). */
+  childWhy: ChildWhyTally;
 };
 
 export type RunLessonOptions = {
@@ -2410,7 +2438,7 @@ async function chatLessonRun(
         )
       ).result,
   );
-  const childCall = childRole(setup, ctx, lesson, child);
+  const childCall = childRole(setup, ctx, lesson, child, p.childWhy);
   const replay = async (): Promise<ChatScenarioRun> => {
     const r = await chatReplay(makeSim, p.steps, cache.callerFor(false));
     if (r.run === null) throw new Error(`${lesson}: 다시 돌리기가 멈춤`);
@@ -2806,6 +2834,7 @@ async function runChatLesson(
         ? {}
         : { "talk.safety_max_turns": opts.safetyMax },
     start: r2LessonContextOf(ALL_CHILDREN.indexOf(child) + seed),
+    childWhy: { broken: 0, turns: [] },
   };
   try {
     await chatLessonRun(
@@ -2848,6 +2877,7 @@ async function runChatLesson(
     noise: childHasNoise(child),
     materials: { functionWords: setup.materials.functionWords.size },
     ...(opts.variant === "long" ? { variant: "long" as const } : {}),
+    childWhy: childWhyOf(p.childWhy),
     chat: {
       calls: p.run ? { ...p.run.calls } : noChatCalls(),
       costUsd: p.run?.costUsd ?? 0,
@@ -2894,7 +2924,17 @@ function childBaseBodyOf(
   );
 }
 
-function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
+/**
+ * 아이 역 하나(수업 하나). 앞 기록에는 아이 역 응답 글을 싣되, 한국어 설명이 깨진 응답은 설명 칸만 '(설명 없음)'으로 바꿔 싣고(childHistoryTextOf
+ * — 영어 말 · 행동 · 고른 단추는 그대로) 깨진 응답 수와 아이 차례를 tally 에 센다(13절 C243 보완 10 (3), 장부 T-588).
+ */
+function childRole(
+  setup: Setup,
+  ctx: Ctx,
+  lesson: string,
+  child: ChildKey,
+  tally: ChildWhyTally = { broken: 0, turns: [] },
+) {
   const system = childSystemOf(child);
   const { format: _drop, ...outputConfig } = setup.template.body
     .output_config as Record<string, unknown>;
@@ -2930,10 +2970,18 @@ function childRole(setup: Setup, ctx: Ctx, lesson: string, child: ChildKey) {
       throw new CallFailure(
         `${lesson} 아이 차례 ${childTurn}: 아이 역 출력을 읽지 못함`,
       );
-    history.push({ user, assistant: res.text });
+    // 깨진 설명은 다음 호출의 앞 기록에 '(설명 없음)'으로(정상이면 응답 글 그대로 — T-588). 돌려주는 출력 · 기록의 why 는 원문이다
+    const kept = childHistoryTextOf(res.text);
+    if (kept.whyBroken) {
+      tally.broken += 1;
+      tally.turns.push(childTurn);
+    }
+    history.push({ user, assistant: kept.text });
     return parsed.data;
   };
   return {
+    /** 이 아이 역의 설명 깨짐 셈(수업 요약에 싣는 값의 사본). */
+    whyTally: (): ChildWhyTally => childWhyOf(tally),
     turn: async (childTurn: number, teacherFinal: string) => {
       const heard = heardByChild(teacherFinal);
       const out = await ask(
@@ -3187,6 +3235,7 @@ export async function runLesson(
     ...(teacher.summary ? { lead: teacher.summary() } : {}),
     noise: noiseOn,
     materials: { functionWords: setup.materials.functionWords.size },
+    childWhy: childCall.whyTally(),
   });
   return {
     lesson,
@@ -3215,6 +3264,11 @@ export function transcriptOf(lines: readonly LogLine[]): string {
     ...(lessonLine?.noise === undefined
       ? []
       : [`- 잡음: ${lessonLine.noise ? "넣음(지금 일정)" : "넣지 않음"}`]),
+    ...(lessonLine?.childWhy !== undefined && lessonLine.childWhy.broken > 0
+      ? [
+          `- 아이 역 설명 깨짐: ${lessonLine.childWhy.broken}번(아이 차례 ${lessonLine.childWhy.turns.join(" · ")}) — 다음 아이 역 호출의 앞 기록에는 '${CHILD_WHY_NONE}'으로 실음`,
+        ]
+      : []),
     ...(lessonLine?.ending?.choices ?? []).map(
       (c) =>
         `- 마무리 단추(아이 차례 ${c.childTurn} 앞 · ${WRAP_KIND_LABEL[c.kind]}): ${c.picked === "more" ? "더 이야기하기" : "그만하기"}${c.picked === "more" ? (c.continued ? (c.kind === "wrap_up" ? " · '더 이야기하기' 메시지로 이음" : " · 앱처럼 이음") : " · 이을 길이 없어 여기서 끝남") : ""} · ${c.why}`,
@@ -4038,6 +4092,8 @@ type RunSummaryRow = {
   attempts: number;
   ok: boolean;
   errors: string[];
+  /** 남긴 시도의 아이 역 설명 깨짐 수(childWhyBrokenOfRun — T-588). 이 칸이 생기기 전 실행 요약에는 없다. */
+  childWhyBroken?: number;
 };
 
 /** 앞 실행과 같아야 하는 공통 재료(이 값이 다르면 앞 수업과 견줄 수 없다). */
@@ -4237,12 +4293,19 @@ async function main(): Promise<number> {
     if (!run.ok) errors.push(run.error ?? "-");
     if (isCapError(run.error ?? "")) capped = true;
     writeLesson(args.out, run);
-    summary.push({ lesson: run.lesson, attempts, ok: run.ok, errors });
+    const whyBroken = childWhyBrokenOfRun(run);
+    summary.push({
+      lesson: run.lesson,
+      attempts,
+      ok: run.ok,
+      errors,
+      childWhyBroken: whyBroken,
+    });
     const lessonLine = run.lines.find(
       (l): l is LessonLog => l.type === "lesson",
     );
     say(
-      `  ${run.lesson}: ${run.ok ? "끝" : "실패"} · 아이 차례 ${lessonLine?.childTurns ?? 0} · ${lessonLine?.ended ?? "상한"} · 남은 호출 ${budget.left} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러`,
+      `  ${run.lesson}: ${run.ok ? "끝" : "실패"} · 아이 차례 ${lessonLine?.childTurns ?? 0} · ${lessonLine?.ended ?? "상한"}${whyBroken > 0 ? ` · 아이 역 설명 깨짐 ${whyBroken}` : ""} · 남은 호출 ${budget.left} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러`,
     );
   };
   // 실행 순서(--shuffle 이면 섞인 순서)를 먼저 적는다(setup.json 의 plan.order 와 같은 값)
@@ -4314,6 +4377,10 @@ async function main(): Promise<number> {
   );
   say(
     `쓴 호출 ${maxCalls - budget.left} / 상한 ${maxCalls} · 쓴 비용 누계 ${spentUsd.toFixed(4)}달러(실패해 다시 돌린 시도의 호출 포함)`,
+  );
+  const whyLessons = summary.filter((r) => (r.childWhyBroken ?? 0) > 0);
+  say(
+    `아이 역 설명 깨짐: ${whyLessons.reduce((a, r) => a + (r.childWhyBroken ?? 0), 0)}번 · 수업 ${whyLessons.length}/${summary.length}${whyLessons.length > 0 ? `(${whyLessons.map((r) => `${r.lesson} ${r.childWhyBroken}`).join(" · ")}) — 다음 아이 역 호출의 앞 기록에는 '${CHILD_WHY_NONE}'으로 실었다` : ""}`,
   );
   return summary.every((s) => s.ok) ? 0 : 1;
 }

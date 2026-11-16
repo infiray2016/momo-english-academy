@@ -107,24 +107,12 @@ import { bandOf, FUNCTION_POS } from "@/core/seed/structure";
 import { splitSentences } from "@/core/seed/text";
 import { createAnthropicClient } from "@/server/ai/client";
 import {
-  chatListenCheckedOf,
-  chatSayChangesOf,
   streamTalkChat,
   type TalkLessonOutcome,
   talkChatSentUserMessageOf,
 } from "@/server/ai/talk";
-import {
-  chatEvalFailureOf,
-  chatEvalInputFor,
-  chatEvalStateOf,
-  chatEvalWritesOf,
-  chatJudgeRowsOf,
-} from "@/server/conversation/chat-eval";
-import {
-  type ChatTurnRowLike as ChatTurnRowLikeServer,
-  chatHintInputOf,
-  chatSaidSayLostOf,
-} from "@/server/conversation/chat-hint";
+import { chatJudgeRowsOf } from "@/server/conversation/chat-eval";
+import type { ChatTurnRowLike as ChatTurnRowLikeServer } from "@/server/conversation/chat-hint";
 import {
   chatJudgeContextFrom,
   chatUnitWordsOf,
@@ -134,7 +122,6 @@ import {
   lessonAdvanceLeadOf,
   lessonMoreLeadOf,
   lessonMoreOf,
-  lessonStartModeOf,
   TALK_TEXT_MAX,
 } from "@/server/conversation/index";
 import { leadTurnApplies } from "@/server/conversation/lead-turn";
@@ -189,16 +176,6 @@ import {
   OBSERVE_TURN_IN_FLIGHT_MS,
   OBSERVE_TURN_SAVE_GRACE_MS,
   type ObserveStep,
-  observeChatEvalFailureOf,
-  observeChatEvalInputOf,
-  observeChatEvalStateOf,
-  observeChatEvalWritesOf,
-  observeChatHintInputOf,
-  observeChatJudgeRowsOf,
-  observeChatListenCheckedOf,
-  observeChatSaidSayLostOf,
-  observeChatSayChangesOf,
-  observeChatStartModeOf,
   observeChildLiteOf,
   observeFailLineOf,
   observeLiveOf,
@@ -4063,7 +4040,7 @@ async function chatTalking(
 }
 
 describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이야기 방식 묶음 T1)", () => {
-  it("AC-27r 처음 스냅숏: 설정 chat · 3단계 · 단원 재료 · 선생님 재료 넷이 서면 이야기 방식이고 서버 lessonStartModeOf 와 같다, 하나라도 빠지면 지금 길", () => {
+  it("AC-27r 처음 스냅숏: 설정 chat · 3단계 · 단원 재료 · 선생님 재료 넷이 서면 이야기 방식이고(서버와 같은 core lessonStartModeOf), 하나라도 빠지면 지금 길", () => {
     const m3 = materialsAt(3);
     expect(chatSimOf(m3).chat.on).toBe(true);
     expect(chatSimOf(m3).lead.on).toBe(false);
@@ -4071,19 +4048,7 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
     const sim = chatSimOf(m3);
     expect(sim.rows).toEqual([]);
     expect(sim.chat.openDue()).toBe("start");
-    for (const [mode, teacher, unit, level] of [
-      ["chat", CHAT_TEACHER, 1, 3],
-      ["chat", null, 1, 3],
-      ["chat", CHAT_TEACHER, 2, 3],
-      ["chat", CHAT_TEACHER, 1, 4],
-      ["app", CHAT_TEACHER, 1, 3],
-      ["claude", CHAT_TEACHER, 1, 3],
-    ] as const) {
-      expect(
-        observeChatStartModeOf({ mode, level, unit, teacher }),
-        `${mode} · ${level}단계 단원 ${unit} · 선생님 재료 ${teacher !== null}`,
-      ).toBe(lessonStartModeOf({ mode, level, unit, teacher }));
-    }
+    // 방식 판단 자체는 서버와 같은 core lessonStartModeOf 를 부른다(13절 C243 보완 10 (1) — 옮기기 전 판과의 대조는 chat-core-move-baseline 시험)
     // 선생님 재료가 없는 선생님 · 4단계는 지금 길(카드 인사 행이 들어감)
     const noTeacher = chatSimOf({ ...m3, chatTeacher: null });
     expect(noTeacher.chat.on).toBe(false);
@@ -4292,7 +4257,7 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
     expect(suggestion.turnEnd).toBe("suggestion");
     expect(suggestion.lines.some((l) => l.t === "add")).toBe(false);
     expect(suggestion.teacher?.text).toBe("Pizza is yummy! That was fun.");
-    // 물음 있는 앱의 마무리 차례: 선생님이 상수 물음과 같은 물음을 제 말로 이미 했으면(core chatClosingAddsOf 의 거름) 서버 · 도구 모두 붙이지 않는다
+    // 물음 있는 앱의 마무리 차례: 선생님이 상수 물음과 같은 물음을 제 말로 이미 했으면(core leadClosingAddsOf 의 거름 — chatClosingAddsOf 가 그대로 부름) 서버 · 도구 모두 붙이지 않는다
     const asking = await chatTalking(m);
     const askSaid = `Me too! That was a fun talk. ${MORE_PROMPT.en}`;
     let asked: ChatTurnRecord | null = null;
@@ -4444,29 +4409,10 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
     expect(stages).toEqual([1, 1, 2]);
   });
 
-  it("AC-27r 서버 배선 사본이 서버 export 와 같다: 흘려 받기의 6.4 · 문장 문 짝 · 보낸 메시지 · 힌트 입력 · 평가 입력 · 판정 행", async () => {
+  it("AC-27r 대본 도구의 이야기 방식 배선: 글 상한 · 정리 되짚을 말 · 보낸 메시지가 서버와 같다(흘려 받기 · 힌트 · 평가 · 판정 행은 서버와 같은 core 함수 — 13절 C243 보완 10 (1))", async () => {
     // 대본의 인식기 정보 글 상한(index.ts TALK_TEXT_MAX — 턴 요청 규격과 같은 값)
     expect(OBSERVE_CHAT_TEXT_MAX).toBe(TALK_TEXT_MAX);
-    // 흘려 받기(talk.ts)
-    for (const listen of ["I like cats.", "You are stupid.", ""])
-      expect(
-        observeChatListenCheckedOf(listen, materialsAt(3).forbidden, 7),
-      ).toBe(chatListenCheckedOf(listen, materialsAt(3).forbidden, 7));
-    const gate = {
-      forbidden: materialsAt(3).forbidden,
-      metaPhrases: materialsAt(3).metaPhrases,
-      safeLine: "Let's talk!",
-      sentenceMaxWords: 7,
-    };
-    for (const sayText of [
-      "Hi! You are stupid. Bye.",
-      "I am an AI model. Let's play.",
-      "Nice!",
-    ])
-      expect(observeChatSayChangesOf(sayText, gate)).toEqual(
-        chatSayChangesOf(sayText, gate),
-      );
-    // 힌트 · 평가 입력과 판정 행(chat-hint.ts · chat-eval.ts) — 대화가 쌓인 수업의 행으로
+    // 대화가 쌓인 수업의 행으로
     const m = materialsAt(3);
     const sim = await chatTalking(m);
     await bothChat(
@@ -4495,30 +4441,6 @@ describe("AC-27r 서버 턴 길과 createTalkSim 이 같은 함수를 부름(이
     );
     const rows = sim.chat.serverRows();
     const serverRows = rows as unknown as ChatTurnRowLikeServer[];
-    const teacher = rows.findLast((r) => r.speaker === "tori");
-    const hintArgs = {
-      teacherRowId: teacher?.id ?? "",
-      level: 3,
-      sentenceMaxWords: m.ctx.sentenceMaxWords,
-      hintTiers: m.spec.hintTiers,
-      teacherNameEn: m.teacher.nameEn,
-    };
-    expect(observeChatHintInputOf({ rows, ...hintArgs })).toEqual(
-      chatHintInputOf({ rows: serverRows, ...hintArgs }),
-    );
-    for (const r of rows.filter((x) => x.speaker === "child")) {
-      const evalArgs = {
-        childRowId: r.id,
-        contextTurns: 6,
-        unitWords: m.ctx.unitWords,
-      };
-      expect(observeChatEvalInputOf({ rows, ...evalArgs })).toEqual(
-        chatEvalInputFor({ rows: serverRows, ...evalArgs }),
-      );
-    }
-    expect(observeChatJudgeRowsOf(rows, { band: bandOf(3) })).toEqual(
-      chatJudgeRowsOf(serverRows, { band: bandOf(3) }),
-    );
     // 정리 되짚을 말(lesson-turn.ts lessonWrapLinesOf — 이야기 방식 갈래)
     expect(sim.chat.wrapLines()).toEqual(
       lessonWrapLinesOf({
@@ -5088,80 +5010,6 @@ describe("T1 fix 1 — 힌트 단 재료 · 더 이야기하기 입구 · 힌트
       { stop: "refusal" },
     );
     expect(refused.call).toEqual({ kind: "failed", reason: "refusal" });
-  });
-
-  it("M-2 직접 맞대지 않던 사본: 평가 실패 갈래 · 평가 상태(done · failed) · 원문 잃음 · 평가 쓰기가 서버 export 와 같다", async () => {
-    for (const reason of [
-      "timeout",
-      "invalid",
-      "output_blocked",
-      "server",
-      "refusal",
-      "safety_cap",
-    ])
-      expect(observeChatEvalFailureOf(reason)).toBe(
-        chatEvalFailureOf(reason as Parameters<typeof chatEvalFailureOf>[0]),
-      );
-    const m = materialsAt(3);
-    const sim = await chatTalking(m);
-    for (const say of ["I play soccer.", "With my dad."])
-      await bothChat(
-        m,
-        CHAT_VALUES,
-        sim,
-        chatChild({ say }),
-        chatAnswerOf({ say: "Nice! Who else?" }),
-      );
-    const rows = sim.chat.serverRows();
-    const serverRows = rows as unknown as ChatTurnRowLikeServer[];
-    const ctx = chatJudgeContextFrom(
-      { card: m.card, spec: { band: bandOf(3) }, teacher: m.teacher },
-      unitWordsServer(m),
-      seedHomophones(),
-    );
-    const children = rows.filter((r) => r.speaker === "child");
-    const states = [
-      {
-        status: "done" as const,
-        output: {
-          reading: "clear_answer" as const,
-          teacher_move: "react_and_follow_up" as const,
-          model_sentence: "",
-          child_used_on_own: ["soccer"],
-        },
-      },
-      { status: "failed" as const, failure: "timeout" as const },
-    ];
-    for (const child of children)
-      for (const state of states) {
-        const args = { rows, childRowId: child.id, state, ctx };
-        const tool = observeChatEvalWritesOf(args);
-        expect(tool).toEqual(chatEvalWritesOf({ ...args, rows: serverRows }));
-        // 쓴 판정으로 읽은 평가 상태도 같다
-        for (const write of tool ?? []) {
-          const row = { ...child, chatJudge: write.judge };
-          expect(observeChatEvalStateOf(row)).toEqual(
-            chatEvalStateOf(row as unknown as ChatTurnRowLikeServer),
-          );
-        }
-      }
-    // 원문 잃음: 대화 기록 글이 없고 뺀 문장 · 따라 할 문장 칸이 빈 값인 꼴
-    const teacher = rows.findLast((r) => r.speaker === "tori");
-    const move = readTalkMove(teacher?.move) ?? { kind: "ai" };
-    for (const chat of [
-      { removed: [] },
-      { listen: { sentence: "", inSay: false } },
-      { removed: ["I play soccer."] },
-    ]) {
-      const row = {
-        toriRewrite: null,
-        move: {
-          ...move,
-          chat: { ...(move as { chat?: object }).chat, ...chat },
-        },
-      };
-      expect(observeChatSaidSayLostOf(row)).toBe(chatSaidSayLostOf(row));
-    }
   });
 
   it("M-2 이어진 막힘의 힌트 칸: 저장된 단이 있는 선생님 행 뒤 모름 단추가 이어지면 자리 막힘 수(stuckRun)로 연 단 수가 정해지고 서버와 같다", async () => {

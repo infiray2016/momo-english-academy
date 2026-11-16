@@ -1,0 +1,915 @@
+{
+  "live": false,
+  "screens": [
+    {
+      "id": "first_words",
+      "label": "수업 첫 말",
+      "trigger": "initial",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Hi!"
+          },
+          {
+            "t": "s",
+            "en": "I'm Mina."
+          },
+          {
+            "t": "s",
+            "en": "How are you today?"
+          },
+          {
+            "t": "ko",
+            "ko": "안녕! 나는 미나야. 오늘 기분 어때?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Hi!"]
+    },
+    {
+      "id": "greeting_end",
+      "label": "인사 끝 차례(짧은 준비가 열림)",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Hi!"
+          },
+          {
+            "t": "s",
+            "en": "I'm Mina."
+          },
+          {
+            "t": "s",
+            "en": "How are you today?"
+          },
+          {
+            "t": "ko",
+            "ko": "안녕! 나는 미나야. 오늘 기분 어때?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Good to hear!"
+            },
+            {
+              "t": "s",
+              "en": "I'm happy too."
+            },
+            {
+              "t": "ko",
+              "ko": "다행이다! 나도 기뻐."
+            }
+          ],
+          "signal": {},
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Good to hear!"],
+      "heard": "I am good."
+    },
+    {
+      "id": "back",
+      "label": "짧은 준비 뒤 돌아옴",
+      "trigger": "initial",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "You did great!"
+          },
+          {
+            "t": "s",
+            "en": "What is your name?"
+          },
+          {
+            "t": "ko",
+            "ko": "잘했어! 이름이 뭐야?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["You did great!"]
+    },
+    {
+      "id": "quiet_twice",
+      "label": "조용함 입구 둘이 잇달아",
+      "trigger": "quiet",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Oh, I could not hear you."
+          },
+          {
+            "t": "s",
+            "en": "Do you like the sea?"
+          },
+          {
+            "t": "ko",
+            "ko": "앗, 잘 안 들렸어. 바다 좋아해?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "It's okay."
+            },
+            {
+              "t": "s",
+              "en": "Take your time."
+            },
+            {
+              "t": "ko",
+              "ko": "괜찮아. 천천히 해."
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        },
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "I like the sea."
+            },
+            {
+              "t": "s",
+              "en": "It is so blue."
+            },
+            {
+              "t": "ko",
+              "ko": "나는 바다가 좋아. 정말 파래."
+            }
+          ],
+          "signal": {
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["It's okay.", "I like the sea."]
+    },
+    {
+      "id": "wait_after_cap",
+      "label": "상한 뒤 기다림",
+      "trigger": "none",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "I like the sea."
+          },
+          {
+            "t": "s",
+            "en": "It is so blue."
+          },
+          {
+            "t": "ko",
+            "ko": "나는 바다가 좋아. 정말 파래."
+          }
+        ],
+        "signal": {
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["I like the sea."]
+    },
+    {
+      "id": "not_heard",
+      "label": "눌렀으나 들리지 않음",
+      "trigger": "nospeech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Nice to meet you, {NAME}!"
+          },
+          {
+            "t": "s",
+            "en": "Do you like the sea?"
+          },
+          {
+            "t": "ko",
+            "ko": "만나서 반가워, {NAME}! 바다 좋아해?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Oh, I could not hear you."
+            },
+            {
+              "t": "s",
+              "en": "Do you like the sea?"
+            },
+            {
+              "t": "ko",
+              "ko": "앗, 잘 안 들렸어. 바다 좋아해?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Oh, I could not hear you."]
+    },
+    {
+      "id": "closing",
+      "label": "앱의 마무리 차례",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "A red hat!"
+          },
+          {
+            "t": "s",
+            "en": "I have a green one."
+          },
+          {
+            "t": "ko",
+            "ko": "빨간 모자! 나는 초록 모자 있어."
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "That was so fun."
+            },
+            {
+              "t": "s",
+              "en": "I liked your beach story."
+            },
+            {
+              "t": "ko",
+              "ko": "정말 재미있었어. 바닷가 이야기 좋았어."
+            },
+            {
+              "t": "add",
+              "kind": "more_prompt",
+              "en": "Do you want to talk more?",
+              "ko": "더 이야기할래?"
+            }
+          ],
+          "signal": {},
+          "turnEnd": "closing",
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["That was so fun."],
+      "heard": "I like green."
+    },
+    {
+      "id": "wrap_after_suggestion",
+      "label": "wrap_up 뒤 정리",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "The beach is fun!"
+          },
+          {
+            "t": "s",
+            "en": "Do you swim?"
+          },
+          {
+            "t": "ko",
+            "ko": "바닷가 재밌지! 수영해?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Okay!"
+            },
+            {
+              "t": "s",
+              "en": "It was fun to talk with you."
+            },
+            {
+              "t": "ko",
+              "ko": "알았어! 이야기해서 즐거웠어."
+            }
+          ],
+          "signal": {},
+          "turnEnd": "suggestion",
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": [
+        {
+          "en": "We go to the lake.",
+          "ko": "우리는 호수에 가."
+        },
+        {
+          "en": "We eat rice and fish.",
+          "ko": "우리는 밥이랑 생선을 먹어."
+        },
+        {
+          "en": "I drink the juice.",
+          "ko": "나는 주스를 마셔."
+        },
+        {
+          "en": "I wash my hands.",
+          "ko": "나는 손을 씻어."
+        },
+        {
+          "en": "We come home.",
+          "ko": "우리는 집에 와."
+        }
+      ],
+      "expect": ["Okay!"],
+      "heard": "I have to go now. Bye!"
+    },
+    {
+      "id": "safety_last",
+      "label": "안전 상한 차례",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Ice cream at the beach is the best!"
+          },
+          {
+            "t": "ko",
+            "ko": "바닷가 아이스크림이 최고지!"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [],
+          "signal": null,
+          "turnEnd": "last_turn",
+          "close": {
+            "en": "Thank you for talking with me, {NAME}. Bye!",
+            "ko": "이야기해 줘서 고마워, {NAME}. 안녕!"
+          }
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Thank you for talking with me, {NAME}. Bye!"],
+      "heard": "The sea is blue."
+    },
+    {
+      "id": "recognizer",
+      "label": "인식기 알림(다른 후보 있음 · 없음 · 중간 결과만)",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "You did great!"
+          },
+          {
+            "t": "s",
+            "en": "What do you eat in the morning?"
+          },
+          {
+            "t": "ko",
+            "ko": "잘했어! 아침에 뭐 먹어?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Oh, the sea!"
+            },
+            {
+              "t": "s",
+              "en": "Do you like to swim?"
+            },
+            {
+              "t": "ko",
+              "ko": "오, 바다! 수영 좋아해?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Oh, the sea!"],
+      "heard": "I see the see."
+    },
+    {
+      "id": "listen_sentence",
+      "label": "1~3단계 따라 할 문장(say 에 듦 · 어긋남)",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Rice is yummy."
+          },
+          {
+            "t": "s",
+            "en": "I eat rice with egg."
+          },
+          {
+            "t": "ko",
+            "ko": "밥 맛있지. 나는 밥에 달걀을 먹어."
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Yummy!"
+            },
+            {
+              "t": "sound",
+              "kind": "model",
+              "say": "I eat rice with egg."
+            },
+            {
+              "t": "s",
+              "en": "What do you drink?"
+            },
+            {
+              "t": "ko",
+              "ko": "오, 나도! 뭐 마셔?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [
+        {
+          "ok": true,
+          "tiers": [
+            {
+              "kind": "ko"
+            },
+            {
+              "kind": "frame"
+            },
+            {
+              "kind": "sentence",
+              "listen": true
+            }
+          ],
+          "tier": 0,
+          "text": "나도 밥에 달걀을 먹어요."
+        }
+      ],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Yummy!"],
+      "heard": "I eat rice egg."
+    },
+    {
+      "id": "stuck_choice",
+      "label": "막힌 뒤 고르기 물음",
+      "trigger": "dont_know",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "You did great!"
+          },
+          {
+            "t": "s",
+            "en": "What do you eat in the morning?"
+          },
+          {
+            "t": "ko",
+            "ko": "잘했어! 아침에 뭐 먹어?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "That's okay."
+            },
+            {
+              "t": "ko",
+              "ko": "괜찮아. 밥 먹어, 빵 먹어?"
+            },
+            {
+              "t": "sound",
+              "kind": "answer",
+              "say": "Do you eat rice or bread?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "explainWait": 6,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": {
+        "ok": true,
+        "text": "선생님이 밥을 먹는지 빵을 먹는지 물었어요."
+      },
+      "wrap": null,
+      "expect": ["That's okay."]
+    },
+    {
+      "id": "stuck_explain",
+      "label": "막힌 뒤 설명",
+      "trigger": "dont_know",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "You did great!"
+          },
+          {
+            "t": "s",
+            "en": "What do you eat in the morning?"
+          },
+          {
+            "t": "ko",
+            "ko": "잘했어! 아침에 뭐 먹어?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "That's okay."
+            },
+            {
+              "t": "ko",
+              "ko": "괜찮아. 밥 먹어, 빵 먹어?"
+            },
+            {
+              "t": "sound",
+              "kind": "answer",
+              "say": "Do you eat rice or bread?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "explainWait": 6,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": {
+        "ok": true,
+        "text": "선생님이 밥을 먹는지 빵을 먹는지 물었어요."
+      },
+      "wrap": null,
+      "expect": ["That's okay."]
+    },
+    {
+      "id": "hint_no_question",
+      "label": "질문 없는 차례의 힌트",
+      "trigger": "hint",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Rice is yummy."
+          },
+          {
+            "t": "s",
+            "en": "I eat rice with egg."
+          },
+          {
+            "t": "ko",
+            "ko": "밥 맛있지. 나는 밥에 달걀을 먹어."
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [],
+      "hints": [
+        {
+          "ok": true,
+          "tiers": [
+            {
+              "kind": "ko"
+            },
+            {
+              "kind": "frame"
+            },
+            {
+              "kind": "sentence",
+              "listen": true
+            }
+          ],
+          "tier": 0,
+          "text": "나도 밥에 달걀을 먹어요."
+        }
+      ],
+      "explain": null,
+      "wrap": null,
+      "expect": ["나도 밥에 달걀을 먹어요."]
+    },
+    {
+      "id": "hint_no_frame",
+      "label": "3단계 틀 재료가 없는 차례의 힌트",
+      "trigger": "hint",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "Yummy!"
+          },
+          {
+            "t": "sound",
+            "kind": "model",
+            "say": "I eat rice with egg."
+          },
+          {
+            "t": "s",
+            "en": "What do you drink?"
+          },
+          {
+            "t": "ko",
+            "ko": "오, 나도! 뭐 마셔?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [],
+      "hints": [
+        {
+          "ok": true,
+          "tiers": [
+            {
+              "kind": "ko"
+            },
+            {
+              "kind": "sentence",
+              "listen": true
+            }
+          ],
+          "tier": 0,
+          "text": "나는 우유를 좋아해요."
+        },
+        {
+          "ok": true,
+          "tiers": [
+            {
+              "kind": "ko"
+            },
+            {
+              "kind": "sentence",
+              "listen": true
+            }
+          ],
+          "tier": 1,
+          "text": "I like milk."
+        }
+      ],
+      "explain": null,
+      "wrap": null,
+      "expect": ["나는 우유를 좋아해요.", "I like milk."]
+    },
+    {
+      "id": "name_mask",
+      "label": "아이가 제 이름을 말한 차례({NAME} 가림)",
+      "trigger": "speech",
+      "reached": true,
+      "why": [],
+      "before": {
+        "lines": [
+          {
+            "t": "s",
+            "en": "You did great!"
+          },
+          {
+            "t": "s",
+            "en": "What is your name?"
+          },
+          {
+            "t": "ko",
+            "ko": "잘했어! 이름이 뭐야?"
+          }
+        ],
+        "signal": {
+          "quietSeconds": 8,
+          "hint": true,
+          "alternatives": 2
+        }
+      },
+      "replies": [
+        {
+          "lines": [
+            {
+              "t": "s",
+              "en": "Nice to meet you, {NAME}!"
+            },
+            {
+              "t": "s",
+              "en": "Do you like the sea?"
+            },
+            {
+              "t": "ko",
+              "ko": "만나서 반가워, {NAME}! 바다 좋아해?"
+            }
+          ],
+          "signal": {
+            "quietSeconds": 8,
+            "hint": true,
+            "alternatives": 2
+          },
+          "turnEnd": null,
+          "close": null
+        }
+      ],
+      "hints": [],
+      "explain": null,
+      "wrap": null,
+      "expect": ["Nice to meet you, {NAME}!"],
+      "heard": "My name is {NAME}."
+    }
+  ]
+}

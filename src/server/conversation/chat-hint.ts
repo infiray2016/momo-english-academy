@@ -8,11 +8,7 @@ import "server-only";
 // 화면 응답(chatHintReplyOf · chatExplainReplyOf)과 서버 액션은 묶음 S2 의 몫이다. 아이 이름 · 아이 말 글은 로그에 남기지 않는다.
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
-import type { CallSpec, LevelContext } from "@/core/ai/calls/common";
 import {
-  type ChatHintChildInput,
-  type ChatHintContextEntry,
-  type ChatHintTierKind,
   type TalkChatHintInput,
   type TalkChatHintOutput,
   talkChatHintSpec,
@@ -24,13 +20,10 @@ import {
   chatHintRecordOf,
   chatHintRecordOfRow,
 } from "@/core/conversation/chat-hints";
+import { levelCallSpecOf, levelInputOf } from "@/core/conversation/chat-rows";
 import type { LessonHintSpec } from "@/core/conversation/hints";
 import type { LeadLevelInput } from "@/core/conversation/lead-level";
-import {
-  LEAD_OPEN_ACTIVITY_NO,
-  leadConversationOrder,
-} from "@/core/conversation/lead-turn-core";
-import { readTalkMove } from "@/core/conversation/move";
+import { LEAD_OPEN_ACTIVITY_NO } from "@/core/conversation/lead-turn-core";
 import { AI_WAIT_TIMEOUT_MULTIPLE } from "@/core/seed/structure";
 import { attempts, talkTurns } from "@/db/schema/learning";
 import {
@@ -106,182 +99,22 @@ export function chatHintMarkOf(
 
 // ── 수업 행 읽기(힌트 · 평가 호출 입력이 함께 쓴다) ───────────────────────────
 
-/** 이야기 방식 대화 호출이 도는 토막(인사 · 대화 · 더 이야기하기). 짧은 준비 · 정리 토막의 행은 대화 차례가 아니다. */
-export const CHAT_DIALOG_SEGMENTS = ["greeting", "talk", "more_talk"] as const;
-
-/** 힌트 · 평가 · 판정이 읽는 talk_turns 행의 칸(서버 TalkTurnRow 의 일부 — 이름 · 꼴이 같다). */
-export type ChatTurnRowLike = {
-  id: string;
-  turnNo: number;
-  segment: string;
-  speaker: "child" | "tori";
-  text: string | null;
-  inputMode: string | null;
-  hintLevel: number | null;
-  clientListen: unknown;
-  sentUserMessage: string | null;
-  toriRewrite: string | null;
-  aiQuestion: unknown;
-  move: unknown;
-  chatJudge: unknown;
-};
-
-/** 대화 토막의 행만, 대화 차례로(같은 차례 번호면 선생님 행 먼저 — leadConversationOrder). */
-export function chatDialogRowsOf<R extends ChatTurnRowLike>(
-  rows: readonly R[],
-): R[] {
-  const dialog: readonly string[] = CHAT_DIALOG_SEGMENTS;
-  return leadConversationOrder(
-    rows.filter((row) => dialog.includes(row.segment)),
-  );
-}
-
-/**
- * 수업이 닫힌 뒤에도 남는 칸만으로 다시 세운 선생님 말(검토 rev-chat-t3 I-1 · 5절): 행 글의 첫 줄(말풍선 글 — 앱이 붙인 줄 앞)에 1~3단계에서 소리 줄로
- * 뺀 문장(이야기 방식 move.chat.removed · 지금 새 방식 move.lead.removed)을 더한 글이다. 닫는 거래는 대화 기록 글(tori_rewrite)을 지우지만 행 글과
- * move 는 남기므로, 열린 수업과 닫힌 수업에서 같은 값이다. 뺀 문장은 원래 자리가 아니라 끝에 붙는다(문장 차례는 어림 — 같은 문장들을 담는다).
- */
-export function chatSayFromRowOf(
-  row: Pick<ChatTurnRowLike, "text"> & { move?: unknown },
-): string {
-  const shown = ((row.text ?? "").split("\n")[0] ?? "").trim();
-  const move = readTalkMove(row.move ?? null);
-  const removed = move?.chat?.removed ?? move?.lead?.removed ?? [];
-  return [shown, ...removed]
-    .map((part) => part.trim())
-    .filter((part) => part !== "")
-    .join(" ");
-}
-
-/**
- * 원문이 지워져 나간 말을 다시 세울 수 없는 선생님 행인가: 대화 기록 글이 없고, 원문 지우기(move.ts eraseTalkMoveText)가 남긴 꼴 — 뺀 문장 칸이 빈
- * 목록이거나 따라 할 문장 글이 빈 글(이야기 방식 move.chat.listen · 지금 새 방식 move.lead.model). 이 칸들은 쓰는 쪽이 값이 있을 때만 두므로(빈 목록 ·
- * 빈 문장으로 쓰지 않음) 빈 값은 지운 표지다. 비교 도구는 이런 행이 있는 수업을 '다시 세울 수 없는 수업'으로 따로 세고, 평가 저장은 그 수업의
- * 판정을 고쳐 쓰지 않는다.
- */
-export function chatSaidSayLostOf(
-  row: Pick<ChatTurnRowLike, "toriRewrite"> & { move?: unknown },
-): boolean {
-  if (row.toriRewrite !== null) return false;
-  const move = readTalkMove(row.move ?? null);
-  const { chat, lead } = move ?? {};
-  return (
-    chat?.removed?.length === 0 ||
-    chat?.listen?.sentence === "" ||
-    lead?.removed?.length === 0 ||
-    lead?.model?.sentence === ""
-  );
-}
-
-/**
- * 선생님 행의 나간 say 전체: 대화 기록 글(tori_rewrite — 응답 JSON 에서 문장 문이 바꾼 문장만 나간 글로 바꾼 것)의 say 칸이다. 1~3단계에서 소리 줄로 뺀
- * 따라 할 문장 · 고르기 물음도 든다(아이가 들은 말 전체 — 컨트롤러 결정 (나)). 그 글이 없거나(닫힌 수업) JSON 이 아니면 닫힌 뒤에도 남는 칸으로
- * 다시 세운 글(chatSayFromRowOf — 뺀 문장 포함)이다. move 를 넘기지 않으면 행 글의 첫 줄뿐이다.
- */
-export function chatSaidSayOf(
-  row: Pick<ChatTurnRowLike, "toriRewrite" | "text"> & { move?: unknown },
-): string {
-  if (row.toriRewrite !== null) {
-    try {
-      const parsed: unknown = JSON.parse(row.toriRewrite);
-      const say = (parsed as { say?: unknown } | null)?.say;
-      if (typeof say === "string") return say;
-    } catch {
-      // 아래 다시 세운 글로
-    }
-  }
-  return chatSayFromRowOf(row);
-}
-
-/**
- * 아이 행의 입력 갈래(대화 호출 입력 줄의 갈래): quiet 행은 조용함, '잘 모르겠어요' 행 가운데 말소리 없음(client_listen.src nospeech)은 눌렀으나
- * 듣지 못함(지금 새 방식과 같은 꼴), 그 밖은 '잘 모르겠어요', 말 행(옛 행의 빈 입력 방식 포함)은 들린 글이다. 들린 글이 빈 말 행은 듣지 못함으로 본다.
- */
-export function chatChildInputOf(
-  row: Pick<ChatTurnRowLike, "inputMode" | "clientListen" | "text">,
-): ChatHintChildInput {
-  if (row.inputMode === "quiet") return { kind: "quiet" };
-  if (row.inputMode === "dont_know") {
-    const src = (row.clientListen as { src?: unknown } | null | undefined)?.src;
-    return src === "nospeech" ? { kind: "not_heard" } : { kind: "dont_know" };
-  }
-  const heard = (row.text ?? "").trim();
-  return heard === "" ? { kind: "not_heard" } : { kind: "speech", heard };
-}
-
-/**
- * 힌트 호출 입력(spec 설계 7 '호출 입력'): 선생님의 지금 말(그 선생님 행의 나간 say 전체)과 그 앞 대화(대화 토막의 행 — 선생님은 나간 say, 아이는 입력
- * 갈래와 들린 글, 오래된 것부터). 자르기는 규격의 규칙(talk.chat_hint_context_turns)이 한다. 단원 단어 · 목표는 싣지 않는다. 그 선생님 행이 대화 토막에
- * 없으면 null 이다.
- */
-export function chatHintInputOf({
-  rows,
-  teacherRowId,
-  level,
-  sentenceMaxWords,
-  hintTiers,
-  teacherNameEn,
-}: {
-  rows: readonly ChatTurnRowLike[];
-  teacherRowId: string;
-  level: number;
-  sentenceMaxWords: number;
-  hintTiers: readonly ChatHintTierKind[];
-  teacherNameEn: string;
-}): TalkChatHintInput | null {
-  const dialog = chatDialogRowsOf(rows);
-  const at = dialog.findIndex(
-    (row) => row.id === teacherRowId && row.speaker === "tori",
-  );
-  const teacher = dialog[at];
-  if (teacher === undefined) return null;
-  const context: ChatHintContextEntry[] = dialog
-    .slice(0, at)
-    .map((row) =>
-      row.speaker === "tori"
-        ? { speaker: "teacher", say: chatSaidSayOf(row) }
-        : { speaker: "child", input: chatChildInputOf(row) },
-    );
-  return {
-    level,
-    sentenceMaxWords,
-    hintTiers: [...hintTiers],
-    teacherNameEn,
-    say: chatSaidSayOf(teacher),
-    context,
-  };
-}
+// 수업 행 읽기 · 힌트 호출 입력 · 단계 맥락 칸은 DB 없는 순수 함수라 core chat-rows.ts 에 있다(13절 C243 보완 10 (1) — 대본 도구가 같은 함수를
+// 부른다). 서버 쪽 이름 그대로 다시 내보낸다
+export {
+  CHAT_DIALOG_SEGMENTS,
+  type ChatTurnRowLike,
+  chatChildInputOf,
+  chatDialogRowsOf,
+  chatHintInputOf,
+  chatSaidSayLostOf,
+  chatSaidSayOf,
+  chatSayFromRowOf,
+  levelCallSpecOf,
+  levelInputOf,
+} from "@/core/conversation/chat-rows";
 
 // ── 호출 실행(runAiCall 의 단계 맥락 꼴) ───────────────────────────────────
-
-/**
- * runAiCall 은 입력에 단계 맥락 칸(LevelContext)을 바란다(단계 · 문장 낱말 상한만 읽음). 이야기 방식의 힌트 · 평가 입력에는 그 칸이 없어, 빈 맥락 칸을
- * 덧대고 가림이 덧댄 칸을 그대로 두게 한 규격이다. 안내문 · 메시지는 원래 규격 그대로 만든다.
- */
-export function levelCallSpecOf<I, O, R>(
-  spec: CallSpec<I, O, R>,
-): CallSpec<I & LevelContext, O, R> {
-  return {
-    ...spec,
-    mask: (input, masker) => ({ ...input, ...spec.mask(input, masker) }),
-  };
-}
-
-/** 입력에 단계 맥락 칸을 덧댄다(입력의 같은 이름 칸이 이긴다 — 평가 입력의 단원 단어). */
-export function levelInputOf<I extends object>(
-  input: I,
-  { level, sentenceMaxWords }: { level: number; sentenceMaxWords: number },
-): I & LevelContext {
-  return {
-    canDo: "",
-    learningElement: "",
-    prevLearningElements: [],
-    unitWords: [],
-    ...input,
-    level,
-    sentenceMaxWords,
-  } as I & LevelContext;
-}
 
 // ── 묶음 · 기다림 · 다시 받기(spec 설계 7 '실패와 다시 받기' · m-4 (다)) ──────────────
 

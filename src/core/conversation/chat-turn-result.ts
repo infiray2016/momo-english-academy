@@ -28,11 +28,9 @@ import {
 } from "@/core/conversation/lead-low-band";
 import { leadClosingAddsOf } from "@/core/conversation/lead-turn-core";
 import type { TalkMove } from "@/core/conversation/move";
-import { isClosingQuestion } from "@/core/conversation/question-check";
 import { metWordsIn } from "@/core/conversation/said";
 import { normalizeSpoken } from "@/core/conversation/spoken";
 import { safeLineOf } from "@/core/conversation/stream";
-import { splitSentences } from "@/core/seed/text";
 
 /**
  * 대화 호출 결과(서버 talkChatTurn 의 결과 · 대본 도구의 가짜 응답을 옮긴 꼴): ok 는 응답(value 는 문장 문 · 6.4 뒤 값, assistant 는 대화 기록 글,
@@ -67,8 +65,8 @@ export const CHAT_LISTEN_BLOCKED_GATE_NAME = "listen_check";
 
 /**
  * 앱의 마무리 차례에 앱이 상수 물음('Do you want to talk more?')을 붙이는가(13절 C243 보완 9 (2)): 지금 새 방식의 판단 leadClosingAddsOf(말 칸에 물음
- * 문장이 없을 때만)를 그대로 쓴다. 그 판단은 상수 물음과 같은 물음을 물음 셈에서 빼므로, 선생님이 제 말로 그 물음을 이미 했으면 두 번 붙이지 않게 그 경우만
- * 더 거른다(13절 글 '선생님 말 칸에 물음 문장이 없으면'). say 는 아이에게 소리로 나간 말(1~3단계 소리 줄로 뺀 문장 포함 — 지금 새 방식 settled.say 와 같은 자리).
+ * 문장이 없을 때만 — 선생님이 제 말로 상수 물음과 같은 물음을 이미 했으면 두 번 붙이지 않는 거름까지, 13절 C243 보완 10 (2) 로 그 함수 안에 옮김)를
+ * 그대로 쓴다. say 는 아이에게 소리로 나간 말(1~3단계 소리 줄로 뺀 문장 포함 — 지금 새 방식 settled.say 와 같은 자리).
  */
 export function chatClosingAddsOf({
   closing,
@@ -77,10 +75,7 @@ export function chatClosingAddsOf({
   closing: boolean;
   say: string;
 }): boolean {
-  return (
-    leadClosingAddsOf({ closing, say }) &&
-    !splitSentences(say).some(isClosingQuestion)
-  );
+  return leadClosingAddsOf({ closing, say });
 }
 
 /** 선생님 행 초안(저장 앞 — 보낸 사용자 메시지 · 행 번호는 부르는 쪽이 붙인다). */

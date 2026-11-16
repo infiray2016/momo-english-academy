@@ -9,50 +9,39 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
-  type ChatEvalEntry,
   type TalkChatEvalInput,
   type TalkChatEvalOutput,
-  talkChatEvalInputOf,
   talkChatEvalSpec,
 } from "@/core/ai/calls/talk-chat-eval";
 import {
   ChatCompareSummarySchema,
   chatCompareOf,
 } from "@/core/conversation/chat-compare";
-import { chatHintRecordOfRow } from "@/core/conversation/chat-hints";
 import {
   type ChatEvalFailure,
   type ChatEvalState,
   type ChatJudge,
   type ChatJudgeContext,
-  type ChatJudgeInputKind,
-  type ChatJudgeRow,
-  chatJudgeChangesOf,
   readChatJudge,
 } from "@/core/conversation/chat-judge";
-import { chatInputLineOf } from "@/core/conversation/chat-message";
+import {
+  chatEvalFailureOf,
+  chatEvalInputFor,
+  chatEvalPendingOf,
+  chatEvalWritesOf,
+  chatLessonSayLostOf,
+} from "@/core/conversation/chat-rows";
 import {
   chatEvalAfterTeacherOf,
-  chatEvalDueOf,
   chatEvalOnCloseOf,
 } from "@/core/conversation/chat-turn-core";
 import { LEAD_OPEN_ACTIVITY_NO } from "@/core/conversation/lead-turn-core";
-import { readTalkMove } from "@/core/conversation/move";
 import { attempts, sessions, talkTurns } from "@/db/schema/learning";
-import {
-  type AiDeps,
-  type AiFailureReason,
-  type AiOutcome,
-  runAiCall,
-} from "@/server/ai/run";
+import { type AiDeps, type AiOutcome, runAiCall } from "@/server/ai/run";
 import { now } from "@/server/clock";
 import {
   type ChatTurnRowLike,
-  chatChildInputOf,
   chatDialogRowsOf,
-  chatSaidSayLostOf,
-  chatSaidSayOf,
-  chatSayFromRowOf,
   levelCallSpecOf,
   levelInputOf,
 } from "@/server/conversation/chat-hint";
@@ -61,191 +50,19 @@ import { dbErrorTag } from "@/server/db/safe-error";
 
 // ── 평가 입력 · 상태(spec 설계 8-2 '입력' · 8-4) ─────────────────────────────
 
-/**
- * 대화 토막의 행(대화 차례로 둔 것 — chatDialogRowsOf)을 평가 호출의 기록 꼴로 옮긴다: 아이 쪽은 그 차례에 대화 호출로 보낸 사용자 메시지 글 그대로
- * (아이 행의 sent_user_message. 입구 차례 start · more · back 은 아이 행이 없어 그 선생님 행의 sent_user_message), 선생님 쪽은 나간 say 전체.
- * 사용자 메시지가 남지 않은 아이 행(호출 전에 닫힌 마지막 차례)은 입력 줄을 다시 만든다(사실 줄 없음). childAt 은 아이 행 id → 차례 번호다.
- * 수업이 닫힌 뒤(closing.ts clearSentMessages 가 대화 기록 글 · 보낸 사용자 메시지를 지움)에는: 선생님 말은 행 글 + 뺀 문장으로 다시 세운 글이고
- * (chatSaidSayOf — 뺀 문장은 끝에 붙음), 아이 쪽 줄은 입력 줄을 다시 만든 글이라 사실 줄 · 인식기 알림 줄이 없으며, 입구 차례(start · more · back)의
- * 사용자 메시지 줄은 빠진다. 이 차이는 알고 둔다(검토 rev-chat-t3 I-1 뒤 컨트롤러 결정 — 판정 행은 이 차이에 닿지 않음).
- */
-export function chatEvalEntriesOf(rows: readonly ChatTurnRowLike[]): {
-  entries: ChatEvalEntry[];
-  childAt: Map<string, number>;
-} {
-  const entries: ChatEvalEntry[] = [];
-  const childAt = new Map<string, number>();
-  for (const row of rows) {
-    if (row.speaker === "child") {
-      childAt.set(row.id, entries.length);
-      entries.push({
-        speaker: "child",
-        message: row.sentUserMessage ?? chatInputLineOf(chatChildInputOf(row)),
-      });
-      continue;
-    }
-    if (row.sentUserMessage !== null)
-      entries.push({ speaker: "child", message: row.sentUserMessage });
-    entries.push({ speaker: "teacher", say: chatSaidSayOf(row) });
-  }
-  return { entries, childAt };
-}
-
-/** 아이 행 하나의 평가 입력(talkChatEvalInputOf — n 앞 contextTurns 차례 · n · n+1). 그 행이 대화 토막의 아이 행이 아니면 null. */
-export function chatEvalInputFor({
-  rows,
-  childRowId,
-  contextTurns,
-  unitWords,
-}: {
-  rows: readonly ChatTurnRowLike[];
-  childRowId: string;
-  /** talk.chat_eval_context_turns. */
-  contextTurns: number;
-  unitWords: readonly string[];
-}): TalkChatEvalInput | null {
-  const { entries, childAt } = chatEvalEntriesOf(chatDialogRowsOf(rows));
-  const at = childAt.get(childRowId);
-  if (at === undefined) return null;
-  return talkChatEvalInputOf({ entries, at, contextTurns, unitWords });
-}
-
-/**
- * 아이 행의 평가 상태: 저장된 chat_judge 의 기존 꼴 상태와 출력. chat_judge 가 아직 없으면(옛 행 · 행 저장 전의 값) 말 입력 차례는 기다림, 그 밖은
- * 부르지 않음이다(P3 chatEvalDueOf). 있음인데 출력이 없는 값은 판정 없음으로 본다.
- */
-export function chatEvalStateOf(
-  row: Pick<
-    ChatTurnRowLike,
-    "chatJudge" | "inputMode" | "clientListen" | "text"
-  >,
-): ChatEvalState {
-  const judge = readChatJudge(row.chatJudge);
-  if (judge !== null) {
-    const { status, output, failure } = judge.legacy;
-    if (status === "failed")
-      return failure === undefined ? { status } : { status, failure };
-    if (status !== "done") return { status };
-    return output === null ? { status: "failed" } : { status: "done", output };
-  }
-  return chatEvalDueOf(chatChildInputOf(row))
-    ? { status: "waiting" }
-    : { status: "not_called" };
-}
-
-/** 이 행이 아직 평가 값을 기다리는 아이 행인가(조건부 고쳐 쓰기의 조건 — 두 번 쓰지 않음, plan 열린 것 7). */
-export function chatEvalPendingOf(row: ChatTurnRowLike): boolean {
-  return row.speaker === "child" && chatEvalStateOf(row).status === "waiting";
-}
-
-/** 원문이 지워져 나간 말을 다시 세울 수 없는 대화 토막 선생님 행이 있는 수업인가(chatSaidSayLostOf). */
-export function chatLessonSayLostOf(rows: readonly ChatTurnRowLike[]): boolean {
-  return chatDialogRowsOf(rows).some(
-    (row) => row.speaker === "tori" && chatSaidSayLostOf(row),
-  );
-}
-
-/** 판정 없음의 까닭(시간 넘음 · 검증 실패 · 그 밖 — 검토 rev-chat-p4 5절, 값 목록은 chat-judge CHAT_EVAL_FAILURES). */
-export type { ChatEvalFailure };
-
-/** AI 호출 실패 갈래 → 판정 없음의 까닭. 읽지 못함 · 출력 막힘은 검증 실패다. */
-export function chatEvalFailureOf(reason: AiFailureReason): ChatEvalFailure {
-  if (reason === "timeout") return "timeout";
-  if (reason === "invalid" || reason === "output_blocked") return "invalid";
-  return "other";
-}
-
-// ── 판정 행 · 저장 계산(P4 chatJudgeChangesOf) ───────────────────────────────
-
-/** 아이 행의 입력 갈래(판정 꼴). */
-function judgeInputOf(row: ChatTurnRowLike): ChatJudgeInputKind {
-  return chatChildInputOf(row).kind;
-}
-
-/**
- * 판정 함수에 넘기는 행: 대화 토막의 행만, 평가 입력과 같은 차례로(정리 · 짧은 준비 토막 행을 섞지 않음 — rows[at+1] 이 평가의 n+1 과 같은 행).
- * 선생님 행은 나간 say 전체 · 따라 할 문장(move.chat.listen 이 say 에 든 때만) · 막힌 뒤 설명을 보였는지 · 마무리 자리 · 대화 첫 선생님 행, 아이 행은
- * 입력 갈래 · 들린 글 · 바로 앞 선생님 행의 힌트 단 가운데 연 단(hint_level 만큼)의 종류 · 평가 상태다. 한국어 도움은 그 가지가 합쳐진 뒤 채운다(null).
- * override 는 저장 전의 새 평가 값(그 아이 행의 상태를 바꿔 센다). ids 는 판정 행 번호 → talk_turns id, stored 는 아이 행 번호 → 저장된 chat_judge 다.
- */
-export function chatJudgeRowsOf(
-  rows: readonly ChatTurnRowLike[],
-  spec: ChatJudgeContext["spec"],
-  override?: { id: string; state: ChatEvalState },
-): { rows: ChatJudgeRow[]; ids: string[]; stored: Map<number, unknown> } {
-  const dialog = chatDialogRowsOf(rows);
-  const out: ChatJudgeRow[] = [];
-  const ids: string[] = [];
-  const stored = new Map<number, unknown>();
-  let prevTeacher: ChatTurnRowLike | null = null;
-  for (const row of dialog) {
-    ids.push(row.id);
-    if (row.speaker === "tori") {
-      const move = readTalkMove(row.move);
-      const listen = move?.chat?.listen;
-      out.push({
-        role: "teacher",
-        // 닫힌 뒤에도 남는 칸만으로 만든 글(열린 수업과 닫힌 수업의 다시 세기가 같은 값을 내게 — 검토 rev-chat-t3 I-1)
-        say: chatSayFromRowOf(row),
-        listenSentence: listen?.inSay === true ? listen.sentence : null,
-        explainShown: move?.chat?.explain === true,
-        closing: move?.kind === "closing_slot",
-        first: move?.kind === "first_question",
-      });
-      prevTeacher = row;
-      continue;
-    }
-    const input = judgeInputOf(row);
-    const tiers =
-      prevTeacher === null
-        ? []
-        : (chatHintRecordOfRow(prevTeacher.aiQuestion, spec)?.tiers ?? []);
-    stored.set(out.length, row.chatJudge);
-    out.push({
-      role: "child",
-      input,
-      heard: input === "speech" ? (row.text ?? "").trim() : "",
-      opened: tiers.slice(0, row.hintLevel ?? 0).map((tier) => tier.kind),
-      koHelp: null,
-      eval:
-        override !== undefined && override.id === row.id
-          ? override.state
-          : chatEvalStateOf(row),
-    });
-  }
-  return { rows: out, ids, stored };
-}
-
-/**
- * 새 평가 값의 쓰기(한 거래 안에서 부른다): 그 아이 행이 아직 기다림이면 그 값을 넣은 행으로 수업 전체를 다시 세어(chatJudgeChangesOf) 저장값과 다른
- * 아이 행 전부를 돌려준다 — 그 평가의 행과 그 값에 기대는 뒤 행(들은 도움 · 되물은 뒤 이어 받기 · 출처). 그 행이 없거나 이미 기다림이 아니면(다른 요청이
- * 먼저 씀) null 이다(두 번 쓰지 않음).
- */
-export function chatEvalWritesOf({
-  rows,
-  childRowId,
-  state,
-  ctx,
-}: {
-  rows: readonly ChatTurnRowLike[];
-  childRowId: string;
-  state: ChatEvalState;
-  ctx: ChatJudgeContext;
-}): { id: string; judge: ChatJudge }[] | null {
-  const target = rows.find(
-    (row) => row.id === childRowId && row.speaker === "child",
-  );
-  if (target === undefined || !chatEvalPendingOf(target)) return null;
-  // 원문이 지워진 수업은 다시 셀 재료가 없어 저장된 판정을 고쳐 쓰지 않는다(가장 보수적인 쪽)
-  if (chatLessonSayLostOf(rows)) return null;
-  const judged = chatJudgeRowsOf(rows, ctx.spec, { id: childRowId, state });
-  if (!judged.ids.includes(childRowId)) return null;
-  return chatJudgeChangesOf({
-    rows: judged.rows,
-    stored: judged.stored,
-    ctx,
-  }).map(({ row, judge }) => ({ id: judged.ids[row] ?? "", judge }));
-}
+// 평가 입력 · 상태 · 판정 행 · 평가 쓰기 계산은 DB 없는 순수 함수라 core chat-rows.ts 에 있다(13절 C243 보완 10 (1) — 대본 도구가 같은 함수를
+// 부른다). 서버 쪽 이름 그대로 다시 내보낸다
+export type { ChatEvalFailure } from "@/core/conversation/chat-judge";
+export {
+  chatEvalEntriesOf,
+  chatEvalFailureOf,
+  chatEvalInputFor,
+  chatEvalPendingOf,
+  chatEvalStateOf,
+  chatEvalWritesOf,
+  chatJudgeRowsOf,
+  chatLessonSayLostOf,
+} from "@/core/conversation/chat-rows";
 
 // ── 수업별 비교 표지 행(spec 설계 13 '수업별 비교 기록') ───────────────────────
 
