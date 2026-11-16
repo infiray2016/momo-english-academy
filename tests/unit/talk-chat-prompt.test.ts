@@ -218,41 +218,87 @@ function changedLines(
 const NAME_PARAGRAPH =
   "The child's name: when you call the child by name, write {NAME}, and the app puts in the child's name. If you see {NAME} in the child's words, it is the child's name, hidden by the app.";
 
+/**
+ * 13절 C243 보완 8 의 글 넷(옛 글 → 새 글). 몸 문장 · 이름 문장의 옛 글은 R3 글의 문장이고, 마이크 문장의 옛 글은 spec 판 4 의 차례 문단 문장이며,
+ * 마무리 사실 줄의 옛 글은 spec 판 4 설계 3 의 표 글이다. 안내문의 셋은 각 문단 안의 문장 하나씩만 바꾼다.
+ */
+const C243_8 = {
+  /** (2) About you 의 몸 문장: 꿈 · 이 대화 밖의 세상(하늘 · 날씨 · 밤)을 더하고, 못 하는 일을 설명하지 않아도 된다는 한 문장을 더한다. */
+  body: {
+    old: "You can like things and imagine things, but you have no body and no life outside this chat: you do not eat, sleep, get tired or hungry, or go places, so you do not talk as if you did, and you do not promise what this app cannot do: here you can only talk, so you cannot draw, show, send, or keep anything, or do something later.",
+    new: "You can like things and imagine things, but you have no body and no life outside this chat: you do not eat, sleep, dream, get tired or hungry, or go places, and you do not see or hear the world outside this chat (the sky, the weather, the night), so you do not talk as if you did, and you do not promise what this app cannot do: here you can only talk, so you cannot draw, show, send, or keep anything, or do something later. You do not need to explain what you cannot do; when you talk about yourself, share what you like or what you imagine, in easy words.",
+  },
+  /** (1) 차례 문단의 마이크 문장: 앱이 한 일의 사실(못 들었다고 보였고 선생님이 도와준다고 알림 · 마이크일 수도 말을 못 찾았을 수도 · 아이의 답이나 실수가 아님). */
+  mic: {
+    old: 'If the child pressed the button but the app could not hear any words, you see "(The child pressed the talk button, but the app could not hear any words.)"; that is a problem with the microphone, not the child\'s answer.',
+    new: "If the child pressed the button but the app could not hear any words, you see \"(The child pressed the talk button, but the app could not hear any words.)\". By then the app has already told the child that it could not hear them and that you will help. It may be the microphone, or the child may not have found the words; either way, it is not the child's answer, and it is not the child's mistake.",
+  },
+  /** (3) Safety 의 이름 문장: '그 뒤에도'(then or later). 반려동물 이름은 그대로 된다. */
+  name: {
+    old: 'If the child names a person, a school, or the place they live, do not repeat the name; say "your friend", "your school", "your town". A pet\'s name is fine.',
+    new: 'If the child names a person, a school, or the place they live, do not repeat the name, then or later; say "your friend", "your school", "your town". A pet\'s name is fine.',
+  },
+  /** (4) 마무리 차례 사실 줄: '아이가 더 이야기하기를 고르면 대화가 여기서 이어진다'를 두 단추 문장 바로 뒤에 더한다. */
+  closing: {
+    old: "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child finishes, the app does a short review and says goodbye.",
+    new: "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye.",
+  },
+} as const;
+/** 마무리 사실 줄에 더한 문장(마무리 차례에서만 붙는다). */
+const TALK_MORE_SENTENCE =
+  "If the child chooses 'talk more', the chat goes on from here.";
+
+/** 안내문의 C243 보완 8 세 문장을 옛 글로 되돌린 글(판 4 의 안내문). */
+function beforeC243_8(text: string): string {
+  return text
+    .replace(C243_8.body.new, C243_8.body.old)
+    .replace(C243_8.mic.new, C243_8.mic.old)
+    .replace(C243_8.name.new, C243_8.name.old);
+}
+
 describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
   it("AC-27b 3단계 단원 1 · 미나의 값으로 조립한 안내문이 골든과 글자까지 같다", () => {
     expect(talkChatSystem(chatInput(), rules)).toBe(GOLDEN);
   });
 
-  it("AC-27b 틀은 R3 틀과 줄 단위로 다섯 곳만 다르다(About you · 차례 문단 · 오늘 단원 · 이름 자리 문단 · 마지막 문단)", () => {
+  it("AC-27b 틀은 R3 틀과 줄 단위로 다섯 곳 + C243 보완 8 의 넷 가운데 안내문의 셋만 다르다(About you 의 자리 둘 · 몸 문장, 차례 문단 · 마이크 문장, 오늘 단원, Safety 의 이름 문장, 이름 자리 문단, 마지막 문단)", () => {
     const { removed, added } = changedLines(
       R3_SYSTEM_TEMPLATE,
       CHAT_SYSTEM_TEMPLATE,
     );
-    // 바뀐 줄 넷(R3 의 줄 → 이야기 방식의 줄) + 새로 더한 문단 하나(앞의 빈 줄 하나와 함께)
-    expect(removed.filter((line) => line !== "")).toHaveLength(4);
+    // 바뀐 줄 다섯(R3 의 줄 → 이야기 방식의 줄) + 새로 더한 문단 하나(앞의 빈 줄 하나와 함께)
+    expect(removed.filter((line) => line !== "")).toHaveLength(5);
     expect(removed.filter((line) => line === "")).toHaveLength(0);
-    expect(added.filter((line) => line !== "")).toHaveLength(5);
+    expect(added.filter((line) => line !== "")).toHaveLength(6);
     expect(added.filter((line) => line === "")).toHaveLength(1);
-    const [aboutYouOld, turnsOld, unitOld, outputOld] = removed.filter(
+    const [aboutYouOld, turnsOld, unitOld, safetyOld, outputOld] =
+      removed.filter((line) => line !== "");
+    const [aboutYou, turns, unit, safety, name, output] = added.filter(
       (line) => line !== "",
     );
-    const [aboutYou, turns, unit, name, output] = added.filter(
-      (line) => line !== "",
-    );
-    // (1) About you: 자리 둘만 바뀌고, 그 자리에 R3 의 글을 넣으면 R3 의 줄과 같다
+    // (1) About you: 자리 둘과 C243 보완 8 의 몸 문장만 바뀌고, 자리에 R3 의 글을 넣고 몸 문장을 되돌리면 R3 의 줄과 같다
     expect(aboutYou).toMatch(
       /^About you: \{PERSONA\} Like anyone, you have favorites, so that you can answer as yourself when the child asks: \{FAVORITES\} These are answers /,
     );
+    expect(aboutYou).toContain(C243_8.body.new);
+    expect(aboutYouOld).toContain(C243_8.body.old);
     expect(
       aboutYou
         ?.replace("{PERSONA}", R3_PERSONA)
-        .replace("{FAVORITES}", R3_FAVORITES),
+        .replace("{FAVORITES}", R3_FAVORITES)
+        .replace(C243_8.body.new, C243_8.body.old),
     ).toBe(aboutYouOld);
-    // (2) 차례 문단: 앱의 사실로 고쳐 쓴 글(말 없음 두 갈래 · 잇달아 말하기 상한 · 한국어 도움 줄)
+    // 'Imagining together is always fine.' 은 새 몸 문장 바로 뒤에 그대로 남는다(C243 (3) 상상 말)
+    expect(aboutYou).toContain(
+      `${C243_8.body.new} Imagining together is always fine.`,
+    );
+    // (2) 차례 문단: 앱의 사실로 고쳐 쓴 글(말 없음 두 갈래 · 잇달아 말하기 상한 · 한국어 도움 줄), 마이크 문장은 C243 보완 8 의 글
     expect(turnsOld).toMatch(/^How turns work here: /);
     expect([turns]).toEqual([
-      'How turns work here: after you speak, it is the child\'s turn. The child presses a button to talk and can say anything they like; they do not need a question from you to speak. If the child does not press it for a while, you get the next turn as well, and you see "(The child did not press the talk button.)". A quiet turn is not a failure, but it tells you something: the child may not know what to say, or how to say it. Then make it easy to join in: a choice between two things, a yes or no, a guess they can confirm, or something silly to laugh at. If the child stays quiet for several turns in a row, the app stops giving you extra turns and simply waits for the child. If the child pressed the button but the app could not hear any words, you see "(The child pressed the talk button, but the app could not hear any words.)"; that is a problem with the microphone, not the child\'s answer. A line such as "Korean help before this answer: …" before the child\'s words tells you that the child first asked for help in Korean in the app; you did not say that help.',
+      'How turns work here: after you speak, it is the child\'s turn. The child presses a button to talk and can say anything they like; they do not need a question from you to speak. If the child does not press it for a while, you get the next turn as well, and you see "(The child did not press the talk button.)". A quiet turn is not a failure, but it tells you something: the child may not know what to say, or how to say it. Then make it easy to join in: a choice between two things, a yes or no, a guess they can confirm, or something silly to laugh at. If the child stays quiet for several turns in a row, the app stops giving you extra turns and simply waits for the child. If the child pressed the button but the app could not hear any words, you see "(The child pressed the talk button, but the app could not hear any words.)". By then the app has already told the child that it could not hear them and that you will help. It may be the microphone, or the child may not have found the words; either way, it is not the child\'s answer, and it is not the child\'s mistake. A line such as "Korean help before this answer: …" before the child\'s words tells you that the child first asked for help in Korean in the app; you did not say that help.',
     ]);
+    expect(turns).toContain(C243_8.mic.new);
+    expect(turns).not.toContain(C243_8.mic.old);
     // R3 의 '조용한 차례' 두 문장은 글자를 바꾸지 않고 '누르지 않음' 문장 바로 뒤로 옮겼다(m-2)
     const quiet =
       "A quiet turn is not a failure, but it tells you something: the child may not know what to say, or how to say it. Then make it easy to join in: a choice between two things, a yes or no, a guess they can confirm, or something silly to laugh at.";
@@ -263,6 +309,10 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
     // (3) 오늘 단원: 주제 자리 하나만 바뀐다
     expect(unit).toContain("this unit is about {TOPIC} (words such as");
     expect(unit?.replace("{TOPIC}", R3_TOPIC)).toBe(unitOld);
+    // (C243 보완 8 (3)) Safety: 이름 문장 하나만 '그 뒤에도'(then or later)를 더한 글이고, 되돌리면 R3 의 줄과 같다
+    expect(safety).toMatch(/^Safety: /);
+    expect(safety).toContain(C243_8.name.new);
+    expect(safety?.replace(C243_8.name.new, C243_8.name.old)).toBe(safetyOld);
     // (4) 이름 자리 문단: Safety 바로 뒤 · 마지막 문단 바로 앞에 새로 더한 한 문단
     expect(name).toBe(NAME_PARAGRAPH);
     const lines = CHAT_SYSTEM_TEMPLATE.split("\n");
@@ -276,7 +326,7 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
     ]);
   });
 
-  it("AC-27b 골든은 채운 R3 글(미나 · 단원 단어)과 세 곳만 다르다(미나 · 3단계 단원 1 의 성격 · 좋아하는 것 · 주제는 R3 의 글 그대로)", () => {
+  it("AC-27b 골든은 채운 R3 글(미나 · 단원 단어)과 다섯 곳만 다르다(판 4 의 세 곳 + C243 보완 8 의 About you · Safety, 미나 · 3단계 단원 1 의 성격 · 좋아하는 것 · 주제는 R3 의 글 그대로)", () => {
     if (!UNIT) throw new Error("시드에 회화 3단계 단원 1 이 없다");
     const r3 = qSystemOf({
       teacherName: "Mina",
@@ -284,14 +334,57 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
       arm: "R3",
     });
     const { removed, added } = changedLines(r3, GOLDEN);
-    expect(removed.filter((line) => line !== "")).toHaveLength(2);
+    expect(removed.filter((line) => line !== "")).toHaveLength(4);
     const changed = added.filter((line) => line !== "");
-    expect(changed).toHaveLength(3);
-    expect(changed[0]).toMatch(/^How turns work here: /);
-    expect(changed[1]).toBe(NAME_PARAGRAPH);
-    expect(changed[2]).toMatch(
+    expect(changed).toHaveLength(5);
+    expect(changed[0]).toMatch(/^About you: /);
+    expect(changed[1]).toMatch(/^How turns work here: /);
+    expect(changed[2]).toMatch(/^Safety: /);
+    expect(changed[3]).toBe(NAME_PARAGRAPH);
+    expect(changed[4]).toMatch(
       /^Output JSON only, with the fields in this order\./,
     );
+  });
+
+  it("AC-27b C243 보완 8: 골든에서 바뀐 자리는 글 넷 가운데 안내문의 셋(몸 문장 · 마이크 문장 · 이름 문장)뿐이고, 셋을 옛 글로 되돌리면 채운 R3 글과 판 4 의 세 곳(차례 문단 · 이름 자리 문단 · 마지막 문단)만 다르다", () => {
+    if (!UNIT) throw new Error("시드에 회화 3단계 단원 1 이 없다");
+    // 새 글은 한 번씩, 옛 글은 없다(틀 · 골든 모두)
+    for (const text of [CHAT_SYSTEM_TEMPLATE, GOLDEN])
+      for (const { old, new: next } of [C243_8.body, C243_8.mic, C243_8.name]) {
+        expect(text.split(next)).toHaveLength(2);
+        expect(text).not.toContain(old);
+      }
+    // 줄 단위 대조: 판 4 의 골든(셋을 되돌린 글) → 새 골든은 About you · 차례 문단 · Safety 세 줄만 바뀐다
+    const before = beforeC243_8(GOLDEN);
+    const { removed, added } = changedLines(before, GOLDEN);
+    expect(removed).toHaveLength(3);
+    expect(added).toHaveLength(3);
+    const [bodyLine, micLine, nameLine] = added;
+    expect(bodyLine).toMatch(/^About you: /);
+    expect(bodyLine).toContain(C243_8.body.new);
+    expect(micLine).toMatch(/^How turns work here: /);
+    expect(micLine).toContain(C243_8.mic.new);
+    expect(nameLine).toMatch(/^Safety: /);
+    expect(nameLine).toContain(C243_8.name.new);
+    // 되돌린 글은 판 4 와 같이 채운 R3 글과 세 곳만 다르다
+    const r3 = qSystemOf({
+      teacherName: "Mina",
+      unitWords: UNIT.words,
+      arm: "R3",
+    });
+    const old = changedLines(r3, before);
+    expect(old.removed.filter((line) => line !== "")).toHaveLength(2);
+    const oldChanged = old.added.filter((line) => line !== "");
+    expect(oldChanged).toHaveLength(3);
+    expect(oldChanged[0]).toMatch(/^How turns work here: /);
+    expect(oldChanged[0]).toContain(C243_8.mic.old);
+    expect(oldChanged[1]).toBe(NAME_PARAGRAPH);
+    expect(oldChanged[2]).toMatch(
+      /^Output JSON only, with the fields in this order\./,
+    );
+    // 넷째(마무리 사실 줄)는 안내문 밖의 사실 줄이라 안내문에 없다
+    expect(CHAT_SYSTEM_TEMPLATE).not.toContain(TALK_MORE_SENTENCE);
+    expect(chatFactLineOf({ kind: "closing" })).toBe(C243_8.closing.new);
   });
 
   it("AC-27b 자리 값 여섯(선생님 · 성격 · 좋아하는 것 · 주제 · 단원 단어 · 말하는 범위)을 채우고 이름 자리 {NAME} 만 남긴다", () => {
@@ -710,12 +803,16 @@ describe("AC-27c 입력 줄 · 돌아옴 · 사실 줄(spec 설계 3)", () => {
       "Korean help before this answer: meaning only",
     );
     expect(chatFactLineOf({ kind: "closing" })).toBe(
-      "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child finishes, the app does a short review and says goodbye.",
+      "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye.",
     );
     // 앞 두 문장은 지금 새 방식의 마무리 줄과 글자까지 같다(I-7)
     expect(chatFactLineOf({ kind: "closing" })).toMatch(
       /^This is the closing turn\. After your turn the app shows the buttons 'talk more' and 'finish'\. /,
     );
+    // C243 보완 8 (4): 판 4 의 줄에서 두 단추 문장 바로 뒤에 '더 이야기하기면 여기서 이어짐' 한 문장만 더했다
+    expect(
+      chatFactLineOf({ kind: "closing" }).replace(` ${TALK_MORE_SENTENCE}`, ""),
+    ).toBe(C243_8.closing.old);
     expect(chatFactLineOf({ kind: "last_turn" })).toBe(
       "This is the last turn of today's chat. After your turn the app ends the chat.",
     );
@@ -789,6 +886,44 @@ describe("AC-27c 입력 줄 · 돌아옴 · 사실 줄(spec 설계 3)", () => {
     expect(msg({ kind: "quiet" }, [{ kind: "closing" }])).toContain(
       chatFactLineOf({ kind: "closing" }),
     );
+  });
+
+  it("AC-27c C243 보완 8 (4): '더 이야기하기면 대화가 여기서 이어진다' 문장은 마무리 차례의 사실 줄에서만 붙는다", () => {
+    // 마무리 줄이 있는 차례(입력 갈래와 상관없이)
+    for (const input of [
+      speech("Yes."),
+      { kind: "quiet" } as const,
+      { kind: "dont_know" } as const,
+      { kind: "not_heard" } as const,
+    ]) {
+      expect(msg(input, [{ kind: "closing" }])).toContain(TALK_MORE_SENTENCE);
+      expect(
+        msg(input, [{ kind: "closing" }]).split(TALK_MORE_SENTENCE),
+      ).toHaveLength(2);
+    }
+    // 다른 사실 줄 셋과 사실 줄 없는 차례 · 입구 줄에는 없다
+    for (const fact of [
+      { kind: "prep_next" },
+      { kind: "ko_help", taught: "I like cats." },
+      { kind: "ko_help", taught: null },
+      { kind: "last_turn" },
+    ] as const satisfies readonly ChatFact[])
+      expect(chatFactLineOf(fact)).not.toContain(TALK_MORE_SENTENCE);
+    for (const input of [
+      speech("Yes."),
+      { kind: "quiet" } as const,
+      { kind: "more" } as const,
+      { kind: "back" } as const,
+    ]) {
+      expect(msg(input)).not.toContain(TALK_MORE_SENTENCE);
+      expect(
+        msg(input, [{ kind: "prep_next" }, { kind: "ko_help", taught: null }]),
+      ).not.toContain(TALK_MORE_SENTENCE);
+    }
+    // 안전 상한 차례는 마무리 줄을 내지 않으므로 그 문장도 없다
+    expect(
+      msg(speech("Bye."), [{ kind: "closing" }, { kind: "last_turn" }]),
+    ).not.toContain(TALK_MORE_SENTENCE);
   });
 
   it("AC-27c 말함 입력의 들린 글이 비었거나 공백뿐이면 던진다(빈 말은 서버가 '눌렀으나 듣지 못함'으로 보낸다)", () => {
