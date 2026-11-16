@@ -66,11 +66,13 @@ import {
   AC11_LATE_TURNS,
   type AskedQuestion,
   afterSilenceOf,
+  alertAlternativeOf,
   type ChatCounts,
   chatCallLatencyOf,
   chatCountsOf,
   chatLongSummaryOf,
   chatTurnRowsOf,
+  effectiveBranchesOf,
   endingOf,
   type FirstSent,
   type FirstSentence,
@@ -78,6 +80,9 @@ import {
   firstSentStatsOf,
   flat,
   followSentenceOf,
+  HARD_FORMS,
+  hardFormCountsOf,
+  isAlertedTurn,
   type JudgeFile,
   type JudgeSummary,
   judgeSummaryOf,
@@ -87,7 +92,9 @@ import {
   nineViewsOf,
   OWN_WORDS,
   ownWordTurnsOf,
+  PERCEPTION_WHEN,
   percentile,
+  perceptionTurnsOf,
   questionStatsOf,
   questionsIn,
   SAID_CATEGORIES,
@@ -135,6 +142,8 @@ const BRANCHES: readonly Branch[] = [
   "모델의 문장을 지움",
   "모델을 부르지 않은 고정 차례",
 ];
+/** 이야기 방식의 1~3단계 소리 줄 빼기 갈래(BRANCHES 밖 — 있을 때만 수치 칸에 둔다, T2 fix 4 (라)). */
+const SOUND_LINE: Branch = "소리 줄로 뺌";
 
 export type Lesson = {
   name: string;
@@ -214,12 +223,13 @@ export function lessonMetricsOf(lesson: Lesson) {
   const changed = called.filter(
     (t) => flat(t.final) !== flat(t.modelFirstSpoken ?? ""),
   );
-  const branchCounts = Object.fromEntries(
-    BRANCHES.map((b) => [
-      b,
-      lesson.teachers.filter((t) => t.branches.includes(b)).length,
-    ]),
+  // 이야기 방식은 기록의 이름표를 다시 매긴다(T2 fix 4 (라) — 소리 줄 빼기를 '고정 문구'로 적었던 지난 기록). '소리 줄로 뺌' 칸은 있을 때만 둔다(지난 metrics.json 과 칸이 같게)
+  const effective = lesson.teachers.map(effectiveBranchesOf);
+  const branchCounts: Record<string, number> = Object.fromEntries(
+    BRANCHES.map((b) => [b, effective.filter((bs) => bs.includes(b)).length]),
   );
+  const soundLine = effective.filter((bs) => bs.includes(SOUND_LINE)).length;
+  if (soundLine > 0) branchCounts[SOUND_LINE] = soundLine;
   const perTurnMs = responses.filter((t) => t.called).map((t) => t.ms);
   const firstMs = responses.flatMap((t) =>
     t.firstMs === null ? [] : [t.firstMs],
@@ -275,6 +285,8 @@ export function lessonMetricsOf(lesson: Lesson) {
       offbandFormTurns: fit.filter((f) => f.offbandForms.length > 0).length,
       offbandForms: [...new Set(fit.flatMap((f) => f.offbandForms))],
     },
+    /** 어려운 꼴 셈(기록 전용 · 기계 어림 — T2 fix 4 (다), 단계 검사와 같은 범위: 아이 차례 뒤 선생님 차례). 새 칸이라 지난 칸은 그대로다. */
+    hardForms: hardFormCountsOf(responses),
     // X1(spec '회화 Claude 주도' 설계 9): 아래 둘은 옛 기록에도 셈이 나오도록 새 칸으로만 더한다(위 칸의 값은 그대로)
     firstSentence: firstSentenceStatsOf(firstSentencesOf(responses)),
     // X2: 아이에게 첫 문장이 나간 때(받아 둔 차례를 가름) · 새 엔진(N) 기록 셈 — 새 칸으로만 더한다(옛 기록은 비거나 null)
@@ -472,9 +484,14 @@ export function armMetricsOf(arm: Arm, lessons: readonly Lesson[]) {
           ? null
           : sum((m) => m.intervention.changedTurns) /
             sum((m) => m.intervention.calledTurns),
-      branches: Object.fromEntries(
-        BRANCHES.map((b) => [b, sum((m) => m.intervention.branches[b] ?? 0)]),
-      ),
+      branches: (() => {
+        const out: Record<string, number> = Object.fromEntries(
+          BRANCHES.map((b) => [b, sum((m) => m.intervention.branches[b] ?? 0)]),
+        );
+        const sound = sum((m) => m.intervention.branches[SOUND_LINE] ?? 0);
+        if (sound > 0) out[SOUND_LINE] = sound;
+        return out;
+      })(),
     },
     calls: {
       perChildTurnMean:
@@ -508,6 +525,7 @@ export function armMetricsOf(arm: Arm, lessons: readonly Lesson[]) {
       offbandWords: [...new Set(per.flatMap((m) => m.levelFit.offbandWords))],
       offbandForms: [...new Set(per.flatMap((m) => m.levelFit.offbandForms))],
     },
+    hardForms: hardFormCountsOf(responses),
     firstSentence: firstSentenceStatsOf(firstSentencesOf(responses)),
     firstSent: firstSentStatsOf(firstSentsOf(responses)),
     lead: leadArmOf(per),
@@ -783,12 +801,20 @@ function metricsMarkdown(
     ),
     ...rows(
       "(라) 앱의 개입",
-      ["방식", "모델 부른 차례", "최종 말 ≠ 모델 처음 말", ...BRANCHES],
+      [
+        "방식",
+        "모델 부른 차례",
+        "최종 말 ≠ 모델 처음 말",
+        ...BRANCHES,
+        `${SOUND_LINE}(CHAT 1~3단계 따라 할 문장 · 막힌 뒤 고르기 물음, 낱말이 모델 원문과 다르면 다른 갈래와 함께)`,
+      ],
       arms.map((m) => [
         m.arm,
         String(m.intervention.calledTurns),
         `${m.intervention.changedTurns} (${pct(m.intervention.changedRatio)})`,
-        ...BRANCHES.map((b) => String(m.intervention.branches[b] ?? 0)),
+        ...[...BRANCHES, SOUND_LINE].map((b) =>
+          String(m.intervention.branches[b] ?? 0),
+        ),
       ]),
     ),
     ...rows(
@@ -856,6 +882,23 @@ function metricsMarkdown(
         String(m.levelFit.offbandFormTurns),
         cell(m.levelFit.offbandWords.join(", ")),
         cell(m.levelFit.offbandForms.join(", ")),
+      ]),
+    ),
+    ...rows(
+      "(사-2) 어려운 꼴(기록 전용 · 기계 어림, 아이 차례 뒤 선생님 차례 — 문장은 nine-views.md 관점 7 의 목록)",
+      [
+        "방식",
+        "차례",
+        "어려운 꼴이 든 차례",
+        "든 문장",
+        ...HARD_FORMS.map((f) => f.label),
+      ],
+      arms.map((m) => [
+        m.arm,
+        String(m.levelFit.turns),
+        String(m.hardForms.turns),
+        String(m.hardForms.sentences),
+        ...HARD_FORMS.map((f) => String(m.hardForms.byForm[f.key])),
       ]),
     ),
     ...rows(
@@ -1062,11 +1105,11 @@ function childCell(c: ChildTurnLog | undefined): string {
   return c.noise ? `"${c.says}" → 들린 글 "${c.heard}"` : `"${c.says}"`;
 }
 
-function afterNoiseMarkdown(lessons: readonly Lesson[]): string {
+export function afterNoiseMarkdown(lessons: readonly Lesson[]): string {
   const out = [
     "# 잡음 · '잘 모르겠어요' · 말 없음 차례 바로 뒤 선생님 말(방식 나란히)",
     "",
-    "칸마다 그 방식 수업의 아이 말(잡음을 넣었으면 들린 글) 다음 줄에 바로 뒤 선생님의 최종 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 다르다. 잡음은 같은 씨앗이면 같은 차례에 넣고, 그 차례에 말하지 않았으면 건너뛴다.",
+    "칸마다 그 방식 수업의 아이 말(잡음을 넣었으면 들린 글) 다음 줄에 바로 뒤 선생님의 최종 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 다르다. 잡음은 같은 씨앗이면 같은 차례에 넣고, 그 차례에 말하지 않았으면 건너뛴다. 잡음 차례에는 선생님이 인식기 알림(확신 낮음 · 다른 후보)을 함께 받았는지를 적는다: '알림 없음 — 글로 알 길 없음'은 선생님이 들린 글만 받은 차례다(spec 설계 11 · 13절 C243 보완 8 (나)).",
     "",
   ];
   const groups = new Map<string, Lesson[]>();
@@ -1098,7 +1141,13 @@ function afterNoiseMarkdown(lessons: readonly Lesson[]): string {
         const teacher = l?.teachers.find((x) => x.childTurn === t);
         if (!c) return "(그 차례 없음)";
         const flag =
-          c.noise !== null ? "[잡음] " : c.noiseSkipped ? "[잡음 건너뜀] " : "";
+          c.noise !== null
+            ? isAlertedTurn(c)
+              ? "[잡음 · 알림 있음] "
+              : "[잡음 · 알림 없음 — 글로 알 길 없음] "
+            : c.noiseSkipped
+              ? "[잡음 건너뜀] "
+              : "";
         return cell(
           `${flag}${childCell(c)}\n→ ${teacher ? heardByChild(teacher.final) : "(선생님 말 없음 — 수업 끝)"}`,
         );
@@ -1333,61 +1382,102 @@ function blindOf(dir: string, lessons: readonly Lesson[]): void {
   order.forEach((l, i) => {
     const name = `T${String(i + 1).padStart(2, "0")}`;
     key[name] = l.name;
-    const out = [
-      `# ${name}`,
-      "",
-      `아이 ${l.meta.child} · 씨앗 ${l.meta.seed} · 아이 차례 ${l.meta.childTurns}`,
-      "",
-    ];
-    const opening = l.teachers.find((t) => t.childTurn === 0);
-    if (opening)
-      out.push(
-        "## 처음",
-        "",
-        ...heardByChild(opening.final)
-          .split("\n")
-          .map((x) => `> ${x}`),
-        "",
-      );
-    for (const c of l.children) {
-      out.push(`## 아이 차례 ${c.childTurn}`, "");
-      // 마무리 단추에서 '더 이야기하기'를 고른 뒤 이은 선생님 말(이 아이 차례 앞 — 매기는 차례가 아니다)
-      const cont = l.teachers.find(
-        (x) => x.childTurn === c.childTurn && x.afterChoice === true,
-      );
-      if (cont)
-        out.push(
-          "- (아이가 더 이야기하기로 함) 선생님:",
-          "",
-          ...heardByChild(cont.final)
-            .split("\n")
-            .map((x) => `> ${x}`),
-          "",
-        );
-      out.push(
-        `- 아이가 하려던 말: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"}`,
-      );
-      if (c.action === "speak") out.push(`- 들린 글: "${c.heard ?? ""}"`);
-      const t = l.teachers.find(
-        (x) => x.childTurn === c.childTurn && x.afterChoice !== true,
-      );
-      out.push(
-        "- 선생님:",
-        "",
-        ...(t
-          ? heardByChild(t.final)
-              .split("\n")
-              .map((x) => `> ${x}`)
-          : ["> (수업 끝)"]),
-        "",
-      );
-    }
-    writeFileSync(join(blind, `${name}.md`), `${out.join("\n")}\n`);
+    writeFileSync(join(blind, `${name}.md`), blindLessonMarkdownOf(name, l));
   });
   writeFileSync(
     join(dir, "blind-key.json"),
     `${JSON.stringify(key, null, 2)}\n`,
   );
+}
+
+/** 가린 기록에서 '더 이야기하기'를 고른 뒤 이은 선생님 말의 머리(읽을 맥락 — 매기는 차례가 아니다). */
+export const BLIND_MORE_LABEL = "- (아이가 더 이야기하기로 함) 선생님:";
+/**
+ * 가린 기록에서 짧은 낱말 준비 뒤 대화로 돌아온 선생님 말의 머리(T2 fix 4 (가) · T-562 — 아이 차례 바로 뒤 선생님 말 다음, 같은 아이 차례 번호로
+ * 매긴다). 방식 이름 · 입구 이름은 적지 않고 앱이 한 일만 적는다.
+ */
+export const BLIND_BACK_LABEL =
+  "- (짧은 낱말 준비를 마치고 대화로 돌아옴 — 두 말 사이에 아이 차례는 없었음) 선생님:";
+/** 아이 차례 없이 선생님이 잇달아 말한 그 밖의 차례 머리(지금 기록에는 없음 — 빠뜨리지 않으려고 둔다). */
+export const BLIND_NEXT_LABEL =
+  "- (이어서 — 두 말 사이에 아이 차례는 없었음) 선생님:";
+
+const quoted = (final: string) =>
+  heardByChild(final)
+    .split("\n")
+    .map((x) => `> ${x}`);
+
+/** 아이 차례에 실린 인식기 알림 줄(선생님이 들린 글과 함께 받은 것만 — spec 설계 11, 판정 칸 misheard 를 알림 유무로 가르는 재료). */
+function blindAlertLine(c: ChildTurnLog): string | null {
+  if (c.action !== "speak" || !isAlertedTurn(c)) return null;
+  const alt = alertAlternativeOf(c);
+  return `- 인식기 알림(선생님이 들린 글과 함께 받음): 확신 낮음${alt !== null ? ` · 다른 후보 "${alt}"` : ""}`;
+}
+
+/**
+ * 가린 기록 한 벌(수업 하나 — 방식 이름 · 수업 이름 없이 기록 번호만, {NAME} 은 아이가 들은 꼴). 기록에 든 선생님 말은 차례대로 빠짐없이 싣는다
+ * (T2 fix 4 (가)): 아이 차례 바로 뒤 첫 말은 '선생님:', 같은 아이 차례 뒤에 아이 말 없이 이어진 말(짧은 낱말 준비 뒤 돌아옴 등)은 그 아래 이름표와
+ * 함께, '더 이야기하기' 뒤 이음은 다음 아이 차례 머리에, 마지막 아이 차례 뒤에 남은 말은 끝에 둔다. 아이 차례 사이 선생님 말이 하나인 기록은
+ * 지난 꼴과 글자까지 같다.
+ */
+export function blindLessonMarkdownOf(
+  name: string,
+  l: Pick<Lesson, "meta" | "teachers" | "children">,
+): string {
+  const out = [
+    `# ${name}`,
+    "",
+    `아이 ${l.meta.child} · 씨앗 ${l.meta.seed} · 아이 차례 ${l.meta.childTurns}`,
+    "",
+  ];
+  const shown = new Set<TeacherTurnLog>();
+  const labelOf = (t: TeacherTurnLog) =>
+    t.afterChoice === true
+      ? BLIND_MORE_LABEL
+      : t.chat?.entry === "back"
+        ? BLIND_BACK_LABEL
+        : BLIND_NEXT_LABEL;
+  const pushLabeled = (ts: readonly TeacherTurnLog[]) => {
+    for (const t of ts) {
+      shown.add(t);
+      out.push(labelOf(t), "", ...quoted(t.final), "");
+    }
+  };
+  const repliesAt = (n: number) =>
+    l.teachers.filter((t) => t.childTurn === n && t.afterChoice !== true);
+  const opening = repliesAt(0);
+  const [first, ...rest] = opening;
+  if (first) {
+    shown.add(first);
+    out.push("## 처음", "", ...quoted(first.final), "");
+    pushLabeled(rest);
+  }
+  for (const c of l.children) {
+    out.push(`## 아이 차례 ${c.childTurn}`, "");
+    // 마무리 단추에서 '더 이야기하기'를 고른 뒤 이은 선생님 말(이 아이 차례 앞 — 매기는 차례가 아니다)
+    pushLabeled(
+      l.teachers.filter(
+        (x) => x.childTurn === c.childTurn && x.afterChoice === true,
+      ),
+    );
+    out.push(
+      `- 아이가 하려던 말: ${c.action === "speak" ? `"${c.says}"` : c.action === "dont_know" ? "('잘 모르겠어요' 단추)" : "(말 없음)"}`,
+    );
+    if (c.action === "speak") out.push(`- 들린 글: "${c.heard ?? ""}"`);
+    const alert = blindAlertLine(c);
+    if (alert !== null) out.push(alert);
+    const [t, ...more] = repliesAt(c.childTurn);
+    if (t) shown.add(t);
+    out.push("- 선생님:", "", ...(t ? quoted(t.final) : ["> (수업 끝)"]), "");
+    pushLabeled(more);
+  }
+  // 마지막 아이 차례 뒤에 남은 선생님 말(예: '더 이야기하기'를 고른 뒤 아이 차례 없이 끝난 수업의 이음)
+  const left = l.teachers.filter((t) => !shown.has(t));
+  if (left.length > 0) {
+    out.push("## 마지막 아이 차례 뒤", "");
+    pushLabeled(left);
+  }
+  return `${out.join("\n")}\n`;
 }
 
 // ── 가려 읽는 판정의 채점표 · 모음 ─────────────────────────────────
@@ -2278,7 +2368,7 @@ function examplesOf(
             checks: teacher.checks,
             retry: teacher.retry,
             changes: teacher.changes,
-            branches: teacher.branches,
+            branches: effectiveBranchesOf(teacher),
           },
           final: teacher.final,
         },
@@ -2337,7 +2427,7 @@ function examplesOf(
       md.push(
         `## A 에서 앱이 모델의 말을 바꾼 차례: 아이 차례 ${changed.childTurn}(\`examples/${file}\`)`,
         "",
-        `- 갈래: ${changed.branches.join(" · ")}`,
+        `- 갈래: ${effectiveBranchesOf(changed).join(" · ")}`,
         "- 모델의 처음 말:",
         "",
         ...(changed.modelFirstSpoken ?? "").split("\n").map((x) => `> ${x}`),
@@ -2372,7 +2462,7 @@ function examplesOf(
       `### ${arm}`,
       "",
       `- 아이: ${childCell(c)}`,
-      `- 갈래: ${t.branches.join(" · ")}`,
+      `- 갈래: ${effectiveBranchesOf(t).join(" · ")}`,
       ...(t.directive && t.directive.length > 0
         ? [
             `- ${arm === "A" ? "앱이 넘긴 이번 차례의 지시" : "B 가 걷은 줄"}: ${t.directive.length}줄(첫 줄 \`${t.directive[0]}\` …)`,
@@ -2572,6 +2662,21 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
       : ["- 없음"]),
     "",
   );
+  // T2 fix 4 (다): 몸 경험은 'my + 낱말' 꼴보다 지각 꼴(오늘 구름을 본다 · 밤에 별을 본다)이 많았다(분석 task-ana-chat-gaps (2))
+  const perceptions = perceptionTurnsOf(lessons);
+  out.push(
+    "### 선생님이 제 것으로 말한 지각 꼴(모든 방식의 선생님 최종 말 — 긴 대본 포함, 'I see · I hear · I look at' 이 때 말과 한 문장에 옴)",
+    "",
+    `읽기용 목록이다. 셈은 판정자가 하므로(own_life) 걸림 수로 세지 않는다. 함께 하는 상상 놀이 안의 말도 걸릴 수 있다. 앱의 지어낸 경험 꼴 검사와는 따로이고 앱 동작에 닿지 않는다(13절 C243 보완 8 — 앱 꼴 목록은 그대로). 때 말: ${PERCEPTION_WHEN.join(" · ")}`,
+    "",
+    ...(perceptions.length > 0
+      ? perceptions.map(
+          (r) =>
+            `- ${r.lesson}${r.long ? "(긴 대본)" : ""} 아이 차례 ${r.childTurn} · ${r.when}: ${r.sentence}`,
+        )
+      : ["- 없음"]),
+    "",
+  );
   list(
     "정리의 되짚을 말이 카드 정리 대사였던 수업과 대화 화제(M-1 — 아이가 한 말)",
     c.wrapCard.list.map(
@@ -2690,9 +2795,11 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
     const lr = chatTurnRowsOf([l]);
     const safety = lr.find((r) => r.facts.includes("last_turn"));
     const sum = chatLongSummaryOf(lr, l.meta.chat?.costUsd ?? 0);
+    const hard = hardFormCountsOf(l.teachers.filter((t) => t.childTurn > 0));
     out.push(
       `- ${l.name}: 아이 차례 ${l.meta.childTurns} · 끝 ${l.meta.ended ?? "아이 차례 상한"} · 덮은 설정 ${JSON.stringify(l.meta.chat?.overrides ?? {})} · 안전 상한 사실 줄 차례 ${safety ? `${safety.order}(아이 차례 ${safety.childTurn})` : "없음"} · 비용 ${l.meta.chat?.costUsd ?? "-"}달러`,
       `- AC-11 잣대: 아이 차례 ${AC11_EARLY_TURNS.join("~")} 의 첫 문장 시간 중앙값 ${num(sum.earlyMs, 0)}ms · ${AC11_LATE_TURNS.join("~")} ${num(sum.lateMs, 0)}ms · 차이 ${num(sum.diffMs, 0)}ms(잣대 ${AC11_DIFF_MS}ms) · 수업 비용 ${sum.costUsd}달러(잣대 ${AC11_COST_USD}달러): ${sum.over ? "넘음 — 켜기 전에 컨트롤러가 대화 기록 길이 상한을 정함" : "넘지 않음"}`,
+      `- 어려운 꼴(기록 전용 · 기계 어림) 차례 ${hard.turns} · 문장 ${hard.sentences}(${HARD_FORMS.map((f) => `${f.label} ${hard.byForm[f.key]}`).join(" · ")}) — 긴 대본 밖 수업의 셈은 metrics.md (사-2)`,
       "",
       ...turnTable(lr),
       "",

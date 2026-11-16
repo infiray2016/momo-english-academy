@@ -36,6 +36,7 @@ import { isQArm } from "./arch-arm-q";
 import { CHILD_NAME_FILL, type ChildKey, heardByChild } from "./arch-arms";
 import type {
   Arm,
+  Branch,
   ChildTurnLog,
   LessonEnding,
   LessonLog,
@@ -1291,6 +1292,227 @@ export function ownWordTurnsOf(
   return out;
 }
 
+// ── T2 fix 4(13절 C243 보완 8 의 실험 도구 넷) ─────────────────────────
+
+/** 한 문장 하나에 걸린 꼴 하나(읽기 목록 · 셈의 재료). */
+type SentenceHit<K extends string> = { form: K; sentence: string };
+
+/**
+ * 수준 기록에 더하는 어려운 꼴(기록 전용 · 기계 어림 — 분석 task-ana-chat-gaps (3) 라: 선생님의 제 이야기에서 나온 wish · would · 'd ·
+ * imagination · 동명사 주어). 앱의 단계 검사(levelFit)와는 따로이고 앱 동작에 닿지 않는다. 동명사 주어는 문장 첫 낱말(또는 둘째 낱말)이
+ * -ing 이고 몇 낱말 안에 is · makes 같은 동사가 오는 꼴로 어림한다(분사가 꾸미는 주어 'Cats doing silly things make …' 도 함께 잡는다).
+ */
+export const HARD_FORMS = [
+  { key: "wish", label: "wish", pattern: /\bwish(?:es|ed|ing)?\b/i },
+  { key: "would", label: "would", pattern: /\bwould(?:n't)?\b/i },
+  {
+    key: "contracted_d",
+    label: "'d",
+    pattern: /\b(?:i|you|we|they|he|she|it|that)['’]d\b/i,
+  },
+  {
+    key: "imagine",
+    label: "imagine",
+    pattern: /\bimagin(?:e|es|ed|ing|ation|ary)\b/i,
+  },
+  {
+    key: "gerund_subject",
+    label: "동명사 주어",
+    pattern:
+      /^(?:[a-z]+\s+)?([a-z]+ing)\b(?:\s+[a-z',]+){0,4}?\s+(?:is|are|was|were|makes?|made|feels?|sounds?|looks?)\b/i,
+  },
+] as const;
+
+export type HardFormKey = (typeof HARD_FORMS)[number]["key"];
+
+/** 동명사 주어 어림에서 빼는 흔한 -ing 낱말(명사 · 대명사). */
+const ING_NOUNS: ReadonlySet<string> = new Set([
+  "morning",
+  "evening",
+  "something",
+  "nothing",
+  "anything",
+  "everything",
+  "thing",
+  "king",
+  "ring",
+  "spring",
+  "wing",
+  "swing",
+  "string",
+  "ceiling",
+  "building",
+  "pudding",
+  "during",
+]);
+
+/** 선생님 글(아이가 들은 꼴)에서 문장마다 어려운 꼴을 모은다(한 문장에 여럿이면 HARD_FORMS 차례대로 모두). */
+export function hardFormsOf(text: string): SentenceHit<HardFormKey>[] {
+  const out: SentenceHit<HardFormKey>[] = [];
+  for (const raw of splitSentences(heardByChild(text).replaceAll("\n", " "))) {
+    const sentence = raw.trim();
+    for (const f of HARD_FORMS) {
+      const m = sentence.match(f.pattern);
+      if (!m) continue;
+      if (
+        f.key === "gerund_subject" &&
+        ING_NOUNS.has((m[1] ?? "").toLowerCase())
+      )
+        continue;
+      out.push({ form: f.key, sentence });
+    }
+  }
+  return out;
+}
+
+/** 어려운 꼴 셈(차례 · 문장 · 꼴별) — 같은 범위의 선생님 차례들에서. */
+export function hardFormCountsOf(teachers: readonly { final: string }[]): {
+  turns: number;
+  sentences: number;
+  byForm: Record<HardFormKey, number>;
+} {
+  const byForm = Object.fromEntries(
+    HARD_FORMS.map((f) => [f.key, 0]),
+  ) as Record<HardFormKey, number>;
+  let turns = 0;
+  const sentences = new Set<string>();
+  teachers.forEach((t, i) => {
+    const hits = hardFormsOf(t.final);
+    if (hits.length > 0) turns++;
+    for (const h of hits) {
+      byForm[h.form]++;
+      sentences.add(`${i}#${h.sentence}`);
+    }
+  });
+  return { turns, sentences: sentences.size, byForm };
+}
+
+/** 지각 꼴과 함께 오면 '이 대화 밖의 때'를 말한 것으로 읽는 때 말(T2 fix 4 (다) — 'now' 는 함께 하는 상상 놀이 · 'I see now'(알겠어)와 섞여 넣지 않음). */
+export const PERCEPTION_WHEN: readonly string[] = [
+  "today",
+  "tonight",
+  "yesterday",
+  "every day",
+  "every night",
+  "every morning",
+  "this morning",
+  "this evening",
+  "in the morning",
+  "in the evening",
+  "at night",
+  "sometimes",
+  "always",
+  "often",
+  "usually",
+  "never",
+];
+
+const PERCEPTION_VERB =
+  /\bI\s+(?:(?:can|could|always|often|sometimes|usually|never)\s+)?(?:see|saw|hear|heard|look(?:ed)?\s+at)\b/i;
+const PERCEPTION_WHEN_PATTERN = new RegExp(
+  `\\b(${[...PERCEPTION_WHEN].sort((a, b) => b.length - a.length).join("|")})\\b`,
+  "i",
+);
+
+/** 선생님이 제 것으로 말한 지각 꼴 한 문장(수업 · 아이 차례 · 때 말 · 문장). */
+export type PerceptionTurn = {
+  lesson: string;
+  arm: Arm;
+  childTurn: number;
+  when: string;
+  sentence: string;
+  long: boolean;
+};
+
+/**
+ * 선생님 최종 말(아이가 들은 꼴)에서 'I see · I hear · I look at'(과거 · can 꼴 포함)이 PERCEPTION_WHEN 의 때 말과 한 문장에 온 것을 모은다
+ * (T2 fix 4 (다), 분석 task-ana-chat-gaps (2) 다 — 읽기용, 판정자의 own_life 와 함께 읽는다). 'I see.'(알겠어) · 'I see it too'(함께 하는
+ * 상상)처럼 때 말이 없는 문장은 걸리지 않는다. 앱의 지어낸 경험 꼴 목록과는 따로이고 앱 동작에 닿지 않는다(C243 보완 8).
+ */
+export function perceptionTurnsOf(
+  lessons: readonly { meta: LessonLog; teachers: readonly TeacherTurnLog[] }[],
+): PerceptionTurn[] {
+  const out: PerceptionTurn[] = [];
+  for (const l of lessons)
+    for (const t of l.teachers)
+      for (const raw of splitSentences(
+        heardByChild(t.final).replaceAll("\n", " "),
+      )) {
+        const sentence = raw.trim();
+        if (!PERCEPTION_VERB.test(sentence)) continue;
+        const when = sentence.match(PERCEPTION_WHEN_PATTERN)?.[1];
+        if (!when) continue;
+        out.push({
+          lesson: l.meta.lesson,
+          arm: l.meta.arm,
+          childTurn: t.childTurn,
+          when: when.toLowerCase(),
+          sentence,
+          long: l.meta.variant === "long",
+        });
+      }
+  return out;
+}
+
+/**
+ * 아이 차례의 인식기 알림 유무(선생님이 들린 글과 함께 받았는가 — spec 설계 11): 이야기 방식은 턴 요청에 실은 인식기 정보(chat.recognizer —
+ * 낮은 확신 정도라 알림 줄이 붙음), 다른 방식은 선생님 호출에 실은 알림(stt — R2 · R3 만 싣는다). N 처럼 알림을 싣지 않는 방식은 늘 거짓이다.
+ */
+export function isAlertedTurn(c: ChildTurnLog): boolean {
+  if (c.chat) return (c.chat.recognizer ?? null) !== null;
+  return c.stt !== undefined;
+}
+
+/** 선생님이 받은 인식기 알림의 다른 후보 글(이야기 방식은 실제로 실은 것만 — 후보 수가 2 미만이면 싣지 않았다). 없으면 null. */
+export function alertAlternativeOf(c: ChildTurnLog): string | null {
+  if (c.chat) return c.chat.recognizer?.alternative ?? null;
+  return c.stt?.alt ?? null;
+}
+
+/** 글을 낱말만 남긴 꼴(소문자 · 따옴표 · 문장 부호 · 줄바꿈을 뺌 — 소리 줄 빼기가 낱말을 바꾸지 않았는지 볼 때). */
+const wordsOnly = (text: string) =>
+  (
+    text
+      .toLowerCase()
+      .replaceAll("’", "'")
+      .match(/[a-z0-9']+/g) ?? []
+  ).join(" ");
+
+/**
+ * 이야기 방식 차례의 갈래 이름표(T2 fix 4 (라)). 실패는 앱의 고정 말이라 '고정 문구를 붙임'. 1~3단계 따라 할 문장 · 막힌 뒤 고르기 물음을 소리 줄로 뺀 차례(removed)는
+ * 낱말이 모델 원문과 같으면 '소리 줄로 뺌' 하나다(모델 원문에 'You can say …' 가 이미 있었으므로 앱이 붙인 문구가 아니다, 분석 우려 4). 낱말이
+ * 다르면 지난 문장 차이 갈래를 적고 '소리 줄로 뺌'을 함께 단다. 그 밖은 지난 꼴(문장 차이)과 같다.
+ */
+export function chatBranchesOf(input: {
+  failure: string | null;
+  rawSay: string | null;
+  final: string;
+  removed: readonly string[];
+}): Branch[] {
+  if (input.failure !== null) return ["고정 문구를 붙임"];
+  const moved = input.removed.length > 0;
+  if (moved && wordsOnly(input.rawSay ?? "") === wordsOnly(input.final))
+    return ["소리 줄로 뺌"];
+  const changes = sentenceDiffOf([input.rawSay ?? ""], input.final);
+  const out: Branch[] = [];
+  if (changes.added.length > 0) out.push("고정 문구를 붙임");
+  if (changes.deleted.length > 0) out.push("모델의 문장을 지움");
+  if (moved) out.push("소리 줄로 뺌");
+  if (out.length === 0) out.push("그대로 나감");
+  return out;
+}
+
+/** 수치 · 대본 글에 쓰는 갈래(이야기 방식은 기록에서 다시 매김 — 지난 기록의 이름표를 고치지 않고 읽을 때 바로잡는다, 다른 방식은 기록 그대로). */
+export function effectiveBranchesOf(t: TeacherTurnLog): Branch[] {
+  if (t.arm !== "CHAT" || !t.chat) return t.branches;
+  return chatBranchesOf({
+    failure: t.chat.failure,
+    rawSay: t.modelFirstSpoken,
+    final: t.final,
+    removed: t.chat.removed,
+  });
+}
+
 export type ChatCounts = {
   lessons: number;
   /** I-1: 인사 끝 차례(사실 줄 prep_next)의 말에 물음이 든 수업 수. */
@@ -2348,16 +2570,67 @@ export function nineViewsOf(
   };
   const hasRecognizerNote = (c: ChildTurnLog) =>
     (c.chat?.recognizer ?? null) !== null || c.stt !== undefined;
+  const alertedNoisy = (ls: ViewLesson[]) =>
+    noisy(ls).filter((x) => isAlertedTurn(x.c));
+  const silentNoisy = (ls: ViewLesson[]) =>
+    noisy(ls).filter((x) => !isAlertedTurn(x.c));
+  type NoisyTurn = ReturnType<typeof noisy>[number];
+  const reaskOf = (xs: NoisyTurn[]) => {
+    const ys = xs.filter((x) => x.reply !== null);
+    return frac(
+      ys.filter((x) => REASK_PATTERN.test(x.reply as string)).length,
+      ys.length,
+    );
+  };
+  const tookWrongOf = (xs: NoisyTurn[]) => {
+    const ys = xs.filter((x) => x.reply !== null);
+    return frac(
+      ys.filter((x) =>
+        overlaps(wrongWordsOf(x.c), contentWordsOf(x.reply as string)),
+      ).length,
+      ys.length,
+    );
+  };
+  const alertNote = (c: ChildTurnLog) =>
+    isAlertedTurn(c) ? "알림 있음" : "알림 없음(글로 알 길 없음)";
   const view6: NineView = {
     no: 6,
     title: NINE_VIEW_TITLES[5],
-    rule: "잡음 차례: 실험이 들린 글을 바꿔 넣은(noise) 아이 차례와 바로 뒤 선생님 말. 같은 씨앗이면 방식마다 같은 차례에 넣는다(아이 역이 그 차례에 말하지 않으면 건너뜀).",
+    rule: "잡음 차례: 실험이 들린 글을 바꿔 넣은(noise) 아이 차례와 바로 뒤 선생님 말. 같은 씨앗이면 방식마다 같은 차례에 넣는다(아이 역이 그 차례에 말하지 않으면 건너뜀). 잡음 차례는 선생님 호출에 인식기 알림(확신 낮음 · 다른 후보)이 실린 차례와 실리지 않은 차례로 갈라 센다. 알림 없이 잘못 들린 차례는 선생님이 글만으로 알 길이 없는 차례라 따로 적는다(spec '회화 대화 구조 R' 설계 11 · AC-14 (라), 13절 C243 보완 8 (나)).",
     existing: [
       "after-noise.md(잡음 차례를 방식마다 나란히)",
       "chat.md '맞게 들린 말에 알림이 붙은 차례 뒤 선생님 말'(CHAT 의 인식기 알림)",
     ],
     stats: [
       stat("noise:turns", "잡음 차례", (ls) => num(noisy(ls).length)),
+      stat("noise:alerted", "잡음 차례 가운데 인식기 알림이 실린 차례", (ls) =>
+        num(alertedNoisy(ls).length),
+      ),
+      stat(
+        "noise:silent",
+        "잡음 차례 가운데 알림 없이 잘못 들린 차례(글로 알 길 없음)",
+        (ls) => num(silentNoisy(ls).length),
+      ),
+      stat(
+        "noise:alerted_reask",
+        "알림 있는 잡음 차례: 바로 뒤 선생님 말이 되묻기 · 확인 꼴(기계 어림)",
+        (ls) => reaskOf(alertedNoisy(ls)),
+      ),
+      stat(
+        "noise:alerted_took_wrong",
+        "알림 있는 잡음 차례: 바로 뒤 선생님 말이 잘못 들린 낱말을 씀",
+        (ls) => tookWrongOf(alertedNoisy(ls)),
+      ),
+      stat(
+        "noise:silent_reask",
+        "알림 없는 잡음 차례(글로 알 길 없음): 바로 뒤 선생님 말이 되묻기 · 확인 꼴(기계 어림)",
+        (ls) => reaskOf(silentNoisy(ls)),
+      ),
+      stat(
+        "noise:silent_took_wrong",
+        "알림 없는 잡음 차례(글로 알 길 없음): 바로 뒤 선생님 말이 잘못 들린 낱말을 씀",
+        (ls) => tookWrongOf(silentNoisy(ls)),
+      ),
       stat(
         "noise:reask",
         "바로 뒤 선생님 말이 되묻기 · 확인 꼴(기계 어림)",
@@ -2398,7 +2671,7 @@ export function nineViewsOf(
     lists: [
       list(
         "잡음 차례",
-        "잡음 차례의 하려던 말 → 들린 글과 바로 뒤 선생님 말(참고: 잘못 들린 낱말 · 선생님이 그 낱말을 썼는가 · 되묻기 꼴).",
+        "잡음 차례의 하려던 말 → 들린 글과 바로 뒤 선생님 말(참고: 인식기 알림 유무 · 잘못 들린 낱말 · 선생님이 그 낱말을 썼는가 · 되묻기 꼴).",
         (ls) =>
           noisy(ls).map(({ l, c, reply }) => {
             const wrong = [...wrongWordsOf(c)];
@@ -2408,7 +2681,23 @@ export function nineViewsOf(
             return caseOf(
               l,
               c,
-              `잘못 들린 낱말 ${wrong.length > 0 ? wrong.join(" · ") : "없음"}${used.length > 0 ? ` · 선생님이 씀: ${used.join(" · ")}` : ""}${reply !== null && REASK_PATTERN.test(reply) ? " · 되묻기 꼴" : ""}`,
+              `${alertNote(c)} · 잘못 들린 낱말 ${wrong.length > 0 ? wrong.join(" · ") : "없음"}${used.length > 0 ? ` · 선생님이 씀: ${used.join(" · ")}` : ""}${reply !== null && REASK_PATTERN.test(reply) ? " · 되묻기 꼴" : ""}`,
+            );
+          }),
+      ),
+      list(
+        "알림 없이 잘못 들린 차례(글로 알 길 없음)",
+        "잡음 차례 가운데 선생님 호출에 인식기 알림이 실리지 않은 차례와 바로 뒤 선생님 말. 선생님은 들린 글만 받았으므로 대화 맥락 밖에서는 알아챌 단서가 없다 — 고칠 수 있는 차례와 가르는 칸이다(참고: 잘못 들린 낱말 · 선생님이 그 낱말을 썼는가).",
+        (ls) =>
+          silentNoisy(ls).map(({ l, c, reply }) => {
+            const wrong = [...wrongWordsOf(c)];
+            const used = wrong.filter((w) =>
+              contentWordsOf(reply ?? "").has(w),
+            );
+            return caseOf(
+              l,
+              c,
+              `잘못 들린 낱말 ${wrong.length > 0 ? wrong.join(" · ") : "없음"}${used.length > 0 ? ` · 선생님이 씀: ${used.join(" · ")}` : ""}`,
             );
           }),
       ),
@@ -2485,6 +2774,17 @@ export function nineViewsOf(
                 xs.length,
         );
       }),
+      stat(
+        "level:hard_form_turns",
+        `어려운 꼴(${HARD_FORMS.map((f) => f.label).join(" · ")} — 기록 전용 · 기계 어림)이 든 선생님 차례`,
+        (ls) => {
+          const xs = responsesOf(ls);
+          return frac(
+            xs.filter((x) => hardFormsOf(x.t.final).length > 0).length,
+            xs.length,
+          );
+        },
+      ),
     ],
     lists: [
       list(
@@ -2500,6 +2800,20 @@ export function nineViewsOf(
               teacher: heardByChild(t.final),
               note: flagsOf(t).join(" · "),
             })),
+      ),
+      list(
+        "어려운 꼴이 든 선생님 문장(기록 전용 · 기계 어림)",
+        `아이 차례 뒤 선생님 말에서 ${HARD_FORMS.map((f) => f.label).join(" · ")} 꼴이 든 문장(참고: 걸린 꼴 · 그 문장). 동명사 주어는 첫 낱말이 -ing 이고 몇 낱말 안에 is · makes 같은 동사가 오는 꼴로 어림한다.`,
+        (ls) =>
+          responsesOf(ls).flatMap(({ l, t }) =>
+            hardFormsOf(t.final).map((h) => ({
+              lesson: l.meta.lesson,
+              childTurn: t.childTurn,
+              child: childSaidOf(childAt(l, t.childTurn)),
+              teacher: heardByChild(t.final),
+              note: `${HARD_FORMS.find((f) => f.key === h.form)?.label ?? h.form}: ${h.sentence}`,
+            })),
+          ),
       ),
     ],
   };
@@ -2573,6 +2887,21 @@ export function nineViewsOf(
               child: childSaidOf(childAt(l, o.childTurn)),
               teacher: o.sentence,
               note: o.words.join(" · "),
+            };
+          }),
+      ),
+      list(
+        "선생님이 제 것으로 말한 지각 꼴",
+        `'I see · I hear · I look at'(과거 · can 꼴 포함)이 때 말(${PERCEPTION_WHEN.join(" · ")})과 한 문장에 온 선생님 문장(참고: 때 말). 함께 하는 상상 놀이 안의 말도 걸릴 수 있어 판정자의 own_life 와 함께 읽는다.`,
+        (ls) =>
+          perceptionTurnsOf(ls).map((o) => {
+            const l = ls.find((x) => x.meta.lesson === o.lesson) as ViewLesson;
+            return {
+              lesson: o.lesson,
+              childTurn: o.childTurn,
+              child: childSaidOf(childAt(l, o.childTurn)),
+              teacher: o.sentence,
+              note: o.when,
             };
           }),
       ),

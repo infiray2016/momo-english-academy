@@ -179,7 +179,9 @@ import {
   wrapChoiceMessageOf,
 } from "./arch-arms";
 import {
+  chatBranchesOf,
   createFirstSentenceClock,
+  effectiveBranchesOf,
   type FirstSent,
   type FirstSentence,
   flat,
@@ -297,7 +299,9 @@ export type Branch =
   | "카드의 질문으로 바꿈"
   | "고정 문구를 붙임"
   | "모델의 문장을 지움"
-  | "모델을 부르지 않은 고정 차례";
+  | "모델을 부르지 않은 고정 차례"
+  /** CHAT: 1~3단계 따라 할 문장 · 막힌 뒤 고르기 물음을 보이는 글에서 빼 소리 줄로 냄(move.chat.removed)(나간 글의 낱말이 모델 원문과 같으면 이 갈래 하나, 다르면 다른 갈래와 함께 단다 — T2 fix 4 (라), arch-metrics chatBranchesOf). */
+  | "소리 줄로 뺌";
 
 export type TeacherTurnLog = {
   type: "teacher_turn";
@@ -2695,13 +2699,12 @@ function chatLinesOf(
     const rawSay = typeof raw?.say === "string" ? raw.say.trim() : null;
     const final = rec.heard;
     const changes = sentenceDiffOf([rawSay ?? ""], final);
-    const branches: Branch[] = [];
-    if (rec.failure !== null) branches.push("고정 문구를 붙임");
-    else {
-      if (changes.added.length > 0) branches.push("고정 문구를 붙임");
-      if (changes.deleted.length > 0) branches.push("모델의 문장을 지움");
-    }
-    if (branches.length === 0) branches.push("그대로 나감");
+    const branches = chatBranchesOf({
+      failure: rec.failure,
+      rawSay,
+      final,
+      removed: rec.teacher?.move.chat?.removed ?? [],
+    });
     const latency = t.usage?.latencyMs ?? 0;
     const firstText =
       splitSentences((rawSay ?? final).replaceAll("\n", " "))[0] ?? null;
@@ -3224,7 +3227,7 @@ export function transcriptOf(lines: readonly LogLine[]): string {
   const block = (t: TeacherTurnLog | undefined) => {
     if (!t) return [];
     const rows = [
-      `**선생님**(${[...(t.chat ? [`입구 ${t.chat.entry}`] : []), ...t.branches].join(" · ")}):`,
+      `**선생님**(${[...(t.chat ? [`입구 ${t.chat.entry}`] : []), ...effectiveBranchesOf(t)].join(" · ")}):`,
       "",
       ...t.final.split("\n").map((l) => `> ${l}`),
       "",
