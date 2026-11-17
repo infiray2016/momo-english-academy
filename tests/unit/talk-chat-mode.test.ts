@@ -314,12 +314,12 @@ describe("아이 행 입력 방식 좁히기(묶음 D 의 열거 값 quiet 뒤 �
   });
 });
 
-describe("개발용 쪽 서버 액션(묶음 E 전까지 두 값)", () => {
-  it("AC-27a 개발용 쪽 서버 액션은 묶음 E 전까지 app · claude 둘만 받고 chat 은 받지 않는다", () => {
-    expect([...DEV_TALK_MODES]).toEqual(["app", "claude"]);
+describe("개발용 쪽 서버 액션(묶음 E 부터 세 값)", () => {
+  it("AC-27a 개발용 쪽 서버 액션은 묶음 E 부터 app · claude · chat 세 값을 받는다", () => {
+    expect([...DEV_TALK_MODES]).toEqual(["app", "claude", "chat"]);
     expect(talkModeInputOf("app")).toBe("app");
     expect(talkModeInputOf("claude")).toBe("claude");
-    expect(talkModeInputOf("chat")).toBeNull();
+    expect(talkModeInputOf("chat")).toBe("chat");
   });
 });
 

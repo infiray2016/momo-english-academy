@@ -1,12 +1,13 @@
 import "server-only";
 // 개발용 회화 방식 전환 쪽(/dev/talk-mode — 회화 Claude 주도 plan 묶음 D · spec FR-13 · 정본 AC-26o · 13절 C238 (5))의 값 읽기 · 쓰기.
-// 요청자가 수업과 수업 사이에 회화의 두 방식(app 기존 방식 · claude 새 방식)을 직접 바꿔 견주게 한다. 진행 중인 수업은 처음 스냅숏의
+// 요청자가 수업과 수업 사이에 회화의 세 방식(app 기존 방식 · claude 새 방식 · chat 이야기 방식)을 직접 바꿔 견주게 한다. 진행 중인 수업은 처음 스냅숏의
 // leadMode 그대로 가고(lead-mode.ts), 새로 여는 수업부터 바뀐 값을 읽는다.
 // - 서버 액션 둘(readTalkMode · changeTalkMode)은 함수 안 지시 'use server' 이고 첫 문장이 requireAccess() 다(쿠키 없으면 401). 쪽(page.preview.tsx)이
 //   본체에 넘긴다 — 이 파일은 순수 꼴 · 가짜 저장소 시험을 위해 파일 지시를 두지 않는다.
 // - 운영 배포(VERCEL_ENV=production)면 읽지도 쓰지도 않는다(쪽이 운영 빌드에 없는 것에 더한 깊이 방어 — previewToolsAllowed).
-// - talk.lead_mode 한 키의 집 행(profile_id 빈 행)만, app · claude 두 값만 쓴다(DEV_TALK_MODES — 설정 값에는 셋째 값 chat 이 있으나, 이야기 방식
-//   plan 묶음 C 가 묶음 E(켜기 전 관문 뒤)까지 이 쪽에서 chat 을 고르지 못하게 둘로 고정한다. 집 행이 chat 이면 읽기는 invalid 다). 바꿀 때 설정 판을 settings 전체 최대 판 + 1 로 올리고
+// - talk.lead_mode 한 키의 집 행(profile_id 빈 행)만, 설정 값 목록과 같은 app · claude · chat 세 값만 쓴다(DEV_TALK_MODES — 이야기 방식 plan
+//   묶음 E 가 묶음 C 의 두 값 고정을 풀었다. 이 판은 켜기 전 관문 G 를 지난 뒤에 올린다). chat 이 실제로 열리는지(설정 · 1~3단계 · 단원 재료 ·
+//   선생님 재료 넷)는 이 쪽이 셈하지 않고 수업을 열 때의 스냅숏 조건(lessonStartModeOf · chatStartAllowed)이 판단한다. 바꿀 때 설정 판을 settings 전체 최대 판 + 1 로 올리고
 //   settings_history 에 한 줄 남긴다(5절 · 12절 머리 — 시드 적재와 같은 꼴). 같은 값이면 쓰지 않는다. 다른 설정 행은 건드리지 않는다.
 // DB 오류는 이름 · 코드만 담아 다시 던진다(safeDbError).
 import { and, eq, isNull, max } from "drizzle-orm";
@@ -25,10 +26,11 @@ import { previewToolsAllowed } from "@/server/preview";
 /** settings_history.source 의 개발용 전환 쪽 값(시드 적재 seed_load 와 가른다). */
 export const TALK_MODE_HISTORY_SOURCE = "dev_talk_mode";
 
-/** 이 쪽이 받고 보이는 방식(묶음 E 전까지 app · claude 둘 — 이야기 방식 plan 묶음 C). */
+/** 이 쪽이 받고 보이는 방식: 설정 값 목록(TALK_LEAD_MODES)과 같은 세 값(이야기 방식 plan 묶음 E). */
 export const DEV_TALK_MODES = [
   "app",
   "claude",
+  "chat",
 ] as const satisfies readonly TalkLeadMode[];
 export type DevTalkMode = (typeof DEV_TALK_MODES)[number];
 
@@ -76,7 +78,7 @@ export type TalkModeStore = {
   transaction<T>(fn: (tx: TalkModeTx) => Promise<T>): Promise<T>;
 };
 
-/** 바꿀 값: app · claude 두 글만 받는다(그 밖은 null). */
+/** 바꿀 값: app · claude · chat 세 글만 받는다(그 밖은 null). */
 export function talkModeInputOf(input: unknown): DevTalkMode | null {
   const parsed = talkLeadModeSchema.safeParse(input);
   return parsed.success ? parsed.data : null;
@@ -159,7 +161,7 @@ export function dbTalkModeStore(db: Db = getDb()): TalkModeStore {
 type ReadDeps = { env?: Env; store?: TalkModeStore };
 type ChangeDeps = ReadDeps & { now?: () => Date };
 
-/** 지금 값 읽기(몸). 운영 배포면 not-allowed, 집 행이 없으면 missing, 두 값 밖이면 invalid. */
+/** 지금 값 읽기(몸). 운영 배포면 not-allowed, 집 행이 없으면 missing, 세 값 밖이면 invalid. */
 export async function readTalkModeFor({
   env = process.env,
   store,
@@ -175,7 +177,7 @@ export async function readTalkModeFor({
     : { ok: false, reason: "invalid" };
 }
 
-/** 값 바꾸기(몸). 운영 배포면 not-allowed, 두 값 밖이면 invalid-input, 집 행이 없으면 missing. */
+/** 값 바꾸기(몸). 운영 배포면 not-allowed, 세 값 밖이면 invalid-input, 집 행이 없으면 missing. */
 export async function changeTalkModeFor(
   input: unknown,
   { env = process.env, store, now = clockNow }: ChangeDeps = {},
@@ -204,7 +206,7 @@ export async function readTalkMode(): Promise<TalkModeRead> {
   return readTalkModeFor();
 }
 
-/** 서버 액션: app · claude 가운데 하나로 바꾸기. 입력 검사는 몸이 한다. */
+/** 서버 액션: app · claude · chat 가운데 하나로 바꾸기. 입력 검사는 몸이 한다. */
 export async function changeTalkMode(input: unknown): Promise<TalkModeOutcome> {
   "use server";
   await requireAccess();
