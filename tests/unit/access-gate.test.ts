@@ -603,6 +603,117 @@ export default Layout;`;
   });
 });
 
+// 관문에서 빠지는 주소가 404 가 되면 루트 '없는 주소' 판이 proxy 없이 그려진다(검토 rev-sec-bypass M-2). 그래서 Next 의 특수 판
+// (not-found · error · global-error · template · default · unauthorized · forbidden · loading)은 서버 모듈(@/server/ · @/db/)을
+// 가져오지 않는다 — 'use client' 판이거나 서버 모듈 가져오기가 없어야 한다.
+
+const SPECIAL_FILE =
+  /(^|\/)(not-found|error|global-error|template|default|unauthorized|forbidden|loading)\.(?:(?:preview|local)\.)?(ts|tsx|js|jsx)$/;
+const SERVER_MODULE = /^@\/(server|db)(\/|$)/;
+const SERVER_DIR = /^src\/(server|db)(\/|$)/;
+
+/** 가져오는 모듈 이름이 서버 모듈인가. 상대 경로는 파일 자리에서 풀어 src/server · src/db 안인지 본다. */
+function isServerModule(fromPath: string, specifier: string): boolean {
+  if (SERVER_MODULE.test(specifier)) return true;
+  if (!specifier.startsWith(".")) return false;
+  const resolved = relative(
+    REPO_ROOT,
+    join(REPO_ROOT, fromPath, "..", specifier),
+  )
+    .split(sep)
+    .join("/");
+  return SERVER_DIR.test(resolved);
+}
+
+/** 특수 판 하나가 서버 모듈을 가져오는 곳. 'use client' 판은 보지 않는다. */
+function findSpecialFileViolations(path: string, text: string): string[] {
+  const source = ts.createSourceFile(
+    path,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const first = source.statements[0];
+  if (
+    first &&
+    ts.isExpressionStatement(first) &&
+    ts.isStringLiteral(first.expression) &&
+    first.expression.text === "use client"
+  )
+    return [];
+  const specifiers: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    )
+      specifiers.push(node.moduleSpecifier.text);
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0] &&
+      ts.isStringLiteral(node.arguments[0])
+    )
+      specifiers.push(node.arguments[0].text);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return specifiers
+    .filter((spec) => isServerModule(path, spec))
+    .map((spec) => `${path} 서버 모듈 ${spec} 을 가져옴`);
+}
+
+describe("특수 판의 서버 모듈", () => {
+  it("AC-N5 특수 판: src/app 의 not-found · error · global-error · template · default · unauthorized · forbidden · loading 판이 @/server/ · @/db/ 를 가져오지 않는다('use client' 이거나, 검토 rev-sec-bypass M-2)", () => {
+    const files = sourceFiles("src/app")
+      .map((p) => relative(REPO_ROOT, join(REPO_ROOT, p)).split(sep).join("/"))
+      .filter((p) => SPECIAL_FILE.test(p));
+    // 훑기가 실제로 루트 '없는 주소' 판과 오류 판을 찾는다(빈 목록으로 통과하지 않게)
+    expect(files).toEqual(
+      expect.arrayContaining(["src/app/not-found.tsx", "src/app/error.tsx"]),
+    );
+    const violations = files.flatMap((p) =>
+      findSpecialFileViolations(p, readFileSync(join(REPO_ROOT, p), "utf8")),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("AC-N5 특수 판: 서버 모듈을 가져오는 견본 판(가져오기 · 다시 내보내기 · 동적 가져오기 · 상대 경로)을 잡고 'use client' · 부품만 가져오는 판은 잡지 않는다", () => {
+    const fake: Record<string, string> = {
+      "src/app/not-found.tsx": `import { readHome } from "@/server/home";
+export default async function NotFound() { return readHome(); }`,
+      "src/app/(child)/template.tsx": `export { db } from "@/db";
+export default function Template({ children }) { return children; }`,
+      "src/app/(child)/x/default.tsx": `export default async function Default() { const m = await import("@/server/profile"); return m.read(); }`,
+      "src/app/(child)/loading.tsx": `import { db } from "../../db/client";
+export default function Loading() { return null; }`,
+      "src/app/forbidden.tsx": `import { readSettings } from "../server/settings";
+export default function Forbidden() { return null; }`,
+      "src/app/error.tsx": `"use client";
+import { AppErrorPanel } from "@/components/session/app-trouble";
+export default function ErrorPage() { return null; }`,
+      "src/app/(setup)/access/unauthorized.tsx": `import { AccessCodeForm } from "./access-code-form";
+import { serverish } from "@/serverless/x";
+export default function Unauthorized() { return null; }`,
+    };
+    for (const path of Object.keys(fake)) {
+      expect(SPECIAL_FILE.test(path), path).toBe(true);
+    }
+    const violations = Object.entries(fake).flatMap(([p, text]) =>
+      findSpecialFileViolations(p, text),
+    );
+    expect(violations).toEqual([
+      "src/app/not-found.tsx 서버 모듈 @/server/home 을 가져옴",
+      "src/app/(child)/template.tsx 서버 모듈 @/db 을 가져옴",
+      "src/app/(child)/x/default.tsx 서버 모듈 @/server/profile 을 가져옴",
+      "src/app/(child)/loading.tsx 서버 모듈 ../../db/client 을 가져옴",
+      "src/app/forbidden.tsx 서버 모듈 ../server/settings 을 가져옴",
+    ]);
+  });
+});
+
 describe("requireAccess · requireCron", () => {
   it("AC-N5 requireAccess: 쿠키가 없거나 무효면 unauthorized() 를 부르고 유효하면 부르지 않는다", async () => {
     const keyMaterial = randomSecret();

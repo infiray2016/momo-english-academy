@@ -61,9 +61,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 // 회화 선생님 모델 · 초상(teachers/ — 재배포가 허용된 공개 모델, 큰 파일 요청마다 proxy 를 부르지 않음, 선생님 화면 plan 값 15 · 위험 14)
 // 아래의 확장자 있는 파일(마지막 조각에 점), 뿌리 한 조각의 정적 확장자 파일(favicon.ico 등). 그 밖은 모두 관문을 지난다 — 주소 조각을
 // 받는 쪽(/session/abc.png · /images/lessons 등)이 관문을 건너뛰지 않게. public/dev/ 는 관문 안이다. 일치식은 Next 가 빌드 때 읽으므로
-// 상수 글이어야 한다(가드 시험 tests/unit/proxy-matcher-guard.test.ts).
+// 상수 글이어야 한다(가드 시험 tests/unit/proxy-matcher-guard.test.ts). images/ · teachers/ 갈래의 (?!.*\.rsc$): Next 가 빌드 때 일치식 뒤에
+// .rsc 접미(.rsc · .prefetch.rsc · .segments/….segment.rsc)를 붙이고 앞보기 안의 $ 는 그 접미까지 본 끝이라, 빼지 않으면 /images/lessons.rsc
+// 같은 RSC 요청을 정적 파일로 읽어 관문을 건너뛴다(검토 rev-sec-bypass I-1).
 export const config = {
   matcher: [
-    "/((?!_next/static/|_next/image$|(?:images|teachers)/.*\\.[^/]+$|[^/]+\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
+    "/((?!_next/static/|_next/image$|(?:images|teachers)/(?!.*\\.rsc$).*\\.[^/]+$|[^/]+\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
   ],
 };

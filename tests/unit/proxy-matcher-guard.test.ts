@@ -31,17 +31,25 @@ const METADATA_CODE_URL: Record<string, string> = {
 };
 /** 동적 조각을 채우는 평범한 값. */
 const DYNAMIC_SAMPLE = "x";
+/** public 아래 폴더 이름(images · teachers · dev …). 새 정적 폴더가 생기면 견본에 저절로 들어간다(검토 rev-sec-bypass M-1). */
+const PUBLIC_FOLDERS = readdirSync(join(REPO_ROOT, "public")).filter((name) =>
+  statSync(join(REPO_ROOT, "public", name)).isDirectory(),
+);
 /**
  * 동적 조각에 넣어 보는 '정적 파일처럼 보이는' 값(13절 C247 보완 1 (3)). 아이 쪽 주소 조각은 그대로 쪽에 닿으므로 이런 값으로도 관문을 지나야 한다.
- * 확장자 꼴 · 정적 폴더 이름 · 뿌리 정적 파일 이름.
+ * 확장자 꼴 · 정적 폴더 이름(public 의 폴더 목록에서) · 뿌리 정적 파일 이름.
  */
 const STATIC_LOOKING_SAMPLES = [
   "abc.png",
   "abc.txt",
-  "images",
-  "teachers",
+  ...PUBLIC_FOLDERS,
   "favicon.ico",
 ];
+/**
+ * Next 가 빌드 때 일치식 뒤에 붙이는 RSC 전송 접미(get-page-static-info 의 getMiddlewareMatchers). 쪽 주소 /x 의 RSC 요청 /x.rsc 등도
+ * 관문을 지나야 한다(검토 rev-sec-bypass I-1).
+ */
+const RSC_SUFFIXES = [".rsc", ".prefetch.rsc", ".segments/_tree.segment.rsc"];
 const DYNAMIC_SEGMENT = /^\[.+\]$/;
 
 type AppEntry = { file: string; url: string };
@@ -215,6 +223,10 @@ describe("proxy 일치식 가드", () => {
   });
 
   it("AC-N5 proxy 일치식 가드: 동적 조각이 있는 실제 쪽 · 처리기는 조각에 확장자 꼴 · images · teachers · favicon.ico 를 넣어도 관문을 지난다(C247 보완 1)", () => {
+    // 견본 폴더 이름이 public 에서 온다(빈 목록으로 통과하지 않게)
+    expect(PUBLIC_FOLDERS).toEqual(
+      expect.arrayContaining(["images", "teachers", "dev"]),
+    );
     for (const sample of STATIC_LOOKING_SAMPLES) {
       const entries = dynamicEntriesWith(sample);
       // 훑기가 실제로 동적 쪽을 찾는다(빈 목록으로 통과하지 않게)
@@ -228,6 +240,22 @@ describe("proxy 일치식 가드", () => {
         ]),
       );
       expect(bypassingEntries(entries), sample).toEqual([]);
+      // 같은 쪽의 RSC 요청 주소(.rsc 접미)도 관문을 지난다(검토 rev-sec-bypass I-1)
+      for (const { url } of entries) {
+        for (const suffix of RSC_SUFFIXES) {
+          expect(matches(`${url}${suffix}`), `${url}${suffix}`).toBe(true);
+        }
+      }
+    }
+    // 검토 rev-sec-bypass I-1 이 Next 시험 도구로 잰, 관문을 건너뛰던 RSC 주소
+    for (const url of [
+      "/images/lessons.rsc",
+      "/images/lessons.prefetch.rsc",
+      "/images/lessons.segments/_tree.segment.rsc",
+      "/teachers/placement.rsc",
+      "/images/lessons/past.rsc",
+    ]) {
+      expect(matches(url), url).toBe(true);
     }
     // 프리뷰 실측에서 관문을 건너뛴 다섯 주소(C247 보완 1)
     for (const url of [
@@ -251,7 +279,9 @@ describe("proxy 일치식 가드", () => {
       ...images,
       ...teachers,
       "/images/x.svg",
+      "/images/vocab/shoe.svg",
       "/teachers/x.vrm",
+      "/teachers/mina.9c5152a7.vrm",
       "/teachers/mina.fdc5f7f2.webp",
       "/favicon.ico",
       "/_next/static/chunks/main.js",
