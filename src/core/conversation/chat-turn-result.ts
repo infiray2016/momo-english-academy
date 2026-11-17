@@ -118,12 +118,17 @@ const wordsOnly = (text: string) =>
  */
 function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
   const removed = reply.record.removed ?? [];
-  // 나간 문장 안에 본체와 같은 경계 판정으로 든 조각만 나간 것이다(글자로만 든 'Wow, I play soccer.' 안의 조각은 아님 — 검토 rev-l2 I-1)
+  const orAnswers = reply.orAnswers ?? [];
+  // 나간 문장 안에 본체와 같은 경계 판정으로 든 조각만 나간 것이다(글자로만 든 'Wow, I play soccer.' 안의 조각은 아님 — 검토 rev-l2 I-1). 'or'
+  // 따옴표 답 조각은 그 꼴로 든 자리만 본다(13절 C243 보완 11)
   const out = removed.filter((piece) =>
-    sent.some((sentence) => lowBandHasPiece(sentence, piece)),
+    sent.some((sentence) =>
+      lowBandHasPiece(sentence, piece, orAnswers.includes(piece)),
+    ),
   );
   if (out.length === 0) return reply;
   const kept = removed.filter((piece) => !out.includes(piece));
+  const keptOr = orAnswers.filter((piece) => kept.includes(piece));
   const model =
     reply.sound.model !== undefined && kept.includes(reply.sound.model)
       ? reply.sound.model
@@ -133,17 +138,21 @@ function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
     removed: _removed,
     choices: _choices,
     soundMoved: _moved,
+    orAnswers: _or,
     ...rest
   } = reply.record;
+  const { orAnswers: _orPieces, ...base } = reply;
   return {
-    ...reply,
+    ...base,
     sound: {
       ...(model === undefined ? {} : { model }),
       ...(answers.length === 0 ? {} : { answer: answers.join(" ") }),
     },
+    ...(keptOr.length === 0 ? {} : { orAnswers: keptOr }),
     record: {
       ...rest,
       ...(kept.length === 0 ? {} : { removed: kept }),
+      ...(keptOr.length === 0 ? {} : { orAnswers: true as const }),
       ...(answers.length > 0 && reply.record.choices
         ? { choices: true as const }
         : {}),
@@ -155,7 +164,8 @@ function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
 }
 
 /**
- * 안전 상한 차례의 응답 처리 꼴(검토 I-2): 글을 바꾸지 않았으므로(나간 say 전체가 끝인사) 뺀 문장 · 소리 차례 바뀜 · 고르기 표시를 남기지 않는다.
+ * 안전 상한 차례의 응답 처리 꼴(검토 I-2): 글을 바꾸지 않았으므로(나간 say 전체가 끝인사) 뺀 문장 · 소리 차례 바뀜 · 고르기 표시 · 'or' 따옴표 답
+ * 표지를 남기지 않는다.
  * 따라 할 문장 대조(listen)는 say 에 들었으므로 그대로 둔다.
  */
 function unchangedOf(reply: ChatReply, say: string): ChatReply {
@@ -163,9 +173,11 @@ function unchangedOf(reply: ChatReply, say: string): ChatReply {
     removed: _removed,
     choices: _choices,
     soundMoved: _moved,
+    orAnswers: _or,
     ...rest
   } = reply.record;
-  return { ...reply, text: say, sound: {}, record: rest };
+  const { orAnswers: _orPieces, ...base } = reply;
+  return { ...base, text: say, sound: {}, record: rest };
 }
 
 /**
@@ -324,7 +336,11 @@ export function chatTurnResultOf({
     const pieces = sentReply.record.removed ?? [];
     // 잡아 둔 글에서 본체가 뺀 조각을 지운 글(본체와 같은 다듬기 — lead-low-band lowBandStrippedOf)과 소리 줄의 제자리(13절 C241 보완 7):
     // model 은 따라 할 문장 조각을 뺀 마지막 자리, answer 는 그 밖(고르기 물음)의 마지막 자리. 뒤에 글이 남는 소리 줄만 글 사이에 끼운다
-    const stripped = lowBandStrippedOf(flow.held.join(" "), pieces);
+    const stripped = lowBandStrippedOf(
+      flow.held.join(" "),
+      pieces,
+      sentReply.orAnswers,
+    );
     const modelKey =
       sentReply.sound.model === undefined
         ? null

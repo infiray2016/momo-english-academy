@@ -182,6 +182,8 @@ export const TalkChatSchema = z.strictObject({
   choices: z.literal(true).optional(),
   /** 1~3단계에서 보이는 글에서 뺀 문장(소리 줄). */
   removed: z.array(z.string()).optional(),
+  /** 따라 할 문장 바로 뒤의 'or' 따옴표 답 글도 고르기 답으로 보고 글에서 빼 소리 줄(answer)로 낸 차례(13절 C243 보완 11). 참일 때만 싣는다. */
+  orAnswers: z.literal(true).optional(),
   /** 소리 줄 뒤에 글이 남아 글 뒤의 듣기 단추 자리가 원래 문장 차례(소리 줄을 읽는 제자리)와 다르다(13절 C241 보완 7). */
   soundMoved: z.literal(true).optional(),
   /** 글 사이에서 읽은 소리 줄의 자리(LowBandSoundAtSchema). 칸이 없으면 글 뒤다. */
@@ -311,6 +313,7 @@ function copyChat(chat: TalkChat): TalkChat {
   if (chat.listen !== undefined) out.listen = { ...chat.listen };
   if (chat.choices !== undefined) out.choices = chat.choices;
   if (chat.removed !== undefined) out.removed = [...chat.removed];
+  if (chat.orAnswers !== undefined) out.orAnswers = chat.orAnswers;
   if (chat.soundMoved !== undefined) out.soundMoved = chat.soundMoved;
   if (chat.soundAt !== undefined) out.soundAt = { ...chat.soundAt };
   if (chat.gate !== undefined) out.gate = [...chat.gate];

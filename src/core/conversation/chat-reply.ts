@@ -1,6 +1,7 @@
 // 회화 이야기 방식(talk.lead_mode 'chat', intent 2026-11-13-회화-대화-구조-R spec 설계 4 · 5 · 9 · 데이터 move 행, plan 묶음 P2)의 응답 처리.
 // 대화 호출 응답(talk-chat.ts TalkChatOutput)을 화면 글 · 소리 줄 · 뜻 줄 · 선생님 행 move 로 옮긴다. 글을 바꾸는 것은 셋뿐이다(FR-4):
-// (가) 1~3단계에서 say 에 문장째 든 따라 할 문장(listen_sentence)을 글에서 빼 소리 줄로, (나) 앱이 아는 막힘 뒤의 or 물음 문장을 글에서 빼 소리
+// (가) 1~3단계에서 say 에 문장째 든 따라 할 문장(listen_sentence)을 글에서 빼 소리 줄로(바로 뒤의 'or' 따옴표 답 글도 —
+// 13절 C243 보완 11), (나) 앱이 아는 막힘 뒤의 or 물음 문장을 글에서 빼 소리
 // 줄로(lead-low-band 의 함수를 그대로 씀), (다) say_ko 의 영어 문장 거르기. listen_sentence 어긋남 · 수준 검사 · 지어낸 경험 꼴 검사는 기록만
 // 하고(C242 — 고정 규칙으로 대화를 고치지 않음), 인사 · 첫 말 · 돌아옴 차례의 wrap_up 참은 거짓으로 다루고 그 자리를 기록한다.
 // 입력의 say 는 문장 문(안전 검사)을 지난 글, listen_sentence 는 6.4 출력 검사를 지난 글이다 — 6.4 가 비운 따라 할 문장은 빼지 않는다(코드 검토
@@ -196,6 +197,7 @@ export type ChatReplyRecord = Pick<
   | "listen"
   | "choices"
   | "removed"
+  | "orAnswers"
   | "soundMoved"
   | "soundAt"
   | "level"
@@ -208,8 +210,16 @@ export type ChatReply = {
   text: string;
   /** 뜻 줄(1~3단계는 영어 문장 거르개를 지난 글). 선생님 행 tori_ko. */
   sayKo: string;
-  /** 소리 줄(글 없는 듣기 단추): model 은 say 에 든 따라 할 문장, answer 는 막힌 뒤 고르기 물음(둘 이상이면 이은 한 줄). */
+  /**
+   * 소리 줄(글 없는 듣기 단추): model 은 say 에 든 따라 할 문장, answer 는 막힌 뒤 고르기 물음 · 따라 할 문장 바로 뒤의 'or' 따옴표 답(둘 이상이면 이은
+   * 한 줄).
+   */
   sound: { model?: string; answer?: string };
+  /**
+   * record.removed 가운데 'or' 따옴표 답 조각(13절 C243 보완 11 — 잡아 둔 글 다듬기가 'or' 와 따옴표까지 지우게 넘긴다). 저장하지 않는다. 없으면 칸이
+   * 없다.
+   */
+  orAnswers?: string[];
   /** 처리한 wrap_up(거짓으로 다룬 자리면 거짓). 차례 끝 갈래(chatTurnEndOf)에 넘긴다. */
   wrapUp: boolean;
   record: ChatReplyRecord;
@@ -248,6 +258,9 @@ function madeUpRecordOf(say: string, phrases: readonly string[]): string[] {
  *   맞으면 그 글자 그대로의 조각을 글에서 빼 소리 줄 model 로 낸다. 어긋나면 글을 바꾸지 않는다. 정규화로는 들었으나 문장 경계 밖이라 글에 남은
  *   차례(문장 일부 · 끝 부호 없는 글 끝)는 listen.partial 표지로 따로 센다(검토 rev-chat-p2 M-1). 빼낸 or 물음 자리가 따라 할 문장의 조각을 품으면
  *   소리 줄은 그 자리 하나(answer)이고 model 로 겹쳐 내지 않는다(M-3).
+ * - 'or' 따옴표 답(13절 C243 보완 11): 1~3단계에서 따라 할 문장을 뺀 자리 바로 뒤에 'or' 와 따옴표로 묶인 답 글이 이어지면(둘 이상 이어져도) 그 답
+ *   글도 고르기 답으로 보고 'or' · 따옴표까지 글에서 빼 소리 줄 answer 로 낸다(막힘 여부와 무관, 기록 move.chat.orAnswers). listen_sentence 가 빈
+ *   차례 · 따라 할 문장을 빼지 못한 차례는 보지 않는다(앱이 짐작해 빼지 않음).
  * - 고르기 물음: 바로 앞 아이 차례가 앱이 아는 막힘이면 or 물음 문장을 글에서 빼 소리 줄 answer 로(마무리 차례 · wrap_up 차례는 빼지 않음 —
  *   lead-record leadChoicesOf 와 lead-low-band leadLowBandShownOf 를 그대로 부른다).
  * - 뜻 줄: 1~3단계 영어 문장 거르개(leadKoLineOf).
@@ -272,6 +285,7 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
     prevStuck: appStuck,
     closing,
     moreModels: literals.slice(1),
+    orAnswers: true,
   });
   const text = first.text;
   const removed = [...first.removed];
@@ -308,6 +322,7 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
         }),
     ...(choices ? { choices: true as const } : {}),
     ...(removed.length === 0 ? {} : { removed }),
+    ...(first.orAnswers === undefined ? {} : { orAnswers: true as const }),
     ...(soundMoved ? { soundMoved: true as const } : {}),
     level: levelRecordOf(say, check),
     madeUp: madeUpRecordOf(say, check.madeUpPhrases),
@@ -322,6 +337,7 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
       ...(model === undefined ? {} : { model }),
       ...(answers.length === 0 ? {} : { answer: answers.join(" ") }),
     },
+    ...(first.orAnswers === undefined ? {} : { orAnswers: first.orAnswers }),
     wrapUp,
     record,
   };

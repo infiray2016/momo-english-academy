@@ -805,6 +805,23 @@ describe("끝에서 낼 글과 소리 줄(spec 설계 8)", () => {
     expect(out.release).toEqual(out.shown);
   });
 
+  it("C243 보완 11 틈 확인(고치지 않음): 지금 새 방식은 따라 할 문장 바로 뒤 'or' 따옴표 답을 글에 남긴다 — 이야기 방식만 뺀다", () => {
+    const out = settle({
+      move: "model_repeat",
+      modelSentence: "Play day.",
+      sentences: [
+        "That's okay!",
+        "Say 'Play day.'",
+        "or 'Sleep day.'",
+        "Which one?",
+      ],
+      held: true,
+    });
+    expect(out.sound).toEqual({ model: "Play day." });
+    expect(out.removed).toEqual(["Play day."]);
+    expect(out.shown.join(" ")).toContain("'Sleep day.'");
+  });
+
   it("AC-26i 1~3단계 막힌 뒤 고르기: or 물음 문장은 글에서 빠져 소리 줄(answer) 하나로 가고, 뒤에 글이 남으면 소리 차례가 바뀐 것으로 적는다", () => {
     const out = settle({
       move: "easier_or_choices",

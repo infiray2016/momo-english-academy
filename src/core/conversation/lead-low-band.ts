@@ -27,6 +27,11 @@ export type LeadLowBandInput = {
    * 차례에서 modelSentence 와 같이 문장 첫머리에서만 빼고, 앞서 뺀 자리와 겹치는 자리는 빼지 않는다. 없으면 빈 목록.
    */
   moreModels?: readonly string[];
+  /**
+   * 따라 할 문장을 뺀 자리 바로 뒤에 'or' 와 따옴표로 묶인 답 글이 이어지면 그 답 글도 고르기 답으로 보고 함께 뺀다(이야기 방식만 — 13절 C243 보완 11).
+   * 지금 새 방식은 넘기지 않는다(그 방식의 빼기는 바꾸지 않음). model_repeat 차례에서 따라 할 문장을 뺀 때만 본다.
+   */
+  orAnswers?: boolean;
 };
 
 /** 소리 줄의 갈래(따라 할 문장 model · 막힌 뒤 고르기 물음 answer). */
@@ -56,6 +61,8 @@ export type LeadLowBandShown = {
   model: { sentence: string; removed: boolean } | null;
   /** moreModels 가운데 글에서 뺀 조각(받은 차례대로). */
   moreRemoved: string[];
+  /** orAnswers 로 뺀 'or' 따옴표 답 글(say 차례대로 — removed 에 든 그 조각). 뺀 것이 없으면 칸이 없다. */
+  orAnswers?: string[];
   /**
    * 소리 줄의 자리(text 의 글자 수): model 은 따라 할 문장을 뺀 마지막 자리(같은 문장이 두 자리면 소리 줄은 마지막 자리 하나 — C241 보완 7),
    * answer 는 그 밖의 뺀 자리(고르기 물음)의 마지막. 뺀 것이 없으면 칸이 없다.
@@ -68,7 +75,8 @@ export type LeadLowBandShown = {
   soundMoved: boolean;
 };
 
-type Span = { start: number; end: number };
+/** 뺄 자리. piece 는 뺀 조각으로 적을 글이 자리의 글과 다를 때만 둔다('or' 따옴표 답 — 자리는 'or' 부터 닫는 따옴표까지, 조각은 따옴표 안 답 글). */
+type Span = { start: number; end: number; piece?: string };
 
 /** 글자 · 숫자(낱말 경계를 가르는 글자. 남은 조각에 이것이 없으면 남은 말로 보지 않는다 — 따옴표 · 문장 부호 · 빈칸만 든 조각). */
 const WORD_CHAR = /[\p{L}\p{N}]/u;
@@ -143,6 +151,59 @@ function literalSpansOf(text: string, piece: string, from0 = 0): Span[] {
       from = at + 1;
     }
   }
+}
+
+// ── 따라 할 문장 바로 뒤 'or' 따옴표 답(13절 C243 보완 11) ──────────────────
+
+/** 'or' 뒤에 오는 여는 따옴표. */
+const OR_OPENER = /^or\s+["“‘']/i;
+/**
+ * 'or' 자리의 따옴표 답 하나: 여는 따옴표 뒤 낱말 글자로 시작해, 뒤가 빈칸 · 부호 · 글 끝인 닫는 따옴표까지('Let's sleep.' 의 줄임꼴 따옴표는 닫는
+ * 따옴표가 아니다). 답 글 안에 문장 끝 부호 뒤 빈칸이 있으면(문장 둘 이상) 답으로 보지 않는다.
+ */
+const OR_QUOTED = /^(["“‘'])([\p{L}\p{N}{][^\n]*?)(["”’'])(?=$|[\s.,!?;:)])/u;
+/** 따라 할 문장 조각 뒤 · 앞 답 뒤에서 'or' 앞까지 올 수 있는 글(닫는 따옴표 · 괄호 · 문장 부호 · 빈칸). */
+const OR_LEAD = /^[\s"”’'),.!?]*/;
+
+/** orAt(그 자리 글이 'or') 에서 시작하는 따옴표 답 자리(자리는 'or' 부터 닫는 따옴표까지, 조각은 따옴표 안 답 글). 꼴이 아니면 null. */
+function orAnswerAt(text: string, orAt: number): Span | null {
+  if (orAt === 0 || !/\s/.test(text.charAt(orAt - 1))) return null;
+  const rest = text.slice(orAt);
+  const head = OR_OPENER.exec(rest);
+  if (head === null) return null;
+  const quoteAt = head[0].length - 1;
+  const m = OR_QUOTED.exec(rest.slice(quoteAt));
+  if (m === null) return null;
+  const piece = (m[2] ?? "").replace(/[\s,]+$/, "");
+  if (!WORD_CHAR.test(piece) || /[.!?]\s/.test(piece)) return null;
+  return { start: orAt, end: orAt + quoteAt + m[0].length, piece };
+}
+
+/** 글자 자리 at(따라 할 문장 조각 끝) 바로 뒤로 이어지는 'or' 따옴표 답 자리들(사이에 낱말이 끼면 거기서 멈춘다). */
+function orAnswerChainOf(text: string, at: number): Span[] {
+  const out: Span[] = [];
+  let from = at;
+  for (;;) {
+    const lead = OR_LEAD.exec(text.slice(from))?.[0] ?? "";
+    const span = orAnswerAt(text, from + lead.length);
+    if (span === null) return out;
+    out.push(span);
+    from = span.end;
+  }
+}
+
+/** 글자 자리 from 부터 그 답 글(piece)의 'or' 따옴표 답 자리 첫째(잡아 둔 글 다듬기 · 이미 나간 조각 가르기 — 본체와 같은 꼴 판정). */
+function orAnswerSpanOf(
+  text: string,
+  piece: string,
+  from = 0,
+): Span | undefined {
+  for (const m of text.matchAll(/or/gi)) {
+    if (m.index < from) continue;
+    const span = orAnswerAt(text, m.index);
+    if (span !== null && span.piece === piece) return span;
+  }
+  return undefined;
 }
 
 /**
@@ -254,6 +315,8 @@ function cutTextOf(
 export function lowBandStrippedOf(
   held: string,
   pieces: readonly string[],
+  /** pieces 가운데 'or' 따옴표 답 조각(본체 leadLowBandShownOf 의 orAnswers — 'or' 와 따옴표까지 지운다, 13절 C243 보완 11). */
+  orAnswers: readonly string[] = [],
 ): { text: string; cutsAt: (number | undefined)[] } {
   const spans: Span[] = [];
   const found: number[] = [];
@@ -261,7 +324,11 @@ export function lowBandStrippedOf(
   for (const piece of pieces) {
     // 본체와 같은 경계 판정으로 찾는다(글자로만 든 앞 자리 — 문장의 일부 — 를 지우지 않게, 검토 rev-l2 I-1)
     const span =
-      piece === "" ? undefined : literalSpansOf(held, piece, from)[0];
+      piece === ""
+        ? undefined
+        : orAnswers.includes(piece)
+          ? orAnswerSpanOf(held, piece, from)
+          : literalSpansOf(held, piece, from)[0];
     if (span === undefined) {
       found.push(-1);
       continue;
@@ -286,8 +353,16 @@ export function lowBandStrippedOf(
  * 글에 그 조각이 문장 경계에 맞게 드는가(본체 leadLowBandShownOf 가 빼는 판정과 같음): 이야기 방식 흘림 길이 '이미 글로 나간 조각'을 가를 때
  * 쓴다(검토 rev-l2 I-1 — 글자로 들기만 한 'Wow, I play soccer.' 안의 조각은 나간 것이 아니다). 고르기 물음 조각은 통째 문장이라 그대로 찾힌다.
  */
-export function lowBandHasPiece(text: string, piece: string): boolean {
-  return piece !== "" && literalSpansOf(text, piece).length > 0;
+export function lowBandHasPiece(
+  text: string,
+  piece: string,
+  /** 'or' 따옴표 답 조각이면 참(그 꼴로 든 자리만 본다 — 13절 C243 보완 11). */
+  orAnswer = false,
+): boolean {
+  if (piece === "") return false;
+  return orAnswer
+    ? orAnswerSpanOf(text, piece) !== undefined
+    : literalSpansOf(text, piece).length > 0;
 }
 
 /** 글자 자리 뒤에 낱말이 남았는가(그 자리의 소리 줄이 글 사이에 놓이는가). */
@@ -380,11 +455,14 @@ export function leadLowBandShownOf(input: LeadLowBandInput): LeadLowBandShown {
   const spans: Span[] = [];
   const literals: string[] = [];
   const moreRemoved: string[] = [];
+  /** 따라 할 문장을 뺀 자리('or' 따옴표 답을 이을 앞 자리). */
+  const modelSpans: Span[] = [];
   let model: LeadLowBandShown["model"] = null;
   if (move === "model_repeat") {
     const sentence = modelSentence.trim();
     const found = sentence === "" ? [] : literalSpansOf(say, sentence);
     spans.push(...found);
+    modelSpans.push(...found);
     model = { sentence, removed: found.length > 0 };
     if (found.length > 0) literals.push(sentence);
   }
@@ -400,15 +478,29 @@ export function leadLowBandShownOf(input: LeadLowBandInput): LeadLowBandShown {
       );
       if (fresh.length === 0) continue;
       spans.push(...fresh);
+      modelSpans.push(...fresh);
       literals.push(piece);
       moreRemoved.push(piece);
+    }
+  }
+  // 따라 할 문장을 뺀 자리 바로 뒤의 'or' 따옴표 답(이야기 방식만, 13절 C243 보완 11): 앞서 정한 자리(막힌 뒤 고르기 물음 포함)와 겹치면 거기서 멈춘다
+  const orAnswers: string[] = [];
+  if (move === "model_repeat" && input.orAnswers === true) {
+    for (const at of modelSpans) {
+      for (const span of orAnswerChainOf(say, at.end)) {
+        if (spans.some((t) => span.start < t.end && t.start < span.end)) break;
+        spans.push(span);
+        orAnswers.push(span.piece ?? "");
+      }
     }
   }
 
   const merged = mergedSpans(spans);
   if (merged.length === 0) return none(model);
 
-  const removed = merged.map((span) => say.slice(span.start, span.end));
+  const removed = merged.map(
+    (span) => span.piece ?? say.slice(span.start, span.end),
+  );
   const { text, cutsAt } = cutTextOf(say, merged);
   // 소리 줄 자리: model 은 따라 할 문장만 뺀 마지막 자리(그런 자리가 없고 고르기 물음 자리가 품었으면 그 자리), answer 는 그 밖의 마지막 자리
   const lastAt = (test: (piece: string) => boolean): number | undefined => {
@@ -432,6 +524,7 @@ export function leadLowBandShownOf(input: LeadLowBandInput): LeadLowBandShown {
     cutsAt,
     model,
     moreRemoved,
+    ...(orAnswers.length === 0 ? {} : { orAnswers }),
     soundAt,
     soundMoved: Object.values(soundAt).some((pos) => wordsAfter(text, pos)),
   };

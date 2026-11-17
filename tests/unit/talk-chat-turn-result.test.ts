@@ -6,7 +6,10 @@ import {
   CHAT_SENTENCE_MAX,
 } from "@/core/ai/calls/talk-chat";
 import type { ChatInput } from "@/core/conversation/chat-message";
-import type { ChatReplyCheck } from "@/core/conversation/chat-reply";
+import {
+  type ChatReplyCheck,
+  chatReplyOf,
+} from "@/core/conversation/chat-reply";
 import {
   chatReplayLinesOf,
   chatTurnPlanOf,
@@ -545,5 +548,94 @@ describe("두 문장에 걸친 조각 · 문장 부호만 다른 차이", () => 
       held: [],
     });
     expect(other.diverged).toBe(true);
+  });
+
+  it("C243 보완 11 따라 할 문장 뒤 'or' 따옴표 답: 보통 흘림 · 막힌 뒤 · 모두 잡아 둔 차례가 다 받은 뒤의 응답 처리(chatReplyOf)와 같은 글 · 소리 줄을 내고, 다시 흘림도 같다", () => {
+    const sayOf = [
+      "That's okay! Maybe it's like this. Say 'Play day.' or 'Sleep day.' Which one?",
+      'Say "Play day." or "Sleep day." or "Fun day."',
+      "Say 'Play day', or 'Sleep day'. Which one?",
+      "Is it 'Play day' or 'Sleep day'? Tell me!",
+    ];
+    for (const say of sayOf)
+      for (const c of [
+        { name: "보통 흘림", input: SAY, holdAll: false },
+        { name: "막힌 뒤", input: DK, holdAll: false },
+        { name: "모두 잡아 둠", input: SAY, holdAll: true },
+      ]) {
+        const name = `${c.name} · ${say}`;
+        const listen = "Play day.";
+        const appStuck = c.input.kind === "dont_know";
+        const flow = createChatSentenceFlow({
+          level: 3,
+          appStuck,
+          holdAll: c.holdAll,
+        });
+        flow.listen(listen);
+        for (const sentence of splitSentences(say)) flow.accept(sentence);
+        const r = resultOf(
+          c.input,
+          ok(say, { listen, sentSentences: splitSentences(say) }),
+          { sent: flow.sent(), held: flow.held() },
+        );
+        const whole = chatReplyOf({
+          level: 3,
+          output: {
+            listen_sentence: listen,
+            say,
+            say_ko: "뜻",
+            wrap_up: false,
+          },
+          appStuck,
+          closingSlot: false,
+          wrapUpHeldAt: null,
+          check: CHECK,
+        });
+        expect(r.teacher?.text, name).toBe(whole.text);
+        expect(r.teacher?.move.sound, name).toEqual(whole.sound);
+        expect(r.teacher?.move.chat?.removed, name).toEqual(
+          whole.record.removed,
+        );
+        expect(r.teacher?.move.chat?.orAnswers, name).toBe(
+          whole.record.orAnswers,
+        );
+        expect(r.diverged, name).toBe(false);
+        const live = [
+          ...flow.sent().map((en) => ({ t: "s" as const, en })),
+          ...r.lines,
+        ];
+        // 글 줄에 'Sleep day' 가 없다(T2)
+        for (const line of live)
+          if (line.t === "s") expect(line.en, name).not.toMatch(/sleep/i);
+        expect(
+          chatReplayLinesOf(
+            {
+              text: r.teacher?.text ?? "",
+              toriKo: r.teacher?.toriKo ?? null,
+              move: r.teacher?.move,
+            },
+            true,
+          ),
+          name,
+        ).toEqual(live);
+      }
+  });
+
+  it("C243 보완 11 실호출 예의 줄 차례: 'Say:' → 따라 할 문장 → 다른 답 → 'Which one?' → 뜻(답 하나에 듣기 단추 하나)", () => {
+    const say =
+      "That's okay! Maybe it's like this. Say 'Play day.' or 'Sleep day.' Which one?";
+    const r = streamed(SAY, say, "Play day.");
+    expect(r.lines).toEqual([
+      { t: "s", en: "Say:" },
+      { t: "sound", kind: "model", say: "Play day." },
+      { t: "sound", kind: "answer", say: "Sleep day." },
+      { t: "s", en: "Which one?" },
+      { t: "ko", ko: "뜻" },
+    ]);
+    expect(r.teacher?.text).toBe(
+      "That's okay! Maybe it's like this. Say: Which one?",
+    );
+    const at = "That's okay! Maybe it's like this. Say:".length;
+    expect(r.teacher?.move.chat?.soundAt).toEqual({ model: at, answer: at });
   });
 });

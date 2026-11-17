@@ -393,6 +393,170 @@ describe("앱이 아는 막힘 뒤의 or 물음(spec 설계 4 · AC-4)", () => {
   });
 });
 
+describe("따라 할 문장 바로 뒤 'or' 따옴표 답(13절 C243 보완 11)", () => {
+  const REAL =
+    "That's okay! Maybe it's like this. Say 'Play day.' or 'Sleep day.' Which one?";
+
+  it("C243 보완 11 실호출 예: 'or' 뒤 따옴표 답도 글에서 빼 소리 줄 answer 로 내고, 기록에 표지를 남긴다", () => {
+    const r = reply({ listen_sentence: "Play day.", say: REAL });
+    expect(r.text).toBe("That's okay! Maybe it's like this. Say: Which one?");
+    expect(r.sound).toEqual({ model: "Play day.", answer: "Sleep day." });
+    expect(r.record.removed).toEqual(["Play day.", "Sleep day."]);
+    expect(r.record.orAnswers).toBe(true);
+    expect(r.record.listen).toEqual({ sentence: "Play day.", inSay: true });
+    expect(r.record.choices).toBeUndefined();
+  });
+
+  it("C243 보완 11 막힘 여부와 무관하다(앞 차례가 앱이 아는 막힘이어도 같은 결과)", () => {
+    const calm = reply({ listen_sentence: "Play day.", say: REAL });
+    const stuck = reply(
+      { listen_sentence: "Play day.", say: REAL },
+      { appStuck: true },
+    );
+    expect(stuck.text).toBe(calm.text);
+    expect(stuck.sound).toEqual(calm.sound);
+    expect(stuck.record.removed).toEqual(calm.record.removed);
+  });
+
+  it.each([
+    [
+      "큰따옴표 · 부호 안",
+      'Say "Play day." or "Sleep day."',
+      "Play day.",
+      "Sleep day.",
+      "Say:",
+    ],
+    [
+      "둥근 큰따옴표",
+      "Say “Play day.” or “Sleep day.” Which one?",
+      "Play day.",
+      "Sleep day.",
+      "Say: Which one?",
+    ],
+    [
+      "둥근 작은따옴표",
+      "Say ‘Play day.’ or ‘Sleep day.’ Which one?",
+      "Play day.",
+      "Sleep day.",
+      "Say: Which one?",
+    ],
+    [
+      "부호가 따옴표 밖 · 쉼표",
+      "Say 'Play day', or 'Sleep day'. Which one?",
+      "Play day",
+      "Sleep day",
+      "Say: Which one?",
+    ],
+    [
+      "물음 안 · 부호가 따옴표 밖",
+      "Is it 'Play day' or 'Sleep day'?",
+      "Play day",
+      "Sleep day",
+      "Is it:",
+    ],
+    [
+      "느낌표 · 'Or' 대문자로 새 문장",
+      "Say 'Play day!' Or 'Sleep day!' Which one?",
+      "Play day!",
+      "Sleep day!",
+      "Say: Which one?",
+    ],
+    [
+      "답 안의 줄임꼴 따옴표",
+      "Say 'Let's play.' or 'Let's sleep.' Which one?",
+      "Let's play.",
+      "Let's sleep.",
+      "Say: Which one?",
+    ],
+  ])("C243 보완 11 따옴표 꼴 변형: %s", (_name, say, model, answer, text) => {
+    const r = reply({ listen_sentence: model.replace(/[.!]?$/, "."), say });
+    expect(r.text).toBe(text);
+    expect(r.sound).toEqual({ model, answer });
+    expect(r.record.orAnswers).toBe(true);
+  });
+
+  it("C243 보완 11 'or' 뒤 답이 둘 이상 이어지면 모두 뺀다(소리 줄 answer 는 지금 칸 하나에 이은 한 줄)", () => {
+    const r = reply({
+      listen_sentence: "Play day.",
+      say: "Say 'Play day.' or 'Sleep day.' or 'Fun day.' Which one?",
+    });
+    expect(r.text).toBe("Say: Which one?");
+    expect(r.record.removed).toEqual(["Play day.", "Sleep day.", "Fun day."]);
+    expect(r.sound).toEqual({
+      model: "Play day.",
+      answer: "Sleep day. Fun day.",
+    });
+    const commas = reply({
+      listen_sentence: "Play day.",
+      say: "Say 'Play day', 'Sleep day', or 'Fun day'.",
+    });
+    // 쉼표로 늘어놓은 답(or 가 바로 붙지 않은 'Sleep day')은 이번 갈래가 아니다 — 앱이 짐작해 빼지 않음
+    expect(commas.record.removed).toEqual(["Play day"]);
+    expect(commas.record.orAnswers).toBeUndefined();
+  });
+
+  it.each([
+    ["or 없음", "Say 'Play day.' Which one?", "Say: Which one?"],
+    [
+      "and 로 이음",
+      "Say 'Play day.' and 'Sleep day.' Which one?",
+      "Say: and 'Sleep day.' Which one?",
+    ],
+    [
+      "or 뒤가 따옴표 없음",
+      "Say 'Play day.' or sleep day. Which one?",
+      "Say: or sleep day. Which one?",
+    ],
+    [
+      "바로 뒤가 아님",
+      "Say 'Play day.' It is fun. Or 'Sleep day.'",
+      "Say: It is fun. Or 'Sleep day.'",
+    ],
+  ])(
+    "C243 보완 11 'or' 따옴표 답이 바로 뒤에 없으면 바뀌지 않는다: %s",
+    (_name, say, text) => {
+      const r = reply({ listen_sentence: "Play day.", say });
+      expect(r.text).toBe(text);
+      expect(r.sound).toEqual({ model: "Play day." });
+      expect(r.record.removed).toEqual(["Play day."]);
+      expect(r.record.orAnswers).toBeUndefined();
+    },
+  );
+
+  it("C243 보완 11 listen_sentence 가 빈 차례 · say 에 들지 않는 차례 · 4단계는 바뀌지 않는다", () => {
+    const empty = reply({ listen_sentence: "", say: REAL });
+    expect(empty.text).toBe(REAL);
+    expect(empty.sound).toEqual({});
+    expect(empty.record.orAnswers).toBeUndefined();
+    const missing = reply({ listen_sentence: "Fun day.", say: REAL });
+    expect(missing.text).toBe(REAL);
+    expect(missing.sound).toEqual({});
+    const four = reply(
+      { listen_sentence: "Play day.", say: REAL },
+      { level: 4 },
+    );
+    expect(four.text).toBe(REAL);
+    expect(four.sound).toEqual({});
+    expect(four.record.orAnswers).toBeUndefined();
+  });
+
+  it("C243 보완 11 막힌 뒤 'or' 물음 문장이 따라 할 문장과 답을 품으면 지금처럼 그 물음 하나만 뺀다(표지 없음)", () => {
+    const say = "That's okay. Is it 'Play day' or 'Sleep day'?";
+    const r = reply({ listen_sentence: "Play day.", say }, { appStuck: true });
+    expect(r.text).toBe("That's okay.");
+    expect(r.record.removed).toEqual(["Is it 'Play day' or 'Sleep day'?"]);
+    expect(r.sound).toEqual({ answer: "Is it 'Play day' or 'Sleep day'?" });
+    expect(r.record.orAnswers).toBeUndefined();
+  });
+
+  it("C243 보완 11 흘림 중 판단(chatListenLiteralOf)은 그대로 따라 할 문장 조각만 잡는다", () => {
+    expect(chatListenLiteralOf("Say 'Play day.'", "Play day.", 3)).toBe(
+      "Play day.",
+    );
+    expect(chatListenLiteralOf("or 'Sleep day.'", "Play day.", 3)).toBeNull();
+  });
+});
+
 describe("say_ko 의 영어 문장 거르기(spec 설계 4 · C204 (4))", () => {
   it("AC-27d 1~3단계 뜻 줄에서 영어 문장을 거르고, 영어 낱말 하나는 남긴다", () => {
     const r = reply({
