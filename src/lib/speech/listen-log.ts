@@ -11,6 +11,7 @@ import {
   type ClientListenEntry,
   DISCARD_COUNT_MAX,
   type DiscardNote,
+  LISTEN_LANG_PATTERN,
   LISTEN_RESULT_PATTERN,
 } from "@/core/conversation/client-listen";
 import type { EndedBy, ListenOutcome } from "@/core/speech/listen";
@@ -90,7 +91,14 @@ function recOf(rec: { cf?: number; na: number; int: boolean; mx?: boolean }): {
 
 /** 글을 버린 사건. */
 type Kept =
-  | { at: number; k: "begin"; listen: number; capMs: number | undefined }
+  /** lang 은 규칙에 언어가 있는 듣기(한국어 질문)에만 있다(요약의 lg). */
+  | {
+      at: number;
+      k: "begin";
+      listen: number;
+      capMs: number | undefined;
+      lang?: string;
+    }
   | { at: number; k: "start-call"; listen: number; synth?: SynthState }
   | { at: number; k: "audio"; listen: number }
   | { at: number; k: "sound"; listen: number }
@@ -145,7 +153,13 @@ function keptOf(entry: SpeechTraceEntry): Kept | undefined {
   const { at } = entry;
   switch (entry.kind) {
     case "listen-begin":
-      return { at, k: "begin", listen: entry.listen, capMs: entry.rule.capMs };
+      return {
+        at,
+        k: "begin",
+        listen: entry.listen,
+        capMs: entry.rule.capMs,
+        ...(entry.rule.lang === undefined ? {} : { lang: entry.rule.lang }),
+      };
     case "recognizer-call":
       return entry.call === "start"
         ? {
@@ -404,6 +418,9 @@ function summaryOf(
     ...(te === undefined ? {} : { te }),
     hid: hiddenBefore(kept, begin),
     ...(dc ? { dc } : {}),
+    ...(begin.lang !== undefined && LISTEN_LANG_PATTERN.test(begin.lang)
+      ? { lg: begin.lang }
+      : {}),
     ...speakTimingOf(kept, begin),
     ...(info === undefined
       ? {}

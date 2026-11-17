@@ -73,6 +73,8 @@ export const endRuleSchema = z.strictObject({
       retryMax: z.number().int().nonnegative(),
     })
     .optional(),
+  /** 듣기 언어(없으면 speech.lang — 수업 안 한국어로 묻기 plan 정한 것 1). */
+  lang: z.string().min(1).optional(),
 }) satisfies z.ZodType<EndRule>;
 
 export const speechSettingsSchema = z.strictObject({
@@ -127,7 +129,7 @@ export const listenOutcomeSchema = z.discriminatedUnion("kind", [
   z.strictObject({
     kind: z.literal("error"),
     code: z.string(),
-    group: z.enum(["retry", "mic-unavailable", "network"]),
+    group: z.enum(["retry", "mic-unavailable", "network", "lang-unavailable"]),
     partialText: z.string(),
   }),
   z.strictObject({ kind: z.literal("stalled"), partialText: z.string() }),

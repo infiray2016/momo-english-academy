@@ -25,6 +25,11 @@ export type FakeSpeechRecord = {
   pitches: number[];
   /** 읽어 준 목소리 이름(spoken 과 같은 차례). 목소리를 고르지 않은 발화(잠금 풀기 · 목록 없음)는 null. */
   voices: (string | null)[];
+  /**
+   * 인식 객체 start() 때 그 객체의 lang(calls 의 start 와 같은 차례 — 진짜 · 버림 · 마이크 확인 모두). 한국어 질문 듣기의 언어를 e2e 가 본다
+   * (수업 안 한국어로 묻기 AC-25d).
+   */
+  langs: string[];
   /** 함수 안에 다시 적은 기본값. script.ts 의 DEFAULT_* 와 같은지 단위 시험이 본다. */
   defaults: {
     expose: { recognition: string; synthesis: boolean };
@@ -53,6 +58,7 @@ export function installFakeWebSpeech(script: SpeechScript): void {
   const record: FakeSpeechRecord = {
     created: 0,
     calls: [],
+    langs: [],
     spoken: [],
     spokenAt: [],
     rates: [],
@@ -129,6 +135,7 @@ export function installFakeWebSpeech(script: SpeechScript): void {
 
     start() {
       record.calls.push({ at: clock(), id: this.id, method: "start" });
+      record.langs.push(this.lang);
       if (this.started) {
         throw new DOMException("already started", "InvalidStateError");
       }

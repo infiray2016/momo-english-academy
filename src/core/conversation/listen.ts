@@ -86,6 +86,34 @@ export function talkEndRuleFor(
   };
 }
 
+/**
+ * 한국어 질문 듣기 끝 규칙(수업 안 한국어로 묻기 spec 설계 3 '끝 규칙' · plan 접점 나): 한 문장 답 꼴이다. 마지막 결과 뒤 endSilenceMs
+ * (speech.end_silence_seconds.ko_ask — 부르는 쪽이 읽어 넘긴다)가 지나면 끝내고, 상한은 speech.max_listen_seconds, 못 듣는 마이크를
+ * 가르며(회복은 같은 언어로 다시 듣는다), lang(speech.lang_ko)으로 듣는다. 8단계부터의 '다 말했어요' 꼴은 쓰지 않는다. 값이 0 이하이거나
+ * 언어가 비었으면 던진다.
+ */
+export function koAskEndRuleOf(
+  speech: Pick<
+    SpeechSettings,
+    "maxListenMs" | "deafAudiostartMs" | "deafSilenceMs" | "deafRetryMax"
+  >,
+  { endSilenceMs, lang }: { endSilenceMs: number; lang: string },
+): EndRule {
+  if (!(endSilenceMs > 0))
+    throw new RangeError(
+      `한국어 질문 끝 조용함은 0 보다 커야 한다: ${endSilenceMs}`,
+    );
+  if (lang.trim() === "")
+    throw new RangeError("한국어 질문 듣기 언어가 비었다");
+  return {
+    endSilenceMs,
+    capMs: speech.maxListenMs,
+    chunkMs: speech.maxListenMs,
+    deaf: deafRuleOf(speech),
+    lang,
+  };
+}
+
 /** 견줄 낱말이 있는 틀만({NAME} 하나뿐인 힌트는 견주지 않는다). */
 function comparable(text: string): boolean {
   return normalizeForMatch(text, []).some((w) => w !== NAME_SLOT);

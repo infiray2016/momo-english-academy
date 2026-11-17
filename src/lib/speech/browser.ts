@@ -262,9 +262,16 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
     | { close(call: "stop" | "abort", by: DiscardCloseBy): void }
     | undefined;
 
-  /** alternatives 는 듣기 매개(ListenCallbacks.alternatives — 이야기 방식 차례만), 없으면 지금처럼 1 이다. */
-  function prepare(recognition: RecognitionLike, alternatives = 1) {
-    recognition.lang = settings.lang;
+  /**
+   * alternatives 는 듣기 매개(ListenCallbacks.alternatives — 이야기 방식 차례만), 없으면 지금처럼 1 이다. lang 은 진짜 듣기의 규칙 언어
+   * (EndRule.lang — 한국어 질문 듣기만), 없으면 speech.lang 이다. 버림 · 마이크 확인은 넘기지 않는다(수업 안 한국어로 묻기 plan 정한 것 1).
+   */
+  function prepare(
+    recognition: RecognitionLike,
+    alternatives = 1,
+    lang: string | undefined = undefined,
+  ) {
+    recognition.lang = lang ?? settings.lang;
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = alternatives;
@@ -467,7 +474,7 @@ export function createBrowserSpeech(options: BrowserSpeechOptions): SpeechPort {
             continue;
           }
           const recognition = new Ctor();
-          prepare(recognition, alternatives);
+          prepare(recognition, alternatives, rule.lang);
           attach(id, recognition);
           recognizers.set(id, recognition);
           if (call(id, "start")) {

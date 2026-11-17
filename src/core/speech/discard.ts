@@ -44,7 +44,8 @@ export const DISCARD_END_WHYS = [
 export type DiscardEndWhy = (typeof DISCARD_END_WHYS)[number];
 /**
  * reopen 이면 다시 열게 한 앞 닫힘의 까닭. check 는 마이크 확인, no_mic 은 '마이크를 쓸 수 없음'으로 끝난 진짜(M-5). quiet 는 이야기 방식의
- * 조용함 입구로 연 버림과 그 버림이 살아 있어 다시 연 버림이다(회화 대화 구조 R spec 설계 6 '기록 칸' (ㄱ)).
+ * 조용함 입구로 연 버림과 그 버림이 살아 있어 다시 연 버림이다(회화 대화 구조 R spec 설계 6 '기록 칸' (ㄱ)). no_lang 은 '그 언어만 안 됨'으로
+ * 끝난 진짜다(다른 언어 듣기 — 수업 안 한국어로 묻기 spec 설계 3 '언어만 안 됨' 행 · plan 정한 것 2, 기계의 끝은 no_mic 과 같다).
  */
 export const DISCARD_REOPEN_WHYS = [
   "self_end",
@@ -54,6 +55,7 @@ export const DISCARD_REOPEN_WHYS = [
   "check",
   "no_mic",
   "quiet",
+  "no_lang",
 ] as const;
 export type DiscardReopenWhy = (typeof DISCARD_REOPEN_WHYS)[number];
 /** 버림 안에서 낸 소리 종류(마지막 소리). cut 은 읽는 중 끊긴 읽기(대개 누름 — 화면이 누름 없이 끊은 때도 같은 값, 묶음 2-나 검토 M-3), none 은 소리 없음. */
@@ -782,8 +784,9 @@ function onRealEnd(
     return;
   }
   if (kind === "unavailable") {
-    // '마이크를 쓸 수 없음' 뒤에는 버림을 열지 않는다(F2 예외). 다음 읽기 · 누름 앞에 버림부터 연다(까닭 no_mic, M-5).
-    toReopen(d, "no_mic");
+    // '마이크를 쓸 수 없음' 뒤에는 버림을 열지 않는다(F2 예외). 다음 읽기 · 누름 앞에 버림부터 연다(까닭 no_mic, M-5). 층이 넘긴 까닭
+    // ('그 언어만 안 됨'의 no_lang)이 있으면 그것을 적는다(끝은 같다, 수업 안 한국어로 묻기 plan 정한 것 2).
+    toReopen(d, why ?? "no_mic");
     return;
   }
   if (d.hidden || !d.unlocked) {

@@ -11,6 +11,8 @@ import {
 
 /** 한 기록에 남기는 듣기 요약 수 상한(기술 값 — 최근 것부터 남김). */
 export const CLIENT_LISTENS_MAX = 20;
+/** 듣기 언어 표지 길이 상한(기술 값 — 꼴 검사). */
+const LANG_TAG_MAX = 35;
 /** 기기 판정 이름 길이 상한(기술 값 — readDeviceVerdict().name). */
 const BROWSER_NAME_MAX = 80;
 /** ms 값 상한(기술 값 — 꼴 검사, 10분). 화면은 이 값으로 잘라 보낸다(상한에 걸린 값은 이 값 그대로 — 검토 rev-mic-1 I-1). */
@@ -33,6 +35,11 @@ export const CLIENT_ALTERNATIVES_MAX = 100;
  */
 export const LISTEN_RESULT_PATTERN =
   /^(result|no-result|stalled|deaf|error:[a-z][a-z-]{0,39}|interrupted:(hidden|speak|leave))$/;
+
+/**
+ * 듣기 언어 표지(lg — 언어 · 지역 꼴 'ko-KR' · 'en-US'). 글 칸이 되지 않게 영어 글자 · 붙임표 꼴만 받는다(수업 안 한국어로 묻기 AC-N27).
+ */
+export const LISTEN_LANG_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
 /** start 호출 때 읽어 주기 상태(ts). */
 export const LISTEN_SYNTH_STATES = ["speaking", "pending", "idle"] as const;
@@ -130,6 +137,9 @@ export const ClientListenEntrySchema = z.strictObject({
   int: z.boolean().optional(),
   /** 섞인 글 표지(묶음 V fix 1 컨트롤러 결정): 확정 결과와 중간 결과가 섞인 글로 끝났을 때만 참으로 싣는다(int 의 뜻은 그대로). */
   mx: z.boolean().optional(),
+  // ── 아래 칸은 2026-11-17 에 더함(수업 안 한국어로 묻기 plan 접점 나 — 규칙에 lang 이 있는 듣기(한국어 질문)에만, 영어 듣기와 옛 기록에는 없다) ──
+  /** 듣기 언어(EndRule.lang). 글은 없다. */
+  lg: z.string().max(LANG_TAG_MAX).regex(LISTEN_LANG_PATTERN).optional(),
 });
 export type ClientListenEntry = z.infer<typeof ClientListenEntrySchema>;
 

@@ -193,7 +193,10 @@ const interrupted = (
   partialText: "",
 });
 
-/** 진짜 듣기 결과를 기계 입력으로 옮긴다(검토 1 6절 2): 다시 듣는 오류만 error, 마이크를 쓸 수 없음은 unavailable, network 는 error. */
+/**
+ * 진짜 듣기 결과를 기계 입력으로 옮긴다(검토 1 6절 2): 다시 듣는 오류만 error, 마이크를 쓸 수 없음은 unavailable, network 는 error.
+ * '그 언어만 안 됨'(다른 언어 듣기)은 마이크를 쓸 수 없음과 같은 unavailable 끝이고 다시 연 까닭만 no_lang 이다(수업 안 한국어로 묻기 plan 정한 것 2).
+ */
 export function realEndOf(
   outcome: ListenOutcome,
   why: DiscardReopenWhy | undefined,
@@ -201,6 +204,8 @@ export function realEndOf(
   let kind: RealEndKind;
   switch (outcome.kind) {
     case "error":
+      if (outcome.group === "lang-unavailable")
+        return { type: "real-end", kind: "unavailable", why: "no_lang" };
       kind = outcome.group === "mic-unavailable" ? "unavailable" : "error";
       break;
     case "interrupted":

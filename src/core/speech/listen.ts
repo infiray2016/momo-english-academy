@@ -214,12 +214,16 @@ export function speechSettingsFrom(
  * endSilenceMs 가 있으면 한 문장 답(마지막 결과 뒤 조용하면 stop), 없으면 두 문장 이상 답.
  * capMs 는 듣기 전체 상한, chunkMs 는 인식 객체 하나의 길이(넘으면 끊어 듣고 이어 붙인다).
  * 말하기 버튼은 어느 규칙에서나 듣기를 끝낸다(7절). deaf 가 있으면 못 듣는 마이크를 가른다(DeafRule — 회화 듣기만 켠다).
+ * lang 은 이 듣기의 인식 언어다(없으면 speech.lang — 수업 안 한국어로 묻기 plan 정한 것 1). speech.lang 과 다른 언어로 듣는 때에만 싣고
+ * (한국어 질문 듣기 — koAskEndRuleOf), 음성 접점은 진짜 듣기의 인식 객체에만 넣는다(버림 · 마이크 확인은 speech.lang). lang 이 있는 듣기의
+ * service-not-allowed · language-not-supported 는 '그 언어만 안 됨'이다(classifyRecognitionError).
  */
 export type EndRule = {
   endSilenceMs?: number;
   capMs?: number;
   chunkMs: number;
   deaf?: DeafRule;
+  lang?: string;
 };
 
 /**
@@ -313,7 +317,15 @@ export function endRuleFor(
 
 // ── 오류 갈래(7절 · 8절 · C53) ──
 
-export type ErrorGroup = "retry" | "mic-unavailable" | "network";
+/**
+ * lang-unavailable 은 '그 언어만 안 됨'(수업 안 한국어로 묻기 spec 설계 3 · plan 정한 것 2): speech.lang 과 다른 언어로 여는 듣기에서 그 언어의
+ * 인식기를 쓸 수 없다는 오류다. 영어 듣기에는 생기지 않는다.
+ */
+export type ErrorGroup =
+  | "retry"
+  | "mic-unavailable"
+  | "network"
+  | "lang-unavailable";
 
 /** 새 인식 객체의 start() 가 던졌을 때의 코드. */
 export const START_FAILED_CODE = "start-failed";
@@ -329,6 +341,12 @@ export const NO_SPEECH_CODE = "no-speech";
  * 스스로 no-speech 를 내지 않으므로 이 aborted 를 no-speech 로 읽는다(C148).
  */
 const NO_SPEECH_MESSAGE = /no speech detected/i;
+
+/** 다른 언어로 여는 듣기에서 '그 언어만 안 됨'으로 가르는 코드(WebKit 공개 소스 — 그 언어의 인식기가 없거나 쓸 수 없음, 검토 I-1). */
+const LANG_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
+  "service-not-allowed",
+  "language-not-supported",
+]);
 
 const MIC_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([
   "not-allowed",
@@ -358,8 +376,15 @@ export function recognitionErrorCodeOf(
  * 인식 오류 코드의 갈래. not-allowed · service-not-allowed · language-not-supported · dictation-disabled 는 '마이크를 쓸 수 없음',
  * network 는 network, 나머지(no-speech · aborted · audio-capture · phrases-not-supported · bad-grammar ·
  * start-failed · 모르는 코드)는 다시 듣기다. 셈(speech.max_retries · 여섯 번 · 세 번)은 부르는 쪽 몫이다.
+ * otherLang 은 speech.lang 과 다른 언어로 여는 듣기인가(규칙에 lang 이 있는 듣기)다. 참이면 service-not-allowed · language-not-supported 만
+ * '그 언어만 안 됨'(lang-unavailable)이고, not-allowed · 받아쓰기 꺼짐은 두 언어 모두 '마이크를 쓸 수 없음'이다(마이크 권한과 받아쓰기는
+ * 언어와 무관한 기기 설정, spec 설계 3 표). 없으면 거짓(지금 갈래 그대로).
  */
-export function classifyRecognitionError(code: string): ErrorGroup {
+export function classifyRecognitionError(
+  code: string,
+  otherLang = false,
+): ErrorGroup {
+  if (otherLang && LANG_UNAVAILABLE_CODES.has(code)) return "lang-unavailable";
   if (MIC_UNAVAILABLE_CODES.has(code)) return "mic-unavailable";
   if (code === "network") return "network";
   return "retry";
@@ -534,7 +559,7 @@ function errorOutcome(s: ListenState, code: string): ListenOutcome {
   return {
     kind: "error",
     code,
-    group: classifyRecognitionError(code),
+    group: classifyRecognitionError(code, s.rule.lang !== undefined),
     partialText: joinedText(s),
   };
 }
