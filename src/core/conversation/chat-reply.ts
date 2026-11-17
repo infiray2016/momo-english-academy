@@ -253,6 +253,28 @@ function madeUpRecordOf(say: string, phrases: readonly string[]): string[] {
 }
 
 /**
+ * 소리 줄 answer 한 줄(뺀 차례대로 이은 글): 'or' 따옴표 답 조각(orPieces)은 정규화(normalizeSpoken)로 같은 답이 뒤에 또 있으면 마지막 자리 하나만
+ * 둔다(검토 rev-g-t2 M-3 — 따라 할 문장의 '같은 문장은 마지막 자리 하나'와 같은 꼴, C241 보완 7). 막힌 뒤 고르기 물음 조각은 그대로다. 없으면 undefined.
+ */
+export function chatSoundAnswerOf(
+  answers: readonly string[],
+  orPieces: readonly string[] = [],
+): string | undefined {
+  const isOr = (piece: string) => orPieces.includes(piece);
+  const kept = answers.filter(
+    (piece, i) =>
+      !isOr(piece) ||
+      !answers
+        .slice(i + 1)
+        .some(
+          (later) =>
+            isOr(later) && normalizeSpoken(later) === normalizeSpoken(piece),
+        ),
+  );
+  return kept.length === 0 ? undefined : kept.join(" ");
+}
+
+/**
  * 응답 하나의 처리(spec 설계 4 표 · 설계 5):
  * - 따라 할 문장: 비지 않았고 say 에 정규화로 문장째 들면(1~3단계는 글 빼기가 문장 경계에서 뺄 수 있을 때) 맞음, 아니면 어긋남. 1~3단계에서
  *   맞으면 그 글자 그대로의 조각을 글에서 빼 소리 줄 model 로 낸다. 어긋나면 글을 바꾸지 않는다. 정규화로는 들었으나 문장 경계 밖이라 글에 남은
@@ -310,6 +332,7 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
   // 두 자리면 소리 줄은 마지막 자리 하나에서 읽는다 — C241 보완 7, chat-turn-result), 나머지 자리(or 물음 — 따라 할 문장을 품은 자리 포함)는 answer
   const model = removed.find((r) => listenRemoved.includes(r));
   const answers = removed.filter((r) => !listenRemoved.includes(r));
+  const answer = chatSoundAnswerOf(answers, first.orAnswers);
   const record: ChatReplyRecord = {
     ...(listen === ""
       ? {}
@@ -335,7 +358,7 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
     sayKo: leadKoLineOf(level, output.say_ko),
     sound: {
       ...(model === undefined ? {} : { model }),
-      ...(answers.length === 0 ? {} : { answer: answers.join(" ") }),
+      ...(answer === undefined ? {} : { answer }),
     },
     ...(first.orAnswers === undefined ? {} : { orAnswers: first.orAnswers }),
     wrapUp,

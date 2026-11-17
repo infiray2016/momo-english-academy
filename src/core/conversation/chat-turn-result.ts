@@ -8,6 +8,7 @@ import {
   type ChatReply,
   type ChatReplyCheck,
   chatReplyOf,
+  chatSoundAnswerOf,
 } from "@/core/conversation/chat-reply";
 import {
   type ChatReplayLine,
@@ -134,6 +135,7 @@ function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
       ? reply.sound.model
       : undefined;
   const answers = kept.filter((piece) => piece !== reply.sound.model);
+  const answer = chatSoundAnswerOf(answers, keptOr);
   const {
     removed: _removed,
     choices: _choices,
@@ -146,7 +148,7 @@ function withoutSent(reply: ChatReply, sent: readonly string[]): ChatReply {
     ...base,
     sound: {
       ...(model === undefined ? {} : { model }),
-      ...(answers.length === 0 ? {} : { answer: answers.join(" ") }),
+      ...(answer === undefined ? {} : { answer }),
     },
     ...(keptOr.length === 0 ? {} : { orAnswers: keptOr }),
     record: {

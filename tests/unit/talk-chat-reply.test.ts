@@ -549,6 +549,65 @@ describe("따라 할 문장 바로 뒤 'or' 따옴표 답(13절 C243 보완 11)"
     expect(r.record.orAnswers).toBeUndefined();
   });
 
+  it.each([
+    [
+      "답 안의 복수 소유격",
+      "Say 'Play day.' or 'The dogs' day.' Which one?",
+      "Say: or 'The dogs' day.' Which one?",
+    ],
+    [
+      "닫히지 않은 답 뒤의 복수 소유격",
+      "Say 'Play day.' or 'Sleep day, the cats' way. Which one?",
+      "Say: or 'Sleep day, the cats' way. Which one?",
+    ],
+  ])(
+    "C243 보완 11 닫는 따옴표가 모호한 답은 짐작해 자르지 않고 글에 둔다(검토 rev-g-t2 M-2): %s",
+    (_name, say, text) => {
+      const r = reply({ listen_sentence: "Play day.", say });
+      expect(r.text).toBe(text);
+      expect(r.sound).toEqual({ model: "Play day." });
+      expect(r.record.removed).toEqual(["Play day."]);
+      expect(r.record.orAnswers).toBeUndefined();
+      expect(r.orAnswers).toBeUndefined();
+    },
+  );
+
+  it("C243 보완 11 답 뒤에 같은 문장이 이어지는 꼴('or 'Sleep day' is okay too.')은 그대로 뺀다(검토 rev-g-t2 M-2 의 참고)", () => {
+    const r = reply({
+      listen_sentence: "Play day.",
+      say: "Say 'Play day.' or 'Sleep day' is okay too.",
+    });
+    expect(r.text).toBe("Say: is okay too.");
+    expect(r.sound).toEqual({ model: "Play day.", answer: "Sleep day" });
+    expect(r.record.orAnswers).toBe(true);
+  });
+
+  it("C243 보완 11 같은 'or' 답이 두 자리에서 빠지면 소리 줄 answer 는 그 답 한 번이다(검토 rev-g-t2 M-3)", () => {
+    const r = reply({
+      listen_sentence: "Play day.",
+      say: "Say 'Play day.' or 'Sleep day.' Again! Say 'Play day.' or 'sleep day!'",
+    });
+    expect(r.text).toBe("Say: Again! Say:");
+    expect(r.record.removed).toEqual([
+      "Play day.",
+      "Sleep day.",
+      "Play day.",
+      "sleep day!",
+    ]);
+    // 정규화로 같은 답은 마지막 자리의 글 하나만 읽는다(따라 할 문장의 '같은 문장은 마지막 자리 하나'와 같은 꼴)
+    expect(r.sound).toEqual({ model: "Play day.", answer: "sleep day!" });
+    expect(r.record.orAnswers).toBe(true);
+    // 다른 답은 그대로 이어 읽는다
+    const two = reply({
+      listen_sentence: "Play day.",
+      say: "Say 'Play day.' or 'Sleep day.' or 'Fun day.' Again! Say 'Play day.' or 'Sleep day.'",
+    });
+    expect(two.sound).toEqual({
+      model: "Play day.",
+      answer: "Fun day. Sleep day.",
+    });
+  });
+
   it("C243 보완 11 흘림 중 판단(chatListenLiteralOf)은 그대로 따라 할 문장 조각만 잡는다", () => {
     expect(chatListenLiteralOf("Say 'Play day.'", "Play day.", 3)).toBe(
       "Play day.",
@@ -769,6 +828,26 @@ describe("move.chat 묶음(spec 데이터 move 행 · 선택 칸, 판은 그대�
     expect(erased.chat?.removed).toEqual([]);
     expect(erased.chat?.choices).toBe(true);
     expect(erased.chat?.run).toBe(1);
+    expect(eraseTalkMoveText(erased)).toEqual(erased);
+  });
+
+  it("C243 보완 11 원문을 지워도 'or' 따옴표 답 표지(move.chat.orAnswers)는 남는다(검토 rev-g-t2 M-4 (나))", () => {
+    const move = chatTeacherMoveOf({
+      reply: reply({
+        listen_sentence: "Play day.",
+        say: "That's okay! Maybe it's like this. Say 'Play day.' or 'Sleep day.' Which one?",
+      }),
+      closingSlot: false,
+      firstQuestion: false,
+      stage: 0,
+      extra: { facts: [], run: 0 },
+    });
+    expect(move.chat?.orAnswers).toBe(true);
+    expect(readTalkMove(JSON.parse(JSON.stringify(move)))).toEqual(move);
+    const erased = eraseTalkMoveText(move);
+    expect(erased.sound).toBeUndefined();
+    expect(erased.chat?.removed).toEqual([]);
+    expect(erased.chat?.orAnswers).toBe(true);
     expect(eraseTalkMoveText(erased)).toEqual(erased);
   });
 });

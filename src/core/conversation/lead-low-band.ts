@@ -165,9 +165,51 @@ const OR_QUOTED = /^(["“‘'])([\p{L}\p{N}{][^\n]*?)(["”’'])(?=$|[\s.,!?;:
 /** 따라 할 문장 조각 뒤 · 앞 답 뒤에서 'or' 앞까지 올 수 있는 글(닫는 따옴표 · 괄호 · 문장 부호 · 빈칸). */
 const OR_LEAD = /^[\s"”’'),.!?]*/;
 
-/** orAt(그 자리 글이 'or') 에서 시작하는 따옴표 답 자리(자리는 'or' 부터 닫는 따옴표까지, 조각은 따옴표 안 답 글). 꼴이 아니면 null. */
+/** 낱말 바로 뒤에 붙는 복수 소유격 꼴('dogs' day' 의 s' — 작은따옴표 꼴만). */
+const PLURAL_POSSESSIVE = /[sS]$/;
+
+/**
+ * 고른 닫는 따옴표(text 의 closeAt 자리, 글자 close)가 답 경계로 모호한가(검토 rev-g-t2 M-2 — 13절 C242 (3) 짐작해 고치지 않음):
+ * (가) 작은따옴표 꼴(' · ’)이 's' 바로 뒤에 붙고 뒤에 빈칸 + 낱말이 오면 복수 소유격('the cats' way')일 수 있다.
+ * (나) 그 뒤로 같은 문장 끝(뒤가 빈칸 · 글 끝인 문장 끝 부호)이나 다음 여는 따옴표 앞에 같은 글자의 닫는 따옴표 후보가 하나 더 있으면('The dogs' day.'
+ * 의 끝 따옴표) 어느 쪽이 닫는 따옴표인지 모른다. 모호하면 답으로 보지 않는다(글에 둔다).
+ */
+function orCloseAmbiguous(
+  text: string,
+  closeAt: number,
+  close: string,
+): boolean {
+  const single = close === "'" || close === "’";
+  if (
+    single &&
+    PLURAL_POSSESSIVE.test(text.slice(0, closeAt)) &&
+    /^\s+[\p{L}\p{N}{]/u.test(text.slice(closeAt + 1))
+  )
+    return true;
+  for (let i = closeAt + 1; i < text.length; i++) {
+    const c = text.charAt(i);
+    if (/[\n\r]/.test(c)) return false;
+    if (SENTENCE_END.test(c) && /^(?:$|\s)/.test(text.slice(i + 1)))
+      return false;
+    if (c !== close) continue;
+    const before = text.charAt(i - 1);
+    const after = text.charAt(i + 1);
+    // 다음 답의 여는 따옴표(앞이 빈칸 · 글 처음, 뒤가 낱말)면 거기서 멈춘다 — 'or' 사슬의 다음 답
+    if ((i === 0 || /\s/.test(before)) && /[\p{L}\p{N}{]/u.test(after))
+      return false;
+    // 닫는 따옴표 후보(뒤가 빈칸 · 부호 · 글 끝 — OR_QUOTED 와 같은 판정)
+    if (after === "" || /[\s.,!?;:)]/.test(after)) return true;
+  }
+  return false;
+}
+
+/**
+ * orAt(그 자리 글이 'or') 에서 시작하는 따옴표 답 자리(자리는 'or' 부터 닫는 따옴표까지, 조각은 따옴표 안 답 글). 꼴이 아니면 null. 'or' 앞은 빈칸이거나
+ * 글 처음이다(흘림 길에서 잡아 둔 · 이미 나간 문장은 "or 'Sleep day.'" 처럼 'or' 부터 시작한다 — 검토 rev-g-t2 M-1. 본체 say 에서는 사슬이 따라 할
+ * 문장 끝 뒤에서 시작하므로 글 처음이 나오지 않는다).
+ */
 function orAnswerAt(text: string, orAt: number): Span | null {
-  if (orAt === 0 || !/\s/.test(text.charAt(orAt - 1))) return null;
+  if (orAt > 0 && !/\s/.test(text.charAt(orAt - 1))) return null;
   const rest = text.slice(orAt);
   const head = OR_OPENER.exec(rest);
   if (head === null) return null;
@@ -176,7 +218,9 @@ function orAnswerAt(text: string, orAt: number): Span | null {
   if (m === null) return null;
   const piece = (m[2] ?? "").replace(/[\s,]+$/, "");
   if (!WORD_CHAR.test(piece) || /[.!?]\s/.test(piece)) return null;
-  return { start: orAt, end: orAt + quoteAt + m[0].length, piece };
+  const end = orAt + quoteAt + m[0].length;
+  if (orCloseAmbiguous(text, end - 1, m[3] ?? "")) return null;
+  return { start: orAt, end, piece };
 }
 
 /** 글자 자리 at(따라 할 문장 조각 끝) 바로 뒤로 이어지는 'or' 따옴표 답 자리들(사이에 낱말이 끼면 거기서 멈춘다). */

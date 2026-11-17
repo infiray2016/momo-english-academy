@@ -205,9 +205,97 @@ describe("갈린 길(검토 M-2)", () => {
       chatSayFromRowOf({ text: r.teacher?.text ?? "", move: r.teacher?.move }),
     ).toBe("Nice! I like cats.");
   });
+
+  it("C243 보완 11 'or' 따옴표 답 조각이 이미 글로 나간 갈린 길은 move 에서 그 답을 빼고 소리 줄을 내지 않는다(검토 rev-g-t2 M-1 · M-4 (라))", () => {
+    const say = "Say 'Play day.' or 'Sleep day.' Which one?";
+    const chunks = splitSentences(say);
+    expect(chunks).toEqual([
+      "Say 'Play day.'",
+      "or 'Sleep day.'",
+      "Which one?",
+    ]);
+    for (const [name, sent, held] of [
+      ["모든 조각이 나감", chunks, []],
+      ["'or' 조각까지 나감", chunks.slice(0, 2), chunks.slice(2)],
+    ] as const) {
+      const r = resultOf(
+        SAY,
+        ok(say, { listen: "Play day.", sentSentences: chunks }),
+        { sent: [...sent], held: [...held] },
+      );
+      expect(r.teacher?.text, name).toBe(say);
+      expect(r.teacher?.move.chat?.removed, name).toBeUndefined();
+      expect(r.teacher?.move.chat?.orAnswers, name).toBeUndefined();
+      expect(r.teacher?.move.sound, name).toBeUndefined();
+      expect(
+        r.lines.some((l) => l.t === "sound"),
+        name,
+      ).toBe(false);
+      expect(r.diverged, name).toBe(true);
+      expect(
+        chatSayFromRowOf({
+          text: r.teacher?.text ?? "",
+          move: r.teacher?.move,
+        }),
+        name,
+      ).toBe(say);
+    }
+  });
+
+  it("C243 보완 11 따라 할 문장 조각만 나가고 'or' 조각부터 잡아 둔 갈린 길은 잡아 둔 글에서 그 답을 빼 소리 줄로 낸다(검토 rev-g-t2 M-1 · M-4 (라))", () => {
+    const say = "Say 'Play day.' or 'Sleep day.' Which one?";
+    const chunks = splitSentences(say);
+    const r = resultOf(
+      SAY,
+      ok(say, { listen: "Play day.", sentSentences: chunks }),
+      { sent: chunks.slice(0, 1), held: chunks.slice(1) },
+    );
+    expect(r.lines).toEqual([
+      { t: "sound", kind: "answer", say: "Sleep day." },
+      { t: "s", en: "Which one?" },
+      { t: "ko", ko: "뜻" },
+    ]);
+    expect(r.teacher?.text).toBe("Say 'Play day.' Which one?");
+    expect(r.teacher?.move.chat?.removed).toEqual(["Sleep day."]);
+    expect(r.teacher?.move.chat?.orAnswers).toBe(true);
+    expect(r.teacher?.move.sound).toEqual({ answer: "Sleep day." });
+    expect(r.diverged).toBe(true);
+    expect(
+      chatReplayLinesOf(
+        {
+          text: r.teacher?.text ?? "",
+          toriKo: r.teacher?.toriKo ?? null,
+          move: r.teacher?.move,
+        },
+        true,
+      ),
+    ).toEqual([{ t: "s", en: "Say 'Play day.'" }, ...r.lines]);
+  });
 });
 
 describe("안전 상한 차례(검토 I-2 · M-1)", () => {
+  it("C243 보완 11 안전 상한 차례 move 에는 'or' 따옴표 답 표지 · 뺀 문장 · 소리 줄이 없고 다시 세운 글이 say 와 같다(검토 rev-g-t2 M-4 (가))", () => {
+    const say = "Say 'Play day.' or 'Sleep day.' Bye!";
+    const r = resultOf(
+      SAY,
+      ok(say, { listen: "Play day.", sentSentences: splitSentences(say) }),
+      { sent: [], held: splitSentences(say) },
+      { lastTurn: true },
+    );
+    const chat = r.teacher?.move.chat;
+    expect(chat?.orAnswers).toBeUndefined();
+    expect(chat?.removed).toBeUndefined();
+    expect(chat?.soundMoved).toBeUndefined();
+    expect(r.teacher?.move.sound).toBeUndefined();
+    expect(r.lines).toEqual([]);
+    expect(r.teacher?.text).toBe(say);
+    expect(r.farewell.en).toBe(say);
+    expect(chat?.listen).toEqual({ sentence: "Play day.", inSay: true });
+    expect(
+      chatSayFromRowOf({ text: r.teacher?.text ?? "", move: r.teacher?.move }),
+    ).toBe(say);
+  });
+
   it("AC-27k 안전 상한 차례 move 에는 뺀 문장 · 소리 차례 바뀜 · 고르기 표시가 없고, 다시 세운 글이 say 와 같다(따라 할 문장 대조는 남음)", () => {
     for (const [input, say, listen] of [
       [SAY, "Nice! I like cats. Bye!", "I like cats."],
@@ -637,5 +725,27 @@ describe("두 문장에 걸친 조각 · 문장 부호만 다른 차이", () => 
     );
     const at = "That's okay! Maybe it's like this. Say:".length;
     expect(r.teacher?.move.chat?.soundAt).toEqual({ model: at, answer: at });
+    // 닫힌 수업에서 다시 세운 글: 'or' 없이 뺀 조각을 끝에 붙인다('문장 차례는 어림' — 검토 rev-g-t2 M-4 (다))
+    expect(
+      chatSayFromRowOf({ text: r.teacher?.text ?? "", move: r.teacher?.move }),
+    ).toBe(
+      "That's okay! Maybe it's like this. Say: Which one? Play day. Sleep day.",
+    );
+  });
+
+  it("C243 보완 11 같은 'or' 답이 두 자리에서 빠지면 흘림 길 · 다시 흘림도 그 답을 한 번 읽는다(검토 rev-g-t2 M-3)", () => {
+    const say =
+      "Say 'Play day.' or 'Sleep day.' Again! Say 'Play day.' or 'Sleep day.'";
+    const r = streamed(SAY, say, "Play day.");
+    expect(r.teacher?.move.sound).toEqual({
+      model: "Play day.",
+      answer: "Sleep day.",
+    });
+    const sounds = r.lines.filter((l) => l.t === "sound");
+    expect(sounds).toEqual([
+      { t: "sound", kind: "model", say: "Play day." },
+      { t: "sound", kind: "answer", say: "Sleep day." },
+    ]);
+    expect(r.diverged).toBe(false);
   });
 });
