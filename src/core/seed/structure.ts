@@ -778,6 +778,8 @@ export const SEED_FILES = {
   talkShortLines: "lists/talk-short-lines.json",
   /** 회화 들은 글 귀띔의 소리가 가까운 낱말(C217 (1)). 빌드에 묶고 DB 에 넣지 않는다. */
   soundAlikes: "lists/sound-alikes.json",
+  /** 한국어 도움 대신 줄(수업 안 한국어로 묻기 plan 정한 것 15). 빌드에 묶고 DB 에 넣지 않는다. */
+  talkKoHelpLines: "lists/talk-ko-help-lines.json",
 } as const;
 export type SeedFileName = keyof typeof SEED_FILES;
 

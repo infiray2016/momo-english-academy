@@ -6,6 +6,7 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { z } from "zod";
+import type { TalkKoHelpFallbackShape } from "@/core/ai/calls/talk-ko-help";
 import {
   type ForbiddenFile,
   ForbiddenFileSchema,
@@ -18,6 +19,7 @@ import {
   TalkAllowedWordsFileSchema,
   type TalkCueLinesFile,
   TalkCueLinesFileSchema,
+  TalkKoHelpLinesFileSchema,
   type TalkListLine,
   TalkMadeUpPhrasesFileSchema,
   type TalkShortLinesFile,
@@ -57,6 +59,7 @@ const LIST_SCHEMAS = {
   talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
   talkShortLines: TalkShortLinesFileSchema,
   soundAlikes: SoundAlikesFileSchema,
+  talkKoHelpLines: TalkKoHelpLinesFileSchema,
 } as const;
 
 export type SeedListName = keyof typeof LIST_SCHEMAS;
@@ -278,4 +281,15 @@ export function seedTalkShortLinesAt(
   const file = seedTalkShortLines(opts);
   const band = bandOf(level);
   return recordOf(TALK_SHORT_PLACES, (place) => [...file[place][band]]);
+}
+
+/**
+ * 한국어 도움 대신 줄(수업 안 한국어로 묻기 plan 정한 것 15 · spec 설계 4 [M-4]): 꼴 둘(호출 실패 · 검사 걸림)마다 선생님 반말 한국어 줄. 대신 줄
+ * 고르기(core/ai/calls/talk-ko-help koHelpFallbackLineOf)에 그대로 넘긴다. 빈 목록으로 갈음하지 않는다 — 없거나 규격이 틀리면 던진다(SeedListError,
+ * 대신 줄 없이 검사하지 않은 답을 보이지 않는다).
+ */
+export function seedTalkKoHelpLines(
+  opts: SeedListOptions = {},
+): Readonly<Record<TalkKoHelpFallbackShape, readonly string[]>> {
+  return loadSeedList("talkKoHelpLines", opts);
 }

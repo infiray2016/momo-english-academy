@@ -189,6 +189,53 @@ export function messageBody({
   };
 }
 
+/** 한국어 도움 호출의 목적 · 규격 제목(수업 안 한국어로 묻기 묶음 4-가 — 규칙의 when.purpose 로 고른다). */
+export const TALK_KO_HELP_PURPOSE = "talk_ko_help";
+
+/**
+ * 한국어 도움 응답(규격 제목 talk_ko_help). 세 칸 kind · say_ko · teach_en 은 모두 required 이고 쓰지 않는 칸은 빈 글이다(spec 설계 4).
+ * 1~3단계 표현 답의 say_ko 에는 라틴 글자를 쓰지 않는다(검사가 그 문장을 뺀다).
+ */
+export function talkKoHelpBody({
+  model,
+  kind,
+  sayKo,
+  teachEn = "",
+  usage,
+}: {
+  model: string;
+  kind: "expression" | "meaning" | "unclear" | "other";
+  sayKo: string;
+  teachEn?: string;
+  usage?: FakeUsage;
+}): Record<string, unknown> {
+  return messageBody({
+    model,
+    json: { kind, say_ko: sayKo, teach_en: teachEn },
+    ...(usage === undefined ? {} : { usage }),
+  });
+}
+
+/** 한국어 도움 호출에만 맞는 규칙(한 번 호출이라 흘려 받지 않는 message 응답). */
+export function talkKoHelpRule({
+  times,
+  delayMs,
+  ...body
+}: Parameters<typeof talkKoHelpBody>[0] & {
+  times?: number;
+  delayMs?: number;
+}): FakeRule {
+  return {
+    when: { purpose: TALK_KO_HELP_PURPOSE },
+    reply: {
+      kind: "message",
+      body: talkKoHelpBody(body),
+      ...(delayMs === undefined ? {} : { delayMs }),
+    },
+    ...(times === undefined ? {} : { times }),
+  };
+}
+
 /** 문서의 오류 본문 꼴 `{ type: "error", error: { type, message, details? }, request_id }`. */
 export function errorBody(
   _status: number,

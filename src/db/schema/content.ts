@@ -119,6 +119,21 @@ export const aiPurposeEnum = pgEnum("ai_purpose", [
   // 이야기 방식의 힌트 호출 · 기존 꼴 평가 호출(이야기 방식 spec 설계 7 · 8-2 · 마이그레이션 0009 는 끝에 더하기만)
   "talk_chat_hint",
   "talk_chat_eval",
+  // 수업 안 한국어 도움(한국어로 묻기 spec 설계 4 · 마이그레이션 0010 은 끝에 더하기만)
+  "talk_ko_help",
+]);
+/** talk_ko_helps.kind — 앱이 칸의 사실로 고친 한국어 도움 갈래(core/ai/calls/talk-ko-help TALK_KO_HELP_KINDS 와 같은 값 · 차례). */
+export const koHelpKindEnum = pgEnum("ko_help_kind", [
+  "expression",
+  "meaning",
+  "unclear",
+  "other",
+]);
+/** talk_ko_helps.fallback — 대신 줄을 썼는지와 그 꼴(none 뒤는 TALK_KO_HELP_FALLBACK_SHAPES 와 같은 값 · 차례). */
+export const koHelpFallbackEnum = pgEnum("ko_help_fallback", [
+  "none",
+  "call_failed",
+  "check_blocked",
 ]);
 export const aiCallStatusEnum = pgEnum("ai_call_status", [
   "success",

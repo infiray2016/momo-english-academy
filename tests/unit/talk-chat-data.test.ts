@@ -78,7 +78,8 @@ describe("마이그레이션 0009(이야기 방식 데이터 꼴, 더하기만)"
     expect(journal.entries.find((e) => e.tag === MIGRATION)).toMatchObject({
       idx: 9,
     });
-    expect(journal.entries.at(-1)?.tag).toBe(MIGRATION);
+    // 0010(한국어 도움 표)이 뒤에 더해져도 깨지지 않게 idx 로 그 줄을 본다
+    expect(journal.entries[9]?.tag).toBe(MIGRATION);
     const snap = JSON.parse(
       readFileSync(join(DRIZZLE, "meta/0009_snapshot.json"), "utf8"),
     ) as {
@@ -98,7 +99,10 @@ describe("마이그레이션 0009(이야기 방식 데이터 꼴, 더하기만)"
       "dont_know",
       "quiet",
     ]);
-    expect(snap.enums["public.ai_purpose"]?.values).toEqual([...AI_PURPOSES]);
+    // 0009 시점의 값(talk_chat_eval 까지). 뒤 마이그레이션이 더한 값(0010 talk_ko_help)은 그 스냅숏이 담는다
+    expect(snap.enums["public.ai_purpose"]?.values).toEqual(
+      AI_PURPOSES.slice(0, AI_PURPOSES.indexOf("talk_chat_eval") + 1),
+    );
     expect(snap.tables["public.talk_turns"]?.columns.chat_judge).toMatchObject({
       type: "jsonb",
       notNull: false,
@@ -126,6 +130,8 @@ describe("DB 열거 값과 새 열(스키마)", () => {
       "probe",
       "talk_chat_hint",
       "talk_chat_eval",
+      // 한국어 도움(수업 안 한국어로 묻기 묶음 4-가 · 마이그레이션 0010)도 끝에 더하기만 했다
+      "talk_ko_help",
     ]);
     expect([...AI_PURPOSES]).toEqual([...aiPurposeEnum.enumValues]);
   });

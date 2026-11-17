@@ -68,6 +68,7 @@ import {
   SoundAlikesFileSchema,
   TalkAllowedWordsFileSchema,
   TalkCueLinesFileSchema,
+  TalkKoHelpLinesFileSchema,
   TalkMadeUpPhrasesFileSchema,
   TalkShortLinesFileSchema,
   TalkSituationLinesFileSchema,
@@ -588,6 +589,7 @@ const REFERENCE_SCHEMAS: Record<SeedFileName, z.ZodType> = {
   talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
   talkShortLines: TalkShortLinesFileSchema,
   soundAlikes: SoundAlikesFileSchema,
+  talkKoHelpLines: TalkKoHelpLinesFileSchema,
 };
 
 function issuePath(prefix: string, path: readonly PropertyKey[]): string {

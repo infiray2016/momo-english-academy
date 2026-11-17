@@ -13,8 +13,8 @@ import { parentAuth, settings as settingsTable } from "@/db/schema/operations";
 import { createDb, DbNotConfiguredError, getDb, POOL_MAX } from "@/server/db";
 import { createTestDatabase, type TestDatabase } from "./test-db";
 
-/** 5절 'Postgres 테이블은 29개다'. */
-const SPEC_TABLE_COUNT = 29;
+/** 5절 'Postgres 테이블은 30개다'(한국어 도움 talk_ko_helps 포함 — 수업 안 한국어로 묻기 묶음 4-가). */
+const SPEC_TABLE_COUNT = 30;
 const API_ROLES: string[] = ["anon", "authenticated"];
 const CHECKED_SCHEMAS: string[] = ["public", "drizzle"];
 const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
@@ -71,13 +71,15 @@ async function insertProfile(): Promise<string> {
 }
 
 describe("AC-N5 DB 접근 제어", () => {
-  it("AC-N5 public 의 테이블 29개가 모두 RLS 켜짐이고 스키마의 테이블 목록과 같다", async () => {
+  it("AC-N5 public 의 테이블 30개가 모두 RLS 켜짐이고 스키마의 테이블 목록과 같다", async () => {
     const rows = await client<{ name: string; rls: boolean }[]>`
       SELECT c.relname AS name, c.relrowsecurity AS rls
       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
       ORDER BY c.relname`;
     expect(schemaTableNames).toHaveLength(SPEC_TABLE_COUNT);
+    // 새 표도 목록에 들어 아래 권한 · 조회 시험이 함께 본다(한국어 도움, 마이그레이션 0010)
+    expect(schemaTableNames).toContain("talk_ko_helps");
     expect(rows.map((r) => r.name).sort()).toEqual(schemaTableNames);
     expect(rows.filter((r) => !r.rls).map((r) => r.name)).toEqual([]);
   });

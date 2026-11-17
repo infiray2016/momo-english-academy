@@ -11,12 +11,15 @@
 //     낱말(동음이의어 묶음 몫) · 기능어(I · to · it — 문장마다 귀띔이 붙는다)가 아니다. 표제어 겹침 · 빈 목록은 Zod 규격이 막는다.
 //     표제어와 같은 회화 단원의 단원 단어인 가까운 낱말(wash 의 watch — 아이가 정말 그 낱말을 말했을 수 있다)은 막고, 표제어 둘에 겹친 가까운
 //     낱말(each: eat · beach — 귀띔이 앞 표제어 쪽으로만 난다)은 경고로 알린다(13절 C217 보완 · 코드 검토 rev-content-1 M-3).
+// (7) 한국어 도움 대신 줄(수업 안 한국어로 묻기 plan 정한 것 15 · spec 설계 4 [M-4]): 꼴 둘마다 줄 수, 줄마다 한국어(한글이 있음) · 라틴 글자
+//     없음 · {NAME} 같은 틀 자리 없음 · 글자 수(빈칸 뺌)가 talk.ko_ask_reply_max_chars 안. 글자 수 상한은 설정값이라 맥락으로 받는다.
 // 꼴 수(셋 이상 · 하나 이상 · 둘 이상)는 시드 꼴 검사 상수이고 설정값이 아니다(06:187). 한국어 뜻 · 빈 목록 · 겹침은 Zod 규격이 먼저 막는다.
 // DB · 파일을 읽지 않는 순수 함수다.
 import {
   homophoneHeadOf,
   isSceneFunctionWord,
 } from "@/core/conversation/child-kind";
+import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
 import { normalizeSpoken } from "@/core/conversation/spoken";
 import type { SeedIssue } from "@/core/seed/issue";
 import type {
@@ -24,6 +27,7 @@ import type {
   SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
+  TalkKoHelpLinesFile,
   TalkListLine,
   TalkMadeUpPhrasesFile,
   TalkShortLinesFile,
@@ -46,6 +50,7 @@ import {
   isEnglishSentence,
   type Lexicon,
   lemmasOf,
+  placeholdersIn,
   sentenceWords,
   splitSentences,
   tokenize,
@@ -85,6 +90,17 @@ export const TALK_ASK_AGAIN_KO_FORBIDDEN: readonly string[] = [
 ];
 /** 짧은 말 자리 · 구간마다 줄 수 하한(plan 정한 것 6). 시드 꼴 검사 상수다. */
 export const TALK_SHORT_LINES_MIN = 1;
+/** 한국어 도움 대신 줄 꼴마다 줄 수 하한(plan 정한 것 15 '꼴마다 둘 이상' — 순번으로 돌려 같은 줄이 이어 나오지 않게). 시드 꼴 검사 상수다. */
+export const TALK_KO_HELP_LINES_MIN = 2;
+/** 대신 줄의 꼴(TALK_KO_HELP_FALLBACK_SHAPES 와 같은 값 — 꼴 이름은 목록 규격의 열쇠다). */
+const KO_HELP_LINE_SHAPES = ["call_failed", "check_blocked"] as const;
+const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힣]/;
+const LATIN = /[A-Za-z]/;
+const WHITESPACE_RUN = /\s+/g;
+/** 한국어 답 글자 수(코드 포인트, 빈칸 뺌 — talk-ko-help koReplyCharsOf 와 같은 셈, 설정 talk.ko_ask_reply_max_chars 의 정의). */
+const koCharsOf = (text: string) =>
+  [...text.replace(WHITESPACE_RUN, "")].length;
+
 /** 1인칭 낱말(지어낸 경험 꼴은 '선생님 자신'의 경험 · 기억 꼴이다, 06:187 (4)). 영어 문법 목록이라 코드 상수다. */
 export const FIRST_PERSON_WORDS: ReadonlySet<string> = new Set([
   "i",
@@ -103,6 +119,8 @@ export type TalkListsFiles = {
 };
 /** 짧은 말 목록(C213). 1~3단계 목록 넷과 따로 두되 같은 검사가 본다. */
 export type TalkShortListFiles = { talkShortLines?: TalkShortLinesFile };
+/** 한국어 도움 대신 줄(수업 안 한국어로 묻기 plan 정한 것 15). 같은 검사가 본다. */
+export type TalkKoHelpListFiles = { talkKoHelpLines?: TalkKoHelpLinesFile };
 /** 소리가 가까운 낱말 목록(C217 (1))과 그 검사가 견주는 동음이의어 묶음. 같은 검사가 본다. */
 export type SoundAlikeListFiles = {
   soundAlikes?: SoundAlikesFile;
@@ -119,6 +137,8 @@ export type TalkListsContext = {
    * 막는다. 단원 규격이 없으면 비운다(그 검사를 건너뛴다).
    */
   talkUnitWords?: readonly (readonly string[])[];
+  /** 한국어 답 글자 수 상한(talk.ko_ask_reply_max_chars). 없으면 대신 줄 검사 (7)의 글자 수만 건너뛴다(설정 없음은 규격 파일 정합이 알린다). */
+  koReplyMaxChars?: number;
 };
 
 /** 단계 구간 열쇠('1' · '2-3')의 첫 단계. */
@@ -206,7 +226,10 @@ function sentenceKeysOf(en: string, minWords: number): string[] {
 
 /** 시드 목록 넷 검사(06:187)와 짧은 말 검사(C213). 없는 파일의 몫은 건너뛴다(규격 파일 '없음'은 seed:validate 가 따로 막는다). */
 export function checkTalkLists(
-  files: TalkListsFiles & TalkShortListFiles & SoundAlikeListFiles,
+  files: TalkListsFiles &
+    TalkShortListFiles &
+    SoundAlikeListFiles &
+    TalkKoHelpListFiles,
   ctx: TalkListsContext,
 ): SeedIssue[] {
   const out: SeedIssue[] = [];
@@ -470,6 +493,48 @@ export function checkTalkLists(
           );
       });
     });
+  }
+
+  // (7) 한국어 도움 대신 줄: 꼴마다 줄 수, 한국어 · 라틴 글자 없음 · 틀 자리 없음 · 글자 수 상한
+  const koLines = files.talkKoHelpLines;
+  if (koLines) {
+    const file = SEED_FILES.talkKoHelpLines;
+    for (const shape of KO_HELP_LINE_SHAPES) {
+      const lines = koLines[shape];
+      if (lines.length < TALK_KO_HELP_LINES_MIN)
+        push(
+          "talk-ko-help-lines",
+          file,
+          shape,
+          `대신 줄(${shape}) ${lines.length}개가 ${TALK_KO_HELP_LINES_MIN}개보다 적다`,
+        );
+      lines.forEach((text, i) => {
+        const max = ctx.koReplyMaxChars;
+        const problems = [
+          ...(HANGUL.test(text) ? [] : ["한국어(한글)가 없다"]),
+          ...(LATIN.test(text)
+            ? ["라틴 글자가 있다(1~3단계 화면에도 보이는 줄이다)"]
+            : []),
+          ...(placeholdersIn(text).length > 0
+            ? [
+                "틀 자리({NAME} 꼴)가 있다(한국어 답은 아이를 이름으로 부르지 않는다)",
+              ]
+            : []),
+          ...(max !== undefined && koCharsOf(text) > max
+            ? [
+                `글자 수 ${koCharsOf(text)}(빈칸 뺌)가 ${max}(${KO_ASK_REPLY_MAX_CHARS_KEY})를 넘는다`,
+              ]
+            : []),
+        ];
+        if (problems.length > 0)
+          push(
+            "talk-ko-help-lines",
+            file,
+            `${shape}.${i}`,
+            `대신 줄 '${text}': ${problems.join(" · ")}`,
+          );
+      });
+    }
   }
   return out;
 }

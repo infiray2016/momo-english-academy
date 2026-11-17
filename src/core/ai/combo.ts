@@ -21,6 +21,8 @@ export const AI_PURPOSES = [
   "probe",
   "talk_chat_hint",
   "talk_chat_eval",
+  // 수업 안 한국어 도움(수업 안 한국어로 묻기 spec 설계 4 — 마이그레이션 0010 은 끝에 더하기만)
+  "talk_ko_help",
 ] as const;
 export type AiPurpose = (typeof AI_PURPOSES)[number];
 
@@ -30,6 +32,7 @@ export const REALTIME_PURPOSES = [
   "speaking_eval",
   "thinkout",
   "talk_turn",
+  "talk_ko_help",
 ] as const satisfies readonly AiPurpose[];
 
 /** 12절 ai.thinking 의 저장 값('끔' · '적응', plan-p06a 정할 것 마). */
@@ -45,7 +48,10 @@ export const STRUCTURED_OUTPUTS_BETA = "structured-outputs-2025-12-15";
 const MS_PER_SECOND = 1000;
 /** 확인 호출의 effort — 가장 가벼운 값(6.1 표 확인 호출 행 'low'). */
 const PROBE_EFFORT: Effort = EFFORTS[0];
-/** 조합 검사를 하는 호출 목적(회화 턴은 구간마다 따로, 끝맺음 턴은 회화 턴 값을 쓴다 — 12절. 이야기 방식의 힌트 · 평가 호출은 자기 키를 가진다). */
+/**
+ * 조합 검사를 하는 호출 목적(회화 턴은 구간마다 따로, 끝맺음 턴 · 한국어 도움은 회화 턴 값을 쓴다 — 12절. 이야기 방식의 힌트 · 평가 호출은 자기
+ * 키를 가진다).
+ */
 const SINGLE_COMBO_PURPOSES = [
   "writing_feedback",
   "writing_check",
@@ -104,11 +110,16 @@ export type AiSettingKeys = {
   timeout: string;
 };
 
+/** 모델 · effort · 생각 단계를 회화 턴 구간 키로 푸는 목적(끝맺음 턴 · 한국어 도움 — 12절 · 한국어로 묻기 spec 설계 4 · 7). */
 function isTalkPurpose(purpose: AiPurpose): boolean {
-  return purpose === "talk_turn" || purpose === "talk_closing";
+  return (
+    purpose === "talk_turn" ||
+    purpose === "talk_closing" ||
+    purpose === "talk_ko_help"
+  );
 }
 
-/** 모델 · effort · 생각 단계 키의 뒷부분. 회화 턴 · 끝맺음 턴은 `talk_turn.<구간>`(12절). */
+/** 모델 · effort · 생각 단계 키의 뒷부분. 회화 턴 · 끝맺음 턴 · 한국어 도움은 `talk_turn.<구간>`(12절). */
 function comboKeyBaseOf(purpose: AiPurpose, level?: number): string {
   if (purpose === "probe") {
     throw new RangeError(

@@ -61,7 +61,7 @@ const ROWS: [string, string, string, string][] = [
   [
     "ai.max_tokens.<호출>",
     "집 전체",
-    "writing_feedback 8000 · writing_check · speaking_eval · thinkout 4000 · talk_turn 1000 · talk_closing(끝맺음 턴) 2000 · probe 1 · talk_chat_hint 600 · talk_chat_eval 400",
+    "writing_feedback 8000 · writing_check · speaking_eval · thinkout 4000 · talk_turn 1000 · talk_closing(끝맺음 턴) 2000 · probe 1 · talk_chat_hint 600 · talk_chat_eval 400 · talk_ko_help 1000",
     "고급",
   ],
 ];
@@ -128,6 +128,8 @@ function goodSettings(): Row[] {
     probe: 1,
     talk_chat_hint: 600,
     talk_chat_eval: 400,
+    // 한국어 도움(수업 안 한국어로 묻기 spec 설계 7) — 자기 ai.model · effort · thinking 키가 없고 회화 턴 구간 값을 쓴다
+    talk_ko_help: 1000,
   };
   return [
     ...band("unit.vocab_count", [25, 30, 30, 30], "seed"),
@@ -398,6 +400,7 @@ describe("식별자 대조(pnpm check:ids)", () => {
       "ai.max_tokens.probe": 1,
       "ai.max_tokens.talk_chat_hint": 600,
       "ai.max_tokens.talk_chat_eval": 400,
+      "ai.max_tokens.talk_ko_help": 1000,
     });
     expect(parse("ai.thinking.<호출>")).toEqual({
       "ai.thinking.writing_feedback": "adaptive",

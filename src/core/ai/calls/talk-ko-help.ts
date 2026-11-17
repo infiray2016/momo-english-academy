@@ -1,7 +1,8 @@
 // 한국어 도움 호출의 조각('수업 안 한국어로 묻기' spec 판 3 설계 4 · plan 정한 것 4 · 접점 가, 13절 C221 · C225 · C226).
 // 회화 수업의 아이 차례에 아이가 한국어로 물은 것 하나에만 답하는 짧은 호출이다. 회화 턴과 따로 부르고 흘려 받지 않는다.
-// 이 파일은 호출 규격에서 목적 · 설정 규격 · 규칙 읽기를 뺀 조각이다 — 목적 등록(talk_ko_help)과 설정 읽기는 묶음 4-가 가 더해 규격을 조립한다.
-// 그래서 설정 키 글자를 쓰지 않고 규칙 값(한국어 답 글자 수 상한)을 인자로 받는다. 순수 모듈이다(시각 · DB · SDK 없음).
+// 호출 조각(talkKoHelpPiece)은 목적 · 설정 규격 · 규칙 읽기를 뺀 것이고 규칙 값(한국어 답 글자 수 상한)을 인자로 받는다. 묶음 4-가 가 목적
+// talk_ko_help 와 설정 읽기(talk.ko_ask_reply_max_chars, 키 글자는 core/conversation/ko-ask)를 더해 규격 talkKoHelpSpec 을 조립한다(맨 끝 절).
+// 순수 모듈이다(시각 · DB · SDK 없음).
 // 고정부의 한국어 도움 규칙은 plan '옮겨 적는 문구' 절의 바탕 글 그대로이고, 요청자 확정(C226) 두 줄(도움 뒤 같은 질문 자리로 돌아감 · 한국어로
 // 묻는 것을 모름으로 다루지 않음)과 글자 수 한 줄을 더했다. 실호출 표본 판정(2026-11-12, C-1 · I-1 · I-3~I-6 · M-1~M-3)으로 다듬어 답만 달라는 물음 ·
 // 한글로 적힌 영어를 독립된 줄로 꺼냈고 끝 안내를 하나로 줄였다(앞뒤 글은 고침 1 보고, scripts/talk-ko-help-sample.ts 로 다시 잰다).
@@ -9,12 +10,17 @@ import { z } from "zod";
 import {
   type ApplyChecksResult,
   buildSystem,
+  CallSettingError,
   type CallSpec,
   type ChatMessage,
   type LevelContext,
 } from "@/core/ai/calls/common";
 import { type TalkTeacher, teacherBlockOf } from "@/core/ai/calls/talk-lesson";
 import type { CheckField, FieldHit } from "@/core/ai/output-check";
+import {
+  KO_ASK_REPLY_MAX_CHARS_KEY,
+  koAskReplyMaxCharsSchema,
+} from "@/core/conversation/ko-ask";
 import { offbandWordsIn } from "@/core/conversation/question-check";
 import { placeholdersIn, splitSentences, tokenize } from "@/core/seed/text";
 
@@ -644,4 +650,42 @@ export const talkKoHelpPiece: TalkKoHelpPiece = {
     // 걸린 답은 대신 줄로 바꿔 쓰고 그 호출을 실패로 보지 않는다(대신 줄을 쓴 차례도 talk_ko_helps 에 남긴다)
     return { value: result.value, changed: result.changed, fatal: false };
   },
+};
+
+// ── 호출 규격(묶음 4-가 — 조각에 목적 · 설정 규격 · 규칙 읽기를 더함) ─────────
+
+/**
+ * 이 규격이 읽는 설정 키의 규격(ai.* 밖). 모델 · effort · 생각 단계는 회화 턴 구간 키(ai.*.talk_turn.<구간>), 최대 출력은
+ * ai.max_tokens.talk_ko_help, 타임아웃은 ai.timeout_seconds.realtime 이고 호출 조합(settingKeysOf)이 읽는다.
+ */
+export const TALK_KO_HELP_SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> =
+  {
+    [KO_ASK_REPLY_MAX_CHARS_KEY]: koAskReplyMaxCharsSchema,
+  };
+
+/** 규칙 값 읽기: 한국어 답 글자 수 상한(talk.ko_ask_reply_max_chars). 없거나 꼴이 틀리면 CallSettingError 다(조용한 기본값 없음). */
+export function talkKoHelpRulesOf(
+  values: Readonly<Record<string, unknown>>,
+): TalkKoHelpRules {
+  const parsed = koAskReplyMaxCharsSchema.safeParse(
+    values[KO_ASK_REPLY_MAX_CHARS_KEY],
+  );
+  if (!parsed.success)
+    throw new CallSettingError(
+      KO_ASK_REPLY_MAX_CHARS_KEY,
+      "없거나 꼴이 틀렸다",
+    );
+  return { replyMaxChars: parsed.data };
+}
+
+/** 한국어 도움 호출 규격. 목적 talk_ko_help(규격 제목과 같다), 한 번 호출(흘려 받지 않음 · 캐시 없음). */
+export const talkKoHelpSpec: CallSpec<
+  TalkKoHelpInput,
+  TalkKoHelpOutput,
+  TalkKoHelpRules
+> = {
+  ...talkKoHelpPiece,
+  purpose: "talk_ko_help",
+  settingSchemas: TALK_KO_HELP_SETTING_SCHEMAS,
+  rulesOf: (values) => talkKoHelpRulesOf(values),
 };

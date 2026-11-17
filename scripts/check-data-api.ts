@@ -56,7 +56,7 @@ const ORDER: Classification[] = [
   "unreachable",
 ];
 
-/** P3a 스키마 세 파일의 테이블 이름(29개). */
+/** P3a 스키마 세 파일의 테이블 이름(30개 — 한국어 도움 talk_ko_helps 포함). */
 export function schemaTableNames(): string[] {
   return [content, learning, operations]
     .flatMap((mod) => Object.values(mod))

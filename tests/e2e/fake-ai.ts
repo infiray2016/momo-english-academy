@@ -9,6 +9,7 @@ import {
   type FakeRequest,
   type FakeRule,
   messageBody,
+  talkKoHelpBody,
 } from "../fixtures/ai/fake-anthropic";
 import { TEST_SETTINGS } from "../fixtures/settings";
 
@@ -170,6 +171,49 @@ export function feedbackReply({
         modelAnswer: "I have a small dog. We play in the park every day.",
         rubric,
       },
+    }),
+    ...(delayMs === undefined ? {} : { delayMs }),
+  };
+}
+
+/**
+ * 한국어 도움 시험 고정 글(수업 안 한국어로 묻기 묶음 4-가). 선생님 반말이고 아이 이름 · {NAME} 을 쓰지 않는다. 표현 답의 say_ko 에는 라틴 글자가
+ * 없어 1~3단계 검사를 지난다.
+ */
+export const FAKE_KO_HELP = {
+  expression: {
+    sayKo: "이렇게 말하면 돼. 잘 듣고 따라 해 봐.",
+    teachEn: "I like clams.",
+  },
+  meaning: { sayKo: "무엇을 좋아하는지 묻는 말이야.", teachEn: "" },
+} as const;
+
+/**
+ * 한국어 도움 응답(규격 제목 talk_ko_help — ruleFor("talk_ko_help", …) 로 건다). 모델은 회화 턴 구간 값(ai.model.talk_turn.<구간>)이다 —
+ * 한국어 도움은 그 값을 같이 쓴다(spec 설계 4).
+ */
+export function talkKoHelpReply({
+  band = "1-3",
+  kind = "expression",
+  sayKo,
+  teachEn,
+  delayMs,
+}: {
+  band?: "1-3" | "4-6" | "7-9" | "10-12";
+  kind?: "expression" | "meaning" | "unclear" | "other";
+  sayKo?: string;
+  teachEn?: string;
+  delayMs?: number;
+} = {}): FakeReply {
+  const fixed =
+    kind === "expression" ? FAKE_KO_HELP.expression : FAKE_KO_HELP.meaning;
+  return {
+    kind: "message",
+    body: talkKoHelpBody({
+      model: TEST_SETTINGS[`ai.model.talk_turn.${band}`].value,
+      kind,
+      sayKo: sayKo ?? fixed.sayKo,
+      teachEn: teachEn ?? (kind === "expression" ? fixed.teachEn : ""),
     }),
     ...(delayMs === undefined ? {} : { delayMs }),
   };

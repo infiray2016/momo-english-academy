@@ -112,9 +112,15 @@ const CHANGE_VIA_WORDS: Record<string, SpecChangeVia> = {
 const VALUE_WORDS: Record<string, string> = { 끔: "off", 적응: "adaptive" };
 /**
  * ai.model · ai.effort · ai.thinking 의 <호출> 에서 빼는 호출. 회화 턴은 구간 키를 따로 두고,
- * 끝맺음 턴 · 확인 호출은 이 키를 쓰지 않는다(12절 ai.model 뜻 칸 · 13절 '데이터 · 운영 세부').
+ * 끝맺음 턴 · 한국어 도움 · 확인 호출은 이 키를 쓰지 않는다(12절 ai.model 뜻 칸 · 13절 '데이터 · 운영 세부' · 한국어로 묻기 spec 설계 4 ·
+ * 7 — 한국어 도움은 회화 턴 구간 값을 같이 쓴다).
  */
-const CALLS_WITHOUT_OWN_KEY = ["talk_turn", "talk_closing", "probe"];
+const CALLS_WITHOUT_OWN_KEY = [
+  "talk_turn",
+  "talk_closing",
+  "talk_ko_help",
+  "probe",
+];
 /** AI 없이 정답 비교하는 쓰기 마지막 단계의 설정 키(12절). */
 const RULE_CHECK_UNTIL_KEY = "writing.rule_check_until_level";
 /** <호출> 을 일곱 모두로 펼치는 키 머리. */

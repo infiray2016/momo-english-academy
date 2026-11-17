@@ -41,6 +41,7 @@ import {
   SoundAlikesFileSchema,
   TalkAllowedWordsFileSchema,
   TalkCueLinesFileSchema,
+  TalkKoHelpLinesFileSchema,
   TalkMadeUpPhrasesFileSchema,
   TalkShortLinesFileSchema,
   TalkSituationLinesFileSchema,
@@ -1092,6 +1093,7 @@ describe("시드 규격(schema)", () => {
             talkMadeUpPhrases: TalkMadeUpPhrasesFileSchema,
             talkShortLines: TalkShortLinesFileSchema,
             soundAlikes: SoundAlikesFileSchema,
+            talkKoHelpLines: TalkKoHelpLinesFileSchema,
           }[parsed.name];
         case "lessons":
           return LessonFileSchema;

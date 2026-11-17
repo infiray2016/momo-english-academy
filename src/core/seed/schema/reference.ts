@@ -640,6 +640,39 @@ export const SoundAlikesFileSchema = z
 export type SoundAlikesFile = z.infer<typeof SoundAlikesFileSchema>;
 
 /**
+ * 한국어 도움 대신 줄 lists/talk-ko-help-lines.json(수업 안 한국어로 묻기 plan 정한 것 15 · spec 설계 4 [M-4]). 꼴 둘 — 호출 실패
+ * (call_failed: 호출이 실패 · 거절 · 타임아웃으로 끝남, 다시 물어보게 한다) · 검사 걸림(check_blocked: 같은 일이 되풀이되지 않게 다른 길을
+ * 짚는다) — 마다 선생님 반말 한국어 줄이고 그 차례의 순번으로 돌려 고른다(core/ai/calls/talk-ko-help koHelpFallbackLineOf). 꼴 이름은
+ * TALK_KO_HELP_FALLBACK_SHAPES 와 같다. 여기는 꼴만 본다(빈 줄 · 모르는 꼴 · 겹침 거부). 꼴마다 줄 수 · 한국어 · 라틴 글자 · {NAME} · 글자 수
+ * 검사는 시드 검증기(check-talk-lists)가 한다. 빌드에 묶고 DB 에 넣지 않는다.
+ */
+export const TalkKoHelpLinesFileSchema = z
+  .strictObject({
+    call_failed: z.array(Text),
+    check_blocked: z.array(Text),
+  })
+  .superRefine((file, ctx) => {
+    const all = [
+      ...file.call_failed.map((line, i) => ({
+        line,
+        path: ["call_failed", i],
+      })),
+      ...file.check_blocked.map((line, i) => ({
+        line,
+        path: ["check_blocked", i],
+      })),
+    ];
+    for (const i of duplicateIndexes(all, (row) => row.line)) {
+      ctx.addIssue({
+        code: "custom",
+        path: all[i]?.path ?? [],
+        message: `대신 줄이 겹친다: ${all[i]?.line}`,
+      });
+    }
+  });
+export type TalkKoHelpLinesFile = z.infer<typeof TalkKoHelpLinesFileSchema>;
+
+/**
  * 문법 용어 목록 lists/grammar-terms.json(델타 spec 2026-10-29 설계 7). 항목은 낱말과 열리는 단계(fromLevel, 비면 모든 단계 금지).
  * 선생님 말 칸 · 칩 글에 이 낱말이 있으면 막는다. 메타 문장 목록과는 별개다.
  */

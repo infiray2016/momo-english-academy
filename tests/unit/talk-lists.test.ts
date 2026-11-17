@@ -5,6 +5,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  koHelpFallbackLineOf,
+  TALK_KO_HELP_FALLBACK_SHAPES,
+} from "@/core/ai/calls/talk-ko-help";
+import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
+import {
   checkTalkLists,
   FIRST_PERSON_WORDS,
   firstLevelOfBand,
@@ -15,15 +20,23 @@ import {
   TALK_ASK_AGAIN_LINES_MIN,
   TALK_CUE_LONG_MIN,
   TALK_CUE_SHORT_MIN,
+  TALK_KO_HELP_LINES_MIN,
   TALK_SAME_SENTENCE_MIN_WORDS,
   TALK_SITUATION_LINES_MIN,
+  type TalkListsContext,
   type TalkListsFiles,
 } from "@/core/seed/check-talk-lists";
 import type { SeedIssue } from "@/core/seed/issue";
 import { buildReferenceIndex } from "@/core/seed/reference-index";
+import {
+  type TalkKoHelpLinesFile,
+  TalkKoHelpLinesFileSchema,
+} from "@/core/seed/schema/reference";
 import { SEED_FILES, TALK_SITUATION_PLACES } from "@/core/seed/structure";
 import { buildLexicon } from "@/core/seed/text";
+import { loadSeedList, seedTalkKoHelpLines } from "@/server/seed-lists";
 import { defaultSettings, referenceSet } from "../fixtures/seed/builders";
+import { TEST_SETTINGS } from "../fixtures/settings";
 
 const ref = referenceSet(defaultSettings());
 const { index } = buildReferenceIndex(ref);
@@ -352,5 +365,122 @@ describe("실제 시드의 인사 끝 상황 줄 — 짧은 준비가 없는 수
     expect(
       lines.filter((en) => /\b(learn|new|words?|talk(ing)?|chat)\b/.test(en)),
     ).toEqual([]);
+  });
+});
+
+describe("한국어 도움 대신 줄 목록(수업 안 한국어로 묻기 plan 정한 것 15 · spec 설계 4 [M-4] — 묶음 4-가)", () => {
+  const replyMax = TEST_SETTINGS[KO_ASK_REPLY_MAX_CHARS_KEY].value;
+  const koCtx = { ...ctx, koReplyMaxChars: replyMax };
+  const sample = (): TalkKoHelpLinesFile =>
+    structuredClone(ref.talkKoHelpLines);
+  const koIssues = (
+    file: TalkKoHelpLinesFile,
+    context: TalkListsContext = koCtx,
+  ) =>
+    at(
+      checkTalkLists({ talkKoHelpLines: file }, context),
+      "talk-ko-help-lines",
+    );
+  const seedFile = (): unknown =>
+    JSON.parse(
+      readFileSync(
+        join(process.cwd(), "seed", SEED_FILES.talkKoHelpLines),
+        "utf8",
+      ),
+    );
+
+  it("AC-25g 실제 시드 lists/talk-ko-help-lines.json 은 규격을 지나고 꼴 둘(호출 실패 · 검사 걸림)마다 둘 이상이며 꼴 검사에 걸리지 않는다", () => {
+    expect(SEED_FILES.talkKoHelpLines).toBe("lists/talk-ko-help-lines.json");
+    const file = TalkKoHelpLinesFileSchema.parse(seedFile());
+    expect(Object.keys(file).sort()).toEqual(
+      [...TALK_KO_HELP_FALLBACK_SHAPES].sort(),
+    );
+    for (const shape of TALK_KO_HELP_FALLBACK_SHAPES)
+      expect(file[shape].length, shape).toBeGreaterThanOrEqual(
+        TALK_KO_HELP_LINES_MIN,
+      );
+    expect(koIssues(file)).toEqual([]);
+  });
+
+  it("AC-25g 꼴 수는 검사 상수(꼴마다 둘 이상)이고, 하나뿐인 꼴을 거부한다", () => {
+    expect(TALK_KO_HELP_LINES_MIN).toBe(2);
+    const file = sample();
+    file.call_failed = file.call_failed.slice(0, 1);
+    expect(koIssues(file)).toEqual([
+      `${SEED_FILES.talkKoHelpLines}:call_failed`,
+    ]);
+  });
+
+  it("AC-25g 줄은 한국어이고 라틴 글자 · {NAME} 이 없으며 글자 수(빈칸 뺌)가 talk.ko_ask_reply_max_chars 안이다", () => {
+    const file = sample();
+    file.check_blocked = [
+      "음, 그건 Sale 이야.",
+      "{NAME}, 다른 걸 물어봐 줄래?",
+      "...!",
+      "가".repeat(replyMax + 1),
+      `${"가".repeat(replyMax - 1)} 나`,
+    ];
+    expect(koIssues(file)).toEqual([
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.0`,
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.1`,
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.2`,
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.3`,
+    ]);
+    // 글자 수 상한을 모르면(설정이 없으면) 글자 수만 건너뛴다
+    const { koReplyMaxChars: _m, ...noMax } = koCtx;
+    expect(koIssues(file, noMax)).toEqual([
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.0`,
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.1`,
+      `${SEED_FILES.talkKoHelpLines}:check_blocked.2`,
+    ]);
+  });
+
+  it("AC-25g 규격은 꼴 둘만 받고 빈 줄 · 모르는 꼴을 거부한다", () => {
+    const base = sample();
+    expect(TalkKoHelpLinesFileSchema.safeParse(base).success).toBe(true);
+    expect(
+      TalkKoHelpLinesFileSchema.safeParse({ ...base, other: ["다른 꼴"] })
+        .success,
+    ).toBe(false);
+    expect(
+      TalkKoHelpLinesFileSchema.safeParse({ ...base, call_failed: [""] })
+        .success,
+    ).toBe(false);
+    const { check_blocked: _c, ...onlyOne } = base;
+    expect(TalkKoHelpLinesFileSchema.safeParse(onlyOne).success).toBe(false);
+  });
+
+  it("AC-25g seed:validate 의 규격 파일 정합이 대신 줄 검사를 부르고, 글자 수 설정이 없으면 settings 오류로 알린다", () => {
+    const bad = structuredClone(ref);
+    bad.talkKoHelpLines.call_failed = ["Sorry!", "미안, 다시 물어봐 줄래?"];
+    expect(at(buildReferenceIndex(bad).issues, "talk-ko-help-lines")).toEqual([
+      `${SEED_FILES.talkKoHelpLines}:call_failed.0`,
+    ]);
+    expect(at(buildReferenceIndex(ref).issues, "talk-ko-help-lines")).toEqual(
+      [],
+    );
+    const noSetting = structuredClone(ref);
+    noSetting.settings.settings = noSetting.settings.settings.filter(
+      (row) => row.key !== KO_ASK_REPLY_MAX_CHARS_KEY,
+    );
+    expect(
+      buildReferenceIndex(noSetting).issues.filter(
+        (i) =>
+          i.rule === "settings" &&
+          i.message.includes(KO_ASK_REPLY_MAX_CHARS_KEY),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("AC-25g 서버 읽기(seedTalkKoHelpLines)는 꼴 둘의 줄을 돌려주고 대신 줄 고르기가 순번으로 돌린다", () => {
+    const lines = seedTalkKoHelpLines();
+    expect(lines).toEqual(TalkKoHelpLinesFileSchema.parse(seedFile()));
+    expect(loadSeedList("talkKoHelpLines")).toEqual(lines);
+    for (const shape of TALK_KO_HELP_FALLBACK_SHAPES) {
+      const list = lines[shape];
+      expect(koHelpFallbackLineOf(lines, shape, 0)).toBe(list[0]);
+      expect(koHelpFallbackLineOf(lines, shape, 1)).toBe(list[1]);
+      expect(koHelpFallbackLineOf(lines, shape, list.length)).toBe(list[0]);
+    }
   });
 });

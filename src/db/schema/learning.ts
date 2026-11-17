@@ -1,4 +1,4 @@
-// 학습 기록 테이블 13(정본 5절, plan-p03a 파일별 값 2 · 3).
+// 학습 기록 테이블 14(정본 5절, plan-p03a 파일별 값 2 · 3).
 // server-only 를 가져오지 않는다. 시각 열에 기본값을 두지 않는다(한 시계, 11절 (4-1)).
 // 프로필 쪽 행은 프로필을 따라 지우고(5.1), 시드 행을 가리키는 키는 지우기를 막는다(5절).
 import { sql } from "drizzle-orm";
@@ -24,6 +24,8 @@ import {
   heardHelpEnum,
   hintKindEnum,
   inputModeEnum,
+  koHelpFallbackEnum,
+  koHelpKindEnum,
   lessons,
   levelTestKindEnum,
   sessionKindEnum,
@@ -233,6 +235,52 @@ export const talkTurns = pgTable(
     uniqueIndex("talk_turns_client_attempt_id_unique")
       .on(t.clientAttemptId)
       .where(sql`${t.clientAttemptId} IS NOT NULL`),
+  ],
+).enableRLS();
+
+/**
+ * 회화 수업 안 한국어 문답(수업 안 한국어로 묻기 spec 판 3 설계 5 · plan 정한 것 7 · 13절 C225 (1)). talk_turns 에 넣지 않고 따로 둔다 — 그 표를
+ * 읽는 셈(흐름 · '말했다' · 수행 근거 · 이월 · 통계)에 처음부터 보이지 않게 하려는 것이다. 턴 번호는 그때 열려 있던 아이 차례의 턴 번호(그 앞
+ * 선생님 행의 턴 번호와 같다)이고 순번은 그 차례 안의 차례다. 답이 오기 전에는 갈래 · 답 칸이 비어 있다. question · say_ko · teach_en ·
+ * shown_en 은 원문과 같이 지우는 칸이다(5.1, 원문 지우기는 1-나).
+ */
+export const talkKoHelps = pgTable(
+  "talk_ko_helps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: sessionRef(),
+    turnNo: smallint("turn_no").notNull(),
+    seq: smallint("seq").notNull(),
+    // 기기가 만든 시도 id(같은 id 는 한 번만 저장한다)
+    clientAttemptId: text("client_attempt_id").notNull(),
+    // 가린 한국어 질문(이름 · 전화번호 · 주소를 가린 인식 글)
+    question: text("question").notNull(),
+    // 앱이 칸의 사실로 고친 갈래
+    kind: koHelpKindEnum("kind"),
+    // 화면에 보인 한국어 답
+    sayKo: text("say_ko"),
+    // 가르친 표현(1~3단계는 소리로만 준 글)
+    teachEn: text("teach_en"),
+    // 새로 보인 영어 글(정한 것 7 — 다음 영어 턴의 힌트 종류 · 한 줄 · '말했다' 거름이 이 칸만 읽는다)
+    shownEn: text("shown_en").array(),
+    // 가르친 표현을 글로 보였는가
+    textShown: boolean("text_shown"),
+    // 소리를 한 번이라도 들려줬는가(다음 요청이 싣기 전에는 비어 있고, 비면 들은 것으로 본다)
+    heard: boolean("heard"),
+    // '알려 준 말 듣기' 누른 수
+    replays: smallint("replays"),
+    // 가르친 표현의 범위 밖 낱말 수
+    outOfRange: smallint("out_of_range"),
+    fallback: koHelpFallbackEnum("fallback"),
+    // 그 질문까지의 듣기 요약(client_listen 과 같은 꼴, 언어 칸 포함, 글 없음)
+    clientListen: jsonb("client_listen"),
+    // 서버가 요청을 받은 때와 답을 돌려준 때
+    askedAt: tstz("asked_at").notNull(),
+    answeredAt: tstz("answered_at"),
+  },
+  (t) => [
+    unique("talk_ko_helps_turn_seq_unique").on(t.sessionId, t.turnNo, t.seq),
+    unique("talk_ko_helps_client_attempt_id_unique").on(t.clientAttemptId),
   ],
 ).enableRLS();
 

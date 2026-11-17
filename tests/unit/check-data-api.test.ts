@@ -175,9 +175,10 @@ describe("Data API 확인", () => {
     }
   });
 
-  it("Data API 확인: 테이블 목록은 스키마의 테이블 29개다", () => {
+  it("Data API 확인: 테이블 목록은 스키마의 테이블 30개다(한국어 도움 talk_ko_helps 포함)", () => {
     const tables = schemaTableNames();
-    expect(tables).toHaveLength(29);
+    expect(tables).toHaveLength(30);
+    expect(tables).toContain("talk_ko_helps");
     expect(new Set(tables).size).toBe(tables.length);
     expect(tables).toContain("parent_auth");
   });

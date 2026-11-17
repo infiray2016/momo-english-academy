@@ -10,6 +10,7 @@ import {
   checkCombo,
   checkSettingsCombos,
   probeConfigOf,
+  REALTIME_PURPOSES,
   requestConfigOf,
   SERVER_SIDE_FALLBACK_BETA,
   settingKeysOf,
@@ -303,6 +304,8 @@ describe("6.1 조합 · 요청 구성", () => {
       // 이야기 방식: 응답 뒤 평가 호출은 feedback(설계 8-2), 힌트 호출은 realtime(설계 7)
       talk_chat_eval: feedbackMs,
       talk_chat_hint: realtimeMs,
+      // 한국어 도움(수업 안 한국어로 묻기 spec 설계 4): 아이가 기다리는 짧은 호출이라 realtime
+      talk_ko_help: realtimeMs,
     };
     for (const [purpose, ms] of Object.entries(expected)) {
       const config = requestConfigOf({
@@ -380,5 +383,56 @@ describe("6.1 조합 · 요청 구성", () => {
 
   it("6.1 호출 목적은 DB 열거형 ai_purpose 와 같은 값 · 차례다", () => {
     expect([...AI_PURPOSES]).toEqual(aiPurposeEnum.enumValues);
+  });
+
+  it("AC-25g 한국어 도움 talk_ko_help 는 talk_chat_eval 뒤에 더한 목적이고, 회화 턴 구간 키 · 자기 최대 출력 · realtime 으로 푼다", () => {
+    // 열거 값은 끝에 더하기만 한다(마이그레이션 0010, plan 다시 맞춤 2026-11-17)
+    expect(AI_PURPOSES.slice(-2)).toEqual(["talk_chat_eval", "talk_ko_help"]);
+    expect(aiPurposeEnum.enumValues.slice(-2)).toEqual([
+      "talk_chat_eval",
+      "talk_ko_help",
+    ]);
+    // 아이가 기다리는 실시간 호출(첫 바이트 전 연결 오류에 1회 다시 보냄)
+    expect(REALTIME_PURPOSES).toContain("talk_ko_help");
+    const values = testSettingValues();
+    for (const band of ["1-3", "4-6", "7-9", "10-12"] as const) {
+      const level = levelOfBand(band);
+      expect(settingKeysOf("talk_ko_help", level)).toEqual({
+        model: `ai.model.talk_turn.${band}`,
+        effort: `ai.effort.talk_turn.${band}`,
+        thinking: `ai.thinking.talk_turn.${band}`,
+        maxTokens: "ai.max_tokens.talk_ko_help",
+        timeout: "ai.timeout_seconds.realtime",
+      });
+      const help = requestConfigOf({
+        purpose: "talk_ko_help",
+        level,
+        values,
+        book,
+      });
+      const turn = requestConfigOf({
+        purpose: "talk_turn",
+        level,
+        values,
+        book,
+      });
+      expect(help.purpose).toBe("talk_ko_help");
+      expect(help.model).toBe(turn.model);
+      expect(help.effort).toBe(turn.effort);
+      expect(help.thinking).toEqual(turn.thinking);
+      expect(help.maxTokens).toBe(
+        TEST_SETTINGS["ai.max_tokens.talk_ko_help"].value,
+      );
+      expect(help.timeoutMs).toBe(realtimeMs);
+    }
+    // 단계가 없으면 구간 키를 모른다(회화 턴과 같다)
+    expect(() => settingKeysOf("talk_ko_help")).toThrow(RangeError);
+    // 자기 조합 키(ai.model.talk_ko_help)를 두지 않는다 — 조합 검사는 회화 턴 구간 키에서 본다
+    expect(
+      checkSettingsCombos(values, book).map((v) => v.keyBase),
+    ).not.toContain("talk_ko_help");
+    expect(Object.keys(aiSettingSchemasOf("talk_ko_help", 1))).not.toContain(
+      "ai.model.talk_ko_help",
+    );
   });
 });

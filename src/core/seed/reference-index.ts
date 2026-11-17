@@ -2,6 +2,7 @@
 // 규격 파일끼리 맞는지를 본다. 정합 위반은 모두 오류다(plan-p04a 정할 것 ㄹ). DB 없는 순수 함수다.
 // Zod 규격에서 깨진 규격 파일은 넘기지 않는다(Partial). 빠진 파일을 쓰는 정합 검사는 건너뛰고, P4c 가 '규격 파일 오류로 건너뜀'을 보고한다.
 
+import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
 import { checkTalkLists } from "@/core/seed/check-talk-lists";
 import {
   checkTeacherNamesInSpecs,
@@ -28,6 +29,7 @@ import type {
   SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
+  TalkKoHelpLinesFile,
   TalkMadeUpPhrasesFile,
   TalkShortLinesFile,
   TalkSituationLinesFile,
@@ -93,6 +95,8 @@ export type ReferenceFiles = {
   talkShortLines: TalkShortLinesFile;
   /** 회화 들은 글 귀띔의 소리가 가까운 낱말(C217 (1)). 검사는 같은 check-talk-lists. */
   soundAlikes: SoundAlikesFile;
+  /** 한국어 도움 대신 줄(수업 안 한국어로 묻기 plan 정한 것 15). 검사는 같은 check-talk-lists. */
+  talkKoHelpLines: TalkKoHelpLinesFile;
   /**
    * 문법 용어 목록(델타 spec 2026-10-29 설계 7, `GRAMMAR_TERMS_FILE`). 규격 파일 열(SEED_FILES) 밖의 선택 파일이라
    * 없어도 규격 파일 오류가 아니고, teach 가 있는 수업 칸만 '목록 없음'으로 막는다.
@@ -611,6 +615,15 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
 
   // 회화 1~3단계 시드 목록 넷(06:187): 꼴 수 · 물음표 · 길이 · 어휘 범위(허용 낱말 포함) · 상황 금지 구 · 지어낸 경험 꼴.
   // 짧은 말(C213)도 같은 검사가 본다(줄 수 · 물음표 · 길이 · 그 구간 첫 단계 어휘 범위 · 지어낸 경험 꼴).
+  // 한국어 도움 대신 줄도 같은 검사가 본다(꼴마다 줄 수 · 한국어 · 라틴 글자 · 틀 자리 · 글자 수 상한 talk.ko_ask_reply_max_chars).
+  const koReplyMax = settingMap.get(KO_ASK_REPLY_MAX_CHARS_KEY);
+  if (files.talkKoHelpLines && typeof koReplyMax !== "number")
+    issue(
+      "settings",
+      SEED_FILES.settings,
+      "settings",
+      `설정값 ${KO_ASK_REPLY_MAX_CHARS_KEY} 가 없거나 수가 아니다(한국어 도움 대신 줄의 글자 수를 볼 수 없다)`,
+    );
   issues.push(
     ...checkTalkLists(files, {
       ...(files.vocab ? { lexicon } : {}),
@@ -620,6 +633,9 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
       talkUnitWords: unitSpecs
         .filter((u) => u.area === "talk")
         .map((u) => u.words),
+      ...(typeof koReplyMax === "number"
+        ? { koReplyMaxChars: koReplyMax }
+        : {}),
     }),
   );
 

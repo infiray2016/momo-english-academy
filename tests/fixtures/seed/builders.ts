@@ -49,6 +49,7 @@ import type {
   SoundAlikesFile,
   TalkAllowedWordsFile,
   TalkCueLinesFile,
+  TalkKoHelpLinesFile,
   TalkLevelSpec,
   TalkMadeUpPhrasesFile,
   TalkShortLinesFile,
@@ -203,9 +204,11 @@ const SINGLE_SETTINGS: readonly {
   { key: "writing.split_from_level", value: 6, changeVia: "decision-first" },
   { key: "talk.teacher_model_max_mb", value: 8, changeVia: "seed" },
   { key: "talk.teacher_portrait_max_kb", value: 100, changeVia: "seed" },
+  // 한국어 도움 대신 줄의 글자 수 상한(수업 안 한국어로 묻기 spec 설계 7)
+  { key: "talk.ko_ask_reply_max_chars", value: 80, changeVia: "advanced" },
 ];
 
-/** 검증기(P4b · P4c · 회화 묶음 3)와 선생님 자산 검사가 읽는 52 키의 12절 기본값. */
+/** 검증기(P4b · P4c · 회화 묶음 3)와 선생님 자산 검사가 읽는 53 키의 12절 기본값. */
 export function defaultSettings(): SettingsFile {
   const settings: SettingRow[] = [];
   for (const { key, values, changeVia } of BAND_SETTINGS) {
@@ -956,6 +959,7 @@ export type ReferenceSet = {
   talkMadeUpPhrases: TalkMadeUpPhrasesFile;
   talkShortLines: TalkShortLinesFile;
   soundAlikes: SoundAlikesFile;
+  talkKoHelpLines: TalkKoHelpLinesFile;
 };
 
 /** 시제품 출처(seed/teachers.json 과 같은 꼴, 견본 값). */
@@ -1293,6 +1297,17 @@ export function referenceSet(
     talkShortLines: talkShortLinesSample(),
     // 소리가 가까운 낱말 견본(C217 (1)): 표제어는 견본 어휘의 원형, 가까운 낱말은 활용형 · 기능어 · 같은 소리 낱말이 아닌 것
     soundAlikes: { words: [{ word: "like", alikes: ["lake", "bike"] }] },
+    // 한국어 도움 대신 줄 견본(수업 안 한국어로 묻기 plan 정한 것 15): 꼴마다 둘, 한국어 · 라틴 글자 없음 · 틀 자리 없음 · 글자 수 상한 안
+    talkKoHelpLines: {
+      call_failed: [
+        "미안, 지금은 대답을 못 했어. 한 번 더 물어봐 줄래?",
+        "어, 잠깐 생각이 안 났어. 다시 물어봐 줘!",
+      ],
+      check_blocked: [
+        "음, 그건 지금 알려 주기 어려워. 다른 걸 물어봐 줄래?",
+        "그건 다음에 같이 알아보자. 다른 걸 물어봐도 돼!",
+      ],
+    },
   };
 }
 
