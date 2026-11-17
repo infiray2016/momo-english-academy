@@ -3,6 +3,7 @@
 // 도구 짝 시험(talk-observe-parity 'AC-27r 서버 배선 사본이 서버 export 와 같다' · 'M-2 직접 맞대지 않던 사본' · 'M-2 이어진 막힘의 힌트 칸')의
 // 수업 행과 그 재료에 없던 갈래를 손으로 만든 행(토막 거름 · 같은 차례 번호 · 기록 글 꼴 · 입력 갈래 · 지운 표지)이다. 옮긴 core 함수에 같은 재료를
 // 넣어 JSON 글자까지 같은지 본다 — 이야기 방식 길의 동작이 바뀌지 않았다는 근거다(켜기 전 관문 (가)를 다시 돌리지 않는 조건).
+// 기준 파일을 만든 생성기와 돌리는 법은 tests/fixtures/chat-core-move-baseline/build.ts 머리 주석에 있다(뜻을 갖고 함수를 고친 때만 다시 만든다).
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { TalkChatInput } from "@/core/ai/calls/talk-chat";
