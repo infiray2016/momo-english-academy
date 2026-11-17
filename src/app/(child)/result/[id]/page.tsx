@@ -5,6 +5,7 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { resultDestinationOf } from "@/core/session/destination";
+import { requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
 import { readHouseholdProfile } from "@/server/profile";
 import { readSessionPlace } from "@/server/session";
@@ -12,6 +13,8 @@ import { loadResultView } from "@/server/session/result";
 import { ResultView } from "./result-view";
 
 export default async function ResultPage(props: PageProps<"/result/[id]">) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   const { id } = await props.params;
   await connection();
   if (!(await readHouseholdProfile())) redirect("/first-run");

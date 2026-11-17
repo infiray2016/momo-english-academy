@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 import { AREAS, type Area } from "@/core/seed/structure";
+import { requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
 import { readLessonList } from "@/server/lesson-list";
 import { getSettings } from "@/server/settings";
@@ -13,6 +14,8 @@ import { LessonBoard } from "./lesson-board";
 import { placementPathOf } from "./placement-path";
 
 export default async function LessonsPage(props: PageProps<"/[area]/lessons">) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   const { area } = await props.params;
   if (!(AREAS as readonly string[]).includes(area)) notFound();
   await connection();

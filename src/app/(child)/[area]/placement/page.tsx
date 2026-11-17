@@ -4,12 +4,15 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { PLACEMENT_AREAS, type PlacementArea } from "@/core/seed/structure";
+import { requireAccess } from "@/server/access/guard";
 import { readPlacementPage } from "@/server/placement";
 import { PlacementFlow } from "./placement-flow";
 
 export default async function PlacementPage(
   props: PageProps<"/[area]/placement">,
 ) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   const { area } = await props.params;
   if (!(PLACEMENT_AREAS as readonly string[]).includes(area)) notFound();
   await connection();

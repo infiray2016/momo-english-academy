@@ -3,6 +3,7 @@
 // readTalkMode 가 먼저 requireAccess() 를 한다. 바꾸기 서버 액션(changeTalkMode)을 본체에 넘긴다. 아이 화면에서 이 쪽으로 가는 길은 없다.
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { requireAccess } from "@/server/access/guard";
 import { changeTalkMode, readTalkMode } from "@/server/dev/talk-mode";
 import { TalkMode } from "./talk-mode";
 
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default async function TalkModePage() {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   // DB 를 읽는 쪽이라 요청 때 그린다(빌드 때 미리 그리지 않는다)
   await connection();
   const initial = await readTalkMode();

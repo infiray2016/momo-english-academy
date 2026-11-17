@@ -480,6 +480,129 @@ export async function save() { await requireAccess(); return 1; }
   });
 });
 
+// ── 쪽 · 틀의 접근 확인(13절 C247 보완 1 (2)) ──
+// proxy 의 일치식에만 기대지 않게, 쪽(page) · 틀(layout)의 기본 내보내기도 첫 문장이 `await requireAccess()` 다(DB 를 읽기 전에).
+// 틀과 쪽은 Next 가 나란히 그리므로 틀의 확인만으로는 쪽의 DB 읽기를 막지 못한다 — 쪽마다 둔다.
+
+const PAGE_OR_LAYOUT_FILE =
+  /(^|\/)(page|layout)\.(?:(?:preview|local)\.)?(ts|tsx|js|jsx)$/;
+/** 첫 문장 requireAccess() 를 두지 않는 쪽 · 틀과 그 까닭. */
+const PAGE_ALLOWLIST: Record<string, string> = {
+  "src/app/layout.tsx":
+    "루트 틀 — 쿠키 없는 기기의 접근 코드 화면(/access)도 감싼다. DB 를 읽지 않는다",
+  "src/app/(setup)/access/page.tsx":
+    "접근 코드 화면 — 쿠키 없는 기기의 입구다. hasValidAccess() 로 유효하면 홈으로 보내고 아니면 unauthorized()",
+  "src/app/dev/mic-probe/page.preview.tsx":
+    "운영 배포에서 빠지는 관찰 쪽. 빌드 때 그리는 정적 쪽이고 DB 를 읽지 않는다(명단 파일만). 주소가 정해져 proxy 가 거른다",
+  "src/app/dev/speech-probe/page.preview.tsx":
+    "운영 배포에서 빠지는 관찰 쪽. 빌드 때 그리는 정적 쪽이고 시험 자료 파일만 읽는다. 주소가 정해져 proxy 가 거른다",
+  "src/app/dev/seed-viewer/page.local.tsx":
+    "next dev 에서만 묶이는 로컬 시드 보기. 첫 문장이 assertSeedViewerLocal() 이고 DB 를 읽지 않는다(P5b, AC-7f)",
+};
+
+/** 쪽 · 틀 파일 하나에서 첫 문장 확인을 빠뜨린 곳. */
+function findPageGuardViolations(path: string, text: string): string[] {
+  const source = ts.createSourceFile(
+    path,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  if (requireAccessFromElsewhere(source)) {
+    return [`${path} requireAccess 가 ${GUARD_MODULE} 에서 오지 않음`];
+  }
+  const defaults = exportedFunctions(source).filter(
+    (e) => e.name === "default",
+  );
+  if (defaults.length === 0) return [`${path} 기본 내보내기가 없음`];
+  return defaults.flatMap(({ fn }) => {
+    if (!fn)
+      return [`${path} 쪽 · 틀(requireAccess, 함수 본문을 따라가지 못함)`];
+    return isGuardCall(firstStatement(fn), "requireAccess")
+      ? []
+      : [`${path} 쪽 · 틀(requireAccess)`];
+  });
+}
+
+describe("쪽 · 틀의 접근 확인", () => {
+  it("AC-N5 쪽 · 틀 확인: src/app 의 모든 쪽 · 틀의 첫 문장이 @/server/access/guard 의 requireAccess() 다(허용 목록 밖, C247 보완 1)", () => {
+    const files = sourceFiles("src/app")
+      .map((p) => relative(REPO_ROOT, join(REPO_ROOT, p)).split(sep).join("/"))
+      .filter((p) => PAGE_OR_LAYOUT_FILE.test(p));
+    // 훑기가 실제로 아이 쪽 틀과 주소 조각을 받는 쪽을 찾는다(빈 목록으로 통과하지 않게)
+    expect(files).toEqual(
+      expect.arrayContaining([
+        "src/app/(child)/layout.tsx",
+        "src/app/(child)/page.tsx",
+        "src/app/(child)/[area]/lessons/page.tsx",
+        "src/app/(child)/[area]/lessons/past/page.tsx",
+        "src/app/(child)/[area]/placement/page.tsx",
+        "src/app/(child)/result/[id]/page.tsx",
+        "src/app/(child)/session/[id]/page.tsx",
+      ]),
+    );
+    const violations = files
+      .filter((p) => !(p in PAGE_ALLOWLIST))
+      .flatMap((p) => {
+        const text = readFileSync(join(REPO_ROOT, p), "utf8");
+        const own = findPageGuardViolations(p, text);
+        // 실제 파일은 확인 함수를 guard 에서 가져와야 한다(가져오기 줄 없는 조각 견본과 달리)
+        const imported = text.includes(
+          `import { requireAccess } from "${GUARD_MODULE}"`,
+        );
+        return imported
+          ? own
+          : [
+              ...own,
+              `${p} requireAccess 를 ${GUARD_MODULE} 에서 가져오지 않음`,
+            ];
+      });
+    expect(violations).toEqual([]);
+    for (const path of Object.keys(PAGE_ALLOWLIST)) {
+      expect(files, path).toContain(path);
+    }
+  });
+
+  it("AC-N5 쪽 · 틀 확인: 첫 문장을 빠뜨리거나 DB 읽기 뒤에 둔 견본 쪽 · 틀을 잡는다", () => {
+    const missing = `export default async function Page() { const v = await readHome(); return v; }`;
+    expect(
+      findPageGuardViolations("src/app/(child)/x/page.tsx", missing),
+    ).toEqual(["src/app/(child)/x/page.tsx 쪽 · 틀(requireAccess)"]);
+    const late = `export default async function Page(props) { const { id } = await props.params; await readProfile(); await requireAccess(); }`;
+    expect(findPageGuardViolations("src/app/(child)/x/page.tsx", late)).toEqual(
+      ["src/app/(child)/x/page.tsx 쪽 · 틀(requireAccess)"],
+    );
+    const notAwaited = `export default async function Layout({ children }) { requireAccess(); return children; }`;
+    expect(
+      findPageGuardViolations("src/app/(child)/layout.tsx", notAwaited),
+    ).toEqual(["src/app/(child)/layout.tsx 쪽 · 틀(requireAccess)"]);
+    const opaque = `const Page = withFrame(Inner); export default Page;`;
+    expect(
+      findPageGuardViolations("src/app/(child)/x/page.tsx", opaque),
+    ).toEqual([
+      "src/app/(child)/x/page.tsx 쪽 · 틀(requireAccess, 함수 본문을 따라가지 못함)",
+    ]);
+    const fake = `import { requireAccess } from "./fake";
+export default async function Page() { await requireAccess(); }`;
+    expect(findPageGuardViolations("src/app/(child)/x/page.tsx", fake)).toEqual(
+      [
+        "src/app/(child)/x/page.tsx requireAccess 가 @/server/access/guard 에서 오지 않음",
+      ],
+    );
+    const good = `import { requireAccess } from "@/server/access/guard";
+export default async function Page(props) { await requireAccess(); const { id } = await props.params; return id; }`;
+    expect(findPageGuardViolations("src/app/(child)/x/page.tsx", good)).toEqual(
+      [],
+    );
+    const goodArrow = `const Layout = async ({ children }) => { await requireAccess(); return children; };
+export default Layout;`;
+    expect(
+      findPageGuardViolations("src/app/(child)/layout.tsx", goodArrow),
+    ).toEqual([]);
+  });
+});
+
 describe("requireAccess · requireCron", () => {
   it("AC-N5 requireAccess: 쿠키가 없거나 무효면 unauthorized() 를 부르고 유효하면 부르지 않는다", async () => {
     const keyMaterial = randomSecret();
@@ -663,6 +786,9 @@ describe("proxy", () => {
       "/lessons/reading",
       "/api/things",
       "/api/cron/daily",
+      // 두 조각 이상의 확장자 주소는 images/ · teachers/ 아래가 아니면 관문을 지난다(C247 보완 1 — 글꼴은 _next/static/media 로 온다)
+      "/fonts/jua.woff2",
+      "/session/abc.png",
     ]) {
       expect(matches(url), url).toBe(true);
     }
@@ -675,7 +801,6 @@ describe("proxy", () => {
       "/teachers/mina.fdc5f7f2.webp",
       "/robots.txt",
       "/icon.png",
-      "/fonts/jua.woff2",
     ]) {
       expect(matches(url), url).toBe(false);
     }

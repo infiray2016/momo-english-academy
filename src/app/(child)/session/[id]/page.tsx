@@ -16,6 +16,7 @@ import {
   type Destination,
   sessionDestinationOf,
 } from "@/core/session/destination";
+import { requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
 import {
   loadTalkLessonView,
@@ -27,6 +28,8 @@ import { loadSessionView, readSessionPlace } from "@/server/session";
 import { SessionFrame } from "./session-frame";
 
 export default async function SessionPage(props: PageProps<"/session/[id]">) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   const { id } = await props.params;
   await connection();
   if (!(await readHouseholdProfile())) redirect("/first-run");

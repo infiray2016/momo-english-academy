@@ -3,9 +3,12 @@
 // 집 선생님(선생님 화면 plan 값 9)을 서버에서 읽어 아이 화면 조각에 나눈다 — 문구 표의 [이름] 자리. 읽기 실패 · 고르기 전은 null('선생님').
 import { connection } from "next/server";
 import { TeacherProvider } from "@/components/teacher/teacher-provider";
+import { requireAccess } from "@/server/access/guard";
 import { householdTeacher } from "@/server/teacher";
 
 export default async function ChildLayout({ children }: LayoutProps<"/">) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   // DB 를 읽는 틀이라 요청 때 그린다(빌드 때 미리 그리지 않는다)
   await connection();
   const teacher = await householdTeacher();

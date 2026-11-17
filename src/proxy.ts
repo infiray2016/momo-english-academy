@@ -57,10 +57,13 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return new NextResponse(null, { status: 401 });
 }
 
-// 정적 파일 · 그림(images/) · 회화 선생님 모델 · 초상(teachers/ — 재배포가 허용된 공개 모델, 큰 파일 요청마다 proxy 를 부르지 않음,
-// 선생님 화면 plan 값 15 · 위험 14)은 거르지 않는다.
+// 실제 정적 파일 꼴만 거르지 않는다(13절 C247 보완 1): Next 빌드 산출물(_next/static/ 아래 · 그림 최적화 _next/image), 그림(images/) ·
+// 회화 선생님 모델 · 초상(teachers/ — 재배포가 허용된 공개 모델, 큰 파일 요청마다 proxy 를 부르지 않음, 선생님 화면 plan 값 15 · 위험 14)
+// 아래의 확장자 있는 파일(마지막 조각에 점), 뿌리 한 조각의 정적 확장자 파일(favicon.ico 등). 그 밖은 모두 관문을 지난다 — 주소 조각을
+// 받는 쪽(/session/abc.png · /images/lessons 등)이 관문을 건너뛰지 않게. public/dev/ 는 관문 안이다. 일치식은 Next 가 빌드 때 읽으므로
+// 상수 글이어야 한다(가드 시험 tests/unit/proxy-matcher-guard.test.ts).
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|images/|teachers/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
+    "/((?!_next/static/|_next/image$|(?:images|teachers)/.*\\.[^/]+$|[^/]+\\.(?:png|jpg|jpeg|gif|svg|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
   ],
 };

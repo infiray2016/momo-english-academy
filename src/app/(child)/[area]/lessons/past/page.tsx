@@ -13,6 +13,7 @@ import {
 } from "@/components/board/board";
 import { pastUnits } from "@/core/lesson-list/state";
 import { AREAS, type Area } from "@/core/seed/structure";
+import { requireAccess } from "@/server/access/guard";
 import { now } from "@/server/clock";
 import { readLessonList } from "@/server/lesson-list";
 import { getSettings } from "@/server/settings";
@@ -28,6 +29,8 @@ const TEXT = {
 export default async function PastLessonsPage(
   props: PageProps<"/[area]/lessons/past">,
 ) {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   const { area } = await props.params;
   const query = await props.searchParams;
   if (!(AREAS as readonly string[]).includes(area)) notFound();

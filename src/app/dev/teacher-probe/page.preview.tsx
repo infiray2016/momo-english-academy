@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { z } from "zod";
 import { AREAS, type Area } from "@/core/seed/structure";
 import { teacherViewOf } from "@/core/teacher/roster";
+import { requireAccess } from "@/server/access/guard";
 import {
   previewLevels,
   previewUnitsOf,
@@ -40,6 +41,8 @@ export const metadata: Metadata = {
 };
 
 export default async function TeacherProbePage() {
+  // 관문(proxy)에만 기대지 않고 DB 를 읽기 전에 접근 쿠키를 확인한다(13절 C247 보완 1)
+  await requireAccess();
   // DB 를 읽는 쪽이라 요청 때 그린다(빌드 때 미리 그리지 않는다)
   await connection();
   const view = await readPreviewProbe();
