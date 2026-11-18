@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { TalkLessonFrame } from "@/components/conversation/talk-frame";
 import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
 import type { ChatReplayLine } from "@/core/conversation/chat-turn-plan";
+import { koAskSettingsFrom } from "@/core/conversation/ko-ask";
 import { talkSpeechSettingsFrom } from "@/core/conversation/listen";
 import { TALK_LOW_BAND } from "@/core/seed/structure";
 import { discardSettingsFrom } from "@/core/speech/discard-settings";
@@ -333,6 +334,8 @@ function viewOf(): TalkLessonView {
         waitLineSeconds: read("talk.wait_line_seconds") as number,
       },
       feedbackTimeoutSeconds: read("ai.timeout_seconds.feedback") as number,
+      // 수업 안 한국어로 묻기(묶음 5-가 — 시드 값 그대로, talk.ko_ask_mode 는 장면이 settings 로 바꿀 수 있음)
+      koAsk: koAskSettingsFrom(read),
     },
     pictures: {},
     homophones: [],

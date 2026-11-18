@@ -6,6 +6,7 @@
 import { createRoot } from "react-dom/client";
 import { TalkLessonFrame } from "@/components/conversation/talk-frame";
 import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
+import { koAskSettingsFrom } from "@/core/conversation/ko-ask";
 import { talkSpeechSettingsFrom } from "@/core/conversation/listen";
 import { TALK_LOW_BAND } from "@/core/seed/structure";
 import { discardSettingsFrom } from "@/core/speech/discard-settings";
@@ -13,6 +14,7 @@ import { speechSettingsFrom } from "@/core/speech/listen";
 import type { SpeechScript } from "@/core/speech/script";
 import { MIC_NOTICE_KEY } from "@/lib/mic-state";
 import { installFakeWebSpeech } from "@/lib/speech/fake-web-speech";
+import { TALK_KO_HELP_PATH } from "@/lib/talk-stream";
 import type { TalkLessonView } from "@/server/conversation";
 import settingsSeed from "../../../../seed/settings.json";
 
@@ -55,6 +57,18 @@ type ReplyBody =
 
 type HintStep = { delayMs?: number; reply: unknown };
 
+/**
+ * 한국어 질문(POST /api/talk/ko-help) 응답 하나(묶음 5-다). reply 가 없으면 표현 답(ok · expression)이다. ok 의 help 는 지금 선생님 차례 번호 ·
+ * 질문 글을 채워 돌려준다(help 칸은 덮어씀). offline 은 연결 끊김(fetch 가 던짐)이다.
+ */
+type KoStep = {
+  delayMs?: number;
+  reply?:
+    | { t: "ok"; help?: Record<string, unknown> }
+    | { t: "resting" | "stale" | "off" | "error" }
+    | { t: "offline" };
+};
+
 type ChatConfig = {
   mode: "chat" | "old";
   /** 처음 자료 · 보통 응답의 끝 줄 신호(mode old 면 쓰지 않음). */
@@ -88,6 +102,10 @@ type ChatConfig = {
   childTexts: string[];
   /** 있으면 '그만하기'가 확인 쪽지 없이 이 오늘 쓸 말로 정리를 연다(stopTalkLesson ok — S5 fix 9 · D-8). 없으면 확인 쪽지(needs_confirm). */
   wrap: { words: string[] } | null;
+  /** 수업 단계(1~3 이면 소리 줄 꼴 구간 TALK_LOW_BAND, 4 부터는 4-6 구간 — 한국어 도움의 가르친 표현 글을 보이는가). */
+  level: number;
+  /** 한국어 질문마다 차례로 쓸 응답(모자라면 표현 답). */
+  koHelps: KoStep[];
 };
 
 const params = new URLSearchParams(location.search);
@@ -127,6 +145,8 @@ const cfg: ChatConfig = {
   settings: {},
   childTexts: [],
   wrap: null,
+  level: 3,
+  koHelps: [],
   ...given,
 };
 const chatMode = cfg.mode === "chat";
@@ -225,6 +245,8 @@ const chat = {
   router: { refresh: 0, push: [] as string[] },
   actions: [] as { at: number; name: string; input: unknown }[],
   pageErrors: [] as string[],
+  /** 한국어 질문 요청(본문). */
+  koCalls: [] as Rec[],
   async action(name: string, input: unknown): Promise<unknown> {
     chat.actions.push({ at: clock(), name, input });
     if (name === "revealTalkLessonHint") {
@@ -327,11 +349,46 @@ function turnLines(reply: Extract<Reply, { kind: "turn" }>): object[] {
   ];
 }
 
+/** 표현 답(1~3단계는 글 없이 소리로만, 4단계부터 글과 읽기). */
+const KO_TAUGHT = "I like ducks.";
+let koAt = 0;
+async function koHelpReply(body: Record<string, unknown>): Promise<Response> {
+  chat.koCalls.push({ at: clock(), body });
+  const step = cfg.koHelps[koAt] ?? {};
+  koAt += 1;
+  await wait(step.delayMs ?? 800);
+  const reply = step.reply ?? { t: "ok" };
+  if (reply.t === "offline") throw new TypeError("network");
+  const json =
+    reply.t === "ok"
+      ? {
+          t: "ok",
+          help: {
+            turnNo,
+            seq: koAt,
+            question: String(body.question ?? ""),
+            kind: "expression",
+            sayKo: "'오리를 좋아해요'는 이렇게 말해요. 잘 듣고 따라 해 봐요.",
+            teachEn: KO_TAUGHT,
+            textShown: cfg.level > 3,
+            fallback: "none",
+            replay: "taught",
+            ...("help" in reply ? reply.help : {}),
+          },
+        }
+      : reply;
+  return new Response(JSON.stringify(json), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+}
+
 window.fetch = (async (
-  _url: unknown,
+  url: unknown,
   init?: { body?: string; signal?: AbortSignal },
 ) => {
   const body = JSON.parse(init?.body ?? "{}") as Record<string, unknown>;
+  if (String(url) === TALK_KO_HELP_PATH) return koHelpReply(body);
   chat.requests.push({ at: clock(), body });
   const reply: Reply = cfg.replies[replyAt] ?? { kind: "turn" };
   replyAt += 1;
@@ -465,7 +522,7 @@ function viewOf(): TalkLessonView {
   return {
     sessionId: SESSION,
     version: `${no}`,
-    level: 3,
+    level: cfg.level,
     unit: 1,
     lessonNo: 1,
     kind: "regular",
@@ -473,7 +530,7 @@ function viewOf(): TalkLessonView {
     title: "가족과 호수 나들이",
     englishName: "Momo",
     card: { topic: "lake", todayTopicsKo: ["호수에 가기", "오리 보기"] },
-    spec: { band: TALK_LOW_BAND, koMeaning: true },
+    spec: { band: cfg.level <= 3 ? TALK_LOW_BAND : "4-6", koMeaning: true },
     segment: "talk",
     step: orphan
       ? { kind: "retry" }
@@ -538,6 +595,8 @@ function viewOf(): TalkLessonView {
         waitLineSeconds: read("talk.wait_line_seconds") as number,
       },
       feedbackTimeoutSeconds: read("ai.timeout_seconds.feedback") as number,
+      // 수업 안 한국어로 묻기(묶음 5-가 — 시드 값 그대로, talk.ko_ask_mode 는 장면이 settings 로 바꿀 수 있음)
+      koAsk: koAskSettingsFrom(read),
     },
     pictures: {},
     homophones: [],
