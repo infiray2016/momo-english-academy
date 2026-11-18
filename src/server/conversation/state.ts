@@ -5,7 +5,10 @@ import "server-only";
 // 세션이 끝날 때의 이음매. AI 를 부르지 않는다. 시각은 인자로 받고 SQL 안에 now() 를 쓰지 않는다. 아이 글을 로그에 내지 않는다.
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
-import type { TalkHistoryEntry } from "@/core/ai/calls/talk-lesson";
+import {
+  isLowBandLevel,
+  type TalkHistoryEntry,
+} from "@/core/ai/calls/talk-lesson";
 import {
   type LessonFollowDone,
   lessonFollowDoneOf,
@@ -15,7 +18,13 @@ import {
 import type { TalkCarry } from "@/core/conversation/chances";
 import { chatFlowRowsOf } from "@/core/conversation/chat-turn-core";
 import type { HintTier } from "@/core/conversation/hints";
-import type { KoHelpTurnRow } from "@/core/conversation/ko-help";
+import {
+  type KoHelpDeviceEntry,
+  type KoHelpStanding,
+  type KoHelpTurnRow,
+  koHelpStandingOf,
+  koHelpTurnNosOf,
+} from "@/core/conversation/ko-help";
 import {
   isChatSession,
   leadModeOf,
@@ -870,4 +879,72 @@ export function koHelpTurnRowOf(
     turnNo: row.turnNo,
     askAgain: move?.why === "ask_again" || move?.lead?.move === "ask_again",
   };
+}
+
+// ── 한국어 도움 뒤 다음 영어 턴의 도움 읽기 · 기기 값 적기(묶음 4-다 — 세 방식이 같은 좁힘으로 쓴다, 검토 rev-b4c 6절) ──
+
+/** 그 아이 차례가 읽는 도움 행에 고르는 칸(세션 · 턴 번호 · 수준). */
+export type KoHelpTurnState = Pick<
+  TalkLessonState,
+  "session" | "liveRows" | "level"
+>;
+
+/**
+ * 그 아이 차례가 읽는 한국어 도움 행(talk_ko_helps): 그 세션의 행 가운데 지금 턴 번호와 되묻는 차례를 건너 이어받은 턴 번호(core koHelpTurnNosOf
+ * [N-1])에 붙은 것만. 읽을 턴 번호가 없으면 읽지 않고 빈 목록이다.
+ */
+export async function readTurnKoHelpRows(
+  db: DbOrTx,
+  state: KoHelpTurnState,
+): Promise<TalkKoHelpRow[]> {
+  const turnNos = koHelpTurnNosOf(state.liveRows.map(koHelpTurnRowOf));
+  if (turnNos.length === 0) return [];
+  return (await readKoHelpRows(db, state.session.id)).filter((r) =>
+    turnNos.includes(r.turnNo),
+  );
+}
+
+/**
+ * 회화 턴 요청의 기기 값(들려줬는가 · 다시 듣기 수, 접점 마)을 같은 턴 번호 · 순번의 행에 적는다. rows 는 readTurnKoHelpRows 로 좁힌 행이어야 한다
+ * (다른 세션 · 다른 턴의 행은 고치지 않는다). 맞는 행이 없거나 두 값이 다 없는 항목은 버린다. talk_turns 는 고치지 않는다.
+ */
+export async function writeKoHelpDevice(
+  db: DbOrTx,
+  rows: readonly Pick<TalkKoHelpRow, "id" | "turnNo" | "seq">[],
+  device: readonly KoHelpDeviceEntry[],
+): Promise<void> {
+  for (const entry of device) {
+    const row = rows.find(
+      (r) => r.turnNo === entry.turnNo && r.seq === entry.seq,
+    );
+    if (!row || (entry.heard === undefined && entry.replays === undefined))
+      continue;
+    await db
+      .update(talkKoHelps)
+      .set({
+        ...(entry.heard === undefined ? {} : { heard: entry.heard }),
+        ...(entry.replays === undefined ? {} : { replays: entry.replays }),
+      })
+      .where(eq(talkKoHelps.id, row.id));
+  }
+}
+
+/**
+ * 그 아이 차례가 읽는 한국어 도움의 대접(core koHelpStandingOf). write 가 참이면 먼저 기기 값을 적는다(같은 시도 id 로 다시 부르는 길은 거짓).
+ * 도움 행이 없으면 null(한국어로 묻지 않은 턴은 고치기 전 그대로 — AC-N26). 기존 방식 길(lesson-turn)이 쓰고, Claude 주도 · 이야기 방식 길도 같은
+ * 좁힘으로 쓴다(묶음 4-라 · K).
+ */
+export async function turnKoHelpStandingOf(
+  db: DbOrTx,
+  state: KoHelpTurnState,
+  device: readonly KoHelpDeviceEntry[],
+  { write }: { write: boolean },
+): Promise<KoHelpStanding | null> {
+  const rows = await readTurnKoHelpRows(db, state);
+  if (rows.length === 0) return null;
+  if (write) await writeKoHelpDevice(db, rows, device);
+  return koHelpStandingOf(rows, {
+    lowBand: isLowBandLevel(state.level),
+    device,
+  });
 }

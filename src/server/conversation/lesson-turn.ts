@@ -68,11 +68,9 @@ import {
   heardWithTaughtOf,
   type KoHelpDeviceEntry,
   type KoHelpStanding,
-  koHelpStandingOf,
-  koHelpTurnNosOf,
+  koHelpUnitWordsOf,
   koTaughtHeardOf,
   raiseHintKind,
-  unitWordsWithoutShownOf,
   withKoHelpLineOf,
 } from "@/core/conversation/ko-help";
 import { isChatSession } from "@/core/conversation/lead-mode";
@@ -178,7 +176,7 @@ import {
 } from "@/core/seed/structure";
 import { tokenize } from "@/core/seed/text";
 import { vocab } from "@/db/schema/content";
-import { sessions, talkKoHelps, talkTurns } from "@/db/schema/learning";
+import { sessions, talkTurns } from "@/db/schema/learning";
 import { aiCalls } from "@/db/schema/operations";
 import { createAlertOnce } from "@/server/ai/store";
 import {
@@ -219,16 +217,15 @@ import {
   type HintView,
   hintViewsOf,
   isTalkOpen,
-  koHelpTurnRowOf,
   onTalkSessionEnded,
   positiveInt,
-  readKoHelpRows,
   readTalkLessonState,
   snapshotNumber,
   type TalkLessonState,
   type TalkServerDeps,
   type TalkTurnRow,
   toriLinesOf,
+  turnKoHelpStandingOf,
   writeSay,
 } from "./state";
 
@@ -2385,44 +2382,6 @@ function appTurnPathOf(state: TalkLessonState): boolean {
 }
 
 /**
- * 그 아이 차례가 읽는 한국어 도움 행(talk_ko_helps — 지금 턴 번호와 되묻는 차례를 건너 이어받은 턴 번호 [N-1])과 대접(core koHelpStandingOf). write
- * 가 참이면 요청의 기기 값(들려줬는가 · 다시 듣기 수)을 같은 턴 번호 · 순번의 행에 적는다(접점 마). 도움 행이 없으면 null(한국어로 묻지 않은 턴은
- * 고치기 전 그대로 — AC-N26). talk_turns 는 고치지 않는다.
- */
-async function lessonKoHelpOf(
-  tx: Tx,
-  state: TalkLessonState,
-  device: readonly KoHelpDeviceEntry[],
-  { write }: { write: boolean },
-): Promise<KoHelpStanding | null> {
-  const turnNos = koHelpTurnNosOf(state.liveRows.map(koHelpTurnRowOf));
-  if (turnNos.length === 0) return null;
-  const rows = (await readKoHelpRows(tx, state.session.id)).filter((r) =>
-    turnNos.includes(r.turnNo),
-  );
-  if (rows.length === 0) return null;
-  if (write)
-    for (const entry of device) {
-      const row = rows.find(
-        (r) => r.turnNo === entry.turnNo && r.seq === entry.seq,
-      );
-      if (!row || (entry.heard === undefined && entry.replays === undefined))
-        continue;
-      await tx
-        .update(talkKoHelps)
-        .set({
-          ...(entry.heard === undefined ? {} : { heard: entry.heard }),
-          ...(entry.replays === undefined ? {} : { replays: entry.replays }),
-        })
-        .where(eq(talkKoHelps.id, row.id));
-    }
-  return koHelpStandingOf(rows, {
-    lowBand: isLowBandLevel(state.level),
-    device,
-  });
-}
-
-/**
  * 같은 시도 id 의 저장된 선생님 행을 다시 흘려 보낸다(AI 없음 — 신호 말은 지난 선생님 행 move 로 다시 고른다). 새 엔진 행(move.lead)은 앱이
  * 신호 말을 붙이지 않으므로(spec 설계 8) 저장한 행 그대로 실시간 길과 같은 줄을 낸다(검토 rev-s2 I-1 · 새 엔진 입구의 다시 흘림도 이 함수).
  */
@@ -2535,7 +2494,7 @@ export async function runTalkLessonTurn(
           state,
           child: own,
           ko: appTurnPathOf(state)
-            ? await lessonKoHelpOf(tx, state, request.koHelp ?? [], {
+            ? await turnKoHelpStandingOf(tx, state, request.koHelp ?? [], {
                 write: false,
               })
             : null,
@@ -2558,7 +2517,9 @@ export async function runTalkLessonTurn(
       )
         return { kind: "stale" };
       const ko = appTurnPathOf(state)
-        ? await lessonKoHelpOf(tx, state, request.koHelp ?? [], { write: true })
+        ? await turnKoHelpStandingOf(tx, state, request.koHelp ?? [], {
+            write: true,
+          })
         : null;
       const base = lessonChildRowOf(request, { state, masker });
       // 한국어 도움을 받은 아이 차례가 '말하기'로 보낸 말은 도움받은 연습이다(힌트 종류를 높은 쪽으로 — hintKindOf 는 고치지 않는다, plan 정한 것 9)
@@ -3117,8 +3078,9 @@ async function lessonTurnAfterChild(
   const explanation = value
     ? explainFor(result.plan, stuck, value.explanation)
     : null;
-  // 한국어 도움이 새로 보인 낱말은 '말했다'로 세지 않는다(넘기는 단원 단어 목록에서 뺀다 — said.ts 는 고치지 않는다, plan 정한 것 9 · [N-4])
-  const unitWords = unitWordsWithoutShownOf(
+  // 한국어 도움이 새로 보인 낱말은 '말했다'로 세지 않는다(saidWordsOf 에 넘기는 목록에서만 뺀다 — said.ts 는 고치지 않는다, plan 정한 것 9 · [N-4]).
+  // 선생님의 다음 영어 말의 '만났다'에는 거르지 않은 목록을 넘긴다(검토 rev-b4c I-1)
+  const unitLists = koHelpUnitWordsOf(
     ctx.unitWords,
     ko?.shownWords ?? [],
     state.lemmaOf,
@@ -3127,7 +3089,7 @@ async function lessonTurnAfterChild(
     speech: mode === "speech",
     heard: child.text ?? "",
     hintKind: (child.hintKind ?? "none") as TalkHintKind,
-    unitWords,
+    unitWords: unitLists.said,
     lemmaOf: state.lemmaOf,
     homophones: () => (deps.homophones ?? seedHomophones)(),
   });
@@ -3182,7 +3144,10 @@ async function lessonTurnAfterChild(
         .where(eq(talkTurns.id, child.id));
       await writeSay(tx, {
         profileId,
-        met: metWordsIn(result.text, { unitWords, lemmaOf: state.lemmaOf }),
+        met: metWordsIn(result.text, {
+          unitWords: unitLists.met,
+          lemmaOf: state.lemmaOf,
+        }),
         said,
         day: locked.learningDay,
         knownDays: snapshotNumber(locked, "talk.known_days"),

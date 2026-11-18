@@ -11,19 +11,27 @@ import { effectiveStuckOf } from "@/core/conversation/child-kind";
 import { heardHintsOf } from "@/core/conversation/heard-hint";
 import {
   heardWithTaughtOf,
+  KO_HELP_HINT_KINDS,
   type KoHelpStandingRow,
   koHelpCarryOf,
   koHelpLineText,
   koHelpStandingOf,
   koHelpTurnNosOf,
+  koHelpUnitWordsOf,
   koTaughtHeardOf,
   koTaughtMatchedOf,
   raiseHintKind,
   unitWordsWithoutShownOf,
   withKoHelpLineOf,
 } from "@/core/conversation/ko-help";
+import { TALK_HINT_KINDS } from "@/core/conversation/lesson-turns";
+import { metWordsIn } from "@/core/conversation/said";
 import { bestMatchRate } from "@/core/speech/match-rate";
-import { parseTalkTurnRequest, turnSettings } from "@/server/conversation/turn";
+import {
+  KO_HELP_ENTRIES_MAX,
+  parseTalkTurnRequest,
+  turnSettings,
+} from "@/server/conversation/turn";
 import {
   BASE_CALL_TURN,
   lessonInput,
@@ -66,12 +74,59 @@ describe("AC-25j 한국어 도움의 대접(koHelpStandingOf — 세 방식 공�
   });
 
   it("4단계부터 가르친 표현 칸이 비고 한국어 답 속 토막이 새로 보였으면 그 토막을 적는다 [N-4]", () => {
+    // 4-나 는 한국어 답 속 새 영어 토막이 있을 때 textShown 을 참으로 적는다(검토 rev-b4c M-1 — 실제로 생기는 행)
+    const s = koHelpStandingOf(
+      [
+        row({
+          kind: "meaning",
+          teachEn: null,
+          textShown: true,
+          shownEn: ["red apple"],
+        }),
+      ],
+      { lowBand: false },
+    );
+    expect(s.hintKind).toBe("english");
+    expect(s.line).toEqual({ kind: "taught", taught: ["red apple"] });
+  });
+
+  it("4단계부터 '보았다'는 행의 textShown 으로 본다: 쉼표로 늘어놓은 낱말(조각 글 'cat dog')은 '뜻만' · meaning only [rev-b4c M-1]", () => {
+    // 4-나 는 "'cat, dog'는 …" 의 조각을 토막으로 보지 않아 textShown 거짓 · shown_en 은 문장 부호를 버린 'cat dog' 로 적는다
     const s = koHelpStandingOf(
       [
         row({
           kind: "meaning",
           teachEn: null,
           textShown: false,
+          shownEn: ["cat dog"],
+        }),
+      ],
+      { lowBand: false },
+    );
+    expect(s.hintKind).toBe("meaning_only");
+    expect(s.koHelp).toBe(true);
+    expect(s.line).toEqual({ kind: "meaning" });
+    expect(koHelpLineText(s.line ?? { kind: "meaning" })).toBe(
+      "Korean help before this answer: meaning only",
+    );
+    // 새로 보인 낱말은 대접과 관계없이 '말했다' 거름에 든다
+    expect(s.shownWords).toEqual(["cat", "dog"]);
+  });
+
+  it("4단계부터 한 줄의 토막은 textShown 이 참인 행의 shown_en 에서만 고른다 [rev-b4c M-1]", () => {
+    const s = koHelpStandingOf(
+      [
+        row({
+          kind: "meaning",
+          teachEn: null,
+          textShown: false,
+          shownEn: ["cat dog"],
+        }),
+        row({
+          seq: 2,
+          kind: "meaning",
+          teachEn: null,
+          textShown: true,
           shownEn: ["red apple"],
         }),
       ],
@@ -170,6 +225,33 @@ describe("AC-25j 한국어 도움의 대접(koHelpStandingOf — 세 방식 공�
     expect(raiseHintKind("none", "english")).toBe("english");
     expect(raiseHintKind("english", "meaning_only")).toBe("english");
     expect(raiseHintKind("meaning_only", "none")).toBe("meaning_only");
+  });
+
+  it("힌트 종류 목록은 회화 턴 행의 목록 하나다(같은 값 · 같은 차례) [rev-b4c M-4]", () => {
+    expect(KO_HELP_HINT_KINDS).toBe(TALK_HINT_KINDS);
+  });
+});
+
+describe("AC-25j 단원 단어 목록 — 거름은 '말했다'에만, '만났다'는 거르지 않은 목록 [rev-b4c I-1]", () => {
+  const lemmaOf = (w: string) => ({ apples: "apple" })[w.toLowerCase()];
+  it("새로 보인 낱말이 있어도 '만났다' 목록은 받은 목록 그대로(같은 배열), '말했다'만 거른다", () => {
+    const unit = ["apple", "gimbap", "red"];
+    const lists = koHelpUnitWordsOf(unit, ["apples"], lemmaOf);
+    expect(lists.met).toBe(unit);
+    expect(lists.said).toEqual(["gimbap", "red"]);
+    // 선생님이 다음 영어 말에서 그 낱말을 쓰면 '만났다'에는 든다
+    expect(
+      metWordsIn("Do you like apples?", {
+        unitWords: lists.met,
+        lemmaOf: (w) => lemmaOf(w) ?? w,
+      }),
+    ).toContain("apple");
+  });
+  it("도움이 없으면 둘 다 받은 목록 그대로(같은 배열 — AC-N26)", () => {
+    const unit = ["apple", "gimbap"];
+    const lists = koHelpUnitWordsOf(unit, [], lemmaOf);
+    expect(lists.met).toBe(unit);
+    expect(lists.said).toBe(unit);
   });
 });
 
@@ -456,6 +538,21 @@ describe("AC-N26 회화 턴 입구의 koHelp 칸(세 방식 공통 — 한 번 �
       [{ turnNo: 3, seq: 1, replays: -1 }],
     ])
       expect(parseTalkTurnRequest({ ...base, koHelp: bad })).toBeNull();
+  });
+  it("항목이 상한을 넘어도 턴 요청을 거절하지 않고 마지막 것들만 읽는다(횟수로 수업을 멈추지 않는다) [rev-b4c M-2]", () => {
+    const koHelp = Array.from({ length: KO_HELP_ENTRIES_MAX + 10 }, (_, i) => ({
+      turnNo: 3,
+      seq: i + 1,
+    }));
+    const parsed = parseTalkTurnRequest({ ...base, koHelp });
+    expect(parsed?.kind).toBe("child");
+    const read = parsed?.kind === "child" ? parsed.request.koHelp : undefined;
+    expect(read).toEqual(koHelp.slice(-KO_HELP_ENTRIES_MAX));
+    expect(read?.[0]?.seq).toBe(11);
+    // 상한 안이면 그대로
+    const fit = koHelp.slice(0, KO_HELP_ENTRIES_MAX);
+    const fitted = parseTalkTurnRequest({ ...base, koHelp: fit });
+    expect(fitted?.kind === "child" && fitted.request.koHelp).toEqual(fit);
   });
   it("턴 입구 설정 목록에 talk.hint_read_match(막힘 무름 문턱)가 있다(plan 정한 것 13)", () => {
     expect(Object.keys(turnSettings)).toContain("talk.hint_read_match");

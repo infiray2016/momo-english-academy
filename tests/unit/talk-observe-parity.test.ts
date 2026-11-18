@@ -5197,7 +5197,9 @@ describe("수업 안 한국어로 묻기 묶음 4-다 — 대본의 한국어 �
     if (!plain.ok) throw new Error(plain.reason);
     for (const koHelp of [
       [help({ textShown: false, heard: false })],
-      [help({ kind: "other", teachEn: undefined, fallback: "call_failed" })],
+      // 대신 줄 두 꼴은 표현 갈래 · 가르친 표현이 남아도 도움 없음(갈래가 아니라 대신 줄로 거른다 — 검토 rev-b4c M-6)
+      [help({ fallback: "call_failed" })],
+      [help({ fallback: "check_blocked" })],
     ]) {
       const ready = sim.prepare(
         { say: "I like gimbap.", koHelp },

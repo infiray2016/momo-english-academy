@@ -44,10 +44,10 @@ export type { TalkLessonLine } from "./lesson-turn";
 const LISTEN_END_MAX_SECONDS = 600;
 const PERCEIVED_WAIT_MAX_MS = 600_000;
 /**
- * 회화 턴 요청의 한국어 도움 칸(수업 안 한국어로 묻기 접점 마)의 꼴 검사 값(기술 값): 항목 수 상한(한 아이 차례의 도움 수 — 본문 크기 상한이 먼저
- * 막는다)과 talk_ko_helps 의 smallint 칸(턴 번호 · 순번 · 다시 듣기 수) 상한.
+ * 회화 턴 요청의 한국어 도움 칸(수업 안 한국어로 묻기 접점 마)의 꼴 검사 값(기술 값): 읽는 항목 수(한 아이 차례의 도움 수 — 넘으면 거절하지 않고
+ * 마지막 것들만 읽는다, 횟수로 수업을 멈추지 않는다 · 검토 rev-b4c M-2)와 talk_ko_helps 의 smallint 칸(턴 번호 · 순번 · 다시 듣기 수) 상한.
  */
-const KO_HELP_ENTRIES_MAX = 50;
+export const KO_HELP_ENTRIES_MAX = 50;
 const SMALLINT_MAX = 32_767;
 
 /**
@@ -85,7 +85,10 @@ const TurnRequestSchema = z.strictObject({
    */
   recognizer: chatRecognizerSchemaOf(TALK_TEXT_MAX).optional(),
   /** 그 아이 차례에서 받은 한국어 도움(수업 안 한국어로 묻기 접점 마 — 없으면 지금과 같다). */
-  koHelp: z.array(KoHelpEntrySchema).max(KO_HELP_ENTRIES_MAX).optional(),
+  koHelp: z
+    .array(KoHelpEntrySchema)
+    .transform((entries) => entries.slice(-KO_HELP_ENTRIES_MAX))
+    .optional(),
 });
 
 /**

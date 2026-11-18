@@ -2,6 +2,10 @@
 // 서버의 한국어 질문 길(server/conversation/ko-help.ts) · 화면 자료(server/conversation/index.ts) · 묶음 4-다 의 다음 영어 턴이 같은 함수를 쓴다.
 // DB · AI 없음. talk_turns 의 행을 읽기만 하고 고치지 않는다 — 한국어 문답은 학습 셈 어디에도 들지 않는다(C221 · C226 (3), spec 설계 6).
 import type { TalkKoHelpKind } from "@/core/ai/calls/talk-ko-help";
+import {
+  TALK_HINT_KINDS,
+  type TalkHintKind,
+} from "@/core/conversation/lesson-turns";
 import { bestMatchRate } from "@/core/speech/match-rate";
 
 // ── 읽을 턴 번호([N-1] — 되묻는 차례를 건너 이어받기) ────────────────────
@@ -253,9 +257,9 @@ export type KoHelpStanding = {
   shownWords: string[];
 };
 
-/** 힌트 종류 셋(lesson-turns TALK_HINT_KINDS 와 같은 값 · 같은 차례 — 낮은 것부터). */
-export const KO_HELP_HINT_KINDS = ["none", "meaning_only", "english"] as const;
-export type KoHelpHintKind = (typeof KO_HELP_HINT_KINDS)[number];
+/** 힌트 종류 셋(낮은 것부터 — 회화 턴 행의 목록 lesson-turns TALK_HINT_KINDS 하나를 쓴다, 검토 rev-b4c M-4). */
+export const KO_HELP_HINT_KINDS = TALK_HINT_KINDS;
+export type KoHelpHintKind = TalkHintKind;
 
 /** 두 힌트 종류 가운데 높은 쪽('영어' > '뜻만' > '없음' — 이미 더 높으면 그대로). */
 export function raiseHintKind<K extends KoHelpHintKind>(
@@ -278,8 +282,8 @@ function enWordsIn(text: string): string[] {
  * 그 아이 차례가 읽는 도움 행들(koHelpTurnNosOf 의 턴 번호에 붙은 것 — 되묻는 차례를 건너 이어받은 것 포함 [N-1]) → 다음 영어 턴의 대접.
  * 행마다(설계 4 표):
  * - 답이 없는 행 · 대신 줄(fallback 이 none 이 아님) · 갈래 불분명 · 그 밖 → 도움 없음(검토 rev-b4b 6절 — kind 가 아니라 fallback 으로 먼저 가른다).
- * - 표현을 글로 보았다(4단계부터 textShown, 또는 새로 보인 영어 글에 영어 낱말이 둘 이상 이어진 토막) → '영어' · ko_help · 한 줄 taught(가르친
- *   표현, 그 칸이 비면 그 토막).
+ * - 표현을 글로 보았다(4단계부터 행의 textShown — 4-나 가 가르친 표현 글이나 한국어 답 속 새 영어 토막을 보였을 때 적는다) → '영어' · ko_help ·
+ *   한 줄 taught(가르친 표현, 그 칸이 비면 그 행의 새로 보인 영어 글 가운데 낱말이 둘 이상인 것).
  * - 표현을 소리로 들었다(1~3단계 가르친 표현 — 기기 값 heard 가 거짓이 아니면) → '영어' · ko_help · 한 줄 taught.
  * - 1~3단계에서 한 번도 들려주지 못한 표현 → 도움 없음(들려주지 못한 소리는 도움으로 적지 않는다, I-6).
  * - 뜻만 받았다(갈래 뜻) → '뜻만' · ko_help · 한 줄 meaning only.
@@ -312,8 +316,12 @@ export function koHelpStandingOf(
     if (row.fallback !== "none") continue;
     if (row.kind !== "expression" && row.kind !== "meaning") continue;
     const teach = (row.teachEn ?? "").trim();
-    const chunks = (row.shownEn ?? []).filter((c) => enWordsIn(c).length >= 2);
-    const seen = !lowBand && (row.textShown === true || chunks.length > 0);
+    // 4단계부터의 '보았다'는 행의 textShown 하나로 본다(4-나 가 토막 여부를 정해 적은 값 — shown_en 의 조각 글은 쉼표를 버려 늘어놓은 낱말도
+    // 이어 보이므로 다시 세지 않는다, 검토 rev-b4c M-1). 가르친 표현 칸이 빈 때 한 줄의 토막도 보았다고 적힌 행의 것만 고른다
+    const seen = !lowBand && row.textShown === true;
+    const chunks = seen
+      ? (row.shownEn ?? []).filter((c) => enWordsIn(c).length >= 2)
+      : [];
     const entry = device.find(
       (d) => d.turnNo === row.turnNo && d.seq === row.seq,
     );
@@ -367,6 +375,21 @@ export function unitWordsWithoutShownOf(
       !keys.has(lower) && !keys.has(lemmaOf(lower)?.toLowerCase() ?? lower)
     );
   });
+}
+
+/**
+ * 도움 뒤 선생님 턴이 넘기는 단원 단어 목록 둘(검토 rev-b4c I-1): '말했다'(saidWordsOf)에는 새로 보인 낱말을 뺀 목록, '만났다'(metWordsIn —
+ * 선생님의 다음 영어 말)에는 받은 목록 그대로. 거름은 '말했다'만이다(정본 3.4 · plan 정한 것 9). 도움이 없으면 둘 다 받은 목록이다(AC-N26).
+ */
+export function koHelpUnitWordsOf(
+  unitWords: readonly string[],
+  shownWords: readonly string[],
+  lemmaOf: (surface: string) => string | undefined,
+): { said: readonly string[]; met: readonly string[] } {
+  return {
+    said: unitWordsWithoutShownOf(unitWords, shownWords, lemmaOf),
+    met: unitWords,
+  };
 }
 
 /**
