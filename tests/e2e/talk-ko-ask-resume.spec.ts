@@ -51,6 +51,13 @@ const ASKED_ONLY = "수영은 영어로 뭐라고 해요";
 const SAYS = "I like it.";
 const TAUGHT = FAKE_KO_HELP.expression.teachEn;
 const SAY_KO = FAKE_KO_HELP.expression.sayKo;
+/**
+ * 1~3단계 인사 차례의 가짜 응답(두 문장 모두 인사 끝 상황 검사를 지난다 — talk-ko-ask.spec 과 같은 값). 'Wow! Clams are cool.' 은 인사 차례에서
+ * 걸려 시드 상황 줄(seed/lists/talk-situation-lines.json greeting_end)로 바뀐다(CI 실행 44252958636 의 이 파일 340줄 시험 trace).
+ */
+const GREETING_REPLY = "Great! Now let's start!";
+/** 인사 차례 응답이 말풍선에 그대로 남았음을 보는 글(greeting_end 상황 줄 셋에 없음). */
+const GREETING_SHOWN = "Now let's start";
 
 test.beforeEach(async () => {
   await resetHousehold();
@@ -185,18 +192,25 @@ async function reopenIn(
   return opened;
 }
 
-/** 영어 한 차례(말하기 → 가짜 회화 턴 응답 → 다음 아이 차례 — talk-ko-ask.spec 과 같은 꼴). */
-async function speakEnglish(page: Page, reply = "Great! Tell me more.") {
+/**
+ * 영어 한 차례(말하기 → 가짜 회화 턴 응답 → 다음 아이 차례 — talk-ko-ask.spec 과 같은 꼴). shown 은 말풍선에서 기다릴 글(기본은 응답의 첫 '!' 앞).
+ * 1~3단계 인사 차례의 응답은 인사 끝 상황 검사를 받아 걸린 문장이 시드 상황 줄로 바뀐다 — 인사 차례에는 GREETING_REPLY · GREETING_SHOWN 을
+ * 쓴다(화면 고침 4).
+ */
+async function speakEnglish(
+  page: Page,
+  reply = "Great! Tell me more.",
+  shown = reply.split("!")[0] ?? reply,
+) {
   const before = await talkTurnRequests();
   await pushFakeAi([talkLessonReply({ tori_en: reply })]);
   await speakButton(page).click();
   await expect
     .poll(talkTurnRequests, { timeout: STREAM_END_MS })
     .toBe(before + 1);
-  await expect(page.locator("[data-tori-bubble]")).toContainText(
-    reply.split("!")[0] ?? reply,
-    { timeout: STREAM_END_MS },
-  );
+  await expect(page.locator("[data-tori-bubble]")).toContainText(shown, {
+    timeout: STREAM_END_MS,
+  });
   await untilChildTurn(page);
 }
 
@@ -376,7 +390,7 @@ test.describe("수업 안 한국어로 묻기 — 소리가 끊기거나 못 난
     ).toHaveCount(1);
     // 다음 영어 턴 요청의 koHelp: 들었음은 참(다시 열기 전에 들은 것으로 본다), 다시 들은 수 1
     await expect(speakButton(back.page)).toBeEnabled();
-    await speakEnglish(back.page, "Wow! Clams are cool.");
+    await speakEnglish(back.page, GREETING_REPLY, GREETING_SHOWN);
     expect(back.turnBodies).toHaveLength(1);
     expect(back.turnBodies[0]?.koHelp).toEqual([
       { turnNo: help.turnNo, seq: help.seq, heard: true, replays: 1 },

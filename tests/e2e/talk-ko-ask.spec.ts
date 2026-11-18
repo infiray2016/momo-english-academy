@@ -58,6 +58,24 @@ const KO_LANG = TEST_SETTINGS["speech.lang_ko"].value;
 const EN_LANG = TEST_SETTINGS["speech.lang"].value;
 /** 기록 칸을 넘치게 넣을 앞선 대화 차례 쌍(talk-log-follow.spec 과 같은 값). */
 const PAIRS = 6;
+/**
+ * 1~3단계 인사 차례의 가짜 응답(두 문장 모두 인사 끝 상황 검사를 지난다 — CI 실행 44252958636 의 C226 (4) 시험 trace 에서 회화 턴 응답이 두
+ * 문장을 그대로 흘림). 'Wow! Clams are cool.' 은 인사 차례에서 걸려 시드 상황 줄(seed/lists/talk-situation-lines.json greeting_end)로 바뀐다.
+ */
+const GREETING_REPLY = "Great! Now let's start!";
+/** 인사 차례 응답이 말풍선에 그대로 남았음을 보는 글(greeting_end 상황 줄 'Let's start!' · 'Nice! Here we go!' · 'Great! Let's start now.' 에 없음). */
+const GREETING_SHOWN = "Now let's start";
+/** 기록 칸을 채운 뒤 지금 차례를 여는 선생님 AI 질문(힌트 재료를 행 ai_question 에 둔다 — 회화 턴이 저장하는 꼴, lesson-turn aiQuestion). */
+const LAST_ASK = {
+  text: "Nice! Do you like it?",
+  aiQuestion: {
+    en: "Do you like it?",
+    ko: "",
+    answerExample: SAYS,
+    hintKo: "좋아하는 것을 말해 봐.",
+    hints: ["I like ___.", SAYS],
+  },
+} as const;
 /** 아이 버튼 글자의 최소 크기(px, AC-25a · 정본 03 '한국어로 물어보기' 행 — 시험 값). */
 const TEXT_MIN_PX = 22;
 /** 3단계 카드 질문의 힌트 단 수(한국어 뜻 → 영어 틀 → 영어 문장과 듣기 — talk-lesson.spec AC-15p 와 같다, 시험 값). */
@@ -148,18 +166,25 @@ async function reopen(page: Page) {
   await untilChildTurn(page);
 }
 
-/** 영어 한 차례(말하기 → 가짜 회화 턴 응답 → 다음 아이 차례). */
-async function speakEnglish(page: Page, reply = "Great! Tell me more.") {
+/**
+ * 영어 한 차례(말하기 → 가짜 회화 턴 응답 → 다음 아이 차례). shown 은 말풍선에서 기다릴 글(기본은 응답의 첫 '!' 앞). 1~3단계 인사 차례의 응답은
+ * 인사 끝 상황 검사를 받아 걸린 문장이 시드 상황 줄로 바뀐다(lesson-turn createLessonSentenceFlow liveDrop) — 인사 차례에는 검사를 지나는
+ * GREETING_REPLY 와 상황 줄에 없는 GREETING_SHOWN 을 쓴다(화면 고침 4).
+ */
+async function speakEnglish(
+  page: Page,
+  reply = "Great! Tell me more.",
+  shown = reply.split("!")[0] ?? reply,
+) {
   const before = await talkTurnRequests();
   await pushFakeAi([talkLessonReply({ tori_en: reply })]);
   await speakButton(page).click();
   await expect
     .poll(talkTurnRequests, { timeout: STREAM_END_MS })
     .toBe(before + 1);
-  await expect(page.locator("[data-tori-bubble]")).toContainText(
-    reply.split("!")[0] ?? reply,
-    { timeout: STREAM_END_MS },
-  );
+  await expect(page.locator("[data-tori-bubble]")).toContainText(shown, {
+    timeout: STREAM_END_MS,
+  });
   await untilChildTurn(page);
 }
 
@@ -304,7 +329,11 @@ function allChancesLesson(level: number): TalkLesson {
   };
 }
 
-/** 앞선 대화 차례를 바로 넣는다(talk-log-follow.spec 의 insertExchanges 와 같은 꼴 — 기록 칸을 넘치게). */
+/**
+ * 앞선 대화 차례를 바로 넣는다(talk-log-follow.spec 의 insertExchanges 와 같은 꼴 — 기록 칸을 넘치게). 마지막 선생님 행은 힌트 재료가 있는 AI
+ * 질문(LAST_ASK)이라 다시 연 지금 차례에 '힌트'가 있다 — 물음 없는 'Nice! I like it too.' 로 끝나면 힌트 재료가 없어 힌트 단추가 없다
+ * (lesson-turn lessonHintsAt · child-turn showHint, 화면 고침 4).
+ */
 async function insertExchanges(sessionId: string, count: number) {
   const db = e2eDb();
   const [top] = await db
@@ -330,7 +359,9 @@ async function insertExchanges(sessionId: string, count: number) {
         turnNo: turnNo + 1,
         segment: "talk",
         speaker: "tori",
-        text: "Nice! I like it too.",
+        ...(i === count - 1
+          ? { text: LAST_ASK.text, aiQuestion: LAST_ASK.aiQuestion }
+          : { text: "Nice! I like it too." }),
         move: talkMoveOf({ kind: "ai" }),
         recordedAt: at,
       },
@@ -712,9 +743,13 @@ test.describe("수업 안 한국어로 묻기 — iPad 세로 · 가로에서 �
       koSaidRun(QUESTION),
       koSaidRun(QUESTION),
     ]);
-    await speakEnglish(page, "Great! Now let's start!");
+    await speakEnglish(page, GREETING_REPLY, GREETING_SHOWN);
     await insertExchanges(sessionId, PAIRS);
     await reopen(page);
+    // 다시 연 지금 차례는 넣은 마지막 AI 질문(힌트 재료가 있는 차례)이다
+    await expect(page.locator("[data-tori-bubble]")).toContainText(
+      LAST_ASK.aiQuestion.en,
+    );
     const overflow = await page
       .locator("[data-talk-log]")
       .evaluate((el) => el.scrollHeight - el.clientHeight);
@@ -890,7 +925,7 @@ test.describe("수업 안 한국어로 묻기 — 답을 들려주지 못함 · 
       saidRun("I'm good."),
       koSaidRun(QUESTION),
     ]);
-    await speakEnglish(page, "Great! Now let's start!");
+    await speakEnglish(page, GREETING_REPLY, GREETING_SHOWN);
     await openAllHints(page);
     const tiers = page.locator("[data-child-turn] [data-hint-tier]");
     const listen = page.locator("[data-child-turn] [data-hint-listen]");
@@ -1027,7 +1062,7 @@ test.describe("수업 안 한국어로 묻기 — 응답 갈래 · 다시 보냄
     await expect
       .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
       .toBe(5);
-    await speakEnglish(page, "Wow! Clams are cool.");
+    await speakEnglish(page, GREETING_REPLY, GREETING_SHOWN);
     expect(turnBodies.at(-1)?.koHelp).toEqual([
       { turnNo: first.turnNo, seq: first.seq, heard: true, replays: 1 },
       { turnNo: second.turnNo, seq: second.seq, heard: true, replays: 2 },
@@ -1053,7 +1088,7 @@ test.describe("수업 안 한국어로 묻기 — 응답 갈래 · 다시 보냄
       saidRun("I'm good."),
       koSaidRun(QUESTION),
     ]);
-    await speakEnglish(page, "Great! Now let's start!");
+    await speakEnglish(page, GREETING_REPLY, GREETING_SHOWN);
     await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
     // 응답을 붙잡아 둔다(그동안 질문 말풍선과 점 셋)
     await page.route(`**${TALK_KO_HELP_URL}`, async (route) => {
