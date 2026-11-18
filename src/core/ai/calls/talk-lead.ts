@@ -230,8 +230,11 @@ export type TalkLeadStatus = {
   talkStarts?: boolean;
   /** 마무리 차례(참고 턴 · 더 이야기하기 한 바퀴 끝). */
   closingTurn?: boolean;
-  /** 한국어 도움으로 알려 준 표현(한국어 묻기 spec FR-9 — 도움 뒤 같은 질문 자리의 아이 차례). */
-  koTaught?: string;
+  /**
+   * 한국어 도움으로 가르친 표현(목록, 차례대로 — 한국어 도움을 받은 아이 차례와 되묻는 차례 뒤로 이어받은 차례만, 정본 05 6.1 Claude 주도 방식 문단 ·
+   * C240 · C225 보완 1 (2) (4), 묶음 4-라). 글 하나(옛 꼴 — 표현 하나와 같다)도 받는다. 비거나 없으면 줄이 없다.
+   */
+  koTaught?: string | readonly string[];
 };
 
 export type TalkLeadTurn = {
@@ -288,10 +291,25 @@ export function talkLeadStatusLines(status: TalkLeadStatus): string[] {
     lines.push(
       "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'.",
     );
-  const taught = status.koTaught?.trim() ?? "";
+  const taught = talkLeadKoTaughtText(status.koTaught);
   if (taught !== "")
-    lines.push(`The child asked in Korean and was taught: "${taught}".`);
+    lines.push(`The child asked in Korean and was taught: ${taught}.`);
   return lines;
+}
+
+/**
+ * 사실 줄의 가르친 표현 글: 표현마다 따옴표로 싸고 여럿이면 `; ` 로 잇는다(plan '옮겨 적는 문구'의 목록 꼴. 따옴표는 승인된 사실 줄
+ * `The child asked in Korean and was taught: "<표현>".` 의 큰따옴표 그대로 — 표현 하나면 고치기 전 글과 같다). 빈 표현은 뺀다. 없으면 빈 글.
+ */
+export function talkLeadKoTaughtText(
+  taught: string | readonly string[] | undefined,
+): string {
+  const list = typeof taught === "string" ? [taught] : (taught ?? []);
+  return list
+    .map((t) => t.trim())
+    .filter((t) => t !== "")
+    .map((t) => `"${t}"`)
+    .join("; ");
 }
 
 /** 이번 차례의 사용자 메시지: (인사 이음) → 아이 입력 줄 → 빈 줄 → 사실 알림(실험 P 와 같은 꼴). */
@@ -561,7 +579,12 @@ export const talkLeadTurnSpec: CallSpec<
           ...turn.status,
           ...(koTaught === undefined
             ? {}
-            : { koTaught: masker(koTaught).text }),
+            : {
+                koTaught:
+                  typeof koTaught === "string"
+                    ? masker(koTaught).text
+                    : koTaught.map((t) => masker(t).text),
+              }),
         },
       },
     };

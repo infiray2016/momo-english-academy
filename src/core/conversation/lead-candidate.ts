@@ -3,6 +3,12 @@
 // 계산하고 저장하지 않는다. 이 값은 said_words · '안다' · 단원 통과 · 승급 계산의 입력이 아니다(AC-26f 호출 자리 검색 시험 — src 의 어느
 // 파일도 이 모듈을 가져다 쓰지 않는다). 지금 판정 함수(said.ts)는 그대로 부를 뿐 바꾸지 않는다. DB 없는 순수 모듈이다.
 import { homophoneHeadOf } from "@/core/conversation/child-kind";
+import {
+  type KoHelpStandingRow,
+  type KoHelpTurnRow,
+  koHelpStandingOf,
+  koHelpTurnNosOf,
+} from "@/core/conversation/ko-help";
 import type { TalkHintKind } from "@/core/conversation/lesson-turns";
 import type { TalkLeadMove, TalkLeadReading } from "@/core/conversation/move";
 import { metWordsIn, saidWordsOf } from "@/core/conversation/said";
@@ -625,4 +631,26 @@ export function leadCandidateTableOf(
   }
   counts.differ = counts.currentOnly + counts.candidateOnly;
   return { turns, words, counts };
+}
+
+/**
+ * 아이 행의 koHelp 칸 재료(수업 안 한국어로 묻기 묶음 4-라 — 후보 판정 행을 채우는 쪽이 쓴다): 차례대로 놓인 talk_turns 행(koHelpTurnRowOf 꼴)과 그 수업의
+ * 한국어 도움 행에서, 도움의 대접이 ko_help 인 아이 차례의 턴 번호. 아이 행마다 그 행 바로 앞까지의 행으로 읽을 턴 번호(koHelpTurnNosOf — 되묻는 차례를
+ * 건너 이어받은 것 포함 [N-1])를 정하고 서버와 같은 koHelpStandingOf 로 가른다(기기 값은 행에 적힌 heard 로 본다). 도움 행이 없으면 빈 모음이다.
+ */
+export function leadCandidateKoHelpTurnsOf(
+  rows: readonly KoHelpTurnRow[],
+  helps: readonly KoHelpStandingRow[],
+  { lowBand }: { lowBand: boolean },
+): Set<number> {
+  const out = new Set<number>();
+  if (helps.length === 0) return out;
+  rows.forEach((row, at) => {
+    if (row.speaker !== "child") return;
+    const turnNos = koHelpTurnNosOf(rows.slice(0, at));
+    const read = helps.filter((h) => turnNos.includes(h.turnNo));
+    if (read.length > 0 && koHelpStandingOf(read, { lowBand }).koHelp)
+      out.add(row.turnNo);
+  });
+  return out;
 }

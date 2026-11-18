@@ -66,6 +66,7 @@ import {
 } from "@/core/conversation/hints";
 import {
   heardWithTaughtOf,
+  type KoCarryEntry,
   type KoHelpDeviceEntry,
   type KoHelpStanding,
   koHelpUnitWordsOf,
@@ -328,6 +329,11 @@ export type TalkLessonNext = {
   imageKey?: string;
   /** 이 차례 선생님 행 번호(마지막 살아 있는 선생님 행 — 화면이 다음 행 번호를 어림하지 않게). 행이 없으면 0. */
   turnNo: number;
+  /**
+   * 되묻는 차례 뒤 이어받은 한국어 도움(접점 마 · [N-1] — 1~3단계 화면이 그 차례에 '알려 준 말 듣기'를 다시 둔다). Claude 주도 방식의 끝 줄만 싣고
+   * (묶음 4-라 lead-turn), 이어받은 것이 없으면 칸이 없다. teachEn 은 읽기 재료다(1~3단계 화면은 그 글을 그리지 않는다).
+   */
+  koCarry?: KoCarryEntry[];
 };
 
 /** 카드 항목의 그림 키(1~3단계 그림 턴 C32 — 단계 규격 turnImages 이고 그 항목에 그림 키가 있을 때). 아니면 undefined. */
@@ -2349,6 +2355,8 @@ export type LessonLeadAfterChild = (
   deps: LessonTurnDeps,
   shared: LessonTurnShared,
   ctxP: ReturnType<typeof levelContextOf>,
+  /** 그 아이 차례가 읽는 한국어 도움의 대접(묶음 4-라 — 도움 없음은 null). */
+  ko?: KoHelpStanding | null,
 ) => Promise<void>;
 
 const CHILD_SEGMENTS: readonly TalkSegment[] = [
@@ -2370,15 +2378,18 @@ type Begun =
       kind: "call";
       state: TalkLessonState;
       child: TalkTurnRow;
-      /** 그 아이 차례가 읽는 한국어 도움의 대접(기존 방식 길만 — 다른 방식 · 도움 없음은 null, 묶음 4-다). */
+      /** 그 아이 차례가 읽는 한국어 도움의 대접(기존 방식 길(4-다)과 Claude 주도 방식 길(4-라) — 이야기 방식 · 도움 없음은 null). */
       ko: KoHelpStanding | null;
     };
 
 // ── 한국어 도움 뒤 다음 영어 턴(수업 안 한국어로 묻기 묶음 4-다 — 기존 방식) ─────────────────
 
-/** 이 수업의 아이 행이 기존 방식 길로 가는가(이야기 방식 · Claude 주도 방식의 대화 차례가 아님 — 그 두 길은 묶음 K · 4-라 몫). */
-function appTurnPathOf(state: TalkLessonState): boolean {
-  return !chatTurnAppliesOf(state) && !leadTurnAppliesOf(state);
+/**
+ * 이 수업의 아이 행이 한국어 도움 행을 읽고 기기 값을 적는 길로 가는가: 기존 방식 길(4-다)과 Claude 주도 방식의 대화 차례(4-라 — 같은 좁힘 · 같은 힌트
+ * 종류 올림, 그 뒤 판정 장치는 lead-turn 이 건다). 이야기 방식의 대화 차례는 아니다(묶음 K 몫).
+ */
+function koTurnPathOf(state: TalkLessonState): boolean {
+  return !chatTurnAppliesOf(state);
 }
 
 /**
@@ -2493,7 +2504,7 @@ export async function runTalkLessonTurn(
           kind: "call",
           state,
           child: own,
-          ko: appTurnPathOf(state)
+          ko: koTurnPathOf(state)
             ? await turnKoHelpStandingOf(tx, state, request.koHelp ?? [], {
                 write: false,
               })
@@ -2516,7 +2527,7 @@ export async function runTalkLessonTurn(
         !CHILD_SEGMENTS.includes(state.segment)
       )
         return { kind: "stale" };
-      const ko = appTurnPathOf(state)
+      const ko = koTurnPathOf(state)
         ? await turnKoHelpStandingOf(tx, state, request.koHelp ?? [], {
             write: true,
           })
@@ -2731,7 +2742,7 @@ async function lessonTurnAfterChild(
   if (leadTurnAppliesOf(state)) {
     if (!leadAfterChild)
       throw new Error("새 엔진 수업의 턴 처리기가 넘어오지 않았다");
-    await leadAfterChild(state, child, deps, shared, ctxP);
+    await leadAfterChild(state, child, deps, shared, ctxP, ko);
     return;
   }
 

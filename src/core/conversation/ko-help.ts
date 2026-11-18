@@ -464,6 +464,78 @@ export function koHelpCarryOf<T extends { turnNo: number }>(
   return helps.filter((h) => h.turnNo !== now && turnNos.includes(h.turnNo));
 }
 
+/** 끝 줄 lesson.koCarry 의 항목(접점 마 — 화면 ko-ask KoCarryItem 과 같은 꼴). */
+export type KoCarryEntry = { turnNo: number; seq: number; teachEn?: string };
+
+/**
+ * 끝 줄 lesson.koCarry(되묻는 차례 뒤 이어받은 도움, [N-1] · 묶음 4-라): 지금 열린 아이 차례가 읽는 턴 번호(koHelpTurnNosOf) 가운데 지금 턴 번호가
+ * 아닌 것에 붙은, 답이 있고 대신 줄이 아닌 도움(koHelpCarryOf). 가르친 표현이 있으면 teachEn 을 싣는다 — 이 목록은 지금 열린 차례의 것이라 1~3단계도
+ * 실어도 된다(접점 라 · 위험 8 '지금 차례에만'). 되묻는 차례가 없으면 빈 목록이고, 부르는 쪽은 그때 칸을 싣지 않는다(AC-N26).
+ */
+export function koCarryOf(
+  rows: readonly Pick<
+    KoHelpRowFacts,
+    "turnNo" | "seq" | "sayKo" | "fallback" | "teachEn"
+  >[],
+  turnNos: readonly number[],
+): KoCarryEntry[] {
+  return koHelpCarryOf(
+    rows.filter((r) => r.sayKo !== null && r.fallback === "none"),
+    turnNos,
+  )
+    .sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq)
+    .map((r) => {
+      const teach = (r.teachEn ?? "").trim();
+      return {
+        turnNo: r.turnNo,
+        seq: r.seq,
+        ...(teach === "" ? {} : { teachEn: teach }),
+      };
+    });
+}
+
+/**
+ * Claude 주도 방식 턴 길의 배선(묶음 4-라 — 서버 lead-turn 이 쓴다, 정본 02-2 3.3 '걸리는 방식' 표의 Claude 주도 방식 행): 그 아이 차례가 읽는 도움의
+ * 대접(koHelpStandingOf) → 사실 알림의 가르친 표현(목록, 소리 귀띔의 기대 낱말도 같은 목록), 막힘 무름 한 꼴(말 입력에서 가르친 표현과 문턱 이상 맞음),
+ * '말했다'에 넘기는 단원 단어 목록(새로 보인 낱말을 뺌 — '만났다'는 받은 목록 그대로, 검토 rev-b4c I-1). 도움이 없으면 가르친 표현은 undefined ·
+ * 무름 거짓 · 받은 목록 그대로(AC-N26).
+ */
+export function leadKoHelpOf(
+  ko: KoHelpStanding | null,
+  {
+    heard,
+    speech,
+    unitWords,
+    lemmaOf,
+    minMatch,
+    homophones,
+  }: {
+    heard: string;
+    speech: boolean;
+    unitWords: readonly string[];
+    lemmaOf: (surface: string) => string | undefined;
+    minMatch: number;
+    homophones: readonly (readonly string[])[];
+  },
+): {
+  koTaught: string[] | undefined;
+  taughtMatched: boolean;
+  saidUnitWords: readonly string[];
+} {
+  if (ko === null)
+    return {
+      koTaught: undefined,
+      taughtMatched: false,
+      saidUnitWords: unitWords,
+    };
+  return {
+    koTaught: ko.taught.length > 0 ? [...ko.taught] : undefined,
+    taughtMatched:
+      speech && koTaughtHeardOf(ko, heard, { minMatch, homophones }),
+    saidUnitWords: koHelpUnitWordsOf(unitWords, ko.shownWords, lemmaOf).said,
+  };
+}
+
 /**
  * 화면 자료의 도움 목록(이어 하기용, 접점 라): 행마다 open(지금 열린 아이 차례가 읽는 도움인가 — 되묻는 차례를 건너 이어받은 것 포함 [N-1]).
  * 1~3단계(lowBand)는 open 이 거짓인 항목의 teachEn 을 내리지 않는다. 4단계부터는 가르친 표현을 글로 보였으므로 늘 싣는다.

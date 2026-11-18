@@ -78,12 +78,15 @@ export function leadStuckOf({
   input,
   sceneWords,
   homophones,
+  taughtMatched,
 }: {
   reading: TalkLeadReading;
   child: string;
   input: TalkInputMode;
   sceneWords?: ReadonlySet<string>;
   homophones?: readonly (readonly string[])[];
+  /** 한국어 도움 뒤 가르친 표현과 맞은 말(막힘 무름 한 꼴 — effectiveStuckOf taughtMatched, C225 (3) · 묶음 4-라). 없으면 고치기 전 그대로. */
+  taughtMatched?: boolean;
 }): { aiStuck: boolean; childKind: TalkChildKind; stuck: boolean } {
   const aiStuck = LEAD_STUCK_READINGS.has(reading);
   const childKind = leadChildKindOf(reading);
@@ -97,6 +100,7 @@ export function leadStuckOf({
       input,
       ...(sceneWords === undefined ? {} : { sceneWords }),
       ...(homophones === undefined ? {} : { homophones }),
+      ...(taughtMatched === true ? { taughtMatched } : {}),
     }),
   };
 }

@@ -3,7 +3,8 @@
 // 바로 넣고 runTalkTurnRequest 를 가짜 Anthropic 으로 부른다. 1단계는 1~3단계 구간이라 가르친 표현은 소리로만 준 글이다(heard).
 // 증명(검토 5절): (a) AC-25j 도움을 끼운 것과 뺀 것의 행 · 끝 줄 · 집계가 힌트 종류와 한 줄 밖에는 같다 (b) AC-25c 한 줄의 자리 (c) 기기 값 적기의
 // 좁힘 (d) 같은 시도 id 다시 부르기 (e) 1~3단계 heard (f) 답 없는 행 · 대신 줄 (g) '말했다'만 거르고 '만났다'는 든다(I-1) (h) AC-25o 막힘 무름 ·
-// 귀띔 줄 (i) 도움 뒤 '잘 모르겠어요' (j) Claude 주도 방식의 대화 토막 (k) AC-N26 묻지 않은 턴은 글자까지 같다.
+// 귀띔 줄 (i) 도움 뒤 '잘 모르겠어요' (j) Claude 주도 방식의 대화 토막 (k) AC-N26 묻지 않은 턴은 글자까지 같다. 묶음 4-라(Claude 주도 방식): (l) 사실
+// 알림 · 힌트 종류 · '말했다' (m) 막힘 무름 (n) 되묻기 길 · 끝 줄 koCarry (o) 묻지 않은 턴 (p) 받을 차례 · 호출 입력.
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { TALK_LEAD_TEXT_L3U1 } from "@/core/ai/calls/talk-lead";
@@ -21,6 +22,7 @@ import {
 import { settings } from "@/db/schema/operations";
 import { maskerFor } from "@/server/ai/run";
 import { advanceTalkLesson, loadTalkLessonView } from "@/server/conversation";
+import { runTalkKoHelpRequest } from "@/server/conversation/ko-help";
 import { runLeadOpenTurn } from "@/server/conversation/lead-turn";
 import {
   type TalkLessonLine,
@@ -32,6 +34,7 @@ import { loadSeed } from "@/server/seed/load";
 import { getOutputCheckLists } from "@/server/seed-lists";
 import { levelContextOf } from "@/server/session/ai-context";
 import { getSettings } from "@/server/settings";
+import { talkKoHelpRule } from "../fixtures/ai/fake-anthropic";
 import {
   DEV_SEED_AREAS,
   DEV_SEED_THROUGH,
@@ -43,6 +46,7 @@ import {
   harnessOf,
   LEAD_STATUS_MARK,
   LOADED_AT,
+  LOW_MODEL,
   leadTurnRule,
   lessonTurnRule,
   MS_PER_MINUTE,
@@ -67,6 +71,9 @@ const TAUGHT = "I like gimbap.";
 const LINE = `Korean help before this answer: taught '${TAUGHT}'`;
 const MEANING_LINE = "Korean help before this answer: meaning only";
 const KO_LINE_HEAD = "Korean help before this answer:";
+/** Claude 주도 방식 사실 알림의 한국어 도움 줄(13절 C240 · 묶음 4-라). */
+const LEAD_KO_HEAD = "The child asked in Korean and was taught:";
+const LEAD_KO_LINE = `${LEAD_KO_HEAD} "${TAUGHT}".`;
 
 beforeAll(async () => {
   testDb = await createTestDatabase();
@@ -659,7 +666,7 @@ describe("도움 뒤 '잘 모르겠어요'", () => {
 
 // ── (j) Claude 주도 방식의 대화 토막 ──────────────────────────────────
 
-describe("Claude 주도 방식 수업의 대화 토막(4-라 몫 — 지금은 그대로)", () => {
+describe("Claude 주도 방식 수업의 대화 토막(묶음 4-라)", () => {
   /** Claude 주도 방식 세션을 인사(지금 길) 뒤 대화 첫 차례까지(talk-lead-turn.test.ts inTalk 와 같은 꼴). */
   async function leadInTalk() {
     await setHouseholdSetting(db, "talk.lead_mode", "claude");
@@ -741,7 +748,7 @@ describe("Claude 주도 방식 수업의 대화 토막(4-라 몫 — 지금은 �
     return { profileId, sessionId };
   }
 
-  it("(j) 대화 토막 턴에 koHelp 칸이 와도 저장 행 · 호출 입력이 칸 없는 요청과 같고 도움 행에 적지 않는다", async () => {
+  it("(j) 한 번도 들려주지 못한 1~3단계 표현(heard 거짓)이면 저장 행 · 호출 입력이 칸 없는 요청과 같고, 기기 값은 그 도움 행에 적힌다(4-라)", async () => {
     const runs = [];
     for (const withHelp of [false, true]) {
       const { sessionId } = await leadInTalk();
@@ -768,7 +775,141 @@ describe("Claude 주도 방식 수업의 대화 토막(4-라 몫 — 지금은 �
     expect(helped?.sent).toHaveLength(plain?.sent.length ?? -1);
     expect(helped?.sent[0]?.bodyText).toBe(plain?.sent[0]?.bodyText);
     expect(helped?.rows).toEqual(plain?.rows);
-    expect(helped?.help).toMatchObject({ heard: null, replays: null });
+    expect(helped?.help).toMatchObject({ heard: false, replays: 2 });
     expect(helped?.sent[0]?.bodyText).not.toContain(KO_LINE_HEAD);
+    expect(helped?.sent[0]?.bodyText).not.toContain(LEAD_KO_HEAD);
+  });
+
+  // ── 묶음 4-라: 사실 알림 · 판정 장치 · 되묻기 길 · 받을 차례 ─────────────────
+
+  /** Claude 주도 방식 대화 토막의 한 턴(도움 행을 넣고 · 가짜 응답 하나 · 보낸 요청과 끝 줄). */
+  async function leadTurn(
+    sessionId: string,
+    answer: Record<string, unknown>,
+    input: TurnInput = {},
+  ) {
+    h.fake.push(leadTurnRule(answer));
+    const before = leadRequests().length;
+    const lines = await turn(sessionId, { leadText: true, ...input });
+    return { lines, sent: leadRequests().slice(before) };
+  }
+  const endOf = (lines: TalkLessonLine[]) => {
+    const end = lines.at(-1);
+    if (end?.t !== "end") throw new Error(`끝 줄이 아니다(${end?.t})`);
+    return end.lesson;
+  };
+
+  it("(l) AC-26c AC-25j 들은 표현 뒤 턴: 사실 알림에 가르친 표현 줄이 한 번 · 아이 행 힌트 종류 '영어' · '말했다' 0 · 기존 방식 한 줄은 없다", async () => {
+    const runs = [];
+    for (const withHelp of [false, true]) {
+      const { sessionId } = await leadInTalk();
+      const turnNo = await openTurnNo(sessionId);
+      if (withHelp) await addHelp(sessionId, turnNo);
+      const { sent } = await leadTurn(
+        sessionId,
+        { say: "Yummy! What else do you like?" },
+        withHelp
+          ? { koHelp: [{ turnNo, seq: 1, heard: true, replays: 1 }] }
+          : {},
+      );
+      runs.push({ sent, child: await lastChild(sessionId) });
+    }
+    const [plain, helped] = runs;
+    const body = helped?.sent[0]?.bodyText ?? "";
+    expect(body.split(LEAD_KO_LINE)).toHaveLength(2);
+    expect(body).not.toContain(KO_LINE_HEAD);
+    expect(plain?.sent[0]?.bodyText).not.toContain(LEAD_KO_HEAD);
+    expect(helped?.child.hintKind).toBe("english");
+    expect(plain?.child.hintKind ?? "none").toBe("none");
+    expect(helped?.child.saidWords ?? []).toEqual([]);
+    expect(helped?.child.sentUserMessage).toContain(LEAD_KO_LINE);
+  });
+
+  it("(m) AC-25o 읽기 칸이 막힘 갈래여도 인식 글이 가르친 표현과 문턱 이상 맞으면 막힘으로 보지 않는다(뺀 턴은 막힘)", async () => {
+    const runs = [];
+    for (const withHelp of [false, true]) {
+      const { sessionId } = await leadInTalk();
+      const turnNo = await openTurnNo(sessionId);
+      if (withHelp) await addHelp(sessionId, turnNo);
+      await leadTurn(sessionId, {
+        reading: "does_not_fit",
+        move: "easier_or_choices",
+        say: "Do you like gimbap or pizza?",
+      });
+      runs.push(await lastChild(sessionId));
+    }
+    const [plain, helped] = runs;
+    expect(plain?.stuckPhrase).not.toBeNull();
+    expect(helped?.stuckPhrase ?? null).toBeNull();
+  });
+
+  it("(n) AC-25j AC-25o [N-1] 되묻는 차례(move ask_again) 뒤 아이 차례도 앞 도움을 이어받는다: 끝 줄 koCarry · 다음 턴의 사실 줄 · 힌트 종류", async () => {
+    const { sessionId } = await leadInTalk();
+    const turnNo = await openTurnNo(sessionId);
+    await addHelp(sessionId, turnNo);
+    const first = await leadTurn(
+      sessionId,
+      {
+        reading: "likely_misheard",
+        move: "ask_again",
+        say: "Sorry? Can you say it again?",
+      },
+      { koHelp: [{ turnNo, seq: 1, heard: true }] },
+    );
+    const asked = await lastChild(sessionId);
+    expect(asked.askAgain).toBe(true);
+    expect(endOf(first.lines).koCarry).toEqual([
+      { turnNo, seq: 1, teachEn: TAUGHT },
+    ]);
+    const second = await leadTurn(sessionId, {
+      say: "Great! I like gimbap too.",
+    });
+    expect(second.sent[0]?.bodyText).toContain(LEAD_KO_LINE);
+    const child = await lastChild(sessionId);
+    expect(child.turnNo).toBeGreaterThan(turnNo);
+    expect(child.hintKind).toBe("english");
+    expect(child.saidWords ?? []).toEqual([]);
+    // 되묻지 않은 차례의 끝 줄에는 칸이 없다(AC-N26)
+    expect(endOf(second.lines)).not.toHaveProperty("koCarry");
+  });
+
+  it("(o) AC-N26 Claude 주도 방식에서 한국어로 묻지 않은 턴은 끝 줄에 koCarry 칸이 없고 사실 알림에 한국어 줄이 없다", async () => {
+    const { sessionId } = await leadInTalk();
+    const { lines, sent } = await leadTurn(sessionId, {
+      say: "Yummy! What else do you like?",
+    });
+    expect(endOf(lines)).not.toHaveProperty("koCarry");
+    expect(sent[0]?.bodyText).not.toContain(LEAD_KO_HEAD);
+  });
+
+  it("(p) rev-b4b 6절 받을 차례 · 호출 입력: Claude 주도 방식 대화 토막의 열린 아이 차례에서 한국어 질문을 받고, 선생님의 지금 말을 입력에 싣는다", async () => {
+    const { sessionId } = await leadInTalk();
+    h.fake.push(
+      talkKoHelpRule({
+        model: LOW_MODEL,
+        kind: "expression",
+        sayKo: "이렇게 말하면 돼. 잘 듣고 따라 해 봐.",
+        teachEn: TAUGHT,
+      }),
+    );
+    const before = h.fake.requests.length;
+    const reply = await runTalkKoHelpRequest(
+      {
+        sessionId,
+        clientAttemptId: `ko-lead-${sessionId}`,
+        question: "김밥 좋다고 어떻게 말해?",
+        hint: { opened: 0 },
+      },
+      h.deps(),
+    );
+    expect(reply).toMatchObject({ t: "ok" });
+    const body = h.fake.requests
+      .slice(before)
+      .map((r) => r.bodyText)
+      .join("\n");
+    expect(body).toContain("Hello again! Do you like it?");
+    expect(leadRequests().slice(-1)[0]?.bodyText ?? "").not.toContain(
+      "김밥 좋다고",
+    );
   });
 });

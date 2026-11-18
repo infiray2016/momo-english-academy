@@ -27,6 +27,13 @@ import {
   teacherSentencesMaxOf,
 } from "@/core/ai/calls/talk-lesson";
 import {
+  type KoCarryEntry,
+  type KoHelpStanding,
+  koCarryOf,
+  koHelpTurnNosOf,
+  leadKoHelpOf,
+} from "@/core/conversation/ko-help";
+import {
   type LeadFormRule,
   type LeadLevelInput,
   leadNarrowHitsOf,
@@ -138,7 +145,9 @@ import {
 } from "./lesson-turn";
 import {
   isTalkOpen,
+  koHelpTurnRowOf,
   positiveInt,
+  readKoHelpRows,
   readTalkLessonState,
   snapshotNumber,
   type TalkLessonState,
@@ -246,7 +255,12 @@ export type LeadOpenClaim = { id: string; at: Date; called: boolean };
 
 /** 이 차례를 연 것: 아이 말(아이 행이 이미 저장됨) 또는 아이 말 없이 부르는 입구(대화 토막 첫 차례 · 더 이야기하기 — 아이 행 없음). */
 type LeadEntry =
-  | { kind: "child"; child: TalkTurnRow }
+  | {
+      kind: "child";
+      child: TalkTurnRow;
+      /** 그 아이 차례가 읽는 한국어 도움의 대접(lesson-turn 이 아이 행을 넣기 전에 정함 — 묶음 4-라). 도움 없음은 null. */
+      ko: KoHelpStanding | null;
+    }
   | { kind: "open"; open: LeadOpen; turnNo: number; claim: LeadOpenClaim };
 
 /** 호출 전에 끝난 입구의 표지를 지운다(시도 id 와 그 요청이 넣은 시각이 같을 때만 — 그 사이 다른 요청이 고쳐 잡았으면 남긴다). 실패는 기록만. */
@@ -289,8 +303,15 @@ export function leadTurnAfterChild(
   deps: LeadTurnDeps,
   shared: LessonTurnShared,
   ctxP: Promise<LevelContext>,
+  ko: KoHelpStanding | null = null,
 ): Promise<void> {
-  return leadTeacherTurn(state, { kind: "child", child }, deps, shared, ctxP);
+  return leadTeacherTurn(
+    state,
+    { kind: "child", child, ko },
+    deps,
+    shared,
+    ctxP,
+  );
 }
 
 /**
@@ -591,10 +612,28 @@ async function leadTeacherTurn(
   const hitsOf = (sentence: string) =>
     levelInput === null ? [] : leadNarrowHitsOf(sentence, levelInput);
   const sceneWords = talkSceneWordsOf({ card: state.card, unitWords });
+  // 한국어 도움 뒤 영어 차례(묶음 4-라 — 정본 02-2 3.3 '걸리는 방식' Claude 주도 방식 행): 사실 알림 · 소리 귀띔의 가르친 표현, 막힘 무름 한 꼴,
+  // '말했다' 거름. 도움이 없으면 가르친 표현 없음 · 무름 거짓 · 단원 단어 그대로라 고치기 전과 같다(AC-N26)
+  const koLead = leadKoHelpOf(entry.kind === "child" ? entry.ko : null, {
+    heard,
+    speech,
+    unitWords,
+    lemmaOf: state.lemmaOf,
+    minMatch: s["talk.hint_read_match"] as number,
+    homophones,
+  });
+  const taughtMatched = koLead.taughtMatched ? { taughtMatched: true } : {};
   const stuckOfReading = (reading: unknown) =>
     child === null
       ? false
-      : leadChildStuckOf({ reading, mode, heard, sceneWords, homophones });
+      : leadChildStuckOf({
+          reading,
+          mode,
+          heard,
+          sceneWords,
+          homophones,
+          ...taughtMatched,
+        });
 
   // (2) 요청 조립(안내문 · 사실 알림 · 대화 기록 — spec 설계 2). 입구 차례는 아이 차례 줄 · 소리 귀띔이 없다(턴 셈 밖)
   const history = leadHistoryOf(rows);
@@ -612,6 +651,7 @@ async function leadTeacherTurn(
     lemmaOf: state.lemmaOf,
     open,
     closing,
+    ...(koLead.koTaught === undefined ? {} : { koTaught: koLead.koTaught }),
   });
   const leadInput: TalkLeadInput = {
     ...ctx,
@@ -654,6 +694,7 @@ async function leadTeacherTurn(
         heard,
         sceneWords,
         homophones,
+        ...taughtMatched,
       }),
     hitsOf,
   });
@@ -1001,7 +1042,8 @@ async function leadTeacherTurn(
     heard,
     speech,
     stuck,
-    unitWords,
+    // '말했다' 거름(한국어 답에 새로 글자로 든 단원 단어를 뺀 목록 — '만났다'는 아래 받은 목록 그대로, 검토 rev-b4c I-1)
+    unitWords: koLead.saidUnitWords,
     lemmaOf: state.lemmaOf,
     homophones,
   });
@@ -1169,5 +1211,31 @@ async function saveLeadTurn({
     write({ t: "stale" });
     return;
   }
-  write({ t: "end", lesson: lessonNextOf(saved, { explanation }) });
+  const koCarry = await leadKoCarryOf(db, saved);
+  write({
+    t: "end",
+    lesson: {
+      ...lessonNextOf(saved, { explanation }),
+      ...(koCarry.length === 0 ? {} : { koCarry }),
+    },
+  });
+}
+
+/**
+ * 끝 줄 lesson.koCarry(되묻는 차례 뒤 이어받은 도움 — 접점 마 · [N-1] · 묶음 4-라): 저장 뒤 열린 아이 차례가 되묻는 차례를 건너 앞 아이 차례의 도움을
+ * 읽을 때만 도움 행을 읽는다(읽을 턴 번호가 지금 차례 하나면 읽지 않고 빈 목록 — 되묻지 않은 차례의 끝 줄은 고치기 전 그대로, AC-N26). 읽기에 실패하면
+ * 빈 목록이다(화면은 받아 둔 도움에서 찾는다 — 끝 줄을 막지 않는다).
+ */
+async function leadKoCarryOf(
+  db: Db,
+  saved: TalkLessonState,
+): Promise<KoCarryEntry[]> {
+  const turnNos = koHelpTurnNosOf(saved.liveRows.map(koHelpTurnRowOf));
+  if (turnNos.length <= 1) return [];
+  try {
+    return koCarryOf(await readKoHelpRows(db, saved.session.id), turnNos);
+  } catch (error) {
+    logFailure("회화 새 엔진 이어받은 도움 읽기", error);
+    return [];
+  }
 }

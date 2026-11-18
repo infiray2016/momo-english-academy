@@ -597,6 +597,7 @@ export function leadSoundNotesFor({
   homophones,
   soundAlikes,
   lemmaOf,
+  taught,
 }: {
   heard: string;
   prevMove: TalkMove | null;
@@ -604,6 +605,8 @@ export function leadSoundNotesFor({
   homophones: readonly (readonly string[])[];
   soundAlikes: readonly SoundAlikeEntry[];
   lemmaOf: (surface: string) => string | undefined;
+  /** 한국어 도움이 가르친 표현(기대 낱말에 더함 — heardHintsOf taught, 정본 02-2 3.3 기기 쪽 · 묶음 4-라). 없으면 고치기 전 그대로. */
+  taught?: readonly string[];
 }): TalkLeadSoundNote[] {
   const targets = prevMove?.lead?.asked ?? prevMove?.words ?? [];
   const hints = heardHintsOf({
@@ -614,6 +617,7 @@ export function leadSoundNotesFor({
     homophones,
     soundAlikes,
     lemmaOf,
+    ...(taught === undefined || taught.length === 0 ? {} : { taught }),
   });
   return talkLeadSoundNotesOf(heard, hints);
 }
@@ -713,12 +717,15 @@ export function leadChildStuckOf({
   heard,
   sceneWords,
   homophones,
+  taughtMatched,
 }: {
   reading: unknown;
   mode: "speech" | "dont_know";
   heard: string;
   sceneWords: ReadonlySet<string>;
   homophones: readonly (readonly string[])[];
+  /** 한국어 도움 뒤 가르친 표현과 맞은 말(막힘 무름 한 꼴 — 읽기 칸을 막힘 값으로 옮긴 뒤의 앱 무름 자리, 묶음 4-라). 없으면 고치기 전 그대로. */
+  taughtMatched?: boolean;
 }): boolean {
   if (mode !== "speech" || typeof reading !== "string") return false;
   if (!(TALK_LEAD_READINGS as readonly string[]).includes(reading))
@@ -729,6 +736,7 @@ export function leadChildStuckOf({
     input: mode,
     sceneWords,
     homophones,
+    ...(taughtMatched === true ? { taughtMatched } : {}),
   }).stuck;
 }
 
@@ -1087,6 +1095,7 @@ export function leadStatusOf({
   lemmaOf,
   open,
   closing,
+  koTaught,
 }: {
   rows: readonly LeadRowLike[];
   /** 아이 말 차례인가(입구 차례면 거짓 — 'Child turn' 줄이 없다). */
@@ -1105,7 +1114,13 @@ export function leadStatusOf({
   open: LeadOpen | null;
   /** 마무리 차례(leadClosingTurnOf). */
   closing: boolean;
+  /**
+   * 그 아이 차례가 읽는 한국어 도움이 가르친 표현(core ko-help koHelpStandingOf 의 taught — 되묻는 차례를 건너 이어받은 것 포함, 묶음 4-라). 사실 줄과
+   * 소리 귀띔의 기대 낱말에 쓴다. 비거나 없으면 고치기 전 그대로(AC-N26).
+   */
+  koTaught?: readonly string[];
 }): TalkLeadStatus {
+  const taught = koTaught !== undefined && koTaught.length > 0 ? koTaught : [];
   const ordered = leadConversationOrder(rows);
   const prevMove = readTalkMove(
     ordered.findLast((r) => r.speaker === "tori")?.move,
@@ -1135,11 +1150,13 @@ export function leadStatusOf({
             homophones,
             soundAlikes,
             lemmaOf,
+            ...(taught.length === 0 ? {} : { taught }),
           }),
         }
       : {}),
     ...(first || open === "start" ? { talkStarts: true } : {}),
     ...(closing ? { closingTurn: true } : {}),
+    ...(taught.length === 0 ? {} : { koTaught: [...taught] }),
   };
 }
 
@@ -1242,6 +1259,7 @@ export function leadFlowPrevStuckOf({
   heard,
   sceneWords,
   homophones,
+  taughtMatched,
 }: {
   /** 아이 말 차례인가(입구 차례면 거짓). */
   hasChild: boolean;
@@ -1253,10 +1271,19 @@ export function leadFlowPrevStuckOf({
   heard: string;
   sceneWords: ReadonlySet<string>;
   homophones: readonly (readonly string[])[];
+  /** 한국어 도움 뒤 가르친 표현과 맞은 말(leadChildStuckOf 와 같은 값 — 흘려 받는 동안과 끝의 막힘이 같게, 묶음 4-라). */
+  taughtMatched?: boolean;
 }): boolean {
   if (!hasChild) return false;
   if (mode === "dont_know") return !nospeech;
-  return leadChildStuckOf({ reading, mode, heard, sceneWords, homophones });
+  return leadChildStuckOf({
+    reading,
+    mode,
+    heard,
+    sceneWords,
+    homophones,
+    ...(taughtMatched === true ? { taughtMatched } : {}),
+  });
 }
 
 /**
