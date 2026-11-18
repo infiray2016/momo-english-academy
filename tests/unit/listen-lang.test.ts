@@ -6,7 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("client-only", () => ({}));
 
-import { ClientListenEntrySchema } from "@/core/conversation/client-listen";
+import {
+  ClientListenEntrySchema,
+  LISTEN_LANG_PATTERN,
+} from "@/core/conversation/client-listen";
 import { koAskEndRuleOf, talkEndRuleFor } from "@/core/conversation/listen";
 import { DISCARD_REOPEN_WHYS } from "@/core/speech/discard";
 import {
@@ -478,5 +481,21 @@ describe("듣기 요약의 언어 칸 lg(AC-N27 · NFR-2)", () => {
         ClientListenEntrySchema.safeParse({ ...base, lg: bad }).success,
         bad,
       ).toBe(false);
+  });
+});
+
+describe("한국어 질문 끝 규칙의 언어 꼴 — 요약의 lg 와 함께 간다(코드 검토 묶음 3 M-1)", () => {
+  it("AC-N27 요약의 lg 꼴(LISTEN_LANG_PATTERN) 밖의 언어는 끝 규칙이 받지 않아, lang 이 있는 듣기는 늘 lg 가 있는 요약이 된다", () => {
+    for (const bad of ["ko_KR", " ko-KR", "ko-KR ", "KO-KR", "한국어"]) {
+      expect(LISTEN_LANG_PATTERN.test(bad), bad).toBe(false);
+      expect(
+        () => koAskEndRuleOf(speech, { endSilenceMs: 2500, lang: bad }),
+        bad,
+      ).toThrow(RangeError);
+    }
+    expect(LISTEN_LANG_PATTERN.test(KO)).toBe(true);
+    expect(koAskEndRuleOf(speech, { endSilenceMs: 2500, lang: KO }).lang).toBe(
+      KO,
+    );
   });
 });

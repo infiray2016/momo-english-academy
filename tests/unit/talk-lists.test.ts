@@ -6,9 +6,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   koHelpFallbackLineOf,
+  koReplyCharsOf,
   TALK_KO_HELP_FALLBACK_SHAPES,
 } from "@/core/ai/calls/talk-ko-help";
-import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
+import {
+  TALK_KO_HELP_FALLBACK_SHAPES as KO_ASK_FALLBACK_SHAPES,
+  KO_ASK_REPLY_MAX_CHARS_KEY,
+  koReplyCharsOf as koAskReplyCharsOf,
+} from "@/core/conversation/ko-ask";
 import {
   checkTalkLists,
   FIRST_PERSON_WORDS,
@@ -482,5 +487,61 @@ describe("한국어 도움 대신 줄 목록(수업 안 한국어로 묻기 plan
       expect(koHelpFallbackLineOf(lines, shape, 1)).toBe(list[1]);
       expect(koHelpFallbackLineOf(lines, shape, list.length)).toBe(list[0]);
     }
+  });
+});
+
+describe("대신 줄의 꼴 이름 · 글자 셈은 한 정의(코드 검토 묶음 4-가 M-2 · M-3)", () => {
+  const replyMax = TEST_SETTINGS[KO_ASK_REPLY_MAX_CHARS_KEY].value;
+  const koCtx = { ...ctx, koReplyMaxChars: replyMax };
+  const lineIssues = (line: string) =>
+    at(
+      checkTalkLists(
+        {
+          talkKoHelpLines: {
+            call_failed: [line, "미안, 다시 물어봐 줄래?"],
+            check_blocked: [
+              "그건 다음에 같이 알아봐요.",
+              "다른 걸 물어봐 줄래?",
+            ],
+          },
+        },
+        koCtx,
+      ),
+      "talk-ko-help-lines",
+    );
+
+  it("AC-25g 시드 검사와 런타임이 같은 꼴 이름 목록 · 같은 글자 셈(ko-ask 의 정의)을 쓴다", () => {
+    expect(TALK_KO_HELP_FALLBACK_SHAPES).toBe(KO_ASK_FALLBACK_SHAPES);
+    expect(koReplyCharsOf).toBe(koAskReplyCharsOf);
+  });
+
+  it("AC-25g 시드 검사의 글자 수 상한은 런타임 셈(코드 포인트, 빈칸 뺌)의 경계와 같다", () => {
+    const exact = `${"가 ".repeat(replyMax - 1)}가`;
+    const over = `${exact}나`;
+    expect(koReplyCharsOf(exact)).toBe(replyMax);
+    expect(koReplyCharsOf(over)).toBe(replyMax + 1);
+    expect(lineIssues(exact)).toEqual([]);
+    expect(lineIssues(over)).toEqual([
+      `${SEED_FILES.talkKoHelpLines}:call_failed.0`,
+    ]);
+  });
+
+  it("AC-25g talk.ko_ask_reply_max_chars 가 양의 정수가 아니면 seed:validate 가 settings 오류로 알린다(런타임 규격과 같은 꼴)", () => {
+    const settingIssues = (value: unknown) => {
+      const bad = structuredClone(ref);
+      bad.settings.settings = bad.settings.settings.map((row) =>
+        row.key === KO_ASK_REPLY_MAX_CHARS_KEY
+          ? ({ ...row, value } as typeof row)
+          : row,
+      );
+      return buildReferenceIndex(bad).issues.filter(
+        (i) =>
+          i.rule === "settings" &&
+          i.message.includes(KO_ASK_REPLY_MAX_CHARS_KEY),
+      );
+    };
+    for (const value of [0, -1, 1.5, "80"])
+      expect(settingIssues(value), String(value)).toHaveLength(1);
+    expect(settingIssues(replyMax)).toEqual([]);
   });
 });

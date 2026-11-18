@@ -19,7 +19,11 @@ import {
   homophoneHeadOf,
   isSceneFunctionWord,
 } from "@/core/conversation/child-kind";
-import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
+import {
+  KO_ASK_REPLY_MAX_CHARS_KEY,
+  koReplyCharsOf,
+  TALK_KO_HELP_FALLBACK_SHAPES,
+} from "@/core/conversation/ko-ask";
 import { normalizeSpoken } from "@/core/conversation/spoken";
 import type { SeedIssue } from "@/core/seed/issue";
 import type {
@@ -92,14 +96,8 @@ export const TALK_ASK_AGAIN_KO_FORBIDDEN: readonly string[] = [
 export const TALK_SHORT_LINES_MIN = 1;
 /** 한국어 도움 대신 줄 꼴마다 줄 수 하한(plan 정한 것 15 '꼴마다 둘 이상' — 순번으로 돌려 같은 줄이 이어 나오지 않게). 시드 꼴 검사 상수다. */
 export const TALK_KO_HELP_LINES_MIN = 2;
-/** 대신 줄의 꼴(TALK_KO_HELP_FALLBACK_SHAPES 와 같은 값 — 꼴 이름은 목록 규격의 열쇠다). */
-const KO_HELP_LINE_SHAPES = ["call_failed", "check_blocked"] as const;
 const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힣]/;
 const LATIN = /[A-Za-z]/;
-const WHITESPACE_RUN = /\s+/g;
-/** 한국어 답 글자 수(코드 포인트, 빈칸 뺌 — talk-ko-help koReplyCharsOf 와 같은 셈, 설정 talk.ko_ask_reply_max_chars 의 정의). */
-const koCharsOf = (text: string) =>
-  [...text.replace(WHITESPACE_RUN, "")].length;
 
 /** 1인칭 낱말(지어낸 경험 꼴은 '선생님 자신'의 경험 · 기억 꼴이다, 06:187 (4)). 영어 문법 목록이라 코드 상수다. */
 export const FIRST_PERSON_WORDS: ReadonlySet<string> = new Set([
@@ -499,7 +497,7 @@ export function checkTalkLists(
   const koLines = files.talkKoHelpLines;
   if (koLines) {
     const file = SEED_FILES.talkKoHelpLines;
-    for (const shape of KO_HELP_LINE_SHAPES) {
+    for (const shape of TALK_KO_HELP_FALLBACK_SHAPES) {
       const lines = koLines[shape];
       if (lines.length < TALK_KO_HELP_LINES_MIN)
         push(
@@ -520,9 +518,9 @@ export function checkTalkLists(
                 "틀 자리({NAME} 꼴)가 있다(한국어 답은 아이를 이름으로 부르지 않는다)",
               ]
             : []),
-          ...(max !== undefined && koCharsOf(text) > max
+          ...(max !== undefined && koReplyCharsOf(text) > max
             ? [
-                `글자 수 ${koCharsOf(text)}(빈칸 뺌)가 ${max}(${KO_ASK_REPLY_MAX_CHARS_KEY})를 넘는다`,
+                `글자 수 ${koReplyCharsOf(text)}(빈칸 뺌)가 ${max}(${KO_ASK_REPLY_MAX_CHARS_KEY})를 넘는다`,
               ]
             : []),
         ];

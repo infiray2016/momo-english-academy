@@ -20,6 +20,8 @@ import type { CheckField, FieldHit } from "@/core/ai/output-check";
 import {
   KO_ASK_REPLY_MAX_CHARS_KEY,
   koAskReplyMaxCharsSchema,
+  koReplyCharsOf,
+  TALK_KO_HELP_FALLBACK_SHAPES,
 } from "@/core/conversation/ko-ask";
 import { offbandWordsIn } from "@/core/conversation/question-check";
 import { placeholdersIn, splitSentences, tokenize } from "@/core/seed/text";
@@ -36,11 +38,8 @@ export const TALK_KO_HELP_KINDS = [
 ] as const;
 export type TalkKoHelpKind = (typeof TALK_KO_HELP_KINDS)[number];
 
-/** 대신 줄의 꼴(시드 목록의 두 꼴). 호출 실패 꼴은 서버가 정하고, 검사 걸림 꼴은 이 조각의 검사 뒤 값이 알린다. */
-export const TALK_KO_HELP_FALLBACK_SHAPES = [
-  "call_failed",
-  "check_blocked",
-] as const;
+/** 대신 줄의 꼴 · 한국어 답 글자 셈은 시드 검사와 한 정의다(ko-ask, 코드 검토 묶음 4-가 M-2). 부르는 쪽은 이 모듈에서 가져온다. */
+export { koReplyCharsOf, TALK_KO_HELP_FALLBACK_SHAPES };
 export type TalkKoHelpFallbackShape =
   (typeof TALK_KO_HELP_FALLBACK_SHAPES)[number];
 
@@ -217,13 +216,6 @@ export function talkKoHelpUserMessage(input: TalkKoHelpInput): string {
 }
 
 // ── 정규화(갈래와 칸의 짝 · 글자 수) ───────────────────────────────
-
-/**
- * 한국어 답의 글자 수(코드 포인트, 빈칸은 뺀다 — 설정 talk.ko_ask_reply_max_chars 의 정의, spec 264줄 · 코드 검토 I-2). 표본 도구의 '글자 수 잘림'
- * 표지도 이 셈을 쓴다.
- */
-export const koReplyCharsOf = (text: string) =>
-  [...text.replace(WHITESPACE_RUN, "")].length;
 
 /**
  * 한국어 답의 문장. 영어 문장 자르기(splitSentences)는 따옴표 속 영어 인용('I eat.' 라고 …) 뒤에서도 자르므로, 한글이 없는 조각은 뒤따르는

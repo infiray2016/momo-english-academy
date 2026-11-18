@@ -2,7 +2,10 @@
 // 규격 파일끼리 맞는지를 본다. 정합 위반은 모두 오류다(plan-p04a 정할 것 ㄹ). DB 없는 순수 함수다.
 // Zod 규격에서 깨진 규격 파일은 넘기지 않는다(Partial). 빠진 파일을 쓰는 정합 검사는 건너뛰고, P4c 가 '규격 파일 오류로 건너뜀'을 보고한다.
 
-import { KO_ASK_REPLY_MAX_CHARS_KEY } from "@/core/conversation/ko-ask";
+import {
+  KO_ASK_REPLY_MAX_CHARS_KEY,
+  koAskReplyMaxCharsSchema,
+} from "@/core/conversation/ko-ask";
 import { checkTalkLists } from "@/core/seed/check-talk-lists";
 import {
   checkTeacherNamesInSpecs,
@@ -616,13 +619,19 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
   // 회화 1~3단계 시드 목록 넷(06:187): 꼴 수 · 물음표 · 길이 · 어휘 범위(허용 낱말 포함) · 상황 금지 구 · 지어낸 경험 꼴.
   // 짧은 말(C213)도 같은 검사가 본다(줄 수 · 물음표 · 길이 · 그 구간 첫 단계 어휘 범위 · 지어낸 경험 꼴).
   // 한국어 도움 대신 줄도 같은 검사가 본다(꼴마다 줄 수 · 한국어 · 라틴 글자 · 틀 자리 · 글자 수 상한 talk.ko_ask_reply_max_chars).
-  const koReplyMax = settingMap.get(KO_ASK_REPLY_MAX_CHARS_KEY);
-  if (files.talkKoHelpLines && typeof koReplyMax !== "number")
+  // 꼴은 런타임 규격(talkKoHelpRulesOf)과 같은 koAskReplyMaxCharsSchema 로 본다(코드 검토 묶음 4-가 M-3 — 0 · 음수 · 소수도 여기서 걸린다).
+  const koReplyMaxParsed = koAskReplyMaxCharsSchema.safeParse(
+    settingMap.get(KO_ASK_REPLY_MAX_CHARS_KEY),
+  );
+  const koReplyMax = koReplyMaxParsed.success
+    ? koReplyMaxParsed.data
+    : undefined;
+  if (files.talkKoHelpLines && koReplyMax === undefined)
     issue(
       "settings",
       SEED_FILES.settings,
       "settings",
-      `설정값 ${KO_ASK_REPLY_MAX_CHARS_KEY} 가 없거나 수가 아니다(한국어 도움 대신 줄의 글자 수를 볼 수 없다)`,
+      `설정값 ${KO_ASK_REPLY_MAX_CHARS_KEY} 가 없거나 양의 정수가 아니다(한국어 도움 대신 줄의 글자 수를 볼 수 없다)`,
     );
   issues.push(
     ...checkTalkLists(files, {
@@ -633,9 +642,7 @@ export function buildReferenceIndex(files: Partial<ReferenceFiles>): {
       talkUnitWords: unitSpecs
         .filter((u) => u.area === "talk")
         .map((u) => u.words),
-      ...(typeof koReplyMax === "number"
-        ? { koReplyMaxChars: koReplyMax }
-        : {}),
+      ...(koReplyMax === undefined ? {} : { koReplyMaxChars: koReplyMax }),
     }),
   );
 

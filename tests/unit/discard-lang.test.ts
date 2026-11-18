@@ -266,6 +266,11 @@ describe("버리는 듣기를 켠 기기의 한국어 듣기(FR-5 · spec 설계
     // 맞장구는 버림 안에서 읽혔다(버림 열기 뒤 · 그 닫기 앞)
     const speakAt = ko.calls.indexOf("speak:Nice!");
     expect(ko.calls.slice(0, speakAt)).toContain("openDiscard:1");
+    expect(ko.calls.slice(0, speakAt)).not.toContain("stop:1");
+    expect(ko.calls.slice(0, speakAt)).not.toContain("abort:1");
+    expect(
+      ko.calls.slice(speakAt).some((c) => c === "stop:1" || c === "abort:1"),
+    ).toBe(true);
   });
 
   it("AC-25e '그 언어만 안 됨'으로 끝난 진짜는 '마이크를 쓸 수 없음'과 같은 끝(버림을 열지 않고 다음 누름 앞에 버림부터)이고 다시 연 까닭만 no_lang 이다", async () => {

@@ -391,3 +391,14 @@ describe("AC-25g 한국어 도움 가짜 응답(tests/fixtures/ai/fake-anthropic
     expect(rule.reply.kind).toBe("message");
   });
 });
+
+describe("speech.lang_ko 의 꼴(코드 검토 묶음 3 M-1)", () => {
+  it("AC-N27 speech.lang_ko 가 듣기 요약 lg 의 꼴 밖이면 화면 자료 읽기가 그 키 이름으로 던진다", () => {
+    for (const value of ["ko_KR", " ko-KR", "ko-KR ", "한국어"])
+      expect(
+        () =>
+          koAskSettingsFrom(readOf(testValues, { "speech.lang_ko": value })),
+        value,
+      ).toThrow("speech.lang_ko");
+  });
+});

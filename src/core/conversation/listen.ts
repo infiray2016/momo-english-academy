@@ -1,6 +1,7 @@
 // 회화 듣기 끝 규칙 · 인식 확인 · 이름 묻기 턴 가림(7절 '듣기를 끝내는 때' · '인식 결과 확인' · 4절 인식 확인 행 · 6.1 이름 가림 ·
 // C7 · C23 · C37, plan-p13a 파일별 값 11). P2a endRuleFor 는 고치지 않는다(말하기 · 배치가 회화 키 없이 돈다). 순수 모듈이다.
 import { z } from "zod";
+import { LISTEN_LANG_PATTERN } from "@/core/conversation/client-listen";
 import { BANDS, type Band, bandOf } from "@/core/level-band";
 import { PLACEHOLDER_NAME } from "@/core/seed/structure";
 import {
@@ -103,8 +104,11 @@ export function koAskEndRuleOf(
     throw new RangeError(
       `한국어 질문 끝 조용함은 0 보다 커야 한다: ${endSilenceMs}`,
     );
-  if (lang.trim() === "")
-    throw new RangeError("한국어 질문 듣기 언어가 비었다");
+  // 듣기 요약은 이 꼴에 맞을 때만 lg 를 싣는다(listen-log) — 꼴 밖의 언어를 받으면 한국어 듣기가 lg 없이 남아 영어 듣기로 읽힌다(코드 검토 묶음 3 M-1).
+  if (!LISTEN_LANG_PATTERN.test(lang))
+    throw new RangeError(
+      `한국어 질문 듣기 언어가 비었거나 언어 표지 꼴(ko-KR)이 아니다: ${JSON.stringify(lang)}`,
+    );
   return {
     endSilenceMs,
     capMs: speech.maxListenMs,

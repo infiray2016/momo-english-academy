@@ -4,6 +4,7 @@
 // 키가 없거나 꼴이 틀리면 그 키 이름으로 던진다(조용한 기본값 없음). 숫자는 모두 12절 설정값이고 이 파일에 두지 않는다.
 // 새 키 아홉 가운데 ai.max_tokens.talk_ko_help 는 호출 조합(settingKeysOf)이, talk.ko_ask_reply_max_chars 는 한국어 도움 호출 규격(talkKoHelpSpec)이 읽는다.
 import { z } from "zod";
+import { LISTEN_LANG_PATTERN } from "@/core/conversation/client-listen";
 
 /** talk.ko_ask_mode 의 값: on(켬) · off(끔 — 되돌림 스위치, 단추가 없고 서버가 한국어 질문 요청을 받지 않는다, C221). */
 export const KO_ASK_MODE_VALUES = ["on", "off"] as const;
@@ -51,7 +52,8 @@ export const KO_ASK_SETTING_KEYS: readonly string[] = [
 const MS_PER_SECOND = 1000;
 
 const modeSchema = z.enum(KO_ASK_MODE_VALUES);
-const langSchema = z.string().min(1);
+/** 듣기 요약 lg 와 같은 꼴(코드 검토 묶음 3 M-1 — 꼴 밖이면 한국어 듣기가 lg 없이 남는다). */
+const langSchema = z.string().regex(LISTEN_LANG_PATTERN);
 const positiveSecondsSchema = z.number().positive();
 const secondsSchema = z.number().nonnegative();
 const msSchema = z.int().nonnegative();
@@ -59,6 +61,23 @@ const countSchema = z.int().positive();
 const linesSchema = z.int().nonnegative();
 /** 한국어 답 글자 수 상한의 꼴(한국어 도움 규격의 설정 규격이 같이 쓴다). */
 export const koAskReplyMaxCharsSchema = z.int().positive();
+
+/**
+ * 한국어 도움 대신 줄의 꼴(시드 목록의 두 꼴 — 목록 규격의 열쇠). 호출 실패 꼴은 서버가 정하고, 검사 걸림 꼴은 한국어 도움 조각의 검사 뒤 값이 알린다.
+ * 시드 꼴 검사(check-talk-lists)와 한국어 도움 호출 규격(talk-ko-help)이 이 하나를 쓴다(코드 검토 묶음 4-가 M-2).
+ */
+export const TALK_KO_HELP_FALLBACK_SHAPES = [
+  "call_failed",
+  "check_blocked",
+] as const;
+
+const WHITESPACE_RUN = /\s+/g;
+/**
+ * 한국어 답의 글자 수(코드 포인트, 빈칸은 뺀다 — 설정 talk.ko_ask_reply_max_chars 의 정의, spec 264줄 · 코드 검토 I-2).
+ * 런타임 자르기 · 표본 도구의 '글자 수 잘림' 표지 · 시드 대신 줄 검사가 이 셈 하나를 쓴다(코드 검토 묶음 4-가 M-2).
+ */
+export const koReplyCharsOf = (text: string) =>
+  [...text.replace(WHITESPACE_RUN, "")].length;
 
 function readSetting<T>(
   read: (key: string) => unknown,
