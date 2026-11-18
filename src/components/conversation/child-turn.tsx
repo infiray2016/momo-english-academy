@@ -1032,6 +1032,11 @@ export function ChildTurn(props: ChildTurnProps) {
     setKoTipOn(true);
     ko.onTipShown?.();
   }, [ko !== undefined]);
+  /**
+   * 이어진 한국어 듣기 실패 수(누를 때 틀의 값으로 맞추고 걸음마다 바로 고친다 — 회복은 같은 처리 안에서 다시 불러 그린 때의 값을 쥐고 있으므로, 코드
+   * 검토 rev-b5a I-1).
+   */
+  const koFailsNow = useRef(0);
 
   /** 한국어 듣기 하나. auto 는 버리는 듣기의 마이크 안 잡힘 회복(같은 언어로 누름 없이 다시 듣는다). */
   async function koSpeak(auto = false) {
@@ -1042,6 +1047,7 @@ export function ChildTurn(props: ChildTurnProps) {
       return;
     }
     const discard = props.discard;
+    if (!auto) koFailsNow.current = ko.fails;
     if (!auto) {
       setKoTipOn(false);
       speech.unlockFromGesture();
@@ -1076,7 +1082,8 @@ export function ChildTurn(props: ChildTurnProps) {
     setKoListening(false);
     props.onListening(false);
     const end = koListenEndOf(outcome);
-    const step = koFailStepOf(ko.fails, end.kind, ko.failHideAfter);
+    const step = koFailStepOf(koFailsNow.current, end.kind, ko.failHideAfter);
+    koFailsNow.current = step.fails;
     ko.onFails(step.fails, step.hide);
     if (step.hide) {
       // 합친 안내 한 줄을 아이의 다음 누름까지 남기고 그 수업 동안 단추를 숨긴다(설계 3 표 · [N-3])
@@ -1163,8 +1170,9 @@ export function ChildTurn(props: ChildTurnProps) {
       type="button"
       data-hint-listen=""
       aria-label={CHILD_TURN_TEXT.listenHint}
-      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행(분석 A2 · N3))
-      disabled={listening}
+      // 듣는 동안은 끈다(누르면 듣기가 안내 없이 끝남 — 7절 말하기 버튼 행(분석 A2 · N3)). 한국어 질문 처리 중(보냄 · 기다림 · 표현 답의 쉼)도
+      // 끈다 — 누르면 읽기 줄이 걸어 둔 표현을 지운다(코드 검토 rev-b5a I-2)
+      disabled={listening || koBusy}
       onClick={() => {
         props.onInput?.("hint_listen");
         listenHint({
@@ -1452,6 +1460,8 @@ export function ChildTurn(props: ChildTurnProps) {
                   <button
                     type="button"
                     data-ko-ask=""
+                    // 영어 듣기 · 영어 인식 확인 동안은 누를 수 없다(AC-N28). 버리는 듣기 기기는 누름이 진짜를 기다리는 '준비 중이에요'와 회복 동안도
+                    // 영어 듣기다(listening 은 진짜가 열린 뒤에야 참 — 코드 검토 rev-b5a I-5)
                     disabled={
                       !speech ||
                       moving ||
@@ -1459,7 +1469,9 @@ export function ChildTurn(props: ChildTurnProps) {
                       koListening ||
                       koConfirm !== null ||
                       listening ||
-                      confirm !== null
+                      confirm !== null ||
+                      props.discard?.view.waiting === true ||
+                      props.discard?.view.recovering === true
                     }
                     onClick={() => void koSpeak()}
                     className={cn(

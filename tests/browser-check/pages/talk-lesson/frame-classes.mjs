@@ -40,5 +40,6 @@ export const FRAME_EFFECT_TEXTS = [
   'viewport.addEventListener("resize", keep);',
   "}, [keepActive, fitOnly, fitLandscape, phase, stage, turnKey]);",
   "const fitOnly =\n    panelOpen && !keepActive && lessonFitOnlyOf({ inPrep, phase });",
-  "const fitLandscape = lessonFitLandscapeOf({ wrapShown, phase });",
+  // 한국어로 묻는 수업은 가로의 대화 장면도 맞춘다(b5-fix1 — 이 쪽은 한국어 단추가 없는 수업이라 쪽은 { wrapShown, phase } 그대로)
+  "const fitLandscape = lessonFitLandscapeOf({\n    wrapShown,\n    phase,\n    koAsk: koSet.on,\n  });",
 ];

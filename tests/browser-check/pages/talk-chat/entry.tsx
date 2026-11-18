@@ -602,10 +602,14 @@ function viewOf(): TalkLessonView {
     homophones: [],
     lemmaEntries: [],
     friendship: { value: 1, max: 10 },
+    // 이어 열 때 되살릴 한국어 문답(묶음 5-나 — 이 쪽은 처음 여는 수업이라 없음)
+    koHelps: [],
     noticesSeen: {
       talk_intro: true,
       talk_hint_nudge: true,
       talk_answer_tip: true,
+      // 첫 안내 '모르는 말은 한국어로 물어봐요'(묶음 5-나)는 본 것으로 연다 — 장면의 배치를 그 앞 판과 같게
+      talk_ko_ask_tip: true,
     },
     resting: false,
     teacher: TEACHER,

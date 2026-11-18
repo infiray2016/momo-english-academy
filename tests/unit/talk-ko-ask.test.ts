@@ -2,7 +2,22 @@
 // 한국어 듣기의 결과 가운데 영어 셈 기계(judge · onSpeech)로 가는 것은 '마이크를 쓸 수 없음'과 network 뿐이고, 나머지는 화면이 따로 세어
 // 문턱에 닿으면 단추를 숨긴다. 합친 안내는 힌트 단추와 남은 단으로 고르고, 답의 소리는 1~3단계 표현 답만 쉰 뒤 읽으며 그 소리가 시작한 뒤에
 // 아이 차례를 연다. 도움이 없는 턴의 요청에는 koHelp 칸이 없다.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// 틀의 순수 판정(소리 끝 · 보는 창 지키기)을 가져오려고 조각의 서버 · 기기 의존을 비운다(discard-screen.test.ts 와 같은 꼴)
+vi.mock("client-only", () => ({}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({}) }));
+vi.mock("@/server/actions/conversation", () => ({}));
+vi.mock("@/server/actions/session", () => ({}));
+vi.mock("@/server/actions/first-run", () => ({}));
+
+import {
+  lessonKeepInViewOf,
+  type TalkSoundEndAt,
+  talkSoundEndDue,
+  talkSoundEndSceneOf,
+} from "@/components/conversation/talk-frame";
+import { lessonFitLandscapeOf } from "@/components/conversation/talk-log";
 import {
   KO_ASK_NOTICE,
   KO_ASK_TIP,
@@ -14,6 +29,7 @@ import {
   koHelpTurnPartOf,
   koListenEndOf,
   koResumeOf,
+  koSoundDroppedOf,
   koTaughtOf,
   koTipShownOf,
 } from "@/core/conversation/ko-ask";
@@ -307,5 +323,115 @@ describe("AC-25o 되묻는 차례 뒤 이어받은 차례의 '알려 준 말 듣
     expect(
       koCarrySoundsOf([{ turnNo: 4, seq: 1 }], known, { lowBand: false }),
     ).toEqual([]);
+  });
+});
+
+// ── 화면 고침 b5-fix1(코드 검토 rev-b5a I-2 · I-7, 13절 C226 (4)) ──
+
+describe("AC-25e 쉼 동안 소리 끝 입력 없음 [N-2] — 한국어 처리 중(ko_help)은 소리 끝을 알리지 않고, 표현 소리가 시작해 아이 차례로 돌린 뒤 줄이 비면 한 번", () => {
+  /** 그림 차례를 돌려 소리 끝을 부른 그림 번호를 모은다(틀의 effect 와 같은 꼴). */
+  const dues = (
+    frames: readonly { phase: "child" | "ko_help"; speaking: boolean }[],
+  ) => {
+    let prev: TalkSoundEndAt | undefined;
+    const out: number[] = [];
+    frames.forEach((f, i) => {
+      const next = {
+        scene: talkSoundEndSceneOf({
+          stage: "talk",
+          phase: f.phase,
+          away: false,
+        }),
+        speaking: f.speaking,
+      };
+      if (talkSoundEndDue(prev, next)) out.push(i);
+      prev = next;
+    });
+    return out;
+  };
+  it("아이 차례(줄 빔) → 질문 보냄 · 기다림 → 답의 쉼(줄은 읽는 중) → 소리 시작으로 아이 차례(읽는 중) → 줄 빔: 소리 끝은 처음과 마지막에만", () => {
+    expect(
+      dues([
+        { phase: "child", speaking: false }, // 아이 차례가 열림(앞 차례의 소리 끝)
+        { phase: "ko_help", speaking: false }, // 보냄 · 기다림
+        { phase: "ko_help", speaking: true }, // 답의 쉼(ko_ask_sound_pause_ms — 줄은 읽는 중)
+        { phase: "child", speaking: true }, // 소리 시작 알림으로 아이 차례
+        { phase: "child", speaking: false }, // 표현을 다 읽음
+      ]),
+    ).toEqual([0, 4]);
+  });
+  it("쉼 동안에는 줄이 읽는 중이라 차례가 바뀌어도 소리 끝이 나가지 않는다", () => {
+    expect(
+      dues([
+        { phase: "ko_help", speaking: false },
+        { phase: "ko_help", speaking: true },
+        { phase: "ko_help", speaking: true },
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe("AC-25b 표현 답의 소리가 시작하기 전에 줄이 비면 들려주지 못함으로 보고 아이 차례를 연다(코드 검토 rev-b5a I-2 (나))", () => {
+  const waiting = { waitOpen: true, started: false, failed: false };
+  it("답을 받아 소리를 기다리는데 줄이 멈췄으면(쉬는 중 줄을 비움 · 음성 접점 없음) 참", () => {
+    expect(
+      koSoundDroppedOf({ waiting: true, speaking: false, sound: waiting }),
+    ).toBe(true);
+  });
+  it("쉬는 중 · 읽는 중이거나, 질문 요청이 아직 나가 있거나, 기다릴 소리가 없으면 거짓", () => {
+    expect(
+      koSoundDroppedOf({ waiting: true, speaking: true, sound: waiting }),
+    ).toBe(false);
+    expect(
+      koSoundDroppedOf({ waiting: false, speaking: false, sound: waiting }),
+    ).toBe(false);
+    expect(
+      koSoundDroppedOf({ waiting: true, speaking: false, sound: undefined }),
+    ).toBe(false);
+  });
+  it("이미 시작했거나 들려주지 못함이 왔거나 기다리지 않는 답(4단계부터)이면 거짓 — 차례는 이미 열렸다", () => {
+    for (const sound of [
+      { ...waiting, started: true },
+      { ...waiting, failed: true },
+      { ...waiting, waitOpen: false },
+    ])
+      expect(
+        koSoundDroppedOf({ waiting: true, speaking: false, sound }),
+        JSON.stringify(sound),
+      ).toBe(false);
+  });
+});
+
+describe("AC-25a 한국어로 묻는 수업의 가로 화면 — 대화 장면도 기록 칸 높이를 남는 높이에 맞추고, 한국어 처리 중도 단추를 화면 안에 둔다(13절 C226 (4) · b5-fix1)", () => {
+  it("한국어로 묻는 수업은 아이 차례 · 한국어 처리 중 · 선생님 차례에서 가로도 맞춘다", () => {
+    for (const phase of ["child", "ko_help", "tori", "moving"])
+      expect(
+        lessonFitLandscapeOf({ wrapShown: false, phase, koAsk: true }),
+        phase,
+      ).toBe(true);
+    for (const phase of ["prep", "break", "closed", "offline", "failed"])
+      expect(
+        lessonFitLandscapeOf({ wrapShown: false, phase, koAsk: true }),
+        phase,
+      ).toBe(false);
+  });
+  it("AC-N26 한국어로 묻지 않는 수업은 그대로다(가로의 대화 장면은 맞추지 않음)", () => {
+    for (const phase of ["child", "tori", "moving"]) {
+      expect(lessonFitLandscapeOf({ wrapShown: false, phase }), phase).toBe(
+        false,
+      );
+      expect(
+        lessonFitLandscapeOf({ wrapShown: false, phase, koAsk: false }),
+        phase,
+      ).toBe(false);
+    }
+  });
+  it("한국어 처리 중(ko_help)도 으뜸 단추 줄을 보는 창 안에 둘 차례다(짧은 준비 쪽지 안은 아님)", () => {
+    expect(
+      lessonKeepInViewOf({ wrapShown: false, inPrep: false, phase: "ko_help" }),
+    ).toBe(true);
+    expect(
+      lessonKeepInViewOf({ wrapShown: false, inPrep: true, phase: "ko_help" }),
+    ).toBe(false);
   });
 });

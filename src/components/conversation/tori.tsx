@@ -331,7 +331,9 @@ export type SpeakItem = {
    */
   pauseMs?: number;
   /** 한국어 도움 답의 소리(틀이 시작 · 결과를 따로 듣는다 — 말풍선의 소리 줄 · '글로 봐요' 셈에 넣지 않는다). */
-  ko?: "taught_low" | "taught" | "line";
+  ko?: "taught_low" | "taught";
+  /** 한국어 도움 답의 열쇠(차례 번호:순번 — 틀이 시작 · 결과를 글자가 아니라 이 열쇠로 그 도움에 짝짓는다, 코드 검토 rev-b5a I-6). */
+  koKey?: string;
 };
 
 /**

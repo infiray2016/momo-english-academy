@@ -119,6 +119,29 @@ async function fitOf(p, view, { needKo = true, needLine = false } = {}) {
   };
 }
 
+/**
+ * 쪽 넘침 · 위 띠(b5-fix1, 13절 C226 (4)): 쪽 높이가 보는 창을 넘는 몫(1px 여유)과 쪽 넘김, 위 띠('그만하기' · '홈'이 있는 수업 제목 띠)가 보는 창
+ * 안인가. 가로로 연 수업의 쪽 넘김 0 · 위 띠 보임(talk-lesson-land)과 같은 잣대다.
+ */
+async function pageOf(p, view) {
+  const m = await p.evaluate(() => {
+    const band = document.querySelector("[data-paper-band]");
+    const r = band?.getBoundingClientRect();
+    return {
+      over: document.scrollingElement.scrollHeight - window.innerHeight,
+      scrollY: window.scrollY,
+      band: r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null,
+    };
+  });
+  const bandIn = inside(m.band, view);
+  return {
+    // 쪽 넘침 = 쪽이 넘겨져 있음(쪽 넘김, talk-lesson-land 와 같은 잣대). 쪽 높이가 보는 창보다 큰 몫(빈 알림 줄 자리 · 아래 여백)은 참고로만 적는다 —
+    // 한국어 단추를 끈 수업도 세로에서 그 몫이 있다
+    ok: m.scrollY <= 1 && bandIn,
+    detail: `쪽 넘김 ${Math.round(m.scrollY)} · 위 띠 ${fmt(m.band)}${bandIn ? "" : "(밖)"} · (참고) 쪽 높이 − 보는 창 ${Math.round(m.over)}`,
+  };
+}
+
 async function shot(p, browserName, name) {
   const path = join(SHOTS, `${browserName}-${name}.png`);
   await p.screenshot({ path });
@@ -157,6 +180,7 @@ async function askKo(p, browserName, tag, view) {
     lang: await p.evaluate(() => window.__fakeSpeech?.langs.at(-1) ?? null),
   };
   listening.fit = view ? await fitOf(p, view, { needLine: true }) : null;
+  listening.page = view ? await pageOf(p, view) : null;
   if (tag) listening.shot = await shot(p, browserName, `${tag}-2-ko-listening`);
   const confirmed = await until(
     p,
@@ -170,6 +194,7 @@ async function askKo(p, browserName, tag, view) {
     again: await p.locator("[data-ko-again]").count(),
     send: await p.locator("[data-ko-send]").count(),
   };
+  confirm.page = view ? await pageOf(p, view) : null;
   if (tag) confirm.shot = await shot(p, browserName, `${tag}-3-ko-confirm`);
   return { listening, confirm };
 }
@@ -280,6 +305,12 @@ async function lowFlow(browser, url, browserName, check, { view, pairs, tag }) {
       look?.koText.includes("한국어로 물어보기"),
     `말하기 ${fmt(speak)} · 한국어 ${fmt(ko)} · 묶음 너비 ${Math.round(stack?.width ?? 0)} · 사이 ${gap === null ? "-" : Math.round(gap)} · 테 ${look?.speakBorder}/${look?.koBorder} · 바탕 ${look?.speakBg}/${look?.koBg} · 표지 ${look?.mark} · 글 '${look?.koText}'`,
   );
+  const startPage = await pageOf(p, view);
+  check(
+    `${where} · 처음: 쪽 넘침 0 · 위 띠가 화면 안`,
+    startPage.ok,
+    startPage.detail,
+  );
   const startShot = await shot(p, browserName, `${tag}-1-start`);
 
   const { listening, confirm } = await askKo(p, browserName, tag, view);
@@ -297,6 +328,16 @@ async function lowFlow(browser, url, browserName, check, { view, pairs, tag }) {
     `${where} · 한국어 듣는 중: 네 단추와 안내 줄이 화면 안`,
     listenFit.ok,
     listenFit.detail,
+  );
+  check(
+    `${where} · 한국어 듣는 중: 쪽 넘침 0 · 위 띠가 화면 안`,
+    listening.page.ok,
+    listening.page.detail,
+  );
+  check(
+    `${where} · 인식 확인: 쪽 넘침 0 · 위 띠가 화면 안`,
+    confirm.page.ok,
+    confirm.page.detail,
   );
   check(
     `${where} · 인식 확인: 한국어 글 · '다시 말하기' · '보내기'`,
@@ -331,6 +372,12 @@ async function lowFlow(browser, url, browserName, check, { view, pairs, tag }) {
   );
   const helpFit = await fitOf(p, view);
   check(`${where} · 답 뒤: 네 단추가 화면 안`, helpFit.ok, helpFit.detail);
+  const helpPage = await pageOf(p, view);
+  check(
+    `${where} · 도움 말풍선: 쪽 넘침 0 · 위 띠가 화면 안`,
+    helpPage.ok,
+    helpPage.detail,
+  );
 
   // (다) 둘째 질문은 꺼짐 — 단추가 사라지고 합친 안내
   const second = await askKo(p, browserName, null);
@@ -396,6 +443,126 @@ async function oneAsk(
   const errors = (await recordOf(p)).pageErrors;
   await p.context().close();
   return { opened, confirm, sent, help, fit, path, koHelpPart, errors };
+}
+
+/** 한국어 질문을 보내고(기다림에 들어간 뒤) 돌아온다 — 기다리는 동안의 누름을 보는 장면들이 쓴다. */
+async function askAndSend(p) {
+  const { confirm } = await askKo(p, null, null);
+  if (!confirm.shown) return false;
+  await p.locator("[data-ko-send]").click();
+  await advance(p, 300);
+  return true;
+}
+
+const enabledOf = async (p, s) => (await disabledOf(p, s)) === false;
+
+/** I-4: 답을 기다리는 동안 '그만하기'를 누르면 정리로 가고, 늦게 온 답은 그리지도 읽지도 않는다. */
+async function stopWhileWaiting(browser, url, check) {
+  const p = await openChat(browser, url, {
+    viewport: PORTRAIT,
+    config: {
+      wrap: { words: [] },
+      recognitions: [KO_RECOGNITION],
+      koHelps: [{ delayMs: 4000 }],
+    },
+  });
+  await untilChild(p);
+  const sent = await askAndSend(p);
+  const waiting = await phaseOf(p);
+  await p.locator("[data-paper-band] [data-talk-stop]").click();
+  await advance(p, 6000);
+  const help = await helpOf(p);
+  const errors = (await recordOf(p)).pageErrors;
+  const koCalls = await p.evaluate(() => window.__chat.koCalls.length);
+  const wrapped = await p.evaluate(
+    () =>
+      document.querySelector("[data-talk-panel]") === null ||
+      document.querySelector("[data-wrap-log], [data-talk-wrap]") !== null,
+  );
+  check(
+    "기다리는 동안 '그만하기' → 늦게 온 답이 그려지지도 읽히지도 않음(I-4)",
+    sent &&
+      waiting === "ko_help" &&
+      koCalls === 1 &&
+      !help.has &&
+      !help.spoken.includes(TAUGHT) &&
+      errors.length === 0,
+    `보냄 ${sent} · 기다림 차례 ${waiting} · 질문 요청 ${koCalls} · 정리로 감 ${wrapped} · 곁 말풍선 ${help.has} · 읽은 것에 표현 ${help.spoken.includes(TAUGHT)} · 쪽 오류 ${errors.join(" | ")}`,
+  );
+  await p.context().close();
+}
+
+/** I-3: 응답이 stale 이면 아이 차례로 돌아오고(단추가 꺼진 채 남지 않음) 화면 자료를 새로 읽는다. */
+async function staleReply(browser, url, check) {
+  const p = await openChat(browser, url, {
+    viewport: PORTRAIT,
+    config: {
+      recognitions: [KO_RECOGNITION],
+      koHelps: [{ reply: { t: "stale" } }],
+    },
+  });
+  await untilChild(p);
+  const sent = await askAndSend(p);
+  const back = await until(p, async () => (await phaseOf(p)) === "child");
+  await advance(p, 300);
+  const speakOn = await enabledOf(p, SEL.speak);
+  const koOn = await enabledOf(p, SEL.ko);
+  const dontKnowOn = await enabledOf(p, SEL.dontKnow);
+  const refresh = await p.evaluate(() => window.__chat.router.refresh);
+  check(
+    "응답 stale → 아이 차례로 돌아오고 '말하기' · '한국어로 물어보기' · '잘 모르겠어요'가 켜짐 · 새로 읽음(I-3)",
+    sent && back && speakOn && koOn && dontKnowOn && refresh >= 1,
+    `보냄 ${sent} · 돌아옴 ${back} · 말하기 ${speakOn} · 한국어 ${koOn} · 잘 모르겠어요 ${dontKnowOn} · 새로 읽음 ${refresh}`,
+  );
+  await p.context().close();
+}
+
+/** I-6: 한 차례에 두 번 물으면 두 곁 말풍선의 '알려 준 말 듣기'가 저마다 제 표현을 읽고, 다음 턴 본문에 두 도움의 다시 들은 수가 실린다. */
+async function twoAsks(browser, url, check) {
+  const FISH = "I like fish.";
+  const p = await openChat(browser, url, {
+    viewport: PORTRAIT,
+    config: {
+      recognitions: [KO_RECOGNITION, KO_RECOGNITION, EN_RECOGNITION],
+      koHelps: [{}, { reply: { t: "ok", help: { teachEn: FISH } } }],
+    },
+  });
+  await untilChild(p);
+  for (let i = 0; i < 2; i++) {
+    await askAndSend(p);
+    await until(p, async () => (await phaseOf(p)) === "child");
+    await advance(p, 1500);
+  }
+  const spokenAt = async () =>
+    p.evaluate(() => [...(window.__fakeSpeech?.spoken ?? [])]);
+  const replays = p.locator("[data-ko-replay]");
+  const count = await replays.count();
+  const heard = [];
+  for (let i = 0; i < Math.min(count, 2); i++) {
+    const before = (await spokenAt()).length;
+    await replays.nth(i).click();
+    await advance(p, 1500);
+    heard.push((await spokenAt()).slice(before).join(" / "));
+  }
+  await p.locator(SEL.speak).click();
+  await until(
+    p,
+    async () => (await recordOf(p)).requests.some((b) => b.input !== undefined),
+    6000,
+  );
+  const req = (await recordOf(p)).requests.find((b) => b.input !== undefined);
+  const koHelp = req?.koHelp ?? [];
+  check(
+    "한 차례에 두 번 물음 → 두 '알려 준 말 듣기'가 저마다 제 표현을 읽고 다음 턴에 두 도움의 다시 들은 수(I-6)",
+    count === 2 &&
+      heard[0]?.includes(TAUGHT) &&
+      !heard[0]?.includes(FISH) &&
+      heard[1]?.includes(FISH) &&
+      koHelp.length === 2 &&
+      koHelp.every((h) => h.replays === 1),
+    `듣기 단추 ${count} · 첫째 누름에 읽음 '${heard[0]}' · 둘째 '${heard[1]}' · 다음 턴 koHelp ${JSON.stringify(koHelp)}`,
+  );
+  await p.context().close();
 }
 
 export async function run({ browserType, browserName, url, check, log }) {
@@ -468,6 +635,10 @@ export async function run({ browserType, browserName, url, check, log }) {
       );
       log(`4단계 ${name} 답 뒤 영어 턴 요청의 koHelp: ${r.koHelpPart}`);
     }
+    // 기다리는 동안 · 응답 갈래 · 두 번 물음(b5-fix1 — 코드 검토 rev-b5a I-3 · I-4 · I-6)
+    await stopWhileWaiting(browser, url, check);
+    await staleReply(browser, url, check);
+    await twoAsks(browser, url, check);
     // (참고) 한국어 단추가 있는 수업과 끈 수업(talk.ko_ask_mode off)의 처음 쪽 넘김 · 위 띠('그만하기') 자리 — 판정 아님, 화면 검토 자료
     for (const [view, name] of [
       [PORTRAIT, "portrait"],
@@ -481,6 +652,11 @@ export async function run({ browserType, browserName, url, check, log }) {
         });
         await untilChild(p);
         const scrollY = await p.evaluate(() => Math.round(window.scrollY));
+        const over = await p.evaluate(() =>
+          Math.round(
+            document.scrollingElement.scrollHeight - window.innerHeight,
+          ),
+        );
         const stop = await p
           .getByRole("button", { name: "그만하기" })
           .boundingBox()
@@ -489,7 +665,7 @@ export async function run({ browserType, browserName, url, check, log }) {
         if (mode === "off")
           shots.push(await shot(p, browserName, `ko-off-${name}-start`));
         seen.push(
-          `${mode}: 한국어 단추 ${ko} · 쪽 넘김 ${scrollY} · 그만하기 ${fmt(stop)}`,
+          `${mode}: 한국어 단추 ${ko} · 쪽 넘김 ${scrollY} · 쪽 높이 − 보는 창 ${over} · 그만하기 ${fmt(stop)}`,
         );
         await p.context().close();
       }

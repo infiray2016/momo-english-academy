@@ -312,11 +312,25 @@ export function pageZoomedOf(scale: number): boolean {
 export function lessonFitLandscapeOf({
   wrapShown,
   phase,
+  koAsk = false,
 }: {
   wrapShown: boolean;
   phase: string;
+  /**
+   * 한국어로 물어볼 수 있는 수업인가(talk.ko_ask_mode 가 켜진 수업 — 한국어 질문 화면 고침 b5-fix1, 13절 C226 (4)): '말하기' 아래 '한국어로 물어보기'가
+   * 더해져 가로에서도 아래 조각이 크므로, 대화 장면(아이 차례 · 한국어 처리 중 · 선생님 차례)도 칸 높이를 남는 높이에 맞춘다(쪽을 넘기지 않아 위 띠가
+   * 화면 안). 없으면 거짓 — 한국어로 묻지 않는 수업은 지금 그대로다(AC-N26).
+   */
+  koAsk?: boolean;
 }): boolean {
-  return wrapShown || phase === "choice";
+  if (wrapShown || phase === "choice") return true;
+  return (
+    koAsk &&
+    (phase === "child" ||
+      phase === "ko_help" ||
+      phase === "tori" ||
+      phase === "moving")
+  );
 }
 
 /**

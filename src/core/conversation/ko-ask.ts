@@ -252,6 +252,27 @@ export function koChildOpenOf({
   return !waitOpen || started || failed;
 }
 
+/**
+ * 걸어 둔 표현 답의 소리가 시작하기 전에 읽기 줄이 비었는가(순수, 코드 검토 rev-b5a I-2 (나)): 답을 받아 그 소리를 기다리는 동안(질문을 보내는 중이
+ * 아님) 줄이 멈췄는데 시작 알림도 결과도 오지 않은 때다(쉬는 중 줄을 비움 · 음성 접점이 없음). 그러면 '들려주지 못함'으로 보고 아이 차례를 연다 —
+ * 단추가 모두 꺼진 채 남지 않게.
+ */
+export function koSoundDroppedOf({
+  waiting,
+  speaking,
+  sound,
+}: {
+  /** 한국어 처리 중이고 질문 요청은 끝났다(답의 소리를 기다림). */
+  waiting: boolean;
+  /** 읽기 줄이 읽는 중 · 쉬는 중인가. */
+  speaking: boolean;
+  /** 지금 걸어 둔 답의 소리(없으면 기다릴 소리가 없음). */
+  sound: { waitOpen: boolean; started: boolean; failed: boolean } | undefined;
+}): boolean {
+  if (!waiting || speaking || sound === undefined) return false;
+  return !koChildOpenOf(sound);
+}
+
 /** 다음 영어 턴 요청에 싣는 도움 하나(plan 접점 마 — 들었는가 · '알려 준 말 듣기'로 다시 들은 수). */
 export type KoHelpTurnEntry = {
   turnNo: number;
