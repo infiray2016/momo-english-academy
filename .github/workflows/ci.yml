@@ -69,7 +69,7 @@ jobs:
   e2e: # P2b 가 켰다(가짜 음성 e2e, 다-2). Playwright 가 스스로 빌드하고 띄운다(playwright.config.ts webServer)
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 70 # 실측 38.3분(2026-11-15, 228건) → 45분 제한에 끊김(11-16, 231건 · 160건까지 실패 0). 시험이 늘어 넉넉히(검토 I-2 의 21~27분은 옛 값)
+    timeout-minutes: 100 # 실측 38.3분(2026-11-15, 228건) → 45분 제한에 끊김(11-16, 231건 · 160건까지 실패 0) → 54.1분(11-18, 238건). 설치가 느린 날(위 25분)까지 넣어 넉넉히(검토 I-2 의 21~27분은 옛 값)
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
@@ -79,7 +79,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps webkit
-        timeout-minutes: 12 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 일찍 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토)
+        timeout-minutes: 25 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토). 2026-11-18 에는 멈춘 것이 아니라 우분투 꾸러미 받기가 느려 12.2분에서 끊겼다(하루 네 번 가운데 세 번) → 12 → 25
       - run: pnpm e2e
         env:
           E2E_PHOTOS: "1" # 화면 검토 사진(tests/e2e/photos.ts) — 이 Mac 은 로컬 e2e 를 못 돌려 CI 에서 받는다(P11 차례 2)
@@ -103,7 +103,7 @@ jobs:
   e2e-local: # P5b. 로컬 전용 시드 보기 화면(next dev)을 시험용 시드 나무로 연다. API 0회
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.e2e) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && (github.event.action != 'labeled' || github.event.label.name == 'e2e')) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40 # 설치가 느린 날(아래 25분)까지 넣는다(2026-11-18, 20 → 40)
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6 # 판은 package.json 의 packageManager 에서 읽는다
@@ -113,5 +113,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps webkit
-        timeout-minutes: 12 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 일찍 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토)
+        timeout-minutes: 25 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토). 2026-11-18 에는 멈춘 것이 아니라 우분투 꾸러미 받기가 느려 12.2분에서 끊겼다(하루 네 번 가운데 세 번) → 12 → 25
       - run: pnpm e2e:local
