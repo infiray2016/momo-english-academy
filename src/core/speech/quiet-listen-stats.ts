@@ -26,10 +26,10 @@ import type {
 } from "@/core/conversation/client-listen";
 import { TALK_LOG_SEGMENTS } from "@/core/conversation/log";
 
-/** 집계가 읽는 듣기 요약 칸(결과 종류 · 그 앞 버림 · 인식기 칸). */
+/** 집계가 읽는 듣기 요약 칸(결과 종류 · 그 앞 버림 · 인식기 칸 · 듣기 언어). */
 export type QuietStatsListen = Pick<
   ClientListenEntry,
-  "o" | "dc" | "cf" | "na" | "int" | "mx"
+  "o" | "dc" | "cf" | "na" | "int" | "mx" | "lg"
 >;
 
 /** 집계가 읽는 행 칸(talk_turns 의 화자 · 토막 · 입력 방식 · '모름' 출처 · client_listen.listens). 글 칸은 없다. */
@@ -238,7 +238,9 @@ export function quietListenStatsOf(
     rows.forEach((row, i) => {
       if (row.speaker !== "child" || !DIALOGUE_SEGMENTS.has(row.segment))
         return;
-      const listens = row.listens ?? [];
+      // 한국어 질문 듣기(언어 칸 lg 가 있는 듣기)는 영어 듣기의 집계에 넣지 않는다 — 첫 진짜로도 세지 않는다(수업 안 한국어로 묻기 코드 검토 묶음 3 O-2).
+      // lg 가 없는 행(영어 듣기 · 옛 기록)은 그대로다.
+      const listens = (row.listens ?? []).filter((l) => l.lg === undefined);
       for (const l of listens) {
         if (l.o === "result") recognizer.results += 1;
         if (

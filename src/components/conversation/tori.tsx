@@ -321,7 +321,18 @@ export type SpeakWhat = ClientSpeakEntry["w"];
  * 읽기 줄 한 항목: 읽을 글과 무엇을 읽는지(감시 기록용). 글만 넘기면 선생님 말(tori)이다. line 은 지금 말풍선 줄 차례(소리 줄을 들려줬는지
  * 되찾는 열쇠 — fix 1 M-5, playedSoundsOf).
  */
-export type SpeakItem = { text: string; w: SpeakWhat; line?: number };
+export type SpeakItem = {
+  text: string;
+  w: SpeakWhat;
+  line?: number;
+  /**
+   * 이 항목을 읽기 전에 더 쉴 ms(수업 안 한국어로 묻기 정한 것 11 · [N-2] — 1~3단계 표현 답의 talk.ko_ask_sound_pause_ms). 문장 사이 쉼과
+   * 같은 꼴이라 쉬는 동안에도 줄은 읽는 중이다(틀의 소리 끝 판정이 나가지 않는다). 없으면 지금 그대로다.
+   */
+  pauseMs?: number;
+  /** 한국어 도움 답의 소리(틀이 시작 · 결과를 따로 듣는다 — 말풍선의 소리 줄 · '글로 봐요' 셈에 넣지 않는다). */
+  ko?: "taught_low" | "taught" | "line";
+};
 
 /**
  * 1~3단계 소리 줄(서버 TalkLessonLine 의 sound 와 같은 꼴). lead 는 새 엔진만 싣는 표지다(core lead-turn-core LeadSoundMark): ask 는 고르기
@@ -863,17 +874,22 @@ export function useSpeakQueue(
     pauseMs,
     englishName,
     onSpoken,
+    onStarted,
   }: {
     rate: number;
     pauseMs: number;
     englishName: string;
     /** 한 항목을 읽은 결과(묶음 10 — 감시 기록 sp · 들려주지 못함 셈은 틀이 speakHitchOf · soundTrackOf 로). */
     onSpoken?: (item: SpeakItem, outcome: SpeakOutcome) => void;
+    /** 한 항목의 소리가 시작한 때(음성 접점의 시작 알림 — 한국어 도움 답이 아이 차례를 여는 때, 정한 것 11). 없으면 부르지 않는다. */
+    onStarted?: (item: SpeakItem) => void;
   },
 ) {
   const queue = useRef<SpeakItem[]>([]);
   const spoken = useRef(onSpoken);
   spoken.current = onSpoken;
+  const startedRef = useRef(onStarted);
+  startedRef.current = onStarted;
   const generation = useRef(0);
   /** 늘 지금 음성 접점으로 읽는다(처리기가 보낸 때의 함수를 쥐고 있어도 — 재검토 N-1). */
   const port = useRef(speech);
@@ -894,16 +910,23 @@ export function useSpeakQueue(
     const mine = generation.current;
     while (queue.current.length > 0 && mine === generation.current) {
       const item = queue.current.shift() as SpeakItem;
-      const wait = pauseLeftMs({
-        endedAt: endedAt.current,
-        now: performance.now(),
-        pauseMs,
-      });
+      const wait = Math.max(
+        pauseLeftMs({
+          endedAt: endedAt.current,
+          now: performance.now(),
+          pauseMs,
+        }),
+        item.pauseMs ?? 0,
+      );
       if (!(await sleeper.sleep(wait)) || mine !== generation.current) return;
       const current = port.current;
       if (!current) break;
       const outcome = await current.speak(fillName(item.text, englishName), {
         rate,
+        // 시작 알림은 듣는 쪽이 있을 때만 건다(한국어로 묻지 않는 수업의 읽기는 지금 그대로)
+        ...(item.ko !== undefined && startedRef.current
+          ? { onStart: () => startedRef.current?.(item) }
+          : {}),
       });
       endedAt.current =
         outcome.kind === "ended" ? performance.now() : undefined;

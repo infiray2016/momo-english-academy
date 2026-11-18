@@ -11,6 +11,8 @@ import type {
 import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
 import type { ChatOpen } from "@/core/conversation/chat-turn-plan";
 import type { ClientListen } from "@/core/conversation/client-listen";
+import type { KoHelpTurnEntry } from "@/core/conversation/ko-ask";
+import type { TalkKoHelpView } from "@/core/conversation/ko-help";
 import type { RecognizerInfo } from "@/lib/speech/types";
 import type {
   TalkLessonLine,
@@ -44,6 +46,10 @@ export type TalkTurnBody = {
    * 다른 후보 글은 이 본문에만 싣고 화면 · 듣기 요약에는 남기지 않는다.
    */
   recognizer?: TalkRecognizerBody;
+  /**
+   * 그 아이 차례에서 받은 한국어 도움(수업 안 한국어로 묻기 plan 접점 마 — 도움이 있는 턴에만 칸이 있다, koHelpTurnPartOf). 서버의 풀기는 묶음 4-다 몫이다.
+   */
+  koHelp?: KoHelpTurnEntry[];
 };
 
 /** 턴 요청의 인식기 칸(서버 turn.ts recognizer — 확신 정도 · 다른 후보 · 중간 결과만). */
@@ -383,4 +389,61 @@ export async function sendTalkLessonTurnRetrying(
     (opts) => sendTalkLessonTurn(body, handlers, opts),
     deps,
   );
+}
+
+// ── 수업 안 한국어로 묻기의 한국어 질문 요청(plan 접점 다 · 묶음 4-나 끝점) ──
+
+export const TALK_KO_HELP_PATH = "/api/talk/ko-help";
+
+/** 한국어 질문 요청 본문(서버 KoHelpRequestSchema 와 같은 꼴). 같은 시도 id 로 다시 보내면 저장된 답을 받는다. */
+export type TalkKoHelpBody = {
+  sessionId: string;
+  clientAttemptId: string;
+  question: string;
+  hint: { opened: number };
+  clientListen?: ClientListen;
+};
+
+/** 응답 한 건(서버 KoHelpReply) 또는 연결이 끊김(offline) · 화면이 끊음(aborted). */
+export type TalkKoHelpResult =
+  | { t: "ok"; help: TalkKoHelpView }
+  | { t: "resting" }
+  | { t: "stale" }
+  | { t: "off" }
+  | { t: "error" }
+  | { t: "offline" }
+  | { t: "aborted" };
+
+const KO_HELP_REPLY_TAGS = new Set(["ok", "resting", "stale", "off", "error"]);
+
+/** 한국어 질문을 한 번 보낸다(JSON 한 번 — 흘려 받지 않는다). HTTP 오류 · 꼴이 틀린 응답은 error, 끊기면 offline. */
+export async function sendTalkKoHelp(
+  body: TalkKoHelpBody,
+  {
+    signal,
+    fetchImpl = fetch,
+  }: { signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
+): Promise<TalkKoHelpResult> {
+  let response: Response;
+  try {
+    response = await fetchImpl(TALK_KO_HELP_PATH, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      ...(signal ? { signal } : {}),
+    });
+  } catch {
+    return signal?.aborted ? { t: "aborted" } : { t: "offline" };
+  }
+  if (!response.ok) return { t: "error" };
+  try {
+    const value = (await response.json()) as { t?: unknown; help?: unknown };
+    if (typeof value?.t !== "string" || !KO_HELP_REPLY_TAGS.has(value.t))
+      return { t: "error" };
+    if (value.t === "ok" && (typeof value.help !== "object" || !value.help))
+      return { t: "error" };
+    return value as TalkKoHelpResult;
+  } catch {
+    return signal?.aborted ? { t: "aborted" } : { t: "offline" };
+  }
 }

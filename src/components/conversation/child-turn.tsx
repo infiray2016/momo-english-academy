@@ -45,6 +45,11 @@ import {
 } from "@/core/conversation/client-listen";
 import { OPEN_ALL_HINTS_FROM_DONT_KNOW } from "@/core/conversation/hints";
 import {
+  koAskNoticeOf,
+  koFailStepOf,
+  koListenEndOf,
+} from "@/core/conversation/ko-ask";
+import {
   confirmPlanOf,
   type TalkSpeechSettings,
   talkEndRuleFor,
@@ -54,6 +59,7 @@ import type { SpeechEvent, SpeechVerdict } from "@/core/speaking/judge";
 import { speechEventOf } from "@/core/speaking/judge";
 import type { DiscardView } from "@/core/speech/discard";
 import {
+  type EndRule,
   type ListenOutcome,
   NO_SPEECH_CODE,
   type SpeechSettings,
@@ -94,6 +100,12 @@ export const CHILD_TURN_TEXT = {
    * 사유로 다음 항목, 대화 차례는 '잘 모르겠어요'가 길이라 이 줄만 보인다.
    */
   micDeafSkip: "마이크가 계속 안 잡혀서 다음으로 넘어가요",
+  /** 수업 안 한국어로 묻기(plan '옮겨 적는 문구' · 정본 03 4절 '한국어로 물어보기' 행 — A2 '말하기' 아래 한 줄, C226). */
+  koAsk: "한국어로 물어보기",
+  /** 한국어 듣는 동안의 안내 줄(spec 설계 2 '누른 뒤'). */
+  koListening: "한국어로 물어보세요",
+  /** 단추의 언어 표지(동그라미 안 한 글자 — 표본 A2 · B1 의 잠정 꼴, 화면 검토에서 굳힘). 글자가 아니라 표지라 읽지 않는다. */
+  koMark: "가",
   /** 대화 차례에서 마이크 안 잡힘이 speech.deaf_skip_after 번 이어짐 — 넘어가지 않으므로 '잘 모르겠어요'로 안내한다(fix 3 · 정본 밖 문구). */
   micDeafStuck: "마이크가 계속 안 잡혀요. '잘 모르겠어요'를 눌러 넘어가 주세요",
   /** 버리는 듣기: 기다린 누름 · 회복으로 진짜가 열림 — 소리가 들어오면 지운다(iPad 버리는 듣기 spec 설계 3 · 정본 밖 문구). */
@@ -185,12 +197,21 @@ export function keepTurnInViewOf({
   on,
   discardLine,
   shortLine,
+  koLine,
 }: {
   on: boolean;
   discardLine: string | undefined;
   shortLine: object | undefined;
+  /**
+   * 한국어 안내 줄('한국어로 물어보세요' · 합친 안내 — 수업 안 한국어로 묻기 표본 보고 5절 2 · C226 (4)). 어느 기기든 그 줄이 보이면 옮긴다
+   * (가로 820 높이에서 누른 뒤 안내 줄이 화면 아래에 걸린다). 칸이 없으면 지금 그대로다.
+   */
+  koLine?: string | undefined;
 }): boolean {
-  return on && (discardLine !== undefined || shortLine !== undefined);
+  return (
+    (on && (discardLine !== undefined || shortLine !== undefined)) ||
+    koLine !== undefined
+  );
 }
 
 /** 아이 차례 듣기 하나의 끝(버리는 듣기가 다음에 할 일을 가르는 몫). */
@@ -246,6 +267,33 @@ export type ChildSend = {
   listenEndedAt: number;
   /** 이야기 방식: 후보 수를 넘긴 듣기의 인식기 칸(말 입력만 — spec 설계 11). 없으면 칸 없음. */
   recognizer?: TalkRecognizerBody;
+};
+
+/**
+ * 수업 안 한국어로 묻기의 아이 차례 몫(틀이 그 차례에 한국어 질문을 받을 때만 넘긴다 — 없으면 지금 그대로, AC-N26). 숨김 · 실패 셈 · 안내 줄은
+ * 수업 동안 이어지므로 틀이 가진다(아이 차례는 턴마다 새로 그려진다).
+ */
+export type ChildKoAsk = {
+  /** 한국어 질문 끝 규칙(koAskEndRuleOf — speech.lang_ko · speech.end_silence_seconds.ko_ask). */
+  rule: EndRule;
+  /** talk.ko_ask_confirm_seconds(ms) — 한국어 인식 글을 보이고 '다시 말하기' · '보내기'를 받는 시간. 1~3단계 바로 보냄은 쓰지 않는다. */
+  confirmMs: number;
+  /** talk.ko_ask_fail_hide_after. */
+  failHideAfter: number;
+  /** 그 수업 동안 단추를 숨김(실패 문턱 · 그 언어만 안 됨 · 꺼짐). */
+  hidden: boolean;
+  /** 그 수업의 이어진 한국어 듣기 실패 수. */
+  fails: number;
+  onFails: (fails: number, hide: boolean) => void;
+  /** 틀이 한국어 질문을 처리하는 중(보냄 · 기다림 · 1~3단계 표현 답의 쉼) — 그동안 모든 단추를 끈다. */
+  busy: boolean;
+  /** 안내 줄에 남긴 합친 안내(아이가 그 차례에서 '말하기' · '힌트' · '잘 모르겠어요'를 누를 때까지 — [N-3]). */
+  notice: string | undefined;
+  onNotice: (text: string | undefined) => void;
+  /** 이 차례에서 받은 도움의 가르친 표현(인식 확인의 들려준 답과 같이 견준다 — 맞으면 1~3단계 바로 보냄). */
+  taught: readonly string[];
+  /** 인식 확인을 지난 한국어 질문(보냄 · 연 힌트 단 수). */
+  onAsk: (ask: { question: string; hintOpened: number }) => void;
 };
 
 export type ChildTurnProps = {
@@ -306,6 +354,8 @@ export type ChildTurnProps = {
   onInput?: ((input: ChatQuietInput) => void) | undefined;
   /** 이야기 방식: 이어진 둘째 막힘으로 힌트 단이 저절로 열림(입력이 아님 — 조용함 타이머는 그대로 돈다). */
   onHintAutoOpen?: (() => void) | undefined;
+  /** 수업 안 한국어로 묻기(그 차례에 받을 때만). 없으면 지금 그대로다. */
+  koAsk?: ChildKoAsk | undefined;
 };
 
 /** 이야기 방식 힌트 단 하나 받기(틀이 서버 액션과 응답 읽기를 감싼다 — 실패도 응답 꼴로 돌려준다). */
@@ -630,6 +680,10 @@ export function ChildTurn(props: ChildTurnProps) {
     text: string;
     bigRetry: boolean;
   } | null>(null);
+  /** 지금 듣기가 한국어 질문 듣기인가 · 한국어 인식 확인 글(수업 안 한국어로 묻기). */
+  const [koListening, setKoListening] = useState(false);
+  const [koConfirm, setKoConfirm] = useState<string | null>(null);
+  const koConfirmTimer = useRef<number | undefined>(undefined);
   const handle = useRef<ListenHandle | undefined>(undefined);
   /** 아이 차례 칸 · 동작 줄(화면 안으로 옮김 — I-2). */
   const turnRef = useRef<HTMLDivElement>(null);
@@ -735,6 +789,7 @@ export function ChildTurn(props: ChildTurnProps) {
       handle.current?.cancel();
       window.clearTimeout(confirmTimer.current);
       window.clearTimeout(moveTimer.current);
+      window.clearTimeout(koConfirmTimer.current);
     },
     [],
   );
@@ -785,6 +840,9 @@ export function ChildTurn(props: ChildTurnProps) {
     // 조용함 타이머의 입력은 누름 처리의 첫 줄에서(막힌 누름도 — 회복 듣기는 누름이 아님)
     if (!auto) props.onInput?.("talk");
     if (!speech || sent.current || moving) return;
+    // 합친 안내는 아이의 다음 누름에 지운다(한국어로 묻기 [N-3])
+    if (!auto && props.koAsk?.notice !== undefined)
+      props.koAsk.onNotice(undefined);
     if (handle.current) {
       handle.current.press();
       return;
@@ -878,6 +936,8 @@ export function ChildTurn(props: ChildTurnProps) {
         heardAnswers: [
           ...(heard.twoAnswers ?? []),
           ...(heard.answerExample ? [heard.answerExample] : []),
+          // 한국어 도움에서 가르친 표현도 들려준 답과 같이 견준다(맞으면 1~3단계 바로 보냄 — 수업 안 한국어로 묻기 묶음 5)
+          ...(props.koAsk?.taught ?? []),
         ].map((t) => fillName(t, props.englishName)),
         matchPass: settings.hintReadMatch,
         homophones: props.homophones,
@@ -936,6 +996,116 @@ export function ChildTurn(props: ChildTurnProps) {
   }
 
   const showHint = hints.length > 0 || chatHint !== undefined;
+
+  // ── 수업 안 한국어로 묻기(spec 판 3 설계 2 · 3, plan 정한 것 3 · 12) ──
+  // 누른 그 한 번만 한국어로 듣는다(끝 규칙의 lang). 결과는 koListenEndOf 로 가르고, 영어 셈 기계(onSpeech)에는 '마이크를 쓸 수 없음' · network 만
+  // 넘긴다. 같은 질문 자리의 말소리 없음 셈 · 마이크 안 잡힘 이어짐(영어 차례의 셈)은 건드리지 않는다([N-5]).
+  const ko = props.koAsk;
+  /** 그 차례에 한국어로 물어볼 수 있는가(단추를 그린다). */
+  const koShown = ko !== undefined && !ko.hidden;
+
+  /** 한국어 듣기 하나. auto 는 버리는 듣기의 마이크 안 잡힘 회복(같은 언어로 누름 없이 다시 듣는다). */
+  async function koSpeak(auto = false) {
+    if (!auto) props.onInput?.("talk");
+    if (!ko || !speech || sent.current || moving || ko.busy) return;
+    if (handle.current) {
+      handle.current.press();
+      return;
+    }
+    const discard = props.discard;
+    if (!auto) {
+      speech.unlockFromGesture();
+      // 읽어 주는 중에 누르면 읽기를 멈추고 듣는다('말하기' 누름과 같은 누름 — spec 설계 3 차례 1)
+      props.onListenStart();
+    }
+    window.clearTimeout(koConfirmTimer.current);
+    setKoConfirm(null);
+    setMessage(undefined);
+    setAttemptSaid((c) => attemptSaidStep(c, { kind: "listen" }));
+    setSoundIn(false);
+    setKoListening(true);
+    const opened = () => {
+      setListening(true);
+      props.onListening(true);
+    };
+    const sound = () => setSoundIn(true);
+    let current: ListenHandle;
+    if (!discard) {
+      opened();
+      current = speech.listen(ko.rule, { sound });
+    } else if (auto) {
+      current = discard.listenAuto(ko.rule, { sound, started: opened });
+    } else {
+      current = speech.listen(ko.rule, { sound, started: opened });
+    }
+    handle.current = current;
+    const outcome = await current.outcome;
+    handle.current = undefined;
+    setListening(false);
+    setSoundIn(false);
+    setKoListening(false);
+    props.onListening(false);
+    const end = koListenEndOf(outcome);
+    const step = koFailStepOf(ko.fails, end.kind, ko.failHideAfter);
+    ko.onFails(step.fails, step.hide);
+    if (step.hide) {
+      // 합친 안내 한 줄을 아이의 다음 누름까지 남기고 그 수업 동안 단추를 숨긴다(설계 3 표 · [N-3])
+      setAttemptSaid((c) =>
+        end.kind === "not-heard" ? attemptSaidStep(c, { kind: "failed" }) : c,
+      );
+      ko.onNotice(
+        koAskNoticeOf({ hintButton: showHint, tiersLeft: !hintSpent }),
+      );
+      if (end.kind === "not-heard") discard?.again();
+      return;
+    }
+    switch (end.kind) {
+      case "heard":
+        setKoConfirm(end.text);
+        koConfirmTimer.current = window.setTimeout(
+          () => koSend(end.text),
+          ko.confirmMs,
+        );
+        return;
+      case "english": {
+        // '마이크를 쓸 수 없음' · network 는 7절 그대로(영어 셈 기계가 막힘 · 안내를 정한다)
+        const verdict = props.onSpeech(end.event);
+        if (verdict === "offline") setMessage(CHILD_TURN_TEXT.offline);
+        return;
+      }
+      case "not-heard":
+        setMessage(TEACHER_TEXT.notHeard(props.teacherName));
+        setAttemptSaid((c) => attemptSaidStep(c, { kind: "failed" }));
+        discard?.again();
+        return;
+      case "deaf":
+        // 켠 기기는 '잠깐만요, 마이크를 다시 켤게요'(층 view)와 같은 언어로 누름 없이 다시 듣는다. "'잘 모르겠어요'를 눌러 넘어가 주세요"는 쓰지 않는다
+        if (discard) void koSpeak(true);
+        else setMessage(CHILD_TURN_TEXT.micDeaf);
+        return;
+      default:
+        return;
+    }
+  }
+
+  /** 인식 확인을 지난 한국어 질문을 틀에 넘긴다(턴을 보내지 않는다 — 같은 질문 자리의 아이 차례가 이어진다). */
+  function koSend(question: string) {
+    window.clearTimeout(koConfirmTimer.current);
+    setKoConfirm(null);
+    setAttemptSaid(undefined);
+    if (!ko || sent.current) return;
+    ko.onAsk({
+      question,
+      hintOpened: chatHint ? chatHintOpenedOf(chatRef.current) : opened,
+    });
+  }
+
+  /** 합친 안내를 지운다(아이의 다음 누름 — '말하기' · '힌트' · '잘 모르겠어요'). */
+  function koNoticeClear() {
+    if (ko?.notice !== undefined) ko.onNotice(undefined);
+  }
+  /** 한국어 듣기 · 한국어 인식 확인 · 틀의 한국어 질문 처리 중(그동안 '말하기' · '힌트' · '잘 모르겠어요'를 누를 수 없다, AC-N28). */
+  const koBusy = koListening || koConfirm !== null || ko?.busy === true;
   /** 힌트 단추 자리의 눌림(이야기 방식 — 막힌 단추도, rev-chat-w M-1). 단추 밖(안내 글)의 눌림은 세지 않는다. */
   const hintPointerDown = (event: {
     clientX: number;
@@ -1053,20 +1223,33 @@ export function ChildTurn(props: ChildTurnProps) {
     listening,
     soundIn,
   });
+  // 한국어 안내 줄: 듣는 동안 '한국어로 물어보세요', 그 밖은 남긴 합친 안내(없으면 없음 — 한국어로 묻지 않는 차례는 늘 없음)
+  const koLine = koListening ? CHILD_TURN_TEXT.koListening : ko?.notice;
+  // 안내 줄 한 줄: 마이크 다시 켬(회복)이 먼저, 그다음 한국어 안내 줄, 그다음 버리는 듣기의 '말해 보세요'
+  const turnLine =
+    props.discard?.view.recovering === true
+      ? discardLine
+      : (koLine ?? discardLine);
   const keepInView = keepTurnInViewOf({
     on: props.discard !== undefined,
     discardLine,
     shortLine: props.shortLine,
+    ...(ko ? { koLine } : {}),
   });
   // 짧은 말 말풍선 · 안내 줄이 나타날 때(새 줄마다)와 방향이 바뀔 때 동작 줄 · 맨 아래 알림 줄을 움직임 없이 화면 안으로(I-2). 이미 보이면 그대로다.
   // 줄이 사라질 때(소리가 들어와 '말해 보세요'가 지워질 때 등)는 옮기지 않는다 — 아이가 올려 둔 쪽을 되돌리지 않게(코드 확인 m-1)
-  const shownRef = useRef<{ line: unknown; short: unknown }>({
+  const shownRef = useRef<{ line: unknown; short: unknown; ko: unknown }>({
     line: undefined,
     short: undefined,
+    ko: undefined,
   });
   useEffect(() => {
     const prev = shownRef.current;
-    shownRef.current = { line: discardLine, short: props.shortLine };
+    shownRef.current = {
+      line: discardLine,
+      short: props.shortLine,
+      ko: koLine,
+    };
     if (!keepInView) return;
     const keep = () => {
       actionsRef.current?.scrollIntoView({ block: "nearest" });
@@ -1074,15 +1257,16 @@ export function ChildTurn(props: ChildTurnProps) {
     };
     const appeared =
       (discardLine !== undefined && discardLine !== prev.line) ||
-      (props.shortLine !== undefined && props.shortLine !== prev.short);
+      (props.shortLine !== undefined && props.shortLine !== prev.short) ||
+      (koLine !== undefined && koLine !== prev.ko);
     if (appeared) keep();
     const turned = window.matchMedia("(orientation: portrait)");
     turned.addEventListener("change", keep);
     return () => turned.removeEventListener("change", keep);
-  }, [keepInView, discardLine, props.shortLine]);
+  }, [keepInView, discardLine, props.shortLine, koLine]);
   return (
     <div ref={turnRef} data-child-turn="" className="flex flex-col gap-3">
-      {attemptSaid && !confirm ? (
+      {attemptSaid && !confirm && koConfirm === null ? (
         <div data-child-attempt="">
           <ChildBubble said={attemptSaid} />
         </div>
@@ -1114,6 +1298,39 @@ export function ChildTurn(props: ChildTurnProps) {
                   confirmSkipped: false,
                   ...recognizerPart(),
                 });
+              }}
+            >
+              {CHILD_TURN_TEXT.send}
+            </SmallButton>
+          </div>
+        </div>
+      ) : null}
+      {koConfirm !== null ? (
+        // 한국어 인식 확인: 아이 말풍선(한국어 글꼴)과 '다시 말하기'(한국어 듣기를 다시 연다) · '보내기'. 1~3단계 바로 보냄은 쓰지 않는다
+        <div
+          data-child-confirm=""
+          data-ko-confirm=""
+          className="flex flex-col items-end gap-3 self-end"
+        >
+          <p lang="ko" data-child-bubble="" className={CHILD_BUBBLE_KO_CLASS}>
+            {koConfirm}
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <SmallButton
+              data-ko-again=""
+              onClick={() => {
+                window.clearTimeout(koConfirmTimer.current);
+                setKoConfirm(null);
+                void koSpeak();
+              }}
+            >
+              {CHILD_TURN_TEXT.again}
+            </SmallButton>
+            <SmallButton
+              data-ko-send=""
+              onClick={() => {
+                props.onInput?.("talk");
+                koSend(koConfirm);
               }}
             >
               {CHILD_TURN_TEXT.send}
@@ -1165,18 +1382,68 @@ export function ChildTurn(props: ChildTurnProps) {
           data-child-actions=""
           className="flex shrink-0 flex-wrap items-center justify-center gap-4 lg:ml-auto lg:justify-start"
         >
-          <SpeakButton
-            label={CHILD_TURN_TEXT.speak}
-            listening={listening}
-            soundIn={soundIn}
-            // 버리는 듣기: 누름이 진짜를 기다리는 동안 '준비 중이에요'와 점 셋(C215), 세 상태 글을 겹쳐 너비 그대로(I-1)
-            preparing={props.discard?.view.waiting === true}
-            steady={props.discard !== undefined}
-            capAt={() => handle.current?.capAt}
-            gapClassName="bg-postit-talk"
-            disabled={!speech || confirm !== null || moving}
-            onPress={() => void speak()}
-          />
+          {(() => {
+            const speakButton = (
+              <SpeakButton
+                label={CHILD_TURN_TEXT.speak}
+                listening={listening}
+                soundIn={soundIn}
+                // 버리는 듣기: 누름이 진짜를 기다리는 동안 '준비 중이에요'와 점 셋(C215), 세 상태 글을 겹쳐 너비 그대로(I-1)
+                preparing={props.discard?.view.waiting === true}
+                steady={props.discard !== undefined}
+                capAt={() => handle.current?.capAt}
+                gapClassName="bg-postit-talk"
+                disabled={
+                  !speech ||
+                  confirm !== null ||
+                  moving ||
+                  koConfirm !== null ||
+                  ko?.busy === true
+                }
+                // 한국어 듣는 동안은 큰 단추가 한국어 듣기 표시다 — 다시 누르면 그 듣기를 끝낸다
+                onPress={() => void (koListening ? koSpeak() : speak())}
+              />
+            );
+            if (!ko) return speakButton;
+            // A2(13절 C226): '말하기' 아래 한 줄에 같은 너비로 '한국어로 물어보기'. 사이 20px · 점선 테 · 보라 표지 '가'로 '말하기'와 가른다(C226 (1))
+            return (
+              <div
+                data-speak-stack=""
+                className="flex flex-col items-stretch gap-5"
+              >
+                {speakButton}
+                {koShown ? (
+                  <button
+                    type="button"
+                    data-ko-ask=""
+                    disabled={
+                      !speech ||
+                      moving ||
+                      ko.busy ||
+                      koListening ||
+                      koConfirm !== null ||
+                      listening ||
+                      confirm !== null
+                    }
+                    onClick={() => void koSpeak()}
+                    className={cn(
+                      FOCUS_RING,
+                      CHILD_SIZE.target,
+                      "inline-flex items-center justify-center gap-3 rounded-2xl border-[3px] border-dashed border-ink bg-paper px-5 font-heading text-[22px] text-ink disabled:border-ink-off-edge disabled:text-ink-soft",
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink bg-tape-3 text-lg"
+                    >
+                      {CHILD_TURN_TEXT.koMark}
+                    </span>
+                    {CHILD_TURN_TEXT.koAsk}
+                  </button>
+                ) : null}
+              </div>
+            );
+          })()}
           <div className="flex flex-col items-start gap-2">
             {showHint ? (
               <div
@@ -1189,10 +1456,15 @@ export function ChildTurn(props: ChildTurnProps) {
                   data-hint-button=""
                   // 인식 확인 중에는 힌트를 열지 않는다(한 화면 한 행동 — 화면 검토 M-4)
                   disabled={
-                    hintSpent || listening || confirm !== null || moving
+                    hintSpent ||
+                    listening ||
+                    confirm !== null ||
+                    moving ||
+                    koBusy
                   }
                   onClick={() => {
                     props.onInput?.("hint");
+                    koNoticeClear();
                     if (!chatHint) {
                       setPressed((n) => n + 1);
                       return;
@@ -1220,9 +1492,10 @@ export function ChildTurn(props: ChildTurnProps) {
                   ? "ring-4 ring-postit-talk motion-safe:animate-pulse"
                   : undefined
               }
-              disabled={listening || confirm !== null || moving}
+              disabled={listening || confirm !== null || moving || koBusy}
               onClick={() => {
                 props.onInput?.("dont_know");
+                koNoticeClear();
                 endedAt.current = performance.now();
                 // 버리는 듣기: 걸린 누름 · 회복 · 다시 말할 차례를 거둔다(층이 걸린 손잡이를 끊김으로 끝낸다)
                 props.discard?.dontKnow();
@@ -1235,17 +1508,21 @@ export function ChildTurn(props: ChildTurnProps) {
           {/* 버리는 듣기 안내 줄: 단추 묶음 바로 아래 — 세로는 가운데, 가로는 말하기 단추 왼쪽 끝에 맞춤(M-3). 그동안 아래 알림 줄은 비운다(한 줄).
               w-0 min-w-full: 둘째 줄을 다 쓰되 동작 줄의 내용 너비에는 들지 않는다 — 가로에서 줄이 나고 질 때 단추 묶음이 좌우로 밀리지 않게(화면 판정 N-1).
               가로의 lg:-mr-4 는 동작 줄 gap-4 가 내용 너비에 더하는 사이 하나를 지운다(동작 줄이 단추 줄 너비 그대로라 lg:justify-start 로 단추 줄이 제자리다) */}
-          {discardLine && !moving ? (
+          {turnLine && !moving ? (
             <StatusLine className="w-0 min-w-full justify-center lg:-mr-4 lg:justify-start">
-              <span data-discard-line="">{discardLine}</span>
+              {turnLine === discardLine ? (
+                <span data-discard-line="">{discardLine}</span>
+              ) : (
+                <span data-ko-line="">{turnLine}</span>
+              )}
             </StatusLine>
           ) : null}
         </div>
       </div>
-      <StatusLine tone={message && !moving && !discardLine ? "error" : "info"}>
+      <StatusLine tone={message && !moving && !turnLine ? "error" : "info"}>
         {moving ? (
           <span data-nospeech-move="">{message}</span>
-        ) : discardLine ? undefined : (
+        ) : turnLine ? undefined : (
           message
         )}
       </StatusLine>

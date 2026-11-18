@@ -121,3 +121,166 @@ export function koAskSettingsFrom(
 export function koAskContextTurnsFrom(read: (key: string) => unknown): number {
   return readSetting(read, KO_ASK_CONTEXT_TURNS_KEY, linesSchema);
 }
+
+// ── 화면 순수 판정(묶음 5-가 — spec 판 3 설계 2 · 3, plan 정한 것 3 · 11 · 12) ──────────────
+// 한국어 듣기의 결과는 영어 듣기의 셈 기계(core/speaking/judge · 화면의 onSpeech)에 넣지 않는다. 넘기는 것은 '마이크를 쓸 수 없음'(not-allowed ·
+// 받아쓰기 꺼짐)과 network 뿐이다(정한 것 3 — 7절 그대로). judge 는 group 이 아니라 code 로 다시 가르므로(코드 검토 묶음 3 O-1) 그 밖의 결과는
+// 여기서 걸러 화면이 따로 센다(한국어 듣기 실패 셈 · 단추 숨김).
+
+/**
+ * 한국어 듣기 하나의 끝(화면이 할 일): heard(글이 왔다 — 인식 확인), english(영어 셈 기계에 넘길 오류 — 마이크를 쓸 수 없음 · network),
+ * not-heard(글 없이 끝남 — 말소리 없음 · 결과 없음 · 다시 듣는 오류 · 감시 타이머 멈춤 · 빈 글), deaf(마이크 안 잡힘), lang(그 언어만 안 됨),
+ * none(끊김 — 일 없음).
+ */
+export type KoListenEnd =
+  | { kind: "heard"; text: string }
+  | { kind: "english"; event: { type: "error"; code: string } }
+  | { kind: "not-heard" }
+  | { kind: "deaf" }
+  | { kind: "lang" }
+  | { kind: "none" };
+
+/** 한국어 듣기의 결과 꼴(core/speech/listen ListenOutcome 가운데 이 판정이 읽는 칸 — 그 꼴을 그대로 받는다). */
+export type KoListenOutcome =
+  | { kind: "result"; text: string }
+  | { kind: "no-result" }
+  | {
+      kind: "error";
+      code: string;
+      group: "retry" | "mic-unavailable" | "network" | "lang-unavailable";
+    }
+  | { kind: "stalled" }
+  | { kind: "interrupted" }
+  | { kind: "deaf" };
+
+/** 한국어 듣기의 끝을 가른다(순수, spec 설계 3 표). */
+export function koListenEndOf(outcome: KoListenOutcome): KoListenEnd {
+  switch (outcome.kind) {
+    case "result": {
+      const text = outcome.text.trim();
+      return text === "" ? { kind: "not-heard" } : { kind: "heard", text };
+    }
+    case "error":
+      if (outcome.group === "lang-unavailable") return { kind: "lang" };
+      if (outcome.group === "mic-unavailable" || outcome.group === "network")
+        return {
+          kind: "english",
+          event: { type: "error", code: outcome.code },
+        };
+      return { kind: "not-heard" };
+    case "no-result":
+    case "stalled":
+      return { kind: "not-heard" };
+    case "deaf":
+      return { kind: "deaf" };
+    case "interrupted":
+      return { kind: "none" };
+  }
+}
+
+/**
+ * 한국어 듣기 실패 셈의 한 걸음(순수, spec 설계 3 표 · talk.ko_ask_fail_hide_after): 글이 오면 0, 글 없이 끝남 · 마이크 안 잡힘이면 하나 늘리고
+ * 문턱에 닿으면 숨김, 그 언어만 안 됨은 셈과 관계없이 숨김, 그 밖(영어 셈 기계로 넘긴 오류 · 끊김)은 그대로다. 숨김은 그 수업 화면에 있는 동안이다.
+ */
+export function koFailStepOf(
+  fails: number,
+  end: KoListenEnd["kind"],
+  hideAfter: number,
+): { fails: number; hide: boolean } {
+  if (end === "heard") return { fails: 0, hide: false };
+  if (end === "lang") return { fails, hide: true };
+  if (end === "not-heard" || end === "deaf") {
+    const next = fails + 1;
+    return { fails: next, hide: next >= hideAfter };
+  }
+  return { fails, hide: false };
+}
+
+/** 합친 안내 두 꼴(plan '옮겨 적는 문구' — 정본 03 4절 '한국어로 물어보기' 행 글자 그대로). */
+export const KO_ASK_NOTICE = {
+  hint: "지금은 한국어로 물어볼 수 없어요. '힌트'를 눌러 봐요",
+  talk: "지금은 한국어로 물어볼 수 없어요. 아는 말로 말해 봐요",
+} as const;
+
+/**
+ * 합친 안내 고르기(순수, 정한 것 12 · [N-3]): 단계가 아니라 그 턴에 '힌트' 단추가 있고 열 단이 남았는가로 고른다. 그렇지 않은 턴('힌트'가 없는
+ * 10~12단계 · 검사에 걸려 단추가 없는 턴 · 단을 다 연 턴)은 '아는 말로 말해 봐요'다.
+ */
+export function koAskNoticeOf({
+  hintButton,
+  tiersLeft,
+}: {
+  hintButton: boolean;
+  tiersLeft: boolean;
+}): string {
+  return hintButton && tiersLeft ? KO_ASK_NOTICE.hint : KO_ASK_NOTICE.talk;
+}
+
+/**
+ * 답 뒤의 영어 소리(순수, spec 설계 2 '답의 소리' · 정한 것 11 · [N-2]): 가르친 표현이 있으면 그 표현이고, 1~3단계(글 없는 단계)만 한국어 답 글이
+ * 보인 뒤 soundPauseMs 를 쉬고 읽으며 그 소리가 시작한 뒤(또는 들려주지 못한 뒤)에 아이 차례를 연다(waitOpen). 4단계부터의 표현은 쉼 없이 글과
+ * 함께 읽는다. 표현이 없으면(뜻 · 불분명 · 그 밖 · 대신 줄) 선생님의 지금 말을 소리 줄까지 한 번 다시 읽고 바로 연다.
+ */
+export type KoHelpSound =
+  | { kind: "taught"; text: string; pauseMs: number; waitOpen: boolean }
+  | { kind: "teacher_line" };
+
+export function koHelpSoundOf(
+  help: { replay: "taught" | "teacher_line"; teachEn?: string | undefined },
+  { lowBand, soundPauseMs }: { lowBand: boolean; soundPauseMs: number },
+): KoHelpSound {
+  const text = (help.teachEn ?? "").trim();
+  if (help.replay !== "taught" || text === "") return { kind: "teacher_line" };
+  return lowBand
+    ? { kind: "taught", text, pauseMs: soundPauseMs, waitOpen: true }
+    : { kind: "taught", text, pauseMs: 0, waitOpen: false };
+}
+
+/**
+ * 답 뒤 아이 차례를 열까(순수, spec 설계 2 '답 뒤 아이 차례'): 소리를 기다리지 않는 답은 바로, 1~3단계 표현 답은 그 소리가 시작했거나 들려주지
+ * 못한 결과가 온 뒤다(쉬는 동안 누르면 답을 못 듣고 지나간다).
+ */
+export function koChildOpenOf({
+  waitOpen,
+  started,
+  failed,
+}: {
+  waitOpen: boolean;
+  started: boolean;
+  failed: boolean;
+}): boolean {
+  return !waitOpen || started || failed;
+}
+
+/** 다음 영어 턴 요청에 싣는 도움 하나(plan 접점 마 — 들었는가 · '알려 준 말 듣기'로 다시 들은 수). */
+export type KoHelpTurnEntry = {
+  turnNo: number;
+  seq: number;
+  heard: boolean;
+  replays: number;
+};
+
+/**
+ * 회화 턴 요청의 선택 칸(순수, 접점 마): 그 아이 차례에 받은 도움이 있으면 `koHelp`, 없으면 칸 자체가 없다(한국어로 묻지 않은 턴의 요청 본문이
+ * 그대로 — AC-N26).
+ */
+export function koHelpTurnPartOf(entries: readonly KoHelpTurnEntry[]): {
+  koHelp?: KoHelpTurnEntry[];
+} {
+  return entries.length === 0 ? {} : { koHelp: entries.map((e) => ({ ...e })) };
+}
+
+/**
+ * 인식 확인의 '들려준 답'에 더할 가르친 표현(순수, 1~3단계 바로 보냄): 그 아이 차례에서 받은 도움의 가르친 표현(빈 것은 뺀다, 같은 것은 하나).
+ * 인식 글이 이 표현과 talk.hint_read_match 이상 맞으면 confirmPlanOf 가 바로 보낸다(들은 답과 같은 대접).
+ */
+export function koTaughtOf(
+  helps: readonly { teachEn?: string | undefined }[],
+): string[] {
+  const out: string[] = [];
+  for (const h of helps) {
+    const t = (h.teachEn ?? "").trim();
+    if (t !== "" && !out.includes(t)) out.push(t);
+  }
+  return out;
+}
