@@ -236,12 +236,18 @@ import {
   heardWithTaughtOf,
   type KoHelpStanding,
   type KoHelpStandingRow,
+  type KoHelpTurnRow,
   koHelpStandingOf,
+  koHelpTurnNosOf,
   koTaughtHeardOf,
+  leadKoHelpOf,
   raiseHintKind,
   withKoHelpLineOf,
 } from "../src/core/conversation/ko-help";
-import type { LeadCandidateRow } from "../src/core/conversation/lead-candidate";
+import {
+  type LeadCandidateRow,
+  leadCandidateKoHelpTurnsOf,
+} from "../src/core/conversation/lead-candidate";
 import {
   type LeadFormRule,
   type LeadLevelInput,
@@ -790,6 +796,45 @@ export function observeKoRowsOf(
     shownEn: h.shownEn ?? null,
     heard: h.heard ?? null,
   }));
+}
+
+/**
+ * 메모리 행 → 읽을 턴 번호 고르기의 꼴(서버 state.ts koHelpTurnRowOf 사본 — server-only 라 부를 수 없다, 짝 시험 talk-observe-lead-ko). 아이 행은
+ * 되물음 표지, 선생님 행은 move 의 까닭 ask_again 이나 새 엔진 move.lead.move ask_again 이면 되묻는 차례다.
+ */
+export function observeKoTurnRowOf(
+  row: Pick<SimRow, "speaker" | "turnNo"> & {
+    askAgain?: boolean;
+    move?: TalkMove;
+  },
+): KoHelpTurnRow {
+  if (row.speaker === "child")
+    return {
+      speaker: "child",
+      turnNo: row.turnNo,
+      askAgain: row.askAgain === true,
+    };
+  return {
+    speaker: "teacher",
+    turnNo: row.turnNo,
+    askAgain:
+      row.move?.why === "ask_again" || row.move?.lead?.move === "ask_again",
+  };
+}
+
+/**
+ * Claude 주도 방식 아이 차례가 읽는 한국어 도움의 대접(서버 state.ts turnKoHelpStandingOf 사본 — 지금 턴 번호와 되묻는 차례를 건너 이어받은 턴
+ * 번호(core koHelpTurnNosOf [N-1])에 붙은 행만, core koHelpStandingOf). 대본의 행은 들려줬는가를 이미 담아 기기 값을 따로 넘기지 않는다. 읽을
+ * 행이 없으면 null(한국어로 묻지 않은 턴은 고치기 전 그대로 — AC-N26).
+ */
+export function observeLeadKoStandingOf(
+  rows: readonly Parameters<typeof observeKoTurnRowOf>[0][],
+  koRows: readonly KoHelpStandingRow[],
+  lowBand: boolean,
+): KoHelpStanding | null {
+  const turnNos = koHelpTurnNosOf(rows.map(observeKoTurnRowOf));
+  const read = koRows.filter((r) => turnNos.includes(r.turnNo));
+  return read.length === 0 ? null : koHelpStandingOf(read, { lowBand });
 }
 
 const ScriptSchema = z.strictObject({
@@ -3223,6 +3268,15 @@ export type LeadPreparedTurn = {
   safeLine: string;
   levelInput: LeadLevelInput;
   lineOptions: LowLevelLineOptions;
+  /**
+   * 이 아이 차례가 읽는 한국어 도움(수업 안 한국어로 묻기 묶음 4-라 — 대본 차례의 koHelp 칸을 그 턴 번호의 talk_ko_helps 행 꼴로 옮긴 것, 서버
+   * lead-turn 과 같은 core leadKoHelpOf 의 값: 사실 줄의 가르친 표현 · 막힘 무름 · '말했다' 목록). 도움이 없으면 rows 빈 목록 · standing null.
+   */
+  ko: {
+    rows: KoHelpStandingRow[];
+    standing: KoHelpStanding | null;
+    lead: ReturnType<typeof leadKoHelpOf>;
+  };
 };
 
 /** 좁은 정의 다시 말하기 한 번의 요청(서버 lead-turn.ts 의 runAiCall(talkLeadRetrySpec) 과 같은 입력). */
@@ -3761,6 +3815,8 @@ export function createTalkSim(
   // 아래 주석의 '서버 lead-turn.ts:줄'이다(task-x2-report '확인할 것'). 응답은 다 받은 메시지 하나로 흘려 받기를 흉내 낸다(문장 차례 · 붙잡기 ·
   // 문장 문이 같다 — 시도 다시 보내기 · 다른 모델 다시 부르기 · 끊김은 흉내 내지 않는다).
   const leadText = talkLeadTextOf(level, materials.unit);
+  // 이 수업의 한국어 도움 행(서버 talk_ko_helps 흉내 — 새 엔진 아이 행을 저장한 차례에 더한다, 묶음 4-라)
+  let leadKoRows: KoHelpStandingRow[] = [];
   let leadLexicon: ReturnType<typeof buildLexicon> | null = null;
   const leadLexiconOf = () => {
     leadLexicon ??= buildLexicon(materials.leadLexicon ?? []);
@@ -3822,6 +3878,8 @@ export function createTalkSim(
           heard: p.child.text ?? "",
           sceneWords,
           homophones,
+          // 한국어 도움 뒤 가르친 표현과 맞은 말은 막힘이 아니다(서버 lead-turn.ts koLead.taughtMatched — 흘려 받는 동안과 같은 값)
+          ...(p.ko.lead.taughtMatched ? { taughtMatched: true } : {}),
         });
   const leadHitsOf = (p: LeadPreparedTurn) => (sentence: string) =>
     leadNarrowHitsOf(sentence, p.levelInput);
@@ -3894,6 +3952,7 @@ export function createTalkSim(
           heard: p.child?.text ?? "",
           sceneWords,
           homophones,
+          ...(p.ko.lead.taughtMatched ? { taughtMatched: true } : {}),
         }),
       hitsOf: leadHitsOf(p),
     });
@@ -4154,10 +4213,27 @@ export function createTalkSim(
           ok: false,
           reason: "조용함 · 고르기 차례는 이야기 방식 수업에서만 받는다",
         };
-      const child =
+      const simChild =
         entry.kind === "child"
           ? leadSimChildOf(entry.step, position, args)
           : null;
+      // 한국어 도움(서버 lesson-turn turnKoHelpStandingOf — 지금 턴 번호와 되묻는 차례를 건너 이어받은 턴 번호의 행, 입구 차례는 없음)
+      const koRows =
+        entry.kind === "child" && simChild !== null
+          ? observeKoRowsOf(entry.step, simChild.turnNo)
+          : [];
+      const koStanding =
+        simChild === null
+          ? null
+          : observeLeadKoStandingOf(rows, [...leadKoRows, ...koRows], low);
+      // 한국어 도움을 받은 아이 차례가 '말하기'로 보낸 말은 힌트 종류를 높은 쪽으로(서버 lesson-turn 아이 행 넣기와 같다)
+      const child =
+        simChild !== null && koStanding !== null && simChild.mode === "speech"
+          ? {
+              ...simChild,
+              hintKind: raiseHintKind(simChild.hintKind, koStanding.hintKind),
+            }
+          : simChild;
       const open = entry.kind === "open" ? entry.open : null;
       const mode = child?.mode ?? "speech";
       const nospeech = child?.nospeech ?? false;
@@ -4204,6 +4280,15 @@ export function createTalkSim(
       };
       const history = leadHistoryOf(ordered);
       const first = leadFirstTurnOf(ordered);
+      // 한국어 도움 뒤 영어 차례(서버 lead-turn.ts koLead — 사실 알림 · 소리 귀띔의 가르친 표현, 막힘 무름, '말했다' 거름)
+      const koLead = leadKoHelpOf(koStanding, {
+        heard,
+        speech,
+        unitWords,
+        lemmaOf: materials.lemmaOf,
+        minMatch: values["talk.hint_read_match"] as number,
+        homophones,
+      });
       const status = leadStatusOf({
         rows: ordered,
         hasChild: child !== null,
@@ -4216,6 +4301,7 @@ export function createTalkSim(
         lemmaOf: materials.lemmaOf,
         open,
         closing,
+        ...(koLead.koTaught === undefined ? {} : { koTaught: koLead.koTaught }),
       });
       const input: TalkLeadInput = {
         ...materials.ctx,
@@ -4255,6 +4341,7 @@ export function createTalkSim(
           safeLine: safeLineOf(card.safeLines, history.length + 1),
           levelInput,
           lineOptions,
+          ko: { rows: koRows, standing: koStanding, lead: koLead },
         },
       };
     },
@@ -4594,7 +4681,8 @@ export function createTalkSim(
           heard,
           speech,
           stuck,
-          unitWords,
+          // '말했다' 거름(서버 lead-turn.ts koLead.saidUnitWords — '만났다'는 아래 받은 목록 그대로)
+          unitWords: p.ko.lead.saidUnitWords,
           lemmaOf,
           homophones,
         });
@@ -4663,6 +4751,8 @@ export function createTalkSim(
           saidWords: [...childFields.saidWords],
           ...(childFields.askAgain ? { askAgain: true } : {}),
         });
+      // 이 수업의 한국어 도움 행(서버 talk_ko_helps 흉내 — 아이 행을 저장한 차례에 더한다)
+      if (child !== null) leadKoRows = [...leadKoRows, ...p.ko.rows];
       const aq = teacher.aiQuestion;
       rows.push({
         speaker: "tori",
@@ -4733,6 +4823,12 @@ export function createTalkSim(
           row,
         })),
       ).filter((r) => r.segment === "talk" || r.segment === "more_talk");
+      // 도움 대접이 ko_help 인 아이 차례(되묻는 차례를 건너 이어받은 것 포함 — 서버와 같은 core 함수, 전체 행 차례로 본다)
+      const koHelpTurns = leadCandidateKoHelpTurnsOf(
+        rows.map(observeKoTurnRowOf),
+        leadKoRows,
+        { lowBand: low },
+      );
       return ordered.flatMap((r, i): LeadCandidateRow[] => {
         const row = r.row;
         if (row.speaker === "tori") {
@@ -4769,8 +4865,8 @@ export function createTalkSim(
             hintKind: row.hintKind ?? "none",
             // 말 입력이 아닌 차례는 막힘으로 채운다(검토 rev-r3 · R3 고침 1 확인할 것 3 — 지금 판정이 말 입력 아닌 차례를 비우는 것과 같은 조건)
             stuck: row.stuck || row.input !== "speech",
-            // 수업 안 한국어로 묻기(talk_ko_helps)는 그 가지가 합쳐질 때 생긴다 — 그때까지 거짓(검토 rev-r3 8 (가))
-            koHelp: false,
+            // 수업 안 한국어로 묻기(묶음 4-라): 그 차례가 읽은 도움의 대접이 ko_help 인가(core leadCandidateKoHelpTurnsOf)
+            koHelp: koHelpTurns.has(row.turnNo),
             meaningHint: row.meaningHint ?? false,
             reading: nextLead?.reading ?? null,
           },

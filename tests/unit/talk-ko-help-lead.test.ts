@@ -30,6 +30,8 @@ import {
   leadFlowPrevStuckOf,
   leadStatusOf,
 } from "@/core/conversation/lead-turn-core";
+import { talkMoveOf } from "@/core/conversation/move";
+import { koHelpTurnRowOf } from "@/server/conversation/state";
 
 const TAUGHT = "I like gimbap.";
 const lemmaOf = (w: string) => w.toLowerCase();
@@ -362,5 +364,71 @@ describe("AC-25j AC-25o [N-1] 되묻는 차례(move ask_again) 뒤 이어받기"
       },
     ]);
     expect(turnOf(false)?.candidate[0]?.help ?? null).toBeNull();
+  });
+});
+
+describe("C225 보완 2 (1) 도움 뒤 '잘 모르겠어요' 차례(Claude 주도 방식)", () => {
+  it("사실 알림에 가르친 표현이 실린다(받침을 Claude 가 정함) · 막힘 무름과 소리 귀띔에는 닿지 않는다", () => {
+    const ko = koHelpStandingOf([help()], { lowBand: true });
+    const out = leadKoHelpOf(ko, {
+      heard: "",
+      speech: false,
+      unitWords: ["gimbap", "food"],
+      lemmaOf,
+      minMatch: 0.8,
+      homophones: [],
+    });
+    expect(out.koTaught).toEqual([TAUGHT]);
+    expect(out.taughtMatched).toBe(false);
+    const status = leadStatusOf({
+      ...statusArgs,
+      speech: false,
+      heard: "",
+      koTaught: out.koTaught,
+    });
+    expect(status.koTaught).toEqual([TAUGHT]);
+    expect(status.soundNotes ?? []).toEqual([]);
+    expect(talkLeadStatusLines(status).at(-1)).toBe(
+      'The child asked in Korean and was taught: "I like gimbap.".',
+    );
+  });
+});
+
+describe("AC-25j [N-1] koHelpTurnRowOf — talk_turns 행을 읽을 턴 번호 꼴로", () => {
+  const leadMove = (move: "ask_again" | "react_and_follow_up") =>
+    talkMoveOf({
+      kind: "ai",
+      lead: { reading: "likely_misheard", move, asked: [], said: [] },
+    });
+  it("선생님 행의 move.lead.move 가 ask_again 이면 되묻는 차례다(아이 행 표지가 없어도 앞 아이 차례의 도움을 읽는다)", () => {
+    const rows = [
+      {
+        speaker: "tori",
+        turnNo: 4,
+        askAgain: null,
+        move: leadMove("react_and_follow_up"),
+      },
+      { speaker: "child", turnNo: 4, askAgain: null, move: null },
+      {
+        speaker: "tori",
+        turnNo: 5,
+        askAgain: null,
+        move: leadMove("ask_again"),
+      },
+    ] as const;
+    const turnRows = rows.map(koHelpTurnRowOf);
+    expect(turnRows).toEqual([
+      { speaker: "teacher", turnNo: 4, askAgain: false },
+      { speaker: "child", turnNo: 4, askAgain: false },
+      { speaker: "teacher", turnNo: 5, askAgain: true },
+    ]);
+    expect(koHelpTurnNosOf(turnRows)).toEqual([4, 5]);
+    // 되묻지 않은 선생님 행이면 지금 차례 하나다(AC-N26)
+    const plain = [
+      rows[0],
+      rows[1],
+      { ...rows[2], move: leadMove("react_and_follow_up") },
+    ];
+    expect(koHelpTurnNosOf(plain.map(koHelpTurnRowOf))).toEqual([5]);
   });
 });

@@ -285,6 +285,8 @@ describe("대본", () => {
         "l3-chat-ko-help",
         // 수업 안 한국어로 묻기 묶음 4-다(기존 방식 대본 둘)
         "l3-ko-help",
+        // 수업 안 한국어로 묻기 셋째 물결 고침 1(Claude 주도 방식 대본 하나 — 대본 칸 settings 로 talk.lead_mode claude)
+        "l3-lead-ko-help",
         "l3-nospeech",
         "l3-preview-1",
         "l3-second-session-recall",
@@ -297,7 +299,7 @@ describe("대본", () => {
       ].sort(),
     );
     expect(all.filter((s) => s.level === 1)).toHaveLength(2);
-    expect(all.filter((s) => s.level === 3)).toHaveLength(17);
+    expect(all.filter((s) => s.level === 3)).toHaveLength(18);
     expect(all.filter((s) => s.level === 4)).toHaveLength(2);
   });
 
@@ -444,7 +446,10 @@ describe("대본", () => {
       all
         .filter((s) => s.settings?.["talk.lead_mode"] !== undefined)
         .map((s) => [s.name, s.settings]),
-    ).toEqual([["l3-chat-ko-help", { "talk.lead_mode": "chat" }]]);
+    ).toEqual([
+      ["l3-chat-ko-help", { "talk.lead_mode": "chat" }],
+      ["l3-lead-ko-help", { "talk.lead_mode": "claude" }],
+    ]);
   });
 
   it("대본 칸 settings 는 설정 키 꼴 · 글 · 수 · 참거짓만, summaries 는 빈 줄 없이 받는다", () => {
@@ -1611,8 +1616,8 @@ describe("실행(네트워크 없음)", () => {
     expect(code).toBe(0);
     expect(written.size).toBe(0);
     const total = logs.find((l) => l.startsWith("합계:")) ?? "";
-    // 수업 안 한국어로 묻기 묶음 4-다 가 3단계 대본 하나(l3-ko-help)를, 묶음 K 가 하나(l3-chat-ko-help)를 더했다
-    expect(total).toContain("대본 17(돌릴 것 17) × 바퀴 2");
+    // 수업 안 한국어로 묻기 묶음 4-다 가 3단계 대본 하나(l3-ko-help)를, 묶음 K 가 하나(l3-chat-ko-help)를, 셋째 물결 고침 1 이 하나(l3-lead-ko-help)를 더했다
+    expect(total).toContain("대본 18(돌릴 것 18) × 바퀴 2");
     const perRound = Number(/한 바퀴 (\d+)\)/.exec(total)?.[1]);
     expect(perRound).toBeGreaterThan(0);
     expect(total).toContain(`예상 호출 ${perRound * 2}(`);

@@ -26,13 +26,7 @@ import {
   talkSceneWordsOf,
   teacherSentencesMaxOf,
 } from "@/core/ai/calls/talk-lesson";
-import {
-  type KoCarryEntry,
-  type KoHelpStanding,
-  koCarryOf,
-  koHelpTurnNosOf,
-  leadKoHelpOf,
-} from "@/core/conversation/ko-help";
+import { type KoHelpStanding, leadKoHelpOf } from "@/core/conversation/ko-help";
 import {
   type LeadFormRule,
   type LeadLevelInput,
@@ -131,6 +125,7 @@ import {
   type LessonAiQuestion,
   type LessonTurnDeps,
   type LessonTurnShared,
+  leadKoCarryOf,
   lessonArgsOf,
   lessonChildLiteOf,
   lessonNextOf,
@@ -145,9 +140,7 @@ import {
 } from "./lesson-turn";
 import {
   isTalkOpen,
-  koHelpTurnRowOf,
   positiveInt,
-  readKoHelpRows,
   readTalkLessonState,
   snapshotNumber,
   type TalkLessonState,
@@ -1219,23 +1212,4 @@ async function saveLeadTurn({
       ...(koCarry.length === 0 ? {} : { koCarry }),
     },
   });
-}
-
-/**
- * 끝 줄 lesson.koCarry(되묻는 차례 뒤 이어받은 도움 — 접점 마 · [N-1] · 묶음 4-라): 저장 뒤 열린 아이 차례가 되묻는 차례를 건너 앞 아이 차례의 도움을
- * 읽을 때만 도움 행을 읽는다(읽을 턴 번호가 지금 차례 하나면 읽지 않고 빈 목록 — 되묻지 않은 차례의 끝 줄은 고치기 전 그대로, AC-N26). 읽기에 실패하면
- * 빈 목록이다(화면은 받아 둔 도움에서 찾는다 — 끝 줄을 막지 않는다).
- */
-async function leadKoCarryOf(
-  db: Db,
-  saved: TalkLessonState,
-): Promise<KoCarryEntry[]> {
-  const turnNos = koHelpTurnNosOf(saved.liveRows.map(koHelpTurnRowOf));
-  if (turnNos.length <= 1) return [];
-  try {
-    return koCarryOf(await readKoHelpRows(db, saved.session.id), turnNos);
-  } catch (error) {
-    logFailure("회화 새 엔진 이어받은 도움 읽기", error);
-    return [];
-  }
 }

@@ -969,6 +969,32 @@ describe("Claude 주도 방식 수업(묶음 4-라 — 대화 토막 · 인사 �
     expect(endOf(second.lines)).not.toHaveProperty("koCarry");
   });
 
+  it("(n-다시) rev-b4d M-3 되묻는 차례의 응답을 잃고 같은 시도 id 로 다시 보내면, 다시 흘린 끝 줄에도 이어받은 도움 koCarry 가 첫 끝 줄과 같이 실린다(새 회화 턴 요청 없음)", async () => {
+    const { sessionId } = await leadInTalk();
+    const turnNo = await openTurnNo(sessionId);
+    await addHelp(sessionId, turnNo);
+    const clientAttemptId = `ko-lead-replay-${sessionId}`;
+    const first = await leadTurn(
+      sessionId,
+      {
+        reading: "likely_misheard",
+        move: "ask_again",
+        say: "Do you like it?",
+      },
+      { koHelp: [{ turnNo, seq: 1, heard: true }], clientAttemptId },
+    );
+    const carry = [{ turnNo, seq: 1, teachEn: TAUGHT }];
+    expect(endOf(first.lines).koCarry).toEqual(carry);
+    const before = leadRequests().length;
+    const replayed = await turn(sessionId, {
+      leadText: true,
+      koHelp: [{ turnNo, seq: 1, heard: true }],
+      clientAttemptId,
+    });
+    expect(leadRequests()).toHaveLength(before);
+    expect(endOf(replayed).koCarry).toEqual(carry);
+  });
+
   it("(o) AC-N26 Claude 주도 방식에서 한국어로 묻지 않은 턴은 끝 줄에 koCarry 칸이 없고 사실 알림에 한국어 줄이 없다", async () => {
     const { sessionId } = await leadInTalk();
     const { lines, sent } = await leadTurn(sessionId, {

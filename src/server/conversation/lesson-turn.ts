@@ -69,6 +69,8 @@ import {
   type KoCarryEntry,
   type KoHelpDeviceEntry,
   type KoHelpStanding,
+  koCarryOf,
+  koHelpTurnNosOf,
   koHelpUnitWordsOf,
   koTaughtHeardOf,
   raiseHintKind,
@@ -218,8 +220,10 @@ import {
   type HintView,
   hintViewsOf,
   isTalkOpen,
+  koHelpTurnRowOf,
   onTalkSessionEnded,
   positiveInt,
+  readKoHelpRows,
   readTalkLessonState,
   snapshotNumber,
   type TalkLessonState,
@@ -2400,6 +2404,7 @@ export function replayLesson(
   state: TalkLessonState,
   teacher: TalkTurnRow,
   deps: Pick<LessonTurnDeps, "write" | "talkLists">,
+  koCarry: readonly KoCarryEntry[] = [],
 ) {
   const { write } = deps;
   const lists =
@@ -2423,8 +2428,31 @@ export function replayLesson(
     write(line);
   write({
     t: "end",
-    lesson: lessonNextOf(state, { explanation: teacher.explanation }),
+    lesson: {
+      ...lessonNextOf(state, { explanation: teacher.explanation }),
+      ...(koCarry.length === 0 ? {} : { koCarry: [...koCarry] }),
+    },
   });
+}
+
+/**
+ * 끝 줄 lesson.koCarry(되묻는 차례 뒤 이어받은 도움 — 접점 마 · [N-1] · 묶음 4-라): 저장 뒤 열린 아이 차례가 되묻는 차례를 건너 앞 아이 차례의 도움을
+ * 읽을 때만 도움 행을 읽는다(읽을 턴 번호가 지금 차례 하나면 읽지 않고 빈 목록 — 되묻지 않은 차례의 끝 줄은 고치기 전 그대로, AC-N26). 읽기에 실패하면
+ * 빈 목록이다(화면은 받아 둔 도움에서 찾는다 — 끝 줄을 막지 않는다). Claude 주도 방식의 실시간 길(lead-turn)과 같은 시도 id 다시 흘림
+ * (runTalkLessonTurn 의 replay 갈래 — 검토 rev-b4d M-3)이 함께 부른다(lead-turn 을 불러오지 않는 쪽에 둔다, 의존 방향 AC-26a).
+ */
+export async function leadKoCarryOf(
+  db: Db,
+  saved: TalkLessonState,
+): Promise<KoCarryEntry[]> {
+  const turnNos = koHelpTurnNosOf(saved.liveRows.map(koHelpTurnRowOf));
+  if (turnNos.length <= 1) return [];
+  try {
+    return koCarryOf(await readKoHelpRows(db, saved.session.id), turnNos);
+  } catch (error) {
+    logFailure("회화 새 엔진 이어받은 도움 읽기", error);
+    return [];
+  }
 }
 
 /**
@@ -2595,7 +2623,16 @@ export async function runTalkLessonTurn(
           deps,
           await shared.restingP,
         );
-      else replayLesson(begun.state, begun.teacher, deps);
+      else
+        replayLesson(
+          begun.state,
+          begun.teacher,
+          deps,
+          // Claude 주도 방식 행은 실시간 길의 끝 줄과 같이 이어받은 도움을 싣는다(되묻는 차례의 응답을 잃은 뒤 — 검토 rev-b4d M-3). 다른 행은 고치기 전 그대로
+          readTalkMove(begun.teacher.move)?.lead
+            ? await leadKoCarryOf(db, begun.state)
+            : [],
+        );
       return;
     }
     const { state, child, ko } = begun;
