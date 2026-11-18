@@ -30,6 +30,7 @@ export type KoHelpExchange = {
   /** 열쇠(턴 번호 · 순번). */
   key: string;
   question: string;
+  /** 선생님의 한국어 답(빈 글이면 답이 빈 행 — 이어 하기로 되살린, 호출 중에 끊긴 질문 — 이라 물은 말만 그린다, 정본 03 대화 기록). */
   sayKo: string;
   /** 4단계부터 보이는 가르친 표현 글(1~3단계는 늘 없다 — 소리로만). */
   shownEn?: string | undefined;
@@ -105,39 +106,41 @@ export function KoHelpBubble({
       >
         {fillName(exchange.question, englishName)}
       </p>
-      <div data-ko-help="" className="relative self-start pt-4">
-        {/* B1 딱지: 말풍선 위 테두리에 걸친 '한국어 도움'(글로 밝힘 — 색만으로 가르지 않는다) */}
-        <span
-          data-ko-badge=""
-          className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
-        >
-          {KO_HELP_TEXT.badge}
-        </span>
-        <div className={cn(BUBBLE_CLASS, "pt-5")}>
-          <p lang="ko" data-ko-say="" className={CHILD_SIZE.guide}>
-            {fillName(exchange.sayKo, englishName)}
-          </p>
-          {exchange.shownEn ? (
-            <button
-              type="button"
-              lang="en"
-              data-ko-taught=""
-              disabled={!canReplay}
-              onClick={onReplay}
-              className={cn(
-                FOCUS_RING,
-                CHILD_SIZE.english,
-                "self-start text-left font-en font-bold",
-              )}
-            >
-              {fillName(exchange.shownEn, englishName)}
-            </button>
-          ) : null}
-          {exchange.soundOnly && exchange.retry === "none"
-            ? replayButton(false)
-            : null}
+      {exchange.sayKo.trim() === "" ? null : (
+        <div data-ko-help="" className="relative self-start pt-4">
+          {/* B1 딱지: 말풍선 위 테두리에 걸친 '한국어 도움'(글로 밝힘 — 색만으로 가르지 않는다) */}
+          <span
+            data-ko-badge=""
+            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
+          >
+            {KO_HELP_TEXT.badge}
+          </span>
+          <div className={cn(BUBBLE_CLASS, "pt-5")}>
+            <p lang="ko" data-ko-say="" className={CHILD_SIZE.guide}>
+              {fillName(exchange.sayKo, englishName)}
+            </p>
+            {exchange.shownEn ? (
+              <button
+                type="button"
+                lang="en"
+                data-ko-taught=""
+                disabled={!canReplay}
+                onClick={onReplay}
+                className={cn(
+                  FOCUS_RING,
+                  CHILD_SIZE.english,
+                  "self-start text-left font-en font-bold",
+                )}
+              >
+                {fillName(exchange.shownEn, englishName)}
+              </button>
+            ) : null}
+            {exchange.soundOnly && exchange.retry === "none"
+              ? replayButton(false)
+              : null}
+          </div>
         </div>
-      </div>
+      )}
       {exchange.soundOnly && exchange.retry !== "none" ? (
         <div
           data-ko-retry={exchange.retry}

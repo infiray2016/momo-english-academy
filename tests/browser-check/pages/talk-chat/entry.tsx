@@ -106,6 +106,10 @@ type ChatConfig = {
   level: number;
   /** 한국어 질문마다 차례로 쓸 응답(모자라면 표현 답). */
   koHelps: KoStep[];
+  /** 이어 열 때 되살릴 한국어 문답(화면 자료 koHelps — b5-fix2 장면 chat-ko-resume, 없으면 처음 여는 수업). */
+  resumeKoHelps: TalkLessonView["koHelps"];
+  /** 이 글의 읽기를 시작 전에 실패시킨다(times 번, error 는 onerror 의 코드 — interrupted · canceled 는 끊김, 그 밖은 들려주지 못함). */
+  speakFails: { text: string; error: string; times: number }[];
 };
 
 const params = new URLSearchParams(location.search);
@@ -147,6 +151,8 @@ const cfg: ChatConfig = {
   wrap: null,
   level: 3,
   koHelps: [],
+  resumeKoHelps: [],
+  speakFails: [],
   ...given,
 };
 const chatMode = cfg.mode === "chat";
@@ -241,6 +247,8 @@ const chat = {
   /** 인식 세션이 열려 있는 수(start ~ end) · 읽기를 시작한 때 열린 세션이 없던 읽기의 글(세션 없이 읽음). */
   liveSessions: 0,
   bareReads: [] as { at: number; text: string }[],
+  /** 시작 전에 실패시킨 읽기(cfg.speakFails). */
+  failedReads: [] as { at: number; text: string; error: string }[],
   reads: [] as { at: number; text: string; live: number }[],
   router: { refresh: 0, push: [] as string[] },
   actions: [] as { at: number; name: string; input: unknown }[],
@@ -485,6 +493,18 @@ installFakeWebSpeech({
   const synth = window.speechSynthesis;
   const speak = synth.speak.bind(synth);
   synth.speak = (u: SpeechSynthesisUtterance) => {
+    const fail = cfg.speakFails.find((f) => f.text === u.text && f.times > 0);
+    if (fail) {
+      // 시작 알림 전에 실패(기기 읽기 중단 · 들려주지 못함) — 가짜 읽어 주기 줄에 넣지 않는다
+      fail.times -= 1;
+      chat.failedReads.push({ at: clock(), text: u.text, error: fail.error });
+      window.setTimeout(() => {
+        const ev = new Event("error");
+        Object.defineProperty(ev, "error", { value: fail.error });
+        u.onerror?.call(u, ev as SpeechSynthesisErrorEvent);
+      }, 30);
+      return;
+    }
     const entry = { at: clock(), text: u.text, live: chat.liveSessions };
     chat.reads.push(entry);
     if (entry.live === 0) chat.bareReads.push({ at: entry.at, text: u.text });
@@ -602,8 +622,8 @@ function viewOf(): TalkLessonView {
     homophones: [],
     lemmaEntries: [],
     friendship: { value: 1, max: 10 },
-    // 이어 열 때 되살릴 한국어 문답(묶음 5-나 — 이 쪽은 처음 여는 수업이라 없음)
-    koHelps: [],
+    // 이어 열 때 되살릴 한국어 문답(묶음 5-나 — 장면이 resumeKoHelps 로 줌, 없으면 처음 여는 수업)
+    koHelps: cfg.resumeKoHelps,
     noticesSeen: {
       talk_intro: true,
       talk_hint_nudge: true,

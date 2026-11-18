@@ -19,12 +19,19 @@ import {
 } from "@/components/conversation/talk-frame";
 import { lessonFitLandscapeOf } from "@/components/conversation/talk-log";
 import {
+  SOUND_TRACK_START,
+  soundTrackOf,
+} from "@/components/session/sound-retry";
+import {
   KO_ASK_NOTICE,
   KO_ASK_TIP,
+  KO_HELP_TURN_ENTRIES_MAX,
+  koAnsweredOf,
   koAskNoticeOf,
   koCarrySoundsOf,
   koChildOpenOf,
   koFailStepOf,
+  koHeardOf,
   koHelpSoundOf,
   koHelpTurnPartOf,
   koListenEndOf,
@@ -39,6 +46,7 @@ import {
   type QuietStatsRow,
   quietListenStatsOf,
 } from "@/core/speech/quiet-listen-stats";
+import { KO_HELP_ENTRIES_MAX } from "@/server/conversation/turn";
 
 const errorOf = (code: string) => ({
   kind: "error" as const,
@@ -209,6 +217,49 @@ describe("AC-N26 다음 영어 턴 요청의 koHelp 칸(접점 마)", () => {
       koHelpTurnPartOf([{ turnNo: 3, seq: 1, heard: true, replays: 2 }]),
     ).toEqual({ koHelp: [{ turnNo: 3, seq: 1, heard: true, replays: 2 }] });
   });
+
+  it("도움 항목은 서버가 읽는 수와 같은 상한까지 마지막 것들만 싣는다(본문 크기 상한에 막히지 않게 — b5-fix2)", () => {
+    expect(KO_HELP_TURN_ENTRIES_MAX).toBe(KO_HELP_ENTRIES_MAX);
+    const many = Array.from(
+      { length: KO_HELP_TURN_ENTRIES_MAX + 7 },
+      (_, i) => ({ turnNo: 3, seq: i + 1, heard: true, replays: 0 }),
+    );
+    const part = koHelpTurnPartOf(many);
+    expect(part.koHelp).toHaveLength(KO_HELP_TURN_ENTRIES_MAX);
+    expect(part.koHelp?.[0]?.seq).toBe(8);
+    expect(part.koHelp?.at(-1)?.seq).toBe(KO_HELP_TURN_ENTRIES_MAX + 7);
+    const fit = many.slice(0, KO_HELP_TURN_ENTRIES_MAX);
+    expect(koHelpTurnPartOf(fit)).toEqual({ koHelp: fit });
+  });
+});
+
+describe("AC-25b · C221 이어 하기로 되살린 표현 도움의 '들었음'(코드 검토 rev-b5b I-2)", () => {
+  const notPlayed = { kind: "error" as const, code: "x", started: false };
+  it("되살린 도움은 다시 듣기 한 번이 소리를 못 내도 '들었음'이 거짓으로 내려가지 않는다", () => {
+    const track = soundTrackOf(SOUND_TRACK_START, notPlayed);
+    expect(track.everHeard).toBe(false);
+    expect(track.failed).toBe(1);
+    expect(koHeardOf({ heardBefore: true, track })).toBe(true);
+    expect(
+      koHeardOf({
+        heardBefore: true,
+        track: soundTrackOf(track, { kind: "unsupported" }),
+      }),
+    ).toBe(true);
+  });
+  it("이 차례에 받은 도움은 셈 그대로다(한 번도 못 들려주면 거짓, 들려주면 참)", () => {
+    const failed = soundTrackOf(SOUND_TRACK_START, notPlayed);
+    expect(koHeardOf({ heardBefore: false, track: failed })).toBe(false);
+    expect(
+      koHeardOf({
+        heardBefore: false,
+        track: soundTrackOf(failed, { kind: "ended", heard: "played" }),
+      }),
+    ).toBe(true);
+    expect(koHeardOf({ heardBefore: false, track: SOUND_TRACK_START })).toBe(
+      false,
+    );
+  });
 });
 
 describe("AC-25c 가르친 표현과 맞으면 바로 보냄 — 인식 확인의 들려준 답에 더할 표현", () => {
@@ -289,9 +340,19 @@ describe("AC-25i 이어 하기 — 화면 자료 koHelps 를 곁 말풍선 · �
     expect(out.log.map((x) => x.turnNo)).toEqual([2, 4]);
   });
 
-  it("답이 아직 없는 행(sayKo null)은 어디에도 두지 않는다", () => {
-    const out = koResumeOf([h(6, 1, true, { sayKo: null })], { turnNo: 6 });
-    expect(out).toEqual({ live: [], carried: [], log: [] });
+  it("답이 아직 없는 행(sayKo null)은 물은 말만 남긴다 — 지금 차례면 곁 말풍선 자리, 아니면 기록이고 이어받지 않는다(정본 03 대화 기록 · rev-b5b I-1 (나))", () => {
+    const empty = { sayKo: null, teachEn: undefined };
+    const out = koResumeOf(
+      [h(6, 1, true, empty), h(4, 1, true, empty), h(2, 1, false, empty)],
+      { turnNo: 6 },
+    );
+    expect(out.live.map((x) => `${x.turnNo}:${x.seq}`)).toEqual(["6:1"]);
+    expect(out.carried).toEqual([]);
+    expect(out.log.map((x) => `${x.turnNo}:${x.seq}`)).toEqual(["2:1", "4:1"]);
+    expect(koAnsweredOf(out.live)).toEqual([]);
+    const blank = koResumeOf([h(6, 1, true, { sayKo: "  " })], { turnNo: 6 });
+    expect(koAnsweredOf(blank.live)).toEqual([]);
+    expect(blank.live).toHaveLength(1);
   });
 
   it("같은 차례의 도움은 순번 차례로 되살린다", () => {
@@ -399,6 +460,20 @@ describe("AC-25b 표현 답의 소리가 시작하기 전에 줄이 비면 들�
         koSoundDroppedOf({ waiting: true, speaking: false, sound }),
         JSON.stringify(sound),
       ).toBe(false);
+  });
+  it("시작 알림 전에 '끊김'으로 끝나도(결과가 하나라도 옴 — 셈은 들은 것으로 보아 failed 0) 차례를 열고 줄이 빈 것으로 다시 넣지 않는다(재검토 rev-b5a-2 N-1)", () => {
+    const track = soundTrackOf(SOUND_TRACK_START, { kind: "cancelled" });
+    expect(track).toMatchObject({ everHeard: true, failed: 0 });
+    const cancelled = {
+      ...waiting,
+      failed: track.failed > 0,
+      settled: true,
+    };
+    expect(koChildOpenOf(cancelled)).toBe(true);
+    expect(
+      koSoundDroppedOf({ waiting: true, speaking: false, sound: cancelled }),
+    ).toBe(false);
+    expect(koChildOpenOf({ ...waiting, settled: false })).toBe(false);
   });
 });
 

@@ -244,12 +244,18 @@ export function koChildOpenOf({
   waitOpen,
   started,
   failed,
+  settled = false,
 }: {
   waitOpen: boolean;
   started: boolean;
   failed: boolean;
+  /**
+   * 그 소리의 결과가 하나라도 왔는가(재검토 rev-b5a-2 N-1 — 시작 알림 전의 '끊김'은 셈이 들은 것으로 보아 failed 가 오르지 않는다. 그래도 결과가 온
+   * 뒤에는 더 기다릴 소리가 없으므로 연다).
+   */
+  settled?: boolean;
 }): boolean {
-  return !waitOpen || started || failed;
+  return !waitOpen || started || failed || settled;
 }
 
 /**
@@ -267,7 +273,14 @@ export function koSoundDroppedOf({
   /** 읽기 줄이 읽는 중 · 쉬는 중인가. */
   speaking: boolean;
   /** 지금 걸어 둔 답의 소리(없으면 기다릴 소리가 없음). */
-  sound: { waitOpen: boolean; started: boolean; failed: boolean } | undefined;
+  sound:
+    | {
+        waitOpen: boolean;
+        started: boolean;
+        failed: boolean;
+        settled?: boolean;
+      }
+    | undefined;
 }): boolean {
   if (!waiting || speaking || sound === undefined) return false;
   return !koChildOpenOf(sound);
@@ -288,7 +301,32 @@ export type KoHelpTurnEntry = {
 export function koHelpTurnPartOf(entries: readonly KoHelpTurnEntry[]): {
   koHelp?: KoHelpTurnEntry[];
 } {
-  return entries.length === 0 ? {} : { koHelp: entries.map((e) => ({ ...e })) };
+  return entries.length === 0
+    ? {}
+    : {
+        koHelp: entries.slice(-KO_HELP_TURN_ENTRIES_MAX).map((e) => ({ ...e })),
+      };
+}
+
+/**
+ * 회화 턴 요청에 싣는 도움 항목 수(기술 값 — 서버가 읽는 수 KO_HELP_ENTRIES_MAX 와 같다, 단위 시험이 둘을 맞댄다). 한 차례에 이보다 많이 물으면
+ * 마지막 것들만 싣는다: 거절하지 않고 횟수로 수업을 멈추지 않으며, 회화 턴 끝점의 본문 크기 상한에 막히지 않게 한다(검토 rev-b4c M-2 · b5-fix2).
+ */
+export const KO_HELP_TURN_ENTRIES_MAX = 50;
+
+/**
+ * 표현 답 소리의 '들었음'(순수, 코드 검토 rev-b5b I-2 · C221): 이 차례에 받은 도움은 셈 그대로(한 번이라도 들려줬나)이고, 이어 하기로 되살린 도움은
+ * 다시 열기 전에 들은 것으로 보므로(heardBefore) 다시 듣기가 소리를 못 내도 거짓으로 내려가지 않는다. 셈 자체는 그대로라 '소리가 안 나왔어요'
+ * 안내는 뜬다.
+ */
+export function koHeardOf({
+  heardBefore,
+  track,
+}: {
+  heardBefore: boolean;
+  track: { everHeard: boolean };
+}): boolean {
+  return heardBefore || track.everHeard;
 }
 
 /**
@@ -340,22 +378,30 @@ export type KoResumeHelp = {
 
 /**
  * 이어 열 때 도움 목록 가르기(순수, 묶음 5-나 · 접점 라 · AC-25i): 지금 열린 아이 차례(turnNo)의 열린 도움은 곁 말풍선으로 되살리고(live), 되묻는
- * 차례를 건너 이어받은 열린 도움(carried — 앞 턴 번호)은 대화 기록의 그 턴 자리에 두고 '알려 준 말 듣기'만 지금 차례에 다시 둔다. 나머지 답이
- * 있는 도움은 기록(log)이다. 답이 아직 없는 행(sayKo null)은 어디에도 그리지 않는다(plan '접점 다 · 라 보충').
+ * 차례를 건너 이어받은 열린 도움(carried — 앞 턴 번호)은 대화 기록의 그 턴 자리에 두고 '알려 준 말 듣기'만 지금 차례에 다시 둔다. 나머지
+ * 도움은 기록(log)이다. 답이 아직 없는 행(sayKo null — 호출 중에 끊긴 것)은 물은 말만 그리고 다시 부르지 않는다(정본 03 대화 기록 · rev-b5b
+ * I-1 (나)): 지금 차례면 live 에 남아 질문 말풍선만 그리고, 이어받지 않는다(carried 에 없음). 소리 · koHelp 는 koAnsweredOf 로 거른다.
  */
 export function koResumeOf<H extends KoResumeHelp>(
   helps: readonly H[],
   { turnNo }: { turnNo: number | undefined },
 ): { live: H[]; carried: H[]; log: H[] } {
-  const answered = [...helps]
-    .filter((h) => (h.sayKo ?? "").trim() !== "")
-    .sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq);
-  const live = answered.filter((h) => h.open && h.turnNo === turnNo);
+  const sorted = [...helps].sort(
+    (a, b) => a.turnNo - b.turnNo || a.seq - b.seq,
+  );
+  const live = sorted.filter((h) => h.open && h.turnNo === turnNo);
   return {
     live,
-    carried: answered.filter((h) => h.open && h.turnNo !== turnNo),
-    log: answered.filter((h) => !live.includes(h)),
+    carried: koAnsweredOf(sorted.filter((h) => h.open && h.turnNo !== turnNo)),
+    log: sorted.filter((h) => !live.includes(h)),
   };
+}
+
+/** 답이 있는 도움만(순수): 답이 빈 행은 물은 말만 그리고 다시 부르지 않는다 — 소리 · 다음 턴의 koHelp · 가르친 표현에 넣지 않는다. */
+export function koAnsweredOf<H extends { sayKo: string | null }>(
+  helps: readonly H[],
+): H[] {
+  return helps.filter((h) => (h.sayKo ?? "").trim() !== "");
 }
 
 /** 이어받은 도움 한 건(회화 턴 끝 줄 lesson.koCarry 의 항목 — 접점 마. 표현 글은 실릴 수도 있고, 없으면 화면이 받아 둔 도움에서 찾는다). */

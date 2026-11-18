@@ -71,8 +71,10 @@ import {
   type KoCarryItem,
   type KoCarrySound,
   type KoHelpTurnEntry,
+  koAnsweredOf,
   koCarrySoundsOf,
   koChildOpenOf,
+  koHeardOf,
   koHelpSoundOf,
   koHelpTurnPartOf,
   koResumeOf,
@@ -1281,6 +1283,12 @@ type KoSound = {
   started: boolean;
   track: SoundTrack;
   entry: KoHelpTurnEntry;
+  /** 이어 하기로 되살린 도움(다시 열기 전에 들은 것으로 본다 — 다시 듣기가 소리를 못 내도 '들었음'을 내리지 않는다, 코드 검토 rev-b5b I-2). */
+  heardBefore: boolean;
+  /** 결과가 하나라도 왔는가(끊김 포함 — 그 뒤로는 차례를 연다, 재검토 rev-b5a-2 N-1). */
+  settled: boolean;
+  /** 줄이 빈 것을 '들려주지 못함'으로 이미 넣었는가(열쇠마다 한 번 — 되풀이하지 않게, N-1). */
+  dropped: boolean;
 };
 
 /**
@@ -1292,24 +1300,30 @@ function openingKoOf(view: TalkLessonView) {
   const { live, carried } = koResumeOf(view.koHelps, {
     turnNo: view.current?.turnNo,
   });
-  const exchanges: KoHelpExchange[] = live.map((help) => ({
-    key: `${help.turnNo}:${help.seq}`,
-    question: help.question,
-    sayKo: help.sayKo ?? "",
-    shownEn: !lowBand && help.teachEn ? help.teachEn : undefined,
-    soundOnly:
-      lowBand &&
-      koHelpSoundOf(help, { lowBand, soundPauseMs: 0 }).kind === "taught",
-    retry: "none",
-  }));
-  const entries: KoHelpTurnEntry[] = live.map((help) => ({
+  // 답이 빈 행(호출 중에 끊긴 것)은 물은 말만 그리고 다시 부르지 않는다 — 소리 · koHelp · 가르친 표현은 답이 있는 도움만(rev-b5b I-1 (나))
+  const answered = koAnsweredOf(live);
+  const exchanges: KoHelpExchange[] = live.map((help) => {
+    const has = answered.includes(help);
+    return {
+      key: `${help.turnNo}:${help.seq}`,
+      question: help.question,
+      sayKo: has ? (help.sayKo ?? "") : "",
+      shownEn: has && !lowBand && help.teachEn ? help.teachEn : undefined,
+      soundOnly:
+        has &&
+        lowBand &&
+        koHelpSoundOf(help, { lowBand, soundPauseMs: 0 }).kind === "taught",
+      retry: "none",
+    };
+  });
+  const entries: KoHelpTurnEntry[] = answered.map((help) => ({
     turnNo: help.turnNo,
     seq: help.seq,
     heard: true,
     replays: 0,
   }));
   // 표현 답마다 '알려 준 말 듣기'가 그 표현을 읽는다(열쇠마다 — 코드 검토 rev-b5a I-6). 이어 연 차례는 기다리지 않는다
-  const sounds: KoSound[] = live.flatMap((help, i) =>
+  const sounds: KoSound[] = answered.flatMap((help, i) =>
     help.teachEn !== undefined &&
     koHelpSoundOf(help, { lowBand, soundPauseMs: 0 }).kind === "taught"
       ? [
@@ -1321,6 +1335,9 @@ function openingKoOf(view: TalkLessonView) {
             started: true,
             track: SOUND_TRACK_START,
             entry: entries[i] as KoHelpTurnEntry,
+            heardBefore: true,
+            settled: false,
+            dropped: false,
           },
         ]
       : [],
@@ -1328,7 +1345,7 @@ function openingKoOf(view: TalkLessonView) {
   return {
     exchanges,
     entries,
-    taught: koTaughtOf(live),
+    taught: koTaughtOf(answered),
     sounds,
     logPending: live.flatMap((help) => {
       const entry = koLogEntryOf(help, { lowBand });
@@ -1542,6 +1559,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         waitOpen: sound.waitOpen,
         started: sound.started,
         failed: sound.track.failed > 0,
+        settled: sound.settled,
       })
     )
       return;
@@ -1553,11 +1571,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       item.koKey === undefined ? undefined : koSounds.current.get(item.koKey);
     if (!sound) return;
     sound.track = soundTrackOf(sound.track, outcome);
-    sound.entry.heard = sound.track.everHeard;
+    sound.settled = true;
+    sound.entry.heard = koHeardOf(sound);
     if (sound.low) {
       const retry = soundRetryStepOf(sound.track, { canSkip: true });
+      // 바뀐 것이 없으면 같은 배열(곁 말풍선 목록이 효과의 의존값이라 새 배열이면 다시 돈다 — N-1)
       setKoExchanges((list) =>
-        list.map((x) => (x.key === sound.key ? { ...x, retry } : x)),
+        list.some((x) => x.key === sound.key && x.retry !== retry)
+          ? list.map((x) => (x.key === sound.key ? { ...x, retry } : x))
+          : list,
       );
     }
     koOpenIfDue();
@@ -1612,10 +1634,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           waitOpen: sound.waitOpen,
           started: sound.started,
           failed: sound.track.failed > 0,
+          settled: sound.settled,
         },
-      })
+      }) ||
+      sound?.dropped
     )
       return;
+    if (sound) sound.dropped = true;
     koSpoken(
       {
         text: sound?.text ?? "",
@@ -2686,6 +2711,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
             started: false,
             track: SOUND_TRACK_START,
             entry,
+            heardBefore: false,
+            settled: false,
+            dropped: false,
           });
           koWaitKey.current = key;
           if (lowLevel) entry.heard = false;

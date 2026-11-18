@@ -12,6 +12,7 @@ import { ChildBubble } from "@/components/conversation/child-turn";
 import { BUBBLE_CLASS, BUBBLE_WIDTH } from "@/components/conversation/tori";
 import { fillName } from "@/core/ai/mask";
 import {
+  koLogReplayOf,
   type TalkLogEntry,
   type TalkLogReplayItem,
   talkLogReplayOf,
@@ -77,16 +78,36 @@ function PastTeacher({
 }
 
 /**
- * 지난 한국어 문답 한 줄(수업 안 한국어로 묻기 묶음 5-나 — 곁 말풍선과 같은 꼴: 아이의 한국어 질문 · '한국어 도움' 딱지의 선생님 답). 한국어 답은 글만이고
- * 읽지 않는다. 4단계부터는 가르친 표현 글이 남고(누르는 단추가 아니다 — 지난 차례), 1~3단계는 그 글도 듣기 단추도 없다(T2).
+ * 지난 한국어 문답 한 줄(수업 안 한국어로 묻기 묶음 5-나 — 곁 말풍선과 같은 꼴: 아이의 한국어 질문 · '한국어 도움' 딱지의 선생님 답). 한국어 답은
+ * 읽지 않는다. 4단계부터는 가르친 표현 글이 남고 그 말풍선을 누르면 표현 하나만 다시 읽는다(정본 03 대화 기록 · rev-b5b I-1 (가) — 듣는 동안은
+ * 끈다, 지난 선생님 말과 같다). 1~3단계는 그 글도 누를 것도 없다(T2). 답이 빈 행은 물은 말만 그린다(I-1 (나)).
  */
 function PastKoHelp({
   entry,
   englishName,
+  listening,
+  onReplay,
 }: {
   entry: Extract<TalkLogEntry, { who: "ko" }>;
   englishName: string;
+  listening: boolean;
+  onReplay: (items: TalkLogReplayItem[]) => void;
 }) {
+  const replay = koLogReplayOf(entry);
+  const say = entry.sayKo ? (
+    <span lang="ko" data-ko-say="" className={cn(CHILD_SIZE.guide, "block")}>
+      {fillName(entry.sayKo, englishName)}
+    </span>
+  ) : null;
+  const taught = entry.shownEn ? (
+    <span
+      lang="en"
+      data-ko-log-taught=""
+      className={cn(CHILD_SIZE.english, "block font-en font-bold")}
+    >
+      {fillName(entry.shownEn, englishName)}
+    </span>
+  ) : null;
   return (
     <div data-ko-log="" className="flex flex-col gap-3">
       <p
@@ -96,28 +117,35 @@ function PastKoHelp({
       >
         {fillName(entry.question, englishName)}
       </p>
-      <div className="relative self-start pt-4">
-        <span
-          data-ko-badge=""
-          className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
-        >
-          {KO_HELP_TEXT.badge}
-        </span>
-        <div className={cn(BUBBLE_CLASS, "pt-5")}>
-          <p lang="ko" data-ko-say="" className={CHILD_SIZE.guide}>
-            {fillName(entry.sayKo, englishName)}
-          </p>
-          {entry.shownEn ? (
-            <p
-              lang="en"
-              data-ko-log-taught=""
-              className={cn(CHILD_SIZE.english, "font-en font-bold")}
+      {say ? (
+        <div className="relative self-start pt-4">
+          <span
+            data-ko-badge=""
+            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
+          >
+            {KO_HELP_TEXT.badge}
+          </span>
+          {replay.length > 0 ? (
+            <button
+              type="button"
+              data-ko-log-replay=""
+              disabled={listening}
+              onClick={() => onReplay(replay)}
+              className={cn(
+                FOCUS_RING,
+                CHILD_SIZE.target,
+                BUBBLE_CLASS,
+                "pt-5 text-left",
+              )}
             >
-              {fillName(entry.shownEn, englishName)}
-            </p>
-          ) : null}
+              {say}
+              {taught}
+            </button>
+          ) : (
+            <div className={cn(BUBBLE_CLASS, "pt-5")}>{say}</div>
+          )}
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -738,6 +766,8 @@ export function TalkLog({
               key={entry.key}
               entry={entry}
               englishName={englishName}
+              listening={listening}
+              onReplay={onReplay}
             />
           ) : (
             <ChildBubble key={entry.key} said={entry.said} />

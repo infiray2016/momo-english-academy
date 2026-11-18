@@ -26,6 +26,10 @@ export const PAGES = {
       "@/components/conversation/tori": "tori.ts",
       "@/components/activities/common": "common.ts",
       "@/components/board/board": "board.ts",
+      // 기록 칸이 닿는 조각(ko-help-bubble · sound-retry · mic-blocked)이 음성 층 · next/link 를 가져온다(b5-fix2 — 없으면 묶기 · 쪽에서 멈춤)
+      "client-only": "empty.ts",
+      "next/link": "next-link.tsx",
+      "next/image": "next-image.tsx",
     },
   },
   // 수업 화면의 배치(S5 fix 7): 실제 조각(아이 화면 한 장 · 위 띠 · 선생님 창 · 기록 칸 · 말풍선 · 아이 차례 · 정리)과 앱의 실제 스타일(Tailwind)

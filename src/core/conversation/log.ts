@@ -62,7 +62,8 @@ export type TalkLogKoEntry = {
   turnNo: number;
   seq: number;
   question: string;
-  sayKo: string;
+  /** 선생님의 한국어 답(답이 빈 행 — 호출 중에 끊긴 것 — 은 칸이 없고 물은 말만 그린다, 정본 03 대화 기록). */
+  sayKo?: string;
   shownEn?: string;
 };
 
@@ -229,15 +230,16 @@ export type KoLogSource = {
 };
 
 /**
- * 한국어 도움 → 기록 줄(순수, 묶음 5-나 · AC-25i): 답이 아직 없으면 null(도움 말풍선을 그리지 않는다). 가르친 표현 글은 4단계부터만 남기고
- * 1~3단계는 남기지 않는다(소리로만 준 글 — T2, 곁 말풍선과 같은 대접). 열쇠는 턴 번호 · 순번이다.
+ * 한국어 도움 → 기록 줄(순수, 묶음 5-나 · AC-25i): 답이 아직 없으면 물은 말만 남긴다(도움 말풍선 · 표현 글 없음, 다시 부르지 않음 — 정본 03 대화
+ * 기록 · rev-b5b I-1 (나)). 질문 글도 비면 null. 가르친 표현 글은 4단계부터만 남기고 1~3단계는 남기지 않는다(소리로만 준 글 — T2, 곁 말풍선과
+ * 같은 대접). 열쇠는 턴 번호 · 순번이다.
  */
 export function koLogEntryOf(
   help: KoLogSource,
   { lowBand }: { lowBand: boolean },
 ): TalkLogKoEntry | null {
   const sayKo = help.sayKo?.trim() ?? "";
-  if (sayKo === "") return null;
+  if (sayKo === "" && help.question.trim() === "") return null;
   const teach = help.teachEn?.trim() ?? "";
   return {
     who: "ko",
@@ -245,9 +247,18 @@ export function koLogEntryOf(
     turnNo: help.turnNo,
     seq: help.seq,
     question: help.question,
-    sayKo,
-    ...(!lowBand && teach !== "" ? { shownEn: teach } : {}),
+    ...(sayKo === "" ? {} : { sayKo }),
+    ...(sayKo !== "" && !lowBand && teach !== "" ? { shownEn: teach } : {}),
   };
+}
+
+/**
+ * 지난 한국어 도움 말풍선을 누를 때 읽을 차례(순수, 정본 03 대화 기록 · rev-b5b I-1 (가)): 4단계부터 남은 가르친 표현 하나만 선생님 목소리로 읽는다.
+ * 한국어 답은 읽지 않는다(AC-25b). 표현 글이 없는 줄(1~3단계 · 뜻 답 · 물은 말만 있는 행)은 비어 누를 것이 없다.
+ */
+export function koLogReplayOf(entry: TalkLogKoEntry): TalkLogReplayItem[] {
+  const text = entry.shownEn?.trim() ?? "";
+  return text === "" ? [] : [{ text, w: "tori" }];
 }
 
 /**

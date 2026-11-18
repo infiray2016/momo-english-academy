@@ -423,6 +423,63 @@ test.describe("수업 안 한국어로 묻기 — 글이 보이는 단계(10단�
       .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
       .toBe(2);
   });
+
+  test("AC-25i · AC-25b 10단계: 차례가 지나 대화 기록에 남은 지난 한국어 도움 말풍선을 누르면 가르친 표현 하나만 다시 읽고 한국어 답은 읽지 않는다(정본 03 대화 기록 · b5-fix2)", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(context, HIGH_LEVEL, [
+      koSaidRun(QUESTION),
+      saidRun(SAYS),
+    ]);
+    await pushFakeAi([
+      ruleFor("talk_ko_help", talkKoHelpReply({ band: "10-12" })),
+    ]);
+    await askKorean(page);
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(1);
+    await expect(speakButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    await speakEnglish(page);
+    const past = page.locator("[data-ko-log] [data-ko-log-replay]");
+    await expect(past).toHaveCount(1);
+    await expect(past).toContainText(TAUGHT);
+    await past.click();
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(2);
+    const spoken = (await speechRecord(page)).spoken;
+    expect(spoken).not.toContain(FAKE_KO_HELP.expression.sayKo);
+  });
+});
+
+test.describe("수업 안 한국어로 묻기 — 뜻 답과 한국어 답(3단계)", () => {
+  test("AC-25b 뜻 갈래에는 '알려 준 말 듣기'가 없고 한국어 답은 읽지 않으며, 대화 기록으로 넘어간 뒤에도 누를 것 · 영어 글이 없다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(context, LOW_LEVEL, [
+      koSaidRun(QUESTION),
+      saidRun(SAYS),
+    ]);
+    await pushFakeAi([
+      ruleFor(
+        "talk_ko_help",
+        talkKoHelpReply({ band: "1-3", kind: "meaning" }),
+      ),
+    ]);
+    await askKorean(page);
+    await expect(page.locator("[data-ko-exchange] [data-ko-say]")).toHaveText(
+      FAKE_KO_HELP.meaning.sayKo,
+    );
+    await expect(page.locator("[data-ko-replay]")).toHaveCount(0);
+    await expect(speakButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    await speakEnglish(page);
+    await expect(page.locator("[data-ko-log]")).toHaveCount(1);
+    await expect(page.locator("[data-ko-log-replay]")).toHaveCount(0);
+    const spoken = (await speechRecord(page)).spoken;
+    expect(spoken).not.toContain(FAKE_KO_HELP.meaning.sayKo);
+  });
 });
 
 test.describe("수업 안 한국어로 묻기 — 첫 안내(3단계)", () => {
