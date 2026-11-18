@@ -4,7 +4,8 @@
 // (a) 받을 차례 판정(chatFirstQuestionBlocksOf — 짧은 준비 없는 대화 토막은 대화 첫 질문을 기다리지 않음, 아이 행이 마지막이면 stale)
 // (b) 조용함 행을 뺀 앞 대화 (c) 물음이 없는 차례에서도 도움 호출의 '선생님의 지금 말'이 빈 글이 아님 (d) 연 힌트 글(힌트 받는 서버 액션이 저장한 단)
 // (e) 도움 뒤 턴의 사실 줄(입력 줄 바로 앞)과 대화 기록에 한국어 문답 없음 · 아이 행 힌트 종류 · 첫 판정(도움받은 상황) · 기기 값 적기
-// (f) 답 없는 행 · 대신 줄 · 묻지 않은 턴은 사실 줄이 없다.
+// (f) 답 없는 행 · 대신 줄 · 묻지 않은 턴은 사실 줄이 없다(들려주지 못한 표현도 기기 값은 그 차례의 턴 번호 행에만 적는다 — talk-ko-help-turn 의
+// 옛 (j-이야기)가 보던 몫을 통합 정리 int-merge 에서 옮김).
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -373,14 +374,23 @@ describe("이야기 방식 수업의 한국어로 묻기(묶음 K)", () => {
         });
       if (variant === "call_failed")
         await insertHelp(sessionId, turnNo, { fallback: "call_failed" });
-      if (variant === "not_heard") await insertHelp(sessionId, turnNo);
+      if (variant === "not_heard") {
+        await insertHelp(sessionId, turnNo);
+        // 다른 턴 번호의 행(기기 값 적기의 좁힘 — 이 아이 차례의 턴 번호 행에만 적는다, chat-turn chatKoHelpRead · 통합 정리 int-merge 가 옮긴 몫)
+        await insertHelp(sessionId, turnNo + 1);
+      }
       h.fake.push(chatTurnRule({ say: "Gimbap is yummy!" }));
       await turn(
         chatSayBody(
           sessionId,
           TAUGHT,
           variant === "not_heard"
-            ? { koHelp: [{ turnNo, seq: 1, heard: false }] }
+            ? {
+                koHelp: [
+                  { turnNo, seq: 1, heard: false, replays: 2 },
+                  { turnNo: turnNo + 1, seq: 1, heard: false, replays: 5 },
+                ],
+              }
             : {},
         ),
       );
@@ -389,6 +399,21 @@ describe("이야기 방식 수업의 한국어로 묻기(묶음 K)", () => {
         (r) => r.speaker === "child",
       );
       hintKinds.push(child?.hintKind);
+      if (variant === "not_heard") {
+        // 들려주지 못한 표현도 기기 값은 그 차례의 행에 적히고(도움 없음으로 대접할 뿐), 다른 턴 번호의 행은 그대로다
+        const helps = await db
+          .select()
+          .from(talkKoHelps)
+          .where(eq(talkKoHelps.sessionId, sessionId));
+        expect(helps.find((r) => r.turnNo === turnNo)).toMatchObject({
+          heard: false,
+          replays: 2,
+        });
+        expect(helps.find((r) => r.turnNo === turnNo + 1)).toMatchObject({
+          heard: null,
+          replays: null,
+        });
+      }
     }
     expect(messages.every((m) => !m.includes(KO_LINE_HEAD))).toBe(true);
     expect(new Set(messages).size).toBe(1);
