@@ -2,10 +2,11 @@
 // AC-25i · AC-25k · AC-25o · AC-N26 · AC-N28). 가짜 음성(인식기는 언어를 가리지 않고 글을 낸다 — 듣기의 언어는 인식 객체의 언어 기록으로 본다)과
 // 가짜 AI(규격 제목 talk_ko_help)로 기존 방식 수업을 진행한다. 회화 턴 요청의 koHelp 칸은 서버 묶음 4-다 가 받으므로, 한국어로 물은 차례 뒤 영어
 // 턴을 보내는 시험(AC-25i 기록 · AC-N26 · AC-25o)은 4-다 · 4-라 와 함께 CI 에서 처음 돈다. 이 Mac 은 e2e DB 가 뜨지 않아 CI 에서 돈다.
-import type { BrowserContext, Page } from "@playwright/test";
+import type { BrowserContext, Page, Route } from "@playwright/test";
 import { eq, max } from "drizzle-orm";
-import { KO_ASK_TIP } from "../../src/core/conversation/ko-ask";
+import { KO_ASK_NOTICE, KO_ASK_TIP } from "../../src/core/conversation/ko-ask";
 import { talkMoveOf } from "../../src/core/conversation/move";
+import type { TalkLesson } from "../../src/core/seed/schema/lesson";
 import { profiles, talkTurns } from "../../src/db/schema/learning";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { CHILD_VIEWPORTS } from "./child-size";
@@ -34,6 +35,7 @@ import {
   talkLessonReply,
   talkScript,
   talkTurnRequests,
+  withoutSceneOpener,
 } from "./talk";
 import { expectInView } from "./talk-in-view";
 
@@ -56,6 +58,29 @@ const KO_LANG = TEST_SETTINGS["speech.lang_ko"].value;
 const EN_LANG = TEST_SETTINGS["speech.lang"].value;
 /** 기록 칸을 넘치게 넣을 앞선 대화 차례 쌍(talk-log-follow.spec 과 같은 값). */
 const PAIRS = 6;
+/** 아이 버튼 글자의 최소 크기(px, AC-25a · 정본 03 '한국어로 물어보기' 행 — 시험 값). */
+const TEXT_MIN_PX = 22;
+/** 3단계 카드 질문의 힌트 단 수(한국어 뜻 → 영어 틀 → 영어 문장과 듣기 — talk-lesson.spec AC-15p 와 같다, 시험 값). */
+const LOW_HINT_TIERS = 3;
+/** '저절로 넘어가지 않음'을 볼 때 기다리는 시간(ms, 시험 값 — talk.ko_ask_sound_pause_ms 와 감시 상한보다 넉넉히). */
+const NO_ADVANCE_MS = 4_000;
+/** 그만하기 시험에서 한국어 질문 응답을 붙잡아 두는 시간(ms, 시험 값 — 그만하기 · 확인을 누를 틈). */
+const KO_HOLD_MS = 5_000;
+/** 화면 글(정본 · 정본 밖 문구 표 — src 의 TALK_TEXT · SOUND_RETRY_TEXT 와 같은 글, 화면 묶음을 가져오지 않으려 다시 적는다). */
+const KO_T = {
+  soundNotice: "소리가 안 나왔어요. 다시 들어 봐요",
+  silentNote: "소리가 안 나면 무음 모드를 꺼 주세요",
+  next: "다음",
+  offline: "인터넷이 끊겼어요. 연결되면 다시 해요",
+  stop: "그만하기",
+  stopYes: "그만할래요",
+} as const;
+/** 합친 안내 두 글 가운데 하나(정한 것 12 — 어느 쪽을 고르는지는 rev-b5a M-1, 컨트롤러 몫). */
+const KO_NOTICE_ANY = new RegExp(
+  `^(${[KO_ASK_NOTICE.hint, KO_ASK_NOTICE.talk]
+    .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})$`,
+);
 
 test.beforeEach(async () => {
   await resetHousehold();
@@ -82,17 +107,30 @@ async function untilChildTurn(page: Page) {
   ).toHaveCount(0, { timeout: STREAM_END_MS });
 }
 
-/** 수업을 열고 첫 아이 차례(인사 질문)까지 간다. 회화 턴 요청 본문은 쪽을 열기 전부터 모은다. */
+/**
+ * 수업을 열고 첫 아이 차례(인사 질문)까지 간다. 회화 턴 요청 본문은 쪽을 열기 전부터 모은다. lesson 으로 견본을 바꾸고, prep 이 참이면 짧은 준비를
+ * 건너뛰지 않으며(1~3단계 talk.prep_mode always), prepare 는 쪽을 열기 전에 init script 를 건다(화면 고침 3 '가').
+ */
 async function openKoLesson(
   context: BrowserContext,
   level: number,
   runs: Parameters<typeof talkScript>[0],
+  {
+    lesson = talkLessonCard(level),
+    prep = false,
+    prepare,
+  }: {
+    lesson?: TalkLesson;
+    prep?: boolean;
+    prepare?: (page: Page) => Promise<void>;
+  } = {},
 ) {
   const profileId = await talkHousehold(level);
-  await skipStartPrep(profileId, level);
-  const row = await insertTalkLesson({ level, lesson: talkLessonCard(level) });
+  if (!prep) await skipStartPrep(profileId, level);
+  const row = await insertTalkLesson({ level, lesson });
   const sessionId = await openTalkSession(profileId, row);
   const page = await speechPage(context, talkScript(runs));
+  if (prepare) await prepare(page);
   const turnBodies = collectTurnBodies(page);
   await page.goto(`/session/${sessionId}`);
   await expect(page.locator("[data-talk-start]")).toBeVisible();
@@ -156,6 +194,116 @@ async function spokenCount(page: Page, text: string): Promise<number> {
   return (await speechRecord(page)).spoken.filter((s) => s === text).length;
 }
 
+/** 글자 크기(px, 계산된 값). */
+function fontPx(page: Page, selector: string): Promise<number> {
+  return page
+    .locator(selector)
+    .first()
+    .evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
+}
+
+/**
+ * 그 글의 읽어 주기만 가짜 음성에 넘기지 않는다(시작 알림이 오지 않아 감시 상한 speech.speak_start_timeout_seconds 뒤 '들려주지 못함' —
+ * talk.ts recordInterruptedSpeech 와 같은 init script 감싸기). 넘기지 않은 글은 __mutedSpeech 에 쌓는다. speechPage 뒤 page.goto 앞에 부른다.
+ */
+async function muteSpeechOf(page: Page, text: string): Promise<void> {
+  await page.addInitScript((muted) => {
+    type Utter = EventTarget & { text: string };
+    const w = window as unknown as {
+      speechSynthesis?: { speak(utterance: Utter): void };
+      __mutedSpeech?: string[];
+    };
+    const synth = w.speechSynthesis;
+    if (!synth) return;
+    const list: string[] = [];
+    w.__mutedSpeech = list;
+    const speak = synth.speak.bind(synth);
+    synth.speak = (utterance) => {
+      if (utterance.text === muted) {
+        list.push(utterance.text);
+        return;
+      }
+      speak(utterance);
+    };
+  }, text);
+}
+
+/** 넘기지 않은 읽어 주기 수(muteSpeechOf 를 건 쪽). */
+function mutedCount(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      ((window as unknown as { __mutedSpeech?: string[] }).__mutedSpeech ?? [])
+        .length,
+  );
+}
+
+/** '한국어로 물어보기' → 인식 확인의 '보내기'까지(응답은 기다리지 않는다 — 응답 갈래 시험). */
+async function sendKorean(page: Page) {
+  await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+  await koButton(page).click();
+  await expect(page.locator("[data-ko-confirm]")).toBeVisible({
+    timeout: STREAM_END_MS,
+  });
+  await page.locator("[data-ko-send]").click();
+}
+
+/** 한국어 질문 요청 가로채기의 한 번 몫: 그대로 보냄 · HTTP 500 · 연결 끊음 · 고른 JSON. */
+type KoRouteStep = "pass" | "error" | "abort" | { json: { t: string } };
+
+/**
+ * 한국어 질문 끝점을 가로채(talk-ko-ask AC-25o 의 page.route 꼴) 요청마다 plan 의 앞 것을 쓰고(비면 그대로 보냄), 받은 본문의 시도 id 를 차례로
+ * 모은다. 돌려준 ids 는 시험이 들여다본다.
+ */
+async function routeKoHelp(page: Page, plan: KoRouteStep[]) {
+  const ids: string[] = [];
+  await page.route(`**${TALK_KO_HELP_URL}`, async (route: Route) => {
+    const body = route.request().postDataJSON() as { clientAttemptId: string };
+    ids.push(body.clientAttemptId);
+    const step = plan.shift() ?? "pass";
+    if (step === "pass") await route.continue();
+    else if (step === "error") await route.fulfill({ status: 500, body: "{}" });
+    else if (step === "abort") await route.abort("failed");
+    else
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(step.json),
+      });
+  });
+  return ids;
+}
+
+/** 3단계 카드 질문의 힌트를 끝 단(영어 문장과 듣기)까지 연다(talk-lesson.spec AC-15p 와 같은 누름). */
+async function openAllHints(page: Page) {
+  const tiers = page.locator("[data-child-turn] [data-hint-tier]");
+  await expect(hintButton(page)).toBeVisible();
+  for (let i = 0; i < LOW_HINT_TIERS; i++) {
+    await hintButton(page).click();
+    await expect(tiers).toHaveCount(i + 1);
+  }
+  await expect(
+    page.locator('[data-child-turn] [data-hint-tier="sentence"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator("[data-child-turn] [data-hint-listen]"),
+  ).toHaveCount(1);
+}
+
+/**
+ * 카드 기회를 대화 첫 질문 하나로 다 다루는 견본(talk-lesson.spec allChancesLesson 과 같은 꼴 — 마무리 제안 갈래 '마무리'를 서버가 받게): 장면 여는
+ * 질문을 빼고 필수 질문을 첫째 하나로, 새 단어를 비운다. 짧은 준비 낱말은 카드 그대로다.
+ */
+function allChancesLesson(level: number): TalkLesson {
+  const lesson = withoutSceneOpener(talkLessonCard(level));
+  const first = lesson.card.required[0];
+  if (!first) throw new Error("견본 꼴 — 필수 질문이 있는 배정 수업");
+  return {
+    ...lesson,
+    newWords: [],
+    card: { ...lesson.card, required: [first] },
+  };
+}
+
 /** 앞선 대화 차례를 바로 넣는다(talk-log-follow.spec 의 insertExchanges 와 같은 꼴 — 기록 칸을 넘치게). */
 async function insertExchanges(sessionId: string, count: number) {
   const db = e2eDb();
@@ -210,6 +358,10 @@ test.describe("수업 안 한국어로 묻기 — 단추와 누름(3단계)", ()
     expect(koBox.height).toBeGreaterThanOrEqual(TARGET_MIN_PX);
     expect(koBox.width).toBeGreaterThanOrEqual(TARGET_MIN_PX);
     expect(koBox.y).toBeGreaterThanOrEqual(speakBox.y + speakBox.height);
+    // 글자 22px 이상(AC-25a)
+    expect(
+      await fontPx(page, "[data-child-turn] [data-ko-ask]"),
+    ).toBeGreaterThanOrEqual(TEXT_MIN_PX);
 
     // 영어 듣기 동안 한국어 단추는 눌리지 않는다(AC-N28). 묻지 않은 차례라 다음 턴은 지금 그대로 간다
     const before = await talkTurnRequests();
@@ -405,6 +557,13 @@ test.describe("수업 안 한국어로 묻기 — 글이 보이는 단계(10단�
     await expect(koButton(page)).toBeVisible();
     const koBox = await koButton(page).boundingBox();
     expect(koBox?.height ?? 0).toBeGreaterThanOrEqual(TARGET_MIN_PX);
+    // 10단계 표본에는 '힌트'가 없고(AC-25a), '말하기' · '잘 모르겠어요' · '한국어로 물어보기'가 있으며 글자는 22px 이상이다
+    await expect(hintButton(page)).toHaveCount(0);
+    await expect(speakButton(page)).toBeVisible();
+    await expect(dontKnowButton(page)).toBeVisible();
+    expect(
+      await fontPx(page, "[data-child-turn] [data-ko-ask]"),
+    ).toBeGreaterThanOrEqual(TEXT_MIN_PX);
     await pushFakeAi([
       ruleFor("talk_ko_help", talkKoHelpReply({ band: "10-12" })),
     ]);
@@ -454,7 +613,7 @@ test.describe("수업 안 한국어로 묻기 — 글이 보이는 단계(10단�
 });
 
 test.describe("수업 안 한국어로 묻기 — 뜻 답과 한국어 답(3단계)", () => {
-  test("AC-25b 뜻 갈래에는 '알려 준 말 듣기'가 없고 한국어 답은 읽지 않으며, 대화 기록으로 넘어간 뒤에도 누를 것 · 영어 글이 없다", async ({
+  test("AC-25b 뜻 갈래에는 '알려 준 말 듣기'가 없고 한국어 답은 읽지 않으며, 선생님의 지금 말을 쉼 없이 한 번 다시 읽고 곁 말풍선에 영어 글이 없고, 대화 기록으로 넘어간 뒤에도 누를 것 · 영어 글이 없다", async ({
     context,
   }) => {
     test.setTimeout(LONG);
@@ -468,12 +627,32 @@ test.describe("수업 안 한국어로 묻기 — 뜻 답과 한국어 답(3단�
         talkKoHelpReply({ band: "1-3", kind: "meaning" }),
       ),
     ]);
+    const spokenBefore = (await speechRecord(page)).spoken.length;
     await askKorean(page);
+    const shownAt = await page.evaluate(() => performance.now());
     await expect(page.locator("[data-ko-exchange] [data-ko-say]")).toHaveText(
       FAKE_KO_HELP.meaning.sayKo,
     );
     await expect(page.locator("[data-ko-replay]")).toHaveCount(0);
+    // 곁 말풍선(질문 · 딱지 · 한국어 답)에 영어 글이 없다
+    await expect(page.locator("[data-ko-exchange]")).not.toHaveText(/[A-Za-z]/);
+    // 지금 말(인사 질문)을 쉼 없이 한 번 다시 읽는다(talk-frame askKo 뜻 갈래 — lessonSpokenItemsOf(bubble))
+    const greeting = "How are you today?";
+    const newly = async () =>
+      (await speechRecord(page)).spoken
+        .slice(spokenBefore)
+        .filter((s) => s.includes(greeting)).length;
+    await expect.poll(newly, { timeout: STREAM_END_MS }).toBe(1);
+    const record = await speechRecord(page);
+    const againAt =
+      record.spokenAt[
+        record.spoken.findIndex(
+          (s, i) => i >= spokenBefore && s.includes(greeting),
+        )
+      ] ?? Number.POSITIVE_INFINITY;
+    expect(againAt - shownAt).toBeLessThan(SOUND_PAUSE_MS);
     await expect(speakButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    expect(await newly()).toBe(1);
     await speakEnglish(page);
     await expect(page.locator("[data-ko-log]")).toHaveCount(1);
     await expect(page.locator("[data-ko-log-replay]")).toHaveCount(0);
@@ -577,5 +756,327 @@ test.describe("수업 안 한국어로 묻기 — iPad 세로 · 가로에서 �
     });
     await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
     await mainButtons();
+  });
+});
+
+// ── 화면 고침 3 '가'(재검토 rev-b5b-2 3절 아직 빠진 것 1 · 2 · 3 · 6 과 재현 틀 장면 chat-ko-ask 만 덮던 것) ──
+
+test.describe("수업 안 한국어로 묻기 — 단추가 없는 자리(3단계)", () => {
+  test("AC-25a 인사 · 대화 차례에는 '한국어로 물어보기'가 있고, 짧은 준비 쪽지 · 마무리 물음 차례 · 정리에는 없다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const lesson = allChancesLesson(LOW_LEVEL);
+    const prepWords = lesson.card.prep ?? [];
+    const { page } = await openKoLesson(
+      context,
+      LOW_LEVEL,
+      [
+        saidRun("I'm good."),
+        ...prepWords.map((w) => saidRun(w)),
+        saidRun(lesson.card.required[0]?.answerExample ?? SAYS),
+      ],
+      { lesson, prep: true },
+    );
+    const anyKo = page.locator("[data-ko-ask]");
+    // 인사 차례: 있다
+    await expect(koButton(page)).toBeVisible();
+    // 짧은 준비: 쪽지마다 없다
+    await pushFakeAi([
+      talkLessonReply({ tori_en: "Great! Let's learn some new words!" }),
+    ]);
+    await speakButton(page).click();
+    expect(prepWords.length).toBeGreaterThan(0);
+    for (let i = 0; i < prepWords.length; i++) {
+      const note = page.locator("[data-prep-note]");
+      await expect(note).toBeVisible({ timeout: STREAM_END_MS });
+      await expect(anyKo).toHaveCount(0);
+      await expect(note.locator("[data-speak]")).not.toHaveAttribute(
+        "data-speak-waiting",
+        "",
+        { timeout: STREAM_END_MS },
+      );
+      await note.locator("[data-speak]").click();
+      await expect(note.locator("[data-follow-result]")).toBeVisible();
+    }
+    // 대화 첫 질문: 있다
+    await untilChildTurn(page);
+    await expect(koButton(page)).toBeVisible();
+    // 마무리 물음(갈래 '마무리' 뒤 두 단추 — 말하기는 남는다): 없다
+    await pushFakeAi([
+      talkLessonReply({
+        tori_en: "That was a great talk! We can stop here.",
+        next_move: "closing",
+      }),
+    ]);
+    await speakButton(page).click();
+    const choice = page.locator("[data-talk-choice]");
+    await expect(choice).toBeVisible({ timeout: STREAM_END_MS });
+    await expect(turn(page)).toBeVisible();
+    await expect(anyKo).toHaveCount(0);
+    // 정리: 없다(참여가 적으면 확인 쪽지 '그만할래요'를 거친다)
+    await choice.getByRole("button", { name: KO_T.stop }).click();
+    const wrapAll = page.locator("[data-wrap-all]");
+    const stopYes = page.getByRole("button", { name: KO_T.stopYes });
+    await expect(wrapAll.or(stopYes)).toBeVisible({ timeout: STREAM_END_MS });
+    if (await stopYes.isVisible()) await stopYes.click();
+    await expect(wrapAll).toBeVisible({ timeout: STREAM_END_MS });
+    await expect(anyKo).toHaveCount(0);
+  });
+});
+
+test.describe("수업 안 한국어로 묻기 — 답을 들려주지 못함 · 쉼 동안의 누름(3단계)", () => {
+  test("AC-25b 1~3단계 표현 답을 들려주지 못하면 '소리가 안 나왔어요. 다시 들어 봐요'와 큰 '알려 준 말 듣기'가 뜨고 저절로 넘어가지 않으며, 다시도 못 들려주면 무음 모드 줄과 작은 '다음'이 붙는다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(
+      context,
+      LOW_LEVEL,
+      [koSaidRun(QUESTION)],
+      { prepare: (p) => muteSpeechOf(p, TAUGHT) },
+    );
+    await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
+    await askKorean(page);
+    const turnsBefore = await talkTurnRequests();
+    // 첫 실패: 안내와 큰 '알려 준 말 듣기'(무음 모드 줄 · '다음'은 아직 없음), 아이 차례는 열린다
+    const retry = page.locator("[data-ko-exchange] [data-ko-retry]");
+    await expect(retry).toHaveAttribute("data-ko-retry", "retry", {
+      timeout: STREAM_END_MS,
+    });
+    await expect(retry).toContainText(KO_T.soundNotice);
+    const big = retry.locator('[data-ko-replay][data-retry-size="big"]');
+    await expect(big).toHaveText(/알려 준 말 듣기/);
+    await expect(retry.locator("[data-ko-next]")).toHaveCount(0);
+    await expect(retry.locator("[data-talk-silent-note]")).toHaveCount(0);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    await expect(speakButton(page)).toBeEnabled();
+    expect(await mutedCount(page)).toBe(1);
+    // 저절로 넘어가지 않는다(회화 턴 요청이 없고 안내가 남는다)
+    await page.waitForTimeout(NO_ADVANCE_MS);
+    expect(await talkTurnRequests()).toBe(turnsBefore);
+    await expect(retry).toHaveAttribute("data-ko-retry", "retry");
+    // 둘째 실패: 무음 모드 줄(e2e 기기는 iPad Safari)과 작은 '다음'
+    await expect(big).toBeEnabled();
+    await big.click();
+    await expect(retry).toHaveAttribute("data-ko-retry", "next", {
+      timeout: STREAM_END_MS,
+    });
+    expect(await mutedCount(page)).toBe(2);
+    await expect(retry.locator("[data-talk-silent-note]")).toHaveText(
+      KO_T.silentNote,
+    );
+    const next = retry.locator("[data-ko-next]");
+    await expect(next).toHaveText(KO_T.next);
+    await page.waitForTimeout(NO_ADVANCE_MS);
+    expect(await talkTurnRequests()).toBe(turnsBefore);
+    await expect(next).toBeVisible();
+    // '다음'은 안내를 거두고 작은 '알려 준 말 듣기'로 돌린다(턴은 보내지 않는다)
+    await next.click();
+    await expect(page.locator("[data-ko-retry]")).toHaveCount(0);
+    await expect(
+      page.locator("[data-ko-exchange] [data-ko-replay]"),
+    ).toHaveCount(1);
+    expect(await talkTurnRequests()).toBe(turnsBefore);
+    // 가르친 표현 글은 어디에도 없다
+    await expect(page.locator("body")).not.toContainText(TAUGHT);
+  });
+
+  test("AC-25c · AC-25b 도움 뒤에도 지금 질문의 연 힌트 단과 힌트 문장 듣기 단추가 그대로이고, 소리 앞 쉼 동안에는 힌트 문장 듣기 · 지금 말풍선 · 기록 칸의 지난 말 다시 읽기를 받지 않는다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(context, LOW_LEVEL, [
+      saidRun("I'm good."),
+      koSaidRun(QUESTION),
+    ]);
+    await speakEnglish(page, "Great! Now let's start!");
+    await openAllHints(page);
+    const tiers = page.locator("[data-child-turn] [data-hint-tier]");
+    const listen = page.locator("[data-child-turn] [data-hint-listen]");
+    const bubbleNow = page.locator("[data-tori-bubble]");
+    const pastTeacher = page.locator("[data-talk-log-teacher]").first();
+    await expect(pastTeacher).toBeVisible();
+    await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
+    const spokenBefore = (await speechRecord(page)).spoken.length;
+    await askKorean(page);
+    // 쉼 동안: 셋 다 눌리지 않는다(아이 차례가 아직 열리지 않음)
+    await expect(listen).toBeDisabled();
+    await expect(bubbleNow).toBeDisabled();
+    await expect(pastTeacher).toBeDisabled();
+    await expect(koButton(page)).toBeDisabled();
+    // 쉼 뒤 표현 한 번 → 아이 차례가 열리고 셋이 다시 켜진다
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(1);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    await expect(listen).toBeEnabled();
+    await expect(bubbleNow).toBeEnabled();
+    await expect(pastTeacher).toBeEnabled();
+    // 그 사이 다른 읽기는 없었다(걸어 둔 표현을 지우지 않음)
+    const newly = (await speechRecord(page)).spoken.slice(spokenBefore);
+    expect(newly.filter((s) => s !== TAUGHT)).toEqual([]);
+    // AC-25c: 연 힌트 단과 듣기 단추가 그대로다
+    await expect(tiers).toHaveCount(LOW_HINT_TIERS);
+    await expect(
+      page.locator('[data-child-turn] [data-hint-tier="sentence"]'),
+    ).toBeVisible();
+    await expect(listen).toHaveCount(1);
+    await expect(page.locator("[data-ko-exchange]")).toHaveCount(1);
+  });
+});
+
+test.describe("수업 안 한국어로 묻기 — 응답 갈래 · 다시 보냄 · 두 번 물음 · 그만하기(3단계)", () => {
+  test("AC-25b · AC-25f 응답 갈래: 한 번 실패 뒤 다시 보낸 요청은 같은 시도 id 이고 답이 그려지며, 끊김(offline) · 오류(error)가 이어지면 안내만 나오고 단추가 남고, 낡음(stale) 뒤 갇히지 않으며, 꺼짐(off)은 단추를 숨기고 합친 안내를 남긴다. 새 질문은 새 시도 id 다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(context, LOW_LEVEL, [
+      koSaidRun(QUESTION),
+    ]);
+    await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
+    const plan: KoRouteStep[] = [];
+    const ids = await routeKoHelp(page, plan);
+
+    // 1. 오류 한 번 → 같은 시도 id 로 다시 보내 답이 온다
+    plan.push("error");
+    await sendKorean(page);
+    await expect(page.locator("[data-ko-exchange]")).toHaveCount(1, {
+      timeout: STREAM_END_MS,
+    });
+    expect(ids).toHaveLength(2);
+    expect(ids[1]).toBe(ids[0]);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+
+    // 2. 연결 끊음이 이어짐 → 처음 + 다시 보냄 상한까지 같은 id, 안내 '인터넷이 끊겼어요 …', 단추는 남는다
+    plan.push("abort", "abort", "abort", "abort");
+    await sendKorean(page);
+    await expect(koLine(page)).toHaveText(KO_T.offline, {
+      timeout: STREAM_END_MS,
+    });
+    const offlineIds = ids.slice(2);
+    expect(offlineIds).toHaveLength(4);
+    expect(new Set(offlineIds).size).toBe(1);
+    expect(offlineIds[0]).not.toBe(ids[0]);
+    await expect(koButton(page)).toBeEnabled();
+    await expect(speakButton(page)).toBeEnabled();
+    await expect(page.locator("[data-ko-exchange]")).toHaveCount(1);
+
+    // 3. 오류가 이어짐 → 합친 안내 글, 단추는 남는다
+    plan.push("error", "error", "error", "error");
+    await sendKorean(page);
+    await expect(koLine(page)).toHaveText(KO_NOTICE_ANY, {
+      timeout: STREAM_END_MS,
+    });
+    const errorIds = ids.slice(6);
+    expect(errorIds).toHaveLength(4);
+    expect(new Set(errorIds).size).toBe(1);
+    expect(errorIds[0]).not.toBe(offlineIds[0]);
+    await expect(koButton(page)).toBeEnabled();
+
+    // 4. 낡음 → 다시 보내지 않고 아이 차례로 돌아온다(단추가 꺼진 채 남지 않음)
+    plan.push({ json: { t: "stale" } });
+    await sendKorean(page);
+    await expect.poll(() => ids.length, { timeout: STREAM_END_MS }).toBe(11);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    await expect(speakButton(page)).toBeEnabled();
+    expect(ids).toHaveLength(11);
+
+    // 5. 꺼짐 → 그 수업 동안 단추를 숨기고 합친 안내를 안내 줄에 남긴다
+    plan.push({ json: { t: "off" } });
+    await sendKorean(page);
+    await expect(koButton(page)).toHaveCount(0, { timeout: STREAM_END_MS });
+    await expect(koLine(page)).toHaveText(KO_NOTICE_ANY);
+    await expect(speakButton(page)).toBeEnabled();
+    expect(ids).toHaveLength(12);
+    // 가짜 AI 는 처음 질문 하나만 받았다(나머지는 가로챔)
+    expect(await koHelpRequests()).toBe(1);
+  });
+
+  test("AC-25b · AC-N26 한 차례에 두 번 물으면 두 곁 말풍선의 '알려 준 말 듣기'가 저마다 듣고 다음 턴 koHelp 에 두 항목(heard · replays)이 실리며, 다음 차례의 'AI 쉬는 중' 응답은 쉬는 안내를 띄우고 질문을 다시 보내지 않는다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page, turnBodies } = await openKoLesson(context, LOW_LEVEL, [
+      koSaidRun(QUESTION),
+      koSaidRun(QUESTION),
+      saidRun(SAYS),
+      koSaidRun(QUESTION),
+    ]);
+    await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
+    const first = await askKorean(page);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    const second = await askKorean(page);
+    await expect(koButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
+    expect(second.seq).not.toBe(first.seq);
+    const exchanges = page.locator("[data-ko-exchange]");
+    await expect(exchanges).toHaveCount(2);
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(2);
+    // 앞 도움 한 번 · 뒤 도움 두 번 다시 듣기
+    await exchanges.nth(0).locator("[data-ko-replay]").click();
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(3);
+    await exchanges.nth(1).locator("[data-ko-replay]").click();
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(4);
+    await exchanges.nth(1).locator("[data-ko-replay]").click();
+    await expect
+      .poll(() => spokenCount(page, TAUGHT), { timeout: STREAM_END_MS })
+      .toBe(5);
+    await speakEnglish(page, "Wow! Clams are cool.");
+    expect(turnBodies.at(-1)?.koHelp).toEqual([
+      { turnNo: first.turnNo, seq: first.seq, heard: true, replays: 1 },
+      { turnNo: second.turnNo, seq: second.seq, heard: true, replays: 2 },
+    ]);
+    expect(await koHelpRequests()).toBe(2);
+
+    // 다음 차례: 'AI 쉬는 중' → 쉬는 안내, 질문은 다시 보내지 않는다
+    const ids = await routeKoHelp(page, [{ json: { t: "resting" } }]);
+    await sendKorean(page);
+    await expect(page.locator("[data-talk-rest]")).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    await expect(turn(page)).toHaveCount(0);
+    await page.waitForTimeout(NO_ADVANCE_MS);
+    expect(ids).toHaveLength(1);
+  });
+
+  test("AC-25b 한국어 질문의 답을 기다리는 동안 '그만하기'로 정리에 가면 늦게 온 답은 그리지도 읽지도 않는다", async ({
+    context,
+  }) => {
+    test.setTimeout(LONG);
+    const { page } = await openKoLesson(context, LOW_LEVEL, [
+      saidRun("I'm good."),
+      koSaidRun(QUESTION),
+    ]);
+    await speakEnglish(page, "Great! Now let's start!");
+    await pushFakeAi([ruleFor("talk_ko_help", talkKoHelpReply())]);
+    // 응답을 붙잡아 둔다(그동안 질문 말풍선과 점 셋)
+    await page.route(`**${TALK_KO_HELP_URL}`, async (route) => {
+      await new Promise((r) => setTimeout(r, KO_HOLD_MS));
+      await route.continue().catch(() => {});
+    });
+    await sendKorean(page);
+    await expect(page.locator("[data-ko-pending]")).toBeVisible({
+      timeout: STREAM_END_MS,
+    });
+    await page.locator("[data-talk-stop]").click();
+    const wrapAll = page.locator("[data-wrap-all]");
+    const stopYes = page.getByRole("button", { name: KO_T.stopYes });
+    await expect(wrapAll.or(stopYes)).toBeVisible({ timeout: STREAM_END_MS });
+    if (await stopYes.isVisible()) await stopYes.click();
+    await expect(wrapAll).toBeVisible({ timeout: STREAM_END_MS });
+    // 붙잡은 응답이 풀린 뒤에도 곁 말풍선 · 한국어 답 · 표현 소리가 없다
+    await page.waitForTimeout(KO_HOLD_MS + NO_ADVANCE_MS);
+    await expect(page.locator("[data-ko-exchange]")).toHaveCount(0);
+    await expect(page.locator("[data-ko-pending]")).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText(
+      FAKE_KO_HELP.expression.sayKo,
+    );
+    expect(await spokenCount(page, TAUGHT)).toBe(0);
   });
 });
