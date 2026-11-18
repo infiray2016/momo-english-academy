@@ -16,6 +16,8 @@ import {
   type ChatJudgeRow,
   chatJudgesOf,
 } from "@/core/conversation/chat-judge";
+import { chatJudgeRowsOf } from "@/core/conversation/chat-rows";
+import type { KoHelpStandingRow } from "@/core/conversation/ko-help";
 import { talkMoveOf } from "@/core/conversation/move";
 import { HomophonesFileSchema } from "@/core/seed/schema/reference";
 import { lemmaLookup } from "@/core/session/attempt";
@@ -202,6 +204,7 @@ function lesson(
     ctx: CTX,
     met: ["beach", "sea"],
     storedMark: null,
+    koHelps: [],
   };
 }
 
@@ -461,6 +464,50 @@ describe("비교 도구 — 수업별 표(AC-9 도구 몫)", () => {
       ratio: 4 / 12,
     });
     expect(report.totals.real.agreement.withoutChoice.pairs).toBe(5);
+  });
+});
+
+describe("비교 도구 — 한국어 도움 행으로 다시 셈(rev-bk I-1, C225 보완 2 (3))", () => {
+  it("AC-27m 도움 행과 함께 저장한 판정의 수업은 저장값과 다른 행이 0 이고 앱 판정의 갈래가 '도움받은 상황'이다", () => {
+    const base = chatRows([
+      { teacher: "What is fun?" },
+      { child: "I swim.", used: [] },
+    ]);
+    const child = base.find((r) => r.speaker === "child");
+    // 뜻만 받은 한국어 도움(talk_ko_helps 의 대접 칸 — 서버 readKoHelpRows 와 같은 칸)
+    const koHelps: KoHelpStandingRow[] = [
+      {
+        turnNo: child?.turnNo ?? 0,
+        seq: 1,
+        kind: "meaning",
+        sayKo: "수영한다는 말을 하고 싶구나.",
+        teachEn: null,
+        textShown: false,
+        fallback: "none",
+        shownEn: null,
+        heard: null,
+      },
+    ];
+    // 서버가 저장한 꼴: 같은 도움 행으로 센 첫 판정(chat-turn saveChatTurn)
+    const judged = chatJudgeRowsOf(base, CTX.spec, undefined, koHelps);
+    const fresh = new Map(
+      chatJudgesOf(judged.rows, CTX).map(({ row, judge }) => [
+        judged.ids[row],
+        judge,
+      ]),
+    );
+    const rows = base.map((r) =>
+      r.speaker === "child" ? { ...r, chatJudge: fresh.get(r.id) ?? null } : r,
+    );
+    const table = chatLessonTableOf({ ...lesson("real", rows), koHelps });
+    expect(table.stale).toEqual([]);
+    expect(table.human.map((h) => [h.word, h.side, h.category])).toEqual([
+      ["swim", "app_only", "helped"],
+    ]);
+    // 도움 행 없이 다시 세면(고치기 전의 도구) 그 행이 저장값과 다르다(앱 판정의 갈래 · 기존 꼴 판정의 힌트 종류 '뜻만')
+    expect(
+      chatLessonTableOf({ ...lesson("real", rows), koHelps: [] }).stale,
+    ).toEqual([{ turnNo: 1, parts: ["app", "legacy"] }]);
   });
 });
 

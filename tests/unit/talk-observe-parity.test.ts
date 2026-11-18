@@ -3854,7 +3854,7 @@ async function serverChatTurn(
       { ...child, ...fields },
       ...(teacher === null ? [] : [teacher]),
     ] as unknown as ChatTurnRowLikeServer[];
-    const judged = chatJudgeRowsOf(judgeRows, { band });
+    const judged = chatJudgeRowsOf(judgeRows, { band }, undefined, []);
     const index = judged.ids.indexOf(child.id);
     judge =
       index < 0

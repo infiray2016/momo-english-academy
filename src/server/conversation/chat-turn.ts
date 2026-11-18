@@ -46,6 +46,7 @@ import {
   type ChatOpen,
   chatChildFieldsOf,
   chatHistoryOf,
+  chatKoRaisedHintOf,
   chatMetCountOf,
   chatOpenAcceptsOf,
   chatOpenInputOf,
@@ -67,10 +68,9 @@ import {
   chatUnitWordsFromLexicon,
 } from "@/core/conversation/chat-unit-words";
 import { heardHelpsOfMove } from "@/core/conversation/hints";
-import {
-  type KoHelpDeviceEntry,
-  type KoHelpStanding,
-  raiseHintKind,
+import type {
+  KoHelpDeviceEntry,
+  KoHelpStanding,
 } from "@/core/conversation/ko-help";
 import { isChatSession } from "@/core/conversation/lead-mode";
 import {
@@ -556,17 +556,6 @@ async function chatKoHelpRead(
     );
     return NO_CHAT_KO;
   }
-}
-
-/** 한국어 도움 뒤 '말하기'로 보낸 아이 차례의 힌트 종류를 높은 쪽으로(기존 방식 lesson-turn 과 같은 규칙 — raiseHintKind, 도움이 없으면 그대로). */
-function chatKoRaisedHintOf<H extends { hintKind: TalkHintKind }>(
-  hint: H,
-  input: ChatInput,
-  standing: KoHelpStanding | null,
-): H {
-  if (standing === null || input.kind !== "speech") return hint;
-  const hintKind = raiseHintKind(hint.hintKind, standing.hintKind);
-  return hintKind === hint.hintKind ? hint : { ...hint, hintKind };
 }
 
 // ── 선생님 차례 하나 ────────────────────────────────────────────────

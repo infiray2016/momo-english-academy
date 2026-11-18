@@ -149,7 +149,7 @@ async function seedDialog(
     .values(values)
     .returning({ id: talkTurns.id, turnNo: talkTurns.turnNo });
   const rows = await rowsOf(sessionId);
-  const judged = chatJudgeRowsOf(rows, CTX.spec);
+  const judged = chatJudgeRowsOf(rows, CTX.spec, undefined, []);
   for (const { row, judge } of chatJudgesOf(judged.rows, CTX))
     await db
       .update(talkTurns)
@@ -643,7 +643,7 @@ describe("AC-27i 평가 호출의 저장 · 줄 세우기 · 비교 표지 행",
         readChatJudge(rows.find((r) => r.id === id)?.chatJudge)?.legacy.status,
       ).toBe("done");
     // (가) 끝난 수업 행으로 다시 세어 저장값과 달라지는 행이 0 이다(뒤 행이 앞 행의 옛 상태로 센 값으로 남지 않음)
-    const judged = chatJudgeRowsOf(rows, CTX.spec);
+    const judged = chatJudgeRowsOf(rows, CTX.spec, undefined, []);
     expect(
       chatJudgeChangesOf({
         rows: judged.rows,

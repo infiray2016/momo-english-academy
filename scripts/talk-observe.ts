@@ -192,6 +192,7 @@ import {
   chatChildFieldsOf,
   chatFirstQuestionBlocksOf,
   chatHistoryOf,
+  chatKoRaisedHintOf,
   chatOpenAcceptsOf,
   chatOpenInputOf,
   chatPrevStageOf,
@@ -5534,18 +5535,11 @@ export function createTalkSim(
                   ),
                 ],
               });
-        // 한국어 도움 뒤 '말하기'면 힌트 종류를 높은 쪽으로(서버 chat-turn chatKoRaisedHintOf 와 같은 규칙)
-        const raised =
-          p.ko.standing !== null && p.plan.input.kind === "speech"
-            ? {
-                ...hint,
-                hintKind: raiseHintKind(hint.hintKind, p.ko.standing.hintKind),
-              }
-            : hint;
+        // 한국어 도움 뒤 '말하기'면 힌트 종류를 높은 쪽으로(서버 chat-turn 과 같은 core chatKoRaisedHintOf, rev-bk M-1)
         const fields = chatChildFieldsOf({
           input: p.plan.input,
           sentUserMessage: p.userMessage,
-          hint: raised,
+          hint: chatKoRaisedHintOf(hint, p.plan.input, p.ko.standing),
         });
         childRow = { ...child, ...fields };
         chatKoRows = [...chatKoRows, ...p.ko.rows];

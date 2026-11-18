@@ -1,10 +1,11 @@
 // W 장면 (2): 아이 차례에 입력이 하나라도 있으면 그 뒤 얼마가 지나도 조용함 요청이 없다. 입력 갈래마다(말하기 · 말소리 없음 한 번 · '마이크 안
 // 잡힘' 안내 뒤 · 힌트 · '잘 모르겠어요' · 말풍선 다시 듣기 · 기록 줄 다시 듣기 · 소리 줄 듣기 · 힌트 문장 듣기 · 구석 '그만하기') 두 때(선생님이
-// 읽는 중 · 읽기가 끝난 뒤)에 누르고 60초를 지난다. 한국어 도움 단추는 아직 화면에 없어 이 장면에 없다(보고의 '확인 못 함').
+// 읽는 중 · 읽기가 끝난 뒤)에 누르고 60초를 지난다. 한국어 도움(한국어로 물어보기 → 보내기 → 뜻 답, 기한 전에 끝남 — 셋째 물결 고침 1)도 한 갈래다.
 // 다음 선생님 차례의 끝 줄에는 기다림 시간을 싣지 않는다(그 차례의 조용함이 이 차례의 결과로 잘못 세지지 않게).
 import {
   run as advance,
   openChat,
+  phaseOf,
   recordOf,
   untilChild,
 } from "../pages/talk-chat/drive.mjs";
@@ -30,6 +31,49 @@ const DEAF = [
     ],
   },
 ];
+
+/** 한국어 듣기 한 번(chat-ko-ask 장면과 같은 꼴): 말한 뒤 끝 조용함(speech.end_silence_seconds.ko_ask)이 지나면 확인이 뜬다. */
+const KO_RECOGNITION = {
+  events: [
+    { at: 50, type: "start" },
+    { at: 80, type: "audiostart" },
+    { at: 300, type: "soundstart" },
+    { at: 400, type: "speechstart" },
+    {
+      at: 1200,
+      type: "result",
+      results: [
+        {
+          transcript: "오리 좋아한다는 말은 영어로 뭐라고 해요",
+          isFinal: true,
+        },
+      ],
+    },
+    { at: 1300, type: "speechend" },
+  ],
+};
+/** 뜻 답(소리 줄 없이 곧 아이 차례로 돌아옴). */
+const KO_MEANING = {
+  delayMs: 200,
+  reply: {
+    t: "ok",
+    help: {
+      kind: "meaning",
+      teachEn: undefined,
+      replay: "teacher_line",
+      textShown: false,
+      sayKo: "선생님은 오리를 좋아한다고 말했어요.",
+    },
+  },
+};
+
+async function until(p, test, limit = 8000, step = 100) {
+  for (let t = 0; t < limit; t += step) {
+    if (await test()) return true;
+    await advance(p, step);
+  }
+  return test();
+}
 
 /** 입력 갈래: 이름 · 쪽 설정 · 누름. press 는 그 누름이 실제로 일어났는지(보인 단추를 눌렀는지)를 돌려준다. */
 const INPUTS = [
@@ -105,6 +149,34 @@ const INPUTS = [
     },
   },
   {
+    // 한국어 질문을 시작하면 타이머를 거둔다(talk-frame askKo 의 korean_help — 코드 검토 rev-bk 4절). 도움이 기한 전에 끝나 아이 차례로 돌아온 뒤에도
+    // 조용함 요청이 나가지 않아야 한다. 기한(기다림 20초)이 도움보다 늦게 오게 이 갈래만 기다림을 늘린다(8초면 '읽은 뒤'의 도움이 기한을 넘겨 가림으로
+    // 거두어진다). 아이 차례 조각이 '한국어로 물어보기' · '보내기' 누름을 talk 로도 알리므로, korean_help 한 줄만의 몫은 그 두 알림을 뺀 조각을
+    // --swap 으로 끼워 본다(셋째 물결 고침 1 보고)
+    name: "한국어 도움(기한 전에 끝남)",
+    config: {
+      signal: { quietSeconds: 20, hint: true, alternatives: 2 },
+      recognitions: [KO_RECOGNITION],
+      koHelps: [KO_MEANING],
+    },
+    press: async (p) => {
+      const ok = await clickIf(p.locator("[data-ko-ask]"));
+      if (!ok) return false;
+      const confirmed = await until(
+        p,
+        async () => (await p.locator("[data-ko-send]").count()) > 0,
+      );
+      if (!confirmed || !(await clickIf(p.locator("[data-ko-send]"))))
+        return false;
+      await advance(p, 300);
+      const back = await until(p, async () => (await phaseOf(p)) === "child");
+      const helped = (await p.locator("[data-ko-help]").count()) > 0;
+      const r = await recordOf(p);
+      // 도움이 끝난 때 아직 조용함 요청이 없었다(기한 전에 끝남)
+      return back && helped && r.quiet === 0;
+    },
+  },
+  {
     name: "구석 '그만하기'(확인 쪽지 뒤 대화는 그대로)",
     press: async (p) => {
       const ok = await clickIf(p.locator("[data-talk-stop]"));
@@ -124,7 +196,9 @@ async function clickIf(locator) {
 
 export async function run({ browserType, url, check }) {
   const browser = await browserType.launch();
-  for (const input of INPUTS) {
+  // 갈래 하나만 돌릴 때: QUIET_INPUTS_ONLY 에 이름 일부(없으면 전부)
+  const only = process.env.QUIET_INPUTS_ONLY;
+  for (const input of INPUTS.filter((i) => !only || i.name.includes(only))) {
     for (const at of ["읽는 중", "읽은 뒤"]) {
       const p = await openChat(browser, url, {
         config: {

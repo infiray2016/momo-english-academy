@@ -931,8 +931,8 @@ export async function writeKoHelpDevice(
 
 /**
  * 그 아이 차례가 읽는 한국어 도움의 대접(core koHelpStandingOf). write 가 참이면 먼저 기기 값을 적는다(같은 시도 id 로 다시 부르는 길은 거짓).
- * 도움 행이 없으면 null(한국어로 묻지 않은 턴은 고치기 전 그대로 — AC-N26). 기존 방식 길(lesson-turn)이 쓰고, Claude 주도 · 이야기 방식 길도 같은
- * 좁힘으로 쓴다(묶음 4-라 · K).
+ * 도움 행이 없으면 null(한국어로 묻지 않은 턴은 고치기 전 그대로 — AC-N26). 기존 방식 길(lesson-turn)이 쓰고, Claude 주도 길도 같은 좁힘으로
+ * 쓴다(묶음 4-라). 이야기 방식 길은 쓰지 않는다 — 되묻는 차례 뒤 이어받기를 걸지 않아 그 턴 번호의 행만 읽는다(chat-turn chatKoHelpRead, 묶음 K).
  */
 export async function turnKoHelpStandingOf(
   db: DbOrTx,

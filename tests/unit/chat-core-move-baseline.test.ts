@@ -272,7 +272,7 @@ describe("이야기 방식 서버 배선의 core 옮김(13절 C243 보완 10 (1)
       );
       expect(chatLessonSayLostOf(rows), name).toBe(set.lessonSayLost);
       same(
-        judgedJson(chatJudgeRowsOf(rows, { band: bandOf(3) })),
+        judgedJson(chatJudgeRowsOf(rows, { band: bandOf(3) }, undefined, [])),
         set.judgeRows,
       );
       for (const o of set.judgeRowsOverride)
@@ -282,12 +282,14 @@ describe("이야기 방식 서버 배선의 core 옮김(13절 C243 보완 10 (1)
               rows,
               { band: bandOf(3) },
               { id: o.id, state: STATES[0] as ChatEvalState },
+              [],
             ),
           ),
           o.out,
         );
       for (const w of set.writes) {
         const out = chatEvalWritesOf({
+          koHelps: [],
           rows,
           childRowId: w.childRowId,
           state: STATES[w.stateIndex] as ChatEvalState,

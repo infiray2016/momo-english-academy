@@ -188,7 +188,7 @@ async function seed(
   });
   await db.insert(talkTurns).values(values);
   const rows = await rowsOf(sessionId);
-  const judged = chatJudgeRowsOf(rows, { band: "1-3" });
+  const judged = chatJudgeRowsOf(rows, { band: "1-3" }, undefined, []);
   const any = await readTalkAnyState(db, {
     sessionId,
     profileId: (await profileOf(sessionId)) ?? "",

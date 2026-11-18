@@ -37,7 +37,10 @@ import {
   chatTurnEndOf,
   isChatQuietRow,
 } from "@/core/conversation/chat-turn-core";
-import type { KoHelpStanding } from "@/core/conversation/ko-help";
+import {
+  type KoHelpStanding,
+  raiseHintKind,
+} from "@/core/conversation/ko-help";
 import { lowBandPlacedLinesOf } from "@/core/conversation/lead-low-band";
 import {
   leadConversationOrder,
@@ -615,6 +618,20 @@ export function chatChildFieldsOf({
     hintKind: hint.hintKind,
     hintLevel: hint.hintLevel,
   };
+}
+
+/**
+ * 한국어 도움 뒤 '말하기'로 보낸 아이 차례의 힌트 종류를 높은 쪽으로(기존 방식 lesson-turn 과 같은 규칙 — raiseHintKind, 묶음 K). 도움이 없거나
+ * 말 입력이 아니거나 이미 더 높으면 같은 객체다. 서버 턴 길(chat-turn)과 대본 도구가 이 함수 하나를 부른다(이야기 방식 spec NFR-4, rev-bk M-1).
+ */
+export function chatKoRaisedHintOf<H extends { hintKind: TalkHintKind }>(
+  hint: H,
+  input: ChatInput,
+  standing: Pick<KoHelpStanding, "hintKind"> | null,
+): H {
+  if (standing === null || input.kind !== "speech") return hint;
+  const hintKind = raiseHintKind(hint.hintKind, standing.hintKind);
+  return hintKind === hint.hintKind ? hint : { ...hint, hintKind };
 }
 
 // ── 다시 흘리기 · 이어 하기의 끝 줄 신호 ─────────────────────────────────────

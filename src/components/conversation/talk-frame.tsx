@@ -2602,6 +2602,9 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   }) {
     if (koAsking.current) return;
     koAsking.current = true;
+    // 한국어 질문은 조용함 타이머를 거두는 입력이다(korean_help — spec 설계 6 · AC-6, 코드 검토 rev-bk 4절). 도움이 기한 전에 끝나 아이 차례로 돌아와도
+    // 선생님이 끼어들지 않게, 단추 쪽의 누름 보고와 관계없이 여기서 넣는다
+    quietInput("korean_help");
     const gen = ++koGen.current;
     const controller = new AbortController();
     koInflight.current = controller;

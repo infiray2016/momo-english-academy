@@ -378,13 +378,14 @@ function judgeInputOf(row: ChatTurnRowLike): ChatJudgeInputKind {
  * 입력 갈래 · 들린 글 · 바로 앞 선생님 행의 힌트 단 가운데 연 단(hint_level 만큼)의 종류 · 그 차례 앞의 한국어 도움 · 평가 상태다.
  * override 는 저장 전의 새 평가 값(그 아이 행의 상태를 바꿔 센다). ids 는 판정 행 번호 → talk_turns id, stored 는 아이 행 번호 → 저장된 chat_judge 다.
  * koHelps 는 그 세션의 한국어 도움 행(talk_ko_helps — 기기 값을 적은 뒤의 값)이고, 아이 행마다 같은 턴 번호에 붙은 행만 대접(koHelpStandingOf)으로
- * 읽는다(되묻는 차례 뒤 이어받기는 이야기 방식에 걸지 않는다, 묶음 K). 없거나 그 턴의 행이 없으면 도움 없음(null)이라 고치기 전 그대로다.
+ * 읽는다(되묻는 차례 뒤 이어받기는 이야기 방식에 걸지 않는다, 묶음 K). 그 턴의 행이 없으면 도움 없음(null)이라 고치기 전 그대로다. koHelps 는
+ * 꼭 넘긴다(한국어로 묻지 않은 수업은 빈 목록) — 기본값을 두면 넘기지 않은 호출부가 조용히 '도움 없음'으로 센다(rev-bk I-1).
  */
 export function chatJudgeRowsOf(
   rows: readonly ChatTurnRowLike[],
   spec: ChatJudgeContext["spec"],
-  override?: { id: string; state: ChatEvalState },
-  koHelps: readonly KoHelpStandingRow[] = [],
+  override: { id: string; state: ChatEvalState } | undefined,
+  koHelps: readonly KoHelpStandingRow[],
 ): { rows: ChatJudgeRow[]; ids: string[]; stored: Map<number, unknown> } {
   const dialog = chatDialogRowsOf(rows);
   const out: ChatJudgeRow[] = [];
@@ -439,14 +440,14 @@ export function chatEvalWritesOf({
   childRowId,
   state,
   ctx,
-  koHelps = [],
+  koHelps,
 }: {
   rows: readonly ChatTurnRowLike[];
   childRowId: string;
   state: ChatEvalState;
   ctx: ChatJudgeContext;
-  /** 그 세션의 한국어 도움 행(chatJudgeRowsOf 의 koHelps — 없으면 도움 없음). */
-  koHelps?: readonly KoHelpStandingRow[];
+  /** 그 세션의 한국어 도움 행(chatJudgeRowsOf 의 koHelps — 꼭 넘긴다, 한국어로 묻지 않은 수업은 빈 목록). */
+  koHelps: readonly KoHelpStandingRow[];
 }): { id: string; judge: ChatJudge }[] | null {
   const target = rows.find(
     (row) => row.id === childRowId && row.speaker === "child",

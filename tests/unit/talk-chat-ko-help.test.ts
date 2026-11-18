@@ -26,6 +26,7 @@ import {
   koHelpRowsWithDeviceOf,
 } from "@/core/conversation/chat-rows";
 import { chatFactsOf, chatKoHelpOf } from "@/core/conversation/chat-turn-core";
+import { chatKoRaisedHintOf } from "@/core/conversation/chat-turn-plan";
 import {
   type KoHelpStandingRow,
   koHelpLineText,
@@ -195,15 +196,17 @@ describe("묶음 K 사실 줄 — 가르친 표현은 목록(AC-13 · AC-27m)", 
 });
 
 describe("묶음 K 판정 행 — 도움받은 상황 · '말했다' 거름(AC-13)", () => {
-  it("AC-27m 도움 행이 없으면 판정 행은 넘기지 않은 때와 같다(한국어로 묻지 않은 턴은 그대로)", () => {
-    expect(chatJudgeRowsOf(ROWS, CTX.spec, undefined, [])).toEqual(
-      chatJudgeRowsOf(ROWS, CTX.spec),
-    );
+  it("AC-27m 도움 행이 없으면 판정 행의 한국어 칸은 koHelp null 하나뿐이다(한국어로 묻지 않은 턴은 그대로)", () => {
+    const none = chatJudgeRowsOf(ROWS, CTX.spec, undefined, []);
+    for (const r of none.rows.filter((x) => x.role === "child")) {
+      expect(r).toMatchObject({ koHelp: null });
+      expect(r).not.toHaveProperty("koShownWords");
+    }
     // 다른 턴 번호의 도움 행은 이 아이 행에 붙지 않는다(되묻는 차례 뒤 이어받기를 걸지 않음)
     const other = chatJudgeRowsOf(ROWS, CTX.spec, undefined, [
       help({ turnNo: 2 }),
     ]);
-    expect(other.rows[3]).toEqual(chatJudgeRowsOf(ROWS, CTX.spec).rows[3]);
+    expect(other.rows[3]).toEqual(none.rows[3]);
   });
 
   it("AC-27m 도움 뒤 아이 행에 한국어 도움(가르친 표현 목록 · 힌트 종류)을 싣고, 답이 없는 행 · 대신 줄은 싣지 않는다", () => {
@@ -304,6 +307,67 @@ describe("묶음 K 판정 행 — 도움받은 상황 · '말했다' 거름(AC-1
       lowBand: true,
     });
     expect(chatKoJudgeOf(none)).toEqual({ koHelp: null });
+  });
+});
+
+describe("셋째 물결 고침 1 — 힌트 종류 올림 · 되묻기 뒤 거름(rev-bk M-1 · M-2, C225 보완 2 (3))", () => {
+  it("AC-27m 아이 행 힌트 종류 올림(core chatKoRaisedHintOf — 서버와 대본 도구가 부르는 하나): 말 입력만 높은 쪽으로, 도움이 없으면 같은 객체다", () => {
+    const hint = { hintKind: "none" as const, hintLevel: 1 };
+    const english = koHelpStandingOf([help()], { lowBand: true });
+    const speech = { kind: "speech" as const, heard: "I like gimbap." };
+    expect(chatKoRaisedHintOf(hint, speech, english)).toEqual({
+      hintKind: "english",
+      hintLevel: 1,
+    });
+    expect(chatKoRaisedHintOf(hint, speech, null)).toBe(hint);
+    expect(chatKoRaisedHintOf(hint, { kind: "dont_know" }, english)).toBe(hint);
+    // 이미 더 높으면 그대로(같은 객체)
+    const high = { hintKind: "english" as const, hintLevel: 2 };
+    const meaning = koHelpStandingOf(
+      [help({ kind: "meaning", teachEn: null, shownEn: ["milk"] })],
+      { lowBand: true },
+    );
+    expect(chatKoRaisedHintOf(high, speech, meaning)).toBe(high);
+  });
+
+  it("AC-27m 뜻만 받은 도움 → 평가 출력이 ask_again → 다음 차례: 기존 꼴 판정은 이어받은 힌트 종류와 함께 글로 보인 낱말(milk)도 '말했다'에서 거른다", () => {
+    const say = "What do you drink?";
+    const ko = chatKoJudgeOf(
+      koHelpStandingOf(
+        [
+          help({
+            kind: "meaning",
+            teachEn: null,
+            sayKo: "milk 는 우유라는 뜻이야.",
+            shownEn: ["milk"],
+          }),
+        ],
+        { lowBand: true },
+      ),
+    );
+    const askAgain: TalkChatEvalOutput = {
+      ...DONE,
+      teacher_move: "ask_again",
+      child_used_on_own: [],
+    };
+    const rowsOf = (first: Partial<ChatJudgeChildRow>): ChatJudgeRow[] => [
+      teacherJ(say),
+      childJ("Milk.", {
+        ...first,
+        eval: { status: "done", output: askAgain },
+      }),
+      teacherJ("Can you say it again? What do you drink?"),
+      childJ("I drink milk."),
+    ];
+    const plain = chatJudgesOf(rowsOf({}), CTX).map((x) => x.judge);
+    expect(plain[1]?.legacy.said).toEqual(["drink", "milk"]);
+    const judged = chatJudgesOf(rowsOf(ko), CTX).map((x) => x.judge);
+    const next = judged[1];
+    expect(next?.legacy.afterAskAgain).toBe(true);
+    expect(next?.legacy.help?.hintKind).toBe("meaning_only");
+    expect(next?.legacy.said).toEqual(["drink"]);
+    // 앱 판정에는 잇지 않는다(그 차례에 도움 행이 없음 — 도움이 없던 수업의 같은 차례와 같다)
+    expect(next?.app).toEqual(plain[1]?.app);
   });
 });
 

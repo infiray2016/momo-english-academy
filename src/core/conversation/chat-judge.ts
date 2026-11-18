@@ -33,7 +33,10 @@ import {
   leadStuckOf,
   leadTeacherMoveOf,
 } from "@/core/conversation/lead-record";
-import { leadChildHelpAfterOf } from "@/core/conversation/lead-turn-core";
+import {
+  leadAskAgainFloorApplies,
+  leadChildHelpAfterOf,
+} from "@/core/conversation/lead-turn-core";
 import {
   TALK_HEARD_HELPS,
   TALK_HINT_KINDS,
@@ -626,6 +629,8 @@ type PrevChild = {
   output: TalkChatEvalOutput | null;
   source: Exclude<ChatPrevMoveSource, "eval" | "app_no_child">;
   help: LeadChildHelp;
+  /** 그 차례의 기존 꼴 '말했다' 거름 낱말(한국어 도움이 글로 보인 낱말 — 되묻기 하한으로 이어받은 것까지). */
+  shown: readonly string[];
 };
 
 /**
@@ -729,6 +734,8 @@ export function chatJudgesOf(
   let prevTeacher: ChatJudgeTeacherRow | null = null;
   let prevMove: { move: TalkMove; from: ChatPrevMoveSource } | null = null;
   let askedHelp: LeadChildHelp | null = null;
+  // 되물은 아이 차례의 기존 꼴 거름 낱말(askedHelp 와 함께 잇는다 — C225 보완 2 (3), rev-bk M-2)
+  let askedShown: readonly string[] = [];
   // 바로 앞 행이 아이 행(조용함 밖)이면 그 차례의 흐름 꼴 · 평가 출력 · 힌트 칸. 선생님 행 · 조용함 행 뒤에는 null 이다 — 그 뒤 선생님 행은
   // 아이 입력 없이 연 차례(입구 · 조용함 · 잇달아 말함)라 앞 아이 차례가 없다
   let justBefore: PrevChild | null = null;
@@ -736,6 +743,7 @@ export function chatJudgesOf(
     if (row.role === "teacher") {
       prevMove = legacyTeacherMoveOf(row, justBefore, ctx);
       askedHelp = justBefore?.help ?? null;
+      askedShown = justBefore?.shown ?? [];
       prevTeacher = row;
       justBefore = null;
       return;
@@ -748,6 +756,19 @@ export function chatJudgesOf(
       asked: askedHelp,
     });
     const finalHelp = help ?? own;
+    // 기존 꼴 판정이 지금 새 방식의 되묻기 하한으로 앞 차례의 힌트 종류를 이을 때는 그 차례의 거름 낱말도 함께 잇는다(C225 보완 2 (3) — 두 판정이
+    // 이유 없이 갈리지 않게). 앱 판정 · 사실 줄 · 대접은 잇지 않는다(되묻는 차례 뒤 이어받기는 이야기 방식에 걸지 않음). 한국어 도움이 없던 수업은
+    // 두 목록이 비어 고치기 전 그대로다
+    const ownShown = row.koShownWords ?? [];
+    const legacyShown =
+      askedShown.length > 0 &&
+      leadAskAgainFloorApplies({
+        own,
+        prevMove: prevMove?.move ?? null,
+        asked: askedHelp,
+      })
+        ? [...new Set([...ownShown, ...askedShown])]
+        : ownShown;
     const speech = row.input === "speech" && row.heard.trim() !== "";
     let legacy: LegacyTurn;
     let legacyStuck: boolean | null = null;
@@ -783,7 +804,8 @@ export function chatJudgesOf(
           speech: true,
           stuck: legacyStuck,
           askAgain,
-          unitWords: saidCtxOf(row, ctx).unitWords,
+          unitWords: saidCtxOf({ ...row, koShownWords: legacyShown }, ctx)
+            .unitWords,
           lemmaOf: ctx.lemmaOf,
           homophones: ctx.homophones,
         }),
@@ -808,6 +830,7 @@ export function chatJudgesOf(
             output: row.eval.status === "done" ? row.eval.output : null,
             source: prevSourceOf(row),
             help: finalHelp,
+            shown: legacyShown,
           };
   });
   return out;

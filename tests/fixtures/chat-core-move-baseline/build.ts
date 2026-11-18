@@ -504,6 +504,7 @@ export function buildChatCoreBaseline() {
       .flatMap((r) =>
         states.map((state, stateIndex) => {
           const out = chatEvalWritesOf({
+            koHelps: [],
             rows,
             childRowId: r.id,
             state,
@@ -533,7 +534,9 @@ export function buildChatCoreBaseline() {
         childAt: [...entries.childAt.entries()],
       },
       lessonSayLost: chatLessonSayLostOf(rows),
-      judgeRows: judgedJson(chatJudgeRowsOf(rows, { band: bandOf(3) })),
+      judgeRows: judgedJson(
+        chatJudgeRowsOf(rows, { band: bandOf(3) }, undefined, []),
+      ),
       judgeRowsOverride: rows
         .filter((r) => r.speaker === "child")
         .map((r) => ({
@@ -543,6 +546,7 @@ export function buildChatCoreBaseline() {
               rows,
               { band: bandOf(3) },
               { id: r.id, state: states[0] as never },
+              [],
             ),
           ),
         })),

@@ -1203,7 +1203,7 @@ function applied(
 function withInitialJudges(
   rows: readonly ChatTurnRowLike[],
 ): ChatTurnRowLike[] {
-  const judge = chatJudgeRowsOf(rows, CTX.spec);
+  const judge = chatJudgeRowsOf(rows, CTX.spec, undefined, []);
   const out = chatJudgesOf(judge.rows, CTX);
   return applied(
     rows,
@@ -1286,6 +1286,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const target = rows[1] as ChatTurnRowLike;
     expect(readChatJudge(target.chatJudge)?.legacy.status).toBe("waiting");
     const writes = chatEvalWritesOf({
+      koHelps: [],
       rows,
       childRowId: target.id,
       state: { status: "done", output: EVAL_OUT },
@@ -1306,6 +1307,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const once = applied(
       rows,
       chatEvalWritesOf({
+        koHelps: [],
         rows,
         childRowId: target.id,
         state: { status: "failed" },
@@ -1314,6 +1316,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     );
     expect(
       chatEvalWritesOf({
+        koHelps: [],
         rows: once,
         childRowId: target.id,
         state: { status: "done", output: EVAL_OUT },
@@ -1328,6 +1331,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const after = applied(
       rows,
       chatEvalWritesOf({
+        koHelps: [],
         rows,
         childRowId: target.id,
         state: { status: "failed", failure: "timeout" },
@@ -1345,6 +1349,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     });
     // 뒤 행의 늦은 값으로 수업을 다시 세어도 앞 행의 까닭은 바뀌지 않는다(그 행은 바뀐 행으로 나오지 않음)
     const later = chatEvalWritesOf({
+      koHelps: [],
       rows: after,
       childRowId: after[3]?.id ?? "",
       state: { status: "done", output: EVAL_OUT },
@@ -1359,6 +1364,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const afterA = applied(
       rows,
       chatEvalWritesOf({
+        koHelps: [],
         rows,
         childRowId: c4.id,
         state: {
@@ -1371,6 +1377,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const afterB = applied(
       afterA,
       chatEvalWritesOf({
+        koHelps: [],
         rows: afterA,
         childRowId: c2.id,
         state: { status: "done", output: EVAL_OUT },
@@ -1390,6 +1397,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
     const afterLater = applied(
       rows,
       chatEvalWritesOf({
+        koHelps: [],
         rows,
         childRowId: c4.id,
         state: { status: "done", output: EVAL_OUT },
@@ -1401,6 +1409,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
         .afterAskAgain,
     ).toBe(false);
     const writes = chatEvalWritesOf({
+      koHelps: [],
       rows: afterLater,
       childRowId: c2.id,
       state: {
@@ -1422,7 +1431,7 @@ describe("AC-27i 늦게 온 평가 값의 저장 계산과 다시 세기(검토 
       ...base(),
       teacher(6, "Let's review.", { segment: "wrap_up" }),
     ];
-    const judge = chatJudgeRowsOf(rows, CTX.spec);
+    const judge = chatJudgeRowsOf(rows, CTX.spec, undefined, []);
     expect(judge.rows).toHaveLength(5);
     expect(judge.ids).not.toContain(rows[5]?.id);
   });
@@ -1442,6 +1451,7 @@ describe("AC-27i 수업별 비교 표지 행(talk-chat-compare:<세션 id>)", ()
     const done = applied(
       rows,
       chatEvalWritesOf({
+        koHelps: [],
         rows,
         childRowId: rows[1]?.id ?? "",
         state: { status: "done", output: EVAL_OUT },
@@ -1478,7 +1488,7 @@ describe("AC-27i 수업 단위 줄 세우기가 막는 것(검토 rev-chat-s0 I-
       teacher(5, "Wow!"),
     ]);
   const staleOf = (rows: ChatTurnRowLike[]) => {
-    const judged = chatJudgeRowsOf(rows, CTX.spec);
+    const judged = chatJudgeRowsOf(rows, CTX.spec, undefined, []);
     return chatJudgeChangesOf({
       rows: judged.rows,
       stored: judged.stored,
@@ -1490,12 +1500,14 @@ describe("AC-27i 수업 단위 줄 세우기가 막는 것(검토 rev-chat-s0 I-
     const rows = rowsOf();
     const [c2, c4] = [rows[1], rows[3]] as ChatTurnRowLike[];
     const a = chatEvalWritesOf({
+      koHelps: [],
       rows,
       childRowId: c2.id,
       state: { status: "done", output: EVAL_OUT },
       ctx: CTX,
     });
     const b = chatEvalWritesOf({
+      koHelps: [],
       rows,
       childRowId: c4.id,
       state: { status: "done", output: EVAL_OUT },
@@ -1518,6 +1530,7 @@ describe("AC-27i 수업 단위 줄 세우기가 막는 것(검토 rev-chat-s0 I-
       const afterFirst = applied(
         rows,
         chatEvalWritesOf({
+          koHelps: [],
           rows,
           childRowId: first.id,
           state: { status: "done", output: EVAL_OUT },
@@ -1527,6 +1540,7 @@ describe("AC-27i 수업 단위 줄 세우기가 막는 것(검토 rev-chat-s0 I-
       const final = applied(
         afterFirst,
         chatEvalWritesOf({
+          koHelps: [],
           rows: afterFirst,
           childRowId: second.id,
           state: { status: "done", output: EVAL_OUT },
@@ -1646,6 +1660,7 @@ describe("AC-27i 닫힌 뒤에도 같은 판정(검토 rev-chat-t3 I-1 · 5절)"
       applied(
         rowsNow,
         chatEvalWritesOf({
+          koHelps: [],
           rows: rowsNow,
           childRowId: rowsNow[at]?.id ?? "",
           state: {
@@ -1671,8 +1686,8 @@ describe("AC-27i 닫힌 뒤에도 같은 판정(검토 rev-chat-t3 I-1 · 5절)"
   it("AC-27i (가) 같은 수업의 열린 꼴과 닫힌 꼴에서 판정 행과 다시 센 판정이 같다(막힌 뒤 고르기 물음 뒤의 'Sea.' · 따라 할 문장 뒤의 따라 말하기)", () => {
     const opened = lesson();
     const closed = closedOf(opened);
-    const a = chatJudgeRowsOf(opened, CTX.spec);
-    const b = chatJudgeRowsOf(closed, CTX.spec);
+    const a = chatJudgeRowsOf(opened, CTX.spec, undefined, []);
+    const b = chatJudgeRowsOf(closed, CTX.spec, undefined, []);
     expect(b.rows).toEqual(a.rows);
     expect(chatJudgesOf(b.rows, CTX)).toEqual(chatJudgesOf(a.rows, CTX));
     // 고르기 답 표지와 따라 말하기 갈래가 닫힌 뒤에도 그대로다
@@ -1691,6 +1706,7 @@ describe("AC-27i 닫힌 뒤에도 같은 판정(검토 rev-chat-t3 I-1 · 5절)"
     const closed = closedOf(lesson());
     const last = closed[7] as ChatTurnRowLike;
     const writes = chatEvalWritesOf({
+      koHelps: [],
       rows: closed,
       childRowId: last.id,
       state: { status: "done", output: EVAL_OUT },
@@ -1779,6 +1795,7 @@ describe("AC-27i 닫힌 뒤에도 같은 판정(검토 rev-chat-t3 I-1 · 5절)"
     expect(erased.filter((row) => chatSaidSayLostOf(row))).toHaveLength(2);
     expect(
       chatEvalWritesOf({
+        koHelps: [],
         rows: erased,
         childRowId: erased[7]?.id ?? "",
         state: { status: "done", output: EVAL_OUT },

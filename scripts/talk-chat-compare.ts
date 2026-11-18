@@ -68,6 +68,7 @@ import {
 } from "../src/core/conversation/chat-message";
 import { homophoneHeadOf } from "../src/core/conversation/child-kind";
 import type { HintTier } from "../src/core/conversation/hints";
+import type { KoHelpStandingRow } from "../src/core/conversation/ko-help";
 import { isLeadAskedSentence } from "../src/core/conversation/lead-turn-core";
 import { readTalkMove } from "../src/core/conversation/move";
 import { metWordsIn } from "../src/core/conversation/said";
@@ -165,6 +166,11 @@ export type CompareLesson = {
   met: readonly string[];
   /** 닫힐 때 쓴 비교 표지 행의 요약(없으면 null). 다시 센 요약과 다른지만 본다. */
   storedMark: ChatCompareSummary | null;
+  /**
+   * 그 수업의 한국어 도움 행(talk_ko_helps — 서버 state readKoHelpRows 와 같은 칸, 판정을 다시 셀 때 서버와 같이 넘긴다 — rev-bk I-1). 모의 수업은
+   * 빈 목록이다.
+   */
+  koHelps: readonly KoHelpStandingRow[];
   mask?: TextMask;
 };
 
@@ -306,7 +312,12 @@ export function chatLessonTableOf(lesson: CompareLesson): ChatLessonTable {
   const { ctx, source } = lesson;
   const mask = lesson.mask ?? NO_MASK;
   const head = homophoneHeadOf(ctx.homophones);
-  const judged = chatJudgeRowsOf(lesson.rows, ctx.spec);
+  const judged = chatJudgeRowsOf(
+    lesson.rows,
+    ctx.spec,
+    undefined,
+    lesson.koHelps,
+  );
   const byId = new Map(lesson.rows.map((row) => [row.id, row]));
   // 판정 행 번호 → 대화 행과 그 앞 선생님 행
   const children = new Map<number, DialogChild>();
@@ -1528,6 +1539,7 @@ async function readMockLessons(
       ctx,
       met: l.met ?? metOfRows(rows, ctx),
       storedMark: null,
+      koHelps: [],
     });
   }
   return out;
@@ -1593,6 +1605,8 @@ type DbLesson = {
   rows: LeadRowLike[];
   ctx: ChatJudgeContext;
   storedMark: ChatCompareSummary | null;
+  /** 그 세션의 한국어 도움 행(서버 readKoHelpRows 그대로 — 이야기 방식 판정을 다시 셀 때 넘긴다, rev-bk I-1). */
+  koHelps: KoHelpStandingRow[];
   mask: TextMask;
   maskerForCall: import("../src/core/ai/mask").Masker;
 };
@@ -1624,7 +1638,7 @@ async function readDbLessons(
   const { isChatSession, isLeadSession } = await import(
     "../src/core/conversation/lead-mode"
   );
-  const { readTalkLessonState } = await import(
+  const { readKoHelpRows, readTalkLessonState } = await import(
     "../src/server/conversation/state"
   );
   const { seedHomophones } = await import("../src/server/seed-lists");
@@ -1707,6 +1721,8 @@ async function readDbLessons(
                   eq(attempts.clientAttemptId, chatCompareAttemptId(s.id)),
                 );
               const parsedMark = ChatCompareMarkSchema.safeParse(mark?.input);
+              // 한국어 도움 행(서버 늦은 평가 쓰기 writeChatEval 과 같은 읽기 — 기기 값은 그 아이 차례의 회화 턴이 이미 적었다)
+              const koHelps = await readKoHelpRows(sp, s.id);
               // 이름 가림(그 프로필 이름 — 값은 이 프로세스 밖으로 내지 않는다). 읽기만 하는 질의라 거래를 그대로 넘긴다
               const masker = await maskerFor(
                 sp as unknown as Parameters<typeof maskerFor>[0],
@@ -1735,6 +1751,7 @@ async function readDbLessons(
                 })),
                 ctx,
                 storedMark: parsedMark.success ? parsedMark.data.summary : null,
+                koHelps,
                 mask: (text) => masker(text).text,
                 maskerForCall: masker,
               } satisfies DbLesson;
@@ -2044,6 +2061,7 @@ async function runCompare(
         ctx: l.ctx,
         met: l.storedMark?.met ?? metOfRows(l.rows, l.ctx),
         storedMark: l.storedMark,
+        koHelps: l.koHelps,
         mask: l.mask,
       });
   }
