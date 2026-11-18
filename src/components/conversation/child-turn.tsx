@@ -45,9 +45,11 @@ import {
 } from "@/core/conversation/client-listen";
 import { OPEN_ALL_HINTS_FROM_DONT_KNOW } from "@/core/conversation/hints";
 import {
+  KO_ASK_TIP,
   koAskNoticeOf,
   koFailStepOf,
   koListenEndOf,
+  koTipShownOf,
 } from "@/core/conversation/ko-ask";
 import {
   confirmPlanOf,
@@ -294,6 +296,13 @@ export type ChildKoAsk = {
   taught: readonly string[];
   /** 인식 확인을 지난 한국어 질문(보냄 · 연 힌트 단 수). */
   onAsk: (ask: { question: string; hintOpened: number }) => void;
+  /**
+   * 첫 안내 '모르는 말은 한국어로 물어봐요'를 아직 보지 않았는가(프로필마다 한 번 — notices_seen.talk_ko_ask_tip, 묶음 5-나 · AC-25k). 없으면 거짓.
+   * '막히면 눌러요'가 보이는 차례에는 보이지 않고, 그 차례의 아이 누름에 지운다.
+   */
+  tip?: boolean;
+  /** 첫 안내를 보였다(틀이 한 번 남긴다). */
+  onTipShown?: () => void;
 };
 
 export type ChildTurnProps = {
@@ -840,7 +849,8 @@ export function ChildTurn(props: ChildTurnProps) {
     // 조용함 타이머의 입력은 누름 처리의 첫 줄에서(막힌 누름도 — 회복 듣기는 누름이 아님)
     if (!auto) props.onInput?.("talk");
     if (!speech || sent.current || moving) return;
-    // 합친 안내는 아이의 다음 누름에 지운다(한국어로 묻기 [N-3])
+    // 합친 안내 · 첫 안내는 아이의 다음 누름에 지운다(한국어로 묻기 [N-3] · AC-25k)
+    if (!auto) setKoTipOn(false);
     if (!auto && props.koAsk?.notice !== undefined)
       props.koAsk.onNotice(undefined);
     if (handle.current) {
@@ -1003,6 +1013,25 @@ export function ChildTurn(props: ChildTurnProps) {
   const ko = props.koAsk;
   /** 그 차례에 한국어로 물어볼 수 있는가(단추를 그린다). */
   const koShown = ko !== undefined && !ko.hidden;
+  /**
+   * 첫 안내(AC-25k): 이 차례에 보이는가. 한국어 단추가 이 차례에 처음 생긴 때 한 번만 정한다 — '막히면 눌러요'가 보이는 차례면 그 차례에는 켜지 않는다
+   * (아이가 말하기를 눌러 '막히면 눌러요'가 사라진 뒤 듣는 중에 끼어들지 않게). 아이 누름에 지운다.
+   */
+  const [koTipOn, setKoTipOn] = useState(false);
+  const koTipChecked = useRef(false);
+  const koTipDue = koTipShownOf({
+    unseen: ko?.tip === true,
+    buttonShown: koShown,
+    nudgeShown: shouldMarkNudge(props.nudge, chatHint ? 1 : hints.length),
+  });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 단추가 생긴 그 한 번만 정한다(틀의 남김은 한 번)
+  useEffect(() => {
+    if (koTipChecked.current || ko === undefined) return;
+    koTipChecked.current = true;
+    if (!koTipDue) return;
+    setKoTipOn(true);
+    ko.onTipShown?.();
+  }, [ko !== undefined]);
 
   /** 한국어 듣기 하나. auto 는 버리는 듣기의 마이크 안 잡힘 회복(같은 언어로 누름 없이 다시 듣는다). */
   async function koSpeak(auto = false) {
@@ -1014,6 +1043,7 @@ export function ChildTurn(props: ChildTurnProps) {
     }
     const discard = props.discard;
     if (!auto) {
+      setKoTipOn(false);
       speech.unlockFromGesture();
       // 읽어 주는 중에 누르면 읽기를 멈추고 듣는다('말하기' 누름과 같은 누름 — spec 설계 3 차례 1)
       props.onListenStart();
@@ -1102,6 +1132,7 @@ export function ChildTurn(props: ChildTurnProps) {
 
   /** 합친 안내를 지운다(아이의 다음 누름 — '말하기' · '힌트' · '잘 모르겠어요'). */
   function koNoticeClear() {
+    setKoTipOn(false);
     if (ko?.notice !== undefined) ko.onNotice(undefined);
   }
   /** 한국어 듣기 · 한국어 인식 확인 · 틀의 한국어 질문 처리 중(그동안 '말하기' · '힌트' · '잘 모르겠어요'를 누를 수 없다, AC-N28). */
@@ -1224,7 +1255,12 @@ export function ChildTurn(props: ChildTurnProps) {
     soundIn,
   });
   // 한국어 안내 줄: 듣는 동안 '한국어로 물어보세요', 그 밖은 남긴 합친 안내(없으면 없음 — 한국어로 묻지 않는 차례는 늘 없음)
-  const koLine = koListening ? CHILD_TURN_TEXT.koListening : ko?.notice;
+  // 첫 안내는 남긴 합친 안내가 없을 때 같은 줄에(한 줄 — AC-25k, 그 줄도 화면 안으로 옮긴다 C226 (4))
+  const koTipLine =
+    !koListening && ko?.notice === undefined && koTipOn && koShown;
+  const koLine = koListening
+    ? CHILD_TURN_TEXT.koListening
+    : (ko?.notice ?? (koTipLine ? KO_ASK_TIP : undefined));
   // 안내 줄 한 줄: 마이크 다시 켬(회복)이 먼저, 그다음 한국어 안내 줄, 그다음 버리는 듣기의 '말해 보세요'
   const turnLine =
     props.discard?.view.recovering === true
@@ -1513,7 +1549,14 @@ export function ChildTurn(props: ChildTurnProps) {
               {turnLine === discardLine ? (
                 <span data-discard-line="">{discardLine}</span>
               ) : (
-                <span data-ko-line="">{turnLine}</span>
+                <span
+                  data-ko-line=""
+                  {...(koTipLine && turnLine === KO_ASK_TIP
+                    ? { "data-ko-tip": "" }
+                    : {})}
+                >
+                  {turnLine}
+                </span>
               )}
             </StatusLine>
           ) : null}

@@ -18,6 +18,7 @@ import {
 } from "@/core/conversation/log";
 import { TEACHER_TEXT } from "@/core/teacher/name";
 import { cn } from "@/lib/utils";
+import { KO_HELP_TEXT } from "./ko-help-bubble";
 
 /** 지난 선생님 말 한 줄(누르면 그 말만 다시 읽음). */
 function PastTeacher({
@@ -71,6 +72,52 @@ function PastTeacher({
           {ko.map((line) => fillName(line, englishName)).join(" ")}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 지난 한국어 문답 한 줄(수업 안 한국어로 묻기 묶음 5-나 — 곁 말풍선과 같은 꼴: 아이의 한국어 질문 · '한국어 도움' 딱지의 선생님 답). 한국어 답은 글만이고
+ * 읽지 않는다. 4단계부터는 가르친 표현 글이 남고(누르는 단추가 아니다 — 지난 차례), 1~3단계는 그 글도 듣기 단추도 없다(T2).
+ */
+function PastKoHelp({
+  entry,
+  englishName,
+}: {
+  entry: Extract<TalkLogEntry, { who: "ko" }>;
+  englishName: string;
+}) {
+  return (
+    <div data-ko-log="" className="flex flex-col gap-3">
+      <p
+        lang="ko"
+        data-ko-question=""
+        className="self-end rounded-[18px_4px_18px_18px] border-[3px] border-ink bg-postit-reading px-5 py-3 font-heading text-2xl"
+      >
+        {fillName(entry.question, englishName)}
+      </p>
+      <div className="relative self-start pt-4">
+        <span
+          data-ko-badge=""
+          className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
+        >
+          {KO_HELP_TEXT.badge}
+        </span>
+        <div className={cn(BUBBLE_CLASS, "pt-5")}>
+          <p lang="ko" data-ko-say="" className={CHILD_SIZE.guide}>
+            {fillName(entry.sayKo, englishName)}
+          </p>
+          {entry.shownEn ? (
+            <p
+              lang="en"
+              data-ko-log-taught=""
+              className={cn(CHILD_SIZE.english, "font-en font-bold")}
+            >
+              {fillName(entry.shownEn, englishName)}
+            </p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -671,6 +718,12 @@ export function TalkLog({
               teacherName={teacherName}
               listening={listening}
               onReplay={onReplay}
+            />
+          ) : entry.who === "ko" ? (
+            <PastKoHelp
+              key={entry.key}
+              entry={entry}
+              englishName={englishName}
             />
           ) : (
             <ChildBubble key={entry.key} said={entry.said} />

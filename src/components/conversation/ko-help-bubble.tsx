@@ -39,6 +39,35 @@ export type KoHelpExchange = {
   retry: SoundRetryStep;
 };
 
+/**
+ * 1~3단계 '알려 준 말 듣기' 알약 단추(한글 글이 보이는 단추). 곁 말풍선 안과, 되묻는 차례 뒤 이어받은 차례(묶음 5-나 — 끝 줄 lesson.koCarry)에서
+ * 같은 꼴로 쓴다.
+ */
+export function KoReplayButton({
+  disabled,
+  onReplay,
+}: {
+  disabled: boolean;
+  onReplay: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-ko-replay=""
+      disabled={disabled}
+      onClick={onReplay}
+      className={cn(
+        FOCUS_RING,
+        CHILD_SIZE.target,
+        "inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-paper px-5 font-heading text-[22px] disabled:border-ink-off-edge disabled:text-ink-soft",
+      )}
+    >
+      <Volume2 aria-hidden className="size-6" />
+      {KO_HELP_TEXT.replayTaught}
+    </button>
+  );
+}
+
 export function KoHelpBubble({
   exchange,
   englishName,
@@ -65,20 +94,7 @@ export function KoHelpBubble({
         {KO_HELP_TEXT.replayTaught}
       </BigButton>
     ) : (
-      <button
-        type="button"
-        data-ko-replay=""
-        disabled={!canReplay}
-        onClick={onReplay}
-        className={cn(
-          FOCUS_RING,
-          CHILD_SIZE.target,
-          "inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-paper px-5 font-heading text-[22px] disabled:border-ink-off-edge disabled:text-ink-soft",
-        )}
-      >
-        <Volume2 aria-hidden className="size-6" />
-        {KO_HELP_TEXT.replayTaught}
-      </button>
+      <KoReplayButton disabled={!canReplay} onReplay={onReplay} />
     );
   return (
     <div data-ko-exchange="" className="flex flex-col gap-3">

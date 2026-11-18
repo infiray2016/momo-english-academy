@@ -284,3 +284,89 @@ export function koTaughtOf(
   }
   return out;
 }
+
+// ── 화면 순수 판정 2(묶음 5-나 — 이어 하기 · 이어받은 차례 · 첫 안내) ──
+
+/** 첫 안내(프로필마다 한 번 — 정본 03 4절 '한국어로 물어보기' 행 · plan '옮겨 적는 문구', 안내 본 표시 열쇠 talk_ko_ask_tip). */
+export const KO_ASK_TIP = "모르는 말은 한국어로 물어봐요";
+
+/**
+ * 첫 안내를 보일까(순수, AC-25k): 프로필이 아직 보지 않았고, 그 차례에 '한국어로 물어보기' 단추가 보이며, '막히면 눌러요'가 보이지 않는 차례다
+ * (두 안내를 한 차례에 겹쳐 보이지 않는다 — '막히면 눌러요'가 먼저다).
+ */
+export function koTipShownOf({
+  unseen,
+  buttonShown,
+  nudgeShown,
+}: {
+  unseen: boolean;
+  buttonShown: boolean;
+  nudgeShown: boolean;
+}): boolean {
+  return unseen && buttonShown && !nudgeShown;
+}
+
+/** 이어 하기 자료의 도움 한 건(화면 자료 koHelps 항목 — 구조로 받는다, 접점 라). */
+export type KoResumeHelp = {
+  turnNo: number;
+  seq: number;
+  question: string;
+  sayKo: string | null;
+  teachEn?: string | undefined;
+  replay: "taught" | "teacher_line";
+  open: boolean;
+};
+
+/**
+ * 이어 열 때 도움 목록 가르기(순수, 묶음 5-나 · 접점 라 · AC-25i): 지금 열린 아이 차례(turnNo)의 열린 도움은 곁 말풍선으로 되살리고(live), 되묻는
+ * 차례를 건너 이어받은 열린 도움(carried — 앞 턴 번호)은 대화 기록의 그 턴 자리에 두고 '알려 준 말 듣기'만 지금 차례에 다시 둔다. 나머지 답이
+ * 있는 도움은 기록(log)이다. 답이 아직 없는 행(sayKo null)은 어디에도 그리지 않는다(plan '접점 다 · 라 보충').
+ */
+export function koResumeOf<H extends KoResumeHelp>(
+  helps: readonly H[],
+  { turnNo }: { turnNo: number | undefined },
+): { live: H[]; carried: H[]; log: H[] } {
+  const answered = [...helps]
+    .filter((h) => (h.sayKo ?? "").trim() !== "")
+    .sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq);
+  const live = answered.filter((h) => h.open && h.turnNo === turnNo);
+  return {
+    live,
+    carried: answered.filter((h) => h.open && h.turnNo !== turnNo),
+    log: answered.filter((h) => !live.includes(h)),
+  };
+}
+
+/** 이어받은 도움 한 건(회화 턴 끝 줄 lesson.koCarry 의 항목 — 접점 마. 표현 글은 실릴 수도 있고, 없으면 화면이 받아 둔 도움에서 찾는다). */
+export type KoCarryItem = { turnNo: number; seq: number; teachEn?: string };
+
+/** 이어받은 차례에 다시 둘 '알려 준 말 듣기' 하나(열쇠 · 읽을 표현). */
+export type KoCarrySound = { key: string; text: string };
+
+/**
+ * 되묻는 차례 뒤 이어받은 차례의 '알려 준 말 듣기'(순수, 접점 마 · AC-25o): 1~3단계만, 이어받은 도움 가운데 가르친 표현이 있는 것마다 하나다(끝 줄의
+ * 글이 먼저, 없으면 받아 둔 도움의 글). 칸이 없거나 비면 아무것도 두지 않는다(지금과 같다). 4단계부터는 기록에 글로 남아 있으므로 두지 않는다.
+ */
+export function koCarrySoundsOf(
+  carry: readonly KoCarryItem[] | undefined,
+  known: readonly {
+    turnNo: number;
+    seq: number;
+    teachEn?: string | undefined;
+  }[],
+  { lowBand }: { lowBand: boolean },
+): KoCarrySound[] {
+  if (!lowBand || !carry || carry.length === 0) return [];
+  const out: KoCarrySound[] = [];
+  for (const item of carry) {
+    const key = `${item.turnNo}:${item.seq}`;
+    const text = (
+      item.teachEn ??
+      known.find((k) => k.turnNo === item.turnNo && k.seq === item.seq)
+        ?.teachEn ??
+      ""
+    ).trim();
+    if (text !== "" && !out.some((o) => o.key === key)) out.push({ key, text });
+  }
+  return out;
+}

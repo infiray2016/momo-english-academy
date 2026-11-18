@@ -49,7 +49,22 @@ export type TalkLogEntry =
       turnNo: number;
       lines: TalkLogLine[];
     }
-  | { who: "child"; key: string; turnNo: number; said: ChildSaid };
+  | { who: "child"; key: string; turnNo: number; said: ChildSaid }
+  | TalkLogKoEntry;
+
+/**
+ * 기록 칸의 한국어 문답 한 줄(수업 안 한국어로 묻기 묶음 5-나 — talk_ko_helps 를 그 턴의 자리에 합쳐 그린다, AC-25i). 아이의 한국어 질문(가린 글 —
+ * {NAME} 은 그리는 쪽이 곁 말풍선과 같이 fillName 으로 채운다)과 선생님의 한국어 답, 4단계부터는 가르친 표현 글. 1~3단계는 가르친 표현 글이 없다(T2).
+ */
+export type TalkLogKoEntry = {
+  who: "ko";
+  key: string;
+  turnNo: number;
+  seq: number;
+  question: string;
+  sayKo: string;
+  shownEn?: string;
+};
 
 /** 보낸 아이 입력 → 남길 말(빈 인식 글은 없음). '모름'은 말소리 없음 출처면 '못 들었어요', 단추면 '잘 모르겠어요'. */
 export function childSaidOfInput(input: {
@@ -201,4 +216,67 @@ export function talkLogReplayOf(
       w: line.app ? ("card" as const) : ("tori" as const),
     })),
   );
+}
+
+/** 한국어 도움 한 건의 기록 재료(화면 자료 koHelps 항목 · 한국어 질문 응답의 help 와 같은 칸 — 구조로 받는다). */
+export type KoLogSource = {
+  turnNo: number;
+  seq: number;
+  question: string;
+  /** 답이 아직 없는 행(호출 중 · 끊김 · 호출 앞 안전 상한)은 null(plan '접점 다 · 라 보충'). */
+  sayKo: string | null;
+  teachEn?: string | undefined;
+};
+
+/**
+ * 한국어 도움 → 기록 줄(순수, 묶음 5-나 · AC-25i): 답이 아직 없으면 null(도움 말풍선을 그리지 않는다). 가르친 표현 글은 4단계부터만 남기고
+ * 1~3단계는 남기지 않는다(소리로만 준 글 — T2, 곁 말풍선과 같은 대접). 열쇠는 턴 번호 · 순번이다.
+ */
+export function koLogEntryOf(
+  help: KoLogSource,
+  { lowBand }: { lowBand: boolean },
+): TalkLogKoEntry | null {
+  const sayKo = help.sayKo?.trim() ?? "";
+  if (sayKo === "") return null;
+  const teach = help.teachEn?.trim() ?? "";
+  return {
+    who: "ko",
+    key: `ko:${help.turnNo}:${help.seq}`,
+    turnNo: help.turnNo,
+    seq: help.seq,
+    question: help.question,
+    sayKo,
+    ...(!lowBand && teach !== "" ? { shownEn: teach } : {}),
+  };
+}
+
+/**
+ * 기록 줄에 한국어 문답을 그 턴의 자리에 끼운다(순수, 두 표를 합친 차례 — 이어 하기, AC-25i). 턴 번호 N 의 문답은 그 턴의 선생님 말 뒤 · 그 턴의
+ * 아이 말 앞이고(도움은 그때 열려 있던 아이 차례의 턴 번호로 남는다 — talk_ko_helps.turn_no), 같은 턴 안에서는 순번 차례다. 그 턴의 아이 말이
+ * 없으면 N 보다 큰 턴의 첫 줄 앞, 그것도 없으면 맨 끝이다. 도움이 없으면 받은 줄을 그대로 돌려준다(한국어로 묻지 않은 수업 — AC-N26).
+ */
+export function talkLogWithKoOf(
+  entries: readonly TalkLogEntry[],
+  helps: readonly KoLogSource[],
+  { lowBand }: { lowBand: boolean },
+): readonly TalkLogEntry[] {
+  const ko = [...helps]
+    .sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq)
+    .flatMap((h) => {
+      const entry = koLogEntryOf(h, { lowBand });
+      return entry ? [entry] : [];
+    });
+  if (ko.length === 0) return entries;
+  const out = [...entries];
+  for (const entry of ko) {
+    if (out.some((e) => e.key === entry.key)) continue;
+    const at = out.findIndex(
+      (e) =>
+        e.turnNo > entry.turnNo ||
+        (e.turnNo === entry.turnNo && e.who === "child"),
+    );
+    if (at === -1) out.push(entry);
+    else out.splice(at, 0, entry);
+  }
+  return out;
 }

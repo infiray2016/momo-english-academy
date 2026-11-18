@@ -19,7 +19,11 @@ import { talkTurns, vocabProgress } from "../../src/db/schema/learning";
 import { aiCalls, settings } from "../../src/db/schema/operations";
 import { SEED_REVISION_TABLES } from "../../src/db/schema/seed-revision";
 import type { FakeSpeechRecord } from "../../src/lib/speech/fake-web-speech";
-import { type FakeRule, messageBody } from "../fixtures/ai/fake-anthropic";
+import {
+  type FakeRule,
+  messageBody,
+  TALK_KO_HELP_PURPOSE,
+} from "../fixtures/ai/fake-anthropic";
 import {
   type CellPlace,
   smallReferenceSet,
@@ -27,7 +31,7 @@ import {
 } from "../fixtures/seed/builders";
 import { TEST_SETTINGS } from "../fixtures/settings";
 import { e2eDb, insertSessions, withHouseholdSetting } from "./db";
-import { fakeAiRequests } from "./fake-ai";
+import { fakeAiRequests, fakeAiRequestsOf } from "./fake-ai";
 import { insertHousehold } from "./household";
 
 type LessonRow = typeof lessons.$inferSelect;
@@ -536,4 +540,41 @@ export function talkLessonReply(
 export function withoutSceneOpener(lesson: TalkLesson): TalkLesson {
   const { sceneOpener: _opener, ...card } = lesson.card;
   return { ...lesson, card };
+}
+
+// ── 수업 안 한국어로 묻기(묶음 5-나 — tests/e2e/talk-ko-ask.spec.ts) ──
+
+/** 회화 턴 · 한국어 질문 끝점 경로(src/lib/talk-stream 의 TALK_TURN_PATH 와 sendTalkKoHelp 의 경로 — 화면 묶음을 가져오지 않으려 다시 적는다). */
+export const TALK_TURN_URL = "/api/talk/turn";
+export const TALK_KO_HELP_URL = "/api/talk/ko-help";
+
+/**
+ * 한국어 한 문장을 말하는 듣기 대본(가짜 인식기는 언어를 가리지 않고 글을 낸다 — 듣기의 언어는 recognitionLangs 로 본다). 한국어 질문 끝 규칙은
+ * 마지막 결과 뒤 speech.end_silence_seconds.ko_ask 만큼 조용하면 앱이 stop 한다.
+ */
+export function koSaidRun(question: string): RecognitionRun {
+  return saidRun(question);
+}
+
+/** 인식 객체 start() 때의 언어 차례(진짜 · 버림 · 마이크 확인 모두 — AC-25d). */
+export async function recognitionLangs(page: Page): Promise<string[]> {
+  return (await speechRecord(page)).langs;
+}
+
+/** 가짜 AI 가 받은 한국어 도움 요청 수(규격 제목 talk_ko_help). */
+export async function koHelpRequests(): Promise<number> {
+  return (await fakeAiRequestsOf(TALK_KO_HELP_PURPOSE)).length;
+}
+
+/** 화면이 보낸 회화 턴 요청 본문을 차례대로 모은다(koHelp 칸 — 접점 마 · AC-N26). 쪽을 열기 전에 건다. */
+export function collectTurnBodies(page: Page): Record<string, unknown>[] {
+  const bodies: Record<string, unknown>[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname === TALK_TURN_URL
+    )
+      bodies.push(request.postDataJSON() as Record<string, unknown>);
+  });
+  return bodies;
 }

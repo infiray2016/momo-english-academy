@@ -68,21 +68,28 @@ import type { ChatOpen } from "@/core/conversation/chat-turn-plan";
 import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   KO_ASK_NOTICE,
+  type KoCarryItem,
+  type KoCarrySound,
   type KoHelpTurnEntry,
+  koCarrySoundsOf,
   koChildOpenOf,
   koHelpSoundOf,
   koHelpTurnPartOf,
+  koResumeOf,
   koTaughtOf,
 } from "@/core/conversation/ko-ask";
 import { KO_ASK_SEGMENTS } from "@/core/conversation/ko-help";
 import { koAskEndRuleOf } from "@/core/conversation/listen";
 import {
   childLogEntryOf,
+  koLogEntryOf,
   liveTeacherEntryOf,
   type TalkLogEntry,
+  type TalkLogKoEntry,
   type TalkLogReplayItem,
   talkLogAppend,
   talkLogOf,
+  talkLogWithKoOf,
 } from "@/core/conversation/log";
 import { waitLineOf } from "@/core/conversation/wait-line";
 import { TALK_LOW_BAND } from "@/core/seed/structure";
@@ -183,7 +190,11 @@ import {
   TalkStart,
 } from "./follow-along";
 import { HintLoadingDots } from "./hint-loading-dots";
-import { KoHelpBubble, type KoHelpExchange } from "./ko-help-bubble";
+import {
+  KoHelpBubble,
+  type KoHelpExchange,
+  KoReplayButton,
+} from "./ko-help-bubble";
 import {
   keepLessonInView,
   lessonFitLandscapeOf,
@@ -1241,13 +1252,75 @@ export function TalkLessonFrame({ view }: { view: TalkLessonView }) {
   return <TalkLessonFrameBody key={view.teacher?.key ?? ""} view={view} />;
 }
 
-/** 이어 열 때의 대화 기록(지금 말풍선인 마지막 선생님 행은 빼고 — 그 행은 말풍선이 그린다). */
+/**
+ * 이어 열 때의 대화 기록(지금 말풍선인 마지막 선생님 행은 빼고 — 그 행은 말풍선이 그린다). 한국어 문답(koHelps)은 지금 차례의 곁 말풍선으로
+ * 되살리는 것 말고는 그 턴의 자리에 합쳐 그린다(묶음 5-나 · AC-25i — 도움이 없으면 지금 그대로).
+ */
 function openingLogOf(view: TalkLessonView): readonly TalkLogEntry[] {
   const now = view.current?.turnNo;
-  return talkLogOf(
-    view.log.filter((r) => r.speaker !== "teacher" || r.turnNo !== now),
-    { koMeaning: view.spec.koMeaning },
+  return talkLogWithKoOf(
+    talkLogOf(
+      view.log.filter((r) => r.speaker !== "teacher" || r.turnNo !== now),
+      { koMeaning: view.spec.koMeaning },
+    ),
+    koResumeOf(view.koHelps, { turnNo: now }).log,
+    { lowBand: view.spec.band === TALK_LOW_BAND },
   );
+}
+
+/**
+ * 이어 열 때 지금 차례의 한국어 문답(묶음 5-나 — 화면 자료 koHelps 가운데 지금 열린 아이 차례의 열린 도움, '알려 준 말 듣기' 포함). 1~3단계 표현
+ * 답은 글 없이 듣기 단추만 되살리고 저절로 다시 읽지 않는다. 다음 영어 턴 요청에 실을 도움 · 가르친 표현 · 기록에 올릴 줄을 함께 짓는다.
+ */
+function openingKoOf(view: TalkLessonView) {
+  const lowBand = view.spec.band === TALK_LOW_BAND;
+  const { live, carried } = koResumeOf(view.koHelps, {
+    turnNo: view.current?.turnNo,
+  });
+  const exchanges: KoHelpExchange[] = live.map((help) => ({
+    key: `${help.turnNo}:${help.seq}`,
+    question: help.question,
+    sayKo: help.sayKo ?? "",
+    shownEn: !lowBand && help.teachEn ? help.teachEn : undefined,
+    soundOnly:
+      lowBand &&
+      koHelpSoundOf(help, { lowBand, soundPauseMs: 0 }).kind === "taught",
+    retry: "none",
+  }));
+  const entries: KoHelpTurnEntry[] = live.map((help) => ({
+    turnNo: help.turnNo,
+    seq: help.seq,
+    heard: true,
+    replays: 0,
+  }));
+  const last = [...live]
+    .reverse()
+    .find(
+      (help) =>
+        koHelpSoundOf(help, { lowBand, soundPauseMs: 0 }).kind === "taught",
+    );
+  return {
+    exchanges,
+    entries,
+    taught: koTaughtOf(live),
+    sound:
+      last?.teachEn === undefined
+        ? null
+        : {
+            key: `${last.turnNo}:${last.seq}`,
+            text: last.teachEn.trim(),
+            low: lowBand,
+            waitOpen: false,
+            started: true,
+            track: SOUND_TRACK_START,
+            entry: entries[live.indexOf(last)] as KoHelpTurnEntry,
+          },
+    logPending: live.flatMap((help) => {
+      const entry = koLogEntryOf(help, { lowBand });
+      return entry ? [entry] : [];
+    }),
+    carried: koCarrySoundsOf(carried, carried, { lowBand }),
+  };
 }
 
 function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
@@ -1387,12 +1460,16 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   /** 한국어 질문을 보내고 답을 기다리는 동안(선생님 창 '생각' · 점 셋 · 맞장구). */
   const [koWaitingSince, setKoWaitingSince] = useState<number | null>(null);
   const [koPending, setKoPending] = useState<string | null>(null);
-  /** 지금 아이 차례의 한국어 문답(곁 말풍선 — 대화 기록에 합쳐 그리기는 묶음 5-나). */
-  const [koExchanges, setKoExchanges] = useState<KoHelpExchange[]>([]);
+  /** 이어 열 때 되살릴 지금 차례의 한국어 문답(묶음 5-나 — 처음 그릴 때 한 번). */
+  const [koOpening] = useState(() => openingKoOf(view));
+  /** 지금 아이 차례의 한국어 문답(곁 말풍선 — 차례가 바뀌면 대화 기록이 잇는다, 묶음 5-나). */
+  const [koExchanges, setKoExchanges] = useState<KoHelpExchange[]>(
+    koOpening.exchanges,
+  );
   /** 지금 아이 차례에서 받은 가르친 표현(인식 확인의 바로 보냄 견줌). */
-  const [koTaught, setKoTaught] = useState<string[]>([]);
+  const [koTaught, setKoTaught] = useState<string[]>(koOpening.taught);
   /** 다음 영어 턴 요청에 실을 도움(접점 마). */
-  const koEntries = useRef<KoHelpTurnEntry[]>([]);
+  const koEntries = useRef<KoHelpTurnEntry[]>(koOpening.entries);
   /** 걸어 둔 답의 소리(1~3단계 표현 답은 시작 · 결과로 아이 차례를 연다). */
   const koSound = useRef<{
     key: string;
@@ -1402,8 +1479,25 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     started: boolean;
     track: SoundTrack;
     entry: KoHelpTurnEntry;
-  } | null>(null);
+  } | null>(koOpening.sound);
+  /** 지금 차례의 한국어 문답 기록 줄 — 그 턴의 선생님 말을 기록에 올릴 때 바로 뒤에 함께 올린다(묶음 5-나, 아이 말보다 앞). */
+  const koLogPending = useRef<TalkLogKoEntry[]>(koOpening.logPending);
+  /** 이 수업에서 받은 도움의 가르친 표현(이어받은 차례의 '알려 준 말 듣기'가 끝 줄에 글이 없을 때 찾는다 — 접점 마). */
+  const koKnown = useRef<{ turnNo: number; seq: number; teachEn?: string }[]>(
+    view.koHelps.map((h) => ({
+      turnNo: h.turnNo,
+      seq: h.seq,
+      ...(h.teachEn ? { teachEn: h.teachEn } : {}),
+    })),
+  );
+  /** 되묻는 차례 뒤 이어받은 차례에 다시 둔 '알려 준 말 듣기'(1~3단계 — 끝 줄 lesson.koCarry · 이어 열면 koHelps 의 이어받은 도움). */
+  const [koCarried, setKoCarried] = useState<KoCarrySound[]>(koOpening.carried);
   const koAsking = useRef(false);
+  /** 첫 안내 '모르는 말은 한국어로 물어봐요'를 아직 보지 않았는가(프로필마다 한 번 — talk_ko_ask_tip, AC-25k). 보인 차례 뒤로는 거짓. */
+  const [koTipUnseen, setKoTipUnseen] = useState(
+    !view.noticesSeen.talk_ko_ask_tip,
+  );
+  const koTipMarked = useRef(false);
   /** 소리 결과 · 시작으로 1~3단계 표현 답의 아이 차례를 여는가(쉬는 동안은 ko_help 그대로). */
   function koOpenIfDue() {
     const sound = koSound.current;
@@ -1439,6 +1533,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     setKoExchanges([]);
     setKoTaught([]);
     setKoNotice(undefined);
+    setKoCarried([]);
   }
   const queue = useSpeakQueue(speech, {
     rate,
@@ -1881,7 +1976,10 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
       content: bubble,
       koMeaning,
     });
-    setLog((l) => talkLogAppend(l, entry));
+    // 그 턴의 한국어 문답은 선생님 말 바로 뒤에(곁 말풍선이 사라지는 자리를 기록이 잇는다 — 묶음 5-나). 없으면 지금 그대로
+    const ko = koLogPending.current;
+    koLogPending.current = [];
+    setLog((l) => ko.reduce(talkLogAppend, talkLogAppend(l, entry)));
   }
 
   /** 새 선생님 행 → 새 말풍선(앞 말풍선은 기록으로, 읽기 줄에 넣음). */
@@ -2258,6 +2356,15 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           counterLimits,
         ).state;
         applyEnd(n, chat);
+        // 되묻는 차례 뒤 이어받은 도움(접점 마 — 서버가 칸을 보내는 길은 묶음 4-라). 칸이 없으면 지금 그대로다(상태도 바꾸지 않는다)
+        const carried = koCarrySoundsOf(
+          (n as TalkLessonNext & { koCarry?: KoCarryItem[] }).koCarry,
+          koKnown.current,
+          { lowBand: lowLevel },
+        );
+        setKoCarried((prev) =>
+          carried.length === 0 && prev.length === 0 ? prev : carried,
+        );
         setBubble((b) => ({ ...b, done: true }));
       },
       onResting: () => {
@@ -2445,6 +2552,21 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           replays: 0,
         };
         koEntries.current = [...koEntries.current, entry];
+        // 차례가 바뀌어 곁 말풍선이 사라지면 대화 기록이 잇는다(1~3단계는 가르친 표현 글 없이 — 묶음 5-나 · T2)
+        const logEntry = koLogEntryOf(help, { lowBand: lowLevel });
+        if (logEntry)
+          koLogPending.current = [
+            ...koLogPending.current.filter((e) => e.key !== logEntry.key),
+            logEntry,
+          ];
+        koKnown.current = [
+          ...koKnown.current,
+          {
+            turnNo: help.turnNo,
+            seq: help.seq,
+            ...(help.teachEn ? { teachEn: help.teachEn } : {}),
+          },
+        ];
         setKoTaught((list) =>
           koTaughtOf([...list.map((teachEn) => ({ teachEn })), help]),
         );
@@ -2526,6 +2648,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
     queue.replay([
       { text: sound.text, w: "tori", ko: sound.low ? "taught_low" : "taught" },
     ]);
+  }
+
+  /** 이어받은 차례의 '알려 준 말 듣기'(1~3단계 — 되묻는 차례 앞에서 알려 준 표현을 다시 읽는다, 접점 마). */
+  function koCarryReplay(sound: KoCarrySound) {
+    quietInput("replay");
+    speech?.unlockFromGesture();
+    queue.replay([{ text: sound.text, w: "tori", ko: "taught_low" }]);
   }
 
   function onChildSend(send: ChildSend) {
@@ -2789,6 +2918,13 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         onNotice: setKoNotice,
         taught: koTaught,
         onAsk: (ask) => void askKo(ask),
+        tip: koTipUnseen,
+        onTipShown: () => {
+          if (koTipMarked.current) return;
+          koTipMarked.current = true;
+          setKoTipUnseen(false);
+          void markTalkNotice({ kind: "talk_ko_ask_tip" }).catch(() => {});
+        },
       }
     : undefined;
   // 1~3단계 그림 턴(C32 — 그림 파일이 있을 때만, 말풍선 옆에 크게)
@@ -3119,6 +3255,18 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
                   }
                 />
               ))}
+              {/* 되묻는 차례 뒤 이어받은 차례: 앞에서 알려 준 표현의 '알려 준 말 듣기'만 다시 둔다(1~3단계, 글 없음 — 접점 마) */}
+              {koCarried.length > 0 ? (
+                <div data-ko-carry="" className="flex flex-col gap-2">
+                  {koCarried.map((sound) => (
+                    <KoReplayButton
+                      key={sound.key}
+                      disabled={phase !== "child" || listening}
+                      onReplay={() => koCarryReplay(sound)}
+                    />
+                  ))}
+                </div>
+              ) : null}
               {koPending !== null ? (
                 <div data-ko-pending="" className="flex flex-col gap-3">
                   <p

@@ -9,11 +9,13 @@ import { TalkLog } from "@/components/conversation/talk-log";
 import {
   childLogEntryOf,
   childSaidOfInput,
+  koLogEntryOf,
   liveTeacherEntryOf,
   type TalkLogEntry,
   talkLogAppend,
   talkLogOf,
   talkLogReplayOf,
+  talkLogWithKoOf,
 } from "@/core/conversation/log";
 import { talkMoveOf } from "@/core/conversation/move";
 import { lessonLogOf, type TalkLessonLogRow } from "@/server/conversation";
@@ -412,5 +414,154 @@ describe("대화 기록 칸 TalkLog", () => {
     expect(out).toContain("border-ink-off-edge");
     expect(out).toContain("text-ink-soft");
     expect(out).not.toContain('lang="en"');
+  });
+});
+
+// 한국어로 묻기 묶음 5-나 — 두 표(talk_turns · talk_ko_helps)를 합친 대화 기록(AC-25i 단위 몫 · AC-N26 · T2).
+describe("AC-25i 대화 기록에 한국어 문답을 그 턴의 자리에 합쳐 그린다(묶음 5-나)", () => {
+  const t = (turnNo: number, en: string): TalkLogEntry => ({
+    who: "teacher",
+    key: `teacher:${turnNo}`,
+    turnNo,
+    lines: [{ en, app: false }],
+  });
+  const c = (turnNo: number, text: string): TalkLogEntry => ({
+    who: "child",
+    key: `child:${turnNo}`,
+    turnNo,
+    said: { kind: "speech", text },
+  });
+  const help = (
+    turnNo: number,
+    seq: number,
+    over: Partial<Parameters<typeof koLogEntryOf>[0]> = {},
+  ): Parameters<typeof koLogEntryOf>[0] => ({
+    turnNo,
+    seq,
+    question: "조개는 영어로 뭐야?",
+    sayKo: "이렇게 말하면 돼.",
+    teachEn: "I found a shell.",
+    ...over,
+  });
+  const base = [
+    t(1, "Hi!"),
+    c(1, "Hi."),
+    t(2, "What did you find?"),
+    c(2, "A shell."),
+  ];
+
+  it("AC-25i 턴 N 의 문답은 그 턴 선생님 말 뒤 · 아이 말 앞이고 같은 턴 안에서는 순번 차례다", () => {
+    const out = talkLogWithKoOf(base, [help(2, 2), help(2, 1)], {
+      lowBand: false,
+    });
+    expect(out.map((e) => e.key)).toEqual([
+      "teacher:1",
+      "child:1",
+      "teacher:2",
+      "ko:2:1",
+      "ko:2:2",
+      "child:2",
+    ]);
+  });
+
+  it("AC-25i 그 턴의 아이 말이 아직 없으면 다음 턴 첫 줄 앞, 그것도 없으면 맨 끝이다", () => {
+    const open = [t(1, "Hi!"), c(1, "Hi."), t(2, "What did you find?")];
+    expect(
+      talkLogWithKoOf(open, [help(2, 1)], { lowBand: false }).map((e) => e.key),
+    ).toEqual(["teacher:1", "child:1", "teacher:2", "ko:2:1"]);
+    const skipped = [t(1, "Hi!"), t(3, "Tell me more.")];
+    expect(
+      talkLogWithKoOf(skipped, [help(1, 1)], { lowBand: false }).map(
+        (e) => e.key,
+      ),
+    ).toEqual(["teacher:1", "ko:1:1", "teacher:3"]);
+  });
+
+  it("AC-25i 답이 아직 없는 항목(sayKo null · 빈 글)은 도움 말풍선을 그리지 않는다", () => {
+    expect(koLogEntryOf(help(2, 1, { sayKo: null }), { lowBand: false })).toBe(
+      null,
+    );
+    expect(koLogEntryOf(help(2, 1, { sayKo: "  " }), { lowBand: true })).toBe(
+      null,
+    );
+    const out = talkLogWithKoOf(base, [help(2, 1, { sayKo: null })], {
+      lowBand: false,
+    });
+    expect(out.some((e) => e.who === "ko")).toBe(false);
+  });
+
+  it("AC-25i 1~3단계의 지난 차례에는 가르친 표현 글이 없고 4단계부터는 남는다(T2)", () => {
+    const low = koLogEntryOf(help(2, 1), { lowBand: true });
+    expect(low).not.toBeNull();
+    expect(low && "shownEn" in low).toBe(false);
+    expect(JSON.stringify(low)).not.toContain("I found a shell.");
+    expect(koLogEntryOf(help(2, 1), { lowBand: false })?.shownEn).toBe(
+      "I found a shell.",
+    );
+    // 뜻 · 대신 줄처럼 가르친 표현이 없는 답은 4단계부터도 글이 없다
+    expect(
+      koLogEntryOf(help(2, 1, { teachEn: undefined }), { lowBand: false }),
+    ).not.toHaveProperty("shownEn");
+  });
+
+  it("AC-N26 도움이 없는 수업은 받은 기록 줄을 그대로 돌려준다(같은 목록)", () => {
+    expect(talkLogWithKoOf(base, [], { lowBand: true })).toBe(base);
+    expect(
+      talkLogWithKoOf(base, [help(2, 1, { sayKo: null })], { lowBand: true }),
+    ).toBe(base);
+  });
+
+  it("AC-25i 같은 열쇠는 두 번 넣지 않는다(살아 있는 턴에서 이미 더한 문답)", () => {
+    const once = talkLogWithKoOf(base, [help(2, 1)], { lowBand: false });
+    const twice = talkLogWithKoOf(once, [help(2, 1)], { lowBand: false });
+    expect(twice.filter((e) => e.key === "ko:2:1")).toHaveLength(1);
+  });
+
+  it("AC-25i 기록 칸은 질문과 '한국어 도움' 딱지의 답을 그리고 {NAME} 은 곁 말풍선과 같이 영어 이름으로 채운다", () => {
+    const entries = talkLogWithKoOf(
+      base,
+      [
+        help(2, 1, {
+          question: "{NAME} 은 영어로 뭐야?",
+          sayKo: "{NAME}, 이렇게 말해 봐.",
+          teachEn: "I am {NAME}.",
+        }),
+      ],
+      { lowBand: false },
+    );
+    const out = renderToStaticMarkup(
+      createElement(TalkLog, {
+        entries,
+        englishName: "Momo",
+        teacherName: "미나",
+        onReplay: () => {},
+      }),
+    );
+    expect(out).toContain("data-ko-log");
+    expect(out).toContain("한국어 도움");
+    expect(out).toContain("Momo 은 영어로 뭐야?");
+    expect(out).toContain("Momo, 이렇게 말해 봐.");
+    expect(out).toContain("I am Momo.");
+    expect(out).not.toContain("{NAME}");
+    // 차례: 선생님 말 → 한국어 문답 → 아이 말
+    expect(out.indexOf("What did you find?")).toBeLessThan(
+      out.indexOf("data-ko-log"),
+    );
+    expect(out.indexOf("data-ko-log")).toBeLessThan(out.indexOf("A shell."));
+  });
+
+  it("AC-25i 1~3단계 기록 칸의 한국어 문답에는 영어 글 · 듣기 단추가 없다(T2)", () => {
+    const entries = talkLogWithKoOf(base, [help(2, 1)], { lowBand: true });
+    const out = renderToStaticMarkup(
+      createElement(TalkLog, {
+        entries,
+        englishName: "Momo",
+        onReplay: () => {},
+      }),
+    );
+    expect(out).toContain("data-ko-log");
+    expect(out).not.toContain("I found a shell.");
+    expect(out).not.toContain("data-ko-replay");
+    expect(out).not.toContain("data-ko-taught");
   });
 });

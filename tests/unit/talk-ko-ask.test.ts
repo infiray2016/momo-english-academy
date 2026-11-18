@@ -5,13 +5,17 @@
 import { describe, expect, it } from "vitest";
 import {
   KO_ASK_NOTICE,
+  KO_ASK_TIP,
   koAskNoticeOf,
+  koCarrySoundsOf,
   koChildOpenOf,
   koFailStepOf,
   koHelpSoundOf,
   koHelpTurnPartOf,
   koListenEndOf,
+  koResumeOf,
   koTaughtOf,
+  koTipShownOf,
 } from "@/core/conversation/ko-ask";
 import { classifyRecognitionError } from "@/core/speech/listen";
 import {
@@ -219,5 +223,89 @@ describe("코드 검토 묶음 3 O-2 — 조용함 집계가 한국어 듣기를
     const withKo = quietListenStatsOf([rowsOf([korean, english])], criteria);
     expect(plain.afterSpeech.firstReals).toBe(1);
     expect(withKo).toEqual(plain);
+  });
+});
+
+// 묶음 5-나 — 이어 하기 · 이어받은 차례 · 첫 안내의 순수 판정.
+describe("AC-25k 첫 안내 '모르는 말은 한국어로 물어봐요' — 프로필마다 한 번, '막히면 눌러요'와 겹치지 않는다", () => {
+  it("문구는 plan '옮겨 적는 문구' 그대로다", () => {
+    expect(KO_ASK_TIP).toBe("모르는 말은 한국어로 물어봐요");
+  });
+  it("아직 보지 않았고 단추가 보이고 '막히면 눌러요'가 없는 차례에만 보인다", () => {
+    expect(
+      koTipShownOf({ unseen: true, buttonShown: true, nudgeShown: false }),
+    ).toBe(true);
+    expect(
+      koTipShownOf({ unseen: true, buttonShown: true, nudgeShown: true }),
+    ).toBe(false);
+    expect(
+      koTipShownOf({ unseen: false, buttonShown: true, nudgeShown: false }),
+    ).toBe(false);
+    expect(
+      koTipShownOf({ unseen: true, buttonShown: false, nudgeShown: false }),
+    ).toBe(false);
+  });
+});
+
+describe("AC-25i 이어 하기 — 화면 자료 koHelps 를 곁 말풍선 · 기록 · 이어받은 듣기로 가른다(접점 라)", () => {
+  const h = (
+    turnNo: number,
+    seq: number,
+    open: boolean,
+    over: Partial<Parameters<typeof koResumeOf>[0][number]> = {},
+  ) => ({
+    turnNo,
+    seq,
+    open,
+    question: "뭐라고 해?",
+    sayKo: "이렇게 말해 봐.",
+    teachEn: "I like it.",
+    replay: "taught" as const,
+    ...over,
+  });
+
+  it("지금 차례의 열린 도움은 곁 말풍선, 앞 턴의 열린 도움은 이어받음(기록에도 둠), 나머지는 기록이다", () => {
+    const out = koResumeOf([h(6, 1, true), h(2, 1, false), h(4, 1, true)], {
+      turnNo: 6,
+    });
+    expect(out.live.map((x) => x.turnNo)).toEqual([6]);
+    expect(out.carried.map((x) => x.turnNo)).toEqual([4]);
+    expect(out.log.map((x) => x.turnNo)).toEqual([2, 4]);
+  });
+
+  it("답이 아직 없는 행(sayKo null)은 어디에도 두지 않는다", () => {
+    const out = koResumeOf([h(6, 1, true, { sayKo: null })], { turnNo: 6 });
+    expect(out).toEqual({ live: [], carried: [], log: [] });
+  });
+
+  it("같은 차례의 도움은 순번 차례로 되살린다", () => {
+    const out = koResumeOf([h(6, 2, true), h(6, 1, true)], { turnNo: 6 });
+    expect(out.live.map((x) => x.seq)).toEqual([1, 2]);
+  });
+});
+
+describe("AC-25o 되묻는 차례 뒤 이어받은 차례의 '알려 준 말 듣기'(끝 줄 lesson.koCarry — 접점 마)", () => {
+  const known = [{ turnNo: 4, seq: 1, teachEn: "I found a shell." }];
+  it("칸이 없거나 비면 아무것도 두지 않는다(지금과 같다)", () => {
+    expect(koCarrySoundsOf(undefined, known, { lowBand: true })).toEqual([]);
+    expect(koCarrySoundsOf([], known, { lowBand: true })).toEqual([]);
+  });
+  it("1~3단계는 이어받은 표현마다 하나 — 끝 줄의 글이 먼저, 없으면 받아 둔 도움의 글", () => {
+    expect(
+      koCarrySoundsOf([{ turnNo: 4, seq: 1 }], known, { lowBand: true }),
+    ).toEqual([{ key: "4:1", text: "I found a shell." }]);
+    expect(
+      koCarrySoundsOf([{ turnNo: 4, seq: 1, teachEn: "A shell." }], known, {
+        lowBand: true,
+      }),
+    ).toEqual([{ key: "4:1", text: "A shell." }]);
+  });
+  it("표현이 없는 도움(뜻 · 대신 줄)과 4단계부터는 두지 않는다", () => {
+    expect(
+      koCarrySoundsOf([{ turnNo: 9, seq: 1 }], known, { lowBand: true }),
+    ).toEqual([]);
+    expect(
+      koCarrySoundsOf([{ turnNo: 4, seq: 1 }], known, { lowBand: false }),
+    ).toEqual([]);
   });
 });
