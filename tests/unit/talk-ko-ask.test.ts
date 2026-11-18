@@ -218,8 +218,9 @@ describe("AC-N26 다음 영어 턴 요청의 koHelp 칸(접점 마)", () => {
     ).toEqual({ koHelp: [{ turnNo: 3, seq: 1, heard: true, replays: 2 }] });
   });
 
-  it("도움 항목은 서버가 읽는 수와 같은 상한까지 마지막 것들만 싣는다(본문 크기 상한에 막히지 않게 — b5-fix2)", () => {
-    expect(KO_HELP_TURN_ENTRIES_MAX).toBe(KO_HELP_ENTRIES_MAX);
+  it("도움 항목은 서버가 읽는 수와 같은 상한까지 마지막 것들만 싣는다(본문 크기 상한에 막히지 않게 — b5-fix2, 서버 값은 core 값을 가져다 씀 — rev-b5b-2 N-2)", () => {
+    // 서버의 읽는 수는 core 의 싣는 수를 그대로 가져다 쓴다(값 한 곳) — 따로 숫자를 다시 적으면 이 줄이 잡는다
+    expect(KO_HELP_ENTRIES_MAX).toBe(KO_HELP_TURN_ENTRIES_MAX);
     const many = Array.from(
       { length: KO_HELP_TURN_ENTRIES_MAX + 7 },
       (_, i) => ({ turnNo: 3, seq: i + 1, heard: true, replays: 0 }),

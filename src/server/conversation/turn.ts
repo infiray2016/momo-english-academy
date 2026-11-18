@@ -15,6 +15,7 @@ import {
 import { chatRecognizerSchemaOf } from "@/core/conversation/chat-message";
 import { CHAT_OPENS, type ChatOpen } from "@/core/conversation/chat-turn-plan";
 import { ClientListenSchema } from "@/core/conversation/client-listen";
+import { KO_HELP_TURN_ENTRIES_MAX } from "@/core/conversation/ko-ask";
 import type { StageTimings } from "@/core/conversation/timing";
 import { createStageTimer } from "@/core/conversation/timing";
 import { talkCardKindOf } from "@/core/seed/schema/talk";
@@ -46,8 +47,9 @@ const PERCEIVED_WAIT_MAX_MS = 600_000;
 /**
  * 회화 턴 요청의 한국어 도움 칸(수업 안 한국어로 묻기 접점 마)의 꼴 검사 값(기술 값): 읽는 항목 수(한 아이 차례의 도움 수 — 넘으면 거절하지 않고
  * 마지막 것들만 읽는다, 횟수로 수업을 멈추지 않는다 · 검토 rev-b4c M-2)와 talk_ko_helps 의 smallint 칸(턴 번호 · 순번 · 다시 듣기 수) 상한.
+ * 읽는 항목 수는 화면이 싣는 수(core KO_HELP_TURN_ENTRIES_MAX)를 그대로 가져다 쓴다 — 값은 한 곳에만 둔다(재검토 rev-b5b-2 N-2).
  */
-export const KO_HELP_ENTRIES_MAX = 50;
+export const KO_HELP_ENTRIES_MAX = KO_HELP_TURN_ENTRIES_MAX;
 const SMALLINT_MAX = 32_767;
 
 /**

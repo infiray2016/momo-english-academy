@@ -309,7 +309,7 @@ export function koHelpTurnPartOf(entries: readonly KoHelpTurnEntry[]): {
 }
 
 /**
- * 회화 턴 요청에 싣는 도움 항목 수(기술 값 — 서버가 읽는 수 KO_HELP_ENTRIES_MAX 와 같다, 단위 시험이 둘을 맞댄다). 한 차례에 이보다 많이 물으면
+ * 회화 턴 요청에 싣는 도움 항목 수(기술 값 — 서버가 읽는 수 KO_HELP_ENTRIES_MAX 가 이 값을 가져다 쓴다, 값은 여기 한 곳). 한 차례에 이보다 많이 물으면
  * 마지막 것들만 싣는다: 거절하지 않고 횟수로 수업을 멈추지 않으며, 회화 턴 끝점의 본문 크기 상한에 막히지 않게 한다(검토 rev-b4c M-2 · b5-fix2).
  */
 export const KO_HELP_TURN_ENTRIES_MAX = 50;

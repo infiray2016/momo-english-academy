@@ -68,7 +68,6 @@ import type { ChatOpen } from "@/core/conversation/chat-turn-plan";
 import type { ClientListen } from "@/core/conversation/client-listen";
 import {
   KO_ASK_NOTICE,
-  type KoCarryItem,
   type KoCarrySound,
   type KoHelpTurnEntry,
   koAnsweredOf,
@@ -2457,12 +2456,11 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
           counterLimits,
         ).state;
         applyEnd(n, chat);
-        // 되묻는 차례 뒤 이어받은 도움(접점 마 — 서버가 칸을 보내는 길은 묶음 4-라). 칸이 없으면 지금 그대로다(상태도 바꾸지 않는다)
-        const carried = koCarrySoundsOf(
-          (n as TalkLessonNext & { koCarry?: KoCarryItem[] }).koCarry,
-          koKnown.current,
-          { lowBand: lowLevel },
-        );
+        // 되묻는 차례 뒤 이어받은 도움(접점 마 — 끝 줄 형 TalkLessonNext 의 koCarry 칸, 서버가 칸을 보내는 길은 묶음 4-라). 칸이 없으면 지금
+        // 그대로다(상태도 바꾸지 않는다)
+        const carried = koCarrySoundsOf(n.koCarry, koKnown.current, {
+          lowBand: lowLevel,
+        });
         setKoCarried((prev) =>
           carried.length === 0 && prev.length === 0 ? prev : carried,
         );
