@@ -5233,3 +5233,85 @@ describe("수업 안 한국어로 묻기 묶음 4-다 — 대본의 한국어 �
     }
   });
 });
+
+// ── 수업 안 한국어로 묻기 묶음 K: 대본 도구의 이야기 방식 길에 한국어 도움(이야기 방식 AC-13 · 정본 AC-27m) ─────────────────
+
+describe("묶음 K 대본 도구의 이야기 방식 길 — 한국어 도움 뒤 차례", () => {
+  const taughtHelp = [
+    {
+      kind: "expression" as const,
+      sayKo: "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+      teachEn: "I like gimbap.",
+      textShown: false,
+      heard: true,
+    },
+  ];
+
+  it("AC-27m 도움 뒤 차례의 보낸 메시지는 입력 줄 바로 앞에 한 줄이 더해질 뿐이고, 대화 기록에는 한국어 문답이 없다", async () => {
+    const sim = await chatTalking();
+    const plain = sim.chat.prepare(chatChild({ say: "I like gimbap." }));
+    const helped = sim.chat.prepare(
+      chatChild({ say: "I like gimbap.", koHelp: taughtHelp }),
+    );
+    if (!plain.ok || !helped.ok) throw new Error("준비하지 못했다");
+    const p = plain.turn.userMessage.split("\n");
+    expect(helped.turn.userMessage.split("\n")).toEqual([
+      ...p.slice(0, -1),
+      "Korean help before this answer: taught 'I like gimbap.'",
+      ...p.slice(-1),
+    ]);
+    expect(helped.turn.chatInput.history).toEqual(plain.turn.chatInput.history);
+    expect(JSON.stringify(helped.turn.chatInput.history)).not.toContain("김밥");
+    expect(helped.turn.plan.facts.map((f) => f.kind)).toContain("ko_help");
+  });
+
+  it("AC-27m 도움 뒤 '말하기' 차례의 아이 행 힌트 종류는 '영어'이고 첫 판정 기록의 앱 판정은 '도움받은 상황'이다", async () => {
+    const sim = await chatTalking();
+    const { rec } = chatToolTurn(
+      sim,
+      chatChild({ say: "I like gimbap.", koHelp: taughtHelp }),
+      chatResult(
+        chatAnswerOf({ say: "Gimbap is yummy! What else do you like?" }),
+      ),
+    );
+    expect(rec.facts).toContain("ko_help");
+    expect(rec.child?.hintKind).toBe("english");
+    expect(rec.judge?.app.hintKind).toBe("english");
+    expect(rec.judge?.app.said).toEqual([]);
+  });
+
+  it("AC-27m 답이 없는 도움 · 대신 줄은 도움 없음이라 보낸 메시지가 도움 없는 차례와 글자까지 같다", async () => {
+    const sim = await chatTalking();
+    const plain = sim.chat.prepare(chatChild({ say: "I like gimbap." }));
+    if (!plain.ok) throw new Error(plain.reason);
+    for (const fallback of ["call_failed", "check_blocked"] as const) {
+      const ready = sim.chat.prepare(
+        chatChild({
+          say: "I like gimbap.",
+          koHelp: [{ ...taughtHelp[0], fallback } as (typeof taughtHelp)[0]],
+        }),
+      );
+      if (!ready.ok) throw new Error(ready.reason);
+      expect(ready.turn.userMessage).toBe(plain.turn.userMessage);
+      expect(ready.turn.plan.facts).toEqual(plain.turn.plan.facts);
+    }
+  });
+
+  it("대본 l3-chat-ko-help 는 꼴 검사를 지나고 이야기 방식으로 덮으며, 도움 칸이 말 차례 둘에만 있다", () => {
+    const raw = JSON.parse(
+      readFileSync(
+        `${ROOT}/tests/fixtures/talk-observe/l3-chat-ko-help.json`,
+        "utf8",
+      ),
+    );
+    const parsed = parseObserveScript(raw, "l3-chat-ko-help.json");
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.script.settings).toEqual({ [TALK_LEAD_MODE_KEY]: "chat" });
+    expect(parsed.script.level).toBe(3);
+    const withHelp = parsed.script.steps.filter((s) => s.koHelp !== undefined);
+    expect(withHelp.map((s) => s.say)).toEqual([
+      "I like gimbap.",
+      "I drink milk.",
+    ]);
+  });
+});

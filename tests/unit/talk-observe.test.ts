@@ -281,6 +281,8 @@ describe("대본", () => {
         "l1-first-new-word",
         "l3-child-topic",
         "l3-heard-counter",
+        // 수업 안 한국어로 묻기 묶음 K(이야기 방식 대본 하나 — 대본 칸 settings 로 talk.lead_mode chat)
+        "l3-chat-ko-help",
         // 수업 안 한국어로 묻기 묶음 4-다(기존 방식 대본 둘)
         "l3-ko-help",
         "l3-nospeech",
@@ -295,7 +297,7 @@ describe("대본", () => {
       ].sort(),
     );
     expect(all.filter((s) => s.level === 1)).toHaveLength(2);
-    expect(all.filter((s) => s.level === 3)).toHaveLength(16);
+    expect(all.filter((s) => s.level === 3)).toHaveLength(17);
     expect(all.filter((s) => s.level === 4)).toHaveLength(2);
   });
 
@@ -430,9 +432,19 @@ describe("대본", () => {
       recall?.lesson,
       recall?.teacher,
     ]).toEqual([3, 1, 1, "mina"]);
+    // 묶음 K 의 이야기 방식 대본(l3-chat-ko-help)은 회화 방식만 덮는다(talk.lead_mode — 요약 · 인사 기억과 관계없음)
     expect(
-      all.filter((s) => s.summaries !== undefined || s.settings !== undefined),
+      all.filter(
+        (s) =>
+          s.summaries !== undefined ||
+          (s.settings !== undefined && !("talk.lead_mode" in s.settings)),
+      ),
     ).toHaveLength(2);
+    expect(
+      all
+        .filter((s) => s.settings?.["talk.lead_mode"] !== undefined)
+        .map((s) => [s.name, s.settings]),
+    ).toEqual([["l3-chat-ko-help", { "talk.lead_mode": "chat" }]]);
   });
 
   it("대본 칸 settings 는 설정 키 꼴 · 글 · 수 · 참거짓만, summaries 는 빈 줄 없이 받는다", () => {
@@ -1599,8 +1611,8 @@ describe("실행(네트워크 없음)", () => {
     expect(code).toBe(0);
     expect(written.size).toBe(0);
     const total = logs.find((l) => l.startsWith("합계:")) ?? "";
-    // 수업 안 한국어로 묻기 묶음 4-다 가 3단계 대본 하나(l3-ko-help)를 더했다
-    expect(total).toContain("대본 16(돌릴 것 16) × 바퀴 2");
+    // 수업 안 한국어로 묻기 묶음 4-다 가 3단계 대본 하나(l3-ko-help)를, 묶음 K 가 하나(l3-chat-ko-help)를 더했다
+    expect(total).toContain("대본 17(돌릴 것 17) × 바퀴 2");
     const perRound = Number(/한 바퀴 (\d+)\)/.exec(total)?.[1]);
     expect(perRound).toBeGreaterThan(0);
     expect(total).toContain(`예상 호출 ${perRound * 2}(`);

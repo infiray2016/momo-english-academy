@@ -162,6 +162,7 @@ import {
   chatHintInputOf,
   chatJudgeRowsOf,
   chatLessonSayLostOf,
+  chatTurnKoStandingOf,
   levelCallSpecOf,
   levelInputOf,
 } from "../src/core/conversation/chat-rows";
@@ -234,6 +235,7 @@ import {
 import {
   heardWithTaughtOf,
   type KoHelpStanding,
+  type KoHelpStandingRow,
   koHelpStandingOf,
   koTaughtHeardOf,
   raiseHintKind,
@@ -769,20 +771,25 @@ export function observeKoStandingOf(
   lowBand: boolean,
 ): KoHelpStanding | null {
   if (step.koHelp === undefined) return null;
-  return koHelpStandingOf(
-    step.koHelp.map((h, i) => ({
-      turnNo: 0,
-      seq: i + 1,
-      kind: h.kind,
-      sayKo: h.sayKo,
-      teachEn: h.teachEn ?? null,
-      textShown: h.textShown ?? false,
-      fallback: h.fallback ?? "none",
-      shownEn: h.shownEn ?? null,
-      heard: h.heard ?? null,
-    })),
-    { lowBand },
-  );
+  return koHelpStandingOf(observeKoRowsOf(step, 0), { lowBand });
+}
+
+/** 대본 차례의 한국어 도움 → 그 턴 번호에 붙은 talk_ko_helps 행의 꼴(순번은 차례대로 1 부터). 없으면 빈 목록. */
+export function observeKoRowsOf(
+  step: Pick<ObserveStep, "koHelp">,
+  turnNo: number,
+): KoHelpStandingRow[] {
+  return (step.koHelp ?? []).map((h, i) => ({
+    turnNo,
+    seq: i + 1,
+    kind: h.kind,
+    sayKo: h.sayKo,
+    teachEn: h.teachEn ?? null,
+    textShown: h.textShown ?? false,
+    fallback: h.fallback ?? "none",
+    shownEn: h.shownEn ?? null,
+    heard: h.heard ?? null,
+  }));
 }
 
 const ScriptSchema = z.strictObject({
@@ -3057,6 +3064,11 @@ export type ChatPreparedTurn = {
   safeLine: string;
   check: ChatReplyCheck;
   hintOpened: number;
+  /**
+   * 이 아이 차례 앞에 받은 한국어 도움(묶음 K — 대본 차례의 koHelp 칸을 그 아이 차례의 턴 번호에 붙은 talk_ko_helps 행 꼴로 옮긴 것과 그 대접, 서버
+   * chat-turn chatKoHelpRead 와 같은 core 함수 chatTurnKoStandingOf). 도움이 없으면 빈 목록 · null.
+   */
+  ko: { rows: KoHelpStandingRow[]; standing: KoHelpStanding | null };
 };
 
 /** 이야기 방식 선생님 행(서버 꼴 + move 를 읽은 값). */
@@ -4789,6 +4801,8 @@ export function createTalkSim(
   const chatLessonLemmaOf = materials.lessonLemmaOf ?? materials.lemmaOf;
   /** '더 이야기하기'를 골랐고 그 입구를 아직 부르지 않았다(화면은 단추를 누른 뒤에만 신호 more 를 보낸다 — T2 가 찾은 결함). */
   let chatMoreChosen = false;
+  // 이 수업의 한국어 도움 행(서버 talk_ko_helps 흉내 — 아이 행을 저장한 차례에 더한다, 묶음 K)
+  let chatKoRows: KoHelpStandingRow[] = [];
   // 판정 맥락(서버 턴 길 · 닫는 길과 같은 core chatJudgeContextFrom)
   const chatJudgeCtx: ChatJudgeContext = chatJudgeContextFrom(
     { card, spec: { band }, teacher: materials.teacher },
@@ -5169,6 +5183,7 @@ export function createTalkSim(
       let input: ChatInput;
       let teacherTurnNo: number;
       let hintOpened = 0;
+      let ko: ChatPreparedTurn["ko"] = { rows: [], standing: null };
       if (entry.kind === "open") {
         // 입구를 받는가(서버 runChatOpenTurn — chatOpenAcceptsOf, 대본 도구에는 끊긴 고아 행이 없다)
         if (
@@ -5257,6 +5272,11 @@ export function createTalkSim(
           overLength: null,
         };
         teacherTurnNo = lastTeacher.turnNo + 1;
+        const koRows = observeKoRowsOf(step, lastTeacher.turnNo);
+        ko = {
+          rows: koRows,
+          standing: chatTurnKoStandingOf(koRows, lastTeacher.turnNo, chatSpec),
+        };
         input = chatTurnInputOf(child, entry.recognizer, {
           unsureConfidence: chatSettings.unsureConfidence,
           unsureOnPartial: chatSettings.unsureOnPartial,
@@ -5272,6 +5292,7 @@ export function createTalkSim(
         prepOpens: prepPlan.length > 0,
         safetyMaxTurns: values["talk.safety_max_turns"] as number,
         settings,
+        koHelp: ko.standing,
       });
       const ordered = leadConversationOrder(live);
       const history = chatHistoryOf(ordered);
@@ -5335,6 +5356,7 @@ export function createTalkSim(
             madeUpPhrases: materials.talkLists.madeUp,
           },
           hintOpened,
+          ko,
         },
       };
     },
@@ -5416,12 +5438,21 @@ export function createTalkSim(
                   ),
                 ],
               });
+        // 한국어 도움 뒤 '말하기'면 힌트 종류를 높은 쪽으로(서버 chat-turn chatKoRaisedHintOf 와 같은 규칙)
+        const raised =
+          p.ko.standing !== null && p.plan.input.kind === "speech"
+            ? {
+                ...hint,
+                hintKind: raiseHintKind(hint.hintKind, p.ko.standing.hintKind),
+              }
+            : hint;
         const fields = chatChildFieldsOf({
           input: p.plan.input,
           sentUserMessage: p.userMessage,
-          hint,
+          hint: raised,
         });
         childRow = { ...child, ...fields };
+        chatKoRows = [...chatKoRows, ...p.ko.rows];
         // 첫 판정 기록(서버 saveChatTurn — 서버 chatJudgeRowsOf 사본 + core chatJudgesOf, 그 행에만)
         const judged = chatJudgeRowsOf(
           [
@@ -5430,6 +5461,8 @@ export function createTalkSim(
             ...(teacher === null ? [] : [teacher]),
           ],
           chatJudgeCtx.spec,
+          undefined,
+          chatKoRows,
         );
         const index = judged.ids.indexOf(child.id);
         judge =
@@ -5630,6 +5663,7 @@ export function createTalkSim(
         childRowId: ask.childRowId,
         state,
         ctx: chatJudgeCtx,
+        koHelps: chatKoRows,
       });
       for (const write of writes ?? []) {
         const at = rows.findIndex(

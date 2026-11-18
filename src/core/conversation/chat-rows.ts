@@ -19,6 +19,7 @@ import {
   type ChatEvalFailure,
   type ChatEvalState,
   type ChatJudge,
+  type ChatJudgeChildRow,
   type ChatJudgeContext,
   type ChatJudgeInputKind,
   type ChatJudgeRow,
@@ -27,8 +28,15 @@ import {
 } from "@/core/conversation/chat-judge";
 import { chatInputLineOf } from "@/core/conversation/chat-message";
 import { chatEvalDueOf } from "@/core/conversation/chat-turn-core";
+import {
+  type KoHelpDeviceEntry,
+  type KoHelpStanding,
+  type KoHelpStandingRow,
+  koHelpStandingOf,
+} from "@/core/conversation/ko-help";
 import { leadConversationOrder } from "@/core/conversation/lead-turn-core";
 import { readTalkMove } from "@/core/conversation/move";
+import { TALK_LOW_BAND } from "@/core/seed/structure";
 
 // ── 수업 행 읽기(힌트 · 평가 호출 입력이 함께 쓴다) ───────────────────────────
 
@@ -307,6 +315,58 @@ export function chatEvalFailureOf(reason: string): ChatEvalFailure {
 
 // ── 판정 행 · 저장 계산(P4 chatJudgeChangesOf) ───────────────────────────────
 
+// ── 한국어 도움(수업 안 한국어로 묻기 묶음 K — 이야기 방식 spec 설계 12 · FR-13) ─────────────────
+
+/**
+ * 회화 턴 요청의 기기 값(들려줬는가)을 같은 턴 번호 · 순번의 행 값 위에 얹은 행(서버가 기기 값을 적은 뒤 다시 읽지 않고 판정에 넘기는 값 — 적는
+ * 규칙은 state writeKoHelpDevice 와 같다: heard 가 없는 항목은 행 값 그대로). 기기 값이 없으면 같은 행들이다.
+ */
+export function koHelpRowsWithDeviceOf<R extends KoHelpStandingRow>(
+  rows: readonly R[],
+  device: readonly KoHelpDeviceEntry[],
+): R[] {
+  return rows.map((row) => {
+    const entry = device.find(
+      (d) => d.turnNo === row.turnNo && d.seq === row.seq,
+    );
+    return entry?.heard === undefined ? row : { ...row, heard: entry.heard };
+  });
+}
+
+/**
+ * 그 아이 차례(턴 번호)에 붙은 도움 행의 대접(ko-help koHelpStandingOf — 묶음 4-다 의 순수 함수 그대로, 단계 구간은 판정 맥락의 band). 그 턴의
+ * 행이 없으면 null. 되묻는 차례를 건너 이어받지 않는다(묶음 K, 컨트롤러가 정한 것).
+ */
+export function chatTurnKoStandingOf(
+  koHelps: readonly KoHelpStandingRow[],
+  turnNo: number,
+  spec: ChatJudgeContext["spec"],
+): KoHelpStanding | null {
+  const rows = koHelps.filter((h) => h.turnNo === turnNo);
+  if (rows.length === 0) return null;
+  return koHelpStandingOf(rows, { lowBand: spec.band === TALK_LOW_BAND });
+}
+
+/**
+ * 대접 → 판정 행의 한국어 도움 칸(chat-judge ChatJudgeChildRow 의 koHelp · koShownWords). 도움으로 대접한 때(koHelp 참)만 koHelp 를 싣고(가르친
+ * 표현 목록 · 뜻만이면 null · 힌트 종류), 새로 보인 낱말이 있으면 '말했다' 거름 재료를 싣는다(대접과 관계없이 — 낱말 단위 거름). 도움이 없으면
+ * koHelp null 하나뿐이다(한국어로 묻지 않은 턴의 행은 고치기 전 그대로).
+ */
+export function chatKoJudgeOf(
+  standing: KoHelpStanding | null,
+): Pick<ChatJudgeChildRow, "koHelp" | "koShownWords"> {
+  const koHelp: ChatJudgeChildRow["koHelp"] =
+    standing === null || !standing.koHelp || standing.hintKind === "none"
+      ? null
+      : {
+          taught: standing.taught.length > 0 ? [...standing.taught] : null,
+          hintKind: standing.hintKind,
+        };
+  return standing !== null && standing.shownWords.length > 0
+    ? { koHelp, koShownWords: [...standing.shownWords] }
+    : { koHelp };
+}
+
 /** 아이 행의 입력 갈래(판정 꼴). */
 function judgeInputOf(row: ChatTurnRowLike): ChatJudgeInputKind {
   return chatChildInputOf(row).kind;
@@ -315,13 +375,16 @@ function judgeInputOf(row: ChatTurnRowLike): ChatJudgeInputKind {
 /**
  * 판정 함수에 넘기는 행: 대화 토막의 행만, 평가 입력과 같은 차례로(정리 · 짧은 준비 토막 행을 섞지 않음 — rows[at+1] 이 평가의 n+1 과 같은 행).
  * 선생님 행은 나간 say 전체 · 따라 할 문장(move.chat.listen 이 say 에 든 때만) · 막힌 뒤 설명을 보였는지 · 마무리 자리 · 대화 첫 선생님 행, 아이 행은
- * 입력 갈래 · 들린 글 · 바로 앞 선생님 행의 힌트 단 가운데 연 단(hint_level 만큼)의 종류 · 평가 상태다. 한국어 도움은 그 가지가 합쳐진 뒤 채운다(null).
+ * 입력 갈래 · 들린 글 · 바로 앞 선생님 행의 힌트 단 가운데 연 단(hint_level 만큼)의 종류 · 그 차례 앞의 한국어 도움 · 평가 상태다.
  * override 는 저장 전의 새 평가 값(그 아이 행의 상태를 바꿔 센다). ids 는 판정 행 번호 → talk_turns id, stored 는 아이 행 번호 → 저장된 chat_judge 다.
+ * koHelps 는 그 세션의 한국어 도움 행(talk_ko_helps — 기기 값을 적은 뒤의 값)이고, 아이 행마다 같은 턴 번호에 붙은 행만 대접(koHelpStandingOf)으로
+ * 읽는다(되묻는 차례 뒤 이어받기는 이야기 방식에 걸지 않는다, 묶음 K). 없거나 그 턴의 행이 없으면 도움 없음(null)이라 고치기 전 그대로다.
  */
 export function chatJudgeRowsOf(
   rows: readonly ChatTurnRowLike[],
   spec: ChatJudgeContext["spec"],
   override?: { id: string; state: ChatEvalState },
+  koHelps: readonly KoHelpStandingRow[] = [],
 ): { rows: ChatJudgeRow[]; ids: string[]; stored: Map<number, unknown> } {
   const dialog = chatDialogRowsOf(rows);
   const out: ChatJudgeRow[] = [];
@@ -356,7 +419,7 @@ export function chatJudgeRowsOf(
       input,
       heard: input === "speech" ? (row.text ?? "").trim() : "",
       opened: tiers.slice(0, row.hintLevel ?? 0).map((tier) => tier.kind),
-      koHelp: null,
+      ...chatKoJudgeOf(chatTurnKoStandingOf(koHelps, row.turnNo, spec)),
       eval:
         override !== undefined && override.id === row.id
           ? override.state
@@ -376,11 +439,14 @@ export function chatEvalWritesOf({
   childRowId,
   state,
   ctx,
+  koHelps = [],
 }: {
   rows: readonly ChatTurnRowLike[];
   childRowId: string;
   state: ChatEvalState;
   ctx: ChatJudgeContext;
+  /** 그 세션의 한국어 도움 행(chatJudgeRowsOf 의 koHelps — 없으면 도움 없음). */
+  koHelps?: readonly KoHelpStandingRow[];
 }): { id: string; judge: ChatJudge }[] | null {
   const target = rows.find(
     (row) => row.id === childRowId && row.speaker === "child",
@@ -388,7 +454,12 @@ export function chatEvalWritesOf({
   if (target === undefined || !chatEvalPendingOf(target)) return null;
   // 원문이 지워진 수업은 다시 셀 재료가 없어 저장된 판정을 고쳐 쓰지 않는다(가장 보수적인 쪽)
   if (chatLessonSayLostOf(rows)) return null;
-  const judged = chatJudgeRowsOf(rows, ctx.spec, { id: childRowId, state });
+  const judged = chatJudgeRowsOf(
+    rows,
+    ctx.spec,
+    { id: childRowId, state },
+    koHelps,
+  );
   if (!judged.ids.includes(childRowId)) return null;
   return chatJudgeChangesOf({
     rows: judged.rows,

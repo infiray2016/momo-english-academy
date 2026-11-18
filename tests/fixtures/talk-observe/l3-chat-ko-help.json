@@ -1,0 +1,38 @@
+{
+  "name": "l3-chat-ko-help",
+  "title": "3단계 · 이야기 방식에서 한국어로 물어본 뒤 영어로 돌아옴(가르친 표현 · 뜻만)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "수업 안 한국어로 묻기 묶음 K(이야기 방식, 13절 C243 (5) — 한국어로 물어보기와 영어로 돌아오기). 대본 칸 settings 로 talk.lead_mode 를 chat 으로 덮는다. 둘째 차례 앞에는 가르친 표현 답(1~3단계는 소리로만, 한 번 들려줌), 넷째 차례 앞에는 뜻만 답(한국어 답 속에 milk 가 글로 보임)을 받았다. 그 차례의 사용자 메시지에는 입력 줄 바로 앞에 'Korean help before this answer' 한 줄이 들고, 대화 기록에는 한국어 문답이 없다. 선생님이 그 줄을 '앱이 한 도움'으로 받아 영어로 이어 가는지(같은 도움을 되풀이하거나 자기가 도왔다고 말하지 않는지)를 사람이 읽는다.",
+  "settings": { "talk.lead_mode": "chat" },
+  "steps": [
+    { "say": "I am good." },
+    {
+      "koHelp": [
+        {
+          "kind": "expression",
+          "sayKo": "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+          "teachEn": "I like gimbap.",
+          "textShown": false,
+          "heard": true
+        }
+      ],
+      "say": "I like gimbap."
+    },
+    { "say": "Yes." },
+    {
+      "koHelp": [
+        {
+          "kind": "meaning",
+          "sayKo": "milk 는 우유라는 뜻이야. 무엇을 마시는지 물어본 거야.",
+          "shownEn": ["milk"]
+        }
+      ],
+      "say": "I drink milk."
+    },
+    { "input": "dont_know" },
+    { "say": "Bye." }
+  ]
+}

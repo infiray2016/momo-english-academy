@@ -266,12 +266,13 @@ export function chatInputLineOf(input: ChatInput): string {
 // ── 사실 줄(spec 설계 3 '사실 줄은 네 때뿐이다') ──────────────────────────
 
 /**
- * 사실 줄 넷: prep_next 인사 토막의 끝 차례이고 그 뒤 짧은 준비가 열릴 때 · ko_help 한국어 도움 뒤의 영어 차례(taught 는 알려 준 표현, 뜻만
- * 풀이했으면 null) · closing 앱의 마무리 차례 · last_turn 이 아이 차례로 대화 안전 상한에 닿을 때.
+ * 사실 줄 넷: prep_next 인사 토막의 끝 차례이고 그 뒤 짧은 준비가 열릴 때 · ko_help 한국어 도움 뒤의 영어 차례(taught 는 알려 준 표현 — 목록이고
+ * 여럿이면 `'A'; 'B'`(묶음 K, 컨트롤러가 정한 것). 표현 하나는 글로도 받는다. 뜻만 풀이했으면 null · 빈 목록) · closing 앱의 마무리 차례 · last_turn
+ * 이 아이 차례로 대화 안전 상한에 닿을 때.
  */
 export type ChatFact =
   | { kind: "prep_next" }
-  | { kind: "ko_help"; taught: string | null }
+  | { kind: "ko_help"; taught: string | readonly string[] | null }
   | { kind: "closing" }
   | { kind: "last_turn" };
 
@@ -309,10 +310,15 @@ export function chatFactLineOf(fact: ChatFact): string {
     case "prep_next":
       return "After your turn the app does a short word practice with the child, and then your chat goes on.";
     case "ko_help": {
-      const taught = fact.taught?.trim() ?? "";
-      return taught === ""
+      // 기존 방식의 한 줄(ko-help koHelpLineText)과 같은 꼴 — 빈 표현은 빼고, 남은 것이 없으면 뜻만
+      const taught = (
+        typeof fact.taught === "string" ? [fact.taught] : (fact.taught ?? [])
+      )
+        .map((t) => t.trim())
+        .filter((t) => t !== "");
+      return taught.length === 0
         ? "Korean help before this answer: meaning only"
-        : `Korean help before this answer: taught '${taught}'`;
+        : `Korean help before this answer: taught ${taught.map((t) => `'${t}'`).join("; ")}`;
     }
     case "closing":
       return "This is the closing turn. After your turn the app shows the buttons 'talk more' and 'finish'. If the child chooses 'talk more', the chat goes on from here. If the child finishes, the app does a short review and says goodbye, so do not say goodbye yet. In your own words, ask the child if they want to talk more.";

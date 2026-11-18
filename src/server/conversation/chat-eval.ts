@@ -45,6 +45,7 @@ import {
   levelCallSpecOf,
   levelInputOf,
 } from "@/server/conversation/chat-hint";
+import { readKoHelpRows } from "@/server/conversation/state";
 import { type DbOrTx, getDb } from "@/server/db";
 import { dbErrorTag } from "@/server/db/safe-error";
 
@@ -227,7 +228,9 @@ export async function writeChatEval(
   return db.transaction(async (tx) => {
     await lockSession(tx, sessionId);
     const rows = await readChatRows(tx, sessionId);
-    const writes = chatEvalWritesOf({ rows, childRowId, state, ctx });
+    // 한국어 도움 행(talk_ko_helps — 기기 값은 그 아이 차례의 회화 턴이 이미 적었다)으로 다시 센다(묶음 K — 판정 행의 도움받은 상황 · '말했다' 거름)
+    const koHelps = await readKoHelpRows(tx, sessionId);
+    const writes = chatEvalWritesOf({ rows, childRowId, state, ctx, koHelps });
     if (writes === null) return false;
     for (const write of writes)
       await tx

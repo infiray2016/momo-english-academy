@@ -368,10 +368,16 @@ function maskInput(input: ChatInput, masker: Masker): ChatInput {
   };
 }
 
-/** 사실 줄의 가림: 한국어 도움으로 알려 준 표현. */
+/** 사실 줄의 가림: 한국어 도움으로 알려 준 표현(목록이면 하나씩 — 묶음 K). */
 function maskFact(fact: ChatFact, masker: Masker): ChatFact {
   if (fact.kind !== "ko_help" || fact.taught === null) return fact;
-  return { ...fact, taught: masker(fact.taught).text };
+  return {
+    ...fact,
+    taught:
+      typeof fact.taught === "string"
+        ? masker(fact.taught).text
+        : fact.taught.map((t) => masker(t).text),
+  };
 }
 
 /**

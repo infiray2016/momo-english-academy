@@ -7,6 +7,7 @@
 // 순수 모듈이다(DB · 서버 · SDK 없음). 설정값은 읽지 않고 인자로 받는다(설정 읽기는 lesson-turns talkChatSettingsFrom).
 import type { ChatFact, ChatInput } from "@/core/conversation/chat-message";
 import { isDontKnowSaying } from "@/core/conversation/child-kind";
+import type { KoHelpStanding } from "@/core/conversation/ko-help";
 import { leadClosingTurnOf } from "@/core/conversation/lead-turn-core";
 import {
   lessonTurnSegmentOf,
@@ -221,7 +222,7 @@ export function chatClosingTurnOf({
 /**
  * 이번 차례에 붙일 사실 줄(spec 설계 3 '사실 줄은 네 때뿐이다', 글과 차례는 chat-message chatUserMessageOf).
  * - prep_next: 인사 끝 차례(greetingEnd)이고 그 뒤 짧은 준비가 열릴 때(prepOpens)만. 열리지 않으면 붙이지 않는다(I-1).
- * - ko_help: 한국어 도움 뒤의 영어 차례(koHelp 가 있을 때 — 한국어 가지가 합쳐진 뒤 부르는 쪽이 넘긴다).
+ * - ko_help: 한국어 도움 뒤의 영어 차례(koHelp 가 있을 때 — 부르는 쪽이 chatKoHelpOf 로 대접에서 만들어 넘긴다, 묶음 K).
  * - closing: 앱의 마무리 차례(chatClosingTurnOf).
  * - last_turn: 안전 상한 차례(chatLastTurnOf). 이 차례 뒤 앱이 대화를 닫으므로 두 단추(closing) · 짧은 준비(prep_next)의 사실 줄은 붙이지 않는다
  *   (사실 줄은 앱이 하는 일을 알리는 사실이라 하지 않을 일을 알리지 않는다).
@@ -237,7 +238,7 @@ export function chatFactsOf({
   prepOpens: boolean;
   closing: boolean;
   lastTurn: boolean;
-  koHelp?: { taught: string | null } | null;
+  koHelp?: { taught: string | readonly string[] | null } | null;
 }): ChatFact[] {
   const facts: ChatFact[] = [];
   if (greetingEnd && prepOpens && !lastTurn) facts.push({ kind: "prep_next" });
@@ -245,6 +246,18 @@ export function chatFactsOf({
   if (closing && !lastTurn) facts.push({ kind: "closing" });
   if (lastTurn) facts.push({ kind: "last_turn" });
   return facts;
+}
+
+/**
+ * 한국어 도움의 대접(core ko-help koHelpStandingOf — 묶음 4-다 의 순수 함수 그대로) → 사실 줄 재료(묶음 K · 이야기 방식 spec 설계 12): 대접의 한 줄이
+ * 가르친 표현이면 그 목록, 뜻만이면 null, 줄이 없으면(답이 없는 행 · 대신 줄 · 들려주지 못한 표현 · 도움 없음) null 이라 사실 줄을 붙이지 않는다.
+ */
+export function chatKoHelpOf(
+  standing: Pick<KoHelpStanding, "line"> | null,
+): { taught: readonly string[] | null } | null {
+  const line = standing?.line ?? null;
+  if (line === null) return null;
+  return { taught: line.kind === "taught" ? [...line.taught] : null };
 }
 
 /**

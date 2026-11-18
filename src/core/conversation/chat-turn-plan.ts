@@ -29,6 +29,7 @@ import {
   chatEndSignalOf,
   chatFactsOf,
   chatGreetingEndOf,
+  chatKoHelpOf,
   chatLastTurnOf,
   chatQuietAcceptsOf,
   chatSupportStageOf,
@@ -36,6 +37,7 @@ import {
   chatTurnEndOf,
   isChatQuietRow,
 } from "@/core/conversation/chat-turn-core";
+import type { KoHelpStanding } from "@/core/conversation/ko-help";
 import { lowBandPlacedLinesOf } from "@/core/conversation/lead-low-band";
 import {
   leadConversationOrder,
@@ -358,6 +360,7 @@ export function chatTurnPlanOf({
   prepOpens,
   safetyMaxTurns,
   settings,
+  koHelp = null,
 }: {
   input: ChatInput;
   child: Pick<ChatChildRowLike, "inputMode" | "clientListen"> | null;
@@ -368,6 +371,11 @@ export function chatTurnPlanOf({
   prepOpens: boolean;
   safetyMaxTurns: number;
   settings: Pick<TalkLessonSettings, "dontknowMax">;
+  /**
+   * 이 아이 차례 앞에 받은 한국어 도움의 대접(묶음 K — 서버 · 대본 도구가 그 아이 차례의 턴 번호에 붙은 도움 행으로 koHelpStandingOf 를 부른 값).
+   * 아이 차례(child)가 있을 때만 사실 줄을 붙인다. 없거나 null 이면 고치기 전 그대로다.
+   */
+  koHelp?: Pick<KoHelpStanding, "line"> | null;
 }): ChatTurnPlan {
   const appStuck = chatAppStuckOf(input);
   const lite =
@@ -384,7 +392,14 @@ export function chatTurnPlanOf({
     input,
     positionAfter: () => positionAfter,
   });
-  const facts = chatFactsOf({ greetingEnd, prepOpens, closing, lastTurn });
+  const ko = child === null ? null : chatKoHelpOf(koHelp);
+  const facts = chatFactsOf({
+    greetingEnd,
+    prepOpens,
+    closing,
+    lastTurn,
+    ...(ko === null ? {} : { koHelp: ko }),
+  });
   return {
     input,
     lite,

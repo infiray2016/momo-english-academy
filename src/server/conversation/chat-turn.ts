@@ -35,6 +35,10 @@ import {
 import { type ChatInput, chatClockOf } from "@/core/conversation/chat-message";
 import type { ChatReplyCheck } from "@/core/conversation/chat-reply";
 import {
+  chatTurnKoStandingOf,
+  koHelpRowsWithDeviceOf,
+} from "@/core/conversation/chat-rows";
+import {
   chatChildTurnCountOf,
   isChatQuietRow,
 } from "@/core/conversation/chat-turn-core";
@@ -63,6 +67,11 @@ import {
   chatUnitWordsFromLexicon,
 } from "@/core/conversation/chat-unit-words";
 import { heardHelpsOfMove } from "@/core/conversation/hints";
+import {
+  type KoHelpDeviceEntry,
+  type KoHelpStanding,
+  raiseHintKind,
+} from "@/core/conversation/ko-help";
 import { isChatSession } from "@/core/conversation/lead-mode";
 import {
   LEAD_OPEN_ACTIVITY_NO,
@@ -129,10 +138,13 @@ import {
 import {
   isTalkOpen,
   positiveInt,
+  readKoHelpRows,
   readTalkLessonState,
   snapshotNumber,
+  type TalkKoHelpRow,
   type TalkLessonState,
   type TalkTurnRow,
+  writeKoHelpDevice,
   writeSay,
 } from "./state";
 
@@ -504,6 +516,59 @@ export async function runChatOpenTurn(
   }
 }
 
+// ── 한국어 도움(수업 안 한국어로 묻기 묶음 K — 이야기 방식 spec 설계 12 · FR-13) ─────────────────
+
+/** 이 아이 차례 앞의 한국어 도움: 그 세션의 도움 행(기기 값을 얹은 값 — 판정 행이 읽는다) · 이 아이 차례의 대접(사실 줄 · 힌트 종류). */
+type ChatKoRead = {
+  rows: readonly TalkKoHelpRow[];
+  standing: KoHelpStanding | null;
+};
+
+const NO_CHAT_KO: ChatKoRead = { rows: [], standing: null };
+
+/**
+ * 이 아이 차례(턴 번호) 앞의 한국어 도움을 읽고 기기 값(들려줬는가 · 다시 듣기 수)을 그 턴의 행에 적는다(state writeKoHelpDevice — 세션 · 턴 번호로
+ * 좁힌 행만). 대접은 그 턴 번호에 붙은 행만으로 정한다(되묻는 차례 뒤 이어받기는 이야기 방식에 걸지 않는다 — 묶음 K, 컨트롤러가 정한 것). 판정이
+ * 수업 전체를 다시 세므로 세션의 행 전부를 함께 돌려준다. 읽지 못하면 도움 없음으로 두고 차례를 막지 않는다(기록 전용 판정 · 사실 줄 하나의 일).
+ */
+async function chatKoHelpRead(
+  db: DbOrTx,
+  state: TalkLessonState,
+  turnNo: number,
+  device: readonly KoHelpDeviceEntry[],
+): Promise<ChatKoRead> {
+  try {
+    const all = await readKoHelpRows(db, state.session.id);
+    const own = all.filter((r) => r.turnNo === turnNo);
+    if (own.length === 0) return { rows: all, standing: null };
+    await writeKoHelpDevice(db, own, device);
+    const rows = [
+      ...all.filter((r) => r.turnNo !== turnNo),
+      ...koHelpRowsWithDeviceOf(own, device),
+    ].sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq);
+    return {
+      rows,
+      standing: chatTurnKoStandingOf(rows, turnNo, state.spec),
+    };
+  } catch (error) {
+    console.error(
+      `회화 이야기 방식 한국어 도움 행을 읽지 못했다(${dbErrorTag(error)})`,
+    );
+    return NO_CHAT_KO;
+  }
+}
+
+/** 한국어 도움 뒤 '말하기'로 보낸 아이 차례의 힌트 종류를 높은 쪽으로(기존 방식 lesson-turn 과 같은 규칙 — raiseHintKind, 도움이 없으면 그대로). */
+function chatKoRaisedHintOf<H extends { hintKind: TalkHintKind }>(
+  hint: H,
+  input: ChatInput,
+  standing: KoHelpStanding | null,
+): H {
+  if (standing === null || input.kind !== "speech") return hint;
+  const hintKind = raiseHintKind(hint.hintKind, standing.hintKind);
+  return hintKind === hint.hintKind ? hint : { ...hint, hintKind };
+}
+
 // ── 선생님 차례 하나 ────────────────────────────────────────────────
 
 async function chatTeacherTurn(
@@ -555,17 +620,6 @@ async function chatTeacherTurn(
               : null,
           );
   const safetyMaxTurns = positiveInt(s, "talk.safety_max_turns");
-  const plan = chatTurnPlanOf({
-    input,
-    child,
-    args: lessonArgsOf(state),
-    position: state.position,
-    rows: state.liveRows,
-    segment: state.segment,
-    prepOpens: (state.start?.prepPlan.length ?? 0) > 0,
-    safetyMaxTurns,
-    settings: state.settings,
-  });
   const segment = child?.segment ?? state.segment;
   const teacherTurnNo =
     entry.kind === "child" ? entry.child.turnNo + 1 : entry.turnNo;
@@ -573,8 +627,8 @@ async function chatTeacherTurn(
   const homophones = (deps.homophones ?? seedHomophones)();
   const heard = input.kind === "speech" ? input.heard : "";
 
-  // (1) 재료(나란히): 단계 맥락 · 범위 · 모든 단계 어휘(기록 전용 수준 검사 — 지금 새 방식과 같은 재료)
-  const [ctx, rangeRead, lexiconRows] = await Promise.all([
+  // (1) 재료(나란히): 단계 맥락 · 범위 · 모든 단계 어휘(기록 전용 수준 검사 — 지금 새 방식과 같은 재료) · 이 아이 차례 앞의 한국어 도움(묶음 K)
+  const [ctx, rangeRead, lexiconRows, ko] = await Promise.all([
     ctxP,
     lessonRangeOf(db, state, heard).catch((error: unknown) => {
       console.error(
@@ -588,8 +642,23 @@ async function chatTeacherTurn(
       );
       return null;
     }),
+    entry.kind === "child"
+      ? chatKoHelpRead(db, state, entry.child.turnNo, request?.koHelp ?? [])
+      : Promise.resolve(NO_CHAT_KO),
   ]);
   timer.mark("checks_context");
+  const plan = chatTurnPlanOf({
+    input,
+    child,
+    args: lessonArgsOf(state),
+    position: state.position,
+    rows: state.liveRows,
+    segment: state.segment,
+    prepOpens: (state.start?.prepPlan.length ?? 0) > 0,
+    safetyMaxTurns,
+    settings: state.settings,
+    koHelp: ko.standing,
+  });
   const unitWords = ctx.unitWords;
   const range = rangeRead ?? emptyLessonRange(state);
   const allowedLemmaOf =
@@ -766,6 +835,7 @@ async function chatTeacherTurn(
     childSentUserMessage: sentUserMessage,
     met,
     judgeCtx,
+    ko,
   });
   if (saved === undefined) {
     write({ t: "stale" });
@@ -852,6 +922,7 @@ async function saveChatTurn({
   childSentUserMessage,
   met,
   judgeCtx,
+  ko = NO_CHAT_KO,
 }: {
   state: TalkLessonState;
   shared: LessonTurnShared;
@@ -864,6 +935,8 @@ async function saveChatTurn({
   childSentUserMessage: string;
   met: readonly string[];
   judgeCtx: ChatJudgeContext;
+  /** 이 아이 차례 앞의 한국어 도움(chatKoHelpRead — 아이 차례가 아니면 없음). */
+  ko?: ChatKoRead;
 }): Promise<ChatSaved | undefined> {
   const { db, profileId, settings: s, at } = shared;
   const stuckRun = state.position.stuckInSlot;
@@ -930,14 +1003,19 @@ async function saveChatTurn({
         const fields = chatChildFieldsOf({
           input: plan.input,
           sentUserMessage: childSentUserMessage,
-          hint,
+          hint: chatKoRaisedHintOf(hint, plan.input, ko.standing),
         });
         const judgeRows = [
           ...locked.rows.filter((r) => r.id !== child.id),
           { ...now, ...fields },
           ...inserted,
         ];
-        const judged = chatJudgeRowsOf(judgeRows, judgeCtx.spec);
+        const judged = chatJudgeRowsOf(
+          judgeRows,
+          judgeCtx.spec,
+          undefined,
+          ko.rows,
+        );
         const index = judged.ids.indexOf(child.id);
         const judge =
           index < 0

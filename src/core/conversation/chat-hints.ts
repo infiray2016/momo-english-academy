@@ -194,6 +194,24 @@ export function chatHintRecordOfRow(
   return { tiers, explainKo };
 }
 
+/**
+ * 그 차례에 연 힌트 단의 글(한국어 도움 호출 입력의 '연 힌트 글' — 이야기 방식 spec 설계 12, 묶음 K): 힌트 받는 서버 액션이 그 선생님 행의 ai_question 에
+ * 저장한 단(chatHintRecordOfRow) 가운데 앞에서 opened 개의 글(차례대로, 빈 글 뺌). 저장된 단이 없으면(아직 힌트를 받지 않음 · 다른 방식의 행) 빈 목록
+ * 그대로다(컨트롤러가 정한 것).
+ */
+export function chatOpenedHintTextsOf(
+  aiQuestion: unknown,
+  spec: Pick<LessonHintSpec, "band">,
+  opened: number,
+): string[] {
+  if (opened <= 0) return [];
+  const record = chatHintRecordOfRow(aiQuestion, spec);
+  return (record?.tiers ?? [])
+    .slice(0, opened)
+    .map((tier) => tier.text)
+    .filter((text) => text.trim() !== "");
+}
+
 // ── 화면에 줄 응답(spec 설계 7 '누를 때' · '실패와 다시 받기') ─────────────────
 
 /** 단 목록의 한 칸(글 없이 종류 · 듣기 단추만 — 글은 그 단을 누를 때 온다). */

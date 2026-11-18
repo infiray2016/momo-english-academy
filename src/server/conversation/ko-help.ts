@@ -13,6 +13,7 @@ import {
   type TalkKoHelpOutput,
   talkKoHelpResultOf,
 } from "@/core/ai/calls/talk-ko-help";
+import { chatOpenedHintTextsOf } from "@/core/conversation/chat-hints";
 import { chatFlowRowsOf } from "@/core/conversation/chat-turn-core";
 import { chatFirstQuestionBlocksOf } from "@/core/conversation/chat-turn-plan";
 import { ClientListenSchema } from "@/core/conversation/client-listen";
@@ -344,9 +345,13 @@ async function koHelpInputOf(
   const { teacherLine, soundLine } = koHelpTeacherWordsOf(
     lessonCurrentOf(state, { aiResting: false }),
   );
-  // 이야기 방식의 힌트 단은 힌트 호출이 낸 글이라 여기서 다시 만들지 않는다(묶음 K 의 몫 — 보고 8절)
+  // 이야기 방식의 힌트 단은 힌트 받는 서버 액션이 지금 선생님 행에 저장한 글을 읽는다(다시 만들지 않음 — 저장된 단이 없으면 빈 목록, 묶음 K)
   const openedHints = isChatSession(state)
-    ? []
+    ? chatOpenedHintTextsOf(
+        state.liveRows.at(-1)?.aiQuestion ?? null,
+        state.spec,
+        opened,
+      )
     : Array.from({ length: opened }, (_, tier) =>
         lessonHintTextOf(state, tier),
       ).filter((text): text is string => text !== null);

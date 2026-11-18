@@ -21,6 +21,10 @@ import {
   hintKindOf,
 } from "@/core/conversation/hints";
 import {
+  raiseHintKind,
+  unitWordsWithoutShownOf,
+} from "@/core/conversation/ko-help";
+import {
   hasLeadChoiceQuestion,
   isLeadAskAgain,
   type LeadChildHelp,
@@ -101,8 +105,19 @@ export type ChatJudgeChildRow = {
   heard: string;
   /** 이 차례에 실제로 연 힌트 단의 종류(설계 7 — 응답이 만든 단 가운데 연 것, 차례대로. 실패 문구로 끝난 단은 넣지 않음). */
   opened: readonly HintTier["kind"][];
-  /** 이 차례 앞의 한국어 도움(합쳐진 뒤). taught 는 알려 준 영어 표현, 뜻만 풀이했으면 null. 없으면 null. */
-  koHelp: { taught: string | null } | null;
+  /**
+   * 이 차례 앞의 한국어 도움(묶음 K — 부르는 쪽이 chat-rows chatKoJudgeOf 로 대접에서 채운다). taught 는 알려 준 영어 표현(목록 · 글 하나도 받음), 뜻만
+   * 풀이했으면 null. hintKind 는 대접(ko-help koHelpStandingOf)의 힌트 종류이고, 있으면 그 값을 따른다(없으면 taught 로 가린다). 없으면 null.
+   */
+  koHelp: {
+    taught: string | readonly string[] | null;
+    hintKind?: Exclude<TalkHintKind, "none">;
+  } | null;
+  /**
+   * 한국어 도움이 새로 보인 영어 낱말(소문자 — 대접의 shownWords). 기록 전용 두 판정의 '말했다'(saidWordsOf · leadSaidWordsOf)에 넘기는 단원 단어
+   * 목록에서 뺀다(묶음 K, 컨트롤러가 정한 것 — 다른 두 방식의 공식 판정과 같은 거름). 갈래 기록(words)에는 걸지 않는다. 없으면 거르지 않는다.
+   */
+  koShownWords?: readonly string[];
   eval: ChatEvalState;
 };
 
@@ -469,17 +484,43 @@ function unitHeadsIn(
   return new Set(metWordsIn(text, ctx).map((w) => head(w)));
 }
 
-/** 앱이 아는 힌트 종류: 연 단의 종류(hintKindOf) · 한국어 도움(영어를 알려 줬으면 '영어', 뜻만이면 '뜻만') · 막힌 뒤 설명(뜻). */
+/**
+ * 한국어 도움의 힌트 종류: 대접의 값(hintKind)이 있으면 그 값, 없으면 영어를 알려 줬으면 '영어', 뜻만이면 '뜻만'. 도움이 없으면 '없음'.
+ */
+function koHintKindOf(koHelp: ChatJudgeChildRow["koHelp"]): TalkHintKind {
+  if (koHelp === null) return "none";
+  if (koHelp.hintKind !== undefined) return koHelp.hintKind;
+  const taught =
+    typeof koHelp.taught === "string" ? [koHelp.taught] : (koHelp.taught ?? []);
+  return taught.some((t) => t.trim() !== "") ? "english" : "meaning_only";
+}
+
+/** 앱이 아는 힌트 종류: 연 단의 종류(hintKindOf) · 막힌 뒤 설명(뜻) · 한국어 도움(koHintKindOf) 가운데 높은 쪽(raiseHintKind). */
 function appHintKindOf(
   row: ChatJudgeChildRow,
   explainShown: boolean,
 ): TalkHintKind {
   const tiers = hintKindOf({ opened: tiersOf(row.opened), heard: [] });
-  const taught = row.koHelp?.taught?.trim() ?? "";
-  if (tiers === "english" || taught !== "") return "english";
-  if (tiers === "meaning_only" || row.koHelp !== null || explainShown)
-    return "meaning_only";
-  return "none";
+  const base: TalkHintKind =
+    tiers === "english"
+      ? "english"
+      : tiers === "meaning_only" || explainShown
+        ? "meaning_only"
+        : "none";
+  return raiseHintKind(base, koHintKindOf(row.koHelp));
+}
+
+/** '말했다' 셈에 넘기는 판정 맥락: 한국어 도움이 새로 보인 낱말을 단원 단어에서 뺀다(ko-help unitWordsWithoutShownOf — 없으면 같은 값). */
+function saidCtxOf(
+  row: ChatJudgeChildRow,
+  ctx: ChatJudgeContext,
+): ChatJudgeContext {
+  const shown = row.koShownWords ?? [];
+  if (shown.length === 0) return ctx;
+  return {
+    ...ctx,
+    unitWords: unitWordsWithoutShownOf(ctx.unitWords, shown, ctx.lemmaOf),
+  };
 }
 
 function tiersOf(kinds: readonly HintTier["kind"][]): HintTier[] {
@@ -564,7 +605,7 @@ function appTurnOf(
     candidates.length === 0
       ? []
       : saidWordsOf({
-          ...ctx,
+          ...saidCtxOf(row, ctx),
           aiWords: candidates,
           heard: row.heard,
           hintKind: "none",
@@ -648,8 +689,12 @@ function ownHelpOf(
 ): LeadChildHelp {
   const heard = heardHelpsOfMove(prevMove, ctx.spec);
   const help = heardHelpOf(heard);
+  // 한국어 도움은 다른 두 방식의 아이 행처럼 힌트 종류를 높은 쪽으로 올린다(raiseHintKind — 묶음 4-다 · 4-라 와 같은 규칙, 묶음 K)
   return {
-    hintKind: hintKindOf({ opened: tiersOf(row.opened), heard }),
+    hintKind: raiseHintKind(
+      hintKindOf({ opened: tiersOf(row.opened), heard }),
+      koHintKindOf(row.koHelp),
+    ),
     hintLevel: row.opened.length,
     heardHelp: help === "none" ? null : help,
   };
@@ -738,7 +783,7 @@ export function chatJudgesOf(
           speech: true,
           stuck: legacyStuck,
           askAgain,
-          unitWords: ctx.unitWords,
+          unitWords: saidCtxOf(row, ctx).unitWords,
           lemmaOf: ctx.lemmaOf,
           homophones: ctx.homophones,
         }),
