@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TalkKoHelpOutput } from "@/core/ai/calls/talk-ko-help";
 import type { AiOutcome } from "@/server/ai";
-import { TALK_TEXT_MAX } from "@/server/conversation";
+import { HINT_TIERS_MAX, TALK_TEXT_MAX } from "@/server/conversation";
 
 const sameOrigin = vi.fn(() => true);
 const access = vi.fn(async () => {});
@@ -90,6 +90,13 @@ describe("한국어 질문 끝점 앞머리(회화 턴 끝점과 같은 차례)"
     expect(run).not.toHaveBeenCalled();
   });
 
+  it("한국어 질문 끝점: 함수 실행 시간 상한(maxDuration)은 회화 턴 끝점과 같다 — 호출 기다림 2 × realtime + 저장보다 넉넉히(검토 rev-b4b M-1)", async () => {
+    const koHelp = await import("@/app/api/talk/ko-help/route");
+    const turn = await import("@/app/api/talk/turn/route");
+    expect(koHelp.maxDuration).toBeTypeOf("number");
+    expect(koHelp.maxDuration).toBe(turn.maxDuration);
+  });
+
   it("한국어 질문 끝점: 길의 응답을 JSON 한 번으로 그대로 돌려준다(흘려 받지 않는다)", async () => {
     run.mockResolvedValue({ t: "off" });
     const response = await POST(request({}, JSON.stringify(valid)));
@@ -130,6 +137,18 @@ describe("한국어 질문 요청의 꼴(접점 다)", () => {
         ...valid,
         question: "가".repeat(TALK_TEXT_MAX + 1),
       }),
+    ).toBeNull();
+  });
+
+  it("한국어 질문 요청: 연 힌트 단 수 상한은 회화 턴 요청과 같은 HINT_TIERS_MAX 다(상한 + 1 이면 받지 않는다 — 검토 rev-b4b I-1)", () => {
+    expect(
+      parseKoHelpRequest({ ...valid, hint: { opened: HINT_TIERS_MAX } }),
+    ).not.toBeNull();
+    expect(
+      parseKoHelpRequest({ ...valid, hint: { opened: HINT_TIERS_MAX + 1 } }),
+    ).toBeNull();
+    expect(
+      parseKoHelpRequest({ ...valid, hint: { opened: 4_000_000_000 } }),
     ).toBeNull();
   });
 
@@ -200,14 +219,24 @@ describe("선생님의 지금 말 · 소리 줄(세 방식 공통 — lessonCurr
     });
   });
 
-  it("AC-27m 한국어 도움 입력: 물음이 없는 차례에서도 선생님의 지금 말이 빈 글이 아니다(화면 글이 없으면 소리 줄 글)", () => {
+  it("AC-27m 한국어 도움 입력: 물음이 없는 차례에서도 선생님의 지금 말(화면 글)이 빈 글이 아니다", () => {
     expect(
       koHelpTeacherWordsOf({ lines: [line("Cool, me too.")], sound: null })
         .teacherLine,
     ).toBe("Cool, me too.");
+  });
+
+  it("한국어 도움 입력: 화면 글이 빈 차례에는 선생님의 지금 말도 비우고 소리 줄은 소리 줄로만 싣는다(이미 보인 글로 치지 않는다 — 설계 4 [N-4], 검토 rev-b4b M-2)", () => {
     expect(
       koHelpTeacherWordsOf({ lines: [], sound: { model: "I like it." } }),
-    ).toEqual({ teacherLine: "I like it.", soundLine: "I like it." });
+    ).toEqual({ teacherLine: "", soundLine: "I like it." });
+    expect(
+      koHelpTeacherWordsOf({
+        lines: [line("  ")],
+        sound: null,
+        leadSound: [{ t: "sound", kind: "model", say: "I went to the beach." }],
+      }),
+    ).toEqual({ teacherLine: "", soundLine: "I went to the beach." });
   });
 });
 

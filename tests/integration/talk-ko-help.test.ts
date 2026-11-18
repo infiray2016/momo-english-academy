@@ -1,7 +1,8 @@
 // 수업 안 한국어 질문 길 통합 시험(수업 안 한국어로 묻기 plan 묶음 4-나 — 이 기기에서는 돌지 않고 CI 에서 돈다). 시험용 시드의 회화 1단계
 // 단원 1 수업으로 세션을 넣고 talk_turns 를 대화 첫 질문(아이 차례가 열린 상태)까지 넣은 뒤 runTalkKoHelpRequest 를 가짜 Anthropic 으로 부른다.
 // 증명: AC-25g(회화 턴 호출 0 · 한국어 도움 호출 1 · ai_calls 목적 행 · 대신 줄 두 꼴이 남음) · AC-25i(행 하나 · talk_turns 불변 · 같은 시도 id ·
-// 세션과 함께 지움) · AC-25m(끔이면 요청 거절) · AC-N29(하루 호출 셈에 듦 — 상한에 닿으면 쉼).
+// 세션과 함께 지움 · 화면 자료 koHelps) · AC-25m(끔이면 요청 거절 · 화면 자료에 단추 없음) · AC-N29(하루 호출 셈에 듦 — 상한에 닿으면 쉼).
+// 검토 rev-b4b I-2(같은 시도 id 의 겹친 요청은 먼저 채운 쪽이 이김) · M-4(화면 자료 쪽 단언 · 답 없는 행의 낡음)도 여기서 본다.
 import { and, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { talkMoveOf } from "@/core/conversation/move";
@@ -10,6 +11,7 @@ import { LEVEL_MAX } from "@/core/seed/structure";
 import { lessons } from "@/db/schema/content";
 import { sessions, talkKoHelps, talkTurns } from "@/db/schema/learning";
 import { aiCalls, settings } from "@/db/schema/operations";
+import { loadTalkLessonView } from "@/server/conversation";
 import { runTalkKoHelpRequest } from "@/server/conversation/ko-help";
 import type { Db } from "@/server/db";
 import { loadSeed } from "@/server/seed/load";
@@ -250,6 +252,51 @@ describe("수업 안 한국어 질문 길(통합)", () => {
     expect(rows[0]?.question).toContain("{NAME}");
     expect(rows[0]?.answeredAt).not.toBeNull();
     expect(await turnRows(sessionId)).toEqual(before);
+    // 화면 자료(접점 라 · 검토 rev-b4b M-4): 단추가 켜져 있고, 지금 열린 아이 차례가 읽는 도움 하나(1단계라도 open 이면 가르친 표현 글을 싣는다)
+    const view = await loadTalkLessonView({ sessionId }, h.deps());
+    expect(view?.settings.koAsk.on).toBe(true);
+    expect(view?.koHelps).toHaveLength(1);
+    expect(view?.koHelps[0]).toMatchObject({
+      turnNo: lastTeacher?.turnNo,
+      seq: 1,
+      open: true,
+      sayKo: "이렇게 말하면 돼. 잘 듣고 따라 해 봐.",
+      teachEn: "I found a shell.",
+      replay: "taught",
+    });
+  });
+
+  it("같은 시도 id 의 두 요청이 겹쳐 둘 다 불러도 답은 먼저 채운 쪽이 이겨서 두 응답과 저장된 답이 같다(검토 rev-b4b I-2)", async () => {
+    const profileId = await resetHousehold(db, 1);
+    const sessionId = await openSession(profileId);
+    // 먼저 닿은 호출이 늦게 끝나게 한다(기기가 느린 첫 요청을 같은 id 로 다시 보낸 꼴)
+    h.fake.push(
+      talkKoHelpRule({
+        model: LOW_MODEL,
+        kind: "meaning",
+        sayKo: "느린 첫 답이야.",
+        times: 1,
+        delayMs: 500,
+      }),
+    );
+    h.fake.push(
+      talkKoHelpRule({
+        model: LOW_MODEL,
+        kind: "meaning",
+        sayKo: "빠른 둘째 답이야.",
+        times: 1,
+      }),
+    );
+    const id = nextAttempt();
+    const [a, b] = await Promise.all([
+      ask(sessionId, { clientAttemptId: id }),
+      ask(sessionId, { clientAttemptId: id }),
+    ]);
+    if (a.t !== "ok" || b.t !== "ok") throw new Error("두 응답이 ok 가 아니다");
+    const rows = await koHelpRows(sessionId);
+    expect(rows).toHaveLength(1);
+    expect(a.help.sayKo).toBe(b.help.sayKo);
+    expect(rows[0]?.sayKo).toBe(a.help.sayKo);
   });
 
   it("AC-25i 같은 시도 id 를 다시 보내면 행이 늘지 않고 호출 없이 저장된 답을 돌려준다 — 다른 세션의 같은 시도 id 는 stale", async () => {
@@ -274,20 +321,48 @@ describe("수업 안 한국어 질문 길(통합)", () => {
       .filter((r) => r.speaker === "tori")
       .sort((a, b) => a.turnNo - b.turnNo)
       .at(-1);
-    await db.insert(talkKoHelps).values({
-      sessionId,
-      turnNo: teacher?.turnNo ?? 0,
-      seq: 1,
-      clientAttemptId: "ko-cut",
-      question: "조개는 영어로 뭐야?",
-      askedAt: NOW,
-    });
+    await db.insert(talkKoHelps).values([
+      {
+        sessionId,
+        turnNo: teacher?.turnNo ?? 0,
+        seq: 1,
+        clientAttemptId: "ko-cut",
+        question: "조개는 영어로 뭐야?",
+        askedAt: NOW,
+      },
+      {
+        sessionId,
+        turnNo: teacher?.turnNo ?? 0,
+        seq: 2,
+        clientAttemptId: "ko-cut-late",
+        question: "방금 뭐라고 했어?",
+        askedAt: NOW,
+      },
+    ]);
     h.fake.push(expressionRule());
     const reply = await ask(sessionId, { clientAttemptId: "ko-cut" });
     expect(reply).toMatchObject({ t: "ok", help: { seq: 1 } });
     const rows = await koHelpRows(sessionId);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.sayKo).not.toBeNull();
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r) => r.seq === 1)?.sayKo).not.toBeNull();
+    // 답 없는 자기 행인데 아이 차례가 넘어갔으면(그 차례의 아이 행이 생김) 다시 부르지 않고 stale 이다(검토 rev-b4b M-4)
+    await db.insert(talkTurns).values({
+      sessionId,
+      turnNo: teacher?.turnNo ?? 0,
+      segment: "talk",
+      speaker: "child",
+      text: "I like it.",
+      inputMode: "speech",
+      clientAttemptId: "child-after-cut",
+      recordedAt: NOW,
+    });
+    expect(await ask(sessionId, { clientAttemptId: "ko-cut-late" })).toEqual({
+      t: "stale",
+    });
+    expect(koHelpRequests()).toHaveLength(1);
+    const late = (await koHelpRows(sessionId)).find((r) => r.seq === 2);
+    expect(late?.sayKo).toBeNull();
+    expect(late?.answeredAt).toBeNull();
   });
 
   it("AC-25g 호출이 실패하면 호출 실패 꼴의 대신 줄이고 그 차례도 talk_ko_helps 에 남는다 — 순번은 이어진다", async () => {
@@ -331,6 +406,10 @@ describe("수업 안 한국어 질문 길(통합)", () => {
     expect(await ask(sessionId)).toEqual({ t: "off" });
     expect(h.fake.requests).toHaveLength(0);
     expect(await koHelpRows(sessionId)).toHaveLength(0);
+    // 화면 자료(검토 rev-b4b M-4): 끔이면 단추가 없고(on 거짓) 도움 목록도 비어 있다
+    const view = await loadTalkLessonView({ sessionId }, h.deps());
+    expect(view?.settings.koAsk.on).toBe(false);
+    expect(view?.koHelps).toEqual([]);
   });
 
   it("AC-N29 한국어 도움 호출은 하루 호출 셈에 든다 — 상한에 닿으면 'AI 쉬는 중'이고 행 · 호출이 없다", async () => {

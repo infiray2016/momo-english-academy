@@ -134,6 +134,39 @@ export type TalkKoHelpView = {
   replay: KoHelpReplay;
 };
 
+/**
+ * 답이 있는 도움(응답의 help 는 늘 이 꼴). kind 가 null 이면 호출 실패 꼴의 대신 줄이다(fallback call_failed — 모델 답이 없다). 검사 걸림 꼴
+ * (check_blocked)은 모델이 낸 갈래를 남기므로 kind 가 expression 인데 teachEn 이 없을 수 있다 — 화면과 다음 영어 턴은 kind 가 아니라 fallback 과
+ * teachEn 이 있는지로 가른다(검토 rev-b4b 4절 우려 2).
+ */
+export type TalkKoHelpAnswered = TalkKoHelpView & {
+  sayKo: string;
+  fallback: KoHelpFallback;
+};
+
+/**
+ * 답이 아직 없는 도움(호출 중 · 끊김 · 호출 앞 안전 상한에 걸림). 아이가 본 것이 없으므로 도움 말풍선을 그리지 않고 다음 영어 턴은 도움 없음으로
+ * 읽는다. 화면 자료 koHelps 에만 나오고, open 이 참이면 같은 시도 id 로 다시 보내 답을 받을 수 있다(검토 rev-b4b 4절 우려 2).
+ */
+export type TalkKoHelpPending = TalkKoHelpView & {
+  kind: null;
+  sayKo: null;
+  teachEn?: never;
+  textShown: false;
+  fallback: null;
+  replay: "teacher_line";
+};
+
+/** 응답 · 화면 자료의 도움 하나 — 답이 있는 꼴과 없는 꼴의 합. */
+export type TalkKoHelpItem = TalkKoHelpAnswered | TalkKoHelpPending;
+
+/** 답이 있는 꼴인가(sayKo · fallback 이 둘 다 있음). */
+export function isKoHelpAnswered(
+  help: TalkKoHelpItem,
+): help is TalkKoHelpAnswered {
+  return help.sayKo !== null && help.fallback !== null;
+}
+
 /** 저장한 도움 행에서 읽는 칸(talk_ko_helps). */
 export type KoHelpRowFacts = {
   turnNo: number;
@@ -149,11 +182,23 @@ export type KoHelpRowFacts = {
 /**
  * 저장한 행 → 도움 보기. withTeach 가 거짓이면 teachEn 을 내리지 않는다(1~3단계에서 지금 열린 아이 차례가 읽지 않는 도움 — 소리로만 준
  * 표현 글이 화면 자료로 새지 않게, 접점 라 · 위험 8). 답의 소리 고르기는 가르친 표현이 있었는가로 정한다(내리지 않아도 같다).
+ * 답 칸(sayKo · fallback — 답을 채울 때 함께 쓴다) 가운데 하나라도 비면 답이 아직 없는 꼴이다(물은 말만).
  */
 export function koHelpViewOf(
   row: KoHelpRowFacts,
   { withTeach }: { withTeach: boolean },
-): TalkKoHelpView {
+): TalkKoHelpItem {
+  if (row.sayKo === null || row.fallback === null)
+    return {
+      turnNo: row.turnNo,
+      seq: row.seq,
+      question: row.question,
+      kind: null,
+      sayKo: null,
+      textShown: false,
+      fallback: null,
+      replay: "teacher_line",
+    };
   const teach = row.teachEn ?? "";
   return {
     turnNo: row.turnNo,
@@ -178,7 +223,7 @@ export function koHelpViewsOf(
     openTurnNos,
     lowBand,
   }: { openTurnNos: readonly number[]; lowBand: boolean },
-): (TalkKoHelpView & { open: boolean })[] {
+): (TalkKoHelpItem & { open: boolean })[] {
   return [...helps]
     .sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq)
     .map((row) => {

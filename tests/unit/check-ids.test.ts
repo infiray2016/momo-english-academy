@@ -632,6 +632,31 @@ describe("식별자 대조(pnpm check:ids)", () => {
     expect(result.violations[0]?.detail).toBe("0.8 ← unit.vocab_mastery");
   });
 
+  it("식별자 대조: src/app 아래 파일의 맨 위 export const maxDuration(Next 경로 설정)만 빼고, 함수 안 · 내보내지 않음 · src/app 밖의 maxDuration 은 센다(검토 rev-b4b M-1)", () => {
+    const found = collectDesignNumbers(
+      [
+        {
+          path: "src/app/api/a/route.ts",
+          text: [
+            "export const maxDuration = 30;",
+            "export function f() { const maxDuration = 4; return maxDuration; }",
+          ].join("\n"),
+        },
+        {
+          path: "src/app/api/b/route.ts",
+          text: "const maxDuration = 30;\nexport { maxDuration };",
+        },
+        { path: "src/server/x.ts", text: "export const maxDuration = 30;" },
+      ],
+      settingNumbers(goodSettings()),
+    );
+    expect(found.map((d) => `${d.file}:${d.line} ${d.value}`)).toEqual([
+      "src/app/api/a/route.ts:2 4",
+      "src/app/api/b/route.ts:1 30",
+      "src/server/x.ts:1 30",
+    ]);
+  });
+
   it("AC-23e (1) 식별자 대조 design-color: 화면 소스(src/components · src/app)의 날값 색(#… · rgb() · hsl()) · 기본 팔레트 색 클래스 · 코르크 토큰을 내고, 주석 · 자료에서 오는 색 · 화면 밖 폴더는 뺀다", () => {
     expect(SCREEN_DIRS).toEqual(["src/components", "src/app"]);
     expect(DESIGN_COLOR_DEV_DIR).toBe("src/app/dev/");

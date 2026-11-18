@@ -4,7 +4,7 @@ import "server-only";
 // → 세션 상태(그 프로필의 열린 회화 수업 · 아이 차례가 열림 · 마무리 고르기가 아님) → 같은 시도 id 확인 → 질문 저장(talk_ko_helps 한 행) → 한국어
 // 도움 호출 → 검사 · 대신 줄 → 같은 행에 답 채움 → 응답. talk_turns 는 읽기만 하고 고치지 않는다 — 한국어 문답은 학습 셈 어디에도 들지 않고
 // '모름'이나 학습 실패로 다루지 않는다(C221 · C226 (3), spec 설계 6). AI 호출에 아이 이름을 보내지 않는다(질문은 가린 글). 로그에는 오류 이름만 남긴다.
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   koHelpFallbackLineOf,
@@ -23,12 +23,13 @@ import {
   koAskModeFrom,
 } from "@/core/conversation/ko-ask";
 import {
+  isKoHelpAnswered,
   type KoHelpFallback,
   koAskTurnOpenOf,
   koHelpEarlierOf,
   koHelpViewOf,
   nextKoHelpSeqOf,
-  type TalkKoHelpView,
+  type TalkKoHelpAnswered,
 } from "@/core/conversation/ko-help";
 import { isChatSession } from "@/core/conversation/lead-mode";
 import { isLowBand } from "@/core/conversation/lesson-turns";
@@ -48,6 +49,7 @@ import { aiRestingToday } from "@/server/session/ai-gate";
 import { getSettings, SettingMissingError } from "@/server/settings";
 import {
   CLIENT_ATTEMPT_ID_MAX,
+  HINT_TIERS_MAX,
   lessonCurrentOf,
   lessonHintTextOf,
   TALK_TEXT_MAX,
@@ -67,20 +69,24 @@ import {
 
 /**
  * 한국어 질문 요청. 질문 글자 수 상한은 회화 턴의 아이 글과 같다(TALK_TEXT_MAX). 연 힌트 단 수는 회화 턴 요청의 hint.opened 와 같은 믿음
- * 수준이고(plan 정한 것 6), 서버가 지금 질문 자리의 단 수로 자른다. 듣기 요약은 글 없는 꼴이다(C149).
+ * 수준이고 같은 상한(HINT_TIERS_MAX)을 쓴다(plan 정한 것 6 · 검토 rev-b4b I-1 — 큰 수가 호출 앞 반복을 묶지 않게). 서버가 지금 질문 자리의
+ * 단 수로 자른다. 듣기 요약은 글 없는 꼴이다(C149).
  */
 export const KoHelpRequestSchema = z.strictObject({
   sessionId: z.uuid(),
   clientAttemptId: z.string().min(1).max(CLIENT_ATTEMPT_ID_MAX),
   question: z.string().trim().min(1).max(TALK_TEXT_MAX),
-  hint: z.strictObject({ opened: z.int().min(0) }),
+  hint: z.strictObject({ opened: z.int().min(0).max(HINT_TIERS_MAX) }),
   clientListen: ClientListenSchema.optional(),
 });
 export type KoHelpRequest = z.infer<typeof KoHelpRequestSchema>;
 
-/** 응답 한 건(회화 턴 끝점과 같은 꼴의 끝 줄 — ok 밖은 화면이 지금 꼴로 다룬다). */
+/**
+ * 응답 한 건(회화 턴 끝점과 같은 꼴의 끝 줄 — ok 밖은 화면이 지금 꼴로 다룬다). ok 의 help 는 늘 답이 있는 꼴이다(sayKo · fallback 이 있음 —
+ * 답이 아직 없는 꼴은 화면 자료 koHelps 에만 나온다, 검토 rev-b4b 4절 우려 2).
+ */
 export type KoHelpReply =
-  | { t: "ok"; help: TalkKoHelpView }
+  | { t: "ok"; help: TalkKoHelpAnswered }
   | { t: "resting" }
   | { t: "stale" }
   | { t: "off" }
@@ -124,7 +130,8 @@ const screenTextOf = (text: string | null) => {
 
 /**
  * 선생님의 지금 말(화면 글 전체)과 소리 줄 글(1~3단계, 화면에 글로 보이지 않음). 이어 하기 자료(lessonCurrentOf)에서 가져온다 — 세 방식 공통.
- * 화면 글이 비면(소리 줄만 낸 차례) 소리 줄 글을 선생님의 지금 말로도 쓴다(물음이 없는 차례에서도 빈 글이 아님, AC-27m).
+ * 화면 글이 비면(소리 줄만 낸 차례) 선생님의 지금 말도 빈 글이다 — 소리 줄을 대신 넣지 않는다. 검사 뒤 값 고르기가 선생님의 지금 말을 이미 보인
+ * 글로 치므로, 대신 넣으면 소리로만 들은 낱말이 새로 보인 영어에서 빠진다(설계 4 [N-4] · 검토 rev-b4b M-2). 소리 줄은 1~3단계 메시지에 따로 실린다.
  */
 export function koHelpTeacherWordsOf(
   current: Pick<
@@ -151,10 +158,7 @@ export function koHelpTeacherWordsOf(
     )
     .map((say) => say.trim())
     .join(" / ");
-  return {
-    teacherLine: teacherLine === "" ? soundLine : teacherLine,
-    soundLine,
-  };
+  return { teacherLine, soundLine };
 }
 
 /** 한국어 도움 하나를 채울 값(talk_ko_helps 의 답 칸). */
@@ -216,9 +220,19 @@ export function koHelpAnswerOf(
   };
 }
 
-/** 저장한 행 → 응답의 도움(그 아이 차례가 읽는 도움이라 가르친 표현 글을 싣는다 — 읽기 재료, 1~3단계 화면은 그리지 않는다). */
-function helpOfRow(row: TalkKoHelpRow): TalkKoHelpView {
-  return koHelpViewOf(row, { withTeach: true });
+/**
+ * 답을 채운 행 → 응답의 도움(그 아이 차례가 읽는 도움이라 가르친 표현 글을 싣는다 — 읽기 재료, 1~3단계 화면은 그리지 않는다). 답이 아직 없는
+ * 행이면 null(부르는 쪽은 답을 채운 행만 넘긴다).
+ */
+function helpOfRow(row: TalkKoHelpRow): TalkKoHelpAnswered | null {
+  const view = koHelpViewOf(row, { withTeach: true });
+  return isKoHelpAnswered(view) ? view : null;
+}
+
+/** 답을 채운 행 → ok 응답(답이 없으면 error — 쓰는 길에서는 생기지 않는다). */
+function okOfRow(row: TalkKoHelpRow): KoHelpReply {
+  const help = helpOfRow(row);
+  return help === null ? { t: "error" } : { t: "ok", help };
 }
 
 // ── 세션 상태 확인 · 질문 저장 ──────────────────────────────────────
@@ -393,7 +407,7 @@ export async function runTalkKoHelpRequest(
     const question = masker(request.question).text;
     const begun = await beginKoHelp(db, request, { profileId, at, question });
     if (begun.kind === "stale") return { t: "stale" };
-    if (begun.kind === "stored") return { t: "ok", help: helpOfRow(begun.row) };
+    if (begun.kind === "stored") return okOfRow(begun.row);
     const { state, row } = begun;
     const input = await koHelpInputOf(db, state, {
       question: row.question,
@@ -412,6 +426,8 @@ export async function runTalkKoHelpRequest(
       lines: (deps.koHelpLines ?? seedTalkKoHelpLines)(),
       seq: row.seq,
     });
+    // 답은 먼저 채운 쪽이 이긴다(답이 아직 없을 때만 채움 — 검토 rev-b4b I-2): 같은 시도 id 의 겹친 요청(기기가 끊긴 첫 요청을 다시 보냄)이
+    // 둘 다 불렀어도 늦게 끝난 쪽은 행을 덮지 않고 저장된 답을 돌려준다. 그래서 어느 차례로 끝나도 응답과 행(이어 하기 · 다음 영어 턴이 읽음)이 같다
     const [saved] = await db
       .update(talkKoHelps)
       .set({
@@ -424,10 +440,14 @@ export async function runTalkKoHelpRequest(
         fallback: answer.fallback,
         answeredAt: deps.now(),
       })
-      .where(eq(talkKoHelps.id, row.id))
+      .where(and(eq(talkKoHelps.id, row.id), isNull(talkKoHelps.answeredAt)))
       .returning();
-    if (!saved) return { t: "error" };
-    return { t: "ok", help: helpOfRow(saved) };
+    if (saved) return okOfRow(saved);
+    const [stored] = await db
+      .select()
+      .from(talkKoHelps)
+      .where(eq(talkKoHelps.id, row.id));
+    return stored ? okOfRow(stored) : { t: "error" };
   } catch (error) {
     logFailure("한국어 질문 길", error);
     return { t: "error" };

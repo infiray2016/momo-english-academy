@@ -11,8 +11,11 @@ import {
 } from "@/server/conversation/ko-help";
 
 export const dynamic = "force-dynamic";
-// 함수 실행 시간 상한(maxDuration)은 두지 않는다: 한 번 호출(흘려 받지 않음)이라 같은 실시간 호출을 하는 서버 액션(힌트 · 말하기 평가)과 같은
-// 배포 기본값을 쓴다. 회화 턴 끝점의 60 은 흘려 보내며 호출이 둘일 수 있어서다(설계 숫자 대조 상한 49 — 보고 8절).
+/**
+ * 한국어 도움 호출 기다림(ai.timeout_seconds.realtime 의 두 배 — 호출 안 다시 시도 포함) + 질문 저장 · 답 채움보다 넉넉히(초, 기술 값 — 배포
+ * 설정 칸이라 상수). 배포 기본 상한이 그보다 짧으면 잘려 답 없는 행이 남는다. 회화 턴 끝점(api/talk/turn)과 같은 값이다(검토 rev-b4b M-1).
+ */
+export const maxDuration = 60;
 
 /** 요청 본문 글자 수 상한(기술 값 — 회화 턴 끝점과 같다. 한국어 질문 한 번 + 듣기 요약보다 넉넉히). */
 const BODY_MAX_CHARS = 4000;

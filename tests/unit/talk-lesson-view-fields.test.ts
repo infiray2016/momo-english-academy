@@ -2,6 +2,7 @@
 // (stuckInSlot — 둘째 막힘부터 힌트 다 열기), 1~3단계 그림 턴의 그림 키(imageKey — C32 · 03절 96줄), 그 차례 선생님 행 번호(turnNo).
 import { describe, expect, it } from "vitest";
 import {
+  isKoHelpAnswered,
   type KoHelpRowFacts,
   koAskTurnOpenOf,
   koHelpEarlierOf,
@@ -231,6 +232,23 @@ describe("한국어 도움 — 읽을 턴 번호(koHelpTurnNosOf, [N-1])", () =>
     ).toBe(true);
     expect(koHelpTurnRowOf(tori(3) as never).askAgain).toBe(false);
   });
+
+  it("한국어 도움 턴 번호: Claude 주도 방식 선생님 행은 move.lead.move 가 ask_again 일 때만 되묻는 차례다(move 까닭은 비어 있다 — 검토 rev-b4b M-3)", () => {
+    const leadMove = (move: "ask_again" | "model_repeat") =>
+      talkMoveOf({
+        kind: "ai",
+        lead: { reading: "clear_answer", move, asked: [], said: [] },
+      });
+    expect(leadMove("ask_again").why).toBeNull();
+    expect(koHelpTurnRowOf(tori(3, leadMove("ask_again")) as never)).toEqual({
+      speaker: "teacher",
+      turnNo: 3,
+      askAgain: true,
+    });
+    expect(
+      koHelpTurnRowOf(tori(3, leadMove("model_repeat")) as never).askAgain,
+    ).toBe(false);
+  });
 });
 
 describe("한국어 도움 — 받을 차례 · 순번 · 앞 대화 · 답의 소리", () => {
@@ -342,6 +360,47 @@ describe("화면 자료 koHelps · 안내 열쇠(접점 라)", () => {
       replay: "teacher_line",
       open: true,
     });
+  });
+
+  it("한국어 도움 꼴: 답이 있는 도움은 sayKo · fallback 이 늘 있고, 답이 아직 없는 도움은 물은 말만 있다 — isKoHelpAnswered 로 가른다(검토 rev-b4b 4절 우려 2 의 5)", () => {
+    const [answered, failed, pending] = koHelpViewsOf(
+      [
+        helpRow({ seq: 1 }),
+        helpRow({
+          seq: 2,
+          kind: null,
+          sayKo: "한 번 더 물어봐 줄래?",
+          teachEn: null,
+          fallback: "call_failed",
+        }),
+        helpRow({
+          seq: 3,
+          kind: null,
+          sayKo: null,
+          teachEn: null,
+          textShown: null,
+          fallback: null,
+        }),
+      ],
+      { openTurnNos: [5], lowBand: true },
+    );
+    if (!answered || !failed || !pending) throw new Error("항목 셋이 없다");
+    expect(isKoHelpAnswered(answered)).toBe(true);
+    expect(isKoHelpAnswered(failed)).toBe(true);
+    expect(failed).toMatchObject({ kind: null, fallback: "call_failed" });
+    expect(isKoHelpAnswered(pending)).toBe(false);
+    // 답이 있는 꼴로 좁히면 sayKo 는 글이다(형이 드러낸다)
+    if (isKoHelpAnswered(answered)) {
+      const say: string = answered.sayKo;
+      expect(say).toBe("이렇게 말하면 돼.");
+    }
+    // 답 칸 가운데 하나라도 비면(쓰는 길에서는 생기지 않음) 답이 아직 없는 꼴로 읽는다 — 아이가 본 것이 없다
+    const [half] = koHelpViewsOf([helpRow({ fallback: null })], {
+      openTurnNos: [5],
+      lowBand: false,
+    });
+    expect(half).toMatchObject({ sayKo: null, fallback: null, kind: null });
+    expect(half).not.toHaveProperty("teachEn");
   });
 
   it("AC-25i 화면 자료 koHelps(서버): 살아 있는 talk_turns 행으로 되묻는 차례를 건너 open 을 정한다", () => {

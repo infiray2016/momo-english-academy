@@ -33,15 +33,13 @@ import {
   lessonChatTurn,
   runChatOpenTurn,
 } from "./chat-turn";
-import { CLIENT_ATTEMPT_ID_MAX, TALK_TEXT_MAX } from "./index";
+import { CLIENT_ATTEMPT_ID_MAX, HINT_TIERS_MAX, TALK_TEXT_MAX } from "./index";
 import { leadTurnAfterChild, runLeadOpenTurn } from "./lead-turn";
 import { runTalkLessonTurn, type TalkLessonLine } from "./lesson-turn";
 import type { TalkServerDeps } from "./state";
 
 export type { TalkLessonLine } from "./lesson-turn";
 
-/** 힌트 단 수 상한(기술 값 — 단계 규격 단 수보다 넉넉히). */
-const HINT_TIERS_MAX = 10;
 /** 듣기 끝 대기 초 · 체감 대기 ms 상한(기술 값 — 꼴 검사). */
 const LISTEN_END_MAX_SECONDS = 600;
 const PERCEIVED_WAIT_MAX_MS = 600_000;

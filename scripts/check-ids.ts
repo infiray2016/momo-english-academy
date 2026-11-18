@@ -524,6 +524,33 @@ function isTopLevelUpperConst(node: ts.Node): boolean {
   );
 }
 
+/** Next 경로 설정 maxDuration 을 두는 폴더(그 아래 파일의 맨 위 내보낸 상수만 뺀다). */
+const ROUTE_CONFIG_DIR = "src/app/";
+/** Next 경로 설정 이름(글자 그대로여야 하는 배포 설정 칸 — 설계 숫자가 아니다). */
+const ROUTE_MAX_DURATION_NAME = "maxDuration";
+
+/**
+ * src/app 아래 파일의 맨 위 `export const maxDuration = …`(Next 경로 설정 — 함수 실행 시간 상한)인가. 함수 안 지역 변수 · 내보내지 않은 상수 ·
+ * src/app 밖의 같은 이름은 세는 그대로다(검토 rev-b4b M-1 — 대조의 세기를 지금과 같게).
+ */
+function isRouteMaxDuration(node: ts.Node, path: string): boolean {
+  if (!path.startsWith(ROUTE_CONFIG_DIR)) return false;
+  if (!ts.isVariableStatement(node) || !ts.isSourceFile(node.parent))
+    return false;
+  if ((node.declarationList.flags & ts.NodeFlags.Const) === 0) return false;
+  const exported = ts
+    .getModifiers(node)
+    ?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+  const [only, ...rest] = node.declarationList.declarations;
+  return (
+    exported === true &&
+    rest.length === 0 &&
+    only !== undefined &&
+    ts.isIdentifier(only.name) &&
+    only.name.text === ROUTE_MAX_DURATION_NAME
+  );
+}
+
 function isAllowedName(node: ts.Node): boolean {
   return (
     ts.isVariableDeclaration(node) &&
@@ -532,7 +559,10 @@ function isAllowedName(node: ts.Node): boolean {
   );
 }
 
-/** src 의 수 글자 가운데 설정값과 같은 것(structure.ts · 개발 도구 쪽 src/app/dev/ · 맨 위 대문자 이름 상수 · 허용 이름 · 0 · 1 · 2 뺌). */
+/**
+ * src 의 수 글자 가운데 설정값과 같은 것(structure.ts · 개발 도구 쪽 src/app/dev/ · 맨 위 대문자 이름 상수 · 허용 이름 · src/app 아래 맨 위
+ * export const maxDuration · 0 · 1 · 2 뺌).
+ */
 export function collectDesignNumbers(
   files: readonly SourceFile[],
   numbers: ReadonlyMap<number, readonly string[]>,
@@ -546,7 +576,12 @@ export function collectDesignNumbers(
       continue;
     const sf = parseSource(file);
     const visit = (node: ts.Node) => {
-      if (isTopLevelUpperConst(node) || isAllowedName(node)) return;
+      if (
+        isTopLevelUpperConst(node) ||
+        isAllowedName(node) ||
+        isRouteMaxDuration(node, file.path)
+      )
+        return;
       if (ts.isNumericLiteral(node)) {
         const value = Number(node.text.replaceAll("_", ""));
         const keys = numbers.get(value);

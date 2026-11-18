@@ -62,7 +62,7 @@ import {
 import {
   koHelpTurnNosOf,
   koHelpViewsOf,
-  type TalkKoHelpView,
+  type TalkKoHelpItem,
 } from "@/core/conversation/ko-help";
 import {
   isChatSession,
@@ -205,6 +205,8 @@ export {
 export const CLIENT_ATTEMPT_ID_MAX = 100;
 /** 아이 말 · 목표 글 글자 수 상한(기술 값 — 회화 한 턴 답보다 넉넉히). */
 export const TALK_TEXT_MAX = 500;
+/** 연 힌트 단 수 상한(기술 값 — 단계 규격 단 수보다 넉넉히). 회화 턴 요청과 한국어 질문 요청이 함께 쓴다(검토 rev-b4b I-1). */
+export const HINT_TIERS_MAX = 10;
 /** 따라 말하기 한 차례의 인식 글 수 상한(기술 값 — speech.max_retries 보다 넉넉히). */
 const HEARD_MAX = 10;
 /** 한 차례 인식 실패 수 상한(기술 값). */
@@ -1631,7 +1633,7 @@ export function lessonCurrentOf(
 export function lessonKoHelpsOf(
   state: Pick<TalkLessonState, "liveRows" | "spec">,
   rows: readonly TalkKoHelpRow[],
-): (TalkKoHelpView & { open: boolean })[] {
+): (TalkKoHelpItem & { open: boolean })[] {
   return koHelpViewsOf(rows, {
     openTurnNos: koHelpTurnNosOf(state.liveRows.map(koHelpTurnRowOf)),
     lowBand: isLowBand(state.spec),
@@ -1739,7 +1741,7 @@ export type TalkLessonView = {
    * 이 수업의 한국어 도움(talk_ko_helps — 이어 하기 · 대화 기록에서 두 표를 합쳐 그린다, 접점 라). open 은 지금 열린 아이 차례가 읽는 도움인가(되묻는
    * 차례를 건너 이어받은 것 포함 [N-1])이고, 1~3단계는 open 이 거짓인 항목의 teachEn 을 싣지 않는다.
    */
-  koHelps: (TalkKoHelpView & { open: boolean })[];
+  koHelps: (TalkKoHelpItem & { open: boolean })[];
   /** 선생님 말이 없는 마지막 아이 행 — 화면이 같은 시도 id 로 다시 보낸다(8절 · AC-15f). 들리지 않음 행이면 nospeech(묶음 11 재검토 N-3). */
   retryTurn: LessonRetryTurn | null;
   /**
