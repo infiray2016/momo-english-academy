@@ -1,0 +1,36 @@
+{
+  "name": "l4-ko-help",
+  "title": "4단계 · 한국어로 물어본 뒤 가르친 표현으로 답함(맞게 적힌 글 · 틀리게 적힌 글)",
+  "level": 4,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "수업 안 한국어로 묻기 묶음 4-다(기존 방식). 4단계부터 가르친 표현은 글로 보인다(textShown). 둘째 차례는 인식이 가르친 표현을 맞게, 셋째 차례는 틀리게(kimbob) 적은 글이다 — 두 차례 모두 사용자 메시지에 한국어 도움 한 줄이 든다(AC-25c · AC-25o). 4단계 회화 카드 시드(seed/lessons/talk/4/1.json)가 있어야 돈다.",
+  "steps": [
+    { "say": "I'm good." },
+    {
+      "koHelp": [
+        {
+          "kind": "expression",
+          "sayKo": "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+          "teachEn": "I like gimbap.",
+          "shownEn": ["I like gimbap."],
+          "textShown": true
+        }
+      ],
+      "say": "I like gimbap."
+    },
+    {
+      "koHelp": [
+        {
+          "kind": "expression",
+          "sayKo": "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+          "teachEn": "I like gimbap.",
+          "shownEn": ["I like gimbap."],
+          "textShown": true
+        }
+      ],
+      "say": "I like kimbob."
+    }
+  ]
+}

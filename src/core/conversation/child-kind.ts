@@ -94,6 +94,7 @@ export function effectiveStuckOf({
   input,
   sceneWords,
   homophones,
+  taughtMatched,
 }: {
   aiStuck: boolean;
   childKind: TalkChildKind | undefined;
@@ -110,8 +111,14 @@ export function effectiveStuckOf({
    * 막힘으로 세지 않는다(13절 C217 (1) · 분석 A2). 없으면 글자 그대로만 본다.
    */
   homophones?: readonly (readonly string[])[];
+  /**
+   * 막힘 무름 한 꼴(수업 안 한국어로 묻기 C225 (3) · 정본 02-2 3.3 막힘 문단): 한국어 도움 바로 뒤의 영어 말이 가르친 표현과 일치율(6.2)
+   * talk.hint_read_match 이상 맞았다(부르는 쪽이 ko-help koTaughtMatchedOf 로 정한다). 참이면 막힘이 아니다. 모든 단계, 무르기만 한다.
+   */
+  taughtMatched?: boolean;
 }): boolean {
   if (!aiStuck || input !== "speech") return aiStuck;
+  if (taughtMatched === true) return false;
   if (isEnglishSaying(child, ENGLISH_SENTENCE_MIN_WORDS)) return false;
   if (sceneWords !== undefined && touchesScene(child, sceneWords, homophones))
     return false;

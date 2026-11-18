@@ -2,6 +2,7 @@
 // 서버의 한국어 질문 길(server/conversation/ko-help.ts) · 화면 자료(server/conversation/index.ts) · 묶음 4-다 의 다음 영어 턴이 같은 함수를 쓴다.
 // DB · AI 없음. talk_turns 의 행을 읽기만 하고 고치지 않는다 — 한국어 문답은 학습 셈 어디에도 들지 않는다(C221 · C226 (3), spec 설계 6).
 import type { TalkKoHelpKind } from "@/core/ai/calls/talk-ko-help";
+import { bestMatchRate } from "@/core/speech/match-rate";
 
 // ── 읽을 턴 번호([N-1] — 되묻는 차례를 건너 이어받기) ────────────────────
 
@@ -211,6 +212,233 @@ export function koHelpViewOf(
     fallback: row.fallback,
     replay: koHelpReplayOf(teach),
   };
+}
+
+// ── 다음 영어 턴의 대접(묶음 4-다 — spec 판 3 설계 4 '다음 영어 턴' 표 · plan 정한 것 8 · 9, 세 방식 공통) ──
+
+/** 회화 턴 요청의 선택 칸 koHelp 의 항목 하나(접점 마 — 기기가 보낸 값, 힌트의 '들은 도움'과 같은 믿음 수준). */
+export type KoHelpDeviceEntry = {
+  turnNo: number;
+  seq: number;
+  /** 소리를 한 번이라도 들려줬는가(없으면 들은 것으로 본다). */
+  heard?: boolean | undefined;
+  /** '알려 준 말 듣기' 누른 수. */
+  replays?: number | undefined;
+};
+
+/** 대접 판정이 읽는 도움 행의 칸(talk_ko_helps — 새로 보인 영어 글 shown_en · 들려줬는가 heard 포함). */
+export type KoHelpStandingRow = Pick<
+  KoHelpRowFacts,
+  "turnNo" | "seq" | "kind" | "sayKo" | "teachEn" | "textShown" | "fallback"
+> & {
+  shownEn: readonly string[] | null;
+  heard: boolean | null;
+};
+
+/** 회화 턴 사용자 메시지에 더하는 한 줄의 꼴(기존 방식 — 6.2 회화 턴 입력). */
+export type KoHelpLine =
+  | { kind: "taught"; taught: readonly string[] }
+  | { kind: "meaning" };
+
+/** 도움의 대접(koHelpStandingOf). 도움이 없으면 hintKind 'none' · koHelp 거짓 · 빈 목록 · line null. */
+export type KoHelpStanding = {
+  /** 아이 행의 힌트 종류에 올릴 값(그 행의 hintKindOf 값과 높은 쪽을 고른다 — raiseHintKind). */
+  hintKind: KoHelpHintKind;
+  /** 근거 칸 도움 ko_help 가 있는가(근거 칸은 P12 몫 — plan 정한 것 8, 그때까지 이 값과 단위 시험이 증명이다). */
+  koHelp: boolean;
+  /** 가르친 표현(보았거나 들은 것만 — 귀띔의 기대 낱말 · 막힘 무름 · 한 줄이 읽는다). 차례대로, 같은 글은 하나. */
+  taught: string[];
+  line: KoHelpLine | null;
+  /** 한국어 도움이 새로 보인 영어 낱말(소문자 — '말했다' 거름이 넘기는 단원 단어 목록에서 뺀다, [N-4]). */
+  shownWords: string[];
+};
+
+/** 힌트 종류 셋(lesson-turns TALK_HINT_KINDS 와 같은 값 · 같은 차례 — 낮은 것부터). */
+export const KO_HELP_HINT_KINDS = ["none", "meaning_only", "english"] as const;
+export type KoHelpHintKind = (typeof KO_HELP_HINT_KINDS)[number];
+
+/** 두 힌트 종류 가운데 높은 쪽('영어' > '뜻만' > '없음' — 이미 더 높으면 그대로). */
+export function raiseHintKind<K extends KoHelpHintKind>(
+  base: K,
+  by: KoHelpHintKind,
+): K | KoHelpHintKind {
+  return KO_HELP_HINT_KINDS.indexOf(by) > KO_HELP_HINT_KINDS.indexOf(base)
+    ? by
+    : base;
+}
+
+const EN_WORD = /[A-Za-z]+(?:['’][A-Za-z]+)*/g;
+
+/** 글의 영어 낱말(적힌 차례). */
+function enWordsIn(text: string): string[] {
+  return text.match(EN_WORD) ?? [];
+}
+
+/**
+ * 그 아이 차례가 읽는 도움 행들(koHelpTurnNosOf 의 턴 번호에 붙은 것 — 되묻는 차례를 건너 이어받은 것 포함 [N-1]) → 다음 영어 턴의 대접.
+ * 행마다(설계 4 표):
+ * - 답이 없는 행 · 대신 줄(fallback 이 none 이 아님) · 갈래 불분명 · 그 밖 → 도움 없음(검토 rev-b4b 6절 — kind 가 아니라 fallback 으로 먼저 가른다).
+ * - 표현을 글로 보았다(4단계부터 textShown, 또는 새로 보인 영어 글에 영어 낱말이 둘 이상 이어진 토막) → '영어' · ko_help · 한 줄 taught(가르친
+ *   표현, 그 칸이 비면 그 토막).
+ * - 표현을 소리로 들었다(1~3단계 가르친 표현 — 기기 값 heard 가 거짓이 아니면) → '영어' · ko_help · 한 줄 taught.
+ * - 1~3단계에서 한 번도 들려주지 못한 표현 → 도움 없음(들려주지 못한 소리는 도움으로 적지 않는다, I-6).
+ * - 뜻만 받았다(갈래 뜻) → '뜻만' · ko_help · 한 줄 meaning only.
+ * 여럿이면 가장 높은 대접을 따르고 한 줄에는 가르친 표현을 모두 적는다. 기기 값(device)은 같은 턴 번호 · 순번의 행 값보다 앞선다. 새로 보인 낱말은
+ * 대접과 관계없이 답이 있는 행의 shown_en 에서 모은다(낱말 단위 거름 — 힌트 종류와 관계없이).
+ */
+export function koHelpStandingOf(
+  rows: readonly KoHelpStandingRow[],
+  {
+    lowBand,
+    device = [],
+  }: { lowBand: boolean; device?: readonly KoHelpDeviceEntry[] },
+): KoHelpStanding {
+  let hintKind: KoHelpHintKind = "none";
+  let koHelp = false;
+  let meaning = false;
+  const taught: string[] = [];
+  const shownWords: string[] = [];
+  const addTaught = (t: string) => {
+    const v = t.trim();
+    if (v !== "" && !taught.includes(v)) taught.push(v);
+  };
+  for (const row of rows) {
+    if (row.sayKo === null || row.fallback === null) continue;
+    for (const chunk of row.shownEn ?? [])
+      for (const w of enWordsIn(chunk)) {
+        const lower = w.toLowerCase();
+        if (!shownWords.includes(lower)) shownWords.push(lower);
+      }
+    if (row.fallback !== "none") continue;
+    if (row.kind !== "expression" && row.kind !== "meaning") continue;
+    const teach = (row.teachEn ?? "").trim();
+    const chunks = (row.shownEn ?? []).filter((c) => enWordsIn(c).length >= 2);
+    const seen = !lowBand && (row.textShown === true || chunks.length > 0);
+    const entry = device.find(
+      (d) => d.turnNo === row.turnNo && d.seq === row.seq,
+    );
+    const heard = (entry?.heard ?? row.heard) !== false;
+    if (seen || (lowBand && teach !== "" && heard)) {
+      hintKind = "english";
+      koHelp = true;
+      if (teach !== "") addTaught(teach);
+      else for (const c of chunks) addTaught(c);
+      continue;
+    }
+    if (lowBand && teach !== "") continue;
+    if (row.kind === "meaning") {
+      hintKind = raiseHintKind(hintKind, "meaning_only");
+      koHelp = true;
+      meaning = true;
+    }
+  }
+  const line: KoHelpLine | null =
+    taught.length > 0
+      ? { kind: "taught", taught }
+      : meaning
+        ? { kind: "meaning" }
+        : null;
+  return { hintKind, koHelp, taught, line, shownWords };
+}
+
+/** 사용자 메시지 한 줄의 글(6.2 회화 턴 입력 — 여럿이면 `'A'; 'B'`). */
+export function koHelpLineText(line: KoHelpLine): string {
+  return line.kind === "taught"
+    ? `Korean help before this answer: taught ${line.taught.map((t) => `'${t}'`).join("; ")}`
+    : "Korean help before this answer: meaning only";
+}
+
+/**
+ * '말했다' 거름(plan 정한 것 9 — said.ts 는 고치지 않는다): saidWordsOf 에 넘기는 단원 단어 목록에서 한국어 도움이 새로 보인 낱말을 뺀다. 표기형은
+ * 원형으로도 맞댄다(lemmaOf). 새로 보인 낱말이 없으면 목록을 그대로 돌려준다(한국어로 묻지 않은 턴은 같은 값).
+ */
+export function unitWordsWithoutShownOf(
+  unitWords: readonly string[],
+  shownWords: readonly string[],
+  lemmaOf: (surface: string) => string | undefined,
+): readonly string[] {
+  if (shownWords.length === 0) return unitWords;
+  const keys = new Set(
+    shownWords.flatMap((w) => [w, lemmaOf(w)?.toLowerCase() ?? w]),
+  );
+  return unitWords.filter((u) => {
+    const lower = u.toLowerCase();
+    return (
+      !keys.has(lower) && !keys.has(lemmaOf(lower)?.toLowerCase() ?? lower)
+    );
+  });
+}
+
+/**
+ * 가르친 표현과의 일치(막힘 무름 한 꼴 · C225 (3)): 인식 글이 가르친 표현 가운데 하나와 일치율(6.2, {NAME} 자리 뺌) minMatch 이상이면 참이다.
+ * 일치율 함수는 부르는 쪽이 넘긴다(보통은 koTaughtHeardOf 가 6.2 bestMatchRate 로 부른다). 견줄 영어 낱말이 없는 표현은 보지 않는다.
+ */
+export function koTaughtMatchedOf({
+  heard,
+  taught,
+  minMatch,
+  rateOf,
+}: {
+  heard: string;
+  taught: readonly string[];
+  minMatch: number;
+  rateOf: (targets: readonly string[], heard: string) => number;
+}): boolean {
+  const usable = taught.filter((t) => enWordsIn(t).length > 0);
+  if (usable.length === 0 || enWordsIn(heard).length === 0) return false;
+  return rateOf(usable, heard) >= minMatch;
+}
+
+// ── 기존 방식 턴 길의 배선(서버 lesson-turn · 대본 도구 talk:observe 가 같은 함수를 쓴다) ──────────────
+
+/** 귀띔 재료에 가르친 표현을 더한다(귀띔을 쓰는 단계 — 재료가 없으면 그대로, 도움이 없으면 같은 값). */
+export function heardWithTaughtOf<T extends { taught?: readonly string[] }>(
+  heard: T | undefined,
+  ko: Pick<KoHelpStanding, "taught"> | null,
+): T | undefined {
+  if (heard === undefined || ko === null || ko.taught.length === 0)
+    return heard;
+  return { ...heard, taught: ko.taught };
+}
+
+/** 회화 턴 입력에 한국어 도움 한 줄을 얹는다(기존 방식 — 줄이 없으면 같은 값, AC-N26). */
+export function withKoHelpLineOf<T extends { koHelpLine?: string }>(
+  turn: T,
+  ko: Pick<KoHelpStanding, "line"> | null,
+): T {
+  return ko?.line ? { ...turn, koHelpLine: koHelpLineText(ko.line) } : turn;
+}
+
+/** 막힘 무름 한 꼴(C225 (3)): 인식 글이 가르친 표현과 일치율(6.2 bestMatchRate, {NAME} 자리 뺌) minMatch 이상인가. 도움이 없으면 거짓. */
+export function koTaughtHeardOf(
+  ko: Pick<KoHelpStanding, "taught"> | null,
+  heard: string,
+  {
+    minMatch,
+    homophones,
+  }: { minMatch: number; homophones: readonly (readonly string[])[] },
+): boolean {
+  if (ko === null) return false;
+  return koTaughtMatchedOf({
+    heard,
+    taught: ko.taught,
+    minMatch,
+    rateOf: (targets, text) =>
+      bestMatchRate(targets, text, { homophones, nameSlot: "excluded" }),
+  });
+}
+
+/**
+ * 되묻는 차례 뒤에 이어받은 도움([N-1] — 끝 줄 lesson.koCarry 의 재료): 지금 아이 차례가 읽는 턴 번호(koHelpTurnNosOf) 가운데 지금 턴 번호가
+ * 아닌 것에 붙은 도움. 기존 방식에는 되묻는 차례를 쓰는 서버 코드가 없어 지금은 늘 빈 목록이고(다시 맞춤 2026-11-17), Claude 주도 방식(묶음 4-라)이
+ * 끝 줄에 쓴다.
+ */
+export function koHelpCarryOf<T extends { turnNo: number }>(
+  helps: readonly T[],
+  turnNos: readonly number[],
+): T[] {
+  const now = turnNos.at(-1);
+  return helps.filter((h) => h.turnNo !== now && turnNos.includes(h.turnNo));
 }
 
 /**

@@ -62,6 +62,7 @@ export function heardHintsOf({
   homophones,
   soundAlikes,
   lemmaOf,
+  taught = [],
 }: {
   /** 아이 말(인식 글). */
   heard: string;
@@ -75,6 +76,12 @@ export function heardHintsOf({
   soundAlikes: readonly SoundAlikeEntry[];
   /** 표기형 → 원형(vocab forms). */
   lemmaOf: (surface: string) => string | undefined;
+  /**
+   * 한국어 도움 바로 뒤의 영어 차례면 그 도움이 가르친 표현(수업 안 한국어로 묻기 C225 (3) · 정본 02-2 3.3 기기 쪽). 그 내용 낱말을 답 낱말에 더한다 —
+   * 아이가 몰라서 물은 말이라 범위 밖 낱말이 많고 인식이 틀리게 적기 쉽다. 소리에 근거가 있을 때만 내는 규칙은 그대로다(C217 보완 3 (6) — 답 틀만으로
+   * 내는 귀띔은 두지 않는다). 없으면 고치기 전 그대로.
+   */
+  taught?: readonly string[];
 }): HeardHint[] {
   const tokens = wordsOf(heard);
   if (tokens.length === 0 || isDontKnowSaying(heard)) return [];
@@ -85,6 +92,7 @@ export function heardHintsOf({
     ...new Set([
       ...targets.map(lower),
       ...(answer === null ? [] : sceneWordsOf([answer])),
+      ...(taught.length === 0 ? [] : sceneWordsOf(taught)),
     ]),
   ];
   const broad = [...new Set([...scene].map(lower))];

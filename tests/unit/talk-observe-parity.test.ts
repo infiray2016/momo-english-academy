@@ -185,6 +185,7 @@ import {
   observeQuestionRetryFits,
   type PreparedTurn,
   parseArgs,
+  parseObserveScript,
   readSeedFiles,
   runChatScenario,
   runTalkObserve,
@@ -5145,5 +5146,88 @@ describe("T1 fix 1 덧붙임 — 만남 셈의 원형 표는 서버 그대로(�
     expect(rec.met).toContain("eat");
     expect(rec.met).not.toContain("beach");
     expect(rec.met).not.toContain("see");
+  });
+});
+
+describe("수업 안 한국어로 묻기 묶음 4-다 — 대본의 한국어 도움 칸(기존 방식, AC-25c · AC-25j · AC-25o)", () => {
+  const help = (over: Record<string, unknown> = {}) => ({
+    kind: "expression" as const,
+    sayKo: "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+    teachEn: "I like gimbap.",
+    ...over,
+  });
+  const LINE = "Korean help before this answer: taught 'I like gimbap.'";
+
+  for (const level of [3, 4]) {
+    it(`${level}단계: 도움 뒤 말 턴은 힌트 종류 '영어' · 아이 말 줄 바로 뒤 한 줄, 계획은 서버와 같다`, () => {
+      const m = level === 3 ? materialsAt(3) : materials4();
+      const { sim } = greeted(m);
+      const koHelp = [
+        level === 3
+          ? help({ textShown: false, heard: true })
+          : help({ textShown: true, shownEn: ["I like gimbap."] }),
+      ];
+      const ready = sim.prepare(
+        { say: "I like gimbap.", koHelp },
+        sim.rows.length,
+      );
+      if (!ready.ok) throw new Error(ready.reason);
+      expectPlannedSame(m, sim, ready.turn);
+      expect(ready.turn.turn.hintKind).toBe("english");
+      const lines = ready.turn.userMessage.split("\n");
+      const at = lines.indexOf(LINE);
+      expect(at).toBeGreaterThan(0);
+      expect(lines[at - 1]).toMatch(/^Child: |^Heard hint/);
+      // 가르친 표현과 맞은 글이면 막힘 무름(모든 단계), 틀리게 적힌 글은 문턱 아래
+      expect(ready.turn.input.koTaughtMatched).toBe(true);
+      const wrong = sim.prepare(
+        { say: "I like kimbob.", koHelp },
+        sim.rows.length,
+      );
+      if (!wrong.ok) throw new Error(wrong.reason);
+      expect(wrong.turn.userMessage).toContain(LINE);
+      expect(wrong.turn.input.koTaughtMatched).toBeUndefined();
+    });
+  }
+
+  it("3단계: 한 번도 들려주지 못한 표현 · 대신 줄 뒤의 말 턴은 그대로(한 줄 · 힌트 올림 없음, AC-N26)", () => {
+    const m = materialsAt(3);
+    const { sim } = greeted(m);
+    const plain = sim.prepare(say("I like gimbap."), sim.rows.length);
+    if (!plain.ok) throw new Error(plain.reason);
+    for (const koHelp of [
+      [help({ textShown: false, heard: false })],
+      [help({ kind: "other", teachEn: undefined, fallback: "call_failed" })],
+    ]) {
+      const ready = sim.prepare(
+        { say: "I like gimbap.", koHelp },
+        sim.rows.length,
+      );
+      if (!ready.ok) throw new Error(ready.reason);
+      expect(ready.turn.userMessage).toBe(plain.turn.userMessage);
+      expect(ready.turn.turn.hintKind).toBe(plain.turn.turn.hintKind);
+    }
+  });
+
+  it("대본 둘(l3-ko-help · l4-ko-help)은 꼴 검사를 지나고 도움 칸이 말 차례에만 있다", () => {
+    for (const name of ["l3-ko-help", "l4-ko-help"]) {
+      const raw = JSON.parse(
+        readFileSync(
+          `${ROOT}/tests/fixtures/talk-observe/${name}.json`,
+          "utf8",
+        ),
+      );
+      const parsed = parseObserveScript(raw, `${name}.json`);
+      if (!parsed.ok) throw new Error(parsed.error);
+      const withHelp = parsed.script.steps.filter(
+        (s) => s.koHelp !== undefined,
+      );
+      expect(withHelp.length).toBe(2);
+      expect(withHelp.every((s) => s.say !== undefined)).toBe(true);
+      expect(withHelp.map((s) => s.say)).toEqual([
+        "I like gimbap.",
+        "I like kimbob.",
+      ]);
+    }
   });
 });

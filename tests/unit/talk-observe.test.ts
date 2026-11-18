@@ -281,19 +281,22 @@ describe("대본", () => {
         "l1-first-new-word",
         "l3-child-topic",
         "l3-heard-counter",
+        // 수업 안 한국어로 묻기 묶음 4-다(기존 방식 대본 둘)
+        "l3-ko-help",
         "l3-nospeech",
         "l3-preview-1",
         "l3-second-session-recall",
         "l3-stuck-three",
         "l3-word-answers",
+        "l4-ko-help",
         "l4-word-answers",
         "replay-lesson-1108",
         ...NEW_SEVEN,
       ].sort(),
     );
     expect(all.filter((s) => s.level === 1)).toHaveLength(2);
-    expect(all.filter((s) => s.level === 3)).toHaveLength(15);
-    expect(all.filter((s) => s.level === 4)).toHaveLength(1);
+    expect(all.filter((s) => s.level === 3)).toHaveLength(16);
+    expect(all.filter((s) => s.level === 4)).toHaveLength(2);
   });
 
   it("새 일곱은 3단계 단원 1 수업 1 · 미나이고 차례마다 기대 칸이 있다(설계 8 판정 표본)", () => {
@@ -505,7 +508,7 @@ describe("대본", () => {
         (s) => s.name,
       ),
     ).toEqual(["l3-nospeech"]);
-    expect(selectScripts(all, { script: null, level: 4 })).toHaveLength(1);
+    expect(selectScripts(all, { script: null, level: 4 })).toHaveLength(2);
   });
 });
 
@@ -1596,7 +1599,8 @@ describe("실행(네트워크 없음)", () => {
     expect(code).toBe(0);
     expect(written.size).toBe(0);
     const total = logs.find((l) => l.startsWith("합계:")) ?? "";
-    expect(total).toContain("대본 15(돌릴 것 15) × 바퀴 2");
+    // 수업 안 한국어로 묻기 묶음 4-다 가 3단계 대본 하나(l3-ko-help)를 더했다
+    expect(total).toContain("대본 16(돌릴 것 16) × 바퀴 2");
     const perRound = Number(/한 바퀴 (\d+)\)/.exec(total)?.[1]);
     expect(perRound).toBeGreaterThan(0);
     expect(total).toContain(`예상 호출 ${perRound * 2}(`);

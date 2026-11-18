@@ -404,6 +404,8 @@ function lessonKit(plan: {
         ...(input.homophones === undefined
           ? {}
           : { homophones: input.homophones }),
+        // 한국어 도움 뒤 가르친 표현과 맞은 말도 막힘이 아니다(수업 안 한국어로 묻기 C225 (3) — 정규화와 같은 판정)
+        ...(input.koTaughtMatched ? { taughtMatched: true } : {}),
       }),
   };
 }

@@ -279,6 +279,12 @@ export type TalkCallTurn = {
    */
   heardHints?: readonly HeardHint[];
   /**
+   * 한국어 도움 바로 뒤의 영어 턴만(수업 안 한국어로 묻기 — 기존 방식, 모든 단계, 6.2 회화 턴 입력): 사용자 메시지에 더하는 한 줄의 글
+   * ('Korean help before this answer: …' — core/conversation/ko-help koHelpLineText 가 만든다). 아이 말 줄과 귀띔 줄 바로 뒤에 둔다. 없으면 줄이
+   * 없다(한국어로 묻지 않은 턴의 사용자 메시지는 글자 그대로 — AC-N26).
+   */
+  koHelpLine?: string;
+  /**
    * 1~3단계만: 바로 앞 선생님 말(AI 가 쓴 반응)의 첫 낱말(사용자 메시지 'Your last turn started with' — 13절 C217 보완, 같은 낱말로 연달아
    * 시작하지 않게. talkLastStartOf). 앞 선생님 말이 없거나 호출 입력을 만들 때 받지 않았으면 없음(줄을 넣지 않음).
    */
@@ -362,6 +368,11 @@ export type TalkLessonInput = LevelContext & {
    * (1)). 없으면 글자 그대로만 본다(4단계부터 · 옛 시험).
    */
   homophones?: readonly (readonly string[])[];
+  /**
+   * 막힘 무름 한 꼴(수업 안 한국어로 묻기 C225 (3)): 한국어 도움 바로 뒤의 영어 말이 가르친 표현과 talk.hint_read_match 이상 맞았다(서버가 정한다 —
+   * ko-help koTaughtMatchedOf). 참이면 앱이 막힘으로 보지 않는다(child-kind effectiveStuckOf taughtMatched). 없으면 고치기 전 그대로.
+   */
+  koTaughtMatched?: true;
   /**
    * 질문 다시 쓰기(13절 C203 (3)): 1~3단계 AI 질문이 검사에 걸린 턴을 한 번만 다시 부를 때, 이번 사용자 메시지 뒤에 앞 응답(previous — 선생님이
    * 쓴 tori_en)과 앱의 다시 쓰기 메시지(note — question-retry questionRetryNoteOf)를 잇는다. 없으면 보통 턴이다.
@@ -520,6 +531,8 @@ export type TalkHeardSource = {
   scene: Iterable<string>;
   homophones: readonly (readonly string[])[];
   soundAlikes: readonly SoundAlikeEntry[];
+  /** 한국어 도움 바로 뒤의 영어 턴이면 가르친 표현(heard-hint heardHintsOf taught — 기대 낱말에 그 내용 낱말을 더한다). 없으면 고치기 전 그대로. */
+  taught?: readonly string[];
 };
 
 function cardLineOf(plan: TeacherTurnPlan): TalkCardLine | null {
@@ -1488,6 +1501,8 @@ export function talkLessonUserMessage(
     `Child: ${child}`,
     // 1~3단계 들은 글 귀띔(13절 C217 (1)) — 닿은 것이 있는 턴만
     ...heardHintLines(turn),
+    // 한국어 도움 바로 뒤의 영어 턴(기존 방식 — 아이 말 줄과 귀띔 줄 바로 뒤, 모든 단계)
+    ...(turn.koHelpLine === undefined ? [] : [turn.koHelpLine]),
     `Input: ${turn.input}`,
     // 1~3단계: 바로 앞 선생님 말의 첫 낱말(13절 C217 보완 — 같은 낱말로 연달아 시작하지 않게)
     ...(turn.lastStart === undefined
@@ -2101,6 +2116,7 @@ export function normalizeTalkLesson(
     input: turn.input,
     sceneWords: talkSceneWordsOf(input),
     ...(input.homophones === undefined ? {} : { homophones: input.homophones }),
+    ...(input.koTaughtMatched ? { taughtMatched: true } : {}),
   });
   // 응답 첫 칸(stuck)으로 고른 계획(말 입력 턴의 막힘 계획, 검토 I-1)
   const chosen = chosenCallTurnOf(turn, stuck);

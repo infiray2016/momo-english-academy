@@ -1,0 +1,36 @@
+{
+  "name": "l3-ko-help",
+  "title": "3단계 · 한국어로 물어본 뒤 가르친 표현으로 답함(맞게 적힌 글 · 틀리게 적힌 글)",
+  "level": 3,
+  "unit": 1,
+  "lesson": 1,
+  "teacher": "mina",
+  "note": "수업 안 한국어로 묻기 묶음 4-다(기존 방식). 아이 차례 앞 koHelp 칸은 그 차례에 받은 한국어 도움(talk_ko_helps 행의 꼴)이다. 1~3단계 표현 답은 소리로만 주고(글로 보이지 않음) 한 번 들려줬다. 둘째 차례는 인식이 가르친 표현을 맞게, 셋째 차례는 틀리게(kimbob) 적은 글이다 — 사용자 메시지에 한국어 도움 한 줄이 들고, 셋째는 가르친 표현의 내용 낱말로 귀띔 줄이 들 수 있다(AC-25c · AC-25o).",
+  "steps": [
+    { "say": "I am fine." },
+    {
+      "koHelp": [
+        {
+          "kind": "expression",
+          "sayKo": "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+          "teachEn": "I like gimbap.",
+          "textShown": false,
+          "heard": true
+        }
+      ],
+      "say": "I like gimbap."
+    },
+    {
+      "koHelp": [
+        {
+          "kind": "expression",
+          "sayKo": "김밥이 좋다고 말하고 싶구나. 이렇게 말해 봐.",
+          "teachEn": "I like gimbap.",
+          "textShown": false,
+          "heard": true
+        }
+      ],
+      "say": "I like kimbob."
+    }
+  ]
+}

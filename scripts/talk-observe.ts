@@ -60,6 +60,7 @@ import {
   talkChatHintSpec,
   talkChatHintSystem,
 } from "../src/core/ai/calls/talk-chat-hint";
+import { TALK_KO_HELP_KINDS } from "../src/core/ai/calls/talk-ko-help";
 import {
   applyTalkLeadChecks,
   TALK_LEAD_OUTPUT_FIELDS,
@@ -230,6 +231,14 @@ import {
   lessonHintTiersOf,
   openedTierCount,
 } from "../src/core/conversation/hints";
+import {
+  heardWithTaughtOf,
+  type KoHelpStanding,
+  koHelpStandingOf,
+  koTaughtHeardOf,
+  raiseHintKind,
+  withKoHelpLineOf,
+} from "../src/core/conversation/ko-help";
 import type { LeadCandidateRow } from "../src/core/conversation/lead-candidate";
 import {
   type LeadFormRule,
@@ -689,6 +698,21 @@ const ChatStepSchema = z.strictObject({
   hintRetry: z.boolean().optional(),
 });
 
+/**
+ * 이 아이 차례 앞에 받은 한국어 도움 하나(수업 안 한국어로 묻기 묶음 4-다 — talk_ko_helps 행의 꼴, 기존 방식). 갈래 · 한국어 답 · 가르친 표현 · 새로
+ * 보인 영어 글 · 글로 보였는가 · 들려줬는가 · 대신 줄 꼴. 서버와 같은 core 함수(koHelpStandingOf)가 대접을 정한다.
+ */
+const KoHelpStepSchema = z.strictObject({
+  kind: z.enum(TALK_KO_HELP_KINDS),
+  sayKo: z.string().trim().min(1),
+  teachEn: z.string().trim().min(1).optional(),
+  shownEn: z.array(z.string().trim().min(1)).optional(),
+  textShown: z.boolean().optional(),
+  /** 소리를 한 번이라도 들려줬는가(없으면 들은 것으로 — 회화 턴 요청의 koHelp 칸과 같다). */
+  heard: z.boolean().optional(),
+  fallback: z.enum(["none", "call_failed", "check_blocked"]).optional(),
+});
+
 const StepSchema = z
   .strictObject({
     /** 아이 말(인식 결과 흉내). */
@@ -704,6 +728,8 @@ const StepSchema = z
     chat: ChatStepSchema.optional(),
     /** 아이가 연 힌트(없으면 앞 선생님 차례에서 들은 도움으로 앱처럼 정한다). */
     hint: z.enum(TALK_HINT_KINDS).optional(),
+    /** 이 아이 차례 앞에 받은 한국어 도움(기존 방식 — 서버 lesson-turn 과 같이 힌트 종류 · 한 줄 · 귀띔 · 막힘 무름에 쓴다). 없으면 고치기 전 그대로. */
+    koHelp: z.array(KoHelpStepSchema).min(1).optional(),
     hintTier: z.int().min(0).optional(),
     /** 설계된 대화의 그 차례 선생님 말(사람이 나란히 볼 예). */
     design: z.string().optional(),
@@ -736,6 +762,28 @@ const StepSchema = z
     message: "기대 낱말 주석(meant)은 말 차례(say)에만 둔다",
   });
 export type ObserveStep = z.infer<typeof StepSchema>;
+
+/** 대본 차례의 한국어 도움 → 대접(서버 lesson-turn lessonKoHelpOf 와 같은 core koHelpStandingOf — 지금 아이 차례의 행으로 본다). 없으면 null. */
+export function observeKoStandingOf(
+  step: Pick<ObserveStep, "koHelp">,
+  lowBand: boolean,
+): KoHelpStanding | null {
+  if (step.koHelp === undefined) return null;
+  return koHelpStandingOf(
+    step.koHelp.map((h, i) => ({
+      turnNo: 0,
+      seq: i + 1,
+      kind: h.kind,
+      sayKo: h.sayKo,
+      teachEn: h.teachEn ?? null,
+      textShown: h.textShown ?? false,
+      fallback: h.fallback ?? "none",
+      shownEn: h.shownEn ?? null,
+      heard: h.heard ?? null,
+    })),
+    { lowBand },
+  );
+}
 
 const ScriptSchema = z.strictObject({
   name: z.string().regex(/^[a-z0-9-]+$/),
@@ -5875,8 +5923,12 @@ export function createTalkSim(
         dontKnowCount: position.stuckInSlot,
       });
       const hintTier = step.hint !== undefined ? (step.hintTier ?? 0) : opened;
-      const hintKind: TalkHintKind =
+      // 한국어 도움 뒤 다음 영어 턴(서버 lesson-turn 과 같은 core 함수 — 말 입력 턴만, 묶음 4-다)
+      const ko = mode === "speech" ? observeKoStandingOf(step, low) : null;
+      const baseHint: TalkHintKind =
         step.hint ?? hintKindOf({ opened: tiers.slice(0, opened), heard });
+      const hintKind: TalkHintKind =
+        ko === null ? baseHint : raiseHintKind(baseHint, ko.hintKind);
       const heardHelp = heardHelpOf(heard);
       const childText = said;
       const planned = talkCallTurnOf({
@@ -5896,7 +5948,7 @@ export function createTalkSim(
           rotationKey,
         ),
         // 1~3단계 들은 글 귀띔(13절 C217 (1)) · 바로 앞 선생님 말의 첫 낱말(C217 보완) — 서버와 같이 talkTurnWiringOf 가 조립한 재료 그대로
-        heard: wiring.heardOf(materials.ctx.unitWords),
+        heard: heardWithTaughtOf(wiring.heardOf(materials.ctx.unitWords), ko),
         lastStart: wiring.lastStart,
       });
       // 인사 끝 턴은 다음 토막을 알린다(서버 lesson-turn.ts 이번 패치 판 — 처음 스냅숏의 짧은 준비 계획이 있으면 준비)
@@ -5910,13 +5962,16 @@ export function createTalkSim(
           child: childText ?? "",
           lemmaOf: materials.lemmaOf,
         });
-      const turn: TalkCallTurn = {
-        ...planned,
-        ...(late ? { afterCardChance: true } : {}),
-        ...(planned.segment === "greeting_end"
-          ? { nextPart: prepPlan.length > 0 ? "prep" : "talk" }
-          : {}),
-      };
+      const turn: TalkCallTurn = withKoHelpLineOf(
+        {
+          ...planned,
+          ...(late ? { afterCardChance: true } : {}),
+          ...(planned.segment === "greeting_end"
+            ? { nextPart: prepPlan.length > 0 ? "prep" : "talk" }
+            : {}),
+        },
+        ko,
+      );
       const now = contextNow();
       const history = historyOf();
       const opening = history.length === 0 ? openingLine() : undefined;
@@ -5945,6 +6000,13 @@ export function createTalkSim(
         lemmaOf: materials.lemmaOf,
         // 막힘 무름이 같은 소리로 들린 장면 낱말도 본다(서버와 같이 1~3단계만 — 13절 C217 (1))
         ...wiring.callInput,
+        // 한국어 도움 뒤 가르친 표현과 맞은 말은 막힘이 아니다(서버와 같이 모든 단계 — C225 (3))
+        ...(koTaughtHeardOf(ko, childText ?? "", {
+          minMatch: values["talk.hint_read_match"] as number,
+          homophones: wiring.homophones,
+        })
+          ? { koTaughtMatched: true as const }
+          : {}),
       };
       const userMessage = talkLessonUserMessage(
         input.turn,

@@ -43,6 +43,23 @@ export type { TalkLessonLine } from "./lesson-turn";
 /** 듣기 끝 대기 초 · 체감 대기 ms 상한(기술 값 — 꼴 검사). */
 const LISTEN_END_MAX_SECONDS = 600;
 const PERCEIVED_WAIT_MAX_MS = 600_000;
+/**
+ * 회화 턴 요청의 한국어 도움 칸(수업 안 한국어로 묻기 접점 마)의 꼴 검사 값(기술 값): 항목 수 상한(한 아이 차례의 도움 수 — 본문 크기 상한이 먼저
+ * 막는다)과 talk_ko_helps 의 smallint 칸(턴 번호 · 순번 · 다시 듣기 수) 상한.
+ */
+const KO_HELP_ENTRIES_MAX = 50;
+const SMALLINT_MAX = 32_767;
+
+/**
+ * 그 아이 차례에서 받은 한국어 도움(접점 마 — 화면 talk-stream 의 koHelp, 도움이 없으면 칸이 없다). 세 방식의 입구라 여기서 한 번 풀고, 쓰는 길은
+ * 방식마다다(기존 방식은 lesson-turn, Claude 주도 · 이야기 방식은 묶음 4-라 · K). heard · replays 가 없으면 들은 것으로 본다.
+ */
+const KoHelpEntrySchema = z.strictObject({
+  turnNo: z.int().min(0).max(SMALLINT_MAX),
+  seq: z.int().min(1).max(SMALLINT_MAX),
+  heard: z.boolean().optional(),
+  replays: z.int().min(0).max(SMALLINT_MAX).optional(),
+});
 
 const TurnRequestSchema = z.strictObject({
   sessionId: z.uuid(),
@@ -67,6 +84,8 @@ const TurnRequestSchema = z.strictObject({
    * 이름 가림을 지나 알림 줄(보낸 사용자 메시지)에만 남는다. 듣기 요약(client_listen)의 칸 이름(cf · na · int · mx)과는 층이 달라 맞추지 않는다.
    */
   recognizer: chatRecognizerSchemaOf(TALK_TEXT_MAX).optional(),
+  /** 그 아이 차례에서 받은 한국어 도움(수업 안 한국어로 묻기 접점 마 — 없으면 지금과 같다). */
+  koHelp: z.array(KoHelpEntrySchema).max(KO_HELP_ENTRIES_MAX).optional(),
 });
 
 /**
@@ -126,6 +145,8 @@ export const turnSettings = {
   // 되묻기 상한(13절 C218 — 수업 상태 읽기 talkLessonSettingsFrom 이 0 이상 정수로 읽는다). 턴 입구 목록에도 두어 키가 빠진 DB 에서는
   // 턴 입구의 SettingMissingError 로 바로 드러나게 한다(장부 T-157 꼴, 내용 고침 2 plan 위험 2)
   "talk.ask_again_max": z.unknown(),
+  // 한국어 도움 뒤 막힘 무름의 일치율 문턱(수업 안 한국어로 묻기 plan 정한 것 13 — 기존 방식 턴 길이 읽는다)
+  "talk.hint_read_match": z.number().min(0).max(1),
   "ai.timeout_seconds.realtime": z.number().positive(),
   // 턴 길의 길이 초과 기록이 읽는 선생님 문장 상한(lesson-turn teacherSentencesMaxOf — 빠지면 턴이 CallSettingError 로 오류가 된다)
   ...TEACHER_SENTENCES_SETTING_SCHEMAS,
