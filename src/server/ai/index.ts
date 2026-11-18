@@ -13,6 +13,11 @@ import {
   speakingPresentationSpec,
 } from "@/core/ai/calls/speaking";
 import {
+  type TalkKoHelpInput,
+  type TalkKoHelpOutput,
+  talkKoHelpSpec,
+} from "@/core/ai/calls/talk-ko-help";
+import {
   type ThinkoutInput,
   type ThinkoutOutput,
   thinkoutSpec,
@@ -109,4 +114,17 @@ export async function thinkoutTurn(
 ): Promise<AiOutcome<ThinkoutOutput>> {
   const allowedWords = await allowedWordsOf(deps?.db ?? getDb(), input.level);
   return runAiCall(thinkoutSpec, { ...input, allowedWords }, ctx, deps);
+}
+
+/**
+ * 수업 안 한국어 도움 한 번(목적 talk_ko_help — 수업 안 한국어로 묻기 spec 설계 4, 흘려 받지 않음). 회화 턴 호출과 따로 부른다(대화 사슬 ·
+ * talk_turns 에 넣지 않음). 실패 · 거절 · 타임아웃이면 부르는 쪽이 호출 실패 꼴의 대신 줄을 쓰고, 검사에 걸린 답은 검사 뒤 값이 비어 온다
+ * (talkKoHelpResultOf 가 검사 걸림 꼴로 가른다). 하루 안전 상한 · ai_calls 기록 · 재시도는 runAiCall 그대로다(6.1).
+ */
+export function askKoHelp(
+  input: TalkKoHelpInput,
+  ctx: AiCallContext,
+  deps?: AiDeps,
+): Promise<AiOutcome<TalkKoHelpOutput>> {
+  return runAiCall(talkKoHelpSpec, input, ctx, deps);
 }

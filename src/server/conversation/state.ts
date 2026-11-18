@@ -15,6 +15,7 @@ import {
 import type { TalkCarry } from "@/core/conversation/chances";
 import { chatFlowRowsOf } from "@/core/conversation/chat-turn-core";
 import type { HintTier } from "@/core/conversation/hints";
+import type { KoHelpTurnRow } from "@/core/conversation/ko-help";
 import {
   isChatSession,
   leadModeOf,
@@ -53,6 +54,7 @@ import {
   profiles,
   profileTracks,
   sessions,
+  talkKoHelps,
   talkSummaries,
   talkTurns,
   unitProgress,
@@ -827,5 +829,45 @@ async function lessonStateOf(
     learningDay,
     timezone,
     dayStartHour,
+  };
+}
+
+// ── 한국어 도움 행(수업 안 한국어로 묻기 묶음 4-나 — talk_ko_helps, talk_turns 와 따로) ──
+
+export type TalkKoHelpRow = typeof talkKoHelps.$inferSelect;
+
+/**
+ * 그 세션의 한국어 도움 행(턴 번호 · 순번 차례). 화면 자료(이어 하기)와 한국어 질문 길(다음 순번)이 읽는다. talk_turns 는 읽지 않는다 — 흐름 ·
+ * 셈은 이 행을 보지 않는다(spec 설계 5 · 6, C221).
+ */
+export async function readKoHelpRows(
+  db: DbOrTx,
+  sessionId: string,
+): Promise<TalkKoHelpRow[]> {
+  const rows = await db
+    .select()
+    .from(talkKoHelps)
+    .where(eq(talkKoHelps.sessionId, sessionId));
+  return rows.sort((a, b) => a.turnNo - b.turnNo || a.seq - b.seq);
+}
+
+/**
+ * talk_turns 행 → 읽을 턴 번호 고르기의 꼴(core koHelpTurnNosOf). 아이 행은 되물음 표지(ask_again), 선생님 행은 move 의 까닭 ask_again 이나 새
+ * 엔진 move.lead.move ask_again 이면 되묻는 차례다(plan 정한 것 10 · 다시 맞춤 2026-11-17).
+ */
+export function koHelpTurnRowOf(
+  row: Pick<TalkTurnRow, "speaker" | "turnNo" | "askAgain" | "move">,
+): KoHelpTurnRow {
+  if (row.speaker === "child")
+    return {
+      speaker: "child",
+      turnNo: row.turnNo,
+      askAgain: row.askAgain === true,
+    };
+  const move = readTalkMove(row.move);
+  return {
+    speaker: "teacher",
+    turnNo: row.turnNo,
+    askAgain: move?.why === "ask_again" || move?.lead?.move === "ask_again",
   };
 }

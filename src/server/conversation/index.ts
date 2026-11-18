@@ -55,6 +55,16 @@ import {
   talkStopOf,
 } from "@/core/conversation/ending";
 import {
+  KO_ASK_SETTING_KEYS,
+  type KoAskSettings,
+  koAskSettingsFrom,
+} from "@/core/conversation/ko-ask";
+import {
+  koHelpTurnNosOf,
+  koHelpViewsOf,
+  type TalkKoHelpView,
+} from "@/core/conversation/ko-help";
+import {
   isChatSession,
   isLeadSession,
   leadModeStartField,
@@ -153,13 +163,16 @@ import {
   hintViewsOf,
   isTalkOpen,
   knownSayOf,
+  koHelpTurnRowOf,
   lessonTurnOf,
   metSayOf,
   onTalkSessionEnded,
   positiveInt,
+  readKoHelpRows,
   readTalkAnyState,
   snapshotNumber,
   type TalkAnyState,
+  type TalkKoHelpRow,
   type TalkLessonState,
   type TalkServerDeps,
   type TalkTurnRow,
@@ -203,6 +216,8 @@ export const TALK_NOTICE_KINDS = [
   "talk_test_hint_nudge",
   /** ①② 처음 안내 '번호를 누르면 답을 들려줘요'(U5-11 — 프로필마다 한 번, R-29). */
   "talk_answer_tip",
+  /** 수업 안 한국어 질문 첫 안내 '모르는 말은 한국어로 물어봐요'(수업 안 한국어로 묻기 spec 설계 2 · 접점 라 — 프로필마다 한 번). */
+  "talk_ko_ask_tip",
 ] as const;
 
 function logFailure(what: string, error: unknown) {
@@ -1396,6 +1411,8 @@ export type TalkLessonViewSettings = {
   };
   /** ai.timeout_seconds.feedback */
   feedbackTimeoutSeconds: number;
+  /** 수업 안 한국어 질문(talk.ko_ask_* · speech.lang_ko · speech.end_silence_seconds.ko_ask — 접점 라, 끔이면 on 거짓이고 단추가 없다). */
+  koAsk: KoAskSettings;
 };
 
 const TALK_SPEECH_KEYS = [
@@ -1426,6 +1443,7 @@ async function lessonViewSettingsOf(
           ...SPEECH_SETTING_KEYS,
           ...TALK_SPEECH_KEYS,
           ...DISCARD_SETTING_KEYS,
+          ...KO_ASK_SETTING_KEYS,
         ].map((key) => [key, z.unknown()]),
       ),
       "speech.max_retries": count,
@@ -1471,6 +1489,7 @@ async function lessonViewSettingsOf(
         waitLineSeconds: num("talk.wait_line_seconds"),
       },
       feedbackTimeoutSeconds: num("ai.timeout_seconds.feedback"),
+      koAsk: koAskSettingsFrom(read),
     },
     friendship: {
       per: num("talk.friendship_per_talk"),
@@ -1568,7 +1587,11 @@ export type TalkLessonCurrent = {
   chat?: ChatEndSignal;
 };
 
-function currentOf(
+/**
+ * 지금 선생님 차례(이어 하기 자료). 한국어 질문 길(ko-help.ts)도 이 함수로 선생님의 지금 말 전체와 소리 줄을 얻는다 — 세 방식 공통이고 물음이
+ * 없는 차례에서도 글이 빈 값이 아니다(다시 맞춤 2026-11-17 · 이야기 방식 AC-27m).
+ */
+export function lessonCurrentOf(
   state: TalkLessonState,
   { aiResting }: { aiResting: boolean },
 ): TalkLessonCurrent | null {
@@ -1599,6 +1622,20 @@ function currentOf(
     ...(leadSound === null ? {} : { leadSound }),
     ...(chat ? { chat: chatResumeSignalOf(state, aiResting) } : {}),
   };
+}
+
+/**
+ * 화면 자료의 한국어 도움 목록(접점 라): 지금 열린 아이 차례가 읽는 턴 번호(core koHelpTurnNosOf — 살아 있는 행으로 고름)의 도움은 open 참.
+ * 1~3단계는 open 이 거짓인 항목의 가르친 표현 글을 내리지 않는다(T2 · plan 위험 8).
+ */
+export function lessonKoHelpsOf(
+  state: Pick<TalkLessonState, "liveRows" | "spec">,
+  rows: readonly TalkKoHelpRow[],
+): (TalkKoHelpView & { open: boolean })[] {
+  return koHelpViewsOf(rows, {
+    openTurnNos: koHelpTurnNosOf(state.liveRows.map(koHelpTurnRowOf)),
+    lowBand: isLowBand(state.spec),
+  });
 }
 
 const imageKeyOf = (imageKey: string | undefined) =>
@@ -1698,6 +1735,11 @@ export type TalkLessonView = {
   /** 대화 기록(살아 있는 행, 정리 토막 전). 묶음 10 talkLogOf 가 고른다. */
   log: TalkLessonLogRow[];
   current: TalkLessonCurrent | null;
+  /**
+   * 이 수업의 한국어 도움(talk_ko_helps — 이어 하기 · 대화 기록에서 두 표를 합쳐 그린다, 접점 라). open 은 지금 열린 아이 차례가 읽는 도움인가(되묻는
+   * 차례를 건너 이어받은 것 포함 [N-1])이고, 1~3단계는 open 이 거짓인 항목의 teachEn 을 싣지 않는다.
+   */
+  koHelps: (TalkKoHelpView & { open: boolean })[];
   /** 선생님 말이 없는 마지막 아이 행 — 화면이 같은 시도 id 로 다시 보낸다(8절 · AC-15f). 들리지 않음 행이면 nospeech(묶음 11 재검토 N-3). */
   retryTurn: LessonRetryTurn | null;
   /**
@@ -1847,7 +1889,8 @@ export async function loadTalkLessonView(
       card: state.card,
       koMeaning: state.spec.koMeaning,
     }),
-    current: currentOf(state, { aiResting: resting }),
+    current: lessonCurrentOf(state, { aiResting: resting }),
+    koHelps: lessonKoHelpsOf(state, await readKoHelpRows(db, sessionId)),
     retryTurn: lessonRetryTurnOf(state.orphan),
     retryLead: lessonRetryLeadOf(state.orphan),
     prep,
@@ -1908,7 +1951,7 @@ async function moveOutcomeOf(
     step,
     position: positionViewOf(after.position),
     // 'AI 쉬는 중'은 이 액션이 읽지 않는다(이야기 방식 끝 줄 신호는 거짓으로 낸다 — 쉬는 중이면 턴 길이 그 요청에서 알린다)
-    current: currentOf(after, { aiResting: false }),
+    current: lessonCurrentOf(after, { aiResting: false }),
     prep: place ? await prepViewOf(tx, after, place) : null,
   };
 }
