@@ -3,6 +3,8 @@
 // (나) 4단계부터 지난 한국어 도움 말풍선을 누르면 가르친 표현 하나만 다시 읽고(한국어 답은 읽지 않음), 답이 빈 행은 물은 말만 그리며 다시 부르지
 // 않는다. 1~3단계는 누를 것도 표현 글도 없다(rev-b5b I-1, 정본 03 대화 기록). (다) 표현 답의 소리가 시작 알림 전에 '끊김'으로 끝나도 아이 차례가
 // 열린다(재검토 rev-b5a-2 N-1).
+// (라) 지금 차례의 답이 빈 행(이어 하기 — 열린 행)은 곁 말풍선 자리에 질문만 그리고 딱지 · 한국어 답이 없으며, 한국어 질문 요청을 다시 보내지 않고
+// 다음 영어 턴 요청의 koHelp 에 들지 않는다(재검토 rev-b5b-2 N-1 — 화면 고침 3 '다').
 import {
   run as advance,
   openChat,
@@ -73,8 +75,8 @@ const answered = (
   replay: "taught",
   open,
 });
-/** 답이 빈 행(호출 중에 끊긴 것). */
-const pending = (turnNo, seq) => ({
+/** 답이 빈 행(호출 중에 끊긴 것). open 은 지금 차례에 열린 행인가(이어 하기의 live). */
+const pending = (turnNo, seq, open = false) => ({
   turnNo,
   seq,
   question: ASKED_ONLY,
@@ -83,8 +85,10 @@ const pending = (turnNo, seq) => ({
   textShown: false,
   fallback: null,
   replay: "teacher_line",
-  open: false,
+  open,
 });
+/** 쪽의 지금 선생님 행 번호(entry.tsx turnNo — 처음 기록 칸의 지난 차례 쌍 3 뒤). */
+const CURRENT_TURN = 4;
 
 async function until(p, test, limit = 8000, step = 100) {
   for (let t = 0; t < limit; t += step) {
@@ -257,6 +261,53 @@ async function cancelledBeforeStart(browser, url, check) {
   await p.context().close();
 }
 
+/** (라) N-1: 지금 차례의 열린 빈 행 — 곁 말풍선 자리에 질문만, 딱지 없음, 질문 요청 0, 다음 턴 koHelp 에 없음. */
+async function liveEmptyRow(browser, url, check) {
+  const p = await openChat(browser, url, {
+    viewport: PORTRAIT,
+    config: {
+      level: 3,
+      recognitions: [EN_RECOGNITION],
+      resumeKoHelps: [pending(CURRENT_TURN, 1, true)],
+    },
+  });
+  const opened = await untilChild(p);
+  const live = p.locator("[data-ko-exchange]").filter({ hasText: ASKED_ONLY });
+  const shown = await live.count();
+  const inLog = await p
+    .locator("[data-ko-log]")
+    .filter({ hasText: ASKED_ONLY })
+    .count();
+  const questionOnly =
+    shown === 1 &&
+    (await live.locator("[data-ko-question]").innerText()) === ASKED_ONLY &&
+    (await live
+      .locator(
+        "[data-ko-badge], [data-ko-say], [data-ko-help], [data-ko-replay]",
+      )
+      .count()) === 0;
+  await advance(p, 1500);
+  const koCallsBefore = await p.evaluate(() => window.__chat.koCalls.length);
+  const req = await sendEnglish(p);
+  const koHelp = req?.koHelp;
+  const koCalls = await p.evaluate(() => window.__chat.koCalls.length);
+  const errors = (await recordOf(p)).pageErrors;
+  check(
+    "지금 차례의 답이 빈 행(이어 하기): 곁 말풍선 자리에 질문만 · 딱지 없음 · 한국어 질문 요청 0 · 다음 턴 koHelp 에 없음(rev-b5b-2 N-1)",
+    opened &&
+      questionOnly &&
+      inLog === 0 &&
+      koCallsBefore === 0 &&
+      koCalls === 0 &&
+      req !== undefined &&
+      (koHelp === undefined ||
+        (Array.isArray(koHelp) && koHelp.length === 0)) &&
+      errors.length === 0,
+    `열림 ${opened} · 곁 말풍선 ${shown} · 질문만 ${questionOnly} · 기록 칸에 ${inLog} · 질문 요청 ${koCallsBefore} → ${koCalls} · 다음 턴 koHelp ${JSON.stringify(koHelp)} · 쪽 오류 ${errors.join(" | ")}`,
+  );
+  await p.context().close();
+}
+
 export async function run({ browserType, url, check }) {
   const browser = await browserType.launch();
   try {
@@ -264,6 +315,7 @@ export async function run({ browserType, url, check }) {
     await pastHelps(browser, url, check, 4);
     await pastHelps(browser, url, check, 3);
     await cancelledBeforeStart(browser, url, check);
+    await liveEmptyRow(browser, url, check);
   } finally {
     await browser.close();
   }
