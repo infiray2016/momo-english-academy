@@ -309,6 +309,11 @@ describe("수업 안 한국어 질문 길(통합)", () => {
     expect(again).toEqual(first);
     expect(koHelpRequests()).toHaveLength(1);
     expect(await koHelpRows(sessionId)).toHaveLength(1);
+    // 진행 중인 세션은 프로필 · 영역마다 하나뿐이다(sessions_one_in_progress_unique). 앞 세션을 닫은 뒤에 새 세션을 연다(도움 행은 남는다)
+    await db
+      .update(sessions)
+      .set({ status: "aborted" })
+      .where(eq(sessions.id, sessionId));
     const other = await openSession(profileId);
     expect(await ask(other, { clientAttemptId: id })).toEqual({ t: "stale" });
     expect(await koHelpRows(other)).toHaveLength(0);
