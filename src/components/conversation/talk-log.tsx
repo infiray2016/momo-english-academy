@@ -118,10 +118,10 @@ function PastKoHelp({
         {fillName(entry.question, englishName)}
       </p>
       {say ? (
-        <div className="relative self-start pt-4">
+        <div className="relative self-start pt-4.5">
           <span
             data-ko-badge=""
-            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
+            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-xl"
           >
             {KO_HELP_TEXT.badge}
           </span>
@@ -135,14 +135,14 @@ function PastKoHelp({
                 FOCUS_RING,
                 CHILD_SIZE.target,
                 BUBBLE_CLASS,
-                "pt-5 text-left",
+                "pt-6 text-left",
               )}
             >
               {say}
               {taught}
             </button>
           ) : (
-            <div className={cn(BUBBLE_CLASS, "pt-5")}>{say}</div>
+            <div className={cn(BUBBLE_CLASS, "pt-6")}>{say}</div>
           )}
         </div>
       ) : null}
@@ -462,16 +462,50 @@ const DOM_KEEP_ACCESS: KeepNodeAccess<Element> = {
   children: (el) => Array.from(el.children),
 };
 
-/** 지금 턴(없으면 지난 줄의 마지막 줄)이 온전히 보이는 칸 높이(px): 그 조각의 높이 + 칸의 위아래 안쪽 여백. */
+/** 지금 턴 안의 곁 말풍선(한국어 문답 · 답을 기다리는 질문 — 수업 안 한국어로 묻기). 한국어로 묻지 않는 수업에는 없다. */
+const TALK_LOG_SIDE_SELECTOR = "[data-ko-exchange], [data-ko-pending]";
+
+/**
+ * 칸이 온전히 보여야 할 조각의 높이(순수, 13절 C226 보완 2 (1)): 곁 말풍선이 없으면 지금 턴 전체, 있으면 마지막 곁 말풍선의 위 끝부터 지금 턴의 아래
+ * 끝까지다 — 지금 질문과 앞 곁 말풍선은 칸 위로 넘어가 칸 안에서 넘겨 본다(C241 보완 5 가 받아들인 꼴). 그래서 한 차례에 두 번 묻거나 안내가 떠도
+ * 칸이 더 줄어 쪽을 넘기지 않는다.
+ */
+export function talkLogKeepSpanOf({
+  top,
+  bottom,
+  sideTop,
+}: {
+  /** 지금 턴(없으면 지난 줄의 마지막 줄)의 위 끝(px). */
+  top: number;
+  bottom: number;
+  /** 마지막 곁 말풍선의 위 끝(px, 없으면 undefined). */
+  sideTop?: number | undefined;
+}): number {
+  const from = sideTop === undefined ? top : Math.max(top, sideTop);
+  return Math.max(0, bottom - from);
+}
+
+/** 지금 턴(없으면 지난 줄의 마지막 줄 · 곁 말풍선이 있으면 마지막 곁 말풍선부터)이 온전히 보이는 칸 높이(px): 그 높이 + 칸의 위아래 안쪽 여백. */
 function talkLogMinHeightOf(log: HTMLElement): number {
+  const now = log.querySelector(":scope > [data-talk-log-now]");
   const block =
-    log.querySelector(":scope > [data-talk-log-now]") ??
-    log.querySelector(':scope > [role="log"]')?.lastElementChild;
+    now ?? log.querySelector(':scope > [role="log"]')?.lastElementChild;
   const style = window.getComputedStyle(log);
   const pad =
     Number.parseFloat(style.paddingTop) +
     Number.parseFloat(style.paddingBottom);
-  return (block?.getBoundingClientRect().height ?? 0) + pad;
+  if (!block) return pad;
+  const box = block.getBoundingClientRect();
+  const side = now
+    ? Array.from(now.querySelectorAll(TALK_LOG_SIDE_SELECTOR)).at(-1)
+    : undefined;
+  return (
+    talkLogKeepSpanOf({
+      top: box.top,
+      bottom: box.bottom,
+      sideTop: side?.getBoundingClientRect().top,
+    }) + pad
+  );
 }
 
 /** keepLessonInView 의 갈래(S5 fix 8). 모두 없으면 fix 7 그대로(세로만 맞춤 · 아래로만 넘김). */
@@ -484,6 +518,11 @@ export type LessonKeepOptions = {
   belowFloor?: number | undefined;
   /** 기기를 돌린 뒤다: 맞춘 뒤 남는 쪽 넘김을 거둔다(turnedBackScrollOf — 맞추는 방향에서만). */
   turned?: boolean;
+  /**
+   * 다시 맞출 때마다 남는 쪽 넘김을 거둔다(돌린 뒤와 같은 셈 — 맞추는 방향에서만). 한국어로 묻는 수업에서 아래 조각이 작아질 때(확인 칸이 닫힘 · 답이
+   * 옴 · 안내 줄이 바뀜) 넘겨진 쪽이 남아 위 띠가 잘리지 않게(13절 C226 보완 2 (1)).
+   */
+  settle?: boolean;
 };
 
 /** keepLessonInView 의 결과: 넘긴 거리(위로 거두면 음수)와 이번에 잰 칸 아래 조각의 높이(칸을 맞춘 때만). */
@@ -542,7 +581,7 @@ export function keepLessonInView(
     window.scrollBy(0, by);
     return { by, ...kept };
   }
-  if (options.turned && fits) {
+  if ((options.turned || options.settle) && fits) {
     const back = turnedBackScrollOf({
       scrollY: window.scrollY,
       keepBottom,

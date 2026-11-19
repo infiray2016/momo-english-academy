@@ -17,17 +17,22 @@ import {
   talkSoundEndDue,
   talkSoundEndSceneOf,
 } from "@/components/conversation/talk-frame";
-import { lessonFitLandscapeOf } from "@/components/conversation/talk-log";
+import {
+  lessonFitLandscapeOf,
+  talkLogKeepSpanOf,
+} from "@/components/conversation/talk-log";
 import {
   SOUND_TRACK_START,
   soundTrackOf,
 } from "@/components/session/sound-retry";
 import {
   KO_ASK_NOTICE,
+  KO_ASK_RETRY,
   KO_ASK_TIP,
   KO_HELP_TURN_ENTRIES_MAX,
   koAnsweredOf,
   koAskNoticeOf,
+  koAskNoticeTextOf,
   koCarrySoundsOf,
   koChildOpenOf,
   koFailStepOf,
@@ -36,6 +41,7 @@ import {
   koHelpTurnPartOf,
   koListenEndOf,
   koResumeOf,
+  koSentencesOf,
   koSoundDroppedOf,
   koTaughtOf,
   koTipShownOf,
@@ -127,6 +133,50 @@ describe("AC-25f 합친 안내 고르기(정한 것 12 · [N-3])", () => {
     expect(koAskNoticeOf({ hintButton: false, tiersLeft: true })).toBe(
       KO_ASK_NOTICE.talk,
     );
+  });
+
+  it("C226 보완 2 (5) 꺼짐(unavailable)도 그 턴의 힌트 상태로 고르고, 오류(retry)는 단추가 남으면 '한 번 더 물어봐요' · 숨었으면 합친 안내, 글(text)은 그대로", () => {
+    const open = { hintButton: true, tiersLeft: true, hidden: false };
+    const spent = { hintButton: true, tiersLeft: false, hidden: false };
+    const none = { hintButton: false, tiersLeft: true, hidden: false };
+    expect(koAskNoticeTextOf({ kind: "unavailable" }, open)).toBe(
+      KO_ASK_NOTICE.hint,
+    );
+    expect(koAskNoticeTextOf({ kind: "unavailable" }, spent)).toBe(
+      KO_ASK_NOTICE.talk,
+    );
+    expect(koAskNoticeTextOf({ kind: "unavailable" }, none)).toBe(
+      KO_ASK_NOTICE.talk,
+    );
+    expect(
+      koAskNoticeTextOf({ kind: "unavailable" }, { ...open, hidden: true }),
+    ).toBe(KO_ASK_NOTICE.hint);
+    for (const hint of [open, spent, none])
+      expect(koAskNoticeTextOf({ kind: "retry" }, hint)).toBe(KO_ASK_RETRY);
+    expect(
+      koAskNoticeTextOf({ kind: "retry" }, { ...spent, hidden: true }),
+    ).toBe(KO_ASK_NOTICE.talk);
+    expect(
+      koAskNoticeTextOf({ kind: "text", text: "인터넷이 끊겼어요" }, open),
+    ).toBe("인터넷이 끊겼어요");
+    expect(KO_ASK_RETRY).toBe("지금은 대답을 못 했어요. 한 번 더 물어봐요");
+  });
+
+  it("C226 보완 2 (5) 두 문장 안내는 문장 끝 뒤에서만 나눈다(문장 끝 글자는 앞 문장에 남김), 한 문장은 그대로", () => {
+    expect(koSentencesOf(KO_ASK_NOTICE.hint)).toEqual([
+      "지금은 한국어로 물어볼 수 없어요.",
+      "'힌트'를 눌러 봐요",
+    ]);
+    expect(koSentencesOf(KO_ASK_NOTICE.talk)).toEqual([
+      "지금은 한국어로 물어볼 수 없어요.",
+      "아는 말로 말해 봐요",
+    ]);
+    expect(koSentencesOf(KO_ASK_RETRY)).toEqual([
+      "지금은 대답을 못 했어요.",
+      "한 번 더 물어봐요",
+    ]);
+    expect(koSentencesOf(KO_ASK_TIP)).toEqual([KO_ASK_TIP]);
+    expect(koSentencesOf("  ")).toEqual([]);
   });
 
   it("문구는 정본 글자 그대로이고 '잘 모르겠어요' · '이 기기에서는'을 짚지 않는다", () => {
@@ -509,5 +559,19 @@ describe("AC-25a 한국어로 묻는 수업의 가로 화면 — 대화 장면�
     expect(
       lessonKeepInViewOf({ wrapShown: false, inPrep: true, phase: "ko_help" }),
     ).toBe(false);
+  });
+});
+
+describe("C226 보완 2 (1) 기록 칸이 온전히 보여야 할 조각(talkLogKeepSpanOf)", () => {
+  it("곁 말풍선이 없으면 지금 턴 전체, 있으면 마지막 곁 말풍선의 위 끝부터 지금 턴의 아래 끝까지", () => {
+    expect(talkLogKeepSpanOf({ top: 100, bottom: 500 })).toBe(400);
+    expect(talkLogKeepSpanOf({ top: 100, bottom: 500, sideTop: 320 })).toBe(
+      180,
+    );
+  });
+
+  it("곁 말풍선의 위 끝이 지금 턴 위로 나가 있어도 지금 턴보다 크지 않고, 0 아래로 내려가지 않는다", () => {
+    expect(talkLogKeepSpanOf({ top: 100, bottom: 500, sideTop: 40 })).toBe(400);
+    expect(talkLogKeepSpanOf({ top: 100, bottom: 500, sideTop: 600 })).toBe(0);
   });
 });

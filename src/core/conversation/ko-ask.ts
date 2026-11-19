@@ -216,6 +216,42 @@ export function koAskNoticeOf({
   return hintButton && tiersLeft ? KO_ASK_NOTICE.hint : KO_ASK_NOTICE.talk;
 }
 
+/** 요청이 오류로 끝나 한국어 단추가 남는 때의 안내(13절 C226 보완 2 (5) — '물어볼 수 없어요'와 남은 단추가 엇갈리지 않게). */
+export const KO_ASK_RETRY = "지금은 대답을 못 했어요. 한 번 더 물어봐요";
+
+/**
+ * 안내 줄에 남길 한국어 안내(틀 · 아이 차례가 함께 쥔다): 합친 안내(unavailable — 실패 문턱 · 그 언어만 안 됨 · 꺼짐 응답), 오류 응답(retry),
+ * 그대로 보일 글(text — 끊김 안내 등). 합친 안내 · 오류 안내의 글은 그리는 때 그 턴의 힌트 상태로 고른다(koAskNoticeTextOf).
+ */
+export type KoAskNotice =
+  | { kind: "unavailable" }
+  | { kind: "retry" }
+  | { kind: "text"; text: string };
+
+/**
+ * 안내 줄의 글(순수, 13절 C226 보완 2 (5)): 합친 안내는 그 턴의 힌트 상태로 고르고(koAskNoticeOf), 오류 안내는 단추가 남으면 '한 번 더 물어봐요',
+ * 단추가 숨었으면 합친 안내다. 그대로 보일 글은 그 글이다.
+ */
+export function koAskNoticeTextOf(
+  notice: KoAskNotice,
+  hint: { hintButton: boolean; tiersLeft: boolean; hidden: boolean },
+): string {
+  if (notice.kind === "text") return notice.text;
+  if (notice.kind === "retry" && !hint.hidden) return KO_ASK_RETRY;
+  return koAskNoticeOf(hint);
+}
+
+/**
+ * 안내 글을 문장으로 나눈다(순수, 13절 C226 보완 2 (5) — 두 문장 안내는 문장 사이에서만 줄이 바뀌게 문장마다 감싼다). 문장 끝(. ? !) 뒤의 빈칸에서
+ * 자르고 문장 끝 글자는 앞 문장에 남긴다. 한 문장이면 그 글 하나다.
+ */
+export function koSentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=[.?!])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+}
+
 /**
  * 답 뒤의 영어 소리(순수, spec 설계 2 '답의 소리' · 정한 것 11 · [N-2]): 가르친 표현이 있으면 그 표현이고, 1~3단계(글 없는 단계)만 한국어 답 글이
  * 보인 뒤 soundPauseMs 를 쉬고 읽으며 그 소리가 시작한 뒤(또는 들려주지 못한 뒤)에 아이 차례를 연다(waitOpen). 4단계부터의 표현은 쉼 없이 글과

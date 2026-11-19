@@ -80,9 +80,18 @@ export async function run({ browserType, url, check }) {
         );
         const box = await p.locator("[data-talk-log]").boundingBox();
         await p.mouse.move(box.x + box.width / 2, box.y + 40);
-        await p.mouse.wheel(0, -400);
-        await wait(p, 400);
-        const raised = await scrollOf(p);
+        // 읽기가 시작되는 순간에는 새 말풍선이 자라며 칸이 맨 아래를 따라가, 올린 것이 가끔 되돌려진다(2026-11-19: 화면 고침 5 앞 판에서도
+        // 24번 가운데 1번, 뒤 판에서 48번 가운데 9번). 올리는 동작 자체는 talk-log-wheel · chat-log-away 가 증명하고, 이 장면은 '올린 뒤'를
+        // 보므로 올려질 때까지 읽는 동안 몇 번 더 올린다. 몇 번째에 올려졌는지는 판정 줄에 적는다(늘면 보이게)
+        let raised = null;
+        let tries = 0;
+        while (tries < 4) {
+          tries += 1;
+          await p.mouse.wheel(0, -400);
+          await wait(p, 400);
+          raised = await scrollOf(p);
+          if (raised !== null && raised.top < raised.max - 2) break;
+        }
         const away = raised !== null && raised.top < raised.max - 2;
         // 쪽지 → 돌아옴 차례 → 돌아온 차례의 조용함
         const backSent = await until(
@@ -106,7 +115,7 @@ export async function run({ browserType, url, check }) {
             backSent &&
             quietBack &&
             rec.pageErrors.length === 0,
-          `첫 조용함 ${firstQuiet} · 올림 ${away}(${JSON.stringify(raised)}) · 칸 사라짐 ${gone} · 돌아옴 요청 ${backSent} · 조용함 ${rec.quiet}(돌아온 차례 ${quietBack}) · 요청 ${rec.requests.map((b) => b.lead ?? "아이").join(",")}`,
+          `첫 조용함 ${firstQuiet} · 올림 ${away}(${tries}번째 · ${JSON.stringify(raised)}) · 칸 사라짐 ${gone} · 돌아옴 요청 ${backSent} · 조용함 ${rec.quiet}(돌아온 차례 ${quietBack}) · 요청 ${rec.requests.map((b) => b.lead ?? "아이").join(",")}`,
         );
         await p.context().close();
       }

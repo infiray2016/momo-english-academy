@@ -23,7 +23,7 @@
 // 화면 · 문구 판정(2026-11-07): 켠 기기의 말하기 단추는 세 상태 글을 겹쳐 너비가 그대로(I-1, SpeakButton steady)이고, 안내 줄은 단추 묶음 바로
 // 아래(단추 쪽 정렬, M-3)이며, 짧은 말 말풍선이나 안내 줄이 나타나면 아이 차례를 움직임 없이 화면 안으로 옮긴다(I-2 — 방향이 바뀌어도).
 import { Volume2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { CHILD_SIZE } from "@/components/activities/common";
 import { SpeakButton } from "@/components/answer/speak-button";
 import {
@@ -46,9 +46,11 @@ import {
 import { OPEN_ALL_HINTS_FROM_DONT_KNOW } from "@/core/conversation/hints";
 import {
   KO_ASK_TIP,
-  koAskNoticeOf,
+  type KoAskNotice,
+  koAskNoticeTextOf,
   koFailStepOf,
   koListenEndOf,
+  koSentencesOf,
   koTipShownOf,
 } from "@/core/conversation/ko-ask";
 import {
@@ -289,9 +291,12 @@ export type ChildKoAsk = {
   onFails: (fails: number, hide: boolean) => void;
   /** 틀이 한국어 질문을 처리하는 중(보냄 · 기다림 · 1~3단계 표현 답의 쉼) — 그동안 모든 단추를 끈다. */
   busy: boolean;
-  /** 안내 줄에 남긴 합친 안내(아이가 그 차례에서 '말하기' · '힌트' · '잘 모르겠어요'를 누를 때까지 — [N-3]). */
-  notice: string | undefined;
-  onNotice: (text: string | undefined) => void;
+  /**
+   * 안내 줄에 남긴 안내(아이가 그 차례에서 '말하기' · '힌트' · '잘 모르겠어요'를 누를 때까지 — [N-3]). 합친 안내 · 오류 안내의 글은 그리는 때 그
+   * 턴의 힌트 상태로 고른다(koAskNoticeTextOf — C226 보완 2 (5)).
+   */
+  notice: KoAskNotice | undefined;
+  onNotice: (notice: KoAskNotice | undefined) => void;
   /** 이 차례에서 받은 도움의 가르친 표현(인식 확인의 들려준 답과 같이 견준다 — 맞으면 1~3단계 바로 보냄). */
   taught: readonly string[];
   /** 인식 확인을 지난 한국어 질문(보냄 · 연 힌트 단 수). */
@@ -1090,9 +1095,7 @@ export function ChildTurn(props: ChildTurnProps) {
       setAttemptSaid((c) =>
         end.kind === "not-heard" ? attemptSaidStep(c, { kind: "failed" }) : c,
       );
-      ko.onNotice(
-        koAskNoticeOf({ hintButton: showHint, tiersLeft: !hintSpent }),
-      );
+      ko.onNotice({ kind: "unavailable" });
       if (end.kind === "not-heard") discard?.again();
       return;
     }
@@ -1266,9 +1269,17 @@ export function ChildTurn(props: ChildTurnProps) {
   // 첫 안내는 남긴 합친 안내가 없을 때 같은 줄에(한 줄 — AC-25k, 그 줄도 화면 안으로 옮긴다 C226 (4))
   const koTipLine =
     !koListening && ko?.notice === undefined && koTipOn && koShown;
+  const koNoticeText =
+    ko?.notice === undefined
+      ? undefined
+      : koAskNoticeTextOf(ko.notice, {
+          hintButton: showHint,
+          tiersLeft: !hintSpent,
+          hidden: ko.hidden,
+        });
   const koLine = koListening
     ? CHILD_TURN_TEXT.koListening
-    : (ko?.notice ?? (koTipLine ? KO_ASK_TIP : undefined));
+    : (koNoticeText ?? (koTipLine ? KO_ASK_TIP : undefined));
   // 안내 줄 한 줄: 마이크 다시 켬(회복)이 먼저, 그다음 한국어 안내 줄, 그다음 버리는 듣기의 '말해 보세요'
   const turnLine =
     props.discard?.view.recovering === true
@@ -1474,15 +1485,17 @@ export function ChildTurn(props: ChildTurnProps) {
                       props.discard?.view.recovering === true
                     }
                     onClick={() => void koSpeak()}
+                    // mx-3: '말하기' 감싸개의 고리 자리(양옆 12px)만큼 비워 '말하기'와 같은 너비 · '잘 모르겠어요'와 사이 28px(표본 — C226 보완 2 (3)).
+                    // 꺼진 꼴은 공용 단추와 같은 옅은 값이고 '가' 표지도 함께 옅어진다(group-disabled — C226 보완 2 (4))
                     className={cn(
                       FOCUS_RING,
                       CHILD_SIZE.target,
-                      "inline-flex items-center justify-center gap-3 rounded-2xl border-[3px] border-dashed border-ink bg-paper px-5 font-heading text-[22px] text-ink disabled:border-ink-off-edge disabled:text-ink-soft",
+                      "group mx-3 inline-flex items-center justify-center gap-3 rounded-2xl border-[3px] border-dashed border-ink bg-paper px-5 font-heading text-[22px] text-ink disabled:cursor-not-allowed disabled:border-ink-off-edge disabled:text-ink-off",
                     )}
                   >
                     <span
                       aria-hidden
-                      className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink bg-tape-3 text-lg"
+                      className="inline-flex size-8 items-center justify-center rounded-full border-2 border-ink bg-tape-3 text-lg group-disabled:border-ink-off-edge group-disabled:bg-paper group-disabled:text-ink-off"
                     >
                       {CHILD_TURN_TEXT.koMark}
                     </span>
@@ -1567,7 +1580,16 @@ export function ChildTurn(props: ChildTurnProps) {
                     ? { "data-ko-tip": "" }
                     : {})}
                 >
-                  {turnLine}
+                  {/* 문장마다 감싸 두 문장 안내는 문장 사이에서만 줄이 바뀐다(C226 보완 2 (5) · 화면 검토 M-4) */}
+                  {koSentencesOf(turnLine).map((sentence, i, all) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: 문장 차례가 곧 열쇠다
+                    <Fragment key={i}>
+                      <span data-ko-sentence="" className="inline-block">
+                        {sentence}
+                      </span>
+                      {i < all.length - 1 ? " " : null}
+                    </Fragment>
+                  ))}
                 </span>
               )}
             </StatusLine>

@@ -67,7 +67,7 @@ import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
 import type { ChatOpen } from "@/core/conversation/chat-turn-plan";
 import type { ClientListen } from "@/core/conversation/client-listen";
 import {
-  KO_ASK_NOTICE,
+  type KoAskNotice,
   type KoCarrySound,
   type KoHelpTurnEntry,
   koAnsweredOf,
@@ -1487,7 +1487,7 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   /** 그 수업의 이어진 한국어 듣기 실패 수(글이 오면 0). */
   const [koFails, setKoFails] = useState(0);
   /** 안내 줄에 남긴 합친 안내(아이의 다음 누름에 지운다 — [N-3]). */
-  const [koNotice, setKoNotice] = useState<string | undefined>();
+  const [koNotice, setKoNotice] = useState<KoAskNotice | undefined>();
   /** 한국어 질문을 보내고 답을 기다리는 동안(선생님 창 '생각' · 점 셋 · 맞장구). */
   const [koWaitingSince, setKoWaitingSince] = useState<number | null>(null);
   const [koPending, setKoPending] = useState<string | null>(null);
@@ -2748,20 +2748,21 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         router.refresh();
         return;
       case "off":
-        // 되돌림 스위치가 꺼졌다 — 그 수업 동안 숨기고 왜 없어졌는지 안내 줄에 남긴다
+        // 되돌림 스위치가 꺼졌다 — 그 수업 동안 숨기고 왜 없어졌는지 안내 줄에 남긴다(글은 아이 차례가 그 턴의 힌트 상태로 고른다 — C226 보완 2 (5))
         setKoHidden(true);
-        setKoNotice(KO_ASK_NOTICE.talk);
+        setKoNotice({ kind: "unavailable" });
         reopen();
         return;
       case "offline":
-        setKoNotice(TALK_TEXT.offline);
+        setKoNotice({ kind: "text", text: TALK_TEXT.offline });
         reopen();
         return;
       case "aborted":
         reopen();
         return;
       default:
-        setKoNotice(KO_ASK_NOTICE.talk);
+        // 오류: 단추가 남으므로 '한 번 더 물어봐요'(C226 보완 2 (5) — 아이 차례가 koAskNoticeTextOf 로 그린다)
+        setKoNotice({ kind: "retry" });
         reopen();
         return;
     }
@@ -3091,6 +3092,16 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
   });
   // 앞 아이 차례에 잰 칸 아래 조각의 가장 작은 높이(잠깐 생긴 짧은 말 · 확인 칸을 뺀 보통 높이 — 선생님 차례의 칸 높이를 이 값으로 셈)
   const childBelow = useRef<number | undefined>(undefined);
+  // 지금 차례에 한국어 도움이 닿았는가(문답 · 답을 기다리는 질문 · 한국어 안내 · 도움 처리 중). 남는 쪽 넘김을 거두는 일(settle)은 이런 차례에만
+  // 건다 — 스위치가 켜져 있어도 한국어로 묻지 않는 차례는 고치기 전과 똑같이 움직인다(13절 C226 보완 2 (1). 수업 전체에 걸면 묻지 않는 차례의
+  // 쪽 넘김까지 달라져, 재현 틀 chat-log-remount 의 흔들림이 6번 가운데 1번에서 3번으로 늘었다). 효과의 의존 배열을 건드리지 않게 ref 로 읽는다
+  const koTouched = useRef(false);
+  koTouched.current =
+    koSet.on &&
+    (koExchanges.length > 0 ||
+      koPending !== null ||
+      koNotice !== undefined ||
+      phase === "ko_help");
   // 그린 바로 뒤 한 번 맞춘다 — 아이 차례 조각이 짧은 말 · 안내 줄에 따라 스스로 하는 화면 안 넘김(child-turn 의 효과)이 맞춘 배치를 보게(D-5)
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -3110,6 +3121,8 @@ function TalkLessonFrameBody({ view }: { view: TalkLessonView }) {
         fitOnly,
         belowFloor: fitOnly ? childBelow.current : undefined,
         turned: rotated,
+        // 한국어 도움이 닿은 차례: 아래 조각이 작아지면 남는 쪽 넘김을 거둔다(C226 보완 2 (1) — 묻지 않는 차례 · 수업은 그대로)
+        settle: koTouched.current,
       });
       rotated = false;
       if (phase === "child" && out.below !== undefined) {

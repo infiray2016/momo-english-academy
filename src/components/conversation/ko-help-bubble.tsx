@@ -60,7 +60,8 @@ export function KoReplayButton({
       className={cn(
         FOCUS_RING,
         CHILD_SIZE.target,
-        "inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-paper px-5 font-heading text-[22px] disabled:border-ink-off-edge disabled:text-ink-soft",
+        // 꺼진 꼴은 공용 단추와 같은 옅은 값(board.tsx — C226 보완 2 (4))
+        "inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-paper px-5 font-heading text-[22px] disabled:cursor-not-allowed disabled:border-ink-off-edge disabled:text-ink-off",
       )}
     >
       <Volume2 aria-hidden className="size-6" />
@@ -107,15 +108,16 @@ export function KoHelpBubble({
         {fillName(exchange.question, englishName)}
       </p>
       {exchange.sayKo.trim() === "" ? null : (
-        <div data-ko-help="" className="relative self-start pt-4">
-          {/* B1 딱지: 말풍선 위 테두리에 걸친 '한국어 도움'(글로 밝힘 — 색만으로 가르지 않는다) */}
+        <div data-ko-help="" className="relative self-start pt-4.5">
+          {/* B1 딱지: 말풍선 위 테두리에 걸친 '한국어 도움'(글로 밝힘 — 색만으로 가르지 않는다). 글은 아이용 20px(4절 · C226 보완 2 (2)) — 딱지 높이
+              36px 의 절반(pt-4.5)이 말풍선 위로 나오고, 말풍선 위 안쪽 여백(pt-6)이 딱지 아래를 비운다 */}
           <span
             data-ko-badge=""
-            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-base"
+            className="absolute top-0 left-4 rounded-full border-2 border-ink bg-tape-3 px-3 py-0.5 font-heading text-xl"
           >
             {KO_HELP_TEXT.badge}
           </span>
-          <div className={cn(BUBBLE_CLASS, "pt-5")}>
+          <div className={cn(BUBBLE_CLASS, "pt-6")}>
             <p lang="ko" data-ko-say="" className={CHILD_SIZE.guide}>
               {fillName(exchange.sayKo, englishName)}
             </p>
@@ -126,10 +128,12 @@ export function KoHelpBubble({
                 data-ko-taught=""
                 disabled={!canReplay}
                 onClick={onReplay}
+                // 누르는 곳 56px 이상(4절 · C226 보완 2 (7))
                 className={cn(
                   FOCUS_RING,
                   CHILD_SIZE.english,
-                  "self-start text-left font-en font-bold",
+                  CHILD_SIZE.target,
+                  "inline-flex items-center self-start text-left font-en font-bold",
                 )}
               >
                 {fillName(exchange.shownEn, englishName)}
