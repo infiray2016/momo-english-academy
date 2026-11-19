@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { TALK_LEAD_TEXT_L3U1 } from "@/core/ai/calls/talk-lead";
+import { KO_HELP_TAUGHT_SPELLING_NOTE } from "@/core/conversation/ko-help";
 import { talkMoveOf } from "@/core/conversation/move";
 import { situationRotationOf } from "@/core/conversation/situation";
 import { createStageTimer } from "@/core/conversation/timing";
@@ -75,7 +76,7 @@ let unitWord: string;
 let unitWords: readonly string[] = [];
 
 const TAUGHT = "I like gimbap.";
-const LINE = `Korean help before this answer: taught '${TAUGHT}'`;
+const LINE = `Korean help before this answer: taught '${TAUGHT}' ${KO_HELP_TAUGHT_SPELLING_NOTE}`;
 const MEANING_LINE = "Korean help before this answer: meaning only";
 const KO_LINE_HEAD = "Korean help before this answer:";
 /** Claude 주도 방식 사실 알림의 한국어 도움 줄(13절 C240 · 묶음 4-라). */
@@ -680,7 +681,7 @@ describe("AC-25o 가르친 표현과의 일치 · 귀띔 줄(기존 방식 1~3�
     });
     expect(helped.child.hintKind).toBe("english");
     expect(helped.child.sentUserMessage).toContain(
-      `Korean help before this answer: taught '${taught}'`,
+      `Korean help before this answer: taught '${taught}' ${KO_HELP_TAUGHT_SPELLING_NOTE}`,
     );
     expect(helped.child.stuckPhrase).toBeNull();
   });
@@ -700,7 +701,7 @@ describe("AC-25o 가르친 표현과의 일치 · 귀띔 줄(기존 방식 1~3�
     expect(run.child.stuckPhrase).toBe(text);
     const lines = (run.child.sentUserMessage ?? "").split("\n");
     const at = lines.indexOf(
-      `Korean help before this answer: taught '${taught}'`,
+      `Korean help before this answer: taught '${taught}' ${KO_HELP_TAUGHT_SPELLING_NOTE}`,
     );
     expect(at).toBeGreaterThan(1);
     expect(lines[at - 1]).toBe(

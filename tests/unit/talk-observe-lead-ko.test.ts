@@ -256,7 +256,8 @@ describe("대본 도구의 Claude 주도 길 — 한국어 도움 뒤 차례(서
         }),
       );
 
-    // (2) 되묻는 차례 뒤 아이 차례(도움 칸 없음)는 앞 차례의 도움을 이어받는다 — 가르친 표현과 맞은 말이면 막힘 무름
+    // (2) 되묻는 차례 뒤 아이 차례(도움 칸 없음)는 앞 차례의 도움을 이어받는다 — 대접 · 사실 줄 · 힌트 종류가 서버와 같다('Gimbap.' 은 가르친
+    // 표현과 1/3 만 맞아 막힘 무름은 거짓 쪽이다. 참 쪽은 아래 '막힘 무름이 참' 시험이 본다, rev-b4d-2 N-1)
     const inherited = sim.lead.prepare(child({ say: "Gimbap." }, 2));
     if (!inherited.ok) throw new Error(inherited.reason);
     const standing2 = serverStandingOf(sim.rows, koRows);
@@ -321,6 +322,57 @@ describe("대본 도구의 Claude 주도 길 — 한국어 도움 뒤 차례(서
       r.role === "child" ? [r.koHelp] : [],
     );
     expect(childKo).toEqual([true, true, false, true]);
+  });
+
+  it("AC-25o [rev-b4d-2 N-1] 짝: 도움 뒤 가르친 표현과 문턱 이상 맞는 두 낱말 말은 읽기 칸이 막힘 갈래여도 막힘이 아니고(서버와 같은 taughtMatched), 도움 없는 같은 차례는 막힘이다", () => {
+    const m = materials3();
+    const taught = "Gimbap, please.";
+    const say = "Gimbap please.";
+    const help = [{ ...taughtHelp[0], teachEn: taught }];
+    const stuckReply = leadResult({
+      reading: "does_not_fit",
+      move: "react_and_follow_up",
+      say: "Yummy! What else do you like?",
+    });
+    // 도움 없는 같은 차례: 두 낱말 말이라 isEnglishSaying(·,3) 이 무르지 않고, 막힘 갈래 그대로 막힘이다
+    const plainSim = leadTalking(m);
+    const plain = plainSim.lead.prepare(child({ say }, 1));
+    if (!plain.ok) throw new Error(plain.reason);
+    expect(plain.turn.ko.lead.taughtMatched).toBe(false);
+    plainSim.lead.finish(plain.turn, stuckReply);
+    expect(plainSim.rows.findLast((r) => r.speaker === "child")).toMatchObject({
+      text: say,
+      stuck: true,
+    });
+    // 도움 뒤 같은 차례: 일치율 1(문턱 talk.hint_read_match 이상)이라 막힘 무름
+    const sim = leadTalking(m);
+    const turnNo = sim.rows.findLast((r) => r.speaker === "tori")?.turnNo ?? 0;
+    const koRows: KoHelpStandingRow[] = [
+      {
+        turnNo,
+        seq: 1,
+        kind: "expression",
+        sayKo: help[0].sayKo,
+        teachEn: taught,
+        textShown: false,
+        fallback: "none",
+        shownEn: null,
+        heard: true,
+      },
+    ];
+    const helped = sim.lead.prepare(child({ say, koHelp: help }, 1));
+    if (!helped.ok) throw new Error(helped.reason);
+    const standing = serverStandingOf(sim.rows, koRows);
+    expect(helped.turn.ko.standing).toEqual(standing);
+    const server = serverKoLeadOf(m, standing, say, true);
+    expect(server.taughtMatched).toBe(true);
+    expect(helped.turn.ko.lead).toEqual(server);
+    sim.lead.finish(helped.turn, stuckReply);
+    expect(sim.rows.findLast((r) => r.speaker === "child")).toMatchObject({
+      text: say,
+      stuck: false,
+      hintKind: "english",
+    });
   });
 
   it("대본 l3-lead-ko-help 는 꼴 검사를 지나고 Claude 주도 방식으로 덮으며, 도움 뒤 말이 한두 낱말 꼴 · 문장 꼴 · '잘 모르겠어요'를 함께 둔다", () => {

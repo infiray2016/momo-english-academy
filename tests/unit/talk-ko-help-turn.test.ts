@@ -12,6 +12,7 @@ import { heardHintsOf } from "@/core/conversation/heard-hint";
 import {
   heardWithTaughtOf,
   KO_HELP_HINT_KINDS,
+  KO_HELP_TAUGHT_SPELLING_NOTE,
   type KoHelpStandingRow,
   koHelpCarryOf,
   koHelpLineText,
@@ -214,10 +215,30 @@ describe("AC-25j 한국어 도움의 대접(koHelpStandingOf — 세 방식 공�
       taught: ["I like gimbap.", "Gimbap, please."],
     });
     expect(koHelpLineText(s.line ?? { kind: "meaning" })).toBe(
-      "Korean help before this answer: taught 'I like gimbap.'; 'Gimbap, please.'",
+      `Korean help before this answer: taught 'I like gimbap.'; 'Gimbap, please.' ${KO_HELP_TAUGHT_SPELLING_NOTE}`,
     );
     expect(koHelpLineText({ kind: "meaning" })).toBe(
       "Korean help before this answer: meaning only",
+    );
+  });
+
+  it("C225 보완 3 가르친 표현 꼴의 줄 끝에만 철자 구가 한 번 붙는다(뜻만 받은 꼴은 그대로)", () => {
+    expect(KO_HELP_TAUGHT_SPELLING_NOTE).toBe(
+      "(speech-to-text may write these words wrong; words that sound like them are these words, so say them back in this spelling)",
+    );
+    expect(koHelpLineText({ kind: "taught", taught: ["I like gimbap."] })).toBe(
+      "Korean help before this answer: taught 'I like gimbap.' (speech-to-text may write these words wrong; words that sound like them are these words, so say them back in this spelling)",
+    );
+    const many = koHelpLineText({
+      kind: "taught",
+      taught: ["I like gimbap.", "Gimbap, please."],
+    });
+    expect(many.split(KO_HELP_TAUGHT_SPELLING_NOTE)).toHaveLength(2);
+    expect(
+      many.endsWith(`'Gimbap, please.' ${KO_HELP_TAUGHT_SPELLING_NOTE}`),
+    ).toBe(true);
+    expect(koHelpLineText({ kind: "meaning" })).not.toContain(
+      KO_HELP_TAUGHT_SPELLING_NOTE,
     );
   });
 
@@ -392,7 +413,7 @@ describe("AC-25c 기존 방식 회화 턴 사용자 메시지의 한국어 도�
     );
     const lines = msg.split("\n");
     const at = lines.indexOf(
-      "Korean help before this answer: taught 'I like gimbap.'",
+      `Korean help before this answer: taught 'I like gimbap.' ${KO_HELP_TAUGHT_SPELLING_NOTE}`,
     );
     expect(at).toBeGreaterThan(0);
     expect(lines[at - 1]).toBe("Child: I like gimbap.");

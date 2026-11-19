@@ -65,6 +65,7 @@ import {
 } from "@/core/conversation/chat-turn-result";
 import { cueBandOf, seedCuePhrasesOf } from "@/core/conversation/cue-line";
 import { heardHelpsOfMove } from "@/core/conversation/hints";
+import { KO_HELP_TAUGHT_SPELLING_NOTE } from "@/core/conversation/ko-help";
 import { leadNarrowHitsOf } from "@/core/conversation/lead-level";
 import { TALK_LEAD_MODE_KEY } from "@/core/conversation/lead-mode";
 import {
@@ -5156,7 +5157,7 @@ describe("수업 안 한국어로 묻기 묶음 4-다 — 대본의 한국어 �
     teachEn: "I like gimbap.",
     ...over,
   });
-  const LINE = "Korean help before this answer: taught 'I like gimbap.'";
+  const LINE = `Korean help before this answer: taught 'I like gimbap.' ${KO_HELP_TAUGHT_SPELLING_NOTE}`;
 
   for (const level of [3, 4]) {
     it(`${level}단계: 도움 뒤 말 턴은 힌트 종류 '영어' · 아이 말 줄 바로 뒤 한 줄, 계획은 서버와 같다`, () => {

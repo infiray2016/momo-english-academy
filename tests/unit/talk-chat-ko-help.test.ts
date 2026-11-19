@@ -28,6 +28,7 @@ import {
 import { chatFactsOf, chatKoHelpOf } from "@/core/conversation/chat-turn-core";
 import { chatKoRaisedHintOf } from "@/core/conversation/chat-turn-plan";
 import {
+  KO_HELP_TAUGHT_SPELLING_NOTE,
   type KoHelpStandingRow,
   koHelpLineText,
   koHelpStandingOf,
@@ -137,20 +138,45 @@ const ROWS: ChatTurnRowLike[] = [
 ];
 
 describe("묶음 K 사실 줄 — 가르친 표현은 목록(AC-13 · AC-27m)", () => {
-  it("AC-27m 가르친 표현 여럿은 'A'; 'B' 로 적고 기존 방식의 한 줄(koHelpLineText)과 글자까지 같다", () => {
+  it("AC-27m 가르친 표현 여럿은 'A'; 'B' 로 적고 기존 방식의 한 줄(koHelpLineText)에서 철자 구(C225 보완 3)만 뺀 글과 같다", () => {
     const taught = ["I like gimbap.", "It is yummy."];
     expect(chatFactLineOf({ kind: "ko_help", taught })).toBe(
       "Korean help before this answer: taught 'I like gimbap.'; 'It is yummy.'",
     );
-    expect(chatFactLineOf({ kind: "ko_help", taught })).toBe(
-      koHelpLineText({ kind: "taught", taught }),
-    );
+    expect(
+      `${chatFactLineOf({ kind: "ko_help", taught })} ${KO_HELP_TAUGHT_SPELLING_NOTE}`,
+    ).toBe(koHelpLineText({ kind: "taught", taught }));
     expect(chatFactLineOf({ kind: "ko_help", taught: [] })).toBe(
       koHelpLineText({ kind: "meaning" }),
     );
     expect(chatFactLineOf({ kind: "ko_help", taught: [" ", ""] })).toBe(
       "Korean help before this answer: meaning only",
     );
+  });
+
+  it("C225 보완 3 이야기 방식의 사실 줄에는 기존 방식의 철자 구가 붙지 않는다(사실만 알린다, C242 (3))", () => {
+    for (const taught of [
+      ["I like gimbap."],
+      ["I like gimbap.", "It is yummy."],
+      [],
+    ])
+      expect(chatFactLineOf({ kind: "ko_help", taught })).not.toContain(
+        KO_HELP_TAUGHT_SPELLING_NOTE,
+      );
+    const lines = chatUserMessageOf({
+      facts: chatFactsOf({
+        greetingEnd: false,
+        prepOpens: false,
+        closing: false,
+        lastTurn: false,
+        koHelp: chatKoHelpOf(koHelpStandingOf([help()], { lowBand: true })),
+      }),
+      input: { kind: "speech", heard: "I like gimbap." },
+    });
+    expect(lines).toContain(
+      "Korean help before this answer: taught 'I like gimbap.'",
+    );
+    expect(lines).not.toContain(KO_HELP_TAUGHT_SPELLING_NOTE);
   });
 
   it("AC-27m 대접(koHelpStandingOf)의 한 줄이 사실이 된다: 표현 → taught 목록, 뜻만 → meaning only, 줄 없음 → 사실 없음", () => {

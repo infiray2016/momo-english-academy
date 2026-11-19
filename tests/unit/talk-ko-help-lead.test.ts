@@ -11,6 +11,7 @@ import {
 } from "@/core/ai/calls/talk-lead";
 import type { Masker } from "@/core/ai/mask";
 import {
+  KO_HELP_TAUGHT_SPELLING_NOTE,
   type KoHelpStandingRow,
   type KoHelpTurnRow,
   koCarryOf,
@@ -117,6 +118,22 @@ describe("AC-26c AC-25c 사실 알림의 가르친 표현(목록 — C240 · 정
     expect(talkLeadKoTaughtText([" ", ""])).toBe("");
     // 옛 꼴(글 하나)은 표현 하나와 같은 글이다
     expect(talkLeadKoTaughtText(TAUGHT)).toBe(talkLeadKoTaughtText([TAUGHT]));
+  });
+
+  it("C225 보완 3 사실 알림에는 기존 방식의 철자 구가 붙지 않는다(사실만 알린다, C240)", () => {
+    for (const koTaught of [[TAUGHT], [TAUGHT, "Gimbap, please."]]) {
+      const lines = talkLeadStatusLines({ goalWordsSaid: [], koTaught });
+      expect(lines.join("\n")).not.toContain(KO_HELP_TAUGHT_SPELLING_NOTE);
+      expect(lines.join("\n")).not.toContain("speech-to-text");
+    }
+    const message = talkLeadUserMessage({
+      child: { kind: "speech", heard: "I like gimbap." },
+      status: { goalWordsSaid: [], koTaught: [TAUGHT] },
+    } as unknown as Parameters<typeof talkLeadUserMessage>[0]);
+    expect(message).toContain(
+      'The child asked in Korean and was taught: "I like gimbap.".',
+    );
+    expect(message).not.toContain(KO_HELP_TAUGHT_SPELLING_NOTE);
   });
 
   it("가림은 목록의 표현마다 건다(아이 이름이 든 표현이 사용자 메시지에 나가지 않음)", () => {
