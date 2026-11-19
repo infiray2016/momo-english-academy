@@ -5983,6 +5983,12 @@ export function createTalkSim(
           ok: false,
           reason: "이야기 방식 수업이다(sim.chat 으로 부른다)",
         };
+      // Claude 주도 세션의 대화 토막도 이 조립으로 부르지 않는다(설계 판정 task-des-ko-live-2 L-1 — 첫 질문이 빠진 세션에 기존 방식 요청을 넣은 섞인 기록이 났다)
+      if (leadOn && leadTurnAppliesOf({ start, segment, level }))
+        return {
+          ok: false,
+          reason: `Claude 주도 수업이다(${segment} 토막 — sim.lead 로 부른다)`,
+        };
       const args = argsOf();
       const position = talkLessonPositionOf(args);
       if (position.closed) return { ok: false, reason: "대화가 닫혔다" };
@@ -7214,7 +7220,15 @@ export type PlanRun = {
   summaries: number;
   /** 고정 입력 재생 대본인가(대본 칸 replay — 그 대본에만 칸이 있다). */
   replay?: true;
+  /**
+   * Claude 주도 대본(talk.lead_mode claude 로 선 세션 — 그 대본에만 칸이 있다): 기존 방식으로 부르는 인사 차례 수와 입구 start 요청의 시스템 글 ·
+   * 응답 규격 글자 수. 예상 호출은 대본 차례 + 입구 start 1 이고, 인사 뒤 차례는 이 글자 수로 어림한다.
+   */
+  lead?: LeadPlanInfo;
 };
+
+/** Claude 주도 대본의 어림 재료(leadPlanInfoOf). */
+export type LeadPlanInfo = { greetSteps: number; promptChars: number };
 
 /** 자리 재현 모드(--anchored)에 붙이는 알림 글(계획 줄 · 보고 · 지표 표가 같은 글을 쓴다). */
 export const ANCHORED_NOTICE =
@@ -7282,6 +7296,7 @@ export function planRunOf(
       }
     | { ok: false; missing: string },
   overrides: readonly SettingOverride[] = [],
+  lead?: LeadPlanInfo,
 ): PlanRun {
   const base = {
     name: script.name,
@@ -7291,6 +7306,7 @@ export function planRunOf(
     overrides: [...overrides],
     summaries: script.summaries?.length ?? 0,
     ...(script.replay === true ? { replay: true as const } : {}),
+    ...(lead !== undefined ? { lead } : {}),
   };
   if (!info.ok)
     return {
@@ -7306,10 +7322,18 @@ export function planRunOf(
       reaskMax: 0,
       reaskMaxCostUsd: 0,
     };
-  const calls = script.steps.length;
+  // Claude 주도 대본은 인사 뒤에 입구 start 요청이 하나 더 있고, 그 뒤 요청은 Claude 주도 안내문 크기로 어림한다
+  const calls = script.steps.length + (lead !== undefined ? 1 : 0);
   const first = Math.ceil(info.promptChars / CHARS_PER_TOKEN);
+  const leadFirst =
+    lead !== undefined && lead.promptChars > 0
+      ? Math.ceil(lead.promptChars / CHARS_PER_TOKEN)
+      : first;
+  const promptAt = (k: number) =>
+    (lead !== undefined && k >= lead.greetSteps ? leadFirst : first) +
+    k * HISTORY_TOKENS_PER_TURN;
   let input = 0;
-  for (let i = 0; i < calls; i++) input += first + i * HISTORY_TOKENS_PER_TURN;
+  for (let i = 0; i < calls; i++) input += promptAt(i);
   const output = calls * OUTPUT_TOKENS_PER_CALL;
   const microsOf = (inTokens: number, outTokens: number) =>
     info.price
@@ -7317,18 +7341,21 @@ export function planRunOf(
         PRICE4_PER_MICRO
       : 0;
   const micros = microsOf(input, output);
-  const reaskAt = isLowBandLevel(script.level)
-    ? script.steps.flatMap((step, i) =>
-        i > 0 && step.say !== undefined ? [i] : [],
-      )
-    : [];
+  // Claude 주도 차례(입구 start · 대화 차례)는 아이 입력과 관계없이 선생님 질문이 좁은 정의에 걸리면 다시 말하기 한 번(서버 lead-turn)
+  const reaskAt = !isLowBandLevel(script.level)
+    ? []
+    : lead !== undefined
+      ? Array.from({ length: calls }, (_, k) => k).filter((k) =>
+          k >= lead.greetSteps
+            ? true
+            : k > 0 && script.steps[k]?.say !== undefined,
+        )
+      : script.steps.flatMap((step, i) =>
+          i > 0 && step.say !== undefined ? [i] : [],
+        );
   const reaskMicros = reaskAt.reduce(
     (sum, i) =>
-      sum +
-      microsOf(
-        first + i * HISTORY_TOKENS_PER_TURN + RETRY_NOTE_TOKENS,
-        OUTPUT_TOKENS_PER_CALL,
-      ),
+      sum + microsOf(promptAt(i) + RETRY_NOTE_TOKENS, OUTPUT_TOKENS_PER_CALL),
     0,
   );
   return {
@@ -7367,6 +7394,9 @@ export function planLines(
   const reaskCost = live.reduce((s, r) => s + r.reaskMaxCostUsd, 0);
   const extraOf = (r: PlanRun) =>
     [
+      ...(r.lead !== undefined
+        ? [`Claude 주도(인사 ${r.lead.greetSteps} 기존 방식 · 입구 start 1)`]
+        : []),
       ...(meta.anchored === true
         ? ["자리 재현"]
         : r.replay === true
@@ -7634,6 +7664,258 @@ export function reportMarkdown({
   return out.join("\n");
 }
 
+// ── Claude 주도 대본 실행(설계 판정 task-des-ko-live-2 L-1) ─────────────────
+
+/**
+ * Claude 주도 대본의 차례 하나: 인사 토막은 기존 방식 조립(app — 서버도 인사는 lesson-turn 길), 대화 · 더 이야기하기 토막은 새 엔진(lead — 서버
+ * lead-turn 과 같은 core 함수, 입구 start · more 도 여기). retried 는 다시 말하기(재질문)를 부른 차례다.
+ */
+export type LeadScenarioTurn =
+  | { path: "app"; record: TurnRecord; retried: boolean }
+  | { path: "lead"; record: LeadTurnRecord; retried: boolean };
+
+export type LeadScenarioRun = {
+  turns: LeadScenarioTurn[];
+  /** 새 엔진 첫 요청의 시스템 글(Claude 주도 안내문 — 부르지 못했으면 빈 글). */
+  systemPrompt: string;
+  /** 인사 토막 첫 요청의 시스템 글(기존 방식). */
+  appSystemPrompt: string;
+  /** 멈춘 까닭(끝까지 돌았으면 null). */
+  stopped: string | null;
+  /** 보낸 요청 수(다시 말하기 포함). */
+  calls: number;
+};
+
+/** 미리 보기의 인사 차례를 지나게 하는 가짜 응답(AI 를 부르지 않음 — 질문 없는 인사 끝 꼴). */
+const PLAN_PROBE_APP_RESULT: CallResult = {
+  ok: true,
+  message: {
+    model: "probe",
+    stop_reason: "end_turn",
+    usage: { input_tokens: 0, output_tokens: 0 },
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({
+          child_kind: "answer",
+          stuck: false,
+          tori_en: "Good to hear!",
+        }),
+      },
+    ],
+  } as never,
+  latencyMs: 0,
+  firstSentenceMs: null,
+  requestId: "",
+};
+
+/**
+ * Claude 주도 대본의 어림 재료(미리 보기 — AI 를 부르지 않음): 버리는 sim 으로 인사 차례를 가짜 응답으로 지나 기존 방식 인사 차례 수를 세고, 입구 start
+ * 요청의 시스템 글 · 응답 규격 글자 수를 잰다. 입구를 열 수 없으면 0자(planRunOf 가 첫 요청 글자 수로 어림)로 둔다.
+ */
+export function leadPlanInfoOf(
+  probe: TalkSim,
+  steps: readonly ObserveStep[],
+): LeadPlanInfo {
+  let greetSteps = 0;
+  for (const [i, step] of steps.entries()) {
+    if (probe.lead.applies()) break;
+    const ready = probe.prepare(step, i);
+    if (!ready.ok) break;
+    probe.finish(ready.turn, PLAN_PROBE_APP_RESULT);
+    greetSteps++;
+  }
+  const opened =
+    probe.lead.openDue() === "start"
+      ? probe.lead.prepare({ kind: "open", open: "start" })
+      : null;
+  return {
+    greetSteps,
+    promptChars:
+      opened?.ok === true ? requestPromptCharsOf(opened.turn.request) : 0,
+  };
+}
+
+/** 요청의 시스템 글 · 응답 규격 글자 수(어림 재료 — 첫 요청의 promptChars 와 같은 셈). */
+function requestPromptCharsOf(request: PreparedTurn["request"]): number {
+  return (
+    String(request.body.system ?? "").length +
+    JSON.stringify(
+      (request.body.output_config as { format?: unknown } | undefined)
+        ?.format ?? {},
+    ).length
+  );
+}
+
+/** 흘려 받는 앞 칸 이름(서버 talk.ts TALK_LEAD_READER_KEYS 사본 — server-only 라 부를 수 없다. 첫 문장 시각 재기에만 쓴다). */
+const OBSERVE_LEAD_READER_KEYS: ToriEnReaderKeys = {
+  sayKey: "say",
+  heads: LEAD_HEAD_KEYS.map((key) => ({ key, kind: "enum" as const })),
+  requireHeads: true,
+};
+
+/**
+ * Claude 주도 대본을 돌린다(서버의 차례 그대로): 인사 토막은 sim.prepare · retryOf · finish(기존 방식 — 서버 lesson-turn), 인사 끝 뒤 대화 첫
+ * 질문 차례가 열리면 아이 말 없이 부르는 입구 start(서버 runLeadOpenTurn), 그 뒤 대본 차례는 sim.lead.prepare · retryOf · finish(서버
+ * lead-turn). 고르기 차례 · 닫힘 · 받지 않는 차례에 닿으면 까닭을 남기고 멈춘다. stopOn 이 글을 내면 실행 전체를 멈춘다(콘솔 한도 · 계정).
+ */
+export async function runLeadScenario(
+  sim: TalkSim,
+  steps: readonly ObserveStep[],
+  deps: {
+    call: (
+      path: "app" | "lead",
+      request: PreparedTurn["request"],
+    ) => Promise<CallResult>;
+    stopOn: (result: CallResult) => string | null;
+    onTurn?: (turn: LeadScenarioTurn) => void;
+  },
+): Promise<LeadScenarioRun> {
+  const turns: LeadScenarioTurn[] = [];
+  let systemPrompt = "";
+  let appSystemPrompt = "";
+  let calls = 0;
+  let stopped: string | null = sim.lead.on ? null : "Claude 주도 세션이 아니다";
+  const push = (turn: LeadScenarioTurn) => {
+    turns.push(turn);
+    deps.onTurn?.(turn);
+  };
+  const send = async (
+    path: "app" | "lead",
+    request: PreparedTurn["request"],
+  ): Promise<CallResult | null> => {
+    calls++;
+    const result = await deps.call(path, request);
+    const halt = deps.stopOn(result);
+    if (halt !== null) {
+      stopped = halt;
+      return null;
+    }
+    return result;
+  };
+  const leadTurn = async (entry: LeadSimEntry): Promise<boolean> => {
+    const ready = sim.lead.prepare(entry);
+    if (!ready.ok) {
+      stopped =
+        entry.kind === "child"
+          ? `차례 ${entry.stepIndex + 1}: ${ready.reason}`
+          : `입구 ${entry.open}: ${ready.reason}`;
+      return false;
+    }
+    if (systemPrompt === "")
+      systemPrompt = String(ready.turn.request.body.system ?? "");
+    const result = await send("lead", ready.turn.request);
+    if (result === null) return false;
+    const ask = sim.lead.retryOf(ready.turn, result);
+    const again = ask ? await send("lead", ask.request) : null;
+    if (ask && again === null) return false;
+    push({
+      path: "lead",
+      record: sim.lead.finish(
+        ready.turn,
+        result,
+        ask && again ? { ask, result: again } : undefined,
+      ),
+      retried: again !== null,
+    });
+    return true;
+  };
+  const openStartIfDue = async (): Promise<boolean> =>
+    sim.lead.openDue() === "start"
+      ? leadTurn({ kind: "open", open: "start" })
+      : true;
+  if (stopped === null && !(await openStartIfDue()))
+    return { turns, systemPrompt, appSystemPrompt, stopped, calls };
+  for (const [i, step] of steps.entries()) {
+    if (stopped !== null) break;
+    if (sim.lead.applies()) {
+      if (!(await leadTurn({ kind: "child", step, stepIndex: i }))) break;
+      continue;
+    }
+    // 인사 토막(기존 방식 — 서버도 이 토막은 lesson-turn 길이다)
+    const ready = sim.prepare(step, i);
+    if (!ready.ok) {
+      stopped = `차례 ${i + 1}: ${ready.reason}`;
+      break;
+    }
+    if (appSystemPrompt === "")
+      appSystemPrompt = String(ready.turn.request.body.system ?? "");
+    const result = await send("app", ready.turn.request);
+    if (result === null) break;
+    const ask = sim.retryOf(ready.turn, result);
+    const again = ask ? await send("app", ask.request) : null;
+    if (ask && again === null) break;
+    push({
+      path: "app",
+      record: sim.finish(
+        ready.turn,
+        result,
+        ask && again ? { ask, result: again } : undefined,
+      ),
+      retried: again !== null,
+    });
+    if (!(await openStartIfDue())) break;
+  }
+  return { turns, systemPrompt, appSystemPrompt, stopped, calls };
+}
+
+/** Claude 주도 대본 보고 하나(바퀴마다 — -lead.json 의 runs 꼴). */
+export type LeadObserveReport = {
+  script: string;
+  title: string;
+  level: number;
+  unit: number;
+  lesson: number;
+  round: number;
+  model: string;
+  effort: string;
+  overrides: SettingOverride[];
+} & LeadScenarioRun;
+
+/** Claude 주도 대본 보고의 사람이 읽는 꼴(차례마다 길 · 입구 · 아이 말 · 들은 영어 · move · 사용자 메시지). */
+export function leadReportMarkdown(
+  date: string,
+  reports: readonly LeadObserveReport[],
+): string {
+  const cell = (s: string) => s.replaceAll("|", "\\|").replaceAll("\n", " / ");
+  const out = [`# 회화 대본 관찰 — Claude 주도 방식(${date})`, ""];
+  for (const r of reports) {
+    out.push(
+      `## ${r.script} — ${r.title}(${r.level}단계 단원 ${r.unit} 수업 ${r.lesson} · 바퀴 ${r.round})`,
+      "",
+      `- 모델 ${r.model} · effort ${r.effort} · 호출 ${r.calls}${r.overrides.length > 0 ? ` · 덮는 설정 ${r.overrides.map(overrideText).join(" · ")}` : ""}`,
+      `- 길: 인사 토막은 기존 방식 조립(sim.prepare), 입구 start 와 대화 토막은 Claude 주도(sim.lead — 서버 lead-turn 과 같은 core 함수)`,
+      `- 시스템 글: Claude 주도 ${r.systemPrompt.length}자 · 인사(기존 방식) ${r.appSystemPrompt.length}자`,
+      ...(r.stopped !== null ? [`- 멈춤: ${r.stopped}`] : []),
+      "",
+      "| 차례 | 길 | 입구 | 아이 말 | 아이가 들은 영어 | move | 다시 말하기 | 실패 |",
+      "|---|---|---|---|---|---|---|---|",
+    );
+    for (const t of r.turns) {
+      if (t.path === "app")
+        out.push(
+          `| ${t.record.no} | 기존 방식(인사) | — | ${cell(t.record.child)} | ${cell(t.record.teacher)} | ${t.record.move.kind}/${t.record.move.next} | ${t.retried ? "예" : ""} | ${cell(t.record.failure ?? "")} |`,
+        );
+      else
+        out.push(
+          `| ${t.record.no} | Claude 주도 | ${t.record.entry} | ${cell(t.record.child?.text ?? (t.record.child ? "(단추 · 말소리 없음)" : ""))} | ${cell(t.record.heard)} | ${t.record.teacher.move.lead?.move ?? t.record.teacher.move.kind} | ${t.retried ? "예" : ""} | ${cell(t.record.failure ?? "")} |`,
+        );
+    }
+    out.push("");
+    for (const t of r.turns)
+      if (t.path === "lead")
+        out.push(
+          `### 차례 ${t.record.no}(${t.record.entry}) 보낸 사용자 메시지`,
+          "",
+          "```",
+          t.record.userMessage,
+          "```",
+          "",
+        );
+  }
+  return out.join("\n");
+}
+
 // ── 실행 ─────────────────────────────────────────────────────────
 
 /** 기준선 JSON(지표 셈이 읽는 꼴 — talk-metrics ObserveJson). */
@@ -7788,6 +8070,17 @@ export async function runTalkObserve(
           dialogPromptChars: promptChars,
         })
       : null;
+    const lead = sim.lead.on
+      ? leadPlanInfoOf(
+          createTalkSim(
+            m.materials,
+            values,
+            io.config.book,
+            simOptionsOf(script),
+          ),
+          script.steps,
+        )
+      : undefined;
     const config = requestConfigOf({
       purpose: PURPOSE,
       level: script.level,
@@ -7812,6 +8105,7 @@ export async function runTalkObserve(
           price,
         },
         overrides,
+        lead,
       ),
     };
   });
@@ -7845,6 +8139,7 @@ export async function runTalkObserve(
   const client = io.createClient();
   const reports: RunReport[] = [];
   const chatReports: ChatObserveReport[] = [];
+  const leadReports: LeadObserveReport[] = [];
   let stopAll: string | null = null;
   // 바퀴마다 대본 전부를 한 번씩(같은 바퀴의 대본이 붙어 있게 — 중간에 멈춰도 앞 바퀴는 온전하다)
   for (let round = 1; round <= args.rounds; round++)
@@ -7893,6 +8188,50 @@ export async function runTalkObserve(
           overrides: p.overrides,
           plan: p.chatPlan,
           run,
+        });
+        continue;
+      }
+      if (sim.lead.on) {
+        // Claude 주도: 인사만 기존 방식 조립, 입구 start 와 대화 토막은 sim.lead(설계 판정 task-des-ko-live-2 L-1 — 같은 문을 지난 뒤 이 자리에서만 부른다)
+        const tag = `${p.script.name}${args.rounds > 1 ? ` · 바퀴 ${round}` : ""}`;
+        const run = await runLeadScenario(sim, p.script.steps, {
+          call: (path, request) =>
+            streamTurn(
+              client,
+              request,
+              path === "lead" ? OBSERVE_LEAD_READER_KEYS : undefined,
+            ),
+          stopOn: (result) => {
+            if (result.ok) return null;
+            const f = observeFailureOf(result.status, {}, new Headers());
+            if (!f.stop) return null;
+            stopAll = `${f.key} — 실행 전체를 멈춘다(콘솔 한도 · 계정)`;
+            return stopAll;
+          },
+          onTurn: (t) => {
+            const usage = t.record.usage;
+            const tail = usage
+              ? `${usage.firstSentenceMs ?? "-"}ms · 입력 ${usage.inputTokens} · 출력 ${usage.outputTokens} · ${usage.costUsd}달러`
+              : (t.record.failure ?? "");
+            io.log(
+              t.path === "app"
+                ? `${tag} · ${t.record.no} · 기존 방식(인사) · ${t.record.move.kind}/${t.record.move.next} · ${tail}${t.retried ? " · 재질문" : ""}`
+                : `${tag} · ${t.record.no} · Claude 주도 ${t.record.entry} · ${t.record.teacher.move.lead?.move ?? t.record.teacher.move.kind} · ${tail}${t.retried ? " · 다시 말하기" : ""}`,
+            );
+          },
+        });
+        if (run.stopped !== null) io.log(`${tag} · 멈춤: ${run.stopped}`);
+        leadReports.push({
+          script: p.script.name,
+          title: p.script.title,
+          level: p.script.level,
+          unit: p.script.unit,
+          lesson: p.script.lesson,
+          round,
+          model: p.run.model,
+          effort: p.run.effort,
+          overrides: p.overrides,
+          ...run,
         });
         continue;
       }
@@ -8027,8 +8366,21 @@ export async function runTalkObserve(
     );
     io.write(`${base}-chat.md`, chatReportMarkdown(date, chatReports));
     io.log(`talk-observe: 이야기 방식 ${base}-chat.md · ${base}-chat.json`);
-    if (reports.length === 0) return EXIT_OK;
   }
+  // Claude 주도 대본의 기록도 따로 둔다(요청 꼴이 기존 방식과 달라 지금 길의 보고 · 지표 셈에 넣지 않는다 — 설계 판정 L-1)
+  if (leadReports.length > 0) {
+    io.write(
+      `${base}-lead.json`,
+      `${JSON.stringify({ date, effort, rounds: args.rounds, set: args.set, runs: leadReports }, null, 2)}\n`,
+    );
+    io.write(`${base}-lead.md`, leadReportMarkdown(date, leadReports));
+    io.log(`talk-observe: Claude 주도 ${base}-lead.md · ${base}-lead.json`);
+  }
+  if (
+    reports.length === 0 &&
+    (chatReports.length > 0 || leadReports.length > 0)
+  )
+    return EXIT_OK;
   const json = {
     date,
     effort,

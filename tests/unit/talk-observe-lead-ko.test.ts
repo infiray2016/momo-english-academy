@@ -388,13 +388,20 @@ describe("대본 도구의 Claude 주도 길 — 한국어 도움 뒤 차례(서
     expect(script.settings).toEqual({ [TALK_LEAD_MODE_KEY]: "claude" });
     expect([script.level, script.unit, script.lesson]).toEqual([3, 1, 1]);
     const withHelp = script.steps.filter((s) => s.koHelp !== undefined);
+    // 설계 판정 task-des-ko-live-2 4절: 두 낱말 상한이 가르는 짝(단원 단어 drink 를 틀리게 적은 한 낱말 · 문장) · 되묻게 될 관계없는 한 낱말 · 도움 뒤 '잘 모르겠어요'
     expect(withHelp.map((s) => s.say ?? s.input)).toEqual([
       "Kimbob.",
-      "I drink meal.",
+      "Think.",
+      "I think juice.",
+      "Tomorrow.",
       "dont_know",
     ]);
-    // 도움 뒤 바로 다음 차례(되묻는 차례 뒤 이어받기를 볼 자리)는 도움 칸 없는 한두 낱말 말이다
+    // 도움 뒤 바로 다음 차례(되묻는 차례 뒤 이어받기를 볼 자리)는 도움 칸 없는 말이다
     const first = script.steps.findIndex((s) => s.koHelp !== undefined);
     expect(script.steps[first + 1]).toEqual({ say: "Gimbap." });
+    const asked = script.steps.findIndex((s) => s.say === "Tomorrow.");
+    expect(script.steps[asked + 1]).toEqual({ say: "I go to the park." });
+    // 아이 차례는 열 안팎(실호출 비용)
+    expect(script.steps.length).toBeLessThanOrEqual(11);
   });
 });
