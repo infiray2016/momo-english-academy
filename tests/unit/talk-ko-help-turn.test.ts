@@ -224,10 +224,10 @@ describe("AC-25j 한국어 도움의 대접(koHelpStandingOf — 세 방식 공�
 
   it("C225 보완 3 가르친 표현 꼴의 줄 끝에만 철자 구가 한 번 붙는다(뜻만 받은 꼴은 그대로)", () => {
     expect(KO_HELP_TAUGHT_SPELLING_NOTE).toBe(
-      "(speech-to-text may write these words wrong; words that sound like them are these words, so say them back in this spelling)",
+      "(speech-to-text may write these words wrong; words that sound like them are these words; if you say them back, use this spelling)",
     );
     expect(koHelpLineText({ kind: "taught", taught: ["I like gimbap."] })).toBe(
-      "Korean help before this answer: taught 'I like gimbap.' (speech-to-text may write these words wrong; words that sound like them are these words, so say them back in this spelling)",
+      "Korean help before this answer: taught 'I like gimbap.' (speech-to-text may write these words wrong; words that sound like them are these words; if you say them back, use this spelling)",
     );
     const many = koHelpLineText({
       kind: "taught",

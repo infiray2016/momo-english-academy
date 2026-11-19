@@ -280,7 +280,8 @@ export type TalkCallTurn = {
   heardHints?: readonly HeardHint[];
   /**
    * 한국어 도움 바로 뒤의 영어 턴만(수업 안 한국어로 묻기 — 기존 방식, 모든 단계, 6.2 회화 턴 입력): 사용자 메시지에 더하는 한 줄의 글
-   * ('Korean help before this answer: …' — core/conversation/ko-help koHelpLineText 가 만든다). 아이 말 줄과 귀띔 줄 바로 뒤에 둔다. 없으면 줄이
+   * ('Korean help before this answer: …' — core/conversation/ko-help koHelpLineText 가 만든다. 가르친 표현 꼴은 줄 끝에 철자 구가 한 번
+   * 붙는다, 13절 C225 보완 3). 아이 말 줄과 귀띔 줄 바로 뒤에 둔다. 없으면 줄이
    * 없다(한국어로 묻지 않은 턴의 사용자 메시지는 글자 그대로 — AC-N26).
    */
   koHelpLine?: string;

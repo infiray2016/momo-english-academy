@@ -310,7 +310,8 @@ export function chatFactLineOf(fact: ChatFact): string {
     case "prep_next":
       return "After your turn the app does a short word practice with the child, and then your chat goes on.";
     case "ko_help": {
-      // 기존 방식의 한 줄(ko-help koHelpLineText)과 같은 꼴 — 빈 표현은 빼고, 남은 것이 없으면 뜻만
+      // 기존 방식의 한 줄(ko-help koHelpLineText)과 같은 머리 · 표현 꼴 — 빈 표현은 빼고, 남은 것이 없으면 뜻만. 기존 방식이 줄 끝에 붙이는
+      // 철자 구(KO_HELP_TAUGHT_SPELLING_NOTE, 13절 C225 보완 3)는 여기 붙이지 않는다(이야기 방식은 사실만 알린다, C242 (3))
       const taught = (
         typeof fact.taught === "string" ? [fact.taught] : (fact.taught ?? [])
       )

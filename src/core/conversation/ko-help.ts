@@ -350,11 +350,13 @@ export function koHelpStandingOf(
 }
 
 /**
- * 가르친 표현 꼴의 줄 끝에 한 번 붙는 구(13절 C225 보완 3 — 인식이 가르친 낱말을 틀리게 적어도 그 철자로 되받게). 기존 방식만 쓴다:
+ * 가르친 표현 꼴의 줄 끝에 한 번 붙는 구(13절 C225 보완 3 — 인식이 가르친 낱말을 틀리게 적어도, 되받을 때는 그 철자를 쓰게). 기존 방식만 쓴다:
  * 이야기 방식의 사실 줄(chat-message chatFactLineOf)과 Claude 주도 방식의 사실 알림(talk-lead)은 사실만 알려 이 구를 붙이지 않는다(C242 (3) · C240).
+ * 끝 마디는 조건 꼴이다(재검토 rev-b4c-3 M-a): '되받아라'가 아니라 '되받을 때는 이 철자로'라서, 맞게 적힌 차례에 가르친 표현을 되풀이하라는
+ * 지시가 되지 않는다.
  */
 export const KO_HELP_TAUGHT_SPELLING_NOTE =
-  "(speech-to-text may write these words wrong; words that sound like them are these words, so say them back in this spelling)";
+  "(speech-to-text may write these words wrong; words that sound like them are these words; if you say them back, use this spelling)";
 
 /** 사용자 메시지 한 줄의 글(6.2 회화 턴 입력 — 여럿이면 `'A'; 'B'` 뒤에 철자 구 한 번, 뜻만 받은 꼴은 그대로). */
 export function koHelpLineText(line: KoHelpLine): string {
