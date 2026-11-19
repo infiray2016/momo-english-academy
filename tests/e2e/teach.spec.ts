@@ -1066,11 +1066,12 @@ test.describe("가르치는 수업 말하기(AC-22c · AC-4d · AC-5d · AC-3k)"
         { choice: s5.answerNo, heard: "Yes, they eat cake." },
         { choice: s5.answerNo, heard: s5Model },
       ]);
-      // 짝 셋(질문 → 듣기 → 문장), 내지 않은 짝은 시도 없음
+      // 짝 셋(질문 · 듣기 · 문장), 내지 않은 짝은 시도 없음. finalInputs 는 차례를 정하지 않고 읽어(행이 고쳐지면 DB 가 돌려주는
+      // 차례가 달라진다 — CI 44422282785 에서 두 번 다른 차례로 실패) 갈래의 모음만 본다
       const spares = finals.filter((f) => f.input.slot === "spare");
-      expect(spares.map((f) => f.input.kind)).toEqual([
-        "question",
+      expect(spares.map((f) => String(f.input.kind)).sort()).toEqual([
         "listening",
+        "question",
         "repeat-sentence",
       ]);
     });

@@ -78,8 +78,31 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps webkit
+      # 우분투 꾸러미 캐시(2026-11-19): 브라우저 설치(--with-deps)가 받는 꾸러미를 실행 사이에 나눠 쓴다. 러너에 따라 꾸러미 받는 곳이
+      # 아주 느려(같은 날 세 갈래가 25분 제한에 걸리고 한 갈래는 1분) 받은 꾸러미를 캐시에 두면 다음 실행이 다시 받지 않는다. 제한에
+      # 걸려도 그때까지 받은 것은 남겨(아래 always 단계) 다음 실행이 이어 받는다. 캐시가 없거나 못 써도 설치는 지금처럼 돈다
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-debs
+          key: apt-debs-webkit-${{ runner.os }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            apt-debs-webkit-${{ runner.os }}-
+      - run: |
+          mkdir -p ~/apt-debs
+          sudo cp -n ~/apt-debs/*.deb /var/cache/apt/archives/ 2>/dev/null || true
+          pnpm exec playwright install --with-deps webkit
         timeout-minutes: 25 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토). 2026-11-18 에는 멈춘 것이 아니라 우분투 꾸러미 받기가 느려 12.2분에서 끊겼다(하루 네 번 가운데 세 번) → 12 → 25
+      - if: always()
+        run: |
+          mkdir -p ~/apt-debs
+          cp -n /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          ls ~/apt-debs | wc -l
+      - uses: actions/cache/save@v4
+        if: always()
+        continue-on-error: true
+        with:
+          path: ~/apt-debs
+          key: apt-debs-webkit-${{ runner.os }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
       - run: pnpm e2e
         env:
           E2E_PHOTOS: "1" # 화면 검토 사진(tests/e2e/photos.ts) — 이 Mac 은 로컬 e2e 를 못 돌려 CI 에서 받는다(P11 차례 2)
@@ -112,6 +135,29 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps webkit
+      # 우분투 꾸러미 캐시(2026-11-19): 브라우저 설치(--with-deps)가 받는 꾸러미를 실행 사이에 나눠 쓴다. 러너에 따라 꾸러미 받는 곳이
+      # 아주 느려(같은 날 세 갈래가 25분 제한에 걸리고 한 갈래는 1분) 받은 꾸러미를 캐시에 두면 다음 실행이 다시 받지 않는다. 제한에
+      # 걸려도 그때까지 받은 것은 남겨(아래 always 단계) 다음 실행이 이어 받는다. 캐시가 없거나 못 써도 설치는 지금처럼 돈다
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-debs
+          key: apt-debs-webkit-${{ runner.os }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            apt-debs-webkit-${{ runner.os }}-
+      - run: |
+          mkdir -p ~/apt-debs
+          sudo cp -n ~/apt-debs/*.deb /var/cache/apt/archives/ 2>/dev/null || true
+          pnpm exec playwright install --with-deps webkit
         timeout-minutes: 25 # 설치가 멈춘 실행이 26~49분을 쓴 적이 있어 끊는다. 보통 0.6~1.3분, 느린 날 6~9.5분(검토 M-2 · 재검토). 2026-11-18 에는 멈춘 것이 아니라 우분투 꾸러미 받기가 느려 12.2분에서 끊겼다(하루 네 번 가운데 세 번) → 12 → 25
+      - if: always()
+        run: |
+          mkdir -p ~/apt-debs
+          cp -n /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          ls ~/apt-debs | wc -l
+      - uses: actions/cache/save@v4
+        if: always()
+        continue-on-error: true
+        with:
+          path: ~/apt-debs
+          key: apt-debs-webkit-${{ runner.os }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
       - run: pnpm e2e:local
