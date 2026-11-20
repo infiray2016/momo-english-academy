@@ -132,6 +132,7 @@ import {
   keepLastHeldQuestion,
   mergeQuestionRetry,
   questionRetryNoteOf,
+  retryAimGuardOf,
   stuckRewriteNoteOf,
 } from "@/core/conversation/question-retry";
 import {
@@ -1968,6 +1969,9 @@ export function questionRetryFits({
   );
 }
 
+/** 노림 안전망에 카드를 주지 않은 때(카드 항목을 보지 않음). */
+const NO_RETRY_CARD = { required: [], more: [] } as const;
+
 /**
  * 1~3단계 AI 질문이 검사에 걸린 턴을 한 번 다시 쓰게 한다(13절 C203 (3) 잠정). 성공 응답이고 질문을 쓰는 차례이며 잡아 둔 질문이 길이 ·
  * 노리는 단어 · 범위 밖 낱말 · 형태 검사에 걸렸을 때만, 걸린 까닭 · 낱말 · 범위를 알려 retry 를 한 번 부른다(1회 상한 — 다시 부르지 않는다).
@@ -1983,6 +1987,7 @@ export async function withQuestionRetry({
   canRetry = true,
   rewrite = null,
   chainKeys = [],
+  card = NO_RETRY_CARD,
   retry,
 }: {
   flow: Pick<LessonSentenceFlow, "entries" | "chosen">;
@@ -1994,6 +1999,11 @@ export async function withQuestionRetry({
    * 같으면(카드 필수 질문 글 그대로) 갈래 표지만 고치지 않고 한 번 다시 쓰게 한다. 그 차례가 아니면 빈 목록.
    */
   chainKeys?: readonly string[];
+  /**
+   * 카드 항목의 번호와 노리는 단어(노림 안전망 retryAimGuardOf — 13절 C203 보완 1). 노리는 단어가 들어 걸린 질문을 다시 쓴 응답의 card_item 이
+   * 걸린 낱말을 노린 카드 항목이면 kind none 으로 둔다. 주지 않으면 카드 항목은 보지 않는다(나머지 안전망은 그대로).
+   */
+  card?: Parameters<typeof retryAimGuardOf>[0]["card"];
   /** 다시 부를 시간이 남았는가(questionRetryFits). 거짓이면 다시 쓰지 않는다. */
   canRetry?: boolean;
   /**
@@ -2045,13 +2055,14 @@ export async function withQuestionRetry({
   const targets = view.value.next_targets;
   let note: string;
   let reason: QuestionRetryReason;
+  let fail: HeldQuestionFail | null = null;
   if (rewrite !== null) {
     note = stuckRewriteNoteOf(rewrite.child);
     reason = "stuck_overridden";
   } else {
     // lineOptions 가 있으면 1~3단계다 — 받침 둘째의 AI 질문 자리면 쉬운 질문 조건을 함께 본다(끝 처리와 같은 판정)
     const easySlot = lessonEasySlotOf(flow.chosen(), view.value, true);
-    const fail = heldQuestionFailOf({
+    fail = heldQuestionFailOf({
       entries: firstEntries,
       targets,
       options: { ...lineOptions, easySlot },
@@ -2087,6 +2098,19 @@ export async function withQuestionRetry({
     whole: rewrite !== null,
   });
   if (merged === null) return retried;
+  // 노리는 단어가 들어 걸린 질문은 이번 차례에 그 낱말을 노리지 않는다(13절 C203 보완 1 (2)): 다시 쓴 질문에 그 낱말이 남았으면 앞 응답으로
+  // 카드 자리, 아니면 노리는 단어 칸 · 카드 항목에서 빼고 그 낱말이 남은 답 예시 · 힌트를 비운다. 끝 처리 검사는 그대로다
+  const guarded =
+    fail === null
+      ? merged.value
+      : retryAimGuardOf({
+          fail,
+          entries: merged.entries,
+          value: merged.value,
+          card,
+          options: lineOptions,
+        });
+  if (guarded === null) return retried;
   const blocked = (view.blocked ?? 0) + answer.blocked;
   return {
     flow: {
@@ -2095,7 +2119,7 @@ export async function withQuestionRetry({
     },
     view: {
       kind: "ok",
-      value: merged.value,
+      value: guarded,
       hintsBlocked: answer.hintsBlocked,
       ...(answer.soundFixed ? { soundFixed: answer.soundFixed } : {}),
       overLength: view.overLength + answer.overLength,
@@ -3039,6 +3063,8 @@ async function lessonTurnAfterChild(
     rewrite: hold.holding() ? { child: child.text ?? "" } : null,
     // 카드 답 바로 뒤 차례의 카드 필수 질문 글(13절 C217 (2) (ㄷ))
     chainKeys: low ? talkCardChainKeysOf(callInput.turn, state.card) : [],
+    // 노림 안전망의 카드 항목(13절 C203 보완 1)
+    card: state.card,
     retry: async ({ previous, note, reason }) => {
       const again = createLessonSentenceFlow({
         low,

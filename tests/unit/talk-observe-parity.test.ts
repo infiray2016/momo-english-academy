@@ -5316,3 +5316,79 @@ describe("묶음 K 대본 도구의 이야기 방식 길 — 한국어 도움 �
     ]);
   });
 });
+
+describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 노림 안전망 — 도구와 서버가 같은 함수(13절 C203 보완 1 · 장부 T-625)", () => {
+  it("질문만 바꾼 묵은 칸 응답: 서버 · 도구 모두 노림에서 걸린 낱말을 빼고 카드 항목을 none 으로 두며, 도구 기록에 첫 응답 칸 · 아이 차례 힌트가 남는다", async () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    const item = m.card.required.find((i) => i.targets.length > 0);
+    const word = item?.targets[0];
+    if (!item || word === undefined)
+      throw new Error("노리는 단어가 있는 필수 질문 없음");
+    const aim = {
+      next_move: "follow_up",
+      card_item: { kind: "required", no: item.no },
+      next_targets: [word],
+      next_hint_ko: item.hintKo,
+      next_hints: [...item.hints],
+      next_answer_example: item.answerExample,
+    };
+    const first = fakeMessage({ ...aim, tori_en: `Oh, good! Do you ${word}?` });
+    const second = fakeMessage({
+      ...aim,
+      tori_en: "Oh, good! Who is with you?",
+    });
+    const ready = sim.prepare(say("Yes."), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const p = ready.turn;
+    const ask = sim.retryOf(p, first);
+    expect(ask?.fail?.reason).toBe("target_word");
+    // 서버: 같은 재료로 다시 쓰기(가짜 재호출)를 지난 값
+    const parts = serverPartsOf(m, sim, p, first);
+    const again = serverPartsOf(m, sim, p, second);
+    const out = await withQuestionRetry({
+      flow: parts.flow,
+      view: parts.view,
+      lineOptions: parts.lineOptions,
+      sentenceMaxWords: p.input.sentenceMaxWords,
+      chainKeys: talkCardChainKeysOf(p.turn, m.card),
+      card: m.card,
+      retry: async () =>
+        again.value
+          ? {
+              value: again.value,
+              entries: again.flow.entries(),
+              hintsBlocked: false,
+              overLength: 0,
+              blocked: 0,
+            }
+          : null,
+    });
+    expect(out.retried).toBe(true);
+    const serverValue = out.view.kind === "ok" ? out.view.value : null;
+    if (!ask) throw new Error("재질문 없음");
+    const record = sim.finish(p, first, { ask, result: second });
+    expect(serverValue?.next_targets).not.toContain(word);
+    expect(serverValue?.card_item).toEqual({ kind: "none", no: 0 });
+    for (const key of [
+      "next_targets",
+      "card_item",
+      "next_answer_example",
+      "next_hints",
+      "next_hint_ko",
+    ] as const)
+      expect(record.output?.[key], key).toEqual(serverValue?.[key]);
+    // 기록 두 가지(장부 T-625 다시 재기 재료): 첫 응답의 노림 칸 · 이번 아이 차례의 힌트 단과 그 자리의 답
+    expect(record.reask?.firstAim?.nextTargets).toContain(word);
+    // 첫 응답 칸은 정규화 뒤 값이다(정규화가 이 차례의 카드 항목을 고칠 수 있다 — 서버 재료의 첫 응답 값과 같다)
+    expect(record.reask?.firstAim).toEqual({
+      nextTargets: parts.value?.next_targets,
+      cardItem: parts.value?.card_item,
+      answerExample: parts.value?.next_answer_example,
+    });
+    expect(record.childHints).toEqual({
+      tiers: p.hintTiers,
+      answerExample: p.slot?.answerExample ?? null,
+    });
+  });
+});

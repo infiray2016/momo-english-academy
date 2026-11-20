@@ -313,6 +313,63 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     }
   });
 
+  it("AC-15zj (바) 13절 C203 보완 1: 노리는 단어가 들어 걸린 질문을 질문만 바꿔 다시 쓴 응답(묵은 칸)은 노림 [] · 답 예시가 빈 행으로 저장되고, 이어진 '잘 모르겠어요' 차례에 앞 질문의 답 소리가 없다", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    const item = card.required[1] ?? card.required[0];
+    const word = item?.targets[0];
+    if (!item || word === undefined)
+      throw new Error("노리는 단어가 있는 필수 질문이 없다");
+    const staleAnswer = `I like ${word}.`;
+    const aim = {
+      next_move: "follow_up",
+      next_targets: [word],
+      next_hint_ko: "좋아해.",
+      next_hints: [staleAnswer],
+      next_answer_example: staleAnswer,
+    };
+    const before = h.fake.requests.length;
+    h.fake.push(
+      turnRule({ ...aim, tori_en: `Oh, nice! Do you like ${word}?` }),
+    );
+    h.fake.push(turnRule({ ...aim, tori_en: "Oh, nice! Do you like it?" }));
+    const lines = await sayLesson(sessionId);
+    const sent = h.fake.requests.slice(before);
+    expect(sent).toHaveLength(2);
+    // 다시 쓰기 알림은 target_word 판(이번 차례는 그 낱말을 노리지 않음)
+    expect(sent[1]?.bodyText).toContain(
+      `This turn, do not aim at \\"${word}\\"`,
+    );
+    expect(lines).toContainEqual({ t: "s", en: "Do you like it?" });
+    const last = (await teacherRows(sessionId)).at(-1);
+    const move = readTalkMove(last?.move);
+    expect(move).toMatchObject({ kind: "ai" });
+    expect(move?.words).toEqual([]);
+    expect(move?.item).toEqual({ kind: "none", no: 0 });
+    const q = last?.aiQuestion as {
+      answerExample?: string;
+      hints?: string[];
+    } | null;
+    expect(q?.answerExample ?? "").toBe("");
+    expect(q?.hints).toBeUndefined();
+    // 이어진 '잘 모르겠어요' 차례: 자리의 답이 없어 받침 첫째가 AI 받침이고, 앞 질문의 답 소리가 붙지 않는다
+    h.fake.push(turnRule({ tori_en: "That's okay!" }));
+    const stuckLines: TalkLessonLine[] = [];
+    await runTalkTurnRequest(
+      {
+        sessionId,
+        clientAttemptId: `t625-dont-know-${sessionId}`,
+        input: { mode: "dont_know" },
+        hint: { opened: 0, heard: [] },
+      },
+      {
+        ...h.deps(),
+        write: (line) => stuckLines.push(line as TalkLessonLine),
+        requestReceivedAt: h.clock.now,
+      },
+    );
+    expect(JSON.stringify(stuckLines)).not.toContain(staleAnswer);
+  });
+
   it("AC-15k 둘째 턴 요청 본문은 앞 턴 사용자 메시지와 다시 쓸 선생님 차례(붙인 카드 질문 포함)를 글자 그대로 앞에 둔다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(

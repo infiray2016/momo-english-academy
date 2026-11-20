@@ -311,8 +311,11 @@ function hasOffbandForm(text: string, options: LowLevelLineOptions): boolean {
   );
 }
 
-/** 글에 든 노리는 단어(원형 포함, 소문자 노리는 단어 꼴 — 같은 낱말은 한 번). */
-function targetWordsIn(
+/**
+ * 글에 든 노리는 단어(원형 포함, 소문자 노리는 단어 꼴 — 같은 낱말은 한 번). 질문 다시 쓰기의 노림 안전망(question-retry retryAimGuardOf)이
+ * 같은 판정을 쓴다(13절 C203 보완 1).
+ */
+export function targetWordsIn(
   text: string,
   targets: readonly string[],
   options: Pick<LowLevelLineOptions, "lemmaOf">,

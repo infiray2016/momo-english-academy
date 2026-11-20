@@ -263,9 +263,21 @@ describe("고정부 · 다시 쓰기 메시지 문장(고침 3)", () => {
     expect(talkLessonSystem(lessonInput(4), lessonRules(4))).toContain(
       "Start with 'I couldn't hear you.'.",
     );
+    // 노리는 단어가 들어 걸린 질문의 알림은 13절 C203 보완 1 로 '사람이나 물건을 물어라'(예 'Do you like fish?') 줄 대신 '이번 차례는 그 낱말을
+    // 노리지 않는다' 줄을 둔다(장부 T-625 — tests/unit/talk-question-retry-aim.test.ts). 다른 까닭의 알림은 그 줄을 그대로 둔다
     expect(
       questionRetryNoteOf(
         { question: "Do you eat rice?", reason: "target_word", words: ["eat"] },
+        { sentenceMaxWords: 7, targets: ["eat"], childWords: [] },
+      ),
+    ).not.toContain("e.g. 'Do you like fish?'");
+    expect(
+      questionRetryNoteOf(
+        {
+          question: "Do you eat rice with you?",
+          reason: "too_long",
+          words: [],
+        },
         { sentenceMaxWords: 7, targets: ["eat"], childWords: [] },
       ),
     ).toContain("e.g. 'Do you like fish?'");

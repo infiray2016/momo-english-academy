@@ -7,6 +7,7 @@ import {
   type LowLevelLineOptions,
   type LowLevelLineReason,
   questionKeyOf,
+  targetWordsIn,
 } from "@/core/conversation/question-check";
 
 /** 문장 문을 지난 선생님 문장(서버 LessonSentence 와 같은 꼴 — 구조로 맞춘다). */
@@ -100,6 +101,13 @@ const REASON_LINE: Record<HeldQuestionFail["reason"], string> = {
 };
 
 /**
+ * 다시 쓴 질문에 맞게 나머지 칸을 다시 쓰라는 문장(13절 C203 보완 1 — 'Keep the other fields' 가 노리는 단어 · 힌트 · 답 예시를 앞 질문의 것으로
+ * 남기게 했다, 대본 열다섯 번 가운데 열다섯 번 · 장부 T-625). 세 판이 같이 쓴다.
+ */
+const FIELDS_AGAIN_LINE =
+  "Write the other fields again for the new question (next_targets, card_item, next_hint_ko, next_hints and next_answer_example): the hints and the answer example answer the new question, not the question that was not shown.";
+
+/**
  * '무엇을 다시 쓸지' 줄(받침 둘째 · 카드 답 뒤는 새 질문의 꼴이 정해져 있다). 쉬운 질문 자리(받침 둘째의 AI 질문)에서는 걸린 까닭이 길이 · 범위 밖
  * 낱말 · 되묻기여도 예 · 아니요 질문으로 다시 쓰게 한다 — 자리로 고른다(코드 검토 rev-content-1 M-1: 까닭으로 고르면 다시 쓴 wh 질문이 끝 처리에서
  * 또 걸린다).
@@ -109,10 +117,22 @@ function rewriteLineOf(
   easySlot: boolean,
 ): string {
   if (easySlot || reason === "not_easy")
-    return "Your reaction was already shown. Write this turn again: in tori_en write only one easy yes-or-no question about the same thing (e.g. 'Do you like fish?'), or one question with two answer choices in choices. Set next_move follow_up and card_item kind none and no 0, and keep the other fields for the new question.";
+    return `Your reaction was already shown. Write this turn again: in tori_en write only one easy yes-or-no question about the same thing (e.g. 'Do you like fish?'), or one question with two answer choices in choices. Set next_move follow_up and card_item kind none and no 0. ${FIELDS_AGAIN_LINE}`;
   if (reason === "chain")
-    return "Your reaction was already shown. Write this turn again: in tori_en write only one new question that follows up on the child's last answer, in your own words (next_move follow_up, card_item kind none and no 0). Bring up the next card chance in a later turn. Keep the other fields for the new question.";
-  return "Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). Keep the other fields for the new question.";
+    return `Your reaction was already shown. Write this turn again: in tori_en write only one new question that follows up on the child's last answer, in your own words (next_move follow_up, card_item kind none and no 0). Bring up the next card chance in a later turn. ${FIELDS_AGAIN_LINE}`;
+  return `Your reaction was already shown. Write this turn again: in tori_en write only one new question (and a cue only if you fill model_line or choices). ${FIELDS_AGAIN_LINE}`;
+}
+
+/**
+ * 노리는 단어가 들어 걸린 질문의 노림 줄(13절 C203 보완 1): 이번 차례는 걸린 낱말을 노리지 않고, 아이의 바로 앞 말에 이어 다른 것을 묻는
+ * 새 질문 하나를 쓰며, 그 낱말은 노리는 단어 칸 · 카드 항목에서 빼고 뒤 차례에 꺼낸다. 쉬운 질문 자리는 예 · 아니요 질문 줄과 어긋나지 않게
+ * 'who, where or what' 과 '다른 카드 항목' 갈래를 넣지 않는다(그 자리는 카드 항목 none 이 정해져 있다).
+ */
+function targetWordAimLineOf(words: readonly string[], easy: boolean): string {
+  const list = words.map((w) => `"${w}"`).join(", ");
+  return easy
+    ? `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words. Leave ${list} out of next_targets. Bring up ${list} in a later turn.`
+    : `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words, about something else (who, where or what). Leave ${list} out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up ${list} in a later turn.`;
 }
 
 /**
@@ -136,7 +156,10 @@ export function questionRetryNoteOf(
     `App check: your question "${fail.question}" was not shown, because ${REASON_LINE[fail.reason]}${words}.`,
     rewriteLineOf(fail.reason, easy),
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
-    `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
+    // 노리는 단어가 들어 걸린 질문은 이번 차례에 그 낱말을 노리지 않는다(13절 C203 보완 1) — 다른 까닭은 노림 줄을 그대로 둔다
+    fail.reason === "target_word" && fail.words.length > 0
+      ? targetWordAimLineOf(fail.words, easy)
+      : `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
     // [N-3] 아이의 바로 앞 말이 답인 질문 금지(대본 회차 r2 판정 N-3)
     "Do not ask a question whose answer the child just gave in the last words (after 'I drink juice.', not 'What do you do with the juice?').",
     // 다시 쓰기의 버릇 꼴 · 비튼 문장(대본 회차 r1 판정 M-7 · M-2) — 받침 둘째의 쉬운 질문은 예 · 아니요 꼴이 맞으므로 이 줄을 넣지 않는다
@@ -251,4 +274,77 @@ export function mergeQuestionRetry<
     new_words: [...new Set([...first.new_words, ...retry.new_words])],
   };
   return { entries, value };
+}
+
+/** 노림 안전망이 읽고 고치는 응답 칸(회화 턴 출력 TalkLessonOutput 의 다음 질문 칸). */
+type RetryAimValue = {
+  next_targets: string[];
+  card_item: { kind: string; no: number };
+  next_hint_ko: string;
+  next_hints: string[];
+  next_answer_example: string;
+};
+
+/** 노림 안전망이 읽는 카드 항목(번호와 노리는 단어). */
+type RetryAimItem = { no: number; targets: readonly string[] };
+
+/**
+ * 노리는 단어가 들어 걸린 질문을 다시 쓴 응답의 노림 안전망(13절 C203 보완 1 (2) · 02-2 3.3 · AC-15zj (바)). 까닭이 target_word 일 때만
+ * 동작하고, 다른 까닭이면 합친 값을 그대로 돌려준다. 차례는 다음과 같다.
+ * ① 합친 문장의 잡아 둔 질문(끝 처리가 검사할 질문)에 걸린 낱말(원형 포함)이 남았으면 null — 부르는 쪽이 앞 응답으로 카드 자리를 만든다.
+ *    빼기보다 먼저 본다: 빼고 나면 끝 처리 검사가 노리는 단어를 모르게 되어 그 질문이 지나간다(분석 U-4 · C217 보완 3 (1)).
+ * ② next_targets 에서 걸린 낱말을 뺀다.
+ * ③ card_item 이 가리키는 카드 항목의 노리는 단어가 걸린 낱말과 겹치면 kind none · no 0 으로 둔다.
+ * ④ next_answer_example · next_hints 가운데 걸린 낱말을 담은 칸이 있으면 next_answer_example · next_hints · next_hint_ko 를 함께 비운다.
+ * 낱말 찾기는 질문 검사와 같은 판정(question-check targetWordsIn)이다. 알림을 잘 따른 응답(걸린 낱말이 어느 칸에도 없음)은 같은 값이 된다.
+ */
+export function retryAimGuardOf<V extends RetryAimValue>({
+  fail,
+  entries,
+  value,
+  card,
+  options,
+}: {
+  fail: HeldQuestionFail;
+  /** 합친 문장(mergeQuestionRetry 의 entries). */
+  entries: readonly RetrySentence[];
+  /** 합친 값(mergeQuestionRetry 의 value). */
+  value: V;
+  card: {
+    required: readonly RetryAimItem[];
+    more: readonly RetryAimItem[];
+  };
+  options: Pick<LowLevelLineOptions, "lemmaOf">;
+}): V | null {
+  if (fail.reason !== "target_word" || fail.words.length === 0) return value;
+  const has = (text: string) =>
+    targetWordsIn(text, fail.words, options).length > 0;
+  // ①
+  if (entries.some((e) => e.state === "held" && e.question && has(e.en)))
+    return null;
+  // ②
+  const nextTargets = value.next_targets.filter((t) => !has(t));
+  // ③
+  const kind = value.card_item.kind;
+  const item =
+    kind === "required" || kind === "more"
+      ? (kind === "required" ? card.required : card.more).find(
+          (x) => x.no === value.card_item.no,
+        )
+      : undefined;
+  const cardItem =
+    item !== undefined && has(item.targets.join(" "))
+      ? { ...value.card_item, kind: "none", no: 0 }
+      : value.card_item;
+  // ④
+  const stale =
+    has(value.next_answer_example) || value.next_hints.some((h) => has(h));
+  return {
+    ...value,
+    next_targets: nextTargets,
+    card_item: cardItem,
+    ...(stale
+      ? { next_answer_example: "", next_hints: [], next_hint_ko: "" }
+      : {}),
+  };
 }

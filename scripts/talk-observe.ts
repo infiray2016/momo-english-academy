@@ -370,6 +370,7 @@ import {
   keepLastHeldQuestion,
   mergeQuestionRetry,
   questionRetryNoteOf,
+  retryAimGuardOf,
   stuckRewriteNoteOf,
 } from "../src/core/conversation/question-retry";
 import { metWordsIn } from "../src/core/conversation/said";
@@ -1563,7 +1564,22 @@ export type TurnRecord = {
     retryToriEn: string | null;
     /** 다시 쓴 시도의 걸림(이은 질문의 질문 검사 · 같은 질문, 통과했거나 잇지 못했으면 null). */
     retryFail: QuestionFailNote | null;
+    /**
+     * 첫 시도의 다음 질문 칸(정규화 뒤 — 다시 쓴 응답이 앞 질문의 칸을 베꼈는지 · 새로 채웠는지 가르는 재료, 장부 T-625). 첫 시도를 읽지 못했으면 null.
+     * 이 칸이 생기기 전의 결과 파일에는 없다(선택 칸).
+     */
+    firstAim?: {
+      nextTargets: string[];
+      cardItem: { kind: string; no: number };
+      answerExample: string;
+    } | null;
   } | null;
+  /**
+   * 이번 아이 차례에 보인 질문 자리의 힌트 단과 그 자리의 답(부르기 전 — 서버 lessonHintsAt · 흐름 slotOf 와 같은 셈). 앞 선생님 차례의 질문과
+   * 이 힌트 · 답의 어긋남을 직접 세는 재료다(장부 T-625). 질문 자리가 없으면 tiers 는 빈 목록 · answerExample 은 null. 이 칸이 생기기 전의
+   * 결과 파일에는 없다(선택 칸).
+   */
+  childHints?: { tiers: HintTier[]; answerExample: string | null };
 };
 
 /**
@@ -6263,6 +6279,9 @@ export function createTalkSim(
         firstToriEn: string;
         firstFail: QuestionFailNote;
         retryToriEn: string | null;
+        firstAim: NonNullable<
+          NonNullable<TurnRecord["reask"]>["firstAim"]
+        > | null;
       } | null = null;
       let merged = false;
       let retryFailed = false;
@@ -6292,9 +6311,23 @@ export function createTalkSim(
             }),
             whole: retry.ask.kind === "rewrite",
           });
-          if (joined) {
+          // 노리는 단어가 들어 걸린 질문의 노림 안전망(서버 withQuestionRetry 와 같은 함수 — 13절 C203 보완 1 (2))
+          const guarded =
+            joined && retry.ask.fail
+              ? retryAimGuardOf({
+                  fail: retry.ask.fail,
+                  entries: joined.entries,
+                  value: joined.value,
+                  card,
+                  options: lineOptions,
+                })
+              : (joined?.value ?? null);
+          if (joined && guarded === null)
+            outcome +=
+              "다시 쓴 질문에 걸린 낱말이 남음 → 앞 응답으로 카드 자리";
+          else if (joined && guarded) {
             entries = joined.entries;
-            value = blankIfNotHeard(p, joined.value);
+            value = blankIfNotHeard(p, guarded);
             blockedSentences += second.blocked;
             merged = true;
             soundFixed = second.soundFixed;
@@ -6311,6 +6344,13 @@ export function createTalkSim(
           firstToriEn,
           firstFail,
           retryToriEn: second.value?.tori_en ?? null,
+          firstAim: first.value
+            ? {
+                nextTargets: [...first.value.next_targets],
+                cardItem: { ...first.value.card_item },
+                answerExample: first.value.next_answer_example,
+              }
+            : null,
         };
       }
       const needsQuestion = holding && !merged && listed !== undefined;
@@ -6562,6 +6602,10 @@ export function createTalkSim(
           overridden: stuckOverridden,
         },
         reask: reask === null ? null : reaskRecordOf(reask, retryFail),
+        childHints: {
+          tiers: p.hintTiers.map((t) => ({ ...t })),
+          answerExample: p.slot?.answerExample ?? null,
+        },
       };
     },
   };
