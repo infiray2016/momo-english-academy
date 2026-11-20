@@ -146,19 +146,61 @@ async function pageOf(p, view) {
 }
 
 /**
- * 안내 줄의 문장 줄(M-4): 문장 조각([data-ko-sentence])마다 차지한 줄 수. 한 문장이 두 줄로 갈리면 split 거짓. 조각이 없으면(한 문장 안내) 참.
+ * 안내 줄의 문장 줄(M-4): 문장 조각([data-ko-sentence])마다 글이 차지한 줄 수. 한 문장이 두 줄로 갈리면 split 거짓. 조각이 없으면(한 문장 안내) 참.
+ * 조각은 inline-block 이라 getClientRects 는 안에서 글이 접혀도 상자 하나만 돌려준다(늘 1 — 재검토 rev-b5a-3 N-1). 그래서 글의 줄 상자를
+ * Range 로 받아 위아래로 겹치지 않는 묶음을 센다. whole 은 안내 줄 전체의 줄 수다 — 가로에서는 두 줄이어야 해서, 이 셈이 1 보다 큰 값을
+ * 낼 수 있음을 함께 보인다.
  */
 async function lineRowsOf(p) {
   return p.evaluate((s) => {
+    const rowsOf = (el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const rects = [...range.getClientRects()]
+        .filter((r) => r.width > 0 && r.height > 0)
+        .sort((a, b) => a.top - b.top);
+      let rows = 0;
+      let bottom = Number.NEGATIVE_INFINITY;
+      for (const r of rects) {
+        if (r.top >= bottom - 1) {
+          rows += 1;
+          bottom = r.bottom;
+        } else bottom = Math.max(bottom, r.bottom);
+      }
+      return rows;
+    };
     const line = document.querySelector(s);
-    if (!line) return { split: false, detail: "줄 없음" };
+    if (!line) return { split: false, whole: 0, detail: "줄 없음" };
     const parts = [...line.querySelectorAll("[data-ko-sentence]")];
-    const rows = parts.map((el) => el.getClientRects().length);
+    const rows = parts.map(rowsOf);
+    const whole = rowsOf(line);
     return {
       split: parts.length > 0 && rows.every((n) => n === 1),
-      detail: `문장 ${parts.length} · 문장마다 줄 ${rows.join("/")} · 줄 높이 ${Math.round(line.getBoundingClientRect().height)}`,
+      whole,
+      detail: `문장 ${parts.length} · 문장마다 줄 ${rows.join("/")} · 안내 전체 줄 ${whole} · 줄 높이 ${Math.round(line.getBoundingClientRect().height)}`,
     };
   }, SEL.line);
+}
+
+/**
+ * 줄 셈의 잣대 확인(재검토 rev-b5a-3 N-1): 안내 줄을 잠깐 좁혀 문장이 안에서 접히게 한 때의 줄 셈. 이때는 split 이 거짓이어야 한다 — '문장마다 한
+ * 줄' 판정이 늘 참이 아니라 문장 안의 줄 바꿈을 실제로 잡는다는 것을 보인다. 본 뒤 너비를 되돌린다(장면의 끝에서만 부른다).
+ */
+async function narrowRowsOf(p) {
+  const narrow = (width) =>
+    p.evaluate(
+      ([s, w]) => {
+        const line = document.querySelector(s);
+        if (!line) return;
+        line.style.display = w ? "inline-block" : "";
+        line.style.maxWidth = w;
+      },
+      [SEL.line, width],
+    );
+  await narrow("96px");
+  const rows = await lineRowsOf(p);
+  await narrow("");
+  return rows;
 }
 
 async function shot(p, browserName, name) {
@@ -618,7 +660,7 @@ async function staleReply(browser, url, check) {
 }
 
 /** I-6: 한 차례에 두 번 물으면 두 곁 말풍선의 '알려 준 말 듣기'가 저마다 제 표현을 읽고, 다음 턴 본문에 두 도움의 다시 들은 수가 실린다. */
-async function twoAsks(browser, url, check, { view, name }) {
+async function twoAsks(browser, url, check, { view, name, browserName }) {
   const FISH = "I like fish.";
   const p = await openChat(browser, url, {
     viewport: view,
@@ -640,6 +682,13 @@ async function twoAsks(browser, url, check, { view, name }) {
     await until(p, async () => (await phaseOf(p)) === "child");
     await advance(p, 1500);
     pages.push([`${i + 1}째 답 뒤`, await pageOf(p, view)]);
+    // 지금 질문이 칸 위로 넘어간 꼴을 눈으로 보는 사진(화면 재검토 des-ko-screen-2 N-1)
+    if (browserName)
+      await shot(
+        p,
+        browserName,
+        `l3-${view.width > view.height ? "landscape" : "portrait"}-two-asks-${i + 1}-after`,
+      );
   }
   check(
     `${name} · 한 차례에 두 번 물음: 확인 · 답 뒤마다 쪽 넘침 0 · 위 띠가 화면 안(I-1)`,
@@ -717,6 +766,14 @@ async function errorReply(browser, url, browserName, check) {
       fit.ok &&
       page.ok,
     `보냄 ${sent} · 돌아옴 ${back} · 한국어 단추 ${koLeft}(켜짐 ${koOn}) · 줄 '${line}' · ${lines.detail} · ${fit.detail} · ${page.detail}`,
+  );
+  // 잣대 확인: 안내 줄을 좁히면 문장이 안에서 접혀 '문장마다 한 줄'이 거짓이 된다(판정이 늘 참이 아님 — 재검토 rev-b5a-3 N-1)
+  const narrow = await narrowRowsOf(p);
+  const again = await lineRowsOf(p);
+  check(
+    "줄 셈의 잣대: 안내 줄을 좁히면 문장 안에서 줄이 바뀐 것으로 세고, 되돌리면 다시 문장마다 한 줄",
+    lines.split && !narrow.split && again.split,
+    `좁혔을 때 ${narrow.detail} / 되돌린 뒤 ${again.detail}`,
   );
   await p.context().close();
 }
@@ -796,8 +853,16 @@ export async function run({ browserType, browserName, url, check, log }) {
     // 기다리는 동안 · 응답 갈래 · 두 번 물음(b5-fix1 — 코드 검토 rev-b5a I-3 · I-4 · I-6)
     await stopWhileWaiting(browser, url, check);
     await staleReply(browser, url, check);
-    await twoAsks(browser, url, check, { view: PORTRAIT, name: "세로" });
-    await twoAsks(browser, url, check, { view: LANDSCAPE, name: "가로" });
+    await twoAsks(browser, url, check, {
+      view: PORTRAIT,
+      name: "세로",
+      browserName,
+    });
+    await twoAsks(browser, url, check, {
+      view: LANDSCAPE,
+      name: "가로",
+      browserName,
+    });
     await errorReply(browser, url, browserName, check);
     // (참고) 한국어 단추가 있는 수업과 끈 수업(talk.ko_ask_mode off)의 처음 쪽 넘김 · 위 띠('그만하기') 자리 — 판정 아님, 화면 검토 자료
     for (const [view, name] of [

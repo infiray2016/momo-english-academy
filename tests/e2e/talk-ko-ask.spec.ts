@@ -54,6 +54,8 @@ const SAYS = "I like it.";
 const TAUGHT = FAKE_KO_HELP.expression.teachEn;
 /** 1~3단계 표현 답의 소리 앞 쉼(ms, 시험 설정값 talk.ko_ask_sound_pause_ms). */
 const SOUND_PAUSE_MS = TEST_SETTINGS["talk.ko_ask_sound_pause_ms"].value;
+/** 문장 사이 쉼(ms, 설정 speech.sentence_pause_ms — 다시 읽기가 앞 문장 바로 뒤에 올 때 가장 늦는 만큼). */
+const SENTENCE_PAUSE_MS = TEST_SETTINGS["speech.sentence_pause_ms"].value;
 /** 쉼을 잰 값의 여유(ms, 시험 값 — 곁 말풍선이 보인 것을 시험이 알아챈 늦음). */
 const PAUSE_SLACK_MS = 300;
 /** 누르는 곳의 최소 크기(px, 13절 C226 (1) · 정본 4절 큰 단추 — 시험 값). */
@@ -150,13 +152,62 @@ async function noticeForTurn(page: Page): Promise<string> {
   return (await hint.isEnabled()) ? KO_ASK_NOTICE.hint : KO_ASK_NOTICE.talk;
 }
 
+/**
+ * 안내 줄의 문장 조각마다 글이 차지한 줄 수. 조각은 inline-block 이라 getClientRects 는 안에서 글이 접혀도 상자 하나만 돌려준다(늘 1 — 재검토
+ * rev-b5a-3 N-1). 그래서 글의 줄 상자를 Range 로 받아 위아래로 겹치지 않는 묶음을 센다.
+ */
+async function koLineRows(page: Page): Promise<number[]> {
+  return koLine(page).evaluate((line) => {
+    const rowsOf = (el: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const rects = Array.from(range.getClientRects())
+        .filter((r) => r.width > 0 && r.height > 0)
+        .sort((a, b) => a.top - b.top);
+      let rows = 0;
+      let bottom = Number.NEGATIVE_INFINITY;
+      for (const r of rects) {
+        if (r.top >= bottom - 1) {
+          rows += 1;
+          bottom = r.bottom;
+        } else bottom = Math.max(bottom, r.bottom);
+      }
+      return rows;
+    };
+    return Array.from(line.querySelectorAll("[data-ko-sentence]")).map(rowsOf);
+  });
+}
+
 /** 안내 줄의 문장마다 한 줄 안이다(두 문장 안내는 문장 사이에서만 줄이 바뀜 — C226 보완 2 (5) · 화면 검토 M-4). */
 async function expectSentencesUnbroken(page: Page) {
-  const rows = await koLine(page)
-    .locator("[data-ko-sentence]")
-    .evaluateAll((els) => els.map((el) => el.getClientRects().length));
+  const rows = await koLineRows(page);
   expect(rows.length).toBeGreaterThan(0);
   expect(rows.every((n) => n === 1)).toBe(true);
+}
+
+/**
+ * 줄 셈의 잣대 확인(재검토 rev-b5a-3 N-1): 안내 줄을 잠깐 좁혀 문장이 안에서 접히게 하면 줄 셈이 1 을 넘어야 한다 — 위 단언이 늘 참이 아니라
+ * 문장 안의 줄 바꿈을 실제로 잡는다는 것을 이 브라우저에서 보인다. 본 뒤 너비를 되돌린다(차례의 끝에서만 부른다 — 줄 높이가 잠깐 바뀐다).
+ */
+async function expectRowCountSeesBreaks(page: Page) {
+  const narrow = (on: boolean) =>
+    koLine(page).evaluate(
+      (line, width) => {
+        const el = line as HTMLElement;
+        el.style.display = width ? "inline-block" : "";
+        el.style.maxWidth = width;
+      },
+      on ? "96px" : "",
+    );
+  await narrow(true);
+  try {
+    const rows = await koLineRows(page);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.some((n) => n > 1)).toBe(true);
+  } finally {
+    await narrow(false);
+  }
+  await expectSentencesUnbroken(page);
 }
 
 async function untilChildTurn(page: Page) {
@@ -747,9 +798,10 @@ test.describe("수업 안 한국어로 묻기 — 뜻 답과 한국어 답(3단�
           (s, i) => i >= spokenBefore && s.includes(greeting),
         )
       ] ?? Number.POSITIVE_INFINITY;
-    // 가짜 음성은 바로 읽으므로 쉼이 없으면 차이는 0 근처다. 쉼(SOUND_PAUSE_MS)이 끼어들면 그 절반을 넘어 실패한다(R-1)
+    // 가짜 음성은 바로 읽으므로 쉼이 없으면 차이는 0 근처다. 다만 앞 문장이 막 읽힌 뒤 답이 오면 문장 사이 쉼(SENTENCE_PAUSE_MS)만큼은 늦을 수
+    // 있어, 문턱을 그 쉼과 소리 앞 쉼(SOUND_PAUSE_MS)의 가운데에 둔다 — 소리 앞 쉼이 끼어들면 넘어서 실패한다(R-1 · 재검토 rev-b5a-3 M-2)
     expect(againAt - (repliedAt ?? Number.POSITIVE_INFINITY)).toBeLessThan(
-      SOUND_PAUSE_MS / 2,
+      (SOUND_PAUSE_MS + SENTENCE_PAUSE_MS) / 2,
     );
     await expect(speakButton(page)).toBeEnabled({ timeout: STREAM_END_MS });
     expect(await newly()).toBe(1);
@@ -879,6 +931,8 @@ test.describe("수업 안 한국어로 묻기 — iPad 세로 · 가로에서 �
     await expectInView(hintButton(page));
     await expectInView(dontKnowButton(page));
     await expectPageAtTop(page);
+    // 줄 셈이 문장 안의 줄 바꿈을 잡는지(잣대 확인 — 차례의 끝, 너비를 잠깐 좁혔다 되돌림)
+    await expectRowCountSeesBreaks(page);
   });
 });
 
