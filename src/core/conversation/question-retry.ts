@@ -144,17 +144,17 @@ function rewriteLineOf(
 }
 
 /**
- * 노리는 단어가 든 걸린 질문의 노림 줄(13절 C203 보완 1 · 덧붙임 (다) · (라)): 이번 차례는 그 낱말을 노리지 않고, 그 낱말은 노리는 단어 칸에서
- * 빼고 뒤 차례에 꺼낸다. 보통 자리는 아이의 바로 앞 말에 이어 묻되 같은 질문에서 그 낱말만 다른 낱말로 바꿔 묻지 않고 선생님이 자연스럽게 할
- * 다른 질문을 쓴다(덧붙임 (라) — 금지 예문 · 본보기 예문은 모델이 그 꼴을 따라 쓰므로 넣지 않는다). 쉬운 질문 자리(받침 둘째)는 아이의 앞 말이
- * '잘 모르겠어요'라 이을 말이 없으므로, 막힌 질문과 같은 것을 그 낱말 없이 예 · 아니요나 선택지 둘로 쉽게 묻는다(덧붙임 (다)). 그 자리는 카드
- * 항목 none 이 정해져 있어 '다른 카드 항목' 갈래를 넣지 않는다.
+ * 노리는 단어가 든 걸린 질문의 노림 줄(13절 C203 보완 1 · 덧붙임 (다)): 이번 차례는 그 낱말을 노리지 않고, 그 낱말은 노리는 단어 칸에서
+ * 빼고 뒤 차례에 꺼낸다. 보통 자리는 아이의 바로 앞 말에 이어 다른 것을 묻는다. 쉬운 질문 자리(받침 둘째)는 아이의 앞 말이 '잘 모르겠어요'라
+ * 이을 말이 없으므로, 막힌 질문과 같은 것을 그 낱말 없이 예 · 아니요나 선택지 둘로 쉽게 묻는다(덧붙임 (다)). 그 자리는 카드 항목 none 이
+ * 정해져 있어 '다른 카드 항목' 갈래를 넣지 않는다. 덧붙임 (라)의 '그 낱말만 다른 낱말로 바꿔 묻지 않는다' 문장은 넣었다가 뺐다: 실호출에서
+ * 다시 쓴 질문의 꼴이 달라지지 않았다(덧붙임 2). 알림 글을 더 늘려 다듬지 않는다.
  */
 function targetWordAimLineOf(words: readonly string[], easy: boolean): string {
   const list = words.map((w) => `"${w}"`).join(", ");
   return easy
     ? `This turn, do not aim at ${list}: ask about the same thing as the question the child could not answer, more easily and without ${list} (a yes-or-no question, or two answer choices). Leave ${list} out of next_targets. Bring up ${list} in a later turn.`
-    : `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words, about something else. Do not ask the same question with only ${list} changed to another word; ask another question a teacher would naturally ask the child. Leave ${list} out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up ${list} in a later turn.`;
+    : `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words, about something else (who, where or what). Leave ${list} out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up ${list} in a later turn.`;
 }
 
 /**

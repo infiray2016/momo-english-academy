@@ -92,7 +92,7 @@ const ctx = { sentenceMaxWords: 8, targets: ["eat"], childWords: ["gimbap"] };
 const FIELDS_AGAIN =
   "Write the other fields again for the new question (next_targets, card_item, next_hint_ko, next_hints and next_answer_example): the hints and the answer example answer the new question, not the question that was not shown.";
 const OLD_AIM = "ask about the thing or the person instead";
-const NORMAL_AIM = `This turn, do not aim at "eat": ask one new question that follows up on the child's last words, about something else. Do not ask the same question with only "eat" changed to another word; ask another question a teacher would naturally ask the child. Leave "eat" out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up "eat" in a later turn.`;
+const NORMAL_AIM = `This turn, do not aim at "eat": ask one new question that follows up on the child's last words, about something else (who, where or what). Leave "eat" out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up "eat" in a later turn.`;
 const EASY_AIM = `This turn, do not aim at "eat": ask about the same thing as the question the child could not answer, more easily and without "eat" (a yes-or-no question, or two answer choices). Leave "eat" out of next_targets. Bring up "eat" in a later turn.`;
 
 describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰기 알림(13절 C203 보완 1 (1))", () => {
@@ -159,16 +159,13 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
     expect(note).not.toContain(OLD_AIM);
   });
 
-  it("AC-15zj (바) 덧붙임 (라): 보통 자리의 노림 줄은 그 낱말만 다른 낱말로 바꿔 묻지 않고 선생님이 자연스럽게 할 다른 질문을 쓰게 하며, '(who, where or what)' 묶음과 예문을 넣지 않는다", () => {
+  it("AC-15zj (바): 보통 자리의 노림 줄은 한 줄이고 예문이 없다(13절 C203 보완 1 덧붙임 2 — '낱말만 바꿔 묻지 않는다' 문장은 실호출에서 듣지 않아 넣지 않음)", () => {
     const note = questionRetryNoteOf(failOf("target_word", ["eat"]), ctx);
-    expect(note).toContain(
-      'Do not ask the same question with only "eat" changed to another word; ask another question a teacher would naturally ask the child.',
-    );
-    expect(note).not.toContain("(who, where or what)");
-    // 노림 줄에는 금지 · 본보기 예문이 없다(모델이 그 꼴을 따라 쓰지 않게)
     const aimLine = note.split("\n").find((l) => l.startsWith("This turn"));
     expect(aimLine).toBe(NORMAL_AIM);
+    // 노림 줄에는 금지 · 본보기 예문이 없다(모델이 그 꼴을 따라 쓰지 않게)
     expect(aimLine).not.toMatch(/e\.g\.|'[^']*\?'/);
+    expect(note).not.toContain("changed to another word");
     // 다른 줄의 'what, who or where' 권고는 그대로다
     expect(note).toContain("Prefer a what, who or where question");
   });
