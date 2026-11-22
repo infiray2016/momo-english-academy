@@ -180,7 +180,7 @@ export function questionRetryNoteOf(
     rewriteLineOf(fail.reason, easy),
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
     // 걸린 질문에 노리는 단어가 들었으면 으뜸 까닭과 관계없이 이번 차례에 그 낱말을 노리지 않는다(13절 C203 보완 1 · 덧붙임 (나)) —
-    // 까닭 줄 · 길이 줄은 첫 까닭 그대로, 노리는 단어가 없는 다시 쓰기는 노림 줄을 그대로 둔다
+    // 까닭 줄은 첫 까닭 그대로, 노리는 단어가 없는 다시 쓰기는 노림 줄을 그대로 둔다
     aimed.length > 0
       ? targetWordAimLineOf(aimed, easy)
       : `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
@@ -192,7 +192,9 @@ export function questionRetryNoteOf(
       : [
           "Prefer a what, who or where question about something new; do not fall back to 'Do you like …?' or 'A or B?' each time.",
         ]),
-    ...(fail.reason === "too_long"
+    // 길이 줄은 걸린 질문을 줄여 쓰라는 뜻이다. 보통 자리에서 노리는 단어가 든 긴 질문은 새 질문을 쓰게 하므로(노림 줄) 이 줄을 넣지 않는다 —
+    // '줄여라'와 '다른 것을 물어라'가 한 알림에서 어긋나지 않게(재검토 rev-t625-2 N-1). 낱말 수 상한은 위 줄이 이미 알린다
+    ...(fail.reason === "too_long" && (aimed.length === 0 || easy)
       ? [
           "To make it shorter, leave out extra words but keep a whole question that makes sense (not 'Is the lake with your family?').",
         ]

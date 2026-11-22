@@ -170,7 +170,7 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
     expect(note).toContain("Prefer a what, who or where question");
   });
 
-  it("AC-15zj (바) 덧붙임 (나): 길이가 먼저 걸린 긴 질문에 노리는 단어가 들었으면 aimed 에 들고, 알림은 첫 까닭 줄 · 길이 줄을 그대로 두면서 새 노림 줄을 쓴다", () => {
+  it("AC-15zj (바) 덧붙임 (나): 길이가 먼저 걸린 긴 질문에 노리는 단어가 들었으면 aimed 에 들고, 알림은 첫 까닭 줄을 그대로 두면서 새 노림 줄을 쓴다(보통 자리는 '줄이는 법' 줄을 빼고 쉬운 질문 자리는 둔다)", () => {
     const entries = held("Is soccer fun for you and your friend here?");
     const fail = heldQuestionFailOf({
       entries,
@@ -190,9 +190,20 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
       childWords: OPTIONS.childWords,
     });
     expect(note).toContain("because it was too long.");
-    expect(note).toContain("To make it shorter");
     expect(note).toContain('This turn, do not aim at "soccer"');
     expect(note).not.toContain(OLD_AIM);
+    // 보통 자리: 새 질문을 쓰게 하므로 '줄여라' 줄이 없다(한 알림에서 어긋나지 않게 — 재검토 rev-t625-2 N-1). 낱말 수 상한 줄은 있다
+    expect(note).not.toContain("To make it shorter");
+    expect(note).toContain("Use at most 8 words");
+    // 쉬운 질문 자리: 같은 것을 더 쉽게 묻는 자리라 '줄이는 법' 줄이 그대로 있다
+    const easyNote = questionRetryNoteOf(fail, {
+      sentenceMaxWords: 8,
+      targets: ["soccer"],
+      childWords: OPTIONS.childWords,
+      easySlot: true,
+    });
+    expect(easyNote).toContain("To make it shorter");
+    expect(easyNote).toContain('This turn, do not aim at "soccer"');
     // 아이가 이미 말한 낱말은 질문 검사처럼 노림에서 빠진다 → 노리는 단어 없음 → 옛 줄
     const said = heldQuestionFailOf({
       entries,
@@ -209,14 +220,16 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
     });
     expect(plain?.aimed).toBeUndefined();
     if (plain === null || said === null) throw new Error("걸림 없음");
-    for (const f of [plain, said])
-      expect(
-        questionRetryNoteOf(f, {
-          sentenceMaxWords: 8,
-          targets: ["soccer"],
-          childWords: OPTIONS.childWords,
-        }),
-      ).toContain(OLD_AIM);
+    for (const f of [plain, said]) {
+      const old = questionRetryNoteOf(f, {
+        sentenceMaxWords: 8,
+        targets: ["soccer"],
+        childWords: OPTIONS.childWords,
+      });
+      expect(old).toContain(OLD_AIM);
+      // 노리는 단어가 없는 긴 질문은 '줄이는 법' 줄을 그대로 받는다
+      expect(old).toContain("To make it shorter");
+    }
   });
 });
 

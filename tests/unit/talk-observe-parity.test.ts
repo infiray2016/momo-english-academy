@@ -5441,6 +5441,8 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 노림 안�
           : null,
     });
     expect(out.retried).toBe(true);
+    // 다시 쓴 응답은 읽혔다(읽지 못해 앞 응답으로 돌아간 것이 아님 — 재검토 rev-t625-2 의 덧말)
+    expect(again.value).not.toBeNull();
     // 서버: 안전망이 null 이라 앞 응답 그대로(합치지 않음)
     expect(out.view).toBe(parts.view);
     if (!ask) throw new Error("재질문 없음");
