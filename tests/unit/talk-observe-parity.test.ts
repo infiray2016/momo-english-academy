@@ -5391,4 +5391,67 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 노림 안�
       answerExample: p.slot?.answerExample ?? null,
     });
   });
+
+  it("AC-15zj (바): 다시 쓴 질문에 걸린 낱말이 남고 노림 칸은 빈 응답: 서버 · 도구 모두 합치지 않고 앞 응답으로 카드 자리를 만든다(안전망 ①의 null 길, 코드 검토 M-1)", async () => {
+    const m = materialsReinforce();
+    const { sim } = greeted(m);
+    const item = m.card.required.find((i) => i.targets.length > 0);
+    const word = item?.targets[0];
+    if (!item || word === undefined)
+      throw new Error("노리는 단어가 있는 필수 질문 없음");
+    const aim = {
+      next_move: "follow_up",
+      card_item: { kind: "required", no: item.no },
+      next_targets: [word],
+      next_hint_ko: item.hintKo,
+      next_hints: [...item.hints],
+      next_answer_example: item.answerExample,
+    };
+    const first = fakeMessage({ ...aim, tori_en: `Oh, good! Do you ${word}?` });
+    // 알림대로 노림 칸에서는 뺐지만 질문에는 걸린 낱말이 남은 응답
+    const second = fakeMessage({
+      ...aim,
+      next_targets: [],
+      card_item: { kind: "none", no: 0 },
+      tori_en: `Oh, good! Can you ${word}?`,
+    });
+    const ready = sim.prepare(say("Yes."), sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const p = ready.turn;
+    const ask = sim.retryOf(p, first);
+    expect(ask?.fail?.reason).toBe("target_word");
+    const parts = serverPartsOf(m, sim, p, first);
+    const again = serverPartsOf(m, sim, p, second);
+    const out = await withQuestionRetry({
+      flow: parts.flow,
+      view: parts.view,
+      lineOptions: parts.lineOptions,
+      sentenceMaxWords: p.input.sentenceMaxWords,
+      chainKeys: talkCardChainKeysOf(p.turn, m.card),
+      card: m.card,
+      retry: async () =>
+        again.value
+          ? {
+              value: again.value,
+              entries: again.flow.entries(),
+              hintsBlocked: false,
+              overLength: 0,
+              blocked: 0,
+            }
+          : null,
+    });
+    expect(out.retried).toBe(true);
+    // 서버: 안전망이 null 이라 앞 응답 그대로(합치지 않음)
+    expect(out.view).toBe(parts.view);
+    if (!ask) throw new Error("재질문 없음");
+    const record = sim.finish(p, first, { ask, result: second });
+    expect(record.reask?.outcome).toContain(
+      "다시 쓴 질문에 걸린 낱말이 남음 → 앞 응답으로 카드 자리",
+    );
+    // 다시 쓴 질문은 아이에게 나가지 않는다
+    expect(record.reask?.retryToriEn).toContain(`Can you ${word}?`);
+    expect(JSON.stringify(record.output?.tori_en ?? "")).not.toContain(
+      `Can you ${word}?`,
+    );
+  });
 });

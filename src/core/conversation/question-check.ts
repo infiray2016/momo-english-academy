@@ -402,6 +402,26 @@ function childSaidSet(
   return out;
 }
 
+/**
+ * 질문에 든 노리는 단어(질문 검사 target_word 와 같은 판정 — 아이가 이 대화에서 말한 낱말은 노림에서 뺀다, C203 (1)). 질문 다시 쓰기
+ * (question-retry heldQuestionFailOf)가 으뜸 까닭이 무엇이든 걸린 질문에 노리는 단어가 들었는가를 이 판정으로 본다(13절 C203 보완 1 덧붙임 (나)).
+ */
+export function aimedTargetWordsIn(
+  sentence: string,
+  targets: readonly string[],
+  options: Pick<
+    LowLevelLineOptions,
+    "childWords" | "lemmaOf" | "homophones" | "childLines"
+  >,
+): string[] {
+  const said = childSaidSet(options);
+  return targetWordsIn(
+    sentence,
+    targets.filter((t) => !said.has(t.toLowerCase())),
+    options,
+  );
+}
+
 /** 길이 · 어휘 · 형태 범위(질문 · 소리 줄 공통). */
 function rangeCheck(text: string, options: LowLevelLineOptions): LineCheck {
   if (overLength(text, options.sentenceMaxWords)) return fail("too_long");
@@ -427,9 +447,7 @@ export function checkLowLevelQuestion(
 ): LineCheck {
   if (sentence.trim() === "") return fail("empty");
   if (overLength(sentence, options.sentenceMaxWords)) return fail("too_long");
-  const said = childSaidSet(options);
-  const targets = options.targets.filter((t) => !said.has(t.toLowerCase()));
-  const hit = targetWordsIn(sentence, targets, options);
+  const hit = aimedTargetWordsIn(sentence, options.targets, options);
   if (hit.length > 0) return fail("target_word", hit);
   const off = offbandWordsIn(sentence, options);
   const closedOnly =

@@ -2,6 +2,7 @@
 // 다시 쓴 응답과 앞 응답 잇기. 서버 턴 길(lesson-turn)과 대본 도구(talk:observe)가 같은 함수를 쓴다(서버 사본을 만들지 않음).
 // 순수 모듈이다(시각 · DB · SDK 없음). 숫자는 부르는 쪽이 단계 규격에서 넘긴다.
 import {
+  aimedTargetWordsIn,
   checkLowLevelQuestion,
   type EasySlotCheck,
   type LowLevelLineOptions,
@@ -29,7 +30,18 @@ export type HeldQuestionFail = {
   reason: Exclude<LowLevelLineReason, "shape" | "no_target"> | "chain";
   /** 걸린 낱말(노리는 단어 · 범위 밖 낱말). 다른 까닭이면 빈 목록. */
   words: string[];
+  /**
+   * 걸린 질문에 든 노리는 단어(질문 검사와 같은 판정 question-check aimedTargetWordsIn — 으뜸 까닭이 무엇이든, 13절 C203 보완 1 덧붙임 (나)).
+   * 길이가 먼저 걸린 질문(too_long)에도 노리는 단어가 들었으면 여기에 든다. heldQuestionFailOf 가 들었을 때만 채운다. 칸이 없으면 까닭
+   * target_word 의 words 로 본다(그 밖의 까닭이면 빈 목록).
+   */
+  aimed?: string[];
 };
+
+/** 걸린 질문에 든 노리는 단어(aimed, 없으면 까닭 target_word 의 걸린 낱말). 비어 있지 않으면 새 노림 줄과 노림 안전망을 건다. */
+function aimedWordsOf(fail: HeldQuestionFail): readonly string[] {
+  return fail.aimed ?? (fail.reason === "target_word" ? fail.words : []);
+}
 
 /**
  * 1~3단계 한 차례 질문 하나(고정부 'your question is the last question sentence of tori_en' · 대본 회차 r2 판정 M-r2-1 — 'Is it apple juice? What
@@ -76,13 +88,21 @@ export function heldQuestionFailOf({
   for (const e of entries) {
     if (e.state !== "held" || !e.question || e.cue) continue;
     const check = checkLowLevelQuestion(e.en, { ...options, targets });
+    // 으뜸 까닭과 관계없이 걸린 질문에 든 노리는 단어(13절 C203 보완 1 덧붙임 (나) — 질문 검사는 길이를 먼저 본다). 들었을 때만 칸을 둔다
+    const aimed = aimedTargetWordsIn(e.en, targets, options);
+    const aim = aimed.length > 0 ? { aimed } : {};
     if (check.ok) {
       if (chainKeys.includes(questionKeyOf(e.en)))
-        return { question: e.en, reason: "chain", words: [] };
+        return { question: e.en, reason: "chain", words: [], ...aim };
       continue;
     }
     if (check.reason === "shape" || check.reason === "no_target") continue;
-    return { question: e.en, reason: check.reason, words: check.words ?? [] };
+    return {
+      question: e.en,
+      reason: check.reason,
+      words: check.words ?? [],
+      ...aim,
+    };
   }
   return null;
 }
@@ -124,15 +144,17 @@ function rewriteLineOf(
 }
 
 /**
- * 노리는 단어가 들어 걸린 질문의 노림 줄(13절 C203 보완 1): 이번 차례는 걸린 낱말을 노리지 않고, 아이의 바로 앞 말에 이어 다른 것을 묻는
- * 새 질문 하나를 쓰며, 그 낱말은 노리는 단어 칸 · 카드 항목에서 빼고 뒤 차례에 꺼낸다. 쉬운 질문 자리는 예 · 아니요 질문 줄과 어긋나지 않게
- * 'who, where or what' 과 '다른 카드 항목' 갈래를 넣지 않는다(그 자리는 카드 항목 none 이 정해져 있다).
+ * 노리는 단어가 든 걸린 질문의 노림 줄(13절 C203 보완 1 · 덧붙임 (다) · (라)): 이번 차례는 그 낱말을 노리지 않고, 그 낱말은 노리는 단어 칸에서
+ * 빼고 뒤 차례에 꺼낸다. 보통 자리는 아이의 바로 앞 말에 이어 묻되 같은 질문에서 그 낱말만 다른 낱말로 바꿔 묻지 않고 선생님이 자연스럽게 할
+ * 다른 질문을 쓴다(덧붙임 (라) — 금지 예문 · 본보기 예문은 모델이 그 꼴을 따라 쓰므로 넣지 않는다). 쉬운 질문 자리(받침 둘째)는 아이의 앞 말이
+ * '잘 모르겠어요'라 이을 말이 없으므로, 막힌 질문과 같은 것을 그 낱말 없이 예 · 아니요나 선택지 둘로 쉽게 묻는다(덧붙임 (다)). 그 자리는 카드
+ * 항목 none 이 정해져 있어 '다른 카드 항목' 갈래를 넣지 않는다.
  */
 function targetWordAimLineOf(words: readonly string[], easy: boolean): string {
   const list = words.map((w) => `"${w}"`).join(", ");
   return easy
-    ? `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words. Leave ${list} out of next_targets. Bring up ${list} in a later turn.`
-    : `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words, about something else (who, where or what). Leave ${list} out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up ${list} in a later turn.`;
+    ? `This turn, do not aim at ${list}: ask about the same thing as the question the child could not answer, more easily and without ${list} (a yes-or-no question, or two answer choices). Leave ${list} out of next_targets. Bring up ${list} in a later turn.`
+    : `This turn, do not aim at ${list}: ask one new question that follows up on the child's last words, about something else. Do not ask the same question with only ${list} changed to another word; ask another question a teacher would naturally ask the child. Leave ${list} out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up ${list} in a later turn.`;
 }
 
 /**
@@ -150,15 +172,17 @@ export function questionRetryNoteOf(
   },
 ): string {
   const easy = ctx.easySlot === true || fail.reason === "not_easy";
+  const aimed = aimedWordsOf(fail);
   const words =
     fail.words.length > 0 ? ` (words: ${fail.words.join(", ")})` : "";
   return [
     `App check: your question "${fail.question}" was not shown, because ${REASON_LINE[fail.reason]}${words}.`,
     rewriteLineOf(fail.reason, easy),
     `Use at most ${ctx.sentenceMaxWords} words, only easy words of this level, the unit words and words the child said (${ctx.childWords.join(", ") || "none"}).`,
-    // 노리는 단어가 들어 걸린 질문은 이번 차례에 그 낱말을 노리지 않는다(13절 C203 보완 1) — 다른 까닭은 노림 줄을 그대로 둔다
-    fail.reason === "target_word" && fail.words.length > 0
-      ? targetWordAimLineOf(fail.words, easy)
+    // 걸린 질문에 노리는 단어가 들었으면 으뜸 까닭과 관계없이 이번 차례에 그 낱말을 노리지 않는다(13절 C203 보완 1 · 덧붙임 (나)) —
+    // 까닭 줄 · 길이 줄은 첫 까닭 그대로, 노리는 단어가 없는 다시 쓰기는 노림 줄을 그대로 둔다
+    aimed.length > 0
+      ? targetWordAimLineOf(aimed, easy)
       : `Do not put the word the question aims at in the question (aims at: ${ctx.targets.join(", ") || "none"}); ask about the thing or the person instead (e.g. 'Do you like fish?').`,
     // [N-3] 아이의 바로 앞 말이 답인 질문 금지(대본 회차 r2 판정 N-3)
     "Do not ask a question whose answer the child just gave in the last words (after 'I drink juice.', not 'What do you do with the juice?').",
@@ -289,9 +313,10 @@ type RetryAimValue = {
 type RetryAimItem = { no: number; targets: readonly string[] };
 
 /**
- * 노리는 단어가 들어 걸린 질문을 다시 쓴 응답의 노림 안전망(13절 C203 보완 1 (2) · 02-2 3.3 · AC-15zj (바)). 까닭이 target_word 일 때만
- * 동작하고, 다른 까닭이면 합친 값을 그대로 돌려준다. 차례는 다음과 같다.
- * ① 합친 문장의 잡아 둔 질문(끝 처리가 검사할 질문)에 걸린 낱말(원형 포함)이 남았으면 null — 부르는 쪽이 앞 응답으로 카드 자리를 만든다.
+ * 노리는 단어가 든 걸린 질문을 다시 쓴 응답의 노림 안전망(13절 C203 보완 1 (2) · 덧붙임 (나) · 02-2 3.3 · AC-15zj (바)). 으뜸 까닭이 무엇이든
+ * 걸린 질문에 노리는 단어가 들었을 때(aimedWordsOf — 걸린 낱말이라 부른다) 동작하고, 들지 않았으면 합친 값을 그대로 돌려준다. 차례는 다음과 같다.
+ * ① 합친 문장의 잡아 둔 질문을 모두 보아 걸린 낱말(원형 포함)이 남았으면 null — 부르는 쪽이 앞 응답으로 카드 자리를 만든다. 끝 처리는 마지막
+ *    질문 하나만 남긴 뒤 검사하므로(keepLastHeldQuestion), ①은 끝 처리보다 넓게 볼 수 있다(지워질 앞 질문에만 남아도 카드 자리 — 더 조심스러운 쪽).
  *    빼기보다 먼저 본다: 빼고 나면 끝 처리 검사가 노리는 단어를 모르게 되어 그 질문이 지나간다(분석 U-4 · C217 보완 3 (1)).
  * ② next_targets 에서 걸린 낱말을 뺀다.
  * ③ card_item 이 가리키는 카드 항목의 노리는 단어가 걸린 낱말과 겹치면 kind none · no 0 으로 둔다.
@@ -316,9 +341,9 @@ export function retryAimGuardOf<V extends RetryAimValue>({
   };
   options: Pick<LowLevelLineOptions, "lemmaOf">;
 }): V | null {
-  if (fail.reason !== "target_word" || fail.words.length === 0) return value;
-  const has = (text: string) =>
-    targetWordsIn(text, fail.words, options).length > 0;
+  const aimed = aimedWordsOf(fail);
+  if (aimed.length === 0) return value;
+  const has = (text: string) => targetWordsIn(text, aimed, options).length > 0;
   // ①
   if (entries.some((e) => e.state === "held" && e.question && has(e.en)))
     return null;

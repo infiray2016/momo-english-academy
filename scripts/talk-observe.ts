@@ -6295,7 +6295,12 @@ export function createTalkSim(
         retryFailed = second.failure !== null;
         const firstToriEn = value?.tori_en ?? "";
         const firstFail: QuestionFailNote = retry.ask.fail
-          ? { ...retry.ask.fail, words: [...retry.ask.fail.words] }
+          ? {
+              // 기록 칸은 까닭 · 걸린 질문 · 걸린 낱말 그대로(노리는 단어 aimed 는 다시 쓰기 판정에만 쓴다)
+              question: retry.ask.fail.question,
+              reason: retry.ask.fail.reason,
+              words: [...retry.ask.fail.words],
+            }
           : { question: "", reason: "stuck_overridden", words: [] };
         let outcome = `첫 시도 ${failText(firstFail)} → `;
         if (value && entries && second.value) {
@@ -6424,7 +6429,11 @@ export function createTalkSim(
               })
             : null;
         retryFail = fail
-          ? { ...fail, words: [...fail.words] }
+          ? {
+              question: fail.question,
+              reason: fail.reason,
+              words: [...fail.words],
+            }
           : {
               question:
                 entries?.findLast((e) => e.question && !e.cue)?.en ?? "",

@@ -16,6 +16,7 @@ import type {
 } from "@/core/conversation/lesson-turns";
 import {
   type HeldQuestionFail,
+  heldQuestionFailOf,
   questionRetryNoteOf,
   type RetrySentence,
   retryAimGuardOf,
@@ -91,13 +92,13 @@ const ctx = { sentenceMaxWords: 8, targets: ["eat"], childWords: ["gimbap"] };
 const FIELDS_AGAIN =
   "Write the other fields again for the new question (next_targets, card_item, next_hint_ko, next_hints and next_answer_example): the hints and the answer example answer the new question, not the question that was not shown.";
 const OLD_AIM = "ask about the thing or the person instead";
+const NORMAL_AIM = `This turn, do not aim at "eat": ask one new question that follows up on the child's last words, about something else. Do not ask the same question with only "eat" changed to another word; ask another question a teacher would naturally ask the child. Leave "eat" out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up "eat" in a later turn.`;
+const EASY_AIM = `This turn, do not aim at "eat": ask about the same thing as the question the child could not answer, more easily and without "eat" (a yes-or-no question, or two answer choices). Leave "eat" out of next_targets. Bring up "eat" in a later turn.`;
 
 describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰기 알림(13절 C203 보완 1 (1))", () => {
   it("target_word 판: 이번 차례는 걸린 낱말을 노리지 않고, 아이 말에 이어 다른 것을 묻고, 노림 칸 · 카드 항목에서 빼고 뒤 차례에 꺼낸다", () => {
     const note = questionRetryNoteOf(failOf("target_word", ["eat"]), ctx);
-    expect(note).toContain(
-      `This turn, do not aim at "eat": ask one new question that follows up on the child's last words, about something else (who, where or what). Leave "eat" out of next_targets, and set card_item to kind none and no 0 unless the new question uses another card item. Bring up "eat" in a later turn.`,
-    );
+    expect(note).toContain(NORMAL_AIM);
     // 노림은 그대로 두고 사람 · 물건을 물으라는 줄(모순의 뿌리)은 이 알림에 없다
     expect(note).not.toContain(OLD_AIM);
     expect(note).not.toContain("(aims at: eat)");
@@ -125,7 +126,7 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
     );
   });
 
-  it("다른 까닭(too_long · offband · form · echo · not_easy · chain)은 '노리는 단어를 질문에 넣지 않는다' 줄을 그대로 둔다", () => {
+  it("걸린 질문에 노리는 단어가 없는(aimed 칸 없음) 다른 까닭(too_long · offband · form · echo · not_easy · chain)은 '노리는 단어를 질문에 넣지 않는다' 줄을 그대로 둔다", () => {
     for (const reason of [
       "too_long",
       "offband",
@@ -142,19 +143,83 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 다시 쓰�
     }
   });
 
-  it("쉬운 질문 자리의 target_word 판은 예 · 아니요 질문 줄과 어긋나는 'who, where or what' · 다른 카드 항목 갈래를 넣지 않는다", () => {
+  it("AC-15zj (바) 덧붙임 (다): 쉬운 질문 자리의 노림 줄은 막힌 질문과 같은 것을 그 낱말 없이 예 · 아니요나 선택지 둘로 쉽게 묻게 하고, 아이 말에 이어 새 질문을 쓰라는 뜻 · 'who, where or what' · 다른 카드 항목 갈래를 넣지 않는다", () => {
     const note = questionRetryNoteOf(failOf("target_word", ["eat"]), {
       ...ctx,
       easySlot: true,
     });
-    expect(note).toContain(
-      `This turn, do not aim at "eat": ask one new question that follows up on the child's last words. Leave "eat" out of next_targets. Bring up "eat" in a later turn.`,
-    );
+    expect(note).toContain(EASY_AIM);
+    expect(note).not.toContain("follows up on the child's last words");
+    // 같은 알림의 '같은 것을 쉽게' 줄과 뜻이 맞는다(어긋나던 줄 — 코드 검토 M-2 · 설계 M-2)
+    expect(note).toContain("easy yes-or-no question about the same thing");
     expect(note).not.toContain("who, where or what");
     expect(note).not.toContain(
       "unless the new question uses another card item",
     );
     expect(note).not.toContain(OLD_AIM);
+  });
+
+  it("AC-15zj (바) 덧붙임 (라): 보통 자리의 노림 줄은 그 낱말만 다른 낱말로 바꿔 묻지 않고 선생님이 자연스럽게 할 다른 질문을 쓰게 하며, '(who, where or what)' 묶음과 예문을 넣지 않는다", () => {
+    const note = questionRetryNoteOf(failOf("target_word", ["eat"]), ctx);
+    expect(note).toContain(
+      'Do not ask the same question with only "eat" changed to another word; ask another question a teacher would naturally ask the child.',
+    );
+    expect(note).not.toContain("(who, where or what)");
+    // 노림 줄에는 금지 · 본보기 예문이 없다(모델이 그 꼴을 따라 쓰지 않게)
+    const aimLine = note.split("\n").find((l) => l.startsWith("This turn"));
+    expect(aimLine).toBe(NORMAL_AIM);
+    expect(aimLine).not.toMatch(/e\.g\.|'[^']*\?'/);
+    // 다른 줄의 'what, who or where' 권고는 그대로다
+    expect(note).toContain("Prefer a what, who or where question");
+  });
+
+  it("AC-15zj (바) 덧붙임 (나): 길이가 먼저 걸린 긴 질문에 노리는 단어가 들었으면 aimed 에 들고, 알림은 첫 까닭 줄 · 길이 줄을 그대로 두면서 새 노림 줄을 쓴다", () => {
+    const entries = held("Is soccer fun for you and your friend here?");
+    const fail = heldQuestionFailOf({
+      entries,
+      targets: ["soccer"],
+      options: OPTIONS,
+    });
+    expect(fail).toEqual({
+      question: "Is soccer fun for you and your friend here?",
+      reason: "too_long",
+      words: [],
+      aimed: ["soccer"],
+    });
+    if (fail === null) throw new Error("걸림 없음");
+    const note = questionRetryNoteOf(fail, {
+      sentenceMaxWords: 8,
+      targets: ["soccer"],
+      childWords: OPTIONS.childWords,
+    });
+    expect(note).toContain("because it was too long.");
+    expect(note).toContain("To make it shorter");
+    expect(note).toContain('This turn, do not aim at "soccer"');
+    expect(note).not.toContain(OLD_AIM);
+    // 아이가 이미 말한 낱말은 질문 검사처럼 노림에서 빠진다 → 노리는 단어 없음 → 옛 줄
+    const said = heldQuestionFailOf({
+      entries,
+      targets: ["soccer"],
+      options: { ...OPTIONS, childWords: ["soccer"] },
+    });
+    expect(said?.reason).toBe("too_long");
+    expect(said?.aimed).toBeUndefined();
+    // 노리는 단어가 없는 긴 질문도 옛 줄 그대로
+    const plain = heldQuestionFailOf({
+      entries: held("Is it fun for you and your friend here?"),
+      targets: ["soccer"],
+      options: OPTIONS,
+    });
+    expect(plain?.aimed).toBeUndefined();
+    if (plain === null || said === null) throw new Error("걸림 없음");
+    for (const f of [plain, said])
+      expect(
+        questionRetryNoteOf(f, {
+          sentenceMaxWords: 8,
+          targets: ["soccer"],
+          childWords: OPTIONS.childWords,
+        }),
+      ).toContain(OLD_AIM);
   });
 });
 
@@ -237,7 +302,7 @@ describe("AC-15zj (바): 다시 쓴 응답의 노림 안전망 retryAimGuardOf(1
     expect(guard(stale({ next_targets: [] }), "Who eats with you?")).toBeNull();
   });
 
-  it("⑤ 다른 까닭(too_long · chain)의 다시 쓴 응답은 그대로 받는다(같은 값)", () => {
+  it("⑤ 걸린 질문에 노리는 단어가 없는(aimed 칸 없음) 다른 까닭(too_long · chain)의 다시 쓴 응답은 그대로 받는다(같은 값)", () => {
     const chainValue = answer({
       tori_en: "Yum! What do you do at the table?",
       card_item: { kind: "required", no: 1 },
@@ -252,6 +317,17 @@ describe("AC-15zj (바): 다시 쓴 응답의 노림 안전망 retryAimGuardOf(1
       );
       expect(out, reason).toBe(chainValue);
     }
+  });
+
+  it("⑥ AC-15zj (바) 덧붙임 (나): 으뜸 까닭이 too_long 이라도 걸린 질문에 노리는 단어가 들었으면(aimed) 안전망이 돈다", () => {
+    const long: HeldQuestionFail = {
+      ...failOf("too_long"),
+      aimed: ["eat"],
+    };
+    const out = guard(stale(), "Who is with you at the table?", long);
+    expect(out?.next_targets).toEqual([]);
+    expect(out?.next_answer_example).toBe("");
+    expect(guard(stale(), "Who eats with you?", long)).toBeNull();
   });
 });
 
@@ -356,6 +432,7 @@ const STALE_RETRY = answer({
 async function retried(
   retryValue: TalkLessonOutput,
   card?: Parameters<typeof withQuestionRetry>[0]["card"],
+  first: TalkLessonOutput = FIRST,
 ) {
   const notes: string[] = [];
   const sentences = retryValue.tori_en.split(/(?<=[!?.])\s+/);
@@ -367,8 +444,8 @@ async function retried(
     blocked: 0,
   };
   const out = await withQuestionRetry({
-    flow: flowOf(["Nice!", "Is soccer fun for you?"]),
-    view: okView(FIRST),
+    flow: flowOf(first.tori_en.split(/(?<=[!?.])\s+/)),
+    view: okView(first),
     lineOptions: OPTIONS,
     sentenceMaxWords: 8,
     ...(card === undefined ? {} : { card }),
@@ -395,14 +472,38 @@ describe("AC-15zj (바): 서버 withQuestionRetry 배선 · 흐름 결과(13절 
     expect(result.aiQuestion?.hintKo).toBeUndefined();
   });
 
-  it("서버: 다시 쓴 질문에 걸린 낱말이 남으면 안전망이 빼지 않고 끝 처리가 앞 응답으로 카드 자리를 만든다(분석 U-4)", async () => {
+  it("AC-15zj (바): 서버: 알림대로 노림 칸에서는 빼고 질문에는 걸린 낱말을 남긴 응답(범위 안 · 노림 [])은 안전망 ①이 앞 응답으로 카드 자리를 만든다(분석 U-4)", async () => {
+    // 범위 안 낱말 + 걸린 낱말 + 노림 [] — ①이 없으면 끝 처리가 노리는 단어를 몰라 이 질문이 지나간다(코드 검토 M-1)
     const { out, result } = await retried(
-      answer({ ...FIRST, tori_en: "Nice! Who plays soccer with you?" }),
+      answer({
+        ...FIRST,
+        next_targets: [],
+        tori_en: "Nice! Is soccer fun with your friend?",
+      }),
       CARD3,
     );
     expect(out.retried).toBe(true);
+    // 안전망이 null 이면 앞 응답 그대로(합치지 않음)
+    expect(out.view.kind === "ok" ? out.view.value : null).toBe(FIRST);
     expect(result.replaced).toBe("question_check");
     expect(result.kept.join(" ")).not.toContain("soccer");
+  });
+
+  it("AC-15zj (바) 덧붙임 (나): 서버: 길이가 먼저 걸린 긴 질문에 노리는 단어가 들었으면 새 노림 줄을 알리고, 묵은 노림 칸 · 카드 항목 · 답 예시를 뺀다", async () => {
+    const longFirst = answer({
+      ...FIRST,
+      tori_en: "Nice! Is soccer fun for you and your friend here?",
+    });
+    const { notes, result } = await retried(STALE_RETRY, CARD3, longFirst);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain("because it was too long.");
+    expect(notes[0]).toContain('This turn, do not aim at "soccer"');
+    expect(notes[0]).not.toContain("(aims at: soccer)");
+    expect(result.replaced).toBeNull();
+    expect(result.kept.at(-1)).toBe("Who is with you?");
+    expect(result.move.words).toEqual([]);
+    expect(result.move.item).toEqual({ kind: "none", no: 0 });
+    expect(result.aiQuestion?.answerExample).toBe("");
   });
 
   it("흐름 ⓐ ~ ⓓ: 안전망을 지난 행 뒤에는 카드 기회 뒤가 아니고 · 받침 첫째에 앞 질문의 답 소리가 없고 · 카드 2 힌트가 없고 · 필수 2 가 남은 기회에 남는다", async () => {
@@ -460,6 +561,8 @@ describe("AC-15zj (바): 서버 withQuestionRetry 배선 · 흐름 결과(13절 
       );
     };
     const guardedQ = (await retried(STALE_RETRY, CARD3)).result.aiQuestion;
+    // 그 질문에는 '힌트' 버튼이 없다(결정 (2) — 힌트 단이 빈 목록)
+    expect(hintsOf(guarded, guardedQ)).toEqual([]);
     const shown = JSON.stringify(hintsOf(guarded, guardedQ));
     expect(shown).not.toContain("Card hint 2.");
     expect(shown).not.toContain("Soccer is fun.");
