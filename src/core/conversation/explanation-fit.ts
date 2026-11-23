@@ -1,16 +1,22 @@
 // 막힌 차례의 한국어 설명이 그 차례의 영어와 맞는가(13절 C249 (4) · 02-2 3.3 한국어 설명 문단 끝 문장 · AC-15zj (사)).
 // 서버 턴 길(lesson-turn)과 대본 도구(talk:observe)가 같은 함수를 쓴다. 순수 모듈이다(시각 · DB · SDK 없음, 낱말 목록 없음 — C233).
 
-/** 영어 낱말 덩어리(라틴 글자, 축약형 · 소유격은 한 낱말). */
+/** 영어 낱말 덩어리(라틴 글자, 축약형 · 소유격은 한 낱말 — 굽은 따옴표는 wordsIn 이 먼저 곧은 따옴표로 맞춘다). */
 const ENGLISH_WORD = /[A-Za-z]+(?:'[A-Za-z]+)*/g;
 
 /** 아이 이름 자리(고정부 · 가면이 쓰는 {NAME}). 대소문자와 관계없이 뺀다. */
 const NAME_SLOT = /\{name\}/gi;
 
+/** 굽은 따옴표(’)는 곧은 따옴표로 맞춘다 — 'I’m' 과 "I'm" 이 같은 한 낱말이 되게(코드 검토 M-3). */
+const CURLY_APOSTROPHE = /\u2019/g;
+
 function wordsIn(text: string): string[] {
-  return [...text.replace(NAME_SLOT, " ").matchAll(ENGLISH_WORD)].map((m) =>
-    m[0].toLowerCase(),
-  );
+  return [
+    ...text
+      .replace(NAME_SLOT, " ")
+      .replace(CURLY_APOSTROPHE, "'")
+      .matchAll(ENGLISH_WORD),
+  ].map((m) => m[0].toLowerCase());
 }
 
 /**

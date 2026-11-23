@@ -869,6 +869,8 @@ export function createLessonSentenceFlow({
   const answer = { send: "send", held: "hold", dropped: "drop" } as const;
   // 상황 줄의 넘김 몫(이 문장 뒤에 더한다 — C249 (1))
   let pendingTail: LessonSentence | null = null;
+  // 받침 차례에서 넘김 말을 잡아 두었다 — 그 뒤의 물음표 아닌 문장도 응답 끝까지 잡아 둔다(화면 차례와 저장 글 · 뜻 차례를 같게, 코드 검토 M-1)
+  let moveOnHeld = false;
   // 마지막으로 받은 AI 문장(lastText — 뒤에 더한 앱 문장이 아니라)
   let last: LessonSentence | undefined;
   /** 1~3단계 실시간 검사(신호 말 · 지어낸 경험 · 상황 차례) — 지웠으면 참. */
@@ -972,6 +974,7 @@ export function createLessonSentenceFlow({
         entry.state = "dropped";
         entry.reason = "overlap";
       } else if (holding) entry.state = "held";
+      else if (!question && moveOnHeld) entry.state = "held";
       else if (
         !question &&
         supportPlaceOf(plan, low) !== null &&
@@ -980,6 +983,7 @@ export function createLessonSentenceFlow({
         // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 그 차례에 붙는 것이 정해질 때까지 잡아 둔다
         entry.state = "held";
         entry.moveOn = true;
+        moveOnHeld = true;
       } else if (question && !asks) {
         entry.state = "dropped";
         entry.reason = "question";
@@ -1004,7 +1008,10 @@ export function createLessonSentenceFlow({
       }
       list.push(entry);
       last = entry;
-      if (pendingTail) list.push(pendingTail);
+      if (pendingTail) {
+        list.push(pendingTail);
+        moveOnHeld = true;
+      }
       pendingTail = null;
       return entry.state === "sent" ? answer.send : answer[entry.state];
     },
@@ -1473,6 +1480,20 @@ export function settleLessonTurn({
     easyClosed &&
     replaced !== null &&
     plan.attach.some((l) => l.kind === "sound" && l.role === "answer");
+  // 대신 줄 길(두 번 실패 · 거절)이 답 소리로 닫히면 그 자리(쉬운 질문)의 줄 대신 닫기 자리 상황 줄 통째를 뜻과 함께 쓴다(닫기 꼬리는 더하지
+  // 않는다 — C249 (2), 코드 검토 I-1). 답 소리로 닫히지 않으면 그 줄 그대로다
+  const closeWhole =
+    closesWithAnswer && line && ctx.live
+      ? situationLineOf(ctx.live.situationLines, "close", ctx.live.turnNo, {
+          sentences: entries.filter((e) => willKeep(e)).map((e) => e.en),
+          texts: teacherTextsOf(ctx.turns),
+        })
+      : null;
+  const lineShown = closeWhole
+    ? cueLineView(closeWhole, ctx.spec.koMeaning)
+    : line;
+  const lineEntry = lineEntries[0];
+  if (closeWhole && lineEntry) lineEntry.en = closeWhole.en;
   // (3) 질문을 쓰지 않는 받침 차례(첫째 · 셋째)에 선생님이 쓴 질문이 지워졌으면 그 앞의 잡아 둔 넘김 말도 같은 까닭으로 뺀다
   if (support === "together" || support === "close") {
     let lastQuestion = -1;
@@ -1507,7 +1528,7 @@ export function settleLessonTurn({
       : null;
   // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
   const closeLine =
-    closesWithAnswer && reacted && ctx.live
+    closesWithAnswer && reacted && ctx.live && closeWhole === null
       ? situationLineOf(ctx.live.situationLines, "close", ctx.live.turnNo, {
           sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
           texts: teacherTextsOf(ctx.turns),
@@ -1553,8 +1574,8 @@ export function settleLessonTurn({
       ? null
       : value && value.tori_ko.length > 0
         ? value.tori_ko
-        : line?.ko !== undefined
-          ? line.ko
+        : lineShown?.ko !== undefined
+          ? lineShown.ko
           : null;
   const situationKo = situationKoOf({
     koRaw,
@@ -3336,7 +3357,8 @@ async function lessonTurnAfterChild(
     explanation: explanationRaw,
     result,
     low,
-    teacherName: lineOptions?.teacherName ?? "",
+    // 범위를 못 읽은 턴도 선생님 영어 이름을 뺀다(대본 도구와 같게 — 코드 검토 M-4)
+    teacherName: lineOptions?.teacherName ?? callInput.teacher.nameEn,
     lemmaOf: lineOptions?.lemmaOf ?? state.lemmaOf,
   });
   // 한국어 도움이 새로 보인 낱말은 '말했다'로 세지 않는다(saidWordsOf 에 넘기는 목록에서만 뺀다 — said.ts 는 고치지 않는다, plan 정한 것 9 · [N-4]).

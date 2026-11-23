@@ -5513,6 +5513,27 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
     });
   };
 
+  /** 도구 문장 문 사본(상황 줄 나누기 포함)을 서버와 같은 재료로 돌린 문장 목록(stepBoth 의 견주기와 같은 꼴 — 코드 검토 M-4). */
+  const toolEntries = (
+    m: Materials,
+    sim: TalkSim,
+    p: PreparedTurn,
+    server: ServerTurn,
+  ) => {
+    const live = observeLiveOf(m, {
+      turns: light(sim.rows),
+      teacherTurnNo:
+        (sim.rows.findLast((r) => r.speaker === "tori")?.turnNo ?? 0) + 1,
+      lineOptions: server.live?.checks.situation?.options ?? null,
+    });
+    return sentenceEntriesOf(server.sentences, p.ifAnswered, {
+      low: isLowBandLevel(m.level),
+      asked: p.before.asked,
+      max: p.flowArgs.settings.sameQuestionMax,
+      live: live?.checks ?? null,
+    });
+  };
+
   it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문이 빠지면 약속한 말 없이 닫기 넘김 → 답 소리이고, 설명 대조까지 서버와 도구가 같다", () => {
     const m = withoutSceneOpener(materialsAt(3));
     const sim = toEasySlot(m);
@@ -5528,6 +5549,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       explanation: "'gimbap'은 김밥이에요.",
     });
     const server = serverTurn(m, sim, ready.turn, message);
+    expect(toolEntries(m, sim, ready.turn, server)).toEqual(server.entries);
     const tool = toolRelease(m, sim, ready.turn, message, server);
     expect(tool.release).toEqual(server.result.release);
     expect(tool.kept).toEqual(server.result.kept);
@@ -5555,7 +5577,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       explanation: "'gimbap'은 김밥이에요.",
       result: server.result,
       low: true,
-      teacherName: lineOptions?.teacherName ?? "",
+      teacherName: lineOptions?.teacherName ?? m.teacher.nameEn,
       lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
     });
     expect(serverShown).toBeNull();
@@ -5566,7 +5588,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
         spec: m.spec,
         stuckInSlot: 2,
         low: true,
-        teacherName: lineOptions?.teacherName ?? "",
+        teacherName: lineOptions?.teacherName ?? m.teacher.nameEn,
         lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
       }),
     ).toBeNull();
@@ -5578,7 +5600,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
         spec: m.spec,
         stuckInSlot: 2,
         low: true,
-        teacherName: lineOptions?.teacherName ?? "",
+        teacherName: lineOptions?.teacherName ?? m.teacher.nameEn,
         lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
       }),
     ).toBe("'like'는 좋아한다는 뜻이에요.");
@@ -5597,6 +5619,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       tori_en: "No worries! Do you like it?",
     });
     const server = serverTurn(m, sim, ready.turn, message);
+    expect(toolEntries(m, sim, ready.turn, server)).toEqual(server.entries);
     const tool = toolRelease(m, sim, ready.turn, message, server);
     expect(tool.release).toEqual(server.result.release);
     expect(server.result.replaced).toBeNull();
@@ -5606,6 +5629,27 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       "Here is an easy one.",
       "Do you like it?",
     ]);
+  });
+
+  it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문 자리에서 회화 턴이 실패하면(대신 줄) 쉬운 것을 약속한 줄 대신 닫기 자리 상황 줄 통째와 그 뜻이고 닫기 꼬리는 없다 — 서버와 같다", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    const { server, record } = stepBoth(m, sim, dontKnow, FAILED);
+    expect(server.result.replaced).toBe("fail");
+    expect(server.result.attach[0]).toMatchObject({
+      kind: "sound",
+      role: "answer",
+    });
+    const close = m.talkLists.situation.lines.close ?? [];
+    expect(close.length).toBeGreaterThan(0);
+    // 반응 자리 줄 하나(닫기 자리 상황 줄 통째)만 나가고, 그 뒤에 닫기 꼬리가 붙지 않는다
+    expect(server.result.release).toHaveLength(1);
+    const shown = close.find((l) => l.en === server.result.release[0]);
+    expect(shown).toBeDefined();
+    expect(server.result.kept).toEqual([shown?.en]);
+    expect(server.result.text).not.toMatch(/easy|new one|try this/i);
+    expect(server.result.ko).toBe(shown?.ko);
+    expect(record.toriKo).toBe(shown?.ko);
   });
 
   it("AC-15zj (사) 받침 첫째에 넘김 말과 질문을 쓰면 둘 다 빠지고 신호 말 · 답 소리는 그대로다 — 서버와 같다", () => {

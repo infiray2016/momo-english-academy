@@ -2039,6 +2039,8 @@ export function sentenceEntriesOf(
   };
   // 상황 줄의 넘김 몫(이 문장 뒤에 더한다 — C249 (1))
   let pendingTail: Entry | null = null;
+  // 받침 차례에서 넘김 말을 잡아 둔 뒤의 물음표 아닌 문장도 잡아 둔다(서버 moveOnHeld 와 같음 — 코드 검토 M-1)
+  let moveOnHeld = false;
   for (const en of sentences) {
     const question = isQuestionSentence(en);
     const cue = low && isSoundCueOf(en, live?.cuePhrases ?? []);
@@ -2055,6 +2057,7 @@ export function sentenceEntriesOf(
       entry.state = "dropped";
       entry.reason = "overlap";
     } else if (holding) entry.state = "held";
+    else if (!question && moveOnHeld) entry.state = "held";
     else if (
       !question &&
       supportPlaceOf(plan, low) !== null &&
@@ -2063,6 +2066,7 @@ export function sentenceEntriesOf(
       // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 응답 끝까지 잡아 둔다
       entry.state = "held";
       entry.moveOn = true;
+      moveOnHeld = true;
     } else if (question && !asks) {
       entry.state = "dropped";
       entry.reason = "question";
@@ -2086,7 +2090,10 @@ export function sentenceEntriesOf(
       }
     }
     list.push(entry);
-    if (pendingTail) list.push(pendingTail);
+    if (pendingTail) {
+      list.push(pendingTail);
+      moveOnHeld = true;
+    }
     pendingTail = null;
   }
   return list;
@@ -2622,6 +2629,24 @@ export function settleTurn({
     easyClosed &&
     replaced !== null &&
     plan.attach.some((l) => l.kind === "sound" && l.role === "answer");
+  // 대신 줄 길이 답 소리로 닫히면 닫기 자리 상황 줄 통째(뜻 포함)를 쓰고 닫기 꼬리는 더하지 않는다(서버 closeWhole 과 같음 — 코드 검토 I-1)
+  const closeWhole =
+    closesWithAnswer && line && live
+      ? situationLineOf(
+          live.settle.situationLines,
+          "close",
+          live.settle.turnNo,
+          {
+            sentences: entries.filter((e) => willKeep(e)).map((e) => e.en),
+            texts: teacherTextsOf(turns),
+          },
+        )
+      : null;
+  const lineShown: FailLine | null = closeWhole
+    ? cueLineView(closeWhole, koMeaning)
+    : line;
+  const lineEntry = lineEntries[0];
+  if (closeWhole && lineEntry) lineEntry.en = closeWhole.en;
   if (support === "together" || support === "close") {
     let lastQuestion = -1;
     all.forEach((e, i) => {
@@ -2665,7 +2690,7 @@ export function settleTurn({
     : [];
   // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
   const closeLine =
-    closesWithAnswer && reacted && live
+    closesWithAnswer && reacted && live && closeWhole === null
       ? situationLineOf(
           live.settle.situationLines,
           "close",
@@ -2701,8 +2726,8 @@ export function settleTurn({
       ? null
       : value && value.tori_ko.length > 0
         ? value.tori_ko
-        : line?.ko !== undefined
-          ? line.ko
+        : lineShown?.ko !== undefined
+          ? lineShown.ko
           : null;
   const situationKo = situationKoOf({
     koRaw,

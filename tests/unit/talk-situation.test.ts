@@ -1445,6 +1445,87 @@ describe("AC-15zj (사) 받침 차례의 넘김 말(13절 C249 (1) · (2) · (3)
     expect(result.kept).toEqual(["That's okay!", "We can try it together."]);
   });
 
+  it("AC-15zj (사) 사례 6: 쉬운 질문 자리에서 회화 턴이 두 번 실패한 차례(대신 줄)가 답 소리로 닫히면 그 줄 대신 닫기 자리 상황 줄 통째와 그 뜻이고 닫기 꼬리는 없다", () => {
+    const plan = easyPlan();
+    const failLine = {
+      en: "No problem! Here is an easy one.",
+      ko: "괜찮아! 쉬운 거야.",
+    };
+    const { result } = play({
+      args: args3(easyTurns()),
+      ifAnswered: plan,
+      sentences: [],
+      outcome: { kind: "line", line: failLine },
+      child: button(),
+      over: splitLive,
+    });
+    expect(result.replaced).toBe("fail");
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+    // 돌림 차례(턴 번호 7 → 둘째 줄)의 닫기 줄 통째다
+    const whole = SPLIT_CLOSE[1];
+    expect(result.release).toEqual([whole?.en]);
+    expect(result.kept).toEqual([whole?.en]);
+    expect(result.ko).toBe(whole?.ko);
+    expect(result.text).not.toContain("easy");
+    expect(result.ko).not.toContain("쉬운");
+    const lines = lessonAfterLinesOf(result);
+    expect(lines[0]).toMatchObject({ t: "ko", ko: whole?.ko });
+    // 답 소리로 닫히지 않는 대신 줄 길(같이 말하기 자리)은 그 줄 그대로다(부모 커밋과 같음)
+    const args = args3(opening3());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    const together = { en: "Let's say it together!", ko: "같이 말해 보자!" };
+    const kept = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences: [],
+      outcome: { kind: "line", line: together },
+      child: stuckSaid(),
+      over: splitLive,
+    }).result;
+    expect(kept.release).toEqual([together.en]);
+    expect(kept.ko).toBe(together.ko);
+  });
+
+  it("AC-15zj (사) 사례 7: 넘김 말을 잡아 둔 뒤의 맞장구도 잡아 두어 화면 차례 · 저장 글 · 뜻의 차례가 같다", () => {
+    const args = args3(opening3());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    const sentences = [
+      "That's okay!",
+      "We can try it together.",
+      "You can do it!",
+    ];
+    const { states, shown, result } = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences,
+      outcome: ok(
+        out({
+          stuck: true,
+          tori_ko: ["괜찮아!", "같이 해 볼 수 있어.", "넌 할 수 있어!"],
+        }),
+      ),
+      child: stuckSaid(),
+      live: null,
+      over: { live: null },
+    });
+    // 첫 맞장구는 바로 나가고, 넘김 말 뒤의 맞장구는 넘김 말과 함께 응답 끝에 나간다
+    expect(states).toEqual(["send", "hold", "hold"]);
+    const screen = [...shown, ...result.release];
+    expect(screen).toEqual(sentences);
+    expect(result.kept).toEqual(sentences);
+    expect(result.ko).toBe("괜찮아! 같이 해 볼 수 있어. 넌 할 수 있어!");
+  });
+
   it("AC-15zj (사) 인사 토막의 쉬운 질문 자리도 같다: 질문이 빠지면 약속한 말 없이 닫기 넘김 → 인사 답 소리다", () => {
     const turns: TalkLessonTurn[] = [
       teacher(
@@ -1611,6 +1692,16 @@ describe("AC-15zj (사) 한국어 설명 대조(13절 C249 (4))", () => {
       "eat",
     ]);
   });
+  it("AC-15zj (사) 굽은 따옴표(’) 축약형도 한 낱말로 읽는다 — 설명 · 그 차례 글 어느 쪽이 굽은 따옴표여도 같다", () => {
+    expect(
+      explanationEnglishWordsOf("‘I’m’은 ‘나는 ~이야’예요.", "Mina"),
+    ).toEqual(["i'm"]);
+    expect(fits("‘I’m’은 ‘나는 ~이야’예요.", ["I'm fine."])).toBe(true);
+    expect(fits("'I'm'은 '나는 ~이야'예요.", ["I’m fine."])).toBe(true);
+    expect(explanationEnglishWordsOf("Mina’s 'eat'", "Mina")).toEqual(["eat"]);
+    // 견주기는 그대로다: 그 차례에 없는 축약형은 맞지 않는다
+    expect(fits("‘I’m’은 ‘나는 ~이야’예요.", ["You're fine."])).toBe(false);
+  });
   it("AC-15zj (사) 서버 끝: 맞지 않는 설명은 보이지도 저장하지도 않고(null), 4단계부터는 그대로다", () => {
     const args = args3(opening3());
     const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
@@ -1645,6 +1736,9 @@ describe("AC-15zj (사) 한국어 설명 대조(13절 C249 (4))", () => {
     // 붙인 답 소리의 낱말도 보인다
     const sound = result.attach.find((l) => l.kind === "sound");
     const word = sound && "en" in sound ? sound.en.split(" ")[0] : "";
+    // 견본에 답 소리가 실제로 있어야 아래 단언이 무언가를 본다(빈 글이면 영어 낱말이 없어 늘 보인다 — 코드 검토 M-5)
+    expect(sound).toBeDefined();
+    expect(word).not.toBe("");
     expect(at(`'${word}'`, true)).toBe(`'${word}'`);
     expect(
       lessonExplanationFitOf({
