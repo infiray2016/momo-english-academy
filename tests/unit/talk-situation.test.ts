@@ -1635,6 +1635,47 @@ describe("AC-15zj (사) 받침 차례의 넘김 말(13절 C249 (1) · (2) · (3)
     expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
   });
 
+  it("AC-15zj (사) 사례 11: 같이 말하기 차례에서 첫 문장이 나누지 않는 상황 줄(맞장구 + 맞장구 꼴 꼬리)로 바뀌면 통째로 바로 나가고, 질문이 지워져도 남는다(재검토 3 의 관찰)", () => {
+    const args = args3(opening3());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    // 시드 꼴 같이 말하기 줄: 꼬리도 맞장구 꼴이라 나누지 않는다
+    const SEED_TOGETHER = [
+      { en: "It's okay! I am with you.", ko: "괜찮아! 같이 있어." },
+      { en: "No problem! I can help.", ko: "괜찮아! 도와줄게." },
+      { en: "Okay! We can do this.", ko: "좋아! 할 수 있어." },
+    ];
+    const lines = { ...LINES, together: SEED_TOGETHER };
+    const { states, shown, entries, result } = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences: ["You are a spaceship star!", "Do you drink juice?"],
+      outcome: ok(out({ stuck: true })),
+      child: stuckSaid(),
+      live: liveOf(args.turns, { lines }),
+      over: { live: { situationLines: lines, turnNo: TURN_NO, cue: null } },
+    });
+    expect(situationPlaceOf(ifStuck)).toBe("together");
+    const line = entries[0];
+    expect(SEED_TOGETHER.map((l) => l.en)).toContain(line?.en);
+    // 줄 전체가 맞장구 몫이다: 넘김 표지 없이 바로 나간다(응답 끝까지 잡아 두지 않는다)
+    expect(line).toMatchObject({
+      ai: "You are a spaceship star!",
+      state: "sent",
+    });
+    expect(line?.moveOn).toBeUndefined();
+    expect(states[0]).toBe("send");
+    expect(shown).toEqual([line?.en]);
+    // 같이 말하기 차례의 질문은 지워지고, 바로 나간 줄은 남는다(반응 자리 줄을 다시 붙이지 않는다)
+    expect(result.kept).toEqual([line?.en]);
+    expect(result.release).toEqual([]);
+    expect(result.attach).toEqual(ifStuck.attach);
+  });
+
   it("AC-15zj (사) 인사 토막의 쉬운 질문 자리도 같다: 질문이 빠지면 약속한 말 없이 닫기 넘김 → 인사 답 소리다", () => {
     const turns: TalkLessonTurn[] = [
       teacher(

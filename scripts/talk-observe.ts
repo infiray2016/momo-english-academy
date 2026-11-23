@@ -2127,6 +2127,8 @@ export function sentenceEntriesOf(
       };
       return false;
     }
+    // 나눌 수 있는 줄인데 꼬리도 맞장구 꼴이라 나누지 않았다('No problem! I can help.' 꼴) — 줄 전체가 맞장구 몫이다(서버와 같음)
+    if (split?.head) reactionLine = true;
     entry.en = shown.en;
     entry.ko = shown.ko;
     return false;
@@ -2135,10 +2137,13 @@ export function sentenceEntriesOf(
   let pendingTail: Entry | null = null;
   // 받침 차례에서 넘김 말을 잡아 둔 뒤의 물음표 아닌 문장도 잡아 둔다(서버 moveOnHeld 와 같음 — 코드 검토 M-1)
   let moveOnHeld = false;
+  // 이번 문장이 나누지 않은 상황 줄(맞장구 + 맞장구 꼴 꼬리)로 바뀌었다 — 받침 갈래가 넘김 말로 잡아 두지 않는다(서버 reactionLine 과 같음)
+  let reactionLine = false;
   for (const en of sentences) {
     const question = isQuestionSentence(en);
     const cue = low && isSoundCueOf(en, live?.cuePhrases ?? []);
     const entry: Entry = { en, question, cue, state: "sent" };
+    reactionLine = false;
     if (liveDrop(entry)) {
       // 지움(1~3단계 신호 말 · 지어낸 경험 · 상황 차례 둘째 걸림부터)
     } else if (
@@ -2154,7 +2159,8 @@ export function sentenceEntriesOf(
     else if (
       !question &&
       supportPlaceOf(plan, low) !== null &&
-      !isShortReaction(entry.en)
+      !isShortReaction(entry.en) &&
+      !reactionLine
     ) {
       // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 응답 끝까지 잡아 둔다
       entry.state = "held";

@@ -884,6 +884,8 @@ export function createLessonSentenceFlow({
   let pendingTail: LessonSentence | null = null;
   // 받침 차례에서 넘김 말을 잡아 두었다 — 그 뒤의 물음표 아닌 문장도 응답 끝까지 잡아 둔다(화면 차례와 저장 글 · 뜻 차례를 같게, 코드 검토 M-1)
   let moveOnHeld = false;
+  // 이번 문장이 나누지 않은 상황 줄(맞장구 + 맞장구 꼴 꼬리)로 바뀌었다 — 통째로 맞장구 몫이라 받침 갈래가 넘김 말로 잡아 두지 않는다(C249 (1), 재검토 3 의 관찰)
+  let reactionLine = false;
   // 마지막으로 받은 AI 문장(lastText — 뒤에 더한 앱 문장이 아니라)
   let last: LessonSentence | undefined;
   /** 1~3단계 실시간 검사(신호 말 · 지어낸 경험 · 상황 차례) — 지웠으면 참. */
@@ -959,6 +961,8 @@ export function createLessonSentenceFlow({
       };
       return false;
     }
+    // 나눌 수 있는 줄인데 꼬리도 맞장구 꼴이라 나누지 않았다('No problem! I can help.' 꼴) — 줄 전체가 맞장구 몫이다
+    if (split?.head) reactionLine = true;
     entry.en = shown.en;
     entry.ko = shown.ko;
     return false;
@@ -975,6 +979,7 @@ export function createLessonSentenceFlow({
       const entry: LessonSentence = { en, question, cue, state: "sent" };
       const answers = soundAnswersOf(plan);
       const asks = asksQuestion(plan);
+      reactionLine = false;
       if (liveDrop(entry, plan)) {
         // 지움(1~3단계 신호 말 · 지어낸 경험 · 상황 차례 둘째 걸림부터)
       } else if (
@@ -990,7 +995,8 @@ export function createLessonSentenceFlow({
       else if (
         !question &&
         supportPlaceOf(plan, low) !== null &&
-        !isShortReaction(entry.en)
+        !isShortReaction(entry.en) &&
+        !reactionLine
       ) {
         // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 그 차례에 붙는 것이 정해질 때까지 잡아 둔다
         entry.state = "held";
