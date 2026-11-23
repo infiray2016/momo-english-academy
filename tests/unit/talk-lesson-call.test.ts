@@ -1146,7 +1146,7 @@ describe("fix 2 받침 단계별 1~3단계 AI 차례 규칙(재검토 N-1 · N-2
       "Levels 1-3, Turn ai with 'Question: no' after a stuck turn (saying it together): put the answer to say in model_line, not in tori_en.",
     );
     expect(three).toContain(
-      "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask an easier yes-or-no question, or put two answer choices in choices.",
+      "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask one short yes-or-no question, or one short question with its two answer choices in choices and not inside the question. Keep the question within 'Maximum words per English sentence'.",
     );
     expect(three).toContain(
       "Levels 1-3, Turn ai at Support stage 3 or after nospeech: put the answer in model_line, not in tori_en, then (when Question: yes) ask about the next topic.",
@@ -1163,6 +1163,29 @@ describe("fix 2 받침 단계별 1~3단계 AI 차례 규칙(재검토 N-1 · N-2
     );
     for (const system of [three, four])
       expect(system).not.toMatch(/, then ask about the next topic/);
+  });
+
+  it("C250 (1) · (3): 3단계 고정부의 받침 단계 줄 · 'AI 차례 · 받침 둘째' 줄은 짧은 예 · 아니요 질문 하나나 선택지 칸에 고르기 답 둘이 딸린 짧은 질문 하나를 주문하고 막힌 차례 설명은 막힌 질문을 풀이하게 한다 — 4단계 고정부에는 설명 줄이 없고 UPPER_SUPPORT_RULE 은 그대로다(AC-15zj (아))", () => {
+    const three = talkLessonSystem(lessonInput(3), lessonRules(3));
+    const four = talkLessonSystem(lessonInput(4), lessonRules(4));
+    const supportLow =
+      "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together (the app plays the answer and says the cue), 2 = an easier question (a short yes-or-no question, or a short question with two answer choices in choices), 3 = the answer once and then the next topic, with no saying it together.";
+    const stage2 =
+      "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask one short yes-or-no question, or one short question with its two answer choices in choices and not inside the question. Keep the question within 'Maximum words per English sentence'.";
+    const explain =
+      "Levels 1-3: after a stuck turn, explanation is about the question in the 'Stuck question' line, not about the question you write now, the question the app adds or the Chances words. Say in Korean what that question asks, with at most one English word taken from it, and never give its answer.";
+    const upper =
+      "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together ('That's okay! Let's say it together.'), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic ('That's okay! Let's move on.'), with no saying it together.";
+    for (const line of [supportLow, stage2, explain])
+      expect(three).toContain(line);
+    expect(three).not.toContain("yes or no, or two choices");
+    expect(three).not.toContain("Ask an easier yes-or-no question");
+    // 상한 줄 이름은 가변부의 그 줄과 글자까지 같다
+    expect(three).toContain("Maximum words per English sentence: ");
+    expect(four).not.toContain(explain);
+    expect(four).not.toContain("'Stuck question' line");
+    expect(four).toContain(upper);
+    expect(four).not.toContain(supportLow);
   });
 
   it("3단계 AI 이어 묻기에서 두 번 막힌 계획은 AI 차례 · 질문함 · 받침 둘째이고, 그 응답의 선택지 둘(같은 꼴 · next_targets 의 노리는 단어)은 정규화를 지나며 따라 할 말 칸의 답은 남지 않는다", () => {

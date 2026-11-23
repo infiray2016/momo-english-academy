@@ -1099,7 +1099,7 @@ function lowSituationRules(): {
 } {
   return {
     support:
-      "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together (the app plays the answer and says the cue), 2 = an easier question (yes or no, or two choices), 3 = the answer once and then the next topic, with no saying it together.",
+      "After the child got stuck (Reason: button or stuck), never ask the stuck question again. Support stage: 1 = say it together (the app plays the answer and says the cue), 2 = an easier question (a short yes-or-no question, or a short question with two answer choices in choices), 3 = the answer once and then the next topic, with no saying it together.",
     nospeech:
       "When Reason is nospeech, the 'Not heard' line tells you that the app could not get the child's voice. It is a technical problem: never treat it as the child's answer, as not knowing or as a mistake, never blame the child, and never praise or say back words you did not hear. Say in your own words that you could not hear it because of the sound, then move on (the 'Example line' shows only the kind of line). When Turn is card_slot after nospeech, write only that short line: no answer and no question.",
     greetingEnd:
@@ -1219,7 +1219,9 @@ function lowBandRules(
     // 상황 차례 예는 사용자 메시지에 그 자리 하나만(판정 r1 I-1 · M-1) — 앱은 베낀 줄 · 되풀이한 줄을 상황 줄로 바꾼다(situation repeat)
     "In the greeting end, support and not-heard turns, the 'Example line' in the message shows only the kind of line for this place. Never copy it or any of its sentences word for word, never use a line made for another place, and never repeat a sentence you already said in this conversation: react to what the child said or did in your own short words. The app changes a copied or repeated line.",
     "Levels 1-3, Turn ai with 'Question: no' after a stuck turn (saying it together): put the answer to say in model_line, not in tori_en.",
-    "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask an easier yes-or-no question, or put two answer choices in choices.",
+    "Levels 1-3, Turn ai at Support stage 2: do not give the answer. Ask one short yes-or-no question, or one short question with its two answer choices in choices and not inside the question. Keep the question within 'Maximum words per English sentence'.",
+    // 막힌 차례의 한국어 설명은 막힌 질문을 풀이(13절 C250 (3)) — 앱의 설명 대조(explanation-fit, C249 (4))는 안전망으로 그대로
+    "Levels 1-3: after a stuck turn, explanation is about the question in the 'Stuck question' line, not about the question you write now, the question the app adds or the Chances words. Say in Korean what that question asks, with at most one English word taken from it, and never give its answer.",
     "Levels 1-3, Turn ai at Support stage 3 or after nospeech: put the answer in model_line, not in tori_en, then (when Question: yes) ask about the next topic.",
     "Levels 1-3: never write in tori_en the English the child should say.",
     // 말 길이는 아이 중심(C211 (3)) — 반응 문장 수는 설정 talk.teacher_sentences_max.<구간> 에서 질문 하나를 뺀 수

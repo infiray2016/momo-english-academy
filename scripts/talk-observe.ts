@@ -242,6 +242,7 @@ import {
   type KoHelpTurnRow,
   koHelpStandingOf,
   koHelpTurnNosOf,
+  koHelpUnitWordsOf,
   koTaughtHeardOf,
   leadKoHelpOf,
   raiseHintKind,
@@ -375,7 +376,7 @@ import {
   retryAimGuardOf,
   stuckRewriteNoteOf,
 } from "../src/core/conversation/question-retry";
-import { metWordsIn } from "../src/core/conversation/said";
+import { metWordsIn, saidWordsOf } from "../src/core/conversation/said";
 import {
   allowedLemmaOfVocab,
   checkSituationSentence,
@@ -946,12 +947,93 @@ const hasList = (raw: unknown) => raw !== undefined && raw !== null;
  */
 export function observeEasySlotOf(
   chosen: Pick<TeacherTurnPlan, "kind" | "aiAsks" | "stage">,
-  value: Pick<TalkLessonOutput, "choices">,
+  value: Pick<TalkLessonOutput, "choices"> & ObserveAiHintOutput,
   low: boolean,
+  /** 그 질문 자리의 힌트 재료와 그 응답의 질문 · 힌트 검사 걸림(서버 lessonEasySlotOf 의 hint 사본 — 13절 C250). 없으면 englishHint 거짓. */
+  hint?: {
+    ctx: ObserveEasyHint | null | undefined;
+    question: string;
+    hintsBlocked: boolean;
+  },
 ): EasySlotCheck | undefined {
-  return talkEasyAiSlotOf(chosen, low)
-    ? { choices: value.choices.length }
-    : undefined;
+  if (!talkEasyAiSlotOf(chosen, low)) return undefined;
+  const englishHint =
+    hint?.ctx != null &&
+    observeEasyEnglishHintOf(hint.ctx, {
+      question: hint.question,
+      hints: observeAiQuestionHintsOf(value, hint.hintsBlocked),
+    });
+  // 거짓이면 칸을 두지 않는다(지금까지의 꼴 그대로)
+  return {
+    choices: value.choices.length,
+    ...(englishHint ? { englishHint: true } : {}),
+  };
+}
+
+/** 선생님 행 AI 질문 힌트를 만드는 회화 턴 출력 칸. */
+export type ObserveAiHintOutput = Pick<
+  TalkLessonOutput,
+  "next_hint_ko" | "next_hints" | "next_usable_phrases"
+>;
+
+/** 선생님 행에 남길 AI 질문 힌트(서버 lessonAiQuestionHintsOf 사본 — 힌트 칸이 걸렸으면 빈 칸). settleTurn 과 C250 조건이 같은 식을 쓴다. */
+export function observeAiQuestionHintsOf(
+  value: ObserveAiHintOutput,
+  hintsBlocked: boolean,
+): AiHints {
+  return hintsBlocked
+    ? { hintKo: "", hints: [], usable: [] }
+    : {
+        hintKo: value.next_hint_ko,
+        hints: [...value.next_hints],
+        usable: [...value.next_usable_phrases],
+      };
+}
+
+/** 받침 둘째 AI 쉬운 질문 자리의 힌트 재료(서버 LessonEasyHintContext 사본 — 이번 아이 행까지의 흐름 행 · 위치와 힌트 단 재료, 13절 C250). */
+export type ObserveEasyHint = {
+  spec: TalkLevelSpec;
+  card: TalkCard;
+  turns: readonly TalkLessonTurn[];
+  /** 선생님 행 차례대로의 AI 질문 힌트(없는 행은 null). */
+  aiQuestions: readonly (ObserveAiQuestion | null)[];
+  position: Pick<
+    ReturnType<typeof talkLessonPositionOf>,
+    "slot" | "stuckInSlot"
+  >;
+};
+
+/**
+ * 받침 둘째 AI 쉬운 질문 자리에서 그 응답의 영어 힌트가 그 질문 자리의 힌트 단으로 남는가(서버 lessonEasyEnglishHintOf 사본 — 13절 C250).
+ * 질문 자리 글을 그 질문으로 바꾼 자리 · 그 질문과 저장될 힌트를 단 선생님 행을 더한 목록으로 observeHintTiersOf 가 고른 힌트 단이 카드 칸이
+ * 아니라 AI 힌트에서 왔고, 누르지 않고 들은 도움이 없어도 열린 단의 힌트 종류가 '영어'일 때만 참이다.
+ */
+export function observeEasyEnglishHintOf(
+  ctx: ObserveEasyHint,
+  turn: { question: string; hints: AiHints },
+): boolean {
+  const slot = ctx.position.slot;
+  if (slot === null || turn.question.trim() === "") return false;
+  const next: TalkQuestionSlot = { ...slot, question: turn.question };
+  if (
+    observeHintItemAt({ spec: ctx.spec, card: ctx.card, slot: next }) !== null
+  )
+    return false;
+  const tiers = observeHintTiersOf({
+    spec: ctx.spec,
+    card: ctx.card,
+    turns: ctx.turns,
+    aiQuestions: [...ctx.aiQuestions, { en: turn.question, ...turn.hints }],
+    slot: next,
+  });
+  const opened = openedTierCount({
+    tiers,
+    pressed: 0,
+    dontKnowCount: ctx.position.stuckInSlot,
+  });
+  return (
+    hintKindOf({ opened: tiers.slice(0, opened), heard: [] }) === "english"
+  );
 }
 
 const recordOf = <K extends string, V>(keys: readonly K[], value: () => V) =>
@@ -1589,6 +1671,18 @@ export type TurnRecord = {
    * 결과 파일에는 없다(선택 칸).
    */
   childHints?: { tiers: HintTier[]; answerExample: string | null };
+  /**
+   * 받침 둘째 AI 쉬운 질문 자리의 첫 응답(다시 쓰기 전 — 13절 C250 다시 재기): 선택지 칸의 수 · 영어 힌트 수 · 출력 검사가 힌트 칸을 걸렀는지 ·
+   * 그 응답의 영어 힌트가 그 질문 자리의 힌트 단으로 남는다는 조건(englishHint — 참이면 노리는 단어 검사를 걸지 않았다). 그 자리가 아니면 없다.
+   */
+  easyFirst?: {
+    choices: number;
+    englishHints: number;
+    hintsBlocked: boolean;
+    englishHint: boolean;
+  };
+  /** 이번 아이 행의 힌트 종류와 그 차례에 '말했다'로 센 단원 단어(서버와 같은 core saidWordsOf — 13절 C250 다시 재기). 이 칸이 생기기 전의 결과 파일에는 없다. */
+  childRow?: { hintKind: TalkHintKind; said: string[] };
 };
 
 /**
@@ -2455,6 +2549,7 @@ export function settleTurn({
   hintsBlocked = false,
   failLine,
   live = null,
+  easyHint = null,
   materials,
   turns,
   asked,
@@ -2477,6 +2572,8 @@ export function settleTurn({
   failLine?: FailLine | null;
   /** 1~3단계 실시간 검사 · 끝 처리 재료(observeLiveOf). 없으면 신호 말 · 상황 줄이 없다(4단계부터 · 옛 시험). */
   live?: ObserveLive | null;
+  /** 받침 둘째 AI 쉬운 질문 자리의 힌트 재료(서버 ctx.easyHint 사본 — 13절 C250). 없으면 그 자리의 노리는 단어 검사를 지금처럼 건다. */
+  easyHint?: ObserveEasyHint | null;
   materials: Pick<Materials, "card" | "spec">;
   turns: readonly TalkLessonTurn[];
   asked: ReadonlyMap<string, number>;
@@ -2519,7 +2616,12 @@ export function settleTurn({
     else {
       const options = lineOptions;
       // 받침 둘째의 AI 질문 자리는 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 받는다(서버와 같음 — 13절 C217 (2) (ㄴ), 다시 쓰기와 같은 판정)
-      const easySlot = observeEasySlotOf(chosen, value, low);
+      // 그 응답의 영어 힌트가 그 질문 자리의 힌트 단으로 남으면 노리는 단어 검사를 걸지 않는다(서버와 같음 — 13절 C250)
+      const easySlot = observeEasySlotOf(chosen, value, low, {
+        ctx: easyHint,
+        question: heldQuestions.at(-1)?.en ?? "",
+        hintsBlocked,
+      });
       const ranged = heldQuestions.every(
         (q) =>
           checkLowLevelQuestion(q.en, {
@@ -2836,13 +2938,7 @@ export function settleTurn({
       asksNext && value && turnQuestion !== null
         ? {
             en: turnQuestion,
-            ...(hintsBlocked
-              ? { hintKo: "", hints: [], usable: [] }
-              : {
-                  hintKo: value.next_hint_ko,
-                  hints: [...value.next_hints],
-                  usable: [...value.next_usable_phrases],
-                }),
+            ...observeAiQuestionHintsOf(value, hintsBlocked),
           }
         : null,
     cue: cueLine ? cueLineView(cueLine, koMeaning) : null,
@@ -2952,6 +3048,33 @@ export function observeHintTiersOf({
   slot: TalkQuestionSlot | null;
 }): HintTier[] {
   if (!slot) return [];
+  const item = observeHintItemAt({ spec, card, slot });
+  const row =
+    item || slot.question === null
+      ? undefined
+      : aiQuestions.findLast((r) => r?.en === slot.question);
+  const ai =
+    row && (row.hintKo !== "" || row.hints.length > 0 || row.usable.length > 0)
+      ? { hintKo: row.hintKo, hints: row.hints, usable: row.usable }
+      : undefined;
+  return lessonHintTiersOf({
+    spec,
+    item,
+    ai,
+    askKind: askKindOf(turns, slot),
+  });
+}
+
+/** 그 질문 자리의 힌트 단을 대는 카드 칸(서버 lessonHintItemAt 사본). null 이면 그 질문을 쓴 선생님 행의 AI 힌트가 힌트 단이다. */
+function observeHintItemAt({
+  spec,
+  card,
+  slot,
+}: {
+  spec: TalkLevelSpec;
+  card: TalkCard;
+  slot: TalkQuestionSlot;
+}): LessonHintItem | null {
   const englishTiers = spec.hintTiers.filter((t) => t !== "ko");
   const cardItem =
     slot.item.kind === "none"
@@ -2986,21 +3109,7 @@ export function observeHintTiersOf({
       usablePhrases: [],
     };
   })();
-  const item = cardItem ?? sceneItem ?? greetingItem;
-  const row =
-    item || slot.question === null
-      ? undefined
-      : aiQuestions.findLast((r) => r?.en === slot.question);
-  const ai =
-    row && (row.hintKo !== "" || row.hints.length > 0 || row.usable.length > 0)
-      ? { hintKo: row.hintKo, hints: row.hints, usable: row.usable }
-      : undefined;
-  return lessonHintTiersOf({
-    spec,
-    item,
-    ai,
-    askKind: askKindOf(turns, slot),
-  });
+  return cardItem ?? sceneItem ?? greetingItem;
 }
 
 /** 응답 → 정규화 값(서버 parsedAnswer · ai-contract evaluateCall 과 같은 길). raw 는 정규화 전(소리 줄 바뀜 판정). */
@@ -3775,6 +3884,36 @@ export function createTalkSim(
       | (SimRow & { speaker: "tori" })
       | undefined;
   const nextToriNo = () => (rows.at(-1)?.turnNo ?? 0) + 1;
+  /** 대본 차례의 아이 행(끝 처리가 더하는 행 — 서버 lessonChildLiteOf 자리). C250 힌트 재료(easyHintOf)도 같은 행으로 위치를 센다. */
+  const childRowOf = (p: PreparedTurn, stuck: boolean): SimRow => ({
+    speaker: "child",
+    turnNo: lastTori()?.turnNo ?? 0,
+    // talk_turns.segment 에 greeting_end 가 없어 저장된 행은 greeting 이다(되짚기가 인사 끝을 스스로 안다)
+    segment: p.segment === "greeting_end" ? "greeting" : p.segment,
+    text: p.childText,
+    input: p.mode,
+    nospeech: p.nospeech,
+    stuck,
+    targets: [...p.targets],
+    sentUserMessage: p.userMessage,
+  });
+  /** 받침 둘째 AI 쉬운 질문 자리의 힌트 재료(서버 lessonTurnAfterChild 의 easyHint 사본 — 이번 아이 행까지의 위치, 13절 C250). */
+  const easyHintOf = (
+    p: PreparedTurn,
+    stuck: boolean,
+  ): ObserveEasyHint | null => {
+    if (!low) return null;
+    const turns = [...lightTurns(), lightOf(childRowOf(p, stuck))];
+    return {
+      spec,
+      card,
+      turns,
+      aiQuestions: rows.flatMap((r) =>
+        r.speaker === "tori" ? [r.aiQuestion] : [],
+      ),
+      position: talkLessonPositionOf({ ...p.flowArgs, turns }),
+    };
+  };
 
   /** 앱 차례(첫 인사 · 대화 첫 질문 — AI 없음) 행을 더한다. 더한 글을 돌려준다. */
   const appendAppTurns = (): string[] => {
@@ -6429,6 +6568,18 @@ export function createTalkSim(
       const entries = rewrite ? heldAll(listed) : listed;
       const options = lineOptionsFor(p.childText);
       const targets = first.value.next_targets;
+      // 받침 둘째 AI 쉬운 질문 자리면 그 응답의 영어 힌트가 힌트 단으로 남는지도 본다(서버 withQuestionRetry easyHint 와 같음 — 13절 C250)
+      const easySlot = observeEasySlotOf(chosen, first.value, low, {
+        ctx: easyHintOf(
+          p,
+          blankIfNotHeard(p, first.value)?.stuck === true &&
+            p.mode === "speech",
+        ),
+        question:
+          entries.findLast((e) => e.state === "held" && e.question && !e.cue)
+            ?.en ?? "",
+        hintsBlocked: first.hintsBlocked,
+      });
       let fail: HeldQuestionFail | null = null;
       let note: string;
       if (rewrite) note = stuckRewriteNoteOf(p.childText ?? "");
@@ -6437,10 +6588,7 @@ export function createTalkSim(
           entries,
           targets,
           // 받침 둘째의 AI 질문 자리면 쉬운 질문 조건을 함께 본다(끝 처리와 같은 판정 — 서버 withQuestionRetry)
-          options: {
-            ...options,
-            easySlot: observeEasySlotOf(chosen, first.value, low),
-          },
+          options: { ...options, easySlot },
           // 카드 답 바로 뒤 차례의 카드 필수 질문 글(13절 C217 (2) (ㄷ))
           chainKeys: talkCardChainKeysOf(p.turn, card),
         });
@@ -6450,7 +6598,7 @@ export function createTalkSim(
           targets,
           childWords: options.childWords,
           // 쉬운 질문 자리면 까닭과 관계없이 예 · 아니요 질문으로 다시 쓰게 한다(서버 withQuestionRetry 와 같음 — 코드 검토 rev-content-1 M-1)
-          easySlot: observeEasySlotOf(chosen, first.value, low) !== undefined,
+          easySlot: easySlot !== undefined,
         });
       }
       const input: TalkLessonInput = {
@@ -6582,19 +6730,9 @@ export function createTalkSim(
       }
       const needsQuestion = holding && !merged && listed !== undefined;
       if (needsQuestion) entries = droppedAll(listed);
-      const child: SimRow = {
-        speaker: "child",
-        turnNo,
-        // talk_turns.segment 에 greeting_end 가 없어 저장된 행은 greeting 이다(되짚기가 인사 끝을 스스로 안다)
-        segment: p.segment === "greeting_end" ? "greeting" : p.segment,
-        text: p.childText,
-        input: p.mode,
-        nospeech: p.nospeech,
-        stuck,
-        targets: [...p.targets],
-        sentUserMessage: p.userMessage,
-      };
+      const child: SimRow = childRowOf(p, stuck);
       const turnsWithChild = [...lightTurns(), lightOf(child)];
+      const easyHint = easyHintOf(p, stuck);
       // 응답이 없는 턴의 반응 한 줄(서버 lessonOutcomeViewOf — 1~3단계 상황 차례 · 아이 말이 모름 꼴이면 상황 줄, 거절은 안전한 대사, 그 밖
       // 1~3단계는 뜻 있는 안전한 대사 — 판정 r1 I-3)
       const failLine = value
@@ -6629,6 +6767,7 @@ export function createTalkSim(
         hintsBlocked,
         failLine,
         live,
+        easyHint,
         materials,
         turns: turnsWithChild,
         asked,
@@ -6646,7 +6785,14 @@ export function createTalkSim(
                 // 끝 처리와 같은 재료(받침 둘째의 쉬운 질문 조건까지 — 카드 답 뒤 까닭 chain 은 끝 처리가 보지 않는다)
                 options: {
                   ...lineOptions,
-                  easySlot: observeEasySlotOf(chosen, value, low),
+                  easySlot: observeEasySlotOf(chosen, value, low, {
+                    ctx: easyHint,
+                    question:
+                      entries.findLast(
+                        (e) => e.state === "held" && e.question && !e.cue,
+                      )?.en ?? "",
+                    hintsBlocked,
+                  }),
                 },
               })
             : null;
@@ -6850,6 +6996,44 @@ export function createTalkSim(
         childHints: {
           tiers: p.hintTiers.map((t) => ({ ...t })),
           answerExample: p.slot?.answerExample ?? null,
+        },
+        // [C250 다시 재기] 받침 둘째 AI 쉬운 질문 자리의 첫 응답(다시 쓰기 전 값 — 질문 검사와 같은 재료)
+        ...(talkEasyAiSlotOf(chosen, low) && first.value
+          ? {
+              easyFirst: {
+                choices: first.value.choices.length,
+                englishHints: first.value.next_hints.length,
+                hintsBlocked: first.hintsBlocked,
+                englishHint:
+                  observeEasySlotOf(chosen, first.value, low, {
+                    ctx: easyHint,
+                    question:
+                      listed?.findLast(
+                        (e) => e.state === "held" && e.question && !e.cue,
+                      )?.en ?? "",
+                    hintsBlocked: first.hintsBlocked,
+                  })?.englishHint ?? false,
+              },
+            }
+          : {}),
+        // [C250 다시 재기] 이번 아이 행의 힌트 종류와 '말했다'(서버 lessonSaidWordsOf 와 같은 core saidWordsOf — 말 입력 · 응답 값이 있을 때만)
+        childRow: {
+          hintKind: p.hintKind,
+          said:
+            value === null || p.mode !== "speech"
+              ? []
+              : saidWordsOf({
+                  aiWords: value.self_used_words,
+                  heard: p.childText ?? "",
+                  hintKind: p.hintKind,
+                  unitWords: koHelpUnitWordsOf(
+                    materials.ctx.unitWords,
+                    [],
+                    materials.lemmaOf,
+                  ).said,
+                  lemmaOf: materials.lemmaOf,
+                  homophones: materials.homophones.map((g) => [...g]),
+                }),
         },
       };
     },

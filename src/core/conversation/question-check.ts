@@ -163,8 +163,11 @@ export type LowLevelLineReason =
  * 받침 둘째의 AI 질문 자리(쉬운 질문 자리 — talk-lesson talkEasyAiSlotOf)의 질문 검사 재료: 그 응답에 남은 고르기 답 수(정규화 뒤 choices).
  * 질문이 예 · 아니요 꼴(첫 낱말이 do · is · can …)이거나 고르기 답 둘이 딸려 있으면 쉬운 질문이다(02-2 3.3 받침 표 둘째 '예 · 아니요 또는 둘 중
  * 고르기').
+ * englishHint: 그 응답의 영어 힌트가 그 질문 자리의 힌트 단으로 남는다(13절 C250 — 서버 lessonEasyEnglishHintOf · 대본 도구 사본이 정한다).
+ * 참이면 그 질문에 노리는 단원 단어 검사(target_word)를 걸지 않는다: 같은 자리 둘째 막힘부터 힌트가 마지막 단까지 열려 그 답의 힌트 종류가
+ * '영어'라 '말했다'로 세지 않는다. 없거나 거짓이면 지금처럼 건다.
  */
-export type EasySlotCheck = { choices: number };
+export type EasySlotCheck = { choices: number; englishHint?: boolean };
 
 /** 선택지 한 쌍의 수(06:30 답 두 개 규칙 — 설계 숫자가 아닌 꼴 상수). */
 const CHOICE_PAIR = 2;
@@ -435,7 +438,8 @@ function rangeCheck(text: string, options: LowLevelLineOptions): LineCheck {
  * 아이가 이 대화에서 말한 낱말은 되묻기에 쓸 수 있어 뺀다, C203 (1)), 그 단계 어휘 범위 · 이번 단원 단어 · 아이가 이 대화에서 말한 낱말 ·
  * {NAME} · 선생님 영어 이름 밖 낱말 없음(범위 밖이 닫힌 품사 한 낱말뿐이면 통과, C203 (2)), 범위 밖 형태 없음. 걸리면 걸린 낱말을 함께 낸다.
  * 걸린 질문은 부르는 쪽이 AI 에 한 번 다시 쓰게 하고(C203 (3), question-retry), 그래도 걸리면 카드 자리로 바꾼다. 같은 질문은 sameQuestionHit.
- * 받침 둘째의 AI 질문 자리(easySlot)는 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 지난다(13절 C217 (2) (ㄴ)).
+ * 받침 둘째의 AI 질문 자리(easySlot)는 예 · 아니요 질문이나 고르기 답 둘이 딸린 질문만 지난다(13절 C217 (2) (ㄴ)). 그 자리에서 그 응답의
+ * 영어 힌트가 힌트 단으로 남으면(easySlot.englishHint) 노리는 단어 검사만 걸지 않는다(13절 C250).
  */
 export function checkLowLevelQuestion(
   sentence: string,
@@ -447,8 +451,11 @@ export function checkLowLevelQuestion(
 ): LineCheck {
   if (sentence.trim() === "") return fail("empty");
   if (overLength(sentence, options.sentenceMaxWords)) return fail("too_long");
-  const hit = aimedTargetWordsIn(sentence, options.targets, options);
-  if (hit.length > 0) return fail("target_word", hit);
+  // 받침 둘째 AI 쉬운 질문 자리에서 그 응답의 영어 힌트가 힌트 단으로 남으면 노리는 단어 검사만 걸지 않는다(13절 C250 — A4-03 의 1~3단계 예외)
+  if (options.easySlot?.englishHint !== true) {
+    const hit = aimedTargetWordsIn(sentence, options.targets, options);
+    if (hit.length > 0) return fail("target_word", hit);
+  }
   const off = offbandWordsIn(sentence, options);
   const closedOnly =
     off.length === 1 && CLOSED_CLASS_PASS_WORDS.has(off[0] ?? "");

@@ -133,6 +133,7 @@ import {
 } from "@/server/conversation/lesson-input";
 import {
   createLessonSentenceFlow,
+  type LessonEasyHintContext,
   type LessonLiveChecks,
   type LessonOutcomeView,
   type LessonSettleLive,
@@ -464,6 +465,8 @@ function serverTurn(
     flow,
     outcome: view,
     ctx: {
+      // 받침 둘째 AI 쉬운 질문 자리의 힌트 재료(서버 lessonTurnAfterChild 와 같이 이번 아이 행까지의 위치 — 13절 C250)
+      easyHint: serverEasyHintOf(m, sim, p, [...turns, child], low),
       card: m.card,
       turns: [...turns, child],
       asked: p.before.asked,
@@ -477,6 +480,27 @@ function serverTurn(
     },
   });
   return { live, entries: flow.entries(), result, sentences, value };
+}
+
+/** 서버 lessonTurnAfterChild 의 C250 힌트 재료(단계 규격 · 카드 · 저장 행 · 이번 아이 행까지의 흐름 행과 위치). 4단계부터는 null. */
+function serverEasyHintOf(
+  m: Materials,
+  sim: TalkSim,
+  p: PreparedTurn,
+  turnsWithChild: TalkLessonTurn[],
+  low: boolean,
+): LessonEasyHintContext | null {
+  if (!low) return null;
+  return {
+    spec: m.spec,
+    card: m.card,
+    liveRows: sim.rows.map((r) => ({
+      speaker: r.speaker,
+      aiQuestion: r.speaker === "tori" ? r.aiQuestion : null,
+    })) as LessonEasyHintContext["liveRows"],
+    turns: turnsWithChild,
+    position: talkLessonPositionOf({ ...p.flowArgs, turns: turnsWithChild }),
+  };
 }
 
 /**
@@ -1791,6 +1815,16 @@ async function serverRetryOf(
   reason: string;
 } | null> {
   const parts = serverPartsOf(m, sim, p, message);
+  const stuck = parts.flow.stuckValue() === true && p.mode === "speech";
+  const turnsWithChild = [
+    ...parts.turns,
+    lessonChildLiteOf(
+      talkLessonPositionOf(p.flowArgs),
+      { mode: p.mode, nospeech: p.nospeech },
+      parts.settings,
+      stuck,
+    ),
+  ];
   let asked: {
     ask: { previous: string; note: string };
     reason: string;
@@ -1801,6 +1835,7 @@ async function serverRetryOf(
     lineOptions: parts.lineOptions,
     sentenceMaxWords: p.input.sentenceMaxWords,
     chainKeys: parts.low ? talkCardChainKeysOf(p.turn, m.card) : [],
+    easyHint: serverEasyHintOf(m, sim, p, turnsWithChild, parts.low),
     retry: async ({ previous, note, reason }) => {
       asked = { ask: { previous, note }, reason };
       return null;
@@ -1963,6 +1998,102 @@ describe("내용 고침 1(13절 C217) — 도구 배선이 서버와 같은 길"
     expect(server.result.replaced).toBeNull();
     expect(record.replaced).toBeNull();
     expect(record.teacher).toContain("Do you like fish?");
+  });
+
+  /** 쉬운 질문에 노린 단원 단어(eat)가 든 응답(영어 힌트는 주면 그대로). */
+  function easyEatMessage(hints: string[]) {
+    return fakeMessage({
+      tori_en: "No problem! Do you eat fish?",
+      next_move: "follow_up",
+      next_targets: ["eat"],
+      next_hint_ko: "물고기를 먹는지 물어요.",
+      next_hints: hints,
+      next_answer_example: "Yes, I eat fish.",
+    });
+  }
+
+  it("(6) C250 조건 참: 받침 둘째 AI 쉬운 질문에 노린 단원 단어가 들고 영어 힌트가 남으면 서버 · 도구 모두 다시 쓰지 않고 내보내며, 그 뒤 아이 차례의 힌트 종류는 서버 아이 행과 같이 '영어'이고 '말했다'가 없다", async () => {
+    const m = materialsReinforce();
+    const sim = stuckTwiceAtAiQuestion(m);
+    const hints = ["Yes, I ___ fish.", "Yes, I eat fish."];
+    const message = easyEatMessage(hints);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(ready.turn.ifAnswered).toMatchObject({
+      kind: "ai",
+      aiAsks: true,
+      stage: 2,
+    });
+    expect(sim.retryOf(ready.turn, message)).toBeNull();
+    expect(await serverRetryAsk(m, sim, ready.turn, message)).toBeNull();
+    const { record, server } = stepBoth(m, sim, dontKnow, message);
+    expect(server.result.replaced).toBeNull();
+    expect(record.replaced).toBeNull();
+    expect(record.teacher).toContain("Do you eat fish?");
+    expect(server.result.aiQuestion?.hints).toEqual(hints);
+    expect(record.easyFirst).toEqual({
+      choices: 0,
+      englishHints: 2,
+      hintsBlocked: false,
+      englishHint: true,
+    });
+    // 그 뒤 아이 차례: 도구의 아이 행 칸 = 서버 lessonChildRowOf(힌트를 누르지 않음 · 들은 도움 없음)
+    const next = sim.prepare(say("Yes, I eat fish."), sim.rows.length);
+    if (!next.ok) throw new Error(next.reason);
+    const p = next.turn;
+    const row = lessonChildRowOf(
+      {
+        sessionId: "parity",
+        clientAttemptId: "parity",
+        input: { mode: "speech", text: "Yes, I eat fish." },
+        hint: { opened: 0, heard: [] },
+      },
+      {
+        state: {
+          spec: m.spec,
+          card: m.card,
+          position: talkLessonPositionOf(p.flowArgs),
+          turns: p.flowArgs.turns,
+          liveRows: sim.rows.map((r) => ({
+            speaker: r.speaker,
+            aiQuestion: r.speaker === "tori" ? r.aiQuestion : null,
+          })),
+          segment: p.flowArgs.segment,
+        } as Parameters<typeof lessonChildRowOf>[1]["state"],
+        masker: (text) => ({ text }) as ReturnType<Masker>,
+      },
+    );
+    expect(row.hintKind).toBe("english");
+    expect(p.hintKind).toBe(row.hintKind);
+    const answered = stepBoth(
+      m,
+      sim,
+      say("Yes, I eat fish."),
+      fakeMessage({
+        tori_en: "Yum! You eat fish. What do you drink?",
+        next_move: "follow_up",
+        self_used_words: ["eat"],
+      }),
+    );
+    expect(answered.record.childRow).toEqual({ hintKind: "english", said: [] });
+  });
+
+  it("(6) C250 조건 거짓: 같은 쉬운 질문이라도 영어 힌트가 비면 서버 · 도구 모두 target_word 로 다시 쓰기 길에 들고(까닭 줄이 같다), 다시 쓰지 못하면 카드 자리다", async () => {
+    const m = materialsReinforce();
+    const sim = stuckTwiceAtAiQuestion(m);
+    const message = easyEatMessage([]);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const ask = sim.retryOf(ready.turn, message);
+    expect(ask?.fail?.reason).toBe("target_word");
+    const serverAsk = await serverRetryOf(m, sim, ready.turn, message);
+    expect(serverAsk?.reason).toBe("target_word");
+    expect(ask?.input.retry).toEqual(serverAsk?.ask);
+    const { record, server } = stepBoth(m, sim, dontKnow, message);
+    expect(server.result.replaced).toBe("question_check");
+    expect(record.replaced).toBe("question_check");
+    expect(record.easyFirst?.englishHint).toBe(false);
+    expect(record.easyFirst?.englishHints).toBe(0);
   });
 
   it("(5) 카드 답 바로 뒤 차례에 카드 필수 질문 글이 그대로 오면 다시 쓰기 까닭 줄(chain)이 서버와 같고, 끝 처리는 그 까닭을 보지 않는다", async () => {
