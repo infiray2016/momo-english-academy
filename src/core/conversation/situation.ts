@@ -213,6 +213,25 @@ export function situationTailOf(
   return { en: en.slice(1).join(" "), ko: ko.slice(1).join(" ") };
 }
 
+/**
+ * 상황 줄을 맞장구 몫과 넘김 몫으로 나눈다(13절 C249 (1) — situationTailOf 의 짝, 같은 규칙): 줄이 두 문장 이상이고 첫 문장이 맞장구이며 뜻의
+ * 문장 수가 영어와 같으면 head 는 첫 문장(맞장구), tail 은 나머지(넘김)다. 나눌 수 없으면 head 는 null 이고 tail 은 줄 그대로다. 받침 차례에서
+ * 부르는 쪽이 맞장구 몫은 바로 보내고 넘김 몫은 잡아 둔다.
+ */
+export function situationSplitOf(line: TalkListLine): {
+  head: TalkListLine | null;
+  tail: TalkListLine;
+} {
+  const tail = situationTailOf(line, true);
+  if (tail === line) return { head: null, tail: line };
+  const en = splitSentences(line.en);
+  const ko = line.ko
+    .split(/(?<=[.!?])\s+/)
+    .map((k) => k.trim())
+    .filter((k) => k !== "");
+  return { head: { en: en[0] ?? "", ko: ko[0] ?? "" }, tail };
+}
+
 /** 예 문장 전부(정규화 글 — 자리와 관계없이, 예를 그대로 베낀 문장 걸림의 재료). */
 export const SITUATION_EXAMPLE_SENTENCES: ReadonlySet<string> = new Set(
   Object.values(TALK_SITUATION_EXAMPLES)

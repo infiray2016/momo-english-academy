@@ -370,6 +370,70 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
     expect(JSON.stringify(stuckLines)).not.toContain(staleAnswer);
   });
 
+  it("AC-15zj (사) 13절 C249: 받침 둘째의 AI 쉬운 질문이 다시 써도 걸리면 쉬운 것을 약속한 말이 흘림에 없고, 닫기 넘김이 답 소리 앞에 오며 저장한 선생님 행 글이 흘린 글과 같다", async () => {
+    const { sessionId } = await sessionAtFirstQuestion();
+    const dontKnow = async (id: string) => {
+      const out: TalkLessonLine[] = [];
+      await runTalkTurnRequest(
+        {
+          sessionId,
+          clientAttemptId: `c249-dont-know-${id}-${sessionId}`,
+          input: { mode: "dont_know" },
+          hint: { opened: 0, heard: [] },
+        },
+        {
+          ...h.deps(),
+          write: (line) => out.push(line as TalkLessonLine),
+          requestReceivedAt: h.clock.now,
+        },
+      );
+      return out;
+    };
+    // AI 질문 차례(범위 안 예 · 아니요 질문 — 답 예시가 받침의 답 소리가 된다)
+    h.fake.push(
+      turnRule({
+        tori_en: "Oh, nice! Do you like it?",
+        next_move: "follow_up",
+        next_answer_example: "Yes, I do.",
+      }),
+    );
+    await sayLesson(sessionId);
+    // 받침 첫째(같이 말하기)
+    h.fake.push(turnRule({ tori_en: "That's okay!" }));
+    await dontKnow("1");
+    // 받침 둘째(AI 쉬운 질문 자리): 첫 응답의 질문 · 다시 쓴 질문 모두 범위 밖 낱말(gimbap)로 걸린다
+    const before = h.fake.requests.length;
+    h.fake.push(
+      turnRule({ tori_en: "No worries! Do you eat gimbap or drink gimbap?" }),
+    );
+    h.fake.push(turnRule({ tori_en: "Do you like gimbap?" }));
+    const lines = await dontKnow("2");
+    expect(h.fake.requests.length - before).toBe(2);
+    const said = lines.flatMap((l) => (l.t === "s" ? [l.en] : []));
+    const easyTails = [
+      "Try this one.",
+      "Here is an easy one.",
+      "Here is a new one.",
+    ];
+    const closeTails = ["Let's go on.", "Here is the answer.", "Now we go on."];
+    for (const tail of easyTails) expect(said).not.toContain(tail);
+    expect(JSON.stringify(lines)).not.toContain("gimbap");
+    const soundAt = lines.findIndex(
+      (l) => l.t === "sound" && l.kind === "answer",
+    );
+    expect(soundAt).toBeGreaterThan(0);
+    const lastSaidAt = lines.findLastIndex((l) => l.t === "s");
+    expect(lastSaidAt).toBeLessThan(soundAt);
+    expect(closeTails).toContain(said.at(-1));
+    const last = (await teacherRows(sessionId)).at(-1);
+    expect(last?.text?.split("\n")[0]).toBe(said.join(" "));
+    expect(readTalkMove(last?.move)).toMatchObject({
+      kind: "card_slot",
+      why: "question_check",
+      stage: 2,
+    });
+  });
+
   it("AC-15k 둘째 턴 요청 본문은 앞 턴 사용자 메시지와 다시 쓸 선생님 차례(붙인 카드 질문 포함)를 글자 그대로 앞에 둔다", async () => {
     const { sessionId } = await sessionAtFirstQuestion();
     h.fake.push(

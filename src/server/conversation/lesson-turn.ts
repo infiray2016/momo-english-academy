@@ -52,6 +52,7 @@ import {
   seedCuePhrasesOf,
   TALK_CUE_LINE_KIND,
 } from "@/core/conversation/cue-line";
+import { explanationFitsTurnOf } from "@/core/conversation/explanation-fit";
 import type { SoundAlikeEntry } from "@/core/conversation/heard-hint";
 import {
   type HintTier,
@@ -146,10 +147,12 @@ import {
   echoesTurnSentence,
   failSituationLineOf,
   heardFieldsBlankOf,
+  isShortReaction,
   type SituationPlace,
   situationLineOf,
   situationPlaceOf,
   situationRotationOf,
+  situationSplitOf,
   situationTailOf,
 } from "@/core/conversation/situation";
 import {
@@ -730,12 +733,32 @@ export type LessonSentence = {
     | "rewrite"
     | "cue"
     | "made_up"
-    | "situation";
+    | "situation"
+    | "promise";
   /** 상황 차례 검사에 걸려 상황 줄로 바뀐 문장의 AI 원문(보이지 않는다 — 대본 · 시험 몫). */
   ai?: string;
   /** 상황 줄로 바뀐 문장의 뜻(상황 줄의 뜻 — AI 뜻 목록의 그 문장 자리를 이것으로 바꾼다). */
   ko?: string;
+  /**
+   * 1~3단계 받침 차례에서 맞장구가 아니라 잡아 둔 넘김 말(13절 C249 (1)). 끝 처리가 그 차례에 붙는 것을 정한 뒤 내보내거나 뺀다(까닭 promise ·
+   * question).
+   */
+  moveOn?: boolean;
+  /** 앱이 더한 문장(상황 줄의 넘김 몫 · 닫기 넘김 — 13절 C249). AI 뜻 목록에 자리가 없고 ko 를 늘 갖는다. AI 문장 수에 세지 않는다. */
+  app?: boolean;
 };
+
+/** 1~3단계 받침 자리(같이 말하기 · 쉬운 질문 · 닫기)인가 — 넘김 말을 잡아 두는 차례(13절 C249 (1)). 들리지 않음 · 인사 끝은 아니다. */
+function supportPlaceOf(
+  plan: TeacherTurnPlan,
+  low: boolean,
+): "together" | "easy" | "close" | null {
+  if (!low) return null;
+  const place = situationPlaceOf(plan);
+  return place === "together" || place === "easy" || place === "close"
+    ? place
+    : null;
+}
 
 export type LessonSentenceFlow = {
   /** 응답 첫 칸(stuck)을 읽은 때(시도마다 한 번 — C127). */
@@ -844,6 +867,10 @@ export function createLessonSentenceFlow({
   const list: LessonSentence[] = [];
   const chosen = () => (stuck === true && ifStuck ? ifStuck : ifAnswered);
   const answer = { send: "send", held: "hold", dropped: "drop" } as const;
+  // 상황 줄의 넘김 몫(이 문장 뒤에 더한다 — C249 (1))
+  let pendingTail: LessonSentence | null = null;
+  // 마지막으로 받은 AI 문장(lastText — 뒤에 더한 앱 문장이 아니라)
+  let last: LessonSentence | undefined;
   /** 1~3단계 실시간 검사(신호 말 · 지어낸 경험 · 상황 차례) — 지웠으면 참. */
   const liveDrop = (entry: LessonSentence, plan: TeacherTurnPlan): boolean => {
     if (!low) return false;
@@ -898,6 +925,25 @@ export function createLessonSentenceFlow({
     // [N-1] 이 턴에 AI 맞장구가 남았으면 상황 줄의 넘김만 붙인다(반응은 AI, 넘김은 앱 — 대본 회차 r2 판정 N-1 (나))
     const shown = situationTailOf(line, reacted);
     entry.ai = entry.en;
+    // [C249 (1)] 받침 차례는 '맞장구 + 넘김' 줄을 나눠 맞장구 몫만 이 문장으로 보내고 넘김 몫은 앱 문장으로 잡아 둔다(뜻도 같은 자리로)
+    const split =
+      supportPlaceOf(plan, low) !== null && shown === line
+        ? situationSplitOf(line)
+        : null;
+    if (split?.head && !isShortReaction(split.tail.en)) {
+      entry.en = split.head.en;
+      entry.ko = split.head.ko;
+      pendingTail = {
+        en: split.tail.en,
+        question: false,
+        cue: false,
+        state: "held",
+        ko: split.tail.ko,
+        moveOn: true,
+        app: true,
+      };
+      return false;
+    }
     entry.en = shown.en;
     entry.ko = shown.ko;
     return false;
@@ -926,7 +972,15 @@ export function createLessonSentenceFlow({
         entry.state = "dropped";
         entry.reason = "overlap";
       } else if (holding) entry.state = "held";
-      else if (question && !asks) {
+      else if (
+        !question &&
+        supportPlaceOf(plan, low) !== null &&
+        !isShortReaction(entry.en)
+      ) {
+        // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 그 차례에 붙는 것이 정해질 때까지 잡아 둔다
+        entry.state = "held";
+        entry.moveOn = true;
+      } else if (question && !asks) {
         entry.state = "dropped";
         entry.reason = "question";
       } else if (question && low) {
@@ -949,9 +1003,12 @@ export function createLessonSentenceFlow({
         }
       }
       list.push(entry);
+      last = entry;
+      if (pendingTail) list.push(pendingTail);
+      pendingTail = null;
       return entry.state === "sent" ? answer.send : answer[entry.state];
     },
-    lastText: () => list.at(-1)?.en ?? "",
+    lastText: () => last?.en ?? "",
     entries: () => list.map((e) => ({ ...e })),
     chosen,
     stuckValue: () => stuck,
@@ -1401,17 +1458,76 @@ export function settleLessonTurn({
       e.reason = "overlap";
     }
   }
+  // [C249 (2) · (3)] 1~3단계 받침 차례의 잡아 둔 넘김 말은 그 차례에 붙는 것이 정해진 뒤 내보내거나 뺀다(정본 02-2 3.3 '받침 차례의 넘김 말')
+  const support = supportPlaceOf(chosen, low);
+  // (2) 받침 둘째의 AI 쉬운 질문이 빠졌다(검사 걸림 · 끊김) — 쉬운 질문을 주겠다는 넘김 말을 뺀다
+  const easyClosed = support === "easy" && questionDropped;
+  if (easyClosed)
+    for (const e of all)
+      if (e.moveOn && e.state === "held") {
+        e.state = "dropped";
+        e.reason = "promise";
+      }
+  // 앱이 답을 들려주며 그 자리를 닫는다(lessonCardSlotOf 의 답 소리 갈래) — 닫기 자리 상황 줄의 넘김 한 줄을 답 소리 앞에 둔다
+  const closesWithAnswer =
+    easyClosed &&
+    replaced !== null &&
+    plan.attach.some((l) => l.kind === "sound" && l.role === "answer");
+  // (3) 질문을 쓰지 않는 받침 차례(첫째 · 셋째)에 선생님이 쓴 질문이 지워졌으면 그 앞의 잡아 둔 넘김 말도 같은 까닭으로 뺀다
+  if (support === "together" || support === "close") {
+    let lastQuestion = -1;
+    all.forEach((e, i) => {
+      if (e.question && e.state === "dropped" && e.reason === "question")
+        lastQuestion = i;
+    });
+    all.forEach((e, i) => {
+      if (i < lastQuestion && e.moveOn && e.state === "held") {
+        e.state = "dropped";
+        e.reason = "question";
+      }
+    });
+  }
   // 반응이 다 지워진 1~3단계 상황 차례(AI 신호 말뿐 · 걸린 문장뿐 · 물음표뿐)는 상황 줄 하나를 반응 자리에 둔다('AI 몫 넓힘' plan 2 행).
-  // 이 턴은 보낸 반응 문장이 없어(질문은 1~3단계에서 늘 잡아 둠) 상황 줄을 맨 앞에 둬도 화면 차례가 맞다
+  // 이 턴은 보낸 반응 문장이 없어(질문은 1~3단계에서 늘 잡아 둠) 상황 줄을 맨 앞에 둬도 화면 차례가 맞다. 받침 둘째의 쉬운 질문이 빠진 차례는
+  // 닫기 자리의 줄을 쓴다(C249 (2) — 쉬운 것을 약속하지 않게)
   const place = low ? situationPlaceOf(chosen) : null;
   const reacted = all.some((e) => willKeep(e) && !e.question);
+  const fallbackPlace: SituationPlace | null = easyClosed ? "close" : place;
   const fallbackLine =
-    place !== null && ctx.live && outcome.kind === "ok" && !reacted
-      ? situationLineOf(ctx.live.situationLines, place, ctx.live.turnNo, {
+    fallbackPlace !== null && ctx.live && outcome.kind === "ok" && !reacted
+      ? situationLineOf(
+          ctx.live.situationLines,
+          fallbackPlace,
+          ctx.live.turnNo,
+          {
+            sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
+            texts: teacherTextsOf(ctx.turns),
+          },
+        )
+      : null;
+  // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
+  const closeLine =
+    closesWithAnswer && reacted && ctx.live
+      ? situationLineOf(ctx.live.situationLines, "close", ctx.live.turnNo, {
           sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
           texts: teacherTextsOf(ctx.turns),
+          reacted: true,
         })
       : null;
+  const closeTail = closeLine ? situationTailOf(closeLine, true) : null;
+  const after: LessonSentence[] = closeTail
+    ? [
+        {
+          en: closeTail.en,
+          question: false,
+          cue: false,
+          state: "held",
+          ko: closeTail.ko,
+          moveOn: true,
+          app: true,
+        },
+      ]
+    : [];
   const fallback: LessonSentence[] = fallbackLine
     ? [
         {
@@ -1423,7 +1539,7 @@ export function settleLessonTurn({
         },
       ]
     : [];
-  const ordered = [...fallback, ...all];
+  const ordered = [...fallback, ...all, ...after];
   const release = ordered.filter((e) => e.state === "held").map((e) => e.en);
   const kept = ordered.filter(willKeep).map((e) => e.en);
 
@@ -1440,7 +1556,13 @@ export function settleLessonTurn({
         : line?.ko !== undefined
           ? line.ko
           : null;
-  const situationKo = situationKoOf({ koRaw, entries, fallback, ordered });
+  const situationKo = situationKoOf({
+    koRaw,
+    entries,
+    fallback,
+    after,
+    ordered,
+  });
   const ko = !ctx.spec.koMeaning
     ? null
     : situationKo
@@ -1576,24 +1698,36 @@ function situationKoOf({
   koRaw,
   entries,
   fallback,
+  after = [],
   ordered,
 }: {
   koRaw: string | readonly string[] | null;
   entries: readonly LessonSentence[];
   fallback: readonly LessonSentence[];
+  /** 끝에 더한 앱 문장(닫기 넘김 — C249 (2)). */
+  after?: readonly LessonSentence[];
   ordered: readonly LessonSentence[];
 }): { ko: string | null } | null {
-  if (fallback.length === 0 && !entries.some((e) => e.ko !== undefined))
+  if (
+    fallback.length === 0 &&
+    after.length === 0 &&
+    !entries.some((e) => e.ko !== undefined)
+  )
     return null;
   const kept = ordered.filter((e) => e.state !== "dropped");
-  if (
-    typeof koRaw !== "string" &&
-    koRaw !== null &&
-    koRaw.length === entries.length
-  ) {
+  // AI 뜻 목록은 AI 문장 자리마다다 — 앱이 더한 문장(app)은 자리가 없고 제 뜻을 쓴다(C249 (1))
+  const aiCount = entries.filter((e) => !e.app).length;
+  if (typeof koRaw !== "string" && koRaw !== null && koRaw.length === aiCount) {
+    let at = 0;
     const list = [
       ...fallback.map((e) => e.ko ?? ""),
-      ...entries.map((e, i) => e.ko ?? koRaw[i] ?? ""),
+      ...entries.map((e) => {
+        if (e.app) return e.ko ?? "";
+        const i = at;
+        at += 1;
+        return e.ko ?? koRaw[i] ?? "";
+      }),
+      ...after.map((e) => e.ko ?? ""),
     ];
     return {
       ko: toriKoShownOf({
@@ -1827,6 +1961,51 @@ export function lessonExplanationOf({
 }): string | null {
   if (!koExplanationShownOf({ spec, stuckInSlot, cause })) return null;
   return explanation.trim() === "" ? null : explanation;
+}
+
+/**
+ * 그 차례에 아이가 보거나 듣는 영어(선생님 말 · 붙인 줄 · 신호 말 · 소리 줄)와 막힌 질문(13절 C249 (4) — 설명 대조의 재료). 화면 글(text)은 남은
+ * 선생님 문장과 화면 글로 붙인 줄이고, 소리로만 붙인 줄(답 소리)은 attach 에서 더한다.
+ */
+export function lessonExplanationSeenOf(
+  result: Pick<LessonTurnResult, "text" | "attach" | "sound" | "cue" | "plan">,
+): string[] {
+  return [
+    result.text,
+    ...result.attach.flatMap((l) => ("en" in l ? [l.en] : [])),
+    ...(result.cue ? [result.cue.en] : []),
+    ...(result.sound.model !== undefined ? [result.sound.model] : []),
+    ...(result.sound.choices ?? []),
+    ...(result.plan.stuckQuestion !== null ? [result.plan.stuckQuestion] : []),
+  ];
+}
+
+/**
+ * 보일 한국어 설명(13절 C249 (4)): 1~3단계에서 설명의 영어 낱말이 그 차례의 영어와 막힌 질문 어디에도 없으면 null(보이지 않고 저장하지 않는다 —
+ * core explanationFitsTurnOf). 4단계부터와 영어 낱말이 없는 설명은 그대로다.
+ */
+export function lessonExplanationFitOf({
+  explanation,
+  result,
+  low,
+  teacherName,
+  lemmaOf,
+}: {
+  explanation: string | null;
+  result: Pick<LessonTurnResult, "text" | "attach" | "sound" | "cue" | "plan">;
+  low: boolean;
+  teacherName: string;
+  lemmaOf: (surface: string) => string | undefined;
+}): string | null {
+  if (explanation === null || !low) return explanation;
+  return explanationFitsTurnOf({
+    explanation,
+    seen: lessonExplanationSeenOf(result),
+    teacherName,
+    lemmaOf,
+  })
+    ? explanation
+    : null;
 }
 
 /**
@@ -3149,9 +3328,17 @@ async function lessonTurnAfterChild(
   for (const en of result.release) send(en);
   for (const line of lessonAfterLinesOf(result)) write(line);
   const value = view.kind === "ok" ? view.value : null;
-  const explanation = value
+  const explanationRaw = value
     ? explainFor(result.plan, stuck, value.explanation)
     : null;
+  // 1~3단계: 그 차례에 없는 낱말을 설명한 한국어 설명은 보이지 않고 저장하지 않는다(13절 C249 (4))
+  const explanation = lessonExplanationFitOf({
+    explanation: explanationRaw,
+    result,
+    low,
+    teacherName: lineOptions?.teacherName ?? "",
+    lemmaOf: lineOptions?.lemmaOf ?? state.lemmaOf,
+  });
   // 한국어 도움이 새로 보인 낱말은 '말했다'로 세지 않는다(saidWordsOf 에 넘기는 목록에서만 뺀다 — said.ts 는 고치지 않는다, plan 정한 것 9 · [N-4]).
   // 선생님의 다음 영어 말의 '만났다'에는 거르지 않은 목록을 넘긴다(검토 rev-b4c I-1)
   const unitLists = koHelpUnitWordsOf(
@@ -3172,7 +3359,7 @@ async function lessonTurnAfterChild(
     view.kind !== "line" &&
     lessonOverLengthOf({
       words: view.overLength,
-      sentences: settleFlow.entries().length,
+      sentences: settleFlow.entries().filter((e) => !e.app).length,
       max: teacherSentencesMaxOf(s, state.level),
     });
 

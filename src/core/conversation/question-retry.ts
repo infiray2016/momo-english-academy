@@ -19,6 +19,8 @@ export type RetrySentence = {
   state: "sent" | "held" | "dropped";
   /** 지운 까닭(서버 · 도구의 문장 꼴마다 다르다 — 잇기는 읽지 않고 그대로 옮긴다). */
   reason?: string;
+  /** 앱이 더한 문장(상황 줄의 넘김 몫 — 13절 C249). AI 뜻 목록에 자리가 없다. */
+  app?: boolean;
 };
 
 /**
@@ -234,7 +236,8 @@ type RetryValue = {
 } & Record<(typeof CHILD_FIELDS)[number], unknown>;
 
 /**
- * 다시 쓴 응답을 앞 응답에 잇는다(C203 (3)). 앞 응답의 보낸 문장(반응)은 그대로 두고 잡아 둔 문장(걸린 질문부터)을 버린 뒤, 다시 쓴 응답의
+ * 다시 쓴 응답을 앞 응답에 잇는다(C203 (3)). 앞 응답의 첫 잡아 둔 질문 앞 문장(보낸 반응 · 잡아 둔 넘김 말 · 지운 것, C249)은 그대로 두고 그
+ * 질문부터 버린 뒤, 다시 쓴 응답의
  * 첫 물음표 문장부터를 잡아 둔 문장으로 붙인다. 값은 다음 질문 칸(갈래 · 카드 항목 · 노린 것 · 힌트 · 소리 줄)을 다시 쓴 응답에서, 아이 말에
  * 대한 칸(막힘 · 되풀이 · 아이가 보인 능력 …)을 앞 응답에서 가져온다. 뜻은 문장 자리마다 두고, 문장 수와 맞지 않는 응답 쪽의 자리는 빈 뜻,
  * 둘 다 맞지 않으면 빈 목록이다(걸린 질문 · 버린 반응의 뜻이 붙지 않게). 다시 쓴 응답에 질문이 없으면 null(부르는 쪽이 앞 응답으로 카드 자리를 만든다).
@@ -259,20 +262,36 @@ export function mergeQuestionRetry<
   const firstQuestion = retryEntries.findIndex((e) => e.question && !e.cue);
   if (firstQuestion < 0) return null;
   const at = whole ? 0 : firstQuestion;
-  const kept = firstEntries.filter((e) => e.state !== "held");
+  // 앞 응답은 첫 잡아 둔 질문 앞의 문장(보낸 것 · 잡아 둔 넘김 말 · 지운 것)을 지키고 그 질문부터 버린다(13절 C249 — 받침 차례의 넘김 말은
+  // 질문 앞에 잡아 둔다). 통째로 다시 쓰는 턴(whole)은 앞 응답 문장이 모두 잡아 둔 채라 지운 것만 남긴다(지금과 같음)
+  const heldQuestion = firstEntries.findIndex(
+    (e) => e.state === "held" && e.question && !e.cue,
+  );
+  const cut = heldQuestion < 0 ? firstEntries.length : heldQuestion;
+  const keepFirst = (e: E, i: number) => (whole ? e.state !== "held" : i < cut);
+  const kept = firstEntries.filter(keepFirst);
   const added = retryEntries
     .slice(at)
     .map((e) =>
       e.state === "dropped" ? { ...e } : { ...e, state: "held" as const },
     );
   const entries = [...kept, ...added];
+  // 뜻은 AI 문장 자리마다다(앱이 더한 문장은 자리가 없다 — C249). aiIndexesOf 는 그 문장의 AI 뜻 자리(앱 문장은 -1)
+  const aiIndexesOf = (list: readonly E[]) => {
+    let n = 0;
+    return list.map((e) => (e.app ? -1 : n++));
+  };
+  const firstAi = aiIndexesOf(firstEntries);
+  const retryAi = aiIndexesOf(retryEntries);
   const keptIndexes = firstEntries.flatMap((e, i) =>
-    e.state !== "held" ? [i] : [],
+    keepFirst(e, i) && !e.app ? [firstAi[i] ?? -1] : [],
   );
   // 뜻은 문장마다 맞는 쪽만 문장 자리에 둔다(13절 C202 (5) — 빠진 문장의 뜻만 뺌, 검토 rev-night-2 fix1 N-1). 맞지 않는 쪽의 문장 자리는
   // 빈 뜻이라 보이지 않는다. 두 쪽 모두 맞지 않으면 빈 목록(뜻 없음) — 걸린 질문 · 버린 반응의 뜻을 한 덩이로 잇지 않는다
-  const firstAligned = first.tori_ko.length === firstEntries.length;
-  const retryAligned = retry.tori_ko.length === retryEntries.length;
+  const firstAligned =
+    first.tori_ko.length === firstEntries.filter((e) => !e.app).length;
+  const retryAligned =
+    retry.tori_ko.length === retryEntries.filter((e) => !e.app).length;
   const toriKo =
     firstAligned || retryAligned
       ? [
@@ -281,7 +300,15 @@ export function mergeQuestionRetry<
           ),
           ...retryEntries
             .slice(at)
-            .map((_, j) => (retryAligned ? (retry.tori_ko[at + j] ?? "") : "")),
+            .flatMap((e, j) =>
+              e.app
+                ? []
+                : [
+                    retryAligned
+                      ? (retry.tori_ko[retryAi[at + j] ?? -1] ?? "")
+                      : "",
+                  ],
+            ),
         ]
       : [];
   // 통째로 다시 쓴 턴(막힘을 무름)은 앞 응답이 막힘이라 보고 쓴 것이라 아이 말 칸('말함' · 목표 근거 · 되풀이 …)이 비어 있다 — 앱이 정한 갈래 ·

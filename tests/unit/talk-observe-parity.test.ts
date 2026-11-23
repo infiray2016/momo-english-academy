@@ -139,6 +139,7 @@ import {
   type LessonTurnResult,
   lessonChildLiteOf,
   lessonChildRowOf,
+  lessonExplanationFitOf,
   lessonHintsAt,
   lessonOutcomeViewOf,
   lessonOverLengthOf,
@@ -178,6 +179,7 @@ import {
   OBSERVE_TURN_SAVE_GRACE_MS,
   type ObserveStep,
   observeChildLiteOf,
+  observeExplanationShownOf,
   observeFailLineOf,
   observeLiveOf,
   observeMoreLeadOf,
@@ -5455,5 +5457,172 @@ describe("AC-15zj (바): 노리는 단어가 들어 걸린 질문의 노림 안�
     expect(JSON.stringify(record.output?.tori_en ?? "")).not.toContain(
       `Can you ${word}?`,
     );
+  });
+});
+
+describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서버 · 도구가 같은 길(13절 C249)", () => {
+  /** 대화 첫 질문에 답한 뒤 AI 질문 차례 → 막힘 둘(받침 둘째가 AI 쉬운 질문 자리). */
+  const toEasySlot = (m: Materials) => {
+    const { sim } = greeted(m);
+    stepBoth(
+      m,
+      sim,
+      say("I eat rice."),
+      fakeMessage({
+        tori_en: "Yummy! Do you like rice?",
+        next_move: "follow_up",
+        next_answer_example: "Yes, I do.",
+      }),
+    );
+    stepBoth(m, sim, dontKnow, fakeMessage({ tori_en: "That's okay!" }));
+    return sim;
+  };
+  /** 도구 끝 처리(settleTurn)를 서버와 같은 재료로 직접 불러 release 를 견준다. */
+  const toolRelease = (
+    m: Materials,
+    sim: TalkSim,
+    p: PreparedTurn,
+    message: CallResult,
+    server: ServerTurn,
+  ) => {
+    const position = talkLessonPositionOf(p.flowArgs);
+    const child = lessonChildLiteOf(
+      position,
+      { mode: p.mode, nospeech: p.nospeech },
+      p.flowArgs.settings,
+      false,
+    );
+    const live = observeLiveOf(m, {
+      turns: light(sim.rows),
+      teacherTurnNo:
+        (sim.rows.findLast((r) => r.speaker === "tori")?.turnNo ?? 0) + 1,
+      lineOptions: server.live?.checks.situation?.options ?? null,
+    });
+    return settleTurn({
+      chosen: p.ifAnswered,
+      value: checkedValue(m, p, message),
+      sentences: server.sentences,
+      soundFixed: false,
+      entries: server.entries,
+      live,
+      materials: m,
+      turns: [...light(sim.rows), child],
+      asked: p.before.asked,
+      max: p.flowArgs.settings.sameQuestionMax,
+      lineOptions: server.live?.checks.situation?.options ?? null,
+    });
+  };
+
+  it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문이 빠지면 약속한 말 없이 닫기 넘김 → 답 소리이고, 설명 대조까지 서버와 도구가 같다", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(ready.turn.ifAnswered).toMatchObject({
+      kind: "ai",
+      aiAsks: true,
+      stage: 2,
+    });
+    const message = fakeMessage({
+      tori_en: "No worries! Do you eat gimbap or drink gimbap?",
+      explanation: "'gimbap'은 김밥이에요.",
+    });
+    const server = serverTurn(m, sim, ready.turn, message);
+    const tool = toolRelease(m, sim, ready.turn, message, server);
+    expect(tool.release).toEqual(server.result.release);
+    expect(tool.kept).toEqual(server.result.kept);
+    expect(tool.ko).toBe(server.result.ko);
+    expect(server.result.replaced).toBe("question_check");
+    expect(server.result.text).not.toMatch(/easy|new one|try this/i);
+    // 문장 문은 맞장구 몫('No problem!')만 보내고 넘김 몫을 잡아 두었고, 끝 처리가 그것을 까닭 promise 로 뺐다
+    expect(server.entries[1]).toMatchObject({
+      en: "Here is an easy one.",
+      state: "held",
+      moveOn: true,
+    });
+    expect(tool.dropped).toContainEqual({
+      en: "Here is an easy one.",
+      reason: "promise",
+    });
+    expect(server.result.release).toEqual(["Now we go on."]);
+    expect(server.result.attach[0]).toMatchObject({
+      kind: "sound",
+      role: "answer",
+    });
+    // 설명: 지운 질문에만 있던 낱말(gimbap)은 그 차례에 없다 — 서버 · 도구 모두 숨긴다
+    const lineOptions = server.live?.checks.situation?.options;
+    const serverShown = lessonExplanationFitOf({
+      explanation: "'gimbap'은 김밥이에요.",
+      result: server.result,
+      low: true,
+      teacherName: lineOptions?.teacherName ?? "",
+      lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
+    });
+    expect(serverShown).toBeNull();
+    expect(
+      observeExplanationShownOf({
+        explanation: "'gimbap'은 김밥이에요.",
+        settled: tool,
+        spec: m.spec,
+        stuckInSlot: 2,
+        low: true,
+        teacherName: lineOptions?.teacherName ?? "",
+        lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
+      }),
+    ).toBeNull();
+    // 막힌 질문의 낱말(like)을 풀이한 설명은 보인다
+    expect(
+      observeExplanationShownOf({
+        explanation: "'like'는 좋아한다는 뜻이에요.",
+        settled: tool,
+        spec: m.spec,
+        stuckInSlot: 2,
+        low: true,
+        teacherName: lineOptions?.teacherName ?? "",
+        lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
+      }),
+    ).toBe("'like'는 좋아한다는 뜻이에요.");
+    // 대본 기록: 설명 칸은 보인 값(빈 글) · 날값은 따로
+    const record = sim.finish(ready.turn, message);
+    expect(record.explanation).toBe("");
+    expect(record.explanationRaw).toBe("'gimbap'은 김밥이에요.");
+  });
+
+  it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문이 지나면 넘김 말이 그 질문 바로 앞이고 서버와 도구가 같다", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const message = fakeMessage({
+      tori_en: "No worries! Do you like it?",
+    });
+    const server = serverTurn(m, sim, ready.turn, message);
+    const tool = toolRelease(m, sim, ready.turn, message, server);
+    expect(tool.release).toEqual(server.result.release);
+    expect(server.result.replaced).toBeNull();
+    expect(server.result.release.at(-1)).toBe("Do you like it?");
+    expect(server.entries[1]).toMatchObject({ moveOn: true, state: "held" });
+    expect(server.result.release).toEqual([
+      "Here is an easy one.",
+      "Do you like it?",
+    ]);
+  });
+
+  it("AC-15zj (사) 받침 첫째에 넘김 말과 질문을 쓰면 둘 다 빠지고 신호 말 · 답 소리는 그대로다 — 서버와 같다", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const { sim } = greeted(m);
+    const { server, record } = stepBoth(
+      m,
+      sim,
+      dontKnow,
+      fakeMessage({
+        tori_en:
+          "That's okay! Let's try an easy one. Do you drink juice with gimbap?",
+      }),
+    );
+    expect(record.teacher).toBe("That's okay!");
+    expect(server.result.release).toEqual([]);
+    expect(server.result.cue).not.toBeNull();
+    expect(server.result.attach.some((l) => l.kind === "sound")).toBe(true);
   });
 });

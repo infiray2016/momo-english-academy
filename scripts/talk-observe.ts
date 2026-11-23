@@ -222,6 +222,7 @@ import {
   isSoundCue as isSoundCueOf,
   seedCuePhrasesOf,
 } from "../src/core/conversation/cue-line";
+import { explanationFitsTurnOf } from "../src/core/conversation/explanation-fit";
 import type { SoundAlikeEntry } from "../src/core/conversation/heard-hint";
 import {
   type AiHints,
@@ -229,6 +230,7 @@ import {
   heardHelpOf,
   heardHelpsOfMove,
   hintKindOf,
+  koExplanationShownOf,
   type LessonHintItem,
   lessonHintTiersOf,
   openedTierCount,
@@ -380,10 +382,12 @@ import {
   echoesTurnSentence,
   failSituationLineOf,
   heardFieldsBlankOf,
+  isShortReaction,
   type SituationPlace,
   situationLineOf,
   situationPlaceOf,
   situationRotationOf,
+  situationSplitOf,
   situationTailOf,
 } from "../src/core/conversation/situation";
 import {
@@ -1504,7 +1508,10 @@ export type TurnRecord = {
   toriKo: string | null;
   sound: { model?: string; choices?: [string, string]; answer?: string };
   recast: string;
+  /** 보인 한국어 설명(서버와 같은 판정 — 보이지 않으면 빈 글, 13절 C249 (4)). 이 칸이 날값이던 옛 결과 파일도 있다. */
   explanation: string;
+  /** 응답의 한국어 설명 날값(보이기 판정 전 — C249 뒤 결과 파일에만). */
+  explanationRaw?: string;
   move: Pick<TalkMove, "kind" | "next" | "why" | "item" | "app" | "stage">;
   replaced: TalkSlotWhy | null;
   dropped: { en: string; reason: string }[];
@@ -1562,6 +1569,8 @@ export type TurnRecord = {
     firstFail: QuestionFailNote;
     /** 다시 쓴 시도의 tori_en(응답을 읽지 못했으면 null). */
     retryToriEn: string | null;
+    /** 다시 쓴 시도의 한국어 설명 칸(잇기는 첫 시도 값을 쓰고 이 값은 버린다 — 뒤에 판단할 재료, C249 분석 다-2). 응답을 읽지 못했으면 null. */
+    retryExplanation?: string | null;
     /** 다시 쓴 시도의 걸림(이은 질문의 질문 검사 · 같은 질문, 통과했거나 잇지 못했으면 null). */
     retryFail: QuestionFailNote | null;
     /**
@@ -1771,10 +1780,27 @@ export type Entry = {
     | "rewrite"
     | "cue"
     | "made_up"
-    | "situation";
+    | "situation"
+    | "promise";
   ai?: string;
   ko?: string;
+  /** 1~3단계 받침 차례에서 잡아 둔 넘김 말(서버 LessonSentence.moveOn — 13절 C249 (1)). */
+  moveOn?: boolean;
+  /** 앱이 더한 문장(상황 줄의 넘김 몫 · 닫기 넘김 — 서버 LessonSentence.app). AI 뜻 목록에 자리가 없다. */
+  app?: boolean;
 };
+
+/** 1~3단계 받침 자리인가(서버 supportPlaceOf 사본 — 13절 C249 (1)). */
+function supportPlaceOf(
+  plan: TeacherTurnPlan,
+  low: boolean,
+): "together" | "easy" | "close" | null {
+  if (!low) return null;
+  const place = situationPlaceOf(plan);
+  return place === "together" || place === "easy" || place === "close"
+    ? place
+    : null;
+}
 
 /** 1~3단계 실시간 검사 재료(서버 LessonLiveChecks 와 같은 꼴). 없으면 신호 구 지움만 한다(4단계부터 · 옛 시험 길). */
 export type ObserveLiveChecks = {
@@ -1988,10 +2014,31 @@ export function sentenceEntriesOf(
     // [N-1] 이 턴에 AI 맞장구가 남았으면 상황 줄의 넘김만 붙인다(반응은 AI, 넘김은 앱 — 대본 회차 r2 판정 N-1 (나))
     const shown = situationTailOf(line, reacted);
     entry.ai = entry.en;
+    // [C249 (1)] 받침 차례는 '맞장구 + 넘김' 줄을 나눠 맞장구 몫만 이 문장으로 보내고 넘김 몫은 앱 문장으로 잡아 둔다(서버와 같음)
+    const split =
+      supportPlaceOf(plan, low) !== null && shown === line
+        ? situationSplitOf(line)
+        : null;
+    if (split?.head && !isShortReaction(split.tail.en)) {
+      entry.en = split.head.en;
+      entry.ko = split.head.ko;
+      pendingTail = {
+        en: split.tail.en,
+        question: false,
+        cue: false,
+        state: "held",
+        ko: split.tail.ko,
+        moveOn: true,
+        app: true,
+      };
+      return false;
+    }
     entry.en = shown.en;
     entry.ko = shown.ko;
     return false;
   };
+  // 상황 줄의 넘김 몫(이 문장 뒤에 더한다 — C249 (1))
+  let pendingTail: Entry | null = null;
   for (const en of sentences) {
     const question = isQuestionSentence(en);
     const cue = low && isSoundCueOf(en, live?.cuePhrases ?? []);
@@ -2008,7 +2055,15 @@ export function sentenceEntriesOf(
       entry.state = "dropped";
       entry.reason = "overlap";
     } else if (holding) entry.state = "held";
-    else if (question && !asks) {
+    else if (
+      !question &&
+      supportPlaceOf(plan, low) !== null &&
+      !isShortReaction(entry.en)
+    ) {
+      // [C249 (1)] 받침 차례의 맞장구 아닌 문장(넘김 말)은 응답 끝까지 잡아 둔다
+      entry.state = "held";
+      entry.moveOn = true;
+    } else if (question && !asks) {
       entry.state = "dropped";
       entry.reason = "question";
     } else if (question && low) {
@@ -2031,6 +2086,8 @@ export function sentenceEntriesOf(
       }
     }
     list.push(entry);
+    if (pendingTail) list.push(pendingTail);
+    pendingTail = null;
   }
   return list;
 }
@@ -2282,24 +2339,36 @@ function situationKoOf({
   koRaw,
   entries,
   fallback,
+  after = [],
   ordered,
 }: {
   koRaw: string | readonly string[] | null;
   entries: readonly Entry[];
   fallback: readonly Entry[];
+  /** 끝에 더한 앱 문장(닫기 넘김 — C249 (2)). */
+  after?: readonly Entry[];
   ordered: readonly Entry[];
 }): { ko: string | null } | null {
-  if (fallback.length === 0 && !entries.some((e) => e.ko !== undefined))
+  if (
+    fallback.length === 0 &&
+    after.length === 0 &&
+    !entries.some((e) => e.ko !== undefined)
+  )
     return null;
   const kept = ordered.filter((e) => e.state !== "dropped");
-  if (
-    typeof koRaw !== "string" &&
-    koRaw !== null &&
-    koRaw.length === entries.length
-  ) {
+  // AI 뜻 목록은 AI 문장 자리마다다 — 앱이 더한 문장(app)은 자리가 없고 제 뜻을 쓴다(서버와 같음, C249 (1))
+  const aiCount = entries.filter((e) => !e.app).length;
+  if (typeof koRaw !== "string" && koRaw !== null && koRaw.length === aiCount) {
+    let at = 0;
     const list = [
       ...fallback.map((e) => e.ko ?? ""),
-      ...entries.map((e, i) => e.ko ?? koRaw[i] ?? ""),
+      ...entries.map((e) => {
+        if (e.app) return e.ko ?? "";
+        const i = at;
+        at += 1;
+        return e.ko ?? koRaw[i] ?? "";
+      }),
+      ...after.map((e) => e.ko ?? ""),
     ];
     return {
       ko: toriKoShownOf({
@@ -2342,6 +2411,8 @@ export type Settled = {
   plan: TeacherTurnPlan;
   replaced: TalkSlotWhy | null;
   kept: string[];
+  /** 응답 끝에 내보내는 문장(서버 LessonTurnResult.release — 잡아 둔 질문 · 받침 넘김 말 · 반응 자리 상황 줄, C249). */
+  release: string[];
   dropped: { en: string; reason: string }[];
   /** 상황 차례 검사로 상황 줄이 된 문장(AI 원문 → 상황 줄) · 반응 자리에 둔 상황 줄(ai null). */
   situation: { ai: string | null; en: string }[];
@@ -2538,15 +2609,48 @@ export function settleTurn({
       e.reason = "overlap";
     }
   }
-  // 반응이 다 지워진 1~3단계 상황 차례는 상황 줄 하나를 반응 자리 맨 앞에 둔다(서버와 같음 — 성공 응답일 때만)
+  // [C249 (2) · (3)] 1~3단계 받침 차례의 잡아 둔 넘김 말(서버 settleLessonTurn 과 같음)
+  const support = supportPlaceOf(chosen, low);
+  const easyClosed = support === "easy" && questionDropped;
+  if (easyClosed)
+    for (const e of all)
+      if (e.moveOn && e.state === "held") {
+        e.state = "dropped";
+        e.reason = "promise";
+      }
+  const closesWithAnswer =
+    easyClosed &&
+    replaced !== null &&
+    plan.attach.some((l) => l.kind === "sound" && l.role === "answer");
+  if (support === "together" || support === "close") {
+    let lastQuestion = -1;
+    all.forEach((e, i) => {
+      if (e.question && e.state === "dropped" && e.reason === "question")
+        lastQuestion = i;
+    });
+    all.forEach((e, i) => {
+      if (i < lastQuestion && e.moveOn && e.state === "held") {
+        e.state = "dropped";
+        e.reason = "question";
+      }
+    });
+  }
+  // 반응이 다 지워진 1~3단계 상황 차례는 상황 줄 하나를 반응 자리 맨 앞에 둔다(서버와 같음 — 성공 응답일 때만). 받침 둘째의 쉬운 질문이
+  // 빠진 차례는 닫기 자리의 줄(C249 (2))
   const place = low ? situationPlaceOf(chosen) : null;
   const reacted = all.some((e) => willKeep(e) && !e.question);
+  const fallbackPlace: SituationPlace | null = easyClosed ? "close" : place;
   const fallbackLine =
-    place !== null && live && value && !reacted
-      ? situationLineOf(live.settle.situationLines, place, live.settle.turnNo, {
-          sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
-          texts: teacherTextsOf(turns),
-        })
+    fallbackPlace !== null && live && value && !reacted
+      ? situationLineOf(
+          live.settle.situationLines,
+          fallbackPlace,
+          live.settle.turnNo,
+          {
+            sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
+            texts: teacherTextsOf(turns),
+          },
+        )
       : null;
   const fallback: Entry[] = fallbackLine
     ? [
@@ -2559,7 +2663,35 @@ export function settleTurn({
         },
       ]
     : [];
-  const ordered = [...fallback, ...all];
+  // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
+  const closeLine =
+    closesWithAnswer && reacted && live
+      ? situationLineOf(
+          live.settle.situationLines,
+          "close",
+          live.settle.turnNo,
+          {
+            sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
+            texts: teacherTextsOf(turns),
+            reacted: true,
+          },
+        )
+      : null;
+  const closeTail = closeLine ? situationTailOf(closeLine, true) : null;
+  const after: Entry[] = closeTail
+    ? [
+        {
+          en: closeTail.en,
+          question: false,
+          cue: false,
+          state: "held",
+          ko: closeTail.ko,
+          moveOn: true,
+          app: true,
+        },
+      ]
+    : [];
+  const ordered = [...fallback, ...all, ...after];
   const kept = ordered.filter(willKeep).map((e) => e.en);
   const attach = shownAttachOf(kept, plan.attach);
   // 뜻은 옛 한 글 꼴 · 문장마다 목록 꼴(13절 C202 (5)) 모두 받는다. 문장 문에 걸린 문장이 있는 응답은 걸린 문장의 뜻을 가려낼 수 없어 뜻을
@@ -2572,7 +2704,13 @@ export function settleTurn({
         : line?.ko !== undefined
           ? line.ko
           : null;
-  const situationKo = situationKoOf({ koRaw, entries, fallback, ordered });
+  const situationKo = situationKoOf({
+    koRaw,
+    entries,
+    fallback,
+    after,
+    ordered,
+  });
   const ko = !koMeaning
     ? null
     : situationKo
@@ -2641,6 +2779,7 @@ export function settleTurn({
     plan,
     replaced,
     kept,
+    release: ordered.filter((e) => e.state === "held").map((e) => e.en),
     dropped: ordered
       .filter((e) => e.state === "dropped")
       .map((e) => ({ en: e.en, reason: e.reason ?? "" })),
@@ -2681,6 +2820,60 @@ export function settleTurn({
         : null,
     cue: cueLine ? cueLineView(cueLine, koMeaning) : null,
   };
+}
+
+/**
+ * 그 차례에 아이가 보거나 듣는 영어(서버 lessonExplanationSeenOf 사본 — 선생님 말 · 붙인 줄 · 신호 말 · 소리 줄)와 막힌 질문(13절 C249 (4)).
+ */
+export function observeExplanationSeenOf(
+  settled: Pick<Settled, "text" | "attach" | "sound" | "cue" | "plan">,
+): string[] {
+  return [
+    settled.text,
+    ...settled.attach.flatMap((l) => ("en" in l ? [l.en] : [])),
+    ...(settled.cue ? [settled.cue.en] : []),
+    ...(settled.sound.model !== undefined ? [settled.sound.model] : []),
+    ...(settled.sound.choices ?? []),
+    ...(settled.plan.stuckQuestion !== null
+      ? [settled.plan.stuckQuestion]
+      : []),
+  ];
+}
+
+/**
+ * 보일 한국어 설명(서버 explainFor(lessonExplanationOf) → lessonExplanationFitOf 사본): 막힘 차례에서 그 자리 막힘 수가 단계 규격 이상이고
+ * 글이 비지 않았으면 보이고, 1~3단계는 설명의 영어 낱말이 그 차례의 영어와 막힌 질문 어디에도 없으면 보이지 않는다(core explanationFitsTurnOf).
+ * 보이지 않으면 null.
+ */
+export function observeExplanationShownOf({
+  explanation,
+  settled,
+  spec,
+  stuckInSlot,
+  low,
+  teacherName,
+  lemmaOf,
+}: {
+  explanation: string;
+  settled: Pick<Settled, "text" | "attach" | "sound" | "cue" | "plan">;
+  spec: Parameters<typeof koExplanationShownOf>[0]["spec"];
+  stuckInSlot: number;
+  low: boolean;
+  teacherName: string;
+  lemmaOf: (surface: string) => string | undefined;
+}): string | null {
+  if (!koExplanationShownOf({ spec, stuckInSlot, cause: settled.plan.cause }))
+    return null;
+  if (explanation.trim() === "") return null;
+  if (!low) return explanation;
+  return explanationFitsTurnOf({
+    explanation,
+    seen: observeExplanationSeenOf(settled),
+    teacherName,
+    lemmaOf,
+  })
+    ? explanation
+    : null;
 }
 
 /** 이 질문 자리를 연 선생님 행 차례(서버 slotOpenerIndex 사본). 없으면 -1. */
@@ -6279,6 +6472,7 @@ export function createTalkSim(
         firstToriEn: string;
         firstFail: QuestionFailNote;
         retryToriEn: string | null;
+        retryExplanation: string | null;
         firstAim: NonNullable<
           NonNullable<TurnRecord["reask"]>["firstAim"]
         > | null;
@@ -6349,6 +6543,7 @@ export function createTalkSim(
           firstToriEn,
           firstFail,
           retryToriEn: second.value?.tori_en ?? null,
+          retryExplanation: second.value?.explanation ?? null,
           firstAim: first.value
             ? {
                 nextTargets: [...first.value.next_targets],
@@ -6469,6 +6664,19 @@ export function createTalkSim(
         prepWords = [...prepPlan];
       }
       const appAfter = appendAppTurns();
+      // 보인 한국어 설명(서버 explainFor → lessonExplanationFitOf 와 같은 판정 — 02-2 263줄 · 13절 C249 (4)). 날값은 explanationRaw 칸
+      const explanationShown = observeExplanationShownOf({
+        explanation: value?.explanation ?? "",
+        settled,
+        spec: materials.spec,
+        stuckInSlot: talkLessonPositionOf({
+          ...p.flowArgs,
+          turns: turnsWithChild,
+        }).stuckInSlot,
+        low,
+        teacherName: lineOptions?.teacherName ?? materials.teacher.nameEn,
+        lemmaOf: lineOptions?.lemmaOf ?? materials.lemmaOf,
+      });
 
       const question = turnQuestionOf(settled.text, settled.move.kind);
       let sameQuestion: string | null = null;
@@ -6551,7 +6759,8 @@ export function createTalkSim(
             : {}),
         },
         recast,
-        explanation: value?.explanation ?? "",
+        explanation: explanationShown ?? "",
+        explanationRaw: value?.explanation ?? "",
         move: {
           kind: m.kind,
           next: m.next,
