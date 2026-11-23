@@ -490,12 +490,13 @@ describe("C250 (2) 끝 처리(서버): 조건이 참이면 질문이 나가고 �
     expect(nextChildRow(turns, resultA, "Yes.").row.hintKind).toBe("english");
 
     // (나) 첫 시도가 노린 단어(soccer)를 담고 길이로 걸림 → 다시 쓴 질문은 다른 노린 단어(sunday)를 담고 영어 힌트에 걸린 낱말 soccer 가 남음 →
-    // 노림 안전망이 그 질문의 힌트를 비우므로 조건이 거짓이 되어 sunday 로 걸린다(비운 뒤의 값으로 판정)
+    // 노림 안전망이 그 질문의 힌트를 비우므로 조건이 거짓이 되어 sunday 로 걸린다(비운 뒤의 값으로 판정). 다시 쓴 질문은 카드 인사 질문과 열쇠가
+    // 다른 글이어야 한다: 같은 열쇠('Do you like Sunday?')면 힌트를 비우지 않아도 카드 칸이 힌트를 대어 조건이 거짓이다(코드 검토 rev-easy M-1)
     const b = flowFor(turns, [
       "Okay!",
       "Do you like to play soccer here on a free day?",
     ]);
-    const retryB = flowFor(turns, ["Okay!", "Do you like Sunday?"]).flow;
+    const retryB = flowFor(turns, ["Okay!", "Is Sunday fun?"]).flow;
     const outB = await withQuestionRetry({
       flow: b.flow,
       view: okView(
@@ -511,9 +512,9 @@ describe("C250 (2) 끝 처리(서버): 조건이 참이면 질문이 나가고 �
       retry: async () =>
         ({
           value: answer({
-            tori_en: "Okay! Do you like Sunday?",
+            tori_en: "Okay! Is Sunday fun?",
             next_targets: ["sunday"],
-            next_hint_ko: "일요일을 좋아하는지 물어요.",
+            next_hint_ko: "일요일이 재미있는지 물어요.",
             next_hints: ["Yes, I ___.", "Yes, I like soccer on Sunday."],
           }),
           entries: retryB.entries(),
@@ -526,7 +527,50 @@ describe("C250 (2) 끝 처리(서버): 조건이 참이면 질문이 나가고 �
     expect(outB.view.kind === "ok" && outB.view.value.next_hints).toEqual([]);
     const resultB = b.settle(outB.flow, outB.view);
     expect(resultB.replaced).toBe("question_check");
-    expect(resultB.kept).not.toContain("Do you like Sunday?");
+    expect(resultB.kept).not.toContain("Is Sunday fun?");
+
+    // (다) 같은 다시 쓴 질문이라도 영어 힌트에 걸린 낱말이 없으면 안전망이 힌트를 비우지 않아 조건이 참이고 질문이 나간다((나)가 '비운 뒤의 값'에
+    // 기대고 있음을 보이는 짝)
+    const c = flowFor(turns, [
+      "Okay!",
+      "Do you like to play soccer here on a free day?",
+    ]);
+    const retryC = flowFor(turns, ["Okay!", "Is Sunday fun?"]).flow;
+    const outC = await withQuestionRetry({
+      flow: c.flow,
+      view: okView(
+        answer({
+          tori_en: "Okay! Do you like to play soccer here on a free day?",
+          next_targets: ["soccer"],
+          ...EASY_HINTS,
+        }),
+      ),
+      lineOptions: OPTIONS,
+      sentenceMaxWords: 8,
+      easyHint: c.easyHint,
+      retry: async () =>
+        ({
+          value: answer({
+            tori_en: "Okay! Is Sunday fun?",
+            next_targets: ["sunday"],
+            next_hint_ko: "일요일이 재미있는지 물어요.",
+            next_hints: ["Yes, it ___.", "Yes, it is fun."],
+          }),
+          entries: retryC.entries(),
+          hintsBlocked: false,
+          overLength: 0,
+          blocked: 0,
+        }) satisfies QuestionRetryAnswer,
+    });
+    expect(outC.retried).toBe(true);
+    expect(outC.view.kind === "ok" && outC.view.value.next_hints).toEqual([
+      "Yes, it ___.",
+      "Yes, it is fun.",
+    ]);
+    const resultC = c.settle(outC.flow, outC.view);
+    expect(resultC.replaced).toBeNull();
+    expect(resultC.kept.at(-1)).toBe("Is Sunday fun?");
+    expect(nextChildRow(turns, resultC, "Yes.").row.hintKind).toBe("english");
   });
 
   it("받침 둘째 밖의 AI 질문 자리(받침 없는 이어 묻기)는 영어 힌트가 있어도 지금처럼 target_word 로 걸린다", () => {
