@@ -5669,4 +5669,31 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
     expect(server.result.cue).not.toBeNull();
     expect(server.result.attach.some((l) => l.kind === "sound")).toBe(true);
   });
+
+  it("AC-15zj (사) 받침 첫째에 넘김 말 둘과 질문을 쓰면 넘김 말 둘이 모두 표지를 받아 빠지고, 문장 목록 · 끝 처리가 서버와 같다(재검토 N-1)", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const { sim } = greeted(m);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const message = fakeMessage({
+      tori_en:
+        "That's okay! Let's try an easy one. Here is a new question. Do you drink juice?",
+    });
+    const server = serverTurn(m, sim, ready.turn, message);
+    const entries = toolEntries(m, sim, ready.turn, server);
+    expect(entries).toEqual(server.entries);
+    // 맞장구 뒤의 물음표 아닌 문장 둘(상황 줄로 바뀌었어도)은 모두 넘김 표지를 단다
+    const between = server.entries.filter(
+      (e) => !e.question && e.state === "held",
+    );
+    expect(between.length).toBeGreaterThanOrEqual(1);
+    for (const e of between) expect(e.moveOn).toBe(true);
+    const tool = toolRelease(m, sim, ready.turn, message, server);
+    expect(tool.release).toEqual(server.result.release);
+    expect(tool.kept).toEqual(server.result.kept);
+    expect(tool.ko).toBe(server.result.ko);
+    expect(server.result.kept).toEqual(["That's okay!"]);
+    expect(server.result.release).toEqual([]);
+    expect(server.result.text).not.toMatch(/easy|new question/i);
+  });
 });

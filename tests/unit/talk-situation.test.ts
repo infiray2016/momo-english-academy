@@ -1526,6 +1526,115 @@ describe("AC-15zj (사) 받침 차례의 넘김 말(13절 C249 (1) · (2) · (3)
     expect(result.ko).toBe("괜찮아! 같이 해 볼 수 있어. 넌 할 수 있어!");
   });
 
+  it("AC-15zj (사) 사례 8: 쉬운 질문 자리에서 넘김 말 둘 뒤의 질문이 걸리면 넘김 말 둘이 모두 빠지고 닫기 넘김 → 답 소리다(재검토 N-1 (가))", () => {
+    const plan = easyPlan();
+    const { states, entries, result } = play({
+      args: args3(easyTurns()),
+      ifAnswered: plan,
+      sentences: [
+        "No worries!",
+        "Let's try an easy one.",
+        "Here is a new question.",
+        "Do you eat gimbap or drink gimbap?",
+      ],
+      outcome: ok(
+        out({
+          tori_ko: [
+            "걱정 마!",
+            "쉬운 거 해 보자.",
+            "새 질문이야.",
+            "김밥을 먹어 아니면 마셔?",
+          ],
+        }),
+      ),
+      child: button(),
+      live: null,
+      over: splitLive,
+    });
+    expect(states).toEqual(["send", "hold", "hold", "hold"]);
+    // 둘째 넘김 말도 표지를 받는다(첫째를 잡아 둔 뒤라도)
+    expect(entries.slice(1, 3)).toMatchObject([
+      { state: "held", moveOn: true },
+      { state: "held", moveOn: true },
+    ]);
+    expect(result.replaced).toBe("question_check");
+    expect(result.kept).toEqual(["No worries!", "Here is the answer."]);
+    expect(result.release).toEqual(["Here is the answer."]);
+    expect(result.text).not.toMatch(/easy|new question/i);
+    expect(result.ko).not.toMatch(/쉬운|새 질문/);
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+  });
+
+  it("AC-15zj (사) 사례 9: 같이 말하기 차례에서 넘김 말 둘 뒤의 질문이 지워지면 넘김 말 둘이 모두 빠진다(재검토 N-1 (나))", () => {
+    const args = args3(opening3());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    const { states, entries, result } = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences: [
+        "That's okay!",
+        "Let's try an easy one.",
+        "Here is a new question.",
+        "Do you drink juice?",
+      ],
+      outcome: ok(out({ stuck: true })),
+      child: stuckSaid(),
+      live: null,
+      over: { live: null },
+    });
+    expect(states[0]).toBe("send");
+    expect(entries.slice(1, 3)).toMatchObject([
+      { state: "held", moveOn: true },
+      { state: "held", moveOn: true },
+    ]);
+    expect(result.kept).toEqual(["That's okay!"]);
+    expect(result.release).toEqual([]);
+    expect(result.attach).toEqual(ifStuck.attach);
+  });
+
+  it("AC-15zj (사) 사례 10: 넘김 말을 잡아 둔 뒤 실시간 상황 검사가 문장을 상황 줄의 넘김 몫으로 바꾸어도 표지를 받아, 질문이 걸리면 함께 빠진다(재검토 N-1 '왜')", () => {
+    const plan = easyPlan();
+    const { entries, result } = play({
+      args: args3(easyTurns()),
+      ifAnswered: plan,
+      sentences: [
+        "That's okay!",
+        "Let's go on.",
+        "Here is a spaceship riddle.",
+        "Do you eat gimbap or drink gimbap?",
+      ],
+      outcome: ok(
+        out({
+          tori_ko: [
+            "괜찮아!",
+            "계속하자.",
+            "우주선 수수께끼야.",
+            "김밥을 먹어 아니면 마셔?",
+          ],
+        }),
+      ),
+      child: button(),
+      over: splitLive,
+    });
+    // 셋째 문장은 상황 검사에 걸려 상황 줄의 넘김 몫으로 바뀌었다(이 턴에 맞장구가 남아 넘김 몫만)
+    expect(entries[2]).toMatchObject({
+      ai: "Here is a spaceship riddle.",
+      en: "Here is an easy one.",
+      state: "held",
+      moveOn: true,
+    });
+    expect(result.replaced).toBe("question_check");
+    expect(result.text).not.toMatch(/easy/i);
+    expect(result.ko).not.toContain("쉬운");
+    expect(result.kept[0]).toBe("That's okay!");
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+  });
+
   it("AC-15zj (사) 인사 토막의 쉬운 질문 자리도 같다: 질문이 빠지면 약속한 말 없이 닫기 넘김 → 인사 답 소리다", () => {
     const turns: TalkLessonTurn[] = [
       teacher(

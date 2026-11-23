@@ -974,7 +974,6 @@ export function createLessonSentenceFlow({
         entry.state = "dropped";
         entry.reason = "overlap";
       } else if (holding) entry.state = "held";
-      else if (!question && moveOnHeld) entry.state = "held";
       else if (
         !question &&
         supportPlaceOf(plan, low) !== null &&
@@ -984,6 +983,9 @@ export function createLessonSentenceFlow({
         entry.state = "held";
         entry.moveOn = true;
         moveOnHeld = true;
+      } else if (!question && moveOnHeld) {
+        // 넘김 말을 잡아 둔 뒤의 맞장구도 응답 끝까지 잡아 둔다(표지 없이 — 코드 검토 M-1). 맞장구 아닌 문장은 위 갈래가 표지를 붙인다(재검토 N-1)
+        entry.state = "held";
       } else if (question && !asks) {
         entry.state = "dropped";
         entry.reason = "question";
