@@ -27,9 +27,12 @@ import {
   allowedLemmaOfVocab,
   checkSituationSentence,
   heardFieldsBlankOf,
+  isShortReaction,
   type SituationCheckContext,
   situationLineOf,
   situationPlaceOf,
+  situationSplitOf,
+  TALK_SITUATION_EXAMPLES,
 } from "@/core/conversation/situation";
 import type { TalkSituationLinesFile } from "@/core/seed/schema/reference";
 import { lemmaLookup } from "@/core/session/attempt";
@@ -41,13 +44,18 @@ import {
   lessonAfterLinesOf,
   lessonExplanationFitOf,
   lessonHintsAt,
+  lessonOffersNewQuestionOf,
   lessonOutcomeViewOf,
   lessonReplayLinesOf,
   settleLessonTurn,
   slotQuestionTextOf,
   withQuestionRetry,
 } from "@/server/conversation/lesson-turn";
-import { seedTalkAllowedWords, seedTalkCueLines } from "@/server/seed-lists";
+import {
+  seedTalkAllowedWords,
+  seedTalkCueLines,
+  seedTalkSituationLines,
+} from "@/server/seed-lists";
 import {
   aiTurn,
   button,
@@ -1901,5 +1909,352 @@ describe("AC-15zj (사) 한국어 설명 대조(13절 C249 (4))", () => {
         },
       }),
     ).toBeNull();
+  });
+});
+
+describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않는다 · 닫는 말은 답을 들려준다는 안내(13절 C252)", () => {
+  const lemmaOf = (w: string) =>
+    w.toLowerCase() === "eats" ? "eat" : undefined;
+  /** 받침 둘째의 AI 쉬운 질문 자리 앞까지의 행(막힌 질문은 AI 질문 'What is fun?'). */
+  const easyTurns = (): TalkLessonTurn[] => [
+    ...opening3(),
+    said(),
+    aiTurn("Oh, nice! What is fun?", { next: "follow_up" }, "Soccer is fun."),
+    button(),
+    teacher("That's okay!", {
+      kind: "card_slot",
+      why: "support",
+      stage: TALK_SUPPORT_STAGE_TOGETHER,
+      cause: "button",
+    }),
+  ];
+  /** 카드 필수 질문 1 에서 받침 첫째를 지난 행(받침 둘째는 카드 쉬운 질문이 붙는다 — AC-15za (라) 시험과 같은 꼴). */
+  const afterFirst = (): TalkLessonTurn[] => [
+    ...opening3(),
+    button(),
+    teacher("That's okay!", {
+      kind: "card_slot",
+      why: "support",
+      stage: 1,
+      cause: "button",
+      item: { kind: "required", no: 1 },
+      words: ["play"],
+      app: ["together", "answer_example"],
+      sound: { answer: "Answer first 1." },
+    }),
+  ];
+  const afterSecond = (): TalkLessonTurn[] => [
+    ...afterFirst(),
+    button(),
+    teacher("Okay! Easy first 1?", {
+      kind: "card_slot",
+      why: "support",
+      stage: 2,
+      cause: "button",
+      item: { kind: "required", no: 1 },
+      words: ["play"],
+      app: ["easy_question"],
+    }),
+  ];
+  const SEED = seedTalkSituationLines();
+  const seedLive = (turns: readonly TalkLessonTurn[]) =>
+    liveOf(turns, { lines: SEED.lines });
+  const seedSettle = {
+    live: { situationLines: SEED.lines, turnNo: TURN_NO, cue: null },
+  };
+  const seedCloseTails = SEED.lines.close.map(
+    (line) => situationSplitOf(line).tail,
+  );
+  const shownOf = (
+    explanation: string,
+    result: Parameters<typeof lessonExplanationFitOf>[0]["result"],
+    low = true,
+  ) =>
+    lessonExplanationFitOf({
+      explanation,
+      result,
+      low,
+      teacherName: "Mina",
+      lemmaOf,
+    });
+  /** 판정이 뜻 줄 · 화면 글 · 붙인 줄을 건드리지 않는다(숨긴 차례에서도 그 차례의 글은 그대로다). */
+  const keepsTurn = (
+    result: Parameters<typeof lessonExplanationFitOf>[0]["result"] & {
+      ko: string | null;
+    },
+    explanation: string,
+  ) => {
+    const before = structuredClone({
+      text: result.text,
+      ko: result.ko,
+      attach: result.attach,
+    });
+    shownOf(explanation, result);
+    expect({ text: result.text, ko: result.ko, attach: result.attach }).toEqual(
+      before,
+    );
+  };
+
+  it("AC-15zj (자) 같이 말하기 차례(질문 없음 · 답 소리와 신호 말)의 설명은 보이고, C249 (4)의 대조는 그대로 걸린다", () => {
+    const args = args3(opening3());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    const { result } = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences: ["That's okay!"],
+      outcome: ok(out({ stuck: true })),
+      child: stuckSaid(),
+      over: {
+        live: {
+          situationLines: LINES,
+          turnNo: TURN_NO,
+          cue: { file: seedTalkCueLines(), band: "2-3" },
+        },
+      },
+    });
+    expect(result.attach.some((l) => l.kind === "sound")).toBe(true);
+    expect(result.attach.some((l) => l.kind === "question")).toBe(false);
+    expect(lessonOffersNewQuestionOf(result)).toBe(false);
+    const good = "'weekend'는 '주말'이에요.";
+    expect(shownOf(good, result)).toBe(good);
+    expect(shownOf("'lake'는 '호수'예요.", result)).toBeNull();
+  });
+
+  it("AC-15zj (자) 받침 둘째에서 선생님이 쓴 쉬운 질문이 나간 차례는 막힌 질문의 설명을 숨기고 뜻 줄 · 화면 글은 그대로다", () => {
+    const plan = nextTeacherTurnOf(args3([...easyTurns(), button()]));
+    const { result } = play({
+      args: args3(easyTurns()),
+      ifAnswered: plan,
+      sentences: ["No worries!", "Do you like it?"],
+      outcome: ok(out({ tori_ko: ["걱정 마!", "그거 좋아해?"] })),
+      child: button(),
+    });
+    expect(result.replaced).toBeNull();
+    expect(result.plan.stuckQuestion).toContain("What is fun?");
+    expect(result.text).toBe("It's okay! Here is an easy one. Do you like it?");
+    expect(result.ko).toBe("괜찮아! 쉬운 거야. 그거 좋아해?");
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    // 막힌 질문의 낱말(fun)을 풀이해 대조는 지나는 설명이어도 숨긴다
+    const explain =
+      "'fun'은 '재미있다'라는 뜻이야. 뭐가 재미있는지 물어본 거야.";
+    expect(shownOf(explain, result)).toBeNull();
+    keepsTurn(result, explain);
+    // 4단계부터는 지금 그대로다(그 단계의 설명은 새로 쓰는 질문의 낱말을 풀이한다)
+    expect(shownOf(explain, result, false)).toBe(explain);
+  });
+
+  it("AC-15zj (자) 말로 막힌 받침 둘째(쉬운 질문이 나감)도 숨긴다", () => {
+    const args = args3(easyTurns());
+    const { ifAnswered, ifStuck } = teacherTurnPlansOf(args, {
+      segment: "talk",
+      targets: ["play"],
+    });
+    expect(ifStuck).toMatchObject({ kind: "ai", aiAsks: true, stage: 2 });
+    const { result } = play({
+      args,
+      ifAnswered,
+      ifStuck,
+      stuck: true,
+      sentences: ["No worries!", "Do you like it?"],
+      outcome: ok(out({ stuck: true, tori_ko: ["걱정 마!", "그거 좋아해?"] })),
+      child: stuckSaid(),
+    });
+    expect(result.plan.cause).toBe("stuck");
+    expect(result.text.split("\n").at(-1)).toContain("Do you like it?");
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    expect(shownOf("'fun'은 '재미있다'예요.", result)).toBeNull();
+  });
+
+  it("AC-15zj (자) 받침 둘째에 카드의 쉬운 질문이 붙은 차례는 숨긴다", () => {
+    const plan = nextTeacherTurnOf(args3([...afterFirst(), button()]));
+    const { result } = play({
+      args: args3(afterFirst()),
+      ifAnswered: plan,
+      sentences: ["That's okay!"],
+      outcome: ok(out()),
+      child: button(),
+    });
+    const easy = result.attach.find(
+      (l) => l.kind === "question" && l.role === "easy",
+    );
+    expect(easy).toBeDefined();
+    expect(result.text.split("\n").at(-1)).toBe(
+      easy && "en" in easy ? easy.en : "",
+    );
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    const explain = "'weekend'는 '주말'이에요.";
+    expect(shownOf(explain, result)).toBeNull();
+    keepsTurn(result, explain);
+  });
+
+  it("AC-15zj (자) 쉬운 질문이 걸려 답 소리로 닫히고 다음 카드 질문이 붙은 차례는 숨기고, 차례는 닫는 말(시드 꼬리) → 답 소리 → 다음 질문이다", () => {
+    const turns = easyTurns();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["No worries!", "Do you eat gimbap or drink gimbap?"],
+      outcome: ok(out({ tori_ko: ["걱정 마!", "김밥을 먹어 아니면 마셔?"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(result.replaced).toBe("question_check");
+    const tail = seedCloseTails.find((t) => t.en === result.kept.at(-1));
+    expect(tail).toBeDefined();
+    expect(tail?.ko).toContain("답");
+    expect(result.ko?.endsWith(tail?.ko ?? "?")).toBe(true);
+    expect(
+      result.attach.map((l) => [l.kind, "role" in l ? l.role : ""]),
+    ).toEqual([
+      ["sound", "answer"],
+      ["question", "card"],
+    ]);
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    const explain = "'fun'은 '재미있다'예요.";
+    expect(shownOf(explain, result)).toBeNull();
+    keepsTurn(result, explain);
+  });
+
+  it("AC-15zj (자) 받침 셋째에서 답 소리 뒤 다음 질문이 붙은 차례는 숨기고, 차례는 닫는 말(시드 꼬리) → 답 소리 → 다음 질문이다", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    expect(situationPlaceOf(plan)).toBe("close");
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["No worries!"],
+      outcome: ok(out({ tori_ko: ["걱정 마!"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    const tail = seedCloseTails.find((t) => t.en === result.kept.at(-1));
+    expect(tail).toBeDefined();
+    expect(tail?.ko).toContain("답");
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+    expect(result.attach[1]).toMatchObject({ kind: "question" });
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    const explain = "'weekend'는 '주말'이에요.";
+    expect(shownOf(explain, result)).toBeNull();
+    keepsTurn(result, explain);
+  });
+
+  it("AC-15zj (자) 대신 줄 길(쉬운 질문 자리의 회화 턴 실패)이 답 소리로 닫혀도 시드 닫기 줄 → 답 소리 → 다음 질문이다", () => {
+    const turns = easyTurns();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: [],
+      outcome: {
+        kind: "line",
+        line: {
+          en: "No problem! Here is an easy one.",
+          ko: "괜찮아! 쉬운 거야.",
+        },
+      },
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(result.replaced).toBe("fail");
+    const whole = SEED.lines.close.find((l) => l.en === result.kept.at(-1));
+    expect(whole).toBeDefined();
+    expect(whole?.ko).toContain("답");
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+    expect(result.attach[1]).toMatchObject({ kind: "question" });
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+  });
+
+  it("AC-15zj (자) 인사 토막의 쉬운 질문 자리도 같다: 선생님이 쓴 쉬운 질문이 나가면 숨긴다", () => {
+    const turns: TalkLessonTurn[] = [
+      teacher(
+        "Hi! How are you today?",
+        { kind: "first_question" },
+        "I am fine.",
+      ),
+      button({ segment: "greeting" }),
+      teacher("That's okay!", {
+        kind: "card_slot",
+        why: "support",
+        stage: TALK_SUPPORT_STAGE_TOGETHER,
+        cause: "button",
+      }),
+    ];
+    const args = { ...args3(turns), segment: "greeting" as const };
+    const plan = nextTeacherTurnOf({
+      ...args,
+      turns: [...turns, button({ segment: "greeting" })],
+    });
+    expect(plan).toMatchObject({ kind: "ai", aiAsks: true, stage: 2 });
+    const { result } = play({
+      args,
+      ifAnswered: plan,
+      sentences: ["No worries!", "Are you okay today?"],
+      outcome: ok(out({ tori_ko: ["걱정 마!", "오늘 괜찮아?"] })),
+      child: button({ segment: "greeting" }),
+    });
+    expect(result.replaced).toBeNull();
+    expect(result.text.split("\n").at(-1)).toContain("Are you okay today?");
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    expect(shownOf("'how'는 '어떻게'예요.", result)).toBeNull();
+  });
+
+  it("AC-15zj (자) 그 차례에 든 질문이 막힌 질문과 같은 질문뿐이면 숨기지 않는다(판정의 뜻)", () => {
+    const plan = nextTeacherTurnOf(args3([...easyTurns(), button()]));
+    const { result } = play({
+      args: args3(easyTurns()),
+      ifAnswered: plan,
+      sentences: ["No worries!", "Do you like it?"],
+      outcome: ok(out({ tori_ko: ["걱정 마!", "그거 좋아해?"] })),
+      child: button(),
+    });
+    const same = { ...result, text: "It's okay! What is fun?", attach: [] };
+    expect(lessonOffersNewQuestionOf(same)).toBe(false);
+    expect(shownOf("'fun'은 '재미있다'예요.", same)).toBe(
+      "'fun'은 '재미있다'예요.",
+    );
+    // 마무리 물음(앱 고정 대사)은 새 질문으로 세지 않는다
+    const closing = {
+      ...result,
+      text: "Good job!\nDo you want to talk more?",
+      attach: [],
+    };
+    expect(lessonOffersNewQuestionOf(closing)).toBe(false);
+  });
+
+  it("AC-15zj (자) 시드 닫기 줄 셋은 맞장구와 넘김으로 나뉘고, 꼬리는 답을 들려준다는 뜻이며 '계속하자' 꼴이 없다", () => {
+    expect(SEED.lines.close).toHaveLength(3);
+    const tails = SEED.lines.close.map((line) => {
+      const { head, tail } = situationSplitOf(line);
+      expect(head).not.toBeNull();
+      expect(isShortReaction(tail.en)).toBe(false);
+      expect(tail.ko).toContain("답");
+      expect(tail.ko).not.toContain("계속");
+      expect(tail.en).not.toMatch(/\bgo on\b|keep going/i);
+      expect(tail.en).not.toMatch(/^listen\b/i);
+      return tail.en;
+    });
+    expect(new Set(tails).size).toBe(3);
+  });
+
+  it("AC-15zj (자) 선생님에게 보이는 닫기 예 셋은 맞장구와 넘김으로 나뉘고, 꼬리는 답을 들려준다는 뜻이며 '계속하자' 꼴이 없다", () => {
+    expect(TALK_SITUATION_EXAMPLES.close).toHaveLength(3);
+    const tails = TALK_SITUATION_EXAMPLES.close.map((en) => {
+      const { head, tail } = situationSplitOf({ en, ko: en });
+      expect(head).not.toBeNull();
+      expect(isShortReaction(tail.en)).toBe(false);
+      expect(tail.en).toMatch(/\banswer\b/i);
+      expect(tail.en).not.toMatch(/\bgo on\b|keep going/i);
+      expect(tail.en).not.toMatch(/^listen\b/i);
+      return tail.en;
+    });
+    expect(new Set(tails).size).toBe(3);
   });
 });

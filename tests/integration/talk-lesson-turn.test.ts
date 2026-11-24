@@ -415,7 +415,12 @@ describe("새 꼴 회화 수업 턴 길(묶음 8)", () => {
       "Here is an easy one.",
       "Here is a new one.",
     ];
-    const closeTails = ["Let's go on.", "Here is the answer.", "Now we go on."];
+    // 시드 닫기 줄 셋의 넘김 몫(13절 C252 — 답을 들려준다는 안내)
+    const closeTails = [
+      "I will say the answer.",
+      "Here is the answer.",
+      "Let me say the answer.",
+    ];
     for (const tail of easyTails) expect(said).not.toContain(tail);
     expect(JSON.stringify(lines)).not.toContain("gimbap");
     const soundAt = lines.findIndex(

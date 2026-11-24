@@ -142,6 +142,7 @@ import {
   lessonChildRowOf,
   lessonExplanationFitOf,
   lessonHintsAt,
+  lessonOffersNewQuestionOf,
   lessonOutcomeViewOf,
   lessonOverLengthOf,
   lessonReplayLinesOf,
@@ -185,6 +186,7 @@ import {
   observeLiveOf,
   observeMoreLeadOf,
   observeMoreOf,
+  observeOffersNewQuestionOf,
   observeOverLengthOf,
   observeQuestionRetryFits,
   type PreparedTurn,
@@ -5697,7 +5699,8 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       en: "Here is an easy one.",
       reason: "promise",
     });
-    expect(server.result.release).toEqual(["Now we go on."]);
+    // 시드 닫기 줄 셋째(C252 — 답을 들려준다는 안내)의 넘김 몫
+    expect(server.result.release).toEqual(["Let me say the answer."]);
     expect(server.result.attach[0]).toMatchObject({
       kind: "sound",
       role: "answer",
@@ -5723,7 +5726,17 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
         lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
       }),
     ).toBeNull();
-    // 막힌 질문의 낱말(like)을 풀이한 설명은 보인다
+    // 막힌 질문의 낱말(like)을 풀이한 설명은 대조를 지나지만, 답 소리 뒤에 다음 카드 질문이 붙은 차례라 서버 · 도구 모두 숨긴다(13절 C252 (1))
+    expect(server.result.attach.some((l) => l.kind === "question")).toBe(true);
+    expect(
+      lessonExplanationFitOf({
+        explanation: "'like'는 좋아한다는 뜻이에요.",
+        result: server.result,
+        low: true,
+        teacherName: lineOptions?.teacherName ?? m.teacher.nameEn,
+        lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
+      }),
+    ).toBeNull();
     expect(
       observeExplanationShownOf({
         explanation: "'like'는 좋아한다는 뜻이에요.",
@@ -5734,7 +5747,7 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
         teacherName: lineOptions?.teacherName ?? m.teacher.nameEn,
         lemmaOf: lineOptions?.lemmaOf ?? (() => undefined),
       }),
-    ).toBe("'like'는 좋아한다는 뜻이에요.");
+    ).toBeNull();
     // 대본 기록: 설명 칸은 보인 값(빈 글) · 날값은 따로
     const record = sim.finish(ready.turn, message);
     expect(record.explanation).toBe("");
@@ -5760,6 +5773,72 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
       "Here is an easy one.",
       "Do you like it?",
     ]);
+  });
+
+  it("AC-15zj (자) 설명 판정(새 질문이면 숨김, 13절 C252 (1))이 서버와 도구에서 같다 — 같이 말하기 차례는 보이고, 쉬운 질문이 나간 차례는 숨긴다", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    // 영어 낱말이 없는 설명이라 C249 (4)의 대조는 늘 지난다 — 갈림은 새 질문 판정뿐이다
+    const explain = "뭘 하는지 물어본 거야.";
+    const both = (
+      sim: TalkSim,
+      p: PreparedTurn,
+      message: CallResult,
+      stuckInSlot: number,
+    ) => {
+      const server = serverTurn(m, sim, p, message);
+      const tool = toolRelease(m, sim, p, message, server);
+      const lineOptions = server.live?.checks.situation?.options;
+      const teacherName = lineOptions?.teacherName ?? m.teacher.nameEn;
+      const lemmaOf = lineOptions?.lemmaOf ?? (() => undefined);
+      return {
+        server: lessonExplanationFitOf({
+          explanation: explain,
+          result: server.result,
+          low: true,
+          teacherName,
+          lemmaOf,
+        }),
+        tool: observeExplanationShownOf({
+          explanation: explain,
+          settled: tool,
+          spec: m.spec,
+          stuckInSlot,
+          low: true,
+          teacherName,
+          lemmaOf,
+        }),
+        newQuestion: [
+          lessonOffersNewQuestionOf(server.result),
+          observeOffersNewQuestionOf(tool),
+        ],
+      };
+    };
+    // 보임: 받침 첫째(같이 말하기 — 질문 없음)
+    const { sim: first } = greeted(m);
+    const together = first.prepare(dontKnow, first.rows.length);
+    if (!together.ok) throw new Error(together.reason);
+    const shown = both(
+      first,
+      together.turn,
+      fakeMessage({ tori_en: "That's okay!" }),
+      1,
+    );
+    expect(shown.newQuestion).toEqual([false, false]);
+    expect(shown.server).toBe(explain);
+    expect(shown.tool).toBe(explain);
+    // 숨김: 받침 둘째의 AI 쉬운 질문이 지난 차례
+    const sim = toEasySlot(m);
+    const easy = sim.prepare(dontKnow, sim.rows.length);
+    if (!easy.ok) throw new Error(easy.reason);
+    const hidden = both(
+      sim,
+      easy.turn,
+      fakeMessage({ tori_en: "No worries! Do you like it?" }),
+      2,
+    );
+    expect(hidden.newQuestion).toEqual([true, true]);
+    expect(hidden.server).toBeNull();
+    expect(hidden.tool).toBeNull();
   });
 
   it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문 자리에서 회화 턴이 실패하면(대신 줄) 쉬운 것을 약속한 줄 대신 닫기 자리 상황 줄 통째와 그 뜻이고 닫기 꼬리는 없다 — 서버와 같다", () => {

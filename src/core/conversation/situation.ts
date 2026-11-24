@@ -71,8 +71,9 @@ export const TALK_SITUATION_EXAMPLES = {
   close: [
     // [M-1] 듣고 따라 하라는 신호 말 꼴('Listen …')은 예에 두지 않는다(같은 고정부의 신호 말 금지 줄 · C207)
     "That's okay! Here is the answer.",
-    "No problem. I will help, and then we go on.",
-    "It's okay! Let's go on.",
+    // 13절 C252 (2): 답을 들려주겠다는 안내(→ 답 소리 → 다음 질문). '계속하자' 꼴은 두지 않는다
+    "No problem. I will say the answer.",
+    "It's okay! Let me say the answer.",
   ],
   /**
    * 들리지 않음(못 들은 것을 소리 쪽 일로, spec 설계 1 [M-8]). 'my ears' 꼴은 두지 않는다(13절 C217 (3) — 요청자 iPad 수업 11-08 '뭐만하면

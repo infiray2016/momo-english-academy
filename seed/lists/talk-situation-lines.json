@@ -44,16 +44,16 @@
     ],
     "close": [
       {
-        "en": "That's okay! Let's go on.",
-        "ko": "괜찮아! 계속하자."
+        "en": "That's okay! I will say the answer.",
+        "ko": "괜찮아! 답을 말해 줄게."
       },
       {
         "en": "No problem! Here is the answer.",
         "ko": "괜찮아! 답은 이거야."
       },
       {
-        "en": "It's okay! Now we go on.",
-        "ko": "괜찮아! 이제 계속하자."
+        "en": "It's okay! Let me say the answer.",
+        "ko": "괜찮아! 내가 답을 들려줄게."
       }
     ],
     "nospeech": [

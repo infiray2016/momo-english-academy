@@ -125,6 +125,7 @@ import {
   type LowLevelLineOptions,
   questionEchoesChild,
   questionKeyOf,
+  questionsOfText,
   sameQuestionKeyHit,
   turnQuestionOf,
 } from "@/core/conversation/question-check";
@@ -2123,8 +2124,29 @@ export function lessonExplanationSeenOf(
 }
 
 /**
- * 보일 한국어 설명(13절 C249 (4)): 1~3단계에서 설명의 영어 낱말이 그 차례의 영어와 막힌 질문 어디에도 없으면 null(보이지 않고 저장하지 않는다 —
- * core explanationFitsTurnOf). 4단계부터와 영어 낱말이 없는 설명은 그대로다.
+ * 그 차례가 아이에게 새 질문(막힌 질문이 아닌 질문)을 내놓는가(13절 C252 (1)): 화면 글(남은 선생님 문장 · 화면 글로 붙인 줄)과 붙인 질문 줄의
+ * 물음표 문장(마무리 물음은 뺀다 — questionsOfText) 가운데 하나라도 막힌 질문과 열쇠(questionKeyOf · 막힌 질문은 cardQuestionKeyOf)가 다르면
+ * 참이다. 받침 둘째의 쉬운 질문(선생님이 쓴 것 · 카드의 것)과 답 소리 뒤에 붙은 다음 질문이 여기에 든다. 같이 말하기 차례 · 다음 질문이 붙지
+ * 않는 닫기 차례(질문 없음)와, 든 질문이 막힌 질문과 같은 질문뿐인 차례는 거짓이다. 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
+ */
+export function lessonOffersNewQuestionOf(
+  result: Pick<LessonTurnResult, "text" | "attach" | "plan">,
+): boolean {
+  const stuck = result.plan.stuckQuestion;
+  const stuckKey = stuck === null ? null : cardQuestionKeyOf(stuck);
+  const questions = [
+    ...questionsOfText(result.text),
+    ...result.attach.flatMap((l) =>
+      l.kind === "question" ? questionsOfText(l.en) : [],
+    ),
+  ];
+  return questions.some((q) => questionKeyOf(q) !== stuckKey);
+}
+
+/**
+ * 보일 한국어 설명(13절 C249 (4) · C252 (1)): 1~3단계에서 그 차례가 아이에게 새 질문을 내놓으면(lessonOffersNewQuestionOf) null 이고, 설명의
+ * 영어 낱말이 그 차례의 영어와 막힌 질문 어디에도 없어도 null 이다(보이지 않고 저장하지 않는다 — core explanationFitsTurnOf). 4단계부터와,
+ * 새 질문이 없는 차례의 영어 낱말이 없는 설명은 그대로다. 뜻 줄 · 화면 글 · 붙인 줄은 이 판정과 관계없다.
  */
 export function lessonExplanationFitOf({
   explanation,
@@ -2140,6 +2162,7 @@ export function lessonExplanationFitOf({
   lemmaOf: (surface: string) => string | undefined;
 }): string | null {
   if (explanation === null || !low) return explanation;
+  if (lessonOffersNewQuestionOf(result)) return null;
   return explanationFitsTurnOf({
     explanation,
     seen: lessonExplanationSeenOf(result),

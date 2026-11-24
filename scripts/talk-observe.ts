@@ -364,6 +364,7 @@ import {
   type LowLevelLineOptions,
   questionEchoesChild,
   questionKeyOf,
+  questionsOfText,
   sameQuestionKeyHit,
   turnQuestionOf,
 } from "../src/core/conversation/question-check";
@@ -2970,9 +2971,27 @@ export function observeExplanationSeenOf(
 }
 
 /**
+ * 그 차례가 아이에게 새 질문(막힌 질문이 아닌 질문)을 내놓는가(서버 lessonOffersNewQuestionOf 사본 — 13절 C252 (1)): 화면 글과 붙인 질문 줄의
+ * 물음표 문장(마무리 물음은 뺀다) 가운데 하나라도 막힌 질문과 열쇠가 다르면 참이다. 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
+ */
+export function observeOffersNewQuestionOf(
+  settled: Pick<Settled, "text" | "attach" | "plan">,
+): boolean {
+  const stuck = settled.plan.stuckQuestion;
+  const stuckKey = stuck === null ? null : cardQuestionKeyOf(stuck);
+  const questions = [
+    ...questionsOfText(settled.text),
+    ...settled.attach.flatMap((l) =>
+      l.kind === "question" ? questionsOfText(l.en) : [],
+    ),
+  ];
+  return questions.some((q) => questionKeyOf(q) !== stuckKey);
+}
+
+/**
  * 보일 한국어 설명(서버 explainFor(lessonExplanationOf) → lessonExplanationFitOf 사본): 막힘 차례에서 그 자리 막힘 수가 단계 규격 이상이고
- * 글이 비지 않았으면 보이고, 1~3단계는 설명의 영어 낱말이 그 차례의 영어와 막힌 질문 어디에도 없으면 보이지 않는다(core explanationFitsTurnOf).
- * 보이지 않으면 null.
+ * 글이 비지 않았으면 보이고, 1~3단계는 그 차례가 새 질문을 내놓으면(observeOffersNewQuestionOf, 13절 C252 (1)) 보이지 않고, 설명의 영어 낱말이
+ * 그 차례의 영어와 막힌 질문 어디에도 없어도 보이지 않는다(core explanationFitsTurnOf). 보이지 않으면 null.
  */
 export function observeExplanationShownOf({
   explanation,
@@ -2995,6 +3014,7 @@ export function observeExplanationShownOf({
     return null;
   if (explanation.trim() === "") return null;
   if (!low) return explanation;
+  if (observeOffersNewQuestionOf(settled)) return null;
   return explanationFitsTurnOf({
     explanation,
     seen: observeExplanationSeenOf(settled),
