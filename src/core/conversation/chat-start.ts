@@ -28,7 +28,7 @@ export function chatUnitMaterialOf(
 
 /**
  * 처음 스냅숏에 적을 회화 방식(이야기 방식 spec 설계 1 '스냅숏 조건', 묶음 S2). 설정이 chat 이면 넷(설정 · 1~3단계 구간 · 단원 재료 · 고른 선생님의
- * 이야기 방식 재료)이 모두 설 때만 chat 이고, 하나라도 빠지면 기존 방식(app — 리오 · 다른 단원 · 4단계 이상)이다. 설정이 app · claude 면 지금
+ * 이야기 방식 재료)이 모두 설 때만 chat 이고, 하나라도 빠지면 기존 방식(app — 재료 없는 선생님 · 다른 단원 · 4단계 이상)이다. 설정이 app · claude 면 지금
  * 판단(leadStartModeOf) 그대로다.
  */
 export function lessonStartModeOf({

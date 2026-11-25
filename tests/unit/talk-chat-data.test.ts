@@ -1,6 +1,6 @@
 // 이야기 방식 묶음 D(데이터 꼴, plan 2026-11-13-회화-대화-구조-R 묶음 표 'D 데이터 꼴' · spec 판 3 데이터 절 · AC-1 의 미나 재료).
 // DB 열거 값 셋(input_mode quiet · ai_purpose talk_chat_hint · talk_chat_eval) · 새 열 talk_turns.chat_judge · 마이그레이션 0009 ·
-// 선생님 시드 새 칸 둘(chatPersonaEn · chatFavoritesEn — 미나는 시제품 R3 의 글 그대로, 리오는 비움).
+// 선생님 시드 새 칸 둘(chatPersonaEn · chatFavoritesEn — 미나는 시제품 R3 의 글 그대로, 리오는 새로 쓴 글 — task-des-leo-chat 3절 고른 판).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { getTableColumns } from "drizzle-orm";
@@ -163,7 +163,7 @@ describe("DB 열거 값과 새 열(스키마)", () => {
 });
 
 describe("선생님 시드의 이야기 방식 재료", () => {
-  it("AC-27a 미나만 이야기 방식 재료가 있다", () => {
+  it("AC-27a 미나와 리오 모두 이야기 방식 재료가 있다", () => {
     const seed = seedRoster();
     const mina = chatMaterialOf(teacher(seed, "mina"));
     expect(mina).not.toBeNull();
@@ -177,11 +177,22 @@ describe("선생님 시드의 이야기 방식 재료", () => {
       favoritesEn:
         "you like small animals (cats most of all), drawing, music, puzzles, kites, picture books, the sea, and stars; your favorite fruit is strawberries and your favorite color is yellow.",
     });
-    // 리오는 비움(미결 2) — 리오 수업은 기존 방식
+    // 리오는 새로 쓴 글(spec 우려 3 · 설계 검토 task-des-leo-chat 3절의 고른 판 그대로)
     const leo = teacher(seed, "leo");
-    expect(leo.chatPersonaEn).toBeUndefined();
-    expect(leo.chatFavoritesEn).toBeUndefined();
-    expect(chatMaterialOf(leo)).toBeNull();
+    expect(chatMaterialOf(leo)).toEqual({
+      personaEn:
+        "You are curious, relaxed, and cheerful, and you love new stories and imagining funny things.",
+      favoritesEn:
+        "you like monkeys and giraffes, kings and queens, trains, and balloons; your favorite food is pizza and your favorite color is blue.",
+    });
+    // 재료 없는 선생님(두 칸을 뺀 가짜 선생님)은 재료가 없다 — 그 수업은 기존 방식
+    expect(
+      chatMaterialOf({
+        ...leo,
+        chatPersonaEn: undefined,
+        chatFavoritesEn: undefined,
+      }),
+    ).toBeNull();
     // 지금 personaEn 은 기존 방식 · 지금 새 방식이 쓰므로 그대로다
     expect(teacher(seed, "mina").personaEn).toBe(
       "Warm and patient. You go step by step and laugh together with the child.",
@@ -240,7 +251,7 @@ describe("명단 검사의 이야기 방식 재료", () => {
   const issuesOf = (r: TeachersFile) =>
     checkTeacherRoster(r, ctx).map((i) => `${i.rule} ${i.path}`);
 
-  it("AC-27a 시드 명단(미나 재료 있음 · 리오 비움)은 명단 검사를 통과한다", () => {
+  it("AC-27a 시드 명단(미나 · 리오 재료 있음)은 명단 검사를 통과한다", () => {
     expect(checkTeacherRoster(seedRoster(), ctx)).toEqual([]);
   });
 

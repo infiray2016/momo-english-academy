@@ -47,7 +47,7 @@ export type ChatMaterial = { personaEn: string; favoritesEn: string };
 
 /**
  * 그 선생님의 이야기 방식 재료. 두 칸(chatPersonaEn · chatFavoritesEn)이 다 있을 때만 있고, 하나라도 없으면 null 이다
- * (null 인 선생님의 수업은 기존 방식 — spec AC-1 의 '미나 재료', 리오는 비움 · 미결 2).
+ * (null 인 선생님의 수업은 기존 방식 — spec AC-1 · 설계 2. 지금 시드의 미나 · 리오는 둘 다 재료가 있다).
  */
 export function chatMaterialOf(
   t: Pick<Teacher, "chatPersonaEn" | "chatFavoritesEn">,

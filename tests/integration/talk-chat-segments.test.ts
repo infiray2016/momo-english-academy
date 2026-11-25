@@ -309,14 +309,15 @@ describe("AC-27a 수업을 열 때 조건 넷이 서야 이야기 방식(묶음 
     expect(h.fake.requests).toHaveLength(0);
   });
 
-  it("AC-27a 리오(선생님 재료 없음)는 설정이 chat 이어도 기존 방식으로 열린다(스냅숏 칸 없음 · 카드 인사 행)", async () => {
+  it("AC-27a 리오 선생님으로 연 회화 3단계 단원 1 수업도 이야기 방식으로 열린다(처음 스냅숏 chat · 카드 인사 행 없음)", async () => {
     const { sessionId } = await newSession("chat", { teacherKey: "leo" });
-    expect(await startModeOf(sessionId)).toBeUndefined();
-    const rows = await rowsOf(sessionId);
-    expect(rows.map((r) => [r.turnNo, r.speaker, r.segment])).toEqual([
-      [1, "tori", "greeting"],
-    ]);
-    expect(rows[0]?.text).toContain(cardOpeningEn(card));
+    expect(await startModeOf(sessionId)).toBe("chat");
+    expect(await rowsOf(sessionId)).toEqual([]);
+    const view = await loadTalkLessonView({ sessionId }, h.deps());
+    expect(view?.step).toEqual({ kind: "advance", to: "talk" });
+    expect(view?.current).toBeNull();
+    expect(view?.retryLead).toBeNull();
+    expect(h.fake.requests).toHaveLength(0);
   });
 
   it("AC-27a 재료가 없는 단원(이야기 방식 주제 칸 없음)은 설정이 chat 이어도 기존 방식으로 열린다", async () => {

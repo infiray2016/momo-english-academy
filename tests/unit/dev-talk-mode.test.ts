@@ -415,13 +415,22 @@ describe("개발용 회화 방식 전환 서버 액션", () => {
     expect(leadModeOf(openedAfter)).toBe("claude");
     expect(leadModeOf(openedBefore)).toBe("app");
 
-    // chat 으로 바꾸면 새로 여는 3단계 단원 1 · 미나 수업은 chat 칸이고(리오는 재료가 없어 기존 방식), 앞서 연 두 수업은 그대로다
+    // chat 으로 바꾸면 새로 여는 3단계 단원 1 수업은 미나 · 리오 모두 chat 칸이고(재료 없는 가짜 선생님은 기존 방식), 앞서 연 두 수업은 그대로다
     await changeTalkModeFor("chat", deps);
     const readChat = await readTalkModeFor(deps);
     if (!readChat.ok) throw new Error("읽기 실패");
     expect(readChat.mode).toBe("chat");
     expect(startFieldOf(readChat.mode, 3, 1)).toEqual({ leadMode: "chat" });
-    expect(startFieldOf(readChat.mode, 3, 1, teacherOf("leo"))).toEqual({});
+    expect(startFieldOf(readChat.mode, 3, 1, teacherOf("leo"))).toEqual({
+      leadMode: "chat",
+    });
+    expect(
+      startFieldOf(readChat.mode, 3, 1, {
+        ...teacherOf("leo"),
+        chatPersonaEn: undefined,
+        chatFavoritesEn: undefined,
+      }),
+    ).toEqual({});
     expect(leadModeOf(openedAfter)).toBe("claude");
     expect(leadModeOf(openedBefore)).toBe("app");
   });
@@ -481,10 +490,11 @@ describe("개발용 회화 방식 전환 화면", () => {
       chat: "이야기 방식(실험)",
     });
     expect(TALK_MODE_TEXT.chatScope).toBe(
-      "이야기 방식은 회화 3단계 단원 1 을 미나 선생님과 할 때만 열려요.",
+      "이야기 방식은 회화 3단계 단원 1 에서 열려요.",
     );
-    // 안내 줄이 적은 단원 · 선생님은 재료와 맞는다: 회화 1~12단계 × 단원 1~5 × 시드 선생님 가운데 설정이 chat 일 때 처음 스냅숏이 chat 인
-    // 곳은 3단계 단원 1 · 미나 하나이고(단원 재료는 3단계 단원 1 에만, 선생님 재료는 미나에게만), 재료가 늘면 이 시험이 걸려 문구를 함께 고친다.
+    // 안내 줄이 적은 단원은 재료와 맞는다: 회화 1~12단계 × 단원 1~5 × 시드 선생님 가운데 설정이 chat 일 때 처음 스냅숏이 chat 인
+    // 곳은 3단계 단원 1 에서 시드 선생님 모두이고(단원 재료는 3단계 단원 1 에만, 선생님 재료는 미나 · 리오 둘 다), 그래서 안내 줄은
+    // 선생님 이름을 적지 않는다. 단원 재료가 늘거나 재료 없는 선생님이 생기면 이 시험이 걸려 문구를 함께 고친다.
     const roster = rosterOf();
     const opens: string[] = [];
     const unitMaterial: string[] = [];
@@ -501,11 +511,11 @@ describe("개발용 회화 방식 전환 화면", () => {
     expect(unitMaterial).toEqual(["3-1"]);
     expect(
       roster.filter((t) => chatMaterialOf(t) !== null).map((t) => t.nameKo),
-    ).toEqual(["미나"]);
-    expect(opens).toEqual(["3-1-미나"]);
-    expect(TALK_MODE_TEXT.chatScope).toContain(
-      "회화 3단계 단원 1 을 미나 선생님과",
-    );
+    ).toEqual(["미나", "리오"]);
+    expect(opens).toEqual(["3-1-미나", "3-1-리오"]);
+    expect(TALK_MODE_TEXT.chatScope).toContain("회화 3단계 단원 1 에서");
+    for (const teacher of roster)
+      expect(TALK_MODE_TEXT.chatScope).not.toContain(teacher.nameKo);
     const chat = html({
       mode: "chat",
       busy: false,
@@ -526,7 +536,7 @@ describe("개발용 회화 방식 전환 화면", () => {
     expect(chat).toContain(TALK_MODE_TEXT.notice);
     expect(chat).toContain(TALK_MODE_TEXT.scope);
     expect(chat).toContain(
-      '<p data-testid="talk-mode-chat-scope">이야기 방식은 회화 3단계 단원 1 을 미나 선생님과 할 때만 열려요.</p>',
+      '<p data-testid="talk-mode-chat-scope">이야기 방식은 회화 3단계 단원 1 에서 열려요.</p>',
     );
     // 다른 값일 때도 안내 줄은 늘 보인다
     const app = html({

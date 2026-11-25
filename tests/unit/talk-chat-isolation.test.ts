@@ -147,7 +147,7 @@ describe("AC-27a 수업을 열 때의 방식(조건 넷 — 묶음 S2)", () => {
       teacher: MATERIAL,
     };
     expect(lessonStartModeOf(base)).toBe("chat");
-    // 선생님 재료 없음(리오) · 선생님 없음 · 다른 단원 · 4단계
+    // 선생님 재료 없음(가짜 선생님 NO_MATERIAL) · 선생님 없음 · 다른 단원 · 4단계
     expect(lessonStartModeOf({ ...base, teacher: NO_MATERIAL })).toBe("app");
     expect(lessonStartModeOf({ ...base, teacher: null })).toBe("app");
     expect(lessonStartModeOf({ ...base, unit: 2 })).toBe("app");
@@ -171,7 +171,7 @@ describe("AC-27a 수업을 열 때의 방식(조건 넷 — 묶음 S2)", () => {
     }
   });
 
-  it("AC-27a 시드의 미나는 이야기 방식 재료가 있어 chat, 리오는 없어 기존 방식으로 열린다", () => {
+  it("AC-27a 시드의 미나와 리오는 이야기 방식 재료가 있어 chat 으로 열린다", () => {
     const roster = rosterOf();
     const mina = roster.find((t) => t.key === "mina") ?? null;
     const rio = roster.find((t) => t.key === "leo") ?? null;
@@ -182,7 +182,7 @@ describe("AC-27a 수업을 열 때의 방식(조건 넷 — 묶음 S2)", () => {
     ).toBe("chat");
     expect(
       lessonStartModeOf({ mode: "chat", level: 3, unit: 1, teacher: rio }),
-    ).toBe("app");
+    ).toBe("chat");
   });
 
   it("AC-27a 단원 재료는 단원 표의 이야기 방식 주제 칸이고, 표 출처를 바꾸면(시험의 1단계 시드) 그 표로 판단한다", () => {
