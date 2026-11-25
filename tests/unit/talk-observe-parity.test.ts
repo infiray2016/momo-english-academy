@@ -5936,6 +5936,36 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
     expect(server.result.attach[1]).toMatchObject({ kind: "question" });
   });
 
+  it("AC-15zj (자) 받침 셋째에서 회화 턴이 실패하면(대신 줄) 시드 닫기 줄 통째 한 번과 그 뜻이고 닫기 꼬리는 없다 — 화면 글 · 남긴 문장 · 뜻 줄이 서버와 도구에서 같다(재검토 I-1)", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    stepBoth(
+      m,
+      sim,
+      dontKnow,
+      fakeMessage({ tori_en: "No worries! Do you like it?" }),
+    );
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(situationPlaceOf(ready.turn.ifAnswered)).toBe("close");
+    // stepBoth 가 화면 글(행 글) · 남긴 문장(record.teacher) · 뜻 줄(record.toriKo)을 서버와 견준다
+    // 실패 차례의 대신 줄이 이미 닫기 자리 상황 줄이라 바꿔 넣은 표지(replaced)는 없다
+    const { server, record } = stepBoth(m, sim, dontKnow, FAILED);
+    const close = m.talkLists.situation.lines.close ?? [];
+    const shown = close.find((l) => l.en === server.result.kept[0]);
+    expect(shown).toBeDefined();
+    expect(server.result.kept).toEqual([shown?.en]);
+    expect(server.result.release).toEqual([shown?.en]);
+    expect(server.result.ko).toBe(shown?.ko);
+    expect(record.teacher).toBe(shown?.en);
+    expect(record.toriKo).toBe(shown?.ko);
+    expect(server.result.attach[0]).toMatchObject({
+      kind: "sound",
+      role: "answer",
+    });
+    expect(server.result.attach[1]).toMatchObject({ kind: "question" });
+  });
+
   it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문 자리에서 회화 턴이 실패하면(대신 줄) 쉬운 것을 약속한 줄 대신 닫기 자리 상황 줄 통째와 그 뜻이고 닫기 꼬리는 없다 — 서버와 같다", () => {
     const m = withoutSceneOpener(materialsAt(3));
     const sim = toEasySlot(m);

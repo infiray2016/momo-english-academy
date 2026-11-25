@@ -2799,9 +2799,11 @@ export function settleTurn({
         },
       ]
     : [];
-  // 받침 셋째가 답 소리로 닫히는데 남은 넘김 말이 없으면 닫기 꼬리를 둔다(서버 closeBare 와 같음 — 13절 C252 (2), 코드 검토 O-1)
+  // 받침 셋째가 답 소리로 닫히는데 남은 넘김 말이 없으면 닫기 꼬리를 둔다(서버 closeBare 와 같음 — 13절 C252 (2), 코드 검토 O-1).
+  // 실패 · 거절로 대신 줄이 든 차례(value 없음)는 꼬리를 더하지 않는다(재검토 I-1)
   const closeBare =
     support === "close" &&
+    value !== null &&
     plan.attach.some((l) => l.kind === "sound" && l.role === "answer") &&
     !all.some((e) => willKeep(e) && (e.moveOn === true || e.ai !== undefined));
   // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))

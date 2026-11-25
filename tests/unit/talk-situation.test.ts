@@ -2342,6 +2342,35 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
     expect(result.attach.some((l) => l.kind === "sound")).toBe(false);
   });
 
+  it("AC-15zj (자) 받침 셋째에서 회화 턴이 실패해 대신 줄(시드 닫기 줄 통째)이 든 차례는 그 줄 한 번뿐이고 뜻 줄도 그 줄의 뜻이며, 차례는 답 소리 → 다음 질문이다(재검토 I-1)", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    expect(situationPlaceOf(plan)).toBe("close");
+    expect(SEED.lines.close.length).toBe(3);
+    for (const line of SEED.lines.close) {
+      const { result } = play({
+        args: args3(turns),
+        ifAnswered: plan,
+        sentences: [],
+        outcome: { kind: "line", line },
+        child: button(),
+        live: seedLive(turns),
+        over: seedSettle,
+      });
+      // 닫기 꼬리가 또 붙지 않는다(같은 안내가 두 번 나가지 않음)
+      expect(result.kept).toEqual([line.en]);
+      expect(result.release).toEqual([line.en]);
+      expect(result.text.split("\n")[0]).toBe(line.en);
+      expect(result.ko).toBe(line.ko);
+      expect(
+        result.attach.map((l) => [l.kind, "role" in l ? l.role : ""]),
+      ).toEqual([
+        ["sound", "answer"],
+        ["question", "card"],
+      ]);
+    }
+  });
+
   it("AC-15zj (자) 인사 토막의 쉬운 질문 자리도 같다: 선생님이 쓴 쉬운 질문이 나가면 숨긴다", () => {
     const turns: TalkLessonTurn[] = [
       teacher(
