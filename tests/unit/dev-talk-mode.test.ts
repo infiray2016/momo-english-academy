@@ -513,6 +513,8 @@ describe("개발용 회화 방식 전환 화면", () => {
       roster.filter((t) => chatMaterialOf(t) !== null).map((t) => t.nameKo),
     ).toEqual(["미나", "리오"]);
     expect(opens).toEqual(["3-1-미나", "3-1-리오"]);
+    // 이름 없는 글("… 단원 1 에서 열려요")이 참이려면 명단의 모든 선생님으로 열려야 한다(코드 검토 M-1 — 재료 없는 선생님이 생기면 여기서 걸린다)
+    expect(opens).toEqual(roster.map((t) => `3-1-${t.nameKo}`));
     expect(TALK_MODE_TEXT.chatScope).toContain("회화 3단계 단원 1 에서");
     for (const teacher of roster)
       expect(TALK_MODE_TEXT.chatScope).not.toContain(teacher.nameKo);

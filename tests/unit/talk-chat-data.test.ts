@@ -177,13 +177,13 @@ describe("선생님 시드의 이야기 방식 재료", () => {
       favoritesEn:
         "you like small animals (cats most of all), drawing, music, puzzles, kites, picture books, the sea, and stars; your favorite fruit is strawberries and your favorite color is yellow.",
     });
-    // 리오는 새로 쓴 글(spec 우려 3 · 설계 검토 task-des-leo-chat 3절의 고른 판 그대로)
+    // 리오는 새로 쓴 글(spec 우려 3 · 설계 검토 task-des-leo-chat 3절의 고른 판에서 실호출 되돌림으로 피자와 'imagining funny things' 를 뺀 판, 13절 C243 보완 12)
     const leo = teacher(seed, "leo");
     expect(chatMaterialOf(leo)).toEqual({
       personaEn:
-        "You are curious, relaxed, and cheerful, and you love new stories and imagining funny things.",
+        "You are curious, relaxed, and cheerful, and you love new stories.",
       favoritesEn:
-        "you like monkeys and giraffes, kings and queens, trains, and balloons; your favorite food is pizza and your favorite color is blue.",
+        "you like monkeys and giraffes, kings and queens, trains, and balloons; your favorite color is blue.",
     });
     // 재료 없는 선생님(두 칸을 뺀 가짜 선생님)은 재료가 없다 — 그 수업은 기존 방식
     expect(

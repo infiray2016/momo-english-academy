@@ -314,6 +314,8 @@ describe("AC-27a 수업을 열 때 조건 넷이 서야 이야기 방식(묶음 
     expect(await startModeOf(sessionId)).toBe("chat");
     expect(await rowsOf(sessionId)).toEqual([]);
     const view = await loadTalkLessonView({ sessionId }, h.deps());
+    // 그 수업의 선생님이 정말 리오인지(코드 검토 M-2 — teacherKey 가 빠져 기본값 mina 로 떨어져도 통과하지 않게)
+    expect(view?.teacher?.key).toBe("leo");
     expect(view?.step).toEqual({ kind: "advance", to: "talk" });
     expect(view?.current).toBeNull();
     expect(view?.retryLead).toBeNull();
