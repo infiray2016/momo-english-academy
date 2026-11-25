@@ -2799,9 +2799,14 @@ export function settleTurn({
         },
       ]
     : [];
+  // 받침 셋째가 답 소리로 닫히는데 남은 넘김 말이 없으면 닫기 꼬리를 둔다(서버 closeBare 와 같음 — 13절 C252 (2), 코드 검토 O-1)
+  const closeBare =
+    support === "close" &&
+    plan.attach.some((l) => l.kind === "sound" && l.role === "answer") &&
+    !all.some((e) => willKeep(e) && (e.moveOn === true || e.ai !== undefined));
   // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
   const closeLine =
-    closesWithAnswer && reacted && live && closeWhole === null
+    ((closesWithAnswer && closeWhole === null) || closeBare) && reacted && live
       ? situationLineOf(
           live.settle.situationLines,
           "close",
@@ -2972,10 +2977,11 @@ export function observeExplanationSeenOf(
 
 /**
  * 그 차례가 아이에게 새 질문(막힌 질문이 아닌 질문)을 내놓는가(서버 lessonOffersNewQuestionOf 사본 — 13절 C252 (1)): 화면 글과 붙인 질문 줄의
- * 물음표 문장(마무리 물음은 뺀다) 가운데 하나라도 막힌 질문과 열쇠가 다르면 참이다. 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
+ * 물음표 문장(마무리 물음은 뺀다) 가운데 하나라도 막힌 질문과 열쇠가 다르면 참이다. 물음표 문장이 없는데 선택지 소리가 남은 차례도 참이다.
+ * 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
  */
 export function observeOffersNewQuestionOf(
-  settled: Pick<Settled, "text" | "attach" | "plan">,
+  settled: Pick<Settled, "text" | "attach" | "plan" | "sound">,
 ): boolean {
   const stuck = settled.plan.stuckQuestion;
   const stuckKey = stuck === null ? null : cardQuestionKeyOf(stuck);
@@ -2985,6 +2991,8 @@ export function observeOffersNewQuestionOf(
       l.kind === "question" ? questionsOfText(l.en) : [],
     ),
   ];
+  // 물음표 문장이 없는데 선택지 소리가 남은 차례는 물음표 없는 고르기라 새 질문이다(서버와 같음 — 코드 검토 M-1)
+  if (questions.length === 0) return settled.sound.choices !== undefined;
   return questions.some((q) => questionKeyOf(q) !== stuckKey);
 }
 

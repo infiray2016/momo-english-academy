@@ -101,6 +101,7 @@ import {
   heardFieldsBlankOf,
   SITUATION_EXAMPLE_SENTENCES,
   situationPlaceOf,
+  situationSplitOf,
 } from "@/core/conversation/situation";
 import { MORE_PROMPT, normalizeSpoken } from "@/core/conversation/spoken";
 import { createToriSentenceGate, safeLineOf } from "@/core/conversation/stream";
@@ -5839,6 +5840,100 @@ describe("AC-15zj (사) 받침 차례의 넘김 말 · 한국어 설명 — 서�
     expect(hidden.newQuestion).toEqual([true, true]);
     expect(hidden.server).toBeNull();
     expect(hidden.tool).toBeNull();
+  });
+
+  it("AC-15zj (자) 받침 둘째에서 물음표 없는 고르기와 선택지 둘이 나간 차례는 서버 · 도구 모두 새 질문으로 세어 설명을 숨긴다(검토 M-1 · S1)", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    const message = fakeMessage({
+      // 앞 선생님 행이 'That's okay!' 라 되풀이 검사를 피해 다른 맞장구를 쓴다(검토 S1 과 같은 꼴). 받침 둘째의 선택지는 노리는 단어가 있어야 남는다
+      tori_en: "Okay! Rice or fish.",
+      choices: ["I eat rice.", "I eat fish."],
+      next_targets: ["eat"],
+    });
+    const server = serverTurn(m, sim, ready.turn, message);
+    const tool = toolRelease(m, sim, ready.turn, message, server);
+    expect(server.result.replaced).toBeNull();
+    expect(server.result.text).toBe("Okay! Rice or fish.");
+    expect(server.result.sound.choices).toEqual(["I eat rice.", "I eat fish."]);
+    expect(tool.sound.choices).toEqual(server.result.sound.choices);
+    expect(tool.text).toBe(server.result.text);
+    expect([
+      lessonOffersNewQuestionOf(server.result),
+      observeOffersNewQuestionOf(tool),
+    ]).toEqual([true, true]);
+    // 막힌 질문을 그대로 다시 묻고 선택지를 붙인 글은 서버 · 도구 모두 새 질문으로 세지 않는다(선택지가 없을 때와 같은 판정)
+    expect(server.result.plan.stuckQuestion).not.toBeNull();
+    const again = `Okay! ${server.result.plan.stuckQuestion}`;
+    expect([
+      lessonOffersNewQuestionOf({ ...server.result, text: again }),
+      observeOffersNewQuestionOf({ ...tool, text: again }),
+    ]).toEqual([false, false]);
+    const explain = "뭐가 재미있는지 물어본 거야.";
+    const lineOptions = server.live?.checks.situation?.options;
+    const teacherName = lineOptions?.teacherName ?? m.teacher.nameEn;
+    const lemmaOf = lineOptions?.lemmaOf ?? (() => undefined);
+    expect(
+      lessonExplanationFitOf({
+        explanation: explain,
+        result: server.result,
+        low: true,
+        teacherName,
+        lemmaOf,
+      }),
+    ).toBeNull();
+    expect(
+      observeExplanationShownOf({
+        explanation: explain,
+        settled: tool,
+        spec: m.spec,
+        stuckInSlot: 2,
+        low: true,
+        teacherName,
+        lemmaOf,
+      }),
+    ).toBeNull();
+  });
+
+  it("AC-15zj (자) 받침 셋째에서 선생님이 맞장구만 쓰고 답 소리로 닫히면 맞장구 → 시드 닫기 꼬리(뜻 포함) → 답 소리 → 다음 질문이고 서버와 도구가 같다(검토 O-1 · S7a)", () => {
+    const m = withoutSceneOpener(materialsAt(3));
+    const sim = toEasySlot(m);
+    stepBoth(
+      m,
+      sim,
+      dontKnow,
+      fakeMessage({ tori_en: "No worries! Do you like it?" }),
+    );
+    const ready = sim.prepare(dontKnow, sim.rows.length);
+    if (!ready.ok) throw new Error(ready.reason);
+    expect(situationPlaceOf(ready.turn.ifAnswered)).toBe("close");
+    // 앞 선생님 행이 'That's okay!' 라 되풀이 검사를 피해 다른 맞장구를 쓴다(검토 S7a 와 같은 꼴 — 맞장구 하나뿐)
+    const message = fakeMessage({ tori_en: "Okay!" });
+    const server = serverTurn(m, sim, ready.turn, message);
+    expect(toolEntries(m, sim, ready.turn, server)).toEqual(server.entries);
+    expect(server.entries).toEqual([
+      { en: "Okay!", question: false, cue: false, state: "sent" },
+    ]);
+    const tool = toolRelease(m, sim, ready.turn, message, server);
+    expect(tool.release).toEqual(server.result.release);
+    expect(tool.kept).toEqual(server.result.kept);
+    expect(tool.ko).toBe(server.result.ko);
+    expect(tool.text).toBe(server.result.text);
+    const tails = (m.talkLists.situation.lines.close ?? []).map(
+      (l) => situationSplitOf(l).tail,
+    );
+    const tail = tails.find((t) => t.en === server.result.kept.at(-1));
+    expect(tail).toBeDefined();
+    expect(server.result.kept).toEqual(["Okay!", tail?.en]);
+    expect(server.result.release).toEqual([tail?.en]);
+    expect(server.result.ko).toBe(`뜻 1 ${tail?.ko}`);
+    expect(server.result.attach[0]).toMatchObject({
+      kind: "sound",
+      role: "answer",
+    });
+    expect(server.result.attach[1]).toMatchObject({ kind: "question" });
   });
 
   it("AC-15zj (사) 받침 둘째의 AI 쉬운 질문 자리에서 회화 턴이 실패하면(대신 줄) 쉬운 것을 약속한 줄 대신 닫기 자리 상황 줄 통째와 그 뜻이고 닫기 꼬리는 없다 — 서버와 같다", () => {

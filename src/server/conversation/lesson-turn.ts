@@ -1657,9 +1657,17 @@ export function settleLessonTurn({
           },
         )
       : null;
+  // 받침 셋째(닫기 자리)가 답 소리로 닫히는데 남은 넘김 말이 없다(선생님이 맞장구만 썼다) — 답을 들려준다는 안내가 답 소리 앞에 오게 닫기
+  // 꼬리를 둔다(13절 C252 (2), 코드 검토 O-1). 선생님 넘김 말이 남았거나 상황 검사가 시드 줄로 바꾼 문장(ai)이 있으면 그대로 둔다
+  const closeBare =
+    support === "close" &&
+    plan.attach.some((l) => l.kind === "sound" && l.role === "answer") &&
+    !all.some((e) => willKeep(e) && (e.moveOn === true || e.ai !== undefined));
   // 반응이 남은 차례의 닫기 넘김(맞장구 몫을 뗀 꼬리 — C249 (2))
   const closeLine =
-    closesWithAnswer && reacted && ctx.live && closeWhole === null
+    ((closesWithAnswer && closeWhole === null) || closeBare) &&
+    reacted &&
+    ctx.live
       ? situationLineOf(ctx.live.situationLines, "close", ctx.live.turnNo, {
           sentences: all.filter((e) => willKeep(e)).map((e) => e.en),
           texts: teacherTextsOf(ctx.turns),
@@ -2126,11 +2134,12 @@ export function lessonExplanationSeenOf(
 /**
  * 그 차례가 아이에게 새 질문(막힌 질문이 아닌 질문)을 내놓는가(13절 C252 (1)): 화면 글(남은 선생님 문장 · 화면 글로 붙인 줄)과 붙인 질문 줄의
  * 물음표 문장(마무리 물음은 뺀다 — questionsOfText) 가운데 하나라도 막힌 질문과 열쇠(questionKeyOf · 막힌 질문은 cardQuestionKeyOf)가 다르면
- * 참이다. 받침 둘째의 쉬운 질문(선생님이 쓴 것 · 카드의 것)과 답 소리 뒤에 붙은 다음 질문이 여기에 든다. 같이 말하기 차례 · 다음 질문이 붙지
- * 않는 닫기 차례(질문 없음)와, 든 질문이 막힌 질문과 같은 질문뿐인 차례는 거짓이다. 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
+ * 참이다. 물음표 문장이 없는데 선택지 소리가 남은 차례도 참이다(물음표 없는 고르기). 받침 둘째의 쉬운 질문(선생님이 쓴 것 · 카드의 것)과
+ * 답 소리 뒤에 붙은 다음 질문이 여기에 든다. 같이 말하기 차례 · 다음 질문이 붙지 않는 닫기 차례(질문도 선택지도 없음)와, 든 질문이 막힌 질문과
+ * 같은 질문뿐인 차례(선택지를 붙여 다시 물어도)는 거짓이다. 막힌 질문이 없으면 든 질문은 모두 새 질문이다.
  */
 export function lessonOffersNewQuestionOf(
-  result: Pick<LessonTurnResult, "text" | "attach" | "plan">,
+  result: Pick<LessonTurnResult, "text" | "attach" | "plan" | "sound">,
 ): boolean {
   const stuck = result.plan.stuckQuestion;
   const stuckKey = stuck === null ? null : cardQuestionKeyOf(stuck);
@@ -2140,6 +2149,9 @@ export function lessonOffersNewQuestionOf(
       l.kind === "question" ? questionsOfText(l.en) : [],
     ),
   ];
+  // 물음표 문장이 없는데 선택지 소리(고르기 답 둘)가 남았다 — 물음표 없이 쓴 고르기라 아이에게 새 질문이다(코드 검토 M-1). 선택지는 질문이
+  // 지워지지 않은 AI 차례에만 남는다. 막힌 질문을 그대로 다시 묻고 선택지를 붙인 차례는 아래 열쇠 대조대로 새 질문이 아니다
+  if (questions.length === 0) return result.sound.choices !== undefined;
   return questions.some((q) => questionKeyOf(q) !== stuckKey);
 }
 

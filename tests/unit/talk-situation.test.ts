@@ -821,7 +821,16 @@ describe("문장 문 · 끝 처리의 상황 차례(AC-15za (나)(라)(마))", (
       }).result;
       expect(withLive.attach).toEqual(without.attach);
       expect(withLive.attach).toEqual(plan.attach);
-      expect(withLive.kept).toEqual(["That's okay!"]);
+      expect(without.kept).toEqual(["That's okay!"]);
+      if (situationPlaceOf(plan) === "close") {
+        // 받침 셋째는 답 소리로 닫혀 맞장구 뒤에 앱이 닫기 꼬리를 둔다(13절 C252 (2), 코드 검토 O-1 — 상황 줄 재료가 없으면 두지 않는다)
+        const closeTails = (LINES.close ?? []).map(
+          (l) => situationSplitOf(l).tail.en,
+        );
+        expect(withLive.kept).toHaveLength(2);
+        expect(withLive.kept[0]).toBe("That's okay!");
+        expect(closeTails).toContain(withLive.kept[1]);
+      } else expect(withLive.kept).toEqual(["That's okay!"]);
     }
   });
 
@@ -2076,7 +2085,7 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
       args: args3(afterFirst()),
       ifAnswered: plan,
       sentences: ["That's okay!"],
-      outcome: ok(out()),
+      outcome: ok(out({ tori_ko: ["괜찮아!"] })),
       child: button(),
     });
     const easy = result.attach.find(
@@ -2086,6 +2095,8 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
     expect(result.text.split("\n").at(-1)).toBe(
       easy && "en" in easy ? easy.en : "",
     );
+    expect(result.text).toBe("That's okay!\nEasy first 1?");
+    expect(result.ko).toBe("괜찮아!");
     expect(lessonOffersNewQuestionOf(result)).toBe(true);
     const explain = "'weekend'는 '주말'이에요.";
     expect(shownOf(explain, result)).toBeNull();
@@ -2109,6 +2120,10 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
     expect(tail).toBeDefined();
     expect(tail?.ko).toContain("답");
     expect(result.ko?.endsWith(tail?.ko ?? "?")).toBe(true);
+    expect(result.text).toBe(
+      "No problem! Let me say the answer.\nWhat sport is fun?",
+    );
+    expect(result.ko).toBe("괜찮아! 내가 답을 들려줄게.");
     expect(
       result.attach.map((l) => [l.kind, "role" in l ? l.role : ""]),
     ).toEqual([
@@ -2137,6 +2152,10 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
     const tail = seedCloseTails.find((t) => t.en === result.kept.at(-1));
     expect(tail).toBeDefined();
     expect(tail?.ko).toContain("답");
+    expect(result.text).toBe(
+      "No problem! Here is the answer.\nWhat sport is fun?",
+    );
+    expect(result.ko).toBe("괜찮아! 답은 이거야.");
     expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
     expect(result.attach[1]).toMatchObject({ kind: "question" });
     expect(lessonOffersNewQuestionOf(result)).toBe(true);
@@ -2170,6 +2189,157 @@ describe("AC-15zj (자) 새 질문에 지난 질문의 설명을 붙이지 않�
     expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
     expect(result.attach[1]).toMatchObject({ kind: "question" });
     expect(lessonOffersNewQuestionOf(result)).toBe(true);
+  });
+
+  it("AC-15zj (자) 받침 둘째에서 선생님이 물음표 없이 고르기를 쓰고 선택지 둘이 소리로 나간 차례도 새 질문이라 숨긴다(검토 M-1 · S1)", () => {
+    const turns = easyTurns();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["That's okay!", "Rice or fish."],
+      outcome: ok(
+        out({
+          tori_ko: ["괜찮아!", "밥 아니면 생선."],
+          choices: ["I eat rice.", "I eat fish."],
+        }),
+      ),
+      child: button(),
+      // 'or' 는 시드 기능어다(이 시험의 견본 범위에는 없어 허용 낱말로 더한다)
+      live: liveOf(turns, {
+        lines: SEED.lines,
+        allowed: new Set([...ALLOWED, "or"]),
+      }),
+      over: seedSettle,
+    });
+    expect(result.replaced).toBeNull();
+    expect(result.text).toBe("That's okay! Rice or fish.");
+    expect(result.sound.choices).toEqual(["I eat rice.", "I eat fish."]);
+    expect(lessonOffersNewQuestionOf(result)).toBe(true);
+    const explain = "뭐가 재미있는지 물어본 거야.";
+    expect(shownOf(explain, result)).toBeNull();
+    keepsTurn(result, explain);
+    // 선택지 소리가 없는 같은 글은 질문이 없는 차례다(판정의 뜻)
+    expect(lessonOffersNewQuestionOf({ ...result, sound: {} })).toBe(false);
+    // 막힌 질문을 그대로 다시 묻고 선택지를 붙인 글은 새 질문이 아니다(설명이 지금 질문과 맞는다 — 선택지가 없을 때와 같은 판정)
+    const stuck = result.plan.stuckQuestion;
+    expect(stuck).not.toBeNull();
+    expect(
+      lessonOffersNewQuestionOf({ ...result, text: `That's okay! ${stuck}` }),
+    ).toBe(false);
+  });
+
+  it("AC-15zj (자) 쉬운 질문이 걸려 닫혔는데 붙일 카드 기회가 없어 답 소리만 붙은 차례는 설명이 보인다(검토 M-3)", () => {
+    const turns = easyTurns();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["No worries!", "Do you eat gimbap or drink gimbap?"],
+      outcome: ok(out({ tori_ko: ["걱정 마!", "김밥을 먹어 아니면 마셔?"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: { ...seedSettle, card: { required: [], more: [] } },
+    });
+    expect(result.replaced).toBe("question_check");
+    expect(
+      result.attach.map((l) => [l.kind, "role" in l ? l.role : ""]),
+    ).toEqual([["sound", "answer"]]);
+    expect(lessonOffersNewQuestionOf(result)).toBe(false);
+    const explain = "'fun'은 '재미있다'예요. 뭐가 재미있는지 물어본 거야.";
+    expect(shownOf(explain, result)).toBe(explain);
+  });
+
+  it("AC-15zj (자) 받침 셋째에서 선생님이 맞장구만 쓰고 답 소리로 닫히면 앱이 시드 닫기 꼬리(뜻 포함)를 맞장구 뒤 · 답 소리 앞에 둔다(검토 O-1 · S7a)", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    expect(situationPlaceOf(plan)).toBe("close");
+    const { result, shown } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["That's okay!"],
+      outcome: ok(out({ tori_ko: ["괜찮아!"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(shown).toEqual(["That's okay!"]);
+    const tail = seedCloseTails.find((t) => t.en === result.kept.at(-1));
+    expect(tail).toBeDefined();
+    expect(tail?.ko).toContain("답");
+    expect(result.kept).toEqual(["That's okay!", tail?.en]);
+    expect(result.release).toEqual([tail?.en]);
+    expect(result.text.split("\n")[0]).toBe(`That's okay! ${tail?.en}`);
+    expect(result.ko).toBe(`괜찮아! ${tail?.ko}`);
+    expect(
+      result.attach.map((l) => [l.kind, "role" in l ? l.role : ""]),
+    ).toEqual([
+      ["sound", "answer"],
+      ["question", "card"],
+    ]);
+  });
+
+  it("AC-15zj (자) 받침 셋째에서 선생님이 넘김 말을 쓴 차례는 그 말을 그대로 두고 시드 꼬리를 더하지 않는다(검토 O-1)", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result, entries } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["That's okay!", "Here we go!"],
+      outcome: ok(out({ tori_ko: ["괜찮아!", "자, 간다!"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(entries[1]).toMatchObject({ en: "Here we go!", moveOn: true });
+    expect(entries[1]?.ai).toBeUndefined();
+    expect(result.kept).toEqual(["That's okay!", "Here we go!"]);
+    expect(result.release).toEqual(["Here we go!"]);
+    expect(result.ko).toBe("괜찮아! 자, 간다!");
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+  });
+
+  it("AC-15zj (자) 받침 셋째에서 상황 검사가 선생님 말을 시드 닫기 줄(넘김 몫)로 바꾼 차례는 꼬리를 한 번만 둔다(검토 O-1)", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const { result, entries } = play({
+      args: args3(turns),
+      ifAnswered: plan,
+      sentences: ["That's okay!", "Listen to me."],
+      outcome: ok(out({ tori_ko: ["괜찮아!", "내 말 들어 봐."] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(entries[1]?.ai).toBe("Listen to me.");
+    const tail = seedCloseTails.find((t) => t.en === entries[1]?.en);
+    expect(tail).toBeDefined();
+    expect(result.kept).toEqual(["That's okay!", tail?.en]);
+    expect(result.ko).toBe(`괜찮아! ${tail?.ko}`);
+    expect(result.attach[0]).toMatchObject({ kind: "sound", role: "answer" });
+  });
+
+  it("AC-15zj (자) 답 소리가 붙지 않는 받침 셋째에는 시드 꼬리를 붙이지 않는다(검토 O-1)", () => {
+    const turns = afterSecond();
+    const plan = nextTeacherTurnOf(args3([...turns, button()]));
+    const bare: TeacherTurnPlan = {
+      ...plan,
+      attach: plan.attach.filter((l) => l.kind !== "sound"),
+      app: plan.app.filter((a) => a !== "answer_example"),
+    };
+    expect(situationPlaceOf(bare)).toBe("close");
+    const { result } = play({
+      args: args3(turns),
+      ifAnswered: bare,
+      sentences: ["That's okay!"],
+      outcome: ok(out({ tori_ko: ["괜찮아!"] })),
+      child: button(),
+      live: seedLive(turns),
+      over: seedSettle,
+    });
+    expect(result.kept).toEqual(["That's okay!"]);
+    expect(result.ko).toBe("괜찮아!");
+    expect(result.attach.some((l) => l.kind === "sound")).toBe(false);
   });
 
   it("AC-15zj (자) 인사 토막의 쉬운 질문 자리도 같다: 선생님이 쓴 쉬운 질문이 나가면 숨긴다", () => {
