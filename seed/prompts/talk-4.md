@@ -1,0 +1,1108 @@
+# 생성 브리프 — 회화 4단계 수업 카드(`talk-4`)
+
+이 파일은 회화 4단계 수업 카드 묶음의 프롬프트 판이다(정본 6.3). 시드 생성자(`seed-generator`)는 이 파일과 호출이 넘긴 값만 보고 단원 하나의 회화 카드를 만든다. 다른 문서 · 코드 · 시드 파일은 읽지 않는다. 카드는 새 꼴이다(13절 C189: 학습 목표 · 오늘 쓸 말 · 필수 질문 · 더 이야기할 거리 · 받침 줄). 단계 규격 값은 3절에 옮겼고, 설정값은 키 이름으로만 적는다. 그 지금 값은 호출이 1절 '설정값 표'로 넘긴다. 정본에 없는 값은 '(제안)'으로 적고 17절에 모았다. 이 파일을 고치면 프롬프트 판이 바뀌므로 회화 4단계 카드를 처음부터 다시 만든다. 이미 프리뷰에서 본 고정 카드는 14절 붙이기 명령으로 그대로 둔다.
+
+카드 설계 원칙은 13절 C219(한 장면에서 질문이 이어지는 카드, 요청자 결정 2026-11-10)를 따르고, 대화 규칙은 13절 C222 와 'C218 · C222 보완'(1~3단계의 대화 규칙을 4~6단계 구간에도 적용)을 따른다. 0절의 판단은 컨트롤러가 2026-11-10 에 정한 것이다. 단원 목표 셋의 수와 글만 요청자 승인 전의 잠정이다.
+
+## 0. 판 정보
+
+| 칸 | 값 |
+|---|---|
+| 영역 · 단계 | `talk` · 4 · CEFR A1 · 구간 `4-6` |
+| 틀 | `seed/prompts/_template.md`(가르치는 수업 규칙 R5~R16 은 옮기지 않는다: 회화 카드에는 `teach` 칸이 없다) · 꼴과 문구는 `seed/prompts/talk-3.md` 여섯째 판(고침 1)과 맞췄다 |
+| 만든 날 · 만든 이 | 2026-11-10 첫 판 초안 · 같은 날 고침(13절 C219 · C220 반영: 카드 한 장은 한 장면, 질문은 이야기 차례, 5절 '필수 질문 쓰는 법' · '더 이야기할 거리' · 11 · 12 · 14절) · 같은 날 한 번 더 고침(3단계 브리프 `talk-3.md` 여섯째 판과 문구를 맞춤: 앞 문장이 붙은 항목은 1번을 빼고 둘까지, 8절 질문 꼴 표를 물음표 문장 하나인 꼴로 다시 씀, 12절 예시 카드의 앞 문장을 둘로 줄임, 14 · 16 · 17절. 작업 `task-card-scene.md`) · 같은 날 고침 1(설계 검토 '수정 필요' 뒤, 해시를 잡기 전: 초안 표시를 떼고 0절 판단을 컨트롤러 결정대로 확정 · 13절 C222 반영 · 낱말 맞히기 꼴의 정의와 셈을 3단계 브리프와 한 문장 · 한 덩이로 맞춤 · 한 꼴이 항목의 절반을 넘지 않음 · 8절 질문 예 표 · 11절 첫 세 장의 장면 예 · 12절 예시 · 14 · 16 · 17절. 작업 `task-card-scene-fix1.md`) · 학습 설계자(회화 plan C192 묶음 19 의 4단계 몫, 브리프 `task-talk4-brief.md`) |
+| 옮긴 곳 | `seed/level-specs.json`(talk 4 행, revision 3) · `unit-specs.json`(talk 4단계 단원 1, revision 1, goals 셋은 컨트롤러가 2026-11-10 에 넣은 잠정) · `settings.json`(키 이름) · `vocab.json`(1,920 낱말) · `lists/forms.json` · `lists/forbidden.json` · `lists/meta-sentences.json` · `src/core/seed/schema/talk.ts`(TalkCardSchema, 2026-11-10 에 읽음) · `check-talk.ts` · `check-cross.ts` · `src/core/vocab/allocate.ts` · `src/components/conversation/follow-along.tsx`(짧은 준비 쪽지) · `src/core/conversation/lesson-flow.ts` · `chances.ts`(4단계부터의 차례) · 정본 3.3 회화(`specs/02-2-세션과-단계표.md` 154~353줄) · 3.6 · 6.3 회화 카드 행 · 6.4 회화 시나리오 카드 행 · 회화 spec 4판(`intent/2026-10-29-회화-수업을-대화로/spec.md`, approved C188) · 회화 plan(C192) · 13절 C2 · C19 · C64 · C117 · C124 · C130 · C132 · C145 · C161 · C172 · C181 · C188 · C189 · C194 · C202 (3) · C217 · C218 · C219 · C220 · C222 · 'C218 · C222 보완'(카드 자리 · 카드 기회를 아이 말에 이어 묻기 · 따라가기 뒤 돌아오기는 정본 02-2:190 · 192 · 194 · 198) · 요청자 결정 원문 `docs/research/2026-11-10-회화-수업-내용-요청자-결정-원문.md` 2절 · 내용 분석 보고의 한 장면 카드 표본(`.superpowers/sdd/2026-11-07-회화-AI-몫-넓힘/task-ana-lesson-content-report.md` 5절 안 5) · 요청자가 고른 승인 표본 B(5절 끝) · 이 판의 예시 카드와 질문 예 표의 검증(8 · 12절) · 설계 검토 보고 `.superpowers/sdd/2026-10-29-회화-수업을-대화로/task-des-card-briefs-report.md`(I-1 · I-3 · M-1 · M-3~M-6 · M-8 · M-9) · 내용 분석 보고 4절 3번(카드 질문이 답 하나를 맞히는 꼴) |
+| 이 판으로 만드는 것 | 단원 1 '친구가 하는 일'의 카드 전부(주제 변형 수 × (정규 + 보강), 4절). 첫 프리뷰 호출은 세 장만 만든다: 배정 1 · 배정 2 · 다지기 9, 모두 변형 1(1절 (가), 정본 6.3 '회화 카드 새 꼴의 생성' 표 차례 3). 단원 2~5 는 단원 규격에 목표(goals)가 생긴 뒤 다음 판으로 만든다(6절 규격과 14절 스스로 확인의 갈래 · 목표가 단원 1 전용이다) |
+| 12 · 14절 꼴의 상태 | 12절 예시 카드(배정 2 · 변형 2)와 8절 질문 예 서른 줄은 2026-11-10 고침 1 에서 다시 쓰고, p13d 시드 사본(저장소 밖, `unit-specs` 의 잠정 목표 셋이 든 사본)에 두고 `pnpm -s seed:validate --areas talk` 와 14절 스스로 확인 명령으로 돌렸다. 예시 카드는 칸 오류 0 · 칸 경고 0 이고 스스로 확인은 '걸림 없음'이다(낱말 맞히기 꼴 2/10. 단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다). 고침 전의 예시 카드는 새 셈으로 낱말 맞히기 꼴 8/11 · Who 주어 물음 7/11 이라 걸린다(고침 전의 셈은 1/11 로 세었다) |
+
+이 판이 따르는 판단(컨트롤러 결정 2026-11-10). 단원 목표의 수와 글(판단 1)만 요청자 승인 전의 잠정이고, 3단계와 같이 프리뷰에서 견주어 바꿀 수 있다.
+
+| 번호 | 판단 | 이 브리프에서 |
+|---|---|---|
+| 1 | 단원 목표는 셋(talk-4-1-1 하는 일 문장 · talk-4-1-2 사람 낱말 · talk-4-1-3 덧붙이는 말)이다. 컨트롤러가 2026-11-10 에 `unit-specs` 에 넣었고(준비 보고 D1 의 (가)) 요청자 승인 전이다. 승인으로 목표가 바뀌면 카드의 목표 칸만 정정 판으로 고친다. talk-4-1-1 의 글은 고침 1 에서 '친구나 주변 사람에 대해 묻는 말에'로 넓혔다. does 가 없는 이 단원에서는 '하는 일을 묻는 말'을 카드가 묻지 못하기 때문이다 | 5절 '목표 잇기' · 6절 |
+| 2 | does 물음(`What does your friend do?`)은 단원 2 요소라 카드 글에 쓰지 않는다(컨트롤러 결정: 4단계는 does 없이, 준비 보고 D2 의 (가)). 사람이 하는 일은 아이와 아이 친구에게 묻는 예 · 아니요 물음과 둘 가운데 고르는 물음을 앞세우고, Who 주어 물음과 `What is he?` 는 낱말 맞히기 꼴의 상한 안에서만 쓴다 | 5 · 8절 |
+| 3 | 짧은 준비 낱말 칸 `prep` 은 두지 않는다. 4단계 준비는 필요할 때만 열리고 낱말은 앱이 고른다 | 5절 '짧은 준비와 꺼내기' |
+| 4 | 4단계 기능어는 about · every · everyone · his · her · so 만 쓴다. 그 밖의 4단계 낱말은 이 단원 단어 서른뿐이다 | 7절 |
+| 5 | 사람의 직업은 아이 가족에게 묻지 않는다. 직업 낱말은 아이와 아이 친구가 하는 일 · 할 수 있는 일을 묻는 물음(`Can your friend sing?` · `Can you fly a plane?`)을 앞세우고, 장면 속 사람(`A man flies a big plane.`)이나 Who 주어 물음은 낱말 맞히기 꼴의 상한 안에서 쓴다 | 5 · 10절 |
+| 6 | 다지기 9 · 변형 1 은 배정 1 · 2 의 여덟 낱말 가운데 그 장면에서 아이와 친구 이야기로 물을 수 있는 것을 다시 묻고 [talk-4-1-1, talk-4-1-2] 를 노린다. 프리뷰의 아이는 배정 3~8 을 하지 않았기 때문이다. 같은 까닭으로 덧붙이는 말은 이 카드에서 노리지 않는다 | 11절 |
+| 7 | 대화 규칙은 13절 C222 대로 1~3단계와 같다: 따라가기 상한 뒤 선생님이 스스로 오늘 이야기로 돌아옴 · 카드 기회를 아이의 바로 앞 말에 이어 제 말로 물음 · 못 알아들으면 한 번 되묻기. 카드 자리에서 앱이 붙이는 것은 가장 앞의 남은 필수 질문이다(컨트롤러 결정: '가장 앞' 규칙 그대로). 힌트는 단계표대로 3단이다('C218 · C222 보완' (6)) | 3 · 5절 |
+
+정해진 원칙(잠정이 아니다, 13절 C219 · C220): 카드 한 장은 한 곳(한 장면)만 다루고 질문은 이야기 차례로 둔다. 카드의 질문을 순서대로 다 묻는 것보다 아이의 대답을 받아 자연스럽게 이어 가는 것이 먼저다. 장면은 대화의 소재이지 반드시 끝내야 하는 질문 목록이 아니다. 단원 회화의 학습 목표 · 카드 칸 · 평가 · 승급 기준은 그대로다. 바뀌는 것은 카드 글을 쓰는 법이다(5절).
+
+## 1. 호출이 넘기는 값과 쓸 파일
+
+| 값 | 예 | 쓰는 곳 |
+|---|---|---|
+| 단원 번호 | `1`(지금 만들 수 있는 단원은 1뿐, 0절) | 파일 이름, 6절 |
+| 뿌리 폴더 | `seed` 또는 비교용 폴더 | 쓸 파일 `<뿌리>/lessons/talk/4/<단원>.json` |
+| 만들 카드 | `전부` 또는 목록(예: `assigned 1 · variant 1`, `assigned 2 · variant 1`, `reinforce 9 · variant 1`) | 2절. 목록이면 그 카드만 만들고 파일에도 그 카드만 둔다 |
+| briefHash · agentHash | 소문자 16진 64자 | 새로 만든 카드의 `generation` |
+| effort | `xhigh` | `generation.effort` |
+| createdOn | 날짜 | `generation.createdOn` |
+| revision · correction | 개정: 컨트롤러가 생성 직전에 적재 미리 보기(`seed:load --dry-run`)의 '최신 개정 + 1'로 넣는다(회화 plan 정한 것 16) · `0` | 새로 만든 카드 |
+| 고정 카드 파일 · 고정 카드 해시 | 둘째 호출부터. 프리뷰에서 본 카드가 든 파일 경로(뿌리 밖 사본)와 카드마다의 정규화 해시 | 14절 붙이기 명령 |
+| 설정값 표 | 아래 키의 지금 값 | 4 · 5 · 11 · 14절 |
+| 검증 명령 | 14절 명령을 환경에 맞춘 것 | 14절 |
+
+설정값 표의 키(호출하는 이가 `seed/settings.json` 에서 옮겨 넘긴다. 이 브리프에는 값을 적지 않는다): `unit.vocab_count.4-6` · `unit.new_words_per_lesson.4-6` · `unit.regular_lessons.4-6` · `seed.remedial_per_unit.4-6` · `seed.topic_variants.4-6` · `seed.remedial_coverage.4-6` · `seed.max_retries` · `talk.prep_mode.4-6` · `talk.prep_words.4-6` · `talk.more_talk_turns` · `talk.required_max_ratio` · `talk.known_days` · `talk.same_question_max`.
+
+컨트롤러가 쓰는 명령 둘(생성자는 돌리지 않는다):
+
+```sh
+# 설정값 표
+python3 -c 'import json; s={x["key"]:x["value"] for x in json.load(open("seed/settings.json"))["settings"]}; [print(k, json.dumps(s[k])) for k in ["unit.vocab_count.4-6","unit.new_words_per_lesson.4-6","unit.regular_lessons.4-6","seed.remedial_per_unit.4-6","seed.topic_variants.4-6","seed.remedial_coverage.4-6","seed.max_retries","talk.prep_mode.4-6","talk.prep_words.4-6","talk.more_talk_turns","talk.required_max_ratio","talk.known_days","talk.same_question_max"]]'
+# 고정 카드 해시(프리뷰에서 본 파일에서, 카드마다)
+python3 -c 'import json,hashlib,sys; [print(l["kind"], l["lessonNo"], l["variant"], hashlib.sha256(json.dumps(l, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()) for l in json.load(open(sys.argv[1]))["lessons"]]' <고정 카드 파일>
+```
+
+호출 글 꼴 (가) 첫 프리뷰(세 장):
+
+```text
+브리프: seed/prompts/talk-4.md — 이 파일만 읽는다
+단원: 1 · 뿌리: seed
+만들 카드: assigned 1 · variant 1, assigned 2 · variant 1, reinforce 9 · variant 1 (이 세 장만)
+briefHash: <talk-4.md sha256> · agentHash: <seed-generator 정의 확인 줄의 sha256>
+effort: xhigh · createdOn: <날짜> · revision: <개정> · correction: 0
+설정값 표: <위 명령 출력 그대로>
+검증 명령: pnpm -s seed:validate --root seed --areas talk --json
+```
+
+호출 글 꼴 (나) 단원 나머지(브리프가 그대로일 때): (가)에서 '만들 카드'를 `전부(고정 카드 셋은 붙이기 명령으로)` 로 바꾸고, `고정 카드 파일: <뿌리 밖 사본 경로>` 와 `고정 카드 해시: <해시 셋>` 줄을 더한다. 브리프가 바뀌었으면 (나)가 아니라 처음부터(카드 모두) 다시 만든다(회화 plan 정한 것 16).
+
+`generation.model` 에는 자기 모델 ID(예: `claude-opus-5-5`)를 적는다. 파일은 하나만 쓴다.
+
+## 2. 할 일 한눈에
+
+1. 6절에서 단원 1 의 단원 단어 · 배정표 · 목표를 찾는다.
+2. 만들 카드마다 **장면 한 곳**을 먼저 정한다(5절 '한 장면', 13절 C219). '만들 카드'가 전부면 **단원 장면 표**를 먼저 짠다: 카드마다 장면 한 줄 · 그 장면에서 노릴 단원 단어를 적고, 단원 단어마다 다시 묻는 자리가 서로 다른 수업 `talk.known_days` 개 이상이 되는지와 같은 변형 안에서 장면이 겹치지 않는지를 이 표에서 본다(11절).
+3. 카드마다 **카드 계획표**를 짠다. 장면 안에서 일이 벌어지는 차례(이야기 차례)를 먼저 적고, 그 차례대로 필수 질문에 번호를 매긴다. 필수 질문마다 번호 · 노리는 단어 · 목표 · 처음 묻기인지 다시 묻기인지 · 질문 글 · 답 예시 · **아이가 가장 흔히 할 답** · 쉬운 질문 글을 적고, 더 이야기할 거리도 같게 적는다. '가장 흔한 답' 칸에는 그 질문을 받은 4 · 5학년 아이가 가장 먼저 할 답을 적고, 답 예시가 아이나 친구의 사실을 정해 버리는 문장이 아닌지 본다. 낱말 맞히기 꼴의 수와 질문 꼴마다의 수도 이 표에서 센다(5절 '아이 쪽으로 묻기'). 필수 질문 1번은 대화 첫 질문이므로 5절 '대화 첫 질문 쓰는 법'의 다섯 조건을 이 표에서 본다. 대화 중에 꺼낼 새 단어와 꺼내기 좋은 때도 적는다.
+4. 계획표대로 카드 글(질문 · 힌트 · 답 예시 · 쉬운 질문 · 오늘 쓸 말 · 정리 대사 …)을 쓴다.
+5. 파일 하나 `{ "area": "talk", "level": 4, "unit": <단원>, "lessons": [ … ] }` 에 넣는다. 차례는 (제안) 변형 1 의 정규 수업 번호 차례 · 보강 번호 차례, 그다음 변형 2 다. '만들 카드'가 목록이면 그 카드만 넣는다.
+6. (나) 호출이면 14절 붙이기 명령으로 고정 카드를 넣는다.
+7. 14절 스스로 확인 → 검증 명령 → 오류 칸 고침 → 16절 보고.
+
+## 3. 단계 규격(`level-specs` talk 4, revision 3)
+
+| 칸 | 값 |
+|---|---|
+| can-do(AI 가변부에 가는 단계 문장) | 틀 없이 한 문장으로 답하며 선생님과 일상 이야기로 20번 말을 주고받을 수 있다 |
+| CEFR · 참고 시간 | A1 · 15분 |
+| 문장 길이 상한 `sentenceMaxWords` | 8낱말. 카드의 모든 영어 문장마다다(선생님 첫 말 · 질문 · 쉬운 질문 · 힌트 · 답 예시 · 오늘 쓸 말 예문 · 들려줄 말 · 목표 표현 · 정리 대사 · 안전한 대사 · 끝인사 · 칭찬 대사). `{NAME}` 은 한 낱말, 축약형도 한 낱말이다. 예상 흐름(`flow`)만 이 상한 밖이다(C132 (3)) |
+| 토막 `segments` | 인사(greeting) → 짧은 준비(prep) → 대화(talk) → 정리(wrap_up). 짧은 준비는 필요할 때만 열린다(`talk.prep_mode.4-6`). 말해 보기는 없다(C189) |
+| 대화 방식 `mode` | 준비 없이 대화하고 필요할 때만 짧은 준비를 한다. 틀 없이 한 문장으로 답하고, 선생님이 필요한 표현을 대화 중에 꺼내며 아이 말에 이어 묻는다 |
+| 참고 턴 `targetTurns` | 20. 마무리 물음을 꺼내는 때의 참고값이고 완료 조건이 아니다(C161 · C188). 카드는 참고 턴을 질문으로 채우지 않는다 |
+| 힌트 `hintTiers` | 3단: 한국어 뜻(`hintKo`) → 영어 틀(`hints[0]`) → 영어 문장(`hints[1]`). 영어 문장 듣기 버튼은 1~3단계에만 있다 |
+| 카드 꼴 `cardShape` | `required`: 필수 질문 · 더 이야기할 거리 꼴 하나(옛 `turns` · `moreTalk` · `questions` 칸은 없다) |
+| 선택지 `choices` | 없다(1단계 몫). `firstForm` · `choices` 칸을 두면 오류다 |
+| 영어 틀 `frameInTurns` | 인사 질문 칸이 없으므로 `frameEn` 도 없다. 필수 질문 · 더 이야기할 거리의 `hints[0]` 은 영어 틀이다 |
+| 그림 `turnImages` | 없다. 어느 칸에도 `imageKey` 를 두지 않는다(두면 `talk-images` 오류) |
+| 한국어 뜻 `koMeaning` | 있다(4단계까지). 선생님 첫 말 · 필수 질문 · 더 이야기할 거리 · 쉬운 질문(C194 (2)) · 정리 대사 · 안전한 대사 · 끝인사 · 안전 상한 끝인사의 `ko`(반말)가 모두 있어야 한다(검증기 `talk-ko`) |
+| 한국어 설명 `koExplainFromStuck` | 1. 첫 막힘부터 선생님 말풍선 아래에 한국어 설명이 글로 붙는다(앱 · AI 몫, 카드 칸 없음) |
+| 더 이야기할 거리 `moreTalk` | 있다 |
+| 미션 · 쓸 수 있는 말 | 없다(`missions` · `roleSwap` · `usablePhrases` 를 두지 않는다. 5단계부터다) |
+
+정본 3.3 회화 단계표 4단계 행: 대화 방식 '준비 없이 대화하고 필요할 때만 짧은 준비를 한다. 틀 없이 한 문장으로 답하고, 선생님이 필요한 표현을 대화 중에 꺼내며 아이 말에 이어 묻는다' · 힌트 '3단(한국어 뜻 → 영어 틀 → 영어 문장)' · 참고 턴 20 · 참고 시간 15분. 대화 토막에서는 아이가 말할 영어 문장을 미리 보이지 않는다(T2). 선생님 질문 글과 한국어 뜻은 말풍선에 보이고, 아이 답의 영어는 '힌트'를 눌러야 열린다. 대화 뒤 피드백(잘한 말 · 다음엔 이렇게)은 5단계부터라 4단계에는 없다.
+
+## 4. 단원 틀(`settings` 구간 4-6)
+
+| 설정 키 | 뜻 |
+|---|---|
+| `unit.vocab_count.4-6` | 단원 단어 수 |
+| `unit.new_words_per_lesson.4-6` | 배정 수업마다 새 단어 수 k. 다지기 · 보강 카드의 다시 묻는 필수 질문 하한이기도 하다 |
+| `unit.regular_lessons.4-6` | 정규 수업 수(배정 = 단원 단어 수 ÷ k 를 올린 수, 나머지는 다지기) |
+| `seed.remedial_per_unit.4-6` | 보강 카드 수 |
+| `seed.topic_variants.4-6` | 주제 변형 수 |
+| `seed.remedial_coverage.4-6` | 변형마다 보강 카드들을 합쳐 단원 단어마다 카드 글에 나와야 하는 횟수 |
+| `talk.prep_mode.4-6` | 짧은 준비를 여는 방식(필요할 때만) |
+| `talk.prep_words.4-6` | 짧은 준비가 열릴 때 보이는 낱말 수(앱이 고른다) |
+| `talk.more_talk_turns` | 더 이야기할 거리 하한 |
+| `talk.required_max_ratio` | 필수 질문 상한 = 참고 턴 20 × 이 값(인사 뺌) |
+| `talk.known_days` | 단원 단어마다 다시 묻는 자리가 있어야 하는 서로 다른 수업 수(단원 덮기) |
+| `talk.same_question_max` | 한 대화에서 글이 같은 선생님 질문의 상한(앱 셈. 카드 검증기의 상한은 코드의 정한 수 2 다) |
+| `seed.max_retries` | 검증 뒤 고침 회차 상한 |
+
+2026-11-10 의 값으로 셈하면(호출 값이 우선한다) 단원 단어 30 · k 4 · 정규 13(배정 1~8 · 다지기 9~13, 배정 8 은 새 단어가 둘) · 보강 4 · 변형 2 라 카드 34장이고, 더 이야기할 거리 5개 이상 · 필수 질문 10개 이하(20 × 0.5) · 보강 덮기 2 · 단원 덮기 2 다.
+
+코드의 정한 수(설정 키가 아니다, `structure.ts`): 인사 턴 수 1~2 · 한 항목이 노리는 단원 단어 1~2개 · 한 카드 안에서 글자가 같은 선생님 질문 2번까지(쉬운 질문 포함) · 오늘 이야기 목록 3~5개.
+
+수업 번호(검증기 `layout`): `assigned` 1~8 · `reinforce` 9~13 · `remedial` 1~4 · `variant` 1~2. 이 수는 설정값이라 아이가 보는 글에 적지 않는다.
+
+## 5. 수업 구성(정본 3.3 회화 · 회화 spec 설계 1~6)
+
+**으뜸 원칙(C172 · C181): 카드와 목표는 대화를 돕는 장치이지 수업 완료를 위해 채우는 할당량이 아니다.** 카드의 필수 질문 · 새 단어 · 목표는 준비된 기회이고, 선생님(실시간 AI)은 아이 말의 흐름이 닿는 때에만 꺼낸다. 다 다루지 못한 기회는 다음 수업으로 넘어간다(이월).
+
+**한 장면에서 질문이 이어지는 카드(13절 C219, 요청자 결정 2026-11-10).** 카드 한 장은 한 곳(한 장면)만 다루고, 질문은 그 장면에서 일이 벌어지는 차례로 둔다. 카드의 질문을 순서대로 다 묻는 것보다 아이의 대답을 받아 자연스럽게 이어 가는 것이 먼저다. 장면은 대화의 소재이지 반드시 끝내야 하는 질문 목록이 아니다. 그래서 카드는 차례대로 읽어 내려가는 각본이 아니고, 한 장면 안에서 이야기가 흘러갈 길을 준비해 둔 것이다. 선생님은 아이 말을 따라가다 이야기가 닿는 대목의 질문을 꺼내고, 닿지 않은 대목은 남긴다. 단원 회화의 학습 목표 · 카드 칸 · 평가 · 승급 기준은 그대로다(C220).
+
+회화 수업은 아이가 고른 회화 선생님(앱 속 AI 선생님)이 이끄는 15분 안팎의 수업이다. 카드 한 장이 수업 하나다. 회화는 채점하지 않는다(R2). 틀린 말은 선생님이 바른 말로 되풀이하고, 낱말 답은 그 낱말이 든 바른 문장으로 넓혀 들려준다. 녹음은 하지 않는다.
+
+4단계 회화에서 보려는 것은 자연스러운 후속 질문과 대화 넓힘이다(요청자 2026-10-29, 표본 B '대화 중심'). 준비 예문을 대화 앞에 몰아 따라 하지 않고, 필요한 표현을 대화 안에서 꺼낸다. 그래서 4단계 카드는 3단계 카드보다 준비한 질문의 몫이 작고, 선생님이 아이 말을 이어 묻는 턴의 몫이 크다.
+
+### 3단계 카드와 다른 점
+
+| 것 | 3단계 | 4단계 | 근거 |
+|---|---|---|---|
+| 인사 | `greeting.questions`(인사 질문과 힌트 칸) | `greeting.firstLine` `{en, ko}` 하나. 그 뒤(인사 반응 · 둘째 인사)는 선생님이 쓴다 | 정본 02-2:162 · 검증기 `talk-shape` |
+| 짧은 준비 | 늘 한다. `prep` 세 낱말 | 필요할 때만 열린다. 카드 `prep` 칸은 두지 않는다(제안). 열리면 쪽지에 낱말 · 뜻 · 예문 글이 보인다 | 02-2:163 · 174 · 176 |
+| 대화 첫 질문 | 장면 여는 질문 `sceneOpener` | 필수 질문 1번. 앱이 AI 없이 보이고 읽는다. `sceneOpener` 를 두면 오류다 | 02-2:169 · 188 · 200 · `talk-scene-opener` |
+| 새 단어 | 짧은 준비와 소리 줄 꺼내기 | 선생님이 대화 중에 꺼낸다. 따라 할 말은 선생님 말 안에 글로 든다(`Say it with me: Math is difficult.`) | 02-2:180 |
+| 받침(막힘 도움) | 카드 줄(답 예시 소리 · 쉬운 질문) | 선생님이 쓴다(답 예시를 말 안에 글로 · 쉬운 영어로 바꿔 묻기 · 답을 한 번 말하고 넘어가기). 카드의 답 예시 · 쉬운 질문은 힌트와 대체 줄이다 | 02-2:269~273 |
+| 힌트 | 3단 + 영어 문장 듣기 버튼 | 3단, 듣기 버튼 없음 | 02-2:341 |
+| 그림 | 카탈로그 키 | 없음 | level-specs `turnImages` |
+| 문장 길이 · 참고 턴 · 참고 시간 | 7낱말 · 15 · 10분 | 8낱말 · 20 · 15분 | level-specs |
+| 따라가기 상한 뒤 | 선생님이 아이 이야기와 오늘 장면을 잇는 질문으로 돌아온다. 그 차례도 따라가기였을 때만 다음 턴이 카드 자리다 | 3단계와 같다(4~6단계도 1~3단계와 같다, C222). 카드 기회를 꺼낼 때 아이의 바로 앞 말에 이어 제 짧은 말로 묻고 카드의 장면 문장을 그대로 붙이지 않는 것도 같다 | 02-2:192 · 194 · 198 |
+| 정리 | 되짚을 말 전체를 아이가 따라 말한다 | 선생님이 되짚을 말을 읽는다. 정리 대사의 뜻이 보인다 | 02-2:165 · 216 |
+| 대화 뒤 피드백 | 없음 | 없음(5단계부터) | 02-2:265 |
+
+### 네 토막과 카드 칸
+
+| 토막 | 카드 칸 | 앱 · 선생님이 하는 일 |
+|---|---|---|
+| 인사 | `greeting.firstLine` · `greetingTurns` 1 | 앱이 선생님 첫 말을 보이고 읽는다. 아이가 답하면 선생님이 그 답에 반응하고 대화로 넘어가는 짧은 말을 한다(질문 없음). 인사는 평가 과제가 아니다 |
+| 짧은 준비 | (카드 칸 없음) `todayWords` 의 `word` · `meaningKo` · `example` | 보통은 건너뛴다. 대화에서 막힌 차례가 이어지면 앱이 그 질문을 닫고(답을 들려준다) 아직 꺼내지 않은 새 단어 가운데 막힌 질문이 노린 낱말을 앞세워 쪽지를 보인다. 쪽지에는 낱말 · 한국어 뜻 · 예문 글이 있고, 선생님이 예문을 읽고 아이가 한 번 따라 말한다 |
+| 대화 | `required` · `more` · `flow` · `targetExpressions` · `goals` · `todayWords` | 대화는 카드의 한 장면 안에서 흘러간다. 대화 첫 질문은 필수 질문 1번이고 그 장면을 연다. 앱이 인사 끝 턴 바로 뒤에 AI 없이 보이고 읽는다. 그 뒤는 선생님이 아이 답에 반응하고 그 답을 따라 다음 질문을 스스로 쓰며, 카드 기회(필수 질문 · 다시 쓰기 · 꺼낼 새 단어)를 자연스러운 때 고른다. 필수 질문은 카드 글을 바꿔 말해 물어도 된다. 선생님은 카드 기회를 꺼낼 때 아이의 바로 앞 말에 이어 제 짧은 말로 묻고 카드의 장면 문장을 그대로 붙이지 않는다(02-2:192 · 198, C222). 앱은 따라가기 뒤 돌아오기가 안 된 때의 안전장치 · 질문 검사 실패 · 같은 질문 때에만 카드 질문을 그대로 붙인다(카드 자리, 가장 앞의 남은 필수 질문, 02-2:190). 마무리 때 앱이 붙이는 것은 카드 질문이 아니라 마무리 물음이다 |
+| 정리 | `closingLines` · `farewell` | 대화 기록에서 아이가 스스로 한 말 가운데 오늘 쓸 말이 든 줄을 반짝이고, 되짚을 말을 선생님이 읽는다 |
+| (어디서나) | `safeLines` · `praiseLines` · `safetyFarewell` · `endCondition` · `todayTopicsKo` · `topic` | 걸린 선생님 문장을 바꿀 대사 · 짧은 칭찬 · 안전 상한의 끝인사 · 끝맺음 조건 · 옆 칸 오늘 이야기 목록 · AI 에게 가는 카드 주제 |
+
+### 필수 질문 쓰는 법(괄호는 걸리는 검증 규칙)
+
+| 규칙 | 내용 |
+|---|---|
+| 무엇인가 | 카드가 준비하는 기회다. 새 단어를 처음 묻는 질문과 단원 목표의 수행 기회를 만드는 질문이다. 한 수업에서 다 물어야 하는 질문이 아니다 |
+| 수 | 배정 카드: 새 단어마다 그 낱말 하나만 노리는 처음 묻는 질문(`ask: "first"`) 하나씩(`talk-first-ask`). 다지기 · 보강 카드: 처음 묻는 질문이 없고 다시 묻는 질문(`ask: "re_ask"`)이 k 개 이상(`talk-required`). 모든 카드: 필수 질문 수 ≤ 참고 턴 × `talk.required_max_ratio`(`talk-required`). (제안) 필수 질문은 k + 2 개까지만 둔다. 참고 턴 가운데 카드 질문의 몫을 줄여 선생님이 아이 말을 이어 묻는 자리를 넓히기 위해서다 |
+| 한 장면 | 카드 한 장의 필수 질문과 더 이야기할 거리는 모두 한 곳(한 장면)에서 벌어지는 일을 묻는다(C219). 장면은 아이가 그려 볼 수 있는 곳 하나다(도서관 · 공원 · 동물원 · 부엌 · 운동장 · 버스 안). 한 카드에 곳을 섞지 않는다(도서관 질문 뒤에 바닷가 질문 ×). 장면에 어울리지 않는 낱말은 그 카드에서 노리지 않고 다른 장면의 카드로 옮긴다(11절). (제안) 질문 글에 나오는 곳 낱말은 둘까지다: 장면의 곳과, 이야기가 오가는 곳 하나(집 · 학교) |
+| 이야기 차례 | `no` 는 1부터 차례대로이고(`talk-numbers`), 그 차례는 장면에서 일이 벌어지는 차례다: 장면에 들어감 → 장면 안에서 보고 만나는 것 → 장면을 떠남. 1번이 대화 첫 질문이고 장면을 연다(아래 '대화 첫 질문 쓰는 법'). 앱이 카드 자리에서 붙이는 것은 가장 앞의 남은 필수 질문이므로, 이야기 차례로 두면 붙는 질문이 이야기의 다음 대목이 된다. 이 차례는 선생님이 지켜야 하는 순서가 아니다. 아이 말이 뒤 대목에 먼저 닿으면 선생님은 그 대목부터 묻는다 |
+| 장면 안에서 뜻이 통함 | 질문마다 장면 문장을 따로 붙이지 않는다(C219). 장면은 1번이 한 번 열고, 그 뒤 질문은 그 장면 안의 것을 바로 묻는다(`Who writes books?`). 앞 문장이 필요하면 같은 장면 안의 물건 · 사람을 짚는 짧은 한 문장만 쓴다(`Look, a book about stars!` · `A man in a book flies a plane.`). (제안) 앞 문장이 붙은 항목은 1번을 빼고 필수 질문과 더 이야기할 거리를 합쳐 한 카드에 둘까지다(낱말 맞히기 꼴 포함). 그 밖의 항목은 물음표 문장 하나로 쓰고, 장면은 질문 문장 안의 말로 잇는다(`Who draws the pictures in a book?` · `Who takes you home on the bus?`). 4단계 화면에는 그림이 없어 this · that · here 로 가리킬 것이 없다. 가리키는 것을 낱말로 쓴다(`this book` ×, `a plane book` ○). 질문마다 앞 문장을 붙이면 한 곳 안에서도 질문마다 작은 장면이 새로 서서, 앱이 카드 자리에서 그대로 붙일 때 이음새가 끊긴다(2026-11-08 수업의 `Oh, hot water! Sand and shells! Where do you play?`). 다른 곳이나 새 상황을 세우는 앞 문장(`At the beach, …` · `Your friend is at home.`)은 쓰지 않는다. 다만 질문은 앞 질문의 **답**에 기대지 않는다. 선생님이 대목을 건너뛰거나 아이 이야기를 따라갔다 돌아올 수 있으므로, 앞 질문을 묻지 않았어도 뜻이 통해야 한다. 그래서 앞 답을 가리키는 말(it · that · there · too · 그 사람)로 시작하지 않고, 가리키는 것을 질문 글 안에 둔다(`And what is she?` ×, `A girl in a picture book dances. What is she?` ○). 아이나 아이 친구의 상태 · 행동을 단정하지 않는다(`Your friend sings every day.` 는 쓰지 않는다. 아이 친구가 무엇을 하는지 선생님은 모른다, C202 (3)). 질문 글은 두 문장까지다 |
+| 아이 쪽으로 묻기 | (제안) 한 카드의 필수 질문 · 더 이야기할 거리 가운데 낱말 맞히기 꼴은 항목 셋에 하나까지만 쓴다. **낱말 맞히기 꼴은 답 예시의 낱말 말고는 맞는 답이 사실상 없고, 아이 · 아이 친구 · 아이가 아는 사람의 이야기가 아닌 질문이다**(3단계 브리프 `talk-3.md` 와 같은 문장이다). 아이에게 묻는 꼴이어도 아래 갈래에 드는 질문은 여기에 든다. 4단계 단원 1 에서는 네 갈래다. (ㄱ) 답이 직업 낱말 하나로 정해진 Who 주어 물음과 장면 속 사실을 묻는 질문(`Who writes books?` · `Who studies the stars?` · `Is a pilot a kid?`). (ㄴ) 장면 한 문장 + `What is he?` · `Who is she?` · `What are they?`. (ㄷ) 앞 문장이 답의 단서를 주고 그 답을 맞히게 하는 질문(`The library closes. Who takes you home on the bus?` · `A fun game ends. What do you say?`). 장면을 여는 1번의 앞 문장과 사람만 부르는 앞 문장은 단서가 아니다. (ㄹ) 물건 하나로 동사 하나를 맞히게 하는 `What do you do with + 물건?`. 14절 스스로 확인은 (ㄱ)을 질문 글에 you · your 가 없는 항목으로, (ㄴ) · (ㄹ)을 마지막 물음표 문장의 꼴로, (ㄷ)을 1번을 뺀 앞 문장이 붙은 항목으로 센다. 3단계 브리프의 스크립트와 같은 셈이다. 이 셈은 아래 선이다. 셈에 걸리지 않아도 답이 하나로 정해진 질문이 있으므로, 카드 계획표의 '가장 흔한 답' 칸을 보고 사람이 한 번 더 센다(16절 보고). 나머지 항목은 아이 자신 · 아이 친구 · 아이가 아는 사람에 대해 묻는 꼴로 쓴다. 둘 가운데 고르는 물음(`Is your friend funny or kind?`), 아이와 친구가 할 수 있는 일을 묻고 그 답에서 낱말이 나오는 물음(`Can your friend sing?` → `Yes, my friend is a good singer.` · `Can you dance?` → `Yes, I am a good dancer.`), 아이에게 예 · 아니요로 묻고 '아니요 + 바른 문장'에서 낱말이 나오는 물음(`Do you write books?` → `No, a writer writes books.` · `Can you fly a plane?` → `No, a pilot flies a plane.`), 아이 삶의 사람을 묻는 Who 물음(`Who takes you home on the bus?`)이다. '아니요 + 바른 문장' 꼴은 아이가 그 낱말을 스스로 꺼내기 어렵고 선생님이 넓혀 들려주게 되므로 (제안) 한 카드에 둘까지만 쓴다. **한 꼴이 항목의 절반을 넘지 않는다**(Who 주어 물음 · 예 · 아니요 물음 · 둘 가운데 고르기 · `What is he?` 꼴을 따로 센다). 예 · 아니요 물음만 늘어도 같은 꼴 되풀이가 된다. 답 예시는 아이나 친구의 사실을 정해 버리지 않는 문장으로 쓴다. 누구에게나 참인 답(`No, I have only one nose.`), 대부분의 아이에게 참인 답(`Yes, I can already ride a bike.`), 아이의 지금 느낌 가운데 하나(`No, I am just hungry.`), 장면 속 일(`We are almost at the zoo.`)로 쓰고, 친구의 나이 · 사는 곳 · 못하는 것과 '친구가 없다'를 답으로 두지 않는다(10 · 13절). 낱말 맞히기가 이어지면 대화가 문제 풀이로 들린다(요청자가 2026-11-08 의 3단계 수업에서 '카드 질문이 답 하나를 맞히는 꼴'이라고 짚었다, 내용 분석 보고 `task-ana-lesson-content-report.md` 4절 3번) |
+| 노리는 단어 | 한 항목에 단원 단어 하나, 이 단원 단어만(`talk-targets`). 검증기는 둘까지 받지만 (제안) 한 항목은 한 낱말을 노린다 |
+| 질문에 노리는 단어 없음 | 질문(`en`)과 쉬운 질문(`easyQuestion.en`)에 그 항목이 노리는 단어가 활용형까지 없다(`talk-targets`, A4-03). 예: singer 를 노리는 항목에 `Is she a singer?` ×. `sings` 는 sing 의 활용형이라 singer 항목의 질문에 써도 된다 |
+| 처음 묻는 질문의 힌트 | 영어 문장 힌트(`hints[1]`)에 그 새 단어가 원형이나 활용형으로 든다(`talk-first-ask`). 새 단어는 아이 차례 글(힌트 · 답 예시 · 목표 표현) 어딘가에 원형으로 한 번 이상 나온다(`vocab-allocation`). 들려줄 말 · 오늘 쓸 말 예문은 이 셈에 들지 않는다 |
+| 같은 질문 | 한 카드 안에서 같은 선생님 질문(필수 · 더 · 쉬운 질문을 합쳐)은 2번까지다(`talk-same-question`). **같은지는 질문 글의 마지막 물음표 문장으로 본다**(대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시). 앞 장면이 달라도 `A man flies a plane. What is he?` 와 `A man studies rocks. What is he?` 는 같은 질문이다. (제안) 한 카드 안의 마지막 물음표 문장은 모두 다르게 쓴다. 선생님이 쓰는 질문도 같은 셈에 들어가므로, 이 단원에서 가장 흔한 꼴(`What is he?` · `What is she?`)을 카드가 여러 번 쓰면 셈이 빨리 찬다 |
+| 뒤 수업 단어 | 배정 카드 m 은 어디에도(질문 · 힌트 · 답 예시 · 쉬운 질문 · 오늘 쓸 말 예문 · 대사 · 끝인사 · 칭찬, (제안) 예상 흐름도) 배정 m+1 이후의 단원 단어를 쓰지 않는다(경고 `relation-early-use`). 이 단원은 흔한 낱말이 뒤 수업에 몰려 있어 걸리기 쉽다: too · also · just · only(배정 6) · well(배정 7) · work · try(배정 8) · again(배정 5) · together(배정 4) · kid(배정 3). 그래서 앞 카드에서는 `Me too!` · `Well done!` · `Good work!` · `Nice try!` · `Try again!` · `The kids play.` 를 쓰지 않는다. `best` · `better` 는 검증기가 well 의 활용형으로도 세므로 well 이 열리기 전(배정 1~6) 카드에 쓰지 않는다(`best friend` 포함). `people` 은 person 의 활용형이라 배정 1 카드에 쓰지 않는다 |
+
+### 대화 첫 질문 쓰는 법(4단계, 정본 02-2:169 · 188)
+
+4단계는 짧은 준비 없이 인사 뒤에 바로 대화로 간다. 인사 끝 반응 뒤에 앱이 필수 질문 1번을 AI 없이 그대로 보이고 읽는다. 아이는 새 단어를 한 번도 듣지 못한 채 이 질문을 받는다. 1번은 그 카드의 장면을 여는 질문이기도 하다. 그래서 1번은 다른 필수 질문과 달리 아래 조건을 지킨다(제안).
+
+| 조건 | 내용 |
+|---|---|
+| (가) 아이 이야기를 묻는다 | 아이 자신 · 아이 친구 · 아이가 아는 사람에 대해 묻는다. 낱말 맞히기 꼴(`A man flies a big plane. What is he?`)은 1번에 쓰지 않는다 |
+| (나) 아는 말로 답할 수 있다 | 새 단어를 몰라도 1~3단계 낱말로 답할 수 있어야 한다(`Kind.` · `She sings.`). 수업이 막힘으로 시작하지 않게 하려는 것이다. 예 · 아니요나 둘 가운데 고르는 꼴(`Is your friend funny or kind?`)이 좋다 |
+| (다) 새 단어가 넓혀 들려주기에서 나온다 | 1번이 노리는 새 단어는 선생님이 아이 답을 바른 문장으로 넓혀 들려줄 때 자연스럽게 나오는 낱말로 고른다(`Kind.` → `Your friend is a kind person!`). 그 카드의 새 단어 가운데 아이가 아는 말과 가장 가까운 낱말이 알맞다(sing 을 아는 아이의 singer, play 를 아는 아이의 together). 이 조건은 새 단어가 있는 배정 카드에만 해당한다. 다지기 · 보강 카드의 1번은 (가) · (나) · (라) · (마)를 지키고, 그 카드가 다시 묻는 낱말 가운데 아이가 아는 말과 가장 가까운 것을 노린다 |
+| (라) 앞 문장으로 장면을 연다 | 1번의 앞 문장이 그 카드의 장면을 연다. 권하는 말이나 물건 말로 쓴다(`Let's go to the library with your friend!` · `So many ducks at the park!`). 아이나 친구가 지금 어디서 무엇을 한다고 단정하지 않는다(`You are at the library.` ×). 장면은 이 문장이 한 번만 열고, 뒤 질문은 장면을 다시 세우지 않는다 |
+| (마) 단원 안에서 돌려 쓴다 | 한 단원에서 1번 질문의 마지막 물음표 문장은 모두 다르고, 같은 변형에서 차례가 바로 앞인 카드와 첫 세 낱말 꼴이 다르다. 14절 스스로 확인이 이 셈을 본다 |
+
+### 받침 줄과 힌트
+
+4단계부터는 아이가 막히면 선생님(AI)이 도움말을 쓴다. 첫째 막힘에는 답 하나를 말 안에 글로 들려주고 같이 말하게 하고, 둘째에는 쉬운 영어로 바꿔 묻고, 셋째에는 답을 한 번 말해 주고 다음 이야기로 간다. 카드의 줄은 아래 자리에서 쓰인다.
+
+| 칸 | 쓰이는 자리 | 쓰는 법 |
+|---|---|---|
+| `answerExample` | 힌트 마지막 단의 문장, 선생님 답 예시가 검사에 걸렸을 때의 대체 줄, 짧은 준비를 열며 막힌 질문을 닫을 때 들려주는 답 | 8낱말 이하 한 문장. 아이가 무슨 답을 했든 맞는 문장으로 쓴다. 아이 친구를 가리킬 때는 `My friend` 를 주어로 쓴다. `He` · `She` 는 질문의 장면 문장이 사람을 정해 준 항목에서만 쓴다(`A man flies a big plane. What is he?` → `He is a pilot.`). 아이 친구가 남자인지 여자인지 카드는 모른다 |
+| `hints` | '힌트' 버튼의 둘째 · 셋째 단 | `[영어 틀, 영어 문장]` 두 단(`talk-hints`). 영어 틀은 영어 문장에서 노리는 단어 자리를 `___` 하나로 바꾼 꼴이다(`A ___ writes books.`). (제안) 영어 문장 = `answerExample` |
+| `hintKo` | '힌트' 버튼의 첫 단 | 영어 문장의 한국어 뜻(아이가 할 말이라 반말: `작가가 책을 써.`). 뜻만 보고 말하면 스스로 한 것으로 센다(S1) |
+| `easyQuestion` | 선생님의 쉬운 질문이 막힌 질문을 되풀이할 때 앱이 바꿔 쓰는 줄 | `{ "en", "ko" }`. 물음표로 끝나고 그 질문과 정규화한 글이 다르다(`talk-support`). 노리는 단어가 없다(`talk-targets`). (제안) 아이가 `Yes.` · `No.` 로도 답할 수 있는 예 · 아니요 질문(`Do you like big planes?` · `Is your friend kind?`)으로 쓴다. `Does ~?` 는 쓰지 않는다(8절). 1~4단계는 쉬운 질문에도 한국어 뜻 `ko` 가 있어야 한다(`talk-ko`, C194 (2)) |
+| 앞 턴과 상관없음 | | 힌트 · 답 예시는 앞 턴에 아이가 어떤 답을 했어도 맞는 문장으로 쓴다. 앞 답을 되받는 문장(`Your friend sings too!`)을 두지 않는다 |
+
+### 짧은 준비와 꺼내기
+
+- 4단계 카드에는 `prep` 칸을 두지 않는다(제안). 준비는 대화에서 막힌 차례가 이어질 때 열리고, 낱말은 앱이 아직 꺼내지 않은 새 단어 가운데 막힌 질문이 노린 낱말을 앞세워 고른다(정본 02-2:173 · 176). 카드가 차례를 정해도 앱이 읽지 않는다.
+- `todayWords` 는 배정 카드의 새 단어 k 개를 배정표 차례로(제안), 다지기 · 보강 카드는 `[]` 다(`talk-today`: 새 단어 목록과 같다). 칸마다 `word` · `meaningKo`(6절 뜻을 짧게) · `example` · `modelLine` 이다. `imageKey` 는 두지 않는다.
+- `example` 은 그 낱말이 원형으로 든 8낱말 이하 한 문장이다. 짧은 준비가 열리면 쪽지에 글로 보이고 선생님이 읽으며 아이가 한 번 따라 말한다. `modelLine` 은 `example` 과 같은 글로 쓴다(제안). 화면은 `example` 을 읽고 선생님(AI)은 `modelLine` 을 꺼내기의 참고로 받으므로, 둘이 다르면 화면이 읽는 말과 선생님이 아는 말이 달라진다.
+- (제안) 예문은 이 단원의 꼴이 보이게 쓴다. 사람 명사는 `A pilot flies a big plane.` 처럼 '사람 + 하는 일(-s)'이나 `She is a kind person.` 으로, 덧붙이는 말은 `We play games together.` · `My friend dances well.` 처럼 문장 끝자리에 둔다.
+- 새 단어는 선생님이 대화 중에 꺼낸다. 뜻이 드러나는 말로 그 낱말을 들려주고 아이가 한 번 따라 하게 한 뒤, 그 낱말의 필수 질문을 자연스러운 때 묻는다. 카드는 그 낱말의 예문과 필수 질문을 준비하고, `flow` 에 꺼낼 낱말과 꺼내기 좋은 때를 적는다(`The teacher brings in scientist and pilot when the child talks about stars or planes.`).
+- 덧붙이는 말(together · again · already …)은 질문으로 끌어내기 어렵다. 그 낱말의 필수 질문은 힌트 문장이 자연스러운 답이 되는 꼴로 쓰되 답 예시가 아이나 친구의 사실을 정해 버리지 않게 하고(8절 표, 위 '아이 쪽으로 묻기'), `flow` 에 '아이가 친구와 하는 일을 말하면 together 를 꺼낸다'처럼 꺼낼 때를 적어 선생님이 넓혀 들려주기와 꺼내기로 먼저 들려주게 한다.
+
+### 더 이야기할 거리
+
+`more` 는 `talk.more_talk_turns` 개 이상이고 모두 다시 묻는 질문이다(`talk-more`, 칸은 필수 질문과 같고 쉬운 질문 · 한국어 뜻도 똑같이 있어야 한다). 아이가 '더 이야기하기'를 고를 때와, 다시 쓰기가 남은 낱말 · 이월 낱말을 노릴 질문으로 쓴다. 카드 자리(따라가기 뒤 돌아오기가 안 된 때 · 질문 검사 실패 · 같은 질문에 걸린 뒤, 02-2:190)에서 남은 필수 질문이 없으면 앱이 다시 쓰기가 남은 낱말을 노리는 더 이야기할 거리를 그대로 붙인다. 더 이야기할 거리도 그 카드의 **같은 장면 안**에서 쓴다(C219): 필수 질문이 지나간 이야기 길 옆에 있는 것(같은 곳의 다른 물건 · 다른 사람)을 묻고, 다른 곳으로 옮기지 않는다. 더 이야기할 거리는 필수 질문이 장면을 떠나는 대목까지 간 뒤('더 이야기하기')에 쓰이는 일이 많다. 그래서 '지금 그 장면 안에 있다'를 전제하는 말(now · here)을 쓰지 않고, 장면을 떠난 뒤에 들어도 말이 되는 꼴(아이와 친구의 이야기: `Can your friend sing?`)로 쓴다. 필수 질문의 떠나는 대목도 장면을 닫는 알림 문장(`The library closes.`) 없이 묻는다(`Who takes you home on the bus?`). 필수 질문과 같이 '장면 안에서 뜻이 통함' · '아이 쪽으로 묻기' · '같은 질문'을 지키고, 앞 질문의 답에 기대지 않는다. 노리는 단어는 그 카드에서 이미 열린 단원 단어(배정 카드는 그 수업까지 배정된 낱말, 다지기 · 보강은 단원 단어 전부) 가운데 그 장면에 어울리는 것이고, (제안) 그 카드의 필수 질문이 덜 노린 낱말을 앞세운다. 단원 덮기(`talk-known-days`, 단원을 다 채운 뒤): 단원 단어마다 다지기 · 보강의 다시 묻는 필수 질문과 모든 카드의 더 이야기할 거리를 합쳐 서로 다른 수업 `talk.known_days` 개 이상에서 노린다. 장면마다 어울리는 낱말이 달라 낱말마다 자리 수가 고르지 않게 되므로, 단원 장면 표(2절)에서 이 셈을 먼저 맞춘다.
+
+### 목표 잇기(평가 spec 2절 · 0절 판단 1, 잠정)
+
+| 항목 | 항목의 `goals` | 까닭 |
+|---|---|---|
+| 동사 셋(return · work · try)을 노리는 항목 | `["talk-4-1-1"]` | 사람이 하는 일을 '사람 + 하는 일(-s)' 한 문장으로 답하는 기회다 |
+| 명사를 노리고 답 예시가 '사람 + 동사-s' 문장인 항목(`A writer writes books.` · `A frog has green skin.`). kitchen · skin 을 노리는 항목은 늘 이 꼴로 쓴다 | `["talk-4-1-1"]` | 위와 같다. 낱말을 떠올리는 일은 단원 단어 근거가 따로 남긴다(C165) |
+| 사람 · 모임 명사 열셋(singer … club)을 노리고 답 예시가 be 문장인 항목(`He is a pilot.` · `They are a team.`) | `["talk-4-1-2"]` | 그 낱말을 스스로 떠올려 알맞게 답하는 기회다. 판정은 낱말 회상(word)과 알맞은 응답이다 |
+| 덧붙이는 말 열둘(together … away)을 노리는 항목 | `["talk-4-1-3"]` | 누구와 · 어떻게 · 얼마나를 덧붙여 답하는 기회다 |
+
+- 카드 `goals` 의 목표 ID 는 모두 `talk-4-1-<n>` 꼴이다(`talk-goals`). 항목의 `goals` 는 카드 `goals` 안이다. 카드 `goals` 는 그 카드의 필수 질문 · 더 이야기할 거리가 노리는 목표의 합이고, 카드 목표마다 필수 질문 하나 이상이 그 목표를 노린다(`talk-goals`). 더 이야기할 거리만 노리는 목표가 생기면 그 목표의 필수 질문을 하나 더 두거나(상한 안) 그 더 이야기할 거리를 바꾼다.
+- (제안) 모든 카드에 talk-4-1-1 을 노리는 필수 질문이 하나 이상 있다. 3인칭 단수 -s 가 이 단원의 학습 요소인데 동사 셋은 배정 7 · 8 에야 나오기 때문이다. 배정 1~4 는 새 명사 가운데 하나 이상을 '사람 + 동사-s' 답으로 묻고, 배정 5 · 6(새 단어가 모두 덧붙이는 말)은 앞 배정 명사를 다시 묻는 필수 질문 하나를 이 꼴로 더한다.
+- talk-4-1-1 항목의 답 예시에는 '사람 + 동사-s'가 있어야 한다. 주어는 `A writer` · `My friend` · `He` · `She` 가운데 고른다(위 '받침 줄과 힌트').
+- 한 항목은 목표 하나만 가리킨다(제안). 목표 둘 이상을 가리키는 항목은 `demands` 가 있어야 하고(`talk-demands`) 이 판은 두지 않는다. `She dances well.` 처럼 두 목표에 다 닿는 답도 노리는 낱말의 갈래 하나로 잇는다.
+- `purpose` 는 카드 · 항목 모두 두지 않는다(목표 home '선생님과 이야기'로 본다, 17절).
+- 이 칸들은 근거 기록이 읽는다. 아이 화면 · 점수에는 나오지 않는다.
+
+### 그 밖의 칸
+
+| 칸 | 쓰는 법 |
+|---|---|
+| `greeting.firstLine` | 선생님 첫 말. `{NAME}` 을 부르고 안부를 묻는 질문으로 끝낸다(`Hi, {NAME}! How are you?`). `ko` 는 반말 뜻이다. today · day 는 단원 5 낱말이라 쓰지 않는다. (제안) `greetingTurns` 는 모든 카드 1 이다 |
+| `targetExpressions` | (제안) 3~5개. 이 카드에서 아이가 쓰게 할 한 문장(필수 질문 답 예시 꼴). 화면에 보이지 않는다 |
+| `closingLines` | (제안) 3~5줄. 오늘 쓸 말(다지기 · 보강은 그 카드가 노린 단원 단어)이 든 8낱말 이하 영어 문장과 `ko`(반말). 선생님이 읽는다 |
+| `flow` | (제안) 4~6줄. 첫 줄은 모든 카드에서 `After the first question, the teacher follows the child's answer.` 이다. 둘째 줄은 장면을 적는다: `The scene is <한 곳>: <그 장면 안의 소재 서넛>.`(예: `The scene is the library with the child's friend: many books, a star book, a plane book, the bus home.`). 셋째 줄부터는 꺼낼 새 단어와 꺼내기 좋은 때를 `The teacher …` 꼴로 짧게 쓴다. 마지막 줄은 모든 카드에서 `The scene is something to talk about, not a list of questions to finish.` 이다(C219, 3단계 브리프와 같은 줄). AI 에게 주는 이야기 흐름의 예다. 모든 질문을 차례대로 묻는 꼴(`one question at a time` · `in order` · `one by one`)이나 '이렇게 답하면 이렇게' 같은 갈래를 쓰지 않는다. 장면의 소재는 이야기할 거리이지 다 다뤄야 하는 목록이 아니다(C219). 문장 길이 · 형태 검사 밖이지만 금지어 · 선생님 이름 검사는 받는다 |
+| `todayTopicsKo` | 3~5개(`talk-today`). 아이 옆 칸의 한국어 짧은 이름꼴. 그 장면의 대목을 이야기 차례로 적는다(`친구와 도서관에` · `책을 쓰는 사람` · `별과 비행기 책`) |
+| `topic` | 한국어 한 줄. AI 에게 '카드 주제'로 간다. 단원 주제 + 장면 한 곳(`친구가 하는 일 · 친구와 간 도서관의 책 속 사람들`) |
+| `title` | 한국어 10자 안팎. 단원 안 카드의 제목이 서로 다르다. 선생님 이름을 쓰지 않는다 |
+| `safeLines` | (제안) 2~3줄 + `ko`. 걸린 선생님 문장을 바꾸는 짧은 반응이다. 물음표가 없고, 칭찬 · 판정 말이 아니며, 단원 단어가 없다(`Oh, okay!` · `Wow, cool!`). `Me too!` 는 쓰지 않는다(too 가 단원 단어) |
+| `praiseLines` | (제안) 3~4개. 짧은 칭찬(`Wow!` · `Good!` · `Great!` · `Nice!`). `ko` 칸이 없다. `Good job!`(job 은 범위 밖) · `Well done!` · `Good work!` · `Nice try!`(단원 단어)는 쓰지 않는다 |
+| `farewell` · `safetyFarewell` | 끝인사 + `ko`, '새 이야기로 이어 가자' 끝인사 + `ko`(안전 상한용). 예: `Bye, {NAME}! See you!` · `Bye for now, {NAME}!`. soon · tomorrow · next 는 단원 5 낱말이고 again 은 배정 5 낱말이라 `See you soon!` · `See you again!` 을 쓰지 않는다 |
+| `endCondition` | 한국어 한 줄(검토용). (제안) `마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.` 참고 턴을 채우면 끝난다는 말을 쓰지 않는다 |
+| `newWords` | 배정 카드는 6절 배정표의 낱말, 다지기 · 보강은 `[]`(`vocab-allocation`) |
+| `unitWords` | 카드 영어 글(질문 · 쉬운 질문 · 힌트 · 답 예시 · 오늘 쓸 말 예문 · 들려줄 말 · 목표 표현 · 정리 대사 · 안전한 대사 · 끝인사 · 칭찬)에 나온 단원 단어 전부. 예상 흐름 · 한국어 칸은 세지 않는다. 빠지면 경고 `unit-words-unlisted`, 글에 없는 낱말을 적으면 오류 `unit-words` |
+
+### 흐름 예(요청자가 고른 승인 표본 B 의 대화 줄)
+
+아래 줄은 대화의 결을 보이는 예다. 표본은 단원 2 '방과 후 활동'의 가상 카드로 쓴 것이라 낱말(math · art · hobby)과 꼴(`Does your friend ~?`)이 이 단원 범위 밖이다. 결만 보고 낱말 · 문장 꼴은 옮기지 않는다. 출처: `.superpowers/sdd/2026-10-29-회화-수업을-대화로/samples-level4-5.md`(sha256 0be72c006a09659dbaed3cd4f1a5557f64a3aba07e078a5599b60f3782c76e68) 표본 B. 표본의 말한 이 이름은 '선생님'으로 바꿔 적었다(10절 '선생님 이름을 쓰지 않는다').
+
+```
+[표본 B · 4단계 · 대화 중심, 인사 뒤 바로 대화]
+선생님(소리): Hi, {NAME}! Nice to see you. How are you today? [카드 선생님 첫 말]
+아이: "I'm good. I'm a little tired." · 스스로
+선생님(소리): Oh, a little tired. Long day at school? [선생님 이어 묻기]
+아이: "Yes. I have six classes today." · 스스로
+선생님(소리): Six classes! Good job. / What class do you like? [반응 + 카드 1번을 앱이 붙임]
+아이: "I like art." · 도움 뒤
+선생님(소리): Art! Nice. Do you draw a lot? [선생님 이어 묻기]
+아이: "Yes. I draw cat every day." · 스스로(관사 · 복수 빠짐)
+선생님(소리): You draw cats every day! Cool. Is math hard for you? [바른 말로 되풀이 + 카드 2번을 바꿔 물음]
+아이: "Yes. Math is very hard." · 스스로
+선생님(소리): Hard? We can say difficult. Say it with me: Math is difficult. [새 단어를 대화 중에 꺼냄, 글로]
+아이: "Math is difficult." · 따라
+선생님(소리): Great! Is art hard, too? [노리는 단어 easy]
+아이: "No! Easy." · 스스로 ✓ easy
+선생님(소리): Art is easy for you! Where do you learn about animals? [넓혀 들려주기 · 다시 묻지 않음 + 카드 3번]
+아이: "In science class. I like dinosaurs!" · 스스로(아이가 공룡 이야기를 꺼냄)
+선생님(소리): Dinosaurs! Cool. Do you have a favorite dinosaur? [아이 이야기 따라가기]
+아이: "T-rex! It is very big and strong."
+선생님(소리): Yes, T-rex is so big! Can you draw a T-rex? [오늘 이야기로 돌아옴]
+```
+
+카드가 이 결을 돕는 법: 1번 질문은 준비 없이도 아는 말로 답할 수 있게 쓴다(위 '대화 첫 질문 쓰는 법'). 표본의 대화가 '학교 시간' 한 화제에서 벗어나지 않듯, 카드의 질문은 한 장면 안에 있어야 선생님이 아이 이야기를 따라갔다가 돌아올 때, 그리고 앱이 카드 자리에서 붙일 때 '하던 이야기의 다음 대목'으로 들린다. 새 단어는 예문과 `flow` 의 '꺼낼 때'로 준비해 두고, 질문만으로 끌어내려 하지 않는다.
+
+한 장면 카드의 결(내용 분석 보고 안 5 의 표본을 줄인 것. 3단계 다지기 카드를 바다 · 바닷가 한 곳으로 다시 쓴 예이고, 손으로 쓴 예시다. 낱말과 꼴은 옮기지 않는다):
+
+```
+선생님: (앱) Hot sun and cool water! Can you swim? [장면을 여는 첫 질문]
+선생님: Oh, you can swim! Whales swim, too. Where do whales swim? [같은 바다의 다음 대목]
+선생님: Yes, in the sea! Do you like the sea? [아이 답을 받아 이어 물음]
+선생님: Me too! Oh, sand and shells! Where do you play? [같은 곳의 모래와 조개]
+선생님: Yes, at the beach! What do you do at the beach? [이어 물음]
+```
+
+고치기 전 카드는 바다 · 바닷가 · 산 · 샌드위치 질문이 섞이고 질문마다 다른 장면 문장이 붙어 이음새가 끊겼다. 고친 카드는 한 곳에서 고래 → 모래와 조개 → 발의 모래 → 주스 → 해가 짐 차례로 이야기가 흐른다.
+
+### 실제 수업에서 걸린 것과 카드의 몫
+
+요청자가 2026-11-08 에 3단계 수업을 직접 해 보고 짚은 것은 셋이다. 다음 카드 질문으로 넘어가는 이음새가 아이 말과 끊겼고(`Nice, your family! Whales and dolphins! Where do they swim?`), 도움 차례가 선생님 차례 셋 가운데 하나꼴로 많았으며, 카드 질문이 답 하나를 맞히는 꼴이라 문제 풀이처럼 들렸다(내용 분석 보고 4절 3번). 4단계 카드는 아래로 그 몫을 줄인다.
+
+- 이음새: 카드 한 장은 한 장면만 다루고 질문을 이야기 차례로 둔다(C219, 위 '필수 질문 쓰는 법'). 질문 앞 문장으로 새 곳을 세우지 않고, 아이 쪽으로 묻는 꼴을 낱말 맞히기 꼴보다 많이 둔다. 장면이 하나면 앱이 카드 질문을 그대로 붙여도 '하던 이야기의 다음 대목'으로 들린다.
+- 도움 차례: 필수 질문 수를 줄이고(k + 2 개까지), 1번을 아는 말로 답할 수 있게 쓰며, 답 예시를 짧고 흔한 꼴로 쓴다. 한 낱말만 말하면 음성 인식이 다른 글자로 적기 쉬운 낱말(too · well · only · away · alone · writer)은 답 예시에서 문장 안에 두어 인식이 앞뒤 말의 도움을 받게 한다(`My friend likes music too.`).
+- 문제 풀이처럼 들림: 직업 낱말을 `Who writes books?` · `Who studies the stars?` · `What is he?` 로 잇달아 물으면 같은 지적이 4단계에서 직업 맞히기로 다시 나온다. 낱말 맞히기 꼴을 항목 셋에 하나까지로 묶고 한 꼴이 항목의 절반을 넘지 않게 하며(위 '아이 쪽으로 묻기'), 아이와 아이 친구가 하는 일 · 할 수 있는 일을 묻는 꼴을 앞세운다.
+
+## 6. 단원 규격과 배정표(`unit-specs` · 배정 함수)
+
+배정표는 앱의 배정 함수가 단원 단어를 차례대로 k 개씩 나눈 결과다(나머지는 마지막 배정 수업). `newWords` 는 표와 낱말 모음이 같아야 한다(검증기 `vocab-allocation`). 이 판은 단원 1 만 만든다.
+
+### 단원 1 — 친구가 하는 일 · 학습 요소 '3인칭 단수 -s'
+
+- 단원 단어 30개(배정 차례 그대로): singer, dancer, driver, artist, scientist, writer, pilot, person, kid, parent, adult, team, club, kitchen, skin, together, again, already, alone, almost, also, just, only, too, well, enough, away, return, work, try
+- 갈래: 사람 · 모임 명사 13개(singer … club) · 그 밖 명사 2개(kitchen · skin) · 덧붙이는 말 12개(together … away) · 동사 3개(return · work · try). 갈래가 목표를 정한다(5절 '목표 잇기').
+- 그림: 4단계 카드는 그림을 쓰지 않는다(9절).
+- 사람이 하는 일을 말할 동사는 대부분 앞 단계 낱말이다(7절: sing · dance · write · draw · paint · fly · cook · help · play · read · study · make · take · live …). drive 는 6단계 낱말이라 `A driver drives a bus.` 를 쓸 수 없다. `A bus driver takes me to school.` 꼴로 쓴다.
+
+| 수업 번호 | kind | newWords(배정표, 이 차례 그대로) | 카드 goals(제안) |
+|---|---|---|---|
+| 1 | assigned | singer(가수) · dancer(춤추는 사람) · driver(운전사) · artist(화가) | [talk-4-1-1, talk-4-1-2] |
+| 2 | assigned | scientist(과학자) · writer(작가) · pilot(조종사) · person(사람) | [talk-4-1-1, talk-4-1-2] |
+| 3 | assigned | kid(아이) · parent(부모 한 사람) · adult(어른) · team(팀) | [talk-4-1-1, talk-4-1-2] |
+| 4 | assigned | club(동아리) · kitchen(부엌) · skin(피부) · together(함께) | [talk-4-1-1, talk-4-1-2, talk-4-1-3] |
+| 5 | assigned | again(다시) · already(벌써) · alone(혼자) · almost(거의) | [talk-4-1-1, talk-4-1-3](talk-4-1-1 은 앞 배정 명사 다시 묻기로) |
+| 6 | assigned | also(또한, ~도) · just(그냥) · only(오직, ~뿐) · too(~도, 너무) | [talk-4-1-1, talk-4-1-3](같음) |
+| 7 | assigned | well(잘) · enough(충분히) · away(멀리) · return(돌려주다, 돌아오다) | [talk-4-1-1, talk-4-1-3] |
+| 8 | assigned | work(일하다) · try(해 보다) | [talk-4-1-1](다시 묻기 항목에 따라 더) |
+| 9~13 | reinforce | [] (새 단어 없음) | 노린 낱말에 따라(11절) |
+| 보강 1~4 | remedial | [] (새 단어 없음) | 노린 낱말에 따라 |
+
+단원 목표(잠정, 요청자 승인 전, `unit-specs` goals 그대로):
+
+| id | 목표 글 | 주된 능력 | needs · accept | 이 단원에서 |
+|---|---|---|---|---|
+| talk-4-1-1 | 친구나 주변 사람에 대해 묻는 말에 '누가(he · she · 사람) + 하는 일(-s)' 한 문장으로 답할 수 있다 | 정보 묻고 답하기 | response · expression · meaning | 동사를 노린 항목과, 답 예시가 '사람 + 동사-s' 문장인 명사 항목 |
+| talk-4-1-2 | 어떤 사람인지 묻는 말에 가수 · 조종사 · 아이 · 팀 같은 사람과 모임의 낱말을 영어로 스스로 떠올려 답할 수 있다 | 정보 묻고 답하기 | word · response · meaning(words: 사람 · 모임 명사 13개) | 사람 · 모임 명사를 노리고 답 예시가 be 문장인 항목 |
+| talk-4-1-3 | 누구와 · 어떻게 · 얼마나 하는지 묻는 말에 together · alone · well · again 같은 덧붙이는 말을 넣어 답할 수 있다 | 정보 묻고 답하기 | word · response · meaning(words: 덧붙이는 말 12개) | 덧붙이는 말을 노린 항목 |
+
+세 목표 모두 home 은 '선생님과 이야기'이고 tasks 는 card-answer · follow-up · child-topic · test-turn 이다. talk-4-1-1 의 needs 에 form(꼴을 바르게 씀)을 넣지 않았다. 음성 인식이 낱말 끝의 -s 소리를 자주 놓치므로, 꼴로 재면 인식 오류가 판정에 든다. 회화는 채점하지 않으며(R2) 선생님이 `He play piano.` 를 `He plays the piano!` 로 되풀이해 들려주는 것으로 꼴을 익히게 한다.
+
+## 7. 단계 어휘 범위(vocab 4단계)
+
+검증기는 회화 카드 글의 어휘 범위를 세지 않는다(2026-11-10 대조: `Good job!` · `My mom cooks dinner.` · `I think so.` 가 걸리지 않았다). 그래서 아래 범위는 생성자가 지키고 14절 스스로 확인 명령으로 본다.
+
+| 글 칸 | 쓸 수 있는 낱말 |
+|---|---|
+| 아이 차례 영어: 항목 `hints` · `answerExample`, 오늘 쓸 말 `example` · `modelLine`, `closingLines`, `targetExpressions` | 1~3단계 낱말 전부(활용형 포함) · 4단계 기능어 여섯(about · every · everyone · his · her · so) · 이 단원 단어 가운데 그 카드에서 열린 것(배정 m 카드는 배정 1~m 의 새 단어, 다지기 · 보강은 30개 전부) · `{NAME}`. (제안) 실시간 AI 의 범위(4단계 이하 vocab 전부)보다 좁다. 아직 배우지 않은 4단계 낱말이 미리 나오지 않게 한다(3단계 카드와 같은 기준) |
+| 선생님 쪽 영어: 선생님 첫 말, 항목 `en` · `easyQuestion.en`, `safeLines` · `praiseLines` · `farewell` · `safetyFarewell` | 위와 같은 범위 + 10절 인물 표의 이름(질문 앞 장면 문장에만) |
+| 예상 흐름 `flow` | AI 에게 주는 지시 글이라 낱말 범위를 따지지 않는다. 다만 뒤 배정 수업 단어는 쓰지 않는다 |
+
+4단계 기능어 스물다섯 가운데 여섯만 쓰는 까닭(제안): his · her 는 사람 이야기에 꼭 필요하고(`She washes her hands.`), about · every · everyone · so 는 화제를 열거나 -s 문장을 만드는 데 쓴다(`Let's talk about your friend.` · `Everyone sings.`). our · their · its 와 mine · yours · hers · ours · theirs 는 단원 4(소유격) 뒤로 미루고, after · before 는 9단계의 잇는 꼴과 헷갈리므로 쓰지 않으며, above · below · by · inside · outside · over · everybody · Mr. · Mrs. 는 이 단원 대화에 필요하지 않다.
+
+흔하지만 쓰지 않는 낱말(괄호는 까닭): day · today · tomorrow · morning · night · time · week · weekend · class · homework · next · soon · early · late · 요일 이름(회화 4단계 단원 5 낱말) · hobby · sport · art · science · math · easy · difficult · story · English · teach · speak · start · finish · win · party · dream(단원 2 낱말) · show · tell · call · wear · weather · warm · summer · winter(단원 3 낱말) · love · think · feel · favorite · same · right · sure · thing · lot · movie · photo · video · use(단원 4 낱말) · job · drive · year · first · last(6단계) · much · other · band · group · member · player · full · always · often · sometimes · never · but(5단계) · moon(6단계) · more · than · then · stage(7단계) · people(person 의 활용형, 배정 2 부터) · best · better(well 의 활용형으로도 세어짐, 배정 7 부터) · TV · lab(vocab 밖). 수는 영어 낱말로 쓴다(`ten`).
+
+**1~3단계 기능어 58개**: `a` 하나의(셀 수 있는 낱말 앞) · `an` 하나의(모음 소리 앞) · `and` 그리고, ~와 · `be` ~이다, ~에 있다 [am, is, are, was, were, been, being] · `bye` 잘 가, 안녕 · `do` 하다(질문 · 부정을 만듦) [does, did, done, doing] · `goodbye` 안녕(헤어질 때 인사) · `hello` 안녕(만날 때 인사) · `hi` 안녕 · `how` 어떻게, 얼마나 · `I` 나는 · `in` ~ 안에 · `it` 그것 · `many` 많은 · `me` 나를, 나에게 · `my` 나의 · `no` 아니, 없는 · `not` 아니다, ~ 않다 · `oh` 오, 아 · `okay` 좋아, 괜찮은 · `on` ~ 위에 · `please` ~해 주세요, 부디 · `that` 저것, 저 · `the` 그(정해진 것 앞) · `this` 이것, 이 · `to` ~에, ~까지 · `up` 위로 · `what` 무엇 · `wow` 와 · `yes` 응, 네 · `you` 너, 너를 · `your` 너의 · `all` 모든, 모두 · `at` ~에(서), ~을(보다) · `can` ~할 수 있다 · `down` 아래로 · `for` ~을 위해, ~을 위한 · `from` ~에서, ~로부터 · `he` 그는 · `of` ~의 · `or` 또는 · `out` 밖으로, 밖에 · `she` 그녀는 · `with` ~와 함께, ~로 · `behind` ~ 뒤에 · `between` ~ 사이에 · `in front of` ~ 앞에 · `near` ~ 가까이에 · `next to` ~ 옆에 · `off` 떨어져, 벗어 · `there` 거기에, (There is) ~이 있다 · `these` 이것들, 이 · `they` 그들은, 그것들은 · `those` 저것들, 저 · `under` ~ 아래에 · `we` 우리는 · `where` 어디에 · `who` 누구
+
+**1단계 내용어 151개**(활용형): `ant` [ants] · `apple` [apples] · `arm` [arms] · `bag` [bags] · `ball` [balls] · `banana` [bananas] · `bank` [banks] · `bath` [baths] · `bear` [bears] · `bed` [beds] · `bell` [bells] · `big` [bigger, biggest] · `bike` [bikes] · `bird` [birds] · `black` [blacks] · `blue` [blues] · `book` [books] · `box` [boxes] · `brush` [brushes, brushed, brushing] · `bus` [buses] · `cake` [cakes] · `candy` [candies] · `cap` [caps] · `car` [cars] · `cat` [cats] · `chair` [chairs] · `cheese` [cheeses] · `chicken` [chickens] · `clock` [clocks] · `color` [colors] · `cookie` [cookies] · `cow` [cows] · `cup` [cups] · `cute` [cuter, cutest] · `desk` [desks] · `dish` [dishes] · `dog` [dogs] · `doll` [dolls] · `door` [doors] · `drum` [drums] · `duck` [ducks] · `ear` [ears] · `egg` [eggs] · `eight` · `elephant` [elephants] · `eye` [eyes] · `face` [faces] · `fan` [fans] · `fish` · `five` · `flower` [flowers] · `fork` [forks] · `four` · `fox` [foxes] · `frog` [frogs] · `game` [games] · `grape` [grapes] · `green` [greens] · `guitar` [guitars] · `hand` [hands] · `hat` [hats] · `home` [homes] · `horse` [horses] · `hot` [hotter, hottest] · `insect` [insects] · `jacket` [jackets] · `jam` [jams] · `juice` · `key` [keys] · `king` [kings] · `kite` [kites] · `lake` [lakes] · `lamp` [lamps] · `leg` [legs] · `like` [likes, liked, liking] · `lion` [lions] · `little` · `long` [longer, longest] · `lunch` · `map` [maps] · `milk` · `monkey` [monkeys] · `mouth` [mouths] · `name` [names] · `neck` [necks] · `nice` [nicer, nicest] · `nine` · `nose` [noses] · `nurse` [nurses] · `octopus` [octopuses] · `old` [older, oldest] · `one` · `orange` [oranges] · `pen` [pens] · `pencil` [pencils] · `piano` [pianos] · `pig` [pigs] · `pink` [pinks] · `pizza` [pizzas] · `plane` [planes] · `pot` [pots] · `puppy` [puppies] · `queen` [queens] · `rabbit` [rabbits] · `red` [reds] · `rice` · `ring` [rings, rang, rung, ringing] · `robot` [robots] · `rock` [rocks] · `rose` [roses] · `sand` · `seven` · `sheep` · `shell` [shells] · `ship` [ships] · `shirt` [shirts] · `shoe` [shoes] · `shop` [shops, shopped, shopping] · `short` [shorter, shortest] · `six` · `small` [smaller, smallest] · `smile` [smiles, smiled, smiling] · `snack` [snacks] · `snake` [snakes] · `sock` [socks] · `song` [songs] · `star` [stars] · `sun` [suns] · `swing` [swings, swung, swinging] · `tall` [taller, tallest] · `ten` · `tent` [tents] · `thank` [thanks, thanked, thanking] · `thick` [thicker, thickest] · `thin` [thinner, thinnest] · `three` · `tiger` [tigers] · `tooth` [teeth] · `top` [tops] · `toy` [toys] · `tree` [trees] · `truck` [trucks] · `two` · `umbrella` [umbrellas] · `violin` [violins] · `white` [whites] · `window` [windows] · `wing` [wings] · `yellow` [yellows] · `yo-yo` [yo-yos] · `zebra` [zebras]
+
+**2단계 내용어 125개**(활용형): `angry` [angrier, angriest] · `animal` [animals] · `aunt` [aunts] · `baby` [babies] · `bad` [worse, worst] · `badminton` · `baseball` · `basketball` · `beautiful` · `boy` [boys] · `brother` [brothers] · `busy` [busier, busiest] · `catch` [catches, caught, catching] · `chocolate` [chocolates] · `climb` [climbs, climbed, climbing] · `coat` [coats] · `cold` [colder, coldest] · `computer` [computers] · `cook` [cooks, cooked, cooking] · `cool` [cooler, coolest] · `corn` · `cousin` [cousins] · `dad` [dads] · `dance` [dances, danced, dancing] · `doctor` [doctors] · `dolphin` [dolphins] · `draw` [draws, drew, drawn, drawing] · `dress` [dresses] · `family` [families] · `farmer` [farmers] · `fast` [faster, fastest] · `father` [fathers] · `fine` · `finger` [fingers] · `fly` [flies, flew, flown, flying] · `food` [foods] · `foot` [feet] · `friend` [friends] · `fruit` [fruits] · `fun` · `funny` [funnier, funniest] · `gift` [gifts] · `giraffe` [giraffes] · `girl` [girls] · `glad` · `glasses` · `goat` [goats] · `good` [better, best] · `grandfather` [grandfathers] · `grandmother` [grandmothers] · `great` [greater, greatest] · `hair` [hairs] · `hamburger` [hamburgers] · `happy` [happier, happiest] · `have` [has, had, having] · `head` [heads] · `help` [helps, helped, helping] · `here` · `house` [houses] · `hungry` [hungrier, hungriest] · `ice cream` [ice creams] · `jeans` · `jump` [jumps, jumped, jumping] · `kick` [kicks, kicked, kicking] · `kind` [kinder, kindest] · `knee` [knees] · `know` [knows, knew, known, knowing] · `man` [men] · `mom` [moms] · `mother` [mothers] · `music` · `need` [needs, needed, needing] · `new` [newer, newest] · `now` · `pants` · `penguin` [penguins] · `pet` [pets] · `phone` [phones] · `play` [plays, played, playing] · `police` · `potato` [potatoes] · `pretty` [prettier, prettiest] · `read` [reads, reading] · `ready` · `really` · `ride` [rides, rode, ridden, riding] · `room` [rooms] · `run` [runs, ran, running] · `sad` [sadder, saddest] · `sandwich` [sandwiches] · `scarf` [scarves] · `shoulder` [shoulders] · `sick` [sicker, sickest] · `sing` [sings, sang, sung, singing] · `sister` [sisters] · `skate` [skates, skated, skating] · `ski` [skis, skied, skiing] · `skirt` [skirts] · `sleepy` [sleepier, sleepiest] · `slow` [slower, slowest] · `smart` [smarter, smartest] · `soccer` · `sorry` · `strawberry` [strawberries] · `strong` [stronger, strongest] · `student` [students] · `sweater` [sweaters] · `swim` [swims, swam, swum, swimming] · `table` [tables] · `teacher` [teachers] · `tennis` · `thirsty` [thirstier, thirstiest] · `throw` [throws, threw, thrown, throwing] · `tired` · `toe` [toes] · `turtle` [turtles] · `uncle` [uncles] · `very` · `walk` [walks, walked, walking] · `want` [wants, wanted, wanting] · `water` · `whale` [whales] · `woman` [women] · `write` [writes, wrote, written, writing] · `young` [younger, youngest]
+
+**3단계 내용어 125개**(활용형): `age` [ages] · `air` · `airplane` [airplanes] · `answer` [answers, answered, answering] · `ask` [asks, asked, asking] · `back` [backs] · `balloon` [balloons] · `basket` [baskets] · `bathroom` [bathrooms] · `beach` [beaches] · `bedroom` [bedrooms] · `birthday` [birthdays] · `block` [blocks] · `bottle` [bottles] · `bottom` [bottoms] · `bridge` [bridges] · `bright` [brighter, brightest] · `bring` [brings, brought, bringing] · `card` [cards] · `carry` [carries, carried, carrying] · `child` [children] · `city` [cities] · `classroom` [classrooms] · `clean` [cleans, cleaned, cleaning, cleaner, cleanest] · `close` [closes, closed, closing] · `cloud` [clouds] · `come` [comes, came, coming] · `corner` [corners] · `crayon` [crayons] · `cut` [cuts, cutting] · `dark` [darker, darkest] · `drink` [drinks, drank, drunk, drinking] · `drop` [drops, dropped, dropping] · `eat` [eats, ate, eaten, eating] · `end` [ends] · `eraser` [erasers] · `far` [farther, farthest] · `farm` [farms] · `find` [finds, found, finding] · `fire` [fires] · `fix` [fixes, fixed, fixing] · `floor` [floors] · `forest` [forests] · `front` [fronts] · `garden` [gardens] · `get` [gets, got, gotten, getting] · `give` [gives, gave, given, giving] · `glue` [glues] · `go` [goes, went, gone, going] · `grass` [grasses] · `hard` [harder, hardest] · `high` [higher, highest] · `hold` [holds, held, holding] · `hospital` [hospitals] · `large` [larger, largest] · `learn` [learns, learned, learning] · `left` · `let` [lets, letting, let's] · `library` [libraries] · `listen` [listens, listened, listening] · `live` [lives, lived, living] · `living room` [living rooms] · `look` [looks, looked, looking] · `low` [lower, lowest] · `make` [makes, made, making] · `market` [markets] · `meet` [meets, met, meeting] · `middle` [middles] · `mountain` [mountains] · `move` [moves, moved, moving] · `notebook` [notebooks] · `number` [numbers] · `open` [opens, opened, opening] · `paint` [paints, painted, painting] · `paper` [papers] · `park` [parks] · `pick` [picks, picked, picking] · `picture` [pictures] · `playground` [playgrounds] · `pull` [pulls, pulled, pulling] · `push` [pushes, pushed, pushing] · `put` [puts, putting] · `puzzle` [puzzles] · `question` [questions] · `quick` [quicker, quickest] · `rain` [rains, rained, raining] · `restaurant` [restaurants] · `river` [rivers] · `road` [roads] · `round` [rounder, roundest] · `ruler` [rulers] · `safe` [safer, safest] · `say` [says, said, saying] · `school` [schools] · `scissors` · `sea` [seas] · `see` [sees, saw, seen, seeing] · `side` [sides] · `sit` [sits, sat, sitting] · `sky` [skies] · `sleep` [sleeps, slept, sleeping] · `snow` [snows, snowed, snowing] · `soft` [softer, softest] · `soup` [soups] · `squirrel` [squirrels] · `stand` [stands, stood, standing] · `stop` [stops, stopped, stopping] · `store` [stores] · `street` [streets] · `study` [studies, studied, studying] · `subway` [subways] · `take` [takes, took, taken, taking] · `talk` [talks, talked, talking] · `taxi` [taxis] · `textbook` [textbooks] · `town` [towns] · `train` [trains] · `turn` [turns, turned, turning] · `wait` [waits, waited, waiting] · `wall` [walls] · `wash` [washes, washed, washing] · `watch` [watches, watched, watching] · `way` [ways] · `wind` [winds] · `zoo` [zoos]
+
+**4단계 기능어 25개**: `about` ~에 대해 · `above` ~ 위에 · `after` ~ 뒤에 · `before` ~ 전에 · `below` ~ 아래에 · `by` ~ 옆에, ~로 · `every` 모든, ~마다 · `everybody` 모두 · `everyone` 모두 · `her` 그녀의, 그녀를 · `hers` 그녀의 것 · `his` 그의 · `inside` ~ 안에, 안에서 · `its` 그것의 · `mine` 내 것 · `Mr.` ~ 씨(남자 어른) · `Mrs.` ~ 부인, ~ 씨 · `our` 우리의 · `ours` 우리의 것 · `outside` 밖에, ~ 밖에 · `over` ~ 위로, 넘어 · `so` 아주, 그렇게 · `their` 그들의 · `theirs` 그들의 것 · `yours` 네 것 이 가운데 about · every · everyone · his · her · so 만 쓴다.
+
+**회화 4단계 단원 1 단원 단어 30개**(배정 차례): `singer` 가수 [singers] · `dancer` 춤추는 사람, 무용가 [dancers] · `driver` 운전사 [drivers] · `artist` 화가, 예술가 [artists] · `scientist` 과학자 [scientists] · `writer` 작가 [writers] · `pilot` 조종사 [pilots] · `person` 사람 [people, persons] · `kid` 아이 [kids] · `parent` 부모(한 사람) [parents] · `adult` 어른 [adults] · `team` 팀 [teams] · `club` 동아리, 클럽 [clubs] · `kitchen` 부엌 [kitchens] · `skin` 피부 [skins] · `together` 함께 · `again` 다시 · `already` 벌써, 이미 · `alone` 혼자, 혼자서 · `almost` 거의 · `also` 또한, ~도 · `just` 그냥, 막 · `only` 오직, ~뿐 · `too` 너무, ~도 · `well` 잘 [better, best] · `enough` 충분한, 충분히 · `away` 멀리, 떨어져 · `return` 돌려주다, 돌아오다 [returns, returned, returning] · `work` 일하다, 일 [works, worked, working] · `try` 해 보다 [tries, tried, trying]
+
+**회화 4단계 다른 단원 단어(쓰지 않는다)**: 단원 2: hobby, sport, race, win, lose, party, touch, camp, ice, dream, point, special, tail, interesting, tape, art, science, difficult, English, Korean, easy, story, page, word, line, teach, speak, math, start, finish / 단원 3: spring, summer, fall, winter, autumn, weather, sunny, rainy, cloudy, windy, snowy, warm, leaf, grow, change, bread, butter, meat, vegetable, body, heart, wear, keep, apartment, building, build, send, call, show, tell / 단원 4: camera, album, mail, photo, video, comic, movie, newspaper, news, letter, internet, use, thing, lot, present, love, think, feel, hear, worry, forget, remember, afraid, sure, true, right, wrong, same, favorite, free / 단원 5: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, week, weekend, today, tomorrow, day, next, soon, class, morning, afternoon, evening, night, time, hour, minute, o'clock, breakfast, dinner, homework, wake, arrive, early, late
+
+## 8. 학습 요소 범위와 문장 꼴(정본 3.6 · C64)
+
+카드 글은 앞 단계 전부, 같은 단계의 앞 단원, 이번 단원의 요소만 쓴다(C64 (1)). 1~3단계 요소는 `a · an + 명사` / `This is ~` / `색 · 크기 + 명사` / `I like ~` / `수 + 복수 -s` / `I am · You are` / `He · She · It is` / `have` / `can` / `Is it ~? · Do you ~?` / `일반동사 현재(I · you · we · they)` / `There is · There are` / `위치 전치사` / `명령문 · Let's` / `What · Where · Who 의문문` 이고, 4단계 단원 1 요소는 `3인칭 단수 -s` 다. `Do you ~?` 와 `Do + 복수 주어 ~?` 는 2 · 3단계에서 이미 쓴다(C170 (15)). does 와 3인칭 주어의 물음 · 부정문은 단원 2 요소다.
+
+| 쓰는 곳 | 쓸 수 있는 꼴(제안) | 예 |
+|---|---|---|
+| 아이 답(힌트 · 답 예시 · 목표 표현 · 정리 대사 · 예문) | 사람(A writer · My friend · He · She · Everyone) + 하는 일(-s) + 무엇 · 어디 · 덧붙이는 말. be 문장(He is a ~ · They are a ~ · I am a ~). I · We · They + 하는 일(원형). can · have · like · Let's | `A writer writes books.` · `He is a pilot.` · `My friend dances well.` · `We play games together.` · `Let's play again!` |
+| 선생님 질문 | 아이와 아이 친구에게 묻는 `Do you ~?` · `Can you ~?` · `Are you ~?` · `Is your friend ~?` · `Can your friend ~?`(둘 가운데 고르는 or 포함) · `What can your friend do?` · `What do you say?` · `Where are we now?`. Who 주어 물음(`Who takes you to school on the bus?` · `Who writes books?`)과 장면 문장 + `What is he?` · `Who is she?` · `What are they?`(낱말 맞히기 꼴은 항목 셋에 하나까지, 앞 문장은 1번을 빼고 한 카드에 둘까지). 화제를 여는 `Let's talk about your friend.` How 물음은 쓰지 않는다. 3.6 요소 표에서 How many · How much 는 5단계 요소이고 `How do you ~?` 는 요소 표에 없다. 그림이 없으므로 this · that · here 로 가리키지 않는다 | `Can your friend sing?` · `Is your friend funny or kind?` · `Who takes you to school on the bus?` · `A man flies a big plane. What is he?` |
+| 쉬운 질문 | 예 · 아니요 꼴(`Do you ~?` · `Is your friend ~?` · `Are you ~?` · `Can you ~?`) | `Do you like big planes?` |
+
+검증기가 오류로 잡는 꼴(형태 표 `forms.json`, 회화 4단계 단원 1 에서 범위 밖. 아래 예는 2026-11-10 실제 검증기로 대조했다):
+
+| 꼴 | 걸리는 예 | 열리는 때 |
+|---|---|---|
+| does · doesn't | `What does your friend do?` · `Does she sing?` · `He doesn't play soccer.` | 4단계 단원 2 |
+| don't(주어가 있는 꼴) | `I don't like it.` | 4단계 단원 2 |
+| 현재진행 | `She is singing now.` · `They are playing.` | 4단계 단원 3 |
+| be 동사 부정 | `She isn't tall.` · `A teacher is not a kid.` | 4단계 단원 4 |
+| 시각 · 요일(at · on) | `We play at three.` · `He goes to school on Monday.` | 4단계 단원 5 |
+| 빈도부사 | `She always sings.` | 5단계 |
+| want to · but | `She wants to sing.` · `My friend sings but I dance.` | 5단계 |
+| 과거 | `He was a pilot.` · `He walked home.` | 6단계 |
+| When 물음 | `When does she sing?` | 6단계 |
+| will · 비교급 · 최상급 | `She will sing.` · `She sings better than me.` · `You are the best!` | 7단계 |
+| 동명사 · 잇는 so | `She likes singing.` · `He sings, so I dance.` | 9단계 |
+| 9낱말 이상 문장 | `My friend sings a very long song for me today.` | 상한 8 |
+
+검증기가 못 잡지만 쓰지 않는 꼴: 부정 명령문(`Don't worry!`. don't 는 단원 2 요소다) · 's 소유격(`My friend's dog runs fast.`. 단원 4 요소다. `my friend` · `his` · `her` 로 쓴다) · 문장 둘을 잇는 and · or(`She sings and he dances.`. 5단계 요소다. 낱말 둘을 잇는 and · or 는 된다: `funny or kind`) · 7절 범위 밖 낱말. 14절 스스로 확인 명령이 앞의 둘과 낱말 범위를 본다.
+
+3인칭 단수 -s 를 쓰는 법: 주어가 사람 하나(A singer · My friend · He · She · Everyone · 인물 이름)일 때 동사에 -s 를 붙인다(sings · dances · writes · flies · studies · tries · has). 물음은 does 없이 주어를 묻는 Who 물음으로 만든다(`Who writes books?`). 답 예시는 그 물음의 주어 자리를 채운 문장이다(`A writer writes books.`).
+
+단원 단어 서른의 질문 꼴(제안 · 예. 한 카드 안에서 꼴을 돌려 쓴다). 서른 줄의 열쇠(마지막 물음표 문장을 5절 '같은 질문'대로 정규화한 글)가 모두 다르고, 줄마다 그 낱말보다 뒤에 배정되는 단원 단어를 쓰지 않았다. 스물다섯 줄은 물음표 문장 하나이고, 앞 문장이 붙은 줄은 pilot · parent · club · again · also 다섯이다. '꼴' 칸은 14절 스스로 확인의 셈 그대로다. '아이 쪽'은 아이 · 아이 친구 · 아이가 아는 사람에 대해 묻는 줄이고, '맞히기'는 낱말 맞히기 꼴이다(괄호는 5절 '아이 쪽으로 묻기'의 갈래: 사실 · What is he · 단서). 맞히기 줄은 한 카드에 항목 셋에 하나까지만 쓴다. 2026-11-10 고침 1 에서 서른 줄을 다시 써 카드 한 장에 담고 검증기(형태 · 문장 길이 · 노리는 단어 · 같은 질문)와 14절 스스로 확인으로 돌렸다. 낱말마다 따로 쓴 줄을 한 장에 모은 탓에 걸리는 '곳 낱말 수' · '앞 문장 수' · '낱말 맞히기 꼴 수' 말고는 걸림이 없었다. 줄은 낱말마다 꼴을 보이려고 따로 쓴 것이다. 카드에서는 그대로 모아 쓰지 않는다. 그 카드의 한 장면 안의 물건 · 사람으로 바꾸고(5절 '장면 안에서 뜻이 통함'), 낱말은 주제 변형과 장면에 맞게 바꾸되 꼴은 이 범위 안에 둔다(예: 도서관 장면이면 `A man flies a big plane. What is he?` 를 `A man in a book flies a plane. What is he?` 로, `Where are we now?` 는 버스를 타고 가는 장면에서만 쓴다).
+
+| 낱말 | 목표 | 질문 예 | 답 예시 예 | 쉬운 질문 예 | 꼴 |
+|---|---|---|---|---|---|
+| singer | talk-4-1-2 | `Can your friend sing?` | `Yes, my friend is a good singer.` | `Do you sing with your friends?` | 아이 쪽 |
+| dancer | talk-4-1-2 | `Can you sing or dance?` | `I am a good dancer.` | `Do you like fun music?` | 아이 쪽 |
+| driver | talk-4-1-1 | `Who takes you to school on the bus?` | `A bus driver takes me to school.` | `Do you ride a bus to school?` | 아이 쪽 |
+| artist | talk-4-1-1 | `Who draws pictures of cars and robots?` | `An artist draws pictures.` | `Do you draw robots?` | 맞히기(사실) |
+| scientist | talk-4-1-1 | `Who studies the stars in the sky?` | `A scientist studies the stars.` | `Do you like the stars?` | 맞히기(사실) |
+| writer | talk-4-1-1 | `Do you write books?` | `No, a writer writes books.` | `Do you read game books?` | 아이 쪽 |
+| pilot | talk-4-1-2 | `A man flies a big plane. What is he?` | `He is a pilot.` | `Do you like big planes?` | 맞히기(What is he) |
+| person | talk-4-1-2 | `Is your friend funny or kind?` | `My friend is a kind person.` | `Is your friend kind?` | 아이 쪽 |
+| kid | talk-4-1-2 | `Are you a baby?` | `No, I am a kid.` | `Are you tall?` | 아이 쪽 |
+| parent | talk-4-1-2 | `A mom and a dad! What are they?` | `They are parents.` | `Do babies need help?` | 맞히기(What is he) |
+| adult | talk-4-1-2 | `Is a pilot a kid?` | `No, a pilot is an adult.` | `Are you a kid?` | 맞히기(사실) |
+| team | talk-4-1-1 | `Who plays soccer with you?` | `My team plays soccer with me.` | `Do you play soccer?` | 아이 쪽 |
+| club | talk-4-1-2 | `Friends meet and read books at school. What is it?` | `It is a book club.` | `Do you meet friends at school?` | 맞히기(What is he) |
+| kitchen | talk-4-1-1 | `Do you cook in your bedroom?` | `No, my family cooks in the kitchen.` | `Do you help your family?` | 아이 쪽 |
+| skin | talk-4-1-1 | `Are you green?` | `No, a frog has green skin.` | `Do you like frogs?` | 아이 쪽 |
+| together | talk-4-1-3 | `Do you play games with your friend?` | `Yes, we play games together.` | `Do you like games?` | 아이 쪽 |
+| again | talk-4-1-3 | `A fun game ends. What do you say?` | `Let's play again!` | `Do you like fun games?` | 맞히기(단서) |
+| already | talk-4-1-3 | `Can you ride a bike?` | `Yes, I can already ride a bike.` | `Do you have a bike?` | 아이 쪽 |
+| alone | talk-4-1-3 | `Do you read books with friends?` | `No, I read books alone.` | `Do you like books?` | 아이 쪽 |
+| almost | talk-4-1-3 | `Where are we now?` | `We are almost at the zoo.` | `Do you like the zoo?` | 맞히기(사실) |
+| also | talk-4-1-3 | `A duck swims. Can a duck fly?` | `Yes, a duck also flies.` | `Do you like ducks?` | 맞히기(사실) |
+| just | talk-4-1-3 | `Are you tired now?` | `No, I am just hungry.` | `Are you okay?` | 아이 쪽 |
+| only | talk-4-1-3 | `Do you have two noses?` | `No, I have only one nose.` | `Do you have a nose?` | 아이 쪽 |
+| too | talk-4-1-3 | `Do you and your friend like music?` | `Yes, my friend likes music too.` | `Do you like music?` | 아이 쪽 |
+| well | talk-4-1-3 | `What can your friend do?` | `My friend swims well.` | `Can your friend swim?` | 아이 쪽 |
+| enough | talk-4-1-3 | `Do you need two cookies?` | `No, one cookie is enough.` | `Do you like cookies?` | 아이 쪽 |
+| away | talk-4-1-3 | `Where is the zoo?` | `The zoo is far away.` | `Do you go to the zoo?` | 맞히기(사실) |
+| return | talk-4-1-1 | `Who takes the books back to the library?` | `A student returns the books.` | `Do you read library books?` | 맞히기(사실) |
+| work | talk-4-1-1 | `Is the nurse at a zoo?` | `No, the nurse works at a hospital.` | `Do nurses help you?` | 맞히기(사실) |
+| try | talk-4-1-1 | `Who plays a new game with you?` | `My friend tries the new game.` | `Do you like new games?` | 아이 쪽 |
+
+덧붙이는 말 열둘(together … away)은 아이가 스스로 꺼내기 어렵다. 그 낱말은 선생님이 넓혀 들려주기와 꺼내기로 먼저 들려주고(5절 '짧은 준비와 꺼내기'), 카드는 `flow` 에 꺼낼 때를 적는다. 고침 1 에서 열두 줄을 다시 봤다. again 은 그대로 두고, together · too · well 은 물음을 한 문장으로 손봤으며, already · alone · almost · also · just · only · enough · away 여덟 줄은 다시 썼다. 기준은 하나다. 답 예시가 아이나 친구의 사실을 정해 버리지 않는다. 누구에게나 참인 답(only: `No, I have only one nose.`), 대부분의 아이에게 참인 답(already: `Yes, I can already ride a bike.` · alone: `No, I read books alone.`), 아이의 지금 느낌 가운데 하나(just: `No, I am just hungry.`), 장면 속 일(almost · also · away)로 썼다. 친구의 나이(`Is your friend ten?` ×) · 친구가 사는 곳(`Is your friend near your house?` ×) · 친구가 못하는 것(`No, my friend just likes songs.` ×) · 친구가 없다는 말(`How do you play with no friends?` ×)은 10 · 13절 규칙에 걸려 쓰지 않는다. 장면 속 일로 묻는 줄(almost · also · away)은 낱말 맞히기 꼴로 세므로, 한 카드에 덧붙이는 말을 여럿 노릴 때는 아이 쪽으로 물을 수 있는 낱말과 섞는다. parent 는 앞 문장이 답과 다른 낱말(dad)로 그 사람을 이미 말해 놓고 묻지 않게 `A mom and a dad! What are they?` 로, adult 는 `your teacher`(아이가 앱 속 선생님으로 들을 수 있다) 없이 `Is a pilot a kid?` 로 썼다. kitchen · work 는 묻는 말과 답의 꼴이 맞게 '아니요 + 바른 문장'으로 답하는 물음으로 바꿨다(`Where is the cook?` 에 `The cook makes soup in the kitchen.` 으로 답하면 꼴이 어긋난다).
+
+## 9. 그림 규칙
+
+회화 4단계 카드는 그림을 쓰지 않는다(level-specs `turnImages` 없음). `todayWords` · 필수 질문 · 더 이야기할 거리 어디에도 `imageKey` 를 두지 않는다. 두면 검증기 `talk-images` 가 막는다. 그림이 없으므로 장면은 1번 질문의 앞 문장과 질문 글만으로 서게 쓰고, 질문 글에서 this · that · here 로 가리키지 않는다(5절 '대화 첫 질문 쓰는 법' · '장면 안에서 뜻이 통함').
+
+## 10. 주제 묶음 · 변형 · 선생님 · 인물
+
+- `variant` 1 = 주제 묶음 1(동물 · 자연 · 음식 · 가족), `variant` 2 = 주제 묶음 2(놀이 · 운동 · 게임 · 우주 · 탈것). 묶음 id 와 변형 번호가 같다(C54 (3)).
+- 단원 주제 '친구가 하는 일'은 그대로 두고 장면 · 예시만 묶음에 맞춘다(정본 6.3). 카드마다 장면은 한 곳이다(5절 '한 장면', C219). (제안) 변형 1 의 장면은 음식 · 동물 · 자연 · 가족 쪽의 곳에서 고른다(친구와 간 공원 · 동물원 · 농장 · 텃밭 · 강가 · 호숫가 · 바닷가 · 숲 · 시장 · 식당 · 부엌). 변형 2 의 장면은 놀이 · 운동 · 게임 · 우주 · 탈것 쪽의 곳에서 고른다(운동장의 축구 · 놀이터 · 교실의 놀이 · 도서관의 별 책과 탈것 책 · 버스 안 · 기차 안 · 자전거 타는 길 · 장난감 가게 · 별이 보이는 창가). 곳 이름은 7절 범위의 낱말로 쓴다(library · park · zoo · farm · garden · playground · store · market · kitchen 은 그 낱말이 열린 카드부터). 묶음은 제목만이 아니라 글에 드러나게 한다.
+- 같은 단원 4단계 다른 영역 장면과 겹치지 않게 한다: 읽기 '형의 아침', 말하기 '선생님의 하루', 쓰기 '나를 소개해요'다. 회화는 형 · 오빠의 아침 차례와 선생님의 하루 일과를 장면으로 쓰지 않는다.
+- 같은 (kind, lessonNo) 의 두 변형은 `newWords` 가 같고 분량(필수 질문 · 더 이야기할 거리 수, 인사 턴 수)이 같다(검증기 `topic-variants`).
+- 한 단원 카드의 제목과 장면이 서로 겹치지 않게 한다. 앞에서 쓴 제목 · 장면 · 대화 첫 질문 목록을 적어 가며 만든다. 같은 변형 안에서 장면(예상 흐름 둘째 줄)이 겹치지 않는다. 같은 곳을 두 번 쓰면 때와 하는 일이 달라야 하고(도서관에서 책 고르기 · 도서관의 이야기 모임), (제안) 같은 곳은 변형마다 두 장까지다(3단계 브리프와 같은 규칙이다). 변형마다 카드 수(정규 + 보강, 4절)가 위 곳의 수보다 많으므로 곳이 모자라면 이 길로 한 번 더 쓴다.
+
+### 친구와 가족을 묻는 범위(제안)
+
+- 아이 친구는 '어떤 사람인지 · 무엇을 하는지 · 무엇을 좋아하는지'만 묻는다. 친구의 이름 · 사는 곳 · 학교 · 반 · 생김새 평가를 묻지 않는다(`What is his name?` ×, `Where is your friend's house?` ×).
+- 가족의 직업을 묻지 않는다(`What is your dad?` ×, `Where does your mom work?` ×). 아이마다 집안 사정이 다르고 6.2 개인 정보 규칙에 닿는다. 직업 낱말(singer … pilot)은 아이와 아이 친구가 하는 일 · 할 수 있는 일을 묻는 물음(`Can your friend sing?` · `Can you fly a plane?`)을 앞세우고, 장면 속 사람(`A man flies a big plane.`) · Who 주어 물음 · 인물 표의 이름은 낱말 맞히기 꼴의 상한 안에서 쓴다.
+- 가족은 '함께 하는 일'까지만 받는다. 특정 가족(엄마 · 아빠)을 정해 묻지 않고, 답 예시에 `My dad` · `My mom` 을 두지 않는다. parent 는 장면 속 사람으로 묻는다(`A mom and a dad! What are they?`). 앞 문장이 답과 다른 낱말로 그 사람을 이미 말해 놓고 묻지 않는다(`A dad helps a small baby. Who is he?` → `He is a parent.` ×).
+- 아이의 나이를 묻는 질문은 쉬운 질문 한 줄까지만 쓴다(`Are you ten?`). 친구의 나이를 캐묻지 않는다. 친구의 나이 · 사는 곳 · 못하는 것 · 친구가 없다는 말을 질문과 답 예시에 두지 않는다(`Is your friend ten?` × · `Is your friend near your house?` × · `No, my friend just likes songs.` × · `How do you play with no friends?` ×).
+- `your teacher` 로 묻지 않는다(`Is your teacher a kid?` ×). 말하는 이가 선생님이라 아이가 앱 속 선생님 이야기로 들을 수 있고, 선생님은 사람인지 · 나이를 말하지 않는다(아래 '선생님').
+
+### 선생님(C117 · C122 · C130)
+
+- 말하는 이는 아이가 고른 회화 선생님(앱 속 AI 선생님)이다. 어느 선생님이 고르든 같은 카드를 쓴다.
+- **선생님 이름을 쓰지 않는다.** 'Tori' · '토리'와 명단 이름(지금 Mina · 미나 · Leo · 리오)을 카드의 모든 글 칸(영어 · 한국어 · 제목 · 주제 · 예상 흐름 · 대사 · 끝인사)에 쓰지 않는다(검증기 `teacher-name`). 토리는 회화 글에 등장인물로도 쓰지 않는다.
+- 자리 표시자 `{TEACHER}` 를 쓰지 않는다. 틀 자리는 `{NAME}` 하나뿐이다(검증기 `talk-placeholder`). 예상 흐름의 선생님은 'The teacher' 다.
+- (제안) 뒤에 명단에 들어올 이름도 미리 피한다: Ruby · Sora · Hana · Jun · Nabi · Luna · Kiki · Lulu · Pang · Pipi, 루비 · 소라 · 하나 · 나비 · 루나 · 키키 · 루루 · 팡팡 · 삐삐. 한국어에서 흔한 말과 같은 글자는 다른 말로 쓴다('하나' → '한 개' · '한 번', '소라' → '조개'). '준'은 영어 `Jun` 만 피하고 한국어 칸에서는 보지 않는다.
+- 선생님은 사람의 삶을 지어내지 않는다(6.3 · 05:62). 선생님에게 친구 · 가족 · 직업 · 하루 일과가 있는 것처럼 쓰지 않는다(`My friend is a pilot.` ×, `I work at a school.` ×). 선생님 자기 이야기는 좋아하는 것만(`I like fun game books.`), 한 카드에 한 번까지다(제안). 선생님이 사람 · 동물 · 남자 · 여자라고 말하지 않는다.
+- 아이에게 묻지 않는 것: 사는 곳 · 집 주소 · 학교 이름 · 반 · 전화번호 · 이메일 · 성 · 전체 이름 · 비밀번호 · 사진 · 만나자는 말 · 생김새 평가(6.2 · 13절).
+
+### `{NAME}`
+
+- `{NAME}` 은 회화 카드 글에 쓸 수 있는 유일한 틀 자리다(6.1). 선생님 첫 말 · 끝인사에 쓰고, (제안) 그 밖에서 부르는 말로는 한 카드에 세 번까지 쓴다.
+- 한국어 칸에서 `{NAME}` 바로 뒤에 조사를 붙이지 않는다(받침을 모른다): `안녕, {NAME}!` ○ · `{NAME}는` × · `{NAME}야` ×.
+
+### 인물(C124)
+
+- 4단계 단원 1 부터는 이름 뒤 동사에 -s 를 붙일 수 있어, 인물이 무엇을 하는지 장면 문장으로 쓸 수 있다(`Ben plays soccer with ten friends.`). 인물은 선생님 질문 앞 장면 문장에만 두고, 아이 차례 영어(힌트 · 답 예시 · 목표 표현 · 정리 대사 · 예문)에는 넣지 않는다(제안: 음성 인식이 이름을 다른 글자로 적어 일치율이 깎인다).
+- 이름 표: Momo(아이 · 모모) · Ben(남자아이 · 벤) · Meg(여자아이 · 메그) · Dan(남자아이 · 댄) · Tess(여자아이 · 테스) · Max(강아지 · 맥스) · Ted(곰 · 테드) · Gus(오리 · 거스). 표 밖의 이름을 새로 만들지 않는다. 이름을 부르는 말로 문장 앞뒤에 붙이지 않는다.
+- 셈(단원 파일 하나, 카드 N 장): 이름 표의 이름이 영어 칸 어디든 나오는 카드를 n, 그 가운데 Momo 가 나오는 카드를 m 이라 할 때 n ≤ ⌊N/4⌋ · m ≤ max(⌊N/8⌋, ⌊n/2⌋) 이다. 세 장 호출(N = 3)이면 이름을 쓰지 않는다.
+
+## 11. 수업 종류별 내용
+
+| kind | 새 단어 | 내용 |
+|---|---|---|
+| `assigned`(배정 1~8) | 6절 표의 낱말 | 장면 한 곳. 그 수업의 새 단어가 모두 어울리는 곳으로 고른다. 한 곳에 넣기 어려운 새 단어는 장면을 옮기지 않고 그 자리에서 보이는 것 · 하는 일로 들인다(배정 4 의 club · kitchen · skin · together 는 요리 동아리가 모인 학교 부엌 한 곳, skin 은 그 부엌의 사과 껍질 `An apple has red skin.`). `todayWords` = 새 단어. 새 단어마다 처음 묻는 필수 질문 하나이고, 번호는 이야기 차례다. (제안) 배정 2~8 은 앞 배정 낱말을 다시 묻는 필수 질문을 하나~둘 더하고, 배정 1 은 새 단어 넷만 둔다. 배정 8 은 새 단어가 둘이라 다시 묻는 필수 질문을 둘~셋 더한다(return · 사람 명사). 카드마다 talk-4-1-1 필수 질문이 하나 이상이다(5절). 더 이야기할 거리는 그 수업까지 열린 낱말 가운데 그 장면에 어울리는 것을 다시 묻는다. 정리 대사 · 목표 표현에 새 단어를 고루 둔다. 뒤 배정 수업의 단원 단어는 어디에도 쓰지 않는다 |
+| `reinforce`(다지기 9~13) | 없음 | 장면 한 곳. `todayWords` `[]` · `prep` 없음. 다시 묻는 필수 질문 k 개 이상(k + 2 개까지) · 더 이야기할 거리. 낱말을 고루 섞으려고 곳을 섞지 않는다(C219). 장면에 어울리는 낱말끼리 묶고, 그 장면에 어울리지 않는 낱말은 다른 다지기 카드의 장면으로 옮긴다. 다지기 다섯을 합쳐 단원 단어가 모두 노려지고 글에 다시 나온다(경고 `relation-not-reused`). (제안) 장면과 낱말 묶음의 예: 다지기 9 는 배정 1 · 2 카드와 다른 한 곳(배정 1 · 2 의 사람 명사 가운데 그 장면에서 아이와 친구 이야기로 물을 수 있는 것, 0절 판단 6), 10 은 팀이 뛰는 운동장(kid · parent · adult · team · club · together), 11 은 친구와 노는 방이나 놀이터(again · already · alone · almost · also · just · only · too), 12 는 부엌(kitchen · skin · well · enough · away · return · work · try), 13 은 앞의 네 장면과 다른 한 곳에서 자리 수가 모자란 낱말을 채운다. 사람 명사는 장면을 타고, 덧붙이는 말과 동사 셋은 어느 장면에나 붙는다. 그래서 장면은 사람 명사에 맞춰 고르고 덧붙이는 말을 카드마다 나눠 싣는다. 단원 단어마다 다시 묻는 자리가 서로 다른 수업 `talk.known_days` 개 이상이다(단원 장면 표에서 먼저 센다) |
+| `remedial`(보강 1~4) | 없음 | 장면 한 곳. `todayWords` `[]` · `prep` 없음. 단원의 약한 단어를 다시 쓰게 하는 대화다. 정규 카드와 다른 곳을 장면으로 고른다. (제안) 보강 1 과 3 은 명사 열다섯이 어울리는 장면 둘, 보강 2 와 4 는 덧붙이는 말 열둘과 동사 셋을 많이 쓰게 되는 장면 둘로 나눈다. 이렇게 하면 단원 단어마다 서로 다른 보강 카드 둘에 나온다. 변형마다 보강 넷을 합쳐 단원 단어마다 `seed.remedial_coverage.4-6` 번 이상 카드 글에 나온다(`remedial-coverage`, 나온 횟수의 합) |
+
+첫 프리뷰 세 장(1절 (가))에 더하는 것:
+
+- 배정 1 · 변형 1: 새 단어가 모두 직업 명사다(singer · dancer · driver · artist). 직업을 가진 사람 넷을 한 곳에 세워 `Who sings?` · `Who dances?` · `Who draws?` 로 잇달아 묻지 않는다. 그렇게 쓰면 카드가 직업 맞히기가 된다. 아이와 친구가 그곳에서 하는 일 · 할 수 있는 일로 묻고 그 답에서 낱말이 나오게 한다(예: 친구와 간 공원. 버스를 타고 감 `Who takes you to the park on the bus?` → 친구가 노래를 잘하는지 → 아이가 춤출 수 있는지 → 그림을 그리는지). 1번은 장면을 열고 아이 친구가 잘하는 것을 묻는다(예: `Let's go to the park with your friend! Can your friend sing or dance?` → 답 예시 `My friend is a good singer.`). 낱말 맞히기 꼴은 하나까지만 쓴다. 배정 2 이후 낱말을 어디에도 쓰지 않는다(person · people · kid · too · well · together 포함).
+- 배정 2 · 변형 1: 새 단어는 scientist · writer · pilot · person 이다. 배정 1 의 낱말을 다시 묻는 필수 질문을 하나 더한다. 12절 예시 카드는 같은 수업의 변형 2(도서관 장면)이니 글과 장면을 옮기지 않고, 변형 1 묶음(동물 · 자연 · 음식 · 가족)의 다른 한 곳으로 새로 쓴다(예: 친구와 간 동물원이나 농장. 친구가 어떤 사람인지 → 아이가 동물을 연구하는지 · 동물 책을 쓰는지 → 하늘의 비행기를 몰 수 있는지 → 집에 가는 버스). scientist · writer · pilot 을 `Who studies ~?` · `Who writes ~?` · `Who flies ~?` 로 잇달아 묻지 않는다. Who 주어 물음은 둘까지, '아니요 + 바른 문장' 꼴도 둘까지 쓰고, 낱말 맞히기 꼴은 항목 셋에 하나까지다.
+- 다지기 9 · 변형 1: 프리뷰의 아이는 배정 3~8 을 하지 않았으므로, 배정 1 · 2 의 여덟 낱말을 다시 묻는다. 장면은 배정 1 · 2 카드와 다른 한 곳으로 고른다(예: 친구와 간 놀이터나 시장). 여덟 낱말을 다 넣으려고 그곳에 사람 여덟을 세우지 않는다. 그 장면에서 아이와 친구 이야기로 물을 수 있는 낱말만 노리고, 어울리지 않는 낱말은 억지로 넣지 않는다. 그 때문에 `relation-not-reused` 경고가 남으면 고치지 말고 뺀 낱말과 까닭을 보고한다(단원 전체를 만들 때 다른 다지기 카드가 받는다). 덧붙이는 말은 이 카드에서 노리지 않는다(필수 질문 · 더 이야기할 거리 모두). 다지기 카드는 꺼낼 새 단어가 없고 대화 중 준비의 낱말은 아직 꺼내지 않은 새 단어에서만 고르므로, 덧붙이는 말을 노리면 배정 3~8 을 하지 않은 아이에게 준비도 꺼내기도 없이 처음 나온다. 더 이야기할 거리에만 두는 길도 없다. 덧붙이는 말 항목의 목표는 talk-4-1-3 이고 카드 목표마다 필수 질문이 있어야 하기 때문이다(`talk-goals`). 그래서 카드 goals 는 [talk-4-1-1, talk-4-1-2] 이고, 덧붙이는 말은 `flow` 에 '아이가 친구와 하는 일을 말하면 together 를 넓혀 들려준다'처럼 적어 선생님이 들려주게만 한다.
+- 세 장 호출의 검증에서는 단원 단위 경고 `talk-unit-incomplete`(단원 칸이 다 차지 않음)가 나오는 것이 맞다. 그 밖의 오류 · 경고는 고치거나 까닭을 보고한다.
+
+보강 덮기 셈(제안): 그 변형 보강 카드들의 영어 글(질문 · 쉬운 질문 · 힌트 · 답 예시 · 대사)에 그 단어가 나온 횟수의 합이다. 검증기 기준에 더해 '서로 다른 보강 카드 둘 이상'인 낱말 수를 보고한다.
+
+## 12. 출력 규격(Zod `TalkLessonSchema` · `TalkCardSchema` 와 1:1)
+
+모르는 키는 거부된다. 필드 이름 · 꼴을 그대로 쓴다. 이 절은 `src/core/seed/schema/talk.ts`(TalkCardSchema · TalkTodayWordSchema · TalkRequiredSchema · TalkMoreSchema)와 `src/core/seed/schema/lesson.ts`(TalkLessonSchema)의 꼴이다(2026-11-10 대조). 옛 꼴 카드(turns · moreTalk · questions · firstQuestion 이 있는 카드)는 모르는 키라 거부된다.
+
+파일 겉: `{ "area": "talk", "level": 4, "unit": <단원>, "lessons": [ … ] }`. 회화 수업에는 `preview` 칸이 없다.
+
+| 필드 | 꼴 | 설명 |
+|---|---|---|
+| `kind` · `lessonNo` · `variant` | 4절 번호 규칙 | 수업 종류(11절) · 번호 · 주제 변형 |
+| `revision` · `correction` | 0 이상 정수 | 호출 값 |
+| `generation` | `{ "method": "generated", "model", "effort", "briefHash", "agentHash", "createdOn", "retries"? }` | 호출 값과 자기 모델 ID. `retries` 는 검증 뒤 고친 카드에만 그 회차 |
+| `title` | 한국어 | 목록 제목 |
+| `newWords` · `unitWords` | 낱말 id 목록 | 5절 표 |
+| `card.topic` | 한국어 | AI 에게 가는 카드 주제 |
+| `card.targetExpressions` | 영어 글 1개 이상 | 목표 표현 |
+| `card.goals` | 목표 ID 목록(1개 이상, 겹침 없음) | 5절 '목표 잇기' |
+| `card.greetingTurns` | 1 | 인사 턴 수 |
+| `card.greeting` | `{ "firstLine": { "en", "ko" } }` | 선생님 첫 말. `questions` 를 두면 `talk-shape` 오류다 |
+| `card.todayWords` | `[{ "word", "meaningKo", "example", "modelLine" }]` | 배정은 새 단어, 다지기 · 보강은 `[]`. `imageKey` 를 두지 않는다 |
+| `card.required` | 필수 질문 1개 이상 | 필수 질문 = `{ "no", "en", "ko", "targets", "goals", "ask", "hintKo", "hints": [영어 틀, 영어 문장], "answerExample", "easyQuestion": {"en", "ko"} }` |
+| `card.more` | 더 이야기할 거리 | 필수 질문과 같은 꼴. `ask` 는 모두 `re_ask` |
+| `card.flow` | 영어 글 1개 이상 | 예상 흐름 |
+| `card.todayTopicsKo` | 한국어 3~5개 | 오늘 이야기 목록 |
+| `card.closingLines` · `card.safeLines` | `[{ "en", "ko" }]` 1개 이상 | 정리 대사 · 안전한 대사 |
+| `card.endCondition` | 한국어 | 끝맺음 조건 |
+| `card.farewell` · `card.safetyFarewell` | `{ "en", "ko" }` | 끝인사 · '새 이야기로 이어 가자' 끝인사 |
+| `card.praiseLines` | 영어 글 1개 이상 | 짧은 칭찬 |
+
+두지 않는 칸: `card.prep` · `card.sceneOpener` · `card.missions` · `card.roleSwap` · `card.purpose` · 항목의 `imageKey` · `firstForm` · `choices` · `usablePhrases` · `purpose` · `demands`, 인사의 `questions`, 옛 칸 `turns` · `moreTalk` · `questions` · `firstQuestion` · `exampleKo`.
+
+예시: 단원 1 배정 2 · 변형 2(꼴을 보이는 예이니 그대로 옮기지 않는다. 이 칸을 만들 때도 새로 쓴다). 장면은 '친구와 간 도서관' 한 곳이고, 필수 질문은 도서관에 감 → 책 → 별 책 → 비행기 책 → 버스로 집에 감 차례다. 열 항목 가운데 여덟이 아이와 아이 친구에게 묻는 꼴이다: 둘 가운데 고르기 셋(필수 1 · 더 2 · 더 4), 예 · 아니요 물음 넷(필수 2 · 4, 더 1 · 3), 아이 삶의 사람을 묻는 Who 물음 하나(필수 5). 낱말 맞히기 꼴은 둘이다(필수 3 의 Who 주어 물음 · 더 5 의 `What is he?`). 한 꼴이 항목의 절반을 넘지 않는다. '아니요 + 바른 문장' 꼴은 둘이다(필수 2 · 4). 앞 문장이 붙은 항목은 1번을 빼고 하나다(더 5 의 책 속 사람). 그림이 없는 화면이라 `this book` · `here` 로 가리키지 않고 `a book` 처럼 낱말로 썼다. 떠나는 대목(필수 5)은 장면을 닫는 알림 문장 없이 묻고, 더 이야기할 거리는 장면을 떠난 뒤에 들어도 말이 되는 아이와 친구의 이야기다. 이 카드 하나만 든 파일을 p13d 시드 사본(저장소 밖)에 두고 `pnpm -s seed:validate --areas talk` 로 확인했다(2026-11-10 고침 1): 칸 오류 0 · 칸 경고 0(단원 단위 경고 `talk-unit-incomplete` 하나는 카드 한 장이라 나오는 것이 맞다) · 14절 스스로 확인 명령 '걸림 없음'(같은 질문 열쇠는 카드에서 가장 많은 것이 1번, 낱말 맞히기 꼴 2/10). 고침 전의 예시는 열한 항목 가운데 일곱이 Who 주어 물음이었고 새 셈으로 낱말 맞히기 꼴 8/11 이라 이 판에서 바꿨다.
+
+```json
+{
+  "kind": "assigned",
+  "lessonNo": 2,
+  "variant": 2,
+  "revision": 1,
+  "correction": 0,
+  "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "0000000000000000000000000000000000000000000000000000000000000000", "agentHash": "0000000000000000000000000000000000000000000000000000000000000000", "createdOn": "2026-11-10"},
+  "title": "친구와 간 도서관",
+  "newWords": ["scientist", "writer", "pilot", "person"],
+  "unitWords": ["scientist", "writer", "pilot", "person", "driver", "singer", "dancer", "artist"],
+  "card": {
+    "topic": "친구가 하는 일 · 친구와 간 도서관에서 보는 책",
+    "targetExpressions": ["My friend is a kind person.", "No, a writer writes books.", "A scientist studies the stars.", "No, a pilot flies a big plane."],
+    "goals": ["talk-4-1-1", "talk-4-1-2"],
+    "greetingTurns": 1,
+    "greeting": {"firstLine": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}},
+    "todayWords": [
+      {"word": "scientist", "meaningKo": "과학자", "example": "A scientist studies the stars.", "modelLine": "A scientist studies the stars."},
+      {"word": "writer", "meaningKo": "작가", "example": "A writer writes fun books.", "modelLine": "A writer writes fun books."},
+      {"word": "pilot", "meaningKo": "조종사", "example": "A pilot flies a big plane.", "modelLine": "A pilot flies a big plane."},
+      {"word": "person", "meaningKo": "사람", "example": "She is a kind person.", "modelLine": "She is a kind person."}
+    ],
+    "required": [
+      {"no": 1, "en": "Let's go to the library with your friend! Is your friend funny or kind?", "ko": "친구랑 도서관에 가 보자! 네 친구는 웃겨, 아니면 친절해?", "targets": ["person"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "내 친구는 친절한 사람이야.", "hints": ["My friend is a kind ___.", "My friend is a kind person."], "answerExample": "My friend is a kind person.", "easyQuestion": {"en": "Is your friend kind?", "ko": "네 친구는 친절해?"}},
+      {"no": 2, "en": "Do you write books?", "ko": "너는 책을 써?", "targets": ["writer"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "아니, 작가가 책을 써.", "hints": ["No, a ___ writes books.", "No, a writer writes books."], "answerExample": "No, a writer writes books.", "easyQuestion": {"en": "Do you read fun books?", "ko": "재미있는 책 읽어?"}},
+      {"no": 3, "en": "Who studies the stars?", "ko": "별은 누가 연구해?", "targets": ["scientist"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "과학자가 별을 연구해.", "hints": ["A ___ studies the stars.", "A scientist studies the stars."], "answerExample": "A scientist studies the stars.", "easyQuestion": {"en": "Do you like the stars?", "ko": "별 좋아해?"}},
+      {"no": 4, "en": "Can you fly a big plane?", "ko": "너는 큰 비행기를 몰 수 있어?", "targets": ["pilot"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "아니, 조종사가 큰 비행기를 몰아.", "hints": ["No, a ___ flies a big plane.", "No, a pilot flies a big plane."], "answerExample": "No, a pilot flies a big plane.", "easyQuestion": {"en": "Do you like big planes?", "ko": "큰 비행기 좋아해?"}},
+      {"no": 5, "en": "Who takes you home on the bus?", "ko": "버스로 집에 데려다주는 사람은 누구야?", "targets": ["driver"], "goals": ["talk-4-1-1"], "ask": "re_ask", "hintKo": "버스 운전사가 나를 집에 데려다줘.", "hints": ["A bus ___ takes me home.", "A bus driver takes me home."], "answerExample": "A bus driver takes me home.", "easyQuestion": {"en": "Do you go home on a bus?", "ko": "버스 타고 집에 가?"}}
+    ],
+    "more": [
+      {"no": 1, "en": "Can your friend sing?", "ko": "네 친구는 노래할 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 내 친구는 노래를 잘하는 사람이야.", "hints": ["Yes, my friend is a good ___.", "Yes, my friend is a good singer."], "answerExample": "Yes, my friend is a good singer.", "easyQuestion": {"en": "Do you like songs?", "ko": "노래 좋아해?"}},
+      {"no": 2, "en": "Can you dance or swim?", "ko": "너는 춤출 수 있어, 아니면 헤엄칠 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "나는 춤을 잘 추는 사람이야.", "hints": ["I am a good ___.", "I am a good dancer."], "answerExample": "I am a good dancer.", "easyQuestion": {"en": "Do you like fun music?", "ko": "신나는 음악 좋아해?"}},
+      {"no": 3, "en": "Do you draw pictures?", "ko": "너는 그림을 그려?", "targets": ["artist"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 나는 그림을 잘 그리는 사람이야.", "hints": ["Yes, I am a good ___.", "Yes, I am a good artist."], "answerExample": "Yes, I am a good artist.", "easyQuestion": {"en": "Do you have crayons?", "ko": "크레용 있어?"}},
+      {"no": 4, "en": "Is your friend smart or funny?", "ko": "네 친구는 똑똑해, 아니면 웃겨?", "targets": ["person"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 똑똑한 사람이야.", "hints": ["My friend is a smart ___.", "My friend is a smart person."], "answerExample": "My friend is a smart person.", "easyQuestion": {"en": "Is your friend smart?", "ko": "네 친구는 똑똑해?"}},
+      {"no": 5, "en": "A man in a book flies a plane. What is he?", "ko": "책 속의 남자가 비행기를 몰아. 그 사람은 뭐 하는 사람이야?", "targets": ["pilot"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "그는 조종사야.", "hints": ["He is a ___.", "He is a pilot."], "answerExample": "He is a pilot.", "easyQuestion": {"en": "Do you read plane books?", "ko": "비행기 책 읽어?"}}
+    ],
+    "flow": ["After the first question, the teacher follows the child's answer.", "The scene is the library with the child's friend: many books, a star book, a plane book, the bus home.", "The teacher brings in writer, scientist and pilot when the talk reaches the books.", "The teacher says a new word once in a clear sentence before the child uses it.", "The scene is something to talk about, not a list of questions to finish."],
+    "todayTopicsKo": ["친구와 도서관에", "책과 별 이야기", "비행기 책과 집에 가는 버스"],
+    "closingLines": [
+      {"en": "My friend is a kind person.", "ko": "내 친구는 친절한 사람이야."},
+      {"en": "A writer writes books.", "ko": "작가가 책을 써."},
+      {"en": "A scientist studies the stars.", "ko": "과학자가 별을 연구해."},
+      {"en": "A pilot flies a big plane.", "ko": "조종사가 큰 비행기를 몰아."}
+    ],
+    "safeLines": [
+      {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+      {"en": "Wow, cool!", "ko": "와, 멋지다!"}
+    ],
+    "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+    "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+    "safetyFarewell": {"en": "Bye for now, {NAME}!", "ko": "오늘은 여기까지! 안녕, {NAME}!"},
+    "praiseLines": ["Wow!", "Good!", "Great!", "Nice!"]
+  }
+}
+```
+
+## 13. 금지 목록
+
+- `lists/forbidden.json` 의 낱말과 정규식(예: kill · gun · bomb · weapon · beer · wine · cigarette · drugs · stupid · idiot · dumb · shut up · hell · damn). 금지어 · 선생님 이름 검사는 예상 흐름에도 걸린다.
+- 개인 정보를 묻는 말(영어 · 한국어): 사는 곳 · 집 주소 · 전화번호 · 학교 이름 · 반 · 성 · 전체 이름 · 이메일 · 비밀번호 · 사진 · 만나자는 말, 그리고 (제안) 친구의 이름 · 사는 곳 · 생김새 평가, 가족이 누구인지 · 가족의 이름 · 직업 · 집안 사정.
+- 연락처 꼴: 전화번호 · 이메일 · 집 주소 · 웹 주소.
+- 메타 문장(`meta-sentences.json`): the child · the user · the student · the learner · I should · I will now · as an AI · system prompt · the card says 등을 선생님이 말하는 칸에 쓰지 않는다(예상 흐름은 AI 지시 글이라 'the child' 를 써도 된다).
+- 선생님 이름 · `{TEACHER}` · 토리(10절), 선생님이 사람 · 동물 · 남자 · 여자라고 말하는 글, 선생님의 사람 삶을 지어낸 글(친구 · 가족 · 직업 · 하루 일과).
+- (제안) 사람을 낮추어 견주는 글(직업의 좋고 나쁨 · 누가 더 잘함 · 못함), 친구를 놀리는 글, 무섭거나 다치는 장면, 상표 · 실제 인물(가수 · 선수 이름) · 종교 · 정치.
+- 설계 숫자를 글에 쓰지 않는다(예: '오늘 네 개 배워요').
+- 실제 아이 이름 · 실제 사람 이름.
+
+## 14. 스스로 확인과 검증 명령
+
+(나) 호출이면 파일을 다 쓴 뒤 먼저 고정 카드를 붙이고 해시를 대조한다(뿌리 · 단원 · 고정 카드 파일 · 고정 카드 해시를 호출 값으로 넣는다). 해시가 다르면 멈추고 보고한다. (가) 호출이면 이 명령을 돌리지 않는다.
+
+```sh
+python3 - <뿌리> <단원> <고정 카드 파일> <해시들(쉼표로 이음)> <<'PY'
+import json, hashlib, sys
+root, unit, fixed_path, want = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4].split(",")
+def norm(l): return hashlib.sha256(json.dumps(l, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+fixed = json.load(open(fixed_path))["lessons"]
+got = sorted(norm(l) for l in fixed)
+assert got == sorted(want), ("고정 카드 해시가 호출 값과 다르다", got)
+keys = {(l["kind"], l["lessonNo"], l["variant"]) for l in fixed}
+p = f"{root}/lessons/talk/4/{unit}.json"
+d = json.load(open(p))
+rest = [l for l in d["lessons"] if (l["kind"], l["lessonNo"], l["variant"]) not in keys]
+rank = {"assigned": 0, "reinforce": 0, "remedial": 1}
+d["lessons"] = sorted(fixed + rest, key=lambda l: (l["variant"], rank[l["kind"]], l["lessonNo"]))
+open(p, "w").write(json.dumps(d, ensure_ascii=False, indent=1))
+print("붙임: 카드", len(d["lessons"]), "· 고정", len(fixed), "· 해시 같음")
+PY
+```
+
+그다음 하나씩 확인한다.
+
+1. 카드 수가 호출의 '만들 카드'와 같다(전부면 변형 수 × (정규 + 보강), 고정 카드 포함). (kind, lessonNo, variant) 겹침 없음.
+2. 카드마다 선생님 첫 말(`firstLine` 의 `en` · `ko`) · 인사 턴 수 1, 예상 흐름 첫 줄과 마지막 줄이 5절의 고정 줄, 필수 질문 수가 4절 하한 · 상한 안이고 k + 2 개까지, 더 이야기할 거리 `talk.more_talk_turns` 개 이상(모두 re_ask), 번호가 1부터 차례대로. 필수 질문 · 더 이야기할 거리 · 쉬운 질문마다 한국어 뜻 `ko`. `prep` · `sceneOpener` · `imageKey` · `firstForm` · `choices` · `missions` · `roleSwap` · `purpose` · 옛 칸 없음.
+3. 배정 카드: `newWords` · `todayWords` 가 배정표와 같고, 새 단어마다 처음 묻는 필수 질문이 하나씩이며 그 `hints[1]` 에 그 새 단어. `example` = `modelLine` 이고 그 낱말이 원형으로 들어 있다. 다지기 · 보강 카드: 처음 묻는 질문 없음, 다시 묻는 필수 질문 k 개 이상, `todayWords` `[]`.
+4. 한 장면(C219): 카드의 필수 질문 · 더 이야기할 거리가 모두 한 곳에서 벌어지고(질문 글의 곳 낱말은 둘까지. 답 예시와 노리는 낱말의 곳 낱말은 스크립트가 따로 적어 주는 줄을 눈으로 본다), 필수 질문 번호가 이야기 차례이며, 질문마다 새 장면 문장을 붙이지 않았고(앞 문장이 붙은 항목은 1번을 빼고 둘까지), 앞 질문의 답에 기대는 질문이 없다. 더 이야기할 거리가 장면을 떠나는 대목 뒤에 들어도 말이 된다. `flow` 둘째 줄이 장면을 적고 차례대로 묻는다는 말이 없으며, 같은 변형 안에서 장면이 겹치지 않는다. 이야기 차례와 '한 곳'은 스크립트가 다 보지 못해 눈으로 본다.
+5. 대화 첫 질문(필수 질문 1번)이 5절의 다섯 조건을 지킨다: 장면을 열고, 아이 이야기를 묻고, 아는 말로 답할 수 있고, 낱말 맞히기 꼴이 아니며, 단원 안에서 열쇠가 모두 다르고 바로 앞 카드와 첫 세 낱말 꼴이 다르다. (가) · (나) · (다)는 스크립트가 보지 못해 눈으로 본다((다)는 새 단어가 있는 배정 카드에만 해당한다).
+6. 질문 · 쉬운 질문에 그 항목이 노리는 단어가 없다. 선생님 질문(필수 · 더 · 쉬운 질문)의 마지막 물음표 문장이 한 카드에서 글자가 같은 것은 2번까지이고, (제안) 모두 다르다. 낱말 맞히기 꼴(5절의 네 갈래)이 항목 셋에 하나까지이고, 한 꼴(Who 주어 물음 · 예 · 아니요 물음 · 둘 가운데 고르기 · `What is he?` 꼴)이 항목의 절반을 넘지 않는다. '아니요 + 바른 문장' 꼴이 둘까지다(눈으로 본다). 스크립트의 셈과 따로, 카드 계획표의 '가장 흔한 답' 칸으로 답이 하나로 정해진 항목을 손으로 세어 보고한다. 쉬운 질문이 예 · 아니요 꼴이다. 질문 글에 this · that · here 가 없다. 아이나 친구의 상태 · 행동을 단정하는 앞 문장이 없고, 답 예시가 아이나 친구의 사실(나이 · 사는 곳 · 못하는 것 · 친구가 없음)을 정해 버리지 않는다(눈으로 본다).
+7. 목표: 5절 '목표 잇기' 표대로다. 한 항목에 목표 하나, 카드 goals = 항목 목표의 합이고 카드 목표마다 필수 질문이 있다. 카드마다 talk-4-1-1 필수 질문이 하나 이상이고, 그 답 예시에 '사람 + 동사-s'가 있다.
+8. 힌트: `hints` 두 단, 영어 틀에 `___` 하나, 영어 문장 = 답 예시, `hintKo` 는 반말 뜻. 답 예시의 `He` · `She` 는 질문의 장면 문장이 사람을 정해 준 항목에만 있다(눈으로 본다).
+9. 모든 영어 문장 8낱말 이하(예상 흐름 밖), 8절 꼴 밖의 형태 없음(does · don't · 진행형 · be 부정 · 과거 · 빈도부사 · want to · but · on + 요일 · 's 소유격 · 부정 명령문), 뒤 배정 수업 단원 단어 없음(too · well · work · try · again · best · people 을 따로 본다).
+10. 7절 어휘 범위(아래 스스로 확인 명령), 수는 영어 낱말.
+11. (전부일 때) 다지기 다섯에 단원 단어가 모두 다시 나오고, 단어마다 다시 묻는 자리가 서로 다른 수업 `talk.known_days` 개 이상. 보강 넷에 단원 단어마다 `seed.remedial_coverage.4-6` 번 이상(변형마다).
+12. 변형 1 · 2 의 같은 칸끼리 새 단어 · 분량이 같고, 제목이 서로 다르며, 읽기 · 말하기 4단계 단원 1 장면(형의 아침 · 선생님의 하루)을 쓰지 않았다.
+13. 선생님: 이름 · 토리 · `{TEACHER}` 없음(뒤 명단 포함), 선생님의 사람 삶(친구 · 가족 · 직업 · 하루 일과) 없음. 친구의 이름 · 나이 · 사는 곳과 가족의 직업을 묻지 않았고 `your teacher` 로 묻지 않았다. 한국어 칸에 '하나 · 소라 · 나비' 없음('준'은 영어 `Jun` 만 본다), `{NAME}` 뒤 조사 없음.
+14. 인물: n · m 상한 안, 부르는 말 없음, 아이 차례 영어에 이름 없음, 표 밖 이름 없음.
+15. 한국어 뜻이 반말이고 영어 뜻과 맞다. 13절 금지 목록에 걸리는 말이 없다.
+
+검증기가 이 카드에 거는 규칙(`check-talk.ts` · 공통 검사 · 단원 사이 검사, 2026-11-10 대조). 오류는 막고 경고는 고치거나 까닭을 보고한다.
+
+| 규칙 | 보는 것 | 브리프 |
+|---|---|---|
+| 규격(Zod) | 모르는 키, 옛 꼴 칸 | 12절 |
+| `talk-shape` · `talk-numbers` | 4단계부터 `greeting.firstLine`(인사 질문을 두면 오류), 항목 번호가 1부터 목록 차례 | 5절 |
+| `talk-goals` · `talk-goals-pending` | 목표 ID 꼴 `talk-4-1-<n>` · unit-specs 단원 목표 안(목표가 있을 때), 항목 목표가 카드 `goals` 안, 카드 목표마다 그 목표를 노리는 필수 질문. 단원 목표가 없으면 경고 | 5절 '목표 잇기' |
+| `talk-demands` | 목표 둘 이상을 가리키는 항목의 `demands`(이 판은 그런 항목을 두지 않는다) | 5절 |
+| `talk-required` | 필수 질문 수 ≤ 참고 턴 × `talk.required_max_ratio`, 다지기 · 보강의 다시 묻는 필수 질문 ≥ k | 5 · 11절 |
+| `talk-first-ask` | 배정: 새 단어마다 처음 묻는 필수 질문 하나(둘이면 오류) · 새 단어만 노림 · `hints[1]` 에 그 새 단어. 다지기 · 보강: 처음 묻는 질문 없음 | 5 · 11절 |
+| `talk-prep` | 4단계는 `prep` 을 두면 개수(`talk.prep_words.4-6`)와 오늘 쓸 말 안인지를 본다. 이 판은 두지 않는다. 다지기 · 보강에 두면 오류 | 5절 |
+| `talk-scene-opener` | 4단계 카드에 `sceneOpener` 를 두면 오류 | 5절 |
+| `talk-first-form` · `talk-choices` · `talk-missions` | `firstForm` · `choices` · `missions` · `roleSwap` 을 두면 오류 | 3 · 12절 |
+| `talk-targets` | 노리는 단어 1~2개 · 이 단원 단어 · 질문 · 쉬운 질문에 노리는 단어(활용형 포함) 없음 | 5절 |
+| `talk-support` | 쉬운 질문이 물음표로 끝나고 그 질문과 정규화한 글이 다름 | 5절 '받침 줄' |
+| `talk-hints` | `hints` 가 두 단(영어 틀 · 영어 문장), `usablePhrases` 없음 | 3 · 5절 |
+| `talk-same-question` | 마지막 물음표 문장이 같은 선생님 질문(필수 · 더 · 쉬운 질문) 2번까지 | 5절 |
+| `talk-more` | 더 이야기할 거리 `talk.more_talk_turns` 개 이상 · 모두 `re_ask` | 5절 |
+| `talk-ko` | 1~4단계 뜻: 선생님 첫 말 · 필수 질문 · 더 이야기할 거리 · 쉬운 질문 · 정리 대사 · 안전한 대사 · 끝인사 · 안전 상한 끝인사의 `ko` | 3 · 5절 |
+| `talk-today` | `todayWords` 낱말 = `newWords`, `todayTopicsKo` 3~5개 | 5절 |
+| `talk-images` · `talk-placeholder` · `teacher-name` | 그림 키를 두면 오류, 틀 자리는 `{NAME}` 하나, 선생님 이름 없음 | 9 · 10절 |
+| `vocab-allocation` · `unit-words` · `unit-words-unlisted` · `learning-elements` · `forbidden` · `layout` | 배정표와 새 단어(아이 차례 글에 원형, 들려줄 말 · 예문은 세지 않음), 단원 단어 목록, 8낱말 · 형태 범위, 금지어, 수업 번호 | 4 · 5 · 8 · 13절 |
+| `topic-variants` · `relation-early-use` · `relation-not-reused` · `remedial-coverage` | 두 변형의 새 단어 · 분량, 뒤 배정 수업 단어 먼저 씀(경고), 다지기에 다시 안 나옴(경고), 보강 덮기 | 5 · 10 · 11절 |
+| `talk-known-days` · `talk-unit-incomplete` | 단원 덮기(다지기 · 보강 카드의 필수 질문과 모든 카드의 더 이야기할 거리를 셈)는 단원을 다 채웠을 때만 오류, 덜 찼으면 변형마다 경고 하나 | 5 · 11절 |
+
+스스로 확인 명령. 검증기가 보지 않는 것(한 장면의 곳 낱말 수 · 앞 문장이 붙은 항목 수 · 낱말 맞히기 꼴 수 · 한 꼴이 항목의 절반을 넘는지 · 같은 물건으로 서로 다른 답을 기대하는 항목 · 가리킴말 this · that · here · 예상 흐름 둘째 줄의 장면과 마지막 줄 · 차례대로 묻는다는 말 · 같은 변형 안 장면 겹침 · 어휘 범위 · 목표 잇기 · 답 예시의 '사람 + 동사-s' · 힌트 꼴 · 쉬운 질문 꼴 · 선생님 삶 문장 · 부정 명령문 · 's 소유격 · best · better · 이름 · `{NAME}` 뒤 조사 · 인물 셈 · 예상 흐름 첫 줄 · 대화 첫 질문 돌려 쓰기 · 들려줄 말과 예문이 같은지)과, 검증기 `talk-same-question` 과 같은 같은 질문 열쇠 셈(상한은 `<뿌리>/settings.json` 의 `talk.same_question_max`)을 본다. 답 예시와 노리는 낱말의 곳 낱말은 걸지 않고 줄로 적어 주니 눈으로 본다. '낱말 맞히기 꼴과 질문 꼴의 셈' 덩이는 3단계 브리프의 스크립트와 같은 글이다. 한쪽을 고치면 다른 쪽도 같이 고친다. `<뿌리>` · `<단원>` · `<k>`(설정값 표의 `unit.new_words_per_lesson.4-6`)를 바꿔 돌린다. '스스로 확인 걸림 없음'이 나올 때까지 고친다(고침 회차는 검증 고침과 따로 세지 않는다).
+
+```sh
+python3 - <뿌리> <단원> <k> <<'PY'
+import json, re, sys
+
+root, unit, K = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+vocab = json.load(open(f"{root}/vocab.json"))["vocab"]
+spec = next(u for u in json.load(open(f"{root}/unit-specs.json"))["unitSpecs"]
+            if u["area"] == "talk" and u["level"] == 4 and u["unit"] == unit)
+lessons = json.load(open(f"{root}/lessons/talk/4/{unit}.json"))["lessons"]
+words = spec["words"]
+assigned_at = {w: i // K + 1 for i, w in enumerate(words)}
+LAST_ASSIGNED = max(assigned_at.values())
+PEOPLE = {"singer", "dancer", "driver", "artist", "scientist", "writer", "pilot", "person", "kid", "parent", "adult", "team", "club"}
+NOUNS = PEOPLE | {"kitchen", "skin"}
+ADVERBS = {"together", "again", "already", "alone", "almost", "also", "just", "only", "too", "well", "enough", "away"}
+VERBS = {"return", "work", "try"}
+G_DO, G_WHO, G_HOW = "talk-4-1-1", "talk-4-1-2", "talk-4-1-3"
+assert NOUNS | ADVERBS | VERBS == set(words), "6절 갈래와 unit-specs 단원 단어가 다르다(브리프를 고친다)"
+
+def surfaces(entries):
+    out = set()
+    for v in entries:
+        out.add(v["word"].lower())
+        out.update(f.lower() for f in v["forms"])
+    return out
+
+by_word = {v["word"]: v for v in vocab}
+unit_all = surfaces(by_word[w] for w in words)
+# 4단계 기능어 가운데 이 단원에서 쓰는 것(7절, 제안)
+L4_FUNCTION = {"about", "every", "everyone", "his", "her", "so"}
+base = (surfaces(v for v in vocab if v["level"] <= 3) - unit_all) | L4_FUNCTION
+# 3인칭 단수 -s 꼴(동사 품사 낱말의 활용형 가운데 s 로 끝나는 것 + has)
+S_FORMS = {f.lower() for v in vocab if "verb" in v["pos"] and v["level"] <= 4
+           for f in v["forms"] if f.lower().endswith("s")} | {"has"}
+S_FORMS -= {"is", "was", "does"}
+SUFFIX = {"'m": "am", "'re": "are", "'s": "is", "'ve": "have", "'ll": "will", "'d": "would", "n't": "not"}
+NAMES = ["Momo", "Ben", "Meg", "Dan", "Tess", "Max", "Ted", "Gus"]
+TEACHER_EN = ["Tori", "Mina", "Leo", "Ruby", "Sora", "Hana", "Jun", "Nabi", "Luna", "Kiki", "Lulu", "Pang", "Pipi"]
+# '준'은 한국어 칸에서 보지 않는다('준비' · '준다'). 영어 Jun 은 TEACHER_EN 이 본다
+TEACHER_KO = ["토리", "미나", "리오", "루비", "소라", "하나", "나비", "루나", "키키", "루루", "팡팡", "삐삐"]
+SELF_LIFE = re.compile(r"(?<![A-Za-z'])I\s+(?!like\b|am\b|see\b|can\b|know\b)[a-z]+", re.I)
+TOKEN = re.compile(r"\{[A-Z_]+\}|_{3,}|\d+|[A-Za-z]+(?:'[A-Za-z]+)*(?:-[A-Za-z]+)*")
+POSSESSIVE = re.compile(r"\b(?!(?:he|she|it|that|what|who|where|there|here|let)'s\b)[A-Za-z]+'s\b", re.I)
+SAME_MAX = next(s["value"] for s in json.load(open(f"{root}/settings.json"))["settings"]
+                if s["key"] == "talk.same_question_max")
+FLOW_FIRST = "After the first question, the teacher follows the child's answer."
+SCENE_START = "The scene is "
+# 앞 문장이 붙은 항목의 상한(제안, 5절 '장면 안에서 뜻이 통함'). 대화 첫 질문(필수 질문 1번)은 세지 않는다
+LEAD_MAX = 2
+# 곳 낱말(1~3단계 낱말과 이 단원의 kitchen). 한 카드의 질문 글에는 둘까지: 장면의 곳과 오가는 곳 하나
+PLACES = ["library", "park", "zoo", "farm", "store", "shop", "market", "hospital", "garden", "playground", "school",
+          "classroom", "bedroom", "bathroom", "living room", "restaurant", "kitchen", "beach", "mountain", "forest",
+          "river", "sea", "lake", "town", "city", "street", "house", "home", "bank"]
+# 그림 없는 화면에서 가리킬 것이 없는 가리킴말(8절). 질문 글에 쓰지 않는다
+POINTING = re.compile(r"(?i)\b(this|that|these|those|here)\b")
+CONTRACT = [(r"\bwon't\b", "will not"), (r"\bcan't\b", "can not"), (r"\bshan't\b", "shall not"),
+            (r"\b(\w+)n't\b", r"\1 not"), (r"\bcannot\b", "can not"), (r"\blet's\b", "let us"),
+            (r"\b(\w+)'m\b", r"\1 am"), (r"\b(\w+)'re\b", r"\1 are"), (r"\b(\w+)'ve\b", r"\1 have"),
+            (r"\b(\w+)'ll\b", r"\1 will"), (r"\b(\w+)'d\b", r"\1 would"),
+            (r"\b(he|she|it|you|we|they|this|that|there|here|what|where|who|how)'s\b", r"\1 is")]
+
+def question_key(text):
+    # 같은 질문 열쇠: 마지막 물음표 문장을 대소문자 · 따옴표 · 문장 부호 · 띄어쓰기 · 줄임꼴 무시로 줄인 글(앱 · 검증기와 같은 셈)
+    qs = [q.strip() for q in re.findall(r"[^.!?\n]*\?+[\"')\]}”’»]*", text) if q.strip()]
+    s = (qs[-1] if qs else text).lower().replace("’", "'").replace("‘", "'").replace("`", "'")
+    for pat, rep in CONTRACT:
+        s = re.sub(pat, rep, s)
+    return re.sub(r"[^a-z0-9]+", " ", s.replace("'", "")).strip()
+
+def tokens(text):
+    return [t.lower() for t in re.findall(r"[A-Za-z]+", text.replace("’", "'"))]
+
+# ── 낱말 맞히기 꼴과 질문 꼴의 셈(5절 '아이 쪽으로 묻기'). talk-3 · talk-4 브리프가 이 덩이를 같은 글로 쓴다 ──
+# 사람 낱말: 'with your family' 처럼 사람과 함께 하는 일을 묻는 말과, 사람만 부르는 앞 문장('Your family!')을 가려낸다
+PERSON_WORDS = {"family", "families", "friend", "friends", "mom", "moms", "dad", "dads", "mother", "father", "brother", "brothers",
+                "sister", "sisters", "grandmother", "grandfather", "cousin", "cousins", "aunt", "uncle", "teacher", "baby", "babies"}
+LEAD_FILLER = {"your", "my", "the", "a", "an", "and", "oh"}
+RIDDLE_BE = re.compile(r"^(what|who) (is|are) (he|she|it|they)$")
+WITH_THING = re.compile(r"^what do (?:you|we|they) do with (.+)$")
+# 예상 흐름의 마지막 줄(제안, 5절 '그 밖의 칸')과 차례대로 묻는다는 말(쓰지 않는다, C219)
+FLOW_LAST = "The scene is something to talk about, not a list of questions to finish."
+FLOW_IN_ORDER = re.compile(r"(?i)one question at a time|\bin order\b|one by one")
+
+def sentences(text):
+    return [s.strip() for s in re.findall(r"[^.!?]+[.!?]+", text) if s.strip()]
+
+def riddle_kind(text, opens_scene=False):
+    # 낱말 맞히기 꼴이면 갈래 이름을, 아니면 빈 글을 돌려준다. opens_scene 은 앞 문장이 장면을 여는 자리(4단계 대화 첫 질문)다
+    key, low = question_key(text), text.lower()
+    if RIDDLE_BE.match(key):
+        return "What is he 꼴"
+    if not re.search(r"\byou(r)?\b", low):
+        return "아이 이야기가 아닌 물음(you · your 없음)"
+    m = WITH_THING.match(key)
+    if m and not set(m.group(1).split()) & PERSON_WORDS:
+        return "물건으로 동사 맞히기(What do you do with ~)"
+    lead = set(re.findall(r"[a-z]+", " ".join(sentences(text)[:-1]).lower())) - LEAD_FILLER
+    if lead and not opens_scene and not lead <= PERSON_WORDS:
+        return "단서를 주는 앞 문장"
+    return ""
+
+def with_thing(text):
+    # 'What do you do with + 물건?' 의 물건 말(관사 · your 뺌). 같은 물건으로 서로 다른 답을 기대하는 두 항목을 찾는다
+    m = WITH_THING.match(question_key(text))
+    return " ".join(w for w in m.group(1).split() if w not in LEAD_FILLER) if m else ""
+
+def frame_of(text):
+    # 질문 꼴(마지막 물음표 문장의 머리). 한 꼴이 한 카드에서 되풀이되는지 본다
+    key = question_key(text)
+    first = (key.split() or [""])[0]
+    if RIDDLE_BE.match(key):
+        return "What is he 꼴"
+    if first == "who":
+        return "Who 주어 물음"
+    if first in {"do", "can", "is", "are", "have"}:
+        return "둘 가운데 고르기" if re.search(r"\bor\b", key) else "예 · 아니요 물음"
+    m = re.match(r"^(?:.* )?(what do (?:you|we|they) do|where do (?:you|we|they)|what do (?:you|we|they)|where (?:is|are)|what (?:is|are))\b", key)
+    return m.group(1) if m else "그 밖"
+
+def riddles_of(card, first_opens_scene):
+    # 필수 질문 · 더 이야기할 거리의 (자리, 낱말 맞히기 갈래, 항목) 목록
+    out = []
+    for group in ("required", "more"):
+        for i, it in enumerate(card[group]):
+            out.append((f"{group}.{i}", riddle_kind(it["en"], first_opens_scene and group == "required" and i == 0), it))
+    return out
+
+def place_words(texts):
+    low = " ".join(texts).lower()
+    found = [pl for pl in PLACES if re.search(rf"(?<![a-z]){re.escape(pl)}(?:e?s)?(?![a-z])", low)]
+    if "house" in found and "home" in found:
+        found.remove("house")
+    return found
+
+def offband(text, allowed):
+    text = text.replace("’", "'")
+    # 두 낱말 표제어(ice cream · living room · in front of · next to)는 토큰으로 가르기 전에 통째로 맞춘다
+    for phrase in sorted((a for a in allowed if " " in a), key=len, reverse=True):
+        text = re.sub(rf"(?<![A-Za-z]){re.escape(phrase)}(?![A-Za-z])", " ", text, flags=re.I)
+    bad = []
+    for tok in TOKEN.findall(text):
+        if tok.startswith("{") or tok.startswith("_"):
+            continue
+        if tok.isdigit():
+            bad.append(tok + "(숫자는 낱말로)")
+            continue
+        low = tok.lower()
+        if low in allowed:
+            continue
+        stem = next((low[: -len(s)] for s in SUFFIX if low.endswith(s) and len(low) > len(s)), None)
+        if stem is not None and stem in allowed:
+            continue
+        bad.append(tok)
+    return bad
+
+problems = []
+def say(lesson, path, msg):
+    problems.append(f"{lesson['kind']} {lesson['lessonNo']} v{lesson['variant']} {path}: {msg}")
+
+for lesson in lessons:
+    card = lesson["card"]
+    if lesson["kind"] == "assigned":
+        open_words = [w for w in words if assigned_at[w] <= lesson["lessonNo"]]
+    else:
+        open_words = list(words)
+    unit_surface = surfaces(by_word[w] for w in open_words)
+    child_allowed = base | unit_surface
+    teacher_allowed = child_allowed | {n.lower() for n in NAMES}
+    child, teacher, korean = [], [], []
+    g = card["greeting"]
+    if "firstLine" not in g:
+        say(lesson, "greeting", "4단계 카드는 선생님의 첫 말(greeting.firstLine)을 둔다")
+    else:
+        teacher.append(("greeting.firstLine.en", g["firstLine"]["en"]))
+        korean.append(("greeting.firstLine.ko", g["firstLine"].get("ko", "")))
+        if "{NAME}" not in g["firstLine"]["en"] or not g["firstLine"]["en"].strip().endswith("?"):
+            say(lesson, "greeting.firstLine.en", f"선생님 첫 말은 {{NAME}} 을 부르고 안부를 묻는 질문으로 끝낸다: {g['firstLine']['en']}")
+    for key in ("sceneOpener", "prep", "missions", "roleSwap", "purpose"):
+        if key in card:
+            say(lesson, key, "4단계 카드에는 이 칸을 두지 않는다(3 · 5 · 12절)")
+    goals_seen, required_goals = set(), set()
+    for group in ("required", "more"):
+        for i, it in enumerate(card[group]):
+            at = f"{group}.{i}"
+            teacher += [(f"{at}.en", it["en"]), (f"{at}.easyQuestion.en", it["easyQuestion"]["en"])]
+            korean += [(f"{at}.ko", it.get("ko", "")), (f"{at}.easyQuestion.ko", it["easyQuestion"].get("ko", "")), (f"{at}.hintKo", it["hintKo"])]
+            child += [(f"{at}.hints.{j}", h) for j, h in enumerate(it["hints"])] + [(f"{at}.answerExample", it["answerExample"])]
+            for extra in ("imageKey", "firstForm", "choices", "usablePhrases", "purpose", "demands"):
+                if extra in it:
+                    say(lesson, f"{at}.{extra}", "이 판의 4단계 카드에는 이 칸을 두지 않는다(12절)")
+            if len(it["targets"]) != 1:
+                say(lesson, f"{at}.targets", f"한 항목은 한 낱말을 노린다(제안): {it['targets']}")
+            t = it["targets"][0]
+            has_s = any(tok in S_FORMS for tok in tokens(it["answerExample"]))
+            if t in ADVERBS:
+                want = [G_HOW]
+            elif t in VERBS:
+                want = [G_DO]
+            else:
+                want = [G_DO] if has_s else [G_WHO]
+            if it["goals"] != want:
+                say(lesson, f"{at}.goals", f"노리는 낱말 {t} · 답 예시 '{it['answerExample']}' 의 목표는 {want} 다(지금 {it['goals']}, 5절 '목표 잇기')")
+            if G_DO in it["goals"] and not has_s:
+                say(lesson, f"{at}.answerExample", f"talk-4-1-1 항목의 답 예시에 '사람 + 동사-s' 꼴이 없다: {it['answerExample']}")
+            goals_seen.update(it["goals"])
+            if group == "required":
+                required_goals.update(it["goals"])
+            if len(it["hints"]) == 2:
+                if it["hints"][0].count("___") != 1:
+                    say(lesson, f"{at}.hints.0", f"영어 틀의 빈칸 ___ 이 하나가 아니다: {it['hints'][0]}")
+                if it["hints"][1] != it["answerExample"]:
+                    say(lesson, f"{at}.hints.1", "영어 문장 힌트와 답 예시가 다르다(제안: 같게)")
+            if not re.match(r"^(Do|Are|Is|Can|Have)\b", it["easyQuestion"]["en"]):
+                say(lesson, f"{at}.easyQuestion.en", f"쉬운 질문이 예 · 아니요 꼴(Do · Are · Is · Can · Have ~?)이 아니다: {it['easyQuestion']['en']}")
+            if len(re.findall(r"[^.!?]+[.!?]+", it["en"])) > 2:
+                say(lesson, f"{at}.en", f"질문 글이 두 문장을 넘는다: {it['en']}")
+    if sorted(goals_seen) != sorted(card["goals"]):
+        say(lesson, "goals", f"카드 goals {card['goals']} 가 항목 목표의 합 {sorted(goals_seen)} 과 다르다")
+    if len(card["required"]) > K + 2:
+        say(lesson, "required", f"필수 질문 {len(card['required'])}개가 k + 2 = {K + 2} 개를 넘는다(제안, 5절 '필수 질문 쓰는 법')")
+    if G_DO not in required_goals:
+        say(lesson, "required", "talk-4-1-1 을 노리는 필수 질문이 없다(제안: 카드마다 하나 이상, 5절 '목표 잇기')")
+    for i, w in enumerate(card["todayWords"]):
+        child += [(f"todayWords.{i}.example", w["example"]), (f"todayWords.{i}.modelLine", w["modelLine"])]
+        korean.append((f"todayWords.{i}.meaningKo", w["meaningKo"]))
+        if w["modelLine"] != w["example"]:
+            say(lesson, f"todayWords.{i}.modelLine", "4단계는 들려줄 말과 예문을 같은 글로 쓴다(제안, 5절)")
+        if w["word"].lower() not in tokens(w["example"]):
+            say(lesson, f"todayWords.{i}.example", f"예문에 그 낱말 {w['word']} 이 원형으로 없다: {w['example']}")
+        if "imageKey" in w:
+            say(lesson, f"todayWords.{i}.imageKey", "4단계 카드에는 그림 키를 두지 않는다(9절)")
+    for i, l in enumerate(card["closingLines"]):
+        child.append((f"closingLines.{i}", l["en"]))
+        korean.append((f"closingLines.{i}.ko", l.get("ko", "")))
+    child += [(f"targetExpressions.{i}", e) for i, e in enumerate(card["targetExpressions"])]
+    for i, l in enumerate(card["safeLines"]):
+        teacher.append((f"safeLines.{i}", l["en"]))
+        korean.append((f"safeLines.{i}.ko", l.get("ko", "")))
+        if "?" in l["en"]:
+            say(lesson, f"safeLines.{i}", f"안전한 대사에 물음표가 있다: {l['en']}")
+    for key in ("farewell", "safetyFarewell"):
+        teacher.append((key, card[key]["en"]))
+        korean.append((f"{key}.ko", card[key].get("ko", "")))
+    teacher += [(f"praiseLines.{i}", p) for i, p in enumerate(card["praiseLines"])]
+    korean += [("title", lesson["title"]), ("topic", card["topic"]), ("endCondition", card["endCondition"])]
+    korean += [(f"todayTopicsKo.{i}", t) for i, t in enumerate(card["todayTopicsKo"])]
+
+    asks = [(f"{group}.{i}.{part}", q) for group in ("required", "more") for i, it in enumerate(card[group])
+            for part, q in (("en", it["en"]), ("easyQuestion.en", it["easyQuestion"]["en"]))]
+    by_key = {}
+    for path, q in asks:
+        by_key.setdefault(question_key(q), []).append(path)
+    for key, paths in by_key.items():
+        if len(paths) > SAME_MAX:
+            say(lesson, paths[0], f"마지막 물음표 문장 '{key}' 이 {len(paths)}번 나온다({SAME_MAX}번까지, 5절 '같은 질문'): {paths}")
+        if key in ("what does he do", "what does she do", "what do you do"):
+            say(lesson, paths[0], f"장면 없는 질문으로 끝난다. 장면을 질문 문장 안에 둔다(5절 '같은 질문'): {paths}")
+    lesson["_same"] = max((len(p) for p in by_key.values()), default=0)
+    if not card["flow"] or card["flow"][0] != FLOW_FIRST:
+        say(lesson, "flow.0", f"예상 흐름 첫 줄이 '{FLOW_FIRST}' 가 아니다(5절 '그 밖의 칸')")
+    if len(card["flow"]) < 2 or not card["flow"][1].startswith(SCENE_START) or ":" not in card["flow"][1]:
+        say(lesson, "flow.1", f"예상 흐름 둘째 줄이 '{SCENE_START}<한 곳>: <소재>.' 꼴이 아니다(5절 '그 밖의 칸', C219)")
+    if any(FLOW_IN_ORDER.search(f) for f in card["flow"]):
+        say(lesson, "flow", "예상 흐름에 질문을 차례대로 묻는다는 말이 있다(5절 '그 밖의 칸', C219)")
+    if card["flow"] and card["flow"][-1] != FLOW_LAST:
+        say(lesson, "flow", f"예상 흐름 마지막 줄이 '{FLOW_LAST}' 가 아니다(5절 '그 밖의 칸', C219)")
+    lesson["_scene"] = card["flow"][1] if len(card["flow"]) > 1 else ""
+    places = place_words(it["en"] for it in card["required"] + card["more"])
+    # 곳이 답 예시와 노리는 낱말에서만 섞이는 카드는 질문 글 셈에 걸리지 않는다. 사람이 보게 따로 적는다
+    lesson["_places"] = (places, place_words(it["answerExample"] + " " + " ".join(it["targets"]) for it in card["required"] + card["more"]))
+    if len(places) > 2:
+        say(lesson, "required · more", f"질문 글에 곳 낱말이 {len(places)}개다({places}). 카드 한 장은 한 곳만 다룬다(둘까지, 5절 '한 장면', C219)")
+    leads = [f"{group}.{i}" for group in ("required", "more") for i, it in enumerate(card[group])
+             if not (group == "required" and i == 0) and len(re.findall(r"[^.!?]+[.!?]+", it["en"])) > 1]
+    if len(leads) > LEAD_MAX:
+        say(lesson, "required · more", f"앞 문장이 붙은 항목이 1번을 빼고 {len(leads)}개다({leads}). 한 카드에 {LEAD_MAX}개까지다(5절 '장면 안에서 뜻이 통함', C219)")
+    lesson["_leads"] = len(leads)
+    items = card["required"] + card["more"]
+    kinds = riddles_of(card, True)
+    riddles = [f"{at} {kind}" for at, kind, _ in kinds if kind]
+    if len(riddles) > len(items) // 3:
+        say(lesson, "required · more", f"낱말 맞히기 꼴이 {len(riddles)}개다(항목 {len(items)}개에 {len(items) // 3}개까지, 5절 '아이 쪽으로 묻기'): {riddles}")
+    if kinds and kinds[0][1]:
+        say(lesson, "required.0.en", f"대화 첫 질문이 낱말 맞히기 꼴({kinds[0][1]})이다(5절 '대화 첫 질문 쓰는 법'): {card['required'][0]['en']}")
+    things = {}
+    for at, _, it in kinds:
+        if with_thing(it["en"]):
+            things.setdefault(with_thing(it["en"]), []).append((at, it["targets"][0]))
+    for thing, who in things.items():
+        if len({target for _, target in who}) > 1:
+            say(lesson, "required · more", f"같은 물건 '{thing}' 으로 서로 다른 답을 기대하는 항목이 있다(5절 '가장 흔한 답'): {who}")
+    frames = {}
+    for it in items:
+        frames[frame_of(it["en"])] = frames.get(frame_of(it["en"]), 0) + 1
+    for frame, n in frames.items():
+        if n * 2 > len(items):
+            say(lesson, "required · more", f"질문 꼴 '{frame}' 이 {n}개로 항목 {len(items)}개의 절반을 넘는다(5절 '아이 쪽으로 묻기')")
+    lesson["_riddles"], lesson["_items"], lesson["_frames"] = len(riddles), len(items), frames
+    for at, _, it in kinds:
+        for part, text in (("en", it["en"]), ("easyQuestion.en", it["easyQuestion"]["en"])):
+            if POINTING.search(text):
+                say(lesson, f"{at}.{part}", f"그림 없는 화면이라 this · that · here 로 가리킬 것이 없다. 가리키는 것을 낱말로 쓴다(5절 '장면 안에서 뜻이 통함'): {text}")
+    for path, text in child:
+        bad = offband(text, child_allowed)
+        if bad:
+            say(lesson, path, f"아이 차례 영어에 범위 밖 낱말 {bad}: {text}")
+        hit = [n for n in NAMES if re.search(rf"(?<![A-Za-z]){n}(?![A-Za-z])", text)]
+        if hit:
+            say(lesson, path, f"아이 차례 영어에 인물 이름 {hit}: {text}")
+    for path, text in teacher:
+        bad = offband(text, teacher_allowed)
+        if bad:
+            say(lesson, path, f"선생님 쪽 영어에 범위 밖 낱말 {bad}: {text}")
+        if SELF_LIFE.search(text):
+            say(lesson, path, f"선생님이 자기가 하는 일을 말한다(사람의 삶을 지어내지 않는다): {text}")
+    for path, text in teacher + child:
+        if re.search(r"(?i)\bdon't\b|\bdo not\b", text):
+            say(lesson, path, f"don't 는 단원 2 요소다(부정 명령문도 쓰지 않는다, 8절): {text}")
+        if POSSESSIVE.search(text.replace("’", "'")):
+            say(lesson, path, f"'s 소유격은 단원 4 요소다(8절): {text}")
+        if "well" not in open_words and re.search(r"(?i)\b(best|better)\b", text):
+            say(lesson, path, f"best · better 는 well 의 활용형이기도 하다. well 이 열리기 전 카드에는 쓰지 않는다(7절): {text}")
+    every = [t for _, t in teacher] + [t for _, t in child] + [t for _, t in korean] + card["flow"]
+    for text in every:
+        for n in TEACHER_EN:
+            if re.search(rf"(?<![A-Za-z]){n}(?![A-Za-z])", text, re.I):
+                say(lesson, "글", f"선생님 이름(뒤 명단 포함) {n}: {text}")
+    for path, text in korean:
+        for n in TEACHER_KO:
+            for m in re.finditer(n, text):
+                before = text[m.start() - 1] if m.start() > 0 else ""
+                if not re.match(r"[가-힣]", before):
+                    say(lesson, path, f"한국어 칸에 선생님 이름과 같은 글자 '{n}': {text}")
+                    break
+        if re.search(r"\{NAME\}[가-힣]", text):
+            say(lesson, path, f"{{NAME}} 바로 뒤에 조사를 붙였다: {text}")
+    lesson["_names"] = {n for n in NAMES for _, t in teacher + child
+                        if re.search(rf"(?<![A-Za-z]){n}(?![A-Za-z])", t)}
+    lesson["_first"] = question_key(card["required"][0]["en"]) if card["required"] else ""
+
+rank = {"assigned": 0, "reinforce": 0, "remedial": 1}
+for v in sorted({l["variant"] for l in lessons}):
+    row = sorted((l for l in lessons if l["variant"] == v), key=lambda l: (rank[l["kind"]], l["lessonNo"]))
+    for a, b in zip(row, row[1:]):
+        fa, fb = " ".join(a["_first"].split()[:3]), " ".join(b["_first"].split()[:3])
+        if fa and fa == fb:
+            problems.append(f"변형 {v}: {a['kind']} {a['lessonNo']} 과 {b['kind']} {b['lessonNo']} 의 대화 첫 질문 꼴 '{fa}' 이 이어진다(5절 '대화 첫 질문')")
+    scenes = {}
+    for l in row:
+        scenes.setdefault(l["_scene"], []).append(f"{l['kind']} {l['lessonNo']}")
+    for sc, who in scenes.items():
+        if sc and len(who) > 1:
+            problems.append(f"변형 {v}: 같은 장면 줄이 {len(who)}장에 있다(같은 변형 안에서 장면이 겹치지 않게, 10절): {who}")
+firsts = {}
+for l in lessons:
+    firsts.setdefault(l["_first"], []).append(f"{l['kind']} {l['lessonNo']} v{l['variant']}")
+for k, who in firsts.items():
+    if len(who) > 1:
+        problems.append(f"단원: 대화 첫 질문 '{k}' 이 {len(who)}장에 있다(모두 다르게): {who}")
+N = len(lessons)
+n = sum(1 for l in lessons if l["_names"])
+m = sum(1 for l in lessons if "Momo" in l["_names"])
+if n > N // 4:
+    problems.append(f"인물: 이름이 나온 카드 {n}장이 상한 {N // 4} 을 넘는다(10절)")
+if m > max(N // 8, n // 2):
+    problems.append(f"인물: Momo 가 나온 카드 {m}장이 상한 {max(N // 8, n // 2)} 을 넘는다(10절)")
+print(f"인물: 이름이 나온 카드 n={n} (상한 {N // 4}) · Momo 카드 m={m} (상한 {max(N // 8, n // 2)})")
+print("같은 질문(마지막 물음표 문장 열쇠) 카드마다 가장 많은 수: "
+      + " · ".join(f"{l['kind']} {l['lessonNo']} v{l['variant']} {l['_same']}" for l in lessons))
+print("한 장면(앞 문장이 붙은 항목 수(1번 빼고) · 낱말 맞히기 꼴 수/항목 수): "
+      + " · ".join(f"{l['kind']} {l['lessonNo']} v{l['variant']} {l['_leads']} · {l['_riddles']}/{l['_items']}" for l in lessons))
+print("곳 낱말(질문 글 | 답 예시와 노리는 낱말. 한 곳인지 눈으로 본다): "
+      + " · ".join(f"{l['kind']} {l['lessonNo']} v{l['variant']} {l['_places'][0]} | {l['_places'][1]}" for l in lessons))
+print("질문 꼴(카드마다 꼴과 수. 한 꼴이 항목의 절반을 넘지 않는다): "
+      + " · ".join(f"{l['kind']} {l['lessonNo']} v{l['variant']} " + ", ".join(f"{f} {n}" for f, n in sorted(l["_frames"].items(), key=lambda x: -x[1]))
+                   for l in lessons))
+print("\n".join(problems) if problems else "스스로 확인 걸림 없음")
+PY
+```
+
+검증 명령(호출이 다른 명령을 주면 그것을 쓴다):
+
+```sh
+pnpm -s seed:validate --root <뿌리> --areas talk --json | python3 -c 'import json,sys; d=json.load(sys.stdin); f="lessons/talk/4/<단원>.json"; xs=[x for x in d["errors"]+d["warnings"] if x.get("file")==f]; print(d["summary"]); [print(x["rule"], x.get("id",""), x.get("cell",""), x.get("path",""), x["message"]) for x in xs]'
+```
+
+- 첫 검증 결과(이 파일의 칸 수 · 오류가 있는 칸 수 · 규칙별 오류 수 · 경고 수 · 단원 단위 오류 `talk-known-days` · `remedial-coverage` 수)를 그대로 적어 둔다. 보고의 '첫 검증'이다.
+- 오류가 있으면 그 칸만 고치고 다시 검증한다. 고친 칸의 `generation.retries` 에 회차를 적는다. 고침은 `seed.max_retries` 회까지다. 그래도 남으면 멈추고 남은 오류를 보고한다. 고정 카드에 오류가 나면 고치지 말고 보고한다.
+- 경고(`unit-words-unlisted` · `relation-early-use` · `relation-not-reused` · 분포)도 고친다. 남기면 까닭을 보고한다. `talk-unit-incomplete` 는 단원을 다 채우지 않은 호출에서 나오는 것이 맞다. 단원 규격 파일의 `unit-goals` 경고(다른 단원 · 단계의 목표 없음)는 이 파일 밖이라 걸러져 나오지 않는다.
+- `unchecked`(풀이 검사 안 됨)와 `empty`(빈 칸)는 이 단계의 일이 아니다. 회화 카드는 풀이 검사 대상이 아니다.
+
+## 15. 근거 한 줄
+
+회화 4단계는 준비 없이 선생님과 일상 이야기를 주고받으며, 친구나 주변 사람이 어떤 사람이고 무엇을 하는지를 틀 없이 한 문장으로 말하고, 선생님이 그 말을 이어 묻는 단계다. 2022 개정 영어과 5~6학년군 '표현' 성취기준 가운데 주변 사람을 간단한 문장으로 소개 · 묘사하고 일상 주제의 정보를 묻고 답하는 기준에 기댄다(성취기준 번호는 이 저장소 문서에서 확인한 것이 없어 적지 않았다. 확인 정도: 내용 요지만 확인했고 번호는 대조 전이라 근거가 약하다). CEFR A1 구어 상호작용의 '아주 익숙한 화제에서 간단한 질문을 하고 답하며 간단한 말을 주고받는다'와 맞닿는다(CEFR Companion Volume 요지, 원문 대조 전). CEFR-J 참고 범위는 확정 전이라 판정에 쓰지 않는다(정본 3.1). 그래서 질문은 아이 쪽으로 묻는 짧은 꼴을 돌려 쓰고, 답은 이 단원 낱말이 든 8낱말 이하의 한 문장이며, 낱말 답도 뜻이 통하면 받는다.
+
+## 16. 보고 꼴
+
+마지막 답장(파일로 쓰지 않는다)에 이 차례로 쓴다.
+
+```
+상태: DONE | DONE_WITH_CONCERNS | BLOCKED
+모델 ID: <자기 모델 ID> · effort: <호출 값>
+파일: <뿌리>/lessons/talk/4/<단원>.json · 카드 <n>(새로 <n> · 고정 <n> · 정규 <n> · 보강 <n>) · <바이트>
+시각: 시작 <date> · 끝 <date> · <분>
+고정 카드: 붙이기 명령 결과(해시 같음 · 다름 · 해당 없음)
+첫 검증: 칸 <n> · 오류 칸 <n> · 규칙별 <rule n, …> · 단원 단위 오류 <n> · 경고 <n>
+고침: <회차마다 고친 칸 · 남은 오류>
+스스로 확인 명령: 첫 결과 <걸림 n> · 마지막 '걸림 없음'
+카드마다: 장면 <한 곳> · 필수 질문 <n>(처음 <n> · 다시 <n>) · 더 이야기할 거리 <n> · 카드 goals <…> · 대화 첫 질문 <글>
+한 장면: 질문 글의 곳 낱말이 둘을 넘는 카드 <n> · 답 예시와 노리는 낱말의 곳 낱말(카드마다) <…> · 앞 문장이 붙은 항목이 1번을 빼고 둘을 넘는 카드 <n> · 같은 변형 안 겹친 장면 <n> · 이야기 차례 · '앞 답에 기대지 않음' · 떠나는 대목 뒤의 더 이야기할 거리(눈으로 확인) <n>/<n> · 장면에 어울리지 않아 뺀 낱말 <…>
+목표 기회(카드가 준비한 자리, 변형마다): talk-4-1-1 <n> · talk-4-1-2 <n> · talk-4-1-3 <n>
+단원 덮기(전부일 때): talk.known_days 에 닿은 단원 단어 <n>/30
+보강 덮기(전부일 때): 변형마다 설정 횟수 이상 <n> · 서로 다른 보강 카드 둘 이상 <n>
+같은 질문: 카드마다 가장 많이 나온 마지막 물음표 문장 열쇠 <n>번(상한 2)
+대화 첫 질문: 단원 안 같은 질문 <n> · 바로 앞 카드와 같은 꼴 <n> · 낱말 맞히기 꼴 <n> · 아는 말로 답할 수 있음(눈으로 확인) <n>/<n>
+아이 쪽으로 묻기: 카드마다 낱말 맞히기 꼴 <n>/<항목 수>(스크립트 셈, 갈래별) · 답이 하나로 정해진 항목 <n>/<항목 수>(손으로 셈) · 질문 꼴마다의 수 <…>(한 꼴이 절반을 넘는 카드 <n>) · '아니요 + 바른 문장' 꼴이 둘을 넘는 카드 <n> · 아이나 친구의 사실을 정하는 답 예시 <n> · 가리킴말 this · that · here <n>
+덧붙이는 말: 질문으로 끌어내기 어려워 꺼내기에 기댄 낱말 <…>
+인물: 이름이 나온 카드 <n> · 그 가운데 Momo 카드 <n> · 쓴 이름 <…>
+선생님: 선생님 이름 · 토리 · {TEACHER} 0 · 선생님 삶 문장 0 · 가족 직업 질문 0
+스스로 확인: 14절 1~15 각각 확인함 · 못 함(까닭)
+근거가 약한 곳 · 브리프로 풀리지 않은 것: …
+```
+
+## 17. 제안 모음(정본에 없는 값)
+
+| 절 | 제안 | 까닭 |
+|---|---|---|
+| 0 · 1 | 첫 호출은 세 장(배정 1 · 2, 다지기 9, 변형 1), 둘째 호출은 브리프가 그대로일 때 나머지 + 고정 카드 붙이기 | 정본 6.3 '회화 카드 새 꼴의 생성' 표 차례 3 · 회화 plan 정한 것 16. 고정 카드는 브리프 안에 넣지 않고 파일 · 해시로 받는다 |
+| 0 · 5 · 6 | 단원 목표 셋과 목표 잇기(동사 · '사람 + 동사-s' 답 → talk-4-1-1, 사람 · 모임 명사의 be 문장 답 → talk-4-1-2, 덧붙이는 말 → talk-4-1-3), 한 항목에 목표 하나, 카드마다 talk-4-1-1 필수 질문 하나 이상 | 단원 목표는 이 판을 쓰며 제안한 것을 컨트롤러가 unit-specs 에 잠정으로 넣었다. 단원 단어의 갈래가 셋(명사 15 · 덧붙이는 말 12 · 동사 3)이고, 학습 요소(3인칭 -s)를 쓰는 동사가 배정 7 · 8 에야 나와 갈래만으로 이으면 앞 여섯 수업에 요소의 기회가 없다. 목표 수 · 글은 컨트롤러와 요청자가 정한다 |
+| 5 | 대화 첫 질문의 다섯 조건, 예상 흐름 첫 줄 고정(`After the first question, the teacher follows the child's answer.`)과 마지막 줄 고정(`The scene is something to talk about, not a list of questions to finish.`, 3단계 브리프와 같은 줄) | 4단계는 준비 없이 필수 질문 1번을 앱이 그대로 읽는다(02-2:169). 아이가 새 단어를 듣지 못한 채 받으므로 아는 말로 답할 수 있어야 수업이 막힘으로 시작하지 않는다. 정본은 1~3단계 예상 흐름 첫 줄만 정했다 |
+| 5 · 10 · 14 | 한 장면의 풀이: 장면은 한 곳, 질문 글의 곳 낱말은 둘까지, 이야기 차례는 '들어감 → 안에서 보고 만남 → 떠남', 질문은 장면에는 기대되 앞 질문의 답에는 기대지 않음, `flow` 둘째 줄에 장면, 같은 변형 안에서 장면이 겹치지 않음(같은 곳은 때와 하는 일을 달리해 두 장까지, 3단계 브리프와 같은 규칙) | 13절 C219 는 원칙을 정했고('한 장면에서 질문이 이어지는 카드') 쓰는 법은 정하지 않았다. 선생님이 대목을 건너뛸 수 있고 앱이 카드 자리에서 가장 앞의 남은 질문을 붙이므로, 번호는 이야기 차례로 두되 앞 답에 기대지 않아야 한다. 검증기는 아직 장면을 보지 않아 스스로 확인이 곳 낱말 수와 장면 줄을 본다 |
+| 5 · 8 · 14 | 앞 문장이 붙은 항목은 1번을 빼고 한 카드에 둘까지, 8절 질문 꼴 표는 물음표 문장 하나인 꼴을 앞세움(예 · 아니요로 묻고 답에서 낱말이 나오는 꼴 포함) | C219 의 '질문마다 장면 문장을 붙이지 않는다'를 셀 수 있는 수로 옮겼다(3단계 브리프와 같은 수). 2026-11-08 수업에서는 같은 바닷가의 물건 말(`Sand and shells!`)도 질문마다 붙으니 이음새가 끊겼다. 이 판의 첫 고침 예시 카드는 열한 항목 모두에 앞 문장이 있어 같은 꼴이 되풀이됐다. 낱말 맞히기 꼴(셋에 하나까지)은 앞 문장을 쓰므로 이 상한에 함께 든다 |
+| 2 · 11 | 단원 장면 표를 먼저 짜고 장면에 어울리는 낱말끼리 묶음. 사람 명사에 맞춰 장면을 고르고 덧붙이는 말 · 동사 셋은 카드마다 나눠 실음. 다지기 · 보강의 장면과 낱말 묶음 예 | 한 장면 원칙에서는 낱말마다 다시 묻는 자리 수가 고르지 않게 된다. 단원 덮기(`talk-known-days`)를 장면 표에서 먼저 맞춰야 카드를 다시 쓰지 않는다. 정본은 '몰아서 다룰 단원 어휘 묶음'의 나누는 법을 정하지 않았다 |
+| 5 | 필수 질문 k + 2 개까지, 낱말 맞히기 꼴은 항목 셋에 하나까지, 한 카드의 마지막 물음표 문장을 모두 다르게 | 요청자의 4단계 목표가 후속 질문과 대화 넓힘이다(2026-10-29). 검증기 상한(참고 턴 × `talk.required_max_ratio`)은 10 이지만 카드 질문이 많을수록 차례대로 묻는 수업이 된다. 3단계 실제 수업(2026-11-08)에서 카드 질문의 이음새와 도움 차례가 걸렸다 |
+| 5 · 14 | 낱말 맞히기 꼴의 정의는 3단계 브리프와 같은 한 문장, 셈은 3단계와 같은 스크립트 덩이(you · your 가 없는 물음 · `What is he?` 꼴 · 단서를 주는 앞 문장 · `What do you do with + 물건?`). 한 꼴이 항목의 절반을 넘지 않음. '아니요 + 바른 문장' 꼴은 둘까지 | C219 는 4단계 이후에도 같은 설계 원칙을 적용한다고 정했다. 고침 전에는 4단계가 '장면 한 문장 + `What is he?`' 꼴만 낱말 맞히기로 세고 Who 주어 물음을 그 대신 쓰라고 권해서, 예시 카드 열한 항목 가운데 일곱이 Who 주어 물음(직업 맞히기)이었다(설계 검토 I-1). 예 · 아니요 물음만 늘어도 같은 꼴 되풀이가 되므로 꼴마다의 상한을 함께 둔다 |
+| 2 · 5 · 8 | 카드 계획표의 '아이가 가장 흔히 할 답' 칸, 답 예시가 아이나 친구의 사실을 정해 버리지 않음(누구에게나 참인 답 · 대부분의 아이에게 참인 답 · 장면 속 일) | 덧붙이는 말의 답 예시가 아이의 사실과 다를 때가 많았고(`No, I have only one pencil.`), 친구의 나이 · 사는 곳 · 못하는 것을 정하는 줄이 같은 브리프의 금지 규칙과 어긋났다(설계 검토 I-3) |
+| 5 | `prep` 칸을 두지 않음 | `talk.prep_mode.4-6` 이 필요할 때만이면 앱이 카드 `prep` 을 읽지 않고 막힌 질문의 낱말을 앞세워 고른다(`lesson-flow.ts` · `chances.ts`). 설정을 늘로 바꿔도 앱이 필수 질문 차례로 낱말을 고른다 |
+| 5 | `modelLine` = `example`, 예문은 단원 꼴이 보이는 한 문장 | 4단계 쪽지는 `example` 을 보이고 읽으며(`follow-along.tsx`), AI 가변부는 `modelLine` 을 받는다. 정본은 '4단계부터 예문'만 정했다 |
+| 5 | 답 예시의 주어: 아이 친구는 `My friend`, `He` · `She` 는 장면 문장이 사람을 정한 항목에만 | 카드는 아이 친구가 남자인지 여자인지 모른다. 힌트와 답 예시는 앞 턴과 상관없이 맞아야 한다(정본 6.3) |
+| 5 | 쉬운 질문은 예 · 아니요 꼴, 영어 문장 힌트 = 답 예시, 목표 표현 3~5 · 정리 대사 3~5 · 예상 흐름 3~5 · 안전한 대사 2~3 · 칭찬 3~4 · 인사 턴 수 1 · 끝맺음 조건 문장 | 규격은 '1개 이상'만 정했다(talk-3 과 같은 값) |
+| 5 · 12 | `purpose` · `demands` 를 두지 않음 | 세 목표의 home 이 '선생님과 이야기'라 비우면 같다. 목표 둘을 가리키는 항목을 두지 않으므로 `demands` 판단이 생기지 않는다 |
+| 6 | talk-4-1-1 의 needs 에 form 을 넣지 않음 | 음성 인식이 낱말 끝 -s 를 자주 놓친다. 꼴로 재면 인식 오류가 판정에 든다. 회화는 채점하지 않는다(R2) |
+| 7 | 어휘 범위를 1~3단계 + 4단계 기능어 여섯 + 그 카드에서 열린 단원 단어로 좁힘 | 회화 4단계 다른 단원 단어(day · class · hobby · love …)와 아직 배정되지 않은 이 단원 낱말이 미리 나오지 않게 한다. 4단계 내용어 150개는 모두 회화 4단계 단원 1~5 의 단원 단어다 |
+| 7 | 4단계 기능어 가운데 about · every · everyone · his · her · so 만 씀 | his · her 는 3인칭 이야기에 필요하고 형태 표에 검출기가 없다. 소유대명사 · our · their 는 단원 4(소유격) 뒤가 알맞다 |
+| 7 · 14 | best · better 를 well 이 열리기 전 카드에 쓰지 않음 | vocab 에서 두 꼴이 good 과 well 둘의 활용형이라, 검증기가 well 의 먼저 씀(`relation-early-use`)으로 센다(2026-11-10 대조) |
+| 8 | does 물음을 쓰지 않고 예 · 아니요 물음 · 둘 가운데 고르는 물음 · Who 주어 물음 · `What is he?` 로 묻기(컨트롤러 결정 2026-11-10: 4단계는 does 없이). How 물음 · 's 소유격 · 부정 명령문 · 문장을 잇는 and · or 를 쓰지 않음 | does 는 단원 2 요소이고 검증기가 막는다. `How do you ~?` 는 3.6 요소 표에 없다(How many · How much 는 5단계 요소, 설계 검토 M-8 (나)). 회화 3단계의 What · Where 물음처럼 회화 질문에 한해 먼저 여는 길(C64 (3))은 13절 결정이 있어야 한다 |
+| 8 | 단원 단어 서른의 질문 예 표 | 6.3 순서 (2)(B5-M-05)의 '노리는 단어를 질문에 넣지 않고 물을 수 있는지'를 이 단원의 서른 낱말에 먼저 보였다. 덧붙이는 말 열둘은 질문만으로 끌어내기 어렵다. 고침 1 에서 almost · away(친구의 나이 · 사는 곳을 묻는 줄이라 10절 규칙과 어긋났다)와 alone · just · adult · parent, 덧붙이는 말 여덟 줄, kitchen · work 를 다시 썼다(설계 검토 I-3 · M-8 (다)) |
+| 10 | 친구는 어떤 사람 · 하는 일 · 좋아하는 것만(나이 · 사는 곳 · 못하는 것 · 친구가 없다는 말을 두지 않음), 가족의 직업을 묻지 않음, 답 예시에 특정 가족을 두지 않음, `your teacher` 로 묻지 않음, 선생님에게 친구 · 직업 · 하루 일과를 지어내지 않음 | 이 단원은 직업 낱말과 3인칭 이야기라 가족 직업 · 친구 신상으로 흐르기 쉽다. 6.2 개인 정보 규칙과 '사람의 삶을 지어내지 않는다'를 이 주제에 맞춰 넓혔다 |
+| 10 | 인물 이름은 선생님 질문 앞 장면 문장에만, 다른 영역 4단계 단원 1 장면(형의 아침 · 선생님의 하루)을 쓰지 않음 | 4단계 단원 1 부터 이름 뒤 -s 가 열린다. 같은 날 같은 단원을 하는 아이에게 같은 이야기가 겹치지 않게 한다 |
+| 11 | 배정 2~8 의 다시 묻기 필수 질문, 다지기 9 · 변형 1 은 배정 1 · 2 낱말 중심이고 장면에 안 맞는 낱말은 빼고 보고함. 덧붙이는 말은 그 카드에서 노리지 않음. 첫 세 장의 장면 예는 직업을 가진 사람을 줄 세우지 않고 아이와 친구가 하는 일로 물음 | 프리뷰의 아이는 배정 3~8 을 하지 않았다. 낱말을 다 넣으려고 곳을 섞으면 C219 에 어긋난다. 다지기 카드는 꺼낼 새 단어가 없어 배우지 않은 덧붙이는 말이 준비 없이 나오고(설계 검토 M-8 (사)), 더 이야기할 거리에만 두는 길은 검증기 `talk-goals`(카드 목표마다 필수 질문)가 막는다. 사람 넷 · 여덟을 세우는 장면 예는 Who 주어 물음을 부른다(설계 검토 I-1) |
+| 13 | 사람을 낮추어 견주는 글 · 실제 가수 · 선수 이름 금지 | 직업과 '잘한다'를 말하는 단원이라 견주기와 실제 인물이 들어오기 쉽다 |
+| 14 | 스스로 확인 명령(python 한 덩이) · 고정 카드 붙이기 명령 | 검증기가 회화 카드의 어휘 범위 · 목표 잇기 · 선생님 삶 문장을 보지 않는다. 고정 카드는 정규화 해시(키 정렬 · 빈칸 없는 JSON 의 sha256)로 대조한다(회화 plan 정한 것 16) |

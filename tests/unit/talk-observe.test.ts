@@ -1,5 +1,6 @@
 // 회화 수업 실호출 표본 평가 명령(talk:observe, 회화 plan 묶음 13 · AC-15o)의 순수 함수: 인자 · 대본 읽기 · 계획 · 비용 어림 ·
 // 메모리 대화(가짜 응답 — 네트워크 없음) · 판정 칸 · 보고 꼴.
+import { readFileSync } from "node:fs";
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 import { hasJsonSchemaRefs } from "@/core/ai/inline-refs";
@@ -348,13 +349,21 @@ describe("대본", () => {
     ]);
     expect(replay?.steps.every((step) => step.hint === undefined)).toBe(true);
     expect(replay?.steps.every((step) => step.lessonBefore)).toBe(true);
-    // 다지기 6 은 시드 카드 · 단계 규격 · 선생님으로 채워진다(필수 질문 여섯 · 새 단어 없음)
-    const m = materialsOf(readSeedFiles(ROOT, 3, 1), {
-      level: 3,
-      unit: 1,
-      lesson: 6,
-      teacher: replay?.teacher ?? "",
-    });
+    // 다지기 6 은 시드 카드 · 단계 규격 · 선생님으로 채워진다(필수 질문 여섯 · 새 단어 없음). 카드는 그 수업이 쓴 개정 5 의 고정 사본
+    // (tests/fixtures/talk-lesson-3-1-rev5.json, 103b7b8 의 seed/lessons/talk/3/1.json)이다 — 살아 있는 시드의 다지기 6 은 개정 6(13절 C219)으로
+    // 필수 질문 수가 달라졌다
+    const rev5: unknown = JSON.parse(
+      readFileSync(`${ROOT}/tests/fixtures/talk-lesson-3-1-rev5.json`, "utf8"),
+    );
+    const m = materialsOf(
+      { ...readSeedFiles(ROOT, 3, 1), lessonFile: rev5 },
+      {
+        level: 3,
+        unit: 1,
+        lesson: 6,
+        teacher: replay?.teacher ?? "",
+      },
+    );
     expect(m.ok && m.materials.card.required.length).toBe(6);
     expect(m.ok && m.materials.newWords).toEqual([]);
   });

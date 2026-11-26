@@ -1721,9 +1721,22 @@ describe("fix 3 — 대본 회차 r3 재판정 I-r3-1 · M-r3-2(서버 · 도구
   });
 });
 
-/** 3단계 단원 1 다지기 6 재료(재생 대본 replay-lesson-1108 의 카드 — 필수 질문 여섯 · 장면 여는 질문 'Can you swim?'). */
+/**
+ * 개정 5 카드 두 장(회화 3단계 단원 1 배정 1 · 다지기 6)의 고정 사본(tests/fixtures/talk-lesson-3-1-rev5.json, 103b7b8 의
+ * seed/lessons/talk/3/1.json 을 서식만 맞춰 뜸). 살아 있는 시드의 다지기 6 은 개정 6(13절 C219 — 한 장면 카드)으로 글이 바뀌므로, 옛 글의 장면
+ * (고래 · 돌고래 · 'Sand on your feet! What do you do in the sea?')에 기대는 배선 시험은 이 사본을 읽는다.
+ */
+const REV5_LESSON_FILE: unknown = JSON.parse(
+  readFileSync(`${ROOT}/tests/fixtures/talk-lesson-3-1-rev5.json`, "utf8"),
+);
+
+/**
+ * 3단계 단원 1 다지기 6 재료(재생 대본 replay-lesson-1108 의 카드 — 필수 질문 여섯 · 장면 여는 질문 'Can you swim?'). 카드는 개정 5 고정
+ * 사본이고 나머지 시드(단계 · 단원 규격 · 어휘 · 목록)는 살아 있는 파일이다.
+ */
 function materialsReinforce(): Materials {
-  const m = materialsOf(readSeedFiles(ROOT, 3, 1), {
+  const files = { ...readSeedFiles(ROOT, 3, 1), lessonFile: REV5_LESSON_FILE };
+  const m = materialsOf(files, {
     level: 3,
     unit: 1,
     lesson: 6,
