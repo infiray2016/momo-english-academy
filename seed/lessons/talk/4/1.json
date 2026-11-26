@@ -1,0 +1,164 @@
+{
+  "area": "talk",
+  "level": 4,
+  "unit": 1,
+  "lessons": [
+    {
+      "kind": "assigned",
+      "lessonNo": 1,
+      "variant": 1,
+      "revision": 6,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "e828a78c1f74c80dbc5d958e342b7eac5a97d0032142a4224f00a8d1575eb260", "agentHash": "259027cdfc8e1f71e943b3867e1ef42c9fb6bf9ea7a84e85fac6144b0d0012f9", "createdOn": "2026-11-26"},
+      "title": "친구와 간 공원",
+      "newWords": ["singer", "dancer", "driver", "artist"],
+      "unitWords": ["singer", "dancer", "driver", "artist"],
+      "card": {
+        "topic": "친구가 하는 일 · 친구와 간 공원에서 노래하고 춤추고 그림 그리기",
+        "targetExpressions": ["My friend is a good singer.", "Yes, I am a good dancer.", "Yes, I am a good artist.", "No, a bus driver takes everyone home."],
+        "goals": ["talk-4-1-1", "talk-4-1-2"],
+        "greetingTurns": 1,
+        "greeting": {"firstLine": {"en": "Hi, {NAME}! How are you?", "ko": "안녕, {NAME}! 잘 지냈어?"}},
+        "todayWords": [
+          {"word": "singer", "meaningKo": "가수", "example": "A singer sings for everyone.", "modelLine": "A singer sings for everyone."},
+          {"word": "dancer", "meaningKo": "춤추는 사람", "example": "A dancer dances to fun music.", "modelLine": "A dancer dances to fun music."},
+          {"word": "driver", "meaningKo": "운전사", "example": "A bus driver takes everyone home.", "modelLine": "A bus driver takes everyone home."},
+          {"word": "artist", "meaningKo": "화가", "example": "An artist paints pretty flowers.", "modelLine": "An artist paints pretty flowers."}
+        ],
+        "required": [
+          {"no": 1, "en": "Let's go to the park with your friend! Can your friend sing or dance?", "ko": "친구랑 공원에 가 보자! 네 친구는 노래할 수 있어, 아니면 춤출 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "내 친구는 노래를 잘하는 사람이야.", "hints": ["My friend is a good ___.", "My friend is a good singer."], "answerExample": "My friend is a good singer.", "easyQuestion": {"en": "Can your friend sing?", "ko": "네 친구는 노래할 수 있어?"}},
+          {"no": 2, "en": "Can you dance with the ducks?", "ko": "너는 오리랑 춤출 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "응, 나는 춤을 잘 추는 사람이야.", "hints": ["Yes, I am a good ___.", "Yes, I am a good dancer."], "answerExample": "Yes, I am a good dancer.", "easyQuestion": {"en": "Do you like fun music?", "ko": "신나는 음악 좋아해?"}},
+          {"no": 3, "en": "Can you draw ducks and flowers?", "ko": "너는 오리랑 꽃을 그릴 수 있어?", "targets": ["artist"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "응, 나는 그림을 잘 그리는 화가야.", "hints": ["Yes, I am a good ___.", "Yes, I am a good artist."], "answerExample": "Yes, I am a good artist.", "easyQuestion": {"en": "Do you like crayons?", "ko": "크레용 좋아해?"}},
+          {"no": 4, "en": "Can you take everyone home on a bus?", "ko": "너는 버스로 모두를 집에 데려다줄 수 있어?", "targets": ["driver"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "아니, 버스 운전사가 모두를 집에 데려다줘.", "hints": ["No, a bus ___ takes everyone home.", "No, a bus driver takes everyone home."], "answerExample": "No, a bus driver takes everyone home.", "easyQuestion": {"en": "Do you like big buses?", "ko": "큰 버스 좋아해?"}}
+        ],
+        "more": [
+          {"no": 1, "en": "Can you sing or play the drum?", "ko": "너는 노래할 수 있어, 아니면 드럼을 칠 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "나는 노래를 잘하는 사람이야.", "hints": ["I am a good ___.", "I am a good singer."], "answerExample": "I am a good singer.", "easyQuestion": {"en": "Do you like songs?", "ko": "노래 좋아해?"}},
+          {"no": 2, "en": "Can your friend paint pretty pictures?", "ko": "네 친구는 예쁜 그림을 그릴 수 있어?", "targets": ["artist"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 내 친구는 그림을 잘 그리는 화가야.", "hints": ["Yes, my friend is a good ___.", "Yes, my friend is a good artist."], "answerExample": "Yes, my friend is a good artist.", "easyQuestion": {"en": "Can your friend draw?", "ko": "네 친구는 그림 그릴 수 있어?"}},
+          {"no": 3, "en": "Can your friend dance or skate?", "ko": "네 친구는 춤출 수 있어, 아니면 스케이트를 탈 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 춤을 잘 추는 사람이야.", "hints": ["My friend is a good ___.", "My friend is a good dancer."], "answerExample": "My friend is a good dancer.", "easyQuestion": {"en": "Can your friend dance?", "ko": "네 친구는 춤출 수 있어?"}},
+          {"no": 4, "en": "A woman sings for everyone at the park. What is she?", "ko": "어떤 여자가 공원에서 모두에게 노래를 불러 줘. 그 사람은 뭐 하는 사람이야?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "그 사람은 가수야.", "hints": ["She is a ___.", "She is a singer."], "answerExample": "She is a singer.", "easyQuestion": {"en": "Do you like her song?", "ko": "그 사람 노래 좋아해?"}},
+          {"no": 5, "en": "Who draws the pictures in your books?", "ko": "네 책에 있는 그림은 누가 그려?", "targets": ["artist"], "goals": ["talk-4-1-1"], "ask": "re_ask", "hintKo": "화가가 그림을 그려.", "hints": ["An ___ draws the pictures.", "An artist draws the pictures."], "answerExample": "An artist draws the pictures.", "easyQuestion": {"en": "Do you read picture books?", "ko": "그림책 읽어?"}}
+        ],
+        "flow": ["After the first question, the teacher follows the child's answer.", "The scene is the park with the child's friend: songs and music, ducks and flowers, pictures, the bus home.", "The teacher brings in singer and dancer when the child talks about songs or music.", "The teacher brings in artist when the talk reaches pictures, and driver when it reaches the bus home.", "The teacher says a new word once in a clear sentence before the child uses it.", "The scene is something to talk about, not a list of questions to finish."],
+        "todayTopicsKo": ["친구와 공원에", "노래하고 춤추기", "오리와 꽃 그림", "버스로 집에"],
+        "closingLines": [
+          {"en": "A singer sings for everyone.", "ko": "가수는 모두에게 노래를 불러 줘."},
+          {"en": "A dancer dances to fun music.", "ko": "춤추는 사람은 신나는 음악에 맞춰 춤춰."},
+          {"en": "An artist paints pretty flowers.", "ko": "화가는 예쁜 꽃을 그려."},
+          {"en": "A bus driver takes everyone home.", "ko": "버스 운전사가 모두를 집에 데려다줘."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Oh, I see!", "ko": "아, 알겠어!"}
+        ],
+        "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Bye for now, {NAME}!", "ko": "그럼 이만 안녕, {NAME}!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Nice!"]
+      }
+    },
+    {
+      "kind": "assigned",
+      "lessonNo": 2,
+      "variant": 1,
+      "revision": 6,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "e828a78c1f74c80dbc5d958e342b7eac5a97d0032142a4224f00a8d1575eb260", "agentHash": "259027cdfc8e1f71e943b3867e1ef42c9fb6bf9ea7a84e85fac6144b0d0012f9", "createdOn": "2026-11-26"},
+      "title": "친구와 간 동물원",
+      "newWords": ["scientist", "writer", "pilot", "person"],
+      "unitWords": ["singer", "dancer", "driver", "artist", "scientist", "writer", "pilot", "person"],
+      "card": {
+        "topic": "친구가 하는 일 · 친구와 간 동물원에서 보는 동물과 사람",
+        "targetExpressions": ["Yes, my friend is a kind person.", "She is a scientist.", "No, a writer writes books about animals.", "No, a pilot flies a plane.", "A bus driver takes everyone home."],
+        "goals": ["talk-4-1-1", "talk-4-1-2"],
+        "greetingTurns": 1,
+        "greeting": {"firstLine": {"en": "Hello, {NAME}! Nice to see you! How are you?", "ko": "안녕, {NAME}! 만나서 반가워! 잘 지냈어?"}},
+        "todayWords": [
+          {"word": "scientist", "meaningKo": "과학자", "example": "A scientist studies the animals.", "modelLine": "A scientist studies the animals."},
+          {"word": "writer", "meaningKo": "작가", "example": "A writer writes books about animals.", "modelLine": "A writer writes books about animals."},
+          {"word": "pilot", "meaningKo": "조종사", "example": "A pilot flies a plane in the sky.", "modelLine": "A pilot flies a plane in the sky."},
+          {"word": "person", "meaningKo": "사람", "example": "Everyone likes a kind person.", "modelLine": "Everyone likes a kind person."}
+        ],
+        "required": [
+          {"no": 1, "en": "Let's go to the zoo with your friend! Is your friend kind to animals?", "ko": "친구랑 동물원에 가 보자! 네 친구는 동물한테 친절해?", "targets": ["person"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "응, 내 친구는 친절한 사람이야.", "hints": ["Yes, my friend is a kind ___.", "Yes, my friend is a kind person."], "answerExample": "Yes, my friend is a kind person.", "easyQuestion": {"en": "Do you like animals?", "ko": "동물 좋아해?"}},
+          {"no": 2, "en": "A woman studies the big elephants. What is she?", "ko": "어떤 여자가 큰 코끼리들을 연구해. 그 사람은 뭐 하는 사람이야?", "targets": ["scientist"], "goals": ["talk-4-1-2"], "ask": "first", "hintKo": "그 사람은 과학자야.", "hints": ["She is a ___.", "She is a scientist."], "answerExample": "She is a scientist.", "easyQuestion": {"en": "Do you like big elephants?", "ko": "큰 코끼리 좋아해?"}},
+          {"no": 3, "en": "Do you write books about animals?", "ko": "너는 동물에 대한 책을 써?", "targets": ["writer"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "아니, 작가가 동물에 대한 책을 써.", "hints": ["No, a ___ writes books about animals.", "No, a writer writes books about animals."], "answerExample": "No, a writer writes books about animals.", "easyQuestion": {"en": "Do you read animal books?", "ko": "동물 책 읽어?"}},
+          {"no": 4, "en": "Can you fly a plane in the sky?", "ko": "너는 하늘에서 비행기를 몰 수 있어?", "targets": ["pilot"], "goals": ["talk-4-1-1"], "ask": "first", "hintKo": "아니, 조종사가 비행기를 몰아.", "hints": ["No, a ___ flies a plane.", "No, a pilot flies a plane."], "answerExample": "No, a pilot flies a plane.", "easyQuestion": {"en": "Do you like planes?", "ko": "비행기 좋아해?"}},
+          {"no": 5, "en": "Who takes you two home on the bus?", "ko": "너희 둘을 버스로 집에 데려다주는 사람은 누구야?", "targets": ["driver"], "goals": ["talk-4-1-1"], "ask": "re_ask", "hintKo": "버스 운전사가 모두를 집에 데려다줘.", "hints": ["A bus ___ takes everyone home.", "A bus driver takes everyone home."], "answerExample": "A bus driver takes everyone home.", "easyQuestion": {"en": "Do you ride the bus home?", "ko": "버스 타고 집에 가?"}}
+        ],
+        "more": [
+          {"no": 1, "en": "Is your friend nice or funny?", "ko": "네 친구는 착해, 아니면 웃겨?", "targets": ["person"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 착한 사람이야.", "hints": ["My friend is a nice ___.", "My friend is a nice person."], "answerExample": "My friend is a nice person.", "easyQuestion": {"en": "Is your friend nice?", "ko": "네 친구는 착해?"}},
+          {"no": 2, "en": "Can your friend dance with the penguins?", "ko": "네 친구는 펭귄이랑 춤출 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 내 친구는 춤을 잘 추는 사람이야.", "hints": ["Yes, my friend is a good ___.", "Yes, my friend is a good dancer."], "answerExample": "Yes, my friend is a good dancer.", "easyQuestion": {"en": "Can your friend dance?", "ko": "네 친구는 춤출 수 있어?"}},
+          {"no": 3, "en": "Can you draw a tall giraffe?", "ko": "너는 키 큰 기린을 그릴 수 있어?", "targets": ["artist"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 나는 그림을 잘 그리는 화가야.", "hints": ["Yes, I am a good ___.", "Yes, I am a good artist."], "answerExample": "Yes, I am a good artist.", "easyQuestion": {"en": "Do you have crayons?", "ko": "크레용 있어?"}},
+          {"no": 4, "en": "Can your friend sing or play the piano?", "ko": "네 친구는 노래할 수 있어, 아니면 피아노를 칠 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 노래를 잘하는 사람이야.", "hints": ["My friend is a good ___.", "My friend is a good singer."], "answerExample": "My friend is a good singer.", "easyQuestion": {"en": "Can your friend sing?", "ko": "네 친구는 노래할 수 있어?"}},
+          {"no": 5, "en": "A man writes about the zoo animals. What is he?", "ko": "어떤 남자가 동물원 동물들에 대해 글을 써. 그 사람은 뭐 하는 사람이야?", "targets": ["writer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "그 사람은 작가야.", "hints": ["He is a ___.", "He is a writer."], "answerExample": "He is a writer.", "easyQuestion": {"en": "Do you like the zoo animals?", "ko": "동물원 동물들 좋아해?"}}
+        ],
+        "flow": ["After the first question, the teacher follows the child's answer.", "The scene is the zoo with the child's friend: big elephants, animal books, a plane in the sky, the bus home.", "The teacher brings in person when the child says what the friend is like.", "The teacher brings in scientist and writer when the talk reaches the animals, and pilot when it reaches the sky.", "The scene is something to talk about, not a list of questions to finish."],
+        "todayTopicsKo": ["친구와 동물원에", "코끼리를 연구하는 사람", "동물 책과 하늘의 비행기", "버스로 집에"],
+        "closingLines": [
+          {"en": "Everyone likes a kind person.", "ko": "모두 친절한 사람을 좋아해."},
+          {"en": "A scientist studies the animals.", "ko": "과학자는 동물을 연구해."},
+          {"en": "A writer writes books about animals.", "ko": "작가는 동물에 대한 책을 써."},
+          {"en": "A pilot flies a plane in the sky.", "ko": "조종사는 하늘에서 비행기를 몰아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, okay!", "ko": "오, 그렇구나!"},
+          {"en": "Wow, cool!", "ko": "와, 멋지다!"}
+        ],
+        "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+        "farewell": {"en": "Goodbye, {NAME}! See you!", "ko": "잘 가, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Bye for now, {NAME}!", "ko": "그럼 이만 안녕, {NAME}!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Nice!"]
+      }
+    },
+    {
+      "kind": "reinforce",
+      "lessonNo": 9,
+      "variant": 1,
+      "revision": 6,
+      "correction": 0,
+      "generation": {"method": "generated", "model": "claude-opus-5-5", "effort": "xhigh", "briefHash": "e828a78c1f74c80dbc5d958e342b7eac5a97d0032142a4224f00a8d1575eb260", "agentHash": "259027cdfc8e1f71e943b3867e1ef42c9fb6bf9ea7a84e85fac6144b0d0012f9", "createdOn": "2026-11-26"},
+      "title": "친구와 간 바닷가",
+      "newWords": [],
+      "unitWords": ["singer", "dancer", "driver", "artist", "scientist", "pilot", "person"],
+      "card": {
+        "topic": "친구가 하는 일 · 친구와 간 바닷가 모래 위에서 하는 일과 만나는 사람",
+        "targetExpressions": ["Yes, I am a good dancer.", "Yes, my friend is a good artist.", "I am a good singer.", "She is a scientist.", "No, a pilot flies a plane."],
+        "goals": ["talk-4-1-1", "talk-4-1-2"],
+        "greetingTurns": 1,
+        "greeting": {"firstLine": {"en": "Hi, {NAME}! Good to see you! How are you?", "ko": "안녕, {NAME}! 또 만나서 반가워! 잘 지냈어?"}},
+        "todayWords": [],
+        "required": [
+          {"no": 1, "en": "Let's go to the beach with your friend! Can you dance on the hot sand?", "ko": "친구랑 바닷가에 가 보자! 너는 뜨거운 모래 위에서 춤출 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 나는 춤을 잘 추는 사람이야.", "hints": ["Yes, I am a good ___.", "Yes, I am a good dancer."], "answerExample": "Yes, I am a good dancer.", "easyQuestion": {"en": "Do you like the beach?", "ko": "바닷가 좋아해?"}},
+          {"no": 2, "en": "Can your friend draw fish in the sand?", "ko": "네 친구는 모래에 물고기를 그릴 수 있어?", "targets": ["artist"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 내 친구는 그림을 잘 그리는 화가야.", "hints": ["Yes, my friend is a good ___.", "Yes, my friend is a good artist."], "answerExample": "Yes, my friend is a good artist.", "easyQuestion": {"en": "Can your friend draw?", "ko": "네 친구는 그림 그릴 수 있어?"}},
+          {"no": 3, "en": "Can you sing or catch fish?", "ko": "너는 노래할 수 있어, 아니면 물고기를 잡을 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "나는 노래를 잘하는 사람이야.", "hints": ["I am a good ___.", "I am a good singer."], "answerExample": "I am a good singer.", "easyQuestion": {"en": "Do you like songs?", "ko": "노래 좋아해?"}},
+          {"no": 4, "en": "A woman studies the fish in the water. What is she?", "ko": "어떤 여자가 물속의 물고기를 연구해. 그 사람은 뭐 하는 사람이야?", "targets": ["scientist"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "그 사람은 과학자야.", "hints": ["She is a ___.", "She is a scientist."], "answerExample": "She is a scientist.", "easyQuestion": {"en": "Do you like fish?", "ko": "물고기 좋아해?"}},
+          {"no": 5, "en": "Can you fly a plane home?", "ko": "너는 비행기를 몰고 집에 갈 수 있어?", "targets": ["pilot"], "goals": ["talk-4-1-1"], "ask": "re_ask", "hintKo": "아니, 조종사가 비행기를 몰아.", "hints": ["No, a ___ flies a plane.", "No, a pilot flies a plane."], "answerExample": "No, a pilot flies a plane.", "easyQuestion": {"en": "Do you like big planes?", "ko": "큰 비행기 좋아해?"}}
+        ],
+        "more": [
+          {"no": 1, "en": "Is your friend cool or funny?", "ko": "네 친구는 멋져, 아니면 웃겨?", "targets": ["person"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 멋진 사람이야.", "hints": ["My friend is a cool ___.", "My friend is a cool person."], "answerExample": "My friend is a cool person.", "easyQuestion": {"en": "Is your friend funny?", "ko": "네 친구는 웃겨?"}},
+          {"no": 2, "en": "A man takes everyone home on a bus. What is he?", "ko": "어떤 남자가 버스로 모두를 집에 데려다줘. 그 사람은 뭐 하는 사람이야?", "targets": ["driver"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "그 사람은 버스 운전사야.", "hints": ["He is a bus ___.", "He is a bus driver."], "answerExample": "He is a bus driver.", "easyQuestion": {"en": "Do you ride a bus home?", "ko": "버스 타고 집에 가?"}},
+          {"no": 3, "en": "Can your friend dance or jump high?", "ko": "네 친구는 춤출 수 있어, 아니면 높이 뛸 수 있어?", "targets": ["dancer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "내 친구는 춤을 잘 추는 사람이야.", "hints": ["My friend is a good ___.", "My friend is a good dancer."], "answerExample": "My friend is a good dancer.", "easyQuestion": {"en": "Can your friend dance?", "ko": "네 친구는 춤출 수 있어?"}},
+          {"no": 4, "en": "Can your friend sing a happy song?", "ko": "네 친구는 신나는 노래를 부를 수 있어?", "targets": ["singer"], "goals": ["talk-4-1-2"], "ask": "re_ask", "hintKo": "응, 내 친구는 노래를 잘하는 사람이야.", "hints": ["Yes, my friend is a good ___.", "Yes, my friend is a good singer."], "answerExample": "Yes, my friend is a good singer.", "easyQuestion": {"en": "Do you sing songs?", "ko": "너는 노래 불러?"}},
+          {"no": 5, "en": "Do you study fish and shells?", "ko": "너는 물고기랑 조개를 연구해?", "targets": ["scientist"], "goals": ["talk-4-1-1"], "ask": "re_ask", "hintKo": "아니, 과학자가 물고기랑 조개를 연구해.", "hints": ["No, a ___ studies fish and shells.", "No, a scientist studies fish and shells."], "answerExample": "No, a scientist studies fish and shells.", "easyQuestion": {"en": "Do you like shells?", "ko": "조개 좋아해?"}}
+        ],
+        "flow": ["After the first question, the teacher follows the child's answer.", "The scene is the beach with the child's friend: hot sand, pictures in the sand, fish in the water, a plane, the bus home.", "The teacher uses singer, dancer and artist again when the child talks about the sand.", "When the child talks about playing with the friend, the teacher can say together once in a reply.", "The scene is something to talk about, not a list of questions to finish."],
+        "todayTopicsKo": ["친구와 바닷가에", "모래 위에서 춤과 그림", "물고기를 연구하는 사람", "비행기와 집에 가는 버스"],
+        "closingLines": [
+          {"en": "A singer sings a happy song.", "ko": "가수는 신나는 노래를 불러."},
+          {"en": "A dancer dances on the hot sand.", "ko": "춤추는 사람이 뜨거운 모래 위에서 춤춰."},
+          {"en": "An artist draws fish in the sand.", "ko": "화가가 모래에 물고기를 그려."},
+          {"en": "A scientist studies the fish.", "ko": "과학자는 물고기를 연구해."},
+          {"en": "A pilot flies a big plane.", "ko": "조종사는 큰 비행기를 몰아."}
+        ],
+        "safeLines": [
+          {"en": "Oh, I see!", "ko": "아, 그렇구나!"},
+          {"en": "Okay, cool!", "ko": "좋아, 멋지다!"}
+        ],
+        "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+        "farewell": {"en": "Bye, {NAME}! See you!", "ko": "안녕, {NAME}! 또 보자!"},
+        "safetyFarewell": {"en": "Bye for now, {NAME}!", "ko": "그럼 이만 안녕, {NAME}!"},
+        "praiseLines": ["Wow!", "Good!", "Great!", "Nice!"]
+      }
+    }
+  ]
+}
