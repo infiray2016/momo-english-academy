@@ -314,7 +314,7 @@ describe("따라 할 문장(listen_sentence) 대조와 소리 줄(spec 설계 4 
     }
   });
 
-  it("4단계부터는 빼지 않는다(이야기 방식은 1~3단계에서만 열리고, 4단계의 inSay 는 정규화로 든 것만 본다 — 보고 M-4)", () => {
+  it("4단계부터는 빼지 않는다(이야기 방식 구간은 1-3 · 4-6 이지만 따라 할 문장을 글에서 빼는 것은 1~3단계뿐이고, 4단계의 inSay 는 정규화로 든 것만 본다 — 보고 M-4)", () => {
     const say = "Say it with me: I like cats.";
     const r = reply({ listen_sentence: "I like cats.", say }, { level: 4 });
     expect(r.text).toBe(say);

@@ -93,7 +93,8 @@ const CHARS_PER_TOKEN_ESTIMATE = 3;
 const CALL_CONCURRENCY = 4;
 /**
  * 평가 호출 구성을 읽는 단계의 기본값(이야기 방식이 처음 돈 1~3단계 구간의 한 단계, 기술 값). 다른 구간의 수업을 대조할 때는 --level 로 그
- * 구간의 단계를 준다(13절 C254 · 분석 S6 — 4단계 확인 실행).
+ * 구간의 단계를 준다(13절 C254 · 분석 S6 — 4단계 확인 실행). 다만 talk_chat_eval 은 구간 키 목적이 아니어서(src/core/ai/combo.ts
+ * isTalkPurpose · comboKeyBaseOf) 지금 설정에서는 --level 로 평가 호출 구성이 갈리지 않는다 — 그 목적이 구간 키를 쓰게 될 때를 위한 자리다.
  */
 export const EVAL_CONFIG_LEVEL = 3;
 /** 사람 판독 칸의 머리(spec AC-9). */
@@ -1880,7 +1881,8 @@ async function runAgainstLead(
   const plans = lessons.map((l) =>
     l.lesson.sayLost ? [] : leadEvalPlanOf(l.lesson, contextTurns),
   );
-  // 평가 호출의 ai.* 키(모델 · 출력 상한)를 읽는 단계(기본 3 — 이야기 방식이 처음 돈 1~3단계 구간, --level 로 바꿈)
+  // 평가 호출의 ai.* 키(모델 · 출력 상한)를 읽는 단계(기본 3 — 이야기 방식이 처음 돈 1~3단계 구간, --level 로 바꿈). talk_chat_eval 은 구간 키
+  // 목적이 아니어서(src/core/ai/combo.ts isTalkPurpose) 지금 설정에서는 단계로 구성이 갈리지 않는다
   const reqConfig = requestConfigOf({
     purpose: "talk_chat_eval",
     level: args.evalLevel,

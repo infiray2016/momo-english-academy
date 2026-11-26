@@ -2625,6 +2625,11 @@ function chatCountRows(
   ];
 }
 
+/** 결과 글의 긴 대본 절 머리(--long-seeds 로 여러 벌이면 그 벌 수 — 검토 M-4). 한 벌 · 없음이면 지난 머리 그대로다. */
+export function longSectionTitleOf(count: number): string {
+  return `## 긴 대본 ${count > 1 ? `${count}벌` : "한 벌"}(AC-11 — 대화 기록 길이에 따른 첫 문장 시간 · 입력 토큰 · 비용 · 안전 상한 사실 줄 차례)`;
+}
+
 export function chatMarkdownOf(lessons: readonly Lesson[]): string {
   const main = lessons.filter((l) => l.meta.variant !== "long");
   const longs = lessons.filter(
@@ -2879,10 +2884,7 @@ export function chatMarkdownOf(lessons: readonly Lesson[]): string {
           .join(" · ")} | ${r.costUsd} |`,
     ),
   ];
-  out.push(
-    "## 긴 대본 한 벌(AC-11 — 대화 기록 길이에 따른 첫 문장 시간 · 입력 토큰 · 비용 · 안전 상한 사실 줄 차례)",
-    "",
-  );
+  out.push(longSectionTitleOf(longs.length), "");
   if (longs.length === 0) out.push("(긴 대본 없음)", "");
   for (const l of longs) {
     const lr = chatTurnRowsOf([l]);

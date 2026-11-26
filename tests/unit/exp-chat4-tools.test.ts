@@ -18,6 +18,7 @@ import {
 import {
   ALL_CHILDREN,
   CHAT_CARD_SCRIPT,
+  CONDITION_DIFFER_EXIT,
   cardScriptOf,
   DEFAULT_CARD_WHERE,
   parseRunArgs,
@@ -26,6 +27,7 @@ import {
   setupOf,
 } from "../../scripts/exp/arch-compare";
 import {
+  longSectionTitleOf,
   scenarioMarkdownOf,
   setupLevelOf,
 } from "../../scripts/exp/arch-report";
@@ -44,6 +46,7 @@ import {
   lessonRowOf,
   materialsOf,
   parseArgs,
+  parseObserveScript,
   readScriptFiles,
   readSeedFiles,
   runTalkObserve,
@@ -117,6 +120,31 @@ describe("arch-compare 단계 · 단원 · 수업 인자와 긴 대본 씨앗(S6
     expect(() =>
       parseRunArgs([...SCENARIO_RUN, "--long-seeds", "1,1"]),
     ).toThrow("같은 씨앗");
+  });
+
+  it("--long 없이 --long-seeds 를 주면 멈춘다(긴 대본을 빠뜨린 채 계획을 지나가지 않게 — 검토 M-5)", () => {
+    const noLong = SCENARIO_RUN.filter((a) => a !== "--long");
+    expect(() => parseRunArgs([...noLong, "--long-seeds", "1,2"])).toThrow(
+      "--long-seeds 는 --long 에서만 쓴다",
+    );
+    expect(parseRunArgs(noLong).long).toBe(false);
+  });
+
+  it("이야기 방식 요청을 만들지 못하면(chatSystem 없음) CHAT 이 있을 때만 끝 코드 4 로 멈춘다(검토 M-1)", () => {
+    const args = parseRunArgs(SCENARIO_RUN);
+    const setup = setupOf(ROOT, { card: args.card, where: args.where });
+    const closed = { ...setup, chatSystem: null };
+    const withChat = preflightOf(closed, args);
+    expect(withChat.exitCode).toBe(CONDITION_DIFFER_EXIT);
+    expect(CONDITION_DIFFER_EXIT).toBe(4);
+    expect(withChat.lines.join("\n")).toContain(
+      "arch-compare: 이야기 방식 요청을 만들지 못함(회화 3단계 단원 1 수업 1",
+    );
+    const noChat = preflightOf(closed, { ...args, arms: ["R3"] });
+    expect(noChat.exitCode).toBe(0);
+    expect(noChat.lines.join("\n")).not.toContain(
+      "이야기 방식 요청을 만들지 못함",
+    );
   });
 
   it("--level 3 --unit 1 --lesson 1 을 적어 준 계획 · 같은 조건 표는 인자 없는 계획과 글자까지 같다", () => {
@@ -206,16 +234,50 @@ describe("4단계 아이 역 시나리오 여덟(arch-arms CHILD_PERSONAS_L4)", 
     expect(hangul(CHILD_PERSONAS_L4.SD)).toEqual(["몰라요"]);
   });
 
-  it("SA 의 예문은 3단계처럼 한 조각이 네 낱말 이하이고, 4단계 예문에는 '사람 + 동사-s' 말과 -s 를 빠뜨린 말이 함께 든다", () => {
+  it("SA 의 예문은 3단계처럼 한 조각이 네 낱말 이하이고, 4단계 SA 예문에는 동사-s 말과 -s 를 빠뜨린 말이 함께 든다", () => {
     const quoted = [...CHILD_PERSONAS_L4.SA.matchAll(/"([^"]+)"/g)].map(
       (m) => m[1] ?? "",
     );
     expect(quoted.length).toBeGreaterThanOrEqual(4);
     for (const q of quoted)
       expect(q.split(/\s+/).length, q).toBeLessThanOrEqual(4);
-    const all = Object.values(CHILD_PERSONAS_L4).join(" ");
-    expect(all).toContain("She dances at school!");
-    expect(all).toContain("My friend dance!");
+    expect(quoted).toContain("My dragon flies!");
+    expect(quoted).toContain("It like apple!");
+  });
+
+  it("4단계 SA · SB · SE 는 수업 주제('친구가 하는 일') 밖이다: SA · SE 에 수업 1 새 단어가 없고 SA 에 friend 가 없으며, SB 는 요청자 원문 B 의 물음을 묻는다(검토 I-1)", () => {
+    const has = (text: string, word: string) =>
+      new RegExp(`\\b${word}`, "i").test(text);
+    const lesson1 = ["singer", "dancer", "driver", "artist"];
+    for (const k of ["SA", "SE"] as const)
+      for (const w of lesson1)
+        expect(has(CHILD_PERSONAS_L4[k], w), `${k} · ${w}`).toBe(false);
+    expect(has(CHILD_PERSONAS_L4.SA, "friend")).toBe(false);
+    expect(CHILD_PERSONAS_L4.SB).toContain('"Teacher, what do you like?"');
+    expect(has(CHILD_PERSONAS_L4.SB, "friend")).toBe(false);
+    // SE 의 새 화제는 단원 단어 서른 어느 것도 쓰지 않는다(지난 글의 driver · team 이 단원 단어였다)
+    const specs = JSON.parse(
+      readFileSync(join(ROOT, "seed/unit-specs.json"), "utf8"),
+    ) as {
+      unitSpecs: {
+        area: string;
+        level: number;
+        unit: number;
+        words: string[];
+      }[];
+    };
+    const words =
+      specs.unitSpecs.find(
+        (u) => u.area === "talk" && u.level === 4 && u.unit === 1,
+      )?.words ?? [];
+    expect(words).toHaveLength(30);
+    for (const w of words)
+      expect(
+        new RegExp(`\\b${w}\\b`, "i").test(CHILD_PERSONAS_L4.SE),
+        `SE · ${w}`,
+      ).toBe(false);
+    // SE 는 3단계에 없던 말 길이 지시를 두지 않는다(검토 M-6)
+    expect(CHILD_PERSONAS_L4.SE).not.toContain("You say it in short sentences");
   });
 
   it("아이 역 안내문: 3단계는 지난 글 그대로(단계 인자 없음과 같음), 4단계는 같은 머리 + 4단계 글, 글이 없는 단계 · 아이 역은 멈춘다", () => {
@@ -244,6 +306,16 @@ describe("4단계 아이 역 시나리오 여덟(arch-arms CHILD_PERSONAS_L4)", 
     const l4 = scenarioMarkdownOf("SA", [], 4);
     expect(l4).toContain(CHILD_PERSONAS_L4.SA);
     expect(l4).toContain("회화 4단계 글");
+  });
+
+  it("결과 글(arch-report): 긴 대본 절의 머리는 벌 수를 적고, 한 벌 · 없음이면 지난 머리 그대로다(검토 M-4)", () => {
+    const one =
+      "## 긴 대본 한 벌(AC-11 — 대화 기록 길이에 따른 첫 문장 시간 · 입력 토큰 · 비용 · 안전 상한 사실 줄 차례)";
+    expect(longSectionTitleOf(1)).toBe(one);
+    expect(longSectionTitleOf(0)).toBe(one);
+    expect(longSectionTitleOf(2)).toBe(
+      "## 긴 대본 2벌(AC-11 — 대화 기록 길이에 따른 첫 문장 시간 · 입력 토큰 · 비용 · 안전 상한 사실 줄 차례)",
+    );
   });
 });
 
@@ -365,6 +437,27 @@ describe("talk:observe 개정 5 견본 인자(R2)와 수업 행 고르기(T-340 
       logs.find((l) => l.startsWith("replay-lesson-1108")) ?? "";
     expect(planLine(withRev5.logs)).toContain("아이 차례 23 · 예상 호출 23");
     expect(planLine(plain.logs)).toContain("아이 차례 23 · 예상 호출 23");
+    // 재생 대본의 카드 개정(cardRevision 5)과 고른 수업 행의 개정이 다르면 알림 한 줄(막지 않음 — 검토 M-2)
+    const alerts = (logs: string[]) =>
+      logs.filter((l) => l.startsWith("카드 개정 알림"));
+    expect(alerts(plain.logs)).toEqual([
+      "카드 개정 알림: replay-lesson-1108 은 카드 개정 5 전제인데 고른 수업 행(회화 3단계 단원 1 수업 6)은 개정 6 이다 — 막지 않고 계획한다(개정 5 견본은 --card-file)",
+    ]);
+    expect(alerts(withRev5.logs)).toEqual([]);
+  });
+
+  it("재생 대본 둘은 선택 칸 cardRevision 5 를 갖고, 대본 파서가 그 칸을 받는다(검토 M-2)", () => {
+    const files = readScriptFiles(ROOT);
+    for (const name of ["replay-lesson-1108", "l3-heard-counter"]) {
+      const f = files.find((x) => x.file === `${name}.json`);
+      expect(f, name).toBeDefined();
+      const parsed = parseObserveScript(f?.raw, `${name}.json`);
+      expect(parsed.ok && parsed.script.cardRevision, name).toBe(5);
+    }
+    const others = files
+      .map((f) => parseObserveScript(f.raw, f.file))
+      .filter((p) => p.ok && p.script.cardRevision !== undefined);
+    expect(others).toHaveLength(2);
   });
 
   it("수업 행: 같은 번호면 보강보다 정규(배정 · 다지기), 그 안에서 작은 변형, 같으면 파일 차례", () => {

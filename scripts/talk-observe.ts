@@ -865,6 +865,11 @@ const ScriptSchema = z.strictObject({
   source: z.string().optional(),
   note: z.string().optional(),
   /**
+   * 이 대본이 전제한 카드 개정(수업 행의 revision — 재생 대본 둘은 개정 5 다지기 6). 계획에서 고른 수업 행의 개정과 다르면 알림 한 줄을 찍는다
+   * (막지 않음 — 검토 rev-chat4-tools M-2). 개정이 같은 수업은 --card-file 로 준다.
+   */
+  cardRevision: z.int().min(1).optional(),
+  /**
    * 고정 입력 재생 대본(13절 C217 (4)): 실제 수업의 아이 입력(들은 글 · 단추 · 누른 힌트 수)을 차례대로 그대로 넣는다. 선생님 말이 실제 수업과
    * 달라지면 뒤 입력이 그 질문과 어긋날 수 있으므로 계획 줄 · 보고 · 지표 표에 '고정 입력 재생'을 밝힌다.
    */
@@ -1146,6 +1151,8 @@ const LessonFileLite = z.object({
       kind: z.string().optional(),
       /** 주제 변형(1 · 2 …). 같은 수업의 변형이 여럿이면 가장 작은 변형을 읽는다 — 옛 시험 재료에는 없다. */
       variant: z.int().optional(),
+      /** 카드 개정(대본의 cardRevision 과 견주는 값 — 알림만). 옛 시험 재료에는 없다. */
+      revision: z.int().optional(),
       newWords: z.array(z.string()),
       /** 그 수업 내용의 단원 단어(서버 수업 상태의 원형 표 state.lemmaOf 의 재료 — 묶음 T1 fix 1). 옛 시드에는 없다. */
       unitWords: z.array(z.string()).optional(),
@@ -3915,7 +3922,7 @@ export function createTalkSim(
   const summaries = summariesOf(options.summaries ?? [], values);
   // 처음 스냅숏의 회화 방식(서버 index.ts ensureLessonStarted — core leadStartModeOf: 설정이 claude · 새 방식의 단계 구간 · 그 단원의 안내문 글이
   // 있을 때만 claude). 그 뒤 판단은 이 값 하나로 한다(isLeadSession · leadTurnAppliesOf). 설정이 없거나 app 이면 지금 길 그대로다
-  // 설정이 chat 이면 서버 index.ts lessonStartModeOf 와 같은 조건 넷(설정 · 1~3단계 · 단원 재료 · 선생님 재료)으로 chat · app 을 고른다(묶음 T1 —
+  // 설정이 chat 이면 서버 index.ts lessonStartModeOf 와 같은 조건 넷(설정 · 이야기 방식 구간 1-3 · 4-6 · 단원 재료 · 선생님 재료)으로 chat · app 을 고른다(묶음 T1 —
   // app · claude 는 위 판단 그대로)
   const start = leadModeStartField(
     lessonStartModeOf({
@@ -8570,6 +8577,26 @@ export function seedReaderOf(
   };
 }
 
+/**
+ * 대본이 전제한 카드 개정(cardRevision)과 계획에서 고를 수업 행(lessonRowOf)의 개정이 다르면 알림 한 줄(막지 않음 — 검토 rev-chat4-tools M-2).
+ * 개정 칸이 없는 대본 · 수업 행을 못 고른 대본(계획이 까닭과 함께 건너뜀)은 null 이다.
+ */
+export function cardRevisionAlertOf(
+  script: Pick<
+    ObserveScript,
+    "name" | "level" | "unit" | "lesson" | "cardRevision"
+  >,
+  lessonFile: unknown,
+): string | null {
+  if (script.cardRevision === undefined) return null;
+  const lessons = LessonFileLite.safeParse(lessonFile);
+  const row = lessons.success
+    ? lessonRowOf(lessons.data.lessons, script.lesson)
+    : undefined;
+  if (!row || row.revision === script.cardRevision) return null;
+  return `카드 개정 알림: ${script.name} 은 카드 개정 ${script.cardRevision} 전제인데 고른 수업 행(회화 ${script.level}단계 단원 ${script.unit} 수업 ${script.lesson})은 ${row.revision === undefined ? "개정 칸이 없다" : `개정 ${row.revision} 이다`} — 막지 않고 계획한다(개정 ${script.cardRevision} 견본은 --card-file)`;
+}
+
 function loadScripts(io: Pick<TalkObserveIo, "readScripts">): ObserveScript[] {
   const scripts: ObserveScript[] = [];
   for (const { file, raw } of io.readScripts()) {
@@ -8609,6 +8636,11 @@ export async function runTalkObserve(
     io.log(
       `카드 견본: ${cardFile.path}(회화 ${cardFile.level}단계 단원 ${cardFile.unit}) — 이 파일의 수업을 읽는 대본 ${using.length}${using.length > 0 ? `(${using.map((s) => s.name).join(" · ")})` : ""}`,
     );
+  }
+  for (const s of scripts) {
+    if (s.cardRevision === undefined) continue;
+    const alert = cardRevisionAlertOf(s, readSeed(s.level, s.unit).lessonFile);
+    if (alert !== null) io.log(alert);
   }
   const simOptionsOf = (script: ObserveScript) => ({
     skippedPrep: script.prep?.skipped ?? [],

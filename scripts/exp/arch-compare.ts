@@ -2442,7 +2442,7 @@ async function chatLessonRun(
   const probe = chatSimFor(setup, values, lesson);
   if (!probe.chat.on)
     throw new Error(
-      `${lesson}: 이야기 방식 세션이 아니다(1~3단계 · 선생님 이야기 방식 칸 확인)`,
+      `${lesson}: 이야기 방식 세션이 아니다(이야기 방식 구간 1-3 · 4-6 · 단원 재료 · 선생님 이야기 방식 칸 확인)`,
     );
   const settings = probe.chat.settings;
   if (!(CHAT_LOW_CONFIDENCE < settings.unsureConfidence))
@@ -3514,6 +3514,11 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
     lesson: positive("--lesson") ?? DEFAULT_CARD_WHERE.lesson,
   };
   const longSeedsText = get("--long-seeds");
+  // 긴 대본 씨앗만 주고 --long 을 빠뜨리면 긴 대본 없이 계획 · 비용 확인을 지나가므로 멈춘다(replay 에 자리 인자를 준 때와 같은 꼴 — 검토 M-5)
+  if (longSeedsText !== undefined && !argv.includes("--long"))
+    throw new Error(
+      "--long-seeds 는 --long 에서만 쓴다(긴 대본을 돌리려면 --long 을 함께 준다)",
+    );
   const longSeeds =
     longSeedsText === undefined
       ? [CHAT_LONG_SEED]

@@ -2735,7 +2735,7 @@ export type LessonChatTurn = {
   ) => void;
 };
 
-/** 이 수업의 이 토막을 이야기 방식이 맡는가(처음 스냅숏의 방식 chat · 1~3단계 — isChatSession, 토막은 인사 · 대화 · 더 이야기하기). */
+/** 이 수업의 이 토막을 이야기 방식이 맡는가(처음 스냅숏의 방식 chat · 이야기 방식 구간 1-3 · 4-6 — isChatSession, 토막은 인사 · 대화 · 더 이야기하기). */
 export function chatTurnAppliesOf(
   state: Parameters<typeof isChatSession>[0] & { segment: string },
 ): boolean {
