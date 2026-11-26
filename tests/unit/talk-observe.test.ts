@@ -547,13 +547,26 @@ describe("자료 · 계획", () => {
     expect(m.spec.band).toBe("1-3");
   });
 
-  it("4단계 카드 시드가 없으면 그 까닭으로 건너뛴다", () => {
+  it("4단계 단원 1 수업 1 은 시드 카드 · 단계 규격으로 채운다", () => {
     const m = materialsOf(readSeedFiles(ROOT, 4, 1), {
       level: 4,
       unit: 1,
       lesson: 1,
       teacher: "mina",
     });
+    expect(m.ok).toBe(true);
+    if (!m.ok) return;
+    expect(m.materials.card.required.length).toBeGreaterThan(0);
+    expect(m.materials.ctx.unitWords).toContain("singer");
+    expect(m.materials.spec.band).toBe("4-6");
+  });
+
+  it("카드 시드 파일이 없으면 그 까닭으로 건너뛴다", () => {
+    // 시드에 4단계 단원 1 카드가 생겼으므로(2026-11-27), 없는 경우는 읽은 재료에서 수업 파일만 비워서 본다
+    const m = materialsOf(
+      { ...readSeedFiles(ROOT, 4, 1), lessonFile: null },
+      { level: 4, unit: 1, lesson: 1, teacher: "mina" },
+    );
     expect(m).toEqual({
       ok: false,
       missing: "카드 시드 없음(seed/lessons/talk/4/1.json)",
