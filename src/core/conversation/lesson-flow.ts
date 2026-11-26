@@ -409,6 +409,10 @@ export function talkLessonPositionOf(args: LessonArgs): TalkLessonPosition {
         // 인사 끝 턴의 응답은 반응과 넘어가는 말뿐이다(질문 자리를 열지 않음, C19)
         transitionNext = false;
         slot = null;
+        // 이야기 방식 넘김 행(move.chat 이 있음)은 자리 막힘 수도 되돌린다(13절 C243 보완 4 (14) · C254 (5)): 짧은 준비가 없는 수업(4단계 꼴)에는
+        // 셈을 되돌리는 돌아옴 · 대화 첫 질문 행이 없어, 막힘으로 닫은 인사의 수가 대화 첫 막힘으로 이어졌다. 기존 두 방식의 행은 그 뒤 대화 첫 질문
+        // 행이 되돌리므로 그대로 둔다. 이어진 막힘(streak)은 지금처럼 잇는다
+        if (m?.chat !== undefined) stuckInSlot = 0;
         continue;
       }
       // 이어 묻기 뒤 선생님 차례 셈(대화 토막 — 받침 차례는 막힘 처리라, 마무리 자리는 마무리 물음이라 세지 않는다)

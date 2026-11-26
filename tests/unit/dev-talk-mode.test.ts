@@ -22,7 +22,7 @@ const getDb = vi.fn(() => {
 });
 vi.mock("@/server/db", () => ({ getDb: () => getDb() }));
 
-import { talkLeadTextOf } from "@/core/ai/calls/talk-lead";
+import { talkUnitTextOf } from "@/core/ai/calls/talk-lead";
 import {
   chatUnitMaterialOf,
   lessonStartModeOf,
@@ -386,8 +386,9 @@ describe("개발용 회화 방식 전환 서버 액션", () => {
 
   /**
    * 처음 스냅숏 칸(index.ts ensureLessonStarted 와 같은 식): 방식은 lessonStartModeOf 가 정한다 — app · claude 는 leadStartModeOf(설정 · 단계
-   * 구간 · 그 단원의 안내문 글 — 13절 C241 보완) 그대로이고, chat 은 넷(설정 · 1~3단계 구간 · 단원 재료 · 고른 선생님의 재료)이 모두 설 때만
-   * chat 이다. 안내문 글 · 단원 재료가 있는 단원은 지금 회화 3단계 단원 1 이다(운영 표 talkLeadTextOf 기본값). 선생님은 시드 명단에서 고른다.
+   * 구간 · 그 단원의 안내문 글 — 13절 C241 보완) 그대로이고, chat 은 넷(설정 · 이야기 방식 구간 · 단원 재료 · 고른 선생님의 재료)이 모두 설 때만
+   * chat 이다. 안내문 글이 있는 단원은 지금 회화 3단계 단원 1 이고(운영 표 talkLeadTextOf 기본값), 단원 재료는 그와 4단계 단원 1 이다(talkUnitTextOf,
+   * C254). 선생님은 시드 명단에서 고른다.
    */
   const teacherOf = (key: string): Teacher => {
     const found = rosterOf().find((t) => t.key === key);
@@ -490,17 +491,17 @@ describe("개발용 회화 방식 전환 화면", () => {
       chat: "이야기 방식(실험)",
     });
     expect(TALK_MODE_TEXT.chatScope).toBe(
-      "이야기 방식은 회화 3단계 단원 1 에서 열려요.",
+      "이야기 방식은 회화 3단계 단원 1 · 4단계 단원 1 에서 열려요.",
     );
     // 안내 줄이 적은 단원은 재료와 맞는다: 회화 1~12단계 × 단원 1~5 × 시드 선생님 가운데 설정이 chat 일 때 처음 스냅숏이 chat 인
-    // 곳은 3단계 단원 1 에서 시드 선생님 모두이고(단원 재료는 3단계 단원 1 에만, 선생님 재료는 미나 · 리오 둘 다), 그래서 안내 줄은
-    // 선생님 이름을 적지 않는다. 단원 재료가 늘거나 재료 없는 선생님이 생기면 이 시험이 걸려 문구를 함께 고친다.
+    // 곳은 3단계 단원 1 · 4단계 단원 1(13절 C254)에서 시드 선생님 모두이고(단원 재료는 그 두 단원에만, 선생님 재료는 미나 · 리오 둘 다), 그래서
+    // 안내 줄은 선생님 이름을 적지 않는다. 단원 재료가 늘거나 재료 없는 선생님이 생기면 이 시험이 걸려 문구를 함께 고친다.
     const roster = rosterOf();
     const opens: string[] = [];
     const unitMaterial: string[] = [];
     for (let level = 1; level <= 12; level++)
       for (let unit = 1; unit <= 5; unit++) {
-        if (chatUnitMaterialOf(talkLeadTextOf, level, unit))
+        if (chatUnitMaterialOf(talkUnitTextOf, level, unit))
           unitMaterial.push(`${level}-${unit}`);
         for (const teacher of roster)
           if (
@@ -508,14 +509,18 @@ describe("개발용 회화 방식 전환 화면", () => {
           )
             opens.push(`${level}-${unit}-${teacher.nameKo}`);
       }
-    expect(unitMaterial).toEqual(["3-1"]);
+    expect(unitMaterial).toEqual(["3-1", "4-1"]);
     expect(
       roster.filter((t) => chatMaterialOf(t) !== null).map((t) => t.nameKo),
     ).toEqual(["미나", "리오"]);
-    expect(opens).toEqual(["3-1-미나", "3-1-리오"]);
+    expect(opens).toEqual(["3-1-미나", "3-1-리오", "4-1-미나", "4-1-리오"]);
     // 이름 없는 글("… 단원 1 에서 열려요")이 참이려면 명단의 모든 선생님으로 열려야 한다(코드 검토 M-1 — 재료 없는 선생님이 생기면 여기서 걸린다)
-    expect(opens).toEqual(roster.map((t) => `3-1-${t.nameKo}`));
-    expect(TALK_MODE_TEXT.chatScope).toContain("회화 3단계 단원 1 에서");
+    expect(opens).toEqual(
+      ["3-1", "4-1"].flatMap((u) => roster.map((t) => `${u}-${t.nameKo}`)),
+    );
+    expect(TALK_MODE_TEXT.chatScope).toContain(
+      "회화 3단계 단원 1 · 4단계 단원 1 에서",
+    );
     for (const teacher of roster)
       expect(TALK_MODE_TEXT.chatScope).not.toContain(teacher.nameKo);
     const chat = html({
@@ -538,7 +543,7 @@ describe("개발용 회화 방식 전환 화면", () => {
     expect(chat).toContain(TALK_MODE_TEXT.notice);
     expect(chat).toContain(TALK_MODE_TEXT.scope);
     expect(chat).toContain(
-      '<p data-testid="talk-mode-chat-scope">이야기 방식은 회화 3단계 단원 1 에서 열려요.</p>',
+      '<p data-testid="talk-mode-chat-scope">이야기 방식은 회화 3단계 단원 1 · 4단계 단원 1 에서 열려요.</p>',
     );
     // 다른 값일 때도 안내 줄은 늘 보인다
     const app = html({

@@ -1,0 +1,256 @@
+{
+  "kind": "assigned",
+  "lessonNo": 2,
+  "variant": 2,
+  "revision": 1,
+  "correction": 0,
+  "generation": {
+    "method": "generated",
+    "model": "claude-opus-5-5",
+    "effort": "xhigh",
+    "briefHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "agentHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "createdOn": "2026-11-10"
+  },
+  "title": "친구와 간 도서관",
+  "newWords": ["scientist", "writer", "pilot", "person"],
+  "unitWords": [
+    "scientist",
+    "writer",
+    "pilot",
+    "person",
+    "driver",
+    "singer",
+    "dancer",
+    "artist"
+  ],
+  "card": {
+    "topic": "친구가 하는 일 · 친구와 간 도서관에서 보는 책",
+    "targetExpressions": [
+      "My friend is a kind person.",
+      "No, a writer writes books.",
+      "A scientist studies the stars.",
+      "No, a pilot flies a big plane."
+    ],
+    "goals": ["talk-4-1-1", "talk-4-1-2"],
+    "greetingTurns": 1,
+    "greeting": {
+      "firstLine": {
+        "en": "Hi, {NAME}! How are you?",
+        "ko": "안녕, {NAME}! 잘 지냈어?"
+      }
+    },
+    "todayWords": [
+      {
+        "word": "scientist",
+        "meaningKo": "과학자",
+        "example": "A scientist studies the stars.",
+        "modelLine": "A scientist studies the stars."
+      },
+      {
+        "word": "writer",
+        "meaningKo": "작가",
+        "example": "A writer writes fun books.",
+        "modelLine": "A writer writes fun books."
+      },
+      {
+        "word": "pilot",
+        "meaningKo": "조종사",
+        "example": "A pilot flies a big plane.",
+        "modelLine": "A pilot flies a big plane."
+      },
+      {
+        "word": "person",
+        "meaningKo": "사람",
+        "example": "She is a kind person.",
+        "modelLine": "She is a kind person."
+      }
+    ],
+    "required": [
+      {
+        "no": 1,
+        "en": "Let's go to the library with your friend! Is your friend funny or kind?",
+        "ko": "친구랑 도서관에 가 보자! 네 친구는 웃겨, 아니면 친절해?",
+        "targets": ["person"],
+        "goals": ["talk-4-1-2"],
+        "ask": "first",
+        "hintKo": "내 친구는 친절한 사람이야.",
+        "hints": ["My friend is a kind ___.", "My friend is a kind person."],
+        "answerExample": "My friend is a kind person.",
+        "easyQuestion": {
+          "en": "Is your friend kind?",
+          "ko": "네 친구는 친절해?"
+        }
+      },
+      {
+        "no": 2,
+        "en": "Do you write books?",
+        "ko": "너는 책을 써?",
+        "targets": ["writer"],
+        "goals": ["talk-4-1-1"],
+        "ask": "first",
+        "hintKo": "아니, 작가가 책을 써.",
+        "hints": ["No, a ___ writes books.", "No, a writer writes books."],
+        "answerExample": "No, a writer writes books.",
+        "easyQuestion": {
+          "en": "Do you read fun books?",
+          "ko": "재미있는 책 읽어?"
+        }
+      },
+      {
+        "no": 3,
+        "en": "Who studies the stars?",
+        "ko": "별은 누가 연구해?",
+        "targets": ["scientist"],
+        "goals": ["talk-4-1-1"],
+        "ask": "first",
+        "hintKo": "과학자가 별을 연구해.",
+        "hints": ["A ___ studies the stars.", "A scientist studies the stars."],
+        "answerExample": "A scientist studies the stars.",
+        "easyQuestion": { "en": "Do you like the stars?", "ko": "별 좋아해?" }
+      },
+      {
+        "no": 4,
+        "en": "Can you fly a big plane?",
+        "ko": "너는 큰 비행기를 몰 수 있어?",
+        "targets": ["pilot"],
+        "goals": ["talk-4-1-1"],
+        "ask": "first",
+        "hintKo": "아니, 조종사가 큰 비행기를 몰아.",
+        "hints": [
+          "No, a ___ flies a big plane.",
+          "No, a pilot flies a big plane."
+        ],
+        "answerExample": "No, a pilot flies a big plane.",
+        "easyQuestion": {
+          "en": "Do you like big planes?",
+          "ko": "큰 비행기 좋아해?"
+        }
+      },
+      {
+        "no": 5,
+        "en": "Who takes you home on the bus?",
+        "ko": "버스로 집에 데려다주는 사람은 누구야?",
+        "targets": ["driver"],
+        "goals": ["talk-4-1-1"],
+        "ask": "re_ask",
+        "hintKo": "버스 운전사가 나를 집에 데려다줘.",
+        "hints": ["A bus ___ takes me home.", "A bus driver takes me home."],
+        "answerExample": "A bus driver takes me home.",
+        "easyQuestion": {
+          "en": "Do you go home on a bus?",
+          "ko": "버스 타고 집에 가?"
+        }
+      }
+    ],
+    "more": [
+      {
+        "no": 1,
+        "en": "Can your friend sing?",
+        "ko": "네 친구는 노래할 수 있어?",
+        "targets": ["singer"],
+        "goals": ["talk-4-1-2"],
+        "ask": "re_ask",
+        "hintKo": "응, 내 친구는 노래를 잘하는 사람이야.",
+        "hints": [
+          "Yes, my friend is a good ___.",
+          "Yes, my friend is a good singer."
+        ],
+        "answerExample": "Yes, my friend is a good singer.",
+        "easyQuestion": { "en": "Do you like songs?", "ko": "노래 좋아해?" }
+      },
+      {
+        "no": 2,
+        "en": "Can you dance or swim?",
+        "ko": "너는 춤출 수 있어, 아니면 헤엄칠 수 있어?",
+        "targets": ["dancer"],
+        "goals": ["talk-4-1-2"],
+        "ask": "re_ask",
+        "hintKo": "나는 춤을 잘 추는 사람이야.",
+        "hints": ["I am a good ___.", "I am a good dancer."],
+        "answerExample": "I am a good dancer.",
+        "easyQuestion": {
+          "en": "Do you like fun music?",
+          "ko": "신나는 음악 좋아해?"
+        }
+      },
+      {
+        "no": 3,
+        "en": "Do you draw pictures?",
+        "ko": "너는 그림을 그려?",
+        "targets": ["artist"],
+        "goals": ["talk-4-1-2"],
+        "ask": "re_ask",
+        "hintKo": "응, 나는 그림을 잘 그리는 사람이야.",
+        "hints": ["Yes, I am a good ___.", "Yes, I am a good artist."],
+        "answerExample": "Yes, I am a good artist.",
+        "easyQuestion": { "en": "Do you have crayons?", "ko": "크레용 있어?" }
+      },
+      {
+        "no": 4,
+        "en": "Is your friend smart or funny?",
+        "ko": "네 친구는 똑똑해, 아니면 웃겨?",
+        "targets": ["person"],
+        "goals": ["talk-4-1-2"],
+        "ask": "re_ask",
+        "hintKo": "내 친구는 똑똑한 사람이야.",
+        "hints": ["My friend is a smart ___.", "My friend is a smart person."],
+        "answerExample": "My friend is a smart person.",
+        "easyQuestion": {
+          "en": "Is your friend smart?",
+          "ko": "네 친구는 똑똑해?"
+        }
+      },
+      {
+        "no": 5,
+        "en": "A man in a book flies a plane. What is he?",
+        "ko": "책 속의 남자가 비행기를 몰아. 그 사람은 뭐 하는 사람이야?",
+        "targets": ["pilot"],
+        "goals": ["talk-4-1-2"],
+        "ask": "re_ask",
+        "hintKo": "그는 조종사야.",
+        "hints": ["He is a ___.", "He is a pilot."],
+        "answerExample": "He is a pilot.",
+        "easyQuestion": {
+          "en": "Do you read plane books?",
+          "ko": "비행기 책 읽어?"
+        }
+      }
+    ],
+    "flow": [
+      "After the first question, the teacher follows the child's answer.",
+      "The scene is the library with the child's friend: many books, a star book, a plane book, the bus home.",
+      "The teacher brings in writer, scientist and pilot when the talk reaches the books.",
+      "The teacher says a new word once in a clear sentence before the child uses it.",
+      "The scene is something to talk about, not a list of questions to finish."
+    ],
+    "todayTopicsKo": [
+      "친구와 도서관에",
+      "책과 별 이야기",
+      "비행기 책과 집에 가는 버스"
+    ],
+    "closingLines": [
+      {
+        "en": "My friend is a kind person.",
+        "ko": "내 친구는 친절한 사람이야."
+      },
+      { "en": "A writer writes books.", "ko": "작가가 책을 써." },
+      { "en": "A scientist studies the stars.", "ko": "과학자가 별을 연구해." },
+      { "en": "A pilot flies a big plane.", "ko": "조종사가 큰 비행기를 몰아." }
+    ],
+    "safeLines": [
+      { "en": "Oh, okay!", "ko": "오, 그렇구나!" },
+      { "en": "Wow, cool!", "ko": "와, 멋지다!" }
+    ],
+    "endCondition": "마무리 물음에 답하거나 그만하기를 고르면 정리로 간다.",
+    "farewell": {
+      "en": "Bye, {NAME}! See you!",
+      "ko": "안녕, {NAME}! 또 보자!"
+    },
+    "safetyFarewell": {
+      "en": "Bye for now, {NAME}!",
+      "ko": "오늘은 여기까지! 안녕, {NAME}!"
+    },
+    "praiseLines": ["Wow!", "Good!", "Great!", "Nice!"]
+  }
+}

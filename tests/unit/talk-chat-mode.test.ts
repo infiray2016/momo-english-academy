@@ -8,10 +8,12 @@ import { isLowBandLevel } from "@/core/ai/calls/talk-lesson";
 import { parseTalkAttemptInput } from "@/core/conversation/attempt";
 import {
   chatStartAllowed,
+  isChatLevel,
   isChatSession,
   isLeadSession,
   leadModeOf,
   leadModeStartField,
+  TALK_CHAT_BANDS,
   TALK_LEAD_MODE_KEY,
   TALK_LEAD_MODES,
   talkLeadModeOf,
@@ -71,6 +73,7 @@ const settingsWith = (key: string, value: unknown, band = "1-3" as const) =>
 /** spec 설정 표의 잠정 값(12절 행 · 시드 · 시험 설정이 같아야 함). */
 const CHAT_VALUES: Record<string, unknown> = {
   "talk.chat_turn_words.1-3": 12,
+  "talk.chat_turn_words.4-6": 12,
   "talk.chat_quiet_seconds": 8,
   "talk.chat_teacher_run_max": 2,
   "talk.chat_hint_context_turns": 6,
@@ -118,36 +121,41 @@ describe("방식 값 chat(이야기 방식 묶음 C — FR-1 · 설계 1)", () =
     expect(leadModeOf({})).toBe("app");
   });
 
-  it("AC-27a chat 스냅숏은 넷이 설 때만: 설정 · 1~3단계 · 단원 재료 · 선생님 재료가 모두 참일 때만 참이고 열여섯 조합 가운데 하나뿐이다", () => {
+  it("AC-27a chat 스냅숏은 넷이 설 때만: 설정 · 이야기 방식 구간 · 단원 재료 · 선생님 재료가 모두 참일 때만 참이고 열여섯 조합 가운데 하나뿐이다", () => {
     const flags = [true, false];
     let allowed = 0;
     for (const setting of flags)
-      for (const lowBand of flags)
+      for (const chatBand of flags)
         for (const unitMaterial of flags)
           for (const teacherMaterial of flags) {
             const got = chatStartAllowed({
               setting,
-              lowBand,
+              chatBand,
               unitMaterial,
               teacherMaterial,
             });
             expect(
               got,
-              JSON.stringify({ setting, lowBand, unitMaterial }),
-            ).toBe(setting && lowBand && unitMaterial && teacherMaterial);
+              JSON.stringify({ setting, chatBand, unitMaterial }),
+            ).toBe(setting && chatBand && unitMaterial && teacherMaterial);
             if (got) allowed++;
           }
     expect(allowed).toBe(1);
   });
 
-  it("AC-27a 이야기 방식 판단 isChatSession: 처음 스냅숏이 chat 이고 1~3단계 구간일 때만 참이고(isLowBandLevel 과 같은 판정), 4단계부터 · claude · app · 칸 없음은 거짓이다", () => {
+  it("AC-27a 이야기 방식 판단 isChatSession: 처음 스냅숏이 chat 이고 이야기 방식 구간(1-3 · 4-6, C254)일 때만 참이고, 7단계부터 · claude · app · 칸 없음은 거짓이다", () => {
+    expect([...TALK_CHAT_BANDS]).toEqual(["1-3", "4-6"]);
     const chat = { leadMode: "chat" };
-    for (const level of LEVELS)
+    for (const level of LEVELS) {
       expect(isChatSession({ start: chat, level }), String(level)).toBe(
-        isLowBandLevel(level),
+        level <= 6,
       );
-    for (const level of [1, 2, 3])
+      expect(isChatLevel(level), String(level)).toBe(level <= 6);
+    }
+    for (const level of [1, 2, 3, 4, 5, 6])
       expect(isChatSession({ start: chat, level })).toBe(true);
+    for (const level of [7, 8, 9, 10, 11, 12])
+      expect(isChatSession({ start: chat, level })).toBe(false);
     for (const start of [
       { leadMode: "claude" },
       { leadMode: "app" },
@@ -204,6 +212,7 @@ describe("설정 읽기(이야기 방식 묶음 C — 설계 1 · 설정 표)", 
     expect(TALK_CHAT_KEYS.turnWords).toBe(
       `talk.chat_turn_words.${TALK_LOW_BAND}`,
     );
+    expect(TALK_CHAT_KEYS.turnWords46).toBe("talk.chat_turn_words.4-6");
     for (const [key, value] of Object.entries(CHAT_VALUES)) {
       const row = seed.settings.find((s) => s.key === key);
       expect(row, key).toEqual({
@@ -226,6 +235,7 @@ describe("설정 읽기(이야기 방식 묶음 C — 설계 1 · 설정 표)", 
           band,
         ).toEqual({
           turnWords: 12,
+          turnWords46: 12,
           quietSeconds: 8,
           teacherRunMax: 2,
           hintContextTurns: 6,

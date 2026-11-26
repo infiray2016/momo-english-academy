@@ -149,12 +149,15 @@ export type TalkLessonSettings = {
 };
 
 /**
- * 이야기 방식 설정(12절 talk.chat_* — 이야기 방식 spec 판 3 설정 표 · 설계 2 · 6 · 7 · 8-2 · 11, 값은 잠정). 이야기 방식은 1~3단계 구간에서만 돌므로
- * 낱말 수는 그 구간 키 하나만 둔다(talk.chat_turn_words.1-3 — 다른 구간은 행이 없다).
+ * 이야기 방식 설정(12절 talk.chat_* — 이야기 방식 spec 판 3 설정 표 · 설계 2 · 6 · 7 · 8-2 · 11, 값은 잠정). 이야기 방식은 1-3 · 4-6 구간에서 돌므로
+ * (13절 C254 (2)) 낱말 수는 그 두 구간 키를 둔다(talk.chat_turn_words.1-3 · 4-6 — 다른 구간은 행이 없다). 안내문 조립은 그 단계 구간의 키를
+ * 설정값에서 바로 읽는다(talk-chat.ts talkChatRulesOf). 여기서는 두 키 모두 늘 읽어 빠진 DB 를 다른 키처럼 드러낸다.
  */
 export type TalkChatSettings = {
-  /** talk.chat_turn_words.1-3 — 안내문 '말하는 범위'의 한 차례 낱말 수. */
+  /** talk.chat_turn_words.1-3 — 안내문 '말하는 범위'의 한 차례 낱말 수(1~3단계). */
   turnWords: number;
+  /** talk.chat_turn_words.4-6 — 같은 값의 4~6단계 구간(13절 C254 (4), 잠정). */
+  turnWords46: number;
   /** talk.chat_quiet_seconds — 아이 차례가 열리고 읽기가 끝난 뒤 입력 없이 기다리는 시간(초). 0 이면 조용함 입구를 보내지 않는다(끔). */
   quietSeconds: number;
   /** talk.chat_teacher_run_max — 조용함으로 선생님이 혼자 잇달아 말하는 차례 수의 상한. */
@@ -180,6 +183,7 @@ export type TalkChatSettings = {
 /** 이야기 방식 설정 키(12절). 칸 이름 → 키. */
 export const TALK_CHAT_KEYS = {
   turnWords: "talk.chat_turn_words.1-3",
+  turnWords46: "talk.chat_turn_words.4-6",
   quietSeconds: "talk.chat_quiet_seconds",
   teacherRunMax: "talk.chat_teacher_run_max",
   hintContextTurns: "talk.chat_hint_context_turns",
@@ -270,6 +274,7 @@ function talkChatSettingsFrom(
   const seconds = z.number().min(0);
   return {
     turnWords: readValue(read, k.turnWords, positive, "1 이상 정수"),
+    turnWords46: readValue(read, k.turnWords46, positive, "1 이상 정수"),
     quietSeconds: readValue(read, k.quietSeconds, seconds, "0 이상 수"),
     teacherRunMax: readValue(read, k.teacherRunMax, positive, "1 이상 정수"),
     hintContextTurns: readValue(

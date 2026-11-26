@@ -139,7 +139,7 @@ const NO_MATERIAL = { chatPersonaEn: undefined, chatFavoritesEn: undefined };
 // ── (1) 수업 열기 ──────────────────────────────────────────────────
 
 describe("AC-27a 수업을 열 때의 방식(조건 넷 — 묶음 S2)", () => {
-  it("AC-27a 설정 chat · 1~3단계 · 단원 재료 · 선생님 재료가 모두 서면 chat, 하나라도 빠지면 기존 방식(app)", () => {
+  it("AC-27a 설정 chat · 이야기 방식 구간(1-3 · 4-6) · 단원 재료 · 선생님 재료가 모두 서면 chat, 하나라도 빠지면 기존 방식(app)", () => {
     const base = {
       mode: "chat" as const,
       level: 3,
@@ -147,11 +147,24 @@ describe("AC-27a 수업을 열 때의 방식(조건 넷 — 묶음 S2)", () => {
       teacher: MATERIAL,
     };
     expect(lessonStartModeOf(base)).toBe("chat");
-    // 선생님 재료 없음(가짜 선생님 NO_MATERIAL) · 선생님 없음 · 다른 단원 · 4단계
+    // 선생님 재료 없음(가짜 선생님 NO_MATERIAL) · 선생님 없음 · 다른 단원 · 재료 없는 4 · 5단계 단원 · 이야기 방식 구간 밖(7단계)
     expect(lessonStartModeOf({ ...base, teacher: NO_MATERIAL })).toBe("app");
     expect(lessonStartModeOf({ ...base, teacher: null })).toBe("app");
     expect(lessonStartModeOf({ ...base, unit: 2 })).toBe("app");
-    expect(lessonStartModeOf({ ...base, level: 4 })).toBe("app");
+    for (const unit of [2, 3, 4, 5])
+      expect(lessonStartModeOf({ ...base, level: 4, unit }), `4-${unit}`).toBe(
+        "app",
+      );
+    for (const unit of [1, 2, 3, 4, 5])
+      expect(lessonStartModeOf({ ...base, level: 5, unit }), `5-${unit}`).toBe(
+        "app",
+      );
+    expect(lessonStartModeOf({ ...base, level: 7 })).toBe("app");
+    // 회화 4단계 단원 1 은 이야기 방식 재료가 있어 chat 으로 열린다(13절 C254) — 선생님 재료가 없으면 기존 방식
+    expect(lessonStartModeOf({ ...base, level: 4 })).toBe("chat");
+    expect(lessonStartModeOf({ ...base, level: 4, teacher: NO_MATERIAL })).toBe(
+      "app",
+    );
   });
 
   it("AC-27a 설정 app · claude 는 지금 판단 그대로다(선생님 재료와 무관)", () => {
@@ -306,11 +319,15 @@ describe("AC-27e 이야기 방식의 토막 넘김(spec 설계 5 · 보완 4 (5)
     expect(
       lessonAdvanceChoiceOf({ start: null, level: 3 }, plain, "talk").mode,
     ).toBe("app");
-    // 스냅숏이 chat 이어도 4단계면 이야기 방식이 아니다(isChatSession)
+    // 스냅숏이 chat 이어도 이야기 방식 구간 밖(7단계)이면 이야기 방식이 아니다(isChatSession). 4단계는 이야기 방식이다(C254)
+    expect(
+      lessonAdvanceChoiceOf({ start: CHAT_START, level: 7 }, plain, "talk")
+        .mode,
+    ).toBe("app");
     expect(
       lessonAdvanceChoiceOf({ start: CHAT_START, level: 4 }, plain, "talk")
         .mode,
-    ).toBe("app");
+    ).toBe("chat");
   });
 
   it("AC-27e 준비 없는 수업의 '더 이야기하기' 토막에서 물음 없는 선생님 말 뒤의 할 일은 아이 차례다(S1 행 꼴 — 대화 토막 선생님 행 kind ai, 검토 I-1)", () => {
@@ -386,8 +403,11 @@ describe("AC-27e 정리 되짚을 말 · 대화 기록 · 다시 보낼 자료(�
     expect(lessonWrapSourcesOf({ start: null, level: 3, rows })).toEqual([
       "I eat bread.",
     ]);
-    // 4단계는 이야기 방식이 아니다
+    // 4단계도 이야기 방식이다(C254), 7단계는 아니다
     expect(lessonWrapSourcesOf({ start: CHAT_START, level: 4, rows })).toEqual([
+      "I eat apples.",
+    ]);
+    expect(lessonWrapSourcesOf({ start: CHAT_START, level: 7, rows })).toEqual([
       "I eat bread.",
     ]);
   });

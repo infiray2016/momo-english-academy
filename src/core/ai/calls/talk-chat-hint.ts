@@ -17,9 +17,8 @@ import {
   type ChatInput,
   chatInputLineOf,
 } from "@/core/conversation/chat-message";
-import { bandOf } from "@/core/level-band";
+import { isChatLevel, TALK_CHAT_BANDS } from "@/core/conversation/lead-mode";
 import type { TalkLevelSpec } from "@/core/seed/schema/reference";
-import { TALK_LOW_BAND } from "@/core/seed/structure";
 
 /** 응답 규격의 이름(가짜 클라이언트가 목적을 알아보는 표시). */
 export const TALK_CHAT_HINT_TITLE = "talk_chat_hint";
@@ -53,7 +52,7 @@ export type ChatHintContextEntry =
  * 가린다). context 는 지금 말 앞의 대화이고, 싣는 차례 수는 규칙(talk.chat_hint_context_turns)이 자른다.
  */
 export type TalkChatHintInput = {
-  /** 회화 단계(이야기 방식은 1~3단계 구간에서만 돈다). */
+  /** 회화 단계(이야기 방식은 그 구간 TALK_CHAT_BANDS 에서만 돈다 — 1~6단계). */
   level: number;
   /** 그 단계의 문장 낱말 상한(level_specs sentenceMaxWords — 6.4 검사와 같은 값). */
   sentenceMaxWords: number;
@@ -73,15 +72,16 @@ export type TalkChatHintRules = {
 };
 
 /**
- * 규칙을 읽는다. 단계가 1~3단계 구간 밖이면 RangeError(이야기 방식은 그 구간에서만 돈다), 키가 없거나 꼴이 틀리면 CallSettingError 를 던진다.
+ * 규칙을 읽는다. 단계가 이야기 방식 구간(TALK_CHAT_BANDS — 1-3 · 4-6, 13절 C254 (2)) 밖이면 RangeError(이야기 방식은 그 구간에서만 돈다), 키가
+ * 없거나 꼴이 틀리면 CallSettingError 를 던진다.
  */
 export function talkChatHintRulesOf(
   values: SettingValues,
   input: Pick<TalkChatHintInput, "level">,
 ): TalkChatHintRules {
-  if (bandOf(input.level) !== TALK_LOW_BAND)
+  if (!isChatLevel(input.level))
     throw new RangeError(
-      `이야기 방식 힌트 호출은 1~3단계 구간에서만 조립한다: ${input.level}단계`,
+      `이야기 방식 힌트 호출은 이야기 방식 구간(${TALK_CHAT_BANDS.join(" · ")})에서만 조립한다: ${input.level}단계`,
     );
   const parsed = TALK_CHAT_HINT_SETTING_SCHEMAS[
     CHAT_HINT_CONTEXT_TURNS_KEY

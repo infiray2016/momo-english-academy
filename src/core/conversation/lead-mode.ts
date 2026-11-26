@@ -5,9 +5,10 @@
 // 설정 값 자체의 검증(세 값 밖이면 던짐)은 설정 읽기(lesson-turns.ts talkLessonSettingsFrom)가 하고, 여기 읽기는 스냅숏 호환 몫이라 관대하다.
 // 셋째 값 chat 은 이야기 방식이다(이야기 방식 spec 판 3 FR-1 · 설계 1 · 13절 C243 · C243 보완 2 · 3, 묶음 C). 그 판단은 isChatSession 하나로만 하고,
 // isLeadSession 은 claude 만 뜻하는 지금 뜻 그대로 둔다(지금 새 방식에만 걸리는 처리가 이야기 방식에 걸리지 않게). 갈림 자체는 S1 · S2 몫이다.
+// 이야기 방식의 구간은 TALK_CHAT_BANDS(1-3 · 4-6, 13절 C254 (2))이고, 지금 새 방식의 구간(1~3단계)은 그대로다.
 // 순수 모듈이다.
 
-import { bandOf } from "@/core/level-band";
+import { type Band, bandOf } from "@/core/level-band";
 import { TALK_LOW_BAND } from "@/core/seed/structure";
 
 /** 회화 방식: app 은 지금 방식(앱이 차례를 계획), claude 는 Claude 가 대화를 이끄는 방식(N), chat 은 이야기 방식(실험, 묶음 C). */
@@ -54,34 +55,49 @@ export function isLeadSession(session: {
 }
 
 /**
- * 이 세션을 이야기 방식으로 다루는가(이야기 방식 spec 설계 1 '판단 함수'): 처음 스냅숏의 방식이 chat 이고 단계가 1~3단계 구간일 때만 참이다
- * (isLeadSession 과 같은 구간 판정 — 같은 까닭으로 talk-lesson.ts 를 부르지 않는다). 스냅숏에 chat 을 적는 조건은 chatStartAllowed 가 따로 본다.
+ * 이야기 방식이 도는 단계 구간(13절 C254 (2) — 1-3 · 4-6). 안내문 조립(talk-chat.ts) · 힌트 호출(talk-chat-hint.ts) · 세션 판단(isChatSession) ·
+ * 처음 스냅숏 조건(chat-start.ts)이 이 상수 하나로 가른다. 구조 상수이고 설정값이 아니다. 지금 새 방식(claude)의 구간(isLeadSession, 1~3단계)과
+ * 따로 둔다. 구간을 더하면 그 구간의 talk.chat_turn_words.<구간> 행도 함께 더한다(정본 09).
+ */
+export const TALK_CHAT_BANDS: readonly Band[] = [TALK_LOW_BAND, "4-6"];
+
+/** 그 단계 구간에서 이야기 방식이 도는가. */
+export function isChatBand(band: Band): boolean {
+  return TALK_CHAT_BANDS.includes(band);
+}
+
+/** 그 단계가 이야기 방식 구간인가(단계 → 구간은 bandOf — 1~12 의 정수가 아니면 bandOf 처럼 던진다). */
+export function isChatLevel(level: number): boolean {
+  return isChatBand(bandOf(level));
+}
+
+/**
+ * 이 세션을 이야기 방식으로 다루는가(이야기 방식 spec 설계 1 '판단 함수'): 처음 스냅숏의 방식이 chat 이고 단계가 이야기 방식 구간(TALK_CHAT_BANDS,
+ * 1~6단계)일 때만 참이다(talk-lesson.ts 를 부르지 않는다 — 위 isLeadSession 과 같은 까닭). 스냅숏에 chat 을 적는 조건은 chatStartAllowed 가 따로 본다.
  * 기존 방식이면 단계 값을 읽지 않는다. 세션 도중 설정이 바뀌어도 처음 스냅숏만 본다.
  */
 export function isChatSession(session: {
   readonly start: { readonly leadMode?: unknown } | null | undefined;
   readonly level: number;
 }): boolean {
-  return (
-    leadModeOf(session.start) === "chat" &&
-    bandOf(session.level) === TALK_LOW_BAND
-  );
+  return leadModeOf(session.start) === "chat" && isChatLevel(session.level);
 }
 
 /**
  * 수업을 처음 열 때 처음 스냅숏에 chat 을 적어도 되는가(이야기 방식 spec FR-1 · 설계 1 '스냅숏 조건'): 넷이 모두 설 때만 참이다 — 설정
- * talk.lead_mode 가 chat · 단계가 1~3단계 구간 · 그 단원의 이야기 방식 재료가 있음 · 고른 선생님의 이야기 방식 재료가 있음. 하나라도 서지 않으면
- * 스냅숏에 적지 않아 그 수업은 기존 방식으로 간다. 넷을 무엇으로 셀지(단원 표 · 선생님 시드)는 수업을 여는 자리(묶음 S2)가 정해 넘긴다.
+ * talk.lead_mode 가 chat · 단계가 이야기 방식 구간(TALK_CHAT_BANDS) · 그 단원의 이야기 방식 재료가 있음 · 고른 선생님의 이야기 방식 재료가 있음.
+ * 하나라도 서지 않으면 스냅숏에 적지 않아 그 수업은 기존 방식으로 간다. 넷을 무엇으로 셀지(단원 표 · 선생님 시드)는 수업을 여는 자리(묶음 S2)가
+ * 정해 넘긴다.
  */
 export function chatStartAllowed(facts: {
   readonly setting: boolean;
-  readonly lowBand: boolean;
+  readonly chatBand: boolean;
   readonly unitMaterial: boolean;
   readonly teacherMaterial: boolean;
 }): boolean {
   return (
     facts.setting &&
-    facts.lowBand &&
+    facts.chatBand &&
     facts.unitMaterial &&
     facts.teacherMaterial
   );

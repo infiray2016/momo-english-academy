@@ -158,7 +158,19 @@ const judgedJson = (j: ReturnType<typeof chatJudgeRowsOf>) => ({
 describe("이야기 방식 서버 배선의 core 옮김(13절 C243 보완 10 (1)) — 옮기기 전 기준 파일과 글자까지 같다", () => {
   it("AC-27r 시작 방식(lessonStartModeOf): 방식 셋 × 1~5단계 × 단원 1~5 × 선생님(미나 · 레오 · 없음)과 단원 표 출처를 바꾼 꼴", () => {
     expect(B.startMode).toHaveLength(225);
-    for (const { args, out } of B.startMode)
+    // 13절 C254 로 뜻을 갖고 바꾼 칸: 설정 chat · 회화 4단계 단원 1 · 이야기 방식 재료가 있는 선생님은 기준 파일의 app 에서 chat 으로 연다
+    // (이야기 방식 구간 4-6 과 4단계 단원 1 의 주제 글). 기준 파일의 선생님 가운데 재료가 있는 것은 미나뿐이라 한 칸이고, 그 밖의 224 칸은 같다.
+    const widened = (args: (typeof B.startMode)[number]["args"]) =>
+      args.mode === "chat" &&
+      args.level === 4 &&
+      args.unit === 1 &&
+      B.teachers[args.teacher]?.chatPersonaEn !== undefined &&
+      B.teachers[args.teacher]?.chatFavoritesEn !== undefined;
+    expect(
+      B.startMode.filter(({ args }) => widened(args)).map((c) => c.args),
+    ).toEqual([{ mode: "chat", level: 4, unit: 1, teacher: "mina" }]);
+    for (const { args, out } of B.startMode) {
+      if (widened(args)) expect(out, JSON.stringify(args)).toBe("app");
       expect(
         lessonStartModeOf({
           mode: args.mode,
@@ -167,7 +179,8 @@ describe("이야기 방식 서버 배선의 core 옮김(13절 C243 보완 10 (1)
           teacher: B.teachers[args.teacher] ?? null,
         }),
         JSON.stringify(args),
-      ).toBe(out);
+      ).toBe(widened(args) ? "chat" : out);
+    }
     expect(
       lessonStartModeOf({
         mode: "chat",

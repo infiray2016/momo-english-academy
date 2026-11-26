@@ -13,7 +13,7 @@ import {
   type ChatMessage,
   type SettingValues,
 } from "@/core/ai/calls/common";
-import { talkLeadTextOf } from "@/core/ai/calls/talk-lead";
+import { talkUnitTextOf } from "@/core/ai/calls/talk-lead";
 import type { Masker } from "@/core/ai/mask";
 import type { CheckField, FieldHit } from "@/core/ai/output-check";
 import {
@@ -22,6 +22,7 @@ import {
   type ChatUserMessage,
   chatUserMessageOf,
 } from "@/core/conversation/chat-message";
+import { isChatLevel, TALK_CHAT_BANDS } from "@/core/conversation/lead-mode";
 import { bandOf } from "@/core/level-band";
 import { bandKey } from "@/core/seed/structure";
 
@@ -115,9 +116,12 @@ export type TalkChatTeacher = {
   chatFavoritesEn: string;
 };
 
-/** 단계 · 단원의 이야기 방식 주제({TOPIC}, 단원 재료 표 talk-lead.ts 의 chatTopicEn). 재료가 없는 단원은 null 이다 — 부르는 쪽이 이 방식을 열지 않는다. */
+/**
+ * 단계 · 단원의 이야기 방식 주제({TOPIC}, 단원 재료 표 talk-lead.ts 의 chatTopicEn — 이야기 방식 재료만 있는 단원도 읽음, talkUnitTextOf). 재료가 없는
+ * 단원은 null 이다 — 부르는 쪽이 이 방식을 열지 않는다.
+ */
 export function talkChatTopicOf(level: number, unit: number): string | null {
-  const topic = talkLeadTextOf(level, unit)?.chatTopicEn?.trim() ?? "";
+  const topic = talkUnitTextOf(level, unit)?.chatTopicEn?.trim() ?? "";
   return topic === "" ? null : topic;
 }
 
@@ -143,32 +147,34 @@ export type TalkChatRules = {
 };
 
 const TURN_WORDS_PREFIX = "talk.chat_turn_words";
-/** 이야기 방식을 여는 단계 구간(spec 범위: 1~3단계 구간만 — 다른 구간의 값은 정하지 않았다). */
-const CHAT_BAND = "1-3" as const;
-const TURN_WORDS_KEY = bandKey(TURN_WORDS_PREFIX, CHAT_BAND);
-
-/** 이 규격이 읽는 설정 키의 규격(ai.* 밖). 다른 구간의 talk.chat_turn_words 는 쓰지 않아 넣지 않는다. */
-export const TALK_CHAT_SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> = {
-  [TURN_WORDS_KEY]: z.int().min(1),
-};
 
 /**
- * 설정값에서 이 단계의 안내문 값을 읽는다. 단계가 1~3단계 구간 밖이면 RangeError(이야기 방식 안내문은 그 구간에서만 조립한다), 키가 없거나 꼴이
- * 틀리면 CallSettingError 를 던진다.
+ * 이 규격이 읽는 설정 키의 규격(ai.* 밖): 이야기 방식 구간(TALK_CHAT_BANDS — 1-3 · 4-6, 13절 C254 (2) · (4))마다의 talk.chat_turn_words 하나씩.
+ * 이야기 방식이 돌지 않는 구간의 키는 쓰지 않아 넣지 않는다.
+ */
+export const TALK_CHAT_SETTING_SCHEMAS: Readonly<Record<string, z.ZodType>> =
+  Object.fromEntries(
+    TALK_CHAT_BANDS.map((band) => [
+      bandKey(TURN_WORDS_PREFIX, band),
+      z.int().min(1),
+    ]),
+  );
+
+/**
+ * 설정값에서 이 단계의 안내문 값을 읽는다(그 단계 구간의 talk.chat_turn_words.<구간>). 단계가 이야기 방식 구간 밖이면 RangeError(이야기 방식
+ * 안내문은 그 구간에서만 조립한다), 키가 없거나 꼴이 틀리면 CallSettingError 를 던진다.
  */
 export function talkChatRulesOf(
   values: SettingValues,
   input: Pick<TalkChatInput, "level">,
 ): TalkChatRules {
-  if (bandOf(input.level) !== CHAT_BAND)
+  if (!isChatLevel(input.level))
     throw new RangeError(
-      `이야기 방식 안내문은 1~3단계 구간에서만 조립한다: ${input.level}단계`,
+      `이야기 방식 안내문은 이야기 방식 구간(${TALK_CHAT_BANDS.join(" · ")})에서만 조립한다: ${input.level}단계`,
     );
-  const parsed = TALK_CHAT_SETTING_SCHEMAS[TURN_WORDS_KEY]?.safeParse(
-    values[TURN_WORDS_KEY],
-  );
-  if (!parsed?.success)
-    throw new CallSettingError(TURN_WORDS_KEY, "없거나 꼴이 틀렸다");
+  const key = bandKey(TURN_WORDS_PREFIX, bandOf(input.level));
+  const parsed = TALK_CHAT_SETTING_SCHEMAS[key]?.safeParse(values[key]);
+  if (!parsed?.success) throw new CallSettingError(key, "없거나 꼴이 틀렸다");
   return { turnWords: parsed.data as number };
 }
 

@@ -651,16 +651,22 @@ describe("AC-27g 힌트 호출 규격(spec 설계 7 '호출 입력' · '호출 �
     expect(messages[0]?.content).not.toContain("recognizer");
   });
 
-  it("AC-27g 맥락 차례 수 설정이 없거나 꼴이 틀리면 CallSettingError, 1~3단계 밖이면 RangeError", () => {
+  it("AC-27g 맥락 차례 수 설정이 없거나 꼴이 틀리면 CallSettingError, 이야기 방식 구간(1-3 · 4-6) 밖이면 RangeError", () => {
     expect(() => talkChatHintRulesOf({}, hintInput())).toThrow(
       CallSettingError,
     );
     expect(() =>
       talkChatHintRulesOf({ [CHAT_HINT_CONTEXT_TURNS_KEY]: 0 }, hintInput()),
     ).toThrow(CallSettingError);
-    expect(() => talkChatHintRulesOf(VALUES, hintInput({ level: 4 }))).toThrow(
-      RangeError,
-    );
+    for (const level of [7, 9, 12])
+      expect(() => talkChatHintRulesOf(VALUES, hintInput({ level }))).toThrow(
+        RangeError,
+      );
+    // 4~6단계는 이야기 방식 구간이다(13절 C254 (2)) — 규칙을 읽는다
+    for (const level of [1, 3, 4, 5, 6])
+      expect(talkChatHintRulesOf(VALUES, hintInput({ level }))).toEqual(
+        talkChatHintRulesOf(VALUES, hintInput()),
+      );
   });
 
   it("AC-27g 안내문은 단계의 힌트 단 · 1~3단계 글 규칙(영어 문장 한 개 · 낱말 상한 · 설명에 영어 문장을 옮기지 않음) · 이름 자리 규칙을 싣는다", () => {

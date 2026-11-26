@@ -170,20 +170,22 @@ function lastStageOf(rows: readonly Row[]): number {
  * (3) 거른 행 + 이번 아이 행의 위치(positionAfter)로 받침 단계를 정해 (4) 그 단계를 적은 선생님 행을 남긴다. 인사가 끝나면 짧은 준비 뒤 돌아옴
  * 차례의 선생님 행을 하나 더 둔다. 선생님 말은 기본으로 물음이 있다(질문 자리를 연다). opts.text 를 주면 첫 인사 뒤 선생님 말을 모두 그 글로
  * 둔다(물음 없는 말 'I like Sunday.' 꼴). opts.chat 이 참이면(기본) 선생님 행이 이야기 방식 행(move.chat 이 있음)이고, 거짓이면 chat 묶음 없는 행이다.
+ * opts.prep 이 거짓이면 짧은 준비가 없는 수업이다(4단계 꼴 — 위치의 준비 낱말이 비고, 인사 끝 뒤 돌아옴 차례의 선생님 행 없이 아이 차례가 온다).
  */
 function play(
   inputs: readonly ChatInput[],
   settings: TalkLessonSettings,
-  opts: { text?: string; chat?: boolean } = {},
+  opts: { text?: string; chat?: boolean; prep?: boolean } = {},
 ) {
   const chat = opts.chat ?? true;
+  const prep = opts.prep ?? true;
   const rows: Row[] = [toriStage("Hi! How are you?", 0)];
   const greetingEnds: boolean[] = [];
   const stages: number[] = [];
   const afters: ReturnType<typeof positionOf>[] = [];
   let seg: "greeting" | "talk" = "greeting";
   for (const input of inputs) {
-    const before = positionOf(flowOf(rows), { segment: seg, settings });
+    const before = positionOf(flowOf(rows), { segment: seg, settings, prep });
     const greetingEnd = chatGreetingEndOf({
       input,
       position: before,
@@ -198,7 +200,7 @@ function play(
         text: input.kind === "speech" ? input.heard : null,
         flow: said({ ...flow, segment: seg }),
       });
-    const after = positionOf(flowOf(rows), { segment: seg, settings });
+    const after = positionOf(flowOf(rows), { segment: seg, settings, prep });
     const stage = chatSupportStageOf({
       input,
       positionAfter: after,
@@ -208,9 +210,10 @@ function play(
     rows.push(toriStage(opts.text ?? "Can you tell me more?", stage, chat));
     if (greetingEnd) {
       seg = "talk";
-      rows.push(
-        toriStage(opts.text ?? "We are back! What do you like?", 0, chat),
-      );
+      if (prep)
+        rows.push(
+          toriStage(opts.text ?? "We are back! What do you like?", 0, chat),
+        );
     }
     greetingEnds.push(greetingEnd);
     stages.push(stage);
@@ -623,6 +626,42 @@ describe("질문 자리가 없을 때의 막힘 수(이야기 방식 행만 — 
     expect(withChat.afters.map((p) => p.stuckInSlot)).toEqual(
       without.afters.map((p) => p.stuckInSlot),
     );
+  });
+});
+
+// ── 짧은 준비가 없는 수업의 인사 끝 뒤 첫 막힘(13절 C243 보완 4 (14) · C254 (5)) ──────────
+
+describe("짧은 준비가 없는 수업에서 막힘으로 인사를 닫은 뒤 대화 첫 막힘의 자리 막힘 수(C243 보완 4 (14))", () => {
+  /** 첫 인사에 말로 답한 뒤 둘째(마지막) 인사에서 모름 셋(talk.dontknow_max 3 번째에 인사 끝) → 대화의 첫 모름. */
+  const INPUTS = [SAY, DK, DK, DK, DK] as const;
+
+  it("AC-27f 짧은 준비가 없는 이야기 방식 수업은 인사 끝 넘김 행에서 자리 막힘 수를 되돌려 대화 첫 막힘이 자리 막힘 수 1 · 받침 첫째다", () => {
+    const sim = play(INPUTS, MAX3, { prep: false });
+    expect(sim.greetingEnds).toEqual([false, false, false, true, false]);
+    expect(sim.seg).toBe("talk");
+    expect(sim.afters.map((p) => p.stuckInSlot)).toEqual([0, 1, 2, 3, 1]);
+    expect(sim.stages.at(-1)).toBe(TALK_SUPPORT_STAGE_TOGETHER);
+    // 끝 줄 위치(마지막 선생님 행까지 — 받침 첫째 행은 자리를 잇는다)도 같은 수다
+    expect(
+      positionOf(flowOf(sim.rows), { settings: MAX3, prep: false }).stuckInSlot,
+    ).toBe(1);
+  });
+
+  it("AC-27f 대화 첫 막힘 뒤 둘째 막힘은 자리 막힘 수 2 · 쉬운 질문 받침이다(셈이 다시 이어진다)", () => {
+    const sim = play([...INPUTS, DK], MAX3, { prep: false });
+    expect(sim.afters.at(-1)?.stuckInSlot).toBe(2);
+    expect(sim.stages.at(-1)).toBe(TALK_SUPPORT_STAGE_EASY);
+  });
+
+  it("AC-27f 짧은 준비가 있는 수업은 돌아옴 행이 셈을 되돌려 고치기 전과 같은 값이다", () => {
+    const sim = play(INPUTS, MAX3);
+    expect(sim.afters.map((p) => p.stuckInSlot)).toEqual([0, 1, 2, 3, 1]);
+    expect(sim.stages.at(-1)).toBe(TALK_SUPPORT_STAGE_TOGETHER);
+  });
+
+  it("AC-27f 기존 두 방식의 행(chat 묶음 없음)은 고치기 전 셈 그대로다 — 그 방식은 인사 끝 뒤 대화 첫 질문 행이 셈을 되돌린다", () => {
+    const sim = play(INPUTS, MAX3, { prep: false, chat: false });
+    expect(sim.afters.map((p) => p.stuckInSlot)).toEqual([0, 1, 2, 3, 4]);
   });
 });
 

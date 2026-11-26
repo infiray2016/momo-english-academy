@@ -55,16 +55,53 @@ export const TALK_LEAD_TEXT_L3U1: TalkLeadLevelText = {
   chatTopicEn: "weekends and nature",
 };
 
-const LEVEL_TEXTS: Readonly<Record<string, TalkLeadLevelText>> = {
-  "3-1": TALK_LEAD_TEXT_L3U1,
+/**
+ * 이야기 방식 재료만 있는 단원의 글(13절 C254 (3)): 지금 새 방식(claude)의 안내문 글(topicEn · sentencesLikeEn · formsEn)이 없으므로 talkLeadTextOf 는
+ * 이 항목을 돌려주지 않는다 — 새 방식이 이 단원을 새 방식 단원으로 읽지 않는다.
+ */
+export type TalkChatUnitText = {
+  /** 이야기 방식 안내문의 짧은 주제({TOPIC}, TalkLeadLevelText.chatTopicEn 과 같은 뜻). */
+  chatTopicEn: string;
 };
 
-/** 단계 · 단원의 안내문 글. 출처가 정해지지 않은 단원(spec 미결 2)은 null 이다 — 부르는 쪽이 N 을 열지 않는다. */
+/** 단원 표의 한 칸: 두 방식의 글이 다 있는 단원(TalkLeadLevelText) 또는 이야기 방식 재료만 있는 단원(TalkChatUnitText). */
+export type TalkUnitText = TalkLeadLevelText | TalkChatUnitText;
+
+/** 회화 4단계 단원 1 의 이야기 방식 주제(단원 규격의 주제 '친구가 하는 일', 13절 C254 (3)). */
+export const TALK_CHAT_TEXT_L4U1: TalkChatUnitText = {
+  chatTopicEn: "friends and what people do",
+};
+
+const UNIT_TEXTS: Readonly<Record<string, TalkUnitText>> = {
+  "3-1": TALK_LEAD_TEXT_L3U1,
+  "4-1": TALK_CHAT_TEXT_L4U1,
+};
+
+/** 단원 표의 칸이 새 방식의 안내문 글까지 갖췄는가. */
+function isLeadText(text: TalkUnitText): text is TalkLeadLevelText {
+  return "topicEn" in text;
+}
+
+/**
+ * 단계 · 단원의 단원 표 칸(두 방식 모두 — 이야기 방식 재료 출처 talk-chat.ts talkChatTopicOf · chat-start.ts 가 읽는다). 칸이 없는 단원은 null 이다.
+ */
+export function talkUnitTextOf(
+  level: number,
+  unit: number,
+): TalkUnitText | null {
+  return UNIT_TEXTS[`${level}-${unit}`] ?? null;
+}
+
+/**
+ * 단계 · 단원의 안내문 글(지금 새 방식). 출처가 정해지지 않은 단원(spec 미결 2)과 이야기 방식 재료만 있는 단원(TalkChatUnitText)은 null 이다 —
+ * 부르는 쪽이 N 을 열지 않는다.
+ */
 export function talkLeadTextOf(
   level: number,
   unit: number,
 ): TalkLeadLevelText | null {
-  return LEVEL_TEXTS[`${level}-${unit}`] ?? null;
+  const text = talkUnitTextOf(level, unit);
+  return text !== null && isLeadText(text) ? text : null;
 }
 
 /** 이 단계 · 다음 단계의 CEFR(단계 규격 level_specs 의 cefr — 부르는 쪽이 회화 단계 규격 두 행에서 채운다, 12단계는 next 가 null). */

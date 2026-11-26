@@ -198,6 +198,7 @@ export const TEST_SETTINGS = {
   "talk.lead_mode": { scope: "household", value: "app" },
   // 이야기 방식(talk.lead_mode chat — 이야기 방식 묶음 C · 13절 C243, 값은 잠정)
   "talk.chat_turn_words.1-3": { scope: "household", value: 12 },
+  "talk.chat_turn_words.4-6": { scope: "household", value: 12 },
   "talk.chat_quiet_seconds": { scope: "household", value: 8 },
   "talk.chat_teacher_run_max": { scope: "household", value: 2 },
   "talk.chat_hint_context_turns": { scope: "household", value: 6 },

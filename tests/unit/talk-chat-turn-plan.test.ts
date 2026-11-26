@@ -337,10 +337,13 @@ describe("quiet 행을 거르는 한 자리(state.ts lessonFlowTurnsOf — 보�
         lessonFlowTurnsOf(plain, { start: CHAT_START, level: 3 }),
       );
     }
-    // 4단계부터는 chat 스냅숏이어도 이야기 방식이 아니다(거르지 않음)
+    // 이야기 방식 구간 밖(7단계부터)은 chat 스냅숏이어도 이야기 방식이 아니다(거르지 않음). 4단계는 거른다(C254)
     expect(() =>
-      lessonFlowTurnsOf(live, { start: CHAT_START, level: 4 }),
+      lessonFlowTurnsOf(live, { start: CHAT_START, level: 7 }),
     ).toThrow();
+    expect(lessonFlowTurnsOf(live, { start: CHAT_START, level: 4 })).toEqual(
+      lessonFlowTurnsOf(live, { start: CHAT_START, level: 3 }),
+    );
   });
 
   it("AC-27s 갈림(chatTurnAppliesOf): 이야기 방식 수업의 인사 · 대화 · 더 이야기하기 토막만 참이고 app · claude · 짧은 준비 · 정리는 거짓이다", () => {

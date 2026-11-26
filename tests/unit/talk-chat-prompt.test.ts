@@ -28,7 +28,12 @@ import {
   talkChatTopicOf,
   talkChatTurnSpec,
 } from "@/core/ai/calls/talk-chat";
-import { TALK_LEAD_TEXT_L3U1, talkLeadTextOf } from "@/core/ai/calls/talk-lead";
+import {
+  TALK_CHAT_TEXT_L4U1,
+  TALK_LEAD_TEXT_L3U1,
+  talkLeadTextOf,
+  talkUnitTextOf,
+} from "@/core/ai/calls/talk-lead";
 import { settingKeysOf } from "@/core/ai/combo";
 import { fillName, type Masker } from "@/core/ai/mask";
 import { checkOutputFields } from "@/core/ai/output-check";
@@ -456,11 +461,30 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
     expect(() => talkChatLanguageOf(2.5)).toThrow(RangeError);
   });
 
-  it("AC-27b 설정 읽기: 1~3단계 구간 키만 읽고, 없거나 꼴이 틀리면 CallSettingError, 다른 구간이면 던진다", () => {
+  it("AC-27b 설정 읽기: 이야기 방식 구간(1-3 · 4-6)의 키를 그 단계 구간대로 읽고, 없거나 꼴이 틀리면 CallSettingError, 다른 구간이면 던진다", () => {
     expect(Object.keys(TALK_CHAT_SETTING_SCHEMAS)).toEqual([
       "talk.chat_turn_words.1-3",
+      "talk.chat_turn_words.4-6",
     ]);
     expect(talkChatRulesOf(values, { level: 1 })).toEqual({
+      turnWords: values["talk.chat_turn_words.1-3"],
+    });
+    // 4~6단계는 4-6 구간 키(13절 C254 (4) — 시험 설정 12)를 읽는다. 구간마다 따로 읽는지 두 값을 달리 두고 본다
+    expect(values["talk.chat_turn_words.4-6"]).toBe(12);
+    const split = {
+      ...values,
+      "talk.chat_turn_words.1-3": 11,
+      "talk.chat_turn_words.4-6": 14,
+    };
+    for (const level of [1, 2, 3])
+      expect(talkChatRulesOf(split, { level })).toEqual({ turnWords: 11 });
+    for (const level of [4, 5, 6])
+      expect(talkChatRulesOf(split, { level })).toEqual({ turnWords: 14 });
+    const { "talk.chat_turn_words.4-6": _gone46, ...missing46 } = values;
+    expect(() => talkChatRulesOf(missing46, { level: 4 })).toThrow(
+      CallSettingError,
+    );
+    expect(talkChatRulesOf(missing46, { level: 3 })).toEqual({
       turnWords: values["talk.chat_turn_words.1-3"],
     });
     const { "talk.chat_turn_words.1-3": _gone, ...missing } = values;
@@ -475,7 +499,8 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
         },
       ),
     ).toThrow(CallSettingError);
-    expect(() => talkChatRulesOf(values, { level: 4 })).toThrow(RangeError);
+    for (const level of [7, 9, 10, 12])
+      expect(() => talkChatRulesOf(values, { level })).toThrow(RangeError);
   });
 
   it("AC-27b 성격 · 좋아하는 것 · 주제 · 선생님 이름이 비면 안내문을 만들지 않는다", () => {
@@ -497,11 +522,30 @@ describe("AC-27b 이야기 방식 안내문(spec 설계 2)", () => {
     ).toThrow(RangeError);
   });
 
-  it("AC-27b 단원 재료 표: 3단계 단원 1 에만 이야기 방식 주제가 있고, 지금 새 방식의 글 칸은 그대로다", () => {
+  it("AC-27b 단원 재료 표: 이야기 방식 주제는 3단계 단원 1 · 4단계 단원 1 에만 있고, 지금 새 방식의 글 칸은 그대로다(4단계 단원 1 은 새 방식 글이 없음)", () => {
     expect(talkChatTopicOf(3, 1)).toBe(R3_TOPIC);
     expect(TALK_LEAD_TEXT_L3U1.chatTopicEn).toBe(R3_TOPIC);
     expect(talkChatTopicOf(3, 2)).toBeNull();
-    expect(talkChatTopicOf(4, 1)).toBeNull();
+    // 4단계 단원 1 의 주제(단원 규격의 주제 '친구가 하는 일', 13절 C254 (3))
+    expect(talkChatTopicOf(4, 1)).toBe("friends and what people do");
+    expect(TALK_CHAT_TEXT_L4U1).toEqual({
+      chatTopicEn: "friends and what people do",
+    });
+    expect(talkUnitTextOf(4, 1)).toBe(TALK_CHAT_TEXT_L4U1);
+    const topics: string[] = [];
+    for (let level = 1; level <= 12; level++)
+      for (let unit = 1; unit <= 5; unit++)
+        if (talkChatTopicOf(level, unit) !== null)
+          topics.push(`${level}-${unit}`);
+    expect(topics).toEqual(["3-1", "4-1"]);
+    // 새 방식의 표 읽기는 그대로: 글이 있는 단원은 3단계 단원 1 하나이고, 4단계 단원 1 은 null 이다
+    expect(talkLeadTextOf(4, 1)).toBeNull();
+    const leadUnits: string[] = [];
+    for (let level = 1; level <= 12; level++)
+      for (let unit = 1; unit <= 5; unit++)
+        if (talkLeadTextOf(level, unit) !== null)
+          leadUnits.push(`${level}-${unit}`);
+    expect(leadUnits).toEqual(["3-1"]);
     expect(talkLeadTextOf(3, 1)).toBe(TALK_LEAD_TEXT_L3U1);
     expect(TALK_LEAD_TEXT_L3U1.topicEn).toBe(
       "what I and my family do on weekends, and places and nature we go to",

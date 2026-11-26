@@ -317,8 +317,9 @@ export function chatReplyOf(input: ChatReplyInput): ChatReply {
   ];
   const soundMoved = first.soundMoved;
 
-  // 이야기 방식은 1~3단계에서만 열린다(spec 설계 1). 4단계부터는 글 빼기가 문장 경계를 보지 않고 아무것도 빼지 않으므로, inSay 는 정규화로 든
-  // 것만 본다(문장 일부 꼴도 참). 1~3단계와 같은 판정으로 맞추려면 lead-low-band 의 문장 경계 판정을 고치거나 베껴야 해서 두었다(검토 M-4).
+  // 이야기 방식은 1~3단계 · 4~6단계에서 열린다(spec 설계 1 · 13절 C254 (2)). 4단계부터는 글 빼기가 문장 경계를 보지 않고 아무것도 빼지 않으므로,
+  // inSay 는 정규화로 든 것만 본다(문장 일부 꼴도 참). 1~3단계와 같은 판정으로 맞추려면 lead-low-band 의 문장 경계 판정을 고치거나 베껴야 해서
+  // 두었다(검토 M-4 — 4단계를 열면서 이 갈래가 실제로 돈다).
   const low = first.model !== null;
   const inSay = low ? listenRemoved.length > 0 : literals.length > 0;
   const partial = low && literals.length > 0 && !inSay;

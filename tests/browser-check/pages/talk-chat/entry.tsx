@@ -5,7 +5,13 @@
 // mode old 는 기존 두 방식의 화면(끝 줄 · 이어 하기 자료에 chat 칸이 없음)이다 — 고친 틀에서도 아무 기능이 켜지지 않는지 본다.
 import { createRoot } from "react-dom/client";
 import { TalkLessonFrame } from "@/components/conversation/talk-frame";
+import {
+  chatHintRecordOf,
+  chatHintReplyOf,
+} from "@/core/conversation/chat-hints";
+import { chatListenLiteralOf } from "@/core/conversation/chat-reply";
 import type { ChatEndSignal } from "@/core/conversation/chat-turn-core";
+import type { LessonHintSpec } from "@/core/conversation/hints";
 import { koAskSettingsFrom } from "@/core/conversation/ko-ask";
 import { talkSpeechSettingsFrom } from "@/core/conversation/listen";
 import { TALK_LOW_BAND } from "@/core/seed/structure";
@@ -16,6 +22,7 @@ import { MIC_NOTICE_KEY } from "@/lib/mic-state";
 import { installFakeWebSpeech } from "@/lib/speech/fake-web-speech";
 import { TALK_KO_HELP_PATH } from "@/lib/talk-stream";
 import type { TalkLessonView } from "@/server/conversation";
+import levelSpecsSeed from "../../../../seed/level-specs.json";
 import settingsSeed from "../../../../seed/settings.json";
 
 /** 턴 요청 응답 하나. delayMs 는 첫 줄(또는 거절 · 오류 줄) 앞 늦춤(ms — 조용함 요청 뒤 기다림 칸 장면). */
@@ -106,6 +113,18 @@ type ChatConfig = {
   level: number;
   /** 한국어 질문마다 차례로 쓸 응답(모자라면 표현 답). */
   koHelps: KoStep[];
+  /**
+   * 있으면 아이 차례 응답의 선생님 말이 이 글이다(4단계 장면 — 13절 C254). 따라 할 문장(listen)을 글에서 빼 소리 줄로 낼지는 서버와 같은 판단
+   * (core chat-reply chatListenLiteralOf, 단계로 가름)으로 정한다: 빼는 단계(1~3단계)면 뺀 글 + 소리 줄, 아니면(4단계부터) 글 한 줄 그대로.
+   */
+  follow: { say: string; listen: string } | null;
+  /**
+   * 있으면 힌트 응답을 이 힌트 호출 출력(검사를 지난 세 칸)으로 core 의 단 만들기(chat-hints chatHintRecordOf · chatHintReplyOf)에 넣어 만든다 — 단
+   * 차례 · 뜻 단의 영어 문장 거르기 · 문장 단의 듣기 단추가 단계 규격(시드 level-specs 의 회화 그 단계)대로다. 없으면 손으로 쓴 보통 힌트(hintTiers).
+   */
+  hintOutput: { hint_ko: string; hint_en: string; explain_ko: string } | null;
+  /** 힌트 틀 단의 재료가 되는 단원 단어(hintOutput 과 함께 — 서버는 단원 규격의 단어). */
+  unitWords: string[];
   /** 이어 열 때 되살릴 한국어 문답(화면 자료 koHelps — b5-fix2 장면 chat-ko-resume, 없으면 처음 여는 수업). */
   resumeKoHelps: TalkLessonView["koHelps"];
   /** 이 글의 읽기를 시작 전에 실패시킨다(times 번, error 는 onerror 의 코드 — interrupted · canceled 는 끊김, 그 밖은 들려주지 못함). */
@@ -151,11 +170,28 @@ const cfg: ChatConfig = {
   wrap: null,
   level: 3,
   koHelps: [],
+  follow: null,
+  hintOutput: null,
+  unitWords: [],
   resumeKoHelps: [],
   speakFails: [],
   ...given,
 };
 const chatMode = cfg.mode === "chat";
+
+// ── 단계 규격(시드 level-specs 의 회화 그 단계 — 뜻 줄 · 힌트 단) ──
+const levelSpec = (
+  levelSpecsSeed as {
+    levelSpecs: (LessonHintSpec & {
+      area: string;
+      level: number;
+      koMeaning: boolean;
+    })[];
+  }
+).levelSpecs.find((s) => s.area === "talk" && s.level === cfg.level);
+if (!levelSpec) throw new Error(`시드에 회화 ${cfg.level}단계 규격이 없다`);
+/** 뜻 줄을 보이는 단계인가(서버는 koMeaning 이 거짓이면 뜻 줄 · 기록 뜻을 보내지 않는다). */
+const koMeaning = levelSpec.koMeaning;
 
 // ── 설정(시드 값 그대로 — speech.discard_mode 만 장면이 정함) ──
 const values = new Map<string, unknown>(
@@ -273,6 +309,19 @@ const chat = {
       const tier = typeof body.tier === "number" ? body.tier : 0;
       await wait(step?.delayMs ?? cfg.hintDelayMs);
       if (step) return step.reply;
+      if (cfg.hintOutput)
+        return chatHintReplyOf({
+          record: chatHintRecordOf({
+            output: cfg.hintOutput,
+            spec: levelSpec,
+            unitWords: cfg.unitWords,
+            lemmaOf: (surface) => surface.toLowerCase(),
+          }),
+          tier,
+          retriesUsed: 0,
+          retryMax: 1,
+          aiResting: false,
+        });
       const kinds =
         cfg.hintTiers === 3
           ? [
@@ -336,14 +385,27 @@ function streamOf(
   });
 }
 
+/** 선생님 말 줄: follow 가 있으면 서버와 같은 판단으로 따라 할 문장을 글에 두거나 소리 줄로 뺀다, 없으면 차례의 문장 하나. */
+function sayLines(sentence: string): object[] {
+  if (!cfg.follow) return [{ t: "s", en: sentence }];
+  const { say, listen } = cfg.follow;
+  const literal = chatListenLiteralOf(say, listen, cfg.level);
+  if (literal === null) return [{ t: "s", en: say }];
+  const rest = say.replace(literal, "").replace(/\s+/g, " ").trim();
+  return [
+    ...(rest === "" ? [] : [{ t: "s", en: rest }]),
+    { t: "sound", kind: "model", say: literal },
+  ];
+}
+
 function turnLines(reply: Extract<Reply, { kind: "turn" }>): object[] {
   turnNo += 1;
   if (reply.prep) prepOpen = true;
   const sentence = SENTENCES[(turnNo - 2) % SENTENCES.length] as string;
   const signal = reply.chat === undefined ? cfg.signal : reply.chat;
   return [
-    { t: "s", en: sentence },
-    { t: "ko", ko: "재미있겠다!" },
+    ...sayLines(sentence),
+    ...(koMeaning ? [{ t: "ko", ko: "재미있겠다!" }] : []),
     ...(cfg.sound ? [{ t: "sound", kind: "model", say: cfg.sound }] : []),
     {
       t: "end",
@@ -525,7 +587,11 @@ function logOf(pairs: number) {
       turnNo: i + 1,
       segment: "talk",
       kind: null,
-      lines: [{ en: "Nice! I like it too.", ko: "좋아! 나도 그거 좋아." }],
+      lines: [
+        koMeaning
+          ? { en: "Nice! I like it too.", ko: "좋아! 나도 그거 좋아." }
+          : { en: "Nice! I like it too." },
+      ],
     },
     {
       speaker: "child",
@@ -550,7 +616,7 @@ function viewOf(): TalkLessonView {
     title: "가족과 호수 나들이",
     englishName: "Momo",
     card: { topic: "lake", todayTopicsKo: ["호수에 가기", "오리 보기"] },
-    spec: { band: cfg.level <= 3 ? TALK_LOW_BAND : "4-6", koMeaning: true },
+    spec: { band: cfg.level <= 3 ? TALK_LOW_BAND : "4-6", koMeaning },
     segment: "talk",
     step: orphan
       ? { kind: "retry" }
@@ -579,7 +645,9 @@ function viewOf(): TalkLessonView {
       turnNo: no,
       kind: null,
       lines: [
-        { en: "Hi Momo! What did you do today?", ko: "안녕! 오늘 뭐 했어?" },
+        koMeaning
+          ? { en: "Hi Momo! What did you do today?", ko: "안녕! 오늘 뭐 했어?" }
+          : { en: "Hi Momo! What did you do today?" },
       ],
       sound: cfg.sound ? { model: cfg.sound } : null,
       app: [],
