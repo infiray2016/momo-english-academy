@@ -3,7 +3,9 @@
 // 열여섯 자리에 닿게 하고, 자리마다 그 차례의 사용자 메시지(보낸 글 전문) · 응답 원문 · 나간 글(말풍선 · 뜻 · 소리 줄 · 앱이 붙인 물음 · 두 단추 ·
 // 닫는 줄 · 힌트 단 · 설명) · 앱 판단(토막 · 사실 줄 · 끝 줄 신호 · 알림 · 힌트 단)을 JSON(spots.json)과 읽는 글(spots.md)로 남긴다. 화면 재현
 // 장면(tests/browser-check/scenes/chat-spots.mjs)이 읽는 작은 화면 자료(screens.json)도 함께 쓴다. 한국어 도움 뒤 자리는 K 로 미뤘다(열여섯 자리).
-// 실행: node --import tsx scripts/exp/chat-spots.ts [--live] [--max-calls N] [--out <폴더>]
+// 실행: node --import tsx scripts/exp/chat-spots.ts [--live] [--max-calls N] [--out <폴더>] [--level 3] [--unit 1] [--lesson 1]
+// 단계 · 단원 · 수업 인자(13절 C254 · 분석 S6)가 없으면 회화 3단계 단원 1 수업 1 이다. 대본 일곱과 자리 조건은 3단계 수업 1 에 맞춰 쓴 것이라
+// 다른 자리에서는 닿지 못하는 자리(짧은 준비 · 1~3단계 소리 줄 · 3단계 힌트 틀)가 까닭과 함께 남는다.
 // 기본은 가짜 응답(tests/fixtures/ai/fake-anthropic 의 흘려 받기 꼴)이다. --live 를 줄 때만 실호출하고, 부르기 전에 부를 호출 수와 어림 비용을 찍으며
 // 최악 수(힌트 다시 받기 포함)가 --max-calls(기본 30)를 넘으면 부르지 않고 끝낸다. 실호출은 자리에 닿는 호출(자리 표지가 붙은 호출)만이고, 자리까지
 // 가는 앞 차례(수업 첫 말 · 인사 · 돌아옴 · 채움 차례)는 실호출에서도 대본의 가짜 응답을 깐다(talk-observe --anchored 와 같은 뜻 — 자리를 정해진
@@ -53,9 +55,9 @@ import {
   type SettingValue,
 } from "../talk-observe";
 
-const LEVEL = 3;
-const UNIT = 1;
-const LESSON = 1;
+/** 기본 자리(회화 3단계 단원 1 수업 1 — 지난 자리 재현 그대로). --level · --unit · --lesson 으로 바꾼다. */
+export const DEFAULT_SPOT_WHERE = { level: 3, unit: 1, lesson: 1 } as const;
+export type SpotWhere = { level: number; unit: number; lesson: number };
 const TEACHER = "mina";
 /** 수업 시작 시각(서울 토요일 아침 — 수업 시작 줄의 요일 · 때를 실행마다 같게). */
 const CHAT_AT = new Date("2026-11-14T01:00:00.000Z");
@@ -732,6 +734,8 @@ function callerOf(script: SpotScript, io: SpotRunIo, calls: SpotCall[]) {
 /** 대본 하나를 돌린 결과(차례 · 호출 기록 · 차례에 붙인 호출). */
 export type SpotScriptRun = {
   script: SpotScript;
+  /** 이 실행의 회화 단계(재료의 단계 — 단계에 매인 자리 조건이 읽는다). */
+  level: number;
   steps: readonly ObserveStep[];
   run: ChatScenarioRun;
   calls: SpotCall[];
@@ -777,13 +781,16 @@ export type SpotEnv = {
   materials: Materials;
 };
 
-/** 시드 · 설정을 읽는다(3단계 단원 1 수업 1 · 미나, 짧은 준비가 열린 실제 카드 — spec 설계 13 I-1). */
-export function spotEnvOf(root = process.cwd()): SpotEnv {
+/** 시드 · 설정을 읽는다(기본 3단계 단원 1 수업 1 · 미나, 짧은 준비가 열린 실제 카드 — spec 설계 13 I-1). */
+export function spotEnvOf(
+  root = process.cwd(),
+  where: SpotWhere = DEFAULT_SPOT_WHERE,
+): SpotEnv {
   const config = loadScriptConfig({ root });
-  const m = materialsOf(readSeedFiles(root, LEVEL, UNIT), {
-    level: LEVEL,
-    unit: UNIT,
-    lesson: LESSON,
+  const m = materialsOf(readSeedFiles(root, where.level, where.unit), {
+    level: where.level,
+    unit: where.unit,
+    lesson: where.lesson,
     teacher: TEACHER,
   });
   if (!m.ok) throw new Error(`재료가 없다: ${m.missing}`);
@@ -848,6 +855,7 @@ async function runOnce(
   });
   return {
     script,
+    level: env.materials.level,
     steps,
     run,
     calls,
@@ -1439,7 +1447,7 @@ const FINDERS: Readonly<Record<SpotId, Finder>> = {
       call: "hint",
       picks: hit ? [{ run: sr, index: hit.index }] : [],
       conditions: [
-        cond("3단계 수업이다", LEVEL === 3),
+        cond("3단계 수업이다", sr.level === 3),
         cond(
           "틀 단 없이 두 단(뜻 · 문장)이다",
           kinds.join(",") === "ko,sentence",
@@ -1891,13 +1899,14 @@ export function spotsMarkdown(
 
 // ── 실행 ─────────────────────────────────────────────────────────
 
-type Args = { live: boolean; maxCalls: number; out: string };
+type Args = { live: boolean; maxCalls: number; out: string; where: SpotWhere };
 
 export function parseSpotArgs(argv: readonly string[]): Args {
   const args: Args = {
     live: false,
     maxCalls: DEFAULT_MAX_CALLS,
     out: join(tmpdir(), `chat-spots-${Date.now()}`),
+    where: { ...DEFAULT_SPOT_WHERE },
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -1911,6 +1920,12 @@ export function parseSpotArgs(argv: readonly string[]): Args {
       const v = argv[++i];
       if (!v) throw new Error("--out 뒤에 폴더가 없다");
       args.out = v;
+    } else if (a === "--level" || a === "--unit" || a === "--lesson") {
+      const n = Number(argv[++i]);
+      if (!Number.isInteger(n) || n < 1) throw new Error(`${a} 는 1 이상 정수`);
+      args.where[
+        a === "--level" ? "level" : a === "--unit" ? "unit" : "lesson"
+      ] = n;
     } else throw new Error(`모르는 인자: ${a}`);
   }
   return args;
@@ -1918,7 +1933,7 @@ export function parseSpotArgs(argv: readonly string[]): Args {
 
 async function main(): Promise<number> {
   const args = parseSpotArgs(process.argv.slice(2));
-  const env = spotEnvOf();
+  const env = spotEnvOf(process.cwd(), args.where);
   const fakeRuns = await runAllSpots(env);
   const retryMax = env.config.values[HINT_RETRY_MAX_KEY];
   const plan = livePlanOf(
@@ -1949,7 +1964,7 @@ async function main(): Promise<number> {
   mkdirSync(args.out, { recursive: true });
   writeFileSync(
     join(args.out, "spots.json"),
-    `${JSON.stringify({ live: args.live, level: LEVEL, unit: UNIT, lesson: LESSON, teacher: TEACHER, settingsSource: env.config.settingsSource, plan, spots, scripts }, null, 2)}\n`,
+    `${JSON.stringify({ live: args.live, level: env.materials.level, unit: env.materials.unit, lesson: env.materials.lessonNo, teacher: TEACHER, settingsSource: env.config.settingsSource, plan, spots, scripts }, null, 2)}\n`,
   );
   writeFileSync(
     join(args.out, "screens.json"),

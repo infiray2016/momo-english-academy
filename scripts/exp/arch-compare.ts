@@ -1,7 +1,8 @@
 // 회화 구조 비교 실험(13절 C234 · task-exp-harness · task-exp-arm-p): 선생님 쪽 다섯 방식(A · B · C · C2 · P)과 아이 역(K1 · K2 · K3)이 번갈아 말하는 연속 수업.
 // 사용: node --env-file-if-exists=.env.local --import tsx scripts/exp/arch-compare.ts --out <폴더> [--pilot] [--turns 16]
 //        [--children K1,K2,K3 | SA,SB,SC,SD,SD2,SE,SF,SG] [--seeds 1,2] [--arms A,B,C,C2,P,N,Q,QP,R,R2,R3,R3M,R3O,CHAT]
-//        [--card replay|lesson1] [--long [--long-turns 40] [--long-safety-max 40]] [--shuffle <씨앗>] [--call --max-calls <수>]
+//        [--card replay|lesson1 [--level 3] [--unit 1] [--lesson 1]] [--long [--long-seeds 1] [--long-turns 40] [--long-safety-max 40]]
+//        [--shuffle <씨앗>] [--call --max-calls <수>]
 // 같은 (아이 · 씨앗)의 네 방식은 동시에, 조합 사이는 차례로 돈다. 실패한 수업은 그 수업만 다시 돈다(두 번까지, 기록에 남김).
 // 방식 A 는 앱 코드 그대로(scripts/talk-observe.ts createTalkSim — 프롬프트 조립 · 차례 계획 · 응답 검사 · 다시 쓰기 · 카드 자리 · 고정 문구).
 // 방식 B 는 같은 시스템 프롬프트 · 출력 규격 · 기록 꼴에 사용자 메시지의 행동 지시 줄을 걷고(arch-arms B_REMOVED_PREFIXES) 후처리를 하지
@@ -16,7 +17,8 @@
 // 키 값은 출력하지 않는다. 결과 파일: <out>/runs/<방식>-<아이>-s<씨앗>.jsonl · .transcript.md, <out>/run-summary.json.
 // 방식 CHAT(묶음 T2)은 앱 길의 이야기 방식(대본 도구 runChatScenario — 서버와 같은 함수, talk.lead_mode chat)에 아이 역 AI 가 차례마다 말을 정하고
 // 앱 행동(조용함 · 말 없음 · 힌트 · 모름 · 더 이야기하기 · 인식기 알림)을 넣는다(spec '회화 대화 구조 R' 설계 13). --card lesson1 은 실제 카드(회화 3단계
-// 단원 1 첫 수업, 짧은 준비가 열림), --long 은 긴 대본 한 벌(CHAT · SE · 아이 차례 40)을 더한다.
+// 단원 1 첫 수업, 짧은 준비가 열림 — --level · --unit · --lesson 으로 다른 단계 · 단원 · 수업의 카드, 아이 역 글은 그 단계의 글 · 13절 C254),
+// --long 은 긴 대본(CHAT · SE · 아이 차례 40)을 --long-seeds 의 씨앗마다 한 벌(기본 씨앗 1 한 벌) 더한다.
 // 실제 AI 호출은 --call 과 --max-calls <수> 가 함께 있을 때만 나간다(13절 C243 보완 5 (6)). 기본은 계획만: 수업 · 방식 · 호출 갈래별 위쪽 어림 수와
 // 어림 비용을 찍고 끝낸다. 어림이 상한을 넘으면 부르지 않고, 실행 중 상한에 닿으면 더 부르지 않고 멈춘다.
 // 묶음 T2 fix 3(13절 C245 (3)): --shuffle <씨앗> 이면 조합 차례와 조합 안 방식의 요청 차례를 그 씨앗대로 섞고(setup.json plan.order · progress.log),
@@ -771,6 +773,29 @@ export const CHAT_CARD_SCRIPT: ObserveScript = {
   steps: [{ say: "I'm fine." }],
 };
 
+/** 실제 카드 대본 틀의 자리(--level · --unit · --lesson, 기본 회화 3단계 단원 1 수업 1 — 지난 실험 그대로). */
+export type CardWhere = { level: number; unit: number; lesson: number };
+export const DEFAULT_CARD_WHERE: CardWhere = { level: 3, unit: 1, lesson: 1 };
+
+/** 실제 카드 대본 틀: 기본 자리면 CHAT_CARD_SCRIPT 그대로(이름 · 제목까지), 다른 자리면 같은 꼴로 그 단계 · 단원 · 수업을 읽는다. */
+export function cardScriptOf(where: CardWhere): ObserveScript {
+  const { level, unit, lesson } = where;
+  if (
+    level === CHAT_CARD_SCRIPT.level &&
+    unit === CHAT_CARD_SCRIPT.unit &&
+    lesson === CHAT_CARD_SCRIPT.lesson
+  )
+    return CHAT_CARD_SCRIPT;
+  return {
+    ...CHAT_CARD_SCRIPT,
+    name: `exp-chat-l${level}u${unit}-lesson${lesson}`,
+    title: `${level}단계 · 실제 카드 단원 ${unit} 수업 ${lesson}(이야기 방식 실험 재료)`,
+    level,
+    unit,
+    lesson,
+  };
+}
+
 export type Setup = {
   root: string;
   /** 실험 재료의 카드(지난 실험은 replay). */
@@ -923,8 +948,12 @@ function chatStartBodyOf(
   return opened.ok ? opened.turn.request.body : null;
 }
 
-function sourceScriptOf(root: string, card: SetupCard): ObserveScript {
-  if (card === "lesson1") return CHAT_CARD_SCRIPT;
+function sourceScriptOf(
+  root: string,
+  card: SetupCard,
+  where: CardWhere,
+): ObserveScript {
+  if (card === "lesson1") return cardScriptOf(where);
   const scriptFile = readScriptFiles(root).find(
     (f) => f.file === `${SOURCE_SCRIPT}.json`,
   );
@@ -934,10 +963,17 @@ function sourceScriptOf(root: string, card: SetupCard): ObserveScript {
   return parsed.script;
 }
 
-export function setupOf(root: string, opts: { card?: SetupCard } = {}): Setup {
+/**
+ * 실험 틀. card lesson1 은 where(기본 회화 3단계 단원 1 수업 1)의 실제 카드를 읽고, replay 는 재생 대본(회화 3단계 단원 1 수업 6)이라 자리를
+ * 받지 않는다(parseRunArgs 가 막는다).
+ */
+export function setupOf(
+  root: string,
+  opts: { card?: SetupCard; where?: CardWhere } = {},
+): Setup {
   const card = opts.card ?? "replay";
   const config = loadScriptConfig({ root });
-  const script = sourceScriptOf(root, card);
+  const script = sourceScriptOf(root, card, opts.where ?? DEFAULT_CARD_WHERE);
   const { values } = runValuesOf({
     values: config.values,
     level: script.level,
@@ -2917,7 +2953,7 @@ function childBaseBodyOf(
   return withFormat(
     {
       ...setup.template.body,
-      system: childSystemOf(child),
+      system: childSystemOf(child, setup.materials.level),
       output_config: outputConfig,
     },
     ChildOutputSchema,
@@ -2935,7 +2971,7 @@ function childRole(
   child: ChildKey,
   tally: ChildWhyTally = { broken: 0, turns: [] },
 ) {
-  const system = childSystemOf(child);
+  const system = childSystemOf(child, setup.materials.level);
   const { format: _drop, ...outputConfig } = setup.template.body
     .output_config as Record<string, unknown>;
   const base = childBaseBodyOf(setup, child);
@@ -3409,12 +3445,19 @@ export type RunArgs = {
   arms: Arm[];
   /** 실험 재료의 카드(--card replay | lesson1, 기본 replay — 지난 실험). */
   card: SetupCard;
+  /**
+   * 실제 카드의 자리(--level · --unit · --lesson, 기본 회화 3단계 단원 1 수업 1 — 13절 C254 · 분석 S6). --card lesson1 에서만 바꿀 수 있다
+   * (replay 는 회화 3단계 단원 1 수업 6 재생 대본이다). 아이 역 글은 이 단계의 글이다(arch-arms childPersonaOf).
+   */
+  where: CardWhere;
   /** 실제 AI 호출을 한다(--call). 없으면 계획만 찍고 끝낸다. */
   call: boolean;
   /** 실행 전체의 실제 호출 수 상한(--max-calls — --call 이면 꼭 둔다). */
   maxCalls: number | null;
-  /** 긴 대본 한 벌(--long — CHAT · SE · 씨앗 1)을 더한다. */
+  /** 긴 대본(--long — CHAT · SE, 씨앗마다 한 벌)을 더한다. */
   long: boolean;
+  /** 긴 대본의 씨앗(--long-seeds 1,2 — 기본 [1], 지난 실험의 한 벌). 씨앗마다 긴 대본 한 벌이다(C246 꼴 '긴 대본 둘'). */
+  longSeeds: number[];
   /** 긴 대본의 아이 차례(--long-turns, 기본 40). */
   longTurns: number;
   /** 긴 대본의 대화 안전 상한(--long-safety-max, 기본 긴 대본의 아이 차례 — 그 차례에 안전 상한 사실 줄이 붙는다). */
@@ -3458,6 +3501,30 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
   const card = get("--card") ?? "replay";
   if (!(SETUP_CARDS as readonly string[]).includes(card))
     throw new Error(`모르는 카드: ${card}(replay · lesson1)`);
+  const whereGiven = ["--level", "--unit", "--lesson"].filter(
+    (f) => get(f) !== undefined,
+  );
+  if (card === "replay" && whereGiven.length > 0)
+    throw new Error(
+      `${whereGiven.join(" · ")} 는 --card lesson1 에서만 쓴다(replay 는 회화 3단계 단원 1 수업 6 재생 대본)`,
+    );
+  const where: CardWhere = {
+    level: positive("--level") ?? DEFAULT_CARD_WHERE.level,
+    unit: positive("--unit") ?? DEFAULT_CARD_WHERE.unit,
+    lesson: positive("--lesson") ?? DEFAULT_CARD_WHERE.lesson,
+  };
+  const longSeedsText = get("--long-seeds");
+  const longSeeds =
+    longSeedsText === undefined
+      ? [CHAT_LONG_SEED]
+      : longSeedsText.split(",").map((x) => {
+          const n = Number(x);
+          if (!Number.isInteger(n) || n <= 0)
+            throw new Error(`--long-seeds 는 1 이상 정수 목록이다: ${x}`);
+          return n;
+        });
+  if (new Set(longSeeds).size !== longSeeds.length)
+    throw new Error(`--long-seeds 에 같은 씨앗이 있다: ${longSeedsText}`);
   const longTurns = positive("--long-turns") ?? CHAT_LONG_TURNS;
   const shuffleText = get("--shuffle");
   const shuffle = shuffleText === undefined ? null : Number(shuffleText);
@@ -3479,9 +3546,11 @@ export function parseRunArgs(argv: readonly string[]): RunArgs {
         : (get("--seeds") ?? SEEDS.join(",")).split(",").map(Number),
     arms: list(get("--arms"), ARMS),
     card: card as SetupCard,
+    where,
     call,
     maxCalls,
     long: argv.includes("--long"),
+    longSeeds,
     longTurns,
     longSafetyMax: positive("--long-safety-max") ?? longTurns,
     shuffle,
@@ -3714,7 +3783,11 @@ export function callConditionsOf(
         "child",
         arm,
         "아이 역(보통 차례 · 마무리 단추 — 아이 역 안내문만 아이마다)",
-        childBaseBodyOf(setup, CHILDREN[0]),
+        // 3단계는 지난 표 그대로 K1, 다른 단계는 그 단계 글이 있는 첫 시나리오 아이 역(모델 · effort · thinking · max_tokens 는 아이 역과 상관없다)
+        childBaseBodyOf(
+          setup,
+          setup.materials.level === 3 ? CHILDREN[0] : SCENARIO_CHILDREN[0],
+        ),
       ),
     );
   const fieldOf = (
@@ -3797,8 +3870,15 @@ export function preflightOf(
     ...runOrderLinesOf(order, args.shuffle),
     ...conditionLinesOf(conditions),
   ];
-  const differ = conditions.differ.length > 0;
-  if (differ)
+  // 이야기 방식 요청을 만들지 못하는 자리(그 단계 · 단원에서 이야기 방식이 열리지 않음)면 같은 조건을 잴 수 없으므로 부르기 전에 멈춘다
+  // (13절 C254 — 4단계를 여는 코드가 들어오기 전의 4단계 실행)
+  const chatClosed = args.arms.includes(CHAT_ARM) && setup.chatSystem === null;
+  if (chatClosed)
+    lines.push(
+      `arch-compare: 이야기 방식 요청을 만들지 못함(회화 ${setup.materials.level}단계 단원 ${setup.materials.unit} 수업 ${setup.materials.lessonNo} — 이 자리에서 이야기 방식이 열리지 않는다) — 실제 호출 전에 멈추고 부르지 않는다(끝 코드 ${CONDITION_DIFFER_EXIT})`,
+    );
+  const differ = conditions.differ.length > 0 || chatClosed;
+  if (conditions.differ.length > 0)
     lines.push(
       `arch-compare: 세 방식의 호출 조건이 같지 않음(${conditions.differ
         .map((d) => `${CONDITION_CALL_LABEL[d.call]}: ${d.fields.join(" · ")}`)
@@ -3865,16 +3945,17 @@ export function plannedLessonsOf(args: RunArgs): PlannedLesson[] {
           seed,
           turns: args.turns,
         });
-  // 긴 대본은 CHAT 을 돌릴 때만(fix 1 m-7)
+  // 긴 대본은 CHAT 을 돌릴 때만(fix 1 m-7), 씨앗마다 한 벌(--long-seeds — 기본 씨앗 1 한 벌)
   if (args.long && args.arms.includes(CHAT_ARM))
-    out.push({
-      lesson: lessonName(CHAT_ARM, CHAT_LONG_CHILD, CHAT_LONG_SEED, "long"),
-      arm: CHAT_ARM,
-      child: CHAT_LONG_CHILD,
-      seed: CHAT_LONG_SEED,
-      turns: args.longTurns,
-      variant: "long",
-    });
+    for (const seed of args.longSeeds)
+      out.push({
+        lesson: lessonName(CHAT_ARM, CHAT_LONG_CHILD, seed, "long"),
+        arm: CHAT_ARM,
+        child: CHAT_LONG_CHILD,
+        seed,
+        turns: args.longTurns,
+        variant: "long",
+      });
   return out;
 }
 
@@ -3996,7 +4077,7 @@ export function runPlanOf(setup: Setup, args: RunArgs): RunPlan {
       }) +
       planCallsCostUsdOf({
         n: calls.child,
-        systemChars: childSystemOf(l.child).length,
+        systemChars: childSystemOf(l.child, level).length,
         growing: true,
         price: priceOf(modelOf(PURPOSE)),
         mode,
@@ -4177,7 +4258,7 @@ export function mergeSetup(
 async function main(): Promise<number> {
   const args = parseRunArgs(process.argv.slice(2));
   const root = process.cwd();
-  const setup = setupOf(root, { card: args.card });
+  const setup = setupOf(root, { card: args.card, where: args.where });
   // 부르기 전: 수업 · 방식 · 호출 갈래별 어림 수와 어림 비용 · 실행 순서 · 같은 조건 표(늘 찍는다). 같은 조건이 아니면 계획만이어도 그 끝 코드로 끝낸다
   const pre = preflightOf(setup, args);
   const plan = pre.plan;
@@ -4332,21 +4413,24 @@ async function main(): Promise<number> {
       );
     }
   }
-  if (args.long && args.arms.includes(CHAT_ARM) && !capped) {
+  const longSeeds =
+    args.long && args.arms.includes(CHAT_ARM) ? args.longSeeds : [];
+  for (const longSeed of longSeeds) {
+    if (capped) break;
     const opts: RunLessonOptions = {
       variant: "long",
       safetyMax: args.longSafetyMax,
       budget,
     };
     say(
-      `긴 대본: ${CHAT_ARM} · ${CHAT_LONG_CHILD} · 씨앗 ${CHAT_LONG_SEED} · 아이 차례 ${args.longTurns} · 안전 상한 ${args.longSafetyMax}`,
+      `긴 대본: ${CHAT_ARM} · ${CHAT_LONG_CHILD} · 씨앗 ${longSeed} · 아이 차례 ${args.longTurns} · 안전 상한 ${args.longSafetyMax}`,
     );
     const first = await runLesson(
       setup,
       client,
       CHAT_ARM,
       CHAT_LONG_CHILD,
-      CHAT_LONG_SEED,
+      longSeed,
       args.longTurns,
       1,
       opts,
@@ -4357,7 +4441,7 @@ async function main(): Promise<number> {
         client,
         CHAT_ARM,
         CHAT_LONG_CHILD,
-        CHAT_LONG_SEED,
+        longSeed,
         args.longTurns,
         attempt,
         opts,

@@ -5,7 +5,7 @@
   "unit": 1,
   "lesson": 1,
   "teacher": "mina",
-  "note": "4단계는 짧은 준비 없이 대화하고 소리 줄이 없다. 4단계 회화 카드 시드(seed/lessons/talk/4/1.json)가 생기면 돌아간다(plan 묶음 20 둘째 프리뷰).",
+  "note": "4단계는 짧은 준비 없이 대화하고 소리 줄이 없다. 4단계 회화 카드 시드(seed/lessons/talk/4/1.json)가 생기면 돌아간다(plan 묶음 20 둘째 프리뷰). 아이 말의 단원 단어는 수업 1 의 새 단어(singer · dancer · driver · artist)에 맞췄다: 일곱째 걸음은 배정 4 낱말 kitchen 이었으나 artist 로 바꿨다(장부 T-340 ⑥).",
   "steps": [
     {
       "say": "I'm good.",
@@ -41,9 +41,9 @@
       "expect": { "koMeaning": true, "sameSoundTwice": false }
     },
     {
-      "say": "Kitchen.",
+      "say": "Artist.",
       "expect": {
-        "recastWord": "kitchen",
+        "recastWord": "artist",
         "answerFirst": false,
         "koMeaning": true
       }

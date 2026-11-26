@@ -40,8 +40,8 @@ import {
 } from "./arch-arm-q";
 import {
   C_START_MESSAGE,
-  CHILD_PERSONAS,
   childHasNoise,
+  childPersonaOf,
   heardByChild,
   SCENARIO_CHILDREN,
   SCENARIO_TITLES,
@@ -2191,12 +2191,14 @@ function teacherParts(t: TeacherTurnLog, head: string): string[] {
 export function scenarioMarkdownOf(
   child: ScenarioKey,
   lessons: readonly Lesson[],
+  /** 실행의 회화 단계(결과 폴더 setup.json 의 level — 아이 역 글을 그 단계의 글로 적는다, 없으면 3). */
+  level = 3,
 ): string {
   const mine = lessons.filter((l) => l.meta.child === child);
   const out = [
     `# 시나리오 ${child}(${SCENARIO_TITLES[child]})`,
     "",
-    `- 아이 역 글(지금 아이 역 머리 뒤에 붙음): ${CHILD_PERSONAS[child]}`,
+    `- 아이 역 글(지금 아이 역 머리 뒤에 붙음${level === 3 ? "" : ` · 회화 ${level}단계 글`}): ${childPersonaOf(child, level)}`,
     `- 잡음: ${childHasNoise(child) ? "넣음(지금 일정 — 씨앗마다 정해진 차례)" : "넣지 않음"}`,
     "",
     "칸마다 그 방식 수업의 아이 말(들린 글이 다르면 함께) 다음 줄에 바로 뒤 선생님 말이다. 아이 역은 방식마다 다른 선생님 말을 듣고 답하므로 같은 차례라도 아이 말이 방식마다 다르다. [따라 할 문장]은 그 차례에 선생님이 낸 따라 할 문장(A · N: 소리 줄, P: model_sentence, Q · Q+ · CHAT: listen_sentence), [wrap_up]은 Q · Q+ 의 선생님이 마무리를 꺼낸 차례, [단추: …]는 그 아이 차례 앞에서 아이가 고른 마무리 단추다. CHAT 의 '선생님(back · quiet)'은 아이 말 없이 연 선생님 차례(짧은 준비 뒤 돌아옴 · 조용함), [힌트 n단]은 앱 행동으로 누른 힌트다.",
@@ -2257,6 +2259,7 @@ export function scenarioMarkdownOf(
 
 /** 기록에 든 시나리오마다 scenarios/<SA…SF>.md 를 쓴다(시나리오 수업이 없으면 쓰지 않음). */
 function writeScenarios(dir: string, lessons: readonly Lesson[]): void {
+  const level = setupLevelOf(dir);
   const present = SCENARIO_CHILDREN.filter((k) =>
     lessons.some((l) => l.meta.child === k),
   );
@@ -2264,7 +2267,7 @@ function writeScenarios(dir: string, lessons: readonly Lesson[]): void {
   const at = join(dir, "scenarios");
   mkdirSync(at, { recursive: true });
   for (const k of present)
-    writeFileSync(join(at, `${k}.md`), scenarioMarkdownOf(k, lessons));
+    writeFileSync(join(at, `${k}.md`), scenarioMarkdownOf(k, lessons, level));
 }
 
 // ── 예시 ─────────────────────────────────────────────────────────
@@ -2521,6 +2524,15 @@ function setupCardOf(dir: string): SetupCard {
   return (SETUP_CARDS as readonly unknown[]).includes(card)
     ? (card as SetupCard)
     : "replay";
+}
+
+/** 결과 폴더 setup.json 의 회화 단계(없거나 정수가 아니면 3 — 지난 실험은 모두 3단계). */
+export function setupLevelOf(dir: string): number {
+  const path = join(dir, "setup.json");
+  if (!existsSync(path)) return 3;
+  const level = (JSON.parse(readFileSync(path, "utf8")) as { level?: unknown })
+    .level;
+  return typeof level === "number" && Number.isInteger(level) ? level : 3;
 }
 
 /** spec 설계 14 의 보통 수업 비용 어림(달러)과 AC-16 잣대(어림 상단의 1.5배). */

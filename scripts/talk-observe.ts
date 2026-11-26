@@ -1,6 +1,8 @@
 // 회화 수업 실호출 표본 평가 명령(회화 plan 묶음 13 · AC-15o · 9절 실시간 호출 표본 평가의 회화 몫, 컨트롤러 T-131 로 앞당김).
 // 사용: pnpm talk:observe [--yes] [--script <이름>] [--level <단계>] [--effort low|medium] [--rounds <n>] [--set <키>=<값> …]
-//        [--baseline <json>] [--out <폴더>] [--anchored]
+//        [--baseline <json>] [--out <폴더>] [--anchored] [--card-file <회화 수업 파일>]
+// --card-file: 그 파일과 단계 · 단원이 같은 대본은 살아 있는 시드 대신 그 파일의 수업을 읽는다. 개정 5 다지기 6 전제의 재생 대본 둘은
+// `--card-file tests/fixtures/talk-lesson-3-1-rev5.json` 으로 돌린다(분석 task-ana-talk4-ready R2 — 살아 있는 시드의 다지기 6 은 개정 6).
 // --yes 가 없으면 대본 · 아이 차례 수 · 예상 호출 · 예상 비용만 출력하고 부르지 않는다(종료 0). 설정 파일은 바꾸지 않는다.
 // 설정값은 설정 파일 → 대본 칸 settings(그 대본만) → --effort → --set(명령 전체) 차례로 메모리에서만 덮는다('AI 몫 넓힘' plan 묶음 4-가).
 // --rounds 는 대본마다 같은 대화를 n 바퀴 돌리고, --baseline 은 기준선 보고 경로를 보고에 적기만 한다(지표 셈 · 견줌은 묶음 4-나 talk-metrics).
@@ -519,6 +521,12 @@ export type TalkObserveArgs = {
    * '부르지 않음'으로 적는다.
    */
   chatEval?: boolean;
+  /**
+   * 회화 수업 파일 견본(--card-file <파일> — 준 때에만 칸이 있다, 분석 task-ana-talk4-ready R2). 그 파일과 단계 · 단원이 같은 대본은 살아 있는
+   * 시드(seed/lessons/talk/<단계>/<단원>.json) 대신 이 파일의 수업을 읽는다. 개정 5 다지기 6 을 전제로 쓴 재생 대본 둘(replay-lesson-1108 ·
+   * l3-heard-counter)을 개정 6 시드에서 돌릴 때 개정 5 견본(tests/fixtures/talk-lesson-3-1-rev5.json)을 준다.
+   */
+  cardFile?: string;
 };
 
 /** --set 의 값 글 → 값: true · false 는 참거짓, 십진 수는 수, 그 밖은 글 그대로(on · off · low 꼴). */
@@ -572,6 +580,7 @@ export function parseArgs(
     }
     if (
       arg !== "--script" &&
+      arg !== "--card-file" &&
       arg !== "--chat-eval" &&
       arg !== "--level" &&
       arg !== "--effort" &&
@@ -586,6 +595,7 @@ export function parseArgs(
       return { ok: false, error: `${arg} 뒤에 값이 없다` };
     i += 1;
     if (arg === "--script") args.script = value;
+    else if (arg === "--card-file") args.cardFile = value;
     else if (arg === "--chat-eval") {
       if (value !== "on" && value !== "off")
         return { ok: false, error: "--chat-eval 은 on · off 가운데 하나다" };
@@ -1132,6 +1142,10 @@ const LessonFileLite = z.object({
   lessons: z.array(
     z.object({
       lessonNo: z.int(),
+      /** 수업 종류(assigned · reinforce · remedial). 같은 lessonNo 의 보강(remedial) 수업과 가른다 — 옛 시험 재료에는 없다. */
+      kind: z.string().optional(),
+      /** 주제 변형(1 · 2 …). 같은 수업의 변형이 여럿이면 가장 작은 변형을 읽는다 — 옛 시험 재료에는 없다. */
+      variant: z.int().optional(),
       newWords: z.array(z.string()),
       /** 그 수업 내용의 단원 단어(서버 수업 상태의 원형 표 state.lemmaOf 의 재료 — 묶음 T1 fix 1). 옛 시드에는 없다. */
       unitWords: z.array(z.string()).optional(),
@@ -1152,6 +1166,26 @@ const VocabLite = z.object({
   ),
 });
 
+/**
+ * 대본의 수업 번호로 수업 행 하나를 고른다(장부 T-340 ⑥ — 파일 차례만 따르면 같은 번호의 보강 수업이나 변형 2 를 집을 수 있다): 정규 수업
+ * (배정 · 다지기)을 보강(remedial)보다 앞세우고, 그 안에서 가장 작은 변형, 같으면 파일 차례다. 번호가 겹치지 않는 시드(회화 3단계 단원 1)는 지금과
+ * 같은 행이다.
+ */
+export function lessonRowOf<
+  T extends { lessonNo: number; kind?: string; variant?: number },
+>(rows: readonly T[], lesson: number): T | undefined {
+  const rank = (r: T) => (r.kind === "remedial" ? 1 : 0);
+  return rows
+    .filter((r) => r.lessonNo === lesson)
+    .map((r, i) => ({ r, i }))
+    .sort(
+      (a, b) =>
+        rank(a.r) - rank(b.r) ||
+        (a.r.variant ?? 1) - (b.r.variant ?? 1) ||
+        a.i - b.i,
+    )[0]?.r;
+}
+
 /** 시드 JSON → 재료. 카드 · 단계 규격 · 단원 규격 · 선생님이 없으면 그 까닭(돌리지 않고 계획에서 건너뜀). */
 export function materialsOf(
   files: SeedFiles,
@@ -1163,7 +1197,7 @@ export function materialsOf(
     return { ok: false, missing: `카드 시드 없음(${lessonPath})` };
   const lessons = LessonFileLite.safeParse(files.lessonFile);
   const row = lessons.success
-    ? lessons.data.lessons.find((l) => l.lessonNo === lesson)
+    ? lessonRowOf(lessons.data.lessons, lesson)
     : undefined;
   if (!row) return { ok: false, missing: `수업 ${lesson} 없음(${lessonPath})` };
   const card = TalkCardSchema.safeParse(row.card);
@@ -8504,6 +8538,38 @@ async function streamTurn(
   }
 }
 
+/** --card-file 로 받은 회화 수업 파일(단계 · 단원과 읽은 그대로의 JSON). */
+export type ObserveCardFile = {
+  path: string;
+  level: number;
+  unit: number;
+  raw: unknown;
+};
+
+/** --card-file 의 파일을 읽어 회화 수업 파일 꼴인지 본다(아니면 부르기 전에 멈춘다). */
+export function cardFileOf(path: string, raw: unknown): ObserveCardFile {
+  const parsed = LessonFileLite.safeParse(raw);
+  if (!parsed.success)
+    throw new ScriptInputError(
+      `--card-file 이 회화 수업 파일 꼴이 아니다: ${path}`,
+    );
+  return { path, level: parsed.data.level, unit: parsed.data.unit, raw };
+}
+
+/** 대본 재료의 시드 읽기: --card-file 과 단계 · 단원이 같으면 수업 파일만 그 파일로 바꾼다(나머지 시드는 그대로). */
+export function seedReaderOf(
+  read: TalkObserveIo["readSeed"],
+  card: ObserveCardFile | null,
+): TalkObserveIo["readSeed"] {
+  if (card === null) return read;
+  return (level, unit) => {
+    const files = read(level, unit);
+    return card.level === level && card.unit === unit
+      ? { ...files, lessonFile: card.raw }
+      : files;
+  };
+}
+
 function loadScripts(io: Pick<TalkObserveIo, "readScripts">): ObserveScript[] {
   const scripts: ObserveScript[] = [];
   for (const { file, raw } of io.readScripts()) {
@@ -8528,6 +8594,22 @@ export async function runTalkObserve(
         : "고른 대본이 없다(--script · --level 을 보라)",
     );
   const out = args.out ?? join(tmpdir(), "talk-observe");
+  const cardFile =
+    args.cardFile === undefined
+      ? null
+      : cardFileOf(args.cardFile, (io.readJson ?? readJsonFile)(args.cardFile));
+  const readSeed = seedReaderOf(
+    (level, unit) => io.readSeed(level, unit),
+    cardFile,
+  );
+  if (cardFile !== null) {
+    const using = scripts.filter(
+      (s) => s.level === cardFile.level && s.unit === cardFile.unit,
+    );
+    io.log(
+      `카드 견본: ${cardFile.path}(회화 ${cardFile.level}단계 단원 ${cardFile.unit}) — 이 파일의 수업을 읽는 대본 ${using.length}${using.length > 0 ? `(${using.map((s) => s.name).join(" · ")})` : ""}`,
+    );
+  }
   const simOptionsOf = (script: ObserveScript) => ({
     skippedPrep: script.prep?.skipped ?? [],
     summaries: script.summaries ?? [],
@@ -8540,7 +8622,7 @@ export async function runTalkObserve(
       script,
       set: args.set,
     });
-    const m = materialsOf(io.readSeed(script.level, script.unit), script);
+    const m = materialsOf(readSeed(script.level, script.unit), script);
     if (!m.ok)
       return {
         script,

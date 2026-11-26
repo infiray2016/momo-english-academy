@@ -8,7 +8,7 @@
 //    판정(said_words)과 '기존 꼴 said'를 맞댄다. 앞 선생님 차례의 행동은 공식 값이 아니라 평가 출력으로 만들고, 따라 할 문장 자리에는 그 기록의 값을
 //    넣는다(P4 보고 5절). 기록을 고치지 않는다. 실제 AI 호출은 --call 이 있을 때만 하고, 부를 호출 수와 어림 비용을 먼저 낸다(없으면 계획만 낸다).
 // 사용(워크트리 뿌리에서, Node 24): pnpm talk:compare --out <저장소 밖 폴더> [--db [--db-env <이름>]] [--mock <파일>] [--since <YYYY-MM-DD>] [--session <id 앞부분>]…
-//        pnpm talk:compare --against-lead --out <폴더> [--db] [--runs <실험 runs 폴더>] [--call | --fake-ai]
+//        pnpm talk:compare --against-lead --out <폴더> [--db] [--runs <실험 runs 폴더>] [--call | --fake-ai] [--level <평가 호출 구성 단계, 기본 3>]
 // 출력 파일에는 아이 말 원문이 들어가므로 저장소 밖의 경로만 받는다(저장소 안이면 거부). 아이 이름 · 프로필 id · 접속 값은 내지 않는다(세션 id 는 앞
 // 여덟 자, DB 수업의 글 칸은 그 프로필의 이름 가림을 한 번 더 건다). DB 는 읽기 전용 거래로만 읽고 접속 값은 환경 변수에서 받는다.
 // 띄우기: node --conditions=react-server --import tsx — server-only 를 빈 모듈로 풀어 src/server 를 가져온다. 종료 코드: 0 냄, 2 인자 · 환경 · 읽기 오류.
@@ -91,8 +91,11 @@ const SESSION_ID_CHARS = 8;
 const CHARS_PER_TOKEN_ESTIMATE = 3;
 /** 실제 호출을 함께 보내는 수(기술 값 — 분당 한도에 걸리지 않을 만큼 작게). */
 const CALL_CONCURRENCY = 4;
-/** 평가 호출 구성을 읽는 단계(이야기 방식은 1~3단계에서만 돈다 — 그 구간의 한 단계, 기술 값). */
-const EVAL_CONFIG_LEVEL = 3;
+/**
+ * 평가 호출 구성을 읽는 단계의 기본값(이야기 방식이 처음 돈 1~3단계 구간의 한 단계, 기술 값). 다른 구간의 수업을 대조할 때는 --level 로 그
+ * 구간의 단계를 준다(13절 C254 · 분석 S6 — 4단계 확인 실행).
+ */
+export const EVAL_CONFIG_LEVEL = 3;
 /** 사람 판독 칸의 머리(spec AC-9). */
 const VERDICT_HEAD = "사람 판독(앱 쪽이 맞음 · 같음 · 기존 꼴 쪽이 맞음)";
 /** 대조 갈래의 사람 판독 칸 머리(공식 · 평가 호출). */
@@ -1315,6 +1318,8 @@ export type CompareArgs = {
   sessions: string[];
   /** 실제 호출의 호출 수 상한(--call 이면 꼭 있어야 함 — 계획만 실행의 수를 보고 적는다). */
   maxCalls: number | null;
+  /** 대조 갈래의 평가 호출 구성(모델 · 출력 상한)을 읽는 단계(--level, 기본 EVAL_CONFIG_LEVEL). */
+  evalLevel: number;
 };
 
 /** 접속 문자열 환경 변수의 기본 이름(앱 서버와 같은 개발 DB). */
@@ -1337,6 +1342,7 @@ export function parseCompareArgs(
     since: null,
     sessions: [],
     maxCalls: null,
+    evalLevel: EVAL_CONFIG_LEVEL,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
@@ -1365,6 +1371,7 @@ export function parseCompareArgs(
       case "--runs":
       case "--since":
       case "--max-calls":
+      case "--level":
       case "--session": {
         const v = value();
         if (v === null) return { ok: false, error: `${flag} 뒤에 값이 없다` };
@@ -1373,6 +1380,12 @@ export function parseCompareArgs(
         if (flag === "--mock") args.mock = v;
         if (flag === "--runs") args.runs = v;
         if (flag === "--session") args.sessions.push(v);
+        if (flag === "--level") {
+          const n = Number(v);
+          if (!Number.isInteger(n) || n < 1)
+            return { ok: false, error: "--level 은 1 이상 정수" };
+          args.evalLevel = n;
+        }
         if (flag === "--max-calls") {
           const n = Number(v);
           if (!Number.isInteger(n) || n < 1)
@@ -1418,6 +1431,8 @@ export function parseCompareArgs(
       };
     if (args.runs !== null)
       return { ok: false, error: "--runs 는 --against-lead 에서만 쓴다" };
+    if (args.evalLevel !== EVAL_CONFIG_LEVEL)
+      return { ok: false, error: "--level 은 --against-lead 에서만 쓴다" };
     if (!args.db && args.mock === null)
       return { ok: false, error: "--db 나 --mock 이 필요하다" };
   }
@@ -1865,10 +1880,10 @@ async function runAgainstLead(
   const plans = lessons.map((l) =>
     l.lesson.sayLost ? [] : leadEvalPlanOf(l.lesson, contextTurns),
   );
-  // 평가 호출의 ai.* 키(모델 · 출력 상한)는 단계로 갈리지 않는다 — 이야기 방식이 도는 1~3단계 구간의 값으로 읽는다
+  // 평가 호출의 ai.* 키(모델 · 출력 상한)를 읽는 단계(기본 3 — 이야기 방식이 처음 돈 1~3단계 구간, --level 로 바꿈)
   const reqConfig = requestConfigOf({
     purpose: "talk_chat_eval",
-    level: EVAL_CONFIG_LEVEL,
+    level: args.evalLevel,
     values: config.values,
     book: config.book,
   });
